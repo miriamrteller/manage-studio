@@ -65,6 +65,9 @@ The system is built for Israel. RTL layout, Hebrew locale formatting, and Israel
 **1.10 External API keys belong to tenants, not the platform.**
 Each school configures their own Twilio, Resend, and Stripe keys. You store them encrypted. Schools pay their own communication costs. This eliminates margin risk and billing complexity in early stages.
 
+**1.11 Accessibility is mandatory, not optional.**
+WCAG 2.1 Level AA is a legal requirement for Israeli community centers (דינ נגישות לאנשים עם מוגבלות, 1998). All UI features must pass automated axe-core tests before merge. Manual NVDA Hebrew smoke tests verify 15 minutes pre-deployment. Accessibility is part of the Definition of Done for every feature.
+
 ---
 
 ## 2. Technology Stack
@@ -86,6 +89,10 @@ Each school configures their own Twilio, Resend, and Stripe keys. You store them
 | Email | Resend + React Email | Typed templates, per-tenant API keys |
 | WhatsApp + Voice | Twilio | Only provider with reliable WhatsApp Business API in Israel |
 | AI | Anthropic Claude API | `claude-sonnet-4-6` for chatbot and communication drafting |
+| **Accessibility (WCAG 2.1 AA)** | **ESLint jsx-a11y** | **Write-time linting for semantic HTML, ARIA, keyboard nav** |
+| | **axe-core** | **Merge-time hard gate: zero violations on all UI features** |
+| | **Playwright a11y tests** | **E2E verification: heading structure, focus traps, contrast, RTL** |
+| | **NVDA Hebrew** | **Ship-time manual: Israeli screen reader smoke test (15 min)** |
 
 ### 2.2 Supporting libraries
 
@@ -142,6 +149,63 @@ Israeli VAT calculations are often done on net amount, then add VAT. This ensure
 - No negative VAT amounts
 - Matches accountant expectations (Israeli accounting norms use banker's rounding)
 - Minimal rounding errors across large invoice volumes
+
+### 2.6 Accessibility compliance — WCAG 2.1 Level AA
+
+**Legal mandate:** Israeli law (דינ נגישות לאנשים עם מוגבלות, 1998) requires all digital interfaces in community centers to be accessible to people with disabilities. This is not optional; it's a legal requirement for operation.
+
+**Scope:** All UI components must pass WCAG 2.1 Level AA criteria. Priority: heading structure, form labeling, keyboard navigation, color contrast, focus management, and ARIA patterns.
+
+**Three-layer enforcement model:**
+
+1. **Write-time** (ESLint jsx-a11y): Developers see warnings in IDE as they code
+   - Missing labels on inputs → warning
+   - Headings skip levels (h1 → h3) → warning
+   - Click handlers without keyboard support → warning
+   - **Result:** Non-blocking; helps catch issues early
+
+2. **Merge-time** (axe-core CI gate): Hard blocker — zero violations required
+   - Every PR runs `pnpm run a11y:e2e` (Playwright + axe)
+   - Detects contrast failures, ARIA misuse, semantic issues
+   - Fails PR if violations found
+   - **Result:** Blocking; prevents inaccessible code from merging
+
+3. **Ship-time** (Manual Hebrew screen reader test): 15-minute smoke test before production
+   - Test with NVDA (Israeli screen reader) in Hebrew mode
+   - Verify tab order, focus traps, form announcements
+   - Check RTL layout logic
+   - PM/QA sign-off required
+   - **Result:** Catches algorithmic issues masked by automation
+
+**Testing strategy:**
+
+```typescript
+// e2e/accessibility-compliance.spec.ts — Full test suite included in Phase 1 checklist
+import { test, expect } from '@playwright/test';
+import { injectAxe, checkA11y } from 'axe-playwright';
+
+test('heading structure is valid', async ({ page }) => {
+  await page.goto('/');
+  await injectAxe(page);
+  await checkA11y(page);
+  
+  // Verify no level skips
+  const headings = await page.locator('h1, h2, h3, h4, h5, h6').all();
+  for (let i = 1; i < headings.length; i++) {
+    const current = await headings[i].evaluate(el => parseInt(el.tagName[1]));
+    const previous = await headings[i-1].evaluate(el => parseInt(el.tagName[1]));
+    expect(current - previous).toBeLessThanOrEqual(1);
+  }
+});
+
+// Additional tests for forms, modals, keyboard nav, contrast, landmarks, etc.
+```
+
+**Tools & libraries:**
+- `eslint-plugin-jsx-a11y`: Static analysis (write-time)
+- `@axe-core/react` + `axe-playwright`: Automated testing (merge-time)
+- `NVDA` (screen reader): Manual verification (ship-time, Israeli language)
+- APCA contrast checker: Verify contrast ratios for Hebrew fonts
 
 ---
 
@@ -343,6 +407,15 @@ CREATE TABLE tenants (
 
   created_at                TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at                TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE user_profiles (
+  id            UUID        PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  tenant_id     UUID        NOT NULL REFERENCES tenants(id),
+  role          TEXT        NOT NULL DEFAULT 'student'
+                CHECK (role IN ('super_admin','tenant_admin','teacher','parent','student')),
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 ```
 
@@ -1555,6 +1628,13 @@ npx shadcn@latest init   # New York style, Zinc, CSS variables: yes
 - [ ] i18next configured with `he.json` as primary, `en.json` as secondary
 - [ ] FullCalendar Hebrew locale imported
 - [ ] All Tailwind spacing uses `ms-`, `me-` not `ml-`, `mr-`
+- [ ] **WCAG 2.1 AA:** Install `@axe-core/react`, `axe-playwright`, `eslint-plugin-jsx-a11y` (run `pnpm dlx snyk test` first)
+- [ ] **WCAG 2.1 AA:** Configure ESLint with jsx-a11y plugin and rules in `.eslintrc.json`
+- [ ] **WCAG 2.1 AA:** Create `e2e/accessibility-compliance.spec.ts` with heading structure, form validation, focus trap tests
+- [ ] **WCAG 2.1 AA:** Add npm scripts to `package.json`: `a11y:lint`, `a11y:axe`, `a11y:e2e`
+- [ ] **WCAG 2.1 AA:** Add axe-core CI job to `.github/workflows/ci.yml` (blocks merge if violations found)
+- [ ] **WCAG 2.1 AA:** Add accessibility checklist to `.github/PULL_REQUEST_TEMPLATE.md`
+- [ ] **WCAG 2.1 AA:** Create manual test plan for NVDA Hebrew smoke test (15 min pre-deployment)
 
 ### Phase 1B — Auth and tenant context (Days 4–6)
 
@@ -2019,6 +2099,216 @@ Critical paths only:
 1. Full enrolment → payment → WhatsApp confirmation received
 2. Class cancelled → makeup credit created → parent notified on preferred channel
 3. Adult student self-enrols and accesses student portal
+
+### Accessibility tests — WCAG 2.1 Level AA (merged into Definition of Done)
+
+**Test file:** `apps/web/e2e/accessibility-compliance.spec.ts`
+
+**Scope:** All customer-facing pages (no admin panels in V1). Tests run on every PR; zero violations required.
+
+```typescript
+import { test, expect } from '@playwright/test';
+import { injectAxe, checkA11y } from 'axe-playwright';
+
+/**
+ * WCAG 2.1 Level AA Compliance Tests
+ * Scope: Israeli community centers (דינ נגישות לאנשים עם מוגבלות, 1998)
+ * Required: All tests pass before merge; manual NVDA Hebrew smoke test pre-deployment
+ */
+
+test.describe('Heading Structure (WCAG 2.4.1)', () => {
+  test('no level skips (h1 → h3)', async ({ page }) => {
+    await page.goto('/enrolment');
+    const headings = await page.locator('h1, h2, h3, h4, h5, h6').all();
+    
+    for (let i = 1; i < headings.length; i++) {
+      const current = parseInt(await headings[i].evaluate(el => el.tagName[1]));
+      const previous = parseInt(await headings[i-1].evaluate(el => el.tagName[1]));
+      expect(current - previous).toBeLessThanOrEqual(1);
+    }
+  });
+
+  test('exactly one h1 per page', async ({ page }) => {
+    await page.goto('/');
+    const h1Count = await page.locator('h1').count();
+    expect(h1Count).toBe(1);
+  });
+});
+
+test.describe('Form Accessibility (WCAG 1.3.1)', () => {
+  test('all inputs have associated labels', async ({ page }) => {
+    await page.goto('/enrolment');
+    const inputs = await page.locator('input, select, textarea').all();
+    
+    for (const input of inputs) {
+      const id = await input.getAttribute('id');
+      const ariaLabel = await input.getAttribute('aria-label');
+      const parent = await input.evaluate(el => el.parentElement?.textContent);
+      
+      expect(id || ariaLabel || parent?.length).toBeTruthy();
+    }
+  });
+
+  test('form validation errors announce via aria-live', async ({ page }) => {
+    await page.goto('/enrolment');
+    await page.click('button[type="submit"]');
+    
+    const liveRegion = await page.locator('[aria-live]').first();
+    const errorText = await liveRegion.textContent();
+    expect(errorText).toBeTruthy();
+  });
+});
+
+test.describe('Modal Focus Management (WCAG 2.4.3)', () => {
+  test('focus trap: Tab cycles within modal', async ({ page }) => {
+    await page.goto('/classes');
+    await page.click('button:has-text("Add Class")');
+    
+    const modal = page.locator('[role="dialog"]');
+    const focusableElements = await modal.locator(
+      'button, [href], input, select, textarea, [tabindex]'
+    ).all();
+    
+    // Tab to first element
+    await page.keyboard.press('Tab');
+    expect(await page.evaluate(() => document.activeElement?.getAttribute('type'))).toBeTruthy();
+    
+    // Escape closes modal
+    await page.keyboard.press('Escape');
+    expect(await modal.isVisible()).toBe(false);
+  });
+});
+
+test.describe('Color Contrast (WCAG 1.4.3)', () => {
+  test('text contrast ratio >= 4.5:1', async ({ page }) => {
+    await injectAxe(page);
+    const results = await page.evaluate(() => (window as any).axe.run());
+    
+    const contrastViolations = results.violations.filter(
+      v => v.id === 'color-contrast'
+    );
+    expect(contrastViolations).toHaveLength(0);
+  });
+});
+
+test.describe('Keyboard Navigation (WCAG 2.1.1)', () => {
+  test('tab through entire page without focus loss', async ({ page }) => {
+    await page.goto('/');
+    let focusedElement = null;
+    
+    for (let i = 0; i < 50; i++) {
+      await page.keyboard.press('Tab');
+      focusedElement = await page.evaluate(() => document.activeElement?.tagName);
+      expect(focusedElement).not.toBe('BODY'); // Focus must be on an element
+    }
+  });
+
+  test('all interactive elements keyboard accessible', async ({ page }) => {
+    await page.goto('/classes');
+    const buttons = await page.locator('button, [role="button"]').all();
+    
+    for (const button of buttons) {
+      const tabindex = await button.getAttribute('tabindex');
+      const role = await button.getAttribute('role');
+      expect(tabindex !== '-1' || role === 'button').toBeTruthy();
+    }
+  });
+});
+
+test.describe('Semantic HTML & ARIA (WCAG 1.3.1)', () => {
+  test('landmarks present: main, nav', async ({ page }) => {
+    await page.goto('/');
+    const main = await page.locator('main, [role="main"]').isVisible();
+    expect(main).toBe(true);
+  });
+
+  test('buttons use <button> not <div>', async ({ page }) => {
+    await page.goto('/');
+    const divButtons = await page.locator('div[onclick]').count();
+    expect(divButtons).toBe(0);
+  });
+
+  test('list items in lists (<li> in <ul>/<ol>)', async ({ page }) => {
+    await page.goto('/classes');
+    const orphanItems = await page.locator(
+      'li:not(ul > li):not(ol > li)'
+    ).count();
+    expect(orphanItems).toBe(0);
+  });
+});
+
+test.describe('RTL & Hebrew Support (WCAG 3.1.1)', () => {
+  test('lang="he" and dir="rtl" on html element', async ({ page }) => {
+    await page.goto('/');
+    const html = await page.locator('html').evaluate(el => ({
+      lang: el.getAttribute('lang'),
+      dir: el.getAttribute('dir')
+    }));
+    expect(html.lang).toBe('he');
+    expect(html.dir).toBe('rtl');
+  });
+
+  test('tab order follows visual RTL layout', async ({ page }) => {
+    await page.goto('/');
+    const elements = await page.locator('button, input, [role="button"]').all();
+    
+    // Rough check: in RTL, first focusable element should be on the right side
+    if (elements.length > 0) {
+      const firstBox = await elements[0].boundingBox();
+      expect(firstBox?.x).toBeGreaterThan(window.innerWidth / 2);
+    }
+  });
+});
+
+test.describe('ARIA Patterns', () => {
+  test('form groups have fieldset + legend', async ({ page }) => {
+    await page.goto('/enrolment');
+    const fieldsets = await page.locator('fieldset').all();
+    
+    for (const fs of fieldsets) {
+      const legend = await fs.locator('legend').isVisible();
+      expect(legend).toBe(true);
+    }
+  });
+
+  test('checkboxes/radios have aria-checked', async ({ page }) => {
+    await page.goto('/enrolment');
+    const radios = await page.locator('input[type="radio"], input[type="checkbox"]').all();
+    
+    for (const radio of radios) {
+      const checked = await radio.getAttribute('aria-checked');
+      expect(checked).toBeTruthy();
+    }
+  });
+});
+
+/**
+ * Phase 1C Acceptance Criteria: Accessibility
+ * Before a feature is considered "done", verify:
+ * - [ ] Heading structure: no level skips, exactly 1 h1 per page
+ * - [ ] Forms: all inputs labeled, validation errors announce
+ * - [ ] Modals: focus trapped, Tab cycles, Escape closes
+ * - [ ] Contrast: 4.5:1 min for text
+ * - [ ] Keyboard: Tab through all elements, no focus loss
+ * - [ ] Landmarks: <main> or role="main" present
+ * - [ ] RTL: lang="he" dir="rtl", tab order matches visual layout
+ * - [ ] ARIA: proper roles, aria-label/aria-described, aria-checked for inputs
+ * - [ ] NVDA: manual smoke test passes (15 min, Hebrew mode, before merge)
+ * - [ ] No axe-core violations: `pnpm run a11y:e2e`
+ */
+```
+
+**Manual smoke test checklist (15 minutes, Hebrew NVDA, before production):**
+- [ ] Open in NVDA, switch to Hebrew mode
+- [ ] Headings: H key cycles through headings; structure makes sense
+- [ ] Forms: Tab enters input, arrow keys select radio options, validation errors announce
+- [ ] Modals: Tab traps focus inside; Escape closes; focus returns to button
+- [ ] Buttons: All interactive elements read as buttons/links, not generic text
+- [ ] Images: Alt text present (or `aria-hidden` if decorative)
+- [ ] Lists: List items announced with count ("1 of 5")
+- [ ] Focus: Can always see where focus is; no focus disappearance
+- [ ] Keyboard-only: No mouse required; all features work via Tab/Enter/Arrow keys
+- [ ] RTL: Tab moves right-to-left in Hebrew mode; no visual layout breaks
 
 ---
 
