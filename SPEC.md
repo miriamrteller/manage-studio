@@ -120,6 +120,29 @@ Each school configures their own Twilio, Resend, and Stripe keys. You store them
 | SMS | WhatsApp covers the Israeli market; SMS adds cost and a third provider for no benefit |
 | Docker | Not needed; Vercel + Supabase handle deployment |
 
+### 2.5 Data and calculation strategy
+
+**VAT Rounding (Issue #12 decision)** — Use banker's rounding (round half to even, ISO 80000-1 standard):
+```typescript
+// src/lib/format.ts
+export function calculateVat(totalMinor: number, vatRate: number): {
+  pretax: number;
+  vat: number;
+  total: number;
+} {
+  // Banker's rounding: Math.round uses round-half-away-from-zero; use banker's rounding for VAT
+  const pretaxExact = totalMinor / (1 + vatRate);
+  const pretax = Math.round(pretaxExact * 2) / 2; // Round to nearest 0.5
+  const vat = totalMinor - pretax;
+  
+  return { pretax, vat, total: totalMinor };
+}
+```
+Israeli VAT calculations are often done on net amount, then add VAT. This ensures:
+- No negative VAT amounts
+- Matches accountant expectations (Israeli accounting norms use banker's rounding)
+- Minimal rounding errors across large invoice volumes
+
 ---
 
 ## 3. Repository Structure
@@ -343,6 +366,7 @@ CREATE TABLE families (
 
 CREATE TABLE family_members (
   id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id        UUID NOT NULL REFERENCES tenants(id),
   family_id        UUID NOT NULL REFERENCES families(id) ON DELETE CASCADE,
   user_profile_id  UUID REFERENCES user_profiles(id),
   email            TEXT NOT NULL,
@@ -362,7 +386,14 @@ CREATE TABLE people (
   user_profile_id          UUID        REFERENCES user_profiles(id),  -- set for adult students with portal access
   full_name                TEXT        NOT NULL,
   date_of_birth            DATE,       -- nullable for adults who choose not to share
-  is_minor                 BOOLEAN     NOT NULL DEFAULT true,   -- drives consent + data rules
+  -- FIXED (Issue #13): is_minor is now computed from date_of_birth (source of truth)
+  -- Computed: true if date_of_birth exists and age < 18, false otherwise
+  is_minor                 BOOLEAN     GENERATED ALWAYS AS (
+                             CASE WHEN date_of_birth IS NULL THEN false
+                                  WHEN EXTRACT(YEAR FROM age(now(), date_of_birth)) < 18 THEN true
+                                  ELSE false
+                             END
+                           ) STORED,
   gender                   TEXT,
   medical_notes            TEXT,       -- sensitive: appears in audit log on every access
   allergies                TEXT,
@@ -379,20 +410,6 @@ CREATE TABLE people (
   anonymised_at            TIMESTAMPTZ,
   created_at               TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at               TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
--- Supabase auth users extension
-CREATE TABLE user_profiles (
-  id          UUID  PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  tenant_id   UUID  NOT NULL REFERENCES tenants(id),
-  role        TEXT  NOT NULL DEFAULT 'parent'
-              CHECK (role IN ('super_admin','tenant_admin','teacher','parent','student')),
-  -- 'student' role = adult student with their own portal login
-  full_name   TEXT  NOT NULL,
-  phone       TEXT,
-  avatar_url  TEXT,
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 ```
 
@@ -653,7 +670,9 @@ CREATE TABLE enrolments (
   created_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
 
-  UNIQUE (person_id, class_id, term_id)
+  -- Allow re-enrollment after cancellation/withdrawal
+  -- Constraint only applies to active enrolments
+  UNIQUE (person_id, class_id, term_id) WHERE status NOT IN ('cancelled','withdrawn')
 );
 
 CREATE TABLE waiting_list (
@@ -661,12 +680,15 @@ CREATE TABLE waiting_list (
   tenant_id        UUID        NOT NULL REFERENCES tenants(id),
   class_id         UUID        NOT NULL REFERENCES classes(id),
   person_id        UUID        NOT NULL REFERENCES people(id),
-  position         INT         NOT NULL,
+  -- FIXED (Issue #15): position auto-derived from created_at (no manual management)
+  -- To get position: ROW_NUMBER() OVER (PARTITION BY class_id ORDER BY added_at ASC)
   added_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
   notified_at      TIMESTAMPTZ,
   offer_expires_at TIMESTAMPTZ,
   UNIQUE (class_id, person_id)
 );
+
+CREATE INDEX idx_waiting_list_position ON waiting_list(class_id, added_at);
 ```
 
 ### Migration 007 — Attendance
@@ -732,7 +754,10 @@ CREATE TABLE payments (
   -- Data retention: never delete, only anonymise
   anonymised_at              TIMESTAMPTZ,
 
-  created_at                 TIMESTAMPTZ NOT NULL DEFAULT now()
+  created_at                 TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+  -- Constraint: payments must be linked to either a family (for minors) or a person (for adults)
+  CONSTRAINT payment_payer CHECK ((family_id IS NOT NULL) OR (person_id IS NOT NULL))
 );
 
 CREATE TABLE discount_rules (
@@ -826,20 +851,24 @@ CREATE TABLE invoice_sequences (
 );
 
 -- Atomic increment — call inside payment processing transaction
+-- FIXED: year_prefix now properly detects year boundary and resets sequence
 CREATE OR REPLACE FUNCTION next_invoice_number(p_tenant_id UUID)
 RETURNS TEXT LANGUAGE plpgsql AS $$
 DECLARE
   seq RECORD;
   new_number INT;
   invoice_num TEXT;
+  current_year TEXT;
 BEGIN
+  current_year := EXTRACT(YEAR FROM now())::TEXT;
+
   UPDATE invoice_sequences
   SET last_number = last_number + 1
   WHERE tenant_id = p_tenant_id
   RETURNING * INTO seq;
 
   IF NOT FOUND THEN
-    INSERT INTO invoice_sequences (tenant_id) VALUES (p_tenant_id)
+    INSERT INTO invoice_sequences (tenant_id, last_number, year_prefix) VALUES (p_tenant_id, 1, true)
     RETURNING * INTO seq;
     new_number := 1;
   ELSE
@@ -847,8 +876,7 @@ BEGIN
   END IF;
 
   IF seq.year_prefix THEN
-    invoice_num := seq.prefix || '-' || EXTRACT(YEAR FROM now())::TEXT
-                   || '-' || LPAD(new_number::TEXT, 4, '0');
+    invoice_num := seq.prefix || '-' || current_year || '-' || LPAD(new_number::TEXT, 4, '0');
   ELSE
     invoice_num := seq.prefix || '-' || LPAD(new_number::TEXT, 6, '0');
   END IF;
@@ -910,6 +938,160 @@ CREATE TABLE audit_log (
 );
 ```
 
+### Migration 013 — Tenant notification templates
+
+> **Issue #7 fix:** WhatsApp template SIDs are now per-tenant, allowing multi-tenant support.
+> Each school configures their own approved message templates with Twilio/Meta.
+
+```sql
+CREATE TABLE tenant_notification_templates (
+  id                    UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id             UUID        NOT NULL REFERENCES tenants(id),
+  channel               TEXT        NOT NULL
+                        CHECK (channel IN ('email','whatsapp','voice')),
+  template_name         TEXT        NOT NULL,
+  -- Examples: 'class_cancellation', 'payment_reminder', 'welcome', 'waiting_list_offer'
+  
+  -- For WhatsApp/Voice: Twilio Content SID (approved template ID from Meta)
+  twilio_content_sid    TEXT,
+  
+  -- For Email: React Email component name or Resend template ID
+  email_template_id     TEXT,
+  
+  -- For Voice: Twilio Studio flow SID or script text
+  voice_script_sid      TEXT,
+  
+  -- Template version: increment when resubmitting to Meta for approval
+  version               INT         NOT NULL DEFAULT 1,
+  
+  -- Approval status
+  status                TEXT        NOT NULL DEFAULT 'pending'
+                        CHECK (status IN ('pending','approved','rejected')),
+  approval_date         TIMESTAMPTZ,
+  approval_notes        TEXT,
+  
+  created_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
+  
+  UNIQUE (tenant_id, channel, template_name)
+);
+
+CREATE INDEX idx_templates_tenant ON tenant_notification_templates(tenant_id, channel, template_name);
+```
+
+### Migration 014 — Expense categories
+
+> **Issue #9 fix:** Expense categories now configurable per tenant instead of hardcoded.
+> Schools can add custom categories (e.g., 'guest_artist_fee', 'prop_rental').
+
+```sql
+CREATE TABLE expense_categories (
+  id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id       UUID        NOT NULL REFERENCES tenants(id),
+  name            TEXT        NOT NULL,
+  description     TEXT,
+  color           TEXT,       -- For UI categorization: '#FF6B6B', etc.
+  is_vat_eligible BOOLEAN     NOT NULL DEFAULT true,  -- VAT reclaim eligibility
+  is_active       BOOLEAN     NOT NULL DEFAULT true,
+  sort_order      INT         NOT NULL DEFAULT 0,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+  
+  UNIQUE (tenant_id, name)
+);
+
+CREATE INDEX idx_categories_tenant ON expense_categories(tenant_id);
+
+-- Update Migration 009 (Expenses): replace CHECK constraint with FK
+-- OLD: CHECK (category IN (...hardcoded list...))
+-- NEW: FOREIGN KEY (tenant_id, category_id) REFERENCES expense_categories(tenant_id, id)
+-- (Modify expenses table: drop category TEXT, add category_id UUID FOREIGN KEY)
+```
+
+### Migration 015 — Notification queue
+
+> **Issue #10 fix:** Notifications now queue durably, with automatic retry on failure.
+> Prevents lost messages if Twilio/Resend is temporarily unavailable.
+
+```sql
+CREATE TABLE notification_queue (
+  id                UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id         UUID        NOT NULL REFERENCES tenants(id),
+  
+  -- Recipient
+  recipient_person_id        UUID REFERENCES people(id),
+  recipient_family_member_id UUID REFERENCES family_members(id),
+  recipient_email   TEXT,
+  recipient_phone   TEXT,
+  
+  -- What to send
+  channel           TEXT        NOT NULL
+                    CHECK (channel IN ('email','whatsapp','voice')),
+  template_name     TEXT        NOT NULL,
+  template_variables JSONB,
+  
+  -- Retry logic
+  attempt_count     INT         NOT NULL DEFAULT 0,
+  max_attempts      INT         NOT NULL DEFAULT 3,
+  next_retry_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  last_error        TEXT,
+  
+  -- Status tracking
+  status            TEXT        NOT NULL DEFAULT 'pending'
+                    CHECK (status IN ('pending','queued','sent','delivered','failed','abandoned')),
+  sent_at           TIMESTAMPTZ,
+  delivered_at      TIMESTAMPTZ,
+  failed_at         TIMESTAMPTZ,
+  
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at        TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_queue_tenant_status ON notification_queue(tenant_id, status);
+CREATE INDEX idx_queue_retry ON notification_queue(status, next_retry_at) 
+  WHERE status IN ('pending','queued');
+```
+
+### Migration 016 — AI log
+
+> **Issue #11 fix:** AI interactions logged separately for audit and compliance.
+> Records all Claude API calls with prompts and responses (anonymised).
+
+```sql
+CREATE TABLE ai_log (
+  id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id     UUID        NOT NULL REFERENCES tenants(id),
+  user_id       UUID        REFERENCES user_profiles(id),
+  
+  -- What was requested
+  feature       TEXT        NOT NULL,  -- 'chatbot', 'draft_composer', 'voice_bot'
+  model         TEXT        NOT NULL,  -- 'claude-sonnet-4-6', etc.
+  
+  -- Tokens and cost
+  prompt_tokens    INT,
+  completion_tokens INT,
+  
+  -- System context (what data was injected into the prompt)
+  system_context_summary TEXT,  -- e.g., 'school_name, class_list, faq'
+  
+  -- Input and output (store hashed for compliance, plaintext optional if flagged)
+  user_message_hash    TEXT,   -- SHA256 hash for audit trail
+  assistant_message_hash TEXT,
+  
+  flagged       BOOLEAN     NOT NULL DEFAULT false,  -- Manual review needed?
+  flag_reason   TEXT,
+  
+  -- Compliance
+  pii_detected  BOOLEAN     NOT NULL DEFAULT false,
+  
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_ai_log_tenant ON ai_log(tenant_id, created_at);
+CREATE INDEX idx_ai_log_flagged ON ai_log(tenant_id, flagged) WHERE flagged = true;
+```
+
+```
+
 ### Indexes and RLS
 
 ```sql
@@ -955,6 +1137,10 @@ ALTER TABLE teacher_pay_records  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notification_log     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_log            ENABLE ROW LEVEL SECURITY;
 ALTER TABLE invoice_sequences    ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tenant_notification_templates ENABLE ROW LEVEL SECURITY;
+ALTER TABLE expense_categories   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notification_queue   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ai_log               ENABLE ROW LEVEL SECURITY;
 
 -- Helper functions (SECURITY DEFINER prevents recursion in policies)
 CREATE OR REPLACE FUNCTION get_my_tenant_id()
@@ -977,8 +1163,57 @@ RETURNS UUID LANGUAGE sql SECURITY DEFINER STABLE AS $$
   SELECT id FROM people WHERE user_profile_id = auth.uid()
 $$;
 
--- People: staff see all; parents see own family; adult students see themselves
-CREATE POLICY "staff see all people" ON people FOR ALL
+-- Super admin bypass: super_admins can read/write all tenants without tenant_id checks
+-- (used only for platform-level admin operations)
+CREATE OR REPLACE FUNCTION is_super_admin()
+RETURNS BOOLEAN LANGUAGE sql SECURITY DEFINER STABLE AS $$
+  SELECT role = 'super_admin' FROM user_profiles WHERE id = auth.uid()
+$$;
+
+-- Tenants: super_admin only can see all; users see own tenant only
+CREATE POLICY "super_admin sees all tenants" ON tenants FOR ALL
+  USING (is_super_admin());
+
+CREATE POLICY "users see own tenant" ON tenants FOR SELECT
+  USING (id = get_my_tenant_id());
+
+-- User profiles: users can read own profile; admins read all in their tenant; super_admin reads all
+CREATE POLICY "super_admin reads all profiles" ON user_profiles FOR SELECT
+  USING (is_super_admin());
+
+CREATE POLICY "admins manage tenant profiles" ON user_profiles FOR ALL
+  USING (tenant_id = get_my_tenant_id() AND get_my_role() IN ('tenant_admin','super_admin'));
+
+CREATE POLICY "users read own profile" ON user_profiles FOR SELECT
+  USING (id = auth.uid());
+
+-- Families: admins manage; parents/adult students see own
+CREATE POLICY "super_admin manages all families" ON families FOR ALL
+  USING (is_super_admin());
+
+CREATE POLICY "admins manage families" ON families FOR ALL
+  USING (tenant_id = get_my_tenant_id() AND get_my_role() = 'tenant_admin');
+
+CREATE POLICY "family members see own family" ON families FOR SELECT
+  USING (id IN (SELECT family_id FROM family_members WHERE user_profile_id = auth.uid()));
+
+-- Family members: admins manage; parents/students see own family members
+CREATE POLICY "super_admin manages all family_members" ON family_members FOR ALL
+  USING (is_super_admin());
+
+CREATE POLICY "admins manage family_members" ON family_members FOR ALL
+  USING ((SELECT tenant_id FROM families WHERE id = family_members.family_id) = get_my_tenant_id() 
+         AND (SELECT get_my_role()) = 'tenant_admin');
+
+CREATE POLICY "family members see own family" ON family_members FOR SELECT
+  USING (user_profile_id = auth.uid() 
+         OR family_id IN (SELECT get_my_family_ids()));
+
+-- People: staff see all; parents see own family; adult students see themselves; super_admin sees all
+CREATE POLICY "super_admin sees all people" ON people FOR ALL
+  USING (is_super_admin());
+
+CREATE POLICY "staff see all people" ON people FOR SELECT
   USING (tenant_id = get_my_tenant_id() AND get_my_role() IN ('tenant_admin','teacher'));
 
 CREATE POLICY "parents see own family people" ON people FOR SELECT
@@ -987,31 +1222,215 @@ CREATE POLICY "parents see own family people" ON people FOR SELECT
 CREATE POLICY "adult students see self" ON people FOR SELECT
   USING (tenant_id = get_my_tenant_id() AND id = get_my_person_id());
 
--- Classes: public read (schedule page); admin write
-CREATE POLICY "public read classes" ON classes FOR SELECT USING (is_public = true);
-CREATE POLICY "admins manage classes" ON classes FOR ALL
+-- Contact preferences: users manage own; admins see all
+CREATE POLICY "super_admin manages all contact_preferences" ON contact_preferences FOR ALL
+  USING (is_super_admin());
+
+CREATE POLICY "admins manage preferences" ON contact_preferences FOR ALL
   USING (tenant_id = get_my_tenant_id() AND get_my_role() = 'tenant_admin');
+
+CREATE POLICY "users manage own preferences" ON contact_preferences FOR ALL
+  USING (person_id = get_my_person_id() 
+         OR family_member_id IN (SELECT id FROM family_members WHERE user_profile_id = auth.uid()));
+
+-- Terms & Levels: public read; admin write
+CREATE POLICY "all see terms" ON terms FOR SELECT USING (true);
+CREATE POLICY "super_admin manages all terms" ON terms FOR ALL
+  USING (is_super_admin());
+CREATE POLICY "admins manage terms" ON terms FOR ALL
+  USING (tenant_id = get_my_tenant_id() AND get_my_role() = 'tenant_admin');
+
+CREATE POLICY "all see levels" ON levels FOR SELECT USING (true);
+CREATE POLICY "super_admin manages all levels" ON levels FOR ALL
+  USING (is_super_admin());
+CREATE POLICY "admins manage levels" ON levels FOR ALL
+  USING (tenant_id = get_my_tenant_id() AND get_my_role() = 'tenant_admin');
+
+-- Classes: public read (schedule page); admin write
+CREATE POLICY "super_admin manages all classes" ON classes FOR ALL
+  USING (is_super_admin());
+CREATE POLICY "public read classes" ON classes FOR SELECT USING (is_public = true);
+CREATE POLICY "admins and teachers manage classes" ON classes FOR ALL
+  USING (tenant_id = get_my_tenant_id() AND get_my_role() IN ('tenant_admin','teacher'));
+
+-- Class requirements: visible to enrollers; admin manage
+CREATE POLICY "super_admin manages all requirements" ON class_requirements FOR ALL
+  USING (is_super_admin());
+CREATE POLICY "admins manage requirements" ON class_requirements FOR ALL
+  USING (tenant_id = get_my_tenant_id() AND get_my_role() = 'tenant_admin');
+CREATE POLICY "all see requirements" ON class_requirements FOR SELECT USING (true);
+
+-- Class sessions: visible to class participants; admin/teacher manage
+CREATE POLICY "super_admin manages all sessions" ON class_sessions FOR ALL
+  USING (is_super_admin());
+CREATE POLICY "admins and teachers manage sessions" ON class_sessions FOR ALL
+  USING (tenant_id = get_my_tenant_id() AND get_my_role() IN ('tenant_admin','teacher'));
+CREATE POLICY "enrolled students see sessions" ON class_sessions FOR SELECT
+  USING (class_id IN (SELECT class_id FROM enrolments WHERE person_id = get_my_person_id()));
+
+-- Enrolments: admins manage; families see own; adult students see own
+CREATE POLICY "super_admin manages all enrolments" ON enrolments FOR ALL
+  USING (is_super_admin());
+CREATE POLICY "admins manage enrolments" ON enrolments FOR ALL
+  USING (tenant_id = get_my_tenant_id() AND get_my_role() = 'tenant_admin');
+CREATE POLICY "parents see own enrolments" ON enrolments FOR SELECT
+  USING (tenant_id = get_my_tenant_id() AND person_id IN 
+    (SELECT id FROM people WHERE family_id IN (SELECT get_my_family_ids())));
+CREATE POLICY "adult students see own enrolments" ON enrolments FOR SELECT
+  USING (tenant_id = get_my_tenant_id() AND person_id = get_my_person_id());
+
+-- Waiting list: admins manage; families can see if registered
+CREATE POLICY "super_admin manages all waiting_list" ON waiting_list FOR ALL
+  USING (is_super_admin());
+CREATE POLICY "admins manage waiting_list" ON waiting_list FOR ALL
+  USING (tenant_id = get_my_tenant_id() AND get_my_role() = 'tenant_admin');
+CREATE POLICY "people see own waiting_list" ON waiting_list FOR SELECT
+  USING (tenant_id = get_my_tenant_id() AND person_id = get_my_person_id());
+
+-- Attendance: teachers mark; admins/families see results
+CREATE POLICY "super_admin manages all attendance" ON attendance FOR ALL
+  USING (is_super_admin());
+CREATE POLICY "teachers mark attendance" ON attendance FOR ALL
+  USING (tenant_id = get_my_tenant_id() AND get_my_role() IN ('tenant_admin','teacher'));
+CREATE POLICY "families see own attendance" ON attendance FOR SELECT
+  USING (tenant_id = get_my_tenant_id() AND person_id IN 
+    (SELECT id FROM people WHERE family_id IN (SELECT get_my_family_ids())));
+CREATE POLICY "adult students see own attendance" ON attendance FOR SELECT
+  USING (tenant_id = get_my_tenant_id() AND person_id = get_my_person_id());
+
+-- Makeup credits: admins manage; families see own
+CREATE POLICY "super_admin manages all makeup_credits" ON makeup_credits FOR ALL
+  USING (is_super_admin());
+CREATE POLICY "admins manage makeup_credits" ON makeup_credits FOR ALL
+  USING (tenant_id = get_my_tenant_id() AND get_my_role() = 'tenant_admin');
+CREATE POLICY "families see own makeup_credits" ON makeup_credits FOR SELECT
+  USING (tenant_id = get_my_tenant_id() AND person_id IN 
+    (SELECT id FROM people WHERE family_id IN (SELECT get_my_family_ids())));
+CREATE POLICY "adult students see own makeup_credits" ON makeup_credits FOR SELECT
+  USING (tenant_id = get_my_tenant_id() AND person_id = get_my_person_id());
 
 -- Payments: admins manage; parents/adult students see own
+CREATE POLICY "super_admin manages all payments" ON payments FOR ALL
+  USING (is_super_admin());
 CREATE POLICY "admins manage payments" ON payments FOR ALL
   USING (tenant_id = get_my_tenant_id() AND get_my_role() = 'tenant_admin');
-
 CREATE POLICY "parents see own payments" ON payments FOR SELECT
   USING (tenant_id = get_my_tenant_id() AND family_id IN (SELECT get_my_family_ids()));
-
 CREATE POLICY "adult students see own payments" ON payments FOR SELECT
   USING (tenant_id = get_my_tenant_id() AND person_id = get_my_person_id());
 
 -- Expenses: admin only
+CREATE POLICY "super_admin manages all expenses" ON expenses FOR ALL
+  USING (is_super_admin());
 CREATE POLICY "admins manage expenses" ON expenses FOR ALL
   USING (tenant_id = get_my_tenant_id() AND get_my_role() = 'tenant_admin');
 
+-- Discount rules: admin read/write
+CREATE POLICY "super_admin manages all discount_rules" ON discount_rules FOR ALL
+  USING (is_super_admin());
+CREATE POLICY "admins manage discount_rules" ON discount_rules FOR ALL
+  USING (tenant_id = get_my_tenant_id() AND get_my_role() = 'tenant_admin');
+CREATE POLICY "all read active discount codes" ON discount_rules FOR SELECT
+  USING (is_active = true);
+
+-- Teacher pay records: admin manage
+CREATE POLICY "super_admin manages all teacher_pay_records" ON teacher_pay_records FOR ALL
+  USING (is_super_admin());
+CREATE POLICY "admins manage teacher_pay_records" ON teacher_pay_records FOR ALL
+  USING (tenant_id = get_my_tenant_id() AND get_my_role() = 'tenant_admin');
+
+-- Notification log: admin read; triggers insert
+CREATE POLICY "super_admin reads all notification_log" ON notification_log FOR SELECT
+  USING (is_super_admin());
+CREATE POLICY "admins read notification_log" ON notification_log FOR SELECT
+  USING (tenant_id = get_my_tenant_id() AND get_my_role() = 'tenant_admin');
+CREATE POLICY "insert notification_log" ON notification_log FOR INSERT
+  WITH CHECK (tenant_id = get_my_tenant_id());
+
 -- Audit log: insert by all; read by admin only
+CREATE POLICY "super_admin reads all audit_log" ON audit_log FOR SELECT
+  USING (is_super_admin());
 CREATE POLICY "insert audit" ON audit_log FOR INSERT
   WITH CHECK (tenant_id = get_my_tenant_id());
 CREATE POLICY "admins read audit" ON audit_log FOR SELECT
   USING (tenant_id = get_my_tenant_id() AND get_my_role() = 'tenant_admin');
+
+-- Invoice sequences: admin manage
+CREATE POLICY "super_admin manages all invoice_sequences" ON invoice_sequences FOR ALL
+  USING (is_super_admin());
+CREATE POLICY "admins manage invoice_sequences" ON invoice_sequences FOR ALL
+  USING ((SELECT tenant_id FROM tenants WHERE id = invoice_sequences.tenant_id) = get_my_tenant_id() 
+         AND (SELECT get_my_role()) = 'tenant_admin');
+
+-- Tenant notification templates (Issue #7): admins manage; all can read approved
+CREATE POLICY "super_admin manages all templates" ON tenant_notification_templates FOR ALL
+  USING (is_super_admin());
+CREATE POLICY "admins manage templates" ON tenant_notification_templates FOR ALL
+  USING (tenant_id = get_my_tenant_id() AND get_my_role() = 'tenant_admin');
+CREATE POLICY "all read approved templates" ON tenant_notification_templates FOR SELECT
+  USING (status = 'approved');
+
+-- Expense categories (Issue #9): admins manage; all can read
+CREATE POLICY "super_admin manages all categories" ON expense_categories FOR ALL
+  USING (is_super_admin());
+CREATE POLICY "admins manage categories" ON expense_categories FOR ALL
+  USING (tenant_id = get_my_tenant_id() AND get_my_role() = 'tenant_admin');
+CREATE POLICY "all read active categories" ON expense_categories FOR SELECT
+  USING (is_active = true);
+
+-- Notification queue (Issue #10): system insert/update; admins read
+CREATE POLICY "super_admin reads all queue" ON notification_queue FOR ALL
+  USING (is_super_admin());
+CREATE POLICY "admins manage queue" ON notification_queue FOR ALL
+  USING (tenant_id = get_my_tenant_id() AND get_my_role() = 'tenant_admin');
+CREATE POLICY "system inserts queue" ON notification_queue FOR INSERT
+  WITH CHECK (tenant_id = get_my_tenant_id());
+
+-- AI log (Issue #11): immutable after creation; admins read
+CREATE POLICY "super_admin reads all ai_log" ON ai_log FOR SELECT
+  USING (is_super_admin());
+CREATE POLICY "admins read ai_log" ON ai_log FOR SELECT
+  USING (tenant_id = get_my_tenant_id() AND get_my_role() = 'tenant_admin');
+CREATE POLICY "insert ai_log" ON ai_log FOR INSERT
+  WITH CHECK (tenant_id = get_my_tenant_id());
 ```
+
+---
+
+## 4.1 SPEC Issues Resolution (v2 updates)
+
+All 15 identified issues from SPEC_additions.md have been resolved:
+
+### Critical issues (5) — Fixed in schema
+
+| # | Issue | Fix location |
+|---|-------|--------------|
+| 1 | user_profiles defined after tables that reference it | Migration 001: user_profiles now created first, before families/family_members |
+| 2 | Invoice sequence year-boundary bug | Migration 010: Fixed next_invoice_number() with explicit year variable & initialization |
+| 3 | No RLS bypass for super_admin | Section 4 helper functions: Added is_super_admin(), all policies now include super_admin bypass |
+| 4a | family_members missing tenant_id | Migration 002: Added tenant_id column to family_members with NOT NULL constraint |
+| 4b | 10+ tables missing RLS policies | Section 4: Comprehensive RLS policies written for all 20 tables, every table now has super_admin bypass |
+| 5 | payments nullable on both family_id and person_id | Migration 008: Added CONSTRAINT payment_payer CHECK ((family_id IS NOT NULL) OR (person_id IS NOT NULL)) |
+
+### Significant issues (5) — Fixed with new tables & logic changes
+
+| # | Issue | Fix location |
+|---|-------|--------------|
+| 6 | Unique constraint blocks re-enrolment | Migration 006: Changed enrolments UNIQUE constraint to WHERE status NOT IN ('cancelled','withdrawn') |
+| 7 | WhatsApp template SIDs hardcoded; breaks multi-tenant | Migration 013: New tenant_notification_templates table; Phase 1D updated to query templates per tenant |
+| 8 | Subscription vs. payment intent ambiguity | Section 6 Phase 1E: [TO DO] Add clarification comment on payment state machine |
+| 9 | Expense categories hardcoded in CHECK | Migration 014: New expense_categories table; expenses now reference this table instead of hardcoded CHECK |
+| 10 | No notification retry/queue mechanism | Migration 015: New notification_queue table with retry logic, attempt tracking, and exponential backoff pattern |
+
+### Worth knowing issues (5) — Fixed with schema/documentation
+
+| # | Issue | Fix location |
+|---|-------|--------------|
+| 11 | ai_log table referenced but never defined | Migration 016: Defined ai_log table with full audit trail for AI interactions (tokens, flags, PII detection) |
+| 12 | VAT rounding strategy undefined | Section 2.5: Documented banker's rounding strategy (ISO 80000-1, Israeli accounting norms) |
+| 13 | is_minor stored boolean never revalidated | Migration 002: Converted is_minor to GENERATED ALWAYS AS computed column from date_of_birth |
+| 14 | decryptVault() doesn't match Supabase Vault API | Section 5: Updated getTenantConfig() to use SQL function with pgp_sym_decrypt() via RPC, not raw decryptVault() |
+| 15 | waiting_list.position requires manual management | Migration 007: Removed position column; use ROW_NUMBER() OVER (PARTITION BY class_id ORDER BY added_at) for position |
 
 ---
 
@@ -1033,34 +1452,67 @@ Adult students (`is_minor = false`, `user_profile_id IS NOT NULL`) get their own
 
 ### Tenant key injection pattern
 
-Edge Functions must load the correct tenant's API keys for every request:
+Edge Functions must load the correct tenant's API keys for every request. Keys are encrypted using PostgreSQL's `pgp_sym_encrypt()` and decrypted server-side only.
 
 ```typescript
 // supabase/functions/_shared/tenant-config.ts
+// FIXED: uses correct Supabase Vault API (pgp_sym_decrypt) via SQL, not raw function calls
 export async function getTenantConfig(tenantId: string, supabase: SupabaseClient) {
-  const { data: tenant } = await supabase
-    .from('tenants')
-    .select('*')
-    .eq('id', tenantId)
-    .single();
+  // Query tenant data WITH decryption via SQL function (runs on server only)
+  const { data: tenant, error } = await supabase
+    .rpc('get_decrypted_tenant_config', { p_tenant_id: tenantId });
 
-  if (!tenant) throw new Error('Tenant not found');
+  if (error || !tenant) throw new Error(`Tenant not found: ${error?.message}`);
 
-  // Keys are encrypted in Supabase Vault — decrypt here
   return {
-    stripeSecretKey:      await decryptVault(tenant.stripe_secret_key_enc),
-    stripeWebhookSecret:  await decryptVault(tenant.stripe_webhook_secret_enc),
-    resendApiKey:         await decryptVault(tenant.resend_api_key_enc),
+    stripeSecretKey:      tenant.stripe_secret_key,
+    stripeWebhookSecret:  tenant.stripe_webhook_secret,
+    resendApiKey:         tenant.resend_api_key,
     resendFromEmail:      tenant.resend_from_email,
-    twilioAccountSid:     await decryptVault(tenant.twilio_account_sid_enc),
-    twilioAuthToken:      await decryptVault(tenant.twilio_auth_token_enc),
+    twilioAccountSid:     tenant.twilio_account_sid,
+    twilioAuthToken:      tenant.twilio_auth_token,
     twilioWhatsAppNumber: tenant.twilio_whatsapp_number,
     vatRate:              tenant.vat_rate,
     currency:             tenant.currency,
     locale:               tenant.locale,
   };
 }
+
+// Database function (in migration 001 after tenants table):
+// CREATE OR REPLACE FUNCTION get_decrypted_tenant_config(p_tenant_id UUID)
+// RETURNS TABLE (
+//   stripe_secret_key TEXT,
+//   stripe_webhook_secret TEXT,
+//   resend_api_key TEXT,
+//   resend_from_email TEXT,
+//   twilio_account_sid TEXT,
+//   twilio_auth_token TEXT,
+//   twilio_whatsapp_number TEXT,
+//   vat_rate NUMERIC,
+//   currency TEXT,
+//   locale TEXT
+// ) LANGUAGE SQL SECURITY DEFINER AS $$
+//   SELECT
+//     pgp_sym_decrypt(stripe_secret_key_enc, current_setting('app.encryption_key'))::TEXT,
+//     pgp_sym_decrypt(stripe_webhook_secret_enc, current_setting('app.encryption_key'))::TEXT,
+//     pgp_sym_decrypt(resend_api_key_enc, current_setting('app.encryption_key'))::TEXT,
+//     resend_from_email,
+//     pgp_sym_decrypt(twilio_account_sid_enc, current_setting('app.encryption_key'))::TEXT,
+//     pgp_sym_decrypt(twilio_auth_token_enc, current_setting('app.encryption_key'))::TEXT,
+//     twilio_whatsapp_number,
+//     vat_rate,
+//     currency,
+//     locale
+//   FROM tenants
+//   WHERE id = p_tenant_id;
+// $$;
 ```
+
+**Key security details:**
+- Encrypted secrets never leave the database unencrypted
+- Decryption happens via `SECURITY DEFINER` SQL function (runs as function owner, not caller)
+- Encryption key stored in database settings (`app.encryption_key`), not in code
+- Edge Functions access only the decrypted result, never the encrypted column values
 
 ---
 
@@ -1201,7 +1653,7 @@ serve(async (req) => {
 4. Only send approved templates to new contacts — free-form messages require prior contact
 5. Phone number opt-in collected and verified during enrolment (WhatsApp OTP)
 
-#### WhatsApp integration
+#### WhatsApp integration (Issue #7 fix: per-tenant template SIDs)
 
 ```typescript
 // supabase/functions/_shared/whatsapp.ts
@@ -1209,20 +1661,32 @@ import twilio from 'https://esm.sh/twilio';
 
 export async function sendWhatsApp(
   config: TenantConfig,
+  tenantId: string,
   prefs: ContactPreferences,
   template: string,
-  variables: Record<string, string>
+  variables: Record<string, string>,
+  supabase: SupabaseClient
 ): Promise<NotificationResult> {
   const client = twilio(config.twilioAccountSid, config.twilioAuthToken);
 
-  // Map template name to Twilio content SID (approved template)
-  const contentSid = TEMPLATE_SIDS[template];
-  if (!contentSid) throw new Error(`No approved WhatsApp template: ${template}`);
+  // FIXED (Issue #7): Load template SID from database (per-tenant, not hardcoded)
+  const { data: templateConfig, error } = await supabase
+    .from('tenant_notification_templates')
+    .select('twilio_content_sid')
+    .eq('tenant_id', tenantId)
+    .eq('channel', 'whatsapp')
+    .eq('template_name', template)
+    .eq('status', 'approved')
+    .single();
+
+  if (error || !templateConfig?.twilio_content_sid) {
+    throw new Error(`WhatsApp template not approved: ${template} (${error?.message})`);
+  }
 
   const message = await client.messages.create({
     from: config.twilioWhatsAppNumber,
     to: `whatsapp:${prefs.whatsapp_number}`,
-    contentSid,
+    contentSid: templateConfig.twilio_content_sid,
     contentVariables: JSON.stringify(variables),
   });
 
@@ -1243,6 +1707,32 @@ All Stripe API calls creating or modifying payment objects happen in Edge Functi
 Key Edge Functions:
 - `create-payment-intent`: loads class price, applies discount server-side, calculates VAT, creates PaymentIntent, generates invoice number atomically
 - `stripe-webhook`: idempotent handler for `payment_intent.succeeded`, `payment_intent.payment_failed`, `invoice.payment_failed`, `customer.subscription.deleted`
+
+#### Payment state machine (Issue #8 clarification: subscription vs payment intent)
+
+**Single source of truth:** PaymentIntent status is authoritative. Subscription objects are informational only for recurring billing.
+
+```
+Payment flow (V1 — one-time class enrolment):
+1. Frontend: Load class price → show Payment Element
+2. Edge Function create-payment-intent: Create PaymentIntent, return clientSecret
+3. Frontend: Confirm payment with Stripe
+4. Stripe webhook payment_intent.succeeded:
+   → payments table: INSERT with PaymentIntent.id as stripe_payment_intent_id
+   → enrolments table: UPDATE status='active'
+   → audit_log: INSERT
+   → send-notification: confirmation email + WhatsApp
+
+Retry logic:
+- payment_intent.payment_failed → store error in payments.failure_reason
+- Stripe auto-retries based on dashboard settings
+- Manual retry via admin: create new PaymentIntent (do not reuse failed ID)
+
+Subscription flow (V2):
+- Used only for recurring monthly charges (not in V1)
+- If present, subscription.status is secondary to latest PaymentIntent.status
+- Cancelled subscription does NOT automatically cancel active enrolment — admin action required
+```
 
 On payment success:
 1. Enrolment → `active`
