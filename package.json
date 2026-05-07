@@ -1,0 +1,19 @@
+{
+  "name": "ballet-school-system",
+  "version": "1.0.0",
+  "private": true,
+  "packageManager": "pnpm@latest",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "pnpm -r dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "test": "pnpm -r test"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}
