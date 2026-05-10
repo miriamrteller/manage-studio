@@ -6,6 +6,7 @@
 // Re-export from shared package
 export {
   LoginFormSchema,
+  PasswordLoginSchema,
   PublicClassSchema,
   UUIDSchema,
   EmailSchema,
@@ -24,6 +25,7 @@ export {
   ClassRequirementSchema,
   EnrolmentSchema,
   type LoginForm,
+  type PasswordLogin,
   type PublicClass,
   type Tenant,
   type UserProfile,

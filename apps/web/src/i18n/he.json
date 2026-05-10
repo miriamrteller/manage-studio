@@ -67,8 +67,14 @@
     "login": {
       "title": "התחברות",
       "subtitle": "הכנסו את כתובת הדוא\"ל שלכם להתחברות",
+      "magic_link_tab": "קישור קסום",
+      "password_tab": "סיסמה",
       "send_link": "שלחו קישור",
+      "sign_in": "התחברו",
+      "password": "סיסמה",
+      "password_placeholder": "הכנסו את הסיסמה שלכם",
       "check_email": "אימות דוא\"ל נשלח. בדקו את תיבת הדוא\"ל שלכם.",
+      "invalid_credentials": "דוא\"ל או סיסמה שגויים",
       "no_account": "אין לכם חשבון?",
       "signup": "הרשמו כאן"
     },

@@ -49,12 +49,23 @@ export const UserProfileSchema = z.object({
 
 export type UserProfile = z.infer<typeof UserProfileSchema>;
 
-// Login form
+// Login form (magic link)
 export const LoginFormSchema = z.object({
   email: EmailSchema,
 });
 
 export type LoginForm = z.infer<typeof LoginFormSchema>;
+
+// Password login form
+export const PasswordLoginSchema = z.object({
+  email: EmailSchema,
+  password: z.string()
+    .min(6, 'Password must be at least 6 characters')
+    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+    .regex(/[0-9]/, 'Password must contain at least one number'),
+});
+
+export type PasswordLogin = z.infer<typeof PasswordLoginSchema>;
 
 // Public class (for landing page)
 export const PublicClassSchema = z.object({

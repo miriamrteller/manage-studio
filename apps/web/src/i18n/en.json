@@ -42,8 +42,14 @@
     "login": {
       "title": "Login",
       "subtitle": "Enter your email to sign in",
+      "magic_link_tab": "Magic Link",
+      "password_tab": "Password",
       "send_link": "Send Link",
+      "sign_in": "Sign In",
+      "password": "Password",
+      "password_placeholder": "Enter your password",
       "check_email": "Check your email for a magic link to sign in.",
+      "invalid_credentials": "Invalid email or password",
       "no_account": "Don't have an account?",
       "signup": "Sign up here"
     },

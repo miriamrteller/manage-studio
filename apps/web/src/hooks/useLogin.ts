@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
-import { LoginFormSchema, type LoginForm } from '../schemas';
+import { LoginFormSchema, PasswordLoginSchema, type LoginForm, type PasswordLogin } from '../schemas';
 
 /**
- * useLogin: Handles magic link authentication logic
+ * useLogin: Handles authentication logic (password and magic link)
  * - Manages form submission state (loading, messages)
- * - Calls Supabase OTP signin
+ * - Calls Supabase password signin or OTP signin
  * - Returns form state and submission handler
  * 
  * Separation of concerns:
@@ -14,6 +14,9 @@ import { LoginFormSchema, type LoginForm } from '../schemas';
  * - LoginForm component handles UI rendering only
  * - Pages compose these together
  */
+
+type AuthMode = 'password' | 'magic_link';
+type FormData = LoginForm | PasswordLogin;
 
 export interface LoginState {
   isLoading: boolean;
@@ -24,50 +27,79 @@ export interface LoginState {
 }
 
 export interface LoginActions {
-  onSubmit: (_formData: LoginForm) => Promise<void>;
+  onSubmit: (_formData: FormData, _authMode: AuthMode) => Promise<void>;
   resetMessage: () => void;
 }
 
-export function useLogin(onSuccess?: () => void): LoginState & LoginActions {
+export function useLogin(): LoginState & LoginActions {
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<LoginState['message']>(null);
 
-  const onSubmit = async (formData: LoginForm) => {
+  const onSubmit = async (formData: FormData, authMode: AuthMode) => {
     setIsLoading(true);
     setMessage(null);
 
     try {
-      // Validate input with Zod schema
-      const validatedData = LoginFormSchema.parse(formData);
-
-      // Send magic link
-      const { error } = await supabase.auth.signInWithOtp({
-        email: validatedData.email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/dashboard`,
-        },
-      });
-
-      if (error) {
-        setMessage({
-          type: 'error',
-          text: error.message || t('error.login_failed'),
+      if (authMode === 'password') {
+        // Password authentication
+        const passwordData = PasswordLoginSchema.parse(formData);
+        
+        const { error } = await supabase.auth.signInWithPassword({
+          email: passwordData.email,
+          password: passwordData.password,
         });
+
+        if (error) {
+          // Handle specific error cases
+          if (error.message.includes('Invalid login credentials')) {
+            setMessage({
+              type: 'error',
+              text: t('pages.login.invalid_credentials'),
+            });
+          } else {
+            setMessage({
+              type: 'error',
+              text: error.message || t('error.login_failed'),
+            });
+          }
+        } else {
+          setMessage({
+            type: 'success',
+            text: t('pages.login.check_email'),
+          });
+          // Redirect to dashboard after successful login
+          setTimeout(() => {
+            window.location.href = `${window.location.origin}/dashboard`;
+          }, 1000);
+        }
       } else {
-        setMessage({
-          type: 'success',
-          text: t('pages.login.check_email'),
+        // Magic link authentication
+        const magicLinkData = LoginFormSchema.parse(formData);
+
+        const { error } = await supabase.auth.signInWithOtp({
+          email: magicLinkData.email,
+          options: {
+            emailRedirectTo: `${window.location.origin}/dashboard`,
+          },
         });
-        // Call optional success callback
-        onSuccess?.();
+
+        if (error) {
+          setMessage({
+            type: 'error',
+            text: error.message || t('error.login_failed'),
+          });
+        } else {
+          setMessage({
+            type: 'success',
+            text: t('pages.login.check_email'),
+          });
+        }
       }
-    } catch (err) {
-      // Zod validation or unexpected error
-      const errorMessage = err instanceof Error ? err.message : t('error.unexpected');
+    } catch (error) {
       setMessage({
         type: 'error',
-        text: errorMessage,
+        text: error instanceof Error ? error.message : t('error.login_failed'),
       });
     } finally {
       setIsLoading(false);
