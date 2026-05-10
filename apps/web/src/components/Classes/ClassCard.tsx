@@ -41,6 +41,9 @@ export function ClassCard({ class: cls, locale, currency }: ClassCardProps) {
         </p>
         <p className="text-lg font-semibold text-primary">
           {formatCurrency(cls.price_minor, currency, locale)}
+          <span className="text-sm text-gray-600 ms-1">
+            / {t(`billing.${cls.billing_frequency}`)}
+          </span>
         </p>
       </div>
 

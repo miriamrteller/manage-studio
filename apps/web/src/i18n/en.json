@@ -67,5 +67,11 @@
     "login_failed": "Login failed. Please try again.",
     "unexpected": "An unexpected error occurred. Please try again later.",
     "fetch_classes": "Error loading classes"
+  },
+  "billing": {
+    "monthly": "per month",
+    "per-session": "per session",
+    "weekly": "per week",
+    "annual": "per year"
   }
 }
