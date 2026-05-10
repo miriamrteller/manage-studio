@@ -89,6 +89,6 @@ VALUES (
 --    );
 --
 -- 3. Verify: Navigate to http://localhost:5173/ 
---    Should see "Ballet Beginners — Monday" and "Mini Ballet — Mondays"
+--    Should see "Mini-Ballet age 4" and "Mini-Ballet age 5"
 -- ============================================================================
 
