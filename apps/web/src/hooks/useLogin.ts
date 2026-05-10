@@ -68,9 +68,9 @@ export function useLogin(): LoginState & LoginActions {
             type: 'success',
             text: t('pages.login.check_email'),
           });
-          // Redirect to dashboard after successful login
+          // Redirect to admin setup after successful login
           setTimeout(() => {
-            window.location.href = `${window.location.origin}/dashboard`;
+            window.location.href = `${window.location.origin}/admin/setup`;
           }, 1000);
         }
       } else {
@@ -80,7 +80,7 @@ export function useLogin(): LoginState & LoginActions {
         const { error } = await supabase.auth.signInWithOtp({
           email: magicLinkData.email,
           options: {
-            emailRedirectTo: `${window.location.origin}/dashboard`,
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
           },
         });
 
