@@ -32,12 +32,6 @@ CREATE TABLE people (
   name                     TEXT        NOT NULL,
   email                    TEXT,
   date_of_birth            DATE,
-  is_minor                 BOOLEAN     GENERATED ALWAYS AS (
-                             CASE WHEN date_of_birth IS NULL THEN false
-                                  WHEN EXTRACT(YEAR FROM age(now(), date_of_birth)) < 18 THEN true
-                                  ELSE false
-                             END
-                           ) STORED,
   medical_notes            TEXT,
   allergies                TEXT,
   emergency_contact_name   TEXT,
@@ -75,22 +69,30 @@ RETURNS UUID LANGUAGE sql SECURITY DEFINER STABLE AS $$
   SELECT id FROM people WHERE user_profile_id = auth.uid()
 $$;
 
+CREATE OR REPLACE FUNCTION is_minor(date_of_birth DATE)
+RETURNS BOOLEAN LANGUAGE sql STABLE AS $$
+  SELECT CASE WHEN date_of_birth IS NULL THEN false
+              WHEN date_of_birth > (now()::date - interval '18 years') THEN true
+              ELSE false
+         END
+$$;
+
 -- RLS Policies
 CREATE POLICY "admins manage families" ON families FOR ALL
-  USING (tenant_id = get_my_tenant_id() AND 'tenant_admin' = ANY((SELECT role FROM user_profiles WHERE id = auth.uid())));
+  USING (tenant_id = get_my_tenant_id() AND EXISTS(SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role @> ARRAY['tenant_admin']));
 
 CREATE POLICY "family members see own family" ON families FOR SELECT
   USING (id IN (SELECT get_my_family_ids()));
 
 CREATE POLICY "admins manage family_members" ON family_members FOR ALL
-  USING (tenant_id = get_my_tenant_id() AND 'tenant_admin' = ANY((SELECT role FROM user_profiles WHERE id = auth.uid())));
+  USING (tenant_id = get_my_tenant_id() AND EXISTS(SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role @> ARRAY['tenant_admin']));
 
 CREATE POLICY "family members see own family" ON family_members FOR SELECT
   USING (user_profile_id = auth.uid());
 
 -- People: staff see all in their tenant, parents see own family, adult students see self
 CREATE POLICY "staff see all people" ON people FOR SELECT
-  USING (tenant_id = get_my_tenant_id() AND 'tenant_admin' = ANY((SELECT role FROM user_profiles WHERE id = auth.uid())));
+  USING (tenant_id = get_my_tenant_id() AND EXISTS(SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role @> ARRAY['tenant_admin']));
 
 CREATE POLICY "parents see own family people" ON people FOR SELECT
   USING (tenant_id = get_my_tenant_id() AND family_id IN (SELECT get_my_family_ids()));

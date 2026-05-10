@@ -39,7 +39,7 @@ ALTER TABLE contact_preferences ENABLE ROW LEVEL SECURITY;
 
 -- Policies
 CREATE POLICY "admins manage preferences" ON contact_preferences FOR ALL
-  USING (tenant_id = get_my_tenant_id() AND 'tenant_admin' = ANY((SELECT role FROM user_profiles WHERE id = auth.uid())));
+  USING (tenant_id = get_my_tenant_id() AND EXISTS(SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role @> ARRAY['tenant_admin']));
 
 CREATE POLICY "users manage own preferences" ON contact_preferences FOR ALL
   USING (person_id = get_my_person_id());

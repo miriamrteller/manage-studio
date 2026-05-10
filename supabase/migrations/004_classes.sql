@@ -60,15 +60,15 @@ ALTER TABLE classes ENABLE ROW LEVEL SECURITY;
 -- Terms & Levels: public read, admin write
 CREATE POLICY "all see terms" ON terms FOR SELECT USING (true);
 CREATE POLICY "admins manage terms" ON terms FOR ALL
-  USING (tenant_id = get_my_tenant_id() AND 'tenant_admin' = ANY((SELECT role FROM user_profiles WHERE id = auth.uid())));
+  USING (tenant_id = get_my_tenant_id() AND EXISTS(SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role @> ARRAY['tenant_admin']));
 
 CREATE POLICY "all see levels" ON levels FOR SELECT USING (true);
 CREATE POLICY "admins manage levels" ON levels FOR ALL
-  USING (tenant_id = get_my_tenant_id() AND 'tenant_admin' = ANY((SELECT role FROM user_profiles WHERE id = auth.uid())));
+  USING (tenant_id = get_my_tenant_id() AND EXISTS(SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role @> ARRAY['tenant_admin']));
 
 -- Classes: public read (is_public), admin write
 CREATE POLICY "public read classes" ON classes FOR SELECT
   USING (is_public = true);
 
 CREATE POLICY "admins manage classes" ON classes FOR ALL
-  USING (tenant_id = get_my_tenant_id() AND 'tenant_admin' = ANY((SELECT role FROM user_profiles WHERE id = auth.uid())));
+  USING (tenant_id = get_my_tenant_id() AND EXISTS(SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role @> ARRAY['tenant_admin']));
