@@ -118,6 +118,11 @@
     "email_placeholder": "example@example.com",
     "password": "Password",
     "email_required": "Email is required",
+    "search": "Search",
+    "search_by_name_email_phone": "Search by name, email, or phone",
+    "search_people": "Search people",
+    "select_family": "Select family",
+    "select_contact_person": "Select contact person",
     "person": {
       "title": "Person Details",
       "first_name": "First Name",
@@ -126,6 +131,8 @@
       "is_minor": "Is Minor",
       "email": "Email",
       "phone": "Phone",
+      "medical_notes": "Medical Notes",
+      "family": "Family",
       "first_name_required": "First name is required",
       "last_name_required": "Last name is required",
       "birthdate_required": "Birth date is required",
@@ -184,6 +191,34 @@
       "title": "Contact Preferences",
       "email_opted_in": "Receive Email",
       "whatsapp_opted_in": "Receive WhatsApp"
+    },
+    "person": {
+      "title": "Person",
+      "name": "Full Name",
+      "email": "Email Address",
+      "date_of_birth": "Date of Birth",
+      "medical_notes": "Medical Notes",
+      "allergies": "Allergies",
+      "is_minor_label": "Minor",
+      "status": "Status",
+      "status_active": "Active",
+      "status_inactive": "Inactive",
+      "status_withdrawn": "Withdrawn",
+      "name_required": "Name is required",
+      "invalid_email": "Invalid email address"
+    },
+    "family": {
+      "title": "Family",
+      "name": "Family Name",
+      "contact_person_name": "Contact Person Name",
+      "contact_email": "Contact Person Email",
+      "contact_phone": "Contact Phone (Israeli Format)",
+      "name_required": "Family name is required",
+      "contact_person_name_required": "Contact person name is required",
+      "contact_email_required": "Contact email is required",
+      "contact_phone_required": "Contact phone is required",
+      "invalid_email": "Invalid email address",
+      "invalid_phone": "Phone must be in Israeli format (e.g., 0501234567)"
     }
   },
   "footer": {

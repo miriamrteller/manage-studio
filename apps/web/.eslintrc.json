@@ -27,6 +27,13 @@
   "rules": {
     "react/react-in-jsx-scope": "off",
     "react/prop-types": "off",
+    "@typescript-eslint/no-unused-vars": [
+      "error",
+      {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_"
+      }
+    ],
     "jsx-a11y/alt-text": "warn",
     "jsx-a11y/aria-props": "warn",
     "jsx-a11y/aria-role": "warn",

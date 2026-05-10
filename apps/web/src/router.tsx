@@ -7,6 +7,8 @@ import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import AuthCallbackPage from './pages/AuthCallbackPage';
 import AdminDashboard from './pages/AdminDashboard';
+import PeoplePage from './pages/PeoplePage';
+import FamiliesPage from './pages/FamiliesPage';
 import PortalDashboard from './pages/PortalDashboard';
 import NotFoundPage from './pages/NotFoundPage';
 
@@ -60,7 +62,17 @@ const router = createBrowserRouter([
     element: (
       <ProtectedLayout>
         <AdminRoute>
-          <AdminDashboard />
+          <PeoplePage />
+        </AdminRoute>
+      </ProtectedLayout>
+    ),
+  },
+  {
+    path: '/admin/families',
+    element: (
+      <ProtectedLayout>
+        <AdminRoute>
+          <FamiliesPage />
         </AdminRoute>
       </ProtectedLayout>
     ),

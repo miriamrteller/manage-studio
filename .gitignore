@@ -29,6 +29,8 @@ logs/
 *.log
 npm-debug.log*
 pnpm-debug.log*
+playwright-report/
+test-results/
 
 # OS
 Thumbs.db

@@ -3,6 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
 import { LoginFormSchema, type LoginForm as LoginFormData } from '../../schemas';
 import { AuthMessage } from './AuthMessage';
+import { Button, FormField } from '../Common';
 
 /**
  * LoginForm: Presentational component for login form UI
@@ -23,7 +24,7 @@ interface LoginFormProps {
     type: 'success' | 'error';
     text: string;
   } | null;
-  onSubmit: (formData: LoginFormData) => Promise<void>; // eslint-disable-line no-unused-vars
+  onSubmit: (_formData: LoginFormData) => Promise<void>;
   onMessageDismiss?: () => void;
 }
 
@@ -46,55 +47,45 @@ export function LoginForm({
     <>
       {/* Message */}
       {message && (
-        <button
-          type="button"
+        <Button
+          variant="secondary"
+          size="sm"
           onClick={onMessageDismiss}
-          className="w-full text-left"
+          className="w-full text-left justify-start"
           aria-label={t('common.dismiss_message')}
         >
           <AuthMessage type={message.type} text={message.text} />
-        </button>
+        </Button>
       )}
 
       {/* Form */}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         {/* Email Input */}
-        <div>
-          <label
-            htmlFor="email"
-            className="block text-sm font-medium text-gray-700 mb-2"
-          >
-            {t('form.email')}
-          </label>
+        <FormField
+          label={t('form.email')}
+          id="email"
+          error={errors.email?.message}
+        >
           <input
             id="email"
             type="email"
             placeholder={t('form.email_placeholder')}
-            className={`w-full px-4 py-2 border rounded focus-visible:outline-2 outline-primary outline-offset-2 ${
-              errors.email
-                ? 'border-red-500 bg-red-50'
-                : 'border-gray-300'
-            }`}
+            className="w-full px-4 py-2 border border-gray-300 rounded focus-visible:outline-2 outline-primary outline-offset-2"
             {...register('email')}
             aria-invalid={!!errors.email}
-            aria-describedby={errors.email ? 'email-error' : undefined}
           />
-          {errors.email && (
-            <p id="email-error" className="text-sm text-red-600 mt-1">
-              {errors.email.message}
-            </p>
-          )}
-        </div>
+        </FormField>
 
         {/* Submit Button */}
-        <button
+        <Button
           type="submit"
-          disabled={isLoading}
-          className="w-full px-4 py-2 bg-primary text-white rounded font-medium hover:bg-opacity-90 disabled:opacity-50 focus-visible:outline-2 outline-white outline-offset-2"
-          aria-busy={isLoading}
+          variant="primary"
+          size="md"
+          fullWidth
+          isLoading={isLoading}
         >
           {isLoading ? t('common.loading') : t('pages.login.send_link')}
-        </button>
+        </Button>
       </form>
     </>
   );

@@ -24,7 +24,7 @@ export interface LoginState {
 }
 
 export interface LoginActions {
-  onSubmit: (formData: LoginForm) => Promise<void>; // eslint-disable-line no-unused-vars
+  onSubmit: (_formData: LoginForm) => Promise<void>;
   resetMessage: () => void;
 }
 
