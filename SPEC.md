@@ -109,6 +109,27 @@ Each tenant has configurable properties: `locale`, `dir` (rtl/ltr), `currency`, 
 - **Pattern:** Move hardcoded values to config → 1) update CSS variables for colors/fonts, 2) update schemas for tenant fields, 3) update components to reference config, not hardcodes.
 - **Example:** Change `<h1 className="text-[#76335a]">` to `<h1 className="text-primary">` → uses CSS variable.
 
+**1.13 Schema-first implementation — non-negotiable.**
+
+Forms and components derive from database schemas, never the reverse.
+Before writing any component that reads/writes data:
+
+1. Read the exact schema definition in SPEC.md (Migration 00X)
+2. Import the actual Zod schema from `@shared/schemas`
+3. Use that schema to define form fields — never assume field names
+4. Run `pnpm run build` immediately after the FIRST component
+5. Fix all type errors before moving to dependent components
+
+This prevents cascading schema mismatches across features.
+
+**Why it matters:**
+PersonForm with wrong field names → PeopleList inherits wrong types → PeoplePage inherits wrong types → 80+ TypeScript errors discovered after 5 components built. **Better approach:** Build PersonForm + `pnpm run build` → caught immediately → fix once → proceed.
+
+**Rationale (learned from Stream 1 implementation):**
+Detailed SPEC.md documentation exists. Developer read it. Forms were still built with `first_name`/`last_name` instead of schema's single `name` field. Why? Form design intuition ("that's how people data works") overrode schema verification. ESLint caught syntax but not semantics. Build validation only ran after all components were written — by then 80+ cascading errors. Cost: 2 hours to unwind.
+
+**Prevention:** Enforce schema-first at principle level. Make it non-negotiable. Make build gate immediate (after component 1, not after component 5).
+
 ---
 
 ## 2. Technology Stack
@@ -1836,6 +1857,62 @@ UI & Translations:
 - [ ] Build succeeds: `pnpm run build` (zero errors)
 - [ ] No TypeScript errors: `tsc --noEmit`
 
+### Phase 1A Addendum — Schema-First Workflow & Build Gates
+
+These gates prevent schema mismatches from cascading through features. **Mandatory before proceeding to Phase 1B.**
+
+**Before implementing ANY data component (form, hook, list):**
+
+- [ ] Locate the relevant migration in SPEC.md Section 4.2 defining that table (e.g., Migration 002 for `people`)
+- [ ] Read the full table definition, noting all column names and types
+- [ ] Import the Zod schema from `@shared/schemas` (not a local type copy)
+- [ ] Verify imported schema fields match SPEC.md migration exactly (use `grep` or manual check)
+- [ ] Build first component + run `pnpm run build` immediately
+- [ ] Fix all TypeScript errors before moving to component #2 (no skipping)
+- [ ] Repeat for each feature component: build + validate before next
+
+**Example — PersonForm implementation workflow:**
+
+```bash
+# Day 1: Schema reading + first component
+1. Read SPEC.md Migration 002 (people table, lines ~600-628)
+2. Note fields: id, name (TEXT), date_of_birth (DATE), email (TEXT), is_minor, ...
+3. Import schema: import { PersonSchema } from '@shared/schemas'
+4. Implement PersonForm.tsx using PersonSchema
+5. Run `pnpm run build`
+   → If errors: schema mismatch caught HERE (first component)
+   → Fix field names (e.g., name, not first_name + last_name)
+   → Run build again until zero errors
+6. Only then: proceed to PeopleList.tsx
+
+# Why immediate build:
+# PersonForm alone: 25 min implementation + 5 min build = 30 min
+# PersonForm + PeopleList + PeoplePage (no intermediate builds):
+#   45 min implementation + 2 hours debugging 80+ cascading errors = 2h 45m
+# The earlier you validate, the faster you move
+```
+
+**Checklist for each feature module (People, Families, Classes, Enrolments):**
+
+- [ ] Schema reading complete (5 min)
+- [ ] Zod import verified against `@shared/schemas` (2 min)
+- [ ] First component implemented (form, hook, list) (10-15 min)
+- [ ] `pnpm run build` passes zero errors (5 min)
+- [ ] All dependent components built after schema validation (PeopleList only after PersonForm builds)
+- [ ] Final: `pnpm run lint` zero errors, `pnpm run build` zero errors
+
+**Red flags (stop and re-read SPEC.md schema):**
+- Form field names don't match migration column names
+- TypeScript error: "Property 'X' does not exist on type 'Person'"
+- Build fails immediately after first component creation
+- You assumed a field name instead of checking the schema
+
+**Cost of ignoring this gate:**
+- Stream 1 Reality: 90% feature completion, 80+ build errors, 2 hours debugging
+- Root cause: Schema mismatch discovered late (after component 5)
+- Prevention cost: 5 min schema reading + 5 min immediate build per component = ~30 min total per feature
+- Prevention value: Zero cascading errors, feature builds cleanly, confidence in type safety
+
 ### Phase 1B — Auth and tenant context (Days 4–6)
 
 Key implementation: `useTenant()` resolves from subdomain. In dev: `VITE_DEV_TENANT_SUBDOMAIN`. In prod: `window.location.hostname.split('.')[0]`.
@@ -2745,6 +2822,113 @@ main      → production
 staging   → always matches what's going to production next
 feat/*    → local work; PR to staging; staging to main
 ```
+
+### Schema-first development — Agent implementation checklist
+
+When implementing a feature that reads/writes database data, follow this workflow exactly.
+This prevents the schema-mismatch cascade that occurred in Stream 1.
+
+**Phase 1: Schema Discovery (5 min)**
+
+Before writing any code:
+- [ ] Locate migration in SPEC.md Section 4.2 (e.g., Migration 002 for people table)
+- [ ] Read the full CREATE TABLE statement
+- [ ] List all column names and types in a comment in your implementation file
+- [ ] Note any special constraints or computed columns (`GENERATED ALWAYS AS`)
+
+Example (for people table):
+```typescript
+// Schema source: SPEC.md Migration 002
+// Columns: id (UUID), tenant_id (UUID), family_id (UUID?), user_profile_id (UUID?),
+//   name (TEXT), date_of_birth (DATE), email (TEXT), is_minor (COMPUTED),
+//   medical_notes (TEXT), allergies (TEXT), status (TEXT), created_at, updated_at
+```
+
+**Phase 2: Schema Import & Validation (2 min)**
+
+```typescript
+// CORRECT pattern:
+import { PersonSchema } from '@shared/schemas';
+
+const form = useForm({
+  resolver: zodResolver(PersonSchema),
+  defaultValues: { /* person data */ }
+});
+
+// WRONG pattern (never do this):
+type Person = {
+  firstName: string;  // ← assumption, not from schema
+  lastName: string;   // ← assumption, not from schema
+};
+```
+
+- [ ] Import schema from `@shared/schemas`, not local types
+- [ ] Verify schema matches SPEC.md definition
+- [ ] All form fields defined by schema, not intuition
+
+**Phase 3: Component Implementation (10-15 min)**
+
+Build ONE component only. Do not build dependent components yet.
+
+Example for people feature:
+- [ ] PersonForm.tsx (form for create/edit) — STOP here
+- Do NOT yet: PeopleList.tsx, PeoplePage.tsx, usePersonSearch.ts hooks
+
+**Phase 4: Build Validation Gate (5 min — MANDATORY)**
+
+```bash
+pnpm run build
+```
+
+**Possible outcomes:**
+
+| Outcome | Action |
+|---------|--------|
+| ✅ Zero errors | Proceed to Phase 5 |
+| ❌ TypeScript errors on form fields | Schema mismatch. Read SPEC.md migration again. Fix field names. Re-run build. |
+| ❌ "Property X does not exist" | Form is using wrong field name. Check SPEC.md migration, update form field. |
+| ❌ Build takes >15s or fails later | Likely schema type mismatch. Restart at Phase 2. |
+
+**Do NOT proceed to next component until build succeeds.**
+
+**Phase 5: Dependent Components (only after Phase 4 succeeds)**
+
+Now safe to implement components that depend on the first:
+- [ ] PeopleList.tsx (depends on Person type from PersonForm)
+- [ ] PeoplePage.tsx (depends on both)
+- [ ] usePersonSearch.ts (depends on Person type)
+
+After each new component:
+- [ ] Run `pnpm run build` (should still be zero errors)
+- [ ] Proceed to next component only if build succeeds
+
+**Phase 6: Linting & Final Validation**
+
+```bash
+pnpm run lint     # Zero errors
+pnpm run build    # Zero errors
+```
+
+- [ ] `pnpm run lint` passes (zero errors)
+- [ ] `pnpm run build` passes (zero errors)
+- [ ] Feature ready for review
+
+**Common mistakes to avoid:**
+
+| Mistake | Prevention |
+|---------|------------|
+| Assume field names instead of reading schema | Read SPEC.md migration before writing component |
+| Implement 5 components before first build | Run `pnpm run build` after component 1 |
+| Ignore TypeScript errors, keep coding | Stop immediately on build errors. Fix before proceeding. |
+| Copy field names from similar features | Each feature schema is unique. Verify against its migration. |
+| Use local type definitions instead of Zod schemas | Always import schema from `@shared/schemas`. Never create local types. |
+
+**Why this workflow:**
+
+PersonForm without validation → 25 min dev + 2 hours debugging 80+ errors
+PersonForm + immediate build → 30 min dev + 0 debugging
+
+The 5-minute build gate eliminates 2 hours of downstream pain.
 
 ---
 
