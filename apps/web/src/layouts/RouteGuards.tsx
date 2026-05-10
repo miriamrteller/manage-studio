@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 
@@ -26,13 +26,14 @@ function LoadingState() {
  */
 export function AdminRoute({ children }: { children: ReactNode }) {
   const { user, isLoading } = useCurrentUser();
+  const location = useLocation();
 
   if (isLoading) {
     return <LoadingState />;
   }
 
   if (!user || !user.role.includes('tenant_admin')) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   }
 
   return <>{children}</>;
@@ -43,13 +44,14 @@ export function AdminRoute({ children }: { children: ReactNode }) {
  */
 export function TeacherRoute({ children }: { children: ReactNode }) {
   const { user, isLoading } = useCurrentUser();
+  const location = useLocation();
 
   if (isLoading) {
     return <LoadingState />;
   }
 
   if (!user || !user.role.includes('teacher')) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   }
 
   return <>{children}</>;
@@ -60,6 +62,7 @@ export function TeacherRoute({ children }: { children: ReactNode }) {
  */
 export function ParentRoute({ children }: { children: ReactNode }) {
   const { user, isLoading } = useCurrentUser();
+  const location = useLocation();
 
   if (isLoading) {
     return <LoadingState />;
@@ -70,7 +73,7 @@ export function ParentRoute({ children }: { children: ReactNode }) {
   );
 
   if (!user || !hasParentRole) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   }
 
   return <>{children}</>;
@@ -81,6 +84,7 @@ export function ParentRoute({ children }: { children: ReactNode }) {
  */
 export function StudentRoute({ children }: { children: ReactNode }) {
   const { user, isLoading } = useCurrentUser();
+  const location = useLocation();
 
   if (isLoading) {
     return <LoadingState />;
@@ -91,7 +95,7 @@ export function StudentRoute({ children }: { children: ReactNode }) {
   );
 
   if (!user || !hasStudentRole) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   }
 
   return <>{children}</>;

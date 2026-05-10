@@ -31,7 +31,7 @@ export interface LoginActions {
   resetMessage: () => void;
 }
 
-export function useLogin(): LoginState & LoginActions {
+export function useLogin(redirectTo: string = '/classes'): LoginState & LoginActions {
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<LoginState['message']>(null);
@@ -66,12 +66,12 @@ export function useLogin(): LoginState & LoginActions {
         } else {
           setMessage({
             type: 'success',
-            text: t('pages.login.check_email'),
+            text: 'Login successful! Redirecting...',
           });
-          // Redirect to admin setup after successful login
+          // Redirect to intended destination or fallback
           setTimeout(() => {
-            window.location.href = `${window.location.origin}/admin/setup`;
-          }, 1000);
+            window.location.href = `${window.location.origin}${redirectTo}`;
+          }, 800);
         }
       } else {
         // Magic link authentication

@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { LoginForm } from '../components/Auth/LoginForm';
 import { useLogin } from '../hooks/useLogin';
 
@@ -8,13 +8,24 @@ import { useLogin } from '../hooks/useLogin';
  * - Acts as a route container, not a logic container
  * - Composes PublicLayout + LoginForm component
  * - Delegates form logic to useLogin hook
+ * - Extracts intended destination from location state
  * - WCAG: Semantic structure maintained in child components
  */
 
 export default function LoginPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { isLoading, message, onSubmit, resetMessage } = useLogin();
+  const location = useLocation();
+  
+  // Extract intended destination from location state
+  // Validate: must start with / and not be /login to prevent redirect loops
+  const from = location.state?.from;
+  const validRedirectTo = 
+    from && typeof from === 'string' && from.startsWith('/') && from !== '/login'
+      ? from
+      : '/classes';
+  
+  const { isLoading, message, onSubmit, resetMessage } = useLogin(validRedirectTo);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-white px-4">
