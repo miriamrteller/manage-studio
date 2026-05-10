@@ -71,14 +71,6 @@ language switch without code changes, regional customization per tenant (V3).
 Hard-coded strings discovered during Phase reviews must be refactored immediately
 before merge to main. Pattern: move string to translation file, add hook to component.
 
-**1.9.1 No hard-coded UI strings.**
-All user-facing text lives in i18n translation files (`he.json`, `en.json`).
-Components use `const { t } = useTranslation()` to access strings.
-This enables: proper RTL testing (flip to English + `dir="ltr"` to verify layout),
-language switch without code changes, regional customization per tenant (V3).
-Hard-coded strings discovered during Phase reviews must be refactored immediately
-before merge to main. Pattern: move string to translation file, add hook to component.
-
 **1.10 External API keys belong to tenants, not the platform.**
 Each school configures their own Twilio, Resend, and Stripe keys. You store them encrypted. Schools pay their own communication costs. This eliminates margin risk and billing complexity in early stages.
 
@@ -420,6 +412,8 @@ This design enables:
 - **Clear intent** — every policy explicitly states who can do what
 
 **Example:** A `super_admin` with `is_super_admin()` returning `true` sees all `families` rows across all tenants, while a `tenant_admin` sees only families in their own tenant.
+
+**Super-Admin Bypass Scope (Critical):** A `super_admin` role user bypasses ALL tenant checks entirely. They can read/write/delete data from any tenant without restriction. This is intentional for platform-level operations only (platform owner, customer support). Non-super-admin users (tenant_admin, teacher, parent, student) always see only their own tenant's data — this constraint is enforced by RLS policy and cannot be bypassed.
 
 ---
 
@@ -1574,7 +1568,7 @@ All 15 identified issues from SPEC_additions.md have been resolved:
 | --- | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
 | 6   | Unique constraint blocks re-enrolment                 | Migration 006: Changed enrolments UNIQUE constraint to WHERE status NOT IN ('cancelled','withdrawn')            |
 | 7   | WhatsApp template SIDs hardcoded; breaks multi-tenant | Migration 013: New tenant_notification_templates table; Phase 1D updated to query templates per tenant          |
-| 8   | Subscription vs. payment intent ambiguity             | Section 6 Phase 1E: [TO DO] Add clarification comment on payment state machine                                  |
+| 8   | Subscription vs. payment intent ambiguity             | Section 6 Phase 1E: Payment state machine now explicit (see Phase 1E detailed architecture)                      |
 | 9   | Expense categories hardcoded in CHECK                 | Migration 014: New expense_categories table; expenses now reference this table instead of hardcoded CHECK       |
 | 10  | No notification retry/queue mechanism                 | Migration 015: New notification_queue table with retry logic, attempt tracking, and exponential backoff pattern |
 
@@ -1734,7 +1728,8 @@ pnpm dlx shadcn@latest init   # New York style, Zinc, CSS variables: yes
 - [ ] **WCAG 2.1 AA:** Configure ESLint with jsx-a11y plugin and rules in `.eslintrc.json`
 - [ ] **WCAG 2.1 AA:** Create `e2e/accessibility-compliance.spec.ts` with heading structure, form validation, focus trap tests
 - [ ] **WCAG 2.1 AA:** Add pnpm scripts to `package.json`: `a11y:lint`, `a11y:axe`, `a11y:e2e`
-- [ ] **WCAG 2.1 AA:** Add axe-core CI job to `.github/workflows/ci.yml` (blocks merge if violations found)
+- [ ] **WCAG 2.1 AA:** Add axe-core CI job to `.github/workflows/ci.yml` **(blocks merge if violations found — non-negotiable)**
+- [ ] **WCAG 2.1 AA:** Configure CI: `axe-core` returns exit code 1 on ANY violation; merge is prevented until resolved
 - [ ] **WCAG 2.1 AA:** Add accessibility checklist to `.github/PULL_REQUEST_TEMPLATE.md`
 - [ ] **WCAG 2.1 AA:** Create manual test plan for NVDA Hebrew smoke test (15 min pre-deployment)
 - [ ] Confirm `pnpm-lock.yaml` is the only lockfile — delete `package-lock.json` if present
@@ -1863,7 +1858,15 @@ serve(async (req) => {
    - `payment_reminder`: "{{school_name}}: A payment of {{amount}} for {{student_name}} is pending. Update payment: {{link}}"
    - `welcome`: "Welcome to {{school_name}}! Access your parent portal: {{link}}"
 4. Only send approved templates to new contacts — free-form messages require prior contact
-5. Phone number opt-in collected and verified during enrolment (WhatsApp OTP)
+5. **WhatsApp Phone Number Verification Flow:**
+   - Parent enters phone number in enrolment form
+   - Click "Verify with WhatsApp OTP"
+   - Twilio Verify API sends 6-digit code to phone via WhatsApp
+   - Parent enters code in form
+   - Frontend validates code against Twilio Verify API
+   - On success: `contact_preferences.whatsapp_verified = true` + phone number stored
+   - Future notifications use verified number (no re-verification needed)
+   - Fallback: If parent skips verification, WhatsApp is unchecked in preferences (can enable later)
 
 #### WhatsApp integration (Issue #7 fix: per-tenant template SIDs)
 
@@ -2197,7 +2200,7 @@ Each pattern is progressively more complex. By V3 you will have real production 
 
 ## 11. Testing Strategy
 
-### Unit tests — pure functions, no mocks needed
+### 11.1 Unit Tests — pure functions, no mocks needed
 
 ```typescript
 // Test class requirement evaluation
@@ -2251,7 +2254,7 @@ describe("resolveNotificationChannels", () => {
 });
 ```
 
-### RLS security tests
+### 11.2 RLS Security Tests
 
 ```sql
 -- Must run before every production deploy
@@ -2264,7 +2267,7 @@ BEGIN;
 ROLLBACK;
 ```
 
-### E2E tests (Playwright) — V2 priority
+### 11.3 E2E Tests (Playwright) — V2 priority
 
 Critical paths only:
 
@@ -2272,7 +2275,7 @@ Critical paths only:
 2. Class cancelled → makeup credit created → parent notified on preferred channel
 3. Adult student self-enrols and accesses student portal
 
-### Accessibility tests — WCAG 2.1 Level AA (merged into Definition of Done)
+### 11.4 Accessibility Tests — WCAG 2.1 Level AA (merged into Definition of Done)
 
 **Test file:** `apps/web/e2e/accessibility-compliance.spec.ts`
 
@@ -2466,7 +2469,7 @@ test.describe("ARIA Patterns", () => {
   });
 });
 
-### 11.4 Advanced Reliability Gates (Required for V1/V2)
+### 11.5 Advanced Reliability Gates (Required for V1/V2)
 
 #### **A. Multi-Tenant Security (RLS) Tests**
 Ensure no data "leaks" between different schools (tenants).
@@ -2491,33 +2494,31 @@ Prevent double-charging or duplicate invoicing during network instability.
 - **Tool:** Playwright API testing.
 - **Requirement:** Mock a Stripe `invoice.paid` event. Send the identical payload to the `/api/webhooks/stripe` endpoint twice in rapid succession.
 - **Pass Criteria:** The `payments` table must contain exactly one record, and the `invoice_sequence` must increment exactly once.
+
+```typescript
 // test/integration/webhooks.test.ts
 test('Stripe webhook is idempotent', async () => {
-  const payload = mockStripeEvent('invoice.paid', { amount: 5000 });
+  const payload = mockStripeEvent('invoice.paid', { amount: 5000, id: 'evt_123' });
   const headers = { 'stripe-signature': 'valid_sig' };
 
-  // Send twice
+  // Send twice to simulate network retry
   await request(app).post('/api/webhooks/stripe').set(headers).send(payload);
   const res = await request(app).post('/api/webhooks/stripe').set(headers).send(payload);
 
+  // Verify exactly one payment created (idempotency key prevents duplicate)
   expect(res.status).toBe(200);
   const payments = await db.from('payments').select('*').eq('stripe_id', payload.id);
   expect(payments).toHaveLength(1); // Crucial: must only be 1
 });
-test('Stripe webhook is idempotent', async () => {
-  const payload = mockStripeEvent('invoice.paid', { id: 'evt_123' });
-  await request(app).post('/api/webhooks/stripe').send(payload);
-  const res = await request(app).post('/api/webhooks/stripe').send(payload);
-  expect(res.status).toBe(200);
-  const payments = await db.from('payments').select('*').eq('stripe_id', 'evt_123');
-  expect(payments).toHaveLength(1); 
-});
+```
 
 #### **C. AI Module "Golden Prompt" Evaluations (Evals)**
 Verify the AI doesn't hallucinate syllabus rules or enrollment eligibility.
 - **Tool:** Custom script (or Promptfoo) using `test_cases.json`.
 - **Requirement:** Run 10 "Golden Prompts" (e.g., "Student age 5, class min_age 7, can they enroll?").
 - **Pass Criteria:** AI output must match the expected `eligibility: false` logic 100% of the time. This test must run whenever the System Prompt or Model version changes.
+
+```typescript
 // test/ai/syllabus_eval.test.ts
 const goldenPrompts = [
   { input: "Enroll student age 5 in Grade 2 (min_age 7)", expected: "INELIGIBLE_AGE" }
@@ -2527,11 +2528,7 @@ test.each(goldenPrompts)('AI Eligibility logic: %s', async ({ input, expected })
   const result = await aiAgent.evaluateEnrollment(input);
   expect(result.code).toBe(expected);
 });
-const goldenPrompts = [{ input: "Enroll student age 5 in Grade 2 (min_age 7)", expected: "INELIGIBLE_AGE" }];
-test.each(goldenPrompts)('AI Eligibility logic: %s', async ({ input, expected }) => {
-  const result = await aiAgent.evaluateEnrollment(input);
-  expect(result.code).toBe(expected);
-});
+```
 
 #### **D. Legal Privacy & Anonymisation Audit**
 Verify that "Right to be Forgotten" logic works without breaking accounting history.
@@ -2540,7 +2537,9 @@ Verify that "Right to be Forgotten" logic works without breaking accounting hist
 - **Pass Criteria:** 1. `people.full_name` and `people.contact_info` must be replaced with "DELETED_USER".
   2. `payments.amount` and `payments.created_at` must remain unchanged.
   3. The record's `anonymised_at` timestamp must be present.
-  // test/legal/privacy.test.ts
+
+```typescript
+// test/legal/privacy.test.ts
 test('Anonymization destroys PII but keeps financial data', async () => {
   const person = await db.from('people').select('*').single();
   await anonymiseUser(person.id);
@@ -2552,40 +2551,34 @@ test('Anonymization destroys PII but keeps financial data', async () => {
   const paymentCount = await db.from('payments').select('count').eq('person_id', person.id);
   expect(paymentCount).toBeGreaterThan(0); // Accounting trail must remain
 });
-
-test('Tenant A cannot access Tenant B student data', async () => {
-  const { data, error } = await supabaseTenantA.from('people').select('*').eq('tenant_id', tenantB_ID);
-  expect(data).toHaveLength(0);
-  expect(error).toBeDefined(); 
-});
-test('Anonymization destroys PII but keeps financial data', async () => {
-  await anonymiseUser(testUserId);
-  const updated = await db.from('people').select('*').eq('id', testUserId).single();
-  expect(updated.full_name).toBe('DELETED_USER');
-  expect(updated.email).toBeNull();
-  const paymentCount = await db.from('payments').select('count').eq('person_id', testUserId);
-  expect(paymentCount).toBeGreaterThan(0); 
-});
-
+```
 
 #### **E. Data Residency Guardrail (UK Launch Only)**
 - **Requirement:** A CI check to ensure that when `process.env.REGION === 'UK'`, the `SUPABASE_URL` points specifically to the `eu-west-2` (London) instance.
 
-/**
- * Phase 1C Acceptance Criteria: Accessibility
- * Before a feature is considered "done", verify:
- * - [ ] Heading structure: no level skips, exactly 1 h1 per page
- * - [ ] Forms: all inputs labeled, validation errors announce
- * - [ ] Modals: focus trapped, Tab cycles, Escape closes
- * - [ ] Contrast: 4.5:1 min for text
- * - [ ] Keyboard: Tab through all elements, no focus loss
- * - [ ] Landmarks: <main> or role="main" present
- * - [ ] RTL: lang="he" dir="rtl", tab order matches visual layout
- * - [ ] ARIA: proper roles, aria-label/aria-described, aria-checked for inputs
- * - [ ] NVDA: manual smoke test passes (15 min, Hebrew mode, before merge)
- * - [ ] No axe-core violations: `pnpm run a11y:e2e`
- */
-````
+```bash
+# ci/region-check.sh — run this in CI before deploy
+if [ "$REGION" = "UK" ]; then
+  if [[ "$SUPABASE_URL" != *"eu-west-2"* ]]; then
+    echo "ERROR: UK region must use eu-west-2 Supabase instance"
+    exit 1
+  fi
+fi
+```
+
+#### **Phase 1C Acceptance Criteria: Accessibility**
+
+Before a feature is considered "done", verify:
+- [ ] Heading structure: no level skips, exactly 1 h1 per page
+- [ ] Forms: all inputs labeled, validation errors announce
+- [ ] Modals: focus trapped, Tab cycles, Escape closes
+- [ ] Contrast: 4.5:1 min for text
+- [ ] Keyboard: Tab through all elements, no focus loss
+- [ ] Landmarks: <main> or role="main" present
+- [ ] RTL: lang="he" dir="rtl", tab order matches visual layout
+- [ ] ARIA: proper roles, aria-label/aria-described, aria-checked for inputs
+- [ ] NVDA: manual smoke test passes (15 min, Hebrew mode, before merge)
+- [ ] No axe-core violations: `pnpm run a11y:e2e`
 
 **Manual smoke test checklist (15 minutes, Hebrew NVDA, before production):**
 
@@ -2599,25 +2592,6 @@ test('Anonymization destroys PII but keeps financial data', async () => {
 - [ ] Focus: Can always see where focus is; no focus disappearance
 - [ ] Keyboard-only: No mouse required; all features work via Tab/Enter/Arrow keys
 - [ ] RTL: Tab moves right-to-left in Hebrew mode; no visual layout breaks
-
-### 11.4 Advanced Reliability Gates (Reference Implementations)
-
-#### **A. Multi-Tenant Security (RLS) Tests**
-```typescript
-test('Tenant A cannot access Tenant B student data', async () => {
-  const { data, error } = await supabaseTenantA.from('people').select('*').eq('tenant_id', tenantB_ID);
-  expect(data).toHaveLength(0);
-  expect(error).toBeDefined(); 
-});
-
-test('Stripe webhook is idempotent', async () => {
-  const payload = mockStripeEvent('invoice.paid', { id: 'evt_123' });
-  await request(app).post('/api/webhooks/stripe').send(payload);
-  const res = await request(app).post('/api/webhooks/stripe').send(payload);
-  expect(res.status).toBe(200);
-  const payments = await db.from('payments').select('*').eq('stripe_id', 'evt_123');
-  expect(payments).toHaveLength(1); 
-});
 
 ---
 
