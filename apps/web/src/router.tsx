@@ -1,48 +1,77 @@
-import { createBrowserRouter } from 'react-router-dom'
-import LoginPage from './pages/LoginPage'
-import SignupPage from './pages/SignupPage'
-import AdminDashboard from './pages/AdminDashboard'
-import PortalDashboard from './pages/PortalDashboard'
-import NotFoundPage from './pages/NotFoundPage'
+import { createBrowserRouter } from 'react-router-dom';
+import { PublicLayout } from './components/PublicLayout';
+import { ProtectedLayout } from './components/ProtectedLayout';
+import { AdminRoute, ParentRoute, StudentRoute } from './components/RouteGuards';
+import { ClassesPage } from './pages/ClassesPage';
+import LoginPage from './pages/LoginPage';
+import SignupPage from './pages/SignupPage';
+import AdminDashboard from './pages/AdminDashboard';
+import PortalDashboard from './pages/PortalDashboard';
+import NotFoundPage from './pages/NotFoundPage';
+
+/**
+ * Route structure:
+ * - Public routes: no auth required, wrapped in PublicLayout
+ * - Protected routes: auth required, wrapped in ProtectedLayout
+ * - Role-based routes: AdminRoute, ParentRoute, StudentRoute guard specific dashboards
+ */
 
 const router = createBrowserRouter([
+  // PUBLIC ROUTES (no auth required)
   {
     path: '/',
-    element: <div className="min-h-screen bg-white" />,
-    errorElement: <NotFoundPage />,
-    children: [
-      {
-        path: 'login',
-        element: <LoginPage />,
-      },
-      {
-        path: 'signup',
-        element: <SignupPage />,
-      },
-      {
-        path: 'admin',
-        children: [
-          {
-            path: 'dashboard',
-            element: <AdminDashboard />,
-          },
-        ],
-      },
-      {
-        path: 'portal',
-        children: [
-          {
-            path: 'dashboard',
-            element: <PortalDashboard />,
-          },
-        ],
-      },
-      {
-        path: '*',
-        element: <NotFoundPage />,
-      },
-    ],
+    element: <PublicLayout><ClassesPage /></PublicLayout>,
   },
-])
+  {
+    path: '/classes',
+    element: <PublicLayout><ClassesPage /></PublicLayout>,
+  },
+  {
+    path: '/login',
+    element: <PublicLayout><LoginPage /></PublicLayout>,
+  },
+  {
+    path: '/signup',
+    element: <PublicLayout><SignupPage /></PublicLayout>,
+  },
 
-export default router
+  // PROTECTED ROUTES (auth required) — flattened, each with layout + guard
+  {
+    path: '/dashboard/admin',
+    element: (
+      <ProtectedLayout>
+        <AdminRoute>
+          <AdminDashboard />
+        </AdminRoute>
+      </ProtectedLayout>
+    ),
+  },
+  {
+    path: '/dashboard/portal',
+    element: (
+      <ProtectedLayout>
+        <ParentRoute>
+          <PortalDashboard />
+        </ParentRoute>
+      </ProtectedLayout>
+    ),
+  },
+  {
+    path: '/dashboard/student',
+    element: (
+      <ProtectedLayout>
+        <StudentRoute>
+          <PortalDashboard />
+        </StudentRoute>
+      </ProtectedLayout>
+    ),
+  },
+
+  // 404
+  {
+    path: '*',
+    element: <NotFoundPage />,
+  },
+]);
+
+export default router;

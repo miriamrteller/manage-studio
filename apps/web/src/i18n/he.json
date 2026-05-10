@@ -11,28 +11,58 @@
     "loading": "טוען...",
     "error": "שגיאה"
   },
-  "pages": {
+  "nav": {
+    "classes": "שיעורים",
     "login": "התחברות",
-    "signup": "הרשמה",
+    "logout": "התנתקות",
+    "admin": "ניהול",
+    "portal": "פורטל",
+    "schedule": "לוח זמנים"
+  },
+  "pages": {
+    "login": {
+      "title": "התחברות",
+      "subtitle": "הכנסו את כתובת הדוא\"ל שלכם להתחברות",
+      "send_link": "שלחו קישור",
+      "check_email": "אימות דוא\"ל נשלח. בדקו את תיבת הדוא\"ל שלכם.",
+      "no_account": "אין לכם חשבון?",
+      "signup": "הרשמו כאן"
+    },
+    "classes": {
+      "title": "שיעורים זמינים",
+      "subtitle": "בחרו שיעור והרשמו לכיתה",
+      "no_classes": "אין שיעורים זמינים כרגע",
+      "capacity": "קיבולת",
+      "enrol_now": "הרשמו עכשיו"
+    },
     "admin_dashboard": "לוח בקרה - ניהול",
     "portal_dashboard": "לוח בקרה - פורטל",
     "coming_soon_phase1a": "Phase 1A - בקרוב בשלבים הבאים",
     "coming_soon_admin": "Phase 1A - תכונות ניהול בקרוב ב-Phase 1C",
     "coming_soon_portal": "Phase 1A - תכונות פורטל בקרוב ב-Phase 1C"
   },
-  "error": {
-    "network": "שגיאת רשת. אנא נסו שוב.",
-    "invalid_input": "קלט לא חוקי",
-    "not_found": "לא נמצא"
-  },
-  "auth": {
+  "form": {
     "email": "דוא\"ל",
+    "email_placeholder": "example@example.com",
     "password": "סיסמה",
     "email_required": "דוא\"ל נדרש"
   },
-  "nav": {
-    "admin": "ניהול",
-    "portal": "פורטל",
-    "schedule": "לוח זמנים"
+  "footer": {
+    "school_management": "מערכת ניהול בית ספר להנדסה",
+    "links": "קישורים",
+    "about": "אודות",
+    "contact": "יצירת קשר",
+    "legal": "משפטי",
+    "privacy": "מדיניות פרטיות",
+    "terms": "תנאים וההגבלות",
+    "all_rights": "כל הזכויות שמורות."
+  },
+  "error": {
+    "network": "שגיאת רשת. אנא נסו שוב.",
+    "invalid_input": "קלט לא חוקי",
+    "not_found": "לא נמצא",
+    "login_failed": "ההתחברות נכשלה. אנא נסו שוב.",
+    "unexpected": "שגיאה בלתי צפויה. אנא נסו שוב מאוחר יותר.",
+    "fetch_classes": "שגיאה בטעינת השיעורים"
   }
 }

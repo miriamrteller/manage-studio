@@ -11,28 +11,58 @@
     "loading": "Loading...",
     "error": "Error"
   },
-  "pages": {
+  "nav": {
+    "classes": "Classes",
     "login": "Login",
-    "signup": "Sign Up",
+    "logout": "Logout",
+    "admin": "Admin",
+    "portal": "Portal",
+    "schedule": "Schedule"
+  },
+  "pages": {
+    "login": {
+      "title": "Login",
+      "subtitle": "Enter your email to sign in",
+      "send_link": "Send Link",
+      "check_email": "Check your email for a magic link to sign in.",
+      "no_account": "Don't have an account?",
+      "signup": "Sign up here"
+    },
+    "classes": {
+      "title": "Available Classes",
+      "subtitle": "Choose a class and enroll",
+      "no_classes": "No classes available right now",
+      "capacity": "Capacity",
+      "enrol_now": "Enroll Now"
+    },
     "admin_dashboard": "Admin Dashboard",
     "portal_dashboard": "Portal Dashboard",
     "coming_soon_phase1a": "Phase 1A - Coming in later phases",
     "coming_soon_admin": "Phase 1A - Admin features coming in Phase 1C",
     "coming_soon_portal": "Phase 1A - Portal features coming in Phase 1C"
   },
-  "error": {
-    "network": "Network error. Please try again.",
-    "invalid_input": "Invalid input",
-    "not_found": "Not found"
-  },
-  "auth": {
+  "form": {
     "email": "Email",
+    "email_placeholder": "example@example.com",
     "password": "Password",
     "email_required": "Email is required"
   },
-  "nav": {
-    "admin": "Admin",
-    "portal": "Portal",
-    "schedule": "Schedule"
+  "footer": {
+    "school_management": "School Management System",
+    "links": "Links",
+    "about": "About",
+    "contact": "Contact",
+    "legal": "Legal",
+    "privacy": "Privacy Policy",
+    "terms": "Terms & Conditions",
+    "all_rights": "All rights reserved."
+  },
+  "error": {
+    "network": "Network error. Please try again.",
+    "invalid_input": "Invalid input",
+    "not_found": "Not found",
+    "login_failed": "Login failed. Please try again.",
+    "unexpected": "An unexpected error occurred. Please try again later.",
+    "fetch_classes": "Error loading classes"
   }
 }
