@@ -63,6 +63,22 @@ Never drop a column in a single migration. Add → deploy → verify → drop in
 **1.9 RTL and Hebrew are first-class concerns.**
 The system is built for Israel. RTL layout, Hebrew locale formatting, and Israeli legal requirements are not afterthoughts — they are part of the initial design.
 
+**1.9.1 No hard-coded UI strings.**
+All user-facing text lives in i18n translation files (`he.json`, `en.json`).
+Components use `const { t } = useTranslation()` to access strings.
+This enables: proper RTL testing (flip to English + `dir="ltr"` to verify layout),
+language switch without code changes, regional customization per tenant (V3).
+Hard-coded strings discovered during Phase reviews must be refactored immediately
+before merge to main. Pattern: move string to translation file, add hook to component.
+
+**1.9.1 No hard-coded UI strings.**
+All user-facing text lives in i18n translation files (`he.json`, `en.json`).
+Components use `const { t } = useTranslation()` to access strings.
+This enables: proper RTL testing (flip to English + `dir="ltr"` to verify layout),
+language switch without code changes, regional customization per tenant (V3).
+Hard-coded strings discovered during Phase reviews must be refactored immediately
+before merge to main. Pattern: move string to translation file, add hook to component.
+
 **1.10 External API keys belong to tenants, not the platform.**
 Each school configures their own Twilio, Resend, and Stripe keys. You store them encrypted. Schools pay their own communication costs. This eliminates margin risk and billing complexity in early stages.
 
@@ -1655,6 +1671,25 @@ pnpm dlx shadcn@latest init   # New York style, Zinc, CSS variables: yes
 - [ ] **WCAG 2.1 AA:** Add accessibility checklist to `.github/PULL_REQUEST_TEMPLATE.md`
 - [ ] **WCAG 2.1 AA:** Create manual test plan for NVDA Hebrew smoke test (15 min pre-deployment)
 - [ ] Confirm `pnpm-lock.yaml` is the only lockfile — delete `package-lock.json` if present
+- [ ] **i18n compliance:** All UI text in `he.json` and `en.json`. Verify no hard-coded strings in components:
+  ```bash
+  grep -r "className.*text.*[א-ת]" apps/web/src/pages apps/web/src/components
+  # Should return zero matches (Hebrew text only in .json files)
+  ```
+- [ ] **RTL mirror test:** Temporarily change `index.html` `lang="en" dir="ltr"` and verify layout flips correctly. All spacing must use `ms-`, `me-`, `ps-`, `pe-`.
+
+**Definition of Done — Phase 1A (must pass all before Phase 1B starts):**
+
+UI & Translations:
+- [ ] All user-facing text in `he.json` and `en.json`
+- [ ] No hard-coded strings in page components (search for Hebrew/English text in TSX files)
+- [ ] Components use `useTranslation()` hook: `const { t } = useTranslation()`
+- [ ] Translation keys follow pattern: `pages.login`, `pages.signup`, `pages.admin_dashboard`, `pages.portal_dashboard`, `error.not_found`
+- [ ] English and Hebrew keys match exactly (same structure, different content)
+- [ ] RTL mirror test passed: flip to English + `dir="ltr"`; verify layout
+- [ ] Linting passes: `pnpm run lint` (zero errors)
+- [ ] Build succeeds: `pnpm run build` (zero errors)
+- [ ] No TypeScript errors: `tsc --noEmit`
 
 ### Phase 1B — Auth and tenant context (Days 4–6)
 

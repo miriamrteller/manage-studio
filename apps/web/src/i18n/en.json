@@ -11,6 +11,15 @@
     "loading": "Loading...",
     "error": "Error"
   },
+  "pages": {
+    "login": "Login",
+    "signup": "Sign Up",
+    "admin_dashboard": "Admin Dashboard",
+    "portal_dashboard": "Portal Dashboard",
+    "coming_soon_phase1a": "Phase 1A - Coming in later phases",
+    "coming_soon_admin": "Phase 1A - Admin features coming in Phase 1C",
+    "coming_soon_portal": "Phase 1A - Portal features coming in Phase 1C"
+  },
   "error": {
     "network": "Network error. Please try again.",
     "invalid_input": "Invalid input",

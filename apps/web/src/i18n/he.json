@@ -11,6 +11,15 @@
     "loading": "טוען...",
     "error": "שגיאה"
   },
+  "pages": {
+    "login": "התחברות",
+    "signup": "הרשמה",
+    "admin_dashboard": "לוח בקרה - ניהול",
+    "portal_dashboard": "לוח בקרה - פורטל",
+    "coming_soon_phase1a": "Phase 1A - בקרוב בשלבים הבאים",
+    "coming_soon_admin": "Phase 1A - תכונות ניהול בקרוב ב-Phase 1C",
+    "coming_soon_portal": "Phase 1A - תכונות פורטל בקרוב ב-Phase 1C"
+  },
   "error": {
     "network": "שגיאת רשת. אנא נסו שוב.",
     "invalid_input": "קלט לא חוקי",
