@@ -1,7 +1,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
-import { LoginFormSchema, type LoginForm } from '../../schemas';
+import { LoginFormSchema, type LoginForm as LoginFormData } from '../../schemas';
 import { AuthMessage } from './AuthMessage';
 
 /**
@@ -23,7 +23,7 @@ interface LoginFormProps {
     type: 'success' | 'error';
     text: string;
   } | null;
-  onSubmit: (data: LoginForm) => Promise<void>;
+  onSubmit: (formData: LoginFormData) => Promise<void>; // eslint-disable-line no-unused-vars
   onMessageDismiss?: () => void;
 }
 
@@ -38,7 +38,7 @@ export function LoginForm({
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<LoginForm>({
+  } = useForm<LoginFormData>({
     resolver: zodResolver(LoginFormSchema),
   });
 
@@ -46,9 +46,14 @@ export function LoginForm({
     <>
       {/* Message */}
       {message && (
-        <div onClick={onMessageDismiss}>
+        <button
+          type="button"
+          onClick={onMessageDismiss}
+          className="w-full text-left"
+          aria-label={t('common.dismiss_message')}
+        >
           <AuthMessage type={message.type} text={message.text} />
-        </div>
+        </button>
       )}
 
       {/* Form */}

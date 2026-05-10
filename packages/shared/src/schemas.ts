@@ -106,3 +106,108 @@ export const ContactPreferencesSchema = z.object({
 
 export type ContactPreferences = z.infer<typeof ContactPreferencesSchema>;
 
+// Family (group of related people)
+export const FamilySchema = z.object({
+  id: UUIDSchema,
+  tenant_id: UUIDSchema,
+  name: z.string().min(1, 'Family name required'),
+  contact_person_name: z.string().min(1, 'Contact person name required'),
+  contact_email: z.string().email('Invalid email'),
+  contact_phone: z.string().regex(
+    /^(050|051|052|053|054|055|056|058|059)\d{7}$/,
+    'Invalid Israeli phone format'
+  ),
+  created_at: z.string().datetime(),
+});
+
+export type Family = z.infer<typeof FamilySchema>;
+
+// Family member (relationship to family)
+export const FamilyMemberSchema = z.object({
+  id: UUIDSchema,
+  tenant_id: UUIDSchema,
+  family_id: UUIDSchema,
+  person_id: UUIDSchema,
+  user_profile_id: UUIDSchema.nullable(),
+  role: z.enum(['parent', 'guardian', 'sibling', 'adult_student']),
+  created_at: z.string().datetime(),
+});
+
+export type FamilyMember = z.infer<typeof FamilyMemberSchema>;
+
+// Term (semester/academic period)
+export const TermSchema = z.object({
+  id: UUIDSchema,
+  tenant_id: UUIDSchema,
+  name: z.string().min(1, 'Term name required'),
+  start_date: z.string().date('Invalid date format'),
+  end_date: z.string().date('Invalid date format'),
+  status: z.enum(['planning', 'active', 'completed']).default('planning'),
+  created_at: z.string().datetime(),
+}).refine((data) => new Date(data.end_date) > new Date(data.start_date), {
+  message: 'End date must be after start date',
+  path: ['end_date'],
+});
+
+export type Term = z.infer<typeof TermSchema>;
+
+// Level (e.g., Grade 1, Grade 2, Beginner, Advanced)
+export const LevelSchema = z.object({
+  id: UUIDSchema,
+  tenant_id: UUIDSchema,
+  name: z.string().min(1, 'Level name required'),
+  sort_order: z.number().int().nonnegative('Sort order must be >= 0'),
+  created_at: z.string().datetime(),
+});
+
+export type Level = z.infer<typeof LevelSchema>;
+
+// Class (a course offered in a term at a specific level)
+export const ClassSchema = z.object({
+  id: UUIDSchema,
+  tenant_id: UUIDSchema,
+  term_id: UUIDSchema,
+  level_id: UUIDSchema,
+  teacher_id: UUIDSchema.nullable().optional(),
+  name: z.string().min(1, 'Class name required'),
+  max_capacity: z.number().positive('Max capacity must be > 0'),
+  price_minor: z.number().positive('Price must be > 0'),
+  day_of_week: z.number().int().min(0).max(6),
+  start_time: z.string().regex(/^\d{2}:\d{2}$/, 'Invalid time format (HH:MM)'),
+  end_time: z.string().regex(/^\d{2}:\d{2}$/, 'Invalid time format (HH:MM)'),
+  status: z.enum(['active', 'cancelled']).default('active'),
+  created_at: z.string().datetime(),
+}).refine((data) => data.start_time < data.end_time, {
+  message: 'End time must be after start time',
+  path: ['end_time'],
+});
+
+export type Class = z.infer<typeof ClassSchema>;
+
+// Class requirement (age, prerequisite, approval, etc.)
+export const ClassRequirementSchema = z.object({
+  id: UUIDSchema,
+  tenant_id: UUIDSchema,
+  class_id: UUIDSchema,
+  requirement_type: z.enum(['min_age', 'prerequisite_class', 'admin_approval']),
+  value: z.string(),
+  display_text: z.string(),
+  is_hard_block: z.boolean().default(true),
+  created_at: z.string().datetime(),
+});
+
+export type ClassRequirement = z.infer<typeof ClassRequirementSchema>;
+
+// Enrolment (person enrolled in a class for a term)
+export const EnrolmentSchema = z.object({
+  id: UUIDSchema,
+  tenant_id: UUIDSchema,
+  person_id: UUIDSchema,
+  class_id: UUIDSchema,
+  term_id: UUIDSchema,
+  status: z.enum(['active', 'pending_payment', 'cancelled', 'withdrawn', 'waitlisted']).default('active'),
+  prior_experience: z.string().nullable().optional(),
+  created_at: z.string().datetime(),
+});
+
+export type Enrolment = z.infer<typeof EnrolmentSchema>;

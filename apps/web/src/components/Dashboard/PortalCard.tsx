@@ -1,3 +1,5 @@
+import React from 'react';
+
 /**
  * PortalCard: Reusable presentational component for dashboard cards
  * 
@@ -32,15 +34,28 @@ export function PortalCard({
     error: 'bg-red-50 border-red-300',
   };
 
+  const baseClasses = `border rounded-lg p-6 ${variantClasses[variant]} ${
+    onClick ? 'cursor-pointer hover:shadow-md transition-shadow' : ''
+  }`;
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className={`text-left block w-full ${baseClasses}`}
+        aria-label={title}
+      >
+        <h3 className="font-bold text-lg mb-1">{title}</h3>
+        {subtitle && <p className="text-sm text-gray-600 mb-4">{subtitle}</p>}
+        <div className="text-gray-900">{children}</div>
+      </button>
+    );
+  }
+
   return (
     <article
-      className={`border rounded-lg p-6 ${variantClasses[variant]} ${
-        onClick ? 'cursor-pointer hover:shadow-md transition-shadow' : ''
-      }`}
-      onClick={onClick}
-      role={onClick ? 'button' : 'article'}
-      tabIndex={onClick ? 0 : undefined}
-      onKeyDown={onClick ? (e) => e.key === 'Enter' && onClick() : undefined}
+      className={baseClasses}
     >
       <h3 className="font-bold text-lg mb-1">{title}</h3>
       {subtitle && <p className="text-sm text-gray-600 mb-4">{subtitle}</p>}

@@ -24,7 +24,7 @@ export interface LoginState {
 }
 
 export interface LoginActions {
-  onSubmit: (data: LoginForm) => Promise<void>;
+  onSubmit: (formData: LoginForm) => Promise<void>; // eslint-disable-line no-unused-vars
   resetMessage: () => void;
 }
 
@@ -33,13 +33,13 @@ export function useLogin(onSuccess?: () => void): LoginState & LoginActions {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<LoginState['message']>(null);
 
-  const onSubmit = async (data: LoginForm) => {
+  const onSubmit = async (formData: LoginForm) => {
     setIsLoading(true);
     setMessage(null);
 
     try {
       // Validate input with Zod schema
-      const validatedData = LoginFormSchema.parse(data);
+      const validatedData = LoginFormSchema.parse(formData);
 
       // Send magic link
       const { error } = await supabase.auth.signInWithOtp({

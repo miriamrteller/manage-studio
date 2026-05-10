@@ -12,7 +12,23 @@
     "error": "Error",
     "time": "Time",
     "capacity": "Capacity",
-    "enrol": "Enroll"
+    "enrol": "Enroll",
+    "next_step": "Next Step",
+    "prev_step": "Previous Step",
+    "submit_enrolment": "Submit Enrollment",
+    "dismiss_message": "Dismiss message",
+    "try_again": "Try Again",
+    "back_to_login": "Back to Login",
+    "contact_support": "If you need help, please contact support",
+    "daysOfWeek": {
+      "0": "Sunday",
+      "1": "Monday",
+      "2": "Tuesday",
+      "3": "Wednesday",
+      "4": "Thursday",
+      "5": "Friday",
+      "6": "Saturday"
+    }
   },
   "nav": {
     "classes": "Classes",
@@ -31,12 +47,65 @@
       "no_account": "Don't have an account?",
       "signup": "Sign up here"
     },
+    "authCallback": {
+      "loading": "Processing sign in...",
+      "redirecting": "Redirecting...",
+      "error": "Sign in error",
+      "session_failed": "Failed to create session",
+      "please_login": "Please return to login",
+      "back_to_login": "Back to login"
+    },
     "classes": {
       "title": "Available Classes",
       "subtitle": "Choose a class and enroll",
       "no_classes": "No classes available right now",
       "capacity": "Capacity",
       "enrol_now": "Enroll Now"
+    },
+    "admin": {
+      "title": "Admin",
+      "setup": {
+        "title": "System Setup",
+        "subtitle": "Configure initial terms and structure"
+      },
+      "people": {
+        "title": "People",
+        "subtitle": "Manage people in your school"
+      },
+      "families": {
+        "title": "Families",
+        "subtitle": "Manage families and members"
+      }
+    },
+    "portal": {
+      "title": "Parent Portal",
+      "enrolments": {
+        "title": "Enrollments",
+        "subtitle": "View and manage enrollments"
+      },
+      "payments": {
+        "title": "Payments",
+        "subtitle": "View payment history"
+      }
+    },
+    "enrol": {
+      "title": "Enroll in Class",
+      "step1": {
+        "title": "Step 1: Choose Class",
+        "description": "Select a class from the list"
+      },
+      "step2": {
+        "title": "Step 2: Choose Participant",
+        "description": "Select who will be enrolling"
+      },
+      "step3": {
+        "title": "Step 3: Check Requirements",
+        "description": "Verify all requirements are met"
+      },
+      "step4": {
+        "title": "Step 4: Confirm",
+        "description": "Confirm the details"
+      }
     },
     "admin_dashboard": "Admin Dashboard",
     "portal_dashboard": "Portal Dashboard",
@@ -48,7 +117,74 @@
     "email": "Email",
     "email_placeholder": "example@example.com",
     "password": "Password",
-    "email_required": "Email is required"
+    "email_required": "Email is required",
+    "person": {
+      "title": "Person Details",
+      "first_name": "First Name",
+      "last_name": "Last Name",
+      "birthdate": "Birth Date",
+      "is_minor": "Is Minor",
+      "email": "Email",
+      "phone": "Phone",
+      "first_name_required": "First name is required",
+      "last_name_required": "Last name is required",
+      "birthdate_required": "Birth date is required",
+      "valid_email": "Valid email is required",
+      "valid_phone": "Valid phone in format +972xxxxxxxxx is required"
+    },
+    "family": {
+      "title": "Family Details",
+      "name": "Family Name",
+      "contact_person_id": "Contact Person",
+      "name_required": "Family name is required",
+      "contact_person_required": "Contact person is required"
+    },
+    "term": {
+      "title": "Term",
+      "name": "Name",
+      "start_date": "Start Date",
+      "end_date": "End Date",
+      "is_active": "Active",
+      "name_required": "Name is required",
+      "start_date_required": "Start date is required",
+      "end_date_required": "End date is required",
+      "end_after_start": "End date must be after start date"
+    },
+    "level": {
+      "title": "Level",
+      "name": "Level Name",
+      "sort_order": "Sort Order",
+      "name_required": "Name is required",
+      "sort_order_required": "Sort order is required"
+    },
+    "class": {
+      "title": "Class",
+      "name": "Class Name",
+      "term_id": "Term",
+      "level_id": "Level",
+      "teacher_id": "Teacher",
+      "day_of_week": "Day of Week",
+      "start_time": "Start Time",
+      "end_time": "End Time",
+      "max_capacity": "Max Capacity",
+      "price_minor": "Price (ILS)",
+      "is_public": "Public",
+      "name_required": "Class name is required",
+      "term_required": "Term is required",
+      "level_required": "Level is required",
+      "day_required": "Day of week is required",
+      "start_time_required": "Start time is required",
+      "end_time_required": "End time is required",
+      "times_valid": "End time must be after start time",
+      "capacity_positive": "Capacity must be positive",
+      "price_positive": "Price must be positive",
+      "no_teacher": "(TBD)"
+    },
+    "contact_preferences": {
+      "title": "Contact Preferences",
+      "email_opted_in": "Receive Email",
+      "whatsapp_opted_in": "Receive WhatsApp"
+    }
   },
   "footer": {
     "school_management": "School Management System",
@@ -60,13 +196,41 @@
     "terms": "Terms & Conditions",
     "all_rights": "All rights reserved."
   },
+  "auth": {
+    "signing_you_in": "Signing you in",
+    "setting_up_access": "Setting up access..."
+  },
   "error": {
     "network": "Network error. Please try again.",
     "invalid_input": "Invalid input",
     "not_found": "Not found",
     "login_failed": "Login failed. Please try again.",
     "unexpected": "An unexpected error occurred. Please try again later.",
-    "fetch_classes": "Error loading classes"
+    "fetch_classes": "Error loading classes",
+    "invalid_callback": "Invalid sign-in link",
+    "session_exchange_failed": "Failed to exchange session",
+    "session_setup_failed": "Failed to set up session",
+    "user_not_found": "User not found",
+    "requirement_not_met": "Requirement not met",
+    "min_age_required": "Minimum age required: {{minAge}} years",
+    "prerequisite_required": "Prerequisite class required",
+    "approval_required": "Admin approval required",
+    "person_not_found": "Person not found",
+    "class_not_found": "Class not found",
+    "already_enrolled": "Already enrolled in this class"
+  },
+  "success": {
+    "person_created": "Person created successfully",
+    "person_updated": "Person updated successfully",
+    "family_created": "Family created successfully",
+    "family_updated": "Family updated successfully",
+    "class_created": "Class created successfully",
+    "class_updated": "Class updated successfully",
+    "enrolment_submitted": "Enrollment submitted successfully",
+    "enrolment_confirmed": "Enrollment confirmed",
+    "term_created": "Term created successfully",
+    "level_created": "Level created successfully",
+    "sessions_generated": "Sessions generated successfully"
   },
   "billing": {
     "monthly": "per month",

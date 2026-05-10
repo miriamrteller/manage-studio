@@ -1,3 +1,5 @@
+import React from 'react';
+
 /**
  * Button: Reusable button component with consistent styling
  * 

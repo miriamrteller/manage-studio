@@ -1,3 +1,5 @@
+import React from 'react';
+
 /**
  * Card: Reusable container component for content grouping
  * 

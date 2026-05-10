@@ -12,7 +12,23 @@
     "error": "שגיאה",
     "time": "זמן",
     "capacity": "קיבולת",
-    "enrol": "הרשמה"
+    "enrol": "הרשמה",
+    "next_step": "הצעד הבא",
+    "prev_step": "הצעד הקודם",
+    "submit_enrolment": "שלחו הרשמה",
+    "dismiss_message": "סגור הודעה",
+    "try_again": "נסו שוב",
+    "back_to_login": "חזרו להתחברות",
+    "contact_support": "אם אתם צריכים עזרה, יצרו קשר עם התמיכה",
+    "daysOfWeek": {
+      "0": "ראשון",
+      "1": "שני",
+      "2": "שלישי",
+      "3": "רביעי",
+      "4": "חמישי",
+      "5": "שישי",
+      "6": "שבת"
+    }
   },
   "nav": {
     "classes": "שיעורים",
@@ -31,12 +47,65 @@
       "no_account": "אין לכם חשבון?",
       "signup": "הרשמו כאן"
     },
+    "authCallback": {
+      "loading": "מעבדים התחברות...",
+      "redirecting": "מעביר...",
+      "error": "שגיאה בהתחברות",
+      "session_failed": "נכשל יצירת הפעלה",
+      "please_login": "אנא חזרו להתחברות",
+      "back_to_login": "חזרו להתחברות"
+    },
     "classes": {
       "title": "שיעורים זמינים",
       "subtitle": "בחרו שיעור והרשמו לכיתה",
       "no_classes": "אין שיעורים זמינים כרגע",
       "capacity": "קיבולת",
       "enrol_now": "הרשמו עכשיו"
+    },
+    "admin": {
+      "title": "ניהול",
+      "setup": {
+        "title": "הגדרת מערכת",
+        "subtitle": "הגדרו את תנאי ההשקעה הראשוניים"
+      },
+      "people": {
+        "title": "אנשים",
+        "subtitle": "נהלו אנשים בתיקייה"
+      },
+      "families": {
+        "title": "משפחות",
+        "subtitle": "נהלו משפחות וחברים"
+      }
+    },
+    "portal": {
+      "title": "פורטל הורים",
+      "enrolments": {
+        "title": "הרשמות",
+        "subtitle": "ראו ונהלו הרשמות"
+      },
+      "payments": {
+        "title": "תשלומים",
+        "subtitle": "ראו היסטוריית תשלומים"
+      }
+    },
+    "enrol": {
+      "title": "הרשמה לשיעור",
+      "step1": {
+        "title": "שלב 1: בחרו שיעור",
+        "description": "בחרו שיעור מהרשימה"
+      },
+      "step2": {
+        "title": "שלב 2: בחרו משתתף",
+        "description": "בחרו מי יהיה משתתף בשיעור"
+      },
+      "step3": {
+        "title": "שלב 3: בדקו דרישות",
+        "description": "וודאו שהכל תואם דרישות"
+      },
+      "step4": {
+        "title": "שלב 4: אישרו",
+        "description": "אישרו את הפרטים"
+      }
     },
     "admin_dashboard": "לוח בקרה - ניהול",
     "portal_dashboard": "לוח בקרה - פורטל",
@@ -48,7 +117,74 @@
     "email": "דוא\"ל",
     "email_placeholder": "example@example.com",
     "password": "סיסמה",
-    "email_required": "דוא\"ל נדרש"
+    "email_required": "דוא\"ל נדרש",
+    "person": {
+      "title": "פרטי אדם",
+      "first_name": "שם פרטי",
+      "last_name": "שם משפחה",
+      "birthdate": "תאריך לידה",
+      "is_minor": "בן/בת קטין/ה",
+      "email": "דוא\"ל",
+      "phone": "טלפון",
+      "first_name_required": "שם פרטי נדרש",
+      "last_name_required": "שם משפחה נדרש",
+      "birthdate_required": "תאריך לידה נדרש",
+      "valid_email": "דוא\"ל חוקי נדרש",
+      "valid_phone": "טלפון חוקי בפורמט +972xxxxxxxxx נדרש"
+    },
+    "family": {
+      "title": "פרטי משפחה",
+      "name": "שם משפחה",
+      "contact_person_id": "איש קשר",
+      "name_required": "שם משפחה נדרש",
+      "contact_person_required": "איש קשר נדרש"
+    },
+    "term": {
+      "title": "שם תקופה",
+      "name": "שם",
+      "start_date": "תאריך התחלה",
+      "end_date": "תאריך סיום",
+      "is_active": "פעיל",
+      "name_required": "שם נדרש",
+      "start_date_required": "תאריך התחלה נדרש",
+      "end_date_required": "תאריך סיום נדרש",
+      "end_after_start": "תאריך הסיום חייב להיות אחרי התחלה"
+    },
+    "level": {
+      "title": "רמה",
+      "name": "שם רמה",
+      "sort_order": "סדר מיון",
+      "name_required": "שם נדרש",
+      "sort_order_required": "סדר מיון נדרש"
+    },
+    "class": {
+      "title": "שיעור",
+      "name": "שם שיעור",
+      "term_id": "תקופה",
+      "level_id": "רמה",
+      "teacher_id": "מורה",
+      "day_of_week": "יום בשבוע",
+      "start_time": "שעת התחלה",
+      "end_time": "שעת סיום",
+      "max_capacity": "קיבולת מקסימלית",
+      "price_minor": "מחיר (שקל)",
+      "is_public": "ציבורי",
+      "name_required": "שם שיעור נדרש",
+      "term_required": "תקופה נדרשת",
+      "level_required": "רמה נדרשת",
+      "day_required": "יום בשבוע נדרש",
+      "start_time_required": "שעת התחלה נדרשת",
+      "end_time_required": "שעת סיום נדרשת",
+      "times_valid": "שעת הסיום חייבת להיות אחרי שעת ההתחלה",
+      "capacity_positive": "קיבולת חייבת להיות חיובית",
+      "price_positive": "מחיר חייב להיות חיובי",
+      "no_teacher": "(כמתלכד)"
+    },
+    "contact_preferences": {
+      "title": "העדפות קשר",
+      "email_opted_in": "קבלו דוא\"ל",
+      "whatsapp_opted_in": "קבלו WhatsApp"
+    }
   },
   "footer": {
     "school_management": "מערכת ניהול בית ספר להנדסה",
@@ -60,13 +196,41 @@
     "terms": "תנאים וההגבלות",
     "all_rights": "כל הזכויות שמורות."
   },
+  "auth": {
+    "signing_you_in": "מחברים אתכם",
+    "setting_up_access": "מכינים גישה..."
+  },
   "error": {
     "network": "שגיאת רשת. אנא נסו שוב.",
     "invalid_input": "קלט לא חוקי",
     "not_found": "לא נמצא",
     "login_failed": "ההתחברות נכשלה. אנא נסו שוב.",
     "unexpected": "שגיאה בלתי צפויה. אנא נסו שוב מאוחר יותר.",
-    "fetch_classes": "שגיאה בטעינת השיעורים"
+    "fetch_classes": "שגיאה בטעינת השיעורים",
+    "invalid_callback": "קישור התחברות לא חוקי",
+    "session_exchange_failed": "שגיאה בחילוף ההפעלה",
+    "session_setup_failed": "שגיאה בהגדרת ההפעלה",
+    "user_not_found": "משתמש לא נמצא",
+    "requirement_not_met": "דרישה לא בתוקף",
+    "min_age_required": "גיל מינימלי נדרש: {{minAge}} שנים",
+    "prerequisite_required": "שיעור קדם נדרש",
+    "approval_required": "אישור מנהל נדרש",
+    "person_not_found": "אדם לא נמצא",
+    "class_not_found": "שיעור לא נמצא",
+    "already_enrolled": "כבר נרשמו לשיעור זה"
+  },
+  "success": {
+    "person_created": "אדם יצור בהצלחה",
+    "person_updated": "אדם עודכן בהצלחה",
+    "family_created": "משפחה יצורה בהצלחה",
+    "family_updated": "משפחה עודכנה בהצלחה",
+    "class_created": "שיעור יצור בהצלחה",
+    "class_updated": "שיעור עודכן בהצלחה",
+    "enrolment_submitted": "הרשמה הוגשה בהצלחה",
+    "enrolment_confirmed": "הרשמה אושרה",
+    "term_created": "תקופה יצורה בהצלחה",
+    "level_created": "רמה יצורה בהצלחה",
+    "sessions_generated": "הפעלות יוצרו בהצלחה"
   },
   "billing": {
     "monthly": "לחודש",

@@ -1,3 +1,5 @@
+import React from 'react';
+
 /**
  * FormField: Reusable wrapper for form inputs with label and error display
  * 
