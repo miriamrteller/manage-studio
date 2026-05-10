@@ -85,6 +85,17 @@ Each school configures their own Twilio, Resend, and Stripe keys. You store them
 **1.11 Accessibility is mandatory, not optional.**
 WCAG 2.1 Level AA is a legal requirement for Israeli community centers (דינ נגישות לאנשים עם מוגבלות, 1998). All UI features must pass automated axe-core tests before merge. Manual NVDA Hebrew smoke tests verify 15 minutes pre-deployment. Accessibility is part of the Definition of Done for every feature.
 
+**1.12 Tenant branding and configuration are separate from code.**
+Each tenant has configurable properties: `locale`, `dir` (rtl/ltr), `currency`, `vat_rate`, and future fields like `primary_color`, `logo_url`. 
+- **Never hardcode tenant-specific values** in components (no `text-[#76335a]`, no `'he-IL'` strings).
+- **Always use CSS variables and configuration hooks** (`useTenant()` for locale/dir, CSS variables for colors/fonts).
+- Define colors in `:root` CSS variables and Tailwind `theme.extend.colors` → all components use `text-primary`, `text-accent`.
+- Define locale/direction in `useTenant()` hook → Phase 1A returns defaults, Phase 1B fetches from tenant row in DB.
+- Define page titles and branding text in i18n translation files (`he.json`, `en.json`) → no hardcoding in HTML or components.
+- **Rationale:** Enables white-labeling (V3), per-tenant customization without code changes, and clean tenant isolation.
+- **Pattern:** Move hardcoded values to config → 1) update CSS variables for colors/fonts, 2) update schemas for tenant fields, 3) update components to reference config, not hardcodes.
+- **Example:** Change `<h1 className="text-[#76335a]">` to `<h1 className="text-primary">` → uses CSS variable.
+
 ---
 
 ## 2. Technology Stack
@@ -2392,6 +2403,83 @@ test.describe("ARIA Patterns", () => {
     }
   });
 });
+
+### 11.4 Advanced Reliability Gates (Required for V1/V2)
+
+#### **A. Multi-Tenant Security (RLS) Tests**
+Ensure no data "leaks" between different schools (tenants).
+- **Tool:** Vitest + Supabase Service Role (for setup) + Anon Client (for testing).
+- **Requirement:** Create two test tenants. Authenticate as Tenant A. Attempt to `SELECT`, `UPDATE`, and `DELETE` from Tenant B’s `people` and `payments` tables.
+- **Pass Criteria:** Every cross-tenant attempt must return an empty set or a `403 Forbidden` error.
+Verify that Row Level Security (RLS) prevents cross-tenant data leaks.
+```typescript
+// test/security/rls_leak.test.ts
+test('Tenant A cannot access Tenant B student data', async () => {
+  const { data, error } = await supabaseTenantA
+    .from('people')
+    .select('*')
+    .eq('tenant_id', tenantB_ID);
+    
+  expect(data).toHaveLength(0);
+  expect(error).toBeDefined(); // Should return 403 or empty depending on policy
+});
+
+#### **B. Payment Idempotency & Webhook Resilience**
+Prevent double-charging or duplicate invoicing during network instability.
+- **Tool:** Playwright API testing.
+- **Requirement:** Mock a Stripe `invoice.paid` event. Send the identical payload to the `/api/webhooks/stripe` endpoint twice in rapid succession.
+- **Pass Criteria:** The `payments` table must contain exactly one record, and the `invoice_sequence` must increment exactly once.
+// test/integration/webhooks.test.ts
+test('Stripe webhook is idempotent', async () => {
+  const payload = mockStripeEvent('invoice.paid', { amount: 5000 });
+  const headers = { 'stripe-signature': 'valid_sig' };
+
+  // Send twice
+  await request(app).post('/api/webhooks/stripe').set(headers).send(payload);
+  const res = await request(app).post('/api/webhooks/stripe').set(headers).send(payload);
+
+  expect(res.status).toBe(200);
+  const payments = await db.from('payments').select('*').eq('stripe_id', payload.id);
+  expect(payments).toHaveLength(1); // Crucial: must only be 1
+});
+
+#### **C. AI Module "Golden Prompt" Evaluations (Evals)**
+Verify the AI doesn't hallucinate syllabus rules or enrollment eligibility.
+- **Tool:** Custom script (or Promptfoo) using `test_cases.json`.
+- **Requirement:** Run 10 "Golden Prompts" (e.g., "Student age 5, class min_age 7, can they enroll?").
+- **Pass Criteria:** AI output must match the expected `eligibility: false` logic 100% of the time. This test must run whenever the System Prompt or Model version changes.
+// test/ai/syllabus_eval.test.ts
+const goldenPrompts = [
+  { input: "Enroll student age 5 in Grade 2 (min_age 7)", expected: "INELIGIBLE_AGE" }
+];
+
+test.each(goldenPrompts)('AI Eligibility logic: %s', async ({ input, expected }) => {
+  const result = await aiAgent.evaluateEnrollment(input);
+  expect(result.code).toBe(expected);
+});
+
+#### **D. Legal Privacy & Anonymisation Audit**
+Verify that "Right to be Forgotten" logic works without breaking accounting history.
+- **Tool:** Unit test.
+- **Requirement:** Trigger the `anonymise_student` function.
+- **Pass Criteria:** 1. `people.full_name` and `people.contact_info` must be replaced with "DELETED_USER".
+  2. `payments.amount` and `payments.created_at` must remain unchanged.
+  3. The record's `anonymised_at` timestamp must be present.
+  // test/legal/privacy.test.ts
+test('Anonymization destroys PII but keeps financial data', async () => {
+  const person = await db.from('people').select('*').single();
+  await anonymiseUser(person.id);
+
+  const updated = await db.from('people').select('*').eq('id', person.id).single();
+  expect(updated.full_name).toBe('DELETED_USER');
+  expect(updated.email).toBeNull();
+  
+  const paymentCount = await db.from('payments').select('count').eq('person_id', person.id);
+  expect(paymentCount).toBeGreaterThan(0); // Accounting trail must remain
+});
+
+#### **E. Data Residency Guardrail (UK Launch Only)**
+- **Requirement:** A CI check to ensure that when `process.env.REGION === 'UK'`, the `SUPABASE_URL` points specifically to the `eu-west-2` (London) instance.
 
 /**
  * Phase 1C Acceptance Criteria: Accessibility
