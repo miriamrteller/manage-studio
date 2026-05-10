@@ -16,7 +16,8 @@
   textarea:focus-visible,
   select:focus-visible,
   a:focus-visible {
-    @apply outline-2 outline-offset-2 outline-[#76335a];
+    @apply outline-2 outline-offset-2;
+    outline-color: var(--primary);
   }
 }
 

@@ -1,25 +1,27 @@
 /// <reference types="vite/client" />
 import { useMemo } from 'react'
+import type { Tenant } from '@shared/schemas'
 
-interface Tenant {
-  subdomain: string
-  id: string
-  name: string
-  dir: 'rtl' | 'ltr'
-  locale: string
-}
-
+/**
+ * Resolve tenant from environment (dev) or subdomain (prod)
+ * 
+ * Phase 1A: Returns defaults. Phase 1B will fetch from Supabase auth context.
+ * Tenant config (locale, dir, colors, fonts) comes from tenant row in DB.
+ * CSS variables and i18n directory are controlled by this hook's return values.
+ */
 export function useTenant(): Tenant | null {
   return useMemo(() => {
     // Development: use VITE_DEV_TENANT_SUBDOMAIN from .env.local
     const devSubdomain = import.meta.env.VITE_DEV_TENANT_SUBDOMAIN as string | undefined
     if (devSubdomain) {
       return {
+        id: `tenant-${devSubdomain}` as unknown as string, // Phase 1B: UUID from Supabase
         subdomain: devSubdomain,
-        id: `tenant-${devSubdomain}`,
         name: 'Ballet School',
-        dir: 'rtl',
-        locale: 'he-IL',
+        locale: 'he-IL',    // Phase 1B: from tenant.locale in DB
+        dir: 'rtl',         // Phase 1B: from tenant.dir in DB
+        currency: 'ILS',
+        vat_rate: 0.17,
       }
     }
 
@@ -32,11 +34,13 @@ export function useTenant(): Tenant | null {
       if (parts.length > 1) {
         const subdomain = parts[0]
         return {
+          id: `tenant-${subdomain}` as unknown as string, // Phase 1B: UUID from Supabase
           subdomain,
-          id: `tenant-${subdomain}`,
           name: subdomain.replace(/-/g, ' '),
-          dir: 'rtl',
-          locale: 'he-IL',
+          locale: 'he-IL',    // Phase 1B: from tenant.locale in DB
+          dir: 'rtl',         // Phase 1B: from tenant.dir in DB
+          currency: 'ILS',
+          vat_rate: 0.17,
         }
       }
     }
