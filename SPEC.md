@@ -1,4 +1,5 @@
 # Ballet School Management System
+
 ## Complete Implementation Blueprint — v2.0
 
 > **Architectural priority order:** Reliability → Scalability → Correctness → Readability → AI integration
@@ -74,78 +75,84 @@ WCAG 2.1 Level AA is a legal requirement for Israeli community centers (דינ �
 
 ### 2.1 Core
 
-| Layer | Choice | Reason |
-|---|---|---|
-| Frontend | React 18 + TypeScript 5 | Core expertise; maximum leverage |
-| Build | Vite 5 | Fast HMR, Vitest co-location |
-| Routing | React Router v6 (data router) | Loader/action pattern fits multi-role app |
-| Server state | TanStack Query v5 | Best-in-class cache invalidation |
-| Forms | React Hook Form + Zod | Type-safe, minimal re-renders |
-| UI components | shadcn/ui (Radix primitives) | Accessible, owned not depended on |
-| Styling | Tailwind CSS v3 | RTL logical properties support; pairs with shadcn |
-| RTL support | `tailwindcss-rtl` plugin | Adds `ms-`, `me-`, `ps-`, `pe-` logical utilities |
-| Backend | Supabase | Postgres + Auth + RLS + Edge Functions + Storage + Realtime |
-| Payments | Stripe | Subscriptions, intents, webhooks, Connect |
-| Email | Resend + React Email | Typed templates, per-tenant API keys |
-| WhatsApp + Voice | Twilio | Only provider with reliable WhatsApp Business API in Israel |
-| AI | Anthropic Claude API | `claude-sonnet-4-6` for chatbot and communication drafting |
-| **Accessibility (WCAG 2.1 AA)** | **ESLint jsx-a11y** | **Write-time linting for semantic HTML, ARIA, keyboard nav** |
-| | **axe-core** | **Merge-time hard gate: zero violations on all UI features** |
-| | **Playwright a11y tests** | **E2E verification: heading structure, focus traps, contrast, RTL** |
-| | **NVDA Hebrew** | **Ship-time manual: Israeli screen reader smoke test (15 min)** |
+| Layer                           | Choice                        | Reason                                                              |
+| ------------------------------- | ----------------------------- | ------------------------------------------------------------------- |
+| Frontend                        | React 18 + TypeScript 5       | Core expertise; maximum leverage                                    |
+| Build                           | Vite 5                        | Fast HMR, Vitest co-location                                        |
+| Routing                         | React Router v6 (data router) | Loader/action pattern fits multi-role app                           |
+| Server state                    | TanStack Query v5             | Best-in-class cache invalidation                                    |
+| Forms                           | React Hook Form + Zod         | Type-safe, minimal re-renders                                       |
+| UI components                   | shadcn/ui (Radix primitives)  | Accessible, owned not depended on                                   |
+| Styling                         | Tailwind CSS v3               | RTL logical properties support; pairs with shadcn                   |
+| RTL support                     | `tailwindcss-rtl` plugin      | Adds `ms-`, `me-`, `ps-`, `pe-` logical utilities                   |
+| Backend                         | Supabase                      | Postgres + Auth + RLS + Edge Functions + Storage + Realtime         |
+| Payments                        | Stripe                        | Subscriptions, intents, webhooks, Connect                           |
+| Email                           | Resend + React Email          | Typed templates, per-tenant API keys                                |
+| WhatsApp + Voice                | Twilio                        | Only provider with reliable WhatsApp Business API in Israel         |
+| AI                              | Anthropic Claude API          | `claude-sonnet-4-6` for chatbot and communication drafting          |
+| **Accessibility (WCAG 2.1 AA)** | **ESLint jsx-a11y**           | **Write-time linting for semantic HTML, ARIA, keyboard nav**        |
+|                                 | **axe-core**                  | **Merge-time hard gate: zero violations on all UI features**        |
+|                                 | **Playwright a11y tests**     | **E2E verification: heading structure, focus traps, contrast, RTL** |
+|                                 | **NVDA Hebrew**               | **Ship-time manual: Israeli screen reader smoke test (15 min)**     |
 
 ### 2.2 Supporting libraries
 
-| Library | Purpose |
-|---|---|
-| Zod | Runtime validation of all external data |
-| date-fns | Date manipulation with locale support |
-| FullCalendar + `@fullcalendar/core/locales/he` | Schedule views with Hebrew locale |
-| Recharts | Finance dashboard charts |
-| Lucide React | Icon set |
-| clsx + tailwind-merge | Conditional class composition |
-| i18next + react-i18next | Internationalisation (Hebrew primary, English secondary) |
+| Library                                        | Purpose                                                  |
+| ---------------------------------------------- | -------------------------------------------------------- |
+| Zod                                            | Runtime validation of all external data                  |
+| date-fns                                       | Date manipulation with locale support                    |
+| FullCalendar + `@fullcalendar/core/locales/he` | Schedule views with Hebrew locale                        |
+| Recharts                                       | Finance dashboard charts                                 |
+| Lucide React                                   | Icon set                                                 |
+| clsx + tailwind-merge                          | Conditional class composition                            |
+| i18next + react-i18next                        | Internationalisation (Hebrew primary, English secondary) |
 
 ### 2.3 Infrastructure (per tenant — pass-through model)
 
-| Service | Who pays | How configured |
-|---|---|---|
-| Vercel | Platform owner | Central; serves all tenants via wildcard subdomain |
-| Supabase Cloud | Platform owner | Central database; tenant isolation via RLS |
-| Stripe | Each tenant | Their own Stripe account key stored encrypted |
-| Resend | Each tenant | Their own API key stored encrypted |
-| Twilio | Each tenant | Their own account SID + auth token stored encrypted |
+| Service        | Who pays       | How configured                                      |
+| -------------- | -------------- | --------------------------------------------------- |
+| Vercel         | Platform owner | Central; serves all tenants via wildcard subdomain  |
+| Supabase Cloud | Platform owner | Central database; tenant isolation via RLS          |
+| Stripe         | Each tenant    | Their own Stripe account key stored encrypted       |
+| Resend         | Each tenant    | Their own API key stored encrypted                  |
+| Twilio         | Each tenant    | Their own account SID + auth token stored encrypted |
 
 **Rationale for pass-through:** Each school pays their own Twilio/Resend costs directly. You have zero margin risk, zero billing complexity, and zero liability for their communication failures. Move to an aggregated model in V4 once you understand usage patterns.
 
 ### 2.4 Deliberately excluded
 
-| Excluded | Why |
-|---|---|
-| Custom Express/Node server | Supabase Edge Functions cover all backend needs |
-| Redux / Zustand | TanStack Query handles server state; React built-ins for UI state |
-| SMS | WhatsApp covers the Israeli market; SMS adds cost and a third provider for no benefit |
-| Docker | Not needed; Vercel + Supabase handle deployment |
+| Excluded                   | Why                                                                                   |
+| -------------------------- | ------------------------------------------------------------------------------------- |
+| Custom Express/Node server | Supabase Edge Functions cover all backend needs                                       |
+| Redux / Zustand            | TanStack Query handles server state; React built-ins for UI state                     |
+| SMS                        | WhatsApp covers the Israeli market; SMS adds cost and a third provider for no benefit |
+| Docker                     | Not needed; Vercel + Supabase handle deployment                                       |
 
 ### 2.5 Data and calculation strategy
 
 **VAT Rounding (Issue #12 decision)** — Use banker's rounding (round half to even, ISO 80000-1 standard):
+
 ```typescript
 // src/lib/format.ts
-export function calculateVat(totalMinor: number, vatRate: number): {
+export function calculateVat(
+  totalMinor: number,
+  vatRate: number,
+): {
   pretax: number;
   vat: number;
   total: number;
 } {
   // Banker's rounding: Math.round uses round-half-away-from-zero; use banker's rounding for VAT
   const pretaxExact = totalMinor / (1 + vatRate);
-  const pretax = Math.round(pretaxExact * 2) / 2; // Round to nearest 0.5
-  const vat = totalMinor - pretax;
-  
+  const pretax = Math.round(pretaxExact); // Round to nearest whole agora
+  const vat = totalMinor - pretax; // VAT is the remainder — always sums cleanly
+
   return { pretax, vat, total: totalMinor };
 }
 ```
+
 Israeli VAT calculations are often done on net amount, then add VAT. This ensures:
+
 - No negative VAT amounts
 - Matches accountant expectations (Israeli accounting norms use banker's rounding)
 - Minimal rounding errors across large invoice volumes
@@ -181,19 +188,21 @@ Israeli VAT calculations are often done on net amount, then add VAT. This ensure
 
 ```typescript
 // e2e/accessibility-compliance.spec.ts — Full test suite included in Phase 1 checklist
-import { test, expect } from '@playwright/test';
-import { injectAxe, checkA11y } from 'axe-playwright';
+import { test, expect } from "@playwright/test";
+import { injectAxe, checkA11y } from "axe-playwright";
 
-test('heading structure is valid', async ({ page }) => {
-  await page.goto('/');
+test("heading structure is valid", async ({ page }) => {
+  await page.goto("/");
   await injectAxe(page);
   await checkA11y(page);
-  
+
   // Verify no level skips
-  const headings = await page.locator('h1, h2, h3, h4, h5, h6').all();
+  const headings = await page.locator("h1, h2, h3, h4, h5, h6").all();
   for (let i = 1; i < headings.length; i++) {
-    const current = await headings[i].evaluate(el => parseInt(el.tagName[1]));
-    const previous = await headings[i-1].evaluate(el => parseInt(el.tagName[1]));
+    const current = await headings[i].evaluate((el) => parseInt(el.tagName[1]));
+    const previous = await headings[i - 1].evaluate((el) =>
+      parseInt(el.tagName[1]),
+    );
     expect(current - previous).toBeLessThanOrEqual(1);
   }
 });
@@ -202,6 +211,7 @@ test('heading structure is valid', async ({ page }) => {
 ```
 
 **Tools & libraries:**
+
 - `eslint-plugin-jsx-a11y`: Static analysis (write-time)
 - `@axe-core/react` + `axe-playwright`: Automated testing (merge-time)
 - `NVDA` (screen reader): Manual verification (ship-time, Israeli language)
@@ -304,15 +314,15 @@ src/
 
 ```html
 <!-- index.html — direction set from tenant config after load -->
-<html lang="he" dir="rtl">
+<html lang="he" dir="rtl"></html>
 ```
 
 ```typescript
 // src/main.tsx — apply tenant direction before render
 async function initApp() {
   const tenant = await resolveTenant();
-  document.documentElement.dir = tenant?.dir ?? 'rtl';
-  document.documentElement.lang = tenant?.locale?.split('-')[0] ?? 'he';
+  document.documentElement.dir = tenant?.dir ?? "rtl";
+  document.documentElement.lang = tenant?.locale?.split("-")[0] ?? "he";
   // Then render React app
 }
 ```
@@ -321,11 +331,11 @@ async function initApp() {
 // src/lib/format.ts — always use these, never inline Intl calls
 export function formatCurrency(
   amountMinor: number,
-  currency = 'ILS',
-  locale = 'he-IL'
+  currency = "ILS",
+  locale = "he-IL",
 ): string {
   return new Intl.NumberFormat(locale, {
-    style: 'currency',
+    style: "currency",
     currency,
     minimumFractionDigits: 0,
   }).format(amountMinor / 100);
@@ -333,20 +343,22 @@ export function formatCurrency(
 
 export function formatDate(
   date: Date | string,
-  locale = 'he-IL',
-  options?: Intl.DateTimeFormatOptions
+  locale = "he-IL",
+  options?: Intl.DateTimeFormatOptions,
 ): string {
   return new Intl.DateTimeFormat(locale, {
-    day: 'numeric', month: 'long', year: 'numeric',
+    day: "numeric",
+    month: "long",
+    year: "numeric",
     ...options,
   }).format(new Date(date));
 }
 
 export function formatPhone(phone: string): string {
   // Israeli phone normalisation: ensure +972 prefix
-  const digits = phone.replace(/\D/g, '');
-  if (digits.startsWith('972')) return `+${digits}`;
-  if (digits.startsWith('0')) return `+972${digits.slice(1)}`;
+  const digits = phone.replace(/\D/g, "");
+  if (digits.startsWith("972")) return `+${digits}`;
+  if (digits.startsWith("0")) return `+972${digits.slice(1)}`;
   return `+972${digits}`;
 }
 ```
@@ -655,14 +667,14 @@ CREATE TABLE class_requirements (
 
 export type RequirementCheckResult = {
   passed: boolean;
-  blocked: boolean;     // hard block: cannot enrol
-  flagged: boolean;     // soft flag: admin must review
-  messages: string[];   // display to parent
+  blocked: boolean; // hard block: cannot enrol
+  flagged: boolean; // soft flag: admin must review
+  messages: string[]; // display to parent
 };
 
 export function checkClassRequirements(
   requirements: ClassRequirement[],
-  person: Person
+  person: Person,
 ): RequirementCheckResult {
   const messages: string[] = [];
   let blocked = false;
@@ -682,19 +694,19 @@ export function checkClassRequirements(
 
 function evaluateRequirement(req: ClassRequirement, person: Person): boolean {
   switch (req.requirement_type) {
-    case 'min_age': {
+    case "min_age": {
       if (!person.date_of_birth) return false;
       const age = getAgeInYears(person.date_of_birth);
       return age >= parseInt(req.value);
     }
-    case 'max_age': {
+    case "max_age": {
       if (!person.date_of_birth) return true; // benefit of doubt for adults
       const age = getAgeInYears(person.date_of_birth);
       return age <= parseInt(req.value);
     }
-    case 'admin_approval':
+    case "admin_approval":
       return false; // always flags — admin must manually approve
-    case 'equipment_required':
+    case "equipment_required":
       return true; // informational only — no automatic block
     default:
       return true;
@@ -1024,28 +1036,28 @@ CREATE TABLE tenant_notification_templates (
                         CHECK (channel IN ('email','whatsapp','voice')),
   template_name         TEXT        NOT NULL,
   -- Examples: 'class_cancellation', 'payment_reminder', 'welcome', 'waiting_list_offer'
-  
+
   -- For WhatsApp/Voice: Twilio Content SID (approved template ID from Meta)
   twilio_content_sid    TEXT,
-  
+
   -- For Email: React Email component name or Resend template ID
   email_template_id     TEXT,
-  
+
   -- For Voice: Twilio Studio flow SID or script text
   voice_script_sid      TEXT,
-  
+
   -- Template version: increment when resubmitting to Meta for approval
   version               INT         NOT NULL DEFAULT 1,
-  
+
   -- Approval status
   status                TEXT        NOT NULL DEFAULT 'pending'
                         CHECK (status IN ('pending','approved','rejected')),
   approval_date         TIMESTAMPTZ,
   approval_notes        TEXT,
-  
+
   created_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
-  
+
   UNIQUE (tenant_id, channel, template_name)
 );
 
@@ -1068,7 +1080,7 @@ CREATE TABLE expense_categories (
   is_active       BOOLEAN     NOT NULL DEFAULT true,
   sort_order      INT         NOT NULL DEFAULT 0,
   created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-  
+
   UNIQUE (tenant_id, name)
 );
 
@@ -1089,38 +1101,38 @@ CREATE INDEX idx_categories_tenant ON expense_categories(tenant_id);
 CREATE TABLE notification_queue (
   id                UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id         UUID        NOT NULL REFERENCES tenants(id),
-  
+
   -- Recipient
   recipient_person_id        UUID REFERENCES people(id),
   recipient_family_member_id UUID REFERENCES family_members(id),
   recipient_email   TEXT,
   recipient_phone   TEXT,
-  
+
   -- What to send
   channel           TEXT        NOT NULL
                     CHECK (channel IN ('email','whatsapp','voice')),
   template_name     TEXT        NOT NULL,
   template_variables JSONB,
-  
+
   -- Retry logic
   attempt_count     INT         NOT NULL DEFAULT 0,
   max_attempts      INT         NOT NULL DEFAULT 3,
   next_retry_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
   last_error        TEXT,
-  
+
   -- Status tracking
   status            TEXT        NOT NULL DEFAULT 'pending'
                     CHECK (status IN ('pending','queued','sent','delivered','failed','abandoned')),
   sent_at           TIMESTAMPTZ,
   delivered_at      TIMESTAMPTZ,
   failed_at         TIMESTAMPTZ,
-  
+
   created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX idx_queue_tenant_status ON notification_queue(tenant_id, status);
-CREATE INDEX idx_queue_retry ON notification_queue(status, next_retry_at) 
+CREATE INDEX idx_queue_retry ON notification_queue(status, next_retry_at)
   WHERE status IN ('pending','queued');
 ```
 
@@ -1134,28 +1146,28 @@ CREATE TABLE ai_log (
   id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id     UUID        NOT NULL REFERENCES tenants(id),
   user_id       UUID        REFERENCES user_profiles(id),
-  
+
   -- What was requested
   feature       TEXT        NOT NULL,  -- 'chatbot', 'draft_composer', 'voice_bot'
   model         TEXT        NOT NULL,  -- 'claude-sonnet-4-6', etc.
-  
+
   -- Tokens and cost
   prompt_tokens    INT,
   completion_tokens INT,
-  
+
   -- System context (what data was injected into the prompt)
   system_context_summary TEXT,  -- e.g., 'school_name, class_list, faq'
-  
+
   -- Input and output (store hashed for compliance, plaintext optional if flagged)
   user_message_hash    TEXT,   -- SHA256 hash for audit trail
   assistant_message_hash TEXT,
-  
+
   flagged       BOOLEAN     NOT NULL DEFAULT false,  -- Manual review needed?
   flag_reason   TEXT,
-  
+
   -- Compliance
   pii_detected  BOOLEAN     NOT NULL DEFAULT false,
-  
+
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -1163,7 +1175,7 @@ CREATE INDEX idx_ai_log_tenant ON ai_log(tenant_id, created_at);
 CREATE INDEX idx_ai_log_flagged ON ai_log(tenant_id, flagged) WHERE flagged = true;
 ```
 
-```
+````
 
 ### Indexes and RLS
 
@@ -1275,11 +1287,11 @@ CREATE POLICY "super_admin manages all family_members" ON family_members FOR ALL
   USING (is_super_admin());
 
 CREATE POLICY "admins manage family_members" ON family_members FOR ALL
-  USING ((SELECT tenant_id FROM families WHERE id = family_members.family_id) = get_my_tenant_id() 
+  USING ((SELECT tenant_id FROM families WHERE id = family_members.family_id) = get_my_tenant_id()
          AND (SELECT get_my_role()) = 'tenant_admin');
 
 CREATE POLICY "family members see own family" ON family_members FOR SELECT
-  USING (user_profile_id = auth.uid() 
+  USING (user_profile_id = auth.uid()
          OR family_id IN (SELECT get_my_family_ids()));
 
 -- People: staff see all; parents see own family; adult students see themselves; super_admin sees all
@@ -1303,7 +1315,7 @@ CREATE POLICY "admins manage preferences" ON contact_preferences FOR ALL
   USING (tenant_id = get_my_tenant_id() AND get_my_role() = 'tenant_admin');
 
 CREATE POLICY "users manage own preferences" ON contact_preferences FOR ALL
-  USING (person_id = get_my_person_id() 
+  USING (person_id = get_my_person_id()
          OR family_member_id IN (SELECT id FROM family_members WHERE user_profile_id = auth.uid()));
 
 -- Terms & Levels: public read; admin write
@@ -1347,7 +1359,7 @@ CREATE POLICY "super_admin manages all enrolments" ON enrolments FOR ALL
 CREATE POLICY "admins manage enrolments" ON enrolments FOR ALL
   USING (tenant_id = get_my_tenant_id() AND get_my_role() = 'tenant_admin');
 CREATE POLICY "parents see own enrolments" ON enrolments FOR SELECT
-  USING (tenant_id = get_my_tenant_id() AND person_id IN 
+  USING (tenant_id = get_my_tenant_id() AND person_id IN
     (SELECT id FROM people WHERE family_id IN (SELECT get_my_family_ids())));
 CREATE POLICY "adult students see own enrolments" ON enrolments FOR SELECT
   USING (tenant_id = get_my_tenant_id() AND person_id = get_my_person_id());
@@ -1366,7 +1378,7 @@ CREATE POLICY "super_admin manages all attendance" ON attendance FOR ALL
 CREATE POLICY "teachers mark attendance" ON attendance FOR ALL
   USING (tenant_id = get_my_tenant_id() AND get_my_role() IN ('tenant_admin','teacher'));
 CREATE POLICY "families see own attendance" ON attendance FOR SELECT
-  USING (tenant_id = get_my_tenant_id() AND person_id IN 
+  USING (tenant_id = get_my_tenant_id() AND person_id IN
     (SELECT id FROM people WHERE family_id IN (SELECT get_my_family_ids())));
 CREATE POLICY "adult students see own attendance" ON attendance FOR SELECT
   USING (tenant_id = get_my_tenant_id() AND person_id = get_my_person_id());
@@ -1377,7 +1389,7 @@ CREATE POLICY "super_admin manages all makeup_credits" ON makeup_credits FOR ALL
 CREATE POLICY "admins manage makeup_credits" ON makeup_credits FOR ALL
   USING (tenant_id = get_my_tenant_id() AND get_my_role() = 'tenant_admin');
 CREATE POLICY "families see own makeup_credits" ON makeup_credits FOR SELECT
-  USING (tenant_id = get_my_tenant_id() AND person_id IN 
+  USING (tenant_id = get_my_tenant_id() AND person_id IN
     (SELECT id FROM people WHERE family_id IN (SELECT get_my_family_ids())));
 CREATE POLICY "adult students see own makeup_credits" ON makeup_credits FOR SELECT
   USING (tenant_id = get_my_tenant_id() AND person_id = get_my_person_id());
@@ -1432,7 +1444,7 @@ CREATE POLICY "admins read audit" ON audit_log FOR SELECT
 CREATE POLICY "super_admin manages all invoice_sequences" ON invoice_sequences FOR ALL
   USING (is_super_admin());
 CREATE POLICY "admins manage invoice_sequences" ON invoice_sequences FOR ALL
-  USING ((SELECT tenant_id FROM tenants WHERE id = invoice_sequences.tenant_id) = get_my_tenant_id() 
+  USING (invoice_sequences.tenant_id = get_my_tenant_id()
          AND (SELECT get_my_role()) = 'tenant_admin');
 
 -- Tenant notification templates (Issue #7): admins manage; all can read approved
@@ -1466,7 +1478,7 @@ CREATE POLICY "admins read ai_log" ON ai_log FOR SELECT
   USING (tenant_id = get_my_tenant_id() AND get_my_role() = 'tenant_admin');
 CREATE POLICY "insert ai_log" ON ai_log FOR INSERT
   WITH CHECK (tenant_id = get_my_tenant_id());
-```
+````
 
 ---
 
@@ -1476,34 +1488,34 @@ All 15 identified issues from SPEC_additions.md have been resolved:
 
 ### Critical issues (5) — Fixed in schema
 
-| # | Issue | Fix location |
-|---|-------|--------------|
-| 1 | user_profiles defined after tables that reference it | Migration 001: user_profiles now created first, before families/family_members |
-| 2 | Invoice sequence year-boundary bug | Migration 010: Fixed next_invoice_number() with explicit year variable & initialization |
-| 3 | No RLS bypass for super_admin | Section 4 helper functions: Added is_super_admin(), all policies now include super_admin bypass |
-| 4a | family_members missing tenant_id | Migration 002: Added tenant_id column to family_members with NOT NULL constraint |
-| 4b | 10+ tables missing RLS policies | Section 4: Comprehensive RLS policies written for all 20 tables, every table now has super_admin bypass |
-| 5 | payments nullable on both family_id and person_id | Migration 008: Added CONSTRAINT payment_payer CHECK ((family_id IS NOT NULL) OR (person_id IS NOT NULL)) |
+| #   | Issue                                                | Fix location                                                                                             |
+| --- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| 1   | user_profiles defined after tables that reference it | Migration 001: user_profiles now created first, before families/family_members                           |
+| 2   | Invoice sequence year-boundary bug                   | Migration 010: Fixed next_invoice_number() with explicit year variable & initialization                  |
+| 3   | No RLS bypass for super_admin                        | Section 4 helper functions: Added is_super_admin(), all policies now include super_admin bypass          |
+| 4a  | family_members missing tenant_id                     | Migration 002: Added tenant_id column to family_members with NOT NULL constraint                         |
+| 4b  | 10+ tables missing RLS policies                      | Section 4: Comprehensive RLS policies written for all 20 tables, every table now has super_admin bypass  |
+| 5   | payments nullable on both family_id and person_id    | Migration 008: Added CONSTRAINT payment_payer CHECK ((family_id IS NOT NULL) OR (person_id IS NOT NULL)) |
 
 ### Significant issues (5) — Fixed with new tables & logic changes
 
-| # | Issue | Fix location |
-|---|-------|--------------|
-| 6 | Unique constraint blocks re-enrolment | Migration 006: Changed enrolments UNIQUE constraint to WHERE status NOT IN ('cancelled','withdrawn') |
-| 7 | WhatsApp template SIDs hardcoded; breaks multi-tenant | Migration 013: New tenant_notification_templates table; Phase 1D updated to query templates per tenant |
-| 8 | Subscription vs. payment intent ambiguity | Section 6 Phase 1E: [TO DO] Add clarification comment on payment state machine |
-| 9 | Expense categories hardcoded in CHECK | Migration 014: New expense_categories table; expenses now reference this table instead of hardcoded CHECK |
-| 10 | No notification retry/queue mechanism | Migration 015: New notification_queue table with retry logic, attempt tracking, and exponential backoff pattern |
+| #   | Issue                                                 | Fix location                                                                                                    |
+| --- | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| 6   | Unique constraint blocks re-enrolment                 | Migration 006: Changed enrolments UNIQUE constraint to WHERE status NOT IN ('cancelled','withdrawn')            |
+| 7   | WhatsApp template SIDs hardcoded; breaks multi-tenant | Migration 013: New tenant_notification_templates table; Phase 1D updated to query templates per tenant          |
+| 8   | Subscription vs. payment intent ambiguity             | Section 6 Phase 1E: [TO DO] Add clarification comment on payment state machine                                  |
+| 9   | Expense categories hardcoded in CHECK                 | Migration 014: New expense_categories table; expenses now reference this table instead of hardcoded CHECK       |
+| 10  | No notification retry/queue mechanism                 | Migration 015: New notification_queue table with retry logic, attempt tracking, and exponential backoff pattern |
 
 ### Worth knowing issues (5) — Fixed with schema/documentation
 
-| # | Issue | Fix location |
-|---|-------|--------------|
-| 11 | ai_log table referenced but never defined | Migration 016: Defined ai_log table with full audit trail for AI interactions (tokens, flags, PII detection) |
-| 12 | VAT rounding strategy undefined | Section 2.5: Documented banker's rounding strategy (ISO 80000-1, Israeli accounting norms) |
-| 13 | is_minor stored boolean never revalidated | Migration 002: Converted is_minor to GENERATED ALWAYS AS computed column from date_of_birth |
-| 14 | decryptVault() doesn't match Supabase Vault API | Section 5: Updated getTenantConfig() to use SQL function with pgp_sym_decrypt() via RPC, not raw decryptVault() |
-| 15 | waiting_list.position requires manual management | Migration 007: Removed position column; use ROW_NUMBER() OVER (PARTITION BY class_id ORDER BY added_at) for position |
+| #   | Issue                                            | Fix location                                                                                                         |
+| --- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| 11  | ai_log table referenced but never defined        | Migration 016: Defined ai_log table with full audit trail for AI interactions (tokens, flags, PII detection)         |
+| 12  | VAT rounding strategy undefined                  | Section 2.5: Documented banker's rounding strategy (ISO 80000-1, Israeli accounting norms)                           |
+| 13  | is_minor stored boolean never revalidated        | Migration 002: Converted is_minor to GENERATED ALWAYS AS computed column from date_of_birth                          |
+| 14  | decryptVault() doesn't match Supabase Vault API  | Section 5: Updated getTenantConfig() to use SQL function with pgp_sym_decrypt() via RPC, not raw decryptVault()      |
+| 15  | waiting_list.position requires manual management | Migration 007: Removed position column; use ROW_NUMBER() OVER (PARTITION BY class_id ORDER BY added_at) for position |
 
 ---
 
@@ -1511,13 +1523,13 @@ All 15 identified issues from SPEC_additions.md have been resolved:
 
 ### Role model
 
-| Role | Auth method | Access |
-|---|---|---|
-| `super_admin` | Password + 2FA | All tenants — platform owner only |
-| `tenant_admin` | Password | Full school data |
-| `teacher` | Password or magic link | Own classes: read + attendance + placement confirm |
-| `parent` | Magic link | Own family: read + pay + update contact |
-| `student` | Magic link | Own data only: adult students with portal access |
+| Role           | Auth method            | Access                                             |
+| -------------- | ---------------------- | -------------------------------------------------- |
+| `super_admin`  | Password + 2FA         | All tenants — platform owner only                  |
+| `tenant_admin` | Password               | Full school data                                   |
+| `teacher`      | Password or magic link | Own classes: read + attendance + placement confirm |
+| `parent`       | Magic link             | Own family: read + pay + update contact            |
+| `student`      | Magic link             | Own data only: adult students with portal access   |
 
 ### Adult student portal access
 
@@ -1530,24 +1542,29 @@ Edge Functions must load the correct tenant's API keys for every request. Keys a
 ```typescript
 // supabase/functions/_shared/tenant-config.ts
 // FIXED: uses correct Supabase Vault API (pgp_sym_decrypt) via SQL, not raw function calls
-export async function getTenantConfig(tenantId: string, supabase: SupabaseClient) {
+export async function getTenantConfig(
+  tenantId: string,
+  supabase: SupabaseClient,
+) {
   // Query tenant data WITH decryption via SQL function (runs on server only)
-  const { data: tenant, error } = await supabase
-    .rpc('get_decrypted_tenant_config', { p_tenant_id: tenantId });
+  const { data: tenant, error } = await supabase.rpc(
+    "get_decrypted_tenant_config",
+    { p_tenant_id: tenantId },
+  );
 
   if (error || !tenant) throw new Error(`Tenant not found: ${error?.message}`);
 
   return {
-    stripeSecretKey:      tenant.stripe_secret_key,
-    stripeWebhookSecret:  tenant.stripe_webhook_secret,
-    resendApiKey:         tenant.resend_api_key,
-    resendFromEmail:      tenant.resend_from_email,
-    twilioAccountSid:     tenant.twilio_account_sid,
-    twilioAuthToken:      tenant.twilio_auth_token,
+    stripeSecretKey: tenant.stripe_secret_key,
+    stripeWebhookSecret: tenant.stripe_webhook_secret,
+    resendApiKey: tenant.resend_api_key,
+    resendFromEmail: tenant.resend_from_email,
+    twilioAccountSid: tenant.twilio_account_sid,
+    twilioAuthToken: tenant.twilio_auth_token,
     twilioWhatsAppNumber: tenant.twilio_whatsapp_number,
-    vatRate:              tenant.vat_rate,
-    currency:             tenant.currency,
-    locale:               tenant.locale,
+    vatRate: tenant.vat_rate,
+    currency: tenant.currency,
+    locale: tenant.locale,
   };
 }
 
@@ -1582,6 +1599,7 @@ export async function getTenantConfig(tenantId: string, supabase: SupabaseClient
 ```
 
 **Key security details:**
+
 - Encrypted secrets never leave the database unencrypted
 - Decryption happens via `SECURITY DEFINER` SQL function (runs as function owner, not caller)
 - Encryption key stored in database settings (`app.encryption_key`), not in code
@@ -1599,12 +1617,12 @@ export async function getTenantConfig(tenantId: string, supabase: SupabaseClient
 ### Phase 1A — Project skeleton (Days 1–3)
 
 ```bash
-npx create-turbo@latest ballet-school-system --package-manager npm
+pnpm dlx create-turbo@latest ballet-school-system --package-manager npm
 cd ballet-school-system
-npm create vite@latest apps/web -- --template react-ts
+pnpm create vite@latest apps/web -- --template react-ts
 cd apps/web
 
-npm install \
+pnpm add \
   @supabase/supabase-js @tanstack/react-query @tanstack/react-query-devtools \
   react-router-dom react-hook-form @hookform/resolvers zod \
   date-fns lucide-react clsx tailwind-merge recharts \
@@ -1613,15 +1631,16 @@ npm install \
   @stripe/stripe-js @stripe/react-stripe-js \
   i18next react-i18next
 
-npm install -D tailwindcss postcss autoprefixer tailwindcss-rtl \
+pnpm add -D tailwindcss postcss autoprefixer tailwindcss-rtl \
   @types/node vitest @testing-library/react @testing-library/user-event \
   @vitejs/plugin-react
 
-npx tailwindcss init -p
-npx shadcn@latest init   # New York style, Zinc, CSS variables: yes
+pnpm dlx tailwindcss init -p
+pnpm dlx shadcn@latest init   # New York style, Zinc, CSS variables: yes
 ```
 
 **Day 1 checklist before any feature work:**
+
 - [ ] `<html lang="he" dir="rtl">` set in `index.html`
 - [ ] `tailwindcss-rtl` plugin added to `tailwind.config.ts`
 - [ ] `format.ts` utilities created (currency, date, phone)
@@ -1631,10 +1650,11 @@ npx shadcn@latest init   # New York style, Zinc, CSS variables: yes
 - [ ] **WCAG 2.1 AA:** Install `@axe-core/react`, `axe-playwright`, `eslint-plugin-jsx-a11y` (run `pnpm dlx snyk test` first)
 - [ ] **WCAG 2.1 AA:** Configure ESLint with jsx-a11y plugin and rules in `.eslintrc.json`
 - [ ] **WCAG 2.1 AA:** Create `e2e/accessibility-compliance.spec.ts` with heading structure, form validation, focus trap tests
-- [ ] **WCAG 2.1 AA:** Add npm scripts to `package.json`: `a11y:lint`, `a11y:axe`, `a11y:e2e`
+- [ ] **WCAG 2.1 AA:** Add pnpm scripts to `package.json`: `a11y:lint`, `a11y:axe`, `a11y:e2e`
 - [ ] **WCAG 2.1 AA:** Add axe-core CI job to `.github/workflows/ci.yml` (blocks merge if violations found)
 - [ ] **WCAG 2.1 AA:** Add accessibility checklist to `.github/PULL_REQUEST_TEMPLATE.md`
 - [ ] **WCAG 2.1 AA:** Create manual test plan for NVDA Hebrew smoke test (15 min pre-deployment)
+- [ ] Confirm `pnpm-lock.yaml` is the only lockfile — delete `package-lock.json` if present
 
 ### Phase 1B — Auth and tenant context (Days 4–6)
 
@@ -1646,15 +1666,15 @@ Route guards: `AdminRoute`, `TeacherRoute`, `ParentRoute`, `StudentRoute` (adult
 
 Build in this order:
 
-| Order | Module | Key screens |
-|---|---|---|
-| 1 | People | List (search/filter/status), detail with medical, create/edit |
-| 2 | Families | Detail with members, link adult student accounts |
-| 3 | Levels + Terms | Admin setup: create levels, create/mark current term |
-| 4 | Classes + Requirements | Create class, define requirements, assign teacher |
-| 5 | Class sessions | Generate sessions via Edge Function on class creation |
-| 6 | Enrolment | 4-step wizard (no placement questionnaire in V1) |
-| 7 | Teachers | Profile, class assignment, type (contractor/employee) |
+| Order | Module                 | Key screens                                                   |
+| ----- | ---------------------- | ------------------------------------------------------------- |
+| 1     | People                 | List (search/filter/status), detail with medical, create/edit |
+| 2     | Families               | Detail with members, link adult student accounts              |
+| 3     | Levels + Terms         | Admin setup: create levels, create/mark current term          |
+| 4     | Classes + Requirements | Create class, define requirements, assign teacher             |
+| 5     | Class sessions         | Generate sessions via Edge Function on class creation         |
+| 6     | Enrolment              | 4-step wizard (no placement questionnaire in V1)              |
+| 7     | Teachers               | Profile, class assignment, type (contractor/employee)         |
 
 #### V1 enrolment wizard (simplified — no placement scoring)
 
@@ -1691,11 +1711,16 @@ Step 4: Confirmation
 // Single function handles email, WhatsApp, and (in V2) voice
 
 serve(async (req) => {
-  const { tenantId, recipientId, recipientType, template, variables } = await req.json();
+  const { tenantId, recipientId, recipientType, template, variables } =
+    await req.json();
   const config = await getTenantConfig(tenantId, supabase);
 
   // Load recipient's contact preferences
-  const prefs = await getContactPreferences(recipientId, recipientType, supabase);
+  const prefs = await getContactPreferences(
+    recipientId,
+    recipientType,
+    supabase,
+  );
 
   const results = [];
 
@@ -1705,13 +1730,17 @@ serve(async (req) => {
   }
 
   // WhatsApp: sent if opted in and number verified
-  if (prefs.whatsapp_opted_in && prefs.whatsapp_verified && prefs.whatsapp_number) {
+  if (
+    prefs.whatsapp_opted_in &&
+    prefs.whatsapp_verified &&
+    prefs.whatsapp_number
+  ) {
     results.push(await sendWhatsApp(config, prefs, template, variables));
   }
 
   // Log all attempts
   for (const result of results) {
-    await supabase.from('notification_log').insert({
+    await supabase.from("notification_log").insert({
       tenant_id: tenantId,
       ...result,
     });
@@ -1737,7 +1766,7 @@ serve(async (req) => {
 
 ```typescript
 // supabase/functions/_shared/whatsapp.ts
-import twilio from 'https://esm.sh/twilio';
+import twilio from "https://esm.sh/twilio";
 
 export async function sendWhatsApp(
   config: TenantConfig,
@@ -1745,22 +1774,24 @@ export async function sendWhatsApp(
   prefs: ContactPreferences,
   template: string,
   variables: Record<string, string>,
-  supabase: SupabaseClient
+  supabase: SupabaseClient,
 ): Promise<NotificationResult> {
   const client = twilio(config.twilioAccountSid, config.twilioAuthToken);
 
   // FIXED (Issue #7): Load template SID from database (per-tenant, not hardcoded)
   const { data: templateConfig, error } = await supabase
-    .from('tenant_notification_templates')
-    .select('twilio_content_sid')
-    .eq('tenant_id', tenantId)
-    .eq('channel', 'whatsapp')
-    .eq('template_name', template)
-    .eq('status', 'approved')
+    .from("tenant_notification_templates")
+    .select("twilio_content_sid")
+    .eq("tenant_id", tenantId)
+    .eq("channel", "whatsapp")
+    .eq("template_name", template)
+    .eq("status", "approved")
     .single();
 
   if (error || !templateConfig?.twilio_content_sid) {
-    throw new Error(`WhatsApp template not approved: ${template} (${error?.message})`);
+    throw new Error(
+      `WhatsApp template not approved: ${template} (${error?.message})`,
+    );
   }
 
   const message = await client.messages.create({
@@ -1771,9 +1802,9 @@ export async function sendWhatsApp(
   });
 
   return {
-    channel: 'whatsapp',
+    channel: "whatsapp",
     external_msg_id: message.sid,
-    status: 'sent',
+    status: "sent",
     recipient_phone: prefs.whatsapp_number,
     template_name: template,
   };
@@ -1785,6 +1816,7 @@ export async function sendWhatsApp(
 All Stripe API calls creating or modifying payment objects happen in Edge Functions. Frontend receives `clientSecret` only.
 
 Key Edge Functions:
+
 - `create-payment-intent`: loads class price, applies discount server-side, calculates VAT, creates PaymentIntent, generates invoice number atomically
 - `stripe-webhook`: idempotent handler for `payment_intent.succeeded`, `payment_intent.payment_failed`, `invoice.payment_failed`, `customer.subscription.deleted`
 
@@ -1815,6 +1847,7 @@ Subscription flow (V2):
 ```
 
 On payment success:
+
 1. Enrolment → `active`
 2. Insert into `payments` with VAT breakdown
 3. Generate invoice number via `next_invoice_number()`
@@ -1822,6 +1855,7 @@ On payment success:
 5. Trigger `send-notification` for confirmation
 
 Dunning (configure in Stripe dashboard — retry schedule):
+
 ```
 Day 0:  Decline → Stripe auto-retries
 Day 3:  Retry → send payment_reminder WhatsApp + email
@@ -1832,6 +1866,7 @@ Day 14: Exhausted → enrolment → cancelled; trigger waiting list; send cancel
 ### Phase 1F — Admin dashboard (Days 35–42)
 
 Screens:
+
 - **Overview:** today's classes, enrolments this term, revenue this month, outstanding payments, quick actions
 - **People:** searchable directory, filter by status/class, export CSV
 - **Classes:** by term, with occupancy bar and waiting list count
@@ -1847,6 +1882,7 @@ Screens:
 **Adult student portal (magic link):** Same as parent portal but showing their own enrolments, payments, and upcoming sessions.
 
 **Contact preference management (both portals):**
+
 - Toggle WhatsApp opt-in
 - Enter/verify WhatsApp number (OTP via Twilio Verify)
 - Choose preferred channel
@@ -1860,7 +1896,7 @@ Screens:
 
 ```
 DATABASE
-[ ] All 12 migrations applied and verified in Supabase dashboard
+[ ] All 16 migrations applied and verified in Supabase dashboard
 [ ] Types regenerated: supabase gen types typescript --linked
 [ ] RLS verified: parent sees only own family; teacher sees only own tenant
 [ ] Invoice sequences table seeded for your tenant
@@ -1911,49 +1947,60 @@ supabase secrets set \
 
 ### Rollback plan
 
-| Layer | Method |
-|---|---|
-| Frontend | Vercel → Deployments → promote previous (instant) |
-| Database | Supabase point-in-time recovery (Pro plan). Additive-only migrations mean this is rarely needed |
-| Edge Functions | Redeploy previous git commit |
+| Layer          | Method                                                                                          |
+| -------------- | ----------------------------------------------------------------------------------------------- |
+| Frontend       | Vercel → Deployments → promote previous (instant)                                               |
+| Database       | Supabase point-in-time recovery (Pro plan). Additive-only migrations mean this is rarely needed |
+| Edge Functions | Redeploy previous git commit                                                                    |
 
 ---
 
 ## 8. V2 Roadmap
 
 ### V2.1 — Attendance and make-up classes
+
 Teacher attendance register per session. Absent students automatically credited. Parent self-service make-up booking.
 
 ### V2.2 — Waiting list automation
+
 Database webhook on enrolment cancellation → `process-waiting-list` Edge Function → offer sent via WhatsApp + email with 48-hour payment link.
 
 ### V2.3 — Class cancellation cascade
+
 Admin cancels session → makeup credits created → cancellation notification sent via preferred channel → substitute teacher pool notified.
 
 ### V2.4 — Annual re-enrolment
+
 End-of-term automated flow: email + WhatsApp to all current families, pre-filled re-enrolment, one-tap confirm + pay.
 
 ### V2.5 — Voice call chatbot
+
 ```
 Phone call → Twilio Voice → Deepgram STT → Claude API → Twilio TTS → caller
 ```
+
 Handles: class schedule questions, enrolment process, pricing, waitlist queries. Payment: sends WhatsApp/email link during call — never collects card details by voice (PCI compliance). Conversation transcripts logged (without PII in Anthropic prompts).
 
 Build on top of existing WhatsApp/Twilio account (same vendor, new product).
 
 ### V2.6 — Green Invoice integration
+
 Edge Function calls Green Invoice API on payment success. Generates legally-compliant Israeli tax invoice. Stores invoice URL in `payments.invoice_url`. Accountant receives monthly export automatically.
 
 ### V2.7 — QuickBooks / Xero export
+
 Date-range CSV from `payments` + `expenses` tables in standard import format. Admin downloads from finance dashboard. Format documented for accountant on day one even before the UI exists.
 
 ### V2.8 — Apparel shop
+
 Stripe payment for physical items. Products linked to class levels. Stock tracking. Admin marks orders as collected/dispatched.
 
 ### V2.9 — Document management
+
 Digital waiver with full text snapshot. Medical form PDF upload. Photo/media consent per event. GDPR deletion request flow.
 
 ### V2.10 — Progress reports
+
 Teacher writes end-of-term note per student. Admin reviews. System sends PDF to family via email and stores in student record.
 
 ---
@@ -1961,21 +2008,27 @@ Teacher writes end-of-term note per student. Admin reviews. System sends PDF to 
 ## 9. V3 SaaS Roadmap
 
 ### V3.1 — Self-service tenant onboarding
+
 `signup.yoursystem.com` — school name, subdomain, plan selection, admin account creation, guided setup wizard.
 
 ### V3.2 — White-label theming
+
 Tenant config drives: logo, primary colour, accent colour, `dir` (rtl/ltr), `locale`, font choice (limited to 3 options). Applied as CSS custom properties at app init.
 
 ### V3.3 — Subscription billing for schools
+
 Your Stripe account (separate from tenant Stripe accounts) charges schools monthly. Plans: Trial (free, 30 students), Basic (₪299/month, 100 students), Pro (₪599/month, unlimited).
 
 ### V3.4 — Feature flags
+
 `feature_flags` table: per-tenant feature toggles. Used to: roll out V2 features gradually, restrict features by plan, A/B test new workflows.
 
 ### V3.5 — Super-admin dashboard
+
 All tenants: plan, student count, MRR, last active. Drill-down per tenant. Plan management. Impersonation for support (logged to audit_log).
 
 ### V3.6 — Communication drafting AI
+
 Admin describes intent in natural language → Claude drafts email or WhatsApp message → admin reviews in split-pane editor → sends via existing notification system.
 
 ---
@@ -1992,14 +2045,15 @@ Admin describes intent in natural language → Claude drafts email or WhatsApp m
 ```typescript
 // supabase/functions/ai-chatbot/index.ts
 const response = await client.messages.create({
-  model: 'claude-sonnet-4-6',
+  model: "claude-sonnet-4-6",
   max_tokens: 1024,
-  system: buildSystemPrompt(tenantContext),   // School name, classes, FAQ, policies
-  messages: [...conversationHistory, { role: 'user', content: message }],
+  system: buildSystemPrompt(tenantContext), // School name, classes, FAQ, policies
+  messages: [...conversationHistory, { role: "user", content: message }],
 });
 ```
 
 **Safety rules:**
+
 - Never send student names or identifiable data to Claude — use anonymised references
 - Claude cannot change enrolment state — it answers questions only
 - All prompts and responses logged to `ai_log` table (separate from notification_log)
@@ -2010,6 +2064,7 @@ const response = await client.messages.create({
 Twilio Voice → Deepgram STT → Claude API → Twilio TTS. Same system prompt as text chatbot. Payment: voice sends payment link via WhatsApp/SMS during call. Never collects card details.
 
 Latency target: under 2 seconds perceived response time. Achieve by:
+
 - Streaming Claude response
 - Sending first TTS chunk before full response complete
 - Pre-loading common responses
@@ -2021,12 +2076,12 @@ Model: `claude-sonnet-4-6`, max_tokens: 500. Tone configured per tenant in syste
 
 ### AI integration principles (your learning path through this project)
 
-| Pattern | Where used | What you learn |
-|---|---|---|
-| Context injection | Chatbot (V1) | Structured data → LLM; prompt engineering |
-| Streaming responses | Voice bot (V2) | Latency management; async streaming |
-| Tool use / function calling | Voice enrolment (V3) | Agentic AI; reliability constraints |
-| Multi-modal | Document processing (V3) | Images + text; receipt scanning for expenses |
+| Pattern                     | Where used               | What you learn                               |
+| --------------------------- | ------------------------ | -------------------------------------------- |
+| Context injection           | Chatbot (V1)             | Structured data → LLM; prompt engineering    |
+| Streaming responses         | Voice bot (V2)           | Latency management; async streaming          |
+| Tool use / function calling | Voice enrolment (V3)     | Agentic AI; reliability constraints          |
+| Multi-modal                 | Document processing (V3) | Images + text; receipt scanning for expenses |
 
 Each pattern is progressively more complex. By V3 you will have real production AI integration experience across four distinct patterns.
 
@@ -2038,21 +2093,25 @@ Each pattern is progressively more complex. By V3 you will have real production 
 
 ```typescript
 // Test class requirement evaluation
-describe('checkClassRequirements', () => {
-  it('blocks a 5-year-old from a min_age:7 class', () => {
+describe("checkClassRequirements", () => {
+  it("blocks a 5-year-old from a min_age:7 class", () => {
     const req: ClassRequirement = {
-      requirement_type: 'min_age', value: '7',
-      display_text: 'Ages 7+', is_hard_block: true
+      requirement_type: "min_age",
+      value: "7",
+      display_text: "Ages 7+",
+      is_hard_block: true,
     };
-    const person = { date_of_birth: '2020-01-01' }; // age 5
+    const person = { date_of_birth: "2020-01-01" }; // age 5
     const result = checkClassRequirements([req], person as Person);
     expect(result.blocked).toBe(true);
   });
 
-  it('flags but does not block admin_approval requirement', () => {
+  it("flags but does not block admin_approval requirement", () => {
     const req: ClassRequirement = {
-      requirement_type: 'admin_approval', value: 'true',
-      display_text: 'Requires teacher approval', is_hard_block: false
+      requirement_type: "admin_approval",
+      value: "true",
+      display_text: "Requires teacher approval",
+      is_hard_block: false,
     };
     const result = checkClassRequirements([req], {} as Person);
     expect(result.blocked).toBe(false);
@@ -2061,21 +2120,25 @@ describe('checkClassRequirements', () => {
 });
 
 // Test VAT calculation
-describe('calculateVat', () => {
-  it('calculates 17% VAT correctly', () => {
+describe("calculateVat", () => {
+  it("calculates 17% VAT correctly", () => {
     const { pretax, vat, total } = calculateVat(1000, 0.17);
-    expect(pretax).toBe(855);  // 1000 / 1.17 rounded
+    expect(pretax).toBe(855); // 1000 / 1.17 rounded
     expect(vat).toBe(145);
     expect(total).toBe(1000);
   });
 });
 
 // Test notification channel routing
-describe('resolveNotificationChannels', () => {
-  it('sends to email only when WhatsApp not verified', () => {
-    const prefs = { email_opted_in: true, whatsapp_opted_in: true, whatsapp_verified: false };
+describe("resolveNotificationChannels", () => {
+  it("sends to email only when WhatsApp not verified", () => {
+    const prefs = {
+      email_opted_in: true,
+      whatsapp_opted_in: true,
+      whatsapp_verified: false,
+    };
     const channels = resolveChannels(prefs);
-    expect(channels).toEqual(['email']);
+    expect(channels).toEqual(["email"]);
   });
 });
 ```
@@ -2096,6 +2159,7 @@ ROLLBACK;
 ### E2E tests (Playwright) — V2 priority
 
 Critical paths only:
+
 1. Full enrolment → payment → WhatsApp confirmation received
 2. Class cancelled → makeup credit created → parent notified on preferred channel
 3. Adult student self-enrols and accesses student portal
@@ -2107,8 +2171,8 @@ Critical paths only:
 **Scope:** All customer-facing pages (no admin panels in V1). Tests run on every PR; zero violations required.
 
 ```typescript
-import { test, expect } from '@playwright/test';
-import { injectAxe, checkA11y } from 'axe-playwright';
+import { test, expect } from "@playwright/test";
+import { injectAxe, checkA11y } from "axe-playwright";
 
 /**
  * WCAG 2.1 Level AA Compliance Tests
@@ -2116,167 +2180,179 @@ import { injectAxe, checkA11y } from 'axe-playwright';
  * Required: All tests pass before merge; manual NVDA Hebrew smoke test pre-deployment
  */
 
-test.describe('Heading Structure (WCAG 2.4.1)', () => {
-  test('no level skips (h1 → h3)', async ({ page }) => {
-    await page.goto('/enrolment');
-    const headings = await page.locator('h1, h2, h3, h4, h5, h6').all();
-    
+test.describe("Heading Structure (WCAG 2.4.1)", () => {
+  test("no level skips (h1 → h3)", async ({ page }) => {
+    await page.goto("/enrolment");
+    const headings = await page.locator("h1, h2, h3, h4, h5, h6").all();
+
     for (let i = 1; i < headings.length; i++) {
-      const current = parseInt(await headings[i].evaluate(el => el.tagName[1]));
-      const previous = parseInt(await headings[i-1].evaluate(el => el.tagName[1]));
+      const current = parseInt(
+        await headings[i].evaluate((el) => el.tagName[1]),
+      );
+      const previous = parseInt(
+        await headings[i - 1].evaluate((el) => el.tagName[1]),
+      );
       expect(current - previous).toBeLessThanOrEqual(1);
     }
   });
 
-  test('exactly one h1 per page', async ({ page }) => {
-    await page.goto('/');
-    const h1Count = await page.locator('h1').count();
+  test("exactly one h1 per page", async ({ page }) => {
+    await page.goto("/");
+    const h1Count = await page.locator("h1").count();
     expect(h1Count).toBe(1);
   });
 });
 
-test.describe('Form Accessibility (WCAG 1.3.1)', () => {
-  test('all inputs have associated labels', async ({ page }) => {
-    await page.goto('/enrolment');
-    const inputs = await page.locator('input, select, textarea').all();
-    
+test.describe("Form Accessibility (WCAG 1.3.1)", () => {
+  test("all inputs have associated labels", async ({ page }) => {
+    await page.goto("/enrolment");
+    const inputs = await page.locator("input, select, textarea").all();
+
     for (const input of inputs) {
-      const id = await input.getAttribute('id');
-      const ariaLabel = await input.getAttribute('aria-label');
-      const parent = await input.evaluate(el => el.parentElement?.textContent);
-      
+      const id = await input.getAttribute("id");
+      const ariaLabel = await input.getAttribute("aria-label");
+      const parent = await input.evaluate(
+        (el) => el.parentElement?.textContent,
+      );
+
       expect(id || ariaLabel || parent?.length).toBeTruthy();
     }
   });
 
-  test('form validation errors announce via aria-live', async ({ page }) => {
-    await page.goto('/enrolment');
+  test("form validation errors announce via aria-live", async ({ page }) => {
+    await page.goto("/enrolment");
     await page.click('button[type="submit"]');
-    
-    const liveRegion = await page.locator('[aria-live]').first();
+
+    const liveRegion = await page.locator("[aria-live]").first();
     const errorText = await liveRegion.textContent();
     expect(errorText).toBeTruthy();
   });
 });
 
-test.describe('Modal Focus Management (WCAG 2.4.3)', () => {
-  test('focus trap: Tab cycles within modal', async ({ page }) => {
-    await page.goto('/classes');
+test.describe("Modal Focus Management (WCAG 2.4.3)", () => {
+  test("focus trap: Tab cycles within modal", async ({ page }) => {
+    await page.goto("/classes");
     await page.click('button:has-text("Add Class")');
-    
+
     const modal = page.locator('[role="dialog"]');
-    const focusableElements = await modal.locator(
-      'button, [href], input, select, textarea, [tabindex]'
-    ).all();
-    
+    const focusableElements = await modal
+      .locator("button, [href], input, select, textarea, [tabindex]")
+      .all();
+
     // Tab to first element
-    await page.keyboard.press('Tab');
-    expect(await page.evaluate(() => document.activeElement?.getAttribute('type'))).toBeTruthy();
-    
+    await page.keyboard.press("Tab");
+    expect(
+      await page.evaluate(() => document.activeElement?.getAttribute("type")),
+    ).toBeTruthy();
+
     // Escape closes modal
-    await page.keyboard.press('Escape');
+    await page.keyboard.press("Escape");
     expect(await modal.isVisible()).toBe(false);
   });
 });
 
-test.describe('Color Contrast (WCAG 1.4.3)', () => {
-  test('text contrast ratio >= 4.5:1', async ({ page }) => {
+test.describe("Color Contrast (WCAG 1.4.3)", () => {
+  test("text contrast ratio >= 4.5:1", async ({ page }) => {
     await injectAxe(page);
     const results = await page.evaluate(() => (window as any).axe.run());
-    
+
     const contrastViolations = results.violations.filter(
-      v => v.id === 'color-contrast'
+      (v) => v.id === "color-contrast",
     );
     expect(contrastViolations).toHaveLength(0);
   });
 });
 
-test.describe('Keyboard Navigation (WCAG 2.1.1)', () => {
-  test('tab through entire page without focus loss', async ({ page }) => {
-    await page.goto('/');
+test.describe("Keyboard Navigation (WCAG 2.1.1)", () => {
+  test("tab through entire page without focus loss", async ({ page }) => {
+    await page.goto("/");
     let focusedElement = null;
-    
+
     for (let i = 0; i < 50; i++) {
-      await page.keyboard.press('Tab');
-      focusedElement = await page.evaluate(() => document.activeElement?.tagName);
-      expect(focusedElement).not.toBe('BODY'); // Focus must be on an element
+      await page.keyboard.press("Tab");
+      focusedElement = await page.evaluate(
+        () => document.activeElement?.tagName,
+      );
+      expect(focusedElement).not.toBe("BODY"); // Focus must be on an element
     }
   });
 
-  test('all interactive elements keyboard accessible', async ({ page }) => {
-    await page.goto('/classes');
+  test("all interactive elements keyboard accessible", async ({ page }) => {
+    await page.goto("/classes");
     const buttons = await page.locator('button, [role="button"]').all();
-    
+
     for (const button of buttons) {
-      const tabindex = await button.getAttribute('tabindex');
-      const role = await button.getAttribute('role');
-      expect(tabindex !== '-1' || role === 'button').toBeTruthy();
+      const tabindex = await button.getAttribute("tabindex");
+      const role = await button.getAttribute("role");
+      expect(tabindex !== "-1" || role === "button").toBeTruthy();
     }
   });
 });
 
-test.describe('Semantic HTML & ARIA (WCAG 1.3.1)', () => {
-  test('landmarks present: main, nav', async ({ page }) => {
-    await page.goto('/');
+test.describe("Semantic HTML & ARIA (WCAG 1.3.1)", () => {
+  test("landmarks present: main, nav", async ({ page }) => {
+    await page.goto("/");
     const main = await page.locator('main, [role="main"]').isVisible();
     expect(main).toBe(true);
   });
 
-  test('buttons use <button> not <div>', async ({ page }) => {
-    await page.goto('/');
-    const divButtons = await page.locator('div[onclick]').count();
+  test("buttons use <button> not <div>", async ({ page }) => {
+    await page.goto("/");
+    const divButtons = await page.locator("div[onclick]").count();
     expect(divButtons).toBe(0);
   });
 
-  test('list items in lists (<li> in <ul>/<ol>)', async ({ page }) => {
-    await page.goto('/classes');
-    const orphanItems = await page.locator(
-      'li:not(ul > li):not(ol > li)'
-    ).count();
+  test("list items in lists (<li> in <ul>/<ol>)", async ({ page }) => {
+    await page.goto("/classes");
+    const orphanItems = await page
+      .locator("li:not(ul > li):not(ol > li)")
+      .count();
     expect(orphanItems).toBe(0);
   });
 });
 
-test.describe('RTL & Hebrew Support (WCAG 3.1.1)', () => {
+test.describe("RTL & Hebrew Support (WCAG 3.1.1)", () => {
   test('lang="he" and dir="rtl" on html element', async ({ page }) => {
-    await page.goto('/');
-    const html = await page.locator('html').evaluate(el => ({
-      lang: el.getAttribute('lang'),
-      dir: el.getAttribute('dir')
+    await page.goto("/");
+    const html = await page.locator("html").evaluate((el) => ({
+      lang: el.getAttribute("lang"),
+      dir: el.getAttribute("dir"),
     }));
-    expect(html.lang).toBe('he');
-    expect(html.dir).toBe('rtl');
+    expect(html.lang).toBe("he");
+    expect(html.dir).toBe("rtl");
   });
 
-  test('tab order follows visual RTL layout', async ({ page }) => {
-    await page.goto('/');
+  test("tab order follows visual RTL layout", async ({ page }) => {
+    await page.goto("/");
     const elements = await page.locator('button, input, [role="button"]').all();
-    
+
     // Rough check: in RTL, first focusable element should be on the right side
     if (elements.length > 0) {
       const firstBox = await elements[0].boundingBox();
-      expect(firstBox?.x).toBeGreaterThan(window.innerWidth / 2);
+      expect(firstBox?.x).toBeGreaterThan(page.viewportSize() / 2);
     }
   });
 });
 
-test.describe('ARIA Patterns', () => {
-  test('form groups have fieldset + legend', async ({ page }) => {
-    await page.goto('/enrolment');
-    const fieldsets = await page.locator('fieldset').all();
-    
+test.describe("ARIA Patterns", () => {
+  test("form groups have fieldset + legend", async ({ page }) => {
+    await page.goto("/enrolment");
+    const fieldsets = await page.locator("fieldset").all();
+
     for (const fs of fieldsets) {
-      const legend = await fs.locator('legend').isVisible();
+      const legend = await fs.locator("legend").isVisible();
       expect(legend).toBe(true);
     }
   });
 
-  test('checkboxes/radios have aria-checked', async ({ page }) => {
-    await page.goto('/enrolment');
-    const radios = await page.locator('input[type="radio"], input[type="checkbox"]').all();
-    
+  test("checkboxes/radios have aria-checked", async ({ page }) => {
+    await page.goto("/enrolment");
+    const radios = await page
+      .locator('input[type="radio"], input[type="checkbox"]')
+      .all();
+
     for (const radio of radios) {
-      const checked = await radio.getAttribute('aria-checked');
+      const checked = await radio.getAttribute("aria-checked");
       expect(checked).toBeTruthy();
     }
   });
@@ -2299,6 +2375,7 @@ test.describe('ARIA Patterns', () => {
 ```
 
 **Manual smoke test checklist (15 minutes, Hebrew NVDA, before production):**
+
 - [ ] Open in NVDA, switch to Hebrew mode
 - [ ] Headings: H key cycles through headings; structure makes sense
 - [ ] Forms: Tab enters input, arrow keys select radio options, validation errors announce
@@ -2325,17 +2402,20 @@ test.describe('ARIA Patterns', () => {
 
 ```typescript
 // ✅ Always handle Supabase errors
-const { data, error } = await supabase.from('people').select('*');
+const { data, error } = await supabase.from("people").select("*");
 if (error) throw new Error(`Failed to fetch people: ${error.message}`);
 
 // ❌ Never use data without checking error first
 
 // ✅ Always use Zod for external data (webhooks, API responses, URL params)
-const Payload = z.object({ tenant_id: z.string().uuid(), amount: z.number().positive() });
+const Payload = z.object({
+  tenant_id: z.string().uuid(),
+  amount: z.number().positive(),
+});
 const payload = Payload.parse(await req.json());
 
 // ✅ Always use format utilities — never inline Intl calls
-import { formatCurrency, formatDate } from '@shared/format';
+import { formatCurrency, formatDate } from "@shared/format";
 
 // ✅ Always use logical Tailwind properties for RTL support
 // ms- me- ps- pe- not ml- mr- pl- pr-
@@ -2373,10 +2453,10 @@ feat/*    → local work; PR to staging; staging to main
 
 ---
 
-*Document version: 2.0*
-*Replaces: v1.0 blueprint*
-*Key changes from v1.0: placement questionnaire removed from V1; people table replaces students;
+_Document version: 2.0_
+_Replaces: v1.0 blueprint_
+_Key changes from v1.0: placement questionnaire removed from V1; people table replaces students;
 contact_preferences replaces email_log; class_requirements replaces age columns; expenses table
 added to V1; VAT and invoice sequence added; RTL and i18n specified; WhatsApp architecture
 detailed; pass-through API key model documented; adult student model added; AI features
-clearly marked as non-critical modules.*
+clearly marked as non-critical modules._

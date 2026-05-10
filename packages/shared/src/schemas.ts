@@ -30,3 +30,12 @@ export const TenantSchema = z.object({
 })
 
 export type Tenant = z.infer<typeof TenantSchema>
+
+export const UserSchema = z.object({
+  id: UUIDSchema,
+  email: EmailSchema,
+  tenant_id: UUIDSchema,
+  role: z.enum(['admin', 'teacher', 'parent', 'student']).optional(),
+}).nullable()
+
+export type User = z.infer<typeof UserSchema>

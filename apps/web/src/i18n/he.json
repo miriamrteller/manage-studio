@@ -1,0 +1,29 @@
+{
+  "common": {
+    "dashboard": "לוח בקרה",
+    "home": "בית",
+    "logout": "התנתקות",
+    "login": "התחברות",
+    "signup": "הרשמה",
+    "save": "שמור",
+    "cancel": "בטל",
+    "submit": "שלח",
+    "loading": "טוען...",
+    "error": "שגיאה"
+  },
+  "error": {
+    "network": "שגיאת רשת. אנא נסו שוב.",
+    "invalid_input": "קלט לא חוקי",
+    "not_found": "לא נמצא"
+  },
+  "auth": {
+    "email": "דוא\"ל",
+    "password": "סיסמה",
+    "email_required": "דוא\"ל נדרש"
+  },
+  "nav": {
+    "admin": "ניהול",
+    "portal": "פורטל",
+    "schedule": "לוח זמנים"
+  }
+}

@@ -8,7 +8,7 @@
     "preview": "vite preview",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "test": "vitest",
-    "a11y:lint": "eslint . --ext tsx,ts --rule 'jsx-a11y/*: warn'",
+    "a11y:lint": "eslint . --ext tsx,ts",
     "a11y:e2e": "playwright test e2e/accessibility-compliance.spec.ts --reporter=html"
   },
   "dependencies": {
@@ -53,6 +53,10 @@
     "@axe-core/react": "^4.8.0",
     "axe-playwright": "^1.2.3",
     "eslint-plugin-jsx-a11y": "^6.8.0",
+    "eslint-plugin-react": "^7.33.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "@typescript-eslint/eslint-plugin": "^6.13.1",
+    "@typescript-eslint/parser": "^6.13.1",
     "@playwright/test": "^1.40.1"
   }
 }

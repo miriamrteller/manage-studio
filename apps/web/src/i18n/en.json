@@ -1,0 +1,29 @@
+{
+  "common": {
+    "dashboard": "Dashboard",
+    "home": "Home",
+    "logout": "Logout",
+    "login": "Login",
+    "signup": "Sign Up",
+    "save": "Save",
+    "cancel": "Cancel",
+    "submit": "Submit",
+    "loading": "Loading...",
+    "error": "Error"
+  },
+  "error": {
+    "network": "Network error. Please try again.",
+    "invalid_input": "Invalid input",
+    "not_found": "Not found"
+  },
+  "auth": {
+    "email": "Email",
+    "password": "Password",
+    "email_required": "Email is required"
+  },
+  "nav": {
+    "admin": "Admin",
+    "portal": "Portal",
+    "schedule": "Schedule"
+  }
+}
