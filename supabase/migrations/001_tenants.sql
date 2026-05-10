@@ -51,7 +51,9 @@ RETURNS BOOLEAN LANGUAGE sql SECURITY DEFINER STABLE AS $$
 $$;
 
 -- RLS Policies
--- Tenants: users see own tenant only
+-- Tenants: public read, users see own for updates
+CREATE POLICY "public read tenants" ON tenants FOR SELECT USING (true);
+
 CREATE POLICY "users see own tenant" ON tenants FOR SELECT
   USING (id = get_my_tenant_id());
 
