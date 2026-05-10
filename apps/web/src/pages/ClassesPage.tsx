@@ -1,24 +1,21 @@
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { supabase } from '../lib/supabase';
 import { useTenant } from '../hooks/useTenant';
-import { formatCurrency } from '@shared/format';
 import { PublicClassSchema } from '@shared/schemas';
-import { getLocale } from '../lib/locale-helper';
+import { ClassCard } from '../components/ClassCard';
 
 /**
  * ClassesPage: Public landing page showing available classes
  * - No auth required
  * - Queries public classes from Supabase
- * - "Enrol Now" button redirects to login
- * - WCAG: Semantic heading, list structure, button labels
+ * - Delegates card rendering to ClassCard component
+ * - WCAG: Semantic heading, list structure
  */
 export function ClassesPage() {
   const { t } = useTranslation();
   const tenant = useTenant();
-  const navigate = useNavigate();
 
   // Fetch public classes
   const { data: classes = [], isLoading, error } = useQuery({
@@ -43,20 +40,15 @@ export function ClassesPage() {
 
       // Validate response with Zod
       try {
-        const validated = z.array(PublicClassSchema).parse(data || []);
-        return validated;
+        return z.array(PublicClassSchema).parse(data || []);
       } catch (parseErr) {
         console.error('Invalid class data from Supabase:', parseErr);
         return [];
       }
     },
     enabled: !!tenant?.id,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
   });
-
-  const handleEnrolNow = () => {
-    navigate('/login', { state: { redirect: '/dashboard/enrol' } });
-  };
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-16">
@@ -87,44 +79,17 @@ export function ClassesPage() {
           {t('pages.classes.no_classes')}
         </div>
       ) : (
-        <ul className="space-y-4">
-          {classes.map((classItem) => (
-            <li
-              key={classItem.id}
-              className="border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow"
-            >
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <h2 className="text-xl font-bold text-gray-900">
-                    {classItem.name}
-                  </h2>
-                  <p className="text-sm text-gray-600 mt-1">
-                    {classItem.start_time} – {classItem.end_time}
-                  </p>
-                </div>
-                <div className="text-right ms-4">
-                  <p className="text-2xl font-bold text-primary">
-                    {formatCurrency(classItem.price_minor, 'ILS', getLocale(tenant?.locale))}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex gap-2 text-sm text-gray-600 mb-4">
-                <span>
-                  {t('pages.classes.capacity')}: {classItem.max_capacity}
-                </span>
-              </div>
-
-              <button
-                onClick={handleEnrolNow}
-                className="px-6 py-2 bg-primary text-white rounded hover:bg-opacity-90 focus-visible:outline-2 outline-white outline-offset-2"
-                aria-label={`${t('pages.classes.enrol_now')} - ${classItem.name}`}
-              >
-                {t('pages.classes.enrol_now')}
-              </button>
-            </li>
+        <div className="space-y-4" role="list">
+          {classes.map((cls) => (
+            <div key={cls.id} role="listitem">
+              <ClassCard
+                class={cls}
+                locale={tenant?.locale || 'he-IL'}
+                currency={tenant?.currency || 'ILS'}
+              />
+            </div>
           ))}
-        </ul>
+        </div>
       )}
     </div>
   );

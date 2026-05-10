@@ -86,7 +86,8 @@ Each school configures their own Twilio, Resend, and Stripe keys. You store them
 WCAG 2.1 Level AA is a legal requirement for Israeli community centers (דינ נגישות לאנשים עם מוגבלות, 1998). All UI features must pass automated axe-core tests before merge. Manual NVDA Hebrew smoke tests verify 15 minutes pre-deployment. Accessibility is part of the Definition of Done for every feature.
 
 **1.12 Tenant branding and configuration are separate from code.**
-Each tenant has configurable properties: `locale`, `dir` (rtl/ltr), `currency`, `vat_rate`, and future fields like `primary_color`, `logo_url`. 
+Each tenant has configurable properties: `locale`, `dir` (rtl/ltr), `currency`, `vat_rate`, and future fields like `primary_color`, `logo_url`.
+
 - **Never hardcode tenant-specific values** in components (no `text-[#76335a]`, no `'he-IL'` strings).
 - **Always use CSS variables and configuration hooks** (`useTenant()` for locale/dir, CSS variables for colors/fonts).
 - Define colors in `:root` CSS variables and Tailwind `theme.extend.colors` → all components use `text-primary`, `text-accent`.
@@ -243,6 +244,12 @@ test("heading structure is valid", async ({ page }) => {
 - `@axe-core/react` + `axe-playwright`: Automated testing (merge-time)
 - `NVDA` (screen reader): Manual verification (ship-time, Israeli language)
 - APCA contrast checker: Verify contrast ratios for Hebrew fonts
+
+### 2.6.1 Bi-directional UI Logic (RTL/LTR)
+
+- **Logical Properties:** All CSS must use logical properties (e.g., `margin-inline-start` instead of `margin-left`, `padding-block` instead of `padding-top`).
+- **Font-Stack Switching:** When `lang === 'he'`, prioritize 'Assistant' or 'Heebo'. When `lang === 'en'`, prioritize 'Inter'.
+- **Mirroring:** UI components must automatically flip based on the `dir` attribute of the HTML root, with zero manual CSS overrides per page.
 
 ---
 
@@ -583,12 +590,12 @@ CREATE TABLE terms (
   name        TEXT        NOT NULL,
   start_date  DATE        NOT NULL,
   end_date    DATE        NOT NULL,
-  is_current  BOOLEAN     NOT NULL DEFAULT false,
+  status      TEXT        NOT NULL DEFAULT 'upcoming' CHECK (status IN ('upcoming', 'active', 'completed', 'archived')),
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE UNIQUE INDEX one_current_term_per_tenant
-  ON terms (tenant_id) WHERE (is_current = true);
+CREATE UNIQUE INDEX one_active_term_per_tenant
+  ON terms (tenant_id) WHERE (status = 'active');
 
 CREATE TABLE levels (
   id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1544,6 +1551,12 @@ All 15 identified issues from SPEC_additions.md have been resolved:
 | 14  | decryptVault() doesn't match Supabase Vault API  | Section 5: Updated getTenantConfig() to use SQL function with pgp_sym_decrypt() via RPC, not raw decryptVault()      |
 | 15  | waiting_list.position requires manual management | Migration 007: Removed position column; use ROW_NUMBER() OVER (PARTITION BY class_id ORDER BY added_at) for position |
 
+### 4.8 Financial Integrity Rules
+
+- **No-Update Policy:** Records in the `payments` and `expenses` tables are immutable. Any change (e.g., a refund or a correction) must be recorded as a _new_ row with a negative value, linked to the original `transaction_id`.
+- **System-Generated Invoices:** Invoices must be generated as signed, read-only PDFs at the moment of payment and stored in a versioned bucket.
+- **Sequence Locking:** The `invoice_sequence` table must use a database-level lock (`SELECT FOR UPDATE`) during incrementing to prevent "skipping" or "doubling" numbers during high-concurrency registration events.
+
 ---
 
 ## 5. Auth & Authorisation
@@ -1632,6 +1645,12 @@ export async function getTenantConfig(
 - Encryption key stored in database settings (`app.encryption_key`), not in code
 - Edge Functions access only the decrypted result, never the encrypted column values
 
+### 5.3 Regional Data Sovereignty Guardrails
+
+- **Dynamic Connection Routing:** The application must determine the Supabase Project URL based on the `tenant.region` at the edge/middleware level.
+- **Cross-Region Block:** The Database Client must throw an error if a transaction attempts to write to a UK production database while the active session is initiated from an Israeli tenant context.
+- **Media Storage:** S3/Supabase Storage buckets must be region-pinned (e.g., `me-central-1` for IL, `eu-west-2` for UK).
+
 ---
 
 ## 6. V1 Implementation
@@ -1692,6 +1711,7 @@ pnpm dlx shadcn@latest init   # New York style, Zinc, CSS variables: yes
 **Definition of Done — Phase 1A (must pass all before Phase 1B starts):**
 
 UI & Translations:
+
 - [ ] All user-facing text in `he.json` and `en.json`
 - [ ] No hard-coded strings in page components (search for Hebrew/English text in TSX files)
 - [ ] Components use `useTranslation()` hook: `const { t } = useTranslation()`
@@ -2131,6 +2151,11 @@ Model: `claude-sonnet-4-6`, max_tokens: 500. Tone configured per tenant in syste
 
 Each pattern is progressively more complex. By V3 you will have real production AI integration experience across four distinct patterns.
 
+### 10.4 AI Resilience (The Circuit Breaker)
+
+- **Graceful Degradation:** If the Claude API returns a 500 or exceeds a 10s timeout, the UI must hide the "AI Assistant" and revert to a standard "Search & Filter" interface.
+- **Cost Guardrails:** Every tenant has a `monthly_token_quota`. If reached, the AI module disables itself for that tenant until the next billing cycle.
+
 ---
 
 ## 11. Testing Strategy
@@ -2216,7 +2241,7 @@ Critical paths only:
 
 **Scope:** All customer-facing pages (no admin panels in V1). Tests run on every PR; zero violations required.
 
-```typescript
+````typescript
 import { test, expect } from "@playwright/test";
 import { injectAxe, checkA11y } from "axe-playwright";
 
@@ -2419,7 +2444,7 @@ test('Tenant A cannot access Tenant B student data', async () => {
     .from('people')
     .select('*')
     .eq('tenant_id', tenantB_ID);
-    
+
   expect(data).toHaveLength(0);
   expect(error).toBeDefined(); // Should return 403 or empty depending on policy
 });
@@ -2442,6 +2467,14 @@ test('Stripe webhook is idempotent', async () => {
   const payments = await db.from('payments').select('*').eq('stripe_id', payload.id);
   expect(payments).toHaveLength(1); // Crucial: must only be 1
 });
+test('Stripe webhook is idempotent', async () => {
+  const payload = mockStripeEvent('invoice.paid', { id: 'evt_123' });
+  await request(app).post('/api/webhooks/stripe').send(payload);
+  const res = await request(app).post('/api/webhooks/stripe').send(payload);
+  expect(res.status).toBe(200);
+  const payments = await db.from('payments').select('*').eq('stripe_id', 'evt_123');
+  expect(payments).toHaveLength(1); 
+});
 
 #### **C. AI Module "Golden Prompt" Evaluations (Evals)**
 Verify the AI doesn't hallucinate syllabus rules or enrollment eligibility.
@@ -2453,6 +2486,11 @@ const goldenPrompts = [
   { input: "Enroll student age 5 in Grade 2 (min_age 7)", expected: "INELIGIBLE_AGE" }
 ];
 
+test.each(goldenPrompts)('AI Eligibility logic: %s', async ({ input, expected }) => {
+  const result = await aiAgent.evaluateEnrollment(input);
+  expect(result.code).toBe(expected);
+});
+const goldenPrompts = [{ input: "Enroll student age 5 in Grade 2 (min_age 7)", expected: "INELIGIBLE_AGE" }];
 test.each(goldenPrompts)('AI Eligibility logic: %s', async ({ input, expected }) => {
   const result = await aiAgent.evaluateEnrollment(input);
   expect(result.code).toBe(expected);
@@ -2473,10 +2511,25 @@ test('Anonymization destroys PII but keeps financial data', async () => {
   const updated = await db.from('people').select('*').eq('id', person.id).single();
   expect(updated.full_name).toBe('DELETED_USER');
   expect(updated.email).toBeNull();
-  
+
   const paymentCount = await db.from('payments').select('count').eq('person_id', person.id);
   expect(paymentCount).toBeGreaterThan(0); // Accounting trail must remain
 });
+
+test('Tenant A cannot access Tenant B student data', async () => {
+  const { data, error } = await supabaseTenantA.from('people').select('*').eq('tenant_id', tenantB_ID);
+  expect(data).toHaveLength(0);
+  expect(error).toBeDefined(); 
+});
+test('Anonymization destroys PII but keeps financial data', async () => {
+  await anonymiseUser(testUserId);
+  const updated = await db.from('people').select('*').eq('id', testUserId).single();
+  expect(updated.full_name).toBe('DELETED_USER');
+  expect(updated.email).toBeNull();
+  const paymentCount = await db.from('payments').select('count').eq('person_id', testUserId);
+  expect(paymentCount).toBeGreaterThan(0); 
+});
+
 
 #### **E. Data Residency Guardrail (UK Launch Only)**
 - **Requirement:** A CI check to ensure that when `process.env.REGION === 'UK'`, the `SUPABASE_URL` points specifically to the `eu-west-2` (London) instance.
@@ -2495,7 +2548,7 @@ test('Anonymization destroys PII but keeps financial data', async () => {
  * - [ ] NVDA: manual smoke test passes (15 min, Hebrew mode, before merge)
  * - [ ] No axe-core violations: `pnpm run a11y:e2e`
  */
-```
+````
 
 **Manual smoke test checklist (15 minutes, Hebrew NVDA, before production):**
 
@@ -2509,6 +2562,25 @@ test('Anonymization destroys PII but keeps financial data', async () => {
 - [ ] Focus: Can always see where focus is; no focus disappearance
 - [ ] Keyboard-only: No mouse required; all features work via Tab/Enter/Arrow keys
 - [ ] RTL: Tab moves right-to-left in Hebrew mode; no visual layout breaks
+
+### 11.4 Advanced Reliability Gates (Reference Implementations)
+
+#### **A. Multi-Tenant Security (RLS) Tests**
+```typescript
+test('Tenant A cannot access Tenant B student data', async () => {
+  const { data, error } = await supabaseTenantA.from('people').select('*').eq('tenant_id', tenantB_ID);
+  expect(data).toHaveLength(0);
+  expect(error).toBeDefined(); 
+});
+
+test('Stripe webhook is idempotent', async () => {
+  const payload = mockStripeEvent('invoice.paid', { id: 'evt_123' });
+  await request(app).post('/api/webhooks/stripe').send(payload);
+  const res = await request(app).post('/api/webhooks/stripe').send(payload);
+  expect(res.status).toBe(200);
+  const payments = await db.from('payments').select('*').eq('stripe_id', 'evt_123');
+  expect(payments).toHaveLength(1); 
+});
 
 ---
 

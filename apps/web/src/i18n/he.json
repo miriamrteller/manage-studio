@@ -9,7 +9,10 @@
     "cancel": "בטל",
     "submit": "שלח",
     "loading": "טוען...",
-    "error": "שגיאה"
+    "error": "שגיאה",
+    "time": "זמן",
+    "capacity": "קיבולת",
+    "enrol": "הרשמה"
   },
   "nav": {
     "classes": "שיעורים",

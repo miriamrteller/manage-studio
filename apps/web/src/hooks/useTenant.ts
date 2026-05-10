@@ -1,6 +1,7 @@
 /// <reference types="vite/client" />
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
+import { getDir, getLocale } from '../lib/language-helper';
 import type { TenantConfig } from '../types/auth';
 
 /**
@@ -10,7 +11,7 @@ import type { TenantConfig } from '../types/auth';
  * Dev: VITE_DEV_TENANT_SUBDOMAIN → queries by subdomain
  * Prod: window.location.hostname → extracts subdomain → queries by subdomain
  *
- * Returns: tenant config with locale, dir, colors, vat_rate for CSS/i18n
+ * Returns: tenant config with language, country, computed dir + locale
  */
 export function useTenant(): TenantConfig | null {
   // Determine subdomain
@@ -41,7 +42,7 @@ export function useTenant(): TenantConfig | null {
       const { data, error } = await supabase
         .from('tenants')
         .select(
-          'id, name, subdomain, locale, dir, primary_color, accent_color, currency, vat_rate'
+          'id, name, subdomain, language, country, primary_color, accent_color, currency, vat_rate'
         )
         .eq('subdomain', subdomain)
         .single();
@@ -51,7 +52,13 @@ export function useTenant(): TenantConfig | null {
         return null;
       }
 
-      return data as TenantConfig;
+      // Compute dir and locale from language + country
+      const config = data as Omit<TenantConfig, 'dir' | 'locale'>;
+      return {
+        ...config,
+        dir: getDir(config.language as 'he' | 'en'),
+        locale: getLocale(config.language as 'he' | 'en', config.country as 'IL' | 'US'),
+      } as TenantConfig;
     },
     enabled: !!subdomain,
     staleTime: 30 * 60 * 1000, // 30 minutes

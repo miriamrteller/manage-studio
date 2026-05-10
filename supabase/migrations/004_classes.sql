@@ -9,12 +9,12 @@ CREATE TABLE terms (
   name        TEXT        NOT NULL,
   start_date  DATE        NOT NULL,
   end_date    DATE        NOT NULL,
-  is_current  BOOLEAN     NOT NULL DEFAULT false,
+  status      TEXT        NOT NULL DEFAULT 'upcoming' CHECK (status IN ('upcoming', 'active', 'completed', 'archived')),
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE UNIQUE INDEX one_current_term_per_tenant
-  ON terms (tenant_id) WHERE (is_current = true);
+CREATE UNIQUE INDEX one_active_term_per_tenant
+  ON terms (tenant_id) WHERE (status = 'active');
 
 CREATE TABLE levels (
   id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),

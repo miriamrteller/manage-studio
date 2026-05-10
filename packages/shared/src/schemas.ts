@@ -25,8 +25,8 @@ export const TenantSchema = z.object({
   id: UUIDSchema,
   name: z.string().min(1),
   subdomain: z.string().min(1),
-  locale: z.enum(['he-IL', 'en-US']).default('he-IL'),
-  dir: z.enum(['rtl', 'ltr']).default('rtl'),
+  language: z.enum(['he', 'en']).default('he'),
+  country: z.enum(['IL', 'US']).default('IL'),
   primary_color: z.string().default('#76335a'),
   accent_color: z.string().default('#e99ac4'),
   currency: z.string().default('ILS'),
@@ -42,6 +42,8 @@ export const UserProfileSchema = z.object({
   tenant_id: UUIDSchema,
   role: z.array(z.string()), // ['parent'], ['teacher', 'parent'], etc.
   person_id: UUIDSchema.nullable(),
+  language: z.enum(['he', 'en']).nullable().optional(), // User override (NULL = use tenant)
+  country: z.enum(['IL', 'US']).nullable().optional(), // User override (NULL = use tenant)
   created_at: z.string().datetime(),
 });
 

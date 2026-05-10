@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useCurrentUser } from '../hooks/useCurrentUser';
@@ -16,6 +16,14 @@ export function ProtectedLayout({ children }: { children: ReactNode }) {
   const { user, isLoading } = useCurrentUser();
   const tenant = useTenant();
   const navigate = useNavigate();
+
+  // Apply document direction + language
+  useEffect(() => {
+    if (tenant) {
+      document.documentElement.dir = tenant.dir || 'rtl';
+      document.documentElement.lang = tenant.language || 'he';
+    }
+  }, [tenant]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();

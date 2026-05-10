@@ -3,13 +3,13 @@
 -- Manual step required: Create auth user in Supabase UI first
 
 -- Insert test tenant (matches VITE_DEV_TENANT_SUBDOMAIN=creativeballet)
-INSERT INTO tenants (id, name, subdomain, locale, dir, primary_color, accent_color, currency, vat_rate)
+INSERT INTO tenants (id, name, subdomain, language, country, primary_color, accent_color, currency, vat_rate)
 VALUES (
   '00000000-0000-0000-0000-000000000001'::uuid,
   'Creative Ballet',
   'creativeballet',
-  'he-IL',
-  'rtl',
+  'en',
+  'IL',
   '#76335a',
   '#e99ac4',
   'ILS',
@@ -17,14 +17,14 @@ VALUES (
 ) ON CONFLICT (subdomain) DO NOTHING;
 
 -- Insert test term (Spring 2026)
-INSERT INTO terms (id, tenant_id, name, start_date, end_date, is_current)
+INSERT INTO terms (id, tenant_id, name, start_date, end_date, status)
 VALUES (
   '00000000-0000-0000-0000-000000000101'::uuid,
   '00000000-0000-0000-0000-000000000001'::uuid,
   'Spring 2026',
   '2026-01-01',
   '2026-05-31',
-  true
+  'active'
 ) ON CONFLICT DO NOTHING;
 
 -- Insert test level (Beginner)

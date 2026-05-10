@@ -9,7 +9,10 @@
     "cancel": "Cancel",
     "submit": "Submit",
     "loading": "Loading...",
-    "error": "Error"
+    "error": "Error",
+    "time": "Time",
+    "capacity": "Capacity",
+    "enrol": "Enroll"
   },
   "nav": {
     "classes": "Classes",

@@ -33,6 +33,8 @@ export function useCurrentUser(): {
           role,
           person_id,
           tenant_id,
+          language,
+          country,
           created_at
         `
         )
