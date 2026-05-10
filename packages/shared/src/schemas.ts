@@ -66,6 +66,7 @@ export const PublicClassSchema = z.object({
   end_time: z.string(),
   price_minor: z.number().nonnegative(),
   max_capacity: z.number().positive(),
+  billing_frequency: z.enum(['monthly', 'per-session', 'weekly', 'annual']).default('monthly'),
   current_enrolments: z.number().nonnegative().optional(),
 });
 
