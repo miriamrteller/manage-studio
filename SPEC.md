@@ -405,10 +405,43 @@ export function formatPhone(phone: string): string {
 > Every RLS policy enforces `tenant_id = get_my_tenant_id()`.
 > A table without `tenant_id` and RLS is a data breach waiting to happen.
 
-### Migration 001 — Tenants
+### 4.1 RLS Policy Pattern and Super-Admin Bypass
+
+Every table uses **Row Level Security (RLS)** to enforce multi-tenant isolation and role-based access control.
+All policies follow the same pattern:
+
+1. **Super-admin bypass:** `is_super_admin()` function returns `true` for `super_admin` role users. These users bypass all tenant checks and see/edit all data globally (platform admin operations only).
+2. **Tenant isolation:** Non-super-admins see data only from their own tenant (`tenant_id = get_my_tenant_id()`).
+3. **Role filtering:** Within a tenant, access is further restricted by role (admin, teacher, parent, student).
+
+This design enables:
+- **Platform-level operations** (super-admin) without complex conditional logic
+- **Guaranteed data isolation** — cross-tenant queries are impossible even with RLS bugs
+- **Clear intent** — every policy explicitly states who can do what
+
+**Example:** A `super_admin` with `is_super_admin()` returning `true` sees all `families` rows across all tenants, while a `tenant_admin` sees only families in their own tenant.
+
+---
+
+### 4.2 Database Migrations (001–016)
+
+#### Migration 001 — Tenants and user profiles
+
+> **Critical ordering:** `user_profiles` is defined first in this migration because later tables
+> (families, family_members, people) reference it via `user_profile_id`. This prevents foreign key
+> violations and ensures clean schema ordering.
 
 ```sql
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+CREATE TABLE user_profiles (
+  id            UUID        PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  tenant_id     UUID        NOT NULL,  -- Will be set by trigger after tenants table exists
+  role          TEXT        NOT NULL DEFAULT 'student'
+                CHECK (role IN ('super_admin','tenant_admin','teacher','parent','student')),
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 
 CREATE TABLE tenants (
   id                        UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -455,17 +488,13 @@ CREATE TABLE tenants (
   updated_at                TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE user_profiles (
-  id            UUID        PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  tenant_id     UUID        NOT NULL REFERENCES tenants(id),
-  role          TEXT        NOT NULL DEFAULT 'student'
-                CHECK (role IN ('super_admin','tenant_admin','teacher','parent','student')),
-  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
-);
+-- Add tenant_id foreign key to user_profiles now that tenants table exists
+ALTER TABLE user_profiles
+  ADD CONSTRAINT user_profiles_tenant_id_fk
+  FOREIGN KEY (tenant_id) REFERENCES tenants(id);
 ```
 
-### Migration 002 — People and families
+#### Migration 002 — People and families
 
 > **Design note:** `students` is renamed to `people` to support adult students, art pupils,
 > piano students, and community center members — all in the same table with the same model.
@@ -532,7 +561,7 @@ CREATE TABLE people (
 );
 ```
 
-### Migration 003 — Contact preferences
+#### Migration 003 — Contact preferences
 
 > **Design note:** Communication targets are people and family_members, not families.
 > Every human with a phone has their own preferences. A 16-year-old wants to know
@@ -581,7 +610,7 @@ CREATE TABLE contact_preferences (
 );
 ```
 
-### Migration 004 — Terms and classes
+#### Migration 004 — Terms and classes
 
 ```sql
 CREATE TABLE terms (
@@ -656,7 +685,7 @@ CREATE TABLE class_sessions (
 );
 ```
 
-### Migration 005 — Class requirements (replaces age columns)
+#### Migration 005 — Class requirements (replaces age columns)
 
 > **Design note:** Age is just one possible constraint. This table supports any requirement type
 > with custom enforcement logic per type. Auto-enforceable requirements block at enrolment.
@@ -748,7 +777,7 @@ function evaluateRequirement(req: ClassRequirement, person: Person): boolean {
 }
 ```
 
-### Migration 006 — Enrolments
+#### Migration 006 — Enrolments
 
 ```sql
 CREATE TABLE enrolments (
@@ -810,7 +839,7 @@ CREATE TABLE waiting_list (
 CREATE INDEX idx_waiting_list_position ON waiting_list(class_id, added_at);
 ```
 
-### Migration 007 — Attendance
+#### Migration 007 — Attendance
 
 ```sql
 CREATE TABLE attendance (
@@ -839,7 +868,7 @@ CREATE TABLE makeup_credits (
 );
 ```
 
-### Migration 008 — Payments and finance
+#### Migration 008 — Payments and finance
 
 ```sql
 CREATE TABLE payments (
@@ -921,7 +950,7 @@ CREATE TABLE teacher_pay_records (
 );
 ```
 
-### Migration 009 — Expenses
+#### Migration 009 — Expenses
 
 > **Required in V1.** Without this table you have no P&L and cannot calculate profit.
 > Your accountant needs both sides from day one.
@@ -956,7 +985,7 @@ CREATE TABLE expenses (
 );
 ```
 
-### Migration 010 — Invoice sequences
+#### Migration 010 — Invoice sequences
 
 > **Israeli legal requirement.** Invoice numbers must be sequential and gapless.
 > This atomic function prevents gaps under concurrent payments.
@@ -1005,7 +1034,7 @@ END;
 $$;
 ```
 
-### Migration 011 — Notification log
+#### Migration 011 — Notification log
 
 ```sql
 -- All communication channels unified. One table, four channels.
@@ -1037,7 +1066,7 @@ CREATE TABLE notification_log (
 );
 ```
 
-### Migration 012 — Audit log
+#### Migration 012 — Audit log
 
 ```sql
 -- Immutable. RLS: insert only. No UPDATE or DELETE permitted. Ever.
@@ -1057,7 +1086,7 @@ CREATE TABLE audit_log (
 );
 ```
 
-### Migration 013 — Tenant notification templates
+#### Migration 013 — Tenant notification templates
 
 > **Issue #7 fix:** WhatsApp template SIDs are now per-tenant, allowing multi-tenant support.
 > Each school configures their own approved message templates with Twilio/Meta.
@@ -1098,7 +1127,7 @@ CREATE TABLE tenant_notification_templates (
 CREATE INDEX idx_templates_tenant ON tenant_notification_templates(tenant_id, channel, template_name);
 ```
 
-### Migration 014 — Expense categories
+#### Migration 014 — Expense categories
 
 > **Issue #9 fix:** Expense categories now configurable per tenant instead of hardcoded.
 > Schools can add custom categories (e.g., 'guest_artist_fee', 'prop_rental').
@@ -1126,7 +1155,7 @@ CREATE INDEX idx_categories_tenant ON expense_categories(tenant_id);
 -- (Modify expenses table: drop category TEXT, add category_id UUID FOREIGN KEY)
 ```
 
-### Migration 015 — Notification queue
+#### Migration 015 — Notification queue
 
 > **Issue #10 fix:** Notifications now queue durably, with automatic retry on failure.
 > Prevents lost messages if Twilio/Resend is temporarily unavailable.
@@ -1170,7 +1199,7 @@ CREATE INDEX idx_queue_retry ON notification_queue(status, next_retry_at)
   WHERE status IN ('pending','queued');
 ```
 
-### Migration 016 — AI log
+#### Migration 016 — AI log
 
 > **Issue #11 fix:** AI interactions logged separately for audit and compliance.
 > Records all Claude API calls with prompts and responses (anonymised).
@@ -1209,12 +1238,11 @@ CREATE INDEX idx_ai_log_tenant ON ai_log(tenant_id, created_at);
 CREATE INDEX idx_ai_log_flagged ON ai_log(tenant_id, flagged) WHERE flagged = true;
 ```
 
-````
+---
 
-### Indexes and RLS
+### 4.3 Indexes and RLS Implementation
 
-```sql
--- === INDEXES ===
+#### 4.3.1 Database Indexes
 CREATE INDEX idx_people_tenant         ON people(tenant_id);
 CREATE INDEX idx_people_family         ON people(family_id);
 CREATE INDEX idx_enrolments_tenant     ON enrolments(tenant_id);
@@ -1261,6 +1289,11 @@ ALTER TABLE expense_categories   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notification_queue   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ai_log               ENABLE ROW LEVEL SECURITY;
 
+#### 4.3.2 RLS Helper Functions
+
+> **Pattern reference:** See section 4.1 for RLS design principles and super-admin bypass explanation.
+
+```sql
 -- Helper functions (SECURITY DEFINER prevents recursion in policies)
 CREATE OR REPLACE FUNCTION get_my_tenant_id()
 RETURNS UUID LANGUAGE sql SECURITY DEFINER STABLE AS $$
@@ -1288,7 +1321,11 @@ CREATE OR REPLACE FUNCTION is_super_admin()
 RETURNS BOOLEAN LANGUAGE sql SECURITY DEFINER STABLE AS $$
   SELECT role = 'super_admin' FROM user_profiles WHERE id = auth.uid()
 $$;
+```
 
+#### 4.3.3 RLS Policies (By Table)
+
+```sql
 -- Tenants: super_admin only can see all; users see own tenant only
 CREATE POLICY "super_admin sees all tenants" ON tenants FOR ALL
   USING (is_super_admin());
@@ -1516,7 +1553,7 @@ CREATE POLICY "insert ai_log" ON ai_log FOR INSERT
 
 ---
 
-## 4.1 SPEC Issues Resolution (v2 updates)
+### 4.4 SPEC Issues Resolution (v2 updates)
 
 All 15 identified issues from SPEC_additions.md have been resolved:
 
@@ -1551,7 +1588,7 @@ All 15 identified issues from SPEC_additions.md have been resolved:
 | 14  | decryptVault() doesn't match Supabase Vault API  | Section 5: Updated getTenantConfig() to use SQL function with pgp_sym_decrypt() via RPC, not raw decryptVault()      |
 | 15  | waiting_list.position requires manual management | Migration 007: Removed position column; use ROW_NUMBER() OVER (PARTITION BY class_id ORDER BY added_at) for position |
 
-### 4.8 Financial Integrity Rules
+### 4.5 Financial Integrity Rules
 
 - **No-Update Policy:** Records in the `payments` and `expenses` tables are immutable. Any change (e.g., a refund or a correction) must be recorded as a _new_ row with a negative value, linked to the original `transaction_id`.
 - **System-Generated Invoices:** Invoices must be generated as signed, read-only PDFs at the moment of payment and stored in a versioned bucket.
@@ -1730,17 +1767,17 @@ Route guards: `AdminRoute`, `TeacherRoute`, `ParentRoute`, `StudentRoute` (adult
 
 ### Phase 1C — Core data modules (Days 7–20)
 
-Build in this order:
+Build in this strict order (each module depends on previous):
 
-| Order | Module                 | Key screens                                                   |
-| ----- | ---------------------- | ------------------------------------------------------------- |
-| 1     | People                 | List (search/filter/status), detail with medical, create/edit |
-| 2     | Families               | Detail with members, link adult student accounts              |
-| 3     | Levels + Terms         | Admin setup: create levels, create/mark current term          |
-| 4     | Classes + Requirements | Create class, define requirements, assign teacher             |
-| 5     | Class sessions         | Generate sessions via Edge Function on class creation         |
-| 6     | Enrolment              | 4-step wizard (no placement questionnaire in V1)              |
-| 7     | Teachers               | Profile, class assignment, type (contractor/employee)         |
+| Order | Module                 | Key screens                                                   | Dependencies |
+| ----- | ---------------------- | ------------------------------------------------------------- | ------------ |
+| 1     | People                 | List (search/filter/status), detail with medical, create/edit | Migrations 002-003 |
+| 2     | Families               | Detail with members, link adult student accounts              | People module |
+| 3     | Levels + Terms         | Admin setup: create levels, create/mark current term          | Migrations 004 |
+| 4     | Classes + Requirements | Create class, define requirements, assign teacher             | Levels, Terms, Migrations 005 |
+| 5     | Class sessions         | Generate sessions via Edge Function on class creation         | Classes module |
+| 6     | Enrolment              | 4-step wizard (no placement questionnaire in V1)              | People, Families, Classes, Sessions (Migrations 006) |
+| 7     | Teachers               | Profile, class assignment, type (contractor/employee)         | Classes module |
 
 #### V1 enrolment wizard (simplified — no placement scoring)
 
