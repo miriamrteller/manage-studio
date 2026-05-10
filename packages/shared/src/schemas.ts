@@ -61,7 +61,7 @@ export const PublicClassSchema = z.object({
   id: UUIDSchema,
   tenant_id: UUIDSchema,
   name: z.string().min(1),
-  level_id: UUIDSchema.nullable(),
+  level_id: UUIDSchema.nullable().optional(),
   start_time: z.string(), // HH:MM format
   end_time: z.string(),
   price_minor: z.number().nonnegative(),
