@@ -2,12 +2,12 @@
 -- Creates test tenant, term, level, and public classes
 -- Manual step required: Create auth user in Supabase UI first
 
--- Insert test tenant (matches VITE_DEV_TENANT_SUBDOMAIN=ballet-school)
+-- Insert test tenant (matches VITE_DEV_TENANT_SUBDOMAIN=creativeballet)
 INSERT INTO tenants (id, name, subdomain, locale, dir, primary_color, accent_color, currency, vat_rate)
 VALUES (
   '00000000-0000-0000-0000-000000000001'::uuid,
-  'First Ballet School',
-  'ballet-school',
+  'Creative Ballet',
+  'creativeballet',
   'he-IL',
   'rtl',
   '#76335a',
