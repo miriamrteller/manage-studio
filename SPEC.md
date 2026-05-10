@@ -32,6 +32,26 @@
 
 ---
 
+## Visual Conventions
+
+Throughout this document, callouts highlight critical information:
+
+```
+⚠️  **WARNING:** Critical constraint or breaking change
+    Content here. Takes priority over defaults.
+
+✅  **NOTE:** Important but non-breaking information
+    Content here. Best practice or clarification.
+
+🔒  **SECURITY:** Security or compliance requirement
+    Content here. Must be implemented exactly as stated.
+
+⏱️  **TIMING:** Sequencing or dependency constraint
+    Content here. Must be done in this order.
+```
+
+---
+
 ## 1. Core Principles
 
 Apply in order when facing any ambiguous decision.
@@ -139,7 +159,57 @@ Each tenant has configurable properties: `locale`, `dir` (rtl/ltr), `currency`, 
 
 **Rationale for pass-through:** Each school pays their own Twilio/Resend costs directly. You have zero margin risk, zero billing complexity, and zero liability for their communication failures. Move to an aggregated model in V4 once you understand usage patterns.
 
-### 2.4 Deliberately excluded
+### 2.3.1 Tech Stack Dependency Graph
+
+```
+Frontend (React 18 + TS5)
+  ├─ React Router v6 (routing)
+  │   └─ TanStack Query v5 (server state)
+  │       └─ Supabase Client
+  │           ├─ Auth (session management)
+  │           └─ RLS (row-level security)
+  │
+  ├─ React Hook Form + Zod (form validation)
+  │   └─ Zod (runtime validation)
+  │
+  ├─ Tailwind CSS v3 (styling)
+  │   ├─ tailwindcss-rtl (RTL support)
+  │   └─ shadcn/ui (component library)
+  │       └─ Radix UI (accessible primitives)
+  │
+  ├─ i18next + react-i18next (translations)
+  │   ├─ he.json (Hebrew — primary)
+  │   └─ en.json (English — secondary)
+  │
+  └─ Date + Number Formatting
+      ├─ date-fns + locale support
+      ├─ Intl.NumberFormat (currency, locale-aware)
+      └─ Intl.DateTimeFormat (dates, locale-aware)
+
+Edge Functions
+  ├─ Stripe API (payments, webhooks)
+  │   ├─ PaymentIntent creation
+  │   ├─ Webhook signature verification
+  │   └─ Subscription management (V2)
+  │
+  ├─ Resend API (email)
+  │   └─ React Email templates
+  │
+  ├─ Twilio API (WhatsApp, Voice)
+  │   ├─ Message delivery
+  │   └─ Phone verification
+  │
+  ├─ Anthropic Claude API (AI)
+  │   ├─ Eligibility evaluation
+  │   └─ Communication drafting
+  │
+  └─ Supabase (database, auth)
+      ├─ PostgreSQL (data)
+      ├─ RLS policies (security)
+      └─ Functions (atomic operations)
+```
+
+### 2.4 Infrastructure (per tenant — pass-through model)
 
 | Excluded                   | Why                                                                                   |
 | -------------------------- | ------------------------------------------------------------------------------------- |
@@ -179,7 +249,8 @@ Israeli VAT calculations are often done on net amount, then add VAT. This ensure
 
 ### 2.6 Accessibility compliance — WCAG 2.1 Level AA
 
-**Legal mandate:** Israeli law (דינ נגישות לאנשים עם מוגבלות, 1998) requires all digital interfaces in community centers to be accessible to people with disabilities. This is not optional; it's a legal requirement for operation.
+🔒 **SECURITY & LEGAL — Non-negotiable Requirement:**
+Israeli law (דינ נגישות לאנשים עם מוגבלות, 1998) requires all digital interfaces in community centers to be accessible to people with disabilities. This is a legal mandate, not optional. Non-compliance = no license to operate.
 
 **Scope:** All UI components must pass WCAG 2.1 Level AA criteria. Priority: heading structure, form labeling, keyboard navigation, color contrast, focus management, and ARIA patterns.
 
@@ -393,9 +464,12 @@ export function formatPhone(phone: string): string {
 
 ## 4. Database Schema
 
-> **Non-negotiable rule:** Every school-specific table has `tenant_id UUID NOT NULL REFERENCES tenants(id)`.
-> Every RLS policy enforces `tenant_id = get_my_tenant_id()`.
-> A table without `tenant_id` and RLS is a data breach waiting to happen.
+🔒 **SECURITY — Data Breach Risk:**
+Every school-specific table MUST have `tenant_id UUID NOT NULL REFERENCES tenants(id)`.
+Every RLS policy MUST enforce `tenant_id = get_my_tenant_id()`.
+A table without both is a data breach waiting to happen. No exceptions.
+
+---
 
 ### 4.1 RLS Policy Pattern and Super-Admin Bypass
 
@@ -902,6 +976,8 @@ CREATE TABLE payments (
   CONSTRAINT payment_payer CHECK ((family_id IS NOT NULL) OR (person_id IS NOT NULL))
 );
 
+✅ **Cross-reference:** Payment state machine logic and webhook handling is detailed in [Phase 1E — Payments](#phase-1e--payments-days-2734).
+
 CREATE TABLE discount_rules (
   id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id       UUID        NOT NULL REFERENCES tenants(id),
@@ -1231,6 +1307,8 @@ CREATE TABLE ai_log (
 CREATE INDEX idx_ai_log_tenant ON ai_log(tenant_id, created_at);
 CREATE INDEX idx_ai_log_flagged ON ai_log(tenant_id, flagged) WHERE flagged = true;
 ```
+
+✅ **Cross-reference:** See [Section 10 — AI Integration Specification](#10-ai-integration-specification) for architecture details on how AI interactions are logged and audited.
 
 ---
 
@@ -1584,6 +1662,10 @@ All 15 identified issues from SPEC_additions.md have been resolved:
 
 ### 4.5 Financial Integrity Rules
 
+🔒 **SECURITY & LEGAL — Immutable Financial Records:**
+All payments and expenses are immutable by design. Corrections are new entries with negative values linked to the original.
+This pattern ensures: audit trail, tax compliance, dispute resolution, and prevents data manipulation.
+
 - **No-Update Policy:** Records in the `payments` and `expenses` tables are immutable. Any change (e.g., a refund or a correction) must be recorded as a _new_ row with a negative value, linked to the original `transaction_id`.
 - **System-Generated Invoices:** Invoices must be generated as signed, read-only PDFs at the moment of payment and stored in a versioned bucket.
 - **Sequence Locking:** The `invoice_sequence` table must use a database-level lock (`SELECT FOR UPDATE`) during incrementing to prevent "skipping" or "doubling" numbers during high-concurrency registration events.
@@ -1928,6 +2010,11 @@ Key Edge Functions:
 
 #### Payment state machine (Issue #8 clarification: subscription vs payment intent)
 
+⚠️  **WARNING — Data Integrity:**
+PaymentIntent status is the authoritative source of truth. Subscription objects are secondary.
+If ever out of sync, re-fetch PaymentIntent from Stripe and treat it as correct.
+Never trust a cached subscription status when PaymentIntent disagrees.
+
 **Single source of truth:** PaymentIntent status is authoritative. Subscription objects are informational only for recurring billing.
 
 ```
@@ -2140,6 +2227,8 @@ Admin describes intent in natural language → Claude drafts email or WhatsApp m
 ---
 
 ## 10. AI Integration Specification
+
+✅ **Cross-reference:** AI interactions are logged in the `ai_log` table (defined in [Section 4, Migration 016](#migration-016--ai-log)). Every API call records system context, input/output hashes, token usage, and compliance flags.
 
 > AI features are modules. The system is fully functional without them.
 > No AI feature touches payment logic or enrolment state transitions.
