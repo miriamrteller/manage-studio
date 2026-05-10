@@ -1,7 +1,7 @@
 import { createBrowserRouter } from 'react-router-dom';
-import { PublicLayout } from './components/PublicLayout';
-import { ProtectedLayout } from './components/ProtectedLayout';
-import { AdminRoute, ParentRoute, StudentRoute } from './components/RouteGuards';
+import { PublicLayout } from './layouts/PublicLayout';
+import { ProtectedLayout } from './layouts/ProtectedLayout';
+import { AdminRoute, ParentRoute, StudentRoute } from './layouts/RouteGuards';
 import { ClassesPage } from './pages/ClassesPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
