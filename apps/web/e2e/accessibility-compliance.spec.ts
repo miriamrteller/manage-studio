@@ -7,6 +7,15 @@ import { injectAxe, checkA11y } from 'axe-playwright';
  * Required: All tests pass before merge; manual NVDA Hebrew smoke test pre-deployment
  */
 
+interface AxeViolation {
+  id: string
+  impact?: string
+}
+
+interface AxeResults {
+  violations?: AxeViolation[]
+}
+
 test.describe('Heading Structure (WCAG 2.4.1)', () => {
   test('no level skips (h1 → h3)', async ({ page }) => {
     await page.goto('/');
@@ -92,12 +101,13 @@ test.describe('Color Contrast (WCAG 1.4.3)', () => {
     await page.goto('/');
     await injectAxe(page);
     
-    const results = await page.evaluate(() => {
-      return (window as any).axe?.run?.() || { violations: [] };
+    const results = await page.evaluate((): AxeResults => {
+      const window_ = window as unknown as { axe?: { run?: () => AxeResults } }
+      return window_.axe?.run?.() || { violations: [] };
     });
     
     const contrastViolations = results.violations?.filter(
-      (v: any) => v.id === 'color-contrast'
+      (v: AxeViolation) => v.id === 'color-contrast'
     ) || [];
     
     expect(contrastViolations.length).toBe(0);
@@ -214,12 +224,13 @@ test.describe('Overall axe-core scan', () => {
     await page.goto('/');
     await injectAxe(page);
     
-    const results = await page.evaluate(() => {
-      return (window as any).axe?.run?.() || { violations: [] };
+    const results = await page.evaluate((): AxeResults => {
+      const window_ = window as unknown as { axe?: { run?: () => AxeResults } }
+      return window_.axe?.run?.() || { violations: [] };
     });
     
     const seriousViolations = (results.violations || []).filter(
-      (v: any) => ['critical', 'serious'].includes(v.impact)
+      (v: AxeViolation) => v.impact && ['critical', 'serious'].includes(v.impact)
     );
     
     if (seriousViolations.length > 0) {
