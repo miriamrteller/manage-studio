@@ -14,8 +14,8 @@ jobs:
       - uses: pnpm/action-setup@v2
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
-          cache: 'pnpm'
+          node-version: "22"
+          cache: "pnpm"
       - run: pnpm install
       - name: Run linter
         run: pnpm run lint
@@ -27,8 +27,8 @@ jobs:
       - uses: pnpm/action-setup@v2
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
-          cache: 'pnpm'
+          node-version: "22"
+          cache: "pnpm"
       - run: pnpm install
       - name: Build
         run: pnpm run build
@@ -40,9 +40,9 @@ jobs:
       - uses: pnpm/action-setup@v2
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
-          cache: 'pnpm'
+          node-version: "22"
+          cache: "pnpm"
       - run: pnpm install
-      - run: pnpm exec playwright install
+      - run: pnpm -C apps/web exec playwright install --with-deps
       - name: Run axe-core accessibility scan
         run: pnpm run a11y:e2e
