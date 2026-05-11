@@ -1,40 +1,41 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useFamilies } from '../hooks/useFamilies';
-import type { Family } from '@shared/schemas';
+import { useLevels } from '../hooks/useLevels';
+import type { Level } from '@shared/schemas';
 
-interface FamiliesListProps {
-  onEdit?: (family: Family) => void;
+interface LevelsListProps {
+  onEdit?: (level: Level) => void;
 }
 
-export const FamiliesList = ({ onEdit }: FamiliesListProps) => {
+export const LevelsList = ({ onEdit }: LevelsListProps) => {
   const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
-  const familiesData = useFamilies({ page });
+  const levelsData = useLevels({ page });
 
-  const handleEdit = (family: Family) => {
+  const handleEdit = (level: Level) => {
     if (onEdit) {
-      onEdit(family);
+      onEdit(level);
     }
   };
 
-  const handleDeleteClick = (familyId: string) => {
-    setDeleteConfirmId(familyId);
+  const handleDeleteClick = (levelId: string) => {
+    setDeleteConfirmId(levelId);
   };
 
-  const handleConfirmDelete = async (familyId: string) => {
+  const handleConfirmDelete = async (levelId: string) => {
     try {
-      await new Promise((resolve, reject) => {
-        familiesData.deleteFamily(familyId, {
-          onSuccess: resolve,
-          onError: reject,
-        });
+      levelsData.deleteLevel(levelId, {
+        onSuccess: () => {
+          setDeleteConfirmId(null);
+        },
+        onError: (error) => {
+          console.error('Failed to delete level:', error);
+        },
       });
-      setDeleteConfirmId(null);
     } catch (error) {
-      console.error('Failed to delete family:', error);
+      console.error('Failed to delete level:', error);
     }
   };
 
@@ -45,43 +46,37 @@ export const FamiliesList = ({ onEdit }: FamiliesListProps) => {
   return (
     <div className="space-y-4 p-4" dir="rtl">
       {/* Loading state */}
-      {familiesData.isLoading && (
+      {levelsData.isLoading && (
         <div className="text-center py-4">
           {t('common.loading')}
         </div>
       )}
 
       {/* Error state */}
-      {familiesData.error && (
+      {levelsData.error && (
         <div className="alert-error">
-          {t('common.error')}: {familiesData.error.message}
+          {t('common.error')}: {levelsData.error.message}
         </div>
       )}
 
       {/* Empty state */}
-      {!familiesData.isLoading && familiesData.families.length === 0 && (
+      {!levelsData.isLoading && levelsData.levels.length === 0 && (
         <div className="text-center py-4">
-          {t('common.no_families_yet')}
+          {t('common.no_levels_yet')}
         </div>
       )}
 
       {/* Table */}
-      {familiesData.families.length > 0 && (
+      {levelsData.levels.length > 0 && (
         <div className="card overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="border-b" style={{ borderColor: 'var(--color-border-default)' }}>
               <tr>
                 <th className="px-4 py-3 text-right font-medium">
-                  {t('form.family.name')}
+                  {t('form.level.name')}
                 </th>
                 <th className="px-4 py-3 text-right font-medium">
-                  {t('form.family.contact_person_name')}
-                </th>
-                <th className="px-4 py-3 text-right font-medium">
-                  {t('form.family.contact_email')}
-                </th>
-                <th className="px-4 py-3 text-right font-medium">
-                  {t('form.family.contact_phone')}
+                  {t('form.level.sort_order')}
                 </th>
                 <th className="px-4 py-3 text-center font-medium">
                   {t('common.actions')}
@@ -89,29 +84,21 @@ export const FamiliesList = ({ onEdit }: FamiliesListProps) => {
               </tr>
             </thead>
             <tbody>
-              {familiesData.families.map((family) => (
-                <tr key={family.id} className="border-b hover:bg-opacity-50" style={{ borderColor: 'var(--color-border-default)' }}>
-                  <td className="px-4 py-3">{family.name}</td>
-                  <td className="px-4 py-3">
-                    {family.contact_person_name}
-                  </td>
-                  <td className="px-4 py-3">
-                    {family.contact_email}
-                  </td>
-                  <td className="px-4 py-3">
-                    {family.contact_phone}
-                  </td>
+              {levelsData.levels.map((level) => (
+                <tr key={level.id} className="border-b hover:bg-opacity-50" style={{ borderColor: 'var(--color-border-default)' }}>
+                  <td className="px-4 py-3">{level.name}</td>
+                  <td className="px-4 py-3 text-center">{level.sort_order}</td>
                   <td className="px-4 py-3">
                     <div className="flex gap-2 justify-center">
                       <button
-                        onClick={() => handleEdit(family)}
+                        onClick={() => handleEdit(level)}
                         className="button-secondary text-sm"
                         title={t('common.edit')}
                       >
                         {t('common.edit')}
                       </button>
                       <button
-                        onClick={() => handleDeleteClick(family.id)}
+                        onClick={() => handleDeleteClick(level.id)}
                         className="button-error text-sm"
                         title={t('common.delete')}
                       >
@@ -127,7 +114,7 @@ export const FamiliesList = ({ onEdit }: FamiliesListProps) => {
       )}
 
       {/* Pagination */}
-      {familiesData.total > familiesData.pageSize && (
+      {levelsData.total > levelsData.pageSize && (
         <div className="flex justify-between items-center pt-4">
           <button
             onClick={() => setPage(Math.max(1, page - 1))}
@@ -139,13 +126,13 @@ export const FamiliesList = ({ onEdit }: FamiliesListProps) => {
           <span className="text-sm">
             {t('common.page_n', { page })} —{' '}
             {t('common.showing_results', {
-              count: Math.min(familiesData.pageSize, familiesData.total - (page - 1) * familiesData.pageSize),
-              total: familiesData.total,
+              count: Math.min(levelsData.pageSize, levelsData.total - (page - 1) * levelsData.pageSize),
+              total: levelsData.total,
             })}
           </span>
           <button
             onClick={() => setPage(page + 1)}
-            disabled={page * familiesData.pageSize >= familiesData.total}
+            disabled={page * levelsData.pageSize >= levelsData.total}
             className="button-outline"
           >
             {t('common.next')}
@@ -161,23 +148,23 @@ export const FamiliesList = ({ onEdit }: FamiliesListProps) => {
               {t('common.confirm_delete')}
             </h3>
             <p className="mb-6">
-              {t('common.delete_family_confirm', {
+              {t('common.delete_level_confirm', {
                 name:
-                  familiesData.families.find((f) => f.id === deleteConfirmId)?.name ||
-                  'Family',
+                  levelsData.levels.find((l) => l.id === deleteConfirmId)?.name ||
+                  'Level',
               })}
             </p>
             <div className="flex gap-4">
               <button
                 onClick={() => handleConfirmDelete(deleteConfirmId)}
-                disabled={familiesData.isDeleting}
+                disabled={levelsData.isDeleting}
                 className="flex-1 button-error"
               >
-                {familiesData.isDeleting ? t('common.loading') : t('common.delete')}
+                {levelsData.isDeleting ? t('common.loading') : t('common.delete')}
               </button>
               <button
                 onClick={handleCancelDelete}
-                disabled={familiesData.isDeleting}
+                disabled={levelsData.isDeleting}
                 className="flex-1 button-outline"
               >
                 {t('form.cancel')}

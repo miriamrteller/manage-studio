@@ -58,14 +58,14 @@ export const FamilyForm = ({ family, onSubmit, isLoading }: FamilyFormProps) => 
     >
       {/* Error message */}
       {submitError && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded text-red-700" role="alert">
+        <div className="alert-error" role="alert">
           {submitError}
         </div>
       )}
 
       {/* Success message */}
       {submitSuccess && (
-        <div className="p-3 bg-green-50 border border-green-200 rounded text-green-700" role="status">
+        <div className="alert-success" role="status">
           {isCreating
             ? t('common.success_created')
             : t('common.success_updated')}

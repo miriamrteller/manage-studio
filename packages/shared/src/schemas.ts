@@ -181,7 +181,23 @@ export const TermSchema = z.object({
   path: ['end_date'],
 });
 
+// Creatable/updatable term (excludes id, tenant_id, created_at)
+export const CreateTermSchema = z.object({
+  name: z.string().min(1, 'Term name required'),
+  start_date: z.string().date('Invalid date format'),
+  end_date: z.string().date('Invalid date format'),
+  status: z.enum(['planning', 'active', 'completed']).default('planning'),
+}).partial().refine((data) => {
+  // Skip validation if both dates are missing (partial update)
+  if (!data.start_date || !data.end_date) return true;
+  return new Date(data.end_date) > new Date(data.start_date);
+}, {
+  message: 'End date must be after start date',
+  path: ['end_date'],
+});
+
 export type Term = z.infer<typeof TermSchema>;
+export type CreateTerm = z.infer<typeof CreateTermSchema>;
 
 // Level (e.g., Grade 1, Grade 2, Beginner, Advanced)
 export const LevelSchema = z.object({

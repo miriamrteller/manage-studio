@@ -1,0 +1,1 @@
+export { useTerms } from './useTerms';

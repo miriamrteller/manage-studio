@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase';
-import { PersonSchema, type Person } from '@shared/schemas';
+import { PersonService } from '../service';
+import { type Person } from '@shared/schemas';
 import { useTenant } from '@/hooks/useTenant';
 
 const PAGE_SIZE = 20;
@@ -23,48 +23,16 @@ export function usePeople({ page = 1, enabled = true }: UsePeopleOptions = {}) {
     queryKey: ['people', tenant?.id, page],
     queryFn: async () => {
       if (!tenant) throw new Error('Tenant not initialized');
-      
-      const from = (page - 1) * PAGE_SIZE;
-      const { data, error, count } = await supabase
-        .from('people')
-        .select('*', { count: 'exact' })
-        .eq('tenant_id', tenant.id)
-        .range(from, from + PAGE_SIZE - 1)
-        .order('created_at', { ascending: false });
-
-      if (error) throw new Error(`Failed to fetch people: ${error.message}`);
-
-      // Validate with schema
-      return {
-        people: (data || []).map(person => PersonSchema.parse(person)),
-        total: count || 0,
-        page,
-        pageSize: PAGE_SIZE,
-      };
+      return PersonService.list(tenant, { page, pageSize: PAGE_SIZE });
     },
     enabled: enabled && !!tenant?.id,
   });
 
   // Create mutation
   const createMutation = useMutation({
-    mutationFn: async (
-      newPersonData: Omit<Person, 'id' | 'created_at' | 'is_minor'>
-    ) => {
+    mutationFn: async (newPersonData: Partial<Person>) => {
       if (!tenant) throw new Error('Tenant not initialized');
-      
-      const { data, error } = await supabase
-        .from('people')
-        .insert([
-          {
-            ...newPersonData,
-            tenant_id: tenant.id,
-          },
-        ])
-        .select()
-        .single();
-
-      if (error) throw new Error(`Failed to create person: ${error.message}`);
-      return PersonSchema.parse(data);
+      return PersonService.create(tenant, newPersonData);
     },
     onSuccess: () => {
       // Invalidate all people queries for this tenant
@@ -78,21 +46,9 @@ export function usePeople({ page = 1, enabled = true }: UsePeopleOptions = {}) {
 
   // Update mutation
   const updateMutation = useMutation({
-    mutationFn: async (
-      updatedPerson: Partial<Person> & { id: string }
-    ) => {
+    mutationFn: async (updatedPerson: Partial<Person> & { id: string }) => {
       if (!tenant) throw new Error('Tenant not initialized');
-      
-      const { data, error } = await supabase
-        .from('people')
-        .update(updatedPerson)
-        .eq('id', updatedPerson.id)
-        .eq('tenant_id', tenant.id)
-        .select()
-        .single();
-
-      if (error) throw new Error(`Failed to update person: ${error.message}`);
-      return PersonSchema.parse(data);
+      return PersonService.update(tenant, updatedPerson.id, updatedPerson);
     },
     onSuccess: () => {
       if (tenant?.id) {
@@ -107,14 +63,7 @@ export function usePeople({ page = 1, enabled = true }: UsePeopleOptions = {}) {
   const deleteMutation = useMutation({
     mutationFn: async (personId: string) => {
       if (!tenant) throw new Error('Tenant not initialized');
-      
-      const { error } = await supabase
-        .from('people')
-        .delete()
-        .eq('id', personId)
-        .eq('tenant_id', tenant.id);
-
-      if (error) throw new Error(`Failed to delete person: ${error.message}`);
+      return PersonService.delete(tenant, personId);
     },
     onSuccess: () => {
       if (tenant?.id) {

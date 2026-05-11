@@ -1,40 +1,41 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useFamilies } from '../hooks/useFamilies';
-import type { Family } from '@shared/schemas';
+import { useTerms } from '../hooks/useTerms';
+import type { Term } from '@shared/schemas';
 
-interface FamiliesListProps {
-  onEdit?: (family: Family) => void;
+interface TermsListProps {
+  onEdit?: (term: Term) => void;
 }
 
-export const FamiliesList = ({ onEdit }: FamiliesListProps) => {
+export const TermsList = ({ onEdit }: TermsListProps) => {
   const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
-  const familiesData = useFamilies({ page });
+  const termsData = useTerms({ page });
 
-  const handleEdit = (family: Family) => {
+  const handleEdit = (term: Term) => {
     if (onEdit) {
-      onEdit(family);
+      onEdit(term);
     }
   };
 
-  const handleDeleteClick = (familyId: string) => {
-    setDeleteConfirmId(familyId);
+  const handleDeleteClick = (termId: string) => {
+    setDeleteConfirmId(termId);
   };
 
-  const handleConfirmDelete = async (familyId: string) => {
+  const handleConfirmDelete = async (termId: string) => {
     try {
-      await new Promise((resolve, reject) => {
-        familiesData.deleteFamily(familyId, {
-          onSuccess: resolve,
-          onError: reject,
-        });
+      termsData.deleteTerm(termId, {
+        onSuccess: () => {
+          setDeleteConfirmId(null);
+        },
+        onError: (error) => {
+          console.error('Failed to delete term:', error);
+        },
       });
-      setDeleteConfirmId(null);
     } catch (error) {
-      console.error('Failed to delete family:', error);
+      console.error('Failed to delete term:', error);
     }
   };
 
@@ -45,43 +46,43 @@ export const FamiliesList = ({ onEdit }: FamiliesListProps) => {
   return (
     <div className="space-y-4 p-4" dir="rtl">
       {/* Loading state */}
-      {familiesData.isLoading && (
+      {termsData.isLoading && (
         <div className="text-center py-4">
           {t('common.loading')}
         </div>
       )}
 
       {/* Error state */}
-      {familiesData.error && (
+      {termsData.error && (
         <div className="alert-error">
-          {t('common.error')}: {familiesData.error.message}
+          {t('common.error')}: {termsData.error.message}
         </div>
       )}
 
       {/* Empty state */}
-      {!familiesData.isLoading && familiesData.families.length === 0 && (
+      {!termsData.isLoading && termsData.terms.length === 0 && (
         <div className="text-center py-4">
-          {t('common.no_families_yet')}
+          {t('common.no_terms_yet')}
         </div>
       )}
 
       {/* Table */}
-      {familiesData.families.length > 0 && (
+      {termsData.terms.length > 0 && (
         <div className="card overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="border-b" style={{ borderColor: 'var(--color-border-default)' }}>
               <tr>
                 <th className="px-4 py-3 text-right font-medium">
-                  {t('form.family.name')}
+                  {t('form.term.name')}
                 </th>
                 <th className="px-4 py-3 text-right font-medium">
-                  {t('form.family.contact_person_name')}
+                  {t('form.term.start_date')}
                 </th>
                 <th className="px-4 py-3 text-right font-medium">
-                  {t('form.family.contact_email')}
+                  {t('form.term.end_date')}
                 </th>
                 <th className="px-4 py-3 text-right font-medium">
-                  {t('form.family.contact_phone')}
+                  {t('form.term.status')}
                 </th>
                 <th className="px-4 py-3 text-center font-medium">
                   {t('common.actions')}
@@ -89,29 +90,41 @@ export const FamiliesList = ({ onEdit }: FamiliesListProps) => {
               </tr>
             </thead>
             <tbody>
-              {familiesData.families.map((family) => (
-                <tr key={family.id} className="border-b hover:bg-opacity-50" style={{ borderColor: 'var(--color-border-default)' }}>
-                  <td className="px-4 py-3">{family.name}</td>
+              {termsData.terms.map((term) => (
+                <tr key={term.id} className="border-b hover:bg-opacity-50" style={{ borderColor: 'var(--color-border-default)' }}>
+                  <td className="px-4 py-3">{term.name}</td>
+                  <td className="px-4 py-3">{term.start_date}</td>
+                  <td className="px-4 py-3">{term.end_date}</td>
                   <td className="px-4 py-3">
-                    {family.contact_person_name}
-                  </td>
-                  <td className="px-4 py-3">
-                    {family.contact_email}
-                  </td>
-                  <td className="px-4 py-3">
-                    {family.contact_phone}
+                    <span
+                      className="px-2 py-1 rounded text-xs font-medium"
+                      style={{
+                        backgroundColor: term.status === 'active'
+                          ? 'var(--color-success-light)'
+                          : term.status === 'planning'
+                            ? 'var(--color-info-light)'
+                            : 'var(--color-neutral-100)',
+                        color: term.status === 'active'
+                          ? 'var(--color-success)'
+                          : term.status === 'planning'
+                            ? 'var(--color-info)'
+                            : 'var(--color-text-primary)',
+                      }}
+                    >
+                      {t(`form.term.status_${term.status}`)}
+                    </span>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-2 justify-center">
                       <button
-                        onClick={() => handleEdit(family)}
+                        onClick={() => handleEdit(term)}
                         className="button-secondary text-sm"
                         title={t('common.edit')}
                       >
                         {t('common.edit')}
                       </button>
                       <button
-                        onClick={() => handleDeleteClick(family.id)}
+                        onClick={() => handleDeleteClick(term.id)}
                         className="button-error text-sm"
                         title={t('common.delete')}
                       >
@@ -127,7 +140,7 @@ export const FamiliesList = ({ onEdit }: FamiliesListProps) => {
       )}
 
       {/* Pagination */}
-      {familiesData.total > familiesData.pageSize && (
+      {termsData.total > termsData.pageSize && (
         <div className="flex justify-between items-center pt-4">
           <button
             onClick={() => setPage(Math.max(1, page - 1))}
@@ -139,13 +152,13 @@ export const FamiliesList = ({ onEdit }: FamiliesListProps) => {
           <span className="text-sm">
             {t('common.page_n', { page })} —{' '}
             {t('common.showing_results', {
-              count: Math.min(familiesData.pageSize, familiesData.total - (page - 1) * familiesData.pageSize),
-              total: familiesData.total,
+              count: Math.min(termsData.pageSize, termsData.total - (page - 1) * termsData.pageSize),
+              total: termsData.total,
             })}
           </span>
           <button
             onClick={() => setPage(page + 1)}
-            disabled={page * familiesData.pageSize >= familiesData.total}
+            disabled={page * termsData.pageSize >= termsData.total}
             className="button-outline"
           >
             {t('common.next')}
@@ -161,23 +174,23 @@ export const FamiliesList = ({ onEdit }: FamiliesListProps) => {
               {t('common.confirm_delete')}
             </h3>
             <p className="mb-6">
-              {t('common.delete_family_confirm', {
+              {t('common.delete_term_confirm', {
                 name:
-                  familiesData.families.find((f) => f.id === deleteConfirmId)?.name ||
-                  'Family',
+                  termsData.terms.find((t) => t.id === deleteConfirmId)?.name ||
+                  'Term',
               })}
             </p>
             <div className="flex gap-4">
               <button
                 onClick={() => handleConfirmDelete(deleteConfirmId)}
-                disabled={familiesData.isDeleting}
+                disabled={termsData.isDeleting}
                 className="flex-1 button-error"
               >
-                {familiesData.isDeleting ? t('common.loading') : t('common.delete')}
+                {termsData.isDeleting ? t('common.loading') : t('common.delete')}
               </button>
               <button
                 onClick={handleCancelDelete}
-                disabled={familiesData.isDeleting}
+                disabled={termsData.isDeleting}
                 className="flex-1 button-outline"
               >
                 {t('form.cancel')}
