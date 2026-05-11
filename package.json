@@ -12,6 +12,7 @@
     "build": "pnpm -r build",
     "lint": "pnpm -r lint",
     "test": "pnpm -r test",
+    "a11y:install": "pnpm -C apps/web exec playwright install --with-deps",
     "a11y:e2e": "pnpm -C apps/web run a11y:e2e"
   },
   "devDependencies": {
