@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
 import { LoginFormSchema, PasswordLoginSchema, type LoginForm as LoginFormData, type PasswordLogin as PasswordLoginData } from '../../schemas';
 import { AuthMessage } from './AuthMessage';
-import { Button, FormField } from '../Common';
+import { Button, FormInput } from '../Common';
 
 /**
  * LoginForm: Presentational component for login form UI
@@ -109,37 +109,25 @@ export function LoginForm({
       {/* Form */}
       <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
         {/* Email Input */}
-        <FormField
+        <FormInput
+          htmlFor="email"
           label={t('form.email')}
-          id="email"
+          type="email"
+          placeholder={t('form.email_placeholder')}
           error={form.formState.errors.email?.message}
-        >
-          <input
-            id="email"
-            type="email"
-            placeholder={t('form.email_placeholder')}
-            className="w-full px-4 py-2 border border-gray-300 rounded focus-visible:outline-2 outline-primary outline-offset-2"
-            {...register('email')}
-            aria-invalid={Boolean(form.formState.errors.email)}
-          />
-        </FormField>
+          {...register('email')}
+        />
 
         {/* Password Input (only visible in password mode) */}
         {authMode === 'password' && (
-          <FormField
+          <FormInput
+            htmlFor="password"
             label={t('pages.login.password')}
-            id="password"
-            error={((form.formState.errors as Record<string, { message?: string }>).password?.message)}
-          >
-            <input
-              id="password"
-              type="password"
-              placeholder={t('pages.login.password_placeholder')}
-              className="w-full px-4 py-2 border border-gray-300 rounded focus-visible:outline-2 outline-primary outline-offset-2"
-              {...register('password' as const)}
-              aria-invalid={Boolean((form.formState.errors as Record<string, unknown>).password)}
-            />
-          </FormField>
+            type="password"
+            placeholder={t('pages.login.password_placeholder')}
+            error={(form.formState.errors as Record<string, { message?: string }>).password?.message}
+            {...register('password' as const)}
+          />
         )}
 
         {/* Submit Button */}

@@ -3,6 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { FamilySchema, type Family } from '@shared/schemas';
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
+import { FormInput, Button } from '../../../components/Common';
 
 // Schema source: SPEC.md Migration 002
 // Columns: id, tenant_id, name, contact_person_name, contact_email, contact_phone, created_at
@@ -57,14 +58,14 @@ export const FamilyForm = ({ family, onSubmit, isLoading }: FamilyFormProps) => 
     >
       {/* Error message */}
       {submitError && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded text-red-700">
+        <div className="p-3 bg-red-50 border border-red-200 rounded text-red-700" role="alert">
           {submitError}
         </div>
       )}
 
       {/* Success message */}
       {submitSuccess && (
-        <div className="p-3 bg-green-50 border border-green-200 rounded text-green-700">
+        <div className="p-3 bg-green-50 border border-green-200 rounded text-green-700" role="status">
           {isCreating
             ? t('common.success_created')
             : t('common.success_updated')}
@@ -72,140 +73,69 @@ export const FamilyForm = ({ family, onSubmit, isLoading }: FamilyFormProps) => 
       )}
 
       {/* Family Name field — REQUIRED */}
-      <div>
-        <label
-          htmlFor="name"
-          className="block text-sm font-medium text-gray-700 mb-1"
-        >
-          {t('form.family.name')} *
-        </label>
-        <input
-          id="name"
-          type="text"
-          placeholder={t('form.family.name')}
-          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-            form.formState.errors.name
-              ? 'border-red-500'
-              : 'border-gray-300'
-          }`}
-          {...form.register('name')}
-          required
-        />
-        {form.formState.errors.name && (
-          <span className="text-sm text-red-600 mt-1 block">
-            {form.formState.errors.name.message}
-          </span>
-        )}
-      </div>
+      <FormInput
+        htmlFor="name"
+        label={t('form.family.name')}
+        placeholder={t('form.family.name')}
+        error={form.formState.errors.name?.message}
+        required
+        {...form.register('name')}
+      />
 
       {/* Contact Person Name field — REQUIRED */}
-      <div>
-        <label
-          htmlFor="contact_person_name"
-          className="block text-sm font-medium text-gray-700 mb-1"
-        >
-          {t('form.family.contact_person_name')} *
-        </label>
-        <input
-          id="contact_person_name"
-          type="text"
-          placeholder={t('form.family.contact_person_name')}
-          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-            form.formState.errors.contact_person_name
-              ? 'border-red-500'
-              : 'border-gray-300'
-          }`}
-          {...form.register('contact_person_name')}
-          required
-        />
-        {form.formState.errors.contact_person_name && (
-          <span className="text-sm text-red-600 mt-1 block">
-            {form.formState.errors.contact_person_name.message}
-          </span>
-        )}
-      </div>
+      <FormInput
+        htmlFor="contact_person_name"
+        label={t('form.family.contact_person_name')}
+        placeholder={t('form.family.contact_person_name')}
+        error={form.formState.errors.contact_person_name?.message}
+        required
+        {...form.register('contact_person_name')}
+      />
 
       {/* Contact Email field — REQUIRED */}
-      <div>
-        <label
-          htmlFor="contact_email"
-          className="block text-sm font-medium text-gray-700 mb-1"
-        >
-          {t('form.family.contact_email')} *
-        </label>
-        <input
-          id="contact_email"
-          type="email"
-          placeholder="example@email.com"
-          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-            form.formState.errors.contact_email
-              ? 'border-red-500'
-              : 'border-gray-300'
-          }`}
-          {...form.register('contact_email')}
-          required
-        />
-        {form.formState.errors.contact_email && (
-          <span className="text-sm text-red-600 mt-1 block">
-            {form.formState.errors.contact_email.message}
-          </span>
-        )}
-      </div>
+      <FormInput
+        htmlFor="contact_email"
+        label={t('form.family.contact_email')}
+        type="email"
+        placeholder="example@email.com"
+        error={form.formState.errors.contact_email?.message}
+        required
+        {...form.register('contact_email')}
+      />
 
       {/* Contact Phone field — REQUIRED, STRICT ISRAELI FORMAT */}
-      <div>
-        <label
-          htmlFor="contact_phone"
-          className="block text-sm font-medium text-gray-700 mb-1"
-        >
-          {t('form.family.contact_phone')} *
-        </label>
-        <input
-          id="contact_phone"
-          type="tel"
-          placeholder="05012345678"
-          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-            form.formState.errors.contact_phone
-              ? 'border-red-500'
-              : 'border-gray-300'
-          }`}
-          {...form.register('contact_phone')}
-          required
-        />
-        <p className="text-xs text-gray-500 mt-1">
-          {t('form.family.invalid_phone')}
-        </p>
-        {form.formState.errors.contact_phone && (
-          <span className="text-sm text-red-600 mt-1 block">
-            {form.formState.errors.contact_phone.message}
-          </span>
-        )}
-      </div>
+      <FormInput
+        htmlFor="contact_phone"
+        label={t('form.family.contact_phone')}
+        type="tel"
+        placeholder="05012345678"
+        error={form.formState.errors.contact_phone?.message}
+        helperText={t('form.family.invalid_phone')}
+        required
+        {...form.register('contact_phone')}
+      />
 
       {/* Form buttons */}
       <div className="flex gap-2 pt-4">
-        <button
+        <Button
           type="submit"
+          variant="primary"
           disabled={isLoading || form.formState.isSubmitting}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+          isLoading={isLoading || form.formState.isSubmitting}
         >
-          {isLoading || form.formState.isSubmitting
-            ? t('common.loading')
-            : isCreating
-              ? t('common.create')
-              : t('common.save')}
-        </button>
-        <button
+          {isCreating ? t('common.create') : t('common.save')}
+        </Button>
+        <Button
           type="reset"
+          variant="secondary"
           onClick={() => {
             form.reset();
             setSubmitError(null);
             setSubmitSuccess(false);
           }}
-          className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400"
         >
           {t('form.cancel')}
-        </button>
+        </Button>
       </div>
     </form>
   );
