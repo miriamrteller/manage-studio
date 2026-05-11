@@ -259,3 +259,31 @@ export const EnrolmentSchema = z.object({
 });
 
 export type Enrolment = z.infer<typeof EnrolmentSchema>;
+
+// Class session (individual meeting of a class)
+export const ClassSessionSchema = z.object({
+  id: UUIDSchema,
+  tenant_id: UUIDSchema,
+  class_id: UUIDSchema,
+  session_date: z.string().date('Invalid date format'),
+  session_start_time: z.string().regex(/^\d{2}:\d{2}$/, 'Invalid time format (HH:MM)'),
+  session_end_time: z.string().regex(/^\d{2}:\d{2}$/, 'Invalid time format (HH:MM)'),
+  created_at: z.string().datetime(),
+});
+
+export type ClassSession = z.infer<typeof ClassSessionSchema>;
+
+// Teacher profile
+export const TeacherSchema = z.object({
+  id: UUIDSchema,
+  tenant_id: UUIDSchema,
+  user_profile_id: UUIDSchema,
+  name: z.string().min(1, 'Teacher name required'),
+  email: z.string().email().nullable().optional(),
+  phone: z.string().nullable().optional(),
+  contract_type: z.enum(['employee', 'contractor']).default('contractor'),
+  hourly_rate_minor: z.number().nonnegative().nullable().optional(),
+  created_at: z.string().datetime(),
+});
+
+export type Teacher = z.infer<typeof TeacherSchema>;
