@@ -15,6 +15,24 @@ export type UserProfile = {
 };
 
 /**
+ * Tenant white-label configuration
+ * Stores brand customization: primary color, secondary color, logo
+ */
+export type TenantWhiteLabel = {
+  primary_color: string; // e.g., '#76335a'
+  secondary_color?: string; // e.g., '#e99ac4' (optional)
+  accent_color?: string; // e.g., '#a78bfa' (optional)
+  logo?: {
+    url: string;
+    height?: string;
+  };
+  logo_dark?: {
+    url: string;
+    height?: string;
+  };
+};
+
+/**
  * Tenant configuration from tenants table
  * Used to apply branding, locale, dir to app UI
  * language + country are sources of truth; dir and locale are computed
@@ -25,10 +43,9 @@ export type TenantConfig = {
   subdomain: string;
   language: 'he' | 'en'; // Source of truth for language
   country: 'IL' | 'US'; // Source of truth for region (VAT, currency, locale)
-  primary_color: string; // e.g., '#76335a'
-  accent_color: string; // e.g., '#e99ac4'
   currency: string; // e.g., 'ILS'
   vat_rate: number; // e.g., 0.17
+  white_label?: TenantWhiteLabel; // Brand customization (colors, logo)
   // Computed (not stored in DB):
   dir?: 'rtl' | 'ltr'; // Computed from language
   locale?: string; // Computed as e.g., 'he-IL'

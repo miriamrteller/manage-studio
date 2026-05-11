@@ -2,10 +2,102 @@
 @tailwind components;
 @tailwind utilities;
 
+/**
+ * DESIGN SYSTEM: Color Architecture (3 Layers)
+ * 
+ * Layer 1: Core Primitives
+ *   --color-primary, --color-secondary, status colors, neutral scale
+ *   Derived from school's branding via deriveColorSystem()
+ *   Can be overridden at runtime by useThemeInjection() hook
+ * 
+ * Layer 2: Semantic Intent Colors
+ *   --color-primary-light, --color-primary-hover, etc.
+ *   Used for interactive states (hover, active, disabled)
+ * 
+ * Layer 3: Component CSS Classes
+ *   .form-input, .button, .card, etc.
+ *   Use semantic variables to define appearance
+ */
+
 :root {
-  --primary: #76335a;
-  --accent: #e99ac4;
-  /* Fallback colors: #7C3AED primary, #A78BFA accent */
+  /* ===== LAYER 1: CORE PRIMITIVES ===== */
+  
+  /* Primary Color Family (School's custom burgundy: #76335a) */
+  --color-primary: #76335a;
+  --color-primary-light: #a85a7e;
+  --color-primary-hover: #5f2549;
+  --color-primary-active: #4a1c35;
+
+  /* Secondary Color Family (School's custom mauve: #e99ac4) */
+  --color-secondary: #e99ac4;
+  --color-secondary-light: #f0c0d9;
+  --color-secondary-hover: #dc7da5;
+  --color-secondary-active: #cf5987;
+
+  /* Status Colors (Universal - not derived from primary) */
+  --color-error: #dc2626;
+  --color-error-light: #fee2e2;
+  --color-error-hover: #b91c1c;
+  --color-error-active: #991b1b;
+
+  --color-warning: #ea580c;
+  --color-warning-light: #fed7aa;
+  --color-warning-hover: #c2410c;
+  --color-warning-active: #9a3412;
+
+  --color-success: #15803d;
+  --color-success-light: #dcfce7;
+  --color-success-hover: #166534;
+  --color-success-active: #15552c;
+
+  --color-info: #0284c7;
+  --color-info-light: #e0f2fe;
+  --color-info-hover: #0369a1;
+  --color-info-active: #075985;
+
+  /* Background Colors - Two Variants (Cool vs Warm off-white) */
+  /* Cool off-white: Gray-blue tint (for cool primary colors like blue, purple, cyan) */
+  --color-bg-primary-cool: #fafbfc;
+  --color-bg-secondary-cool: #f3f4f6;
+
+  /* Warm off-white: Cream tint (for warm primary colors like red, orange, yellow) */
+  --color-bg-primary-warm: #fffbf5;
+  --color-bg-secondary-warm: #faf8f3;
+
+  /* Default to cool background (most professional) - will be overridden by useThemeInjection */
+  --color-bg-primary: var(--color-bg-primary-cool);
+  --color-bg-secondary: var(--color-bg-secondary-cool);
+
+  /* Neutral Scale (50-900, derived from primary's hue for cohesion) */
+  --color-neutral-50: #faf8f7;
+  --color-neutral-100: #f5f2f1;
+  --color-neutral-200: #eae6e5;
+  --color-neutral-300: #dcd5d2;
+  --color-neutral-400: #c4b8b2;
+  --color-neutral-500: #aca199;
+  --color-neutral-600: #948b81;
+  --color-neutral-700: #7c7369;
+  --color-neutral-800: #645b51;
+  --color-neutral-900: #4c4339;
+
+  /* ===== LAYER 2: SEMANTIC INTENT ===== */
+
+  /* Text Colors */
+  --color-text-primary: #1f2937; /* Dark gray for primary text */
+  --color-text-secondary: #6b7280; /* Medium gray for secondary text */
+  --color-text-muted: #9ca3af; /* Light gray for muted text */
+  --color-text-inverted: #f9fafb; /* White for text on dark backgrounds */
+
+  /* Border Colors */
+  --color-border-default: var(--color-neutral-200);
+  --color-border-subtle: var(--color-neutral-100);
+  --color-border-focus: var(--color-primary);
+
+  /* Surface Colors */
+  --color-surface-primary: var(--color-bg-primary);
+  --color-surface-secondary: var(--color-bg-secondary);
+  --color-surface-elevated: #ffffff;
+  --color-surface-overlay: rgba(0, 0, 0, 0.5);
 }
 
 /* Accessibility: Focus visible on all interactive elements (WCAG 2.1 Level AA) */
@@ -17,14 +109,143 @@
   select:focus-visible,
   a:focus-visible {
     @apply outline-2 outline-offset-2;
-    outline-color: var(--primary);
+    outline-color: var(--color-primary);
+  }
+
+  /* ===== LAYER 3: COMPONENT STYLES ===== */
+
+  /* Form Input Styles */
+  .form-input,
+  .form-textarea,
+  .form-select {
+    @apply w-full px-3 py-2 border rounded-md text-base;
+    border-color: var(--color-border-default);
+    background-color: var(--color-surface-elevated);
+    color: var(--color-text-primary);
+  }
+
+  .form-input:hover,
+  .form-textarea:hover,
+  .form-select:hover {
+    border-color: var(--color-border-default);
+  }
+
+  .form-input:focus,
+  .form-textarea:focus,
+  .form-select:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(118, 51, 90, 0.1);
+  }
+
+  .form-input:disabled,
+  .form-textarea:disabled,
+  .form-select:disabled {
+    background-color: var(--color-bg-secondary);
+    color: var(--color-text-muted);
+    cursor: not-allowed;
+  }
+
+  /* Form Label Styles */
+  .form-label {
+    @apply block text-sm font-medium mb-2;
+    color: var(--color-text-primary);
+  }
+
+  /* Form Error Message */
+  .form-error {
+    @apply text-sm mt-1;
+    color: var(--color-error);
+  }
+
+  /* Form Hint Text */
+  .form-hint {
+    @apply text-sm mt-1;
+    color: var(--color-text-secondary);
+  }
+
+  /* Button Base Styles */
+  .button {
+    @apply px-4 py-2 rounded-md font-medium transition-colors duration-200;
+    cursor: pointer;
+  }
+
+  .button-primary {
+    @apply button;
+    background-color: var(--color-primary);
+    color: white;
+  }
+
+  .button-primary:hover {
+    background-color: var(--color-primary-hover);
+  }
+
+  .button-primary:active {
+    background-color: var(--color-primary-active);
+  }
+
+  .button-secondary {
+    @apply button;
+    background-color: var(--color-secondary);
+    color: white;
+  }
+
+  .button-secondary:hover {
+    background-color: var(--color-secondary-hover);
+  }
+
+  .button-secondary:active {
+    background-color: var(--color-secondary-active);
+  }
+
+  /* Alert Styles */
+  .alert {
+    @apply p-4 rounded-md;
+  }
+
+  .alert-error {
+    @apply alert;
+    background-color: var(--color-error-light);
+    color: var(--color-error);
+    border: 1px solid var(--color-error);
+  }
+
+  .alert-warning {
+    @apply alert;
+    background-color: var(--color-warning-light);
+    color: var(--color-warning);
+    border: 1px solid var(--color-warning);
+  }
+
+  .alert-success {
+    @apply alert;
+    background-color: var(--color-success-light);
+    color: var(--color-success);
+    border: 1px solid var(--color-success);
+  }
+
+  .alert-info {
+    @apply alert;
+    background-color: var(--color-info-light);
+    color: var(--color-info);
+    border: 1px solid var(--color-info);
+  }
+
+  /* Card Styles */
+  .card {
+    @apply rounded-lg border p-4;
+    background-color: var(--color-surface-elevated);
+    border-color: var(--color-border-default);
+  }
+
+  .card-hover {
+    @apply card;
+    transition: box-shadow 0.2s ease;
+  }
+
+  .card-hover:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   }
 }
-
-/* Color contrast verification (WCAG 2.1 Level AA):
-   #76335a (primary) on white = 8.5:1 (WCAG AAA) ✅
-   #e99ac4 (accent) on white = 4.8:1 (WCAG AA) ✅
-*/
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',

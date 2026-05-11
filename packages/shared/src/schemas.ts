@@ -27,13 +27,34 @@ export const TenantSchema = z.object({
   subdomain: z.string().min(1),
   language: z.enum(['he', 'en']).default('he'),
   country: z.enum(['IL', 'US']).default('IL'),
-  primary_color: z.string().default('#76335a'),
-  accent_color: z.string().default('#e99ac4'),
   currency: z.string().default('ILS'),
   vat_rate: z.number().min(0).max(1).default(0.17),
 });
 
 export type Tenant = z.infer<typeof TenantSchema>;
+
+// Tenant white-label configuration (brand customization)
+export const TenantWhiteLabelSchema = z.object({
+  primary_color: z.string()
+    .regex(/^#[0-9a-fA-F]{6}$/, 'Must be a valid hex color (e.g., #76335a)')
+    .default('#2563eb'),
+  secondary_color: z.string()
+    .regex(/^#[0-9a-fA-F]{6}$/, 'Must be a valid hex color')
+    .optional(),
+  accent_color: z.string()
+    .regex(/^#[0-9a-fA-F]{6}$/, 'Must be a valid hex color')
+    .optional(),
+  logo: z.object({
+    url: z.string().url('Invalid logo URL'),
+    height: z.string().optional(),
+  }).optional(),
+  logo_dark: z.object({
+    url: z.string().url('Invalid dark mode logo URL'),
+    height: z.string().optional(),
+  }).optional(),
+});
+
+export type TenantWhiteLabel = z.infer<typeof TenantWhiteLabelSchema>;
 
 // User profile
 export const UserProfileSchema = z.object({

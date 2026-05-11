@@ -42,7 +42,7 @@ export function useTenant(): TenantConfig | null {
       const { data, error } = await supabase
         .from('tenants')
         .select(
-          'id, name, subdomain, language, country, primary_color, accent_color, currency, vat_rate'
+          'id, name, subdomain, language, country, currency, vat_rate, white_label:tenant_white_labels(primary_color, secondary_color, accent_color, logo, logo_dark)'
         )
         .eq('subdomain', subdomain)
         .single();
@@ -52,12 +52,24 @@ export function useTenant(): TenantConfig | null {
         return null;
       }
 
+      // Handle white_label: could be array (Supabase returns one-to-many as array)
+      // Extract first element or use undefined if not found
+      const whiteLabel = Array.isArray(data.white_label)
+        ? data.white_label[0]
+        : data.white_label;
+
       // Compute dir and locale from language + country
-      const config = data as Omit<TenantConfig, 'dir' | 'locale'>;
       return {
-        ...config,
-        dir: getDir(config.language as 'he' | 'en'),
-        locale: getLocale(config.language as 'he' | 'en', config.country as 'IL' | 'US'),
+        id: data.id,
+        name: data.name,
+        subdomain: data.subdomain,
+        language: data.language,
+        country: data.country,
+        currency: data.currency,
+        vat_rate: data.vat_rate,
+        white_label: whiteLabel || undefined,
+        dir: getDir(data.language as 'he' | 'en'),
+        locale: getLocale(data.language as 'he' | 'en', data.country as 'IL' | 'US'),
       } as TenantConfig;
     },
     enabled: !!subdomain,

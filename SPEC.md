@@ -105,6 +105,16 @@ Each tenant has configurable properties: `locale`, `dir` (rtl/ltr), `currency`, 
 - Define colors in `:root` CSS variables and Tailwind `theme.extend.colors` → all components use `text-primary`, `text-accent`.
 - Define locale/direction in `useTenant()` hook → Phase 1A returns defaults, Phase 1B fetches from tenant row in DB.
 - Define page titles and branding text in i18n translation files (`he.json`, `en.json`) → no hardcoding in HTML or components.
+
+**Design System (3-layer CSS architecture):**
+- **Layer 1** (Core Primitives): Primary, secondary, status colors (error/warning/success/info), neutral scale — all defined in `:root` CSS variables.
+- **Layer 2** (Semantic Intent): Derived variants (light/hover/active) and intent-based colors (text-primary, border-focus) — used by components.
+- **Layer 3** (Component CSS): Classes (`.form-input`, `.button`, `.card`) referencing Layer 2 variables — zero inline colors.
+
+**Color Derivation:** Primary color automatically expands to 30+ semantic colors via `deriveColorSystem()` (primary family, secondary family if provided, status colors, neutral scale). All variants (`primary_light`, `primary_hover`, `primary_active`) computed in `src/lib/utils.ts`, injected via `useThemeInjection()` hook.
+
+**White-Label Scope:** Tenants customize primary color, optional secondary color, and logo. System auto-detects warm vs cool background based on primary hue. Locked: background colors, text colors, spacing, typography (ensures professionalism and WCAG compliance).
+
 - **Rationale:** Enables white-labeling (V3), per-tenant customization without code changes, and clean tenant isolation.
 - **Pattern:** Move hardcoded values to config → 1) update CSS variables for colors/fonts, 2) update schemas for tenant fields, 3) update components to reference config, not hardcodes.
 - **Example:** Change `<h1 className="text-[#76335a]">` to `<h1 className="text-primary">` → uses CSS variable.
