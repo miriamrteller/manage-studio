@@ -75,6 +75,7 @@
       "password_placeholder": "הכנסו את הסיסמה שלכם",
       "check_email": "אימות דוא״ל נשלח. בדקו את תיבת הדוא״ל שלכם.",
       "invalid_credentials": "דוא״ל או סיסמה שגויים",
+      "success_redirecting": "התחברות בוצעה בהצלחה! מעביר לעמוד הבא...",
       "no_account": "אין לכם חשבון?",
       "signup": "הרשמו כאן"
     },

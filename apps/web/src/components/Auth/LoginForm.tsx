@@ -46,14 +46,11 @@ export function LoginForm({
   // Use different schema based on auth mode
   const schema = authMode === 'password' ? PasswordLoginSchema : LoginFormSchema;
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    reset,
-  } = useForm<FormData>({
+  const form = useForm<FormData>({
     resolver: zodResolver(schema),
   });
+  
+  const { register, handleSubmit, reset } = form;
 
   const handleAuthModeChange = (mode: AuthMode) => {
     setAuthMode(mode);
@@ -115,7 +112,7 @@ export function LoginForm({
         <FormField
           label={t('form.email')}
           id="email"
-          error={(errors as any).email?.message}
+          error={form.formState.errors.email?.message}
         >
           <input
             id="email"
@@ -123,7 +120,7 @@ export function LoginForm({
             placeholder={t('form.email_placeholder')}
             className="w-full px-4 py-2 border border-gray-300 rounded focus-visible:outline-2 outline-primary outline-offset-2"
             {...register('email')}
-            aria-invalid={!!(errors as any).email}
+            aria-invalid={Boolean(form.formState.errors.email)}
           />
         </FormField>
 
@@ -132,15 +129,15 @@ export function LoginForm({
           <FormField
             label={t('pages.login.password')}
             id="password"
-            error={(errors as any).password?.message}
+            error={((form.formState.errors as Record<string, { message?: string }>).password?.message)}
           >
             <input
               id="password"
               type="password"
               placeholder={t('pages.login.password_placeholder')}
               className="w-full px-4 py-2 border border-gray-300 rounded focus-visible:outline-2 outline-primary outline-offset-2"
-              {...register('password')}
-              aria-invalid={!!(errors as any).password}
+              {...register('password' as const)}
+              aria-invalid={Boolean((form.formState.errors as Record<string, unknown>).password)}
             />
           </FormField>
         )}

@@ -50,6 +50,7 @@
       "password_placeholder": "Enter your password",
       "check_email": "Check your email for a magic link to sign in.",
       "invalid_credentials": "Invalid email or password",
+      "success_redirecting": "Login successful! Redirecting...",
       "no_account": "Don't have an account?",
       "signup": "Sign up here"
     },

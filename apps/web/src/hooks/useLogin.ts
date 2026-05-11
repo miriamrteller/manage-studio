@@ -66,7 +66,7 @@ export function useLogin(redirectTo: string = '/classes'): LoginState & LoginAct
         } else {
           setMessage({
             type: 'success',
-            text: 'Login successful! Redirecting...',
+            text: t('pages.login.success_redirecting'),
           });
           // Redirect to intended destination or fallback
           setTimeout(() => {
