@@ -22,7 +22,7 @@ export class TenantDB {
     // Use .select() with default options, then add tenant filter
     return supabase
       .from(table)
-      .select('*', selectOptions ?? {})
+      .select('*', selectOptions)
       .eq('tenant_id', tenant.id);
   }
 
