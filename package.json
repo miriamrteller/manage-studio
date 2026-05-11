@@ -2,7 +2,7 @@
   "name": "ballet-school-system",
   "version": "1.0.0",
   "private": true,
-  "packageManager": "pnpm@10.0.0",
+  "packageManager": "pnpm@11.0.8",
   "workspaces": [
     "apps/*",
     "packages/*"
