@@ -74,7 +74,7 @@ export const PersonForm = ({ person, onSubmit, isLoading }: PersonFormProps) => 
         <button
           type="submit"
           disabled={isLoading || form.formState.isSubmitting}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+          className="button-primary"
         >
           {isLoading || form.formState.isSubmitting
             ? t('common.loading')
@@ -89,7 +89,7 @@ export const PersonForm = ({ person, onSubmit, isLoading }: PersonFormProps) => 
             setSubmitError(null);
             setSubmitSuccess(false);
           }}
-          className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400"
+          className="button-outline"
         >
           {t('form.cancel')}
         </button>

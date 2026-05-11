@@ -86,8 +86,8 @@ export const PersonFormFields = ({ register, errors, person }: PersonFormFieldsP
 
       {/* Display computed field (is_minor) if person exists — read-only */}
       {person?.is_minor !== undefined && (
-        <div className="p-3 bg-gray-50 border border-gray-200 rounded">
-          <p className="text-sm text-gray-700">
+        <div className="card">
+          <p className="text-sm">
             <strong>{t('form.person.is_minor_label')}:</strong>{' '}
             {person.is_minor ? t('common.yes') : t('common.no')}
           </p>

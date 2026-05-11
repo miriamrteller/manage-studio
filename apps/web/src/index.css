@@ -197,6 +197,45 @@
     background-color: var(--color-secondary-active);
   }
 
+  .button-error {
+    @apply button;
+    background-color: var(--color-error);
+    color: white;
+  }
+
+  .button-error:hover {
+    background-color: var(--color-error-hover);
+  }
+
+  .button-error:active {
+    background-color: var(--color-error-active);
+  }
+
+  .button-outline {
+    @apply button;
+    background-color: transparent;
+    border: 1px solid var(--color-border-default);
+    color: var(--color-text-primary);
+  }
+
+  .button-outline:hover {
+    background-color: var(--color-surface-secondary);
+    border-color: var(--color-primary);
+  }
+
+  .button-outline:active {
+    background-color: var(--color-bg-secondary);
+  }
+
+  .button:disabled,
+  .button-primary:disabled,
+  .button-secondary:disabled,
+  .button-error:disabled,
+  .button-outline:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
   /* Alert Styles */
   .alert {
     @apply p-4 rounded-md;

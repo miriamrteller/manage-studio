@@ -65,7 +65,7 @@ export const PeopleList = ({ onEdit }: PeopleListProps) => {
     <div className="space-y-4 p-4" dir="rtl">
       {/* Search bar */}
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700">
+        <label className="form-label">
           {t('common.search_people')}
         </label>
         <div className="relative">
@@ -74,7 +74,7 @@ export const PeopleList = ({ onEdit }: PeopleListProps) => {
             placeholder={t('common.search_by_name_email_phone')}
             value={searchQuery}
             onChange={(e) => handleSearchChange(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="form-input"
           />
           {showSearch && searchQuery.trim().length > 0 && (
             <button
@@ -90,14 +90,14 @@ export const PeopleList = ({ onEdit }: PeopleListProps) => {
 
       {/* Loading state */}
       {isLoading && (
-        <div className="text-center py-4 text-gray-500">
+        <div className="text-center py-4">
           {t('common.loading')}
         </div>
       )}
 
       {/* Error state */}
       {(peopleList.error || searchResults.error) && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded text-red-700">
+        <div className="alert-error">
           {t('common.error')}: {(peopleList.error || searchResults.error)?.message}
         </div>
       )}
@@ -106,51 +106,57 @@ export const PeopleList = ({ onEdit }: PeopleListProps) => {
       {!isLoading &&
         displayPeople.length === 0 &&
         (isSearching ? (
-          <div className="text-center py-4 text-gray-500">
+          <div className="text-center py-4">
             {t('common.no_results_found')}
           </div>
         ) : (
-          <div className="text-center py-4 text-gray-500">
+          <div className="text-center py-4">
             {t('common.no_people_yet')}
           </div>
         ))}
 
       {/* Table */}
       {displayPeople.length > 0 && (
-        <div className="overflow-x-auto border border-gray-200 rounded-lg">
+        <div className="card overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="border-b" style={{ borderColor: 'var(--color-border-default)' }}>
               <tr>
-                <th className="px-4 py-3 text-right font-medium text-gray-700">
+                <th className="px-4 py-3 text-right font-medium">
                   {t('form.person.name')}
                 </th>
-                <th className="px-4 py-3 text-right font-medium text-gray-700">
+                <th className="px-4 py-3 text-right font-medium">
                   {t('form.person.email')}
                 </th>
-                <th className="px-4 py-3 text-right font-medium text-gray-700">
+                <th className="px-4 py-3 text-right font-medium">
                   {t('form.person.status')}
                 </th>
-                <th className="px-4 py-3 text-center font-medium text-gray-700">
+                <th className="px-4 py-3 text-center font-medium">
                   {t('common.actions')}
                 </th>
               </tr>
             </thead>
             <tbody>
               {displayPeople.map((person) => (
-                <tr key={person.id} className="border-b border-gray-200 hover:bg-gray-50">
-                  <td className="px-4 py-3 text-gray-900">{person.name}</td>
-                  <td className="px-4 py-3 text-gray-600">
+                <tr key={person.id} className="border-b hover:bg-opacity-50" style={{ borderColor: 'var(--color-border-default)' }}>
+                  <td className="px-4 py-3">{person.name}</td>
+                  <td className="px-4 py-3">
                     {person.email || '—'}
                   </td>
                   <td className="px-4 py-3">
                     <span
-                      className={`px-2 py-1 rounded text-xs font-medium ${
-                        person.status === 'active'
-                          ? 'bg-green-100 text-green-800'
+                      className="px-2 py-1 rounded text-xs font-medium"
+                      style={{
+                        backgroundColor: person.status === 'active'
+                          ? 'var(--color-success-light)'
                           : person.status === 'inactive'
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : 'bg-gray-100 text-gray-800'
-                      }`}
+                            ? 'var(--color-warning-light)'
+                            : 'var(--color-neutral-100)',
+                        color: person.status === 'active'
+                          ? 'var(--color-success)'
+                          : person.status === 'inactive'
+                            ? 'var(--color-warning)'
+                            : 'var(--color-text-primary)',
+                      }}
                     >
                       {t(`form.person.status_${person.status}`)}
                     </span>
@@ -159,14 +165,14 @@ export const PeopleList = ({ onEdit }: PeopleListProps) => {
                     <div className="flex gap-2 justify-center">
                       <button
                         onClick={() => handleEdit(person)}
-                        className="px-3 py-1 text-blue-600 hover:text-blue-800 font-medium text-sm"
+                        className="button-secondary"
                         title={t('common.edit')}
                       >
                         {t('common.edit')}
                       </button>
                       <button
                         onClick={() => handleDeleteClick(person.id)}
-                        className="px-3 py-1 text-red-600 hover:text-red-800 font-medium text-sm"
+                        className="button-error"
                         title={t('common.delete')}
                       >
                         {t('common.delete')}
@@ -186,11 +192,11 @@ export const PeopleList = ({ onEdit }: PeopleListProps) => {
           <button
             onClick={() => setPage(Math.max(1, page - 1))}
             disabled={page === 1}
-            className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="button-outline"
           >
             {t('common.previous')}
           </button>
-          <span className="text-sm text-gray-600">
+          <span className="text-sm">
             {t('common.page_n', { page })} —{' '}
             {t('common.showing_results', {
               count: Math.min(peopleList.pageSize, peopleList.total - (page - 1) * peopleList.pageSize),
@@ -200,7 +206,7 @@ export const PeopleList = ({ onEdit }: PeopleListProps) => {
           <button
             onClick={() => setPage(page + 1)}
             disabled={page * peopleList.pageSize >= peopleList.total}
-            className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="button-outline"
           >
             {t('common.next')}
           </button>
@@ -209,12 +215,12 @@ export const PeopleList = ({ onEdit }: PeopleListProps) => {
 
       {/* Delete confirmation modal */}
       {deleteConfirmId && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm mx-4">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">
+        <div className="fixed inset-0 flex items-center justify-center z-50" style={{ backgroundColor: 'var(--color-surface-overlay)' }}>
+          <div className="card max-w-sm mx-4">
+            <h3 className="text-lg font-medium mb-4">
               {t('common.confirm_delete')}
             </h3>
-            <p className="text-gray-600 mb-6">
+            <p className="mb-6">
               {t('common.delete_person_confirm', {
                 name:
                   displayPeople.find((p) => p.id === deleteConfirmId)?.name ||
@@ -225,14 +231,14 @@ export const PeopleList = ({ onEdit }: PeopleListProps) => {
               <button
                 onClick={() => handleConfirmDelete(deleteConfirmId)}
                 disabled={peopleList.isDeleting}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:bg-gray-400"
+                className="flex-1 button-error"
               >
                 {peopleList.isDeleting ? t('common.loading') : t('common.delete')}
               </button>
               <button
                 onClick={handleCancelDelete}
                 disabled={peopleList.isDeleting}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
+                className="flex-1 button-outline"
               >
                 {t('form.cancel')}
               </button>
