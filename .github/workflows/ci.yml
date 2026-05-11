@@ -43,5 +43,6 @@ jobs:
           node-version: '22'
           cache: 'pnpm'
       - run: pnpm install
+      - run: pnpm exec playwright install
       - name: Run axe-core accessibility scan
         run: pnpm run a11y:e2e
