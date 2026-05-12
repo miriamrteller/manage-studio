@@ -17,6 +17,8 @@ CREATE TABLE tenants (
   accent_color              TEXT        NOT NULL DEFAULT '#e99ac4',
   currency                  TEXT        NOT NULL DEFAULT 'ILS',
   vat_rate                  NUMERIC(5,4) DEFAULT 0.17,
+  phone_region              TEXT        NOT NULL DEFAULT 'IL',
+  phone_region_updated_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
   created_at                TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at                TIMESTAMPTZ NOT NULL DEFAULT now()
 );
