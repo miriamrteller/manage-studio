@@ -54,7 +54,7 @@ test.describe('Heading Structure (WCAG 2.4.1)', () => {
 test.describe('Form Accessibility (WCAG 1.3.1)', () => {
   test('all inputs have associated labels', async ({ page }) => {
     // Real workflow: User navigates to login form and needs to identify form fields
-    await page.goto('/login');
+    await page.goto('/login', { waitUntil: 'networkidle' });
     const inputs = await page.locator('input, select, textarea').all();
     
     // Skip test if page has no form inputs
@@ -75,7 +75,7 @@ test.describe('Form Accessibility (WCAG 1.3.1)', () => {
 
   test('form validation errors are announced', async ({ page }) => {
     // Real workflow: User submits form with missing fields, errors should be clear
-    await page.goto('/login');
+    await page.goto('/login', { waitUntil: 'networkidle' });
     const submitButton = await page.locator('button[type="submit"]').first();
     
     if (await submitButton.isVisible()) {
@@ -252,7 +252,7 @@ test.describe('RTL & Hebrew Support (WCAG 3.1.1)', () => {
 test.describe('ARIA Patterns (Realistic)', () => {
   test('form inputs can be identified by screen readers', async ({ page }) => {
     // Real workflow: User with visual impairment uses screen reader to fill form
-    await page.goto('/login');
+    await page.goto('/login', { waitUntil: 'networkidle' });
     const inputs = await page.locator('input, select, textarea').all();
     
     // Skip if no form on this page
@@ -299,12 +299,12 @@ test.describe('ARIA Patterns (Realistic)', () => {
 test.describe('Real-World Accessibility Validation', () => {
   test('zero critical violations on home page', async ({ page }) => {
     // Real-world validation: Only fail on critical issues that actually block users
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'networkidle' });
     await injectAxe(page);
     
-    const results = await page.evaluate((): AxeResults => {
-      const window_ = window as unknown as { axe?: { run?: () => AxeResults } }
-      return window_.axe?.run?.() || { violations: [] };
+    const results = await page.evaluate(async (): Promise<AxeResults> => {
+      const window_ = window as unknown as { axe?: { run?: () => Promise<AxeResults> } }
+      return await window_.axe?.run?.() || { violations: [] };
     });
     
     // Only check for CRITICAL violations (complete blockers)
@@ -324,7 +324,7 @@ test.describe('Real-World Accessibility Validation', () => {
     // Note: This test is just a reminder
     // Real accessibility validation requires manual testing with NVDA screen reader in Hebrew
     // Automated tests catch structure issues, but only real users can validate usability
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'networkidle' });
     
     // If we got here, automated tests passed
     // Next: Manual NVDA Hebrew RTL testing before production
