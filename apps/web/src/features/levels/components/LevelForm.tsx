@@ -50,7 +50,6 @@ export const LevelForm = ({ level, onSubmit, isLoading }: LevelFormProps) => {
     <form
       onSubmit={form.handleSubmit(handleSubmit)}
       className="space-y-4 p-4"
-      dir="rtl"
     >
       {/* Error message */}
       {submitError && (

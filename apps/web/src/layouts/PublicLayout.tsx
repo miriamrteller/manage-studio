@@ -14,10 +14,8 @@ export function PublicLayout({ children }: { children: ReactNode }) {
 
   // Apply document direction + language
   useEffect(() => {
-    if (tenant) {
-      document.documentElement.dir = tenant.dir || 'rtl';
-      document.documentElement.lang = tenant.language || 'he';
-    }
+    if (tenant?.dir) document.documentElement.dir = tenant.dir;
+    if (tenant?.language) document.documentElement.lang = tenant.language;
   }, [tenant]);
 
   return (

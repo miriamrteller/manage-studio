@@ -54,7 +54,6 @@ export const FamilyForm = ({ family, onSubmit, isLoading }: FamilyFormProps) => 
     <form
       onSubmit={form.handleSubmit(handleSubmit)}
       className="space-y-4 p-4"
-      dir="rtl"
     >
       {/* Error message */}
       {submitError && (

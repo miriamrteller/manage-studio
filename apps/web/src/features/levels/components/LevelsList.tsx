@@ -44,7 +44,7 @@ export const LevelsList = ({ onEdit }: LevelsListProps) => {
   };
 
   return (
-    <div className="space-y-4 p-4" dir="rtl">
+    <div className="space-y-4 p-4">
       {/* Loading state */}
       {levelsData.isLoading && (
         <div className="text-center py-4">

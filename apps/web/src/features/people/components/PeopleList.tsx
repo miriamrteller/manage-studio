@@ -62,7 +62,7 @@ export const PeopleList = ({ onEdit }: PeopleListProps) => {
   };
 
   return (
-    <div className="space-y-4 p-4" dir="rtl">
+    <div className="space-y-4 p-4">
       {/* Search bar */}
       <div className="space-y-2">
         <label className="form-label">

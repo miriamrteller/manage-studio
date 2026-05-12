@@ -43,7 +43,7 @@ export const FamiliesList = ({ onEdit }: FamiliesListProps) => {
   };
 
   return (
-    <div className="space-y-4 p-4" dir="rtl">
+    <div className="space-y-4 p-4">
       {/* Loading state */}
       {familiesData.isLoading && (
         <div className="text-center py-4">

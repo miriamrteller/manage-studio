@@ -44,7 +44,7 @@ export const TermsList = ({ onEdit }: TermsListProps) => {
   };
 
   return (
-    <div className="space-y-4 p-4" dir="rtl">
+    <div className="space-y-4 p-4">
       {/* Loading state */}
       {termsData.isLoading && (
         <div className="text-center py-4">

@@ -55,7 +55,6 @@ export const PersonForm = ({ person, onSubmit, isLoading }: PersonFormProps) => 
     <form
       onSubmit={form.handleSubmit(handleSubmit)}
       className="space-y-4 p-4"
-      dir="rtl"
     >
       <PersonFormMessages
         submitError={submitError}
