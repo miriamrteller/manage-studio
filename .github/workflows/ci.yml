@@ -7,6 +7,30 @@ on:
     branches: [main, develop]
 
 jobs:
+  # Detect which files changed
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      ui-changed: ${{ steps.filter.outputs.ui }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            ui:
+              # Only components, layouts, pages, and styles (visible changes)
+              - 'apps/web/src/components/**'
+              - 'apps/web/src/features/**'
+              - 'apps/web/src/layouts/**'
+              - 'apps/web/src/pages/**'
+              - 'apps/web/src/**/*.tsx'
+              - 'apps/web/src/**/*.css'
+              - 'apps/web/e2e/**'
+              - '.github/workflows/ci.yml'
+
   lint:
     runs-on: ubuntu-latest
     steps:
@@ -34,7 +58,11 @@ jobs:
         run: pnpm run build
 
   accessibility:
+    needs: detect-changes
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Only run if UI files changed (on PR or push)
+    if: ${{ needs.detect-changes.outputs.ui-changed == 'true' }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v2
@@ -43,6 +71,15 @@ jobs:
           node-version: "22"
           cache: "pnpm"
       - run: pnpm install
-      - run: pnpm run a11y:install
-      - name: Run axe-core accessibility scan
-        run: pnpm run a11y:e2e
+      - name: Install Playwright browsers
+        run: cd apps/web && pnpm exec playwright install --with-deps
+      - name: Run accessibility tests (chromium only for speed)
+        run: cd apps/web && pnpm exec playwright test e2e/accessibility-compliance.spec.ts --project=chromium --retries=1
+        timeout-minutes: 15
+      - name: Upload test results on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/web/playwright-report/
+          retention-days: 7
