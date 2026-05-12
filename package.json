@@ -24,6 +24,7 @@
     "typescript": "^5.3.3"
   },
   "dependencies": {
+    "libphonenumber-js": "^1.13.1",
     "pnpm": "^11.0.8"
   },
   "lint-staged": {
