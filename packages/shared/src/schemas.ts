@@ -255,6 +255,7 @@ export const EnrolmentSchema = z.object({
   term_id: UUIDSchema,
   status: z.enum(['active', 'pending_payment', 'cancelled', 'withdrawn', 'waitlisted']).default('active'),
   prior_experience: z.string().nullable().optional(),
+  approvedBy: z.enum(['system-auto-approval', 'human-review']).optional(),
   created_at: z.string().datetime(),
 });
 
@@ -287,3 +288,122 @@ export const TeacherSchema = z.object({
 });
 
 export type Teacher = z.infer<typeof TeacherSchema>;
+
+// Notification log (audit trail for all sent notifications)
+export const NotificationLogSchema = z.object({
+  id: UUIDSchema,
+  tenant_id: UUIDSchema,
+  recipient_person_id: UUIDSchema.nullable().optional(),
+  recipient_family_member_id: UUIDSchema.nullable().optional(),
+  recipient_email: z.string().email().nullable().optional(),
+  recipient_phone: z.string().regex(/^\+\d{1,15}$/, 'Invalid E.164 phone format').nullable().optional(),
+  channel: z.enum(['email', 'whatsapp', 'voice']),
+  template_name: z.string().min(1, 'Template name required'),
+  variables: z.record(z.string(), z.unknown()).nullable().optional(),
+  subject: z.string().nullable().optional(),
+  body_preview: z.string().nullable().optional(),
+  external_msg_id: z.string().nullable().optional(),
+  status: z.enum(['sent', 'delivered', 'read', 'failed', 'bounced']).default('sent'),
+  failure_reason: z.string().nullable().optional(),
+  sent_at: z.string().datetime(),
+});
+
+export type NotificationLog = z.infer<typeof NotificationLogSchema>;
+
+// Audit log (immutable record of all data changes)
+export const AuditLogSchema = z.object({
+  id: UUIDSchema,
+  tenant_id: UUIDSchema,
+  actor_id: UUIDSchema.nullable().optional(),
+  actor_email: z.string().email().nullable().optional(),
+  action: z.string().min(1, 'Action required'),
+  entity_type: z.string().min(1, 'Entity type required'),
+  entity_id: UUIDSchema.nullable().optional(),
+  before_state: z.record(z.string(), z.unknown()).nullable().optional(),
+  after_state: z.record(z.string(), z.unknown()).nullable().optional(),
+  ip_address: z.string().ip().nullable().optional(),
+  created_at: z.string().datetime(),
+});
+
+export type AuditLog = z.infer<typeof AuditLogSchema>;
+
+// Tenant notification templates (per-tenant email/WhatsApp templates)
+export const TenantNotificationTemplateSchema = z.object({
+  id: UUIDSchema,
+  tenant_id: UUIDSchema,
+  channel: z.enum(['email', 'whatsapp', 'voice']),
+  template_name: z.string().min(1, 'Template name required'),
+  twilio_content_sid: z.string().nullable().optional(),
+  email_template_id: z.string().nullable().optional(),
+  voice_script_sid: z.string().nullable().optional(),
+  version: z.number().int().positive().default(1),
+  status: z.enum(['pending', 'approved', 'rejected']).default('pending'),
+  approval_date: z.string().datetime().nullable().optional(),
+  approval_notes: z.string().nullable().optional(),
+  created_at: z.string().datetime(),
+  updated_at: z.string().datetime(),
+});
+
+export type TenantNotificationTemplate = z.infer<typeof TenantNotificationTemplateSchema>;
+
+// Expense categories (per-tenant, configurable by school)
+export const ExpenseCategorySchema = z.object({
+  id: UUIDSchema,
+  tenant_id: UUIDSchema,
+  name: z.string().min(1, 'Category name required').max(100),
+  description: z.string().max(500).nullable().optional(),
+  color: z.string().regex(/^#[0-9A-F]{6}$/i, 'Invalid hex color format').nullable().optional(),
+  is_vat_eligible: z.boolean().default(true),
+  is_active: z.boolean().default(true),
+  sort_order: z.number().int().nonnegative().default(0),
+  created_at: z.string().datetime(),
+  updated_at: z.string().datetime(),
+});
+
+export type ExpenseCategory = z.infer<typeof ExpenseCategorySchema>;
+
+// Notification payload for send-notification Edge Function
+export const NotificationPayloadSchema = z.object({
+  tenantId: UUIDSchema,
+  recipientId: UUIDSchema.nullable().optional(),
+  recipientType: z.enum(['person', 'family_member']).nullable().optional(),
+  recipientEmail: z.string().email().nullable().optional(),
+  recipientPhone: z.string().regex(/^\+\d{1,15}$/, 'Invalid E.164 phone format').nullable().optional(),
+  templateName: z.string().min(1, 'Template name required'),
+  channel: z.enum(['email', 'whatsapp', 'voice']),
+  variables: z.record(z.string(), z.unknown()).optional(),
+});
+
+export type NotificationPayload = z.infer<typeof NotificationPayloadSchema>;
+
+// OTP email payload for send-otp-email Edge Function
+export const OtpEmailPayloadSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  code: z.string().length(6, 'OTP must be 6 digits').regex(/^\d{6}$/, 'OTP must contain only digits'),
+  expiryMinutes: z.number().int().positive().default(10),
+  tenantId: UUIDSchema.optional(),
+});
+
+export type OtpEmailPayload = z.infer<typeof OtpEmailPayloadSchema>;
+
+// WhatsApp OTP verification payload for verify-whatsapp-otp Edge Function
+export const VerifyWhatsAppOtpPayloadSchema = z.object({
+  phone: z.string().regex(/^\+\d{1,15}$/, 'Invalid E.164 phone format'),
+  code: z.string().length(6, 'OTP must be 6 digits').regex(/^\d{6}$/, 'OTP must contain only digits'),
+  personId: UUIDSchema.optional(),
+  familyMemberId: UUIDSchema.optional(),
+  tenantId: UUIDSchema.optional(),
+});
+
+export type VerifyWhatsAppOtpPayload = z.infer<typeof VerifyWhatsAppOtpPayloadSchema>;
+
+// Contact preferences update payload
+export const ContactPreferencesUpdateSchema = z.object({
+  whatsapp_number: z.string().regex(/^\+\d{1,15}$/, 'Invalid E.164 phone format').nullable().optional(),
+  whatsapp_opted_in: z.boolean().optional(),
+  whatsapp_verified: z.boolean().optional(),
+  email_opted_in: z.boolean().optional(),
+  preferred_channel: z.enum(['email', 'whatsapp']).nullable().optional(),
+});
+
+export type ContactPreferencesUpdate = z.infer<typeof ContactPreferencesUpdateSchema>;

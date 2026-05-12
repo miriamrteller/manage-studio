@@ -16,4 +16,13 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(({ className, ..
 ));
 Select.displayName = 'Select';
 
+// Stub components for shadcn/ui compatibility
+export const SelectContent = ({ children }: { children: React.ReactNode }) => <>{children}</>;
+export const SelectItem = ({ children, value }: { children: React.ReactNode; value: string }) => (
+  <option value={value}>{children}</option>
+);
+export const SelectTrigger = ({ children }: { children: React.ReactNode }) => <>{children}</>;
+export const SelectValue = ({ placeholder }: { placeholder?: string }) => <>{placeholder}</>;
+
 export { Select };
+
