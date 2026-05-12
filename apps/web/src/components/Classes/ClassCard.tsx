@@ -28,7 +28,8 @@ export function ClassCard({ class: cls, locale, currency }: ClassCardProps) {
 
   return (
     <div className="border border-gray-300 rounded-lg p-6 bg-white shadow-sm hover:shadow-md transition-shadow">
-      <h3 className="font-bold text-lg mb-2">{cls.name}</h3>
+      {/* h2 because ClassCard is a direct subsection of the main page h1 */}
+      <h2 className="font-bold text-lg mb-2">{cls.name}</h2>
 
       <div className="space-y-2 mb-4 text-sm text-gray-600">
         <p>

@@ -16,6 +16,8 @@
     "a11y:e2e": "pnpm -C apps/web run a11y:e2e"
   },
   "devDependencies": {
+    "@react-email/components": "^1.0.12",
+    "@react-email/render": "^2.0.8",
     "typescript": "^5.3.3"
   },
   "dependencies": {

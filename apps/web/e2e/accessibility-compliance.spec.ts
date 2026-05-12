@@ -43,6 +43,12 @@ test.describe('Form Accessibility (WCAG 1.3.1)', () => {
     await page.goto('/');
     const inputs = await page.locator('input, select, textarea').all();
     
+    // Skip test if page has no form inputs (e.g., home page with only class listings)
+    if (inputs.length === 0) {
+      test.skip();
+      return;
+    }
+    
     for (const input of inputs) {
       const id = await input.getAttribute('id');
       const ariaLabel = await input.getAttribute('aria-label');
@@ -53,11 +59,14 @@ test.describe('Form Accessibility (WCAG 1.3.1)', () => {
   });
 
   test('form validation errors announce via aria-live', async ({ page }) => {
-    await page.goto('/');
+    // Navigate to login page where the form is located
+    await page.goto('/login');
     const submitButton = await page.locator('button[type="submit"]').first();
     
     if (submitButton) {
-      await submitButton.click();
+      await submitButton.click({ timeout: 5000 });
+      // Wait for any form errors to appear
+      await page.waitForTimeout(500);
       const liveRegion = await page.locator('[aria-live="polite"], [aria-live="assertive"]').first();
       
       if (await liveRegion.isVisible()) {
@@ -74,6 +83,12 @@ test.describe('Modal Focus Management (WCAG 2.4.3)', () => {
     
     // Try to find and open any modal/dialog
     const dialogTrigger = await page.locator('[aria-haspopup="dialog"], [data-testid*="modal-trigger"]').first();
+    
+    // Skip test if no modal exists on this page
+    if (!dialogTrigger || !(await dialogTrigger.isVisible())) {
+      test.skip();
+      return;
+    }
     
     if (dialogTrigger && await dialogTrigger.isVisible()) {
       await dialogTrigger.click();

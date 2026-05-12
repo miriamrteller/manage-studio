@@ -49,9 +49,10 @@ export function ProtectedLayout({ children }: { children: ReactNode }) {
         role="banner"
       >
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-primary font-bold text-lg">
+          {/* Header branding is not the page h1 (each page has its own h1); use heading role without level */}
+          <div className="text-primary font-bold text-lg" role="heading" aria-level={0}>
             {tenant?.name || 'Ballet School'}
-          </h1>
+          </div>
 
           {/* User Menu */}
           <div className="flex gap-4 items-center">

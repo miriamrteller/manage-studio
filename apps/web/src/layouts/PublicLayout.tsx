@@ -61,7 +61,8 @@ export function PublicLayout({ children }: { children: ReactNode }) {
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
-              <h3 className="font-bold mb-2">{tenant?.name}</h3>
+              {/* h2: footer is a page-level section, not subordinate to any h3 */}
+              <h2 className="font-bold mb-2">{tenant?.name}</h2>
               <p className="text-sm text-gray-600">{t('footer.school_management')}</p>
             </div>
             <div className="text-sm text-gray-600">
