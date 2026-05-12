@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-serve(async (req) => {
+serve(async (req: Request) => {
   const { MessageSid, MessageStatus, ErrorCode } = await req.json();
 
   // Update notification_log with delivery status
