@@ -345,6 +345,21 @@ test("heading structure is valid", async ({ page }) => {
 - **Font-Stack Switching:** When `lang === 'he'`, prioritize 'Assistant' or 'Heebo'. When `lang === 'en'`, prioritize 'Inter'.
 - **Mirroring:** UI components must automatically flip based on the `dir` attribute of the HTML root, with zero manual CSS overrides per page.
 
+### 2.7 Third-Party Service Configuration
+
+Detailed setup instructions for all external services (Twilio, Resend, Stripe) are documented separately to keep this spec focused on architecture.
+
+**Required reading before Phase 2 Edge Functions deployment:**
+
+- [Third-Party Services Setup Guide](docs/deployment/THIRD_PARTY_SERVICES.md) — Complete walkthrough for Twilio WhatsApp, Resend email, Stripe payments
+- Service credentials are stored encrypted in Supabase and accessed via `getTenantConfig()` function (see Section 5.2)
+- Each service is tenant-configurable (Phase 2); platform defaults available (Phase 1)
+
+**Services covered:**
+- **Twilio Verify + WhatsApp** — OTP delivery and two-way messaging
+- **Resend** — Transactional email via React Email templates
+- **Stripe** — Payment processing and webhooks
+
 ---
 
 ## 3. Repository Structure
@@ -365,6 +380,14 @@ ballet-school-system/
 │               ├── currency.ts       # Intl.NumberFormat with locale
 │               ├── date.ts           # Intl.DateTimeFormat with locale
 │               └── phone.ts          # Israeli phone number formatting
+├── docs/
+│   ├── deployment/
+│   │   ├── THIRD_PARTY_SERVICES.md    # Twilio, Resend, Stripe setup
+│   │   ├── ENVIRONMENTS.md            # Dev/staging/prod config (Phase 2)
+│   │   └── TROUBLESHOOTING.md         # Common issues (Phase 2)
+│   └── plans/
+│       ├── 2026-05-08-phase1a.md
+│       └── ...
 ├── supabase/
 │   ├── migrations/
 │   │   ├── 001_tenants_and_users.sql
@@ -523,6 +546,8 @@ This design enables:
 ---
 
 ### 4.2 Database Migrations (001–016)
+
+⏱️ **TIMING:** Migrations 001–016 assume all third-party credentials (Twilio, Resend, Stripe) will be configured AFTER initial schema deployment. See [Third-Party Services Setup](docs/deployment/THIRD_PARTY_SERVICES.md) for when/how to configure.
 
 #### Migration 001 — Tenants and user profiles
 
