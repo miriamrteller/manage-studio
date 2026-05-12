@@ -27,6 +27,6 @@
     "pnpm": "^11.0.8"
   },
   "lint-staged": {
-    "*.{ts,tsx}": "eslint --fix"
+    "apps/**/*.{ts,tsx}": "eslint --fix"
   }
 }
