@@ -5,6 +5,8 @@
  * Run: pnpm test rls.policies.test.ts
  */
 
+import { describe, it, expect } from 'vitest';
+
 /**
  * RLS Policy Test Cases
  * 

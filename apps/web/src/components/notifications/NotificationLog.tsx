@@ -19,8 +19,9 @@ export function NotificationLog() {
 
       <div className="grid grid-cols-2 gap-4 mb-4">
         <div>
-          <label className="block text-sm font-medium mb-2">Channel</label>
+          <label htmlFor="channel-select" className="block text-sm font-medium mb-2">Channel</label>
           <select
+            id="channel-select"
             value={channel || ''}
             onChange={(e) => {
               setChannel((e.target.value as 'email' | 'whatsapp' | 'voice') || undefined);
@@ -35,8 +36,9 @@ export function NotificationLog() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-2">Status</label>
+          <label htmlFor="status-select" className="block text-sm font-medium mb-2">Status</label>
           <select
+            id="status-select"
             value={status || ''}
             onChange={(e) => {
               setStatus((e.target.value as 'sent' | 'delivered' | 'read' | 'failed' | 'bounced') || undefined);

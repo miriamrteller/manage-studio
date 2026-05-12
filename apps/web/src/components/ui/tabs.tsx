@@ -7,7 +7,7 @@ export interface TabsProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 export const Tabs = React.forwardRef<HTMLDivElement, TabsProps>(
-  ({ value, onValueChange, children, ...props }, ref) => (
+  ({ children, ...props }, ref) => (
     <div ref={ref} {...props}>
       {children}
     </div>
@@ -35,7 +35,7 @@ export interface TabsTriggerProps extends React.ButtonHTMLAttributes<HTMLButtonE
 }
 
 export const TabsTrigger = React.forwardRef<HTMLButtonElement, TabsTriggerProps>(
-  ({ value, className = '', ...props }, ref) => (
+  ({ className = '', ...props }, ref) => (
     <button
       ref={ref}
       className={`px-4 py-2 font-medium border-b-2 border-transparent hover:border-gray-300 ${className}`}
@@ -51,7 +51,7 @@ export interface TabsContentProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 export const TabsContent = React.forwardRef<HTMLDivElement, TabsContentProps>(
-  ({ value, className = '', ...props }, ref) => (
+  ({ className = '', ...props }, ref) => (
     <div ref={ref} className={className} {...props} />
   )
 );

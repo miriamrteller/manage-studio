@@ -4,22 +4,15 @@
  * Run: pnpm test notifications.hooks.test.ts
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { QueryClient } from '@tanstack/react-query';
+import { describe, it, expect, beforeEach } from 'vitest';
 
 // Mock setup would go here
 // These are placeholder tests to demonstrate structure
 
 describe('Notification Hooks', () => {
-  let queryClient: QueryClient;
-
   beforeEach(() => {
-    queryClient = new QueryClient({
-      defaultOptions: {
-        queries: { retry: false },
-        mutations: { retry: false },
-      },
-    });
+    // Setup would go here
+    // Example: would use new QueryClient() if we were testing hooks
   });
 
   describe('useContactPreferences', () => {

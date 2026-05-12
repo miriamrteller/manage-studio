@@ -6,7 +6,7 @@ export interface DialogProps {
   children: React.ReactNode;
 }
 
-export const Dialog = ({ open = false, onOpenChange: _onOpenChange, children }: DialogProps) => (
+export const Dialog = ({ open = false, children }: DialogProps) => (
   <div>{open && children}</div>
 );
 
