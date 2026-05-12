@@ -46,7 +46,7 @@ CREATE POLICY audit_log_read ON audit_log
       AND EXISTS (
         SELECT 1 FROM user_profiles
         WHERE id = auth.uid()
-        AND role IN ('tenant_admin', 'super_admin')
+        AND ('tenant_admin' = ANY(role) OR 'super_admin' = ANY(role))
       )
     )
   );
@@ -64,7 +64,7 @@ CREATE POLICY templates_read ON tenant_notification_templates
         OR EXISTS (
           SELECT 1 FROM user_profiles
           WHERE id = auth.uid()
-          AND role IN ('tenant_admin', 'super_admin')
+          AND ('tenant_admin' = ANY(role) OR 'super_admin' = ANY(role))
         )
       )
     )
@@ -79,7 +79,7 @@ CREATE POLICY templates_modify ON tenant_notification_templates
       AND EXISTS (
         SELECT 1 FROM user_profiles
         WHERE id = auth.uid()
-        AND role = 'tenant_admin'
+        AND 'tenant_admin' = ANY(role)
       )
     )
   );
@@ -93,7 +93,7 @@ CREATE POLICY templates_update ON tenant_notification_templates
       AND EXISTS (
         SELECT 1 FROM user_profiles
         WHERE id = auth.uid()
-        AND role = 'tenant_admin'
+        AND 'tenant_admin' = ANY(role)
       )
     )
   )
@@ -104,7 +104,7 @@ CREATE POLICY templates_update ON tenant_notification_templates
       AND EXISTS (
         SELECT 1 FROM user_profiles
         WHERE id = auth.uid()
-        AND role = 'tenant_admin'
+        AND 'tenant_admin' = ANY(role)
       )
     )
   );
@@ -120,7 +120,7 @@ CREATE POLICY categories_read ON expense_categories
       AND EXISTS (
         SELECT 1 FROM user_profiles
         WHERE id = auth.uid()
-        AND role IN ('tenant_admin', 'super_admin')
+        AND ('tenant_admin' = ANY(role) OR 'super_admin' = ANY(role))
       )
     )
   );
@@ -134,7 +134,7 @@ CREATE POLICY categories_insert ON expense_categories
       AND EXISTS (
         SELECT 1 FROM user_profiles
         WHERE id = auth.uid()
-        AND role = 'tenant_admin'
+        AND 'tenant_admin' = ANY(role)
       )
     )
   );
@@ -148,7 +148,7 @@ CREATE POLICY categories_update ON expense_categories
       AND EXISTS (
         SELECT 1 FROM user_profiles
         WHERE id = auth.uid()
-        AND role = 'tenant_admin'
+        AND 'tenant_admin' = ANY(role)
       )
     )
   )
@@ -159,7 +159,7 @@ CREATE POLICY categories_update ON expense_categories
       AND EXISTS (
         SELECT 1 FROM user_profiles
         WHERE id = auth.uid()
-        AND role = 'tenant_admin'
+        AND 'tenant_admin' = ANY(role)
       )
     )
   );
