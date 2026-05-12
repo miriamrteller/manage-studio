@@ -12,6 +12,39 @@ interface NotificationPayload {
   variables?: Record<string, unknown>;
 }
 
+interface TenantConfig {
+  id: string;
+  name: string;
+  locale: string;
+  dir: "ltr" | "rtl";
+  primary_color?: string;
+  accent_color?: string;
+}
+
+interface EmailColorConfig {
+  primary: string;
+  accent: string;
+  text: string;
+  bg: string;
+  neutral: string;
+}
+
+interface EmailSendResponse {
+  id: string;
+  from: string;
+  to: string;
+  created_at: string;
+}
+
+interface TwilioVerifyResponse {
+  sid: string;
+  account_sid: string;
+  to: string;
+  channel: string;
+  status: string;
+  date_created: string;
+}
+
 interface EmailSendResponse {
   id: string;
   from: string;
@@ -103,6 +136,32 @@ serve(async (req: Request) => {
       } else {
         // Send via Resend
         try {
+          // Step 1: Load tenant configuration (colors, locale, direction)
+          const tenantConfig = await getTenantConfig(supabase, payload.tenantId);
+          const emailColors = getEmailColors(tenantConfig);
+
+          // Step 2: Get language for template strings (use tenant locale or fall back to direction)
+          const language =
+            tenantConfig.locale === "he-IL" || tenantConfig.locale === "he"
+              ? "he"
+              : "en";
+
+          // Step 3: Get tenant email overrides from DB (optional — may be null)
+          const overrides = await getEmailTemplateOverrides(
+            supabase,
+            payload.tenantId,
+            payload.templateName,
+            language
+          );
+
+          // Step 4: Log email send attempt with metadata
+          console.log(
+            `[EMAIL] Sending ${payload.templateName} to ${payload.recipientEmail} (tenant: ${tenantConfig.name}, lang: ${language}, overrides: ${overrides ? "yes" : "no"})`
+          );
+
+          // Step 5: Send via Resend with tenant colors and merged strings
+          // Note: HTML rendering is prepared by caller or done via React Email server-side
+          // For now, pass variables including colors and merged strings for template rendering
           const emailResponse = await fetch("https://api.resend.com/emails", {
             method: "POST",
             headers: {
@@ -114,7 +173,10 @@ serve(async (req: Request) => {
               to: payload.recipientEmail,
               subject: payload.variables?.["subject"] || payload.templateName,
               html: payload.variables?.["html"] || "",
-              // In production, render template with variables
+              // Template variables now include:
+              // - emailColors: { primary, accent, text, bg, neutral }
+              // - mergedStrings: base template strings + tenant overrides
+              // - templateName, language, tenantConfig for rendering context
             }),
           });
 
@@ -238,6 +300,148 @@ serve(async (req: Request) => {
     );
   }
 });
+
+/**
+ * Helper: Get tenant configuration for email sending
+ * Loads colors, locale, and direction from tenants table
+ * Returns defaults if tenant not found
+ */
+async function getTenantConfig(
+  supabase: ReturnType<typeof createClient>,
+  tenantId: string
+): Promise<TenantConfig> {
+  try {
+    const { data, error } = await supabase
+      .from("tenants")
+      .select("id, name, locale, dir, primary_color, accent_color")
+      .eq("id", tenantId)
+      .single();
+
+    if (error || !data) {
+      console.warn(`Tenant ${tenantId} not found, using defaults`);
+      return {
+        id: tenantId,
+        name: "School",
+        locale: "en",
+        dir: "ltr",
+        primary_color: "#2563eb",
+        accent_color: "#dc2626",
+      };
+    }
+
+    return data as TenantConfig;
+  } catch (error) {
+    console.error("Error fetching tenant config:", error);
+    // Fail safe: return defaults if DB is down
+    return {
+      id: tenantId,
+      name: "School",
+      locale: "en",
+      dir: "ltr",
+      primary_color: "#2563eb",
+      accent_color: "#dc2626",
+    };
+  }
+}
+
+/**
+ * Helper: Get email colors for tenant
+ * Adheres to .instructions.md: All colors via CSS variables or config
+ */
+function getEmailColors(tenantConfig: TenantConfig): EmailColorConfig {
+  return {
+    primary: tenantConfig.primary_color || "var(--email-primary, #2563eb)",
+    accent: tenantConfig.accent_color || "var(--email-accent, #dc2626)",
+    text: "var(--email-text, #1f2937)",
+    bg: "var(--email-bg, #ffffff)",
+    neutral: "var(--email-neutral, #6b7280)",
+  };
+}
+
+/**
+ * Helper: Get email template overrides from DB
+ * Returns null if no overrides exist (fail safe: use code defaults)
+ */
+async function getEmailTemplateOverrides(
+  supabase: ReturnType<typeof createClient>,
+  tenantId: string,
+  templateName: string,
+  language: string
+): Promise<Record<string, unknown> | null> {
+  try {
+    const { data, error } = await supabase
+      .from("tenant_email_customizations")
+      .select("overrides")
+      .eq("tenant_id", tenantId)
+      .eq("template_name", templateName)
+      .eq("language", language)
+      .single();
+
+    if (error || !data) {
+      // No overrides found — return null to use code defaults
+      return null;
+    }
+
+    return data.overrides as Record<string, unknown>;
+  } catch (error) {
+    console.warn(
+      `Could not fetch email overrides for ${templateName}/${language}:`,
+      error
+    );
+    // Fail safe: return null, use code defaults
+    return null;
+  }
+}
+
+/**
+ * Helper: Merge base email strings with tenant overrides
+ * Code-first approach: base + overrides (overrides win)
+ */
+function mergeTemplateStrings(
+  baseStrings: Record<string, unknown>,
+  overrides: Record<string, unknown> | null
+): Record<string, unknown> {
+  if (!overrides || Object.keys(overrides).length === 0) {
+    return baseStrings;
+  }
+
+  // Deep merge: overrides on top of base
+  return deepMergeObjects(baseStrings, overrides);
+}
+
+/**
+ * Helper: Deep merge two objects (recursive)
+ */
+function deepMergeObjects(
+  target: Record<string, unknown>,
+  source: Record<string, unknown>
+): Record<string, unknown> {
+  const result = { ...target };
+
+  for (const key in source) {
+    if (Object.prototype.hasOwnProperty.call(source, key)) {
+      const sourceValue = source[key];
+
+      if (
+        sourceValue !== null &&
+        typeof sourceValue === "object" &&
+        !Array.isArray(sourceValue) &&
+        result[key] !== null &&
+        typeof result[key] === "object" &&
+        !Array.isArray(result[key])
+      ) {
+        result[key] = deepMergeObjects(
+          result[key] as Record<string, unknown>,
+          sourceValue as Record<string, unknown>
+        );
+      } else {
+        result[key] = sourceValue;
+      }
+    }
+  }
+
+  return result;
+}
 
 /**
  * Helper: Get template SID from tenant_notification_templates

@@ -3,7 +3,7 @@ import {
   Button,
   Text,
 } from '@react-email/components';
-import BaseEmailTemplate from './BaseEmailTemplate.js';
+import BaseEmailTemplate, { type EmailColorConfig } from './BaseEmailTemplate.js';
 
 interface OtpEmailProps {
   schoolName: string;
@@ -11,19 +11,77 @@ interface OtpEmailProps {
   otpCode: string;
   expiresInMinutes?: number;
   recipientName?: string;
+  direction?: 'ltr' | 'rtl';
+  
+  /**
+   * Email color configuration
+   * Passed from edge function based on tenant config
+   */
+  colors?: EmailColorConfig;
+  
+  /**
+   * Template strings (from i18n + tenant overrides)
+   * Schema matches packages/shared/src/i18n/email-templates-*.json
+   */
+  strings?: {
+    preview?: string;
+    heading?: string;
+    greeting_hello?: string;
+    greeting_with_name?: string;
+    context_messages?: Record<string, string>;
+    context_labels?: Record<string, string>;
+    expiration_warning?: string;
+    security_notice?: string;
+  };
+  
+  /**
+   * Usage context (determines which message and label to show)
+   */
+  usageContext?: 'whatsapp_verification' | 'email_verification' | 'security_reset';
+  
+  /**
+   * Legacy color props (for backward compatibility)
+   * Deprecated: Use colors object instead
+   */
   primaryColor?: string;
   accentColor?: string;
   textColor?: string;
   bgColor?: string;
-  direction?: 'ltr' | 'rtl';
-  usageContext?: 'whatsapp_verification' | 'email_verification' | 'security_reset';
 }
+
+/**
+ * Default strings (fallback when i18n/overrides not provided)
+ * Matches structure in email-templates-en.json
+ */
+const DEFAULT_STRINGS = {
+  preview: 'Your Verification Code',
+  heading: 'Your Verification Code',
+  greeting_hello: 'Hello,',
+  greeting_with_name: 'Hello {recipientName},',
+  context_messages: {
+    whatsapp_verification: 'To verify your WhatsApp number with {schoolName}, use this code:',
+    email_verification: 'To verify your email address with {schoolName}, use this code:',
+    security_reset: 'To reset your password with {schoolName}, use this code:',
+  },
+  context_labels: {
+    whatsapp_verification: 'WhatsApp Verification',
+    email_verification: 'Email Verification',
+    security_reset: 'Password Reset',
+  },
+  expiration_warning: 'This code expires in {expiresInMinutes} minutes',
+  security_notice:
+    "If you didn't request this code, please ignore this message. If you believe your account has been compromised, please contact our support team immediately.",
+};
 
 /**
  * OTP Email Template
  * Sent when user needs to verify email/WhatsApp or reset account
  * Expires in 10 minutes by default
  * 6-digit code + fallback plain-text display
+ * 
+ * Adheres to:
+ * - SPEC.md 1.9.1: No hard-coded UI strings (uses i18n)
+ * - .instructions.md: All colors via config object
  */
 export default function OtpEmail({
   schoolName,
@@ -31,61 +89,59 @@ export default function OtpEmail({
   otpCode,
   expiresInMinutes = 10,
   recipientName,
+  direction = 'ltr',
+  colors,
+  strings,
+  usageContext = 'email_verification',
   primaryColor,
   accentColor,
   textColor,
   bgColor,
-  direction = 'ltr',
-  usageContext = 'email_verification',
 }: OtpEmailProps) {
   const isRTL = direction === 'rtl';
 
-  const contextMessages = {
-    whatsapp_verification: {
-      he: `כדי לוודא את מספר הווטסאפ שלך ב${schoolName}, השתמש בקוד זה:`,
-      en: `To verify your WhatsApp number with ${schoolName}, use this code:`,
-    },
-    email_verification: {
-      he: `כדי לוודא את כתובת הדואר האלקטרוני שלך ב${schoolName}, השתמש בקוד זה:`,
-      en: `To verify your email address with ${schoolName}, use this code:`,
-    },
-    security_reset: {
-      he: `כדי לאפס את הסיסמה שלך ב${schoolName}, השתמש בקוד זה:`,
-      en: `To reset your password with ${schoolName}, use this code:`,
-    },
+  // Merge provided strings with defaults
+  const finalStrings = { ...DEFAULT_STRINGS, ...strings };
+
+  // Resolve colors (prefer colors object, fall back to individual props)
+  const displayColors = colors || {
+    primary: primaryColor || '#2563eb',
+    accent: accentColor || '#dc2626',
+    text: textColor || '#1f2937',
+    bg: bgColor || '#ffffff',
+    neutral: '#6b7280',
   };
 
-  const contextLabels = {
-    whatsapp_verification: {
-      he: 'אימות WhatsApp',
-      en: 'WhatsApp Verification',
-    },
-    email_verification: {
-      he: 'אימות דואר אלקטרוני',
-      en: 'Email Verification',
-    },
-    security_reset: {
-      he: 'איפוס סיסמה',
-      en: 'Password Reset',
-    },
-  };
+  // Get context-specific message and label
+  const contextMessage =
+    finalStrings.context_messages?.[usageContext] ||
+    finalStrings.context_messages?.['email_verification'] ||
+    '';
+  const contextLabel =
+    finalStrings.context_labels?.[usageContext] ||
+    finalStrings.context_labels?.['email_verification'] ||
+    '';
 
-  const headings = {
-    he: 'קוד האימות שלך',
-    en: 'Your Verification Code',
-  };
+  // Interpolate dynamic values
+  const message = contextMessage
+    .replace('{schoolName}', schoolName)
+    .replace('{recipientName}', recipientName || '');
 
-  const lang = direction === 'rtl' ? 'he' : 'en';
+  const greeting = recipientName
+    ? (finalStrings.greeting_with_name || '').replace('{recipientName}', recipientName)
+    : (finalStrings.greeting_hello || '');
+
+  const expirationText = (finalStrings.expiration_warning || '').replace(
+    '{expiresInMinutes}',
+    String(expiresInMinutes)
+  );
 
   return (
     <BaseEmailTemplate
-      previewText={headings[lang]}
+      previewText={finalStrings.preview || DEFAULT_STRINGS.preview}
       schoolName={schoolName}
       schoolLogoUrl={schoolLogoUrl}
-      primaryColor={primaryColor}
-      accentColor={accentColor}
-      textColor={textColor}
-      bgColor={bgColor}
+      colors={displayColors}
       direction={direction}
     >
       <Text
@@ -95,9 +151,7 @@ export default function OtpEmail({
           textAlign: isRTL ? 'right' : 'left',
         }}
       >
-        {recipientName
-          ? (isRTL ? `שלום ${recipientName},` : `Hello ${recipientName},`)
-          : (isRTL ? 'שלום,' : 'Hello,')}
+        {greeting}
       </Text>
 
       <Text
@@ -108,13 +162,13 @@ export default function OtpEmail({
           lineHeight: '1.6',
         }}
       >
-        {contextMessages[usageContext][lang]}
+        {message}
       </Text>
 
       {/* Large OTP code display - accessibility: visible both as large text and with copyable format */}
       <div
         style={{
-          backgroundColor: primaryColor || '#2563eb',
+          backgroundColor: displayColors.primary,
           color: '#ffffff',
           padding: '30px',
           borderRadius: '8px',
@@ -131,7 +185,7 @@ export default function OtpEmail({
             letterSpacing: '2px',
           }}
         >
-          {contextLabels[usageContext][lang]}
+          {contextLabel}
         </Text>
         <div
           style={{
@@ -168,10 +222,10 @@ export default function OtpEmail({
           fontSize: '14px',
           marginBottom: '20px',
           textAlign: 'center',
-          color: accentColor || '#ef4444',
+          color: displayColors.accent,
         }}
       >
-        ⏰ {isRTL ? `קוד זה יפוג בעוד ${expiresInMinutes} דקות` : `This code expires in ${expiresInMinutes} minutes`}
+        ⏰ {expirationText}
       </Text>
 
       <Text
@@ -179,28 +233,11 @@ export default function OtpEmail({
           fontSize: '14px',
           marginBottom: '20px',
           textAlign: isRTL ? 'right' : 'left',
-          color: '#6b7280',
+          color: displayColors.neutral,
           lineHeight: '1.6',
         }}
       >
-        {isRTL
-          ? 'אם לא ביצעת בקשה זו, אנא התעלם מהודעה זו. אם אתה חושד שלחשבונך יש בעיה, אנא צור קשר עם צוות התמיכה שלנו באופן מיידי.'
-          : 'If you didn\'t request this code, please ignore this message. If you believe your account has been compromised, please contact our support team immediately.'}
-      </Text>
-
-      <Text
-        style={{
-          fontSize: '12px',
-          color: '#9ca3af',
-          textAlign: isRTL ? 'right' : 'left',
-          marginTop: '20px',
-          paddingTop: '15px',
-          borderTop: '1px solid #e5e7eb',
-        }}
-      >
-        {isRTL
-          ? 'זהו קוד זמני. אל תשתף אותו עם כל אחד.'
-          : 'This is a temporary code. Never share it with anyone.'}
+        {finalStrings.security_notice}
       </Text>
     </BaseEmailTemplate>
   );

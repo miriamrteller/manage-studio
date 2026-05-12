@@ -13,14 +13,20 @@
     "lint": "pnpm -r lint",
     "test": "pnpm -r test",
     "a11y:install": "pnpm -C apps/web exec playwright install --with-deps",
-    "a11y:e2e": "pnpm -C apps/web run a11y:e2e"
+    "a11y:e2e": "pnpm -C apps/web run a11y:e2e",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@react-email/components": "^1.0.12",
     "@react-email/render": "^2.0.8",
+    "husky": "^9.0.0",
+    "lint-staged": "^17.0.4",
     "typescript": "^5.3.3"
   },
   "dependencies": {
     "pnpm": "^11.0.8"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": "eslint --fix"
   }
 }
