@@ -50,6 +50,32 @@ export const PersonFormFields = ({ register, errors, person }: PersonFormFieldsP
         {...register('date_of_birth')}
       />
 
+      {/* Emergency Contact — REQUIRED */}
+      <fieldset className="border ps-4 py-3 rounded space-y-3">
+        <legend className="font-semibold">
+          {t('pages.people.emergency_contact_required')}
+        </legend>
+
+        <FormInput
+          htmlFor="emergency_contact_name"
+          label={t('pages.people.emergency_contact_name_label')}
+          placeholder={t('pages.people.emergency_contact_name_label')}
+          error={errors.emergency_contact_name?.message}
+          required
+          {...register('emergency_contact_name')}
+        />
+
+        <FormInput
+          htmlFor="emergency_contact_phone"
+          label={t('pages.people.emergency_contact_phone_label')}
+          type="tel"
+          placeholder="+972 5X XXXXXXX or 05X XXXXXXX"
+          error={errors.emergency_contact_phone?.message}
+          required
+          {...register('emergency_contact_phone')}
+        />
+      </fieldset>
+
       {/* Medical Notes field */}
       <FormTextarea
         htmlFor="medical_notes"

@@ -54,11 +54,6 @@ export default function PeoplePage() {
     }
   };
 
-  const handleEditPerson = (person: Person) => {
-    setEditingPerson(person);
-    setShowForm(true);
-  };
-
   const handleCloseForm = () => {
     setEditingPerson(null);
     setShowForm(false);
@@ -138,7 +133,7 @@ export default function PeoplePage() {
               {t('common.manage_people') || 'People'}
             </h2>
           </div>
-          <PeopleList onEdit={handleEditPerson} />
+          <PeopleList />
         </div>
       </div>
     </div>

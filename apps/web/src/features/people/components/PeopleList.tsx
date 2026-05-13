@@ -1,91 +1,73 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { usePeople } from '../hooks/usePeople';
 import { usePersonSearch } from '../hooks/usePersonSearch';
-import type { Person } from '@shared/schemas';
+import { PersonSearch } from './PersonSearch';
+import { PersonDetail } from './PersonDetail';
+import { PersonForm } from './PersonForm';
 
-interface PeopleListProps {
-  onEdit?: (person: Person) => void;
-}
-
-export const PeopleList = ({ onEdit }: PeopleListProps) => {
+export const PeopleList = (): React.ReactNode => {
   const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
-  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'withdrawn'>('all');
+  const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
 
   // Use search results if searching, otherwise use paginated list
   const searchResults = usePersonSearch(searchQuery, { enabled: showSearch && searchQuery.trim().length > 0 });
   const peopleList = usePeople({ page, enabled: !showSearch });
 
   const isSearching = showSearch && searchQuery.trim().length > 0;
-  const displayPeople = isSearching ? searchResults.results : peopleList.people;
+  const displayPeople = (isSearching ? searchResults.results : peopleList.people || []).filter(p =>
+    statusFilter === 'all' ? true : p.status === statusFilter
+  );
   const isLoading = isSearching ? searchResults.isSearching : peopleList.isLoading;
-
-  const handleSearchChange = (query: string) => {
-    setSearchQuery(query);
-    if (query.trim().length === 0) {
-      setShowSearch(false);
-      setPage(1);
-    } else {
-      setShowSearch(true);
-    }
-  };
-
-  const handleEdit = (person: Person) => {
-    if (onEdit) {
-      onEdit(person);
-    }
-  };
-
-  const handleDeleteClick = (personId: string) => {
-    setDeleteConfirmId(personId);
-  };
-
-  const handleConfirmDelete = async (personId: string) => {
-    try {
-      await new Promise((resolve, reject) => {
-        peopleList.deletePerson(personId, {
-          onSuccess: resolve,
-          onError: reject,
-        });
-      });
-      setDeleteConfirmId(null);
-    } catch (error) {
-      console.error('Failed to delete person:', error);
-    }
-  };
-
-  const handleCancelDelete = () => {
-    setDeleteConfirmId(null);
-  };
 
   return (
     <div className="space-y-4 p-4">
-      {/* Search bar */}
+      {/* Page Title */}
       <div className="space-y-2">
-        <label className="form-label">
-          {t('common.search_people')}
-        </label>
-        <div className="relative">
-          <input
-            type="text"
-            placeholder={t('common.search_by_name_email_phone')}
-            value={searchQuery}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            className="form-input"
-          />
-          {showSearch && searchQuery.trim().length > 0 && (
-            <button
-              onClick={() => handleSearchChange('')}
-              className="absolute left-3 top-2.5 text-gray-400 hover:text-gray-600"
-              title={t('form.cancel')}
-            >
-              ✕
-            </button>
-          )}
+        <h1 className="text-3xl font-bold">{t('pages.people.title')}</h1>
+        <p className="text-gray-600">{t('pages.people.description')}</p>
+      </div>
+
+      {/* Search and Filter Bar */}
+      <div className="flex gap-4 flex-wrap items-end">
+        <div className="flex-1 min-w-64">
+          <label htmlFor="status-filter" className="block text-sm font-medium mb-1">
+            {t('pages.people.filter_by_status')}
+          </label>
+          <select
+            id="status-filter"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+            className="w-full form-input"
+          >
+            <option value="all">{t('common.all')}</option>
+            <option value="active">{t('pages.people.status_active')}</option>
+            <option value="inactive">{t('pages.people.status_inactive')}</option>
+            <option value="withdrawn">{t('pages.people.status_withdrawn')}</option>
+          </select>
         </div>
+
+        <PersonSearch
+          value={searchQuery}
+          onChange={(query) => {
+            setSearchQuery(query);
+            setShowSearch(query.trim().length > 0);
+            setPage(1);
+          }}
+          isSearching={peopleList.isLoading || searchResults.isSearching}
+        />
+
+        <button
+          onClick={() => setIsCreating(true)}
+          className="button-primary"
+        >
+          {t('pages.people.create_button')}
+        </button>
       </div>
 
       {/* Loading state */}
@@ -121,16 +103,16 @@ export const PeopleList = ({ onEdit }: PeopleListProps) => {
           <table className="w-full text-sm">
             <thead className="border-b" style={{ borderColor: 'var(--color-border-default)' }}>
               <tr>
-                <th className="px-4 py-3 text-right font-medium">
-                  {t('form.person.name')}
+                <th className="ps-4 py-3 text-start font-medium" scope="col">
+                  {t('pages.people.name_label')}
                 </th>
-                <th className="px-4 py-3 text-right font-medium">
-                  {t('form.person.email')}
+                <th className="ps-4 py-3 text-start font-medium" scope="col">
+                  {t('pages.people.email_label')}
                 </th>
-                <th className="px-4 py-3 text-right font-medium">
-                  {t('form.person.status')}
+                <th className="ps-4 py-3 text-start font-medium" scope="col">
+                  {t('common.status')}
                 </th>
-                <th className="px-4 py-3 text-center font-medium">
+                <th className="ps-4 py-3 text-center font-medium" scope="col">
                   {t('common.actions')}
                 </th>
               </tr>
@@ -161,21 +143,14 @@ export const PeopleList = ({ onEdit }: PeopleListProps) => {
                       {t(`form.person.status_${person.status}`)}
                     </span>
                   </td>
-                  <td className="px-4 py-3">
-                    <div className="flex gap-2 justify-center">
+                  <td className="ps-4 py-3">
+                    <div className="flex gap-2">
                       <button
-                        onClick={() => handleEdit(person)}
+                        onClick={() => setSelectedPersonId(person.id)}
                         className="button-secondary"
-                        title={t('common.edit')}
+                        title={t('common.view')}
                       >
-                        {t('common.edit')}
-                      </button>
-                      <button
-                        onClick={() => handleDeleteClick(person.id)}
-                        className="button-error"
-                        title={t('common.delete')}
-                      >
-                        {t('common.delete')}
+                        {t('common.view')}
                       </button>
                     </div>
                   </td>
@@ -213,36 +188,39 @@ export const PeopleList = ({ onEdit }: PeopleListProps) => {
         </div>
       )}
 
-      {/* Delete confirmation modal */}
-      {deleteConfirmId && (
-        <div className="fixed inset-0 flex items-center justify-center z-50" style={{ backgroundColor: 'var(--color-surface-overlay)' }}>
-          <div className="card max-w-sm mx-4">
-            <h3 className="text-lg font-medium mb-4">
-              {t('common.confirm_delete')}
-            </h3>
-            <p className="mb-6">
-              {t('common.delete_person_confirm', {
-                name:
-                  displayPeople.find((p) => p.id === deleteConfirmId)?.name ||
-                  'Person',
-              })}
-            </p>
-            <div className="flex gap-4">
+      {/* Person Detail Modal */}
+      {selectedPersonId && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <PersonDetail
+              id={selectedPersonId}
+              onClose={() => setSelectedPersonId(null)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Create Person Modal */}
+      {isCreating && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center p-4 border-b">
+              <h2 className="text-xl font-semibold">
+                {t('pages.people.create_title')}
+              </h2>
               <button
-                onClick={() => handleConfirmDelete(deleteConfirmId)}
-                disabled={peopleList.isDeleting}
-                className="flex-1 button-error"
+                onClick={() => setIsCreating(false)}
+                className="text-gray-500 hover:text-gray-700"
+                aria-label={t('common.close')}
               >
-                {peopleList.isDeleting ? t('common.loading') : t('common.delete')}
-              </button>
-              <button
-                onClick={handleCancelDelete}
-                disabled={peopleList.isDeleting}
-                className="flex-1 button-outline"
-              >
-                {t('form.cancel')}
+                ✕
               </button>
             </div>
+            <PersonForm
+              onSubmit={async () => {
+                setIsCreating(false);
+              }}
+            />
           </div>
         </div>
       )}

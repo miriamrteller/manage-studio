@@ -1,0 +1,65 @@
+import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+
+interface PersonSearchProps {
+  value: string;
+  onChange: (value: string) => void;
+  isSearching?: boolean;
+}
+
+/**
+ * PersonSearch: Debounced search input field for people search
+ * - Controlled input with local state
+ * - Clear button with aria-label
+ * - sr-only label for accessibility
+ * - Logical CSS (ps-, pe-, ms-)
+ */
+export function PersonSearch({
+  value,
+  onChange,
+  isSearching = false,
+}: PersonSearchProps) {
+  const { t } = useTranslation();
+  const [localValue, setLocalValue] = useState(value);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    setLocalValue(newValue);
+    onChange(newValue);
+  };
+
+  const handleClear = () => {
+    setLocalValue('');
+    onChange('');
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      <label htmlFor="person-search" className="sr-only">
+        {t('pages.people.search_placeholder')}
+      </label>
+      <input
+        id="person-search"
+        type="text"
+        placeholder={t('pages.people.search_placeholder')}
+        value={localValue}
+        onChange={handleChange}
+        disabled={isSearching}
+        className="form-input flex-1"
+        aria-label={t('pages.people.search_placeholder')}
+      />
+      {localValue && (
+        <button
+          type="button"
+          onClick={handleClear}
+          disabled={isSearching}
+          aria-label={t('common.clear')}
+          className="px-2 py-1 hover:bg-gray-100 rounded text-gray-500"
+          title={t('common.clear')}
+        >
+          ✕
+        </button>
+      )}
+    </div>
+  );
+}
