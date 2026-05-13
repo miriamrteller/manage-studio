@@ -45,12 +45,15 @@ export default function SignupStep3({ onSubmit, loading }: SignupStep3Props) {
         if (code.length === 6) onSubmit({ code });
       }}
       className="space-y-6"
+      aria-label={t('signup.step3.subtitle')}
     >
-      <p className="text-center text-sm text-gray-600">
+      <h2 className="sr-only">{t('signup.step3.subtitle')}</h2>
+      <p className="text-center text-sm text-gray-600" id="otp-instruction">
         {t('signup.step3.enterCode')}
       </p>
 
-      <div className="flex justify-center gap-2">
+      <fieldset className="flex justify-center gap-2">
+        <legend className="sr-only">{t('signup.step3.enterCode')}</legend>
         {digits.map((digit, index) => (
           <input
             key={index}
@@ -64,15 +67,18 @@ export default function SignupStep3({ onSubmit, loading }: SignupStep3Props) {
             onChange={(e) => handleChange(index, e.target.value)}
             onKeyDown={(e) => handleKeyDown(index, e)}
             aria-label={t('signup.step3.digit', { number: index + 1 })}
+            aria-required="true"
+            aria-describedby="otp-instruction"
             className="h-12 w-12 text-center text-2xl border border-gray-300 rounded-lg"
           />
         ))}
-      </div>
+      </fieldset>
 
       <Button
         type="submit"
         disabled={loading || digits.some((d) => !d)}
         className="w-full"
+        aria-label={loading ? t('common.verifying') : t('signup.step3.verify')}
       >
         {loading ? t('common.verifying') : t('signup.step3.verify')}
       </Button>

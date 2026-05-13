@@ -20,13 +20,13 @@ export default function SignupStep1({ onSubmit, loading }: SignupStep1Props) {
   const showPhoneField = channel === 'sms' || channel === 'whatsapp';
 
   return (
-    <form onSubmit={onSubmit} className="space-y-6">
+    <form onSubmit={onSubmit} className="space-y-6" aria-label={t('signup.step1.subtitle')}>
+      <h2 className="sr-only">{t('signup.step1.subtitle')}</h2>
       <div className="space-y-2">
         <Label htmlFor="firstName">{t('signup.step1.firstName')}</Label>
         <Input
           id="firstName"
-          {...register('firstName')}
-          aria-describedby={errors.firstName ? 'firstName-error' : undefined}
+          {...register('firstName')}          aria-required="true"          aria-describedby={errors.firstName ? 'firstName-error' : undefined}
         />
         {errors.firstName && (
           <p id="firstName-error" className="text-sm text-red-600" role="alert">
@@ -39,8 +39,7 @@ export default function SignupStep1({ onSubmit, loading }: SignupStep1Props) {
         <Label htmlFor="lastName">{t('signup.step1.lastName')}</Label>
         <Input
           id="lastName"
-          {...register('lastName')}
-          aria-describedby={errors.lastName ? 'lastName-error' : undefined}
+          {...register('lastName')}          aria-required="true"          aria-describedby={errors.lastName ? 'lastName-error' : undefined}
         />
         {errors.lastName && (
           <p id="lastName-error" className="text-sm text-red-600" role="alert">
@@ -54,8 +53,7 @@ export default function SignupStep1({ onSubmit, loading }: SignupStep1Props) {
         <Input
           id="email"
           type="email"
-          {...register('email')}
-          aria-describedby={errors.email ? 'email-error' : undefined}
+          {...register('email')}          aria-required="true"          aria-describedby={errors.email ? 'email-error' : undefined}
         />
         {errors.email && (
           <p id="email-error" className="text-sm text-red-600" role="alert">
@@ -64,8 +62,8 @@ export default function SignupStep1({ onSubmit, loading }: SignupStep1Props) {
         )}
       </div>
 
-      <div className="space-y-3">
-        <Label>{t('signup.step1.channel')}</Label>
+      <fieldset className="space-y-3">
+        <legend className="block text-sm font-medium">{t('signup.step1.channel')}</legend>
         <div className="space-y-2">
           <label className="flex items-center">
             <input
@@ -73,6 +71,7 @@ export default function SignupStep1({ onSubmit, loading }: SignupStep1Props) {
               value="email"
               {...register('channel')}
               className="me-2"
+              aria-label={t('signup.step1.channelEmail')}
             />
             <span>{t('signup.step1.channelEmail')}</span>
           </label>
@@ -82,6 +81,7 @@ export default function SignupStep1({ onSubmit, loading }: SignupStep1Props) {
               value="sms"
               {...register('channel')}
               className="me-2"
+              aria-label={t('signup.step1.channelSms')}
             />
             <span>{t('signup.step1.channelSms')}</span>
           </label>
@@ -91,11 +91,12 @@ export default function SignupStep1({ onSubmit, loading }: SignupStep1Props) {
               value="whatsapp"
               {...register('channel')}
               className="me-2"
+              aria-label={t('signup.step1.channelWhatsapp')}
             />
             <span>{t('signup.step1.channelWhatsapp')}</span>
           </label>
         </div>
-      </div>
+      </fieldset>
 
       {showPhoneField && (
         <PhoneInput

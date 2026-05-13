@@ -37,8 +37,9 @@ export default function SignupStep2({
   };
 
   return (
-    <div className="space-y-6">
-      <div className="rounded-md bg-blue-50 p-4">
+    <div className="space-y-6" role="region" aria-label={t('signup.step2.subtitle')}>
+      <h2 className="sr-only">{t('signup.step2.subtitle')}</h2>
+      <div className="rounded-md bg-blue-50 p-4" role="status" aria-live="polite">
         <p className="text-sm text-blue-800">
           {t('signup.step2.sentTo', {
             channel: t(`signup.step2.${channel}`),
