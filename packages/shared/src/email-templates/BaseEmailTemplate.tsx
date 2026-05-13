@@ -38,21 +38,16 @@ interface BaseEmailTemplateProps {
   schoolLogoUrl?: string;
   
   /**
-   * Color configuration object (preferred approach)
-   * If provided, individual color props are ignored
+   * Language (REQUIRED) - Used for i18n and computing direction
+   * Direction is computed from this: language === 'he' ? 'rtl' : 'ltr'
    */
-  colors?: EmailColorConfig;
+  language: 'en' | 'he';
   
   /**
-   * Legacy individual color props (for backward compatibility)
-   * Deprecated: Use colors object instead
+   * Color configuration object (OPTIONAL)
+   * If not provided, uses defaults
    */
-  primaryColor?: string;
-  accentColor?: string;
-  textColor?: string;
-  bgColor?: string;
-  
-  direction?: 'ltr' | 'rtl';
+  colors?: EmailColorConfig;
   
   /**
    * Footer customization (from tenant overrides)
@@ -79,34 +74,32 @@ const DEFAULT_EMAIL_COLORS: EmailColorConfig = {
  * Base email template component
  * Provides consistent branding, header/footer, and RTL support
  * All color props use CSS custom properties (CSS variables) to allow tenant customization
+ * Direction is computed from language prop and inherited via CSS cascade
  * 
  * Adheres to:
  * - SPEC.md 1.12: Tenant branding separate from code
  * - .instructions.md: No hardcoded colors, use CSS variables
- * - RTL support for Hebrew emails
+ * - W3C/WCAG: Direction computed once at root level, inherited by children
  */
 export default function BaseEmailTemplate({
   previewText,
   children,
   schoolName,
   schoolLogoUrl,
+  language,
   colors,
-  primaryColor,
-  accentColor,
-  textColor,
-  bgColor,
-  direction = 'ltr',
   footerText = 'Manage your notification preferences at',
   copyrightText,
 }: BaseEmailTemplateProps) {
-  const isRTL = direction === 'rtl';
+  // Compute direction ONLY from language (single source of truth)
+  const dir = language === 'he' ? 'rtl' : 'ltr';
 
-  // Use colors object if provided, otherwise fall back to individual props or defaults
+  // Use colors object if provided, otherwise use defaults
   const emailColors: EmailColorConfig = colors || {
-    primary: primaryColor || DEFAULT_EMAIL_COLORS.primary,
-    accent: accentColor || DEFAULT_EMAIL_COLORS.accent,
-    text: textColor || DEFAULT_EMAIL_COLORS.text,
-    bg: bgColor || DEFAULT_EMAIL_COLORS.bg,
+    primary: DEFAULT_EMAIL_COLORS.primary,
+    accent: DEFAULT_EMAIL_COLORS.accent,
+    text: DEFAULT_EMAIL_COLORS.text,
+    bg: DEFAULT_EMAIL_COLORS.bg,
     neutral: DEFAULT_EMAIL_COLORS.neutral,
   };
 
@@ -115,14 +108,24 @@ export default function BaseEmailTemplate({
   const displayCopyright = copyrightText || defaultCopyright;
 
   return (
-    <Html lang={isRTL ? 'he' : 'en'} dir={direction}>
-      <Head />
+    <Html lang={language} dir={dir}>
+      <Head>
+        <style>{`
+          :root {
+            --email-primary: ${emailColors.primary};
+            --email-accent: ${emailColors.accent};
+            --email-text: ${emailColors.text};
+            --email-bg: ${emailColors.bg};
+            --email-neutral: ${emailColors.neutral};
+          }
+        `}</style>
+      </Head>
       <Preview>{previewText}</Preview>
       <Body
         style={{
-          backgroundColor: emailColors.bg,
+          backgroundColor: 'var(--email-bg)',
           fontFamily: '"Segoe UI", sans-serif',
-          color: emailColors.text,
+          color: 'var(--email-text)',
           lineHeight: '1.6',
         }}
       >
@@ -150,7 +153,7 @@ export default function BaseEmailTemplate({
                 fontSize: '24px',
                 fontWeight: 'bold',
                 margin: '10px 0',
-                color: emailColors.primary,
+                color: 'var(--email-primary)',
               }}
             >
               {schoolName}
@@ -168,7 +171,7 @@ export default function BaseEmailTemplate({
             <Text
               style={{
                 fontSize: '12px',
-                color: emailColors.neutral,
+                color: 'var(--email-neutral)',
                 margin: '5px 0',
               }}
             >
@@ -177,25 +180,23 @@ export default function BaseEmailTemplate({
             <Text
               style={{
                 fontSize: '12px',
-                color: emailColors.neutral,
+                color: 'var(--email-neutral)',
                 margin: '5px 0',
               }}
             >
-              {isRTL
-                ? 'זו הודעה אוטומטית. אנא אל תשיב ישירות להודעה זו.'
-                : 'This is an automated email. Please do not reply directly.'}
+              This is an automated email. Please do not reply directly.
             </Text>
             <Text
               style={{
                 fontSize: '12px',
-                color: emailColors.neutral,
+                color: 'var(--email-neutral)',
                 margin: '10px 0 0 0',
               }}
             >
               {footerText}{' '}
               <Link
                 href="https://manage-studio.app/preferences"
-                style={{ color: emailColors.primary }}
+                style={{ color: 'var(--email-primary)' }}
               >
                 manage-studio.app/preferences
               </Link>

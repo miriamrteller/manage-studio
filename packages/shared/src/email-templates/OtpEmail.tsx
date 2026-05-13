@@ -11,10 +11,15 @@ interface OtpEmailProps {
   otpCode: string;
   expiresInMinutes?: number;
   recipientName?: string;
-  direction?: 'ltr' | 'rtl';
   
   /**
-   * Email color configuration
+   * Language (REQUIRED) - For i18n and direction computation
+   * Direction computed in BaseEmailTemplate: language === 'he' ? 'rtl' : 'ltr'
+   */
+  language: 'en' | 'he';
+  
+  /**
+   * Email color configuration (OPTIONAL)
    * Passed from edge function based on tenant config
    */
   colors?: EmailColorConfig;
@@ -38,15 +43,6 @@ interface OtpEmailProps {
    * Usage context (determines which message and label to show)
    */
   usageContext?: 'whatsapp_verification' | 'email_verification' | 'security_reset';
-  
-  /**
-   * Legacy color props (for backward compatibility)
-   * Deprecated: Use colors object instead
-   */
-  primaryColor?: string;
-  accentColor?: string;
-  textColor?: string;
-  bgColor?: string;
 }
 
 /**
@@ -80,8 +76,9 @@ const DEFAULT_STRINGS = {
  * 6-digit code + fallback plain-text display
  * 
  * Adheres to:
- * - SPEC.md 1.9.1: No hard-coded UI strings (uses i18n)
- * - .instructions.md: All colors via config object
+ * - SPEC.md 2.1: Direction computed from language in BaseEmailTemplate only
+ * - No hardcoded text (uses i18n)
+ * - All colors via CSS variables
  */
 export default function OtpEmail({
   schoolName,
@@ -89,28 +86,13 @@ export default function OtpEmail({
   otpCode,
   expiresInMinutes = 10,
   recipientName,
-  direction = 'ltr',
+  language,
   colors,
   strings,
   usageContext = 'email_verification',
-  primaryColor,
-  accentColor,
-  textColor,
-  bgColor,
 }: OtpEmailProps) {
-  const isRTL = direction === 'rtl';
-
   // Merge provided strings with defaults
   const finalStrings = { ...DEFAULT_STRINGS, ...strings };
-
-  // Resolve colors (prefer colors object, fall back to individual props)
-  const displayColors = colors || {
-    primary: primaryColor || '#2563eb',
-    accent: accentColor || '#dc2626',
-    text: textColor || '#1f2937',
-    bg: bgColor || '#ffffff',
-    neutral: '#6b7280',
-  };
 
   // Get context-specific message and label
   const contextMessage =
@@ -141,14 +123,13 @@ export default function OtpEmail({
       previewText={finalStrings.preview || DEFAULT_STRINGS.preview}
       schoolName={schoolName}
       schoolLogoUrl={schoolLogoUrl}
-      colors={displayColors}
-      direction={direction}
+      language={language}
+      colors={colors}
     >
       <Text
         style={{
           fontSize: '16px',
           marginBottom: '20px',
-          textAlign: isRTL ? 'right' : 'left',
         }}
       >
         {greeting}
@@ -158,7 +139,6 @@ export default function OtpEmail({
         style={{
           fontSize: '16px',
           marginBottom: '30px',
-          textAlign: isRTL ? 'right' : 'left',
           lineHeight: '1.6',
         }}
       >
@@ -168,7 +148,7 @@ export default function OtpEmail({
       {/* Large OTP code display - accessibility: visible both as large text and with copyable format */}
       <div
         style={{
-          backgroundColor: displayColors.primary,
+          backgroundColor: 'var(--email-primary)',
           color: '#ffffff',
           padding: '30px',
           borderRadius: '8px',
@@ -222,7 +202,7 @@ export default function OtpEmail({
           fontSize: '14px',
           marginBottom: '20px',
           textAlign: 'center',
-          color: displayColors.accent,
+          color: 'var(--email-accent)',
         }}
       >
         ⏰ {expirationText}
@@ -232,8 +212,7 @@ export default function OtpEmail({
         style={{
           fontSize: '14px',
           marginBottom: '20px',
-          textAlign: isRTL ? 'right' : 'left',
-          color: displayColors.neutral,
+          color: 'var(--email-text)',
           lineHeight: '1.6',
         }}
       >

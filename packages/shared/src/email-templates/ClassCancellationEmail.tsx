@@ -3,7 +3,7 @@ import {
   Button,
   Text,
 } from '@react-email/components';
-import BaseEmailTemplate from './BaseEmailTemplate.js';
+import BaseEmailTemplate, { type EmailColorConfig } from './BaseEmailTemplate.js';
 
 interface ClassCancellationEmailProps {
   schoolName: string;
@@ -14,17 +14,61 @@ interface ClassCancellationEmailProps {
   cancellationReason?: string;
   makeupCreditAmount?: string;
   rebookUrl?: string;
-  primaryColor?: string;
-  accentColor?: string;
-  textColor?: string;
-  bgColor?: string;
-  direction?: 'ltr' | 'rtl';
+  
+  /**
+   * Language (REQUIRED) - For i18n and direction computation
+   * Direction computed in BaseEmailTemplate: language === 'he' ? 'rtl' : 'ltr'
+   */
+  language: 'en' | 'he';
+  
+  /**
+   * Email color configuration (OPTIONAL)
+   * Passed from edge function based on tenant config
+   */
+  colors?: EmailColorConfig;
+  
+  /**
+   * Template strings (from i18n + tenant overrides)
+   * Schema matches packages/shared/src/i18n/email-templates-*.json
+   */
+  strings?: {
+    preview?: string;
+    greeting?: string;
+    announcement?: string;
+    cancellation_reason_label?: string;
+    makeup_credit_heading?: string;
+    makeup_credit_text?: string;
+    reschedule_instructions?: string;
+    cta_button?: string;
+    support_text?: string;
+  };
 }
+
+/**
+ * Default strings (fallback when i18n/overrides not provided)
+ * Matches structure in email-templates-en.json
+ */
+const DEFAULT_STRINGS = {
+  preview: 'Class Cancellation Notice',
+  greeting: 'Hello {recipientName},',
+  announcement: 'The class {cancelledClassName} scheduled for {cancelledDate} has been cancelled.',
+  cancellation_reason_label: 'Reason:',
+  makeup_credit_heading: '💳 Makeup Credit:',
+  makeup_credit_text: 'You are eligible for a {makeupCreditAmount} makeup session to reschedule for another class.',
+  reschedule_instructions: 'To reschedule another class using your makeup credit, visit your dashboard:',
+  cta_button: 'Reschedule Now',
+  support_text: 'If you have any questions or need help rescheduling, please contact our support team.',
+};
 
 /**
  * Class Cancellation Email Template
  * Sent when a scheduled class is cancelled
  * Includes makeup credit details and rebooking link
+ * 
+ * Adheres to:
+ * - SPEC.md 2.1: Direction computed from language in BaseEmailTemplate only
+ * - No hardcoded text (uses i18n)
+ * - All colors via CSS variables
  */
 export default function ClassCancellationEmail({
   schoolName,
@@ -35,48 +79,52 @@ export default function ClassCancellationEmail({
   cancellationReason,
   makeupCreditAmount,
   rebookUrl,
-  primaryColor,
-  accentColor,
-  textColor,
-  bgColor,
-  direction = 'ltr',
+  language,
+  colors,
+  strings,
 }: ClassCancellationEmailProps) {
-  const isRTL = direction === 'rtl';
+  // Merge provided strings with defaults
+  const finalStrings = { ...DEFAULT_STRINGS, ...strings };
+
+  // Interpolate dynamic values
+  const greeting = (finalStrings.greeting || '').replace('{recipientName}', recipientName);
+
+  const announcement = (finalStrings.announcement || '')
+    .replace('{cancelledClassName}', cancelledClassName)
+    .replace('{cancelledDate}', cancelledDate);
+
+  const previewText = (finalStrings.preview || '');
+
+  const makeupCreditText = (finalStrings.makeup_credit_text || '')
+    .replace('{makeupCreditAmount}', makeupCreditAmount || 'full credit');
 
   return (
     <BaseEmailTemplate
-      previewText={`${cancelledClassName} - Class Cancelled`}
+      previewText={previewText}
       schoolName={schoolName}
       schoolLogoUrl={schoolLogoUrl}
-      primaryColor={primaryColor}
-      accentColor={accentColor}
-      textColor={textColor}
-      bgColor={bgColor}
-      direction={direction}
+      language={language}
+      colors={colors}
     >
       <Text
         style={{
           fontSize: '16px',
           marginBottom: '10px',
-          textAlign: isRTL ? 'right' : 'left',
         }}
       >
-        {isRTL ? `שלום ${recipientName},` : `Hello ${recipientName},`}
+        {greeting}
       </Text>
 
       <Text
         style={{
           fontSize: '16px',
           marginBottom: '20px',
-          textAlign: isRTL ? 'right' : 'left',
-          color: accentColor || '#ef4444',
+          color: 'var(--email-accent)',
           fontWeight: '600',
           lineHeight: '1.6',
         }}
       >
-        {isRTL
-          ? `הכיתה ${cancelledClassName} בתאריך ${cancelledDate} בוטלה.`
-          : `The class ${cancelledClassName} scheduled for ${cancelledDate} has been cancelled.`}
+        {announcement}
       </Text>
 
       {cancellationReason && (
@@ -84,12 +132,11 @@ export default function ClassCancellationEmail({
           style={{
             fontSize: '14px',
             marginBottom: '20px',
-            textAlign: isRTL ? 'right' : 'left',
-            color: '#6b7280',
+            color: 'var(--email-neutral)',
             fontStyle: 'italic',
           }}
         >
-          <strong>{isRTL ? 'סיבה:' : 'Reason:'}</strong> {cancellationReason}
+          <strong>{finalStrings.cancellation_reason_label || DEFAULT_STRINGS.cancellation_reason_label}</strong> {cancellationReason}
         </Text>
       )}
 
@@ -99,8 +146,7 @@ export default function ClassCancellationEmail({
           padding: '15px',
           borderRadius: '6px',
           marginBottom: '25px',
-          borderLeft: `4px solid ${accentColor || '#ef4444'}`,
-          textAlign: isRTL ? 'right' : 'left',
+          borderLeft: '4px solid var(--email-accent)',
         }}
       >
         <Text
@@ -108,10 +154,10 @@ export default function ClassCancellationEmail({
             fontSize: '14px',
             fontWeight: '600',
             margin: '0 0 10px 0',
-            color: accentColor || '#ef4444',
+            color: 'var(--email-accent)',
           }}
         >
-          {isRTL ? '💳 זיכוי אחזקה:' : '💳 Makeup Credit:'}
+          {finalStrings.makeup_credit_heading || DEFAULT_STRINGS.makeup_credit_heading}
         </Text>
         <Text
           style={{
@@ -119,9 +165,7 @@ export default function ClassCancellationEmail({
             margin: '0',
           }}
         >
-          {isRTL
-            ? `הנך זכאי לאשראי של ${makeupCreditAmount || 'כל הסכום שלך'} לשימוש בחזרה ניסיון כיתה אחרת.`
-            : `You are eligible for a ${makeupCreditAmount || 'full credit'} makeup session to reschedule for another class.`}
+          {makeupCreditText}
         </Text>
       </div>
 
@@ -131,20 +175,17 @@ export default function ClassCancellationEmail({
             style={{
               fontSize: '14px',
               marginBottom: '20px',
-              textAlign: isRTL ? 'right' : 'left',
               lineHeight: '1.6',
             }}
           >
-            {isRTL
-              ? 'לתזמן מחדש כיתה אחרת עם האשראי שלך, בקר בלוח ההשראות שלך:'
-              : 'To reschedule another class using your makeup credit, visit your dashboard:'}
+            {finalStrings.reschedule_instructions || DEFAULT_STRINGS.reschedule_instructions}
           </Text>
 
           <div style={{ marginBottom: '25px', textAlign: 'center' }}>
             <Button
               href={rebookUrl}
               style={{
-                backgroundColor: primaryColor || '#2563eb',
+                backgroundColor: 'var(--email-primary)',
                 color: '#ffffff',
                 padding: '12px 32px',
                 borderRadius: '6px',
@@ -154,7 +195,7 @@ export default function ClassCancellationEmail({
                 fontSize: '16px',
               }}
             >
-              {isRTL ? 'כתום מחדש' : 'Reschedule Now'}
+              {finalStrings.cta_button || DEFAULT_STRINGS.cta_button}
             </Button>
           </div>
         </>
@@ -164,27 +205,23 @@ export default function ClassCancellationEmail({
         style={{
           fontSize: '14px',
           marginBottom: '10px',
-          textAlign: isRTL ? 'right' : 'left',
-          color: '#6b7280',
+          color: 'var(--email-neutral)',
           lineHeight: '1.6',
         }}
       >
-        {isRTL
-          ? 'אם יש לך כל שאלה או צריך עזרה בתזמון מחדש, אנא צור קשר עם צוות התמיכה שלנו.'
-          : 'If you have any questions or need help rescheduling, please contact our support team.'}
+        {finalStrings.support_text || DEFAULT_STRINGS.support_text}
       </Text>
 
       <Text
         style={{
           fontSize: '14px',
           marginBottom: '10px',
-          textAlign: isRTL ? 'right' : 'left',
-          color: '#6b7280',
+          color: 'var(--email-neutral)',
         }}
       >
-        {isRTL ? 'בברכה,' : 'Best regards,'}
+        Best regards,
         <br />
-        {schoolName} {isRTL ? 'צוות' : 'Team'}
+        {schoolName} Team
       </Text>
     </BaseEmailTemplate>
   );

@@ -4,7 +4,7 @@ import {
   Link,
   Text,
 } from '@react-email/components';
-import BaseEmailTemplate from './BaseEmailTemplate.js';
+import BaseEmailTemplate, { type EmailColorConfig } from './BaseEmailTemplate.js';
 
 interface MagicLinkEmailProps {
   schoolName: string;
@@ -12,18 +12,60 @@ interface MagicLinkEmailProps {
   magicLinkUrl: string;
   expiresInMinutes?: number;
   recipientName?: string;
-  primaryColor?: string;
-  accentColor?: string;
-  textColor?: string;
-  bgColor?: string;
-  direction?: 'ltr' | 'rtl';
+  
+  /**
+   * Language (REQUIRED) - For i18n and direction computation
+   * Direction computed in BaseEmailTemplate: language === 'he' ? 'rtl' : 'ltr'
+   */
+  language: 'en' | 'he';
+  
+  /**
+   * Email color configuration (OPTIONAL)
+   * Passed from edge function based on tenant config
+   */
+  colors?: EmailColorConfig;
+  
+  /**
+   * Template strings (from i18n + tenant overrides)
+   * Schema matches packages/shared/src/i18n/email-templates-*.json
+   */
+  strings?: {
+    preview?: string;
+    greeting_hello?: string;
+    greeting_with_name?: string;
+    intro?: string;
+    cta_button?: string;
+    fallback_text?: string;
+    expiration_notice?: string;
+    security_notice?: string;
+  };
 }
 
 /**
+ * Default strings (fallback when i18n/overrides not provided)
+ * Matches structure in email-templates-en.json
+ */
+const DEFAULT_STRINGS = {
+  preview: 'Sign in to {schoolName}',
+  greeting_hello: 'Hello,',
+  greeting_with_name: 'Hello {recipientName},',
+  intro: 'We received a request to sign in to your {schoolName} account. If you didn\'t make this request, you can ignore this message.',
+  cta_button: 'Sign In',
+  fallback_text: 'Or copy and paste this link in your browser:',
+  expiration_notice: '⏰ This link expires in {expiresInMinutes} minutes',
+  security_notice: 'This link can only be used once. If you didn\'t request this sign-in link, you can safely ignore this message.',
+};
+
+/**
  * Magic Link Email Template
- * Sent during login flow (Phase 1B auth)
+ * Sent during login flow for passwordless authentication
  * Expires in 15 minutes by default
  * Includes fallback plain-text link for accessibility
+ * 
+ * Adheres to:
+ * - SPEC.md 2.1: Direction computed from language in BaseEmailTemplate only
+ * - No hardcoded text (uses i18n)
+ * - All colors via CSS variables
  */
 export default function MagicLinkEmail({
   schoolName,
@@ -31,59 +73,59 @@ export default function MagicLinkEmail({
   magicLinkUrl,
   expiresInMinutes = 15,
   recipientName,
-  primaryColor,
-  accentColor,
-  textColor,
-  bgColor,
-  direction = 'ltr',
+  language,
+  colors,
+  strings,
 }: MagicLinkEmailProps) {
-  const isRTL = direction === 'rtl';
+  // Merge provided strings with defaults
+  const finalStrings = { ...DEFAULT_STRINGS, ...strings };
+
+  // Interpolate dynamic values
+  const greeting = recipientName
+    ? (finalStrings.greeting_with_name || '').replace('{recipientName}', recipientName)
+    : (finalStrings.greeting_hello || '');
+
+  const intro = (finalStrings.intro || '').replace('{schoolName}', schoolName);
+
+  const expirationText = (finalStrings.expiration_notice || '').replace(
+    '{expiresInMinutes}',
+    String(expiresInMinutes)
+  );
+
+  const previewText = (finalStrings.preview || '').replace('{schoolName}', schoolName);
 
   return (
     <BaseEmailTemplate
-      previewText={`Sign in to ${schoolName}`}
+      previewText={previewText}
       schoolName={schoolName}
       schoolLogoUrl={schoolLogoUrl}
-      primaryColor={primaryColor}
-      accentColor={accentColor}
-      textColor={textColor}
-      bgColor={bgColor}
-      direction={direction}
+      language={language}
+      colors={colors}
     >
       <Text
         style={{
           fontSize: '16px',
           marginBottom: '20px',
-          textAlign: isRTL ? 'right' : 'left',
         }}
       >
-        {recipientName
-          ? isRTL
-            ? `שלום ${recipientName},`
-            : `Hello ${recipientName},`
-          : isRTL
-          ? 'שלום,'
-          : 'Hello,'}
+        {greeting}
       </Text>
 
       <Text
         style={{
           fontSize: '16px',
           marginBottom: '20px',
-          textAlign: isRTL ? 'right' : 'left',
           lineHeight: '1.6',
         }}
       >
-        {direction === 'rtl'
-          ? `קיבלנו בקשה להיכנס לחשבון ${schoolName} שלך. אם לא ביצעת פעולה זו, אתה יכול להתעלם מהודעה זו.`
-          : `We received a request to sign in to your ${schoolName} account. If you didn't make this request, you can ignore this message.`}
+        {intro}
       </Text>
 
       <div style={{ marginBottom: '30px', textAlign: 'center' }}>
         <Button
           href={magicLinkUrl}
           style={{
-            backgroundColor: primaryColor || '#2563eb',
+            backgroundColor: 'var(--email-primary)',
             color: '#ffffff',
             padding: '12px 32px',
             borderRadius: '6px',
@@ -93,7 +135,7 @@ export default function MagicLinkEmail({
             fontSize: '16px',
           }}
         >
-          {direction === 'rtl' ? 'הכנס לחשבון' : 'Sign In'}
+          {finalStrings.cta_button || DEFAULT_STRINGS.cta_button}
         </Button>
       </div>
 
@@ -101,13 +143,10 @@ export default function MagicLinkEmail({
         style={{
           fontSize: '14px',
           marginBottom: '15px',
-          textAlign: isRTL ? 'right' : 'left',
-          color: '#6b7280',
+          color: 'var(--email-neutral)',
         }}
       >
-        {direction === 'rtl'
-          ? 'או העתק וקבע את הקישור הזה בדפדפן שלך:'
-          : 'Or copy and paste this link in your browser:'}
+        {finalStrings.fallback_text || DEFAULT_STRINGS.fallback_text}
       </Text>
 
       <div
@@ -122,7 +161,7 @@ export default function MagicLinkEmail({
         <Link
           href={magicLinkUrl}
           style={{
-            color: primaryColor || '#2563eb',
+            color: 'var(--email-primary)',
             textDecoration: 'underline',
             fontSize: '12px',
           }}
@@ -135,39 +174,20 @@ export default function MagicLinkEmail({
         style={{
           fontSize: '14px',
           marginBottom: '20px',
-          textAlign: isRTL ? 'right' : 'left',
           color: '#ef4444',
         }}
       >
-        {direction === 'rtl'
-          ? `⏰ קישור זה יפוג תוך ${expiresInMinutes} דקות`
-          : `⏰ This link expires in ${expiresInMinutes} minutes`}
+        {expirationText}
       </Text>
 
       <Text
         style={{
           fontSize: '14px',
           marginBottom: '10px',
-          textAlign: isRTL ? 'right' : 'left',
-          color: '#6b7280',
+          color: 'var(--email-neutral)',
         }}
       >
-        {direction === 'rtl'
-          ? 'אם יש לך שאלות, אנא צור קשר עם צוות התמיכה.'
-          : 'If you have any questions, please contact our support team.'}
-      </Text>
-
-      <Text
-        style={{
-          fontSize: '13px',
-          color: '#9ca3af',
-          textAlign: isRTL ? 'right' : 'left',
-          marginTop: '20px',
-        }}
-      >
-        {direction === 'rtl'
-          ? 'סימן זה: Magic Link for sign-in'
-          : 'Tag: Magic Link for sign-in'}
+        {finalStrings.security_notice || DEFAULT_STRINGS.security_notice}
       </Text>
     </BaseEmailTemplate>
   );

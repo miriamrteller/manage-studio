@@ -4,7 +4,7 @@ import {
   Link,
   Text,
 } from '@react-email/components';
-import BaseEmailTemplate from './BaseEmailTemplate.js';
+import BaseEmailTemplate, { type EmailColorConfig } from './BaseEmailTemplate.js';
 
 interface PaymentReminderEmailProps {
   schoolName: string;
@@ -15,19 +15,70 @@ interface PaymentReminderEmailProps {
   dueDate: string;
   paymentUrl: string;
   invoiceId?: string;
-  primaryColor?: string;
-  accentColor?: string;
-  textColor?: string;
-  bgColor?: string;
-  direction?: 'ltr' | 'rtl';
+  
+  /**
+   * Language (REQUIRED) - For i18n and direction computation
+   * Direction computed in BaseEmailTemplate: language === 'he' ? 'rtl' : 'ltr'
+   */
+  language: 'en' | 'he';
+  
+  /**
+   * Email color configuration (OPTIONAL)
+   * Passed from edge function based on tenant config
+   */
+  colors?: EmailColorConfig;
+  
+  /**
+   * Template strings (from i18n + tenant overrides)
+   * Schema matches packages/shared/src/i18n/email-templates-*.json
+   */
+  strings?: {
+    preview?: string;
+    greeting?: string;
+    intro?: string;
+    intro_overdue?: string;
+    amount_label?: string;
+    due_date_label?: string;
+    due_date_value?: string;
+    payment_details?: string;
+    cta_button?: string;
+    late_notice?: string;
+    questions_text?: string;
+    payment_methods?: string;
+  };
+  
   daysSinceOverdue?: number;
 }
+
+/**
+ * Default strings (fallback when i18n/overrides not provided)
+ * Matches structure in email-templates-en.json
+ */
+const DEFAULT_STRINGS = {
+  preview: 'Payment Reminder - {schoolName}',
+  greeting: 'Hello {recipientName},',
+  intro: 'This is a reminder that payment for {description} is due soon.',
+  intro_overdue: 'Your account with {schoolName} has an outstanding balance of {amount} that is now {daysSinceOverdue} days overdue.',
+  amount_label: 'Amount Due:',
+  due_date_label: 'Due Date:',
+  due_date_value: '{dueDate}',
+  payment_details: 'Please log in to your account to make a payment or set up automatic payments.',
+  cta_button: 'Make Payment',
+  late_notice: 'If payment is not received by {dueDate}, your enrollment may be subject to cancellation.',
+  questions_text: 'If you have questions about your payment or need to discuss payment arrangements, please contact us.',
+  payment_methods: 'We accept the following payment methods:',
+};
 
 /**
  * Payment Reminder Email Template
  * Dunning notice for outstanding class payments
  * Includes payment link and invoice reference
  * Escalates in tone if overdue (optional daysSinceOverdue parameter)
+ * 
+ * Adheres to:
+ * - SPEC.md 2.1: Direction computed from language in BaseEmailTemplate only
+ * - No hardcoded text (uses i18n)
+ * - All colors via CSS variables
  */
 export default function PaymentReminderEmail({
   schoolName,
@@ -38,66 +89,61 @@ export default function PaymentReminderEmail({
   dueDate,
   paymentUrl,
   invoiceId,
-  primaryColor,
-  accentColor,
-  textColor,
-  bgColor,
-  direction = 'ltr',
+  language,
+  colors,
+  strings,
   daysSinceOverdue,
 }: PaymentReminderEmailProps) {
-  const isRTL = direction === 'rtl';
+  // Merge provided strings with defaults
+  const finalStrings = { ...DEFAULT_STRINGS, ...strings };
+
+  // Determine if account is overdue
   const isOverdue = daysSinceOverdue && daysSinceOverdue > 0;
+
+  // Interpolate dynamic values
+  const greeting = (finalStrings.greeting || '').replace('{recipientName}', recipientName);
+
+  const intro = isOverdue
+    ? (finalStrings.intro_overdue || '')
+        .replace('{schoolName}', schoolName)
+        .replace('{amount}', amountOutstandingFormatted)
+        .replace('{daysSinceOverdue}', String(daysSinceOverdue || 0))
+    : (finalStrings.intro || '')
+        .replace('{description}', `${enrolledClassName}`)
+        .replace('{enrolledClassName}', enrolledClassName);
+
+  const previewText = (finalStrings.preview || '').replace('{schoolName}', schoolName);
+
+  const lateNotice = (finalStrings.late_notice || '').replace('{dueDate}', dueDate);
 
   return (
     <BaseEmailTemplate
-      previewText={`Payment Reminder - ${amountOutstandingFormatted} Outstanding`}
+      previewText={previewText}
       schoolName={schoolName}
       schoolLogoUrl={schoolLogoUrl}
-      primaryColor={primaryColor}
-      accentColor={accentColor}
-      textColor={textColor}
-      bgColor={bgColor}
-      direction={direction}
+      language={language}
+      colors={colors}
     >
       <Text
         style={{
           fontSize: '16px',
           marginBottom: '10px',
-          textAlign: isRTL ? 'right' : 'left',
         }}
       >
-        {isRTL ? `שלום ${recipientName},` : `Hello ${recipientName},`}
+        {greeting}
       </Text>
 
-      {isOverdue ? (
-        <Text
-          style={{
-            fontSize: '16px',
-            marginBottom: '20px',
-            textAlign: isRTL ? 'right' : 'left',
-            color: accentColor || '#ef4444',
-            fontWeight: '600',
-            lineHeight: '1.6',
-          }}
-        >
-          {isRTL
-            ? `חשבונך עם ${schoolName} הוא בעדכון עם ${amountOutstandingFormatted} שפדויים לעידכון הנוסף של ${daysSinceOverdue} ימים.`
-            : `Your account with ${schoolName} has an outstanding balance of ${amountOutstandingFormatted} that is now ${daysSinceOverdue} days overdue.`}
-        </Text>
-      ) : (
-        <Text
-          style={{
-            fontSize: '16px',
-            marginBottom: '20px',
-            textAlign: isRTL ? 'right' : 'left',
-            lineHeight: '1.6',
-          }}
-        >
-          {isRTL
-            ? `זהו תזכורת שיש לך תשלום שלא שולם עבור ${enrolledClassName}. אנא בצע תשלום בדרך זו על ידי ${dueDate}.`
-            : `This is a reminder that you have an outstanding payment for ${enrolledClassName}. Please settle your account by ${dueDate}.`}
-        </Text>
-      )}
+      <Text
+        style={{
+          fontSize: '16px',
+          marginBottom: '20px',
+          color: isOverdue ? 'var(--email-accent)' : undefined,
+          fontWeight: isOverdue ? '600' : undefined,
+          lineHeight: '1.6',
+        }}
+      >
+        {intro}
+      </Text>
 
       {/* Payment details card */}
       <div
@@ -106,8 +152,7 @@ export default function PaymentReminderEmail({
           padding: '20px',
           borderRadius: '8px',
           marginBottom: '25px',
-          borderLeft: `4px solid ${accentColor || '#ef4444'}`,
-          textAlign: isRTL ? 'right' : 'left',
+          borderLeft: '4px solid var(--email-accent)',
         }}
       >
         <Text
@@ -117,7 +162,7 @@ export default function PaymentReminderEmail({
             margin: '0 0 15px 0',
           }}
         >
-          {isRTL ? 'פרטי התשלום:' : 'Payment Details:'}
+          Payment Details:
         </Text>
 
         <Text
@@ -126,7 +171,7 @@ export default function PaymentReminderEmail({
             margin: '8px 0',
           }}
         >
-          <strong>{isRTL ? 'סכום תפוקה:' : 'Amount Outstanding:'}</strong>{' '}
+          <strong>{finalStrings.amount_label || DEFAULT_STRINGS.amount_label}</strong>{' '}
           <span style={{ fontSize: '18px', fontWeight: 'bold' }}>
             {amountOutstandingFormatted}
           </span>
@@ -139,7 +184,7 @@ export default function PaymentReminderEmail({
               margin: '8px 0',
             }}
           >
-            <strong>{isRTL ? 'מזהה חשבונית:' : 'Invoice ID:'}</strong> {invoiceId}
+            <strong>Invoice ID:</strong> {invoiceId}
           </Text>
         )}
 
@@ -149,7 +194,7 @@ export default function PaymentReminderEmail({
             margin: '8px 0',
           }}
         >
-          <strong>{isRTL ? 'מועד השלמה:' : 'Due By:'}</strong> {dueDate}
+          <strong>{finalStrings.due_date_label || DEFAULT_STRINGS.due_date_label}</strong> {dueDate}
         </Text>
 
         <Text
@@ -158,7 +203,7 @@ export default function PaymentReminderEmail({
             margin: '8px 0',
           }}
         >
-          <strong>{isRTL ? 'כיתה:' : 'Class:'}</strong> {enrolledClassName}
+          <strong>Class:</strong> {enrolledClassName}
         </Text>
       </div>
 
@@ -166,7 +211,7 @@ export default function PaymentReminderEmail({
         <Button
           href={paymentUrl}
           style={{
-            backgroundColor: primaryColor || '#2563eb',
+            backgroundColor: 'var(--email-primary)',
             color: '#ffffff',
             padding: '12px 32px',
             borderRadius: '6px',
@@ -176,7 +221,7 @@ export default function PaymentReminderEmail({
             fontSize: '16px',
           }}
         >
-          {isRTL ? 'בצע תשלום' : 'Pay Now'}
+          {finalStrings.cta_button || DEFAULT_STRINGS.cta_button}
         </Button>
       </div>
 
@@ -184,14 +229,11 @@ export default function PaymentReminderEmail({
         style={{
           fontSize: '14px',
           marginBottom: '15px',
-          textAlign: isRTL ? 'right' : 'left',
-          color: '#6b7280',
+          color: 'var(--email-neutral)',
           lineHeight: '1.6',
         }}
       >
-        {isRTL
-          ? 'או העתק את הקישור הזה בדפדפן שלך כדי להשלים את התשלום:'
-          : 'Or copy this link to your browser to complete your payment:'}
+        {finalStrings.payment_details || DEFAULT_STRINGS.payment_details}
       </Text>
 
       <div
@@ -206,7 +248,7 @@ export default function PaymentReminderEmail({
         <Link
           href={paymentUrl}
           style={{
-            color: primaryColor || '#2563eb',
+            color: 'var(--email-primary)',
             textDecoration: 'underline',
             fontSize: '12px',
           }}
@@ -223,14 +265,11 @@ export default function PaymentReminderEmail({
             padding: '15px',
             backgroundColor: '#fee2e2',
             borderRadius: '6px',
-            textAlign: isRTL ? 'right' : 'left',
-            color: accentColor || '#dc2626',
+            color: 'var(--email-accent)',
             lineHeight: '1.6',
           }}
         >
-          {isRTL
-            ? '⚠️ חשבון שלא שולם עלול להשפיע על ההרשמה בעתיד. אנא בצע תשלום בתאריך המוקדם ביותר האפשרי.'
-            : '⚠️ Delinquent accounts may affect future enrollment. Please remit payment at your earliest convenience.'}
+          ⚠️ {lateNotice}
         </Text>
       )}
 
@@ -238,27 +277,23 @@ export default function PaymentReminderEmail({
         style={{
           fontSize: '14px',
           marginBottom: '10px',
-          textAlign: isRTL ? 'right' : 'left',
-          color: '#6b7280',
+          color: 'var(--email-neutral)',
           lineHeight: '1.6',
         }}
       >
-        {isRTL
-          ? 'אם בעיה בעיצוב הביצוע או אם יש לך שאלות, בואו נדבר! צוות התמיכה שלנו בהנאה לעזור.'
-          : 'If you\'re experiencing difficulty making the payment or have questions, please don\'t hesitate to contact us. Our support team is happy to help.'}
+        {finalStrings.questions_text || DEFAULT_STRINGS.questions_text}
       </Text>
 
       <Text
         style={{
           fontSize: '14px',
           marginBottom: '10px',
-          textAlign: isRTL ? 'right' : 'left',
-          color: '#6b7280',
+          color: 'var(--email-neutral)',
         }}
       >
-        {isRTL ? 'בברכה,' : 'Best regards,'}
+        Best regards,
         <br />
-        {schoolName} {isRTL ? 'צוות' : 'Team'}
+        {schoolName} Team
       </Text>
     </BaseEmailTemplate>
   );

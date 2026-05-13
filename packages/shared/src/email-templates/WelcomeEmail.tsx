@@ -3,7 +3,7 @@ import {
   Button,
   Text,
 } from '@react-email/components';
-import BaseEmailTemplate from './BaseEmailTemplate.js';
+import BaseEmailTemplate, { type EmailColorConfig } from './BaseEmailTemplate.js';
 
 interface WelcomeEmailProps {
   schoolName: string;
@@ -12,17 +12,65 @@ interface WelcomeEmailProps {
   enrolledClassName: string;
   enrolledTermName: string;
   dashboardUrl: string;
-  primaryColor?: string;
-  accentColor?: string;
-  textColor?: string;
-  bgColor?: string;
-  direction?: 'ltr' | 'rtl';
+  
+  /**
+   * Language (REQUIRED) - For i18n and direction computation
+   * Direction computed in BaseEmailTemplate: language === 'he' ? 'rtl' : 'ltr'
+   */
+  language: 'en' | 'he';
+  
+  /**
+   * Email color configuration (OPTIONAL)
+   * Passed from edge function based on tenant config
+   */
+  colors?: EmailColorConfig;
+  
+  /**
+   * Template strings (from i18n + tenant overrides)
+   * Schema matches packages/shared/src/i18n/email-templates-*.json
+   */
+  strings?: {
+    preview?: string;
+    greeting?: string;
+    confirmation?: string;
+    class_details_heading?: string;
+    class_name_label?: string;
+    class_term_label?: string;
+    next_steps_heading?: string;
+    next_steps_text?: string;
+    cta_button?: string;
+    contact_notice?: string;
+    questions_text?: string;
+  };
 }
+
+/**
+ * Default strings (fallback when i18n/overrides not provided)
+ * Matches structure in email-templates-en.json
+ */
+const DEFAULT_STRINGS = {
+  preview: 'Welcome to {enrolledClassName} - {schoolName}',
+  greeting: 'Welcome, {recipientName}!',
+  confirmation: 'Your enrollment in {enrolledClassName} for {enrolledTermName} has been successfully confirmed!',
+  class_details_heading: 'Class Details:',
+  class_name_label: 'Class:',
+  class_term_label: 'Term:',
+  next_steps_heading: 'Next Steps:',
+  next_steps_text: 'You can now view your class schedule and manage your enrollment through your account dashboard.',
+  cta_button: 'View Dashboard',
+  contact_notice: 'If you have any questions about your enrollment, please contact us.',
+  questions_text: 'Questions? Contact our support team for more information about your class and the session schedule.',
+};
 
 /**
  * Welcome Email Template
  * Sent after successful enrolment to confirm participation
  * Includes link to dashboard/schedule view
+ * 
+ * Adheres to:
+ * - SPEC.md 2.1: Direction computed from language in BaseEmailTemplate only
+ * - No hardcoded text (uses i18n)
+ * - All colors via CSS variables
  */
 export default function WelcomeEmail({
   schoolName,
@@ -31,46 +79,49 @@ export default function WelcomeEmail({
   enrolledClassName,
   enrolledTermName,
   dashboardUrl,
-  primaryColor,
-  accentColor,
-  textColor,
-  bgColor,
-  direction = 'ltr',
+  language,
+  colors,
+  strings,
 }: WelcomeEmailProps) {
-  const isRTL = direction === 'rtl';
+  // Merge provided strings with defaults
+  const finalStrings = { ...DEFAULT_STRINGS, ...strings };
+
+  // Interpolate dynamic values
+  const greeting = (finalStrings.greeting || '').replace('{recipientName}', recipientName);
+
+  const confirmation = (finalStrings.confirmation || '')
+    .replace('{enrolledClassName}', enrolledClassName)
+    .replace('{enrolledTermName}', enrolledTermName);
+
+  const previewText = (finalStrings.preview || '')
+    .replace('{enrolledClassName}', enrolledClassName)
+    .replace('{schoolName}', schoolName);
 
   return (
     <BaseEmailTemplate
-      previewText={`Welcome to ${enrolledClassName} - ${schoolName}`}
+      previewText={previewText}
       schoolName={schoolName}
       schoolLogoUrl={schoolLogoUrl}
-      primaryColor={primaryColor}
-      accentColor={accentColor}
-      textColor={textColor}
-      bgColor={bgColor}
-      direction={direction}
+      language={language}
+      colors={colors}
     >
       <Text
         style={{
           fontSize: '16px',
           marginBottom: '10px',
-          textAlign: isRTL ? 'right' : 'left',
         }}
       >
-        {isRTL ? `ברוכים הבאים, ${recipientName}!` : `Welcome, ${recipientName}!`}
+        {greeting}
       </Text>
 
       <Text
         style={{
           fontSize: '16px',
           marginBottom: '25px',
-          textAlign: isRTL ? 'right' : 'left',
           lineHeight: '1.6',
         }}
       >
-        {isRTL
-          ? `הרשמתך ל${enrolledClassName} בתקופת ${enrolledTermName} אושרה בהצלחה!`
-          : `Your enrollment in ${enrolledClassName} for ${enrolledTermName} has been successfully confirmed!`}
+        {confirmation}
       </Text>
 
       <div
@@ -79,8 +130,7 @@ export default function WelcomeEmail({
           padding: '20px',
           borderRadius: '8px',
           marginBottom: '25px',
-          borderLeft: `4px solid ${primaryColor || '#2563eb'}`,
-          textAlign: isRTL ? 'right' : 'left',
+          borderLeft: '4px solid var(--email-primary)',
         }}
       >
         <Text
@@ -90,7 +140,7 @@ export default function WelcomeEmail({
             margin: '0 0 10px 0',
           }}
         >
-          {isRTL ? 'פרטי הכיתה:' : 'Class Details:'}
+          {finalStrings.class_details_heading || DEFAULT_STRINGS.class_details_heading}
         </Text>
         <Text
           style={{
@@ -98,7 +148,7 @@ export default function WelcomeEmail({
             margin: '5px 0',
           }}
         >
-          <strong>{isRTL ? 'כיתה:' : 'Class:'}</strong> {enrolledClassName}
+          <strong>{finalStrings.class_name_label || DEFAULT_STRINGS.class_name_label}</strong> {enrolledClassName}
         </Text>
         <Text
           style={{
@@ -106,7 +156,7 @@ export default function WelcomeEmail({
             margin: '5px 0',
           }}
         >
-          <strong>{isRTL ? 'תקופה:' : 'Term:'}</strong> {enrolledTermName}
+          <strong>{finalStrings.class_term_label || DEFAULT_STRINGS.class_term_label}</strong> {enrolledTermName}
         </Text>
       </div>
 
@@ -114,20 +164,17 @@ export default function WelcomeEmail({
         style={{
           fontSize: '16px',
           marginBottom: '20px',
-          textAlign: isRTL ? 'right' : 'left',
           lineHeight: '1.6',
         }}
       >
-        {isRTL
-          ? 'לצפייה בלוח הזמנים המלא, סימני דרך וברכות לכיתה, בקר בלוח ההשראות שלך:'
-          : 'To view the full schedule, milestones, and class announcements, visit your dashboard:'}
+        {finalStrings.next_steps_text || DEFAULT_STRINGS.next_steps_text}
       </Text>
 
       <div style={{ marginBottom: '25px', textAlign: 'center' }}>
         <Button
           href={dashboardUrl}
           style={{
-            backgroundColor: primaryColor || '#2563eb',
+            backgroundColor: 'var(--email-primary)',
             color: '#ffffff',
             padding: '12px 32px',
             borderRadius: '6px',
@@ -137,7 +184,7 @@ export default function WelcomeEmail({
             fontSize: '16px',
           }}
         >
-          {isRTL ? 'בקר בלוח הבקרה' : 'Visit Dashboard'}
+          {finalStrings.cta_button || DEFAULT_STRINGS.cta_button}
         </Button>
       </div>
 
@@ -145,27 +192,21 @@ export default function WelcomeEmail({
         style={{
           fontSize: '14px',
           marginBottom: '15px',
-          textAlign: isRTL ? 'right' : 'left',
-          color: '#6b7280',
+          color: 'var(--email-neutral)',
           lineHeight: '1.6',
         }}
       >
-        {isRTL
-          ? 'אם יש לך שאלות לגבי הכיתה או תקופה זו, בואו נדבר! צוות התמיכה שלנו פה כדי לעזור.'
-          : 'If you have any questions about this class or term, we\'re here to help! Our support team is ready to assist.'}
+        {finalStrings.questions_text || DEFAULT_STRINGS.questions_text}
       </Text>
 
       <Text
         style={{
           fontSize: '14px',
           marginBottom: '10px',
-          textAlign: isRTL ? 'right' : 'left',
-          color: '#6b7280',
+          color: 'var(--email-neutral)',
         }}
       >
-        {isRTL ? 'בברכה,' : 'Warm regards,'}
-        <br />
-        {schoolName} {isRTL ? 'צוות' : 'Team'}
+        {finalStrings.contact_notice || DEFAULT_STRINGS.contact_notice}
       </Text>
     </BaseEmailTemplate>
   );
