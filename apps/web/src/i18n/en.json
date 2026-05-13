@@ -9,6 +9,7 @@
     "cancel": "Cancel",
     "submit": "Submit",
     "loading": "Loading...",
+    "verifying": "Verifying...",
     "error": "Error",
     "time": "Time",
     "capacity": "Capacity",
@@ -53,6 +54,37 @@
       "success_redirecting": "Login successful! Redirecting...",
       "no_account": "Don't have an account?",
       "signup": "Sign up here"
+    },
+    "signup": {
+      "title": "Sign Up",
+      "step1": {
+        "subtitle": "How would you like to sign up?",
+        "firstName": "First Name",
+        "lastName": "Last Name",
+        "email": "Email Address",
+        "phone": "Phone Number",
+        "channel": "Choose communication method",
+        "channelEmail": "Email",
+        "channelSms": "SMS",
+        "channelWhatsapp": "WhatsApp",
+        "continue": "Continue"
+      },
+      "step2": {
+        "subtitle": "Verify your code",
+        "sentTo": "We sent a code to your {{channel}} {{contact}}",
+        "email": "email",
+        "sms": "SMS",
+        "whatsapp": "WhatsApp",
+        "resendIn": "Resend code in:",
+        "resend": "Send new code",
+        "continue": "Continue"
+      },
+      "step3": {
+        "subtitle": "Enter the verification code",
+        "enterCode": "Enter the 6-digit code you received",
+        "digit": "Digit {{number}} of 6",
+        "verify": "Verify"
+      }
     },
     "authCallback": {
       "loading": "Processing sign in...",
@@ -259,7 +291,9 @@
     "approval_required": "Admin approval required",
     "person_not_found": "Person not found",
     "class_not_found": "Class not found",
-    "already_enrolled": "Already enrolled in this class"
+    "already_enrolled": "Already enrolled in this class",
+    "loading_tenant": "Error loading company information",
+    "signup_failed": "Sign up failed. Please try again."
   },
   "success": {
     "person_created": "Person created successfully",

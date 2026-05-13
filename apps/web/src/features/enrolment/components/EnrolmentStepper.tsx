@@ -118,7 +118,6 @@ export function EnrolmentStepper({
       {
         ...enrolmentData,
         status: 'active',
-        approvedBy: 'system-auto-approval',
       },
       {
         onSuccess: (created) => {

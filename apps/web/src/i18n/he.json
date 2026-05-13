@@ -9,6 +9,7 @@
     "cancel": "בטל",
     "submit": "שלח",
     "loading": "טוען...",
+    "verifying": "מאמתים...",
     "error": "שגיאה",
     "time": "זמן",
     "capacity": "קיבולת",
@@ -78,6 +79,37 @@
       "success_redirecting": "התחברות בוצעה בהצלחה! מעביר לעמוד הבא...",
       "no_account": "אין לכם חשבון?",
       "signup": "הרשמו כאן"
+    },
+    "signup": {
+      "title": "הרשמה",
+      "step1": {
+        "subtitle": "מעדיפים להרשם עם דוא\"ל או SMS?",
+        "firstName": "שם פרטי",
+        "lastName": "שם משפחה",
+        "email": "כתובת דוא\"ל",
+        "phone": "מספר טלפון",
+        "channel": "בחרו אמצעי תקשורת",
+        "channelEmail": "דוא\"ל",
+        "channelSms": "SMS",
+        "channelWhatsapp": "WhatsApp",
+        "continue": "המשכו"
+      },
+      "step2": {
+        "subtitle": "אנא אימתו את הקוד",
+        "sentTo": "קוד שלחנו אל {{channel}} {{contact}}",
+        "email": "דוא\"ל",
+        "sms": "SMS",
+        "whatsapp": "WhatsApp",
+        "resendIn": "שלחו שוב את הקוד בעוד:",
+        "resend": "שלחו קוד חדש",
+        "continue": "המשכו"
+      },
+      "step3": {
+        "subtitle": "הכנסו את קוד האימות",
+        "enterCode": "הכנסו את קוד בן שש ספרות שקבלתם",
+        "digit": "ספרה {{number}} של 6",
+        "verify": "אימתו"
+      }
     },
     "authCallback": {
       "loading": "מעבדים התחברות...",
@@ -284,7 +316,9 @@
     "approval_required": "אישור מנהל נדרש",
     "person_not_found": "אדם לא נמצא",
     "class_not_found": "שיעור לא נמצא",
-    "already_enrolled": "כבר נרשמו לשיעור זה"
+    "already_enrolled": "כבר נרשמו לשיעור זה",
+    "loading_tenant": "שגיאה בטעינת מידע החברה",
+    "signup_failed": "ההרשמה נכשלה. אנא נסו שוב."
   },
   "success": {
     "person_created": "אדם יצור בהצלחה",
