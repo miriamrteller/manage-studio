@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { WhatsAppOtpVerifier } from '@/components/notifications';
+import { WhatsAppOtpVerifier } from '@/components/Notifications';
 import { useEnrolment } from '../hooks/useEnrolment';
 import type { Enrolment } from '@shared/schemas';
 
