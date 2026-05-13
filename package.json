@@ -13,7 +13,12 @@
     "lint": "pnpm -r lint",
     "test": "pnpm -r test",
     "a11y:install": "pnpm -C apps/web exec playwright install --with-deps",
-    "a11y:e2e": "pnpm -C apps/web run a11y:e2e"
+    "a11y:e2e": "pnpm -C apps/web run a11y:e2e",
+    "db:link": "npx supabase link --project-ref acmujrhavgbamdilzuew",
+    "db:push": "npx supabase db push",
+    "db:pull": "npx supabase db pull",
+    "db:types": "npx supabase gen types typescript --project-id acmujrhavgbamdilzuew > packages/shared/src/database.types.ts",
+    "db:sync": "pnpm db:push && pnpm db:types"
   },
   "devDependencies": {
     "@react-email/components": "^1.0.12",
