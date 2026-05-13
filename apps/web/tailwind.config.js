@@ -13,6 +13,6 @@ export default {
     },
   },
   plugins: [
-    require('tailwindcss-rtl'),
+    // require('tailwindcss-rtl'), // TODO: Fix compatibility with Tailwind 3.3.6
   ],
 }

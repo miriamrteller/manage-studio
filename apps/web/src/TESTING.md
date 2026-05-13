@@ -57,7 +57,7 @@
  * ✓ Should call handleEnrol on button click
  * ✓ Should have proper aria-label on button
  * 
- * 4. COMMON COMPONENT TESTS (src/components/Common/*.test.tsx)
+ * 4. UI COMPONENT TESTS (src/components/ui/*.test.tsx)
  * 
  * Test variants, sizes, states:
  * 
@@ -95,7 +95,7 @@
  * By feature:
  * - hooks/: 90% (business logic)
  * - components/[Feature]/: 85% (smart components)
- * - components/Common/: 90% (heavily reused)
+ * - components/ui/: 90% (heavily reused)
  * - pages/: 70% (mostly composition, hard to test)
  * 
  * MOCKING STRATEGY

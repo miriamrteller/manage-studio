@@ -34,6 +34,6 @@
     "pnpm": "^11.0.8"
   },
   "lint-staged": {
-    "apps/**/*.{ts,tsx}": "eslint --fix"
+    "apps/web/**/*.{ts,tsx}": "pnpm -C apps/web exec eslint --fix"
   }
 }

@@ -43,11 +43,12 @@ src/
 │   │   ├── PortalCard.tsx     # Presentational: Dashboard card
 │   │   └── index.ts
 │   │
-│   └── Common/                # Shared UI components
-│       ├── Button.tsx         # Variants: primary, secondary, outline, danger
-│       ├── Card.tsx           # Variants: default, outlined, filled
-│       ├── FormField.tsx      # Label + input + error wrapper
-│       └── index.ts
+│   └── ui/                    # Headless UI primitives
+│       ├── button.tsx         # Base button component
+│       ├── card.tsx           # Base card component
+│       ├── input.tsx          # Base input component
+│       ├── dialog.tsx         # Base dialog component
+│       └── ...other primitives
 │
 ├── hooks/
 │   ├── useLogin.ts            # Feature: Login form logic

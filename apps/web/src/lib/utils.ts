@@ -261,3 +261,112 @@ export function getBackgroundForPrimaryColor(
 ): 'warm' | 'cool' {
   return detectColorTemperature(primaryHex);
 }
+
+// Date and utility functions
+
+import { differenceInYears } from 'date-fns';
+
+const JERUSALEM_TZ = 'Asia/Jerusalem';
+
+/**
+ * Calculate age from date of birth
+ */
+export function calculateAge(dateOfBirth: string | Date | null | undefined): number | null {
+  if (!dateOfBirth) return null;
+  try {
+    const dob = typeof dateOfBirth === 'string' ? new Date(dateOfBirth) : dateOfBirth;
+    return differenceInYears(new Date(), dob);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Check if person is under 18
+ */
+export function isMinor(dateOfBirth: string | Date | null | undefined): boolean {
+  const age = calculateAge(dateOfBirth);
+  return age !== null && age < 18;
+}
+
+/**
+ * Format date in Jerusalem timezone using Intl API
+ */
+export function formatDate(
+  date: string | Date | null | undefined
+): string {
+  if (!date) return '';
+  try {
+    const d = typeof date === 'string' ? new Date(date) : date;
+    return new Intl.DateTimeFormat('en-US', {
+      day: 'numeric',
+      month: 'numeric',
+      year: 'numeric',
+      timeZone: JERUSALEM_TZ,
+    }).format(d);
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * Format currency in Israeli Shekel
+ */
+export function formatCurrency(amount: number, currency: string = 'ILS'): string {
+  return new Intl.NumberFormat('he-IL', {
+    style: 'currency',
+    currency,
+  }).format(amount);
+}
+
+/**
+ * Validate phone number (international + Israeli formats)
+ */
+export function isValidPhone(phone: string): boolean {
+  const internationalPattern = /^\+?[1-9]\d{1,14}$/;
+  const localPattern = /^05\d{8}$/; // Israeli format
+  return internationalPattern.test(phone) || localPattern.test(phone);
+}
+
+/**
+ * Format phone for display
+ */
+export function formatPhone(phone: string | null | undefined): string {
+  if (!phone) return '';
+  // Remove non-digits
+  const digits = phone.replace(/\D/g, '');
+  // Format as +972-XX-XXX-XXXX (Israeli)
+  if (digits.length === 10 && digits.startsWith('5')) {
+    return `+972-${digits.slice(0, 2)}-${digits.slice(2, 5)}-${digits.slice(5)}`;
+  }
+  // Return as-is if non-Israeli
+  return phone;
+}
+
+/**
+ * Generate UUID-like identifier for non-stored data
+ */
+export function generateClientId(): string {
+  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+}
+
+/**
+ * Debounce utility
+ */
+export function debounce<T extends (...args: unknown[]) => unknown>(
+  func: T,
+  delay: number
+): (...args: Parameters<T>) => void {
+  let timeoutId: ReturnType<typeof setTimeout>;
+  return (...args: Parameters<T>) => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => func(...args), delay);
+  };
+}
+
+/**
+ * Type-safe object keys
+ */
+export function objectKeys<T extends Record<string, unknown>>(obj: T): Array<keyof T> {
+  return Object.keys(obj) as Array<keyof T>;
+}
