@@ -255,7 +255,6 @@ export const EnrolmentSchema = z.object({
   term_id: UUIDSchema,
   status: z.enum(['active', 'pending_payment', 'cancelled', 'withdrawn', 'waitlisted']).default('active'),
   prior_experience: z.string().nullable().optional(),
-  approvedBy: z.enum(['system-auto-approval', 'human-review']).optional(),
   created_at: z.string().datetime(),
 });
 
@@ -407,73 +406,3 @@ export const ContactPreferencesUpdateSchema = z.object({
 });
 
 export type ContactPreferencesUpdate = z.infer<typeof ContactPreferencesUpdateSchema>;
-
-// ===== PHASE 1D: SMS/OTP + SIGNUP =====
-
-// Verification attempts (rate limiting)
-export const VerificationAttemptSchema = z.object({
-  id: UUIDSchema,
-  tenant_id: UUIDSchema,
-  contact_point: z.string().min(1),
-  channel: z.enum(['email', 'sms', 'whatsapp']),
-  attempt_count: z.number().int().min(0),
-  last_attempt_at: z.string().datetime(),
-  blocked_until: z.string().datetime().nullable(),
-  created_at: z.string().datetime(),
-  updated_at: z.string().datetime(),
-});
-
-export type VerificationAttempt = z.infer<typeof VerificationAttemptSchema>;
-
-// Signup form schema (client-side validation)
-export const SignupFormSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  firstName: z.string()
-    .min(1, 'First name required')
-    .max(100, 'First name too long'),
-  lastName: z.string()
-    .min(1, 'Last name required')
-    .max(100, 'Last name too long'),
-  phone: z.string().optional(),
-  channel: z.enum(['email', 'sms', 'whatsapp']),
-  tenantId: UUIDSchema,
-}).refine(
-  (data) => {
-    if ((data.channel === 'sms' || data.channel === 'whatsapp') && !data.phone) {
-      return false;
-    }
-    return true;
-  },
-  {
-    message: 'Phone number required for SMS/WhatsApp',
-    path: ['phone'],
-  }
-);
-
-export type SignupForm = z.infer<typeof SignupFormSchema>;
-
-// Send OTP SMS request (Edge Function input)
-export const SendOtpSmsRequestSchema = z.object({
-  recipient_phone: z.string().regex(/^\+\d{1,3}\d{6,14}$/, 'Invalid phone (must be E.164)'),
-  recipient_name: z.string().min(1).max(100),
-  channel: z.enum(['sms', 'whatsapp']),
-  tenant_id: UUIDSchema,
-});
-
-export type SendOtpSmsRequest = z.infer<typeof SendOtpSmsRequestSchema>;
-
-// Send OTP SMS response (Edge Function output)
-export const SendOtpSmsResponseSchema = z.union([
-  z.object({
-    success: z.literal(true),
-    message_id: z.string(),
-    expires_in_seconds: z.number(),
-  }),
-  z.object({
-    error: z.enum(['invalid_phone', 'rate_limited', 'send_failed']),
-    message: z.string(),
-    blocked_until: z.string().datetime().nullable(),
-  }),
-]);
-
-export type SendOtpSmsResponse = z.infer<typeof SendOtpSmsResponseSchema>;
