@@ -202,13 +202,17 @@ test.describe('Keyboard Navigation (WCAG 2.1.1)', () => {
 test.describe('Semantic HTML & ARIA (WCAG 1.3.1)', () => {
   test('page has proper landmark structure', async ({ page }) => {
     // Real workflow: Screen reader user navigates by landmarks to understand page layout
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'networkidle' });
     
-    // Check for main content area
+    // Wait for main element to be visible before checking
+    await page.locator('main, [role="main"]').first().waitFor({ state: 'visible', timeout: 5000 });
+    
     const main = await page.locator('main, [role="main"]').isVisible();
     expect(main).toBe(true);
     
-    // Check for header/nav
+    // Wait for nav before checking
+    await page.locator('nav, header, [role="navigation"]').first().waitFor({ state: 'visible', timeout: 5000 });
+    
     const hasNav = (await page.locator('nav, header, [role="navigation"]').count()) > 0;
     expect(hasNav).toBe(true);
   });
