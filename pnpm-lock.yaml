@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      libphonenumber-js:
+        specifier: ^1.13.1
+        version: 1.13.1
       pnpm:
         specifier: ^11.0.8
         version: 11.0.9
