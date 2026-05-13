@@ -667,7 +667,7 @@ export type Database = {
           created_at: string
           currency: string
           id: string
-          language: string
+          language_default: string
           name: string
           primary_color: string
           subdomain: string
@@ -680,7 +680,7 @@ export type Database = {
           created_at?: string
           currency?: string
           id?: string
-          language?: string
+          language_default?: string
           name: string
           primary_color?: string
           subdomain: string
@@ -693,7 +693,7 @@ export type Database = {
           created_at?: string
           currency?: string
           id?: string
-          language?: string
+          language_default?: string
           name?: string
           primary_color?: string
           subdomain?: string
@@ -784,15 +784,71 @@ export type Database = {
           },
         ]
       }
+      verification_attempts: {
+        Row: {
+          attempt_count: number
+          blocked_until: string | null
+          channel: string
+          contact_point: string
+          created_at: string
+          id: string
+          last_attempt_at: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          attempt_count?: number
+          blocked_until?: string | null
+          channel: string
+          contact_point: string
+          created_at?: string
+          id?: string
+          last_attempt_at?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          attempt_count?: number
+          blocked_until?: string | null
+          channel?: string
+          contact_point?: string
+          created_at?: string
+          id?: string
+          last_attempt_at?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "verification_attempts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
       cleanup_expired_otps: { Args: never; Returns: undefined }
+      cleanup_old_verification_attempts: { Args: never; Returns: number }
       get_my_family_ids: { Args: never; Returns: string[] }
       get_my_person_id: { Args: never; Returns: string }
       get_my_tenant_id: { Args: never; Returns: string }
+      increment_verification_attempt: {
+        Args: {
+          p_channel: string
+          p_contact_point: string
+          p_tenant_id: string
+        }
+        Returns: {
+          attempt_count: number
+          blocked_until: string
+        }[]
+      }
       is_minor: { Args: { date_of_birth: string }; Returns: boolean }
       is_super_admin: { Args: never; Returns: boolean }
     }

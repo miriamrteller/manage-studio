@@ -15,7 +15,7 @@ CREATE TABLE verification_attempts (
   created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
   
-  UNIQUE (tenant_id, contact_point, channel) WHERE blocked_until IS NULL OR blocked_until > now()
+  UNIQUE (tenant_id, contact_point, channel)
 );
 
 -- Indexes for common queries
@@ -30,9 +30,7 @@ ALTER TABLE verification_attempts ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policy 1: Tenant admins can read/manage all attempts in their tenant
 CREATE POLICY "admin_manage_attempts" ON verification_attempts FOR ALL
-  USING (tenant_id = get_my_tenant_id() AND 'tenant_admin' = ANY((
-    SELECT role FROM user_profiles WHERE id = auth.uid()
-  )));
+  USING (tenant_id = get_my_tenant_id() AND EXISTS(SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role @> ARRAY['tenant_admin']));
 
 -- RLS Policy 2: System (Edge Functions) can insert/update
 CREATE POLICY "system_insert_attempts" ON verification_attempts FOR INSERT
