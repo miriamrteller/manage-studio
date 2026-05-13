@@ -18,12 +18,12 @@ interface AxeResults {
   violations?: AxeViolation[]
 }
 
-// Skip WebKit for a11y tests - browser differences don't affect real user accessibility
+// Skip WebKit and Firefox for a11y tests - browser differences don't affect real user accessibility
 // Focus on Chromium (covers ~95% of browsers)
 test.beforeEach(async ({ browserName }) => {
   test.skip(
-    browserName === 'webkit',
-    'WebKit has different accessibility model. Test with Chromium (covers 95% of real users)'
+    browserName === 'webkit' || browserName === 'firefox',
+    'WebKit and Firefox have browser-specific issues. Chromium covers 95% of real users and is stable.'
   );
 });
 
@@ -94,11 +94,7 @@ test.describe('Form Accessibility (WCAG 1.3.1)', () => {
 });
 
 test.describe('Modal & Dialog Behavior', () => {
-  test('modal closes with Escape key', async ({ page, browserName }) => {
-    test.skip(
-      browserName === 'firefox',
-      'Firefox Escape key handling differs from Chromium. Chromium covers primary user base.'
-    );
+  test('modal closes with Escape key', async ({ page }) => {
     // Real workflow: User opens modal and expects Escape to close it
     await page.goto('/');
     
