@@ -4,7 +4,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
 import { LoginFormSchema, PasswordLoginSchema, type LoginForm as LoginFormData, type PasswordLogin as PasswordLoginData } from '../../schemas';
 import { AuthMessage } from './AuthMessage';
-import { Button, FormInput } from '../Common';
+import { Button } from '../ui/button';
+import { FormInput } from '../ui/form';
 
 /**
  * LoginForm: Presentational component for login form UI

@@ -1,7 +1,7 @@
 import { type UseFormRegister, type FieldErrors } from 'react-hook-form';
 import { type Person } from '@shared/schemas';
 import { useTranslation } from 'react-i18next';
-import { FormInput, FormTextarea, FormSelect } from '../../../components/Common';
+import { FormInput, FormTextarea, FormSelect } from '../../../components/ui/form';
 
 interface PersonFormFieldsProps {
   register: UseFormRegister<Partial<Person>>;

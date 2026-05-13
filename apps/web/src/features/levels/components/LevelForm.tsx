@@ -3,7 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { LevelSchema, type Level } from '@shared/schemas';
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
-import { FormInput } from '../../../components/Common';
+import { FormInput } from '../../../components/ui/form';
 
 // Schema source: SPEC.md — Levels table
 // Columns: id, tenant_id, name, sort_order, description (optional), created_at

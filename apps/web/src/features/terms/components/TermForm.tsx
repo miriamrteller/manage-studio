@@ -4,7 +4,7 @@ import { type Term } from '@shared/schemas';
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 import { z } from 'zod';
-import { FormInput, FormSelect } from '../../../components/Common';
+import { FormInput, FormSelect } from '../../../components/ui/form';
 
 // Schema source: SPEC.md — Terms table
 // Columns: id, tenant_id, name, start_date, end_date, status, created_at

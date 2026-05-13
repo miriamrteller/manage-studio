@@ -3,7 +3,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { FamilySchema, type Family } from '@shared/schemas';
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
-import { FormInput, Button } from '../../../components/Common';
+import { FormInput } from '../../../components/ui/form';
+import { Button } from '../../../components/ui/button';
 
 // Schema source: SPEC.md Migration 002
 // Columns: id, tenant_id, name, contact_person_name, contact_email, contact_phone, created_at
@@ -118,9 +119,8 @@ export const FamilyForm = ({ family, onSubmit, isLoading }: FamilyFormProps) => 
       <div className="flex gap-2 pt-4">
         <Button
           type="submit"
-          variant="primary"
+          variant="default"
           disabled={isLoading || form.formState.isSubmitting}
-          isLoading={isLoading || form.formState.isSubmitting}
         >
           {isCreating ? t('common.create') : t('common.save')}
         </Button>
