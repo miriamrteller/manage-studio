@@ -116,11 +116,142 @@ export const PersonSchema = z.object({
   is_minor: z.boolean(),
   medical_notes: z.string().nullable(),
   allergies: z.string().nullable(),
+  emergency_contact_name: z.string().min(2, 'Emergency contact name required').max(255).nullable().optional(),
+  emergency_contact_phone: z.string().min(7).max(20).nullable().optional(),
+  photo_consent: z.boolean().default(false),
+  media_consent: z.boolean().default(false),
   status: z.enum(['active', 'inactive', 'withdrawn']).default('active'),
+  waiver_template_id: z.string().uuid().nullable().optional(),
+  waiver_accepted_at: z.string().datetime().nullable().optional(),
+  waiver_version: z.number().int().nullable().optional(),
+  billing_account_id: z.string().uuid().nullable().optional(),
   created_at: z.string().datetime(),
+  updated_at: z.string().datetime().optional(),
 });
 
+export const PersonCreateSchema = z.object({
+  name: z.string().min(1, 'Name required'),
+  email: z.string().email().nullable().optional(),
+  date_of_birth: DateSchema.nullable().optional(),
+  emergency_contact_name: z.string().min(2, 'Emergency contact name required').max(255),
+  emergency_contact_phone: z.string().min(7, 'Valid phone number required').max(20),
+  medical_notes: z.string().nullable().optional(),
+  allergies: z.string().nullable().optional(),
+  photo_consent: z.boolean().default(false),
+  media_consent: z.boolean().default(false),
+  family_id: z.string().uuid().nullable().optional(),
+  billing_account_id: z.string().uuid().nullable().optional(),
+});
+
+export const PersonUpdateSchema = PersonSchema.omit({
+  id: true,
+  tenant_id: true,
+  user_profile_id: true,
+  created_at: true,
+  updated_at: true,
+}).partial();
+
 export type Person = z.infer<typeof PersonSchema>;
+export type PersonCreate = z.infer<typeof PersonCreateSchema>;
+export type PersonUpdate = z.infer<typeof PersonUpdateSchema>;
+
+// Billing account (payment method and account info per tenant)
+export const BillingAccountSchema = z.object({
+  id: UUIDSchema,
+  tenant_id: UUIDSchema,
+  account_holder_name: z.string().min(2, 'Account holder name required').max(255),
+  primary_contact_email: z.string().email('Invalid email address'),
+  primary_contact_phone: z.string().min(7).max(20).nullable().optional(),
+  payment_method: z.enum(['card', 'bank_transfer', 'cash', 'check']).default('card'),
+  status: z.enum(['active', 'inactive', 'archived']).default('active'),
+  created_at: z.string().datetime(),
+  updated_at: z.string().datetime(),
+});
+
+export const BillingAccountCreateSchema = z.object({
+  account_holder_name: z.string().min(2, 'Account holder name required').max(255),
+  primary_contact_email: z.string().email('Invalid email address'),
+  primary_contact_phone: z.string().min(7).max(20).nullable().optional(),
+  payment_method: z.enum(['card', 'bank_transfer', 'cash', 'check']).default('card'),
+});
+
+export const BillingAccountUpdateSchema = BillingAccountSchema.omit({
+  id: true,
+  tenant_id: true,
+  created_at: true,
+  updated_at: true,
+}).partial();
+
+export type BillingAccount = z.infer<typeof BillingAccountSchema>;
+export type BillingAccountCreate = z.infer<typeof BillingAccountCreateSchema>;
+export type BillingAccountUpdate = z.infer<typeof BillingAccountUpdateSchema>;
+
+// Requirement templates (eligibility requirements for classes)
+const AgeRangeConfig = z.object({
+  requirement_type: z.literal('age_range'),
+  min_birth_date: z.string().date('Invalid date'),
+  max_birth_date: z.string().date('Invalid date'),
+  reference_date: z.string().date('Invalid date'),
+});
+
+const GenderConfig = z.object({
+  requirement_type: z.literal('gender'),
+  gender: z.enum(['girl', 'boy']),
+});
+
+const LevelConfig = z.object({
+  requirement_type: z.literal('level'),
+  level_id: z.string().uuid('Invalid level ID'),
+});
+
+const DocumentConfig = z.object({
+  requirement_type: z.literal('document_submitted'),
+  document_type: z.enum(['medical_records', 'vaccination_records', 'other']),
+});
+
+const ManualConfig = z.object({
+  requirement_type: z.literal('manual_review'),
+  category: z.enum(['approval', 'documentation', 'other']),
+});
+
+const ConfigSchema = z.union([
+  AgeRangeConfig,
+  GenderConfig,
+  LevelConfig,
+  DocumentConfig,
+  ManualConfig,
+]);
+
+export const RequirementTemplateSchema = z.object({
+  id: UUIDSchema,
+  tenant_id: UUIDSchema,
+  name: z.string().min(2, 'Template name required').max(255),
+  requirement_type: z.enum(['age_range', 'gender', 'level', 'document_submitted', 'manual_review']),
+  config: ConfigSchema,
+  display_text: z.string().max(1000).nullable().optional(),
+  is_hard_block: z.boolean().default(true),
+  created_at: z.string().datetime(),
+  updated_at: z.string().datetime(),
+});
+
+export const RequirementTemplateCreateSchema = z.object({
+  name: z.string().min(2, 'Template name required').max(255),
+  requirement_type: z.enum(['age_range', 'gender', 'level', 'document_submitted', 'manual_review']),
+  config: ConfigSchema,
+  display_text: z.string().max(1000).nullable().optional(),
+  is_hard_block: z.boolean().default(true),
+});
+
+export const RequirementTemplateUpdateSchema = RequirementTemplateSchema.omit({
+  id: true,
+  tenant_id: true,
+  created_at: true,
+  updated_at: true,
+}).partial();
+
+export type RequirementTemplate = z.infer<typeof RequirementTemplateSchema>;
+export type RequirementTemplateCreate = z.infer<typeof RequirementTemplateCreateSchema>;
+export type RequirementTemplateUpdate = z.infer<typeof RequirementTemplateUpdateSchema>;
 
 // Contact preferences
 export const ContactPreferencesSchema = z.object({
