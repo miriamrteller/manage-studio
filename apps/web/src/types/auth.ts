@@ -34,21 +34,22 @@ export type TenantWhiteLabel = {
 
 /**
  * Tenant configuration from tenants table
- * Used to apply branding, locale, dir to app UI
- * language + country are sources of truth; dir and locale are computed
+ * Used to apply branding, locale, language to app UI
+ * Single source of truth: language_default is passed to useLanguage() hook
+ * Direction is computed from language only (he → rtl, en → ltr)
  */
 export type TenantConfig = {
   id: string;
   name: string;
   subdomain: string;
-  language: 'he' | 'en'; // Source of truth for language
-  country: 'IL' | 'US'; // Source of truth for region (VAT, currency, locale)
+  language_default: 'he' | 'en'; // Renamed from language; source of truth
+  country: 'IL' | 'US'; // For locale, phone parsing, not exposed in components
   currency: string; // e.g., 'ILS'
   vat_rate: number; // e.g., 0.17
   white_label?: TenantWhiteLabel; // Brand customization (colors, logo)
   // Computed (not stored in DB):
-  dir?: 'rtl' | 'ltr'; // Computed from language
-  locale?: string; // Computed as e.g., 'he-IL'
+  locale: string; // Computed as e.g., 'he-IL', 'en-US'
+  // NOTE: dir is never stored or passed; computed in useLanguage() hook only
 };
 
 /**

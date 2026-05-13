@@ -1,17 +1,18 @@
 /// <reference types="vite/client" />
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
-import { getDir, getLocale } from '../lib/language-helper';
+import { getLocale } from '../lib/language-helper';
 import type { TenantConfig } from '../types/auth';
 
 /**
  * Resolves tenant from environment (dev) or subdomain (prod)
- * Fetches full config from Supabase tenants table
+ * Fetches config from Supabase tenants table
  *
  * Dev: VITE_DEV_TENANT_SUBDOMAIN → queries by subdomain
  * Prod: window.location.hostname → extracts subdomain → queries by subdomain
  *
- * Returns: tenant config with language, country, computed dir + locale
+ * Returns: tenant config with language_default, computed locale
+ * Direction is computed in useLanguage() hook, not here
  */
 export function useTenant(): TenantConfig | null {
   // Determine subdomain
@@ -42,7 +43,7 @@ export function useTenant(): TenantConfig | null {
       const { data, error } = await supabase
         .from('tenants')
         .select(
-          'id, name, subdomain, language, country, currency, vat_rate, white_label:tenant_white_labels(primary_color, secondary_color, accent_color, logo, logo_dark)'
+          'id, name, subdomain, language_default, country, currency, vat_rate, white_label:tenant_white_labels(primary_color, secondary_color, accent_color, logo, logo_dark)'
         )
         .eq('subdomain', subdomain)
         .single();
@@ -58,18 +59,17 @@ export function useTenant(): TenantConfig | null {
         ? data.white_label[0]
         : data.white_label;
 
-      // Compute dir and locale from language + country
+      // Compute locale from language_default and country
       return {
         id: data.id,
         name: data.name,
         subdomain: data.subdomain,
-        language: data.language,
+        language_default: data.language_default,
         country: data.country,
         currency: data.currency,
         vat_rate: data.vat_rate,
         white_label: whiteLabel || undefined,
-        dir: getDir(data.language as 'he' | 'en'),
-        locale: getLocale(data.language as 'he' | 'en', data.country as 'IL' | 'US'),
+        locale: getLocale(data.language_default as 'he' | 'en', data.country as 'IL' | 'US'),
       } as TenantConfig;
     },
     enabled: !!subdomain,

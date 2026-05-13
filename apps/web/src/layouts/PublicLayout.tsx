@@ -1,4 +1,4 @@
-import { ReactNode, useEffect } from 'react';
+import { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useTenant } from '../hooks/useTenant';
@@ -11,12 +11,6 @@ import { useTenant } from '../hooks/useTenant';
 export function PublicLayout({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
   const tenant = useTenant();
-
-  // Apply document direction + language
-  useEffect(() => {
-    if (tenant?.dir) document.documentElement.dir = tenant.dir;
-    if (tenant?.language) document.documentElement.lang = tenant.language;
-  }, [tenant]);
 
   return (
     <div className="min-h-screen flex flex-col">

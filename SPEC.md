@@ -339,11 +339,46 @@ test("heading structure is valid", async ({ page }) => {
 - `NVDA` (screen reader): Manual verification (ship-time, Israeli language)
 - APCA contrast checker: Verify contrast ratios for Hebrew fonts
 
-### 2.6.1 Bi-directional UI Logic (RTL/LTR)
+### 2.6.1 Language & Direction (RTL/LTR)
 
-- **Logical Properties:** All CSS must use logical properties (e.g., `margin-inline-start` instead of `margin-left`, `padding-block` instead of `padding-top`).
-- **Font-Stack Switching:** When `lang === 'he'`, prioritize 'Assistant' or 'Heebo'. When `lang === 'en'`, prioritize 'Inter'.
-- **Mirroring:** UI components must automatically flip based on the `dir` attribute of the HTML root, with zero manual CSS overrides per page.
+**Principles:**
+- Language is source of truth; direction is derived (he→rtl, en→ltr)
+- Single hook `useLanguage()` manages all language/direction state
+- HTML `<html lang>` and `<html dir>` only change via this hook
+- Components never set direction; they inherit from `<html>`
+
+**Backend (Tenants Table):**
+- Column: `language_default` (enum: 'en', 'he') — source of truth
+- No separate `dir` column (computed, never stored)
+- Column: `country` (enum: 'IL', 'US') — stored but not exposed to frontend
+- Column: `currency` (string) — for Intl formatting
+
+**Frontend (TenantConfig Type):**
+```typescript
+type TenantConfig = {
+  id: string;
+  name: string;
+  subdomain: string;
+  language_default: 'he' | 'en';  // Source of truth
+  currency: string;               // For Intl formatting
+  vat_rate: number;               // Business logic
+  white_label?: TenantWhiteLabel;  // Branding
+  locale: string;                 // Derived from language (e.g., 'he-IL', 'en-US')
+};
+```
+
+**useLanguage() Hook:**
+- Watches tenant `language_default`
+- Computes direction from language: `language === 'he' ? 'rtl' : 'ltr'`
+- Call once in App root
+- Automatically sets `document.documentElement.lang` and `document.documentElement.dir`
+
+**CSS Cascade:** All children inherit from `<html>` via logical CSS properties (ms-, pe-, inset-inline-start)
+
+**Logical Properties (Required):**
+- MANDATORY: All CSS must use logical properties (e.g., `margin-inline-start` instead of `margin-left`, `padding-block` instead of `padding-top`).
+- Font-Stack Switching: When `lang === 'he'`, prioritize 'Assistant' or 'Heebo'. When `lang === 'en'`, prioritize 'Inter'.
+- Mirroring: UI components automatically flip based on the `dir` attribute of the HTML root, with zero manual CSS overrides per page.
 
 ### 2.7 Third-Party Service Configuration
 

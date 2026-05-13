@@ -25,7 +25,7 @@ export const TenantSchema = z.object({
   id: UUIDSchema,
   name: z.string().min(1),
   subdomain: z.string().min(1),
-  language: z.enum(['he', 'en']).default('he'),
+  language_default: z.enum(['he', 'en']).default('en'),
   country: z.enum(['IL', 'US']).default('IL'),
   currency: z.string().default('ILS'),
   vat_rate: z.number().min(0).max(1).default(0.17),

@@ -18,12 +18,6 @@ export function ProtectedLayout({ children }: { children: ReactNode }) {
   const tenant = useTenant();
   const navigate = useNavigate();
 
-  // Apply document direction + language
-  useEffect(() => {
-    if (tenant?.dir) document.documentElement.dir = tenant.dir;
-    if (tenant?.language) document.documentElement.lang = tenant.language;
-  }, [tenant]);
-
   // Redirect to login if user is not authenticated (after loading completes)
   useEffect(() => {
     if (!isLoading && !user) {
