@@ -1,4 +1,4 @@
--- Migration 030: Add Student Visibility Policies
+-- Migration 029: Add Student Visibility Policies
 -- Adds fine-grained student access policies that depend on later tables
 -- DEPENDENCIES: Migration 018 (class_sessions), Migration 026 (enrolments), Migration 002 (people)
 -- REQUIRED BY: Phase 1C (student session visibility)
