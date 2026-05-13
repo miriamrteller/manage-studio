@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { useClasses } from '../../hooks/useClasses';
+import { useClasses } from './useClasses';
 import { useTenant } from '../../hooks/useTenant';
 import { ClassCard } from './ClassCard';
 

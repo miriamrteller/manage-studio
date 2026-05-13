@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { useAdminDashboard } from '../../hooks/useAdminDashboard';
+import { useAdminDashboard } from './useAdminDashboard';
 
 /**
  * AdminPanel: Smart component for admin dashboard

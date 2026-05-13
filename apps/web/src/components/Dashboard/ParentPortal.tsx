@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { useParentPortal } from '../../hooks/useParentPortal';
+import { useParentPortal } from './useParentPortal';
 
 /**
  * ParentPortal: Smart component for parent/guardian dashboard

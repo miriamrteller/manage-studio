@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { supabase } from '../lib/supabase';
-import { LoginFormSchema, PasswordLoginSchema, type LoginForm, type PasswordLogin } from '../schemas';
+import { supabase } from '@/lib/supabase';
+import { LoginFormSchema, PasswordLoginSchema, type LoginForm, type PasswordLogin } from '@/schemas';
 
 /**
  * useLogin: Handles authentication logic (password and magic link)

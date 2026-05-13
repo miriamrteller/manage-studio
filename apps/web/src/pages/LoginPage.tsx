@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { LoginForm } from '../components/Auth/LoginForm';
-import { useLogin } from '../hooks/useLogin';
+import { useLogin } from '@/components/Auth';
 
 /**
  * LoginPage: Light composition page

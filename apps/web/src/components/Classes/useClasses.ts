@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { z } from 'zod';
-import { supabase } from '../lib/supabase';
-import { useTenant } from './useTenant';
-import { PublicClassSchema, type PublicClass } from '../schemas';
+import { supabase } from '@/lib/supabase';
+import { useTenant } from '@/hooks/useTenant';
+import { PublicClassSchema, type PublicClass } from '@/schemas';
 
 /**
  * useClasses: Manages public classes fetching and caching
