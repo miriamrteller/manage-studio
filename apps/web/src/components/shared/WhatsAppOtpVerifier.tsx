@@ -26,7 +26,7 @@ import {
   useContactPreferences,
   useSendOtpEmail,
   useVerifyWhatsAppOtp,
-} from './index';
+} from '@/features/notifications/hooks';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 

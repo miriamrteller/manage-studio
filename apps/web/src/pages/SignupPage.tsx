@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
 import { useTenant } from '@/hooks/useTenant';
 import { signupFormSchema, type SignupForm } from '@/schemas/auth';
-import { useSignup } from '@/components/Auth';
+import { useSignup } from '@/features/auth/hooks/useSignup';
 import SignupStep1 from '@/features/auth/components/SignupStep1';
 import SignupStep2 from '@/features/auth/components/SignupStep2';
 import SignupStep3 from '@/features/auth/components/SignupStep3';

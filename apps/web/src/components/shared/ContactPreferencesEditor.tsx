@@ -20,7 +20,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { useContactPreferences } from './useContactPreferences';
+import { useContactPreferences } from '@/features/notifications/hooks/useContactPreferences';
 import { ContactPreferencesUpdateSchema } from '@shared/schemas';
 import type { ContactPreferencesUpdate } from '@shared/schemas';
 

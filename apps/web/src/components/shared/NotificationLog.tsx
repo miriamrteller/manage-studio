@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNotificationLog } from './useNotificationLog';
+import { useNotificationLog } from '@/features/notifications/hooks/useNotificationLog';
 
 export function NotificationLog() {
   const [page, setPage] = useState(1);

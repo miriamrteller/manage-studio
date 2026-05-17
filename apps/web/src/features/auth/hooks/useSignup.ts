@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/lib/supabase';
 import { useTenant } from '@/hooks/useTenant';
 import type { SignupForm } from '@/schemas/auth';
 
@@ -9,28 +10,26 @@ export function useSignup() {
   const sendOtpMutation = useMutation({
     mutationFn: async (data: SignupForm) => {
       if (data.channel === 'email') {
-        const response = await fetch('/api/functions/send-otp-email', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+        const { data: response, error } = await supabase.functions.invoke('send-otp-email', {
+          body: {
             email: data.email,
             recipient_name: `${data.firstName} ${data.lastName}`,
             tenant_id: data.tenantId,
-          }),
+          },
         });
-        return response.json();
+        if (error) throw error;
+        return response;
       } else {
-        const response = await fetch('/api/functions/send-otp-sms', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+        const { data: response, error } = await supabase.functions.invoke('send-otp-sms', {
+          body: {
             recipient_phone: data.phone,
             recipient_name: `${data.firstName} ${data.lastName}`,
             channel: data.channel,
             tenant_id: data.tenantId,
-          }),
+          },
         });
-        return response.json();
+        if (error) throw error;
+        return response;
       }
     },
     onSuccess: () => {
@@ -48,17 +47,16 @@ export function useSignup() {
       code: string;
       channel: 'email' | 'sms' | 'whatsapp';
     }) => {
-      const response = await fetch('/api/functions/verify-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const { data: response, error } = await supabase.functions.invoke('verify-otp', {
+        body: {
           contact_point: contactPoint,
           code,
           channel,
           tenant_id: tenant?.id,
-        }),
+        },
       });
-      return response.json();
+      if (error) throw error;
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user'] });

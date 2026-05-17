@@ -1,12 +1,20 @@
 /**
- * Auth feature components and hooks
- * - LoginForm: Form UI component
- * - AuthMessage: Message display component
- * - useLogin: Login state and submission logic
- * - useSignup: Signup state and submission logic
+ * DEPRECATED: Auth components and hooks have been reorganized
+ * 
+ * Components moved to @/components/shared/:
+ * - LoginForm
+ * - AuthMessage
+ * 
+ * Hooks moved to:
+ * - useLogin → @/hooks/useLogin (shared hook)
+ * - useSignup → @/features/auth/hooks/useSignup (feature-specific)
+ * 
+ * This file exists only for backwards compatibility.
+ * Please update your imports to use the new locations.
  */
 
-export { LoginForm } from './LoginForm';
-export { AuthMessage } from './AuthMessage';
-export { useLogin } from './useLogin';
-export { useSignup } from './useSignup';
+// Re-export from new locations for backwards compatibility (to be removed)
+export { LoginForm } from '@/components/shared';
+export { AuthMessage } from '@/components/shared';
+export { useLogin } from '@/hooks/useLogin';
+export { useSignup } from '@/features/auth/hooks/useSignup';

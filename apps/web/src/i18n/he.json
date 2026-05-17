@@ -38,7 +38,8 @@
     "missing_field": "שדה זה נדרש",
     "date_invalid": "תאריך לא תקף",
     "email_invalid": "כתובת דוא״ל לא תקפה",
-    "phone_invalid": "מספר טלפון לא תקף"
+    "phone_invalid": "מספר טלפון לא תקף",
+    "failed_to_load_classes": "הטעינה של שיעורים נכשלה. נסה שוב."
   },
   "validation": {
     "required": "שדה זה נדרש",
@@ -153,6 +154,14 @@
       "update_success": "דרישה עודכנה בהצלחה",
       "delete_success": "דרישה נמחקה בהצלחה"
     },
+    "classes": {
+      "title": "שיעורים",
+      "description": "צפה בשיעורים זמינים",
+      "no_classes": "אין שיעורים זמינים",
+      "enrol": "הירשם",
+      "time": "שעה",
+      "capacity": "קיבולת"
+    },
     "levels_terms": {
       "title": "רמות וסימנים",
       "description": "ניהול רמות קבוצה ופרקי זמן",
@@ -181,6 +190,21 @@
       "update_success": "עודכן בהצלחה",
       "delete_success": "נמחק בהצלחה"
     }
+  },
+  "nav": {
+    "classes": "שיעורים",
+    "login": "התחברות",
+    "logout": "התנתקות"
+  },
+  "footer": {
+    "school_management": "ניהול בית הספר",
+    "all_rights": "כל הזכויות שמורות"
+  },
+  "billing": {
+    "monthly": "חודשי",
+    "per_session": "לשיעור",
+    "weekly": "שבועי",
+    "annual": "שנתי"
   },
   "accessibility": {
     "form_error": "שגיאה בטופס",

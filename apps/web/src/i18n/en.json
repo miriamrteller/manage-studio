@@ -38,7 +38,8 @@
     "missing_field": "This field is required.",
     "date_invalid": "Invalid date.",
     "email_invalid": "Invalid email address.",
-    "phone_invalid": "Invalid phone number."
+    "phone_invalid": "Invalid phone number.",
+    "failed_to_load_classes": "Failed to load classes. Please try again."
   },
   "validation": {
     "required": "This field is required.",
@@ -153,6 +154,14 @@
       "update_success": "Requirement updated successfully.",
       "delete_success": "Requirement deleted successfully."
     },
+    "classes": {
+      "title": "Classes",
+      "description": "Browse available classes.",
+      "no_classes": "No classes available.",
+      "enrol": "Enrol",
+      "time": "Time",
+      "capacity": "Capacity"
+    },
     "levels_terms": {
       "title": "Levels & Terms",
       "description": "Manage class levels and terms.",
@@ -181,6 +190,21 @@
       "update_success": "Updated successfully.",
       "delete_success": "Deleted successfully."
     }
+  },
+  "nav": {
+    "classes": "Classes",
+    "login": "Login",
+    "logout": "Logout"
+  },
+  "footer": {
+    "school_management": "School Management",
+    "all_rights": "All rights reserved"
+  },
+  "billing": {
+    "monthly": "Monthly",
+    "per_session": "Per Session",
+    "weekly": "Weekly",
+    "annual": "Annual"
   },
   "accessibility": {
     "form_error": "Form error",

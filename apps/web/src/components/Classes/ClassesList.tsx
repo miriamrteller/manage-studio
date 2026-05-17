@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
-import { useClasses } from './useClasses';
-import { useTenant } from '../../hooks/useTenant';
-import { ClassCard } from './ClassCard';
+import { useClasses } from '@/features/classes/hooks';
+import { ClassCard } from '@/components/shared';
+import type { PublicClass } from '@/schemas';
 
 /**
  * ClassesList: Smart component for public classes listing
@@ -17,57 +17,44 @@ import { ClassCard } from './ClassCard';
  */
 
 export function ClassesList() {
-  const { t } = useTranslation();
-  const tenant = useTenant();
+  const { t, i18n } = useTranslation();
   const { classes, isLoading, error } = useClasses();
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-16">
-      {/* Hero */}
-      <div className="mb-12">
-        <h1 className="text-4xl font-bold text-primary mb-4">
-          {t('pages.classes.title')}
-        </h1>
-        <p className="text-lg text-gray-600">
-          {t('pages.classes.subtitle')}
-        </p>
-      </div>
+    <section>
+      <h1 className="text-2xl font-bold mb-6">{t('pages.classes.title')}</h1>
 
-      {/* Classes List */}
-      {isLoading ? (
-        <div
-          className="text-center py-8"
-          role="status"
-          aria-live="polite"
-          aria-label={t('common.loading')}
-        >
-          <p>{t('common.loading')}</p>
-        </div>
-      ) : error ? (
-        <div
-          className="bg-red-50 border border-red-200 rounded p-4 text-red-700"
-          role="alert"
-          aria-live="assertive"
-        >
-          {t('error.fetch_classes')}
-        </div>
-      ) : classes.length === 0 ? (
-        <div className="text-center py-8 text-gray-600" role="status">
-          {t('pages.classes.no_classes')}
-        </div>
-      ) : (
-        <div className="space-y-4" role="list">
-          {classes.map((cls) => (
-            <div key={cls.id} role="listitem">
-              <ClassCard
-                class={cls}
-                locale={tenant?.locale || 'he-IL'}
-                currency={tenant?.currency || 'ILS'}
-              />
-            </div>
-          ))}
+      {/* Loading state */}
+      {isLoading && (
+        <div role="status" aria-live="polite" className="p-4">
+          {t('common.loading')}
         </div>
       )}
-    </div>
+
+      {/* Error state */}
+      {error && (
+        <div role="alert" className="p-4 text-red-500">
+          {t('error.failed_to_load_classes')}
+        </div>
+      )}
+
+      {/* Empty state */}
+      {!error && !isLoading && !classes.length && (
+        <div className="p-4">
+          {t('classes.no_classes')}
+        </div>
+      )}
+
+      {/* Success state: render classes list */}
+      {!error && !isLoading && classes.length > 0 && (
+        <ul className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {classes.map((classItem) => (
+            <li key={classItem.id}>
+              <ClassCard class={classItem as unknown as PublicClass} locale={i18n.language} currency="USD" />
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }

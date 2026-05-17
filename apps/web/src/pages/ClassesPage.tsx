@@ -1,4 +1,4 @@
-import { ClassesList } from '../components/Classes';
+import { ClassesList } from '@/components/Classes';
 
 /**
  * ClassesPage: Light composition page
