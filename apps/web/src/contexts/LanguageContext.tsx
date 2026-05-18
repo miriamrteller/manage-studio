@@ -15,20 +15,48 @@ interface LanguageContextType {
 
 export const LanguageContext = createContext<LanguageContextType | null>(null);
 
-export function LanguageProvider({ children }: { children: ReactNode }) {
-  const { userLanguage, setUserLanguage, isLoaded } = useLanguagePreference();
-  const [language, setLanguageState] = useState<'he' | 'en'>(userLanguage);
+/**
+ * Synchronously read saved language from localStorage
+ * Called during component initialization to prevent race condition
+ * with useLanguagePreference's async effect
+ */
+function getSavedLanguage(): 'he' | 'en' {
+  try {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('userLanguagePreference');
+      if (saved === 'he' || saved === 'en') {
+        return saved;
+      }
+    }
+  } catch (e) {
+    // localStorage not available (SSR, private mode, etc.)
+  }
+  return 'he'; // Default fallback
+}
 
-  // On mount: sync i18n language with localStorage value
-  // This ensures i18n and Context start in sync
+export function LanguageProvider({ children }: { children: ReactNode }) {
+  // Initialize state synchronously from localStorage (prevents race condition)
+  const [language, setLanguageState] = useState<'he' | 'en'>(getSavedLanguage);
+  const { userLanguage, setUserLanguage, isLoaded } = useLanguagePreference();
+
+  // On mount: sync i18n with saved language immediately (prevents flicker)
+  useEffect(() => {
+    const savedLang = getSavedLanguage();
+    const currentI18nLang = i18n.language as 'he' | 'en';
+    if (currentI18nLang !== savedLang) {
+      i18n.changeLanguage(savedLang);
+    }
+  }, []); // Empty deps: run once on mount only
+
+  // When useLanguagePreference finishes loading, update if different from current state
   useEffect(() => {
     if (!isLoaded) return;
     
-    const currentI18nLang = i18n.language as 'he' | 'en';
-    if (currentI18nLang !== userLanguage) {
+    if (userLanguage !== language) {
+      setLanguageState(userLanguage);
       i18n.changeLanguage(userLanguage);
     }
-  }, [isLoaded, userLanguage]);
+  }, [isLoaded, userLanguage, language]);
 
   // Sync language state when i18n updates externally
   useEffect(() => {
