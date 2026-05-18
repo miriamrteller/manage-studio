@@ -25,7 +25,8 @@
     "download": "הורד",
     "upload": "העלה",
     "print": "הדפס",
-    "export": "ייצא"
+    "export": "ייצא",
+    "manage": "ניהול"
   },
   "errors": {
     "network": "שגיאת רשת. בדוק את החיבור שלך.",
@@ -54,6 +55,12 @@
     "maximum_age": "המקסימום גיל הנדרש הוא {{age}}"
   },
   "pages": {
+    "admin": {
+      "setup": {
+        "title": "הגדרות מערכת",
+        "description": "ניהול רמות, סימנים, חשבונות תשלום וקבוצות"
+      }
+    },
     "people": {
       "title": "תלמידים ובוגרים",
       "description": "ניהול תלמידים, יצירת קשרי משפחה, ועדכון פרטים קשרים חירום",
@@ -165,6 +172,10 @@
     "levels_terms": {
       "title": "רמות וסימנים",
       "description": "ניהול רמות קבוצה ופרקי זמן",
+      "levels_title": "רמות בלט",
+      "levels_description": "הגדר רמות קבוצה (מתחיל, בינוני, מתקדם)",
+      "terms_title": "תקופות לימוד",
+      "terms_description": "צור ונהל תקופות לימוד (עונות, סמסטרים)",
       "levels_subtitle": "רמות",
       "terms_subtitle": "סימנים",
       "add_level": "הוסף רמה",

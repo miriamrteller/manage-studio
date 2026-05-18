@@ -9,6 +9,9 @@ import AuthCallbackPage from './pages/AuthCallbackPage';
 import AdminDashboard from './pages/AdminDashboard';
 import PeoplePage from './pages/PeoplePage';
 import FamiliesPage from './pages/FamiliesPage';
+import BillingPage from './pages/BillingPage';
+import LevelsPage from './pages/LevelsPage';
+import TermsPage from './pages/TermsPage';
 import PortalDashboard from './pages/PortalDashboard';
 import NotFoundPage from './pages/NotFoundPage';
 
@@ -83,6 +86,36 @@ const router = createBrowserRouter([
       <ProtectedLayout>
         <AdminRoute>
           <AdminDashboard />
+        </AdminRoute>
+      </ProtectedLayout>
+    ),
+  },
+  {
+    path: '/admin/setup/billing',
+    element: (
+      <ProtectedLayout>
+        <AdminRoute>
+          <BillingPage />
+        </AdminRoute>
+      </ProtectedLayout>
+    ),
+  },
+  {
+    path: '/admin/setup/levels',
+    element: (
+      <ProtectedLayout>
+        <AdminRoute>
+          <LevelsPage />
+        </AdminRoute>
+      </ProtectedLayout>
+    ),
+  },
+  {
+    path: '/admin/setup/terms',
+    element: (
+      <ProtectedLayout>
+        <AdminRoute>
+          <TermsPage />
         </AdminRoute>
       </ProtectedLayout>
     ),

@@ -1,17 +1,18 @@
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { useAdminDashboard } from './useAdminDashboard';
 
 /**
  * AdminPanel: Smart component for admin dashboard
  * - Fetches admin data using useAdminDashboard hook
  * - Manages loading/error states
- * - Renders admin-specific content
+ * - Renders admin setup navigation cards
  * 
- * WCAG: Semantic structure, proper heading hierarchy
+ * WCAG: Semantic structure, proper heading hierarchy, focus management
  */
-
 export function AdminPanel() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { isLoading, error } = useAdminDashboard();
 
   if (isLoading) {
@@ -34,23 +35,71 @@ export function AdminPanel() {
     <div className="space-y-8">
       <section>
         <h2 className="text-2xl font-bold text-primary mb-4">
-          {t('pages.admin_dashboard')}
+          {t('pages.admin.setup.title')}
         </h2>
-        <p className="text-gray-600 mb-6">
-          {t('pages.coming_soon_admin')}
+        <p className="text-gray-600 mb-8">
+          {t('pages.admin.setup.description')}
         </p>
       </section>
 
-      {/* Placeholder sections for Phase 1B features */}
-      <section className="bg-blue-50 border border-blue-200 rounded p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">Phase 1B: Coming Soon</h3>
-        <ul className="text-sm text-gray-600 space-y-1">
-          <li>• Class management</li>
-          <li>• Enrolment overview</li>
-          <li>• Payment tracking</li>
-          <li>• Teacher payroll</li>
-          <li>• Analytics and reports</li>
-        </ul>
+      {/* Setup Navigation Cards */}
+      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Billing Card */}
+        <div className="card border border-gray-200 hover:border-primary hover:shadow-md transition-all">
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900">
+              {t('pages.billing.title')}
+            </h3>
+            <p className="text-sm text-gray-600">
+              {t('pages.billing.description')}
+            </p>
+            <button
+              onClick={() => navigate('/admin/setup/billing')}
+              className="button-primary w-full"
+              aria-label={t('pages.billing.title')}
+            >
+              {t('common.manage')} →
+            </button>
+          </div>
+        </div>
+
+        {/* Levels Card */}
+        <div className="card border border-gray-200 hover:border-primary hover:shadow-md transition-all">
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900">
+              {t('pages.levels_terms.levels_title')}
+            </h3>
+            <p className="text-sm text-gray-600">
+              {t('pages.levels_terms.levels_description')}
+            </p>
+            <button
+              onClick={() => navigate('/admin/setup/levels')}
+              className="button-primary w-full"
+              aria-label={t('pages.levels_terms.levels_title')}
+            >
+              {t('common.manage')} →
+            </button>
+          </div>
+        </div>
+
+        {/* Terms Card */}
+        <div className="card border border-gray-200 hover:border-primary hover:shadow-md transition-all">
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900">
+              {t('pages.levels_terms.terms_title')}
+            </h3>
+            <p className="text-sm text-gray-600">
+              {t('pages.levels_terms.terms_description')}
+            </p>
+            <button
+              onClick={() => navigate('/admin/setup/terms')}
+              className="button-primary w-full"
+              aria-label={t('pages.levels_terms.terms_title')}
+            >
+              {t('common.manage')} →
+            </button>
+          </div>
+        </div>
       </section>
     </div>
   );
