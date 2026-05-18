@@ -43,7 +43,7 @@ export function useTenant(): TenantConfig | null {
       const { data, error } = await supabase
         .from('tenants')
         .select(
-          'id, name, subdomain, language_default, country, currency, vat_rate, white_label:tenant_white_labels(primary_color, secondary_color, accent_color, logo, logo_dark)'
+          'id, name, subdomain, language_default, country, currency, vat_rate, primary_color, accent_color'
         )
         .eq('subdomain', subdomain)
         .single();
@@ -53,11 +53,11 @@ export function useTenant(): TenantConfig | null {
         return null;
       }
 
-      // Handle white_label: could be array (Supabase returns one-to-many as array)
-      // Extract first element or use undefined if not found
-      const whiteLabel = Array.isArray(data.white_label)
-        ? data.white_label[0]
-        : data.white_label;
+      // Construct white_label object from direct columns (no join needed)
+      const whiteLabel = {
+        primary_color: data.primary_color,
+        accent_color: data.accent_color,
+      };
 
       // Compute locale from language_default and country
       return {

@@ -7,8 +7,13 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: 'var(--primary)',
-        accent: 'var(--accent)',
+        primary: 'var(--color-primary)',
+        secondary: 'var(--color-secondary)',
+        accent: 'var(--color-primary)',
+        error: 'var(--color-error)',
+        warning: 'var(--color-warning)',
+        success: 'var(--color-success)',
+        info: 'var(--color-info)',
       },
     },
   },
