@@ -72,10 +72,10 @@ export const LevelsList = ({ onEdit }: LevelsListProps) => {
           <table className="w-full text-sm">
             <thead className="border-b" style={{ borderColor: 'var(--color-border-default)' }}>
               <tr>
-                <th className="px-4 py-3 text-right font-medium">
+                <th className="px-4 py-3 text-start font-medium">
                   {t('form.level.name')}
                 </th>
-                <th className="px-4 py-3 text-right font-medium">
+                <th className="px-4 py-3 text-start font-medium">
                   {t('form.level.sort_order')}
                 </th>
                 <th className="px-4 py-3 text-center font-medium">
@@ -89,7 +89,7 @@ export const LevelsList = ({ onEdit }: LevelsListProps) => {
                   <td className="px-4 py-3">{level.name}</td>
                   <td className="px-4 py-3 text-center">{level.sort_order}</td>
                   <td className="px-4 py-3">
-                    <div className="flex gap-2 justify-center">
+                    <div className="flex gap-2 justify-items-center">
                       <button
                         onClick={() => handleEdit(level)}
                         className="button-secondary text-sm"

@@ -72,16 +72,16 @@ export const TermsList = ({ onEdit }: TermsListProps) => {
           <table className="w-full text-sm">
             <thead className="border-b" style={{ borderColor: 'var(--color-border-default)' }}>
               <tr>
-                <th className="px-4 py-3 text-right font-medium">
+                <th className="px-4 py-3 text-start font-medium">
                   {t('form.term.name')}
                 </th>
-                <th className="px-4 py-3 text-right font-medium">
+                <th className="px-4 py-3 text-start font-medium">
                   {t('form.term.start_date')}
                 </th>
-                <th className="px-4 py-3 text-right font-medium">
+                <th className="px-4 py-3 text-start font-medium">
                   {t('form.term.end_date')}
                 </th>
-                <th className="px-4 py-3 text-right font-medium">
+                <th className="px-4 py-3 text-start font-medium">
                   {t('form.term.status')}
                 </th>
                 <th className="px-4 py-3 text-center font-medium">
@@ -115,7 +115,7 @@ export const TermsList = ({ onEdit }: TermsListProps) => {
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex gap-2 justify-center">
+                    <div className="flex gap-2 justify-items-center">
                       <button
                         onClick={() => handleEdit(term)}
                         className="button-secondary text-sm"
@@ -168,7 +168,7 @@ export const TermsList = ({ onEdit }: TermsListProps) => {
 
       {/* Delete confirmation modal */}
       {deleteConfirmId && (
-        <div className="fixed inset-0 flex items-center justify-center z-50" style={{ backgroundColor: 'var(--color-surface-overlay)' }}>
+        <div className="fixed inset-inline-0 inset-block-0 flex items-center justify-center z-50" style={{ backgroundColor: 'var(--color-surface-overlay)' }}>
           <div className="card max-w-sm mx-4">
             <h3 className="text-lg font-medium mb-4">
               {t('common.confirm_delete')}
