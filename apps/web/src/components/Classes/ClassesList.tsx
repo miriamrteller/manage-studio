@@ -34,7 +34,7 @@ export function ClassesList() {
       {/* Error state */}
       {error && (
         <div role="alert" className="p-4 text-red-500">
-          {t('error.failed_to_load_classes')}
+          {t('errors.failed_to_load_classes')}
         </div>
       )}
 

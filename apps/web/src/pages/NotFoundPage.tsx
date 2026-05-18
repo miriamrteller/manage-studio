@@ -15,7 +15,7 @@ export default function NotFoundPage() {
       <div className="max-w-2xl mx-auto px-4 py-20 text-center">
         <h1 className="text-6xl font-bold text-primary mb-4">404</h1>
         <p className="text-2xl font-semibold text-gray-900 mb-4">
-          {t('error.not_found')}
+          {t('errors.not_found')}
         </p>
         <p className="text-lg text-gray-600 mb-8">
           The page you&apos;re looking for doesn&apos;t exist.

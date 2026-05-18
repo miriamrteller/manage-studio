@@ -9,6 +9,8 @@
     "close": "סגור",
     "next": "הבא",
     "back": "חזור",
+    "back_to_login": "חזור להתחברות",
+    "try_again": "נסה שוב",
     "confirm": "אישור",
     "loading": "טוען...",
     "error": "שגיאה",
@@ -40,7 +42,16 @@
     "date_invalid": "תאריך לא תקף",
     "email_invalid": "כתובת דוא״ל לא תקפה",
     "phone_invalid": "מספר טלפון לא תקף",
-    "failed_to_load_classes": "הטעינה של שיעורים נכשלה. נסה שוב."
+    "failed_to_load_classes": "הטעינה של שיעורים נכשלה. נסה שוב.",
+    "loading_tenant": "טוען מידע בית ספר...",
+    "signup_failed": "ההרשמה נכשלה. נסה שוב.",
+    "invalid_callback": "קריאה חזרה לאימות לא תקינה. נסה להיכנס שוב.",
+    "session_exchange_failed": "הקמת הסשן נכשלה. נסה להיכנס שוב.",
+    "unexpected": "אירעה שגיאה בלתי צפויה. נסה שוב.",
+    "user_not_found": "חשבון משתמש לא נמצא. אנא פנה לתמיכה.",
+    "session_setup_failed": "הקמת הסשן נכשלה",
+    "contact_support": "אם הבעיה היא מתמשכת, אנא פנה לתמיכה.",
+    "dashboard_load_failed": "הטעינת לוח הבקרה נכשלה. נסה לרענן את הדף."
   },
   "validation": {
     "required": "שדה זה נדרש",

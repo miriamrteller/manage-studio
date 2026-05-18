@@ -25,7 +25,7 @@ export function ParentPortal() {
   if (error) {
     return (
       <div role="alert" className="bg-red-50 border border-red-200 rounded p-4 text-red-700">
-        {t('error.dashboard_load_failed')}
+        {t('errors.dashboard_load_failed')}
       </div>
     );
   }

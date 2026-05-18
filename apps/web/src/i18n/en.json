@@ -9,6 +9,8 @@
     "close": "Close",
     "next": "Next",
     "back": "Back",
+    "back_to_login": "Back to Login",
+    "try_again": "Try Again",
     "confirm": "Confirm",
     "loading": "Loading...",
     "error": "Error",
@@ -40,7 +42,16 @@
     "date_invalid": "Invalid date.",
     "email_invalid": "Invalid email address.",
     "phone_invalid": "Invalid phone number.",
-    "failed_to_load_classes": "Failed to load classes. Please try again."
+    "failed_to_load_classes": "Failed to load classes. Please try again.",
+    "loading_tenant": "Loading school information...",
+    "signup_failed": "Signup failed. Please try again.",
+    "invalid_callback": "Invalid authentication callback. Please try logging in again.",
+    "session_exchange_failed": "Failed to establish your session. Please try logging in again.",
+    "unexpected": "An unexpected error occurred. Please try again.",
+    "user_not_found": "User account not found. Please contact support.",
+    "session_setup_failed": "Session Setup Failed",
+    "contact_support": "If this problem persists, please contact support.",
+    "dashboard_load_failed": "Failed to load dashboard. Please try refreshing the page."
   },
   "validation": {
     "required": "This field is required.",

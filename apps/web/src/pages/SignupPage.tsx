@@ -63,7 +63,7 @@ export default function SignupPage() {
   };
 
   if (!tenant) {
-    return <div>{t('error.loading_tenant')}</div>;
+    return <div>{t('errors.loading_tenant')}</div>;
   }
 
   return (
@@ -99,7 +99,7 @@ export default function SignupPage() {
         {sendOtpError && (
           <div className="rounded-md bg-red-50 p-4" role="alert" aria-live="polite">
             <p className="text-sm font-medium text-red-800">
-              {t('error.signup_failed')}
+              {t('errors.signup_failed')}
             </p>
           </div>
         )}

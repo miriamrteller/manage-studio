@@ -31,7 +31,7 @@ export default function AuthCallbackPage() {
         const code = searchParams.get('code');
 
         if (!code) {
-          setError(t('error.invalid_callback'));
+          setError(t('errors.invalid_callback'));
           return;
         }
 
@@ -39,14 +39,14 @@ export default function AuthCallbackPage() {
         const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 
         if (exchangeError) {
-          setError(exchangeError.message || t('error.session_exchange_failed'));
+          setError(exchangeError.message || t('errors.session_exchange_failed'));
           return;
         }
 
         // Step 2: Wait for user profile to load (useCurrentUser will fetch it)
         // User profile fetch happens in useCurrentUser hook
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : t('error.unexpected');
+        const errorMessage = err instanceof Error ? err.message : t('errors.unexpected');
         setError(errorMessage);
       }
     };
@@ -65,7 +65,7 @@ export default function AuthCallbackPage() {
     }
 
     if (!user) {
-      setError(t('error.user_not_found'));
+      setError(t('errors.user_not_found'));
       return;
     }
 
@@ -96,7 +96,7 @@ export default function AuthCallbackPage() {
             className="bg-red-50 border-2 border-red-500 rounded-lg p-6 mb-6"
           >
             <h1 className="text-2xl font-bold text-red-600 mb-2">
-              {t('error.session_setup_failed')}
+              {t('errors.session_setup_failed')}
             </h1>
             <p className="text-red-700 mb-4">{error}</p>
           </div>
@@ -117,7 +117,7 @@ export default function AuthCallbackPage() {
           </div>
 
           <p className="text-sm text-gray-600 text-center mt-6">
-            {t('error.contact_support')}
+            {t('errors.contact_support')}
           </p>
         </div>
       </div>
