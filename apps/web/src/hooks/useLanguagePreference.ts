@@ -41,5 +41,5 @@ export function useLanguagePreference() {
     });
   };
 
-  return { userLanguage, toggleLanguage, isLoaded };
+  return { userLanguage, setUserLanguage, toggleLanguage, isLoaded };
 }

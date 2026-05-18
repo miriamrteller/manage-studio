@@ -5,11 +5,9 @@ import i18n from './i18n/i18n'
 import router from './router'
 import queryClient from './lib/query-client'
 import { useThemeInjection } from './hooks/useThemeInjection'
-import { useLanguage } from './hooks/useLanguage'
+import { LanguageProvider } from './contexts/LanguageContext'
 
 function AppContent() {
-  // Set HTML lang/dir attributes from tenant language_default
-  useLanguage()
   // Inject tenant's theme (colors, logo) at app root
   useThemeInjection()
 
@@ -20,7 +18,9 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <I18nextProvider i18n={i18n}>
-        <AppContent />
+        <LanguageProvider>
+          <AppContent />
+        </LanguageProvider>
       </I18nextProvider>
     </QueryClientProvider>
   )

@@ -2,7 +2,7 @@ import { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useTenant } from '../hooks/useTenant';
-import { useLanguagePreference } from '../hooks/useLanguagePreference';
+import { useLanguage } from '../hooks/useLanguage';
 
 /**
  * PublicLayout: Header + Footer for unauthenticated pages
@@ -12,7 +12,11 @@ import { useLanguagePreference } from '../hooks/useLanguagePreference';
 export function PublicLayout({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
   const tenant = useTenant();
-  const { userLanguage, toggleLanguage } = useLanguagePreference();
+  const { language, setLanguage } = useLanguage();
+
+  const toggleLanguage = () => {
+    setLanguage(language === 'he' ? 'en' : 'he');
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -41,8 +45,8 @@ export function PublicLayout({ children }: { children: ReactNode }) {
               onClick={toggleLanguage}
               className="px-3 py-2 text-sm border border-gray-300 rounded hover:bg-gray-100 focus-visible:outline-2 outline-primary outline-offset-2"
             >
-              {userLanguage === 'he' && '🇮🇱 עברית'}
-              {userLanguage === 'en' && '🇬🇧 English'}
+              {language === 'he' && '🇮🇱 עברית'}
+              {language === 'en' && '🇬🇧 English'}
             </button>
             <Link
               to="/login"
