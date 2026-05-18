@@ -14,8 +14,8 @@ export function PublicLayout({ children }: { children: ReactNode }) {
   const tenant = useTenant();
   const { language, setLanguage } = useLanguage();
 
-  const toggleLanguage = () => {
-    setLanguage(language === 'he' ? 'en' : 'he');
+  const toggleLanguage = async () => {
+    await setLanguage(language === 'he' ? 'en' : 'he');
   };
 
   return (

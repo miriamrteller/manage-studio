@@ -28,7 +28,8 @@
     "upload": "העלה",
     "print": "הדפס",
     "export": "ייצא",
-    "manage": "ניהול"
+    "manage": "ניהול",
+    "dismiss_message": "סגור הודעה"
   },
   "errors": {
     "network": "שגיאת רשת. בדוק את החיבור שלך.",
@@ -65,12 +66,28 @@
     "minimum_age": "המינימום גיל הנדרש הוא {{age}}",
     "maximum_age": "המקסימום גיל הנדרש הוא {{age}}"
   },
+  "form": {
+    "email": "דוא״ל",
+    "email_placeholder": "example@school.com"
+  },
   "pages": {
     "admin": {
       "setup": {
         "title": "הגדרות מערכת",
         "description": "ניהול רמות, סימנים, חשבונות תשלום וקבוצות"
       }
+    },
+    "login": {
+      "title": "התחברות",
+      "subtitle": "הזן את פרטי ההתחברות שלך",
+      "no_account": "אין לך חשבון?",
+      "signup": "הירשם כאן",
+      "password_tab": "ססמה",
+      "magic_link_tab": "קישור קסם",
+      "password": "ססמה",
+      "password_placeholder": "הזן את הססמה שלך",
+      "sign_in": "התחבר",
+      "send_link": "שלח קישור"
     },
     "people": {
       "title": "תלמידים ובוגרים",

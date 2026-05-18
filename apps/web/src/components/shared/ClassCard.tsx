@@ -14,12 +14,11 @@ import type { PublicClass } from '@/schemas';
 
 interface ClassCardProps {
   class: PublicClass;
-  locale: string;
   currency: string;
 }
 
-export function ClassCard({ class: cls, locale, currency }: ClassCardProps) {
-  const { t } = useTranslation();
+export function ClassCard({ class: cls, currency }: ClassCardProps) {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
 
   const handleEnrol = () => {
@@ -33,24 +32,24 @@ export function ClassCard({ class: cls, locale, currency }: ClassCardProps) {
 
       <div className="space-y-2 mb-4 text-sm text-gray-600">
         <p>
-          <span className="font-semibold">{t('time')}:</span> {cls.start_time} –{' '}
+          <span className="font-semibold">{t('pages.classes.time')}:</span> {cls.start_time} –{' '}
           {cls.end_time}
         </p>
         <p>
-          <span className="font-semibold">{t('capacity')}:</span>{' '}
+          <span className="font-semibold">{t('pages.classes.capacity')}:</span>{' '}
           {cls.max_capacity}
         </p>
         <p className="text-lg font-semibold text-primary">
-          {formatCurrency(cls.price_minor, currency, locale)}
+          {formatCurrency(cls.price_minor, currency, i18n.language)}
         </p>
       </div>
 
       <button
         onClick={handleEnrol}
-        aria-label={`${t('enrol')} - ${cls.name}`}
+        aria-label={`${t('pages.classes.enrol')} - ${cls.name}`}
         className="w-full px-4 py-2 bg-primary text-white rounded hover:bg-opacity-90 focus-visible:outline-2 outline-white outline-offset-2 font-medium"
       >
-        {t('enrol')}
+        {t('pages.classes.enrol')}
       </button>
     </div>
   );

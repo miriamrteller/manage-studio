@@ -28,7 +28,8 @@
     "upload": "Upload",
     "print": "Print",
     "export": "Export",
-    "manage": "Manage"
+    "manage": "Manage",
+    "dismiss_message": "Dismiss message"
   },
   "errors": {
     "network": "Network error. Check your connection.",
@@ -65,12 +66,28 @@
     "minimum_age": "Minimum required age is {{age}}.",
     "maximum_age": "Maximum required age is {{age}}."
   },
+  "form": {
+    "email": "Email",
+    "email_placeholder": "example@school.com"
+  },
   "pages": {
     "admin": {
       "setup": {
         "title": "System Setup",
         "description": "Manage levels, terms, billing accounts, and classes"
       }
+    },
+    "login": {
+      "title": "Login",
+      "subtitle": "Enter your login details",
+      "no_account": "Don't have an account?",
+      "signup": "Sign up here",
+      "password_tab": "Password",
+      "magic_link_tab": "Magic Link",
+      "password": "Password",
+      "password_placeholder": "Enter your password",
+      "sign_in": "Sign In",
+      "send_link": "Send Link"
     },
     "people": {
       "title": "Students & Adults",

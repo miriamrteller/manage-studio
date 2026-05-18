@@ -10,7 +10,7 @@ import { useLanguagePreference } from '@/hooks/useLanguagePreference';
 
 interface LanguageContextType {
   language: 'he' | 'en';
-  setLanguage: (lang: 'he' | 'en') => void;
+  setLanguage: (lang: 'he' | 'en') => Promise<void>;
 }
 
 export const LanguageContext = createContext<LanguageContextType | null>(null);
@@ -45,10 +45,10 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const setLanguage = (lang: 'he' | 'en') => {
-    setLanguageState(lang);
-    setUserLanguage(lang); // Persist to localStorage
-    i18n.changeLanguage(lang); // Update i18n — triggers languageChanged event
+  const setLanguage = async (lang: 'he' | 'en') => {
+    setUserLanguage(lang); // Persist to localStorage first
+    await i18n.changeLanguage(lang); // Wait for i18n to actually change
+    setLanguageState(lang); // Update React state AFTER i18n is ready
   };
 
   return (
