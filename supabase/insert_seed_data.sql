@@ -1,15 +1,11 @@
--- Seed data for Ballet School Management System
+-- Seed Data: Creative Ballet Academy
+-- Run this AFTER applying update_existing_schema.sql
 -- Creates test tenant, terms, levels, and classes for Phase 1B testing
--- Matches VITE_DEV_TENANT_SUBDOMAIN=creativeballet
---
--- IMPORTANT: Tenant Configuration (colors, language, currency, VAT rate)
--- These fields are configured by school administrators during onboarding setup.
--- End-users (students, parents, teachers) send ONLY the subdomain to the frontend.
--- The frontend receives this configuration from the database and applies it to the UI.
--- End-users NEVER send or modify configuration data—this is read-only from their perspective.
+
+BEGIN; -- Wrap in transaction for safety
 
 -- ============================================================================
--- TENANTS (Migration 001)
+-- TENANTS (Insert or update)
 -- ============================================================================
 INSERT INTO tenants (id, name, subdomain, language_default, country, primary_color, accent_color, currency, vat_rate, phone_region)
 VALUES (
@@ -23,7 +19,14 @@ VALUES (
   'ILS',
   0.17,
   'IL'
-) ON CONFLICT (subdomain) DO NOTHING;
+) ON CONFLICT (subdomain) DO UPDATE SET
+  name = EXCLUDED.name,
+  language_default = EXCLUDED.language_default,
+  country = EXCLUDED.country,
+  primary_color = EXCLUDED.primary_color,
+  accent_color = EXCLUDED.accent_color,
+  currency = EXCLUDED.currency,
+  vat_rate = EXCLUDED.vat_rate;
 
 -- ============================================================================
 -- TERMS (Migration 004)
@@ -93,3 +96,23 @@ VALUES
   ('00000000-0000-0000-0000-000000000601'::uuid, '00000000-0000-0000-0000-000000000001'::uuid, '00000000-0000-0000-0000-000000000501'::uuid, 'sarah@example.com', true, false, false, 'email', 'he', now(), now()),
   ('00000000-0000-0000-0000-000000000602'::uuid, '00000000-0000-0000-0000-000000000001'::uuid, '00000000-0000-0000-0000-000000000502'::uuid, 'david@example.com', true, false, false, 'email', 'he', now(), now())
 ON CONFLICT DO NOTHING;
+
+-- ============================================================================
+-- VERIFICATION QUERIES
+-- ============================================================================
+-- Verify seed data was inserted
+SELECT 'Tenants' as table_name, COUNT(*) as count FROM tenants UNION ALL
+SELECT 'Terms', COUNT(*) FROM terms UNION ALL
+SELECT 'Levels', COUNT(*) FROM levels UNION ALL
+SELECT 'Classes', COUNT(*) FROM classes UNION ALL
+SELECT 'Families', COUNT(*) FROM families UNION ALL
+SELECT 'People', COUNT(*) FROM people UNION ALL
+SELECT 'Contact Preferences', COUNT(*) FROM contact_preferences;
+
+-- Verify tenant config
+SELECT id, name, subdomain, language_default, country, primary_color, accent_color, currency FROM tenants WHERE subdomain = 'creativeballet';
+
+-- Verify public classes
+SELECT id, name, day_of_week, start_time, end_time, is_public FROM classes WHERE is_public = true ORDER BY day_of_week, start_time;
+
+COMMIT; -- Complete transaction

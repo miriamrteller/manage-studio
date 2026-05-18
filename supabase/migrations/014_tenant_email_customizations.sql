@@ -95,21 +95,13 @@ CREATE TRIGGER trigger_tenant_email_customizations_updated_at
 
 -- Seed comment for audit/documentation
 COMMENT ON TABLE tenant_email_customizations IS
-  'Tenant email template customizations. Stores JSON overrides for template text fields. ' ||
-  'Used to enable white-label customization without code changes. Base templates live in ' ||
-  'packages/shared/src/i18n/email-templates-*.json (git-tracked, safe defaults). ' ||
-  'This table stores only diffs — tenants with no overrides will use code defaults. ' ||
-  'RLS enforced: tenants can only access their own customizations.';
+  'Tenant email template customizations. Stores JSON overrides for template text fields. Used to enable white-label customization without code changes. Base templates live in packages/shared/src/i18n/email-templates-*.json (git-tracked, safe defaults). This table stores only diffs — tenants with no overrides will use code defaults. RLS enforced: tenants can only access their own customizations.';
 
 COMMENT ON COLUMN tenant_email_customizations.template_name IS
-  'Template identifier (e.g., "otp", "magic_link", "welcome", "payment_reminder", ' ||
-  '"class_cancellation", "waiting_list_offer"). Matches keys in i18n JSON files.';
+  'Template identifier (e.g., "otp", "magic_link", "welcome", "payment_reminder", "class_cancellation", "waiting_list_offer"). Matches keys in i18n JSON files.';
 
 COMMENT ON COLUMN tenant_email_customizations.language IS
   'Language code: "en" or "he". Enables per-language customization.';
 
 COMMENT ON COLUMN tenant_email_customizations.overrides IS
-  'JSON object containing template field overrides. ' ||
-  'Example: {"greeting": "Custom greeting", "cta_button": "Click here"}. ' ||
-  'Fields not present in overrides will use code defaults. ' ||
-  'Structure matches keys in email-templates-[en|he].json.';
+  'JSON object containing template field overrides. Example: {"greeting": "Custom greeting", "cta_button": "Click here"}. Fields not present in overrides will use code defaults. Structure matches keys in email-templates-[en|he].json.';

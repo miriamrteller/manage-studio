@@ -14,11 +14,11 @@
     "test": "pnpm -r test",
     "a11y:install": "pnpm -C apps/web exec playwright install --with-deps",
     "a11y:e2e": "pnpm -C apps/web run a11y:e2e",
-    "db:link": "npx supabase link --project-ref acmujrhavgbamdilzuew",
-    "db:status": "npx supabase migration list",
-    "db:push": "npx supabase db push",
-    "db:pull": "npx supabase db pull",
-    "db:types": "npx supabase gen types typescript --project-id acmujrhavgbamdilzuew > packages/shared/src/database.types.ts",
+    "db:link": "pnpm dlx supabase link --project-ref acmujrhavgbamdilzuew",
+    "db:status": "pnpm dlx supabase migration list",
+    "db:push": "pnpm dlx supabase db push",
+    "db:pull": "pnpm dlx supabase db pull",
+    "db:types": "pnpm dlx supabase gen types typescript --project-id acmujrhavgbamdilzuew > packages/shared/src/database.types.ts",
     "db:sync": "pnpm db:push && pnpm db:types"
   },
   "devDependencies": {
