@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useTenant } from './useTenant';
+import i18n from '@/i18n/i18n';
 
 /**
  * Single source of truth for app language and direction
@@ -24,10 +25,20 @@ export function useLanguage(): void {
   const tenant = useTenant();
 
   useEffect(() => {
-    const language = tenant?.language_default || 'en';
+    // If tenant not loaded yet, set safe defaults
+    if (!tenant?.language_default) {
+      document.documentElement.lang = 'en';
+      document.documentElement.dir = 'ltr';
+      i18n.changeLanguage('en');
+      return;
+    }
+
+    const language = tenant.language_default;
     const direction = language === 'he' ? 'rtl' : 'ltr';
 
+    // Update both together in transaction (coupled)
     document.documentElement.lang = language;
     document.documentElement.dir = direction;
+    i18n.changeLanguage(language);
   }, [tenant?.language_default]);
 }

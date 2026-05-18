@@ -41,11 +41,9 @@ export function useTenant(): TenantConfig | null {
       }
 
       const { data, error } = await supabase
-        .from('tenants')
-        .select(
-          'id, name, subdomain, language_default, country, currency, vat_rate, primary_color, accent_color'
-        )
-        .eq('subdomain', subdomain)
+        .from('tenant_config_by_subdomain')
+        .select('*')
+        .eq('tenant_subdomain', subdomain)
         .single();
 
       if (error) {
@@ -63,7 +61,7 @@ export function useTenant(): TenantConfig | null {
       return {
         id: data.id,
         name: data.name,
-        subdomain: data.subdomain,
+        subdomain: data.tenant_subdomain, // Renamed in view for clarity
         language_default: data.language_default,
         country: data.country,
         currency: data.currency,

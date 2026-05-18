@@ -26,8 +26,8 @@ export function useClasses({ termId, page = 1, enabled = true, publicOnly = true
   const tenant = useTenant();
   const queryClient = useQueryClient();
 
-  // Public classes from view (no auth required, just subdomain)
-  const publicQuery = useQuery({
+  // Public classes from view (returns array)
+  const publicQuery = useQuery<any[]>({
     queryKey: ['public_classes', tenant?.subdomain],
     queryFn: async () => {
       if (!tenant?.subdomain) throw new Error('Tenant subdomain required');
@@ -43,8 +43,8 @@ export function useClasses({ termId, page = 1, enabled = true, publicOnly = true
     staleTime: 5 * 60 * 1000, // 5 min cache
   });
 
-  // Authenticated classes query (full table access for admins)
-  const listQuery = useQuery({
+  // Authenticated classes query (returns object with classes array)
+  const listQuery = useQuery<{ classes: Class[]; total: number }>({
     queryKey: ['classes', tenant?.id, page, termId],
     queryFn: async () => {
       if (!tenant) throw new Error('Tenant not initialized');
@@ -87,17 +87,18 @@ export function useClasses({ termId, page = 1, enabled = true, publicOnly = true
   });
 
   // Select appropriate query based on publicOnly flag
-  const activeQuery = publicOnly ? publicQuery : listQuery;
   const classesData = publicOnly 
-    ? (activeQuery.data || []) 
-    : (activeQuery.data?.classes || []);
+    ? (publicQuery.data || []) 
+    : (listQuery.data?.classes || []);
 
   return {
     classes: classesData,
     total: publicOnly ? classesData.length : (listQuery.data?.total || 0),
     pageSize: PAGE_SIZE,
-    isLoading: activeQuery.isLoading,
-    error: activeQuery.error instanceof Error ? activeQuery.error.message : (activeQuery.error ? 'Unknown error' : null),
+    isLoading: publicOnly ? publicQuery.isLoading : listQuery.isLoading,
+    error: publicOnly 
+      ? (publicQuery.error instanceof Error ? publicQuery.error.message : (publicQuery.error ? 'Unknown error' : null))
+      : (listQuery.error instanceof Error ? listQuery.error.message : (listQuery.error ? 'Unknown error' : null)),
     createClass: createMutation.mutate,
     updateClass: updateMutation.mutate,
     deleteClass: deleteMutation.mutate,
