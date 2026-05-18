@@ -3,18 +3,18 @@ import { useNavigate } from 'react-router-dom';
 import { useCurrentUser } from '../../hooks/useCurrentUser';
 import { useTenant } from '../../hooks/useTenant';
 import { supabase } from '../../lib/supabase';
+import { navigationConfig, canAccessRoute } from './navigationConfig';
+import { DropdownMenu } from './DropdownMenu';
 
 /**
  * ProtectedNavigation: Navigation bar for authenticated users
- * - Shows role-based links (Admin, Parent, etc.)
+ * - Shows role-based links based on navigationConfig
  * - Includes user email and logout button
  * - Accessible with proper ARIA attributes
  * - Responsive layout
  * 
- * Role-based navigation:
- * - tenant_admin: People, Families, Setup
- * - parent/guardian: Portal
- * - All: Logo/Home, Logout, Language switcher
+ * All routes are configured in navigationConfig.ts with their required roles.
+ * Routes without matching user roles are hidden completely from the DOM.
  */
 export function ProtectedNavigation() {
   const { t } = useTranslation();
@@ -31,10 +31,6 @@ export function ProtectedNavigation() {
   if (isLoading) {
     return null; // ProtectedLayout will show loading state
   }
-
-  // Determine if user has specific roles
-  const isAdmin = user?.role.includes('tenant_admin');
-  const isParent = user?.role.some((r) => ['parent', 'guardian'].includes(r));
 
   return (
     <header
@@ -70,50 +66,39 @@ export function ProtectedNavigation() {
           </div>
         </div>
 
-        {/* Navigation Links: Role-based */}
+        {/* Navigation Links: Role-based, config-driven */}
         <nav className="flex gap-6 flex-wrap items-center">
-          {/* Classes link - visible to all authenticated users */}
-          <button
-            onClick={() => navigate('/classes')}
-            className="text-gray-700 hover:text-primary focus-visible:outline-2 outline-primary outline-offset-2 transition-colors"
-            aria-label={t('nav.classes')}
-          >
-            {t('nav.classes')}
-          </button>
+          {navigationConfig.map((navItem) => {
+            // Check if user can access this route
+            const isVisible = user ? canAccessRoute(user.role, navItem.requiredRoles) : false;
 
-          {/* Admin-only links */}
-          {isAdmin && (
-            <>
-              <button
-                onClick={() => navigate('/admin/people')}
-                className="text-gray-700 hover:text-primary focus-visible:outline-2 outline-primary outline-offset-2 transition-colors"
-              >
-                {t('pages.admin.people.title')}
-              </button>
-              <button
-                onClick={() => navigate('/admin/families')}
-                className="text-gray-700 hover:text-primary focus-visible:outline-2 outline-primary outline-offset-2 transition-colors"
-              >
-                {t('pages.admin.families.title')}
-              </button>
-              <button
-                onClick={() => navigate('/admin/setup')}
-                className="text-gray-700 hover:text-primary focus-visible:outline-2 outline-primary outline-offset-2 transition-colors"
-              >
-                {t('pages.admin.setup.title')}
-              </button>
-            </>
-          )}
+            if (!isVisible) {
+              return null;
+            }
 
-          {/* Parent-only links */}
-          {isParent && (
-            <button
-              onClick={() => navigate('/portal')}
-              className="text-gray-700 hover:text-primary focus-visible:outline-2 outline-primary outline-offset-2 transition-colors"
-            >
-              {t('nav.portal')}
-            </button>
-          )}
+            // If this is a dropdown item, use DropdownMenu component
+            if (navItem.dropdownItems && navItem.dropdownItems.length > 0) {
+              return (
+                <DropdownMenu
+                  key={navItem.path}
+                  item={navItem}
+                  isVisible={isVisible}
+                />
+              );
+            }
+
+            // Regular link
+            return (
+              <button
+                key={navItem.path}
+                onClick={() => navigate(navItem.path)}
+                className="text-gray-700 hover:text-primary focus-visible:outline-2 outline-primary outline-offset-2 transition-colors"
+                aria-label={t(navItem.labelKey)}
+              >
+                {t(navItem.labelKey)}
+              </button>
+            );
+          })}
         </nav>
       </div>
     </header>

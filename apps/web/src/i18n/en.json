@@ -235,7 +235,14 @@
   "nav": {
     "classes": "Classes",
     "login": "Login",
-    "logout": "Logout"
+    "logout": "Logout",
+    "people": "Students & Adults",
+    "families": "Families",
+    "portal": "Portal",
+    "student_dashboard": "Student Dashboard",
+    "billing": "Billing Accounts",
+    "levels": "Class Levels",
+    "terms": "Learning Terms"
   },
   "footer": {
     "school_management": "School Management",

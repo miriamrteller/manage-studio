@@ -237,7 +237,14 @@
   "nav": {
     "classes": "שיעורים",
     "login": "התחברות",
-    "logout": "התנתקות"
+    "logout": "התנתקות",
+    "people": "תלמידים ומבוגרים",
+    "families": "משפחות",
+    "portal": "פורטל הורים",
+    "student_dashboard": "לוח התלמיד",
+    "billing": "חשבונות חיוב",
+    "levels": "רמות שיעורים",
+    "terms": "תקופות למידה"
   },
   "footer": {
     "school_management": "ניהול בית הספר",
