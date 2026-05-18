@@ -52,7 +52,8 @@
     "user_not_found": "חשבון משתמש לא נמצא. אנא פנה לתמיכה.",
     "session_setup_failed": "הקמת הסשן נכשלה",
     "contact_support": "אם הבעיה היא מתמשכת, אנא פנה לתמיכה.",
-    "dashboard_load_failed": "הטעינת לוח הבקרה נכשלה. נסה לרענן את הדף."
+    "dashboard_load_failed": "הטעינת לוח הבקרה נכשלה. נסה לרענן את הדף.",
+    "login_failed": "ההתחברות נכשלה. נסה שוב."
   },
   "validation": {
     "required": "שדה זה נדרש",
@@ -87,7 +88,10 @@
       "password": "ססמה",
       "password_placeholder": "הזן את הססמה שלך",
       "sign_in": "התחבר",
-      "send_link": "שלח קישור"
+      "send_link": "שלח קישור",
+      "invalid_credentials": "שם משתמש או ססמה לא תקינים",
+      "success_redirecting": "התחברות בהצלחה…",
+      "check_email": "בדוקו בשמ הדואר האלקטרוני שלך עבור קישור הכניסה"
     },
     "people": {
       "title": "תלמידים ובוגרים",

@@ -52,7 +52,8 @@
     "user_not_found": "User account not found. Please contact support.",
     "session_setup_failed": "Session Setup Failed",
     "contact_support": "If this problem persists, please contact support.",
-    "dashboard_load_failed": "Failed to load dashboard. Please try refreshing the page."
+    "dashboard_load_failed": "Failed to load dashboard. Please try refreshing the page.",
+    "login_failed": "Login failed. Please try again."
   },
   "validation": {
     "required": "This field is required.",
@@ -87,7 +88,10 @@
       "password": "Password",
       "password_placeholder": "Enter your password",
       "sign_in": "Sign In",
-      "send_link": "Send Link"
+      "send_link": "Send Link",
+      "invalid_credentials": "Invalid email or password.",
+      "success_redirecting": "Login successful. Redirecting...",
+      "check_email": "Check your email for a sign-in link."
     },
     "people": {
       "title": "Students & Adults",
