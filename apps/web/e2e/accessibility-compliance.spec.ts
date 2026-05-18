@@ -146,23 +146,55 @@ test.describe('Keyboard Navigation (WCAG 2.1.1)', () => {
     // Real workflow: User with motor impairment navigates using Tab key only
     await page.goto('/');
     
+    // Wait for page to fully load before querying elements
+    await page.waitForLoadState('networkidle');
+    
     // Track which interactive elements we can reach via Tab
+    // Includes: standard interactive elements + custom elements with tabindex
     const interactiveElements = await page.locator(
-      'button, [role="button"], a[href], input:not([type="hidden"]), select, textarea'
+      'button, [role="button"], a[href], input:not([type="hidden"]), select, textarea, [tabindex]:not([tabindex="-1"])'
     ).all();
     
+    console.log(`[Accessibility] Found ${interactiveElements.length} interactive elements on page`);
+    
+    // Safety guard: if no interactive elements found, fail with meaningful error
+    if (interactiveElements.length === 0) {
+      console.warn('[Accessibility] No interactive elements found. Page may not have loaded or may be empty.');
+      console.log(`[Accessibility] Page URL: ${page.url()}`);
+      console.log(`[Accessibility] Page title: ${await page.title()}`);
+      throw new Error('No interactive elements found on page. Unable to test keyboard navigation.');
+    }
+    
     let reachableCount = 0;
+    const unreachableElements = [];
     
     for (const el of interactiveElements) {
       if (await el.isVisible()) {
         await el.focus();
-        const focused = await page.evaluate(() => document.activeElement?.tagName);
-        if (focused) reachableCount++;
+        const focused = await page.evaluate(() => {
+          const active = document.activeElement;
+          return active?.tagName || '';
+        });
+        
+        if (focused) {
+          reachableCount++;
+        } else {
+          unreachableElements.push(await el.evaluate(el => ({
+            tag: (el as HTMLElement).tagName,
+            text: (el as HTMLElement).textContent?.substring(0, 30)
+          })));
+        }
       }
     }
     
+    const reachabilityRate = reachableCount / interactiveElements.length;
+    console.log(`[Accessibility] Reachability: ${reachableCount}/${interactiveElements.length} (${(reachabilityRate * 100).toFixed(1)}%)`);
+    if (unreachableElements.length > 0) {
+      console.log(`[Accessibility] Unreachable elements (first 5):`, unreachableElements.slice(0, 5));
+    }
+    
     // Should be able to reach most interactive elements
-    expect(reachableCount / interactiveElements.length).toBeGreaterThan(0.8);
+    expect(reachabilityRate).toBeGreaterThan(0.8);
   });
 
   test('focus does not get trapped or lost', async ({ page }) => {
