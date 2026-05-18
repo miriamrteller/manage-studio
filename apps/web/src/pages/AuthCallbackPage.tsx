@@ -11,7 +11,7 @@ import { useCurrentUser } from '../hooks/useCurrentUser';
  * 1. Extract code + state from URL
  * 2. Exchange code for session with supabase.auth.exchangeCodeForSession()
  * 3. Fetch user profile (auto-create if missing with role='parent')
- * 4. Redirect by role: tenant_admin → /admin/people, teacher → /admin/classes, parent/student → /classes
+ * 4. Redirect to /dashboard (smart redirect based on user role)
  * 5. Error handling: show error UI, link to login
  *
  * WCAG: aria-busy spinner, aria-label for loading state, error messages role="alert"
@@ -69,19 +69,11 @@ export default function AuthCallbackPage() {
       return;
     }
 
-    // Redirect based on role
-    if (user.role.includes('tenant_admin')) {
-      navigate('/admin/people', { replace: true });
-    } else if (user.role.includes('teacher')) {
-      navigate('/admin/classes', { replace: true });
-    } else if (
-      user.role.includes('parent') ||
-      user.role.includes('student') ||
-      user.role.includes('adult_student')
-    ) {
-      navigate('/classes', { replace: true });
+    // Redirect to dashboard (DashboardRedirectPage will handle role-based redirect)
+    if (user.role.length > 0) {
+      navigate('/dashboard', { replace: true });
     } else {
-      // Default to classes page if role unknown
+      // Default to classes page if no roles
       navigate('/classes', { replace: true });
     }
   }, [user, isUserLoading, error, navigate, t]);

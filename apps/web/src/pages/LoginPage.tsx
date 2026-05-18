@@ -23,7 +23,7 @@ export default function LoginPage() {
   const validRedirectTo = 
     from && typeof from === 'string' && from.startsWith('/') && from !== '/login'
       ? from
-      : '/classes';
+      : '/dashboard';  // Redirect to smart dashboard router instead of /classes
   
   const { isLoading, message, onSubmit, resetMessage } = useLogin(validRedirectTo);
 

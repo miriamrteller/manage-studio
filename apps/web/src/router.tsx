@@ -1,11 +1,13 @@
 import { createBrowserRouter } from 'react-router-dom';
 import { PublicLayout } from './layouts/PublicLayout';
 import { ProtectedLayout } from './layouts/ProtectedLayout';
+import { SmartLayout } from './layouts/SmartLayout';
 import { AdminRoute, ParentRoute, StudentRoute } from './layouts/RouteGuards';
 import { ClassesPage } from './pages/ClassesPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import AuthCallbackPage from './pages/AuthCallbackPage';
+import DashboardRedirectPage from './pages/DashboardRedirectPage';
 import AdminDashboard from './pages/AdminDashboard';
 import PeoplePage from './pages/PeoplePage';
 import FamiliesPage from './pages/FamiliesPage';
@@ -29,14 +31,14 @@ import NotFoundPage from './pages/NotFoundPage';
  */
 
 const router = createBrowserRouter([
-  // PUBLIC ROUTES (no auth required)
+  // SMART ROUTES (adapts to auth status — public navbar when unauthenticated, protected navbar when authenticated)
   {
     path: '/',
-    element: <PublicLayout><ClassesPage /></PublicLayout>,
+    element: <SmartLayout><ClassesPage /></SmartLayout>,
   },
   {
     path: '/classes',
-    element: <PublicLayout><ClassesPage /></PublicLayout>,
+    element: <SmartLayout><ClassesPage /></SmartLayout>,
   },
   {
     path: '/login',
@@ -55,6 +57,12 @@ const router = createBrowserRouter([
   {
     path: '/auth/callback',
     element: <AuthCallbackPage />,
+  },
+
+  // DASHBOARD REDIRECT (smart redirect based on user role)
+  {
+    path: '/dashboard',
+    element: <DashboardRedirectPage />,
   },
 
   // PROTECTED ROUTES (auth required) — flattened, each with layout + guard

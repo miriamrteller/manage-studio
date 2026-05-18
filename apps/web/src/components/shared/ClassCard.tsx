@@ -22,7 +22,9 @@ export function ClassCard({ class: cls, currency }: ClassCardProps) {
   const navigate = useNavigate();
 
   const handleEnrol = () => {
-    navigate('/login');
+    navigate('/login', {
+      state: { from: '/classes', classId: cls.id },
+    });
   };
 
   return (
