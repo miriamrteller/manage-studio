@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useTenant } from './useTenant';
+import { useLanguagePreference } from './useLanguagePreference';
 import i18n from '@/i18n/i18n';
 
 /**
@@ -23,22 +24,21 @@ import i18n from '@/i18n/i18n';
  */
 export function useLanguage(): void {
   const tenant = useTenant();
+  const { userLanguage } = useLanguagePreference();
 
   useEffect(() => {
-    // If tenant not loaded yet, set safe defaults
-    if (!tenant?.language_default) {
-      document.documentElement.lang = 'en';
-      document.documentElement.dir = 'ltr';
-      i18n.changeLanguage('en');
-      return;
-    }
-
-    const language = tenant.language_default;
+    // User preference overrides tenant default
+    const language = userLanguage || tenant?.language_default || 'en';
     const direction = language === 'he' ? 'rtl' : 'ltr';
 
     // Update both together in transaction (coupled)
     document.documentElement.lang = language;
     document.documentElement.dir = direction;
-    i18n.changeLanguage(language);
-  }, [tenant?.language_default]);
+    
+    // changeLanguage is async - wait for it to complete
+    i18n.changeLanguage(language).catch(() => {
+      // Fallback if language change fails
+      console.warn(`Failed to change language to ${language}`);
+    });
+  }, [userLanguage, tenant?.language_default]);
 }
