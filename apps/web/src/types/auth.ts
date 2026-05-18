@@ -1,7 +1,7 @@
 /**
  * User profile from user_profiles table
  * Includes role array for multi-role support
- * language and country are optional overrides (NULL = use tenant defaults)
+ * Language and country are tenant-level settings (TenantConfig), not per-user overrides
  */
 export type UserProfile = {
   id: string; // UUID from auth.users
@@ -9,9 +9,6 @@ export type UserProfile = {
   role: string[]; // e.g., ['parent'] or ['parent', 'teacher']
   person_id: string | null; // UUID if enrolled as student/parent
   tenant_id: string;
-  language?: 'he' | 'en' | null; // User's language preference (overrides tenant)
-  country?: 'IL' | 'US' | null; // User's country preference (overrides tenant)
-  created_at: string;
 };
 
 /**

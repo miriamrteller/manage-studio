@@ -1117,6 +1117,13 @@ export type Database = {
             foreignKeyName: "user_profiles_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
+            referencedRelation: "tenant_config_by_subdomain"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_profiles_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
             referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
@@ -1276,6 +1283,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      tenant_config_by_subdomain: {
+        Row: {
+          accent_color: string | null
+          country: string | null
+          currency: string | null
+          id: string | null
+          language_default: string | null
+          name: string | null
+          primary_color: string | null
+          tenant_subdomain: string | null
+          vat_rate: number | null
+        }
+        Insert: {
+          accent_color?: string | null
+          country?: string | null
+          currency?: string | null
+          id?: string | null
+          language_default?: string | null
+          name?: string | null
+          primary_color?: string | null
+          tenant_subdomain?: string | null
+          vat_rate?: number | null
+        }
+        Update: {
+          accent_color?: string | null
+          country?: string | null
+          currency?: string | null
+          id?: string | null
+          language_default?: string | null
+          name?: string | null
+          primary_color?: string | null
+          tenant_subdomain?: string | null
+          vat_rate?: number | null
+        }
+        Relationships: []
       }
     }
     Functions: {

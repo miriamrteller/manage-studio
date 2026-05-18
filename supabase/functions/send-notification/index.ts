@@ -303,7 +303,8 @@ serve(async (req: Request) => {
 
 /**
  * Helper: Get tenant configuration for email sending
- * Loads colors, locale, and direction from tenants table
+ * Loads colors and language from tenants table
+ * Computes locale and direction from language_default
  * Returns defaults if tenant not found
  */
 async function getTenantConfig(
@@ -313,7 +314,7 @@ async function getTenantConfig(
   try {
     const { data, error } = await supabase
       .from("tenants")
-      .select("id, name, locale, dir, primary_color, accent_color")
+      .select('*')
       .eq("id", tenantId)
       .single();
 
@@ -329,7 +330,20 @@ async function getTenantConfig(
       };
     }
 
-    return data as TenantConfig;
+    // Compute locale and dir from language_default (they are no longer stored)
+    const language_default = data.language_default || "en";
+    const country = data.country || "IL";
+    const locale = language_default === "he" ? `he-${country}` : `en-${country}`;
+    const dir = language_default === "he" ? "rtl" : "ltr";
+
+    return {
+      id: data.id,
+      name: data.name,
+      locale,
+      dir,
+      primary_color: data.primary_color || "#2563eb",
+      accent_color: data.accent_color || "#dc2626",
+    };
   } catch (error) {
     console.error("Error fetching tenant config:", error);
     // Fail safe: return defaults if DB is down
@@ -455,7 +469,7 @@ async function getTemplateSid(
   try {
     const { data } = await supabase
       .from("tenant_notification_templates")
-      .select("twilio_content_sid,email_template_id")
+      .select('*')
       .eq("tenant_id", tenantId)
       .eq("channel", channel)
       .eq("template_name", templateName)

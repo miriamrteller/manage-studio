@@ -27,17 +27,7 @@ export function useCurrentUser(): {
       // Fetch user_profile from DB (RLS will enforce tenant isolation)
       const { data, error } = await supabase
         .from('user_profiles')
-        .select(
-          `
-          id,
-          role,
-          person_id,
-          tenant_id,
-          language,
-          country,
-          created_at
-        `
-        )
+        .select('*')
         .eq('id', session.user.id)
         .single();
 
