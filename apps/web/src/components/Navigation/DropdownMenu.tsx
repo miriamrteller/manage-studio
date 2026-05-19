@@ -88,14 +88,14 @@ export function DropdownMenu({ item, isVisible }: DropdownMenuProps) {
       </button>
 
       {/* Dropdown Menu */}
-      {hasDropdown && isOpen && (
+      {hasDropdown && isOpen && item.dropdownItems && (
         <div
           ref={menuRef}
           className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded shadow-lg z-50 min-w-max"
           role="menu"
           aria-label={`${t(item.labelKey)} submenu`}
         >
-          {item.dropdownItems!.map((subItem) => (
+          {item.dropdownItems.map((subItem) => (
             <button
               key={subItem.path}
               onClick={() => handleSubItemClick(subItem.path)}

@@ -10,7 +10,7 @@ export const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
     <input
       ref={ref}
       type="checkbox"
-      checked={checked as any}
+      checked={checked ?? false}
       onChange={(e) => onCheckedChange?.(e.target.checked)}
       disabled={disabled}
       className={`rounded border-gray-300 ${className}`}

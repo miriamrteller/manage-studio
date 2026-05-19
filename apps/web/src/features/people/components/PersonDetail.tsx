@@ -203,7 +203,7 @@ export function PersonDetail({ id, onClose }: PersonDetailProps) {
       )}
 
       {/* Waiver Status */}
-      {person.waiver_template_id && (
+      {(person.waiver_version || person.waiver_accepted_at) && (
         <div className="p-4 bg-blue-50 rounded border border-blue-200">
           <p className="font-semibold text-blue-900">
             {t('pages.people.waiver_status_label')}

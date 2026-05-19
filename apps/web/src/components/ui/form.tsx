@@ -1,5 +1,11 @@
 import React from 'react';
-import { Controller, type Control, type FieldValues, type FieldPath } from 'react-hook-form';
+import {
+  Controller,
+  type Control,
+  type ControllerRenderProps,
+  type FieldPath,
+  type FieldValues,
+} from 'react-hook-form';
 
 export const Form = ({ children, ...props }: React.FormHTMLAttributes<HTMLFormElement>) => (
   <form {...props}>{children}</form>
@@ -11,14 +17,22 @@ export interface FormFieldProps<
 > {
   control: Control<TFieldValues>;
   name: TName;
-  render: (props: { field: any }) => React.ReactNode;
+  render: (props: {
+    field: ControllerRenderProps<TFieldValues, TName>;
+  }) => React.ReactNode;
 }
 
 export const FormField = function FormField<
   TFieldValues extends FieldValues = FieldValues,
   TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
 >({ control, name, render }: FormFieldProps<TFieldValues, TName>) {
-  return <Controller control={control} name={name} render={({ field }) => render({ field }) as any} />;
+  return (
+    <Controller
+      control={control}
+      name={name}
+      render={({ field }) => <>{render({ field })}</>}
+    />
+  );
 };
 
 export const FormItem = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (

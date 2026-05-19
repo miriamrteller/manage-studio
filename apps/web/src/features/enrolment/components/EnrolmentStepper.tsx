@@ -1,7 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { WhatsAppOtpVerifier } from '@/components/shared';
+import { EnrolmentPaymentForm } from './EnrolmentPaymentForm';
 import { useEnrolment } from '../hooks/useEnrolment';
+import { useTenant } from '@/hooks/useTenant';
+import { EnrolmentService } from '../service';
 import type { Enrolment } from '@shared/schemas';
 
 export type EnrolmentStep = 'person' | 'class' | 'notification' | 'checkout' | 'confirmation';
@@ -52,7 +55,10 @@ export function EnrolmentStepper({
   const [currentStep, setCurrentStep] = useState<EnrolmentStep>(initialStep);
   const [enrolmentData, setEnrolmentData] = useState<Partial<Enrolment>>({});
   
+  const tenant = useTenant();
   const { createEnrolment, isCreating } = useEnrolment();
+  const [checkoutEnrolmentId, setCheckoutEnrolmentId] = useState<string | null>(null);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
   const steps: EnrolmentStep[] = [
     'person',
@@ -87,49 +93,67 @@ export function EnrolmentStepper({
     }
   };
 
-  const handleSubmit = async () => {
-    // Calculate confidence score for enrolment (0-1 scale)
-    // Checks: person_id, class_id, contact_preferences defined
-    const missingFields = [
-      !enrolmentData.person_id ? 'person_id' : null,
-      !enrolmentData.class_id ? 'class_id' : null,
-    ].filter(Boolean);
-    
-    const confidence = missingFields.length === 0 ? 1.0 : 0.5;
-
-    // AI liability guard: Enrolment is a financial transaction
-    // Low confidence (<0.70) requires human-in-the-loop review
-    if (confidence < 0.70) {
-      console.warn(
-        '[HITL-REQUIRED] Low confidence enrolment, needs human review',
-        {
-          confidence,
-          missingFields,
-          enrolmentData,
-        }
-      );
-      // Show error to user
-      throw new Error(
-        'Enrolment validation failed. Please complete all required fields.'
-      );
+  useEffect(() => {
+    if (currentStep !== 'checkout') return;
+    if (checkoutEnrolmentId) return;
+    if (!tenant || !enrolmentData.person_id || !enrolmentData.class_id || !enrolmentData.term_id) {
+      return;
     }
 
     createEnrolment(
-      {
-        ...enrolmentData,
-        status: 'active',
-      },
+      { ...enrolmentData, status: 'pending_payment' },
       {
         onSuccess: (created) => {
-          setCurrentStep('confirmation');
+          setCheckoutEnrolmentId(created.id);
           setEnrolmentData(created);
-          onSuccess?.(created);
         },
-        onError: (error) => {
-          console.error('Enrolment creation failed:', error);
+        onError: () => {
+          setCheckoutError(t('enrolment.checkout_prepare_failed'));
         },
-      }
+      },
     );
+  }, [
+    currentStep,
+    checkoutEnrolmentId,
+    tenant,
+    enrolmentData,
+    createEnrolment,
+    t,
+  ]);
+
+  const handlePaymentSuccess = async () => {
+    if (!checkoutEnrolmentId || !tenant) return;
+
+    const poll = async (attempts = 10): Promise<Enrolment | null> => {
+      const enrolment = await EnrolmentService.get(
+        {
+          id: tenant.id,
+          name: tenant.name,
+          subdomain: tenant.subdomain,
+          language: tenant.language_default,
+          country: tenant.country,
+          currency: tenant.currency,
+          vat_rate: tenant.vat_rate,
+        },
+        checkoutEnrolmentId,
+      );
+      if (enrolment.status === 'active') return enrolment;
+      if (attempts <= 0) return enrolment;
+      await new Promise((r) => setTimeout(r, 1500));
+      return poll(attempts - 1);
+    };
+
+    try {
+      const enrolment = await poll();
+      setCurrentStep('confirmation');
+      if (enrolment) {
+        setEnrolmentData(enrolment);
+        onSuccess?.(enrolment);
+      }
+    } catch (error) {
+      console.error('Failed to confirm enrolment after payment:', error);
+      setCheckoutError(t('enrolment.payment_confirm_pending'));
+    }
   };
 
   return (
@@ -189,9 +213,11 @@ export function EnrolmentStepper({
         {currentStep === 'checkout' && (
           <StepCheckout
             enrolmentData={enrolmentData}
-            onSubmit={handleSubmit}
+            checkoutEnrolmentId={checkoutEnrolmentId}
+            checkoutError={checkoutError}
+            isPreparing={isCreating && !checkoutEnrolmentId}
+            onPaymentSuccess={handlePaymentSuccess}
             onPrevious={handlePreviousStep}
-            isLoading={isCreating}
           />
         )}
 
@@ -374,46 +400,50 @@ function StepNotification({
  */
 function StepCheckout({
   enrolmentData,
-  onSubmit,
+  checkoutEnrolmentId,
+  checkoutError,
+  isPreparing,
+  onPaymentSuccess,
   onPrevious,
-  isLoading,
 }: {
   enrolmentData: Partial<Enrolment>;
-  onSubmit: () => void;
+  checkoutEnrolmentId: string | null;
+  checkoutError: string | null;
+  isPreparing: boolean;
+  onPaymentSuccess: () => void;
   onPrevious: () => void;
-  isLoading: boolean;
 }) {
   const { t } = useTranslation();
-  // TODO: Use enrolmentData to display summary in payment form (Step 4 implementation)
-  void enrolmentData; // Intentionally unused for now - will display payment summary
+
+  if (!enrolmentData.class_id || !enrolmentData.term_id) {
+    return (
+      <p className="text-sm text-destructive" role="alert">
+        {t('enrolment.missing_class_or_term')}
+      </p>
+    );
+  }
+
+  if (checkoutError) {
+    return (
+      <p className="text-sm text-destructive" role="alert">
+        {checkoutError}
+      </p>
+    );
+  }
+
+  if (isPreparing || !checkoutEnrolmentId) {
+    return <p role="status">{t('common.loading')}</p>;
+  }
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-gray-600">
-        {t('enrolment.checkout_desc') || 'Review and complete payment'}
-      </p>
-
-      {/* Placeholder: Payment form will use Stripe Payment Element */}
-      <div className="p-4 bg-gray-50 rounded-lg text-center text-sm text-gray-600">
-        {t('enrolment.payment_placeholder') || 'Stripe Payment Element placeholder'}
-      </div>
-
-      <div className="flex gap-2">
-        <button
-          onClick={onPrevious}
-          disabled={isLoading}
-          className="flex-1 px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50"
-        >
-          {t('common.back') || 'Back'}
-        </button>
-        <button
-          onClick={onSubmit}
-          disabled={isLoading}
-          className="flex-1 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
-        >
-          {isLoading ? 'Processing...' : t('common.complete')}
-        </button>
-      </div>
+      <p className="text-sm text-muted-foreground">{t('enrolment.checkout_desc')}</p>
+      <EnrolmentPaymentForm
+        classId={enrolmentData.class_id}
+        enrolmentId={checkoutEnrolmentId}
+        onPaid={onPaymentSuccess}
+        onPrevious={onPrevious}
+      />
     </div>
   );
 }

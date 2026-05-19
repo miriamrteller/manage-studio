@@ -19,7 +19,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
       <PublicNavigation />
 
       {/* Main Content */}
-      <main className="flex-1">{children}</main>
+      <main className="flex-1" role="main">{children}</main>
 
       {/* Footer */}
       <footer className="border-t border-gray-200 bg-gray-50 mt-16">

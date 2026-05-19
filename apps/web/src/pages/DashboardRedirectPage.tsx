@@ -16,6 +16,10 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
  * This ensures all authenticated users see the ProtectedNavigation with
  * their role-appropriate menu items.
  */
+interface DashboardRedirectState {
+  classId?: string;
+}
+
 export default function DashboardRedirectPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -34,7 +38,8 @@ export default function DashboardRedirectPage() {
     }
 
     // Check if user was enrolling on /classes - return to complete enrollment
-    const fromEnrollment = (location.state as any)?.classId;
+    const state = location.state as DashboardRedirectState | null;
+    const fromEnrollment = state?.classId;
     if (fromEnrollment) {
       navigate('/classes', { replace: true });
       return;

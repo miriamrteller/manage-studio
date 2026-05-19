@@ -61,13 +61,18 @@ export function useTenant(): TenantConfig | null {
       return {
         id: data.id,
         name: data.name,
-        subdomain: data.tenant_subdomain, // Renamed in view for clarity
+        subdomain: data.tenant_subdomain,
+        language: data.language_default,
         language_default: data.language_default,
         country: data.country,
         currency: data.currency,
         vat_rate: data.vat_rate,
         white_label: whiteLabel || undefined,
         locale: getLocale(data.language_default as 'he' | 'en', data.country as 'IL' | 'US'),
+        stripe_publishable_key: data.stripe_publishable_key ?? null,
+        stripe_secret_configured: Boolean(data.stripe_secret_configured),
+        stripe_webhook_configured: Boolean(data.stripe_webhook_configured),
+        stripe_credentials_updated_at: data.stripe_credentials_updated_at ?? null,
       } as TenantConfig;
     },
     enabled: !!subdomain,

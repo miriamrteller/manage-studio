@@ -4,11 +4,12 @@
  * Language and country are tenant-level settings (TenantConfig), not per-user overrides
  */
 export type UserProfile = {
-  id: string; // UUID from auth.users
+  id: string;
   email: string;
-  role: string[]; // e.g., ['parent'] or ['parent', 'teacher']
-  person_id: string | null; // UUID if enrolled as student/parent
+  role: string[];
+  person_id: string | null;
   tenant_id: string;
+  language: 'he' | 'en' | null;
 };
 
 /**
@@ -39,14 +40,17 @@ export type TenantConfig = {
   id: string;
   name: string;
   subdomain: string;
-  language_default: 'he' | 'en'; // Renamed from language; source of truth
-  country: 'IL' | 'US'; // For locale, phone parsing, not exposed in components
-  currency: string; // e.g., 'ILS'
-  vat_rate: number; // e.g., 0.17
-  white_label?: TenantWhiteLabel; // Brand customization (colors, logo)
-  // Computed (not stored in DB):
-  locale: string; // Computed as e.g., 'he-IL', 'en-US'
-  // NOTE: dir is never stored or passed; computed in useLanguage() hook only
+  language: 'he' | 'en';
+  language_default: 'he' | 'en';
+  country: 'IL' | 'US';
+  currency: string;
+  vat_rate: number;
+  white_label?: TenantWhiteLabel;
+  locale: string;
+  stripe_publishable_key?: string | null;
+  stripe_secret_configured?: boolean;
+  stripe_webhook_configured?: boolean;
+  stripe_credentials_updated_at?: string | null;
 };
 
 /**

@@ -12,6 +12,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import PeoplePage from './pages/PeoplePage';
 import FamiliesPage from './pages/FamiliesPage';
 import BillingPage from './pages/BillingPage';
+import StripeSettingsPage from './pages/StripeSettingsPage';
 import LevelsPage from './pages/LevelsPage';
 import TermsPage from './pages/TermsPage';
 import PortalDashboard from './pages/PortalDashboard';
@@ -124,6 +125,16 @@ const router = createBrowserRouter([
       <ProtectedLayout>
         <AdminRoute>
           <TermsPage />
+        </AdminRoute>
+      </ProtectedLayout>
+    ),
+  },
+  {
+    path: '/admin/setup/stripe',
+    element: (
+      <ProtectedLayout>
+        <AdminRoute>
+          <StripeSettingsPage />
         </AdminRoute>
       </ProtectedLayout>
     ),
