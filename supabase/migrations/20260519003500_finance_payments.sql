@@ -1,13 +1,9 @@
--- Finance: tenant Stripe columns, payments, invoice sequences
--- First slice only (no discount_rules / teacher_pay_records)
--- Encryption: pgp_sym_encrypt with app.encryption_key (set via manual runbook; Vault migration later)
-
-ALTER TABLE tenants
-  ADD COLUMN IF NOT EXISTS stripe_publishable_key TEXT,
-  ADD COLUMN IF NOT EXISTS stripe_secret_key_enc BYTEA,
-  ADD COLUMN IF NOT EXISTS stripe_webhook_secret_enc BYTEA,
-  ADD COLUMN IF NOT EXISTS stripe_account_id TEXT,
-  ADD COLUMN IF NOT EXISTS stripe_credentials_updated_at TIMESTAMPTZ;
+-- =============================================================================
+-- Payments, invoice sequences, Stripe credential RPCs
+-- DEPENDS ON: 001 tenants, 002 families/people, 026 enrolments
+-- Encryption: pgp_sym_encrypt + app.encryption_key (set via manual runbook)
+-- Inserts to payments: Edge webhook via service_role only (no user INSERT policy)
+-- =============================================================================
 
 CREATE TABLE payments (
   id                         UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -22,7 +18,7 @@ CREATE TABLE payments (
   vat_amount_minor           INT         NOT NULL DEFAULT 0,
   total_amount_minor         INT         NOT NULL,
   currency                   TEXT        NOT NULL DEFAULT 'ILS',
-  invoice_number             TEXT        UNIQUE,
+  invoice_number             TEXT,
   invoice_issued_at          TIMESTAMPTZ,
   invoice_url                TEXT,
   status                     TEXT        NOT NULL DEFAULT 'pending'
@@ -33,7 +29,8 @@ CREATE TABLE payments (
   refund_amount_minor        INT,
   anonymised_at              TIMESTAMPTZ,
   created_at                 TIMESTAMPTZ NOT NULL DEFAULT now(),
-  CONSTRAINT payment_payer CHECK ((family_id IS NOT NULL) OR (person_id IS NOT NULL))
+  CONSTRAINT payment_payer CHECK ((family_id IS NOT NULL) OR (person_id IS NOT NULL)),
+  CONSTRAINT payments_invoice_unique_per_tenant UNIQUE (tenant_id, invoice_number)
 );
 
 CREATE INDEX idx_payments_tenant ON payments(tenant_id);
@@ -201,25 +198,6 @@ $$;
 
 GRANT EXECUTE ON FUNCTION save_tenant_stripe_credentials(TEXT, TEXT, TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION get_tenant_stripe_credentials(UUID) TO service_role;
-
-CREATE OR REPLACE VIEW tenant_config_by_subdomain AS
-SELECT
-  id,
-  name,
-  subdomain AS tenant_subdomain,
-  language_default,
-  country,
-  currency,
-  vat_rate,
-  primary_color,
-  accent_color,
-  stripe_publishable_key,
-  (stripe_secret_key_enc IS NOT NULL) AS stripe_secret_configured,
-  (stripe_webhook_secret_enc IS NOT NULL) AS stripe_webhook_configured,
-  stripe_credentials_updated_at
-FROM tenants;
-
-GRANT SELECT ON tenant_config_by_subdomain TO anon, authenticated;
 
 ALTER TABLE payments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE invoice_sequences ENABLE ROW LEVEL SECURITY;

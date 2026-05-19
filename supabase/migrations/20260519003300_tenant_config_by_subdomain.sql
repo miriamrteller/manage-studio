@@ -1,9 +1,10 @@
--- Migration 033: Create tenant_config_by_subdomain view for clean frontend/backend separation
--- Purpose: Frontend queries this view with simple `select=*` instead of explicit column list
--- Pattern matches Migration 032 (public_classes_by_subdomain)
+-- =============================================================================
+-- tenant_config_by_subdomain — public tenant branding + Stripe publishable key
+-- DEPENDS ON: 001 tenants (includes Stripe columns)
+-- =============================================================================
 
 CREATE OR REPLACE VIEW tenant_config_by_subdomain AS
-SELECT 
+SELECT
   id,
   name,
   subdomain AS tenant_subdomain,
@@ -12,7 +13,11 @@ SELECT
   currency,
   vat_rate,
   primary_color,
-  accent_color
+  accent_color,
+  stripe_publishable_key,
+  (stripe_secret_key_enc IS NOT NULL) AS stripe_secret_configured,
+  (stripe_webhook_secret_enc IS NOT NULL) AS stripe_webhook_configured,
+  stripe_credentials_updated_at
 FROM tenants;
 
 GRANT SELECT ON tenant_config_by_subdomain TO anon, authenticated;

@@ -19,9 +19,17 @@ CREATE TABLE tenants (
   vat_rate                  NUMERIC(5,4) DEFAULT 0.17,
   phone_region              TEXT        NOT NULL DEFAULT 'IL',
   phone_region_updated_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  -- Stripe (Standard account per school; Connect deferred)
+  stripe_publishable_key    TEXT,
+  stripe_secret_key_enc     BYTEA,
+  stripe_webhook_secret_enc BYTEA,
+  stripe_account_id         TEXT,
+  stripe_credentials_updated_at TIMESTAMPTZ,
   created_at                TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at                TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+COMMENT ON COLUMN tenants.stripe_secret_key_enc IS 'pgp_sym_encrypt with app.encryption_key (manual runbook). Never expose to clients.';
 
 COMMENT ON COLUMN tenants.language_default IS 'Primary language for tenant. Source of truth for UI language. dir (rtl/ltr) is computed from this in the app.';
 COMMENT ON COLUMN tenants.country IS 'Country for regional settings (VAT rate, currency, locale). Used with language to compute locale string (e.g., he-IL, en-US).';
