@@ -77,10 +77,17 @@ export function useLogin(redirectTo: string = '/classes'): LoginState & LoginAct
         // Magic link authentication
         const magicLinkData = LoginFormSchema.parse(formData);
 
+        // Extract subdomain for trigger (auth user auto-creation)
+        const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+        const subdomain = hostname.split('.')[0];
+
         const { error } = await supabase.auth.signInWithOtp({
           email: magicLinkData.email,
           options: {
             emailRedirectTo: `${window.location.origin}/auth/callback`,
+            data: {
+              subdomain, // Passed to auth.users.user_metadata; trigger will extract it
+            },
           },
         });
 
