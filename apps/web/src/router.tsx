@@ -1,7 +1,5 @@
 import { createBrowserRouter } from 'react-router-dom';
-import { PublicLayout } from './layouts/PublicLayout';
-import { ProtectedLayout } from './layouts/ProtectedLayout';
-import { SmartLayout } from './layouts/SmartLayout';
+import { AppLayout } from './layouts/AppLayout';
 import { AdminRoute, ParentRoute, StudentRoute } from './layouts/RouteGuards';
 import { ClassesPage } from './pages/ClassesPage';
 import LoginPage from './pages/LoginPage';
@@ -35,35 +33,35 @@ const router = createBrowserRouter([
   // SMART ROUTES (adapts to auth status — public navbar when unauthenticated, protected navbar when authenticated)
   {
     path: '/',
-    element: <SmartLayout><ClassesPage /></SmartLayout>,
+    element: <AppLayout><ClassesPage /></AppLayout>,
   },
   {
     path: '/classes',
-    element: <SmartLayout><ClassesPage /></SmartLayout>,
+    element: <AppLayout><ClassesPage /></AppLayout>,
   },
   {
     path: '/login',
-    element: <PublicLayout><LoginPage /></PublicLayout>,
+    element: <AppLayout><LoginPage /></AppLayout>,
   },
   {
     path: '/signup',
-    element: <PublicLayout><SignupPage /></PublicLayout>,
+    element: <AppLayout><SignupPage /></AppLayout>,
   },
   {
     path: '/enrol',
-    element: <PublicLayout><ClassesPage /></PublicLayout>, // Placeholder, replaced in Phase 1C.3
+    element: <AppLayout><ClassesPage /></AppLayout>, // Placeholder, replaced in Phase 1C.3
   },
 
   // AUTH CALLBACK (handles magic link redirect)
   {
     path: '/auth/callback',
-    element: <AuthCallbackPage />,
+    element: <AppLayout><AuthCallbackPage /></AppLayout>,
   },
 
   // DASHBOARD REDIRECT (smart redirect based on user role)
   {
     path: '/dashboard',
-    element: <DashboardRedirectPage />,
+    element: <AppLayout><DashboardRedirectPage /></AppLayout>,
   },
 
   // PROTECTED ROUTES (auth required) — flattened, each with layout + guard
@@ -71,111 +69,51 @@ const router = createBrowserRouter([
   // ADMIN ROUTES
   {
     path: '/admin/people',
-    element: (
-      <ProtectedLayout>
-        <AdminRoute>
-          <PeoplePage />
-        </AdminRoute>
-      </ProtectedLayout>
-    ),
+    element: <AppLayout><AdminRoute><PeoplePage /></AdminRoute></AppLayout>,
   },
   {
     path: '/admin/families',
-    element: (
-      <ProtectedLayout>
-        <AdminRoute>
-          <FamiliesPage />
-        </AdminRoute>
-      </ProtectedLayout>
-    ),
+    element: <AppLayout><AdminRoute><FamiliesPage /></AdminRoute></AppLayout>,
   },
   {
     path: '/admin/setup',
-    element: (
-      <ProtectedLayout>
-        <AdminRoute>
-          <AdminDashboard />
-        </AdminRoute>
-      </ProtectedLayout>
-    ),
+    element: <AppLayout><AdminRoute><AdminDashboard /></AdminRoute></AppLayout>,
   },
   {
     path: '/admin/setup/billing',
-    element: (
-      <ProtectedLayout>
-        <AdminRoute>
-          <BillingPage />
-        </AdminRoute>
-      </ProtectedLayout>
-    ),
+    element: <AppLayout><AdminRoute><BillingPage /></AdminRoute></AppLayout>,
   },
   {
     path: '/admin/setup/levels',
-    element: (
-      <ProtectedLayout>
-        <AdminRoute>
-          <LevelsPage />
-        </AdminRoute>
-      </ProtectedLayout>
-    ),
+    element: <AppLayout><AdminRoute><LevelsPage /></AdminRoute></AppLayout>,
   },
   {
     path: '/admin/setup/terms',
-    element: (
-      <ProtectedLayout>
-        <AdminRoute>
-          <TermsPage />
-        </AdminRoute>
-      </ProtectedLayout>
-    ),
+    element: <AppLayout><AdminRoute><TermsPage /></AdminRoute></AppLayout>,
   },
   {
     path: '/admin/setup/stripe',
-    element: (
-      <ProtectedLayout>
-        <AdminRoute>
-          <StripeSettingsPage />
-        </AdminRoute>
-      </ProtectedLayout>
-    ),
+    element: <AppLayout><AdminRoute><StripeSettingsPage /></AdminRoute></AppLayout>,
   },
 
   // LEGACY ROUTES (Phase 1B) — kept for backward compatibility
   {
     path: '/dashboard/admin',
-    element: (
-      <ProtectedLayout>
-        <AdminRoute>
-          <AdminDashboard />
-        </AdminRoute>
-      </ProtectedLayout>
-    ),
+    element: <AppLayout><AdminRoute><AdminDashboard /></AdminRoute></AppLayout>,
   },
   {
     path: '/dashboard/portal',
-    element: (
-      <ProtectedLayout>
-        <ParentRoute>
-          <PortalDashboard />
-        </ParentRoute>
-      </ProtectedLayout>
-    ),
+    element: <AppLayout><ParentRoute><PortalDashboard /></ParentRoute></AppLayout>,
   },
   {
     path: '/dashboard/student',
-    element: (
-      <ProtectedLayout>
-        <StudentRoute>
-          <PortalDashboard />
-        </StudentRoute>
-      </ProtectedLayout>
-    ),
+    element: <AppLayout><StudentRoute><PortalDashboard /></StudentRoute></AppLayout>,
   },
 
   // 404
   {
     path: '*',
-    element: <NotFoundPage />,
+    element: <AppLayout><NotFoundPage /></AppLayout>,
   },
 ]);
 
