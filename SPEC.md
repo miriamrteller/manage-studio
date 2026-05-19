@@ -98,12 +98,13 @@ Each school configures their own Twilio, Resend, and Stripe keys. You store them
 WCAG 2.1 Level AA is a legal requirement for Israeli community centers (דינ נגישות לאנשים עם מוגבלות, 1998). All UI features must pass automated axe-core tests before merge. Manual NVDA Hebrew smoke tests verify 15 minutes pre-deployment. Accessibility is part of the Definition of Done for every feature.
 
 **1.12 Tenant branding and configuration are separate from code.**
-Each tenant has configurable properties: `locale`, `dir` (rtl/ltr), `currency`, `vat_rate`, and future fields like `primary_color`, `logo_url`.
+Each tenant has configurable properties: `language_default`, `country`, `currency`, `vat_rate`, `primary_color`, `accent_color`, and future fields like `logo_url`.
 
 - **Never hardcode tenant-specific values** in components (no `text-[#76335a]`, no `'he-IL'` strings).
-- **Always use CSS variables and configuration hooks** (`useTenant()` for locale/dir, CSS variables for colors/fonts).
+- **Always use CSS variables and configuration hooks** (`useTenant()` for locale, CSS variables for colors/fonts).
 - Define colors in `:root` CSS variables and Tailwind `theme.extend.colors` → all components use `text-primary`, `text-accent`.
-- Define locale/direction in `useTenant()` hook → Phase 1A returns defaults, Phase 1B fetches from tenant row in DB.
+- **Language and direction:** `language_default` on `tenants` is the tenant default. `user_profiles.language` overrides when NOT NULL. **`dir` (rtl/ltr) is never stored in the database** — computed in the app from resolved language only (`he` → `rtl`, else `ltr`) via `DocumentLanguageSync` on `<html>`. Precedence: profile language → tenant `language_default` → `'he'`. Locale strings (e.g. `he-IL`) are derived from `language` + `country`, not stored on `tenants`.
+- Define locale in `useTenant()` (computed from `language_default` + `country`, e.g. `he-IL`).
 - Define page titles and branding text in i18n translation files (`he.json`, `en.json`) → no hardcoding in HTML or components.
 
 **Design System (3-layer CSS architecture):**
@@ -343,35 +344,37 @@ test("heading structure is valid", async ({ page }) => {
 
 **Principles:**
 - Language is source of truth; direction is derived (he→rtl, en→ltr)
-- Single hook `useLanguage()` manages all language/direction state
-- HTML `<html lang>` and `<html dir>` only change via this hook
-- Components never set direction; they inherit from `<html>`
+- **`dir` is never stored in the database** — not on `tenants`, not on `user_profiles`
+- `LanguageProvider` resolves language; `DocumentLanguageSync` sets `<html lang>` and `<html dir>`
+- Components never set document direction; they inherit from `<html>` (exception: isolated fields e.g. phone inputs may use `dir="ltr"`)
 
-**Backend (Tenants Table):**
-- Column: `language_default` (enum: 'en', 'he') — source of truth
-- No separate `dir` column (computed, never stored)
-- Column: `country` (enum: 'IL', 'US') — stored but not exposed to frontend
-- Column: `currency` (string) — for Intl formatting
+**Backend (Tenants + profiles):**
+- `tenants.language_default` (`'he' | 'en'`) — tenant default
+- `user_profiles.language` — when NOT NULL, overrides tenant default
+- `tenants.country` (`'IL' | 'US'`) — used with language to compute locale string in the app
+- No `tenants.dir`, no `tenants.locale` column
 
-**Frontend (TenantConfig Type):**
+**Resolved language precedence (app):** `user_profiles.language` → `tenants.language_default` → `'he'`
+
+**Frontend (`TenantConfig`):**
 ```typescript
 type TenantConfig = {
   id: string;
   name: string;
   subdomain: string;
-  language_default: 'he' | 'en';  // Source of truth
-  currency: string;               // For Intl formatting
-  vat_rate: number;               // Business logic
-  white_label?: TenantWhiteLabel;  // Branding
-  locale: string;                 // Derived from language (e.g., 'he-IL', 'en-US')
+  language_default: 'he' | 'en';
+  country: 'IL' | 'US';
+  currency: string;
+  vat_rate: number;
+  white_label?: TenantWhiteLabel;
+  locale: string; // Derived via getLocale(language_default, country), e.g. 'he-IL'
+  // No dir property — use resolveLanguage() + languageToDir() for <html> only
 };
 ```
 
-**useLanguage() Hook:**
-- Watches tenant `language_default`
-- Computes direction from language: `language === 'he' ? 'rtl' : 'ltr'`
-- Call once in App root
-- Automatically sets `document.documentElement.lang` and `document.documentElement.dir`
+**`DocumentLanguageSync` (mounted inside `LanguageProvider`):**
+- Watches resolved language from profile + tenant
+- Sets `document.documentElement.lang` and `document.documentElement.dir`
 
 **CSS Cascade:** All children inherit from `<html>` via logical CSS properties (ms-, pe-, inset-inline-start)
 
@@ -424,19 +427,11 @@ ballet-school-system/
 │       ├── 2026-05-08-phase1a.md
 │       └── ...
 ├── supabase/
-│   ├── migrations/
-│   │   ├── 001_tenants_and_users.sql
-│   │   ├── 002_people_and_families.sql
-│   │   ├── 003_contact_preferences.sql
-│   │   ├── 004_terms_and_classes.sql
-│   │   ├── 005_class_requirements.sql
-│   │   ├── 006_enrolments.sql
-│   │   ├── 007_attendance.sql
-│   │   ├── 008_payments_and_finance.sql
-│   │   ├── 009_expenses.sql
-│   │   ├── 010_invoice_sequences.sql
-│   │   ├── 011_notification_log.sql
-│   │   └── 012_audit_log.sql
+│   ├── migrations/                    # Timestamped SQL; see Section 4.2.0 index
+│   │   ├── 20260519000100_tenants.sql
+│   │   ├── 20260519000200_people.sql
+│   │   ├── … (see 4.2.0)
+│   │   └── 20260519003500_finance_payments.sql
 │   ├── functions/
 │   │   ├── stripe-webhook/
 │   │   ├── create-payment-intent/
@@ -499,19 +494,20 @@ src/
 ### 3.3 RTL + i18n setup — do this on Day 1
 
 ```html
-<!-- index.html — direction set from tenant config after load -->
-<html lang="he" dir="rtl"></html>
+<!-- index.html — safe LTR default until LanguageProvider resolves language -->
+<html lang="en" dir="ltr"></html>
 ```
 
 ```typescript
-// src/main.tsx — apply tenant direction before render
-async function initApp() {
-  const tenant = await resolveTenant();
-  document.documentElement.dir = tenant?.dir ?? "rtl";
-  document.documentElement.lang = tenant?.locale?.split("-")[0] ?? "he";
-  // Then render React app
-}
+// DocumentLanguageSync (inside LanguageProvider) — sole owner of <html lang/dir>
+useEffect(() => {
+  document.documentElement.lang = language; // 'he' | 'en'
+  document.documentElement.dir = language === 'he' ? 'rtl' : 'ltr';
+}, [language]);
+// language = resolveLanguage(user?.language, tenant?.language_default) → default 'he'
 ```
+
+Do **not** read `dir` or `locale` from the database for the document root. Locale for `Intl` formatting comes from `getLocale(language, country)` in `useTenant()`.
 
 ```typescript
 // src/lib/format.ts — always use these, never inline Intl calls
@@ -580,148 +576,142 @@ This design enables:
 
 ---
 
-### 4.2 Database Migrations (001–016)
+### 4.2 Database migrations
 
-⏱️ **TIMING:** Migrations 001–016 assume all third-party credentials (Twilio, Resend, Stripe) will be configured AFTER initial schema deployment. See [Third-Party Services Setup](docs/deployment/THIRD_PARTY_SERVICES.md) for when/how to configure.
+⏱️ **TIMING:** Third-party credentials (Twilio, Resend, Stripe) are configured **after** schema deploy via admin UI or manual runbook. See [Third-Party Services Setup](docs/deployment/THIRD_PARTY_SERVICES.md) and [docs/MANUAL_OPERATIONS_RUNBOOK.md](docs/MANUAL_OPERATIONS_RUNBOOK.md).
 
-#### Migration 001 — Tenants and user profiles
+**Authoritative SQL:** `supabase/migrations/*.sql` — apply in filename order. Regenerate types after apply: `SUPABASE_PROJECT_REF=<ref> pnpm db:types`.
 
-> **Critical ordering:** `user_profiles` is defined first in this migration because later tables
-> (families, family_members, people) reference it via `user_profile_id`. This prevents foreign key
-> violations and ensures clean schema ordering.
+#### 4.2.0 Implemented schema index (V1 slice)
+
+| File | Creates / updates | Depends on |
+|------|-------------------|------------|
+| `20260519000100_tenants.sql` | `tenants`, `user_profiles`, RLS helpers | — |
+| `20260519000200_people.sql` | `families`, `family_members`, `people` | 001 |
+| `20260519000300_contact_prefs.sql` | `contact_preferences` | 002 |
+| `20260519000400_classes.sql` | `terms`, `levels`, `classes` | 001 |
+| `20260519000800_notification_log.sql` | `notification_log` | 001, 002 |
+| `20260519000900_audit_log.sql` | `audit_log` | 001 |
+| `20260519001000_tenant_notification_templates.sql` | `tenant_notification_templates` | 001 |
+| `20260519001100_expense_categories.sql` | `expense_categories` | 001 |
+| `20260519001300_otp_codes.sql` | `otp_codes` | — |
+| `20260519001400_tenant_email_customizations.sql` | `tenant_email_customizations` | 001 |
+| `20260519001500_verification_attempts.sql` | `verification_attempts` + RPC | 001 |
+| `20260519001800_class_sessions.sql` | `class_sessions` | 004 |
+| `20260519001900_waiver_templates.sql` | `waiver_templates` | 001 |
+| `20260519002000_requirement_templates.sql` | `requirement_templates` | 001 |
+| `20260519002200_requirement_overrides.sql` | `requirement_overrides` | 002, 020 |
+| `20260519002300_billing_accounts.sql` | `billing_accounts` | 001 |
+| `20260519002500_class_requirements.sql` | `class_requirements` | 004, 020 |
+| `20260519002600_enrolments.sql` | `enrolments` | 002, 004, 023 |
+| `20260519002700_waiting_list.sql` | `waiting_list` | 002, 004 |
+| `20260519002800_attendance.sql` | `attendance`, `makeup_credits` | 002, 004, 018 |
+| `20260519002900_rls_policies_after_enrolments.sql` | RLS on `class_sessions` + `billing_accounts` | 023, 026 |
+| `20260519003200_public_classes_view.sql` | `public_classes_by_subdomain` view | 004 |
+| `20260519003300_tenant_config_by_subdomain.sql` | `tenant_config_by_subdomain` view | 001 |
+| `20260519003400_auth_user_profiles_trigger.sql` | `handle_new_user` on `auth.users` | 001 |
+| `20260519003500_finance_payments.sql` | `payments`, `invoice_sequences`, Stripe RPCs | 001, 026 |
+
+Sections **4.2.1–4.2.8** below document the **implemented V1 shape**. Older blueprint tables (`discount_rules`, full `expenses`, platform `plan` on tenants, etc.) remain in the long-term design notes where marked **Deferred**.
+
+#### 4.2.1 Migration 001 — Tenants and user profiles
+
+> **Ordering:** `tenants` is created first, then `user_profiles` references `tenants(id)`.
+> Later tables reference `user_profiles` via `user_profile_id`.
+> **`dir` and `locale` are not columns** — direction and locale strings are computed in the app.
 
 ```sql
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
-
-CREATE TABLE user_profiles (
-  id            UUID        PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  tenant_id     UUID        NOT NULL,  -- Will be set by trigger after tenants table exists
-  role          TEXT        NOT NULL DEFAULT 'student'
-                CHECK (role IN ('super_admin','tenant_admin','teacher','parent','student')),
-  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
-);
 
 CREATE TABLE tenants (
   id                        UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   name                      TEXT        NOT NULL,
   subdomain                 TEXT        NOT NULL UNIQUE,
-  custom_domain             TEXT        UNIQUE,           -- portal.northsideballet.com
-  logo_url                  TEXT,
-  primary_color             TEXT        NOT NULL DEFAULT '#7C3AED',
-  accent_color              TEXT        NOT NULL DEFAULT '#A78BFA',
-  dir                       TEXT        NOT NULL DEFAULT 'rtl'
-                            CHECK (dir IN ('rtl','ltr')),
-  locale                    TEXT        NOT NULL DEFAULT 'he-IL',
-  timezone                  TEXT        NOT NULL DEFAULT 'Asia/Jerusalem',
+  language_default          TEXT        NOT NULL DEFAULT 'he' CHECK (language_default IN ('he', 'en')),
+  country                   TEXT        NOT NULL DEFAULT 'IL' CHECK (country IN ('IL', 'US')),
+  primary_color             TEXT        NOT NULL DEFAULT '#76335a',
+  accent_color              TEXT        NOT NULL DEFAULT '#e99ac4',
   currency                  TEXT        NOT NULL DEFAULT 'ILS',
-
-  -- Vocabulary customisation (ballet='student', community center='member')
-  entity_label_singular     TEXT        NOT NULL DEFAULT 'תלמיד',
-  entity_label_plural       TEXT        NOT NULL DEFAULT 'תלמידים',
-
-  -- External service keys (encrypted via Supabase Vault)
-  -- These belong to each school — pass-through model
-  stripe_publishable_key    TEXT,
-  stripe_secret_key_enc     TEXT,        -- encrypted
-  stripe_webhook_secret_enc TEXT,        -- encrypted
-  stripe_account_id         TEXT,        -- Stripe Connect for teacher payouts
-  resend_api_key_enc        TEXT,        -- encrypted
-  resend_from_email         TEXT,        -- "Northside Ballet <hello@northside.com>"
-  twilio_account_sid_enc    TEXT,        -- encrypted
-  twilio_auth_token_enc     TEXT,        -- encrypted
-  twilio_whatsapp_number    TEXT,        -- e.g. whatsapp:+972501234567
-  twilio_voice_number       TEXT,
-
-  -- Platform plan
-  plan                      TEXT        NOT NULL DEFAULT 'trial'
-                            CHECK (plan IN ('trial','basic','pro','enterprise')),
-  plan_student_limit        INT,         -- NULL = unlimited
-
-  -- Legal
-  vat_registered            BOOLEAN     NOT NULL DEFAULT false,
-  vat_number                TEXT,        -- מספר עוסק מורשה
   vat_rate                  NUMERIC(5,4) DEFAULT 0.17,
-
+  phone_region              TEXT        NOT NULL DEFAULT 'IL',
+  phone_region_updated_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  -- Stripe (Standard account per school; Connect deferred)
+  stripe_publishable_key    TEXT,
+  stripe_secret_key_enc     BYTEA,       -- pgp_sym_encrypt; key from app.encryption_key
+  stripe_webhook_secret_enc BYTEA,
+  stripe_account_id         TEXT,        -- nullable; future Connect
+  stripe_credentials_updated_at TIMESTAMPTZ,
   created_at                TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at                TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Add tenant_id foreign key to user_profiles now that tenants table exists
-ALTER TABLE user_profiles
-  ADD CONSTRAINT user_profiles_tenant_id_fk
-  FOREIGN KEY (tenant_id) REFERENCES tenants(id);
+CREATE TABLE user_profiles (
+  id            UUID        PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  tenant_id     UUID        NOT NULL REFERENCES tenants(id),
+  role          TEXT[]      NOT NULL DEFAULT ARRAY['parent'],
+  person_id     UUID,
+  email         TEXT,
+  language      TEXT CHECK (language IN ('he', 'en')),  -- NULL → use tenant.language_default
+  country       TEXT CHECK (country IN ('IL', 'US')),     -- NULL → use tenant.country
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 ```
 
-#### Migration 002 — People and families
+**Deferred on `tenants` (V2/V3 blueprint, not in V1 migration):** `custom_domain`, `logo_url`, `entity_label_*`, `plan`, Resend/Twilio columns, `vat_registered` / `vat_number`.
 
-> **Design note:** `students` is renamed to `people` to support adult students, art pupils,
-> piano students, and community center members — all in the same table with the same model.
-> `is_minor` drives which rules apply. `family_id` is nullable for solo adult enrolees.
+#### 4.2.2 Migration 002 — People and families
+
+> **Design note:** One `people` row per student/adult. `family_id` nullable for solo adults.
+> **`is_minor` is not a DB column** — computed in app/Zod from `date_of_birth` via `is_minor()` SQL helper or client logic.
 
 ```sql
 CREATE TABLE families (
-  id                    UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id             UUID        NOT NULL REFERENCES tenants(id),
-  primary_contact_name  TEXT        NOT NULL,
-  primary_email         TEXT        NOT NULL,
-  stripe_customer_id    TEXT,
-  notes                 TEXT,
-  anonymised_at         TIMESTAMPTZ,          -- set on GDPR deletion request
+  id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id             UUID NOT NULL REFERENCES tenants(id),
+  primary_contact_id    UUID,
   created_at            TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE family_members (
   id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id        UUID NOT NULL REFERENCES tenants(id),
-  family_id        UUID NOT NULL REFERENCES families(id) ON DELETE CASCADE,
+  family_id        UUID NOT NULL REFERENCES families(id),
   user_profile_id  UUID REFERENCES user_profiles(id),
-  email            TEXT NOT NULL,
-  full_name        TEXT NOT NULL,
-  relationship     TEXT NOT NULL DEFAULT 'parent'
-                   CHECK (relationship IN ('parent','guardian','emergency_contact','self')),
-  -- 'self' = adult student who is their own family contact
-  can_collect      BOOLEAN NOT NULL DEFAULT true,
+  name             TEXT NOT NULL,
+  email            TEXT,
+  phone            TEXT,
+  role             TEXT NOT NULL DEFAULT 'guardian',
   created_at       TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Unified person table: children, teens, adults, community members, art pupils
 CREATE TABLE people (
-  id                       UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id                UUID        NOT NULL REFERENCES tenants(id),
-  family_id                UUID        REFERENCES families(id),  -- nullable for adult solo enrolees
-  user_profile_id          UUID        REFERENCES user_profiles(id),  -- set for adult students with portal access
-  full_name                TEXT        NOT NULL,
-  date_of_birth            DATE,       -- nullable for adults who choose not to share
-  -- FIXED (Issue #13): is_minor is now computed from date_of_birth (source of truth)
-  -- Computed: true if date_of_birth exists and age < 18, false otherwise
-  is_minor                 BOOLEAN     GENERATED ALWAYS AS (
-                             CASE WHEN date_of_birth IS NULL THEN false
-                                  WHEN EXTRACT(YEAR FROM age(now(), date_of_birth)) < 18 THEN true
-                                  ELSE false
-                             END
-                           ) STORED,
-  gender                   TEXT,
-  medical_notes            TEXT,       -- sensitive: appears in audit log on every access
+  id                       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id                UUID NOT NULL REFERENCES tenants(id),
+  user_profile_id          UUID REFERENCES user_profiles(id),
+  family_id                UUID REFERENCES families(id),
+  name                     TEXT NOT NULL,
+  email                    TEXT,
+  date_of_birth            DATE,
+  medical_notes            TEXT,
   allergies                TEXT,
   emergency_contact_name   TEXT,
   emergency_contact_phone  TEXT,
-  photo_consent            BOOLEAN     NOT NULL DEFAULT false,
-  media_consent            BOOLEAN     NOT NULL DEFAULT false,
-  status                   TEXT        NOT NULL DEFAULT 'active'
-                           CHECK (status IN ('active','inactive','withdrawn')),
-  -- Legal
+  photo_consent            BOOLEAN NOT NULL DEFAULT false,
+  media_consent            BOOLEAN NOT NULL DEFAULT false,
+  status                   TEXT NOT NULL DEFAULT 'active'
+                           CHECK (status IN ('active', 'inactive', 'withdrawn')),
   waiver_accepted_at       TIMESTAMPTZ,
   waiver_version           TEXT,
-  waiver_text_snapshot     TEXT,       -- full waiver text at time of acceptance
-  anonymised_at            TIMESTAMPTZ,
   created_at               TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at               TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 ```
 
-#### Migration 003 — Contact preferences
+#### 4.2.3 Migration 003 — Contact preferences
 
+> **File:** `20260519000300_contact_prefs.sql`
+>
 > **Design note:** Communication targets are people and family_members, not families.
 > Every human with a phone has their own preferences. A 16-year-old wants to know
 > their class is cancelled — they don't need their parent involved.
@@ -769,82 +759,58 @@ CREATE TABLE contact_preferences (
 );
 ```
 
-#### Migration 004 — Terms and classes
+#### 4.2.4 Migration 004 — Terms, levels, and classes
+
+> **File:** `20260519000400_classes.sql`. **`class_sessions`** is in `20260519001800_class_sessions.sql` (separate migration).
 
 ```sql
 CREATE TABLE terms (
-  id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id   UUID        NOT NULL REFERENCES tenants(id),
-  name        TEXT        NOT NULL,
-  start_date  DATE        NOT NULL,
-  end_date    DATE        NOT NULL,
-  status      TEXT        NOT NULL DEFAULT 'upcoming' CHECK (status IN ('upcoming', 'active', 'completed', 'archived')),
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id   UUID NOT NULL REFERENCES tenants(id),
+  name        TEXT NOT NULL,
+  start_date  DATE NOT NULL,
+  end_date    DATE NOT NULL,
+  status      TEXT NOT NULL DEFAULT 'upcoming'
+              CHECK (status IN ('upcoming', 'active', 'completed', 'archived')),
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE UNIQUE INDEX one_active_term_per_tenant
-  ON terms (tenant_id) WHERE (status = 'active');
-
 CREATE TABLE levels (
-  id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id   UUID        NOT NULL REFERENCES tenants(id),
-  name        TEXT        NOT NULL,
-  sort_order  INT         NOT NULL DEFAULT 0,
-  description TEXT,
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id   UUID NOT NULL REFERENCES tenants(id),
+  name        TEXT NOT NULL,
+  sort_order  INT NOT NULL DEFAULT 0,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE classes (
-  id                    UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id             UUID        NOT NULL REFERENCES tenants(id),
-  term_id               UUID        NOT NULL REFERENCES terms(id),
-  level_id              UUID        REFERENCES levels(id),   -- nullable: not all classes have levels
-  teacher_id            UUID        REFERENCES user_profiles(id),
-  name                  TEXT        NOT NULL,
-
-  -- Scheduling
-  day_of_week           INT         CHECK (day_of_week BETWEEN 0 AND 6),  -- NULL for one-off
-  start_time            TIME        NOT NULL,
-  end_time              TIME        NOT NULL,
-  studio_room           TEXT,
-
-  -- Class type
-  class_type            TEXT        NOT NULL DEFAULT 'recurring'
-                        CHECK (class_type IN ('recurring','one_off','workshop','event')),
-  is_public             BOOLEAN     NOT NULL DEFAULT true,
-  registration_required BOOLEAN     NOT NULL DEFAULT true,
-  drop_in_allowed       BOOLEAN     NOT NULL DEFAULT false,
-  drop_in_price_minor   INT,
-
-  -- Capacity and pricing
-  max_capacity          INT         NOT NULL DEFAULT 15,
-  price_minor           INT         NOT NULL DEFAULT 0,
-  currency              TEXT        NOT NULL DEFAULT 'ILS',
-
-  -- VAT (inherited from tenant unless overridden)
-  vat_rate              NUMERIC(5,4),   -- NULL = use tenant default
-
-  status                TEXT        NOT NULL DEFAULT 'active'
-                        CHECK (status IN ('active','cancelled','full')),
-  created_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at            TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-CREATE TABLE class_sessions (
-  id                    UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-  class_id              UUID        NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
-  tenant_id             UUID        NOT NULL REFERENCES tenants(id),
-  session_date          DATE        NOT NULL,
-  start_time            TIME,       -- can override class start_time (makeup sessions etc.)
-  status                TEXT        NOT NULL DEFAULT 'scheduled'
-                        CHECK (status IN ('scheduled','cancelled','completed')),
-  cancellation_reason   TEXT,
-  substitute_teacher_id UUID        REFERENCES user_profiles(id),
-  created_at            TIMESTAMPTZ NOT NULL DEFAULT now()
+  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id         UUID NOT NULL REFERENCES tenants(id),
+  term_id           UUID NOT NULL REFERENCES terms(id),
+  level_id          UUID REFERENCES levels(id),
+  name              TEXT NOT NULL,
+  day_of_week       INT CHECK (day_of_week BETWEEN 0 AND 6),
+  start_time        TIME NOT NULL,
+  end_time          TIME NOT NULL,
+  max_capacity      INT NOT NULL DEFAULT 15,
+  price_minor       INT NOT NULL DEFAULT 0,
+  currency          TEXT NOT NULL DEFAULT 'ILS',
+  vat_rate          NUMERIC(5,4),
+  is_public         BOOLEAN NOT NULL DEFAULT true,
+  billing_frequency VARCHAR(50) NOT NULL DEFAULT 'monthly',
+  status            TEXT NOT NULL DEFAULT 'active'
+                    CHECK (status IN ('active', 'cancelled', 'full')),
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 ```
 
-#### Migration 005 — Class requirements (replaces age columns)
+#### 4.2.5 Class requirements (implemented — not inline enum on `classes`)
+
+> **Files:** `20260519002000_requirement_templates.sql`, `20260519002500_class_requirements.sql`, `20260519002200_requirement_overrides.sql`.
+> Replaces the older single-table `class_requirements` with `requirement_type` CHECK from the blueprint below.
+
+#### Migration 005 — Class requirements (blueprint reference)
 
 > **Design note:** Age is just one possible constraint. This table supports any requirement type
 > with custom enforcement logic per type. Auto-enforceable requirements block at enrolment.
@@ -978,98 +944,70 @@ function evaluateRequirement(req: ClassRequirement, person: Person): boolean {
 }
 ```
 
-#### Migration 006 — Enrolments
+#### 4.2.6 Migration 006 — Enrolments and waiting list
+
+> **Files:** `20260519002600_enrolments.sql`, `20260519002700_waiting_list.sql`.
+> **`waiting_list` is a separate table** — do not store `waiting_list` as an `enrolments.status` value.
 
 ```sql
 CREATE TABLE enrolments (
-  id                    UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id             UUID        NOT NULL REFERENCES tenants(id),
-  person_id             UUID        NOT NULL REFERENCES people(id),
-  class_id              UUID        NOT NULL REFERENCES classes(id),
-  term_id               UUID        NOT NULL REFERENCES terms(id),
-  status                TEXT        NOT NULL DEFAULT 'pending_payment'
-                        CHECK (status IN (
-                          'pending_payment',
-                          'active',
-                          'trial',
-                          'waiting_list',
-                          'admin_review',    -- flagged by soft requirement
-                          'cancelled',
-                          'withdrawn'
-                        )),
-  -- Placement
-  prior_experience      TEXT,         -- free text: "3 years ballet in London"
-  placement_notes       TEXT,         -- teacher note after first class
-  placement_confirmed   BOOLEAN       NOT NULL DEFAULT false,
-  trial_class_date      DATE,
-
-  -- Payment
-  stripe_subscription_id TEXT,
-  stripe_payment_intent_id TEXT,
-
-  -- Legal
-  terms_accepted_at     TIMESTAMPTZ,
-  terms_version         TEXT,
-
-  -- Lifecycle
-  enrolled_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
-  cancelled_at          TIMESTAMPTZ,
-  cancellation_reason   TEXT,
-  anonymised_at         TIMESTAMPTZ,
+  id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id             UUID NOT NULL REFERENCES tenants(id),
+  person_id             UUID NOT NULL REFERENCES people(id),
+  class_id              UUID NOT NULL REFERENCES classes(id),
+  term_id               UUID NOT NULL REFERENCES terms(id),
+  billing_account_id    UUID REFERENCES billing_accounts(id),
+  status                TEXT NOT NULL DEFAULT 'pending_payment'
+    CHECK (status IN ('pending_payment', 'active', 'admin_review', 'pending_offer', 'cancelled', 'withdrawn')),
+  payment_received_at   TIMESTAMPTZ,
   created_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
-
-  -- Allow re-enrollment after cancellation/withdrawal
-  -- Constraint only applies to active enrolments
-  UNIQUE (person_id, class_id, term_id) WHERE status NOT IN ('cancelled','withdrawn')
+  updated_at            TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+CREATE UNIQUE INDEX idx_enrolments_active_unique
+  ON enrolments(person_id, class_id, term_id) WHERE status NOT IN ('cancelled', 'withdrawn');
 
 CREATE TABLE waiting_list (
-  id               UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id        UUID        NOT NULL REFERENCES tenants(id),
-  class_id         UUID        NOT NULL REFERENCES classes(id),
-  person_id        UUID        NOT NULL REFERENCES people(id),
-  -- FIXED (Issue #15): position auto-derived from created_at (no manual management)
-  -- To get position: ROW_NUMBER() OVER (PARTITION BY class_id ORDER BY added_at ASC)
-  added_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
-  notified_at      TIMESTAMPTZ,
-  offer_expires_at TIMESTAMPTZ,
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id   UUID NOT NULL REFERENCES tenants(id),
+  class_id    UUID NOT NULL REFERENCES classes(id),
+  person_id   UUID NOT NULL REFERENCES people(id),
+  added_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (class_id, person_id)
 );
-
-CREATE INDEX idx_waiting_list_position ON waiting_list(class_id, added_at);
+-- Position: ROW_NUMBER() OVER (PARTITION BY class_id ORDER BY added_at)
 ```
 
-#### Migration 007 — Attendance
+#### 4.2.7 Migration 007 — Attendance
+
+> **File:** `20260519002800_attendance.sql` — uses `attended BOOLEAN`, not a `status` enum.
 
 ```sql
 CREATE TABLE attendance (
-  id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id   UUID        NOT NULL REFERENCES tenants(id),
-  session_id  UUID        NOT NULL REFERENCES class_sessions(id),
-  person_id   UUID        NOT NULL REFERENCES people(id),
-  status      TEXT        NOT NULL DEFAULT 'present'
-              CHECK (status IN ('present','absent','absent_excused','makeup')),
-  marked_by   UUID        REFERENCES user_profiles(id),
-  marked_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
-  notes       TEXT,
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id   UUID NOT NULL REFERENCES tenants(id),
+  session_id  UUID NOT NULL REFERENCES class_sessions(id),
+  person_id   UUID NOT NULL REFERENCES people(id),
+  attended    BOOLEAN NOT NULL DEFAULT false,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (session_id, person_id)
 );
 
 CREATE TABLE makeup_credits (
-  id                UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id         UUID        NOT NULL REFERENCES tenants(id),
-  person_id         UUID        NOT NULL REFERENCES people(id),
-  source_session_id UUID        REFERENCES class_sessions(id),
-  used_session_id   UUID        REFERENCES class_sessions(id),
-  expires_at        DATE,
-  status            TEXT        NOT NULL DEFAULT 'available'
-                    CHECK (status IN ('available','used','expired')),
-  created_at        TIMESTAMPTZ NOT NULL DEFAULT now()
+  id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id          UUID NOT NULL REFERENCES tenants(id),
+  person_id          UUID NOT NULL REFERENCES people(id),
+  class_id           UUID NOT NULL REFERENCES classes(id),
+  credit_type        TEXT NOT NULL DEFAULT 'makeup',
+  sessions_remaining INT NOT NULL DEFAULT 1,
+  expires_at         TIMESTAMPTZ,
+  created_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at         TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 ```
 
-#### Migration 008 — Payments and finance
+#### 4.2.8 Migration 008 — Payments and finance (V1 slice)
 
 ```sql
 CREATE TABLE payments (
@@ -1088,10 +1026,11 @@ CREATE TABLE payments (
   total_amount_minor         INT         NOT NULL,  -- pretax + vat
   currency                   TEXT        NOT NULL DEFAULT 'ILS',
 
-  -- Invoice (Israeli legal requirement)
-  invoice_number             TEXT        UNIQUE,
+  -- Invoice (Israeli legal requirement) — unique per tenant, not globally
+  invoice_number             TEXT,
   invoice_issued_at          TIMESTAMPTZ,
   invoice_url                TEXT,        -- Supabase Storage PDF or Green Invoice URL
+  UNIQUE (tenant_id, invoice_number),
 
   status                     TEXT        NOT NULL DEFAULT 'pending'
                              CHECK (status IN ('pending','succeeded','failed','refunded','disputed')),
@@ -1111,6 +1050,12 @@ CREATE TABLE payments (
 
 ✅ **Cross-reference:** Payment state machine logic and webhook handling is detailed in [Phase 1E — Payments](#phase-1e--payments-days-2734).
 
+**V1 finance migration file:** `20260519003500_finance_payments.sql` also defines `invoice_sequences`, `next_invoice_number()`, `get_tenant_stripe_credentials()`, `save_tenant_stripe_credentials()`. Stripe secrets use `BYTEA` + `pgcrypto` and `current_setting('app.encryption_key')` (set via manual runbook). Webhook/Edge inserts use `service_role` (bypasses RLS).
+
+**Deferred past first finance slice** (see [§6.x](#6x--deferred-backlog-postv1-payment-slice)):
+
+```sql
+-- NOT in V1 migrations — blueprint only:
 CREATE TABLE discount_rules (
   id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id       UUID        NOT NULL REFERENCES tenants(id),
@@ -1155,6 +1100,8 @@ CREATE TABLE teacher_pay_records (
 
 #### Migration 009 — Expenses
 
+> **V1 repo status:** `expense_categories` exists (`20260519001100`). Full `expenses` table below is **not** migrated yet — deferred until P&L UI ships.
+
 > **Required in V1.** Without this table you have no P&L and cannot calculate profit.
 > Your accountant needs both sides from day one.
 >
@@ -1191,6 +1138,8 @@ CREATE TABLE expenses (
 ```
 
 #### Migration 010 — Invoice sequences
+
+> **V1 implemented in:** `20260519003500_finance_payments.sql` (with `payments` table).
 
 > **Israeli legal requirement.** Invoice numbers must be sequential and gapless.
 > This atomic function prevents gaps under concurrent payments.
@@ -1819,7 +1768,7 @@ All 15 identified issues from SPEC_additions.md have been resolved:
 
 | #   | Issue                                                | Fix location                                                                                             |
 | --- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| 1   | user_profiles defined after tables that reference it | Migration 001: user_profiles now created first, before families/family_members                           |
+| 1   | user_profiles FK ordering                            | Migration 001: `tenants` created first, then `user_profiles` references `tenants(id)`                    |
 | 2   | Invoice sequence year-boundary bug                   | Migration 010: Fixed next_invoice_number() with explicit year variable & initialization                  |
 | 3   | No RLS bypass for super_admin                        | Section 4 helper functions: Added is_super_admin(), all policies now include super_admin bypass          |
 | 4a  | family_members missing tenant_id                     | Migration 002: Added tenant_id column to family_members with NOT NULL constraint                         |
@@ -1842,7 +1791,7 @@ All 15 identified issues from SPEC_additions.md have been resolved:
 | --- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
 | 11  | ai_log table referenced but never defined        | Migration 016: Defined ai_log table with full audit trail for AI interactions (tokens, flags, PII detection)         |
 | 12  | VAT rounding strategy undefined                  | Section 2.5: Documented banker's rounding strategy (ISO 80000-1, Israeli accounting norms)                           |
-| 13  | is_minor stored boolean never revalidated        | Migration 002: Converted is_minor to GENERATED ALWAYS AS computed column from date_of_birth                          |
+| 13  | is_minor stored boolean never revalidated        | V1: `is_minor` computed in app/Zod from `date_of_birth`; SQL helper `is_minor(date)` in migration 002               |
 | 14  | decryptVault() doesn't match Supabase Vault API  | Section 5: Updated getTenantConfig() to use SQL function with pgp_sym_decrypt() via RPC, not raw decryptVault()      |
 | 15  | waiting_list.position requires manual management | Migration 007: Removed position column; use ROW_NUMBER() OVER (PARTITION BY class_id ORDER BY added_at) for position |
 
@@ -1903,38 +1852,14 @@ export async function getTenantConfig(
     twilioWhatsAppNumber: tenant.twilio_whatsapp_number,
     vatRate: tenant.vat_rate,
     currency: tenant.currency,
-    locale: tenant.locale,
+    locale: getLocale(tenant.language_default, tenant.country),
   };
 }
 
-// Database function (in migration 001 after tenants table):
-// CREATE OR REPLACE FUNCTION get_decrypted_tenant_config(p_tenant_id UUID)
-// RETURNS TABLE (
-//   stripe_secret_key TEXT,
-//   stripe_webhook_secret TEXT,
-//   resend_api_key TEXT,
-//   resend_from_email TEXT,
-//   twilio_account_sid TEXT,
-//   twilio_auth_token TEXT,
-//   twilio_whatsapp_number TEXT,
-//   vat_rate NUMERIC,
-//   currency TEXT,
-//   locale TEXT
-// ) LANGUAGE SQL SECURITY DEFINER AS $$
-//   SELECT
-//     pgp_sym_decrypt(stripe_secret_key_enc, current_setting('app.encryption_key'))::TEXT,
-//     pgp_sym_decrypt(stripe_webhook_secret_enc, current_setting('app.encryption_key'))::TEXT,
-//     pgp_sym_decrypt(resend_api_key_enc, current_setting('app.encryption_key'))::TEXT,
-//     resend_from_email,
-//     pgp_sym_decrypt(twilio_account_sid_enc, current_setting('app.encryption_key'))::TEXT,
-//     pgp_sym_decrypt(twilio_auth_token_enc, current_setting('app.encryption_key'))::TEXT,
-//     twilio_whatsapp_number,
-//     vat_rate,
-//     currency,
-//     locale
-//   FROM tenants
-//   WHERE id = p_tenant_id;
-// $$;
+// V1 implemented: get_tenant_stripe_credentials(p_tenant_id) — service_role only
+// Returns decrypted stripe_secret_key, stripe_webhook_secret (BYTEA columns on tenants).
+// Admin UI writes via save_tenant_stripe_credentials() — tenant_admin + app.encryption_key.
+// Resend/Twilio per-tenant decryption deferred (platform env in send-notification for now).
 ```
 
 **Key security details:**
@@ -1989,7 +1914,7 @@ pnpm dlx shadcn@latest init   # New York style, Zinc, CSS variables: yes
 
 **Day 1 checklist before any feature work:**
 
-- [ ] `<html lang="he" dir="rtl">` set in `index.html`
+- [ ] `index.html` uses safe default `lang="en" dir="ltr"`; `DocumentLanguageSync` sets resolved `lang`/`dir` after load
 - [ ] `tailwindcss-rtl` plugin added to `tailwind.config.ts`
 - [ ] `format.ts` utilities created (currency, date, phone)
 - [ ] i18next configured with `he.json` as primary, `en.json` as secondary
@@ -2254,11 +2179,13 @@ export async function sendWhatsApp(
 
 ### Phase 1E — Payments (Days 27–34)
 
+> **V1 locked decisions (2026):** Each school uses its own **Standard Stripe account** (pass-through). **No Stripe Connect in V1.** **Checkout requires an authenticated Supabase session** — guest checkout is deferred. First DB slice: `payments`, `invoice_sequences`, `next_invoice_number()`, tenant Stripe columns only — **`discount_rules` and `teacher_pay_records` deferred.** Tenant keys entered via **admin settings UI**; secrets encrypted at rest (Vault preferred). Webhook resolves tenant via **`metadata.tenant_id`** on PaymentIntent.
+
 All Stripe API calls creating or modifying payment objects happen in Edge Functions. Frontend receives `clientSecret` only.
 
 Key Edge Functions:
 
-- `create-payment-intent`: loads class price, applies discount server-side, calculates VAT, creates PaymentIntent, generates invoice number atomically
+- `create-payment-intent`: validates user JWT; loads class price server-side; calculates VAT; creates PaymentIntent with `metadata.tenant_id`; returns `clientSecret` (invoice number assigned on webhook success, not at intent creation)
 - `stripe-webhook`: idempotent handler for `payment_intent.succeeded`, `payment_intent.payment_failed`, `invoice.payment_failed`, `customer.subscription.deleted`
 
 #### Payment state machine (Issue #8 clarification: subscription vs payment intent)
@@ -2321,6 +2248,18 @@ Screens:
 - **Notifications:** compose email blast; select recipients by class/level/all; WhatsApp blast for urgent items
 - **Settings:** school profile, levels, terms, class requirements, discount rules, external API keys
 
+### 6.x — Deferred backlog (post–V1 payment slice)
+
+Items intentionally **not** in the first finance migration or V1 checkout scope:
+
+1. **Guest checkout** — `checkout_session` row + opaque token + rate limits (V1 requires auth session to pay).
+2. **Stripe Connect** — `stripe_account_id` column may exist nullable; Connect onboarding is a later phase.
+3. **`discount_rules` at checkout** — table defined in full schema; not required for first payment slice.
+4. **Per-tenant Twilio/Resend** — migrate `send-notification` off platform env keys; fix client-supplied `tenantId` trust model.
+5. **Multi-region** — `tenants.region` and routing (V3).
+
+Track live status in [docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md).
+
 ### Phase 1G — Parent and student portals (Days 43–50)
 
 **Parent portal (magic link):** Dashboard showing enrolled children + upcoming classes; payment history with invoice download; account settings; new enrolment.
@@ -2342,7 +2281,7 @@ Screens:
 
 ```
 DATABASE
-[ ] All 16 migrations applied and verified in Supabase dashboard
+[ ] All migrations applied and verified in Supabase dashboard (repo uses numbered files under supabase/migrations/ — count grows; see docs/IMPLEMENTATION_STATUS.md)
 [ ] Types regenerated: supabase gen types typescript --linked
 [ ] RLS verified: parent sees only own family; teacher sees only own tenant
 [ ] Invoice sequences table seeded for your tenant
@@ -2387,8 +2326,9 @@ supabase secrets set \
   TWILIO_AUTH_TOKEN=... \
   ANTHROPIC_API_KEY=sk-ant-...
 
-# Note: per-tenant keys are stored encrypted in the tenants table via Supabase Vault
-# The above are platform-level fallback keys for your own school in early stage
+# Production: per-tenant Stripe keys are stored encrypted in tenants table (Vault preferred).
+# Do NOT use platform-wide live STRIPE_SECRET_KEY to charge schools' customers.
+# RESEND/TWILIO below may remain platform-level until send-notification per-tenant migration (Section 6.x).
 ```
 
 ### Rollback plan
@@ -2459,7 +2399,7 @@ Teacher writes end-of-term note per student. Admin reviews. System sends PDF to 
 
 ### V3.2 — White-label theming
 
-Tenant config drives: logo, primary colour, accent colour, `dir` (rtl/ltr), `locale`, font choice (limited to 3 options). Applied as CSS custom properties at app init.
+Tenant config drives: logo, primary colour, accent colour, `language_default`, font choice (limited to 3 options). **Direction and locale strings are derived in the app** from language + country, not stored on `tenants`. Applied as CSS custom properties at app init.
 
 ### V3.3 — Subscription billing for schools
 

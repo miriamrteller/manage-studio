@@ -20,6 +20,12 @@ i18n
     interpolation: {
       escapeValue: false,
     },
+    saveMissing: import.meta.env.DEV,
+    missingKeyHandler: import.meta.env.DEV
+      ? (_lngs, _ns, key) => {
+          console.warn(`[i18n] missing key: ${key}`);
+        }
+      : undefined,
   })
 
 export default i18n

@@ -197,6 +197,9 @@
       "title": "שיעורים",
       "description": "צפה בשיעורים זמינים",
       "no_classes": "אין שיעורים זמינים",
+      "no_classes_title": "אין שיעורים מתוכננים",
+      "no_classes_message": "אין שיעורים קרובים כרגע. חזרו לבדוק בהמשך או צרו קשר למידע נוסף.",
+      "contact_support": "צור קשר עם התמיכה",
       "enrol": "הירשם",
       "time": "שעה",
       "capacity": "קיבולת"
@@ -247,6 +250,7 @@
     "terms": "תקופות למידה"
   },
   "footer": {
+    "school_name_fallback": "בית הספר לבלט",
     "school_management": "ניהול בית הספר",
     "all_rights": "כל הזכויות שמורות"
   },
@@ -255,6 +259,37 @@
     "per_session": "לשיעור",
     "weekly": "שבועי",
     "annual": "שנתי"
+  },
+  "enrolment": {
+    "step": "שלב",
+    "step_person": "זיהוי משתתף",
+    "step_class": "בחירת שיעור",
+    "step_notification": "התראות",
+    "step_checkout": "תשלום",
+    "step_confirmation": "אישור",
+    "checkout_desc": "סקירה ותשלום",
+    "checkout_prepare_failed": "לא ניתן להכין הרשמה לתשלום",
+    "payment_confirm_pending": "התשלום התקבל. האישור עשוי להתעכב רגע.",
+    "payment_failed": "התשלום נכשל",
+    "payment_setup_failed": "לא ניתן להתחיל תשלום",
+    "pay_now": "שלם עכשיו",
+    "missing_class_or_term": "יש לבחור שיעור ותקופה לפני התשלום"
+  },
+  "settings": {
+    "stripe": {
+      "title": "Stripe",
+      "description": "לכל בית ספר חשבון Stripe משלו (Standard). הסודות מוצפנים ולא יוצגו שוב לאחר השמירה.",
+      "publishable_key": "מפתח ציבורי",
+      "secret_key": "מפתח סודי",
+      "webhook_secret": "סוד חתימת Webhook",
+      "leave_blank": "השאר ריק כדי לשמור על הקיים",
+      "secret_status": "מפתח סודי",
+      "webhook_status": "סוד Webhook",
+      "configured": "מוגדר",
+      "not_configured": "לא מוגדר",
+      "last_updated": "עודכן לאחרונה",
+      "saved": "הגדרות Stripe נשמרו"
+    }
   },
   "accessibility": {
     "form_error": "שגיאה בטופס",

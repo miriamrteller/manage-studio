@@ -37,12 +37,14 @@ BEGIN
     id,
     tenant_id,
     role,
+    email,
     created_at,
     updated_at
   ) VALUES (
     NEW.id,
     v_tenant_id,
-    ARRAY['parent']::TEXT[],  -- Default role per SPEC
+    ARRAY['parent']::TEXT[],
+    v_email,
     NOW(),
     NOW()
   );

@@ -197,6 +197,9 @@
       "title": "Classes",
       "description": "Browse available classes.",
       "no_classes": "No classes available.",
+      "no_classes_title": "No Classes Scheduled",
+      "no_classes_message": "There are currently no upcoming classes. Please check back soon or contact us for more information.",
+      "contact_support": "Contact Support",
       "enrol": "Enrol",
       "time": "Time",
       "capacity": "Capacity"
@@ -245,6 +248,7 @@
     "terms": "Learning Terms"
   },
   "footer": {
+    "school_name_fallback": "Ballet School",
     "school_management": "School Management",
     "all_rights": "All rights reserved"
   },
@@ -253,6 +257,37 @@
     "per_session": "Per Session",
     "weekly": "Weekly",
     "annual": "Annual"
+  },
+  "enrolment": {
+    "step": "Step",
+    "step_person": "Identify person",
+    "step_class": "Select class",
+    "step_notification": "Notifications",
+    "step_checkout": "Payment",
+    "step_confirmation": "Confirmation",
+    "checkout_desc": "Review and complete payment",
+    "checkout_prepare_failed": "Could not prepare enrolment for payment",
+    "payment_confirm_pending": "Payment received. Confirmation may take a moment.",
+    "payment_failed": "Payment failed",
+    "payment_setup_failed": "Could not start payment",
+    "pay_now": "Pay now",
+    "missing_class_or_term": "Select a class and term before payment"
+  },
+  "settings": {
+    "stripe": {
+      "title": "Stripe",
+      "description": "Each school uses its own Stripe account (Standard). Secrets are encrypted and never shown again after save.",
+      "publishable_key": "Publishable key",
+      "secret_key": "Secret key",
+      "webhook_secret": "Webhook signing secret",
+      "leave_blank": "Leave blank to keep existing",
+      "secret_status": "Secret key",
+      "webhook_status": "Webhook secret",
+      "configured": "Configured",
+      "not_configured": "Not configured",
+      "last_updated": "Last updated",
+      "saved": "Stripe settings saved"
+    }
   },
   "accessibility": {
     "form_error": "Form error",

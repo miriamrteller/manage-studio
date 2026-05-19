@@ -63,8 +63,8 @@ jobs:
     timeout-minutes: 20
     # Only run if UI files changed (on PR or push)
     if: ${{ needs.detect-changes.outputs.ui-changed == 'true' }}
-    # Blocker on main (production), warning only on develop (staging)
-    continue-on-error: ${{ github.ref != 'refs/heads/main' }}
+    # Blocker on main and develop when UI paths change
+    continue-on-error: false
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v2
