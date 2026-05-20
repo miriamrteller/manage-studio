@@ -549,30 +549,59 @@ export function formatPhone(phone: string): string {
 
 ## 4. Database Schema
 
-🔒 **SECURITY — Data Breach Risk:**
+🔒 **SECURITY — Multi-Tenant Isolation:**
 Every school-specific table MUST have `tenant_id UUID NOT NULL REFERENCES tenants(id)`.
-Every RLS policy MUST enforce `tenant_id = get_my_tenant_id()`.
-A table without both is a data breach waiting to happen. No exceptions.
+
+Default RLS for all non-super-admin users: `tenant_id = get_my_tenant_id()` plus role checks.
+
+Three documented exceptions — all others are forbidden:
+1. **`is_super_admin()` platform bypass** — platform owner only; see §4.1.
+2. **Subdomain-scoped public reads** — via `SECURITY DEFINER` RPC only, never unfiltered views or `USING (true)`; see §4.1.1.
+3. **`service_role` writes** — webhooks, OTP, payment inserts via Edge Functions; no user-facing INSERT policies.
+
+🚫 **Forbidden:** `USING (true)` on any tenant-scoped table. Unfiltered views granted to `anon`. These are data breaches, not conveniences.
 
 ---
 
 ### 4.1 RLS Policy Pattern and Super-Admin Bypass
 
 Every table uses **Row Level Security (RLS)** to enforce multi-tenant isolation and role-based access control.
-All policies follow the same pattern:
+All policies follow the same layered pattern:
 
-1. **Super-admin bypass:** `is_super_admin()` function returns `true` for `super_admin` role users. These users bypass all tenant checks and see/edit all data globally (platform admin operations only).
+1. **Super-admin bypass:** `is_super_admin()` returns `true` for `super_admin` role users. These users bypass all tenant checks globally (platform admin operations only).
 2. **Tenant isolation:** Non-super-admins see data only from their own tenant (`tenant_id = get_my_tenant_id()`).
-3. **Role filtering:** Within a tenant, access is further restricted by role (admin, teacher, parent, student).
+3. **Role filtering:** Within a tenant, access is further restricted by role (tenant_admin, teacher, parent, student).
+
+⚠️ **`role` is `TEXT[]`** — always check with `'tenant_admin' = ANY(role)`, never with a scalar `get_my_role()` comparison. The helper `is_super_admin()` checks `'super_admin' = ANY(role)`.
 
 This design enables:
 - **Platform-level operations** (super-admin) without complex conditional logic
-- **Guaranteed data isolation** — cross-tenant queries are impossible even with RLS bugs
+- **Guaranteed data isolation** — cross-tenant queries are impossible for non–super-admin users; anon access is subdomain-filtered only
 - **Clear intent** — every policy explicitly states who can do what
 
-**Example:** A `super_admin` with `is_super_admin()` returning `true` sees all `families` rows across all tenants, while a `tenant_admin` sees only families in their own tenant.
+**Example:** A `super_admin` sees all `families` rows across all tenants; a `tenant_admin` sees only families in their own tenant; a `parent` sees only their own family.
 
-**Super-Admin Bypass Scope (Critical):** A `super_admin` role user bypasses ALL tenant checks entirely. They can read/write/delete data from any tenant without restriction. This is intentional for platform-level operations only (platform owner, customer support). Non-super-admin users (tenant_admin, teacher, parent, student) always see only their own tenant's data — this constraint is enforced by RLS policy and cannot be bypassed.
+**Super-Admin Bypass Scope (Critical):** A `super_admin` role user bypasses ALL tenant checks entirely. They can read/write/delete data from any tenant without restriction. This is intentional for platform-level operations only (platform owner, customer support). Non-super-admin users (tenant_admin, teacher, parent, student) always see only their own tenant's data.
+
+---
+
+### 4.1.1 Public Access Model (Subdomain-Scoped)
+
+Landing pages and public class listings need data before a user logs in. The access pattern is **always filtered by subdomain** — never a global table scan.
+
+| Consumer | Mechanism | Implementation |
+|----------|-----------|----------------|
+| `anon` — branding, config | `get_tenant_config_by_subdomain(p_subdomain TEXT)` RPC | `SECURITY DEFINER`, returns one row for that subdomain only |
+| `anon` — class catalog | `get_public_classes_by_subdomain(p_subdomain TEXT)` RPC | `SECURITY DEFINER`, filters `is_public = true AND status = 'active'` for that subdomain |
+| `authenticated` users | Direct table `SELECT` with `tenant_id = get_my_tenant_id()` | Standard RLS; terms, levels, classes, waivers, etc. |
+| OTP / rate limiting | Edge Function + `service_role` | No client policies on `otp_codes` or `verification_attempts` |
+
+**Rules for public RPCs:**
+- Must be `SECURITY DEFINER SET search_path = public`
+- Must accept and validate `p_subdomain TEXT` — never return rows without filtering on it
+- Must not expose encrypted columns (`stripe_secret_key_enc`, etc.) — use boolean presence flags instead
+- `GRANT EXECUTE TO anon, authenticated`
+- Direct `SELECT` on underlying tables by `anon` is forbidden
 
 ---
 
@@ -607,18 +636,22 @@ This design enables:
 | `20260519002700_waiting_list.sql` | `waiting_list` | 002, 004 |
 | `20260519002800_attendance.sql` | `attendance`, `makeup_credits` | 002, 004, 018 |
 | `20260519002900_rls_policies_after_enrolments.sql` | RLS on `class_sessions` + `billing_accounts` | 023, 026 |
-| `20260519003200_public_classes_view.sql` | `public_classes_by_subdomain` view | 004 |
-| `20260519003300_tenant_config_by_subdomain.sql` | `tenant_config_by_subdomain` view | 001 |
+| `20260519003200_public_classes_view.sql` | `get_public_classes_by_subdomain(p_subdomain)` RPC — subdomain-filtered, `anon` safe | 004 |
+| `20260519003300_tenant_config_by_subdomain.sql` | `get_tenant_config_by_subdomain(p_subdomain)` RPC — subdomain-filtered, `anon` safe | 001 |
 | `20260519003400_auth_user_profiles_trigger.sql` | `handle_new_user` on `auth.users` | 001 |
 | `20260519003500_finance_payments.sql` | `payments`, `invoice_sequences`, Stripe RPCs | 001, 026 |
 
-Sections **4.2.1–4.2.8** below document the **implemented V1 shape**. Older blueprint tables (`discount_rules`, full `expenses`, platform `plan` on tenants, etc.) remain in the long-term design notes where marked **Deferred**.
+> **RLS fixes applied in-place** in all files listed above (migrations have not been applied to any environment yet). See §4.1 and §4.1.1 for the security model these migrations implement.
+
+Sections **4.2.1–4.2.8** below document the **implemented V1 shape**. The subsection numbering is legacy (blueprint era) — authoritative filenames are in the index above. Older blueprint tables (`discount_rules`, full `expenses`, platform `plan` on tenants, etc.) remain in the long-term design notes where marked **Deferred**.
 
 #### 4.2.1 Migration 001 — Tenants and user profiles
 
 > **Ordering:** `tenants` is created first, then `user_profiles` references `tenants(id)`.
 > Later tables reference `user_profiles` via `user_profile_id`.
 > **`dir` and `locale` are not columns** — direction and locale strings are computed in the app.
+> **`role` is `TEXT[]`** — a user can hold multiple roles. Always check with `'tenant_admin' = ANY(role)`, never with scalar equality.
+> **`is_service_role()` helper** is also defined in migration 001 (alongside `get_my_tenant_id()` etc.) so it can be used in later migrations.
 
 ```sql
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
@@ -716,6 +749,8 @@ CREATE TABLE people (
 > Every human with a phone has their own preferences. A 16-year-old wants to know
 > their class is cancelled — they don't need their parent involved.
 > Adult students manage their own preferences entirely.
+>
+> **All five `notify_*` columns ship in this migration**, including `notify_waiting_list` and `notify_school_announcements`. Do not add them again in a separate migration.
 
 ```sql
 CREATE TABLE contact_preferences (
@@ -762,6 +797,8 @@ CREATE TABLE contact_preferences (
 #### 4.2.4 Migration 004 — Terms, levels, and classes
 
 > **File:** `20260519000400_classes.sql`. **`class_sessions`** is in `20260519001800_class_sessions.sql` (separate migration).
+>
+> **Public access:** `anon` users MUST NOT read `terms`, `levels`, or `classes` directly. Public class listings are served by the `get_public_classes_by_subdomain(p_subdomain)` RPC (migration 032). Authenticated users read these tables directly — RLS filters to their own tenant.
 
 ```sql
 CREATE TABLE terms (
@@ -807,6 +844,7 @@ CREATE TABLE classes (
 
 #### 4.2.5 Class requirements (implemented — not inline enum on `classes`)
 
+> **Legacy blueprint numbering** — see §4.2.0 for authoritative filenames.
 > **Files:** `20260519002000_requirement_templates.sql`, `20260519002500_class_requirements.sql`, `20260519002200_requirement_overrides.sql`.
 > Replaces the older single-table `class_requirements` with `requirement_type` CHECK from the blueprint below.
 
@@ -946,6 +984,7 @@ function evaluateRequirement(req: ClassRequirement, person: Person): boolean {
 
 #### 4.2.6 Migration 006 — Enrolments and waiting list
 
+> **Legacy blueprint numbering** — see §4.2.0 for authoritative filenames.
 > **Files:** `20260519002600_enrolments.sql`, `20260519002700_waiting_list.sql`.
 > **`waiting_list` is a separate table** — do not store `waiting_list` as an `enrolments.status` value.
 
@@ -980,6 +1019,7 @@ CREATE TABLE waiting_list (
 
 #### 4.2.7 Migration 007 — Attendance
 
+> **Legacy blueprint numbering** — see §4.2.0 for authoritative filenames.
 > **File:** `20260519002800_attendance.sql` — uses `attended BOOLEAN`, not a `status` enum.
 
 ```sql
@@ -1008,6 +1048,9 @@ CREATE TABLE makeup_credits (
 ```
 
 #### 4.2.8 Migration 008 — Payments and finance (V1 slice)
+
+> **Legacy blueprint numbering** — see §4.2.0 for authoritative filenames.
+> **File:** `20260519003500_finance_payments.sql`.
 
 ```sql
 CREATE TABLE payments (
@@ -1447,322 +1490,133 @@ CREATE INDEX idx_ai_log_flagged ON ai_log(tenant_id, flagged) WHERE flagged = tr
 
 ---
 
-### 4.3 Indexes and RLS Implementation
+### 4.3 RLS Reference
 
-#### 4.3.1 Database Indexes
-CREATE INDEX idx_people_tenant         ON people(tenant_id);
-CREATE INDEX idx_people_family         ON people(family_id);
-CREATE INDEX idx_enrolments_tenant     ON enrolments(tenant_id);
-CREATE INDEX idx_enrolments_person     ON enrolments(person_id);
-CREATE INDEX idx_enrolments_class      ON enrolments(class_id);
-CREATE INDEX idx_enrolments_status     ON enrolments(status);
-CREATE INDEX idx_payments_tenant       ON payments(tenant_id);
-CREATE INDEX idx_payments_family       ON payments(family_id);
-CREATE INDEX idx_payments_status       ON payments(status);
-CREATE INDEX idx_audit_log_tenant      ON audit_log(tenant_id);
-CREATE INDEX idx_audit_log_entity      ON audit_log(entity_type, entity_id);
-CREATE INDEX idx_sessions_class        ON class_sessions(class_id);
-CREATE INDEX idx_sessions_date         ON class_sessions(session_date);
-CREATE INDEX idx_attendance_session    ON attendance(session_id);
-CREATE INDEX idx_requirements_class    ON class_requirements(class_id);
-CREATE INDEX idx_contact_person        ON contact_preferences(person_id);
-CREATE INDEX idx_contact_family_member ON contact_preferences(family_member_id);
-
--- === RLS ===
-ALTER TABLE tenants              ENABLE ROW LEVEL SECURITY;
-ALTER TABLE user_profiles        ENABLE ROW LEVEL SECURITY;
-ALTER TABLE families             ENABLE ROW LEVEL SECURITY;
-ALTER TABLE family_members       ENABLE ROW LEVEL SECURITY;
-ALTER TABLE people               ENABLE ROW LEVEL SECURITY;
-ALTER TABLE contact_preferences  ENABLE ROW LEVEL SECURITY;
-ALTER TABLE terms                ENABLE ROW LEVEL SECURITY;
-ALTER TABLE levels               ENABLE ROW LEVEL SECURITY;
-ALTER TABLE classes              ENABLE ROW LEVEL SECURITY;
-ALTER TABLE class_requirements   ENABLE ROW LEVEL SECURITY;
-ALTER TABLE class_sessions       ENABLE ROW LEVEL SECURITY;
-ALTER TABLE enrolments           ENABLE ROW LEVEL SECURITY;
-ALTER TABLE waiting_list         ENABLE ROW LEVEL SECURITY;
-ALTER TABLE attendance           ENABLE ROW LEVEL SECURITY;
-ALTER TABLE makeup_credits       ENABLE ROW LEVEL SECURITY;
-ALTER TABLE payments             ENABLE ROW LEVEL SECURITY;
-ALTER TABLE expenses             ENABLE ROW LEVEL SECURITY;
-ALTER TABLE discount_rules       ENABLE ROW LEVEL SECURITY;
-ALTER TABLE teacher_pay_records  ENABLE ROW LEVEL SECURITY;
-ALTER TABLE notification_log     ENABLE ROW LEVEL SECURITY;
-ALTER TABLE audit_log            ENABLE ROW LEVEL SECURITY;
-ALTER TABLE invoice_sequences    ENABLE ROW LEVEL SECURITY;
-ALTER TABLE tenant_notification_templates ENABLE ROW LEVEL SECURITY;
-ALTER TABLE expense_categories   ENABLE ROW LEVEL SECURITY;
-ALTER TABLE notification_queue   ENABLE ROW LEVEL SECURITY;
-ALTER TABLE ai_log               ENABLE ROW LEVEL SECURITY;
-
-#### 4.3.2 RLS Helper Functions
-
-> **Pattern reference:** See section 4.1 for RLS design principles and super-admin bypass explanation.
-
-```sql
--- Helper functions (SECURITY DEFINER prevents recursion in policies)
-CREATE OR REPLACE FUNCTION get_my_tenant_id()
-RETURNS UUID LANGUAGE sql SECURITY DEFINER STABLE AS $$
-  SELECT tenant_id FROM user_profiles WHERE id = auth.uid()
-$$;
-
-CREATE OR REPLACE FUNCTION get_my_role()
-RETURNS TEXT LANGUAGE sql SECURITY DEFINER STABLE AS $$
-  SELECT role FROM user_profiles WHERE id = auth.uid()
-$$;
-
-CREATE OR REPLACE FUNCTION get_my_family_ids()
-RETURNS SETOF UUID LANGUAGE sql SECURITY DEFINER STABLE AS $$
-  SELECT family_id FROM family_members WHERE user_profile_id = auth.uid()
-$$;
-
-CREATE OR REPLACE FUNCTION get_my_person_id()
-RETURNS UUID LANGUAGE sql SECURITY DEFINER STABLE AS $$
-  SELECT id FROM people WHERE user_profile_id = auth.uid()
-$$;
-
--- Super admin bypass: super_admins can read/write all tenants without tenant_id checks
--- (used only for platform-level admin operations)
-CREATE OR REPLACE FUNCTION is_super_admin()
-RETURNS BOOLEAN LANGUAGE sql SECURITY DEFINER STABLE AS $$
-  SELECT role = 'super_admin' FROM user_profiles WHERE id = auth.uid()
-$$;
-```
-
-#### 4.3.3 RLS Policies (By Table)
-
-```sql
--- Tenants: super_admin only can see all; users see own tenant only
-CREATE POLICY "super_admin sees all tenants" ON tenants FOR ALL
-  USING (is_super_admin());
-
-CREATE POLICY "users see own tenant" ON tenants FOR SELECT
-  USING (id = get_my_tenant_id());
-
--- User profiles: users can read own profile; admins read all in their tenant; super_admin reads all
-CREATE POLICY "super_admin reads all profiles" ON user_profiles FOR SELECT
-  USING (is_super_admin());
-
-CREATE POLICY "admins manage tenant profiles" ON user_profiles FOR ALL
-  USING (tenant_id = get_my_tenant_id() AND get_my_role() IN ('tenant_admin','super_admin'));
-
-CREATE POLICY "users read own profile" ON user_profiles FOR SELECT
-  USING (id = auth.uid());
-
--- Families: admins manage; parents/adult students see own
-CREATE POLICY "super_admin manages all families" ON families FOR ALL
-  USING (is_super_admin());
-
-CREATE POLICY "admins manage families" ON families FOR ALL
-  USING (tenant_id = get_my_tenant_id() AND get_my_role() = 'tenant_admin');
-
-CREATE POLICY "family members see own family" ON families FOR SELECT
-  USING (id IN (SELECT family_id FROM family_members WHERE user_profile_id = auth.uid()));
-
--- Family members: admins manage; parents/students see own family members
-CREATE POLICY "super_admin manages all family_members" ON family_members FOR ALL
-  USING (is_super_admin());
-
-CREATE POLICY "admins manage family_members" ON family_members FOR ALL
-  USING ((SELECT tenant_id FROM families WHERE id = family_members.family_id) = get_my_tenant_id()
-         AND (SELECT get_my_role()) = 'tenant_admin');
-
-CREATE POLICY "family members see own family" ON family_members FOR SELECT
-  USING (user_profile_id = auth.uid()
-         OR family_id IN (SELECT get_my_family_ids()));
-
--- People: staff see all; parents see own family; adult students see themselves; super_admin sees all
-CREATE POLICY "super_admin sees all people" ON people FOR ALL
-  USING (is_super_admin());
-
-CREATE POLICY "staff see all people" ON people FOR SELECT
-  USING (tenant_id = get_my_tenant_id() AND get_my_role() IN ('tenant_admin','teacher'));
-
-CREATE POLICY "parents see own family people" ON people FOR SELECT
-  USING (tenant_id = get_my_tenant_id() AND family_id IN (SELECT get_my_family_ids()));
-
-CREATE POLICY "adult students see self" ON people FOR SELECT
-  USING (tenant_id = get_my_tenant_id() AND id = get_my_person_id());
-
--- Contact preferences: users manage own; admins see all
-CREATE POLICY "super_admin manages all contact_preferences" ON contact_preferences FOR ALL
-  USING (is_super_admin());
-
-CREATE POLICY "admins manage preferences" ON contact_preferences FOR ALL
-  USING (tenant_id = get_my_tenant_id() AND get_my_role() = 'tenant_admin');
-
-CREATE POLICY "users manage own preferences" ON contact_preferences FOR ALL
-  USING (person_id = get_my_person_id()
-         OR family_member_id IN (SELECT id FROM family_members WHERE user_profile_id = auth.uid()));
-
--- Terms & Levels: public read; admin write
-CREATE POLICY "all see terms" ON terms FOR SELECT USING (true);
-CREATE POLICY "super_admin manages all terms" ON terms FOR ALL
-  USING (is_super_admin());
-CREATE POLICY "admins manage terms" ON terms FOR ALL
-  USING (tenant_id = get_my_tenant_id() AND get_my_role() = 'tenant_admin');
-
-CREATE POLICY "all see levels" ON levels FOR SELECT USING (true);
-CREATE POLICY "super_admin manages all levels" ON levels FOR ALL
-  USING (is_super_admin());
-CREATE POLICY "admins manage levels" ON levels FOR ALL
-  USING (tenant_id = get_my_tenant_id() AND get_my_role() = 'tenant_admin');
-
--- Classes: public read (schedule page); admin write
-CREATE POLICY "super_admin manages all classes" ON classes FOR ALL
-  USING (is_super_admin());
-CREATE POLICY "public read classes" ON classes FOR SELECT USING (is_public = true);
-CREATE POLICY "admins and teachers manage classes" ON classes FOR ALL
-  USING (tenant_id = get_my_tenant_id() AND get_my_role() IN ('tenant_admin','teacher'));
-
--- Class requirements: visible to enrollers; admin manage
-CREATE POLICY "super_admin manages all requirements" ON class_requirements FOR ALL
-  USING (is_super_admin());
-CREATE POLICY "admins manage requirements" ON class_requirements FOR ALL
-  USING (tenant_id = get_my_tenant_id() AND get_my_role() = 'tenant_admin');
-CREATE POLICY "all see requirements" ON class_requirements FOR SELECT USING (true);
-
--- Class sessions: visible to class participants; admin/teacher manage
-CREATE POLICY "super_admin manages all sessions" ON class_sessions FOR ALL
-  USING (is_super_admin());
-CREATE POLICY "admins and teachers manage sessions" ON class_sessions FOR ALL
-  USING (tenant_id = get_my_tenant_id() AND get_my_role() IN ('tenant_admin','teacher'));
-CREATE POLICY "enrolled students see sessions" ON class_sessions FOR SELECT
-  USING (class_id IN (SELECT class_id FROM enrolments WHERE person_id = get_my_person_id()));
-
--- Enrolments: admins manage; families see own; adult students see own
-CREATE POLICY "super_admin manages all enrolments" ON enrolments FOR ALL
-  USING (is_super_admin());
-CREATE POLICY "admins manage enrolments" ON enrolments FOR ALL
-  USING (tenant_id = get_my_tenant_id() AND get_my_role() = 'tenant_admin');
-CREATE POLICY "parents see own enrolments" ON enrolments FOR SELECT
-  USING (tenant_id = get_my_tenant_id() AND person_id IN
-    (SELECT id FROM people WHERE family_id IN (SELECT get_my_family_ids())));
-CREATE POLICY "adult students see own enrolments" ON enrolments FOR SELECT
-  USING (tenant_id = get_my_tenant_id() AND person_id = get_my_person_id());
-
--- Waiting list: admins manage; families can see if registered
-CREATE POLICY "super_admin manages all waiting_list" ON waiting_list FOR ALL
-  USING (is_super_admin());
-CREATE POLICY "admins manage waiting_list" ON waiting_list FOR ALL
-  USING (tenant_id = get_my_tenant_id() AND get_my_role() = 'tenant_admin');
-CREATE POLICY "people see own waiting_list" ON waiting_list FOR SELECT
-  USING (tenant_id = get_my_tenant_id() AND person_id = get_my_person_id());
-
--- Attendance: teachers mark; admins/families see results
-CREATE POLICY "super_admin manages all attendance" ON attendance FOR ALL
-  USING (is_super_admin());
-CREATE POLICY "teachers mark attendance" ON attendance FOR ALL
-  USING (tenant_id = get_my_tenant_id() AND get_my_role() IN ('tenant_admin','teacher'));
-CREATE POLICY "families see own attendance" ON attendance FOR SELECT
-  USING (tenant_id = get_my_tenant_id() AND person_id IN
-    (SELECT id FROM people WHERE family_id IN (SELECT get_my_family_ids())));
-CREATE POLICY "adult students see own attendance" ON attendance FOR SELECT
-  USING (tenant_id = get_my_tenant_id() AND person_id = get_my_person_id());
-
--- Makeup credits: admins manage; families see own
-CREATE POLICY "super_admin manages all makeup_credits" ON makeup_credits FOR ALL
-  USING (is_super_admin());
-CREATE POLICY "admins manage makeup_credits" ON makeup_credits FOR ALL
-  USING (tenant_id = get_my_tenant_id() AND get_my_role() = 'tenant_admin');
-CREATE POLICY "families see own makeup_credits" ON makeup_credits FOR SELECT
-  USING (tenant_id = get_my_tenant_id() AND person_id IN
-    (SELECT id FROM people WHERE family_id IN (SELECT get_my_family_ids())));
-CREATE POLICY "adult students see own makeup_credits" ON makeup_credits FOR SELECT
-  USING (tenant_id = get_my_tenant_id() AND person_id = get_my_person_id());
-
--- Payments: admins manage; parents/adult students see own
-CREATE POLICY "super_admin manages all payments" ON payments FOR ALL
-  USING (is_super_admin());
-CREATE POLICY "admins manage payments" ON payments FOR ALL
-  USING (tenant_id = get_my_tenant_id() AND get_my_role() = 'tenant_admin');
-CREATE POLICY "parents see own payments" ON payments FOR SELECT
-  USING (tenant_id = get_my_tenant_id() AND family_id IN (SELECT get_my_family_ids()));
-CREATE POLICY "adult students see own payments" ON payments FOR SELECT
-  USING (tenant_id = get_my_tenant_id() AND person_id = get_my_person_id());
-
--- Expenses: admin only
-CREATE POLICY "super_admin manages all expenses" ON expenses FOR ALL
-  USING (is_super_admin());
-CREATE POLICY "admins manage expenses" ON expenses FOR ALL
-  USING (tenant_id = get_my_tenant_id() AND get_my_role() = 'tenant_admin');
-
--- Discount rules: admin read/write
-CREATE POLICY "super_admin manages all discount_rules" ON discount_rules FOR ALL
-  USING (is_super_admin());
-CREATE POLICY "admins manage discount_rules" ON discount_rules FOR ALL
-  USING (tenant_id = get_my_tenant_id() AND get_my_role() = 'tenant_admin');
-CREATE POLICY "all read active discount codes" ON discount_rules FOR SELECT
-  USING (is_active = true);
-
--- Teacher pay records: admin manage
-CREATE POLICY "super_admin manages all teacher_pay_records" ON teacher_pay_records FOR ALL
-  USING (is_super_admin());
-CREATE POLICY "admins manage teacher_pay_records" ON teacher_pay_records FOR ALL
-  USING (tenant_id = get_my_tenant_id() AND get_my_role() = 'tenant_admin');
-
--- Notification log: admin read; triggers insert
-CREATE POLICY "super_admin reads all notification_log" ON notification_log FOR SELECT
-  USING (is_super_admin());
-CREATE POLICY "admins read notification_log" ON notification_log FOR SELECT
-  USING (tenant_id = get_my_tenant_id() AND get_my_role() = 'tenant_admin');
-CREATE POLICY "insert notification_log" ON notification_log FOR INSERT
-  WITH CHECK (tenant_id = get_my_tenant_id());
-
--- Audit log: insert by all; read by admin only
-CREATE POLICY "super_admin reads all audit_log" ON audit_log FOR SELECT
-  USING (is_super_admin());
-CREATE POLICY "insert audit" ON audit_log FOR INSERT
-  WITH CHECK (tenant_id = get_my_tenant_id());
-CREATE POLICY "admins read audit" ON audit_log FOR SELECT
-  USING (tenant_id = get_my_tenant_id() AND get_my_role() = 'tenant_admin');
-
--- Invoice sequences: admin manage
-CREATE POLICY "super_admin manages all invoice_sequences" ON invoice_sequences FOR ALL
-  USING (is_super_admin());
-CREATE POLICY "admins manage invoice_sequences" ON invoice_sequences FOR ALL
-  USING (invoice_sequences.tenant_id = get_my_tenant_id()
-         AND (SELECT get_my_role()) = 'tenant_admin');
-
--- Tenant notification templates (Issue #7): admins manage; all can read approved
-CREATE POLICY "super_admin manages all templates" ON tenant_notification_templates FOR ALL
-  USING (is_super_admin());
-CREATE POLICY "admins manage templates" ON tenant_notification_templates FOR ALL
-  USING (tenant_id = get_my_tenant_id() AND get_my_role() = 'tenant_admin');
-CREATE POLICY "all read approved templates" ON tenant_notification_templates FOR SELECT
-  USING (status = 'approved');
-
--- Expense categories (Issue #9): admins manage; all can read
-CREATE POLICY "super_admin manages all categories" ON expense_categories FOR ALL
-  USING (is_super_admin());
-CREATE POLICY "admins manage categories" ON expense_categories FOR ALL
-  USING (tenant_id = get_my_tenant_id() AND get_my_role() = 'tenant_admin');
-CREATE POLICY "all read active categories" ON expense_categories FOR SELECT
-  USING (is_active = true);
-
--- Notification queue (Issue #10): system insert/update; admins read
-CREATE POLICY "super_admin reads all queue" ON notification_queue FOR ALL
-  USING (is_super_admin());
-CREATE POLICY "admins manage queue" ON notification_queue FOR ALL
-  USING (tenant_id = get_my_tenant_id() AND get_my_role() = 'tenant_admin');
-CREATE POLICY "system inserts queue" ON notification_queue FOR INSERT
-  WITH CHECK (tenant_id = get_my_tenant_id());
-
--- AI log (Issue #11): immutable after creation; admins read
-CREATE POLICY "super_admin reads all ai_log" ON ai_log FOR SELECT
-  USING (is_super_admin());
-CREATE POLICY "admins read ai_log" ON ai_log FOR SELECT
-  USING (tenant_id = get_my_tenant_id() AND get_my_role() = 'tenant_admin');
-CREATE POLICY "insert ai_log" ON ai_log FOR INSERT
-  WITH CHECK (tenant_id = get_my_tenant_id());
-````
+> **Authoritative SQL lives in `supabase/migrations/*.sql`**, not in this section.
+> This section is a human-readable reference for patterns, helpers, and invariants.
+> Do NOT copy SQL from here into migrations — read the migration files instead.
 
 ---
 
-### 4.4 SPEC Issues Resolution (v2 updates)
+#### 4.3.1 V1 Policy Inventory
 
-All 15 identified issues from SPEC_additions.md have been resolved:
+All V1 tables have RLS enabled. The table below shows who can access what.
+Role checks always use `TEXT[]` array containment (e.g. `'tenant_admin' = ANY(role)`).
+
+| Table | super_admin | tenant_admin | teacher | parent / student | anon |
+|-------|-------------|--------------|---------|-----------------|------|
+| `tenants` | ALL | SELECT own | SELECT own | SELECT own | RPC only |
+| `user_profiles` | ALL | ALL (own tenant) | SELECT own | SELECT own | — |
+| `families` | ALL | ALL (own tenant) | — | SELECT own family | — |
+| `family_members` | ALL | ALL (own tenant) | — | SELECT own + family | — |
+| `people` | ALL | ALL (own tenant) | SELECT (own tenant) | SELECT own family / self | — |
+| `contact_preferences` | ALL | ALL (own tenant) | — | ALL own row | — |
+| `terms` | ALL | ALL (own tenant) | SELECT (own tenant) | SELECT (own tenant) | — |
+| `levels` | ALL | ALL (own tenant) | SELECT (own tenant) | SELECT (own tenant) | — |
+| `classes` | ALL | ALL (own tenant) | ALL (own tenant) | SELECT (own tenant) | RPC only |
+| `class_sessions` | ALL | ALL (own tenant) | ALL (own tenant) | SELECT (enrolled) | — |
+| `class_requirements` | ALL | ALL (own tenant) | — | SELECT (own tenant) | — |
+| `requirement_templates` | ALL | ALL (own tenant) | — | SELECT (own tenant) | — |
+| `requirement_overrides` | ALL | ALL (own tenant) | — | SELECT own | — |
+| `waiver_templates` | ALL | ALL (own tenant) | — | SELECT active (own tenant) | — |
+| `enrolments` | ALL | ALL (own tenant) | — | SELECT own | — |
+| `waiting_list` | ALL | ALL (own tenant) | — | SELECT own | — |
+| `attendance` | ALL | ALL (own tenant) | ALL (own tenant) | SELECT own | — |
+| `makeup_credits` | ALL | ALL (own tenant) | — | SELECT own | — |
+| `billing_accounts` | ALL | ALL (own tenant) | — | SELECT (via enrolment) | — |
+| `payments` | ALL | ALL (own tenant) | — | SELECT own | — |
+| `invoice_sequences` | ALL | SELECT (own tenant) | — | — | — |
+| `notification_log` | ALL | SELECT + INSERT | — | — | — |
+| `audit_log` | ALL | SELECT + INSERT | — | — | — |
+| `tenant_notification_templates` | ALL | ALL (own tenant) | — | SELECT approved | — |
+| `tenant_email_customizations` | ALL | ALL (own tenant) | — | SELECT own tenant | — |
+| `expense_categories` | ALL | ALL (own tenant) | — | SELECT active (own tenant) | — |
+| `verification_attempts` | SELECT | ALL (own tenant) | — | — | service_role only |
+| `otp_codes` | — | — | — | — | service_role only |
+
+---
+
+#### 4.3.2 Helper Functions
+
+All defined in [`supabase/migrations/20260519000100_tenants.sql`](supabase/migrations/20260519000100_tenants.sql).
+All are `SECURITY DEFINER SET search_path = public STABLE`.
+
+| Function | Returns | Purpose |
+|----------|---------|---------|
+| `get_my_tenant_id()` | `UUID` | Resolves caller's `tenant_id` from `user_profiles` |
+| `is_super_admin()` | `BOOLEAN` | `'super_admin' = ANY(role)` — platform bypass |
+| `is_service_role()` | `BOOLEAN` | JWT role = `service_role` — for Edge Function paths |
+| `get_my_family_ids()` | `SETOF UUID` | All `family_id` values for caller via `family_members` |
+| `get_my_person_id()` | `UUID` | The `people.id` for the calling user |
+| `is_minor(date_of_birth DATE)` | `BOOLEAN` | Computed from DOB; not stored as a column |
+
+Defined in [`supabase/migrations/20260519000200_people.sql`](supabase/migrations/20260519000200_people.sql): `get_my_family_ids()`, `get_my_person_id()`, `is_minor()`.
+
+---
+
+#### 4.3.3 SECURITY DEFINER Requirements
+
+Every `SECURITY DEFINER` function MUST:
+
+1. Include `SET search_path = public` in the function definition (prevents search-path injection).
+2. Have an explicit `GRANT EXECUTE TO <role>` — do not rely on default public grants.
+3. Guard privileged operations with a role check (`is_service_role()`, `is_super_admin()`, or explicit `EXISTS` on `user_profiles`).
+
+```sql
+-- Correct pattern:
+CREATE OR REPLACE FUNCTION my_function(p_arg TEXT)
+RETURNS TEXT
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  -- body
+END;
+$$;
+GRANT EXECUTE ON FUNCTION my_function(TEXT) TO authenticated;
+```
+
+Public RPCs (accessible to `anon`) additionally MUST filter by `p_subdomain` and MUST NOT return data from any other tenant.
+
+---
+
+#### 4.3.4 Operational Dependencies
+
+| Dependency | Where configured | Notes |
+|------------|-----------------|-------|
+| `app.encryption_key` | Supabase project secrets (manual runbook) | Required for `pgp_sym_encrypt/decrypt`; set before running Stripe credential RPCs |
+| pg_cron — OTP cleanup | Comment in `20260519001300_otp_codes.sql` | Run `SELECT cron.schedule(...)` after first deploy |
+| pg_cron — verification cleanup | Comment in `20260519001500_verification_attempts.sql` | Run `SELECT cron.schedule(...)` after first deploy |
+| Stripe/Twilio/Resend keys | Admin UI or runbook after schema deploy | See [Third-Party Services Setup](docs/deployment/THIRD_PARTY_SERVICES.md) |
+
+---
+
+#### 4.3.5 Deferred / V2+ Tables
+
+The following tables and features are designed but NOT in V1 migrations. Do not implement until a V2 migration is explicitly planned:
+
+- `expenses` (full expense tracking)
+- `discount_rules`
+- `teacher_pay_records`
+- `notification_queue` (retry/queue mechanism)
+- `ai_log`
+- `tenants.custom_domain`, `tenants.logo_url`, `tenants.plan`, Resend/Twilio columns on `tenants`
+
+---
+
+### 4.4 SPEC Issues Resolution (v3 updates — 2026-05-20)
+
+**2026-05-20 — SPEC §4 + migrations RLS/subdomain model unified:**
+- §4 security banner rewritten to layered model with documented exceptions (§4.1.1 added)
+- §4.3 old duplicate SQL block replaced with policy inventory + helper reference + deferred appendix
+- Migrations 032/033 changed from unfiltered views to subdomain-filtered `SECURITY DEFINER` RPCs
+- Cross-tenant `USING (true)` policies removed; replaced with `tenant_id = get_my_tenant_id()`
+- `otp_codes` RLS hardened (service_role only); `SECURITY DEFINER SET search_path` applied uniformly
+- `contact_preferences` extended with `notify_waiting_list` and `notify_school_announcements`
+- `is_super_admin()` bypass added to all V1 tables; `is_service_role()` moved to migration 001
+
+All 15 identified issues from v2 remain resolved:
 
 ### Critical issues (5) — Fixed in schema
 
