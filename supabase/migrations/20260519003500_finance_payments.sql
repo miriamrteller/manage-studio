@@ -202,7 +202,11 @@ CREATE POLICY payments_admin_all ON payments
   FOR ALL
   USING (
     tenant_id = get_my_tenant_id()
-    AND 'tenant_admin' = ANY((SELECT role FROM user_profiles WHERE id = auth.uid()))
+    AND EXISTS (
+      SELECT 1 FROM user_profiles
+      WHERE id = auth.uid()
+        AND 'tenant_admin' = ANY(role)
+    )
   );
 
 CREATE POLICY payments_parent_select ON payments
@@ -224,7 +228,11 @@ CREATE POLICY invoice_sequences_admin ON invoice_sequences
   FOR SELECT
   USING (
     tenant_id = get_my_tenant_id()
-    AND 'tenant_admin' = ANY((SELECT role FROM user_profiles WHERE id = auth.uid()))
+    AND EXISTS (
+      SELECT 1 FROM user_profiles
+      WHERE id = auth.uid()
+        AND 'tenant_admin' = ANY(role)
+    )
   );
 
 REVOKE ALL ON FUNCTION next_invoice_number(UUID) FROM PUBLIC;

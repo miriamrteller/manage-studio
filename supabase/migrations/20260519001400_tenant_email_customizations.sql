@@ -41,11 +41,19 @@ CREATE POLICY tenant_email_customizations_admin_manage
   FOR ALL
   USING (
     tenant_id = get_my_tenant_id()
-    AND 'tenant_admin' = ANY((SELECT role FROM user_profiles WHERE id = auth.uid()))
+    AND EXISTS (
+      SELECT 1 FROM user_profiles
+      WHERE id = auth.uid()
+        AND 'tenant_admin' = ANY(role)
+    )
   )
   WITH CHECK (
     tenant_id = get_my_tenant_id()
-    AND 'tenant_admin' = ANY((SELECT role FROM user_profiles WHERE id = auth.uid()))
+    AND EXISTS (
+      SELECT 1 FROM user_profiles
+      WHERE id = auth.uid()
+        AND 'tenant_admin' = ANY(role)
+    )
   );
 
 -- Authenticated users in the tenant can read their own customizations (for rendering)

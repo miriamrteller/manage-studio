@@ -40,7 +40,11 @@ CREATE POLICY expense_categories_admin_manage ON expense_categories
   FOR ALL
   USING (
     tenant_id = get_my_tenant_id()
-    AND 'tenant_admin' = ANY((SELECT role FROM user_profiles WHERE id = auth.uid()))
+    AND EXISTS (
+      SELECT 1 FROM user_profiles
+      WHERE id = auth.uid()
+        AND 'tenant_admin' = ANY(role)
+    )
   );
 
 -- Authenticated users read active categories for their own tenant

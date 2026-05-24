@@ -36,7 +36,11 @@ CREATE POLICY "super_admin_reads_all_attempts" ON verification_attempts FOR SELE
 CREATE POLICY "admin_manage_attempts" ON verification_attempts FOR ALL
   USING (
     tenant_id = get_my_tenant_id()
-    AND 'tenant_admin' = ANY((SELECT role FROM user_profiles WHERE id = auth.uid()))
+    AND EXISTS (
+      SELECT 1 FROM user_profiles
+      WHERE id = auth.uid()
+        AND 'tenant_admin' = ANY(role)
+    )
   );
 
 -- Edge Functions (service_role) insert new records

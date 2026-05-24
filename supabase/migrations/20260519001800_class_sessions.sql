@@ -26,9 +26,14 @@ CREATE POLICY "super_admin manages all sessions" ON class_sessions FOR ALL
   USING (is_super_admin());
 
 CREATE POLICY "admins manage sessions" ON class_sessions FOR ALL
-  USING (tenant_id = get_my_tenant_id() AND 'tenant_admin' = ANY(
-    (SELECT role FROM user_profiles WHERE id = auth.uid())
-  ));
+  USING (
+    tenant_id = get_my_tenant_id()
+    AND EXISTS (
+      SELECT 1 FROM user_profiles
+      WHERE id = auth.uid()
+        AND 'tenant_admin' = ANY(role)
+    )
+  );
 
 CREATE POLICY "teachers manage sessions" ON class_sessions FOR ALL
   USING (tenant_id = get_my_tenant_id() AND 'teacher' = ANY(

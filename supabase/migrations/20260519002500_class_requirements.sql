@@ -29,9 +29,14 @@ CREATE POLICY "super_admin manages all class_requirements" ON class_requirements
   USING (is_super_admin());
 
 CREATE POLICY "admins manage class_requirements" ON class_requirements FOR ALL
-  USING (tenant_id = get_my_tenant_id() AND 'tenant_admin' = ANY(
-    (SELECT role FROM user_profiles WHERE id = auth.uid())
-  ));
+  USING (
+    tenant_id = get_my_tenant_id()
+    AND EXISTS (
+      SELECT 1 FROM user_profiles
+      WHERE id = auth.uid()
+        AND 'tenant_admin' = ANY(role)
+    )
+  );
 
 -- Authenticated users read class requirements for their own tenant (needed during enrolment)
 CREATE POLICY "authenticated read class_requirements" ON class_requirements FOR SELECT

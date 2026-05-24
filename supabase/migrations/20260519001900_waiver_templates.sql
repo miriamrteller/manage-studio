@@ -43,9 +43,14 @@ CREATE POLICY "super_admin manages all waivers" ON waiver_templates FOR ALL
   USING (is_super_admin());
 
 CREATE POLICY "admins manage waivers" ON waiver_templates FOR ALL
-  USING (tenant_id = get_my_tenant_id() AND 'tenant_admin' = ANY(
-    (SELECT role FROM user_profiles WHERE id = auth.uid())
-  ));
+  USING (
+    tenant_id = get_my_tenant_id()
+    AND EXISTS (
+      SELECT 1 FROM user_profiles
+      WHERE id = auth.uid()
+        AND 'tenant_admin' = ANY(role)
+    )
+  );
 
 -- Authenticated users read active waivers for their own tenant only
 CREATE POLICY "authenticated read active waivers" ON waiver_templates FOR SELECT

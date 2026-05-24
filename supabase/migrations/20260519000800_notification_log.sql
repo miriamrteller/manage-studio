@@ -64,12 +64,18 @@ CREATE POLICY notification_log_admin_read ON notification_log
   FOR SELECT
   USING (
     tenant_id = get_my_tenant_id()
-    AND 'tenant_admin' = ANY((SELECT role FROM user_profiles WHERE id = auth.uid()))
+    AND EXISTS (
+      SELECT 1 FROM user_profiles
+      WHERE id = auth.uid()
+        AND 'tenant_admin' = ANY(role)
+    )
   );
 
 -- Edge Functions (service_role) insert notification records
 CREATE POLICY notification_log_service_insert ON notification_log
   FOR INSERT
-  WITH CHECK (is_service_role() OR 'tenant_admin' = ANY(
-    (SELECT role FROM user_profiles WHERE id = auth.uid())
+  WITH CHECK (is_service_role() OR EXISTS (
+    SELECT 1 FROM user_profiles
+    WHERE id = auth.uid()
+      AND 'tenant_admin' = ANY(role)
   ));

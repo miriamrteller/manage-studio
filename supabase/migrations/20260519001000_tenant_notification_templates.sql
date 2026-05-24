@@ -56,7 +56,11 @@ CREATE POLICY templates_admin_manage ON tenant_notification_templates
   FOR ALL
   USING (
     tenant_id = get_my_tenant_id()
-    AND 'tenant_admin' = ANY((SELECT role FROM user_profiles WHERE id = auth.uid()))
+    AND EXISTS (
+      SELECT 1 FROM user_profiles
+      WHERE id = auth.uid()
+        AND 'tenant_admin' = ANY(role)
+    )
   );
 
 -- Authenticated users can read approved templates for their own tenant

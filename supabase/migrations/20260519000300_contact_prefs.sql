@@ -44,9 +44,14 @@ CREATE POLICY "super_admin manages all contact_preferences" ON contact_preferenc
   USING (is_super_admin());
 
 CREATE POLICY "admins manage preferences" ON contact_preferences FOR ALL
-  USING (tenant_id = get_my_tenant_id() AND 'tenant_admin' = ANY(
-    (SELECT role FROM user_profiles WHERE id = auth.uid())
-  ));
+  USING (
+    tenant_id = get_my_tenant_id()
+    AND EXISTS (
+      SELECT 1 FROM user_profiles
+      WHERE id = auth.uid()
+        AND 'tenant_admin' = ANY(role)
+    )
+  );
 
 -- Users can manage their own row (keyed by person_id or family_member_id)
 CREATE POLICY "users manage own preferences" ON contact_preferences FOR ALL
