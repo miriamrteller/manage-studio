@@ -96,9 +96,14 @@ CREATE POLICY "super_admin manages all tenants" ON tenants FOR ALL
   USING (is_super_admin());
 
 CREATE POLICY "admins update own tenant" ON tenants FOR UPDATE
-  USING (id = get_my_tenant_id() AND 'tenant_admin' = ANY(
-    (SELECT role FROM user_profiles WHERE id = auth.uid())
-  ));
+  USING (
+    id = get_my_tenant_id()
+    AND EXISTS (
+      SELECT 1 FROM user_profiles
+      WHERE id = auth.uid()
+        AND 'tenant_admin' = ANY(role)
+    )
+  );
 
 -- User profiles: admins manage, users read own; super_admin sees all
 CREATE POLICY "users read own profile" ON user_profiles FOR SELECT
