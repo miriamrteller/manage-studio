@@ -31,11 +31,18 @@ CREATE INDEX idx_enrolments_status ON enrolments(status);
 -- RLS
 ALTER TABLE enrolments ENABLE ROW LEVEL SECURITY;
 
+CREATE POLICY "super_admin manages all enrolments" ON enrolments FOR ALL
+  USING (is_super_admin());
+
 CREATE POLICY "admins manage enrolments" ON enrolments FOR ALL
-  USING (tenant_id = get_my_tenant_id() AND EXISTS(SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role @> ARRAY['tenant_admin']));
+  USING (tenant_id = get_my_tenant_id() AND 'tenant_admin' = ANY(
+    (SELECT role FROM user_profiles WHERE id = auth.uid())
+  ));
 
 CREATE POLICY "parents see own enrolments" ON enrolments FOR SELECT
-  USING (person_id IN (SELECT id FROM people WHERE family_id IN (SELECT family_id FROM family_members WHERE user_profile_id = auth.uid())));
+  USING (person_id IN (
+    SELECT id FROM people WHERE family_id IN (SELECT get_my_family_ids())
+  ));
 
 CREATE POLICY "adult students see own enrolments" ON enrolments FOR SELECT
-  USING (person_id IN (SELECT id FROM people WHERE user_profile_id = auth.uid()));
+  USING (person_id = get_my_person_id());

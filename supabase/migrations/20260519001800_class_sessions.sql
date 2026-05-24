@@ -22,9 +22,15 @@ CREATE INDEX idx_sessions_date ON class_sessions(session_date);
 ALTER TABLE class_sessions ENABLE ROW LEVEL SECURITY;
 
 -- Policies
--- Admins and teachers manage sessions
+CREATE POLICY "super_admin manages all sessions" ON class_sessions FOR ALL
+  USING (is_super_admin());
+
 CREATE POLICY "admins manage sessions" ON class_sessions FOR ALL
-  USING (tenant_id = get_my_tenant_id() AND EXISTS(SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role @> ARRAY['tenant_admin']));
+  USING (tenant_id = get_my_tenant_id() AND 'tenant_admin' = ANY(
+    (SELECT role FROM user_profiles WHERE id = auth.uid())
+  ));
 
 CREATE POLICY "teachers manage sessions" ON class_sessions FOR ALL
-  USING (tenant_id = get_my_tenant_id() AND EXISTS(SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role @> ARRAY['teacher']));
+  USING (tenant_id = get_my_tenant_id() AND 'teacher' = ANY(
+    (SELECT role FROM user_profiles WHERE id = auth.uid())
+  ));

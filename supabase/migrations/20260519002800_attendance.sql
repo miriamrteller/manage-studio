@@ -40,24 +40,40 @@ ALTER TABLE attendance ENABLE ROW LEVEL SECURITY;
 ALTER TABLE makeup_credits ENABLE ROW LEVEL SECURITY;
 
 -- Attendance policies
+CREATE POLICY "super_admin manages all attendance" ON attendance FOR ALL
+  USING (is_super_admin());
+
 CREATE POLICY "admins manage attendance" ON attendance FOR ALL
-  USING (tenant_id = get_my_tenant_id() AND EXISTS(SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role @> ARRAY['tenant_admin']));
+  USING (tenant_id = get_my_tenant_id() AND 'tenant_admin' = ANY(
+    (SELECT role FROM user_profiles WHERE id = auth.uid())
+  ));
 
 CREATE POLICY "teachers mark attendance" ON attendance FOR ALL
-  USING (tenant_id = get_my_tenant_id() AND EXISTS(SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role @> ARRAY['teacher']));
+  USING (tenant_id = get_my_tenant_id() AND 'teacher' = ANY(
+    (SELECT role FROM user_profiles WHERE id = auth.uid())
+  ));
 
 CREATE POLICY "families see own attendance" ON attendance FOR SELECT
-  USING (person_id IN (SELECT id FROM people WHERE family_id IN (SELECT family_id FROM family_members WHERE user_profile_id = auth.uid())));
+  USING (person_id IN (
+    SELECT id FROM people WHERE family_id IN (SELECT get_my_family_ids())
+  ));
 
 CREATE POLICY "adult students see own attendance" ON attendance FOR SELECT
-  USING (person_id IN (SELECT id FROM people WHERE user_profile_id = auth.uid()));
+  USING (person_id = get_my_person_id());
 
 -- Makeup credits policies
+CREATE POLICY "super_admin manages all makeup_credits" ON makeup_credits FOR ALL
+  USING (is_super_admin());
+
 CREATE POLICY "admins manage makeup_credits" ON makeup_credits FOR ALL
-  USING (tenant_id = get_my_tenant_id() AND EXISTS(SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role @> ARRAY['tenant_admin']));
+  USING (tenant_id = get_my_tenant_id() AND 'tenant_admin' = ANY(
+    (SELECT role FROM user_profiles WHERE id = auth.uid())
+  ));
 
 CREATE POLICY "families see own makeup_credits" ON makeup_credits FOR SELECT
-  USING (person_id IN (SELECT id FROM people WHERE family_id IN (SELECT family_id FROM family_members WHERE user_profile_id = auth.uid())));
+  USING (person_id IN (
+    SELECT id FROM people WHERE family_id IN (SELECT get_my_family_ids())
+  ));
 
 CREATE POLICY "adult students see own makeup_credits" ON makeup_credits FOR SELECT
-  USING (person_id IN (SELECT id FROM people WHERE user_profile_id = auth.uid()));
+  USING (person_id = get_my_person_id());

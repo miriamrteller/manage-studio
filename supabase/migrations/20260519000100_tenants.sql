@@ -62,26 +62,50 @@ ALTER TABLE tenants ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
 
 -- Helper functions for RLS policies
+-- All SECURITY DEFINER functions pin search_path to prevent search-path injection.
 CREATE OR REPLACE FUNCTION get_my_tenant_id()
-RETURNS UUID LANGUAGE sql SECURITY DEFINER STABLE AS $$
+RETURNS UUID LANGUAGE sql SECURITY DEFINER STABLE
+SET search_path = public AS $$
   SELECT tenant_id FROM user_profiles WHERE id = auth.uid()
 $$;
 
 CREATE OR REPLACE FUNCTION is_super_admin()
-RETURNS BOOLEAN LANGUAGE sql SECURITY DEFINER STABLE AS $$
+RETURNS BOOLEAN LANGUAGE sql SECURITY DEFINER STABLE
+SET search_path = public AS $$
   SELECT 'super_admin' = ANY(role) FROM user_profiles WHERE id = auth.uid()
 $$;
 
--- RLS Policies
--- Tenants: public read, users see own for updates
-CREATE POLICY "public read tenants" ON tenants FOR SELECT USING (true);
+-- Detects service_role JWT (used by Edge Functions for privileged DB access).
+-- Not a SECURITY DEFINER — reads only the JWT claim, safe to be STABLE.
+CREATE OR REPLACE FUNCTION is_service_role()
+RETURNS BOOLEAN LANGUAGE sql STABLE
+SET search_path = public AS $$
+  SELECT COALESCE(
+    (current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role',
+    false
+  )
+$$;
 
+-- RLS Policies
+-- Tenants: authenticated users see only their own tenant; super_admin sees all.
+-- No public/anon read — anon access to branding is via get_tenant_config_by_subdomain() RPC.
 CREATE POLICY "users see own tenant" ON tenants FOR SELECT
   USING (id = get_my_tenant_id());
 
--- User profiles: admins manage, users read own
+CREATE POLICY "super_admin manages all tenants" ON tenants FOR ALL
+  USING (is_super_admin());
+
+CREATE POLICY "admins update own tenant" ON tenants FOR UPDATE
+  USING (id = get_my_tenant_id() AND 'tenant_admin' = ANY(
+    (SELECT role FROM user_profiles WHERE id = auth.uid())
+  ));
+
+-- User profiles: admins manage, users read own; super_admin sees all
 CREATE POLICY "users read own profile" ON user_profiles FOR SELECT
   USING (id = auth.uid());
 
 CREATE POLICY "admins manage profiles" ON user_profiles FOR ALL
   USING (tenant_id = get_my_tenant_id() AND 'tenant_admin' = ANY(role));
+
+CREATE POLICY "super_admin manages all profiles" ON user_profiles FOR ALL
+  USING (is_super_admin());

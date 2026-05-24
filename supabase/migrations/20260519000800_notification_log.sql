@@ -54,17 +54,22 @@ CREATE INDEX idx_notification_log_created    ON notification_log(tenant_id, crea
 -- Row level security
 ALTER TABLE notification_log ENABLE ROW LEVEL SECURITY;
 
--- Admins + super_admins can see/insert all notifications for their tenant
-CREATE POLICY notification_log_access ON notification_log
+-- Super-admin reads all (platform monitoring)
+CREATE POLICY notification_log_super_admin ON notification_log
+  FOR SELECT
+  USING (is_super_admin());
+
+-- Tenant admins can read and insert notifications for their own tenant
+CREATE POLICY notification_log_admin_read ON notification_log
   FOR SELECT
   USING (
-    is_super_admin()
-    OR tenant_id = get_my_tenant_id()
+    tenant_id = get_my_tenant_id()
+    AND 'tenant_admin' = ANY((SELECT role FROM user_profiles WHERE id = auth.uid()))
   );
 
-CREATE POLICY notification_log_insert ON notification_log
+-- Edge Functions (service_role) insert notification records
+CREATE POLICY notification_log_service_insert ON notification_log
   FOR INSERT
-  WITH CHECK (
-    is_super_admin()
-    OR tenant_id = get_my_tenant_id()
-  );
+  WITH CHECK (is_service_role() OR 'tenant_admin' = ANY(
+    (SELECT role FROM user_profiles WHERE id = auth.uid())
+  ));

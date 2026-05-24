@@ -60,18 +60,39 @@ ALTER TABLE levels ENABLE ROW LEVEL SECURITY;
 ALTER TABLE classes ENABLE ROW LEVEL SECURITY;
 
 -- Policies
--- Terms & Levels: public read, admin write
-CREATE POLICY "all see terms" ON terms FOR SELECT USING (true);
+-- Terms & Levels: authenticated users see own tenant; super_admin sees all; admin writes
+-- anon access is via get_public_classes_by_subdomain() RPC — not direct table reads
+CREATE POLICY "super_admin manages all terms" ON terms FOR ALL
+  USING (is_super_admin());
+
+CREATE POLICY "authenticated see own terms" ON terms FOR SELECT
+  USING (tenant_id = get_my_tenant_id());
+
 CREATE POLICY "admins manage terms" ON terms FOR ALL
-  USING (tenant_id = get_my_tenant_id() AND EXISTS(SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role @> ARRAY['tenant_admin']));
+  USING (tenant_id = get_my_tenant_id() AND 'tenant_admin' = ANY(
+    (SELECT role FROM user_profiles WHERE id = auth.uid())
+  ));
 
-CREATE POLICY "all see levels" ON levels FOR SELECT USING (true);
+CREATE POLICY "super_admin manages all levels" ON levels FOR ALL
+  USING (is_super_admin());
+
+CREATE POLICY "authenticated see own levels" ON levels FOR SELECT
+  USING (tenant_id = get_my_tenant_id());
+
 CREATE POLICY "admins manage levels" ON levels FOR ALL
-  USING (tenant_id = get_my_tenant_id() AND EXISTS(SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role @> ARRAY['tenant_admin']));
+  USING (tenant_id = get_my_tenant_id() AND 'tenant_admin' = ANY(
+    (SELECT role FROM user_profiles WHERE id = auth.uid())
+  ));
 
--- Classes: public read (is_public), admin write
-CREATE POLICY "public read classes" ON classes FOR SELECT
-  USING (is_public = true);
+-- Classes: authenticated users see own tenant's classes; super_admin sees all; admin/teacher write
+-- anon public-facing class catalog is served by get_public_classes_by_subdomain() RPC
+CREATE POLICY "super_admin manages all classes" ON classes FOR ALL
+  USING (is_super_admin());
+
+CREATE POLICY "authenticated see own classes" ON classes FOR SELECT
+  USING (tenant_id = get_my_tenant_id());
 
 CREATE POLICY "admins manage classes" ON classes FOR ALL
-  USING (tenant_id = get_my_tenant_id() AND EXISTS(SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role @> ARRAY['tenant_admin']));
+  USING (tenant_id = get_my_tenant_id() AND 'tenant_admin' = ANY(
+    (SELECT role FROM user_profiles WHERE id = auth.uid())
+  ));

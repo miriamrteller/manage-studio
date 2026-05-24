@@ -5,7 +5,11 @@
 
 -- Step 1: Create trigger function
 CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
 DECLARE
   v_tenant_id UUID;
   v_subdomain TEXT;
@@ -57,14 +61,14 @@ EXCEPTION WHEN OTHERS THEN
   -- Re-raise so frontend knows signup failed at this step
   RAISE;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 -- Step 2: Create trigger on auth.users INSERT
 -- TIMING: AFTER INSERT (new auth.users row exists, fire the function)
 -- WHEN: For every new row (FOR EACH ROW)
 CREATE TRIGGER on_auth_user_created
 AFTER INSERT ON auth.users
-FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 -- Step 3: Verify trigger exists
 -- Run this after applying migration to confirm:

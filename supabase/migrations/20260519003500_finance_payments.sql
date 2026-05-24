@@ -93,16 +93,7 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION is_service_role()
-RETURNS BOOLEAN
-LANGUAGE sql
-STABLE
-AS $$
-  SELECT COALESCE(
-    (current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role',
-    false
-  );
-$$;
+-- is_service_role() is defined in migration 001 — no need to redefine here.
 
 CREATE OR REPLACE FUNCTION get_tenant_stripe_credentials(p_tenant_id UUID)
 RETURNS TABLE (
@@ -202,15 +193,16 @@ GRANT EXECUTE ON FUNCTION get_tenant_stripe_credentials(UUID) TO service_role;
 ALTER TABLE payments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE invoice_sequences ENABLE ROW LEVEL SECURITY;
 
+-- Super-admin sees all payments (platform ops / dispute resolution)
+CREATE POLICY payments_super_admin ON payments
+  FOR ALL
+  USING (is_super_admin());
+
 CREATE POLICY payments_admin_all ON payments
   FOR ALL
   USING (
     tenant_id = get_my_tenant_id()
-    AND EXISTS (
-      SELECT 1 FROM user_profiles
-      WHERE id = auth.uid()
-        AND 'tenant_admin' = ANY(role)
-    )
+    AND 'tenant_admin' = ANY((SELECT role FROM user_profiles WHERE id = auth.uid()))
   );
 
 CREATE POLICY payments_parent_select ON payments
@@ -218,22 +210,21 @@ CREATE POLICY payments_parent_select ON payments
   USING (
     tenant_id = get_my_tenant_id()
     AND (
-      person_id IN (SELECT id FROM people WHERE user_profile_id = auth.uid())
-      OR family_id IN (
-        SELECT family_id FROM family_members WHERE user_profile_id = auth.uid()
-      )
+      person_id = get_my_person_id()
+      OR family_id IN (SELECT get_my_family_ids())
     )
   );
+
+-- Super-admin manages invoice sequences
+CREATE POLICY invoice_sequences_super_admin ON invoice_sequences
+  FOR ALL
+  USING (is_super_admin());
 
 CREATE POLICY invoice_sequences_admin ON invoice_sequences
   FOR SELECT
   USING (
     tenant_id = get_my_tenant_id()
-    AND EXISTS (
-      SELECT 1 FROM user_profiles
-      WHERE id = auth.uid()
-        AND 'tenant_admin' = ANY(role)
-    )
+    AND 'tenant_admin' = ANY((SELECT role FROM user_profiles WHERE id = auth.uid()))
   );
 
 REVOKE ALL ON FUNCTION next_invoice_number(UUID) FROM PUBLIC;

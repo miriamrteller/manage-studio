@@ -24,8 +24,14 @@ CREATE INDEX idx_requirement_templates_type ON requirement_templates(requirement
 -- RLS
 ALTER TABLE requirement_templates ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "admins manage requirement_templates" ON requirement_templates FOR ALL
-  USING (tenant_id = get_my_tenant_id() AND EXISTS(SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role @> ARRAY['tenant_admin']));
+CREATE POLICY "super_admin manages all requirement_templates" ON requirement_templates FOR ALL
+  USING (is_super_admin());
 
-CREATE POLICY "all read requirement_templates" ON requirement_templates FOR SELECT
-  USING (true);
+CREATE POLICY "admins manage requirement_templates" ON requirement_templates FOR ALL
+  USING (tenant_id = get_my_tenant_id() AND 'tenant_admin' = ANY(
+    (SELECT role FROM user_profiles WHERE id = auth.uid())
+  ));
+
+-- Authenticated users read requirement templates for their own tenant
+CREATE POLICY "authenticated read requirement_templates" ON requirement_templates FOR SELECT
+  USING (tenant_id = get_my_tenant_id());

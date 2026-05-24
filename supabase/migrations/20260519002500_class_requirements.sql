@@ -25,8 +25,14 @@ CREATE INDEX idx_class_requirements_template ON class_requirements(requirement_t
 -- RLS
 ALTER TABLE class_requirements ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "admins manage class_requirements" ON class_requirements FOR ALL
-  USING (tenant_id = get_my_tenant_id() AND EXISTS(SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role @> ARRAY['tenant_admin']));
+CREATE POLICY "super_admin manages all class_requirements" ON class_requirements FOR ALL
+  USING (is_super_admin());
 
-CREATE POLICY "all read class_requirements" ON class_requirements FOR SELECT
-  USING (true);
+CREATE POLICY "admins manage class_requirements" ON class_requirements FOR ALL
+  USING (tenant_id = get_my_tenant_id() AND 'tenant_admin' = ANY(
+    (SELECT role FROM user_profiles WHERE id = auth.uid())
+  ));
+
+-- Authenticated users read class requirements for their own tenant (needed during enrolment)
+CREATE POLICY "authenticated read class_requirements" ON class_requirements FOR SELECT
+  USING (tenant_id = get_my_tenant_id());

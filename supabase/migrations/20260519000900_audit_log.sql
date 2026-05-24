@@ -36,25 +36,24 @@ CREATE INDEX idx_audit_log_actor       ON audit_log(actor_id);
 -- Row level security
 ALTER TABLE audit_log ENABLE ROW LEVEL SECURITY;
 
--- Immutable (insert only, RLS prevents update/delete)
+-- Immutable (insert only — no UPDATE or DELETE policies defined, so RLS blocks them)
+-- Service role and authenticated users in the tenant can insert
 CREATE POLICY audit_log_insert ON audit_log
   FOR INSERT
   WITH CHECK (
-    is_super_admin()
+    is_service_role()
     OR tenant_id = get_my_tenant_id()
   );
 
--- Admin-only read access for audits
-CREATE POLICY audit_log_read ON audit_log
+-- Super-admin reads all
+CREATE POLICY audit_log_super_admin_read ON audit_log
+  FOR SELECT
+  USING (is_super_admin());
+
+-- Tenant admins read their own tenant's audit log
+CREATE POLICY audit_log_admin_read ON audit_log
   FOR SELECT
   USING (
-    is_super_admin()
-    OR (
-      tenant_id = get_my_tenant_id()
-      AND EXISTS (
-        SELECT 1 FROM user_profiles
-        WHERE id = auth.uid()
-        AND ('tenant_admin' = ANY(role) OR 'super_admin' = ANY(role))
-      )
-    )
+    tenant_id = get_my_tenant_id()
+    AND 'tenant_admin' = ANY((SELECT role FROM user_profiles WHERE id = auth.uid()))
   );

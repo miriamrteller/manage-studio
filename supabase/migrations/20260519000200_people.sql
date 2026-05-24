@@ -58,19 +58,22 @@ ALTER TABLE families ENABLE ROW LEVEL SECURITY;
 ALTER TABLE family_members ENABLE ROW LEVEL SECURITY;
 ALTER TABLE people ENABLE ROW LEVEL SECURITY;
 
--- Helper function
+-- Helper functions
 CREATE OR REPLACE FUNCTION get_my_family_ids()
-RETURNS SETOF UUID LANGUAGE sql SECURITY DEFINER STABLE AS $$
+RETURNS SETOF UUID LANGUAGE sql SECURITY DEFINER STABLE
+SET search_path = public AS $$
   SELECT family_id FROM family_members WHERE user_profile_id = auth.uid()
 $$;
 
 CREATE OR REPLACE FUNCTION get_my_person_id()
-RETURNS UUID LANGUAGE sql SECURITY DEFINER STABLE AS $$
+RETURNS UUID LANGUAGE sql SECURITY DEFINER STABLE
+SET search_path = public AS $$
   SELECT id FROM people WHERE user_profile_id = auth.uid()
 $$;
 
 CREATE OR REPLACE FUNCTION is_minor(date_of_birth DATE)
-RETURNS BOOLEAN LANGUAGE sql STABLE AS $$
+RETURNS BOOLEAN LANGUAGE sql STABLE
+SET search_path = public AS $$
   SELECT CASE WHEN date_of_birth IS NULL THEN false
               WHEN date_of_birth > (now()::date - interval '18 years') THEN true
               ELSE false
@@ -78,21 +81,40 @@ RETURNS BOOLEAN LANGUAGE sql STABLE AS $$
 $$;
 
 -- RLS Policies
+CREATE POLICY "super_admin manages all families" ON families FOR ALL
+  USING (is_super_admin());
+
 CREATE POLICY "admins manage families" ON families FOR ALL
-  USING (tenant_id = get_my_tenant_id() AND EXISTS(SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role @> ARRAY['tenant_admin']));
+  USING (tenant_id = get_my_tenant_id() AND 'tenant_admin' = ANY(
+    (SELECT role FROM user_profiles WHERE id = auth.uid())
+  ));
 
 CREATE POLICY "family members see own family" ON families FOR SELECT
   USING (id IN (SELECT get_my_family_ids()));
 
+CREATE POLICY "super_admin manages all family_members" ON family_members FOR ALL
+  USING (is_super_admin());
+
 CREATE POLICY "admins manage family_members" ON family_members FOR ALL
-  USING (tenant_id = get_my_tenant_id() AND EXISTS(SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role @> ARRAY['tenant_admin']));
+  USING (tenant_id = get_my_tenant_id() AND 'tenant_admin' = ANY(
+    (SELECT role FROM user_profiles WHERE id = auth.uid())
+  ));
 
+-- Parents see their own row AND all rows in their family (so guardian A sees guardian B)
 CREATE POLICY "family members see own family" ON family_members FOR SELECT
-  USING (user_profile_id = auth.uid());
+  USING (
+    user_profile_id = auth.uid()
+    OR family_id IN (SELECT get_my_family_ids())
+  );
 
--- People: staff see all in their tenant, parents see own family, adult students see self
+-- People: super_admin + staff see all in tenant; parents see own family; adult students see self
+CREATE POLICY "super_admin manages all people" ON people FOR ALL
+  USING (is_super_admin());
+
 CREATE POLICY "staff see all people" ON people FOR SELECT
-  USING (tenant_id = get_my_tenant_id() AND EXISTS(SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role @> ARRAY['tenant_admin']));
+  USING (tenant_id = get_my_tenant_id() AND 'tenant_admin' = ANY(
+    (SELECT role FROM user_profiles WHERE id = auth.uid())
+  ));
 
 CREATE POLICY "parents see own family people" ON people FOR SELECT
   USING (tenant_id = get_my_tenant_id() AND family_id IN (SELECT get_my_family_ids()));

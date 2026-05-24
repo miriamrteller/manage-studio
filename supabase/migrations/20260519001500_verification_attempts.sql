@@ -1,8 +1,8 @@
--- Migration 014: Verification Attempts Table
+-- Migration 015: Verification Attempts
 -- Purpose: Rate limiting for OTP verification attempts
 -- Enforces: Max 5 attempts per contact_point/channel/tenant per hour
 -- Features: Atomic UPSERT, automatic cleanup, soft blocking
--- Created: 2026-05-12
+-- DEPENDENCIES: Migration 001 (tenants, is_service_role, is_super_admin)
 
 CREATE TABLE verification_attempts (
   id                UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -14,7 +14,7 @@ CREATE TABLE verification_attempts (
   blocked_until     TIMESTAMPTZ,
   created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
-  
+
   UNIQUE (tenant_id, contact_point, channel)
 );
 
@@ -28,24 +28,28 @@ CREATE INDEX idx_verification_attempts_blocked
 -- Enable RLS
 ALTER TABLE verification_attempts ENABLE ROW LEVEL SECURITY;
 
--- RLS Policy 1: Tenant admins can read/manage all attempts in their tenant
-CREATE POLICY "admin_manage_attempts" ON verification_attempts FOR ALL
-  USING (tenant_id = get_my_tenant_id() AND EXISTS(SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role @> ARRAY['tenant_admin']));
-
--- RLS Policy 2: System (Edge Functions) can insert/update
-CREATE POLICY "system_insert_attempts" ON verification_attempts FOR INSERT
-  WITH CHECK (tenant_id = get_my_tenant_id());
-
-CREATE POLICY "system_update_attempts" ON verification_attempts FOR UPDATE
-  USING (tenant_id = get_my_tenant_id())
-  WITH CHECK (tenant_id = get_my_tenant_id());
-
--- RLS Policy 3: Super-admin can read all
+-- Super-admin reads all (platform monitoring)
 CREATE POLICY "super_admin_reads_all_attempts" ON verification_attempts FOR SELECT
   USING (is_super_admin());
 
--- Function: Update attempt count + set blocked_until if threshold exceeded
--- This is ATOMIC: prevents race conditions from concurrent requests
+-- Tenant admins read/manage attempts in their own tenant
+CREATE POLICY "admin_manage_attempts" ON verification_attempts FOR ALL
+  USING (
+    tenant_id = get_my_tenant_id()
+    AND 'tenant_admin' = ANY((SELECT role FROM user_profiles WHERE id = auth.uid()))
+  );
+
+-- Edge Functions (service_role) insert new records
+CREATE POLICY "system_insert_attempts" ON verification_attempts FOR INSERT
+  WITH CHECK (is_service_role());
+
+-- Edge Functions (service_role) update existing records
+CREATE POLICY "system_update_attempts" ON verification_attempts FOR UPDATE
+  USING (is_service_role())
+  WITH CHECK (is_service_role());
+
+-- Function: Update attempt count + set blocked_until if threshold exceeded.
+-- ATOMIC via ON CONFLICT — prevents race conditions from concurrent requests.
 CREATE OR REPLACE FUNCTION increment_verification_attempt(
   p_tenant_id UUID,
   p_contact_point TEXT,
@@ -54,7 +58,11 @@ CREATE OR REPLACE FUNCTION increment_verification_attempt(
 RETURNS TABLE (
   attempt_count INT,
   blocked_until TIMESTAMPTZ
-) LANGUAGE plpgsql SECURITY DEFINER AS $$
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
 DECLARE
   v_attempt_count INT;
   v_blocked_until TIMESTAMPTZ;
@@ -85,18 +93,26 @@ BEGIN
 END;
 $$;
 
+GRANT EXECUTE ON FUNCTION increment_verification_attempt(UUID, TEXT, TEXT) TO service_role;
+
 -- Function: Remove attempts older than 30 days
--- Schedule this with pg_cron:
+-- After first deploy, schedule with pg_cron:
 -- SELECT cron.schedule('cleanup-verification-attempts', '0 2 * * *', 'SELECT cleanup_old_verification_attempts()');
 CREATE OR REPLACE FUNCTION cleanup_old_verification_attempts()
-RETURNS INT LANGUAGE plpgsql SECURITY DEFINER AS $$
+RETURNS INT
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
 DECLARE
   v_deleted_count INT;
 BEGIN
   DELETE FROM verification_attempts
   WHERE created_at < now() - INTERVAL '30 days';
-  
+
   GET DIAGNOSTICS v_deleted_count = ROW_COUNT;
   RETURN v_deleted_count;
 END;
 $$;
+
+GRANT EXECUTE ON FUNCTION cleanup_old_verification_attempts() TO service_role;

@@ -29,64 +29,42 @@ CREATE INDEX idx_tenant_email_customizations_language
 -- Enable RLS
 ALTER TABLE tenant_email_customizations ENABLE ROW LEVEL SECURITY;
 
--- RLS Policy: Users can SELECT their own tenant's email customizations
-CREATE POLICY tenant_email_customizations_select 
+-- Super-admin manages all email customizations (platform ops)
+CREATE POLICY tenant_email_customizations_super_admin
   ON tenant_email_customizations
-  FOR SELECT
-  USING (
-    -- Super-admin can see all customizations
-    is_super_admin()
-    OR
-    -- Non-admin users can see only their tenant's customizations
-    (tenant_id = get_my_tenant_id() AND NOT is_super_admin())
-  );
+  FOR ALL
+  USING (is_super_admin());
 
--- RLS Policy: Users can INSERT/UPDATE their own tenant's email customizations
-CREATE POLICY tenant_email_customizations_insert_update 
+-- Tenant admins manage their own tenant's email customizations
+CREATE POLICY tenant_email_customizations_admin_manage
   ON tenant_email_customizations
-  FOR INSERT
-  WITH CHECK (
-    -- Only users from the tenant can insert
-    tenant_id = get_my_tenant_id()
-    AND
-    -- Only tenant_admin or higher can modify email templates (optional: enforce role check here if needed)
-    EXISTS (
-      SELECT 1 FROM user_profiles
-      WHERE id = auth.uid()
-      AND tenant_id = get_my_tenant_id()
-    )
-  );
-
--- RLS Policy: Allow UPDATE of customizations
-CREATE POLICY tenant_email_customizations_update 
-  ON tenant_email_customizations
-  FOR UPDATE
+  FOR ALL
   USING (
-    -- Only users from the same tenant can update
     tenant_id = get_my_tenant_id()
+    AND 'tenant_admin' = ANY((SELECT role FROM user_profiles WHERE id = auth.uid()))
   )
   WITH CHECK (
-    -- Can't update a row to belong to a different tenant
     tenant_id = get_my_tenant_id()
+    AND 'tenant_admin' = ANY((SELECT role FROM user_profiles WHERE id = auth.uid()))
   );
 
--- RLS Policy: Users can DELETE their own tenant's email customizations
-CREATE POLICY tenant_email_customizations_delete 
+-- Authenticated users in the tenant can read their own customizations (for rendering)
+CREATE POLICY tenant_email_customizations_select
   ON tenant_email_customizations
-  FOR DELETE
-  USING (
-    -- Only users from the same tenant can delete
-    tenant_id = get_my_tenant_id()
-  );
+  FOR SELECT
+  USING (tenant_id = get_my_tenant_id());
 
 -- Create updated_at trigger to auto-update timestamp
 CREATE OR REPLACE FUNCTION update_tenant_email_customizations_updated_at()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SET search_path = public
+AS $$
 BEGIN
   NEW.updated_at = now();
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 CREATE TRIGGER trigger_tenant_email_customizations_updated_at
   BEFORE UPDATE ON tenant_email_customizations

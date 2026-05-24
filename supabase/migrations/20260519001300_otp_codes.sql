@@ -22,34 +22,25 @@ CREATE INDEX idx_otp_codes_email_expires
 CREATE INDEX idx_otp_codes_expires
   ON otp_codes(expires_at);
 
--- Policy: Anyone can insert their own OTP during signup
-CREATE POLICY "otp_codes_insert_own"
-  ON otp_codes
-  FOR INSERT
-  WITH CHECK (true);
-
--- Policy: Users can read their own unverified codes
-CREATE POLICY "otp_codes_select_own"
-  ON otp_codes
-  FOR SELECT
-  USING (true);
-
--- Policy: Users can update their own codes (mark as verified)
-CREATE POLICY "otp_codes_update_own"
-  ON otp_codes
-  FOR UPDATE
-  USING (true)
-  WITH CHECK (true);
-
--- Enable RLS
+-- Enable RLS before defining policies
 ALTER TABLE otp_codes ENABLE ROW LEVEL SECURITY;
 
+-- No authenticated or anon client policies.
+-- otp_codes is accessed exclusively by Edge Functions using service_role.
+-- Revoke direct client access as belt-and-suspenders.
+REVOKE ALL ON otp_codes FROM anon;
+REVOKE ALL ON otp_codes FROM authenticated;
+
 -- Function: Clean up expired OTP codes (run daily via pg_cron)
--- Recommendation: Add to cron schedule with:
--- SELECT cron.schedule('cleanup-expired-otps', '0 1 * * *', 'DELETE FROM otp_codes WHERE expires_at < now()');
+-- After first deploy, schedule with:
+-- SELECT cron.schedule('cleanup-expired-otps', '0 1 * * *', 'SELECT cleanup_expired_otps()');
 CREATE OR REPLACE FUNCTION cleanup_expired_otps()
-RETURNS void AS $$
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
 BEGIN
   DELETE FROM otp_codes WHERE expires_at < now();
 END;
-$$ LANGUAGE plpgsql;
+$$;

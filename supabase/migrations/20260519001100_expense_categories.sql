@@ -30,10 +30,20 @@ CREATE INDEX idx_categories_tenant ON expense_categories(tenant_id, is_active);
 
 ALTER TABLE expense_categories ENABLE ROW LEVEL SECURITY;
 
--- Example RLS: Only tenant users can access their categories
-CREATE POLICY expense_categories_access ON expense_categories
+-- Super-admin manages all categories
+CREATE POLICY expense_categories_super_admin ON expense_categories
+  FOR ALL
+  USING (is_super_admin());
+
+-- Tenant admins manage their own tenant's categories
+CREATE POLICY expense_categories_admin_manage ON expense_categories
   FOR ALL
   USING (
-    is_super_admin()
-    OR tenant_id = get_my_tenant_id()
+    tenant_id = get_my_tenant_id()
+    AND 'tenant_admin' = ANY((SELECT role FROM user_profiles WHERE id = auth.uid()))
   );
+
+-- Authenticated users read active categories for their own tenant
+CREATE POLICY expense_categories_read_active ON expense_categories
+  FOR SELECT
+  USING (tenant_id = get_my_tenant_id() AND is_active = true);

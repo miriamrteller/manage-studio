@@ -1,29 +1,62 @@
--- Migration 032: Public Classes View
--- Creates a view for unauthenticated access to public classes
--- DEPENDENCIES: Migrations 001, 004 (tenants and classes tables)
--- REQUIRED BY: Frontend landing page (public class listings)
+-- =============================================================================
+-- get_public_classes_by_subdomain — public class catalog for landing pages
+-- DEPENDS ON: 001 tenants, 004 classes (terms, levels, classes)
+-- ACCESS: anon + authenticated via RPC; no direct table access for anon
+-- =============================================================================
 
-CREATE OR REPLACE VIEW public_classes_by_subdomain AS
-SELECT 
-  c.id,
-  c.tenant_id,
-  c.name,
-  c.day_of_week,
-  c.start_time,
-  c.end_time,
-  c.max_capacity,
-  c.price_minor,
-  c.currency,
-  c.vat_rate,
-  c.is_public,
-  c.status,
-  c.term_id,
-  c.level_id,
-  t.subdomain as tenant_subdomain
-FROM classes c
-JOIN tenants t ON c.tenant_id = t.id
-WHERE c.is_public = true;
+-- Replace previous unfiltered view with a subdomain-filtered SECURITY DEFINER RPC.
+-- Only returns active, public classes for the requested subdomain.
+-- Safe for unauthenticated (anon) callers on landing pages.
 
--- Grant public access to the view (no auth required)
-GRANT SELECT ON public_classes_by_subdomain TO anon;
-GRANT SELECT ON public_classes_by_subdomain TO authenticated;
+CREATE OR REPLACE FUNCTION get_public_classes_by_subdomain(p_subdomain TEXT)
+RETURNS TABLE (
+  id              UUID,
+  tenant_id       UUID,
+  tenant_subdomain TEXT,
+  name            TEXT,
+  day_of_week     INT,
+  start_time      TIME,
+  end_time        TIME,
+  max_capacity    INT,
+  price_minor     INT,
+  currency        TEXT,
+  vat_rate        NUMERIC,
+  term_id         UUID,
+  level_id        UUID,
+  status          TEXT
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF p_subdomain IS NULL OR trim(p_subdomain) = '' THEN
+    RAISE EXCEPTION 'p_subdomain is required';
+  END IF;
+
+  RETURN QUERY
+  SELECT
+    c.id,
+    c.tenant_id,
+    t.subdomain,
+    c.name,
+    c.day_of_week,
+    c.start_time,
+    c.end_time,
+    c.max_capacity,
+    c.price_minor,
+    c.currency,
+    c.vat_rate,
+    c.term_id,
+    c.level_id,
+    c.status
+  FROM classes c
+  JOIN tenants t ON c.tenant_id = t.id
+  WHERE t.subdomain = trim(p_subdomain)
+    AND c.is_public = true
+    AND c.status = 'active';
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION get_public_classes_by_subdomain(TEXT) TO anon;
+GRANT EXECUTE ON FUNCTION get_public_classes_by_subdomain(TEXT) TO authenticated;

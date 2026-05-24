@@ -46,20 +46,23 @@ CREATE INDEX idx_templates_status          ON tenant_notification_templates(stat
 -- Row-level security
 ALTER TABLE tenant_notification_templates ENABLE ROW LEVEL SECURITY;
 
--- Admins manage templates, all users can read approved templates
-CREATE POLICY templates_read ON tenant_notification_templates
-  FOR SELECT
-  USING (
-    is_super_admin()
-    OR (
-      status = 'approved'
-      AND tenant_id = get_my_tenant_id()
-    )
-  );
+-- Super-admin manages all templates across all tenants
+CREATE POLICY templates_super_admin ON tenant_notification_templates
+  FOR ALL
+  USING (is_super_admin());
 
-CREATE POLICY templates_manage ON tenant_notification_templates
+-- Tenant admins manage their own tenant's templates
+CREATE POLICY templates_admin_manage ON tenant_notification_templates
   FOR ALL
   USING (
-    is_super_admin()
-    OR tenant_id = get_my_tenant_id()
+    tenant_id = get_my_tenant_id()
+    AND 'tenant_admin' = ANY((SELECT role FROM user_profiles WHERE id = auth.uid()))
+  );
+
+-- Authenticated users can read approved templates for their own tenant
+CREATE POLICY templates_read_approved ON tenant_notification_templates
+  FOR SELECT
+  USING (
+    status = 'approved'
+    AND tenant_id = get_my_tenant_id()
   );
