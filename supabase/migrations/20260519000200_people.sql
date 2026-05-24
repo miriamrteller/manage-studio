@@ -85,9 +85,14 @@ CREATE POLICY "super_admin manages all families" ON families FOR ALL
   USING (is_super_admin());
 
 CREATE POLICY "admins manage families" ON families FOR ALL
-  USING (tenant_id = get_my_tenant_id() AND 'tenant_admin' = ANY(
-    (SELECT role FROM user_profiles WHERE id = auth.uid())
-  ));
+  USING (
+    tenant_id = get_my_tenant_id()
+    AND EXISTS (
+      SELECT 1 FROM user_profiles
+      WHERE id = auth.uid()
+        AND 'tenant_admin' = ANY(role)
+    )
+  );
 
 CREATE POLICY "family members see own family" ON families FOR SELECT
   USING (id IN (SELECT get_my_family_ids()));
@@ -96,9 +101,14 @@ CREATE POLICY "super_admin manages all family_members" ON family_members FOR ALL
   USING (is_super_admin());
 
 CREATE POLICY "admins manage family_members" ON family_members FOR ALL
-  USING (tenant_id = get_my_tenant_id() AND 'tenant_admin' = ANY(
-    (SELECT role FROM user_profiles WHERE id = auth.uid())
-  ));
+  USING (
+    tenant_id = get_my_tenant_id()
+    AND EXISTS (
+      SELECT 1 FROM user_profiles
+      WHERE id = auth.uid()
+        AND 'tenant_admin' = ANY(role)
+    )
+  );
 
 -- Parents see their own row AND all rows in their family (so guardian A sees guardian B)
 CREATE POLICY "family members see own family" ON family_members FOR SELECT
@@ -112,9 +122,14 @@ CREATE POLICY "super_admin manages all people" ON people FOR ALL
   USING (is_super_admin());
 
 CREATE POLICY "staff see all people" ON people FOR SELECT
-  USING (tenant_id = get_my_tenant_id() AND 'tenant_admin' = ANY(
-    (SELECT role FROM user_profiles WHERE id = auth.uid())
-  ));
+  USING (
+    tenant_id = get_my_tenant_id()
+    AND EXISTS (
+      SELECT 1 FROM user_profiles
+      WHERE id = auth.uid()
+        AND 'tenant_admin' = ANY(role)
+    )
+  );
 
 CREATE POLICY "parents see own family people" ON people FOR SELECT
   USING (tenant_id = get_my_tenant_id() AND family_id IN (SELECT get_my_family_ids()));
