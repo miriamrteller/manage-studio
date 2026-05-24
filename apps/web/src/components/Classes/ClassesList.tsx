@@ -45,17 +45,17 @@ export function ClassesList() {
       {/* Empty state: accessible, positive message with action */}
       {!error && !isLoading && !classes.length && (
         <div className="p-8 flex flex-col items-center gap-4">
-          <p className="mb-4 text-center text-gray-700 text-lg font-semibold">{t('classes.no_classes_title')}</p>
-          <p className="mb-4 text-center text-gray-700">{t('classes.no_classes_message')}</p>
+          <p className="mb-4 text-center text-gray-700 text-lg font-semibold">{t('pages.classes.no_classes_title')}</p>
+          <p className="mb-4 text-center text-gray-700">{t('pages.classes.no_classes_message')}</p>
           <button
             type="button"
             tabIndex={0}
             className="button-outline"
             data-testid="empty-state-contact-support"
             onClick={() => window.open('mailto:support@example.com')}
-            aria-label={t('classes.contact_support')}
+            aria-label={t('pages.classes.contact_support')}
           >
-            {t('classes.contact_support')}
+            {t('pages.classes.contact_support')}
           </button>
         </div>
       )}
