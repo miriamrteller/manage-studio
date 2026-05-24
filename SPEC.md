@@ -1611,10 +1611,18 @@ The following tables and features are designed but NOT in V1 migrations. Do not 
 - §4 security banner rewritten to layered model with documented exceptions (§4.1.1 added)
 - §4.3 old duplicate SQL block replaced with policy inventory + helper reference + deferred appendix
 - Migrations 032/033 changed from unfiltered views to subdomain-filtered `SECURITY DEFINER` RPCs
-- Cross-tenant `USING (true)` policies removed; replaced with `tenant_id = get_my_tenant_id()`
-- `otp_codes` RLS hardened (service_role only); `SECURITY DEFINER SET search_path` applied uniformly
+- Cross-tenant `USING (true)` policies removed from all V1 migrations; replaced with `tenant_id = get_my_tenant_id()`
+- `otp_codes` RLS hardened (service_role only, RLS enabled before policies, `REVOKE ALL` from anon/authenticated)
+- `SECURITY DEFINER SET search_path = public` applied to all helper functions and trigger
 - `contact_preferences` extended with `notify_waiting_list` and `notify_school_announcements`
-- `is_super_admin()` bypass added to all V1 tables; `is_service_role()` moved to migration 001
+- `is_super_admin()` bypass policies added to all V1 tables; `is_service_role()` moved to migration 001; duplicate removed from migration 035
+- `EXECUTE PROCEDURE` → `EXECUTE FUNCTION` in trigger (Postgres 14+ convention)
+- **Verification pending:** `pnpm db:reset-local` requires Docker Desktop running. Run `pnpm db:reset-local` then `pnpm db:types` before first remote deploy and confirm smoke-test matrix (§4.3, Phase 2 exit criteria).
+
+**Out of scope — follow-up tasks before production:**
+- `apps/web/src/features/notifications/hooks/useContactPreferences.ts` queries `user_profile_id` on `contact_preferences` — DB uses `person_id` / `family_member_id`. Requires app-layer fix.
+- Regenerate `packages/shared/src/database.types.ts` and Zod schemas after `pnpm db:types`
+- pg_cron schedules for OTP and verification cleanup (see comments in migrations 013 and 015)
 
 All 15 identified issues from v2 remain resolved:
 
