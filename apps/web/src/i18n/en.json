@@ -44,7 +44,21 @@
     "delete_family_confirm": "Are you sure you want to delete the family \"{{name}}\"? This cannot be undone.",
     "add_family": "Add Family",
     "manage_families": "Manage Families",
-    "edit_family": "Edit Family: {{name}}"
+    "edit_family": "Edit Family: {{name}}",
+    "add_person": "Add Student",
+    "edit_person": "Edit Student: {{name}}",
+    "manage_people": "Manage Students & Adults",
+    "no_people_yet": "No students yet.",
+    "no_levels_yet": "No class levels yet.",
+    "no_terms_yet": "No learning terms yet.",
+    "all": "All",
+    "view": "View",
+    "status": "Status",
+    "done": "Done",
+    "no_results_found": "No results found.",
+    "delete_level_confirm": "Are you sure you want to delete the level \"{{name}}\"?",
+    "delete_term_confirm": "Are you sure you want to delete the term \"{{name}}\"?",
+    "delete_class_confirm": "Are you sure you want to delete the class \"{{name}}\"?"
   },
   "errors": {
     "network": "Network error. Check your connection.",
@@ -106,6 +120,31 @@
     "level": {
       "name": "Level Name",
       "sort_order": "Display Order"
+    },
+    "class": {
+      "name": "Class Name",
+      "term": "Term",
+      "level": "Level",
+      "teacher": "Teacher",
+      "max_capacity": "Max Capacity",
+      "price": "Price",
+      "price_help": "Enter the price in major currency units (e.g. 150.00).",
+      "day_of_week": "Day of Week",
+      "day_0": "Sunday",
+      "day_1": "Monday",
+      "day_2": "Tuesday",
+      "day_3": "Wednesday",
+      "day_4": "Thursday",
+      "day_5": "Friday",
+      "day_6": "Saturday",
+      "start_time": "Start Time",
+      "end_time": "End Time",
+      "billing_frequency": "Billing Frequency",
+      "status": "Status",
+      "status_active": "Active",
+      "status_full": "Full",
+      "status_cancelled": "Cancelled",
+      "is_public": "Show on public class list"
     },
     "person": {
       "name": "Full Name",
@@ -174,7 +213,23 @@
       "delete_confirm": "Are you sure you want to delete {{name}}?",
       "create_success": "Student created successfully.",
       "update_success": "Student updated successfully.",
-      "delete_success": "Student deleted successfully."
+      "delete_success": "Student deleted successfully.",
+      "create_title": "Add Student",
+      "edit_title": "Edit Student",
+      "consent_label": "Consent",
+      "waiver_status_label": "Waiver",
+      "waiver_accepted": "Accepted",
+      "waiver_pending": "Not accepted",
+      "empty_title": "No students yet",
+      "empty_message": "Add your first student to start managing enrolments and family links."
+    },
+    "families": {
+      "title": "Families",
+      "description": "Manage family groups, primary contacts, and guardian relationships.",
+      "create_button": "Add Family",
+      "edit_title": "Edit Family",
+      "empty_title": "No families yet",
+      "empty_message": "Create a family to group students and link primary contacts."
     },
     "billing": {
       "title": "Billing Accounts",
@@ -183,11 +238,19 @@
       "create_button": "New Account",
       "search_placeholder": "Search by email...",
       "account_holder_label": "Account Holder Name",
+      "account_holder_name_label": "Account Holder Name",
+      "filter_by_payment_method": "Filter by payment method",
+      "filter_by_status": "Filter by status",
+      "create_title": "New Billing Account",
+      "edit_title": "Edit Billing Account",
+      "empty_title": "No billing accounts yet",
+      "empty_message": "Create a billing account to link students and track payments.",
       "email_label": "Email",
       "phone_label": "Phone",
       "payment_method_label": "Payment Method",
       "payment_method_card": "Credit Card",
       "payment_method_bank": "Bank Transfer",
+      "payment_method_bank_transfer": "Bank Transfer",
       "payment_method_cash": "Cash",
       "payment_method_check": "Check",
       "status_label": "Status",
@@ -297,7 +360,33 @@
       "create_success": "Created successfully.",
       "update_success": "Updated successfully.",
       "delete_success": "Deleted successfully."
-    }
+    },
+    "levels": {
+      "title": "Class Levels",
+      "description": "Configure class levels such as beginner, intermediate, and advanced.",
+      "create_button": "Add Level",
+      "edit_title": "Edit Level",
+      "empty_title": "No class levels yet",
+      "empty_message": "Add levels to organise classes by skill or grade."
+    },
+    "terms": {
+      "title": "Learning Terms",
+      "description": "Create and manage seasons, semesters, and other learning periods.",
+      "create_button": "Add Term",
+      "edit_title": "Edit Term",
+      "empty_title": "No learning terms yet",
+      "empty_message": "Add a term before scheduling classes and enrolments."
+    },
+    "admin_classes": {
+      "title": "Manage Classes",
+      "description": "Create, edit, and delete classes for your studio.",
+      "create_button": "Add Class",
+      "edit_title": "Edit Class",
+      "empty_title": "No classes yet",
+      "empty_message": "Add your first class to make it available for enrolment."
+    },
+    "portal_dashboard": "Portal",
+    "coming_soon_portal": "Your portal dashboard is coming soon. You will be able to view enrolments, attendance, and payments here."
   },
   "nav": {
     "classes": "Classes",
@@ -309,7 +398,8 @@
     "student_dashboard": "Student Dashboard",
     "billing": "Billing Accounts",
     "levels": "Class Levels",
-    "terms": "Learning Terms"
+    "terms": "Learning Terms",
+    "manage_classes": "Manage Classes"
   },
   "footer": {
     "school_name_fallback": "Ballet School",

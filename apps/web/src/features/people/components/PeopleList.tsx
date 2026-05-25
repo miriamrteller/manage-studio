@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/shared';
 import { usePeople } from '../hooks/usePeople';
 import { usePersonSearch } from '../hooks/usePersonSearch';
 import { PersonSearch } from './PersonSearch';
@@ -89,13 +90,17 @@ export const PeopleList = (): React.ReactNode => {
       {!isLoading &&
         displayPeople.length === 0 &&
         (isSearching ? (
-          <div className="text-center py-4">
-            {t('common.no_results_found')}
-          </div>
+          <EmptyState
+            title={t('common.no_results_found')}
+            message={t('pages.people.search_placeholder')}
+          />
         ) : (
-          <div className="text-center py-4">
-            {t('common.no_people_yet')}
-          </div>
+          <EmptyState
+            title={t('pages.people.empty_title')}
+            message={t('pages.people.empty_message')}
+            actionLabel={t('pages.people.create_button')}
+            onAction={() => setIsCreating(true)}
+          />
         ))}
 
       {/* Table */}

@@ -1,25 +1,42 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/shared';
 import { useTerms } from '../hooks/useTerms';
+import { TermForm } from './TermForm';
 import type { Term } from '@shared/schemas';
 
-interface TermsListProps {
-  onEdit?: (term: Term) => void;
-}
-
-export const TermsList = ({ onEdit }: TermsListProps) => {
+export const TermsList = () => {
   const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [editingTerm, setEditingTerm] = useState<Term | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
 
   const termsData = useTerms({ page });
 
-  const handleEdit = (term: Term) => {
-    if (onEdit) {
-      onEdit(term);
+  const handleFormSubmit = async (data: Partial<Term>) => {
+    if (editingTerm?.id) {
+      await new Promise<void>((resolve, reject) => {
+        termsData.updateTerm(
+          { ...editingTerm, ...data } as Term,
+          { onSuccess: () => resolve(), onError: reject }
+        );
+      });
+      setEditingTerm(null);
+    } else {
+      await new Promise<void>((resolve, reject) => {
+        termsData.createTerm(data, { onSuccess: () => resolve(), onError: reject });
+      });
+      setIsCreating(false);
     }
   };
+
+  const handleEdit = (term: Term) => {
+    setEditingTerm(term);
+  };
+
+  const showFormModal = isCreating || editingTerm !== null;
 
   const handleDeleteClick = (termId: string) => {
     setDeleteConfirmId(termId);
@@ -46,6 +63,17 @@ export const TermsList = ({ onEdit }: TermsListProps) => {
 
   return (
     <div className="space-y-4 p-4">
+      <div className="space-y-2">
+        <h1 className="text-3xl font-bold">{t('pages.terms.title')}</h1>
+        <p className="text-gray-600">{t('pages.terms.description')}</p>
+      </div>
+
+      <div className="flex justify-end">
+        <Button variant="primary" onClick={() => setIsCreating(true)}>
+          {t('pages.terms.create_button')}
+        </Button>
+      </div>
+
       {/* Loading state */}
       {termsData.isLoading && (
         <div className="text-center py-4">
@@ -62,9 +90,12 @@ export const TermsList = ({ onEdit }: TermsListProps) => {
 
       {/* Empty state */}
       {!termsData.isLoading && termsData.terms.length === 0 && (
-        <div className="text-center py-4">
-          {t('common.no_terms_yet')}
-        </div>
+        <EmptyState
+          title={t('pages.terms.empty_title')}
+          message={t('pages.terms.empty_message')}
+          actionLabel={t('pages.terms.create_button')}
+          onAction={() => setIsCreating(true)}
+        />
       )}
 
       {/* Table */}
@@ -166,6 +197,38 @@ export const TermsList = ({ onEdit }: TermsListProps) => {
           >
             {t('common.next')}
           </Button>
+        </div>
+      )}
+
+      {showFormModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white shadow-lg">
+            <div className="flex items-center justify-between border-b p-4">
+              <h2 className="text-xl font-semibold">
+                {editingTerm
+                  ? t('pages.terms.edit_title')
+                  : t('pages.terms.create_button')}
+              </h2>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setIsCreating(false);
+                  setEditingTerm(null);
+                }}
+                className="text-gray-500 hover:text-gray-700"
+                aria-label={t('common.close')}
+              >
+                ✕
+              </Button>
+            </div>
+            <TermForm
+              term={editingTerm || undefined}
+              onSubmit={handleFormSubmit}
+              isLoading={termsData.isCreating || termsData.isUpdating}
+            />
+          </div>
         </div>
       )}
 

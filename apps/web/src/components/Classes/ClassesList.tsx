@@ -1,8 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { useClasses } from '@/features/classes/hooks';
 import { useTenant } from '@/hooks/useTenant';
-import { Button } from '@/components/ui/button';
-import { ClassCard } from '@/components/shared';
+import { ClassCard, EmptyState } from '@/components/shared';
 import type { PublicClass } from '@/schemas';
 
 /**
@@ -45,19 +44,12 @@ export function ClassesList() {
 
       {/* Empty state: accessible, positive message with action */}
       {!error && !isLoading && !classes.length && (
-        <div className="p-8 flex flex-col items-center gap-4">
-          <h2 className="mb-4 text-center text-gray-700 text-lg font-semibold">{t('pages.classes.no_classes_title')}</h2>
-          <p className="mb-4 text-center text-gray-700">{t('pages.classes.no_classes_message')}</p>
-          <Button
-            type="button"
-            variant="outline"
-            data-testid="empty-state-contact-support"
-            onClick={() => window.open('mailto:support@creativeballetacademy.com')}
-            aria-label={t('pages.classes.contact_support')}
-          >
-            {t('pages.classes.contact_support')}
-          </Button>
-        </div>
+        <EmptyState
+          title={t('pages.classes.no_classes_title')}
+          message={t('pages.classes.no_classes_message')}
+          actionLabel={t('pages.classes.contact_support')}
+          onAction={() => window.open('mailto:support@creativeballetacademy.com')}
+        />
       )}
 
       {/* Success state: render classes list */}

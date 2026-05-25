@@ -95,9 +95,33 @@ export function useClasses({ termId, page = 1, enabled = true, publicOnly = true
     error: publicOnly 
       ? (publicQuery.error instanceof Error ? publicQuery.error.message : (publicQuery.error ? 'Unknown error' : null))
       : (listQuery.error instanceof Error ? listQuery.error.message : (listQuery.error ? 'Unknown error' : null)),
-    createClass: createMutation.mutate,
-    updateClass: updateMutation.mutate,
-    deleteClass: deleteMutation.mutate,
+    createClass: (
+      classData: Partial<Class>,
+      callbacks?: { onSuccess?: () => void; onError?: (error: Error) => void }
+    ) => {
+      createMutation.mutate(classData, {
+        onSuccess: callbacks?.onSuccess,
+        onError: callbacks?.onError,
+      });
+    },
+    updateClass: (
+      classData: Partial<Class>,
+      callbacks?: { onSuccess?: () => void; onError?: (error: Error) => void }
+    ) => {
+      updateMutation.mutate(classData, {
+        onSuccess: callbacks?.onSuccess,
+        onError: callbacks?.onError,
+      });
+    },
+    deleteClass: (
+      classId: string,
+      callbacks?: { onSuccess?: () => void; onError?: (error: Error) => void }
+    ) => {
+      deleteMutation.mutate(classId, {
+        onSuccess: callbacks?.onSuccess,
+        onError: callbacks?.onError,
+      });
+    },
     isCreating: createMutation.isPending,
     isUpdating: updateMutation.isPending,
     isDeleting: deleteMutation.isPending,

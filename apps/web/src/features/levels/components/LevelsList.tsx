@@ -1,25 +1,42 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/shared';
 import { useLevels } from '../hooks/useLevels';
+import { LevelForm } from './LevelForm';
 import type { Level } from '@shared/schemas';
 
-interface LevelsListProps {
-  onEdit?: (level: Level) => void;
-}
-
-export const LevelsList = ({ onEdit }: LevelsListProps) => {
+export const LevelsList = () => {
   const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [editingLevel, setEditingLevel] = useState<Level | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
 
   const levelsData = useLevels({ page });
 
-  const handleEdit = (level: Level) => {
-    if (onEdit) {
-      onEdit(level);
+  const handleFormSubmit = async (data: Partial<Level>) => {
+    if (editingLevel?.id) {
+      await new Promise<void>((resolve, reject) => {
+        levelsData.updateLevel(
+          { ...editingLevel, ...data } as Level,
+          { onSuccess: () => resolve(), onError: reject }
+        );
+      });
+      setEditingLevel(null);
+    } else {
+      await new Promise<void>((resolve, reject) => {
+        levelsData.createLevel(data, { onSuccess: () => resolve(), onError: reject });
+      });
+      setIsCreating(false);
     }
   };
+
+  const handleEdit = (level: Level) => {
+    setEditingLevel(level);
+  };
+
+  const showFormModal = isCreating || editingLevel !== null;
 
   const handleDeleteClick = (levelId: string) => {
     setDeleteConfirmId(levelId);
@@ -46,6 +63,17 @@ export const LevelsList = ({ onEdit }: LevelsListProps) => {
 
   return (
     <div className="space-y-4 p-4">
+      <div className="space-y-2">
+        <h1 className="text-3xl font-bold">{t('pages.levels.title')}</h1>
+        <p className="text-gray-600">{t('pages.levels.description')}</p>
+      </div>
+
+      <div className="flex justify-end">
+        <Button variant="primary" onClick={() => setIsCreating(true)}>
+          {t('pages.levels.create_button')}
+        </Button>
+      </div>
+
       {/* Loading state */}
       {levelsData.isLoading && (
         <div className="text-center py-4">
@@ -62,9 +90,12 @@ export const LevelsList = ({ onEdit }: LevelsListProps) => {
 
       {/* Empty state */}
       {!levelsData.isLoading && levelsData.levels.length === 0 && (
-        <div className="text-center py-4">
-          {t('common.no_levels_yet')}
-        </div>
+        <EmptyState
+          title={t('pages.levels.empty_title')}
+          message={t('pages.levels.empty_message')}
+          actionLabel={t('pages.levels.create_button')}
+          onAction={() => setIsCreating(true)}
+        />
       )}
 
       {/* Table */}
@@ -140,6 +171,38 @@ export const LevelsList = ({ onEdit }: LevelsListProps) => {
           >
             {t('common.next')}
           </Button>
+        </div>
+      )}
+
+      {showFormModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white shadow-lg">
+            <div className="flex items-center justify-between border-b p-4">
+              <h2 className="text-xl font-semibold">
+                {editingLevel
+                  ? t('pages.levels.edit_title')
+                  : t('pages.levels.create_button')}
+              </h2>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setIsCreating(false);
+                  setEditingLevel(null);
+                }}
+                className="text-gray-500 hover:text-gray-700"
+                aria-label={t('common.close')}
+              >
+                ✕
+              </Button>
+            </div>
+            <LevelForm
+              level={editingLevel || undefined}
+              onSubmit={handleFormSubmit}
+              isLoading={levelsData.isCreating || levelsData.isUpdating}
+            />
+          </div>
         </div>
       )}
 

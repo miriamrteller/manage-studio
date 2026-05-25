@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from 'react-i18next';
+import { EmptyState } from '@/components/shared';
 import { useBillingAccounts } from '../hooks';
 import { BillingAccountForm } from './BillingAccountForm';
 import { BillingAccountDetail } from './BillingAccountDetail';
@@ -97,9 +98,20 @@ export function BillingAccountsList(): React.ReactNode {
 
       {/* Empty State */}
       {!isLoading && filteredAccounts.length === 0 && (
-        <div className="text-center py-4 text-gray-600">
-          {t('common.no_results_found')}
-        </div>
+        <EmptyState
+          title={
+            accounts.length === 0
+              ? t('pages.billing.empty_title')
+              : t('common.no_results_found')
+          }
+          message={
+            accounts.length === 0
+              ? t('pages.billing.empty_message')
+              : t('pages.billing.description')
+          }
+          actionLabel={accounts.length === 0 ? t('pages.billing.create_button') : undefined}
+          onAction={accounts.length === 0 ? () => setIsCreating(true) : undefined}
+        />
       )}
 
       {/* Accounts Table */}

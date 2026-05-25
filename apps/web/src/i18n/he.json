@@ -44,7 +44,21 @@
     "delete_family_confirm": "האם אתה בטוח שברצונך למחוק את המשפחה \"{{name}}\"? לא ניתן לבטל פעולה זו.",
     "add_family": "הוסף משפחה",
     "manage_families": "ניהול משפחות",
-    "edit_family": "ערוך משפחה: {{name}}"
+    "edit_family": "ערוך משפחה: {{name}}",
+    "add_person": "הוסף תלמיד",
+    "edit_person": "ערוך תלמיד: {{name}}",
+    "manage_people": "ניהול תלמידים ומבוגרים",
+    "no_people_yet": "אין תלמידים עדיין.",
+    "no_levels_yet": "אין רמות שיעור עדיין.",
+    "no_terms_yet": "אין תקופות למידה עדיין.",
+    "all": "הכל",
+    "view": "צפה",
+    "status": "סטטוס",
+    "done": "סיום",
+    "no_results_found": "לא נמצאו תוצאות.",
+    "delete_level_confirm": "האם אתה בטוח שברצונך למחוק את הרמה \"{{name}}\"?",
+    "delete_term_confirm": "האם אתה בטוח שברצונך למחוק את התקופה \"{{name}}\"?",
+    "delete_class_confirm": "האם אתה בטוח שברצונך למחוק את השיעור \"{{name}}\"?"
   },
   "errors": {
     "network": "שגיאת רשת. בדוק את החיבור שלך.",
@@ -106,6 +120,31 @@
     "level": {
       "name": "שם הרמה",
       "sort_order": "סדר תצוגה"
+    },
+    "class": {
+      "name": "שם השיעור",
+      "term": "תקופה",
+      "level": "רמה",
+      "teacher": "מורה",
+      "max_capacity": "קיבולת מקסימלית",
+      "price": "מחיר",
+      "price_help": "הזן את המחיר ביחידות מטבע ראשיות (למשל 150.00).",
+      "day_of_week": "יום בשבוע",
+      "day_0": "ראשון",
+      "day_1": "שני",
+      "day_2": "שלישי",
+      "day_3": "רביעי",
+      "day_4": "חמישי",
+      "day_5": "שישי",
+      "day_6": "שבת",
+      "start_time": "שעת התחלה",
+      "end_time": "שעת סיום",
+      "billing_frequency": "תדירות חיוב",
+      "status": "סטטוס",
+      "status_active": "פעיל",
+      "status_full": "מלא",
+      "status_cancelled": "בוטל",
+      "is_public": "הצג ברשימת השיעורים הציבורית"
     },
     "person": {
       "name": "שם מלא",
@@ -174,7 +213,23 @@
       "delete_confirm": "אתה בטוח שברצונך למחוק את {{name}}?",
       "create_success": "תלמיד נוצר בהצלחה",
       "update_success": "תלמיד עודכן בהצלחה",
-      "delete_success": "תלמיד נמחק בהצלחה"
+      "delete_success": "תלמיד נמחק בהצלחה",
+      "create_title": "הוסף תלמיד",
+      "edit_title": "ערוך תלמיד",
+      "consent_label": "הסכמות",
+      "waiver_status_label": "הצהרת שחרור",
+      "waiver_accepted": "התקבל",
+      "waiver_pending": "לא התקבל",
+      "empty_title": "אין תלמידים עדיין",
+      "empty_message": "הוסף את התלמיד הראשון כדי להתחיל לנהל הרשמות וקשרי משפחה."
+    },
+    "families": {
+      "title": "משפחות",
+      "description": "ניהול קבוצות משפחה, אנשי קשר ראשיים וקשרי אפוטרופוס.",
+      "create_button": "הוסף משפחה",
+      "edit_title": "ערוך משפחה",
+      "empty_title": "אין משפחות עדיין",
+      "empty_message": "צור משפחה כדי לקשר תלמידים ואנשי קשר ראשיים."
     },
     "billing": {
       "title": "חשבונות תשלום",
@@ -183,11 +238,19 @@
       "create_button": "חשבון חדש",
       "search_placeholder": "חפש לפי דוא״ל...",
       "account_holder_label": "שם בעל החשבון",
+      "account_holder_name_label": "שם בעל החשבון",
+      "filter_by_payment_method": "סנן לפי שיטת תשלום",
+      "filter_by_status": "סנן לפי סטטוס",
+      "create_title": "חשבון תשלום חדש",
+      "edit_title": "ערוך חשבון תשלום",
+      "empty_title": "אין חשבונות תשלום עדיין",
+      "empty_message": "צור חשבון תשלום כדי לקשר תלמידים ולעקוב אחר תשלומים.",
       "email_label": "דוא״ל",
       "phone_label": "טלפון",
       "payment_method_label": "שיטת תשלום",
       "payment_method_card": "כרטיס אשראי",
       "payment_method_bank": "העברה בנקאית",
+      "payment_method_bank_transfer": "העברה בנקאית",
       "payment_method_cash": "מזומן",
       "payment_method_check": "צ'ק",
       "status_label": "סטטוס",
@@ -299,7 +362,33 @@
       "create_success": "נוצר בהצלחה",
       "update_success": "עודכן בהצלחה",
       "delete_success": "נמחק בהצלחה"
-    }
+    },
+    "levels": {
+      "title": "רמות שיעור",
+      "description": "הגדר רמות שיעור כגון מתחיל, בינוני ומתקדם.",
+      "create_button": "הוסף רמה",
+      "edit_title": "ערוך רמה",
+      "empty_title": "אין רמות שיעור עדיין",
+      "empty_message": "הוסף רמות כדי לארגן שיעורים לפי רמה או כיתה."
+    },
+    "terms": {
+      "title": "תקופות למידה",
+      "description": "צור ונהל עונות, סמסטרים ותקופות לימוד אחרות.",
+      "create_button": "הוסף תקופה",
+      "edit_title": "ערוך תקופה",
+      "empty_title": "אין תקופות למידה עדיין",
+      "empty_message": "הוסף תקופה לפני תזמון שיעורים והרשמות."
+    },
+    "admin_classes": {
+      "title": "ניהול שיעורים",
+      "description": "צור, ערוך ומחק שיעורים עבור הסטודיו שלך.",
+      "create_button": "הוסף שיעור",
+      "edit_title": "ערוך שיעור",
+      "empty_title": "אין שיעורים עדיין",
+      "empty_message": "הוסף את השיעור הראשון שלך כדי להפוך אותו לזמין להרשמה."
+    },
+    "portal_dashboard": "פורטל",
+    "coming_soon_portal": "לוח הבקרה של הפורטל בדרך. כאן תוכלו לצפות בהרשמות, נוכחות ותשלומים."
   },
   "nav": {
     "classes": "שיעורים",
@@ -311,7 +400,8 @@
     "student_dashboard": "לוח התלמיד",
     "billing": "חשבונות חיוב",
     "levels": "רמות שיעורים",
-    "terms": "תקופות למידה"
+    "terms": "תקופות למידה",
+    "manage_classes": "ניהול שיעורים"
   },
   "footer": {
     "school_name_fallback": "בית הספר לבלט",

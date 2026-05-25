@@ -13,6 +13,7 @@ import BillingPage from "./pages/BillingPage";
 import StripeSettingsPage from "./pages/StripeSettingsPage";
 import LevelsPage from "./pages/LevelsPage";
 import TermsPage from "./pages/TermsPage";
+import AdminClassesPage from "./pages/AdminClassesPage";
 import PortalDashboard from "./pages/PortalDashboard";
 import EnrolPage from "./pages/EnrolPage";
 import NotFoundPage from "./pages/NotFoundPage";
@@ -48,6 +49,7 @@ const router = createBrowserRouter([
       { path: "admin/setup/billing", element: <AdminRoute><BillingPage /></AdminRoute> },
       { path: "admin/setup/levels", element: <AdminRoute><LevelsPage /></AdminRoute> },
       { path: "admin/setup/terms", element: <AdminRoute><TermsPage /></AdminRoute> },
+      { path: "admin/setup/classes", element: <AdminRoute><AdminClassesPage /></AdminRoute> },
       { path: "admin/setup/stripe", element: <AdminRoute><StripeSettingsPage /></AdminRoute> },
 
       // LEGACY ROUTES (Phase 1B) — kept for backward compatibility

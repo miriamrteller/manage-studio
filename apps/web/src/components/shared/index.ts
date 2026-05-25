@@ -5,3 +5,4 @@ export { ClassCard } from './ClassCard';
 export { ContactPreferencesEditor } from './ContactPreferencesEditor';
 export { NotificationLog } from './NotificationLog';
 export { WhatsAppOtpVerifier } from './WhatsAppOtpVerifier';
+export { EmptyState } from './EmptyState';

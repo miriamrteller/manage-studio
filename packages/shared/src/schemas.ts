@@ -20,6 +20,12 @@ export const CurrencySchema = z.number().int().nonnegative();
 
 export const DateSchema = z.string().date('Invalid date format');
 
+/** Accepts Postgres / Supabase timestamptz strings (lenient vs strict ISO). */
+export const TimestampSchema = z.string().refine(
+  (val) => !Number.isNaN(Date.parse(val)),
+  { message: 'Invalid datetime' }
+);
+
 // Tenant configuration
 export const TenantSchema = z.object({
   id: UUIDSchema,
@@ -65,7 +71,7 @@ export const UserProfileSchema = z.object({
   person_id: UUIDSchema.nullable(),
   language: z.enum(['he', 'en']).nullable().optional(), // User override (NULL = use tenant)
   country: z.enum(['IL', 'US']).nullable().optional(), // User override (NULL = use tenant)
-  created_at: z.string().datetime(),
+  created_at: TimestampSchema,
 });
 
 export type UserProfile = z.infer<typeof UserProfileSchema>;
@@ -120,10 +126,10 @@ export const PersonSchema = z.object({
   photo_consent: z.boolean().default(false),
   media_consent: z.boolean().default(false),
   status: z.enum(['active', 'inactive', 'withdrawn']).default('active'),
-  waiver_accepted_at: z.string().datetime().nullable().optional(),
+  waiver_accepted_at: TimestampSchema.nullable().optional(),
   waiver_version: z.string().nullable().optional(),
-  created_at: z.string().datetime(),
-  updated_at: z.string().datetime().optional(),
+  created_at: TimestampSchema,
+  updated_at: TimestampSchema.optional(),
   /** Computed client-side from date_of_birth; not a DB column */
   is_minor: z.boolean().optional(),
 });
@@ -141,8 +147,8 @@ export const BillingAccountSchema = z.object({
     .enum(['card', 'bank_transfer', 'cash', 'check'])
     .default('card'),
   status: z.enum(['active', 'inactive', 'archived']).default('active'),
-  created_at: z.string().datetime(),
-  updated_at: z.string().datetime(),
+  created_at: TimestampSchema,
+  updated_at: TimestampSchema,
 });
 
 export type BillingAccount = z.infer<typeof BillingAccountSchema>;
@@ -185,7 +191,7 @@ export const FamilySchema = z.object({
     /^(050|051|052|053|054|055|056|058|059)\d{7}$/,
     'Invalid Israeli phone format'
   ).nullable().optional(),
-  created_at: z.string().datetime(),
+  created_at: TimestampSchema,
 });
 
 export type Family = z.infer<typeof FamilySchema>;
@@ -201,7 +207,7 @@ export const FamilyMemberSchema = z.object({
   email: z.string().email().nullable().optional(),
   phone: z.string().nullable().optional(),
   role: z.enum(['parent', 'guardian', 'sibling', 'adult_student']),
-  created_at: z.string().datetime(),
+  created_at: TimestampSchema,
 });
 
 export type FamilyMember = z.infer<typeof FamilyMemberSchema>;
@@ -215,7 +221,7 @@ export const TermSchema = z.object({
   start_date: z.string().date('Invalid date format'),
   end_date: z.string().date('Invalid date format'),
   status: z.enum(['upcoming', 'active', 'completed', 'archived']).default('upcoming'),
-  created_at: z.string().datetime(),
+  created_at: TimestampSchema,
 }).refine((data) => new Date(data.end_date) > new Date(data.start_date), {
   message: 'End date must be after start date',
   path: ['end_date'],
@@ -245,7 +251,7 @@ export const LevelSchema = z.object({
   tenant_id: UUIDSchema,
   name: z.string().min(1, 'Level name required'),
   sort_order: z.number().int().nonnegative('Sort order must be >= 0'),
-  created_at: z.string().datetime(),
+  created_at: TimestampSchema,
 });
 
 export type Level = z.infer<typeof LevelSchema>;
@@ -269,7 +275,7 @@ export const ClassSchema = z.object({
   is_public: z.boolean().default(true),
   billing_frequency: z.string().default('monthly'),
   status: z.enum(['active', 'cancelled', 'full']).default('active'),
-  created_at: z.string().datetime(),
+  created_at: TimestampSchema,
 }).refine((data) => {
   if (!data.start_time || !data.end_time) return true;
   return data.start_time < data.end_time;
@@ -289,7 +295,7 @@ export const ClassRequirementSchema = z.object({
   value: z.string(),
   display_text: z.string(),
   is_hard_block: z.boolean().default(true),
-  created_at: z.string().datetime(),
+  created_at: TimestampSchema,
 });
 
 export type ClassRequirement = z.infer<typeof ClassRequirementSchema>;
@@ -303,7 +309,7 @@ export const EnrolmentSchema = z.object({
   term_id: UUIDSchema,
   status: z.enum(['active', 'pending_payment', 'cancelled', 'withdrawn', 'waitlisted']).default('active'),
   prior_experience: z.string().nullable().optional(),
-  created_at: z.string().datetime(),
+  created_at: TimestampSchema,
 });
 
 export type Enrolment = z.infer<typeof EnrolmentSchema>;
@@ -316,7 +322,7 @@ export const ClassSessionSchema = z.object({
   session_date: z.string().date('Invalid date format'),
   session_start_time: z.string().regex(/^\d{2}:\d{2}$/, 'Invalid time format (HH:MM)'),
   session_end_time: z.string().regex(/^\d{2}:\d{2}$/, 'Invalid time format (HH:MM)'),
-  created_at: z.string().datetime(),
+  created_at: TimestampSchema,
 });
 
 export type ClassSession = z.infer<typeof ClassSessionSchema>;
@@ -331,7 +337,7 @@ export const TeacherSchema = z.object({
   phone: z.string().nullable().optional(),
   contract_type: z.enum(['employee', 'contractor']).default('contractor'),
   hourly_rate_minor: z.number().nonnegative().nullable().optional(),
-  created_at: z.string().datetime(),
+  created_at: TimestampSchema,
 });
 
 export type Teacher = z.infer<typeof TeacherSchema>;
@@ -352,7 +358,7 @@ export const NotificationLogSchema = z.object({
   external_msg_id: z.string().nullable().optional(),
   status: z.enum(['sent', 'delivered', 'read', 'failed', 'bounced']).default('sent'),
   failure_reason: z.string().nullable().optional(),
-  sent_at: z.string().datetime(),
+  sent_at: TimestampSchema,
 });
 
 export type NotificationLog = z.infer<typeof NotificationLogSchema>;
@@ -369,7 +375,7 @@ export const AuditLogSchema = z.object({
   before_state: z.record(z.string(), z.unknown()).nullable().optional(),
   after_state: z.record(z.string(), z.unknown()).nullable().optional(),
   ip_address: z.string().ip().nullable().optional(),
-  created_at: z.string().datetime(),
+  created_at: TimestampSchema,
 });
 
 export type AuditLog = z.infer<typeof AuditLogSchema>;
@@ -385,10 +391,10 @@ export const TenantNotificationTemplateSchema = z.object({
   voice_script_sid: z.string().nullable().optional(),
   version: z.number().int().positive().default(1),
   status: z.enum(['pending', 'approved', 'rejected']).default('pending'),
-  approval_date: z.string().datetime().nullable().optional(),
+  approval_date: TimestampSchema.nullable().optional(),
   approval_notes: z.string().nullable().optional(),
-  created_at: z.string().datetime(),
-  updated_at: z.string().datetime(),
+  created_at: TimestampSchema,
+  updated_at: TimestampSchema,
 });
 
 export type TenantNotificationTemplate = z.infer<typeof TenantNotificationTemplateSchema>;
@@ -403,8 +409,8 @@ export const ExpenseCategorySchema = z.object({
   is_vat_eligible: z.boolean().default(true),
   is_active: z.boolean().default(true),
   sort_order: z.number().int().nonnegative().default(0),
-  created_at: z.string().datetime(),
-  updated_at: z.string().datetime(),
+  created_at: TimestampSchema,
+  updated_at: TimestampSchema,
 });
 
 export type ExpenseCategory = z.infer<typeof ExpenseCategorySchema>;

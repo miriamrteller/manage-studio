@@ -1,24 +1,39 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/shared';
 import { useFamilies } from '../hooks/useFamilies';
+import { FamilyForm } from './FamilyForm';
 import type { Family } from '@shared/schemas';
 
-interface FamiliesListProps {
-  onEdit?: (family: Family) => void;
-}
-
-export const FamiliesList = ({ onEdit }: FamiliesListProps) => {
+export const FamiliesList = () => {
   const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [editingFamily, setEditingFamily] = useState<Family | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
 
   const familiesData = useFamilies({ page });
 
-  const handleEdit = (family: Family) => {
-    if (onEdit) {
-      onEdit(family);
+  const handleFormSubmit = async (data: Partial<Family>) => {
+    if (editingFamily?.id) {
+      await new Promise<void>((resolve, reject) => {
+        familiesData.updateFamily(
+          { ...editingFamily, ...data } as Family,
+          { onSuccess: () => resolve(), onError: reject }
+        );
+      });
+      setEditingFamily(null);
+    } else {
+      await new Promise<void>((resolve, reject) => {
+        familiesData.createFamily(data, { onSuccess: () => resolve(), onError: reject });
+      });
+      setIsCreating(false);
     }
+  };
+
+  const handleEdit = (family: Family) => {
+    setEditingFamily(family);
   };
 
   const handleDeleteClick = (familyId: string) => {
@@ -27,9 +42,9 @@ export const FamiliesList = ({ onEdit }: FamiliesListProps) => {
 
   const handleConfirmDelete = async (familyId: string) => {
     try {
-      await new Promise((resolve, reject) => {
+      await new Promise<void>((resolve, reject) => {
         familiesData.deleteFamily(familyId, {
-          onSuccess: resolve,
+          onSuccess: () => resolve(),
           onError: reject,
         });
       });
@@ -43,45 +58,55 @@ export const FamiliesList = ({ onEdit }: FamiliesListProps) => {
     setDeleteConfirmId(null);
   };
 
+  const showFormModal = isCreating || editingFamily !== null;
+
   return (
     <div className="space-y-4 p-4">
-      {/* Loading state */}
+      <div className="space-y-2">
+        <h1 className="text-3xl font-bold">{t('pages.families.title')}</h1>
+        <p className="text-gray-600">{t('pages.families.description')}</p>
+      </div>
+
+      <div className="flex justify-end">
+        <Button variant="primary" onClick={() => setIsCreating(true)}>
+          {t('pages.families.create_button')}
+        </Button>
+      </div>
+
       {familiesData.isLoading && (
-        <div className="text-center py-4">
-          {t('common.loading')}
-        </div>
+        <div className="py-4 text-center">{t('common.loading')}</div>
       )}
 
-      {/* Error state */}
       {familiesData.error && (
         <div className="alert-error">
           {t('common.error')}: {familiesData.error.message}
         </div>
       )}
 
-      {/* Empty state */}
       {!familiesData.isLoading && familiesData.families.length === 0 && (
-        <div className="text-center py-4">
-          {t('common.no_families_yet')}
-        </div>
+        <EmptyState
+          title={t('pages.families.empty_title')}
+          message={t('pages.families.empty_message')}
+          actionLabel={t('pages.families.create_button')}
+          onAction={() => setIsCreating(true)}
+        />
       )}
 
-      {/* Table */}
       {familiesData.families.length > 0 && (
         <div className="card overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="border-b" style={{ borderColor: 'var(--color-border-default)' }}>
               <tr>
-                <th className="px-4 py-3 text-right font-medium">
+                <th className="px-4 py-3 text-start font-medium">
                   {t('form.family.name')}
                 </th>
-                <th className="px-4 py-3 text-right font-medium">
+                <th className="px-4 py-3 text-start font-medium">
                   {t('form.family.contact_person_name')}
                 </th>
-                <th className="px-4 py-3 text-right font-medium">
+                <th className="px-4 py-3 text-start font-medium">
                   {t('form.family.contact_email')}
                 </th>
-                <th className="px-4 py-3 text-right font-medium">
+                <th className="px-4 py-3 text-start font-medium">
                   {t('form.family.contact_phone')}
                 </th>
                 <th className="px-4 py-3 text-center font-medium">
@@ -91,19 +116,17 @@ export const FamiliesList = ({ onEdit }: FamiliesListProps) => {
             </thead>
             <tbody>
               {familiesData.families.map((family) => (
-                <tr key={family.id} className="border-b hover:bg-opacity-50" style={{ borderColor: 'var(--color-border-default)' }}>
+                <tr
+                  key={family.id}
+                  className="border-b hover:bg-opacity-50"
+                  style={{ borderColor: 'var(--color-border-default)' }}
+                >
                   <td className="px-4 py-3">{family.name}</td>
+                  <td className="px-4 py-3">{family.contact_person_name}</td>
+                  <td className="px-4 py-3">{family.contact_email}</td>
+                  <td className="px-4 py-3">{family.contact_phone}</td>
                   <td className="px-4 py-3">
-                    {family.contact_person_name}
-                  </td>
-                  <td className="px-4 py-3">
-                    {family.contact_email}
-                  </td>
-                  <td className="px-4 py-3">
-                    {family.contact_phone}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex gap-2 justify-center">
+                    <div className="flex justify-center gap-2">
                       <Button
                         variant="secondary"
                         size="sm"
@@ -129,9 +152,8 @@ export const FamiliesList = ({ onEdit }: FamiliesListProps) => {
         </div>
       )}
 
-      {/* Pagination */}
       {familiesData.total > familiesData.pageSize && (
-        <div className="flex justify-between items-center pt-4">
+        <div className="flex items-center justify-between pt-4">
           <Button
             variant="outline"
             onClick={() => setPage(Math.max(1, page - 1))}
@@ -142,7 +164,10 @@ export const FamiliesList = ({ onEdit }: FamiliesListProps) => {
           <span className="text-sm">
             {t('common.page_n', { page })} —{' '}
             {t('common.showing_results', {
-              count: Math.min(familiesData.pageSize, familiesData.total - (page - 1) * familiesData.pageSize),
+              count: Math.min(
+                familiesData.pageSize,
+                familiesData.total - (page - 1) * familiesData.pageSize
+              ),
               total: familiesData.total,
             })}
           </span>
@@ -156,13 +181,45 @@ export const FamiliesList = ({ onEdit }: FamiliesListProps) => {
         </div>
       )}
 
-      {/* Delete confirmation modal */}
+      {showFormModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white shadow-lg">
+            <div className="flex items-center justify-between border-b p-4">
+              <h2 className="text-xl font-semibold">
+                {editingFamily
+                  ? t('pages.families.edit_title')
+                  : t('pages.families.create_button')}
+              </h2>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setIsCreating(false);
+                  setEditingFamily(null);
+                }}
+                className="text-gray-500 hover:text-gray-700"
+                aria-label={t('common.close')}
+              >
+                ✕
+              </Button>
+            </div>
+            <FamilyForm
+              family={editingFamily || undefined}
+              onSubmit={handleFormSubmit}
+              isLoading={familiesData.isCreating || familiesData.isUpdating}
+            />
+          </div>
+        </div>
+      )}
+
       {deleteConfirmId && (
-        <div className="fixed inset-0 flex items-center justify-center z-50" style={{ backgroundColor: 'var(--color-surface-overlay)' }}>
-          <div className="card max-w-sm mx-4">
-            <h3 className="text-lg font-medium mb-4">
-              {t('common.confirm_delete')}
-            </h3>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ backgroundColor: 'var(--color-surface-overlay)' }}
+        >
+          <div className="card mx-4 max-w-sm">
+            <h3 className="mb-4 text-lg font-medium">{t('common.confirm_delete')}</h3>
             <p className="mb-6">
               {t('common.delete_family_confirm', {
                 name:

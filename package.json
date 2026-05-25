@@ -12,6 +12,7 @@
     "build": "pnpm -r build",
     "lint": "pnpm -r lint",
     "test": "pnpm -r test",
+    "regtest": "pnpm -r build && pnpm -r lint && pnpm -r a11y:e2e",
     "a11y:install": "pnpm -C apps/web exec playwright install --with-deps",
     "a11y:e2e": "pnpm -C apps/web run a11y:e2e",
     "db:link": "supabase link",

@@ -58,6 +58,11 @@ export const navigationConfig: NavItem[] = [
         labelKey: 'nav.terms',
         requiredRoles: ['tenant_admin'],
       },
+      {
+        path: '/admin/setup/classes',
+        labelKey: 'nav.manage_classes',
+        requiredRoles: ['tenant_admin'],
+      },
     ],
   },
 

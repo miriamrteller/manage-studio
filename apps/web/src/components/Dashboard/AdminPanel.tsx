@@ -104,6 +104,26 @@ export function AdminPanel() {
             </Button>
           </div>
         </div>
+
+        {/* Classes Card */}
+        <div className="card border border-gray-200 hover:border-primary hover:shadow-md transition-all">
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900">
+              {t('pages.admin_classes.title')}
+            </h3>
+            <p className="text-sm text-gray-600">
+              {t('pages.admin_classes.description')}
+            </p>
+            <Button
+              variant="primary"
+              fullWidth
+              onClick={() => navigate('/admin/setup/classes')}
+              aria-label={t('pages.admin_classes.title')}
+            >
+              {t('common.manage')} →
+            </Button>
+          </div>
+        </div>
       </section>
     </div>
   );
