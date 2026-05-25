@@ -4,6 +4,11 @@ import { supabase } from '@/lib/supabase';
 import {
   ClassRequirementSchema,
   RequirementTemplateSchema,
+  AgeRangeConfigSchema,
+  GenderConfigSchema,
+  LevelConfigSchema,
+  DocumentConfigSchema,
+  ManualReviewConfigSchema,
   type ClassRequirement,
   type RequirementTemplate,
   type Tenant,
@@ -12,12 +17,28 @@ import { z } from 'zod';
 
 // ── Requirement Templates ─────────────────────────────────────────────────────
 
+const configByType = {
+  age_range: AgeRangeConfigSchema,
+  gender: GenderConfigSchema,
+  level: LevelConfigSchema,
+  document_submitted: DocumentConfigSchema,
+  manual_review: ManualReviewConfigSchema,
+} as const;
+
 const TemplateInputSchema = z.object({
   name: z.string().min(1),
-  requirement_type: z.string().min(1),
+  requirement_type: z.enum(['age_range', 'gender', 'level', 'document_submitted', 'manual_review']),
   config: z.record(z.unknown()),
   display_text: z.string().optional(),
   is_hard_block: z.boolean().optional(),
+}).superRefine((val, ctx) => {
+  const configSchema = configByType[val.requirement_type];
+  const result = configSchema.safeParse(val.config);
+  if (!result.success) {
+    result.error.issues.forEach((issue) => {
+      ctx.addIssue({ ...issue, path: ['config', ...issue.path] });
+    });
+  }
 });
 
 export class RequirementTemplateService extends BaseService {

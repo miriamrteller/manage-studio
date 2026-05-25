@@ -291,6 +291,37 @@ export const ClassSchema = z.object({
 
 export type Class = z.infer<typeof ClassSchema>;
 
+// Per-type config schemas for requirement_templates.config JSONB
+export const AgeRangeConfigSchema = z.object({
+  min_age: z.number().int().min(0),
+  max_age: z.number().int().min(0).optional(),
+});
+export const GenderConfigSchema = z.object({
+  allowed_genders: z.array(z.enum(['male', 'female'])).min(1),
+});
+export const LevelConfigSchema = z.object({
+  level_id: UUIDSchema,
+});
+export const DocumentConfigSchema = z.object({
+  doc_type: z.string().min(1),
+});
+export const ManualReviewConfigSchema = z.object({});
+
+export const RequirementConfigSchema = z.discriminatedUnion('requirement_type', [
+  z.object({ requirement_type: z.literal('age_range'), config: AgeRangeConfigSchema }),
+  z.object({ requirement_type: z.literal('gender'), config: GenderConfigSchema }),
+  z.object({ requirement_type: z.literal('level'), config: LevelConfigSchema }),
+  z.object({ requirement_type: z.literal('document_submitted'), config: DocumentConfigSchema }),
+  z.object({ requirement_type: z.literal('manual_review'), config: ManualReviewConfigSchema }),
+]);
+
+export type RequirementConfig =
+  | { requirement_type: 'age_range'; config: z.infer<typeof AgeRangeConfigSchema> }
+  | { requirement_type: 'gender'; config: z.infer<typeof GenderConfigSchema> }
+  | { requirement_type: 'level'; config: z.infer<typeof LevelConfigSchema> }
+  | { requirement_type: 'document_submitted'; config: z.infer<typeof DocumentConfigSchema> }
+  | { requirement_type: 'manual_review'; config: z.infer<typeof ManualReviewConfigSchema> };
+
 // Requirement template — tenant's reusable library entry
 export const RequirementTemplateSchema = z.object({
   id: UUIDSchema,

@@ -156,9 +156,20 @@
       "is_hard_block_hint": "Prevents enrolment — unchecked shows a warning only",
       "add_button": "Add requirement",
       "link_button": "Link to class",
+      "create_and_link_button": "Create & link new",
+      "create_modal_title": "Create new requirement",
       "delete_confirm": "Remove this requirement from the class?",
       "select_placeholder": "Select a requirement…",
-      "no_templates": "No requirements defined yet — create some under Setup › Requirements first."
+      "no_templates": "No existing requirements — use \"Create & link new\" to add one.",
+      "config_section": "Configuration",
+      "min_age": "Minimum age (years)",
+      "max_age": "Maximum age (years, optional)",
+      "gender_male": "Male",
+      "gender_female": "Female",
+      "allowed_genders": "Allowed genders",
+      "level_id": "Required level",
+      "doc_type": "Document type",
+      "doc_type_hint": "e.g. Medical certificate, Vaccination record"
     },
     "person": {
       "name": "Full Name",

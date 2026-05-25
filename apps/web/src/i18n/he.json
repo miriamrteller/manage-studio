@@ -156,9 +156,20 @@
       "is_hard_block_hint": "מונע הרשמה — ללא סימון מציג אזהרה בלבד",
       "add_button": "הוסף דרישה",
       "link_button": "קשר לשיעור",
+      "create_and_link_button": "צור וקשר חדש",
+      "create_modal_title": "יצירת דרישה חדשה",
       "delete_confirm": "להסיר דרישה זו מהשיעור?",
       "select_placeholder": "בחר דרישה…",
-      "no_templates": "לא הוגדרו דרישות עדיין — צור דרישות תחת הגדרות › דרישות קודם."
+      "no_templates": "אין דרישות קיימות — השתמש ב\"צור וקשר חדש\" להוספה.",
+      "config_section": "הגדרות",
+      "min_age": "גיל מינימלי (שנים)",
+      "max_age": "גיל מקסימלי (שנים, אופציונלי)",
+      "gender_male": "זכר",
+      "gender_female": "נקבה",
+      "allowed_genders": "מגדרים מותרים",
+      "level_id": "רמה נדרשת",
+      "doc_type": "סוג מסמך",
+      "doc_type_hint": "למשל אישור רפואי, רישום חיסונים"
     },
     "person": {
       "name": "שם מלא",
