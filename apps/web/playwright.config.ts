@@ -4,12 +4,19 @@ import { defineConfig, devices } from '@playwright/test';
  * Playwright Configuration for Ballet School Management System
  * E2E and accessibility testing across all browsers
  */
+const lifecycle = process.env.npm_lifecycle_event ?? '';
+const isRegtestRun = lifecycle === 'a11y:e2e:regtest' || lifecycle === 'a11y:e2e:full';
+const isCi = !!process.env.CI;
+const usePreviewServer = isRegtestRun || isCi;
+const previewPort = 4173;
+const previewUrl = `http://localhost:${previewPort}`;
+
 export default defineConfig({
   testDir: './e2e',
-  fullyParallel: true,
-  forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  fullyParallel: !isRegtestRun,
+  forbidOnly: isCi,
+  retries: isRegtestRun || isCi ? 1 : 0,
+  workers: isRegtestRun || isCi ? 2 : undefined,
   timeout: 60_000,
 
   reporter: [
@@ -18,7 +25,7 @@ export default defineConfig({
   ],
 
   use: {
-    baseURL: process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:5173',
+    baseURL: process.env.PLAYWRIGHT_TEST_BASE_URL || (usePreviewServer ? previewUrl : 'http://localhost:5173'),
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
@@ -48,10 +55,17 @@ export default defineConfig({
     },
   ],
 
-  webServer: {
-    command: 'pnpm run dev',
-    url: 'http://localhost:5173',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120000,
-  },
+  webServer: usePreviewServer
+    ? {
+        command: `pnpm run preview -- --port ${previewPort} --strictPort`,
+        url: previewUrl,
+        reuseExistingServer: false,
+        timeout: 120_000,
+      }
+    : {
+        command: 'pnpm run dev',
+        url: 'http://localhost:5173',
+        reuseExistingServer: !isCi,
+        timeout: 120_000,
+      },
 });

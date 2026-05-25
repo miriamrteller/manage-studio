@@ -1,5 +1,19 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page, type TestInfo } from '@playwright/test';
 import { injectAxe } from 'axe-playwright';
+
+async function gotoHomeReady(page: Page) {
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
+  await page.locator('h1').first().waitFor({ state: 'visible', timeout: 15_000 });
+}
+
+async function gotoLoginReady(page: Page) {
+  await page.goto('/login', { waitUntil: 'domcontentloaded' });
+  await page.getByRole('textbox', { name: /email|דוא/i }).first().waitFor({ state: 'visible', timeout: 15_000 });
+}
+
+function isMobileProject(testInfo: TestInfo): boolean {
+  return /mobile/i.test(testInfo.project.name);
+}
 
 // Dedicated test for empty state accessibility (robust skip logic, standard runner)
 test.describe('Empty State Accessibility', () => {
@@ -13,8 +27,7 @@ test.describe('Empty State Accessibility', () => {
           body: JSON.stringify([]),
         });
       });
-      await page.goto('/', { waitUntil: 'domcontentloaded' });
-      await page.locator('h1').first().waitFor({ state: 'visible', timeout: 15000 });
+      await gotoHomeReady(page);
       const h1s = await page.locator('h1').all();
       if (h1s.length !== 1) {
         test.skip(true, 'No <h1> found or multiple <h1>s. Skipping due to possible environment instability.');
@@ -78,8 +91,7 @@ test.beforeEach(async ({ browserName }) => {
 test.describe('Heading Structure (WCAG 2.4.1)', () => {
   test('page hierarchy supports screen reader navigation', async ({ page }) => {
     try {
-      await page.goto('/', { waitUntil: 'domcontentloaded' });
-      await page.locator('h1').first().waitFor({ state: 'visible', timeout: 15000 });
+      await gotoHomeReady(page);
       const headings = await page.locator('h1, h2, h3, h4, h5, h6').all();
       if (headings.length === 0) {
         test.skip(true, 'No headings found. Skipping due to possible environment instability.');
@@ -105,8 +117,7 @@ test.describe('Heading Structure (WCAG 2.4.1)', () => {
 test.describe('Form Accessibility (WCAG 1.3.1)', () => {
   test('all inputs have associated labels', async ({ page }) => {
     // Real workflow: User navigates to login form and needs to identify form fields
-    await page.goto('/login', { waitUntil: 'domcontentloaded' });
-    await page.getByRole('textbox', { name: /email|דוא/i }).first().waitFor({ state: 'visible', timeout: 15000 });
+    await gotoLoginReady(page);
     const inputs = await page.locator('input:not([type="hidden"]), select, textarea').all();
     
     // Skip test if page has no form inputs
@@ -127,8 +138,7 @@ test.describe('Form Accessibility (WCAG 1.3.1)', () => {
 
   test('form validation errors are announced', async ({ page }) => {
     // Real workflow: User submits form with missing fields, errors should be clear
-    await page.goto('/login', { waitUntil: 'domcontentloaded' });
-    await page.getByRole('textbox', { name: /email|דוא/i }).first().waitFor({ state: 'visible', timeout: 15000 });
+    await gotoLoginReady(page);
     const submitButton = page.locator('button[type="submit"]').first();
     
     await expect(submitButton).toBeVisible();
@@ -143,7 +153,7 @@ test.describe('Form Accessibility (WCAG 1.3.1)', () => {
 test.describe('Modal & Dialog Behavior', () => {
   test('modal closes with Escape key', async ({ page }) => {
     // Real workflow: User opens modal and expects Escape to close it
-    await page.goto('/');
+    await gotoHomeReady(page);
     
     const dialogTrigger = await page.locator('[aria-haspopup="dialog"], button:has-text("modal")').first();
     
@@ -168,7 +178,7 @@ test.describe('Modal & Dialog Behavior', () => {
 test.describe('Focus Management (WCAG 2.4.7)', () => {
   test('all interactive elements have visible focus indicator', async ({ page }) => {
     // Real workflow: Keyboard user tabs through page and needs to know where they are
-    await page.goto('/');
+    await gotoHomeReady(page);
     
     // Find first focusable element
     const firstButton = await page.locator('button, a[href], input:not([type="hidden"])').first();
@@ -189,15 +199,14 @@ test.describe('Focus Management (WCAG 2.4.7)', () => {
 });
 
 test.describe('Keyboard Navigation (WCAG 2.1.1)', () => {
-  test('can navigate entire page with keyboard only', async ({ page, browserName }) => {
+  test('can navigate entire page with keyboard only', async ({ page }, testInfo) => {
     // Skip on mobile browsers (no Tab navigation)
-    if (browserName && browserName.toLowerCase().includes('mobile')) {
+    if (isMobileProject(testInfo)) {
       test.skip(true, 'Keyboard navigation is not relevant on mobile browsers.');
       return;
     }
     try {
-      await page.goto('/');
-      await page.waitForLoadState('networkidle');
+      await gotoHomeReady(page);
       const interactiveElements = await page.locator(
         'button, [role="button"], a[href], input:not([type="hidden"]), select, textarea, [tabindex]:not([tabindex="-1"])'
       ).all();
@@ -236,14 +245,14 @@ test.describe('Keyboard Navigation (WCAG 2.1.1)', () => {
     }
   });
 
-  test('focus does not get trapped or lost', async ({ page, browserName }) => {
+  test('focus does not get trapped or lost', async ({ page }, testInfo) => {
     // Skip on mobile browsers (no Tab navigation)
-    if (browserName && browserName.toLowerCase().includes('mobile')) {
+    if (isMobileProject(testInfo)) {
       test.skip(true, 'Keyboard navigation is not relevant on mobile browsers.');
       return;
     }
     try {
-      await page.goto('/');
+      await gotoHomeReady(page);
       let focusedElement = 'BODY';
       let focusLossCount = 0;
       const focusPath = [];
@@ -272,7 +281,7 @@ test.describe('Keyboard Navigation (WCAG 2.1.1)', () => {
 test.describe('Semantic HTML & ARIA (WCAG 1.3.1)', () => {
   test('page has proper landmark structure', async ({ page }) => {
     try {
-      await page.goto('/', { waitUntil: 'networkidle' });
+      await gotoHomeReady(page);
       await page.locator('main, [role="main"]').first().waitFor({ state: 'visible', timeout: 5000 });
       const main = await page.locator('main, [role="main"]').isVisible();
       if (!main) {
@@ -294,7 +303,7 @@ test.describe('Semantic HTML & ARIA (WCAG 1.3.1)', () => {
 
   test('interactive elements use semantic HTML', async ({ page }) => {
     try {
-      await page.goto('/');
+      await gotoHomeReady(page);
       const divOnclick = await page.locator('div[onclick]').count();
       expect(divOnclick).toBeLessThan(3);
       const h1s = await page.locator('h1').all();
@@ -325,7 +334,7 @@ test.describe('Semantic HTML & ARIA (WCAG 1.3.1)', () => {
 
 test.describe('RTL & Hebrew Support (WCAG 3.1.1)', () => {
   test('html element has lang and dir attributes', async ({ page }) => {
-    await page.goto('/');
+    await gotoHomeReady(page);
     const html = await page.locator('html').evaluate(el => ({
       lang: el.getAttribute('lang'),
       dir: el.getAttribute('dir')
@@ -336,7 +345,7 @@ test.describe('RTL & Hebrew Support (WCAG 3.1.1)', () => {
   });
 
   test('direction properly set (RTL or LTR)', async ({ page }) => {
-    await page.goto('/');
+    await gotoHomeReady(page);
     const direction = await page.locator('html').evaluate(el => el.getAttribute('dir'));
     expect(['rtl', 'ltr']).toContain(direction);
   });
@@ -345,7 +354,7 @@ test.describe('RTL & Hebrew Support (WCAG 3.1.1)', () => {
 test.describe('ARIA Patterns (Realistic)', () => {
   test('form inputs can be identified by screen readers', async ({ page }) => {
     // Real workflow: User with visual impairment uses screen reader to fill form
-    await page.goto('/login', { waitUntil: 'networkidle' });
+    await gotoLoginReady(page);
     const inputs = await page.locator('input, select, textarea').all();
     
     // Skip if no form on this page
@@ -368,7 +377,7 @@ test.describe('ARIA Patterns (Realistic)', () => {
 
   test('dialog/modal has proper ARIA attributes', async ({ page }) => {
     // Real workflow: User opens modal dialog and needs to know they're in a modal
-    await page.goto('/');
+    await gotoHomeReady(page);
     
     const modalTrigger = await page.locator('[aria-haspopup="dialog"], button:has-text("modal")').first();
     
@@ -392,7 +401,7 @@ test.describe('ARIA Patterns (Realistic)', () => {
 test.describe('Real-World Accessibility Validation', () => {
   test('zero critical violations on home page', async ({ page }) => {
     // Real-world validation: Only fail on critical issues that actually block users
-    await page.goto('/', { waitUntil: 'networkidle' });
+    await gotoHomeReady(page);
     await injectAxe(page);
     
     const results = await page.evaluate(async (): Promise<AxeResults> => {
@@ -417,7 +426,7 @@ test.describe('Real-World Accessibility Validation', () => {
     // Note: This test is just a reminder
     // Real accessibility validation requires manual testing with NVDA screen reader in Hebrew
     // Automated tests catch structure issues, but only real users can validate usability
-    await page.goto('/', { waitUntil: 'networkidle' });
+    await gotoHomeReady(page);
     
     // If we got here, automated tests passed
     // Next: Manual NVDA Hebrew RTL testing before production

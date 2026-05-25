@@ -23,6 +23,10 @@
     /* Accessible text color for primary/secondary backgrounds (computed for contrast) */
     --color-on-primary: #fff;
     --color-on-secondary: #111;
+
+  /* Navigation drawer */
+  --nav-drawer-width: 280px;
+
   /* ===== LAYER 1: CORE PRIMITIVES ===== */
   
   /* Primary Color Family (School's custom burgundy: #76335a) */

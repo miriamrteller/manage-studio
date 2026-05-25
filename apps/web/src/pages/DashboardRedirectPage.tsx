@@ -20,8 +20,7 @@ import {
  * - student/adult_student → /dashboard/student
  * - No matching role → /classes (fallback)
  * 
- * This ensures all authenticated users see the ProtectedNavigation with
- * their role-appropriate menu items.
+ * their role-appropriate menu items in the nav drawer.
  */
 
 export default function DashboardRedirectPage() {

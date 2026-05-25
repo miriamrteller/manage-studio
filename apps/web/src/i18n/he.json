@@ -408,6 +408,12 @@
     "classes": "שיעורים",
     "login": "התחברות",
     "logout": "התנתקות",
+    "signup": "הרשמה",
+    "menu": "תפריט",
+    "open_menu": "פתח תפריט",
+    "close_menu": "סגור תפריט",
+    "pin_menu": "הצמד תפריט",
+    "unpin_menu": "בטל הצמדת תפריט",
     "people": "תלמידים ומבוגרים",
     "families": "משפחות",
     "portal": "פורטל הורים",
@@ -415,7 +421,14 @@
     "billing": "חשבונות חיוב",
     "levels": "רמות שיעורים",
     "terms": "תקופות למידה",
-    "manage_classes": "ניהול שיעורים"
+    "manage_classes": "ניהול שיעורים",
+    "section": {
+      "browse": "גלישה",
+      "administration": "ניהול",
+      "portal": "הפורטל שלי",
+      "learning": "הלמידה שלי",
+      "account": "חשבון"
+    }
   },
   "footer": {
     "school_name_fallback": "בית הספר לבלט",

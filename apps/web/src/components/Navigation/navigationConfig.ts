@@ -1,9 +1,8 @@
 /**
  * Navigation Configuration
- * 
- * Defines all authenticated routes that appear in the topbar.
- * Routes are conditionally rendered based on user roles.
- * 
+ *
+ * Defines routes shown in the nav drawer, filtered by user roles.
+ *
  * Role values come from useCurrentUser().user.role (array of strings):
  * - 'tenant_admin': Full system access
  * - 'parent' or 'guardian': Parent/guardian portal access
@@ -11,93 +10,167 @@
  * - 'teacher': (reserved for future use)
  */
 
+export type NavSectionKey =
+  | 'browse'
+  | 'administration'
+  | 'setup'
+  | 'portal'
+  | 'learning';
+
 export interface NavItem {
   path: string;
   labelKey: string;
   requiredRoles: string[];
-  dropdownItems?: NavItem[];
+  sectionKey: NavSectionKey;
+  /** Non-clickable section heading inside the drawer */
+  isGroupLabel?: boolean;
+  /** Indented child item (e.g. setup sub-pages) */
+  indent?: boolean;
 }
 
+export interface NavSection {
+  sectionKey: NavSectionKey;
+  labelKey: string;
+  items: NavItem[];
+}
+
+export const SECTION_LABELS: Record<NavSectionKey, string> = {
+  browse: 'nav.section.browse',
+  administration: 'nav.section.administration',
+  setup: 'pages.admin.setup.title',
+  portal: 'nav.section.portal',
+  learning: 'nav.section.learning',
+};
+
+/** Authenticated navigation items (flattened; no dropdowns) */
 export const navigationConfig: NavItem[] = [
-  // Classes - visible to all authenticated users
   {
     path: '/classes',
     labelKey: 'nav.classes',
-    requiredRoles: [], // Empty means visible to all authenticated users
+    requiredRoles: [],
+    sectionKey: 'browse',
   },
-
-  // Admin Links
   {
     path: '/admin/people',
     labelKey: 'nav.people',
     requiredRoles: ['tenant_admin'],
+    sectionKey: 'administration',
   },
   {
     path: '/admin/families',
     labelKey: 'nav.families',
     requiredRoles: ['tenant_admin'],
+    sectionKey: 'administration',
   },
-  // Admin Setup (with dropdown sub-items)
   {
     path: '/admin/setup',
     labelKey: 'pages.admin.setup.title',
     requiredRoles: ['tenant_admin'],
-    dropdownItems: [
-      {
-        path: '/admin/setup/billing',
-        labelKey: 'nav.billing',
-        requiredRoles: ['tenant_admin'],
-      },
-      {
-        path: '/admin/setup/levels',
-        labelKey: 'nav.levels',
-        requiredRoles: ['tenant_admin'],
-      },
-      {
-        path: '/admin/setup/terms',
-        labelKey: 'nav.terms',
-        requiredRoles: ['tenant_admin'],
-      },
-      {
-        path: '/admin/setup/classes',
-        labelKey: 'nav.manage_classes',
-        requiredRoles: ['tenant_admin'],
-      },
-    ],
+    sectionKey: 'setup',
+    isGroupLabel: true,
   },
-
-  // Parent/Guardian Portal
+  {
+    path: '/admin/setup/billing',
+    labelKey: 'nav.billing',
+    requiredRoles: ['tenant_admin'],
+    sectionKey: 'setup',
+    indent: true,
+  },
+  {
+    path: '/admin/setup/levels',
+    labelKey: 'nav.levels',
+    requiredRoles: ['tenant_admin'],
+    sectionKey: 'setup',
+    indent: true,
+  },
+  {
+    path: '/admin/setup/terms',
+    labelKey: 'nav.terms',
+    requiredRoles: ['tenant_admin'],
+    sectionKey: 'setup',
+    indent: true,
+  },
+  {
+    path: '/admin/setup/classes',
+    labelKey: 'nav.manage_classes',
+    requiredRoles: ['tenant_admin'],
+    sectionKey: 'setup',
+    indent: true,
+  },
   {
     path: '/dashboard/portal',
     labelKey: 'nav.portal',
     requiredRoles: ['parent', 'guardian'],
+    sectionKey: 'portal',
   },
-
-  // Student Dashboard
   {
     path: '/dashboard/student',
     labelKey: 'nav.student_dashboard',
     requiredRoles: ['student', 'adult_student'],
+    sectionKey: 'learning',
   },
+];
+
+/** Unauthenticated navigation items */
+export const publicNavigationConfig: NavItem[] = [
+  {
+    path: '/classes',
+    labelKey: 'nav.classes',
+    requiredRoles: [],
+    sectionKey: 'browse',
+  },
+  {
+    path: '/login',
+    labelKey: 'nav.login',
+    requiredRoles: [],
+    sectionKey: 'browse',
+  },
+  {
+    path: '/signup',
+    labelKey: 'nav.signup',
+    requiredRoles: [],
+    sectionKey: 'browse',
+  },
+];
+
+const SECTION_ORDER: NavSectionKey[] = [
+  'browse',
+  'administration',
+  'setup',
+  'portal',
+  'learning',
 ];
 
 /**
  * Check if a user (with given roles) can access a route.
- * 
- * Rules:
- * - If requiredRoles is empty, user can access (visible to all authenticated)
- * - If requiredRoles has items, user must have at least one matching role
- * 
- * @param userRoles User's role array from useCurrentUser().user.role
- * @param requiredRoles Route's required roles
- * @returns true if user can access this route
  */
 export function canAccessRoute(userRoles: string[], requiredRoles: string[]): boolean {
-  // Empty requiredRoles = accessible to all
   if (requiredRoles.length === 0) {
     return true;
   }
-
-  // Check if user has at least one required role
   return userRoles.some((role) => requiredRoles.includes(role));
+}
+
+/**
+ * Build grouped nav sections for the drawer, hiding empty groups.
+ */
+export function buildNavSections(
+  items: NavItem[],
+  userRoles: string[] | null
+): NavSection[] {
+  const roles = userRoles ?? [];
+  const visibleItems = items.filter((item) => canAccessRoute(roles, item.requiredRoles));
+
+  const grouped = new Map<NavSectionKey, NavItem[]>();
+  for (const item of visibleItems) {
+    const list = grouped.get(item.sectionKey) ?? [];
+    list.push(item);
+    grouped.set(item.sectionKey, list);
+  }
+
+  return SECTION_ORDER.filter((key) => grouped.has(key)).map((sectionKey) => ({
+    sectionKey,
+    labelKey: SECTION_LABELS[sectionKey],
+    items: grouped.get(sectionKey)!,
+  }));
 }

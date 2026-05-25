@@ -406,6 +406,12 @@
     "classes": "Classes",
     "login": "Login",
     "logout": "Logout",
+    "signup": "Sign up",
+    "menu": "Menu",
+    "open_menu": "Open menu",
+    "close_menu": "Close menu",
+    "pin_menu": "Pin menu open",
+    "unpin_menu": "Unpin menu",
     "people": "Students & Adults",
     "families": "Families",
     "portal": "Portal",
@@ -413,7 +419,14 @@
     "billing": "Billing Accounts",
     "levels": "Class Levels",
     "terms": "Learning Terms",
-    "manage_classes": "Manage Classes"
+    "manage_classes": "Manage Classes",
+    "section": {
+      "browse": "Browse",
+      "administration": "Administration",
+      "portal": "My portal",
+      "learning": "My learning",
+      "account": "Account"
+    }
   },
   "footer": {
     "school_name_fallback": "Ballet School",
