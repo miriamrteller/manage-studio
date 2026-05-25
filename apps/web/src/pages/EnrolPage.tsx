@@ -39,7 +39,7 @@ export default function EnrolPage() {
   }
 
   return (
-    <div className="py-8">
+    <div>
       <h1 className="mb-6 text-2xl font-bold">{t('pages.classes.enrol')}</h1>
       <EnrolmentStepper
         initialClassId={intent?.classId}

@@ -12,7 +12,7 @@ export function ClassRequirementsPanel({ classId, className }: ClassRequirements
   const { t } = useTranslation();
   const { requirements, isLoading, error, linkTemplate, deleteRequirement, isLinking, isDeleting } =
     useRequirements(classId);
-  const templatesQuery = useRequirementTemplates();
+  const { templates, isLoading: templatesLoading } = useRequirementTemplates();
 
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
   const [showAdd, setShowAdd] = useState(false);
@@ -23,9 +23,7 @@ export function ClassRequirementsPanel({ classId, className }: ClassRequirements
   const linkedTemplateIds = new Set(
     requirements.map((r) => r.requirement_template_id).filter(Boolean)
   );
-  const availableTemplates = (templatesQuery.data ?? []).filter(
-    (tpl) => !linkedTemplateIds.has(tpl.id)
-  );
+  const availableTemplates = templates.filter((tpl: { id: string }) => !linkedTemplateIds.has(tpl.id));
 
   const handleLink = () => {
     if (!selectedTemplateId) return;
@@ -71,7 +69,7 @@ export function ClassRequirementsPanel({ classId, className }: ClassRequirements
             variant="outline"
             size="sm"
             onClick={() => setShowAdd(true)}
-            disabled={availableTemplates.length === 0 && !templatesQuery.isLoading}
+            disabled={availableTemplates.length === 0 && !templatesLoading}
           >
             + {t('form.requirement.add_button')}
           </Button>
@@ -98,7 +96,7 @@ export function ClassRequirementsPanel({ classId, className }: ClassRequirements
       )}
 
       {/* No templates exist at all */}
-      {!isLoading && availableTemplates.length === 0 && requirements.length === 0 && !templatesQuery.isLoading && (
+      {!isLoading && availableTemplates.length === 0 && requirements.length === 0 && !templatesLoading && (
         <p className="text-sm py-1" style={{ color: 'var(--color-text-muted)' }}>
           {t('form.requirement.no_templates')}
         </p>
@@ -198,7 +196,7 @@ export function ClassRequirementsPanel({ classId, className }: ClassRequirements
             {t('pages.admin_classes.requirements_add_title')}
           </p>
 
-          {templatesQuery.isLoading ? (
+          {templatesLoading ? (
             <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
               {t('common.loading')}
             </p>

@@ -92,6 +92,13 @@ export const navigationConfig: NavItem[] = [
     indent: true,
   },
   {
+    path: '/admin/setup/requirements',
+    labelKey: 'nav.requirements',
+    requiredRoles: ['tenant_admin'],
+    sectionKey: 'setup',
+    indent: true,
+  },
+  {
     path: '/dashboard/portal',
     labelKey: 'nav.portal',
     requiredRoles: ['parent', 'guardian'],

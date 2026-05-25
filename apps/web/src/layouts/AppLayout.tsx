@@ -29,7 +29,10 @@ function AppLayoutContent({ children }: { children: ReactNode }) {
       <div className="flex flex-col flex-1 min-w-0">
         <AppHeader />
 
-        <main className="flex-1 px-4 md:px-8 lg:px-12 xl:px-24" role="main">
+        <main
+          className="flex-1 px-4 md:px-8 lg:px-12 xl:px-24 pt-6 md:pt-8 pb-6 md:pb-8"
+          role="main"
+        >
           {children}
         </main>
 
