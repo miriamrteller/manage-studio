@@ -17,20 +17,30 @@ export const LanguageContext = createContext<LanguageContextType | null>(null);
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const tenant = useTenant();
   const { user } = useCurrentUser();
-  const [guestOverride, setGuestOverride] = useState<AppLanguage | null>(null);
 
-  const resolvedFromSources = useMemo(
+
+  const defaultLanguage = useMemo(
     () => resolveLanguage(user?.language, tenant?.language_default),
     [user?.language, tenant?.language_default],
   );
 
-  const language = user ? resolvedFromSources : (guestOverride ?? resolvedFromSources);
+  const [language, setLanguageState] = useState<AppLanguage>(() => {
+    if (user?.language) return user.language;
+    const stored = localStorage.getItem('language');
+    if (stored) return stored as AppLanguage;
+    return defaultLanguage;
+  });
 
+
+  // When user or tenant changes, update language if user has a preference
   useEffect(() => {
-    if (user) {
-      setGuestOverride(null);
+    if (user?.language) {
+      setLanguageState(user.language);
+      localStorage.setItem('language', user.language);
     }
-  }, [user]);
+    // If no user, don't override current language
+  }, [user?.language, tenant?.language_default]);
+
 
   useEffect(() => {
     if (i18n.language !== language) {
@@ -38,9 +48,14 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     }
   }, [language]);
 
+
+  // Only update language if user explicitly changes it
   const setLanguage = useCallback(
     async (lang: AppLanguage) => {
+      setLanguageState(lang);
       await i18n.changeLanguage(lang);
+
+      localStorage.setItem('language', lang);
 
       if (user) {
         const { error } = await supabase
@@ -53,8 +68,6 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
         } else {
           await queryClient.invalidateQueries({ queryKey: ['currentUser'] });
         }
-      } else {
-        setGuestOverride(lang);
       }
     },
     [user],
