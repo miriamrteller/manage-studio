@@ -56,7 +56,7 @@ export const FormDescription = ({ children, className = '', ...props }: React.HT
 );
 
 export const FormMessage = ({ children, ...props }: React.HTMLAttributes<HTMLParagraphElement>) => (
-  <p className="text-sm text-red-600" {...props}>
+  <p className="text-sm text-red-600" role="alert" {...props}>
     {children}
   </p>
 );
@@ -78,13 +78,13 @@ export const FormInput = React.forwardRef<HTMLInputElement, FormInputProps>(
         {label && <FormLabel htmlFor={inputId}>{label}</FormLabel>}
         <input
           ref={ref}
-          id={inputId}
           className={`w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 disabled:opacity-50 ${
             error ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
           } ${className}`}
           aria-invalid={!!error}
           aria-describedby={error ? `${inputId}-error` : helperText ? `${inputId}-helper` : undefined}
           {...props}
+          id={inputId}
         />
         {error && (
           <FormMessage id={`${inputId}-error`}>{error}</FormMessage>
@@ -113,13 +113,13 @@ export const FormTextarea = React.forwardRef<HTMLTextAreaElement, FormTextareaPr
         {label && <FormLabel htmlFor={textareaId}>{label}</FormLabel>}
         <textarea
           ref={ref}
-          id={textareaId}
           className={`w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 disabled:opacity-50 ${
             error ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
           } ${className}`}
           aria-invalid={!!error}
           aria-describedby={error ? `${textareaId}-error` : helperText ? `${textareaId}-helper` : undefined}
           {...props}
+          id={textareaId}
         />
         {error && (
           <FormMessage id={`${textareaId}-error`}>{error}</FormMessage>
@@ -149,13 +149,13 @@ export const FormSelect = React.forwardRef<HTMLSelectElement, FormSelectProps>(
         {label && <FormLabel htmlFor={selectId}>{label}</FormLabel>}
         <select
           ref={ref}
-          id={selectId}
           className={`w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 disabled:opacity-50 ${
             error ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
           } ${className}`}
           aria-invalid={!!error}
           aria-describedby={error ? `${selectId}-error` : helperText ? `${selectId}-helper` : undefined}
           {...props}
+          id={selectId}
         >
           {options.map(opt => (
             <option key={opt.value} value={opt.value}>

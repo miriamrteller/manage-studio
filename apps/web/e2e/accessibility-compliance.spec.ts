@@ -5,15 +5,16 @@ import { injectAxe } from 'axe-playwright';
 test.describe('Empty State Accessibility', () => {
   test('should render accessible empty state with interactive element', async ({ page }) => {
     try {
-      // Intercept the classes API and mock it to return an empty array
-      await page.route('**/api/classes**', route => {
+      // Mock Supabase RPC (app loads classes via get_public_classes_by_subdomain, not /api/classes)
+      await page.route('**/rest/v1/rpc/get_public_classes_by_subdomain**', (route) => {
         route.fulfill({
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify([]),
         });
       });
-      await page.goto('/');
+      await page.goto('/', { waitUntil: 'domcontentloaded' });
+      await page.locator('h1').first().waitFor({ state: 'visible', timeout: 15000 });
       const h1s = await page.locator('h1').all();
       if (h1s.length !== 1) {
         test.skip(true, 'No <h1> found or multiple <h1>s. Skipping due to possible environment instability.');
@@ -77,7 +78,8 @@ test.beforeEach(async ({ browserName }) => {
 test.describe('Heading Structure (WCAG 2.4.1)', () => {
   test('page hierarchy supports screen reader navigation', async ({ page }) => {
     try {
-      await page.goto('/');
+      await page.goto('/', { waitUntil: 'domcontentloaded' });
+      await page.locator('h1').first().waitFor({ state: 'visible', timeout: 15000 });
       const headings = await page.locator('h1, h2, h3, h4, h5, h6').all();
       if (headings.length === 0) {
         test.skip(true, 'No headings found. Skipping due to possible environment instability.');
@@ -103,8 +105,9 @@ test.describe('Heading Structure (WCAG 2.4.1)', () => {
 test.describe('Form Accessibility (WCAG 1.3.1)', () => {
   test('all inputs have associated labels', async ({ page }) => {
     // Real workflow: User navigates to login form and needs to identify form fields
-    await page.goto('/login', { waitUntil: 'networkidle' });
-    const inputs = await page.locator('input, select, textarea').all();
+    await page.goto('/login', { waitUntil: 'domcontentloaded' });
+    await page.getByRole('textbox', { name: /email|דוא/i }).first().waitFor({ state: 'visible', timeout: 15000 });
+    const inputs = await page.locator('input:not([type="hidden"]), select, textarea').all();
     
     // Skip test if page has no form inputs
     if (inputs.length === 0) {
@@ -124,21 +127,16 @@ test.describe('Form Accessibility (WCAG 1.3.1)', () => {
 
   test('form validation errors are announced', async ({ page }) => {
     // Real workflow: User submits form with missing fields, errors should be clear
-    await page.goto('/login', { waitUntil: 'networkidle' });
-    const submitButton = await page.locator('button[type="submit"]').first();
+    await page.goto('/login', { waitUntil: 'domcontentloaded' });
+    await page.getByRole('textbox', { name: /email|דוא/i }).first().waitFor({ state: 'visible', timeout: 15000 });
+    const submitButton = page.locator('button[type="submit"]').first();
     
-    if (await submitButton.isVisible()) {
-      await submitButton.click({ timeout: 5000 });
-      // Wait for validation errors to appear
-      await page.waitForTimeout(500);
-      
-      // Check for error messages (via aria-live or aria-invalid)
-      const errorMessages = await page.locator('[aria-invalid="true"], [role="alert"]').count();
-      
-      // If form was submitted, there should be some validation feedback
-      const formErrorsOrSuccess = errorMessages > 0 || (await page.url().includes('/login'));
-      expect(formErrorsOrSuccess).toBe(true);
-    }
+    await expect(submitButton).toBeVisible();
+    await submitButton.click();
+    await expect(page.locator('[aria-invalid="true"], [role="alert"]').first()).toBeVisible({ timeout: 5000 });
+    
+    const errorMessages = await page.locator('[aria-invalid="true"], [role="alert"]').count();
+    expect(errorMessages).toBeGreaterThan(0);
   });
 });
 

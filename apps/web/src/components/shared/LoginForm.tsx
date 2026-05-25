@@ -49,9 +49,11 @@ export function LoginForm({
 
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
+    mode: 'onSubmit',
+    reValidateMode: 'onSubmit',
   });
   
-  const { register, handleSubmit, reset } = form;
+  const { register, handleSubmit, reset, formState: { errors, isSubmitted } } = form;
 
   const handleAuthModeChange = (mode: AuthMode) => {
     setAuthMode(mode);
@@ -117,7 +119,7 @@ export function LoginForm({
           label={t('form.email')}
           type="email"
           placeholder={t('form.email_placeholder')}
-          error={form.formState.errors.email?.message}
+          error={isSubmitted ? errors.email?.message : undefined}
           {...register('email')}
         />
 
@@ -128,7 +130,7 @@ export function LoginForm({
             label={t('pages.login.password')}
             type="password"
             placeholder={t('pages.login.password_placeholder')}
-            error={(form.formState.errors as Record<string, { message?: string }>).password?.message}
+            error={isSubmitted ? (errors as Record<string, { message?: string }>).password?.message : undefined}
             {...register('password' as const)}
           />
         )}

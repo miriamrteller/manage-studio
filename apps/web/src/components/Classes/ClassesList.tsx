@@ -46,7 +46,7 @@ export function ClassesList() {
       {/* Empty state: accessible, positive message with action */}
       {!error && !isLoading && !classes.length && (
         <div className="p-8 flex flex-col items-center gap-4">
-          <p className="mb-4 text-center text-gray-700 text-lg font-semibold">{t('pages.classes.no_classes_title')}</p>
+          <h2 className="mb-4 text-center text-gray-700 text-lg font-semibold">{t('pages.classes.no_classes_title')}</h2>
           <p className="mb-4 text-center text-gray-700">{t('pages.classes.no_classes_message')}</p>
           <Button
             type="button"

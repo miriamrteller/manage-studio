@@ -1,10 +1,16 @@
 import { ReactNode, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 import { useTenant } from '../hooks/useTenant';
 import { ProtectedNavigation } from '../components/Navigation/ProtectedNavigation';
 import { PublicNavigation } from '../components/Navigation/PublicNavigation';
+
+const PUBLIC_PATHS = new Set(['/', '/classes', '/login', '/signup', '/enrol']);
+
+function isPublicRoute(pathname: string): boolean {
+  return PUBLIC_PATHS.has(pathname) || pathname.startsWith('/auth/');
+}
 
 /**
  * AppLayout: Unified layout for all pages
@@ -15,27 +21,27 @@ import { PublicNavigation } from '../components/Navigation/PublicNavigation';
  */
 export function AppLayout({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
+  const location = useLocation();
   const { user, isLoading } = useCurrentUser();
   const tenant = useTenant();
   const navigate = useNavigate();
+  const publicRoute = isPublicRoute(location.pathname);
 
   // Redirect to login if user is not authenticated and route is protected
   useEffect(() => {
-    // You may want to refine this logic for public/protected routes
-    // For now, only redirect if not loading and not authenticated
     if (!isLoading && !user && window.location.pathname.startsWith('/admin')) {
       navigate('/login', { replace: true });
     }
   }, [user, isLoading, navigate]);
 
-  if (isLoading) {
+  if (isLoading && !publicRoute) {
     return <div className="p-4">{t('common.loading')}</div>;
   }
 
   return (
     <div className="min-h-screen flex flex-col">
       {/* Navigation */}
-      {user ? <ProtectedNavigation /> : <PublicNavigation />}
+      {!isLoading && user ? <ProtectedNavigation /> : <PublicNavigation />}
 
       {/* Main Content */}
       <main className="flex-1 px-4 md:px-8 lg:px-12 xl:px-24" role="main">{children}</main>
