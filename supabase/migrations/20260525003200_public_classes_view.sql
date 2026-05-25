@@ -20,7 +20,7 @@ RETURNS TABLE (
   max_capacity    INT,
   price_minor     INT,
   currency        TEXT,
-  vat_rate        NUMERIC,
+
   term_id         UUID,
   level_id        UUID,
   status          TEXT
@@ -46,7 +46,7 @@ BEGIN
     c.max_capacity,
     c.price_minor,
     c.currency,
-    c.vat_rate,
+
     c.term_id,
     c.level_id,
     c.status

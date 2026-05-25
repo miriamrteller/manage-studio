@@ -36,7 +36,7 @@ CREATE TABLE classes (
   max_capacity          INT         NOT NULL DEFAULT 15,
   price_minor           INT         NOT NULL DEFAULT 0,
   currency              TEXT        NOT NULL DEFAULT 'ILS',
-  vat_rate              NUMERIC(5,4),
+  -- vat_rate removed: now always sourced from tenant config
   is_public             BOOLEAN     NOT NULL DEFAULT true,
   billing_frequency     VARCHAR(50) DEFAULT 'monthly' NOT NULL,
   status                TEXT        NOT NULL DEFAULT 'active'
