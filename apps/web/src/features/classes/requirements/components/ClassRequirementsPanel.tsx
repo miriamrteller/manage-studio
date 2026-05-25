@@ -1,59 +1,42 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
-import { useRequirements } from '../hooks/useRequirements';
-import type { ClassRequirement } from '@shared/schemas';
-
-type RequirementType = 'min_age' | 'prerequisite_class' | 'admin_approval';
+import { useRequirements, useRequirementTemplates } from '../hooks/useRequirements';
 
 interface ClassRequirementsPanelProps {
   classId: string;
   className: string;
 }
 
-interface AddFormState {
-  requirement_type: RequirementType | '';
-  value: string;
-  display_text: string;
-  is_hard_block: boolean;
-}
-
-const EMPTY_FORM: AddFormState = {
-  requirement_type: '',
-  value: '',
-  display_text: '',
-  is_hard_block: true,
-};
-
 export function ClassRequirementsPanel({ classId, className }: ClassRequirementsPanelProps) {
   const { t } = useTranslation();
-  const { requirements, isLoading, createRequirement, deleteRequirement, isCreating, isDeleting } =
-    useRequirements({ classId, enabled: true });
+  const { requirements, isLoading, error, linkTemplate, deleteRequirement, isLinking, isDeleting } =
+    useRequirements(classId);
+  const templatesQuery = useRequirementTemplates();
 
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [form, setForm] = useState<AddFormState>(EMPTY_FORM);
+  const [selectedTemplateId, setSelectedTemplateId] = useState('');
+  const [showAdd, setShowAdd] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-  const [addError, setAddError] = useState<string | null>(null);
+  const [linkError, setLinkError] = useState<string | null>(null);
 
-  const handleAdd = () => {
-    if (!form.requirement_type) return;
+  // Templates not yet linked to this class
+  const linkedTemplateIds = new Set(
+    requirements.map((r) => r.requirement_template_id).filter(Boolean)
+  );
+  const availableTemplates = (templatesQuery.data ?? []).filter(
+    (tpl) => !linkedTemplateIds.has(tpl.id)
+  );
 
-    setAddError(null);
-    const payload: Partial<ClassRequirement> = {
-      class_id: classId,
-      requirement_type: form.requirement_type,
-      value: form.requirement_type === 'admin_approval' ? 'true' : form.value.trim(),
-      display_text: form.display_text.trim(),
-      is_hard_block: form.is_hard_block,
-    };
-
-    createRequirement(payload, {
+  const handleLink = () => {
+    if (!selectedTemplateId) return;
+    setLinkError(null);
+    linkTemplate(selectedTemplateId, {
       onSuccess: () => {
-        setForm(EMPTY_FORM);
-        setShowAddForm(false);
+        setSelectedTemplateId('');
+        setShowAdd(false);
       },
       onError: (err) => {
-        setAddError(err instanceof Error ? err.message : 'Failed to add requirement');
+        setLinkError(err instanceof Error ? err.message : 'Failed to link requirement');
       },
     });
   };
@@ -64,17 +47,32 @@ export function ClassRequirementsPanel({ classId, className }: ClassRequirements
     });
   };
 
-  const typeLabel = (type: RequirementType) => t(`form.requirement.type_${type}`);
-  const showValueField = form.requirement_type && form.requirement_type !== 'admin_approval';
+  const typeLabel = (type: string) => {
+    const key = `form.requirement.type_${type}`;
+    const translated = t(key);
+    return translated === key ? type : translated;
+  };
 
   return (
-    <div className="border-t px-6 py-4" style={{ borderColor: 'var(--color-border-default)', backgroundColor: 'var(--color-surface-subtle, #f9fafb)' }}>
+    <div
+      className="border-t px-6 py-4"
+      style={{
+        borderColor: 'var(--color-border-default)',
+        backgroundColor: 'var(--color-surface-subtle, #f9fafb)',
+      }}
+    >
+      {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold" style={{ color: 'var(--color-text-secondary)' }}>
           {t('pages.admin_classes.requirements_for', { name: className })}
         </h3>
-        {!showAddForm && (
-          <Button variant="outline" size="sm" onClick={() => setShowAddForm(true)}>
+        {!showAdd && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowAdd(true)}
+            disabled={availableTemplates.length === 0 && !templatesQuery.isLoading}
+          >
             + {t('form.requirement.add_button')}
           </Button>
         )}
@@ -86,159 +84,148 @@ export function ClassRequirementsPanel({ classId, className }: ClassRequirements
         </p>
       )}
 
-      {!isLoading && requirements.length === 0 && !showAddForm && (
+      {error && (
+        <p className="text-sm py-2" style={{ color: 'var(--color-danger, #dc2626)' }}>
+          {error}
+        </p>
+      )}
+
+      {/* Empty state */}
+      {!isLoading && requirements.length === 0 && !showAdd && (
         <p className="text-sm py-2 italic" style={{ color: 'var(--color-text-muted)' }}>
           {t('pages.admin_classes.requirements_empty')}
         </p>
       )}
 
+      {/* No templates exist at all */}
+      {!isLoading && availableTemplates.length === 0 && requirements.length === 0 && !templatesQuery.isLoading && (
+        <p className="text-sm py-1" style={{ color: 'var(--color-text-muted)' }}>
+          {t('form.requirement.no_templates')}
+        </p>
+      )}
+
+      {/* Linked requirements list */}
       {requirements.length > 0 && (
         <ul className="space-y-2 mb-3">
-          {requirements.map((req) => (
-            <li
-              key={req.id}
-              className="flex items-start justify-between rounded-md border px-3 py-2 text-sm"
-              style={{ borderColor: 'var(--color-border-default)', backgroundColor: 'var(--color-surface-default, white)' }}
-            >
-              <div className="space-y-0.5">
-                <span className="font-medium">{typeLabel(req.requirement_type)}</span>
-                {req.requirement_type !== 'admin_approval' && req.value && (
-                  <span className="text-xs ml-2" style={{ color: 'var(--color-text-secondary)' }}>
-                    {req.value}
-                  </span>
-                )}
-                {req.display_text && (
-                  <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
-                    {req.display_text}
-                  </p>
-                )}
-                {req.is_hard_block && (
-                  <span className="inline-flex items-center rounded-sm px-1.5 py-0.5 text-xs font-medium"
-                    style={{ backgroundColor: 'var(--color-danger-subtle, #fef2f2)', color: 'var(--color-danger, #dc2626)' }}>
-                    {t('form.requirement.is_hard_block')}
-                  </span>
-                )}
-              </div>
+          {requirements.map((req) => {
+            const tpl = req.requirement_templates;
+            return (
+              <li
+                key={req.id}
+                className="flex items-start justify-between rounded-md border px-3 py-2 text-sm"
+                style={{
+                  borderColor: 'var(--color-border-default)',
+                  backgroundColor: 'var(--color-surface-default, white)',
+                }}
+              >
+                <div className="space-y-0.5">
+                  <span className="font-medium">{tpl?.name ?? req.id}</span>
+                  {tpl?.requirement_type && (
+                    <span
+                      className="text-xs ml-2"
+                      style={{ color: 'var(--color-text-secondary)' }}
+                    >
+                      {typeLabel(tpl.requirement_type)}
+                    </span>
+                  )}
+                  {tpl?.display_text && (
+                    <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                      {tpl.display_text}
+                    </p>
+                  )}
+                  {tpl?.is_hard_block && (
+                    <span
+                      className="inline-flex items-center rounded-sm px-1.5 py-0.5 text-xs font-medium"
+                      style={{
+                        backgroundColor: 'var(--color-danger-subtle, #fef2f2)',
+                        color: 'var(--color-danger, #dc2626)',
+                      }}
+                    >
+                      {t('form.requirement.is_hard_block')}
+                    </span>
+                  )}
+                </div>
 
-              {confirmDeleteId === req.id ? (
-                <div className="flex items-center gap-2 shrink-0 ms-4">
-                  <span className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
-                    {t('form.requirement.delete_confirm')}
-                  </span>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => handleDelete(req.id)}
-                    disabled={isDeleting}
-                  >
-                    {t('common.delete')}
-                  </Button>
+                {confirmDeleteId === req.id ? (
+                  <div className="flex items-center gap-2 shrink-0 ms-4">
+                    <span className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+                      {t('form.requirement.delete_confirm')}
+                    </span>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleDelete(req.id)}
+                      disabled={isDeleting}
+                    >
+                      {t('common.delete')}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setConfirmDeleteId(null)}
+                      disabled={isDeleting}
+                    >
+                      {t('form.cancel')}
+                    </Button>
+                  </div>
+                ) : (
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => setConfirmDeleteId(null)}
-                    disabled={isDeleting}
+                    onClick={() => setConfirmDeleteId(req.id)}
+                    className="shrink-0 ms-4"
+                    aria-label={t('common.delete')}
                   >
-                    {t('form.cancel')}
+                    ✕
                   </Button>
-                </div>
-              ) : (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setConfirmDeleteId(req.id)}
-                  className="shrink-0 ms-4"
-                  aria-label={t('common.delete')}
-                >
-                  ✕
-                </Button>
-              )}
-            </li>
-          ))}
+                )}
+              </li>
+            );
+          })}
         </ul>
       )}
 
-      {showAddForm && (
+      {/* Add form — select from available templates */}
+      {showAdd && (
         <div
           className="rounded-md border p-4 space-y-3"
-          style={{ borderColor: 'var(--color-border-default)', backgroundColor: 'var(--color-surface-default, white)' }}
+          style={{
+            borderColor: 'var(--color-border-default)',
+            backgroundColor: 'var(--color-surface-default, white)',
+          }}
         >
-          <p className="text-sm font-medium">{t('pages.admin_classes.requirements_add_title')}</p>
+          <p className="text-sm font-medium">
+            {t('pages.admin_classes.requirements_add_title')}
+          </p>
 
-          {/* Type */}
-          <div>
-            <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>
-              {t('form.requirement.type')}
-            </label>
+          {templatesQuery.isLoading ? (
+            <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+              {t('common.loading')}
+            </p>
+          ) : availableTemplates.length === 0 ? (
+            <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+              {t('form.requirement.no_templates')}
+            </p>
+          ) : (
             <select
               className="w-full rounded-md border px-3 py-2 text-sm"
               style={{ borderColor: 'var(--color-border-default)' }}
-              value={form.requirement_type}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, requirement_type: e.target.value as RequirementType | '', value: '' }))
-              }
+              value={selectedTemplateId}
+              onChange={(e) => setSelectedTemplateId(e.target.value)}
             >
-              <option value="">{t('form.requirement.type_select_placeholder')}</option>
-              <option value="min_age">{t('form.requirement.type_min_age')}</option>
-              <option value="prerequisite_class">{t('form.requirement.type_prerequisite_class')}</option>
-              <option value="admin_approval">{t('form.requirement.type_admin_approval')}</option>
+              <option value="">{t('form.requirement.select_placeholder')}</option>
+              {availableTemplates.map((tpl) => (
+                <option key={tpl.id} value={tpl.id}>
+                  {tpl.name}
+                  {tpl.requirement_type ? ` (${typeLabel(tpl.requirement_type)})` : ''}
+                </option>
+              ))}
             </select>
-          </div>
-
-          {/* Value (conditional) */}
-          {showValueField && (
-            <div>
-              <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>
-                {t('form.requirement.value')}
-              </label>
-              <input
-                type={form.requirement_type === 'min_age' ? 'number' : 'text'}
-                min={form.requirement_type === 'min_age' ? 1 : undefined}
-                className="w-full rounded-md border px-3 py-2 text-sm"
-                style={{ borderColor: 'var(--color-border-default)' }}
-                placeholder={
-                  form.requirement_type === 'min_age'
-                    ? t('form.requirement.value_age_hint')
-                    : t('form.requirement.value_class_hint')
-                }
-                value={form.value}
-                onChange={(e) => setForm((f) => ({ ...f, value: e.target.value }))}
-              />
-            </div>
           )}
 
-          {/* Display text */}
-          <div>
-            <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>
-              {t('form.requirement.display_text')}
-            </label>
-            <input
-              type="text"
-              className="w-full rounded-md border px-3 py-2 text-sm"
-              style={{ borderColor: 'var(--color-border-default)' }}
-              placeholder={t('form.requirement.display_text_hint')}
-              value={form.display_text}
-              onChange={(e) => setForm((f) => ({ ...f, display_text: e.target.value }))}
-            />
-          </div>
-
-          {/* Hard block */}
-          <label className="flex items-center gap-2 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={form.is_hard_block}
-              onChange={(e) => setForm((f) => ({ ...f, is_hard_block: e.target.checked }))}
-              className="h-4 w-4 rounded"
-            />
-            <span className="text-sm">{t('form.requirement.is_hard_block')}</span>
-            <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
-              — {t('form.requirement.is_hard_block_hint')}
-            </span>
-          </label>
-
-          {addError && (
+          {linkError && (
             <p className="text-sm" style={{ color: 'var(--color-danger, #dc2626)' }}>
-              {addError}
+              {linkError}
             </p>
           )}
 
@@ -246,20 +233,20 @@ export function ClassRequirementsPanel({ classId, className }: ClassRequirements
             <Button
               variant="primary"
               size="sm"
-              onClick={handleAdd}
-              disabled={!form.requirement_type || isCreating}
+              onClick={handleLink}
+              disabled={!selectedTemplateId || isLinking}
             >
-              {isCreating ? t('common.loading') : t('form.requirement.add_button')}
+              {isLinking ? t('common.loading') : t('form.requirement.link_button')}
             </Button>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => {
-                setShowAddForm(false);
-                setForm(EMPTY_FORM);
-                setAddError(null);
+                setShowAdd(false);
+                setSelectedTemplateId('');
+                setLinkError(null);
               }}
-              disabled={isCreating}
+              disabled={isLinking}
             >
               {t('form.cancel')}
             </Button>

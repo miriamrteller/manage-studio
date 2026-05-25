@@ -291,15 +291,28 @@ export const ClassSchema = z.object({
 
 export type Class = z.infer<typeof ClassSchema>;
 
-// Class requirement (age, prerequisite, approval, etc.)
+// Requirement template — tenant's reusable library entry
+export const RequirementTemplateSchema = z.object({
+  id: UUIDSchema,
+  tenant_id: UUIDSchema,
+  name: z.string(),
+  requirement_type: z.string(),
+  config: z.record(z.unknown()),
+  display_text: z.string().nullable().optional(),
+  is_hard_block: z.boolean().default(true),
+  created_at: TimestampSchema,
+  updated_at: TimestampSchema,
+});
+
+export type RequirementTemplate = z.infer<typeof RequirementTemplateSchema>;
+
+// Class requirement — links a class to a requirement template (or stores inline config)
 export const ClassRequirementSchema = z.object({
   id: UUIDSchema,
   tenant_id: UUIDSchema,
   class_id: UUIDSchema,
-  requirement_type: z.enum(['min_age', 'prerequisite_class', 'admin_approval']),
-  value: z.string(),
-  display_text: z.string(),
-  is_hard_block: z.boolean().default(true),
+  requirement_template_id: UUIDSchema.nullable().optional(),
+  config: z.record(z.unknown()).nullable().optional(),
   created_at: TimestampSchema,
 });
 

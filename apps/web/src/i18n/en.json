@@ -145,19 +145,18 @@
     },
     "requirement": {
       "type": "Requirement type",
-      "type_min_age": "Minimum age",
-      "type_prerequisite_class": "Prerequisite class",
-      "type_admin_approval": "Admin approval required",
-      "value": "Value",
-      "value_age_hint": "Age in years (e.g. 7)",
-      "value_class_hint": "Class name",
-      "display_text": "Display text",
-      "display_text_hint": "Shown to parents, e.g. \"Ages 7 and up\"",
+      "type_age_range": "Age range",
+      "type_gender": "Gender",
+      "type_level": "Level",
+      "type_document_submitted": "Document required",
+      "type_manual_review": "Manual review",
       "is_hard_block": "Hard block",
       "is_hard_block_hint": "Prevents enrolment — unchecked shows a warning only",
       "add_button": "Add requirement",
-      "delete_confirm": "Remove this requirement?",
-      "type_select_placeholder": "Select type…"
+      "link_button": "Link to class",
+      "delete_confirm": "Remove this requirement from the class?",
+      "select_placeholder": "Select a requirement…",
+      "no_templates": "No requirements defined yet — create some under Setup › Requirements first."
     },
     "person": {
       "name": "Full Name",

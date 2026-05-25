@@ -145,19 +145,18 @@
     },
     "requirement": {
       "type": "סוג דרישה",
-      "type_min_age": "גיל מינימלי",
-      "type_prerequisite_class": "שיעור מקדים",
-      "type_admin_approval": "אישור מנהל נדרש",
-      "value": "ערך",
-      "value_age_hint": "גיל בשנים (למשל 7)",
-      "value_class_hint": "שם השיעור",
-      "display_text": "טקסט תצוגה",
-      "display_text_hint": "מוצג להורים, למשל \"גילאי 7 ומעלה\"",
+      "type_age_range": "טווח גיל",
+      "type_gender": "מגדר",
+      "type_level": "רמה",
+      "type_document_submitted": "מסמך נדרש",
+      "type_manual_review": "בדיקה ידנית",
       "is_hard_block": "חסימה קשיחה",
       "is_hard_block_hint": "מונע הרשמה — ללא סימון מציג אזהרה בלבד",
       "add_button": "הוסף דרישה",
-      "delete_confirm": "להסיר דרישה זו?",
-      "type_select_placeholder": "בחר סוג…"
+      "link_button": "קשר לשיעור",
+      "delete_confirm": "להסיר דרישה זו מהשיעור?",
+      "select_placeholder": "בחר דרישה…",
+      "no_templates": "לא הוגדרו דרישות עדיין — צור דרישות תחת הגדרות › דרישות קודם."
     },
     "person": {
       "name": "שם מלא",

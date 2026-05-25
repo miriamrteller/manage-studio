@@ -1,79 +1,99 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { RequirementService } from '../service';
-import { type ClassRequirement } from '@shared/schemas';
+import {
+  RequirementService,
+  RequirementTemplateService,
+} from '../service';
 import { useTenant } from '@/hooks/useTenant';
+import type { RequirementTemplate } from '@shared/schemas';
 
-const PAGE_SIZE = 50;
+// ── Templates (tenant library) ────────────────────────────────────────────────
 
-interface UseRequirementsOptions {
-  classId?: string;
-  page?: number;
-  enabled?: boolean;
-}
-
-/**
- * useRequirements: Fetch and manage class requirements
- * 
- * Pattern: useQuery for reads + useMutation for writes + cache invalidation
- * TanStack Query handles caching and background refetching
- */
-export function useRequirements({ classId, page = 1, enabled = true }: UseRequirementsOptions = {}) {
+export function useRequirementTemplates(enabled = true) {
   const tenant = useTenant();
   const queryClient = useQueryClient();
 
   const listQuery = useQuery({
-    queryKey: ['requirements', tenant?.id, page, classId],
+    queryKey: ['requirement_templates', tenant?.id],
     queryFn: async () => {
       if (!tenant) throw new Error('Tenant not initialized');
-      return RequirementService.list(tenant, { page, pageSize: PAGE_SIZE, classId });
+      return RequirementTemplateService.list(tenant);
     },
     enabled: enabled && !!tenant?.id,
   });
 
-  // Create mutation
   const createMutation = useMutation({
-    mutationFn: async (newRequirement: Partial<ClassRequirement>) => {
+    mutationFn: async (data: Partial<RequirementTemplate>) => {
       if (!tenant) throw new Error('Tenant not initialized');
-      return RequirementService.create(tenant, newRequirement);
+      return RequirementTemplateService.create(tenant, data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['requirements', tenant?.id] });
+      queryClient.invalidateQueries({ queryKey: ['requirement_templates', tenant?.id] });
     },
   });
 
-  // Update mutation
-  const updateMutation = useMutation({
-    mutationFn: async (requirementData: Partial<ClassRequirement>) => {
-      if (!tenant || !requirementData.id) throw new Error('Tenant not initialized or missing requirement ID');
-      return RequirementService.update(tenant, requirementData.id, requirementData);
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      if (!tenant) throw new Error('Tenant not initialized');
+      return RequirementTemplateService.delete(tenant, id);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['requirements', tenant?.id] });
+      queryClient.invalidateQueries({ queryKey: ['requirement_templates', tenant?.id] });
     },
   });
 
-  // Delete mutation
+  return {
+    templates: listQuery.data ?? [],
+    isLoading: listQuery.isLoading,
+    error: listQuery.error instanceof Error ? listQuery.error.message : null,
+    createTemplate: createMutation.mutate,
+    deleteTemplate: deleteMutation.mutate,
+    isCreating: createMutation.isPending,
+    isDeleting: deleteMutation.isPending,
+  };
+}
+
+// ── Per-class requirements (link rows + joined template) ──────────────────────
+
+export function useRequirements(classId: string | undefined, enabled = true) {
+  const tenant = useTenant();
+  const queryClient = useQueryClient();
+
+  const listQuery = useQuery({
+    queryKey: ['class_requirements', tenant?.id, classId],
+    queryFn: async () => {
+      if (!tenant || !classId) throw new Error('Tenant or classId missing');
+      return RequirementService.list(tenant, classId);
+    },
+    enabled: enabled && !!tenant?.id && !!classId,
+  });
+
+  const linkMutation = useMutation({
+    mutationFn: async (templateId: string) => {
+      if (!tenant || !classId) throw new Error('Tenant or classId missing');
+      return RequirementService.linkTemplate(tenant, classId, templateId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['class_requirements', tenant?.id, classId] });
+    },
+  });
+
   const deleteMutation = useMutation({
     mutationFn: async (requirementId: string) => {
       if (!tenant) throw new Error('Tenant not initialized');
       return RequirementService.delete(tenant, requirementId);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['requirements', tenant?.id] });
+      queryClient.invalidateQueries({ queryKey: ['class_requirements', tenant?.id, classId] });
     },
   });
 
   return {
-    requirements: listQuery.data?.requirements || [],
-    total: listQuery.data?.total || 0,
-    pageSize: PAGE_SIZE,
+    requirements: listQuery.data ?? [],
     isLoading: listQuery.isLoading,
-    error: listQuery.error instanceof Error ? listQuery.error.message : 'Unknown error',
-    createRequirement: createMutation.mutate,
-    updateRequirement: updateMutation.mutate,
+    error: listQuery.error instanceof Error ? listQuery.error.message : null,
+    linkTemplate: linkMutation.mutate,
     deleteRequirement: deleteMutation.mutate,
-    isCreating: createMutation.isPending,
-    isUpdating: updateMutation.isPending,
+    isLinking: linkMutation.isPending,
     isDeleting: deleteMutation.isPending,
   };
 }
