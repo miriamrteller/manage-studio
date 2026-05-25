@@ -26,16 +26,12 @@ export function useClasses({ termId, page = 1, enabled = true, publicOnly = true
   const tenant = useTenant();
   const queryClient = useQueryClient();
 
-  // Public classes from view (returns array)
+  // Public classes from function (returns array)
   const publicQuery = useQuery<any[]>({
     queryKey: ['public_classes', tenant?.subdomain],
     queryFn: async () => {
       if (!tenant?.subdomain) throw new Error('Tenant subdomain required');
-      const { data, error } = await supabase
-        .from('public_classes_by_subdomain')
-        .select('*')
-        .eq('tenant_subdomain', tenant.subdomain);
-      
+      const { data, error } = await supabase.rpc('get_public_classes_by_subdomain', { p_subdomain: tenant.subdomain });
       if (error) throw error;
       return data || [];
     },

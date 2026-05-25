@@ -15,10 +15,8 @@ import type { TenantConfig } from '../types/auth';
  * Direction is computed in useLanguage() hook, not here
  */
 export function useTenant(): TenantConfig | null {
-  // Determine subdomain
-  const devSubdomain = import.meta.env.VITE_DEV_TENANT_SUBDOMAIN as
-    | string
-    | undefined;
+  // Determine subdomain (robust)
+  const devSubdomain = import.meta.env.VITE_DEV_TENANT_SUBDOMAIN as string | undefined;
 
   let subdomain: string | null = null;
 
@@ -26,10 +24,27 @@ export function useTenant(): TenantConfig | null {
     subdomain = devSubdomain;
   } else if (typeof window !== 'undefined') {
     const hostname = window.location.hostname;
-    const parts = hostname.split('.');
-    if (parts.length > 1) {
-      subdomain = parts[0];
+    // Check for IP address
+    const isIP = /^\d+\.\d+\.\d+\.\d+$/.test(hostname);
+    if (!isIP) {
+      const parts = hostname.split('.');
+      if (parts.length > 2) {
+        subdomain = parts[0];
+      } else if (parts.length === 2 && parts[0] !== 'localhost') {
+        // e.g. dev with custom hosts like 'creativeballet.localhost'
+        subdomain = parts[0];
+      }
+      // Exclude reserved words
+      if (subdomain && ['localhost', 'www', '127', '0'].includes(subdomain)) {
+        subdomain = null;
+      }
     }
+  }
+
+  if (typeof window !== 'undefined') {
+    // Log for debugging
+    // eslint-disable-next-line no-console
+    console.debug('Resolved tenant subdomain:', subdomain);
   }
 
   // Query Supabase for tenant config using RPC (function, not table)
