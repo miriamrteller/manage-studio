@@ -20,6 +20,9 @@
  */
 
 :root {
+    /* Accessible text color for primary/secondary backgrounds (computed for contrast) */
+    --color-on-primary: #fff;
+    --color-on-secondary: #111;
   /* ===== LAYER 1: CORE PRIMITIVES ===== */
   
   /* Primary Color Family (School's custom burgundy: #76335a) */
@@ -172,7 +175,7 @@
   .button-primary {
     @apply button;
     background-color: var(--color-primary);
-    color: white;
+    color: var(--color-on-primary);
   }
 
   .button-primary:hover {
@@ -186,7 +189,7 @@
   .button-secondary {
     @apply button;
     background-color: var(--color-secondary);
-    color: white;
+    color: var(--color-on-secondary);
   }
 
   .button-secondary:hover {
