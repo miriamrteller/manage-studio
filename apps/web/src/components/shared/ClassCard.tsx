@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { formatCurrency } from '@shared/format';
+import { formatCurrency, formatTime } from '@shared/format';
 import type { PublicClass } from '@/schemas';
 
 /**
@@ -34,8 +34,8 @@ export function ClassCard({ class: cls, currency }: ClassCardProps) {
 
       <div className="space-y-2 mb-4 text-sm text-gray-600">
         <p>
-          <span className="font-semibold">{t('pages.classes.time')}:</span> {cls.start_time} –{' '}
-          {cls.end_time}
+          <span className="font-semibold">{t('pages.classes.time')}:</span>{' '}
+          {formatTime(cls.start_time, i18n.language)} – {formatTime(cls.end_time, i18n.language)}
         </p>
         <p>
           <span className="font-semibold">{t('pages.classes.capacity')}:</span>{' '}
