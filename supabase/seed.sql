@@ -93,3 +93,20 @@ VALUES
   ('00000000-0000-0000-0000-000000000601'::uuid, '00000000-0000-0000-0000-000000000001'::uuid, '00000000-0000-0000-0000-000000000501'::uuid, 'miriamrstern@gmail.com', true, false, false, 'email', 'he', now(), now()),
   ('00000000-0000-0000-0000-000000000602'::uuid, '00000000-0000-0000-0000-000000000001'::uuid, '00000000-0000-0000-0000-000000000502'::uuid, 'tellertwins@gmail.com', true, false, false, 'email', 'he', now(), now())
 ON CONFLICT DO NOTHING;
+
+-- Replace <ADMIN_UUID> with the actual UUID from the Supabase Auth users table
+INSERT INTO user_profiles (
+  id,
+  tenant_id,
+  role,
+  email,
+  language,
+  country
+) VALUES (
+  'fbd652f2-2649-47e8-9a25-8321ac6e2110',
+  '00000000-0000-0000-0000-000000000001'::uuid, -- Use the correct tenant UUID for your admin
+  ARRAY['super_admin', 'tenant_admin'],
+  'miriamrteller@gmail.com',
+  'en',
+  'IL'
+);
