@@ -143,6 +143,22 @@
       "status_cancelled": "בוטל",
       "is_public": "הצג ברשימת השיעורים הציבורית"
     },
+    "requirement": {
+      "type": "סוג דרישה",
+      "type_min_age": "גיל מינימלי",
+      "type_prerequisite_class": "שיעור מקדים",
+      "type_admin_approval": "אישור מנהל נדרש",
+      "value": "ערך",
+      "value_age_hint": "גיל בשנים (למשל 7)",
+      "value_class_hint": "שם השיעור",
+      "display_text": "טקסט תצוגה",
+      "display_text_hint": "מוצג להורים, למשל \"גילאי 7 ומעלה\"",
+      "is_hard_block": "חסימה קשיחה",
+      "is_hard_block_hint": "מונע הרשמה — ללא סימון מציג אזהרה בלבד",
+      "add_button": "הוסף דרישה",
+      "delete_confirm": "להסיר דרישה זו?",
+      "type_select_placeholder": "בחר סוג…"
+    },
     "person": {
       "name": "שם מלא",
       "email": "דוא״ל",
@@ -432,7 +448,11 @@
       "create_button": "הוסף שיעור",
       "edit_title": "ערוך שיעור",
       "empty_title": "אין שיעורים עדיין",
-      "empty_message": "הוסף את השיעור הראשון שלך כדי להפוך אותו לזמין להרשמה."
+      "empty_message": "הוסף את השיעור הראשון שלך כדי להפוך אותו לזמין להרשמה.",
+      "requirements_button": "דרישות",
+      "requirements_for": "דרישות עבור {{name}}",
+      "requirements_empty": "אין דרישות — כל הסטודנטים יכולים להירשם.",
+      "requirements_add_title": "הוסף דרישה"
     },
     "portal_dashboard": "פורטל",
     "coming_soon_portal": "לוח הבקרה של הפורטל בדרך. כאן תוכלו לצפות בהרשמות, נוכחות ותשלומים."

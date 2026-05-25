@@ -143,6 +143,22 @@
       "status_cancelled": "Cancelled",
       "is_public": "Show on public class list"
     },
+    "requirement": {
+      "type": "Requirement type",
+      "type_min_age": "Minimum age",
+      "type_prerequisite_class": "Prerequisite class",
+      "type_admin_approval": "Admin approval required",
+      "value": "Value",
+      "value_age_hint": "Age in years (e.g. 7)",
+      "value_class_hint": "Class name",
+      "display_text": "Display text",
+      "display_text_hint": "Shown to parents, e.g. \"Ages 7 and up\"",
+      "is_hard_block": "Hard block",
+      "is_hard_block_hint": "Prevents enrolment — unchecked shows a warning only",
+      "add_button": "Add requirement",
+      "delete_confirm": "Remove this requirement?",
+      "type_select_placeholder": "Select type…"
+    },
     "person": {
       "name": "Full Name",
       "email": "Email",
@@ -430,7 +446,11 @@
       "create_button": "Add Class",
       "edit_title": "Edit Class",
       "empty_title": "No classes yet",
-      "empty_message": "Add your first class to make it available for enrolment."
+      "empty_message": "Add your first class to make it available for enrolment.",
+      "requirements_button": "Requirements",
+      "requirements_for": "Requirements for {{name}}",
+      "requirements_empty": "No requirements — all students can enrol.",
+      "requirements_add_title": "Add requirement"
     },
     "portal_dashboard": "Portal",
     "coming_soon_portal": "Your portal dashboard is coming soon. You will be able to view enrolments, attendance, and payments here."
