@@ -3,6 +3,12 @@ import { ClassService } from '../service';
 import { type Class } from '@shared/schemas';
 import { useTenant } from '@/hooks/useTenant';
 import { supabase } from '@/lib/supabase';
+import {
+  DEFAULT_CLASS_SORT,
+  sortClasses,
+  type ClassSortField,
+  type ClassSortOrder,
+} from '../utils/sortClasses';
 
 const PAGE_SIZE = 50;
 
@@ -11,6 +17,8 @@ interface UseClassesOptions {
   page?: number;
   enabled?: boolean;
   publicOnly?: boolean;  // Query public_classes_by_subdomain view instead of classes table
+  sortField?: ClassSortField;
+  sortOrder?: ClassSortOrder;
 }
 
 /**
@@ -22,18 +30,25 @@ interface UseClassesOptions {
  * 
  * TanStack Query handles caching and background refetching
  */
-export function useClasses({ termId, page = 1, enabled = true, publicOnly = true }: UseClassesOptions = {}) {
+export function useClasses({
+  termId,
+  page = 1,
+  enabled = true,
+  publicOnly = true,
+  sortField = DEFAULT_CLASS_SORT.field,
+  sortOrder = DEFAULT_CLASS_SORT.order,
+}: UseClassesOptions = {}) {
   const tenant = useTenant();
   const queryClient = useQueryClient();
 
   // Public classes from function (returns array)
   const publicQuery = useQuery<any[]>({
-    queryKey: ['public_classes', tenant?.subdomain],
+    queryKey: ['public_classes', tenant?.subdomain, sortField, sortOrder],
     queryFn: async () => {
       if (!tenant?.subdomain) throw new Error('Tenant subdomain required');
       const { data, error } = await supabase.rpc('get_public_classes_by_subdomain', { p_subdomain: tenant.subdomain });
       if (error) throw error;
-      return data || [];
+      return sortClasses(data || [], sortField, sortOrder);
     },
     enabled: enabled && publicOnly && !!tenant?.subdomain,
     staleTime: 5 * 60 * 1000, // 5 min cache
@@ -41,10 +56,10 @@ export function useClasses({ termId, page = 1, enabled = true, publicOnly = true
 
   // Authenticated classes query (returns object with classes array)
   const listQuery = useQuery<{ classes: Class[]; total: number }>({
-    queryKey: ['classes', tenant?.id, page, termId],
+    queryKey: ['classes', tenant?.id, page, termId, sortField, sortOrder],
     queryFn: async () => {
       if (!tenant) throw new Error('Tenant not initialized');
-      return ClassService.list(tenant, { page, pageSize: PAGE_SIZE, termId });
+      return ClassService.list(tenant, { page, pageSize: PAGE_SIZE, termId, sortField, sortOrder });
     },
     enabled: enabled && !publicOnly && !!tenant?.id,
   });

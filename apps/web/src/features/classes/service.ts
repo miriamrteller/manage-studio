@@ -7,6 +7,11 @@ import {
   type Tenant,
 } from '@shared/schemas';
 import { z } from 'zod';
+import {
+  DEFAULT_CLASS_SORT,
+  type ClassSortField,
+  type ClassSortOrder,
+} from './utils/sortClasses';
 
 // Validation schema for class creation/update (without system fields)
 // Aligns with DB classes table — see Migration 004 + 004100 (teacher_id added)
@@ -35,10 +40,23 @@ const ClassInputSchema = z.object({
 export class ClassService extends BaseService {
   static async list(
     tenant: Tenant,
-    options: { page?: number; pageSize?: number; termId?: string } = {}
+    options: {
+      page?: number;
+      pageSize?: number;
+      termId?: string;
+      sortField?: ClassSortField;
+      sortOrder?: ClassSortOrder;
+    } = {}
   ) {
-    const { page = 1, pageSize = 50, termId } = options;
+    const {
+      page = 1,
+      pageSize = 50,
+      termId,
+      sortField = DEFAULT_CLASS_SORT.field,
+      sortOrder = DEFAULT_CLASS_SORT.order,
+    } = options;
     const from = (page - 1) * pageSize;
+    const ascending = sortOrder === 'asc';
 
     return this.withRetry(async () => {
       let query = TenantDB.selectFor('classes', tenant, { count: 'exact' });
@@ -47,9 +65,19 @@ export class ClassService extends BaseService {
         query = query.eq('term_id', termId);
       }
 
-      const { data, error, count } = await query
-        .order('name', { ascending: true })
-        .range(from, from + pageSize - 1);
+      if (sortField === 'schedule') {
+        query = query
+          .order('day_of_week', { ascending, nullsFirst: false })
+          .order('start_time', { ascending })
+          .order('name', { ascending: true });
+      } else {
+        query = query.order(sortField, { ascending, nullsFirst: false });
+        if (sortField !== 'name') {
+          query = query.order('name', { ascending: true });
+        }
+      }
+
+      const { data, error, count } = await query.range(from, from + pageSize - 1);
 
       if (error) throw error;
 

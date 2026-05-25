@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatCurrency, formatTime } from '@shared/format';
 import { Button } from '@/components/ui/button';
@@ -9,17 +9,59 @@ import { useTerms } from '@/features/terms/hooks/useTerms';
 import { useLevels } from '@/features/levels/hooks/useLevels';
 import { useTeachers } from '@/features/teachers/hooks/useTeachers';
 import { ClassForm } from './ClassForm';
+import { ClassRequirementsPanel } from '../requirements/components';
+import {
+  DEFAULT_CLASS_SORT,
+  type ClassSortField,
+  type ClassSortOrder,
+} from '../utils/sortClasses';
 import type { Class } from '@shared/schemas';
+
+interface SortableHeaderProps {
+  label: string;
+  sortKey: ClassSortField;
+  currentField: ClassSortField;
+  currentOrder: ClassSortOrder;
+  onSort: (field: ClassSortField) => void;
+  className?: string;
+}
+
+function SortableHeader({
+  label,
+  sortKey,
+  currentField,
+  currentOrder,
+  onSort,
+  className = 'px-4 py-3 text-start font-medium',
+}: SortableHeaderProps) {
+  const isActive = currentField === sortKey;
+
+  return (
+    <th className={className} aria-sort={isActive ? (currentOrder === 'asc' ? 'ascending' : 'descending') : 'none'}>
+      <button
+        type="button"
+        onClick={() => onSort(sortKey)}
+        className="inline-flex items-center gap-1 hover:text-[var(--color-primary-default)]"
+      >
+        {label}
+        {isActive && <span aria-hidden="true">{currentOrder === 'asc' ? '↑' : '↓'}</span>}
+      </button>
+    </th>
+  );
+}
 
 export function AdminClassesList() {
   const { t, i18n } = useTranslation();
   const tenant = useTenant();
   const [page, setPage] = useState(1);
+  const [sortField, setSortField] = useState<ClassSortField>(DEFAULT_CLASS_SORT.field);
+  const [sortOrder, setSortOrder] = useState<ClassSortOrder>(DEFAULT_CLASS_SORT.order);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [editingClass, setEditingClass] = useState<Class | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [expandedClassId, setExpandedClassId] = useState<string | null>(null);
 
-  const classesData = useClasses({ page, publicOnly: false });
+  const classesData = useClasses({ page, publicOnly: false, sortField, sortOrder });
   const termsData = useTerms({ page: 1 });
   const levelsData = useLevels({ page: 1 });
   const teachersData = useTeachers({ page: 1 });
@@ -64,6 +106,16 @@ export function AdminClassesList() {
     }
   };
 
+  const handleSort = (field: ClassSortField) => {
+    if (sortField === field) {
+      setSortOrder((currentOrder) => (currentOrder === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortField(field);
+      setSortOrder('asc');
+    }
+    setPage(1);
+  };
+
   const showFormModal = isCreating || editingClass !== null;
   const currency = tenant?.currency || 'ILS';
   const errorMessage = classesData.error;
@@ -105,20 +157,50 @@ export function AdminClassesList() {
           <table className="w-full text-sm">
             <thead className="border-b" style={{ borderColor: 'var(--color-border-default)' }}>
               <tr>
-                <th className="px-4 py-3 text-start font-medium">{t('form.class.name')}</th>
+                <SortableHeader
+                  label={t('form.class.name')}
+                  sortKey="name"
+                  currentField={sortField}
+                  currentOrder={sortOrder}
+                  onSort={handleSort}
+                />
                 <th className="px-4 py-3 text-start font-medium">{t('form.class.term')}</th>
                 <th className="px-4 py-3 text-start font-medium">{t('form.class.level')}</th>
-                <th className="px-4 py-3 text-start font-medium">{t('pages.classes.time')}</th>
-                <th className="px-4 py-3 text-start font-medium">{t('pages.classes.capacity')}</th>
-                <th className="px-4 py-3 text-start font-medium">{t('form.class.price')}</th>
-                <th className="px-4 py-3 text-start font-medium">{t('form.class.status')}</th>
+                <SortableHeader
+                  label={t('pages.classes.time')}
+                  sortKey="schedule"
+                  currentField={sortField}
+                  currentOrder={sortOrder}
+                  onSort={handleSort}
+                />
+                <SortableHeader
+                  label={t('pages.classes.capacity')}
+                  sortKey="max_capacity"
+                  currentField={sortField}
+                  currentOrder={sortOrder}
+                  onSort={handleSort}
+                />
+                <SortableHeader
+                  label={t('form.class.price')}
+                  sortKey="price_minor"
+                  currentField={sortField}
+                  currentOrder={sortOrder}
+                  onSort={handleSort}
+                />
+                <SortableHeader
+                  label={t('form.class.status')}
+                  sortKey="status"
+                  currentField={sortField}
+                  currentOrder={sortOrder}
+                  onSort={handleSort}
+                />
                 <th className="px-4 py-3 text-center font-medium">{t('common.actions')}</th>
               </tr>
             </thead>
             <tbody>
               {classesData.classes.map((classItem) => (
+                <Fragment key={classItem.id}>
                 <tr
-                  key={classItem.id}
                   className="border-b hover:bg-opacity-50"
                   style={{ borderColor: 'var(--color-border-default)' }}
                 >
@@ -154,6 +236,19 @@ export function AdminClassesList() {
                         {t('common.edit')}
                       </Button>
                       <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          setExpandedClassId(
+                            expandedClassId === classItem.id ? null : classItem.id
+                          )
+                        }
+                        title={t('pages.admin_classes.requirements_button')}
+                        aria-expanded={expandedClassId === classItem.id}
+                      >
+                        {t('pages.admin_classes.requirements_button')}
+                      </Button>
+                      <Button
                         variant="destructive"
                         size="sm"
                         onClick={() => setDeleteConfirmId(classItem.id)}
@@ -164,6 +259,17 @@ export function AdminClassesList() {
                     </div>
                   </td>
                 </tr>
+                {expandedClassId === classItem.id && (
+                  <tr>
+                    <td colSpan={8} className="p-0">
+                      <ClassRequirementsPanel
+                        classId={classItem.id}
+                        className={classItem.name}
+                      />
+                    </td>
+                  </tr>
+                )}
+                </Fragment>
               ))}
             </tbody>
           </table>
