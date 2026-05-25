@@ -1648,6 +1648,26 @@ export type Database = {
       cleanup_old_verification_attempts: { Args: never; Returns: number }
       get_my_family_ids: { Args: never; Returns: string[] }
       get_my_person_id: { Args: never; Returns: string }
+      get_my_profile: {
+        Args: never
+        Returns: {
+          country: string | null
+          created_at: string
+          email: string | null
+          id: string
+          language: string | null
+          person_id: string | null
+          role: string[]
+          tenant_id: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "user_profiles"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       get_my_tenant_id: { Args: never; Returns: string }
       get_public_classes_by_subdomain: {
         Args: { p_subdomain: string }
