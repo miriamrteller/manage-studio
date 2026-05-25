@@ -8,10 +8,15 @@ import { Button } from '@/components/ui/button';
 import { FormInput, FormSelect } from '@/components/ui/form';
 import { useTenant } from '@/hooks/useTenant';
 
+const optionalUuidField = z.preprocess(
+  (val) => (val === '' ? null : val),
+  z.string().uuid().nullable().optional(),
+);
+
 const ClassFormSchema = z.object({
   term_id: z.string().uuid('Term is required'),
-  level_id: z.string().uuid().nullable().optional(),
-  teacher_id: z.string().uuid().nullable().optional(),
+  level_id: optionalUuidField,
+  teacher_id: optionalUuidField,
   name: z.string().min(1, 'Class name required'),
   max_capacity: z.number().positive('Max capacity must be > 0'),
   price_major: z.number().nonnegative('Price must be >= 0'),
