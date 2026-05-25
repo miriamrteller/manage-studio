@@ -23,25 +23,53 @@ export function ExpandedStudentRow({
   const cp = contactPrefsMap.get(person.id);
   const classNames = enrolmentsByPerson.get(person.id) ?? [];
 
+  // For minors: primary contact is the family/guardian record.
+  // For adults: primary contact is the person themselves (email + emergency contact).
+  const isMinor = person.is_minor ?? false;
+
+  const contactLabel = isMinor
+    ? t('pages.students.contact_section_guardian')
+    : t('pages.students.contact_section');
+
+  const hasContact = isMinor
+    ? !!family
+    : !!(person.email || person.emergency_contact_name || person.emergency_contact_phone);
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-sm">
-      {/* Guardian */}
+      {/* Contact details */}
       <div>
         <p className="font-semibold text-gray-600 mb-1 text-xs uppercase tracking-wide">
-          {t('pages.students.guardian_column')}
+          {contactLabel}
         </p>
-        {family ? (
+        {hasContact ? (
           <div className="space-y-0.5">
-            <p className="font-medium">{family.contact_person_name ?? '—'}</p>
-            {family.contact_phone && (
-              <p className="text-gray-500">{family.contact_phone}</p>
-            )}
-            {family.contact_email && (
-              <p className="text-gray-500">{family.contact_email}</p>
+            {isMinor && family ? (
+              <>
+                <p className="font-medium">{family.contact_person_name ?? '—'}</p>
+                {family.contact_phone && (
+                  <p className="text-gray-500">{family.contact_phone}</p>
+                )}
+                {family.contact_email && (
+                  <p className="text-gray-500">{family.contact_email}</p>
+                )}
+              </>
+            ) : (
+              <>
+                {person.email && (
+                  <p className="text-gray-500">{person.email}</p>
+                )}
+                {person.emergency_contact_name && (
+                  <p className="font-medium">{person.emergency_contact_name}</p>
+                )}
+                {person.emergency_contact_phone && (
+                  <p className="text-gray-500">{person.emergency_contact_phone}</p>
+                )}
+              </>
             )}
           </div>
         ) : (
-          <p className="text-gray-400">{t('pages.students.no_guardian')}</p>
+          <p className="text-gray-400">{t('pages.students.no_contact')}</p>
         )}
       </div>
 
