@@ -51,14 +51,8 @@ export const navigationConfig: NavItem[] = [
     sectionKey: 'browse',
   },
   {
-    path: '/admin/people',
-    labelKey: 'nav.people',
-    requiredRoles: ['tenant_admin'],
-    sectionKey: 'administration',
-  },
-  {
-    path: '/admin/families',
-    labelKey: 'nav.families',
+    path: '/admin/students',
+    labelKey: 'nav.students',
     requiredRoles: ['tenant_admin'],
     sectionKey: 'administration',
   },

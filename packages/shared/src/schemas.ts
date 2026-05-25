@@ -312,6 +312,7 @@ export const EnrolmentSchema = z.object({
   person_id: UUIDSchema,
   class_id: UUIDSchema,
   term_id: UUIDSchema,
+  billing_account_id: UUIDSchema.nullable().optional(),
   status: z.enum(['active', 'pending_payment', 'cancelled', 'withdrawn', 'waitlisted']).default('active'),
   prior_experience: z.string().nullable().optional(),
   created_at: TimestampSchema,

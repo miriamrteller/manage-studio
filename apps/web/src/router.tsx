@@ -1,4 +1,4 @@
-import { createBrowserRouter, Outlet } from "react-router-dom";
+import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
 import { AppLayout } from "./layouts/AppLayout";
 import { AdminRoute, ParentRoute, StudentRoute } from "./layouts/RouteGuards";
 import { ClassesPage } from "./pages/ClassesPage";
@@ -7,7 +7,7 @@ import SignupPage from "./pages/SignupPage";
 import AuthCallbackPage from "./pages/AuthCallbackPage";
 import DashboardRedirectPage from "./pages/DashboardRedirectPage";
 import AdminDashboard from "./pages/AdminDashboard";
-import PeoplePage from "./pages/PeoplePage";
+import StudentsPage from "./pages/StudentsPage";
 import FamiliesPage from "./pages/FamiliesPage";
 import FamilyDetailPage from "./pages/FamilyDetailPage";
 import BillingPage from "./pages/BillingPage";
@@ -44,7 +44,9 @@ const router = createBrowserRouter([
       { path: "dashboard", element: <DashboardRedirectPage /> },
 
       // ADMIN ROUTES
-      { path: "admin/people", element: <AdminRoute><PeoplePage /></AdminRoute> },
+      { path: "admin/students", element: <AdminRoute><StudentsPage /></AdminRoute> },
+      // Legacy redirects — keep URLs working
+      { path: "admin/people", element: <AdminRoute><Navigate to="/admin/students" replace /></AdminRoute> },
       { path: "admin/families", element: <AdminRoute><FamiliesPage /></AdminRoute> },
       { path: "admin/families/:id", element: <AdminRoute><FamilyDetailPage /></AdminRoute> },
       { path: "admin/setup", element: <AdminRoute><AdminDashboard /></AdminRoute> },
