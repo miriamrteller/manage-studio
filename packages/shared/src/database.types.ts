@@ -304,6 +304,7 @@ export type Database = {
           price_minor: number
           start_time: string
           status: string
+          teacher_id: string | null
           tenant_id: string
           term_id: string
           updated_at: string
@@ -322,6 +323,7 @@ export type Database = {
           price_minor?: number
           start_time: string
           status?: string
+          teacher_id?: string | null
           tenant_id: string
           term_id: string
           updated_at?: string
@@ -340,6 +342,7 @@ export type Database = {
           price_minor?: number
           start_time?: string
           status?: string
+          teacher_id?: string | null
           tenant_id?: string
           term_id?: string
           updated_at?: string
@@ -350,6 +353,13 @@ export type Database = {
             columns: ["level_id"]
             isOneToOne: false
             referencedRelation: "levels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "classes_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers"
             referencedColumns: ["id"]
           },
           {
@@ -583,20 +593,32 @@ export type Database = {
       }
       families: {
         Row: {
+          contact_email: string | null
+          contact_person_name: string | null
+          contact_phone: string | null
           created_at: string
           id: string
+          name: string | null
           primary_contact_id: string | null
           tenant_id: string
         }
         Insert: {
+          contact_email?: string | null
+          contact_person_name?: string | null
+          contact_phone?: string | null
           created_at?: string
           id?: string
+          name?: string | null
           primary_contact_id?: string | null
           tenant_id: string
         }
         Update: {
+          contact_email?: string | null
+          contact_person_name?: string | null
+          contact_phone?: string | null
           created_at?: string
           id?: string
+          name?: string | null
           primary_contact_id?: string | null
           tenant_id?: string
         }
@@ -1189,6 +1211,57 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teachers: {
+        Row: {
+          contract_type: string
+          created_at: string
+          email: string | null
+          hourly_rate_minor: number | null
+          id: string
+          name: string
+          phone: string | null
+          tenant_id: string
+          user_profile_id: string | null
+        }
+        Insert: {
+          contract_type?: string
+          created_at?: string
+          email?: string | null
+          hourly_rate_minor?: number | null
+          id?: string
+          name: string
+          phone?: string | null
+          tenant_id: string
+          user_profile_id?: string | null
+        }
+        Update: {
+          contract_type?: string
+          created_at?: string
+          email?: string | null
+          hourly_rate_minor?: number | null
+          id?: string
+          name?: string
+          phone?: string | null
+          tenant_id?: string
+          user_profile_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teachers_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teachers_user_profile_id_fkey"
+            columns: ["user_profile_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
             referencedColumns: ["id"]
           },
         ]

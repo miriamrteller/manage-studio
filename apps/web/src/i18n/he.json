@@ -30,7 +30,21 @@
     "print": "הדפס",
     "export": "ייצא",
     "manage": "ניהול",
-    "dismiss_message": "סגור הודעה"
+    "dismiss_message": "סגור הודעה",
+    "create": "צור",
+    "select": "בחר",
+    "actions": "פעולות",
+    "previous": "הקודם",
+    "success_created": "נוצר בהצלחה.",
+    "success_updated": "עודכן בהצלחה.",
+    "no_families_yet": "אין משפחות עדיין.",
+    "page_n": "עמוד {{page}}",
+    "showing_results": "מציג {{count}} מתוך {{total}}",
+    "confirm_delete": "אישור מחיקה",
+    "delete_family_confirm": "האם אתה בטוח שברצונך למחוק את המשפחה \"{{name}}\"? לא ניתן לבטל פעולה זו.",
+    "add_family": "הוסף משפחה",
+    "manage_families": "ניהול משפחות",
+    "edit_family": "ערוך משפחה: {{name}}"
   },
   "errors": {
     "network": "שגיאת רשת. בדוק את החיבור שלך.",
@@ -70,7 +84,41 @@
   },
   "form": {
     "email": "דוא״ל",
-    "email_placeholder": "example@school.com"
+    "email_placeholder": "example@school.com",
+    "cancel": "ביטול",
+    "family": {
+      "name": "שם משפחה",
+      "contact_person_name": "שם איש קשר ראשי",
+      "contact_email": "דוא״ל ליצירת קשר",
+      "contact_phone": "טלפון ליצירת קשר",
+      "invalid_phone": "פורמט פלאפון ישראלי: 05X-XXXXXXX"
+    },
+    "term": {
+      "name": "שם התקופה",
+      "start_date": "תאריך התחלה",
+      "end_date": "תאריך סיום",
+      "status": "סטטוס",
+      "status_upcoming": "עתיד",
+      "status_active": "פעיל",
+      "status_completed": "הסתיים",
+      "status_archived": "בארכיון"
+    },
+    "level": {
+      "name": "שם הרמה",
+      "sort_order": "סדר תצוגה"
+    },
+    "person": {
+      "name": "שם מלא",
+      "email": "דוא״ל",
+      "date_of_birth": "תאריך לידה",
+      "medical_notes": "הערות רפואיות",
+      "allergies": "אלרגיות",
+      "status": "סטטוס",
+      "status_active": "פעיל",
+      "status_inactive": "לא פעיל",
+      "status_withdrawn": "הפסיק",
+      "is_minor_label": "קטין"
+    }
   },
   "pages": {
     "admin": {

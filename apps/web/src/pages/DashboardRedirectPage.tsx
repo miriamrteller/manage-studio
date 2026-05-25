@@ -1,5 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { useAuthSession } from '@/hooks/useAuth';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 
 /**
@@ -20,28 +22,57 @@ interface DashboardRedirectState {
   classId?: string;
 }
 
+function readEnrollmentClassId(
+  routeState: DashboardRedirectState | null,
+): string | undefined {
+  if (routeState?.classId) {
+    return routeState.classId;
+  }
+
+  const stored = sessionStorage.getItem('enrollmentIntent');
+  if (!stored) {
+    return undefined;
+  }
+
+  try {
+    const parsed = JSON.parse(stored) as { classId?: string };
+    return typeof parsed.classId === 'string' ? parsed.classId : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export default function DashboardRedirectPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, isLoading } = useCurrentUser();
+  const { session, isLoading: sessionLoading } = useAuthSession();
+  const { user, isLoading: profileLoading } = useCurrentUser();
+  const isLoading = sessionLoading || profileLoading;
 
   useEffect(() => {
-    // Still loading user data
     if (isLoading) {
       return;
     }
 
-    // User not authenticated - shouldn't reach here, but fallback to login
-    if (!user) {
-      navigate('/login', { replace: true });
+    // Authenticated in Supabase Auth but no user_profiles row (403 / missing profile)
+    if (session && !user) {
       return;
     }
 
-    // Check if user was enrolling on /classes - return to complete enrollment
-    const state = location.state as DashboardRedirectState | null;
-    const fromEnrollment = state?.classId;
-    if (fromEnrollment) {
-      navigate('/classes', { replace: true });
+    if (!session) {
+      navigate('/login', { replace: true, state: location.state });
+      return;
+    }
+
+    if (!user) {
+      return;
+    }
+
+    const classId = readEnrollmentClassId(location.state as DashboardRedirectState | null);
+    if (classId) {
+      sessionStorage.removeItem('enrollmentIntent');
+      navigate('/classes', { replace: true, state: { classId } });
       return;
     }
 
@@ -57,7 +88,23 @@ export default function DashboardRedirectPage() {
       // No recognized role - fallback to classes
       navigate('/classes', { replace: true });
     }
-  }, [user, isLoading, navigate, location.state]);
+  }, [session, user, isLoading, navigate, location.state]);
+
+  if (!isLoading && session && !user) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center px-4">
+        <div
+          role="alert"
+          className="max-w-md rounded-lg border border-red-200 bg-red-50 p-6 text-center"
+        >
+          <h1 className="mb-2 text-xl font-semibold text-red-700">
+            {t('errors.session_setup_failed')}
+          </h1>
+          <p className="text-red-600">{t('errors.user_not_found')}</p>
+        </div>
+      </div>
+    );
+  }
 
   // Show nothing while redirecting
   return null;

@@ -7,62 +7,85 @@ import type { ContactPreferences } from '@shared/schemas';
 
 /**
  * Hook: useContactPreferences
- * Fetches and manages contact preferences for the current user
- * Supports updating email/WhatsApp preferences
+ * Fetches and manages contact preferences for the current user.
+ *
+ * The contact_preferences table is keyed by person_id OR family_member_id (never user_profile_id).
+ * RLS policy "users manage own preferences" enforces row access so we let RLS do the filtering;
+ * we only need tenant_id for the insert default path.
  */
 export function useContactPreferences() {
   const { user } = useCurrentUser();
   const tenant = useTenant();
   const queryClient = useQueryClient();
 
-  // Query: Fetch contact preferences
   const query = useQuery({
     queryKey: ['contactPreferences', user?.id, tenant?.id],
     queryFn: async (): Promise<ContactPreferences> => {
-      if (!user?.id) throw new Error('User not authenticated');
+      if (!user?.id || !tenant?.id) throw new Error('User not authenticated');
 
+      // RLS returns only the row owned by this user (via person_id or family_member_id).
       const { data, error } = await supabase
         .from('contact_preferences')
         .select('*')
+        .eq('tenant_id', tenant.id)
+        .maybeSingle();
+
+      if (error) throw error;
+      if (data) return ContactPreferencesSchema.parse(data);
+
+      // No row yet — determine whether the user is a people record or a family_member.
+      const { data: person } = await supabase
+        .from('people')
+        .select('id')
         .eq('user_profile_id', user.id)
-        .single();
+        .maybeSingle();
 
-      if (error) {
-        if (error.code === 'PGRST116') {
-          // No preferences found, create defaults
-          const newPrefs = {
-            user_profile_id: user.id,
-            email_opted_in: true,
-            whatsapp_opted_in: false,
-            whatsapp_verified: false,
-          };
+      const newPrefs: Record<string, unknown> = {
+        tenant_id: tenant.id,
+        email_opted_in: true,
+        whatsapp_opted_in: false,
+        whatsapp_verified: false,
+        preferred_channel: 'email',
+        language: 'he',
+      };
 
-          const { data: created, error: createError } = await supabase
-            .from('contact_preferences')
-            .insert(newPrefs)
-            .select()
-            .single();
+      if (person?.id) {
+        newPrefs.person_id = person.id;
+      } else {
+        const { data: member } = await supabase
+          .from('family_members')
+          .select('id')
+          .eq('user_profile_id', user.id)
+          .maybeSingle();
 
-          if (createError) throw createError;
-          return ContactPreferencesSchema.parse(created);
+        if (member?.id) {
+          newPrefs.family_member_id = member.id;
+        } else {
+          throw new Error('No person or family_member record found for this user');
         }
-        throw error;
       }
 
-      return ContactPreferencesSchema.parse(data);
+      const { data: created, error: createError } = await supabase
+        .from('contact_preferences')
+        .insert(newPrefs)
+        .select()
+        .single();
+
+      if (createError) throw createError;
+      return ContactPreferencesSchema.parse(created);
     },
-    enabled: !!user?.id,
+    enabled: !!user?.id && !!tenant?.id,
   });
 
-  // Mutation: Update contact preferences
   const updateMutation = useMutation({
     mutationFn: async (updates: ContactPreferencesUpdate) => {
-      if (!user?.id) throw new Error('User not authenticated');
+      if (!user?.id || !tenant?.id) throw new Error('User not authenticated');
 
+      // RLS ensures this updates only the user's own row.
       const { data, error } = await supabase
         .from('contact_preferences')
         .update(updates)
-        .eq('user_profile_id', user.id)
+        .eq('tenant_id', tenant.id)
         .select()
         .single();
 

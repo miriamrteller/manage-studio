@@ -8,17 +8,21 @@ import {
 import { z } from 'zod';
 
 // Validation schema for class creation/update (without system fields)
+// Aligns with DB classes table — see Migration 004 + 004100 (teacher_id added)
 const ClassInputSchema = z.object({
   term_id: z.string().uuid().optional(),
-  level_id: z.string().uuid().optional(),
+  level_id: z.string().uuid().nullable().optional(),
   teacher_id: z.string().uuid().nullable().optional(),
   name: z.string().min(1, 'Class name required').optional(),
   max_capacity: z.number().positive('Max capacity must be > 0').optional(),
-  price_minor: z.number().positive('Price must be > 0').optional(),
-  day_of_week: z.number().int().min(0).max(6).optional(),
+  price_minor: z.number().nonnegative('Price must be >= 0').optional(),
+  currency: z.string().optional(),
+  day_of_week: z.number().int().min(0).max(6).nullable().optional(),
   start_time: z.string().regex(/^\d{2}:\d{2}$/, 'Invalid time format (HH:MM)').optional(),
   end_time: z.string().regex(/^\d{2}:\d{2}$/, 'Invalid time format (HH:MM)').optional(),
-  status: z.enum(['active', 'cancelled']).optional(),
+  is_public: z.boolean().optional(),
+  billing_frequency: z.string().optional(),
+  status: z.enum(['active', 'cancelled', 'full']).optional(),
 });
 
 /**

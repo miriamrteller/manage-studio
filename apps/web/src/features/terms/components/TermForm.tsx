@@ -16,11 +16,12 @@ import { FormInput, FormSelect } from '../../../components/ui/form';
 // - end_date must be after start_date (validated in server)
 
 // Form schema for creating/editing terms (without system fields)
+// Status values must match DB CHECK constraint: ('upcoming', 'active', 'completed', 'archived')
 const TermFormSchema = z.object({
   name: z.string().min(1, 'Term name required').optional(),
   start_date: z.string().date('Invalid date format').optional(),
   end_date: z.string().date('Invalid date format').optional(),
-  status: z.enum(['planning', 'active', 'completed']).optional(),
+  status: z.enum(['upcoming', 'active', 'completed', 'archived']).optional(),
 });
 
 interface TermFormProps {
@@ -117,9 +118,10 @@ export const TermForm = ({ term, onSubmit, isLoading }: TermFormProps) => {
         {...form.register('status')}
       >
         <option value="">-- {t('common.select')} --</option>
-        <option value="planning">{t('form.term.status_planning')}</option>
+        <option value="upcoming">{t('form.term.status_upcoming')}</option>
         <option value="active">{t('form.term.status_active')}</option>
         <option value="completed">{t('form.term.status_completed')}</option>
+        <option value="archived">{t('form.term.status_archived')}</option>
       </FormSelect>
 
       {/* Form buttons */}

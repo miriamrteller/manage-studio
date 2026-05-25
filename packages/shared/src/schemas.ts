@@ -173,28 +173,33 @@ export const ContactPreferencesSchema = z.object({
 export type ContactPreferences = z.infer<typeof ContactPreferencesSchema>;
 
 // Family (group of related people)
+// Contact columns (name, contact_person_name, contact_email, contact_phone) were added via
+// Migration 004000 and are nullable for backwards compatibility with existing rows.
 export const FamilySchema = z.object({
   id: UUIDSchema,
   tenant_id: UUIDSchema,
-  name: z.string().min(1, 'Family name required'),
-  contact_person_name: z.string().min(1, 'Contact person name required'),
-  contact_email: z.string().email('Invalid email'),
+  name: z.string().min(1, 'Family name required').nullable().optional(),
+  contact_person_name: z.string().min(1, 'Contact person name required').nullable().optional(),
+  contact_email: z.string().email('Invalid email').nullable().optional(),
   contact_phone: z.string().regex(
     /^(050|051|052|053|054|055|056|058|059)\d{7}$/,
     'Invalid Israeli phone format'
-  ),
+  ).nullable().optional(),
   created_at: z.string().datetime(),
 });
 
 export type Family = z.infer<typeof FamilySchema>;
 
 // Family member (relationship to family)
+// DB: id, tenant_id, family_id, user_profile_id, name, email, phone, role, created_at
 export const FamilyMemberSchema = z.object({
   id: UUIDSchema,
   tenant_id: UUIDSchema,
   family_id: UUIDSchema,
-  person_id: UUIDSchema,
   user_profile_id: UUIDSchema.nullable(),
+  name: z.string().min(1, 'Name required'),
+  email: z.string().email().nullable().optional(),
+  phone: z.string().nullable().optional(),
   role: z.enum(['parent', 'guardian', 'sibling', 'adult_student']),
   created_at: z.string().datetime(),
 });
@@ -202,13 +207,14 @@ export const FamilyMemberSchema = z.object({
 export type FamilyMember = z.infer<typeof FamilyMemberSchema>;
 
 // Term (semester/academic period)
+// DB status CHECK: ('upcoming', 'active', 'completed', 'archived')
 export const TermSchema = z.object({
   id: UUIDSchema,
   tenant_id: UUIDSchema,
   name: z.string().min(1, 'Term name required'),
   start_date: z.string().date('Invalid date format'),
   end_date: z.string().date('Invalid date format'),
-  status: z.enum(['planning', 'active', 'completed']).default('planning'),
+  status: z.enum(['upcoming', 'active', 'completed', 'archived']).default('upcoming'),
   created_at: z.string().datetime(),
 }).refine((data) => new Date(data.end_date) > new Date(data.start_date), {
   message: 'End date must be after start date',
@@ -220,7 +226,7 @@ export const CreateTermSchema = z.object({
   name: z.string().min(1, 'Term name required'),
   start_date: z.string().date('Invalid date format'),
   end_date: z.string().date('Invalid date format'),
-  status: z.enum(['planning', 'active', 'completed']).default('planning'),
+  status: z.enum(['upcoming', 'active', 'completed', 'archived']).default('upcoming'),
 }).partial().refine((data) => {
   // Skip validation if both dates are missing (partial update)
   if (!data.start_date || !data.end_date) return true;
@@ -245,21 +251,29 @@ export const LevelSchema = z.object({
 export type Level = z.infer<typeof LevelSchema>;
 
 // Class (a course offered in a term at a specific level)
+// DB: level_id nullable, day_of_week nullable, status includes 'full',
+//     has is_public, billing_frequency, currency; teacher_id added via Migration 004100
 export const ClassSchema = z.object({
   id: UUIDSchema,
   tenant_id: UUIDSchema,
   term_id: UUIDSchema,
-  level_id: UUIDSchema,
+  level_id: UUIDSchema.nullable().optional(),
   teacher_id: UUIDSchema.nullable().optional(),
   name: z.string().min(1, 'Class name required'),
   max_capacity: z.number().positive('Max capacity must be > 0'),
-  price_minor: z.number().positive('Price must be > 0'),
-  day_of_week: z.number().int().min(0).max(6),
+  price_minor: z.number().nonnegative('Price must be >= 0'),
+  currency: z.string().default('ILS'),
+  day_of_week: z.number().int().min(0).max(6).nullable().optional(),
   start_time: z.string().regex(/^\d{2}:\d{2}$/, 'Invalid time format (HH:MM)'),
   end_time: z.string().regex(/^\d{2}:\d{2}$/, 'Invalid time format (HH:MM)'),
-  status: z.enum(['active', 'cancelled']).default('active'),
+  is_public: z.boolean().default(true),
+  billing_frequency: z.string().default('monthly'),
+  status: z.enum(['active', 'cancelled', 'full']).default('active'),
   created_at: z.string().datetime(),
-}).refine((data) => data.start_time < data.end_time, {
+}).refine((data) => {
+  if (!data.start_time || !data.end_time) return true;
+  return data.start_time < data.end_time;
+}, {
   message: 'End time must be after start time',
   path: ['end_time'],
 });

@@ -19,29 +19,66 @@ export function useCurrentUser(): {
   const { data: userProfile, isLoading: profileLoading } = useQuery({
     queryKey: ['currentUser', session?.user.id],
     queryFn: async () => {
-      // No session = no user
-      if (!session?.user.id) {
+      // Read session from the client at query time so the REST call carries the user JWT.
+      const {
+        data: { session: currentSession },
+        error: sessionError,
+      } = await supabase.auth.getSession();
+
+      if (sessionError || !currentSession?.user.id) {
         return null;
       }
 
-      // Fetch user_profile from DB (RLS will enforce tenant isolation)
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('id', session.user.id)
-        .single();
+      const { data, error } = await supabase.rpc('get_my_profile').maybeSingle();
+
+      if (error?.code === 'PGRST202') {
+        // RPC not deployed yet — fall back to direct table read
+        const tableResult = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('id', currentSession.user.id)
+          .maybeSingle();
+
+        if (tableResult.error) {
+          console.warn(
+            'Failed to fetch user profile:',
+            tableResult.error.code,
+            tableResult.error.message,
+          );
+          return null;
+        }
+
+        if (!tableResult.data) {
+          console.warn('No user_profiles row for auth user:', currentSession.user.id);
+          return null;
+        }
+
+        return {
+          ...tableResult.data,
+          email: currentSession.user.email,
+        } as UserProfile;
+      }
 
       if (error) {
-        console.warn('Failed to fetch user profile:', error.message);
+        console.warn(
+          'Failed to fetch user profile:',
+          error.code,
+          error.message,
+        );
+        return null;
+      }
+
+      if (!data) {
+        console.warn('No user_profiles row for auth user:', currentSession.user.id);
         return null;
       }
 
       return {
         ...data,
-        email: session.user.email,
+        email: currentSession.user.email,
       } as UserProfile;
     },
-    enabled: !!session?.user.id,
+    enabled: !!session?.user.id && !sessionLoading,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 

@@ -95,6 +95,7 @@ VALUES
 ON CONFLICT DO NOTHING;
 
 -- Replace <ADMIN_UUID> with the actual UUID from the Supabase Auth users table
+-- Requires a matching row in auth.users with the same id (create in Supabase Auth first).
 INSERT INTO user_profiles (
   id,
   tenant_id,
@@ -104,9 +105,14 @@ INSERT INTO user_profiles (
   country
 ) VALUES (
   '51149671-b030-4931-9a0d-ca1862ae4f0b',
-  '00000000-0000-0000-0000-000000000001'::uuid, -- Use the correct tenant UUID for your admin
+  '00000000-0000-0000-0000-000000000001'::uuid,
   ARRAY['super_admin', 'tenant_admin'],
   'miriamrteller@gmail.com',
   'en',
   'IL'
-);
+) ON CONFLICT (id) DO UPDATE SET
+  tenant_id = EXCLUDED.tenant_id,
+  role = EXCLUDED.role,
+  email = EXCLUDED.email,
+  language = EXCLUDED.language,
+  country = EXCLUDED.country;

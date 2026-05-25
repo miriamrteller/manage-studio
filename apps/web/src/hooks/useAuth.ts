@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase, getSession } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 import type { Session } from '@supabase/supabase-js';
 
 /**
@@ -13,17 +13,11 @@ export function useAuthSession() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Initial session check
-    (async () => {
-      const currentSession = await getSession();
-      setSession(currentSession);
-      setIsLoading(false);
-    })();
-
-    // Listen for auth state changes (login, logout, token refresh)
+    // Wait for INITIAL_SESSION so REST calls use the user JWT, not the anon key.
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (_event, updatedSession) => {
         setSession(updatedSession);
+        setIsLoading(false);
       }
     );
 

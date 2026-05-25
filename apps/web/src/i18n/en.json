@@ -30,7 +30,21 @@
     "print": "Print",
     "export": "Export",
     "manage": "Manage",
-    "dismiss_message": "Dismiss message"
+    "dismiss_message": "Dismiss message",
+    "create": "Create",
+    "select": "Select",
+    "actions": "Actions",
+    "previous": "Previous",
+    "success_created": "Created successfully.",
+    "success_updated": "Updated successfully.",
+    "no_families_yet": "No families yet.",
+    "page_n": "Page {{page}}",
+    "showing_results": "Showing {{count}} of {{total}}",
+    "confirm_delete": "Confirm Delete",
+    "delete_family_confirm": "Are you sure you want to delete the family \"{{name}}\"? This cannot be undone.",
+    "add_family": "Add Family",
+    "manage_families": "Manage Families",
+    "edit_family": "Edit Family: {{name}}"
   },
   "errors": {
     "network": "Network error. Check your connection.",
@@ -70,7 +84,41 @@
   },
   "form": {
     "email": "Email",
-    "email_placeholder": "example@school.com"
+    "email_placeholder": "example@school.com",
+    "cancel": "Cancel",
+    "family": {
+      "name": "Family Name",
+      "contact_person_name": "Primary Contact Name",
+      "contact_email": "Contact Email",
+      "contact_phone": "Contact Phone",
+      "invalid_phone": "Israeli mobile format: 05X-XXXXXXX"
+    },
+    "term": {
+      "name": "Term Name",
+      "start_date": "Start Date",
+      "end_date": "End Date",
+      "status": "Status",
+      "status_upcoming": "Upcoming",
+      "status_active": "Active",
+      "status_completed": "Completed",
+      "status_archived": "Archived"
+    },
+    "level": {
+      "name": "Level Name",
+      "sort_order": "Display Order"
+    },
+    "person": {
+      "name": "Full Name",
+      "email": "Email",
+      "date_of_birth": "Date of Birth",
+      "medical_notes": "Medical Notes",
+      "allergies": "Allergies",
+      "status": "Status",
+      "status_active": "Active",
+      "status_inactive": "Inactive",
+      "status_withdrawn": "Withdrawn",
+      "is_minor_label": "Minor"
+    }
   },
   "pages": {
     "admin": {

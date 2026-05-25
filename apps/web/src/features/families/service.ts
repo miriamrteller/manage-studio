@@ -7,6 +7,9 @@ import type { Tenant } from '@shared/schemas';
 // Validation schema for family creation/update (without system fields)
 const FamilyInputSchema = z.object({
   name: z.string().min(1, 'Family name required').optional(),
+  contact_person_name: z.string().optional(),
+  contact_email: z.string().email().optional(),
+  contact_phone: z.string().optional(),
 });
 
 /**

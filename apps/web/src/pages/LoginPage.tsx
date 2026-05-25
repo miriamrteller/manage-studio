@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -18,15 +19,23 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   
-  // Extract intended destination from location state
-  // Validate: must start with / and not be /login to prevent redirect loops
-  const from = location.state?.from;
-  const validRedirectTo = 
-    from && typeof from === 'string' && from.startsWith('/') && from !== '/login'
-      ? from
-      : '/dashboard';  // Redirect to smart dashboard router instead of /classes
-  
-  const { isLoading, message, onSubmit, resetMessage } = useLogin(validRedirectTo);
+  // Preserve enrollment intent (classId) through login → dashboard redirect chain
+  const postLoginState =
+    location.state && typeof location.state === 'object'
+      ? (location.state as Record<string, unknown>)
+      : undefined;
+
+  useEffect(() => {
+    const classId = postLoginState?.classId;
+    if (typeof classId === 'string' && classId.length > 0) {
+      sessionStorage.setItem('enrollmentIntent', JSON.stringify({ classId }));
+    }
+  }, [postLoginState?.classId]);
+
+  const { isLoading, message, onSubmit, resetMessage } = useLogin({
+    to: '/dashboard',
+    state: postLoginState,
+  });
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-white px-4">

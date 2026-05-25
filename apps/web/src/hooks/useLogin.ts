@@ -1,7 +1,13 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/lib/supabase';
 import { LoginFormSchema, PasswordLoginSchema, type LoginForm, type PasswordLogin } from '@/schemas';
+
+export type PostLoginRedirect = {
+  to?: string;
+  state?: Record<string, unknown>;
+};
 
 /**
  * useLogin: Handles authentication logic (password and magic link)
@@ -31,8 +37,11 @@ export interface LoginActions {
   resetMessage: () => void;
 }
 
-export function useLogin(redirectTo: string = '/classes'): LoginState & LoginActions {
+export function useLogin(
+  redirect: PostLoginRedirect = { to: '/dashboard' },
+): LoginState & LoginActions {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<LoginState['message']>(null);
 
@@ -68,9 +77,12 @@ export function useLogin(redirectTo: string = '/classes'): LoginState & LoginAct
             type: 'success',
             text: t('pages.login.success_redirecting'),
           });
-          // Redirect to intended destination or fallback
+          // Route through dashboard so role-based redirect + enrollment state are preserved
           setTimeout(() => {
-            window.location.href = `${window.location.origin}${redirectTo}`;
+            navigate(redirect.to ?? '/dashboard', {
+              replace: true,
+              state: redirect.state,
+            });
           }, 800);
         }
       } else {
