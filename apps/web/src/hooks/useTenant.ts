@@ -32,7 +32,8 @@ export function useTenant(): TenantConfig | null {
     }
   }
 
-  // Query Supabase for tenant config
+  // Query Supabase for tenant config using RPC (function, not table)
+  // This matches the DB schema and avoids 404s on non-existent views/tables.
   const { data: tenantConfig } = useQuery({
     queryKey: ['tenant', subdomain],
     queryFn: async () => {
@@ -41,38 +42,34 @@ export function useTenant(): TenantConfig | null {
       }
 
       const { data, error } = await supabase
-        .from('tenant_config_by_subdomain')
-        .select('*')
-        .eq('tenant_subdomain', subdomain)
-        .single();
+        .rpc('get_tenant_config_by_subdomain', { p_subdomain: subdomain });
 
-      if (error) {
-        console.warn('Failed to fetch tenant config:', error.message);
+      if (error || !data || !Array.isArray(data) || data.length === 0) {
+        console.warn('Failed to fetch tenant config:', error?.message || 'No data');
         return null;
       }
 
-      // Construct white_label object from direct columns (no join needed)
+      const row = data[0];
       const whiteLabel = {
-        primary_color: data.primary_color,
-        accent_color: data.accent_color,
+        primary_color: row.primary_color,
+        accent_color: row.accent_color,
       };
 
-      // Compute locale from language_default and country
       return {
-        id: data.id,
-        name: data.name,
-        subdomain: data.tenant_subdomain,
-        language: data.language_default,
-        language_default: data.language_default,
-        country: data.country,
-        currency: data.currency,
-        vat_rate: data.vat_rate,
+        id: row.id,
+        name: row.name,
+        subdomain: row.tenant_subdomain,
+        language: row.language_default,
+        language_default: row.language_default,
+        country: row.country,
+        currency: row.currency,
+        vat_rate: row.vat_rate,
         white_label: whiteLabel || undefined,
-        locale: getLocale(data.language_default as 'he' | 'en', data.country as 'IL' | 'US'),
-        stripe_publishable_key: data.stripe_publishable_key ?? null,
-        stripe_secret_configured: Boolean(data.stripe_secret_configured),
-        stripe_webhook_configured: Boolean(data.stripe_webhook_configured),
-        stripe_credentials_updated_at: data.stripe_credentials_updated_at ?? null,
+        locale: getLocale(row.language_default as 'he' | 'en', row.country as 'IL' | 'US'),
+        stripe_publishable_key: row.stripe_publishable_key ?? null,
+        stripe_secret_configured: Boolean(row.stripe_secret_configured),
+        stripe_webhook_configured: Boolean(row.stripe_webhook_configured),
+        stripe_credentials_updated_at: row.stripe_credentials_updated_at ?? null,
       } as TenantConfig;
     },
     enabled: !!subdomain,

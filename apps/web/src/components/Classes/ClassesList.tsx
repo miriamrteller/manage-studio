@@ -52,7 +52,7 @@ export function ClassesList() {
             tabIndex={0}
             className="button-outline"
             data-testid="empty-state-contact-support"
-            onClick={() => window.open('mailto:support@example.com')}
+            onClick={() => window.open('mailto:support@creativeballetacademy.com')}
             aria-label={t('pages.classes.contact_support')}
           >
             {t('pages.classes.contact_support')}
