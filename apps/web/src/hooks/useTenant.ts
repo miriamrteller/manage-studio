@@ -43,7 +43,6 @@ export function useTenant(): TenantConfig | null {
 
   if (typeof window !== 'undefined') {
     // Log for debugging
-    // eslint-disable-next-line no-console
     console.debug('Resolved tenant subdomain:', subdomain);
   }
 

@@ -14,6 +14,7 @@ import StripeSettingsPage from "./pages/StripeSettingsPage";
 import LevelsPage from "./pages/LevelsPage";
 import TermsPage from "./pages/TermsPage";
 import PortalDashboard from "./pages/PortalDashboard";
+import EnrolPage from "./pages/EnrolPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import { LanguageProvider } from "./contexts/LanguageContext";
 
@@ -36,7 +37,7 @@ const router = createBrowserRouter([
       { path: "classes", element: <ClassesPage /> },
       { path: "login", element: <LoginPage /> },
       { path: "signup", element: <SignupPage /> },
-      { path: "enrol", element: <ClassesPage /> }, // Placeholder, replaced in Phase 1C.3
+      { path: "enrol", element: <EnrolPage /> },
       { path: "auth/callback", element: <AuthCallbackPage /> },
       { path: "dashboard", element: <DashboardRedirectPage /> },
 

@@ -12,6 +12,16 @@ export type EnrolmentStep = 'person' | 'class' | 'notification' | 'checkout' | '
 
 export interface EnrolmentStepperProps {
   /**
+   * Pre-selected class from the classes page (skips class selection step)
+   */
+  initialClassId?: string;
+
+  /**
+   * Term for the pre-selected class (required with initialClassId)
+   */
+  initialTermId?: string;
+
+  /**
    * Initial step (default: 'person')
    * Can be used to skip steps for returning customers
    */
@@ -47,6 +57,8 @@ export interface EnrolmentStepperProps {
  * Each step manages its own state, parent coordinates via step transitions
  */
 export function EnrolmentStepper({
+  initialClassId,
+  initialTermId,
   initialStep = 'person',
   skipNotificationStep = false,
   onSuccess,
@@ -54,16 +66,21 @@ export function EnrolmentStepper({
 }: EnrolmentStepperProps) {
   const { t } = useTranslation();
   const [currentStep, setCurrentStep] = useState<EnrolmentStep>(initialStep);
-  const [enrolmentData, setEnrolmentData] = useState<Partial<Enrolment>>({});
+  const [enrolmentData, setEnrolmentData] = useState<Partial<Enrolment>>(() => ({
+    ...(initialClassId ? { class_id: initialClassId } : {}),
+    ...(initialTermId ? { term_id: initialTermId } : {}),
+  }));
   
   const tenant = useTenant();
   const { createEnrolment, isCreating } = useEnrolment();
   const [checkoutEnrolmentId, setCheckoutEnrolmentId] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
+  const classPreselected = Boolean(initialClassId && initialTermId);
+
   const steps: EnrolmentStep[] = [
     'person',
-    'class',
+    classPreselected ? undefined : 'class',
     skipNotificationStep ? undefined : 'notification',
     'checkout',
     'confirmation',

@@ -2,7 +2,10 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { formatCurrency, formatTime } from '@shared/format';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 import type { PublicClass } from '@/schemas';
+
+type ClassWithTerm = PublicClass & { term_id?: string };
 
 /**
  * ClassCard: Presentational component for individual class display
@@ -14,18 +17,32 @@ import type { PublicClass } from '@/schemas';
  */
 
 interface ClassCardProps {
-  class: PublicClass;
+  class: ClassWithTerm;
   currency: string;
 }
 
 export function ClassCard({ class: cls, currency }: ClassCardProps) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const { user, isLoading } = useCurrentUser();
 
   const handleEnrol = () => {
-    navigate('/login', {
-      state: { from: '/classes', classId: cls.id },
-    });
+    if (isLoading) {
+      return;
+    }
+
+    const intent = {
+      from: '/enrol' as const,
+      classId: cls.id,
+      termId: cls.term_id,
+    };
+
+    if (user) {
+      navigate('/enrol', { state: intent });
+      return;
+    }
+
+    navigate('/login', { state: intent });
   };
 
   return (
@@ -51,6 +68,7 @@ export function ClassCard({ class: cls, currency }: ClassCardProps) {
         variant="primary"
         fullWidth
         onClick={handleEnrol}
+        disabled={isLoading}
         aria-label={`${t('pages.classes.enrol')} - ${cls.name}`}
       >
         {t('pages.classes.enrol')}

@@ -9,7 +9,7 @@ const TermInputSchema = z.object({
   name: z.string().min(1, 'Term name required').optional(),
   start_date: z.string().date('Invalid date format').optional(),
   end_date: z.string().date('Invalid date format').optional(),
-  status: z.enum(['planning', 'active', 'completed']).optional(),
+  status: z.enum(['upcoming', 'active', 'completed', 'archived']).optional(),
 });
 
 /**

@@ -102,12 +102,12 @@ export const TermsList = ({ onEdit }: TermsListProps) => {
                       style={{
                         backgroundColor: term.status === 'active'
                           ? 'var(--color-success-light)'
-                          : term.status === 'planning'
+                          : term.status === 'upcoming'
                             ? 'var(--color-info-light)'
                             : 'var(--color-neutral-100)',
                         color: term.status === 'active'
                           ? 'var(--color-success)'
-                          : term.status === 'planning'
+                          : term.status === 'upcoming'
                             ? 'var(--color-info)'
                             : 'var(--color-text-primary)',
                       }}

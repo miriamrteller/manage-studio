@@ -3,13 +3,18 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuthSession } from '@/hooks/useAuth';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import {
+  clearEnrollmentIntent,
+  readEnrollmentIntent,
+  type EnrollmentIntent,
+} from '@/lib/enrollment-intent';
 
 /**
  * DashboardRedirectPage: Smart redirect based on user role
  * 
  * After login, this page checks the user's role and redirects to the most
  * appropriate authenticated page:
- * - If coming from /classes enrollment → return to /classes
+ * - If enrolling in a class → return to /enrol
  * - tenant_admin → /admin/setup
  * - parent/guardian → /dashboard/portal
  * - student/adult_student → /dashboard/student
@@ -18,29 +23,6 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
  * This ensures all authenticated users see the ProtectedNavigation with
  * their role-appropriate menu items.
  */
-interface DashboardRedirectState {
-  classId?: string;
-}
-
-function readEnrollmentClassId(
-  routeState: DashboardRedirectState | null,
-): string | undefined {
-  if (routeState?.classId) {
-    return routeState.classId;
-  }
-
-  const stored = sessionStorage.getItem('enrollmentIntent');
-  if (!stored) {
-    return undefined;
-  }
-
-  try {
-    const parsed = JSON.parse(stored) as { classId?: string };
-    return typeof parsed.classId === 'string' ? parsed.classId : undefined;
-  } catch {
-    return undefined;
-  }
-}
 
 export default function DashboardRedirectPage() {
   const { t } = useTranslation();
@@ -69,10 +51,10 @@ export default function DashboardRedirectPage() {
       return;
     }
 
-    const classId = readEnrollmentClassId(location.state as DashboardRedirectState | null);
-    if (classId) {
-      sessionStorage.removeItem('enrollmentIntent');
-      navigate('/classes', { replace: true, state: { classId } });
+    const intent = readEnrollmentIntent(location.state as EnrollmentIntent | null);
+    if (intent?.classId) {
+      clearEnrollmentIntent();
+      navigate('/enrol', { replace: true, state: intent });
       return;
     }
 

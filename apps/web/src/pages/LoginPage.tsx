@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { LoginForm } from '@/components/shared';
 import { useLogin } from '@/hooks/useLogin';
+import { persistEnrollmentIntent } from '@/lib/enrollment-intent';
 
 /**
  * LoginPage: Light composition page
@@ -26,11 +27,15 @@ export default function LoginPage() {
       : undefined;
 
   useEffect(() => {
-    const classId = postLoginState?.classId;
-    if (typeof classId === 'string' && classId.length > 0) {
-      sessionStorage.setItem('enrollmentIntent', JSON.stringify({ classId }));
+    if (postLoginState?.classId) {
+      persistEnrollmentIntent({
+        classId: String(postLoginState.classId),
+        termId:
+          typeof postLoginState.termId === 'string' ? postLoginState.termId : undefined,
+        from: typeof postLoginState.from === 'string' ? postLoginState.from : undefined,
+      });
     }
-  }, [postLoginState?.classId]);
+  }, [postLoginState?.classId, postLoginState?.termId, postLoginState?.from]);
 
   const { isLoading, message, onSubmit, resetMessage } = useLogin({
     to: '/dashboard',
