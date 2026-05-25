@@ -179,6 +179,18 @@
       "setup": {
         "title": "System Setup",
         "description": "Manage levels, terms, billing accounts, and classes"
+      },
+      "requirements": {
+        "title": "Requirement Templates",
+        "description": "Build a library of reusable requirements that can be linked to individual classes.",
+        "create_button": "Add Requirement",
+        "empty_title": "No requirements yet",
+        "empty_message": "Add requirement templates here, then link them to specific classes from the Manage Classes page.",
+        "name_label": "Name",
+        "display_text_label": "Display text",
+        "display_text_help": "Shown to parents during enrolment, e.g. \"Ages 7 and up\"",
+        "hard_block_label": "Blocks enrolment",
+        "soft_block_label": "Warning only"
       }
     },
     "login": {
