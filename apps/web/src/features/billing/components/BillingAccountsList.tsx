@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
 import { useTranslation } from 'react-i18next';
 import { useBillingAccounts } from '../hooks';
 import { BillingAccountForm } from './BillingAccountForm';
@@ -75,12 +76,13 @@ export function BillingAccountsList(): React.ReactNode {
           </select>
         </div>
 
-        <button
+        <Button
+          type="button"
           onClick={() => setIsCreating(true)}
-          className="button-primary"
+          variant="primary"
         >
           {t('pages.billing.create_button')}
-        </button>
+        </Button>
       </div>
 
       {/* Loading State */}
@@ -135,12 +137,14 @@ export function BillingAccountsList(): React.ReactNode {
                     {t(`pages.billing.status_${account.status}`)}
                   </td>
                   <td className="ps-4 py-3">
-                    <button
+                    <Button
+                      type="button"
                       onClick={() => setSelectedAccountId(account.id)}
                       className="button-secondary"
+                      variant="secondary"
                     >
                       {t('common.view')}
-                    </button>
+                    </Button>
                   </td>
                 </tr>
               ))}
@@ -152,23 +156,25 @@ export function BillingAccountsList(): React.ReactNode {
       {/* Pagination */}
       {!isLoading && total > 20 && (
         <div className="flex justify-between items-center pt-4">
-          <button
+          <Button
+            type="button"
             onClick={() => setPage(Math.max(1, page - 1))}
             disabled={page === 1}
-            className="button-outline"
+            variant="outline"
           >
             {t('common.previous')}
-          </button>
+          </Button>
           <span className="text-sm">
             {t('common.page_n', { page })}
           </span>
-          <button
+          <Button
+            type="button"
             onClick={() => setPage(page + 1)}
             disabled={page * 20 >= total}
-            className="button-outline"
+            variant="outline"
           >
             {t('common.next')}
-          </button>
+          </Button>
         </div>
       )}
 
@@ -192,13 +198,15 @@ export function BillingAccountsList(): React.ReactNode {
               <h2 className="text-xl font-semibold">
                 {t('pages.billing.create_title')}
               </h2>
-              <button
+              <Button
+                type="button"
                 onClick={() => setIsCreating(false)}
                 className="text-gray-500 hover:text-gray-700"
                 aria-label={t('common.close')}
+                variant="ghost"
               >
                 ✕
-              </button>
+              </Button>
             </div>
             <BillingAccountForm
               onSuccess={() => {

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Button } from '@/components/ui/button';
 import { WhatsAppOtpVerifier } from '@/components/shared';
 import { EnrolmentPaymentForm } from './EnrolmentPaymentForm';
 import { useEnrolment } from '../hooks/useEnrolment';
@@ -254,26 +255,29 @@ function StepPerson({
       </p>
       
       <div className="space-y-3">
-        <button
+        <Button
           onClick={() => onNext({ ...data })}
+          variant="outline"
           className="w-full p-4 border-2 border-blue-600 rounded-lg hover:bg-blue-50 transition"
         >
           {t('enrolment.person_returning') || 'Returning customer'}
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={() => onNext({ ...data })}
+          variant="outline"
           className="w-full p-4 border-2 border-blue-600 rounded-lg hover:bg-blue-50 transition"
         >
           {t('enrolment.person_new') || 'New customer'}
-        </button>
+        </Button>
       </div>
 
-      <button
+      <Button
         onClick={onCancel}
+        variant="ghost"
         className="w-full px-4 py-2 text-gray-600 hover:text-gray-800"
       >
         {t('common.cancel') || 'Cancel'}
-      </button>
+      </Button>
     </div>
   );
 }
@@ -304,18 +308,22 @@ function StepClass({
       </div>
 
       <div className="flex gap-2">
-        <button
+        <Button
+          type="button"
           onClick={onPrevious}
-          className="flex-1 px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
+          variant="outline"
+          className="flex-1"
         >
           {t('common.back') || 'Back'}
-        </button>
-        <button
+        </Button>
+        <Button
+          type="button"
           onClick={() => onNext(data)}
-          className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          variant="primary"
+          className="flex-1"
         >
           {t('common.next') || 'Next'}
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -353,42 +361,50 @@ function StepNotification({
           </div>
         ) : (
           <div className="space-y-3">
-            <button
+            <Button
+              type="button"
               onClick={() => setUseWhatsApp(true)}
+              variant="outline"
               className="w-full p-4 border-2 border-green-600 rounded-lg hover:bg-green-50 transition text-center"
             >
               <div className="font-semibold">💬 WhatsApp</div>
               <div className="text-sm text-gray-600 mt-1">
                 {t('enrolment.notification_whatsapp') || 'Get updates via WhatsApp'}
               </div>
-            </button>
-            <button
+            </Button>
+            <Button
+              type="button"
               onClick={() => onNext()}
+              variant="outline"
               className="w-full p-4 border-2 border-blue-600 rounded-lg hover:bg-blue-50 transition text-center"
             >
               <div className="font-semibold">✉️ Email Only</div>
               <div className="text-sm text-gray-600 mt-1">
                 {t('enrolment.notification_email') || 'Continue with email only'}
               </div>
-            </button>
+            </Button>
           </div>
         )}
       </div>
 
       {!useWhatsApp && (
         <div className="flex gap-2">
-          <button
+          <Button
+            type="button"
             onClick={onPrevious}
-            className="flex-1 px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
+            variant="outline"
+            className="flex-1"
           >
             {t('common.back') || 'Back'}
-          </button>
-          <button
+          </Button>
+          <Button
+            type="button"
             onClick={onSkip}
-            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            variant="primary"
+            className="flex-1"
           >
             {t('common.next') || 'Next'}
-          </button>
+          </Button>
         </div>
       )}
     </div>
@@ -482,12 +498,14 @@ function StepConfirmation({
         </p>
       </div>
 
-      <button
+      <Button
+        type="button"
         onClick={onClose}
-        className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+        variant="primary"
+        className="w-full"
       >
         {t('common.done') || 'Done'}
-      </button>
+      </Button>
     </div>
   );
 }

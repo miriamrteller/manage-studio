@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
 import { useTranslation } from 'react-i18next';
 import { useBillingAccount, useDeleteBillingAccount } from '../hooks';
 import { BillingAccountForm } from './BillingAccountForm';
@@ -62,13 +63,15 @@ export function BillingAccountDetail({
           <h2 className="text-xl font-semibold">
             {t('pages.billing.edit_title')}
           </h2>
-          <button
+          <Button
+            type="button"
             onClick={() => setIsEditing(false)}
             className="text-gray-500 hover:text-gray-700"
             aria-label={t('common.close')}
+            variant="ghost"
           >
             ✕
-          </button>
+          </Button>
         </div>
         <BillingAccountForm
           onSuccess={() => {
@@ -91,13 +94,15 @@ export function BillingAccountDetail({
           </p>
         </div>
         {onClose && (
-          <button
+          <Button
+            type="button"
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700"
             aria-label={t('common.close')}
+            variant="ghost"
           >
             ✕
-          </button>
+          </Button>
         )}
       </div>
 
@@ -142,18 +147,21 @@ export function BillingAccountDetail({
 
       {/* Action Buttons */}
       <div className="flex gap-2 pt-4">
-        <button
+        <Button
+          type="button"
           onClick={() => setIsEditing(true)}
-          className="button-primary"
+          variant="primary"
         >
           {t('common.edit')}
-        </button>
-        <button
+        </Button>
+        <Button
+          type="button"
           onClick={() => setIsDeleting(true)}
+          variant="destructive"
           className="button-outline border-red-300 text-red-600 hover:bg-red-50"
         >
           {t('common.delete')}
-        </button>
+        </Button>
       </div>
 
       {/* Delete Confirmation Dialog */}
@@ -168,20 +176,24 @@ export function BillingAccountDetail({
             })}
           </p>
           <div className="flex gap-2">
-            <button
+            <Button
+              type="button"
               onClick={() => deleteAccount(id)}
               disabled={isDeleting_}
+              variant="destructive"
               className="button-error"
             >
               {isDeleting_ ? t('common.loading') : t('common.confirm')}
-            </button>
-            <button
+            </Button>
+            <Button
+              type="button"
               onClick={() => setIsDeleting(false)}
               disabled={isDeleting_}
+              variant="outline"
               className="button-outline"
             >
               {t('common.cancel')}
-            </button>
+            </Button>
           </div>
         </div>
       )}
