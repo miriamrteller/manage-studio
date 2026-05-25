@@ -38,7 +38,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
       {user ? <ProtectedNavigation /> : <PublicNavigation />}
 
       {/* Main Content */}
-      <main className="flex-1" role="main">{children}</main>
+      <main className="flex-1 px-4 md:px-8 lg:px-12 xl:px-24" role="main">{children}</main>
 
       {/* Footer */}
       <footer className="border-t border-border bg-muted mt-16">
