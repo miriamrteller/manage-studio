@@ -73,8 +73,10 @@ jobs:
           node-version: "22"
           cache: "pnpm"
       - run: pnpm install
+      - name: Build web app
+        run: pnpm run build
       - name: Install Playwright browsers
-        run: cd apps/web && pnpm exec playwright install --with-deps
+        run: cd apps/web && pnpm exec playwright install --with-deps chromium
       - name: Run accessibility tests (chromium only for speed)
         run: cd apps/web && pnpm exec playwright test e2e/accessibility-compliance.spec.ts --project=chromium --retries=1
         timeout-minutes: 15
