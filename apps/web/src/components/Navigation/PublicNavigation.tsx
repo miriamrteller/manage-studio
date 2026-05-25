@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useTenant } from '@/hooks/useTenant';
 import { useLanguage } from '@/hooks/useLanguage';
@@ -18,6 +18,7 @@ import { useLanguage } from '@/hooks/useLanguage';
 export function PublicNavigation() {
   const { t } = useTranslation();
   const tenant = useTenant();
+  const navigate = useNavigate();
   const { language, setLanguage } = useLanguage();
 
   const toggleLanguage = async () => {
@@ -26,13 +27,13 @@ export function PublicNavigation() {
 
   return (
     <header
-      className="border-b border-gray-200 bg-white sticky top-0 z-50"
+      className="border-b border-primary-active bg-primary text-on-primary sticky top-0 z-50"
       role="banner"
     >
       <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
         <Link
           to="/"
-          className="text-primary font-bold text-lg hover:text-opacity-80 focus-visible:outline-2 outline-primary outline-offset-2"
+          className="text-on-primary font-bold text-lg hover:opacity-90 focus-visible:outline-2 outline-on-primary outline-offset-2"
         >
           {tenant?.name || 'Ballet School'}
         </Link>
@@ -41,7 +42,7 @@ export function PublicNavigation() {
         <nav className="flex gap-6 items-center">
           <Link
             to="/classes"
-            className="text-gray-700 hover:text-primary focus-visible:outline-2 outline-primary outline-offset-2"
+            className="text-on-primary hover:opacity-90 focus-visible:outline-2 outline-on-primary outline-offset-2"
           >
             {t('nav.classes')}
           </Link>
@@ -50,16 +51,19 @@ export function PublicNavigation() {
             size="sm"
             onClick={toggleLanguage}
             aria-label={t('common.language')}
+            className="border-on-primary text-on-primary bg-transparent hover:bg-primary-hover hover:text-on-primary"
           >
             {language === 'he' && '🇬🇧 English'}
             {language === 'en' && '🇮🇱 עברית'}
           </Button>
-          <Link
-            to="/login"
-            className="px-4 py-2 bg-primary text-white rounded hover:bg-opacity-90 focus-visible:outline-2 outline-white outline-offset-2"
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => navigate('/login')}
+            aria-label={t('nav.login')}
           >
             {t('nav.login')}
-          </Link>
+          </Button>
         </nav>
       </div>
     </header>

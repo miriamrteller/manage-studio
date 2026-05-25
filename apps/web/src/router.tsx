@@ -9,6 +9,7 @@ import DashboardRedirectPage from "./pages/DashboardRedirectPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import PeoplePage from "./pages/PeoplePage";
 import FamiliesPage from "./pages/FamiliesPage";
+import FamilyDetailPage from "./pages/FamilyDetailPage";
 import BillingPage from "./pages/BillingPage";
 import StripeSettingsPage from "./pages/StripeSettingsPage";
 import LevelsPage from "./pages/LevelsPage";
@@ -45,6 +46,7 @@ const router = createBrowserRouter([
       // ADMIN ROUTES
       { path: "admin/people", element: <AdminRoute><PeoplePage /></AdminRoute> },
       { path: "admin/families", element: <AdminRoute><FamiliesPage /></AdminRoute> },
+      { path: "admin/families/:id", element: <AdminRoute><FamilyDetailPage /></AdminRoute> },
       { path: "admin/setup", element: <AdminRoute><AdminDashboard /></AdminRoute> },
       { path: "admin/setup/billing", element: <AdminRoute><BillingPage /></AdminRoute> },
       { path: "admin/setup/levels", element: <AdminRoute><LevelsPage /></AdminRoute> },

@@ -1,6 +1,6 @@
 import { BaseService } from '@/services/base.service';
 import { TenantDB } from '@/lib/db';
-import { ClassSessionSchema, type ClassSession } from '@shared/schemas';
+import { ClassSessionSchema, TimeSchema, type ClassSession } from '@shared/schemas';
 import { z } from 'zod';
 import type { Tenant } from '@shared/schemas';
 
@@ -8,8 +8,8 @@ import type { Tenant } from '@shared/schemas';
 const SessionInputSchema = z.object({
   class_id: z.string().uuid().optional(),
   session_date: z.string().date('Invalid date format').optional(),
-  session_start_time: z.string().regex(/^\d{2}:\d{2}$/, 'Invalid time format (HH:MM)').optional(),
-  session_end_time: z.string().regex(/^\d{2}:\d{2}$/, 'Invalid time format (HH:MM)').optional(),
+  start_time: TimeSchema.optional(),
+  end_time: TimeSchema.optional(),
 });
 
 /**

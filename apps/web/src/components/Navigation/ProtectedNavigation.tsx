@@ -35,7 +35,7 @@ export function ProtectedNavigation() {
 
   return (
     <header
-      className="border-b border-gray-200 bg-white sticky top-0 z-50"
+      className="border-b border-primary-active bg-primary text-on-primary sticky top-0 z-50"
       role="banner"
     >
       <div className="max-w-7xl mx-auto px-4 py-4">
@@ -45,7 +45,7 @@ export function ProtectedNavigation() {
           <Button
             variant="ghost"
             onClick={() => navigate('/')}
-            className="text-primary font-bold text-lg hover:opacity-80 focus-visible:outline-2 outline-primary outline-offset-2"
+            className="text-on-primary font-bold text-lg hover:bg-primary-hover hover:text-on-primary focus-visible:outline-2 outline-on-primary outline-offset-2"
             aria-label={t('common.home')}
           >
             {tenant?.name || 'Ballet School'}
@@ -55,7 +55,7 @@ export function ProtectedNavigation() {
           <div className="flex gap-3 items-center">
             {user && (
               <>
-                <span className="text-sm text-gray-700">{user.email}</span>
+                <span className="text-sm text-on-primary opacity-90">{user.email}</span>
                 <Button
                   variant="secondary"
                   size="sm"
@@ -96,7 +96,7 @@ export function ProtectedNavigation() {
                 key={navItem.path}
                 variant="ghost"
                 onClick={() => navigate(navItem.path)}
-                className="text-gray-700 hover:text-primary focus-visible:outline-2 outline-primary outline-offset-2 transition-colors"
+                className="text-on-primary hover:bg-primary-hover hover:text-on-primary focus-visible:outline-2 outline-on-primary outline-offset-2 transition-colors"
                 aria-label={t(navItem.labelKey)}
               >
                 {t(navItem.labelKey)}

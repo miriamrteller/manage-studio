@@ -1,21 +1,21 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/shared';
 import { usePeople } from '../hooks/usePeople';
 import { usePersonSearch } from '../hooks/usePersonSearch';
 import { PersonSearch } from './PersonSearch';
 import { PersonDetail } from './PersonDetail';
-import { PersonForm } from './PersonForm';
 
 export const PeopleList = (): React.ReactNode => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'withdrawn'>('all');
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
-  const [isCreating, setIsCreating] = useState(false);
 
   // Use search results if searching, otherwise use paginated list
   const searchResults = usePersonSearch(searchQuery, { enabled: showSearch && searchQuery.trim().length > 0 });
@@ -66,9 +66,9 @@ export const PeopleList = (): React.ReactNode => {
 
         <Button
           variant="primary"
-          onClick={() => setIsCreating(true)}
+          onClick={() => navigate('/enrol')}
         >
-          {t('pages.people.create_button')}
+          {t('pages.people.enrol_button')}
         </Button>
       </div>
 
@@ -98,8 +98,8 @@ export const PeopleList = (): React.ReactNode => {
           <EmptyState
             title={t('pages.people.empty_title')}
             message={t('pages.people.empty_message')}
-            actionLabel={t('pages.people.create_button')}
-            onAction={() => setIsCreating(true)}
+            actionLabel={t('pages.people.enrol_button')}
+            onAction={() => navigate('/enrol')}
           />
         ))}
 
@@ -206,33 +206,6 @@ export const PeopleList = (): React.ReactNode => {
         </div>
       )}
 
-      {/* Create Person Modal */}
-      {isCreating && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center p-4 border-b">
-              <h2 className="text-xl font-semibold">
-                {t('pages.people.create_title')}
-              </h2>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsCreating(false)}
-                className="text-gray-500 hover:text-gray-700"
-                aria-label={t('common.close')}
-              >
-                ✕
-              </Button>
-            </div>
-            <PersonForm
-              onSubmit={async () => {
-                setIsCreating(false);
-              }}
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 };

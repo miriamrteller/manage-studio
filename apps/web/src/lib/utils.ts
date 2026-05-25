@@ -105,6 +105,35 @@ function hslToRgb(h: number, s: number, l: number): [number, number, number] {
 }
 
 /**
+ * WCAG relative luminance for contrast calculations
+ */
+function getRelativeLuminance(r: number, g: number, b: number): number {
+  const [rs, gs, bs] = [r, g, b].map((channel) => {
+    const s = channel / 255;
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
+}
+
+/**
+ * Pick light or dark text for readable contrast on a given background
+ */
+export function getAccessibleTextColor(backgroundHex: string): string {
+  const [r, g, b] = hexToRgb(backgroundHex);
+  const bgLuminance = getRelativeLuminance(r, g, b);
+
+  const lightText = '#ffffff';
+  const darkText = '#1f2937';
+  const [dr, dg, db] = hexToRgb(darkText);
+  const darkLuminance = getRelativeLuminance(dr, dg, db);
+
+  const contrastWithLight = (1 + 0.05) / (bgLuminance + 0.05);
+  const contrastWithDark = (bgLuminance + 0.05) / (darkLuminance + 0.05);
+
+  return contrastWithLight >= contrastWithDark ? lightText : darkText;
+}
+
+/**
  * Detects if a color is warm or cool based on hue
  * Warm: Reds, Oranges, Yellows (0-60° and 300-360°)
  * Cool: Greens, Cyans, Blues, Purples (60-300°)

@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useTenant } from './useTenant';
 import {
   deriveColorSystem,
+  getAccessibleTextColor,
   getBackgroundForPrimaryColor,
 } from '../lib/utils';
 
@@ -51,15 +52,26 @@ export function useThemeInjection(): void {
       }
 
       const primaryColor = whiteLabel.primary_color || '#2563eb';
-      const secondaryColor = whiteLabel.secondary_color || undefined;
+      const secondaryColor =
+        whiteLabel.secondary_color || whiteLabel.accent_color || undefined;
 
-      // 1. Derive full color system from primary + optional secondary
+      // 1. Derive full color system from primary + optional secondary/accent
       const colorSystem = deriveColorSystem(primaryColor, secondaryColor);
 
       // 2. Inject all derived colors into :root
       Object.entries(colorSystem).forEach(([key, value]) => {
         root.style.setProperty(`--color-${key}`, value);
       });
+
+      // 2b. Inject accessible text colors for primary/secondary surfaces
+      root.style.setProperty(
+        '--color-on-primary',
+        getAccessibleTextColor(primaryColor)
+      );
+      root.style.setProperty(
+        '--color-on-secondary',
+        getAccessibleTextColor(colorSystem.secondary)
+      );
 
       // 3. Detect warm vs cool background and set
       const bgVariant = getBackgroundForPrimaryColor(primaryColor);

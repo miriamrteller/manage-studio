@@ -20,6 +20,11 @@ export const CurrencySchema = z.number().int().nonnegative();
 
 export const DateSchema = z.string().date('Invalid date format');
 
+/** HH:MM string; accepts Postgres TIME (HH:MM:SS) and normalizes to HH:MM */
+export const TimeSchema = z.string()
+  .regex(/^\d{2}:\d{2}(:\d{2})?$/, 'Invalid time format (HH:MM)')
+  .transform((val) => val.slice(0, 5));
+
 /** Accepts Postgres / Supabase timestamptz strings (lenient vs strict ISO). */
 export const TimestampSchema = z.string().refine(
   (val) => !Number.isNaN(Date.parse(val)),
@@ -100,8 +105,8 @@ export const PublicClassSchema = z.object({
   tenant_id: UUIDSchema,
   name: z.string().min(1),
   level_id: UUIDSchema.nullable().optional(),
-  start_time: z.string(), // HH:MM format
-  end_time: z.string(),
+  start_time: TimeSchema,
+  end_time: TimeSchema,
   price_minor: z.number().nonnegative(),
   max_capacity: z.number().positive(),
   billing_frequency: z.enum(['monthly', 'per-session', 'weekly', 'annual']).default('monthly'),
@@ -270,8 +275,8 @@ export const ClassSchema = z.object({
   price_minor: z.number().nonnegative('Price must be >= 0'),
   currency: z.string().default('ILS'),
   day_of_week: z.number().int().min(0).max(6).nullable().optional(),
-  start_time: z.string().regex(/^\d{2}:\d{2}$/, 'Invalid time format (HH:MM)'),
-  end_time: z.string().regex(/^\d{2}:\d{2}$/, 'Invalid time format (HH:MM)'),
+  start_time: TimeSchema,
+  end_time: TimeSchema,
   is_public: z.boolean().default(true),
   billing_frequency: z.string().default('monthly'),
   status: z.enum(['active', 'cancelled', 'full']).default('active'),
@@ -320,8 +325,8 @@ export const ClassSessionSchema = z.object({
   tenant_id: UUIDSchema,
   class_id: UUIDSchema,
   session_date: z.string().date('Invalid date format'),
-  session_start_time: z.string().regex(/^\d{2}:\d{2}$/, 'Invalid time format (HH:MM)'),
-  session_end_time: z.string().regex(/^\d{2}:\d{2}$/, 'Invalid time format (HH:MM)'),
+  start_time: TimeSchema,
+  end_time: TimeSchema,
   created_at: TimestampSchema,
 });
 

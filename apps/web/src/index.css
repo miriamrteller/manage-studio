@@ -203,7 +203,7 @@
   .button-error {
     @apply button;
     background-color: var(--color-error);
-    color: white;
+    color: var(--color-on-primary);
   }
 
   .button-error:hover {

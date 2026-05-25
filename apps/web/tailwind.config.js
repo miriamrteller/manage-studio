@@ -8,8 +8,14 @@ export default {
     extend: {
       colors: {
         primary: 'var(--color-primary)',
+        'primary-hover': 'var(--color-primary-hover)',
+        'primary-active': 'var(--color-primary-active)',
         secondary: 'var(--color-secondary)',
-        accent: 'var(--color-primary)',
+        'secondary-hover': 'var(--color-secondary-hover)',
+        'secondary-active': 'var(--color-secondary-active)',
+        'on-primary': 'var(--color-on-primary)',
+        'on-secondary': 'var(--color-on-secondary)',
+        accent: 'var(--color-secondary)',
         error: 'var(--color-error)',
         warning: 'var(--color-warning)',
         success: 'var(--color-success)',

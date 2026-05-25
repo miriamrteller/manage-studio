@@ -1,6 +1,6 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { type Class, type Level, type Term, type Teacher } from '@shared/schemas';
+import { type Class, type Level, type Term, type Teacher, TimeSchema } from '@shared/schemas';
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 import { z } from 'zod';
@@ -20,8 +20,8 @@ const ClassFormSchema = z.object({
     .union([z.number().int().min(0).max(6), z.nan()])
     .nullable()
     .optional(),
-  start_time: z.string().regex(/^\d{2}:\d{2}$/, 'Invalid time format (HH:MM)'),
-  end_time: z.string().regex(/^\d{2}:\d{2}$/, 'Invalid time format (HH:MM)'),
+  start_time: TimeSchema,
+  end_time: TimeSchema,
   is_public: z.enum(['true', 'false']).optional(),
   billing_frequency: z.enum(['monthly', 'per-session', 'weekly', 'annual']).optional(),
   status: z.enum(['active', 'cancelled', 'full']).optional(),

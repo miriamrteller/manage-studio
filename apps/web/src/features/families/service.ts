@@ -1,22 +1,34 @@
 import { BaseService } from '@/services/base.service';
 import { TenantDB } from '@/lib/db';
-import { FamilySchema, type Family } from '@shared/schemas';
+import { FamilySchema, FamilyMemberSchema, type Family, type FamilyMember } from '@shared/schemas';
 import { z } from 'zod';
 import type { Tenant } from '@shared/schemas';
 
-// Validation schema for family creation/update (without system fields)
-const FamilyInputSchema = z.object({
+// Input schema for family creation — used only by EnrolmentOnboardingService.
+export const FamilyInputSchema = z.object({
   name: z.string().min(1, 'Family name required').optional(),
   contact_person_name: z.string().optional(),
   contact_email: z.string().email().optional(),
   contact_phone: z.string().optional(),
 });
 
+// Input schema for family member creation.
+export const FamilyMemberInputSchema = z.object({
+  family_id: z.string().uuid(),
+  name: z.string().min(1, 'Name required'),
+  email: z.string().email().optional(),
+  phone: z.string().optional(),
+  role: z.enum(['parent', 'guardian', 'sibling', 'adult_student']),
+});
+
 /**
- * FamilyService: All family data operations
- * - Validates input/output with FamilySchema
- * - Uses TenantDB for RLS enforcement
- * - Inherits retry logic from BaseService
+ * FamilyService: Family data operations.
+ *
+ * create() and delete() are intentionally NOT on the public surface used by the
+ * admin UI. They are used only by EnrolmentOnboardingService during enrolment intake
+ * so that a family row is always accompanied by at least one person and a family_member.
+ *
+ * Hard delete is never permitted (SPEC §D, migration 039). Use anonymise RPC (future).
  */
 export class FamilyService extends BaseService {
   static async list(
@@ -57,22 +69,29 @@ export class FamilyService extends BaseService {
     }, 'FamilyService.get');
   }
 
-  static async create(tenant: Tenant, familyData: Partial<Family>) {
-    const validated = FamilyInputSchema.parse(familyData);
-
+  /** Get all people linked to a family (for detail view). */
+  static async getPeople(tenant: Tenant, familyId: string) {
     return this.withRetry(async () => {
-      const { data, error } = await TenantDB.insert('families', tenant, validated)
-        .select()
-        .single();
+      const { data, error } = await TenantDB.selectFor('people', tenant)
+        .eq('family_id', familyId);
 
       if (error) throw error;
-
-      const result = FamilySchema.parse(data);
-      await this.logAudit(tenant, 'CREATE', 'families', result.id);
-      return result;
-    }, 'FamilyService.create');
+      return data || [];
+    }, 'FamilyService.getPeople');
   }
 
+  /** Get all family_members for a family (for detail view). */
+  static async getMembers(tenant: Tenant, familyId: string): Promise<FamilyMember[]> {
+    return this.withRetry(async () => {
+      const { data, error } = await TenantDB.selectFor('family_members', tenant)
+        .eq('family_id', familyId);
+
+      if (error) throw error;
+      return (data || []).map(m => FamilyMemberSchema.parse(m));
+    }, 'FamilyService.getMembers');
+  }
+
+  /** Update contact details on an existing family (admin-safe edit). */
   static async update(tenant: Tenant, id: string, familyData: Partial<Family>) {
     const validated = FamilyInputSchema.parse(familyData);
 
@@ -89,12 +108,42 @@ export class FamilyService extends BaseService {
     }, 'FamilyService.update');
   }
 
-  static async delete(tenant: Tenant, id: string) {
+  // -------------------------------------------------------------------------
+  // Enrolment-only methods — called by EnrolmentOnboardingService, never by UI.
+  // -------------------------------------------------------------------------
+
+  /** @internal Used by EnrolmentOnboardingService only. */
+  static async _createForEnrolment(tenant: Tenant, familyData: Partial<Family>) {
+    const validated = FamilyInputSchema.parse(familyData);
+
     return this.withRetry(async () => {
-      const { error } = await TenantDB.delete('families', tenant, id);
+      const { data, error } = await TenantDB.insert('families', tenant, validated)
+        .select()
+        .single();
+
       if (error) throw error;
 
-      await this.logAudit(tenant, 'DELETE', 'families', id);
-    }, 'FamilyService.delete');
+      const result = FamilySchema.parse(data);
+      await this.logAudit(tenant, 'CREATE', 'families', result.id);
+      return result;
+    }, 'FamilyService._createForEnrolment');
+  }
+
+  /** @internal Used by EnrolmentOnboardingService only. */
+  static async _createMemberForEnrolment(
+    tenant: Tenant,
+    memberData: z.infer<typeof FamilyMemberInputSchema>
+  ): Promise<FamilyMember> {
+    const validated = FamilyMemberInputSchema.parse(memberData);
+
+    return this.withRetry(async () => {
+      const { data, error } = await TenantDB.insert('family_members', tenant, validated)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return FamilyMemberSchema.parse(data);
+    }, 'FamilyService._createMemberForEnrolment');
   }
 }

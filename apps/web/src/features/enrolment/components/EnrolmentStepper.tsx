@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { WhatsAppOtpVerifier } from '@/components/shared';
@@ -6,6 +6,11 @@ import { EnrolmentPaymentForm } from './EnrolmentPaymentForm';
 import { useEnrolment } from '../hooks/useEnrolment';
 import { useTenant } from '@/hooks/useTenant';
 import { EnrolmentService } from '../service';
+import {
+  EnrolmentOnboardingService,
+  type NewMinorOnboardingInput,
+  type NewAdultOnboardingInput,
+} from '../onboardingService';
 import type { Enrolment } from '@shared/schemas';
 
 export type EnrolmentStep = 'person' | 'class' | 'notification' | 'checkout' | 'confirmation';
@@ -250,9 +255,14 @@ export function EnrolmentStepper({
   );
 }
 
+type PersonMode = 'choose' | 'returning' | 'new_minor' | 'new_adult';
+
 /**
  * Step 1: Person identification
- * Identify if new or returning customer
+ *
+ * - Returning: look up existing person by email.
+ * - New minor: collect guardian + student details, creates family+person+member.
+ * - New adult solo: collect student details, creates person only.
  */
 function StepPerson({
   data,
@@ -264,38 +274,258 @@ function StepPerson({
   onCancel?: () => void;
 }) {
   const { t } = useTranslation();
+  const tenant = useTenant();
+  const [mode, setMode] = useState<PersonMode>('choose');
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  return (
-    <div className="space-y-4">
-      <p className="text-sm text-gray-600">
-        {t('pages.enrolment.person_desc')}
-      </p>
-      
-      <div className="space-y-3">
-        <Button
-          onClick={() => onNext({ ...data })}
-          variant="outline"
-          className="w-full p-4 border-2 border-blue-600 rounded-lg hover:bg-blue-50 transition"
-        >
-          {t('pages.enrolment.person_returning')}
-        </Button>
-        <Button
-          onClick={() => onNext({ ...data })}
-          variant="outline"
-          className="w-full p-4 border-2 border-blue-600 rounded-lg hover:bg-blue-50 transition"
-        >
-          {t('pages.enrolment.person_new')}
+  // Returning customer — email lookup
+  const [email, setEmail] = useState('');
+
+  // New minor fields
+  const [minorFields, setMinorFields] = useState<Partial<NewMinorOnboardingInput>>({
+    guardian_role: 'parent',
+  });
+
+  // New adult fields
+  const [adultFields, setAdultFields] = useState<Partial<NewAdultOnboardingInput>>({});
+
+  const handleReturning = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!tenant || !email.trim()) return;
+    setError(null);
+    setIsSubmitting(true);
+    try {
+      const person = await EnrolmentOnboardingService.findPersonByEmail(tenant, email.trim());
+      if (!person) {
+        setError(t('pages.enrolment.returning_not_found'));
+        return;
+      }
+      onNext({ ...data, person_id: person.id });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('common.error'));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleNewMinor = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!tenant) return;
+    setError(null);
+    setIsSubmitting(true);
+    try {
+      const { person } = await EnrolmentOnboardingService.createMinorWithFamily(
+        tenant,
+        minorFields as NewMinorOnboardingInput
+      );
+      onNext({ ...data, person_id: person.id });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('common.error'));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleNewAdult = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!tenant) return;
+    setError(null);
+    setIsSubmitting(true);
+    try {
+      const { person } = await EnrolmentOnboardingService.createAdultSolo(
+        tenant,
+        adultFields as NewAdultOnboardingInput
+      );
+      onNext({ ...data, person_id: person.id });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('common.error'));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (mode === 'choose') {
+    return (
+      <div className="space-y-4">
+        <p className="text-sm text-gray-600">{t('pages.enrolment.person_desc')}</p>
+        <div className="space-y-3">
+          <Button
+            onClick={() => setMode('returning')}
+            variant="outline"
+            className="w-full p-4 border-2 border-blue-600 rounded-lg hover:bg-blue-50 transition"
+          >
+            {t('pages.enrolment.person_returning')}
+          </Button>
+          <Button
+            onClick={() => setMode('new_minor')}
+            variant="outline"
+            className="w-full p-4 border-2 border-blue-600 rounded-lg hover:bg-blue-50 transition"
+          >
+            {t('pages.enrolment.person_new_minor')}
+          </Button>
+          <Button
+            onClick={() => setMode('new_adult')}
+            variant="outline"
+            className="w-full p-4 border-2 border-blue-600 rounded-lg hover:bg-blue-50 transition"
+          >
+            {t('pages.enrolment.person_new_adult')}
+          </Button>
+        </div>
+        <Button onClick={onCancel} variant="ghost" className="w-full">
+          {t('common.cancel')}
         </Button>
       </div>
+    );
+  }
 
-      <Button
-        onClick={onCancel}
-        variant="ghost"
-        className="w-full px-4 py-2 text-gray-600 hover:text-gray-800"
-      >
-        {t('common.cancel') || 'Cancel'}
-      </Button>
-    </div>
+  if (mode === 'returning') {
+    return (
+      <form onSubmit={handleReturning} className="space-y-4">
+        <p className="text-sm text-gray-600">{t('pages.enrolment.returning_desc')}</p>
+        <div>
+          <label htmlFor="returning-email" className="block text-sm font-medium mb-1">
+            {t('form.person.email')} *
+          </label>
+          <input
+            id="returning-email"
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="form-input w-full"
+            placeholder="guardian@example.com"
+          />
+        </div>
+        {error && <p className="text-sm text-red-600">{error}</p>}
+        <div className="flex gap-2">
+          <Button type="button" variant="outline" onClick={() => setMode('choose')} className="flex-1">
+            {t('common.back')}
+          </Button>
+          <Button type="submit" variant="primary" disabled={isSubmitting} className="flex-1">
+            {isSubmitting ? t('common.loading') : t('common.next')}
+          </Button>
+        </div>
+      </form>
+    );
+  }
+
+  if (mode === 'new_minor') {
+    return (
+      <form onSubmit={handleNewMinor} className="space-y-4">
+        <p className="text-sm text-gray-600">{t('pages.enrolment.new_minor_desc')}</p>
+
+        <fieldset className="border rounded p-4 space-y-3">
+          <legend className="text-sm font-semibold px-1">{t('pages.enrolment.student_section')}</legend>
+          <div>
+            <label className="block text-sm font-medium mb-1">{t('form.person.name')} *</label>
+            <input
+              type="text"
+              required
+              className="form-input w-full"
+              value={minorFields.student_name ?? ''}
+              onChange={(e) => setMinorFields({ ...minorFields, student_name: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">{t('form.person.date_of_birth')} *</label>
+            <input
+              type="date"
+              required
+              className="form-input w-full"
+              value={minorFields.student_date_of_birth ?? ''}
+              onChange={(e) => setMinorFields({ ...minorFields, student_date_of_birth: e.target.value })}
+            />
+          </div>
+        </fieldset>
+
+        <fieldset className="border rounded p-4 space-y-3">
+          <legend className="text-sm font-semibold px-1">{t('pages.enrolment.guardian_section')}</legend>
+          <div>
+            <label className="block text-sm font-medium mb-1">{t('form.person.name')} *</label>
+            <input
+              type="text"
+              required
+              className="form-input w-full"
+              value={minorFields.guardian_name ?? ''}
+              onChange={(e) => setMinorFields({ ...minorFields, guardian_name: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">{t('form.person.email')}</label>
+            <input
+              type="email"
+              className="form-input w-full"
+              value={minorFields.guardian_email ?? ''}
+              onChange={(e) => setMinorFields({ ...minorFields, guardian_email: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">{t('form.person.phone')}</label>
+            <input
+              type="tel"
+              className="form-input w-full"
+              value={minorFields.guardian_phone ?? ''}
+              onChange={(e) => setMinorFields({ ...minorFields, guardian_phone: e.target.value })}
+            />
+          </div>
+        </fieldset>
+
+        {error && <p className="text-sm text-red-600">{error}</p>}
+        <div className="flex gap-2">
+          <Button type="button" variant="outline" onClick={() => setMode('choose')} className="flex-1">
+            {t('common.back')}
+          </Button>
+          <Button type="submit" variant="primary" disabled={isSubmitting} className="flex-1">
+            {isSubmitting ? t('common.loading') : t('common.next')}
+          </Button>
+        </div>
+      </form>
+    );
+  }
+
+  // new_adult
+  return (
+    <form onSubmit={handleNewAdult} className="space-y-4">
+      <p className="text-sm text-gray-600">{t('pages.enrolment.new_adult_desc')}</p>
+      <div>
+        <label className="block text-sm font-medium mb-1">{t('form.person.name')} *</label>
+        <input
+          type="text"
+          required
+          className="form-input w-full"
+          value={adultFields.name ?? ''}
+          onChange={(e) => setAdultFields({ ...adultFields, name: e.target.value })}
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium mb-1">{t('form.person.email')}</label>
+        <input
+          type="email"
+          className="form-input w-full"
+          value={adultFields.email ?? ''}
+          onChange={(e) => setAdultFields({ ...adultFields, email: e.target.value })}
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium mb-1">{t('form.person.date_of_birth')}</label>
+        <input
+          type="date"
+          className="form-input w-full"
+          value={adultFields.date_of_birth ?? ''}
+          onChange={(e) => setAdultFields({ ...adultFields, date_of_birth: e.target.value })}
+        />
+      </div>
+      {error && <p className="text-sm text-red-600">{error}</p>}
+      <div className="flex gap-2">
+        <Button type="button" variant="outline" onClick={() => setMode('choose')} className="flex-1">
+          {t('common.back')}
+        </Button>
+        <Button type="submit" variant="primary" disabled={isSubmitting} className="flex-1">
+          {isSubmitting ? t('common.loading') : t('common.next')}
+        </Button>
+      </div>
+    </form>
   );
 }
 

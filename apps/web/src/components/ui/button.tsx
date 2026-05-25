@@ -10,13 +10,15 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ variant = 'default', size = 'md', fullWidth = false, isLoading = false, className = '', children, disabled, ...props }, ref) => {
     const variantClasses = {
-      default: 'bg-gray-200 text-gray-800 hover:bg-gray-300',
-      primary: 'bg-primary text-white hover:bg-opacity-90',
-      secondary: 'bg-gray-200 text-gray-800 hover:bg-gray-300',
-      outline: 'border border-gray-300 hover:bg-gray-50',
-      ghost: 'hover:bg-gray-100',
+      default:
+        'bg-[var(--color-neutral-200)] text-[var(--color-text-primary)] hover:bg-[var(--color-neutral-300)]',
+      primary: 'bg-primary text-on-primary hover:bg-primary-hover',
+      secondary: 'bg-secondary text-on-secondary hover:bg-secondary-hover',
+      outline:
+        'border border-[var(--color-border-default)] text-[var(--color-text-primary)] hover:bg-[var(--color-surface-secondary)]',
+      ghost: 'hover:bg-[var(--color-neutral-100)]',
       destructive:
-        'bg-[var(--color-error,#dc2626)] text-white hover:bg-[var(--color-error-dark,#b91c1c)] active:bg-[var(--color-error-dark,#b91c1c)] focus-visible:ring-2 focus-visible:ring-[var(--color-error,#dc2626)]',
+        'bg-error text-on-primary hover:bg-[var(--color-error-hover)] active:bg-[var(--color-error-active)] focus-visible:ring-2 focus-visible:ring-error',
     };
 
     const sizeClasses = {

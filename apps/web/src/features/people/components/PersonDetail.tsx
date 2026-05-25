@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { usePerson } from '../hooks/usePerson';
-import { useDeletePerson } from '../hooks/useDeletePerson';
 import { PersonForm } from './PersonForm';
 import { MedicalNotes } from './MedicalNotes';
 import { formatDate, calculateAge } from '@/lib/utils';
@@ -24,14 +23,8 @@ interface PersonDetailProps {
 export function PersonDetail({ id, onClose }: PersonDetailProps) {
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
 
   const { data: person, isLoading, error } = usePerson(id);
-  const { mutate: deletePerson, isPending: isDeleting_ } = useDeletePerson({
-    onSuccess: () => {
-      onClose?.();
-    },
-  });
 
   if (isLoading) {
     return (
@@ -231,42 +224,10 @@ export function PersonDetail({ id, onClose }: PersonDetailProps) {
         >
           {t('common.edit')}
         </Button>
-        <Button
-          variant="destructive"
-          onClick={() => setIsDeleting(true)}
-        >
-          {t('common.delete')}
-        </Button>
       </div>
 
-      {/* Delete Confirmation Dialog */}
-      {isDeleting && (
-        <div
-          role="alert"
-          className="p-4 bg-red-50 border border-red-300 rounded space-y-4"
-        >
-          <p className="font-semibold text-red-900">
-            {t('pages.people.delete_confirm', { name: person.name })}
-          </p>
-          <div className="flex gap-2">
-            <Button
-              variant="destructive"
-              onClick={() => deletePerson(id)}
-              disabled={isDeleting_}
-              isLoading={isDeleting_}
-            >
-              {t('common.confirm')}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setIsDeleting(false)}
-              disabled={isDeleting_}
-            >
-              {t('common.cancel')}
-            </Button>
-          </div>
-        </div>
-      )}
+      {/* Data removal note — hard delete is not permitted per SPEC §D / migration 039 */}
+      <p className="text-xs text-gray-400 pt-2">{t('pages.people.delete_note')}</p>
     </div>
   );
 }

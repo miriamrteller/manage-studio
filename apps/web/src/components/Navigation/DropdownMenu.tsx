@@ -73,7 +73,7 @@ export function DropdownMenu({ item, isVisible }: DropdownMenuProps) {
         variant="ghost"
         onClick={() => (hasDropdown ? setIsOpen(!isOpen) : navigate(item.path))}
         onKeyDown={handleKeyDown}
-        className="text-gray-700 hover:text-primary focus-visible:outline-2 outline-primary outline-offset-2 transition-colors flex items-center gap-1"
+        className="text-on-primary hover:bg-primary-hover hover:text-on-primary focus-visible:outline-2 outline-on-primary outline-offset-2 transition-colors flex items-center gap-1"
         aria-label={t(item.labelKey)}
         aria-expanded={hasDropdown ? isOpen : undefined}
         aria-haspopup={hasDropdown ? 'true' : undefined}
@@ -93,7 +93,7 @@ export function DropdownMenu({ item, isVisible }: DropdownMenuProps) {
       {hasDropdown && isOpen && item.dropdownItems && (
         <div
           ref={menuRef}
-          className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded shadow-lg z-50 min-w-max"
+          className="absolute top-full left-0 mt-1 bg-[var(--color-surface-elevated)] border border-[var(--color-border-default)] rounded shadow-lg z-50 min-w-max"
           role="menu"
           aria-label={`${t(item.labelKey)} submenu`}
         >
@@ -102,7 +102,7 @@ export function DropdownMenu({ item, isVisible }: DropdownMenuProps) {
               key={subItem.path}
               variant="ghost"
               onClick={() => handleSubItemClick(subItem.path)}
-              className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-primary focus-visible:bg-gray-100 focus-visible:outline-2 outline-primary outline-offset-0 transition-colors text-sm"
+              className="w-full text-left px-4 py-2 text-[var(--color-text-primary)] hover:bg-[var(--color-surface-secondary)] hover:text-primary focus-visible:bg-[var(--color-surface-secondary)] focus-visible:outline-2 outline-primary outline-offset-0 transition-colors text-sm"
               role="menuitem"
               aria-label={t(subItem.labelKey)}
             >

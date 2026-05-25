@@ -71,9 +71,9 @@ ON CONFLICT (id) DO NOTHING;
 -- ============================================================================
 -- FAMILIES (Migration 002)
 -- ============================================================================
-INSERT INTO families (id, tenant_id, created_at)
+INSERT INTO families (id, tenant_id, name, contact_person_name, contact_email, contact_phone, created_at)
 VALUES 
-  ('00000000-0000-0000-0000-000000000401'::uuid, '00000000-0000-0000-0000-000000000001'::uuid, now())
+  ('00000000-0000-0000-0000-000000000401'::uuid, '00000000-0000-0000-0000-000000000001'::uuid, 'Teller family', 'Rachel Teller', 'tellertwins@gmail.com', '+972-50-555-0101', now())
 ON CONFLICT DO NOTHING;
 
 -- ============================================================================

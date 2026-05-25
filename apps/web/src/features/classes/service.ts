@@ -2,6 +2,7 @@ import { TenantDB } from '@/lib/db';
 import { BaseService } from '@/services/base.service';
 import {
   ClassSchema,
+  TimeSchema,
   type Class,
   type Tenant,
 } from '@shared/schemas';
@@ -18,8 +19,8 @@ const ClassInputSchema = z.object({
   price_minor: z.number().nonnegative('Price must be >= 0').optional(),
   currency: z.string().optional(),
   day_of_week: z.number().int().min(0).max(6).nullable().optional(),
-  start_time: z.string().regex(/^\d{2}:\d{2}$/, 'Invalid time format (HH:MM)').optional(),
-  end_time: z.string().regex(/^\d{2}:\d{2}$/, 'Invalid time format (HH:MM)').optional(),
+  start_time: TimeSchema.optional(),
+  end_time: TimeSchema.optional(),
   is_public: z.boolean().optional(),
   billing_frequency: z.string().optional(),
   status: z.enum(['active', 'cancelled', 'full']).optional(),
