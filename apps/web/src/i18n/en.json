@@ -253,6 +253,21 @@
       "time": "Time",
       "capacity": "Capacity"
     },
+    "enrolment": {
+      "person_desc": "Identify the person enrolling in the class",
+      "person_returning": "Returning customer",
+      "person_new": "New customer",
+      "class_desc": "Select the class and term",
+      "class_loading": "Classes loading...",
+      "notification_desc": "Set up how you want to receive updates",
+      "notification_whatsapp": "Get updates via WhatsApp",
+      "notification_email": "Continue with email only",
+      "confirmation_title": "Enrolment Successful!",
+      "confirmation_desc": "Your enrolment has been confirmed. Confirmation email sent.",
+      "class_label": "Class",
+      "status_label": "Status",
+      "date_label": "Date"
+    },
     "levels_terms": {
       "title": "Levels & Terms",
       "description": "Manage class levels and terms.",      "levels_title": "Class Levels",

@@ -268,7 +268,7 @@ function StepPerson({
   return (
     <div className="space-y-4">
       <p className="text-sm text-gray-600">
-        {t('enrolment.person_desc') || 'Identify the person enrolling in the class'}
+        {t('pages.enrolment.person_desc')}
       </p>
       
       <div className="space-y-3">
@@ -277,14 +277,14 @@ function StepPerson({
           variant="outline"
           className="w-full p-4 border-2 border-blue-600 rounded-lg hover:bg-blue-50 transition"
         >
-          {t('enrolment.person_returning') || 'Returning customer'}
+          {t('pages.enrolment.person_returning')}
         </Button>
         <Button
           onClick={() => onNext({ ...data })}
           variant="outline"
           className="w-full p-4 border-2 border-blue-600 rounded-lg hover:bg-blue-50 transition"
         >
-          {t('enrolment.person_new') || 'New customer'}
+          {t('pages.enrolment.person_new')}
         </Button>
       </div>
 
@@ -316,12 +316,12 @@ function StepClass({
   return (
     <div className="space-y-4">
       <p className="text-sm text-gray-600">
-        {t('enrolment.class_desc') || 'Select the class and term'}
+        {t('pages.enrolment.class_desc')}
       </p>
       
       {/* Placeholder: Class list will be fetched from useAvailableClasses hook */}
       <div className="p-4 bg-gray-50 rounded-lg text-center text-sm text-gray-600">
-        {t('enrolment.class_loading') || 'Classes loading...'}
+        {t('pages.enrolment.class_loading')}
       </div>
 
       <div className="flex gap-2">
@@ -364,7 +364,7 @@ function StepNotification({
   return (
     <div className="space-y-4">
       <p className="text-sm text-gray-600">
-        {t('enrolment.notification_desc') || 'Set up how you want to receive updates'}
+        {t('pages.enrolment.notification_desc')}
       </p>
 
       <div className="space-y-4">
@@ -386,7 +386,7 @@ function StepNotification({
             >
               <div className="font-semibold">💬 WhatsApp</div>
               <div className="text-sm text-gray-600 mt-1">
-                {t('enrolment.notification_whatsapp') || 'Get updates via WhatsApp'}
+                {t('pages.enrolment.notification_whatsapp')}
               </div>
             </Button>
             <Button
@@ -397,7 +397,7 @@ function StepNotification({
             >
               <div className="font-semibold">✉️ Email Only</div>
               <div className="text-sm text-gray-600 mt-1">
-                {t('enrolment.notification_email') || 'Continue with email only'}
+                {t('pages.enrolment.notification_email')}
               </div>
             </Button>
           </div>
@@ -497,21 +497,21 @@ function StepConfirmation({
     <div className="space-y-4 text-center">
       <div className="text-5xl mb-4">✅</div>
       <h3 className="text-lg font-semibold">
-        {t('enrolment.confirmation_title') || 'Enrolment Successful!'}
+        {t('pages.enrolment.confirmation_title')}
       </h3>
       <p className="text-gray-600">
-        {t('enrolment.confirmation_desc') || 'Your enrolment has been confirmed. Confirmation email sent.'}
+        {t('pages.enrolment.confirmation_desc')}
       </p>
 
       <div className="p-4 bg-blue-50 rounded-lg text-sm space-y-2">
         <p>
-          <strong>{t('enrolment.class')}:</strong> {enrolment.class_id}
+          <strong>{t('pages.enrolment.class_label')}:</strong> {enrolment.class_id}
         </p>
         <p>
-          <strong>{t('enrolment.status')}:</strong> {enrolment.status}
+          <strong>{t('pages.enrolment.status_label')}:</strong> {enrolment.status}
         </p>
         <p>
-          <strong>{t('enrolment.date')}:</strong> {new Date(enrolment.created_at).toLocaleDateString()}
+          <strong>{t('pages.enrolment.date_label')}:</strong> {new Date(enrolment.created_at).toLocaleDateString()}
         </p>
       </div>
 

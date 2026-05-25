@@ -253,6 +253,21 @@
       "time": "שעה",
       "capacity": "קיבולת"
     },
+    "enrolment": {
+      "person_desc": "זהו את האדם הנרשם לשיעור",
+      "person_returning": "לקוח חוזר",
+      "person_new": "לקוח חדש",
+      "class_desc": "בחר שיעור ותקופה",
+      "class_loading": "טוען שיעורים...",
+      "notification_desc": "בחר כיצד לקבל עדכונים",
+      "notification_whatsapp": "קבל עדכונים ב-WhatsApp",
+      "notification_email": "המשך עם דוא\"ל בלבד",
+      "confirmation_title": "ההרשמה הושלמה בהצלחה!",
+      "confirmation_desc": "ההרשמה שלך אושרה. נשלח אליך דוא\"ל אישור.",
+      "class_label": "שיעור",
+      "status_label": "סטטוס",
+      "date_label": "תאריך"
+    },
     "levels_terms": {
       "title": "רמות וסימנים",
       "description": "ניהול רמות קבוצה ופרקי זמן",
