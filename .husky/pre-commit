@@ -1,2 +1,20 @@
-pnpm exec lint-staged
+# GUI Git clients (Cursor/VS Code) often omit Node from PATH on Windows.
+if ! command -v node >/dev/null 2>&1; then
+  case "$(uname -s 2>/dev/null)" in
+    MINGW* | MSYS* | CYGWIN*)
+      for dir in \
+        "/c/Program Files/nodejs" \
+        "/c/Program Files/cursor/resources/app/resources/helpers" \
+        "$LOCALAPPDATA/Programs/cursor/resources/app/resources/helpers" \
+        "$APPDATA/npm"
+      do
+        if [ -d "$dir" ]; then
+          PATH="$dir:$PATH"
+        fi
+      done
+      export PATH
+      ;;
+  esac
+fi
 
+lint-staged
