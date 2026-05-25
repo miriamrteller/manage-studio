@@ -3,6 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { PersonSchema, type Person } from '@shared/schemas';
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
+import { Button } from '@/components/ui/button';
 import { PersonFormFields } from './PersonFormFields';
 import { PersonFormMessages } from './PersonFormMessages';
 import { ConsentFields } from './ConsentFields';
@@ -87,28 +88,25 @@ export const PersonForm = ({ person, onSubmit, isLoading }: PersonFormProps) => 
 
       {/* Form buttons */}
       <div className="flex gap-2 pt-4">
-        <button
+        <Button
           type="submit"
+          variant="primary"
           disabled={isLoading || form.formState.isSubmitting}
-          className="button-primary"
+          isLoading={isLoading || form.formState.isSubmitting}
         >
-          {isLoading || form.formState.isSubmitting
-            ? t('common.loading')
-            : isCreating
-              ? t('common.create')
-              : t('common.save')}
-        </button>
-        <button
+          {isCreating ? t('common.create') : t('common.save')}
+        </Button>
+        <Button
           type="reset"
+          variant="outline"
           onClick={() => {
             form.reset();
             setSubmitError(null);
             setSubmitSuccess(false);
           }}
-          className="button-outline"
         >
           {t('form.cancel')}
-        </button>
+        </Button>
       </div>
 
       {/* Waiver Modal for Minors */}
@@ -122,24 +120,24 @@ export const PersonForm = ({ person, onSubmit, isLoading }: PersonFormProps) => 
               {t('pages.people.waiver_agreement_text')}
             </p>
             <div className="flex gap-2">
-              <button
+              <Button
                 type="button"
+                variant="primary"
                 onClick={() => {
                   setWaiverAccepted(true);
                   form.handleSubmit(handleSubmit)();
                   setShowWaiverModal(false);
                 }}
-                className="button-primary"
               >
                 {t('common.accept')}
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="outline"
                 onClick={() => setShowWaiverModal(false)}
-                className="button-outline"
               >
                 {t('common.cancel')}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation } from '@tanstack/react-query';
+import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { useTenant } from '@/hooks/useTenant';
 import queryClient from '@/lib/query-client';
@@ -114,14 +115,15 @@ export function StripeSettingsForm() {
         </p>
       )}
 
-      <button
+      <Button
         type="button"
+        variant="primary"
         disabled={saveMutation.isPending}
+        isLoading={saveMutation.isPending}
         onClick={() => saveMutation.mutate()}
-        className="px-4 py-2 bg-primary text-primary-foreground rounded disabled:opacity-50"
       >
-        {saveMutation.isPending ? t('common.loading') : t('common.save')}
-      </button>
+        {t('common.save')}
+      </Button>
     </section>
   );
 }

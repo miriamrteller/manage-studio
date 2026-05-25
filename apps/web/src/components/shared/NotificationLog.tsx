@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Button } from '@/components/ui/button';
 import { useNotificationLog } from '@/features/notifications/hooks/useNotificationLog';
 
 export function NotificationLog() {
@@ -115,23 +116,25 @@ export function NotificationLog() {
 
           {pageCount > 1 && (
             <div className="flex items-center justify-center gap-2 mt-4">
-              <button
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setPage(Math.max(1, page - 1))}
                 disabled={page === 1}
-                className="px-3 py-1 border rounded disabled:opacity-50"
               >
                 Previous
-              </button>
+              </Button>
               <span className="px-4">
                 Page {page} of {pageCount}
               </span>
-              <button
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setPage(Math.min(pageCount, page + 1))}
                 disabled={page === pageCount}
-                className="px-3 py-1 border rounded disabled:opacity-50"
               >
                 Next
-              </button>
+              </Button>
             </div>
           )}
         </>

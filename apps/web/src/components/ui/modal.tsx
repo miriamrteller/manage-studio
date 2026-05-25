@@ -1,5 +1,6 @@
 import { ReactNode, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 interface ModalProps {
   isOpen: boolean;
@@ -61,13 +62,16 @@ export function Modal({ isOpen, title, children, onClose, className }: ModalProp
         <h2 id="modal-title" className="text-2xl font-bold">
           {title}
         </h2>
-        <button
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
           aria-label="Close dialog"
           onClick={onClose}
-          className="text-2xl font-bold leading-none hover:opacity-70 focus-visible:outline-2 outline-offset-2"
+          className="text-2xl font-bold leading-none hover:opacity-70"
         >
           ×
-        </button>
+        </Button>
       </div>
       <div>{children}</div>
     </dialog>

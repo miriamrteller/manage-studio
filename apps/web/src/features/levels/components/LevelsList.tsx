@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Button } from '@/components/ui/button';
 import { useLevels } from '../hooks/useLevels';
 import type { Level } from '@shared/schemas';
 
@@ -90,20 +91,22 @@ export const LevelsList = ({ onEdit }: LevelsListProps) => {
                   <td className="px-4 py-3 text-center">{level.sort_order}</td>
                   <td className="px-4 py-3">
                     <div className="flex gap-2 justify-items-center">
-                      <button
+                      <Button
+                        variant="secondary"
+                        size="sm"
                         onClick={() => handleEdit(level)}
-                        className="button-secondary text-sm"
                         title={t('common.edit')}
                       >
                         {t('common.edit')}
-                      </button>
-                      <button
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
                         onClick={() => handleDeleteClick(level.id)}
-                        className="button-error text-sm"
                         title={t('common.delete')}
                       >
                         {t('common.delete')}
-                      </button>
+                      </Button>
                     </div>
                   </td>
                 </tr>
@@ -116,13 +119,13 @@ export const LevelsList = ({ onEdit }: LevelsListProps) => {
       {/* Pagination */}
       {levelsData.total > levelsData.pageSize && (
         <div className="flex justify-between items-center pt-4">
-          <button
+          <Button
+            variant="outline"
             onClick={() => setPage(Math.max(1, page - 1))}
             disabled={page === 1}
-            className="button-outline"
           >
             {t('common.previous')}
-          </button>
+          </Button>
           <span className="text-sm">
             {t('common.page_n', { page })} —{' '}
             {t('common.showing_results', {
@@ -130,13 +133,13 @@ export const LevelsList = ({ onEdit }: LevelsListProps) => {
               total: levelsData.total,
             })}
           </span>
-          <button
+          <Button
+            variant="outline"
             onClick={() => setPage(page + 1)}
             disabled={page * levelsData.pageSize >= levelsData.total}
-            className="button-outline"
           >
             {t('common.next')}
-          </button>
+          </Button>
         </div>
       )}
 
@@ -155,20 +158,22 @@ export const LevelsList = ({ onEdit }: LevelsListProps) => {
               })}
             </p>
             <div className="flex gap-4">
-              <button
+              <Button
+                variant="destructive"
+                className="flex-1"
                 onClick={() => handleConfirmDelete(deleteConfirmId)}
                 disabled={levelsData.isDeleting}
-                className="flex-1 button-error"
               >
                 {levelsData.isDeleting ? t('common.loading') : t('common.delete')}
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-1"
                 onClick={handleCancelDelete}
                 disabled={levelsData.isDeleting}
-                className="flex-1 button-outline"
               >
                 {t('form.cancel')}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

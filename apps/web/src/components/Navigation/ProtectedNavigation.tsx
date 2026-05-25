@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 import { useCurrentUser } from '../../hooks/useCurrentUser';
 import { useTenant } from '../../hooks/useTenant';
 import { supabase } from '../../lib/supabase';
@@ -41,26 +42,28 @@ export function ProtectedNavigation() {
         {/* Top row: Logo and User Info */}
         <div className="flex items-center justify-between mb-4">
           {/* Logo / Tenant Name */}
-          <button
+          <Button
+            variant="ghost"
             onClick={() => navigate('/')}
             className="text-primary font-bold text-lg hover:opacity-80 focus-visible:outline-2 outline-primary outline-offset-2"
             aria-label={t('common.home')}
           >
             {tenant?.name || 'Ballet School'}
-          </button>
+          </Button>
 
           {/* User Menu: Email + Logout */}
           <div className="flex gap-3 items-center">
             {user && (
               <>
                 <span className="text-sm text-gray-700">{user.email}</span>
-                <button
+                <Button
+                  variant="secondary"
+                  size="sm"
                   onClick={handleLogout}
-                  className="px-3 py-2 text-sm bg-gray-200 text-gray-800 rounded hover:bg-gray-300 focus-visible:outline-2 outline-primary outline-offset-2 transition-colors"
                   aria-label={t('nav.logout')}
                 >
                   {t('nav.logout')}
-                </button>
+                </Button>
               </>
             )}
           </div>
@@ -89,14 +92,15 @@ export function ProtectedNavigation() {
 
             // Regular link
             return (
-              <button
+              <Button
                 key={navItem.path}
+                variant="ghost"
                 onClick={() => navigate(navItem.path)}
                 className="text-gray-700 hover:text-primary focus-visible:outline-2 outline-primary outline-offset-2 transition-colors"
                 aria-label={t(navItem.labelKey)}
               >
                 {t(navItem.labelKey)}
-              </button>
+              </Button>
             );
           })}
         </nav>

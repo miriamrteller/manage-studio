@@ -3,6 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { LevelSchema, type Level } from '@shared/schemas';
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
+import { Button } from '@/components/ui/button';
 import { FormInput } from '../../../components/ui/form';
 
 // Schema source: SPEC.md — Levels table
@@ -89,28 +90,25 @@ export const LevelForm = ({ level, onSubmit, isLoading }: LevelFormProps) => {
 
       {/* Form buttons */}
       <div className="flex gap-2 pt-4">
-        <button
+        <Button
           type="submit"
+          variant="primary"
           disabled={isLoading || form.formState.isSubmitting}
-          className="button-primary"
+          isLoading={isLoading || form.formState.isSubmitting}
         >
-          {isLoading || form.formState.isSubmitting
-            ? t('common.loading')
-            : isCreating
-              ? t('common.create')
-              : t('common.save')}
-        </button>
-        <button
+          {isCreating ? t('common.create') : t('common.save')}
+        </Button>
+        <Button
           type="reset"
+          variant="outline"
           onClick={() => {
             form.reset();
             setSubmitError(null);
             setSubmitSuccess(false);
           }}
-          className="button-outline"
         >
           {t('form.cancel')}
-        </button>
+        </Button>
       </div>
     </form>
   );

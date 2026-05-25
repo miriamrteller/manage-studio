@@ -1,4 +1,5 @@
 import React from 'react';
+import { Button } from '@/components/ui/button';
 
 /**
  * PortalCard: Reusable presentational component for dashboard cards
@@ -40,8 +41,9 @@ export function PortalCard({
 
   if (onClick) {
     return (
-      <button
+      <Button
         type="button"
+        variant="ghost"
         onClick={onClick}
         className={`text-left block w-full ${baseClasses}`}
         aria-label={title}
@@ -49,7 +51,7 @@ export function PortalCard({
         <h3 className="font-bold text-lg mb-1">{title}</h3>
         {subtitle && <p className="text-sm text-gray-600 mb-4">{subtitle}</p>}
         <div className="text-gray-900">{children}</div>
-      </button>
+      </Button>
     );
   }
 

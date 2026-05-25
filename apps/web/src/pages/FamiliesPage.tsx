@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Button } from '@/components/ui/button';
 import { FamilyForm } from '@/features/families/components/FamilyForm';
 import { FamiliesList } from '@/features/families/components/FamiliesList';
 import { useFamilies } from '@/features/families/hooks/useFamilies';
@@ -81,7 +82,8 @@ export default function FamiliesPage() {
                   : t('common.manage_families') || 'Manage Families'}
               </p>
             </div>
-            <button
+            <Button
+              variant="primary"
               onClick={() => {
                 if (showForm) {
                   handleCloseForm();
@@ -89,14 +91,13 @@ export default function FamiliesPage() {
                   setShowForm(true);
                 }
               }}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
             >
               {showForm
                 ? t('form.cancel')
                 : editingFamily
                   ? t('form.cancel')
                   : t('common.add_family')}
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -122,12 +123,13 @@ export default function FamiliesPage() {
               onSubmit={handleFormSubmit}
               isLoading={isCreating || isUpdating}
             />
-            <button
+            <Button
+              variant="outline"
               onClick={handleCloseForm}
-              className="mt-4 px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+              className="mt-4"
             >
               {t('form.cancel')}
-            </button>
+            </Button>
           </div>
         )}
 

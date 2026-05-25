@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Button } from '@/components/ui/button';
 import { usePeople } from '../hooks/usePeople';
 import { usePersonSearch } from '../hooks/usePersonSearch';
 import { PersonSearch } from './PersonSearch';
@@ -62,12 +63,12 @@ export const PeopleList = (): React.ReactNode => {
           isSearching={peopleList.isLoading || searchResults.isSearching}
         />
 
-        <button
+        <Button
+          variant="primary"
           onClick={() => setIsCreating(true)}
-          className="button-primary"
         >
           {t('pages.people.create_button')}
-        </button>
+        </Button>
       </div>
 
       {/* Loading state */}
@@ -145,13 +146,13 @@ export const PeopleList = (): React.ReactNode => {
                   </td>
                   <td className="ps-4 py-3">
                     <div className="flex gap-2">
-                      <button
+                      <Button
+                        variant="secondary"
                         onClick={() => setSelectedPersonId(person.id)}
-                        className="button-secondary"
                         title={t('common.view')}
                       >
                         {t('common.view')}
-                      </button>
+                      </Button>
                     </div>
                   </td>
                 </tr>
@@ -164,13 +165,13 @@ export const PeopleList = (): React.ReactNode => {
       {/* Pagination */}
       {!isSearching && peopleList.total > peopleList.pageSize && (
         <div className="flex justify-between items-center pt-4">
-          <button
+          <Button
+            variant="outline"
             onClick={() => setPage(Math.max(1, page - 1))}
             disabled={page === 1}
-            className="button-outline"
           >
             {t('common.previous')}
-          </button>
+          </Button>
           <span className="text-sm">
             {t('common.page_n', { page })} —{' '}
             {t('common.showing_results', {
@@ -178,13 +179,13 @@ export const PeopleList = (): React.ReactNode => {
               total: peopleList.total,
             })}
           </span>
-          <button
+          <Button
+            variant="outline"
             onClick={() => setPage(page + 1)}
             disabled={page * peopleList.pageSize >= peopleList.total}
-            className="button-outline"
           >
             {t('common.next')}
-          </button>
+          </Button>
         </div>
       )}
 
@@ -208,13 +209,16 @@ export const PeopleList = (): React.ReactNode => {
               <h2 className="text-xl font-semibold">
                 {t('pages.people.create_title')}
               </h2>
-              <button
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
                 onClick={() => setIsCreating(false)}
                 className="text-gray-500 hover:text-gray-700"
                 aria-label={t('common.close')}
               >
                 ✕
-              </button>
+              </Button>
             </div>
             <PersonForm
               onSubmit={async () => {

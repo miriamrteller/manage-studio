@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Button } from '@/components/ui/button';
 import { useFamilies } from '../hooks/useFamilies';
 import type { Family } from '@shared/schemas';
 
@@ -103,20 +104,22 @@ export const FamiliesList = ({ onEdit }: FamiliesListProps) => {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-2 justify-center">
-                      <button
+                      <Button
+                        variant="secondary"
+                        size="sm"
                         onClick={() => handleEdit(family)}
-                        className="button-secondary text-sm"
                         title={t('common.edit')}
                       >
                         {t('common.edit')}
-                      </button>
-                      <button
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
                         onClick={() => handleDeleteClick(family.id)}
-                        className="button-error text-sm"
                         title={t('common.delete')}
                       >
                         {t('common.delete')}
-                      </button>
+                      </Button>
                     </div>
                   </td>
                 </tr>
@@ -129,13 +132,13 @@ export const FamiliesList = ({ onEdit }: FamiliesListProps) => {
       {/* Pagination */}
       {familiesData.total > familiesData.pageSize && (
         <div className="flex justify-between items-center pt-4">
-          <button
+          <Button
+            variant="outline"
             onClick={() => setPage(Math.max(1, page - 1))}
             disabled={page === 1}
-            className="button-outline"
           >
             {t('common.previous')}
-          </button>
+          </Button>
           <span className="text-sm">
             {t('common.page_n', { page })} —{' '}
             {t('common.showing_results', {
@@ -143,13 +146,13 @@ export const FamiliesList = ({ onEdit }: FamiliesListProps) => {
               total: familiesData.total,
             })}
           </span>
-          <button
+          <Button
+            variant="outline"
             onClick={() => setPage(page + 1)}
             disabled={page * familiesData.pageSize >= familiesData.total}
-            className="button-outline"
           >
             {t('common.next')}
-          </button>
+          </Button>
         </div>
       )}
 
@@ -168,20 +171,22 @@ export const FamiliesList = ({ onEdit }: FamiliesListProps) => {
               })}
             </p>
             <div className="flex gap-4">
-              <button
+              <Button
+                variant="destructive"
+                className="flex-1"
                 onClick={() => handleConfirmDelete(deleteConfirmId)}
                 disabled={familiesData.isDeleting}
-                className="flex-1 button-error"
               >
                 {familiesData.isDeleting ? t('common.loading') : t('common.delete')}
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-1"
                 onClick={handleCancelDelete}
                 disabled={familiesData.isDeleting}
-                className="flex-1 button-outline"
               >
                 {t('form.cancel')}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

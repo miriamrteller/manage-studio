@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 interface ToastProps {
   message: string;
@@ -59,21 +60,25 @@ export function Toast({
       <span>{message}</span>
       <div className="flex items-center gap-2">
         {action && (
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={action.onClick}
             className="text-sm font-medium underline hover:opacity-75"
           >
             {action.label}
-          </button>
+          </Button>
         )}
         {onClose && (
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={onClose}
             aria-label="Dismiss notification"
             className="text-lg font-bold leading-none hover:opacity-75"
           >
             ×
-          </button>
+          </Button>
         )}
       </div>
     </div>

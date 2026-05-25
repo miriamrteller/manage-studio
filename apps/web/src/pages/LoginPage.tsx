@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 import { LoginForm } from '@/components/shared';
 import { useLogin } from '@/hooks/useLogin';
 
@@ -48,12 +49,14 @@ export default function LoginPage() {
         {/* Help Text */}
         <p className="text-sm text-gray-600 text-center mt-6">
           {t('pages.login.no_account')}{' '}
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => navigate('/signup')}
             className="text-primary hover:underline focus-visible:outline-2 outline-primary outline-offset-2"
           >
             {t('pages.login.signup')}
-          </button>
+          </Button>
         </p>
       </div>
     </div>

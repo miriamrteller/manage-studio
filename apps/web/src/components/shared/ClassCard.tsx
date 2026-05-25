@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 import { formatCurrency, formatTime } from '@shared/format';
 import type { PublicClass } from '@/schemas';
 
@@ -46,13 +47,14 @@ export function ClassCard({ class: cls, currency }: ClassCardProps) {
         </p>
       </div>
 
-      <button
+      <Button
+        variant="primary"
+        fullWidth
         onClick={handleEnrol}
         aria-label={`${t('pages.classes.enrol')} - ${cls.name}`}
-        className="w-full px-4 py-2 bg-primary text-white rounded hover:bg-opacity-90 focus-visible:outline-2 outline-white outline-offset-2 font-medium"
       >
         {t('pages.classes.enrol')}
-      </button>
+      </Button>
     </div>
   );
 }

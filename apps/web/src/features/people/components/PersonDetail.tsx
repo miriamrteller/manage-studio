@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Button } from '@/components/ui/button';
 import { usePerson } from '../hooks/usePerson';
 import { useDeletePerson } from '../hooks/useDeletePerson';
 import { PersonForm } from './PersonForm';
@@ -64,13 +65,16 @@ export function PersonDetail({ id, onClose }: PersonDetailProps) {
             <h2 className="text-xl font-semibold">
               {t('pages.people.edit_title')}
             </h2>
-            <button
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
               onClick={() => setIsEditing(false)}
               className="text-gray-500 hover:text-gray-700"
               aria-label={t('common.close')}
             >
               ✕
-            </button>
+            </Button>
           </div>
           <PersonForm
             person={person}
@@ -97,13 +101,16 @@ export function PersonDetail({ id, onClose }: PersonDetailProps) {
           )}
         </div>
         {onClose && (
-          <button
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700"
             aria-label={t('common.close')}
           >
             ✕
-          </button>
+          </Button>
         )}
       </div>
 
@@ -218,18 +225,18 @@ export function PersonDetail({ id, onClose }: PersonDetailProps) {
 
       {/* Action Buttons */}
       <div className="flex gap-2 pt-4">
-        <button
+        <Button
+          variant="primary"
           onClick={() => setIsEditing(true)}
-          className="button-primary"
         >
           {t('common.edit')}
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="destructive"
           onClick={() => setIsDeleting(true)}
-          className="button-outline border-red-300 text-red-600 hover:bg-red-50"
         >
           {t('common.delete')}
-        </button>
+        </Button>
       </div>
 
       {/* Delete Confirmation Dialog */}
@@ -242,20 +249,21 @@ export function PersonDetail({ id, onClose }: PersonDetailProps) {
             {t('pages.people.delete_confirm', { name: person.name })}
           </p>
           <div className="flex gap-2">
-            <button
+            <Button
+              variant="destructive"
               onClick={() => deletePerson(id)}
               disabled={isDeleting_}
-              className="button-error"
+              isLoading={isDeleting_}
             >
-              {isDeleting_ ? t('common.loading') : t('common.confirm')}
-            </button>
-            <button
+              {t('common.confirm')}
+            </Button>
+            <Button
+              variant="outline"
               onClick={() => setIsDeleting(false)}
               disabled={isDeleting_}
-              className="button-outline"
             >
               {t('common.cancel')}
-            </button>
+            </Button>
           </div>
         </div>
       )}

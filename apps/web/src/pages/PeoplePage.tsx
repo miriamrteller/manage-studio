@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Button } from '@/components/ui/button';
 import { PersonForm } from '@/features/people/components/PersonForm';
 import { PeopleList } from '@/features/people/components/PeopleList';
 import { usePeople } from '@/features/people/hooks/usePeople';
@@ -76,7 +77,8 @@ export default function PeoplePage() {
                   : t('common.manage_people') || 'Manage People'}
               </p>
             </div>
-            <button
+            <Button
+              variant="primary"
               onClick={() => {
                 if (showForm) {
                   handleCloseForm();
@@ -84,14 +86,13 @@ export default function PeoplePage() {
                   setShowForm(true);
                 }
               }}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
             >
               {showForm
                 ? t('form.cancel')
                 : editingPerson
                   ? t('form.cancel')
                   : t('common.add_person')}
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -117,12 +118,13 @@ export default function PeoplePage() {
               onSubmit={handleFormSubmit}
               isLoading={isCreating || isUpdating}
             />
-            <button
+            <Button
+              variant="outline"
               onClick={handleCloseForm}
-              className="mt-4 px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+              className="mt-4"
             >
               {t('form.cancel')}
-            </button>
+            </Button>
           </div>
         )}
 

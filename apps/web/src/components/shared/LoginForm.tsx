@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
 import { LoginFormSchema, PasswordLoginSchema, type LoginForm as LoginFormData, type PasswordLogin as PasswordLoginData } from '@/schemas';
 import { AuthMessage } from './AuthMessage';
-import { Button } from '../ui/button';
+import { Button } from '@/components/ui/button';
 import { FormInput } from '../ui/form';
 
 /**
@@ -79,8 +79,9 @@ export function LoginForm({
 
       {/* Auth Mode Tabs */}
       <div role="tablist" className="flex gap-2 border-b border-gray-300 mb-6">
-        <button
+        <Button
           role="tab"
+          variant="ghost"
           aria-selected={authMode === 'password'}
           aria-controls="password-panel"
           onClick={() => handleAuthModeChange('password')}
@@ -91,9 +92,10 @@ export function LoginForm({
           }`}
         >
           {t('pages.login.password_tab')}
-        </button>
-        <button
+        </Button>
+        <Button
           role="tab"
+          variant="ghost"
           aria-selected={authMode === 'magic_link'}
           aria-controls="magic-link-panel"
           onClick={() => handleAuthModeChange('magic_link')}
@@ -104,7 +106,7 @@ export function LoginForm({
           }`}
         >
           {t('pages.login.magic_link_tab')}
-        </button>
+        </Button>
       </div>
 
       {/* Form */}

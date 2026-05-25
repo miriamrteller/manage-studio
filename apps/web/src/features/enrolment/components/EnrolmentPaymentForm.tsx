@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
+import { Button } from '@/components/ui/button';
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
 import { supabase } from '@/lib/supabase';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
@@ -56,22 +57,25 @@ function PaymentFormInner({
         </p>
       )}
       <div className="flex gap-2">
-        <button
+        <Button
           type="button"
+          variant="outline"
+          className="flex-1"
           onClick={onPrevious}
           disabled={isPaying}
-          className="flex-1 px-4 py-2 border border-border rounded"
         >
           {t('common.back')}
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant="primary"
+          className="flex-1"
           onClick={handlePay}
           disabled={isPaying || !stripe}
-          className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded disabled:opacity-50"
+          isLoading={isPaying}
         >
-          {isPaying ? t('common.loading') : t('enrolment.pay_now')}
-        </button>
+          {t('enrolment.pay_now')}
+        </Button>
       </div>
     </div>
   );

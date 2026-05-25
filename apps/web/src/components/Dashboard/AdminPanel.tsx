@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 import { useAdminDashboard } from './useAdminDashboard';
 
 /**
@@ -53,13 +54,14 @@ export function AdminPanel() {
             <p className="text-sm text-gray-600">
               {t('pages.billing.description')}
             </p>
-            <button
+            <Button
+              variant="primary"
+              fullWidth
               onClick={() => navigate('/admin/setup/billing')}
-              className="button-primary w-full"
               aria-label={t('pages.billing.title')}
             >
               {t('common.manage')} →
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -72,13 +74,14 @@ export function AdminPanel() {
             <p className="text-sm text-gray-600">
               {t('pages.levels_terms.levels_description')}
             </p>
-            <button
+            <Button
+              variant="primary"
+              fullWidth
               onClick={() => navigate('/admin/setup/levels')}
-              className="button-primary w-full"
               aria-label={t('pages.levels_terms.levels_title')}
             >
               {t('common.manage')} →
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -91,13 +94,14 @@ export function AdminPanel() {
             <p className="text-sm text-gray-600">
               {t('pages.levels_terms.terms_description')}
             </p>
-            <button
+            <Button
+              variant="primary"
+              fullWidth
               onClick={() => navigate('/admin/setup/terms')}
-              className="button-primary w-full"
               aria-label={t('pages.levels_terms.terms_title')}
             >
               {t('common.manage')} →
-            </button>
+            </Button>
           </div>
         </div>
       </section>

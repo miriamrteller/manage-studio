@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Button } from '@/components/ui/button';
 import { supabase } from '../lib/supabase';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 
@@ -94,18 +95,22 @@ export default function AuthCallbackPage() {
           </div>
 
           <div className="space-y-4">
-            <button
+            <Button
+              type="button"
+              variant="primary"
+              fullWidth
               onClick={() => window.location.href = '/login'}
-              className="w-full px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary-dark focus-visible:outline-2 outline-primary outline-offset-2"
             >
               {t('common.back_to_login')}
-            </button>
-            <button
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              fullWidth
               onClick={() => window.location.reload()}
-              className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 focus-visible:outline-2 outline-gray-700 outline-offset-2"
             >
               {t('common.try_again')}
-            </button>
+            </Button>
           </div>
 
           <p className="text-sm text-gray-600 text-center mt-6">

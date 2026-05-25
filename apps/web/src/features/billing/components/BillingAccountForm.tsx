@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { BillingAccountCreateSchema, type BillingAccountCreate } from '@shared/schemas';
 import { useTranslation } from 'react-i18next';
+import { Button } from '@/components/ui/button';
 import { useCreateBillingAccount } from '../hooks';
 import { useTenant } from '@/hooks/useTenant';
 
@@ -189,26 +190,25 @@ export function BillingAccountForm({ onSuccess }: BillingAccountFormProps): Reac
 
       {/* Form Buttons */}
       <div className="flex gap-2 pt-4">
-        <button
+        <Button
           type="submit"
+          variant="primary"
           disabled={isPending || form.formState.isSubmitting}
-          className="button-primary"
+          isLoading={isPending || form.formState.isSubmitting}
         >
-          {isPending || form.formState.isSubmitting
-            ? t('common.loading')
-            : t('pages.billing.create_button')}
-        </button>
-        <button
+          {t('pages.billing.create_button')}
+        </Button>
+        <Button
           type="reset"
+          variant="outline"
           onClick={() => {
             form.reset();
             setSubmitError(null);
             setSubmitSuccess(false);
           }}
-          className="button-outline"
         >
           {t('common.cancel')}
-        </button>
+        </Button>
       </div>
     </form>
   );

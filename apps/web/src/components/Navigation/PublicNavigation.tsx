@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 import { useTenant } from '@/hooks/useTenant';
 import { useLanguage } from '@/hooks/useLanguage';
 
@@ -44,14 +45,15 @@ export function PublicNavigation() {
           >
             {t('nav.classes')}
           </Link>
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             onClick={toggleLanguage}
-            className="px-3 py-2 text-sm border border-gray-300 rounded hover:bg-gray-100 focus-visible:outline-2 outline-primary outline-offset-2"
             aria-label={t('common.language')}
           >
             {language === 'he' && '🇬🇧 English'}
             {language === 'en' && '🇮🇱 עברית'}
-          </button>
+          </Button>
           <Link
             to="/login"
             className="px-4 py-2 bg-primary text-white rounded hover:bg-opacity-90 focus-visible:outline-2 outline-white outline-offset-2"

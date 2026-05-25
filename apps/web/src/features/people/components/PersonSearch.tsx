@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Button } from '@/components/ui/button';
 
 interface PersonSearchProps {
   value: string;
@@ -49,16 +50,18 @@ export function PersonSearch({
         aria-label={t('pages.people.search_placeholder')}
       />
       {localValue && (
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
           onClick={handleClear}
           disabled={isSearching}
           aria-label={t('common.clear')}
-          className="px-2 py-1 hover:bg-gray-100 rounded text-gray-500"
+          className="text-gray-500"
           title={t('common.clear')}
         >
           ✕
-        </button>
+        </Button>
       )}
     </div>
   );

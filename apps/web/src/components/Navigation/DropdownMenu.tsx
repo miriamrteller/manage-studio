@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 import { NavItem } from './navigationConfig';
 
 interface DropdownMenuProps {
@@ -67,8 +68,9 @@ export function DropdownMenu({ item, isVisible }: DropdownMenuProps) {
   return (
     <div className="relative">
       {/* Parent Button / Link */}
-      <button
+      <Button
         ref={buttonRef}
+        variant="ghost"
         onClick={() => (hasDropdown ? setIsOpen(!isOpen) : navigate(item.path))}
         onKeyDown={handleKeyDown}
         className="text-gray-700 hover:text-primary focus-visible:outline-2 outline-primary outline-offset-2 transition-colors flex items-center gap-1"
@@ -85,7 +87,7 @@ export function DropdownMenu({ item, isVisible }: DropdownMenuProps) {
             ▼
           </span>
         )}
-      </button>
+      </Button>
 
       {/* Dropdown Menu */}
       {hasDropdown && isOpen && item.dropdownItems && (
@@ -96,15 +98,16 @@ export function DropdownMenu({ item, isVisible }: DropdownMenuProps) {
           aria-label={`${t(item.labelKey)} submenu`}
         >
           {item.dropdownItems.map((subItem) => (
-            <button
+            <Button
               key={subItem.path}
+              variant="ghost"
               onClick={() => handleSubItemClick(subItem.path)}
               className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-primary focus-visible:bg-gray-100 focus-visible:outline-2 outline-primary outline-offset-0 transition-colors text-sm"
               role="menuitem"
               aria-label={t(subItem.labelKey)}
             >
               {t(subItem.labelKey)}
-            </button>
+            </Button>
           ))}
         </div>
       )}
