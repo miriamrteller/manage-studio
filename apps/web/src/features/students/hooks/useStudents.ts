@@ -1,16 +1,19 @@
 import { useQuery } from '@tanstack/react-query';
 import { useTenant } from '@/hooks/useTenant';
-import { TenantDB } from '@/lib/db';
-import { PersonSchema, type Person } from '@shared/schemas';
+import type { SortOrder } from '@/lib/list-query';
+import { PersonService } from '@/features/people/service';
+import { resolveEnrolledPersonIds } from '../lib/resolveEnrolledPersonIds';
+import {
+  DEFAULT_PERSON_SORT,
+  type PersonSortField,
+} from '../lib/personSort';
+import type { Person } from '@shared/schemas';
 
 const PAGE_SIZE = 50;
 
 export interface StudentRow extends Person {
-  /** Class names the student is currently enrolled in (active enrolments only) */
   classNames: string[];
-  /** Guardian name from family, if person has a family_id */
   guardianName: string | null;
-  /** Guardian phone from family */
   guardianPhone: string | null;
 }
 
@@ -18,80 +21,88 @@ interface UseStudentsOptions {
   page?: number;
   status?: 'active' | 'inactive' | 'all';
   classId?: string | null;
+  levelId?: string | null;
+  familyId?: string | null;
+  minAge?: number | null;
+  maxAge?: number | null;
   searchQuery?: string;
+  sortField?: PersonSortField;
+  sortOrder?: SortOrder;
   enabled?: boolean;
 }
 
-/**
- * useStudents: Main list hook for the Students admin page.
- *
- * Fetches people with optional filters:
- * - status: active (default) / inactive / all
- * - classId: only people enrolled in this class
- * - searchQuery: name ilike filter
- *
- * Returns enriched StudentRow objects with classNames and guardianName
- * resolved client-side from parallel lookups.
- */
 export function useStudents({
   page = 1,
   status = 'active',
   classId = null,
+  levelId = null,
+  familyId = null,
+  minAge = null,
+  maxAge = null,
   searchQuery = '',
+  sortField = DEFAULT_PERSON_SORT.field,
+  sortOrder = DEFAULT_PERSON_SORT.order,
   enabled = true,
 }: UseStudentsOptions = {}) {
   const tenant = useTenant();
+  const hasEnrolmentFilter = !!classId || !!levelId;
 
-  // Step 1: if classId is set, resolve person_ids enrolled in that class
   const enrolledIdsQuery = useQuery({
-    queryKey: ['enrolled-person-ids', tenant?.id, classId],
+    queryKey: ['enrolled-person-ids', tenant?.id, classId, levelId],
     queryFn: async () => {
-      if (!tenant || !classId) return null;
-      const { data, error } = await TenantDB.selectFor('enrolments', tenant)
-        .eq('class_id', classId)
-        .in('status', ['active', 'pending_payment', 'waitlisted']);
-      if (error) throw error;
-      return (data || []).map((e: { person_id: string }) => e.person_id);
+      if (!tenant) throw new Error('Tenant not initialized');
+      return resolveEnrolledPersonIds(tenant, { classId, levelId });
     },
-    enabled: enabled && !!tenant?.id && !!classId,
+    enabled: enabled && !!tenant?.id && hasEnrolmentFilter,
   });
 
-  const from = (page - 1) * PAGE_SIZE;
-
-  // Step 2: fetch people, applying filters
   const peopleQuery = useQuery({
-    queryKey: ['students', tenant?.id, page, status, classId, searchQuery],
+    queryKey: [
+      'students',
+      tenant?.id,
+      page,
+      status,
+      classId,
+      levelId,
+      familyId,
+      minAge,
+      maxAge,
+      searchQuery,
+      sortField,
+      sortOrder,
+    ],
     queryFn: async () => {
       if (!tenant) throw new Error('Tenant not initialized');
 
-      // If filtering by class and enrolled IDs resolved to empty, bail early
-      if (classId && enrolledIdsQuery.data !== null && enrolledIdsQuery.data?.length === 0) {
+      const enrolledPersonIds = hasEnrolmentFilter
+        ? (enrolledIdsQuery.data ?? null)
+        : null;
+
+      if (hasEnrolmentFilter && enrolledPersonIds !== null && enrolledPersonIds.length === 0) {
         return { people: [], total: 0 };
       }
 
-      let query = TenantDB.selectFor('people', tenant, { count: 'exact' })
-        .order('name', { ascending: true })
-        .range(from, from + PAGE_SIZE - 1);
+      const result = await PersonService.listWithFilters(tenant, {
+        page,
+        pageSize: PAGE_SIZE,
+        status,
+        searchQuery,
+        familyId,
+        classId,
+        levelId,
+        minAge,
+        maxAge,
+        sortField,
+        sortOrder,
+        enrolledPersonIds,
+      });
 
-      if (status !== 'all') {
-        query = query.eq('status', status);
-      }
-      if (searchQuery.trim()) {
-        query = query.ilike('name', `%${searchQuery.trim()}%`);
-      }
-      if (classId && enrolledIdsQuery.data && enrolledIdsQuery.data.length > 0) {
-        query = query.in('id', enrolledIdsQuery.data);
-      }
-
-      const { data, error, count } = await query;
-      if (error) throw error;
-
-      return {
-        people: (data || []).map((p: unknown) => PersonSchema.parse(p)),
-        total: count || 0,
-      };
+      return { people: result.people, total: result.total };
     },
-    enabled: enabled && !!tenant?.id && (!classId || enrolledIdsQuery.isFetched),
+    enabled:
+      enabled &&
+      !!tenant?.id &&
+      (!hasEnrolmentFilter || enrolledIdsQuery.isFetched),
   });
 
   return {
@@ -99,7 +110,7 @@ export function useStudents({
     total: peopleQuery.data?.total || 0,
     page,
     pageSize: PAGE_SIZE,
-    isLoading: peopleQuery.isLoading || (!!classId && enrolledIdsQuery.isLoading),
+    isLoading: peopleQuery.isLoading || (hasEnrolmentFilter && enrolledIdsQuery.isLoading),
     isFetching: peopleQuery.isFetching,
     error: peopleQuery.error,
   };

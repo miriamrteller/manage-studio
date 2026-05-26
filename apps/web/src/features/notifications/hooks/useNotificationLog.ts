@@ -8,6 +8,7 @@ interface UseNotificationLogOptions {
   page?: number;
   channel?: 'email' | 'whatsapp' | 'voice';
   status?: 'sent' | 'delivered' | 'read' | 'failed' | 'bounced';
+  sortOrder?: 'asc' | 'desc';
 }
 
 interface NotificationLogResponse {
@@ -27,19 +28,19 @@ export function useNotificationLog(options: UseNotificationLogOptions = {}) {
   const tenant = useTenant();
   const pageSize = options.pageSize || 25;
   const page = options.page || 1;
+  const sortOrder = options.sortOrder || 'desc';
   const offset = (page - 1) * pageSize;
 
   const query = useQuery({
-    queryKey: ['notificationLog', tenant?.id, page, pageSize, options.channel, options.status],
+    queryKey: ['notificationLog', tenant?.id, page, pageSize, options.channel, options.status, sortOrder],
     queryFn: async (): Promise<NotificationLogResponse> => {
       if (!tenant?.id) throw new Error('Tenant not found');
 
-      // Build query
       let queryBuilder = supabase
         .from('notification_log')
         .select('*', { count: 'exact' })
         .eq('tenant_id', tenant.id)
-        .order('sent_at', { ascending: false });
+        .order('sent_at', { ascending: sortOrder === 'asc' });
 
       // Apply filters
       if (options.channel) {
@@ -49,36 +50,21 @@ export function useNotificationLog(options: UseNotificationLogOptions = {}) {
         queryBuilder = queryBuilder.eq('status', options.status);
       }
 
-      // Get count first (without pagination)
-      const countBuilder = supabase
+      let countQuery = supabase
         .from('notification_log')
         .select('id', { count: 'exact', head: true })
         .eq('tenant_id', tenant.id);
 
       if (options.channel) {
-        // @ts-ignore - Supabase types don't expose the internal count query
-        void countBuilder.eq('channel', options.channel);
+        countQuery = countQuery.eq('channel', options.channel);
       }
       if (options.status) {
-        // @ts-ignore
-        void countBuilder.eq('status', options.status);
+        countQuery = countQuery.eq('status', options.status);
       }
 
-      // Execute both queries
       const [dataResult, countResult] = await Promise.all([
         queryBuilder.range(offset, offset + pageSize - 1),
-        supabase
-          .from('notification_log')
-          .select('id', { count: 'exact', head: true })
-          .eq('tenant_id', tenant.id)
-          .then((result) => {
-            // Apply same filters to count
-            if (options.channel) {
-              // Note: Proper filtering on count query would require table subscriptions
-              // This is a simplified approach
-            }
-            return result;
-          }),
+        countQuery,
       ]);
 
       if (dataResult.error) throw dataResult.error;

@@ -1,18 +1,28 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { SortableHeader } from '@/components/shared/table';
+import { useSortState } from '@/hooks/useSortState';
 import { useNotificationLog } from '@/features/notifications/hooks/useNotificationLog';
+
+type NotificationSortField = 'sent_at';
 
 export function NotificationLog() {
   const [page, setPage] = useState(1);
   const [channel, setChannel] = useState<'email' | 'whatsapp' | 'voice' | undefined>();
   const [status, setStatus] = useState<'sent' | 'delivered' | 'read' | 'failed' | 'bounced' | undefined>();
+  const { sortField, sortOrder, toggleSort } = useSortState<NotificationSortField>('sent_at', 'desc');
 
   const { logs, isLoading, error, pageCount } = useNotificationLog({
     page,
     pageSize: 25,
     channel,
     status,
+    sortOrder,
   });
+
+  const handleSort = (field: NotificationSortField) => {
+    toggleSort(field, () => setPage(1));
+  };
 
   return (
     <div className="w-full space-y-4 border rounded-lg p-4">
@@ -75,7 +85,14 @@ export function NotificationLog() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b">
-                  <th className="px-4 py-2 text-left">Date</th>
+                  <SortableHeader
+                    label="Date"
+                    sortKey="sent_at"
+                    currentField={sortField}
+                    currentOrder={sortOrder}
+                    onSort={handleSort}
+                    className="px-4 py-2 text-left font-medium"
+                  />
                   <th className="px-4 py-2 text-left">Channel</th>
                   <th className="px-4 py-2 text-left">Recipient</th>
                   <th className="px-4 py-2 text-left">Status</th>

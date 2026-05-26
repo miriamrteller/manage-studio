@@ -1,5 +1,6 @@
 import { BaseService } from '@/services/base.service';
 import { TenantDB } from '@/lib/db';
+import type { SortOrder } from '@/lib/list-query';
 import { FamilySchema, FamilyMemberSchema, type Family, type FamilyMember } from '@shared/schemas';
 import { z } from 'zod';
 import type { Tenant } from '@shared/schemas';
@@ -29,6 +30,13 @@ export type FamilyContactUpdate = {
 
 const GUARDIAN_ROLES = new Set(['parent', 'guardian']);
 
+export type FamilySortField = 'name' | 'contact_person_name' | 'created_at';
+
+export const DEFAULT_FAMILY_SORT: { field: FamilySortField; order: SortOrder } = {
+  field: 'created_at',
+  order: 'desc',
+};
+
 /**
  * FamilyService: Family data operations.
  *
@@ -41,17 +49,43 @@ const GUARDIAN_ROLES = new Set(['parent', 'guardian']);
 export class FamilyService extends BaseService {
   static async list(
     tenant: Tenant,
-    options: { page?: number; pageSize?: number } = {}
+    options: {
+      page?: number;
+      pageSize?: number;
+      searchQuery?: string;
+      sortField?: FamilySortField;
+      sortOrder?: SortOrder;
+    } = {}
   ) {
-    const { page = 1, pageSize = 20 } = options;
+    const {
+      page = 1,
+      pageSize = 20,
+      searchQuery = '',
+      sortField = DEFAULT_FAMILY_SORT.field,
+      sortOrder = DEFAULT_FAMILY_SORT.order,
+    } = options;
     const from = (page - 1) * pageSize;
+    const ascending = sortOrder === 'asc';
 
     return this.withRetry(async () => {
-      const { data, error, count } = await TenantDB.selectFor('families', tenant, {
+      let query = TenantDB.selectFor('families', tenant, {
         count: 'exact',
       })
-        .order('created_at', { ascending: false })
+        .order(sortField, { ascending, nullsFirst: false })
         .range(from, from + pageSize - 1);
+
+      if (sortField !== 'name') {
+        query = query.order('name', { ascending: true });
+      }
+
+      if (searchQuery.trim()) {
+        const q = `%${searchQuery.trim()}%`;
+        query = query.or(
+          `name.ilike.${q},contact_person_name.ilike.${q},contact_email.ilike.${q}`
+        );
+      }
+
+      const { data, error, count } = await query;
 
       if (error) throw error;
 

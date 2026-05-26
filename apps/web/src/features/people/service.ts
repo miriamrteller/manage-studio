@@ -1,8 +1,32 @@
 import { BaseService } from '@/services/base.service';
 import { TenantDB } from '@/lib/db';
+import type { SortOrder } from '@/lib/list-query';
 import { PersonSchema, type Person } from '@shared/schemas';
 import { z } from 'zod';
 import type { Tenant } from '@shared/schemas';
+import {
+  ageRangeToDobBounds,
+  DEFAULT_PERSON_SORT,
+  personSortOrderForField,
+  type PersonSortField,
+} from '@/features/students/lib/personSort';
+import { resolveEnrolledPersonIds } from '@/features/students/lib/resolveEnrolledPersonIds';
+
+export interface ListPeopleFilters {
+  page?: number;
+  pageSize?: number;
+  status?: 'active' | 'inactive' | 'all';
+  searchQuery?: string;
+  familyId?: string | null;
+  classId?: string | null;
+  levelId?: string | null;
+  minAge?: number | null;
+  maxAge?: number | null;
+  sortField?: PersonSortField;
+  sortOrder?: SortOrder;
+  /** Pre-resolved enrolled person IDs (from class/level filter). Pass [] for no matches. */
+  enrolledPersonIds?: string[] | null;
+}
 
 // Validation schema for person creation/update (without system fields)
 const PersonInputSchema = z.object({
@@ -60,6 +84,77 @@ export class PersonService extends BaseService {
         pageSize,
       };
     }, 'PersonService.list');
+  }
+
+  static async listWithFilters(tenant: Tenant, options: ListPeopleFilters = {}) {
+    const {
+      page = 1,
+      pageSize = 50,
+      status = 'active',
+      searchQuery = '',
+      familyId = null,
+      classId = null,
+      levelId = null,
+      minAge = null,
+      maxAge = null,
+      sortField = DEFAULT_PERSON_SORT.field,
+      sortOrder = DEFAULT_PERSON_SORT.order,
+      enrolledPersonIds: enrolledPersonIdsOverride,
+    } = options;
+    const from = (page - 1) * pageSize;
+
+    return this.withRetry(async () => {
+      const enrolledPersonIds =
+        enrolledPersonIdsOverride !== undefined
+          ? enrolledPersonIdsOverride
+          : await resolveEnrolledPersonIds(tenant, { classId, levelId });
+
+      if (enrolledPersonIds !== null && enrolledPersonIds.length === 0) {
+        return { people: [], total: 0, page, pageSize };
+      }
+
+      const dbSortOrder = personSortOrderForField(sortField, sortOrder);
+      const ascending = dbSortOrder === 'asc';
+
+      let query = TenantDB.selectFor('people', tenant, { count: 'exact' })
+        .order(sortField, { ascending, nullsFirst: false })
+        .range(from, from + pageSize - 1);
+
+      if (sortField !== 'name') {
+        query = query.order('name', { ascending: true });
+      }
+
+      if (status !== 'all') {
+        query = query.eq('status', status);
+      }
+      if (searchQuery.trim()) {
+        query = query.ilike('name', `%${searchQuery.trim()}%`);
+      }
+      if (familyId) {
+        query = query.eq('family_id', familyId);
+      }
+      if (enrolledPersonIds !== null && enrolledPersonIds.length > 0) {
+        query = query.in('id', enrolledPersonIds);
+      }
+
+      const dobBounds = ageRangeToDobBounds(minAge, maxAge);
+      if (dobBounds.maxDob) {
+        query = query.lte('date_of_birth', dobBounds.maxDob);
+      }
+      if (dobBounds.minDob) {
+        query = query.gte('date_of_birth', dobBounds.minDob);
+      }
+
+      const { data, error, count } = await query;
+      if (error) throw error;
+
+      return {
+        people: (data || []).map((p: unknown) => PersonSchema.parse(p)),
+        total: count || 0,
+        page,
+        pageSize,
+      };
+    }, 'PersonService.listWithFilters');
   }
 
   static async get(tenant: Tenant, id: string) {

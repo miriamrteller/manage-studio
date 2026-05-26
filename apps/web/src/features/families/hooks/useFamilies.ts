@@ -1,26 +1,40 @@
 import { useQuery } from '@tanstack/react-query';
-import { FamilyService } from '../service';
+import { FamilyService, type FamilySortField, DEFAULT_FAMILY_SORT } from '../service';
 import { useTenant } from '@/hooks/useTenant';
+import type { SortOrder } from '@/lib/list-query';
 
-const PAGE_SIZE = 20;
-
-// Families are read-only in the admin view.
-// Creation happens during enrolment intake (EnrolmentOnboardingService).
-// Deletion is not permitted — SPEC §D / migration 039: anonymise via RPC only.
+const DEFAULT_PAGE_SIZE = 20;
 
 interface UseFamiliesOptions {
   page?: number;
+  pageSize?: number;
+  searchQuery?: string;
+  sortField?: FamilySortField;
+  sortOrder?: SortOrder;
   enabled?: boolean;
 }
 
-export function useFamilies({ page = 1, enabled = true }: UseFamiliesOptions = {}) {
+export function useFamilies({
+  page = 1,
+  pageSize = DEFAULT_PAGE_SIZE,
+  searchQuery = '',
+  sortField = DEFAULT_FAMILY_SORT.field,
+  sortOrder = DEFAULT_FAMILY_SORT.order,
+  enabled = true,
+}: UseFamiliesOptions = {}) {
   const tenant = useTenant();
 
   const listQuery = useQuery({
-    queryKey: ['families', tenant?.id, page],
+    queryKey: ['families', tenant?.id, page, pageSize, searchQuery, sortField, sortOrder],
     queryFn: async () => {
       if (!tenant) throw new Error('Tenant not initialized');
-      return FamilyService.list(tenant, { page, pageSize: PAGE_SIZE });
+      return FamilyService.list(tenant, {
+        page,
+        pageSize,
+        searchQuery,
+        sortField,
+        sortOrder,
+      });
     },
     enabled: enabled && !!tenant?.id,
   });
@@ -29,7 +43,7 @@ export function useFamilies({ page = 1, enabled = true }: UseFamiliesOptions = {
     families: listQuery.data?.families || [],
     total: listQuery.data?.total || 0,
     page,
-    pageSize: PAGE_SIZE,
+    pageSize,
     isLoading: listQuery.isLoading,
     isFetching: listQuery.isFetching,
     error: listQuery.error,

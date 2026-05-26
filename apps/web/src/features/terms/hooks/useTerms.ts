@@ -1,24 +1,43 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { TermService } from '../service';
+import { TermService, type TermSortField, DEFAULT_TERM_SORT } from '../service';
 import { type Term } from '@shared/schemas';
 import { useTenant } from '@/hooks/useTenant';
+import type { SortOrder } from '@/lib/list-query';
 
 const PAGE_SIZE = 50;
 
 interface UseTermsOptions {
   page?: number;
+  searchQuery?: string;
+  status?: string;
+  sortField?: TermSortField;
+  sortOrder?: SortOrder;
   enabled?: boolean;
 }
 
-export function useTerms({ page = 1, enabled = true }: UseTermsOptions = {}) {
+export function useTerms({
+  page = 1,
+  searchQuery = '',
+  status,
+  sortField = DEFAULT_TERM_SORT.field,
+  sortOrder = DEFAULT_TERM_SORT.order,
+  enabled = true,
+}: UseTermsOptions = {}) {
   const tenant = useTenant();
   const queryClient = useQueryClient();
 
   const listQuery = useQuery({
-    queryKey: ['terms', tenant?.id, page],
+    queryKey: ['terms', tenant?.id, page, searchQuery, status, sortField, sortOrder],
     queryFn: async () => {
       if (!tenant) throw new Error('Tenant not initialized');
-      return TermService.list(tenant, { page, pageSize: PAGE_SIZE });
+      return TermService.list(tenant, {
+        page,
+        pageSize: PAGE_SIZE,
+        searchQuery,
+        status,
+        sortField,
+        sortOrder,
+      });
     },
     enabled: enabled && !!tenant?.id,
   });

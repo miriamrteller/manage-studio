@@ -1,5 +1,6 @@
 import { BaseService } from '@/services/base.service';
 import { TenantDB } from '@/lib/db';
+import type { SortOrder } from '@/lib/list-query';
 import { TermSchema, type Term } from '@shared/schemas';
 import { z } from 'zod';
 import type { Tenant } from '@shared/schemas';
@@ -12,6 +13,13 @@ const TermInputSchema = z.object({
   status: z.enum(['upcoming', 'active', 'completed', 'archived']).optional(),
 });
 
+export type TermSortField = 'name' | 'start_date' | 'end_date' | 'status';
+
+export const DEFAULT_TERM_SORT: { field: TermSortField; order: SortOrder } = {
+  field: 'start_date',
+  order: 'desc',
+};
+
 /**
  * TermService: All term data operations
  * - Validates input/output with TermSchema
@@ -21,17 +29,45 @@ const TermInputSchema = z.object({
 export class TermService extends BaseService {
   static async list(
     tenant: Tenant,
-    options: { page?: number; pageSize?: number } = {}
+    options: {
+      page?: number;
+      pageSize?: number;
+      searchQuery?: string;
+      status?: string;
+      sortField?: TermSortField;
+      sortOrder?: SortOrder;
+    } = {}
   ) {
-    const { page = 1, pageSize = 50 } = options;
+    const {
+      page = 1,
+      pageSize = 50,
+      searchQuery = '',
+      status,
+      sortField = DEFAULT_TERM_SORT.field,
+      sortOrder = DEFAULT_TERM_SORT.order,
+    } = options;
     const from = (page - 1) * pageSize;
+    const ascending = sortOrder === 'asc';
 
     return this.withRetry(async () => {
-      const { data, error, count } = await TenantDB.selectFor('terms', tenant, {
+      let query = TenantDB.selectFor('terms', tenant, {
         count: 'exact',
       })
-        .order('start_date', { ascending: false })
+        .order(sortField, { ascending, nullsFirst: false })
         .range(from, from + pageSize - 1);
+
+      if (sortField !== 'name') {
+        query = query.order('name', { ascending: true });
+      }
+
+      if (searchQuery.trim()) {
+        query = query.ilike('name', `%${searchQuery.trim()}%`);
+      }
+      if (status) {
+        query = query.eq('status', status);
+      }
+
+      const { data, error, count } = await query;
 
       if (error) throw error;
 

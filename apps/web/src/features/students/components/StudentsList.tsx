@@ -10,12 +10,21 @@ import {
 } from '@tanstack/react-table';
 import { useQuery } from '@tanstack/react-query';
 import { useTenant } from '@/hooks/useTenant';
+import { useSortState } from '@/hooks/useSortState';
 import { TenantDB } from '@/lib/db';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/shared';
+import {
+  AgeRangeFilter,
+  FilterSelect,
+  SortableHeader,
+} from '@/components/shared/table';
 import { PersonSearch } from '@/features/people/components/PersonSearch';
 import { useClasses } from '@/features/classes/hooks/useClasses';
+import { useLevels } from '@/features/levels/hooks/useLevels';
+import { useFamilies } from '@/features/families/hooks/useFamilies';
 import { useStudents } from '../hooks/useStudents';
+import { DEFAULT_PERSON_SORT, type PersonSortField } from '../lib/personSort';
 import { ExpandedStudentRow } from './ExpandedStudentRow';
 import { StudentSlideOver } from './StudentSlideOver';
 import { calculateAge } from '@/lib/utils';
@@ -31,17 +40,34 @@ export function StudentsList() {
 
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('active');
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
+  const [selectedLevelId, setSelectedLevelId] = useState<string | null>(null);
+  const [selectedFamilyId, setSelectedFamilyId] = useState<string | null>(null);
+  const [minAge, setMinAge] = useState<number | null>(null);
+  const [maxAge, setMaxAge] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
   const [expanded, setExpanded] = useState<ExpandedState>({});
   const [slideOverPersonId, setSlideOverPersonId] = useState<string | null>(null);
 
+  const { sortField, sortOrder, toggleSort } = useSortState<PersonSortField>(
+    DEFAULT_PERSON_SORT.field,
+    DEFAULT_PERSON_SORT.order
+  );
+
   const { classes } = useClasses({ publicOnly: false });
+  const { levels } = useLevels({ page: 1 });
+  const { families } = useFamilies({ page: 1, pageSize: 200 });
   const { students, total, pageSize, isLoading, error } = useStudents({
     page,
     status: statusFilter,
     classId: selectedClassId,
+    levelId: selectedLevelId,
+    familyId: selectedFamilyId,
+    minAge,
+    maxAge,
     searchQuery,
+    sortField,
+    sortOrder,
   });
 
   // Fetch enrolments for current page students + class names in one batch
@@ -270,6 +296,24 @@ export function StudentsList() {
     setPage(1);
   };
 
+  const handleSort = (field: PersonSortField) => {
+    toggleSort(field, () => setPage(1));
+  };
+
+  const familyOptions = useMemo(
+    () =>
+      families.map((f) => ({
+        value: f.id,
+        label: f.name ?? f.contact_person_name ?? f.id,
+      })),
+    [families]
+  );
+
+  const levelOptions = useMemo(
+    () => levels.map((l) => ({ value: l.id, label: l.name })),
+    [levels]
+  );
+
   return (
     <div className="space-y-4 p-4">
       {/* Header */}
@@ -330,6 +374,49 @@ export function StudentsList() {
           </div>
         )}
 
+        {/* Family, level, age filters */}
+        <div className="flex flex-wrap gap-3 items-end">
+          <FilterSelect
+            id="family-filter"
+            label={t('pages.students.filter_by_family')}
+            value={selectedFamilyId ?? ''}
+            onChange={(v) => {
+              setSelectedFamilyId(v || null);
+              setPage(1);
+            }}
+            options={familyOptions}
+            allLabel={t('common.all')}
+          />
+          <FilterSelect
+            id="level-filter"
+            label={t('pages.students.filter_by_level')}
+            value={selectedLevelId ?? ''}
+            onChange={(v) => {
+              setSelectedLevelId(v || null);
+              setPage(1);
+            }}
+            options={levelOptions}
+            allLabel={t('common.all')}
+          />
+          <AgeRangeFilter
+            minAge={minAge}
+            maxAge={maxAge}
+            onMinChange={(v) => {
+              setMinAge(v);
+              setPage(1);
+            }}
+            onMaxChange={(v) => {
+              setMaxAge(v);
+              setPage(1);
+            }}
+            onClear={() => {
+              setMinAge(null);
+              setMaxAge(null);
+              setPage(1);
+            }}
+          />
+        </div>
+
         {/* Search + Enrol button */}
         <div className="flex gap-3 items-end flex-wrap">
           <div className="flex-1 min-w-48">
@@ -370,21 +457,35 @@ export function StudentsList() {
         <div className="card overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="border-b" style={{ borderColor: 'var(--color-border-default)' }}>
-              {table.getHeaderGroups().map((hg) => (
-                <tr key={hg.id}>
-                  {hg.headers.map((header) => (
-                    <th
-                      key={header.id}
-                      className="px-3 py-3 text-start font-medium text-gray-700"
-                      style={{ width: header.getSize() !== 150 ? header.getSize() : undefined }}
-                    >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(header.column.columnDef.header, header.getContext())}
-                    </th>
-                  ))}
-                </tr>
-              ))}
+              <tr>
+                <th className="px-3 py-3" style={{ width: 32 }} />
+                <SortableHeader
+                  label={t('pages.people.name_label')}
+                  sortKey="name"
+                  currentField={sortField}
+                  currentOrder={sortOrder}
+                  onSort={handleSort}
+                  className="px-3 py-3 text-start font-medium text-gray-700"
+                />
+                <th className="px-3 py-3 text-start font-medium text-gray-700">
+                  {t('pages.students.classes_column')}
+                </th>
+                <SortableHeader
+                  label={t('pages.people.age_label')}
+                  sortKey="date_of_birth"
+                  currentField={sortField}
+                  currentOrder={sortOrder}
+                  onSort={handleSort}
+                  className="px-3 py-3 text-start font-medium text-gray-700"
+                />
+                <th className="px-3 py-3 text-start font-medium text-gray-700">
+                  {t('pages.students.guardian_column')}
+                </th>
+                <th className="px-3 py-3 text-start font-medium text-gray-700" style={{ width: 120 }}>
+                  {t('pages.students.notifications_column')}
+                </th>
+                <th className="px-3 py-3" style={{ width: 80 }} />
+              </tr>
             </thead>
             <tbody>
               {table.getRowModel().rows.map((row) => (

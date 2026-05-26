@@ -1,5 +1,6 @@
 import { BaseService } from '@/services/base.service';
 import { TenantDB } from '@/lib/db';
+import type { SortOrder } from '@/lib/list-query';
 import { LevelSchema, type Level } from '@shared/schemas';
 import { z } from 'zod';
 import type { Tenant } from '@shared/schemas';
@@ -10,6 +11,13 @@ const LevelInputSchema = z.object({
   sort_order: z.number().int().nonnegative('Sort order must be >= 0').optional(),
 });
 
+export type LevelSortField = 'sort_order' | 'name' | 'created_at';
+
+export const DEFAULT_LEVEL_SORT: { field: LevelSortField; order: SortOrder } = {
+  field: 'sort_order',
+  order: 'asc',
+};
+
 /**
  * LevelService: All level (class level) data operations
  * - Validates input/output with LevelSchema
@@ -19,17 +27,40 @@ const LevelInputSchema = z.object({
 export class LevelService extends BaseService {
   static async list(
     tenant: Tenant,
-    options: { page?: number; pageSize?: number } = {}
+    options: {
+      page?: number;
+      pageSize?: number;
+      searchQuery?: string;
+      sortField?: LevelSortField;
+      sortOrder?: SortOrder;
+    } = {}
   ) {
-    const { page = 1, pageSize = 50 } = options;
+    const {
+      page = 1,
+      pageSize = 50,
+      searchQuery = '',
+      sortField = DEFAULT_LEVEL_SORT.field,
+      sortOrder = DEFAULT_LEVEL_SORT.order,
+    } = options;
     const from = (page - 1) * pageSize;
+    const ascending = sortOrder === 'asc';
 
     return this.withRetry(async () => {
-      const { data, error, count } = await TenantDB.selectFor('levels', tenant, {
+      let query = TenantDB.selectFor('levels', tenant, {
         count: 'exact',
       })
-        .order('sort_order', { ascending: true })
+        .order(sortField, { ascending, nullsFirst: false })
         .range(from, from + pageSize - 1);
+
+      if (sortField !== 'name') {
+        query = query.order('name', { ascending: true });
+      }
+
+      if (searchQuery.trim()) {
+        query = query.ilike('name', `%${searchQuery.trim()}%`);
+      }
+
+      const { data, error, count } = await query;
 
       if (error) throw error;
 

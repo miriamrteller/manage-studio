@@ -2,28 +2,46 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/shared';
+import { ListSearchInput, SortableHeader } from '@/components/shared/table';
+import { useSortState } from '@/hooks/useSortState';
 import { useFamilies } from '../hooks/useFamilies';
+import { DEFAULT_FAMILY_SORT, type FamilySortField } from '../service';
 import { useNavigate } from 'react-router-dom';
 
-/**
- * FamiliesList: Read-only registry of families.
- *
- * Families are created automatically during the enrolment intake flow (Step 1).
- * No direct creation or deletion is allowed here — that would produce orphan shells
- * or violate data-retention rules (SPEC §D, migration 039 — no DELETE grant).
- */
 export const FamiliesList = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
+  const { sortField, sortOrder, toggleSort } = useSortState<FamilySortField>(
+    DEFAULT_FAMILY_SORT.field,
+    DEFAULT_FAMILY_SORT.order
+  );
 
-  const familiesData = useFamilies({ page });
+  const familiesData = useFamilies({ page, searchQuery, sortField, sortOrder });
+
+  const handleSort = (field: FamilySortField) => {
+    toggleSort(field, () => setPage(1));
+  };
 
   return (
     <div className="space-y-4 p-4">
       <div className="space-y-2">
         <h1 className="text-3xl font-bold">{t('pages.families.title')}</h1>
         <p className="text-gray-600">{t('pages.families.description')}</p>
+      </div>
+
+      <div className="max-w-md">
+        <ListSearchInput
+          id="family-search"
+          value={searchQuery}
+          onChange={(q) => {
+            setSearchQuery(q);
+            setPage(1);
+          }}
+          placeholder={t('pages.families.search_placeholder')}
+          isSearching={familiesData.isLoading}
+        />
       </div>
 
       {familiesData.isLoading && (
@@ -50,12 +68,20 @@ export const FamiliesList = () => {
           <table className="w-full text-sm">
             <thead className="border-b" style={{ borderColor: 'var(--color-border-default)' }}>
               <tr>
-                <th className="px-4 py-3 text-start font-medium">
-                  {t('form.family.name')}
-                </th>
-                <th className="px-4 py-3 text-start font-medium">
-                  {t('form.family.contact_person_name')}
-                </th>
+                <SortableHeader
+                  label={t('form.family.name')}
+                  sortKey="name"
+                  currentField={sortField}
+                  currentOrder={sortOrder}
+                  onSort={handleSort}
+                />
+                <SortableHeader
+                  label={t('form.family.contact_person_name')}
+                  sortKey="contact_person_name"
+                  currentField={sortField}
+                  currentOrder={sortOrder}
+                  onSort={handleSort}
+                />
                 <th className="px-4 py-3 text-start font-medium">
                   {t('form.family.contact_email')}
                 </th>

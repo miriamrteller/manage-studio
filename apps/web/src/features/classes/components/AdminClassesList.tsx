@@ -3,7 +3,9 @@ import { useTranslation } from 'react-i18next';
 import { formatCurrency, formatTime } from '@shared/format';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/shared';
+import { FilterSelect, ListSearchInput, SortableHeader } from '@/components/shared/table';
 import { useTenant } from '@/hooks/useTenant';
+import { useSortState } from '@/hooks/useSortState';
 import { useClasses } from '../hooks/useClasses';
 import { useTerms } from '@/features/terms/hooks/useTerms';
 import { useLevels } from '@/features/levels/hooks/useLevels';
@@ -13,55 +15,36 @@ import { ClassRequirementsPanel } from '../requirements/components';
 import {
   DEFAULT_CLASS_SORT,
   type ClassSortField,
-  type ClassSortOrder,
 } from '../utils/sortClasses';
 import type { Class } from '@shared/schemas';
-
-interface SortableHeaderProps {
-  label: string;
-  sortKey: ClassSortField;
-  currentField: ClassSortField;
-  currentOrder: ClassSortOrder;
-  onSort: (field: ClassSortField) => void;
-  className?: string;
-}
-
-function SortableHeader({
-  label,
-  sortKey,
-  currentField,
-  currentOrder,
-  onSort,
-  className = 'px-4 py-3 text-start font-medium',
-}: SortableHeaderProps) {
-  const isActive = currentField === sortKey;
-
-  return (
-    <th className={className} aria-sort={isActive ? (currentOrder === 'asc' ? 'ascending' : 'descending') : 'none'}>
-      <button
-        type="button"
-        onClick={() => onSort(sortKey)}
-        className="inline-flex items-center gap-1 hover:text-[var(--color-primary-default)]"
-      >
-        {label}
-        {isActive && <span aria-hidden="true">{currentOrder === 'asc' ? '↑' : '↓'}</span>}
-      </button>
-    </th>
-  );
-}
 
 export function AdminClassesList() {
   const { t, i18n } = useTranslation();
   const tenant = useTenant();
   const [page, setPage] = useState(1);
-  const [sortField, setSortField] = useState<ClassSortField>(DEFAULT_CLASS_SORT.field);
-  const [sortOrder, setSortOrder] = useState<ClassSortOrder>(DEFAULT_CLASS_SORT.order);
+  const { sortField, sortOrder, toggleSort } = useSortState<ClassSortField>(
+    DEFAULT_CLASS_SORT.field,
+    DEFAULT_CLASS_SORT.order
+  );
+  const [filterTermId, setFilterTermId] = useState<string | null>(null);
+  const [filterLevelId, setFilterLevelId] = useState<string | null>(null);
+  const [filterStatus, setFilterStatus] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [editingClass, setEditingClass] = useState<Class | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [expandedClassId, setExpandedClassId] = useState<string | null>(null);
 
-  const classesData = useClasses({ page, publicOnly: false, sortField, sortOrder });
+  const classesData = useClasses({
+    page,
+    publicOnly: false,
+    sortField,
+    sortOrder,
+    termId: filterTermId ?? undefined,
+    levelId: filterLevelId ?? undefined,
+    status: filterStatus ?? undefined,
+    searchQuery,
+  });
   const termsData = useTerms({ page: 1 });
   const levelsData = useLevels({ page: 1 });
   const teachersData = useTeachers({ page: 1 });
@@ -107,14 +90,25 @@ export function AdminClassesList() {
   };
 
   const handleSort = (field: ClassSortField) => {
-    if (sortField === field) {
-      setSortOrder((currentOrder) => (currentOrder === 'asc' ? 'desc' : 'asc'));
-    } else {
-      setSortField(field);
-      setSortOrder('asc');
-    }
-    setPage(1);
+    toggleSort(field, () => setPage(1));
   };
+
+  const termOptions = useMemo(
+    () => termsData.terms.map((term) => ({ value: term.id, label: term.name })),
+    [termsData.terms]
+  );
+  const levelFilterOptions = useMemo(
+    () => levelsData.levels.map((level) => ({ value: level.id, label: level.name })),
+    [levelsData.levels]
+  );
+  const statusOptions = useMemo(
+    () =>
+      (['active', 'cancelled', 'full'] as const).map((s) => ({
+        value: s,
+        label: t(`form.class.status_${s}`),
+      })),
+    [t]
+  );
 
   const showFormModal = isCreating || editingClass !== null;
   const currency = tenant?.currency || 'ILS';
@@ -131,6 +125,54 @@ export function AdminClassesList() {
         <Button variant="primary" onClick={() => setIsCreating(true)}>
           {t('pages.admin_classes.create_button')}
         </Button>
+      </div>
+
+      <div className="flex flex-wrap gap-3 items-end">
+        <div className="flex-1 min-w-48">
+          <ListSearchInput
+            id="class-search"
+            value={searchQuery}
+            onChange={(q) => {
+              setSearchQuery(q);
+              setPage(1);
+            }}
+            placeholder={t('common.search')}
+            isSearching={classesData.isLoading}
+          />
+        </div>
+        <FilterSelect
+          id="class-term-filter"
+          label={t('form.class.term')}
+          value={filterTermId ?? ''}
+          onChange={(v) => {
+            setFilterTermId(v || null);
+            setPage(1);
+          }}
+          options={termOptions}
+          allLabel={t('common.all')}
+        />
+        <FilterSelect
+          id="class-level-filter"
+          label={t('form.class.level')}
+          value={filterLevelId ?? ''}
+          onChange={(v) => {
+            setFilterLevelId(v || null);
+            setPage(1);
+          }}
+          options={levelFilterOptions}
+          allLabel={t('common.all')}
+        />
+        <FilterSelect
+          id="class-status-filter"
+          label={t('common.status')}
+          value={filterStatus ?? ''}
+          onChange={(v) => {
+            setFilterStatus(v || null);
+            setPage(1);
+          }}
+          options={statusOptions}
+          allLabel={t('common.all')}
+        />
       </div>
 
       {classesData.isLoading && (

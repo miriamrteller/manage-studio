@@ -2,18 +2,30 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/shared';
+import { ListSearchInput, SortableHeader } from '@/components/shared/table';
+import { useSortState } from '@/hooks/useSortState';
 import { useLevels } from '../hooks/useLevels';
+import { DEFAULT_LEVEL_SORT, type LevelSortField } from '../service';
 import { LevelForm } from './LevelForm';
 import type { Level } from '@shared/schemas';
 
 export const LevelsList = () => {
   const { t } = useTranslation();
   const [page, setPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
+  const { sortField, sortOrder, toggleSort } = useSortState<LevelSortField>(
+    DEFAULT_LEVEL_SORT.field,
+    DEFAULT_LEVEL_SORT.order
+  );
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [editingLevel, setEditingLevel] = useState<Level | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
-  const levelsData = useLevels({ page });
+  const levelsData = useLevels({ page, searchQuery, sortField, sortOrder });
+
+  const handleSort = (field: LevelSortField) => {
+    toggleSort(field, () => setPage(1));
+  };
 
   const handleFormSubmit = async (data: Partial<Level>) => {
     if (editingLevel?.id) {
@@ -68,7 +80,19 @@ export const LevelsList = () => {
         <p className="text-gray-600">{t('pages.levels.description')}</p>
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex flex-wrap gap-3 items-end justify-between">
+        <div className="flex-1 min-w-48 max-w-md">
+          <ListSearchInput
+            id="level-search"
+            value={searchQuery}
+            onChange={(q) => {
+              setSearchQuery(q);
+              setPage(1);
+            }}
+            placeholder={t('common.search')}
+            isSearching={levelsData.isLoading}
+          />
+        </div>
         <Button variant="primary" onClick={() => setIsCreating(true)}>
           {t('pages.levels.create_button')}
         </Button>
@@ -104,12 +128,20 @@ export const LevelsList = () => {
           <table className="w-full text-sm">
             <thead className="border-b" style={{ borderColor: 'var(--color-border-default)' }}>
               <tr>
-                <th className="px-4 py-3 text-start font-medium">
-                  {t('form.level.name')}
-                </th>
-                <th className="px-4 py-3 text-start font-medium">
-                  {t('form.level.sort_order')}
-                </th>
+                <SortableHeader
+                  label={t('form.level.name')}
+                  sortKey="name"
+                  currentField={sortField}
+                  currentOrder={sortOrder}
+                  onSort={handleSort}
+                />
+                <SortableHeader
+                  label={t('form.level.sort_order')}
+                  sortKey="sort_order"
+                  currentField={sortField}
+                  currentOrder={sortOrder}
+                  onSort={handleSort}
+                />
                 <th className="px-4 py-3 text-center font-medium">
                   {t('common.actions')}
                 </th>

@@ -1,19 +1,47 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/shared';
+import { FilterSelect, ListSearchInput, SortableHeader } from '@/components/shared/table';
+import { useSortState } from '@/hooks/useSortState';
 import { useTerms } from '../hooks/useTerms';
+import { DEFAULT_TERM_SORT, type TermSortField } from '../service';
 import { TermForm } from './TermForm';
 import type { Term } from '@shared/schemas';
 
 export const TermsList = () => {
   const { t } = useTranslation();
   const [page, setPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const { sortField, sortOrder, toggleSort } = useSortState<TermSortField>(
+    DEFAULT_TERM_SORT.field,
+    DEFAULT_TERM_SORT.order
+  );
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [editingTerm, setEditingTerm] = useState<Term | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
-  const termsData = useTerms({ page });
+  const termsData = useTerms({
+    page,
+    searchQuery,
+    status: statusFilter ?? undefined,
+    sortField,
+    sortOrder,
+  });
+
+  const handleSort = (field: TermSortField) => {
+    toggleSort(field, () => setPage(1));
+  };
+
+  const statusOptions = useMemo(
+    () =>
+      (['upcoming', 'active', 'completed', 'archived'] as const).map((s) => ({
+        value: s,
+        label: t(`form.term.status_${s}`),
+      })),
+    [t]
+  );
 
   const handleFormSubmit = async (data: Partial<Term>) => {
     if (editingTerm?.id) {
@@ -68,7 +96,32 @@ export const TermsList = () => {
         <p className="text-gray-600">{t('pages.terms.description')}</p>
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex flex-wrap gap-3 items-end justify-between">
+        <div className="flex flex-wrap gap-3 items-end flex-1">
+          <div className="flex-1 min-w-48 max-w-md">
+            <ListSearchInput
+              id="term-search"
+              value={searchQuery}
+              onChange={(q) => {
+                setSearchQuery(q);
+                setPage(1);
+              }}
+              placeholder={t('common.search')}
+              isSearching={termsData.isLoading}
+            />
+          </div>
+          <FilterSelect
+            id="term-status-filter"
+            label={t('form.term.status')}
+            value={statusFilter ?? ''}
+            onChange={(v) => {
+              setStatusFilter(v || null);
+              setPage(1);
+            }}
+            options={statusOptions}
+            allLabel={t('common.all')}
+          />
+        </div>
         <Button variant="primary" onClick={() => setIsCreating(true)}>
           {t('pages.terms.create_button')}
         </Button>
@@ -104,18 +157,34 @@ export const TermsList = () => {
           <table className="w-full text-sm">
             <thead className="border-b" style={{ borderColor: 'var(--color-border-default)' }}>
               <tr>
-                <th className="px-4 py-3 text-start font-medium">
-                  {t('form.term.name')}
-                </th>
-                <th className="px-4 py-3 text-start font-medium">
-                  {t('form.term.start_date')}
-                </th>
-                <th className="px-4 py-3 text-start font-medium">
-                  {t('form.term.end_date')}
-                </th>
-                <th className="px-4 py-3 text-start font-medium">
-                  {t('form.term.status')}
-                </th>
+                <SortableHeader
+                  label={t('form.term.name')}
+                  sortKey="name"
+                  currentField={sortField}
+                  currentOrder={sortOrder}
+                  onSort={handleSort}
+                />
+                <SortableHeader
+                  label={t('form.term.start_date')}
+                  sortKey="start_date"
+                  currentField={sortField}
+                  currentOrder={sortOrder}
+                  onSort={handleSort}
+                />
+                <SortableHeader
+                  label={t('form.term.end_date')}
+                  sortKey="end_date"
+                  currentField={sortField}
+                  currentOrder={sortOrder}
+                  onSort={handleSort}
+                />
+                <SortableHeader
+                  label={t('form.term.status')}
+                  sortKey="status"
+                  currentField={sortField}
+                  currentOrder={sortOrder}
+                  onSort={handleSort}
+                />
                 <th className="px-4 py-3 text-center font-medium">
                   {t('common.actions')}
                 </th>

@@ -1,24 +1,41 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { LevelService } from '../service';
+import { LevelService, type LevelSortField } from '../service';
 import { type Level } from '@shared/schemas';
 import { useTenant } from '@/hooks/useTenant';
+import type { SortOrder } from '@/lib/list-query';
+import { DEFAULT_LEVEL_SORT } from '../service';
 
 const PAGE_SIZE = 50;
 
 interface UseLevelsOptions {
   page?: number;
+  searchQuery?: string;
+  sortField?: LevelSortField;
+  sortOrder?: SortOrder;
   enabled?: boolean;
 }
 
-export function useLevels({ page = 1, enabled = true }: UseLevelsOptions = {}) {
+export function useLevels({
+  page = 1,
+  searchQuery = '',
+  sortField = DEFAULT_LEVEL_SORT.field,
+  sortOrder = DEFAULT_LEVEL_SORT.order,
+  enabled = true,
+}: UseLevelsOptions = {}) {
   const tenant = useTenant();
   const queryClient = useQueryClient();
 
   const listQuery = useQuery({
-    queryKey: ['levels', tenant?.id, page],
+    queryKey: ['levels', tenant?.id, page, searchQuery, sortField, sortOrder],
     queryFn: async () => {
       if (!tenant) throw new Error('Tenant not initialized');
-      return LevelService.list(tenant, { page, pageSize: PAGE_SIZE });
+      return LevelService.list(tenant, {
+        page,
+        pageSize: PAGE_SIZE,
+        searchQuery,
+        sortField,
+        sortOrder,
+      });
     },
     enabled: enabled && !!tenant?.id,
   });

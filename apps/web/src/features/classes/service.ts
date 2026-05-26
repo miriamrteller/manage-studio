@@ -46,6 +46,9 @@ export class ClassService extends BaseService {
       page?: number;
       pageSize?: number;
       termId?: string;
+      levelId?: string;
+      status?: string;
+      searchQuery?: string;
       sortField?: ClassSortField;
       sortOrder?: ClassSortOrder;
     } = {}
@@ -54,6 +57,9 @@ export class ClassService extends BaseService {
       page = 1,
       pageSize = 50,
       termId,
+      levelId,
+      status,
+      searchQuery = '',
       sortField = DEFAULT_CLASS_SORT.field,
       sortOrder = DEFAULT_CLASS_SORT.order,
     } = options;
@@ -65,6 +71,15 @@ export class ClassService extends BaseService {
 
       if (termId) {
         query = query.eq('term_id', termId);
+      }
+      if (levelId) {
+        query = query.eq('level_id', levelId);
+      }
+      if (status) {
+        query = query.eq('status', status);
+      }
+      if (searchQuery.trim()) {
+        query = query.ilike('name', `%${searchQuery.trim()}%`);
       }
 
       if (sortField === 'schedule') {

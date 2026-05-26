@@ -50,6 +50,10 @@
     "no_levels_yet": "No class levels yet.",
     "no_terms_yet": "No learning terms yet.",
     "all": "All",
+    "filters": {
+      "age_min": "Min age",
+      "age_max": "Max age"
+    },
     "view": "View",
     "status": "Status",
     "done": "Done",
@@ -279,7 +283,8 @@
       "members_section": "Guardians & Members",
       "no_students": "No students linked to this family.",
       "no_members": "No guardian records found.",
-      "data_retention_note": "Family records cannot be deleted. To request data removal, please contact support (GDPR Right to Erasure — anonymisation RPC)."
+      "data_retention_note": "Family records cannot be deleted. To request data removal, please contact support (GDPR Right to Erasure — anonymisation RPC).",
+      "search_placeholder": "Search by family name, contact, or email"
     },
     "students": {
       "title": "Students",
@@ -288,6 +293,8 @@
       "status_inactive": "Inactive",
       "status_all": "All",
       "filter_by_class": "Filter by class:",
+      "filter_by_family": "Family",
+      "filter_by_level": "Level",
       "clear_class_filter": "Clear",
       "classes_column": "Classes",
       "guardian_column": "Guardian",
@@ -327,6 +334,7 @@
       "account_holder_name_label": "Account Holder Name",
       "filter_by_payment_method": "Filter by payment method",
       "filter_by_status": "Filter by status",
+      "search_placeholder": "Search by account holder or email",
       "create_title": "New Billing Account",
       "edit_title": "Edit Billing Account",
       "empty_title": "No billing accounts yet",

@@ -28,9 +28,12 @@ const PAGE_SIZE = 50;
 
 interface UseClassesOptions {
   termId?: string;
+  levelId?: string;
+  status?: string;
+  searchQuery?: string;
   page?: number;
   enabled?: boolean;
-  publicOnly?: boolean;  // Query public_classes_by_subdomain view instead of classes table
+  publicOnly?: boolean;
   sortField?: ClassSortField;
   sortOrder?: ClassSortOrder;
 }
@@ -46,6 +49,9 @@ interface UseClassesOptions {
  */
 export function useClasses({
   termId,
+  levelId,
+  status,
+  searchQuery = '',
   page = 1,
   enabled = true,
   publicOnly = true,
@@ -71,10 +77,19 @@ export function useClasses({
 
   // Authenticated classes query (returns object with classes array)
   const listQuery = useQuery<{ classes: Class[]; total: number }>({
-    queryKey: ['classes', tenant?.id, page, termId, sortField, sortOrder],
+    queryKey: ['classes', tenant?.id, page, termId, levelId, status, searchQuery, sortField, sortOrder],
     queryFn: async () => {
       if (!tenant) throw new Error('Tenant not initialized');
-      return ClassService.list(tenant, { page, pageSize: PAGE_SIZE, termId, sortField, sortOrder });
+      return ClassService.list(tenant, {
+        page,
+        pageSize: PAGE_SIZE,
+        termId,
+        levelId,
+        status,
+        searchQuery,
+        sortField,
+        sortOrder,
+      });
     },
     enabled: enabled && !publicOnly && !!tenant?.id,
   });
