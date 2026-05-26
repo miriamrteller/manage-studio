@@ -4,10 +4,12 @@ import { Button } from '@/components/ui/button';
 import { PersonForm } from '@/features/people/components/PersonForm';
 import { PersonService } from '@/features/people/service';
 import { FamilyService } from '@/features/families/service';
-import { invalidateFamilyCaches } from '@/features/families/lib/invalidateFamilyCaches';
+import { refreshFamilyCaches } from '@/features/families/lib/invalidateFamilyCaches';
 import { useTenant } from '@/hooks/useTenant';
 import { useQueryClient } from '@tanstack/react-query';
 import { useStudentDetail } from '../hooks/useStudentDetail';
+import { AdminEnrolStudentModal } from '@/features/enrolment/components/AdminEnrolStudentModal';
+import { resolveGuardianEmail } from '@/features/enrolment/lib/resolveGuardianEmail';
 import { formatDate, calculateAge } from '@/lib/utils';
 
 interface StudentSlideOverProps {
@@ -43,6 +45,7 @@ export function StudentSlideOver({ personId, onClose }: StudentSlideOverProps) {
   const [contactPhone, setContactPhone] = useState('');
   const [contactSaveError, setContactSaveError] = useState<string | null>(null);
   const [contactSaving, setContactSaving] = useState(false);
+  const [enrolModalOpen, setEnrolModalOpen] = useState(false);
 
   const startEditContact = () => {
     setContactName(family?.contact_person_name ?? '');
@@ -57,12 +60,13 @@ export function StudentSlideOver({ personId, onClose }: StudentSlideOverProps) {
     setContactSaving(true);
     setContactSaveError(null);
     try {
-      await FamilyService.updateContactWithGuardians(tenant, family.id, {
-        contact_person_name: contactName || undefined,
-        contact_email: contactEmail || undefined,
-        contact_phone: contactPhone || undefined,
-      });
-      invalidateFamilyCaches(queryClient, tenant.id, family.id);
+      const { family: updatedFamily, members: updatedMembers } =
+        await FamilyService.updateContactWithGuardians(tenant, family.id, {
+          contact_person_name: contactName || undefined,
+          contact_email: contactEmail || undefined,
+          contact_phone: contactPhone || undefined,
+        });
+      await refreshFamilyCaches(queryClient, tenant.id, updatedFamily, updatedMembers);
       setIsEditingContact(false);
     } catch (err) {
       setContactSaveError(err instanceof Error ? err.message : t('common.error'));
@@ -196,7 +200,12 @@ export function StudentSlideOver({ personId, onClose }: StudentSlideOverProps) {
 
               {/* ── 2. Enrolments ── */}
               <section className="space-y-2">
-                <h3 className="font-semibold text-gray-700">{t('pages.students.enrolments_section')}</h3>
+                <div className="flex justify-between items-center">
+                  <h3 className="font-semibold text-gray-700">{t('pages.students.enrolments_section')}</h3>
+                  <Button variant="primary" size="sm" onClick={() => setEnrolModalOpen(true)}>
+                    {t('pages.students.enrol_button')}
+                  </Button>
+                </div>
                 {enrolments.length === 0 ? (
                   <p className="text-sm text-gray-400">{t('pages.students.no_enrolments')}</p>
                 ) : (
@@ -406,6 +415,25 @@ export function StudentSlideOver({ personId, onClose }: StudentSlideOverProps) {
           )}
         </div>
       </div>
+
+      {person && (
+        <AdminEnrolStudentModal
+          isOpen={enrolModalOpen}
+          personId={personId}
+          personName={person.name}
+          personDateOfBirth={person.date_of_birth}
+          familyId={person.family_id}
+          guardianEmail={resolveGuardianEmail({ person, family: family ?? undefined, members })}
+          guardianName={family?.contact_person_name ?? null}
+          onClose={() => setEnrolModalOpen(false)}
+          onSuccess={() => {
+            void queryClient.invalidateQueries({
+              queryKey: ['student-detail-enrolments', tenant?.id, personId],
+            });
+            void queryClient.invalidateQueries({ queryKey: ['students-list-enrolments', tenant?.id] });
+          }}
+        />
+      )}
     </>
   );
 }

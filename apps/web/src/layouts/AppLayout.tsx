@@ -14,7 +14,7 @@ import { cn } from '../lib/utils';
 const PUBLIC_PATHS = new Set(['/', '/classes', '/login', '/signup', '/enrol']);
 
 function isPublicRoute(pathname: string): boolean {
-  return PUBLIC_PATHS.has(pathname) || pathname.startsWith('/auth/');
+  return PUBLIC_PATHS.has(pathname) || pathname.startsWith('/auth/') || pathname.startsWith('/enrol/pay/');
 }
 
 function AppLayoutContent({ children }: { children: ReactNode }) {

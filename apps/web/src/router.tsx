@@ -17,6 +17,7 @@ import TermsPage from "./pages/TermsPage";
 import AdminClassesPage from "./pages/AdminClassesPage";
 import PortalDashboard from "./pages/PortalDashboard";
 import EnrolPage from "./pages/EnrolPage";
+import EnrolPayPage from "./pages/EnrolPayPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import { LanguageProvider } from "./contexts/LanguageContext";
 
@@ -40,6 +41,7 @@ const router = createBrowserRouter([
       { path: "login", element: <LoginPage /> },
       { path: "signup", element: <SignupPage /> },
       { path: "enrol", element: <EnrolPage /> },
+      { path: "enrol/pay/:enrolmentId", element: <EnrolPayPage /> },
       { path: "auth/callback", element: <AuthCallbackPage /> },
       { path: "dashboard", element: <DashboardRedirectPage /> },
 

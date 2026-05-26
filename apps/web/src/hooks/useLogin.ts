@@ -2,7 +2,17 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/lib/supabase';
+import { resolveTenantSubdomain } from '@/lib/resolveTenantSubdomain';
 import { LoginFormSchema, PasswordLoginSchema, type LoginForm, type PasswordLogin } from '@/schemas';
+
+function isMagicLinkUserNotFoundError(message: string): boolean {
+  const normalized = message.toLowerCase();
+  return (
+    normalized.includes('user not found') ||
+    normalized.includes('signups not allowed') ||
+    normalized.includes('database error saving new user')
+  );
+}
 
 export type PostLoginRedirect = {
   to?: string;
@@ -86,19 +96,25 @@ export function useLogin(
           }, 800);
         }
       } else {
-        // Magic link authentication
+        // Magic link authentication — existing accounts only (no auto-signup on login)
         const magicLinkData = LoginFormSchema.parse(formData);
+        const subdomain = resolveTenantSubdomain();
 
-        // Extract subdomain for trigger (auth user auto-creation)
-        const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
-        const subdomain = hostname.split('.')[0];
+        if (!subdomain) {
+          setMessage({
+            type: 'error',
+            text: t('errors.tenant_subdomain_unresolved'),
+          });
+          return;
+        }
 
         const { error } = await supabase.auth.signInWithOtp({
           email: magicLinkData.email,
           options: {
+            shouldCreateUser: false,
             emailRedirectTo: `${window.location.origin}/auth/callback`,
             data: {
-              subdomain, // Passed to auth.users.user_metadata; trigger will extract it
+              subdomain,
             },
           },
         });
@@ -106,7 +122,9 @@ export function useLogin(
         if (error) {
           setMessage({
             type: 'error',
-            text: error.message || t('error.login_failed'),
+            text: isMagicLinkUserNotFoundError(error.message)
+              ? t('errors.user_not_found')
+              : error.message || t('error.login_failed'),
           });
         } else {
           setMessage({

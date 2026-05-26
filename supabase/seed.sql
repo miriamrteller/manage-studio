@@ -392,6 +392,132 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at = now();
 
 -- ============================================================================
+-- AUTH USERS (local db reset — fixed UUIDs match user_profiles below)
+-- handle_new_user trigger creates base profiles; ON CONFLICT below sets roles.
+-- Hosted projects: run `node scripts/seed-auth-parent.mjs` then re-run seed.
+-- ============================================================================
+DO $$
+DECLARE
+  v_encrypted_pw TEXT := crypt('devpassword123', gen_salt('bf'));
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM auth.users WHERE id = '00000000-0000-0000-0000-000000000510'::uuid
+  ) THEN
+    INSERT INTO auth.users (
+      id,
+      instance_id,
+      aud,
+      role,
+      email,
+      encrypted_password,
+      email_confirmed_at,
+      raw_app_meta_data,
+      raw_user_meta_data,
+      created_at,
+      updated_at,
+      confirmation_token,
+      email_change,
+      email_change_token_new,
+      recovery_token
+    ) VALUES (
+      '00000000-0000-0000-0000-000000000510'::uuid,
+      '00000000-0000-0000-0000-000000000000'::uuid,
+      'authenticated',
+      'authenticated',
+      'miriamrstern@gmail.com',
+      v_encrypted_pw,
+      now(),
+      '{"provider":"email","providers":["email"]}'::jsonb,
+      '{"subdomain":"creativeballet"}'::jsonb,
+      now(),
+      now(),
+      '',
+      '',
+      '',
+      ''
+    );
+
+    INSERT INTO auth.identities (
+      id,
+      user_id,
+      identity_data,
+      provider,
+      provider_id,
+      last_sign_in_at,
+      created_at,
+      updated_at
+    ) VALUES (
+      '00000000-0000-0000-0000-000000000510'::uuid,
+      '00000000-0000-0000-0000-000000000510'::uuid,
+      '{"sub":"00000000-0000-0000-0000-000000000510","email":"miriamrstern@gmail.com"}'::jsonb,
+      'email',
+      '00000000-0000-0000-0000-000000000510',
+      now(),
+      now(),
+      now()
+    );
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM auth.users WHERE id = '51149671-b030-4931-9a0d-ca1862ae4f0b'::uuid
+  ) THEN
+    INSERT INTO auth.users (
+      id,
+      instance_id,
+      aud,
+      role,
+      email,
+      encrypted_password,
+      email_confirmed_at,
+      raw_app_meta_data,
+      raw_user_meta_data,
+      created_at,
+      updated_at,
+      confirmation_token,
+      email_change,
+      email_change_token_new,
+      recovery_token
+    ) VALUES (
+      '51149671-b030-4931-9a0d-ca1862ae4f0b'::uuid,
+      '00000000-0000-0000-0000-000000000000'::uuid,
+      'authenticated',
+      'authenticated',
+      'miriamrteller@gmail.com',
+      v_encrypted_pw,
+      now(),
+      '{"provider":"email","providers":["email"]}'::jsonb,
+      '{"subdomain":"creativeballet"}'::jsonb,
+      now(),
+      now(),
+      '',
+      '',
+      '',
+      ''
+    );
+
+    INSERT INTO auth.identities (
+      id,
+      user_id,
+      identity_data,
+      provider,
+      provider_id,
+      last_sign_in_at,
+      created_at,
+      updated_at
+    ) VALUES (
+      '51149671-b030-4931-9a0d-ca1862ae4f0b'::uuid,
+      '51149671-b030-4931-9a0d-ca1862ae4f0b'::uuid,
+      '{"sub":"51149671-b030-4931-9a0d-ca1862ae4f0b","email":"miriamrteller@gmail.com"}'::jsonb,
+      'email',
+      '51149671-b030-4931-9a0d-ca1862ae4f0b',
+      now(),
+      now(),
+      now()
+    );
+  END IF;
+END $$;
+
+-- ============================================================================
 -- ADMIN USER — requires matching auth.users row (miriamrteller@gmail.com)
 -- ============================================================================
 INSERT INTO user_profiles (
@@ -418,17 +544,9 @@ INSERT INTO user_profiles (
 -- ============================================================================
 -- PARENT / GUARDIAN USER — miriamrstern@gmail.com
 --
--- SETUP (do this BEFORE running the SQL below):
---   1. Supabase Dashboard → Authentication → Users → Add user → Create new user
---   2. Email: miriamrstern@gmail.com
---   3. Password: choose a dev password (e.g. for local login testing)
---   4. Auto Confirm User: ON
---   5. Raw User Meta Data (required for auth trigger):
---        {"subdomain": "creativeballet"}
---   6. Copy the new user's UUID from the Users list
---   7. Replace PARENT_AUTH_USER_ID below with that UUID, then re-run seed
---
--- PARENT_AUTH_USER_ID — must match auth.users.id exactly
+-- Local: auth user is created above (UUID 00000000-0000-0000-0000-000000000510).
+-- Hosted: run `node scripts/seed-auth-parent.mjs`, then re-run this seed file.
+-- Magic link login requires the auth user to exist before requesting a link.
 -- ============================================================================
 
 INSERT INTO user_profiles (

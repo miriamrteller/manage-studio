@@ -13,6 +13,7 @@ const EnrolmentInputSchema = z.object({
     .enum(['pending_payment', 'active', 'admin_review', 'pending_offer', 'cancelled', 'withdrawn'])
     .optional(),
   billing_account_id: z.string().uuid().nullable().optional(),
+  payment_received_at: z.string().nullable().optional(),
 });
 
 /**

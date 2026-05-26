@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { Button } from '@/components/ui/button';
 import type { Person } from '@shared/schemas';
 
 interface ExpandedStudentRowProps {
@@ -6,6 +7,7 @@ interface ExpandedStudentRowProps {
   enrolmentsByPerson: Map<string, string[]>;
   familyMap: Map<string, { contact_person_name: string | null; contact_phone: string | null; contact_email: string | null }>;
   contactPrefsMap: Map<string, { preferred_channel: string; whatsapp_verified: boolean; whatsapp_number: string | null }>;
+  onEnrol?: (person: Person) => void;
 }
 
 /**
@@ -17,6 +19,7 @@ export function ExpandedStudentRow({
   enrolmentsByPerson,
   familyMap,
   contactPrefsMap,
+  onEnrol,
 }: ExpandedStudentRowProps) {
   const { t } = useTranslation();
   const family = person.family_id ? familyMap.get(person.family_id) : null;
@@ -111,7 +114,14 @@ export function ExpandedStudentRow({
             ))}
           </ul>
         ) : (
-          <p className="text-gray-400">{t('pages.students.no_classes')}</p>
+          <div className="space-y-2">
+            <p className="text-gray-400">{t('pages.students.no_classes')}</p>
+            {onEnrol && (
+              <Button variant="primary" size="sm" onClick={() => onEnrol(person)}>
+                {t('pages.students.enrol_button')}
+              </Button>
+            )}
+          </div>
         )}
       </div>
     </div>

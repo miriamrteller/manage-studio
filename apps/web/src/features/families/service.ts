@@ -157,10 +157,8 @@ export class FamilyService extends BaseService {
     tenant: Tenant,
     familyId: string,
     contact: FamilyContactUpdate,
-  ): Promise<Family> {
+  ): Promise<{ family: Family; members: FamilyMember[] }> {
     const family = await this.update(tenant, familyId, contact);
-    const members = await this.getMembers(tenant, familyId);
-    const guardians = members.filter((m) => GUARDIAN_ROLES.has(m.role));
 
     const memberPatch: { name?: string; email?: string; phone?: string } = {};
     if (contact.contact_person_name !== undefined) {
@@ -173,19 +171,23 @@ export class FamilyService extends BaseService {
       memberPatch.phone = contact.contact_phone;
     }
 
-    if (Object.keys(memberPatch).length === 0 || guardians.length === 0) {
-      return family;
+    if (Object.keys(memberPatch).length > 0) {
+      const members = await this.getMembers(tenant, familyId);
+      const guardians = members.filter((m) => GUARDIAN_ROLES.has(m.role));
+
+      if (guardians.length > 0) {
+        await this.withRetry(async () => {
+          for (const member of guardians) {
+            const { error } = await TenantDB.update('family_members', tenant, member.id, memberPatch);
+            if (error) throw error;
+            await this.logAudit(tenant, 'UPDATE', 'family_members', member.id);
+          }
+        }, 'FamilyService.updateContactWithGuardians');
+      }
     }
 
-    await this.withRetry(async () => {
-      for (const member of guardians) {
-        const { error } = await TenantDB.update('family_members', tenant, member.id, memberPatch);
-        if (error) throw error;
-        await this.logAudit(tenant, 'UPDATE', 'family_members', member.id);
-      }
-    }, 'FamilyService.updateContactWithGuardians');
-
-    return family;
+    const members = await this.getMembers(tenant, familyId);
+    return { family, members };
   }
 
   // -------------------------------------------------------------------------

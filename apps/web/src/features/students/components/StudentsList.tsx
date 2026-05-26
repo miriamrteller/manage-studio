@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   useReactTable,
@@ -8,7 +8,7 @@ import {
   createColumnHelper,
   type ExpandedState,
 } from '@tanstack/react-table';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTenant } from '@/hooks/useTenant';
 import { useSortState } from '@/hooks/useSortState';
 import { TenantDB } from '@/lib/db';
@@ -29,6 +29,8 @@ import { useClasses } from '@/features/classes/hooks/useClasses';
 import { useLevels } from '@/features/levels/hooks/useLevels';
 import { useStudents } from '../hooks/useStudents';
 import { DEFAULT_PERSON_SORT, type PersonSortField } from '../lib/personSort';
+import { AdminEnrolStudentModal } from '@/features/enrolment/components/AdminEnrolStudentModal';
+import { resolveGuardianEmail } from '@/features/enrolment/lib/resolveGuardianEmail';
 import { ExpandedStudentRow } from './ExpandedStudentRow';
 import { StudentSlideOver } from './StudentSlideOver';
 import { getStudentAgeDisplay } from '@/lib/utils';
@@ -41,6 +43,7 @@ type StatusFilter = 'active' | 'inactive' | 'all';
 export function StudentsList() {
   const { t } = useTranslation();
   const tenant = useTenant();
+  const queryClient = useQueryClient();
 
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('active');
   const [selectedClasses, setSelectedClasses] = useState<FilterOption[]>([]);
@@ -53,6 +56,14 @@ export function StudentsList() {
   const [page, setPage] = useState(1);
   const [expanded, setExpanded] = useState<ExpandedState>({});
   const [slideOverPersonId, setSlideOverPersonId] = useState<string | null>(null);
+  const [enrolModalStudent, setEnrolModalStudent] = useState<{
+    personId: string;
+    personName: string;
+    personDateOfBirth?: string | null;
+    familyId?: string | null;
+    guardianEmail?: string | null;
+    guardianName?: string | null;
+  } | null>(null);
 
   const { sortField, sortOrder, toggleSort } = useSortState<PersonSortField>(
     DEFAULT_PERSON_SORT.field,
@@ -158,6 +169,21 @@ export function StudentsList() {
       ),
     [familiesQuery.data]
   );
+
+  const openEnrolModal = useCallback((person: Person) => {
+    const family = person.family_id ? familyMap.get(person.family_id) : undefined;
+    setEnrolModalStudent({
+      personId: person.id,
+      personName: person.name,
+      personDateOfBirth: person.date_of_birth,
+      familyId: person.family_id,
+      guardianEmail: resolveGuardianEmail({
+        person,
+        family: family ?? undefined,
+      }),
+      guardianName: family?.contact_person_name ?? null,
+    });
+  }, [familyMap]);
 
   const contactPrefsMap = useMemo(
     () =>
@@ -269,18 +295,27 @@ export function StudentsList() {
         id: 'actions',
         header: () => null,
         cell: ({ row }) => (
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => setSlideOverPersonId(row.original.id)}
-          >
-            {t('pages.students.details_button')}
-          </Button>
+          <div className="flex gap-1">
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => openEnrolModal(row.original)}
+            >
+              {t('pages.students.enrol_button')}
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setSlideOverPersonId(row.original.id)}
+            >
+              {t('pages.students.details_button')}
+            </Button>
+          </div>
         ),
-        size: 80,
+        size: 160,
       }),
     ],
-    [t, enrolmentsByPerson, familyMap, contactPrefsMap]
+    [t, enrolmentsByPerson, familyMap, contactPrefsMap, openEnrolModal]
   );
 
   const table = useReactTable({
@@ -419,7 +454,7 @@ export function StudentsList() {
         }
         actions={
           <Button variant="primary" onClick={() => window.location.assign('/enrol')}>
-            {t('pages.people.enrol_button')}
+            {t('pages.students.enrol_new_button')}
           </Button>
         }
       />
@@ -517,7 +552,7 @@ export function StudentsList() {
         <EmptyState
           title={t('pages.students.empty_title')}
           message={t('pages.students.empty_message')}
-          actionLabel={t('pages.people.enrol_button')}
+          actionLabel={t('pages.students.enrol_new_button')}
           onAction={() => window.location.assign('/enrol')}
         />
       )}
@@ -579,6 +614,7 @@ export function StudentsList() {
                           enrolmentsByPerson={enrolmentsByPerson}
                           familyMap={familyMap}
                           contactPrefsMap={contactPrefsMap}
+                          onEnrol={openEnrolModal}
                         />
                       </td>
                     </tr>
@@ -621,6 +657,22 @@ export function StudentsList() {
         <StudentSlideOver
           personId={slideOverPersonId}
           onClose={() => setSlideOverPersonId(null)}
+        />
+      )}
+
+      {enrolModalStudent && (
+        <AdminEnrolStudentModal
+          isOpen={!!enrolModalStudent}
+          personId={enrolModalStudent.personId}
+          personName={enrolModalStudent.personName}
+          personDateOfBirth={enrolModalStudent.personDateOfBirth}
+          familyId={enrolModalStudent.familyId}
+          guardianEmail={enrolModalStudent.guardianEmail}
+          guardianName={enrolModalStudent.guardianName}
+          onClose={() => setEnrolModalStudent(null)}
+          onSuccess={() => {
+            void queryClient.invalidateQueries({ queryKey: ['students', tenant?.id] });
+          }}
         />
       )}
     </div>
