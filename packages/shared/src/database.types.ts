@@ -299,7 +299,9 @@ export type Database = {
           id: string
           is_public: boolean
           level_id: string | null
+          max_age: number | null
           max_capacity: number
+          min_age: number | null
           name: string
           price_minor: number
           start_time: string
@@ -318,7 +320,9 @@ export type Database = {
           id?: string
           is_public?: boolean
           level_id?: string | null
+          max_age?: number | null
           max_capacity?: number
+          min_age?: number | null
           name: string
           price_minor?: number
           start_time: string
@@ -337,7 +341,9 @@ export type Database = {
           id?: string
           is_public?: boolean
           level_id?: string | null
+          max_age?: number | null
           max_capacity?: number
+          min_age?: number | null
           name?: string
           price_minor?: number
           start_time?: string
@@ -1217,7 +1223,7 @@ export type Database = {
       }
       teachers: {
         Row: {
-          contract_type: string
+          contract_type: string | null
           created_at: string
           email: string | null
           hourly_rate_minor: number | null
@@ -1225,10 +1231,11 @@ export type Database = {
           name: string
           phone: string | null
           tenant_id: string
+          updated_at: string
           user_profile_id: string | null
         }
         Insert: {
-          contract_type?: string
+          contract_type?: string | null
           created_at?: string
           email?: string | null
           hourly_rate_minor?: number | null
@@ -1236,10 +1243,11 @@ export type Database = {
           name: string
           phone?: string | null
           tenant_id: string
+          updated_at?: string
           user_profile_id?: string | null
         }
         Update: {
-          contract_type?: string
+          contract_type?: string | null
           created_at?: string
           email?: string | null
           hourly_rate_minor?: number | null
@@ -1247,6 +1255,7 @@ export type Database = {
           name?: string
           phone?: string | null
           tenant_id?: string
+          updated_at?: string
           user_profile_id?: string | null
         }
         Relationships: [
@@ -1677,7 +1686,10 @@ export type Database = {
           end_time: string
           id: string
           level_id: string
+          level_name: string
+          max_age: number
           max_capacity: number
+          min_age: number
           name: string
           price_minor: number
           start_time: string

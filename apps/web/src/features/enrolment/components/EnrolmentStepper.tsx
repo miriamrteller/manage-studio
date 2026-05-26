@@ -362,7 +362,7 @@ function StepPerson({
         tenant,
         adultFields as NewAdultOnboardingInput
       );
-      onNext({ ...data, person_id: person.id }, adultFields.date_of_birth ?? null);
+      onNext({ ...data, person_id: person.id }, null);
     } catch (err) {
       setError(err instanceof Error ? err.message : t('common.error'));
     } finally {
@@ -530,15 +530,6 @@ function StepPerson({
           className="form-input w-full"
           value={adultFields.email ?? ''}
           onChange={(e) => setAdultFields({ ...adultFields, email: e.target.value })}
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium mb-1">{t('form.person.date_of_birth')}</label>
-        <input
-          type="date"
-          className="form-input w-full"
-          value={adultFields.date_of_birth ?? ''}
-          onChange={(e) => setAdultFields({ ...adultFields, date_of_birth: e.target.value })}
         />
       </div>
       {error && <p className="text-sm text-red-600">{error}</p>}

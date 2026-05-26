@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { PersonForm } from '@/features/people/components/PersonForm';
+import { PersonService } from '@/features/people/service';
 import { FamilyService } from '@/features/families/service';
+import { invalidateFamilyCaches } from '@/features/families/lib/invalidateFamilyCaches';
 import { useTenant } from '@/hooks/useTenant';
 import { useQueryClient } from '@tanstack/react-query';
 import { useStudentDetail } from '../hooks/useStudentDetail';
@@ -55,12 +57,12 @@ export function StudentSlideOver({ personId, onClose }: StudentSlideOverProps) {
     setContactSaving(true);
     setContactSaveError(null);
     try {
-      await FamilyService.update(tenant, family.id, {
+      await FamilyService.updateContactWithGuardians(tenant, family.id, {
         contact_person_name: contactName || undefined,
         contact_email: contactEmail || undefined,
         contact_phone: contactPhone || undefined,
       });
-      queryClient.invalidateQueries({ queryKey: ['student-detail-family', tenant.id, family.id] });
+      invalidateFamilyCaches(queryClient, tenant.id, family.id);
       setIsEditingContact(false);
     } catch (err) {
       setContactSaveError(err instanceof Error ? err.message : t('common.error'));
@@ -136,10 +138,13 @@ export function StudentSlideOver({ personId, onClose }: StudentSlideOverProps) {
                 {isEditingPerson ? (
                   <PersonForm
                     person={person}
-                    onSubmit={async () => {
-                      queryClient.invalidateQueries({
-                        queryKey: ['student-detail-person', tenant?.id, personId],
+                    onSubmit={async (data) => {
+                      if (!tenant) throw new Error('Tenant not initialized');
+                      await PersonService.update(tenant, person.id, data);
+                      await queryClient.invalidateQueries({
+                        queryKey: ['student-detail-person', tenant.id, personId],
                       });
+                      await queryClient.invalidateQueries({ queryKey: ['students', tenant.id] });
                       setIsEditingPerson(false);
                     }}
                   />
@@ -226,7 +231,9 @@ export function StudentSlideOver({ personId, onClose }: StudentSlideOverProps) {
               {/* ── 3. Guardian / Family ── */}
               <section className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <h3 className="font-semibold text-gray-700">{t('pages.families.contact_section')}</h3>
+                  <h3 className="font-semibold text-gray-700">
+                    {t('pages.students.contact_section_guardian')}
+                  </h3>
                   {family && !isEditingContact && (
                     <Button variant="ghost" size="sm" onClick={startEditContact}>
                       {t('common.edit')}

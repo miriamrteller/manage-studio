@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useFamilyDetail } from '../hooks/useFamilyDetail';
 import { FamilyService } from '../service';
+import { invalidateFamilyCaches } from '../lib/invalidateFamilyCaches';
 import { useTenant } from '@/hooks/useTenant';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -41,12 +42,12 @@ export function FamilyDetail({ id }: FamilyDetailProps) {
   const handleSave = async () => {
     if (!tenant || !family) return;
     try {
-      await FamilyService.update(tenant, id, {
+      await FamilyService.updateContactWithGuardians(tenant, id, {
         contact_person_name: contactName || undefined,
         contact_email: contactEmail || undefined,
         contact_phone: contactPhone || undefined,
       });
-      queryClient.invalidateQueries({ queryKey: ['family', tenant.id, id] });
+      invalidateFamilyCaches(queryClient, tenant.id, id);
       setIsEditing(false);
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : t('common.error'));

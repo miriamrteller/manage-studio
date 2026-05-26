@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
+import { useTenant } from '@/hooks/useTenant';
 import { usePerson } from '../hooks/usePerson';
 import { PersonForm } from './PersonForm';
+import { PersonService } from '../service';
 import { MedicalNotes } from './MedicalNotes';
 import { formatDate, calculateAge } from '@/lib/utils';
 
@@ -22,6 +25,8 @@ interface PersonDetailProps {
  */
 export function PersonDetail({ id, onClose }: PersonDetailProps) {
   const { t } = useTranslation();
+  const tenant = useTenant();
+  const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
 
   const { data: person, isLoading, error } = usePerson(id);
@@ -71,8 +76,15 @@ export function PersonDetail({ id, onClose }: PersonDetailProps) {
           </div>
           <PersonForm
             person={person}
-            onSubmit={async () => {
-              // Handle submission via PersonForm's internal mutation
+            onSubmit={async (data) => {
+              if (!tenant) throw new Error('Tenant not initialized');
+              await PersonService.update(tenant, person.id, data);
+              await queryClient.invalidateQueries({ queryKey: ['person', tenant.id, id] });
+              await queryClient.invalidateQueries({ queryKey: ['students', tenant.id] });
+              await queryClient.invalidateQueries({
+                queryKey: ['student-detail-person', tenant.id, id],
+              });
+              setIsEditing(false);
             }}
           />
         </div>

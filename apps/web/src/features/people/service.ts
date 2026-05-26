@@ -6,11 +6,29 @@ import type { Tenant } from '@shared/schemas';
 
 // Validation schema for person creation/update (without system fields)
 const PersonInputSchema = z.object({
-  first_name: z.string().min(1, 'First name required').optional(),
-  last_name: z.string().min(1, 'Last name required').optional(),
-  date_of_birth: z.string().date('Invalid date format').optional(),
+  name: z.string().min(1, 'Name required').optional(),
+  email: z.string().email('Invalid email').nullable().optional(),
+  date_of_birth: z.string().date('Invalid date format').nullable().optional(),
+  medical_notes: z.string().nullable().optional(),
+  allergies: z.string().nullable().optional(),
+  emergency_contact_name: z.string().nullable().optional(),
+  emergency_contact_phone: z.string().nullable().optional(),
+  photo_consent: z.boolean().optional(),
+  media_consent: z.boolean().optional(),
+  status: z.enum(['active', 'inactive', 'withdrawn']).optional(),
   gender: z.enum(['male', 'female', 'other']).optional(),
 });
+
+function normalizePersonPayload(data: z.infer<typeof PersonInputSchema>) {
+  const payload = { ...data };
+  if (payload.email === '') payload.email = null;
+  if (payload.date_of_birth === '') payload.date_of_birth = null;
+  if (payload.medical_notes === '') payload.medical_notes = null;
+  if (payload.allergies === '') payload.allergies = null;
+  if (payload.emergency_contact_name === '') payload.emergency_contact_name = null;
+  if (payload.emergency_contact_phone === '') payload.emergency_contact_phone = null;
+  return payload;
+}
 
 /**
  * PersonService: All person data operations
@@ -58,7 +76,7 @@ export class PersonService extends BaseService {
   }
 
   static async create(tenant: Tenant, personData: Partial<Person>) {
-    const validated = PersonInputSchema.parse(personData);
+    const validated = normalizePersonPayload(PersonInputSchema.parse(personData));
 
     return this.withRetry(async () => {
       const { data, error } = await TenantDB.insert('people', tenant, validated)
@@ -74,7 +92,7 @@ export class PersonService extends BaseService {
   }
 
   static async update(tenant: Tenant, id: string, personData: Partial<Person>) {
-    const validated = PersonInputSchema.parse(personData);
+    const validated = normalizePersonPayload(PersonInputSchema.parse(personData));
 
     return this.withRetry(async () => {
       const { data, error } = await TenantDB.update('people', tenant, id, validated)

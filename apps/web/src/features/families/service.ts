@@ -21,6 +21,14 @@ export const FamilyMemberInputSchema = z.object({
   role: z.enum(['parent', 'guardian', 'sibling', 'adult_student']),
 });
 
+export type FamilyContactUpdate = {
+  contact_person_name?: string;
+  contact_email?: string;
+  contact_phone?: string;
+};
+
+const GUARDIAN_ROLES = new Set(['parent', 'guardian']);
+
 /**
  * FamilyService: Family data operations.
  *
@@ -106,6 +114,44 @@ export class FamilyService extends BaseService {
       await this.logAudit(tenant, 'UPDATE', 'families', id);
       return result;
     }, 'FamilyService.update');
+  }
+
+  /**
+   * Update family contact fields and keep guardian/parent family_members in sync.
+   */
+  static async updateContactWithGuardians(
+    tenant: Tenant,
+    familyId: string,
+    contact: FamilyContactUpdate,
+  ): Promise<Family> {
+    const family = await this.update(tenant, familyId, contact);
+    const members = await this.getMembers(tenant, familyId);
+    const guardians = members.filter((m) => GUARDIAN_ROLES.has(m.role));
+
+    const memberPatch: { name?: string; email?: string; phone?: string } = {};
+    if (contact.contact_person_name !== undefined) {
+      memberPatch.name = contact.contact_person_name;
+    }
+    if (contact.contact_email !== undefined) {
+      memberPatch.email = contact.contact_email;
+    }
+    if (contact.contact_phone !== undefined) {
+      memberPatch.phone = contact.contact_phone;
+    }
+
+    if (Object.keys(memberPatch).length === 0 || guardians.length === 0) {
+      return family;
+    }
+
+    await this.withRetry(async () => {
+      for (const member of guardians) {
+        const { error } = await TenantDB.update('family_members', tenant, member.id, memberPatch);
+        if (error) throw error;
+        await this.logAudit(tenant, 'UPDATE', 'family_members', member.id);
+      }
+    }, 'FamilyService.updateContactWithGuardians');
+
+    return family;
   }
 
   // -------------------------------------------------------------------------

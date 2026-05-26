@@ -25,7 +25,6 @@ export type NewMinorOnboardingInput = z.infer<typeof NewMinorOnboardingInputSche
 export const NewAdultOnboardingInputSchema = z.object({
   name: z.string().min(1, 'Name required'),
   email: z.string().email('Invalid email').optional(),
-  date_of_birth: z.string().date('Invalid date format').optional(),
   gender: z.enum(['male', 'female', 'other']).optional(),
 });
 
