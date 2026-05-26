@@ -5,7 +5,10 @@
  * Usage (from repo root):
  *   SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... node scripts/seed-auth-parent.mjs
  *
- * Uses the same fixed UUID as supabase/seed.sql so user_profiles / family links stay in sync.
+ * Hosted projects:
+ *   1. Apply migration 019 (dashboard-friendly auth trigger)
+ *   2. SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... node scripts/seed-auth-parent.mjs
+ *   3. Re-run supabase/seed.sql (or supabase/scripts/link-parent-user.sql if UUID differs)
  */
 
 const PARENT_AUTH_USER_ID = '00000000-0000-0000-0000-000000000510';

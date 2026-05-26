@@ -11,4 +11,9 @@ export default defineConfig({
       '@shared': path.resolve(__dirname, '../../packages/shared/src'),
     },
   },
+  test: {
+    globals: false,
+    environment: 'node',
+    include: ['src/**/*.test.ts'],
+  },
 })

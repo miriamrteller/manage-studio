@@ -7,10 +7,12 @@ import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-
 import { supabase } from '@/lib/supabase';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useTenant } from '@/hooks/useTenant';
+import { linkAuthUserToPerson } from '../linkAuthUser';
 
 interface EnrolmentPaymentFormProps {
   classId: string;
   enrolmentId: string;
+  personId?: string;
   onPaid: () => void;
   onPrevious: () => void;
 }
@@ -84,6 +86,7 @@ function PaymentFormInner({
 export function EnrolmentPaymentForm({
   classId,
   enrolmentId,
+  personId,
   onPaid,
   onPrevious,
 }: EnrolmentPaymentFormProps) {
@@ -100,6 +103,14 @@ export function EnrolmentPaymentForm({
       navigate('/login', { state: { from: '/classes' }, replace: true });
     }
   }, [authLoading, user, navigate]);
+
+  useEffect(() => {
+    if (!user || !personId) return;
+
+    void linkAuthUserToPerson(personId).catch((err) => {
+      console.warn('Could not link auth user at payment step:', err);
+    });
+  }, [user, personId]);
 
   useEffect(() => {
     if (!user || !enrolmentId || !classId) return;

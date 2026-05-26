@@ -5,7 +5,9 @@ import { WhatsAppOtpVerifier } from '@/components/shared';
 import { EnrolmentPaymentForm } from './EnrolmentPaymentForm';
 import { useEnrolment } from '../hooks/useEnrolment';
 import { useTenant } from '@/hooks/useTenant';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { EnrolmentService } from '../service';
+import { linkAuthUserToPerson } from '../linkAuthUser';
 import {
   EnrolmentOnboardingService,
   type NewMinorOnboardingInput,
@@ -86,6 +88,7 @@ export function EnrolmentStepper({
   const [selectedClassName, setSelectedClassName] = useState('');
 
   const tenant = useTenant();
+  const { user } = useCurrentUser();
   const { createEnrolment, isCreating } = useEnrolment();
   const [checkoutEnrolmentId, setCheckoutEnrolmentId] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
@@ -146,24 +149,37 @@ export function EnrolmentStepper({
       return;
     }
 
-    createEnrolment(
-      { ...enrolmentData, status: 'pending_payment' },
-      {
-        onSuccess: (created) => {
-          setCheckoutEnrolmentId(created.id);
-          setEnrolmentData(created);
+    const prepareCheckout = async () => {
+      createEnrolment(
+        { ...enrolmentData, status: 'pending_payment' },
+        {
+          onSuccess: async (created) => {
+            setCheckoutEnrolmentId(created.id);
+            setEnrolmentData(created);
+
+            if (user?.id && created.person_id) {
+              try {
+                await linkAuthUserToPerson(created.person_id);
+              } catch (linkError) {
+                console.warn('Could not link auth user to family:', linkError);
+              }
+            }
+          },
+          onError: () => {
+            setCheckoutError(t('enrolment.checkout_prepare_failed'));
+          },
         },
-        onError: () => {
-          setCheckoutError(t('enrolment.checkout_prepare_failed'));
-        },
-      },
-    );
+      );
+    };
+
+    void prepareCheckout();
   }, [
     currentStep,
     checkoutEnrolmentId,
     tenant,
     enrolmentData,
     createEnrolment,
+    user?.id,
     t,
   ]);
 
@@ -889,6 +905,7 @@ function StepCheckout({
       <EnrolmentPaymentForm
         classId={enrolmentData.class_id}
         enrolmentId={checkoutEnrolmentId}
+        personId={enrolmentData.person_id}
         onPaid={onPaymentSuccess}
         onPrevious={onPrevious}
       />

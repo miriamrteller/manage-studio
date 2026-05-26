@@ -8,11 +8,11 @@
 -- Usage:
 --   psql "$DATABASE_URL" -f supabase/reset_dev_db.sql
 --
--- After running, apply fresh migrations:
---   supabase db push          (Supabase CLI)
+-- After running, apply fresh migrations (001–018):
+--   supabase db push          (Supabase CLI — set SUPABASE_DB_PASSWORD)
 --   -- or --
 --   psql "$DATABASE_URL" -f supabase/migrations/20260526000100_tenants.sql
---   ... (in order)
+--   ... through 20260526001800_grants.sql
 -- =============================================================================
 
 -- Suppress notices for objects that may not exist
@@ -78,6 +78,7 @@ DROP FUNCTION IF EXISTS public.next_invoice_number(UUID)                        
 DROP FUNCTION IF EXISTS public.get_tenant_stripe_credentials(UUID)                       CASCADE;
 DROP FUNCTION IF EXISTS public.save_tenant_stripe_credentials(TEXT, TEXT, TEXT)          CASCADE;
 DROP FUNCTION IF EXISTS public.get_my_profile()                                          CASCADE;
+DROP FUNCTION IF EXISTS public.link_auth_user_to_person(UUID)                            CASCADE;
 
 -- ---------------------------------------------------------------------------
 -- 4. Clear migration history so Supabase CLI re-applies all migrations
