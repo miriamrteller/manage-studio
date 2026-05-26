@@ -303,6 +303,7 @@
       "filter_by_family": "Family",
       "filter_by_level": "Level",
       "family_search_placeholder": "Search family name or contact…",
+      "filter_by_family_selected": "Selected families",
       "clear_class_filter": "Clear",
       "age_adult": "Adult",
       "classes_column": "Classes",

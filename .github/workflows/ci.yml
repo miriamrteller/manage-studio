@@ -74,7 +74,7 @@ jobs:
           cache: "pnpm"
       - run: pnpm install
       - name: Build web app
-        run: pnpm run build
+        run: cp apps/web/.env.e2e apps/web/.env.production.local && pnpm run build
       - name: Install Playwright browsers
         run: cd apps/web && pnpm exec playwright install --with-deps chromium
       - name: Run accessibility tests (chromium only for speed)

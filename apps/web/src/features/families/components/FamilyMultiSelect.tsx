@@ -29,8 +29,6 @@ export function FamilyMultiSelect({ selected, onChange, id }: FamilyMultiSelectP
     enabled: isOpen,
   });
 
-  const availableFamilies = families.filter((f) => !selectedIds.has(f.id));
-
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
@@ -47,6 +45,14 @@ export function FamilyMultiSelect({ selected, onChange, id }: FamilyMultiSelectP
     setIsOpen(false);
   };
 
+  const handleToggle = (family: Family) => {
+    if (selectedIds.has(family.id)) {
+      handleRemove(family.id);
+    } else {
+      handleSelect(family);
+    }
+  };
+
   const handleRemove = (value: string) => {
     onChange(selected.filter((s) => s.value !== value));
   };
@@ -58,7 +64,11 @@ export function FamilyMultiSelect({ selected, onChange, id }: FamilyMultiSelectP
       </span>
 
       {selected.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-2" aria-labelledby={`${inputId}-label`}>
+        <div
+          className="flex flex-wrap gap-2 mb-2"
+          role="group"
+          aria-label={t('pages.students.filter_by_family_selected')}
+        >
           {selected.map((item) => (
             <span
               key={item.value}
@@ -102,30 +112,42 @@ export function FamilyMultiSelect({ selected, onChange, id }: FamilyMultiSelectP
         <ul
           id={listboxId}
           role="listbox"
+          aria-multiselectable="true"
+          aria-labelledby={`${inputId}-label`}
           className="absolute z-20 mt-1 w-full max-h-48 overflow-y-auto rounded-md border bg-white shadow-lg"
           style={{ borderColor: 'var(--color-border-default)' }}
         >
           {isSearching && (
-            <li className="px-3 py-2 text-sm text-gray-500">{t('common.loading')}</li>
+            <li className="px-3 py-2 text-sm text-gray-500" role="presentation">
+              {t('common.loading')}
+            </li>
           )}
-          {!isSearching && availableFamilies.length === 0 && (
-            <li className="px-3 py-2 text-sm text-gray-500">{t('common.no_results_found')}</li>
+          {!isSearching && families.length === 0 && (
+            <li className="px-3 py-2 text-sm text-gray-500" role="presentation">
+              {t('common.no_results_found')}
+            </li>
           )}
           {!isSearching &&
-            availableFamilies.map((family) => (
-              <li key={family.id} role="option" aria-selected={false}>
-                <button
-                  type="button"
-                  className="w-full px-3 py-2 text-start text-sm hover:bg-gray-50"
-                  onClick={() => handleSelect(family)}
-                >
-                  <span className="font-medium">{familyLabel(family)}</span>
-                  {family.contact_person_name && family.name && (
-                    <span className="block text-xs text-gray-500">{family.contact_person_name}</span>
-                  )}
-                </button>
-              </li>
-            ))}
+            families.map((family) => {
+              const isSelected = selectedIds.has(family.id);
+              return (
+                <li key={family.id} role="option" aria-selected={isSelected}>
+                  <button
+                    type="button"
+                    className={`w-full px-3 py-2 text-start text-sm hover:bg-gray-50 ${
+                      isSelected ? 'bg-gray-50 font-medium' : ''
+                    }`}
+                    onClick={() => handleToggle(family)}
+                    aria-pressed={isSelected}
+                  >
+                    <span className="font-medium">{familyLabel(family)}</span>
+                    {family.contact_person_name && family.name && (
+                      <span className="block text-xs text-gray-500">{family.contact_person_name}</span>
+                    )}
+                  </button>
+                </li>
+              );
+            })}
         </ul>
       )}
     </div>
