@@ -52,7 +52,14 @@
     "all": "All",
     "filters": {
       "age_min": "Min age",
-      "age_max": "Max age"
+      "age_max": "Max age",
+      "title": "Filters",
+      "open": "Filters",
+      "apply": "Apply",
+      "clear_all": "Clear all",
+      "active_count": "{{count}} active",
+      "add": "Add…",
+      "all_selected": "All options selected"
     },
     "view": "View",
     "status": "Status",
@@ -295,7 +302,9 @@
       "filter_by_class": "Filter by class:",
       "filter_by_family": "Family",
       "filter_by_level": "Level",
+      "family_search_placeholder": "Search family name or contact…",
       "clear_class_filter": "Clear",
+      "age_adult": "Adult",
       "classes_column": "Classes",
       "guardian_column": "Guardian",
       "contact_section": "Contact details",

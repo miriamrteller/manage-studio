@@ -16,18 +16,22 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/shared';
 import {
   AgeRangeFilter,
-  FilterSelect,
+  FilterDrawer,
+  FilterMultiSelect,
+  FilterToolbar,
   SortableHeader,
+  type ActiveFilterChip,
+  type FilterOption,
 } from '@/components/shared/table';
 import { PersonSearch } from '@/features/people/components/PersonSearch';
+import { FamilyMultiSelect } from '@/features/families/components/FamilyMultiSelect';
 import { useClasses } from '@/features/classes/hooks/useClasses';
 import { useLevels } from '@/features/levels/hooks/useLevels';
-import { useFamilies } from '@/features/families/hooks/useFamilies';
 import { useStudents } from '../hooks/useStudents';
 import { DEFAULT_PERSON_SORT, type PersonSortField } from '../lib/personSort';
 import { ExpandedStudentRow } from './ExpandedStudentRow';
 import { StudentSlideOver } from './StudentSlideOver';
-import { calculateAge } from '@/lib/utils';
+import { getStudentAgeDisplay } from '@/lib/utils';
 import type { Person } from '@shared/schemas';
 
 const columnHelper = createColumnHelper<Person>();
@@ -39,9 +43,10 @@ export function StudentsList() {
   const tenant = useTenant();
 
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('active');
-  const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
-  const [selectedLevelId, setSelectedLevelId] = useState<string | null>(null);
-  const [selectedFamilyId, setSelectedFamilyId] = useState<string | null>(null);
+  const [selectedClasses, setSelectedClasses] = useState<FilterOption[]>([]);
+  const [selectedLevels, setSelectedLevels] = useState<FilterOption[]>([]);
+  const [selectedFamilies, setSelectedFamilies] = useState<FilterOption[]>([]);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [minAge, setMinAge] = useState<number | null>(null);
   const [maxAge, setMaxAge] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -56,13 +61,12 @@ export function StudentsList() {
 
   const { classes } = useClasses({ publicOnly: false });
   const { levels } = useLevels({ page: 1 });
-  const { families } = useFamilies({ page: 1, pageSize: 200 });
   const { students, total, pageSize, isLoading, error } = useStudents({
     page,
     status: statusFilter,
-    classId: selectedClassId,
-    levelId: selectedLevelId,
-    familyId: selectedFamilyId,
+    classIds: selectedClasses.map((c) => c.value),
+    levelIds: selectedLevels.map((l) => l.value),
+    familyIds: selectedFamilies.map((f) => f.value),
     minAge,
     maxAge,
     searchQuery,
@@ -222,10 +226,14 @@ export function StudentsList() {
       columnHelper.accessor('date_of_birth', {
         header: t('pages.people.age_label'),
         cell: (info) => {
-          const dob = info.getValue();
-          if (!dob) return <span className="text-gray-400">—</span>;
-          const age = calculateAge(dob);
-          return age !== null ? `${age}` : dob;
+          const display = getStudentAgeDisplay(info.getValue());
+          if (display.kind === 'adult') {
+            return t('pages.students.age_adult');
+          }
+          if (display.kind === 'age') {
+            return `${display.value}`;
+          }
+          return <span className="text-gray-400">—</span>;
         },
         size: 60,
       }),
@@ -286,11 +294,6 @@ export function StudentsList() {
     getRowId: (row) => row.id,
   });
 
-  const handleClassFilter = (classId: string) => {
-    setSelectedClassId((prev) => (prev === classId ? null : classId));
-    setPage(1);
-  };
-
   const handleStatusFilter = (s: StatusFilter) => {
     setStatusFilter(s);
     setPage(1);
@@ -300,19 +303,96 @@ export function StudentsList() {
     toggleSort(field, () => setPage(1));
   };
 
-  const familyOptions = useMemo(
-    () =>
-      families.map((f) => ({
-        value: f.id,
-        label: f.name ?? f.contact_person_name ?? f.id,
-      })),
-    [families]
+  const resetPage = () => setPage(1);
+
+  const classOptions = useMemo(
+    () => classes.map((c: { id: string; name: string }) => ({ value: c.id, label: c.name })),
+    [classes]
   );
 
   const levelOptions = useMemo(
     () => levels.map((l) => ({ value: l.id, label: l.name })),
     [levels]
   );
+
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (statusFilter !== 'active') count++;
+    count += selectedClasses.length;
+    count += selectedLevels.length;
+    count += selectedFamilies.length;
+    if (minAge != null || maxAge != null) count++;
+    return count;
+  }, [statusFilter, selectedClasses, selectedLevels, selectedFamilies, minAge, maxAge]);
+
+  const activeFilterChips = useMemo((): ActiveFilterChip[] => {
+    const chips: ActiveFilterChip[] = [];
+    if (statusFilter !== 'active') {
+      chips.push({
+        key: 'status',
+        label: t(`pages.students.status_${statusFilter}`),
+        onRemove: () => {
+          setStatusFilter('active');
+          resetPage();
+        },
+      });
+    }
+    for (const cls of selectedClasses) {
+      chips.push({
+        key: `class-${cls.value}`,
+        label: cls.label,
+        onRemove: () => {
+          setSelectedClasses((prev) => prev.filter((c) => c.value !== cls.value));
+          resetPage();
+        },
+      });
+    }
+    for (const level of selectedLevels) {
+      chips.push({
+        key: `level-${level.value}`,
+        label: level.label,
+        onRemove: () => {
+          setSelectedLevels((prev) => prev.filter((l) => l.value !== level.value));
+          resetPage();
+        },
+      });
+    }
+    for (const family of selectedFamilies) {
+      chips.push({
+        key: `family-${family.value}`,
+        label: family.label,
+        onRemove: () => {
+          setSelectedFamilies((prev) => prev.filter((f) => f.value !== family.value));
+          resetPage();
+        },
+      });
+    }
+    if (minAge != null || maxAge != null) {
+      const parts = [];
+      if (minAge != null) parts.push(`${t('common.filters.age_min')}: ${minAge}`);
+      if (maxAge != null) parts.push(`${t('common.filters.age_max')}: ${maxAge}`);
+      chips.push({
+        key: 'age',
+        label: parts.join(' – '),
+        onRemove: () => {
+          setMinAge(null);
+          setMaxAge(null);
+          resetPage();
+        },
+      });
+    }
+    return chips;
+  }, [statusFilter, selectedClasses, selectedLevels, selectedFamilies, minAge, maxAge, t]);
+
+  const handleClearAllFilters = () => {
+    setStatusFilter('active');
+    setSelectedClasses([]);
+    setSelectedLevels([]);
+    setSelectedFamilies([]);
+    setMinAge(null);
+    setMaxAge(null);
+    resetPage();
+  };
 
   return (
     <div className="space-y-4 p-4">
@@ -322,115 +402,105 @@ export function StudentsList() {
         <p className="text-gray-600">{t('pages.students.description')}</p>
       </div>
 
-      {/* Filter bar */}
-      <div className="space-y-3">
-        {/* Status tabs */}
-        <div className="flex gap-2">
-          {(['active', 'inactive', 'all'] as StatusFilter[]).map((s) => (
-            <button
-              key={s}
-              onClick={() => handleStatusFilter(s)}
-              className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                statusFilter === s
-                  ? 'bg-gray-900 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              {t(`pages.students.status_${s}`)}
-            </button>
-          ))}
-        </div>
-
-        {/* Class quick-filter buttons */}
-        {classes.length > 0 && (
-          <div className="flex flex-wrap gap-2 items-center">
-            <span className="text-xs text-gray-500 font-medium">{t('pages.students.filter_by_class')}</span>
-            {classes.map((cls: { id: string; name: string }) => (
-              <button
-                key={cls.id}
-                onClick={() => handleClassFilter(cls.id)}
-                className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
-                  selectedClassId === cls.id
-                    ? 'border-transparent text-white'
-                    : 'border-gray-300 text-gray-700 hover:border-gray-500'
-                }`}
-                style={
-                  selectedClassId === cls.id
-                    ? { backgroundColor: 'var(--color-info)', borderColor: 'var(--color-info)' }
-                    : {}
-                }
-              >
-                {cls.name}
-              </button>
-            ))}
-            {selectedClassId && (
-              <button
-                onClick={() => { setSelectedClassId(null); setPage(1); }}
-                className="px-2 py-1 text-xs text-gray-500 hover:text-gray-800 underline"
-              >
-                {t('pages.students.clear_class_filter')}
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* Family, level, age filters */}
-        <div className="flex flex-wrap gap-3 items-end">
-          <FilterSelect
-            id="family-filter"
-            label={t('pages.students.filter_by_family')}
-            value={selectedFamilyId ?? ''}
-            onChange={(v) => {
-              setSelectedFamilyId(v || null);
-              setPage(1);
+      {/* Compact toolbar + collapsible filter drawer */}
+      <FilterToolbar
+        onOpenFilters={() => setFiltersOpen(true)}
+        activeFilterCount={activeFilterCount}
+        activeFilters={activeFilterChips}
+        searchSlot={
+          <PersonSearch
+            value={searchQuery}
+            onChange={(q) => {
+              setSearchQuery(q);
+              resetPage();
             }}
-            options={familyOptions}
-            allLabel={t('common.all')}
+            isSearching={isLoading}
           />
-          <FilterSelect
-            id="level-filter"
-            label={t('pages.students.filter_by_level')}
-            value={selectedLevelId ?? ''}
-            onChange={(v) => {
-              setSelectedLevelId(v || null);
-              setPage(1);
-            }}
-            options={levelOptions}
-            allLabel={t('common.all')}
-          />
-          <AgeRangeFilter
-            minAge={minAge}
-            maxAge={maxAge}
-            onMinChange={(v) => {
-              setMinAge(v);
-              setPage(1);
-            }}
-            onMaxChange={(v) => {
-              setMaxAge(v);
-              setPage(1);
-            }}
-            onClear={() => {
-              setMinAge(null);
-              setMaxAge(null);
-              setPage(1);
-            }}
-          />
-        </div>
-
-        {/* Search + Enrol button */}
-        <div className="flex gap-3 items-end flex-wrap">
-          <div className="flex-1 min-w-48">
-            <PersonSearch
-              value={searchQuery}
-              onChange={(q) => { setSearchQuery(q); setPage(1); }}
-              isSearching={isLoading}
-            />
-          </div>
+        }
+        actions={
           <Button variant="primary" onClick={() => window.location.assign('/enrol')}>
             {t('pages.people.enrol_button')}
           </Button>
+        }
+      />
+
+      <FilterDrawer
+        open={filtersOpen}
+        onClose={() => setFiltersOpen(false)}
+        title={t('common.filters.title')}
+        activeCount={activeFilterCount}
+        onClearAll={handleClearAllFilters}
+      >
+        <div className="space-y-1">
+          <span className="block text-sm font-medium">{t('common.status')}</span>
+          <div className="flex flex-wrap gap-2">
+            {(['active', 'inactive', 'all'] as StatusFilter[]).map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => handleStatusFilter(s)}
+                className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                  statusFilter === s
+                    ? 'bg-gray-900 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {t(`pages.students.status_${s}`)}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+
+        {classes.length > 0 && (
+          <FilterMultiSelect
+            id="class-filter"
+            label={t('pages.students.filter_by_class')}
+            options={classOptions}
+            selected={selectedClasses}
+            onChange={(next) => {
+              setSelectedClasses(next);
+              resetPage();
+            }}
+          />
+        )}
+
+        <FamilyMultiSelect
+          selected={selectedFamilies}
+          onChange={(next) => {
+            setSelectedFamilies(next);
+            resetPage();
+          }}
+        />
+
+        <FilterMultiSelect
+          id="level-filter"
+          label={t('pages.students.filter_by_level')}
+          options={levelOptions}
+          selected={selectedLevels}
+          onChange={(next) => {
+            setSelectedLevels(next);
+            resetPage();
+          }}
+        />
+
+        <AgeRangeFilter
+          minAge={minAge}
+          maxAge={maxAge}
+          onMinChange={(v) => {
+            setMinAge(v);
+            resetPage();
+          }}
+          onMaxChange={(v) => {
+            setMaxAge(v);
+            resetPage();
+          }}
+          onClear={() => {
+            setMinAge(null);
+            setMaxAge(null);
+            resetPage();
+          }}
+        />
+      </FilterDrawer>
 
       {/* Loading */}
       {isLoading && <div className="py-8 text-center text-gray-500">{t('common.loading')}</div>}

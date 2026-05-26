@@ -52,7 +52,14 @@
     "all": "הכל",
     "filters": {
       "age_min": "גיל מינימלי",
-      "age_max": "גיל מקסימלי"
+      "age_max": "גיל מקסימלי",
+      "title": "מסננים",
+      "open": "מסננים",
+      "apply": "החל",
+      "clear_all": "נקה הכל",
+      "active_count": "{{count}} פעילים",
+      "add": "הוסף…",
+      "all_selected": "כל האפשרויות נבחרו"
     },
     "view": "צפה",
     "status": "סטטוס",
@@ -295,7 +302,9 @@
       "filter_by_class": "סנן לפי כיתה:",
       "filter_by_family": "משפחה",
       "filter_by_level": "רמה",
+      "family_search_placeholder": "חיפוש שם משפחה או איש קשר…",
       "clear_class_filter": "נקה",
+      "age_adult": "מבוגר",
       "classes_column": "כיתות",
       "guardian_column": "אפוטרופוס",
       "contact_section": "פרטי קשר",

@@ -318,6 +318,22 @@ export function isMinor(dateOfBirth: string | Date | null | undefined): boolean 
   return age !== null && age < 18;
 }
 
+export type StudentAgeDisplay =
+  | { kind: 'adult' }
+  | { kind: 'age'; value: number }
+  | { kind: 'unknown' };
+
+/** Age column display: adults always show as "adult", minors show numeric age. */
+export function getStudentAgeDisplay(
+  dateOfBirth: string | Date | null | undefined
+): StudentAgeDisplay {
+  if (!isMinor(dateOfBirth)) {
+    return { kind: 'adult' };
+  }
+  const age = calculateAge(dateOfBirth);
+  return age !== null ? { kind: 'age', value: age } : { kind: 'unknown' };
+}
+
 /**
  * Format date in Jerusalem timezone using Intl API
  */
