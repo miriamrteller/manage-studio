@@ -8,16 +8,14 @@ import type { RequirementTemplate } from '@shared/schemas';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type RequirementType = 'age_range' | 'gender' | 'level' | 'document_submitted' | 'manual_review';
+type RequirementType = 'gender' | 'level' | 'document_submitted' | 'manual_review';
 
 interface CreateFormState {
   name: string;
   requirement_type: RequirementType | '';
   display_text: string;
   is_hard_block: boolean;
-  // config fields
-  min_age: string;
-  max_age: string;
+  // config fields (no min_age/max_age — those are columns on the class itself)
   gender_male: boolean;
   gender_female: boolean;
   level_id: string;
@@ -29,8 +27,6 @@ const EMPTY_CREATE: CreateFormState = {
   requirement_type: '',
   display_text: '',
   is_hard_block: true,
-  min_age: '',
-  max_age: '',
   gender_male: false,
   gender_female: false,
   level_id: '',
@@ -41,11 +37,6 @@ const EMPTY_CREATE: CreateFormState = {
 
 function buildConfig(form: CreateFormState): Record<string, unknown> {
   switch (form.requirement_type) {
-    case 'age_range': {
-      const cfg: Record<string, unknown> = { min_age: Number(form.min_age) };
-      if (form.max_age) cfg.max_age = Number(form.max_age);
-      return cfg;
-    }
     case 'gender': {
       const allowed: string[] = [];
       if (form.gender_male) allowed.push('male');
@@ -118,10 +109,6 @@ export function ClassRequirementsPanel({ classId, className }: ClassRequirements
   const handleCreateAndLink = () => {
     const { name, requirement_type, display_text, is_hard_block } = createForm;
     if (!name.trim() || !requirement_type) {
-      setCreateError(t('common.required_fields'));
-      return;
-    }
-    if (requirement_type === 'age_range' && !createForm.min_age) {
       setCreateError(t('common.required_fields'));
       return;
     }
@@ -387,7 +374,6 @@ export function ClassRequirementsPanel({ classId, className }: ClassRequirements
                   }
                 >
                   <option value="">{t('form.requirement.select_placeholder')}</option>
-                  <option value="age_range">{t('form.requirement.type_age_range')}</option>
                   <option value="gender">{t('form.requirement.type_gender')}</option>
                   <option value="level">{t('form.requirement.type_level')}</option>
                   <option value="document_submitted">{t('form.requirement.type_document_submitted')}</option>
@@ -396,35 +382,6 @@ export function ClassRequirementsPanel({ classId, className }: ClassRequirements
               </Field>
 
               {/* Conditional config fields */}
-              {createForm.requirement_type === 'age_range' && (
-                <div className="space-y-2 rounded-md border p-3"
-                  style={{ borderColor: 'var(--color-border-default)', backgroundColor: 'var(--color-surface-subtle, #f9fafb)' }}>
-                  <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--color-text-muted)' }}>
-                    {t('form.requirement.config_section')}
-                  </p>
-                  <Field label={t('form.requirement.min_age')}>
-                    <input
-                      type="number"
-                      min={0}
-                      className="w-full rounded-md border px-3 py-2 text-sm"
-                      style={{ borderColor: 'var(--color-border-default)' }}
-                      value={createForm.min_age}
-                      onChange={(e) => setCreateForm((f) => ({ ...f, min_age: e.target.value }))}
-                    />
-                  </Field>
-                  <Field label={t('form.requirement.max_age')}>
-                    <input
-                      type="number"
-                      min={0}
-                      className="w-full rounded-md border px-3 py-2 text-sm"
-                      style={{ borderColor: 'var(--color-border-default)' }}
-                      value={createForm.max_age}
-                      onChange={(e) => setCreateForm((f) => ({ ...f, max_age: e.target.value }))}
-                    />
-                  </Field>
-                </div>
-              )}
-
               {createForm.requirement_type === 'gender' && (
                 <div className="space-y-2 rounded-md border p-3"
                   style={{ borderColor: 'var(--color-border-default)', backgroundColor: 'var(--color-surface-subtle, #f9fafb)' }}>

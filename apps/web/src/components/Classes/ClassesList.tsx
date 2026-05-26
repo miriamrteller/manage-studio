@@ -57,7 +57,7 @@ export function ClassesList() {
         <ul className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {classes.map((classItem) => (
             <li key={classItem.id}>
-              <ClassCard class={classItem as unknown as PublicClass} currency={tenant?.currency || 'ILS'} />
+              <ClassCard class={classItem as PublicClass} currency={tenant?.currency || 'ILS'} />
             </li>
           ))}
         </ul>

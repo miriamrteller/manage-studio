@@ -4,7 +4,6 @@ import { supabase } from '@/lib/supabase';
 import {
   ClassRequirementSchema,
   RequirementTemplateSchema,
-  AgeRangeConfigSchema,
   GenderConfigSchema,
   LevelConfigSchema,
   DocumentConfigSchema,
@@ -17,8 +16,8 @@ import { z } from 'zod';
 
 // ── Requirement Templates ─────────────────────────────────────────────────────
 
+// age_range is NOT a valid requirement type — age is stored as min_age/max_age on classes
 const configByType = {
-  age_range: AgeRangeConfigSchema,
   gender: GenderConfigSchema,
   level: LevelConfigSchema,
   document_submitted: DocumentConfigSchema,
@@ -27,7 +26,7 @@ const configByType = {
 
 const TemplateInputSchema = z.object({
   name: z.string().min(1),
-  requirement_type: z.enum(['age_range', 'gender', 'level', 'document_submitted', 'manual_review']),
+  requirement_type: z.enum(['gender', 'level', 'document_submitted', 'manual_review']),
   config: z.record(z.unknown()),
   display_text: z.string().optional(),
   is_hard_block: z.boolean().optional(),

@@ -14,7 +14,6 @@ export const PERSON_STATUSES = ['active', 'inactive', 'withdrawn'] as const;
 export const BILLING_STATUSES = ['active', 'inactive', 'archived'] as const;
 export const TERM_STATUSES = ['upcoming', 'active', 'completed', 'archived'] as const;
 export const REQUIREMENT_TYPES = [
-  'age_range',
   'gender',
   'level',
   'document_submitted',

@@ -99,16 +99,22 @@ export const PasswordLoginSchema = z.object({
 
 export type PasswordLogin = z.infer<typeof PasswordLoginSchema>;
 
-// Public class (for landing page)
+// Public class (for landing page — matches get_public_classes_by_subdomain RPC)
 export const PublicClassSchema = z.object({
   id: UUIDSchema,
   tenant_id: UUIDSchema,
   name: z.string().min(1),
   level_id: UUIDSchema.nullable().optional(),
+  level_name: z.string().nullable().optional(),
+  term_id: UUIDSchema,
+  day_of_week: z.number().int().min(0).max(6).nullable().optional(),
   start_time: TimeSchema,
   end_time: TimeSchema,
   price_minor: z.number().nonnegative(),
+  currency: z.string().optional(),
   max_capacity: z.number().positive(),
+  min_age: z.number().int().nonnegative().nullable().optional(),
+  max_age: z.number().int().nonnegative().nullable().optional(),
   billing_frequency: z.enum(['monthly', 'per-session', 'weekly', 'annual']).default('monthly'),
   current_enrolments: z.number().nonnegative().optional(),
 });
@@ -272,6 +278,8 @@ export const ClassSchema = z.object({
   teacher_id: UUIDSchema.nullable().optional(),
   name: z.string().min(1, 'Class name required'),
   max_capacity: z.number().positive('Max capacity must be > 0'),
+  min_age: z.number().int().nonnegative().nullable().optional(),
+  max_age: z.number().int().nonnegative().nullable().optional(),
   price_minor: z.number().nonnegative('Price must be >= 0'),
   currency: z.string().default('ILS'),
   day_of_week: z.number().int().min(0).max(6).nullable().optional(),
@@ -292,10 +300,7 @@ export const ClassSchema = z.object({
 export type Class = z.infer<typeof ClassSchema>;
 
 // Per-type config schemas for requirement_templates.config JSONB
-export const AgeRangeConfigSchema = z.object({
-  min_age: z.number().int().min(0),
-  max_age: z.number().int().min(0).optional(),
-});
+// age_range is NOT here — it is a direct typed column on classes (min_age / max_age)
 export const GenderConfigSchema = z.object({
   allowed_genders: z.array(z.enum(['male', 'female'])).min(1),
 });
@@ -308,19 +313,17 @@ export const DocumentConfigSchema = z.object({
 export const ManualReviewConfigSchema = z.object({});
 
 export const RequirementConfigSchema = z.discriminatedUnion('requirement_type', [
-  z.object({ requirement_type: z.literal('age_range'), config: AgeRangeConfigSchema }),
-  z.object({ requirement_type: z.literal('gender'), config: GenderConfigSchema }),
-  z.object({ requirement_type: z.literal('level'), config: LevelConfigSchema }),
+  z.object({ requirement_type: z.literal('gender'),             config: GenderConfigSchema }),
+  z.object({ requirement_type: z.literal('level'),              config: LevelConfigSchema }),
   z.object({ requirement_type: z.literal('document_submitted'), config: DocumentConfigSchema }),
-  z.object({ requirement_type: z.literal('manual_review'), config: ManualReviewConfigSchema }),
+  z.object({ requirement_type: z.literal('manual_review'),      config: ManualReviewConfigSchema }),
 ]);
 
 export type RequirementConfig =
-  | { requirement_type: 'age_range'; config: z.infer<typeof AgeRangeConfigSchema> }
-  | { requirement_type: 'gender'; config: z.infer<typeof GenderConfigSchema> }
-  | { requirement_type: 'level'; config: z.infer<typeof LevelConfigSchema> }
+  | { requirement_type: 'gender';             config: z.infer<typeof GenderConfigSchema> }
+  | { requirement_type: 'level';              config: z.infer<typeof LevelConfigSchema> }
   | { requirement_type: 'document_submitted'; config: z.infer<typeof DocumentConfigSchema> }
-  | { requirement_type: 'manual_review'; config: z.infer<typeof ManualReviewConfigSchema> };
+  | { requirement_type: 'manual_review';      config: z.infer<typeof ManualReviewConfigSchema> };
 
 // Requirement template — tenant's reusable library entry
 export const RequirementTemplateSchema = z.object({
@@ -357,9 +360,12 @@ export const EnrolmentSchema = z.object({
   class_id: UUIDSchema,
   term_id: UUIDSchema,
   billing_account_id: UUIDSchema.nullable().optional(),
-  status: z.enum(['active', 'pending_payment', 'cancelled', 'withdrawn', 'waitlisted']).default('active'),
-  prior_experience: z.string().nullable().optional(),
+  status: z
+    .enum(['pending_payment', 'active', 'admin_review', 'pending_offer', 'cancelled', 'withdrawn'])
+    .default('pending_payment'),
+  payment_received_at: TimestampSchema.nullable().optional(),
   created_at: TimestampSchema,
+  updated_at: TimestampSchema.optional(),
 });
 
 export type Enrolment = z.infer<typeof EnrolmentSchema>;

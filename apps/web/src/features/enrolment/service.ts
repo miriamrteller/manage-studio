@@ -9,8 +9,10 @@ const EnrolmentInputSchema = z.object({
   person_id: z.string().uuid().optional(),
   class_id: z.string().uuid().optional(),
   term_id: z.string().uuid().optional(),
-  status: z.enum(['active', 'pending_payment', 'cancelled', 'withdrawn', 'waitlisted']).optional(),
-  prior_experience: z.string().nullable().optional(),
+  status: z
+    .enum(['pending_payment', 'active', 'admin_review', 'pending_offer', 'cancelled', 'withdrawn'])
+    .optional(),
+  billing_account_id: z.string().uuid().nullable().optional(),
 });
 
 /**

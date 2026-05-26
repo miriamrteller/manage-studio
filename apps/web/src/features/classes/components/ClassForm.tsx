@@ -19,6 +19,8 @@ const ClassFormSchema = z.object({
   teacher_id: optionalUuidField,
   name: z.string().min(1, 'Class name required'),
   max_capacity: z.number().positive('Max capacity must be > 0'),
+  min_age: z.union([z.number().int().nonnegative(), z.nan()]).nullable().optional(),
+  max_age: z.union([z.number().int().nonnegative(), z.nan()]).nullable().optional(),
   price_major: z.number().nonnegative('Price must be >= 0'),
   currency: z.string().optional(),
   day_of_week: z
@@ -50,6 +52,8 @@ function toFormValues(classItem: Partial<Class> | undefined, defaultCurrency: st
     teacher_id: classItem?.teacher_id ?? '',
     name: classItem?.name || '',
     max_capacity: classItem?.max_capacity ?? 10,
+    min_age: classItem?.min_age ?? null,
+    max_age: classItem?.max_age ?? null,
     price_major: classItem?.price_minor != null ? classItem.price_minor / 100 : 0,
     currency: classItem?.currency || defaultCurrency,
     day_of_week: classItem?.day_of_week ?? null,
@@ -68,6 +72,8 @@ function toClassPayload(values: ClassFormValues): Partial<Class> {
     teacher_id: values.teacher_id || null,
     name: values.name,
     max_capacity: values.max_capacity,
+    min_age: Number.isNaN(values.min_age) ? null : (values.min_age ?? null),
+    max_age: Number.isNaN(values.max_age) ? null : (values.max_age ?? null),
     price_minor: Math.round(values.price_major * 100),
     currency: values.currency,
     day_of_week: Number.isNaN(values.day_of_week) ? null : values.day_of_week ?? null,
@@ -208,6 +214,28 @@ export function ClassForm({
           error={form.formState.errors.price_major?.message}
           required
           {...form.register('price_major', { valueAsNumber: true })}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <FormInput
+          htmlFor="min_age"
+          label={t('form.class.min_age')}
+          type="number"
+          min="0"
+          placeholder={t('form.class.age_placeholder')}
+          error={form.formState.errors.min_age?.message}
+          {...form.register('min_age', { valueAsNumber: true })}
+        />
+
+        <FormInput
+          htmlFor="max_age"
+          label={t('form.class.max_age')}
+          type="number"
+          min="0"
+          placeholder={t('form.class.age_placeholder')}
+          error={form.formState.errors.max_age?.message}
+          {...form.register('max_age', { valueAsNumber: true })}
         />
       </div>
 

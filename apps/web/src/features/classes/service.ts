@@ -21,6 +21,8 @@ const ClassInputSchema = z.object({
   teacher_id: z.string().uuid().nullable().optional(),
   name: z.string().min(1, 'Class name required').optional(),
   max_capacity: z.number().positive('Max capacity must be > 0').optional(),
+  min_age: z.number().int().nonnegative().nullable().optional(),
+  max_age: z.number().int().nonnegative().nullable().optional(),
   price_minor: z.number().nonnegative('Price must be >= 0').optional(),
   currency: z.string().optional(),
   day_of_week: z.number().int().min(0).max(6).nullable().optional(),

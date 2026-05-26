@@ -10,6 +10,20 @@ import {
   type ClassSortOrder,
 } from '../utils/sortClasses';
 
+function coerceAge(value: unknown): number | null {
+  if (value == null || value === '') return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+function normalizePublicClass(row: Record<string, unknown>) {
+  return {
+    ...row,
+    min_age: coerceAge(row.min_age),
+    max_age: coerceAge(row.max_age),
+  };
+}
+
 const PAGE_SIZE = 50;
 
 interface UseClassesOptions {
@@ -48,7 +62,8 @@ export function useClasses({
       if (!tenant?.subdomain) throw new Error('Tenant subdomain required');
       const { data, error } = await supabase.rpc('get_public_classes_by_subdomain', { p_subdomain: tenant.subdomain });
       if (error) throw error;
-      return sortClasses(data || [], sortField, sortOrder);
+      const rows = (data || []).map((row: Record<string, unknown>) => normalizePublicClass(row));
+      return sortClasses(rows, sortField, sortOrder);
     },
     enabled: enabled && publicOnly && !!tenant?.subdomain,
     staleTime: 5 * 60 * 1000, // 5 min cache

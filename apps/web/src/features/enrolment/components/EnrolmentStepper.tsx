@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { WhatsAppOtpVerifier } from '@/components/shared';
@@ -11,6 +11,10 @@ import {
   type NewMinorOnboardingInput,
   type NewAdultOnboardingInput,
 } from '../onboardingService';
+import { useClasses } from '@/features/classes/hooks/useClasses';
+import { useRequirements } from '@/features/classes/requirements/hooks/useRequirements';
+import { filterClassesByAge, getRequirementInfoNotes, formatLevelWithAge, ageAt } from '../lib/check-requirements';
+import { useLevels } from '@/features/levels/hooks/useLevels';
 import type { Enrolment } from '@shared/schemas';
 
 export type EnrolmentStep = 'person' | 'class' | 'notification' | 'checkout' | 'confirmation';
@@ -75,7 +79,12 @@ export function EnrolmentStepper({
     ...(initialClassId ? { class_id: initialClassId } : {}),
     ...(initialTermId ? { term_id: initialTermId } : {}),
   }));
-  
+
+  // Person DOB stored separately — not part of the Enrolment record
+  const [personDateOfBirth, setPersonDateOfBirth] = useState<string | null>(null);
+  // Human-readable class name for the confirmation screen
+  const [selectedClassName, setSelectedClassName] = useState('');
+
   const tenant = useTenant();
   const { createEnrolment, isCreating } = useEnrolment();
   const [checkoutEnrolmentId, setCheckoutEnrolmentId] = useState<string | null>(null);
@@ -101,13 +110,27 @@ export function EnrolmentStepper({
 
   const currentStepIndex = steps.indexOf(currentStep);
 
-  const handleNextStep = (newData?: Partial<Enrolment>) => {
-    if (newData) {
-      setEnrolmentData({ ...enrolmentData, ...newData });
-    }
+  const goToNextStep = () => {
     if (currentStepIndex < steps.length - 1) {
       setCurrentStep(steps[currentStepIndex + 1]);
     }
+  };
+
+  const handleNextStep = (newData?: Partial<Enrolment>) => {
+    if (newData) setEnrolmentData(prev => ({ ...prev, ...newData }));
+    goToNextStep();
+  };
+
+  const handlePersonNext = (newData?: Partial<Enrolment>, dob?: string | null) => {
+    if (newData) setEnrolmentData(prev => ({ ...prev, ...newData }));
+    setPersonDateOfBirth(dob ?? null);
+    goToNextStep();
+  };
+
+  const handleClassNext = (newData?: Partial<Enrolment>, className?: string) => {
+    if (newData) setEnrolmentData(prev => ({ ...prev, ...newData }));
+    if (className) setSelectedClassName(className);
+    goToNextStep();
   };
 
   const handlePreviousStep = () => {
@@ -212,7 +235,7 @@ export function EnrolmentStepper({
         {currentStep === 'person' && (
           <StepPerson
             data={enrolmentData}
-            onNext={handleNextStep}
+            onNext={handlePersonNext}
             onCancel={onCancel}
           />
         )}
@@ -220,7 +243,8 @@ export function EnrolmentStepper({
         {currentStep === 'class' && (
           <StepClass
             data={enrolmentData}
-            onNext={handleNextStep}
+            personDateOfBirth={personDateOfBirth}
+            onNext={handleClassNext}
             onPrevious={handlePreviousStep}
           />
         )}
@@ -247,6 +271,7 @@ export function EnrolmentStepper({
         {currentStep === 'confirmation' && (
           <StepConfirmation
             enrolment={enrolmentData as Enrolment}
+            className={selectedClassName}
             onClose={() => onSuccess?.(enrolmentData as Enrolment)}
           />
         )}
@@ -270,7 +295,7 @@ function StepPerson({
   onCancel,
 }: {
   data: Partial<Enrolment>;
-  onNext: (data?: Partial<Enrolment>) => void;
+  onNext: (data?: Partial<Enrolment>, dob?: string | null) => void;
   onCancel?: () => void;
 }) {
   const { t } = useTranslation();
@@ -301,7 +326,7 @@ function StepPerson({
         setError(t('pages.enrolment.returning_not_found'));
         return;
       }
-      onNext({ ...data, person_id: person.id });
+      onNext({ ...data, person_id: person.id }, person.date_of_birth ?? null);
     } catch (err) {
       setError(err instanceof Error ? err.message : t('common.error'));
     } finally {
@@ -319,7 +344,7 @@ function StepPerson({
         tenant,
         minorFields as NewMinorOnboardingInput
       );
-      onNext({ ...data, person_id: person.id });
+      onNext({ ...data, person_id: person.id }, minorFields.student_date_of_birth ?? null);
     } catch (err) {
       setError(err instanceof Error ? err.message : t('common.error'));
     } finally {
@@ -337,7 +362,7 @@ function StepPerson({
         tenant,
         adultFields as NewAdultOnboardingInput
       );
-      onNext({ ...data, person_id: person.id });
+      onNext({ ...data, person_id: person.id }, adultFields.date_of_birth ?? null);
     } catch (err) {
       setError(err instanceof Error ? err.message : t('common.error'));
     } finally {
@@ -529,47 +554,216 @@ function StepPerson({
   );
 }
 
+const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+function formatTime(t: string | null | undefined): string {
+  if (!t) return '';
+  return t.slice(0, 5); // "HH:MM" from "HH:MM:SS"
+}
+
 /**
  * Step 2: Class selection
+ * Filters out age-ineligible classes when DOB is known. Shows level + ages on each card.
+ * Requirement notes are informational only — enrolment always proceeds normally.
  */
 function StepClass({
   data,
+  personDateOfBirth,
   onNext,
   onPrevious,
 }: {
   data: Partial<Enrolment>;
-  onNext: (data?: Partial<Enrolment>) => void;
+  personDateOfBirth?: string | null;
+  onNext: (data?: Partial<Enrolment>, className?: string) => void;
   onPrevious: () => void;
 }) {
   const { t } = useTranslation();
+  const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
+
+  const { classes, isLoading, error } = useClasses({ publicOnly: true });
+  const { levels } = useLevels();
+  const { requirements, isLoading: reqLoading } = useRequirements(
+    selectedClassId ?? undefined,
+  );
+
+  const levelNameById = useMemo(
+    () => new Map(levels.map((l) => [l.id, l.name])),
+    [levels],
+  );
+
+  const person = useMemo(
+    () => ({ date_of_birth: personDateOfBirth }),
+    [personDateOfBirth],
+  );
+
+  const studentAge = useMemo(() => {
+    if (!personDateOfBirth) return null;
+    const age = ageAt(personDateOfBirth);
+    return Number.isNaN(age) ? null : age;
+  }, [personDateOfBirth]);
+
+  const { classes: availableClasses, ageFilteringActive } = useMemo(
+    () => filterClassesByAge(classes, person),
+    [classes, person],
+  );
+
+  const selectedClass = useMemo(
+    () => availableClasses.find((c: { id: string }) => c.id === selectedClassId),
+    [availableClasses, selectedClassId],
+  );
+
+  const infoNotes = useMemo(
+    () => getRequirementInfoNotes(requirements),
+    [requirements],
+  );
+
+  const handleNext = () => {
+    if (!selectedClass) return;
+    onNext(
+      {
+        ...data,
+        class_id: selectedClass.id,
+        term_id: selectedClass.term_id,
+      },
+      selectedClass.name,
+    );
+  };
+
+  if (isLoading) {
+    return <p role="status" className="text-sm text-gray-500">{t('common.loading')}</p>;
+  }
+
+  if (error) {
+    return <p className="text-sm text-destructive" role="alert">{error}</p>;
+  }
+
+  const filteredCount = classes.length - availableClasses.length;
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-gray-600">
-        {t('pages.enrolment.class_desc')}
-      </p>
-      
-      {/* Placeholder: Class list will be fetched from useAvailableClasses hook */}
-      <div className="p-4 bg-gray-50 rounded-lg text-center text-sm text-gray-600">
-        {t('pages.enrolment.class_loading')}
-      </div>
+      <p className="text-sm text-gray-600">{t('pages.enrolment.class_desc')}</p>
+
+      {studentAge != null && ageFilteringActive && (
+        <p className="text-sm text-gray-700" role="status">
+          {t('pages.enrolment.showing_for_age', { age: studentAge })}
+        </p>
+      )}
+
+      {studentAge != null && !ageFilteringActive && classes.length > 0 && (
+        <div className="rounded-md bg-amber-50 border border-amber-200 p-3 text-sm text-amber-900" role="status">
+          {t('pages.enrolment.age_filter_inactive')}
+        </div>
+      )}
+
+      {filteredCount > 0 && ageFilteringActive && (
+        <p className="text-xs text-gray-500" role="status">
+          {t('pages.enrolment.classes_filtered_by_age', { count: filteredCount })}
+        </p>
+      )}
+
+      {availableClasses.length === 0 ? (
+        <div className="p-4 bg-gray-50 rounded-lg text-center text-sm text-gray-500 space-y-2">
+          {ageFilteringActive && studentAge != null ? (
+            <>
+              <p>{t('pages.enrolment.no_classes_for_age')}</p>
+              <p className="text-xs">{t('pages.enrolment.no_classes_for_age_hint', { age: studentAge })}</p>
+            </>
+          ) : (
+            <p>{t('pages.enrolment.no_classes')}</p>
+          )}
+        </div>
+      ) : (
+        <ul className="space-y-2" role="listbox" aria-label={t('pages.enrolment.class_select_label')}>
+          {availableClasses.map((cls: {
+            id: string;
+            name: string;
+            level_id?: string | null;
+            day_of_week?: number;
+            start_time?: string;
+            end_time?: string;
+            min_age?: number | null;
+            max_age?: number | null;
+            level_name?: string | null;
+            price_minor?: number;
+            currency?: string;
+          }) => {
+            const isSelected = cls.id === selectedClassId;
+            const levelName =
+              cls.level_name ??
+              (cls.level_id ? levelNameById.get(cls.level_id) : undefined);
+            const levelLabel = formatLevelWithAge(
+              levelName,
+              cls.min_age,
+              cls.max_age,
+              t('pages.enrolment.class_ages'),
+            );
+            return (
+              <li key={cls.id}>
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={isSelected}
+                  onClick={() => setSelectedClassId(cls.id)}
+                  className={[
+                    'w-full text-start border-2 rounded-lg px-4 py-3 transition-colors',
+                    isSelected
+                      ? 'border-blue-600 bg-blue-50'
+                      : 'border-gray-200 hover:border-gray-300 bg-white',
+                  ].join(' ')}
+                >
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="font-medium text-gray-900">{cls.name}</p>
+                      {levelLabel && (
+                        <p className="text-sm text-gray-700 mt-0.5">{levelLabel}</p>
+                      )}
+                      <p className="text-sm text-gray-500 mt-0.5">
+                        {cls.day_of_week != null ? DAY_NAMES[cls.day_of_week] : ''}
+                        {cls.start_time && `${cls.day_of_week != null ? ' · ' : ''}${formatTime(cls.start_time)}`}
+                        {cls.end_time && `–${formatTime(cls.end_time)}`}
+                      </p>
+                    </div>
+                    {cls.price_minor != null && (
+                      <span className="shrink-0 text-sm font-semibold text-gray-700">
+                        {(cls.price_minor / 100).toLocaleString(undefined, {
+                          style: 'currency',
+                          currency: cls.currency ?? 'USD',
+                          minimumFractionDigits: 0,
+                        })}
+                      </span>
+                    )}
+                  </div>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      {selectedClassId && reqLoading && (
+        <p className="text-sm text-gray-500">{t('pages.enrolment.loading_class_info')}</p>
+      )}
+      {selectedClass && infoNotes.length > 0 && (
+        <div className="rounded-md bg-blue-50 border border-blue-200 p-3 text-sm text-blue-900 space-y-1" role="note">
+          <p className="font-medium">{t('pages.enrolment.class_info_heading')}</p>
+          {infoNotes.map((note, i) => (
+            <p key={i}>{note}</p>
+          ))}
+        </div>
+      )}
 
       <div className="flex gap-2">
-        <Button
-          type="button"
-          onClick={onPrevious}
-          variant="outline"
-          className="flex-1"
-        >
-          {t('common.back') || 'Back'}
+        <Button type="button" onClick={onPrevious} variant="outline" className="flex-1">
+          {t('common.back')}
         </Button>
         <Button
           type="button"
-          onClick={() => onNext(data)}
+          onClick={handleNext}
           variant="primary"
           className="flex-1"
+          disabled={!selectedClass}
         >
-          {t('common.next') || 'Next'}
+          {t('common.next')}
         </Button>
       </div>
     </div>
@@ -716,9 +910,11 @@ function StepCheckout({
  */
 function StepConfirmation({
   enrolment,
+  className,
   onClose,
 }: {
   enrolment: Enrolment;
+  className: string;
   onClose: () => void;
 }) {
   const { t } = useTranslation();
@@ -733,24 +929,21 @@ function StepConfirmation({
         {t('pages.enrolment.confirmation_desc')}
       </p>
 
-      <div className="p-4 bg-blue-50 rounded-lg text-sm space-y-2">
+      <div className="p-4 bg-blue-50 rounded-lg text-sm space-y-2 text-start">
         <p>
-          <strong>{t('pages.enrolment.class_label')}:</strong> {enrolment.class_id}
+          <strong>{t('pages.enrolment.class_label')}:</strong>{' '}
+          {className || enrolment.class_id}
         </p>
         <p>
           <strong>{t('pages.enrolment.status_label')}:</strong> {enrolment.status}
         </p>
         <p>
-          <strong>{t('pages.enrolment.date_label')}:</strong> {new Date(enrolment.created_at).toLocaleDateString()}
+          <strong>{t('pages.enrolment.date_label')}:</strong>{' '}
+          {new Date(enrolment.created_at).toLocaleDateString()}
         </p>
       </div>
 
-      <Button
-        type="button"
-        onClick={onClose}
-        variant="primary"
-        className="w-full"
-      >
+      <Button type="button" onClick={onClose} variant="primary" className="w-full">
         {t('common.done') || 'Done'}
       </Button>
     </div>

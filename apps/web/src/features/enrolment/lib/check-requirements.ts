@@ -1,0 +1,103 @@
+import type { ClassRequirementWithTemplate } from '@/features/classes/requirements/service';
+
+export interface PersonContext {
+  date_of_birth?: string | null;
+}
+
+export interface ClassAgeContext {
+  min_age?: number | null;
+  max_age?: number | null;
+}
+
+/** Parse YYYY-MM-DD as a local calendar date (avoids UTC timezone drift). */
+export function ageAt(dateOfBirth: string, reference = new Date()): number {
+  const [y, m, d] = dateOfBirth.split('-').map(Number);
+  if (!y || !m || !d) return NaN;
+
+  let age = reference.getFullYear() - y;
+  const refMonth = reference.getMonth() + 1;
+  const refDay = reference.getDate();
+  if (refMonth < m || (refMonth === m && refDay < d)) age--;
+  return age;
+}
+
+export function classHasAgeBand(cls: ClassAgeContext): boolean {
+  return cls.min_age != null || cls.max_age != null;
+}
+
+export function anyClassHasAgeBand(classes: ClassAgeContext[]): boolean {
+  return classes.some(classHasAgeBand);
+}
+
+/**
+ * When DOB is known, only classes with a defined age band that includes the student are eligible.
+ * Classes with no min_age AND no max_age are not eligible (caller should skip filtering if no class has ages).
+ */
+export function isAgeEligible(
+  cls: ClassAgeContext,
+  person: PersonContext,
+): boolean {
+  if (!person.date_of_birth) return true;
+
+  if (cls.min_age == null && cls.max_age == null) return false;
+
+  const age = ageAt(person.date_of_birth);
+  if (Number.isNaN(age)) return true;
+
+  if (cls.min_age != null && age < cls.min_age) return false;
+  if (cls.max_age != null && age > cls.max_age) return false;
+  return true;
+}
+
+/** Filter classes by age when at least one class has an age band configured. */
+export function filterClassesByAge<T extends ClassAgeContext>(
+  classes: T[],
+  person: PersonContext,
+): { classes: T[]; ageFilteringActive: boolean } {
+  if (!person.date_of_birth) {
+    return { classes, ageFilteringActive: false };
+  }
+  if (!anyClassHasAgeBand(classes)) {
+    return { classes, ageFilteringActive: false };
+  }
+  return {
+    classes: classes.filter((cls) => isAgeEligible(cls, person)),
+    ageFilteringActive: true,
+  };
+}
+
+/** Collect human-readable requirement notes for informational display only. */
+export function getRequirementInfoNotes(
+  requirements: ClassRequirementWithTemplate[],
+): string[] {
+  return requirements
+    .map((r) => r.requirement_templates?.display_text)
+    .filter((text): text is string => Boolean(text?.trim()));
+}
+
+export function formatAgeRange(minAge?: number | null, maxAge?: number | null): string | null {
+  if (minAge != null && maxAge != null) return `${minAge}–${maxAge}`;
+  if (minAge != null) return `${minAge}+`;
+  if (maxAge != null) return `up to ${maxAge}`;
+  return null;
+}
+
+/** e.g. "Primary (ages 5–6)" */
+export function formatLevelWithAge(
+  levelName: string | null | undefined,
+  minAge?: number | null,
+  maxAge?: number | null,
+  agesLabel = 'ages',
+): string | null {
+  const ages = formatAgeRange(minAge, maxAge);
+  if (levelName && ages) return `${levelName} (${agesLabel} ${ages})`;
+  if (levelName) return levelName;
+  if (ages) return `${agesLabel} ${ages}`;
+  return null;
+}
+
+export function coerceAge(value: unknown): number | null {
+  if (value == null || value === '') return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}

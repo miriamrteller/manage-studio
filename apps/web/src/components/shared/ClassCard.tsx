@@ -5,7 +5,12 @@ import { formatCurrency, formatTime } from '@shared/format';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import type { PublicClass } from '@/schemas';
 
-type ClassWithTerm = PublicClass & { term_id?: string };
+function formatAgeRange(minAge?: number | null, maxAge?: number | null): string | null {
+  if (minAge != null && maxAge != null) return `Ages ${minAge}–${maxAge}`;
+  if (minAge != null) return `Ages ${minAge}+`;
+  if (maxAge != null) return `Up to age ${maxAge}`;
+  return null;
+}
 
 /**
  * ClassCard: Presentational component for individual class display
@@ -17,7 +22,7 @@ type ClassWithTerm = PublicClass & { term_id?: string };
  */
 
 interface ClassCardProps {
-  class: ClassWithTerm;
+  class: PublicClass;
   currency: string;
 }
 
@@ -45,6 +50,8 @@ export function ClassCard({ class: cls, currency }: ClassCardProps) {
     navigate('/login', { state: intent });
   };
 
+  const ageRange = formatAgeRange(cls.min_age, cls.max_age);
+
   return (
     <div className="border border-gray-300 rounded-lg p-6 bg-white shadow-sm hover:shadow-md transition-shadow">
       {/* h2 because ClassCard is a direct subsection of the main page h1 */}
@@ -55,10 +62,18 @@ export function ClassCard({ class: cls, currency }: ClassCardProps) {
           <span className="font-semibold">{t('pages.classes.time')}:</span>{' '}
           {formatTime(cls.start_time, i18n.language)} – {formatTime(cls.end_time, i18n.language)}
         </p>
-        <p>
-          <span className="font-semibold">{t('pages.classes.capacity')}:</span>{' '}
-          {cls.max_capacity}
-        </p>
+        {cls.level_name && (
+          <p>
+            <span className="font-semibold">{t('pages.classes.level')}:</span>{' '}
+            {cls.level_name}
+          </p>
+        )}
+        {ageRange && (
+          <p>
+            <span className="font-semibold">{t('pages.classes.ages')}:</span>{' '}
+            {ageRange}
+          </p>
+        )}
         <p className="text-lg font-semibold text-primary">
           {formatCurrency(cls.price_minor, currency, i18n.language)}
         </p>

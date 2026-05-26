@@ -1,21 +1,24 @@
--- Migration 039: Grant authenticated role table access (RLS still enforces row access)
+-- =============================================================================
+-- 018: All Table + Schema Grants
+-- Must run LAST — all tables must exist before grants can reference them.
+-- DEPENDENCIES: all previous migrations
 --
--- Aligns with SPEC §4.3.1 (RLS policy inventory) and §4.5 (financial integrity):
---   - GRANT  = can this role attempt the operation? (403 if missing)
---   - RLS    = which rows can this user touch?
+-- GRANT vs RLS (SPEC §4.3.1):
+--   GRANT  = can this role attempt the operation? (HTTP 403 if missing)
+--   RLS    = which rows can this user actually touch?
 --
--- Legal / compliance (SPEC §1.7, §4.5, §D privacy tests, coding rules):
---   - audit_log, payments: immutable — no UPDATE or DELETE grants
---   - people, families: never hard-delete — anonymise via RPC; no DELETE grants
---   - notification_log: append-only — INSERT + SELECT only
---   - enrolments: status changes via UPDATE; no hard DELETE grant
---
--- service_role / Edge Functions retain full access for webhooks, OTP, invoicing.
+-- Compliance rules (SPEC §1.7, §4.5, §D):
+--   audit_log, payments     — immutable; no UPDATE/DELETE grants
+--   people, families        — anonymise via RPC; no DELETE grants
+--   notification_log        — append-only
+--   enrolments              — status-change only; no hard DELETE
+-- =============================================================================
 
 GRANT USAGE ON SCHEMA public TO authenticated;
+GRANT USAGE ON SCHEMA public TO anon;
 
 -- ---------------------------------------------------------------------------
--- SELECT: all tenant-scoped tables the app reads
+-- SELECT: every tenant-scoped table the app reads
 -- ---------------------------------------------------------------------------
 GRANT SELECT ON TABLE
   public.tenants,
@@ -26,6 +29,7 @@ GRANT SELECT ON TABLE
   public.contact_preferences,
   public.terms,
   public.levels,
+  public.teachers,
   public.classes,
   public.class_sessions,
   public.class_requirements,
@@ -39,7 +43,6 @@ GRANT SELECT ON TABLE
   public.makeup_credits,
   public.payments,
   public.invoice_sequences,
-  public.teachers,
   public.tenant_notification_templates,
   public.tenant_email_customizations,
   public.expense_categories,
@@ -49,14 +52,14 @@ GRANT SELECT ON TABLE
 TO authenticated;
 
 -- ---------------------------------------------------------------------------
--- IMMUTABLE / APPEND-ONLY (SPEC: no UPDATE or DELETE — ever for audit; payments immutable)
+-- Immutable / append-only tables
 -- ---------------------------------------------------------------------------
-GRANT INSERT ON TABLE public.audit_log TO authenticated;
+GRANT INSERT ON TABLE public.audit_log        TO authenticated;
 GRANT INSERT ON TABLE public.notification_log TO authenticated;
--- payments: SELECT only above; inserts/updates via service_role (Stripe webhooks)
+-- payments: SELECT only above; writes via service_role (Stripe webhooks)
 
 -- ---------------------------------------------------------------------------
--- PII — anonymise, never hard-delete (SPEC §D: anonymise_student keeps financial trail)
+-- PII — anonymise, never hard-delete
 -- ---------------------------------------------------------------------------
 GRANT INSERT, UPDATE ON TABLE
   public.people,
@@ -65,19 +68,19 @@ GRANT INSERT, UPDATE ON TABLE
 TO authenticated;
 
 -- ---------------------------------------------------------------------------
--- ENROLMENTS — mutate status; do not hard-delete records
+-- Enrolments — mutate status; do not hard-delete
 -- ---------------------------------------------------------------------------
 GRANT INSERT, UPDATE ON TABLE public.enrolments TO authenticated;
 
 -- ---------------------------------------------------------------------------
--- OPERATIONAL / ADMIN SETUP — full CRUD where SPEC grants tenant_admin ALL
--- (config entities, not financial or immutable audit records)
+-- Operational / admin setup — full CRUD (config entities, not financial records)
 -- ---------------------------------------------------------------------------
 GRANT INSERT, UPDATE, DELETE ON TABLE
   public.user_profiles,
   public.contact_preferences,
   public.terms,
   public.levels,
+  public.teachers,
   public.classes,
   public.class_sessions,
   public.class_requirements,
@@ -88,20 +91,23 @@ GRANT INSERT, UPDATE, DELETE ON TABLE
   public.waiting_list,
   public.attendance,
   public.makeup_credits,
-  public.teachers,
   public.tenant_notification_templates,
   public.tenant_email_customizations,
   public.expense_categories,
   public.verification_attempts
 TO authenticated;
 
--- tenants: admins update own tenant branding/settings (SPEC: UPDATE, not DELETE)
+-- tenants: admins update own tenant branding/settings (UPDATE, not DELETE)
 GRANT UPDATE ON TABLE public.tenants TO authenticated;
 
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO authenticated;
 
--- Not granted to authenticated (service_role / Edge Functions only):
---   otp_codes
+-- service_role retains full access for webhooks, OTP, invoicing
+GRANT ALL ON TABLE public.tenants       TO service_role;
+GRANT ALL ON TABLE public.user_profiles TO service_role;
+
+-- Not granted to authenticated:
+--   otp_codes (service_role only)
 --   payments INSERT/UPDATE/DELETE (immutable financial records)
 --   audit_log UPDATE/DELETE
 --   people/families/family_members DELETE
