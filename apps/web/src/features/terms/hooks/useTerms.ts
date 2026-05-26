@@ -9,7 +9,7 @@ const PAGE_SIZE = 50;
 interface UseTermsOptions {
   page?: number;
   searchQuery?: string;
-  status?: string;
+  statuses?: string[];
   sortField?: TermSortField;
   sortOrder?: SortOrder;
   enabled?: boolean;
@@ -18,7 +18,7 @@ interface UseTermsOptions {
 export function useTerms({
   page = 1,
   searchQuery = '',
-  status,
+  statuses = [],
   sortField = DEFAULT_TERM_SORT.field,
   sortOrder = DEFAULT_TERM_SORT.order,
   enabled = true,
@@ -27,14 +27,14 @@ export function useTerms({
   const queryClient = useQueryClient();
 
   const listQuery = useQuery({
-    queryKey: ['terms', tenant?.id, page, searchQuery, status, sortField, sortOrder],
+    queryKey: ['terms', tenant?.id, page, searchQuery, statuses, sortField, sortOrder],
     queryFn: async () => {
       if (!tenant) throw new Error('Tenant not initialized');
       return TermService.list(tenant, {
         page,
         pageSize: PAGE_SIZE,
         searchQuery,
-        status,
+        statuses,
         sortField,
         sortOrder,
       });

@@ -17,9 +17,9 @@ export interface ListPeopleFilters {
   pageSize?: number;
   status?: 'active' | 'inactive' | 'all';
   searchQuery?: string;
-  familyId?: string | null;
-  classId?: string | null;
-  levelId?: string | null;
+  familyIds?: string[];
+  classIds?: string[];
+  levelIds?: string[];
   minAge?: number | null;
   maxAge?: number | null;
   sortField?: PersonSortField;
@@ -92,9 +92,9 @@ export class PersonService extends BaseService {
       pageSize = 50,
       status = 'active',
       searchQuery = '',
-      familyId = null,
-      classId = null,
-      levelId = null,
+      familyIds = [],
+      classIds = [],
+      levelIds = [],
       minAge = null,
       maxAge = null,
       sortField = DEFAULT_PERSON_SORT.field,
@@ -107,7 +107,7 @@ export class PersonService extends BaseService {
       const enrolledPersonIds =
         enrolledPersonIdsOverride !== undefined
           ? enrolledPersonIdsOverride
-          : await resolveEnrolledPersonIds(tenant, { classId, levelId });
+          : await resolveEnrolledPersonIds(tenant, { classIds, levelIds });
 
       if (enrolledPersonIds !== null && enrolledPersonIds.length === 0) {
         return { people: [], total: 0, page, pageSize };
@@ -130,8 +130,8 @@ export class PersonService extends BaseService {
       if (searchQuery.trim()) {
         query = query.ilike('name', `%${searchQuery.trim()}%`);
       }
-      if (familyId) {
-        query = query.eq('family_id', familyId);
+      if (familyIds.length > 0) {
+        query = query.in('family_id', familyIds);
       }
       if (enrolledPersonIds !== null && enrolledPersonIds.length > 0) {
         query = query.in('id', enrolledPersonIds);

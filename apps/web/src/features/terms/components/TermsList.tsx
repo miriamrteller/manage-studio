@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/shared';
-import { FilterSelect, ListSearchInput, SortableHeader } from '@/components/shared/table';
+import { FilterMultiSelect, ListSearchInput, SortableHeader, type FilterOption } from '@/components/shared/table';
 import { useSortState } from '@/hooks/useSortState';
 import { useTerms } from '../hooks/useTerms';
 import { DEFAULT_TERM_SORT, type TermSortField } from '../service';
@@ -13,7 +13,7 @@ export const TermsList = () => {
   const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [selectedStatuses, setSelectedStatuses] = useState<FilterOption[]>([]);
   const { sortField, sortOrder, toggleSort } = useSortState<TermSortField>(
     DEFAULT_TERM_SORT.field,
     DEFAULT_TERM_SORT.order
@@ -25,7 +25,7 @@ export const TermsList = () => {
   const termsData = useTerms({
     page,
     searchQuery,
-    status: statusFilter ?? undefined,
+    statuses: selectedStatuses.map((s) => s.value),
     sortField,
     sortOrder,
   });
@@ -110,16 +110,16 @@ export const TermsList = () => {
               isSearching={termsData.isLoading}
             />
           </div>
-          <FilterSelect
+          <FilterMultiSelect
             id="term-status-filter"
             label={t('form.term.status')}
-            value={statusFilter ?? ''}
-            onChange={(v) => {
-              setStatusFilter(v || null);
+            selected={selectedStatuses}
+            onChange={(next) => {
+              setSelectedStatuses(next);
               setPage(1);
             }}
             options={statusOptions}
-            allLabel={t('common.all')}
+            className="min-w-48"
           />
         </div>
         <Button variant="primary" onClick={() => setIsCreating(true)}>

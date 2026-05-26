@@ -1,0 +1,133 @@
+import { useEffect, useId, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { FilterOption } from '@/components/shared/table/FilterMultiSelect';
+import { useFamilySearch } from '../hooks/useFamilySearch';
+import type { Family } from '@shared/schemas';
+
+function familyLabel(family: Family): string {
+  return family.name ?? family.contact_person_name ?? family.contact_email ?? family.id;
+}
+
+interface FamilyMultiSelectProps {
+  selected: FilterOption[];
+  onChange: (selected: FilterOption[]) => void;
+  id?: string;
+}
+
+export function FamilyMultiSelect({ selected, onChange, id }: FamilyMultiSelectProps) {
+  const { t } = useTranslation();
+  const generatedId = useId();
+  const inputId = id ?? generatedId;
+  const listboxId = `${inputId}-listbox`;
+
+  const [inputValue, setInputValue] = useState('');
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const selectedIds = new Set(selected.map((s) => s.value));
+
+  const { families, isSearching } = useFamilySearch(inputValue, {
+    enabled: isOpen,
+  });
+
+  const availableFamilies = families.filter((f) => !selectedIds.has(f.id));
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSelect = (family: Family) => {
+    onChange([...selected, { value: family.id, label: familyLabel(family) }]);
+    setInputValue('');
+    setIsOpen(false);
+  };
+
+  const handleRemove = (value: string) => {
+    onChange(selected.filter((s) => s.value !== value));
+  };
+
+  return (
+    <div ref={containerRef} className="relative space-y-1">
+      <span id={`${inputId}-label`} className="block text-sm font-medium">
+        {t('pages.students.filter_by_family')}
+      </span>
+
+      {selected.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-2" aria-labelledby={`${inputId}-label`}>
+          {selected.map((item) => (
+            <span
+              key={item.value}
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs border"
+              style={{ borderColor: 'var(--color-border-default)' }}
+            >
+              {item.label}
+              <button
+                type="button"
+                onClick={() => handleRemove(item.value)}
+                className="text-gray-500 hover:text-gray-800"
+                aria-label={`${t('common.remove')} ${item.label}`}
+              >
+                ✕
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+
+      <input
+        id={inputId}
+        type="text"
+        role="combobox"
+        aria-expanded={isOpen}
+        aria-controls={listboxId}
+        aria-autocomplete="list"
+        aria-labelledby={`${inputId}-label`}
+        placeholder={t('pages.students.family_search_placeholder')}
+        value={inputValue}
+        onChange={(e) => {
+          setInputValue(e.target.value);
+          setIsOpen(true);
+        }}
+        onFocus={() => setIsOpen(true)}
+        className="form-input w-full"
+        autoComplete="off"
+      />
+
+      {isOpen && inputValue.trim().length >= 1 && (
+        <ul
+          id={listboxId}
+          role="listbox"
+          className="absolute z-20 mt-1 w-full max-h-48 overflow-y-auto rounded-md border bg-white shadow-lg"
+          style={{ borderColor: 'var(--color-border-default)' }}
+        >
+          {isSearching && (
+            <li className="px-3 py-2 text-sm text-gray-500">{t('common.loading')}</li>
+          )}
+          {!isSearching && availableFamilies.length === 0 && (
+            <li className="px-3 py-2 text-sm text-gray-500">{t('common.no_results_found')}</li>
+          )}
+          {!isSearching &&
+            availableFamilies.map((family) => (
+              <li key={family.id} role="option" aria-selected={false}>
+                <button
+                  type="button"
+                  className="w-full px-3 py-2 text-start text-sm hover:bg-gray-50"
+                  onClick={() => handleSelect(family)}
+                >
+                  <span className="font-medium">{familyLabel(family)}</span>
+                  {family.contact_person_name && family.name && (
+                    <span className="block text-xs text-gray-500">{family.contact_person_name}</span>
+                  )}
+                </button>
+              </li>
+            ))}
+        </ul>
+      )}
+    </div>
+  );
+}

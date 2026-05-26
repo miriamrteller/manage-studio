@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from 'react-i18next';
 import { EmptyState } from '@/components/shared';
-import { FilterSelect, ListSearchInput, SortableHeader } from '@/components/shared/table';
+import { FilterMultiSelect, ListSearchInput, SortableHeader, type FilterOption } from '@/components/shared/table';
 import { useSortState } from '@/hooks/useSortState';
 import { useBillingAccounts } from '../hooks';
 import { DEFAULT_BILLING_SORT, type BillingSortField } from '../service';
@@ -13,8 +13,8 @@ export function BillingAccountsList(): React.ReactNode {
   const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
-  const [paymentFilter, setPaymentFilter] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [selectedPaymentMethods, setSelectedPaymentMethods] = useState<FilterOption[]>([]);
+  const [selectedStatuses, setSelectedStatuses] = useState<FilterOption[]>([]);
   const { sortField, sortOrder, toggleSort } = useSortState<BillingSortField>(
     DEFAULT_BILLING_SORT.field,
     DEFAULT_BILLING_SORT.order
@@ -25,8 +25,8 @@ export function BillingAccountsList(): React.ReactNode {
   const { data: listData, isLoading, error } = useBillingAccounts({
     page,
     searchQuery,
-    paymentMethod: paymentFilter ?? undefined,
-    status: statusFilter ?? undefined,
+    paymentMethods: selectedPaymentMethods.map((p) => p.value),
+    statuses: selectedStatuses.map((s) => s.value),
     sortField,
     sortOrder,
   });
@@ -71,28 +71,28 @@ export function BillingAccountsList(): React.ReactNode {
           />
         </div>
 
-        <FilterSelect
+        <FilterMultiSelect
           id="payment-filter"
           label={t('pages.billing.filter_by_payment_method')}
-          value={paymentFilter ?? ''}
-          onChange={(v) => {
-            setPaymentFilter(v || null);
+          selected={selectedPaymentMethods}
+          onChange={(next) => {
+            setSelectedPaymentMethods(next);
             setPage(1);
           }}
           options={paymentOptions}
-          allLabel={t('common.all')}
+          className="flex-1 min-w-48"
         />
 
-        <FilterSelect
+        <FilterMultiSelect
           id="status-filter"
           label={t('pages.billing.filter_by_status')}
-          value={statusFilter ?? ''}
-          onChange={(v) => {
-            setStatusFilter(v || null);
+          selected={selectedStatuses}
+          onChange={(next) => {
+            setSelectedStatuses(next);
             setPage(1);
           }}
           options={statusOptions}
-          allLabel={t('common.all')}
+          className="flex-1 min-w-48"
         />
 
         <Button type="button" onClick={() => setIsCreating(true)} variant="primary">

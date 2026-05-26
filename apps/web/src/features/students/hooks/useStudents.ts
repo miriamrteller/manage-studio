@@ -20,9 +20,9 @@ export interface StudentRow extends Person {
 interface UseStudentsOptions {
   page?: number;
   status?: 'active' | 'inactive' | 'all';
-  classId?: string | null;
-  levelId?: string | null;
-  familyId?: string | null;
+  classIds?: string[];
+  levelIds?: string[];
+  familyIds?: string[];
   minAge?: number | null;
   maxAge?: number | null;
   searchQuery?: string;
@@ -34,9 +34,9 @@ interface UseStudentsOptions {
 export function useStudents({
   page = 1,
   status = 'active',
-  classId = null,
-  levelId = null,
-  familyId = null,
+  classIds = [],
+  levelIds = [],
+  familyIds = [],
   minAge = null,
   maxAge = null,
   searchQuery = '',
@@ -45,13 +45,13 @@ export function useStudents({
   enabled = true,
 }: UseStudentsOptions = {}) {
   const tenant = useTenant();
-  const hasEnrolmentFilter = !!classId || !!levelId;
+  const hasEnrolmentFilter = classIds.length > 0 || levelIds.length > 0;
 
   const enrolledIdsQuery = useQuery({
-    queryKey: ['enrolled-person-ids', tenant?.id, classId, levelId],
+    queryKey: ['enrolled-person-ids', tenant?.id, classIds, levelIds],
     queryFn: async () => {
       if (!tenant) throw new Error('Tenant not initialized');
-      return resolveEnrolledPersonIds(tenant, { classId, levelId });
+      return resolveEnrolledPersonIds(tenant, { classIds, levelIds });
     },
     enabled: enabled && !!tenant?.id && hasEnrolmentFilter,
   });
@@ -62,9 +62,9 @@ export function useStudents({
       tenant?.id,
       page,
       status,
-      classId,
-      levelId,
-      familyId,
+      classIds,
+      levelIds,
+      familyIds,
       minAge,
       maxAge,
       searchQuery,
@@ -87,9 +87,9 @@ export function useStudents({
         pageSize: PAGE_SIZE,
         status,
         searchQuery,
-        familyId,
-        classId,
-        levelId,
+        familyIds,
+        classIds,
+        levelIds,
         minAge,
         maxAge,
         sortField,

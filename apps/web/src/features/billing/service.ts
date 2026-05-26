@@ -29,7 +29,9 @@ export class BillingAccountService extends BaseService {
       pageSize?: number;
       searchQuery?: string;
       paymentMethod?: string;
+      paymentMethods?: string[];
       status?: string;
+      statuses?: string[];
       sortField?: BillingSortField;
       sortOrder?: SortOrder;
     } = {}
@@ -39,7 +41,9 @@ export class BillingAccountService extends BaseService {
       pageSize = 20,
       searchQuery = '',
       paymentMethod,
+      paymentMethods = [],
       status,
+      statuses = [],
       sortField = DEFAULT_BILLING_SORT.field,
       sortOrder = DEFAULT_BILLING_SORT.order,
     } = options;
@@ -65,10 +69,14 @@ export class BillingAccountService extends BaseService {
           `account_holder_name.ilike.${q},primary_contact_email.ilike.${q}`
         );
       }
-      if (paymentMethod) {
+      if (paymentMethods.length > 0) {
+        query = query.in('payment_method', paymentMethods);
+      } else if (paymentMethod) {
         query = query.eq('payment_method', paymentMethod);
       }
-      if (status) {
+      if (statuses.length > 0) {
+        query = query.in('status', statuses);
+      } else if (status) {
         query = query.eq('status', status);
       }
 

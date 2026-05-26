@@ -45,9 +45,9 @@ export class ClassService extends BaseService {
     options: {
       page?: number;
       pageSize?: number;
-      termId?: string;
-      levelId?: string;
-      status?: string;
+      termIds?: string[];
+      levelIds?: string[];
+      statuses?: string[];
       searchQuery?: string;
       sortField?: ClassSortField;
       sortOrder?: ClassSortOrder;
@@ -56,9 +56,9 @@ export class ClassService extends BaseService {
     const {
       page = 1,
       pageSize = 50,
-      termId,
-      levelId,
-      status,
+      termIds = [],
+      levelIds = [],
+      statuses = [],
       searchQuery = '',
       sortField = DEFAULT_CLASS_SORT.field,
       sortOrder = DEFAULT_CLASS_SORT.order,
@@ -69,14 +69,14 @@ export class ClassService extends BaseService {
     return this.withRetry(async () => {
       let query = TenantDB.selectFor('classes', tenant, { count: 'exact' });
 
-      if (termId) {
-        query = query.eq('term_id', termId);
+      if (termIds.length > 0) {
+        query = query.in('term_id', termIds);
       }
-      if (levelId) {
-        query = query.eq('level_id', levelId);
+      if (levelIds.length > 0) {
+        query = query.in('level_id', levelIds);
       }
-      if (status) {
-        query = query.eq('status', status);
+      if (statuses.length > 0) {
+        query = query.in('status', statuses);
       }
       if (searchQuery.trim()) {
         query = query.ilike('name', `%${searchQuery.trim()}%`);

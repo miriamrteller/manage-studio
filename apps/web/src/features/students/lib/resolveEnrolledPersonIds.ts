@@ -4,43 +4,43 @@ import type { Tenant } from '@shared/schemas';
 const ACTIVE_ENROLMENT_STATUSES = ['active', 'pending_payment', 'waitlisted'] as const;
 
 interface EnrolmentFilterOptions {
-  classId?: string | null;
-  levelId?: string | null;
+  classIds?: string[];
+  levelIds?: string[];
 }
 
 /**
- * Resolve person IDs enrolled in classes matching classId and/or levelId.
+ * Resolve person IDs enrolled in classes matching classIds and/or levelIds.
+ * When both are set, classes must satisfy both (intersection).
  * Returns null when no enrolment filter is active.
- * Returns [] when filters apply but no matches exist.
  */
 export async function resolveEnrolledPersonIds(
   tenant: Tenant,
-  { classId, levelId }: EnrolmentFilterOptions
+  { classIds = [], levelIds = [] }: EnrolmentFilterOptions
 ): Promise<string[] | null> {
-  if (!classId && !levelId) return null;
+  if (classIds.length === 0 && levelIds.length === 0) return null;
 
-  let classIds: string[] | null = null;
+  let matchingClassIds: string[] | null = null;
 
-  if (levelId) {
+  if (levelIds.length > 0) {
     const { data, error } = await TenantDB.selectFor('classes', tenant)
-      .eq('level_id', levelId)
+      .in('level_id', levelIds)
       .select('id');
     if (error) throw error;
-    classIds = (data || []).map((c: { id: string }) => c.id);
-    if (classIds.length === 0) return [];
+    matchingClassIds = (data || []).map((c: { id: string }) => c.id);
+    if (matchingClassIds.length === 0) return [];
   }
 
-  if (classId) {
-    if (classIds === null) {
-      classIds = [classId];
+  if (classIds.length > 0) {
+    if (matchingClassIds === null) {
+      matchingClassIds = [...classIds];
     } else {
-      classIds = classIds.filter((id) => id === classId);
-      if (classIds.length === 0) return [];
+      matchingClassIds = matchingClassIds.filter((id) => classIds.includes(id));
+      if (matchingClassIds.length === 0) return [];
     }
   }
 
   const { data, error } = await TenantDB.selectFor('enrolments', tenant)
-    .in('class_id', classIds!)
+    .in('class_id', matchingClassIds!)
     .in('status', [...ACTIVE_ENROLMENT_STATUSES]);
   if (error) throw error;
 

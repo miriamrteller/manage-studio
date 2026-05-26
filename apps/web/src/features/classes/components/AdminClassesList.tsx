@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { formatCurrency, formatTime } from '@shared/format';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/shared';
-import { FilterSelect, ListSearchInput, SortableHeader } from '@/components/shared/table';
+import { FilterMultiSelect, ListSearchInput, SortableHeader, type FilterOption } from '@/components/shared/table';
 import { useTenant } from '@/hooks/useTenant';
 import { useSortState } from '@/hooks/useSortState';
 import { useClasses } from '../hooks/useClasses';
@@ -26,9 +26,9 @@ export function AdminClassesList() {
     DEFAULT_CLASS_SORT.field,
     DEFAULT_CLASS_SORT.order
   );
-  const [filterTermId, setFilterTermId] = useState<string | null>(null);
-  const [filterLevelId, setFilterLevelId] = useState<string | null>(null);
-  const [filterStatus, setFilterStatus] = useState<string | null>(null);
+  const [filterTerms, setFilterTerms] = useState<FilterOption[]>([]);
+  const [filterLevels, setFilterLevels] = useState<FilterOption[]>([]);
+  const [filterStatuses, setFilterStatuses] = useState<FilterOption[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [editingClass, setEditingClass] = useState<Class | null>(null);
@@ -40,9 +40,9 @@ export function AdminClassesList() {
     publicOnly: false,
     sortField,
     sortOrder,
-    termId: filterTermId ?? undefined,
-    levelId: filterLevelId ?? undefined,
-    status: filterStatus ?? undefined,
+    termIds: filterTerms.map((t) => t.value),
+    levelIds: filterLevels.map((l) => l.value),
+    statuses: filterStatuses.map((s) => s.value),
     searchQuery,
   });
   const termsData = useTerms({ page: 1 });
@@ -140,38 +140,38 @@ export function AdminClassesList() {
             isSearching={classesData.isLoading}
           />
         </div>
-        <FilterSelect
+        <FilterMultiSelect
           id="class-term-filter"
           label={t('form.class.term')}
-          value={filterTermId ?? ''}
-          onChange={(v) => {
-            setFilterTermId(v || null);
+          selected={filterTerms}
+          onChange={(next) => {
+            setFilterTerms(next);
             setPage(1);
           }}
           options={termOptions}
-          allLabel={t('common.all')}
+          className="flex-1 min-w-48"
         />
-        <FilterSelect
+        <FilterMultiSelect
           id="class-level-filter"
           label={t('form.class.level')}
-          value={filterLevelId ?? ''}
-          onChange={(v) => {
-            setFilterLevelId(v || null);
+          selected={filterLevels}
+          onChange={(next) => {
+            setFilterLevels(next);
             setPage(1);
           }}
           options={levelFilterOptions}
-          allLabel={t('common.all')}
+          className="flex-1 min-w-48"
         />
-        <FilterSelect
+        <FilterMultiSelect
           id="class-status-filter"
           label={t('common.status')}
-          value={filterStatus ?? ''}
-          onChange={(v) => {
-            setFilterStatus(v || null);
+          selected={filterStatuses}
+          onChange={(next) => {
+            setFilterStatuses(next);
             setPage(1);
           }}
           options={statusOptions}
-          allLabel={t('common.all')}
+          className="flex-1 min-w-48"
         />
       </div>
 

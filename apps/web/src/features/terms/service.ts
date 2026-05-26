@@ -34,6 +34,7 @@ export class TermService extends BaseService {
       pageSize?: number;
       searchQuery?: string;
       status?: string;
+      statuses?: string[];
       sortField?: TermSortField;
       sortOrder?: SortOrder;
     } = {}
@@ -43,6 +44,7 @@ export class TermService extends BaseService {
       pageSize = 50,
       searchQuery = '',
       status,
+      statuses = [],
       sortField = DEFAULT_TERM_SORT.field,
       sortOrder = DEFAULT_TERM_SORT.order,
     } = options;
@@ -63,7 +65,9 @@ export class TermService extends BaseService {
       if (searchQuery.trim()) {
         query = query.ilike('name', `%${searchQuery.trim()}%`);
       }
-      if (status) {
+      if (statuses.length > 0) {
+        query = query.in('status', statuses);
+      } else if (status) {
         query = query.eq('status', status);
       }
 
