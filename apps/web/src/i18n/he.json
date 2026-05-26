@@ -15,6 +15,7 @@
     "try_again": "נסה שוב",
     "confirm": "אישור",
     "loading": "טוען...",
+    "verifying": "מאמת...",
     "error": "שגיאה",
     "success": "הצליח",
     "required": "שדה חובה",
@@ -559,6 +560,37 @@
     },
     "portal_dashboard": "פורטל",
     "coming_soon_portal": "לוח הבקרה של הפורטל בדרך. כאן תוכלו לצפות בהרשמות, נוכחות ותשלומים."
+  },
+  "signup": {
+    "title": "יצירת חשבון",
+    "step1": {
+      "subtitle": "ספרו לנו על עצמכם",
+      "firstName": "שם פרטי",
+      "lastName": "שם משפחה",
+      "email": "דוא״ל",
+      "channel": "איך לשלוח את קוד האימות?",
+      "channelEmail": "דוא״ל",
+      "channelSms": "SMS",
+      "channelWhatsapp": "WhatsApp",
+      "phone": "מספר טלפון",
+      "continue": "המשך"
+    },
+    "step2": {
+      "subtitle": "בדקו את ההודעות שלכם",
+      "sentTo": "שלחנו קוד אימות ב{{channel}} אל {{contact}}.",
+      "email": "דוא״ל",
+      "sms": "SMS",
+      "whatsapp": "WhatsApp",
+      "resendIn": "שליחה חוזרת בעוד",
+      "resend": "שלח קוד שוב",
+      "continue": "קיבלתי את הקוד"
+    },
+    "step3": {
+      "subtitle": "הזינו את קוד האימות",
+      "enterCode": "הזינו את הקוד בן 6 הספרות ששלחנו",
+      "digit": "ספרה {{number}}",
+      "verify": "אמת"
+    }
   },
   "nav": {
     "classes": "שיעורים",

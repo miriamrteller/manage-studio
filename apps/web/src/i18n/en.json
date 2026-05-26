@@ -15,6 +15,7 @@
     "try_again": "Try Again",
     "confirm": "Confirm",
     "loading": "Loading...",
+    "verifying": "Verifying...",
     "error": "Error",
     "success": "Success",
     "required": "Required",
@@ -557,6 +558,37 @@
     },
     "portal_dashboard": "Portal",
     "coming_soon_portal": "Your portal dashboard is coming soon. You will be able to view enrolments, attendance, and payments here."
+  },
+  "signup": {
+    "title": "Create your account",
+    "step1": {
+      "subtitle": "Tell us about yourself",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "email": "Email",
+      "channel": "How should we send your verification code?",
+      "channelEmail": "Email",
+      "channelSms": "SMS",
+      "channelWhatsapp": "WhatsApp",
+      "phone": "Phone number",
+      "continue": "Continue"
+    },
+    "step2": {
+      "subtitle": "Check your messages",
+      "sentTo": "We sent a verification code via {{channel}} to {{contact}}.",
+      "email": "email",
+      "sms": "SMS",
+      "whatsapp": "WhatsApp",
+      "resendIn": "Resend code in",
+      "resend": "Resend code",
+      "continue": "I received the code"
+    },
+    "step3": {
+      "subtitle": "Enter verification code",
+      "enterCode": "Enter the 6-digit code we sent you",
+      "digit": "Digit {{number}}",
+      "verify": "Verify"
+    }
   },
   "nav": {
     "classes": "Classes",
