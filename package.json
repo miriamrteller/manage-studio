@@ -22,7 +22,9 @@
     "db:reset-local": "supabase db reset --local",
     "db:pull": "supabase db pull",
     "db:types": "supabase gen types typescript --linked > packages/shared/src/database.types.ts",
-    "db:sync": "pnpm db:push && pnpm db:types"
+    "db:sync": "pnpm db:push && pnpm db:types",
+    "seed:auth-parent": "node scripts/seed-auth-parent.mjs",
+    "auth:check-email": "node scripts/check-auth-email-setup.mjs"
   },
   "devDependencies": {
     "@react-email/components": "^1.0.12",

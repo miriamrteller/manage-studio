@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTenant } from '@/hooks/useTenant';
 import { signupFormSchema, type SignupForm } from '@/schemas/auth';
 import { useSignup } from '@/features/auth/hooks/useSignup';
+import { resolveAuthErrorMessage } from '@/lib/authErrors';
 import SignupStep1 from '@/features/auth/components/SignupStep1';
 import SignupStep2 from '@/features/auth/components/SignupStep2';
 import SignupStep3 from '@/features/auth/components/SignupStep3';
@@ -113,7 +114,7 @@ export default function SignupPage() {
           <div className="rounded-md bg-red-50 p-4" role="alert" aria-live="polite">
             <p className="text-sm font-medium text-red-800">
               {sendOtpError instanceof Error
-                ? sendOtpError.message
+                ? resolveAuthErrorMessage(sendOtpError.message, t, 'errors.signup_failed')
                 : t('errors.signup_failed')}
             </p>
           </div>

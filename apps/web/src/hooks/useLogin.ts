@@ -4,15 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { supabase } from '@/lib/supabase';
 import { resolveTenantSubdomain } from '@/lib/resolveTenantSubdomain';
 import { LoginFormSchema, PasswordLoginSchema, type LoginForm, type PasswordLogin } from '@/schemas';
-
-function isMagicLinkUserNotFoundError(message: string): boolean {
-  const normalized = message.toLowerCase();
-  return (
-    normalized.includes('user not found') ||
-    normalized.includes('signups not allowed') ||
-    normalized.includes('database error saving new user')
-  );
-}
+import { resolveAuthErrorMessage } from '@/lib/authErrors';
 
 export type PostLoginRedirect = {
   to?: string;
@@ -122,9 +114,7 @@ export function useLogin(
         if (error) {
           setMessage({
             type: 'error',
-            text: isMagicLinkUserNotFoundError(error.message)
-              ? t('errors.user_not_found')
-              : error.message || t('error.login_failed'),
+            text: resolveAuthErrorMessage(error.message, t, 'errors.login_failed'),
           });
         } else {
           setMessage({

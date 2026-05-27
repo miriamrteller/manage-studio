@@ -55,5 +55,18 @@ This system streamlines the complex operations of running a ballet school—from
 - **V2:** Attendance automation, Waiting list logic, and Voice-bot integration.
 - **V3:** Full SaaS onboarding and white-labeling capabilities.
 
+## 🔐 Auth & email setup
+
+Magic-link login uses **Supabase Auth email delivery** (not the Resend Edge Functions). If dashboard "Send magic link" fails with `Error sending magic link email`, configure custom SMTP.
+
+| Task | Doc / command |
+| --- | --- |
+| Full auth + email runbook | [docs/deployment/AUTH_EMAIL_SETUP.md](docs/deployment/AUTH_EMAIL_SETUP.md) |
+| Diagnose hosted magic-link send | `pnpm auth:check-email` (needs `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`) |
+| Seed parent test user (hosted) | `pnpm seed:auth-parent` |
+| Local dev emails (Inbucket) | `pnpm db:reset-local` then open http://127.0.0.1:54324 |
+| Third-party services | [docs/deployment/THIRD_PARTY_SERVICES.md](docs/deployment/THIRD_PARTY_SERVICES.md) |
+| Operations runbook | [docs/MANUAL_OPERATIONS_RUNBOOK.md](docs/MANUAL_OPERATIONS_RUNBOOK.md) |
+
 ---
 *Built for reliability. Designed for dance.*

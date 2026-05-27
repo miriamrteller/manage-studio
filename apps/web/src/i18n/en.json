@@ -94,7 +94,11 @@
     "session_setup_failed": "Session Setup Failed",
     "contact_support": "If this problem persists, please contact support.",
     "dashboard_load_failed": "Failed to load dashboard. Please try refreshing the page.",
-    "login_failed": "Login failed. Please try again."
+    "login_failed": "Login failed. Please try again.",
+    "email_delivery_failed": "We couldn't send the login email. Try again in a few minutes and check your spam folder. If this keeps happening, contact support.",
+    "rate_limited": "Too many login attempts. Please wait a few minutes and try again.",
+    "expired_link": "This login link has expired. Request a new magic link from the login page.",
+    "redirect_mismatch": "Login redirect is not configured for this site. Please contact support."
   },
   "validation": {
     "required": "This field is required.",

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { supabase } from '../lib/supabase';
 import { useCurrentUser } from '../hooks/useCurrentUser';
+import { resolveAuthErrorMessage } from '@/lib/authErrors';
 
 /**
  * AuthCallbackPage: Handles magic link callback after Supabase email auth
@@ -40,7 +41,13 @@ export default function AuthCallbackPage() {
         const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 
         if (exchangeError) {
-          setError(exchangeError.message || t('errors.session_exchange_failed'));
+          setError(
+            resolveAuthErrorMessage(
+              exchangeError.message,
+              t,
+              'errors.session_exchange_failed',
+            ),
+          );
           return;
         }
 
