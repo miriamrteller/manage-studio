@@ -24,26 +24,16 @@ ON CONFLICT (id) DO UPDATE SET
   country = EXCLUDED.country;
 
 UPDATE family_members
-SET
-  user_profile_id = :'auth_user_id'::uuid,
-  email = 'miriamrstern@gmail.com',
-  name = 'Miriam R Stern',
-  phone = '0505550101'
+SET user_profile_id = :'auth_user_id'::uuid
 WHERE id IN (
   '00000000-0000-0000-0000-000000000701'::uuid,
   '00000000-0000-0000-0000-000000000702'::uuid
 );
 
-UPDATE families
-SET
-  contact_person_name = 'Miriam R Stern',
-  contact_email = 'miriamrstern@gmail.com',
-  contact_phone = '0548421987'
-WHERE id IN (
-  '00000000-0000-0000-0000-000000000401'::uuid,
-  '00000000-0000-0000-0000-000000000402'::uuid
-);
-
 UPDATE people
 SET user_profile_id = :'auth_user_id'::uuid
 WHERE id = '00000000-0000-0000-0000-000000000504'::uuid;
+
+UPDATE user_profiles
+SET person_id = '00000000-0000-0000-0000-000000000504'::uuid
+WHERE id = :'auth_user_id'::uuid;

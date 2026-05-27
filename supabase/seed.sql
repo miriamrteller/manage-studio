@@ -9,7 +9,7 @@
 -- End-users NEVER send or modify configuration data—this is read-only from their perspective.
 
 -- ============================================================================
--- TENANTS (Migration 001)
+-- TENANTS (20260526000100_tenants.sql)
 -- ============================================================================
 INSERT INTO tenants (id, name, subdomain, language_default, country, primary_color, accent_color, currency, vat_rate, phone_region)
 VALUES (
@@ -34,7 +34,8 @@ VALUES (
   phone_region = EXCLUDED.phone_region;
 
 -- ============================================================================
--- TERMS (Migration 004)
+-- TERMS + LEVELS + CLASSES (20260526000400_classes.sql)
+-- Age ranges live on classes.min_age / classes.max_age (not requirement templates)
 -- ============================================================================
 INSERT INTO terms (id, tenant_id, name, start_date, end_date, status)
 VALUES
@@ -46,9 +47,6 @@ ON CONFLICT (id) DO UPDATE SET
   end_date = EXCLUDED.end_date,
   status = EXCLUDED.status;
 
--- ============================================================================
--- LEVELS (Migration 004)
--- ============================================================================
 INSERT INTO levels (id, tenant_id, name, sort_order)
 VALUES
   ('00000000-0000-0000-0000-000000000201'::uuid, '00000000-0000-0000-0000-000000000001'::uuid, 'Mini (Ages 3-4)', 1),
@@ -62,18 +60,13 @@ ON CONFLICT (id) DO UPDATE SET
   name = EXCLUDED.name,
   sort_order = EXCLUDED.sort_order;
 
--- ============================================================================
--- CLASSES (Migration 004)
--- Age ranges live on classes.min_age / classes.max_age (not requirement templates)
--- ============================================================================
 INSERT INTO classes (
   id, tenant_id, term_id, level_id, name,
   day_of_week, start_time, end_time,
   min_age, max_age,
-  max_capacity, price_minor, currency, is_public, status
+  max_capacity, price_minor, currency, billing_frequency, is_public, status
 )
 VALUES
-  -- Monday schedule: 45 min slots back-to-back from 15:30, all 240 NIS
   (
     '00000000-0000-0000-0000-000000000301'::uuid,
     '00000000-0000-0000-0000-000000000001'::uuid,
@@ -82,7 +75,7 @@ VALUES
     'Mini',
     1, '15:30:00', '16:15:00',
     3, 4,
-    10, 24000, 'ILS', true, 'active'
+    10, 24000, 'ILS', 'monthly', true, 'active'
   ),
   (
     '00000000-0000-0000-0000-000000000302'::uuid,
@@ -92,7 +85,7 @@ VALUES
     'Pre-Primary',
     1, '16:15:00', '17:00:00',
     4, 6,
-    16, 24000, 'ILS', true, 'active'
+    16, 24000, 'ILS', 'monthly', true, 'active'
   ),
   (
     '00000000-0000-0000-0000-000000000303'::uuid,
@@ -102,7 +95,7 @@ VALUES
     'Primary',
     1, '17:00:00', '17:45:00',
     5, 7,
-    20, 24000, 'ILS', true, 'active'
+    20, 24000, 'ILS', 'monthly', true, 'active'
   ),
   (
     '00000000-0000-0000-0000-000000000304'::uuid,
@@ -112,7 +105,7 @@ VALUES
     'Grade 1',
     1, '17:45:00', '18:30:00',
     7, 10,
-    20, 24000, 'ILS', true, 'active'
+    20, 24000, 'ILS', 'monthly', true, 'active'
   ),
   (
     '00000000-0000-0000-0000-000000000305'::uuid,
@@ -122,7 +115,7 @@ VALUES
     'Grade 2',
     1, '18:30:00', '19:15:00',
     9, 13,
-    20, 24000, 'ILS', true, 'active'
+    20, 24000, 'ILS', 'monthly', true, 'active'
   ),
   (
     '00000000-0000-0000-0000-000000000306'::uuid,
@@ -132,7 +125,7 @@ VALUES
     'Grade 3',
     1, '19:15:00', '20:00:00',
     10, 16,
-    20, 24000, 'ILS', true, 'active'
+    20, 24000, 'ILS', 'monthly', true, 'active'
   ),
   (
     '00000000-0000-0000-0000-000000000309'::uuid,
@@ -142,7 +135,7 @@ VALUES
     'Pilates',
     1, '20:00:00', '20:45:00',
     18, NULL,
-    15, 24000, 'ILS', true, 'active'
+    15, 24000, 'ILS', 'monthly', true, 'active'
   )
 ON CONFLICT (id) DO UPDATE SET
   term_id = EXCLUDED.term_id,
@@ -156,10 +149,10 @@ ON CONFLICT (id) DO UPDATE SET
   max_capacity = EXCLUDED.max_capacity,
   price_minor = EXCLUDED.price_minor,
   currency = EXCLUDED.currency,
+  billing_frequency = EXCLUDED.billing_frequency,
   is_public = EXCLUDED.is_public,
   status = EXCLUDED.status;
 
--- Remove legacy seed classes that are no longer in this seed file
 DELETE FROM classes
 WHERE tenant_id = '00000000-0000-0000-0000-000000000001'::uuid
   AND id IN (
@@ -168,78 +161,37 @@ WHERE tenant_id = '00000000-0000-0000-0000-000000000001'::uuid
   );
 
 -- ============================================================================
--- FAMILIES (Migration 002)
+-- PEOPLE + FAMILIES (20260526000200_people.sql)
+-- families.person_id = primary contact (student); guardians are family_members
 -- ============================================================================
-INSERT INTO families (id, tenant_id, name, contact_person_name, contact_email, contact_phone, created_at)
+
+-- Stub rows so families.person_id FK can be satisfied before family_id is set on people
+INSERT INTO people (id, tenant_id, name, created_at, updated_at)
+VALUES
+  ('00000000-0000-0000-0000-000000000501'::uuid, '00000000-0000-0000-0000-000000000001'::uuid, 'Miriam Stern', now(), now()),
+  ('00000000-0000-0000-0000-000000000502'::uuid, '00000000-0000-0000-0000-000000000001'::uuid, 'Ruti Teller', now(), now())
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name;
+
+INSERT INTO families (id, tenant_id, name, person_id, created_at)
 VALUES
   (
     '00000000-0000-0000-0000-000000000401'::uuid,
     '00000000-0000-0000-0000-000000000001'::uuid,
     'Stern family',
-    'Reuven Teller',
-    'tellertwins@gmail.com',
-    '0505550101',
+    '00000000-0000-0000-0000-000000000501'::uuid,
     now()
   ),
   (
     '00000000-0000-0000-0000-000000000402'::uuid,
     '00000000-0000-0000-0000-000000000001'::uuid,
     'Teller family',
-    'Reuven Teller',
-    'tellertwins@gmail.com',
-    '0505550101',
+    '00000000-0000-0000-0000-000000000502'::uuid,
     now()
   )
 ON CONFLICT (id) DO UPDATE SET
   name = EXCLUDED.name,
-  contact_person_name = EXCLUDED.contact_person_name,
-  contact_email = EXCLUDED.contact_email,
-  contact_phone = EXCLUDED.contact_phone;
+  person_id = EXCLUDED.person_id;
 
--- ============================================================================
--- FAMILY MEMBERS (Migration 002) — guardian linked to each family
--- ============================================================================
-INSERT INTO family_members (id, tenant_id, family_id, user_profile_id, name, email, phone, role, created_at)
-VALUES
-  (
-    '00000000-0000-0000-0000-000000000701'::uuid,
-    '00000000-0000-0000-0000-000000000001'::uuid,
-    '00000000-0000-0000-0000-000000000401'::uuid,
-    NULL,
-    'Reuven Teller',
-    'tellertwins@gmail.com',
-    '0505550101',
-    'guardian',
-    now()
-  ),
-  (
-    '00000000-0000-0000-0000-000000000702'::uuid,
-    '00000000-0000-0000-0000-000000000001'::uuid,
-    '00000000-0000-0000-0000-000000000402'::uuid,
-    NULL,
-    'Reuven Teller',
-    'tellertwins@gmail.com',
-    '0505550101',
-    'guardian',
-    now()
-  )
-ON CONFLICT (id) DO UPDATE SET
-  family_id = EXCLUDED.family_id,
-  user_profile_id = EXCLUDED.user_profile_id,
-  name = EXCLUDED.name,
-  email = EXCLUDED.email,
-  phone = EXCLUDED.phone,
-  role = EXCLUDED.role;
-
-UPDATE families SET primary_contact_id = '00000000-0000-0000-0000-000000000701'::uuid
-WHERE id = '00000000-0000-0000-0000-000000000401'::uuid;
-
-UPDATE families SET primary_contact_id = '00000000-0000-0000-0000-000000000702'::uuid
-WHERE id = '00000000-0000-0000-0000-000000000402'::uuid;
-
--- ============================================================================
--- PEOPLE (Migration 002)
--- ============================================================================
 INSERT INTO people (
   id, tenant_id, user_profile_id, family_id, name, email, date_of_birth,
   medical_notes, allergies,
@@ -259,7 +211,7 @@ VALUES
     '2021-05-15'::date,
     NULL,
     NULL,
-    'Reuven Teller',
+    'Miriam R Stern',
     '0505550101',
     true,
     true,
@@ -279,7 +231,7 @@ VALUES
     '2018-03-22'::date,
     NULL,
     NULL,
-    'Reuven Teller',
+    'Miriam R Stern',
     '0505550101',
     true,
     true,
@@ -327,11 +279,13 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at = now();
 
 -- ============================================================================
--- CONTACT PREFERENCES (Migration 003)
+-- CONTACT PREFERENCES (20260526000300_contact_prefs.sql)
+-- Keyed by person_id OR family_member_id (contact_owner constraint)
 -- ============================================================================
 INSERT INTO contact_preferences (
   id, tenant_id, person_id, family_member_id,
-  email, email_opted_in, whatsapp_opted_in, voice_opted_in,
+  email_opted_in, whatsapp_number, whatsapp_opted_in, whatsapp_verified,
+  voice_number, voice_opted_in,
   preferred_channel, language, created_at, updated_at
 )
 VALUES
@@ -340,8 +294,8 @@ VALUES
     '00000000-0000-0000-0000-000000000001'::uuid,
     '00000000-0000-0000-0000-000000000501'::uuid,
     NULL,
-    'tellertwins@gmail.com',
-    true, false, false,
+    true, NULL, false, false,
+    NULL, false,
     'email', 'he', now(), now()
   ),
   (
@@ -349,26 +303,8 @@ VALUES
     '00000000-0000-0000-0000-000000000001'::uuid,
     '00000000-0000-0000-0000-000000000502'::uuid,
     NULL,
-    'tellertwins@gmail.com',
-    true, false, false,
-    'email', 'he', now(), now()
-  ),
-  (
-    '00000000-0000-0000-0000-000000000603'::uuid,
-    '00000000-0000-0000-0000-000000000001'::uuid,
-    NULL,
-    '00000000-0000-0000-0000-000000000701'::uuid,
-    'miriamrstern@gmail.com',
-    true, false, false,
-    'email', 'he', now(), now()
-  ),
-  (
-    '00000000-0000-0000-0000-000000000604'::uuid,
-    '00000000-0000-0000-0000-000000000001'::uuid,
-    NULL,
-    '00000000-0000-0000-0000-000000000702'::uuid,
-    'tellertwins@gmail.com',
-    true, false, false,
+    true, NULL, false, false,
+    NULL, false,
     'email', 'he', now(), now()
   ),
   (
@@ -376,20 +312,29 @@ VALUES
     '00000000-0000-0000-0000-000000000001'::uuid,
     '00000000-0000-0000-0000-000000000503'::uuid,
     NULL,
-    'sara.gold@gmail.com',
-    true, true, false,
+    true, '0501234567', true, false,
+    NULL, false,
     'email', 'en', now(), now()
   )
 ON CONFLICT (id) DO UPDATE SET
   person_id = EXCLUDED.person_id,
   family_member_id = EXCLUDED.family_member_id,
-  email = EXCLUDED.email,
   email_opted_in = EXCLUDED.email_opted_in,
+  whatsapp_number = EXCLUDED.whatsapp_number,
   whatsapp_opted_in = EXCLUDED.whatsapp_opted_in,
+  whatsapp_verified = EXCLUDED.whatsapp_verified,
+  voice_number = EXCLUDED.voice_number,
   voice_opted_in = EXCLUDED.voice_opted_in,
   preferred_channel = EXCLUDED.preferred_channel,
   language = EXCLUDED.language,
   updated_at = now();
+
+-- ============================================================================
+-- INVOICE SEQUENCE (20260526001400_finance_payments.sql)
+-- ============================================================================
+INSERT INTO invoice_sequences (tenant_id, last_number, prefix, year_prefix, current_year)
+VALUES ('00000000-0000-0000-0000-000000000001'::uuid, 0, 'INV', true, EXTRACT(YEAR FROM now())::TEXT)
+ON CONFLICT (tenant_id) DO NOTHING;
 
 -- ============================================================================
 -- AUTH USERS (local db reset — fixed UUIDs match user_profiles below)
@@ -546,9 +491,7 @@ INSERT INTO user_profiles (
 --
 -- Local: auth user is created above (UUID 00000000-0000-0000-0000-000000000510).
 -- Hosted: run `node scripts/seed-auth-parent.mjs`, then re-run this seed file.
--- Magic link login requires the auth user to exist before requesting a link.
 -- ============================================================================
-
 INSERT INTO user_profiles (
   id,
   tenant_id,
@@ -557,7 +500,7 @@ INSERT INTO user_profiles (
   language,
   country
 ) VALUES (
-  '00000000-0000-0000-0000-000000000510'::uuid,  -- ← replace with Supabase Auth UUID
+  '00000000-0000-0000-0000-000000000510'::uuid,
   '00000000-0000-0000-0000-000000000001'::uuid,
   ARRAY['parent', 'guardian'],
   'miriamrstern@gmail.com',
@@ -570,29 +513,7 @@ INSERT INTO user_profiles (
   language = EXCLUDED.language,
   country = EXCLUDED.country;
 
--- Link guardian login to both families (Miriam Stern + Ruti Teller)
-UPDATE family_members
-SET
-  user_profile_id = '00000000-0000-0000-0000-000000000510'::uuid,  -- ← same UUID
-  email = 'miriamrstern@gmail.com',
-  name = 'Miriam R Stern',
-  phone = '0505550101'
-WHERE id IN (
-  '00000000-0000-0000-0000-000000000701'::uuid,
-  '00000000-0000-0000-0000-000000000702'::uuid
-);
-
-UPDATE families
-SET
-  contact_person_name = 'Miriam R Stern',
-  contact_email = 'miriamrstern@gmail.com',
-  contact_phone = '0505550101'
-WHERE id IN (
-  '00000000-0000-0000-0000-000000000401'::uuid,
-  '00000000-0000-0000-0000-000000000402'::uuid
-);
-
--- Adult solo student record (same login — for Pilates self-enrolment / returning customer)
+-- Adult guardian + solo student (same login — Pilates self-enrolment)
 INSERT INTO people (
   id, tenant_id, user_profile_id, family_id, name, email, date_of_birth,
   medical_notes, allergies,
@@ -603,7 +524,7 @@ INSERT INTO people (
 VALUES (
   '00000000-0000-0000-0000-000000000504'::uuid,
   '00000000-0000-0000-0000-000000000001'::uuid,
-  '00000000-0000-0000-0000-000000000510'::uuid,  -- ← same UUID
+  '00000000-0000-0000-0000-000000000510'::uuid,
   NULL,
   'Miriam R Stern',
   'miriamrstern@gmail.com',
@@ -630,24 +551,77 @@ ON CONFLICT (id) DO UPDATE SET
   status = EXCLUDED.status,
   updated_at = now();
 
+UPDATE user_profiles
+SET person_id = '00000000-0000-0000-0000-000000000504'::uuid
+WHERE id = '00000000-0000-0000-0000-000000000510'::uuid;
+
+-- Guardian membership for both seeded families (person_id + user_profile_id)
+INSERT INTO family_members (id, tenant_id, family_id, user_profile_id, person_id, role, created_at)
+VALUES
+  (
+    '00000000-0000-0000-0000-000000000701'::uuid,
+    '00000000-0000-0000-0000-000000000001'::uuid,
+    '00000000-0000-0000-0000-000000000401'::uuid,
+    '00000000-0000-0000-0000-000000000510'::uuid,
+    '00000000-0000-0000-0000-000000000504'::uuid,
+    'guardian',
+    now()
+  ),
+  (
+    '00000000-0000-0000-0000-000000000702'::uuid,
+    '00000000-0000-0000-0000-000000000001'::uuid,
+    '00000000-0000-0000-0000-000000000402'::uuid,
+    '00000000-0000-0000-0000-000000000510'::uuid,
+    '00000000-0000-0000-0000-000000000504'::uuid,
+    'guardian',
+    now()
+  )
+ON CONFLICT (id) DO UPDATE SET
+  family_id = EXCLUDED.family_id,
+  user_profile_id = EXCLUDED.user_profile_id,
+  person_id = EXCLUDED.person_id,
+  role = EXCLUDED.role;
+
 INSERT INTO contact_preferences (
   id, tenant_id, person_id, family_member_id,
-  email, email_opted_in, whatsapp_opted_in, voice_opted_in,
+  email_opted_in, whatsapp_number, whatsapp_opted_in, whatsapp_verified,
+  voice_number, voice_opted_in,
   preferred_channel, language, created_at, updated_at
 )
-VALUES (
-  '00000000-0000-0000-0000-000000000606'::uuid,
-  '00000000-0000-0000-0000-000000000001'::uuid,
-  '00000000-0000-0000-0000-000000000504'::uuid,
-  NULL,
-  'miriamrstern@gmail.com',
-  true, false, false,
-  'email', 'he', now(), now()
-)
+VALUES
+  (
+    '00000000-0000-0000-0000-000000000606'::uuid,
+    '00000000-0000-0000-0000-000000000001'::uuid,
+    '00000000-0000-0000-0000-000000000504'::uuid,
+    NULL,
+    true, NULL, false, false,
+    NULL, false,
+    'email', 'he', now(), now()
+  ),
+  (
+    '00000000-0000-0000-0000-000000000603'::uuid,
+    '00000000-0000-0000-0000-000000000001'::uuid,
+    NULL,
+    '00000000-0000-0000-0000-000000000701'::uuid,
+    true, NULL, false, false,
+    NULL, false,
+    'email', 'he', now(), now()
+  ),
+  (
+    '00000000-0000-0000-0000-000000000604'::uuid,
+    '00000000-0000-0000-0000-000000000001'::uuid,
+    NULL,
+    '00000000-0000-0000-0000-000000000702'::uuid,
+    true, NULL, false, false,
+    NULL, false,
+    'email', 'he', now(), now()
+  )
 ON CONFLICT (id) DO UPDATE SET
   person_id = EXCLUDED.person_id,
-  email = EXCLUDED.email,
+  family_member_id = EXCLUDED.family_member_id,
   email_opted_in = EXCLUDED.email_opted_in,
+  whatsapp_number = EXCLUDED.whatsapp_number,
+  whatsapp_opted_in = EXCLUDED.whatsapp_opted_in,
   preferred_channel = EXCLUDED.preferred_channel,
   language = EXCLUDED.language,
   updated_at = now();
