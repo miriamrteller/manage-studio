@@ -6,7 +6,7 @@
  *   SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... node scripts/seed-auth-parent.mjs
  *
  * Hosted projects:
- *   1. Apply migration 019 (dashboard-friendly auth trigger)
+ *   1. Apply migrations through 016 (auth trigger)
  *   2. SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... node scripts/seed-auth-parent.mjs
  *   3. Re-run supabase/seed.sql (or supabase/scripts/link-parent-user.sql if UUID differs)
  */

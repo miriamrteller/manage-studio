@@ -121,7 +121,7 @@ export const PublicClassSchema = z.object({
 
 export type PublicClass = z.infer<typeof PublicClassSchema>;
 
-// Person (aligned with migration 20260519000200_people.sql)
+// Person (aligned with migration 20260526000200_people.sql)
 export const PersonSchema = z.object({
   id: UUIDSchema,
   tenant_id: UUIDSchema,
@@ -147,7 +147,7 @@ export const PersonSchema = z.object({
 
 export type Person = z.infer<typeof PersonSchema>;
 
-// Billing account (migration 20260519002300_billing_accounts.sql)
+// Billing account (migration 20260526001000_billing_accounts.sql)
 export const BillingAccountSchema = z.object({
   id: UUIDSchema,
   tenant_id: UUIDSchema,

@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
+import { resolveTenantSubdomain } from '@/lib/resolveTenantSubdomain';
 import { useTenant } from '@/hooks/useTenant';
 import type { SignupForm } from '@/schemas/auth';
 
@@ -9,28 +10,43 @@ export function useSignup() {
 
   const sendOtpMutation = useMutation({
     mutationFn: async (data: SignupForm) => {
-      if (data.channel === 'email') {
-        const { data: response, error } = await supabase.functions.invoke('send-otp-email', {
-          body: {
-            email: data.email,
-            recipient_name: `${data.firstName} ${data.lastName}`,
-            tenant_id: data.tenantId,
-          },
-        });
-        if (error) throw error;
-        return response;
-      } else {
-        const { data: response, error } = await supabase.functions.invoke('send-otp-sms', {
-          body: {
-            recipient_phone: data.phone,
-            recipient_name: `${data.firstName} ${data.lastName}`,
-            channel: data.channel,
-            tenant_id: data.tenantId,
-          },
-        });
-        if (error) throw error;
-        return response;
+      if (!tenant?.id) {
+        throw new Error('Tenant not loaded');
       }
+
+      if (data.channel === 'email') {
+        const subdomain = resolveTenantSubdomain();
+        if (!subdomain) {
+          throw new Error('Could not determine school subdomain');
+        }
+
+        const { error } = await supabase.auth.signInWithOtp({
+          email: data.email,
+          options: {
+            shouldCreateUser: true,
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
+            data: {
+              subdomain,
+              first_name: data.firstName,
+              last_name: data.lastName,
+            },
+          },
+        });
+
+        if (error) throw error;
+        return { success: true };
+      }
+
+      const { data: response, error } = await supabase.functions.invoke('send-otp-sms', {
+        body: {
+          recipient_phone: data.phone,
+          recipient_name: `${data.firstName} ${data.lastName}`,
+          channel: data.channel,
+          tenant_id: tenant.id,
+        },
+      });
+      if (error) throw error;
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['signup-state'] });
@@ -66,6 +82,7 @@ export function useSignup() {
 
   return {
     sendOtp: sendOtpMutation.mutate,
+    sendOtpAsync: sendOtpMutation.mutateAsync,
     sendOtpLoading: sendOtpMutation.isPending,
     sendOtpError: sendOtpMutation.error,
     verifyOtp: verifyOtpMutation.mutate,

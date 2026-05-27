@@ -559,7 +559,29 @@
       "requirements_add_title": "הוסף דרישה"
     },
     "portal_dashboard": "פורטל",
-    "coming_soon_portal": "לוח הבקרה של הפורטל בדרך. כאן תוכלו לצפות בהרשמות, נוכחות ותשלומים."
+    "coming_soon_portal": "לוח הבקרה של הפורטל בדרך. כאן תוכלו לצפות בהרשמות, נוכחות ותשלומים.",
+    "portal": {
+      "subtitle": "צפו בשיעורים של ילדיכם ובהיסטוריית התשלומים.",
+      "children_heading": "הילדים שלי",
+      "no_children": "אין תלמידים מקושרים לחשבון שלכם.",
+      "no_enrolments": "אין הרשמות פעילות.",
+      "enrolments_for": "הרשמות עבור {{name}}",
+      "enrol_new": "הרשמה לשיעור",
+      "payments_heading": "היסטוריית תשלומים",
+      "no_payments": "אין תשלומים עדיין.",
+      "payment_date": "תאריך",
+      "payment_amount": "סכום",
+      "payment_status": "סטטוס",
+      "payment_invoice": "חשבונית",
+      "enrolment_status": {
+        "pending_payment": "ממתין לתשלום",
+        "active": "פעיל",
+        "admin_review": "בבדיקה",
+        "pending_offer": "הצעה ממתינה",
+        "cancelled": "בוטל",
+        "withdrawn": "הוסר"
+      }
+    }
   },
   "signup": {
     "title": "יצירת חשבון",
@@ -578,11 +600,14 @@
     "step2": {
       "subtitle": "בדקו את ההודעות שלכם",
       "sentTo": "שלחנו קוד אימות ב{{channel}} אל {{contact}}.",
+      "magicLinkSent": "שלחנו קישור התחברות אל {{contact}}. לחצו על הקישור בדוא״ל כדי להשלים את יצירת החשבון.",
       "email": "דוא״ל",
       "sms": "SMS",
       "whatsapp": "WhatsApp",
       "resendIn": "שליחה חוזרת בעוד",
+      "resendLinkIn": "שליחת קישור חוזרת בעוד",
       "resend": "שלח קוד שוב",
+      "resendLink": "שלח קישור שוב",
       "continue": "קיבלתי את הקוד"
     },
     "step3": {

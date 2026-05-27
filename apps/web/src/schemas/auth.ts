@@ -16,7 +16,6 @@ export const signupFormSchema = z.object({
   lastName: z.string().min(1, 'Last name is required'),
   phone: z.string().optional(),
   channel: z.enum(['email', 'sms', 'whatsapp']).default('email'),
-  tenantId: z.string().uuid('Invalid tenant ID'),
 }).refine((data) => {
   // phone is required if channel is sms or whatsapp
   if ((data.channel === 'sms' || data.channel === 'whatsapp') && !data.phone) {

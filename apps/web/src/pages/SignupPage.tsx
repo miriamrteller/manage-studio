@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { useTenant } from '@/hooks/useTenant';
 import { signupFormSchema, type SignupForm } from '@/schemas/auth';
 import { useSignup } from '@/features/auth/hooks/useSignup';
@@ -15,9 +16,11 @@ type SignupStep = 1 | 2 | 3;
 
 export default function SignupPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const tenant = useTenant();
   const [step, setStep] = useState<SignupStep>(1);
   const [contactPoint, setContactPoint] = useState<string>('');
+  const [channel, setChannel] = useState<SignupForm['channel']>('email');
 
   const form = useForm<SignupForm>({
     resolver: zodResolver(signupFormSchema),
@@ -28,32 +31,39 @@ export default function SignupPage() {
       lastName: '',
       phone: '',
       channel: 'email',
-      tenantId: tenant?.id || '',
     },
   });
 
-  const { sendOtp, sendOtpLoading, sendOtpError, verifyOtp, verifyOtpLoading } =
-    useSignup();
+  const {
+    sendOtpAsync,
+    sendOtpLoading,
+    sendOtpError,
+    verifyOtp,
+    verifyOtpLoading,
+  } = useSignup();
 
-  const onSubmitStep1 = form.handleSubmit((data) => {
-    if (!data.email || !data.firstName || !data.lastName) {
-      return;
+  const onSubmitStep1 = form.handleSubmit(async (data) => {
+    try {
+      const contact = data.channel === 'email' ? data.email : data.phone;
+      await sendOtpAsync(data);
+      setContactPoint(contact || '');
+      setChannel(data.channel);
+      setStep(2);
+    } catch {
+      // Error surfaced via sendOtpError
     }
-
-    const contact = data.channel === 'email' ? data.email : data.phone;
-    setContactPoint(contact || '');
-
-    sendOtp(data);
-    setStep(2);
   });
 
   const onSubmitStep2 = () => {
     setStep(3);
   };
 
+  const onResend = async () => {
+    await sendOtpAsync(form.getValues());
+  };
+
   const onSubmitStep3 = (_data: { code: string }) => {
     if (contactPoint && _data.code) {
-      const channel = form.getValues('channel');
       verifyOtp({
         contactPoint,
         code: _data.code,
@@ -86,12 +96,15 @@ export default function SignupPage() {
           )}
           {step === 2 && (
             <SignupStep2
-              channel={form.getValues('channel')}
+              channel={channel}
               contactPoint={contactPoint}
-              onSubmit={onSubmitStep2}
+              onContinue={channel === 'email' ? undefined : onSubmitStep2}
+              onResend={onResend}
+              resendLoading={sendOtpLoading}
+              onBackToLogin={() => navigate('/login')}
             />
           )}
-          {step === 3 && (
+          {step === 3 && channel !== 'email' && (
             <SignupStep3 onSubmit={onSubmitStep3} loading={verifyOtpLoading} />
           )}
         </FormProvider>
@@ -99,7 +112,9 @@ export default function SignupPage() {
         {sendOtpError && (
           <div className="rounded-md bg-red-50 p-4" role="alert" aria-live="polite">
             <p className="text-sm font-medium text-red-800">
-              {t('errors.signup_failed')}
+              {sendOtpError instanceof Error
+                ? sendOtpError.message
+                : t('errors.signup_failed')}
             </p>
           </div>
         )}

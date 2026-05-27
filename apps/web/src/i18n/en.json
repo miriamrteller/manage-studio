@@ -557,7 +557,29 @@
       "requirements_add_title": "Add requirement"
     },
     "portal_dashboard": "Portal",
-    "coming_soon_portal": "Your portal dashboard is coming soon. You will be able to view enrolments, attendance, and payments here."
+    "coming_soon_portal": "Your portal dashboard is coming soon. You will be able to view enrolments, attendance, and payments here.",
+    "portal": {
+      "subtitle": "View your children's classes and payment history.",
+      "children_heading": "My children",
+      "no_children": "No students linked to your account yet.",
+      "no_enrolments": "No active enrolments.",
+      "enrolments_for": "Enrolments for {{name}}",
+      "enrol_new": "Register for a class",
+      "payments_heading": "Payment history",
+      "no_payments": "No payments yet.",
+      "payment_date": "Date",
+      "payment_amount": "Amount",
+      "payment_status": "Status",
+      "payment_invoice": "Invoice",
+      "enrolment_status": {
+        "pending_payment": "Awaiting payment",
+        "active": "Active",
+        "admin_review": "Under review",
+        "pending_offer": "Offer pending",
+        "cancelled": "Cancelled",
+        "withdrawn": "Withdrawn"
+      }
+    }
   },
   "signup": {
     "title": "Create your account",
@@ -576,11 +598,14 @@
     "step2": {
       "subtitle": "Check your messages",
       "sentTo": "We sent a verification code via {{channel}} to {{contact}}.",
+      "magicLinkSent": "We sent a sign-in link to {{contact}}. Click the link in your email to finish creating your account.",
       "email": "email",
       "sms": "SMS",
       "whatsapp": "WhatsApp",
       "resendIn": "Resend code in",
+      "resendLinkIn": "Resend link in",
       "resend": "Resend code",
+      "resendLink": "Resend link",
       "continue": "I received the code"
     },
     "step3": {

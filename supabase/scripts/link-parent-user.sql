@@ -38,7 +38,7 @@ UPDATE families
 SET
   contact_person_name = 'Miriam R Stern',
   contact_email = 'miriamrstern@gmail.com',
-  contact_phone = '0505550101'
+  contact_phone = '0548421987'
 WHERE id IN (
   '00000000-0000-0000-0000-000000000401'::uuid,
   '00000000-0000-0000-0000-000000000402'::uuid

@@ -1739,6 +1739,10 @@ export type Database = {
       is_minor: { Args: { date_of_birth: string }; Returns: boolean }
       is_service_role: { Args: never; Returns: boolean }
       is_super_admin: { Args: never; Returns: boolean }
+      link_auth_user_to_person: {
+        Args: { p_person_id: string }
+        Returns: undefined
+      }
       next_invoice_number: { Args: { p_tenant_id: string }; Returns: string }
       save_tenant_stripe_credentials: {
         Args: {

@@ -427,11 +427,13 @@ ballet-school-system/
 │       ├── 2026-05-08-phase1a.md
 │       └── ...
 ├── supabase/
-│   ├── migrations/                    # Timestamped SQL; see Section 4.2.0 index
-│   │   ├── 20260519000100_tenants.sql
-│   │   ├── 20260519000200_people.sql
-│   │   ├── … (see 4.2.0)
-│   │   └── 20260519003500_finance_payments.sql
+│   ├── migrations/                    # 18 timestamped SQL files; see Section 4.2.0
+│   │   ├── 20260526000100_tenants.sql
+│   │   ├── 20260526000200_people.sql
+│   │   ├── … (001–018; see 4.2.0)
+│   │   └── 20260526001800_grants.sql
+│   ├── reset_dev_db.sql               # Dev-only: drop schema + clear migration history
+│   ├── scripts/                       # link-parent-user.sql, verify-seed.sql
 │   ├── functions/
 │   │   ├── stripe-webhook/
 │   │   ├── create-payment-intent/
@@ -609,39 +611,32 @@ Landing pages and public class listings need data before a user logs in. The acc
 
 ⏱️ **TIMING:** Third-party credentials (Twilio, Resend, Stripe) are configured **after** schema deploy via admin UI or manual runbook. See [Third-Party Services Setup](docs/deployment/THIRD_PARTY_SERVICES.md) and [docs/MANUAL_OPERATIONS_RUNBOOK.md](docs/MANUAL_OPERATIONS_RUNBOOK.md).
 
-**Authoritative SQL:** `supabase/migrations/*.sql` — apply in filename order. Regenerate types after apply: `SUPABASE_PROJECT_REF=<ref> pnpm db:types`.
+**Authoritative SQL:** `supabase/migrations/*.sql` — apply in filename order (`20260526000100`–`20260526001800`). Dev reset: `supabase/reset_dev_db.sql` then `pnpm db:push`. Regenerate types after apply: `pnpm db:types`.
 
 #### 4.2.0 Implemented schema index (V1 slice)
 
 | File | Creates / updates | Depends on |
 |------|-------------------|------------|
-| `20260519000100_tenants.sql` | `tenants`, `user_profiles`, RLS helpers | — |
-| `20260519000200_people.sql` | `families`, `family_members`, `people` | 001 |
-| `20260519000300_contact_prefs.sql` | `contact_preferences` | 002 |
-| `20260519000400_classes.sql` | `terms`, `levels`, `classes` | 001 |
-| `20260519000800_notification_log.sql` | `notification_log` | 001, 002 |
-| `20260519000900_audit_log.sql` | `audit_log` | 001 |
-| `20260519001000_tenant_notification_templates.sql` | `tenant_notification_templates` | 001 |
-| `20260519001100_expense_categories.sql` | `expense_categories` | 001 |
-| `20260519001300_otp_codes.sql` | `otp_codes` | — |
-| `20260519001400_tenant_email_customizations.sql` | `tenant_email_customizations` | 001 |
-| `20260519001500_verification_attempts.sql` | `verification_attempts` + RPC | 001 |
-| `20260519001800_class_sessions.sql` | `class_sessions` | 004 |
-| `20260519001900_waiver_templates.sql` | `waiver_templates` | 001 |
-| `20260519002000_requirement_templates.sql` | `requirement_templates` | 001 |
-| `20260519002200_requirement_overrides.sql` | `requirement_overrides` | 002, 020 |
-| `20260519002300_billing_accounts.sql` | `billing_accounts` | 001 |
-| `20260519002500_class_requirements.sql` | `class_requirements` | 004, 020 |
-| `20260519002600_enrolments.sql` | `enrolments` | 002, 004, 023 |
-| `20260519002700_waiting_list.sql` | `waiting_list` | 002, 004 |
-| `20260519002800_attendance.sql` | `attendance`, `makeup_credits` | 002, 004, 018 |
-| `20260519002900_rls_policies_after_enrolments.sql` | RLS on `class_sessions` + `billing_accounts` | 023, 026 |
-| `20260519003200_public_classes_view.sql` | `get_public_classes_by_subdomain(p_subdomain)` RPC — subdomain-filtered, `anon` safe | 004 |
-| `20260519003300_tenant_config_by_subdomain.sql` | `get_tenant_config_by_subdomain(p_subdomain)` RPC — subdomain-filtered, `anon` safe | 001 |
-| `20260519003400_auth_user_profiles_trigger.sql` | `handle_new_user` on `auth.users` | 001 |
-| `20260519003500_finance_payments.sql` | `payments`, `invoice_sequences`, Stripe RPCs | 001, 026 |
+| `20260526000100_tenants.sql` | `tenants`, `user_profiles`, RLS helpers | — |
+| `20260526000200_people.sql` | `families`, `family_members`, `people`, `get_my_family_ids()`, `get_my_person_id()`, `is_minor()` | 001 |
+| `20260526000300_contact_prefs.sql` | `contact_preferences` | 002 |
+| `20260526000400_classes.sql` | `terms`, `levels`, `teachers`, `classes` | 001 |
+| `20260526000500_comms.sql` | `notification_log`, `tenant_notification_templates`, `tenant_email_customizations`, `expense_categories` | 001, 002 |
+| `20260526000600_audit_otp.sql` | `audit_log`, `otp_codes`, `verification_attempts` + cleanup RPCs | 001 |
+| `20260526000700_class_sessions.sql` | `class_sessions` | 004 |
+| `20260526000800_waiver_templates.sql` | `waiver_templates` | 001 |
+| `20260526000900_requirements.sql` | `requirement_templates`, `requirement_overrides`, `class_requirements` | 001, 002, 004 |
+| `20260526001000_billing_accounts.sql` | `billing_accounts` | 001 |
+| `20260526001100_enrolments.sql` | `enrolments`, `waiting_list` | 002, 004, 010 |
+| `20260526001200_attendance.sql` | `attendance`, `makeup_credits` | 002, 004, 007 |
+| `20260526001300_rls_policies.sql` | RLS on `class_sessions` + `billing_accounts` (enrolment-dependent) | 007, 010, 011 |
+| `20260526001400_finance_payments.sql` | `payments`, `invoice_sequences`, Stripe RPCs | 001, 011 |
+| `20260526001500_public_rpcs.sql` | `get_public_classes_by_subdomain(p_subdomain)`, `get_tenant_config_by_subdomain(p_subdomain)` — subdomain-filtered, `anon` safe | 001, 004 |
+| `20260526001600_auth_trigger.sql` | `handle_new_user` on `auth.users` (reads `raw_user_meta_data`, tenant fallback) | 001 |
+| `20260526001700_rpcs.sql` | `get_my_profile()`, `link_auth_user_to_person()` | 001, 002, 011 |
+| `20260526001800_grants.sql` | Schema + table `GRANT`s for `authenticated` / `anon` / `service_role` | all prior |
 
-> **RLS fixes applied in-place** in all files listed above (migrations have not been applied to any environment yet). See §4.1 and §4.1.1 for the security model these migrations implement.
+> **RLS fixes applied in-place** in all files listed above. See §4.1 and §4.1.1 for the security model these migrations implement.
 
 Sections **4.2.1–4.2.8** below document the **implemented V1 shape**. The subsection numbering is legacy (blueprint era) — authoritative filenames are in the index above. Older blueprint tables (`discount_rules`, full `expenses`, platform `plan` on tenants, etc.) remain in the long-term design notes where marked **Deferred**.
 
@@ -743,7 +738,7 @@ CREATE TABLE people (
 
 #### 4.2.3 Migration 003 — Contact preferences
 
-> **File:** `20260519000300_contact_prefs.sql`
+> **File:** `20260526000300_contact_prefs.sql`
 >
 > **Design note:** Communication targets are people and family_members, not families.
 > Every human with a phone has their own preferences. A 16-year-old wants to know
@@ -796,9 +791,9 @@ CREATE TABLE contact_preferences (
 
 #### 4.2.4 Migration 004 — Terms, levels, and classes
 
-> **File:** `20260519000400_classes.sql`. **`class_sessions`** is in `20260519001800_class_sessions.sql` (separate migration).
+> **File:** `20260526000400_classes.sql`. **`class_sessions`** is in `20260526000700_class_sessions.sql` (separate migration).
 >
-> **Public access:** `anon` users MUST NOT read `terms`, `levels`, or `classes` directly. Public class listings are served by the `get_public_classes_by_subdomain(p_subdomain)` RPC (migration 032). Authenticated users read these tables directly — RLS filters to their own tenant.
+> **Public access:** `anon` users MUST NOT read `terms`, `levels`, or `classes` directly. Public class listings are served by the `get_public_classes_by_subdomain(p_subdomain)` RPC (migration 015). Authenticated users read these tables directly — RLS filters to their own tenant.
 
 ```sql
 CREATE TABLE terms (
@@ -845,7 +840,7 @@ CREATE TABLE classes (
 #### 4.2.5 Class requirements (implemented — not inline enum on `classes`)
 
 > **Legacy blueprint numbering** — see §4.2.0 for authoritative filenames.
-> **Files:** `20260519002000_requirement_templates.sql`, `20260519002500_class_requirements.sql`, `20260519002200_requirement_overrides.sql`.
+> **Files:** `20260526000900_requirements.sql` (templates, overrides, class links).
 > Replaces the older single-table `class_requirements` with `requirement_type` CHECK from the blueprint below.
 
 #### Migration 005 — Class requirements (blueprint reference)
@@ -985,7 +980,7 @@ function evaluateRequirement(req: ClassRequirement, person: Person): boolean {
 #### 4.2.6 Migration 006 — Enrolments and waiting list
 
 > **Legacy blueprint numbering** — see §4.2.0 for authoritative filenames.
-> **Files:** `20260519002600_enrolments.sql`, `20260519002700_waiting_list.sql`.
+> **Files:** `20260526001100_enrolments.sql` (`enrolments` + `waiting_list`).
 > **`waiting_list` is a separate table** — do not store `waiting_list` as an `enrolments.status` value.
 
 ```sql
@@ -1020,7 +1015,7 @@ CREATE TABLE waiting_list (
 #### 4.2.7 Migration 007 — Attendance
 
 > **Legacy blueprint numbering** — see §4.2.0 for authoritative filenames.
-> **File:** `20260519002800_attendance.sql` — uses `attended BOOLEAN`, not a `status` enum.
+> **File:** `20260526001200_attendance.sql` — uses `attended BOOLEAN`, not a `status` enum.
 
 ```sql
 CREATE TABLE attendance (
@@ -1050,7 +1045,7 @@ CREATE TABLE makeup_credits (
 #### 4.2.8 Migration 008 — Payments and finance (V1 slice)
 
 > **Legacy blueprint numbering** — see §4.2.0 for authoritative filenames.
-> **File:** `20260519003500_finance_payments.sql`.
+> **File:** `20260526001400_finance_payments.sql`.
 
 ```sql
 CREATE TABLE payments (
@@ -1093,7 +1088,7 @@ CREATE TABLE payments (
 
 ✅ **Cross-reference:** Payment state machine logic and webhook handling is detailed in [Phase 1E — Payments](#phase-1e--payments-days-2734).
 
-**V1 finance migration file:** `20260519003500_finance_payments.sql` also defines `invoice_sequences`, `next_invoice_number()`, `get_tenant_stripe_credentials()`, `save_tenant_stripe_credentials()`. Stripe secrets use `BYTEA` + `pgcrypto` and `current_setting('app.encryption_key')` (set via manual runbook). Webhook/Edge inserts use `service_role` (bypasses RLS).
+**V1 finance migration file:** `20260526001400_finance_payments.sql` also defines `invoice_sequences`, `next_invoice_number()`, `get_tenant_stripe_credentials()`, `save_tenant_stripe_credentials()`. Stripe secrets use `BYTEA` + `pgcrypto` and `current_setting('app.encryption_key')` (set via manual runbook). Webhook/Edge inserts use `service_role` (bypasses RLS).
 
 **Deferred past first finance slice** (see [§6.x](#6x--deferred-backlog-postv1-payment-slice)):
 
@@ -1143,7 +1138,7 @@ CREATE TABLE teacher_pay_records (
 
 #### Migration 009 — Expenses
 
-> **V1 repo status:** `expense_categories` exists (`20260519001100`). Full `expenses` table below is **not** migrated yet — deferred until P&L UI ships.
+> **V1 repo status:** `expense_categories` exists (`20260526000500_comms.sql`). Full `expenses` table below is **not** migrated yet — deferred until P&L UI ships.
 
 > **Required in V1.** Without this table you have no P&L and cannot calculate profit.
 > Your accountant needs both sides from day one.
@@ -1182,7 +1177,7 @@ CREATE TABLE expenses (
 
 #### Migration 010 — Invoice sequences
 
-> **V1 implemented in:** `20260519003500_finance_payments.sql` (with `payments` table).
+> **V1 implemented in:** `20260526001400_finance_payments.sql` (with `payments` table).
 
 > **Israeli legal requirement.** Invoice numbers must be sequential and gapless.
 > This atomic function prevents gaps under concurrent payments.
@@ -1538,7 +1533,7 @@ Role checks always use `TEXT[]` array containment (e.g. `'tenant_admin' = ANY(ro
 
 #### 4.3.2 Helper Functions
 
-All defined in [`supabase/migrations/20260519000100_tenants.sql`](supabase/migrations/20260519000100_tenants.sql).
+All defined in [`supabase/migrations/20260526000100_tenants.sql`](supabase/migrations/20260526000100_tenants.sql).
 All are `SECURITY DEFINER SET search_path = public STABLE`.
 
 | Function | Returns | Purpose |
@@ -1550,7 +1545,9 @@ All are `SECURITY DEFINER SET search_path = public STABLE`.
 | `get_my_person_id()` | `UUID` | The `people.id` for the calling user |
 | `is_minor(date_of_birth DATE)` | `BOOLEAN` | Computed from DOB; not stored as a column |
 
-Defined in [`supabase/migrations/20260519000200_people.sql`](supabase/migrations/20260519000200_people.sql): `get_my_family_ids()`, `get_my_person_id()`, `is_minor()`.
+Defined in [`supabase/migrations/20260526000200_people.sql`](supabase/migrations/20260526000200_people.sql): `get_my_family_ids()`, `get_my_person_id()`, `is_minor()`.
+
+Additional RPCs in [`supabase/migrations/20260526001700_rpcs.sql`](supabase/migrations/20260526001700_rpcs.sql): `get_my_profile()`, `link_auth_user_to_person()`.
 
 ---
 
@@ -1586,8 +1583,8 @@ Public RPCs (accessible to `anon`) additionally MUST filter by `p_subdomain` and
 | Dependency | Where configured | Notes |
 |------------|-----------------|-------|
 | `app.encryption_key` | Supabase project secrets (manual runbook) | Required for `pgp_sym_encrypt/decrypt`; set before running Stripe credential RPCs |
-| pg_cron — OTP cleanup | Comment in `20260519001300_otp_codes.sql` | Run `SELECT cron.schedule(...)` after first deploy |
-| pg_cron — verification cleanup | Comment in `20260519001500_verification_attempts.sql` | Run `SELECT cron.schedule(...)` after first deploy |
+| pg_cron — OTP cleanup | Comment in `20260526000600_audit_otp.sql` | Run `SELECT cron.schedule(...)` after first deploy |
+| pg_cron — verification cleanup | Comment in `20260526000600_audit_otp.sql` | Run `SELECT cron.schedule(...)` after first deploy |
 | Stripe/Twilio/Resend keys | Admin UI or runbook after schema deploy | See [Third-Party Services Setup](docs/deployment/THIRD_PARTY_SERVICES.md) |
 
 ---
@@ -1607,22 +1604,28 @@ The following tables and features are designed but NOT in V1 migrations. Do not 
 
 ### 4.4 SPEC Issues Resolution (v3 updates — 2026-05-20)
 
+**2026-05-26 — Migrations consolidated to 18-file chain (`20260526000100`–`20260526001800`):**
+- Supersedes the earlier `20260519*` / `20260525*` filename sprawl; authoritative index is §4.2.0
+- Auth trigger fix (`raw_user_meta_data`, tenant fallback, `ON CONFLICT`) merged into `016`
+- `link_auth_user_to_person()` merged into `017`; table grants consolidated in `018`
+- Dev reset: `supabase/reset_dev_db.sql` then `pnpm db:push`
+
 **2026-05-20 — SPEC §4 + migrations RLS/subdomain model unified:**
 - §4 security banner rewritten to layered model with documented exceptions (§4.1.1 added)
 - §4.3 old duplicate SQL block replaced with policy inventory + helper reference + deferred appendix
-- Migrations 032/033 changed from unfiltered views to subdomain-filtered `SECURITY DEFINER` RPCs
+- Migrations 015 (`public_rpcs`) replaced unfiltered views with subdomain-filtered `SECURITY DEFINER` RPCs
 - Cross-tenant `USING (true)` policies removed from all V1 migrations; replaced with `tenant_id = get_my_tenant_id()`
 - `otp_codes` RLS hardened (service_role only, RLS enabled before policies, `REVOKE ALL` from anon/authenticated)
 - `SECURITY DEFINER SET search_path = public` applied to all helper functions and trigger
 - `contact_preferences` extended with `notify_waiting_list` and `notify_school_announcements`
-- `is_super_admin()` bypass policies added to all V1 tables; `is_service_role()` moved to migration 001; duplicate removed from migration 035
+- `is_super_admin()` bypass policies added to all V1 tables; `is_service_role()` in migration 001; table grants consolidated in migration 018
 - `EXECUTE PROCEDURE` → `EXECUTE FUNCTION` in trigger (Postgres 14+ convention)
 - **Verification pending:** `pnpm db:reset-local` requires Docker Desktop running. Run `pnpm db:reset-local` then `pnpm db:types` before first remote deploy and confirm smoke-test matrix (§4.3, Phase 2 exit criteria).
 
 **Out of scope — follow-up tasks before production:**
 - `apps/web/src/features/notifications/hooks/useContactPreferences.ts` queries `user_profile_id` on `contact_preferences` — DB uses `person_id` / `family_member_id`. Requires app-layer fix.
 - Regenerate `packages/shared/src/database.types.ts` and Zod schemas after `pnpm db:types`
-- pg_cron schedules for OTP and verification cleanup (see comments in migrations 013 and 015)
+- pg_cron schedules for OTP and verification cleanup (see comments in migration 006)
 
 All 15 identified issues from v2 remain resolved:
 

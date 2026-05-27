@@ -7,16 +7,23 @@ import { Button } from '@/components/ui/button';
 interface SignupStep2Props {
   channel: 'email' | 'sms' | 'whatsapp';
   contactPoint: string;
-  onSubmit: () => void;
+  onContinue?: () => void;
+  onResend?: () => void | Promise<void>;
+  resendLoading?: boolean;
+  onBackToLogin?: () => void;
 }
 
 export default function SignupStep2({
   channel,
   contactPoint,
-  onSubmit,
+  onContinue,
+  onResend,
+  resendLoading,
+  onBackToLogin,
 }: SignupStep2Props) {
   const { t } = useTranslation();
-  const [secondsRemaining, setSecondsRemaining] = useState(300);
+  const [secondsRemaining, setSecondsRemaining] = useState(60);
+  const isMagicLink = channel === 'email';
 
   useEffect(() => {
     if (secondsRemaining <= 0) return;
@@ -32,8 +39,9 @@ export default function SignupStep2({
   const seconds = secondsRemaining % 60;
   const canResend = secondsRemaining === 0;
 
-  const handleResend = () => {
-    setSecondsRemaining(300);
+  const handleResend = async () => {
+    await onResend?.();
+    setSecondsRemaining(60);
   };
 
   return (
@@ -41,16 +49,18 @@ export default function SignupStep2({
       <h2 className="sr-only">{t('signup.step2.subtitle')}</h2>
       <div className="rounded-md bg-blue-50 p-4" role="status" aria-live="polite">
         <p className="text-sm text-blue-800">
-          {t('signup.step2.sentTo', {
-            channel: t(`signup.step2.${channel}`),
-            contact: contactPoint,
-          })}
+          {isMagicLink
+            ? t('signup.step2.magicLinkSent', { contact: contactPoint })
+            : t('signup.step2.sentTo', {
+                channel: t(`signup.step2.${channel}`),
+                contact: contactPoint,
+              })}
         </p>
       </div>
 
       <div className="text-center">
         <p className="text-sm text-gray-600">
-          {t('signup.step2.resendIn')}
+          {t(isMagicLink ? 'signup.step2.resendLinkIn' : 'signup.step2.resendIn')}
         </p>
         <p className="text-2xl font-bold">
           {String(minutes).padStart(2, '0')}:
@@ -60,16 +70,28 @@ export default function SignupStep2({
 
       <Button
         onClick={handleResend}
-        disabled={!canResend}
+        disabled={!canResend || resendLoading}
         variant="outline"
         className="w-full"
       >
-        {t('signup.step2.resend')}
+        {resendLoading
+          ? t('common.loading')
+          : t(isMagicLink ? 'signup.step2.resendLink' : 'signup.step2.resend')}
       </Button>
 
-      <Button onClick={onSubmit} className="w-full">
-        {t('signup.step2.continue')}
-      </Button>
+      {isMagicLink ? (
+        onBackToLogin && (
+          <Button onClick={onBackToLogin} variant="secondary" className="w-full">
+            {t('common.back_to_login')}
+          </Button>
+        )
+      ) : (
+        onContinue && (
+          <Button onClick={onContinue} className="w-full">
+            {t('signup.step2.continue')}
+          </Button>
+        )
+      )}
     </div>
   );
 }
