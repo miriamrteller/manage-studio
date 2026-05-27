@@ -5,12 +5,10 @@
 -- Additional enrolment-based RLS policies added in 013
 -- =============================================================================
 
-CREATE TABLE billing_accounts (
+CREATE TABLE IF NOT EXISTS billing_accounts (
   id                    UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id             UUID        NOT NULL REFERENCES tenants(id),
-  account_holder_name   TEXT        NOT NULL,
-  primary_contact_email TEXT        NOT NULL,
-  primary_contact_phone TEXT,
+  person_id             UUID        NOT NULL REFERENCES people(id),
   payment_method        TEXT        DEFAULT 'card',
   status                TEXT        NOT NULL DEFAULT 'active'
                         CHECK (status IN ('active', 'inactive', 'archived')),
@@ -18,9 +16,8 @@ CREATE TABLE billing_accounts (
   updated_at            TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_billing_accounts_tenant ON billing_accounts(tenant_id);
-CREATE INDEX idx_billing_accounts_email  ON billing_accounts(primary_contact_email);
-CREATE INDEX idx_billing_accounts_status ON billing_accounts(status);
+CREATE INDEX IF NOT EXISTS idx_billing_accounts_tenant ON billing_accounts(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_billing_accounts_status ON billing_accounts(status);
 
 ALTER TABLE billing_accounts ENABLE ROW LEVEL SECURITY;
 

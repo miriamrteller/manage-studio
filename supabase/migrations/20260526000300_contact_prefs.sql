@@ -4,12 +4,11 @@
 -- DEPENDENCIES: 001, 002
 -- =============================================================================
 
-CREATE TABLE contact_preferences (
+CREATE TABLE IF NOT EXISTS contact_preferences (
   id                           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id                    UUID        NOT NULL REFERENCES tenants(id),
   person_id                    UUID        REFERENCES people(id),
   family_member_id             UUID        REFERENCES family_members(id),
-  email                        TEXT,
   email_opted_in               BOOLEAN     NOT NULL DEFAULT true,
   whatsapp_number              TEXT,
   whatsapp_opted_in            BOOLEAN     NOT NULL DEFAULT false,
@@ -32,9 +31,9 @@ CREATE TABLE contact_preferences (
   )
 );
 
-CREATE INDEX idx_contact_person        ON contact_preferences(person_id);
-CREATE INDEX idx_contact_family_member ON contact_preferences(family_member_id);
-CREATE INDEX idx_contact_tenant        ON contact_preferences(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_contact_person        ON contact_preferences(person_id);
+CREATE INDEX IF NOT EXISTS idx_contact_family_member ON contact_preferences(family_member_id);
+CREATE INDEX IF NOT EXISTS idx_contact_tenant        ON contact_preferences(tenant_id);
 
 ALTER TABLE contact_preferences ENABLE ROW LEVEL SECURITY;
 

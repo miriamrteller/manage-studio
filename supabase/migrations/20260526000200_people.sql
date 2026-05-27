@@ -4,37 +4,13 @@
 -- DEPENDENCIES: 001
 -- =============================================================================
 
-CREATE TABLE families (
-  id                   UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id            UUID        NOT NULL REFERENCES tenants(id),
-  primary_contact_id   UUID,
-  -- Registration / contact fields
-  name                 TEXT,
-  contact_person_name  TEXT,
-  contact_email        TEXT,
-  contact_phone        TEXT,
-  created_at           TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-CREATE TABLE family_members (
-  id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id       UUID        NOT NULL REFERENCES tenants(id),
-  family_id       UUID        NOT NULL REFERENCES families(id),
-  user_profile_id UUID        REFERENCES user_profiles(id),
-  name            TEXT        NOT NULL,
-  email           TEXT,
-  phone           TEXT,
-  role            TEXT        NOT NULL DEFAULT 'guardian',
-  created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-CREATE TABLE people (
+CREATE TABLE IF NOT EXISTS people (
   id                      UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id               UUID        NOT NULL REFERENCES tenants(id),
   user_profile_id         UUID        REFERENCES user_profiles(id),
-  family_id               UUID        REFERENCES families(id),
+  family_id               UUID,
   name                    TEXT        NOT NULL,
-  email                   TEXT,
+  email                   TEXT UNIQUE,
   date_of_birth           DATE,
   medical_notes           TEXT,
   allergies               TEXT,
@@ -50,15 +26,48 @@ CREATE TABLE people (
   updated_at              TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_people_tenant        ON people(tenant_id);
-CREATE INDEX idx_people_family        ON people(family_id);
-CREATE INDEX idx_family_members_tenant ON family_members(tenant_id);
-CREATE INDEX idx_family_members_family ON family_members(family_id);
-CREATE INDEX idx_families_tenant      ON families(tenant_id);
+CREATE TABLE IF NOT EXISTS families (
+  id                   UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id            UUID        NOT NULL REFERENCES tenants(id),
+  name                 TEXT,
+  person_id            UUID        NOT NULL REFERENCES people(id), -- primary contact
+  created_at           TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 
-ALTER TABLE families       ENABLE ROW LEVEL SECURITY;
+CREATE TABLE IF NOT EXISTS family_members (
+  id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id       UUID        NOT NULL REFERENCES tenants(id),
+  family_id       UUID        NOT NULL REFERENCES families(id),
+  user_profile_id UUID        REFERENCES user_profiles(id),
+  person_id       UUID        NOT NULL REFERENCES people(id),
+  role            TEXT        NOT NULL DEFAULT 'guardian',
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+
+CREATE INDEX IF NOT EXISTS idx_people_tenant        ON people(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_people_family        ON people(family_id);
+ALTER TABLE people ENABLE ROW LEVEL SECURITY;
+
+
+CREATE INDEX IF NOT EXISTS idx_families_tenant      ON families(tenant_id);
+ALTER TABLE families ENABLE ROW LEVEL SECURITY;
+
+
+CREATE INDEX IF NOT EXISTS idx_family_members_tenant ON family_members(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_family_members_family ON family_members(family_id);
 ALTER TABLE family_members ENABLE ROW LEVEL SECURITY;
-ALTER TABLE people         ENABLE ROW LEVEL SECURITY;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'fk_people_family'
+  ) THEN
+    ALTER TABLE people ADD CONSTRAINT fk_people_family FOREIGN KEY (family_id) REFERENCES families(id);
+  END IF;
+END $$;
+
+
 
 CREATE OR REPLACE FUNCTION get_my_family_ids()
 RETURNS SETOF UUID LANGUAGE sql SECURITY DEFINER STABLE

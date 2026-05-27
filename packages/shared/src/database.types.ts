@@ -153,39 +153,40 @@ export type Database = {
       }
       billing_accounts: {
         Row: {
-          account_holder_name: string
           created_at: string
           id: string
           payment_method: string | null
-          primary_contact_email: string
-          primary_contact_phone: string | null
+          person_id: string
           status: string
           tenant_id: string
           updated_at: string
         }
         Insert: {
-          account_holder_name: string
           created_at?: string
           id?: string
           payment_method?: string | null
-          primary_contact_email: string
-          primary_contact_phone?: string | null
+          person_id: string
           status?: string
           tenant_id: string
           updated_at?: string
         }
         Update: {
-          account_holder_name?: string
           created_at?: string
           id?: string
           payment_method?: string | null
-          primary_contact_email?: string
-          primary_contact_phone?: string | null
+          person_id?: string
           status?: string
           tenant_id?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "billing_accounts_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "billing_accounts_tenant_id_fkey"
             columns: ["tenant_id"]
@@ -387,7 +388,6 @@ export type Database = {
       contact_preferences: {
         Row: {
           created_at: string
-          email: string | null
           email_opted_in: boolean
           family_member_id: string | null
           id: string
@@ -409,7 +409,6 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          email?: string | null
           email_opted_in?: boolean
           family_member_id?: string | null
           id?: string
@@ -431,7 +430,6 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          email?: string | null
           email_opted_in?: boolean
           family_member_id?: string | null
           id?: string
@@ -599,36 +597,34 @@ export type Database = {
       }
       families: {
         Row: {
-          contact_email: string | null
-          contact_person_name: string | null
-          contact_phone: string | null
           created_at: string
           id: string
           name: string | null
-          primary_contact_id: string | null
+          person_id: string
           tenant_id: string
         }
         Insert: {
-          contact_email?: string | null
-          contact_person_name?: string | null
-          contact_phone?: string | null
           created_at?: string
           id?: string
           name?: string | null
-          primary_contact_id?: string | null
+          person_id: string
           tenant_id: string
         }
         Update: {
-          contact_email?: string | null
-          contact_person_name?: string | null
-          contact_phone?: string | null
           created_at?: string
           id?: string
           name?: string | null
-          primary_contact_id?: string | null
+          person_id?: string
           tenant_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "families_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "families_tenant_id_fkey"
             columns: ["tenant_id"]
@@ -641,33 +637,27 @@ export type Database = {
       family_members: {
         Row: {
           created_at: string
-          email: string | null
           family_id: string
           id: string
-          name: string
-          phone: string | null
+          person_id: string
           role: string
           tenant_id: string
           user_profile_id: string | null
         }
         Insert: {
           created_at?: string
-          email?: string | null
           family_id: string
           id?: string
-          name: string
-          phone?: string | null
+          person_id: string
           role?: string
           tenant_id: string
           user_profile_id?: string | null
         }
         Update: {
           created_at?: string
-          email?: string | null
           family_id?: string
           id?: string
-          name?: string
-          phone?: string | null
+          person_id?: string
           role?: string
           tenant_id?: string
           user_profile_id?: string | null
@@ -678,6 +668,13 @@ export type Database = {
             columns: ["family_id"]
             isOneToOne: false
             referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "family_members_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
             referencedColumns: ["id"]
           },
           {
@@ -1097,7 +1094,7 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "people_family_id_fkey"
+            foreignKeyName: "fk_people_family"
             columns: ["family_id"]
             isOneToOne: false
             referencedRelation: "families"
