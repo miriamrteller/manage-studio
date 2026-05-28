@@ -11,7 +11,13 @@
  * Optional:
  *   APP_CALLBACK_URL=http://localhost:5173/auth/callback
  *   SKIP_SEND=1   # only check user existence + print dashboard checklist
+ *
+ * Loads SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY from repo-root .env when set.
  */
+
+import { loadEnv } from './load-env.mjs';
+
+loadEnv();
 
 const url = process.env.SUPABASE_URL?.replace(/\/$/, '');
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -110,8 +116,10 @@ async function main() {
   logSection('Environment');
   if (!url || !serviceRoleKey) {
     console.error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY.');
-    console.error('Get the service role key from Dashboard → Project Settings → API.');
-    process.exit(1);
+    console.error('Add them to repo-root .env (see .env.example) or export in your shell.');
+    console.error('SUPABASE_URL can be copied from VITE_SUPABASE_URL in apps/web/.env.local.');
+    setTimeout(() => process.exit(1), 0);
+    return;
   }
 
   console.log(`Project URL: ${url}`);
@@ -125,7 +133,8 @@ async function main() {
 
   if (!listResponse.ok) {
     console.error('Failed to query auth users:', listBody.msg ?? listBody.message ?? listResponse.statusText);
-    process.exit(1);
+    setTimeout(() => process.exit(1), 0);
+    return;
   }
 
   const users = listBody.users ?? [];
@@ -177,5 +186,5 @@ async function main() {
 
 main().catch((error) => {
   console.error(error);
-  process.exit(1);
+  setTimeout(() => process.exit(1), 0);
 });

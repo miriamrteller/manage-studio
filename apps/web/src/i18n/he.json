@@ -70,6 +70,10 @@
     "delete_term_confirm": "האם אתה בטוח שברצונך למחוק את התקופה \"{{name}}\"?",
     "delete_class_confirm": "האם אתה בטוח שברצונך למחוק את השיעור \"{{name}}\"?"
   },
+  "auth": {
+    "signing_you_in": "מתחבר…",
+    "setting_up_access": "מגדיר את הגישה שלך"
+  },
   "errors": {
     "network": "שגיאת רשת. בדוק את החיבור שלך.",
     "unauthorized": "אינך מורשה לבצע פעולה זו",

@@ -13,10 +13,16 @@ import type { UserProfile } from '../types/auth';
 export function useCurrentUser(): {
   user: UserProfile | null;
   isLoading: boolean;
+  isProfileChecked: boolean;
 } {
   const { session, isLoading: sessionLoading } = useAuthSession();
+  const profileQueryEnabled = !!session?.user.id && !sessionLoading;
 
-  const { data: userProfile, isLoading: profileLoading } = useQuery({
+  const {
+    data: userProfile,
+    isLoading: profileLoading,
+    isFetched: profileFetched,
+  } = useQuery({
     queryKey: ['currentUser', session?.user.id],
     queryFn: async () => {
       // Read session from the client at query time so the REST call carries the user JWT.
@@ -29,7 +35,7 @@ export function useCurrentUser(): {
         return null;
       }
 
-      const { data, error } = await supabase.rpc('get_my_profile').maybeSingle();
+      const { data, error } = await supabase.rpc('get_my_profile');
 
       if (error?.code === 'PGRST202') {
         // RPC not deployed yet — fall back to direct table read
@@ -68,22 +74,25 @@ export function useCurrentUser(): {
         return null;
       }
 
-      if (!data) {
+      const profileRow = Array.isArray(data) ? data[0] : data;
+      if (!profileRow) {
         console.warn('No user_profiles row for auth user:', currentSession.user.id);
         return null;
       }
 
       return {
-        ...data,
+        ...profileRow,
         email: currentSession.user.email,
       } as UserProfile;
     },
-    enabled: !!session?.user.id && !sessionLoading,
+    enabled: profileQueryEnabled,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   return {
     user: userProfile || null,
-    isLoading: sessionLoading || profileLoading,
+    isLoading:
+      sessionLoading || (profileQueryEnabled && (profileLoading || !profileFetched)),
+    isProfileChecked: !profileQueryEnabled || profileFetched,
   };
 }

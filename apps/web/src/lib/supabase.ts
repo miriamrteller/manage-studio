@@ -19,9 +19,11 @@ if (!supabaseUrl || !supabaseAnonKey) {
  */
 export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
+    flowType: 'pkce',
     persistSession: true,
     autoRefreshToken: true,
-    detectSessionInUrl: true,
+    // Handled explicitly on /auth/callback to avoid racing PKCE code exchange.
+    detectSessionInUrl: false,
   },
 });
 

@@ -48,6 +48,14 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     }
   }, [language]);
 
+  // Keep UI aligned with tenant default before profile loads (e.g. magic-link callback).
+  useEffect(() => {
+    if (user?.language) return;
+    if (language === defaultLanguage) return;
+    setLanguageState(defaultLanguage);
+    void i18n.changeLanguage(defaultLanguage);
+  }, [defaultLanguage, language, user?.language]);
+
 
   // Only update language if user explicitly changes it
   const setLanguage = useCallback(

@@ -1,0 +1,138 @@
+import type { Session } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase';
+
+export type AuthCallbackResult =
+  | { ok: true }
+  | { ok: false; message: string };
+
+export type AuthCallbackUrlParts = {
+  search: string;
+  hash: string;
+};
+
+function parseSearchParams(search: string): URLSearchParams {
+  return new URLSearchParams(search.replace(/^\?/, ''));
+}
+
+function parseHashParams(hash: string): URLSearchParams {
+  return new URLSearchParams(hash.replace(/^#/, ''));
+}
+
+function readAuthCallbackUrl(): AuthCallbackUrlParts {
+  return {
+    search: window.location.search,
+    hash: window.location.hash,
+  };
+}
+
+function readAuthError(
+  searchParams: URLSearchParams,
+  hashParams: URLSearchParams,
+): string | null {
+  return (
+    searchParams.get('error_description') ??
+    searchParams.get('error') ??
+    hashParams.get('error_description') ??
+    hashParams.get('error')
+  );
+}
+
+async function waitForAuthSession(timeoutMs = 4000): Promise<Session | null> {
+  const existing = await supabase.auth.getSession();
+  if (existing.data.session) {
+    return existing.data.session;
+  }
+
+  return new Promise((resolve) => {
+    let settled = false;
+    let subscription: { unsubscribe: () => void } | null = null;
+
+    const finish = (session: Session | null) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeoutId);
+      subscription?.unsubscribe();
+      resolve(session);
+    };
+
+    const timeoutId = setTimeout(async () => {
+      const { data } = await supabase.auth.getSession();
+      finish(data.session);
+    }, timeoutMs);
+
+    const {
+      data: { subscription: authSubscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        finish(session);
+      }
+    });
+    subscription = authSubscription;
+  });
+}
+
+/**
+ * Completes login from /auth/callback after a magic link click.
+ * Reads URL parts immediately so nothing else can strip ?code= first.
+ */
+export async function establishSessionFromAuthCallback(
+  url: AuthCallbackUrlParts = readAuthCallbackUrl(),
+): Promise<AuthCallbackResult> {
+  const {
+    data: { session: existingSession },
+    error: existingSessionError,
+  } = await supabase.auth.getSession();
+
+  if (existingSessionError) {
+    return { ok: false, message: existingSessionError.message };
+  }
+
+  if (existingSession) {
+    return { ok: true };
+  }
+
+  const searchParams = parseSearchParams(url.search);
+  const hashParams = parseHashParams(url.hash);
+  const authError = readAuthError(searchParams, hashParams);
+
+  if (authError) {
+    return { ok: false, message: authError };
+  }
+
+  const code = searchParams.get('code');
+  if (code) {
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+    return { ok: true };
+  }
+
+  const accessToken = hashParams.get('access_token');
+  const refreshToken = hashParams.get('refresh_token');
+  if (accessToken && refreshToken) {
+    const { error } = await supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    });
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+    return { ok: true };
+  }
+
+  const session = await waitForAuthSession();
+  if (session) {
+    return { ok: true };
+  }
+
+  return { ok: false, message: 'invalid_callback' };
+}
+
+export function captureAuthCallbackUrl(): AuthCallbackUrlParts {
+  return readAuthCallbackUrl();
+}
+
+export function clearAuthCallbackUrl(): void {
+  window.history.replaceState({}, document.title, `${window.location.pathname}`);
+}

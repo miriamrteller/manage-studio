@@ -1,75 +1,70 @@
-import { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
-import { supabase } from '../lib/supabase';
+import { useAuthSession } from '../hooks/useAuth';
 import { useCurrentUser } from '../hooks/useCurrentUser';
+import queryClient from '../lib/query-client';
 import { resolveAuthErrorMessage } from '@/lib/authErrors';
+import {
+  captureAuthCallbackUrl,
+  clearAuthCallbackUrl,
+  establishSessionFromAuthCallback,
+} from '@/lib/authCallback';
 
 /**
  * AuthCallbackPage: Handles magic link callback after Supabase email auth
- *
- * Flow:
- * 1. Extract code + state from URL
- * 2. Exchange code for session with supabase.auth.exchangeCodeForSession()
- * 3. Fetch user profile (auto-create if missing with role='parent')
- * 4. Redirect to /dashboard (smart redirect based on user role)
- * 5. Error handling: show error UI, link to login
- *
- * WCAG: aria-busy spinner, aria-label for loading state, error messages role="alert"
- * RLS: Respects tenant_id isolation, user_profiles INSERT uses RLS
  */
 export default function AuthCallbackPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const [error, setError] = useState<string | null>(null);
+  const [sessionReady, setSessionReady] = useState(false);
+  const callbackUrlRef = useRef(captureAuthCallbackUrl());
 
-  const { user, isLoading: isUserLoading } = useCurrentUser();
+  const { session, isLoading: sessionLoading } = useAuthSession();
+  const { user, isLoading: isUserLoading, isProfileChecked } = useCurrentUser();
 
   useEffect(() => {
+    let cancelled = false;
+
     const handleCallback = async () => {
-      try {
-        const code = searchParams.get('code');
+      const result = await establishSessionFromAuthCallback(callbackUrlRef.current);
 
-        if (!code) {
-          setError(t('errors.invalid_callback'));
-          return;
-        }
+      if (cancelled) return;
 
-        // Step 1: Exchange code for session
-        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-
-        if (exchangeError) {
-          setError(
-            resolveAuthErrorMessage(
-              exchangeError.message,
-              t,
-              'errors.session_exchange_failed',
-            ),
-          );
-          return;
-        }
-
-        // Step 2: Wait for user profile to load (useCurrentUser will fetch it)
-        // User profile fetch happens in useCurrentUser hook
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : t('errors.unexpected');
-        setError(errorMessage);
+      if (!result.ok) {
+        const message =
+          result.message === 'invalid_callback'
+            ? t('errors.invalid_callback')
+            : resolveAuthErrorMessage(result.message, t, 'errors.session_exchange_failed');
+        setError(message);
+        return;
       }
+
+      clearAuthCallbackUrl();
+      await queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+      setSessionReady(true);
     };
 
-    handleCallback();
-  }, [searchParams, t]);
+    void handleCallback();
 
-  // Step 3: Once user is loaded, redirect by role
+    return () => {
+      cancelled = true;
+    };
+  }, [t]);
+
   useEffect(() => {
-    if (isUserLoading) {
-      return; // Still loading
+    if (!sessionReady || sessionLoading || isUserLoading || error) {
+      return;
     }
 
-    if (error) {
-      return; // Error already set
+    if (!session?.user) {
+      return;
+    }
+
+    if (!isProfileChecked) {
+      return;
     }
 
     if (!user) {
@@ -77,16 +72,23 @@ export default function AuthCallbackPage() {
       return;
     }
 
-    // Redirect to dashboard (DashboardRedirectPage will handle role-based redirect)
     if (user.role.length > 0) {
       navigate('/dashboard', { replace: true });
     } else {
-      // Default to classes page if no roles
       navigate('/classes', { replace: true });
     }
-  }, [user, isUserLoading, error, navigate, t]);
+  }, [
+    user,
+    session,
+    sessionLoading,
+    isUserLoading,
+    isProfileChecked,
+    error,
+    navigate,
+    sessionReady,
+    t,
+  ]);
 
-  // Error state
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white px-4">
@@ -106,7 +108,9 @@ export default function AuthCallbackPage() {
               type="button"
               variant="primary"
               fullWidth
-              onClick={() => window.location.href = '/login'}
+              onClick={() => {
+                window.location.href = '/login';
+              }}
             >
               {t('common.back_to_login')}
             </Button>
@@ -128,7 +132,6 @@ export default function AuthCallbackPage() {
     );
   }
 
-  // Loading state
   return (
     <div
       className="min-h-screen flex items-center justify-center bg-white"

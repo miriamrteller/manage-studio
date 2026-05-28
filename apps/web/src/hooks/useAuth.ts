@@ -10,21 +10,27 @@ import type { Session } from '@supabase/supabase-js';
 export function useAuthSession() {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const navigate = useNavigate();
-
   useEffect(() => {
-    // Wait for INITIAL_SESSION so REST calls use the user JWT, not the anon key.
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      (_event, updatedSession) => {
-        setSession(updatedSession);
-        setIsLoading(false);
-      }
-    );
+    let mounted = true;
+
+    void supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      if (!mounted) return;
+      setSession(initialSession);
+      setIsLoading(false);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, updatedSession) => {
+      setSession(updatedSession);
+      setIsLoading(false);
+    });
 
     return () => {
-      authListener?.subscription.unsubscribe();
+      mounted = false;
+      subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, []);
 
   return { session, isLoading };
 }
