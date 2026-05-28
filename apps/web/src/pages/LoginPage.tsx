@@ -37,7 +37,17 @@ export default function LoginPage() {
     }
   }, [postLoginState?.classId, postLoginState?.termId, postLoginState?.from]);
 
-  const { isLoading, message, onSubmit, resetMessage } = useLogin({
+  const {
+    isLoading,
+    message,
+    codeStep,
+    codeEmail,
+    onSubmit,
+    resetMessage,
+    verifyEmailCode,
+    resendEmailCode,
+    backToCodeSend,
+  } = useLogin({
     to: '/dashboard',
     state: postLoginState,
   });
@@ -56,7 +66,12 @@ export default function LoginPage() {
         <LoginForm
           isLoading={isLoading}
           message={message}
+          codeStep={codeStep}
+          codeEmail={codeEmail}
           onSubmit={onSubmit}
+          onVerifyEmailCode={verifyEmailCode}
+          onResendEmailCode={resendEmailCode}
+          onBackToCodeSend={backToCodeSend}
           onMessageDismiss={resetMessage}
         />
 

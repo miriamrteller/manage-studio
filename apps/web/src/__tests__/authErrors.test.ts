@@ -34,6 +34,11 @@ describe('classifyAuthError', () => {
     expect(classifyAuthError('OTP expired')).toBe('expired_link');
   });
 
+  it('maps invalid OTP codes from verifyOtp', () => {
+    expect(classifyAuthError('Invalid OTP')).toBe('invalid_code');
+    expect(classifyAuthError('Token is invalid')).toBe('invalid_code');
+  });
+
   it('maps redirect mismatches', () => {
     expect(classifyAuthError('redirect_uri mismatch')).toBe('redirect_mismatch');
     expect(classifyAuthError('URL not allowed')).toBe('redirect_mismatch');
@@ -50,6 +55,7 @@ describe('resolveAuthErrorMessage', () => {
       'errors.email_delivery_failed',
     );
     expect(resolveAuthErrorMessage('User not found', t)).toBe('errors.user_not_found');
+    expect(resolveAuthErrorMessage('Invalid OTP', t)).toBe('pages.login.invalid_code');
   });
 
   it('uses fallback for generic errors without message', () => {

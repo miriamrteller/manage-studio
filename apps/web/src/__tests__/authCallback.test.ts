@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { establishSessionFromAuthCallback } from '@/lib/authCallback';
 
 const mockExchangeCodeForSession = vi.fn();
+const mockVerifyOtp = vi.fn();
 const mockSetSession = vi.fn();
 const mockGetSession = vi.fn();
 const mockOnAuthStateChange = vi.fn();
@@ -11,6 +12,7 @@ vi.mock('@/lib/supabase', () => ({
     auth: {
       exchangeCodeForSession: (...args: unknown[]) =>
         mockExchangeCodeForSession(...args),
+      verifyOtp: (...args: unknown[]) => mockVerifyOtp(...args),
       setSession: (...args: unknown[]) => mockSetSession(...args),
       getSession: () => mockGetSession(),
       onAuthStateChange: (callback: unknown) => mockOnAuthStateChange(callback),
@@ -52,6 +54,22 @@ describe('establishSessionFromAuthCallback', () => {
 
     expect(result).toEqual({ ok: true });
     expect(mockExchangeCodeForSession).toHaveBeenCalledWith('abc123');
+  });
+
+  it('verifies PKCE token_hash from email template link', async () => {
+    mockVerifyOtp.mockResolvedValue({ error: null });
+
+    const result = await establishSessionFromAuthCallback({
+      search: '?token_hash=pkce_abc123&type=email',
+      hash: '',
+    });
+
+    expect(result).toEqual({ ok: true });
+    expect(mockVerifyOtp).toHaveBeenCalledWith({
+      token_hash: 'pkce_abc123',
+      type: 'email',
+    });
+    expect(mockExchangeCodeForSession).not.toHaveBeenCalled();
   });
 
   it('sets session from hash tokens when code is absent', async () => {

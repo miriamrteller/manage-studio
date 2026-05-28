@@ -41,5 +41,10 @@ export {
 } from '@shared/schemas';
 
 // Re-export from feature-specific files
-export { signupFormSchema, type SignupForm } from './auth';
+export {
+  signupFormSchema,
+  loginEmailOtpVerifySchema,
+  type SignupForm,
+  type LoginEmailOtpVerify,
+} from './auth';
 export { signupFormSchema as SignupFormSchema } from './auth';

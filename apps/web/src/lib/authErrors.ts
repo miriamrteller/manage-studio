@@ -8,6 +8,7 @@ export type AuthErrorCategory =
   | 'email_delivery_failed'
   | 'rate_limited'
   | 'expired_link'
+  | 'invalid_code'
   | 'redirect_mismatch'
   | 'invalid_callback'
   | 'session_exchange_failed'
@@ -43,6 +44,14 @@ const EXPIRED_LINK_PATTERNS = [
   'link has expired',
   'token has expired',
   'one-time token not found',
+];
+
+const INVALID_OTP_PATTERNS = [
+  'invalid otp',
+  'otp is invalid',
+  'token is invalid',
+  'invalid token',
+  'wrong otp',
 ];
 
 const REDIRECT_MISMATCH_PATTERNS = [
@@ -81,6 +90,9 @@ export function classifyAuthError(message: string): AuthErrorCategory {
   if (EXPIRED_LINK_PATTERNS.some((pattern) => normalized.includes(pattern))) {
     return 'expired_link';
   }
+  if (INVALID_OTP_PATTERNS.some((pattern) => normalized.includes(pattern))) {
+    return 'invalid_code';
+  }
   if (REDIRECT_MISMATCH_PATTERNS.some((pattern) => normalized.includes(pattern))) {
     return 'redirect_mismatch';
   }
@@ -101,6 +113,7 @@ const CATEGORY_I18N_KEYS: Record<Exclude<AuthErrorCategory, 'generic'>, string> 
   email_delivery_failed: 'errors.email_delivery_failed',
   rate_limited: 'errors.rate_limited',
   expired_link: 'errors.expired_link',
+  invalid_code: 'pages.login.invalid_code',
   redirect_mismatch: 'errors.redirect_mismatch',
   invalid_callback: 'errors.invalid_callback',
   session_exchange_failed: 'errors.session_exchange_failed',

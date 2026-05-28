@@ -3,8 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/lib/supabase';
 import { resolveTenantSubdomain } from '@/lib/resolveTenantSubdomain';
-import { LoginFormSchema, PasswordLoginSchema, type LoginForm, type PasswordLogin } from '@/schemas';
+import {
+  LoginFormSchema,
+  PasswordLoginSchema,
+  loginEmailOtpVerifySchema,
+  type LoginForm,
+  type PasswordLogin,
+} from '@/schemas';
 import { resolveAuthErrorMessage } from '@/lib/authErrors';
+import { sendLoginEmailOtp, verifyLoginEmailOtp } from '@/lib/loginEmailOtp';
 
 export type PostLoginRedirect = {
   to?: string;
@@ -12,18 +19,19 @@ export type PostLoginRedirect = {
 };
 
 /**
- * useLogin: Handles authentication logic (password and magic link)
+ * useLogin: Handles authentication logic (password, magic link, email code)
  * - Manages form submission state (loading, messages)
- * - Calls Supabase password signin or OTP signin
+ * - Calls Supabase password signin, OTP signin, or verifyOtp
  * - Returns form state and submission handler
- * 
+ *
  * Separation of concerns:
  * - This hook handles all logic: API calls, state, error handling
  * - LoginForm component handles UI rendering only
  * - Pages compose these together
  */
 
-type AuthMode = 'password' | 'magic_link';
+export type AuthMode = 'password' | 'magic_link' | 'code';
+export type CodeStep = 'send' | 'verify';
 type FormData = LoginForm | PasswordLogin;
 
 export interface LoginState {
@@ -32,11 +40,17 @@ export interface LoginState {
     type: 'success' | 'error';
     text: string;
   } | null;
+  codeStep: CodeStep;
+  codeEmail: string;
 }
 
 export interface LoginActions {
   onSubmit: (_formData: FormData, _authMode: AuthMode) => Promise<void>;
   resetMessage: () => void;
+  sendEmailCode: (email: string) => Promise<void>;
+  verifyEmailCode: (code: string) => Promise<void>;
+  resendEmailCode: () => Promise<void>;
+  backToCodeSend: () => void;
 }
 
 export function useLogin(
@@ -46,23 +60,130 @@ export function useLogin(
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<LoginState['message']>(null);
+  const [codeStep, setCodeStep] = useState<CodeStep>('send');
+  const [codeEmail, setCodeEmail] = useState('');
+
+  const redirectAfterLogin = () => {
+    setMessage({
+      type: 'success',
+      text: t('pages.login.success_redirecting'),
+    });
+    setTimeout(() => {
+      navigate(redirect.to ?? '/dashboard', {
+        replace: true,
+        state: redirect.state,
+      });
+    }, 800);
+  };
+
+  const sendEmailCode = async (email: string) => {
+    setIsLoading(true);
+    setMessage(null);
+
+    try {
+      const parsed = LoginFormSchema.parse({ email });
+      const subdomain = resolveTenantSubdomain();
+
+      if (!subdomain) {
+        setMessage({
+          type: 'error',
+          text: t('errors.tenant_subdomain_unresolved'),
+        });
+        return;
+      }
+
+      const { error } = await sendLoginEmailOtp(
+        parsed.email,
+        subdomain,
+        `${window.location.origin}/auth/callback`,
+      );
+
+      if (error) {
+        setMessage({
+          type: 'error',
+          text: resolveAuthErrorMessage(error.message, t, 'errors.login_failed'),
+        });
+      } else {
+        setCodeEmail(parsed.email);
+        setCodeStep('verify');
+        setMessage({
+          type: 'success',
+          text: t('pages.login.code_sent'),
+        });
+      }
+    } catch (error) {
+      setMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : t('error.login_failed'),
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const verifyEmailCode = async (code: string) => {
+    setIsLoading(true);
+    setMessage(null);
+
+    try {
+      loginEmailOtpVerifySchema.parse({ email: codeEmail, code });
+
+      const { error } = await verifyLoginEmailOtp(codeEmail, code);
+
+      if (error) {
+        setMessage({
+          type: 'error',
+          text: resolveAuthErrorMessage(
+            error.message,
+            t,
+            'pages.login.invalid_code',
+          ),
+        });
+      } else {
+        redirectAfterLogin();
+      }
+    } catch (error) {
+      setMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : t('pages.login.invalid_code'),
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const resendEmailCode = async () => {
+    if (codeEmail) {
+      await sendEmailCode(codeEmail);
+    }
+  };
+
+  const backToCodeSend = () => {
+    setCodeStep('send');
+    setCodeEmail('');
+    setMessage(null);
+  };
 
   const onSubmit = async (formData: FormData, authMode: AuthMode) => {
+    if (authMode === 'code') {
+      const emailData = LoginFormSchema.parse(formData);
+      await sendEmailCode(emailData.email);
+      return;
+    }
+
     setIsLoading(true);
     setMessage(null);
 
     try {
       if (authMode === 'password') {
-        // Password authentication
         const passwordData = PasswordLoginSchema.parse(formData);
-        
+
         const { error } = await supabase.auth.signInWithPassword({
           email: passwordData.email,
           password: passwordData.password,
         });
 
         if (error) {
-          // Handle specific error cases
           if (error.message.includes('Invalid login credentials')) {
             setMessage({
               type: 'error',
@@ -75,20 +196,9 @@ export function useLogin(
             });
           }
         } else {
-          setMessage({
-            type: 'success',
-            text: t('pages.login.success_redirecting'),
-          });
-          // Route through dashboard so role-based redirect + enrollment state are preserved
-          setTimeout(() => {
-            navigate(redirect.to ?? '/dashboard', {
-              replace: true,
-              state: redirect.state,
-            });
-          }, 800);
+          redirectAfterLogin();
         }
       } else {
-        // Magic link authentication — existing accounts only (no auto-signup on login)
         const magicLinkData = LoginFormSchema.parse(formData);
         const subdomain = resolveTenantSubdomain();
 
@@ -140,7 +250,13 @@ export function useLogin(
   return {
     isLoading,
     message,
+    codeStep,
+    codeEmail,
     onSubmit,
     resetMessage,
+    sendEmailCode,
+    verifyEmailCode,
+    resendEmailCode,
+    backToCodeSend,
   };
 }

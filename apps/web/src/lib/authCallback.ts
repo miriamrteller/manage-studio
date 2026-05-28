@@ -108,6 +108,18 @@ export async function establishSessionFromAuthCallback(
     return { ok: true };
   }
 
+  const tokenHash = searchParams.get('token_hash');
+  if (tokenHash) {
+    const { error } = await supabase.auth.verifyOtp({
+      token_hash: tokenHash,
+      type: 'email',
+    });
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+    return { ok: true };
+  }
+
   const accessToken = hashParams.get('access_token');
   const refreshToken = hashParams.get('refresh_token');
   if (accessToken && refreshToken) {

@@ -44,8 +44,10 @@ function printDashboardChecklist() {
   console.log('- Secure email change: recommended ON for production');
 
   logSection('Dashboard checklist (Auth → Email Templates → Magic Link)');
-  console.log('- Template renders without errors');
-  console.log('- {{ .ConfirmationURL }} present in body');
+  console.log('- Template: PKCE app — use TokenHash link + {{ .Token }} (see AUTH_EMAIL_SETUP.md)');
+  console.log('- {{ .Token }} for 6-digit Code tab login');
+  console.log('- Link: <a href="{{ .ConfirmationURL }}">Sign in</a> (uses redirect_to from the app — not Site URL)');
+  console.log('- Site URL must match dev origin (http://localhost:5173) or production domain');
 
   logSection('Email delivery paths');
   console.log('Path A (dev / quick): Supabase built-in mailer');

@@ -33,17 +33,24 @@ function RootLayout() {
 
 const router = createBrowserRouter([
   {
-    path: "/",
+    path: '/auth/callback',
+    element: (
+      <LanguageProvider>
+        <AuthCallbackPage />
+      </LanguageProvider>
+    ),
+  },
+  {
+    path: '/',
     element: <RootLayout />,
     children: [
       { index: true, element: <ClassesPage /> },
-      { path: "classes", element: <ClassesPage /> },
-      { path: "login", element: <LoginPage /> },
-      { path: "signup", element: <SignupPage /> },
-      { path: "enrol", element: <EnrolPage /> },
-      { path: "enrol/pay/:enrolmentId", element: <EnrolPayPage /> },
-      { path: "auth/callback", element: <AuthCallbackPage /> },
-      { path: "dashboard", element: <DashboardRedirectPage /> },
+      { path: 'classes', element: <ClassesPage /> },
+      { path: 'login', element: <LoginPage /> },
+      { path: 'signup', element: <SignupPage /> },
+      { path: 'enrol', element: <EnrolPage /> },
+      { path: 'enrol/pay/:enrolmentId', element: <EnrolPayPage /> },
+      { path: 'dashboard', element: <DashboardRedirectPage /> },
 
       // ADMIN ROUTES
       { path: "admin/students", element: <AdminRoute><StudentsPage /></AdminRoute> },

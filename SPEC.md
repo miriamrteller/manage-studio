@@ -1681,8 +1681,28 @@ This pattern ensures: audit trail, tax compliance, dispute resolution, and preve
 | `super_admin`  | Password + 2FA         | All tenants — platform owner only                  |
 | `tenant_admin` | Password               | Full school data                                   |
 | `teacher`      | Password or magic link | Own classes: read + attendance + placement confirm |
-| `parent`       | Magic link             | Own family: read + pay + update contact            |
-| `student`      | Magic link             | Own data only: adult students with portal access   |
+| `parent`       | Magic link or email OTP (V1); SMS OTP (Phase 1D+) | Own family: read + pay + update contact            |
+| `student`      | Magic link or email OTP (V1); SMS OTP (Phase 1D+) | Own data only: adult students with portal access   |
+
+### Login methods
+
+| Method | Roles | Flow | Cross-device |
+| ------ | ----- | ---- | ------------ |
+| **Password** | `super_admin`, `tenant_admin`, `teacher` | `signInWithPassword` → `/dashboard` | Yes |
+| **Magic link (PKCE)** | `parent`, `student`, `teacher` | `signInWithOtp` + `emailRedirectTo` → `/auth/callback` | No — same browser/profile |
+| **Email OTP (V1)** | `parent`, `student` | `signInWithOtp` + `verifyOtp({ type: 'email' })` → `/dashboard` | Yes — enter 6-digit code from email |
+| **SMS OTP login (deferred)** | `parent`, `student` | After Phase 1D phone stack | Yes — WebOTP autofill |
+| **WhatsApp OTP login (deferred)** | `parent`, `student` | After WhatsApp templates approved | Yes |
+
+**Email OTP prerequisites:** Supabase Auth Magic Link email template must include `{{ .Token }}` (see `docs/deployment/AUTH_EMAIL_SETUP.md`).
+
+**SMS/WhatsApp OTP login prerequisites (deferred — do not implement in V1):**
+
+- Twilio Verify production setup (`send-otp-sms` Edge Function)
+- Phone number linked to account (`contact_preferences` / `family_members`)
+- Edge Function to verify code **and issue Supabase session** (signup references missing `verify-otp` today)
+- WebOTP SMS body format for autofill (`@domain #code`)
+- Rate limiting via `verification_attempts` (migration 006)
 
 ### Adult student portal access
 
@@ -1878,6 +1898,8 @@ Key implementation: `useTenant()` resolves from subdomain. In dev: `VITE_DEV_TEN
 
 Route guards: `AdminRoute`, `TeacherRoute`, `ParentRoute`, `StudentRoute` (adult portal).
 
+Login page tabs: **Password**, **Magic Link**, **Email Code**. The Code tab uses Supabase native email OTP (`signInWithOtp` + `verifyOtp({ type: 'email' })`) — no `/auth/callback` route.
+
 ### Phase 1C — Core data modules (Days 7–20)
 
 Build in this strict order (each module depends on previous):
@@ -1926,6 +1948,8 @@ Step 4: Confirmation
 ```
 
 ### Phase 1D — Notifications (Days 21–26)
+
+> **Cross-reference — SMS/WhatsApp OTP login (deferred):** Parent/student **login** via SMS or WhatsApp builds on the enrolment notification OTP infrastructure (`send-otp-sms`, Twilio Verify). Login requires an Edge Function that verifies the code **and issues a Supabase session**, not verification alone. See §5 Login methods.
 
 #### send-notification Edge Function — routes by channel
 
@@ -2167,6 +2191,8 @@ WHATSAPP
 EMAIL
 [ ] Resend domain verified (SPF + DKIM)
 [ ] All email templates tested to Gmail, Walla Mail, and Gmail Israeli accounts
+[ ] Supabase Auth Magic Link template includes {{ .Token }} for login Code tab
+[ ] Email OTP login tested cross-device (request on desktop, enter code on phone)
 
 LEGAL
 [ ] Privacy Policy live and linked in footer

@@ -28,3 +28,13 @@ export const signupFormSchema = z.object({
 });
 
 export type SignupForm = z.infer<typeof signupFormSchema>;
+
+/** Login email OTP verify step — email + numeric code from Supabase Auth mailer */
+export const loginEmailOtpVerifySchema = z.object({
+  email: EmailSchema,
+  code: z
+    .string()
+    .regex(/^\d{6,8}$/, 'Enter the code from your email (6–8 digits)'),
+});
+
+export type LoginEmailOtpVerify = z.infer<typeof loginEmailOtpVerifySchema>;

@@ -15,6 +15,7 @@
     "try_again": "נסה שוב",
     "confirm": "אישור",
     "loading": "טוען...",
+    "verification_code": "קוד אימות",
     "verifying": "מאמת...",
     "error": "שגיאה",
     "success": "הצליח",
@@ -239,6 +240,16 @@
       "password_placeholder": "הזן את הססמה שלך",
       "sign_in": "התחבר",
       "send_link": "שלח קישור",
+      "code_tab": "קוד",
+      "send_code": "שלח קוד",
+      "code_sent": "בדקו בדוא\"ל שלכם קוד כניסה.",
+      "code_sent_to": "שלחנו קוד ל-{{email}}.",
+      "code_helper": "עובד בכל מכשיר — הדביקו את הקוד המספרי מהדוא\"ל.",
+      "verify_code": "אמת קוד",
+      "resend_code": "שלח קוד שוב",
+      "resend_in": "שליחת קוד מחדש בעוד",
+      "back_to_email": "השתמש בדוא\"ל אחר",
+      "invalid_code": "הקוד שגוי או שפג תוקפו. בקשו קוד חדש.",
       "invalid_credentials": "שם משתמש או ססמה לא תקינים",
       "success_redirecting": "התחברות בהצלחה…",
       "check_email": "בדוקו בשמ הדואר האלקטרוני שלך עבור קישור הכניסה"
@@ -620,7 +631,7 @@
     },
     "step3": {
       "subtitle": "הזינו את קוד האימות",
-      "enterCode": "הזינו את הקוד בן 6 הספרות ששלחנו",
+      "enterCode": "הזינו את הקוד מהדוא\"ל (ניתן להדביק)",
       "digit": "ספרה {{number}}",
       "verify": "אמת"
     }

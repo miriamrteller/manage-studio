@@ -15,6 +15,7 @@
     "try_again": "Try Again",
     "confirm": "Confirm",
     "loading": "Loading...",
+    "verification_code": "Verification code",
     "verifying": "Verifying...",
     "error": "Error",
     "success": "Success",
@@ -239,6 +240,16 @@
       "password_placeholder": "Enter your password",
       "sign_in": "Sign In",
       "send_link": "Send Link",
+      "code_tab": "Code",
+      "send_code": "Send Code",
+      "code_sent": "Check your email for a sign-in code.",
+      "code_sent_to": "We sent a code to {{email}}.",
+      "code_helper": "Works on any device — paste the numeric code from your email.",
+      "verify_code": "Verify Code",
+      "resend_code": "Resend code",
+      "resend_in": "Resend code in",
+      "back_to_email": "Use a different email",
+      "invalid_code": "That code is incorrect or has expired. Request a new code.",
       "invalid_credentials": "Invalid email or password.",
       "success_redirecting": "Login successful. Redirecting...",
       "check_email": "Check your email for a sign-in link."
@@ -618,7 +629,7 @@
     },
     "step3": {
       "subtitle": "Enter verification code",
-      "enterCode": "Enter the 6-digit code we sent you",
+      "enterCode": "Enter the code from your email (you can paste it)",
       "digit": "Digit {{number}}",
       "verify": "Verify"
     }
