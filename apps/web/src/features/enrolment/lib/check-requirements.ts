@@ -1,4 +1,4 @@
-import type { ClassRequirementWithTemplate } from '@/features/classes/requirements/service';
+import type { OfferingRequirementWithTemplate } from '@/features/classes/requirements/service';
 
 export interface PersonContext {
   date_of_birth?: string | null;
@@ -68,7 +68,7 @@ export function filterClassesByAge<T extends ClassAgeContext>(
 
 /** Collect human-readable requirement notes for informational display only. */
 export function getRequirementInfoNotes(
-  requirements: ClassRequirementWithTemplate[],
+  requirements: OfferingRequirementWithTemplate[],
 ): string[] {
   return requirements
     .map((r) => r.requirement_templates?.display_text)

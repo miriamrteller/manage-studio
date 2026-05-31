@@ -1,6 +1,6 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { type Term } from '@shared/schemas';
+import { type Season } from '@shared/schemas';
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 import { z } from 'zod';
@@ -25,8 +25,8 @@ const TermFormSchema = z.object({
 });
 
 interface TermFormProps {
-  term?: Partial<Term>;
-  onSubmit: (data: Partial<Term>) => Promise<void>;
+  term?: Partial<Season>;
+  onSubmit: (data: Partial<Season>) => Promise<void>;
   isLoading?: boolean;
 }
 
@@ -41,7 +41,7 @@ export const TermForm = ({ term, onSubmit, isLoading }: TermFormProps) => {
     mode: 'onBlur',
   });
 
-  const handleSubmit = async (data: Partial<Term>) => {
+  const handleSubmit = async (data: Partial<Season>) => {
     try {
       setSubmitError(null);
       setSubmitSuccess(false);

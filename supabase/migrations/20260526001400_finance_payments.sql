@@ -1,16 +1,17 @@
 -- =============================================================================
 -- 014: Finance — Payments + Invoice Sequences + Stripe RPCs
--- Encryption via pgp_sym_encrypt + app.encryption_key (set via manual runbook)
--- Payments are inserted by Edge webhooks only (service_role) — no user INSERT policy
 -- DEPENDENCIES: 001, 002, 011
 -- =============================================================================
 
 CREATE TABLE payments (
   id                       UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id                UUID        NOT NULL REFERENCES tenants(id),
-  family_id                UUID        REFERENCES families(id),
+  account_id               UUID        REFERENCES accounts(id),
   person_id                UUID        REFERENCES people(id),
-  enrolment_id             UUID        REFERENCES enrolments(id),
+  offering_id              UUID        REFERENCES offerings(id),
+  engagement_id            UUID        REFERENCES engagements(id),
+  charge_type              TEXT        NOT NULL DEFAULT 'initial'
+                           CHECK (charge_type IN ('initial', 'renewal', 'setup', 'adjustment', 'refund')),
   stripe_payment_intent_id TEXT        UNIQUE,
   stripe_invoice_id        TEXT,
   pretax_amount_minor      INT         NOT NULL,
@@ -29,12 +30,13 @@ CREATE TABLE payments (
   refund_amount_minor      INT,
   anonymised_at            TIMESTAMPTZ,
   created_at               TIMESTAMPTZ NOT NULL DEFAULT now(),
-  CONSTRAINT payment_payer CHECK ((family_id IS NOT NULL) OR (person_id IS NOT NULL)),
+  CONSTRAINT payment_payer CHECK ((account_id IS NOT NULL) OR (person_id IS NOT NULL)),
   CONSTRAINT payments_invoice_unique_per_tenant UNIQUE (tenant_id, invoice_number)
 );
 
-CREATE INDEX idx_payments_tenant    ON payments(tenant_id);
-CREATE INDEX idx_payments_enrolment ON payments(enrolment_id);
+CREATE INDEX idx_payments_tenant     ON payments(tenant_id);
+CREATE INDEX idx_payments_engagement ON payments(engagement_id);
+CREATE INDEX idx_payments_offering   ON payments(offering_id);
 
 CREATE TABLE invoice_sequences (
   tenant_id    UUID    PRIMARY KEY REFERENCES tenants(id),
@@ -137,7 +139,7 @@ ALTER TABLE invoice_sequences ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY payments_super_admin      ON payments FOR ALL    USING (is_super_admin());
 CREATE POLICY payments_admin_all        ON payments FOR ALL    USING (tenant_id = get_my_tenant_id() AND EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND 'tenant_admin' = ANY(role)));
-CREATE POLICY payments_parent_select    ON payments FOR SELECT USING (tenant_id = get_my_tenant_id() AND (person_id = get_my_person_id() OR family_id IN (SELECT get_my_family_ids())));
+CREATE POLICY payments_account_select   ON payments FOR SELECT USING (tenant_id = get_my_tenant_id() AND (person_id = get_my_person_id() OR account_id IN (SELECT get_my_account_ids())));
 
 CREATE POLICY invoice_sequences_super_admin ON invoice_sequences FOR ALL    USING (is_super_admin());
 CREATE POLICY invoice_sequences_admin       ON invoice_sequences FOR SELECT USING (tenant_id = get_my_tenant_id() AND EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND 'tenant_admin' = ANY(role)));

@@ -4,12 +4,12 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useTenant } from '@/hooks/useTenant';
 import {
   PersonSchema,
-  EnrolmentSchema,
+  EngagementSchema,
   type Person,
-  type Enrolment,
+  type Engagement,
 } from '@shared/schemas';
 
-export interface EnrolmentWithClass extends Enrolment {
+export interface EngagementWithOffering extends Engagement {
   className: string | null;
   classDay: number | null;
   classStartTime: string | null;
@@ -28,7 +28,7 @@ export interface ParentPayment {
 
 export interface ParentPortalData {
   children: Person[];
-  enrolmentsByPerson: Record<string, EnrolmentWithClass[]>;
+  enrolmentsByPerson: Record<string, EngagementWithOffering[]>;
   payments: ParentPayment[];
 }
 
@@ -60,33 +60,33 @@ export function useParentPortal(): ParentPortalState {
       const children = (peopleRows ?? []).map((row) => PersonSchema.parse(row));
       const personIds = children.map((p) => p.id);
 
-      const enrolmentsByPerson: Record<string, EnrolmentWithClass[]> = {};
+      const enrolmentsByPerson: Record<string, EngagementWithOffering[]> = {};
       for (const id of personIds) {
         enrolmentsByPerson[id] = [];
       }
 
       if (personIds.length > 0) {
         const { data: enrolmentRows, error: enrolmentError } = await supabase
-          .from('enrolments')
-          .select('*, classes(name, day_of_week, start_time)')
+          .from('engagements')
+          .select('*, offerings(name, day_of_week, start_time)')
           .in('person_id', personIds)
           .order('created_at', { ascending: false });
 
         if (enrolmentError) throw enrolmentError;
 
         for (const row of enrolmentRows ?? []) {
-          const enrolment = EnrolmentSchema.parse(row);
-          const cls = row.classes as {
+          const enrolment = EngagementSchema.parse(row);
+          const offering = row.offerings as {
             name?: string;
             day_of_week?: number;
             start_time?: string;
           } | null;
 
-          const entry: EnrolmentWithClass = {
+          const entry: EngagementWithOffering = {
             ...enrolment,
-            className: cls?.name ?? null,
-            classDay: cls?.day_of_week ?? null,
-            classStartTime: cls?.start_time ?? null,
+            className: offering?.name ?? null,
+            classDay: offering?.day_of_week ?? null,
+            classStartTime: offering?.start_time ?? null,
           };
 
           if (!enrolmentsByPerson[enrolment.person_id]) {

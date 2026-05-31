@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { useClasses } from '@/features/classes/hooks';
 import { useTenant } from '@/hooks/useTenant';
 import { ClassCard, EmptyState } from '@/components/shared';
-import type { PublicClass } from '@/schemas';
+import type { PublicOffering } from '@/schemas';
 
 /**
  * ClassesList: Smart component for public classes listing
@@ -57,7 +57,7 @@ export function ClassesList() {
         <ul className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {classes.map((classItem) => (
             <li key={classItem.id}>
-              <ClassCard class={classItem as PublicClass} currency={tenant?.currency || 'ILS'} />
+              <ClassCard class={classItem as PublicOffering} currency={tenant?.currency || 'ILS'} />
             </li>
           ))}
         </ul>

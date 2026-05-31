@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { LevelService, type LevelSortField } from '../service';
-import { type Level } from '@shared/schemas';
+import { LevelService, type CategorySortField } from '../service';
+import { type Category } from '@shared/schemas';
 import { useTenant } from '@/hooks/useTenant';
 import type { SortOrder } from '@/lib/list-query';
 import { DEFAULT_LEVEL_SORT } from '../service';
@@ -10,7 +10,7 @@ const PAGE_SIZE = 50;
 interface UseLevelsOptions {
   page?: number;
   searchQuery?: string;
-  sortField?: LevelSortField;
+  sortField?: CategorySortField;
   sortOrder?: SortOrder;
   enabled?: boolean;
 }
@@ -42,7 +42,7 @@ export function useLevels({
 
   // Create mutation
   const createMutation = useMutation({
-    mutationFn: async (newLevel: Partial<Level>) => {
+    mutationFn: async (newLevel: Partial<Category>) => {
       if (!tenant) throw new Error('Tenant not initialized');
       return LevelService.create(tenant, newLevel);
     },
@@ -53,7 +53,7 @@ export function useLevels({
 
   // Update mutation
   const updateMutation = useMutation({
-    mutationFn: async (level: Partial<Level>) => {
+    mutationFn: async (level: Partial<Category>) => {
       if (!tenant || !level.id) throw new Error('Tenant not initialized or missing level ID');
       return LevelService.update(tenant, level.id, level);
     },
@@ -79,13 +79,13 @@ export function useLevels({
     pageSize: PAGE_SIZE,
     isLoading: listQuery.isLoading,
     error: listQuery.error as Error | null,
-    createLevel: (level: Partial<Level>, callbacks?: { onSuccess?: () => void; onError?: (error: Error) => void }) => {
+    createLevel: (level: Partial<Category>, callbacks?: { onSuccess?: () => void; onError?: (error: Error) => void }) => {
       createMutation.mutate(level, {
         onSuccess: callbacks?.onSuccess,
         onError: callbacks?.onError,
       });
     },
-    updateLevel: (level: Partial<Level>, callbacks?: { onSuccess?: () => void; onError?: (error: Error) => void }) => {
+    updateLevel: (level: Partial<Category>, callbacks?: { onSuccess?: () => void; onError?: (error: Error) => void }) => {
       updateMutation.mutate(level, {
         onSuccess: callbacks?.onSuccess,
         onError: callbacks?.onError,

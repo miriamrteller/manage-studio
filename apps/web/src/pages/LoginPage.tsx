@@ -30,12 +30,12 @@ export default function LoginPage() {
     if (postLoginState?.classId) {
       persistEnrollmentIntent({
         classId: String(postLoginState.classId),
-        termId:
-          typeof postLoginState.termId === 'string' ? postLoginState.termId : undefined,
+        seasonId:
+          typeof postLoginState.seasonId === 'string' ? postLoginState.seasonId : undefined,
         from: typeof postLoginState.from === 'string' ? postLoginState.from : undefined,
       });
     }
-  }, [postLoginState?.classId, postLoginState?.termId, postLoginState?.from]);
+  }, [postLoginState?.classId, postLoginState?.seasonId, postLoginState?.from]);
 
   const {
     isLoading,

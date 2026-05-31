@@ -3,27 +3,27 @@ import type { Tenant } from '@shared/schemas';
 
 const ACTIVE_ENROLMENT_STATUSES = ['active', 'pending_payment', 'waitlisted'] as const;
 
-interface EnrolmentFilterOptions {
+interface EngagementFilterOptions {
   classIds?: string[];
-  levelIds?: string[];
+  categoryIds?: string[];
 }
 
 /**
- * Resolve person IDs enrolled in classes matching classIds and/or levelIds.
+ * Resolve person IDs enrolled in classes matching classIds and/or categoryIds.
  * When both are set, classes must satisfy both (intersection).
  * Returns null when no enrolment filter is active.
  */
 export async function resolveEnrolledPersonIds(
   tenant: Tenant,
-  { classIds = [], levelIds = [] }: EnrolmentFilterOptions
+  { classIds = [], categoryIds = [] }: EngagementFilterOptions
 ): Promise<string[] | null> {
-  if (classIds.length === 0 && levelIds.length === 0) return null;
+  if (classIds.length === 0 && categoryIds.length === 0) return null;
 
   let matchingClassIds: string[] | null = null;
 
-  if (levelIds.length > 0) {
-    const { data, error } = await TenantDB.selectFor('classes', tenant)
-      .in('level_id', levelIds)
+  if (categoryIds.length > 0) {
+    const { data, error } = await TenantDB.selectFor('offerings', tenant)
+      .in('category_id', categoryIds)
       .select('id');
     if (error) throw error;
     matchingClassIds = (data || []).map((c: { id: string }) => c.id);
@@ -39,8 +39,8 @@ export async function resolveEnrolledPersonIds(
     }
   }
 
-  const { data, error } = await TenantDB.selectFor('enrolments', tenant)
-    .in('class_id', matchingClassIds!)
+  const { data, error } = await TenantDB.selectFor('engagements', tenant)
+    .in('offering_id', matchingClassIds!)
     .in('status', [...ACTIVE_ENROLMENT_STATUSES]);
   if (error) throw error;
 

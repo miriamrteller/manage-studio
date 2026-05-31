@@ -2,9 +2,9 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { FilterOption } from '@/components/shared/table/FilterMultiSelect';
 import { useFamilySearch } from '../hooks/useFamilySearch';
-import type { Family } from '@shared/schemas';
+import type { Account } from '@shared/schemas';
 
-function familyLabel(family: Family): string {
+function familyLabel(family: Account): string {
   return family.name ?? family.contact_person_name ?? family.contact_email ?? family.id;
 }
 
@@ -39,13 +39,13 @@ export function FamilyMultiSelect({ selected, onChange, id }: FamilyMultiSelectP
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleSelect = (family: Family) => {
+  const handleSelect = (family: Account) => {
     onChange([...selected, { value: family.id, label: familyLabel(family) }]);
     setInputValue('');
     setIsOpen(false);
   };
 
-  const handleToggle = (family: Family) => {
+  const handleToggle = (family: Account) => {
     if (selectedIds.has(family.id)) {
       handleRemove(family.id);
     } else {

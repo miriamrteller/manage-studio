@@ -1,60 +1,61 @@
 -- =============================================================================
--- 011: Enrolments + Waiting List
+-- 011: Engagements + Waitlist
 -- Core state machine: pending_payment → active / admin_review / pending_offer / cancelled / withdrawn
--- prior_experience removed (never used)
 -- DEPENDENCIES: 001, 002, 004, 007, 010
 -- =============================================================================
 
-CREATE TABLE enrolments (
-  id                 UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id          UUID        NOT NULL REFERENCES tenants(id),
-  person_id          UUID        NOT NULL REFERENCES people(id),
-  class_id           UUID        NOT NULL REFERENCES classes(id),
-  term_id            UUID        NOT NULL REFERENCES terms(id),
-  billing_account_id UUID        REFERENCES billing_accounts(id),
-  status             TEXT        NOT NULL DEFAULT 'pending_payment'
-                     CHECK (status IN ('pending_payment', 'active', 'admin_review', 'pending_offer', 'cancelled', 'withdrawn')),
-  payment_received_at TIMESTAMPTZ,
-  created_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at         TIMESTAMPTZ NOT NULL DEFAULT now()
+CREATE TABLE engagements (
+  id                    UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id             UUID        NOT NULL REFERENCES tenants(id),
+  person_id             UUID        NOT NULL REFERENCES people(id),
+  offering_id           UUID        NOT NULL REFERENCES offerings(id),
+  season_id             UUID        REFERENCES seasons(id),
+  billing_account_id    UUID        REFERENCES billing_accounts(id),
+  status                TEXT        NOT NULL DEFAULT 'pending_payment'
+                        CHECK (status IN ('pending_payment', 'active', 'admin_review', 'pending_offer', 'cancelled', 'withdrawn')),
+  billing_status        TEXT        CHECK (billing_status IN ('current', 'past_due', 'suspended', 'cancelled')),
+  stripe_subscription_id TEXT,
+  stripe_customer_id    TEXT,
+  payment_received_at   TIMESTAMPTZ,
+  created_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at            TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Only one non-cancelled/withdrawn enrolment per person/class/term (allows re-enrolment)
-CREATE UNIQUE INDEX idx_enrolments_active_unique ON enrolments(person_id, class_id, term_id)
-  WHERE status NOT IN ('cancelled', 'withdrawn');
+CREATE UNIQUE INDEX idx_engagements_active_with_season ON engagements(person_id, offering_id, season_id)
+  WHERE status NOT IN ('cancelled', 'withdrawn') AND season_id IS NOT NULL;
 
-CREATE INDEX idx_enrolments_tenant ON enrolments(tenant_id);
-CREATE INDEX idx_enrolments_person ON enrolments(person_id);
-CREATE INDEX idx_enrolments_class  ON enrolments(class_id);
-CREATE INDEX idx_enrolments_term   ON enrolments(term_id);
-CREATE INDEX idx_enrolments_status ON enrolments(status);
+CREATE UNIQUE INDEX idx_engagements_active_no_season ON engagements(person_id, offering_id)
+  WHERE status NOT IN ('cancelled', 'withdrawn') AND season_id IS NULL;
 
-ALTER TABLE enrolments ENABLE ROW LEVEL SECURITY;
+CREATE INDEX idx_engagements_tenant   ON engagements(tenant_id);
+CREATE INDEX idx_engagements_person   ON engagements(person_id);
+CREATE INDEX idx_engagements_offering ON engagements(offering_id);
+CREATE INDEX idx_engagements_season   ON engagements(season_id);
+CREATE INDEX idx_engagements_status   ON engagements(status);
 
-CREATE POLICY "super_admin manages all enrolments"   ON enrolments FOR ALL    USING (is_super_admin());
-CREATE POLICY "admins manage enrolments"             ON enrolments FOR ALL    USING (tenant_id = get_my_tenant_id() AND EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND 'tenant_admin' = ANY(role)));
-CREATE POLICY "parents see own enrolments"           ON enrolments FOR SELECT USING (person_id IN (SELECT id FROM people WHERE family_id IN (SELECT get_my_family_ids())));
-CREATE POLICY "adult students see own enrolments"    ON enrolments FOR SELECT USING (person_id = get_my_person_id());
+ALTER TABLE engagements ENABLE ROW LEVEL SECURITY;
 
--- ---------------------------------------------------------------------------
--- Waiting List (auto-managed queue)
--- ---------------------------------------------------------------------------
-CREATE TABLE waiting_list (
-  id        UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id UUID        NOT NULL REFERENCES tenants(id),
-  class_id  UUID        NOT NULL REFERENCES classes(id),
-  person_id UUID        NOT NULL REFERENCES people(id),
-  added_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE (class_id, person_id)
+CREATE POLICY "super_admin manages all engagements"   ON engagements FOR ALL    USING (is_super_admin());
+CREATE POLICY "admins manage engagements"             ON engagements FOR ALL    USING (tenant_id = get_my_tenant_id() AND EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND 'tenant_admin' = ANY(role)));
+CREATE POLICY "account holders see own engagements"           ON engagements FOR SELECT USING (person_id IN (SELECT id FROM people WHERE account_id IN (SELECT get_my_account_ids())));
+CREATE POLICY "adult students see own engagements"    ON engagements FOR SELECT USING (person_id = get_my_person_id());
+
+CREATE TABLE waitlist (
+  id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id   UUID        NOT NULL REFERENCES tenants(id),
+  offering_id UUID        NOT NULL REFERENCES offerings(id),
+  person_id   UUID        NOT NULL REFERENCES people(id),
+  added_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (offering_id, person_id)
 );
 
-CREATE INDEX idx_waiting_list_tenant   ON waiting_list(tenant_id);
-CREATE INDEX idx_waiting_list_class    ON waiting_list(class_id);
-CREATE INDEX idx_waiting_list_person   ON waiting_list(person_id);
-CREATE INDEX idx_waiting_list_position ON waiting_list(class_id, added_at);
+CREATE INDEX idx_waitlist_tenant   ON waitlist(tenant_id);
+CREATE INDEX idx_waitlist_offering ON waitlist(offering_id);
+CREATE INDEX idx_waitlist_person   ON waitlist(person_id);
+CREATE INDEX idx_waitlist_position ON waitlist(offering_id, added_at);
 
-ALTER TABLE waiting_list ENABLE ROW LEVEL SECURITY;
+ALTER TABLE waitlist ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "super_admin manages all waiting_list"  ON waiting_list FOR ALL    USING (is_super_admin());
-CREATE POLICY "admins manage waiting_list"            ON waiting_list FOR ALL    USING (tenant_id = get_my_tenant_id() AND EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND 'tenant_admin' = ANY(role)));
-CREATE POLICY "people see own waiting_list"           ON waiting_list FOR SELECT USING (person_id = get_my_person_id() OR person_id IN (SELECT id FROM people WHERE family_id IN (SELECT get_my_family_ids())));
+CREATE POLICY "super_admin manages all waitlist"  ON waitlist FOR ALL    USING (is_super_admin());
+CREATE POLICY "admins manage waitlist"            ON waitlist FOR ALL    USING (tenant_id = get_my_tenant_id() AND EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND 'tenant_admin' = ANY(role)));
+CREATE POLICY "people see own waitlist"           ON waitlist FOR SELECT USING (person_id = get_my_person_id() OR person_id IN (SELECT id FROM people WHERE account_id IN (SELECT get_my_account_ids())));

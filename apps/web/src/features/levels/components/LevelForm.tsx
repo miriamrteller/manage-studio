@@ -1,6 +1,6 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { LevelSchema, type Level } from '@shared/schemas';
+import { CategorySchema, type Category } from '@shared/schemas';
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -13,8 +13,8 @@ import { FormInput } from '../../../components/ui/form';
 // - sort_order is numeric (order for display in dropdowns/lists)
 
 interface LevelFormProps {
-  level?: Partial<Level>;
-  onSubmit: (data: Partial<Level>) => Promise<void>;
+  level?: Partial<Category>;
+  onSubmit: (data: Partial<Category>) => Promise<void>;
   isLoading?: boolean;
 }
 
@@ -24,12 +24,12 @@ export const LevelForm = ({ level, onSubmit, isLoading }: LevelFormProps) => {
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
   const form = useForm({
-    resolver: zodResolver(LevelSchema.partial()),
+    resolver: zodResolver(CategorySchema.partial()),
     defaultValues: level || {},
     mode: 'onBlur',
   });
 
-  const handleSubmit = async (data: Partial<Level>) => {
+  const handleSubmit = async (data: Partial<Category>) => {
     try {
       setSubmitError(null);
       setSubmitSuccess(false);

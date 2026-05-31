@@ -12,7 +12,7 @@ CREATE TABLE notification_log (
   id                         UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id                  UUID        NOT NULL REFERENCES tenants(id),
   recipient_person_id        UUID        REFERENCES people(id),
-  recipient_family_member_id UUID        REFERENCES family_members(id),
+  recipient_account_member_id UUID        REFERENCES account_members(id),
   recipient_email            TEXT,
   recipient_phone            TEXT,
   channel                    TEXT        NOT NULL DEFAULT 'email'
@@ -29,7 +29,7 @@ CREATE TABLE notification_log (
   sent_at                    TIMESTAMPTZ,
   CONSTRAINT recipient_not_null CHECK (
     (recipient_person_id        IS NOT NULL)::int +
-    (recipient_family_member_id IS NOT NULL)::int +
+    (recipient_account_member_id IS NOT NULL)::int +
     (recipient_email            IS NOT NULL)::int +
     (recipient_phone            IS NOT NULL)::int > 0
   )
@@ -37,7 +37,7 @@ CREATE TABLE notification_log (
 
 CREATE INDEX idx_notification_log_tenant   ON notification_log(tenant_id);
 CREATE INDEX idx_notification_log_person   ON notification_log(recipient_person_id);
-CREATE INDEX idx_notification_log_family   ON notification_log(recipient_family_member_id);
+CREATE INDEX idx_notification_log_account   ON notification_log(recipient_account_member_id);
 CREATE INDEX idx_notification_log_status   ON notification_log(status);
 CREATE INDEX idx_notification_log_channel  ON notification_log(channel);
 CREATE INDEX idx_notification_log_created  ON notification_log(tenant_id, created_at DESC);
@@ -130,7 +130,7 @@ CREATE TABLE expense_categories (
   UNIQUE (tenant_id, name)
 );
 
-CREATE INDEX idx_categories_tenant ON expense_categories(tenant_id, is_active);
+CREATE INDEX idx_expense_categories_tenant ON expense_categories(tenant_id, is_active);
 
 ALTER TABLE expense_categories ENABLE ROW LEVEL SECURITY;
 

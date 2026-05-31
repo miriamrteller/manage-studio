@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { SessionService } from '../service';
-import { type ClassSession } from '@shared/schemas';
+import { type OfferingSession } from '@shared/schemas';
 import { useTenant } from '@/hooks/useTenant';
 
 const PAGE_SIZE = 50;
@@ -32,7 +32,7 @@ export function useSessions({ classId, page = 1, enabled = true }: UseSessionsOp
 
   // Create mutation
   const createMutation = useMutation({
-    mutationFn: async (newSession: Partial<ClassSession>) => {
+    mutationFn: async (newSession: Partial<OfferingSession>) => {
       if (!tenant) throw new Error('Tenant not initialized');
       return SessionService.create(tenant, newSession);
     },
@@ -43,7 +43,7 @@ export function useSessions({ classId, page = 1, enabled = true }: UseSessionsOp
 
   // Update mutation
   const updateMutation = useMutation({
-    mutationFn: async (sessionData: Partial<ClassSession>) => {
+    mutationFn: async (sessionData: Partial<OfferingSession>) => {
       if (!tenant || !sessionData.id) throw new Error('Tenant not initialized or missing session ID');
       return SessionService.update(tenant, sessionData.id, sessionData);
     },

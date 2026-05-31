@@ -1,12 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { EnrolmentService } from '../service';
-import { type Enrolment } from '@shared/schemas';
+import { type Engagement } from '@shared/schemas';
 import { useTenant } from '@/hooks/useTenant';
 
 const PAGE_SIZE = 20;
 
 interface UseEnrolmentOptions {
-  termId?: string;
+  seasonId?: string;
   personId?: string;
   status?: string;
   page?: number;
@@ -20,7 +20,7 @@ interface UseEnrolmentOptions {
  * Supports filtering by term, person, and status
  */
 export function useEnrolment({
-  termId,
+  seasonId,
   personId,
   status,
   page = 1,
@@ -30,13 +30,13 @@ export function useEnrolment({
   const queryClient = useQueryClient();
 
   const listQuery = useQuery({
-    queryKey: ['enrolments', tenant?.id, page, termId, personId, status],
+    queryKey: ['enrolments', tenant?.id, page, seasonId, personId, status],
     queryFn: async () => {
       if (!tenant) throw new Error('Tenant not initialized');
       return EnrolmentService.list(tenant, {
         page,
         pageSize: PAGE_SIZE,
-        termId,
+        seasonId,
         personId,
         status,
       });
@@ -46,7 +46,7 @@ export function useEnrolment({
 
   // Create mutation
   const createMutation = useMutation({
-    mutationFn: async (newEnrolment: Partial<Enrolment>) => {
+    mutationFn: async (newEnrolment: Partial<Engagement>) => {
       if (!tenant) throw new Error('Tenant not initialized');
       return EnrolmentService.create(tenant, newEnrolment);
     },
@@ -57,7 +57,7 @@ export function useEnrolment({
 
   // Update mutation (status changes, prior_experience updates)
   const updateMutation = useMutation({
-    mutationFn: async (enrolmentData: Partial<Enrolment>) => {
+    mutationFn: async (enrolmentData: Partial<Engagement>) => {
       if (!tenant || !enrolmentData.id) throw new Error('Tenant not initialized or missing enrolment ID');
       return EnrolmentService.update(tenant, enrolmentData.id, enrolmentData);
     },
@@ -68,9 +68,9 @@ export function useEnrolment({
 
   // Delete mutation
   const deleteMutation = useMutation({
-    mutationFn: async (enrolmentId: string) => {
+    mutationFn: async (engagementId: string) => {
       if (!tenant) throw new Error('Tenant not initialized');
-      return EnrolmentService.delete(tenant, enrolmentId);
+      return EnrolmentService.delete(tenant, engagementId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['enrolments', tenant?.id] });

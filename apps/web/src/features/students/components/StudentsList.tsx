@@ -76,8 +76,8 @@ export function StudentsList() {
     page,
     status: statusFilter,
     classIds: selectedClasses.map((c) => c.value),
-    levelIds: selectedLevels.map((l) => l.value),
-    familyIds: selectedFamilies.map((f) => f.value),
+    categoryIds: selectedLevels.map((l) => l.value),
+    accountIds: selectedFamilies.map((f) => f.value),
     minAge,
     maxAge,
     searchQuery,
@@ -91,7 +91,7 @@ export function StudentsList() {
     queryKey: ['students-list-enrolments', tenant?.id, personIds],
     queryFn: async () => {
       if (!tenant || personIds.length === 0) return [];
-      const { data, error } = await TenantDB.selectFor('enrolments', tenant)
+      const { data, error } = await TenantDB.selectFor('engagements', tenant)
         .in('person_id', personIds)
         .in('status', ['active', 'pending_payment', 'waitlisted']);
       if (error) throw error;
@@ -100,28 +100,28 @@ export function StudentsList() {
     enabled: !!tenant?.id && personIds.length > 0,
   });
 
-  // Fetch families for students that have a family_id
-  const familyIds = [...new Set(students.flatMap((s) => (s.family_id ? [s.family_id] : [])))];
+  // Fetch families for students that have a account_id
+  const accountIds = [...new Set(students.flatMap((s) => (s.account_id ? [s.account_id] : [])))];
   const familiesQuery = useQuery({
-    queryKey: ['students-list-families', tenant?.id, familyIds],
+    queryKey: ['students-list-families', tenant?.id, accountIds],
     queryFn: async () => {
-      if (!tenant || familyIds.length === 0) return [];
-      const { data, error } = await TenantDB.selectFor('families', tenant).in('id', familyIds);
+      if (!tenant || accountIds.length === 0) return [];
+      const { data, error } = await TenantDB.selectFor('accounts', tenant).in('id', accountIds);
       if (error) throw error;
       return data || [];
     },
-    enabled: !!tenant?.id && familyIds.length > 0,
+    enabled: !!tenant?.id && accountIds.length > 0,
   });
 
   // Fetch class names for the enrolments
   const classIds = [
-    ...new Set((enrolmentsQuery.data ?? []).map((e: { class_id: string }) => e.class_id)),
+    ...new Set((enrolmentsQuery.data ?? []).map((e: { offering_id: string }) => e.offering_id)),
   ];
   const classNamesQuery = useQuery({
     queryKey: ['students-list-class-names', tenant?.id, classIds],
     queryFn: async () => {
       if (!tenant || classIds.length === 0) return [];
-      const { data, error } = await TenantDB.selectFor('classes', tenant).in('id', classIds);
+      const { data, error } = await TenantDB.selectFor('offerings', tenant).in('id', classIds);
       if (error) throw error;
       return data || [];
     },
@@ -155,7 +155,7 @@ export function StudentsList() {
     const map = new Map<string, string[]>();
     for (const e of enrolmentsQuery.data ?? []) {
       const existing = map.get(e.person_id) ?? [];
-      const cn = classNameMap.get(e.class_id);
+      const cn = classNameMap.get(e.offering_id);
       if (cn) existing.push(cn);
       map.set(e.person_id, existing);
     }
@@ -171,12 +171,12 @@ export function StudentsList() {
   );
 
   const openEnrolModal = useCallback((person: Person) => {
-    const family = person.family_id ? familyMap.get(person.family_id) : undefined;
+    const family = person.account_id ? familyMap.get(person.account_id) : undefined;
     setEnrolModalStudent({
       personId: person.id,
       personName: person.name,
       personDateOfBirth: person.date_of_birth,
-      familyId: person.family_id,
+      familyId: person.account_id,
       guardianEmail: resolveGuardianEmail({
         person,
         family: family ?? undefined,
@@ -263,11 +263,11 @@ export function StudentsList() {
         },
         size: 60,
       }),
-      columnHelper.accessor('family_id', {
+      columnHelper.accessor('account_id', {
         id: 'guardian',
         header: t('pages.students.guardian_column'),
         cell: ({ row }) => {
-          const fid = row.original.family_id;
+          const fid = row.original.account_id;
           if (!fid) return <span className="text-gray-400 text-xs">—</span>;
           const family = familyMap.get(fid) as { contact_person_name: string | null } | undefined;
           return family?.contact_person_name ?? <span className="text-gray-400 text-xs">—</span>;

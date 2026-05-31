@@ -5,33 +5,33 @@ import { EmptyState } from '@/components/shared';
 import { ListSearchInput, SortableHeader } from '@/components/shared/table';
 import { useSortState } from '@/hooks/useSortState';
 import { useLevels } from '../hooks/useLevels';
-import { DEFAULT_LEVEL_SORT, type LevelSortField } from '../service';
+import { DEFAULT_LEVEL_SORT, type CategorySortField } from '../service';
 import { LevelForm } from './LevelForm';
-import type { Level } from '@shared/schemas';
+import type { Category } from '@shared/schemas';
 
 export const LevelsList = () => {
   const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
-  const { sortField, sortOrder, toggleSort } = useSortState<LevelSortField>(
+  const { sortField, sortOrder, toggleSort } = useSortState<CategorySortField>(
     DEFAULT_LEVEL_SORT.field,
     DEFAULT_LEVEL_SORT.order
   );
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
-  const [editingLevel, setEditingLevel] = useState<Level | null>(null);
+  const [editingLevel, setEditingLevel] = useState<Category | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
   const levelsData = useLevels({ page, searchQuery, sortField, sortOrder });
 
-  const handleSort = (field: LevelSortField) => {
+  const handleSort = (field: CategorySortField) => {
     toggleSort(field, () => setPage(1));
   };
 
-  const handleFormSubmit = async (data: Partial<Level>) => {
+  const handleFormSubmit = async (data: Partial<Category>) => {
     if (editingLevel?.id) {
       await new Promise<void>((resolve, reject) => {
         levelsData.updateLevel(
-          { ...editingLevel, ...data } as Level,
+          { ...editingLevel, ...data } as Category,
           { onSuccess: () => resolve(), onError: reject }
         );
       });
@@ -44,7 +44,7 @@ export const LevelsList = () => {
     }
   };
 
-  const handleEdit = (level: Level) => {
+  const handleEdit = (level: Category) => {
     setEditingLevel(level);
   };
 

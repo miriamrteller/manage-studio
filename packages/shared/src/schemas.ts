@@ -99,14 +99,14 @@ export const PasswordLoginSchema = z.object({
 
 export type PasswordLogin = z.infer<typeof PasswordLoginSchema>;
 
-// Public class (for landing page — matches get_public_classes_by_subdomain RPC)
-export const PublicClassSchema = z.object({
+// Public class (for landing page — matches get_public_offerings_by_subdomain RPC)
+export const PublicOfferingSchema = z.object({
   id: UUIDSchema,
   tenant_id: UUIDSchema,
   name: z.string().min(1),
-  level_id: UUIDSchema.nullable().optional(),
-  level_name: z.string().nullable().optional(),
-  term_id: UUIDSchema,
+  category_id: UUIDSchema.nullable().optional(),
+  category_name: z.string().nullable().optional(),
+  season_id: UUIDSchema.nullable().optional(),
   day_of_week: z.number().int().min(0).max(6).nullable().optional(),
   start_time: TimeSchema,
   end_time: TimeSchema,
@@ -115,18 +115,19 @@ export const PublicClassSchema = z.object({
   max_capacity: z.number().positive(),
   min_age: z.number().int().nonnegative().nullable().optional(),
   max_age: z.number().int().nonnegative().nullable().optional(),
-  billing_frequency: z.enum(['monthly', 'per-session', 'weekly', 'annual']).default('monthly'),
-  current_enrolments: z.number().nonnegative().optional(),
+  billing_mode: z.enum(['one_time', 'recurring']).default('one_time'),
+  billing_interval: z.enum(['monthly', 'quarterly', 'annual']).nullable().optional(),
+  current_engagements: z.number().nonnegative().optional(),
 });
 
-export type PublicClass = z.infer<typeof PublicClassSchema>;
+export type PublicOffering = z.infer<typeof PublicOfferingSchema>;
 
 // Person (aligned with migration 20260526000200_people.sql)
 export const PersonSchema = z.object({
   id: UUIDSchema,
   tenant_id: UUIDSchema,
   user_profile_id: UUIDSchema.nullable(),
-  family_id: UUIDSchema.nullable(),
+  account_id: UUIDSchema.nullable(),
   name: z.string().min(1),
   email: z.string().email().nullable(),
   date_of_birth: DateSchema.nullable(),
@@ -178,6 +179,7 @@ export const ContactPreferencesSchema = z.object({
   id: UUIDSchema,
   tenant_id: UUIDSchema,
   person_id: UUIDSchema.nullable(),
+  account_member_id: UUIDSchema.nullable().optional(),
   email: z.string().email().nullable(),
   email_opted_in: z.boolean().default(true),
   whatsapp_number: z.string().nullable(),
@@ -192,7 +194,7 @@ export type ContactPreferences = z.infer<typeof ContactPreferencesSchema>;
 // Family (group of related people)
 // Contact columns (name, contact_person_name, contact_email, contact_phone) were added via
 // Migration 004000 and are nullable for backwards compatibility with existing rows.
-export const FamilySchema = z.object({
+export const AccountSchema = z.object({
   id: UUIDSchema,
   tenant_id: UUIDSchema,
   name: z.string().min(1, 'Family name required').nullable().optional(),
@@ -205,27 +207,27 @@ export const FamilySchema = z.object({
   created_at: TimestampSchema,
 });
 
-export type Family = z.infer<typeof FamilySchema>;
+export type Account = z.infer<typeof AccountSchema>;
 
 // Family member (relationship to family)
-// DB: id, tenant_id, family_id, user_profile_id, name, email, phone, role, created_at
-export const FamilyMemberSchema = z.object({
+// DB: id, tenant_id, account_id, user_profile_id, name, email, phone, role, created_at
+export const AccountMemberSchema = z.object({
   id: UUIDSchema,
   tenant_id: UUIDSchema,
-  family_id: UUIDSchema,
+  account_id: UUIDSchema,
   user_profile_id: UUIDSchema.nullable(),
   name: z.string().min(1, 'Name required'),
   email: z.string().email().nullable().optional(),
   phone: z.string().nullable().optional(),
-  role: z.enum(['parent', 'guardian', 'sibling', 'adult_student']),
+  role: z.enum(['account_holder', 'member', 'sibling', 'adult_student']),
   created_at: TimestampSchema,
 });
 
-export type FamilyMember = z.infer<typeof FamilyMemberSchema>;
+export type AccountMember = z.infer<typeof AccountMemberSchema>;
 
 // Term (semester/academic period)
 // DB status CHECK: ('upcoming', 'active', 'completed', 'archived')
-export const TermSchema = z.object({
+export const SeasonSchema = z.object({
   id: UUIDSchema,
   tenant_id: UUIDSchema,
   name: z.string().min(1, 'Term name required'),
@@ -239,7 +241,7 @@ export const TermSchema = z.object({
 });
 
 // Creatable/updatable term (excludes id, tenant_id, created_at)
-export const CreateTermSchema = z.object({
+export const CreateSeasonSchema = z.object({
   name: z.string().min(1, 'Term name required'),
   start_date: z.string().date('Invalid date format'),
   end_date: z.string().date('Invalid date format'),
@@ -253,11 +255,11 @@ export const CreateTermSchema = z.object({
   path: ['end_date'],
 });
 
-export type Term = z.infer<typeof TermSchema>;
-export type CreateTerm = z.infer<typeof CreateTermSchema>;
+export type Season = z.infer<typeof SeasonSchema>;
+export type CreateSeason = z.infer<typeof CreateSeasonSchema>;
 
 // Level (e.g., Grade 1, Grade 2, Beginner, Advanced)
-export const LevelSchema = z.object({
+export const CategorySchema = z.object({
   id: UUIDSchema,
   tenant_id: UUIDSchema,
   name: z.string().min(1, 'Level name required'),
@@ -265,17 +267,17 @@ export const LevelSchema = z.object({
   created_at: TimestampSchema,
 });
 
-export type Level = z.infer<typeof LevelSchema>;
+export type Category = z.infer<typeof CategorySchema>;
 
 // Class (a course offered in a term at a specific level)
-// DB: level_id nullable, day_of_week nullable, status includes 'full',
-//     has is_public, billing_frequency, currency; teacher_id added via Migration 004100
-export const ClassSchema = z.object({
+// DB: category_id nullable, day_of_week nullable, status includes 'full',
+//     has is_public, billing_frequency, currency; staff_id added via Migration 004100
+export const OfferingSchema = z.object({
   id: UUIDSchema,
   tenant_id: UUIDSchema,
-  term_id: UUIDSchema,
-  level_id: UUIDSchema.nullable().optional(),
-  teacher_id: UUIDSchema.nullable().optional(),
+  season_id: UUIDSchema.nullable().optional(),
+  category_id: UUIDSchema.nullable().optional(),
+  staff_id: UUIDSchema.nullable().optional(),
   name: z.string().min(1, 'Class name required'),
   max_capacity: z.number().positive('Max capacity must be > 0'),
   min_age: z.number().int().nonnegative().nullable().optional(),
@@ -286,7 +288,9 @@ export const ClassSchema = z.object({
   start_time: TimeSchema,
   end_time: TimeSchema,
   is_public: z.boolean().default(true),
-  billing_frequency: z.string().default('monthly'),
+  billing_mode: z.enum(['one_time', 'recurring']).default('one_time'),
+  delivery_mode: z.enum(['scheduled', 'intangible']).default('scheduled'),
+  billing_interval: z.enum(['monthly', 'quarterly', 'annual']).nullable().optional(),
   status: z.enum(['active', 'cancelled', 'full']).default('active'),
   created_at: TimestampSchema,
 }).refine((data) => {
@@ -297,7 +301,7 @@ export const ClassSchema = z.object({
   path: ['end_time'],
 });
 
-export type Class = z.infer<typeof ClassSchema>;
+export type Offering = z.infer<typeof OfferingSchema>;
 
 // Per-type config schemas for requirement_templates.config JSONB
 // age_range is NOT here — it is a direct typed column on classes (min_age / max_age)
@@ -305,7 +309,7 @@ export const GenderConfigSchema = z.object({
   allowed_genders: z.array(z.enum(['male', 'female'])).min(1),
 });
 export const LevelConfigSchema = z.object({
-  level_id: UUIDSchema,
+  category_id: UUIDSchema,
 });
 export const DocumentConfigSchema = z.object({
   doc_type: z.string().min(1),
@@ -341,24 +345,24 @@ export const RequirementTemplateSchema = z.object({
 export type RequirementTemplate = z.infer<typeof RequirementTemplateSchema>;
 
 // Class requirement — links a class to a requirement template (or stores inline config)
-export const ClassRequirementSchema = z.object({
+export const OfferingRequirementSchema = z.object({
   id: UUIDSchema,
   tenant_id: UUIDSchema,
-  class_id: UUIDSchema,
+  offering_id: UUIDSchema,
   requirement_template_id: UUIDSchema.nullable().optional(),
   config: z.record(z.unknown()).nullable().optional(),
   created_at: TimestampSchema,
 });
 
-export type ClassRequirement = z.infer<typeof ClassRequirementSchema>;
+export type OfferingRequirement = z.infer<typeof OfferingRequirementSchema>;
 
 // Enrolment (person enrolled in a class for a term)
-export const EnrolmentSchema = z.object({
+export const EngagementSchema = z.object({
   id: UUIDSchema,
   tenant_id: UUIDSchema,
   person_id: UUIDSchema,
-  class_id: UUIDSchema,
-  term_id: UUIDSchema,
+  offering_id: UUIDSchema,
+  season_id: UUIDSchema.nullable().optional(),
   billing_account_id: UUIDSchema.nullable().optional(),
   status: z
     .enum(['pending_payment', 'active', 'admin_review', 'pending_offer', 'cancelled', 'withdrawn'])
@@ -368,23 +372,23 @@ export const EnrolmentSchema = z.object({
   updated_at: TimestampSchema.optional(),
 });
 
-export type Enrolment = z.infer<typeof EnrolmentSchema>;
+export type Engagement = z.infer<typeof EngagementSchema>;
 
 // Class session (individual meeting of a class)
-export const ClassSessionSchema = z.object({
+export const OfferingSessionSchema = z.object({
   id: UUIDSchema,
   tenant_id: UUIDSchema,
-  class_id: UUIDSchema,
+  offering_id: UUIDSchema,
   session_date: z.string().date('Invalid date format'),
   start_time: TimeSchema,
   end_time: TimeSchema,
   created_at: TimestampSchema,
 });
 
-export type ClassSession = z.infer<typeof ClassSessionSchema>;
+export type OfferingSession = z.infer<typeof OfferingSessionSchema>;
 
 // Teacher profile
-export const TeacherSchema = z.object({
+export const StaffSchema = z.object({
   id: UUIDSchema,
   tenant_id: UUIDSchema,
   user_profile_id: UUIDSchema,
@@ -396,14 +400,14 @@ export const TeacherSchema = z.object({
   created_at: TimestampSchema,
 });
 
-export type Teacher = z.infer<typeof TeacherSchema>;
+export type Staff = z.infer<typeof StaffSchema>;
 
 // Notification log (audit trail for all sent notifications)
 export const NotificationLogSchema = z.object({
   id: UUIDSchema,
   tenant_id: UUIDSchema,
   recipient_person_id: UUIDSchema.nullable().optional(),
-  recipient_family_member_id: UUIDSchema.nullable().optional(),
+  recipient_account_member_id: UUIDSchema.nullable().optional(),
   recipient_email: z.string().email().nullable().optional(),
   recipient_phone: z.string().regex(/^\+\d{1,15}$/, 'Invalid E.164 phone format').nullable().optional(),
   channel: z.enum(['email', 'whatsapp', 'voice']),
@@ -475,7 +479,7 @@ export type ExpenseCategory = z.infer<typeof ExpenseCategorySchema>;
 export const NotificationPayloadSchema = z.object({
   tenantId: UUIDSchema,
   recipientId: UUIDSchema.nullable().optional(),
-  recipientType: z.enum(['person', 'family_member']).nullable().optional(),
+  recipientType: z.enum(['person', 'account_member']).nullable().optional(),
   recipientEmail: z.string().email().nullable().optional(),
   recipientPhone: z.string().regex(/^\+\d{1,15}$/, 'Invalid E.164 phone format').nullable().optional(),
   templateName: z.string().min(1, 'Template name required'),

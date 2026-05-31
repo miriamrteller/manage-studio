@@ -1,6 +1,6 @@
 export type EnrollmentIntent = {
   classId?: string;
-  termId?: string;
+  seasonId?: string;
   from?: string;
 };
 

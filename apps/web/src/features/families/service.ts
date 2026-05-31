@@ -1,7 +1,7 @@
 import { BaseService } from '@/services/base.service';
 import { TenantDB } from '@/lib/db';
 import type { SortOrder } from '@/lib/list-query';
-import { FamilySchema, FamilyMemberSchema, type Family, type FamilyMember } from '@shared/schemas';
+import { AccountSchema, AccountMemberSchema, type Account, type AccountMember } from '@shared/schemas';
 import { z } from 'zod';
 import type { Tenant } from '@shared/schemas';
 
@@ -14,31 +14,31 @@ export const FamilyInputSchema = z.object({
 });
 
 // Input schema for family member creation.
-export const FamilyMemberInputSchema = z.object({
-  family_id: z.string().uuid(),
+export const AccountMemberInputSchema = z.object({
+  account_id: z.string().uuid(),
   name: z.string().min(1, 'Name required'),
   email: z.string().email().optional(),
   phone: z.string().optional(),
-  role: z.enum(['parent', 'guardian', 'sibling', 'adult_student']),
+  role: z.enum(['account_holder', 'member', 'sibling', 'adult_student']),
 });
 
-export type FamilyContactUpdate = {
+export type AccountContactUpdate = {
   contact_person_name?: string;
   contact_email?: string;
   contact_phone?: string;
 };
 
-const GUARDIAN_ROLES = new Set(['parent', 'guardian']);
+const ACCOUNT_HOLDER_ROLES = new Set(['account_holder', 'member']);
 
-export type FamilySortField = 'name' | 'contact_person_name' | 'created_at';
+export type AccountSortField = 'name' | 'contact_person_name' | 'created_at';
 
-export const DEFAULT_FAMILY_SORT: { field: FamilySortField; order: SortOrder } = {
+export const DEFAULT_FAMILY_SORT: { field: AccountSortField; order: SortOrder } = {
   field: 'created_at',
   order: 'desc',
 };
 
 /**
- * FamilyService: Family data operations.
+ * FamilyService: Account data operations.
  *
  * create() and delete() are intentionally NOT on the public surface used by the
  * admin UI. They are used only by EnrolmentOnboardingService during enrolment intake
@@ -53,7 +53,7 @@ export class FamilyService extends BaseService {
       page?: number;
       pageSize?: number;
       searchQuery?: string;
-      sortField?: FamilySortField;
+      sortField?: AccountSortField;
       sortOrder?: SortOrder;
     } = {}
   ) {
@@ -68,7 +68,7 @@ export class FamilyService extends BaseService {
     const ascending = sortOrder === 'asc';
 
     return this.withRetry(async () => {
-      let query = TenantDB.selectFor('families', tenant, {
+      let query = TenantDB.selectFor('accounts', tenant, {
         count: 'exact',
       })
         .order(sortField, { ascending, nullsFirst: false })
@@ -90,7 +90,7 @@ export class FamilyService extends BaseService {
       if (error) throw error;
 
       return {
-        families: (data || []).map(f => FamilySchema.parse(f)),
+        families: (data || []).map(f => AccountSchema.parse(f)),
         total: count || 0,
         page,
         pageSize,
@@ -100,14 +100,14 @@ export class FamilyService extends BaseService {
 
   static async get(tenant: Tenant, id: string) {
     return this.withRetry(async () => {
-      const { data, error } = await TenantDB.selectFor('families', tenant)
+      const { data, error } = await TenantDB.selectFor('accounts', tenant)
         .eq('id', id)
         .single();
 
       if (error) throw error;
       if (!data) throw new Error('Family not found');
 
-      return FamilySchema.parse(data);
+      return AccountSchema.parse(data);
     }, 'FamilyService.get');
   }
 
@@ -115,7 +115,7 @@ export class FamilyService extends BaseService {
   static async getPeople(tenant: Tenant, familyId: string) {
     return this.withRetry(async () => {
       const { data, error } = await TenantDB.selectFor('people', tenant)
-        .eq('family_id', familyId);
+        .eq('account_id', familyId);
 
       if (error) throw error;
       return data || [];
@@ -123,29 +123,29 @@ export class FamilyService extends BaseService {
   }
 
   /** Get all family_members for a family (for detail view). */
-  static async getMembers(tenant: Tenant, familyId: string): Promise<FamilyMember[]> {
+  static async getMembers(tenant: Tenant, familyId: string): Promise<AccountMember[]> {
     return this.withRetry(async () => {
-      const { data, error } = await TenantDB.selectFor('family_members', tenant)
-        .eq('family_id', familyId);
+      const { data, error } = await TenantDB.selectFor('account_members', tenant)
+        .eq('account_id', familyId);
 
       if (error) throw error;
-      return (data || []).map(m => FamilyMemberSchema.parse(m));
+      return (data || []).map(m => AccountMemberSchema.parse(m));
     }, 'FamilyService.getMembers');
   }
 
   /** Update contact details on an existing family (admin-safe edit). */
-  static async update(tenant: Tenant, id: string, familyData: Partial<Family>) {
+  static async update(tenant: Tenant, id: string, familyData: Partial<Account>) {
     const validated = FamilyInputSchema.parse(familyData);
 
     return this.withRetry(async () => {
-      const { data, error } = await TenantDB.update('families', tenant, id, validated)
+      const { data, error } = await TenantDB.update('accounts', tenant, id, validated)
         .select()
         .single();
 
       if (error) throw error;
 
-      const result = FamilySchema.parse(data);
-      await this.logAudit(tenant, 'UPDATE', 'families', id);
+      const result = AccountSchema.parse(data);
+      await this.logAudit(tenant, 'UPDATE', 'accounts', id);
       return result;
     }, 'FamilyService.update');
   }
@@ -156,8 +156,8 @@ export class FamilyService extends BaseService {
   static async updateContactWithGuardians(
     tenant: Tenant,
     familyId: string,
-    contact: FamilyContactUpdate,
-  ): Promise<{ family: Family; members: FamilyMember[] }> {
+    contact: AccountContactUpdate,
+  ): Promise<{ family: Account; members: AccountMember[] }> {
     const family = await this.update(tenant, familyId, contact);
 
     const memberPatch: { name?: string; email?: string; phone?: string } = {};
@@ -173,14 +173,14 @@ export class FamilyService extends BaseService {
 
     if (Object.keys(memberPatch).length > 0) {
       const members = await this.getMembers(tenant, familyId);
-      const guardians = members.filter((m) => GUARDIAN_ROLES.has(m.role));
+      const guardians = members.filter((m) => ACCOUNT_HOLDER_ROLES.has(m.role));
 
       if (guardians.length > 0) {
         await this.withRetry(async () => {
           for (const member of guardians) {
-            const { error } = await TenantDB.update('family_members', tenant, member.id, memberPatch);
+            const { error } = await TenantDB.update('account_members', tenant, member.id, memberPatch);
             if (error) throw error;
-            await this.logAudit(tenant, 'UPDATE', 'family_members', member.id);
+            await this.logAudit(tenant, 'UPDATE', 'account_members', member.id);
           }
         }, 'FamilyService.updateContactWithGuardians');
       }
@@ -195,18 +195,18 @@ export class FamilyService extends BaseService {
   // -------------------------------------------------------------------------
 
   /** @internal Used by EnrolmentOnboardingService only. */
-  static async _createForEnrolment(tenant: Tenant, familyData: Partial<Family>) {
+  static async _createForEnrolment(tenant: Tenant, familyData: Partial<Account>) {
     const validated = FamilyInputSchema.parse(familyData);
 
     return this.withRetry(async () => {
-      const { data, error } = await TenantDB.insert('families', tenant, validated)
+      const { data, error } = await TenantDB.insert('accounts', tenant, validated)
         .select()
         .single();
 
       if (error) throw error;
 
-      const result = FamilySchema.parse(data);
-      await this.logAudit(tenant, 'CREATE', 'families', result.id);
+      const result = AccountSchema.parse(data);
+      await this.logAudit(tenant, 'CREATE', 'accounts', result.id);
       return result;
     }, 'FamilyService._createForEnrolment');
   }
@@ -214,18 +214,18 @@ export class FamilyService extends BaseService {
   /** @internal Used by EnrolmentOnboardingService only. */
   static async _createMemberForEnrolment(
     tenant: Tenant,
-    memberData: z.infer<typeof FamilyMemberInputSchema>
-  ): Promise<FamilyMember> {
-    const validated = FamilyMemberInputSchema.parse(memberData);
+    memberData: z.infer<typeof AccountMemberInputSchema>
+  ): Promise<AccountMember> {
+    const validated = AccountMemberInputSchema.parse(memberData);
 
     return this.withRetry(async () => {
-      const { data, error } = await TenantDB.insert('family_members', tenant, validated)
+      const { data, error } = await TenantDB.insert('account_members', tenant, validated)
         .select()
         .single();
 
       if (error) throw error;
 
-      return FamilyMemberSchema.parse(data);
+      return AccountMemberSchema.parse(data);
     }, 'FamilyService._createMemberForEnrolment');
   }
 }

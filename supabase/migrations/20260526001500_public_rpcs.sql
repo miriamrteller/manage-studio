@@ -1,17 +1,11 @@
 -- =============================================================================
 -- 015: Public RPCs
--- get_public_classes_by_subdomain — min_age/max_age read directly from classes table
--- get_tenant_config_by_subdomain  — branding + Stripe publishable key only (no secrets)
+-- get_public_offerings_by_subdomain — min_age/max_age read directly from offerings table
+-- get_tenant_config_by_subdomain  — branding + preset + Stripe publishable key only
 -- DEPENDENCIES: 001, 004
 -- =============================================================================
 
--- ---------------------------------------------------------------------------
--- Public class catalog
--- Returns active public classes for a subdomain.
--- min_age / max_age come directly from the classes table (typed INT, no JSONB cast).
--- Safe for anon callers on landing/enrolment pages.
--- ---------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION get_public_classes_by_subdomain(p_subdomain TEXT)
+CREATE OR REPLACE FUNCTION get_public_offerings_by_subdomain(p_subdomain TEXT)
 RETURNS TABLE (
   id               UUID,
   tenant_id        UUID,
@@ -25,10 +19,12 @@ RETURNS TABLE (
   max_age          INT,
   price_minor      INT,
   currency         TEXT,
-  term_id          UUID,
-  level_id         UUID,
-  level_name       TEXT,
-  status           TEXT
+  season_id        UUID,
+  category_id      UUID,
+  category_name    TEXT,
+  status           TEXT,
+  billing_mode     TEXT,
+  billing_interval TEXT
 )
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -41,37 +37,36 @@ BEGIN
 
   RETURN QUERY
   SELECT
-    c.id,
-    c.tenant_id,
+    o.id,
+    o.tenant_id,
     t.subdomain,
-    c.name,
-    c.day_of_week,
-    c.start_time,
-    c.end_time,
-    c.max_capacity,
-    c.min_age,
-    c.max_age,
-    c.price_minor,
-    c.currency,
-    c.term_id,
-    c.level_id,
-    l.name AS level_name,
-    c.status
-  FROM classes c
-  JOIN tenants t ON c.tenant_id = t.id
-  LEFT JOIN levels l ON l.id = c.level_id
+    o.name,
+    o.day_of_week,
+    o.start_time,
+    o.end_time,
+    o.max_capacity,
+    o.min_age,
+    o.max_age,
+    o.price_minor,
+    o.currency,
+    o.season_id,
+    o.category_id,
+    c.name AS category_name,
+    o.status,
+    o.billing_mode,
+    o.billing_interval
+  FROM offerings o
+  JOIN tenants t ON o.tenant_id = t.id
+  LEFT JOIN categories c ON c.id = o.category_id
   WHERE t.subdomain = trim(p_subdomain)
-    AND c.is_public = true
-    AND c.status    = 'active';
+    AND o.is_public = true
+    AND o.status    = 'active';
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION get_public_classes_by_subdomain(TEXT) TO anon;
-GRANT EXECUTE ON FUNCTION get_public_classes_by_subdomain(TEXT) TO authenticated;
+GRANT EXECUTE ON FUNCTION get_public_offerings_by_subdomain(TEXT) TO anon;
+GRANT EXECUTE ON FUNCTION get_public_offerings_by_subdomain(TEXT) TO authenticated;
 
--- ---------------------------------------------------------------------------
--- Tenant branding / config (no secrets)
--- ---------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION get_tenant_config_by_subdomain(p_subdomain TEXT)
 RETURNS TABLE (
   id                           UUID,
@@ -83,6 +78,8 @@ RETURNS TABLE (
   vat_rate                     NUMERIC,
   primary_color                TEXT,
   accent_color                 TEXT,
+  business_preset              TEXT,
+  labels                       JSONB,
   stripe_publishable_key       TEXT,
   stripe_secret_configured     BOOLEAN,
   stripe_webhook_configured    BOOLEAN,
@@ -108,6 +105,8 @@ BEGIN
     t.vat_rate,
     t.primary_color,
     t.accent_color,
+    t.business_preset,
+    t.labels,
     t.stripe_publishable_key,
     (t.stripe_secret_key_enc      IS NOT NULL),
     (t.stripe_webhook_secret_enc  IS NOT NULL),

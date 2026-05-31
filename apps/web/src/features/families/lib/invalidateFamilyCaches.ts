@@ -1,12 +1,12 @@
 import type { QueryClient } from '@tanstack/react-query';
-import type { Family, FamilyMember } from '@shared/schemas';
+import type { Account, AccountMember } from '@shared/schemas';
 
-type FamilyContactFields = Pick<
-  Family,
+type AccountContactFields = Pick<
+  Account,
   'contact_person_name' | 'contact_email' | 'contact_phone'
 >;
 
-function contactFields(family: Family): FamilyContactFields {
+function contactFields(family: Account): AccountContactFields {
   return {
     contact_person_name: family.contact_person_name,
     contact_email: family.contact_email,
@@ -18,14 +18,14 @@ function contactFields(family: Family): FamilyContactFields {
 export function syncFamilyContactInCache(
   queryClient: QueryClient,
   tenantId: string,
-  family: Family,
+  family: Account,
 ) {
   const patch = contactFields(family);
 
   queryClient.setQueryData(['family', tenantId, family.id], family);
   queryClient.setQueryData(['student-detail-family', tenantId, family.id], family);
 
-  queryClient.setQueriesData<Array<{ id: string } & FamilyContactFields>>(
+  queryClient.setQueriesData<Array<{ id: string } & AccountContactFields>>(
     { queryKey: ['students-list-families', tenantId] },
     (old) => {
       if (!old) return old;
@@ -33,7 +33,7 @@ export function syncFamilyContactInCache(
     },
   );
 
-  queryClient.setQueriesData<{ families: Family[]; total: number }>(
+  queryClient.setQueriesData<{ families: Account[]; total: number }>(
     { queryKey: ['families', tenantId] },
     (old) => {
       if (!old) return old;
@@ -46,7 +46,7 @@ export function syncFamilyContactInCache(
     },
   );
 
-  queryClient.setQueriesData<Family[]>(
+  queryClient.setQueriesData<Account[]>(
     { queryKey: ['familySearch', tenantId] },
     (old) => {
       if (!old) return old;
@@ -59,7 +59,7 @@ export function syncFamilyMembersInCache(
   queryClient: QueryClient,
   tenantId: string,
   familyId: string,
-  members: FamilyMember[],
+  members: AccountMember[],
 ) {
   queryClient.setQueryData(['family-members', tenantId, familyId], members);
   queryClient.setQueryData(['student-detail-members', tenantId, familyId], members);
@@ -87,8 +87,8 @@ export async function invalidateFamilyCaches(
 export async function refreshFamilyCaches(
   queryClient: QueryClient,
   tenantId: string,
-  family: Family,
-  members: FamilyMember[],
+  family: Account,
+  members: AccountMember[],
 ) {
   syncFamilyContactInCache(queryClient, tenantId, family);
   syncFamilyMembersInCache(queryClient, tenantId, family.id, members);

@@ -11,7 +11,7 @@
 -- ============================================================================
 -- TENANTS (20260526000100_tenants.sql)
 -- ============================================================================
-INSERT INTO tenants (id, name, subdomain, language_default, country, primary_color, accent_color, currency, vat_rate, phone_region, business_preset, labels)
+INSERT INTO tenants (id, name, subdomain, language_default, country, primary_color, accent_color, currency, vat_rate, phone_region)
 VALUES (
   '00000000-0000-0000-0000-000000000001'::uuid,
   'Creative Ballet Academy',
@@ -22,9 +22,7 @@ VALUES (
   '#e99ac4',
   'ILS',
   0.17,
-  'IL',
-  'programs',
-  '{}'::jsonb
+  'IL'
 ) ON CONFLICT (subdomain) DO UPDATE SET
   name = EXCLUDED.name,
   language_default = EXCLUDED.language_default,
@@ -33,15 +31,13 @@ VALUES (
   accent_color = EXCLUDED.accent_color,
   currency = EXCLUDED.currency,
   vat_rate = EXCLUDED.vat_rate,
-  phone_region = EXCLUDED.phone_region,
-  business_preset = EXCLUDED.business_preset,
-  labels = EXCLUDED.labels;
+  phone_region = EXCLUDED.phone_region;
 
 -- ============================================================================
 -- TERMS + LEVELS + CLASSES (20260526000400_classes.sql)
 -- Age ranges live on classes.min_age / classes.max_age (not requirement templates)
 -- ============================================================================
-INSERT INTO seasons (id, tenant_id, name, start_date, end_date, status)
+INSERT INTO terms (id, tenant_id, name, start_date, end_date, status)
 VALUES
   ('00000000-0000-0000-0000-000000000102'::uuid, '00000000-0000-0000-0000-000000000001'::uuid, 'Summer 2026', '2026-05-01', '2026-07-31', 'active'),
   ('00000000-0000-0000-0000-000000000103'::uuid, '00000000-0000-0000-0000-000000000001'::uuid, 'Winter 2026', '2026-09-01', '2026-12-31', 'upcoming')
@@ -51,7 +47,7 @@ ON CONFLICT (id) DO UPDATE SET
   end_date = EXCLUDED.end_date,
   status = EXCLUDED.status;
 
-INSERT INTO categories (id, tenant_id, name, sort_order)
+INSERT INTO levels (id, tenant_id, name, sort_order)
 VALUES
   ('00000000-0000-0000-0000-000000000201'::uuid, '00000000-0000-0000-0000-000000000001'::uuid, 'Mini (Ages 3-4)', 1),
   ('00000000-0000-0000-0000-000000000202'::uuid, '00000000-0000-0000-0000-000000000001'::uuid, 'Pre-Primary (Ages 4-6)', 2),
@@ -64,11 +60,11 @@ ON CONFLICT (id) DO UPDATE SET
   name = EXCLUDED.name,
   sort_order = EXCLUDED.sort_order;
 
-INSERT INTO offerings (
-  id, tenant_id, season_id, category_id, name,
+INSERT INTO classes (
+  id, tenant_id, term_id, level_id, name,
   day_of_week, start_time, end_time,
   min_age, max_age,
-  max_capacity, price_minor, currency, delivery_mode, billing_mode, is_public, status
+  max_capacity, price_minor, currency, billing_frequency, is_public, status
 )
 VALUES
   (
@@ -79,7 +75,7 @@ VALUES
     'Mini',
     1, '15:30:00', '16:15:00',
     3, 4,
-    10, 24000, 'ILS', 'scheduled', 'one_time', true, 'active'
+    10, 24000, 'ILS', 'monthly', true, 'active'
   ),
   (
     '00000000-0000-0000-0000-000000000302'::uuid,
@@ -89,7 +85,7 @@ VALUES
     'Pre-Primary',
     1, '16:15:00', '17:00:00',
     4, 6,
-    16, 24000, 'ILS', 'scheduled', 'one_time', true, 'active'
+    16, 24000, 'ILS', 'monthly', true, 'active'
   ),
   (
     '00000000-0000-0000-0000-000000000303'::uuid,
@@ -99,7 +95,7 @@ VALUES
     'Primary',
     1, '17:00:00', '17:45:00',
     5, 7,
-    20, 24000, 'ILS', 'scheduled', 'one_time', true, 'active'
+    20, 24000, 'ILS', 'monthly', true, 'active'
   ),
   (
     '00000000-0000-0000-0000-000000000304'::uuid,
@@ -109,7 +105,7 @@ VALUES
     'Grade 1',
     1, '17:45:00', '18:30:00',
     7, 10,
-    20, 24000, 'ILS', 'scheduled', 'one_time', true, 'active'
+    20, 24000, 'ILS', 'monthly', true, 'active'
   ),
   (
     '00000000-0000-0000-0000-000000000305'::uuid,
@@ -119,7 +115,7 @@ VALUES
     'Grade 2',
     1, '18:30:00', '19:15:00',
     9, 13,
-    20, 24000, 'ILS', 'scheduled', 'one_time', true, 'active'
+    20, 24000, 'ILS', 'monthly', true, 'active'
   ),
   (
     '00000000-0000-0000-0000-000000000306'::uuid,
@@ -129,7 +125,7 @@ VALUES
     'Grade 3',
     1, '19:15:00', '20:00:00',
     10, 16,
-    20, 24000, 'ILS', 'scheduled', 'one_time', true, 'active'
+    20, 24000, 'ILS', 'monthly', true, 'active'
   ),
   (
     '00000000-0000-0000-0000-000000000309'::uuid,
@@ -139,11 +135,11 @@ VALUES
     'Pilates',
     1, '20:00:00', '20:45:00',
     18, NULL,
-    15, 24000, 'ILS', 'scheduled', 'one_time', true, 'active'
+    15, 24000, 'ILS', 'monthly', true, 'active'
   )
 ON CONFLICT (id) DO UPDATE SET
-  season_id = EXCLUDED.season_id,
-  category_id = EXCLUDED.category_id,
+  term_id = EXCLUDED.term_id,
+  level_id = EXCLUDED.level_id,
   name = EXCLUDED.name,
   day_of_week = EXCLUDED.day_of_week,
   start_time = EXCLUDED.start_time,
@@ -153,11 +149,11 @@ ON CONFLICT (id) DO UPDATE SET
   max_capacity = EXCLUDED.max_capacity,
   price_minor = EXCLUDED.price_minor,
   currency = EXCLUDED.currency,
-  billing_mode = EXCLUDED.billing_mode,
+  billing_frequency = EXCLUDED.billing_frequency,
   is_public = EXCLUDED.is_public,
   status = EXCLUDED.status;
 
-DELETE FROM offerings
+DELETE FROM classes
 WHERE tenant_id = '00000000-0000-0000-0000-000000000001'::uuid
   AND id IN (
     '00000000-0000-0000-0000-000000000307'::uuid,
@@ -166,29 +162,29 @@ WHERE tenant_id = '00000000-0000-0000-0000-000000000001'::uuid
 
 -- ============================================================================
 -- PEOPLE + FAMILIES (20260526000200_people.sql)
--- families.person_id = primary contact (student); guardians are account_members
+-- families.person_id = primary contact (student); guardians are family_members
 -- ============================================================================
 
--- Stub rows so families.person_id FK can be satisfied before account_id is set on people
+-- Stub rows so families.person_id FK can be satisfied before family_id is set on people
 INSERT INTO people (id, tenant_id, name, created_at, updated_at)
 VALUES
   ('00000000-0000-0000-0000-000000000501'::uuid, '00000000-0000-0000-0000-000000000001'::uuid, 'Miriam Stern', now(), now()),
   ('00000000-0000-0000-0000-000000000502'::uuid, '00000000-0000-0000-0000-000000000001'::uuid, 'Ruti Teller', now(), now())
 ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name;
 
-INSERT INTO accounts (id, tenant_id, name, person_id, created_at)
+INSERT INTO families (id, tenant_id, name, person_id, created_at)
 VALUES
   (
     '00000000-0000-0000-0000-000000000401'::uuid,
     '00000000-0000-0000-0000-000000000001'::uuid,
-    'Stern account',
+    'Stern family',
     '00000000-0000-0000-0000-000000000501'::uuid,
     now()
   ),
   (
     '00000000-0000-0000-0000-000000000402'::uuid,
     '00000000-0000-0000-0000-000000000001'::uuid,
-    'Teller account',
+    'Teller family',
     '00000000-0000-0000-0000-000000000502'::uuid,
     now()
   )
@@ -197,7 +193,7 @@ ON CONFLICT (id) DO UPDATE SET
   person_id = EXCLUDED.person_id;
 
 INSERT INTO people (
-  id, tenant_id, user_profile_id, account_id, name, email, date_of_birth,
+  id, tenant_id, user_profile_id, family_id, name, email, date_of_birth,
   medical_notes, allergies,
   emergency_contact_name, emergency_contact_phone,
   photo_consent, media_consent, status,
@@ -266,7 +262,7 @@ VALUES
     now()
   )
 ON CONFLICT (id) DO UPDATE SET
-  account_id = EXCLUDED.account_id,
+  family_id = EXCLUDED.family_id,
   user_profile_id = EXCLUDED.user_profile_id,
   name = EXCLUDED.name,
   email = EXCLUDED.email,
@@ -284,10 +280,10 @@ ON CONFLICT (id) DO UPDATE SET
 
 -- ============================================================================
 -- CONTACT PREFERENCES (20260526000300_contact_prefs.sql)
--- Keyed by person_id OR account_member_id (contact_owner constraint)
+-- Keyed by person_id OR family_member_id (contact_owner constraint)
 -- ============================================================================
 INSERT INTO contact_preferences (
-  id, tenant_id, person_id, account_member_id,
+  id, tenant_id, person_id, family_member_id,
   email_opted_in, whatsapp_number, whatsapp_opted_in, whatsapp_verified,
   voice_number, voice_opted_in,
   preferred_channel, language, created_at, updated_at
@@ -322,7 +318,7 @@ VALUES
   )
 ON CONFLICT (id) DO UPDATE SET
   person_id = EXCLUDED.person_id,
-  account_member_id = EXCLUDED.account_member_id,
+  family_member_id = EXCLUDED.family_member_id,
   email_opted_in = EXCLUDED.email_opted_in,
   whatsapp_number = EXCLUDED.whatsapp_number,
   whatsapp_opted_in = EXCLUDED.whatsapp_opted_in,
@@ -506,7 +502,7 @@ INSERT INTO user_profiles (
 ) VALUES (
   '00000000-0000-0000-0000-000000000510'::uuid,
   '00000000-0000-0000-0000-000000000001'::uuid,
-  ARRAY['account_holder'],
+  ARRAY['parent', 'guardian'],
   'miriamrstern@gmail.com',
   'he',
   'IL'
@@ -519,7 +515,7 @@ INSERT INTO user_profiles (
 
 -- Adult guardian + solo student (same login — Pilates self-enrolment)
 INSERT INTO people (
-  id, tenant_id, user_profile_id, account_id, name, email, date_of_birth,
+  id, tenant_id, user_profile_id, family_id, name, email, date_of_birth,
   medical_notes, allergies,
   emergency_contact_name, emergency_contact_phone,
   photo_consent, media_consent, status,
@@ -560,7 +556,7 @@ SET person_id = '00000000-0000-0000-0000-000000000504'::uuid
 WHERE id = '00000000-0000-0000-0000-000000000510'::uuid;
 
 -- Guardian membership for both seeded families (person_id + user_profile_id)
-INSERT INTO account_members (id, tenant_id, account_id, user_profile_id, person_id, role, created_at)
+INSERT INTO family_members (id, tenant_id, family_id, user_profile_id, person_id, role, created_at)
 VALUES
   (
     '00000000-0000-0000-0000-000000000701'::uuid,
@@ -568,7 +564,7 @@ VALUES
     '00000000-0000-0000-0000-000000000401'::uuid,
     '00000000-0000-0000-0000-000000000510'::uuid,
     '00000000-0000-0000-0000-000000000504'::uuid,
-    'member',
+    'guardian',
     now()
   ),
   (
@@ -577,17 +573,17 @@ VALUES
     '00000000-0000-0000-0000-000000000402'::uuid,
     '00000000-0000-0000-0000-000000000510'::uuid,
     '00000000-0000-0000-0000-000000000504'::uuid,
-    'member',
+    'guardian',
     now()
   )
 ON CONFLICT (id) DO UPDATE SET
-  account_id = EXCLUDED.account_id,
+  family_id = EXCLUDED.family_id,
   user_profile_id = EXCLUDED.user_profile_id,
   person_id = EXCLUDED.person_id,
   role = EXCLUDED.role;
 
 INSERT INTO contact_preferences (
-  id, tenant_id, person_id, account_member_id,
+  id, tenant_id, person_id, family_member_id,
   email_opted_in, whatsapp_number, whatsapp_opted_in, whatsapp_verified,
   voice_number, voice_opted_in,
   preferred_channel, language, created_at, updated_at
@@ -622,7 +618,7 @@ VALUES
   )
 ON CONFLICT (id) DO UPDATE SET
   person_id = EXCLUDED.person_id,
-  account_member_id = EXCLUDED.account_member_id,
+  family_member_id = EXCLUDED.family_member_id,
   email_opted_in = EXCLUDED.email_opted_in,
   whatsapp_number = EXCLUDED.whatsapp_number,
   whatsapp_opted_in = EXCLUDED.whatsapp_opted_in,

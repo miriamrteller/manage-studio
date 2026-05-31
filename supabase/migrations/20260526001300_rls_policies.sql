@@ -1,39 +1,37 @@
 -- =============================================================================
--- 013: RLS Policies Requiring Enrolments
--- These policies reference enrolments and must run after 011
+-- 013: RLS Policies Requiring Engagements
+-- These policies reference engagements and must run after 011
 -- DEPENDENCIES: 002, 007, 010, 011
 -- =============================================================================
 
--- class_sessions: enrolled students and their families see their class sessions
-CREATE POLICY "enrolled students see sessions" ON class_sessions FOR SELECT
+CREATE POLICY "enrolled students see sessions" ON offering_sessions FOR SELECT
   USING (
-    class_id IN (
-      SELECT class_id FROM enrolments WHERE person_id = get_my_person_id()
+    offering_id IN (
+      SELECT offering_id FROM engagements WHERE person_id = get_my_person_id()
     )
   );
 
-CREATE POLICY "families see enrolled sessions" ON class_sessions FOR SELECT
+CREATE POLICY "accounts see enrolled sessions" ON offering_sessions FOR SELECT
   USING (
-    class_id IN (
-      SELECT class_id FROM enrolments
-      WHERE person_id IN (SELECT id FROM people WHERE family_id IN (SELECT get_my_family_ids()))
+    offering_id IN (
+      SELECT offering_id FROM engagements
+      WHERE person_id IN (SELECT id FROM people WHERE account_id IN (SELECT get_my_account_ids()))
     )
   );
 
--- billing_accounts: families/adult students see accounts linked to their enrolments
-CREATE POLICY "families see enrolled billing_accounts" ON billing_accounts FOR SELECT
+CREATE POLICY "accounts see enrolled billing_accounts" ON billing_accounts FOR SELECT
   USING (
     id IN (
-      SELECT billing_account_id FROM enrolments
+      SELECT billing_account_id FROM engagements
       WHERE billing_account_id IS NOT NULL
-        AND person_id IN (SELECT id FROM people WHERE family_id IN (SELECT get_my_family_ids()))
+        AND person_id IN (SELECT id FROM people WHERE account_id IN (SELECT get_my_account_ids()))
     )
   );
 
 CREATE POLICY "adult students see own billing_accounts" ON billing_accounts FOR SELECT
   USING (
     id IN (
-      SELECT billing_account_id FROM enrolments
+      SELECT billing_account_id FROM engagements
       WHERE billing_account_id IS NOT NULL
         AND person_id = get_my_person_id()
     )

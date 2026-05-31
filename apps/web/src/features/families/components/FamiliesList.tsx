@@ -5,7 +5,7 @@ import { EmptyState } from '@/components/shared';
 import { ListSearchInput, SortableHeader } from '@/components/shared/table';
 import { useSortState } from '@/hooks/useSortState';
 import { useFamilies } from '../hooks/useFamilies';
-import { DEFAULT_FAMILY_SORT, type FamilySortField } from '../service';
+import { DEFAULT_FAMILY_SORT, type AccountSortField } from '../service';
 import { useNavigate } from 'react-router-dom';
 
 export const FamiliesList = () => {
@@ -13,14 +13,14 @@ export const FamiliesList = () => {
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
-  const { sortField, sortOrder, toggleSort } = useSortState<FamilySortField>(
+  const { sortField, sortOrder, toggleSort } = useSortState<AccountSortField>(
     DEFAULT_FAMILY_SORT.field,
     DEFAULT_FAMILY_SORT.order
   );
 
   const familiesData = useFamilies({ page, searchQuery, sortField, sortOrder });
 
-  const handleSort = (field: FamilySortField) => {
+  const handleSort = (field: AccountSortField) => {
     toggleSort(field, () => setPage(1));
   };
 

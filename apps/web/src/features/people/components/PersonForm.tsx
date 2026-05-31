@@ -10,7 +10,7 @@ import { ConsentFields } from './ConsentFields';
 import { calculateAge } from '@/lib/utils';
 
 // Schema source: SPEC.md Migration 002
-// Notes: System fields (id, tenant_id, family_id, user_profile_id) are NOT in form.
+// Notes: System fields (id, tenant_id, account_id, user_profile_id) are NOT in form.
 //   is_minor is read-only computed field. date_of_birth format: YYYY-MM-DD (ISO date)
 
 interface PersonFormProps {

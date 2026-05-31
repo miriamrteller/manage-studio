@@ -11,7 +11,7 @@ import { linkAuthUserToPerson } from '../linkAuthUser';
 
 interface EnrolmentPaymentFormProps {
   classId: string;
-  enrolmentId: string;
+  engagementId: string;
   personId?: string;
   onPaid: () => void;
   onPrevious: () => void;
@@ -85,7 +85,7 @@ function PaymentFormInner({
 
 export function EnrolmentPaymentForm({
   classId,
-  enrolmentId,
+  engagementId,
   personId,
   onPaid,
   onPrevious,
@@ -113,11 +113,11 @@ export function EnrolmentPaymentForm({
   }, [user, personId]);
 
   useEffect(() => {
-    if (!user || !enrolmentId || !classId) return;
+    if (!user || !engagementId || !classId) return;
 
     const loadIntent = async () => {
-      const { data, error } = await supabase.functions.invoke('create-payment-intent', {
-        body: { class_id: classId, enrolment_id: enrolmentId },
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: { offering_id: classId, engagement_id: engagementId },
       });
 
       if (error || !data?.clientSecret) {
@@ -130,7 +130,7 @@ export function EnrolmentPaymentForm({
     };
 
     void loadIntent();
-  }, [user, classId, enrolmentId, tenant, t]);
+  }, [user, classId, engagementId, tenant, t]);
 
   if (authLoading || !user) {
     return <p role="status">{t('common.loading')}</p>;

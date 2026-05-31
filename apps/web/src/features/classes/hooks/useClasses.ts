@@ -1,13 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ClassService } from '../service';
-import { type Class } from '@shared/schemas';
+import { type Offering } from '@shared/schemas';
 import { useTenant } from '@/hooks/useTenant';
 import { supabase } from '@/lib/supabase';
 import {
   DEFAULT_CLASS_SORT,
   sortClasses,
-  type ClassSortField,
-  type ClassSortOrder,
+  type OfferingSortField,
+  type OfferingSortOrder,
 } from '../utils/sortClasses';
 
 function coerceAge(value: unknown): number | null {
@@ -16,7 +16,7 @@ function coerceAge(value: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-function normalizePublicClass(row: Record<string, unknown>) {
+function normalizePublicOffering(row: Record<string, unknown>) {
   return {
     ...row,
     min_age: coerceAge(row.min_age),
@@ -27,15 +27,15 @@ function normalizePublicClass(row: Record<string, unknown>) {
 const PAGE_SIZE = 50;
 
 interface UseClassesOptions {
-  termIds?: string[];
-  levelIds?: string[];
+  seasonIds?: string[];
+  categoryIds?: string[];
   statuses?: string[];
   searchQuery?: string;
   page?: number;
   enabled?: boolean;
   publicOnly?: boolean;
-  sortField?: ClassSortField;
-  sortOrder?: ClassSortOrder;
+  sortField?: OfferingSortField;
+  sortOrder?: OfferingSortOrder;
 }
 
 /**
@@ -48,8 +48,8 @@ interface UseClassesOptions {
  * TanStack Query handles caching and background refetching
  */
 export function useClasses({
-  termIds = [],
-  levelIds = [],
+  seasonIds = [],
+  categoryIds = [],
   statuses = [],
   searchQuery = '',
   page = 1,
@@ -66,9 +66,9 @@ export function useClasses({
     queryKey: ['public_classes', tenant?.subdomain, sortField, sortOrder],
     queryFn: async () => {
       if (!tenant?.subdomain) throw new Error('Tenant subdomain required');
-      const { data, error } = await supabase.rpc('get_public_classes_by_subdomain', { p_subdomain: tenant.subdomain });
+      const { data, error } = await supabase.rpc('get_public_offerings_by_subdomain', { p_subdomain: tenant.subdomain });
       if (error) throw error;
-      const rows = (data || []).map((row: Record<string, unknown>) => normalizePublicClass(row));
+      const rows = (data || []).map((row: Record<string, unknown>) => normalizePublicOffering(row));
       return sortClasses(rows, sortField, sortOrder);
     },
     enabled: enabled && publicOnly && !!tenant?.subdomain,
@@ -76,15 +76,15 @@ export function useClasses({
   });
 
   // Authenticated classes query (returns object with classes array)
-  const listQuery = useQuery<{ classes: Class[]; total: number }>({
-    queryKey: ['classes', tenant?.id, page, termIds, levelIds, statuses, searchQuery, sortField, sortOrder],
+  const listQuery = useQuery<{ classes: Offering[]; total: number }>({
+    queryKey: ['classes', tenant?.id, page, seasonIds, categoryIds, statuses, searchQuery, sortField, sortOrder],
     queryFn: async () => {
       if (!tenant) throw new Error('Tenant not initialized');
       return ClassService.list(tenant, {
         page,
         pageSize: PAGE_SIZE,
-        termIds,
-        levelIds,
+        seasonIds,
+        categoryIds,
         statuses,
         searchQuery,
         sortField,
@@ -96,7 +96,7 @@ export function useClasses({
 
   // Create mutation
   const createMutation = useMutation({
-    mutationFn: async (newClass: Partial<Class>) => {
+    mutationFn: async (newClass: Partial<Offering>) => {
       if (!tenant) throw new Error('Tenant not initialized');
       return ClassService.create(tenant, newClass);
     },
@@ -107,7 +107,7 @@ export function useClasses({
 
   // Update mutation
   const updateMutation = useMutation({
-    mutationFn: async (classData: Partial<Class>) => {
+    mutationFn: async (classData: Partial<Offering>) => {
       if (!tenant || !classData.id) throw new Error('Tenant not initialized or missing class ID');
       return ClassService.update(tenant, classData.id, classData);
     },
@@ -141,7 +141,7 @@ export function useClasses({
       ? (publicQuery.error instanceof Error ? publicQuery.error.message : (publicQuery.error ? 'Unknown error' : null))
       : (listQuery.error instanceof Error ? listQuery.error.message : (listQuery.error ? 'Unknown error' : null)),
     createClass: (
-      classData: Partial<Class>,
+      classData: Partial<Offering>,
       callbacks?: { onSuccess?: () => void; onError?: (error: Error) => void }
     ) => {
       createMutation.mutate(classData, {
@@ -150,7 +150,7 @@ export function useClasses({
       });
     },
     updateClass: (
-      classData: Partial<Class>,
+      classData: Partial<Offering>,
       callbacks?: { onSuccess?: () => void; onError?: (error: Error) => void }
     ) => {
       updateMutation.mutate(classData, {

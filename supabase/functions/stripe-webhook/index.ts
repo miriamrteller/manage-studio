@@ -48,7 +48,8 @@ serve(async (req) => {
     event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
 
     const intent = event.data.object as Stripe.PaymentIntent;
-    const enrolmentId = intent.metadata?.enrolment_id;
+    const engagementId = intent.metadata?.engagement_id;
+    const offeringId = intent.metadata?.offering_id;
     const metadataTenantId = intent.metadata?.tenant_id;
 
     if (!metadataTenantId || metadataTenantId !== tenantId) {
@@ -56,8 +57,8 @@ serve(async (req) => {
     }
 
     if (event.type === "payment_intent.succeeded") {
-      if (!enrolmentId) {
-        return jsonResponse({ error: "Missing enrolment_id in metadata" }, 400);
+      if (!engagementId) {
+        return jsonResponse({ error: "Missing engagement_id in metadata" }, 400);
       }
 
       const { data: existing } = await service
@@ -70,20 +71,20 @@ serve(async (req) => {
         return jsonResponse({ received: true, duplicate: true });
       }
 
-      const { data: enrolment } = await service
-        .from("enrolments")
-        .select("id, tenant_id, person_id")
-        .eq("id", enrolmentId)
+      const { data: engagement } = await service
+        .from("engagements")
+        .select("id, tenant_id, person_id, offering_id")
+        .eq("id", engagementId)
         .single();
 
-      if (!enrolment) {
-        return jsonResponse({ error: "Enrolment not found" }, 404);
+      if (!engagement) {
+        return jsonResponse({ error: "Engagement not found" }, 404);
       }
 
       const { data: person } = await service
         .from("people")
-        .select("family_id")
-        .eq("id", enrolment.person_id)
+        .select("account_id")
+        .eq("id", engagement.person_id)
         .single();
 
       const { data: invoiceNumber, error: invoiceError } = await service.rpc(
@@ -104,9 +105,11 @@ serve(async (req) => {
 
       await service.from("payments").insert({
         tenant_id: tenantId,
-        family_id: person?.family_id ?? null,
-        person_id: enrolment.person_id,
-        enrolment_id: enrolmentId,
+        account_id: person?.account_id ?? null,
+        person_id: engagement.person_id,
+        offering_id: offeringId ?? engagement.offering_id,
+        engagement_id: engagementId,
+        charge_type: "initial",
         stripe_payment_intent_id: intent.id,
         pretax_amount_minor: pretax,
         vat_rate: vatRate,
@@ -117,31 +120,31 @@ serve(async (req) => {
         invoice_issued_at: new Date().toISOString(),
         status: "succeeded",
         paid_at: new Date().toISOString(),
-        description: `Enrolment ${enrolmentId}`,
+        description: `Engagement ${engagementId}`,
       });
 
       await service
-        .from("enrolments")
+        .from("engagements")
         .update({
           status: "active",
           payment_received_at: new Date().toISOString(),
         })
-        .eq("id", enrolmentId);
+        .eq("id", engagementId);
 
       await service.from("audit_log").insert({
         tenant_id: tenantId,
         action: "payment.succeeded",
         entity_type: "payment",
-        entity_id: enrolmentId,
+        entity_id: engagementId,
         after_state: { stripe_payment_intent_id: intent.id, status: "succeeded" },
       });
     } else if (event.type === "payment_intent.payment_failed") {
-      if (enrolmentId) {
+      if (engagementId) {
         await service.from("audit_log").insert({
           tenant_id: tenantId,
           action: "payment.failed",
           entity_type: "payment",
-          entity_id: enrolmentId,
+          entity_id: engagementId,
           after_state: {
             stripe_payment_intent_id: intent.id,
             last_payment_error: intent.last_payment_error?.message,

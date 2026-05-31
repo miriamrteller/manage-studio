@@ -1,6 +1,6 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { FamilySchema, type Family } from '@shared/schemas';
+import { AccountSchema, type Account } from '@shared/schemas';
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 import { FormInput } from '../../../components/ui/form';
@@ -15,8 +15,8 @@ import { Button } from '../../../components/ui/button';
 // - date format for created_at is system-generated
 
 interface FamilyFormProps {
-  family?: Partial<Family>;
-  onSubmit: (data: Partial<Family>) => Promise<void>;
+  family?: Partial<Account>;
+  onSubmit: (data: Partial<Account>) => Promise<void>;
   isLoading?: boolean;
 }
 
@@ -27,12 +27,12 @@ export const FamilyForm = ({ family, onSubmit, isLoading }: FamilyFormProps) => 
 
   // Use partial schema to allow editing (some fields can be null/undefined)
   const form = useForm({
-    resolver: zodResolver(FamilySchema.partial()),
+    resolver: zodResolver(AccountSchema.partial()),
     defaultValues: family || {},
     mode: 'onBlur',
   });
 
-  const handleSubmit = async (data: Partial<Family>) => {
+  const handleSubmit = async (data: Partial<Account>) => {
     try {
       setSubmitError(null);
       setSubmitSuccess(false);

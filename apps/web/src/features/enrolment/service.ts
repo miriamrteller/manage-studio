@@ -1,14 +1,14 @@
 import { BaseService } from '@/services/base.service';
 import { TenantDB } from '@/lib/db';
-import { EnrolmentSchema, type Enrolment } from '@shared/schemas';
+import { EngagementSchema, type Engagement } from '@shared/schemas';
 import { z } from 'zod';
 import type { Tenant } from '@shared/schemas';
 
 // Validation schema for enrolment creation/update (without system fields)
 const EnrolmentInputSchema = z.object({
   person_id: z.string().uuid().optional(),
-  class_id: z.string().uuid().optional(),
-  term_id: z.string().uuid().optional(),
+  offering_id: z.string().uuid().optional(),
+  season_id: z.string().uuid().optional(),
   status: z
     .enum(['pending_payment', 'active', 'admin_review', 'pending_offer', 'cancelled', 'withdrawn'])
     .optional(),
@@ -18,7 +18,7 @@ const EnrolmentInputSchema = z.object({
 
 /**
  * EnrolmentService: All enrolment data operations
- * - Validates input/output with EnrolmentSchema
+ * - Validates input/output with EngagementSchema
  * - Uses TenantDB for RLS enforcement
  * - Inherits retry logic from BaseService
  * 
@@ -31,21 +31,21 @@ export class EnrolmentService extends BaseService {
     options: {
       page?: number;
       pageSize?: number;
-      termId?: string;
+      seasonId?: string;
       personId?: string;
       status?: string;
     } = {}
   ) {
-    const { page = 1, pageSize = 20, termId, personId, status } = options;
+    const { page = 1, pageSize = 20, seasonId, personId, status } = options;
     const from = (page - 1) * pageSize;
 
     return this.withRetry(async () => {
-      let query = TenantDB.selectFor('enrolments', tenant, {
+      let query = TenantDB.selectFor('engagements', tenant, {
         count: 'exact',
       });
 
-      if (termId) {
-        query = query.eq('term_id', termId);
+      if (seasonId) {
+        query = query.eq('season_id', seasonId);
       }
       if (personId) {
         query = query.eq('person_id', personId);
@@ -61,7 +61,7 @@ export class EnrolmentService extends BaseService {
       if (error) throw error;
 
       return {
-        enrolments: (data || []).map(e => EnrolmentSchema.parse(e)),
+        enrolments: (data || []).map(e => EngagementSchema.parse(e)),
         total: count || 0,
         page,
         pageSize,
@@ -71,14 +71,14 @@ export class EnrolmentService extends BaseService {
 
   static async get(tenant: Tenant, id: string) {
     return this.withRetry(async () => {
-      const { data, error } = await TenantDB.selectFor('enrolments', tenant)
+      const { data, error } = await TenantDB.selectFor('engagements', tenant)
         .eq('id', id)
         .single();
 
       if (error) throw error;
       if (!data) throw new Error('Enrolment not found');
 
-      return EnrolmentSchema.parse(data);
+      return EngagementSchema.parse(data);
     }, 'EnrolmentService.get');
   }
 
@@ -87,30 +87,30 @@ export class EnrolmentService extends BaseService {
    * V1: Simple create without placement scoring
    * V2: Will add prerequisite validation, waiting list logic
    */
-  static async create(tenant: Tenant, enrolmentData: Partial<Enrolment>) {
+  static async create(tenant: Tenant, enrolmentData: Partial<Engagement>) {
     // Validate input (catches client-side typos)
     const validated = EnrolmentInputSchema.parse(enrolmentData);
 
     return this.withRetry(async () => {
       // Check for duplicate enrolment (same person+class+term)
-      if (validated.person_id && validated.class_id && validated.term_id) {
-        const { data: existing, error: checkError } = await TenantDB.selectFor('enrolments', tenant)
+      if (validated.person_id && validated.offering_id && validated.season_id) {
+        const { data: existing, error: checkError } = await TenantDB.selectFor('engagements', tenant)
           .eq('person_id', validated.person_id)
-          .eq('class_id', validated.class_id)
-          .eq('term_id', validated.term_id)
+          .eq('offering_id', validated.offering_id)
+          .eq('season_id', validated.season_id)
           .maybeSingle();
 
         if (checkError) throw checkError;
         if (existing) throw new Error('Person already enrolled in this class for this term');
       }
 
-      const { data, error } = await TenantDB.insert('enrolments', tenant, validated)
+      const { data, error } = await TenantDB.insert('engagements', tenant, validated)
         .select()
         .single();
 
       if (error) throw error;
 
-      const result = EnrolmentSchema.parse(data);
+      const result = EngagementSchema.parse(data);
       await this.logAudit(tenant, 'CREATE', 'enrolments', result.id);
       return result;
     }, 'EnrolmentService.create');
@@ -120,17 +120,17 @@ export class EnrolmentService extends BaseService {
    * Update enrolment
    * Primarily for status transitions (active→cancelled, pending_payment→active, etc)
    */
-  static async update(tenant: Tenant, id: string, enrolmentData: Partial<Enrolment>) {
+  static async update(tenant: Tenant, id: string, enrolmentData: Partial<Engagement>) {
     const validated = EnrolmentInputSchema.parse(enrolmentData);
 
     return this.withRetry(async () => {
-      const { data, error } = await TenantDB.update('enrolments', tenant, id, validated)
+      const { data, error } = await TenantDB.update('engagements', tenant, id, validated)
         .select()
         .single();
 
       if (error) throw error;
 
-      const result = EnrolmentSchema.parse(data);
+      const result = EngagementSchema.parse(data);
       await this.logAudit(tenant, 'UPDATE', 'enrolments', id);
       return result;
     }, 'EnrolmentService.update');
@@ -142,7 +142,7 @@ export class EnrolmentService extends BaseService {
    */
   static async delete(tenant: Tenant, id: string) {
     return this.withRetry(async () => {
-      const { error } = await TenantDB.delete('enrolments', tenant, id);
+      const { error } = await TenantDB.delete('engagements', tenant, id);
       if (error) throw error;
 
       await this.logAudit(tenant, 'DELETE', 'enrolments', id);

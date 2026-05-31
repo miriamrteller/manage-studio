@@ -18,7 +18,7 @@ interface CreateFormState {
   // config fields (no min_age/max_age — those are columns on the class itself)
   gender_male: boolean;
   gender_female: boolean;
-  level_id: string;
+  category_id: string;
   doc_type: string;
 }
 
@@ -29,7 +29,7 @@ const EMPTY_CREATE: CreateFormState = {
   is_hard_block: true,
   gender_male: false,
   gender_female: false,
-  level_id: '',
+  category_id: '',
   doc_type: '',
 };
 
@@ -44,7 +44,7 @@ function buildConfig(form: CreateFormState): Record<string, unknown> {
       return { allowed_genders: allowed };
     }
     case 'level':
-      return { level_id: form.level_id };
+      return { category_id: form.category_id };
     case 'document_submitted':
       return { doc_type: form.doc_type };
     default:
@@ -116,7 +116,7 @@ export function ClassRequirementsPanel({ classId, className }: ClassRequirements
       setCreateError(t('common.required_fields'));
       return;
     }
-    if (requirement_type === 'level' && !createForm.level_id) {
+    if (requirement_type === 'level' && !createForm.category_id) {
       setCreateError(t('common.required_fields'));
       return;
     }
@@ -412,15 +412,15 @@ export function ClassRequirementsPanel({ classId, className }: ClassRequirements
               {createForm.requirement_type === 'level' && (
                 <div className="space-y-2 rounded-md border p-3"
                   style={{ borderColor: 'var(--color-border-default)', backgroundColor: 'var(--color-surface-subtle, #f9fafb)' }}>
-                  <Field label={t('form.requirement.level_id')}>
+                  <Field label={t('form.requirement.category_id')}>
                     {levelsData.isLoading ? (
                       <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>{t('common.loading')}</p>
                     ) : (
                       <select
                         className="w-full rounded-md border px-3 py-2 text-sm"
                         style={{ borderColor: 'var(--color-border-default)' }}
-                        value={createForm.level_id}
-                        onChange={(e) => setCreateForm((f) => ({ ...f, level_id: e.target.value }))}
+                        value={createForm.category_id}
+                        onChange={(e) => setCreateForm((f) => ({ ...f, category_id: e.target.value }))}
                       >
                         <option value="">—</option>
                         {levelsData.levels.map((l) => (

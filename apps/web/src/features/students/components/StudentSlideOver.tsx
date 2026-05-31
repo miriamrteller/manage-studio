@@ -214,7 +214,7 @@ export function StudentSlideOver({ personId, onClose }: StudentSlideOverProps) {
                       const colors = STATUS_COLORS[e.status] ?? STATUS_COLORS.cancelled;
                       return (
                         <li key={e.id} className="py-2 flex justify-between items-center gap-3">
-                          <span className="font-medium">{e.className ?? e.class_id}</span>
+                          <span className="font-medium">{e.className ?? e.offering_id}</span>
                           <div className="flex items-center gap-2 flex-shrink-0">
                             <span
                               className="px-2 py-0.5 rounded text-xs font-medium"
@@ -422,7 +422,7 @@ export function StudentSlideOver({ personId, onClose }: StudentSlideOverProps) {
           personId={personId}
           personName={person.name}
           personDateOfBirth={person.date_of_birth}
-          familyId={person.family_id}
+          familyId={person.account_id}
           guardianEmail={resolveGuardianEmail({ person, family: family ?? undefined, members })}
           guardianName={family?.contact_person_name ?? null}
           onClose={() => setEnrolModalOpen(false)}

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { formatCurrency, formatTime } from '@shared/format';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
-import type { PublicClass } from '@/schemas';
+import type { PublicOffering } from '@/schemas';
 
 function formatAgeRange(minAge?: number | null, maxAge?: number | null): string | null {
   if (minAge != null && maxAge != null) return `Ages ${minAge}–${maxAge}`;
@@ -22,7 +22,7 @@ function formatAgeRange(minAge?: number | null, maxAge?: number | null): string 
  */
 
 interface ClassCardProps {
-  class: PublicClass;
+  class: PublicOffering;
   currency: string;
 }
 
@@ -39,7 +39,7 @@ export function ClassCard({ class: cls, currency }: ClassCardProps) {
     const intent = {
       from: '/enrol' as const,
       classId: cls.id,
-      termId: cls.term_id,
+      seasonId: cls.season_id,
     };
 
     if (user) {
@@ -62,10 +62,10 @@ export function ClassCard({ class: cls, currency }: ClassCardProps) {
           <span className="font-semibold">{t('pages.classes.time')}:</span>{' '}
           {formatTime(cls.start_time, i18n.language)} – {formatTime(cls.end_time, i18n.language)}
         </p>
-        {cls.level_name && (
+        {cls.category_name && (
           <p>
             <span className="font-semibold">{t('pages.classes.level')}:</span>{' '}
-            {cls.level_name}
+            {cls.category_name}
           </p>
         )}
         {ageRange && (

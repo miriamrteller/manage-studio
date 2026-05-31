@@ -1,7 +1,7 @@
 -- =============================================================================
 -- 017: Miscellaneous RPCs
 -- get_my_profile — reliable profile fetch when PostgREST anon JWT causes 403
--- link_auth_user_to_person — link signup session to enrolment person/family
+-- link_auth_user_to_person — link signup session to engagement person/account
 -- DEPENDENCIES: 001, 002, 011
 -- =============================================================================
 
@@ -13,8 +13,6 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.get_my_profile() TO authenticated;
 
--- Link authenticated user to family/person after enrolment checkout.
--- SECURITY DEFINER — parents cannot UPDATE family_members directly via RLS.
 CREATE OR REPLACE FUNCTION public.link_auth_user_to_person(p_person_id UUID)
 RETURNS VOID
 LANGUAGE plpgsql
@@ -26,6 +24,7 @@ DECLARE
   v_person people%ROWTYPE;
   v_profile_email TEXT;
   v_linked INT := 0;
+  v_preset TEXT;
 BEGIN
   IF v_uid IS NULL THEN
     RAISE EXCEPTION 'Not authenticated';
@@ -44,18 +43,20 @@ BEGIN
     RAISE EXCEPTION 'Person not found or not in your tenant';
   END IF;
 
-  -- Require an open enrolment for this person (prevents arbitrary linking)
   IF NOT EXISTS (
-    SELECT 1 FROM enrolments
+    SELECT 1 FROM engagements
     WHERE person_id = p_person_id
       AND status IN ('pending_payment', 'active', 'admin_review', 'pending_offer')
   ) THEN
-    RAISE EXCEPTION 'No active enrolment for this person';
+    RAISE EXCEPTION 'No active engagement for this person';
   END IF;
 
   SELECT email INTO v_profile_email FROM user_profiles WHERE id = v_uid;
 
-  IF v_person.family_id IS NULL THEN
+  SELECT business_preset INTO v_preset
+  FROM tenants WHERE id = get_my_tenant_id();
+
+  IF v_person.account_id IS NULL OR COALESCE(v_preset, 'programs') IN ('services', 'catalog') THEN
     UPDATE people
     SET user_profile_id = v_uid, updated_at = NOW()
     WHERE id = p_person_id
@@ -63,27 +64,21 @@ BEGIN
     RETURN;
   END IF;
 
-  -- Prefer guardian row matching the logged-in email
-  UPDATE family_members
+  UPDATE account_members
   SET user_profile_id = v_uid
-  WHERE family_id = v_person.family_id
-    AND role IN ('parent', 'guardian')
-    AND (user_profile_id IS NULL OR user_profile_id = v_uid)
-    AND (
-      v_profile_email IS NULL
-      OR email IS NULL
-      OR lower(email) = lower(v_profile_email)
-    );
+  WHERE account_id = v_person.account_id
+    AND role IN ('account_holder', 'member')
+    AND (user_profile_id IS NULL OR user_profile_id = v_uid);
 
   GET DIAGNOSTICS v_linked = ROW_COUNT;
 
   IF v_linked = 0 THEN
-    UPDATE family_members
+    UPDATE account_members
     SET user_profile_id = v_uid
     WHERE id = (
-      SELECT id FROM family_members
-      WHERE family_id = v_person.family_id
-        AND role IN ('parent', 'guardian')
+      SELECT id FROM account_members
+      WHERE account_id = v_person.account_id
+        AND role IN ('account_holder', 'member')
         AND (user_profile_id IS NULL OR user_profile_id = v_uid)
       ORDER BY created_at
       LIMIT 1

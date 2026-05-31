@@ -1,6 +1,6 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { type Class, type Level, type Term, type Teacher, TimeSchema } from '@shared/schemas';
+import { type Offering, type Category, type Season, type Staff, TimeSchema } from '@shared/schemas';
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 import { z } from 'zod';
@@ -14,9 +14,9 @@ const optionalUuidField = z.preprocess(
 );
 
 const ClassFormSchema = z.object({
-  term_id: z.string().uuid('Term is required'),
-  level_id: optionalUuidField,
-  teacher_id: optionalUuidField,
+  season_id: z.string().uuid('Term is required'),
+  category_id: optionalUuidField,
+  staff_id: optionalUuidField,
   name: z.string().min(1, 'Class name required'),
   max_capacity: z.number().positive('Max capacity must be > 0'),
   min_age: z.union([z.number().int().nonnegative(), z.nan()]).nullable().optional(),
@@ -30,26 +30,26 @@ const ClassFormSchema = z.object({
   start_time: TimeSchema,
   end_time: TimeSchema,
   is_public: z.enum(['true', 'false']).optional(),
-  billing_frequency: z.enum(['monthly', 'per-session', 'weekly', 'annual']).optional(),
+  billing_mode: z.enum(['one_time', 'recurring']).optional(),
   status: z.enum(['active', 'cancelled', 'full']).optional(),
 });
 
-type ClassFormValues = z.infer<typeof ClassFormSchema>;
+type OfferingFormValues = z.infer<typeof ClassFormSchema>;
 
 interface ClassFormProps {
-  classItem?: Partial<Class>;
-  terms: Term[];
-  levels: Level[];
-  teachers: Teacher[];
-  onSubmit: (data: Partial<Class>) => Promise<void>;
+  classItem?: Partial<Offering>;
+  terms: Season[];
+  levels: Category[];
+  teachers: Staff[];
+  onSubmit: (data: Partial<Offering>) => Promise<void>;
   isLoading?: boolean;
 }
 
-function toFormValues(classItem: Partial<Class> | undefined, defaultCurrency: string): ClassFormValues {
+function toFormValues(classItem: Partial<Offering> | undefined, defaultCurrency: string): OfferingFormValues {
   return {
-    term_id: classItem?.term_id || '',
-    level_id: classItem?.level_id ?? '',
-    teacher_id: classItem?.teacher_id ?? '',
+    season_id: classItem?.season_id || '',
+    category_id: classItem?.category_id ?? '',
+    staff_id: classItem?.staff_id ?? '',
     name: classItem?.name || '',
     max_capacity: classItem?.max_capacity ?? 10,
     min_age: classItem?.min_age ?? null,
@@ -60,16 +60,16 @@ function toFormValues(classItem: Partial<Class> | undefined, defaultCurrency: st
     start_time: classItem?.start_time || '09:00',
     end_time: classItem?.end_time || '10:00',
     is_public: (classItem?.is_public ?? true) ? 'true' : 'false',
-    billing_frequency: (classItem?.billing_frequency as ClassFormValues['billing_frequency']) || 'monthly',
+    billing_mode: classItem?.billing_mode ?? 'one_time',
     status: classItem?.status || 'active',
   };
 }
 
-function toClassPayload(values: ClassFormValues): Partial<Class> {
+function toClassPayload(values: OfferingFormValues): Partial<Offering> {
   return {
-    term_id: values.term_id,
-    level_id: values.level_id || null,
-    teacher_id: values.teacher_id || null,
+    season_id: values.season_id,
+    category_id: values.category_id || null,
+    staff_id: values.staff_id || null,
     name: values.name,
     max_capacity: values.max_capacity,
     min_age: Number.isNaN(values.min_age) ? null : (values.min_age ?? null),
@@ -80,7 +80,8 @@ function toClassPayload(values: ClassFormValues): Partial<Class> {
     start_time: values.start_time,
     end_time: values.end_time,
     is_public: values.is_public === 'true',
-    billing_frequency: values.billing_frequency,
+    delivery_mode: 'scheduled',
+    billing_mode: values.billing_mode ?? 'one_time',
     status: values.status,
   };
 }
@@ -98,13 +99,13 @@ export function ClassForm({
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
-  const form = useForm<ClassFormValues>({
+  const form = useForm<OfferingFormValues>({
     resolver: zodResolver(ClassFormSchema),
     defaultValues: toFormValues(classItem, tenant?.currency || 'ILS'),
     mode: 'onBlur',
   });
 
-  const handleSubmit = async (values: ClassFormValues) => {
+  const handleSubmit = async (values: OfferingFormValues) => {
     try {
       setSubmitError(null);
       setSubmitSuccess(false);
@@ -151,11 +152,11 @@ export function ClassForm({
       />
 
       <FormSelect
-        htmlFor="term_id"
+        htmlFor="season_id"
         label={t('form.class.term')}
-        error={form.formState.errors.term_id?.message}
+        error={form.formState.errors.season_id?.message}
         required
-        {...form.register('term_id')}
+        {...form.register('season_id')}
       >
         <option value="">-- {t('common.select')} --</option>
         {terms.map((term) => (
@@ -166,10 +167,10 @@ export function ClassForm({
       </FormSelect>
 
       <FormSelect
-        htmlFor="level_id"
+        htmlFor="category_id"
         label={t('form.class.level')}
-        error={form.formState.errors.level_id?.message}
-        {...form.register('level_id')}
+        error={form.formState.errors.category_id?.message}
+        {...form.register('category_id')}
       >
         <option value="">-- {t('common.optional')} --</option>
         {levels.map((level) => (
@@ -180,10 +181,10 @@ export function ClassForm({
       </FormSelect>
 
       <FormSelect
-        htmlFor="teacher_id"
+        htmlFor="staff_id"
         label={t('form.class.teacher')}
-        error={form.formState.errors.teacher_id?.message}
-        {...form.register('teacher_id')}
+        error={form.formState.errors.staff_id?.message}
+        {...form.register('staff_id')}
       >
         <option value="">-- {t('common.optional')} --</option>
         {teachers.map((teacher) => (
@@ -271,15 +272,13 @@ export function ClassForm({
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <FormSelect
-          htmlFor="billing_frequency"
+          htmlFor="billing_mode"
           label={t('form.class.billing_frequency')}
-          error={form.formState.errors.billing_frequency?.message}
-          {...form.register('billing_frequency')}
+          error={form.formState.errors.billing_mode?.message}
+          {...form.register('billing_mode')}
         >
-          <option value="monthly">{t('billing.monthly')}</option>
-          <option value="per-session">{t('billing.per_session')}</option>
-          <option value="weekly">{t('billing.weekly')}</option>
-          <option value="annual">{t('billing.annual')}</option>
+          <option value="one_time">{t('billing.one_time', { defaultValue: 'One-time' })}</option>
+          <option value="recurring">{t('billing.monthly')}</option>
         </FormSelect>
 
         <FormSelect

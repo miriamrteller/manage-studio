@@ -1,13 +1,10 @@
 -- =============================================================================
--- 009: Requirement Templates + Overrides + Class Requirements
--- age_range is NOT a valid requirement_type — age is a direct column on classes.
+-- 009: Requirement Templates + Overrides + Offering Requirements
+-- age_range is NOT a valid requirement_type — age is a direct column on offerings.
 -- Valid types: gender, level, document_submitted, manual_review
 -- DEPENDENCIES: 001, 002, 004
 -- =============================================================================
 
--- ---------------------------------------------------------------------------
--- Requirement Templates (tenant-wide library of eligibility requirements)
--- ---------------------------------------------------------------------------
 CREATE TABLE requirement_templates (
   id               UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id        UUID        NOT NULL REFERENCES tenants(id),
@@ -31,9 +28,6 @@ CREATE POLICY "super_admin manages all requirement_templates"  ON requirement_te
 CREATE POLICY "admins manage requirement_templates"            ON requirement_templates FOR ALL    USING (tenant_id = get_my_tenant_id() AND EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND 'tenant_admin' = ANY(role)));
 CREATE POLICY "authenticated read requirement_templates"       ON requirement_templates FOR SELECT USING (tenant_id = get_my_tenant_id());
 
--- ---------------------------------------------------------------------------
--- Requirement Overrides (soft-block approval workflow)
--- ---------------------------------------------------------------------------
 CREATE TABLE requirement_overrides (
   id                      UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id               UUID        NOT NULL REFERENCES tenants(id),
@@ -56,16 +50,13 @@ ALTER TABLE requirement_overrides ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "super_admin manages all requirement_overrides"  ON requirement_overrides FOR ALL    USING (is_super_admin());
 CREATE POLICY "admins manage requirement_overrides"            ON requirement_overrides FOR ALL    USING (tenant_id = get_my_tenant_id() AND EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND 'tenant_admin' = ANY(role)));
-CREATE POLICY "parents see own overrides"                      ON requirement_overrides FOR SELECT USING (person_id IN (SELECT id FROM people WHERE family_id IN (SELECT get_my_family_ids())));
+CREATE POLICY "account holders see own overrides"                      ON requirement_overrides FOR SELECT USING (person_id IN (SELECT id FROM people WHERE account_id IN (SELECT get_my_account_ids())));
 CREATE POLICY "adult students see own overrides"               ON requirement_overrides FOR SELECT USING (person_id = get_my_person_id());
 
--- ---------------------------------------------------------------------------
--- Class Requirements (links requirement templates to classes)
--- ---------------------------------------------------------------------------
-CREATE TABLE class_requirements (
+CREATE TABLE offering_requirements (
   id                      UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id               UUID        NOT NULL REFERENCES tenants(id),
-  class_id                UUID        NOT NULL REFERENCES classes(id),
+  offering_id             UUID        NOT NULL REFERENCES offerings(id),
   requirement_template_id UUID        REFERENCES requirement_templates(id),
   config                  JSONB,
   created_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -75,13 +66,13 @@ CREATE TABLE class_requirements (
   )
 );
 
-CREATE UNIQUE INDEX idx_class_requirements_template_unique ON class_requirements(class_id, requirement_template_id) WHERE requirement_template_id IS NOT NULL;
-CREATE INDEX idx_class_requirements_tenant   ON class_requirements(tenant_id);
-CREATE INDEX idx_class_requirements_class    ON class_requirements(class_id);
-CREATE INDEX idx_class_requirements_template ON class_requirements(requirement_template_id);
+CREATE UNIQUE INDEX idx_offering_requirements_template_unique ON offering_requirements(offering_id, requirement_template_id) WHERE requirement_template_id IS NOT NULL;
+CREATE INDEX idx_offering_requirements_tenant   ON offering_requirements(tenant_id);
+CREATE INDEX idx_offering_requirements_offering ON offering_requirements(offering_id);
+CREATE INDEX idx_offering_requirements_template ON offering_requirements(requirement_template_id);
 
-ALTER TABLE class_requirements ENABLE ROW LEVEL SECURITY;
+ALTER TABLE offering_requirements ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "super_admin manages all class_requirements"  ON class_requirements FOR ALL    USING (is_super_admin());
-CREATE POLICY "admins manage class_requirements"            ON class_requirements FOR ALL    USING (tenant_id = get_my_tenant_id() AND EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND 'tenant_admin' = ANY(role)));
-CREATE POLICY "authenticated read class_requirements"       ON class_requirements FOR SELECT USING (tenant_id = get_my_tenant_id());
+CREATE POLICY "super_admin manages all offering_requirements"  ON offering_requirements FOR ALL    USING (is_super_admin());
+CREATE POLICY "admins manage offering_requirements"            ON offering_requirements FOR ALL    USING (tenant_id = get_my_tenant_id() AND EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND 'tenant_admin' = ANY(role)));
+CREATE POLICY "authenticated read offering_requirements"       ON offering_requirements FOR SELECT USING (tenant_id = get_my_tenant_id());

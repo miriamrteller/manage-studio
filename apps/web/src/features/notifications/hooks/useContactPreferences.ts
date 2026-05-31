@@ -53,15 +53,15 @@ export function useContactPreferences() {
         newPrefs.person_id = person.id;
       } else {
         const { data: member } = await supabase
-          .from('family_members')
+          .from('account_members')
           .select('id')
           .eq('user_profile_id', user.id)
           .maybeSingle();
 
         if (member?.id) {
-          newPrefs.family_member_id = member.id;
+          newPrefs.account_member_id = member.id;
         } else {
-          throw new Error('No person or family_member record found for this user');
+          throw new Error('No person or account_member record found for this user');
         }
       }
 

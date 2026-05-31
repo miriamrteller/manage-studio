@@ -21,8 +21,8 @@ interface UseStudentsOptions {
   page?: number;
   status?: 'active' | 'inactive' | 'all';
   classIds?: string[];
-  levelIds?: string[];
-  familyIds?: string[];
+  categoryIds?: string[];
+  accountIds?: string[];
   minAge?: number | null;
   maxAge?: number | null;
   searchQuery?: string;
@@ -35,8 +35,8 @@ export function useStudents({
   page = 1,
   status = 'active',
   classIds = [],
-  levelIds = [],
-  familyIds = [],
+  categoryIds = [],
+  accountIds = [],
   minAge = null,
   maxAge = null,
   searchQuery = '',
@@ -45,13 +45,13 @@ export function useStudents({
   enabled = true,
 }: UseStudentsOptions = {}) {
   const tenant = useTenant();
-  const hasEnrolmentFilter = classIds.length > 0 || levelIds.length > 0;
+  const hasEnrolmentFilter = classIds.length > 0 || categoryIds.length > 0;
 
   const enrolledIdsQuery = useQuery({
-    queryKey: ['enrolled-person-ids', tenant?.id, classIds, levelIds],
+    queryKey: ['enrolled-person-ids', tenant?.id, classIds, categoryIds],
     queryFn: async () => {
       if (!tenant) throw new Error('Tenant not initialized');
-      return resolveEnrolledPersonIds(tenant, { classIds, levelIds });
+      return resolveEnrolledPersonIds(tenant, { classIds, categoryIds });
     },
     enabled: enabled && !!tenant?.id && hasEnrolmentFilter,
   });
@@ -63,8 +63,8 @@ export function useStudents({
       page,
       status,
       classIds,
-      levelIds,
-      familyIds,
+      categoryIds,
+      accountIds,
       minAge,
       maxAge,
       searchQuery,
@@ -87,9 +87,9 @@ export function useStudents({
         pageSize: PAGE_SIZE,
         status,
         searchQuery,
-        familyIds,
+        accountIds,
         classIds,
-        levelIds,
+        categoryIds,
         minAge,
         maxAge,
         sortField,

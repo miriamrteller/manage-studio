@@ -1,24 +1,24 @@
 import { TenantDB } from '@/lib/db';
 import { BaseService } from '@/services/base.service';
 import {
-  ClassSchema,
+  OfferingSchema,
   TimeSchema,
-  type Class,
+  type Offering,
   type Tenant,
 } from '@shared/schemas';
 import { z } from 'zod';
 import {
   DEFAULT_CLASS_SORT,
-  type ClassSortField,
-  type ClassSortOrder,
+  type OfferingSortField,
+  type OfferingSortOrder,
 } from './utils/sortClasses';
 
 // Validation schema for class creation/update (without system fields)
-// Aligns with DB classes table — see Migration 004 + 004100 (teacher_id added)
+// Aligns with DB classes table — see Migration 004 + 004100 (staff_id added)
 const ClassInputSchema = z.object({
-  term_id: z.string().uuid().optional(),
-  level_id: z.string().uuid().nullable().optional(),
-  teacher_id: z.string().uuid().nullable().optional(),
+  season_id: z.string().uuid().optional(),
+  category_id: z.string().uuid().nullable().optional(),
+  staff_id: z.string().uuid().nullable().optional(),
   name: z.string().min(1, 'Class name required').optional(),
   max_capacity: z.number().positive('Max capacity must be > 0').optional(),
   min_age: z.number().int().nonnegative().nullable().optional(),
@@ -29,13 +29,15 @@ const ClassInputSchema = z.object({
   start_time: TimeSchema.optional(),
   end_time: TimeSchema.optional(),
   is_public: z.boolean().optional(),
-  billing_frequency: z.string().optional(),
+  delivery_mode: z.enum(['scheduled', 'intangible']).optional(),
+  billing_mode: z.enum(['one_time', 'recurring']).optional(),
+  billing_interval: z.enum(['monthly', 'quarterly', 'annual']).nullable().optional(),
   status: z.enum(['active', 'cancelled', 'full']).optional(),
 });
 
 /**
  * ClassService: All class data operations
- * - Validates input/output with ClassSchema
+ * - Validates input/output with OfferingSchema
  * - Uses TenantDB for RLS enforcement
  * - Inherits retry logic from BaseService
  */
@@ -45,19 +47,19 @@ export class ClassService extends BaseService {
     options: {
       page?: number;
       pageSize?: number;
-      termIds?: string[];
-      levelIds?: string[];
+      seasonIds?: string[];
+      categoryIds?: string[];
       statuses?: string[];
       searchQuery?: string;
-      sortField?: ClassSortField;
-      sortOrder?: ClassSortOrder;
+      sortField?: OfferingSortField;
+      sortOrder?: OfferingSortOrder;
     } = {}
   ) {
     const {
       page = 1,
       pageSize = 50,
-      termIds = [],
-      levelIds = [],
+      seasonIds = [],
+      categoryIds = [],
       statuses = [],
       searchQuery = '',
       sortField = DEFAULT_CLASS_SORT.field,
@@ -67,13 +69,13 @@ export class ClassService extends BaseService {
     const ascending = sortOrder === 'asc';
 
     return this.withRetry(async () => {
-      let query = TenantDB.selectFor('classes', tenant, { count: 'exact' });
+      let query = TenantDB.selectFor('offerings', tenant, { count: 'exact' });
 
-      if (termIds.length > 0) {
-        query = query.in('term_id', termIds);
+      if (seasonIds.length > 0) {
+        query = query.in('season_id', seasonIds);
       }
-      if (levelIds.length > 0) {
-        query = query.in('level_id', levelIds);
+      if (categoryIds.length > 0) {
+        query = query.in('category_id', categoryIds);
       }
       if (statuses.length > 0) {
         query = query.in('status', statuses);
@@ -99,7 +101,7 @@ export class ClassService extends BaseService {
       if (error) throw error;
 
       return {
-        classes: (data || []).map(c => ClassSchema.parse(c)),
+        classes: (data || []).map(c => OfferingSchema.parse(c)),
         total: count || 0,
         page,
         pageSize,
@@ -109,45 +111,45 @@ export class ClassService extends BaseService {
 
   static async get(tenant: Tenant, id: string) {
     return this.withRetry(async () => {
-      const { data, error } = await TenantDB.selectFor('classes', tenant)
+      const { data, error } = await TenantDB.selectFor('offerings', tenant)
         .eq('id', id)
         .single();
 
       if (error) throw error;
       if (!data) throw new Error('Class not found');
 
-      return ClassSchema.parse(data);
+      return OfferingSchema.parse(data);
     }, 'ClassService.get');
   }
 
-  static async create(tenant: Tenant, classData: Partial<Class>) {
+  static async create(tenant: Tenant, classData: Partial<Offering>) {
     // Validate input (catches client-side typos)
     const validated = ClassInputSchema.parse(classData);
 
     return this.withRetry(async () => {
-      const { data, error } = await TenantDB.insert('classes', tenant, validated)
+      const { data, error } = await TenantDB.insert('offerings', tenant, validated)
         .select()
         .single();
 
       if (error) throw error;
 
-      const result = ClassSchema.parse(data);
+      const result = OfferingSchema.parse(data);
       await this.logAudit(tenant, 'CREATE', 'classes', result.id);
       return result;
     }, 'ClassService.create');
   }
 
-  static async update(tenant: Tenant, id: string, classData: Partial<Class>) {
+  static async update(tenant: Tenant, id: string, classData: Partial<Offering>) {
     const validated = ClassInputSchema.parse(classData);
 
     return this.withRetry(async () => {
-      const { data, error } = await TenantDB.update('classes', tenant, id, validated)
+      const { data, error } = await TenantDB.update('offerings', tenant, id, validated)
         .select()
         .single();
 
       if (error) throw error;
 
-      const result = ClassSchema.parse(data);
+      const result = OfferingSchema.parse(data);
       await this.logAudit(tenant, 'UPDATE', 'classes', id);
       return result;
     }, 'ClassService.update');
@@ -155,7 +157,7 @@ export class ClassService extends BaseService {
 
   static async delete(tenant: Tenant, id: string) {
     return this.withRetry(async () => {
-      const { error } = await TenantDB.delete('classes', tenant, id);
+      const { error } = await TenantDB.delete('offerings', tenant, id);
       if (error) throw error;
 
       await this.logAudit(tenant, 'DELETE', 'classes', id);

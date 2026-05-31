@@ -14,7 +14,7 @@ export interface ClassTotalBreakdown {
   currency: string;
 }
 
-/** Match create-payment-intent edge function pricing logic. */
+/** Match create-checkout edge function pricing logic. */
 export function computeClassTotal(
   classRow: ClassPricing,
   tenant: Pick<Tenant, 'vat_rate' | 'currency'>,

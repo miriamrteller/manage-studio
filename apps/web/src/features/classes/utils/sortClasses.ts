@@ -1,23 +1,23 @@
-import type { Class } from '@shared/schemas';
+import type { Offering } from '@shared/schemas';
 
-export type ClassSortField = 'schedule' | 'name' | 'max_capacity' | 'price_minor' | 'status';
-export type ClassSortOrder = 'asc' | 'desc';
+export type OfferingSortField = 'schedule' | 'name' | 'max_capacity' | 'price_minor' | 'status';
+export type OfferingSortOrder = 'asc' | 'desc';
 
-export const DEFAULT_CLASS_SORT: { field: ClassSortField; order: ClassSortOrder } = {
+export const DEFAULT_CLASS_SORT: { field: OfferingSortField; order: OfferingSortOrder } = {
   field: 'schedule',
   order: 'asc',
 };
 
-type SortableClass = Pick<
-  Class,
+type SortableOffering = Pick<
+  Offering,
   'name' | 'day_of_week' | 'start_time' | 'max_capacity' | 'price_minor' | 'status'
 >;
 
 export function compareClasses(
-  a: SortableClass,
-  b: SortableClass,
-  field: ClassSortField,
-  order: ClassSortOrder
+  a: SortableOffering,
+  b: SortableOffering,
+  field: OfferingSortField,
+  order: OfferingSortOrder
 ): number {
   const dir = order === 'asc' ? 1 : -1;
 
@@ -43,10 +43,10 @@ export function compareClasses(
   }
 }
 
-export function sortClasses<T extends SortableClass>(
+export function sortClasses<T extends SortableOffering>(
   classes: T[],
-  field: ClassSortField = DEFAULT_CLASS_SORT.field,
-  order: ClassSortOrder = DEFAULT_CLASS_SORT.order
+  field: OfferingSortField = DEFAULT_CLASS_SORT.field,
+  order: OfferingSortOrder = DEFAULT_CLASS_SORT.order
 ): T[] {
   return [...classes].sort((a, b) => compareClasses(a, b, field, order));
 }

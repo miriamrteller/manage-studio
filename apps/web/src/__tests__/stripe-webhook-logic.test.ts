@@ -10,7 +10,7 @@ export interface WebhookEnrolmentUpdate {
 }
 
 export interface WebhookPaymentInsert {
-  enrolment_id: string;
+  engagement_id: string;
   person_id: string;
   status: 'succeeded';
   stripe_payment_intent_id: string;
@@ -24,13 +24,13 @@ export function buildPostPaymentEnrolmentUpdate(now: Date): WebhookEnrolmentUpda
 }
 
 export function buildWebhookPayment(params: {
-  enrolmentId: string;
+  engagementId: string;
   personId: string;
   intentId: string;
   amountMinor: number;
 }): WebhookPaymentInsert & { total_amount_minor: number } {
   return {
-    enrolment_id: params.enrolmentId,
+    engagement_id: params.engagementId,
     person_id: params.personId,
     status: 'succeeded',
     stripe_payment_intent_id: params.intentId,
@@ -51,14 +51,14 @@ describe('stripe webhook post-payment flow', () => {
 
   it('records payment with enrolment and person ids', () => {
     const payment = buildWebhookPayment({
-      enrolmentId: 'enrol-1',
+      engagementId: 'enrol-1',
       personId: 'person-1',
       intentId: 'pi_test',
       amountMinor: 24000,
     });
 
     expect(payment.status).toBe('succeeded');
-    expect(payment.enrolment_id).toBe('enrol-1');
+    expect(payment.engagement_id).toBe('enrol-1');
     expect(payment.total_amount_minor).toBe(24000);
   });
 

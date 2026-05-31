@@ -56,11 +56,11 @@ export type TenantConfig = {
 /**
  * Public class from classes table (for landing page)
  */
-export type PublicClass = {
+export type PublicOffering = {
   id: string;
   tenant_id: string;
   name: string;
-  level_id: string | null;
+  category_id: string | null;
   start_time: string; // e.g., '18:30'
   end_time: string;
   price_minor: number; // in agorot (1/100 ILS)

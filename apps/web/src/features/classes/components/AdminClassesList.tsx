@@ -14,15 +14,15 @@ import { ClassForm } from './ClassForm';
 import { ClassRequirementsPanel } from '../requirements/components';
 import {
   DEFAULT_CLASS_SORT,
-  type ClassSortField,
+  type OfferingSortField,
 } from '../utils/sortClasses';
-import type { Class } from '@shared/schemas';
+import type { Offering } from '@shared/schemas';
 
 export function AdminClassesList() {
   const { t, i18n } = useTranslation();
   const tenant = useTenant();
   const [page, setPage] = useState(1);
-  const { sortField, sortOrder, toggleSort } = useSortState<ClassSortField>(
+  const { sortField, sortOrder, toggleSort } = useSortState<OfferingSortField>(
     DEFAULT_CLASS_SORT.field,
     DEFAULT_CLASS_SORT.order
   );
@@ -31,7 +31,7 @@ export function AdminClassesList() {
   const [filterStatuses, setFilterStatuses] = useState<FilterOption[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
-  const [editingClass, setEditingClass] = useState<Class | null>(null);
+  const [editingClass, setEditingClass] = useState<Offering | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [expandedClassId, setExpandedClassId] = useState<string | null>(null);
 
@@ -40,8 +40,8 @@ export function AdminClassesList() {
     publicOnly: false,
     sortField,
     sortOrder,
-    termIds: filterTerms.map((t) => t.value),
-    levelIds: filterLevels.map((l) => l.value),
+    seasonIds: filterTerms.map((t) => t.value),
+    categoryIds: filterLevels.map((l) => l.value),
     statuses: filterStatuses.map((s) => s.value),
     searchQuery,
   });
@@ -58,11 +58,11 @@ export function AdminClassesList() {
     [levelsData.levels]
   );
 
-  const handleFormSubmit = async (data: Partial<Class>) => {
+  const handleFormSubmit = async (data: Partial<Offering>) => {
     if (editingClass?.id) {
       await new Promise<void>((resolve, reject) => {
         classesData.updateClass(
-          { ...editingClass, ...data } as Class,
+          { ...editingClass, ...data } as Offering,
           { onSuccess: () => resolve(), onError: reject }
         );
       });
@@ -89,7 +89,7 @@ export function AdminClassesList() {
     }
   };
 
-  const handleSort = (field: ClassSortField) => {
+  const handleSort = (field: OfferingSortField) => {
     toggleSort(field, () => setPage(1));
   };
 
@@ -248,10 +248,10 @@ export function AdminClassesList() {
                 >
                   <td className="px-4 py-3">{classItem.name}</td>
                   <td className="px-4 py-3">
-                    {termById.get(classItem.term_id) || '—'}
+                    {termById.get(classItem.season_id) || '—'}
                   </td>
                   <td className="px-4 py-3">
-                    {classItem.level_id ? levelById.get(classItem.level_id) || '—' : '—'}
+                    {classItem.category_id ? levelById.get(classItem.category_id) || '—' : '—'}
                   </td>
                   <td className="px-4 py-3">
                     {classItem.day_of_week != null
@@ -272,7 +272,7 @@ export function AdminClassesList() {
                       <Button
                         variant="secondary"
                         size="sm"
-                        onClick={() => setEditingClass(classItem as Class)}
+                        onClick={() => setEditingClass(classItem as Offering)}
                         title={t('common.edit')}
                       >
                         {t('common.edit')}

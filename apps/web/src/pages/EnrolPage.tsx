@@ -15,16 +15,16 @@ export default function EnrolPage() {
   const { user, isLoading } = useCurrentUser();
   const intent = readEnrollmentIntent(location.state as EnrollmentIntent | null);
   const classId = intent?.classId;
-  const termId = intent?.termId;
+  const seasonId = intent?.seasonId;
 
   useEffect(() => {
     if (!isLoading && !user) {
       navigate('/login', {
         replace: true,
-        state: { from: '/enrol', classId, termId },
+        state: { from: '/enrol', classId, seasonId },
       });
     }
-  }, [user, isLoading, navigate, classId, termId]);
+  }, [user, isLoading, navigate, classId, seasonId]);
 
   if (isLoading) {
     return (
@@ -43,7 +43,7 @@ export default function EnrolPage() {
       <h1 className="mb-6 text-2xl font-bold">{t('pages.classes.enrol')}</h1>
       <EnrolmentStepper
         initialClassId={intent?.classId}
-        initialTermId={intent?.termId}
+        initialTermId={intent?.seasonId}
         onCancel={() => navigate('/classes')}
         onSuccess={() => navigate('/classes')}
       />

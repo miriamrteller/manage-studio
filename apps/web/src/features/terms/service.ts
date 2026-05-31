@@ -1,7 +1,7 @@
 import { BaseService } from '@/services/base.service';
 import { TenantDB } from '@/lib/db';
 import type { SortOrder } from '@/lib/list-query';
-import { TermSchema, type Term } from '@shared/schemas';
+import { SeasonSchema, type Season } from '@shared/schemas';
 import { z } from 'zod';
 import type { Tenant } from '@shared/schemas';
 
@@ -13,16 +13,16 @@ const TermInputSchema = z.object({
   status: z.enum(['upcoming', 'active', 'completed', 'archived']).optional(),
 });
 
-export type TermSortField = 'name' | 'start_date' | 'end_date' | 'status';
+export type SeasonSortField = 'name' | 'start_date' | 'end_date' | 'status';
 
-export const DEFAULT_TERM_SORT: { field: TermSortField; order: SortOrder } = {
+export const DEFAULT_TERM_SORT: { field: SeasonSortField; order: SortOrder } = {
   field: 'start_date',
   order: 'desc',
 };
 
 /**
  * TermService: All term data operations
- * - Validates input/output with TermSchema
+ * - Validates input/output with SeasonSchema
  * - Uses TenantDB for RLS enforcement
  * - Inherits retry logic from BaseService
  */
@@ -35,7 +35,7 @@ export class TermService extends BaseService {
       searchQuery?: string;
       status?: string;
       statuses?: string[];
-      sortField?: TermSortField;
+      sortField?: SeasonSortField;
       sortOrder?: SortOrder;
     } = {}
   ) {
@@ -52,7 +52,7 @@ export class TermService extends BaseService {
     const ascending = sortOrder === 'asc';
 
     return this.withRetry(async () => {
-      let query = TenantDB.selectFor('terms', tenant, {
+      let query = TenantDB.selectFor('seasons', tenant, {
         count: 'exact',
       })
         .order(sortField, { ascending, nullsFirst: false })
@@ -76,7 +76,7 @@ export class TermService extends BaseService {
       if (error) throw error;
 
       return {
-        terms: (data || []).map(t => TermSchema.parse(t)),
+        terms: (data || []).map(t => SeasonSchema.parse(t)),
         total: count || 0,
         page,
         pageSize,
@@ -86,44 +86,44 @@ export class TermService extends BaseService {
 
   static async get(tenant: Tenant, id: string) {
     return this.withRetry(async () => {
-      const { data, error } = await TenantDB.selectFor('terms', tenant)
+      const { data, error } = await TenantDB.selectFor('seasons', tenant)
         .eq('id', id)
         .single();
 
       if (error) throw error;
       if (!data) throw new Error('Term not found');
 
-      return TermSchema.parse(data);
+      return SeasonSchema.parse(data);
     }, 'TermService.get');
   }
 
-  static async create(tenant: Tenant, termData: Partial<Term>) {
+  static async create(tenant: Tenant, termData: Partial<Season>) {
     const validated = TermInputSchema.parse(termData);
 
     return this.withRetry(async () => {
-      const { data, error } = await TenantDB.insert('terms', tenant, validated)
+      const { data, error } = await TenantDB.insert('seasons', tenant, validated)
         .select()
         .single();
 
       if (error) throw error;
 
-      const result = TermSchema.parse(data);
+      const result = SeasonSchema.parse(data);
       await this.logAudit(tenant, 'CREATE', 'terms', result.id);
       return result;
     }, 'TermService.create');
   }
 
-  static async update(tenant: Tenant, id: string, termData: Partial<Term>) {
+  static async update(tenant: Tenant, id: string, termData: Partial<Season>) {
     const validated = TermInputSchema.parse(termData);
 
     return this.withRetry(async () => {
-      const { data, error } = await TenantDB.update('terms', tenant, id, validated)
+      const { data, error } = await TenantDB.update('seasons', tenant, id, validated)
         .select()
         .single();
 
       if (error) throw error;
 
-      const result = TermSchema.parse(data);
+      const result = SeasonSchema.parse(data);
       await this.logAudit(tenant, 'UPDATE', 'terms', id);
       return result;
     }, 'TermService.update');
@@ -131,7 +131,7 @@ export class TermService extends BaseService {
 
   static async delete(tenant: Tenant, id: string) {
     return this.withRetry(async () => {
-      const { error } = await TenantDB.delete('terms', tenant, id);
+      const { error } = await TenantDB.delete('seasons', tenant, id);
       if (error) throw error;
 
       await this.logAudit(tenant, 'DELETE', 'terms', id);

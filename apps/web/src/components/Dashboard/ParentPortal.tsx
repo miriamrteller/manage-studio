@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
-import { useParentPortal, type EnrolmentWithClass } from './useParentPortal';
+import { useParentPortal, type EngagementWithOffering } from './useParentPortal';
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -38,13 +38,13 @@ function EnrolmentStatusBadge({ status }: { status: string }) {
   );
 }
 
-function EnrolmentRow({ enrolment }: { enrolment: EnrolmentWithClass }) {
+function EnrolmentRow({ enrolment }: { enrolment: EngagementWithOffering }) {
   const schedule = formatSchedule(enrolment.classDay, enrolment.classStartTime);
 
   return (
     <li className="flex flex-wrap items-center justify-between gap-2 py-2 border-b border-gray-100 last:border-0">
       <div>
-        <p className="font-medium text-gray-900">{enrolment.className ?? enrolment.class_id}</p>
+        <p className="font-medium text-gray-900">{enrolment.className ?? enrolment.offering_id}</p>
         {schedule && <p className="text-sm text-gray-500">{schedule}</p>}
       </div>
       <EnrolmentStatusBadge status={enrolment.status} />

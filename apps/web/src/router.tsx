@@ -49,7 +49,7 @@ const router = createBrowserRouter([
       { path: 'login', element: <LoginPage /> },
       { path: 'signup', element: <SignupPage /> },
       { path: 'enrol', element: <EnrolPage /> },
-      { path: 'enrol/pay/:enrolmentId', element: <EnrolPayPage /> },
+      { path: 'enrol/pay/:engagementId', element: <EnrolPayPage /> },
       { path: 'dashboard', element: <DashboardRedirectPage /> },
 
       // ADMIN ROUTES

@@ -22,7 +22,7 @@ export function ExpandedStudentRow({
   onEnrol,
 }: ExpandedStudentRowProps) {
   const { t } = useTranslation();
-  const family = person.family_id ? familyMap.get(person.family_id) : null;
+  const family = person.account_id ? familyMap.get(person.account_id) : null;
   const cp = contactPrefsMap.get(person.id);
   const classNames = enrolmentsByPerson.get(person.id) ?? [];
 

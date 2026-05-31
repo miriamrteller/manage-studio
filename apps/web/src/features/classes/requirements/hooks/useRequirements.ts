@@ -59,7 +59,7 @@ export function useRequirements(classId: string | undefined, enabled = true) {
   const queryClient = useQueryClient();
 
   const listQuery = useQuery({
-    queryKey: ['class_requirements', tenant?.id, classId],
+    queryKey: ['offering_requirements', tenant?.id, classId],
     queryFn: async () => {
       if (!tenant || !classId) throw new Error('Tenant or classId missing');
       return RequirementService.list(tenant, classId);
@@ -73,7 +73,7 @@ export function useRequirements(classId: string | undefined, enabled = true) {
       return RequirementService.linkTemplate(tenant, classId, templateId);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['class_requirements', tenant?.id, classId] });
+      queryClient.invalidateQueries({ queryKey: ['offering_requirements', tenant?.id, classId] });
     },
   });
 
@@ -83,7 +83,7 @@ export function useRequirements(classId: string | undefined, enabled = true) {
       return RequirementService.delete(tenant, requirementId);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['class_requirements', tenant?.id, classId] });
+      queryClient.invalidateQueries({ queryKey: ['offering_requirements', tenant?.id, classId] });
     },
   });
 

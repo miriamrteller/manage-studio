@@ -18,6 +18,9 @@ CREATE TABLE tenants (
   vat_rate                      NUMERIC(5,4) DEFAULT 0.17,
   phone_region                  TEXT        NOT NULL DEFAULT 'IL',
   phone_region_updated_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  business_preset               TEXT        NOT NULL DEFAULT 'programs'
+                                CHECK (business_preset IN ('programs', 'services', 'catalog')),
+  labels                        JSONB       NOT NULL DEFAULT '{}'::jsonb,
   stripe_publishable_key        TEXT,
   stripe_secret_key_enc         BYTEA,
   stripe_webhook_secret_enc     BYTEA,
@@ -34,7 +37,7 @@ COMMENT ON COLUMN tenants.country IS 'Country for regional settings (VAT rate, c
 CREATE TABLE user_profiles (
   id         UUID        PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   tenant_id  UUID        NOT NULL REFERENCES tenants(id),
-  role       TEXT[]      NOT NULL DEFAULT ARRAY['parent'],
+  role       TEXT[]      NOT NULL DEFAULT ARRAY['account_holder'],
   person_id  UUID,
   email      TEXT,
   language   TEXT CHECK (language IN ('he', 'en', NULL)),

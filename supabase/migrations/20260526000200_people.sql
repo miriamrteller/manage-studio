@@ -1,6 +1,6 @@
 -- =============================================================================
--- 002: Families + Family Members + People
--- Unified person table; family contact columns baked in (no separate ALTER)
+-- 002: Accounts + Account Members + People
+-- Unified person table; account contact columns baked in (no separate ALTER)
 -- DEPENDENCIES: 001
 -- =============================================================================
 
@@ -8,9 +8,9 @@ CREATE TABLE IF NOT EXISTS people (
   id                      UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id               UUID        NOT NULL REFERENCES tenants(id),
   user_profile_id         UUID        REFERENCES user_profiles(id),
-  family_id               UUID,
+  account_id              UUID,
   name                    TEXT        NOT NULL,
-  email                   TEXT UNIQUE,
+  email                   TEXT,
   date_of_birth           DATE,
   medical_notes           TEXT,
   allergies               TEXT,
@@ -23,10 +23,11 @@ CREATE TABLE IF NOT EXISTS people (
   waiver_accepted_at      TIMESTAMPTZ,
   waiver_version          TEXT,
   created_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at              TIMESTAMPTZ NOT NULL DEFAULT now()
+  updated_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (tenant_id, email)
 );
 
-CREATE TABLE IF NOT EXISTS families (
+CREATE TABLE IF NOT EXISTS accounts (
   id                   UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id            UUID        NOT NULL REFERENCES tenants(id),
   name                 TEXT,
@@ -34,45 +35,45 @@ CREATE TABLE IF NOT EXISTS families (
   created_at           TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS family_members (
+CREATE TABLE IF NOT EXISTS account_members (
   id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id       UUID        NOT NULL REFERENCES tenants(id),
-  family_id       UUID        NOT NULL REFERENCES families(id),
+  account_id      UUID        NOT NULL REFERENCES accounts(id),
   user_profile_id UUID        REFERENCES user_profiles(id),
   person_id       UUID        NOT NULL REFERENCES people(id),
-  role            TEXT        NOT NULL DEFAULT 'guardian',
+  role            TEXT        NOT NULL DEFAULT 'member',
   created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 
 CREATE INDEX IF NOT EXISTS idx_people_tenant        ON people(tenant_id);
-CREATE INDEX IF NOT EXISTS idx_people_family        ON people(family_id);
+CREATE INDEX IF NOT EXISTS idx_people_account       ON people(account_id);
 ALTER TABLE people ENABLE ROW LEVEL SECURITY;
 
 
-CREATE INDEX IF NOT EXISTS idx_families_tenant      ON families(tenant_id);
-ALTER TABLE families ENABLE ROW LEVEL SECURITY;
+CREATE INDEX IF NOT EXISTS idx_accounts_tenant      ON accounts(tenant_id);
+ALTER TABLE accounts ENABLE ROW LEVEL SECURITY;
 
 
-CREATE INDEX IF NOT EXISTS idx_family_members_tenant ON family_members(tenant_id);
-CREATE INDEX IF NOT EXISTS idx_family_members_family ON family_members(family_id);
-ALTER TABLE family_members ENABLE ROW LEVEL SECURITY;
+CREATE INDEX IF NOT EXISTS idx_account_members_tenant ON account_members(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_account_members_account ON account_members(account_id);
+ALTER TABLE account_members ENABLE ROW LEVEL SECURITY;
 
 DO $$
 BEGIN
   IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint WHERE conname = 'fk_people_family'
+    SELECT 1 FROM pg_constraint WHERE conname = 'fk_people_account'
   ) THEN
-    ALTER TABLE people ADD CONSTRAINT fk_people_family FOREIGN KEY (family_id) REFERENCES families(id);
+    ALTER TABLE people ADD CONSTRAINT fk_people_account FOREIGN KEY (account_id) REFERENCES accounts(id);
   END IF;
 END $$;
 
 
 
-CREATE OR REPLACE FUNCTION get_my_family_ids()
+CREATE OR REPLACE FUNCTION get_my_account_ids()
 RETURNS SETOF UUID LANGUAGE sql SECURITY DEFINER STABLE
 SET search_path = public AS $$
-  SELECT family_id FROM family_members WHERE user_profile_id = auth.uid()
+  SELECT account_id FROM account_members WHERE user_profile_id = auth.uid()
 $$;
 
 CREATE OR REPLACE FUNCTION get_my_person_id()
@@ -91,18 +92,18 @@ SET search_path = public AS $$
   END
 $$;
 
--- Families policies
-CREATE POLICY "super_admin manages all families"  ON families FOR ALL    USING (is_super_admin());
-CREATE POLICY "admins manage families"            ON families FOR ALL    USING (tenant_id = get_my_tenant_id() AND EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND 'tenant_admin' = ANY(role)));
-CREATE POLICY "family members see own family"     ON families FOR SELECT USING (id IN (SELECT get_my_family_ids()));
+-- Accounts policies
+CREATE POLICY "super_admin manages all accounts"  ON accounts FOR ALL    USING (is_super_admin());
+CREATE POLICY "admins manage accounts"            ON accounts FOR ALL    USING (tenant_id = get_my_tenant_id() AND EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND 'tenant_admin' = ANY(role)));
+CREATE POLICY "account members see own account"     ON accounts FOR SELECT USING (id IN (SELECT get_my_account_ids()));
 
--- Family members policies
-CREATE POLICY "super_admin manages all family_members" ON family_members FOR ALL    USING (is_super_admin());
-CREATE POLICY "admins manage family_members"           ON family_members FOR ALL    USING (tenant_id = get_my_tenant_id() AND EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND 'tenant_admin' = ANY(role)));
-CREATE POLICY "family members see own family"          ON family_members FOR SELECT USING (user_profile_id = auth.uid() OR family_id IN (SELECT get_my_family_ids()));
+-- Account members policies
+CREATE POLICY "super_admin manages all account_members" ON account_members FOR ALL    USING (is_super_admin());
+CREATE POLICY "admins manage account_members"           ON account_members FOR ALL    USING (tenant_id = get_my_tenant_id() AND EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND 'tenant_admin' = ANY(role)));
+CREATE POLICY "account members see own account"          ON account_members FOR SELECT USING (user_profile_id = auth.uid() OR account_id IN (SELECT get_my_account_ids()));
 
 -- People policies
 CREATE POLICY "super_admin manages all people"  ON people FOR ALL    USING (is_super_admin());
 CREATE POLICY "staff see all people"            ON people FOR SELECT USING (tenant_id = get_my_tenant_id() AND EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND 'tenant_admin' = ANY(role)));
-CREATE POLICY "parents see own family people"   ON people FOR SELECT USING (tenant_id = get_my_tenant_id() AND family_id IN (SELECT get_my_family_ids()));
+CREATE POLICY "account holders see own account people"   ON people FOR SELECT USING (tenant_id = get_my_tenant_id() AND account_id IN (SELECT get_my_account_ids()));
 CREATE POLICY "adult students see self"         ON people FOR SELECT USING (tenant_id = get_my_tenant_id() AND id = get_my_person_id());

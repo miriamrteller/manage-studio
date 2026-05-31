@@ -1,40 +1,40 @@
 import { TenantDB } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
-import type { Class, Enrolment, Tenant } from '@shared/schemas';
+import type { Offering, Engagement, Tenant } from '@shared/schemas';
 import { EnrolmentService } from '../service';
 import { computeClassTotal } from './computeClassTotal';
 
 export type OfflinePaymentMethod = 'cash' | 'check' | 'bank_transfer';
 
-export function buildPaymentLink(enrolmentId: string): string {
-  return `${window.location.origin}/enrol/pay/${enrolmentId}`;
+export function buildPaymentLink(engagementId: string): string {
+  return `${window.location.origin}/enrol/pay/${engagementId}`;
 }
 
 export class AdminEnrolmentService {
   /** Mark enrolment active and record an offline payment (admin in-person). */
   static async recordOfflinePayment(
     tenant: Tenant,
-    enrolmentId: string,
-    classRow: Pick<Class, 'price_minor' | 'currency'>,
+    engagementId: string,
+    classRow: Pick<Offering, 'price_minor' | 'currency'>,
     personId: string,
-    familyId: string | null,
+    accountId: string | null,
     paymentMethod: OfflinePaymentMethod,
-  ): Promise<Enrolment> {
+  ): Promise<Engagement> {
     const { pretaxMinor, vatMinor, totalMinor, vatRate, currency } = computeClassTotal(
       classRow,
       tenant,
     );
     const paidAt = new Date().toISOString();
 
-    const enrolment = await EnrolmentService.update(tenant, enrolmentId, {
+    const enrolment = await EnrolmentService.update(tenant, engagementId, {
       status: 'active',
       payment_received_at: paidAt,
     });
 
     const { error: paymentError } = await TenantDB.insert('payments', tenant, {
-      family_id: familyId,
+      account_id: accountId,
       person_id: personId,
-      enrolment_id: enrolmentId,
+      engagement_id: engagementId,
       pretax_amount_minor: pretaxMinor,
       vat_rate: vatRate,
       vat_amount_minor: vatMinor,
@@ -42,7 +42,7 @@ export class AdminEnrolmentService {
       currency,
       status: 'succeeded',
       paid_at: paidAt,
-      description: `Offline ${paymentMethod} — enrolment ${enrolmentId}`,
+      description: `Offline ${paymentMethod} — enrolment ${engagementId}`,
     });
 
     if (paymentError) {
@@ -60,12 +60,12 @@ export class AdminEnrolmentService {
       recipientName: string;
       studentName: string;
       className: string;
-      enrolmentId: string;
+      engagementId: string;
       totalMinor: number;
       currency: string;
     },
   ): Promise<void> {
-    const paymentUrl = buildPaymentLink(options.enrolmentId);
+    const paymentUrl = buildPaymentLink(options.engagementId);
     const amountFormatted = (options.totalMinor / 100).toLocaleString(undefined, {
       style: 'currency',
       currency: options.currency,

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { TeacherService } from '../service';
-import { type Teacher } from '@shared/schemas';
+import { type Staff } from '@shared/schemas';
 import { useTenant } from '@/hooks/useTenant';
 
 const PAGE_SIZE = 50;
@@ -31,7 +31,7 @@ export function useTeachers({ page = 1, enabled = true }: UseTeachersOptions = {
 
   // Create mutation
   const createMutation = useMutation({
-    mutationFn: async (newTeacher: Partial<Teacher>) => {
+    mutationFn: async (newTeacher: Partial<Staff>) => {
       if (!tenant) throw new Error('Tenant not initialized');
       return TeacherService.create(tenant, newTeacher);
     },
@@ -42,7 +42,7 @@ export function useTeachers({ page = 1, enabled = true }: UseTeachersOptions = {
 
   // Update mutation
   const updateMutation = useMutation({
-    mutationFn: async (teacherData: Partial<Teacher>) => {
+    mutationFn: async (teacherData: Partial<Staff>) => {
       if (!tenant || !teacherData.id) throw new Error('Tenant not initialized or missing teacher ID');
       return TeacherService.update(tenant, teacherData.id, teacherData);
     },

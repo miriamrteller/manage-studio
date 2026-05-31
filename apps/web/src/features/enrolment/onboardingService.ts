@@ -1,6 +1,6 @@
 import { BaseService } from '@/services/base.service';
 import { TenantDB } from '@/lib/db';
-import { PersonSchema, FamilySchema, FamilyMemberSchema, type Person, type Family, type FamilyMember } from '@shared/schemas';
+import { PersonSchema, AccountSchema, AccountMemberSchema, type Person, type Account, type AccountMember } from '@shared/schemas';
 import { z } from 'zod';
 import type { Tenant } from '@shared/schemas';
 import { FamilyInputSchema } from '@/features/families/service';
@@ -16,7 +16,7 @@ export const NewMinorOnboardingInputSchema = z.object({
   guardian_name: z.string().min(1, 'Guardian name required'),
   guardian_email: z.string().email('Invalid email').optional(),
   guardian_phone: z.string().optional(),
-  guardian_role: z.enum(['parent', 'guardian']).default('parent'),
+  guardian_role: z.enum(['account_holder', 'member']).default('account_holder'),
 });
 
 export type NewMinorOnboardingInput = z.infer<typeof NewMinorOnboardingInputSchema>;
@@ -31,9 +31,9 @@ export const NewAdultOnboardingInputSchema = z.object({
 export type NewAdultOnboardingInput = z.infer<typeof NewAdultOnboardingInputSchema>;
 
 export interface MinorOnboardingResult {
-  family: Family;
+  family: Account;
   person: Person;
-  member: FamilyMember;
+  member: AccountMember;
 }
 
 export interface AdultOnboardingResult {
@@ -70,7 +70,7 @@ export class EnrolmentOnboardingService extends BaseService {
 
   /**
    * Create a new minor student with their family and guardian record.
-   * Order: family → person (with family_id) → family_member.
+   * Order: family → person (with account_id) → family_member.
    */
   static async createMinorWithFamily(
     tenant: Tenant,
@@ -86,22 +86,22 @@ export class EnrolmentOnboardingService extends BaseService {
       contact_phone: validated.guardian_phone,
     };
     const { data: familyData, error: familyError } = await TenantDB.insert(
-      'families',
+      'accounts',
       tenant,
       familyPayload
     )
       .select()
       .single();
     if (familyError) throw new Error(`Failed to create family: ${familyError.message}`);
-    const family = FamilySchema.parse(familyData);
-    await this.logAudit(tenant, 'CREATE', 'families', family.id);
+    const family = AccountSchema.parse(familyData);
+    await this.logAudit(tenant, 'CREATE', 'accounts', family.id);
 
     // 2. Create student person linked to family
     const personPayload = {
       name: validated.student_name,
       date_of_birth: validated.student_date_of_birth,
       gender: validated.student_gender,
-      family_id: family.id,
+      account_id: family.id,
       status: 'active' as const,
     };
     const { data: personData, error: personError } = await TenantDB.insert(
@@ -117,22 +117,22 @@ export class EnrolmentOnboardingService extends BaseService {
 
     // 3. Create family_member for guardian
     const memberPayload = {
-      family_id: family.id,
+      account_id: family.id,
       name: validated.guardian_name,
       email: validated.guardian_email,
       phone: validated.guardian_phone,
       role: validated.guardian_role,
     };
     const { data: memberData, error: memberError } = await TenantDB.insert(
-      'family_members',
+      'account_members',
       tenant,
       memberPayload
     )
       .select()
       .single();
     if (memberError) throw new Error(`Failed to create guardian record: ${memberError.message}`);
-    const member = FamilyMemberSchema.parse(memberData);
-    await this.logAudit(tenant, 'CREATE', 'family_members', member.id);
+    const member = AccountMemberSchema.parse(memberData);
+    await this.logAudit(tenant, 'CREATE', 'account_members', member.id);
 
     return { family, person, member };
   }

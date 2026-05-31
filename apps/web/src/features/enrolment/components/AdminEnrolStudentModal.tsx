@@ -12,7 +12,7 @@ import { useClasses } from '@/features/classes/hooks/useClasses';
 import { useLevels } from '@/features/levels/hooks/useLevels';
 import { useTenant } from '@/hooks/useTenant';
 import { formatCurrency } from '@shared/format';
-import type { Class } from '@shared/schemas';
+import type { Offering } from '@shared/schemas';
 
 type AdminEnrolStep = 'class' | 'payment' | 'pay_now' | 'done';
 
@@ -55,11 +55,11 @@ export function AdminEnrolStudentModal({
   const queryClient = useQueryClient();
 
   const [step, setStep] = useState<AdminEnrolStep>('class');
-  const [selectedClass, setSelectedClass] = useState<Class | null>(null);
+  const [selectedClass, setSelectedClass] = useState<Offering | null>(null);
   const [paymentChoice, setPaymentChoice] = useState<AdminPaymentChoice | null>(null);
   const [offlineMethod, setOfflineMethod] = useState<OfflinePaymentMethod>('cash');
   const [linkEmail, setLinkEmail] = useState(guardianEmail ?? '');
-  const [enrolmentId, setEnrolmentId] = useState<string | null>(null);
+  const [engagementId, setEnrolmentId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [doneMessage, setDoneMessage] = useState<string | null>(null);
@@ -125,8 +125,8 @@ export function AdminEnrolStudentModal({
 
     const created = await EnrolmentService.create(tenant, {
       person_id: personId,
-      class_id: selectedClass.id,
-      term_id: selectedClass.term_id,
+      offering_id: selectedClass.id,
+      season_id: selectedClass.season_id,
       status: 'pending_payment',
     });
 
@@ -146,7 +146,7 @@ export function AdminEnrolStudentModal({
     setIsSubmitting(true);
 
     try {
-      const id = enrolmentId ?? (await createPendingEnrolment());
+      const id = engagementId ?? (await createPendingEnrolment());
       setEnrolmentId(id);
 
       if (choice === 'pay_now') {
@@ -166,7 +166,7 @@ export function AdminEnrolStudentModal({
           recipientName: guardianName ?? personName,
           studentName: personName,
           className: selectedClass.name,
-          enrolmentId: id,
+          engagementId: id,
           totalMinor: pricing.totalMinor,
           currency: pricing.currency,
         });
@@ -251,7 +251,7 @@ export function AdminEnrolStudentModal({
             <ul className="space-y-2 max-h-64 overflow-y-auto" role="listbox">
               {availableClasses.map((cls) => {
                 const isSelected = selectedClass?.id === cls.id;
-                const levelName = cls.level_id ? levelNameById.get(cls.level_id) : null;
+                const levelName = cls.category_id ? levelNameById.get(cls.category_id) : null;
                 const ageLabel = formatLevelWithAge(levelName, cls.min_age, cls.max_age);
 
                 return (
@@ -260,7 +260,7 @@ export function AdminEnrolStudentModal({
                       type="button"
                       role="option"
                       aria-selected={isSelected}
-                      onClick={() => setSelectedClass(cls as Class)}
+                      onClick={() => setSelectedClass(cls as Offering)}
                       className={`w-full text-left p-3 rounded-lg border transition-colors ${
                         isSelected
                           ? 'border-blue-600 bg-blue-50'
@@ -389,12 +389,12 @@ export function AdminEnrolStudentModal({
         </div>
       )}
 
-      {step === 'pay_now' && selectedClass && enrolmentId && (
+      {step === 'pay_now' && selectedClass && engagementId && (
         <div className="space-y-4">
           <p className="text-sm text-gray-600">{t('pages.admin_enrol.pay_now_inline')}</p>
           <EnrolmentPaymentForm
             classId={selectedClass.id}
-            enrolmentId={enrolmentId}
+            engagementId={engagementId}
             onPaid={() => void handlePaymentSuccess()}
             onPrevious={() => setStep('payment')}
           />
@@ -404,9 +404,9 @@ export function AdminEnrolStudentModal({
       {step === 'done' && (
         <div className="space-y-4">
           <p className="text-sm text-gray-700">{doneMessage}</p>
-          {paymentChoice === 'send_link' && enrolmentId && (
+          {paymentChoice === 'send_link' && engagementId && (
             <p className="text-xs text-gray-500 break-all">
-              {t('pages.admin_enrol.link_copy')}: {buildPaymentLink(enrolmentId)}
+              {t('pages.admin_enrol.link_copy')}: {buildPaymentLink(engagementId)}
             </p>
           )}
           <Button variant="primary" className="w-full" onClick={handleClose}>

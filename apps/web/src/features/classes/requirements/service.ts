@@ -2,13 +2,13 @@ import { BaseService } from '@/services/base.service';
 import { TenantDB } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
 import {
-  ClassRequirementSchema,
+  OfferingRequirementSchema,
   RequirementTemplateSchema,
   GenderConfigSchema,
   LevelConfigSchema,
   DocumentConfigSchema,
   ManualReviewConfigSchema,
-  type ClassRequirement,
+  type OfferingRequirement,
   type RequirementTemplate,
   type Tenant,
 } from '@shared/schemas';
@@ -76,37 +76,37 @@ export class RequirementTemplateService extends BaseService {
 // ── Class Requirements (link rows) ────────────────────────────────────────────
 
 // Schema for the joined query result (class_requirements + requirement_templates)
-export const ClassRequirementWithTemplateSchema = ClassRequirementSchema.extend({
+export const OfferingRequirementWithTemplateSchema = OfferingRequirementSchema.extend({
   requirement_templates: RequirementTemplateSchema.nullable().optional(),
 });
-export type ClassRequirementWithTemplate = z.infer<typeof ClassRequirementWithTemplateSchema>;
+export type OfferingRequirementWithTemplate = z.infer<typeof OfferingRequirementWithTemplateSchema>;
 
 export class RequirementService extends BaseService {
   /** Fetch all requirements for a class, joined with their template details. */
-  static async list(tenant: Tenant, classId: string): Promise<ClassRequirementWithTemplate[]> {
+  static async list(tenant: Tenant, classId: string): Promise<OfferingRequirementWithTemplate[]> {
     return this.withRetry(async () => {
       const { data, error } = await supabase
-        .from('class_requirements')
+        .from('offering_requirements')
         .select('*, requirement_templates(*)')
         .eq('tenant_id', tenant.id)
-        .eq('class_id', classId)
+        .eq('offering_id', classId)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      return (data || []).map(r => ClassRequirementWithTemplateSchema.parse(r));
+      return (data || []).map(r => OfferingRequirementWithTemplateSchema.parse(r));
     }, 'RequirementService.list');
   }
 
   /** Link a template to a class. */
-  static async linkTemplate(tenant: Tenant, classId: string, templateId: string): Promise<ClassRequirement> {
+  static async linkTemplate(tenant: Tenant, classId: string, templateId: string): Promise<OfferingRequirement> {
     return this.withRetry(async () => {
-      const payload = { class_id: classId, requirement_template_id: templateId };
-      const { data, error } = await TenantDB.insert('class_requirements', tenant, payload)
+      const payload = { offering_id: classId, requirement_template_id: templateId };
+      const { data, error } = await TenantDB.insert('offering_requirements', tenant, payload)
         .select()
         .single();
       if (error) throw error;
-      const result = ClassRequirementSchema.parse(data);
-      await this.logAudit(tenant, 'CREATE', 'class_requirements', result.id);
+      const result = OfferingRequirementSchema.parse(data);
+      await this.logAudit(tenant, 'CREATE', 'offering_requirements', result.id);
       return result;
     }, 'RequirementService.linkTemplate');
   }
@@ -114,9 +114,9 @@ export class RequirementService extends BaseService {
   /** Remove a requirement link from a class. */
   static async delete(tenant: Tenant, id: string) {
     return this.withRetry(async () => {
-      const { error } = await TenantDB.delete('class_requirements', tenant, id);
+      const { error } = await TenantDB.delete('offering_requirements', tenant, id);
       if (error) throw error;
-      await this.logAudit(tenant, 'DELETE', 'class_requirements', id);
+      await this.logAudit(tenant, 'DELETE', 'offering_requirements', id);
     }, 'RequirementService.delete');
   }
 }

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { FamilyService, type FamilySortField, DEFAULT_FAMILY_SORT } from '../service';
+import { FamilyService, type AccountSortField, DEFAULT_FAMILY_SORT } from '../service';
 import { useTenant } from '@/hooks/useTenant';
 import type { SortOrder } from '@/lib/list-query';
 
@@ -9,7 +9,7 @@ interface UseFamiliesOptions {
   page?: number;
   pageSize?: number;
   searchQuery?: string;
-  sortField?: FamilySortField;
+  sortField?: AccountSortField;
   sortOrder?: SortOrder;
   enabled?: boolean;
 }

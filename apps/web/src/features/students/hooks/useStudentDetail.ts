@@ -3,20 +3,20 @@ import { useTenant } from '@/hooks/useTenant';
 import { TenantDB } from '@/lib/db';
 import {
   PersonSchema,
-  FamilySchema,
-  FamilyMemberSchema,
+  AccountSchema,
+  AccountMemberSchema,
   ContactPreferencesSchema,
-  EnrolmentSchema,
+  EngagementSchema,
   BillingAccountSchema,
-  ClassSchema,
+  OfferingSchema,
   type BillingAccount,
-  type Class,
+  type Offering,
 } from '@shared/schemas';
 
-export interface EnrolmentWithDetails {
+export interface EngagementWithDetails {
   id: string;
-  class_id: string;
-  term_id: string;
+  offering_id: string;
+  season_id: string | null | undefined;
   status: string;
   billing_account_id: string | null | undefined;
   created_at: string;
@@ -46,28 +46,28 @@ export function useStudentDetail(personId: string | null) {
   });
 
   const familyQuery = useQuery({
-    queryKey: ['student-detail-family', tenant?.id, personQuery.data?.family_id],
+    queryKey: ['student-detail-family', tenant?.id, personQuery.data?.account_id],
     queryFn: async () => {
-      if (!tenant || !personQuery.data?.family_id) return null;
-      const { data, error } = await TenantDB.selectFor('families', tenant)
-        .eq('id', personQuery.data.family_id)
+      if (!tenant || !personQuery.data?.account_id) return null;
+      const { data, error } = await TenantDB.selectFor('accounts', tenant)
+        .eq('id', personQuery.data.account_id)
         .single();
       if (error) throw error;
-      return FamilySchema.parse(data);
+      return AccountSchema.parse(data);
     },
-    enabled: isReady && !!personQuery.data?.family_id,
+    enabled: isReady && !!personQuery.data?.account_id,
   });
 
   const membersQuery = useQuery({
-    queryKey: ['student-detail-members', tenant?.id, personQuery.data?.family_id],
+    queryKey: ['student-detail-members', tenant?.id, personQuery.data?.account_id],
     queryFn: async () => {
-      if (!tenant || !personQuery.data?.family_id) return [];
-      const { data, error } = await TenantDB.selectFor('family_members', tenant)
-        .eq('family_id', personQuery.data.family_id);
+      if (!tenant || !personQuery.data?.account_id) return [];
+      const { data, error } = await TenantDB.selectFor('account_members', tenant)
+        .eq('account_id', personQuery.data.account_id);
       if (error) throw error;
-      return (data || []).map((m: unknown) => FamilyMemberSchema.parse(m));
+      return (data || []).map((m: unknown) => AccountMemberSchema.parse(m));
     },
-    enabled: isReady && !!personQuery.data?.family_id,
+    enabled: isReady && !!personQuery.data?.account_id,
   });
 
   const contactPrefsQuery = useQuery({
@@ -88,11 +88,11 @@ export function useStudentDetail(personId: string | null) {
     queryKey: ['student-detail-enrolments', tenant?.id, personId],
     queryFn: async () => {
       if (!tenant || !personId) return [];
-      const { data, error } = await TenantDB.selectFor('enrolments', tenant)
+      const { data, error } = await TenantDB.selectFor('engagements', tenant)
         .eq('person_id', personId)
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return (data || []).map((e: unknown) => EnrolmentSchema.parse(e));
+      return (data || []).map((e: unknown) => EngagementSchema.parse(e));
     },
     enabled: isReady,
   });
@@ -100,7 +100,7 @@ export function useStudentDetail(personId: string | null) {
   // Fetch classes for enrolments and billing accounts where set
   const enrolments = enrolmentsQuery.data ?? [];
 
-  const classIdsToFetch = [...new Set(enrolments.map((e) => e.class_id))];
+  const classIdsToFetch = [...new Set(enrolments.map((e) => e.offering_id))];
   const billingIdsToFetch = [
     ...new Set(
       enrolments
@@ -113,12 +113,12 @@ export function useStudentDetail(personId: string | null) {
     queryKey: ['student-detail-classes', tenant?.id, classIdsToFetch],
     queryFn: async () => {
       if (!tenant || classIdsToFetch.length === 0) return [];
-      const { data, error } = await TenantDB.selectFor('classes', tenant).in(
+      const { data, error } = await TenantDB.selectFor('offerings', tenant).in(
         'id',
         classIdsToFetch
       );
       if (error) throw error;
-      return (data || []).map((c: unknown) => ClassSchema.parse(c));
+      return (data || []).map((c: unknown) => OfferingSchema.parse(c));
     },
     enabled: isReady && classIdsToFetch.length > 0,
   });
@@ -137,21 +137,21 @@ export function useStudentDetail(personId: string | null) {
     enabled: isReady && billingIdsToFetch.length > 0,
   });
 
-  const classMap = new Map<string, Class>(
+  const classMap = new Map<string, Offering>(
     (classesQuery.data ?? []).map((c) => [c.id, c])
   );
   const billingMap = new Map<string, BillingAccount>(
     (billingAccountsQuery.data ?? []).map((a) => [a.id, a])
   );
 
-  const enrolmentsWithDetails: EnrolmentWithDetails[] = enrolments.map((e) => ({
+  const enrolmentsWithDetails: EngagementWithDetails[] = enrolments.map((e) => ({
     id: e.id,
-    class_id: e.class_id,
-    term_id: e.term_id,
+    offering_id: e.offering_id,
+    season_id: e.season_id,
     status: e.status,
     billing_account_id: e.billing_account_id,
     created_at: e.created_at,
-    className: classMap.get(e.class_id)?.name ?? null,
+    className: classMap.get(e.offering_id)?.name ?? null,
     billingAccount: e.billing_account_id ? (billingMap.get(e.billing_account_id) ?? null) : null,
   }));
 

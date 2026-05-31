@@ -1,6 +1,6 @@
 import { BaseService } from '@/services/base.service';
 import { TenantDB } from '@/lib/db';
-import { TeacherSchema, type Teacher } from '@shared/schemas';
+import { StaffSchema, type Staff } from '@shared/schemas';
 import { z } from 'zod';
 import type { Tenant } from '@shared/schemas';
 
@@ -16,7 +16,7 @@ const TeacherInputSchema = z.object({
 
 /**
  * TeacherService: All teacher data operations
- * - Validates input/output with TeacherSchema
+ * - Validates input/output with StaffSchema
  * - Uses TenantDB for RLS enforcement
  * - Inherits retry logic from BaseService
  */
@@ -29,7 +29,7 @@ export class TeacherService extends BaseService {
     const from = (page - 1) * pageSize;
 
     return this.withRetry(async () => {
-      const { data, error, count } = await TenantDB.selectFor('teachers', tenant, {
+      const { data, error, count } = await TenantDB.selectFor('staff', tenant, {
         count: 'exact',
       })
         .order('name', { ascending: true })
@@ -38,7 +38,7 @@ export class TeacherService extends BaseService {
       if (error) throw error;
 
       return {
-        teachers: (data || []).map(t => TeacherSchema.parse(t)),
+        teachers: (data || []).map(t => StaffSchema.parse(t)),
         total: count || 0,
         page,
         pageSize,
@@ -48,45 +48,45 @@ export class TeacherService extends BaseService {
 
   static async get(tenant: Tenant, id: string) {
     return this.withRetry(async () => {
-      const { data, error } = await TenantDB.selectFor('teachers', tenant)
+      const { data, error } = await TenantDB.selectFor('staff', tenant)
         .eq('id', id)
         .single();
 
       if (error) throw error;
       if (!data) throw new Error('Teacher not found');
 
-      return TeacherSchema.parse(data);
+      return StaffSchema.parse(data);
     }, 'TeacherService.get');
   }
 
-  static async create(tenant: Tenant, teacherData: Partial<Teacher>) {
+  static async create(tenant: Tenant, teacherData: Partial<Staff>) {
     // Validate input (catches client-side typos)
     const validated = TeacherInputSchema.parse(teacherData);
 
     return this.withRetry(async () => {
-      const { data, error } = await TenantDB.insert('teachers', tenant, validated)
+      const { data, error } = await TenantDB.insert('staff', tenant, validated)
         .select()
         .single();
 
       if (error) throw error;
 
-      const result = TeacherSchema.parse(data);
+      const result = StaffSchema.parse(data);
       await this.logAudit(tenant, 'CREATE', 'teachers', result.id);
       return result;
     }, 'TeacherService.create');
   }
 
-  static async update(tenant: Tenant, id: string, teacherData: Partial<Teacher>) {
+  static async update(tenant: Tenant, id: string, teacherData: Partial<Staff>) {
     const validated = TeacherInputSchema.parse(teacherData);
 
     return this.withRetry(async () => {
-      const { data, error } = await TenantDB.update('teachers', tenant, id, validated)
+      const { data, error } = await TenantDB.update('staff', tenant, id, validated)
         .select()
         .single();
 
       if (error) throw error;
 
-      const result = TeacherSchema.parse(data);
+      const result = StaffSchema.parse(data);
       await this.logAudit(tenant, 'UPDATE', 'teachers', id);
       return result;
     }, 'TeacherService.update');
@@ -94,7 +94,7 @@ export class TeacherService extends BaseService {
 
   static async delete(tenant: Tenant, id: string) {
     return this.withRetry(async () => {
-      const { error } = await TenantDB.delete('teachers', tenant, id);
+      const { error } = await TenantDB.delete('staff', tenant, id);
       if (error) throw error;
 
       await this.logAudit(tenant, 'DELETE', 'teachers', id);

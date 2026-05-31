@@ -5,21 +5,21 @@ import { EmptyState } from '@/components/shared';
 import { FilterMultiSelect, ListSearchInput, SortableHeader, type FilterOption } from '@/components/shared/table';
 import { useSortState } from '@/hooks/useSortState';
 import { useTerms } from '../hooks/useTerms';
-import { DEFAULT_TERM_SORT, type TermSortField } from '../service';
+import { DEFAULT_TERM_SORT, type SeasonSortField } from '../service';
 import { TermForm } from './TermForm';
-import type { Term } from '@shared/schemas';
+import type { Season } from '@shared/schemas';
 
 export const TermsList = () => {
   const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatuses, setSelectedStatuses] = useState<FilterOption[]>([]);
-  const { sortField, sortOrder, toggleSort } = useSortState<TermSortField>(
+  const { sortField, sortOrder, toggleSort } = useSortState<SeasonSortField>(
     DEFAULT_TERM_SORT.field,
     DEFAULT_TERM_SORT.order
   );
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
-  const [editingTerm, setEditingTerm] = useState<Term | null>(null);
+  const [editingTerm, setEditingTerm] = useState<Season | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
   const termsData = useTerms({
@@ -30,7 +30,7 @@ export const TermsList = () => {
     sortOrder,
   });
 
-  const handleSort = (field: TermSortField) => {
+  const handleSort = (field: SeasonSortField) => {
     toggleSort(field, () => setPage(1));
   };
 
@@ -43,11 +43,11 @@ export const TermsList = () => {
     [t]
   );
 
-  const handleFormSubmit = async (data: Partial<Term>) => {
+  const handleFormSubmit = async (data: Partial<Season>) => {
     if (editingTerm?.id) {
       await new Promise<void>((resolve, reject) => {
         termsData.updateTerm(
-          { ...editingTerm, ...data } as Term,
+          { ...editingTerm, ...data } as Season,
           { onSuccess: () => resolve(), onError: reject }
         );
       });
@@ -60,19 +60,19 @@ export const TermsList = () => {
     }
   };
 
-  const handleEdit = (term: Term) => {
+  const handleEdit = (term: Season) => {
     setEditingTerm(term);
   };
 
   const showFormModal = isCreating || editingTerm !== null;
 
-  const handleDeleteClick = (termId: string) => {
-    setDeleteConfirmId(termId);
+  const handleDeleteClick = (seasonId: string) => {
+    setDeleteConfirmId(seasonId);
   };
 
-  const handleConfirmDelete = async (termId: string) => {
+  const handleConfirmDelete = async (seasonId: string) => {
     try {
-      termsData.deleteTerm(termId, {
+      termsData.deleteTerm(seasonId, {
         onSuccess: () => {
           setDeleteConfirmId(null);
         },

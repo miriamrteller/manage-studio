@@ -10,7 +10,7 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useTenant } from '@/hooks/useTenant';
 import { TenantDB } from '@/lib/db';
 import { formatCurrency } from '@shared/format';
-import { ClassSchema } from '@shared/schemas';
+import { OfferingSchema } from '@shared/schemas';
 
 /**
  * EnrolPayPage: Complete payment for a pending enrolment (e.g. from admin-sent link).
@@ -18,7 +18,7 @@ import { ClassSchema } from '@shared/schemas';
 export default function EnrolPayPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const { enrolmentId } = useParams<{ enrolmentId: string }>();
+  const { engagementId } = useParams<{ engagementId: string }>();
   const { user, isLoading: authLoading } = useCurrentUser();
   const tenant = useTenant();
   const [paid, setPaid] = useState(false);
@@ -27,17 +27,17 @@ export default function EnrolPayPage() {
     if (!authLoading && !user) {
       navigate('/login', {
         replace: true,
-        state: { from: `/enrol/pay/${enrolmentId ?? ''}` },
+        state: { from: `/enrol/pay/${engagementId ?? ''}` },
       });
     }
-  }, [user, authLoading, navigate, enrolmentId]);
+  }, [user, authLoading, navigate, engagementId]);
 
   const detailQuery = useQuery({
-    queryKey: ['enrol-pay-detail', tenant?.id, enrolmentId],
+    queryKey: ['enrol-pay-detail', tenant?.id, engagementId],
     queryFn: async () => {
-      if (!tenant || !enrolmentId) throw new Error('Missing params');
+      if (!tenant || !engagementId) throw new Error('Missing params');
 
-      const enrolment = await EnrolmentService.get(tenant, enrolmentId);
+      const enrolment = await EnrolmentService.get(tenant, engagementId);
       if (enrolment.status === 'active') {
         return { enrolment, classRow: null, alreadyPaid: true as const };
       }
@@ -45,18 +45,18 @@ export default function EnrolPayPage() {
         throw new Error(t('pages.enrol_pay.not_payable'));
       }
 
-      const { data: classData, error: classError } = await TenantDB.selectFor('classes', tenant)
-        .eq('id', enrolment.class_id)
+      const { data: classData, error: classError } = await TenantDB.selectFor('offerings', tenant)
+        .eq('id', enrolment.offering_id)
         .single();
       if (classError) throw classError;
 
       return {
         enrolment,
-        classRow: ClassSchema.parse(classData),
+        classRow: OfferingSchema.parse(classData),
         alreadyPaid: false as const,
       };
     },
-    enabled: !!tenant?.id && !!enrolmentId && !!user,
+    enabled: !!tenant?.id && !!engagementId && !!user,
   });
 
   if (authLoading || !user) {
@@ -124,7 +124,7 @@ export default function EnrolPayPage() {
 
       <EnrolmentPaymentForm
         classId={classRow.id}
-        enrolmentId={enrolment.id}
+        engagementId={enrolment.id}
         personId={enrolment.person_id}
         onPaid={() => setPaid(true)}
         onPrevious={() => navigate('/classes')}

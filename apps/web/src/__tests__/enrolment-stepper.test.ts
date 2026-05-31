@@ -1,5 +1,5 @@
 /**
- * Test: EnrolmentStepper Component
+ * Test: EngagementStepper Component
  * Validates multi-step wizard component flows
  * Run: pnpm test enrolment-stepper.test.ts
  */
@@ -26,7 +26,7 @@ describe('EnrolmentStepper Component', () => {
     });
 
     it('should render all steps with progress indicator', () => {
-      // Test: EnrolmentStepper renders
+      // Test: EngagementStepper renders
       // Expected: Progress bar shows 5 steps
       expect(true).toBe(true);
     });
@@ -112,19 +112,19 @@ describe('EnrolmentStepper Component', () => {
     });
 
     it('should show confirmation after submission', () => {
-      // Test: Enrolment created successfully
+      // Test: Engagement created successfully
       // Expected: Confirmation step shows success message
       expect(true).toBe(true);
     });
 
     it('should call onSuccess callback', () => {
-      // Test: Enrolment completed
+      // Test: Engagement completed
       // Expected: onSuccess(enrolment) called
       expect(true).toBe(true);
     });
 
     it('should handle submission errors', () => {
-      // Test: Enrolment creation fails
+      // Test: Engagement creation fails
       // Expected: Error displayed, user can retry
       expect(true).toBe(true);
     });

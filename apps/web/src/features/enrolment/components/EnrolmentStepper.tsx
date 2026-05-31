@@ -17,7 +17,7 @@ import { useClasses } from '@/features/classes/hooks/useClasses';
 import { useRequirements } from '@/features/classes/requirements/hooks/useRequirements';
 import { filterClassesByAge, getRequirementInfoNotes, formatLevelWithAge, ageAt } from '../lib/check-requirements';
 import { useLevels } from '@/features/levels/hooks/useLevels';
-import type { Enrolment } from '@shared/schemas';
+import type { Engagement } from '@shared/schemas';
 
 export type EnrolmentStep = 'person' | 'class' | 'notification' | 'checkout' | 'confirmation';
 
@@ -46,7 +46,7 @@ export interface EnrolmentStepperProps {
   /**
    * Callback when enrolment is successfully created
    */
-  onSuccess?: (enrolment: Enrolment) => void;
+  onSuccess?: (enrolment: Engagement) => void;
   
   /**
    * Callback when user cancels enrolment
@@ -55,7 +55,7 @@ export interface EnrolmentStepperProps {
 }
 
 /**
- * Component: EnrolmentStepper
+ * Component: EngagementStepper
  * Multi-step wizard for class enrolment
  * 
  * Flow:
@@ -77,9 +77,9 @@ export function EnrolmentStepper({
 }: EnrolmentStepperProps) {
   const { t } = useTranslation();
   const [currentStep, setCurrentStep] = useState<EnrolmentStep>(initialStep);
-  const [enrolmentData, setEnrolmentData] = useState<Partial<Enrolment>>(() => ({
-    ...(initialClassId ? { class_id: initialClassId } : {}),
-    ...(initialTermId ? { term_id: initialTermId } : {}),
+  const [enrolmentData, setEnrolmentData] = useState<Partial<Engagement>>(() => ({
+    ...(initialClassId ? { offering_id: initialClassId } : {}),
+    ...(initialTermId ? { season_id: initialTermId } : {}),
   }));
 
   // Person DOB stored separately — not part of the Enrolment record
@@ -119,18 +119,18 @@ export function EnrolmentStepper({
     }
   };
 
-  const handleNextStep = (newData?: Partial<Enrolment>) => {
+  const handleNextStep = (newData?: Partial<Engagement>) => {
     if (newData) setEnrolmentData(prev => ({ ...prev, ...newData }));
     goToNextStep();
   };
 
-  const handlePersonNext = (newData?: Partial<Enrolment>, dob?: string | null) => {
+  const handlePersonNext = (newData?: Partial<Engagement>, dob?: string | null) => {
     if (newData) setEnrolmentData(prev => ({ ...prev, ...newData }));
     setPersonDateOfBirth(dob ?? null);
     goToNextStep();
   };
 
-  const handleClassNext = (newData?: Partial<Enrolment>, className?: string) => {
+  const handleClassNext = (newData?: Partial<Engagement>, className?: string) => {
     if (newData) setEnrolmentData(prev => ({ ...prev, ...newData }));
     if (className) setSelectedClassName(className);
     goToNextStep();
@@ -145,7 +145,7 @@ export function EnrolmentStepper({
   useEffect(() => {
     if (currentStep !== 'checkout') return;
     if (checkoutEnrolmentId) return;
-    if (!tenant || !enrolmentData.person_id || !enrolmentData.class_id || !enrolmentData.term_id) {
+    if (!tenant || !enrolmentData.person_id || !enrolmentData.offering_id || !enrolmentData.season_id) {
       return;
     }
 
@@ -186,7 +186,7 @@ export function EnrolmentStepper({
   const handlePaymentSuccess = async () => {
     if (!checkoutEnrolmentId || !tenant) return;
 
-    const poll = async (attempts = 10): Promise<Enrolment | null> => {
+    const poll = async (attempts = 10): Promise<Engagement | null> => {
       const enrolment = await EnrolmentService.get(
         {
           id: tenant.id,
@@ -286,9 +286,9 @@ export function EnrolmentStepper({
 
         {currentStep === 'confirmation' && (
           <StepConfirmation
-            enrolment={enrolmentData as Enrolment}
+            enrolment={enrolmentData as Engagement}
             className={selectedClassName}
-            onClose={() => onSuccess?.(enrolmentData as Enrolment)}
+            onClose={() => onSuccess?.(enrolmentData as Engagement)}
           />
         )}
       </div>
@@ -310,8 +310,8 @@ function StepPerson({
   onNext,
   onCancel,
 }: {
-  data: Partial<Enrolment>;
-  onNext: (data?: Partial<Enrolment>, dob?: string | null) => void;
+  data: Partial<Engagement>;
+  onNext: (data?: Partial<Engagement>, dob?: string | null) => void;
   onCancel?: () => void;
 }) {
   const { t } = useTranslation();
@@ -325,7 +325,7 @@ function StepPerson({
 
   // New minor fields
   const [minorFields, setMinorFields] = useState<Partial<NewMinorOnboardingInput>>({
-    guardian_role: 'parent',
+    guardian_role: 'account_holder',
   });
 
   // New adult fields
@@ -579,9 +579,9 @@ function StepClass({
   onNext,
   onPrevious,
 }: {
-  data: Partial<Enrolment>;
+  data: Partial<Engagement>;
   personDateOfBirth?: string | null;
-  onNext: (data?: Partial<Enrolment>, className?: string) => void;
+  onNext: (data?: Partial<Engagement>, className?: string) => void;
   onPrevious: () => void;
 }) {
   const { t } = useTranslation();
@@ -629,8 +629,8 @@ function StepClass({
     onNext(
       {
         ...data,
-        class_id: selectedClass.id,
-        term_id: selectedClass.term_id,
+        offering_id: selectedClass.id,
+        season_id: selectedClass.season_id,
       },
       selectedClass.name,
     );
@@ -684,7 +684,7 @@ function StepClass({
           {availableClasses.map((cls: {
             id: string;
             name: string;
-            level_id?: string | null;
+            category_id?: string | null;
             day_of_week?: number;
             start_time?: string;
             end_time?: string;
@@ -697,7 +697,7 @@ function StepClass({
             const isSelected = cls.id === selectedClassId;
             const levelName =
               cls.level_name ??
-              (cls.level_id ? levelNameById.get(cls.level_id) : undefined);
+              (cls.category_id ? levelNameById.get(cls.category_id) : undefined);
             const levelLabel = formatLevelWithAge(
               levelName,
               cls.min_age,
@@ -785,7 +785,7 @@ function StepNotification({
   onPrevious,
   onSkip,
 }: {
-  onNext: (data?: Partial<Enrolment>) => void;
+  onNext: (data?: Partial<Engagement>) => void;
   onPrevious: () => void;
   onSkip: () => void;
 }) {
@@ -870,7 +870,7 @@ function StepCheckout({
   onPaymentSuccess,
   onPrevious,
 }: {
-  enrolmentData: Partial<Enrolment>;
+  enrolmentData: Partial<Engagement>;
   checkoutEnrolmentId: string | null;
   checkoutError: string | null;
   isPreparing: boolean;
@@ -879,7 +879,7 @@ function StepCheckout({
 }) {
   const { t } = useTranslation();
 
-  if (!enrolmentData.class_id || !enrolmentData.term_id) {
+  if (!enrolmentData.offering_id || !enrolmentData.season_id) {
     return (
       <p className="text-sm text-destructive" role="alert">
         {t('enrolment.missing_class_or_term')}
@@ -903,8 +903,8 @@ function StepCheckout({
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">{t('enrolment.checkout_desc')}</p>
       <EnrolmentPaymentForm
-        classId={enrolmentData.class_id}
-        enrolmentId={checkoutEnrolmentId}
+        classId={enrolmentData.offering_id}
+        engagementId={checkoutEnrolmentId}
         personId={enrolmentData.person_id}
         onPaid={onPaymentSuccess}
         onPrevious={onPrevious}
@@ -921,7 +921,7 @@ function StepConfirmation({
   className,
   onClose,
 }: {
-  enrolment: Enrolment;
+  enrolment: Engagement;
   className: string;
   onClose: () => void;
 }) {
@@ -940,7 +940,7 @@ function StepConfirmation({
       <div className="p-4 bg-blue-50 rounded-lg text-sm space-y-2 text-start">
         <p>
           <strong>{t('pages.enrolment.class_label')}:</strong>{' '}
-          {className || enrolment.class_id}
+          {className || enrolment.offering_id}
         </p>
         <p>
           <strong>{t('pages.enrolment.status_label')}:</strong> {enrolment.status}
