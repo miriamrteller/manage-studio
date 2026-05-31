@@ -1,0 +1,1 @@
+{"version":3,"file":"EmailMutedText.d.ts","sourceRoot":"","sources":["../../../src/email-templates/primitives/EmailMutedText.tsx"],"names":[],"mappings":"AAAA,OAAO,KAAK,MAAM,OAAO,CAAC;AAI1B,UAAU,mBAAmB;IAC3B,QAAQ,EAAE,KAAK,CAAC,SAAS,CAAC;IAC1B,KAAK,CAAC,EAAE,KAAK,CAAC,aAAa,CAAC;CAC7B;AAED,wBAAgB,cAAc,CAAC,EAAE,QAAQ,EAAE,KAAK,EAAE,EAAE,mBAAmB,2CAEtE"}

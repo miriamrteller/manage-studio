@@ -1,0 +1,1 @@
+{"version":3,"file":"EmailPrimaryButton.d.ts","sourceRoot":"","sources":["../../../src/email-templates/primitives/EmailPrimaryButton.tsx"],"names":[],"mappings":"AAAA,OAAO,KAAK,MAAM,OAAO,CAAC;AAI1B,UAAU,uBAAuB;IAC/B,IAAI,EAAE,MAAM,CAAC;IACb,QAAQ,EAAE,KAAK,CAAC,SAAS,CAAC;CAC3B;AAED,wBAAgB,kBAAkB,CAAC,EAAE,IAAI,EAAE,QAAQ,EAAE,EAAE,uBAAuB,2CAQ7E"}

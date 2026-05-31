@@ -8,6 +8,7 @@
     }
   },
   "otp": {
+    "subject": "קוד האימות שלך — {schoolName}",
     "preview": "קוד האימות שלך",
     "heading": "קוד האימות שלך",
     "greeting_hello": "שלום,",
@@ -26,10 +27,13 @@
     "security_notice": "אם לא ביצעת בקשה זו, אנא התעלם מהודעה זו. אם אתה חושד שלחשבונך יש בעיה, אנא צור קשר עם צוות התמיכה שלנו באופן מיידי."
   },
   "magic_link": {
+    "subject": "התחברות ל{schoolName}",
     "preview": "התחברות ל{schoolName}",
     "greeting_hello": "שלום,",
     "greeting_with_name": "שלום {recipientName},",
     "intro": "קיבלנו בקשה להיכנס לחשבון {schoolName} שלך. אם לא ביצעת פעולה זו, אתה יכול להתעלם מהודעה זו.",
+    "code_heading": "קוד ההתחברות שלך:",
+    "copy_button": "העתק",
     "cta_button": "הכנס לחשבון",
     "expiration_notice": "קישור זה יפוג בעוד {expiresInMinutes} דקות",
     "fallback_text": "אם הכפתור למעלה אינו עובד, העתק והדבק קישור זה לדפדפן שלך:",

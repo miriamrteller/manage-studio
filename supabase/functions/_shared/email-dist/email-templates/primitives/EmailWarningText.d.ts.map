@@ -1,0 +1,1 @@
+{"version":3,"file":"EmailWarningText.d.ts","sourceRoot":"","sources":["../../../src/email-templates/primitives/EmailWarningText.tsx"],"names":[],"mappings":"AAAA,OAAO,KAAK,MAAM,OAAO,CAAC;AAI1B,UAAU,qBAAqB;IAC7B,QAAQ,EAAE,KAAK,CAAC,SAAS,CAAC;IAC1B,KAAK,CAAC,EAAE,KAAK,CAAC,aAAa,CAAC;CAC7B;AAED,wBAAgB,gBAAgB,CAAC,EAAE,QAAQ,EAAE,KAAK,EAAE,EAAE,qBAAqB,2CAE1E"}

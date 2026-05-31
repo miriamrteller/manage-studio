@@ -8,6 +8,7 @@
     }
   },
   "otp": {
+    "subject": "Your verification code — {schoolName}",
     "preview": "Your Verification Code",
     "heading": "Your Verification Code",
     "greeting_hello": "Hello,",
@@ -26,10 +27,13 @@
     "security_notice": "If you didn't request this code, please ignore this message. If you believe your account has been compromised, please contact our support team immediately."
   },
   "magic_link": {
+    "subject": "Sign in to {schoolName}",
     "preview": "Sign in to {schoolName}",
     "greeting_hello": "Hello,",
     "greeting_with_name": "Hello {recipientName},",
     "intro": "We received a request to sign in to your {schoolName} account. If you didn't make this request, you can ignore this message.",
+    "code_heading": "Your sign-in code:",
+    "copy_button": "Copy",
     "cta_button": "Sign In",
     "expiration_notice": "This link expires in {expiresInMinutes} minutes",
     "fallback_text": "If the button above doesn't work, copy and paste this link into your browser:",

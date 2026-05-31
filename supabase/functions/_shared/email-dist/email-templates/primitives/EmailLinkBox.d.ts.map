@@ -1,0 +1,1 @@
+{"version":3,"file":"EmailLinkBox.d.ts","sourceRoot":"","sources":["../../../src/email-templates/primitives/EmailLinkBox.tsx"],"names":[],"mappings":"AAAA,OAAO,KAAK,MAAM,OAAO,CAAC;AAI1B,UAAU,iBAAiB;IACzB,IAAI,EAAE,MAAM,CAAC;IACb,QAAQ,CAAC,EAAE,KAAK,CAAC,SAAS,CAAC;CAC5B;AAED,wBAAgB,YAAY,CAAC,EAAE,IAAI,EAAE,QAAQ,EAAE,EAAE,iBAAiB,2CAejE"}

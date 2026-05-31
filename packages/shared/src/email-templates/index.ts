@@ -3,7 +3,7 @@ export { default as BaseEmailTemplate } from './BaseEmailTemplate.js';
 export type { default as BaseEmailTemplateProps } from './BaseEmailTemplate.js';
 
 export { default as MagicLinkEmail } from './MagicLinkEmail.js';
-export type { default as MagicLinkEmailProps } from './MagicLinkEmail.js';
+export type { MagicLinkEmailProps } from './MagicLinkEmail.js';
 
 export { default as OtpEmail } from './OtpEmail.js';
 export type { default as OtpEmailProps } from './OtpEmail.js';

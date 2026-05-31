@@ -1,95 +1,106 @@
-import "@supabase/functions-js/edge-runtime.d.ts"
+import "@supabase/functions-js/edge-runtime.d.ts";
+import {
+  EMAIL_TEMPLATE_NAMES,
+  sendRenderedEmail,
+} from "../_shared/resend-send.ts";
+import { createServiceClient } from "../_shared/supabase.ts";
+import {
+  getEmailTemplateOverrides,
+  getTenantEmailConfig,
+} from "../_shared/tenant-email.ts";
 
-interface SendOTPEmailRequest {
-  recipient_email: string
-  otp_code: string
-  recipient_name: string
+interface SendOtpEmailRequest {
+  email: string;
+  code: string;
+  expiryMinutes?: number;
+  tenantId?: string;
+  recipientName?: string;
+  /** @deprecated Use email */
+  recipient_email?: string;
+  /** @deprecated Use code */
+  otp_code?: string;
+  /** @deprecated Use recipientName */
+  recipient_name?: string;
 }
 
+const DEFAULT_TENANT_ID =
+  Deno.env.get("DEFAULT_TENANT_ID") ?? "00000000-0000-0000-0000-000000000001";
+
 Deno.serve(async (req) => {
-  // Only allow POST requests
   if (req.method !== "POST") {
-    return new Response(
-      JSON.stringify({ error: "Method not allowed" }),
-      { status: 405, headers: { "Content-Type": "application/json" } },
-    )
+    return new Response(JSON.stringify({ error: "Method not allowed" }), {
+      status: 405,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
   try {
-    const { recipient_email, otp_code, recipient_name } =
-      await req.json() as SendOTPEmailRequest
+    const body = (await req.json()) as SendOtpEmailRequest;
 
-    // Get secrets from environment
-    const resendApiKey = Deno.env.get("RESEND_API_KEY")
-    const fromEmail = Deno.env.get("NOTIFICATION_FROM_EMAIL")
+    const email = body.email ?? body.recipient_email;
+    const code = body.code ?? body.otp_code;
+    const recipientName = body.recipientName ?? body.recipient_name;
+    const expiryMinutes = body.expiryMinutes ?? 10;
+    const tenantId = body.tenantId ?? DEFAULT_TENANT_ID;
 
-    if (!resendApiKey || !fromEmail) {
-      throw new Error("Missing required environment variables")
+    if (!email || !code) {
+      return new Response(
+        JSON.stringify({ error: "email and code are required" }),
+        { status: 400, headers: { "Content-Type": "application/json" } },
+      );
     }
 
-    // Build HTML email content
-    const htmlContent = `
-      <html>
-        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-          <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-            <h2>Your OTP Code</h2>
-            <p>Hi ${recipient_name},</p>
-            <p>Your one-time password for Creative Ballet Academy enrollment is:</p>
-            <div style="background: #f5f5f5; padding: 20px; text-align: center; margin: 20px 0; border-radius: 5px;">
-              <h1 style="color: #d946a6; font-size: 36px; letter-spacing: 5px; margin: 0;">${otp_code}</h1>
-            </div>
-            <p>This code expires in 10 minutes. Do not share this code with anyone.</p>
-            <p>If you did not request this code, please ignore this email.</p>
-            <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
-            <p style="font-size: 12px; color: #666;">Creative Ballet Academy</p>
-          </div>
-        </body>
-      </html>
-    `
+    const fromEmail = Deno.env.get("NOTIFICATION_FROM_EMAIL");
+    if (!fromEmail) {
+      throw new Error("NOTIFICATION_FROM_EMAIL is not configured");
+    }
 
-    // Send email via Resend API
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${resendApiKey}`,
-        "Content-Type": "application/json",
+    const supabase = createServiceClient();
+    const tenant = await getTenantEmailConfig(supabase, tenantId);
+    const overrides = await getEmailTemplateOverrides(
+      supabase,
+      tenant.id,
+      EMAIL_TEMPLATE_NAMES.OTP,
+      tenant.language,
+    );
+
+    const result = await sendRenderedEmail({
+      to: email,
+      from: fromEmail,
+      renderInput: {
+        templateName: EMAIL_TEMPLATE_NAMES.OTP,
+        language: tenant.language,
+        schoolName: tenant.name,
+        tenantColors: {
+          primary_color: tenant.primary_color,
+          accent_color: tenant.accent_color,
+        },
+        stringOverrides: overrides,
+        variables: {
+          otpCode: code,
+          code,
+          expiresInMinutes: expiryMinutes,
+          expiryMinutes,
+          recipientName,
+          usageContext: "email_verification",
+        },
       },
-      body: JSON.stringify({
-        from: fromEmail,
-        to: recipient_email,
-        subject: "Your OTP Code - Creative Ballet Academy",
-        html: htmlContent,
+    });
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        messageId: result.id,
+        expiresInMinutes: expiryMinutes,
       }),
-    })
-
-    const data = await response.json()
-
-    if (!response.ok) {
-      console.error("Resend API error:", data)
-      throw new Error(`Failed to send email: ${data.message}`)
-    }
-
-    return new Response(
-      JSON.stringify({ success: true, message_id: data.id }),
       { status: 200, headers: { "Content-Type": "application/json" } },
-    )
+    );
   } catch (error) {
-    console.error("Error sending OTP email:", error)
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { "Content-Type": "application/json" } },
-    )
+    console.error("Error sending OTP email:", error);
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return new Response(JSON.stringify({ success: false, error: message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
-})
-
-/* To invoke locally:
-
-  1. Run `supabase start` (see: https://supabase.com/docs/reference/cli/supabase-start)
-  2. Make an HTTP request:
-
-  curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/send-otp-email' \
-    --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0' \
-    --header 'Content-Type: application/json' \
-    --data '{"name":"Functions"}'
-
-*/
+});

@@ -8,7 +8,6 @@ import {
   Img,
   Link,
   Preview,
-  Row,
   Section,
   Text,
 } from '@react-email/components';
@@ -26,6 +25,13 @@ export interface EmailColorConfig {
   neutral: string;
 }
 
+export interface EmailFooterStrings {
+  copyright?: string;
+  automated_notice?: string;
+  preferences_link?: string;
+  preferences_url?: string;
+}
+
 /**
  * Base email template properties
  * Follows schema-first approach from SPEC.md 1.13
@@ -36,50 +42,46 @@ interface BaseEmailTemplateProps {
   children: React.ReactNode;
   schoolName: string;
   schoolLogoUrl?: string;
-  
+
   /**
    * Language (REQUIRED) - Used for i18n and computing direction
    * Direction is computed from this: language === 'he' ? 'rtl' : 'ltr'
    */
   language: 'en' | 'he';
-  
+
   /**
    * Color configuration object (OPTIONAL)
    * If not provided, uses defaults
    */
   colors?: EmailColorConfig;
-  
+
   /**
-   * Footer customization (from tenant overrides)
-   * If not provided, uses defaults
+   * Footer strings (from i18n base.footer + tenant overrides)
    */
-  footerText?: string;
-  copyrightText?: string;
+  footerStrings?: EmailFooterStrings;
 }
 
 /**
  * Default email colors
  * These match the CSS variable defaults and provide safe fallbacks
- * Adheres to .instructions.md: All colors via CSS variables
  */
 const DEFAULT_EMAIL_COLORS: EmailColorConfig = {
-  primary: 'var(--email-primary, #2563eb)',
-  accent: 'var(--email-accent, #dc2626)',
-  text: 'var(--email-text, #1f2937)',
-  bg: 'var(--email-bg, #ffffff)',
-  neutral: 'var(--email-neutral, #6b7280)',
+  primary: '#2563eb',
+  accent: '#dc2626',
+  text: '#1f2937',
+  bg: '#f9fafb',
+  neutral: '#6b7280',
+};
+
+const DEFAULT_FOOTER: EmailFooterStrings = {
+  automated_notice: 'This is an automated email. Please do not reply directly.',
+  preferences_link: 'Manage your notification preferences at',
+  preferences_url: 'https://manage-studio.app/preferences',
 };
 
 /**
  * Base email template component
  * Provides consistent branding, header/footer, and RTL support
- * All color props use CSS custom properties (CSS variables) to allow tenant customization
- * Direction is computed from language prop and inherited via CSS cascade
- * 
- * Adheres to:
- * - SPEC.md 1.12: Tenant branding separate from code
- * - .instructions.md: No hardcoded colors, use CSS variables
- * - W3C/WCAG: Direction computed once at root level, inherited by children
  */
 export default function BaseEmailTemplate({
   previewText,
@@ -88,24 +90,38 @@ export default function BaseEmailTemplate({
   schoolLogoUrl,
   language,
   colors,
-  footerText = 'Manage your notification preferences at',
-  copyrightText,
+  footerStrings,
 }: BaseEmailTemplateProps) {
-  // Compute direction ONLY from language (single source of truth)
   const dir = language === 'he' ? 'rtl' : 'ltr';
 
-  // Use colors object if provided, otherwise use defaults
-  const emailColors: EmailColorConfig = colors || {
-    primary: DEFAULT_EMAIL_COLORS.primary,
-    accent: DEFAULT_EMAIL_COLORS.accent,
-    text: DEFAULT_EMAIL_COLORS.text,
-    bg: DEFAULT_EMAIL_COLORS.bg,
-    neutral: DEFAULT_EMAIL_COLORS.neutral,
-  };
+  const emailColors: EmailColorConfig = colors
+    ? {
+        ...colors,
+        primary: colors.primary.startsWith('var(')
+          ? colors.primary.replace(/var\(--email-primary,\s*([^)]+)\)/, '$1').trim()
+          : colors.primary,
+        accent: colors.accent.startsWith('var(')
+          ? colors.accent.replace(/var\(--email-accent,\s*([^)]+)\)/, '$1').trim()
+          : colors.accent,
+        text: colors.text.startsWith('var(')
+          ? colors.text.replace(/var\(--email-text,\s*([^)]+)\)/, '$1').trim()
+          : colors.text,
+        bg: colors.bg.startsWith('var(')
+          ? colors.bg.replace(/var\(--email-bg,\s*([^)]+)\)/, '$1').trim()
+          : colors.bg,
+        neutral: colors.neutral.startsWith('var(')
+          ? colors.neutral.replace(/var\(--email-neutral,\s*([^)]+)\)/, '$1').trim()
+          : colors.neutral,
+      }
+    : DEFAULT_EMAIL_COLORS;
 
+  const footer = { ...DEFAULT_FOOTER, ...footerStrings };
   const year = new Date().getFullYear();
-  const defaultCopyright = `© ${year} ${schoolName}. All rights reserved.`;
-  const displayCopyright = copyrightText || defaultCopyright;
+  const displayCopyright =
+    footer.copyright?.replace('{year}', String(year)).replace('{schoolName}', schoolName) ??
+    `© ${year} ${schoolName}. All rights reserved.`;
+
+  const preferencesUrl = footer.preferences_url ?? DEFAULT_FOOTER.preferences_url!;
 
   return (
     <Html lang={language} dir={dir}>
@@ -123,56 +139,70 @@ export default function BaseEmailTemplate({
       <Preview>{previewText}</Preview>
       <Body
         style={{
-          backgroundColor: 'var(--email-bg)',
-          fontFamily: '"Segoe UI", sans-serif',
-          color: 'var(--email-text)',
+          backgroundColor: '#f3f4f6',
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+          color: emailColors.text,
           lineHeight: '1.6',
+          margin: 0,
+          padding: '24px 0',
         }}
       >
         <Container
           style={{
             maxWidth: '600px',
             margin: '0 auto',
-            padding: '20px',
+            padding: '0 16px',
           }}
         >
-          {/* Header */}
-          <Section style={{ marginBottom: '30px', textAlign: 'center' }}>
-            {schoolLogoUrl && (
-              <Img
-                src={schoolLogoUrl}
-                alt={schoolName}
-                style={{
-                  height: '50px',
-                  marginBottom: '10px',
-                }}
-              />
-            )}
-            <Text
+          <Section
+            style={{
+              backgroundColor: '#ffffff',
+              borderRadius: '12px',
+              border: '1px solid #e5e7eb',
+              overflow: 'hidden',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+            }}
+          >
+            <Section
               style={{
-                fontSize: '24px',
-                fontWeight: 'bold',
-                margin: '10px 0',
-                color: 'var(--email-primary)',
+                backgroundColor: emailColors.primary,
+                padding: '28px 32px',
+                textAlign: 'center',
               }}
             >
-              {schoolName}
-            </Text>
+              {schoolLogoUrl ? (
+                <Img
+                  src={schoolLogoUrl}
+                  alt={schoolName}
+                  style={{
+                    height: '48px',
+                    margin: '0 auto 12px',
+                    display: 'block',
+                  }}
+                />
+              ) : null}
+              <Text
+                style={{
+                  fontSize: '22px',
+                  fontWeight: 'bold',
+                  margin: 0,
+                  color: '#ffffff',
+                }}
+              >
+                {schoolName}
+              </Text>
+            </Section>
+
+            <Section style={{ padding: '32px' }}>{children}</Section>
           </Section>
 
-          {/* Main content */}
-          <Section style={{ marginBottom: '30px' }}>
-            {children}
-          </Section>
-
-          {/* Footer */}
-          <Hr style={{ borderColor: '#e5e7eb', margin: '30px 0' }} />
-          <Section style={{ textAlign: 'center', marginBottom: '20px' }}>
+          <Hr style={{ borderColor: '#e5e7eb', margin: '24px 0' }} />
+          <Section style={{ textAlign: 'center', paddingBottom: '16px' }}>
             <Text
               style={{
                 fontSize: '12px',
-                color: 'var(--email-neutral)',
-                margin: '5px 0',
+                color: emailColors.neutral,
+                margin: '4px 0',
               }}
             >
               {displayCopyright}
@@ -180,25 +210,25 @@ export default function BaseEmailTemplate({
             <Text
               style={{
                 fontSize: '12px',
-                color: 'var(--email-neutral)',
-                margin: '5px 0',
+                color: emailColors.neutral,
+                margin: '4px 0',
               }}
             >
-              This is an automated email. Please do not reply directly.
+              {footer.automated_notice}
             </Text>
             <Text
               style={{
                 fontSize: '12px',
-                color: 'var(--email-neutral)',
-                margin: '10px 0 0 0',
+                color: emailColors.neutral,
+                margin: '8px 0 0 0',
               }}
             >
-              {footerText}{' '}
+              {footer.preferences_link}{' '}
               <Link
-                href="https://manage-studio.app/preferences"
-                style={{ color: 'var(--email-primary)' }}
+                href={preferencesUrl}
+                style={{ color: emailColors.primary }}
               >
-                manage-studio.app/preferences
+                {preferencesUrl.replace(/^https?:\/\//, '')}
               </Link>
             </Text>
           </Section>

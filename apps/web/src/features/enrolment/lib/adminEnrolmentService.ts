@@ -71,14 +71,6 @@ export class AdminEnrolmentService {
       currency: options.currency,
     });
 
-    const html = `
-      <p>Hello ${options.recipientName},</p>
-      <p>Please complete payment to enrol <strong>${options.studentName}</strong> in <strong>${options.className}</strong>.</p>
-      <p>Amount due: <strong>${amountFormatted}</strong></p>
-      <p><a href="${paymentUrl}">Pay now</a></p>
-      <p>If the link does not work, copy and paste this URL into your browser:<br/>${paymentUrl}</p>
-    `;
-
     const { data, error } = await supabase.functions.invoke('send-notification', {
       body: {
         tenantId: tenant.id,
@@ -87,7 +79,14 @@ export class AdminEnrolmentService {
         channel: 'email',
         variables: {
           subject: `Payment required — ${options.className}`,
-          html,
+          recipientName: options.recipientName,
+          enrolledClassName: options.className,
+          description: `${options.studentName} — ${options.className}`,
+          amount: amountFormatted,
+          amountOutstandingFormatted: amountFormatted,
+          amountFormatted,
+          paymentUrl,
+          dueDate: '—',
         },
       },
     });

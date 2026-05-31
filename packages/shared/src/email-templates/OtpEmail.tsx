@@ -1,9 +1,11 @@
 import React from 'react';
+import BaseEmailTemplate, { type EmailColorConfig, type EmailFooterStrings } from './BaseEmailTemplate.js';
 import {
-  Button,
-  Text,
-} from '@react-email/components';
-import BaseEmailTemplate, { type EmailColorConfig } from './BaseEmailTemplate.js';
+  EmailCodeBox,
+  EmailMutedText,
+  EmailParagraph,
+  EmailWarningText,
+} from './primitives/index.js';
 
 interface OtpEmailProps {
   schoolName: string;
@@ -11,23 +13,9 @@ interface OtpEmailProps {
   otpCode: string;
   expiresInMinutes?: number;
   recipientName?: string;
-  
-  /**
-   * Language (REQUIRED) - For i18n and direction computation
-   * Direction computed in BaseEmailTemplate: language === 'he' ? 'rtl' : 'ltr'
-   */
   language: 'en' | 'he';
-  
-  /**
-   * Email color configuration (OPTIONAL)
-   * Passed from edge function based on tenant config
-   */
   colors?: EmailColorConfig;
-  
-  /**
-   * Template strings (from i18n + tenant overrides)
-   * Schema matches packages/shared/src/i18n/email-templates-*.json
-   */
+  footerStrings?: EmailFooterStrings;
   strings?: {
     preview?: string;
     heading?: string;
@@ -38,17 +26,9 @@ interface OtpEmailProps {
     expiration_warning?: string;
     security_notice?: string;
   };
-  
-  /**
-   * Usage context (determines which message and label to show)
-   */
   usageContext?: 'whatsapp_verification' | 'email_verification' | 'security_reset';
 }
 
-/**
- * Default strings (fallback when i18n/overrides not provided)
- * Matches structure in email-templates-en.json
- */
 const DEFAULT_STRINGS = {
   preview: 'Your Verification Code',
   heading: 'Your Verification Code',
@@ -69,17 +49,6 @@ const DEFAULT_STRINGS = {
     "If you didn't request this code, please ignore this message. If you believe your account has been compromised, please contact our support team immediately.",
 };
 
-/**
- * OTP Email Template
- * Sent when user needs to verify email/WhatsApp or reset account
- * Expires in 10 minutes by default
- * 6-digit code + fallback plain-text display
- * 
- * Adheres to:
- * - SPEC.md 2.1: Direction computed from language in BaseEmailTemplate only
- * - No hardcoded text (uses i18n)
- * - All colors via CSS variables
- */
 export default function OtpEmail({
   schoolName,
   schoolLogoUrl,
@@ -88,13 +57,12 @@ export default function OtpEmail({
   recipientName,
   language,
   colors,
+  footerStrings,
   strings,
   usageContext = 'email_verification',
 }: OtpEmailProps) {
-  // Merge provided strings with defaults
   const finalStrings = { ...DEFAULT_STRINGS, ...strings };
 
-  // Get context-specific message and label
   const contextMessage =
     finalStrings.context_messages?.[usageContext] ||
     finalStrings.context_messages?.['email_verification'] ||
@@ -104,10 +72,7 @@ export default function OtpEmail({
     finalStrings.context_labels?.['email_verification'] ||
     '';
 
-  // Interpolate dynamic values
-  const message = contextMessage
-    .replace('{schoolName}', schoolName)
-    .replace('{recipientName}', recipientName || '');
+  const message = contextMessage.replace('{schoolName}', schoolName);
 
   const greeting = recipientName
     ? (finalStrings.greeting_with_name || '').replace('{recipientName}', recipientName)
@@ -115,7 +80,7 @@ export default function OtpEmail({
 
   const expirationText = (finalStrings.expiration_warning || '').replace(
     '{expiresInMinutes}',
-    String(expiresInMinutes)
+    String(expiresInMinutes),
   );
 
   return (
@@ -125,99 +90,15 @@ export default function OtpEmail({
       schoolLogoUrl={schoolLogoUrl}
       language={language}
       colors={colors}
+      footerStrings={footerStrings}
     >
-      <Text
-        style={{
-          fontSize: '16px',
-          marginBottom: '20px',
-        }}
-      >
-        {greeting}
-      </Text>
-
-      <Text
-        style={{
-          fontSize: '16px',
-          marginBottom: '30px',
-          lineHeight: '1.6',
-        }}
-      >
-        {message}
-      </Text>
-
-      {/* Large OTP code display - accessibility: visible both as large text and with copyable format */}
-      <div
-        style={{
-          backgroundColor: 'var(--email-primary)',
-          color: '#ffffff',
-          padding: '30px',
-          borderRadius: '8px',
-          textAlign: 'center',
-          marginBottom: '30px',
-        }}
-      >
-        <Text
-          style={{
-            fontSize: '12px',
-            margin: '0 0 15px 0',
-            opacity: '0.9',
-            textTransform: 'uppercase',
-            letterSpacing: '2px',
-          }}
-        >
-          {contextLabel}
-        </Text>
-        <div
-          style={{
-            fontSize: '48px',
-            fontWeight: 'bold',
-            letterSpacing: '8px',
-            fontFamily: '"Courier New", monospace',
-            margin: '10px 0',
-            wordBreak: 'break-all',
-          }}
-        >
-          {otpCode.split('').join(' ')}
-        </div>
-      </div>
-
-      {/* Fallback: copy-pasteable code */}
-      <div
-        style={{
-          backgroundColor: '#f3f4f6',
-          padding: '15px',
-          borderRadius: '4px',
-          marginBottom: '25px',
-          textAlign: 'center',
-          fontFamily: '"Courier New", monospace',
-          fontSize: '18px',
-          fontWeight: 'bold',
-        }}
-      >
-        {otpCode}
-      </div>
-
-      <Text
-        style={{
-          fontSize: '14px',
-          marginBottom: '20px',
-          textAlign: 'center',
-          color: 'var(--email-accent)',
-        }}
-      >
-        ⏰ {expirationText}
-      </Text>
-
-      <Text
-        style={{
-          fontSize: '14px',
-          marginBottom: '20px',
-          color: 'var(--email-text)',
-          lineHeight: '1.6',
-        }}
-      >
-        {finalStrings.security_notice}
-      </Text>
+      <EmailParagraph>{greeting}</EmailParagraph>
+      <EmailParagraph>{message}</EmailParagraph>
+      <EmailCodeBox code={otpCode} label={contextLabel} />
+      <EmailWarningText style={{ textAlign: 'center' }}>
+        {expirationText}
+      </EmailWarningText>
+      <EmailMutedText>{finalStrings.security_notice}</EmailMutedText>
     </BaseEmailTemplate>
   );
 }

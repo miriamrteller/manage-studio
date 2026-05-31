@@ -1,0 +1,101 @@
+{
+    "base": {
+        "footer": {
+            "copyright": "© {year} {schoolName}. כל הזכויות שמורות.",
+            "automated_notice": "זו הודעה אוטומטית. אנא אל תשיב ישירות להודעה זו.",
+            "preferences_link": "נהל את העדפות ההודעות שלך ב",
+            "preferences_url": "https://manage-studio.app/preferences"
+        }
+    },
+    "otp": {
+        "subject": "קוד האימות שלך — {schoolName}",
+        "preview": "קוד האימות שלך",
+        "heading": "קוד האימות שלך",
+        "greeting_hello": "שלום,",
+        "greeting_with_name": "שלום {recipientName},",
+        "context_messages": {
+            "whatsapp_verification": "כדי לוודא את מספר הווטסאפ שלך ב{schoolName}, השתמש בקוד זה:",
+            "email_verification": "כדי לוודא את כתובת הדואר האלקטרוני שלך ב{schoolName}, השתמש בקוד זה:",
+            "security_reset": "כדי לאפס את הסיסמה שלך ב{schoolName}, השתמש בקוד זה:"
+        },
+        "context_labels": {
+            "whatsapp_verification": "אימות WhatsApp",
+            "email_verification": "אימות דואר אלקטרוני",
+            "security_reset": "איפוס סיסמה"
+        },
+        "expiration_warning": "קוד זה יפוג בעוד {expiresInMinutes} דקות",
+        "security_notice": "אם לא ביצעת בקשה זו, אנא התעלם מהודעה זו. אם אתה חושד שלחשבונך יש בעיה, אנא צור קשר עם צוות התמיכה שלנו באופן מיידי."
+    },
+    "magic_link": {
+        "subject": "התחברות ל{schoolName}",
+        "preview": "התחברות ל{schoolName}",
+        "greeting_hello": "שלום,",
+        "greeting_with_name": "שלום {recipientName},",
+        "intro": "קיבלנו בקשה להיכנס לחשבון {schoolName} שלך. אם לא ביצעת פעולה זו, אתה יכול להתעלם מהודעה זו.",
+        "code_heading": "קוד ההתחברות שלך:",
+        "copy_button": "העתק",
+        "cta_button": "הכנס לחשבון",
+        "expiration_notice": "קישור זה יפוג בעוד {expiresInMinutes} דקות",
+        "fallback_text": "אם הכפתור למעלה אינו עובד, העתק והדבק קישור זה לדפדפן שלך:",
+        "security_notice": "ניתן להשתמש בקישור זה פעם אחת בלבד. אם לא ביקשת קישור התחברות זה, תוכל להתעלם מהודעה זו."
+    },
+    "welcome": {
+        "preview": "ברוכים הבאים ל{enrolledClassName} - {schoolName}",
+        "greeting": "ברוכים הבאים, {recipientName}!",
+        "confirmation": "הרשמתך ל{enrolledClassName} בתקופת {enrolledTermName} אושרה בהצלחה!",
+        "class_details_heading": "פרטי הכיתה:",
+        "class_name_label": "כיתה:",
+        "class_term_label": "תקופה:",
+        "next_steps_heading": "הצעדים הבאים:",
+        "next_steps_text": "אתה יכול כעת להציג את לוח הזמנים של הכיתה שלך ולנהל את ההרשמה שלך דרך לוח הבקרה של חשבונך.",
+        "cta_button": "צפה בלוח הבקרה",
+        "contact_notice": "אם יש לך שאלות לגבי ההרשמה שלך, אנא צור קשר איתנו.",
+        "questions_text": "יש שאלות? צור קשר עם צוות התמיכה שלנו לקבלת מידע נוסף על הכיתה ולוח הזמנים של הסדרה."
+    },
+    "payment_reminder": {
+        "preview": "תזכורת תשלום - {schoolName}",
+        "heading": "תזכורת תשלום",
+        "greeting": "שלום {recipientName},",
+        "intro": "זו תזכורת שתשלום עבור {description} יהיה בקרוב.",
+        "amount_label": "סכום הגבוה:",
+        "due_date_label": "תאריך פקיעה:",
+        "due_date_value": "{dueDate}",
+        "payment_details": "אנא היכנס לחשבונך כדי לבצע תשלום או להגדיר תשלומים אוטומטיים.",
+        "cta_button": "בצע תשלום",
+        "late_notice": "אם התשלום לא יתקבל עד {dueDate}, ההרשמה שלך עלולה להיות ממולכדת.",
+        "questions_text": "אם יש לך שאלות לגבי התשלום שלך או אתה צריך לדון בהסדרי תשלום, אנא צור קשר איתנו.",
+        "payment_methods": "אנו מקבלים את שיטות התשלום הבאות:"
+    },
+    "class_cancellation": {
+        "preview": "הודעת ביטול כיתה - {schoolName}",
+        "heading": "הודעת ביטול כיתה",
+        "greeting": "שלום {recipientName},",
+        "announcement": "אנחנו מצטערים להודיע לך שהכיתה {className} בוטלה.",
+        "cancellation_reason_label": "סיבה:",
+        "cancellation_reason_value": "{cancellationReason}",
+        "effective_date_label": "תאריך כניסה לתוקף:",
+        "effective_date_value": "{effectiveDate}",
+        "what_happens_next": "מה קורה הלאה:",
+        "refund_policy": "החזרי כספיים מלאים עבור כיתות שלא שימשו עובדו באופן אוטומטי והם צריכים להופיע בחשבונך תוך 3-5 ימי עבודה.",
+        "enrollment_options": "אפשרויות כיתה אלטרנטיביות:",
+        "contact_support": "אם אתה רוצה לדון בכיתות חלופיות או יש לך שאלות כלשהן, אנא צור קשר עם הצוות שלנו.",
+        "cta_button": "צפה בכיתות חלופיות",
+        "sorry_message": "אנחנו מתנצלים על כל אי-נוחות שאולי גרמנו."
+    },
+    "waiting_list_offer": {
+        "preview": "מקום הזדמן בדיוק! - {schoolName}",
+        "heading": "מקום הזדמן בדיוק!",
+        "greeting": "שלום {recipientName},",
+        "offer": "חדשות טובות! מקום זה נעשה זמין בדיוק ב{className} עבור {termName}.",
+        "class_details_heading": "פרטי הכיתה:",
+        "class_name_label": "כיתה:",
+        "class_time_label": "זמן:",
+        "class_price_label": "מחיר:",
+        "urgent_notice": "המקום הזה שמור לך למשך 24 שעות בלבד.",
+        "action_required": "כדי להבטיח את המקום שלך, אנא לחץ על הכפתור למטה והשלם את ההרשמה שלך בפני {expirationTime}.",
+        "cta_button": "הירשם עכשיו",
+        "after_expiration": "אם לא תירשם תוך 24 שעות, המקום עלול להיות מוצע לאדם הבא בתור ההמתנה.",
+        "questions_text": "יש שאלות? צור קשר איתנו מיד - אנחנו כאן כדי לעזור!",
+        "contact_urgency": "הזמן מוגבל, לכן אנו ממליצים להגיב בהקדם האפשרי."
+    }
+}

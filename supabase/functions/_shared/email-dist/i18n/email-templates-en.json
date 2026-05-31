@@ -1,0 +1,101 @@
+{
+    "base": {
+        "footer": {
+            "copyright": "© {year} {schoolName}. All rights reserved.",
+            "automated_notice": "This is an automated email. Please do not reply directly.",
+            "preferences_link": "Manage your notification preferences at",
+            "preferences_url": "https://manage-studio.app/preferences"
+        }
+    },
+    "otp": {
+        "subject": "Your verification code — {schoolName}",
+        "preview": "Your Verification Code",
+        "heading": "Your Verification Code",
+        "greeting_hello": "Hello,",
+        "greeting_with_name": "Hello {recipientName},",
+        "context_messages": {
+            "whatsapp_verification": "To verify your WhatsApp number with {schoolName}, use this code:",
+            "email_verification": "To verify your email address with {schoolName}, use this code:",
+            "security_reset": "To reset your password with {schoolName}, use this code:"
+        },
+        "context_labels": {
+            "whatsapp_verification": "WhatsApp Verification",
+            "email_verification": "Email Verification",
+            "security_reset": "Password Reset"
+        },
+        "expiration_warning": "This code expires in {expiresInMinutes} minutes",
+        "security_notice": "If you didn't request this code, please ignore this message. If you believe your account has been compromised, please contact our support team immediately."
+    },
+    "magic_link": {
+        "subject": "Sign in to {schoolName}",
+        "preview": "Sign in to {schoolName}",
+        "greeting_hello": "Hello,",
+        "greeting_with_name": "Hello {recipientName},",
+        "intro": "We received a request to sign in to your {schoolName} account. If you didn't make this request, you can ignore this message.",
+        "code_heading": "Your sign-in code:",
+        "copy_button": "Copy",
+        "cta_button": "Sign In",
+        "expiration_notice": "This link expires in {expiresInMinutes} minutes",
+        "fallback_text": "If the button above doesn't work, copy and paste this link into your browser:",
+        "security_notice": "This link can only be used once. If you didn't request this sign-in link, you can safely ignore this message."
+    },
+    "welcome": {
+        "preview": "Welcome to {enrolledClassName} - {schoolName}",
+        "greeting": "Welcome, {recipientName}!",
+        "confirmation": "Your enrollment in {enrolledClassName} for {enrolledTermName} has been successfully confirmed!",
+        "class_details_heading": "Class Details:",
+        "class_name_label": "Class:",
+        "class_term_label": "Term:",
+        "next_steps_heading": "Next Steps:",
+        "next_steps_text": "You can now view your class schedule and manage your enrollment through your account dashboard.",
+        "cta_button": "View Dashboard",
+        "contact_notice": "If you have any questions about your enrollment, please contact us.",
+        "questions_text": "Questions? Contact our support team for more information about your class and the session schedule."
+    },
+    "payment_reminder": {
+        "preview": "Payment Reminder - {schoolName}",
+        "heading": "Payment Reminder",
+        "greeting": "Hello {recipientName},",
+        "intro": "This is a reminder that payment for {description} is due soon.",
+        "amount_label": "Amount Due:",
+        "due_date_label": "Due Date:",
+        "due_date_value": "{dueDate}",
+        "payment_details": "Please log in to your account to make a payment or set up automatic payments.",
+        "cta_button": "Make Payment",
+        "late_notice": "If payment is not received by {dueDate}, your enrollment may be subject to cancellation.",
+        "questions_text": "If you have questions about your payment or need to discuss payment arrangements, please contact us.",
+        "payment_methods": "We accept the following payment methods:"
+    },
+    "class_cancellation": {
+        "preview": "Class Cancellation Notice - {schoolName}",
+        "heading": "Class Cancellation Notice",
+        "greeting": "Hello {recipientName},",
+        "announcement": "We regret to inform you that {className} has been cancelled.",
+        "cancellation_reason_label": "Reason:",
+        "cancellation_reason_value": "{cancellationReason}",
+        "effective_date_label": "Effective Date:",
+        "effective_date_value": "{effectiveDate}",
+        "what_happens_next": "What Happens Next:",
+        "refund_policy": "Full refunds for unused classes have been automatically processed and should appear in your account within 3-5 business days.",
+        "enrollment_options": "Alternative class options:",
+        "contact_support": "If you would like to discuss alternative classes or have any questions, please contact our team.",
+        "cta_button": "View Alternative Classes",
+        "sorry_message": "We apologize for any inconvenience this may cause."
+    },
+    "waiting_list_offer": {
+        "preview": "A Spot Just Opened! - {schoolName}",
+        "heading": "A Spot Just Opened!",
+        "greeting": "Hello {recipientName},",
+        "offer": "Great news! A spot has just become available in {className} for {termName}.",
+        "class_details_heading": "Class Details:",
+        "class_name_label": "Class:",
+        "class_time_label": "Time:",
+        "class_price_label": "Price:",
+        "urgent_notice": "This spot is reserved for you for 24 hours only.",
+        "action_required": "To secure your place, please click the button below and complete your enrollment by {expirationTime}.",
+        "cta_button": "Enroll Now",
+        "after_expiration": "If you don't enroll within 24 hours, the spot may be offered to the next person on the waiting list.",
+        "questions_text": "Questions? Contact us right away — we're here to help!",
+        "contact_urgency": "Time is limited, so we recommend responding as soon as possible."
+    }
+}

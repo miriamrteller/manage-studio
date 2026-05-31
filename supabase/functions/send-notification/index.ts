@@ -1,5 +1,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import {
+  isSupportedEmailTemplate,
+  sendRenderedEmail,
+} from "../_shared/resend-send.ts";
+import {
+  getEmailTemplateOverrides,
+  getTenantEmailConfig,
+} from "../_shared/tenant-email.ts";
 
 interface NotificationPayload {
   tenantId: string;
@@ -19,14 +27,6 @@ interface TenantConfig {
   dir: "ltr" | "rtl";
   primary_color?: string;
   accent_color?: string;
-}
-
-interface EmailColorConfig {
-  primary: string;
-  accent: string;
-  text: string;
-  bg: string;
-  neutral: string;
 }
 
 interface EmailSendResponse {
@@ -136,56 +136,57 @@ serve(async (req: Request) => {
       } else {
         // Send via Resend
         try {
-          // Step 1: Load tenant configuration (colors, locale, direction)
           const tenantConfig = await getTenantConfig(supabase, payload.tenantId);
-          const emailColors = getEmailColors(tenantConfig);
 
-          // Step 2: Get language for template strings (use tenant locale or fall back to direction)
-          const language =
-            tenantConfig.locale === "he-IL" || tenantConfig.locale === "he"
-              ? "he"
-              : "en";
-
-          // Step 3: Get tenant email overrides from DB (optional — may be null)
-          const overrides = await getEmailTemplateOverrides(
-            supabase,
-            payload.tenantId,
-            payload.templateName,
-            language
-          );
-
-          // Step 4: Log email send attempt with metadata
           console.log(
-            `[EMAIL] Sending ${payload.templateName} to ${payload.recipientEmail} (tenant: ${tenantConfig.name}, lang: ${language}, overrides: ${overrides ? "yes" : "no"})`
+            `[EMAIL] Sending ${payload.templateName} to ${payload.recipientEmail} (tenant: ${tenantConfig.name})`,
           );
 
-          // Step 5: Send via Resend with tenant colors and merged strings
-          // Note: HTML rendering is prepared by caller or done via React Email server-side
-          // For now, pass variables including colors and merged strings for template rendering
-          const emailResponse = await fetch("https://api.resend.com/emails", {
-            method: "POST",
-            headers: {
-              "Authorization": `Bearer ${resendApiKey}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              from: "noreply@manage-studio.app",
-              to: payload.recipientEmail,
-              subject: payload.variables?.["subject"] || payload.templateName,
-              html: payload.variables?.["html"] || "",
-              // Template variables now include:
-              // - emailColors: { primary, accent, text, bg, neutral }
-              // - mergedStrings: base template strings + tenant overrides
-              // - templateName, language, tenantConfig for rendering context
-            }),
-          });
+          const fromEmail =
+            Deno.env.get("NOTIFICATION_FROM_EMAIL") ??
+            "Manage Studio <noreply@manage-studio.app>";
 
-          if (!emailResponse.ok) {
-            const error = await emailResponse.json();
-            failureReason = error.message || "Email send failed";
+          if (!isSupportedEmailTemplate(payload.templateName)) {
+            failureReason = `Unsupported email template: ${payload.templateName}`;
             status = "failed";
           } else {
-            const result: EmailSendResponse = await emailResponse.json();
+            const tenant = await getTenantEmailConfig(
+              supabase,
+              payload.tenantId,
+            );
+            const language = tenant.language;
+            const overrides = await getEmailTemplateOverrides(
+              supabase,
+              payload.tenantId,
+              payload.templateName,
+              language,
+            );
+
+            const variables = (payload.variables ?? {}) as Record<
+              string,
+              unknown
+            >;
+
+            const result = await sendRenderedEmail({
+              to: payload.recipientEmail,
+              from: fromEmail,
+              subject:
+                typeof variables.subject === "string"
+                  ? variables.subject
+                  : undefined,
+              renderInput: {
+                templateName: payload.templateName,
+                language,
+                schoolName: tenant.name,
+                tenantColors: {
+                  primary_color: tenant.primary_color,
+                  accent_color: tenant.accent_color,
+                },
+                stringOverrides: overrides,
+                variables,
+              },
+            });
+
             externalMsgId = result.id;
             status = "sent";
           }
@@ -356,20 +357,6 @@ async function getTenantConfig(
       accent_color: "#dc2626",
     };
   }
-}
-
-/**
- * Helper: Get email colors for tenant
- * Adheres to .instructions.md: All colors via CSS variables or config
- */
-function getEmailColors(tenantConfig: TenantConfig): EmailColorConfig {
-  return {
-    primary: tenantConfig.primary_color || "var(--email-primary, #2563eb)",
-    accent: tenantConfig.accent_color || "var(--email-accent, #dc2626)",
-    text: "var(--email-text, #1f2937)",
-    bg: "var(--email-bg, #ffffff)",
-    neutral: "var(--email-neutral, #6b7280)",
-  };
 }
 
 /**

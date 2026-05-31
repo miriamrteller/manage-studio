@@ -24,7 +24,12 @@
     "db:types": "supabase gen types typescript --linked > packages/shared/src/database.types.ts",
     "db:sync": "pnpm db:push && pnpm db:types",
     "seed:auth-parent": "node scripts/seed-auth-parent.mjs",
-    "auth:check-email": "node scripts/check-auth-email-setup.mjs"
+    "auth:check-email": "node scripts/check-auth-email-setup.mjs",
+    "email:preview": "pnpm -C packages/shared build && node scripts/preview-email.mjs",
+    "email:bundle": "pnpm -C packages/shared build && node scripts/copy-email-bundle.mjs",
+    "deploy:email-functions": "pnpm email:bundle && supabase functions deploy send-auth-email --no-verify-jwt && supabase functions deploy send-otp-email && supabase functions deploy send-notification",
+    "secrets:email": "node scripts/sync-email-secrets.mjs && pnpm exec supabase secrets set --env-file supabase/.temp/email-secrets.env",
+    "test:auth-email-hook": "node scripts/test-send-auth-email-hook.mjs"
   },
   "devDependencies": {
     "@react-email/components": "^1.0.12",
@@ -32,6 +37,7 @@
     "@supabase/cli": "latest",
     "husky": "^9.0.0",
     "lint-staged": "^17.0.4",
+    "standardwebhooks": "^1.0.0",
     "typescript": "^5.3.3"
   },
   "dependencies": {
