@@ -38,8 +38,8 @@ VALUES (
   labels = EXCLUDED.labels;
 
 -- ============================================================================
--- TERMS + LEVELS + CLASSES (20260526000400_classes.sql)
--- Age ranges live on classes.min_age / classes.max_age (not requirement templates)
+-- SEASONS + CATEGORIES + OFFERINGS (20260526000400_offerings.sql)
+-- Age ranges live on offerings.min_age / offerings.max_age (not requirement templates)
 -- ============================================================================
 INSERT INTO seasons (id, tenant_id, name, start_date, end_date, status)
 VALUES
