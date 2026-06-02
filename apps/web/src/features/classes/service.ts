@@ -12,6 +12,7 @@ import {
   type OfferingSortField,
   type OfferingSortOrder,
 } from './utils/sortClasses';
+import { deleteOfferingCover, offeringCoverPath } from './lib/offeringImageStorage';
 
 // Validation schema for class creation/update (without system fields)
 // Aligns with DB classes table — see Migration 004 + 004100 (staff_id added)
@@ -34,6 +35,8 @@ const ClassInputSchema = z.object({
   billing_interval: z.enum(['monthly', 'quarterly', 'annual']).nullable().optional(),
   status: z.enum(['active', 'cancelled', 'full']).optional(),
 });
+
+const CoverImagePathSchema = z.string().nullable();
 
 /**
  * ClassService: All class data operations
@@ -155,8 +158,41 @@ export class ClassService extends BaseService {
     }, 'ClassService.update');
   }
 
+  static async setCoverImagePath(tenant: Tenant, id: string, path: string | null) {
+    const validatedPath = CoverImagePathSchema.parse(path);
+    if (validatedPath != null) {
+      const expectedPath = offeringCoverPath(tenant.id, id);
+      if (validatedPath !== expectedPath) {
+        throw new Error('Invalid cover image path.');
+      }
+    }
+
+    return this.withRetry(async () => {
+      const { data, error } = await TenantDB.update('offerings', tenant, id, {
+        cover_image_path: validatedPath,
+      })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const result = OfferingSchema.parse(data);
+      await this.logAudit(tenant, 'UPDATE', 'classes', id);
+      return result;
+    }, 'ClassService.setCoverImagePath');
+  }
+
   static async delete(tenant: Tenant, id: string) {
     return this.withRetry(async () => {
+      const existing = await this.get(tenant, id);
+      if (existing.cover_image_path) {
+        try {
+          await deleteOfferingCover(existing.cover_image_path);
+        } catch (error) {
+          console.warn('Failed to delete class cover image:', error);
+        }
+      }
+
       const { error } = await TenantDB.delete('offerings', tenant, id);
       if (error) throw error;
 

@@ -10,7 +10,7 @@ import { useClasses } from '../hooks/useClasses';
 import { useTerms } from '@/features/terms/hooks/useTerms';
 import { useLevels } from '@/features/levels/hooks/useLevels';
 import { useTeachers } from '@/features/teachers/hooks/useTeachers';
-import { ClassForm } from './ClassForm';
+import { ClassForm, type ClassFormImageIntent } from './ClassForm';
 import { ClassRequirementsPanel } from '../requirements/components';
 import {
   DEFAULT_CLASS_SORT,
@@ -19,6 +19,7 @@ import {
 import type { Offering } from '@shared/schemas';
 import { computeClassTotal } from '@/features/enrolment/lib/computeClassTotal';
 import { formatClassAgeRange } from '../lib/formatClassAgeRange';
+import { deleteOfferingCover, uploadOfferingCover } from '../lib/offeringImageStorage';
 
 export function AdminClassesList() {
   const { t, i18n } = useTranslation();
@@ -60,21 +61,65 @@ export function AdminClassesList() {
     [levelsData.levels]
   );
 
-  const handleFormSubmit = async (data: Partial<Offering>) => {
+  const handleFormSubmit = async (data: Partial<Offering>, imageIntent: ClassFormImageIntent) => {
+    if (!tenant?.id) {
+      throw new Error(t('errors.loading_tenant'));
+    }
+
     if (editingClass?.id) {
-      await new Promise<void>((resolve, reject) => {
+      const updatedClass = await new Promise<Offering>((resolve, reject) => {
         classesData.updateClass(
           { ...editingClass, ...data } as Offering,
-          { onSuccess: () => resolve(), onError: reject }
+          { onSuccess: resolve, onError: reject }
         );
       });
+
+      if (imageIntent && 'file' in imageIntent) {
+        const uploadedPath = await uploadOfferingCover(
+          tenant.id,
+          updatedClass.id,
+          imageIntent.file,
+          updatedClass.cover_image_path
+        );
+        try {
+          await classesData.setCoverImagePath(updatedClass.id, uploadedPath);
+        } catch (error) {
+          await deleteOfferingCover(uploadedPath).catch(() => undefined);
+          throw error;
+        }
+      } else if (
+        imageIntent &&
+        'remove' in imageIntent &&
+        imageIntent.remove &&
+        updatedClass.cover_image_path
+      ) {
+        await deleteOfferingCover(updatedClass.cover_image_path).catch(() => undefined);
+        await classesData.setCoverImagePath(updatedClass.id, null);
+      }
+
       setEditingClass(null);
-    } else {
-      await new Promise<void>((resolve, reject) => {
-        classesData.createClass(data, { onSuccess: () => resolve(), onError: reject });
-      });
-      setIsCreating(false);
+      return;
     }
+
+    const createdClass = await new Promise<Offering>((resolve, reject) => {
+      classesData.createClass(data, { onSuccess: resolve, onError: reject });
+    });
+
+    if (imageIntent && 'file' in imageIntent) {
+      try {
+        const uploadedPath = await uploadOfferingCover(
+          tenant.id,
+          createdClass.id,
+          imageIntent.file
+        );
+        await classesData.setCoverImagePath(createdClass.id, uploadedPath);
+      } catch (error) {
+        console.error('Class image upload failed:', error);
+        throw new Error('errors.image_upload_failed');
+      }
+    }
+
+    setIsCreating(false);
   };
 
   const handleConfirmDelete = async (classId: string) => {

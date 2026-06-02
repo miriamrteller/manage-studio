@@ -22,6 +22,8 @@ function normalizePublicOffering(row: Record<string, unknown>) {
     min_age: coerceAge(row.min_age),
     max_age: coerceAge(row.max_age),
     season_start_date: row.season_start_date ?? null,
+    cover_image_path: row.cover_image_path ?? null,
+    updated_at: row.updated_at ?? null,
   };
 }
 
@@ -103,6 +105,7 @@ export function useClasses({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['classes', tenant?.id] });
+      queryClient.invalidateQueries({ queryKey: ['public_classes', tenant?.subdomain] });
     },
   });
 
@@ -114,6 +117,7 @@ export function useClasses({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['classes', tenant?.id] });
+      queryClient.invalidateQueries({ queryKey: ['public_classes', tenant?.subdomain] });
     },
   });
 
@@ -125,6 +129,7 @@ export function useClasses({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['classes', tenant?.id] });
+      queryClient.invalidateQueries({ queryKey: ['public_classes', tenant?.subdomain] });
     },
   });
 
@@ -143,7 +148,7 @@ export function useClasses({
       : (listQuery.error instanceof Error ? listQuery.error.message : (listQuery.error ? 'Unknown error' : null)),
     createClass: (
       classData: Partial<Offering>,
-      callbacks?: { onSuccess?: () => void; onError?: (error: Error) => void }
+      callbacks?: { onSuccess?: (offering: Offering) => void; onError?: (error: Error) => void }
     ) => {
       createMutation.mutate(classData, {
         onSuccess: callbacks?.onSuccess,
@@ -152,7 +157,7 @@ export function useClasses({
     },
     updateClass: (
       classData: Partial<Offering>,
-      callbacks?: { onSuccess?: () => void; onError?: (error: Error) => void }
+      callbacks?: { onSuccess?: (offering: Offering) => void; onError?: (error: Error) => void }
     ) => {
       updateMutation.mutate(classData, {
         onSuccess: callbacks?.onSuccess,
@@ -167,6 +172,13 @@ export function useClasses({
         onSuccess: callbacks?.onSuccess,
         onError: callbacks?.onError,
       });
+    },
+    setCoverImagePath: async (classId: string, path: string | null) => {
+      if (!tenant) throw new Error('Tenant not initialized');
+      const updated = await ClassService.setCoverImagePath(tenant, classId, path);
+      queryClient.invalidateQueries({ queryKey: ['classes', tenant?.id] });
+      queryClient.invalidateQueries({ queryKey: ['public_classes', tenant?.subdomain] });
+      return updated;
     },
     isCreating: createMutation.isPending,
     isUpdating: updateMutation.isPending,

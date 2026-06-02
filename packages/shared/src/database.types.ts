@@ -837,6 +837,7 @@ export type Database = {
           billing_interval: string | null
           billing_mode: string
           category_id: string | null
+          cover_image_path: string | null
           created_at: string
           currency: string
           day_of_week: number | null
@@ -864,6 +865,7 @@ export type Database = {
           billing_interval?: string | null
           billing_mode?: string
           category_id?: string | null
+          cover_image_path?: string | null
           created_at?: string
           currency?: string
           day_of_week?: number | null
@@ -891,6 +893,7 @@ export type Database = {
           billing_interval?: string | null
           billing_mode?: string
           category_id?: string | null
+          cover_image_path?: string | null
           created_at?: string
           currency?: string
           day_of_week?: number | null
@@ -1774,6 +1777,7 @@ export type Database = {
           billing_mode: string
           category_id: string
           category_name: string
+          cover_image_path: string
           currency: string
           day_of_week: number
           end_time: string
@@ -1789,6 +1793,7 @@ export type Database = {
           status: string
           tenant_id: string
           tenant_subdomain: string
+          updated_at: string
         }[]
       }
       get_tenant_config_by_subdomain: {

@@ -2,11 +2,12 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { type Offering, type Category, type Season, type Staff, TimeSchema } from '@shared/schemas';
 import { useTranslation } from 'react-i18next';
-import { useState } from 'react';
+import { type ChangeEvent, useEffect, useMemo, useState } from 'react';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { FormInput, FormSelect } from '@/components/ui/form';
 import { useTenant } from '@/hooks/useTenant';
+import { getOfferingCoverPublicUrl } from '../lib/offeringImageStorage';
 
 const optionalUuidField = z.preprocess(
   (val) => (val === '' ? null : val),
@@ -35,13 +36,14 @@ const ClassFormSchema = z.object({
 });
 
 type OfferingFormValues = z.infer<typeof ClassFormSchema>;
+export type ClassFormImageIntent = { file: File } | { remove: true } | null;
 
 interface ClassFormProps {
   classItem?: Partial<Offering>;
   terms: Season[];
   levels: Category[];
   teachers: Staff[];
-  onSubmit: (data: Partial<Offering>) => Promise<void>;
+  onSubmit: (data: Partial<Offering>, imageIntent: ClassFormImageIntent) => Promise<void>;
   isLoading?: boolean;
 }
 
@@ -98,6 +100,8 @@ export function ClassForm({
   const tenant = useTenant();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [removeCover, setRemoveCover] = useState(false);
 
   const form = useForm<OfferingFormValues>({
     resolver: zodResolver(ClassFormSchema),
@@ -105,16 +109,57 @@ export function ClassForm({
     mode: 'onBlur',
   });
 
+  const existingCoverUrl = useMemo(
+    () =>
+      classItem?.cover_image_path
+        ? getOfferingCoverPublicUrl(classItem.cover_image_path)
+        : null,
+    [classItem?.cover_image_path]
+  );
+
+  const [pendingPreviewUrl, setPendingPreviewUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (!pendingFile) {
+      setPendingPreviewUrl(null);
+      return;
+    }
+    const objectUrl = URL.createObjectURL(pendingFile);
+    setPendingPreviewUrl(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [pendingFile]);
+
+  const previewUrl = removeCover ? null : (pendingPreviewUrl ?? existingCoverUrl);
+
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] ?? null;
+    setPendingFile(file);
+    if (file) {
+      setRemoveCover(false);
+    }
+  };
+
   const handleSubmit = async (values: OfferingFormValues) => {
     try {
       setSubmitError(null);
       setSubmitSuccess(false);
-      await onSubmit(toClassPayload(values));
+      const imageIntent: ClassFormImageIntent = pendingFile
+        ? { file: pendingFile }
+        : removeCover
+          ? { remove: true }
+          : null;
+
+      await onSubmit(toClassPayload(values), imageIntent);
       setSubmitSuccess(true);
+      setPendingFile(null);
+      setRemoveCover(false);
       if (!classItem?.id) {
         form.reset(toFormValues(undefined, tenant?.currency || 'ILS'));
       }
     } catch (error) {
+      if (error instanceof Error && error.message.startsWith('errors.')) {
+        setSubmitError(t(error.message));
+        return;
+      }
       setSubmitError(error instanceof Error ? error.message : t('common.error'));
     }
   };
@@ -150,6 +195,40 @@ export function ClassForm({
         required
         {...form.register('name')}
       />
+
+      <div className="space-y-2">
+        <label htmlFor="cover_image" className="block text-sm font-medium text-gray-700">
+          {t('form.class.cover_image')}
+        </label>
+        <input
+          id="cover_image"
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          onChange={handleFileChange}
+          className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
+        />
+        <p className="text-xs text-gray-500">{t('form.class.cover_image_hint')}</p>
+        {previewUrl && (
+          <img
+            src={previewUrl}
+            alt={t('form.class.cover_image')}
+            className="h-24 w-40 rounded border border-gray-200 object-cover"
+          />
+        )}
+        {(previewUrl || classItem?.cover_image_path) && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setPendingFile(null);
+              setRemoveCover(true);
+            }}
+          >
+            {t('form.class.remove_cover_image')}
+          </Button>
+        )}
+      </div>
 
       <FormSelect
         htmlFor="season_id"
@@ -327,6 +406,8 @@ export function ClassForm({
             form.reset(toFormValues(classItem, tenant?.currency || 'ILS'));
             setSubmitError(null);
             setSubmitSuccess(false);
+            setPendingFile(null);
+            setRemoveCover(false);
           }}
         >
           {t('form.cancel')}

@@ -6,6 +6,7 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useTenant } from '@/hooks/useTenant';
 import { computeClassTotal } from '@/features/enrolment/lib/computeClassTotal';
 import { formatClassAgeRange } from '@/features/classes/lib/formatClassAgeRange';
+import { getOfferingCoverPublicUrl } from '@/features/classes/lib/offeringImageStorage';
 import type { PublicOffering } from '@/schemas';
 
 /**
@@ -54,44 +55,53 @@ export function ClassCard({ class: cls, currency }: ClassCardProps) {
 
   const actionLabel = isAdmin ? t('pages.classes.view_students') : t('pages.classes.enrol');
   const ageLabel = formatClassAgeRange(t, cls.min_age, cls.max_age);
+  const coverUrl = getOfferingCoverPublicUrl(cls.cover_image_path, cls.updated_at);
 
   return (
-    <div className="border border-gray-300 rounded-lg p-6 bg-white shadow-sm hover:shadow-md transition-shadow">
-      {/* h2 because ClassCard is a direct subsection of the main page h1 */}
-      <h2 className="font-bold text-lg mb-2">{cls.name}</h2>
+    <div className="border border-gray-300 rounded-lg overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow">
+      {coverUrl ? (
+        <img src={coverUrl} alt="" className="w-full h-40 object-cover" loading="lazy" />
+      ) : (
+        <div className="w-full h-40 bg-gray-100" aria-hidden />
+      )}
 
-      <div className="space-y-2 mb-4 text-sm text-gray-600">
-        <p>
-          <span className="font-semibold">{t('pages.classes.time')}:</span>{' '}
-          {formatTime(cls.start_time, i18n.language)} – {formatTime(cls.end_time, i18n.language)}
-        </p>
-        {cls.category_name && (
-          <p>
-            <span className="font-semibold">{t('pages.classes.level')}:</span>{' '}
-            {cls.category_name}
-          </p>
-        )}
-        {ageLabel && (
-          <p>
-            <span className="font-semibold">{t('pages.classes.ages')}:</span>{' '}
-            {ageLabel}
-          </p>
-        )}
+      <div className="p-6">
+        {/* h2 because ClassCard is a direct subsection of the main page h1 */}
+        <h2 className="font-bold text-lg mb-2">{cls.name}</h2>
 
-        <p className="text-lg font-semibold text-primary">
-          {formatCurrency(displayMinor, currency, i18n.language)}
-        </p>
+        <div className="space-y-2 mb-4 text-sm text-gray-600">
+          <p>
+            <span className="font-semibold">{t('pages.classes.time')}:</span>{' '}
+            {formatTime(cls.start_time, i18n.language)} – {formatTime(cls.end_time, i18n.language)}
+          </p>
+          {cls.category_name && (
+            <p>
+              <span className="font-semibold">{t('pages.classes.level')}:</span>{' '}
+              {cls.category_name}
+            </p>
+          )}
+          {ageLabel && (
+            <p>
+              <span className="font-semibold">{t('pages.classes.ages')}:</span>{' '}
+              {ageLabel}
+            </p>
+          )}
+
+          <p className="text-lg font-semibold text-primary">
+            {formatCurrency(displayMinor, currency, i18n.language)}
+          </p>
+        </div>
+
+        <Button
+          variant="primary"
+          fullWidth
+          onClick={handlePrimaryAction}
+          disabled={isLoading}
+          aria-label={`${actionLabel} - ${cls.name}`}
+        >
+          {actionLabel}
+        </Button>
       </div>
-
-      <Button
-        variant="primary"
-        fullWidth
-        onClick={handlePrimaryAction}
-        disabled={isLoading}
-        aria-label={`${actionLabel} - ${cls.name}`}
-      >
-        {actionLabel}
-      </Button>
     </div>
   );
 }
