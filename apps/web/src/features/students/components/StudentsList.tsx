@@ -1,5 +1,5 @@
-import { useState, useMemo, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   useReactTable,
@@ -44,6 +44,8 @@ type StatusFilter = 'active' | 'inactive' | 'all';
 export function StudentsList() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const classIdFromUrl = searchParams.get('class');
   const tenant = useTenant();
   const queryClient = useQueryClient();
 
@@ -360,6 +362,15 @@ export function StudentsList() {
     () => classes.map((c: { id: string; name: string }) => ({ value: c.id, label: c.name })),
     [classes]
   );
+
+  useEffect(() => {
+    if (!classIdFromUrl || classOptions.length === 0) return;
+    const match = classOptions.find((option) => option.value === classIdFromUrl);
+    if (!match) return;
+    setSelectedClasses((prev) =>
+      prev.some((option) => option.value === match.value) ? prev : [match]
+    );
+  }, [classIdFromUrl, classOptions]);
 
   const levelOptions = useMemo(
     () => levels.map((l) => ({ value: l.id, label: l.name })),

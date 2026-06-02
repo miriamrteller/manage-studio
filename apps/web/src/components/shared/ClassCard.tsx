@@ -10,7 +10,7 @@ import type { PublicOffering } from '@/schemas';
 /**
  * ClassCard: Presentational component for individual class display
  * - Shows class info (time, capacity, price)
- * - Enrol button delegates to navigation
+ * - Enrol button for parents/guests; view-students for admins
  * - No state management or hooks (except useTranslation and useNavigate for UI)
  *
  * WCAG: Proper button labels with class name
@@ -24,15 +24,21 @@ interface ClassCardProps {
 export function ClassCard({ class: cls, currency }: ClassCardProps) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const { isLoading } = useCurrentUser();
+  const { user, isLoading } = useCurrentUser();
   const tenant = useTenant();
+  const isAdmin = user?.role.includes('tenant_admin') ?? false;
   const displayMinor =
     tenant != null
       ? computeClassTotal({ price_minor: cls.price_minor }, tenant).chargeMinor
       : cls.price_minor;
 
-  const handleEnrol = () => {
+  const handlePrimaryAction = () => {
     if (isLoading) {
+      return;
+    }
+
+    if (isAdmin) {
+      navigate(`/admin/students?class=${cls.id}`);
       return;
     }
 
@@ -44,6 +50,8 @@ export function ClassCard({ class: cls, currency }: ClassCardProps) {
 
     navigate('/enrol', { state: intent });
   };
+
+  const actionLabel = isAdmin ? t('pages.classes.view_students') : t('pages.classes.enrol');
 
   return (
     <div className="border border-gray-300 rounded-lg p-6 bg-white shadow-sm hover:shadow-md transition-shadow">
@@ -70,11 +78,11 @@ export function ClassCard({ class: cls, currency }: ClassCardProps) {
       <Button
         variant="primary"
         fullWidth
-        onClick={handleEnrol}
+        onClick={handlePrimaryAction}
         disabled={isLoading}
-        aria-label={`${t('pages.classes.enrol')} - ${cls.name}`}
+        aria-label={`${actionLabel} - ${cls.name}`}
       >
-        {t('pages.classes.enrol')}
+        {actionLabel}
       </Button>
     </div>
   );
