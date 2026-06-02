@@ -137,13 +137,13 @@ export declare const PasswordLoginSchema: z.ZodObject<{
     password: string;
 }>;
 export type PasswordLogin = z.infer<typeof PasswordLoginSchema>;
-export declare const PublicClassSchema: z.ZodObject<{
+export declare const PublicOfferingSchema: z.ZodObject<{
     id: z.ZodString;
     tenant_id: z.ZodString;
     name: z.ZodString;
-    level_id: z.ZodOptional<z.ZodNullable<z.ZodString>>;
-    level_name: z.ZodOptional<z.ZodNullable<z.ZodString>>;
-    term_id: z.ZodString;
+    category_id: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    category_name: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    season_id: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     day_of_week: z.ZodOptional<z.ZodNullable<z.ZodNumber>>;
     start_time: z.ZodEffects<z.ZodString, string, string>;
     end_time: z.ZodEffects<z.ZodString, string, string>;
@@ -152,49 +152,52 @@ export declare const PublicClassSchema: z.ZodObject<{
     max_capacity: z.ZodNumber;
     min_age: z.ZodOptional<z.ZodNullable<z.ZodNumber>>;
     max_age: z.ZodOptional<z.ZodNullable<z.ZodNumber>>;
-    billing_frequency: z.ZodDefault<z.ZodEnum<["monthly", "per-session", "weekly", "annual"]>>;
-    current_enrolments: z.ZodOptional<z.ZodNumber>;
+    billing_mode: z.ZodDefault<z.ZodEnum<["one_time", "recurring"]>>;
+    billing_interval: z.ZodOptional<z.ZodNullable<z.ZodEnum<["monthly", "quarterly", "annual"]>>>;
+    current_engagements: z.ZodOptional<z.ZodNumber>;
 }, "strip", z.ZodTypeAny, {
     id: string;
     name: string;
     tenant_id: string;
-    term_id: string;
     start_time: string;
     end_time: string;
     price_minor: number;
     max_capacity: number;
-    billing_frequency: "monthly" | "per-session" | "weekly" | "annual";
+    billing_mode: "one_time" | "recurring";
     currency?: string | undefined;
-    level_id?: string | null | undefined;
-    level_name?: string | null | undefined;
+    category_id?: string | null | undefined;
+    category_name?: string | null | undefined;
+    season_id?: string | null | undefined;
     day_of_week?: number | null | undefined;
     min_age?: number | null | undefined;
     max_age?: number | null | undefined;
-    current_enrolments?: number | undefined;
+    billing_interval?: "monthly" | "quarterly" | "annual" | null | undefined;
+    current_engagements?: number | undefined;
 }, {
     id: string;
     name: string;
     tenant_id: string;
-    term_id: string;
     start_time: string;
     end_time: string;
     price_minor: number;
     max_capacity: number;
     currency?: string | undefined;
-    level_id?: string | null | undefined;
-    level_name?: string | null | undefined;
+    category_id?: string | null | undefined;
+    category_name?: string | null | undefined;
+    season_id?: string | null | undefined;
     day_of_week?: number | null | undefined;
     min_age?: number | null | undefined;
     max_age?: number | null | undefined;
-    billing_frequency?: "monthly" | "per-session" | "weekly" | "annual" | undefined;
-    current_enrolments?: number | undefined;
+    billing_mode?: "one_time" | "recurring" | undefined;
+    billing_interval?: "monthly" | "quarterly" | "annual" | null | undefined;
+    current_engagements?: number | undefined;
 }>;
-export type PublicClass = z.infer<typeof PublicClassSchema>;
+export type PublicOffering = z.infer<typeof PublicOfferingSchema>;
 export declare const PersonSchema: z.ZodObject<{
     id: z.ZodString;
     tenant_id: z.ZodString;
     user_profile_id: z.ZodNullable<z.ZodString>;
-    family_id: z.ZodNullable<z.ZodString>;
+    account_id: z.ZodNullable<z.ZodString>;
     name: z.ZodString;
     email: z.ZodNullable<z.ZodString>;
     date_of_birth: z.ZodNullable<z.ZodString>;
@@ -219,7 +222,7 @@ export declare const PersonSchema: z.ZodObject<{
     tenant_id: string;
     created_at: string;
     user_profile_id: string | null;
-    family_id: string | null;
+    account_id: string | null;
     date_of_birth: string | null;
     medical_notes: string | null;
     allergies: string | null;
@@ -238,7 +241,7 @@ export declare const PersonSchema: z.ZodObject<{
     tenant_id: string;
     created_at: string;
     user_profile_id: string | null;
-    family_id: string | null;
+    account_id: string | null;
     date_of_birth: string | null;
     medical_notes: string | null;
     allergies: string | null;
@@ -313,6 +316,7 @@ export declare const ContactPreferencesSchema: z.ZodObject<{
     id: z.ZodString;
     tenant_id: z.ZodString;
     person_id: z.ZodNullable<z.ZodString>;
+    account_member_id: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     email: z.ZodNullable<z.ZodString>;
     email_opted_in: z.ZodDefault<z.ZodBoolean>;
     whatsapp_number: z.ZodNullable<z.ZodString>;
@@ -331,6 +335,7 @@ export declare const ContactPreferencesSchema: z.ZodObject<{
     whatsapp_opted_in: boolean;
     whatsapp_verified: boolean;
     preferred_channel: "email" | "whatsapp" | "voice";
+    account_member_id?: string | null | undefined;
 }, {
     id: string;
     email: string | null;
@@ -338,13 +343,14 @@ export declare const ContactPreferencesSchema: z.ZodObject<{
     person_id: string | null;
     whatsapp_number: string | null;
     language?: "he" | "en" | undefined;
+    account_member_id?: string | null | undefined;
     email_opted_in?: boolean | undefined;
     whatsapp_opted_in?: boolean | undefined;
     whatsapp_verified?: boolean | undefined;
     preferred_channel?: "email" | "whatsapp" | "voice" | undefined;
 }>;
 export type ContactPreferences = z.infer<typeof ContactPreferencesSchema>;
-export declare const FamilySchema: z.ZodObject<{
+export declare const AccountSchema: z.ZodObject<{
     id: z.ZodString;
     tenant_id: z.ZodString;
     name: z.ZodOptional<z.ZodNullable<z.ZodString>>;
@@ -369,40 +375,40 @@ export declare const FamilySchema: z.ZodObject<{
     contact_email?: string | null | undefined;
     contact_phone?: string | null | undefined;
 }>;
-export type Family = z.infer<typeof FamilySchema>;
-export declare const FamilyMemberSchema: z.ZodObject<{
+export type Account = z.infer<typeof AccountSchema>;
+export declare const AccountMemberSchema: z.ZodObject<{
     id: z.ZodString;
     tenant_id: z.ZodString;
-    family_id: z.ZodString;
+    account_id: z.ZodString;
     user_profile_id: z.ZodNullable<z.ZodString>;
     name: z.ZodString;
     email: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     phone: z.ZodOptional<z.ZodNullable<z.ZodString>>;
-    role: z.ZodEnum<["parent", "guardian", "sibling", "adult_student"]>;
+    role: z.ZodEnum<["account_holder", "member", "sibling", "adult_student"]>;
     created_at: z.ZodEffects<z.ZodString, string, string>;
 }, "strip", z.ZodTypeAny, {
     id: string;
     name: string;
     tenant_id: string;
-    role: "parent" | "guardian" | "sibling" | "adult_student";
+    role: "account_holder" | "member" | "sibling" | "adult_student";
     created_at: string;
     user_profile_id: string | null;
-    family_id: string;
+    account_id: string;
     email?: string | null | undefined;
     phone?: string | null | undefined;
 }, {
     id: string;
     name: string;
     tenant_id: string;
-    role: "parent" | "guardian" | "sibling" | "adult_student";
+    role: "account_holder" | "member" | "sibling" | "adult_student";
     created_at: string;
     user_profile_id: string | null;
-    family_id: string;
+    account_id: string;
     email?: string | null | undefined;
     phone?: string | null | undefined;
 }>;
-export type FamilyMember = z.infer<typeof FamilyMemberSchema>;
-export declare const TermSchema: z.ZodEffects<z.ZodObject<{
+export type AccountMember = z.infer<typeof AccountMemberSchema>;
+export declare const SeasonSchema: z.ZodEffects<z.ZodObject<{
     id: z.ZodString;
     tenant_id: z.ZodString;
     name: z.ZodString;
@@ -443,7 +449,7 @@ export declare const TermSchema: z.ZodEffects<z.ZodObject<{
     end_date: string;
     status?: "active" | "archived" | "upcoming" | "completed" | undefined;
 }>;
-export declare const CreateTermSchema: z.ZodEffects<z.ZodObject<{
+export declare const CreateSeasonSchema: z.ZodEffects<z.ZodObject<{
     name: z.ZodOptional<z.ZodString>;
     start_date: z.ZodOptional<z.ZodString>;
     end_date: z.ZodOptional<z.ZodString>;
@@ -469,9 +475,9 @@ export declare const CreateTermSchema: z.ZodEffects<z.ZodObject<{
     start_date?: string | undefined;
     end_date?: string | undefined;
 }>;
-export type Term = z.infer<typeof TermSchema>;
-export type CreateTerm = z.infer<typeof CreateTermSchema>;
-export declare const LevelSchema: z.ZodObject<{
+export type Season = z.infer<typeof SeasonSchema>;
+export type CreateSeason = z.infer<typeof CreateSeasonSchema>;
+export declare const CategorySchema: z.ZodObject<{
     id: z.ZodString;
     tenant_id: z.ZodString;
     name: z.ZodString;
@@ -490,13 +496,13 @@ export declare const LevelSchema: z.ZodObject<{
     created_at: string;
     sort_order: number;
 }>;
-export type Level = z.infer<typeof LevelSchema>;
-export declare const ClassSchema: z.ZodEffects<z.ZodObject<{
+export type Category = z.infer<typeof CategorySchema>;
+export declare const OfferingSchema: z.ZodEffects<z.ZodObject<{
     id: z.ZodString;
     tenant_id: z.ZodString;
-    term_id: z.ZodString;
-    level_id: z.ZodOptional<z.ZodNullable<z.ZodString>>;
-    teacher_id: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    season_id: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    category_id: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    staff_id: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     name: z.ZodString;
     max_capacity: z.ZodNumber;
     min_age: z.ZodOptional<z.ZodNullable<z.ZodNumber>>;
@@ -507,7 +513,9 @@ export declare const ClassSchema: z.ZodEffects<z.ZodObject<{
     start_time: z.ZodEffects<z.ZodString, string, string>;
     end_time: z.ZodEffects<z.ZodString, string, string>;
     is_public: z.ZodDefault<z.ZodBoolean>;
-    billing_frequency: z.ZodDefault<z.ZodString>;
+    billing_mode: z.ZodDefault<z.ZodEnum<["one_time", "recurring"]>>;
+    delivery_mode: z.ZodDefault<z.ZodEnum<["scheduled", "intangible"]>>;
+    billing_interval: z.ZodOptional<z.ZodNullable<z.ZodEnum<["monthly", "quarterly", "annual"]>>>;
     status: z.ZodDefault<z.ZodEnum<["active", "cancelled", "full"]>>;
     created_at: z.ZodEffects<z.ZodString, string, string>;
 }, "strip", z.ZodTypeAny, {
@@ -517,37 +525,41 @@ export declare const ClassSchema: z.ZodEffects<z.ZodObject<{
     status: "active" | "cancelled" | "full";
     tenant_id: string;
     created_at: string;
-    term_id: string;
     start_time: string;
     end_time: string;
     price_minor: number;
     max_capacity: number;
-    billing_frequency: string;
+    billing_mode: "one_time" | "recurring";
     is_public: boolean;
-    level_id?: string | null | undefined;
+    delivery_mode: "scheduled" | "intangible";
+    category_id?: string | null | undefined;
+    season_id?: string | null | undefined;
     day_of_week?: number | null | undefined;
     min_age?: number | null | undefined;
     max_age?: number | null | undefined;
-    teacher_id?: string | null | undefined;
+    billing_interval?: "monthly" | "quarterly" | "annual" | null | undefined;
+    staff_id?: string | null | undefined;
 }, {
     id: string;
     name: string;
     tenant_id: string;
     created_at: string;
-    term_id: string;
     start_time: string;
     end_time: string;
     price_minor: number;
     max_capacity: number;
     currency?: string | undefined;
     status?: "active" | "cancelled" | "full" | undefined;
-    level_id?: string | null | undefined;
+    category_id?: string | null | undefined;
+    season_id?: string | null | undefined;
     day_of_week?: number | null | undefined;
     min_age?: number | null | undefined;
     max_age?: number | null | undefined;
-    billing_frequency?: string | undefined;
-    teacher_id?: string | null | undefined;
+    billing_mode?: "one_time" | "recurring" | undefined;
+    billing_interval?: "monthly" | "quarterly" | "annual" | null | undefined;
+    staff_id?: string | null | undefined;
     is_public?: boolean | undefined;
+    delivery_mode?: "scheduled" | "intangible" | undefined;
 }>, {
     id: string;
     name: string;
@@ -555,39 +567,43 @@ export declare const ClassSchema: z.ZodEffects<z.ZodObject<{
     status: "active" | "cancelled" | "full";
     tenant_id: string;
     created_at: string;
-    term_id: string;
     start_time: string;
     end_time: string;
     price_minor: number;
     max_capacity: number;
-    billing_frequency: string;
+    billing_mode: "one_time" | "recurring";
     is_public: boolean;
-    level_id?: string | null | undefined;
+    delivery_mode: "scheduled" | "intangible";
+    category_id?: string | null | undefined;
+    season_id?: string | null | undefined;
     day_of_week?: number | null | undefined;
     min_age?: number | null | undefined;
     max_age?: number | null | undefined;
-    teacher_id?: string | null | undefined;
+    billing_interval?: "monthly" | "quarterly" | "annual" | null | undefined;
+    staff_id?: string | null | undefined;
 }, {
     id: string;
     name: string;
     tenant_id: string;
     created_at: string;
-    term_id: string;
     start_time: string;
     end_time: string;
     price_minor: number;
     max_capacity: number;
     currency?: string | undefined;
     status?: "active" | "cancelled" | "full" | undefined;
-    level_id?: string | null | undefined;
+    category_id?: string | null | undefined;
+    season_id?: string | null | undefined;
     day_of_week?: number | null | undefined;
     min_age?: number | null | undefined;
     max_age?: number | null | undefined;
-    billing_frequency?: string | undefined;
-    teacher_id?: string | null | undefined;
+    billing_mode?: "one_time" | "recurring" | undefined;
+    billing_interval?: "monthly" | "quarterly" | "annual" | null | undefined;
+    staff_id?: string | null | undefined;
     is_public?: boolean | undefined;
+    delivery_mode?: "scheduled" | "intangible" | undefined;
 }>;
-export type Class = z.infer<typeof ClassSchema>;
+export type Offering = z.infer<typeof OfferingSchema>;
 export declare const GenderConfigSchema: z.ZodObject<{
     allowed_genders: z.ZodArray<z.ZodEnum<["male", "female"]>, "many">;
 }, "strip", z.ZodTypeAny, {
@@ -596,11 +612,11 @@ export declare const GenderConfigSchema: z.ZodObject<{
     allowed_genders: ("male" | "female")[];
 }>;
 export declare const LevelConfigSchema: z.ZodObject<{
-    level_id: z.ZodString;
+    category_id: z.ZodString;
 }, "strip", z.ZodTypeAny, {
-    level_id: string;
+    category_id: string;
 }, {
-    level_id: string;
+    category_id: string;
 }>;
 export declare const DocumentConfigSchema: z.ZodObject<{
     doc_type: z.ZodString;
@@ -632,21 +648,21 @@ export declare const RequirementConfigSchema: z.ZodDiscriminatedUnion<"requireme
 }>, z.ZodObject<{
     requirement_type: z.ZodLiteral<"level">;
     config: z.ZodObject<{
-        level_id: z.ZodString;
+        category_id: z.ZodString;
     }, "strip", z.ZodTypeAny, {
-        level_id: string;
+        category_id: string;
     }, {
-        level_id: string;
+        category_id: string;
     }>;
 }, "strip", z.ZodTypeAny, {
     requirement_type: "level";
     config: {
-        level_id: string;
+        category_id: string;
     };
 }, {
     requirement_type: "level";
     config: {
-        level_id: string;
+        category_id: string;
     };
 }>, z.ZodObject<{
     requirement_type: z.ZodLiteral<"document_submitted">;
@@ -722,10 +738,10 @@ export declare const RequirementTemplateSchema: z.ZodObject<{
     is_hard_block?: boolean | undefined;
 }>;
 export type RequirementTemplate = z.infer<typeof RequirementTemplateSchema>;
-export declare const ClassRequirementSchema: z.ZodObject<{
+export declare const OfferingRequirementSchema: z.ZodObject<{
     id: z.ZodString;
     tenant_id: z.ZodString;
-    class_id: z.ZodString;
+    offering_id: z.ZodString;
     requirement_template_id: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     config: z.ZodOptional<z.ZodNullable<z.ZodRecord<z.ZodString, z.ZodUnknown>>>;
     created_at: z.ZodEffects<z.ZodString, string, string>;
@@ -733,24 +749,24 @@ export declare const ClassRequirementSchema: z.ZodObject<{
     id: string;
     tenant_id: string;
     created_at: string;
-    class_id: string;
+    offering_id: string;
     config?: Record<string, unknown> | null | undefined;
     requirement_template_id?: string | null | undefined;
 }, {
     id: string;
     tenant_id: string;
     created_at: string;
-    class_id: string;
+    offering_id: string;
     config?: Record<string, unknown> | null | undefined;
     requirement_template_id?: string | null | undefined;
 }>;
-export type ClassRequirement = z.infer<typeof ClassRequirementSchema>;
-export declare const EnrolmentSchema: z.ZodObject<{
+export type OfferingRequirement = z.infer<typeof OfferingRequirementSchema>;
+export declare const EngagementSchema: z.ZodObject<{
     id: z.ZodString;
     tenant_id: z.ZodString;
     person_id: z.ZodString;
-    class_id: z.ZodString;
-    term_id: z.ZodString;
+    offering_id: z.ZodString;
+    season_id: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     billing_account_id: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     status: z.ZodDefault<z.ZodEnum<["pending_payment", "active", "admin_review", "pending_offer", "cancelled", "withdrawn"]>>;
     payment_received_at: z.ZodOptional<z.ZodNullable<z.ZodEffects<z.ZodString, string, string>>>;
@@ -762,8 +778,8 @@ export declare const EnrolmentSchema: z.ZodObject<{
     tenant_id: string;
     person_id: string;
     created_at: string;
-    term_id: string;
-    class_id: string;
+    offering_id: string;
+    season_id?: string | null | undefined;
     updated_at?: string | undefined;
     billing_account_id?: string | null | undefined;
     payment_received_at?: string | null | undefined;
@@ -772,18 +788,18 @@ export declare const EnrolmentSchema: z.ZodObject<{
     tenant_id: string;
     person_id: string;
     created_at: string;
-    term_id: string;
-    class_id: string;
+    offering_id: string;
     status?: "active" | "withdrawn" | "cancelled" | "pending_payment" | "admin_review" | "pending_offer" | undefined;
+    season_id?: string | null | undefined;
     updated_at?: string | undefined;
     billing_account_id?: string | null | undefined;
     payment_received_at?: string | null | undefined;
 }>;
-export type Enrolment = z.infer<typeof EnrolmentSchema>;
-export declare const ClassSessionSchema: z.ZodObject<{
+export type Engagement = z.infer<typeof EngagementSchema>;
+export declare const OfferingSessionSchema: z.ZodObject<{
     id: z.ZodString;
     tenant_id: z.ZodString;
-    class_id: z.ZodString;
+    offering_id: z.ZodString;
     session_date: z.ZodString;
     start_time: z.ZodEffects<z.ZodString, string, string>;
     end_time: z.ZodEffects<z.ZodString, string, string>;
@@ -794,7 +810,7 @@ export declare const ClassSessionSchema: z.ZodObject<{
     created_at: string;
     start_time: string;
     end_time: string;
-    class_id: string;
+    offering_id: string;
     session_date: string;
 }, {
     id: string;
@@ -802,11 +818,11 @@ export declare const ClassSessionSchema: z.ZodObject<{
     created_at: string;
     start_time: string;
     end_time: string;
-    class_id: string;
+    offering_id: string;
     session_date: string;
 }>;
-export type ClassSession = z.infer<typeof ClassSessionSchema>;
-export declare const TeacherSchema: z.ZodObject<{
+export type OfferingSession = z.infer<typeof OfferingSessionSchema>;
+export declare const StaffSchema: z.ZodObject<{
     id: z.ZodString;
     tenant_id: z.ZodString;
     user_profile_id: z.ZodString;
@@ -837,12 +853,12 @@ export declare const TeacherSchema: z.ZodObject<{
     contract_type?: "employee" | "contractor" | undefined;
     hourly_rate_minor?: number | null | undefined;
 }>;
-export type Teacher = z.infer<typeof TeacherSchema>;
+export type Staff = z.infer<typeof StaffSchema>;
 export declare const NotificationLogSchema: z.ZodObject<{
     id: z.ZodString;
     tenant_id: z.ZodString;
     recipient_person_id: z.ZodOptional<z.ZodNullable<z.ZodString>>;
-    recipient_family_member_id: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    recipient_account_member_id: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     recipient_email: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     recipient_phone: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     channel: z.ZodEnum<["email", "whatsapp", "voice"]>;
@@ -862,7 +878,7 @@ export declare const NotificationLogSchema: z.ZodObject<{
     template_name: string;
     sent_at: string;
     recipient_person_id?: string | null | undefined;
-    recipient_family_member_id?: string | null | undefined;
+    recipient_account_member_id?: string | null | undefined;
     recipient_email?: string | null | undefined;
     recipient_phone?: string | null | undefined;
     variables?: Record<string, unknown> | null | undefined;
@@ -878,7 +894,7 @@ export declare const NotificationLogSchema: z.ZodObject<{
     sent_at: string;
     status?: "sent" | "delivered" | "read" | "failed" | "bounced" | undefined;
     recipient_person_id?: string | null | undefined;
-    recipient_family_member_id?: string | null | undefined;
+    recipient_account_member_id?: string | null | undefined;
     recipient_email?: string | null | undefined;
     recipient_phone?: string | null | undefined;
     variables?: Record<string, unknown> | null | undefined;
@@ -1008,7 +1024,7 @@ export type ExpenseCategory = z.infer<typeof ExpenseCategorySchema>;
 export declare const NotificationPayloadSchema: z.ZodObject<{
     tenantId: z.ZodString;
     recipientId: z.ZodOptional<z.ZodNullable<z.ZodString>>;
-    recipientType: z.ZodOptional<z.ZodNullable<z.ZodEnum<["person", "family_member"]>>>;
+    recipientType: z.ZodOptional<z.ZodNullable<z.ZodEnum<["person", "account_member"]>>>;
     recipientEmail: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     recipientPhone: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     templateName: z.ZodString;
@@ -1020,7 +1036,7 @@ export declare const NotificationPayloadSchema: z.ZodObject<{
     templateName: string;
     variables?: Record<string, unknown> | undefined;
     recipientId?: string | null | undefined;
-    recipientType?: "person" | "family_member" | null | undefined;
+    recipientType?: "person" | "account_member" | null | undefined;
     recipientEmail?: string | null | undefined;
     recipientPhone?: string | null | undefined;
 }, {
@@ -1029,7 +1045,7 @@ export declare const NotificationPayloadSchema: z.ZodObject<{
     templateName: string;
     variables?: Record<string, unknown> | undefined;
     recipientId?: string | null | undefined;
-    recipientType?: "person" | "family_member" | null | undefined;
+    recipientType?: "person" | "account_member" | null | undefined;
     recipientEmail?: string | null | undefined;
     recipientPhone?: string | null | undefined;
 }>;
