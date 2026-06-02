@@ -22,7 +22,7 @@ interface ClassCardProps {
 export function ClassCard({ class: cls, currency }: ClassCardProps) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const { user, isLoading } = useCurrentUser();
+  const { isLoading } = useCurrentUser();
 
   const handleEnrol = () => {
     if (isLoading) {
@@ -35,12 +35,7 @@ export function ClassCard({ class: cls, currency }: ClassCardProps) {
       seasonId: cls.season_id,
     };
 
-    if (user) {
-      navigate('/enrol', { state: intent });
-      return;
-    }
-
-    navigate('/login', { state: intent });
+    navigate('/enrol', { state: intent });
   };
 
   return (

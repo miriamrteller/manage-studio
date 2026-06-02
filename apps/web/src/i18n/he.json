@@ -527,6 +527,11 @@
       "notification_email": "המשך עם עדכונים בדוא\"ל",
       "confirmation_title": "ההרשמה הושלמה בהצלחה!",
       "confirmation_desc": "ההרשמה שלך אושרה. נשלח אליך דוא\"ל אישור.",
+      "confirmation_portal_hint": "נשלח קישור לפורטל המשפחה לכתובת {{email}}.",
+      "guest_sign_in_prompt": "כבר רשומים? התחברו כדי לבחור את ילדיכם במקום להזין פרטים מחדש.",
+      "guest_sign_in_action": "התחברות",
+      "guest_new_family_desc": "הזינו פרטי הורה ותלמיד/ה. אין צורך בחשבון כעת — גישה לפורטל תישלח בדוא\"ל לאחר התשלום.",
+      "guardian_email_required": "נדרש דוא\"ל הורה לאישור ולגישה לפורטל.",
       "class_label": "שיעור",
       "status_label": "סטטוס",
       "date_label": "תאריך"

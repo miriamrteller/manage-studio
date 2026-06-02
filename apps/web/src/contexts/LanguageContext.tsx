@@ -1,10 +1,11 @@
 import { createContext, ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import i18n from '@/i18n/i18n';
+import { useAuthSession } from '@/hooks/useAuth';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useTenant } from '@/hooks/useTenant';
 import { supabase } from '@/lib/supabase';
 import queryClient from '@/lib/query-client';
-import { resolveLanguage, type AppLanguage } from '@/lib/resolve-language';
+import { resolveEffectiveLanguage, type AppLanguage } from '@/lib/resolve-language';
 import { DocumentLanguageSync } from '@/components/DocumentLanguageSync';
 
 interface LanguageContextType {
@@ -16,31 +17,30 @@ export const LanguageContext = createContext<LanguageContextType | null>(null);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const tenant = useTenant();
-  const { user } = useCurrentUser();
+  const { session } = useAuthSession();
+  const { user, isProfileChecked } = useCurrentUser();
 
-
-  const defaultLanguage = useMemo(
-    () => resolveLanguage(user?.language, tenant?.language_default),
-    [user?.language, tenant?.language_default],
+  const effectiveLanguage = useMemo(
+    () =>
+      resolveEffectiveLanguage({
+        profileLanguage: user?.language,
+        tenantDefault: tenant?.language_default,
+        isAuthenticated: Boolean(session?.user),
+        isProfileChecked,
+      }),
+    [user?.language, session?.user, tenant?.language_default, isProfileChecked],
   );
 
   const [language, setLanguageState] = useState<AppLanguage>(() => {
-    if (user?.language) return user.language;
     const stored = localStorage.getItem('language');
-    if (stored) return stored as AppLanguage;
-    return defaultLanguage;
+    if (stored === 'he' || stored === 'en') return stored;
+    return 'he';
   });
 
-
-  // When user or tenant changes, update language if user has a preference
   useEffect(() => {
-    if (user?.language) {
-      setLanguageState(user.language);
-      localStorage.setItem('language', user.language);
-    }
-    // If no user, don't override current language
-  }, [user?.language, tenant?.language_default]);
-
+    setLanguageState(effectiveLanguage);
+    localStorage.setItem('language', effectiveLanguage);
+  }, [effectiveLanguage]);
 
   useEffect(() => {
     if (i18n.language !== language) {
@@ -48,21 +48,10 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     }
   }, [language]);
 
-  // Keep UI aligned with tenant default before profile loads (e.g. magic-link callback).
-  useEffect(() => {
-    if (user?.language) return;
-    if (language === defaultLanguage) return;
-    setLanguageState(defaultLanguage);
-    void i18n.changeLanguage(defaultLanguage);
-  }, [defaultLanguage, language, user?.language]);
-
-
-  // Only update language if user explicitly changes it
   const setLanguage = useCallback(
     async (lang: AppLanguage) => {
       setLanguageState(lang);
       await i18n.changeLanguage(lang);
-
       localStorage.setItem('language', lang);
 
       if (user) {

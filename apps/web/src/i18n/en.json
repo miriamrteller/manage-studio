@@ -527,6 +527,11 @@
       "notification_email": "Continue with email updates",
       "confirmation_title": "Enrolment Successful!",
       "confirmation_desc": "Your enrolment has been confirmed. Confirmation email sent.",
+      "confirmation_portal_hint": "We will email {{email}} with a link to access your family portal.",
+      "guest_sign_in_prompt": "Already registered? Sign in to select your children instead of entering details again.",
+      "guest_sign_in_action": "Sign in",
+      "guest_new_family_desc": "Enter guardian and student details to enrol. No account needed yet — you will receive portal access by email after payment.",
+      "guardian_email_required": "Guardian email is required for confirmation and portal access.",
       "class_label": "Class",
       "status_label": "Status",
       "date_label": "Date"
