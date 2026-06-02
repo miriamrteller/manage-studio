@@ -142,7 +142,11 @@ export class EnrolmentIntakeService {
 
     parseRpcError(error, data);
 
-    const row = data as Record<string, string>;
-    return { engagementId: row.engagementId };
+    const row = data as Record<string, string | undefined>;
+    const engagementId = row.engagementId ?? row.engagement_id;
+    if (!engagementId) {
+      throw new Error('Failed to create engagement');
+    }
+    return { engagementId };
   }
 }

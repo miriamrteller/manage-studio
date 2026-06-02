@@ -52,6 +52,7 @@ serve(async (req) => {
         .single();
 
       if (tenantLookupError || !engagementForTenant) {
+        console.error("[create-checkout] engagement lookup failed", tenantLookupError);
         return jsonResponse({ error: "Engagement not found" }, 404);
       }
 
