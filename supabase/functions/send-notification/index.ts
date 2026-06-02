@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { handleOptions, jsonResponse } from "../_shared/cors.ts";
 import {
   isSupportedEmailTemplate,
   sendRenderedEmail,
@@ -62,23 +63,12 @@ interface TwilioVerifyResponse {
 }
 
 serve(async (req: Request) => {
-  // CORS headers
-  if (req.method === "OPTIONS") {
-    return new Response("ok", {
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "POST,OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type,Authorization",
-      },
-    });
-  }
+  const options = handleOptions(req);
+  if (options) return options;
 
   try {
     if (req.method !== "POST") {
-      return new Response(JSON.stringify({ error: "Method not allowed" }), {
-        status: 405,
-        headers: { "Content-Type": "application/json" },
-      });
+      return jsonResponse({ error: "Method not allowed" }, 405);
     }
 
     const payload: NotificationPayload = await req.json();
@@ -89,13 +79,7 @@ serve(async (req: Request) => {
       !payload.templateName ||
       !payload.channel
     ) {
-      return new Response(
-        JSON.stringify({ error: "Missing required fields" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      return jsonResponse({ error: "Missing required fields" }, 400);
     }
 
     // Validate recipient contact info
@@ -104,14 +88,11 @@ serve(async (req: Request) => {
       !payload.recipientPhone &&
       !payload.recipientId
     ) {
-      return new Response(
-        JSON.stringify({
-          error: "Must provide recipientEmail, recipientPhone, or recipientId",
-        }),
+      return jsonResponse(
         {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        }
+          error: "Must provide recipientEmail, recipientPhone, or recipientId",
+        },
+        400,
       );
     }
 
@@ -276,28 +257,22 @@ serve(async (req: Request) => {
       // Don't fail the response if logging fails
     }
 
-    return new Response(
-      JSON.stringify({
+    return jsonResponse(
+      {
         success: status === "sent",
         externalMsgId,
         status,
         failureReason,
-      }),
-      {
-        status: status === "sent" ? 200 : 400,
-        headers: { "Content-Type": "application/json" },
-      }
+      },
+      status === "sent" ? 200 : 400,
     );
   } catch (error) {
     console.error("Notification error:", error);
-    return new Response(
-      JSON.stringify({
-        error: error instanceof Error ? error.message : "Unknown error",
-      }),
+    return jsonResponse(
       {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      }
+        error: error instanceof Error ? error.message : "Unknown error",
+      },
+      500,
     );
   }
 });
