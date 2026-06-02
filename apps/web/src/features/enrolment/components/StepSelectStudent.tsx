@@ -82,6 +82,8 @@ interface StepSelectStudentProps {
   mode: EnrolmentMode;
   isAdultIntake?: boolean;
   constraints: EnrolmentConstraints;
+  allowAgeOverride?: boolean;
+  ageOverrideConfirmed?: boolean;
   guardian: GuardianProfile | null;
   students: StudentWithEnrolments[];
   guardianPersonId: string | null;
@@ -120,6 +122,8 @@ export function StepSelectStudent({
   mode,
   isAdultIntake = false,
   constraints,
+  allowAgeOverride = false,
+  ageOverrideConfirmed = false,
   guardian,
   students,
   guardianPersonId,
@@ -132,6 +136,8 @@ export function StepSelectStudent({
   onCancel,
   onSignInRequest,
 }: StepSelectStudentProps) {
+  const canBypassAgeBlock = allowAgeOverride && ageOverrideConfirmed;
+
   const { t } = useTranslation();
   const [subMode, setSubMode] = useState<SubMode>(() => initialSubMode(mode, isAdultIntake));
   const [error, setError] = useState<string | null>(null);
@@ -281,7 +287,7 @@ export function StepSelectStudent({
           setError(null);
           setForceExistingEmailPrompt(false);
           if (showGuardianExistingPrompt) return;
-          if (studentDobAgeCheck.blocked) return;
+          if (studentDobAgeCheck.blocked && !canBypassAgeBlock) return;
           setIsSubmitting(true);
           try {
             const guardianNameForSubmit =
@@ -414,7 +420,7 @@ export function StepSelectStudent({
             type="submit"
             variant="primary"
             className="flex-1"
-            disabled={isSubmitting || showGuardianExistingPrompt || guardianEmailCheck.isChecking || studentDobAgeCheck.blocked}
+            disabled={isSubmitting || showGuardianExistingPrompt || guardianEmailCheck.isChecking || (studentDobAgeCheck.blocked && !canBypassAgeBlock)}
           >
             {isSubmitting ? t('common.loading') : t('common.next')}
           </Button>
@@ -432,7 +438,7 @@ export function StepSelectStudent({
           setError(null);
           setForceExistingEmailPrompt(false);
           if (showAdultExistingPrompt) return;
-          if (adultDobAgeCheck.blocked) return;
+          if (adultDobAgeCheck.blocked && !canBypassAgeBlock) return;
           setIsSubmitting(true);
           try {
             await onCreateAdult({
@@ -514,7 +520,7 @@ export function StepSelectStudent({
             type="submit"
             variant="primary"
             className="flex-1"
-            disabled={isSubmitting || showAdultExistingPrompt || adultEmailCheck.isChecking || adultDobAgeCheck.blocked}
+            disabled={isSubmitting || showAdultExistingPrompt || adultEmailCheck.isChecking || (adultDobAgeCheck.blocked && !canBypassAgeBlock)}
           >
             {isSubmitting ? t('common.loading') : t('common.next')}
           </Button>
@@ -530,7 +536,7 @@ export function StepSelectStudent({
         onSubmit={async (e) => {
           e.preventDefault();
           setError(null);
-          if (studentDobAgeCheck.blocked) return;
+          if (studentDobAgeCheck.blocked && !canBypassAgeBlock) return;
           setIsSubmitting(true);
           try {
             await onCreateMinor({ student_name: studentName, student_date_of_birth: studentDob });
@@ -561,7 +567,7 @@ export function StepSelectStudent({
           <Button type="button" variant="outline" className="flex-1" onClick={() => setSubMode('choose')}>
             {t('common.back')}
           </Button>
-          <Button type="submit" variant="primary" className="flex-1" disabled={isSubmitting || studentDobAgeCheck.blocked}>
+          <Button type="submit" variant="primary" className="flex-1" disabled={isSubmitting || (studentDobAgeCheck.blocked && !canBypassAgeBlock)}>
             {isSubmitting ? t('common.loading') : t('common.next')}
           </Button>
         </div>

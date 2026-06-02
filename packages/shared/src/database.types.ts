@@ -460,6 +460,11 @@ export type Database = {
       }
       engagements: {
         Row: {
+          age_at_season_start: number | null
+          age_override_at: string | null
+          age_override_by: string | null
+          age_override_reason: string | null
+          age_review_note: string | null
           billing_account_id: string | null
           billing_status: string | null
           cancellation_reason: string | null
@@ -478,6 +483,11 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          age_at_season_start?: number | null
+          age_override_at?: string | null
+          age_override_by?: string | null
+          age_override_reason?: string | null
+          age_review_note?: string | null
           billing_account_id?: string | null
           billing_status?: string | null
           cancellation_reason?: string | null
@@ -496,6 +506,11 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          age_at_season_start?: number | null
+          age_override_at?: string | null
+          age_override_by?: string | null
+          age_override_reason?: string | null
+          age_review_note?: string | null
           billing_account_id?: string | null
           billing_status?: string | null
           cancellation_reason?: string | null
@@ -514,6 +529,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "engagements_age_override_by_fkey"
+            columns: ["age_override_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "engagements_billing_account_id_fkey"
             columns: ["billing_account_id"]

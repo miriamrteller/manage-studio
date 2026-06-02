@@ -359,6 +359,11 @@ export const EngagementSchema = z.object({
   offering_id: UUIDSchema,
   season_id: UUIDSchema.nullable().optional(),
   billing_account_id: UUIDSchema.nullable().optional(),
+  age_override_at: TimestampSchema.nullable().optional(),
+  age_override_by: UUIDSchema.nullable().optional(),
+  age_override_reason: z.string().max(500).nullable().optional(),
+  age_review_note: z.string().max(1000).nullable().optional(),
+  age_at_season_start: z.number().int().nonnegative().nullable().optional(),
   status: z
     .enum(['pending_payment', 'active', 'admin_review', 'pending_offer', 'cancelled', 'withdrawn'])
     .default('pending_payment'),

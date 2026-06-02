@@ -5,7 +5,14 @@ import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
 import { EnrolmentService } from '../service';
 import { buildPaymentLink } from '../lib/adminEnrolmentService';
-import { filterClassesByAge, ageAt, buildSeasonStartById } from '../lib/check-requirements';
+import {
+  filterClassesByAge,
+  ageAt,
+  buildSeasonStartById,
+  formatAgeRange,
+  isAgeEligible,
+  personAgeAtSeasonStart,
+} from '../lib/check-requirements';
 import {
   AdminEnrolmentPaymentStep,
   type AdminPaymentChoice,
@@ -66,6 +73,9 @@ export function AdminEnrolStudentModal({
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [doneMessage, setDoneMessage] = useState<string | null>(null);
+  const [showAllClasses, setShowAllClasses] = useState(false);
+  const [ageOverrideConfirmed, setAgeOverrideConfirmed] = useState(false);
+  const [ageOverrideReason, setAgeOverrideReason] = useState('');
 
   const { classes, isLoading: classesLoading, error: classesError } = useClasses({
     publicOnly: false,
@@ -117,8 +127,40 @@ export function AdminEnrolStudentModal({
       setError(null);
       setIsSubmitting(false);
       setDoneMessage(null);
+      setShowAllClasses(false);
+      setAgeOverrideConfirmed(false);
+      setAgeOverrideReason('');
     }
   }, [isOpen]);
+
+  const classSeasonStartDate = (cls: { season_id?: string | null; season_start_date?: string | null }) => {
+    if (cls.season_start_date) return cls.season_start_date;
+    if (cls.season_id && seasonStartById[cls.season_id]) return seasonStartById[cls.season_id];
+    return null;
+  };
+
+  const isClassAgeEligible = (cls: Offering) => {
+    return isAgeEligible(
+      {
+        min_age: cls.min_age,
+        max_age: cls.max_age,
+        season_id: cls.season_id,
+        season_start_date: classSeasonStartDate(cls),
+      },
+      person,
+      ageCheckOptions,
+    );
+  };
+
+  const selectedClassEligible = selectedClass ? isClassAgeEligible(selectedClass) : true;
+  const selectedClassAges = selectedClass
+    ? formatAgeRange(selectedClass.min_age, selectedClass.max_age)
+    : null;
+  const selectedClassSeasonStart = selectedClass ? classSeasonStartDate(selectedClass) : null;
+  const selectedClassStudentAge =
+    personDateOfBirth && selectedClassSeasonStart
+      ? personAgeAtSeasonStart(personDateOfBirth, selectedClassSeasonStart)
+      : null;
 
   const invalidateStudentCaches = async () => {
     if (!tenant) return;
@@ -139,6 +181,8 @@ export function AdminEnrolStudentModal({
       offering_id: selectedClass.id,
       season_id: selectedClass.season_id,
       status: 'pending_payment',
+      age_override_confirmed: !selectedClassEligible ? ageOverrideConfirmed : undefined,
+      age_override_reason: !selectedClassEligible ? ageOverrideReason : undefined,
     });
 
     return created.id;
@@ -146,6 +190,7 @@ export function AdminEnrolStudentModal({
 
   const handleClassNext = async () => {
     if (!selectedClass || !tenant) return;
+    if (!selectedClassEligible && !ageOverrideConfirmed) return;
     setError(null);
     setIsSubmitting(true);
     try {
@@ -174,6 +219,9 @@ export function AdminEnrolStudentModal({
     step === 'done'
       ? t('pages.admin_enrol.done_title')
       : t('pages.admin_enrol.title', { name: personName });
+
+  const hiddenByAgeCount = classes.length - availableClasses.length;
+  const displayClasses = showAllClasses ? classes : availableClasses;
 
   return (
     <Modal
@@ -206,15 +254,33 @@ export function AdminEnrolStudentModal({
             <p className="text-sm text-gray-500">{t('pages.enrolment.no_classes')}</p>
           )}
 
-          {!classesLoading && availableClasses.length > 0 && (
+          {hiddenByAgeCount > 0 && (
+            <label className="flex items-center gap-2 text-sm text-gray-700">
+              <input
+                type="checkbox"
+                checked={showAllClasses}
+                onChange={(e) => setShowAllClasses(e.target.checked)}
+              />
+              {t('pages.enrolment.show_all_classes')}
+            </label>
+          )}
+
+          {!classesLoading && displayClasses.length > 0 && (
             <ul className="space-y-2 max-h-64 overflow-y-auto" role="listbox">
-              {availableClasses.map((cls) => {
+              {displayClasses.map((cls) => {
                 const isSelected = selectedClass?.id === cls.id;
                 const levelName = cls.category_id ? levelNameById.get(cls.category_id) : null;
                 const detailParts = [
                   levelName && levelName !== cls.name ? levelName : null,
                   formatTime(cls.start_time),
                 ].filter(Boolean);
+                const eligible = isClassAgeEligible(cls as Offering);
+                const classAges = formatAgeRange(cls.min_age, cls.max_age);
+                const classSeasonStart = classSeasonStartDate(cls);
+                const classStudentAge =
+                  personDateOfBirth && classSeasonStart
+                    ? personAgeAtSeasonStart(personDateOfBirth, classSeasonStart)
+                    : null;
 
                 return (
                   <li key={cls.id}>
@@ -222,11 +288,18 @@ export function AdminEnrolStudentModal({
                       type="button"
                       role="option"
                       aria-selected={isSelected}
-                      onClick={() => setSelectedClass(cls as Offering)}
+                      onClick={() => {
+                        setSelectedClass(cls as Offering);
+                        setError(null);
+                        setAgeOverrideConfirmed(false);
+                        setAgeOverrideReason('');
+                      }}
                       className={`w-full text-left p-3 rounded-lg border transition-colors ${
                         isSelected
                           ? 'border-blue-600 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300'
+                          : eligible
+                            ? 'border-gray-200 hover:border-gray-300'
+                            : 'border-amber-300 hover:border-amber-400 bg-amber-50/40'
                       }`}
                     >
                       <p className="font-medium">{cls.name}</p>
@@ -241,11 +314,44 @@ export function AdminEnrolStudentModal({
                             i18n.language,
                           )}
                       </p>
+                      {!eligible && classAges && classStudentAge != null && (
+                        <p className="text-xs text-amber-800 mt-1">
+                          {t('pages.enrolment.selected_class_age_mismatch', {
+                            age: classStudentAge,
+                            classAges,
+                          })}
+                        </p>
+                      )}
                     </button>
                   </li>
                 );
               })}
             </ul>
+          )}
+
+          {selectedClass && !selectedClassEligible && selectedClassAges && selectedClassStudentAge != null && (
+            <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 space-y-2">
+              <p>
+                {t('pages.enrolment.selected_class_age_mismatch', {
+                  age: selectedClassStudentAge,
+                  classAges: selectedClassAges,
+                })}
+              </p>
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={ageOverrideConfirmed}
+                  onChange={(e) => setAgeOverrideConfirmed(e.target.checked)}
+                />
+                {t('pages.enrolment.age_override_label')}
+              </label>
+              <textarea
+                className="w-full rounded border border-amber-300 p-2 text-sm bg-white"
+                placeholder={t('pages.enrolment.age_override_reason_placeholder')}
+                value={ageOverrideReason}
+                onChange={(e) => setAgeOverrideReason(e.target.value)}
+              />
+            </div>
           )}
 
           {error && (
@@ -261,7 +367,7 @@ export function AdminEnrolStudentModal({
             <Button
               variant="primary"
               className="flex-1"
-              disabled={!selectedClass || isSubmitting}
+              disabled={!selectedClass || isSubmitting || (!selectedClassEligible && !ageOverrideConfirmed)}
               onClick={() => void handleClassNext()}
             >
               {isSubmitting ? t('common.loading') : t('common.next')}

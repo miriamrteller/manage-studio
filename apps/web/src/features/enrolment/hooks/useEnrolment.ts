@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { EnrolmentService } from '../service';
+import type { EnrolmentCreateInput } from '../service';
 import { type Engagement } from '@shared/schemas';
 import { useTenant } from '@/hooks/useTenant';
 
@@ -46,7 +47,7 @@ export function useEnrolment({
 
   // Create mutation
   const createMutation = useMutation({
-    mutationFn: async (newEnrolment: Partial<Engagement>) => {
+    mutationFn: async (newEnrolment: EnrolmentCreateInput) => {
       if (!tenant) throw new Error('Tenant not initialized');
       return EnrolmentService.create(tenant, newEnrolment);
     },

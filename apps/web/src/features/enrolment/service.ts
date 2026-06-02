@@ -1,9 +1,11 @@
 import { BaseService } from '@/services/base.service';
 import { TenantDB } from '@/lib/db';
+import { supabase } from '@/lib/supabase';
 import { EngagementSchema, type Engagement } from '@shared/schemas';
 import { z } from 'zod';
 import type { Tenant } from '@shared/schemas';
 import { NON_TERMINAL_ENGAGEMENT_STATUSES } from './lib/enrolmentTransitions';
+import { isAgeEligible } from './lib/check-requirements';
 
 const EnrolmentStatusSchema = z.enum([
   'pending_payment',
@@ -23,11 +25,18 @@ const EnrolmentInputSchema = z
     status: EnrolmentStatusSchema.optional(),
     billing_account_id: z.string().uuid().nullable().optional(),
     payment_received_at: z.string().nullable().optional(),
+    age_override_confirmed: z.boolean().optional(),
+    age_override_reason: z.string().max(500).nullable().optional(),
   })
   .refine(
     (data) => data.status == null || !['cancelled', 'withdrawn'].includes(data.status),
     { message: 'Use cancel_engagement RPC for cancellation or withdrawal' },
   );
+
+export type EnrolmentCreateInput = Partial<Engagement> & {
+  age_override_confirmed?: boolean;
+  age_override_reason?: string | null;
+};
 
 /**
  * EnrolmentService: All enrolment data operations
@@ -100,9 +109,14 @@ export class EnrolmentService extends BaseService {
    * V1: Simple create without placement scoring
    * V2: Will add prerequisite validation, waiting list logic
    */
-  static async create(tenant: Tenant, enrolmentData: Partial<Engagement>) {
+  static async create(tenant: Tenant, enrolmentData: EnrolmentCreateInput) {
     // Validate input (catches client-side typos)
     const validated = EnrolmentInputSchema.parse(enrolmentData);
+    const {
+      age_override_confirmed = false,
+      age_override_reason = null,
+      ...insertBase
+    } = validated;
 
     return this.withRetry(async () => {
       // Check for duplicate enrolment (same person+class+term)
@@ -118,7 +132,73 @@ export class EnrolmentService extends BaseService {
         if (existing) throw new Error('Person already enrolled in this class for this term');
       }
 
-      const { data, error } = await TenantDB.insert('engagements', tenant, validated)
+      let insertPayload: Record<string, unknown> = { ...insertBase };
+
+      if (validated.person_id && validated.offering_id) {
+        const [{ data: person, error: personError }, { data: offering, error: offeringError }] =
+          await Promise.all([
+            TenantDB.selectFor('people', tenant).eq('id', validated.person_id).maybeSingle(),
+            TenantDB.selectFor('offerings', tenant).eq('id', validated.offering_id).maybeSingle(),
+          ]);
+
+        if (personError) throw personError;
+        if (offeringError) throw offeringError;
+
+        let seasonStartDate: string | null = null;
+        if (offering?.season_id) {
+          const { data: season, error: seasonError } = await TenantDB.selectFor('seasons', tenant)
+            .eq('id', offering.season_id)
+            .maybeSingle();
+          if (seasonError) throw seasonError;
+          seasonStartDate = season?.start_date ?? null;
+        }
+        const ageEligible =
+          offering &&
+          person &&
+          isAgeEligible(
+            {
+              min_age: offering.min_age,
+              max_age: offering.max_age,
+              season_start_date: seasonStartDate,
+            },
+            {
+              date_of_birth: person.date_of_birth,
+            },
+          );
+
+        if (ageEligible === false) {
+          if (!age_override_confirmed) {
+            throw new Error('Student is not eligible for this class age range');
+          }
+
+          const {
+            data: { user },
+            error: userError,
+          } = await supabase.auth.getUser();
+          if (userError) throw userError;
+          if (!user?.id) throw new Error('Only admins can override age requirements');
+
+          const { data: profile, error: profileError } = await TenantDB.selectFor('user_profiles', tenant)
+            .select('id, role')
+            .eq('id', user.id)
+            .maybeSingle();
+          if (profileError) throw profileError;
+
+          const roles = Array.isArray(profile?.role) ? profile.role : [];
+          if (!roles.includes('tenant_admin')) {
+            throw new Error('Only admins can override age requirements');
+          }
+
+          insertPayload = {
+            ...insertPayload,
+            age_override_at: new Date().toISOString(),
+            age_override_by: user.id,
+            age_override_reason: age_override_reason?.trim() || null,
+          };
+        }
+      }
+
+      const { data, error } = await TenantDB.insert('engagements', tenant, insertPayload)
         .select()
         .single();
 

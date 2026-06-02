@@ -20,7 +20,15 @@ import {
 import { EnrolmentIntakeService } from '../intakeService';
 import { useClasses } from '@/features/classes/hooks/useClasses';
 import { useRequirements } from '@/features/classes/requirements/hooks/useRequirements';
-import { filterClassesByAge, getRequirementInfoNotes, ageAt, buildSeasonStartById } from '../lib/check-requirements';
+import {
+  filterClassesByAge,
+  getRequirementInfoNotes,
+  ageAt,
+  buildSeasonStartById,
+  isAgeEligible,
+  formatAgeRange,
+  personAgeAtSeasonStart,
+} from '../lib/check-requirements';
 import { getSelectedClassAgeError } from '../lib/selectedClassAgeValidation';
 import { useLevels } from '@/features/levels/hooks/useLevels';
 import { useTerms } from '@/features/terms/hooks/useTerms';
@@ -138,6 +146,10 @@ export function EnrolmentStepper({
   const [guestGuardianEmail, setGuestGuardianEmail] = useState<string | null>(null);
   const [adminDoneMessage, setAdminDoneMessage] = useState<string | null>(null);
   const [adminPaymentChoice, setAdminPaymentChoice] = useState<AdminPaymentChoice | null>(null);
+  const [classAgeOverride, setClassAgeOverride] = useState<{
+    confirmed: boolean;
+    reason: string;
+  }>({ confirmed: false, reason: '' });
 
   const accountStudentsQuery = useAccountStudents({
     accountId: enrolmentContext.constraints.accountId ?? enrolmentContext.guardian?.accountId,
@@ -210,8 +222,14 @@ export function EnrolmentStepper({
         t,
       );
       if (ageError) {
+        if (enrolmentContext.mode === 'admin' && classAgeOverride.confirmed) {
+          setPersonAgeError(null);
+        } else {
+          setPersonAgeError(ageError);
+          return;
+        }
+      } else {
         setPersonAgeError(ageError);
-        return;
       }
     }
     setPersonAgeError(null);
@@ -322,8 +340,26 @@ export function EnrolmentStepper({
           return;
         }
 
+        const shouldApplyAgeOverride =
+          enrolmentContext.mode === 'admin' &&
+          classAgeOverride.confirmed &&
+          Boolean(
+            classPreselected &&
+              personDateOfBirth &&
+              getSelectedClassAgeError(enrolmentContext.constraints, personDateOfBirth, t),
+          );
+
         createEnrolment(
-          { ...enrolmentData, status: 'pending_payment' },
+          {
+            ...enrolmentData,
+            status: 'pending_payment',
+            ...(shouldApplyAgeOverride
+              ? {
+                  age_override_confirmed: true,
+                  age_override_reason: classAgeOverride.reason,
+                }
+              : {}),
+          },
           {
             onSuccess: async (created) => {
               setCheckoutEnrolmentId(created.id);
@@ -355,6 +391,7 @@ export function EnrolmentStepper({
     createEnrolment,
     user,
     enrolmentContext.mode,
+    classAgeOverride,
     classPreselected,
     enrolmentContext.constraints,
     personDateOfBirth,
@@ -443,17 +480,44 @@ export function EnrolmentStepper({
             {!enrolmentContext.isLoading && !enrolmentContext.canSkipPersonStep && (
               <>
                 {personAgeError && (
-                  <div
-                    className="mb-4 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800"
-                    role="alert"
-                  >
-                    {personAgeError}
+                  <div className="mb-4 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800 space-y-2" role="alert">
+                    <p>{personAgeError}</p>
+                    {classPreselected && enrolmentContext.mode === 'admin' && (
+                      <>
+                        <label className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={classAgeOverride.confirmed}
+                            onChange={(e) =>
+                              setClassAgeOverride((prev) => ({
+                                ...prev,
+                                confirmed: e.target.checked,
+                              }))
+                            }
+                          />
+                          {t('pages.enrolment.age_override_label')}
+                        </label>
+                        <textarea
+                          className="w-full rounded border border-red-300 p-2 text-sm bg-white text-gray-900"
+                          placeholder={t('pages.enrolment.age_override_reason_placeholder')}
+                          value={classAgeOverride.reason}
+                          onChange={(e) =>
+                            setClassAgeOverride((prev) => ({
+                              ...prev,
+                              reason: e.target.value,
+                            }))
+                          }
+                        />
+                      </>
+                    )}
                   </div>
                 )}
                 <StepSelectStudent
                 mode={enrolmentContext.mode}
                 isAdultIntake={enrolmentContext.isAdultIntake}
                 constraints={enrolmentContext.constraints}
+                allowAgeOverride={classPreselected && enrolmentContext.mode === 'admin'}
+                ageOverrideConfirmed={classAgeOverride.confirmed}
                 guardian={enrolmentContext.guardian}
                 students={accountStudentsQuery.data?.students ?? []}
                 guardianPersonId={accountStudentsQuery.data?.guardianPersonId ?? null}
@@ -568,6 +632,10 @@ export function EnrolmentStepper({
             data={enrolmentData}
             personDateOfBirth={personDateOfBirth}
             initialTermId={initialTermId}
+            allowAgeOverride={enrolmentContext.mode === 'admin'}
+            onAgeOverrideChange={(confirmed, reason) =>
+              setClassAgeOverride({ confirmed, reason })
+            }
             onNext={handleClassNext}
             onPrevious={handlePreviousStep}
             canGoBack={canGoBack}
@@ -664,6 +732,8 @@ function StepClass({
   data,
   personDateOfBirth,
   initialTermId,
+  allowAgeOverride = false,
+  onAgeOverrideChange,
   onNext,
   onPrevious,
   canGoBack = true,
@@ -671,6 +741,8 @@ function StepClass({
   data: Partial<Engagement>;
   personDateOfBirth?: string | null;
   initialTermId?: string;
+  allowAgeOverride?: boolean;
+  onAgeOverrideChange?: (confirmed: boolean, reason: string) => void;
   onNext: (data?: Partial<Engagement>, className?: string) => void;
   onPrevious: () => void;
   canGoBack?: boolean;
@@ -678,6 +750,9 @@ function StepClass({
   const { t, i18n } = useTranslation();
   const tenant = useTenant();
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
+  const [showAllClasses, setShowAllClasses] = useState(false);
+  const [ageOverrideConfirmed, setAgeOverrideConfirmed] = useState(false);
+  const [ageOverrideReason, setAgeOverrideReason] = useState('');
 
   const { classes, isLoading, error } = useClasses({ publicOnly: true });
   const { terms } = useTerms({ page: 1 });
@@ -726,18 +801,57 @@ function StepClass({
     [classes, person, ageCheckOptions],
   );
 
-  const selectedClass = useMemo(
-    () => availableClasses.find((c: { id: string }) => c.id === selectedClassId),
-    [availableClasses, selectedClassId],
+  const displayClasses = useMemo(
+    () => (allowAgeOverride && showAllClasses ? classes : availableClasses),
+    [allowAgeOverride, showAllClasses, classes, availableClasses],
   );
+
+  const selectedClass = useMemo(
+    () => displayClasses.find((c: { id: string }) => c.id === selectedClassId),
+    [displayClasses, selectedClassId],
+  );
+
+  const classSeasonStartDate = (cls: { season_id?: string | null; season_start_date?: string | null }) => {
+    if (cls.season_start_date) return cls.season_start_date;
+    if (cls.season_id && seasonStartById[cls.season_id]) return seasonStartById[cls.season_id];
+    return null;
+  };
+
+  const selectedClassEligible = selectedClass
+    ? isAgeEligible(
+        {
+          min_age: selectedClass.min_age,
+          max_age: selectedClass.max_age,
+          season_id: selectedClass.season_id,
+          season_start_date: classSeasonStartDate(selectedClass),
+        },
+        person,
+        ageCheckOptions,
+      )
+    : true;
+  const selectedClassAges = selectedClass
+    ? formatAgeRange(selectedClass.min_age, selectedClass.max_age)
+    : null;
+  const selectedClassSeasonStart = selectedClass
+    ? classSeasonStartDate(selectedClass)
+    : null;
+  const selectedClassStudentAge =
+    personDateOfBirth && selectedClassSeasonStart
+      ? personAgeAtSeasonStart(personDateOfBirth, selectedClassSeasonStart)
+      : null;
 
   const infoNotes = useMemo(
     () => getRequirementInfoNotes(requirements),
     [requirements],
   );
 
+  useEffect(() => {
+    onAgeOverrideChange?.(ageOverrideConfirmed, ageOverrideReason);
+  }, [ageOverrideConfirmed, ageOverrideReason, onAgeOverrideChange]);
+
   const handleNext = () => {
     if (!selectedClass) return;
+    if (!selectedClassEligible && !(allowAgeOverride && ageOverrideConfirmed)) return;
     onNext(
       {
         ...data,
@@ -780,7 +894,18 @@ function StepClass({
         </p>
       )}
 
-      {availableClasses.length === 0 ? (
+      {allowAgeOverride && filteredCount > 0 && (
+        <label className="flex items-center gap-2 text-sm text-gray-700">
+          <input
+            type="checkbox"
+            checked={showAllClasses}
+            onChange={(e) => setShowAllClasses(e.target.checked)}
+          />
+          {t('pages.enrolment.show_all_classes')}
+        </label>
+      )}
+
+      {displayClasses.length === 0 ? (
         <div className="p-4 bg-gray-50 rounded-lg text-center text-sm text-gray-500 space-y-2">
           {ageFilteringActive && studentAge != null ? (
             <>
@@ -793,7 +918,7 @@ function StepClass({
         </div>
       ) : (
         <ul className="space-y-2" role="listbox" aria-label={t('pages.enrolment.class_select_label')}>
-          {availableClasses.map((cls: {
+          {displayClasses.map((cls: {
             id: string;
             name: string;
             category_id?: string | null;
@@ -812,18 +937,36 @@ function StepClass({
               (cls.category_id ? levelNameById.get(cls.category_id) : undefined);
             const levelLabel =
               levelName && levelName !== cls.name ? levelName : null;
+            const eligible = isAgeEligible(
+              {
+                min_age: cls.min_age,
+                max_age: cls.max_age,
+                season_id: (cls as { season_id?: string | null }).season_id ?? null,
+                season_start_date: classSeasonStartDate(
+                  cls as { season_id?: string | null; season_start_date?: string | null },
+                ),
+              },
+              person,
+              ageCheckOptions,
+            );
             return (
               <li key={cls.id}>
                 <button
                   type="button"
                   role="option"
                   aria-selected={isSelected}
-                  onClick={() => setSelectedClassId(cls.id)}
+                  onClick={() => {
+                    setSelectedClassId(cls.id);
+                    setAgeOverrideConfirmed(false);
+                    setAgeOverrideReason('');
+                  }}
                   className={[
                     'w-full text-start border-2 rounded-lg px-4 py-3 transition-colors',
                     isSelected
                       ? 'border-blue-600 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300 bg-white',
+                      : eligible
+                        ? 'border-gray-200 hover:border-gray-300 bg-white'
+                        : 'border-amber-300 hover:border-amber-400 bg-amber-50/40',
                   ].join(' ')}
                 >
                   <div className="flex items-center justify-between gap-4">
@@ -851,11 +994,41 @@ function StepClass({
                       </span>
                     )}
                   </div>
+                  {!eligible && (
+                    <p className="text-xs text-amber-800 mt-1">
+                      {t('pages.enrolment.ineligible_age')}
+                    </p>
+                  )}
                 </button>
               </li>
             );
           })}
         </ul>
+      )}
+
+      {allowAgeOverride && selectedClass && !selectedClassEligible && selectedClassAges && selectedClassStudentAge != null && (
+        <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 space-y-2">
+          <p>
+            {t('pages.enrolment.selected_class_age_mismatch', {
+              age: selectedClassStudentAge,
+              classAges: selectedClassAges,
+            })}
+          </p>
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={ageOverrideConfirmed}
+              onChange={(e) => setAgeOverrideConfirmed(e.target.checked)}
+            />
+            {t('pages.enrolment.age_override_label')}
+          </label>
+          <textarea
+            className="w-full rounded border border-amber-300 p-2 text-sm bg-white"
+            placeholder={t('pages.enrolment.age_override_reason_placeholder')}
+            value={ageOverrideReason}
+            onChange={(e) => setAgeOverrideReason(e.target.value)}
+          />
+        </div>
       )}
 
       {selectedClassId && reqLoading && (
@@ -877,7 +1050,7 @@ function StepClass({
           onClick={handleNext}
           variant="primary"
           className={canGoBack ? 'flex-1' : 'w-full'}
-          disabled={!selectedClass}
+          disabled={!selectedClass || (!selectedClassEligible && !(allowAgeOverride && ageOverrideConfirmed))}
         >
           {t('common.next')}
         </Button>
