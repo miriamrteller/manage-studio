@@ -363,7 +363,15 @@
       "whatsapp_unverified": "לא מאומת",
       "payment_history_placeholder": "היסטוריית תשלומים תופיע כאן לאחר הגדרת Stripe webhooks.",
       "enrol_button": "הירשם לשיעור",
-      "enrol_new_button": "הרשמת תלמיד חדש"
+      "enrol_new_button": "הרשמת תלמיד חדש",
+      "cancel_enrolment_button": "ביטול הרשמה",
+      "cancel_enrolment_title": "ביטול הרשמה",
+      "cancel_enrolment_confirm": "לבטל את הרשמת {{studentName}} ל-{{className}}? פעולה זו משחררת את מקום השיעור לפני תשלום.",
+      "cancel_enrolment_reason_label": "סיבה (אופציונלי)",
+      "cancel_enrolment_reason_placeholder": "למשל: שיעור שגוי, הרשמה כפולה",
+      "cancel_enrolment_success": "ההרשמה בוטלה.",
+      "cancel_enrolment_error_has_payment": "לא ניתן לבטל הרשמה זו כי כבר נרשם תשלום.",
+      "cancel_enrolment_error_invalid_status": "לא ניתן לבטל הרשמה זו במצבה הנוכחי."
     },
     "admin_enrol": {
       "title": "הרשמת {{name}}",

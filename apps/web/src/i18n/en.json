@@ -363,7 +363,15 @@
       "whatsapp_unverified": "Not verified",
       "payment_history_placeholder": "Payment transaction history will appear here once Stripe webhooks are set up.",
       "enrol_button": "Enrol in class",
-      "enrol_new_button": "Enrol new student"
+      "enrol_new_button": "Enrol new student",
+      "cancel_enrolment_button": "Cancel enrolment",
+      "cancel_enrolment_title": "Cancel enrolment",
+      "cancel_enrolment_confirm": "Cancel {{studentName}}'s enrolment in {{className}}? This releases the class slot before payment.",
+      "cancel_enrolment_reason_label": "Reason (optional)",
+      "cancel_enrolment_reason_placeholder": "e.g. Wrong class selected, duplicate enrolment",
+      "cancel_enrolment_success": "Enrolment cancelled.",
+      "cancel_enrolment_error_has_payment": "This enrolment cannot be cancelled because payment has already been recorded.",
+      "cancel_enrolment_error_invalid_status": "This enrolment cannot be cancelled in its current state."
     },
     "admin_enrol": {
       "title": "Enrol {{name}}",

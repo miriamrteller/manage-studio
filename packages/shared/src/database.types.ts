@@ -462,6 +462,9 @@ export type Database = {
         Row: {
           billing_account_id: string | null
           billing_status: string | null
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
           created_at: string
           id: string
           offering_id: string
@@ -477,6 +480,9 @@ export type Database = {
         Insert: {
           billing_account_id?: string | null
           billing_status?: string | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           created_at?: string
           id?: string
           offering_id: string
@@ -492,6 +498,9 @@ export type Database = {
         Update: {
           billing_account_id?: string | null
           billing_status?: string | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           created_at?: string
           id?: string
           offering_id?: string
@@ -510,6 +519,13 @@ export type Database = {
             columns: ["billing_account_id"]
             isOneToOne: false
             referencedRelation: "billing_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "engagements_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -1501,6 +1517,7 @@ export type Database = {
           name: string
           phone_region: string
           phone_region_updated_at: string
+          prices_include_vat: boolean
           primary_color: string
           stripe_account_id: string | null
           stripe_credentials_updated_at: string | null
@@ -1523,6 +1540,7 @@ export type Database = {
           name: string
           phone_region?: string
           phone_region_updated_at?: string
+          prices_include_vat?: boolean
           primary_color?: string
           stripe_account_id?: string | null
           stripe_credentials_updated_at?: string | null
@@ -1545,6 +1563,7 @@ export type Database = {
           name?: string
           phone_region?: string
           phone_region_updated_at?: string
+          prices_include_vat?: boolean
           primary_color?: string
           stripe_account_id?: string | null
           stripe_credentials_updated_at?: string | null
@@ -1697,6 +1716,10 @@ export type Database = {
     }
     Functions: {
       admin_enrolment_lookup_email: { Args: { p_email: string }; Returns: Json }
+      cancel_engagement: {
+        Args: { p_engagement_id: string; p_reason?: string }
+        Returns: Json
+      }
       cleanup_expired_otps: { Args: never; Returns: undefined }
       cleanup_old_verification_attempts: { Args: never; Returns: number }
       get_my_account_ids: { Args: never; Returns: string[] }
@@ -1756,6 +1779,7 @@ export type Database = {
           labels: Json
           language_default: string
           name: string
+          prices_include_vat: boolean
           primary_color: string
           stripe_credentials_updated_at: string
           stripe_publishable_key: string

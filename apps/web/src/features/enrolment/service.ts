@@ -3,18 +3,31 @@ import { TenantDB } from '@/lib/db';
 import { EngagementSchema, type Engagement } from '@shared/schemas';
 import { z } from 'zod';
 import type { Tenant } from '@shared/schemas';
+import { NON_TERMINAL_ENGAGEMENT_STATUSES } from './lib/enrolmentTransitions';
+
+const EnrolmentStatusSchema = z.enum([
+  'pending_payment',
+  'active',
+  'admin_review',
+  'pending_offer',
+  'cancelled',
+  'withdrawn',
+]);
 
 // Validation schema for enrolment creation/update (without system fields)
-const EnrolmentInputSchema = z.object({
-  person_id: z.string().uuid().optional(),
-  offering_id: z.string().uuid().optional(),
-  season_id: z.string().uuid().optional(),
-  status: z
-    .enum(['pending_payment', 'active', 'admin_review', 'pending_offer', 'cancelled', 'withdrawn'])
-    .optional(),
-  billing_account_id: z.string().uuid().nullable().optional(),
-  payment_received_at: z.string().nullable().optional(),
-});
+const EnrolmentInputSchema = z
+  .object({
+    person_id: z.string().uuid().optional(),
+    offering_id: z.string().uuid().optional(),
+    season_id: z.string().uuid().optional(),
+    status: EnrolmentStatusSchema.optional(),
+    billing_account_id: z.string().uuid().nullable().optional(),
+    payment_received_at: z.string().nullable().optional(),
+  })
+  .refine(
+    (data) => data.status == null || !['cancelled', 'withdrawn'].includes(data.status),
+    { message: 'Use cancel_engagement RPC for cancellation or withdrawal' },
+  );
 
 /**
  * EnrolmentService: All enrolment data operations
@@ -98,6 +111,7 @@ export class EnrolmentService extends BaseService {
           .eq('person_id', validated.person_id)
           .eq('offering_id', validated.offering_id)
           .eq('season_id', validated.season_id)
+          .in('status', [...NON_TERMINAL_ENGAGEMENT_STATUSES])
           .maybeSingle();
 
         if (checkError) throw checkError;
@@ -117,8 +131,8 @@ export class EnrolmentService extends BaseService {
   }
 
   /**
-   * Update enrolment
-   * Primarily for status transitions (active→cancelled, pending_payment→active, etc)
+   * Update enrolment (status → active, payment fields, etc.).
+   * Do not use for cancellation — use EnrolmentCancellationService.cancelPrePayment.
    */
   static async update(tenant: Tenant, id: string, enrolmentData: Partial<Engagement>) {
     const validated = EnrolmentInputSchema.parse(enrolmentData);

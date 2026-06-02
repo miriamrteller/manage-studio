@@ -361,11 +361,19 @@ export const EngagementSchema = z.object({
     .enum(['pending_payment', 'active', 'admin_review', 'pending_offer', 'cancelled', 'withdrawn'])
     .default('pending_payment'),
   payment_received_at: TimestampSchema.nullable().optional(),
+  cancelled_at: TimestampSchema.nullable().optional(),
+  cancellation_reason: z.string().max(500).nullable().optional(),
+  cancelled_by: UUIDSchema.nullable().optional(),
   created_at: TimestampSchema,
   updated_at: TimestampSchema.optional(),
 });
 
 export type Engagement = z.infer<typeof EngagementSchema>;
+
+export const CancelEnrolmentInputSchema = z.object({
+  engagementId: z.string().uuid(),
+  reason: z.string().max(500).optional(),
+});
 
 // Class session (individual meeting of a class)
 export const OfferingSessionSchema = z.object({

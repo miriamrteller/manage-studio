@@ -11,19 +11,18 @@ import { useStudentDetail } from '../hooks/useStudentDetail';
 import { AdminEnrolStudentModal } from '@/features/enrolment/components/AdminEnrolStudentModal';
 import { resolveGuardianEmail } from '@/features/enrolment/lib/resolveGuardianEmail';
 import { formatDate, calculateAge } from '@/lib/utils';
+import { EnrolmentRowActions, canShowCancelEnrolment } from './EnrolmentRowActions';
+import { CancelEnrolmentDialog } from './CancelEnrolmentDialog';
 
 interface StudentSlideOverProps {
   personId: string;
   onClose: () => void;
 }
 
-const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
-  active: { bg: 'var(--color-success-light)', text: 'var(--color-success)' },
-  pending_payment: { bg: 'var(--color-warning-light)', text: 'var(--color-warning)' },
-  waitlisted: { bg: 'var(--color-info-light)', text: 'var(--color-info)' },
-  cancelled: { bg: 'var(--color-neutral-100)', text: 'var(--color-text-secondary)' },
-  withdrawn: { bg: 'var(--color-neutral-100)', text: 'var(--color-text-secondary)' },
-};
+interface CancelTarget {
+  engagementId: string;
+  className: string;
+}
 
 /**
  * StudentSlideOver: Full detail panel sliding in from the right.
@@ -46,6 +45,7 @@ export function StudentSlideOver({ personId, onClose }: StudentSlideOverProps) {
   const [contactSaveError, setContactSaveError] = useState<string | null>(null);
   const [contactSaving, setContactSaving] = useState(false);
   const [enrolModalOpen, setEnrolModalOpen] = useState(false);
+  const [cancelTarget, setCancelTarget] = useState<CancelTarget | null>(null);
 
   const startEditContact = () => {
     setContactName(guardian?.name ?? '');
@@ -213,27 +213,23 @@ export function StudentSlideOver({ personId, onClose }: StudentSlideOverProps) {
                   <p className="text-sm text-gray-400">{t('pages.students.no_enrolments')}</p>
                 ) : (
                   <ul className="divide-y text-sm" style={{ borderColor: 'var(--color-border-default)' }}>
-                    {enrolments.map((e) => {
-                      const colors = STATUS_COLORS[e.status] ?? STATUS_COLORS.cancelled;
-                      return (
-                        <li key={e.id} className="py-2 flex justify-between items-center gap-3">
-                          <span className="font-medium">{e.className ?? e.offering_id}</span>
-                          <div className="flex items-center gap-2 flex-shrink-0">
-                            <span
-                              className="px-2 py-0.5 rounded text-xs font-medium"
-                              style={{ backgroundColor: colors.bg, color: colors.text }}
-                            >
-                              {e.status.replace('_', ' ')}
-                            </span>
-                            {e.billingAccount && (
-                              <span className="text-xs text-gray-500">
-                                {e.billingAccount.payment_method}
-                              </span>
-                            )}
-                          </div>
-                        </li>
-                      );
-                    })}
+                    {enrolments.map((e) => (
+                      <EnrolmentRowActions
+                        key={e.id}
+                        className={e.className ?? e.offering_id}
+                        status={e.status}
+                        billingLabel={e.billingAccount?.payment_method ?? null}
+                        onCancel={
+                          canShowCancelEnrolment(e.status)
+                            ? () =>
+                                setCancelTarget({
+                                  engagementId: e.id,
+                                  className: e.className ?? e.offering_id,
+                                })
+                            : undefined
+                        }
+                      />
+                    ))}
                   </ul>
                 )}
               </section>
@@ -418,6 +414,19 @@ export function StudentSlideOver({ personId, onClose }: StudentSlideOverProps) {
           )}
         </div>
       </div>
+
+      {person && cancelTarget && (
+        <CancelEnrolmentDialog
+          open={!!cancelTarget}
+          onOpenChange={(open) => {
+            if (!open) setCancelTarget(null);
+          }}
+          engagementId={cancelTarget.engagementId}
+          personId={personId}
+          studentName={person.name}
+          className={cancelTarget.className}
+        />
+      )}
 
       {person && (
         <AdminEnrolStudentModal
