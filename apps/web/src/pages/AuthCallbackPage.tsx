@@ -11,6 +11,8 @@ import {
   clearAuthCallbackUrl,
   establishSessionFromAuthCallback,
 } from '@/lib/authCallback';
+import { linkGuardianForEngagement } from '@/features/enrolment/linkAuthUser';
+import { hasParentRole } from '@/lib/parentRoles';
 
 /**
  * AuthCallbackPage: Handles magic link callback after Supabase email auth
@@ -72,11 +74,27 @@ export default function AuthCallbackPage() {
       return;
     }
 
-    if (user.role.length > 0) {
-      navigate('/dashboard', { replace: true });
-    } else {
-      navigate('/classes', { replace: true });
-    }
+    const linkPortal = async () => {
+      const engagementId = sessionStorage.getItem('portalEngagementId');
+      if (engagementId && hasParentRole(user.role)) {
+        try {
+          await linkGuardianForEngagement(engagementId);
+          sessionStorage.removeItem('portalEngagementId');
+          navigate('/dashboard/portal', { replace: true });
+          return;
+        } catch (linkError) {
+          console.warn('Portal link after auth callback:', linkError);
+        }
+      }
+
+      if (user.role.length > 0) {
+        navigate('/dashboard', { replace: true });
+      } else {
+        navigate('/classes', { replace: true });
+      }
+    };
+
+    void linkPortal();
   }, [
     user,
     session,

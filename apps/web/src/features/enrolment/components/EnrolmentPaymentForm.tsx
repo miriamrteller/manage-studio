@@ -7,12 +7,12 @@ import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-
 import { supabase } from '@/lib/supabase';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useTenant } from '@/hooks/useTenant';
-import { linkAuthUserToPerson } from '../linkAuthUser';
 
 interface EnrolmentPaymentFormProps {
   classId: string;
   engagementId: string;
-  personId?: string;
+  /** When false, payment works without a logged-in session (guest checkout). */
+  requireAuth?: boolean;
   onPaid: () => void;
   onPrevious: () => void;
 }
@@ -86,7 +86,7 @@ function PaymentFormInner({
 export function EnrolmentPaymentForm({
   classId,
   engagementId,
-  personId,
+  requireAuth = true,
   onPaid,
   onPrevious,
 }: EnrolmentPaymentFormProps) {
@@ -99,21 +99,14 @@ export function EnrolmentPaymentForm({
   const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!authLoading && !user) {
+    if (requireAuth && !authLoading && !user) {
       navigate('/login', { state: { from: '/classes' }, replace: true });
     }
-  }, [authLoading, user, navigate]);
+  }, [requireAuth, authLoading, user, navigate]);
 
   useEffect(() => {
-    if (!user || !personId) return;
-
-    void linkAuthUserToPerson(personId).catch((err) => {
-      console.warn('Could not link auth user at payment step:', err);
-    });
-  }, [user, personId]);
-
-  useEffect(() => {
-    if (!user || !engagementId || !classId) return;
+    if (requireAuth && !user) return;
+    if (!engagementId || !classId) return;
 
     const loadIntent = async () => {
       const { data, error } = await supabase.functions.invoke('create-checkout', {
@@ -130,9 +123,9 @@ export function EnrolmentPaymentForm({
     };
 
     void loadIntent();
-  }, [user, classId, engagementId, tenant, t]);
+  }, [requireAuth, user, classId, engagementId, tenant, t]);
 
-  if (authLoading || !user) {
+  if (requireAuth && (authLoading || !user)) {
     return <p role="status">{t('common.loading')}</p>;
   }
 

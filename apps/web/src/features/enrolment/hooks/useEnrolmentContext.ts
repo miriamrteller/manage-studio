@@ -6,9 +6,11 @@ import { useTenant } from '@/hooks/useTenant';
 import { hasParentRole } from '@/lib/parentRoles';
 import { isAdminEnrolmentMode, type EnrollmentIntent } from '@/lib/enrollment-intent';
 import { EnrolmentOnboardingService, type GuardianProfile } from '../onboardingService';
+import { isAdultOffering } from '../lib/offering-intake';
 import type { ClassAgeContext } from '../lib/check-requirements';
+import { resolveTenantSubdomain } from '@/lib/resolveTenantSubdomain';
 
-export type EnrolmentMode = 'parent' | 'admin' | 'adult_student';
+export type EnrolmentMode = 'guest' | 'parent' | 'admin' | 'adult_student';
 
 export interface EnrolmentConstraints {
   accountId?: string;
@@ -19,6 +21,8 @@ export interface EnrolmentContextValue {
   mode: EnrolmentMode;
   constraints: EnrolmentConstraints;
   guardian: GuardianProfile | null;
+  /** True when the selected/preselected class is for adults (min age 18+). */
+  isAdultIntake: boolean;
   canSkipPersonStep: boolean;
   preselectedPersonId?: string;
   isLoading: boolean;
@@ -34,9 +38,22 @@ export function useEnrolmentContext(intent: EnrollmentIntent | null): EnrolmentC
   const tenant = useTenant();
 
   const offeringQuery = useQuery({
-    queryKey: ['enrolment-offering', tenant?.id, intent?.classId],
+    queryKey: ['enrolment-offering', tenant?.id, intent?.classId, user?.id],
     queryFn: async () => {
-      if (!tenant?.id || !intent?.classId) return null;
+      if (!intent?.classId) return null;
+
+      const subdomain = resolveTenantSubdomain();
+      if (!user && subdomain) {
+        const { data, error } = await supabase.rpc('get_public_offerings_by_subdomain', {
+          p_subdomain: subdomain,
+        });
+        if (error) throw error;
+        const row = (data ?? []).find((o: { id: string }) => o.id === intent.classId);
+        if (!row) return null;
+        return { id: row.id, min_age: row.min_age, max_age: row.max_age };
+      }
+
+      if (!tenant?.id) return null;
       const { data, error } = await supabase
         .from('offerings')
         .select('id, min_age, max_age')
@@ -46,7 +63,7 @@ export function useEnrolmentContext(intent: EnrollmentIntent | null): EnrolmentC
       if (error) throw error;
       return data;
     },
-    enabled: !!tenant?.id && !!intent?.classId,
+    enabled: !!intent?.classId && (!!tenant?.id || !!resolveTenantSubdomain()),
   });
 
   const guardianQuery = useQuery({
@@ -65,8 +82,11 @@ export function useEnrolmentContext(intent: EnrollmentIntent | null): EnrolmentC
   const adminMode = isAdminEnrolmentMode(intent, user);
 
   const mode: EnrolmentMode = useMemo(() => {
-    if (!user) return 'parent';
+    if (!user) return 'guest';
     if (user.role.includes('tenant_admin') && adminMode) {
+      return 'admin';
+    }
+    if (user.role.includes('tenant_admin') && !hasParentRole(user.role)) {
       return 'admin';
     }
     if (hasParentRole(user.role) && guardianQuery.data) {
@@ -94,6 +114,11 @@ export function useEnrolmentContext(intent: EnrollmentIntent | null): EnrolmentC
     };
   }, [intent?.accountId, offeringQuery.data]);
 
+  const isAdultIntake = useMemo(
+    () => isAdultOffering(constraints.ageBand),
+    [constraints.ageBand],
+  );
+
   const canSkipPersonStep = useMemo(() => {
     if (intent?.personId) return true;
     if (mode === 'adult_student' && user?.person_id && !adminMode) {
@@ -115,6 +140,7 @@ export function useEnrolmentContext(intent: EnrollmentIntent | null): EnrolmentC
     mode,
     constraints,
     guardian: guardianQuery.data ?? null,
+    isAdultIntake,
     canSkipPersonStep,
     preselectedPersonId: intent?.personId,
     isLoading,

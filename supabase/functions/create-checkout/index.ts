@@ -17,29 +17,49 @@ serve(async (req) => {
   }
 
   try {
-    const auth = await requireAuthUser(req);
-    if ("error" in auth) {
-      return jsonResponse({ error: auth.error }, auth.status);
-    }
-
     const body = (await req.json()) as CreateCheckoutBody;
     if (!body.offering_id || !body.engagement_id) {
       return jsonResponse({ error: "offering_id and engagement_id are required" }, 400);
     }
 
     const service = createServiceClient();
+    const authHeader = req.headers.get("Authorization");
+    let tenantId: string;
 
-    const { data: profile, error: profileError } = await service
-      .from("user_profiles")
-      .select("tenant_id")
-      .eq("id", auth.user.id)
-      .single();
+    if (authHeader?.startsWith("Bearer ")) {
+      const auth = await requireAuthUser(req);
+      if ("error" in auth) {
+        return jsonResponse({ error: auth.error }, auth.status);
+      }
 
-    if (profileError || !profile?.tenant_id) {
-      return jsonResponse({ error: "User profile not found" }, 403);
+      const { data: profile, error: profileError } = await service
+        .from("user_profiles")
+        .select("tenant_id")
+        .eq("id", auth.user.id)
+        .single();
+
+      if (profileError || !profile?.tenant_id) {
+        return jsonResponse({ error: "User profile not found" }, 403);
+      }
+
+      tenantId = profile.tenant_id as string;
+    } else {
+      const { data: engagementForTenant, error: tenantLookupError } = await service
+        .from("engagements")
+        .select("tenant_id, status")
+        .eq("id", body.engagement_id)
+        .single();
+
+      if (tenantLookupError || !engagementForTenant) {
+        return jsonResponse({ error: "Engagement not found" }, 404);
+      }
+
+      if (engagementForTenant.status !== "pending_payment") {
+        return jsonResponse({ error: "Engagement is not payable" }, 403);
+      }
+
+      tenantId = engagementForTenant.tenant_id as string;
     }
-
-    const tenantId = profile.tenant_id as string;
 
     const { data: engagement, error: engagementError } = await service
       .from("engagements")
@@ -53,6 +73,10 @@ serve(async (req) => {
 
     if (engagement.tenant_id !== tenantId || engagement.offering_id !== body.offering_id) {
       return jsonResponse({ error: "Engagement does not match tenant or offering" }, 403);
+    }
+
+    if (engagement.status !== "pending_payment") {
+      return jsonResponse({ error: "Engagement is not payable" }, 403);
     }
 
     const { data: offering, error: offeringError } = await service

@@ -9,12 +9,12 @@ import { useAccountStudents } from '../hooks/useAccountStudents';
 import { useTenant } from '@/hooks/useTenant';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { EnrolmentService } from '../service';
-import { linkAuthUserToPerson } from '../linkAuthUser';
 import {
   EnrolmentOnboardingService,
   type NewMinorOnboardingInput,
   type NewAdultOnboardingInput,
 } from '../onboardingService';
+import { EnrolmentIntakeService } from '../intakeService';
 import { useClasses } from '@/features/classes/hooks/useClasses';
 import { useRequirements } from '@/features/classes/requirements/hooks/useRequirements';
 import { filterClassesByAge, getRequirementInfoNotes, ageAt } from '../lib/check-requirements';
@@ -99,10 +99,12 @@ export function EnrolmentStepper({
 
   const tenant = useTenant();
   const { user } = useCurrentUser();
-  const { createEnrolment, isCreating } = useEnrolment();
+  const { createEnrolment, isCreating } = useEnrolment({ enabled: false });
   const [checkoutEnrolmentId, setCheckoutEnrolmentId] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [isCheckoutPreparing, setIsCheckoutPreparing] = useState(false);
   const [personStepSkipped, setPersonStepSkipped] = useState(false);
+  const [guestGuardianEmail, setGuestGuardianEmail] = useState<string | null>(null);
 
   const accountStudentsQuery = useAccountStudents({
     accountId: enrolmentContext.constraints.accountId ?? enrolmentContext.guardian?.accountId,
@@ -129,7 +131,7 @@ export function EnrolmentStepper({
   );
 
   const stepTitles: Record<EnrolmentStep, string> = {
-    person: t('enrolment.step_person') || 'Identify Person',
+    person: t('enrolment.step_person') || 'Personal details',
     class: t('enrolment.step_class') || 'Select Class',
     notification: t('enrolment.step_notification') || 'Notifications',
     checkout: t('enrolment.step_checkout') || 'Payment',
@@ -215,26 +217,44 @@ export function EnrolmentStepper({
     }
 
     const prepareCheckout = async () => {
-      createEnrolment(
-        { ...enrolmentData, status: 'pending_payment' },
-        {
-          onSuccess: async (created) => {
-            setCheckoutEnrolmentId(created.id);
-            setEnrolmentData(created);
+      setIsCheckoutPreparing(true);
+      setCheckoutError(null);
 
-            if (user?.id && created.person_id) {
-              try {
-                await linkAuthUserToPerson(created.person_id);
-              } catch (linkError) {
-                console.warn('Could not link auth user to family:', linkError);
-              }
-            }
+      const isGuestCheckout = enrolmentContext.mode === 'guest' || !user;
+
+      try {
+        if (isGuestCheckout) {
+          const { engagementId } = await EnrolmentIntakeService.createGuestEngagement(tenant, {
+            studentPersonId: enrolmentData.person_id!,
+            offeringId: enrolmentData.offering_id!,
+            seasonId: enrolmentData.season_id!,
+          });
+          setCheckoutEnrolmentId(engagementId);
+          setEnrolmentData((prev) => ({ ...prev, id: engagementId, status: 'pending_payment' }));
+          setIsCheckoutPreparing(false);
+          return;
+        }
+
+        createEnrolment(
+          { ...enrolmentData, status: 'pending_payment' },
+          {
+            onSuccess: async (created) => {
+              setCheckoutEnrolmentId(created.id);
+              setEnrolmentData(created);
+              setIsCheckoutPreparing(false);
+            },
+            onError: () => {
+              setCheckoutError(t('enrolment.checkout_prepare_failed'));
+              setIsCheckoutPreparing(false);
+            },
           },
-          onError: () => {
-            setCheckoutError(t('enrolment.checkout_prepare_failed'));
-          },
-        },
-      );
+        );
+      } catch (error) {
+        setCheckoutError(
+          error instanceof Error ? error.message : t('enrolment.checkout_prepare_failed'),
+        );
+        setIsCheckoutPreparing(false);
+      }
     };
 
     void prepareCheckout();
@@ -244,7 +264,8 @@ export function EnrolmentStepper({
     tenant,
     enrolmentData,
     createEnrolment,
-    user?.id,
+    user,
+    enrolmentContext.mode,
     t,
   ]);
 
@@ -276,6 +297,9 @@ export function EnrolmentStepper({
       if (enrolment) {
         setEnrolmentData(enrolment);
         onSuccess?.(enrolment);
+      }
+      if (checkoutEnrolmentId) {
+        sessionStorage.setItem('portalEngagementId', checkoutEnrolmentId);
       }
     } catch (error) {
       console.error('Failed to confirm enrolment after payment:', error);
@@ -326,6 +350,7 @@ export function EnrolmentStepper({
             {!enrolmentContext.isLoading && !enrolmentContext.canSkipPersonStep && (
               <StepSelectStudent
                 mode={enrolmentContext.mode}
+                isAdultIntake={enrolmentContext.isAdultIntake}
                 constraints={enrolmentContext.constraints}
                 guardian={enrolmentContext.guardian}
                 students={accountStudentsQuery.data?.students ?? []}
@@ -354,6 +379,23 @@ export function EnrolmentStepper({
                 }}
                 onCreateAdult={async (fields) => {
                   if (!tenant) return;
+                  if (enrolmentContext.mode === 'guest') {
+                    if (!fields.email) {
+                      throw new Error(t('pages.enrolment.guardian_email_required'));
+                    }
+                    const result = await EnrolmentIntakeService.createGuestAdult(tenant, {
+                      name: fields.name,
+                      email: fields.email,
+                      phone: fields.phone,
+                      dateOfBirth: fields.date_of_birth,
+                    });
+                    setGuestGuardianEmail(result.email);
+                    handlePersonNext(
+                      { ...enrolmentData, person_id: result.personId },
+                      fields.date_of_birth ?? null,
+                    );
+                    return;
+                  }
                   const { person } = await EnrolmentOnboardingService.createAdultSolo(
                     tenant,
                     fields as NewAdultOnboardingInput,
@@ -362,6 +404,28 @@ export function EnrolmentStepper({
                 }}
                 onCreateMinorWithGuardian={async (fields) => {
                   if (!tenant) return;
+                  if (enrolmentContext.mode === 'guest') {
+                    if (!fields.guardian_email) {
+                      throw new Error(t('pages.enrolment.guardian_email_required'));
+                    }
+                    const result = await EnrolmentIntakeService.createGuestFamily(tenant, {
+                      guardian: {
+                        name: fields.guardian_name,
+                        email: fields.guardian_email,
+                        phone: fields.guardian_phone,
+                      },
+                      student: {
+                        name: fields.student_name,
+                        dateOfBirth: fields.student_date_of_birth,
+                      },
+                    });
+                    setGuestGuardianEmail(result.guardianEmail);
+                    handlePersonNext(
+                      { ...enrolmentData, person_id: result.studentPersonId },
+                      fields.student_date_of_birth,
+                    );
+                    return;
+                  }
                   const { person } = await EnrolmentOnboardingService.createMinorWithFamily(
                     tenant,
                     {
@@ -399,7 +463,8 @@ export function EnrolmentStepper({
             enrolmentData={enrolmentData}
             checkoutEnrolmentId={checkoutEnrolmentId}
             checkoutError={checkoutError}
-            isPreparing={isCreating && !checkoutEnrolmentId}
+            isPreparing={isCheckoutPreparing || (isCreating && !checkoutEnrolmentId)}
+            requireAuth={enrolmentContext.mode !== 'guest' && Boolean(user)}
             onPaymentSuccess={handlePaymentSuccess}
             onPrevious={handlePreviousStep}
           />
@@ -409,6 +474,7 @@ export function EnrolmentStepper({
           <StepConfirmation
             enrolment={enrolmentData as Engagement}
             className={selectedClassName}
+            guardianEmail={guestGuardianEmail}
             onClose={() => onSuccess?.(enrolmentData as Engagement)}
           />
         )}
@@ -677,6 +743,7 @@ function StepCheckout({
   checkoutEnrolmentId,
   checkoutError,
   isPreparing,
+  requireAuth,
   onPaymentSuccess,
   onPrevious,
 }: {
@@ -684,6 +751,7 @@ function StepCheckout({
   checkoutEnrolmentId: string | null;
   checkoutError: string | null;
   isPreparing: boolean;
+  requireAuth: boolean;
   onPaymentSuccess: () => void;
   onPrevious: () => void;
 }) {
@@ -715,7 +783,7 @@ function StepCheckout({
       <EnrolmentPaymentForm
         classId={enrolmentData.offering_id}
         engagementId={checkoutEnrolmentId}
-        personId={enrolmentData.person_id}
+        requireAuth={requireAuth}
         onPaid={onPaymentSuccess}
         onPrevious={onPrevious}
       />
@@ -729,10 +797,12 @@ function StepCheckout({
 function StepConfirmation({
   enrolment,
   className,
+  guardianEmail,
   onClose,
 }: {
   enrolment: Engagement;
   className: string;
+  guardianEmail?: string | null;
   onClose: () => void;
 }) {
   const { t } = useTranslation();
@@ -746,6 +816,9 @@ function StepConfirmation({
       <p className="text-gray-600">
         {t('pages.enrolment.confirmation_desc')}
       </p>
+      {guardianEmail && (
+        <p className="text-sm text-gray-600">{t('pages.enrolment.confirmation_portal_hint', { email: guardianEmail })}</p>
+      )}
 
       <div className="p-4 bg-blue-50 rounded-lg text-sm space-y-2 text-start">
         <p>

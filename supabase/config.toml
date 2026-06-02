@@ -28,3 +28,14 @@ verify_jwt = false
 import_map = "./functions/send-auth-email/deno.json"
 entrypoint = "./functions/send-auth-email/index.ts"
 
+[functions.create-enrolment-intake]
+enabled = true
+verify_jwt = false
+import_map = "./functions/create-enrolment-intake/deno.json"
+entrypoint = "./functions/create-enrolment-intake/index.ts"
+
+[functions.create-checkout]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/create-checkout/index.ts"
+

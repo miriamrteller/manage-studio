@@ -125,7 +125,6 @@ export default function EnrolPayPage() {
       <EnrolmentPaymentForm
         classId={classRow.id}
         engagementId={enrolment.id}
-        personId={enrolment.person_id}
         onPaid={() => setPaid(true)}
         onPrevious={() => navigate('/classes')}
       />

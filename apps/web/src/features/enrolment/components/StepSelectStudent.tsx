@@ -174,6 +174,7 @@ export function StudentSearchCombobox({
 
 interface StepSelectStudentProps {
   mode: EnrolmentMode;
+  isAdultIntake?: boolean;
   constraints: EnrolmentConstraints;
   guardian: GuardianProfile | null;
   students: StudentWithEnrolments[];
@@ -182,7 +183,12 @@ interface StepSelectStudentProps {
   studentsError: Error | null;
   onSelectPerson: (personId: string, dateOfBirth: string | null) => void;
   onCreateMinor: (fields: { student_name: string; student_date_of_birth: string }) => Promise<void>;
-  onCreateAdult: (fields: { name: string; email?: string }) => Promise<void>;
+  onCreateAdult: (fields: {
+    name: string;
+    email?: string;
+    phone?: string;
+    date_of_birth?: string;
+  }) => Promise<void>;
   onCreateMinorWithGuardian: (fields: {
     student_name: string;
     student_date_of_birth: string;
@@ -195,8 +201,16 @@ interface StepSelectStudentProps {
 
 type SubMode = 'choose' | 'new_child' | 'new_adult' | 'new_family';
 
+function initialSubMode(mode: EnrolmentMode, isAdultIntake: boolean): SubMode {
+  if (mode === 'guest') {
+    return isAdultIntake ? 'new_adult' : 'new_family';
+  }
+  return 'choose';
+}
+
 export function StepSelectStudent({
   mode,
+  isAdultIntake = false,
   constraints,
   guardian,
   students,
@@ -210,13 +224,15 @@ export function StepSelectStudent({
   onCancel,
 }: StepSelectStudentProps) {
   const { t } = useTranslation();
-  const [subMode, setSubMode] = useState<SubMode>('choose');
+  const [subMode, setSubMode] = useState<SubMode>(() => initialSubMode(mode, isAdultIntake));
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [studentName, setStudentName] = useState('');
   const [studentDob, setStudentDob] = useState('');
   const [adultName, setAdultName] = useState('');
   const [adultEmail, setAdultEmail] = useState('');
+  const [adultPhone, setAdultPhone] = useState('');
+  const [adultDob, setAdultDob] = useState('');
   const [guardianName, setGuardianName] = useState('');
   const [guardianEmail, setGuardianEmail] = useState('');
   const [guardianPhone, setGuardianPhone] = useState('');
@@ -231,7 +247,7 @@ export function StepSelectStudent({
     [ineligible],
   );
 
-  const needsGuardianForm = mode === 'admin' || !guardian?.accountId;
+  const needsGuardianForm = mode === 'guest' || mode === 'admin' || !guardian?.accountId;
 
   const handleSelect = (person: StudentWithEnrolments) => {
     if (ineligibleIds.has(person.id)) return;
@@ -279,7 +295,11 @@ export function StepSelectStudent({
           }
         }}
       >
-        <p className="text-sm text-gray-600">{t('pages.enrolment.new_minor_desc')}</p>
+        <p className="text-sm text-gray-600">
+          {mode === 'guest'
+            ? t('pages.enrolment.guest_new_family_desc')
+            : t('pages.enrolment.new_minor_desc')}
+        </p>
         <fieldset className="border rounded p-4 space-y-3">
           <legend className="text-sm font-semibold px-1">{t('pages.enrolment.guardian_section')}</legend>
           <input
@@ -292,6 +312,7 @@ export function StepSelectStudent({
           />
           <input
             type="email"
+            required
             className="form-input w-full"
             value={guardianEmail}
             onChange={(e) => setGuardianEmail(e.target.value)}
@@ -312,9 +333,16 @@ export function StepSelectStudent({
         </fieldset>
         {error && <p className="text-sm text-red-600">{error}</p>}
         <div className="flex gap-2">
-          <Button type="button" variant="outline" className="flex-1" onClick={() => setSubMode('choose')}>
-            {t('common.back')}
-          </Button>
+          {mode !== 'guest' && (
+            <Button type="button" variant="outline" className="flex-1" onClick={() => setSubMode('choose')}>
+              {t('common.back')}
+            </Button>
+          )}
+          {mode === 'guest' && onCancel && (
+            <Button type="button" variant="outline" className="flex-1" onClick={onCancel}>
+              {t('common.cancel')}
+            </Button>
+          )}
           <Button type="submit" variant="primary" className="flex-1" disabled={isSubmitting}>
             {isSubmitting ? t('common.loading') : t('common.next')}
           </Button>
@@ -332,7 +360,12 @@ export function StepSelectStudent({
           setError(null);
           setIsSubmitting(true);
           try {
-            await onCreateAdult({ name: adultName, email: adultEmail || undefined });
+            await onCreateAdult({
+              name: adultName,
+              email: adultEmail || undefined,
+              phone: adultPhone || undefined,
+              date_of_birth: adultDob || undefined,
+            });
           } catch (err) {
             setError(err instanceof Error ? err.message : t('common.error'));
           } finally {
@@ -340,14 +373,56 @@ export function StepSelectStudent({
           }
         }}
       >
-        <p className="text-sm text-gray-600">{t('pages.enrolment.new_adult_desc')}</p>
-        <input type="text" required className="form-input w-full" value={adultName} onChange={(e) => setAdultName(e.target.value)} />
-        <input type="email" className="form-input w-full" value={adultEmail} onChange={(e) => setAdultEmail(e.target.value)} />
+        <p className="text-sm text-gray-600">
+          {mode === 'guest'
+            ? t('pages.enrolment.guest_adult_desc')
+            : t('pages.enrolment.new_adult_desc')}
+        </p>
+        <fieldset className="border rounded p-4 space-y-3">
+          <legend className="text-sm font-semibold px-1">{t('pages.enrolment.personal_section')}</legend>
+          <input
+            type="text"
+            required
+            className="form-input w-full"
+            value={adultName}
+            onChange={(e) => setAdultName(e.target.value)}
+            placeholder={t('form.person.name')}
+          />
+          <input
+            type="email"
+            required={mode === 'guest'}
+            className="form-input w-full"
+            value={adultEmail}
+            onChange={(e) => setAdultEmail(e.target.value)}
+            placeholder={t('form.person.email')}
+          />
+          <input
+            type="tel"
+            className="form-input w-full"
+            value={adultPhone}
+            onChange={(e) => setAdultPhone(e.target.value)}
+            placeholder={t('form.person.phone')}
+          />
+          <input
+            type="date"
+            className="form-input w-full"
+            value={adultDob}
+            onChange={(e) => setAdultDob(e.target.value)}
+            placeholder={t('form.person.date_of_birth')}
+          />
+        </fieldset>
         {error && <p className="text-sm text-red-600">{error}</p>}
         <div className="flex gap-2">
-          <Button type="button" variant="outline" className="flex-1" onClick={() => setSubMode('choose')}>
-            {t('common.back')}
-          </Button>
+          {mode !== 'guest' && (
+            <Button type="button" variant="outline" className="flex-1" onClick={() => setSubMode('choose')}>
+              {t('common.back')}
+            </Button>
+          )}
+          {mode === 'guest' && onCancel && (
+            <Button type="button" variant="outline" className="flex-1" onClick={onCancel}>
+              {t('common.cancel')}
+            </Button>
+          )}
           <Button type="submit" variant="primary" className="flex-1" disabled={isSubmitting}>
             {isSubmitting ? t('common.loading') : t('common.next')}
           </Button>
@@ -466,12 +541,18 @@ export function StepSelectStudent({
         </Button>
       )}
 
-      {mode === 'admin' && (
+      {mode === 'admin' && !isAdultIntake && (
         <>
           <Button type="button" variant="outline" className="w-full" onClick={() => setSubMode('new_adult')}>
             {t('pages.enrolment.person_new_adult')}
           </Button>
         </>
+      )}
+
+      {mode === 'admin' && isAdultIntake && (
+        <Button type="button" variant="outline" className="w-full" onClick={() => setSubMode('new_adult')}>
+          {t('pages.enrolment.create_new_adult')}
+        </Button>
       )}
 
       <Button type="button" variant="ghost" className="w-full" onClick={onCancel}>
