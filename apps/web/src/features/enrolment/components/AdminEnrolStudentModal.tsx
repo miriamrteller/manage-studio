@@ -7,7 +7,7 @@ import { EnrolmentPaymentForm } from './EnrolmentPaymentForm';
 import { EnrolmentService } from '../service';
 import { AdminEnrolmentService, buildPaymentLink, type OfflinePaymentMethod } from '../lib/adminEnrolmentService';
 import { computeClassTotal } from '../lib/computeClassTotal';
-import { filterClassesByAge, formatLevelWithAge, ageAt } from '../lib/check-requirements';
+import { filterClassesByAge, ageAt } from '../lib/check-requirements';
 import { useClasses } from '@/features/classes/hooks/useClasses';
 import { useLevels } from '@/features/levels/hooks/useLevels';
 import { useTenant } from '@/hooks/useTenant';
@@ -252,7 +252,10 @@ export function AdminEnrolStudentModal({
               {availableClasses.map((cls) => {
                 const isSelected = selectedClass?.id === cls.id;
                 const levelName = cls.category_id ? levelNameById.get(cls.category_id) : null;
-                const ageLabel = formatLevelWithAge(levelName, cls.min_age, cls.max_age);
+                const detailParts = [
+                  levelName && levelName !== cls.name ? levelName : null,
+                  formatTime(cls.start_time),
+                ].filter(Boolean);
 
                 return (
                   <li key={cls.id}>
@@ -268,9 +271,9 @@ export function AdminEnrolStudentModal({
                       }`}
                     >
                       <p className="font-medium">{cls.name}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">
-                        {[levelName, ageLabel, formatTime(cls.start_time)].filter(Boolean).join(' · ')}
-                      </p>
+                      {detailParts.length > 0 && (
+                        <p className="text-xs text-gray-500 mt-0.5">{detailParts.join(' · ')}</p>
+                      )}
                       <p className="text-sm font-medium mt-1">
                         {formatCurrency(cls.price_minor, tenant?.currency ?? 'ILS', i18n.language)}
                       </p>

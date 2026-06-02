@@ -59,7 +59,9 @@ export const FamiliesList = () => {
           title={t('pages.families.empty_title')}
           message={t('pages.families.empty_message')}
           actionLabel={t('pages.families.enrol_action')}
-          onAction={() => navigate('/enrol')}
+          onAction={() =>
+            navigate('/enrol', { state: { mode: 'admin', from: '/admin/families' } })
+          }
         />
       )}
 

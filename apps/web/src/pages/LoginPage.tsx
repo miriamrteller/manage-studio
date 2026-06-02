@@ -27,15 +27,32 @@ export default function LoginPage() {
       : undefined;
 
   useEffect(() => {
-    if (postLoginState?.classId) {
+    if (
+      postLoginState?.classId ||
+      postLoginState?.mode ||
+      postLoginState?.from?.toString().startsWith('/admin')
+    ) {
       persistEnrollmentIntent({
-        classId: String(postLoginState.classId),
+        classId:
+          typeof postLoginState.classId === 'string' ? postLoginState.classId : undefined,
         seasonId:
           typeof postLoginState.seasonId === 'string' ? postLoginState.seasonId : undefined,
+        personId:
+          typeof postLoginState.personId === 'string' ? postLoginState.personId : undefined,
+        mode:
+          postLoginState.mode === 'admin' || postLoginState.mode === 'parent'
+            ? postLoginState.mode
+            : undefined,
         from: typeof postLoginState.from === 'string' ? postLoginState.from : undefined,
       });
     }
-  }, [postLoginState?.classId, postLoginState?.seasonId, postLoginState?.from]);
+  }, [
+    postLoginState?.classId,
+    postLoginState?.seasonId,
+    postLoginState?.personId,
+    postLoginState?.mode,
+    postLoginState?.from,
+  ]);
 
   const {
     isLoading,

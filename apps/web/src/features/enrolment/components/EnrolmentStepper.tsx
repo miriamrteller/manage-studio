@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
-import { WhatsAppOtpVerifier } from '@/components/shared';
 import { EnrolmentPaymentForm } from './EnrolmentPaymentForm';
+import { StepSelectStudent } from './StepSelectStudent';
 import { useEnrolment } from '../hooks/useEnrolment';
+import { useEnrolmentContext } from '../hooks/useEnrolmentContext';
+import { useAccountStudents } from '../hooks/useAccountStudents';
 import { useTenant } from '@/hooks/useTenant';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { EnrolmentService } from '../service';
@@ -15,8 +17,9 @@ import {
 } from '../onboardingService';
 import { useClasses } from '@/features/classes/hooks/useClasses';
 import { useRequirements } from '@/features/classes/requirements/hooks/useRequirements';
-import { filterClassesByAge, getRequirementInfoNotes, formatLevelWithAge, ageAt } from '../lib/check-requirements';
+import { filterClassesByAge, getRequirementInfoNotes, ageAt } from '../lib/check-requirements';
 import { useLevels } from '@/features/levels/hooks/useLevels';
+import type { EnrollmentIntent } from '@/lib/enrollment-intent';
 import type { Engagement } from '@shared/schemas';
 
 export type EnrolmentStep = 'person' | 'class' | 'notification' | 'checkout' | 'confirmation';
@@ -49,6 +52,11 @@ export interface EnrolmentStepperProps {
   onSuccess?: (enrolment: Engagement) => void;
   
   /**
+   * Enrollment routing context (class, student, admin mode, family scope)
+   */
+  enrollmentIntent?: EnrollmentIntent | null;
+
+  /**
    * Callback when user cancels enrolment
    */
   onCancel?: () => void;
@@ -72,10 +80,12 @@ export function EnrolmentStepper({
   initialTermId,
   initialStep = 'person',
   skipNotificationStep = false,
+  enrollmentIntent = null,
   onSuccess,
   onCancel,
 }: EnrolmentStepperProps) {
   const { t } = useTranslation();
+  const enrolmentContext = useEnrolmentContext(enrollmentIntent);
   const [currentStep, setCurrentStep] = useState<EnrolmentStep>(initialStep);
   const [enrolmentData, setEnrolmentData] = useState<Partial<Engagement>>(() => ({
     ...(initialClassId ? { offering_id: initialClassId } : {}),
@@ -92,16 +102,31 @@ export function EnrolmentStepper({
   const { createEnrolment, isCreating } = useEnrolment();
   const [checkoutEnrolmentId, setCheckoutEnrolmentId] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [personStepSkipped, setPersonStepSkipped] = useState(false);
+
+  const accountStudentsQuery = useAccountStudents({
+    accountId: enrolmentContext.constraints.accountId ?? enrolmentContext.guardian?.accountId,
+    enabled:
+      enrolmentContext.mode === 'parent' &&
+      !enrolmentContext.canSkipPersonStep &&
+      !enrolmentContext.isLoading &&
+      !enrolmentContext.error &&
+      Boolean(enrolmentContext.guardian?.accountId ?? enrolmentContext.constraints.accountId),
+  });
 
   const classPreselected = Boolean(initialClassId && initialTermId);
 
-  const steps: EnrolmentStep[] = [
-    'person',
-    classPreselected ? undefined : 'class',
-    skipNotificationStep ? undefined : 'notification',
-    'checkout',
-    'confirmation',
-  ].filter((s): s is EnrolmentStep => !!s);
+  const steps: EnrolmentStep[] = useMemo(
+    () =>
+      [
+        'person',
+        classPreselected ? undefined : 'class',
+        skipNotificationStep ? undefined : 'notification',
+        'checkout',
+        'confirmation',
+      ].filter((s): s is EnrolmentStep => !!s),
+    [classPreselected, skipNotificationStep],
+  );
 
   const stepTitles: Record<EnrolmentStep, string> = {
     person: t('enrolment.step_person') || 'Identify Person',
@@ -129,6 +154,46 @@ export function EnrolmentStepper({
     setPersonDateOfBirth(dob ?? null);
     goToNextStep();
   };
+
+  useEffect(() => {
+    if (enrolmentContext.isLoading || personStepSkipped || !tenant) return;
+    if (!enrolmentContext.canSkipPersonStep) return;
+
+    const personId =
+      enrolmentContext.preselectedPersonId ??
+      (enrolmentContext.mode === 'adult_student' ? user?.person_id : null);
+
+    if (!personId || enrolmentData.person_id) return;
+
+    let cancelled = false;
+    void EnrolmentOnboardingService.getPerson(tenant, personId).then((person) => {
+      if (cancelled) return;
+      setEnrolmentData((prev) => ({ ...prev, person_id: person.id }));
+      setPersonDateOfBirth(person.date_of_birth ?? null);
+      setPersonStepSkipped(true);
+      if (currentStep === 'person') {
+        const personIndex = steps.indexOf('person');
+        if (personIndex >= 0 && personIndex < steps.length - 1) {
+          setCurrentStep(steps[personIndex + 1]);
+        }
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    enrolmentContext.isLoading,
+    enrolmentContext.canSkipPersonStep,
+    enrolmentContext.preselectedPersonId,
+    enrolmentContext.mode,
+    user?.person_id,
+    tenant,
+    personStepSkipped,
+    enrolmentData.person_id,
+    currentStep,
+    steps,
+  ]);
 
   const handleClassNext = (newData?: Partial<Engagement>, className?: string) => {
     if (newData) setEnrolmentData(prev => ({ ...prev, ...newData }));
@@ -249,11 +314,67 @@ export function EnrolmentStepper({
       {/* Step content */}
       <div className="border border-gray-200 rounded-lg p-6 bg-white">
         {currentStep === 'person' && (
-          <StepPerson
-            data={enrolmentData}
-            onNext={handlePersonNext}
-            onCancel={onCancel}
-          />
+          <>
+            {enrolmentContext.isLoading && (
+              <p role="status">{t('common.loading')}</p>
+            )}
+            {enrolmentContext.error && (
+              <p role="alert" className="text-sm text-red-600">
+                {enrolmentContext.error.message}
+              </p>
+            )}
+            {!enrolmentContext.isLoading && !enrolmentContext.canSkipPersonStep && (
+              <StepSelectStudent
+                mode={enrolmentContext.mode}
+                constraints={enrolmentContext.constraints}
+                guardian={enrolmentContext.guardian}
+                students={accountStudentsQuery.data?.students ?? []}
+                guardianPersonId={accountStudentsQuery.data?.guardianPersonId ?? null}
+                studentsLoading={accountStudentsQuery.isLoading}
+                studentsError={
+                  enrolmentContext.error
+                    ? null
+                    : accountStudentsQuery.error instanceof Error
+                      ? accountStudentsQuery.error
+                      : null
+                }
+                onSelectPerson={(personId, dob) =>
+                  handlePersonNext({ ...enrolmentData, person_id: personId }, dob)
+                }
+                onCreateMinor={async (fields) => {
+                  if (!tenant || !enrolmentContext.guardian?.accountId) {
+                    throw new Error(t('pages.enrolment.no_account_linked'));
+                  }
+                  const person = await EnrolmentOnboardingService.createChildForAccount(
+                    tenant,
+                    enrolmentContext.guardian.accountId,
+                    fields,
+                  );
+                  handlePersonNext({ ...enrolmentData, person_id: person.id }, fields.student_date_of_birth);
+                }}
+                onCreateAdult={async (fields) => {
+                  if (!tenant) return;
+                  const { person } = await EnrolmentOnboardingService.createAdultSolo(
+                    tenant,
+                    fields as NewAdultOnboardingInput,
+                  );
+                  handlePersonNext({ ...enrolmentData, person_id: person.id }, person.date_of_birth ?? null);
+                }}
+                onCreateMinorWithGuardian={async (fields) => {
+                  if (!tenant) return;
+                  const { person } = await EnrolmentOnboardingService.createMinorWithFamily(
+                    tenant,
+                    {
+                      ...fields,
+                      guardian_role: 'account_holder',
+                    } as NewMinorOnboardingInput,
+                  );
+                  handlePersonNext({ ...enrolmentData, person_id: person.id }, fields.student_date_of_birth);
+                }}
+                onCancel={onCancel}
+              />
+            )}
+          </>
         )}
 
         {currentStep === 'class' && (
@@ -293,271 +414,6 @@ export function EnrolmentStepper({
         )}
       </div>
     </div>
-  );
-}
-
-type PersonMode = 'choose' | 'returning' | 'new_minor' | 'new_adult';
-
-/**
- * Step 1: Person identification
- *
- * - Returning: look up existing person by email.
- * - New minor: collect guardian + student details, creates family+person+member.
- * - New adult solo: collect student details, creates person only.
- */
-function StepPerson({
-  data,
-  onNext,
-  onCancel,
-}: {
-  data: Partial<Engagement>;
-  onNext: (data?: Partial<Engagement>, dob?: string | null) => void;
-  onCancel?: () => void;
-}) {
-  const { t } = useTranslation();
-  const tenant = useTenant();
-  const [mode, setMode] = useState<PersonMode>('choose');
-  const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Returning customer — email lookup
-  const [email, setEmail] = useState('');
-
-  // New minor fields
-  const [minorFields, setMinorFields] = useState<Partial<NewMinorOnboardingInput>>({
-    guardian_role: 'account_holder',
-  });
-
-  // New adult fields
-  const [adultFields, setAdultFields] = useState<Partial<NewAdultOnboardingInput>>({});
-
-  const handleReturning = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!tenant || !email.trim()) return;
-    setError(null);
-    setIsSubmitting(true);
-    try {
-      const person = await EnrolmentOnboardingService.findPersonByEmail(tenant, email.trim());
-      if (!person) {
-        setError(t('pages.enrolment.returning_not_found'));
-        return;
-      }
-      onNext({ ...data, person_id: person.id }, person.date_of_birth ?? null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('common.error'));
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleNewMinor = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!tenant) return;
-    setError(null);
-    setIsSubmitting(true);
-    try {
-      const { person } = await EnrolmentOnboardingService.createMinorWithFamily(
-        tenant,
-        minorFields as NewMinorOnboardingInput
-      );
-      onNext({ ...data, person_id: person.id }, minorFields.student_date_of_birth ?? null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('common.error'));
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleNewAdult = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!tenant) return;
-    setError(null);
-    setIsSubmitting(true);
-    try {
-      const { person } = await EnrolmentOnboardingService.createAdultSolo(
-        tenant,
-        adultFields as NewAdultOnboardingInput
-      );
-      onNext({ ...data, person_id: person.id }, null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('common.error'));
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  if (mode === 'choose') {
-    return (
-      <div className="space-y-4">
-        <p className="text-sm text-gray-600">{t('pages.enrolment.person_desc')}</p>
-        <div className="space-y-3">
-          <Button
-            onClick={() => setMode('returning')}
-            variant="outline"
-            className="w-full p-4 border-2 border-blue-600 rounded-lg hover:bg-blue-50 transition"
-          >
-            {t('pages.enrolment.person_returning')}
-          </Button>
-          <Button
-            onClick={() => setMode('new_minor')}
-            variant="outline"
-            className="w-full p-4 border-2 border-blue-600 rounded-lg hover:bg-blue-50 transition"
-          >
-            {t('pages.enrolment.person_new_minor')}
-          </Button>
-          <Button
-            onClick={() => setMode('new_adult')}
-            variant="outline"
-            className="w-full p-4 border-2 border-blue-600 rounded-lg hover:bg-blue-50 transition"
-          >
-            {t('pages.enrolment.person_new_adult')}
-          </Button>
-        </div>
-        <Button onClick={onCancel} variant="ghost" className="w-full">
-          {t('common.cancel')}
-        </Button>
-      </div>
-    );
-  }
-
-  if (mode === 'returning') {
-    return (
-      <form onSubmit={handleReturning} className="space-y-4">
-        <p className="text-sm text-gray-600">{t('pages.enrolment.returning_desc')}</p>
-        <div>
-          <label htmlFor="returning-email" className="block text-sm font-medium mb-1">
-            {t('form.person.email')} *
-          </label>
-          <input
-            id="returning-email"
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="form-input w-full"
-            placeholder="guardian@example.com"
-          />
-        </div>
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        <div className="flex gap-2">
-          <Button type="button" variant="outline" onClick={() => setMode('choose')} className="flex-1">
-            {t('common.back')}
-          </Button>
-          <Button type="submit" variant="primary" disabled={isSubmitting} className="flex-1">
-            {isSubmitting ? t('common.loading') : t('common.next')}
-          </Button>
-        </div>
-      </form>
-    );
-  }
-
-  if (mode === 'new_minor') {
-    return (
-      <form onSubmit={handleNewMinor} className="space-y-4">
-        <p className="text-sm text-gray-600">{t('pages.enrolment.new_minor_desc')}</p>
-
-        <fieldset className="border rounded p-4 space-y-3">
-          <legend className="text-sm font-semibold px-1">{t('pages.enrolment.student_section')}</legend>
-          <div>
-            <label className="block text-sm font-medium mb-1">{t('form.person.name')} *</label>
-            <input
-              type="text"
-              required
-              className="form-input w-full"
-              value={minorFields.student_name ?? ''}
-              onChange={(e) => setMinorFields({ ...minorFields, student_name: e.target.value })}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">{t('form.person.date_of_birth')} *</label>
-            <input
-              type="date"
-              required
-              className="form-input w-full"
-              value={minorFields.student_date_of_birth ?? ''}
-              onChange={(e) => setMinorFields({ ...minorFields, student_date_of_birth: e.target.value })}
-            />
-          </div>
-        </fieldset>
-
-        <fieldset className="border rounded p-4 space-y-3">
-          <legend className="text-sm font-semibold px-1">{t('pages.enrolment.guardian_section')}</legend>
-          <div>
-            <label className="block text-sm font-medium mb-1">{t('form.person.name')} *</label>
-            <input
-              type="text"
-              required
-              className="form-input w-full"
-              value={minorFields.guardian_name ?? ''}
-              onChange={(e) => setMinorFields({ ...minorFields, guardian_name: e.target.value })}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">{t('form.person.email')}</label>
-            <input
-              type="email"
-              className="form-input w-full"
-              value={minorFields.guardian_email ?? ''}
-              onChange={(e) => setMinorFields({ ...minorFields, guardian_email: e.target.value })}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">{t('form.person.phone')}</label>
-            <input
-              type="tel"
-              className="form-input w-full"
-              value={minorFields.guardian_phone ?? ''}
-              onChange={(e) => setMinorFields({ ...minorFields, guardian_phone: e.target.value })}
-            />
-          </div>
-        </fieldset>
-
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        <div className="flex gap-2">
-          <Button type="button" variant="outline" onClick={() => setMode('choose')} className="flex-1">
-            {t('common.back')}
-          </Button>
-          <Button type="submit" variant="primary" disabled={isSubmitting} className="flex-1">
-            {isSubmitting ? t('common.loading') : t('common.next')}
-          </Button>
-        </div>
-      </form>
-    );
-  }
-
-  // new_adult
-  return (
-    <form onSubmit={handleNewAdult} className="space-y-4">
-      <p className="text-sm text-gray-600">{t('pages.enrolment.new_adult_desc')}</p>
-      <div>
-        <label className="block text-sm font-medium mb-1">{t('form.person.name')} *</label>
-        <input
-          type="text"
-          required
-          className="form-input w-full"
-          value={adultFields.name ?? ''}
-          onChange={(e) => setAdultFields({ ...adultFields, name: e.target.value })}
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium mb-1">{t('form.person.email')}</label>
-        <input
-          type="email"
-          className="form-input w-full"
-          value={adultFields.email ?? ''}
-          onChange={(e) => setAdultFields({ ...adultFields, email: e.target.value })}
-        />
-      </div>
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      <div className="flex gap-2">
-        <Button type="button" variant="outline" onClick={() => setMode('choose')} className="flex-1">
-          {t('common.back')}
-        </Button>
-        <Button type="submit" variant="primary" disabled={isSubmitting} className="flex-1">
-          {isSubmitting ? t('common.loading') : t('common.next')}
-        </Button>
-      </div>
-    </form>
   );
 }
 
@@ -698,12 +554,8 @@ function StepClass({
             const levelName =
               cls.level_name ??
               (cls.category_id ? levelNameById.get(cls.category_id) : undefined);
-            const levelLabel = formatLevelWithAge(
-              levelName,
-              cls.min_age,
-              cls.max_age,
-              t('pages.enrolment.class_ages'),
-            );
+            const levelLabel =
+              levelName && levelName !== cls.name ? levelName : null;
             return (
               <li key={cls.id}>
                 <button
@@ -778,83 +630,41 @@ function StepClass({
 }
 
 /**
- * Step 3: WhatsApp notification opt-in (NEW in Phase 1D)
+ * Step 3: Notification preferences (optional — never blocks enrolment)
  */
 function StepNotification({
   onNext,
   onPrevious,
-  onSkip,
 }: {
   onNext: (data?: Partial<Engagement>) => void;
   onPrevious: () => void;
   onSkip: () => void;
 }) {
   const { t } = useTranslation();
-  const [useWhatsApp, setUseWhatsApp] = useState(false);
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-gray-600">
-        {t('pages.enrolment.notification_desc')}
-      </p>
+      <p className="text-sm text-gray-600">{t('pages.enrolment.notification_desc')}</p>
+      <p className="text-sm text-gray-500">{t('pages.enrolment.notification_skip_hint')}</p>
 
-      <div className="space-y-4">
-        {useWhatsApp ? (
-          <div className="max-w-sm mx-auto">
-            <WhatsAppOtpVerifier
-              onVerificationSuccess={() => {
-                onNext();
-              }}
-            />
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <Button
-              type="button"
-              onClick={() => setUseWhatsApp(true)}
-              variant="outline"
-              className="w-full p-4 border-2 border-green-600 rounded-lg hover:bg-green-50 transition text-center"
-            >
-              <div className="font-semibold">💬 WhatsApp</div>
-              <div className="text-sm text-gray-600 mt-1">
-                {t('pages.enrolment.notification_whatsapp')}
-              </div>
-            </Button>
-            <Button
-              type="button"
-              onClick={() => onNext()}
-              variant="outline"
-              className="w-full p-4 border-2 border-blue-600 rounded-lg hover:bg-blue-50 transition text-center"
-            >
-              <div className="font-semibold">✉️ Email Only</div>
-              <div className="text-sm text-gray-600 mt-1">
-                {t('pages.enrolment.notification_email')}
-              </div>
-            </Button>
-          </div>
-        )}
+      <Button
+        type="button"
+        onClick={() => onNext()}
+        variant="outline"
+        className="w-full p-4 border-2 border-blue-600 rounded-lg hover:bg-blue-50 transition text-center"
+      >
+        <div className="font-semibold">{t('pages.enrolment.notification_email')}</div>
+        <div className="text-sm text-gray-600 mt-1">{t('pages.enrolment.notification_email_desc')}</div>
+      </Button>
+
+      <div className="flex gap-2">
+        <Button type="button" onClick={onPrevious} variant="outline" className="flex-1">
+          {t('common.back')}
+        </Button>
+        <Button type="button" onClick={() => onNext()} variant="primary" className="flex-1">
+          {t('common.next')}
+        </Button>
       </div>
-
-      {!useWhatsApp && (
-        <div className="flex gap-2">
-          <Button
-            type="button"
-            onClick={onPrevious}
-            variant="outline"
-            className="flex-1"
-          >
-            {t('common.back') || 'Back'}
-          </Button>
-          <Button
-            type="button"
-            onClick={onSkip}
-            variant="primary"
-            className="flex-1"
-          >
-            {t('common.next') || 'Next'}
-          </Button>
-        </div>
-      )}
     </div>
   );
 }

@@ -1923,6 +1923,8 @@ Build in this strict order (each module depends on previous):
 
 #### V1 enrolment wizard (simplified — no placement scoring)
 
+> **2026-06 update:** Step 1 uses context-aware student selection (parent child list / admin search), not email lookup. One parent login maps to one account.
+
 ```
 Step 1: Identify the person
   → Returning family: search by email → select existing person

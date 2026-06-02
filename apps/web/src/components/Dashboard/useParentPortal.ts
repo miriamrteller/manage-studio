@@ -57,7 +57,9 @@ export function useParentPortal(): ParentPortalState {
 
       if (peopleError) throw peopleError;
 
-      const children = (peopleRows ?? []).map((row) => PersonSchema.parse(row));
+      const children = (peopleRows ?? [])
+        .map((row) => PersonSchema.parse(row))
+        .filter((person) => person.account_id != null);
       const personIds = children.map((p) => p.id);
 
       const enrolmentsByPerson: Record<string, EngagementWithOffering[]> = {};

@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   useReactTable,
@@ -42,6 +43,7 @@ type StatusFilter = 'active' | 'inactive' | 'all';
 
 export function StudentsList() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const tenant = useTenant();
   const queryClient = useQueryClient();
 
@@ -106,9 +108,23 @@ export function StudentsList() {
     queryKey: ['students-list-families', tenant?.id, accountIds],
     queryFn: async () => {
       if (!tenant || accountIds.length === 0) return [];
-      const { data, error } = await TenantDB.selectFor('accounts', tenant).in('id', accountIds);
+      const { data, error } = await TenantDB.selectFor('accounts', tenant)
+        .in('id', accountIds)
+        .select('id, name, person_id, guardian:people!accounts_person_id_fkey(name, email, emergency_contact_phone)');
       if (error) throw error;
-      return data || [];
+      return (data ?? []).map((row) => {
+        const guardian = row.guardian as {
+          name?: string;
+          email?: string | null;
+          emergency_contact_phone?: string | null;
+        } | null;
+        return {
+          id: row.id as string,
+          contact_person_name: guardian?.name ?? null,
+          contact_email: guardian?.email ?? null,
+          contact_phone: guardian?.emergency_contact_phone ?? null,
+        };
+      });
     },
     enabled: !!tenant?.id && accountIds.length > 0,
   });
@@ -453,7 +469,7 @@ export function StudentsList() {
           />
         }
         actions={
-          <Button variant="primary" onClick={() => window.location.assign('/enrol')}>
+          <Button variant="primary" onClick={() => navigate('/enrol', { state: { mode: 'admin', from: '/admin/students' } })}>
             {t('pages.students.enrol_new_button')}
           </Button>
         }
@@ -553,7 +569,7 @@ export function StudentsList() {
           title={t('pages.students.empty_title')}
           message={t('pages.students.empty_message')}
           actionLabel={t('pages.students.enrol_new_button')}
-          onAction={() => window.location.assign('/enrol')}
+          onAction={() => navigate('/enrol', { state: { mode: 'admin', from: '/admin/students' } })}
         />
       )}
 

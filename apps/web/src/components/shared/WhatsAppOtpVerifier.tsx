@@ -80,10 +80,8 @@ export function WhatsAppOtpVerifier({
 
   const handleSendOtp = async (data: z.infer<typeof PhoneSchema>) => {
     setError('');
-    setPhoneForVerification(data.phone);
 
     if (method === 'email' && user?.email) {
-      // Send OTP via email
       sendOtp(
         {
           email: user.email,
@@ -99,13 +97,14 @@ export function WhatsAppOtpVerifier({
             setError(err.message);
             setStep('error');
           },
-        }
+        },
       );
-    } else {
-      // Send OTP via WhatsApp (in real implementation, would call send-otp-whatsapp function)
-      // For now, we'll simulate by showing verification step
-      setStep('verify-otp');
+      return;
     }
+
+    setPhoneForVerification(data.phone);
+    // WhatsApp OTP send is wired in a later phase; proceed to code entry for now.
+    setStep('verify-otp');
   };
 
   const handleVerifyOtp = async (data: z.infer<typeof OtpCodeSchema>) => {
@@ -210,7 +209,7 @@ export function WhatsAppOtpVerifier({
 
         {step === 'method-select' && (
           <div className="space-y-4">
-            <Tabs defaultValue={method} onValueChange={(v) => setMethod(v as 'email' | 'whatsapp')}>
+            <Tabs value={method} onValueChange={(v) => setMethod(v as 'email' | 'whatsapp')}>
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
                 <TabsTrigger value="email">Email</TabsTrigger>
@@ -248,7 +247,14 @@ export function WhatsAppOtpVerifier({
         {step === 'send-otp' && (
           <Form {...phoneForm}>
             <form
-              onSubmit={phoneForm.handleSubmit(handleSendOtp)}
+              onSubmit={(event) => {
+                event.preventDefault();
+                if (method === 'email') {
+                  void handleSendOtp({ phone: phoneForVerification });
+                  return;
+                }
+                void phoneForm.handleSubmit(handleSendOtp)(event);
+              }}
               className="space-y-4"
             >
               {method === 'whatsapp' && (

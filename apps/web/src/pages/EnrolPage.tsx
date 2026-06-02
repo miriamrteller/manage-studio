@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { EnrolmentStepper } from '@/features/enrolment/components';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import {
+  persistEnrollmentIntent,
   readEnrollmentIntent,
   type EnrollmentIntent,
 } from '@/lib/enrollment-intent';
@@ -18,13 +19,19 @@ export default function EnrolPage() {
   const seasonId = intent?.seasonId;
 
   useEffect(() => {
+    if (intent) {
+      persistEnrollmentIntent(intent);
+    }
+  }, [intent]);
+
+  useEffect(() => {
     if (!isLoading && !user) {
       navigate('/login', {
         replace: true,
-        state: { from: '/enrol', classId, seasonId },
+        state: { from: '/enrol', classId, seasonId, personId: intent?.personId, mode: intent?.mode },
       });
     }
-  }, [user, isLoading, navigate, classId, seasonId]);
+  }, [user, isLoading, navigate, classId, seasonId, intent?.personId, intent?.mode]);
 
   if (isLoading) {
     return (
@@ -44,6 +51,7 @@ export default function EnrolPage() {
       <EnrolmentStepper
         initialClassId={intent?.classId}
         initialTermId={intent?.seasonId}
+        enrollmentIntent={intent}
         onCancel={() => navigate('/classes')}
         onSuccess={() => navigate('/classes')}
       />

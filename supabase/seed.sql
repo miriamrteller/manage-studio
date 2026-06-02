@@ -53,13 +53,13 @@ ON CONFLICT (id) DO UPDATE SET
 
 INSERT INTO categories (id, tenant_id, name, sort_order)
 VALUES
-  ('00000000-0000-0000-0000-000000000201'::uuid, '00000000-0000-0000-0000-000000000001'::uuid, 'Mini (Ages 3-4)', 1),
-  ('00000000-0000-0000-0000-000000000202'::uuid, '00000000-0000-0000-0000-000000000001'::uuid, 'Pre-Primary (Ages 4-6)', 2),
-  ('00000000-0000-0000-0000-000000000203'::uuid, '00000000-0000-0000-0000-000000000001'::uuid, 'Primary (Ages 5-7)', 3),
-  ('00000000-0000-0000-0000-000000000204'::uuid, '00000000-0000-0000-0000-000000000001'::uuid, 'Grade 1 (Ages 7-10)', 4),
-  ('00000000-0000-0000-0000-000000000205'::uuid, '00000000-0000-0000-0000-000000000001'::uuid, 'Grade 2 (Ages 9-13)', 5),
-  ('00000000-0000-0000-0000-000000000206'::uuid, '00000000-0000-0000-0000-000000000001'::uuid, 'Grade 3 (Ages 10-16)', 6),
-  ('00000000-0000-0000-0000-000000000207'::uuid, '00000000-0000-0000-0000-000000000001'::uuid, 'Pilates (18+)', 7)
+  ('00000000-0000-0000-0000-000000000201'::uuid, '00000000-0000-0000-0000-000000000001'::uuid, 'Mini', 1),
+  ('00000000-0000-0000-0000-000000000202'::uuid, '00000000-0000-0000-0000-000000000001'::uuid, 'Pre-Primary', 2),
+  ('00000000-0000-0000-0000-000000000203'::uuid, '00000000-0000-0000-0000-000000000001'::uuid, 'Primary', 3),
+  ('00000000-0000-0000-0000-000000000204'::uuid, '00000000-0000-0000-0000-000000000001'::uuid, 'Grade 1', 4),
+  ('00000000-0000-0000-0000-000000000205'::uuid, '00000000-0000-0000-0000-000000000001'::uuid, 'Grade 2', 5),
+  ('00000000-0000-0000-0000-000000000206'::uuid, '00000000-0000-0000-0000-000000000001'::uuid, 'Grade 3', 6),
+  ('00000000-0000-0000-0000-000000000207'::uuid, '00000000-0000-0000-0000-000000000001'::uuid, 'Pilates', 7)
 ON CONFLICT (id) DO UPDATE SET
   name = EXCLUDED.name,
   sort_order = EXCLUDED.sort_order;
@@ -166,14 +166,16 @@ WHERE tenant_id = '00000000-0000-0000-0000-000000000001'::uuid
 
 -- ============================================================================
 -- PEOPLE + FAMILIES (20260526000200_people.sql)
--- families.person_id = primary contact (student); guardians are account_members
+-- accounts.person_id = guardian (primary contact); students link via people.account_id
+-- One parent login → one account; multiple children in that account
 -- ============================================================================
 
--- Stub rows so families.person_id FK can be satisfied before account_id is set on people
+-- Stub rows so accounts.person_id FK can be satisfied before full people rows
 INSERT INTO people (id, tenant_id, name, created_at, updated_at)
 VALUES
+  ('00000000-0000-0000-0000-000000000504'::uuid, '00000000-0000-0000-0000-000000000001'::uuid, 'Miriam R Stern', now(), now()),
   ('00000000-0000-0000-0000-000000000501'::uuid, '00000000-0000-0000-0000-000000000001'::uuid, 'Miriam Stern', now(), now()),
-  ('00000000-0000-0000-0000-000000000502'::uuid, '00000000-0000-0000-0000-000000000001'::uuid, 'Ruti Teller', now(), now())
+  ('00000000-0000-0000-0000-000000000502'::uuid, '00000000-0000-0000-0000-000000000001'::uuid, 'Ruti Stern', now(), now())
 ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name;
 
 INSERT INTO accounts (id, tenant_id, name, person_id, created_at)
@@ -181,15 +183,8 @@ VALUES
   (
     '00000000-0000-0000-0000-000000000401'::uuid,
     '00000000-0000-0000-0000-000000000001'::uuid,
-    'Stern account',
-    '00000000-0000-0000-0000-000000000501'::uuid,
-    now()
-  ),
-  (
-    '00000000-0000-0000-0000-000000000402'::uuid,
-    '00000000-0000-0000-0000-000000000001'::uuid,
-    'Teller account',
-    '00000000-0000-0000-0000-000000000502'::uuid,
+    'Stern family',
+    '00000000-0000-0000-0000-000000000504'::uuid,
     now()
   )
 ON CONFLICT (id) DO UPDATE SET
@@ -210,13 +205,13 @@ VALUES
     '00000000-0000-0000-0000-000000000001'::uuid,
     NULL,
     '00000000-0000-0000-0000-000000000401'::uuid,
-    'Miriam Stern',
+    'Esther Stern',
     NULL,
     '2021-05-15'::date,
     NULL,
     NULL,
     'Miriam R Stern',
-    '0505550101',
+    '0548421987',
     true,
     true,
     'active',
@@ -229,14 +224,14 @@ VALUES
     '00000000-0000-0000-0000-000000000502'::uuid,
     '00000000-0000-0000-0000-000000000001'::uuid,
     NULL,
-    '00000000-0000-0000-0000-000000000402'::uuid,
-    'Ruti Teller',
+    '00000000-0000-0000-0000-000000000401'::uuid,
+    'Ruti Stern',
     NULL,
     '2018-03-22'::date,
     NULL,
     NULL,
     'Miriam R Stern',
-    '0505550101',
+    '0548421987',
     true,
     true,
     'active',
@@ -517,7 +512,7 @@ INSERT INTO user_profiles (
   language = EXCLUDED.language,
   country = EXCLUDED.country;
 
--- Adult guardian + solo student (same login — Pilates self-enrolment)
+-- Adult guardian (same login — parent portal + self-enrolment for Pilates)
 INSERT INTO people (
   id, tenant_id, user_profile_id, account_id, name, email, date_of_birth,
   medical_notes, allergies,
@@ -536,7 +531,7 @@ VALUES (
   NULL,
   NULL,
   'Reuven Teller',
-  '0505550101',
+  '0548421987',
   true,
   true,
   'active',
@@ -559,7 +554,16 @@ UPDATE user_profiles
 SET person_id = '00000000-0000-0000-0000-000000000504'::uuid
 WHERE id = '00000000-0000-0000-0000-000000000510'::uuid;
 
--- Guardian membership for both seeded families (person_id + user_profile_id)
+-- Legacy cleanup: older seeds linked this parent to two accounts (401 + 402).
+-- Re-running seed with ON CONFLICT does not remove the extra membership row.
+DELETE FROM contact_preferences
+WHERE account_member_id = '00000000-0000-0000-0000-000000000702'::uuid;
+
+DELETE FROM account_members
+WHERE user_profile_id = '00000000-0000-0000-0000-000000000510'::uuid
+  AND id != '00000000-0000-0000-0000-000000000701'::uuid;
+
+-- Single guardian membership — one parent, one account
 INSERT INTO account_members (id, tenant_id, account_id, user_profile_id, person_id, role, created_at)
 VALUES
   (
@@ -568,16 +572,7 @@ VALUES
     '00000000-0000-0000-0000-000000000401'::uuid,
     '00000000-0000-0000-0000-000000000510'::uuid,
     '00000000-0000-0000-0000-000000000504'::uuid,
-    'member',
-    now()
-  ),
-  (
-    '00000000-0000-0000-0000-000000000702'::uuid,
-    '00000000-0000-0000-0000-000000000001'::uuid,
-    '00000000-0000-0000-0000-000000000402'::uuid,
-    '00000000-0000-0000-0000-000000000510'::uuid,
-    '00000000-0000-0000-0000-000000000504'::uuid,
-    'member',
+    'account_holder',
     now()
   )
 ON CONFLICT (id) DO UPDATE SET
@@ -603,19 +598,10 @@ VALUES
     'email', 'he', now(), now()
   ),
   (
-    '00000000-0000-0000-0000-000000000603'::uuid,
-    '00000000-0000-0000-0000-000000000001'::uuid,
-    NULL,
-    '00000000-0000-0000-0000-000000000701'::uuid,
-    true, NULL, false, false,
-    NULL, false,
-    'email', 'he', now(), now()
-  ),
-  (
     '00000000-0000-0000-0000-000000000604'::uuid,
     '00000000-0000-0000-0000-000000000001'::uuid,
     NULL,
-    '00000000-0000-0000-0000-000000000702'::uuid,
+    '00000000-0000-0000-0000-000000000701'::uuid,
     true, NULL, false, false,
     NULL, false,
     'email', 'he', now(), now()
