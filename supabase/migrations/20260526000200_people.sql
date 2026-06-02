@@ -107,3 +107,30 @@ CREATE POLICY "super_admin manages all people"  ON people FOR ALL    USING (is_s
 CREATE POLICY "staff see all people"            ON people FOR SELECT USING (tenant_id = get_my_tenant_id() AND EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND 'tenant_admin' = ANY(role)));
 CREATE POLICY "account holders see own account people"   ON people FOR SELECT USING (tenant_id = get_my_tenant_id() AND account_id IN (SELECT get_my_account_ids()));
 CREATE POLICY "adult students see self"         ON people FOR SELECT USING (tenant_id = get_my_tenant_id() AND id = get_my_person_id());
+CREATE POLICY "account holders update own account people"
+  ON people FOR UPDATE
+  USING (
+    tenant_id = get_my_tenant_id()
+    AND account_id IN (SELECT get_my_account_ids())
+  )
+  WITH CHECK (
+    tenant_id = get_my_tenant_id()
+    AND account_id IN (SELECT get_my_account_ids())
+  );
+CREATE POLICY "adult students update self"
+  ON people FOR UPDATE
+  USING (
+    tenant_id = get_my_tenant_id()
+    AND id = get_my_person_id()
+  )
+  WITH CHECK (
+    tenant_id = get_my_tenant_id()
+    AND id = get_my_person_id()
+  );
+CREATE POLICY "account holders create account children"
+  ON people FOR INSERT
+  WITH CHECK (
+    tenant_id = get_my_tenant_id()
+    AND status = 'active'
+    AND account_id IN (SELECT get_my_account_ids())
+  );

@@ -16,6 +16,7 @@ CREATE TABLE tenants (
   accent_color                  TEXT        NOT NULL DEFAULT '#e99ac4',
   currency                      TEXT        NOT NULL DEFAULT 'ILS',
   vat_rate                      NUMERIC(5,4) DEFAULT 0.17,
+  prices_include_vat            BOOLEAN     NOT NULL DEFAULT true,
   phone_region                  TEXT        NOT NULL DEFAULT 'IL',
   phone_region_updated_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
   business_preset               TEXT        NOT NULL DEFAULT 'programs'
@@ -33,6 +34,9 @@ CREATE TABLE tenants (
 COMMENT ON COLUMN tenants.stripe_secret_key_enc IS 'pgp_sym_encrypt with app.encryption_key (manual runbook). Never expose to clients.';
 COMMENT ON COLUMN tenants.language_default IS 'Primary language for tenant. dir (rtl/ltr) is computed from this in the app.';
 COMMENT ON COLUMN tenants.country IS 'Country for regional settings (VAT rate, currency, locale).';
+COMMENT ON COLUMN tenants.prices_include_vat IS
+  'When true, offerings.price_minor is VAT-inclusive (customer pays this amount). '
+  'When false, price_minor is pretax and VAT is added at checkout. See SPEC §2.5.1.';
 
 CREATE TABLE user_profiles (
   id         UUID        PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,

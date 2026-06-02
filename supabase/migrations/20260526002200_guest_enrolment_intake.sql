@@ -1,7 +1,42 @@
 -- =============================================================================
 -- 022: Guest enrolment intake RPCs (anon-safe, no edge function required)
--- DEPENDENCIES: 002, 011, 015
+-- Includes billing-account resolution, email dedup, and idempotent engagement create.
+-- DEPENDENCIES: 002, 010, 011, 015
 -- =============================================================================
+
+CREATE OR REPLACE FUNCTION public.guest_enrolment_check_email(
+  p_subdomain TEXT,
+  p_email TEXT
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_tenant_id UUID;
+  v_registered BOOLEAN;
+BEGIN
+  SELECT id INTO v_tenant_id FROM tenants WHERE subdomain = trim(p_subdomain) LIMIT 1;
+  IF v_tenant_id IS NULL THEN
+    RAISE EXCEPTION 'Tenant not found';
+  END IF;
+
+  IF p_email IS NULL OR trim(p_email) = '' THEN
+    RETURN jsonb_build_object('registered', false);
+  END IF;
+
+  SELECT EXISTS (
+    SELECT 1
+    FROM people
+    WHERE tenant_id = v_tenant_id
+      AND email IS NOT NULL
+      AND lower(trim(email)) = lower(trim(p_email))
+  ) INTO v_registered;
+
+  RETURN jsonb_build_object('registered', v_registered);
+END;
+$$;
 
 CREATE OR REPLACE FUNCTION public.guest_enrolment_create_family(
   p_subdomain TEXT,
@@ -38,6 +73,16 @@ BEGIN
   END IF;
   IF p_student_dob IS NULL THEN
     RAISE EXCEPTION 'Student date of birth is required';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1
+    FROM people
+    WHERE tenant_id = v_tenant_id
+      AND email IS NOT NULL
+      AND lower(trim(email)) = lower(trim(p_guardian_email))
+  ) THEN
+    RAISE EXCEPTION 'EXISTING_EMAIL';
   END IF;
 
   INSERT INTO people (tenant_id, name, email, emergency_contact_phone, status)
@@ -98,6 +143,16 @@ BEGIN
     RAISE EXCEPTION 'Email is required';
   END IF;
 
+  IF EXISTS (
+    SELECT 1
+    FROM people
+    WHERE tenant_id = v_tenant_id
+      AND email IS NOT NULL
+      AND lower(trim(email)) = lower(trim(p_email))
+  ) THEN
+    RAISE EXCEPTION 'EXISTING_EMAIL';
+  END IF;
+
   INSERT INTO people (tenant_id, name, email, emergency_contact_phone, date_of_birth, status)
   VALUES (
     v_tenant_id,
@@ -129,7 +184,9 @@ SET search_path = public
 AS $$
 DECLARE
   v_tenant_id UUID;
-  v_account_id UUID;
+  v_student_account_id UUID;
+  v_payer_person_id UUID;
+  v_billing_account_id UUID;
   v_engagement_id UUID;
 BEGIN
   SELECT id INTO v_tenant_id FROM tenants WHERE subdomain = trim(p_subdomain) LIMIT 1;
@@ -144,18 +201,45 @@ BEGIN
     RAISE EXCEPTION 'Person not found';
   END IF;
 
-  SELECT account_id INTO v_account_id
+  SELECT account_id INTO v_student_account_id
   FROM people
   WHERE id = p_student_person_id;
 
-  IF EXISTS (
-    SELECT 1 FROM engagements
-    WHERE tenant_id = v_tenant_id
-      AND person_id = p_student_person_id
-      AND offering_id = p_offering_id
-      AND season_id = p_season_id
-  ) THEN
-    RAISE EXCEPTION 'Person already enrolled in this class for this term';
+  IF v_student_account_id IS NOT NULL THEN
+    SELECT am.person_id INTO v_payer_person_id
+    FROM account_members am
+    WHERE am.account_id = v_student_account_id
+      AND am.role = 'account_holder'
+    LIMIT 1;
+  END IF;
+
+  IF v_payer_person_id IS NULL THEN
+    v_payer_person_id := p_student_person_id;
+  END IF;
+
+  SELECT id INTO v_engagement_id
+  FROM engagements
+  WHERE tenant_id = v_tenant_id
+    AND person_id = p_student_person_id
+    AND offering_id = p_offering_id
+    AND season_id = p_season_id
+  LIMIT 1;
+
+  IF v_engagement_id IS NOT NULL THEN
+    RETURN jsonb_build_object('engagementId', v_engagement_id);
+  END IF;
+
+  SELECT id INTO v_billing_account_id
+  FROM billing_accounts
+  WHERE tenant_id = v_tenant_id
+    AND person_id = v_payer_person_id
+    AND status = 'active'
+  LIMIT 1;
+
+  IF v_billing_account_id IS NULL THEN
+    INSERT INTO billing_accounts (tenant_id, person_id, status)
+    VALUES (v_tenant_id, v_payer_person_id, 'active')
+    RETURNING id INTO v_billing_account_id;
   END IF;
 
   INSERT INTO engagements (
@@ -166,7 +250,7 @@ BEGIN
     p_student_person_id,
     p_offering_id,
     p_season_id,
-    v_account_id,
+    v_billing_account_id,
     'pending_payment'
   )
   RETURNING id INTO v_engagement_id;
@@ -174,6 +258,9 @@ BEGIN
   RETURN jsonb_build_object('engagementId', v_engagement_id);
 END;
 $$;
+
+GRANT EXECUTE ON FUNCTION public.guest_enrolment_check_email(TEXT, TEXT) TO anon;
+GRANT EXECUTE ON FUNCTION public.guest_enrolment_check_email(TEXT, TEXT) TO authenticated;
 
 GRANT EXECUTE ON FUNCTION public.guest_enrolment_create_family(TEXT, TEXT, TEXT, TEXT, TEXT, DATE) TO anon;
 GRANT EXECUTE ON FUNCTION public.guest_enrolment_create_family(TEXT, TEXT, TEXT, TEXT, TEXT, DATE) TO authenticated;

@@ -92,6 +92,24 @@ BEGIN
           EXTRACT(YEAR FROM age(CURRENT_DATE, s.date_of_birth))::INT
         ELSE NULL
       END AS age_years,
+      EXISTS (
+        SELECT 1
+        FROM account_members am2
+        WHERE am2.tenant_id = s.tenant_id
+          AND am2.person_id = s.id
+          AND am2.role = 'account_holder'
+      ) AS is_account_holder,
+      COALESCE(
+        s.account_id,
+        (
+          SELECT am3.account_id
+          FROM account_members am3
+          WHERE am3.tenant_id = s.tenant_id
+            AND am3.person_id = s.id
+            AND am3.role = 'account_holder'
+          LIMIT 1
+        )
+      ) AS family_account_id,
       lower(concat_ws(' ',
         s.name,
         s.email,
@@ -171,7 +189,9 @@ BEGIN
         'guardianPhone', m.guardian_phone,
         'emergencyContactName', m.emergency_contact_name,
         'emergencyContactPhone', m.emergency_contact_phone,
-        'activeClassNames', to_jsonb(m.active_class_names)
+        'activeClassNames', to_jsonb(m.active_class_names),
+        'isAccountHolder', m.is_account_holder,
+        'familyAccountId', m.family_account_id
       )
       ORDER BY m.name
     ),

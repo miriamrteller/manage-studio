@@ -75,5 +75,5 @@ GRANT UPDATE ON TABLE public.tenants TO authenticated;
 
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO authenticated;
 
-GRANT ALL ON TABLE public.tenants       TO service_role;
-GRANT ALL ON TABLE public.user_profiles TO service_role;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO service_role;
