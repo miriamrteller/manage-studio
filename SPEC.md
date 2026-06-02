@@ -928,6 +928,8 @@ CREATE TABLE classes (
 
 #### 4.2.5 Class requirements (implemented — not inline enum on `classes`)
 
+> **Age bands (V1 implementation):** `offerings.min_age` / `offerings.max_age` are first-class columns (not requirement templates). Age is evaluated at **season start**, not today's date. Parents/guests are hard-blocked; admins may override with audit trail; parents may request studio review → `admin_review` engagement + admin email. **Agent checklist:** [docs/plans/2026-06-02-age-override-and-review-request.md](docs/plans/2026-06-02-age-override-and-review-request.md)
+
 > **Legacy blueprint numbering** — see §4.2.0 for authoritative filenames.
 > **Files:** `20260526000900_requirements.sql` (templates, overrides, class links).
 > Replaces the older single-table `class_requirements` with `requirement_type` CHECK from the blueprint below.

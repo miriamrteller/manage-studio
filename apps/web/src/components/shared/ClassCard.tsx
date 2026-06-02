@@ -5,6 +5,7 @@ import { formatCurrency, formatTime } from '@shared/format';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useTenant } from '@/hooks/useTenant';
 import { computeClassTotal } from '@/features/enrolment/lib/computeClassTotal';
+import { formatClassAgeRange } from '@/features/classes/lib/formatClassAgeRange';
 import type { PublicOffering } from '@/schemas';
 
 /**
@@ -52,6 +53,7 @@ export function ClassCard({ class: cls, currency }: ClassCardProps) {
   };
 
   const actionLabel = isAdmin ? t('pages.classes.view_students') : t('pages.classes.enrol');
+  const ageLabel = formatClassAgeRange(t, cls.min_age, cls.max_age);
 
   return (
     <div className="border border-gray-300 rounded-lg p-6 bg-white shadow-sm hover:shadow-md transition-shadow">
@@ -67,6 +69,12 @@ export function ClassCard({ class: cls, currency }: ClassCardProps) {
           <p>
             <span className="font-semibold">{t('pages.classes.level')}:</span>{' '}
             {cls.category_name}
+          </p>
+        )}
+        {ageLabel && (
+          <p>
+            <span className="font-semibold">{t('pages.classes.ages')}:</span>{' '}
+            {ageLabel}
           </p>
         )}
 

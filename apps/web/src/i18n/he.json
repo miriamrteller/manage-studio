@@ -502,6 +502,9 @@
       "view_students": "צפה בתלמידים",
       "time": "שעה",
       "ages": "גילאים",
+      "ages_range": "{{min}}–{{max}}",
+      "ages_min_only": "{{min}}+",
+      "ages_max_only": "עד גיל {{max}}",
       "level": "רמה",
       "capacity": "קיבולת"
     },
@@ -516,6 +519,8 @@
       "guardian_summary": "הורה: {{name}}",
       "enrolled_in": "רשום/ה ב: {{classes}}",
       "ineligible_age": "לא מתאים/ה לטווח הגילאים של השיעור שנבחר",
+      "selected_class_age_mismatch": "גיל התלמיד/ה בתחילת העונה יהיה {{age}}. השיעור שנבחר מיועד לגילאים {{classAges}}.",
+      "selected_class_age_ineligible_hint": "חזרו ובחרו שיעור אחר, או צרו קשר עם הסטודיו.",
       "ineligible_account": "לא שייך/ת למשפחה שנבחרה",
       "admin_select_desc": "חפש/י תלמיד/ה או משפחה קיימים, או הוסף/י ילד/ה חדש/ה.",
       "admin_search_label": "חיפוש תלמידים או משפחות",

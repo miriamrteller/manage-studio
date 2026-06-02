@@ -6,6 +6,10 @@ import { GuestExistingAccountPrompt } from './GuestExistingAccountPrompt';
 import { useGuestEmailRegistrationCheck } from '../hooks/useGuestEmailRegistrationCheck';
 import { isExistingEmailError } from '../intakeService';
 import { filterStudentCandidates, studentAgeLabel } from '../lib/filterStudentCandidates';
+import {
+  SelectedClassAgeAlert,
+  useSelectedClassAgeValidation,
+} from '../lib/selectedClassAgeValidation';
 import type { PersonSearchResult } from '@/features/people/types';
 import {
   filterEnrolmentPersonSearchResults,
@@ -176,6 +180,9 @@ export function StepSelectStudent({
     [students, constraints, guardianPersonId],
   );
 
+  const studentDobAgeCheck = useSelectedClassAgeValidation(constraints, studentDob);
+  const adultDobAgeCheck = useSelectedClassAgeValidation(constraints, adultDob);
+
   const ineligibleIds = useMemo(
     () => new Set(ineligible.map((item) => item.person.id)),
     [ineligible],
@@ -274,6 +281,7 @@ export function StepSelectStudent({
           setError(null);
           setForceExistingEmailPrompt(false);
           if (showGuardianExistingPrompt) return;
+          if (studentDobAgeCheck.blocked) return;
           setIsSubmitting(true);
           try {
             const guardianNameForSubmit =
@@ -385,6 +393,7 @@ export function StepSelectStudent({
           <legend className="text-sm font-semibold px-1">{t('pages.enrolment.student_section')}</legend>
           <input type="text" required className="form-input w-full" value={studentName} onChange={(e) => setStudentName(e.target.value)} placeholder={t('form.person.name')} />
           <input type="date" required className="form-input w-full" value={studentDob} onChange={(e) => setStudentDob(e.target.value)} />
+          <SelectedClassAgeAlert constraints={constraints} dateOfBirth={studentDob} />
         </fieldset>
         {error && <p className="text-sm text-red-600">{error}</p>}
         <div className="flex gap-2">
@@ -405,7 +414,7 @@ export function StepSelectStudent({
             type="submit"
             variant="primary"
             className="flex-1"
-            disabled={isSubmitting || showGuardianExistingPrompt || guardianEmailCheck.isChecking}
+            disabled={isSubmitting || showGuardianExistingPrompt || guardianEmailCheck.isChecking || studentDobAgeCheck.blocked}
           >
             {isSubmitting ? t('common.loading') : t('common.next')}
           </Button>
@@ -423,6 +432,7 @@ export function StepSelectStudent({
           setError(null);
           setForceExistingEmailPrompt(false);
           if (showAdultExistingPrompt) return;
+          if (adultDobAgeCheck.blocked) return;
           setIsSubmitting(true);
           try {
             await onCreateAdult({
@@ -486,6 +496,7 @@ export function StepSelectStudent({
             onChange={(e) => setAdultDob(e.target.value)}
             placeholder={t('form.person.date_of_birth')}
           />
+          <SelectedClassAgeAlert constraints={constraints} dateOfBirth={adultDob} />
         </fieldset>
         {error && <p className="text-sm text-red-600">{error}</p>}
         <div className="flex gap-2">
@@ -503,7 +514,7 @@ export function StepSelectStudent({
             type="submit"
             variant="primary"
             className="flex-1"
-            disabled={isSubmitting || showAdultExistingPrompt || adultEmailCheck.isChecking}
+            disabled={isSubmitting || showAdultExistingPrompt || adultEmailCheck.isChecking || adultDobAgeCheck.blocked}
           >
             {isSubmitting ? t('common.loading') : t('common.next')}
           </Button>
@@ -519,6 +530,7 @@ export function StepSelectStudent({
         onSubmit={async (e) => {
           e.preventDefault();
           setError(null);
+          if (studentDobAgeCheck.blocked) return;
           setIsSubmitting(true);
           try {
             await onCreateMinor({ student_name: studentName, student_date_of_birth: studentDob });
@@ -542,13 +554,14 @@ export function StepSelectStudent({
           <legend className="text-sm font-semibold px-1">{t('pages.enrolment.student_section')}</legend>
           <input type="text" required className="form-input w-full" value={studentName} onChange={(e) => setStudentName(e.target.value)} />
           <input type="date" required className="form-input w-full" value={studentDob} onChange={(e) => setStudentDob(e.target.value)} />
+          <SelectedClassAgeAlert constraints={constraints} dateOfBirth={studentDob} />
         </fieldset>
         {error && <p className="text-sm text-red-600">{error}</p>}
         <div className="flex gap-2">
           <Button type="button" variant="outline" className="flex-1" onClick={() => setSubMode('choose')}>
             {t('common.back')}
           </Button>
-          <Button type="submit" variant="primary" className="flex-1" disabled={isSubmitting}>
+          <Button type="submit" variant="primary" className="flex-1" disabled={isSubmitting || studentDobAgeCheck.blocked}>
             {isSubmitting ? t('common.loading') : t('common.next')}
           </Button>
         </div>

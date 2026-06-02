@@ -21,6 +21,7 @@ import { EnrolmentIntakeService } from '../intakeService';
 import { useClasses } from '@/features/classes/hooks/useClasses';
 import { useRequirements } from '@/features/classes/requirements/hooks/useRequirements';
 import { filterClassesByAge, getRequirementInfoNotes, ageAt, buildSeasonStartById } from '../lib/check-requirements';
+import { getSelectedClassAgeError } from '../lib/selectedClassAgeValidation';
 import { useLevels } from '@/features/levels/hooks/useLevels';
 import { useTerms } from '@/features/terms/hooks/useTerms';
 import { parseLocalDate } from '@/lib/personAge';
@@ -107,6 +108,7 @@ export function EnrolmentStepper({
 
   // Person DOB stored separately — not part of the Enrolment record
   const [personDateOfBirth, setPersonDateOfBirth] = useState<string | null>(null);
+  const [personAgeError, setPersonAgeError] = useState<string | null>(null);
   // Human-readable class name for the confirmation screen
   const [selectedClassName, setSelectedClassName] = useState('');
 
@@ -201,6 +203,18 @@ export function EnrolmentStepper({
   };
 
   const handlePersonNext = (newData?: Partial<Engagement>, dob?: string | null) => {
+    if (classPreselected && dob) {
+      const ageError = getSelectedClassAgeError(
+        enrolmentContext.constraints,
+        dob,
+        t,
+      );
+      if (ageError) {
+        setPersonAgeError(ageError);
+        return;
+      }
+    }
+    setPersonAgeError(null);
     if (newData) setEnrolmentData(prev => ({ ...prev, ...newData }));
     setPersonDateOfBirth(dob ?? null);
     goToNextStep();
@@ -278,6 +292,14 @@ export function EnrolmentStepper({
     if (!tenant || !enrolmentData.person_id || !enrolmentData.offering_id || !enrolmentData.season_id) {
       return;
     }
+    if (
+      classPreselected &&
+      personDateOfBirth &&
+      getSelectedClassAgeError(enrolmentContext.constraints, personDateOfBirth, t)
+    ) {
+      setCheckoutError(t('pages.enrolment.ineligible_age'));
+      return;
+    }
 
     checkoutPrepareStartedRef.current = true;
 
@@ -333,6 +355,9 @@ export function EnrolmentStepper({
     createEnrolment,
     user,
     enrolmentContext.mode,
+    classPreselected,
+    enrolmentContext.constraints,
+    personDateOfBirth,
     t,
   ]);
 
@@ -416,7 +441,16 @@ export function EnrolmentStepper({
               </p>
             )}
             {!enrolmentContext.isLoading && !enrolmentContext.canSkipPersonStep && (
-              <StepSelectStudent
+              <>
+                {personAgeError && (
+                  <div
+                    className="mb-4 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800"
+                    role="alert"
+                  >
+                    {personAgeError}
+                  </div>
+                )}
+                <StepSelectStudent
                 mode={enrolmentContext.mode}
                 isAdultIntake={enrolmentContext.isAdultIntake}
                 constraints={enrolmentContext.constraints}
@@ -524,6 +558,7 @@ export function EnrolmentStepper({
                   enrolmentContext.mode === 'guest' ? handleGuestSignIn : undefined
                 }
               />
+              </>
             )}
           </>
         )}

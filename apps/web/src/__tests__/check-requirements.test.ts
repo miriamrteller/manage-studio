@@ -8,6 +8,8 @@ import {
   formatLevelWithAge,
   isAgeEligible,
   anyClassHasAgeBand,
+  isPersonEligibleForSelectedClass,
+  personAgeAtSeasonStart,
 } from '@/features/enrolment/lib/check-requirements';
 import { parseLocalDate } from '@/lib/personAge';
 
@@ -107,6 +109,26 @@ describe('check-requirements', () => {
         date_of_birth: '2020-01-01',
       });
       expect(ageFilteringActive).toBe(false);
+    });
+  });
+
+  describe('isPersonEligibleForSelectedClass', () => {
+    const mini = { min_age: 3, max_age: 4 };
+
+    it('returns null when validation inputs are incomplete', () => {
+      expect(isPersonEligibleForSelectedClass(null, mini, SEASON_START)).toBeNull();
+      expect(isPersonEligibleForSelectedClass('2022-05-01', null, SEASON_START)).toBeNull();
+      expect(isPersonEligibleForSelectedClass('2022-05-01', mini, null)).toBeNull();
+    });
+
+    it('validates against season start for a pre-selected class', () => {
+      expect(
+        isPersonEligibleForSelectedClass('2022-05-02', mini, SEASON_START),
+      ).toBe(true);
+      expect(
+        isPersonEligibleForSelectedClass('2021-04-01', mini, SEASON_START),
+      ).toBe(false);
+      expect(personAgeAtSeasonStart('2022-05-02', SEASON_START)).toBe(3);
     });
   });
 

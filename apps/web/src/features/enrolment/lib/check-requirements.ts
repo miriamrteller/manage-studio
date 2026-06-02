@@ -134,3 +134,32 @@ export function coerceAge(value: unknown): number | null {
   const n = Number(value);
   return Number.isFinite(n) ? n : null;
 }
+
+export function classAgeBandConfigured(ageBand?: ClassAgeContext | null): boolean {
+  return ageBand != null && (ageBand.min_age != null || ageBand.max_age != null);
+}
+
+export function personAgeAtSeasonStart(
+  dateOfBirth: string,
+  seasonStartDate: string,
+): number | null {
+  const age = ageAt(dateOfBirth, parseLocalDate(seasonStartDate));
+  return Number.isNaN(age) ? null : age;
+}
+
+/**
+ * Returns null when age cannot be validated yet (missing DOB, age band, or season start).
+ * Returns true/false when validation is possible.
+ */
+export function isPersonEligibleForSelectedClass(
+  dateOfBirth: string | null | undefined,
+  ageBand: ClassAgeContext | null | undefined,
+  seasonStartDate: string | null | undefined,
+): boolean | null {
+  if (!dateOfBirth || !classAgeBandConfigured(ageBand) || !seasonStartDate) {
+    return null;
+  }
+  return isAgeEligible(ageBand!, { date_of_birth: dateOfBirth }, {
+    referenceDate: seasonStartDate,
+  });
+}
