@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import { handleOptions, jsonResponse } from "../_shared/cors.ts";
+import { createServiceClient, requireAuthUser } from "../_shared/supabase.ts";
 import {
   isSupportedEmailTemplate,
   sendRenderedEmail,
@@ -71,7 +72,37 @@ serve(async (req: Request) => {
       return jsonResponse({ error: "Method not allowed" }, 405);
     }
 
+    const auth = await requireAuthUser(req);
+    if ("error" in auth) {
+      return jsonResponse({ error: auth.error }, auth.status);
+    }
+
     const payload: NotificationPayload = await req.json();
+
+    const service = createServiceClient();
+    const { data: profile, error: profileError } = await service
+      .from("user_profiles")
+      .select("tenant_id, role")
+      .eq("id", auth.user.id)
+      .single();
+
+    if (profileError || !profile?.tenant_id) {
+      return jsonResponse({ error: "User profile not found" }, 403);
+    }
+
+    const roles = (profile.role ?? []) as string[];
+    const canSend =
+      roles.includes("tenant_admin") ||
+      roles.includes("staff") ||
+      roles.includes("super_admin");
+
+    if (!canSend) {
+      return jsonResponse({ error: "Not authorized to send notifications" }, 403);
+    }
+
+    if (payload.tenantId !== profile.tenant_id) {
+      return jsonResponse({ error: "Tenant mismatch" }, 403);
+    }
 
     // Validate required fields
     if (
@@ -96,14 +127,12 @@ serve(async (req: Request) => {
       );
     }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const resendApiKey = Deno.env.get("RESEND_API_KEY")!;
     const twilioAccountSid = Deno.env.get("TWILIO_ACCOUNT_SID")!;
     const twilioAuthToken = Deno.env.get("TWILIO_AUTH_TOKEN")!;
     const twilioPhoneNumber = Deno.env.get("TWILIO_PHONE_NUMBER")!;
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabase = service;
 
     let externalMsgId: string | undefined;
     let status: "sent" | "failed" = "sent";
@@ -284,7 +313,7 @@ serve(async (req: Request) => {
  * Returns defaults if tenant not found
  */
 async function getTenantConfig(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SupabaseClient,
   tenantId: string
 ): Promise<TenantConfig> {
   try {
@@ -339,7 +368,7 @@ async function getTenantConfig(
  * Returns null if no overrides exist (fail safe: use code defaults)
  */
 async function getEmailTemplateOverrides(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SupabaseClient,
   tenantId: string,
   templateName: string,
   language: string
@@ -423,7 +452,7 @@ function deepMergeObjects(
  * Helper: Get template SID from tenant_notification_templates
  */
 async function getTemplateSid(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SupabaseClient,
   tenantId: string,
   channel: string,
   templateName: string

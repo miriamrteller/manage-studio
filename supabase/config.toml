@@ -18,7 +18,8 @@ entrypoint = "./functions/send-otp-sms/index.ts"
 
 [functions.send-notification]
 enabled = true
-verify_jwt = true
+# JWT verified in-function so browser preflight gets full CORS headers (apikey, x-client-info).
+verify_jwt = false
 import_map = "./functions/send-notification/deno.json"
 entrypoint = "./functions/send-notification/index.ts"
 
