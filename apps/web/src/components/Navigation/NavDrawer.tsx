@@ -56,6 +56,8 @@ export function NavDrawer() {
     isAuthenticated: Boolean(user),
   });
 
+  const navItems = sections.flatMap((section) => section.items);
+
   const handleNavigate = (path: string) => {
     navigate(path);
     closeOnNavigate();
@@ -148,66 +150,34 @@ export function NavDrawer() {
         </div>
       </div>
 
-      {/* Nav sections */}
+      {/* Nav links */}
       <nav className="flex-1 overflow-y-auto py-2" aria-label={t('nav.menu')}>
-        {sections.map((section) => (
-          <div key={section.sectionKey} className="mb-2">
-            {section.sectionKey !== 'setup' && (
-              <p
-                className="px-4 py-2 text-xs font-semibold uppercase tracking-wide opacity-70"
-                id={`nav-section-${section.sectionKey}`}
-              >
-                {t(section.labelKey)}
-              </p>
-            )}
-            <ul
-              aria-labelledby={
-                section.sectionKey !== 'setup'
-                  ? `nav-section-${section.sectionKey}`
-                  : undefined
-              }
-            >
-              {section.items.map((item) => {
-                if (item.isGroupLabel) {
-                  return (
-                    <li key={item.path}>
-                      <p className="px-4 pt-2 pb-1 text-sm font-medium opacity-90">
-                        {t(item.labelKey)}
-                      </p>
-                    </li>
-                  );
-                }
-
-                const active = isActivePath(item.path);
-                return (
-                  <li key={item.path}>
-                    <button
-                      type="button"
-                      onClick={() => handleNavigate(item.path)}
-                      aria-current={active ? 'page' : undefined}
-                      className={cn(
-                        'w-full text-start px-4 py-2.5 text-sm transition-colors',
-                        'hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-on-primary focus-visible:outline-offset-[-2px]',
-                        item.indent && 'ps-8',
-                        active && 'bg-primary-hover font-medium'
-                      )}
-                    >
-                      {t(item.labelKey)}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        ))}
+        <ul>
+          {navItems.map((item) => {
+            const active = isActivePath(item.path);
+            return (
+              <li key={item.path}>
+                <button
+                  type="button"
+                  onClick={() => handleNavigate(item.path)}
+                  aria-current={active ? 'page' : undefined}
+                  className={cn(
+                    'w-full text-start px-4 py-2.5 text-sm transition-colors',
+                    'hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-on-primary focus-visible:outline-offset-[-2px]',
+                    active && 'bg-primary-hover font-medium'
+                  )}
+                >
+                  {t(item.labelKey)}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
       </nav>
 
       {/* Account footer (authenticated) */}
       {isAuthenticated && user && (
         <div className="shrink-0 border-t border-primary-active px-4 py-3 space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wide opacity-70">
-            {t('nav.section.account')}
-          </p>
           <p className="text-sm opacity-90 truncate" title={user.email}>
             {user.email}
           </p>

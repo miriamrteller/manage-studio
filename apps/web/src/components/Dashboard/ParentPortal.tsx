@@ -1,7 +1,9 @@
 import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { useParentPortal, type EngagementWithOffering } from './useParentPortal';
+import { EditChildModal } from './EditChildModal';
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -56,6 +58,7 @@ export function ParentPortal() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { data, isLoading, error } = useParentPortal();
+  const [editingChildId, setEditingChildId] = useState<string | null>(null);
 
   if (isLoading) {
     return (
@@ -76,6 +79,7 @@ export function ParentPortal() {
   const children = data?.children ?? [];
   const payments = data?.payments ?? [];
   const enrolmentsByPerson = data?.enrolmentsByPerson ?? {};
+  const editingChild = children.find((child) => child.id === editingChildId) ?? null;
 
   return (
     <div className="space-y-8">
@@ -112,14 +116,34 @@ export function ParentPortal() {
                   key={child.id}
                   className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
                 >
-                  <div className="mb-3">
-                    <p className="font-semibold text-gray-900">{child.name}</p>
-                    {child.date_of_birth && (
-                      <p className="text-sm text-gray-500">
-                        {t('form.person.date_of_birth')}:{' '}
-                        {new Date(child.date_of_birth).toLocaleDateString()}
-                      </p>
-                    )}
+                  <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <p className="font-semibold text-gray-900">{child.name}</p>
+                      {child.date_of_birth && (
+                        <p className="text-sm text-gray-500">
+                          {t('form.person.date_of_birth')}:{' '}
+                          {new Date(child.date_of_birth).toLocaleDateString()}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setEditingChildId(child.id)}
+                      >
+                        {t('pages.portal.edit_child')}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          navigate('/enrol', { state: { personId: child.id, from: '/dashboard/portal' } })
+                        }
+                      >
+                        {t('pages.classes.enrol')}
+                      </Button>
+                    </div>
                   </div>
 
                   {enrolments.length === 0 ? (
@@ -137,6 +161,10 @@ export function ParentPortal() {
           </ul>
         )}
       </section>
+
+      {editingChild && (
+        <EditChildModal child={editingChild} onClose={() => setEditingChildId(null)} />
+      )}
 
       <section aria-labelledby="portal-payments-heading">
         <h3 id="portal-payments-heading" className="text-lg font-semibold text-gray-900 mb-4">

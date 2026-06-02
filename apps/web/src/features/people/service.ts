@@ -43,6 +43,8 @@ const PersonInputSchema = z.object({
   gender: z.enum(['male', 'female', 'other']).optional(),
 });
 
+const ParentPersonInputSchema = PersonInputSchema.omit({ status: true });
+
 function normalizePersonPayload(data: z.infer<typeof PersonInputSchema>) {
   const payload = { ...data };
   if (payload.email === '') payload.email = null;
@@ -202,6 +204,21 @@ export class PersonService extends BaseService {
     }, 'PersonService.update');
   }
 
+  /** Parent portal — same fields as admin except status (RLS-enforced). */
+  static async updateForParent(tenant: Tenant, id: string, personData: Partial<Person>) {
+    const validated = normalizePersonPayload(ParentPersonInputSchema.parse(personData));
+
+    return this.withRetry(async () => {
+      const { data, error } = await TenantDB.update('people', tenant, id, validated)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return PersonSchema.parse(data);
+    }, 'PersonService.updateForParent');
+  }
+
   static async delete(tenant: Tenant, id: string) {
     return this.withRetry(async () => {
       const { error } = await TenantDB.delete('people', tenant, id);
@@ -209,5 +226,85 @@ export class PersonService extends BaseService {
 
       await this.logAudit(tenant, 'DELETE', 'people', id);
     }, 'PersonService.delete');
+  }
+
+  /** Admin enrolment search — rich rows for disambiguation. */
+  static async searchForEnrolment(tenant: Tenant, searchQuery: string, limit = 15) {
+    const q = searchQuery.trim();
+    if (!q) return [];
+
+    return this.withRetry(async () => {
+      const { data, error } = await TenantDB.selectFor('people', tenant)
+        .eq('status', 'active')
+        .or(
+          `name.ilike.%${q}%,email.ilike.%${q}%,emergency_contact_name.ilike.%${q}%,emergency_contact_phone.ilike.%${q}%`,
+        )
+        .order('name')
+        .limit(limit);
+
+      if (error) throw error;
+
+      const people = (data ?? []).map((row) => PersonSchema.parse(row));
+      const accountIds = [...new Set(people.map((p) => p.account_id).filter(Boolean))] as string[];
+      const personIds = people.map((p) => p.id);
+
+      const accountsById = new Map<string, { id: string; name: string | null; person_id: string }>();
+      if (accountIds.length > 0) {
+        const { data: accountRows } = await TenantDB.selectFor('accounts', tenant).in('id', accountIds);
+        for (const row of accountRows ?? []) {
+          accountsById.set(row.id as string, row as { id: string; name: string | null; person_id: string });
+        }
+      }
+
+      const guardianIds = [...new Set([...accountsById.values()].map((a) => a.person_id))];
+      const guardiansById = new Map<string, { name: string; email: string | null; emergency_contact_phone: string | null }>();
+      if (guardianIds.length > 0) {
+        const { data: guardianRows } = await TenantDB.selectFor('people', tenant).in('id', guardianIds);
+        for (const row of guardianRows ?? []) {
+          guardiansById.set(row.id as string, {
+            name: row.name as string,
+            email: (row.email as string | null) ?? null,
+            emergency_contact_phone: (row.emergency_contact_phone as string | null) ?? null,
+          });
+        }
+      }
+
+      const classNamesByPerson = new Map<string, string[]>();
+      if (personIds.length > 0) {
+        const { data: engagementRows } = await TenantDB.selectFor('engagements', tenant)
+          .in('person_id', personIds)
+          .in('status', ['active', 'pending_payment', 'admin_review']);
+        const offeringIds = [...new Set((engagementRows ?? []).map((e) => e.offering_id as string))];
+        const offeringNames = new Map<string, string>();
+        if (offeringIds.length > 0) {
+          const { data: offeringRows } = await TenantDB.selectFor('offerings', tenant).in('id', offeringIds);
+          for (const row of offeringRows ?? []) {
+            offeringNames.set(row.id as string, row.name as string);
+          }
+        }
+        for (const row of engagementRows ?? []) {
+          const pid = row.person_id as string;
+          const names = classNamesByPerson.get(pid) ?? [];
+          const className = offeringNames.get(row.offering_id as string);
+          if (className) names.push(className);
+          classNamesByPerson.set(pid, names);
+        }
+      }
+
+      return people.map((person) => {
+        const account = person.account_id ? accountsById.get(person.account_id) : undefined;
+        const guardian = account ? guardiansById.get(account.person_id) : undefined;
+        return {
+          person,
+          accountName: account?.name ?? null,
+          guardianName: guardian?.name ?? null,
+          guardianEmail: guardian?.email ?? null,
+          guardianPhone: guardian?.emergency_contact_phone ?? null,
+          emergencyContactName: person.emergency_contact_name ?? null,
+          emergencyContactPhone: person.emergency_contact_phone ?? null,
+          activeClassNames: classNamesByPerson.get(person.id) ?? [],
+        };
+      });
+    }, 'PersonService.searchForEnrolment');
   }
 }

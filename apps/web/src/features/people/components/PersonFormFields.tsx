@@ -7,6 +7,8 @@ interface PersonFormFieldsProps {
   register: UseFormRegister<Partial<Person>>;
   errors: FieldErrors<Partial<Person>>;
   person?: Partial<Person>;
+  /** Hides admin-only fields such as status. */
+  variant?: 'default' | 'parent';
 }
 
 /**
@@ -16,7 +18,7 @@ interface PersonFormFieldsProps {
  * - Keep under 150 lines per .instructions.md
  */
 
-export const PersonFormFields = ({ register, errors, person }: PersonFormFieldsProps) => {
+export const PersonFormFields = ({ register, errors, person, variant = 'default' }: PersonFormFieldsProps) => {
   const { t } = useTranslation();
 
   return (
@@ -96,19 +98,21 @@ export const PersonFormFields = ({ register, errors, person }: PersonFormFieldsP
         {...register('allergies')}
       />
 
-      {/* Status field — enum dropdown */}
-      <FormSelect
-        htmlFor="status"
-        label={t('form.person.status')}
-        error={errors.status?.message}
-        required
-        {...register('status')}
-      >
-        <option value="">-- {t('common.select')} --</option>
-        <option value="active">{t('form.person.status_active')}</option>
-        <option value="inactive">{t('form.person.status_inactive')}</option>
-        <option value="withdrawn">{t('form.person.status_withdrawn')}</option>
-      </FormSelect>
+      {/* Status field — admin only */}
+      {variant === 'default' && (
+        <FormSelect
+          htmlFor="status"
+          label={t('form.person.status')}
+          error={errors.status?.message}
+          required
+          {...register('status')}
+        >
+          <option value="">-- {t('common.select')} --</option>
+          <option value="active">{t('form.person.status_active')}</option>
+          <option value="inactive">{t('form.person.status_inactive')}</option>
+          <option value="withdrawn">{t('form.person.status_withdrawn')}</option>
+        </FormSelect>
+      )}
 
       {/* Display computed field (is_minor) if person exists — read-only */}
       {person?.is_minor !== undefined && (

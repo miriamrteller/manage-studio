@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useCurrentUser } from '../hooks/useCurrentUser';
+import { hasParentRole } from '@/lib/parentRoles';
 
 /**
  * Loading state component used by all route guards
@@ -58,7 +59,7 @@ export function TeacherRoute({ children }: { children: ReactNode }) {
 }
 
 /**
- * ParentRoute: requires role to include 'parent' or 'guardian'
+ * ParentRoute: requires a parent portal role (parent, guardian, or account_holder)
  */
 export function ParentRoute({ children }: { children: ReactNode }) {
   const { user, isLoading } = useCurrentUser();
@@ -68,11 +69,7 @@ export function ParentRoute({ children }: { children: ReactNode }) {
     return <LoadingState />;
   }
 
-  const hasParentRole = user?.role.some((r) =>
-    ['parent', 'guardian'].includes(r)
-  );
-
-  if (!user || !hasParentRole) {
+  if (!user || !hasParentRole(user.role)) {
     return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   }
 

@@ -75,13 +75,9 @@ export const FamiliesList = () => {
                   currentOrder={sortOrder}
                   onSort={handleSort}
                 />
-                <SortableHeader
-                  label={t('form.family.contact_person_name')}
-                  sortKey="contact_person_name"
-                  currentField={sortField}
-                  currentOrder={sortOrder}
-                  onSort={handleSort}
-                />
+                <th className="px-4 py-3 text-start font-medium">
+                  {t('form.family.contact_person_name')}
+                </th>
                 <th className="px-4 py-3 text-start font-medium">
                   {t('form.family.contact_email')}
                 </th>

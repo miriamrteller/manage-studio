@@ -5,19 +5,12 @@ import { formatCurrency, formatTime } from '@shared/format';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import type { PublicOffering } from '@/schemas';
 
-function formatAgeRange(minAge?: number | null, maxAge?: number | null): string | null {
-  if (minAge != null && maxAge != null) return `Ages ${minAge}–${maxAge}`;
-  if (minAge != null) return `Ages ${minAge}+`;
-  if (maxAge != null) return `Up to age ${maxAge}`;
-  return null;
-}
-
 /**
  * ClassCard: Presentational component for individual class display
  * - Shows class info (time, capacity, price)
  * - Enrol button delegates to navigation
  * - No state management or hooks (except useTranslation and useNavigate for UI)
- * 
+ *
  * WCAG: Proper button labels with class name
  */
 
@@ -50,8 +43,6 @@ export function ClassCard({ class: cls, currency }: ClassCardProps) {
     navigate('/login', { state: intent });
   };
 
-  const ageRange = formatAgeRange(cls.min_age, cls.max_age);
-
   return (
     <div className="border border-gray-300 rounded-lg p-6 bg-white shadow-sm hover:shadow-md transition-shadow">
       {/* h2 because ClassCard is a direct subsection of the main page h1 */}
@@ -68,12 +59,7 @@ export function ClassCard({ class: cls, currency }: ClassCardProps) {
             {cls.category_name}
           </p>
         )}
-        {ageRange && (
-          <p>
-            <span className="font-semibold">{t('pages.classes.ages')}:</span>{' '}
-            {ageRange}
-          </p>
-        )}
+
         <p className="text-lg font-semibold text-primary">
           {formatCurrency(cls.price_minor, currency, i18n.language)}
         </p>

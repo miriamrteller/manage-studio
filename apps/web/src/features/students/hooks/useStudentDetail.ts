@@ -11,7 +11,16 @@ import {
   OfferingSchema,
   type BillingAccount,
   type Offering,
+  type Person,
+  type AccountMember,
 } from '@shared/schemas';
+
+export interface AccountMemberWithName {
+  id: string;
+  role: AccountMember['role'];
+  person_id: string;
+  name: string;
+}
 
 export interface EngagementWithDetails {
   id: string;
@@ -68,6 +77,43 @@ export function useStudentDetail(personId: string | null) {
       return (data || []).map((m: unknown) => AccountMemberSchema.parse(m));
     },
     enabled: isReady && !!personQuery.data?.account_id,
+  });
+
+  const guardianQuery = useQuery({
+    queryKey: ['student-detail-guardian', tenant?.id, familyQuery.data?.person_id],
+    queryFn: async () => {
+      if (!tenant || !familyQuery.data?.person_id) return null;
+      const { data, error } = await TenantDB.selectFor('people', tenant)
+        .eq('id', familyQuery.data.person_id)
+        .single();
+      if (error) throw error;
+      return PersonSchema.parse(data);
+    },
+    enabled: isReady && !!familyQuery.data?.person_id,
+  });
+
+  const memberPeopleQuery = useQuery({
+    queryKey: [
+      'student-detail-member-people',
+      tenant?.id,
+      (membersQuery.data ?? []).map((m) => m.person_id).join(','),
+    ],
+    queryFn: async () => {
+      const members = membersQuery.data ?? [];
+      if (!tenant || members.length === 0) return new Map<string, Person>();
+
+      const ids = [...new Set(members.map((m) => m.person_id))];
+      const { data, error } = await TenantDB.selectFor('people', tenant).in('id', ids);
+      if (error) throw error;
+
+      return new Map(
+        (data ?? []).map((row) => {
+          const person = PersonSchema.parse(row);
+          return [person.id, person] as const;
+        }),
+      );
+    },
+    enabled: isReady && (membersQuery.data?.length ?? 0) > 0,
   });
 
   const contactPrefsQuery = useQuery({
@@ -160,10 +206,18 @@ export function useStudentDetail(personId: string | null) {
     enrolmentsQuery.isLoading ||
     contactPrefsQuery.isLoading;
 
+  const membersWithNames: AccountMemberWithName[] = (membersQuery.data ?? []).map((member) => ({
+    id: member.id,
+    role: member.role,
+    person_id: member.person_id,
+    name: memberPeopleQuery.data?.get(member.person_id)?.name ?? '—',
+  }));
+
   return {
     person: personQuery.data,
     family: familyQuery.data ?? null,
-    members: membersQuery.data ?? [],
+    guardian: guardianQuery.data ?? null,
+    members: membersWithNames,
     contactPrefs: contactPrefsQuery.data ?? null,
     enrolments: enrolmentsWithDetails,
     isLoading,

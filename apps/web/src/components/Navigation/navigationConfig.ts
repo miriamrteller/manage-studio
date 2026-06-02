@@ -1,3 +1,5 @@
+import { PARENT_ROLE_NAMES } from '@/lib/parentRoles';
+
 /**
  * Navigation Configuration
  *
@@ -5,7 +7,7 @@
  *
  * Role values come from useCurrentUser().user.role (array of strings):
  * - 'tenant_admin': Full system access
- * - 'parent' or 'guardian': Parent/guardian portal access
+ * - 'parent', 'guardian', or 'account_holder': Parent portal access
  * - 'student' or 'adult_student': Student dashboard access
  * - 'teacher': (reserved for future use)
  */
@@ -61,7 +63,6 @@ export const navigationConfig: NavItem[] = [
     labelKey: 'pages.admin.setup.title',
     requiredRoles: ['tenant_admin'],
     sectionKey: 'setup',
-    isGroupLabel: true,
   },
   {
     path: '/admin/setup/billing',
@@ -93,8 +94,8 @@ export const navigationConfig: NavItem[] = [
   },
   {
     path: '/dashboard/portal',
-    labelKey: 'nav.portal',
-    requiredRoles: ['parent', 'guardian'],
+    labelKey: 'nav.my_account',
+    requiredRoles: [...PARENT_ROLE_NAMES],
     sectionKey: 'portal',
   },
   {

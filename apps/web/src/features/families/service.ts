@@ -1,25 +1,28 @@
 import { BaseService } from '@/services/base.service';
 import { TenantDB } from '@/lib/db';
 import type { SortOrder } from '@/lib/list-query';
-import { AccountSchema, AccountMemberSchema, type Account, type AccountMember } from '@shared/schemas';
+import { AccountSchema, AccountMemberSchema, PersonSchema, type Account, type AccountMember, type Person } from '@shared/schemas';
 import { z } from 'zod';
 import type { Tenant } from '@shared/schemas';
+import {
+  attachGuardianContact,
+  type AccountWithContact,
+} from './lib/accountContact';
 
-// Input schema for family creation — used only by EnrolmentOnboardingService.
+export type { AccountWithContact, GuardianContactFields } from './lib/accountContact';
+
+// Input schema for account creation — used only by EnrolmentOnboardingService.
 export const FamilyInputSchema = z.object({
   name: z.string().min(1, 'Family name required').optional(),
-  contact_person_name: z.string().optional(),
-  contact_email: z.string().email().optional(),
-  contact_phone: z.string().optional(),
+  person_id: z.string().uuid(),
 });
 
-// Input schema for family member creation.
+// Input schema for account member creation.
 export const AccountMemberInputSchema = z.object({
   account_id: z.string().uuid(),
-  name: z.string().min(1, 'Name required'),
-  email: z.string().email().optional(),
-  phone: z.string().optional(),
+  person_id: z.string().uuid(),
   role: z.enum(['account_holder', 'member', 'sibling', 'adult_student']),
+  user_profile_id: z.string().uuid().nullable().optional(),
 });
 
 export type AccountContactUpdate = {
@@ -28,9 +31,27 @@ export type AccountContactUpdate = {
   contact_phone?: string;
 };
 
-const ACCOUNT_HOLDER_ROLES = new Set(['account_holder', 'member']);
+export type AccountSortField = 'name' | 'created_at';
 
-export type AccountSortField = 'name' | 'contact_person_name' | 'created_at';
+export type AccountMemberWithPerson = AccountMember & {
+  name: string;
+  email: string | null;
+  phone: string | null;
+};
+
+async function loadGuardiansById(tenant: Tenant, personIds: string[]): Promise<Map<string, Person>> {
+  const guardiansById = new Map<string, Person>();
+  if (personIds.length === 0) return guardiansById;
+
+  const { data, error } = await TenantDB.selectFor('people', tenant).in('id', personIds);
+  if (error) throw error;
+
+  for (const row of data ?? []) {
+    const person = PersonSchema.parse(row);
+    guardiansById.set(person.id, person);
+  }
+  return guardiansById;
+}
 
 export const DEFAULT_FAMILY_SORT: { field: AccountSortField; order: SortOrder } = {
   field: 'created_at',
@@ -80,17 +101,23 @@ export class FamilyService extends BaseService {
 
       if (searchQuery.trim()) {
         const q = `%${searchQuery.trim()}%`;
-        query = query.or(
-          `name.ilike.${q},contact_person_name.ilike.${q},contact_email.ilike.${q}`
-        );
+        query = query.ilike('name', q);
       }
 
       const { data, error, count } = await query;
 
       if (error) throw error;
 
+      const accounts = (data || []).map((f) => AccountSchema.parse(f));
+      const guardiansById = await loadGuardiansById(
+        tenant,
+        [...new Set(accounts.map((account) => account.person_id))],
+      );
+
       return {
-        families: (data || []).map(f => AccountSchema.parse(f)),
+        families: accounts.map((account) =>
+          attachGuardianContact(account, guardiansById.get(account.person_id)),
+        ),
         total: count || 0,
         page,
         pageSize,
@@ -98,7 +125,7 @@ export class FamilyService extends BaseService {
     }, 'FamilyService.list');
   }
 
-  static async get(tenant: Tenant, id: string) {
+  static async get(tenant: Tenant, id: string): Promise<AccountWithContact> {
     return this.withRetry(async () => {
       const { data, error } = await TenantDB.selectFor('accounts', tenant)
         .eq('id', id)
@@ -107,7 +134,9 @@ export class FamilyService extends BaseService {
       if (error) throw error;
       if (!data) throw new Error('Family not found');
 
-      return AccountSchema.parse(data);
+      const account = AccountSchema.parse(data);
+      const guardiansById = await loadGuardiansById(tenant, [account.person_id]);
+      return attachGuardianContact(account, guardiansById.get(account.person_id));
     }, 'FamilyService.get');
   }
 
@@ -123,13 +152,28 @@ export class FamilyService extends BaseService {
   }
 
   /** Get all family_members for a family (for detail view). */
-  static async getMembers(tenant: Tenant, familyId: string): Promise<AccountMember[]> {
+  static async getMembers(tenant: Tenant, familyId: string): Promise<AccountMemberWithPerson[]> {
     return this.withRetry(async () => {
       const { data, error } = await TenantDB.selectFor('account_members', tenant)
         .eq('account_id', familyId);
 
       if (error) throw error;
-      return (data || []).map(m => AccountMemberSchema.parse(m));
+
+      const members = (data || []).map((m) => AccountMemberSchema.parse(m));
+      const peopleById = await loadGuardiansById(
+        tenant,
+        [...new Set(members.map((member) => member.person_id))],
+      );
+
+      return members.map((member) => {
+        const person = peopleById.get(member.person_id);
+        return {
+          ...member,
+          name: person?.name ?? '—',
+          email: person?.email ?? null,
+          phone: person?.emergency_contact_phone ?? null,
+        };
+      });
     }, 'FamilyService.getMembers');
   }
 
@@ -157,37 +201,31 @@ export class FamilyService extends BaseService {
     tenant: Tenant,
     familyId: string,
     contact: AccountContactUpdate,
-  ): Promise<{ family: Account; members: AccountMember[] }> {
-    const family = await this.update(tenant, familyId, contact);
+  ): Promise<{ family: AccountWithContact; members: AccountMemberWithPerson[] }> {
+    const family = await this.get(tenant, familyId);
 
-    const memberPatch: { name?: string; email?: string; phone?: string } = {};
+    const guardianPatch: Record<string, string | null> = {};
     if (contact.contact_person_name !== undefined) {
-      memberPatch.name = contact.contact_person_name;
+      guardianPatch.name = contact.contact_person_name;
     }
     if (contact.contact_email !== undefined) {
-      memberPatch.email = contact.contact_email;
+      guardianPatch.email = contact.contact_email || null;
     }
     if (contact.contact_phone !== undefined) {
-      memberPatch.phone = contact.contact_phone;
+      guardianPatch.emergency_contact_phone = contact.contact_phone || null;
     }
 
-    if (Object.keys(memberPatch).length > 0) {
-      const members = await this.getMembers(tenant, familyId);
-      const guardians = members.filter((m) => ACCOUNT_HOLDER_ROLES.has(m.role));
-
-      if (guardians.length > 0) {
-        await this.withRetry(async () => {
-          for (const member of guardians) {
-            const { error } = await TenantDB.update('account_members', tenant, member.id, memberPatch);
-            if (error) throw error;
-            await this.logAudit(tenant, 'UPDATE', 'account_members', member.id);
-          }
-        }, 'FamilyService.updateContactWithGuardians');
-      }
+    if (Object.keys(guardianPatch).length > 0) {
+      await this.withRetry(async () => {
+        const { error } = await TenantDB.update('people', tenant, family.person_id, guardianPatch);
+        if (error) throw error;
+        await this.logAudit(tenant, 'UPDATE', 'people', family.person_id);
+      }, 'FamilyService.updateContactWithGuardians');
     }
 
     const members = await this.getMembers(tenant, familyId);
-    return { family, members };
+    const updatedFamily = await this.get(tenant, familyId);
+    return { family: updatedFamily, members };
   }
 
   // -------------------------------------------------------------------------

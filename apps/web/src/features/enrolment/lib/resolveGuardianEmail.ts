@@ -1,13 +1,18 @@
-const GUARDIAN_ROLES = new Set(['parent', 'guardian']);
+const GUARDIAN_ROLES = new Set(['parent', 'guardian', 'account_holder']);
 
 interface GuardianEmailSource {
   person?: { email?: string | null };
+  guardian?: { email?: string | null };
   family?: { contact_email?: string | null };
   members?: Array<{ role: string; email?: string | null }>;
 }
 
-/** Prefer family contact email, then guardian member, then student email. */
+/** Prefer guardian person email, then legacy family contact, then member role, then student. */
 export function resolveGuardianEmail(source: GuardianEmailSource): string | null {
+  if (source.guardian?.email?.trim()) {
+    return source.guardian.email.trim();
+  }
+
   if (source.family?.contact_email?.trim()) {
     return source.family.contact_email.trim();
   }

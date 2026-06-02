@@ -35,7 +35,7 @@ export function StudentSlideOver({ personId, onClose }: StudentSlideOverProps) {
   const tenant = useTenant();
   const queryClient = useQueryClient();
 
-  const { person, family, members, contactPrefs, enrolments, isLoading, error } =
+  const { person, family, guardian, members, contactPrefs, enrolments, isLoading, error } =
     useStudentDetail(personId);
 
   const [isEditingPerson, setIsEditingPerson] = useState(false);
@@ -48,9 +48,9 @@ export function StudentSlideOver({ personId, onClose }: StudentSlideOverProps) {
   const [enrolModalOpen, setEnrolModalOpen] = useState(false);
 
   const startEditContact = () => {
-    setContactName(family?.contact_person_name ?? '');
-    setContactEmail(family?.contact_email ?? '');
-    setContactPhone(family?.contact_phone ?? '');
+    setContactName(guardian?.name ?? '');
+    setContactEmail(guardian?.email ?? '');
+    setContactPhone(guardian?.emergency_contact_phone ?? '');
     setContactSaveError(null);
     setIsEditingContact(true);
   };
@@ -67,6 +67,9 @@ export function StudentSlideOver({ personId, onClose }: StudentSlideOverProps) {
           contact_phone: contactPhone || undefined,
         });
       await refreshFamilyCaches(queryClient, tenant.id, updatedFamily, updatedMembers);
+      await queryClient.invalidateQueries({
+        queryKey: ['student-detail-guardian', tenant.id],
+      });
       setIsEditingContact(false);
     } catch (err) {
       setContactSaveError(err instanceof Error ? err.message : t('common.error'));
@@ -258,15 +261,15 @@ export function StudentSlideOver({ personId, onClose }: StudentSlideOverProps) {
                   <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
                     <div>
                       <dt className="text-gray-500">{t('form.family.contact_person_name')}</dt>
-                      <dd>{family.contact_person_name ?? '—'}</dd>
+                      <dd>{guardian?.name ?? '—'}</dd>
                     </div>
                     <div>
                       <dt className="text-gray-500">{t('form.family.contact_phone')}</dt>
-                      <dd>{family.contact_phone ?? '—'}</dd>
+                      <dd>{guardian?.emergency_contact_phone ?? '—'}</dd>
                     </div>
                     <div className="col-span-2">
                       <dt className="text-gray-500">{t('form.family.contact_email')}</dt>
-                      <dd>{family.contact_email ?? '—'}</dd>
+                      <dd>{guardian?.email ?? '—'}</dd>
                     </div>
                   </dl>
                 )}
@@ -423,8 +426,8 @@ export function StudentSlideOver({ personId, onClose }: StudentSlideOverProps) {
           personName={person.name}
           personDateOfBirth={person.date_of_birth}
           familyId={person.account_id}
-          guardianEmail={resolveGuardianEmail({ person, family: family ?? undefined, members })}
-          guardianName={family?.contact_person_name ?? null}
+          guardianEmail={resolveGuardianEmail({ person, guardian: guardian ?? undefined })}
+          guardianName={guardian?.name ?? null}
           onClose={() => setEnrolModalOpen(false)}
           onSuccess={() => {
             void queryClient.invalidateQueries({

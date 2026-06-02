@@ -6,26 +6,18 @@ import { useState } from 'react';
 import { FormInput } from '../../../components/ui/form';
 import { Button } from '../../../components/ui/button';
 
-// Schema source: SPEC.md Migration 002
-// Columns: id, tenant_id, name, contact_person_name, contact_email, contact_phone, created_at
-// Notes:
-// - System fields (id, tenant_id) are NOT in form, added at submission
-// - contact_person_name is a STRING field (not a reference to Person)
-// - contact_phone has STRICT Israeli format: 050-059 prefix + 7 digits
-// - date format for created_at is system-generated
-
 interface FamilyFormProps {
   family?: Partial<Account>;
   onSubmit: (data: Partial<Account>) => Promise<void>;
   isLoading?: boolean;
 }
 
+/** Edits account metadata only — guardian contact lives on the linked people row. */
 export const FamilyForm = ({ family, onSubmit, isLoading }: FamilyFormProps) => {
   const { t } = useTranslation();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
-  // Use partial schema to allow editing (some fields can be null/undefined)
   const form = useForm({
     resolver: zodResolver(AccountSchema.partial()),
     defaultValues: family || {},
@@ -38,41 +30,30 @@ export const FamilyForm = ({ family, onSubmit, isLoading }: FamilyFormProps) => 
       setSubmitSuccess(false);
       await onSubmit(data);
       setSubmitSuccess(true);
-      // Reset form after successful submission if creating new
       if (!family) {
         form.reset();
       }
     } catch (error) {
-      setSubmitError(
-        error instanceof Error ? error.message : t('common.error')
-      );
+      setSubmitError(error instanceof Error ? error.message : t('common.error'));
     }
   };
 
   const isCreating = !family?.id;
 
   return (
-    <form
-      onSubmit={form.handleSubmit(handleSubmit)}
-      className="space-y-4 p-4"
-    >
-      {/* Error message */}
+    <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 p-4">
       {submitError && (
         <div className="alert-error" role="alert">
           {submitError}
         </div>
       )}
 
-      {/* Success message */}
       {submitSuccess && (
         <div className="alert-success" role="status">
-          {isCreating
-            ? t('common.success_created')
-            : t('common.success_updated')}
+          {isCreating ? t('common.success_created') : t('common.success_updated')}
         </div>
       )}
 
-      {/* Family Name field — REQUIRED */}
       <FormInput
         htmlFor="name"
         label={t('form.family.name')}
@@ -82,40 +63,6 @@ export const FamilyForm = ({ family, onSubmit, isLoading }: FamilyFormProps) => 
         {...form.register('name')}
       />
 
-      {/* Contact Person Name field — REQUIRED */}
-      <FormInput
-        htmlFor="contact_person_name"
-        label={t('form.family.contact_person_name')}
-        placeholder={t('form.family.contact_person_name')}
-        error={form.formState.errors.contact_person_name?.message}
-        required
-        {...form.register('contact_person_name')}
-      />
-
-      {/* Contact Email field — REQUIRED */}
-      <FormInput
-        htmlFor="contact_email"
-        label={t('form.family.contact_email')}
-        type="email"
-        placeholder="example@email.com"
-        error={form.formState.errors.contact_email?.message}
-        required
-        {...form.register('contact_email')}
-      />
-
-      {/* Contact Phone field — REQUIRED, STRICT ISRAELI FORMAT */}
-      <FormInput
-        htmlFor="contact_phone"
-        label={t('form.family.contact_phone')}
-        type="tel"
-        placeholder="05012345678"
-        error={form.formState.errors.contact_phone?.message}
-        helperText={t('form.family.invalid_phone')}
-        required
-        {...form.register('contact_phone')}
-      />
-
-      {/* Form buttons */}
       <div className="flex gap-2 pt-4">
         <Button
           type="submit"

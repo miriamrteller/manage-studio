@@ -17,6 +17,7 @@ interface PersonFormProps {
   person?: Partial<Person>;
   onSubmit: (data: Partial<Person>) => Promise<void>;
   isLoading?: boolean;
+  variant?: 'default' | 'parent';
 }
 
 /**
@@ -27,7 +28,7 @@ interface PersonFormProps {
  * - Composition approach keeps this component under 100 lines per .instructions.md
  */
 
-export const PersonForm = ({ person, onSubmit, isLoading }: PersonFormProps) => {
+export const PersonForm = ({ person, onSubmit, isLoading, variant = 'default' }: PersonFormProps) => {
   const { t } = useTranslation();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
@@ -81,6 +82,7 @@ export const PersonForm = ({ person, onSubmit, isLoading }: PersonFormProps) => 
         register={form.register}
         errors={form.formState.errors}
         person={person}
+        variant={variant}
       />
 
       {/* Consent Fields */}

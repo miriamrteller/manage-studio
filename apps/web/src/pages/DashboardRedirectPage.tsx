@@ -8,6 +8,7 @@ import {
   readEnrollmentIntent,
   type EnrollmentIntent,
 } from '@/lib/enrollment-intent';
+import { hasParentRole } from '@/lib/parentRoles';
 
 /**
  * DashboardRedirectPage: Smart redirect based on user role
@@ -16,7 +17,7 @@ import {
  * appropriate authenticated page:
  * - If enrolling in a class → return to /enrol
  * - tenant_admin → /admin/setup
- * - parent/guardian → /dashboard/portal
+ * - parent/guardian/account_holder → /dashboard/portal
  * - student/adult_student → /dashboard/student
  * - No matching role → /classes (fallback)
  * 
@@ -61,7 +62,7 @@ export default function DashboardRedirectPage() {
     // Users can have multiple roles, so check in priority order
     if (user.role.includes('tenant_admin')) {
       navigate('/admin/setup', { replace: true });
-    } else if (user.role.some((r) => ['parent', 'guardian'].includes(r))) {
+    } else if (hasParentRole(user.role)) {
       navigate('/dashboard/portal', { replace: true });
     } else if (user.role.some((r) => ['student', 'adult_student'].includes(r))) {
       navigate('/dashboard/student', { replace: true });
