@@ -1847,6 +1847,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      search_enrolment_students: {
+        Args: { p_limit?: number; p_query: string }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never

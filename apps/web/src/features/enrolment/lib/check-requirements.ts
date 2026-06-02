@@ -1,4 +1,7 @@
 import type { OfferingRequirementWithTemplate } from '@/features/classes/requirements/service';
+import { ageAt } from '@/lib/personAge';
+
+export { ageAt };
 
 export interface PersonContext {
   date_of_birth?: string | null;
@@ -7,18 +10,6 @@ export interface PersonContext {
 export interface ClassAgeContext {
   min_age?: number | null;
   max_age?: number | null;
-}
-
-/** Parse YYYY-MM-DD as a local calendar date (avoids UTC timezone drift). */
-export function ageAt(dateOfBirth: string, reference = new Date()): number {
-  const [y, m, d] = dateOfBirth.split('-').map(Number);
-  if (!y || !m || !d) return NaN;
-
-  let age = reference.getFullYear() - y;
-  const refMonth = reference.getMonth() + 1;
-  const refDay = reference.getDate();
-  if (refMonth < m || (refMonth === m && refDay < d)) age--;
-  return age;
 }
 
 export function classHasAgeBand(cls: ClassAgeContext): boolean {

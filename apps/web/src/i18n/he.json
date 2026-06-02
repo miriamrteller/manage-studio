@@ -71,6 +71,14 @@
     "delete_term_confirm": "האם אתה בטוח שברצונך למחוק את התקופה \"{{name}}\"?",
     "delete_class_confirm": "האם אתה בטוח שברצונך למחוק את השיעור \"{{name}}\"?"
   },
+  "person_search": {
+    "label": "חיפוש אנשים",
+    "placeholder": "שם, הורה, דוא\"ל, טלפון, גיל, שיעור…",
+    "empty": "לא נמצאו אנשים תואמים",
+    "age": "גיל {{age}}",
+    "guardian": "הורה: {{name}}",
+    "enrolled_in": "רשום/ה: {{classes}}"
+  },
   "auth": {
     "signing_you_in": "מתחבר…",
     "setting_up_access": "מגדיר את הגישה שלך"
@@ -498,7 +506,7 @@
       "ineligible_account": "לא שייך/ת למשפחה שנבחרה",
       "admin_select_desc": "חפשו תלמיד/ה קיים/ה, או צרו רשומה חדשה.",
       "admin_search_label": "חיפוש תלמידים",
-      "admin_search_placeholder": "שם, דוא\"ל, טלפון, או איש קשר לחירום…",
+      "admin_search_placeholder": "שם, הורה, דוא\"ל, טלפון, גיל, שיעור…",
       "admin_search_empty": "לא נמצאו תלמידים תואמים",
       "create_new_student": "יצירת תלמיד/ה חדש/ה עם הורה",
       "person_new_minor": "קטין חדש (ילד) — הרשמה עם אפוטרופוס",

@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTenant } from '@/hooks/useTenant';
 import { PersonService } from '@/features/people/service';
+import type { PersonSearchResult } from '@/features/people/types';
 
-export function useEnrolmentStudentSearch(searchQuery: string, enabled = true) {
+export function usePersonSearch(searchQuery: string, enabled = true) {
   const tenant = useTenant();
   const [debouncedQuery, setDebouncedQuery] = useState(searchQuery);
 
@@ -13,10 +14,10 @@ export function useEnrolmentStudentSearch(searchQuery: string, enabled = true) {
   }, [searchQuery]);
 
   const query = useQuery({
-    queryKey: ['enrolment-student-search', tenant?.id, debouncedQuery],
-    queryFn: async () => {
+    queryKey: ['person-search', tenant?.id, debouncedQuery],
+    queryFn: async (): Promise<PersonSearchResult[]> => {
       if (!tenant) throw new Error('Tenant not initialized');
-      return PersonService.searchForEnrolment(tenant, debouncedQuery);
+      return PersonService.searchPeople(tenant, debouncedQuery);
     },
     enabled: enabled && !!tenant?.id && debouncedQuery.trim().length > 0,
   });
@@ -27,7 +28,3 @@ export function useEnrolmentStudentSearch(searchQuery: string, enabled = true) {
     error: query.error,
   };
 }
-
-export type EnrolmentSearchResult = NonNullable<
-  ReturnType<typeof useEnrolmentStudentSearch>['results']
->[number];

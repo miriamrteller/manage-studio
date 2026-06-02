@@ -1,177 +1,46 @@
-import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
+import { PersonSearchCombobox } from '@/components/shared/PersonSearchCombobox';
 import { GuestExistingAccountPrompt } from './GuestExistingAccountPrompt';
 import { useGuestEmailRegistrationCheck } from '../hooks/useGuestEmailRegistrationCheck';
 import { isExistingEmailError } from '../intakeService';
-import { useEnrolmentStudentSearch } from '../hooks/useEnrolmentStudentSearch';
 import { filterStudentCandidates, studentAgeLabel } from '../lib/filterStudentCandidates';
-import type { EnrolmentSearchResult } from '../hooks/useEnrolmentStudentSearch';
+import {
+  filterEnrolmentPersonSearchResults,
+  isEnrolmentPersonSearchSelectable,
+} from '../lib/enrolmentPersonSearch';
 import type { Person } from '@shared/schemas';
 import type { EnrolmentConstraints, EnrolmentMode } from '../hooks/useEnrolmentContext';
 import type { GuardianProfile } from '../onboardingService';
 import type { StudentWithEnrolments } from '../hooks/useAccountStudents';
 
-interface StudentSearchComboboxProps {
+interface EnrolmentPersonSearchComboboxProps {
   onSelect: (person: Person) => void;
   constraints: EnrolmentConstraints;
   disabled?: boolean;
 }
 
-export function StudentSearchCombobox({
+function EnrolmentPersonSearchCombobox({
   onSelect,
   constraints,
   disabled = false,
-}: StudentSearchComboboxProps) {
+}: EnrolmentPersonSearchComboboxProps) {
   const { t } = useTranslation();
-  const inputId = useId();
-  const listboxId = `${inputId}-listbox`;
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  const [inputValue, setInputValue] = useState('');
-  const [isOpen, setIsOpen] = useState(false);
-  const [activeIndex, setActiveIndex] = useState(0);
-
-  const { results, isSearching } = useEnrolmentStudentSearch(inputValue, isOpen && !disabled);
-
-  const filteredResults = useMemo(() => {
-    const people = results.map((r) => r.person);
-    const { eligible, ineligible } = filterStudentCandidates(people, {
-      accountId: constraints.accountId,
-      ageBand: constraints.ageBand,
-    });
-    const eligibleIds = new Set(eligible.map((p) => p.id));
-    return results.filter((r) => eligibleIds.has(r.person.id) || ineligible.some((i) => i.person.id === r.person.id));
-  }, [results, constraints]);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  useEffect(() => {
-    setActiveIndex(0);
-  }, [filteredResults.length]);
-
-  const handleSelect = (result: EnrolmentSearchResult) => {
-    const { eligible } = filterStudentCandidates([result.person], {
-      accountId: constraints.accountId,
-      ageBand: constraints.ageBand,
-    });
-    if (eligible.length === 0) return;
-    onSelect(result.person);
-    setInputValue('');
-    setIsOpen(false);
-  };
-
-  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (!isOpen || filteredResults.length === 0) return;
-    if (event.key === 'ArrowDown') {
-      event.preventDefault();
-      setActiveIndex((i) => Math.min(i + 1, filteredResults.length - 1));
-    } else if (event.key === 'ArrowUp') {
-      event.preventDefault();
-      setActiveIndex((i) => Math.max(i - 1, 0));
-    } else if (event.key === 'Enter') {
-      event.preventDefault();
-      const result = filteredResults[activeIndex];
-      if (result) handleSelect(result);
-    } else if (event.key === 'Escape') {
-      setIsOpen(false);
-    }
-  };
 
   return (
-    <div ref={containerRef} className="relative space-y-1">
-      <label htmlFor={inputId} className="block text-sm font-medium">
-        {t('pages.enrolment.admin_search_label')}
-      </label>
-      <input
-        id={inputId}
-        type="search"
-        role="combobox"
-        aria-expanded={isOpen}
-        aria-controls={listboxId}
-        aria-autocomplete="list"
-        disabled={disabled}
-        value={inputValue}
-        onChange={(e) => {
-          setInputValue(e.target.value);
-          setIsOpen(true);
-        }}
-        onFocus={() => setIsOpen(true)}
-        onKeyDown={handleKeyDown}
-        placeholder={t('pages.enrolment.admin_search_placeholder')}
-        className="form-input w-full"
-      />
-      {isOpen && inputValue.trim() && (
-        <ul
-          id={listboxId}
-          role="listbox"
-          className="absolute z-20 mt-1 max-h-72 w-full overflow-auto rounded-md border border-gray-200 bg-white shadow-lg"
-        >
-          {isSearching && (
-            <li className="px-3 py-2 text-sm text-gray-500" role="presentation">
-              {t('common.loading')}
-            </li>
-          )}
-          {!isSearching && filteredResults.length === 0 && (
-            <li className="px-3 py-2 text-sm text-gray-500" role="presentation">
-              {t('pages.enrolment.admin_search_empty')}
-            </li>
-          )}
-          {filteredResults.map((result, index) => {
-            const age = studentAgeLabel(result.person.date_of_birth);
-            const { eligible } = filterStudentCandidates([result.person], {
-              accountId: constraints.accountId,
-              ageBand: constraints.ageBand,
-            });
-            const isEligible = eligible.length > 0;
-            return (
-              <li key={result.person.id} role="presentation">
-                <button
-                  type="button"
-                  role="option"
-                  aria-selected={index === activeIndex}
-                  disabled={!isEligible}
-                  onClick={() => handleSelect(result)}
-                  className={`w-full px-3 py-2 text-start text-sm ${
-                    index === activeIndex ? 'bg-blue-50' : 'hover:bg-gray-50'
-                  } ${!isEligible ? 'opacity-50 cursor-not-allowed' : ''}`}
-                >
-                  <span className="block font-medium">{result.person.name}</span>
-                  <span className="block text-xs text-gray-600">
-                    {[
-                      age ? t('pages.enrolment.student_age', { age }) : null,
-                      result.accountName,
-                      result.guardianName
-                        ? t('pages.enrolment.guardian_summary', { name: result.guardianName })
-                        : null,
-                      result.guardianEmail,
-                      result.activeClassNames.length > 0
-                        ? t('pages.enrolment.enrolled_in', { classes: result.activeClassNames.join(', ') })
-                        : null,
-                    ]
-                      .filter(Boolean)
-                      .join(' · ')}
-                  </span>
-                  {!isEligible && constraints.ageBand && (
-                    <span className="block text-xs text-amber-700">
-                      {t('pages.enrolment.ineligible_age')}
-                    </span>
-                  )}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </div>
+    <PersonSearchCombobox
+      disabled={disabled}
+      label={t('pages.enrolment.admin_search_label')}
+      placeholder={t('pages.enrolment.admin_search_placeholder')}
+      emptyMessage={t('pages.enrolment.admin_search_empty')}
+      filterResults={(results) => filterEnrolmentPersonSearchResults(results, constraints)}
+      isSelectable={(result) => isEnrolmentPersonSearchSelectable(result, constraints)}
+      renderIneligibleHint={() =>
+        constraints.ageBand ? t('pages.enrolment.ineligible_age') : null
+      }
+      onSelect={(person) => onSelect(person)}
+    />
   );
 }
 
@@ -283,7 +152,7 @@ export function StepSelectStudent({
     return (
       <div className="space-y-4">
         <p className="text-sm text-gray-600">{t('pages.enrolment.admin_select_desc')}</p>
-        <StudentSearchCombobox
+        <EnrolmentPersonSearchCombobox
           constraints={constraints}
           onSelect={(person) => onSelectPerson(person.id, person.date_of_birth ?? null)}
         />
