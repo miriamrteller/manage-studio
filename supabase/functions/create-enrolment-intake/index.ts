@@ -171,7 +171,52 @@ serve(async (req) => {
         .maybeSingle();
 
       if (existing) {
-        return jsonResponse({ error: "Person already enrolled in this class for this term" }, 409);
+        return jsonResponse({ engagementId: existing.id, engagement: existing });
+      }
+
+      let payerPersonId = studentPersonId;
+      if (student.account_id) {
+        const { data: accountHolder } = await service
+          .from("account_members")
+          .select("person_id")
+          .eq("account_id", student.account_id)
+          .eq("role", "account_holder")
+          .limit(1)
+          .maybeSingle();
+        if (accountHolder?.person_id) {
+          payerPersonId = accountHolder.person_id as string;
+        }
+      }
+
+      let billingAccountId: string | null = null;
+      const { data: existingBilling } = await service
+        .from("billing_accounts")
+        .select("id")
+        .eq("tenant_id", tenantId)
+        .eq("person_id", payerPersonId)
+        .eq("status", "active")
+        .limit(1)
+        .maybeSingle();
+
+      if (existingBilling?.id) {
+        billingAccountId = existingBilling.id as string;
+      } else {
+        const { data: newBilling, error: billingError } = await service
+          .from("billing_accounts")
+          .insert({
+            tenant_id: tenantId,
+            person_id: payerPersonId,
+            status: "active",
+          })
+          .select("id")
+          .single();
+        if (billingError || !newBilling) {
+          return jsonResponse(
+            { error: billingError?.message ?? "Failed to create billing account" },
+            500,
+          );
+        }
+        billingAccountId = newBilling.id as string;
       }
 
       const { data: engagement, error: engagementError } = await service
@@ -181,7 +226,7 @@ serve(async (req) => {
           person_id: studentPersonId,
           offering_id: offeringId,
           season_id: seasonId,
-          billing_account_id: student.account_id,
+          billing_account_id: billingAccountId,
           status: "pending_payment",
         })
         .select("id, person_id, offering_id, season_id, status")

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { EnrolmentPaymentForm } from './EnrolmentPaymentForm';
@@ -103,6 +103,7 @@ export function EnrolmentStepper({
   const [checkoutEnrolmentId, setCheckoutEnrolmentId] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [isCheckoutPreparing, setIsCheckoutPreparing] = useState(false);
+  const checkoutPrepareStartedRef = useRef(false);
   const [personStepSkipped, setPersonStepSkipped] = useState(false);
   const [guestGuardianEmail, setGuestGuardianEmail] = useState<string | null>(null);
 
@@ -210,11 +211,17 @@ export function EnrolmentStepper({
   };
 
   useEffect(() => {
-    if (currentStep !== 'checkout') return;
+    if (currentStep !== 'checkout') {
+      checkoutPrepareStartedRef.current = false;
+      return;
+    }
     if (checkoutEnrolmentId) return;
+    if (checkoutPrepareStartedRef.current) return;
     if (!tenant || !enrolmentData.person_id || !enrolmentData.offering_id || !enrolmentData.season_id) {
       return;
     }
+
+    checkoutPrepareStartedRef.current = true;
 
     const prepareCheckout = async () => {
       setIsCheckoutPreparing(true);
@@ -244,12 +251,14 @@ export function EnrolmentStepper({
               setIsCheckoutPreparing(false);
             },
             onError: () => {
+              checkoutPrepareStartedRef.current = false;
               setCheckoutError(t('enrolment.checkout_prepare_failed'));
               setIsCheckoutPreparing(false);
             },
           },
         );
       } catch (error) {
+        checkoutPrepareStartedRef.current = false;
         setCheckoutError(
           error instanceof Error ? error.message : t('enrolment.checkout_prepare_failed'),
         );
