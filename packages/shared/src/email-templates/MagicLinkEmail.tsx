@@ -1,7 +1,7 @@
 import React from 'react';
 import BaseEmailTemplate, { type EmailColorConfig, type EmailFooterStrings } from './BaseEmailTemplate.js';
 import {
-  EmailCodeWithCopy,
+  EmailOtpCode,
   EmailLinkBox,
   EmailMutedText,
   EmailParagraph,
@@ -27,7 +27,6 @@ export interface MagicLinkEmailProps {
     greeting_with_name?: string;
     intro?: string;
     code_heading?: string;
-    copy_button?: string;
     cta_button?: string;
     fallback_text?: string;
     expiration_notice?: string;
@@ -42,7 +41,6 @@ const DEFAULT_STRINGS = {
   intro:
     "We received a request to sign in to your {schoolName} account. If you didn't make this request, you can ignore this message.",
   code_heading: 'Your sign-in code:',
-  copy_button: 'Copy',
   cta_button: 'Sign In',
   fallback_text:
     "If the button above doesn't work, copy and paste this link into your browser:",
@@ -78,11 +76,6 @@ export default function MagicLinkEmail({
 
   const previewText = (finalStrings.preview || '').replace('{schoolName}', schoolName);
 
-  const primaryColor =
-    colors?.primary?.startsWith('var(')
-      ? colors.primary.replace(/var\(--email-primary,\s*([^)]+)\)/, '$1').trim()
-      : colors?.primary ?? '#2563eb';
-
   return (
     <BaseEmailTemplate
       previewText={previewText}
@@ -100,11 +93,7 @@ export default function MagicLinkEmail({
           <EmailParagraph style={{ fontWeight: 600 }}>
             {finalStrings.code_heading || DEFAULT_STRINGS.code_heading}
           </EmailParagraph>
-          <EmailCodeWithCopy
-            code={otpCode}
-            copyLabel={finalStrings.copy_button || DEFAULT_STRINGS.copy_button}
-            primaryColor={primaryColor}
-          />
+          <EmailOtpCode code={otpCode} />
         </>
       ) : null}
 
