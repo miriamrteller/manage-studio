@@ -3,20 +3,22 @@ import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
-import { EnrolmentPaymentForm } from './EnrolmentPaymentForm';
 import { EnrolmentService } from '../service';
-import { AdminEnrolmentService, buildPaymentLink, type OfflinePaymentMethod } from '../lib/adminEnrolmentService';
-import { computeClassTotal } from '../lib/computeClassTotal';
+import { buildPaymentLink } from '../lib/adminEnrolmentService';
 import { filterClassesByAge, ageAt } from '../lib/check-requirements';
+import {
+  AdminEnrolmentPaymentStep,
+  type AdminPaymentChoice,
+} from './AdminEnrolmentPaymentStep';
 import { useClasses } from '@/features/classes/hooks/useClasses';
 import { useLevels } from '@/features/levels/hooks/useLevels';
 import { useTenant } from '@/hooks/useTenant';
 import { formatCurrency } from '@shared/format';
 import type { Offering } from '@shared/schemas';
 
-type AdminEnrolStep = 'class' | 'payment' | 'pay_now' | 'done';
+type AdminEnrolStep = 'class' | 'payment' | 'done';
 
-export type AdminPaymentChoice = 'pay_now' | 'send_link' | 'offline';
+export type { AdminPaymentChoice };
 
 interface AdminEnrolStudentModalProps {
   personId: string;
@@ -57,8 +59,6 @@ export function AdminEnrolStudentModal({
   const [step, setStep] = useState<AdminEnrolStep>('class');
   const [selectedClass, setSelectedClass] = useState<Offering | null>(null);
   const [paymentChoice, setPaymentChoice] = useState<AdminPaymentChoice | null>(null);
-  const [offlineMethod, setOfflineMethod] = useState<OfflinePaymentMethod>('cash');
-  const [linkEmail, setLinkEmail] = useState(guardianEmail ?? '');
   const [engagementId, setEnrolmentId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -90,24 +90,17 @@ export function AdminEnrolStudentModal({
     [classes, person],
   );
 
-  const pricing = useMemo(() => {
-    if (!tenant || !selectedClass) return null;
-    return computeClassTotal(selectedClass, tenant);
-  }, [tenant, selectedClass]);
-
   useEffect(() => {
     if (isOpen) {
       setStep('class');
       setSelectedClass(null);
       setPaymentChoice(null);
-      setOfflineMethod('cash');
-      setLinkEmail(guardianEmail ?? '');
       setEnrolmentId(null);
       setError(null);
       setIsSubmitting(false);
       setDoneMessage(null);
     }
-  }, [isOpen, guardianEmail]);
+  }, [isOpen]);
 
   const invalidateStudentCaches = async () => {
     if (!tenant) return;
@@ -133,66 +126,14 @@ export function AdminEnrolStudentModal({
     return created.id;
   };
 
-  const handleClassNext = () => {
-    if (!selectedClass) return;
-    setStep('payment');
-  };
-
-  const handlePaymentChoice = async (choice: AdminPaymentChoice) => {
-    if (!tenant || !selectedClass || !pricing) return;
-
-    setPaymentChoice(choice);
+  const handleClassNext = async () => {
+    if (!selectedClass || !tenant) return;
     setError(null);
     setIsSubmitting(true);
-
     try {
-      const id = engagementId ?? (await createPendingEnrolment());
+      const id = await createPendingEnrolment();
       setEnrolmentId(id);
-
-      if (choice === 'pay_now') {
-        setStep('pay_now');
-        return;
-      }
-
-      if (choice === 'send_link') {
-        const email = linkEmail.trim();
-        if (!email) {
-          setError(t('pages.admin_enrol.email_required'));
-          return;
-        }
-
-        await AdminEnrolmentService.sendPaymentLinkEmail(tenant, {
-          recipientEmail: email,
-          recipientName: guardianName ?? personName,
-          studentName: personName,
-          className: selectedClass.name,
-          engagementId: id,
-          totalMinor: pricing.totalMinor,
-          currency: pricing.currency,
-        });
-
-        setDoneMessage(t('pages.admin_enrol.link_sent', { email }));
-        setStep('done');
-        await invalidateStudentCaches();
-        onSuccess?.();
-        return;
-      }
-
-      if (choice === 'offline') {
-        await AdminEnrolmentService.recordOfflinePayment(
-          tenant,
-          id,
-          selectedClass,
-          personId,
-          familyId ?? null,
-          offlineMethod,
-        );
-
-        setDoneMessage(t('pages.admin_enrol.offline_recorded'));
-        setStep('done');
-        await invalidateStudentCaches();
-        onSuccess?.();
-      }
+      setStep('payment');
     } catch (err) {
       setError(err instanceof Error ? err.message : t('common.error'));
     } finally {
@@ -200,15 +141,15 @@ export function AdminEnrolStudentModal({
     }
   };
 
-  const handlePaymentSuccess = async () => {
-    setDoneMessage(t('pages.admin_enrol.payment_success'));
+  const handlePaymentComplete = async (result: {
+    message: string;
+    paymentChoice: AdminPaymentChoice;
+  }) => {
+    setPaymentChoice(result.paymentChoice);
+    setDoneMessage(result.message);
     setStep('done');
     await invalidateStudentCaches();
     onSuccess?.();
-  };
-
-  const handleClose = () => {
-    onClose();
   };
 
   const title =
@@ -220,7 +161,7 @@ export function AdminEnrolStudentModal({
     <Modal
       isOpen={isOpen}
       title={title}
-      onClose={handleClose}
+      onClose={onClose}
       className="max-w-2xl w-full"
     >
       {step === 'class' && (
@@ -284,124 +225,43 @@ export function AdminEnrolStudentModal({
             </ul>
           )}
 
-          <div className="flex gap-2 pt-2">
-            <Button variant="outline" className="flex-1" onClick={handleClose}>
-              {t('common.cancel')}
-            </Button>
-            <Button
-              variant="primary"
-              className="flex-1"
-              disabled={!selectedClass}
-              onClick={handleClassNext}
-            >
-              {t('common.next')}
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {step === 'payment' && selectedClass && pricing && (
-        <div className="space-y-4">
-          <div className="rounded-lg bg-gray-50 p-3 text-sm">
-            <p className="font-medium">{selectedClass.name}</p>
-            <p className="text-gray-600 mt-1">
-              {t('pages.admin_enrol.amount_due')}:{' '}
-              {formatCurrency(pricing.totalMinor, pricing.currency, i18n.language)}
-            </p>
-          </div>
-
-          <p className="text-sm text-gray-600">{t('pages.admin_enrol.payment_desc')}</p>
-
-          <div className="space-y-2">
-            <Button
-              variant="outline"
-              className="w-full justify-start p-4 h-auto"
-              disabled={isSubmitting}
-              onClick={() => void handlePaymentChoice('pay_now')}
-            >
-              <div>
-                <p className="font-semibold">{t('pages.admin_enrol.pay_now_title')}</p>
-                <p className="text-sm text-gray-500">{t('pages.admin_enrol.pay_now_desc')}</p>
-              </div>
-            </Button>
-
-            <div className="rounded-lg border border-gray-200 p-4 space-y-3">
-              <div>
-                <p className="font-semibold">{t('pages.admin_enrol.send_link_title')}</p>
-                <p className="text-sm text-gray-500">{t('pages.admin_enrol.send_link_desc')}</p>
-              </div>
-              <label className="block text-sm font-medium" htmlFor="payment-link-email">
-                {t('pages.admin_enrol.recipient_email')}
-              </label>
-              <input
-                id="payment-link-email"
-                type="email"
-                className="form-input w-full"
-                value={linkEmail}
-                onChange={(e) => setLinkEmail(e.target.value)}
-                placeholder={t('pages.admin_enrol.recipient_email_placeholder')}
-              />
-              <Button
-                variant="outline"
-                className="w-full"
-                disabled={isSubmitting || !linkEmail.trim()}
-                onClick={() => void handlePaymentChoice('send_link')}
-              >
-                {t('pages.admin_enrol.send_link_action')}
-              </Button>
-            </div>
-
-            <div className="rounded-lg border border-gray-200 p-4 space-y-3">
-              <div>
-                <p className="font-semibold">{t('pages.admin_enrol.offline_title')}</p>
-                <p className="text-sm text-gray-500">{t('pages.admin_enrol.offline_desc')}</p>
-              </div>
-              <label className="block text-sm font-medium" htmlFor="offline-method">
-                {t('pages.admin_enrol.offline_method')}
-              </label>
-              <select
-                id="offline-method"
-                className="form-input w-full"
-                value={offlineMethod}
-                onChange={(e) => setOfflineMethod(e.target.value as OfflinePaymentMethod)}
-              >
-                <option value="cash">{t('pages.admin_enrol.method_cash')}</option>
-                <option value="check">{t('pages.admin_enrol.method_check')}</option>
-                <option value="bank_transfer">{t('pages.admin_enrol.method_bank')}</option>
-              </select>
-              <Button
-                variant="outline"
-                className="w-full"
-                disabled={isSubmitting}
-                onClick={() => void handlePaymentChoice('offline')}
-              >
-                {t('pages.admin_enrol.offline_action')}
-              </Button>
-            </div>
-          </div>
-
           {error && (
             <p className="text-sm text-destructive" role="alert">
               {error}
             </p>
           )}
 
-          <Button variant="outline" className="w-full" onClick={() => setStep('class')}>
-            {t('common.back')}
-          </Button>
+          <div className="flex gap-2 pt-2">
+            <Button variant="outline" className="flex-1" onClick={onClose}>
+              {t('common.cancel')}
+            </Button>
+            <Button
+              variant="primary"
+              className="flex-1"
+              disabled={!selectedClass || isSubmitting}
+              onClick={() => void handleClassNext()}
+            >
+              {isSubmitting ? t('common.loading') : t('common.next')}
+            </Button>
+          </div>
         </div>
       )}
 
-      {step === 'pay_now' && selectedClass && engagementId && (
-        <div className="space-y-4">
-          <p className="text-sm text-gray-600">{t('pages.admin_enrol.pay_now_inline')}</p>
-          <EnrolmentPaymentForm
-            classId={selectedClass.id}
-            engagementId={engagementId}
-            onPaid={() => void handlePaymentSuccess()}
-            onPrevious={() => setStep('payment')}
-          />
-        </div>
+      {step === 'payment' && selectedClass && engagementId && tenant && (
+        <AdminEnrolmentPaymentStep
+          tenant={tenant}
+          engagementId={engagementId}
+          personId={personId}
+          personName={personName}
+          familyId={familyId}
+          guardianEmail={guardianEmail}
+          guardianName={guardianName}
+          classRow={selectedClass}
+          emailInputId="modal-payment-link-email"
+          offlineMethodId="modal-offline-method"
+          onComplete={(result) => void handlePaymentComplete(result)}
+          onPrevious={() => setStep('class')}
+        />
       )}
 
       {step === 'done' && (
@@ -412,7 +272,7 @@ export function AdminEnrolStudentModal({
               {t('pages.admin_enrol.link_copy')}: {buildPaymentLink(engagementId)}
             </p>
           )}
-          <Button variant="primary" className="w-full" onClick={handleClose}>
+          <Button variant="primary" className="w-full" onClick={onClose}>
             {t('common.close')}
           </Button>
         </div>

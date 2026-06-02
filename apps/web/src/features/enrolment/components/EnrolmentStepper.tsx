@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { EnrolmentPaymentForm } from './EnrolmentPaymentForm';
+import { AdminEnrolmentPaymentStep, type AdminPaymentChoice } from './AdminEnrolmentPaymentStep';
 import { StepSelectStudent } from './StepSelectStudent';
 import { useEnrolment } from '../hooks/useEnrolment';
 import { useEnrolmentContext } from '../hooks/useEnrolmentContext';
@@ -20,6 +22,10 @@ import { useClasses } from '@/features/classes/hooks/useClasses';
 import { useRequirements } from '@/features/classes/requirements/hooks/useRequirements';
 import { filterClassesByAge, getRequirementInfoNotes, ageAt } from '../lib/check-requirements';
 import { useLevels } from '@/features/levels/hooks/useLevels';
+import { PersonService } from '@/features/people/service';
+import { TenantDB } from '@/lib/db';
+import { OfferingSchema } from '@shared/schemas';
+import { buildPaymentLink } from '../lib/adminEnrolmentService';
 import type { EnrollmentIntent } from '@/lib/enrollment-intent';
 import { persistEnrollmentIntent } from '@/lib/enrollment-intent';
 import type { Engagement } from '@shared/schemas';
@@ -124,6 +130,8 @@ export function EnrolmentStepper({
   };
   const [personStepSkipped, setPersonStepSkipped] = useState(false);
   const [guestGuardianEmail, setGuestGuardianEmail] = useState<string | null>(null);
+  const [adminDoneMessage, setAdminDoneMessage] = useState<string | null>(null);
+  const [adminPaymentChoice, setAdminPaymentChoice] = useState<AdminPaymentChoice | null>(null);
 
   const accountStudentsQuery = useAccountStudents({
     accountId: enrolmentContext.constraints.accountId ?? enrolmentContext.guardian?.accountId,
@@ -488,7 +496,22 @@ export function EnrolmentStepper({
           />
         )}
 
-        {currentStep === 'checkout' && (
+        {currentStep === 'checkout' && enrolmentContext.mode === 'admin' && (
+          <StepAdminCheckout
+            enrolmentData={enrolmentData}
+            checkoutEnrolmentId={checkoutEnrolmentId}
+            checkoutError={checkoutError}
+            isPreparing={isCheckoutPreparing || (isCreating && !checkoutEnrolmentId)}
+            onComplete={(result) => {
+              setAdminDoneMessage(result.message);
+              setAdminPaymentChoice(result.paymentChoice);
+              setCurrentStep('confirmation');
+            }}
+            onPrevious={handlePreviousStep}
+          />
+        )}
+
+        {currentStep === 'checkout' && enrolmentContext.mode !== 'admin' && (
           <StepCheckout
             enrolmentData={enrolmentData}
             checkoutEnrolmentId={checkoutEnrolmentId}
@@ -505,6 +528,9 @@ export function EnrolmentStepper({
             enrolment={enrolmentData as Engagement}
             className={selectedClassName}
             guardianEmail={guestGuardianEmail}
+            adminDoneMessage={adminDoneMessage}
+            adminPaymentChoice={adminPaymentChoice}
+            adminEngagementId={checkoutEnrolmentId}
             onClose={() => onSuccess?.(enrolmentData as Engagement)}
           />
         )}
@@ -766,6 +792,119 @@ function StepNotification({
 }
 
 /**
+ * Step 4 (admin): Payment request — send link, record offline, or pay now.
+ */
+function StepAdminCheckout({
+  enrolmentData,
+  checkoutEnrolmentId,
+  checkoutError,
+  isPreparing,
+  onComplete,
+  onPrevious,
+}: {
+  enrolmentData: Partial<Engagement>;
+  checkoutEnrolmentId: string | null;
+  checkoutError: string | null;
+  isPreparing: boolean;
+  onComplete: (result: { message: string; paymentChoice: AdminPaymentChoice }) => void;
+  onPrevious: () => void;
+}) {
+  const { t } = useTranslation();
+  const tenant = useTenant();
+
+  const detailQuery = useQuery({
+    queryKey: [
+      'admin-enrol-checkout',
+      tenant?.id,
+      enrolmentData.person_id,
+      enrolmentData.offering_id,
+    ],
+    queryFn: async () => {
+      if (!tenant || !enrolmentData.person_id || !enrolmentData.offering_id) {
+        throw new Error('Missing enrolment details');
+      }
+
+      const person = await PersonService.get(tenant, enrolmentData.person_id);
+      const { data: offeringRow, error: offeringError } = await TenantDB.selectFor('offerings', tenant)
+        .eq('id', enrolmentData.offering_id)
+        .single();
+      if (offeringError) throw offeringError;
+
+      const offering = OfferingSchema.parse(offeringRow);
+      let guardianEmail: string | null = person.email ?? null;
+      let guardianName: string | null = person.name;
+
+      if (person.account_id) {
+        const { data: holderRow } = await TenantDB.selectFor('account_members', tenant)
+          .eq('account_id', person.account_id)
+          .eq('role', 'account_holder')
+          .maybeSingle();
+        if (holderRow?.person_id) {
+          const guardian = await PersonService.get(tenant, holderRow.person_id as string);
+          guardianEmail = guardian.email ?? guardianEmail;
+          guardianName = guardian.name;
+        }
+      }
+
+      return {
+        person,
+        offering,
+        guardianEmail,
+        guardianName,
+      };
+    },
+    enabled: !!tenant?.id && !!enrolmentData.person_id && !!enrolmentData.offering_id,
+  });
+
+  if (!enrolmentData.offering_id || !enrolmentData.person_id) {
+    return (
+      <p className="text-sm text-destructive" role="alert">
+        {t('enrolment.missing_class_or_term')}
+      </p>
+    );
+  }
+
+  if (checkoutError) {
+    return (
+      <p className="text-sm text-destructive" role="alert">
+        {checkoutError}
+      </p>
+    );
+  }
+
+  if (isPreparing || !checkoutEnrolmentId || detailQuery.isLoading || !detailQuery.data || !tenant) {
+    return <p role="status">{t('common.loading')}</p>;
+  }
+
+  if (detailQuery.error) {
+    return (
+      <p className="text-sm text-destructive" role="alert">
+        {detailQuery.error instanceof Error ? detailQuery.error.message : t('common.error')}
+      </p>
+    );
+  }
+
+  const { person, offering, guardianEmail, guardianName } = detailQuery.data;
+
+  return (
+    <AdminEnrolmentPaymentStep
+      tenant={tenant}
+      engagementId={checkoutEnrolmentId}
+      personId={person.id}
+      personName={person.name}
+      familyId={person.account_id}
+      guardianEmail={guardianEmail}
+      guardianName={guardianName}
+      classRow={offering}
+      emailInputId="stepper-payment-link-email"
+      offlineMethodId="stepper-offline-method"
+      onComplete={onComplete}
+      onPrevious={onPrevious}
+    />
+  );
+}
+
+/**
  * Step 4: Payment/Checkout
  */
 function StepCheckout({
@@ -828,14 +967,38 @@ function StepConfirmation({
   enrolment,
   className,
   guardianEmail,
+  adminDoneMessage,
+  adminPaymentChoice,
+  adminEngagementId,
   onClose,
 }: {
   enrolment: Engagement;
   className: string;
   guardianEmail?: string | null;
+  adminDoneMessage?: string | null;
+  adminPaymentChoice?: AdminPaymentChoice | null;
+  adminEngagementId?: string | null;
   onClose: () => void;
 }) {
   const { t } = useTranslation();
+
+  if (adminDoneMessage) {
+    return (
+      <div className="space-y-4 text-center">
+        <div className="text-5xl mb-4">✅</div>
+        <h3 className="text-lg font-semibold">{t('pages.admin_enrol.done_title')}</h3>
+        <p className="text-gray-600">{adminDoneMessage}</p>
+        {adminPaymentChoice === 'send_link' && adminEngagementId && (
+          <p className="text-xs text-gray-500 break-all text-start">
+            {t('pages.admin_enrol.link_copy')}: {buildPaymentLink(adminEngagementId)}
+          </p>
+        )}
+        <Button type="button" onClick={onClose} variant="primary" className="w-full">
+          {t('common.done') || 'Done'}
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 text-center">
