@@ -20,7 +20,7 @@ import { hasParentRole } from '@/lib/parentRoles';
 export default function AuthCallbackPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [error, setError] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [sessionReady, setSessionReady] = useState(false);
   const callbackUrlRef = useRef(captureAuthCallbackUrl());
 
@@ -36,11 +36,7 @@ export default function AuthCallbackPage() {
       if (cancelled) return;
 
       if (!result.ok) {
-        const message =
-          result.message === 'invalid_callback'
-            ? t('errors.invalid_callback')
-            : resolveAuthErrorMessage(result.message, t, 'errors.session_exchange_failed');
-        setError(message);
+        setErrorMessage(result.message);
         return;
       }
 
@@ -54,10 +50,19 @@ export default function AuthCallbackPage() {
     return () => {
       cancelled = true;
     };
-  }, [t]);
+  }, []);
+
+  const error =
+    errorMessage === 'invalid_callback'
+      ? t('errors.invalid_callback')
+      : errorMessage === 'user_not_found'
+        ? t('errors.user_not_found')
+        : errorMessage
+          ? resolveAuthErrorMessage(errorMessage, t, 'errors.session_exchange_failed')
+          : null;
 
   useEffect(() => {
-    if (!sessionReady || sessionLoading || isUserLoading || error) {
+    if (!sessionReady || sessionLoading || isUserLoading || errorMessage) {
       return;
     }
 
@@ -70,7 +75,7 @@ export default function AuthCallbackPage() {
     }
 
     if (!user) {
-      setError(t('errors.user_not_found'));
+      setErrorMessage('user_not_found');
       return;
     }
 
@@ -101,10 +106,9 @@ export default function AuthCallbackPage() {
     sessionLoading,
     isUserLoading,
     isProfileChecked,
-    error,
+    errorMessage,
     navigate,
     sessionReady,
-    t,
   ]);
 
   if (error) {

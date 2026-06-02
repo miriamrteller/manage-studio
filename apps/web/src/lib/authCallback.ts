@@ -1,4 +1,4 @@
-import type { Session } from '@supabase/supabase-js';
+import type { EmailOtpType, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 
 export type AuthCallbackResult =
@@ -9,6 +9,8 @@ export type AuthCallbackUrlParts = {
   search: string;
   hash: string;
 };
+
+const AUTH_CALLBACK_STORAGE_KEY = 'manageStudio.authCallbackUrl';
 
 function parseSearchParams(search: string): URLSearchParams {
   return new URLSearchParams(search.replace(/^\?/, ''));
@@ -23,6 +25,41 @@ function readAuthCallbackUrl(): AuthCallbackUrlParts {
     search: window.location.search,
     hash: window.location.hash,
   };
+}
+
+function persistAuthCallbackUrl(url: AuthCallbackUrlParts): void {
+  if (!url.search && !url.hash) return;
+  try {
+    sessionStorage.setItem(AUTH_CALLBACK_STORAGE_KEY, JSON.stringify(url));
+  } catch {
+    // sessionStorage may be unavailable in some embedded browsers
+  }
+}
+
+function readPersistedAuthCallbackUrl(): AuthCallbackUrlParts | null {
+  try {
+    const stored = sessionStorage.getItem(AUTH_CALLBACK_STORAGE_KEY);
+    if (!stored) return null;
+    return JSON.parse(stored) as AuthCallbackUrlParts;
+  } catch {
+    return null;
+  }
+}
+
+/** signInWithOtp emails use action type magiclink; verifyOtp expects type email. */
+function resolveOtpVerifyType(type: string | null): EmailOtpType {
+  if (type === 'magiclink') return 'email';
+  const allowed: EmailOtpType[] = [
+    'signup',
+    'invite',
+    'recovery',
+    'email_change',
+    'email',
+  ];
+  if (type && allowed.includes(type as EmailOtpType)) {
+    return type as EmailOtpType;
+  }
+  return 'email';
 }
 
 function readAuthError(
@@ -110,9 +147,10 @@ export async function establishSessionFromAuthCallback(
 
   const tokenHash = searchParams.get('token_hash');
   if (tokenHash) {
+    const otpType = resolveOtpVerifyType(searchParams.get('type'));
     const { error } = await supabase.auth.verifyOtp({
       token_hash: tokenHash,
-      type: 'email',
+      type: otpType,
     });
     if (error) {
       return { ok: false, message: error.message };
@@ -142,9 +180,19 @@ export async function establishSessionFromAuthCallback(
 }
 
 export function captureAuthCallbackUrl(): AuthCallbackUrlParts {
-  return readAuthCallbackUrl();
+  const current = readAuthCallbackUrl();
+  if (current.search || current.hash) {
+    persistAuthCallbackUrl(current);
+    return current;
+  }
+  return readPersistedAuthCallbackUrl() ?? current;
 }
 
 export function clearAuthCallbackUrl(): void {
+  try {
+    sessionStorage.removeItem(AUTH_CALLBACK_STORAGE_KEY);
+  } catch {
+    // ignore
+  }
   window.history.replaceState({}, document.title, `${window.location.pathname}`);
 }

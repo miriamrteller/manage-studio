@@ -56,6 +56,21 @@ describe('establishSessionFromAuthCallback', () => {
     expect(mockExchangeCodeForSession).toHaveBeenCalledWith('abc123');
   });
 
+  it('maps magiclink type to email for verifyOtp', async () => {
+    mockVerifyOtp.mockResolvedValue({ error: null });
+
+    const result = await establishSessionFromAuthCallback({
+      search: '?token_hash=hash123&type=magiclink',
+      hash: '',
+    });
+
+    expect(result).toEqual({ ok: true });
+    expect(mockVerifyOtp).toHaveBeenCalledWith({
+      token_hash: 'hash123',
+      type: 'email',
+    });
+  });
+
   it('verifies PKCE token_hash from email template link', async () => {
     mockVerifyOtp.mockResolvedValue({ error: null });
 

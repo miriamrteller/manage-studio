@@ -6,7 +6,7 @@ const DEFAULT_STRINGS = {
     greeting_hello: 'Hello,',
     greeting_with_name: 'Hello {recipientName},',
     intro: "We received a request to sign in to your {schoolName} account. If you didn't make this request, you can ignore this message.",
-    code_heading: 'Your sign-in code:',
+    code_heading: 'Or enter this code on the login page:',
     cta_button: 'Sign In',
     fallback_text: "If the button above doesn't work, copy and paste this link into your browser:",
     expiration_notice: 'This link expires in {expiresInMinutes} minutes',
@@ -20,5 +20,5 @@ export default function MagicLinkEmail({ schoolName, schoolLogoUrl, magicLinkUrl
     const intro = (finalStrings.intro || '').replace('{schoolName}', schoolName);
     const expirationText = (finalStrings.expiration_notice || '').replace('{expiresInMinutes}', String(expiresInMinutes));
     const previewText = (finalStrings.preview || '').replace('{schoolName}', schoolName);
-    return (_jsxs(BaseEmailTemplate, { previewText: previewText, schoolName: schoolName, schoolLogoUrl: schoolLogoUrl, language: language, colors: colors, footerStrings: footerStrings, children: [_jsx(EmailParagraph, { children: greeting }), _jsx(EmailParagraph, { children: intro }), otpCode ? (_jsxs(_Fragment, { children: [_jsx(EmailParagraph, { style: { fontWeight: 600 }, children: finalStrings.code_heading || DEFAULT_STRINGS.code_heading }), _jsx(EmailOtpCode, { code: otpCode })] })) : null, _jsx(EmailPrimaryButton, { href: magicLinkUrl, children: finalStrings.cta_button || DEFAULT_STRINGS.cta_button }), _jsx(EmailMutedText, { children: finalStrings.fallback_text || DEFAULT_STRINGS.fallback_text }), _jsx(EmailLinkBox, { href: magicLinkUrl }), _jsx(EmailWarningText, { children: expirationText }), _jsx(EmailMutedText, { children: finalStrings.security_notice || DEFAULT_STRINGS.security_notice })] }));
+    return (_jsxs(BaseEmailTemplate, { previewText: previewText, schoolName: schoolName, schoolLogoUrl: schoolLogoUrl, language: language, colors: colors, footerStrings: footerStrings, children: [_jsx(EmailParagraph, { children: greeting }), _jsx(EmailParagraph, { children: intro }), _jsx(EmailPrimaryButton, { href: magicLinkUrl, children: finalStrings.cta_button || DEFAULT_STRINGS.cta_button }), otpCode ? (_jsxs(_Fragment, { children: [_jsx(EmailParagraph, { style: { fontWeight: 600, marginTop: '24px' }, children: finalStrings.code_heading || DEFAULT_STRINGS.code_heading }), _jsx(EmailOtpCode, { code: otpCode })] })) : null, _jsx(EmailMutedText, { children: finalStrings.fallback_text || DEFAULT_STRINGS.fallback_text }), _jsx(EmailLinkBox, { href: magicLinkUrl }), _jsx(EmailWarningText, { children: expirationText }), _jsx(EmailMutedText, { children: finalStrings.security_notice || DEFAULT_STRINGS.security_notice })] }));
 }

@@ -32,7 +32,7 @@
         "greeting_hello": "Hello,",
         "greeting_with_name": "Hello {recipientName},",
         "intro": "We received a request to sign in to your {schoolName} account. If you didn't make this request, you can ignore this message.",
-        "code_heading": "Your sign-in code:",
+        "code_heading": "Or enter this code on the login page:",
         "copy_button": "Copy",
         "cta_button": "Sign In",
         "expiration_notice": "This link expires in {expiresInMinutes} minutes",

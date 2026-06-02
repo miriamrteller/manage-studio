@@ -36,17 +36,20 @@ const AUTH_EMAIL_ACTIONS = new Set([
   "email_change",
 ]);
 
-function buildConfirmationUrl(
-  supabaseUrl: string,
-  emailData: AuthEmailHookData,
-): string {
-  const base = new URL("/auth/v1/verify", supabaseUrl);
-  base.searchParams.set("token", emailData.token_hash);
-  base.searchParams.set("type", emailData.email_action_type);
-  if (emailData.redirect_to) {
-    base.searchParams.set("redirect_to", emailData.redirect_to);
+/**
+ * Link straight to the app callback with token_hash so sign-in works from any
+ * browser/device (Supabase /verify + PKCE requires the same browser that requested the code).
+ */
+function buildConfirmationUrl(emailData: AuthEmailHookData): string {
+  const redirectTo = emailData.redirect_to?.trim() || emailData.site_url?.trim();
+  if (!redirectTo) {
+    throw new Error("Missing redirect_to for auth email link");
   }
-  return base.toString();
+
+  const url = new URL(redirectTo);
+  url.searchParams.set("token_hash", emailData.token_hash);
+  url.searchParams.set("type", emailData.email_action_type);
+  return url.toString();
 }
 
 function subjectForAction(
@@ -150,7 +153,7 @@ Deno.serve(async (req) => {
       tenant.language,
     );
 
-    const confirmationUrl = buildConfirmationUrl(supabaseUrl, emailData);
+    const confirmationUrl = buildConfirmationUrl(emailData);
     const strings = overrides ?? {};
 
     const otpCode = emailData.token || undefined;

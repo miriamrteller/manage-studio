@@ -32,7 +32,7 @@
     "greeting_hello": "שלום,",
     "greeting_with_name": "שלום {recipientName},",
     "intro": "קיבלנו בקשה להיכנס לחשבון {schoolName} שלך. אם לא ביצעת פעולה זו, אתה יכול להתעלם מהודעה זו.",
-    "code_heading": "קוד ההתחברות שלך:",
+    "code_heading": "או הזן קוד זה בדף ההתחברות:",
     "copy_button": "העתק",
     "cta_button": "הכנס לחשבון",
     "expiration_notice": "קישור זה יפוג בעוד {expiresInMinutes} דקות",

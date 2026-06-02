@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { useParentPortal, type EngagementWithOffering } from './useParentPortal';
 import { EditChildModal } from './EditChildModal';
+import { AddChildModal } from './AddChildModal';
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -59,6 +60,7 @@ export function ParentPortal() {
   const navigate = useNavigate();
   const { data, isLoading, error } = useParentPortal();
   const [editingChildId, setEditingChildId] = useState<string | null>(null);
+  const [showAddChild, setShowAddChild] = useState(false);
 
   if (isLoading) {
     return (
@@ -96,16 +98,26 @@ export function ParentPortal() {
       </section>
 
       <section aria-labelledby="portal-children-heading">
-        <h3 id="portal-children-heading" className="text-lg font-semibold text-gray-900 mb-4">
-          {t('pages.portal.children_heading')}
-        </h3>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <h3 id="portal-children-heading" className="text-lg font-semibold text-gray-900">
+            {t('pages.portal.children_heading')}
+          </h3>
+          <Button variant="outline" size="sm" onClick={() => setShowAddChild(true)}>
+            {t('pages.portal.add_child')}
+          </Button>
+        </div>
 
         {children.length === 0 ? (
           <div className="rounded-lg border border-dashed border-gray-300 p-6 text-center text-sm text-gray-600">
             <p>{t('pages.portal.no_children')}</p>
-            <Button variant="outline" className="mt-4" onClick={() => navigate('/enrol')}>
-              {t('pages.portal.enrol_new')}
-            </Button>
+            <div className="mt-4 flex flex-wrap justify-center gap-2">
+              <Button variant="outline" onClick={() => setShowAddChild(true)}>
+                {t('pages.portal.add_child')}
+              </Button>
+              <Button variant="primary" onClick={() => navigate('/enrol')}>
+                {t('pages.portal.enrol_new')}
+              </Button>
+            </div>
           </div>
         ) : (
           <ul className="space-y-4">
@@ -165,6 +177,8 @@ export function ParentPortal() {
       {editingChild && (
         <EditChildModal child={editingChild} onClose={() => setEditingChildId(null)} />
       )}
+
+      {showAddChild && <AddChildModal onClose={() => setShowAddChild(false)} />}
 
       <section aria-labelledby="portal-payments-heading">
         <h3 id="portal-payments-heading" className="text-lg font-semibold text-gray-900 mb-4">

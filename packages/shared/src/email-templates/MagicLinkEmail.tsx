@@ -40,7 +40,7 @@ const DEFAULT_STRINGS = {
   greeting_with_name: 'Hello {recipientName},',
   intro:
     "We received a request to sign in to your {schoolName} account. If you didn't make this request, you can ignore this message.",
-  code_heading: 'Your sign-in code:',
+  code_heading: 'Or enter this code on the login page:',
   cta_button: 'Sign In',
   fallback_text:
     "If the button above doesn't work, copy and paste this link into your browser:",
@@ -88,18 +88,18 @@ export default function MagicLinkEmail({
       <EmailParagraph>{greeting}</EmailParagraph>
       <EmailParagraph>{intro}</EmailParagraph>
 
+      <EmailPrimaryButton href={magicLinkUrl}>
+        {finalStrings.cta_button || DEFAULT_STRINGS.cta_button}
+      </EmailPrimaryButton>
+
       {otpCode ? (
         <>
-          <EmailParagraph style={{ fontWeight: 600 }}>
+          <EmailParagraph style={{ fontWeight: 600, marginTop: '24px' }}>
             {finalStrings.code_heading || DEFAULT_STRINGS.code_heading}
           </EmailParagraph>
           <EmailOtpCode code={otpCode} />
         </>
       ) : null}
-
-      <EmailPrimaryButton href={magicLinkUrl}>
-        {finalStrings.cta_button || DEFAULT_STRINGS.cta_button}
-      </EmailPrimaryButton>
 
       <EmailMutedText>
         {finalStrings.fallback_text || DEFAULT_STRINGS.fallback_text}

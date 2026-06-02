@@ -342,7 +342,7 @@ ON CONFLICT (tenant_id) DO NOTHING;
 -- ============================================================================
 DO $$
 DECLARE
-  v_encrypted_pw TEXT := crypt('devpassword123', gen_salt('bf'));
+  v_encrypted_pw TEXT := crypt('devPassword123', gen_salt('bf'));
 BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM auth.users WHERE id = '00000000-0000-0000-0000-000000000510'::uuid
