@@ -46,3 +46,13 @@ export async function resolveEnrolledPersonIds(
 
   return [...new Set((data || []).map((e: { person_id: string }) => e.person_id))];
 }
+
+/** Person IDs with any active enrolment (for student-list scope). */
+export async function resolveAllEnrolledPersonIds(tenant: Tenant): Promise<string[]> {
+  const { data, error } = await TenantDB.selectFor('engagements', tenant)
+    .in('status', [...ACTIVE_ENROLMENT_STATUSES])
+    .select('person_id');
+  if (error) throw error;
+
+  return [...new Set((data || []).map((e: { person_id: string }) => e.person_id))];
+}

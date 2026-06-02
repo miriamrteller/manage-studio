@@ -2,7 +2,10 @@ import { useQuery } from '@tanstack/react-query';
 import { useTenant } from '@/hooks/useTenant';
 import type { SortOrder } from '@/lib/list-query';
 import { PersonService } from '@/features/people/service';
-import { resolveEnrolledPersonIds } from '../lib/resolveEnrolledPersonIds';
+import {
+  resolveAllEnrolledPersonIds,
+  resolveEnrolledPersonIds,
+} from '../lib/resolveEnrolledPersonIds';
 import {
   DEFAULT_PERSON_SORT,
   type PersonSortField,
@@ -46,6 +49,15 @@ export function useStudents({
 }: UseStudentsOptions = {}) {
   const tenant = useTenant();
   const hasEnrolmentFilter = classIds.length > 0 || categoryIds.length > 0;
+
+  const allEnrolledIdsQuery = useQuery({
+    queryKey: ['all-enrolled-person-ids', tenant?.id],
+    queryFn: async () => {
+      if (!tenant) throw new Error('Tenant not initialized');
+      return resolveAllEnrolledPersonIds(tenant);
+    },
+    enabled: enabled && !!tenant?.id,
+  });
 
   const enrolledIdsQuery = useQuery({
     queryKey: ['enrolled-person-ids', tenant?.id, classIds, categoryIds],
@@ -95,6 +107,8 @@ export function useStudents({
         sortField,
         sortOrder,
         enrolledPersonIds,
+        studentListOnly: true,
+        allEnrolledPersonIds: allEnrolledIdsQuery.data ?? [],
       });
 
       return { people: result.people, total: result.total };
@@ -102,6 +116,7 @@ export function useStudents({
     enabled:
       enabled &&
       !!tenant?.id &&
+      allEnrolledIdsQuery.isFetched &&
       (!hasEnrolmentFilter || enrolledIdsQuery.isFetched),
   });
 
@@ -110,7 +125,10 @@ export function useStudents({
     total: peopleQuery.data?.total || 0,
     page,
     pageSize: PAGE_SIZE,
-    isLoading: peopleQuery.isLoading || (hasEnrolmentFilter && enrolledIdsQuery.isLoading),
+    isLoading:
+      peopleQuery.isLoading ||
+      allEnrolledIdsQuery.isLoading ||
+      (hasEnrolmentFilter && enrolledIdsQuery.isLoading),
     isFetching: peopleQuery.isFetching,
     error: peopleQuery.error,
   };

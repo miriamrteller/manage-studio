@@ -27,6 +27,10 @@ export interface ListPeopleFilters {
   sortOrder?: SortOrder;
   /** Pre-resolved enrolled person IDs (from class/level filter). Pass [] for no matches. */
   enrolledPersonIds?: string[] | null;
+  /** Limit to students: family children or anyone with an active enrolment. */
+  studentListOnly?: boolean;
+  /** Required when studentListOnly — all person IDs with any active enrolment. */
+  allEnrolledPersonIds?: string[];
 }
 
 // Validation schema for person creation/update (without system fields)
@@ -103,6 +107,8 @@ export class PersonService extends BaseService {
       sortField = DEFAULT_PERSON_SORT.field,
       sortOrder = DEFAULT_PERSON_SORT.order,
       enrolledPersonIds: enrolledPersonIdsOverride,
+      studentListOnly = false,
+      allEnrolledPersonIds = [],
     } = options;
     const from = (page - 1) * pageSize;
 
@@ -135,6 +141,15 @@ export class PersonService extends BaseService {
       }
       if (accountIds.length > 0) {
         query = query.in('account_id', accountIds);
+      }
+      if (studentListOnly) {
+        if (allEnrolledPersonIds.length === 0) {
+          query = query.not('account_id', 'is', null);
+        } else {
+          query = query.or(
+            `account_id.not.is.null,id.in.(${allEnrolledPersonIds.join(',')})`
+          );
+        }
       }
       if (enrolledPersonIds !== null && enrolledPersonIds.length > 0) {
         query = query.in('id', enrolledPersonIds);
@@ -251,6 +266,8 @@ export class PersonService extends BaseService {
         emergencyContactName: string | null;
         emergencyContactPhone: string | null;
         activeClassNames: string[];
+        isAccountHolder?: boolean;
+        familyAccountId?: string | null;
       }>;
 
       return rows.map((row) => ({
@@ -262,6 +279,8 @@ export class PersonService extends BaseService {
         emergencyContactName: row.emergencyContactName ?? null,
         emergencyContactPhone: row.emergencyContactPhone ?? null,
         activeClassNames: row.activeClassNames ?? [],
+        isAccountHolder: row.isAccountHolder ?? false,
+        familyAccountId: row.familyAccountId ?? null,
       }));
     }, 'PersonService.searchPeople');
   }
