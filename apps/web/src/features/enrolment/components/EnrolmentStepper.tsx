@@ -167,6 +167,24 @@ export function EnrolmentStepper({
 
   const currentStepIndex = steps.indexOf(currentStep);
 
+  const shouldSkipPersonStep =
+    personStepSkipped || enrolmentContext.canSkipPersonStep;
+
+  const getPreviousStep = (fromIndex = currentStepIndex): EnrolmentStep | null => {
+    let index = fromIndex - 1;
+    while (index >= 0) {
+      const step = steps[index];
+      if (step === 'person' && shouldSkipPersonStep) {
+        index -= 1;
+        continue;
+      }
+      return step;
+    }
+    return null;
+  };
+
+  const canGoBack = getPreviousStep() !== null;
+
   const goToNextStep = () => {
     if (currentStepIndex < steps.length - 1) {
       setCurrentStep(steps[currentStepIndex + 1]);
@@ -231,8 +249,18 @@ export function EnrolmentStepper({
   };
 
   const handlePreviousStep = () => {
-    if (currentStepIndex > 0) {
-      setCurrentStep(steps[currentStepIndex - 1]);
+    if (currentStep === 'checkout') {
+      setCheckoutEnrolmentId(null);
+      setCheckoutError(null);
+      setIsCheckoutPreparing(false);
+      checkoutPrepareStartedRef.current = false;
+    }
+
+    const previous = getPreviousStep();
+    if (previous) {
+      setCurrentStep(previous);
+    } else {
+      onCancel?.();
     }
   };
 
@@ -485,6 +513,7 @@ export function EnrolmentStepper({
             personDateOfBirth={personDateOfBirth}
             onNext={handleClassNext}
             onPrevious={handlePreviousStep}
+            canGoBack={canGoBack}
           />
         )}
 
@@ -493,6 +522,7 @@ export function EnrolmentStepper({
             onNext={handleNextStep}
             onPrevious={handlePreviousStep}
             onSkip={() => handleNextStep()}
+            canGoBack={canGoBack}
           />
         )}
 
@@ -508,6 +538,7 @@ export function EnrolmentStepper({
               setCurrentStep('confirmation');
             }}
             onPrevious={handlePreviousStep}
+            canGoBack={canGoBack}
           />
         )}
 
@@ -520,6 +551,7 @@ export function EnrolmentStepper({
             requireAuth={enrolmentContext.mode !== 'guest' && Boolean(user)}
             onPaymentSuccess={handlePaymentSuccess}
             onPrevious={handlePreviousStep}
+            canGoBack={canGoBack}
           />
         )}
 
@@ -546,6 +578,26 @@ function formatTime(t: string | null | undefined): string {
   return t.slice(0, 5); // "HH:MM" from "HH:MM:SS"
 }
 
+function StepBackButton({
+  onPrevious,
+  canGoBack = true,
+  className = 'flex-1',
+}: {
+  onPrevious: () => void;
+  canGoBack?: boolean;
+  className?: string;
+}) {
+  const { t } = useTranslation();
+
+  if (!canGoBack) return null;
+
+  return (
+    <Button type="button" onClick={onPrevious} variant="outline" className={className}>
+      {t('common.back')}
+    </Button>
+  );
+}
+
 /**
  * Step 2: Class selection
  * Filters out age-ineligible classes when DOB is known. Shows level + ages on each card.
@@ -556,11 +608,13 @@ function StepClass({
   personDateOfBirth,
   onNext,
   onPrevious,
+  canGoBack = true,
 }: {
   data: Partial<Engagement>;
   personDateOfBirth?: string | null;
   onNext: (data?: Partial<Engagement>, className?: string) => void;
   onPrevious: () => void;
+  canGoBack?: boolean;
 }) {
   const { t } = useTranslation();
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
@@ -734,14 +788,12 @@ function StepClass({
       )}
 
       <div className="flex gap-2">
-        <Button type="button" onClick={onPrevious} variant="outline" className="flex-1">
-          {t('common.back')}
-        </Button>
+        <StepBackButton onPrevious={onPrevious} canGoBack={canGoBack} />
         <Button
           type="button"
           onClick={handleNext}
           variant="primary"
-          className="flex-1"
+          className={canGoBack ? 'flex-1' : 'w-full'}
           disabled={!selectedClass}
         >
           {t('common.next')}
@@ -757,10 +809,12 @@ function StepClass({
 function StepNotification({
   onNext,
   onPrevious,
+  canGoBack = true,
 }: {
   onNext: (data?: Partial<Engagement>) => void;
   onPrevious: () => void;
   onSkip: () => void;
+  canGoBack?: boolean;
 }) {
   const { t } = useTranslation();
 
@@ -780,10 +834,13 @@ function StepNotification({
       </Button>
 
       <div className="flex gap-2">
-        <Button type="button" onClick={onPrevious} variant="outline" className="flex-1">
-          {t('common.back')}
-        </Button>
-        <Button type="button" onClick={() => onNext()} variant="primary" className="flex-1">
+        <StepBackButton onPrevious={onPrevious} canGoBack={canGoBack} />
+        <Button
+          type="button"
+          onClick={() => onNext()}
+          variant="primary"
+          className={canGoBack ? 'flex-1' : 'w-full'}
+        >
           {t('common.next')}
         </Button>
       </div>
@@ -801,6 +858,7 @@ function StepAdminCheckout({
   isPreparing,
   onComplete,
   onPrevious,
+  canGoBack = true,
 }: {
   enrolmentData: Partial<Engagement>;
   checkoutEnrolmentId: string | null;
@@ -808,6 +866,7 @@ function StepAdminCheckout({
   isPreparing: boolean;
   onComplete: (result: { message: string; paymentChoice: AdminPaymentChoice }) => void;
   onPrevious: () => void;
+  canGoBack?: boolean;
 }) {
   const { t } = useTranslation();
   const tenant = useTenant();
@@ -858,29 +917,43 @@ function StepAdminCheckout({
 
   if (!enrolmentData.offering_id || !enrolmentData.person_id) {
     return (
-      <p className="text-sm text-destructive" role="alert">
-        {t('enrolment.missing_class_or_term')}
-      </p>
+      <div className="space-y-4">
+        <p className="text-sm text-destructive" role="alert">
+          {t('enrolment.missing_class_or_term')}
+        </p>
+        <StepBackButton onPrevious={onPrevious} canGoBack={canGoBack} className="w-full" />
+      </div>
     );
   }
 
   if (checkoutError) {
     return (
-      <p className="text-sm text-destructive" role="alert">
-        {checkoutError}
-      </p>
+      <div className="space-y-4">
+        <p className="text-sm text-destructive" role="alert">
+          {checkoutError}
+        </p>
+        <StepBackButton onPrevious={onPrevious} canGoBack={canGoBack} className="w-full" />
+      </div>
     );
   }
 
   if (isPreparing || !checkoutEnrolmentId || detailQuery.isLoading || !detailQuery.data || !tenant) {
-    return <p role="status">{t('common.loading')}</p>;
+    return (
+      <div className="space-y-4">
+        <p role="status">{t('common.loading')}</p>
+        <StepBackButton onPrevious={onPrevious} canGoBack={canGoBack} className="w-full" />
+      </div>
+    );
   }
 
   if (detailQuery.error) {
     return (
-      <p className="text-sm text-destructive" role="alert">
-        {detailQuery.error instanceof Error ? detailQuery.error.message : t('common.error')}
-      </p>
+      <div className="space-y-4">
+        <p className="text-sm text-destructive" role="alert">
+          {detailQuery.error instanceof Error ? detailQuery.error.message : t('common.error')}
+        </p>
+        <StepBackButton onPrevious={onPrevious} canGoBack={canGoBack} className="w-full" />
+      </div>
     );
   }
 
@@ -915,6 +988,7 @@ function StepCheckout({
   requireAuth,
   onPaymentSuccess,
   onPrevious,
+  canGoBack = true,
 }: {
   enrolmentData: Partial<Engagement>;
   checkoutEnrolmentId: string | null;
@@ -923,27 +997,39 @@ function StepCheckout({
   requireAuth: boolean;
   onPaymentSuccess: () => void;
   onPrevious: () => void;
+  canGoBack?: boolean;
 }) {
   const { t } = useTranslation();
 
   if (!enrolmentData.offering_id || !enrolmentData.season_id) {
     return (
-      <p className="text-sm text-destructive" role="alert">
-        {t('enrolment.missing_class_or_term')}
-      </p>
+      <div className="space-y-4">
+        <p className="text-sm text-destructive" role="alert">
+          {t('enrolment.missing_class_or_term')}
+        </p>
+        <StepBackButton onPrevious={onPrevious} canGoBack={canGoBack} className="w-full" />
+      </div>
     );
   }
 
   if (checkoutError) {
     return (
-      <p className="text-sm text-destructive" role="alert">
-        {checkoutError}
-      </p>
+      <div className="space-y-4">
+        <p className="text-sm text-destructive" role="alert">
+          {checkoutError}
+        </p>
+        <StepBackButton onPrevious={onPrevious} canGoBack={canGoBack} className="w-full" />
+      </div>
     );
   }
 
   if (isPreparing || !checkoutEnrolmentId) {
-    return <p role="status">{t('common.loading')}</p>;
+    return (
+      <div className="space-y-4">
+        <p role="status">{t('common.loading')}</p>
+        <StepBackButton onPrevious={onPrevious} canGoBack={canGoBack} className="w-full" />
+      </div>
+    );
   }
 
   return (
