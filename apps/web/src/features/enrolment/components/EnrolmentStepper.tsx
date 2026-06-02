@@ -111,7 +111,7 @@ export function EnrolmentStepper({
   const handleGuestSignIn = () => {
     const intent: EnrollmentIntent = {
       classId: initialClassId ?? enrolmentData.offering_id,
-      seasonId: initialTermId ?? enrolmentData.season_id,
+      seasonId: initialTermId ?? enrolmentData.season_id ?? undefined,
       mode: 'parent',
     };
     persistEnrollmentIntent(intent);
