@@ -1,16 +1,13 @@
-interface EmailCodeWithCopyProps {
+interface EmailOtpCodeProps {
     code: string;
-    copyLabel: string;
-    /** Resolved primary hex (email clients ignore CSS variables on buttons). */
-    primaryColor?: string;
 }
-/**
-
- * Sign-in code with a copy-friendly panel beside it.
-
- * Email clients cannot run clipboard JS; the right panel uses selectable monospace text.
-
- */
-export declare function EmailCodeWithCopy({ code, copyLabel, primaryColor, }: EmailCodeWithCopyProps): import("react/jsx-runtime").JSX.Element;
+/** Sign-in OTP code — single selectable block (no copy button; email clients cannot run clipboard JS). */
+export declare function EmailOtpCode({ code }: EmailOtpCodeProps): import("react/jsx-runtime").JSX.Element;
+/** @deprecated Use EmailOtpCode — kept for bundle compatibility during rename. */
+export declare function EmailCodeWithCopy({ code }: {
+    code: string;
+    copyLabel?: string;
+    primaryColor?: string;
+}): import("react/jsx-runtime").JSX.Element;
 export {};
 //# sourceMappingURL=EmailCodeWithCopy.d.ts.map

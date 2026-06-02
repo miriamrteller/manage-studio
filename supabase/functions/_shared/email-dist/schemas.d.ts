@@ -354,26 +354,20 @@ export declare const AccountSchema: z.ZodObject<{
     id: z.ZodString;
     tenant_id: z.ZodString;
     name: z.ZodOptional<z.ZodNullable<z.ZodString>>;
-    contact_person_name: z.ZodOptional<z.ZodNullable<z.ZodString>>;
-    contact_email: z.ZodOptional<z.ZodNullable<z.ZodString>>;
-    contact_phone: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    person_id: z.ZodString;
     created_at: z.ZodEffects<z.ZodString, string, string>;
 }, "strip", z.ZodTypeAny, {
     id: string;
     tenant_id: string;
+    person_id: string;
     created_at: string;
     name?: string | null | undefined;
-    contact_person_name?: string | null | undefined;
-    contact_email?: string | null | undefined;
-    contact_phone?: string | null | undefined;
 }, {
     id: string;
     tenant_id: string;
+    person_id: string;
     created_at: string;
     name?: string | null | undefined;
-    contact_person_name?: string | null | undefined;
-    contact_email?: string | null | undefined;
-    contact_phone?: string | null | undefined;
 }>;
 export type Account = z.infer<typeof AccountSchema>;
 export declare const AccountMemberSchema: z.ZodObject<{
@@ -381,31 +375,25 @@ export declare const AccountMemberSchema: z.ZodObject<{
     tenant_id: z.ZodString;
     account_id: z.ZodString;
     user_profile_id: z.ZodNullable<z.ZodString>;
-    name: z.ZodString;
-    email: z.ZodOptional<z.ZodNullable<z.ZodString>>;
-    phone: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    person_id: z.ZodString;
     role: z.ZodEnum<["account_holder", "member", "sibling", "adult_student"]>;
     created_at: z.ZodEffects<z.ZodString, string, string>;
 }, "strip", z.ZodTypeAny, {
     id: string;
-    name: string;
     tenant_id: string;
     role: "account_holder" | "member" | "sibling" | "adult_student";
+    person_id: string;
     created_at: string;
     user_profile_id: string | null;
     account_id: string;
-    email?: string | null | undefined;
-    phone?: string | null | undefined;
 }, {
     id: string;
-    name: string;
     tenant_id: string;
     role: "account_holder" | "member" | "sibling" | "adult_student";
+    person_id: string;
     created_at: string;
     user_profile_id: string | null;
     account_id: string;
-    email?: string | null | undefined;
-    phone?: string | null | undefined;
 }>;
 export type AccountMember = z.infer<typeof AccountMemberSchema>;
 export declare const SeasonSchema: z.ZodEffects<z.ZodObject<{

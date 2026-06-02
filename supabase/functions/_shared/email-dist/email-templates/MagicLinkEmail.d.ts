@@ -17,7 +17,6 @@ export interface MagicLinkEmailProps {
         greeting_with_name?: string;
         intro?: string;
         code_heading?: string;
-        copy_button?: string;
         cta_button?: string;
         fallback_text?: string;
         expiration_notice?: string;

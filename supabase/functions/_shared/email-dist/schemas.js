@@ -149,25 +149,21 @@ export const ContactPreferencesSchema = z.object({
 // Family (group of related people)
 // Contact columns (name, contact_person_name, contact_email, contact_phone) were added via
 // Migration 004000 and are nullable for backwards compatibility with existing rows.
+// Account (household) — primary contact is people row via person_id
 export const AccountSchema = z.object({
     id: UUIDSchema,
     tenant_id: UUIDSchema,
-    name: z.string().min(1, 'Family name required').nullable().optional(),
-    contact_person_name: z.string().min(1, 'Contact person name required').nullable().optional(),
-    contact_email: z.string().email('Invalid email').nullable().optional(),
-    contact_phone: z.string().regex(/^(050|051|052|053|054|055|056|058|059)\d{7}$/, 'Invalid Israeli phone format').nullable().optional(),
+    name: z.string().nullable().optional(),
+    person_id: UUIDSchema,
     created_at: TimestampSchema,
 });
-// Family member (relationship to family)
-// DB: id, tenant_id, account_id, user_profile_id, name, email, phone, role, created_at
+// Account member links a guardian person to an account
 export const AccountMemberSchema = z.object({
     id: UUIDSchema,
     tenant_id: UUIDSchema,
     account_id: UUIDSchema,
     user_profile_id: UUIDSchema.nullable(),
-    name: z.string().min(1, 'Name required'),
-    email: z.string().email().nullable().optional(),
-    phone: z.string().nullable().optional(),
+    person_id: UUIDSchema,
     role: z.enum(['account_holder', 'member', 'sibling', 'adult_student']),
     created_at: TimestampSchema,
 });
