@@ -1696,6 +1696,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_enrolment_lookup_email: { Args: { p_email: string }; Returns: Json }
       cleanup_expired_otps: { Args: never; Returns: undefined }
       cleanup_old_verification_attempts: { Args: never; Returns: number }
       get_my_account_ids: { Args: never; Returns: string[] }
