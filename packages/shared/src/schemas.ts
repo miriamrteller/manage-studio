@@ -40,6 +40,7 @@ export const TenantSchema = z.object({
   country: z.enum(['IL', 'US']).default('IL'),
   currency: z.string().default('ILS'),
   vat_rate: z.number().min(0).max(1).default(0.17),
+  prices_include_vat: z.boolean().default(true),
 });
 
 export type Tenant = z.infer<typeof TenantSchema>;

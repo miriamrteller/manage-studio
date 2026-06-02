@@ -14,6 +14,7 @@ import { useClasses } from '@/features/classes/hooks/useClasses';
 import { useLevels } from '@/features/levels/hooks/useLevels';
 import { useTenant } from '@/hooks/useTenant';
 import { formatCurrency } from '@shared/format';
+import { computeClassTotal } from '../lib/computeClassTotal';
 import type { Offering } from '@shared/schemas';
 
 type AdminEnrolStep = 'class' | 'payment' | 'done';
@@ -216,7 +217,12 @@ export function AdminEnrolStudentModal({
                         <p className="text-xs text-gray-500 mt-0.5">{detailParts.join(' · ')}</p>
                       )}
                       <p className="text-sm font-medium mt-1">
-                        {formatCurrency(cls.price_minor, tenant?.currency ?? 'ILS', i18n.language)}
+                        {tenant &&
+                          formatCurrency(
+                            computeClassTotal(cls, tenant).chargeMinor,
+                            tenant.currency ?? 'ILS',
+                            i18n.language,
+                          )}
                       </p>
                     </button>
                   </li>

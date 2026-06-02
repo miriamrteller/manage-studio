@@ -12,6 +12,7 @@ import FamiliesPage from "./pages/FamiliesPage";
 import FamilyDetailPage from "./pages/FamilyDetailPage";
 import BillingPage from "./pages/BillingPage";
 import StripeSettingsPage from "./pages/StripeSettingsPage";
+import TaxSettingsPage from "./pages/TaxSettingsPage";
 import LevelsPage from "./pages/LevelsPage";
 import TermsPage from "./pages/TermsPage";
 import AdminClassesPage from "./pages/AdminClassesPage";
@@ -63,6 +64,7 @@ const router = createBrowserRouter([
       { path: "admin/setup/levels", element: <AdminRoute><LevelsPage /></AdminRoute> },
       { path: "admin/setup/terms", element: <AdminRoute><TermsPage /></AdminRoute> },
       { path: "admin/setup/classes", element: <AdminRoute><AdminClassesPage /></AdminRoute> },
+      { path: "admin/setup/tax", element: <AdminRoute><TaxSettingsPage /></AdminRoute> },
       { path: "admin/setup/stripe", element: <AdminRoute><StripeSettingsPage /></AdminRoute> },
 
       // LEGACY ROUTES (Phase 1B) — kept for backward compatibility

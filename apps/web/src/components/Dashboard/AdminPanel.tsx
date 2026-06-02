@@ -45,7 +45,27 @@ export function AdminPanel() {
 
       {/* Setup Navigation Cards */}
       <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* Billing Card */}
+        {/* Tax / VAT Card */}
+        <div className="card border border-gray-200 hover:border-primary hover:shadow-md transition-all">
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900">
+              {t('settings.tax.title')}
+            </h3>
+            <p className="text-sm text-gray-600">
+              {t('settings.tax.description')}
+            </p>
+            <Button
+              variant="primary"
+              fullWidth
+              onClick={() => navigate('/admin/setup/tax')}
+              aria-label={t('settings.tax.title')}
+            >
+              {t('common.manage')} →
+            </Button>
+          </div>
+        </div>
+
+        {/* Billing Accounts Card */}
         <div className="card border border-gray-200 hover:border-primary hover:shadow-md transition-all">
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-gray-900">

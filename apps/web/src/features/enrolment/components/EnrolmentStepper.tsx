@@ -26,6 +26,8 @@ import { PersonService } from '@/features/people/service';
 import { TenantDB } from '@/lib/db';
 import { OfferingSchema } from '@shared/schemas';
 import { buildPaymentLink } from '../lib/adminEnrolmentService';
+import { computeClassTotal } from '../lib/computeClassTotal';
+import { formatCurrency } from '@shared/format';
 import type { EnrollmentIntent } from '@/lib/enrollment-intent';
 import { persistEnrollmentIntent } from '@/lib/enrollment-intent';
 import type { Engagement } from '@shared/schemas';
@@ -345,6 +347,7 @@ export function EnrolmentStepper({
           country: tenant.country,
           currency: tenant.currency,
           vat_rate: tenant.vat_rate,
+          prices_include_vat: tenant.prices_include_vat,
         },
         checkoutEnrolmentId,
       );
@@ -632,7 +635,8 @@ function StepClass({
   onPrevious: () => void;
   canGoBack?: boolean;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const tenant = useTenant();
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
 
   const { classes, isLoading, error } = useClasses({ publicOnly: true });
@@ -774,13 +778,16 @@ function StepClass({
                         {cls.end_time && `–${formatTime(cls.end_time)}`}
                       </p>
                     </div>
-                    {cls.price_minor != null && (
+                    {cls.price_minor != null && tenant && (
                       <span className="shrink-0 text-sm font-semibold text-gray-700">
-                        {(cls.price_minor / 100).toLocaleString(undefined, {
-                          style: 'currency',
-                          currency: cls.currency ?? 'USD',
-                          minimumFractionDigits: 0,
-                        })}
+                        {formatCurrency(
+                          computeClassTotal(
+                            { price_minor: cls.price_minor, currency: cls.currency },
+                            tenant,
+                          ).chargeMinor,
+                          cls.currency ?? tenant.currency,
+                          i18n.language,
+                        )}
                       </span>
                     )}
                   </div>

@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
 import { handleOptions, jsonResponse } from "../_shared/cors.ts";
 import { createServiceClient, requireAuthUser } from "../_shared/supabase.ts";
+import { resolveOfferingPrice } from "../_shared/email-dist/pricing.js";
 
 interface CreateCheckoutBody {
   offering_id: string;
@@ -93,7 +94,7 @@ serve(async (req) => {
 
     const { data: tenant, error: tenantError } = await service
       .from("tenants")
-      .select("vat_rate, currency")
+      .select("vat_rate, prices_include_vat, currency")
       .eq("id", tenantId)
       .single();
 
@@ -116,10 +117,17 @@ serve(async (req) => {
       stripe_webhook_secret: string | null;
     };
 
-    const pretaxMinor = offering.price_minor as number;
-    const vatRate = Number(tenant.vat_rate ?? 0.17);
-    const vatMinor = Math.round(pretaxMinor * vatRate);
-    const totalMinor = pretaxMinor + vatMinor;
+    const pricing = resolveOfferingPrice(
+      { price_minor: offering.price_minor as number },
+      {
+        vat_rate: Number(tenant.vat_rate ?? 0.17),
+        prices_include_vat: tenant.prices_include_vat !== false,
+      },
+    );
+    const pretaxMinor = pricing.pretaxMinor;
+    const vatMinor = pricing.vatMinor;
+    const totalMinor = pricing.totalMinor;
+    const vatRate = pricing.vatRate;
     const currency = (offering.currency ?? tenant.currency ?? "ILS").toLowerCase();
 
     const stripe = new Stripe(cred.stripe_secret_key, {
@@ -138,6 +146,7 @@ serve(async (req) => {
         pretax_amount_minor: String(pretaxMinor),
         vat_amount_minor: String(vatMinor),
         total_amount_minor: String(totalMinor),
+        prices_include_vat: String(tenant.prices_include_vat !== false),
       },
       automatic_payment_methods: { enabled: true },
     });

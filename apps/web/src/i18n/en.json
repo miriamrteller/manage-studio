@@ -161,6 +161,10 @@
       "age_placeholder": "Leave blank if no limit",
       "price": "Price",
       "price_help": "Enter the price in major currency units (e.g. 150.00).",
+      "price_incl_vat": "Price (incl. VAT)",
+      "price_excl_vat": "Price (excl. VAT)",
+      "price_incl_vat_help": "Amount families pay — VAT is included in this figure.",
+      "price_excl_vat_help": "Net price — VAT is added at checkout.",
       "day_of_week": "Day of Week",
       "day_0": "Sunday",
       "day_1": "Monday",
@@ -748,6 +752,16 @@
     "missing_class_or_term": "Select a class and term before payment"
   },
   "settings": {
+    "tax": {
+      "title": "Tax & pricing",
+      "description": "Set VAT rate and whether class prices include VAT. This controls what families see and pay.",
+      "vat_rate": "VAT rate (%)",
+      "vat_rate_help": "e.g. 17 for Israel. Use 0 if VAT-exempt.",
+      "vat_rate_invalid": "Enter a VAT rate between 0 and 100.",
+      "prices_include_vat": "Class prices include VAT",
+      "prices_include_vat_help": "When enabled, the price you enter for each class is the total the customer pays.",
+      "saved": "Tax settings saved"
+    },
     "stripe": {
       "title": "Stripe",
       "description": "Each school uses its own Stripe account (Standard). Secrets are encrypted and never shown again after save.",

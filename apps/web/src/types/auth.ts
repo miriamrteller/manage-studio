@@ -45,6 +45,7 @@ export type TenantConfig = {
   country: 'IL' | 'US';
   currency: string;
   vat_rate: number;
+  prices_include_vat: boolean;
   white_label?: TenantWhiteLabel;
   locale: string;
   stripe_publishable_key?: string | null;

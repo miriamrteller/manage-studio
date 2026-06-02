@@ -365,7 +365,7 @@ When changing core columns in **dev only** (no production tenants yet):
 
 **Implementation plan (agent checklist):** [docs/plans/2026-06-02-vat-pricing.md](docs/plans/2026-06-02-vat-pricing.md)
 
-**Status:** Schema complete (`tenants.prices_include_vat` in `20260526000100_tenants.sql`, RPC in `20260526001500_public_rpcs.sql`, seed updated). Application code pending — see [docs/plans/2026-06-02-vat-pricing.md](docs/plans/2026-06-02-vat-pricing.md) and [docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md). Current bug: `create-checkout` and catalogue still treat `price_minor` as pretax (exclusive VAT).
+**Status:** Implemented — `packages/shared/src/pricing.ts`, `create-checkout`, catalogue/pay UI, `/admin/setup/tax`. Verify after deploy: `pnpm email:bundle`. Track in [docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md).
 
 ### 2.6 Accessibility compliance — WCAG 2.1 Level AA
 

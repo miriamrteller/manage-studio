@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { formatCurrency, formatTime } from '@shared/format';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useTenant } from '@/hooks/useTenant';
+import { computeClassTotal } from '@/features/enrolment/lib/computeClassTotal';
 import type { PublicOffering } from '@/schemas';
 
 /**
@@ -23,6 +25,11 @@ export function ClassCard({ class: cls, currency }: ClassCardProps) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { isLoading } = useCurrentUser();
+  const tenant = useTenant();
+  const displayMinor =
+    tenant != null
+      ? computeClassTotal({ price_minor: cls.price_minor }, tenant).chargeMinor
+      : cls.price_minor;
 
   const handleEnrol = () => {
     if (isLoading) {
@@ -56,7 +63,7 @@ export function ClassCard({ class: cls, currency }: ClassCardProps) {
         )}
 
         <p className="text-lg font-semibold text-primary">
-          {formatCurrency(cls.price_minor, currency, i18n.language)}
+          {formatCurrency(displayMinor, currency, i18n.language)}
         </p>
       </div>
 

@@ -25,6 +25,7 @@ export const TenantSchema = z.object({
     country: z.enum(['IL', 'US']).default('IL'),
     currency: z.string().default('ILS'),
     vat_rate: z.number().min(0).max(1).default(0.17),
+    prices_include_vat: z.boolean().default(true),
 });
 // Tenant white-label configuration (brand customization)
 export const TenantWhiteLabelSchema = z.object({
@@ -287,8 +288,15 @@ export const EngagementSchema = z.object({
         .enum(['pending_payment', 'active', 'admin_review', 'pending_offer', 'cancelled', 'withdrawn'])
         .default('pending_payment'),
     payment_received_at: TimestampSchema.nullable().optional(),
+    cancelled_at: TimestampSchema.nullable().optional(),
+    cancellation_reason: z.string().max(500).nullable().optional(),
+    cancelled_by: UUIDSchema.nullable().optional(),
     created_at: TimestampSchema,
     updated_at: TimestampSchema.optional(),
+});
+export const CancelEnrolmentInputSchema = z.object({
+    engagementId: z.string().uuid(),
+    reason: z.string().max(500).optional(),
 });
 // Class session (individual meeting of a class)
 export const OfferingSessionSchema = z.object({

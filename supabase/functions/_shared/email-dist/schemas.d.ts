@@ -21,6 +21,7 @@ export declare const TenantSchema: z.ZodObject<{
     country: z.ZodDefault<z.ZodEnum<["IL", "US"]>>;
     currency: z.ZodDefault<z.ZodString>;
     vat_rate: z.ZodDefault<z.ZodNumber>;
+    prices_include_vat: z.ZodDefault<z.ZodBoolean>;
 }, "strip", z.ZodTypeAny, {
     id: string;
     name: string;
@@ -29,6 +30,7 @@ export declare const TenantSchema: z.ZodObject<{
     country: "IL" | "US";
     currency: string;
     vat_rate: number;
+    prices_include_vat: boolean;
 }, {
     id: string;
     name: string;
@@ -37,6 +39,7 @@ export declare const TenantSchema: z.ZodObject<{
     country?: "IL" | "US" | undefined;
     currency?: string | undefined;
     vat_rate?: number | undefined;
+    prices_include_vat?: boolean | undefined;
 }>;
 export type Tenant = z.infer<typeof TenantSchema>;
 export declare const TenantWhiteLabelSchema: z.ZodObject<{
@@ -758,6 +761,9 @@ export declare const EngagementSchema: z.ZodObject<{
     billing_account_id: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     status: z.ZodDefault<z.ZodEnum<["pending_payment", "active", "admin_review", "pending_offer", "cancelled", "withdrawn"]>>;
     payment_received_at: z.ZodOptional<z.ZodNullable<z.ZodEffects<z.ZodString, string, string>>>;
+    cancelled_at: z.ZodOptional<z.ZodNullable<z.ZodEffects<z.ZodString, string, string>>>;
+    cancellation_reason: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    cancelled_by: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     created_at: z.ZodEffects<z.ZodString, string, string>;
     updated_at: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
 }, "strip", z.ZodTypeAny, {
@@ -771,6 +777,9 @@ export declare const EngagementSchema: z.ZodObject<{
     updated_at?: string | undefined;
     billing_account_id?: string | null | undefined;
     payment_received_at?: string | null | undefined;
+    cancelled_at?: string | null | undefined;
+    cancellation_reason?: string | null | undefined;
+    cancelled_by?: string | null | undefined;
 }, {
     id: string;
     tenant_id: string;
@@ -782,8 +791,21 @@ export declare const EngagementSchema: z.ZodObject<{
     updated_at?: string | undefined;
     billing_account_id?: string | null | undefined;
     payment_received_at?: string | null | undefined;
+    cancelled_at?: string | null | undefined;
+    cancellation_reason?: string | null | undefined;
+    cancelled_by?: string | null | undefined;
 }>;
 export type Engagement = z.infer<typeof EngagementSchema>;
+export declare const CancelEnrolmentInputSchema: z.ZodObject<{
+    engagementId: z.ZodString;
+    reason: z.ZodOptional<z.ZodString>;
+}, "strip", z.ZodTypeAny, {
+    engagementId: string;
+    reason?: string | undefined;
+}, {
+    engagementId: string;
+    reason?: string | undefined;
+}>;
 export declare const OfferingSessionSchema: z.ZodObject<{
     id: z.ZodString;
     tenant_id: z.ZodString;

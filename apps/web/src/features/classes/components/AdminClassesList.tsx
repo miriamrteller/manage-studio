@@ -17,6 +17,7 @@ import {
   type OfferingSortField,
 } from '../utils/sortClasses';
 import type { Offering } from '@shared/schemas';
+import { computeClassTotal } from '@/features/enrolment/lib/computeClassTotal';
 
 export function AdminClassesList() {
   const { t, i18n } = useTranslation();
@@ -262,7 +263,12 @@ export function AdminClassesList() {
                   </td>
                   <td className="px-4 py-3">{classItem.max_capacity}</td>
                   <td className="px-4 py-3">
-                    {formatCurrency(classItem.price_minor, currency, i18n.language)}
+                    {tenant &&
+                      formatCurrency(
+                        computeClassTotal(classItem, tenant).chargeMinor,
+                        currency,
+                        i18n.language,
+                      )}
                   </td>
                   <td className="px-4 py-3">
                     {t(`form.class.status_${classItem.status}`)}
