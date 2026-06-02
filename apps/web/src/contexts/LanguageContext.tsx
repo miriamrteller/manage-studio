@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
+import { createContext, ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import i18n from '@/i18n/i18n';
 import { useAuthSession } from '@/hooks/useAuth';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase';
 import queryClient from '@/lib/query-client';
 import { resolveEffectiveLanguage, type AppLanguage } from '@/lib/resolve-language';
 import { DocumentLanguageSync } from '@/components/DocumentLanguageSync';
+import type { UserProfile } from '@/types/auth';
 
 interface LanguageContextType {
   language: AppLanguage;
@@ -15,32 +16,47 @@ interface LanguageContextType {
 
 export const LanguageContext = createContext<LanguageContextType | null>(null);
 
+function readStoredLanguage(): AppLanguage | null {
+  const stored = localStorage.getItem('language');
+  return stored === 'he' || stored === 'en' ? stored : null;
+}
+
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const tenant = useTenant();
   const { session } = useAuthSession();
-  const { user, isProfileChecked } = useCurrentUser();
+  const { user, isProfileChecked, isLoading: profileLoading } = useCurrentUser();
 
-  const effectiveLanguage = useMemo(
-    () =>
-      resolveEffectiveLanguage({
-        profileLanguage: user?.language,
-        tenantDefault: tenant?.language_default,
-        isAuthenticated: Boolean(session?.user),
-        isProfileChecked,
-      }),
-    [user?.language, session?.user, tenant?.language_default, isProfileChecked],
+  const [language, setLanguageState] = useState<AppLanguage>(
+    () => readStoredLanguage() ?? 'he',
   );
 
-  const [language, setLanguageState] = useState<AppLanguage>(() => {
-    const stored = localStorage.getItem('language');
-    if (stored === 'he' || stored === 'en') return stored;
-    return 'he';
-  });
+  // Hydrate from profile/tenant once per auth session — not on every profile refetch.
+  const hydratedSessionRef = useRef<string | null>(null);
 
   useEffect(() => {
-    setLanguageState(effectiveLanguage);
-    localStorage.setItem('language', effectiveLanguage);
-  }, [effectiveLanguage]);
+    if (!isProfileChecked) return;
+    if (session?.user && profileLoading) return;
+
+    const sessionKey = session?.user?.id ?? 'guest';
+    if (hydratedSessionRef.current === sessionKey) return;
+    hydratedSessionRef.current = sessionKey;
+
+    const resolved = resolveEffectiveLanguage({
+      profileLanguage: user?.language,
+      tenantDefault: tenant?.language_default,
+      isAuthenticated: Boolean(session?.user),
+      isProfileChecked,
+    });
+
+    setLanguageState(resolved);
+    localStorage.setItem('language', resolved);
+  }, [
+    isProfileChecked,
+    profileLoading,
+    session?.user,
+    user?.language,
+    tenant?.language_default,
+  ]);
 
   useEffect(() => {
     if (i18n.language !== language) {
@@ -54,7 +70,12 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       await i18n.changeLanguage(lang);
       localStorage.setItem('language', lang);
 
-      if (user) {
+      const userId = session?.user?.id;
+      if (user && userId) {
+        queryClient.setQueryData<UserProfile | null>(['currentUser', userId], (old) =>
+          old ? { ...old, language: lang } : old,
+        );
+
         const { error } = await supabase
           .from('user_profiles')
           .update({ language: lang })
@@ -62,12 +83,10 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
         if (error) {
           console.warn('Failed to persist language preference:', error.message);
-        } else {
-          await queryClient.invalidateQueries({ queryKey: ['currentUser'] });
         }
       }
     },
-    [user],
+    [user, session?.user?.id],
   );
 
   return (
