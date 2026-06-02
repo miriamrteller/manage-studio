@@ -98,7 +98,7 @@ Each school configures their own Twilio, Resend, and Stripe keys. You store them
 WCAG 2.1 Level AA is a legal requirement for Israeli community centers (דינ נגישות לאנשים עם מוגבלות, 1998). All UI features must pass automated axe-core tests before merge. Manual NVDA Hebrew smoke tests verify 15 minutes pre-deployment. Accessibility is part of the Definition of Done for every feature.
 
 **1.12 Tenant branding and configuration are separate from code.**
-Each tenant has configurable properties: `language_default`, `country`, `currency`, `vat_rate`, `primary_color`, `accent_color`, and future fields like `logo_url`.
+Each tenant has configurable properties: `language_default`, `country`, `currency`, `vat_rate`, `prices_include_vat`, `primary_color`, `accent_color`, and future fields like `logo_url`.
 
 - **Never hardcode tenant-specific values** in components (no `text-[#76335a]`, no `'he-IL'` strings).
 - **Always use CSS variables and configuration hooks** (`useTenant()` for locale, CSS variables for colors/fonts).
@@ -252,32 +252,118 @@ Edge Functions
 
 ### 2.5 Data and calculation strategy
 
-**VAT Rounding (Issue #12 decision)** — Use banker's rounding (round half to even, ISO 80000-1 standard):
+#### 2.5.1 Class price & VAT semantics (canonical)
+
+**Problem (V1 bug):** `offerings.price_minor` is shown raw in the catalogue (e.g. ₪240) while checkout/email/Stripe add 17% VAT (₪280.80). Admin expects the entered price to be what the customer pays.
+
+**Locked decisions:**
+
+| Decision | Value |
+| -------- | ----- |
+| Tenant flag | `tenants.prices_include_vat BOOLEAN NOT NULL DEFAULT true` |
+| Default for IL B2C schools | `true` — admin-entered price is **gross** (what customer pays) |
+| Alternative mode | `false` — admin-entered price is **net**; VAT added at checkout |
+| V1 scope | Tenant-level flag only (no per-offering inclusive/exclusive override) |
+| `offerings.price_minor` | Always the admin-entered list price; meaning depends on `prices_include_vat` |
+| Rate | `vat_rate = offering.vat_rate ?? tenant.vat_rate ?? 0.17` (offering override when column present) |
+| Dev schema changes | Edit **base** migration `20260526000100_tenants.sql` (do not add a one-off `ALTER` migration in dev); reset DB and re-push all migrations (see §2.5.3) |
+
+**Single implementation module:** `packages/shared/src/pricing.ts` (exported from `@shared`). All UI, Edge Functions, and offline payment recording call `resolveOfferingPrice()` — never duplicate formulas in Deno or React.
+
+**`resolveOfferingPrice()` contract** (all amounts in minor currency units):
+
+| Field | Inclusive (`prices_include_vat = true`) | Exclusive (`= false`) |
+| ----- | --------------------------------------- | --------------------- |
+| `listMinor` | `price_minor` | `price_minor` |
+| `chargeMinor` | `price_minor` | `price_minor + round(price_minor × vat_rate)` |
+| `pretaxMinor` | `round(price_minor / (1 + vat_rate))` | `price_minor` |
+| `vatMinor` | `chargeMinor - pretaxMinor` | `chargeMinor - pretaxMinor` |
+| `totalMinor` | same as `chargeMinor` | same as `chargeMinor` |
+
+**Display rules:**
+
+- Customer-facing surfaces (class cards, enrolment, payment email, pay page) show **`chargeMinor`** via `formatCurrency()` from `packages/shared/src/format.ts`.
+- Admin class form label/help reflects tenant mode (“incl. VAT” / “excl. VAT”).
+- Checkout summary (Phase 1C) may show pretax + VAT lines for transparency; **total line must equal `chargeMinor`**.
+
+**VAT split helper (inclusive mode)** — Issue #12; V1 uses `Math.round` on pretax (banker's rounding deferred):
 
 ```typescript
-// src/lib/format.ts
-export function calculateVat(
-  totalMinor: number,
-  vatRate: number,
-): {
-  pretax: number;
-  vat: number;
-  total: number;
-} {
-  // Banker's rounding: Math.round uses round-half-away-from-zero; use banker's rounding for VAT
+// packages/shared/src/pricing.ts
+export function calculateVat(totalMinor: number, vatRate: number) {
   const pretaxExact = totalMinor / (1 + vatRate);
-  const pretax = Math.round(pretaxExact); // Round to nearest whole agora
-  const vat = totalMinor - pretax; // VAT is the remainder — always sums cleanly
-
+  const pretax = Math.round(pretaxExact);
+  const vat = totalMinor - pretax;
   return { pretax, vat, total: totalMinor };
 }
+
+export function addVatToPretax(pretaxMinor: number, vatRate: number) {
+  const vat = Math.round(pretaxMinor * vatRate);
+  return { pretax: pretaxMinor, vat, total: pretaxMinor + vat };
+}
+
+export function resolveOfferingPrice(
+  offering: { price_minor: number; vat_rate?: number | null },
+  tenant: { vat_rate: number; prices_include_vat: boolean },
+) { /* implements table above */ }
 ```
 
-Israeli VAT calculations are often done on net amount, then add VAT. This ensures:
+`apps/web/src/features/enrolment/lib/computeClassTotal.ts` remains a thin wrapper around `resolveOfferingPrice()` for backwards compatibility.
 
-- No negative VAT amounts
-- Matches accountant expectations (Israeli accounting norms use banker's rounding)
-- Minimal rounding errors across large invoice volumes
+#### 2.5.2 External integrations — what we own vs Stripe / Morning (Green Invoice)
+
+Manage Studio is the **system of record for enrolment pricing consistency**. Third parties handle payment capture and tax document issuance; they must receive amounts we have already resolved — not re-interpret catalogue prices.
+
+| Layer | Owner | Responsibility |
+| ----- | ----- | -------------- |
+| **List price semantics** | Manage Studio | `price_minor` + `prices_include_vat` → `resolveOfferingPrice()` |
+| **UI / email / quotes** | Manage Studio | Always `chargeMinor`; optional VAT breakdown |
+| **`payments` row** | Manage Studio | Immutable `pretax_amount_minor`, `vat_amount_minor`, `total_amount_minor`, `vat_rate` at time of payment |
+| **Card capture** | Stripe | `PaymentIntent.amount = totalMinor` (minor units); metadata carries our breakdown for webhook |
+| **Tax invoice PDF / allocation number** | Morning API / Green Invoice (V2.6) | Legal document generation; **input line amounts = our `payments` breakdown**, not a second VAT calculation |
+| **Accounting export** | Manage Studio → CSV (V2.7) | Reads `payments` / `expenses`; no duplicate math |
+
+**Stripe (V1):**
+
+- Edge Function `create-checkout` loads offering + tenant, calls `resolveOfferingPrice()`, creates `PaymentIntent` with `amount: totalMinor`.
+- Metadata: `pretax_amount_minor`, `vat_amount_minor`, `total_amount_minor`, `vat_rate`, `prices_include_vat` (string), `tenant_id`, `engagement_id`, `offering_id`.
+- `stripe-webhook` persists metadata into `payments` — does not re-derive VAT from `offerings.price_minor` alone.
+- Stripe Tax / automatic tax products are **out of scope for V1**; Israeli VAT is app-computed.
+
+**Morning / Green Invoice (V2.6):**
+
+- Trigger: `payment_intent.succeeded` (or batch job) after `payments` insert.
+- Request body uses **`payments.pretax_amount_minor`**, **`payments.vat_amount_minor`**, **`payments.total_amount_minor`** — same numbers the parent saw.
+- Store provider `document_id` / PDF URL in `payments.invoice_url`; optional `external_invoice_provider` + `external_invoice_id` columns when integrated.
+- If Morning API rejects amounts (rounding mismatch), fix `resolveOfferingPrice()` once — do not maintain parallel VAT logic in the Edge Function.
+
+**Anti-patterns (forbidden):**
+
+- Showing `offerings.price_minor` to parents when `prices_include_vat` does not match display intent.
+- Adding VAT on top of an inclusive price in `create-checkout`.
+- Letting Stripe dashboard tax settings override per-enrolment amounts.
+- Recomputing VAT inside the Morning/Green Invoice adapter from gross catalogue price.
+
+#### 2.5.3 Dev schema change workflow (V1 — edit base migrations)
+
+When changing core columns in **dev only** (no production tenants yet):
+
+1. Edit the **original** migration file (e.g. add `prices_include_vat` to `20260526000100_tenants.sql`).
+2. Update `get_tenant_config_by_subdomain` in `20260526001500_public_rpcs.sql` to return the new column.
+3. Grep repo for `vat_rate`, `price_minor`, `pretax`, `computeClassTotal`, `create-checkout` — align Edge Functions and web.
+4. Update `supabase/seed.sql` tenant `INSERT` (include `prices_include_vat = true`).
+5. Reset and re-apply (local):
+   ```bash
+   pnpm db:reset-local          # or: supabase/reset_dev_db.sql then pnpm db:push
+   psql ... -f supabase/seed.sql   # if seed not auto-run on reset
+   pnpm db:types
+   pnpm email:bundle            # refresh edge _shared/email-dist after shared build
+   ```
+6. Remote dev project: `pnpm db:push` after reset script clears migration history (see §4.2).
+
+**Implementation plan (agent checklist):** [docs/plans/2026-06-02-vat-pricing.md](docs/plans/2026-06-02-vat-pricing.md)
+
+**Status:** Planned — migration `20260526003000_tenant_prices_include_vat.sql` adds `tenants.prices_include_vat` (squash into `001` when resetting migrations). Application code still uses exclusive VAT on `price_minor` in `create-checkout` and raw `price_minor` in catalogue UI (2026-06).
 
 ### 2.6 Accessibility compliance — WCAG 2.1 Level AA
 
@@ -611,7 +697,7 @@ Landing pages and public class listings need data before a user logs in. The acc
 
 ⏱️ **TIMING:** Third-party credentials (Twilio, Resend, Stripe) are configured **after** schema deploy via admin UI or manual runbook. See [Third-Party Services Setup](docs/deployment/THIRD_PARTY_SERVICES.md) and [docs/MANUAL_OPERATIONS_RUNBOOK.md](docs/MANUAL_OPERATIONS_RUNBOOK.md).
 
-**Authoritative SQL:** `supabase/migrations/*.sql` — apply in filename order (`20260526000100`–`20260526001800`). Dev reset: `supabase/reset_dev_db.sql` then `pnpm db:push`. Regenerate types after apply: `pnpm db:types`.
+**Authoritative SQL:** `supabase/migrations/*.sql` — apply in filename order. **Dev-only schema edits:** change the original migration file (e.g. `001` for `tenants`), then reset — do not stack `ALTER` migrations while iterating locally (§2.5.3). Dev reset: `pnpm db:reset-local` or `supabase/reset_dev_db.sql` then `pnpm db:push`; run `supabase/seed.sql`; `pnpm db:types`; `pnpm email:bundle`.
 
 #### 4.2.0 Implemented schema index (V1 slice)
 
@@ -661,6 +747,7 @@ CREATE TABLE tenants (
   accent_color              TEXT        NOT NULL DEFAULT '#e99ac4',
   currency                  TEXT        NOT NULL DEFAULT 'ILS',
   vat_rate                  NUMERIC(5,4) DEFAULT 0.17,
+  prices_include_vat        BOOLEAN     NOT NULL DEFAULT true,  -- see §2.5.1
   phone_region              TEXT        NOT NULL DEFAULT 'IL',
   phone_region_updated_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
   -- Stripe (Standard account per school; Connect deferred)
@@ -686,7 +773,7 @@ CREATE TABLE user_profiles (
 );
 ```
 
-**Deferred on `tenants` (V2/V3 blueprint, not in V1 migration):** `custom_domain`, `logo_url`, `entity_label_*`, `plan`, Resend/Twilio columns, `vat_registered` / `vat_number`.
+**Deferred on `tenants` (V2/V3 blueprint, not in V1 migration):** `custom_domain`, `logo_url`, `entity_label_*`, `plan`, Resend/Twilio columns, `vat_registered` / `vat_number`, `external_invoice_provider` (e.g. `morning` / `green_invoice`).
 
 #### 4.2.2 Migration 002 — People and families
 
@@ -2076,8 +2163,9 @@ All Stripe API calls creating or modifying payment objects happen in Edge Functi
 
 Key Edge Functions:
 
-- `create-payment-intent`: validates user JWT; loads class price server-side; calculates VAT; creates PaymentIntent with `metadata.tenant_id`; returns `clientSecret` (invoice number assigned on webhook success, not at intent creation)
-- `stripe-webhook`: idempotent handler for `payment_intent.succeeded`, `payment_intent.payment_failed`, `invoice.payment_failed`, `customer.subscription.deleted`
+- `create-checkout` (V1): validates session; loads offering + tenant; **`resolveOfferingPrice()`** (§2.5.1); creates PaymentIntent with `amount = totalMinor` and VAT breakdown in metadata; returns `clientSecret` (invoice number assigned on webhook success, not at intent creation)
+- `create-payment-intent`: legacy alias — align with `create-checkout` or remove; **frontend uses `create-checkout` only**
+- `stripe-webhook`: idempotent handler for `payment_intent.succeeded`, `payment_intent.payment_failed`, `invoice.payment_failed`, `customer.subscription.deleted`; persists metadata pretax/vat/total into `payments` without recalculating from catalogue price
 
 #### Payment state machine (Issue #8 clarification: subscription vs payment intent)
 
@@ -2090,8 +2178,8 @@ Never trust a cached subscription status when PaymentIntent disagrees.
 
 ```
 Payment flow (V1 — one-time class enrolment):
-1. Frontend: Load class price → show Payment Element
-2. Edge Function create-payment-intent: Create PaymentIntent, return clientSecret
+1. Frontend: resolveOfferingPrice() → show total (and optional VAT breakdown)
+2. Edge Function create-checkout: Create PaymentIntent (amount = totalMinor), return clientSecret
 3. Frontend: Confirm payment with Stripe
 4. Stripe webhook payment_intent.succeeded:
    → payments table: INSERT with PaymentIntent.id as stripe_payment_intent_id
@@ -2137,7 +2225,7 @@ Screens:
 - **Payments:** transaction log with VAT column, filter by status/date; basic P&L (revenue vs expenses)
 - **Expenses:** enter and categorise expenses; receipt upload to Supabase Storage
 - **Notifications:** compose email blast; select recipients by class/level/all; WhatsApp blast for urgent items
-- **Settings:** school profile, levels, terms, class requirements, discount rules, external API keys
+- **Settings:** school profile, **billing** (`vat_rate`, `prices_include_vat`), levels, terms, class requirements, discount rules, Stripe keys, external API keys (Morning/Green Invoice in V2.6)
 
 ### 6.x — Deferred backlog (post–V1 payment slice)
 
@@ -2181,6 +2269,7 @@ DATABASE
 [ ] RLS verified: parent sees only own family; teacher sees only own tenant
 [ ] Invoice sequences table seeded for your tenant
 [ ] VAT rate set correctly on tenant row (0.17 if עוסק מורשה, 0 if עוסק פטור)
+[ ] `prices_include_vat` matches how school quotes prices (default `true` for parent-facing schools)
 
 STRIPE
 [ ] Webhook endpoint pointing to stripe-webhook Edge Function
@@ -2268,9 +2357,22 @@ Handles: class schedule questions, enrolment process, pricing, waitlist queries.
 
 Build on top of existing WhatsApp/Twilio account (same vendor, new product).
 
-### V2.6 — Green Invoice integration
+### V2.6 — Morning API / Green Invoice integration
 
-Edge Function calls Green Invoice API on payment success. Generates legally-compliant Israeli tax invoice. Stores invoice URL in `payments.invoice_url`. Accountant receives monthly export automatically.
+**Provider:** [Morning](https://www.greeninvoice.co.il/) (Green Invoice / חשבונית ירוקה) REST API for Israeli tax invoices.
+
+**Boundary (see §2.5.2):** Manage Studio computes VAT once at enrolment/checkout; Morning **documents** that transaction — it does not redefine the charge.
+
+Flow:
+
+1. `stripe-webhook` (or offline payment path) inserts `payments` with final `pretax_amount_minor`, `vat_amount_minor`, `total_amount_minor`.
+2. Edge Function `issue-tax-document` (new) reads the `payments` row + payer details; calls Morning API with those amounts.
+3. Store `document_id` and PDF URL in `payments.invoice_url` (and optional `external_invoice_id`).
+4. On Morning failure: queue retry; never change `payments` amounts — fix mapping or rounding in `resolveOfferingPrice()` only.
+
+**Not in Morning adapter:** catalogue pricing, enrolment quotes, or Stripe `PaymentIntent.amount` — those stay in Manage Studio + Stripe.
+
+Accountant monthly export: V2.7 CSV from `payments` / `expenses` (can include Morning document IDs).
 
 ### V2.7 — QuickBooks / Xero export
 
@@ -2428,13 +2530,31 @@ describe("checkClassRequirements", () => {
   });
 });
 
-// Test VAT calculation
+// Test VAT calculation — packages/shared/src/pricing.ts
 describe("calculateVat", () => {
-  it("calculates 17% VAT correctly", () => {
+  it("calculates 17% VAT correctly from inclusive gross", () => {
     const { pretax, vat, total } = calculateVat(1000, 0.17);
     expect(pretax).toBe(855); // 1000 / 1.17 rounded
     expect(vat).toBe(145);
     expect(total).toBe(1000);
+  });
+});
+
+describe("resolveOfferingPrice", () => {
+  it("inclusive: charge equals list price_minor", () => {
+    const r = resolveOfferingPrice(
+      { price_minor: 24000 },
+      { vat_rate: 0.17, prices_include_vat: true },
+    );
+    expect(r.chargeMinor).toBe(24000);
+    expect(r.pretaxMinor + r.vatMinor).toBe(24000);
+  });
+  it("exclusive: charge adds VAT to list", () => {
+    const r = resolveOfferingPrice(
+      { price_minor: 24000 },
+      { vat_rate: 0.17, prices_include_vat: false },
+    );
+    expect(r.chargeMinor).toBe(28080);
   });
 });
 
