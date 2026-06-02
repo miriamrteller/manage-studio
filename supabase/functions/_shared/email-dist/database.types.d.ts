@@ -1786,6 +1786,13 @@ export type Database = {
                     stripe_webhook_secret: string;
                 }[];
             };
+            guest_enrolment_check_email: {
+                Args: {
+                    p_email: string;
+                    p_subdomain: string;
+                };
+                Returns: Json;
+            };
             guest_enrolment_create_adult: {
                 Args: {
                     p_date_of_birth?: string;
@@ -1878,6 +1885,13 @@ export type Database = {
                     p_webhook_secret: string;
                 };
                 Returns: undefined;
+            };
+            search_enrolment_students: {
+                Args: {
+                    p_limit?: number;
+                    p_query: string;
+                };
+                Returns: Json;
             };
         };
         Enums: {

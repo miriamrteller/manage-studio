@@ -2148,6 +2148,10 @@ Items intentionally **not** in the first finance migration or V1 checkout scope:
 3. **`discount_rules` at checkout** — table defined in full schema; not required for first payment slice.
 4. **Per-tenant Twilio/Resend** — migrate `send-notification` off platform env keys; fix client-supplied `tenantId` trust model.
 5. **Multi-region** — `tenants.region` and routing (V3).
+6. **Unenrol Phase 2 — post-payment withdrawal** — `active` → `withdrawn`; refund wizard (none / partial / full) with immutable negative `payments` rows; Stripe refund for online. See [docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md).
+7. **Unenrol Phase 3 — parent withdrawal requests & refund policy** — parent-initiated request queue; tenant-configurable pro-rata rules; optional account credit. Depends on Phase 1G parent portal.
+
+**In progress (V1):** Admin cancel pre-payment enrolment — [docs/plans/2026-06-02-unenrol-phase-1.md](docs/plans/2026-06-02-unenrol-phase-1.md).
 
 Track live status in [docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md).
 
@@ -2243,6 +2247,8 @@ Teacher attendance register per session. Absent students automatically credited.
 ### V2.2 — Waiting list automation
 
 Database webhook on enrolment cancellation → `process-waiting-list` Edge Function → offer sent via WhatsApp + email with 48-hour payment link.
+
+**Prerequisite:** Pre-payment cancellation (Unenrol Phase 1) must emit a reliable cancellation event; see [docs/plans/2026-06-02-unenrol-phase-1.md](docs/plans/2026-06-02-unenrol-phase-1.md).
 
 ### V2.3 — Class cancellation cascade
 

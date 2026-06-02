@@ -489,7 +489,19 @@ export function EnrolmentStepper({
                     );
                     return;
                   }
-                  const { person } = await EnrolmentOnboardingService.createMinorWithFamily(
+                  if (fields.existing_account_id) {
+                    const person = await EnrolmentOnboardingService.createChildForAccount(
+                      tenant,
+                      fields.existing_account_id,
+                      {
+                        student_name: fields.student_name,
+                        student_date_of_birth: fields.student_date_of_birth,
+                      },
+                    );
+                    handlePersonNext({ ...enrolmentData, person_id: person.id }, fields.student_date_of_birth);
+                    return;
+                  }
+                  const person = await EnrolmentOnboardingService.createStudentWithGuardianEmail(
                     tenant,
                     {
                       ...fields,

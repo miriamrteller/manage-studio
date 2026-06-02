@@ -10,4 +10,8 @@ export interface PersonSearchResult {
   emergencyContactName: string | null;
   emergencyContactPhone: string | null;
   activeClassNames: string[];
+  /** True when this person is the account_holder for a family. */
+  isAccountHolder?: boolean;
+  /** Family account id (from person.account_id or account_members). */
+  familyAccountId?: string | null;
 }

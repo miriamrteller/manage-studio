@@ -17,6 +17,8 @@ export interface PersonSearchComboboxProps {
   isSelectable?: (result: PersonSearchResult) => boolean;
   /** Shown under a result when isSelectable returns false. */
   renderIneligibleHint?: (result: PersonSearchResult) => ReactNode;
+  /** Optional badge beside the result name (e.g. Student / Family). */
+  renderResultBadge?: (result: PersonSearchResult) => ReactNode;
   /** Override default subtitle line (name is always shown as the title). */
   renderSubtitle?: (result: PersonSearchResult) => ReactNode;
 }
@@ -47,6 +49,7 @@ export function PersonSearchCombobox({
   filterResults,
   isSelectable = () => true,
   renderIneligibleHint,
+  renderResultBadge,
   renderSubtitle,
 }: PersonSearchComboboxProps) {
   const { t } = useTranslation();
@@ -146,8 +149,9 @@ export function PersonSearchCombobox({
             const selectable = isSelectable(result);
             const ineligibleHint = !selectable ? renderIneligibleHint?.(result) : null;
             const subtitle = renderSubtitle
-              ? renderSubtitle(result)
+              ? (renderSubtitle(result) ?? defaultSubtitle(result, t))
               : defaultSubtitle(result, t);
+            const badge = renderResultBadge?.(result);
 
             return (
               <li key={result.person.id} role="presentation">
@@ -161,7 +165,14 @@ export function PersonSearchCombobox({
                     index === activeIndex ? 'bg-blue-50' : 'hover:bg-gray-50'
                   } ${!selectable ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
-                  <span className="block font-medium">{result.person.name}</span>
+                  <span className="flex flex-wrap items-center gap-2">
+                    <span className="font-medium">{result.person.name}</span>
+                    {badge && (
+                      <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-normal text-gray-600">
+                        {badge}
+                      </span>
+                    )}
+                  </span>
                   {subtitle && (
                     <span className="block text-xs text-gray-600">{subtitle}</span>
                   )}

@@ -63,6 +63,13 @@ export interface GuardianProfile {
 /**
  * EnrolmentOnboardingService — the only place accounts are created during intake.
  */
+export interface GuardianAccountLookup {
+  accountId: string;
+  guardianPersonId: string;
+  guardianName: string;
+  guardianEmail: string | null;
+}
+
 export class EnrolmentOnboardingService extends BaseService {
   /** Resolve the logged-in parent's single account. Throws if zero or multiple. */
   static async getParentAccountId(userProfileId: string): Promise<string> {
@@ -128,7 +135,6 @@ export class EnrolmentOnboardingService extends BaseService {
     }, 'EnrolmentOnboardingService.getPerson');
   }
 
-  /** Add a child to an existing parent account (logged-in parent flow). */
   static async createChildForAccount(
     tenant: Tenant,
     accountId: string,
@@ -150,6 +156,65 @@ export class EnrolmentOnboardingService extends BaseService {
     if (personError) throw new Error(`Failed to create student: ${personError.message}`);
     const person = PersonSchema.parse(personData);
     await this.logAudit(tenant, 'CREATE', 'people', person.id);
+    return person;
+  }
+
+  /** Admin: resolve guardian + family account by email (null if not found). */
+  static async lookupGuardianAccountByEmail(
+    _tenant: Tenant,
+    email: string,
+  ): Promise<GuardianAccountLookup | null> {
+    const normalized = email.trim().toLowerCase();
+    if (!normalized) return null;
+
+    const { data, error } = await supabase.rpc('admin_enrolment_lookup_email', {
+      p_email: normalized,
+    });
+
+    if (error) throw new Error(error.message);
+
+    const row = data as {
+      found?: boolean;
+      accountId?: string;
+      guardianPersonId?: string;
+      guardianName?: string;
+      guardianEmail?: string;
+    };
+
+    if (!row?.found || !row.accountId || !row.guardianPersonId) {
+      return null;
+    }
+
+    return {
+      accountId: row.accountId,
+      guardianPersonId: row.guardianPersonId,
+      guardianName: row.guardianName ?? '',
+      guardianEmail: row.guardianEmail ?? null,
+    };
+  }
+
+  /**
+   * Admin intake: add student to existing family when guardian email is known,
+   * otherwise create a new family record.
+   */
+  static async createStudentWithGuardianEmail(
+    tenant: Tenant,
+    input: NewMinorOnboardingInput,
+  ): Promise<Person> {
+    const validated = NewMinorOnboardingInputSchema.parse(input);
+
+    if (validated.guardian_email) {
+      const existing = await this.lookupGuardianAccountByEmail(tenant, validated.guardian_email);
+      if (existing) {
+        return this.createChildForAccount(tenant, existing.accountId, {
+          student_name: validated.student_name,
+          student_date_of_birth: validated.student_date_of_birth,
+          student_gender: validated.student_gender,
+        });
+      }
+    }
+
+    const { person } = await this.createMinorWithFamily(tenant, validated);
     return person;
   }
 
