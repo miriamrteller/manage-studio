@@ -108,6 +108,7 @@ export const PublicOfferingSchema = z.object({
   category_id: UUIDSchema.nullable().optional(),
   category_name: z.string().nullable().optional(),
   season_id: UUIDSchema.nullable().optional(),
+  season_start_date: z.string().date().nullable().optional(),
   day_of_week: z.number().int().min(0).max(6).nullable().optional(),
   start_time: TimeSchema,
   end_time: TimeSchema,

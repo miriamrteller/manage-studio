@@ -21,6 +21,7 @@ function normalizePublicOffering(row: Record<string, unknown>) {
     ...row,
     min_age: coerceAge(row.min_age),
     max_age: coerceAge(row.max_age),
+    season_start_date: row.season_start_date ?? null,
   };
 }
 

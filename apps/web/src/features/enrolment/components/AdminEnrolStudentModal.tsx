@@ -5,13 +5,15 @@ import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
 import { EnrolmentService } from '../service';
 import { buildPaymentLink } from '../lib/adminEnrolmentService';
-import { filterClassesByAge, ageAt } from '../lib/check-requirements';
+import { filterClassesByAge, ageAt, buildSeasonStartById } from '../lib/check-requirements';
 import {
   AdminEnrolmentPaymentStep,
   type AdminPaymentChoice,
 } from './AdminEnrolmentPaymentStep';
 import { useClasses } from '@/features/classes/hooks/useClasses';
 import { useLevels } from '@/features/levels/hooks/useLevels';
+import { useTerms } from '@/features/terms/hooks/useTerms';
+import { parseLocalDate } from '@/lib/personAge';
 import { useTenant } from '@/hooks/useTenant';
 import { formatCurrency } from '@shared/format';
 import { computeClassTotal } from '../lib/computeClassTotal';
@@ -68,6 +70,7 @@ export function AdminEnrolStudentModal({
   const { classes, isLoading: classesLoading, error: classesError } = useClasses({
     publicOnly: false,
   });
+  const { terms } = useTerms({ page: 1 });
   const { levels } = useLevels();
 
   const levelNameById = useMemo(
@@ -75,20 +78,34 @@ export function AdminEnrolStudentModal({
     [levels],
   );
 
+  const seasonStartById = useMemo(() => buildSeasonStartById(terms), [terms]);
+
   const person = useMemo(
     () => ({ date_of_birth: personDateOfBirth }),
     [personDateOfBirth],
   );
 
+  const ageCheckOptions = useMemo(
+    () => ({ seasonStartById }),
+    [seasonStartById],
+  );
+
+  const displaySeasonStart = useMemo(() => {
+    const fromClass = classes.find((c) => c.season_start_date)?.season_start_date;
+    if (fromClass) return fromClass;
+    const seasonId = classes.find((c) => c.season_id)?.season_id;
+    return seasonId ? seasonStartById[seasonId] : undefined;
+  }, [classes, seasonStartById]);
+
   const studentAge = useMemo(() => {
-    if (!personDateOfBirth) return null;
-    const age = ageAt(personDateOfBirth);
+    if (!personDateOfBirth || !displaySeasonStart) return null;
+    const age = ageAt(personDateOfBirth, parseLocalDate(displaySeasonStart));
     return Number.isNaN(age) ? null : age;
-  }, [personDateOfBirth]);
+  }, [personDateOfBirth, displaySeasonStart]);
 
   const { classes: availableClasses, ageFilteringActive } = useMemo(
-    () => filterClassesByAge(classes, person),
-    [classes, person],
+    () => filterClassesByAge(classes, person, ageCheckOptions),
+    [classes, person, ageCheckOptions],
   );
 
   useEffect(() => {

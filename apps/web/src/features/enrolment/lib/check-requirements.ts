@@ -1,5 +1,5 @@
 import type { OfferingRequirementWithTemplate } from '@/features/classes/requirements/service';
-import { ageAt } from '@/lib/personAge';
+import { ageAt, parseLocalDate } from '@/lib/personAge';
 
 export { ageAt };
 
@@ -10,6 +10,43 @@ export interface PersonContext {
 export interface ClassAgeContext {
   min_age?: number | null;
   max_age?: number | null;
+  season_id?: string | null;
+  season_start_date?: string | null;
+}
+
+export interface AgeCheckOptions {
+  /** Explicit reference date (e.g. pre-selected class season start). */
+  referenceDate?: Date | string;
+  /** season_id → start_date map for per-class age checks. */
+  seasonStartById?: Record<string, string>;
+}
+
+export function buildSeasonStartById(
+  terms: Array<{ id: string; start_date: string }>,
+): Record<string, string> {
+  return Object.fromEntries(terms.map((t) => [t.id, t.start_date]));
+}
+
+function resolveAgeReferenceDate(
+  cls: ClassAgeContext,
+  options?: AgeCheckOptions,
+): Date | null {
+  if (options?.referenceDate) {
+    const ref =
+      typeof options.referenceDate === 'string'
+        ? parseLocalDate(options.referenceDate)
+        : options.referenceDate;
+    return Number.isNaN(ref.getTime()) ? null : ref;
+  }
+  if (cls.season_start_date) {
+    const ref = parseLocalDate(cls.season_start_date);
+    return Number.isNaN(ref.getTime()) ? null : ref;
+  }
+  if (cls.season_id && options?.seasonStartById?.[cls.season_id]) {
+    const ref = parseLocalDate(options.seasonStartById[cls.season_id]);
+    return Number.isNaN(ref.getTime()) ? null : ref;
+  }
+  return null;
 }
 
 export function classHasAgeBand(cls: ClassAgeContext): boolean {
@@ -27,12 +64,16 @@ export function anyClassHasAgeBand(classes: ClassAgeContext[]): boolean {
 export function isAgeEligible(
   cls: ClassAgeContext,
   person: PersonContext,
+  options?: AgeCheckOptions,
 ): boolean {
   if (!person.date_of_birth) return true;
 
   if (cls.min_age == null && cls.max_age == null) return false;
 
-  const age = ageAt(person.date_of_birth);
+  const ref = resolveAgeReferenceDate(cls, options);
+  if (!ref) return true;
+
+  const age = ageAt(person.date_of_birth, ref);
   if (Number.isNaN(age)) return true;
 
   if (cls.min_age != null && age < cls.min_age) return false;
@@ -44,6 +85,7 @@ export function isAgeEligible(
 export function filterClassesByAge<T extends ClassAgeContext>(
   classes: T[],
   person: PersonContext,
+  options?: AgeCheckOptions,
 ): { classes: T[]; ageFilteringActive: boolean } {
   if (!person.date_of_birth) {
     return { classes, ageFilteringActive: false };
@@ -52,7 +94,7 @@ export function filterClassesByAge<T extends ClassAgeContext>(
     return { classes, ageFilteringActive: false };
   }
   return {
-    classes: classes.filter((cls) => isAgeEligible(cls, person)),
+    classes: classes.filter((cls) => isAgeEligible(cls, person, options)),
     ageFilteringActive: true,
   };
 }

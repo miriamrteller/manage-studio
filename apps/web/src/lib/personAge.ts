@@ -1,4 +1,11 @@
 /** Parse YYYY-MM-DD as a local calendar date (avoids UTC timezone drift). */
+export function parseLocalDate(isoDate: string): Date {
+  const [y, m, d] = isoDate.split('-').map(Number);
+  if (!y || !m || !d) return new Date(NaN);
+  return new Date(y, m - 1, d);
+}
+
+/** Age in whole years on a reference date (default: today). */
 export function ageAt(dateOfBirth: string, reference = new Date()): number {
   const [y, m, d] = dateOfBirth.split('-').map(Number);
   if (!y || !m || !d) return NaN;

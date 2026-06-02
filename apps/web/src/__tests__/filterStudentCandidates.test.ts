@@ -53,10 +53,11 @@ describe('filterStudentCandidates', () => {
     expect(ineligible[0].reason).toBe('account');
   });
 
-  it('filters by class age band', () => {
+  it('filters by class age band at season start', () => {
+    const seasonStart = '2026-05-01';
     const { eligible } = filterStudentCandidates(
       [child],
-      { ageBand: { min_age: 3, max_age: 4 } },
+      { ageBand: { min_age: 3, max_age: 4 }, seasonStartDate: seasonStart },
       guardian.id,
     );
     expect(eligible).toHaveLength(1);
@@ -64,7 +65,7 @@ describe('filterStudentCandidates', () => {
     const tooOld = { ...child, date_of_birth: '2010-01-01' };
     const result = filterStudentCandidates(
       [tooOld],
-      { ageBand: { min_age: 3, max_age: 4 } },
+      { ageBand: { min_age: 3, max_age: 4 }, seasonStartDate: seasonStart },
       guardian.id,
     );
     expect(result.eligible).toHaveLength(0);

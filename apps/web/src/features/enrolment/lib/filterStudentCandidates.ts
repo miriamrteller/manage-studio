@@ -5,6 +5,8 @@ import { personAgeLabel } from '@/lib/personAge';
 export interface StudentCandidateConstraints {
   accountId?: string;
   ageBand?: ClassAgeContext | null;
+  /** Season start date for age-at-season-start checks (YYYY-MM-DD). */
+  seasonStartDate?: string | null;
   excludePersonIds?: string[];
 }
 
@@ -53,7 +55,9 @@ export function filterStudentCandidates<T extends Person>(
       constraints.ageBand &&
       (constraints.ageBand.min_age != null || constraints.ageBand.max_age != null) &&
       person.date_of_birth &&
-      !isAgeEligible(constraints.ageBand, person)
+      !isAgeEligible(constraints.ageBand, person, {
+        referenceDate: constraints.seasonStartDate ?? undefined,
+      })
     ) {
       ineligible.push({ person, reason: 'age' });
       continue;

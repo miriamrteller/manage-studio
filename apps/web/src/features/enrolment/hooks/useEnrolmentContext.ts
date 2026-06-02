@@ -15,6 +15,7 @@ export type EnrolmentMode = 'guest' | 'parent' | 'admin' | 'adult_student';
 export interface EnrolmentConstraints {
   accountId?: string;
   ageBand?: ClassAgeContext | null;
+  seasonStartDate?: string | null;
 }
 
 export interface EnrolmentContextValue {
@@ -50,18 +51,30 @@ export function useEnrolmentContext(intent: EnrollmentIntent | null): EnrolmentC
         if (error) throw error;
         const row = (data ?? []).find((o: { id: string }) => o.id === intent.classId);
         if (!row) return null;
-        return { id: row.id, min_age: row.min_age, max_age: row.max_age };
+        return {
+          id: row.id,
+          min_age: row.min_age,
+          max_age: row.max_age,
+          season_start_date: row.season_start_date ?? null,
+        };
       }
 
       if (!tenant?.id) return null;
       const { data, error } = await supabase
         .from('offerings')
-        .select('id, min_age, max_age')
+        .select('id, min_age, max_age, season_id, seasons(start_date)')
         .eq('tenant_id', tenant.id)
         .eq('id', intent.classId)
         .maybeSingle();
       if (error) throw error;
-      return data;
+      if (!data) return null;
+      const season = data.seasons as { start_date?: string } | null;
+      return {
+        id: data.id,
+        min_age: data.min_age,
+        max_age: data.max_age,
+        season_start_date: season?.start_date ?? null,
+      };
     },
     enabled: !!intent?.classId && (!!tenant?.id || !!resolveTenantSubdomain()),
   });
@@ -111,6 +124,7 @@ export function useEnrolmentContext(intent: EnrollmentIntent | null): EnrolmentC
       ageBand: offering
         ? { min_age: offering.min_age, max_age: offering.max_age }
         : null,
+      seasonStartDate: offering?.season_start_date ?? null,
     };
   }, [intent?.accountId, offeringQuery.data]);
 

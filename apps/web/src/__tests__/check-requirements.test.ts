@@ -9,6 +9,11 @@ import {
   isAgeEligible,
   anyClassHasAgeBand,
 } from '@/features/enrolment/lib/check-requirements';
+import { parseLocalDate } from '@/lib/personAge';
+
+/** Summer 2026 season start from seed.sql */
+const SEASON_START = '2026-05-01';
+const seasonRef = parseLocalDate(SEASON_START);
 
 describe('check-requirements', () => {
   describe('ageAt', () => {
@@ -32,30 +37,54 @@ describe('check-requirements', () => {
       expect(isAgeEligible(mini, {})).toBe(true);
     });
 
-    it('filters age 4 to Mini only among seeded bands', () => {
-      const person = { date_of_birth: '2022-05-01' };
+    it('filters by age at season start, not today', () => {
+      const person = { date_of_birth: '2022-05-02' };
+      // Age 3 at season start (May 1), but 4 by late May
+      expect(ageAt(person.date_of_birth!, seasonRef)).toBe(3);
       expect(ageAt(person.date_of_birth!, new Date(2026, 4, 26))).toBe(4);
-      expect(isAgeEligible(mini, person)).toBe(true);
-      expect(isAgeEligible({ min_age: 4, max_age: 6 }, person)).toBe(true);
-      expect(isAgeEligible({ min_age: 5, max_age: 7 }, person)).toBe(false);
+
+      expect(
+        isAgeEligible(mini, person, { referenceDate: SEASON_START }),
+      ).toBe(true);
+      expect(
+        isAgeEligible({ min_age: 4, max_age: 6 }, person, { referenceDate: SEASON_START }),
+      ).toBe(false);
+    });
+
+    it('filters age 4 to Mini only among seeded bands at season start', () => {
+      const person = { date_of_birth: '2022-05-01' };
+      expect(ageAt(person.date_of_birth!, seasonRef)).toBe(4);
+      expect(isAgeEligible(mini, person, { referenceDate: SEASON_START })).toBe(true);
+      expect(isAgeEligible({ min_age: 4, max_age: 6 }, person, { referenceDate: SEASON_START })).toBe(true);
+      expect(isAgeEligible({ min_age: 5, max_age: 7 }, person, { referenceDate: SEASON_START })).toBe(false);
     });
 
     it('treats open-ended max_age as no upper bound', () => {
       const adult = { date_of_birth: '1988-03-15' };
-      expect(isAgeEligible(pilates, adult)).toBe(true);
+      expect(isAgeEligible(pilates, adult, { referenceDate: SEASON_START })).toBe(true);
     });
 
     it('excludes classes with no age band when DOB is known', () => {
       const person = { date_of_birth: '2018-01-01' };
-      expect(isAgeEligible({ min_age: null, max_age: null }, person)).toBe(false);
+      expect(isAgeEligible({ min_age: null, max_age: null }, person, { referenceDate: SEASON_START })).toBe(false);
+    });
+
+    it('uses season_start_date on the class when provided', () => {
+      const person = { date_of_birth: '2022-05-02' };
+      expect(
+        isAgeEligible(
+          { min_age: 4, max_age: 6, season_start_date: SEASON_START },
+          person,
+        ),
+      ).toBe(false);
     });
   });
 
   describe('filterClassesByAge', () => {
     const classes = [
-      { id: 'mini', min_age: 3, max_age: 4 },
-      { id: 'pre', min_age: 4, max_age: 6 },
-      { id: 'primary', min_age: 5, max_age: 7 },
+      { id: 'mini', min_age: 3, max_age: 4, season_start_date: SEASON_START },
+      { id: 'pre', min_age: 4, max_age: 6, season_start_date: SEASON_START },
+      { id: 'primary', min_age: 5, max_age: 7, season_start_date: SEASON_START },
     ];
 
     it('does not filter when DOB is missing', () => {
@@ -64,7 +93,7 @@ describe('check-requirements', () => {
       expect(ageFilteringActive).toBe(false);
     });
 
-    it('filters to eligible classes for age 4', () => {
+    it('filters to eligible classes for age 4 at season start', () => {
       const { classes: result, ageFilteringActive } = filterClassesByAge(classes, {
         date_of_birth: '2022-05-01',
       });

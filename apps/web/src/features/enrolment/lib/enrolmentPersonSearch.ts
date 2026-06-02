@@ -20,6 +20,7 @@ export function filterEnrolmentPersonSearchResults(
     {
       accountId: constraints.accountId,
       ageBand: constraints.ageBand,
+      seasonStartDate: constraints.seasonStartDate,
     },
     null,
     { includeAdultSolo: true },
@@ -46,6 +47,7 @@ export function isEnrolmentPersonSearchSelectable(
     {
       accountId: constraints.accountId,
       ageBand: constraints.ageBand,
+      seasonStartDate: constraints.seasonStartDate,
     },
     null,
     { includeAdultSolo: true },

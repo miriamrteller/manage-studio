@@ -20,8 +20,10 @@ import {
 import { EnrolmentIntakeService } from '../intakeService';
 import { useClasses } from '@/features/classes/hooks/useClasses';
 import { useRequirements } from '@/features/classes/requirements/hooks/useRequirements';
-import { filterClassesByAge, getRequirementInfoNotes, ageAt } from '../lib/check-requirements';
+import { filterClassesByAge, getRequirementInfoNotes, ageAt, buildSeasonStartById } from '../lib/check-requirements';
 import { useLevels } from '@/features/levels/hooks/useLevels';
+import { useTerms } from '@/features/terms/hooks/useTerms';
+import { parseLocalDate } from '@/lib/personAge';
 import { PersonService } from '@/features/people/service';
 import { TenantDB } from '@/lib/db';
 import { OfferingSchema } from '@shared/schemas';
@@ -530,6 +532,7 @@ export function EnrolmentStepper({
           <StepClass
             data={enrolmentData}
             personDateOfBirth={personDateOfBirth}
+            initialTermId={initialTermId}
             onNext={handleClassNext}
             onPrevious={handlePreviousStep}
             canGoBack={canGoBack}
@@ -625,12 +628,14 @@ function StepBackButton({
 function StepClass({
   data,
   personDateOfBirth,
+  initialTermId,
   onNext,
   onPrevious,
   canGoBack = true,
 }: {
   data: Partial<Engagement>;
   personDateOfBirth?: string | null;
+  initialTermId?: string;
   onNext: (data?: Partial<Engagement>, className?: string) => void;
   onPrevious: () => void;
   canGoBack?: boolean;
@@ -640,6 +645,7 @@ function StepClass({
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
 
   const { classes, isLoading, error } = useClasses({ publicOnly: true });
+  const { terms } = useTerms({ page: 1 });
   const { levels } = useLevels();
   const { requirements, isLoading: reqLoading } = useRequirements(
     selectedClassId ?? undefined,
@@ -650,20 +656,39 @@ function StepClass({
     [levels],
   );
 
+  const seasonStartById = useMemo(() => buildSeasonStartById(terms), [terms]);
+
   const person = useMemo(
     () => ({ date_of_birth: personDateOfBirth }),
     [personDateOfBirth],
   );
 
+  const ageCheckOptions = useMemo(
+    () => ({ seasonStartById }),
+    [seasonStartById],
+  );
+
+  const displaySeasonStart = useMemo(() => {
+    if (initialTermId && seasonStartById[initialTermId]) {
+      return seasonStartById[initialTermId];
+    }
+    const fromClass = classes.find(
+      (c: { season_start_date?: string | null }) => c.season_start_date,
+    )?.season_start_date;
+    if (fromClass) return fromClass;
+    const seasonId = classes.find((c: { season_id?: string | null }) => c.season_id)?.season_id;
+    return seasonId ? seasonStartById[seasonId] : undefined;
+  }, [initialTermId, seasonStartById, classes]);
+
   const studentAge = useMemo(() => {
-    if (!personDateOfBirth) return null;
-    const age = ageAt(personDateOfBirth);
+    if (!personDateOfBirth || !displaySeasonStart) return null;
+    const age = ageAt(personDateOfBirth, parseLocalDate(displaySeasonStart));
     return Number.isNaN(age) ? null : age;
-  }, [personDateOfBirth]);
+  }, [personDateOfBirth, displaySeasonStart]);
 
   const { classes: availableClasses, ageFilteringActive } = useMemo(
-    () => filterClassesByAge(classes, person),
-    [classes, person],
+    () => filterClassesByAge(classes, person, ageCheckOptions),
+    [classes, person, ageCheckOptions],
   );
 
   const selectedClass = useMemo(

@@ -1762,6 +1762,7 @@ export type Database = {
           name: string
           price_minor: number
           season_id: string
+          season_start_date: string
           start_time: string
           status: string
           tenant_id: string
