@@ -18,6 +18,7 @@ import {
 } from '../utils/sortClasses';
 import type { Offering } from '@shared/schemas';
 import { computeClassTotal } from '@/features/enrolment/lib/computeClassTotal';
+import { formatClassAgeRange } from '../lib/formatClassAgeRange';
 
 export function AdminClassesList() {
   const { t, i18n } = useTranslation();
@@ -209,6 +210,7 @@ export function AdminClassesList() {
                 />
                 <th className="px-4 py-3 text-start font-medium">{t('form.class.term')}</th>
                 <th className="px-4 py-3 text-start font-medium">{t('form.class.level')}</th>
+                <th className="px-4 py-3 text-start font-medium">{t('pages.classes.ages')}</th>
                 <SortableHeader
                   label={t('pages.classes.time')}
                   sortKey="schedule"
@@ -241,7 +243,9 @@ export function AdminClassesList() {
               </tr>
             </thead>
             <tbody>
-              {classesData.classes.map((classItem) => (
+              {classesData.classes.map((classItem) => {
+                const ageRange = formatClassAgeRange(t, classItem.min_age, classItem.max_age);
+                return (
                 <Fragment key={classItem.id}>
                 <tr
                   className="border-b hover:bg-opacity-50"
@@ -254,6 +258,7 @@ export function AdminClassesList() {
                   <td className="px-4 py-3">
                     {classItem.category_id ? levelById.get(classItem.category_id) || '—' : '—'}
                   </td>
+                  <td className="px-4 py-3">{ageRange || '—'}</td>
                   <td className="px-4 py-3">
                     {classItem.day_of_week != null
                       ? `${t(`form.class.day_${classItem.day_of_week}`)}, `
@@ -309,7 +314,7 @@ export function AdminClassesList() {
                 </tr>
                 {expandedClassId === classItem.id && (
                   <tr>
-                    <td colSpan={8} className="p-0">
+                    <td colSpan={9} className="p-0">
                       <ClassRequirementsPanel
                         classId={classItem.id}
                         className={classItem.name}
@@ -318,7 +323,8 @@ export function AdminClassesList() {
                   </tr>
                 )}
                 </Fragment>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>
