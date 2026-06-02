@@ -110,6 +110,15 @@ DROP FUNCTION IF EXISTS public.get_tenant_stripe_credentials(UUID)              
 DROP FUNCTION IF EXISTS public.save_tenant_stripe_credentials(TEXT, TEXT, TEXT)          CASCADE;
 DROP FUNCTION IF EXISTS public.get_my_profile()                                          CASCADE;
 DROP FUNCTION IF EXISTS public.link_auth_user_to_person(UUID)                            CASCADE;
+DROP FUNCTION IF EXISTS public.resolve_engagement_guardian(UUID)                       CASCADE;
+DROP FUNCTION IF EXISTS public.link_auth_user_to_guardian_for_engagement(UUID)         CASCADE;
+DROP FUNCTION IF EXISTS public.guest_enrolment_check_email(TEXT, TEXT)                 CASCADE;
+DROP FUNCTION IF EXISTS public.guest_enrolment_create_family(TEXT, TEXT, TEXT, TEXT, TEXT, DATE) CASCADE;
+DROP FUNCTION IF EXISTS public.guest_enrolment_create_adult(TEXT, TEXT, TEXT, TEXT, DATE) CASCADE;
+DROP FUNCTION IF EXISTS public.guest_enrolment_create_engagement(TEXT, UUID, UUID, UUID) CASCADE;
+DROP FUNCTION IF EXISTS public.search_enrolment_students(TEXT, INT)                    CASCADE;
+DROP FUNCTION IF EXISTS public.admin_enrolment_lookup_email(TEXT)                      CASCADE;
+DROP FUNCTION IF EXISTS public.cancel_engagement(UUID, TEXT)                           CASCADE;
 
 -- ---------------------------------------------------------------------------
 -- 4. Clear migration history so Supabase CLI re-applies all migrations

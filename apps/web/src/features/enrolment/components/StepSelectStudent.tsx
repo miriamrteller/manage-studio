@@ -405,12 +405,7 @@ export function StepSelectStudent({
             type="submit"
             variant="primary"
             className="flex-1"
-            disabled={
-              isSubmitting ||
-              showGuardianExistingPrompt ||
-              guardianEmailCheck.isChecking ||
-              (mode === 'admin' && !showAdminExistingFamily && adminGuardianLookup.isChecking)
-            }
+            disabled={isSubmitting || showGuardianExistingPrompt || guardianEmailCheck.isChecking}
           >
             {isSubmitting ? t('common.loading') : t('common.next')}
           </Button>

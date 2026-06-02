@@ -51,6 +51,7 @@ export function useAdminGuardianEmailLookup(email: string, enabled: boolean) {
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
+      setIsChecking(false);
     };
   }, [email, enabled, tenant]);
 

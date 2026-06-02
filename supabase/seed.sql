@@ -11,7 +11,7 @@
 -- ============================================================================
 -- TENANTS (20260526000100_tenants.sql)
 -- ============================================================================
-INSERT INTO tenants (id, name, subdomain, language_default, country, primary_color, accent_color, currency, vat_rate, phone_region, business_preset, labels)
+INSERT INTO tenants (id, name, subdomain, language_default, country, primary_color, accent_color, currency, vat_rate, prices_include_vat, phone_region, business_preset, labels)
 VALUES (
   '00000000-0000-0000-0000-000000000001'::uuid,
   'Creative Ballet Academy',
@@ -22,6 +22,7 @@ VALUES (
   '#e99ac4',
   'ILS',
   0.17,
+  true,
   'IL',
   'programs',
   '{}'::jsonb
@@ -33,6 +34,7 @@ VALUES (
   accent_color = EXCLUDED.accent_color,
   currency = EXCLUDED.currency,
   vat_rate = EXCLUDED.vat_rate,
+  prices_include_vat = EXCLUDED.prices_include_vat,
   phone_region = EXCLUDED.phone_region,
   business_preset = EXCLUDED.business_preset,
   labels = EXCLUDED.labels;

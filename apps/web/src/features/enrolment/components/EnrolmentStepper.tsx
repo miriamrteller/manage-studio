@@ -441,7 +441,9 @@ export function EnrolmentStepper({
                   handlePersonNext({ ...enrolmentData, person_id: person.id }, fields.student_date_of_birth);
                 }}
                 onCreateAdult={async (fields) => {
-                  if (!tenant) return;
+                  if (!tenant) {
+                    throw new Error(t('common.error'));
+                  }
                   if (enrolmentContext.mode === 'guest') {
                     if (!fields.email) {
                       throw new Error(t('pages.enrolment.guardian_email_required'));
@@ -466,7 +468,9 @@ export function EnrolmentStepper({
                   handlePersonNext({ ...enrolmentData, person_id: person.id }, person.date_of_birth ?? null);
                 }}
                 onCreateMinorWithGuardian={async (fields) => {
-                  if (!tenant) return;
+                  if (!tenant) {
+                    throw new Error(t('common.error'));
+                  }
                   if (enrolmentContext.mode === 'guest') {
                     if (!fields.guardian_email) {
                       throw new Error(t('pages.enrolment.guardian_email_required'));

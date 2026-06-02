@@ -265,7 +265,7 @@ Edge Functions
 | Alternative mode | `false` — admin-entered price is **net**; VAT added at checkout |
 | V1 scope | Tenant-level flag only (no per-offering inclusive/exclusive override) |
 | `offerings.price_minor` | Always the admin-entered list price; meaning depends on `prices_include_vat` |
-| Rate | `vat_rate = offering.vat_rate ?? tenant.vat_rate ?? 0.17` (offering override when column present) |
+| Rate | `vat_rate = tenant.vat_rate ?? 0.17` (V1; per-offering `vat_rate` deferred until `offerings.vat_rate` column exists) |
 | Dev schema changes | Edit **base** migration `20260526000100_tenants.sql` (do not add a one-off `ALTER` migration in dev); reset DB and re-push all migrations (see §2.5.3) |
 
 **Single implementation module:** `packages/shared/src/pricing.ts` (exported from `@shared`). All UI, Edge Functions, and offline payment recording call `resolveOfferingPrice()` — never duplicate formulas in Deno or React.
@@ -303,9 +303,9 @@ export function addVatToPretax(pretaxMinor: number, vatRate: number) {
 }
 
 export function resolveOfferingPrice(
-  offering: { price_minor: number; vat_rate?: number | null },
+  offering: { price_minor: number },
   tenant: { vat_rate: number; prices_include_vat: boolean },
-) { /* implements table above */ }
+) { /* implements table above; V1 uses tenant.vat_rate only */ }
 ```
 
 `apps/web/src/features/enrolment/lib/computeClassTotal.ts` remains a thin wrapper around `resolveOfferingPrice()` for backwards compatibility.
@@ -346,6 +346,8 @@ Manage Studio is the **system of record for enrolment pricing consistency**. Thi
 
 #### 2.5.3 Dev schema change workflow (V1 — edit base migrations)
 
+> **`prices_include_vat`:** Steps 1–4 and reset completed (2026-06). Proceed with Phases 2–5 in [docs/plans/2026-06-02-vat-pricing.md](docs/plans/2026-06-02-vat-pricing.md).
+
 When changing core columns in **dev only** (no production tenants yet):
 
 1. Edit the **original** migration file (e.g. add `prices_include_vat` to `20260526000100_tenants.sql`).
@@ -363,7 +365,7 @@ When changing core columns in **dev only** (no production tenants yet):
 
 **Implementation plan (agent checklist):** [docs/plans/2026-06-02-vat-pricing.md](docs/plans/2026-06-02-vat-pricing.md)
 
-**Status:** Planned — migration `20260526003000_tenant_prices_include_vat.sql` adds `tenants.prices_include_vat` (squash into `001` when resetting migrations). Application code still uses exclusive VAT on `price_minor` in `create-checkout` and raw `price_minor` in catalogue UI (2026-06).
+**Status:** Schema complete (`tenants.prices_include_vat` in `20260526000100_tenants.sql`, RPC in `20260526001500_public_rpcs.sql`, seed updated). Application code pending — see [docs/plans/2026-06-02-vat-pricing.md](docs/plans/2026-06-02-vat-pricing.md) and [docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md). Current bug: `create-checkout` and catalogue still treat `price_minor` as pretax (exclusive VAT).
 
 ### 2.6 Accessibility compliance — WCAG 2.1 Level AA
 
@@ -2225,7 +2227,7 @@ Screens:
 - **Payments:** transaction log with VAT column, filter by status/date; basic P&L (revenue vs expenses)
 - **Expenses:** enter and categorise expenses; receipt upload to Supabase Storage
 - **Notifications:** compose email blast; select recipients by class/level/all; WhatsApp blast for urgent items
-- **Settings:** school profile, **billing** (`vat_rate`, `prices_include_vat`), levels, terms, class requirements, discount rules, Stripe keys, external API keys (Morning/Green Invoice in V2.6)
+- **Settings:** school profile, **tax** (`/admin/setup/tax` — `vat_rate`, `prices_include_vat`; not `/admin/setup/billing`, which is billing accounts), levels, terms, class requirements, discount rules, Stripe keys, external API keys (Morning/Green Invoice in V2.6)
 
 ### 6.x — Deferred backlog (post–V1 payment slice)
 
