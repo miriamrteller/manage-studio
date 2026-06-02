@@ -24,26 +24,27 @@ serve(async (req) => {
 
     const service = createServiceClient();
     const authHeader = req.headers.get("Authorization");
-    let tenantId: string;
+    let tenantId: string | null = null;
 
+    // Authenticated checkout: resolve tenant from the logged-in user's profile.
+    // Guests still send Authorization (anon JWT); invalid/non-user tokens fall through.
     if (authHeader?.startsWith("Bearer ")) {
       const auth = await requireAuthUser(req);
-      if ("error" in auth) {
-        return jsonResponse({ error: auth.error }, auth.status);
+      if (!("error" in auth)) {
+        const { data: profile, error: profileError } = await service
+          .from("user_profiles")
+          .select("tenant_id")
+          .eq("id", auth.user.id)
+          .single();
+
+        if (!profileError && profile?.tenant_id) {
+          tenantId = profile.tenant_id as string;
+        }
       }
+    }
 
-      const { data: profile, error: profileError } = await service
-        .from("user_profiles")
-        .select("tenant_id")
-        .eq("id", auth.user.id)
-        .single();
-
-      if (profileError || !profile?.tenant_id) {
-        return jsonResponse({ error: "User profile not found" }, 403);
-      }
-
-      tenantId = profile.tenant_id as string;
-    } else {
+    // Guest checkout: tenant from pending engagement (no login required).
+    if (!tenantId) {
       const { data: engagementForTenant, error: tenantLookupError } = await service
         .from("engagements")
         .select("tenant_id, status")
