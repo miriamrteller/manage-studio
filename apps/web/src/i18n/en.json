@@ -531,6 +531,7 @@
       "confirmation_portal_hint": "We will email {{email}} with a link to access your family portal.",
       "guest_sign_in_prompt": "Already registered? Sign in to select your children instead of entering details again.",
       "guest_sign_in_action": "Sign in",
+      "existing_email_prompt": "We found an account with this email. Sign in to select your children and continue enrolment.",
       "guest_new_family_desc": "Enter guardian and student details to enrol. No account needed yet — you will receive portal access by email after payment.",
       "guest_adult_desc": "Enter your details to enrol. No account needed yet — you will receive portal access by email after payment.",
       "create_new_adult": "Create new adult student",

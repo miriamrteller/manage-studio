@@ -11,6 +11,7 @@ import {
   type PasswordLogin,
 } from '@/schemas';
 import { resolveAuthErrorMessage } from '@/lib/authErrors';
+import { buildAuthCallbackRedirect } from '@/lib/authRedirect';
 import { sendLoginEmailOtp, verifyLoginEmailOtp } from '@/lib/loginEmailOtp';
 
 export type PostLoginRedirect = {
@@ -95,7 +96,7 @@ export function useLogin(
       const { error } = await sendLoginEmailOtp(
         parsed.email,
         subdomain,
-        `${window.location.origin}/auth/callback`,
+        buildAuthCallbackRedirect('code'),
       );
 
       if (error) {
@@ -214,7 +215,7 @@ export function useLogin(
           email: magicLinkData.email,
           options: {
             shouldCreateUser: false,
-            emailRedirectTo: `${window.location.origin}/auth/callback`,
+            emailRedirectTo: buildAuthCallbackRedirect('magic_link'),
             data: {
               subdomain,
             },

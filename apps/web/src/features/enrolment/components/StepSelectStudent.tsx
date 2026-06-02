@@ -1,6 +1,9 @@
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
+import { GuestExistingAccountPrompt } from './GuestExistingAccountPrompt';
+import { useGuestEmailRegistrationCheck } from '../hooks/useGuestEmailRegistrationCheck';
+import { isExistingEmailError } from '../intakeService';
 import { useEnrolmentStudentSearch } from '../hooks/useEnrolmentStudentSearch';
 import { filterStudentCandidates, studentAgeLabel } from '../lib/filterStudentCandidates';
 import type { EnrolmentSearchResult } from '../hooks/useEnrolmentStudentSearch';
@@ -197,6 +200,7 @@ interface StepSelectStudentProps {
     guardian_phone?: string;
   }) => Promise<void>;
   onCancel?: () => void;
+  onSignInRequest?: () => void;
 }
 
 type SubMode = 'choose' | 'new_child' | 'new_adult' | 'new_family';
@@ -222,10 +226,12 @@ export function StepSelectStudent({
   onCreateAdult,
   onCreateMinorWithGuardian,
   onCancel,
+  onSignInRequest,
 }: StepSelectStudentProps) {
   const { t } = useTranslation();
   const [subMode, setSubMode] = useState<SubMode>(() => initialSubMode(mode, isAdultIntake));
   const [error, setError] = useState<string | null>(null);
+  const [forceExistingEmailPrompt, setForceExistingEmailPrompt] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [studentName, setStudentName] = useState('');
   const [studentDob, setStudentDob] = useState('');
@@ -236,6 +242,25 @@ export function StepSelectStudent({
   const [guardianName, setGuardianName] = useState('');
   const [guardianEmail, setGuardianEmail] = useState('');
   const [guardianPhone, setGuardianPhone] = useState('');
+
+  const guestEmailCheckEnabled = mode === 'guest' && Boolean(onSignInRequest);
+  const guardianEmailCheck = useGuestEmailRegistrationCheck(
+    guardianEmail,
+    guestEmailCheckEnabled && subMode === 'new_family',
+  );
+  const adultEmailCheck = useGuestEmailRegistrationCheck(
+    adultEmail,
+    guestEmailCheckEnabled && subMode === 'new_adult',
+  );
+
+  const showGuardianExistingPrompt =
+    guestEmailCheckEnabled &&
+    (guardianEmailCheck.registered || forceExistingEmailPrompt) &&
+    subMode === 'new_family';
+  const showAdultExistingPrompt =
+    guestEmailCheckEnabled &&
+    (adultEmailCheck.registered || forceExistingEmailPrompt) &&
+    subMode === 'new_adult';
 
   const { eligible, ineligible } = useMemo(
     () => filterStudentCandidates(students, constraints, guardianPersonId),
@@ -279,6 +304,8 @@ export function StepSelectStudent({
         onSubmit={async (e) => {
           e.preventDefault();
           setError(null);
+          setForceExistingEmailPrompt(false);
+          if (showGuardianExistingPrompt) return;
           setIsSubmitting(true);
           try {
             await onCreateMinorWithGuardian({
@@ -289,7 +316,12 @@ export function StepSelectStudent({
               guardian_phone: guardianPhone || undefined,
             });
           } catch (err) {
-            setError(err instanceof Error ? err.message : t('common.error'));
+            if (isExistingEmailError(err)) {
+              setForceExistingEmailPrompt(true);
+              setError(null);
+            } else {
+              setError(err instanceof Error ? err.message : t('common.error'));
+            }
           } finally {
             setIsSubmitting(false);
           }
@@ -315,9 +347,15 @@ export function StepSelectStudent({
             required
             className="form-input w-full"
             value={guardianEmail}
-            onChange={(e) => setGuardianEmail(e.target.value)}
+            onChange={(e) => {
+              setGuardianEmail(e.target.value);
+              setForceExistingEmailPrompt(false);
+            }}
             placeholder={t('form.person.email')}
           />
+          {showGuardianExistingPrompt && onSignInRequest && (
+            <GuestExistingAccountPrompt onSignIn={onSignInRequest} />
+          )}
           <input
             type="tel"
             className="form-input w-full"
@@ -343,7 +381,12 @@ export function StepSelectStudent({
               {t('common.cancel')}
             </Button>
           )}
-          <Button type="submit" variant="primary" className="flex-1" disabled={isSubmitting}>
+          <Button
+            type="submit"
+            variant="primary"
+            className="flex-1"
+            disabled={isSubmitting || showGuardianExistingPrompt || guardianEmailCheck.isChecking}
+          >
             {isSubmitting ? t('common.loading') : t('common.next')}
           </Button>
         </div>
@@ -358,6 +401,8 @@ export function StepSelectStudent({
         onSubmit={async (e) => {
           e.preventDefault();
           setError(null);
+          setForceExistingEmailPrompt(false);
+          if (showAdultExistingPrompt) return;
           setIsSubmitting(true);
           try {
             await onCreateAdult({
@@ -367,7 +412,12 @@ export function StepSelectStudent({
               date_of_birth: adultDob || undefined,
             });
           } catch (err) {
-            setError(err instanceof Error ? err.message : t('common.error'));
+            if (isExistingEmailError(err)) {
+              setForceExistingEmailPrompt(true);
+              setError(null);
+            } else {
+              setError(err instanceof Error ? err.message : t('common.error'));
+            }
           } finally {
             setIsSubmitting(false);
           }
@@ -393,9 +443,15 @@ export function StepSelectStudent({
             required={mode === 'guest'}
             className="form-input w-full"
             value={adultEmail}
-            onChange={(e) => setAdultEmail(e.target.value)}
+            onChange={(e) => {
+              setAdultEmail(e.target.value);
+              setForceExistingEmailPrompt(false);
+            }}
             placeholder={t('form.person.email')}
           />
+          {showAdultExistingPrompt && onSignInRequest && (
+            <GuestExistingAccountPrompt onSignIn={onSignInRequest} />
+          )}
           <input
             type="tel"
             className="form-input w-full"
@@ -423,7 +479,12 @@ export function StepSelectStudent({
               {t('common.cancel')}
             </Button>
           )}
-          <Button type="submit" variant="primary" className="flex-1" disabled={isSubmitting}>
+          <Button
+            type="submit"
+            variant="primary"
+            className="flex-1"
+            disabled={isSubmitting || showAdultExistingPrompt || adultEmailCheck.isChecking}
+          >
             {isSubmitting ? t('common.loading') : t('common.next')}
           </Button>
         </div>

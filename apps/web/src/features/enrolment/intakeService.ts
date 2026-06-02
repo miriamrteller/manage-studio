@@ -37,7 +37,32 @@ export interface GuestEngagementIntakeResult {
   engagementId: string;
 }
 
+export class ExistingEmailError extends Error {
+  constructor() {
+    super('EXISTING_EMAIL');
+    this.name = 'ExistingEmailError';
+  }
+}
+
+export function isExistingEmailError(error: unknown): error is ExistingEmailError {
+  if (error instanceof ExistingEmailError) return true;
+  if (error instanceof Error) {
+    return (
+      error.message.includes('EXISTING_EMAIL') ||
+      error.message.includes('people_tenant_id_email_key')
+    );
+  }
+  return false;
+}
+
 function parseRpcError(error: { message?: string } | null, data: unknown): void {
+  const message = error?.message ?? '';
+  if (
+    message.includes('EXISTING_EMAIL') ||
+    message.includes('people_tenant_id_email_key')
+  ) {
+    throw new ExistingEmailError();
+  }
   if (error?.message) {
     throw new Error(error.message);
   }
@@ -47,6 +72,18 @@ function parseRpcError(error: { message?: string } | null, data: unknown): void 
 }
 
 export class EnrolmentIntakeService {
+  static async checkGuestEmailRegistered(tenant: Tenant, email: string): Promise<boolean> {
+    const { data, error } = await supabase.rpc('guest_enrolment_check_email', {
+      p_subdomain: tenant.subdomain,
+      p_email: email.trim().toLowerCase(),
+    });
+
+    parseRpcError(error, data);
+
+    const row = data as { registered?: boolean } | null;
+    return Boolean(row?.registered);
+  }
+
   static async createGuestFamily(
     tenant: Tenant,
     input: GuestFamilyIntakeInput,

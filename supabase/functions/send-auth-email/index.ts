@@ -47,9 +47,23 @@ function buildConfirmationUrl(emailData: AuthEmailHookData): string {
   }
 
   const url = new URL(redirectTo);
+  url.searchParams.delete("login_method");
   url.searchParams.set("token_hash", emailData.token_hash);
   url.searchParams.set("type", emailData.email_action_type);
   return url.toString();
+}
+
+/** Magic Link tab: button only. Email Code tab: code + button (code matches on-page entry). */
+function shouldIncludeOtpInEmail(emailData: AuthEmailHookData): boolean {
+  const redirectTo = emailData.redirect_to?.trim();
+  if (!redirectTo) return true;
+
+  try {
+    const method = new URL(redirectTo).searchParams.get("login_method");
+    return method !== "magic_link";
+  } catch {
+    return true;
+  }
 }
 
 function subjectForAction(
@@ -156,7 +170,9 @@ Deno.serve(async (req) => {
     const confirmationUrl = buildConfirmationUrl(emailData);
     const strings = overrides ?? {};
 
-    const otpCode = emailData.token || undefined;
+    const otpCode = shouldIncludeOtpInEmail(emailData)
+      ? emailData.token || undefined
+      : undefined;
     const html = renderAuthMagicLinkHtml({
       language: tenant.language,
       schoolName: tenant.name,

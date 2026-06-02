@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { EnrolmentPaymentForm } from './EnrolmentPaymentForm';
 import { StepSelectStudent } from './StepSelectStudent';
@@ -20,6 +21,7 @@ import { useRequirements } from '@/features/classes/requirements/hooks/useRequir
 import { filterClassesByAge, getRequirementInfoNotes, ageAt } from '../lib/check-requirements';
 import { useLevels } from '@/features/levels/hooks/useLevels';
 import type { EnrollmentIntent } from '@/lib/enrollment-intent';
+import { persistEnrollmentIntent } from '@/lib/enrollment-intent';
 import type { Engagement } from '@shared/schemas';
 
 export type EnrolmentStep = 'person' | 'class' | 'notification' | 'checkout' | 'confirmation';
@@ -85,6 +87,7 @@ export function EnrolmentStepper({
   onCancel,
 }: EnrolmentStepperProps) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const enrolmentContext = useEnrolmentContext(enrollmentIntent);
   const [currentStep, setCurrentStep] = useState<EnrolmentStep>(initialStep);
   const [enrolmentData, setEnrolmentData] = useState<Partial<Engagement>>(() => ({
@@ -104,6 +107,21 @@ export function EnrolmentStepper({
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [isCheckoutPreparing, setIsCheckoutPreparing] = useState(false);
   const checkoutPrepareStartedRef = useRef(false);
+
+  const handleGuestSignIn = () => {
+    const intent: EnrollmentIntent = {
+      classId: initialClassId ?? enrolmentData.offering_id,
+      seasonId: initialTermId ?? enrolmentData.season_id,
+      mode: 'parent',
+    };
+    persistEnrollmentIntent(intent);
+    navigate('/login', {
+      state: {
+        from: '/enrol',
+        ...intent,
+      },
+    });
+  };
   const [personStepSkipped, setPersonStepSkipped] = useState(false);
   const [guestGuardianEmail, setGuestGuardianEmail] = useState<string | null>(null);
 
@@ -445,6 +463,9 @@ export function EnrolmentStepper({
                   handlePersonNext({ ...enrolmentData, person_id: person.id }, fields.student_date_of_birth);
                 }}
                 onCancel={onCancel}
+                onSignInRequest={
+                  enrolmentContext.mode === 'guest' ? handleGuestSignIn : undefined
+                }
               />
             )}
           </>
