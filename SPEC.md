@@ -477,7 +477,7 @@ Detailed setup instructions for all external services (Twilio, Resend, Stripe) a
 
 **Required reading before Phase 2 Edge Functions deployment:**
 
-- [Third-Party Services Setup Guide](docs/deployment/THIRD_PARTY_SERVICES.md) — Complete walkthrough for Twilio WhatsApp, Resend email, Stripe payments
+- [Third-Party Services Setup Guide](docs/deployment/THIRD_PARTY_SERVICES.md) — Complete walkthrough for Twilio WhatsApp, Resend email, Stripe payments, and self-hosted waiver storage
 - Service credentials are stored encrypted in Supabase and accessed via `getTenantConfig()` function (see Section 5.2)
 - Each service is tenant-configurable (Phase 2); platform defaults available (Phase 1)
 
@@ -485,6 +485,32 @@ Detailed setup instructions for all external services (Twilio, Resend, Stripe) a
 - **Twilio Verify + WhatsApp** — OTP delivery and two-way messaging
 - **Resend** — Transactional email via React Email templates
 - **Stripe** — Payment processing and webhooks
+
+### 2.7.1 Self-Hosted Waiver Evidence (V1)
+
+Waiver signatures are legally sensitive records (minor participation and guardian consent). **V1 uses a self-hosted acceptance flow** — no third-party e-sign vendor. The system captures acceptance in-app, stores the exact legal wording and rendered PDF at signing time, and maintains a tamper-evident audit trail.
+
+**V1 approach:**
+- Parent/guardian (or adult student) reads active `consent_templates` content in-app.
+- Signer affirms via checkbox + typed legal name (`typed_name_checkbox` method).
+- Edge Function `accept-waiver` atomically writes immutable evidence, events, and `audit_log` entry.
+- Signed PDF stored in private Supabase Storage bucket; access via signed URLs only.
+
+**Security and legal requirements (non-negotiable):**
+- SHA-256 hash of wording snapshot and PDF at signing time (`consent_version_hash`, `pdf_sha256`).
+- `waiver_evidence` rows are immutable — no UPDATE; corrections append new rows/events only.
+- Server-side timestamp (UTC), IP, user agent, and `Accept-Language` captured by Edge Function — not trusted from client alone.
+- Idempotency token on submission endpoint prevents double-submit duplicates.
+- All waiver lifecycle transitions written to `waiver_events` and `audit_log`.
+- Retention policy for signed artifacts configured per tenant (minimum years per jurisdiction — legal counsel must approve).
+
+**Legal caveat:**
+- Self-hosted acceptance may have lower dispute defensibility than specialized trust-service providers (DocuSign, etc.).
+- Tenant must obtain local legal counsel approval for waiver wording, consent UX, and retention policy before production enablement.
+
+**Deferred (V2+):**
+- Optional third-party e-sign vendor integration (DocuSign / Dropbox Sign) if counsel or volume requires higher evidentiary standard.
+- Manual admin attestation + PDF upload for edge cases (paper waivers on file).
 
 ---
 
@@ -712,7 +738,7 @@ Landing pages and public class listings need data before a user logs in. The acc
 | `20260526000500_comms.sql` | `notification_log`, `tenant_notification_templates`, `tenant_email_customizations`, `expense_categories` | 001, 002 |
 | `20260526000600_audit_otp.sql` | `audit_log`, `otp_codes`, `verification_attempts` + cleanup RPCs | 001 |
 | `20260526000700_class_sessions.sql` | `class_sessions` | 004 |
-| `20260526000800_waiver_templates.sql` | `waiver_templates` | 001 |
+| `20260526000800_consent_templates.sql` | `consent_templates` | 001 |
 | `20260526000900_requirements.sql` | `requirement_templates`, `requirement_overrides`, `class_requirements` | 001, 002, 004 |
 | `20260526001000_billing_accounts.sql` | `billing_accounts` | 001 |
 | `20260526001100_enrolments.sql` | `enrolments`, `waiting_list` | 002, 004, 010 |
@@ -723,6 +749,7 @@ Landing pages and public class listings need data before a user logs in. The acc
 | `20260526001600_auth_trigger.sql` | `handle_new_user` on `auth.users` (reads `raw_user_meta_data`, tenant fallback) | 001 |
 | `20260526001700_rpcs.sql` | `get_my_profile()`, `link_auth_user_to_person()` | 001, 002, 011 |
 | `20260526001800_grants.sql` | Schema + table `GRANT`s for `authenticated` / `anon` / `service_role` | all prior |
+| `20260603000000_waiver_evidence.sql` *(planned V1)* | `waiver_evidence`, `waiver_events`, immutability triggers, RLS | 002, 008 |
 
 > **RLS fixes applied in-place** in all files listed above. See §4.1 and §4.1.1 for the security model these migrations implement.
 
@@ -1227,6 +1254,77 @@ CREATE TABLE teacher_pay_records (
 );
 ```
 
+#### 4.2.9 Migration — Waiver evidence (V1 planned)
+
+> **File:** `20260603000000_waiver_evidence.sql` *(not yet applied — planned V1)*  
+> **Depends on:** `20260526000200_people.sql`, `20260526000800_consent_templates.sql`  
+> **See also:** §2.7.1 Self-Hosted Waiver Evidence, §6 Waiver lifecycle and enrolment gate
+
+Immutable signed-waiver records and append-only lifecycle events. `people.waiver_accepted_at` / `people.waiver_version` remain denormalized pointers to the latest valid evidence row.
+
+```sql
+CREATE TABLE waiver_evidence (
+  id                    UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id             UUID        NOT NULL REFERENCES tenants(id),
+  person_id             UUID        NOT NULL REFERENCES people(id),
+  family_member_id      UUID        REFERENCES family_members(id),  -- signer when guardian
+  consent_template_id   UUID        NOT NULL REFERENCES consent_templates(id),
+  consent_version       INT         NOT NULL,
+  consent_version_hash  VARCHAR(64) NOT NULL,  -- SHA-256 of wording_snapshot
+  wording_snapshot      TEXT        NOT NULL,  -- exact legal text accepted
+  pdf_storage_path      TEXT        NOT NULL,  -- private bucket path
+  pdf_sha256            VARCHAR(64) NOT NULL,
+  signed_by_name        TEXT        NOT NULL,
+  signed_by_email       TEXT,
+  signed_by_role        TEXT        NOT NULL DEFAULT 'guardian'
+                        CHECK (signed_by_role IN ('guardian', 'self', 'admin_attestation')),
+  signature_method      TEXT        NOT NULL DEFAULT 'typed_name_checkbox'
+                        CHECK (signature_method IN ('typed_name_checkbox', 'admin_upload')),
+  signed_at             TIMESTAMPTZ NOT NULL DEFAULT now(),
+  ip_address            INET,
+  user_agent            TEXT,
+  accept_language       TEXT,
+  idempotency_key       TEXT        NOT NULL,
+  status                TEXT        NOT NULL DEFAULT 'signed'
+                        CHECK (status IN ('signed', 'superseded', 'revoked')),
+  created_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (tenant_id, idempotency_key)
+);
+
+CREATE TABLE waiver_events (
+  id                  UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id           UUID        NOT NULL REFERENCES tenants(id),
+  waiver_evidence_id  UUID        NOT NULL REFERENCES waiver_evidence(id),
+  event_type          TEXT        NOT NULL
+                      CHECK (event_type IN (
+                        'requested', 'viewed', 'accepted', 'superseded', 'revoked', 'admin_attested'
+                      )),
+  actor_user_id       UUID        REFERENCES user_profiles(id),
+  metadata            JSONB       NOT NULL DEFAULT '{}',
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Immutability: signed evidence cannot be updated
+CREATE OR REPLACE FUNCTION prevent_waiver_evidence_update()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  RAISE EXCEPTION 'waiver_evidence rows are immutable';
+END;
+$$;
+
+CREATE TRIGGER waiver_evidence_immutable
+  BEFORE UPDATE ON waiver_evidence
+  FOR EACH ROW EXECUTE FUNCTION prevent_waiver_evidence_update();
+
+CREATE TRIGGER waiver_evidence_no_delete
+  BEFORE DELETE ON waiver_evidence
+  FOR EACH ROW EXECUTE FUNCTION prevent_waiver_evidence_update();
+```
+
+**RLS:** `waiver_evidence` and `waiver_events` follow standard tenant isolation. Parents/students SELECT own family/self only. Inserts via `accept-waiver` Edge Function (`service_role`) or authenticated parent with matching `person_id`.
+
+**Storage bucket:** `waiver-pdfs` — private, tenant-scoped paths `{tenant_id}/{person_id}/{evidence_id}.pdf`. Retrieval via short-lived signed URLs only.
+
 #### Migration 009 — Expenses
 
 > **V1 repo status:** `expense_categories` exists (`20260526000500_comms.sql`). Full `expenses` table below is **not** migrated yet — deferred until P&L UI ships.
@@ -1604,7 +1702,9 @@ Role checks always use `TEXT[]` array containment (e.g. `'tenant_admin' = ANY(ro
 | `class_requirements` | ALL | ALL (own tenant) | — | SELECT (own tenant) | — |
 | `requirement_templates` | ALL | ALL (own tenant) | — | SELECT (own tenant) | — |
 | `requirement_overrides` | ALL | ALL (own tenant) | — | SELECT own | — |
-| `waiver_templates` | ALL | ALL (own tenant) | — | SELECT active (own tenant) | — |
+| `consent_templates` | ALL | ALL (own tenant) | — | SELECT active (own tenant) | — |
+| `waiver_evidence` | ALL | ALL (own tenant) | — | SELECT own family / self | — |
+| `waiver_events` | ALL | ALL (own tenant) | — | SELECT own family / self | — |
 | `enrolments` | ALL | ALL (own tenant) | — | SELECT own | — |
 | `waiting_list` | ALL | ALL (own tenant) | — | SELECT own | — |
 | `attendance` | ALL | ALL (own tenant) | ALL (own tenant) | SELECT own | — |
@@ -1677,6 +1777,7 @@ Public RPCs (accessible to `anon`) additionally MUST filter by `p_subdomain` and
 | pg_cron — OTP cleanup | Comment in `20260526000600_audit_otp.sql` | Run `SELECT cron.schedule(...)` after first deploy |
 | pg_cron — verification cleanup | Comment in `20260526000600_audit_otp.sql` | Run `SELECT cron.schedule(...)` after first deploy |
 | Stripe/Twilio/Resend keys | Admin UI or runbook after schema deploy | See [Third-Party Services Setup](docs/deployment/THIRD_PARTY_SERVICES.md) |
+| `waiver-pdfs` storage bucket | Supabase Dashboard → Storage | Private bucket; see self-hosted waiver runbook in [Third-Party Services Setup](docs/deployment/THIRD_PARTY_SERVICES.md) |
 
 ---
 
@@ -2040,6 +2141,46 @@ Step 4: Confirmation
   → Link to portal
 ```
 
+#### Waiver lifecycle and enrolment gate (V1)
+
+Waiver acceptance is required for legal participation eligibility. **V1 uses self-hosted in-app acceptance** (§2.7.1) — not a third-party e-sign provider.
+
+**Who signs:**
+- Minor student: guardian signs (linked `family_member_id`)
+- Adult student: self-signs
+
+**Trigger points:**
+- New minor person creation (if waiver is required by tenant policy)
+- Minor enrolment attempt
+- Consent template version change (re-sign required)
+- Annual renewal cycle (if enabled by tenant policy)
+
+**Lifecycle states:**
+- `pending_signature` → waiver UI shown, no valid evidence yet
+- `signed` → valid `waiver_evidence` row with matching active template version
+- `expired` → prior signature no longer valid by policy/date
+- `superseded` → evidence row marked superseded when newer template/version accepted
+
+**App flow (`accept-waiver` Edge Function):**
+1. Load active `consent_templates` row for tenant.
+2. Render waiver text + PDF preview in portal/admin UI.
+3. Require checkbox affirmation + typed legal name.
+4. Atomically: insert `waiver_evidence`, append `waiver_events`, update `people.waiver_accepted_at` / `waiver_version`, write `audit_log`.
+5. Upload rendered PDF to private storage; store path + SHA-256 hash on evidence row.
+
+**Blocking rules:**
+- Enrolment cannot transition to `active` unless required waiver state is `signed` with current template version.
+- Payment may complete at PSP level, but service activation stays blocked until waiver requirements are met.
+- Admin override (`admin_attestation` / `admin_upload`) allowed only with explicit reason and audit trail.
+
+**Evidence required per signed waiver:**
+- `consent_template_id`, `consent_version`, `consent_version_hash`, `wording_snapshot`
+- `pdf_storage_path`, `pdf_sha256`
+- Signer identity (`signed_by_name`, `signed_by_email`, `signed_by_role`)
+- `signature_method`, `signed_at` (UTC), `ip_address`, `user_agent`, `accept_language`
+- Append-only `waiver_events` chain
+- `audit_log` entry linking `person_id` and `waiver_evidence.id`
+
 ### Phase 1D — Notifications (Days 21–26)
 
 > **Cross-reference — SMS/WhatsApp OTP login (deferred):** Parent/student **login** via SMS or WhatsApp builds on the enrolment notification OTP infrastructure (`send-otp-sms`, Twilio Verify). Login requires an Edge Function that verifies the code **and issues a Supabase session**, not verification alone. See §5 Login methods.
@@ -2388,7 +2529,9 @@ Stripe payment for physical items. Products linked to class levels. Stock tracki
 
 ### V2.9 — Document management
 
-Digital waiver with full text snapshot. Medical form PDF upload. Photo/media consent per event. GDPR deletion request flow.
+Medical form PDF upload. Photo/media consent per event. GDPR deletion request flow. *(Digital waiver with full text snapshot moved to V1 self-hosted flow — §2.7.1, §4.2.9.)*
+
+Optional third-party e-sign (DocuSign / Dropbox Sign) if legal counsel or volume requires trust-service-provider evidentiary standard — deferred from V1 to avoid recurring vendor cost.
 
 ### V2.10 — Progress reports
 
@@ -2815,6 +2958,53 @@ test.describe("ARIA Patterns", () => {
     expect(customCheckboxes).toBe(customWithAriaChecked);
   });
 });
+
+### 11.4.1 Waiver Evidence Reliability and Legal Tests (Self-Hosted)
+
+**A. Evidence immutability**
+- Attempting UPDATE or DELETE on `waiver_evidence` must fail (trigger raises exception).
+- Corrections create new evidence rows; prior rows transition to `superseded` via new event only.
+
+**B. Hash integrity**
+- Stored `consent_version_hash` must match SHA-256 of `wording_snapshot`.
+- Stored `pdf_sha256` must match SHA-256 of file at `pdf_storage_path`.
+
+**C. Idempotency**
+- Submitting the same `idempotency_key` twice must not create duplicate evidence rows.
+
+**D. Enrolment gate enforcement**
+- Minor enrolment cannot become `active` while no valid `signed` evidence exists for current template version.
+- Adult enrolment follows tenant waiver policy.
+
+**E. RLS and access controls**
+- Parents/students can read only their own waiver status/evidence/events.
+- Tenant admins can access only their own tenant records.
+- Cross-tenant SELECT/UPDATE/DELETE must return empty or forbidden.
+- PDF signed URLs must not be accessible without authorization check.
+
+**F. Version re-sign flow**
+- When active `consent_templates` version changes, affected participants require new acceptance; prior evidence marked `superseded`.
+
+**G. Audit trail completeness**
+- Every `accepted` event must have matching `audit_log` row with `entity_type = 'waiver_evidence'`.
+
+```typescript
+// test/waiver/evidence_integrity.test.ts
+test('Duplicate idempotency key does not create second evidence row', async () => {
+  const key = crypto.randomUUID();
+  const first = await acceptWaiver({ personId, idempotencyKey: key });
+  const second = await acceptWaiver({ personId, idempotencyKey: key });
+  expect(first.id).toBe(second.id);
+});
+
+test('waiver_evidence UPDATE is rejected', async () => {
+  const { data, error } = await supabase
+    .from('waiver_evidence')
+    .update({ signed_by_name: 'Tampered' })
+    .eq('id', evidenceId);
+  expect(error).toBeTruthy();
+});
+```
 
 ### 11.5 Advanced Reliability Gates (Required for V1/V2)
 

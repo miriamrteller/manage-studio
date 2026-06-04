@@ -1,4 +1,5 @@
 import { PARENT_ROLE_NAMES } from '@/lib/parentRoles';
+import type { PresetModules } from '@shared/index';
 
 /**
  * Navigation Configuration
@@ -28,6 +29,8 @@ export interface NavItem {
   isGroupLabel?: boolean;
   /** Indented child item (e.g. setup sub-pages) */
   indent?: boolean;
+  /** Hide item when the named module is disabled for this tenant */
+  moduleKey?: keyof PresetModules;
 }
 
 export interface NavSection {
@@ -77,6 +80,7 @@ export const navigationConfig: NavItem[] = [
     requiredRoles: ['tenant_admin'],
     sectionKey: 'setup',
     indent: true,
+    moduleKey: 'categories',
   },
   {
     path: '/admin/setup/terms',
@@ -84,6 +88,7 @@ export const navigationConfig: NavItem[] = [
     requiredRoles: ['tenant_admin'],
     sectionKey: 'setup',
     indent: true,
+    moduleKey: 'scheduling',
   },
   {
     path: '/admin/setup/classes',
