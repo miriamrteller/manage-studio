@@ -149,7 +149,9 @@ describe('seed.sql snapshot', () => {
   const seed = readFileSync(seedPath, 'utf8');
 
   it('defines 7 Monday classes at 24000 agorot', () => {
-    const classBlocks = seed.match(/'Mini'|'Pre-Primary'|'Primary'|'Grade 1'|'Grade 2'|'Grade 3'|'Pilates'/g);
+    const classBlocks = seed.match(
+      /('Mini'|'Pre-Primary'|'Primary'|'Grade 1'|'Grade 2'|'Grade 3'|'Pilates'),\s*\n/g,
+    );
     expect(classBlocks).toHaveLength(7);
 
     const mondayRows = (seed.match(/,\s*1,\s*'\d{2}:\d{2}:\d{2}'/g) ?? []).length;

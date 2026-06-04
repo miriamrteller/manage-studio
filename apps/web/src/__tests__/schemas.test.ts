@@ -14,7 +14,7 @@ import {
   OtpEmailPayloadSchema,
   VerifyWhatsAppOtpPayloadSchema,
   ContactPreferencesUpdateSchema,
-} from 'shared/schemas';
+} from '@shared/schemas';
 
 describe('Phase 1D Schemas', () => {
   describe('NotificationLogSchema', () => {
