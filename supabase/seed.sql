@@ -11,7 +11,7 @@
 -- ============================================================================
 -- TENANTS (20260526000100_tenants.sql)
 -- ============================================================================
-INSERT INTO tenants (id, name, subdomain, language_default, country, primary_color, accent_color, currency, vat_rate, prices_include_vat, phone_region, business_preset, labels)
+INSERT INTO tenants (id, name, subdomain, language_default, country, primary_color, accent_color, currency, vat_rate, prices_include_vat, phone_region, business_preset, labels, waiver_require_otp)
 VALUES (
   '00000000-0000-0000-0000-000000000001'::uuid,
   'Creative Ballet Academy',
@@ -25,7 +25,8 @@ VALUES (
   true,
   'IL',
   'programs',
-  '{}'::jsonb
+  '{}'::jsonb,
+  false  -- OTP before waiver signing disabled by default; enable only if Twilio Verify is configured
 ) ON CONFLICT (subdomain) DO UPDATE SET
   name = EXCLUDED.name,
   language_default = EXCLUDED.language_default,
@@ -37,7 +38,8 @@ VALUES (
   prices_include_vat = EXCLUDED.prices_include_vat,
   phone_region = EXCLUDED.phone_region,
   business_preset = EXCLUDED.business_preset,
-  labels = EXCLUDED.labels;
+  labels = EXCLUDED.labels,
+  waiver_require_otp = EXCLUDED.waiver_require_otp;
 
 -- ============================================================================
 -- SEASONS + CATEGORIES + OFFERINGS (20260526000400_offerings.sql)
