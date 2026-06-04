@@ -4,6 +4,12 @@ import { supabase } from '../lib/supabase';
 import { getLocale } from '../lib/language-helper';
 import { resolveTenantSubdomain } from '../lib/resolveTenantSubdomain';
 import type { TenantConfig } from '../types/auth';
+import {
+  parseEntityLabelOverrides,
+  resolveEntityLabels,
+  resolvePresetModules,
+  safePreset,
+} from '@shared/index';
 
 /**
  * Resolves tenant from environment (dev) or subdomain (prod)
@@ -46,6 +52,9 @@ export function useTenant(): TenantConfig | null {
         accent_color: row.accent_color,
       };
 
+      const preset = safePreset(row.business_preset);
+      const overrides = parseEntityLabelOverrides(row.labels);
+
       return {
         id: row.id,
         name: row.name,
@@ -62,6 +71,9 @@ export function useTenant(): TenantConfig | null {
         stripe_secret_configured: Boolean(row.stripe_secret_configured),
         stripe_webhook_configured: Boolean(row.stripe_webhook_configured),
         stripe_credentials_updated_at: row.stripe_credentials_updated_at ?? null,
+        business_preset: preset,
+        entity_labels: resolveEntityLabels(preset, overrides),
+        modules: resolvePresetModules(preset),
       } as TenantConfig;
     },
     enabled: !!subdomain,

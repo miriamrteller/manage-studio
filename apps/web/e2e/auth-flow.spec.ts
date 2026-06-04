@@ -17,7 +17,7 @@ test.describe('Phase 1B: Auth & Landing Page', () => {
     // Should see classes
     const heading = page.getByRole('heading', { level: 1 });
     await expect(heading).toBeVisible();
-    await expect(heading).toContainText('Available Classes');
+    await expect(heading).toContainText('Classes');
   });
 
   test('landing page shows public classes list', async ({ page }) => {

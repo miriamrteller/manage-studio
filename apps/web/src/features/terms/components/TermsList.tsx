@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/shared';
 import { FilterMultiSelect, ListSearchInput, SortableHeader, type FilterOption } from '@/components/shared/table';
 import { useSortState } from '@/hooks/useSortState';
+import { useEntityLabels } from '@/hooks/useEntityLabels';
 import { useTerms } from '../hooks/useTerms';
 import { DEFAULT_TERM_SORT, type SeasonSortField } from '../service';
 import { TermForm } from './TermForm';
@@ -11,6 +12,7 @@ import type { Season } from '@shared/schemas';
 
 export const TermsList = () => {
   const { t } = useTranslation();
+  const { labels } = useEntityLabels();
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatuses, setSelectedStatuses] = useState<FilterOption[]>([]);
@@ -92,8 +94,8 @@ export const TermsList = () => {
   return (
     <div className="space-y-4 p-4">
       <div className="space-y-2">
-        <h1 className="text-3xl font-bold">{t('pages.terms.title')}</h1>
-        <p className="text-gray-600">{t('pages.terms.description')}</p>
+        <h1 className="text-3xl font-bold">{labels.season.plural}</h1>
+        <p className="text-gray-600">{t('pages.terms.description')}</p>{/* TODO D3b */}
       </div>
 
       <div className="flex flex-wrap gap-3 items-end justify-between">
@@ -123,7 +125,7 @@ export const TermsList = () => {
           />
         </div>
         <Button variant="primary" onClick={() => setIsCreating(true)}>
-          {t('pages.terms.create_button')}
+          {t('common.add_entity', { entity: labels.season.singular })}
         </Button>
       </div>
 
@@ -144,9 +146,9 @@ export const TermsList = () => {
       {/* Empty state */}
       {!termsData.isLoading && termsData.terms.length === 0 && (
         <EmptyState
-          title={t('pages.terms.empty_title')}
+          title={t('common.empty_title_entity', { entity: labels.season.plural })}
           message={t('pages.terms.empty_message')}
-          actionLabel={t('pages.terms.create_button')}
+          actionLabel={t('common.add_entity', { entity: labels.season.singular })}
           onAction={() => setIsCreating(true)}
         />
       )}
@@ -275,8 +277,8 @@ export const TermsList = () => {
             <div className="flex items-center justify-between border-b p-4">
               <h2 className="text-xl font-semibold">
                 {editingTerm
-                  ? t('pages.terms.edit_title')
-                  : t('pages.terms.create_button')}
+                  ? t('pages.terms.edit_title') // TODO D3b
+                  : t('common.add_entity', { entity: labels.season.singular })}
               </h2>
               <Button
                 type="button"

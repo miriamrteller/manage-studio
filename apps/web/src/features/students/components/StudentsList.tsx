@@ -11,6 +11,7 @@ import {
 } from '@tanstack/react-table';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTenant } from '@/hooks/useTenant';
+import { useEntityLabels } from '@/hooks/useEntityLabels';
 import { useSortState } from '@/hooks/useSortState';
 import { TenantDB } from '@/lib/db';
 import { Button } from '@/components/ui/button';
@@ -43,6 +44,7 @@ type StatusFilter = 'active' | 'inactive' | 'all';
 
 export function StudentsList() {
   const { t } = useTranslation();
+  const { labels } = useEntityLabels();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const classIdFromUrl = searchParams.get('class');
@@ -460,7 +462,7 @@ export function StudentsList() {
     <div className="space-y-4 p-4">
       {/* Header */}
       <div className="space-y-1">
-        <h1 className="text-3xl font-bold">{t('pages.students.title')}</h1>
+        <h1 className="text-3xl font-bold">{labels.contact.plural}</h1>
         <p className="text-gray-600">{t('pages.students.description')}</p>
       </div>
 

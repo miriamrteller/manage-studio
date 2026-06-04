@@ -4,10 +4,12 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Pin, PinOff, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useEntityLabels } from '@/hooks/useEntityLabels';
 import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
 import { useNavDrawer } from './NavDrawerContext';
 import { useNavItems } from './useNavItems';
+import type { NavItem } from './navigationConfig';
 
 const FOCUSABLE =
   'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -38,6 +40,7 @@ export function NavDrawer() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useCurrentUser();
+  const { labels, modules } = useEntityLabels();
   const {
     isOpen,
     isPinned,
@@ -54,7 +57,25 @@ export function NavDrawer() {
   const { sections, isAuthenticated } = useNavItems({
     userRoles: user?.role ?? null,
     isAuthenticated: Boolean(user),
+    modules,
   });
+
+  function navLabel(item: NavItem): string {
+    switch (item.path) {
+      case '/classes':
+        return labels.offering.plural;
+      case '/admin/families':
+        return labels.account.plural;
+      case '/admin/setup/levels':
+        return labels.category.plural;
+      case '/admin/setup/terms':
+        return labels.season.plural;
+      case '/admin/setup/classes':
+        return `${t('nav.manage')} ${labels.offering.plural}`;
+      default:
+        return t(item.labelKey);
+    }
+  }
 
   const navItems = sections.flatMap((section) => section.items);
 
@@ -167,7 +188,7 @@ export function NavDrawer() {
                     active && 'bg-primary-hover font-medium'
                   )}
                 >
-                  {t(item.labelKey)}
+                  {navLabel(item)}
                 </button>
               </li>
             );

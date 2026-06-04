@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 export type BusinessPreset = 'programs' | 'services' | 'catalog';
 
 export type EntityKey =
@@ -88,6 +90,40 @@ const PRESET_MODULES: Record<BusinessPreset, PresetModules> = {
     staff: false,
   },
 };
+
+const EntityLabelPairSchema = z.object({
+  singular: z.string(),
+  plural: z.string(),
+});
+
+const EntityLabelsOverrideSchema = z
+  .object({
+    contact: EntityLabelPairSchema.optional(),
+    account: EntityLabelPairSchema.optional(),
+    offering: EntityLabelPairSchema.optional(),
+    season: EntityLabelPairSchema.optional(),
+    category: EntityLabelPairSchema.optional(),
+    staff: EntityLabelPairSchema.optional(),
+    engagement: EntityLabelPairSchema.optional(),
+    session: EntityLabelPairSchema.optional(),
+  })
+  .partial();
+
+export function parseEntityLabelOverrides(raw: unknown): Partial<EntityLabels> {
+  try {
+    const result = EntityLabelsOverrideSchema.safeParse(
+      typeof raw === 'string' ? JSON.parse(raw) : raw
+    );
+    return result.success ? (result.data as Partial<EntityLabels>) : {};
+  } catch {
+    return {};
+  }
+}
+
+export function safePreset(raw: unknown): BusinessPreset {
+  if (raw === 'programs' || raw === 'services' || raw === 'catalog') return raw;
+  return 'programs';
+}
 
 export function resolvePresetModules(preset: BusinessPreset): PresetModules {
   return PRESET_MODULES[preset];

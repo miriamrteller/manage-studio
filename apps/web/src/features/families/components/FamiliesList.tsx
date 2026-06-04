@@ -4,12 +4,14 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/shared';
 import { ListSearchInput, SortableHeader } from '@/components/shared/table';
 import { useSortState } from '@/hooks/useSortState';
+import { useEntityLabels } from '@/hooks/useEntityLabels';
 import { useFamilies } from '../hooks/useFamilies';
 import { DEFAULT_FAMILY_SORT, type AccountSortField } from '../service';
 import { useNavigate } from 'react-router-dom';
 
 export const FamiliesList = () => {
   const { t } = useTranslation();
+  const { labels } = useEntityLabels();
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
@@ -27,7 +29,7 @@ export const FamiliesList = () => {
   return (
     <div className="space-y-4 p-4">
       <div className="space-y-2">
-        <h1 className="text-3xl font-bold">{t('pages.families.title')}</h1>
+        <h1 className="text-3xl font-bold">{labels.account.plural}</h1>
         <p className="text-gray-600">{t('pages.families.description')}</p>
       </div>
 

@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { useClasses } from '@/features/classes/hooks';
 import { useTenant } from '@/hooks/useTenant';
+import { useEntityLabels } from '@/hooks/useEntityLabels';
 import { ClassCard, EmptyState } from '@/components/shared';
 import type { PublicOffering } from '@/schemas';
 
@@ -21,12 +22,13 @@ import type { PublicOffering } from '@/schemas';
 export function ClassesList() {
   const { t } = useTranslation();
   const tenant = useTenant();
+  const { labels } = useEntityLabels();
   const { classes, isLoading, error } = useClasses();
 
   return (
     <section>
       {/* Always render a single <h1> for page hierarchy, even in empty state */}
-      <h1 className="text-2xl font-bold mb-6">{t('pages.classes.title')}</h1>
+      <h1 className="text-2xl font-bold mb-6">{labels.offering.plural}</h1>
 
       {/* Loading state */}
       {isLoading && (
@@ -45,8 +47,8 @@ export function ClassesList() {
       {/* Empty state: accessible, positive message with action */}
       {!error && !isLoading && !classes.length && (
         <EmptyState
-          title={t('pages.classes.no_classes_title')}
-          message={t('pages.classes.no_classes_message')}
+          title={t('pages.classes.no_classes_title')} // TODO D3b
+          message={t('pages.classes.no_classes_message')} // TODO D3b
           actionLabel={t('pages.classes.contact_support')}
           onAction={() => window.open('mailto:support@creativeballetacademy.com')}
         />

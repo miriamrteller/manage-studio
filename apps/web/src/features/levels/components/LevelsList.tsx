@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/shared';
 import { ListSearchInput, SortableHeader } from '@/components/shared/table';
 import { useSortState } from '@/hooks/useSortState';
+import { useEntityLabels } from '@/hooks/useEntityLabels';
 import { useLevels } from '../hooks/useLevels';
 import { DEFAULT_LEVEL_SORT, type CategorySortField } from '../service';
 import { LevelForm } from './LevelForm';
@@ -11,6 +12,7 @@ import type { Category } from '@shared/schemas';
 
 export const LevelsList = () => {
   const { t } = useTranslation();
+  const { labels } = useEntityLabels();
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const { sortField, sortOrder, toggleSort } = useSortState<CategorySortField>(
@@ -76,8 +78,8 @@ export const LevelsList = () => {
   return (
     <div className="space-y-4 p-4">
       <div className="space-y-2">
-        <h1 className="text-3xl font-bold">{t('pages.levels.title')}</h1>
-        <p className="text-gray-600">{t('pages.levels.description')}</p>
+        <h1 className="text-3xl font-bold">{labels.category.plural}</h1>
+        <p className="text-gray-600">{t('pages.levels.description')}</p>{/* TODO D3b */}
       </div>
 
       <div className="flex flex-wrap gap-3 items-end justify-between">
@@ -94,7 +96,7 @@ export const LevelsList = () => {
           />
         </div>
         <Button variant="primary" onClick={() => setIsCreating(true)}>
-          {t('pages.levels.create_button')}
+          {t('common.add_entity', { entity: labels.category.singular })}
         </Button>
       </div>
 
@@ -115,9 +117,9 @@ export const LevelsList = () => {
       {/* Empty state */}
       {!levelsData.isLoading && levelsData.levels.length === 0 && (
         <EmptyState
-          title={t('pages.levels.empty_title')}
+          title={t('common.empty_title_entity', { entity: labels.category.plural })}
           message={t('pages.levels.empty_message')}
-          actionLabel={t('pages.levels.create_button')}
+          actionLabel={t('common.add_entity', { entity: labels.category.singular })}
           onAction={() => setIsCreating(true)}
         />
       )}
@@ -212,8 +214,8 @@ export const LevelsList = () => {
             <div className="flex items-center justify-between border-b p-4">
               <h2 className="text-xl font-semibold">
                 {editingLevel
-                  ? t('pages.levels.edit_title')
-                  : t('pages.levels.create_button')}
+                  ? t('pages.levels.edit_title') // TODO D3b
+                  : t('common.add_entity', { entity: labels.category.singular })}
               </h2>
               <Button
                 type="button"

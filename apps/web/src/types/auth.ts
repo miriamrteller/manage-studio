@@ -1,3 +1,5 @@
+import type { BusinessPreset, EntityLabels, PresetModules } from '@shared/index';
+
 /**
  * User profile from user_profiles table
  * Includes role array for multi-role support
@@ -52,6 +54,9 @@ export type TenantConfig = {
   stripe_secret_configured?: boolean;
   stripe_webhook_configured?: boolean;
   stripe_credentials_updated_at?: string | null;
+  business_preset: BusinessPreset;
+  entity_labels: EntityLabels;
+  modules: PresetModules;
 };
 
 /**

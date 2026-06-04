@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAdminDashboard } from './useAdminDashboard';
+import { useEntityLabels } from '@/hooks/useEntityLabels';
 
 /**
  * AdminPanel: Smart component for admin dashboard
@@ -15,6 +16,7 @@ export function AdminPanel() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { isLoading, error } = useAdminDashboard();
+  const { labels, modules } = useEntityLabels();
 
   if (isLoading) {
     return (
@@ -86,50 +88,54 @@ export function AdminPanel() {
         </div>
 
         {/* Levels Card */}
-        <div className="card border border-gray-200 hover:border-primary hover:shadow-md transition-all">
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900">
-              {t('pages.levels_terms.levels_title')}
-            </h3>
-            <p className="text-sm text-gray-600">
-              {t('pages.levels_terms.levels_description')}
-            </p>
-            <Button
-              variant="primary"
-              fullWidth
-              onClick={() => navigate('/admin/setup/levels')}
-              aria-label={t('pages.levels_terms.levels_title')}
-            >
-              {t('common.manage')} →
-            </Button>
+        {modules.categories && (
+          <div className="card border border-gray-200 hover:border-primary hover:shadow-md transition-all">
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900">
+                {labels.category.plural}
+              </h3>
+              <p className="text-sm text-gray-600">
+                {t('pages.levels_terms.levels_description')}
+              </p>
+              <Button
+                variant="primary"
+                fullWidth
+                onClick={() => navigate('/admin/setup/levels')}
+                aria-label={labels.category.plural}
+              >
+                {t('common.manage')} →
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Terms Card */}
-        <div className="card border border-gray-200 hover:border-primary hover:shadow-md transition-all">
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900">
-              {t('pages.levels_terms.terms_title')}
-            </h3>
-            <p className="text-sm text-gray-600">
-              {t('pages.levels_terms.terms_description')}
-            </p>
-            <Button
-              variant="primary"
-              fullWidth
-              onClick={() => navigate('/admin/setup/terms')}
-              aria-label={t('pages.levels_terms.terms_title')}
-            >
-              {t('common.manage')} →
-            </Button>
+        {modules.scheduling && (
+          <div className="card border border-gray-200 hover:border-primary hover:shadow-md transition-all">
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900">
+                {labels.season.plural}
+              </h3>
+              <p className="text-sm text-gray-600">
+                {t('pages.levels_terms.terms_description')}
+              </p>
+              <Button
+                variant="primary"
+                fullWidth
+                onClick={() => navigate('/admin/setup/terms')}
+                aria-label={labels.season.plural}
+              >
+                {t('common.manage')} →
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Classes Card */}
         <div className="card border border-gray-200 hover:border-primary hover:shadow-md transition-all">
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-gray-900">
-              {t('pages.admin_classes.title')}
+              {`${t('common.manage')} ${labels.offering.plural}`}
             </h3>
             <p className="text-sm text-gray-600">
               {t('pages.admin_classes.description')}
