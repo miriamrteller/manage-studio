@@ -79,7 +79,7 @@ export const LevelsList = () => {
     <div className="space-y-4 p-4">
       <div className="space-y-2">
         <h1 className="text-3xl font-bold">{labels.category.plural}</h1>
-        <p className="text-gray-600">{t('pages.levels.description')}</p>{/* TODO D3b */}
+        <p className="text-gray-600">{t('pages.levels.description', { entity: labels.category.plural.toLowerCase() })}</p>
       </div>
 
       <div className="flex flex-wrap gap-3 items-end justify-between">
@@ -214,7 +214,7 @@ export const LevelsList = () => {
             <div className="flex items-center justify-between border-b p-4">
               <h2 className="text-xl font-semibold">
                 {editingLevel
-                  ? t('pages.levels.edit_title') // TODO D3b
+                  ? t('pages.levels.edit_title', { entity: labels.category.singular })
                   : t('common.add_entity', { entity: labels.category.singular })}
               </h2>
               <Button

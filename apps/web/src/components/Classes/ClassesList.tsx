@@ -47,8 +47,8 @@ export function ClassesList() {
       {/* Empty state: accessible, positive message with action */}
       {!error && !isLoading && !classes.length && (
         <EmptyState
-          title={t('pages.classes.no_classes_title')} // TODO D3b
-          message={t('pages.classes.no_classes_message')} // TODO D3b
+          title={t('pages.classes.no_classes_title', { entity: labels.offering.plural })}
+          message={t('pages.classes.no_classes_message', { entity: labels.offering.plural.toLowerCase() })}
           actionLabel={t('pages.classes.contact_support')}
           onAction={() => window.open('mailto:support@creativeballetacademy.com')}
         />

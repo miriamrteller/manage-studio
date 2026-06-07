@@ -95,7 +95,7 @@ export const TermsList = () => {
     <div className="space-y-4 p-4">
       <div className="space-y-2">
         <h1 className="text-3xl font-bold">{labels.season.plural}</h1>
-        <p className="text-gray-600">{t('pages.terms.description')}</p>{/* TODO D3b */}
+        <p className="text-gray-600">{t('pages.terms.description', { entity: labels.season.plural.toLowerCase() })}</p>
       </div>
 
       <div className="flex flex-wrap gap-3 items-end justify-between">
@@ -277,7 +277,7 @@ export const TermsList = () => {
             <div className="flex items-center justify-between border-b p-4">
               <h2 className="text-xl font-semibold">
                 {editingTerm
-                  ? t('pages.terms.edit_title') // TODO D3b
+                  ? t('pages.terms.edit_title', { entity: labels.season.singular })
                   : t('common.add_entity', { entity: labels.season.singular })}
               </h2>
               <Button

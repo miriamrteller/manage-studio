@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/shared';
 import { FilterMultiSelect, ListSearchInput, SortableHeader, type FilterOption } from '@/components/shared/table';
 import { useTenant } from '@/hooks/useTenant';
+import { useEntityLabels } from '@/hooks/useEntityLabels';
 import { useSortState } from '@/hooks/useSortState';
 import { useClasses } from '../hooks/useClasses';
 import { useTerms } from '@/features/terms/hooks/useTerms';
@@ -24,6 +25,7 @@ import { deleteOfferingCover, uploadOfferingCover } from '../lib/offeringImageSt
 export function AdminClassesList() {
   const { t, i18n } = useTranslation();
   const tenant = useTenant();
+  const { labels } = useEntityLabels();
   const [page, setPage] = useState(1);
   const { sortField, sortOrder, toggleSort } = useSortState<OfferingSortField>(
     DEFAULT_CLASS_SORT.field,
@@ -164,13 +166,13 @@ export function AdminClassesList() {
   return (
     <div className="space-y-4 p-4">
       <div className="space-y-2">
-        <h1 className="text-3xl font-bold">{t('pages.admin_classes.title')}</h1>
-        <p className="text-gray-600">{t('pages.admin_classes.description')}</p>
+        <h1 className="text-3xl font-bold">{t('pages.admin_classes.title', { entity: labels.offering.plural })}</h1>
+        <p className="text-gray-600">{t('pages.admin_classes.description', { entity: labels.offering.plural.toLowerCase() })}</p>
       </div>
 
       <div className="flex justify-end">
         <Button variant="primary" onClick={() => setIsCreating(true)}>
-          {t('pages.admin_classes.create_button')}
+          {t('pages.admin_classes.create_button', { entity: labels.offering.singular })}
         </Button>
       </div>
 
@@ -234,9 +236,9 @@ export function AdminClassesList() {
 
       {!classesData.isLoading && classesData.classes.length === 0 && (
         <EmptyState
-          title={t('pages.admin_classes.empty_title')}
-          message={t('pages.admin_classes.empty_message')}
-          actionLabel={t('pages.admin_classes.create_button')}
+          title={t('pages.admin_classes.empty_title', { entity: labels.offering.plural })}
+          message={t('pages.admin_classes.empty_message', { entity: labels.offering.singular.toLowerCase() })}
+          actionLabel={t('pages.admin_classes.create_button', { entity: labels.offering.singular })}
           onAction={() => setIsCreating(true)}
         />
       )}
@@ -410,8 +412,8 @@ export function AdminClassesList() {
             <div className="flex items-center justify-between border-b p-4">
               <h2 className="text-xl font-semibold">
                 {editingClass
-                  ? t('pages.admin_classes.edit_title')
-                  : t('pages.admin_classes.create_button')}
+                  ? t('pages.admin_classes.edit_title', { entity: labels.offering.singular })
+                  : t('pages.admin_classes.create_button', { entity: labels.offering.singular })}
               </h2>
               <Button
                 type="button"
