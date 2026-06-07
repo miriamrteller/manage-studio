@@ -47,6 +47,26 @@ export function AdminPanel() {
 
       {/* Setup Navigation Cards */}
       <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* School settings */}
+        <div className="card border border-gray-200 hover:border-primary hover:shadow-md transition-all">
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900">
+              {t('settings.hub.page_title')}
+            </h3>
+            <p className="text-sm text-gray-600">
+              {t('settings.hub.page_description')}
+            </p>
+            <Button
+              variant="primary"
+              fullWidth
+              onClick={() => navigate('/admin/setup/settings')}
+              aria-label={t('settings.hub.page_title')}
+            >
+              {t('common.manage')} →
+            </Button>
+          </div>
+        </div>
+
         {/* Tax / VAT Card */}
         <div className="card border border-gray-200 hover:border-primary hover:shadow-md transition-all">
           <div className="space-y-4">

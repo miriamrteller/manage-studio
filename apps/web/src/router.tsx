@@ -1,6 +1,6 @@
 import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
 import { AppLayout } from "./layouts/AppLayout";
-import { AdminRoute, ParentRoute, StudentRoute } from "./layouts/RouteGuards";
+import { AdminRoute, ParentRoute, StudentRoute, SuperAdminRoute } from "./layouts/RouteGuards";
 import { LabelsProvider } from "./contexts/LabelsContext";
 import { ClassesPage } from "./pages/ClassesPage";
 import LoginPage from "./pages/LoginPage";
@@ -14,6 +14,8 @@ import FamilyDetailPage from "./pages/FamilyDetailPage";
 import BillingPage from "./pages/BillingPage";
 import StripeSettingsPage from "./pages/StripeSettingsPage";
 import TaxSettingsPage from "./pages/TaxSettingsPage";
+import TenantSettingsPage from "./pages/TenantSettingsPage";
+import PlatformOnboardPage from "./pages/PlatformOnboardPage";
 import LevelsPage from "./pages/LevelsPage";
 import TermsPage from "./pages/TermsPage";
 import AdminClassesPage from "./pages/AdminClassesPage";
@@ -67,8 +69,10 @@ const router = createBrowserRouter([
       { path: "admin/setup/levels", element: <AdminRoute><LevelsPage /></AdminRoute> },
       { path: "admin/setup/terms", element: <AdminRoute><TermsPage /></AdminRoute> },
       { path: "admin/setup/classes", element: <AdminRoute><AdminClassesPage /></AdminRoute> },
+      { path: "admin/setup/settings", element: <AdminRoute><TenantSettingsPage /></AdminRoute> },
       { path: "admin/setup/tax", element: <AdminRoute><TaxSettingsPage /></AdminRoute> },
       { path: "admin/setup/stripe", element: <AdminRoute><StripeSettingsPage /></AdminRoute> },
+      { path: "platform/onboard", element: <SuperAdminRoute><PlatformOnboardPage /></SuperAdminRoute> },
 
       // LEGACY ROUTES (Phase 1B) — kept for backward compatibility
       { path: "dashboard/admin", element: <AdminRoute><AdminDashboard /></AdminRoute> },

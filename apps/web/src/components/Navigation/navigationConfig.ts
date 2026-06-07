@@ -68,6 +68,13 @@ export const navigationConfig: NavItem[] = [
     sectionKey: 'setup',
   },
   {
+    path: '/admin/setup/settings',
+    labelKey: 'settings.hub.page_title',
+    requiredRoles: ['tenant_admin'],
+    sectionKey: 'setup',
+    indent: true,
+  },
+  {
     path: '/admin/setup/billing',
     labelKey: 'nav.billing',
     requiredRoles: ['tenant_admin'],
