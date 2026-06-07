@@ -30,6 +30,7 @@ import { FamilyMultiSelect } from '@/features/families/components/FamilyMultiSel
 import { useClasses } from '@/features/classes/hooks/useClasses';
 import { useLevels } from '@/features/levels/hooks/useLevels';
 import { useStudents } from '../hooks/useStudents';
+import { STUDENT_LIST_ENROLMENT_STATUSES } from '../lib/resolveEnrolledPersonIds';
 import { DEFAULT_PERSON_SORT, type PersonSortField } from '../lib/personSort';
 import { AdminEnrolStudentModal } from '@/features/enrolment/components/AdminEnrolStudentModal';
 import { resolveGuardianEmail } from '@/features/enrolment/lib/resolveGuardianEmail';
@@ -99,7 +100,7 @@ export function StudentsList() {
       if (!tenant || personIds.length === 0) return [];
       const { data, error } = await TenantDB.selectFor('engagements', tenant)
         .in('person_id', personIds)
-        .in('status', ['active', 'pending_payment', 'waitlisted']);
+        .in('status', [...STUDENT_LIST_ENROLMENT_STATUSES]);
       if (error) throw error;
       return data || [];
     },

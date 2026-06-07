@@ -1,7 +1,11 @@
 import { TenantDB } from '@/lib/db';
+import { NON_TERMINAL_ENGAGEMENT_STATUSES } from '@/features/enrolment/lib/enrolmentTransitions';
 import type { Tenant } from '@shared/schemas';
 
-const ACTIVE_ENROLMENT_STATUSES = ['active', 'pending_payment', 'waitlisted'] as const;
+/** Non-terminal engagement statuses used for student-list enrolment scope. */
+export const STUDENT_LIST_ENROLMENT_STATUSES = NON_TERMINAL_ENGAGEMENT_STATUSES;
+
+const GUARDIAN_ACCOUNT_MEMBER_ROLES = ['account_holder', 'member'] as const;
 
 interface EngagementFilterOptions {
   classIds?: string[];
@@ -41,7 +45,7 @@ export async function resolveEnrolledPersonIds(
 
   const { data, error } = await TenantDB.selectFor('engagements', tenant)
     .in('offering_id', matchingClassIds!)
-    .in('status', [...ACTIVE_ENROLMENT_STATUSES]);
+    .in('status', [...STUDENT_LIST_ENROLMENT_STATUSES]);
   if (error) throw error;
 
   return [...new Set((data || []).map((e: { person_id: string }) => e.person_id))];
@@ -50,9 +54,59 @@ export async function resolveEnrolledPersonIds(
 /** Person IDs with any active enrolment (for student-list scope). */
 export async function resolveAllEnrolledPersonIds(tenant: Tenant): Promise<string[]> {
   const { data, error } = await TenantDB.selectFor('engagements', tenant)
-    .in('status', [...ACTIVE_ENROLMENT_STATUSES])
+    .in('status', [...STUDENT_LIST_ENROLMENT_STATUSES])
     .select('person_id');
   if (error) throw error;
 
   return [...new Set((data || []).map((e: { person_id: string }) => e.person_id))];
+}
+
+/** Primary and secondary guardians — excluded from the student list. */
+export async function resolveGuardianPersonIds(tenant: Tenant): Promise<string[]> {
+  const ids = new Set<string>();
+
+  const { data: accounts, error: accountsError } = await TenantDB.selectFor('accounts', tenant).select(
+    'person_id'
+  );
+  if (accountsError) throw accountsError;
+  for (const row of accounts ?? []) {
+    if (row.person_id) ids.add(row.person_id as string);
+  }
+
+  const { data: members, error: membersError } = await TenantDB.selectFor('account_members', tenant)
+    .in('role', [...GUARDIAN_ACCOUNT_MEMBER_ROLES])
+    .select('person_id');
+  if (membersError) throw membersError;
+  for (const row of members ?? []) {
+    if (row.person_id) ids.add(row.person_id as string);
+  }
+
+  return [...ids];
+}
+
+/** Adult solo students: active people with no family account who are not guardians. */
+export async function resolveSoloStudentPersonIds(
+  tenant: Tenant,
+  guardianPersonIds: string[]
+): Promise<string[]> {
+  let query = TenantDB.selectFor('people', tenant)
+    .is('account_id', null)
+    .eq('status', 'active')
+    .select('id');
+
+  if (guardianPersonIds.length > 0) {
+    query = query.not('id', 'in', `(${guardianPersonIds.join(',')})`);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data ?? []).map((row: { id: string }) => row.id);
+}
+
+/** Extra person IDs included in student-list scope beyond family-linked students. */
+export function mergeStudentListScopeIds(
+  enrolledPersonIds: string[],
+  soloStudentPersonIds: string[]
+): string[] {
+  return [...new Set([...enrolledPersonIds, ...soloStudentPersonIds])];
 }
