@@ -11,7 +11,12 @@ import {
   personSortOrderForField,
   type PersonSortField,
 } from '@/features/students/lib/personSort';
-import { resolveEnrolledPersonIds } from '@/features/students/lib/resolveEnrolledPersonIds';
+import {
+  mergeStudentListScopeIds,
+  resolveEnrolledPersonIds,
+  resolveGuardianPersonIds,
+  resolveSoloStudentPersonIds,
+} from '@/features/students/lib/resolveEnrolledPersonIds';
 
 export interface ListPeopleFilters {
   page?: number;
@@ -143,11 +148,18 @@ export class PersonService extends BaseService {
         query = query.in('account_id', accountIds);
       }
       if (studentListOnly) {
-        if (allEnrolledPersonIds.length === 0) {
+        const guardianPersonIds = await resolveGuardianPersonIds(tenant);
+        const soloStudentPersonIds = await resolveSoloStudentPersonIds(tenant, guardianPersonIds);
+        const scopePersonIds = mergeStudentListScopeIds(
+          allEnrolledPersonIds,
+          soloStudentPersonIds
+        );
+
+        if (scopePersonIds.length === 0) {
           query = query.not('account_id', 'is', null);
         } else {
           query = query.or(
-            `account_id.not.is.null,id.in.(${allEnrolledPersonIds.join(',')})`
+            `account_id.not.is.null,id.in.(${scopePersonIds.join(',')})`
           );
         }
       }

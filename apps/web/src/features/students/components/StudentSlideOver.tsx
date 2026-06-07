@@ -11,6 +11,7 @@ import { useStudentDetail } from '../hooks/useStudentDetail';
 import { AdminEnrolStudentModal } from '@/features/enrolment/components/AdminEnrolStudentModal';
 import { resolveGuardianEmail } from '@/features/enrolment/lib/resolveGuardianEmail';
 import { formatDate, calculateAge } from '@/lib/utils';
+import { formatPersonAgeLabel } from '@/lib/personAge';
 import { EnrolmentRowActions, canShowCancelEnrolment } from './EnrolmentRowActions';
 import { CancelEnrolmentDialog } from './CancelEnrolmentDialog';
 
@@ -108,9 +109,9 @@ export function StudentSlideOver({ personId, onClose }: StudentSlideOverProps) {
         <div className="flex items-start justify-between p-5 border-b flex-shrink-0">
           <div>
             <h2 className="text-xl font-bold">{person?.name ?? '...'}</h2>
-            {age !== undefined && (
+            {age !== undefined && age !== null && (
               <p className="text-sm text-gray-500">
-                {t('pages.people.age_label')}: {age}
+                {t('pages.people.age_label')}: {formatPersonAgeLabel(age, t)}
                 {person?.date_of_birth && ` (${formatDate(person.date_of_birth)})`}
               </p>
             )}

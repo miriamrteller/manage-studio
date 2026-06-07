@@ -71,13 +71,15 @@
     "delete_term_confirm": "Are you sure you want to delete the term \"{{name}}\"?",
     "delete_class_confirm": "Are you sure you want to delete the class \"{{name}}\"?",
     "add_entity": "Add {{entity}}",
-    "empty_title_entity": "No {{entity}} yet"
+    "empty_title_entity": "No {{entity}} yet",
+    "age_18_plus": "18+"
   },
   "person_search": {
     "label": "Search people",
     "placeholder": "Name, parent, email, phone, age, class…",
     "empty": "No matching people found",
     "age": "Age {{age}}",
+    "adult": "Adult",
     "guardian": "Parent: {{name}}",
     "enrolled_in": "Enrolled: {{classes}}"
   },
@@ -529,6 +531,7 @@
       "enrolled_in": "Enrolled in: {{classes}}",
       "ineligible_age": "Not eligible for the selected class age range",
       "selected_class_age_mismatch": "This student will be age {{age}} at the start of the season. The selected class is for ages {{classAges}}.",
+      "selected_class_age_mismatch_adult": "This student will be an adult at the start of the season. The selected class is for ages {{classAges}}.",
       "selected_class_age_ineligible_hint": "Please go back and choose a different class, or contact the studio for help.",
       "show_all_classes": "Show all classes (including age-mismatched)",
       "age_override_label": "Override age requirement (admin only)",
@@ -566,10 +569,12 @@
       "class_ages": "ages",
       "class_info_heading": "About this class",
       "showing_for_age": "Showing classes suitable for age {{age}}.",
+      "showing_for_age_18_plus": "Showing classes suitable for ages 18+.",
       "age_filter_inactive": "Age filtering is not active — no classes have min/max age set. Edit each class under Manage Classes and set Minimum age / Maximum age (not the Requirements panel). Apply the latest database migration if those fields are missing.",
       "classes_filtered_by_age": "{{count}} class(es) hidden — not in this student's age range.",
       "no_classes_for_age": "No classes match this student's age.",
       "no_classes_for_age_hint": "This student is age {{age}}. Check that the class min/max age range includes {{age}} (e.g. min 3 and max 5, not max 3 only). Set ages on the class form under Manage Classes.",
+      "no_classes_for_age_hint_adult": "This student is an adult (18+). Check that the class minimum age is 18 or lower and the maximum age (if set) allows adults. Set ages on the class form under Manage Classes.",
       "loading_class_info": "Loading class details…",
       "no_classes": "No classes are currently available for enrolment.",
       "notification_desc": "Set up how you want to receive updates",
