@@ -1745,6 +1745,10 @@ export type Database = {
         Args: { p_engagement_id: string; p_reason?: string }
         Returns: Json
       }
+      check_subdomain_available: {
+        Args: { p_subdomain: string }
+        Returns: boolean
+      }
       cleanup_expired_otps: { Args: never; Returns: undefined }
       cleanup_old_verification_attempts: { Args: never; Returns: number }
       get_my_account_ids: { Args: never; Returns: string[] }
@@ -1882,6 +1886,24 @@ export type Database = {
         Returns: undefined
       }
       next_invoice_number: { Args: { p_tenant_id: string }; Returns: string }
+      provision_tenant: {
+        Args: {
+          p_accent_color?: string
+          p_admin_email?: string
+          p_business_preset?: string
+          p_country?: string
+          p_currency?: string
+          p_labels?: Json
+          p_language_default?: string
+          p_name: string
+          p_phone_region?: string
+          p_prices_include_vat?: boolean
+          p_primary_color?: string
+          p_subdomain: string
+          p_vat_rate?: number
+        }
+        Returns: string
+      }
       resolve_engagement_guardian: {
         Args: { p_engagement_id: string }
         Returns: {

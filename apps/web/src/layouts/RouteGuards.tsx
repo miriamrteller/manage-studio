@@ -77,6 +77,24 @@ export function ParentRoute({ children }: { children: ReactNode }) {
 }
 
 /**
+ * SuperAdminRoute: requires role to include 'super_admin'
+ */
+export function SuperAdminRoute({ children }: { children: ReactNode }) {
+  const { user, isLoading } = useCurrentUser();
+  const location = useLocation();
+
+  if (isLoading) {
+    return <LoadingState />;
+  }
+
+  if (!user || !user.role.includes('super_admin')) {
+    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
+  }
+
+  return <>{children}</>;
+}
+
+/**
  * StudentRoute: requires role to include 'student' or 'adult_student'
  */
 export function StudentRoute({ children }: { children: ReactNode }) {

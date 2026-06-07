@@ -2597,6 +2597,25 @@ Screens:
 - **Notifications:** compose email blast; select recipients by class/level/all; WhatsApp blast for urgent items
 - **Settings:** school profile, **tax** (`/admin/setup/tax` — `vat_rate`, `prices_include_vat`; not `/admin/setup/billing`, which is billing accounts), levels, terms, class requirements, discount rules, Stripe keys, external API keys (Morning/Green Invoice in V2.6), **waivers** (`/admin/setup/waivers` — manage `consent_templates`: list versions, create draft, preview PDF, promote draft→approved→active, archive; one active template per tenant at a time; view signed waivers per person; export evidence bundle for dispute resolution; add to `navigationConfig.ts` alongside tax/levels/terms)
 
+### 6.y — Tenant settings hub (day-2 admin configuration)
+
+**Route:** `/admin/setup/settings` — `tenant_admin` only.
+
+**Purpose:** Ongoing edits after provisioning. Not industry onboarding (see §9 V3.0).
+
+| Section | Editable fields | Notes |
+| --- | --- | --- |
+| School profile | `name` | `subdomain` read-only post-launch |
+| Branding | `primary_color`, `accent_color` | `useThemeInjection` on cache invalidate |
+| Language & region | `language_default`, `country`, `currency`, `phone_region` | Lock `currency` after first payment |
+| Integrations | — | Cards → `/admin/setup/stripe`; Twilio/Resend when §6.x #4 ships |
+| Tax | — | Card → `/admin/setup/tax` |
+| Compliance | — | Card → `/admin/setup/waivers` (Phase 1F) |
+
+**Excluded:** `business_preset`, `subdomain` edits, terminology overrides in v1 (wizard-only until second tenant).
+
+**Phase D (label display wiring):** Complete. See [docs/plans/phase-d-display-wiring.md](docs/plans/phase-d-display-wiring.md). Former “D4 admin label editor” removed from Phase D — belongs in §9 V3.0.
+
 ### 6.x — Deferred backlog (post–V1 payment slice)
 
 Items intentionally **not** in the first finance migration or V1 checkout scope:
@@ -2764,9 +2783,37 @@ Teacher writes end-of-term note per student. Admin reviews. System sends PDF to 
 
 ## 9. V3 SaaS Roadmap
 
+### V3.0 — Operator tenant provisioning wizard
+
+**When:** After ballet V1 is feature-complete, before second-industry validation.
+
+**Route:** `/platform/onboard` — `super_admin` only.
+
+**Steps:** (1) identity + `business_preset`, (2) optional `labels` overrides, (3) branding, (4) locale, (5) tax, (6) integrations (skippable), (7) starter data seed, (8) review + `provision_tenant` RPC.
+
+**Backend:** `check_subdomain_available`, `provision_tenant` (insert tenant + seed expense categories). Admin account: invite signup with `subdomain` in auth metadata; promote to `tenant_admin`.
+
+**Field matrix (wizard vs admin hub):**
+
+| Field | Wizard | Admin hub |
+| --- | :---: | :---: |
+| `name` | Yes | Yes |
+| `subdomain` | Yes | Read-only |
+| `business_preset` | Yes | Read-only |
+| `labels` | Yes (optional) | Deferred v1 |
+| `primary_color`, `accent_color` | Yes | Yes |
+| `language_default`, `country`, `currency`, `phone_region` | Yes | Yes |
+| `vat_rate`, `prices_include_vat` | Yes | Yes (tax page) |
+| Stripe keys | Yes (skippable) | Yes |
+| Twilio/Resend | Yes (skippable) | Yes (§6.x #4 prerequisite) |
+| Levels/terms/offerings | Optional seed | Existing setup pages |
+| Consent templates | First draft optional | `/admin/setup/waivers` CRUD |
+
+See [docs/plans/v3-0-operator-onboarding-wizard.md](docs/plans/v3-0-operator-onboarding-wizard.md).
+
 ### V3.1 — Self-service tenant onboarding
 
-`signup.yoursystem.com` — school name, subdomain, plan selection, admin account creation, guided setup wizard.
+`signup.yoursystem.com` — school name, subdomain, plan selection, admin account creation, guided setup wizard. Reuses V3.0 step components with public signup entry point.
 
 ### V3.2 — White-label theming
 
