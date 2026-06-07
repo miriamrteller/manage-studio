@@ -1,7 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { usePersonSearch } from '@/hooks/usePersonSearch';
-import { personAgeLabel } from '@/lib/personAge';
+import { formatPersonSearchAgeLine } from '@/lib/personAge';
 import type { PersonSearchResult } from '@/features/people/types';
 import type { Person } from '@shared/schemas';
 
@@ -24,9 +24,9 @@ export interface PersonSearchComboboxProps {
 }
 
 function defaultSubtitle(result: PersonSearchResult, t: (key: string, opts?: Record<string, unknown>) => string): string {
-  const age = personAgeLabel(result.person.date_of_birth);
+  const age = formatPersonSearchAgeLine(result.person.date_of_birth, t);
   return [
-    age ? t('person_search.age', { age }) : null,
+    age,
     result.person.email,
     result.accountName,
     result.guardianName ? t('person_search.guardian', { name: result.guardianName }) : null,

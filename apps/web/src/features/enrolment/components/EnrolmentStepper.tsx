@@ -32,7 +32,12 @@ import {
 import { getSelectedClassAgeError } from '../lib/selectedClassAgeValidation';
 import { useLevels } from '@/features/levels/hooks/useLevels';
 import { useTerms } from '@/features/terms/hooks/useTerms';
-import { parseLocalDate } from '@/lib/personAge';
+import {
+  enrolmentAgeMismatchMessage,
+  enrolmentNoClassesAgeHint,
+  enrolmentShowingForAgeMessage,
+  parseLocalDate,
+} from '@/lib/personAge';
 import { PersonService } from '@/features/people/service';
 import { TenantDB } from '@/lib/db';
 import { OfferingSchema } from '@shared/schemas';
@@ -878,7 +883,7 @@ function StepClass({
 
       {studentAge != null && ageFilteringActive && (
         <p className="text-sm text-gray-700" role="status">
-          {t('pages.enrolment.showing_for_age', { age: studentAge })}
+          {enrolmentShowingForAgeMessage(studentAge, t)}
         </p>
       )}
 
@@ -910,7 +915,7 @@ function StepClass({
           {ageFilteringActive && studentAge != null ? (
             <>
               <p>{t('pages.enrolment.no_classes_for_age')}</p>
-              <p className="text-xs">{t('pages.enrolment.no_classes_for_age_hint', { age: studentAge })}</p>
+              <p className="text-xs">{enrolmentNoClassesAgeHint(studentAge, t)}</p>
             </>
           ) : (
             <p>{t('pages.enrolment.no_classes')}</p>
@@ -1009,10 +1014,7 @@ function StepClass({
       {allowAgeOverride && selectedClass && !selectedClassEligible && selectedClassAges && selectedClassStudentAge != null && (
         <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 space-y-2">
           <p>
-            {t('pages.enrolment.selected_class_age_mismatch', {
-              age: selectedClassStudentAge,
-              classAges: selectedClassAges,
-            })}
+            {enrolmentAgeMismatchMessage(selectedClassStudentAge, selectedClassAges, t)}
           </p>
           <label className="flex items-center gap-2">
             <input

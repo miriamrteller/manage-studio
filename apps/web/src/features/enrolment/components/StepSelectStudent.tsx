@@ -5,7 +5,8 @@ import { PersonSearchCombobox } from '@/components/shared/PersonSearchCombobox';
 import { GuestExistingAccountPrompt } from './GuestExistingAccountPrompt';
 import { useGuestEmailRegistrationCheck } from '../hooks/useGuestEmailRegistrationCheck';
 import { isExistingEmailError } from '../intakeService';
-import { filterStudentCandidates, studentAgeLabel } from '../lib/filterStudentCandidates';
+import { filterStudentCandidates } from '../lib/filterStudentCandidates';
+import { formatEnrolmentStudentAgeLine } from '@/lib/personAge';
 import {
   SelectedClassAgeAlert,
   useSelectedClassAgeValidation,
@@ -598,11 +599,7 @@ export function StepSelectStudent({
                 <span className="block font-medium">{student.name}</span>
                 <span className="block text-sm text-gray-600">
                   {[
-                    student.date_of_birth
-                      ? t('pages.enrolment.student_age', {
-                          age: studentAgeLabel(student.date_of_birth) ?? '—',
-                        })
-                      : null,
+                    formatEnrolmentStudentAgeLine(student.date_of_birth, t),
                     student.activeClassNames.length > 0
                       ? t('pages.enrolment.enrolled_in', { classes: student.activeClassNames.join(', ') })
                       : t('pages.enrolment.no_current_enrolments'),
@@ -718,11 +715,7 @@ function AdminPickChildStep({
                 <span className="block font-medium">{student.name}</span>
                 <span className="block text-sm text-gray-600">
                   {[
-                    student.date_of_birth
-                      ? t('pages.enrolment.student_age', {
-                          age: studentAgeLabel(student.date_of_birth) ?? '—',
-                        })
-                      : null,
+                    formatEnrolmentStudentAgeLine(student.date_of_birth, t),
                     student.activeClassNames.length > 0
                       ? t('pages.enrolment.enrolled_in', { classes: student.activeClassNames.join(', ') })
                       : t('pages.enrolment.no_current_enrolments'),

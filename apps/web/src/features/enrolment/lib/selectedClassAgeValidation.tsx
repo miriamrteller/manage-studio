@@ -5,6 +5,7 @@ import {
   isPersonEligibleForSelectedClass,
   personAgeAtSeasonStart,
 } from './check-requirements';
+import { enrolmentAgeMismatchMessage } from '@/lib/personAge';
 import type { EnrolmentConstraints } from '../hooks/useEnrolmentContext';
 
 export interface SelectedClassAgeValidation {
@@ -64,7 +65,7 @@ export function SelectedClassAgeAlert({
       className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 space-y-1"
       role="alert"
     >
-      <p>{t('pages.enrolment.selected_class_age_mismatch', { age: studentAge, classAges })}</p>
+      <p>{enrolmentAgeMismatchMessage(studentAge, classAges, t)}</p>
       <p className="text-xs">{t('pages.enrolment.selected_class_age_ineligible_hint')}</p>
     </div>
   );
@@ -95,5 +96,5 @@ export function getSelectedClassAgeError(
     return t('pages.enrolment.ineligible_age');
   }
 
-  return t('pages.enrolment.selected_class_age_mismatch', { age: studentAge, classAges });
+  return enrolmentAgeMismatchMessage(studentAge, classAges, t);
 }

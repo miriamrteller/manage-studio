@@ -20,7 +20,11 @@ import {
 import { useClasses } from '@/features/classes/hooks/useClasses';
 import { useLevels } from '@/features/levels/hooks/useLevels';
 import { useTerms } from '@/features/terms/hooks/useTerms';
-import { parseLocalDate } from '@/lib/personAge';
+import {
+  enrolmentAgeMismatchMessage,
+  enrolmentShowingForAgeMessage,
+  parseLocalDate,
+} from '@/lib/personAge';
 import { useTenant } from '@/hooks/useTenant';
 import { formatCurrency } from '@shared/format';
 import { computeClassTotal } from '../lib/computeClassTotal';
@@ -236,7 +240,7 @@ export function AdminEnrolStudentModal({
 
           {studentAge != null && ageFilteringActive && (
             <p className="text-sm text-gray-700" role="status">
-              {t('pages.enrolment.showing_for_age', { age: studentAge })}
+              {enrolmentShowingForAgeMessage(studentAge, t)}
             </p>
           )}
 
@@ -316,10 +320,7 @@ export function AdminEnrolStudentModal({
                       </p>
                       {!eligible && classAges && classStudentAge != null && (
                         <p className="text-xs text-amber-800 mt-1">
-                          {t('pages.enrolment.selected_class_age_mismatch', {
-                            age: classStudentAge,
-                            classAges,
-                          })}
+                          {enrolmentAgeMismatchMessage(classStudentAge, classAges, t)}
                         </p>
                       )}
                     </button>
@@ -332,10 +333,7 @@ export function AdminEnrolStudentModal({
           {selectedClass && !selectedClassEligible && selectedClassAges && selectedClassStudentAge != null && (
             <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 space-y-2">
               <p>
-                {t('pages.enrolment.selected_class_age_mismatch', {
-                  age: selectedClassStudentAge,
-                  classAges: selectedClassAges,
-                })}
+                {enrolmentAgeMismatchMessage(selectedClassStudentAge, selectedClassAges, t)}
               </p>
               <label className="flex items-center gap-2">
                 <input

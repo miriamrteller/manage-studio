@@ -8,6 +8,7 @@ import { PersonForm } from './PersonForm';
 import { PersonService } from '../service';
 import { MedicalNotes } from './MedicalNotes';
 import { formatDate, calculateAge } from '@/lib/utils';
+import { formatPersonAgeLabel } from '@/lib/personAge';
 
 interface PersonDetailProps {
   id: string;
@@ -101,8 +102,10 @@ export function PersonDetail({ id, onClose }: PersonDetailProps) {
       <div className="flex justify-between items-start">
         <div>
           <h2 className="text-2xl font-bold">{person.name}</h2>
-          {age !== undefined && (
-            <p className="text-gray-600">{t('pages.people.age_label')}: {age}</p>
+          {age !== undefined && age !== null && (
+            <p className="text-gray-600">
+              {t('pages.people.age_label')}: {formatPersonAgeLabel(age, t)}
+            </p>
           )}
         </div>
         {onClose && (
