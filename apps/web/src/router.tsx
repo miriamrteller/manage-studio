@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
 import { AppLayout } from "./layouts/AppLayout";
 import { AdminRoute, ParentRoute, StudentRoute } from "./layouts/RouteGuards";
+import { LabelsProvider } from "./contexts/LabelsContext";
 import { ClassesPage } from "./pages/ClassesPage";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
@@ -25,9 +26,11 @@ import { LanguageProvider } from "./contexts/LanguageContext";
 function RootLayout() {
   return (
     <LanguageProvider>
-      <AppLayout>
-        <Outlet />
-      </AppLayout>
+      <LabelsProvider>
+        <AppLayout>
+          <Outlet />
+        </AppLayout>
+      </LabelsProvider>
     </LanguageProvider>
   );
 }

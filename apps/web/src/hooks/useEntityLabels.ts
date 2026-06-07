@@ -1,28 +1,16 @@
-import { useTenant } from './useTenant';
-import {
-  resolveEntityLabels,
-  resolvePresetModules,
-  type EntityLabels,
-  type PresetModules,
-  type BusinessPreset,
-} from '@shared/index';
+import { useContext } from 'react';
+import { LabelsContext, type LabelsContextType } from '@/contexts/LabelsContext';
 
-const FALLBACK_PRESET: BusinessPreset = 'programs';
-const FALLBACK_LABELS: EntityLabels = resolveEntityLabels(FALLBACK_PRESET);
-const FALLBACK_MODULES: PresetModules = resolvePresetModules(FALLBACK_PRESET);
-
-export function useEntityLabels() {
-  const tenant = useTenant();
-  if (!tenant) {
-    return {
-      labels: FALLBACK_LABELS,
-      modules: FALLBACK_MODULES,
-      preset: FALLBACK_PRESET,
-    };
-  }
-  return {
-    labels: tenant.entity_labels,
-    modules: tenant.modules,
-    preset: tenant.business_preset,
-  };
+/**
+ * Returns resolved entity labels, module flags, and preset for the current tenant.
+ *
+ * Always returns valid data — falls back to 'programs' preset before tenant loads.
+ * No null-checks needed at call sites.
+ *
+ * Usage:
+ *   const { labels, modules, preset } = useEntityLabels();
+ *   <h1>{labels.offering.plural}</h1>  // "Classes" for programs preset
+ */
+export function useEntityLabels(): LabelsContextType {
+  return useContext(LabelsContext);
 }

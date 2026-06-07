@@ -5,3 +5,4 @@ export { useTenant } from './useTenant';
 export { useLanguage } from './useLanguage';
 export { useThemeInjection } from './useThemeInjection';
 export { useLogin } from './useLogin';
+export { useEntityLabels } from './useEntityLabels';
