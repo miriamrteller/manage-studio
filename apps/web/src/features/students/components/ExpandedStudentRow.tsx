@@ -26,17 +26,15 @@ export function ExpandedStudentRow({
   const cp = contactPrefsMap.get(person.id);
   const classNames = enrolmentsByPerson.get(person.id) ?? [];
 
-  // For minors: primary contact is the family/guardian record.
-  // For adults: primary contact is the person themselves (email + emergency contact).
-  const isMinor = person.is_minor ?? false;
+  const studentHasContact = !!(
+    person.email || person.emergency_contact_name || person.emergency_contact_phone
+  );
+  const showGuardian = !studentHasContact && !!family;
+  const hasContact = studentHasContact || showGuardian;
 
-  const contactLabel = isMinor
+  const contactLabel = showGuardian
     ? t('pages.students.contact_section_guardian')
     : t('pages.students.contact_section');
-
-  const hasContact = isMinor
-    ? !!family
-    : !!(person.email || person.emergency_contact_name || person.emergency_contact_phone);
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-sm">
@@ -47,7 +45,7 @@ export function ExpandedStudentRow({
         </p>
         {hasContact ? (
           <div className="space-y-0.5">
-            {isMinor && family ? (
+            {showGuardian && family ? (
               <>
                 <p className="font-medium">{family.contact_person_name ?? '—'}</p>
                 {family.contact_phone && (
