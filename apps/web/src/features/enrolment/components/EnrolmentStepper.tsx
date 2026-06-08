@@ -795,7 +795,7 @@ export function EnrolmentStepper({
                     {t('common.back')}
                   </Button>
                 )}
-                <Button className="ml-auto" onClick={handleNextStep}>
+                <Button className="ml-auto" onClick={() => handleNextStep()}>
                   {t('enrolment.waiver_continue_to_payment', { defaultValue: 'Continue to Payment' })}
                 </Button>
               </div>
