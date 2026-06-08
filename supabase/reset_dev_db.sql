@@ -27,6 +27,10 @@ DROP FUNCTION IF EXISTS public.handle_new_user();
 --    Order: most dependent first, foundations last
 --    Legacy + current names — IF EXISTS makes either safe to skip
 -- ---------------------------------------------------------------------------
+-- waivers first (waiver_events -> waiver_evidence; engagements FK -> waiver_evidence)
+DROP TABLE IF EXISTS public.waiver_events                 CASCADE;
+DROP TABLE IF EXISTS public.waiver_evidence               CASCADE;
+
 DROP TABLE IF EXISTS public.payments                      CASCADE;
 DROP TABLE IF EXISTS public.invoice_sequences             CASCADE;
 DROP TABLE IF EXISTS public.attendance                    CASCADE;
@@ -101,7 +105,10 @@ DROP FUNCTION IF EXISTS public.update_tenant_email_customizations_updated_at()  
 DROP FUNCTION IF EXISTS public.increment_verification_attempt(UUID, TEXT, TEXT)          CASCADE;
 DROP FUNCTION IF EXISTS public.cleanup_old_verification_attempts()                       CASCADE;
 DROP FUNCTION IF EXISTS public.prevent_waiver_update()                                   CASCADE;
+DROP FUNCTION IF EXISTS public.prevent_waiver_evidence_update()                          CASCADE;
 DROP FUNCTION IF EXISTS public.prevent_consent_template_update()                         CASCADE;
+DROP FUNCTION IF EXISTS public.get_pending_waiver_engagement(UUID)                       CASCADE;
+DROP FUNCTION IF EXISTS public.get_engagement_person_id(UUID)                            CASCADE;
 DROP FUNCTION IF EXISTS public.get_public_classes_by_subdomain(TEXT)                     CASCADE;
 DROP FUNCTION IF EXISTS public.get_public_offerings_by_subdomain(TEXT)                   CASCADE;
 DROP FUNCTION IF EXISTS public.get_tenant_config_by_subdomain(TEXT)                      CASCADE;
@@ -119,6 +126,24 @@ DROP FUNCTION IF EXISTS public.guest_enrolment_create_engagement(TEXT, UUID, UUI
 DROP FUNCTION IF EXISTS public.search_enrolment_students(TEXT, INT)                    CASCADE;
 DROP FUNCTION IF EXISTS public.admin_enrolment_lookup_email(TEXT)                      CASCADE;
 DROP FUNCTION IF EXISTS public.cancel_engagement(UUID, TEXT)                           CASCADE;
+DROP FUNCTION IF EXISTS public.check_subdomain_available(TEXT)                          CASCADE;
+
+-- sign_waiver and provision_tenant have evolved through several parameter-count
+-- overloads. Drop EVERY overload by name regardless of signature.
+DO $$
+DECLARE
+  r RECORD;
+BEGIN
+  FOR r IN
+    SELECT p.oid::regprocedure AS sig
+    FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public'
+      AND p.proname IN ('sign_waiver', 'provision_tenant')
+  LOOP
+    EXECUTE 'DROP FUNCTION IF EXISTS ' || r.sig || ' CASCADE';
+  END LOOP;
+END $$;
 
 -- ---------------------------------------------------------------------------
 -- 4. Clear migration history so Supabase CLI re-applies all migrations

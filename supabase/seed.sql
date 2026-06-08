@@ -9,9 +9,9 @@
 -- End-users NEVER send or modify configuration data—this is read-only from their perspective.
 
 -- ============================================================================
--- TENANTS (20260526000100_tenants.sql)
+-- TENANTS (20260608000200_core_tenants.sql)
 -- ============================================================================
-INSERT INTO tenants (id, name, subdomain, language_default, country, primary_color, accent_color, currency, vat_rate, prices_include_vat, phone_region, business_preset, labels, waiver_require_otp)
+INSERT INTO tenants (id, name, subdomain, language_default, country, primary_color, accent_color, currency, vat_rate, prices_include_vat, phone_region, business_preset, labels, from_email, waiver_require_otp)
 VALUES (
   '00000000-0000-0000-0000-000000000001'::uuid,
   'Creative Ballet Academy',
@@ -26,6 +26,7 @@ VALUES (
   'IL',
   'programs',
   '{}'::jsonb,
+  'noreply@creativeballet.co.il',  -- verified sender for transactional email (waiver reminders, receipts)
   false  -- OTP before waiver signing disabled by default; enable only if Twilio Verify is configured
 ) ON CONFLICT (subdomain) DO UPDATE SET
   name = EXCLUDED.name,
@@ -39,10 +40,11 @@ VALUES (
   phone_region = EXCLUDED.phone_region,
   business_preset = EXCLUDED.business_preset,
   labels = EXCLUDED.labels,
+  from_email = EXCLUDED.from_email,
   waiver_require_otp = EXCLUDED.waiver_require_otp;
 
 -- ============================================================================
--- SEASONS + CATEGORIES + OFFERINGS (20260526000400_offerings.sql)
+-- SEASONS + CATEGORIES + OFFERINGS (20260608000500_offerings.sql)
 -- Age ranges live on offerings.min_age / offerings.max_age (not requirement templates)
 -- ============================================================================
 INSERT INTO seasons (id, tenant_id, name, start_date, end_date, status)
@@ -168,8 +170,15 @@ WHERE tenant_id = '00000000-0000-0000-0000-000000000001'::uuid
     '00000000-0000-0000-0000-000000000308'::uuid
   );
 
+-- All seed offerings require a signed waiver before enrolment completes.
+-- (offerings.waiver_required defaults to true; set explicitly so re-seeding a
+--  DB that previously had it disabled still enforces the waiver step.)
+UPDATE offerings
+SET waiver_required = true
+WHERE tenant_id = '00000000-0000-0000-0000-000000000001'::uuid;
+
 -- ============================================================================
--- PEOPLE + FAMILIES (20260526000200_people.sql)
+-- PEOPLE + ACCOUNTS (20260608000300_people.sql)
 -- accounts.person_id = guardian (primary contact); students link via people.account_id
 -- One parent login → one account; multiple children in that account
 -- ============================================================================
@@ -282,7 +291,7 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at = now();
 
 -- ============================================================================
--- CONTACT PREFERENCES (20260526000300_contact_prefs.sql)
+-- CONTACT PREFERENCES (20260608000400_contact_prefs.sql)
 -- Keyed by person_id OR account_member_id (contact_owner constraint)
 -- ============================================================================
 INSERT INTO contact_preferences (
@@ -333,7 +342,7 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at = now();
 
 -- ============================================================================
--- INVOICE SEQUENCE (20260526001400_finance_payments.sql)
+-- INVOICE SEQUENCE (20260608001600_finance.sql)
 -- ============================================================================
 INSERT INTO invoice_sequences (tenant_id, last_number, prefix, year_prefix, current_year)
 VALUES ('00000000-0000-0000-0000-000000000001'::uuid, 0, 'INV', true, EXTRACT(YEAR FROM now())::TEXT)
@@ -619,3 +628,130 @@ ON CONFLICT (id) DO UPDATE SET
   preferred_channel = EXCLUDED.preferred_channel,
   language = EXCLUDED.language,
   updated_at = now();
+
+-- ============================================================================
+-- CONSENT TEMPLATES (20260608000900_consent_templates.sql)
+-- Active, lawyer-approved bilingual (HE/EN) waiver. version_hash is the
+-- sha256 hex of the exact wording, so waiver_evidence can pin to it.
+-- Content/name/hash become immutable once status = 'active' (DB trigger).
+-- ============================================================================
+INSERT INTO consent_templates (id, tenant_id, name, content, version, version_hash, status, created_at, updated_at)
+VALUES (
+  '00000000-0000-0000-0000-000000000801'::uuid,
+  '00000000-0000-0000-0000-000000000001'::uuid,
+  'Health & Liability Waiver',
+  $waiver$כתב הצהרת בריאות, ויתור סיכונים ושחרור מאחריות – סטודיו לבלט
+Health Declaration, Assumption of Risk, and Liability Waiver – Ballet Studio
+
+1. הצהרת בריאות וכשירות גופנית (Health & Physical Fitness Declaration)
+עברית: אני מצהיר/ה בזאת כי בני/בתי נמצא/ת במצב בריאותי ותזונתי תקין, וכי אין כל מניעה רפואית, גופנית או נפשית להשתתפותו/ה המלאה בשיעורי בלט, חזרות, והופעות (להלן: "הפעילות"). אני מתחייב/ת לעדכן את הסטודיו בכתב ומייד על כל שינוי במצבו/ה הבריאותי של הילד/ה.
+English: I hereby declare that my child is in good physical and mental health, and suffers from no medical condition or limitation that would prevent their full participation in ballet classes, rehearsals, and recitals (hereinafter: "the Activity"). I undertake to immediately notify the Studio in writing of any change in my child's health status.
+
+2. הכרה בסיכונים טבעיים (Assumption of Inherent Risks)
+עברית: ידוע לי ומקובל עלי כי פעילות מחול ובלט, מעצם טבעה, כרוכה במאמץ פיזי וכוללת סיכונים טבעיים לפציעות גופניות (לרבות מתיחות שרירים, נקעים, נפילות וכיוצא בזה). אני מאשר/ת כי הסכמתי להשתתפות בני/בתי ניתנת מתוך מודעות מלאה לסיכונים אלו, וכי הסטודיו, מוריו ועובדיו לא יישאו באחריות לנזקי גוף הנגרמים כתוצאה מסיכונים טבעיים הכרוכים בפעילות מסוג זה.
+English: I understand and accept that dance and ballet activities, by their very nature, involve physical exertion and carry inherent risks of physical injury (including muscle strains, sprains, falls, etc.). I approve my child's participation with full awareness of these risks, and agree that the Studio, its teachers, and staff shall not be held liable for bodily injuries resulting from the natural risks inherent to this activity.
+
+3. שחרור מאחריות ושיפוי (Release of Liability & Indemnification)
+עברית: בכפוף לכל דין, אני משחרר/ת את הסטודיו, בעליו, מנהליו, מוריו וכל הפועלים מטעמו, מאחריות לכל נזק (גוף או רכוש) שיגרם לילד/ה במהלך השיעורים או הרסיטלים/הופעות, למעט במקרים בהם הנזק נגרם כתוצאה מרשלנות חמורה או פושעת של הסטודיו. כמו כן, הסטודיו אינו אחראי על אובדן או גניבה של ציוד אישי בשטח הסטודיו או באולמי המופעים.
+English: Subject to applicable law, I release the Studio, its owners, directors, teachers, and agents from liability for any damage (bodily or property) caused to the child during classes or recitals, except where the damage is a direct result of the Studio's gross negligence. Furthermore, the Studio is not responsible for lost or stolen personal belongings on the premises or at recital venues.
+
+4. טיפול רפואי דחוף (Emergency Medical Treatment)
+עברית: במקרה חירום רפואי במהלך הפעילות, כאשר אין אפשרות ליצור איתי קשר מיידי, אני מסמיך/ה את צוות הסטודיו לנקוט בכל צעד נדרש, לרבות הזמנת מד"א או פינוי לבית חולים, לצורך הענקת טיפול רפואי ראשוני דחוף. כל ההוצאות הכרוכות בכך יחולו עלי בלבד.
+English: In the event of a medical emergency during the Activity where I cannot be reached immediately, I authorize the Studio staff to take any necessary actions, including calling Mada (Ambulance) or evacuating to a hospital for urgent first aid. Any associated costs will be borne solely by me.
+
+5. אישור צילום ומדיה - אופציונלי (Photo & Media Release - Optional)
+עברית: אני מאשר/ת לסטודיו לצלם את בני/בתי במהלך השיעורים והרסיטלים, ולהשתמש בחומרים אלו (תמונות ווידאו) לצורכי פרסום, שיווק, ורשתות חברתיות של הסטודיו, ללא כל תמורה.
+English: I authorize the Studio to photograph/video my child during classes and recitals, and to use these materials for the Studio's promotional, marketing, and social media purposes without financial compensation.$waiver$,
+  1,
+  encode(digest($waiver$כתב הצהרת בריאות, ויתור סיכונים ושחרור מאחריות – סטודיו לבלט
+Health Declaration, Assumption of Risk, and Liability Waiver – Ballet Studio
+
+1. הצהרת בריאות וכשירות גופנית (Health & Physical Fitness Declaration)
+עברית: אני מצהיר/ה בזאת כי בני/בתי נמצא/ת במצב בריאותי ותזונתי תקין, וכי אין כל מניעה רפואית, גופנית או נפשית להשתתפותו/ה המלאה בשיעורי בלט, חזרות, והופעות (להלן: "הפעילות"). אני מתחייב/ת לעדכן את הסטודיו בכתב ומייד על כל שינוי במצבו/ה הבריאותי של הילד/ה.
+English: I hereby declare that my child is in good physical and mental health, and suffers from no medical condition or limitation that would prevent their full participation in ballet classes, rehearsals, and recitals (hereinafter: "the Activity"). I undertake to immediately notify the Studio in writing of any change in my child's health status.
+
+2. הכרה בסיכונים טבעיים (Assumption of Inherent Risks)
+עברית: ידוע לי ומקובל עלי כי פעילות מחול ובלט, מעצם טבעה, כרוכה במאמץ פיזי וכוללת סיכונים טבעיים לפציעות גופניות (לרבות מתיחות שרירים, נקעים, נפילות וכיוצא בזה). אני מאשר/ת כי הסכמתי להשתתפות בני/בתי ניתנת מתוך מודעות מלאה לסיכונים אלו, וכי הסטודיו, מוריו ועובדיו לא יישאו באחריות לנזקי גוף הנגרמים כתוצאה מסיכונים טבעיים הכרוכים בפעילות מסוג זה.
+English: I understand and accept that dance and ballet activities, by their very nature, involve physical exertion and carry inherent risks of physical injury (including muscle strains, sprains, falls, etc.). I approve my child's participation with full awareness of these risks, and agree that the Studio, its teachers, and staff shall not be held liable for bodily injuries resulting from the natural risks inherent to this activity.
+
+3. שחרור מאחריות ושיפוי (Release of Liability & Indemnification)
+עברית: בכפוף לכל דין, אני משחרר/ת את הסטודיו, בעליו, מנהליו, מוריו וכל הפועלים מטעמו, מאחריות לכל נזק (גוף או רכוש) שיגרם לילד/ה במהלך השיעורים או הרסיטלים/הופעות, למעט במקרים בהם הנזק נגרם כתוצאה מרשלנות חמורה או פושעת של הסטודיו. כמו כן, הסטודיו אינו אחראי על אובדן או גניבה של ציוד אישי בשטח הסטודיו או באולמי המופעים.
+English: Subject to applicable law, I release the Studio, its owners, directors, teachers, and agents from liability for any damage (bodily or property) caused to the child during classes or recitals, except where the damage is a direct result of the Studio's gross negligence. Furthermore, the Studio is not responsible for lost or stolen personal belongings on the premises or at recital venues.
+
+4. טיפול רפואי דחוף (Emergency Medical Treatment)
+עברית: במקרה חירום רפואי במהלך הפעילות, כאשר אין אפשרות ליצור איתי קשר מיידי, אני מסמיך/ה את צוות הסטודיו לנקוט בכל צעד נדרש, לרבות הזמנת מד"א או פינוי לבית חולים, לצורך הענקת טיפול רפואי ראשוני דחוף. כל ההוצאות הכרוכות בכך יחולו עלי בלבד.
+English: In the event of a medical emergency during the Activity where I cannot be reached immediately, I authorize the Studio staff to take any necessary actions, including calling Mada (Ambulance) or evacuating to a hospital for urgent first aid. Any associated costs will be borne solely by me.
+
+5. אישור צילום ומדיה - אופציונלי (Photo & Media Release - Optional)
+עברית: אני מאשר/ת לסטודיו לצלם את בני/בתי במהלך השיעורים והרסיטלים, ולהשתמש בחומרים אלו (תמונות ווידאו) לצורכי פרסום, שיווק, ורשתות חברתיות של הסטודיו, ללא כל תמורה.
+English: I authorize the Studio to photograph/video my child during classes and recitals, and to use these materials for the Studio's promotional, marketing, and social media purposes without financial compensation.$waiver$, 'sha256'), 'hex'),
+  'active',
+  now(),
+  now()
+)
+ON CONFLICT (id) DO NOTHING;
+
+-- ============================================================================
+-- WAIVER EVIDENCE + EVENTS (20260608001200_waiver_evidence.sql)
+-- Sara Gold (adult, self-signing) accepted the active waiver for her Pilates
+-- enrolment. Demonstrates offering_id + guardian_confirmed=false (self signer).
+-- pdf_sha256 / record_hmac are placeholders (64 hex zeros) — NOT valid digests;
+-- a real signing flow computes these in the accept-waiver Edge Function.
+-- Rows are immutable (UPDATE/DELETE blocked), so re-seed uses ON CONFLICT DO NOTHING.
+-- ============================================================================
+INSERT INTO waiver_evidence (
+  id, tenant_id, person_id, account_member_id, offering_id,
+  consent_template_id, consent_version, consent_version_hash, wording_snapshot,
+  pdf_storage_path, pdf_sha256, record_hmac, hmac_key_version, viewed_at,
+  signed_by_name, signed_by_email, signed_by_role, signature_method,
+  guardian_confirmed, signed_at, ip_address, user_agent, accept_language,
+  idempotency_key, otp_verify_sid, status, created_at
+)
+SELECT
+  '00000000-0000-0000-0000-000000000901'::uuid,
+  '00000000-0000-0000-0000-000000000001'::uuid,
+  '00000000-0000-0000-0000-000000000503'::uuid,   -- Sara Gold
+  NULL,                                            -- adult self-signer; no account_member
+  '00000000-0000-0000-0000-000000000309'::uuid,   -- Pilates
+  ct.id,
+  ct.version,
+  ct.version_hash,
+  ct.content,
+  '00000000-0000-0000-0000-000000000001/00000000-0000-0000-0000-000000000503/00000000-0000-0000-0000-000000000901.pdf',
+  '0000000000000000000000000000000000000000000000000000000000000000',  -- 64 hex zeros (pdf_sha256 placeholder)
+  '0000000000000000000000000000000000000000000000000000000000000000',  -- 64 hex zeros (record_hmac placeholder)
+  1,
+  '2026-01-15 10:28:00+02'::timestamptz,
+  'Sara Gold',
+  'sara.gold@gmail.com',
+  'self',
+  'typed_name_checkbox',
+  false,                                           -- self-signer, not a guardian declaration
+  '2026-01-15 10:30:00+02'::timestamptz,
+  '203.0.113.42'::inet,
+  'Mozilla/5.0 (seed)',
+  'en-US',
+  'seed-sara-gold-pilates-waiver-v1',
+  NULL,
+  'signed',
+  now()
+FROM consent_templates ct
+WHERE ct.id = '00000000-0000-0000-0000-000000000801'::uuid
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO waiver_events (id, tenant_id, waiver_evidence_id, event_type, actor_id, metadata, created_at)
+VALUES (
+  '00000000-0000-0000-0000-000000000951'::uuid,
+  '00000000-0000-0000-0000-000000000001'::uuid,
+  '00000000-0000-0000-0000-000000000901'::uuid,
+  'accepted',
+  NULL,
+  jsonb_build_object(
+    'ip', '203.0.113.42',
+    'consent_version', 1,
+    'offering_id', '00000000-0000-0000-0000-000000000309',
+    'guardian_confirmed', false
+  ),
+  '2026-01-15 10:30:00+02'::timestamptz
+)
+ON CONFLICT (id) DO NOTHING;

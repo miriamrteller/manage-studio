@@ -266,7 +266,7 @@ Edge Functions
 | V1 scope | Tenant-level flag only (no per-offering inclusive/exclusive override) |
 | `offerings.price_minor` | Always the admin-entered list price; meaning depends on `prices_include_vat` |
 | Rate | `vat_rate = tenant.vat_rate ?? 0.17` (V1; per-offering `vat_rate` deferred until `offerings.vat_rate` column exists) |
-| Dev schema changes | Edit **base** migration `20260526000100_tenants.sql` (do not add a one-off `ALTER` migration in dev); reset DB and re-push all migrations (see §2.5.3) |
+| Dev schema changes | Edit **base** migration `20260608000200_core_tenants.sql` (do not add a one-off `ALTER` migration in dev); reset DB and re-push all migrations (see §2.5.3) |
 
 **Single implementation module:** `packages/shared/src/pricing.ts` (exported from `@shared`). All UI, Edge Functions, and offline payment recording call `resolveOfferingPrice()` — never duplicate formulas in Deno or React.
 
@@ -350,8 +350,8 @@ Manage Studio is the **system of record for enrolment pricing consistency**. Thi
 
 When changing core columns in **dev only** (no production tenants yet):
 
-1. Edit the **original** migration file (e.g. add `prices_include_vat` to `20260526000100_tenants.sql`).
-2. Update `get_tenant_config_by_subdomain` in `20260526001500_public_rpcs.sql` to return the new column.
+1. Edit the **original** migration file (e.g. add `prices_include_vat` to `20260608000200_core_tenants.sql`).
+2. Update `get_tenant_config_by_subdomain` in `20260608001800_public_rpcs.sql` to return the new column.
 3. Grep repo for `vat_rate`, `price_minor`, `pretax`, `computeClassTotal`, `create-checkout` — align Edge Functions and web.
 4. Update `supabase/seed.sql` tenant `INSERT` (include `prices_include_vat = true`).
 5. Reset and re-apply (local):
@@ -593,11 +593,12 @@ ballet-school-system/
 │       ├── 2026-05-08-phase1a.md
 │       └── ...
 ├── supabase/
-│   ├── migrations/                    # 18 timestamped SQL files; see Section 4.2.0
-│   │   ├── 20260526000100_tenants.sql
-│   │   ├── 20260526000200_people.sql
-│   │   ├── … (001–018; see 4.2.0)
-│   │   └── 20260526001800_grants.sql
+│   ├── migrations/                    # 25 timestamped SQL files; see Section 4.2.0
+│   │   ├── 20260608000200_core_tenants.sql
+│   │   ├── 20260608000300_people.sql
+│   │   ├── … (000200–002500; see 4.2.0)
+│   │   └── 20260608002500_grants.sql
+│   ├── migrations_backup/legacy_20260608/  # superseded pre-consolidation migrations
 │   ├── reset_dev_db.sql               # Dev-only: drop schema + clear migration history
 │   ├── scripts/                       # link-parent-user.sql, verify-seed.sql
 │   ├── functions/
@@ -781,27 +782,35 @@ Landing pages and public class listings need data before a user logs in. The acc
 
 #### 4.2.0 Implemented schema index (V1 slice)
 
+> **2026-06-08 — consolidated chain.** The original 34-file history (`20260526*`–`20260610*`) was rewritten into the 25-file `20260608*` chain below, baking every `ALTER` into its base `CREATE TABLE`. The superseded files are retained read-only under `supabase/migrations_backup/legacy_20260608/`. Filename order = apply order.
+
 | File | Creates / updates | Depends on |
 |------|-------------------|------------|
-| `20260526000100_tenants.sql` | `tenants`, `user_profiles`, RLS helpers | — |
-| `20260526000200_people.sql` | `families`, `family_members`, `people`, `get_my_family_ids()`, `get_my_person_id()`, `is_minor()` | 001 |
-| `20260526000300_contact_prefs.sql` | `contact_preferences` | 002 |
-| `20260526000400_classes.sql` | `terms`, `levels`, `teachers`, `classes` | 001 |
-| `20260526000500_comms.sql` | `notification_log`, `tenant_notification_templates`, `tenant_email_customizations`, `expense_categories` | 001, 002 |
-| `20260526000600_audit_otp.sql` | `audit_log`, `otp_codes`, `verification_attempts` + cleanup RPCs | 001 |
-| `20260526000700_class_sessions.sql` | `class_sessions` | 004 |
-| `20260526000800_consent_templates.sql` | `consent_templates` | 001 |
-| `20260526000900_requirements.sql` | `requirement_templates`, `requirement_overrides`, `class_requirements` | 001, 002, 004 |
-| `20260526001000_billing_accounts.sql` | `billing_accounts` | 001 |
-| `20260526001100_enrolments.sql` | `enrolments`, `waiting_list` | 002, 004, 010 |
-| `20260526001200_attendance.sql` | `attendance`, `makeup_credits` | 002, 004, 007 |
-| `20260526001300_rls_policies.sql` | RLS on `class_sessions` + `billing_accounts` (enrolment-dependent) | 007, 010, 011 |
-| `20260526001400_finance_payments.sql` | `payments`, `invoice_sequences`, Stripe RPCs | 001, 011 |
-| `20260526001500_public_rpcs.sql` | `get_public_classes_by_subdomain(p_subdomain)`, `get_tenant_config_by_subdomain(p_subdomain)` — subdomain-filtered, `anon` safe | 001, 004 |
-| `20260526001600_auth_trigger.sql` | `handle_new_user` on `auth.users` (reads `raw_user_meta_data`, tenant fallback) | 001 |
-| `20260526001700_rpcs.sql` | `get_my_profile()`, `link_auth_user_to_person()` | 001, 002, 011 |
-| `20260526001800_grants.sql` | Schema + table `GRANT`s for `authenticated` / `anon` / `service_role` | all prior |
-| `20260603000000_waiver_evidence.sql` *(planned V1)* | `waiver_evidence`, `waiver_events`, immutability triggers, RLS | 002, 008 |
+| `20260608000200_core_tenants.sql` | `tenants` (incl. `from_email`), `user_profiles`, RLS helpers (`get_my_tenant_id()`, `is_super_admin()`, `is_service_role()`) | — |
+| `20260608000300_people.sql` | `people`, `accounts`, `account_members`, circular FK, `get_my_account_ids()`, `get_my_person_id()`, `is_minor()` | 000200 |
+| `20260608000400_contact_prefs.sql` | `contact_preferences` | 000200, 000300 |
+| `20260608000500_offerings.sql` | `seasons`, `categories`, `staff`, `offerings` (incl. `waiver_required`, `cover_image_path`) | 000200 |
+| `20260608000600_communications.sql` | `notification_log`, `tenant_notification_templates`, `tenant_email_customizations`, `expense_categories` | 000200, 000300 |
+| `20260608000700_audit_security.sql` | `audit_log`, `otp_codes`, `verification_attempts` + cleanup/rate-limit RPCs | 000200 |
+| `20260608000800_offering_sessions.sql` | `offering_sessions` | 000200, 000500 |
+| `20260608000900_consent_templates.sql` | `consent_templates` + content-immutability trigger | 000200 |
+| `20260608001000_requirements.sql` | `requirement_templates`, `requirement_overrides`, `offering_requirements` | 000200, 000300, 000500 |
+| `20260608001100_billing_accounts.sql` | `billing_accounts` | 000200, 000300 |
+| `20260608001200_waiver_evidence.sql` | `waiver_evidence` (incl. `offering_id`, `guardian_confirmed`), `waiver_events`, immutability triggers, RLS, `sign_waiver()` (26-param) | 000200, 000300, 000500, 000700, 000900 |
+| `20260608001300_engagements.sql` | `engagements` (incl. age-override, waiver-deadline, `waiver_evidence_id` FK), `waitlist` | 000200, 000300, 000500, 000800, 001100, 001200 |
+| `20260608001400_attendance.sql` | `attendance`, `service_credits` | 000200, 000300, 000500, 000800, 001300 |
+| `20260608001500_engagement_rls.sql` | engagement-dependent RLS on `offering_sessions` + `billing_accounts` | 000300, 000800, 001100, 001300 |
+| `20260608001600_finance.sql` | `payments`, `invoice_sequences`, Stripe RPCs | 000200, 000300, 000500, 001300 |
+| `20260608001700_storage.sql` | `offering-images` + `waiver-pdfs` buckets + storage RLS | 000200, 000300, 000500 |
+| `20260608001800_public_rpcs.sql` | `get_public_offerings_by_subdomain(p_subdomain)` (incl. `season_start_date`, `cover_image_path`, `waiver_required`), `get_tenant_config_by_subdomain(p_subdomain)` — `anon` safe | 000200, 000500 |
+| `20260608001900_auth_trigger.sql` | `handle_new_user` on `auth.users` (reads `raw_user_meta_data`, tenant fallback) | 000200 |
+| `20260608002000_admin_rpcs.sql` | `get_my_profile()`, `link_auth_user_to_person()` (incl. `pending_waiver`) | 000200, 000300, 001300 |
+| `20260608002100_guest_enrolment_rpcs.sql` | `guest_enrolment_check_email/create_family/create_adult/create_engagement` | 000300, 001100, 001300 |
+| `20260608002150_waiver_rpcs.sql` | `get_pending_waiver_engagement()`, `get_engagement_person_id()` | 000300, 001300 |
+| `20260608002200_admin_enrolment_rpcs.sql` | `search_enrolment_students()` (incl. `pending_waiver`), `admin_enrolment_lookup_email()`, `resolve_engagement_guardian()`, `link_auth_user_to_guardian_for_engagement()` | 000200, 000300, 001300 |
+| `20260608002300_engagement_actions.sql` | `cancel_engagement()` (incl. `pending_waiver`) | 000200, 000700, 001300, 001600 |
+| `20260608002400_tenant_provisioning.sql` | `check_subdomain_available()`, `provision_tenant()` (incl. `p_from_email`) | 000200, 000600 |
+| `20260608002500_grants.sql` | Schema + table `GRANT`s for `authenticated` / `anon` / `service_role` (incl. `waiver_evidence`, `waiver_events`) | all prior |
 
 > **RLS fixes applied in-place** in all files listed above. See §4.1 and §4.1.1 for the security model these migrations implement.
 
@@ -908,7 +917,7 @@ CREATE TABLE people (
 
 #### 4.2.3 Migration 003 — Contact preferences
 
-> **File:** `20260526000300_contact_prefs.sql`
+> **File:** `20260608000400_contact_prefs.sql`
 >
 > **Design note:** Communication targets are people and family_members, not families.
 > Every human with a phone has their own preferences. A 16-year-old wants to know
@@ -961,7 +970,7 @@ CREATE TABLE contact_preferences (
 
 #### 4.2.4 Migration 004 — Terms, levels, and classes
 
-> **File:** `20260526000400_classes.sql`. **`class_sessions`** is in `20260526000700_class_sessions.sql` (separate migration).
+> **File:** `20260608000500_offerings.sql`. **`offering_sessions`** is in `20260608000800_offering_sessions.sql` (separate migration).
 >
 > **Public access:** `anon` users MUST NOT read `terms`, `levels`, or `classes` directly. Public class listings are served by the `get_public_classes_by_subdomain(p_subdomain)` RPC (migration 015). Authenticated users read these tables directly — RLS filters to their own tenant.
 
@@ -1012,7 +1021,7 @@ CREATE TABLE classes (
 > **Age bands (V1 implementation):** `offerings.min_age` / `offerings.max_age` are first-class columns (not requirement templates). Age is evaluated at **season start**, not today's date. Parents/guests are hard-blocked; admins may override with audit trail; parents may request studio review → `admin_review` engagement + admin email. **Agent checklist:** [docs/plans/2026-06-02-age-override-and-review-request.md](docs/plans/2026-06-02-age-override-and-review-request.md)
 
 > **Legacy blueprint numbering** — see §4.2.0 for authoritative filenames.
-> **Files:** `20260526000900_requirements.sql` (templates, overrides, class links).
+> **Files:** `20260608001000_requirements.sql` (templates, overrides, offering links).
 > Replaces the older single-table `class_requirements` with `requirement_type` CHECK from the blueprint below.
 
 #### Migration 005 — Class requirements (blueprint reference)
@@ -1152,7 +1161,7 @@ function evaluateRequirement(req: ClassRequirement, person: Person): boolean {
 #### 4.2.6 Migration 006 — Enrolments and waiting list
 
 > **Legacy blueprint numbering** — see §4.2.0 for authoritative filenames.
-> **Files:** `20260526001100_enrolments.sql` (`enrolments` + `waiting_list`).
+> **Files:** `20260608001300_engagements.sql` (`engagements` + `waitlist`).
 > **`waiting_list` is a separate table** — do not store `waiting_list` as an `enrolments.status` value.
 
 ```sql
@@ -1187,7 +1196,7 @@ CREATE TABLE waiting_list (
 #### 4.2.7 Migration 007 — Attendance
 
 > **Legacy blueprint numbering** — see §4.2.0 for authoritative filenames.
-> **File:** `20260526001200_attendance.sql` — uses `attended BOOLEAN`, not a `status` enum.
+> **File:** `20260608001400_attendance.sql` — uses `attended BOOLEAN`, not a `status` enum.
 
 ```sql
 CREATE TABLE attendance (
@@ -1217,7 +1226,7 @@ CREATE TABLE makeup_credits (
 #### 4.2.8 Migration 008 — Payments and finance (V1 slice)
 
 > **Legacy blueprint numbering** — see §4.2.0 for authoritative filenames.
-> **File:** `20260526001400_finance_payments.sql`.
+> **File:** `20260608001600_finance.sql`.
 
 ```sql
 CREATE TABLE payments (
@@ -1260,7 +1269,7 @@ CREATE TABLE payments (
 
 ✅ **Cross-reference:** Payment state machine logic and webhook handling is detailed in [Phase 1E — Payments](#phase-1e--payments-days-2734).
 
-**V1 finance migration file:** `20260526001400_finance_payments.sql` also defines `invoice_sequences`, `next_invoice_number()`, `get_tenant_stripe_credentials()`, `save_tenant_stripe_credentials()`. Stripe secrets use `BYTEA` + `pgcrypto` and `current_setting('app.encryption_key')` (set via manual runbook). Webhook/Edge inserts use `service_role` (bypasses RLS).
+**V1 finance migration file:** `20260608001600_finance.sql` also defines `invoice_sequences`, `next_invoice_number()`, `get_tenant_stripe_credentials()`, `save_tenant_stripe_credentials()`. Stripe secrets use `BYTEA` + `pgcrypto` and `current_setting('app.encryption_key')` (set via manual runbook). Webhook/Edge inserts use `service_role` (bypasses RLS).
 
 **Deferred past first finance slice** (see [§6.x](#6x--deferred-backlog-postv1-payment-slice)):
 
@@ -1310,8 +1319,8 @@ CREATE TABLE teacher_pay_records (
 
 #### 4.2.9 Migration — Waiver evidence (V1 planned)
 
-> **File:** `20260603000000_waiver_evidence.sql` *(not yet applied — planned V1)*  
-> **Depends on:** `20260526000200_people.sql`, `20260526000800_consent_templates.sql`  
+> **File:** `20260608001200_waiver_evidence.sql`  
+> **Depends on:** `20260608000300_people.sql`, `20260608000500_offerings.sql`, `20260608000700_audit_security.sql`, `20260608000900_consent_templates.sql`  
 > **See also:** §2.7.1 Self-Hosted Waiver Evidence, §6 Waiver lifecycle and enrolment gate
 
 Immutable signed-waiver records and append-only lifecycle events. `people.waiver_accepted_at` / `people.waiver_version` remain denormalized pointers to the latest valid evidence row.
@@ -1569,7 +1578,7 @@ CREATE POLICY waiver_events_insert ON waiver_events FOR INSERT
 
 #### Migration 009 — Expenses
 
-> **V1 repo status:** `expense_categories` exists (`20260526000500_comms.sql`). Full `expenses` table below is **not** migrated yet — deferred until P&L UI ships.
+> **V1 repo status:** `expense_categories` exists (`20260608000600_communications.sql`). Full `expenses` table below is **not** migrated yet — deferred until P&L UI ships.
 
 > **Required in V1.** Without this table you have no P&L and cannot calculate profit.
 > Your accountant needs both sides from day one.
@@ -1608,7 +1617,7 @@ CREATE TABLE expenses (
 
 #### Migration 010 — Invoice sequences
 
-> **V1 implemented in:** `20260526001400_finance_payments.sql` (with `payments` table).
+> **V1 implemented in:** `20260608001600_finance.sql` (with `payments` table).
 
 > **Israeli legal requirement.** Invoice numbers must be sequential and gapless.
 > This atomic function prevents gaps under concurrent payments.
@@ -1966,7 +1975,7 @@ Role checks always use `TEXT[]` array containment (e.g. `'tenant_admin' = ANY(ro
 
 #### 4.3.2 Helper Functions
 
-All defined in [`supabase/migrations/20260526000100_tenants.sql`](supabase/migrations/20260526000100_tenants.sql).
+Tenant-scope helpers are defined in [`supabase/migrations/20260608000200_core_tenants.sql`](supabase/migrations/20260608000200_core_tenants.sql).
 All are `SECURITY DEFINER SET search_path = public STABLE`.
 
 | Function | Returns | Purpose |
@@ -1974,13 +1983,13 @@ All are `SECURITY DEFINER SET search_path = public STABLE`.
 | `get_my_tenant_id()` | `UUID` | Resolves caller's `tenant_id` from `user_profiles` |
 | `is_super_admin()` | `BOOLEAN` | `'super_admin' = ANY(role)` — platform bypass |
 | `is_service_role()` | `BOOLEAN` | JWT role = `service_role` — for Edge Function paths |
-| `get_my_family_ids()` | `SETOF UUID` | All `family_id` values for caller via `family_members` |
+| `get_my_account_ids()` | `SETOF UUID` | All `account_id` values for caller via `account_members` |
 | `get_my_person_id()` | `UUID` | The `people.id` for the calling user |
 | `is_minor(date_of_birth DATE)` | `BOOLEAN` | Computed from DOB; not stored as a column |
 
-Defined in [`supabase/migrations/20260526000200_people.sql`](supabase/migrations/20260526000200_people.sql): `get_my_family_ids()`, `get_my_person_id()`, `is_minor()`.
+Defined in [`supabase/migrations/20260608000300_people.sql`](supabase/migrations/20260608000300_people.sql): `get_my_account_ids()`, `get_my_person_id()`, `is_minor()`.
 
-Additional RPCs in [`supabase/migrations/20260526001700_rpcs.sql`](supabase/migrations/20260526001700_rpcs.sql): `get_my_profile()`, `link_auth_user_to_person()`.
+Additional RPCs in [`supabase/migrations/20260608002000_admin_rpcs.sql`](supabase/migrations/20260608002000_admin_rpcs.sql): `get_my_profile()`, `link_auth_user_to_person()`.
 
 ---
 
@@ -2016,8 +2025,8 @@ Public RPCs (accessible to `anon`) additionally MUST filter by `p_subdomain` and
 | Dependency | Where configured | Notes |
 |------------|-----------------|-------|
 | `app.encryption_key` | Supabase project secrets (manual runbook) | Required for `pgp_sym_encrypt/decrypt`; set before running Stripe credential RPCs |
-| pg_cron — OTP cleanup | Comment in `20260526000600_audit_otp.sql` | Run `SELECT cron.schedule(...)` after first deploy |
-| pg_cron — verification cleanup | Comment in `20260526000600_audit_otp.sql` | Run `SELECT cron.schedule(...)` after first deploy |
+| pg_cron — OTP cleanup | Comment in `20260608000700_audit_security.sql` | Run `SELECT cron.schedule(...)` after first deploy |
+| pg_cron — verification cleanup | Comment in `20260608000700_audit_security.sql` | Run `SELECT cron.schedule(...)` after first deploy |
 | Stripe/Twilio/Resend keys | Admin UI or runbook after schema deploy | See [Third-Party Services Setup](docs/deployment/THIRD_PARTY_SERVICES.md) |
 | `waiver-pdfs` storage bucket | Supabase Dashboard → Storage | Private bucket; see self-hosted waiver runbook in [Third-Party Services Setup](docs/deployment/THIRD_PARTY_SERVICES.md) |
 
@@ -2037,6 +2046,14 @@ The following tables and features are designed but NOT in V1 migrations. Do not 
 ---
 
 ### 4.4 SPEC Issues Resolution (v3 updates — 2026-05-20)
+
+**2026-06-08 — Migrations consolidated to 25-file chain (`20260608000200`–`20260608002500`):**
+- Supersedes the 34-file `20260526*`–`20260610*` history; superseded files retained read-only under `supabase/migrations_backup/legacy_20260608/`. Authoritative index is §4.2.0.
+- Every `ALTER TABLE` baked into its base `CREATE TABLE` (no stacked alters): `tenants.from_email`; `offerings.waiver_required` + `cover_image_path`; `engagements` age-override + waiver-deadline + `waiver_evidence_id` FK; `waiver_evidence.offering_id` + `guardian_confirmed`.
+- `waiver_evidence`/`waiver_events` reordered before `engagements` so `waiver_evidence_id` is a real FK. `sign_waiver()` is the single 26-param signature (`SET search_path = public`).
+- `pending_waiver` status threaded through `link_auth_user_to_person()`, `search_enrolment_students()`, `cancel_engagement()`, `link_auth_user_to_guardian_for_engagement()`.
+- `consent_template_immutable` trigger fixed to lock content/name/hash only (status transitions allowed). Storage buckets split into `20260608001700_storage.sql`. `provision_tenant()` gained `p_from_email`.
+- `waiver_evidence`/`waiver_events` added to the `authenticated` SELECT grant. Dev reset: `supabase/reset_dev_db.sql` then `pnpm db:push`; `supabase/seed.sql`; `pnpm db:types`.
 
 **2026-05-26 — Migrations consolidated to 18-file chain (`20260526000100`–`20260526001800`):**
 - Supersedes the earlier `20260519*` / `20260525*` filename sprawl; authoritative index is §4.2.0
