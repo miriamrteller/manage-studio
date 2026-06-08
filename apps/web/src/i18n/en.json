@@ -841,7 +841,11 @@
     "waiver_name_placeholder": "Type your full legal name",
     "waiver_submit": "Sign and Continue",
     "waiver_token_expired": "Please scroll to the bottom again to re-confirm you have read the waiver.",
-    "waiver_view_error": "Could not confirm reading. Please try scrolling again."
+    "waiver_view_error": "Could not confirm reading. Please try scrolling again.",
+    "waiver_guardian_confirm": "I confirm I am the parent or legal guardian of {{studentName}} and am authorised to sign this waiver on their behalf.",
+    "waiver_this_student": "the enrolled student",
+    "waiver_minor_cannot_sign_title": "A parent or guardian must sign",
+    "waiver_minor_cannot_sign_body": "{{studentName}} is under 18. Israeli law requires a parent or legal guardian to sign the waiver. Please ask a parent or guardian to log in and complete the enrolment."
   },
   "settings": {
     "tax": {

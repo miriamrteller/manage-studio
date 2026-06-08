@@ -28,6 +28,10 @@ interface WaiverStepProps {
   className?: string;
   /** Display name of the term/season. */
   termName?: string;
+  /** True when the enrolled student is under 18 — shows the mandatory guardian declaration checkbox. */
+  isMinorStudent?: boolean;
+  /** True when the signed-in user's own person record IS the student. Triggers the hard block UI. */
+  signerIsTheStudent?: boolean;
 }
 
 export function WaiverStep({
@@ -42,6 +46,8 @@ export function WaiverStep({
   studentName,
   className,
   termName,
+  isMinorStudent,
+  signerIsTheStudent,
 }: WaiverStepProps) {
   const { t } = useTranslation();
   const tenant = useTenant();
@@ -52,6 +58,7 @@ export function WaiverStep({
   const viewTokenRef = useRef<{ view_token: string; viewed_at_ts: number } | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
+  const [guardianConfirmed, setGuardianConfirmed] = useState(false);
   const [viewTokenReady, setViewTokenReady] = useState(false);
   const [tokenExpired, setTokenExpired] = useState(false);
   const [viewError, setViewError] = useState<string | null>(null);
@@ -112,6 +119,7 @@ export function WaiverStep({
         viewed_at_ts: viewTokenRef.current.viewed_at_ts,
         // account_members.id for guardian waivers (not accountId / accounts.id)
         account_member_id: accountMemberId,
+        guardian_confirmed: guardianConfirmed,
       },
     });
 
@@ -129,7 +137,33 @@ export function WaiverStep({
     setIsSubmitting(false);
   }
 
-  const canSubmit = viewTokenReady && affirmed && typedName.trim().length >= 2 && !isSubmitting;
+  const canSubmit =
+    viewTokenReady &&
+    affirmed &&
+    typedName.trim().length >= 2 &&
+    (!isMinorStudent || guardianConfirmed) &&
+    !isSubmitting;
+
+  // Plan 4: hard block when a minor's own account attempts self-signing
+  if (isMinorStudent && signerIsTheStudent) {
+    return (
+      <div className="rounded-lg border-2 border-destructive bg-destructive/10 p-5 space-y-3">
+        <h3 className="font-semibold text-destructive">
+          {t('enrolment.waiver_minor_cannot_sign_title')}
+        </h3>
+        <p className="text-sm text-destructive/80">
+          {t('enrolment.waiver_minor_cannot_sign_body', {
+            studentName: studentName ?? t('enrolment.waiver_this_student'),
+          })}
+        </p>
+        {canGoBack && (
+          <Button variant="outline" onClick={onPrevious}>
+            {t('common.back')}
+          </Button>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -201,6 +235,23 @@ export function WaiverStep({
               {t('enrolment.waiver_checkbox_label', { defaultValue: 'I have read and accept this waiver' })}
             </span>
           </label>
+
+          {/* Guardian declaration — required when signing on behalf of a minor */}
+          {isMinorStudent && (
+            <label className="flex items-start gap-2 cursor-pointer rounded-md border border-amber-300 bg-amber-50 p-3">
+              <input
+                type="checkbox"
+                checked={guardianConfirmed}
+                onChange={(e) => setGuardianConfirmed(e.target.checked)}
+                className="mt-0.5"
+              />
+              <span className="text-sm font-medium text-amber-900">
+                {t('enrolment.waiver_guardian_confirm', {
+                  studentName: studentName ?? t('enrolment.waiver_this_student'),
+                })}
+              </span>
+            </label>
+          )}
 
           <div className="space-y-1">
             <label className="text-sm font-medium" htmlFor="waiver-typed-name">

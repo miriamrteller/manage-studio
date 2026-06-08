@@ -848,7 +848,11 @@
     "waiver_loading": "טוען כתב ויתור…",
     "waiver_no_template": "לא הוגדר תבנית ויתור פעילה. אנא פנה/י למנהל הסטודיו.",
     "waiver_context_student": "תלמיד/ה",
-    "waiver_context_class": "שיעור"
+    "waiver_context_class": "שיעור",
+    "waiver_guardian_confirm": "אני מאשר/ת כי הנני הורה/אפוטרופוס החוקי של {{studentName}} ומוסמך/ת לחתום על כתב ויתור זה בשמם.",
+    "waiver_this_student": "התלמיד/ה הנרשם/ת",
+    "waiver_minor_cannot_sign_title": "נדרשת חתימת הורה או אפוטרופוס",
+    "waiver_minor_cannot_sign_body": "{{studentName}} הינו/ה מתחת לגיל 18. על פי חוק, הורה או אפוטרופוס חוקי חייב לחתום על כתב הויתור. אנא בקש/י מהורה להתחבר ולהשלים את ההרשמה."
   },
   "settings": {
     "tax": {

@@ -602,6 +602,7 @@ export const WaiverEvidenceSchema = z.object({
   accept_language: z.string().nullable().optional(),
   idempotency_key: z.string(),
   otp_verify_sid: z.string().nullable().optional(),
+  guardian_confirmed: z.boolean().default(false),
   status: z.enum(['signed', 'superseded', 'revoked']),
   created_at: TimestampSchema,
   offering_id: UUIDSchema.nullable().optional(),

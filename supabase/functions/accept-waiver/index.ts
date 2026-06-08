@@ -113,6 +113,31 @@ Deno.serve(async (req) => {
       );
     }
 
+    // --- Fetch student date_of_birth to determine minority status ---
+    const { data: student } = await service
+      .from("people")
+      .select("date_of_birth")
+      .eq("id", body.person_id)
+      .eq("tenant_id", tenantId)
+      .single();
+
+    const isMinor: boolean = student?.date_of_birth
+      ? new Date(student.date_of_birth as string) >
+        new Date(Date.now() - 18 * 365.25 * 24 * 60 * 60 * 1000)
+      : false;
+
+    const guardianConfirmed: boolean = body.guardian_confirmed === true;
+
+    if (isMinor && !guardianConfirmed) {
+      return jsonResponse(
+        {
+          error: "guardian_confirmation_required",
+          message: "This student is a minor. Guardian confirmation is required.",
+        },
+        400,
+      );
+    }
+
     // --- Guest path: verify body.person_id belongs to the token's engagement ---
     if (waiverTokenEngagementId) {
       const { data: tokenEng } = await service
@@ -134,6 +159,18 @@ Deno.serve(async (req) => {
         .eq("id", actorId!)
         .single();
       signedByRole = signerProfile?.person_id === body.person_id ? "self" : "guardian";
+    }
+
+    // --- Plan 4: block a minor from signing their own waiver (authenticated path only) ---
+    // Guest path is exempt — guests signing via magic link are always adult guardians.
+    if (!rawWaiverToken && signedByRole === "self" && isMinor) {
+      return jsonResponse(
+        {
+          error: "minor_cannot_self_sign",
+          message: "This student is a minor. A parent or legal guardian must sign.",
+        },
+        403,
+      );
     }
 
     // --- Capture server-side metadata ---
@@ -158,24 +195,25 @@ Deno.serve(async (req) => {
     const storagePath = PDF_DEFERRED_SENTINEL;
     const pdf_sha256 = "0".repeat(64);
 
-    // --- Compute record_hmac over canonical alphabetically-sorted 14-field JSON ---
+    // --- Compute record_hmac over canonical alphabetically-sorted 15-field JSON ---
     const canonical = JSON.stringify(
       Object.fromEntries(
         Object.entries({
-          accept_language: acceptLang,
+          accept_language:     acceptLang,
           consent_template_id: body.consent_template_id,
-          consent_version: template.version,
+          consent_version:     template.version,
           consent_version_hash,
-          idempotency_key: body.idempotency_key,
-          ip_address: ip,
+          guardian_confirmed:  guardianConfirmed,   // 15th field (g sorts between c and i)
+          idempotency_key:     body.idempotency_key,
+          ip_address:          ip,
           pdf_sha256,
-          person_id: body.person_id,
-          signed_at: signedAt,
-          signed_by_email: signedByEmail,
-          signed_by_name: body.typed_name,
-          signed_by_role: signedByRole,
-          tenant_id: tenantId,
-          user_agent: userAgent,
+          person_id:           body.person_id,
+          signed_at:           signedAt,
+          signed_by_email:     signedByEmail,
+          signed_by_name:      body.typed_name,
+          signed_by_role:      signedByRole,
+          tenant_id:           tenantId,
+          user_agent:          userAgent,
         }).sort(([a], [b]) => a.localeCompare(b)),
       ),
     );
@@ -208,6 +246,7 @@ Deno.serve(async (req) => {
       p_otp_verify_sid: body.otp_verify_sid ?? null,
       p_actor_id: actorId,
       p_offering_id: offeringId,
+      p_guardian_confirmed: guardianConfirmed,
     });
 
     if (rpcError) {

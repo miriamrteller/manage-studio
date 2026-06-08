@@ -148,10 +148,10 @@ export function EnrolmentStepper({
     queryKey: ['waiver-person-display', tenant?.id, enrolmentData.person_id],
     queryFn: async () => {
       const { data } = await TenantDB.selectFor('people', tenant!)
-        .select('name')
+        .select('name, date_of_birth')
         .eq('id', enrolmentData.person_id!)
         .maybeSingle();
-      return data as { name: string } | null;
+      return data as { name: string; date_of_birth: string | null } | null;
     },
     enabled: !!user && !!tenant?.id && !!enrolmentData.person_id,
     staleTime: 60_000,
@@ -168,6 +168,18 @@ export function EnrolmentStepper({
     enabled: !!user && !!tenant?.id && !!enrolmentData.season_id,
     staleTime: 60_000,
   });
+
+  // Plan 3: true when the enrolled student is under 18 (requires guardian declaration checkbox)
+  const isMinorStudent: boolean = waiverPersonDisplay?.date_of_birth
+    ? new Date(waiverPersonDisplay.date_of_birth) >
+      new Date(Date.now() - 18 * 365.25 * 24 * 60 * 60 * 1000)
+    : false;
+
+  // Plan 4: true when the signed-in user IS the enrolled student.
+  // UserProfile.person_id is already resolved by useCurrentUser() — no extra query needed.
+  const signerIsTheStudent: boolean =
+    !!user?.person_id && user.person_id === enrolmentData.person_id;
+
   const [checkoutEnrolmentId, setCheckoutEnrolmentId] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [isCheckoutPreparing, setIsCheckoutPreparing] = useState(false);
@@ -496,6 +508,7 @@ export function EnrolmentStepper({
     personDateOfBirth,
     showWaiverStep,
     waiverSignedInFlow,
+    waiverEvidenceId,
     t,
   ]);
 
@@ -809,6 +822,8 @@ export function EnrolmentStepper({
               studentName={waiverPersonDisplay?.name ?? undefined}
               className={selectedClassName || undefined}
               termName={waiverTermDisplay?.name}
+              isMinorStudent={isMinorStudent}
+              signerIsTheStudent={signerIsTheStudent}
               onComplete={(evidenceId) => {
                 setWaiverSignedInFlow(true);
                 setWaiverSignedAt(new Date().toISOString());
