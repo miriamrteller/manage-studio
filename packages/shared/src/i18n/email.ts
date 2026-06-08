@@ -20,6 +20,9 @@ export const EMAIL_TEMPLATE_NAMES = {
   PAYMENT_REMINDER: 'payment_reminder',
   CLASS_CANCELLATION: 'class_cancellation',
   WAITING_LIST_OFFER: 'waiting_list_offer',
+  ENROLMENT_CONFIRMATION: 'enrolment_confirmation',
+  WAIVER_REMINDER: 'waiver_reminder',
+  WAIVER_CANCELLED: 'waiver_cancelled',
 } as const;
 
 export type EmailTemplateName = typeof EMAIL_TEMPLATE_NAMES[keyof typeof EMAIL_TEMPLATE_NAMES];
@@ -135,6 +138,9 @@ const TemplateNameSchema = z.enum([
   EMAIL_TEMPLATE_NAMES.PAYMENT_REMINDER,
   EMAIL_TEMPLATE_NAMES.CLASS_CANCELLATION,
   EMAIL_TEMPLATE_NAMES.WAITING_LIST_OFFER,
+  EMAIL_TEMPLATE_NAMES.ENROLMENT_CONFIRMATION,
+  EMAIL_TEMPLATE_NAMES.WAIVER_REMINDER,
+  EMAIL_TEMPLATE_NAMES.WAIVER_CANCELLED,
 ]);
 
 const LanguageSchema = z.enum(['en', 'he']);

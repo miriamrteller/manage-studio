@@ -12,63 +12,63 @@ interface UseWaiverStatusParams {
 const WAIVER_STATUS_KEY = 'waiver-status';
 
 /**
- * Returns whether a waiver is required and already signed for a specific
- * person + offering combination.
+ * Returns whether this enrolment requires a waiver signature.
  *
- * IMPORTANT: Returns { required: false, signed: true } for:
- * - Guest users (no JWT — Edge Functions require auth)
- * - Offerings with waiver_required = false
- * - Tenants with no active consent_template
+ * DESIGN: Every enrolment requires a fresh signature — we never check for
+ * existing evidence. Each engagement gets its own waiver record.
  *
- * In all these cases the server-side gate (stripe-webhook / adminEnrolmentService)
- * still enforces correctness if a waiver was somehow missed.
+ * Returns { required: true, template } when:
+ *   - The offering has waiver_required = true
+ *   - An active consent template exists for this tenant
+ *
+ * Returns { required: false, template: null } when:
+ *   - Guest users (no JWT — waiver Edge Functions require auth)
+ *   - Offering has waiver_required = false
+ *   - No active consent template exists
+ *
+ * In the guest case the server-side gate (stripe-webhook) enforces the waiver
+ * via pending_waiver status and the post-payment email flow.
  */
 export function useWaiverStatus({ personId, offeringId }: UseWaiverStatusParams) {
   const tenant = useTenant();
   const { user } = useCurrentUser();
 
-  return useQuery({
+  const query = useQuery({
     queryKey: [WAIVER_STATUS_KEY, tenant?.id, personId, offeringId],
-    // Guest users have no JWT — waiver Edge Functions require Bearer auth.
-    // Skip the waiver step for unauthenticated sessions entirely.
-    enabled: !!tenant?.id && !!personId && !!offeringId && !!user,
+    enabled: !!tenant?.id && !!offeringId && !!user,
     queryFn: async () => {
-      // 1. Check offering.waiver_required
+      // 1. Check if the offering requires a waiver
       const { data: offering } = await TenantDB.selectFor('offerings', tenant!)
         .select('waiver_required')
         .eq('id', offeringId!)
         .single();
       if (!offering?.waiver_required) {
-        return { required: false, signed: true, template: null };
+        return { required: false, template: null };
       }
 
-      // 2. Get the active consent template
+      // 2. Get the active consent template (no active template = no gate)
       const { data: templateRow } = await TenantDB.selectFor('consent_templates', tenant!)
         .eq('status', 'active')
         .maybeSingle();
-      // No active template = no gate (admin should create one if waivers are required)
       if (!templateRow) {
-        return { required: false, signed: true, template: null };
+        return { required: false, template: null };
       }
+
       const template = ConsentTemplateSchema.parse(templateRow);
-
-      // 3. Check for existing signed evidence matching this exact template version
-      const { data: evidence } = await TenantDB.selectFor('waiver_evidence', tenant!)
-        .select('id')
-        .eq('person_id', personId!)
-        .eq('consent_template_id', template.id)
-        .eq('consent_version', template.version)
-        .eq('status', 'signed')
-        .maybeSingle();
-
-      return { required: true, signed: !!evidence, template };
+      return { required: true, template };
     },
-    // When not enabled (guest / missing params), default to waiver not required
-    placeholderData: { required: false, signed: true, template: null },
+    // Disabled queries and offerings without waivers both return "not required"
+    placeholderData: { required: false, template: null },
   });
+
+  return {
+    data: query.data,
+    /** True while the first fetch hasn't resolved yet (data is still placeholder). */
+    isPlaceholderData: query.isPlaceholderData,
+  };
 }
 
-/** Invalidate cached waiver status after a successful sign. */
+/** Invalidate cached waiver status (e.g. after template version change). */
 export function invalidateWaiverStatus(
   queryClient: ReturnType<typeof useQueryClient>,
   tenantId: string,

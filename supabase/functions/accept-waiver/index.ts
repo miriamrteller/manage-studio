@@ -1,4 +1,3 @@
-import { PDFDocument, StandardFonts, rgb } from "https://esm.sh/pdf-lib@1.17.1?target=deno";
 import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
 import { createServiceClient } from "../_shared/supabase.ts";
 import {
@@ -9,160 +8,69 @@ import {
   sha256Hex,
   timingSafeEqual,
 } from "../_shared/hmac.ts";
+import {
+  extractWaiverToken,
+  verifyWaiverToken,
+} from "../_shared/waiver-token.ts";
 
-const PAGE_WIDTH = 595;
-const PAGE_HEIGHT = 842;
-const MARGIN = 50;
-const LINE_HEIGHT = 16;
-const FONT_SIZE_BODY = 11;
-const FONT_SIZE_HEADER = 14;
-
-/** Word-wrap text to fit within maxWidth at the given font size. */
-async function wrapText(
-  text: string,
-  font: Awaited<ReturnType<PDFDocument["embedFont"]>>,
-  fontSize: number,
-  maxWidth: number,
-): Promise<string[]> {
-  const lines: string[] = [];
-  for (const paragraph of text.split("\n")) {
-    const words = paragraph.split(" ");
-    let line = "";
-    for (const word of words) {
-      const candidate = line ? `${line} ${word}` : word;
-      if (font.widthOfTextAtSize(candidate, fontSize) <= maxWidth) {
-        line = candidate;
-      } else {
-        if (line) lines.push(line);
-        line = word;
-      }
-    }
-    lines.push(line);
-  }
-  return lines;
-}
-
-async function buildPdf(params: {
-  tenantName: string;
-  templateName: string;
-  content: string;
-  typedName: string;
-  signedAt: string;
-  ip: string | null;
-  templateVersion: number;
-  consentVersionHash: string;
-}): Promise<Uint8Array> {
-  const doc = await PDFDocument.create();
-  const boldFont = await doc.embedFont(StandardFonts.HelveticaBold);
-  const regularFont = await doc.embedFont(StandardFonts.Helvetica);
-
-  const usableWidth = PAGE_WIDTH - MARGIN * 2;
-
-  const contentLines = await wrapText(
-    params.content,
-    regularFont,
-    FONT_SIZE_BODY,
-    usableWidth,
-  );
-
-  // Estimate total lines including headers + signature block
-  const HEADER_LINES = 5;
-  const SIG_LINES = 6;
-  const allLines = HEADER_LINES + contentLines.length + SIG_LINES;
-  const linesPerPage = Math.floor((PAGE_HEIGHT - MARGIN * 2) / LINE_HEIGHT);
-  const totalPages = Math.ceil(allLines / linesPerPage);
-
-  let lineIndex = 0;
-  let pageNum = 0;
-  let page = doc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-  let y = PAGE_HEIGHT - MARGIN;
-
-  function newPage() {
-    pageNum++;
-    page = doc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-    y = PAGE_HEIGHT - MARGIN;
-    // Footer
-    page.drawText(
-      `Content SHA-256: ${params.consentVersionHash} | Page ${pageNum} of ${totalPages}`,
-      {
-        x: MARGIN,
-        y: MARGIN / 2,
-        size: 7,
-        font: regularFont,
-        color: rgb(0.5, 0.5, 0.5),
-      },
-    );
-  }
-
-  // Draw footer on first page
-  pageNum = 1;
-  page.drawText(
-    `Content SHA-256: ${params.consentVersionHash} | Page ${pageNum} of ${totalPages}`,
-    {
-      x: MARGIN,
-      y: MARGIN / 2,
-      size: 7,
-      font: regularFont,
-      color: rgb(0.5, 0.5, 0.5),
-    },
-  );
-
-  function drawLine(text: string, bold = false, size = FONT_SIZE_BODY) {
-    if (y - LINE_HEIGHT < MARGIN) newPage();
-    page.drawText(text, {
-      x: MARGIN,
-      y,
-      size,
-      font: bold ? boldFont : regularFont,
-      color: rgb(0, 0, 0),
-    });
-    y -= LINE_HEIGHT;
-  }
-
-  // Header
-  drawLine(params.tenantName, true, FONT_SIZE_HEADER);
-  drawLine(params.templateName, false, FONT_SIZE_BODY + 1);
-  y -= LINE_HEIGHT / 2;
-  drawLine("─".repeat(80), false, 8);
-  y -= LINE_HEIGHT / 2;
-
-  // Body content
-  for (const line of contentLines) {
-    drawLine(line);
-  }
-
-  // Signature block
-  y -= LINE_HEIGHT;
-  drawLine("─".repeat(80), false, 8);
-  drawLine(`Signed by: ${params.typedName}`, true);
-  drawLine(`Date (UTC): ${params.signedAt}`);
-  drawLine(`IP address: ${params.ip ?? "unknown"}`);
-  drawLine(`Template version: ${params.templateVersion}`);
-
-  return doc.save();
-}
+// V1: PDF generation is deferred — the waiver_evidence row IS the tamper-evident
+// legal record (wording_snapshot + record_hmac over 14 canonical fields).
+// A PDF export can be generated on-demand from the admin panel in V2 once we
+// have a Unicode-capable font pipeline. For now we store a sentinel path so the
+// DB constraint (NOT NULL on pdf_storage_path) is satisfied without any upload.
+const PDF_DEFERRED_SENTINEL = "v1-deferred";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
 
   try {
-    const jwt = req.headers.get("authorization")?.replace("Bearer ", "");
-    if (!jwt) return jsonResponse({ error: "Missing authorization" }, 401);
-
+    const authHeader = req.headers.get("authorization") ?? "";
     const service = createServiceClient();
 
-    const { data: { user }, error: authError } = await service.auth.getUser(jwt);
-    if (authError || !user) return jsonResponse({ error: "Unauthorized" }, 401);
+    // Two auth paths: Supabase session (authenticated users) or WaiverToken (guests)
+    let tenantId: string;
+    let signedByEmail: string | null;
+    let actorId: string | null = null;
+    let signedByRole: string;
+    let waiverTokenEngagementId: string | null = null;
 
-    // Derive tenant_id + email from user_profiles
-    const { data: profile } = await service
-      .from("user_profiles")
-      .select("tenant_id, email")
-      .eq("id", user.id)
-      .single();
-    if (!profile?.tenant_id) return jsonResponse({ error: "User has no tenant" }, 403);
-    const tenantId = profile.tenant_id as string;
+    const rawWaiverToken = extractWaiverToken(authHeader);
+    if (rawWaiverToken) {
+      // Guest path — validate the waiver link token
+      const wtp = await verifyWaiverToken(rawWaiverToken);
+      if (!wtp) return jsonResponse({ error: "WaiverToken invalid or expired" }, 401);
+      tenantId = wtp.tid;
+      signedByEmail = wtp.em;
+      signedByRole = "self";
+      waiverTokenEngagementId = wtp.eid;
+    } else {
+      // Authenticated path — validate Supabase session
+      const jwt = authHeader.replace("Bearer ", "");
+      if (!jwt) return jsonResponse({ error: "Missing authorization" }, 401);
+
+      const { data: { user }, error: authError } = await service.auth.getUser(jwt);
+      if (authError || !user) return jsonResponse({ error: "Unauthorized" }, 401);
+
+      const { data: profile } = await service
+        .from("user_profiles")
+        .select("tenant_id, email")
+        .eq("id", user.id)
+        .single();
+      if (!profile?.tenant_id) return jsonResponse({ error: "User has no tenant" }, 403);
+      tenantId = profile.tenant_id as string;
+      signedByEmail = (profile.email as string) ?? null;
+      actorId = user.id;
+
+      // Determine signer role (self vs guardian) for authenticated users
+      const { data: signerProfile } = await service
+        .from("user_profiles")
+        .select("person_id")
+        .eq("id", user.id)
+        .single();
+      // body.person_id is not parsed yet here — role resolved below after body parse
+      signedByRole = "__pending__"; // resolved after body is parsed
+    }
 
     const body = await req.json().catch(() => null);
     if (
@@ -176,6 +84,9 @@ Deno.serve(async (req) => {
     ) {
       return jsonResponse({ error: "Missing required fields" }, 400);
     }
+
+    // offering_id links this evidence to a specific class — optional for backward compat
+    const offeringId: string | null = body.offering_id ?? null;
 
     // --- Validate view_token (15-minute window) ---
     const nowTs = Math.floor(Date.now() / 1000);
@@ -208,21 +119,34 @@ Deno.serve(async (req) => {
       );
     }
 
+    // --- Guest path: verify body.person_id belongs to the token's engagement ---
+    if (waiverTokenEngagementId) {
+      const { data: tokenEng } = await service
+        .from("engagements")
+        .select("person_id")
+        .eq("id", waiverTokenEngagementId)
+        .eq("tenant_id", tenantId)
+        .single();
+      if (!tokenEng || tokenEng.person_id !== body.person_id) {
+        return jsonResponse({ error: "person_id does not match waiver token" }, 401);
+      }
+    }
+
+    // --- Resolve signer role for authenticated users (pending from auth block) ---
+    if (signedByRole === "__pending__") {
+      const { data: signerProfile } = await service
+        .from("user_profiles")
+        .select("person_id")
+        .eq("id", actorId!)
+        .single();
+      signedByRole = signerProfile?.person_id === body.person_id ? "self" : "guardian";
+    }
+
     // --- Capture server-side metadata ---
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? null;
     const userAgent = req.headers.get("user-agent") ?? null;
     const acceptLang = req.headers.get("accept-language") ?? null;
     const signedAt = new Date().toISOString();
-
-    // --- Determine signer role ---
-    const { data: signerProfile } = await service
-      .from("user_profiles")
-      .select("person_id")
-      .eq("id", user.id)
-      .single();
-    const isSelf = signerProfile?.person_id === body.person_id;
-    const signedByRole: string = isSelf ? "self" : "guardian";
-    const signedByEmail: string | null = (profile.email as string) ?? null;
 
     // --- Load tenant name for PDF header ---
     const { data: tenant } = await service
@@ -232,25 +156,13 @@ Deno.serve(async (req) => {
       .single();
     const tenantName = tenant?.name ?? "Studio";
 
-    // --- Generate PDF in-process ---
-    const pdfBytes = await buildPdf({
-      tenantName,
-      templateName: template.name as string,
-      content: template.content as string,
-      typedName: body.typed_name,
-      signedAt,
-      ip,
-      templateVersion: template.version as number,
-      consentVersionHash: await sha256Hex(template.content as string),
-    });
-
     // --- Compute hashes ---
-    const pdf_sha256 = await sha256Hex(pdfBytes);
     const consent_version_hash = await sha256Hex(template.content as string);
 
-    // --- Pre-generate evidence UUID and storage path ---
+    // V1: no PDF upload — use sentinel path + zeroed hash
     const evidenceId = crypto.randomUUID();
-    const storagePath = `${tenantId}/${body.person_id}/${evidenceId}.pdf`;
+    const storagePath = PDF_DEFERRED_SENTINEL;
+    const pdf_sha256 = "0".repeat(64);
 
     // --- Compute record_hmac over canonical alphabetically-sorted 14-field JSON ---
     const canonical = JSON.stringify(
@@ -274,15 +186,6 @@ Deno.serve(async (req) => {
       ),
     );
     const record_hmac = await hmacSha256Hex(hmacKey, canonical);
-
-    // --- Upload PDF FIRST (before DB write) ---
-    const { error: uploadError } = await service.storage
-      .from("waiver-pdfs")
-      .upload(storagePath, pdfBytes, {
-        contentType: "application/pdf",
-        upsert: false,
-      });
-    if (uploadError) throw new Error(`PDF upload failed: ${uploadError.message}`);
 
     // --- Atomic DB write via sign_waiver() SECURITY DEFINER RPC ---
     const { data: returnedId, error: rpcError } = await service.rpc("sign_waiver", {
@@ -310,6 +213,7 @@ Deno.serve(async (req) => {
       p_idempotency_key: body.idempotency_key,
       p_otp_verify_sid: body.otp_verify_sid ?? null,
       p_actor_id: user.id,
+      p_offering_id: offeringId,
     });
 
     if (rpcError) {
@@ -322,6 +226,25 @@ Deno.serve(async (req) => {
       throw new Error(
         "Failed to record waiver — please contact support with reference: " +
           body.idempotency_key,
+      );
+    }
+
+    // Activate all pending_waiver engagements for this person in this tenant.
+    // One signed waiver covers all concurrent enrollments under the same template version.
+    const { error: activateError } = await service
+      .from("engagements")
+      .update({ status: "active" })
+      .eq("person_id", body.person_id)
+      .eq("tenant_id", tenantId)
+      .eq("status", "pending_waiver");
+
+    if (activateError) {
+      // Non-fatal: waiver IS recorded, but engagement status didn't update.
+      // Log for ops team to fix manually. Do not fail the request.
+      console.error(
+        "[accept-waiver] failed to activate pending_waiver engagements:",
+        activateError,
+        { personId: body.person_id, tenantId },
       );
     }
 

@@ -79,6 +79,22 @@ export default function AuthCallbackPage() {
       return;
     }
 
+    // Guest pending waiver: redirect before checking user profile.
+    // EnrolCompletePage handles account linking for brand-new users.
+    const callbackSearch = new URLSearchParams(callbackUrlRef.current.search);
+    const pendingWaiverEngagementId = callbackSearch.get('pendingWaiverEngagementId');
+    if (pendingWaiverEngagementId && session?.user) {
+      navigate(`/enrol/complete?engagementId=${encodeURIComponent(pendingWaiverEngagementId)}`, {
+        replace: true,
+      });
+      return;
+    }
+
+    if (!user) {
+      setErrorMessage('user_not_found');
+      return;
+    }
+
     const linkPortal = async () => {
       const engagementId = sessionStorage.getItem('portalEngagementId');
       if (engagementId && hasParentRole(user.role)) {

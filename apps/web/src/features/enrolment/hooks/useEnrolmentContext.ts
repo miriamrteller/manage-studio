@@ -28,6 +28,12 @@ export interface EnrolmentContextValue {
   preselectedPersonId?: string;
   isLoading: boolean;
   error: Error | null;
+  /**
+   * Whether this offering requires a waiver.
+   * Sourced from offerings.waiver_required — available once isLoading is false.
+   * Null when the offering hasn't loaded yet (no classId in intent, or still loading).
+   */
+  waiverRequired: boolean | null;
 }
 
 function hasAdultStudentRole(roles: string[]): boolean {
@@ -52,17 +58,18 @@ export function useEnrolmentContext(intent: EnrollmentIntent | null): EnrolmentC
         const row = (data ?? []).find((o: { id: string }) => o.id === intent.classId);
         if (!row) return null;
         return {
-          id: row.id,
-          min_age: row.min_age,
-          max_age: row.max_age,
-          season_start_date: row.season_start_date ?? null,
+          id: row.id as string,
+          min_age: row.min_age as number | null,
+          max_age: row.max_age as number | null,
+          season_start_date: (row.season_start_date ?? null) as string | null,
+          waiver_required: (row.waiver_required ?? false) as boolean,
         };
       }
 
       if (!tenant?.id) return null;
       const { data, error } = await supabase
         .from('offerings')
-        .select('id, min_age, max_age, season_id, seasons(start_date)')
+        .select('id, min_age, max_age, season_id, waiver_required, seasons(start_date)')
         .eq('tenant_id', tenant.id)
         .eq('id', intent.classId)
         .maybeSingle();
@@ -74,6 +81,7 @@ export function useEnrolmentContext(intent: EnrollmentIntent | null): EnrolmentC
         min_age: data.min_age,
         max_age: data.max_age,
         season_start_date: season?.start_date ?? null,
+        waiver_required: (data.waiver_required ?? false) as boolean,
       };
     },
     enabled: !!intent?.classId && (!!tenant?.id || !!resolveTenantSubdomain()),
@@ -159,5 +167,7 @@ export function useEnrolmentContext(intent: EnrollmentIntent | null): EnrolmentC
     preselectedPersonId: intent?.personId,
     isLoading,
     error,
+    // null = offering not loaded yet; false = loaded, waiver not required; true = required
+    waiverRequired: offeringQuery.data != null ? (offeringQuery.data.waiver_required ?? false) : null,
   };
 }

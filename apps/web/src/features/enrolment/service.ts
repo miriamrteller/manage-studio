@@ -27,6 +27,7 @@ const EnrolmentInputSchema = z
     payment_received_at: z.string().nullable().optional(),
     age_override_confirmed: z.boolean().optional(),
     age_override_reason: z.string().max(500).nullable().optional(),
+    waiver_evidence_id: z.string().uuid().nullable().optional(),
   })
   .refine(
     (data) => data.status == null || !['cancelled', 'withdrawn'].includes(data.status),

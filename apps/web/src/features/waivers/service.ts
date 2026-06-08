@@ -1,7 +1,15 @@
 import { BaseService } from '@/services/base.service';
 import { TenantDB } from '@/lib/db';
+import { supabase } from '@/lib/supabase';
 import { ConsentTemplateSchema, WaiverEvidenceSchema, type ConsentTemplate, type WaiverEvidence } from '@shared/schemas';
 import type { Tenant } from '@shared/schemas';
+
+export interface WaiverEvidenceFilters {
+  studentName?: string;
+  signerEmail?: string;
+  offeringId?: string;
+  seasonId?: string;
+}
 
 export class WaiverService extends BaseService {
   /** List all consent templates for the tenant ordered by version descending. */
@@ -97,19 +105,54 @@ export class WaiverService extends BaseService {
     }, 'WaiverService.archiveTemplate');
   }
 
-  /** List signed waiver evidence (admin only). */
+  /** List signed waiver evidence (admin only), enriched with student + class names. */
   static async listEvidence(
     tenant: Tenant,
-    options: { page?: number; pageSize?: number } = {},
+    options: { page?: number; pageSize?: number } & WaiverEvidenceFilters = {},
   ): Promise<{ evidence: WaiverEvidence[]; total: number }> {
-    const { page = 1, pageSize = 50 } = options;
+    const { page = 1, pageSize = 50, studentName, signerEmail, offeringId, seasonId } = options;
     const from = (page - 1) * pageSize;
     return this.withRetry(async () => {
-      const { data, error, count } = await TenantDB.selectFor('waiver_evidence', tenant, {
-        count: 'exact',
-      })
+      // Pre-resolve student name → matching person IDs (people table has no anon grant,
+      // but admins have authenticated access).
+      let personIds: string[] | null = null;
+      if (studentName?.trim()) {
+        const { data: persons } = await supabase
+          .from('people')
+          .select('id')
+          .eq('tenant_id', tenant.id)
+          .ilike('name', `%${studentName.trim()}%`);
+        personIds = (persons ?? []).map((p) => p.id as string);
+        if (personIds.length === 0) return { evidence: [], total: 0 };
+      }
+
+      // Pre-resolve season → matching offering IDs (only when offeringId not set directly).
+      let seasonOfferingIds: string[] | null = null;
+      if (seasonId && !offeringId) {
+        const { data: offs } = await supabase
+          .from('offerings')
+          .select('id')
+          .eq('tenant_id', tenant.id)
+          .eq('season_id', seasonId);
+        seasonOfferingIds = (offs ?? []).map((o) => o.id as string);
+        if (seasonOfferingIds.length === 0) return { evidence: [], total: 0 };
+      }
+
+      // Build query with relational joins for display columns.
+      let q = supabase
+        .from('waiver_evidence')
+        .select('*, people!person_id(name), offerings!offering_id(name)', { count: 'exact' })
+        .eq('tenant_id', tenant.id);
+
+      if (personIds)          q = q.in('person_id', personIds);
+      if (signerEmail?.trim()) q = q.ilike('signed_by_email', `%${signerEmail.trim()}%`);
+      if (offeringId)          q = q.eq('offering_id', offeringId);
+      else if (seasonOfferingIds) q = q.in('offering_id', seasonOfferingIds);
+
+      const { data, error, count } = await q
         .order('signed_at', { ascending: false })
         .range(from, from + pageSize - 1);
+
       if (error) throw error;
       return {
         evidence: (data || []).map((row) => WaiverEvidenceSchema.parse(row)),

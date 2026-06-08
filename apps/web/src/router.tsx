@@ -23,6 +23,7 @@ import WaiversPage from "./pages/WaiversPage";
 import PortalDashboard from "./pages/PortalDashboard";
 import EnrolPage from "./pages/EnrolPage";
 import EnrolPayPage from "./pages/EnrolPayPage";
+import EnrolCompletePage from "./pages/EnrolCompletePage";
 import NotFoundPage from "./pages/NotFoundPage";
 import { LanguageProvider } from "./contexts/LanguageContext";
 
@@ -57,6 +58,7 @@ const router = createBrowserRouter([
       { path: 'signup', element: <SignupPage /> },
       { path: 'enrol', element: <EnrolPage /> },
       { path: 'enrol/pay/:engagementId', element: <EnrolPayPage /> },
+      { path: 'enrol/complete', element: <EnrolCompletePage /> },
       { path: 'dashboard', element: <DashboardRedirectPage /> },
 
       // ADMIN ROUTES

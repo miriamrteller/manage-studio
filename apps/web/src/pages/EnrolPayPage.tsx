@@ -102,8 +102,9 @@ export default function EnrolPayPage() {
 
   const { enrolment, classRow, alreadyPaid } = detailQuery.data;
 
+  // Every enrolment requires a fresh waiver — no signed check needed
   const showWaiverFirst =
-    !!(waiverStatus.data?.required && !waiverStatus.data?.signed) && !waiverComplete;
+    !!waiverStatus.data?.required && !waiverComplete;
 
   if (alreadyPaid || paid) {
     return (

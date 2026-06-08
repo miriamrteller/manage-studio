@@ -2,6 +2,14 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
 import { jsonResponse } from "../_shared/cors.ts";
 import { createServiceClient } from "../_shared/supabase.ts";
+import {
+  sendRenderedEmail,
+  EMAIL_TEMPLATE_NAMES,
+} from "../_shared/resend-send.ts";
+
+// Required env var: APP_URL (e.g. https://app.yourdomain.com)
+// Set via: supabase secrets set APP_URL=https://app.yourdomain.com
+const APP_URL = Deno.env.get("APP_URL") ?? "";
 
 serve(async (req) => {
   if (req.method !== "POST") {
@@ -81,10 +89,18 @@ serve(async (req) => {
         return jsonResponse({ error: "Engagement not found" }, 404);
       }
 
+      // Fetch person with email and name (needed for confirmation email)
       const { data: person } = await service
         .from("people")
-        .select("account_id")
+        .select("account_id, email, name")
         .eq("id", engagement.person_id)
+        .single();
+
+      // Fetch tenant details for email sending
+      const { data: tenantRow } = await service
+        .from("tenants")
+        .select("name, from_email, language_default")
+        .eq("id", tenantId)
         .single();
 
       const { data: invoiceNumber, error: invoiceError } = await service.rpc(
@@ -126,11 +142,16 @@ serve(async (req) => {
       // Waiver gate: if the offering requires a waiver and no signed evidence exists,
       // set the engagement to pending_waiver instead of active.
       let engagementStatus = "active";
+      let offeringName = "";
       const { data: offeringRow } = await service
         .from("offerings")
-        .select("waiver_required")
+        .select("waiver_required, name")
         .eq("id", engagement.offering_id)
         .single();
+      offeringName = offeringRow?.name ?? "";
+
+      let waiverDeadline: string | null = null;
+
       if (offeringRow?.waiver_required) {
         const { data: waiverTemplate } = await service
           .from("consent_templates")
@@ -149,6 +170,7 @@ serve(async (req) => {
             .maybeSingle();
           if (!evidence) {
             engagementStatus = "pending_waiver";
+            waiverDeadline = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
             console.warn(
               "[stripe-webhook] Engagement set to pending_waiver — waiver not yet signed",
               { engagementId, personId: engagement.person_id },
@@ -162,6 +184,7 @@ serve(async (req) => {
         .update({
           status: engagementStatus,
           payment_received_at: new Date().toISOString(),
+          ...(waiverDeadline ? { waiver_deadline: waiverDeadline } : {}),
         })
         .eq("id", engagementId);
 
@@ -172,6 +195,64 @@ serve(async (req) => {
         entity_id: engagementId,
         after_state: { stripe_payment_intent_id: intent.id, status: "succeeded" },
       });
+
+      // Send confirmation email if we have person email and tenant from_email
+      if (person?.email && tenantRow?.from_email) {
+        const language = (tenantRow.language_default === "he" ? "he" : "en") as "en" | "he";
+
+        if (engagementStatus === "pending_waiver" && APP_URL) {
+          // Generate magic link for the pending waiver confirmation email
+          try {
+            const { data: linkData } = await service.auth.admin.generateLink({
+              type: "magiclink",
+              email: person.email,
+              options: {
+                redirectTo: `${APP_URL}/auth/callback?pendingWaiverEngagementId=${encodeURIComponent(engagementId)}`,
+              },
+            });
+            const signUrl = linkData?.properties?.action_link ?? null;
+
+            await sendRenderedEmail({
+              to: person.email,
+              from: tenantRow.from_email,
+              renderInput: {
+                templateName: EMAIL_TEMPLATE_NAMES.ENROLMENT_CONFIRMATION,
+                language,
+                schoolName: tenantRow.name,
+                variables: {
+                  recipientName: person.name ?? "",
+                  className: offeringName,
+                  pendingWaiver: true,
+                  signUrl: signUrl ?? undefined,
+                  deadlineDate: waiverDeadline ?? undefined,
+                },
+              },
+            });
+          } catch (emailErr) {
+            // Email failure must not fail the webhook — reminders act as fallback
+            console.error("[stripe-webhook] failed to send pending_waiver confirmation email:", emailErr);
+          }
+        } else if (engagementStatus === "active") {
+          try {
+            await sendRenderedEmail({
+              to: person.email,
+              from: tenantRow.from_email,
+              renderInput: {
+                templateName: EMAIL_TEMPLATE_NAMES.ENROLMENT_CONFIRMATION,
+                language,
+                schoolName: tenantRow.name,
+                variables: {
+                  recipientName: person.name ?? "",
+                  className: offeringName,
+                  pendingWaiver: false,
+                },
+              },
+            });
+          } catch (emailErr) {
+            console.error("[stripe-webhook] failed to send active confirmation email:", emailErr);
+          }
+        }
+      }
     } else if (event.type === "payment_intent.payment_failed") {
       if (engagementId) {
         await service.from("audit_log").insert({

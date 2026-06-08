@@ -49,8 +49,9 @@ import { persistEnrollmentIntent } from '@/lib/enrollment-intent';
 import type { Engagement } from '@shared/schemas';
 import { useWaiverStatus } from '../hooks/useWaiverStatus';
 import { WaiverStep } from './WaiverStep';
+import { GuestVerifyStep } from './GuestVerifyStep';
 
-export type EnrolmentStep = 'person' | 'class' | 'notification' | 'waiver' | 'checkout' | 'confirmation';
+export type EnrolmentStep = 'person' | 'class' | 'notification' | 'verify_email' | 'waiver' | 'checkout' | 'confirmation';
 
 export interface EnrolmentStepperProps {
   /**
@@ -124,12 +125,49 @@ export function EnrolmentStepper({
   // Person DOB stored separately — not part of the Enrolment record
   const [personDateOfBirth, setPersonDateOfBirth] = useState<string | null>(null);
   const [personAgeError, setPersonAgeError] = useState<string | null>(null);
+
+  // Tracks that the waiver was signed during this specific enrolment session.
+  // waiverSignedInFlow: prevents checkout guard from redirecting back to the waiver form.
+  // waiverSignedAt: timestamp shown in the read-only "already signed" view.
+  // waiverEvidenceId: returned by accept-waiver; stored on the engagement at creation time.
+  const [waiverSignedInFlow, setWaiverSignedInFlow] = useState(false);
+  const [waiverSignedAt, setWaiverSignedAt] = useState<string | null>(null);
+  const [waiverEvidenceId, setWaiverEvidenceId] = useState<string | null>(null);
   // Human-readable class name for the confirmation screen
   const [selectedClassName, setSelectedClassName] = useState('');
 
   const tenant = useTenant();
   const { user } = useCurrentUser();
   const { createEnrolment, isCreating } = useEnrolment({ enabled: false });
+
+  // Lightweight display queries — used only to show context on the waiver step.
+  // Both are single-field selects by PK, so they're fast and likely already cached.
+  // Only needed for the waiver step context header — only shown to logged-in users.
+  // Gate on !!user to prevent anon-role queries (people/seasons have no anon GRANT).
+  const { data: waiverPersonDisplay } = useQuery({
+    queryKey: ['waiver-person-display', tenant?.id, enrolmentData.person_id],
+    queryFn: async () => {
+      const { data } = await TenantDB.selectFor('people', tenant!)
+        .select('name')
+        .eq('id', enrolmentData.person_id!)
+        .maybeSingle();
+      return data as { name: string } | null;
+    },
+    enabled: !!user && !!tenant?.id && !!enrolmentData.person_id,
+    staleTime: 60_000,
+  });
+  const { data: waiverTermDisplay } = useQuery({
+    queryKey: ['waiver-term-display', tenant?.id, enrolmentData.season_id],
+    queryFn: async () => {
+      const { data } = await TenantDB.selectFor('seasons', tenant!)
+        .select('name')
+        .eq('id', enrolmentData.season_id!)
+        .maybeSingle();
+      return data as { name: string } | null;
+    },
+    enabled: !!user && !!tenant?.id && !!enrolmentData.season_id,
+    staleTime: 60_000,
+  });
   const [checkoutEnrolmentId, setCheckoutEnrolmentId] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [isCheckoutPreparing, setIsCheckoutPreparing] = useState(false);
@@ -170,15 +208,38 @@ export function EnrolmentStepper({
 
   const classPreselected = Boolean(initialClassId && initialTermId);
 
+  // waiver_required comes from the offering, surfaced via useEnrolmentContext
+  // (which already queries the offering for age bands). This is synchronous once
+  // enrolmentContext.isLoading is false — no separate async hook needed for step building.
+  //
+  // For the class-selection flow (no pre-selected class), localWaiverRequired is set
+  // from the selected class object in handleClassNext, also synchronously.
+  const [localWaiverRequired, setLocalWaiverRequired] = useState<boolean | null>(null);
+
+  // Effective value: prefer context (pre-selected class) then local (class-selection flow)
+  const effectiveWaiverRequired =
+    enrolmentContext.waiverRequired ?? localWaiverRequired ?? false;
+
+  // Still need useWaiverStatus — but ONLY for the template payload consumed by WaiverStep.
+  // Step visibility is now driven by effectiveWaiverRequired, not by this hook.
   const { data: waiverStatus } = useWaiverStatus({
     personId: enrolmentData.person_id,
     offeringId: enrolmentData.offering_id ?? initialClassId,
   });
-  // Admin mode bypass: admin enrolling a student shouldn't be forced to sign in the UI.
-  // Server gates (stripe-webhook / adminEnrolmentService) set pending_waiver if needed.
+
+  // Admin mode bypass: server gates set pending_waiver when admin enrolls.
+  // Every enrolment is a fresh signature — no evidence check.
   const showWaiverStep =
-    !!(waiverStatus?.required && !waiverStatus?.signed) &&
-    enrolmentContext.mode !== 'admin';
+    effectiveWaiverRequired &&
+    enrolmentContext.mode !== 'admin' &&
+    !!user; // logged-in users sign inline; guests sign post-payment
+
+  // Guests see a pre-payment disclosure step (informational, requires acknowledgment)
+  // instead of the full WaiverStep (which needs a JWT for the Edge Functions).
+  const showGuestVerifyStep =
+    effectiveWaiverRequired &&
+    enrolmentContext.mode === 'guest' &&
+    !user;
 
   const steps: EnrolmentStep[] = useMemo(
     () =>
@@ -186,17 +247,22 @@ export function EnrolmentStepper({
         'person',
         classPreselected ? undefined : 'class',
         skipNotificationStep ? undefined : 'notification',
+        showGuestVerifyStep ? 'verify_email' : undefined,
         showWaiverStep ? 'waiver' : undefined,
         'checkout',
         'confirmation',
       ].filter((s): s is EnrolmentStep => !!s),
-    [classPreselected, skipNotificationStep, showWaiverStep],
+    [classPreselected, skipNotificationStep, showGuestVerifyStep, showWaiverStep],
+    // showWaiverStep and showGuestVerifyStep derive from effectiveWaiverRequired which is
+    // synchronous — no async race condition. Steps are correct on first render once
+    // enrolmentContext.isLoading is false (already gated by the existing isLoading guard).
   );
 
   const stepTitles: Record<EnrolmentStep, string> = {
     person: t('enrolment.step_person') || 'Personal details',
     class: t('enrolment.step_class') || 'Select Class',
     notification: t('enrolment.step_notification') || 'Notifications',
+    verify_email: t('enrolment.step_verify_email') || 'Waiver Acknowledgment',
     waiver: t('enrolment.step_waiver') || 'Waiver',
     checkout: t('enrolment.step_checkout') || 'Payment',
     confirmation: t('enrolment.step_confirmation') || 'Confirmation',
@@ -297,9 +363,12 @@ export function EnrolmentStepper({
     steps,
   ]);
 
-  const handleClassNext = (newData?: Partial<Engagement>, className?: string) => {
+  const handleClassNext = (newData?: Partial<Engagement>, className?: string, waiverRequired?: boolean) => {
     if (newData) setEnrolmentData(prev => ({ ...prev, ...newData }));
     if (className) setSelectedClassName(className);
+    // For the class-selection flow, store the selected class's waiver_required flag so
+    // steps are updated synchronously before goToNextStep() re-renders.
+    if (waiverRequired !== undefined) setLocalWaiverRequired(waiverRequired);
     goToNextStep();
   };
 
@@ -329,6 +398,15 @@ export function EnrolmentStepper({
     if (!tenant || !enrolmentData.person_id || !enrolmentData.offering_id || !enrolmentData.season_id) {
       return;
     }
+
+    // Guard: if the waiver is required but not yet signed in this session,
+    // redirect back to the waiver step. Once waiverSignedInFlow is true the
+    // read-only view is shown and checkout proceeds normally.
+    if (showWaiverStep && !waiverSignedInFlow) {
+      setCurrentStep('waiver');
+      return;
+    }
+
     if (
       classPreselected &&
       personDateOfBirth &&
@@ -378,6 +456,8 @@ export function EnrolmentStepper({
                   age_override_reason: classAgeOverride.reason,
                 }
               : {}),
+            // Link this engagement to the specific waiver evidence signed in this flow
+            ...(waiverEvidenceId ? { waiver_evidence_id: waiverEvidenceId } : {}),
           },
           {
             onSuccess: async (created) => {
@@ -414,6 +494,8 @@ export function EnrolmentStepper({
     classPreselected,
     enrolmentContext.constraints,
     personDateOfBirth,
+    showWaiverStep,
+    waiverSignedInFlow,
     t,
   ]);
 
@@ -434,7 +516,7 @@ export function EnrolmentStepper({
         },
         checkoutEnrolmentId,
       );
-      if (enrolment.status === 'active') return enrolment;
+      if (enrolment.status === 'active' || enrolment.status === 'pending_waiver') return enrolment;
       if (attempts <= 0) return enrolment;
       await new Promise((r) => setTimeout(r, 1500));
       return poll(attempts - 1);
@@ -670,16 +752,95 @@ export function EnrolmentStepper({
           />
         )}
 
-        {currentStep === 'waiver' && waiverStatus?.template && (
-          <WaiverStep
-            personId={enrolmentData.person_id!}
-            template={waiverStatus.template}
-            offeringId={(enrolmentData.offering_id ?? initialClassId)!}
-            accountMemberId={enrolmentContext.guardian?.accountMemberId}
-            onComplete={handleNextStep}
+        {currentStep === 'verify_email' && (
+          <GuestVerifyStep
+            guestEmail={guestGuardianEmail}
+            onContinue={handleNextStep}
             onPrevious={handlePreviousStep}
             canGoBack={canGoBack}
           />
+        )}
+
+        {currentStep === 'waiver' && (
+          waiverSignedInFlow && waiverStatus?.template ? (
+            /* Read-only view — shown when user navigates Back from checkout */
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 rounded-md border border-green-200 bg-green-50 px-4 py-3">
+                <svg className="h-5 w-5 shrink-0 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                <div>
+                  <p className="text-sm font-medium text-green-800">
+                    {t('enrolment.waiver_already_signed', { defaultValue: 'Waiver signed' })}
+                  </p>
+                  {waiverSignedAt && (
+                    <p className="text-xs text-green-700">
+                      {new Date(waiverSignedAt).toLocaleString()}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div
+                role="region"
+                aria-label={t('enrolment.waiver_document_region', { defaultValue: 'Waiver document' })}
+                className="h-72 overflow-y-auto rounded-md border border-border bg-muted/30 p-4 text-sm leading-relaxed whitespace-pre-wrap text-muted-foreground"
+              >
+                {waiverStatus.template.content}
+              </div>
+
+              <div className="flex justify-between pt-2">
+                {canGoBack && (
+                  <Button variant="outline" onClick={handlePreviousStep}>
+                    {t('common.back')}
+                  </Button>
+                )}
+                <Button className="ml-auto" onClick={handleNextStep}>
+                  {t('enrolment.waiver_continue_to_payment', { defaultValue: 'Continue to Payment' })}
+                </Button>
+              </div>
+            </div>
+          ) : waiverStatus?.template ? (
+            <WaiverStep
+              personId={enrolmentData.person_id!}
+              template={waiverStatus.template}
+              offeringId={(enrolmentData.offering_id ?? initialClassId)!}
+              accountMemberId={enrolmentContext.guardian?.accountMemberId}
+              studentName={waiverPersonDisplay?.name ?? undefined}
+              className={selectedClassName || undefined}
+              termName={waiverTermDisplay?.name}
+              onComplete={(evidenceId) => {
+                setWaiverSignedInFlow(true);
+                setWaiverSignedAt(new Date().toISOString());
+                setWaiverEvidenceId(evidenceId);
+                handleNextStep();
+              }}
+              onPrevious={handlePreviousStep}
+              canGoBack={canGoBack}
+            />
+          ) : (
+            /* Template loading or not yet set up */
+            <div className="space-y-4">
+              {!waiverStatus || !waiverStatus.template ? (
+                <p className="text-sm text-muted-foreground" role="status">
+                  {t('enrolment.waiver_loading', { defaultValue: 'Loading waiver…' })}
+                </p>
+              ) : (
+                <p className="text-sm text-destructive" role="alert">
+                  {t('enrolment.waiver_no_template', {
+                    defaultValue: 'No active waiver template is set up. Please ask a studio administrator to add a waiver template before enrolling.',
+                  })}
+                </p>
+              )}
+              <div className="flex justify-between pt-2">
+                {canGoBack && (
+                  <Button variant="outline" onClick={handlePreviousStep}>
+                    {t('common.back')}
+                  </Button>
+                )}
+              </div>
+            </div>
+          )
         )}
 
         {currentStep === 'checkout' && enrolmentContext.mode === 'admin' && (
@@ -774,7 +935,7 @@ function StepClass({
   initialTermId?: string;
   allowAgeOverride?: boolean;
   onAgeOverrideChange?: (confirmed: boolean, reason: string) => void;
-  onNext: (data?: Partial<Engagement>, className?: string) => void;
+  onNext: (data?: Partial<Engagement>, className?: string, waiverRequired?: boolean) => void;
   onPrevious: () => void;
   canGoBack?: boolean;
 }) {
@@ -890,6 +1051,9 @@ function StepClass({
         season_id: selectedClass.season_id,
       },
       selectedClass.name,
+      // Pass waiver_required so the stepper can update steps synchronously.
+      // selectedClass comes from the public offerings RPC which includes waiver_required.
+      (selectedClass?.waiver_required ?? false) as boolean,
     );
   };
 
@@ -1370,16 +1534,31 @@ function StepConfirmation({
     );
   }
 
+  const isPendingWaiver = enrolment.status === 'pending_waiver';
+
   return (
     <div className="space-y-4 text-center">
-      <div className="text-5xl mb-4">✅</div>
+      <div className="text-5xl mb-4">{isPendingWaiver ? '⚠️' : '✅'}</div>
       <h3 className="text-lg font-semibold">
-        {t('pages.enrolment.confirmation_title')}
+        {isPendingWaiver
+          ? t('pages.enrolment.confirmation_title_pending_waiver')
+          : t('pages.enrolment.confirmation_title')}
       </h3>
       <p className="text-gray-600">
-        {t('pages.enrolment.confirmation_desc')}
+        {isPendingWaiver
+          ? t('pages.enrolment.confirmation_desc_pending_waiver')
+          : t('pages.enrolment.confirmation_desc')}
       </p>
-      {guardianEmail && (
+
+      {isPendingWaiver && guardianEmail && (
+        <div className="rounded-lg border-2 border-amber-400 bg-amber-50 p-4 text-sm text-amber-900 text-start space-y-2">
+          <p className="font-bold">{t('pages.enrolment.pending_waiver_heading')}</p>
+          <p>{t('pages.enrolment.pending_waiver_email_hint', { email: guardianEmail })}</p>
+          <p className="text-xs text-amber-800">{t('pages.enrolment.pending_waiver_legal_notice')}</p>
+        </div>
+      )}
+
+      {!isPendingWaiver && guardianEmail && (
         <p className="text-sm text-gray-600">{t('pages.enrolment.confirmation_portal_hint', { email: guardianEmail })}</p>
       )}
 

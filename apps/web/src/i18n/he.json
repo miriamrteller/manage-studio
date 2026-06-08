@@ -585,6 +585,23 @@
       "confirmation_title": "ההרשמה הושלמה בהצלחה!",
       "confirmation_desc": "ההרשמה שלך אושרה. נשלח אליך דוא\"ל אישור.",
       "confirmation_portal_hint": "נשלח קישור לפורטל המשפחה לכתובת {{email}}.",
+      "confirmation_title_pending_waiver": "התשלום התקבל — נדרש ויתור",
+      "confirmation_desc_pending_waiver": "תשלומך עובד, אך ההרשמה שלך עדיין אינה פעילה.",
+      "pending_waiver_heading": "פעולה נדרשת: חתמו על הויתור",
+      "pending_waiver_email_hint": "קישור לחתימה על הויתור נשלח לכתובת {{email}}. לחצו על הקישור כדי להשלים את ההרשמה.",
+      "pending_waiver_legal_notice": "מקומך שמור אך אינך רשאי/ת להשתתף בשיעור עד שהויתור ייחתם. שיעורים שנפספסו בזמן שהויתור ממתין אינם זכאים להחזר, זיכוי או שיעור פיצוי. אם הויתור לא ייחתם תוך 7 ימים, ההרשמה תבוטל אוטומטית וייבוצע החזר מלא.",
+      "guest_waiver_heading": "שיעור זה מחייב חתימת ויתור",
+      "guest_waiver_intro": "לפני השלמת התשלום, נא לקרוא ולאשר את הבא:",
+      "guest_waiver_point_inactive": "ההרשמה שלך לא תהיה פעילה עד שהויתור ייחתם.",
+      "guest_waiver_point_no_attend": "אינך רשאי/ת להשתתף בשיעור עד שהויתור ייחתם, ללא קשר לתשלום.",
+      "guest_waiver_point_no_refund": "שיעורים שנפספסו בזמן שהויתור ממתין אינם זכאים להחזר, זיכוי או שיעור פיצוי.",
+      "guest_waiver_point_auto_cancel": "אם הויתור לא ייחתם תוך 7 ימים, ההרשמה תבוטל אוטומטית וייבוצע החזר מלא.",
+      "guest_waiver_how_it_works_heading": "איך זה עובד",
+      "guest_waiver_how_it_works_body": "לאחר התשלום, קישור לחתימה על הויתור יישלח לכתובת {{email}}. התהליך אורך דקה.",
+      "guest_waiver_your_email": "כתובת הדוא\"ל שלך",
+      "guest_waiver_ack_label": "אני מאשר/ת את דרישת הויתור",
+      "guest_waiver_ack_text": "אני מבין/ה שההרשמה שלי אינה פעילה עד לחתימת הויתור, ושאינני זכאי/ת להחזר על שיעורים שנפספסו בתקופה זו.",
+      "guest_waiver_continue_btn": "המשך לתשלום",
       "guest_sign_in_prompt": "כבר רשומים? התחברו כדי לבחור את ילדיכם במקום להזין פרטים מחדש.",
       "guest_sign_in_action": "התחברות",
       "existing_email_prompt": "מצאנו חשבון עם כתובת דוא\"ל זו. התחברו כדי לבחור את ילדיכם ולהמשיך בהרשמה.",
@@ -703,11 +720,27 @@
       "export_csv": "ייצוא CSV",
       "no_templates": "אין תבניות הסכמה עדיין. צור אחת כדי להתחיל.",
       "no_evidence": "אין כתבי ויתור חתומים עדיין.",
+      "no_evidence_filtered": "לא נמצאו כתבי ויתור התואמים את הסינון.",
       "v1_limit_note": "כל השיעורים הפעילים חולקים תבנית כתב ויתור זו. הקצאת תבנית לכל שיעור בנפרד זמינה בגרסה הבאה.",
       "status_draft": "טיוטה",
       "status_approved": "מאושר",
       "status_active": "פעיל",
-      "status_archived": "בארכיון"
+      "status_archived": "בארכיון",
+      "filter_student": "תלמיד/ה",
+      "filter_student_placeholder": "חיפוש לפי שם…",
+      "filter_signer_email": "אימייל חותם",
+      "filter_email_placeholder": "חיפוש לפי אימייל…",
+      "filter_class": "שיעור",
+      "filter_term": "מועד/עונה",
+      "filter_all": "הכל",
+      "filter_clear": "נקה סינון",
+      "col_student": "תלמיד/ה",
+      "col_class": "שיעור",
+      "col_signed_by": "נחתם על ידי",
+      "col_email": "אימייל",
+      "col_role": "תפקיד",
+      "col_version": "גרסה",
+      "col_signed_at": "תאריך חתימה"
     }
   },
   "signup": {
@@ -791,6 +824,7 @@
     "step_person": "פרטים אישיים",
     "step_class": "בחירת שיעור",
     "step_notification": "התראות",
+    "step_verify_email": "אישור דרישת ויתור",
     "step_waiver": "כתב ויתור",
     "step_checkout": "תשלום",
     "step_confirmation": "אישור",
@@ -808,7 +842,13 @@
     "waiver_name_placeholder": "הקלד/י את שמך המלא",
     "waiver_submit": "חתימה והמשך",
     "waiver_token_expired": "אנא גלול שוב עד הסוף כדי לאשר שקראת את כתב הויתור.",
-    "waiver_view_error": "לא ניתן לאשר קריאה. אנא נסה/י לגלול שוב."
+    "waiver_view_error": "לא ניתן לאשר קריאה. אנא נסה/י לגלול שוב.",
+    "waiver_already_signed": "כתב הויתור נחתם",
+    "waiver_continue_to_payment": "המשך לתשלום",
+    "waiver_loading": "טוען כתב ויתור…",
+    "waiver_no_template": "לא הוגדר תבנית ויתור פעילה. אנא פנה/י למנהל הסטודיו.",
+    "waiver_context_student": "תלמיד/ה",
+    "waiver_context_class": "שיעור"
   },
   "settings": {
     "tax": {
@@ -912,6 +952,28 @@
       "back": "חזרה",
       "next": "הבא",
       "skip_integrations": "דלג לעת עתה"
+    },
+    "enrol_complete": {
+      "page_title": "חתמו על כתב הויתור",
+      "missing_id": "לא סופק מזהה הרשמה. בדקו את הקישור בדוא\"ל.",
+      "engagement_not_found": "לא מצאנו את ההרשמה שלכם. בדקו את הקישור בדוא\"ל או צרו קשר.",
+      "no_active_template": "לא נמצא תבנית ויתור פעילה. צרו קשר.",
+      "link_expired_heading": "הקישור שלך פג תוקף",
+      "link_expired_body": "קישורי קסם פגים לאחר שעה. הזינו את כתובת הדוא\"ל לקבלת קישור חדש.",
+      "your_email_label": "כתובת הדוא\"ל שלך",
+      "email_placeholder": "you@example.com",
+      "resend_btn": "שלח קישור חדש",
+      "resend_sent_heading": "בדקו את תיבת הדואר",
+      "resend_sent_body": "קישור חדש נשלח לדוא\"ל שלך. תוקפו שעה.",
+      "already_signed_heading": "הויתור כבר נחתם",
+      "already_signed_body": "כתב הויתור נחתם וההרשמה שלך פעילה.",
+      "cancelled_heading": "ההרשמה בוטלה",
+      "cancelled_body": "הרשמה זו בוטלה כיוון שהויתור לא נחתם בזמן. הוחזר החזר כספי. ניתן להירשם מחדש.",
+      "signed_heading": "הויתור נחתם — ברוכים הבאים!",
+      "signed_body": "כתב הויתור נחתם וההרשמה שלך פעילה. להתראות בשיעור!",
+      "go_to_dashboard": "עברו ללוח הבקרה",
+      "browse_classes": "עיון בשיעורים",
+      "sign_prompt": "אנא קראו בעיון את כתב הויתור וחתמו למטה כדי להפעיל את ההרשמה."
     }
   },
   "accessibility": {
@@ -922,6 +984,7 @@
     "loading_message": "טוען נתונים...",
     "confirm_action": "אנא אשר את הפעולה שלך",
     "close_dialog": "סגור דיאלוג",
-    "skip_to_content": "דלג לתוכן הראשי"
+    "skip_to_content": "דלג לתוכן הראשי",
+    "go_home": "חזרה לדף הבית"
   }
 }

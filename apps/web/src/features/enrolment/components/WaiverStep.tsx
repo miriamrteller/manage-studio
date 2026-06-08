@@ -13,9 +13,16 @@ interface WaiverStepProps {
   offeringId: string;
   /** account_members.id for the signing guardian (NOT accountId). Absent for self-signing adults. */
   accountMemberId?: string;
-  onComplete: () => void;
+  /** Called with the evidence_id returned by accept-waiver so the stepper can link it to the engagement. */
+  onComplete: (evidenceId: string) => void;
   onPrevious: () => void;
   canGoBack: boolean;
+  /** Display name of the student being enrolled (shown in the context header). */
+  studentName?: string;
+  /** Display name of the class being enrolled in. */
+  className?: string;
+  /** Display name of the term/season. */
+  termName?: string;
 }
 
 export function WaiverStep({
@@ -26,6 +33,9 @@ export function WaiverStep({
   onComplete,
   onPrevious,
   canGoBack,
+  studentName,
+  className,
+  termName,
 }: WaiverStepProps) {
   const { t } = useTranslation();
   const tenant = useTenant();
@@ -85,6 +95,7 @@ export function WaiverStep({
     const { data, error } = await supabase.functions.invoke('accept-waiver', {
       body: {
         person_id: personId,
+        offering_id: offeringId,
         consent_template_id: template.id,
         consent_version: template.version,
         typed_name: typedName.trim(),
@@ -104,7 +115,7 @@ export function WaiverStep({
       setSubmitError(error.message ?? t('common.error'));
     } else if (data?.evidence_id && tenant?.id) {
       void invalidateWaiverStatus(queryClient, tenant.id, personId, offeringId);
-      onComplete();
+      onComplete(data.evidence_id as string);
     }
 
     setIsSubmitting(false);
@@ -115,6 +126,24 @@ export function WaiverStep({
   return (
     <div className="space-y-4">
       <h2 className="text-xl font-semibold">{template.name}</h2>
+
+      {/* Context: who is signing, for whom, and for which class */}
+      {(studentName || className) && (
+        <dl className="rounded-md border border-border bg-muted/40 px-4 py-3 text-sm grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+          {studentName && (
+            <>
+              <dt className="font-medium text-muted-foreground">{t('enrolment.waiver_context_student', { defaultValue: 'Student' })}</dt>
+              <dd>{studentName}</dd>
+            </>
+          )}
+          {className && (
+            <>
+              <dt className="font-medium text-muted-foreground">{t('enrolment.waiver_context_class', { defaultValue: 'Class' })}</dt>
+              <dd>{className}{termName ? ` — ${termName}` : ''}</dd>
+            </>
+          )}
+        </dl>
+      )}
 
       {/* Scrollable waiver document region */}
       <div

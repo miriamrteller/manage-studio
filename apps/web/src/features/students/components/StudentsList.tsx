@@ -11,6 +11,7 @@ import {
 } from '@tanstack/react-table';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTenant } from '@/hooks/useTenant';
+import { useDebounce } from '@/hooks/useDebounce';
 import { useEntityLabels } from '@/hooks/useEntityLabels';
 import { useSortState } from '@/hooks/useSortState';
 import { TenantDB } from '@/lib/db';
@@ -60,6 +61,7 @@ export function StudentsList() {
   const [minAge, setMinAge] = useState<number | null>(null);
   const [maxAge, setMaxAge] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery);
   const [page, setPage] = useState(1);
   const [expanded, setExpanded] = useState<ExpandedState>({});
   const [slideOverPersonId, setSlideOverPersonId] = useState<string | null>(null);
@@ -87,7 +89,7 @@ export function StudentsList() {
     accountIds: selectedFamilies.map((f) => f.value),
     minAge,
     maxAge,
-    searchQuery,
+    searchQuery: debouncedSearchQuery,
     sortField,
     sortOrder,
   });

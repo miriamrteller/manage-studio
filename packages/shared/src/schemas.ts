@@ -122,6 +122,7 @@ export const PublicOfferingSchema = z.object({
   billing_mode: z.enum(['one_time', 'recurring']).default('one_time'),
   billing_interval: z.enum(['monthly', 'quarterly', 'annual']).nullable().optional(),
   current_engagements: z.number().nonnegative().optional(),
+  waiver_required: z.boolean().optional(),
 });
 
 export type PublicOffering = z.infer<typeof PublicOfferingSchema>;
@@ -375,6 +376,7 @@ export const EngagementSchema = z.object({
   cancelled_at: TimestampSchema.nullable().optional(),
   cancellation_reason: z.string().max(500).nullable().optional(),
   cancelled_by: UUIDSchema.nullable().optional(),
+  waiver_evidence_id: UUIDSchema.nullable().optional(),
   created_at: TimestampSchema,
   updated_at: TimestampSchema.optional(),
 });
@@ -602,6 +604,10 @@ export const WaiverEvidenceSchema = z.object({
   otp_verify_sid: z.string().nullable().optional(),
   status: z.enum(['signed', 'superseded', 'revoked']),
   created_at: TimestampSchema,
+  offering_id: UUIDSchema.nullable().optional(),
+  // Joined display fields — present only when fetched via listEvidence (admin)
+  people: z.object({ name: z.string() }).nullable().optional(),
+  offerings: z.object({ name: z.string() }).nullable().optional(),
 });
 
 export type WaiverEvidence = z.infer<typeof WaiverEvidenceSchema>;

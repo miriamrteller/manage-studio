@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 
@@ -8,6 +8,7 @@ interface ListSearchInputProps {
   isSearching?: boolean;
   placeholder?: string;
   id?: string;
+  debounceMs?: number;
 }
 
 export function ListSearchInput({
@@ -16,15 +17,19 @@ export function ListSearchInput({
   isSearching = false,
   placeholder,
   id = 'list-search',
+  debounceMs = 300,
 }: ListSearchInputProps) {
   const { t } = useTranslation();
   const [localValue, setLocalValue] = useState(value);
   const label = placeholder ?? t('common.search');
 
+  useEffect(() => {
+    const timer = setTimeout(() => onChange(localValue), debounceMs);
+    return () => clearTimeout(timer);
+  }, [localValue, debounceMs, onChange]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
-    setLocalValue(newValue);
-    onChange(newValue);
+    setLocalValue(e.target.value);
   };
 
   const handleClear = () => {
