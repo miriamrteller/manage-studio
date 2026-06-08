@@ -12,7 +12,7 @@ CREATE TABLE engagements (
   season_id             UUID        REFERENCES seasons(id),
   billing_account_id    UUID        REFERENCES billing_accounts(id),
   status                TEXT        NOT NULL DEFAULT 'pending_payment'
-                        CHECK (status IN ('pending_payment', 'active', 'admin_review', 'pending_offer', 'cancelled', 'withdrawn')),
+                        CHECK (status IN ('pending_payment', 'active', 'admin_review', 'pending_offer', 'cancelled', 'withdrawn', 'pending_waiver')),
   billing_status        TEXT        CHECK (billing_status IN ('current', 'past_due', 'suspended', 'cancelled')),
   stripe_subscription_id TEXT,
   stripe_customer_id    TEXT,

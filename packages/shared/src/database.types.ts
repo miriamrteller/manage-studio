@@ -860,6 +860,7 @@ export type Database = {
           stripe_product_id: string | null
           tenant_id: string
           updated_at: string
+          waiver_required: boolean
         }
         Insert: {
           billing_interval?: string | null
@@ -888,6 +889,7 @@ export type Database = {
           stripe_product_id?: string | null
           tenant_id: string
           updated_at?: string
+          waiver_required?: boolean
         }
         Update: {
           billing_interval?: string | null
@@ -916,6 +918,7 @@ export type Database = {
           stripe_product_id?: string | null
           tenant_id?: string
           updated_at?: string
+          waiver_required?: boolean
         }
         Relationships: [
           {
@@ -1552,6 +1555,7 @@ export type Database = {
           subdomain: string
           updated_at: string
           vat_rate: number | null
+          waiver_require_otp: boolean
         }
         Insert: {
           accent_color?: string
@@ -1575,6 +1579,7 @@ export type Database = {
           subdomain: string
           updated_at?: string
           vat_rate?: number | null
+          waiver_require_otp?: boolean
         }
         Update: {
           accent_color?: string
@@ -1598,6 +1603,7 @@ export type Database = {
           subdomain?: string
           updated_at?: string
           vat_rate?: number | null
+          waiver_require_otp?: boolean
         }
         Relationships: []
       }
@@ -1728,6 +1734,171 @@ export type Database = {
           },
           {
             foreignKeyName: "waitlist_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      waiver_events: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          event_type: string
+          id: string
+          metadata: Json
+          tenant_id: string
+          waiver_evidence_id: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          metadata?: Json
+          tenant_id: string
+          waiver_evidence_id?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          metadata?: Json
+          tenant_id?: string
+          waiver_evidence_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "waiver_events_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "waiver_events_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "waiver_events_waiver_evidence_id_fkey"
+            columns: ["waiver_evidence_id"]
+            isOneToOne: false
+            referencedRelation: "waiver_evidence"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      waiver_evidence: {
+        Row: {
+          accept_language: string | null
+          account_member_id: string | null
+          consent_template_id: string
+          consent_version: number
+          consent_version_hash: string
+          created_at: string
+          hmac_key_version: number
+          id: string
+          idempotency_key: string
+          ip_address: unknown
+          otp_verify_sid: string | null
+          pdf_sha256: string
+          pdf_storage_path: string
+          person_id: string
+          record_hmac: string
+          signature_method: string
+          signed_at: string
+          signed_by_email: string | null
+          signed_by_name: string
+          signed_by_role: string
+          status: string
+          tenant_id: string
+          user_agent: string | null
+          viewed_at: string | null
+          wording_snapshot: string
+        }
+        Insert: {
+          accept_language?: string | null
+          account_member_id?: string | null
+          consent_template_id: string
+          consent_version: number
+          consent_version_hash: string
+          created_at?: string
+          hmac_key_version?: number
+          id?: string
+          idempotency_key: string
+          ip_address?: unknown
+          otp_verify_sid?: string | null
+          pdf_sha256: string
+          pdf_storage_path: string
+          person_id: string
+          record_hmac: string
+          signature_method?: string
+          signed_at?: string
+          signed_by_email?: string | null
+          signed_by_name: string
+          signed_by_role?: string
+          status?: string
+          tenant_id: string
+          user_agent?: string | null
+          viewed_at?: string | null
+          wording_snapshot: string
+        }
+        Update: {
+          accept_language?: string | null
+          account_member_id?: string | null
+          consent_template_id?: string
+          consent_version?: number
+          consent_version_hash?: string
+          created_at?: string
+          hmac_key_version?: number
+          id?: string
+          idempotency_key?: string
+          ip_address?: unknown
+          otp_verify_sid?: string | null
+          pdf_sha256?: string
+          pdf_storage_path?: string
+          person_id?: string
+          record_hmac?: string
+          signature_method?: string
+          signed_at?: string
+          signed_by_email?: string | null
+          signed_by_name?: string
+          signed_by_role?: string
+          status?: string
+          tenant_id?: string
+          user_agent?: string | null
+          viewed_at?: string | null
+          wording_snapshot?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "waiver_evidence_account_member_id_fkey"
+            columns: ["account_member_id"]
+            isOneToOne: false
+            referencedRelation: "account_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "waiver_evidence_consent_template_id_fkey"
+            columns: ["consent_template_id"]
+            isOneToOne: false
+            referencedRelation: "consent_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "waiver_evidence_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "waiver_evidence_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -1925,6 +2096,35 @@ export type Database = {
       search_enrolment_students: {
         Args: { p_limit?: number; p_query: string }
         Returns: Json
+      }
+      sign_waiver: {
+        Args: {
+          p_accept_language: string
+          p_account_member_id: string
+          p_actor_id: string
+          p_consent_template_id: string
+          p_consent_version: number
+          p_consent_version_hash: string
+          p_hmac_key_version: number
+          p_id: string
+          p_idempotency_key: string
+          p_ip_address: unknown
+          p_otp_verify_sid: string
+          p_pdf_sha256: string
+          p_pdf_storage_path: string
+          p_person_id: string
+          p_record_hmac: string
+          p_signature_method: string
+          p_signed_at: string
+          p_signed_by_email: string
+          p_signed_by_name: string
+          p_signed_by_role: string
+          p_tenant_id: string
+          p_user_agent: string
+          p_viewed_at: string
+          p_wording_snapshot: string
+        }
+        Returns: string
       }
     }
     Enums: {

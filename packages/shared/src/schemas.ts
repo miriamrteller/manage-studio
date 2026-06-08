@@ -290,6 +290,7 @@ export const OfferingSchema = z.object({
   delivery_mode: z.enum(['scheduled', 'intangible']).default('scheduled'),
   billing_interval: z.enum(['monthly', 'quarterly', 'annual']).nullable().optional(),
   status: z.enum(['active', 'cancelled', 'full']).default('active'),
+  waiver_required: z.boolean().default(true),
   created_at: TimestampSchema,
 }).refine((data) => {
   if (!data.start_time || !data.end_time) return true;
@@ -368,7 +369,7 @@ export const EngagementSchema = z.object({
   age_review_note: z.string().max(1000).nullable().optional(),
   age_at_season_start: z.number().int().nonnegative().nullable().optional(),
   status: z
-    .enum(['pending_payment', 'active', 'admin_review', 'pending_offer', 'cancelled', 'withdrawn'])
+    .enum(['pending_payment', 'active', 'admin_review', 'pending_offer', 'cancelled', 'withdrawn', 'pending_waiver'])
     .default('pending_payment'),
   payment_received_at: TimestampSchema.nullable().optional(),
   cancelled_at: TimestampSchema.nullable().optional(),
@@ -531,3 +532,76 @@ export const ContactPreferencesUpdateSchema = z.object({
 });
 
 export type ContactPreferencesUpdate = z.infer<typeof ContactPreferencesUpdateSchema>;
+
+// =============================================================================
+// Waiver — consent templates, evidence, and request/response schemas
+// =============================================================================
+
+export const ConsentTemplateSchema = z.object({
+  id: UUIDSchema,
+  tenant_id: UUIDSchema,
+  name: z.string().min(1).max(200),
+  content: z.string().min(1),
+  version: z.number().int().positive(),
+  version_hash: z.string().length(64),
+  status: z.enum(['draft', 'approved', 'active', 'archived']),
+  created_at: TimestampSchema,
+  updated_at: TimestampSchema,
+});
+
+export type ConsentTemplate = z.infer<typeof ConsentTemplateSchema>;
+
+export const WaiverViewedRequestSchema = z.object({
+  person_id: UUIDSchema,
+  consent_template_id: UUIDSchema,
+});
+
+export const WaiverViewedResponseSchema = z.object({
+  view_token: z.string().min(1),
+  viewed_at_ts: z.number().int(),
+  expires_at: z.string(),
+});
+
+export const WaiverAcceptRequestSchema = z.object({
+  person_id: UUIDSchema,
+  consent_template_id: UUIDSchema,
+  consent_version: z.number().int().positive(),
+  typed_name: z.string().min(2).max(200),
+  idempotency_key: UUIDSchema,
+  view_token: z.string().min(1),
+  viewed_at_ts: z.number().int(),
+  account_member_id: UUIDSchema.optional(),
+  otp_verify_sid: z.string().optional(),
+});
+
+export type WaiverAcceptRequest = z.infer<typeof WaiverAcceptRequestSchema>;
+
+export const WaiverEvidenceSchema = z.object({
+  id: UUIDSchema,
+  tenant_id: UUIDSchema,
+  person_id: UUIDSchema,
+  account_member_id: UUIDSchema.nullable().optional(),
+  consent_template_id: UUIDSchema,
+  consent_version: z.number().int().positive(),
+  consent_version_hash: z.string().length(64),
+  wording_snapshot: z.string(),
+  pdf_storage_path: z.string(),
+  pdf_sha256: z.string().length(64),
+  record_hmac: z.string().length(64),
+  hmac_key_version: z.number().int().positive(),
+  viewed_at: TimestampSchema.nullable().optional(),
+  signed_by_name: z.string(),
+  signed_by_email: z.string().nullable().optional(),
+  signed_by_role: z.enum(['guardian', 'self', 'admin_attestation']),
+  signature_method: z.enum(['typed_name_checkbox', 'admin_upload']),
+  signed_at: TimestampSchema,
+  ip_address: z.string().nullable().optional(),
+  user_agent: z.string().nullable().optional(),
+  accept_language: z.string().nullable().optional(),
+  idempotency_key: z.string(),
+  otp_verify_sid: z.string().nullable().optional(),
+  status: z.enum(['signed', 'superseded', 'revoked']),
+  created_at: TimestampSchema,
+});
+
+export type WaiverEvidence = z.infer<typeof WaiverEvidenceSchema>;

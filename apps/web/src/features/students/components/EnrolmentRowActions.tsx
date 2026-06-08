@@ -14,6 +14,7 @@ export const ENROLMENT_STATUS_COLORS: Record<string, { bg: string; text: string 
   waitlisted: { bg: 'var(--color-info-light)', text: 'var(--color-info)' },
   cancelled: { bg: 'var(--color-neutral-100)', text: 'var(--color-text-secondary)' },
   withdrawn: { bg: 'var(--color-neutral-100)', text: 'var(--color-text-secondary)' },
+  pending_waiver: { bg: 'var(--color-warning-light)', text: 'var(--color-warning)' },
 };
 
 export function canShowCancelEnrolment(status: string): boolean {

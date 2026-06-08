@@ -47,8 +47,10 @@ import { formatCurrency } from '@shared/format';
 import type { EnrollmentIntent } from '@/lib/enrollment-intent';
 import { persistEnrollmentIntent } from '@/lib/enrollment-intent';
 import type { Engagement } from '@shared/schemas';
+import { useWaiverStatus } from '../hooks/useWaiverStatus';
+import { WaiverStep } from './WaiverStep';
 
-export type EnrolmentStep = 'person' | 'class' | 'notification' | 'checkout' | 'confirmation';
+export type EnrolmentStep = 'person' | 'class' | 'notification' | 'waiver' | 'checkout' | 'confirmation';
 
 export interface EnrolmentStepperProps {
   /**
@@ -168,22 +170,34 @@ export function EnrolmentStepper({
 
   const classPreselected = Boolean(initialClassId && initialTermId);
 
+  const { data: waiverStatus } = useWaiverStatus({
+    personId: enrolmentData.person_id,
+    offeringId: enrolmentData.offering_id ?? initialClassId,
+  });
+  // Admin mode bypass: admin enrolling a student shouldn't be forced to sign in the UI.
+  // Server gates (stripe-webhook / adminEnrolmentService) set pending_waiver if needed.
+  const showWaiverStep =
+    !!(waiverStatus?.required && !waiverStatus?.signed) &&
+    enrolmentContext.mode !== 'admin';
+
   const steps: EnrolmentStep[] = useMemo(
     () =>
       [
         'person',
         classPreselected ? undefined : 'class',
         skipNotificationStep ? undefined : 'notification',
+        showWaiverStep ? 'waiver' : undefined,
         'checkout',
         'confirmation',
       ].filter((s): s is EnrolmentStep => !!s),
-    [classPreselected, skipNotificationStep],
+    [classPreselected, skipNotificationStep, showWaiverStep],
   );
 
   const stepTitles: Record<EnrolmentStep, string> = {
     person: t('enrolment.step_person') || 'Personal details',
     class: t('enrolment.step_class') || 'Select Class',
     notification: t('enrolment.step_notification') || 'Notifications',
+    waiver: t('enrolment.step_waiver') || 'Waiver',
     checkout: t('enrolment.step_checkout') || 'Payment',
     confirmation: t('enrolment.step_confirmation') || 'Confirmation',
   };
@@ -652,6 +666,18 @@ export function EnrolmentStepper({
             onNext={handleNextStep}
             onPrevious={handlePreviousStep}
             onSkip={() => handleNextStep()}
+            canGoBack={canGoBack}
+          />
+        )}
+
+        {currentStep === 'waiver' && waiverStatus?.template && (
+          <WaiverStep
+            personId={enrolmentData.person_id!}
+            template={waiverStatus.template}
+            offeringId={(enrolmentData.offering_id ?? initialClassId)!}
+            accountMemberId={enrolmentContext.guardian?.accountMemberId}
+            onComplete={handleNextStep}
+            onPrevious={handlePreviousStep}
             canGoBack={canGoBack}
           />
         )}

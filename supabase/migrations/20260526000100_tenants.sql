@@ -27,6 +27,7 @@ CREATE TABLE tenants (
   stripe_webhook_secret_enc     BYTEA,
   stripe_account_id             TEXT,
   stripe_credentials_updated_at TIMESTAMPTZ,
+  waiver_require_otp            BOOLEAN     NOT NULL DEFAULT false,
   created_at                    TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at                    TIMESTAMPTZ NOT NULL DEFAULT now()
 );

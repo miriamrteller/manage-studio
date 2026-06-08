@@ -4,6 +4,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { EnrolmentPaymentForm } from '@/features/enrolment/components/EnrolmentPaymentForm';
+import { WaiverStep } from '@/features/enrolment/components/WaiverStep';
+import { useWaiverStatus } from '@/features/enrolment/hooks/useWaiverStatus';
 import { EnrolmentService } from '@/features/enrolment/service';
 import { computeClassTotal } from '@/features/enrolment/lib/computeClassTotal';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
@@ -59,6 +61,14 @@ export default function EnrolPayPage() {
     enabled: !!tenant?.id && !!engagementId && !!user,
   });
 
+  // Hooks must be called unconditionally before any early returns
+  // useWaiverStatus skips automatically when user is null (guest) via its enabled guard
+  const waiverStatus = useWaiverStatus({
+    personId: detailQuery.data?.enrolment.person_id,
+    offeringId: detailQuery.data?.classRow?.id,
+  });
+  const [waiverComplete, setWaiverComplete] = useState(false);
+
   if (authLoading || !user) {
     return (
       <div className="p-8 text-center" role="status">
@@ -92,6 +102,9 @@ export default function EnrolPayPage() {
 
   const { enrolment, classRow, alreadyPaid } = detailQuery.data;
 
+  const showWaiverFirst =
+    !!(waiverStatus.data?.required && !waiverStatus.data?.signed) && !waiverComplete;
+
   if (alreadyPaid || paid) {
     return (
       <div className="max-w-lg mx-auto p-6 space-y-4 text-center">
@@ -109,6 +122,21 @@ export default function EnrolPayPage() {
   }
 
   const pricing = computeClassTotal(classRow, tenant);
+
+  if (showWaiverFirst && waiverStatus.data?.template) {
+    return (
+      <div className="max-w-lg mx-auto space-y-6">
+        <WaiverStep
+          personId={enrolment.person_id}
+          template={waiverStatus.data.template}
+          offeringId={classRow.id}
+          onComplete={() => setWaiverComplete(true)}
+          onPrevious={() => navigate('/classes')}
+          canGoBack
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-lg mx-auto space-y-6">

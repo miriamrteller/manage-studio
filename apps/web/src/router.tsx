@@ -19,6 +19,7 @@ import PlatformOnboardPage from "./pages/PlatformOnboardPage";
 import LevelsPage from "./pages/LevelsPage";
 import TermsPage from "./pages/TermsPage";
 import AdminClassesPage from "./pages/AdminClassesPage";
+import WaiversPage from "./pages/WaiversPage";
 import PortalDashboard from "./pages/PortalDashboard";
 import EnrolPage from "./pages/EnrolPage";
 import EnrolPayPage from "./pages/EnrolPayPage";
@@ -72,6 +73,7 @@ const router = createBrowserRouter([
       { path: "admin/setup/settings", element: <AdminRoute><TenantSettingsPage /></AdminRoute> },
       { path: "admin/setup/tax", element: <AdminRoute><TaxSettingsPage /></AdminRoute> },
       { path: "admin/setup/stripe", element: <AdminRoute><StripeSettingsPage /></AdminRoute> },
+      { path: "admin/setup/waivers", element: <AdminRoute><WaiversPage /></AdminRoute> },
       { path: "platform/onboard", element: <SuperAdminRoute><PlatformOnboardPage /></SuperAdminRoute> },
 
       // LEGACY ROUTES (Phase 1B) — kept for backward compatibility

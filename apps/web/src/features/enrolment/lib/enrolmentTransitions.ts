@@ -34,6 +34,7 @@ export function canCancelPrePaymentEnrolment(input: {
     case 'active':
     case 'cancelled':
     case 'withdrawn':
+    case 'pending_waiver':
       return { allowed: false, code: 'invalid_status' };
     default: {
       const _exhaustive: never = input.status;

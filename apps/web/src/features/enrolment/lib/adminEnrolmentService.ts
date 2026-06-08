@@ -11,11 +11,11 @@ export function buildPaymentLink(engagementId: string): string {
 }
 
 export class AdminEnrolmentService {
-  /** Mark enrolment active and record an offline payment (admin in-person). */
+  /** Mark enrolment active (or pending_waiver) and record an offline payment (admin in-person). */
   static async recordOfflinePayment(
     tenant: Tenant,
     engagementId: string,
-    classRow: Pick<Offering, 'price_minor' | 'currency'>,
+    classRow: Pick<Offering, 'price_minor' | 'currency' | 'waiver_required'>,
     personId: string,
     accountId: string | null,
     paymentMethod: OfflinePaymentMethod,
@@ -26,8 +26,27 @@ export class AdminEnrolmentService {
     );
     const paidAt = new Date().toISOString();
 
+    // Waiver gate — same logic as stripe-webhook
+    let targetStatus: 'active' | 'pending_waiver' = 'active';
+    if (classRow.waiver_required) {
+      const { data: waiverTemplate } = await TenantDB.selectFor('consent_templates', tenant)
+        .select('id, version')
+        .eq('status', 'active')
+        .maybeSingle();
+      if (waiverTemplate) {
+        const { data: evidence } = await TenantDB.selectFor('waiver_evidence', tenant)
+          .select('id')
+          .eq('person_id', personId)
+          .eq('consent_template_id', waiverTemplate.id)
+          .eq('consent_version', waiverTemplate.version)
+          .eq('status', 'signed')
+          .maybeSingle();
+        if (!evidence) targetStatus = 'pending_waiver';
+      }
+    }
+
     const enrolment = await EnrolmentService.update(tenant, engagementId, {
-      status: 'active',
+      status: targetStatus,
       payment_received_at: paidAt,
     });
 

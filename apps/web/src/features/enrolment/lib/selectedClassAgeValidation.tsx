@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import {
   formatAgeRange,
   isPersonEligibleForSelectedClass,
@@ -74,7 +75,7 @@ export function SelectedClassAgeAlert({
 export function getSelectedClassAgeError(
   constraints: EnrolmentConstraints,
   dateOfBirth: string | null | undefined,
-  t: (key: string, opts?: Record<string, unknown>) => string,
+  t: TFunction,
 ): string | null {
   if (!dateOfBirth) return null;
 

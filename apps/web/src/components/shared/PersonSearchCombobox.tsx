@@ -1,5 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { usePersonSearch } from '@/hooks/usePersonSearch';
 import { formatPersonSearchAgeLine } from '@/lib/personAge';
 import type { PersonSearchResult } from '@/features/people/types';
@@ -23,7 +24,7 @@ export interface PersonSearchComboboxProps {
   renderSubtitle?: (result: PersonSearchResult) => ReactNode;
 }
 
-function defaultSubtitle(result: PersonSearchResult, t: (key: string, opts?: Record<string, unknown>) => string): string {
+function defaultSubtitle(result: PersonSearchResult, t: TFunction): string {
   const age = formatPersonSearchAgeLine(result.person.date_of_birth, t);
   return [
     age,

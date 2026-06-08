@@ -123,10 +123,44 @@ serve(async (req) => {
         description: `Engagement ${engagementId}`,
       });
 
+      // Waiver gate: if the offering requires a waiver and no signed evidence exists,
+      // set the engagement to pending_waiver instead of active.
+      let engagementStatus = "active";
+      const { data: offeringRow } = await service
+        .from("offerings")
+        .select("waiver_required")
+        .eq("id", engagement.offering_id)
+        .single();
+      if (offeringRow?.waiver_required) {
+        const { data: waiverTemplate } = await service
+          .from("consent_templates")
+          .select("id, version")
+          .eq("tenant_id", tenantId)
+          .eq("status", "active")
+          .maybeSingle();
+        if (waiverTemplate) {
+          const { data: evidence } = await service
+            .from("waiver_evidence")
+            .select("id")
+            .eq("person_id", engagement.person_id)
+            .eq("consent_template_id", waiverTemplate.id)
+            .eq("consent_version", waiverTemplate.version)
+            .eq("status", "signed")
+            .maybeSingle();
+          if (!evidence) {
+            engagementStatus = "pending_waiver";
+            console.warn(
+              "[stripe-webhook] Engagement set to pending_waiver — waiver not yet signed",
+              { engagementId, personId: engagement.person_id },
+            );
+          }
+        }
+      }
+
       await service
         .from("engagements")
         .update({
-          status: "active",
+          status: engagementStatus,
           payment_received_at: new Date().toISOString(),
         })
         .eq("id", engagementId);

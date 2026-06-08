@@ -121,6 +121,7 @@ export function WaiverStep({
         role="region"
         aria-label={t('enrolment.waiver_document_region', { defaultValue: 'Waiver document' })}
         className="relative h-72 overflow-y-auto rounded-md border border-border bg-muted/30 p-4 text-sm leading-relaxed whitespace-pre-wrap focus:outline-none"
+        // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- scrollable region requires tabIndex for keyboard navigation per WAI-ARIA best practices
         tabIndex={0}
       >
         {template.content}

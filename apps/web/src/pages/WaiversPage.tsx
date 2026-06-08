@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { useWaiverTemplates } from '@/features/waivers/hooks/useWaiverTemplates';
@@ -42,7 +42,7 @@ function DraftForm({ onCreated }: { onCreated: () => void }) {
   const [content, setContent] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!name.trim() || !content.trim()) return;
     setError(null);

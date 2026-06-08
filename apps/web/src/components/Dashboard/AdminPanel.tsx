@@ -87,6 +87,26 @@ export function AdminPanel() {
           </div>
         </div>
 
+        {/* Waivers Card */}
+        <div className="card border border-gray-200 hover:border-primary hover:shadow-md transition-all">
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900">
+              {t('pages.waivers.title')}
+            </h3>
+            <p className="text-sm text-gray-600">
+              {t('pages.waivers.description')}
+            </p>
+            <Button
+              variant="primary"
+              fullWidth
+              onClick={() => navigate('/admin/setup/waivers')}
+              aria-label={t('pages.waivers.title')}
+            >
+              {t('common.manage')} →
+            </Button>
+          </div>
+        </div>
+
         {/* Billing Accounts Card */}
         <div className="card border border-gray-200 hover:border-primary hover:shadow-md transition-all">
           <div className="space-y-4">

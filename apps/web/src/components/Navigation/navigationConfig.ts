@@ -105,6 +105,13 @@ export const navigationConfig: NavItem[] = [
     indent: true,
   },
   {
+    path: '/admin/setup/waivers',
+    labelKey: 'nav.waivers',
+    requiredRoles: ['tenant_admin'],
+    sectionKey: 'setup',
+    indent: true,
+  },
+  {
     path: '/dashboard/portal',
     labelKey: 'nav.my_account',
     requiredRoles: [...PARENT_ROLE_NAMES],

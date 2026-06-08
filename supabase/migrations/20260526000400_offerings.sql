@@ -67,6 +67,7 @@ CREATE TABLE offerings (
   setup_fee_minor   INT         NOT NULL DEFAULT 0,
   stripe_product_id TEXT,
   stripe_price_id   TEXT,
+  waiver_required   BOOLEAN     NOT NULL DEFAULT true,
   status            TEXT        NOT NULL DEFAULT 'active'
                     CHECK (status IN ('active', 'cancelled', 'full')),
   created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
