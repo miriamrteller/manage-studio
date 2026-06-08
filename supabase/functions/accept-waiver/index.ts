@@ -62,14 +62,8 @@ Deno.serve(async (req) => {
       signedByEmail = (profile.email as string) ?? null;
       actorId = user.id;
 
-      // Determine signer role (self vs guardian) for authenticated users
-      const { data: signerProfile } = await service
-        .from("user_profiles")
-        .select("person_id")
-        .eq("id", user.id)
-        .single();
-      // body.person_id is not parsed yet here — role resolved below after body parse
-      signedByRole = "__pending__"; // resolved after body is parsed
+      // Role resolved below after body is parsed (need person_id from body)
+      signedByRole = "__pending__";
     }
 
     const body = await req.json().catch(() => null);
@@ -212,7 +206,7 @@ Deno.serve(async (req) => {
       p_accept_language: acceptLang,
       p_idempotency_key: body.idempotency_key,
       p_otp_verify_sid: body.otp_verify_sid ?? null,
-      p_actor_id: user.id,
+      p_actor_id: actorId,
       p_offering_id: offeringId,
     });
 

@@ -140,6 +140,10 @@ export async function establishSessionFromAuthCallback(
   if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (error) {
+      // Supabase JS may have already auto-exchanged this code on page load (race
+      // condition with its internal PKCE detection). Re-check before surfacing error.
+      const { data: raceCheck } = await supabase.auth.getSession();
+      if (raceCheck.session) return { ok: true };
       return { ok: false, message: error.message };
     }
     return { ok: true };
@@ -153,6 +157,8 @@ export async function establishSessionFromAuthCallback(
       type: otpType,
     });
     if (error) {
+      const { data: raceCheck } = await supabase.auth.getSession();
+      if (raceCheck.session) return { ok: true };
       return { ok: false, message: error.message };
     }
     return { ok: true };
@@ -166,6 +172,8 @@ export async function establishSessionFromAuthCallback(
       refresh_token: refreshToken,
     });
     if (error) {
+      const { data: raceCheck } = await supabase.auth.getSession();
+      if (raceCheck.session) return { ok: true };
       return { ok: false, message: error.message };
     }
     return { ok: true };

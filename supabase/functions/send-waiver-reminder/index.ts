@@ -25,6 +25,7 @@ import {
   sendRenderedEmail,
   EMAIL_TEMPLATE_NAMES,
 } from "../_shared/resend-send.ts";
+import { signWaiverToken } from "../_shared/waiver-token.ts";
 
 const CRON_SECRET = Deno.env.get("CRON_SECRET") ?? "";
 const APP_URL = Deno.env.get("APP_URL") ?? "";
@@ -215,14 +216,14 @@ Deno.serve(async (req) => {
       if (msUntilDeadline <= MS_48H && !eng.waiver_48h_reminded_at) {
         if (personEmail && fromEmail && APP_URL) {
           try {
-            const { data: linkData } = await service.auth.admin.generateLink({
-              type: "magiclink",
-              email: personEmail,
-              options: {
-                redirectTo: `${APP_URL}/auth/callback?pendingWaiverEngagementId=${encodeURIComponent(eng.id)}`,
-              },
+            const expireAt = Math.floor(deadline.getTime() / 1000);
+            const wt = await signWaiverToken({
+              eid: eng.id,
+              tid: eng.tenant_id,
+              em: personEmail,
+              exp: expireAt,
             });
-            const signUrl = linkData?.properties?.action_link ?? `${APP_URL}/enrol/complete?engagementId=${eng.id}`;
+            const signUrl = `${APP_URL}/enrol/complete?engagementId=${encodeURIComponent(eng.id)}&wt=${wt}`;
 
             await sendRenderedEmail({
               to: personEmail,
@@ -263,14 +264,14 @@ Deno.serve(async (req) => {
       if (msUntilDeadline <= MS_5D && !eng.waiver_5d_reminded_at) {
         if (personEmail && fromEmail && APP_URL) {
           try {
-            const { data: linkData } = await service.auth.admin.generateLink({
-              type: "magiclink",
-              email: personEmail,
-              options: {
-                redirectTo: `${APP_URL}/auth/callback?pendingWaiverEngagementId=${encodeURIComponent(eng.id)}`,
-              },
+            const expireAt = Math.floor(deadline.getTime() / 1000);
+            const wt = await signWaiverToken({
+              eid: eng.id,
+              tid: eng.tenant_id,
+              em: personEmail,
+              exp: expireAt,
             });
-            const signUrl = linkData?.properties?.action_link ?? `${APP_URL}/enrol/complete?engagementId=${eng.id}`;
+            const signUrl = `${APP_URL}/enrol/complete?engagementId=${encodeURIComponent(eng.id)}&wt=${wt}`;
 
             await sendRenderedEmail({
               to: personEmail,

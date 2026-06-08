@@ -13,6 +13,11 @@ interface WaiverStepProps {
   offeringId: string;
   /** account_members.id for the signing guardian (NOT accountId). Absent for self-signing adults. */
   accountMemberId?: string;
+  /**
+   * When provided, Edge Function calls use `Authorization: WaiverToken <token>`
+   * instead of the current Supabase session. Used for the guest email-link flow.
+   */
+  waiverToken?: string;
   /** Called with the evidence_id returned by accept-waiver so the stepper can link it to the engagement. */
   onComplete: (evidenceId: string) => void;
   onPrevious: () => void;
@@ -30,6 +35,7 @@ export function WaiverStep({
   template,
   offeringId,
   accountMemberId,
+  waiverToken,
   onComplete,
   onPrevious,
   canGoBack,
@@ -75,8 +81,10 @@ export function WaiverStep({
 
   async function callWaiverViewed() {
     setViewError(null);
+    const authOverride = waiverToken ? { Authorization: `WaiverToken ${waiverToken}` } : undefined;
     const { data, error } = await supabase.functions.invoke('waiver-viewed', {
       body: { person_id: personId, consent_template_id: template.id },
+      headers: authOverride,
     });
     if (error || !data?.view_token) {
       setViewError(t('enrolment.waiver_view_error', { defaultValue: 'Could not confirm reading. Please try scrolling again.' }));

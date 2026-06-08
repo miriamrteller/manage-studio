@@ -5,29 +5,46 @@ import {
   getHmacKey,
   hmacSha256Base64url,
 } from "../_shared/hmac.ts";
+import {
+  extractWaiverToken,
+  verifyWaiverToken,
+} from "../_shared/waiver-token.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
 
   try {
-    const jwt = req.headers.get("authorization")?.replace("Bearer ", "");
-    if (!jwt) return jsonResponse({ error: "Missing authorization" }, 401);
-
+    const authHeader = req.headers.get("authorization") ?? "";
     const service = createServiceClient();
 
-    const { data: { user }, error: authError } = await service.auth.getUser(jwt);
-    if (authError || !user) return jsonResponse({ error: "Unauthorized" }, 401);
+    // Two auth paths: Supabase session (authenticated users) or WaiverToken (guests)
+    let tenantId: string;
+    let actorId: string | null = null;
 
-    // Derive tenant_id from user_profiles — NOT via get_my_tenant_id()
-    // (get_my_tenant_id() uses auth.uid() which returns NULL with a service-role client)
-    const { data: profile } = await service
-      .from("user_profiles")
-      .select("tenant_id")
-      .eq("id", user.id)
-      .single();
-    if (!profile?.tenant_id) return jsonResponse({ error: "User has no tenant" }, 403);
-    const tenantId = profile.tenant_id as string;
+    const rawWaiverToken = extractWaiverToken(authHeader);
+    if (rawWaiverToken) {
+      // Guest path — validate the waiver link token
+      const wtp = await verifyWaiverToken(rawWaiverToken);
+      if (!wtp) return jsonResponse({ error: "WaiverToken invalid or expired" }, 401);
+      tenantId = wtp.tid;
+    } else {
+      // Authenticated path — validate Supabase session
+      const jwt = authHeader.replace("Bearer ", "");
+      if (!jwt) return jsonResponse({ error: "Missing authorization" }, 401);
+
+      const { data: { user }, error: authError } = await service.auth.getUser(jwt);
+      if (authError || !user) return jsonResponse({ error: "Unauthorized" }, 401);
+
+      const { data: profile } = await service
+        .from("user_profiles")
+        .select("tenant_id")
+        .eq("id", user.id)
+        .single();
+      if (!profile?.tenant_id) return jsonResponse({ error: "User has no tenant" }, 403);
+      tenantId = profile.tenant_id as string;
+      actorId = user.id;
+    }
 
     const body = await req.json().catch(() => null);
     if (!body?.person_id || !body?.consent_template_id) {
@@ -46,12 +63,12 @@ Deno.serve(async (req) => {
 
     const viewed_at_ts = Math.floor(Date.now() / 1000);
 
-    // Append-only event record for audit chain
+    // Append-only event record for audit chain (actor_id is null for guests)
     await service.from("waiver_events").insert({
       tenant_id: tenantId,
       event_type: "viewed",
       waiver_evidence_id: null,
-      actor_id: user.id,
+      actor_id: actorId,
       metadata: {
         person_id: body.person_id,
         consent_template_id: body.consent_template_id,

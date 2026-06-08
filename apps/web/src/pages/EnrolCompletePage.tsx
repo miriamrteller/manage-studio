@@ -13,28 +13,29 @@ import { linkAuthUserToPerson } from '@/features/enrolment/linkAuthUser';
 type PageState =
   | { kind: 'loading' }
   | { kind: 'link_expired'; email: string }
-  | { kind: 'ready'; personId: string; offeringId: string; template: ConsentTemplate }
+  | { kind: 'ready'; personId: string; offeringId: string; template: ConsentTemplate; waiverToken: string | null }
   | { kind: 'already_signed' }
   | { kind: 'cancelled' }
   | { kind: 'signed' }
   | { kind: 'error'; message: string };
 
 /**
- * EnrolCompletePage — /enrol/complete?engagementId=...
+ * EnrolCompletePage — /enrol/complete?engagementId=...&wt=<token>
  *
- * Reached by clicking the magic link in the post-payment confirmation email.
- * Handles:
- *  - Session verification (redirects to re-send email form if link expired)
- *  - Account linking for brand-new guest users (no user_profiles row yet)
- *  - Loading the pending_waiver engagement + active consent template
- *  - Rendering WaiverStep for the guest to sign
- *  - Post-sign success screen
+ * Two auth paths:
+ *  1. Guest token path (wt param present): calls get-waiver-engagement Edge
+ *     Function with WaiverToken auth — no Supabase session required.
+ *  2. Session path (no wt, but active session): uses the existing RPC path for
+ *     users who enrolled while already logged in.
+ *
+ * If neither is present the expired-link UI is shown with a resend form.
  */
 export default function EnrolCompletePage() {
   const { t } = useTranslation();
   const tenant = useTenant();
   const [searchParams] = useSearchParams();
   const engagementId = searchParams.get('engagementId') ?? '';
+  const waiverToken = searchParams.get('wt') ?? null;
 
   const [state, setState] = useState<PageState>({ kind: 'loading' });
   const [resendEmail, setResendEmail] = useState('');
@@ -47,7 +48,47 @@ export default function EnrolCompletePage() {
     hasInitialized.current = true;
 
     const init = async () => {
-      // 1. Verify auth session — magic link may have expired
+      // --- Path 1: guest waiver token (no session required) ---
+      if (waiverToken) {
+        try {
+          const fnUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-waiver-engagement`;
+          const resp = await fetch(fnUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `WaiverToken ${waiverToken}`,
+              apikey: import.meta.env.VITE_SUPABASE_ANON_KEY as string,
+            },
+            body: JSON.stringify({}),
+          });
+          const data = await resp.json() as Record<string, unknown>;
+
+          if (!resp.ok) {
+            if (resp.status === 401) {
+              setState({ kind: 'link_expired', email: '' });
+            } else {
+              setState({ kind: 'error', message: (data.error as string) ?? t('common.error') });
+            }
+            return;
+          }
+
+          if (data.alreadySigned) { setState({ kind: 'already_signed' }); return; }
+          if (data.cancelled)     { setState({ kind: 'cancelled' });      return; }
+
+          setState({
+            kind: 'ready',
+            personId: data.personId as string,
+            offeringId: data.offeringId as string,
+            template: ConsentTemplateSchema.parse(data.template),
+            waiverToken,
+          });
+        } catch {
+          setState({ kind: 'error', message: t('common.error') });
+        }
+        return;
+      }
+
+      // --- Path 2: session-based (user logged in) ---
       const { data: sessionData } = await supabase.auth.getSession();
       const session = sessionData?.session;
 
@@ -56,9 +97,6 @@ export default function EnrolCompletePage() {
         return;
       }
 
-      // 2. Try to link the auth user to the unlinked guest person record.
-      //    Uses get_engagement_person_id RPC (only returns id when people.user_profile_id IS NULL)
-      //    so it's safe to call even if the person is already linked.
       try {
         const { data: personIdToLink } = await supabase.rpc('get_engagement_person_id', {
           p_engagement_id: engagementId,
@@ -67,21 +105,16 @@ export default function EnrolCompletePage() {
           await linkAuthUserToPerson(personIdToLink as string);
         }
       } catch (linkErr) {
-        // Linking failure is non-fatal — the waiver can still be signed
         console.warn('[EnrolCompletePage] person linking failed:', linkErr);
       }
 
-      // 3. Fetch engagement via RPC (authorised by JWT email matching people.email)
       const { data: engagementRows, error: engError } = await supabase.rpc(
         'get_pending_waiver_engagement',
         { p_engagement_id: engagementId },
       );
 
       if (engError || !engagementRows?.length) {
-        setState({
-          kind: 'error',
-          message: t('pages.enrol_complete.engagement_not_found'),
-        });
+        setState({ kind: 'error', message: t('pages.enrol_complete.engagement_not_found') });
         return;
       }
 
@@ -91,24 +124,11 @@ export default function EnrolCompletePage() {
         current_status: string;
       };
 
-      if (eng.current_status === 'active') {
-        setState({ kind: 'already_signed' });
-        return;
-      }
+      if (eng.current_status === 'active')    { setState({ kind: 'already_signed' }); return; }
+      if (eng.current_status === 'cancelled') { setState({ kind: 'cancelled' });      return; }
 
-      if (eng.current_status === 'cancelled') {
-        setState({ kind: 'cancelled' });
-        return;
-      }
+      if (!tenant) { setState({ kind: 'loading' }); return; }
 
-      // 4. Fetch tenant (for template query)
-      if (!tenant) {
-        // tenant loads asynchronously; retry will happen on next render
-        setState({ kind: 'loading' });
-        return;
-      }
-
-      // 5. Get the active consent template
       const { data: templateRow, error: tmplError } = await TenantDB.selectFor(
         'consent_templates',
         tenant,
@@ -117,32 +137,29 @@ export default function EnrolCompletePage() {
         .maybeSingle();
 
       if (tmplError || !templateRow) {
-        setState({
-          kind: 'error',
-          message: t('pages.enrol_complete.no_active_template'),
-        });
+        setState({ kind: 'error', message: t('pages.enrol_complete.no_active_template') });
         return;
       }
 
-      const template = ConsentTemplateSchema.parse(templateRow);
       setState({
         kind: 'ready',
         personId: eng.person_id,
         offeringId: eng.offering_id,
-        template,
+        template: ConsentTemplateSchema.parse(templateRow),
+        waiverToken: null,
       });
     };
 
     void init();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [engagementId, tenant]);
+  }, [engagementId, tenant, waiverToken]);
 
-  // Re-run init when tenant loads (first render may have no tenant yet)
+  // Re-run init when tenant loads (session path only)
   useEffect(() => {
-    if (state.kind === 'loading' && tenant && engagementId && hasInitialized.current) {
-      hasInitialized.current = false; // allow re-init
+    if (state.kind === 'loading' && tenant && engagementId && hasInitialized.current && !waiverToken) {
+      hasInitialized.current = false;
     }
-  }, [state.kind, tenant, engagementId]);
+  }, [state.kind, tenant, engagementId, waiverToken]);
 
   const handleResend = async () => {
     if (!resendEmail.trim()) return;
@@ -156,7 +173,6 @@ export default function EnrolCompletePage() {
       });
       setResendSent(true);
     } catch {
-      // ignore — Supabase doesn't expose email existence
       setResendSent(true);
     } finally {
       setResendLoading(false);
@@ -206,9 +222,7 @@ export default function EnrolCompletePage() {
                 value={resendEmail}
                 onChange={(e) => setResendEmail(e.target.value)}
                 placeholder={t('pages.enrol_complete.email_placeholder')}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') void handleResend();
-                }}
+                onKeyDown={(e) => { if (e.key === 'Enter') void handleResend(); }}
               />
               <Button
                 type="button"
@@ -217,9 +231,7 @@ export default function EnrolCompletePage() {
                 disabled={!resendEmail.trim() || resendLoading}
                 className="w-full"
               >
-                {resendLoading
-                  ? t('common.loading')
-                  : t('pages.enrol_complete.resend_btn')}
+                {resendLoading ? t('common.loading') : t('pages.enrol_complete.resend_btn')}
               </Button>
             </div>
           ) : (
@@ -240,12 +252,7 @@ export default function EnrolCompletePage() {
           <div className="text-5xl">✅</div>
           <h2 className="text-lg font-semibold">{t('pages.enrol_complete.already_signed_heading')}</h2>
           <p className="text-gray-600">{t('pages.enrol_complete.already_signed_body')}</p>
-          <Button
-            type="button"
-            variant="primary"
-            onClick={() => { window.location.href = '/dashboard'; }}
-            className="w-full"
-          >
+          <Button type="button" variant="primary" onClick={() => { window.location.href = '/dashboard'; }} className="w-full">
             {t('pages.enrol_complete.go_to_dashboard')}
           </Button>
         </div>
@@ -260,12 +267,7 @@ export default function EnrolCompletePage() {
           <div className="text-5xl">❌</div>
           <h2 className="text-lg font-semibold">{t('pages.enrol_complete.cancelled_heading')}</h2>
           <p className="text-gray-600">{t('pages.enrol_complete.cancelled_body')}</p>
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => { window.location.href = '/classes'; }}
-            className="w-full"
-          >
+          <Button type="button" variant="secondary" onClick={() => { window.location.href = '/classes'; }} className="w-full">
             {t('pages.enrol_complete.browse_classes')}
           </Button>
         </div>
@@ -280,12 +282,7 @@ export default function EnrolCompletePage() {
           <div className="text-5xl">✅</div>
           <h2 className="text-lg font-semibold">{t('pages.enrol_complete.signed_heading')}</h2>
           <p className="text-gray-600">{t('pages.enrol_complete.signed_body')}</p>
-          <Button
-            type="button"
-            variant="primary"
-            onClick={() => { window.location.href = '/dashboard'; }}
-            className="w-full"
-          >
+          <Button type="button" variant="primary" onClick={() => { window.location.href = '/dashboard'; }} className="w-full">
             {t('pages.enrol_complete.go_to_dashboard')}
           </Button>
         </div>
@@ -312,6 +309,7 @@ export default function EnrolCompletePage() {
           personId={state.personId}
           template={state.template}
           offeringId={state.offeringId}
+          waiverToken={state.waiverToken ?? undefined}
           onComplete={() => setState({ kind: 'signed' })}
           onPrevious={() => { /* no back on standalone page */ }}
           canGoBack={false}
@@ -340,11 +338,7 @@ function ErrorCard({ message }: { message: string }) {
   return (
     <div className="rounded-lg border-2 border-red-400 bg-red-50 p-5 space-y-3">
       <p className="text-sm text-red-800">{message}</p>
-      <Button
-        type="button"
-        variant="secondary"
-        onClick={() => { window.location.href = '/'; }}
-      >
+      <Button type="button" variant="secondary" onClick={() => { window.location.href = '/'; }}>
         {t('common.go_home')}
       </Button>
     </div>

@@ -201,16 +201,18 @@ serve(async (req) => {
         const language = (tenantRow.language_default === "he" ? "he" : "en") as "en" | "he";
 
         if (engagementStatus === "pending_waiver" && APP_URL) {
-          // Generate magic link for the pending waiver confirmation email
+          // Generate a waiver link token scoped to this engagement — no Supabase OTP
           try {
-            const { data: linkData } = await service.auth.admin.generateLink({
-              type: "magiclink",
-              email: person.email,
-              options: {
-                redirectTo: `${APP_URL}/auth/callback?pendingWaiverEngagementId=${encodeURIComponent(engagementId)}`,
-              },
+            const expireAt = waiverDeadline
+              ? Math.floor(new Date(waiverDeadline).getTime() / 1000)
+              : Math.floor(Date.now() / 1000) + 7 * 24 * 3600;
+            const wt = await signWaiverToken({
+              eid: engagementId,
+              tid: tenantId,
+              em: person.email,
+              exp: expireAt,
             });
-            const signUrl = linkData?.properties?.action_link ?? null;
+            const signUrl = `${APP_URL}/enrol/complete?engagementId=${encodeURIComponent(engagementId)}&wt=${wt}`;
 
             await sendRenderedEmail({
               to: person.email,
