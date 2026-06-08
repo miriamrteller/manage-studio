@@ -481,6 +481,10 @@ export type Database = {
           stripe_subscription_id: string | null
           tenant_id: string
           updated_at: string
+          waiver_48h_reminded_at: string | null
+          waiver_5d_reminded_at: string | null
+          waiver_deadline: string | null
+          waiver_evidence_id: string | null
         }
         Insert: {
           age_at_season_start?: number | null
@@ -504,6 +508,10 @@ export type Database = {
           stripe_subscription_id?: string | null
           tenant_id: string
           updated_at?: string
+          waiver_48h_reminded_at?: string | null
+          waiver_5d_reminded_at?: string | null
+          waiver_deadline?: string | null
+          waiver_evidence_id?: string | null
         }
         Update: {
           age_at_season_start?: number | null
@@ -527,6 +535,10 @@ export type Database = {
           stripe_subscription_id?: string | null
           tenant_id?: string
           updated_at?: string
+          waiver_48h_reminded_at?: string | null
+          waiver_5d_reminded_at?: string | null
+          waiver_deadline?: string | null
+          waiver_evidence_id?: string | null
         }
         Relationships: [
           {
@@ -576,6 +588,13 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "engagements_waiver_evidence_id_fkey"
+            columns: ["waiver_evidence_id"]
+            isOneToOne: false
+            referencedRelation: "waiver_evidence"
             referencedColumns: ["id"]
           },
         ]
@@ -1539,6 +1558,7 @@ export type Database = {
           country: string
           created_at: string
           currency: string
+          from_email: string | null
           id: string
           labels: Json
           language_default: string
@@ -1563,6 +1583,7 @@ export type Database = {
           country?: string
           created_at?: string
           currency?: string
+          from_email?: string | null
           id?: string
           labels?: Json
           language_default?: string
@@ -1587,6 +1608,7 @@ export type Database = {
           country?: string
           created_at?: string
           currency?: string
+          from_email?: string | null
           id?: string
           labels?: Json
           language_default?: string
@@ -1801,10 +1823,12 @@ export type Database = {
           consent_version: number
           consent_version_hash: string
           created_at: string
+          guardian_confirmed: boolean
           hmac_key_version: number
           id: string
           idempotency_key: string
           ip_address: unknown
+          offering_id: string | null
           otp_verify_sid: string | null
           pdf_sha256: string
           pdf_storage_path: string
@@ -1828,10 +1852,12 @@ export type Database = {
           consent_version: number
           consent_version_hash: string
           created_at?: string
+          guardian_confirmed?: boolean
           hmac_key_version?: number
           id?: string
           idempotency_key: string
           ip_address?: unknown
+          offering_id?: string | null
           otp_verify_sid?: string | null
           pdf_sha256: string
           pdf_storage_path: string
@@ -1855,10 +1881,12 @@ export type Database = {
           consent_version?: number
           consent_version_hash?: string
           created_at?: string
+          guardian_confirmed?: boolean
           hmac_key_version?: number
           id?: string
           idempotency_key?: string
           ip_address?: unknown
+          offering_id?: string | null
           otp_verify_sid?: string | null
           pdf_sha256?: string
           pdf_storage_path?: string
@@ -1888,6 +1916,13 @@ export type Database = {
             columns: ["consent_template_id"]
             isOneToOne: false
             referencedRelation: "consent_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "waiver_evidence_offering_id_fkey"
+            columns: ["offering_id"]
+            isOneToOne: false
+            referencedRelation: "offerings"
             referencedColumns: ["id"]
           },
           {
@@ -1922,6 +1957,10 @@ export type Database = {
       }
       cleanup_expired_otps: { Args: never; Returns: undefined }
       cleanup_old_verification_attempts: { Args: never; Returns: number }
+      get_engagement_person_id: {
+        Args: { p_engagement_id: string }
+        Returns: string
+      }
       get_my_account_ids: { Args: never; Returns: string[] }
       get_my_person_id: { Args: never; Returns: string }
       get_my_profile: {
@@ -1945,6 +1984,14 @@ export type Database = {
         }
       }
       get_my_tenant_id: { Args: never; Returns: string }
+      get_pending_waiver_engagement: {
+        Args: { p_engagement_id: string }
+        Returns: {
+          current_status: string
+          offering_id: string
+          person_id: string
+        }[]
+      }
       get_public_offerings_by_subdomain: {
         Args: { p_subdomain: string }
         Returns: {
@@ -1969,6 +2016,7 @@ export type Database = {
           tenant_id: string
           tenant_subdomain: string
           updated_at: string
+          waiver_required: boolean
         }[]
       }
       get_tenant_config_by_subdomain: {
@@ -2064,6 +2112,7 @@ export type Database = {
           p_business_preset?: string
           p_country?: string
           p_currency?: string
+          p_from_email?: string
           p_labels?: Json
           p_language_default?: string
           p_name: string
@@ -2105,10 +2154,12 @@ export type Database = {
           p_consent_template_id: string
           p_consent_version: number
           p_consent_version_hash: string
+          p_guardian_confirmed?: boolean
           p_hmac_key_version: number
           p_id: string
           p_idempotency_key: string
           p_ip_address: unknown
+          p_offering_id?: string
           p_otp_verify_sid: string
           p_pdf_sha256: string
           p_pdf_storage_path: string
