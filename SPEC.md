@@ -493,28 +493,35 @@ Waiver signatures are legally sensitive records (minor participation and guardia
 **V1 approach:**
 - Parent/guardian (or adult student) reads active `consent_templates` content in-app.
 - Signer affirms via checkbox + typed legal name (`typed_name_checkbox` method).
+- When signing on behalf of a minor, signer must additionally check a guardian declaration checkbox confirming parental/legal-guardian authority. Stored as `guardian_confirmed` in the tamper-evident record.
 - Edge Function `accept-waiver` atomically writes immutable evidence, events, and `audit_log` entry.
-- Signed PDF stored in private Supabase Storage bucket; access via signed URLs only.
+- PDF generation is **V1-deferred** — the `waiver_evidence` DB record (with `wording_snapshot` + `record_hmac`) is the legally operative evidence for V1. A `v1-deferred` sentinel is stored in `pdf_storage_path`; on-demand PDF export from the admin panel is planned for V2.
+- `offering_id` on `waiver_evidence` links the signature to the specific class it was signed for. `waiver_evidence_id` on `engagements` links the enrolment back to the exact evidence row.
+- **Every enrolment requires a fresh signature** — there is no cross-enrolment reuse of prior evidence.
 
 **Security and legal requirements (non-negotiable):**
-- SHA-256 hash of wording snapshot and PDF at signing time (`consent_version_hash`, `pdf_sha256`).
-- `waiver_evidence` rows are immutable — no UPDATE; corrections append new rows/events only.
+- SHA-256 hash of wording snapshot at signing time (`consent_version_hash`).
+- `waiver_evidence` rows are immutable — no UPDATE or DELETE; corrections append new rows/events only.
 - Server-side timestamp (UTC), IP, user agent, and `Accept-Language` captured by Edge Function — not trusted from client alone.
 - Idempotency token on submission endpoint prevents double-submit duplicates.
 - All waiver lifecycle transitions written to `waiver_events` and `audit_log`.
 - Retention policy for signed artifacts configured per tenant (minimum years per jurisdiction — legal counsel must approve).
+- **Minor signer gate (server + client):** if the enrolled student is under 18 and the authenticated user's own `person_id` matches the student's `person_id`, `accept-waiver` returns 403 and the frontend shows a hard-block error. A minor cannot sign their own waiver.
+- **Guardian confirmation required for minors:** `accept-waiver` returns 400 if the student is a minor and `guardian_confirmed !== true` in the request body. Enforced both server-side and in the UI.
 
 **Legal defensibility controls:**
 
 The self-hosted flow establishes evidential weight through the following controls, which together satisfy ESIGN/UETA (US) and Israeli electronic signature law:
 
-- **Intent to sign** — explicit checkbox + typed full legal name required before submission.
-- **Attribution** — authenticated Supabase JWT session; server-captured IP, user agent, and `Accept-Language` — client-supplied values are never trusted.
+- **Intent to sign** — explicit checkbox + typed full legal name required before submission. When signing for a minor, a second mandatory guardian-declaration checkbox must also be checked (`guardian_confirmed`).
+- **Attribution** — authenticated Supabase JWT session (or validated WaiverToken for guest magic-link path); server-captured IP, user agent, and `Accept-Language` — client-supplied values are never trusted.
 - **Non-repudiation** — SHA-256 of exact wording snapshot stored at signing time (`consent_version_hash`); independently reproducible from `wording_snapshot`.
 - **Viewing confirmed (server-gated)** — `view_token` issued by `waiver-viewed` Edge Function only after server confirms scroll-to-bottom event; `accept-waiver` rejects any submission without a valid, non-expired token.
-- **Tamper evidence** — immutability trigger at DB level (UPDATE/DELETE raise exception); HMAC-SHA256 (`record_hmac`) over canonical evidence fields using versioned secret key (`hmac_key_version`); periodic hash verification job cross-checks `pdf_sha256` against stored PDFs.
+- **Tamper evidence** — immutability trigger at DB level (UPDATE/DELETE raise exception); HMAC-SHA256 (`record_hmac`) over 15 canonical evidence fields (see §4.2.9) using versioned secret key (`hmac_key_version`).
 - **Retention** — `waiver-pdfs` private bucket with configurable retention policy (minimum years per jurisdiction — legal counsel must approve before production).
 - **Audit chain** — `waiver_events` append-only log + `audit_log` entry with full actor/timestamp trail; exportable for dispute resolution.
+- **Minor signer gate** — server rejects (403) any attempt by a minor to self-sign; frontend shows hard-block UI directing the user to log in as a parent/guardian.
+- **Per-enrolment signature** — every new enrolment requires a fresh signature; prior evidence from another enrolment is never reused.
 
 **`view_token` format (server-issued, client-opaque):**
 
@@ -539,11 +546,23 @@ Authorization: Bearer <supabase_jwt>
 
 Server writes a `viewed` row to `waiver_events` (with `waiver_evidence_id = NULL` until acceptance) and returns the token. Idempotent within the 15-minute window — repeated calls return a fresh token without duplicate events.
 
+**Israeli law specifics (for dance/activity schools with minors):**
+
+This system is designed for Israeli studios enrolling students aged 3+. Key Israeli law requirements that the waiver system is built to satisfy:
+
+- **Minors cannot contract** (חוק הכשרות המשפטית והאפוטרופסות, 1962) — only a parent or legal guardian may sign. The system enforces this at both server and client level (`guardian_confirmed` field, minor-signer gate).
+- **Electronic Signature Law** (חוק חתימה אלקטרונית, 2001) — a typed-name checkbox is a "basic" (non-secure) electronic signature. It is legally admissible but carries lower evidentiary weight than a certified electronic signature. The `waiver_require_otp` flag enables SMS OTP verification (Twilio Verify) to upgrade to a stronger proof of identity.
+- **Standard Form Contracts** (חוק חוזים אחידים, 1982) — courts can void clauses deemed "oppressive" (`תנאי מקפח`), including blanket exclusions of gross negligence. The waiver text must be reviewed by legal counsel before activation.
+- The system does **not** provide emergency medical treatment consent — this is a separate legal document outside V1 scope.
+
 **Legal caveat:**
 Tenant must obtain local legal counsel approval for waiver wording, consent UX, and retention policy **before production enablement**. This is mandatory regardless of jurisdiction.
 
 **Deferred (V2+):**
-- Manual admin attestation + PDF upload for edge cases (paper waivers on file). External e-sign vendor integration is permanently out of scope for this system.
+- On-demand PDF export from admin panel (V1 uses DB evidence record as the operative legal artifact).
+- Manual admin attestation + paper waiver upload for at-door edge cases (full plan exists — see §6 deferred).
+- OTP enforcement for waiver signing (`waiver_require_otp` column and Twilio plumbing exist; UI enforcement and `verify-waiver-otp` Edge Function are V2).
+- External e-sign vendor integration is permanently out of scope for this system.
 
 ---
 
@@ -1363,7 +1382,7 @@ CREATE TRIGGER waiver_evidence_no_delete
 
 **HMAC canonical JSON specification:**
 
-`record_hmac` is `HMAC-SHA256( WAIVER_HMAC_KEY_V{hmac_key_version}, canonical_json )` where `canonical_json` is a JSON object with keys in **alphabetical order**, no whitespace, containing exactly these fields:
+`record_hmac` is `HMAC-SHA256( WAIVER_HMAC_KEY_V{hmac_key_version}, canonical_json )` where `canonical_json` is a JSON object with keys in **alphabetical order**, no whitespace, containing exactly these **15 fields**:
 
 ```json
 {
@@ -1371,6 +1390,7 @@ CREATE TRIGGER waiver_evidence_no_delete
   "consent_template_id": "<uuid>",
   "consent_version": <int>,
   "consent_version_hash": "<hex64>",
+  "guardian_confirmed": <boolean>,
   "idempotency_key": "<string>",
   "ip_address": "<string|null>",
   "pdf_sha256": "<hex64>",
@@ -1384,7 +1404,9 @@ CREATE TRIGGER waiver_evidence_no_delete
 }
 ```
 
-`null` JSON values are used verbatim for nullable fields when absent. Output is lowercase hex (64 chars). The HMAC is computed **inside the `sign_waiver()` RPC** using `encode(hmac(canonical_json::bytea, current_setting('app.waiver_hmac_key')::bytea, 'sha256'), 'hex')`.
+> **Important:** `guardian_confirmed` is `false` for adult self-signers and `true` when a guardian has explicitly checked the parental-authority declaration. Its alphabetical position (between `consent_version_hash` and `idempotency_key`) is fixed — the field ordering must not change or all HMAC verifications will fail.
+
+`null` JSON values are used verbatim for nullable fields when absent. Output is lowercase hex (64 chars). The HMAC is computed in the `accept-waiver` Edge Function (not inside the RPC) using the `WAIVER_HMAC_KEY_V{n}` Supabase secret. The versioned key is referenced by `hmac_key_version` stored on the evidence row, enabling key rotation without invalidating older records.
 
 **`people.waiver_version` value format:**
 
@@ -1395,67 +1417,77 @@ Set to `consent_version::TEXT` (e.g. `'3'` for version 3) — the integer versio
 All writes happen inside a single `SECURITY DEFINER` PostgreSQL function called from the Edge Function via `supabase.rpc('sign_waiver', payload)`. This guarantees true DB-level atomicity — no partial state on network errors.
 
 ```sql
+-- Actual live signature (26 params). Called exclusively from the accept-waiver Edge Function.
+-- REVOKE/GRANT must use the full parameter type list to avoid ambiguity.
 CREATE OR REPLACE FUNCTION sign_waiver(
+  p_id                    UUID,          -- pre-generated by Edge Function (crypto.randomUUID())
   p_tenant_id             UUID,
   p_person_id             UUID,
-  p_family_member_id      UUID,
+  p_account_member_id     UUID,          -- account_members.id; NULL for adult self-signers
   p_consent_template_id   UUID,
   p_consent_version       INT,
   p_consent_version_hash  TEXT,
   p_wording_snapshot      TEXT,
-  p_pdf_storage_path      TEXT,
-  p_pdf_sha256            TEXT,
-  p_record_hmac           TEXT,
+  p_pdf_storage_path      TEXT,          -- 'v1-deferred' sentinel in V1
+  p_pdf_sha256            TEXT,          -- '000...0' sentinel in V1
+  p_record_hmac           TEXT,          -- 15-field canonical HMAC (see §4.2.9)
   p_hmac_key_version      SMALLINT,
   p_viewed_at             TIMESTAMPTZ,
   p_signed_by_name        TEXT,
   p_signed_by_email       TEXT,
-  p_signed_by_role        TEXT,
-  p_signature_method      TEXT,
+  p_signed_by_role        TEXT,          -- 'self' | 'guardian' | 'admin_attestation'
+  p_signature_method      TEXT,          -- 'typed_name_checkbox' | 'admin_upload'
   p_signed_at             TIMESTAMPTZ,
   p_ip_address            INET,
   p_user_agent            TEXT,
   p_accept_language       TEXT,
   p_idempotency_key       TEXT,
-  p_otp_verify_sid        TEXT
+  p_otp_verify_sid        TEXT,          -- Twilio Verify SID; NULL when waiver_require_otp = false
+  p_actor_id              UUID,          -- auth.uid() of the signing user; NULL for guests
+  p_offering_id           UUID DEFAULT NULL,      -- class this waiver was signed for
+  p_guardian_confirmed    BOOLEAN DEFAULT false   -- true when guardian declaration was checked
 )
-RETURNS UUID   -- returns waiver_evidence.id
+RETURNS UUID  -- waiver_evidence.id
 LANGUAGE plpgsql SECURITY DEFINER AS $$
-DECLARE
-  v_evidence_id UUID;
+DECLARE v_evidence_id UUID;
 BEGIN
-  -- Idempotency: return existing id if already signed with this key
-  SELECT id INTO v_evidence_id
-  FROM waiver_evidence
-  WHERE tenant_id = p_tenant_id AND idempotency_key = p_idempotency_key;
-
-  IF v_evidence_id IS NOT NULL THEN
-    RETURN v_evidence_id;
-  END IF;
-
+  -- Idempotency: ON CONFLICT DO NOTHING makes this safe under concurrent retries
   INSERT INTO waiver_evidence (
-    tenant_id, person_id, family_member_id,
+    id, tenant_id, person_id, account_member_id,
     consent_template_id, consent_version, consent_version_hash, wording_snapshot,
     pdf_storage_path, pdf_sha256, record_hmac, hmac_key_version, viewed_at,
     signed_by_name, signed_by_email, signed_by_role, signature_method,
     signed_at, ip_address, user_agent, accept_language,
-    idempotency_key, otp_verify_sid, status
+    idempotency_key, otp_verify_sid, status, offering_id, guardian_confirmed
   ) VALUES (
-    p_tenant_id, p_person_id, p_family_member_id,
+    p_id, p_tenant_id, p_person_id, p_account_member_id,
     p_consent_template_id, p_consent_version, p_consent_version_hash, p_wording_snapshot,
     p_pdf_storage_path, p_pdf_sha256, p_record_hmac, p_hmac_key_version, p_viewed_at,
     p_signed_by_name, p_signed_by_email, p_signed_by_role, p_signature_method,
     p_signed_at, p_ip_address, p_user_agent, p_accept_language,
-    p_idempotency_key, p_otp_verify_sid, 'signed'
+    p_idempotency_key, p_otp_verify_sid, 'signed', p_offering_id, p_guardian_confirmed
   )
+  ON CONFLICT (tenant_id, idempotency_key) DO NOTHING
   RETURNING id INTO v_evidence_id;
 
-  INSERT INTO waiver_events (tenant_id, waiver_evidence_id, event_type, actor_user_id, metadata)
-  VALUES (p_tenant_id, v_evidence_id, 'accepted', NULL, jsonb_build_object('ip', p_ip_address::TEXT));
+  IF v_evidence_id IS NULL THEN
+    SELECT id INTO v_evidence_id FROM waiver_evidence
+    WHERE tenant_id = p_tenant_id AND idempotency_key = p_idempotency_key;
+    RETURN v_evidence_id;
+  END IF;
 
-  INSERT INTO audit_log (tenant_id, actor_user_id, action, entity_type, entity_id, metadata)
-  VALUES (p_tenant_id, NULL, 'waiver_signed', 'waiver_evidence', v_evidence_id,
-          jsonb_build_object('person_id', p_person_id, 'consent_version', p_consent_version));
+  INSERT INTO waiver_events (tenant_id, waiver_evidence_id, event_type, actor_id, metadata)
+  VALUES (p_tenant_id, v_evidence_id, 'accepted', p_actor_id,
+          jsonb_build_object('ip', p_ip_address::TEXT, 'consent_version', p_consent_version,
+                             'offering_id', p_offering_id::TEXT, 'guardian_confirmed', p_guardian_confirmed));
+
+  INSERT INTO audit_log (tenant_id, actor_id, actor_email, action, entity_type, entity_id,
+                         ip_address, user_agent, after_state)
+  VALUES (p_tenant_id, p_actor_id, p_signed_by_email, 'waiver_signed', 'waiver_evidence',
+          v_evidence_id, p_ip_address, p_user_agent,
+          jsonb_build_object('person_id', p_person_id, 'consent_version', p_consent_version,
+                             'consent_template_id', p_consent_template_id,
+                             'offering_id', p_offering_id, 'guardian_confirmed', p_guardian_confirmed));
 
   UPDATE people
   SET waiver_accepted_at = p_signed_at,
@@ -1467,9 +1499,16 @@ BEGIN
 END;
 $$;
 
--- Only service_role may call sign_waiver; revoke from public and authenticated
-REVOKE EXECUTE ON FUNCTION sign_waiver FROM PUBLIC, authenticated;
-GRANT  EXECUTE ON FUNCTION sign_waiver TO service_role;
+REVOKE EXECUTE ON FUNCTION sign_waiver(
+  UUID,UUID,UUID,UUID,UUID,INT,TEXT,TEXT,TEXT,TEXT,TEXT,
+  SMALLINT,TIMESTAMPTZ,TEXT,TEXT,TEXT,TEXT,TIMESTAMPTZ,
+  INET,TEXT,TEXT,TEXT,TEXT,UUID,UUID,BOOLEAN
+) FROM PUBLIC, authenticated;
+GRANT EXECUTE ON FUNCTION sign_waiver(
+  UUID,UUID,UUID,UUID,UUID,INT,TEXT,TEXT,TEXT,TEXT,TEXT,
+  SMALLINT,TIMESTAMPTZ,TEXT,TEXT,TEXT,TEXT,TIMESTAMPTZ,
+  INET,TEXT,TEXT,TEXT,TEXT,UUID,UUID,BOOLEAN
+) TO service_role;
 ```
 
 **RLS policies for `waiver_evidence` and `waiver_events`:**
@@ -2348,63 +2387,109 @@ Step 4: Confirmation
 
 Waiver acceptance is required for legal participation eligibility. **V1 uses self-hosted in-app acceptance** (§2.7.1) — not a third-party e-sign provider.
 
+**Core rule: every enrolment requires a fresh signature.** There is no cross-enrolment reuse. `waiver_evidence.offering_id` records the class the signature was for; `engagements.waiver_evidence_id` records which evidence row covers that enrolment.
+
 **Who signs:**
-- Minor student: guardian signs (linked `family_member_id`)
-- Adult student: self-signs
+- Minor student (under 18): a parent or legal guardian must sign. The system enforces this at both server (`accept-waiver` returns 403 if `signed_by_role === 'self'` and student is a minor) and client (hard-block UI with a message directing the user to ask a parent/guardian to log in).
+- Guardian signs on behalf of minor: must check the explicit guardian-declaration checkbox (`guardian_confirmed = true`). `accept-waiver` returns 400 if `guardian_confirmed !== true` for a minor student.
+- Adult student: self-signs (`signed_by_role = 'self'`); no guardian checkbox shown.
 
-**Trigger points:**
-- New minor person creation (if waiver is required by tenant policy)
-- Minor enrolment attempt
-- Consent template version change (re-sign required)
-- Annual renewal cycle (if enabled by tenant policy)
+**Authentication paths supported by `accept-waiver`:**
+- **Authenticated (Supabase JWT):** standard flow for logged-in parents and adult students.
+- **WaiverToken (guest magic link):** `Authorization: WaiverToken <signed-jwt>` for guests signing after payment via emailed link. Token carries `{ eid: engagement_id, tid: tenant_id, em: email, exp: unix_ts }`. `accept-waiver` verifies the token, then cross-checks that `body.person_id` matches the engagement's `person_id`.
 
-**Lifecycle states:**
-- `pending_signature` → waiver UI shown, no valid evidence yet
-- `signed` → valid `waiver_evidence` row with matching active template version
-- `expired` → prior signature no longer valid by policy/date
-- `superseded` → evidence row marked superseded when newer template/version accepted
+**Engagement statuses relevant to waivers:**
+- `pending_waiver` — payment complete (or not required), but waiver not yet signed. Used for guests who pay before signing.
+- `active` — waiver signed (or not required by the offering). `accept-waiver` bulk-upgrades all `pending_waiver` engagements for the person in the tenant on successful signing.
 
-**App flow:**
+**Guest waiver flow (post-payment signing):**
+1. During enrolment, unauthenticated guests see `GuestVerifyStep` — a disclosure screen listing consequences of not signing (classes not attended, no refund, auto-cancel at 7 days). Guest must check an acknowledgment checkbox before proceeding to payment.
+2. After payment, Stripe webhook creates the engagement with `status = 'pending_waiver'` and sets `waiver_deadline = now() + 7 days`.
+3. The webhook (or `create-enrolment-intake` Edge Function) sends an `EnrolmentConfirmationEmail` containing a magic link to `{APP_URL}/enrol/complete?engagementId=...&wt=<WaiverToken>`.
+4. Guest clicks the link → `EnrolCompletePage` loads → `get-waiver-engagement` RPC fetches the engagement → `WaiverStep` rendered using `WaiverToken` auth.
+5. On successful signing, the engagement transitions to `active`.
+
+**Reminder and auto-cancel cron (`send-waiver-reminder` Edge Function):**
+
+Scheduled every 6 hours via pg_cron. Protected by `CRON_SECRET` env var. Processes up to 100 `pending_waiver` engagements per run.
+
+| When | Action |
+|---|---|
+| deadline − 5 days (first notice) | Send `WaiverReminderEmail` with fresh magic-link WaiverToken |
+| deadline − 48 hours (final notice) | Send urgent `WaiverReminderEmail` with fresh magic-link WaiverToken |
+| Past deadline | Cancel engagement (`status = 'cancelled'`), issue Stripe full refund if paid, send `WaiverCancelledEmail`, append `revoked` event to `waiver_events` |
+
+Reminder timestamps (`waiver_48h_reminded_at`, `waiver_5d_reminded_at`) on the `engagements` table prevent duplicate sends.
+
+**App flow (authenticated user):**
 
 **Step 1 — Load & render (`waiver-viewed` Edge Function)**
 1. Load active `consent_templates` row for tenant.
-2. Render full waiver text in portal UI; submit button is disabled.
-3. `IntersectionObserver` fires when signer reaches the bottom of the text.
+2. Render full waiver text in `WaiverStep` component; submit button is disabled.
+3. `IntersectionObserver` fires once when the scroll sentinel at the bottom of the text enters the viewport (threshold 1.0).
 4. Client calls `POST /functions/v1/waiver-viewed` with `{ person_id, consent_template_id }`.
-5. Edge Function inserts a `viewed` event into `waiver_events` (with `waiver_evidence_id = NULL`) and returns `{ view_token, expires_at }`.
-6. Client stores `view_token` in component state. Submit button activates.
+5. Edge Function inserts a `viewed` event into `waiver_events` (with `waiver_evidence_id = NULL`) and returns `{ view_token, viewed_at_ts, expires_at }`.
+6. Client stores `{ view_token, viewed_at_ts }` in component `useRef` (never localStorage). Submit activates.
 
 **Step 2 — Affirm**
-7. Signer checks the checkbox and types their full legal name.
-8. If `tenants.waiver_require_otp = true`: system calls Twilio Verify to send OTP to signer's registered phone; signer enters code; OTP SID captured.
-9. If `tenants.waiver_require_otp = false` (default for this system): no OTP step.
+7. Signer checks the "I have read and accept" checkbox and types their full legal name.
+8. If student is a minor: signer must also check the guardian-declaration checkbox ("I confirm I am the parent or legal guardian of [student name]..."). `guardian_confirmed` set to `true`.
+9. If `tenants.waiver_require_otp = true` (V2): Twilio Verify OTP step here (infrastructure exists — see §2.7.1 Deferred).
 
 **Step 3 — Submit (`accept-waiver` Edge Function)**
-10. Client calls `POST /functions/v1/accept-waiver` with `{ person_id, consent_template_id, typed_name, idempotency_key, view_token, otp_verify_sid? }` and bearer JWT.
+10. Client calls `POST /functions/v1/accept-waiver` with body:
+    ```json
+    {
+      "person_id": "<uuid>",
+      "offering_id": "<uuid>",
+      "consent_template_id": "<uuid>",
+      "consent_version": <int>,
+      "typed_name": "<string>",
+      "idempotency_key": "<uuid>",
+      "view_token": "<base64url>",
+      "viewed_at_ts": <unix_seconds>,
+      "guardian_confirmed": <boolean>,
+      "account_member_id": "<uuid|null>"
+    }
+    ```
 11. Edge Function validates:
-    - JWT (Supabase auth) — rejects if unauthenticated.
-    - `view_token` — recomputes HMAC, constant-time compare, rejects if expired (>900 s) or invalid.
-    - `idempotency_key` — returns existing `waiver_evidence.id` if already signed (no duplicate write).
-12. Edge Function captures server-side: timestamp, IP (`x-forwarded-for`), user agent, `Accept-Language`.
-13. Generates PDF in-process using `pdf-lib` (ESM import: `https://esm.sh/pdf-lib@1.17.1?target=deno`). PDF includes: tenant name, waiver text, signer name, UTC timestamp, IP, version hash footer, page numbers.
-14. Computes SHA-256 of PDF bytes (`pdf_sha256`) and SHA-256 of `wording_snapshot` (`consent_version_hash`).
-15. Computes `record_hmac` over canonical evidence JSON (alphabetical fields; see §4.2.9).
-16. Calls `supabase.rpc('sign_waiver', payload)` — single atomic DB write (inserts `waiver_evidence`, `waiver_events` `accepted` event, `audit_log` entry, updates `people.waiver_accepted_at` / `waiver_version`).
-17. Uploads rendered PDF to `waiver-pdfs` bucket at `{tenant_id}/{person_id}/{evidence_id}.pdf`.
-18. Returns `{ evidence_id, signed_at }` to client.
+    - Auth (JWT or WaiverToken) — rejects if neither present/valid.
+    - `view_token` — recomputes HMAC over `person_id:template_id:viewed_at_ts`, constant-time compare, rejects if expired (>900 s) or tampered.
+    - Template `status === 'active'` and `version` matches `consent_version` — rejects 409 on mismatch.
+    - Student `date_of_birth` looked up: if minor and `guardian_confirmed !== true` → 400. If minor and `signed_by_role === 'self'` → 403.
+    - For WaiverToken path: `person_id` in body must match the engagement's `person_id`.
+12. Captures server-side: timestamp, IP (`x-forwarded-for` first segment), user agent, `Accept-Language`.
+13. Computes `consent_version_hash` = SHA-256 of `wording_snapshot`.
+14. Computes `record_hmac` over 15-field canonical JSON (alphabetical; see §4.2.9).
+15. Calls `supabase.rpc('sign_waiver', payload)` — single atomic DB write.
+16. Bulk-upgrades `pending_waiver` engagements for the person in the tenant to `active`.
+17. Returns `{ evidence_id, signed_at }` to client.
 
-**Blocking rules:**
-- Enrolment cannot transition to `active` unless required waiver state is `signed` with current template version.
-- Payment may complete at PSP level, but service activation stays blocked until waiver requirements are met.
-- Admin override (`admin_attestation` / `admin_upload`) allowed only with explicit reason and audit trail.
+**EnrolmentStepper gate (authenticated flow):**
+- `showWaiverStep` is computed synchronously from `offering.waiver_required` (returned by `get_public_offerings_by_subdomain` RPC) — no async delay that could be bypassed.
+- Before advancing to checkout, the stepper checks `showWaiverStep && !waiverSignedInFlow`; if true, it redirects back to the waiver step.
+- After signing, `waiverSignedInFlow = true` and `waiverEvidenceId` is stored; the evidence ID is passed to `createEnrolment` as `waiver_evidence_id`.
+- If the user clicks Back from checkout to the waiver step, a read-only view is shown (cannot re-sign in the same flow session).
 
 **Evidence required per signed waiver:**
 - `consent_template_id`, `consent_version`, `consent_version_hash`, `wording_snapshot`
-- `pdf_storage_path`, `pdf_sha256`
+- `pdf_storage_path` (V1: `'v1-deferred'` sentinel), `pdf_sha256` (V1: `'000...0'`)
+- `offering_id` (class the waiver was signed for), `guardian_confirmed`
 - Signer identity (`signed_by_name`, `signed_by_email`, `signed_by_role`)
 - `signature_method`, `signed_at` (UTC), `ip_address`, `user_agent`, `accept_language`
-- Append-only `waiver_events` chain
-- `audit_log` entry linking `person_id` and `waiver_evidence.id`
+- Append-only `waiver_events` chain (viewed → accepted)
+- `audit_log` entry with `person_id`, `consent_template_id`, `offering_id`
+
+**Blocking rules:**
+- For authenticated users: enrolment checkout is blocked if `showWaiverStep && !waiverSignedInFlow`.
+- For guests: engagement is created with `status = 'pending_waiver'`; transitions to `active` only after `accept-waiver` runs.
+- Auto-cancel after 7-day deadline if waiver unsigned (with Stripe refund if paid).
+- Admin override (`admin_attestation` / `admin_upload`) is V2 (at-door plan, not yet built).
+
+**Deferred (V2+):**
+- At-door / kiosk waiver signing: QR code generation, kiosk page, admin attestation for paper waivers. Full plan exists and is ready for implementation.
+- On-demand PDF export from admin panel.
+- OTP enforcement for waiver signing (column + Twilio plumbing exist; UI and `verify-waiver-otp` Edge Function are V2).
 
 ### Phase 1D — Notifications (Days 21–26)
 
