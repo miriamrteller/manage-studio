@@ -6,6 +6,7 @@ import { GuestExistingAccountPrompt } from './GuestExistingAccountPrompt';
 import { useGuestEmailRegistrationCheck } from '../hooks/useGuestEmailRegistrationCheck';
 import { isExistingEmailError } from '../intakeService';
 import { filterStudentCandidates } from '../lib/filterStudentCandidates';
+import { isAgeEligible } from '../lib/check-requirements';
 import { formatEnrolmentStudentAgeLine } from '@/lib/personAge';
 import {
   SelectedClassAgeAlert,
@@ -186,6 +187,20 @@ export function StepSelectStudent({
     () => filterStudentCandidates(students, constraints, guardianPersonId),
     [students, constraints, guardianPersonId],
   );
+
+  // Age eligibility for the guardian themselves — used to offer self-enrolment in parent mode.
+  const guardianAgeEligible = useMemo(() => {
+    if (!guardian) return true;
+    if (!constraints.ageBand) return true;
+    const { min_age, max_age } = constraints.ageBand;
+    if (min_age == null && max_age == null) return true;
+    if (!guardian.dateOfBirth) return true;
+    return isAgeEligible(
+      constraints.ageBand,
+      { date_of_birth: guardian.dateOfBirth },
+      { referenceDate: constraints.seasonStartDate ?? undefined },
+    );
+  }, [guardian, constraints]);
 
   const studentDobAgeCheck = useSelectedClassAgeValidation(constraints, studentDob);
   const adultDobAgeCheck = useSelectedClassAgeValidation(constraints, adultDob);
@@ -622,6 +637,36 @@ export function StepSelectStudent({
               </div>
             </li>
           ))}
+          {guardian && guardianAgeEligible && (
+            <li key={guardian.personId}>
+              <button
+                type="button"
+                onClick={() => onSelectPerson(guardian.personId, guardian.dateOfBirth ?? null)}
+                className="w-full rounded-lg border-2 border-blue-600 p-4 text-start hover:bg-blue-50 transition"
+              >
+                <span className="block font-medium">
+                  {guardian.name}{' '}
+                  <span className="text-sm font-normal text-gray-500">({t('pages.enrolment.enrol_myself')})</span>
+                </span>
+                <span className="block text-sm text-gray-600">
+                  {formatEnrolmentStudentAgeLine(guardian.dateOfBirth, t) || t('pages.enrolment.no_current_enrolments')}
+                </span>
+              </button>
+            </li>
+          )}
+          {guardian && !guardianAgeEligible && (
+            <li key={`guardian-ineligible-${guardian.personId}`}>
+              <div className="w-full rounded-lg border border-gray-200 p-4 opacity-60">
+                <span className="block font-medium">
+                  {guardian.name}{' '}
+                  <span className="text-sm font-normal text-gray-500">({t('pages.enrolment.enrol_myself')})</span>
+                </span>
+                <span className="block text-xs text-amber-700">
+                  {t('pages.enrolment.ineligible_age')}
+                </span>
+              </div>
+            </li>
+          )}
         </ul>
       )}
 

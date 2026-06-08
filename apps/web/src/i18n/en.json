@@ -521,7 +521,8 @@
     },
     "enrolment": {
       "person_desc": "Who are you enrolling today?",
-      "select_student_desc": "Choose a student from your family, or add a new child.",
+      "select_student_desc": "Choose a student from your family, enrol yourself, or add a new child.",
+      "enrol_myself": "Myself",
       "add_new_child": "Add a new child",
       "new_child_desc": "Enter the new student's details. Your contact information is already on file.",
       "no_account_linked": "Your login is not linked to a family account. Please contact the studio.",
@@ -681,8 +682,31 @@
         "admin_review": "Under review",
         "pending_offer": "Offer pending",
         "cancelled": "Cancelled",
-        "withdrawn": "Withdrawn"
+        "withdrawn": "Withdrawn",
+        "pending_waiver": "Awaiting signature"
       }
+    },
+    "waivers": {
+      "title": "Waivers",
+      "description": "Manage consent templates and view signed waiver evidence.",
+      "draft_form_title": "New Consent Template",
+      "name_label": "Template name",
+      "name_placeholder": "e.g. Liability Waiver 2026",
+      "content_label": "Waiver text",
+      "save_draft": "Save as Draft",
+      "promote_to_approved": "Mark as Approved",
+      "promote_to_active": "Set as Active",
+      "activate_confirm": "Setting this template as active will require all students to re-sign before their next enrolment. Continue?",
+      "archive": "Archive",
+      "evidence_title": "Signed Waivers",
+      "export_csv": "Export CSV",
+      "no_templates": "No consent templates yet. Create one to get started.",
+      "no_evidence": "No signed waivers yet.",
+      "v1_limit_note": "All active classes share this waiver template. Per-class template assignment is available in V2.",
+      "status_draft": "Draft",
+      "status_approved": "Approved",
+      "status_active": "Active",
+      "status_archived": "Archived"
     }
   },
   "signup": {
@@ -740,6 +764,7 @@
     "levels": "Class Levels",
     "terms": "Learning Terms",
     "manage_classes": "Manage Classes",
+    "waivers": "Waivers",
     "requirements": "Requirements",
     "section": {
       "browse": "Browse",
@@ -765,6 +790,7 @@
     "step_person": "Personal details",
     "step_class": "Select class",
     "step_notification": "Notifications",
+    "step_waiver": "Waiver",
     "step_checkout": "Payment",
     "step_confirmation": "Confirmation",
     "checkout_desc": "Review and complete payment",
@@ -773,7 +799,15 @@
     "payment_failed": "Payment failed",
     "payment_setup_failed": "Could not start payment",
     "pay_now": "Pay now",
-    "missing_class_or_term": "Select a class and term before payment"
+    "missing_class_or_term": "Select a class and term before payment",
+    "waiver_scroll_prompt": "Scroll to the bottom to enable signing",
+    "waiver_document_region": "Waiver document",
+    "waiver_checkbox_label": "I have read and accept this waiver",
+    "waiver_name_label": "Full legal name",
+    "waiver_name_placeholder": "Type your full legal name",
+    "waiver_submit": "Sign and Continue",
+    "waiver_token_expired": "Please scroll to the bottom again to re-confirm you have read the waiver.",
+    "waiver_view_error": "Could not confirm reading. Please try scrolling again."
   },
   "settings": {
     "tax": {

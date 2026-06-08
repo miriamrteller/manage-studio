@@ -55,9 +55,12 @@ export interface AdultOnboardingResult {
 export interface GuardianProfile {
   personId: string;
   accountId: string;
+  /** account_members.id — the row PK, not accountId. Required for waiver guardian attribution. */
+  accountMemberId: string;
   name: string;
   email: string | null;
   phone: string | null;
+  dateOfBirth: string | null;
 }
 
 /**
@@ -119,9 +122,11 @@ export class EnrolmentOnboardingService extends BaseService {
     return {
       personId: guardian.id,
       accountId,
+      accountMemberId: member.id as string,  // account_members PK — needed for waiver guardian attribution
       name: guardian.name,
       email: guardian.email ?? userEmail ?? null,
       phone: guardian.emergency_contact_phone ?? null,
+      dateOfBirth: guardian.date_of_birth ?? null,
     };
   }
 
