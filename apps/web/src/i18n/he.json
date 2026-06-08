@@ -683,8 +683,31 @@
         "admin_review": "בבדיקה",
         "pending_offer": "הצעה ממתינה",
         "cancelled": "בוטל",
-        "withdrawn": "הוסר"
+        "withdrawn": "הוסר",
+        "pending_waiver": "ממתין לחתימה"
       }
+    },
+    "waivers": {
+      "title": "כתבי ויתור",
+      "description": "ניהול תבניות הסכמה וצפייה בכתבי ויתור חתומים.",
+      "draft_form_title": "תבנית הסכמה חדשה",
+      "name_label": "שם התבנית",
+      "name_placeholder": "לדוגמה: כתב ויתור 2026",
+      "content_label": "טקסט כתב הויתור",
+      "save_draft": "שמור כטיוטה",
+      "promote_to_approved": "סמן כמאושר",
+      "promote_to_active": "הגדר כפעיל",
+      "activate_confirm": "הגדרת תבנית זו כפעילה תחייב את כל התלמידים לחתום מחדש לפני ההרשמה הבאה. להמשיך?",
+      "archive": "העבר לארכיון",
+      "evidence_title": "כתבי ויתור חתומים",
+      "export_csv": "ייצוא CSV",
+      "no_templates": "אין תבניות הסכמה עדיין. צור אחת כדי להתחיל.",
+      "no_evidence": "אין כתבי ויתור חתומים עדיין.",
+      "v1_limit_note": "כל השיעורים הפעילים חולקים תבנית כתב ויתור זו. הקצאת תבנית לכל שיעור בנפרד זמינה בגרסה הבאה.",
+      "status_draft": "טיוטה",
+      "status_approved": "מאושר",
+      "status_active": "פעיל",
+      "status_archived": "בארכיון"
     }
   },
   "signup": {
@@ -742,6 +765,7 @@
     "terms": "תקופות למידה",
     "manage": "ניהול",
     "manage_classes": "ניהול שיעורים",
+    "waivers": "כתבי ויתור",
     "requirements": "דרישות",
     "section": {
       "browse": "גלישה",
@@ -767,6 +791,7 @@
     "step_person": "פרטים אישיים",
     "step_class": "בחירת שיעור",
     "step_notification": "התראות",
+    "step_waiver": "כתב ויתור",
     "step_checkout": "תשלום",
     "step_confirmation": "אישור",
     "checkout_desc": "סקירה ותשלום",
@@ -775,7 +800,15 @@
     "payment_failed": "התשלום נכשל",
     "payment_setup_failed": "לא ניתן להתחיל תשלום",
     "pay_now": "שלם עכשיו",
-    "missing_class_or_term": "יש לבחור שיעור ותקופה לפני התשלום"
+    "missing_class_or_term": "יש לבחור שיעור ותקופה לפני התשלום",
+    "waiver_scroll_prompt": "גלול עד הסוף כדי לאפשר חתימה",
+    "waiver_document_region": "מסמך כתב ויתור",
+    "waiver_checkbox_label": "קראתי ואני מסכים/ה לכתב הויתור",
+    "waiver_name_label": "שם מלא",
+    "waiver_name_placeholder": "הקלד/י את שמך המלא",
+    "waiver_submit": "חתימה והמשך",
+    "waiver_token_expired": "אנא גלול שוב עד הסוף כדי לאשר שקראת את כתב הויתור.",
+    "waiver_view_error": "לא ניתן לאשר קריאה. אנא נסה/י לגלול שוב."
   },
   "settings": {
     "tax": {
