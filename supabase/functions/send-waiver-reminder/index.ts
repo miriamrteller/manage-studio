@@ -169,14 +169,17 @@ Deno.serve(async (req) => {
           .update({ status: "cancelled" })
           .eq("id", eng.id);
 
-        // Insert waiver revoked event
+        // Insert waiver revoked event (extra data goes in metadata JSONB)
         await service.from("waiver_events").insert({
           tenant_id: eng.tenant_id,
-          person_id: eng.person_id,
-          engagement_id: eng.id,
+          waiver_evidence_id: null,
           event_type: "revoked",
-          reason: "waiver_deadline_exceeded",
-          occurred_at: new Date().toISOString(),
+          actor_id: null,
+          metadata: {
+            person_id: eng.person_id,
+            engagement_id: eng.id,
+            reason: "waiver_deadline_exceeded",
+          },
         }).catch((e) =>
           console.warn("[send-waiver-reminder] waiver_events insert failed:", e)
         );
