@@ -1566,7 +1566,7 @@ function StepConfirmation({
   if (adminDoneMessage) {
     const adminSendLinkFlow = adminPaymentChoice === 'send_link';
     const emailFailed = adminSendLinkFlow && adminLinkEmailSent === false;
-    const adminIcon = emailFailed ? '❌' : adminSendLinkFlow ? '⏳' : '✅';
+    const adminIcon = emailFailed ? 'ℹ️' : adminSendLinkFlow ? '⏳' : '✅';
     const pendingFinalizationMessage = t('pages.admin_enrol.pending_finalization_notice', {
       defaultValue:
         'Enrolment is not final yet. It becomes final only after the waiver is signed and payment is completed.',
