@@ -7,7 +7,7 @@ import { useGuestEmailRegistrationCheck } from '../hooks/useGuestEmailRegistrati
 import { isExistingEmailError } from '../intakeService';
 import { filterStudentCandidates } from '../lib/filterStudentCandidates';
 import { isAgeEligible } from '../lib/check-requirements';
-import { formatEnrolmentStudentAgeLine } from '@/lib/personAge';
+import { ADULT_AGE_THRESHOLD, ageAt, formatEnrolmentStudentAgeLine } from '@/lib/personAge';
 import {
   SelectedClassAgeAlert,
   useSelectedClassAgeValidation,
@@ -204,6 +204,12 @@ export function StepSelectStudent({
 
   const studentDobAgeCheck = useSelectedClassAgeValidation(constraints, studentDob);
   const adultDobAgeCheck = useSelectedClassAgeValidation(constraints, adultDob);
+  const adultAge = useMemo(() => (adultDob ? ageAt(adultDob) : NaN), [adultDob]);
+  const adultNeedsGuardian = useMemo(() => {
+    if (!adultDob) return false;
+    if (Number.isNaN(adultAge)) return false;
+    return adultAge < ADULT_AGE_THRESHOLD;
+  }, [adultDob, adultAge]);
 
   const ineligibleIds = useMemo(
     () => new Set(ineligible.map((item) => item.person.id)),
@@ -246,6 +252,16 @@ export function StepSelectStudent({
           }}
         >
           {t('pages.enrolment.add_child_to_family')}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full"
+          onClick={() => setSubMode('new_adult')}
+        >
+          {isAdultIntake
+            ? t('pages.enrolment.create_new_adult')
+            : t('pages.enrolment.person_new_adult')}
         </Button>
         <Button type="button" variant="ghost" className="w-full" onClick={onCancel}>
           {t('common.cancel')}
@@ -457,6 +473,16 @@ export function StepSelectStudent({
           if (adultDobAgeCheck.blocked && !canBypassAgeBlock) return;
           setIsSubmitting(true);
           try {
+            if (adultNeedsGuardian) {
+              await onCreateMinorWithGuardian({
+                student_name: adultName,
+                student_date_of_birth: adultDob,
+                guardian_name: guardianName,
+                guardian_email: guardianEmail || undefined,
+                guardian_phone: guardianPhone || undefined,
+              });
+              return;
+            }
             await onCreateAdult({
               name: adultName,
               email: adultEmail || undefined,
@@ -518,8 +544,56 @@ export function StepSelectStudent({
             onChange={(e) => setAdultDob(e.target.value)}
             placeholder={t('form.person.date_of_birth')}
           />
+          {adultDob && !Number.isNaN(adultAge) && (
+            <p
+              className={[
+                'inline-flex w-fit rounded-full border px-2 py-0.5 text-xs font-medium',
+                adultNeedsGuardian
+                  ? 'border-amber-300 bg-amber-50 text-amber-800'
+                  : 'border-green-300 bg-green-50 text-green-800',
+              ].join(' ')}
+              role="status"
+            >
+              {adultNeedsGuardian
+                ? t('pages.enrolment.status_minor', { defaultValue: 'Minor - guardian required' })
+                : t('pages.enrolment.status_adult', { defaultValue: 'Adult - no guardian needed' })}
+            </p>
+          )}
           <SelectedClassAgeAlert constraints={constraints} dateOfBirth={adultDob} />
         </fieldset>
+        {adultNeedsGuardian && (
+          <fieldset className="border rounded p-4 space-y-3">
+            <legend className="text-sm font-semibold px-1">{t('pages.enrolment.guardian_section')}</legend>
+            <p className="text-sm text-gray-600">
+              {t('pages.enrolment.minor_requires_guardian', {
+                defaultValue: 'Student is under 18. Please add guardian details.',
+              })}
+            </p>
+            <input
+              type="text"
+              required
+              className="form-input w-full"
+              value={guardianName}
+              onChange={(e) => setGuardianName(e.target.value)}
+              placeholder={t('form.person.name')}
+            />
+            <input
+              type="email"
+              required
+              className="form-input w-full"
+              value={guardianEmail}
+              onChange={(e) => setGuardianEmail(e.target.value)}
+              placeholder={t('form.person.email')}
+            />
+            <input
+              type="tel"
+              className="form-input w-full"
+              value={guardianPhone}
+              onChange={(e) => setGuardianPhone(e.target.value)}
+              placeholder={t('form.person.phone')}
+            />
+          </fieldset>
+        )}
         {error && <p className="text-sm text-red-600">{error}</p>}
         <div className="flex gap-2">
           {mode !== 'guest' && (

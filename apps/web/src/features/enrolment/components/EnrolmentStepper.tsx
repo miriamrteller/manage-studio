@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -46,6 +46,7 @@ import { computeClassTotal } from '../lib/computeClassTotal';
 import { formatCurrency } from '@shared/format';
 import type { EnrollmentIntent } from '@/lib/enrollment-intent';
 import { persistEnrollmentIntent } from '@/lib/enrollment-intent';
+import type { EnrolmentResumeState } from '../lib/enrolmentResumeState';
 import type { Engagement } from '@shared/schemas';
 import { useWaiverStatus } from '../hooks/useWaiverStatus';
 import { WaiverStep } from './WaiverStep';
@@ -84,6 +85,7 @@ export interface EnrolmentStepperProps {
    * Enrollment routing context (class, student, admin mode, family scope)
    */
   enrollmentIntent?: EnrollmentIntent | null;
+  initialResumeState?: EnrolmentResumeState | null;
 
   /**
    * Callback when user cancels enrolment
@@ -110,11 +112,13 @@ export function EnrolmentStepper({
   initialStep = 'person',
   skipNotificationStep = false,
   enrollmentIntent = null,
+  initialResumeState = null,
   onSuccess,
   onCancel,
 }: EnrolmentStepperProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  void initialResumeState;
   const enrolmentContext = useEnrolmentContext(enrollmentIntent);
   const [currentStep, setCurrentStep] = useState<EnrolmentStep>(initialStep);
   const [enrolmentData, setEnrolmentData] = useState<Partial<Engagement>>(() => ({
@@ -203,10 +207,21 @@ export function EnrolmentStepper({
   const [guestGuardianEmail, setGuestGuardianEmail] = useState<string | null>(null);
   const [adminDoneMessage, setAdminDoneMessage] = useState<string | null>(null);
   const [adminPaymentChoice, setAdminPaymentChoice] = useState<AdminPaymentChoice | null>(null);
+  const [adminCompletionLink, setAdminCompletionLink] = useState<string | null>(null);
+  const [adminLinkEmailSent, setAdminLinkEmailSent] = useState<boolean | null>(null);
+  const [adminLinkWarning, setAdminLinkWarning] = useState<string | null>(null);
   const [classAgeOverride, setClassAgeOverride] = useState<{
     confirmed: boolean;
     reason: string;
   }>({ confirmed: false, reason: '' });
+  const handleClassAgeOverrideChange = useCallback((confirmed: boolean, reason: string) => {
+    setClassAgeOverride((prev) => {
+      if (prev.confirmed === confirmed && prev.reason === reason) {
+        return prev;
+      }
+      return { confirmed, reason };
+    });
+  }, []);
 
   const accountStudentsQuery = useAccountStudents({
     accountId: enrolmentContext.constraints.accountId ?? enrolmentContext.guardian?.accountId,
@@ -747,9 +762,7 @@ export function EnrolmentStepper({
             personDateOfBirth={personDateOfBirth}
             initialTermId={initialTermId}
             allowAgeOverride={enrolmentContext.mode === 'admin'}
-            onAgeOverrideChange={(confirmed, reason) =>
-              setClassAgeOverride({ confirmed, reason })
-            }
+            onAgeOverrideChange={handleClassAgeOverrideChange}
             onNext={handleClassNext}
             onPrevious={handlePreviousStep}
             canGoBack={canGoBack}
@@ -867,6 +880,9 @@ export function EnrolmentStepper({
             onComplete={(result) => {
               setAdminDoneMessage(result.message);
               setAdminPaymentChoice(result.paymentChoice);
+              setAdminCompletionLink(result.paymentUrl ?? null);
+              setAdminLinkEmailSent(result.emailSent ?? null);
+              setAdminLinkWarning(result.warning ?? null);
               setCurrentStep('confirmation');
             }}
             onPrevious={handlePreviousStep}
@@ -894,6 +910,9 @@ export function EnrolmentStepper({
             guardianEmail={guestGuardianEmail}
             adminDoneMessage={adminDoneMessage}
             adminPaymentChoice={adminPaymentChoice}
+            adminCompletionLink={adminCompletionLink}
+            adminLinkEmailSent={adminLinkEmailSent}
+            adminLinkWarning={adminLinkWarning}
             adminEngagementId={checkoutEnrolmentId}
             onClose={() => onSuccess?.(enrolmentData as Engagement)}
           />
@@ -1327,7 +1346,13 @@ function StepAdminCheckout({
   checkoutEnrolmentId: string | null;
   checkoutError: string | null;
   isPreparing: boolean;
-  onComplete: (result: { message: string; paymentChoice: AdminPaymentChoice }) => void;
+  onComplete: (result: {
+    message: string;
+    paymentChoice: AdminPaymentChoice;
+    paymentUrl?: string;
+    emailSent?: boolean;
+    warning?: string;
+  }) => void;
   onPrevious: () => void;
   canGoBack?: boolean;
 }) {
@@ -1518,6 +1543,9 @@ function StepConfirmation({
   guardianEmail,
   adminDoneMessage,
   adminPaymentChoice,
+  adminCompletionLink,
+  adminLinkEmailSent,
+  adminLinkWarning,
   adminEngagementId,
   onClose,
 }: {
@@ -1526,21 +1554,82 @@ function StepConfirmation({
   guardianEmail?: string | null;
   adminDoneMessage?: string | null;
   adminPaymentChoice?: AdminPaymentChoice | null;
+  adminCompletionLink?: string | null;
+  adminLinkEmailSent?: boolean | null;
+  adminLinkWarning?: string | null;
   adminEngagementId?: string | null;
   onClose: () => void;
 }) {
   const { t } = useTranslation();
+  const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
 
   if (adminDoneMessage) {
+    const adminSendLinkFlow = adminPaymentChoice === 'send_link';
+    const emailFailed = adminSendLinkFlow && adminLinkEmailSent === false;
+    const adminIcon = emailFailed ? '❌' : adminSendLinkFlow ? '⏳' : '✅';
+    const pendingFinalizationMessage = t('pages.admin_enrol.pending_finalization_notice', {
+      defaultValue:
+        'Enrolment is not final yet. It becomes final only after the waiver is signed and payment is completed.',
+    });
+
     return (
       <div className="space-y-4 text-center">
-        <div className="text-5xl mb-4">✅</div>
+        <div className="text-5xl mb-4">{adminIcon}</div>
         <h3 className="text-lg font-semibold">{t('pages.admin_enrol.done_title')}</h3>
         <p className="text-gray-600">{adminDoneMessage}</p>
+        {adminSendLinkFlow && (
+          <div
+            className={[
+              'rounded-lg border p-3 text-sm text-start space-y-1',
+              emailFailed
+                ? 'border-red-300 bg-red-50 text-red-900'
+                : 'border-amber-300 bg-amber-50 text-amber-900',
+            ].join(' ')}
+            role="status"
+          >
+            <p className="font-semibold">
+              {emailFailed
+                ? t('pages.admin_enrol.email_not_sent_heading', {
+                    defaultValue: 'Email was not sent.',
+                  })
+                : t('pages.admin_enrol.email_sent_pending_heading', {
+                    defaultValue: 'Payment link sent. Enrolment still pending.',
+                  })}
+            </p>
+            <p>{pendingFinalizationMessage}</p>
+            {adminLinkWarning && <p className="text-xs">{adminLinkWarning}</p>}
+          </div>
+        )}
         {adminPaymentChoice === 'send_link' && adminEngagementId && (
-          <p className="text-xs text-gray-500 break-all text-start">
-            {t('pages.admin_enrol.link_copy')}: {buildPaymentLink(adminEngagementId)}
-          </p>
+          <div className="space-y-2">
+            <p className="text-xs text-gray-500 break-all text-start">
+              {t('pages.admin_enrol.link_copy')}: {adminCompletionLink ?? buildPaymentLink(adminEngagementId)}
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(adminCompletionLink ?? buildPaymentLink(adminEngagementId));
+                  setCopyFeedback(
+                    t('pages.admin_enrol.link_copied', {
+                      defaultValue: 'Completion link copied to clipboard.',
+                    }),
+                  );
+                } catch {
+                  setCopyFeedback(
+                    t('pages.admin_enrol.link_copy_failed', {
+                      defaultValue: 'Could not copy automatically. Select and copy the link manually.',
+                    }),
+                  );
+                }
+              }}
+            >
+              {t('pages.admin_enrol.copy_link_action', { defaultValue: 'Copy completion link' })}
+            </Button>
+            {copyFeedback && <p className="text-xs text-gray-600">{copyFeedback}</p>}
+          </div>
         )}
         <Button type="button" onClick={onClose} variant="primary" className="w-full">
           {t('common.done') || 'Done'}
