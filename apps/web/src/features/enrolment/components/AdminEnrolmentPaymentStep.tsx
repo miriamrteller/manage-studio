@@ -21,7 +21,13 @@ export interface AdminEnrolmentPaymentStepProps {
   guardianEmail?: string | null;
   guardianName?: string | null;
   classRow: Offering;
-  onComplete: (result: { message: string; paymentChoice: AdminPaymentChoice }) => void;
+  onComplete: (result: {
+    message: string;
+    paymentChoice: AdminPaymentChoice;
+    paymentUrl?: string;
+    emailSent?: boolean;
+    warning?: string;
+  }) => void;
   onPrevious?: () => void;
   emailInputId?: string;
   offlineMethodId?: string;
@@ -44,9 +50,11 @@ export function AdminEnrolmentPaymentStep({
   const { t, i18n } = useTranslation();
   const [view, setView] = useState<'choices' | 'pay_now'>('choices');
   const [linkEmail, setLinkEmail] = useState(guardianEmail ?? '');
+  const [overrideReason, setOverrideReason] = useState('');
   const [offlineMethod, setOfflineMethod] = useState<OfflinePaymentMethod>('cash');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const guardianEmailNormalized = guardianEmail?.toLowerCase() ?? '';
 
   const pricing = computeClassTotal(classRow, tenant);
 
@@ -67,9 +75,10 @@ export function AdminEnrolmentPaymentStep({
           return;
         }
 
-        await AdminEnrolmentService.sendPaymentLinkEmail(tenant, {
+        const completion = await AdminEnrolmentService.sendPaymentLinkEmail(tenant, {
           recipientEmail: email,
           recipientName: guardianName ?? personName,
+          overrideReason: email.toLowerCase() !== (guardianEmail ?? '').toLowerCase() ? overrideReason.trim() : undefined,
           studentName: personName,
           className: classRow.name,
           engagementId,
@@ -78,8 +87,17 @@ export function AdminEnrolmentPaymentStep({
         });
 
         onComplete({
-          message: t('pages.admin_enrol.link_sent', { email }),
+          message: completion.emailSent
+            ? t('pages.admin_enrol.link_sent', { email })
+            : t('pages.admin_enrol.link_not_emailed', {
+                email,
+                defaultValue:
+                  'Completion link was created but email delivery failed. Copy the link below and send it manually.',
+              }),
           paymentChoice: choice,
+          paymentUrl: completion.paymentUrl,
+          emailSent: completion.emailSent,
+          warning: completion.warning,
         });
         return;
       }
@@ -164,10 +182,31 @@ export function AdminEnrolmentPaymentStep({
             onChange={(e) => setLinkEmail(e.target.value)}
             placeholder={t('pages.admin_enrol.recipient_email_placeholder')}
           />
+          {guardianEmail && linkEmail.trim() && linkEmail.trim().toLowerCase() !== guardianEmail.toLowerCase() && (
+            <div className="space-y-1">
+              <label className="block text-sm font-medium" htmlFor={`${emailInputId}-override-reason`}>
+                {t('pages.admin_enrol.override_reason', { defaultValue: 'Reason for using a different email' })}
+              </label>
+              <input
+                id={`${emailInputId}-override-reason`}
+                type="text"
+                className="form-input w-full"
+                value={overrideReason}
+                onChange={(e) => setOverrideReason(e.target.value)}
+                placeholder={t('pages.admin_enrol.override_reason_placeholder', { defaultValue: 'Parent requested alternate email' })}
+              />
+            </div>
+          )}
           <Button
             variant="outline"
             className="w-full"
-            disabled={isSubmitting || !linkEmail.trim()}
+            disabled={
+              isSubmitting ||
+              !linkEmail.trim() ||
+              (Boolean(guardianEmail) &&
+                linkEmail.trim().toLowerCase() !== guardianEmailNormalized &&
+                !overrideReason.trim())
+            }
             onClick={() => void handlePaymentChoice('send_link')}
           >
             {t('pages.admin_enrol.send_link_action')}

@@ -32,9 +32,23 @@ interface WaiverStepProps {
   isMinorStudent?: boolean;
   /** True when the signed-in user's own person record IS the student. Triggers the hard block UI. */
   signerIsTheStudent?: boolean;
+  /** When set, invalidates waiver-status cache after signing without calling useTenant(). */
+  tenantIdForInvalidation?: string;
 }
 
-export function WaiverStep({
+export function WaiverStep(props: WaiverStepProps) {
+  if (props.tenantIdForInvalidation || props.waiverToken) {
+    return <WaiverStepInner {...props} invalidateTenantId={props.tenantIdForInvalidation} />;
+  }
+  return <WaiverStepWithTenant {...props} />;
+}
+
+function WaiverStepWithTenant(props: WaiverStepProps) {
+  const tenant = useTenant();
+  return <WaiverStepInner {...props} invalidateTenantId={props.tenantIdForInvalidation ?? tenant?.id} />;
+}
+
+function WaiverStepInner({
   personId,
   template,
   offeringId,
@@ -48,9 +62,9 @@ export function WaiverStep({
   termName,
   isMinorStudent,
   signerIsTheStudent,
-}: WaiverStepProps) {
+  invalidateTenantId,
+}: WaiverStepProps & { invalidateTenantId?: string }) {
   const { t } = useTranslation();
-  const tenant = useTenant();
   const queryClient = useQueryClient();
 
   // Stable idempotency key for the lifetime of this component mount
@@ -121,6 +135,7 @@ export function WaiverStep({
         account_member_id: accountMemberId,
         guardian_confirmed: guardianConfirmed,
       },
+      headers: waiverToken ? { Authorization: `WaiverToken ${waiverToken}` } : undefined,
     });
 
     if (error?.message?.includes('view_token expired')) {
@@ -129,8 +144,10 @@ export function WaiverStep({
       setTokenExpired(true);
     } else if (error) {
       setSubmitError(error.message ?? t('common.error'));
-    } else if (data?.evidence_id && tenant?.id) {
-      void invalidateWaiverStatus(queryClient, tenant.id, personId, offeringId);
+    } else if (data?.evidence_id) {
+      if (invalidateTenantId) {
+        void invalidateWaiverStatus(queryClient, invalidateTenantId, personId, offeringId);
+      }
       onComplete(data.evidence_id as string);
     }
 

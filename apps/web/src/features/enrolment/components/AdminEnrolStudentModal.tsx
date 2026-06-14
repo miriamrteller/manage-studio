@@ -53,7 +53,7 @@ function formatTime(t: string | null | undefined): string {
 
 /**
  * AdminEnrolStudentModal: Enrol an existing student in a class from the admin UI.
- * Supports pay-now (Stripe), send payment link by email, or record offline payment.
+ * Supports pay-now (Stripe), send completion link by email, or record offline payment.
  */
 export function AdminEnrolStudentModal({
   personId,
@@ -73,6 +73,10 @@ export function AdminEnrolStudentModal({
   const [step, setStep] = useState<AdminEnrolStep>('class');
   const [selectedClass, setSelectedClass] = useState<Offering | null>(null);
   const [paymentChoice, setPaymentChoice] = useState<AdminPaymentChoice | null>(null);
+  const [completionLink, setCompletionLink] = useState<string | null>(null);
+  const [linkWarning, setLinkWarning] = useState<string | null>(null);
+  const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
+  const [showFullLink, setShowFullLink] = useState(false);
   const [engagementId, setEnrolmentId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -131,6 +135,10 @@ export function AdminEnrolStudentModal({
       setError(null);
       setIsSubmitting(false);
       setDoneMessage(null);
+      setCompletionLink(null);
+      setLinkWarning(null);
+      setCopyFeedback(null);
+      setShowFullLink(false);
       setShowAllClasses(false);
       setAgeOverrideConfirmed(false);
       setAgeOverrideReason('');
@@ -211,9 +219,13 @@ export function AdminEnrolStudentModal({
   const handlePaymentComplete = async (result: {
     message: string;
     paymentChoice: AdminPaymentChoice;
+    paymentUrl?: string;
+    warning?: string;
   }) => {
     setPaymentChoice(result.paymentChoice);
     setDoneMessage(result.message);
+    setCompletionLink(result.paymentUrl ?? null);
+    setLinkWarning(result.warning ?? null);
     setStep('done');
     await invalidateStudentCaches();
     onSuccess?.();
@@ -395,9 +407,54 @@ export function AdminEnrolStudentModal({
         <div className="space-y-4">
           <p className="text-sm text-gray-700">{doneMessage}</p>
           {paymentChoice === 'send_link' && engagementId && (
-            <p className="text-xs text-gray-500 break-all">
-              {t('pages.admin_enrol.link_copy')}: {buildPaymentLink(engagementId)}
-            </p>
+            <div className="space-y-2">
+              {linkWarning && (
+                <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
+                  {linkWarning}
+                </p>
+              )}
+              <p className="text-xs text-gray-500 break-all">
+                {t('pages.admin_enrol.link_copy')}:{' '}
+                {(() => {
+                  const full = completionLink ?? buildPaymentLink(engagementId);
+                  return showFullLink || full.length <= 110
+                    ? full
+                    : `${full.slice(0, 72)}...${full.slice(-24)}`;
+                })()}
+              </p>
+              <Button
+                variant="ghost"
+                className="w-full"
+                onClick={() => setShowFullLink((v) => !v)}
+              >
+                {showFullLink
+                  ? t('common.hide', { defaultValue: 'Hide full link' })
+                  : t('common.show', { defaultValue: 'Show full link' })}
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(completionLink ?? buildPaymentLink(engagementId));
+                    setCopyFeedback(
+                      t('pages.admin_enrol.link_copied', {
+                        defaultValue: 'Completion link copied to clipboard.',
+                      }),
+                    );
+                  } catch {
+                    setCopyFeedback(
+                      t('pages.admin_enrol.link_copy_failed', {
+                        defaultValue: 'Could not copy automatically. Select and copy the link manually.',
+                      }),
+                    );
+                  }
+                }}
+              >
+                {t('pages.admin_enrol.copy_link_action', { defaultValue: 'Copy completion link' })}
+              </Button>
+              {copyFeedback && <p className="text-xs text-gray-600">{copyFeedback}</p>}
+            </div>
           )}
           <Button variant="primary" className="w-full" onClick={onClose}>
             {t('common.close')}

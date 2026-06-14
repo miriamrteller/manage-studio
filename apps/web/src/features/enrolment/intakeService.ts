@@ -35,6 +35,7 @@ export interface GuestAdultIntakeResult {
 
 export interface GuestEngagementIntakeResult {
   engagementId: string;
+  enrolmentToken: string;
 }
 
 export class ExistingEmailError extends Error {
@@ -133,20 +134,24 @@ export class EnrolmentIntakeService {
     tenant: Tenant,
     input: { studentPersonId: string; offeringId: string; seasonId: string },
   ): Promise<GuestEngagementIntakeResult> {
-    const { data, error } = await supabase.rpc('guest_enrolment_create_engagement', {
-      p_subdomain: tenant.subdomain,
-      p_student_person_id: input.studentPersonId,
-      p_offering_id: input.offeringId,
-      p_season_id: input.seasonId,
+    const { data, error } = await supabase.functions.invoke('create-enrolment-intake', {
+      body: {
+        action: 'create_engagement',
+        tenantSubdomain: tenant.subdomain,
+        studentPersonId: input.studentPersonId,
+        offeringId: input.offeringId,
+        seasonId: input.seasonId,
+      },
     });
 
     parseRpcError(error, data);
 
     const row = data as Record<string, string | undefined>;
     const engagementId = row.engagementId ?? row.engagement_id;
-    if (!engagementId) {
-      throw new Error('Failed to create engagement');
+    const enrolmentToken = row.enrolmentToken ?? row.enrolment_token;
+    if (!engagementId || !enrolmentToken) {
+      throw new Error('Failed to create engagement token');
     }
-    return { engagementId };
+    return { engagementId, enrolmentToken };
   }
 }

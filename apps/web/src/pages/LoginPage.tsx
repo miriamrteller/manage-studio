@@ -25,6 +25,14 @@ export default function LoginPage() {
     location.state && typeof location.state === 'object'
       ? (location.state as Record<string, unknown>)
       : undefined;
+  const resumeKey =
+    typeof postLoginState?.resumeKey === 'string' ? postLoginState.resumeKey : undefined;
+
+  useEffect(() => {
+    if (resumeKey) {
+      sessionStorage.setItem('enrolmentResumeKey', resumeKey);
+    }
+  }, [resumeKey]);
 
   useEffect(() => {
     if (
@@ -65,7 +73,7 @@ export default function LoginPage() {
     resendEmailCode,
     backToCodeSend,
   } = useLogin({
-    to: '/dashboard',
+    to: resumeKey ? '/enrol' : '/dashboard',
     state: postLoginState,
   });
 

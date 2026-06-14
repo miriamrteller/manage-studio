@@ -599,6 +599,54 @@ export type Database = {
           },
         ]
       }
+      enrolment_resume_drafts: {
+        Row: {
+          created_at: string
+          engagement_id: string | null
+          expires_at: string
+          id: string
+          resume_key: string
+          state_json: Json
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          engagement_id?: string | null
+          expires_at: string
+          id?: string
+          resume_key: string
+          state_json: Json
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          engagement_id?: string | null
+          expires_at?: string
+          id?: string
+          resume_key?: string
+          state_json?: Json
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "enrolment_resume_drafts_engagement_id_fkey"
+            columns: ["engagement_id"]
+            isOneToOne: false
+            referencedRelation: "engagements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "enrolment_resume_drafts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       expense_categories: {
         Row: {
           color: string | null

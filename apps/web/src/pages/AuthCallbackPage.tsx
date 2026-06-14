@@ -96,6 +96,13 @@ export default function AuthCallbackPage() {
     }
 
     const linkPortal = async () => {
+      const resumeKey = sessionStorage.getItem('enrolmentResumeKey');
+      if (resumeKey) {
+        sessionStorage.removeItem('enrolmentResumeKey');
+        navigate('/enrol', { replace: true, state: { resumeKey } });
+        return;
+      }
+
       const engagementId = sessionStorage.getItem('portalEngagementId');
       if (engagementId && hasParentRole(user.role)) {
         try {

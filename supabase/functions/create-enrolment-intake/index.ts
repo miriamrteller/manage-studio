@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { handleOptions, jsonResponse } from "../_shared/cors.ts";
 import { createServiceClient } from "../_shared/supabase.ts";
+import { signWaiverToken } from "../_shared/waiver-token.ts";
 
 interface GuardianInput {
   name: string;
@@ -163,15 +164,54 @@ serve(async (req) => {
 
       const { data: existing } = await service
         .from("engagements")
-        .select("id")
+        .select("id, person_id")
         .eq("tenant_id", tenantId)
         .eq("person_id", studentPersonId)
         .eq("offering_id", offeringId)
         .eq("season_id", seasonId)
         .maybeSingle();
 
+      let tokenRecipientEmail: string | null = null;
+      if (student.account_id) {
+        const { data: holder } = await service
+          .from("account_members")
+          .select("person_id")
+          .eq("tenant_id", tenantId)
+          .eq("account_id", student.account_id)
+          .eq("role", "account_holder")
+          .limit(1)
+          .maybeSingle();
+        if (holder?.person_id) {
+          const { data: guardian } = await service
+            .from("people")
+            .select("email")
+            .eq("tenant_id", tenantId)
+            .eq("id", holder.person_id)
+            .maybeSingle();
+          tokenRecipientEmail = (guardian?.email as string | null)?.toLowerCase() ?? null;
+        }
+      }
+      if (!tokenRecipientEmail) {
+        const { data: studentEmailRow } = await service
+          .from("people")
+          .select("email")
+          .eq("tenant_id", tenantId)
+          .eq("id", studentPersonId)
+          .maybeSingle();
+        tokenRecipientEmail = (studentEmailRow?.email as string | null)?.toLowerCase() ?? null;
+      }
+      if (!tokenRecipientEmail) {
+        return jsonResponse({ error: "No email available for enrolment token" }, 400);
+      }
+
       if (existing) {
-        return jsonResponse({ engagementId: existing.id, engagement: existing });
+        const enrolmentToken = await signWaiverToken({
+          eid: existing.id as string,
+          tid: tenantId,
+          em: tokenRecipientEmail,
+          exp: Math.floor(Date.now() / 1000) + 24 * 3600,
+        });
+        return jsonResponse({ engagementId: existing.id, engagement: existing, enrolmentToken });
       }
 
       let payerPersonId = studentPersonId;
@@ -236,7 +276,14 @@ serve(async (req) => {
         return jsonResponse({ error: engagementError?.message ?? "Failed to create engagement" }, 500);
       }
 
-      return jsonResponse({ engagementId: engagement.id, engagement });
+      const enrolmentToken = await signWaiverToken({
+        eid: engagement.id as string,
+        tid: tenantId,
+        em: tokenRecipientEmail,
+        exp: Math.floor(Date.now() / 1000) + 24 * 3600,
+      });
+
+      return jsonResponse({ engagementId: engagement.id, engagement, enrolmentToken });
     }
 
     return jsonResponse({ error: "Invalid action" }, 400);

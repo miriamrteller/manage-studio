@@ -5,9 +5,16 @@ import { EnrolmentService } from '../service';
 import { computeClassTotal } from './computeClassTotal';
 
 export type OfflinePaymentMethod = 'cash' | 'check' | 'bank_transfer';
+export interface SendCompletionLinkResult {
+  paymentUrl: string;
+  emailSent: boolean;
+  warning?: string;
+}
 
-export function buildPaymentLink(engagementId: string): string {
-  return `${window.location.origin}/enrol/pay/${engagementId}`;
+export function buildPaymentLink(engagementId: string, token?: string): string {
+  const base = `${window.location.origin}/enrol/pay/${engagementId}`;
+  if (!token) return base;
+  return `${base}?t=${encodeURIComponent(token)}`;
 }
 
 export class AdminEnrolmentService {
@@ -26,22 +33,16 @@ export class AdminEnrolmentService {
     );
     const paidAt = new Date().toISOString();
 
-    // Waiver gate — same logic as stripe-webhook
+    // Waiver gate: engagement-scoped evidence only
     let targetStatus: 'active' | 'pending_waiver' = 'active';
     if (classRow.waiver_required) {
-      const { data: waiverTemplate } = await TenantDB.selectFor('consent_templates', tenant)
-        .select('id, version')
-        .eq('status', 'active')
+      const { data: engagementRow, error: engagementError } = await TenantDB.selectFor('engagements', tenant)
+        .select('waiver_evidence_id')
+        .eq('id', engagementId)
         .maybeSingle();
-      if (waiverTemplate) {
-        const { data: evidence } = await TenantDB.selectFor('waiver_evidence', tenant)
-          .select('id')
-          .eq('person_id', personId)
-          .eq('consent_template_id', waiverTemplate.id)
-          .eq('consent_version', waiverTemplate.version)
-          .eq('status', 'signed')
-          .maybeSingle();
-        if (!evidence) targetStatus = 'pending_waiver';
+      if (engagementError) throw engagementError;
+      if (!engagementRow?.waiver_evidence_id) {
+        targetStatus = 'pending_waiver';
       }
     }
 
@@ -77,36 +78,21 @@ export class AdminEnrolmentService {
     options: {
       recipientEmail: string;
       recipientName: string;
+      overrideReason?: string;
       studentName: string;
       className: string;
       engagementId: string;
       totalMinor: number;
       currency: string;
     },
-  ): Promise<void> {
-    const paymentUrl = buildPaymentLink(options.engagementId);
-    const amountFormatted = (options.totalMinor / 100).toLocaleString(undefined, {
-      style: 'currency',
-      currency: options.currency,
-    });
-
-    const { data, error } = await supabase.functions.invoke('send-notification', {
+  ): Promise<SendCompletionLinkResult> {
+    const { data, error } = await supabase.functions.invoke('send-admin-enrolment-link', {
       body: {
         tenantId: tenant.id,
+        engagementId: options.engagementId,
         recipientEmail: options.recipientEmail,
-        templateName: 'payment_reminder',
-        channel: 'email',
-        variables: {
-          subject: `Payment required — ${options.className}`,
-          recipientName: options.recipientName,
-          enrolledClassName: options.className,
-          description: `${options.studentName} — ${options.className}`,
-          amount: amountFormatted,
-          amountOutstandingFormatted: amountFormatted,
-          amountFormatted,
-          paymentUrl,
-          dueDate: '—',
-        },
+        recipientName: options.recipientName,
+        overrideReason: options.overrideReason,
       },
     });
 
@@ -114,8 +100,15 @@ export class AdminEnrolmentService {
       throw new Error(error.message || 'Failed to send payment link email');
     }
 
-    if (data && data.success === false) {
+    if (data && (data as { success?: boolean }).success === false) {
       throw new Error(data.failureReason || 'Failed to send payment link email');
     }
+
+    const typed = (data as { paymentUrl?: string; emailSent?: boolean; warning?: string } | null) ?? null;
+    return {
+      paymentUrl: typed?.paymentUrl ?? buildPaymentLink(options.engagementId),
+      emailSent: typed?.emailSent !== false,
+      warning: typed?.warning,
+    };
   }
 }

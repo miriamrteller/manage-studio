@@ -6,6 +6,7 @@ import {
   sendRenderedEmail,
   EMAIL_TEMPLATE_NAMES,
 } from "../_shared/resend-send.ts";
+import { engagementHasSignedWaiver } from "../_shared/engagement-waiver.ts";
 
 // Required env var: APP_URL (e.g. https://app.yourdomain.com)
 // Set via: supabase secrets set APP_URL=https://app.yourdomain.com
@@ -153,29 +154,16 @@ serve(async (req) => {
       let waiverDeadline: string | null = null;
 
       if (offeringRow?.waiver_required) {
-        const { data: waiverTemplate } = await service
-          .from("consent_templates")
-          .select("id, version")
-          .eq("tenant_id", tenantId)
-          .eq("status", "active")
-          .maybeSingle();
-        if (waiverTemplate) {
-          const { data: evidence } = await service
-            .from("waiver_evidence")
-            .select("id")
-            .eq("person_id", engagement.person_id)
-            .eq("consent_template_id", waiverTemplate.id)
-            .eq("consent_version", waiverTemplate.version)
-            .eq("status", "signed")
-            .maybeSingle();
-          if (!evidence) {
-            engagementStatus = "pending_waiver";
-            waiverDeadline = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-            console.warn(
-              "[stripe-webhook] Engagement set to pending_waiver — waiver not yet signed",
-              { engagementId, personId: engagement.person_id },
-            );
-          }
+        const { satisfied } = await engagementHasSignedWaiver(service, engagementId, tenantId, {
+          requireActiveTemplateMatch: false,
+        });
+        if (!satisfied) {
+          engagementStatus = "pending_waiver";
+          waiverDeadline = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+          console.warn(
+            "[stripe-webhook] Engagement set to pending_waiver — waiver not yet signed",
+            { engagementId, personId: engagement.person_id },
+          );
         }
       }
 

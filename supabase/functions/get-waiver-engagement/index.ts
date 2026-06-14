@@ -17,6 +17,7 @@ import {
   extractWaiverToken,
   verifyWaiverToken,
 } from "../_shared/waiver-token.ts";
+import { resolveAllowedTokenRecipientEmails } from "../_shared/token-recipient.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -55,15 +56,13 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "Engagement is not pending waiver" }, 409);
     }
 
-    // Verify the email on the person record matches the token (prevents token reuse across people)
-    const { data: person } = await service
-      .from("people")
-      .select("email")
-      .eq("id", eng.person_id)
-      .eq("tenant_id", payload.tid)
-      .single();
-
-    if (!person || person.email?.toLowerCase() !== payload.em.toLowerCase()) {
+    const tokenEmail = payload.em.trim().toLowerCase();
+    const allowedEmails = await resolveAllowedTokenRecipientEmails(service, {
+      tenantId: payload.tid,
+      engagementId: eng.id as string,
+      personId: eng.person_id as string,
+    });
+    if (!tokenEmail || !allowedEmails.has(tokenEmail)) {
       return jsonResponse({ error: "Token email mismatch" }, 401);
     }
 

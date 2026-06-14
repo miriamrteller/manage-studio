@@ -138,17 +138,22 @@ Deno.serve(async (req) => {
       );
     }
 
-    // --- Guest path: verify body.person_id belongs to the token's engagement ---
+    // --- Guest path: verify body.person_id / offering_id belongs to the token's engagement ---
+    let tokenEngagementStatus: string | null = null;
     if (waiverTokenEngagementId) {
       const { data: tokenEng } = await service
         .from("engagements")
-        .select("person_id")
+        .select("person_id, offering_id, status")
         .eq("id", waiverTokenEngagementId)
         .eq("tenant_id", tenantId)
         .single();
       if (!tokenEng || tokenEng.person_id !== body.person_id) {
         return jsonResponse({ error: "person_id does not match waiver token" }, 401);
       }
+      if (offeringId && tokenEng.offering_id !== offeringId) {
+        return jsonResponse({ error: "offering_id does not match waiver token" }, 401);
+      }
+      tokenEngagementStatus = (tokenEng.status as string) ?? null;
     }
 
     // --- Resolve signer role for authenticated users (pending from auth block) ---
@@ -262,23 +267,35 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Activate all pending_waiver engagements for this person in this tenant.
-    // One signed waiver covers all concurrent enrollments under the same template version.
-    const { error: activateError } = await service
-      .from("engagements")
-      .update({ status: "active" })
-      .eq("person_id", body.person_id)
-      .eq("tenant_id", tenantId)
-      .eq("status", "pending_waiver");
+    if (waiverTokenEngagementId && tokenEngagementStatus === "pending_payment") {
+      // Pre-payment tokenized flow: link evidence to this engagement only.
+      const { error: linkError } = await service
+        .from("engagements")
+        .update({ waiver_evidence_id: returnedId })
+        .eq("id", waiverTokenEngagementId)
+        .eq("tenant_id", tenantId)
+        .eq("status", "pending_payment");
+      if (linkError) {
+        return jsonResponse({ error: "Failed to link waiver to engagement" }, 500);
+      }
+    } else {
+      // Existing post-payment flow: activate all pending_waiver engagements for this person.
+      const { error: activateError } = await service
+        .from("engagements")
+        .update({ status: "active" })
+        .eq("person_id", body.person_id)
+        .eq("tenant_id", tenantId)
+        .eq("status", "pending_waiver");
 
-    if (activateError) {
-      // Non-fatal: waiver IS recorded, but engagement status didn't update.
-      // Log for ops team to fix manually. Do not fail the request.
-      console.error(
-        "[accept-waiver] failed to activate pending_waiver engagements:",
-        activateError,
-        { personId: body.person_id, tenantId },
-      );
+      if (activateError) {
+        // Non-fatal: waiver IS recorded, but engagement status didn't update.
+        // Log for ops team to fix manually. Do not fail the request.
+        console.error(
+          "[accept-waiver] failed to activate pending_waiver engagements:",
+          activateError,
+          { personId: body.person_id, tenantId },
+        );
+      }
     }
 
     return jsonResponse({ evidence_id: returnedId, signed_at: signedAt });

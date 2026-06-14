@@ -8,13 +8,18 @@ import { supabase } from '@/lib/supabase';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useTenant } from '@/hooks/useTenant';
 
-interface EnrolmentPaymentFormProps {
+interface BasePaymentFormProps {
   classId: string;
   engagementId: string;
-  /** When false, payment works without a logged-in session (guest checkout). */
-  requireAuth?: boolean;
   onPaid: () => void;
   onPrevious: () => void;
+}
+
+interface EnrolmentPaymentFormProps extends BasePaymentFormProps {
+  /** When false, payment works without a logged-in session (guest checkout). */
+  requireAuth?: boolean;
+  /** Token for unauthenticated enrolment checkout actions. */
+  enrolmentToken?: string;
 }
 
 function PaymentFormInner({
@@ -83,13 +88,89 @@ function PaymentFormInner({
   );
 }
 
-export function EnrolmentPaymentForm({
+function StripeElementsShell({
+  clientSecret,
+  publishableKey,
+  onPaid,
+  onPrevious,
+}: {
+  clientSecret: string;
+  publishableKey: string;
+  onPaid: () => void;
+  onPrevious: () => void;
+}) {
+  const stripePromise = loadStripe(publishableKey);
+
+  return (
+    <Elements stripe={stripePromise} options={{ clientSecret }}>
+      <PaymentFormInner onPaid={onPaid} onPrevious={onPrevious} />
+    </Elements>
+  );
+}
+
+/** Token-based checkout — no session or tenant hooks. */
+export function TokenEnrolmentPaymentForm({
+  classId,
+  engagementId,
+  enrolmentToken,
+  onPaid,
+  onPrevious,
+}: BasePaymentFormProps & { enrolmentToken: string }) {
+  const { t } = useTranslation();
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [publishableKey, setPublishableKey] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!engagementId || !classId || !enrolmentToken) return;
+
+    const loadIntent = async () => {
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: { offering_id: classId, engagement_id: engagementId, enrolment_token: enrolmentToken },
+        headers: { Authorization: `WaiverToken ${enrolmentToken}` },
+      });
+
+      if (error || !data?.clientSecret) {
+        setLoadError(error?.message ?? data?.error ?? t('enrolment.payment_setup_failed'));
+        return;
+      }
+
+      setClientSecret(data.clientSecret);
+      setPublishableKey(data.publishableKey ?? null);
+    };
+
+    void loadIntent();
+  }, [classId, engagementId, enrolmentToken, t]);
+
+  if (loadError) {
+    return (
+      <p className="text-sm text-destructive" role="alert">
+        {loadError}
+      </p>
+    );
+  }
+
+  if (!clientSecret || !publishableKey) {
+    return <p role="status">{t('common.loading')}</p>;
+  }
+
+  return (
+    <StripeElementsShell
+      clientSecret={clientSecret}
+      publishableKey={publishableKey}
+      onPaid={onPaid}
+      onPrevious={onPrevious}
+    />
+  );
+}
+
+function AuthenticatedEnrolmentPaymentForm({
   classId,
   engagementId,
   requireAuth = true,
   onPaid,
   onPrevious,
-}: EnrolmentPaymentFormProps) {
+}: BasePaymentFormProps & { requireAuth?: boolean }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, isLoading: authLoading } = useCurrentUser();
@@ -123,7 +204,7 @@ export function EnrolmentPaymentForm({
     };
 
     void loadIntent();
-  }, [requireAuth, user, classId, engagementId, tenant, t]);
+  }, [requireAuth, user, classId, engagementId, tenant?.stripe_publishable_key, t]);
 
   if (requireAuth && (authLoading || !user)) {
     return <p role="status">{t('common.loading')}</p>;
@@ -141,11 +222,43 @@ export function EnrolmentPaymentForm({
     return <p role="status">{t('common.loading')}</p>;
   }
 
-  const stripePromise = loadStripe(publishableKey);
+  return (
+    <StripeElementsShell
+      clientSecret={clientSecret}
+      publishableKey={publishableKey}
+      onPaid={onPaid}
+      onPrevious={onPrevious}
+    />
+  );
+}
+
+export function EnrolmentPaymentForm({
+  classId,
+  engagementId,
+  requireAuth = true,
+  enrolmentToken,
+  onPaid,
+  onPrevious,
+}: EnrolmentPaymentFormProps) {
+  if (enrolmentToken) {
+    return (
+      <TokenEnrolmentPaymentForm
+        classId={classId}
+        engagementId={engagementId}
+        enrolmentToken={enrolmentToken}
+        onPaid={onPaid}
+        onPrevious={onPrevious}
+      />
+    );
+  }
 
   return (
-    <Elements stripe={stripePromise} options={{ clientSecret }}>
-      <PaymentFormInner onPaid={onPaid} onPrevious={onPrevious} />
-    </Elements>
+    <AuthenticatedEnrolmentPaymentForm
+      classId={classId}
+      engagementId={engagementId}
+      requireAuth={requireAuth}
+      onPaid={onPaid}
+      onPrevious={onPrevious}
+    />
   );
 }

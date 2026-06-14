@@ -40,3 +40,38 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/create-checkout/index.ts"
 
+[functions.get-waiver-engagement]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/get-waiver-engagement/index.ts"
+
+[functions.get-enrolment-completion]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/get-enrolment-completion/index.ts"
+
+[functions.waiver-viewed]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/waiver-viewed/index.ts"
+
+[functions.accept-waiver]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/accept-waiver/index.ts"
+
+[functions.save-enrolment-resume]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/save-enrolment-resume/index.ts"
+
+[functions.load-enrolment-resume]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/load-enrolment-resume/index.ts"
+
+[functions.clear-enrolment-resume]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/clear-enrolment-resume/index.ts"
+
