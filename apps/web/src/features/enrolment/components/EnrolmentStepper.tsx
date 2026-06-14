@@ -261,12 +261,9 @@ export function EnrolmentStepper({
     enrolmentContext.mode !== 'admin' &&
     !!user; // logged-in users sign inline; guests sign post-payment
 
-  // Guests see a pre-payment disclosure step (informational, requires acknowledgment)
-  // instead of the full WaiverStep (which needs a JWT for the Edge Functions).
-  const showGuestVerifyStep =
-    effectiveWaiverRequired &&
-    enrolmentContext.mode === 'guest' &&
-    !user;
+  // Guest waiver-first now happens on the tokenized completion page (/enrol/pay/:id?t=...),
+  // so the legacy pre-payment verify_email disclosure step is disabled.
+  const showGuestVerifyStep = false;
 
   const steps: EnrolmentStep[] = useMemo(
     () =>
@@ -453,7 +450,7 @@ export function EnrolmentStepper({
 
       try {
         if (isGuestCheckout) {
-          const { engagementId } = await EnrolmentIntakeService.createGuestEngagement(tenant, {
+          const { engagementId, enrolmentToken } = await EnrolmentIntakeService.createGuestEngagement(tenant, {
             studentPersonId: enrolmentData.person_id!,
             offeringId: enrolmentData.offering_id!,
             seasonId: enrolmentData.season_id!,
@@ -461,6 +458,10 @@ export function EnrolmentStepper({
           setCheckoutEnrolmentId(engagementId);
           setEnrolmentData((prev) => ({ ...prev, id: engagementId, status: 'pending_payment' }));
           setIsCheckoutPreparing(false);
+          navigate(
+            `/enrol/pay/${encodeURIComponent(engagementId)}?t=${encodeURIComponent(enrolmentToken)}`,
+            { replace: true },
+          );
           return;
         }
 
