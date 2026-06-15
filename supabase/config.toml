@@ -85,3 +85,8 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/verify-invoicing-credentials/index.ts"
 
+[functions.handle-payment-event]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/handle-payment-event/index.ts"
+
