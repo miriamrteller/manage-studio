@@ -23,8 +23,10 @@ export function TokenCompletionView({ engagementId, effectiveToken }: TokenCompl
   const [paid, setPaid] = useState(false);
   const [waiverComplete, setWaiverComplete] = useState(false);
   const [tokenStripped, setTokenStripped] = useState(false);
+  const [showSlowLoadingHelp, setShowSlowLoadingHelp] = useState(false);
 
   const tokenInUrl = searchParams.get('t');
+  const tokenReturnPath = `/enrol/pay/${encodeURIComponent(engagementId)}?t=${encodeURIComponent(effectiveToken)}`;
 
   const tokenQuery = useQuery({
     queryKey: ['enrol-pay-token-detail', engagementId, effectiveToken],
@@ -55,6 +57,19 @@ export function TokenCompletionView({ engagementId, effectiveToken }: TokenCompl
     setTokenStripped(true);
   }, [tokenInUrl, tokenQuery.isSuccess, tokenStripped, searchParams, setSearchParams]);
 
+  useEffect(() => {
+    if (!tokenQuery.isLoading) {
+      setShowSlowLoadingHelp(false);
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setShowSlowLoadingHelp(true);
+    }, 8000);
+
+    return () => window.clearTimeout(timer);
+  }, [tokenQuery.isLoading]);
+
   const tokenPayload = tokenQuery.data;
 
   const tokenShowWaiver = useMemo(
@@ -70,8 +85,41 @@ export function TokenCompletionView({ engagementId, effectiveToken }: TokenCompl
 
   if (tokenQuery.isLoading) {
     return (
-      <div className="p-8 text-center" role="status">
-        {t('common.loading')}
+      <div className="max-w-lg mx-auto p-6 space-y-4 text-center">
+        <p role="status">{t('common.loading')}</p>
+        {showSlowLoadingHelp && (
+          <div className="space-y-3 text-start">
+            <p className="text-sm text-amber-800 bg-amber-50 border border-amber-300 rounded p-3">
+              {t('pages.enrol_pay.slow_link_help', {
+                defaultValue:
+                  'This secure link is taking longer than expected. You can retry or refresh this page.',
+              })}
+            </p>
+            <Button variant="outline" className="w-full" onClick={() => void tokenQuery.refetch()}>
+              {t('common.retry', { defaultValue: 'Retry' })}
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => {
+                window.location.href = tokenReturnPath;
+              }}
+            >
+              {t('pages.enrol_pay.refresh_secure_link', { defaultValue: 'Refresh secure link' })}
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full"
+              onClick={() =>
+                navigate('/login', {
+                  state: { from: tokenReturnPath },
+                })
+              }
+            >
+              {t('pages.login.title', { defaultValue: 'Sign in' })}
+            </Button>
+          </div>
+        )}
       </div>
     );
   }
@@ -82,9 +130,40 @@ export function TokenCompletionView({ engagementId, effectiveToken }: TokenCompl
         <p className="text-destructive">
           {tokenQuery.error instanceof Error ? tokenQuery.error.message : t('common.error')}
         </p>
-        <Button variant="outline" onClick={() => navigate('/classes')}>
-          {t('common.back')}
-        </Button>
+        <p className="text-sm text-gray-600">
+          {t('pages.enrol_pay.error_recovery_help', {
+            defaultValue:
+              'If this link has expired or was opened incorrectly, retry first. If it still fails, request a new completion link from the school.',
+          })}
+        </p>
+        <div className="space-y-2">
+          <Button variant="outline" className="w-full" onClick={() => void tokenQuery.refetch()}>
+            {t('common.retry', { defaultValue: 'Retry' })}
+          </Button>
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => {
+              window.location.href = tokenReturnPath;
+            }}
+          >
+            {t('pages.enrol_pay.refresh_secure_link', { defaultValue: 'Refresh secure link' })}
+          </Button>
+          <Button
+            variant="ghost"
+            className="w-full"
+            onClick={() =>
+              navigate('/login', {
+                state: { from: tokenReturnPath },
+              })
+            }
+          >
+            {t('pages.login.title', { defaultValue: 'Sign in' })}
+          </Button>
+          <Button variant="ghost" className="w-full" onClick={() => navigate('/classes')}>
+            {t('common.back')}
+          </Button>
+        </div>
       </div>
     );
   }
