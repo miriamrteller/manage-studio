@@ -525,6 +525,7 @@ export function EnrolmentStepper({
     showWaiverStep,
     waiverSignedInFlow,
     waiverEvidenceId,
+    navigate,
     t,
   ]);
 
@@ -1594,7 +1595,7 @@ function StepConfirmation({
                     defaultValue: 'Email was not sent.',
                   })
                 : t('pages.admin_enrol.email_sent_pending_heading', {
-                    defaultValue: 'Payment link sent. Enrolment still pending.',
+                    defaultValue: 'Completion link sent. Enrolment still pending.',
                   })}
             </p>
             <p>{pendingFinalizationMessage}</p>
