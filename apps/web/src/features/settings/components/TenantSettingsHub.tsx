@@ -65,6 +65,16 @@ export function TenantSettingsHub() {
             href="/admin/setup/tax"
           />
           <SettingsLinkCard
+            title={t('settings.payments.title', { defaultValue: 'Payment provider' })}
+            description={t('settings.payments.description', { defaultValue: 'Payment capture credentials' })}
+            href="/admin/setup/payments"
+          />
+          <SettingsLinkCard
+            title={t('settings.invoicing.title', { defaultValue: 'Invoicing provider' })}
+            description={t('settings.invoicing.description', { defaultValue: 'Tax document credentials' })}
+            href="/admin/setup/invoicing"
+          />
+          <SettingsLinkCard
             title={t('settings.stripe.title')}
             description={t('settings.stripe.description')}
             href="/admin/setup/stripe"

@@ -13,6 +13,8 @@ import FamiliesPage from "./pages/FamiliesPage";
 import FamilyDetailPage from "./pages/FamilyDetailPage";
 import BillingPage from "./pages/BillingPage";
 import StripeSettingsPage from "./pages/StripeSettingsPage";
+import PaymentSettingsPage from "./pages/PaymentSettingsPage";
+import InvoicingSettingsPage from "./pages/InvoicingSettingsPage";
 import TaxSettingsPage from "./pages/TaxSettingsPage";
 import TenantSettingsPage from "./pages/TenantSettingsPage";
 import PlatformOnboardPage from "./pages/PlatformOnboardPage";
@@ -75,6 +77,8 @@ const router = createBrowserRouter([
       { path: "admin/setup/settings", element: <AdminRoute><TenantSettingsPage /></AdminRoute> },
       { path: "admin/setup/tax", element: <AdminRoute><TaxSettingsPage /></AdminRoute> },
       { path: "admin/setup/stripe", element: <AdminRoute><StripeSettingsPage /></AdminRoute> },
+      { path: "admin/setup/payments", element: <AdminRoute><PaymentSettingsPage /></AdminRoute> },
+      { path: "admin/setup/invoicing", element: <AdminRoute><InvoicingSettingsPage /></AdminRoute> },
       { path: "admin/setup/waivers", element: <AdminRoute><WaiversPage /></AdminRoute> },
       { path: "platform/onboard", element: <SuperAdminRoute><PlatformOnboardPage /></SuperAdminRoute> },
 

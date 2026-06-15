@@ -90,3 +90,23 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/handle-payment-event/index.ts"
 
+[functions.record-payment]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/record-payment/index.ts"
+
+[functions.run-monthly-billing]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/run-monthly-billing/index.ts"
+
+[functions.process-refund]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/process-refund/index.ts"
+
+[functions.check-invoicing-auth]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/check-invoicing-auth/index.ts"
+

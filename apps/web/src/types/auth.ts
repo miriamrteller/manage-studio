@@ -54,6 +54,12 @@ export type TenantConfig = {
   stripe_secret_configured?: boolean;
   stripe_webhook_configured?: boolean;
   stripe_credentials_updated_at?: string | null;
+  payment_provider?: string;
+  payment_provider_public_key?: string | null;
+  payment_provider_secret_configured?: boolean;
+  payment_provider_webhook_configured?: boolean;
+  payment_provider_updated_at?: string | null;
+  invoicing_provider?: string;
   business_preset: BusinessPreset;
   entity_labels: EntityLabels;
   modules: PresetModules;
