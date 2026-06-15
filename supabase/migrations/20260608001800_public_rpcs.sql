@@ -2,7 +2,7 @@
 -- 001800: Public RPCs (anon-safe)
 -- get_public_offerings_by_subdomain — final signature with season_start_date,
 --   cover_image_path, updated_at and waiver_required.
--- get_tenant_config_by_subdomain  — branding + preset + Stripe publishable key.
+-- get_tenant_config_by_subdomain  — branding + preset + payment provider public key.
 -- DEPENDENCIES: 000200, 000500
 -- =============================================================================
 
@@ -91,10 +91,10 @@ RETURNS TABLE (
   accent_color                  TEXT,
   business_preset               TEXT,
   labels                        JSONB,
-  stripe_publishable_key        TEXT,
-  stripe_secret_configured      BOOLEAN,
-  stripe_webhook_configured     BOOLEAN,
-  stripe_credentials_updated_at TIMESTAMPTZ
+  payment_provider_public_key        TEXT,
+  payment_provider_secret_configured BOOLEAN,
+  payment_provider_webhook_configured BOOLEAN,
+  payment_provider_updated_at        TIMESTAMPTZ
 )
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -119,10 +119,10 @@ BEGIN
     t.accent_color,
     t.business_preset,
     t.labels,
-    t.stripe_publishable_key,
-    (t.stripe_secret_key_enc     IS NOT NULL),
-    (t.stripe_webhook_secret_enc IS NOT NULL),
-    t.stripe_credentials_updated_at
+    t.payment_provider_public_key,
+    (t.payment_provider_secret_enc  IS NOT NULL),
+    (t.payment_provider_webhook_enc IS NOT NULL),
+    t.payment_provider_updated_at
   FROM tenants t
   WHERE t.subdomain = trim(p_subdomain)
   LIMIT 1;

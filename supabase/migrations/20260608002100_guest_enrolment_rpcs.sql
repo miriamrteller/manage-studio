@@ -186,6 +186,7 @@ DECLARE
   v_tenant_id          UUID;
   v_student_account_id UUID;
   v_payer_person_id    UUID;
+  v_payer_account_id   UUID;
   v_billing_account_id UUID;
   v_engagement_id      UUID;
 BEGIN
@@ -229,16 +230,33 @@ BEGIN
     RETURN jsonb_build_object('engagementId', v_engagement_id);
   END IF;
 
-  SELECT id INTO v_billing_account_id
-  FROM billing_accounts
-  WHERE tenant_id = v_tenant_id
-    AND person_id = v_payer_person_id
-    AND status = 'active'
-  LIMIT 1;
+  SELECT account_id INTO v_payer_account_id
+  FROM people
+  WHERE id = v_payer_person_id;
+
+  -- Prefer household-level billing account (account_id)
+  IF v_payer_account_id IS NOT NULL THEN
+    SELECT id INTO v_billing_account_id
+    FROM billing_accounts
+    WHERE tenant_id = v_tenant_id
+      AND account_id = v_payer_account_id
+      AND status = 'active'
+    LIMIT 1;
+  END IF;
+
+  -- Fallback: legacy person_id-only row (pre-migration or edge cases)
+  IF v_billing_account_id IS NULL THEN
+    SELECT id INTO v_billing_account_id
+    FROM billing_accounts
+    WHERE tenant_id = v_tenant_id
+      AND person_id = v_payer_person_id
+      AND status = 'active'
+    LIMIT 1;
+  END IF;
 
   IF v_billing_account_id IS NULL THEN
-    INSERT INTO billing_accounts (tenant_id, person_id, status)
-    VALUES (v_tenant_id, v_payer_person_id, 'active')
+    INSERT INTO billing_accounts (tenant_id, account_id, person_id, status)
+    VALUES (v_tenant_id, v_payer_account_id, v_payer_person_id, 'active')
     RETURNING id INTO v_billing_account_id;
   END IF;
 

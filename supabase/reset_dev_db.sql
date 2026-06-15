@@ -32,6 +32,10 @@ DROP TABLE IF EXISTS public.waiver_events                 CASCADE;
 DROP TABLE IF EXISTS public.waiver_evidence               CASCADE;
 
 DROP TABLE IF EXISTS public.payments                      CASCADE;
+DROP TABLE IF EXISTS public.document_queue                CASCADE;
+DROP TABLE IF EXISTS public.invoicing_token_cache           CASCADE;
+DROP TABLE IF EXISTS public.billing_schedules               CASCADE;
+DROP TABLE IF EXISTS public.payment_method_tokens           CASCADE;
 DROP TABLE IF EXISTS public.invoice_sequences             CASCADE;
 DROP TABLE IF EXISTS public.attendance                    CASCADE;
 
@@ -115,6 +119,11 @@ DROP FUNCTION IF EXISTS public.get_tenant_config_by_subdomain(TEXT)             
 DROP FUNCTION IF EXISTS public.next_invoice_number(UUID)                                 CASCADE;
 DROP FUNCTION IF EXISTS public.get_tenant_stripe_credentials(UUID)                       CASCADE;
 DROP FUNCTION IF EXISTS public.save_tenant_stripe_credentials(TEXT, TEXT, TEXT)          CASCADE;
+DROP FUNCTION IF EXISTS public.get_tenant_payment_credentials(UUID)                      CASCADE;
+DROP FUNCTION IF EXISTS public.save_tenant_payment_credentials(TEXT, TEXT, TEXT)         CASCADE;
+DROP FUNCTION IF EXISTS public.get_tenant_invoicing_credentials(UUID)                      CASCADE;
+DROP FUNCTION IF EXISTS public.save_tenant_invoicing_credentials(TEXT, TEXT, TEXT)         CASCADE;
+DROP FUNCTION IF EXISTS public.get_billing_account_payment_method(UUID)                    CASCADE;
 DROP FUNCTION IF EXISTS public.get_my_profile()                                          CASCADE;
 DROP FUNCTION IF EXISTS public.link_auth_user_to_person(UUID)                            CASCADE;
 DROP FUNCTION IF EXISTS public.resolve_engagement_guardian(UUID)                       CASCADE;

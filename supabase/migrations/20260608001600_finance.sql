@@ -1,7 +1,7 @@
 -- =============================================================================
--- 001600: Finance — Payments + Invoice Sequences + Stripe RPCs
+-- 001600: Finance — Payments + Provider RPCs + Billing/Invoicing tables
 -- payments lives here because payments.engagement_id FKs engagements (001300).
--- DEPENDENCIES: 000200, 000300, 000500, 001300
+-- DEPENDENCIES: 000200, 000300, 000500, 001300, 001100
 -- =============================================================================
 
 CREATE TABLE payments (
@@ -11,102 +11,72 @@ CREATE TABLE payments (
   person_id                UUID        REFERENCES people(id),
   offering_id              UUID        REFERENCES offerings(id),
   engagement_id            UUID        REFERENCES engagements(id),
+  billing_account_id       UUID        REFERENCES billing_accounts(id),
   charge_type              TEXT        NOT NULL DEFAULT 'initial'
                            CHECK (charge_type IN ('initial', 'renewal', 'setup', 'adjustment', 'refund')),
-  stripe_payment_intent_id TEXT        UNIQUE,
-  stripe_invoice_id        TEXT,
+  provider                 TEXT        NOT NULL DEFAULT 'stripe',
+  provider_payment_ref     TEXT        UNIQUE,
+  payment_method           TEXT        CHECK (payment_method IN ('card','cash','bank_transfer','other')),
   pretax_amount_minor      INT         NOT NULL,
   vat_rate                 NUMERIC(5,4) NOT NULL DEFAULT 0,
   vat_amount_minor         INT         NOT NULL DEFAULT 0,
   total_amount_minor       INT         NOT NULL,
   currency                 TEXT        NOT NULL DEFAULT 'ILS',
-  invoice_number           TEXT,
+  external_document_id     TEXT,
+  external_document_number TEXT,
   invoice_issued_at        TIMESTAMPTZ,
   invoice_url              TEXT,
   status                   TEXT        NOT NULL DEFAULT 'pending'
-                           CHECK (status IN ('pending', 'succeeded', 'failed', 'refunded', 'disputed')),
+                           CHECK (status IN ('pending', 'succeeded', 'failed', 'refunded', 'partially_refunded', 'disputed')),
   description              TEXT,
   paid_at                  TIMESTAMPTZ,
   refunded_at              TIMESTAMPTZ,
   refund_amount_minor      INT,
+  refunds_payment_id       UUID        REFERENCES payments(id),
+  created_by               UUID        REFERENCES user_profiles(id),
+  approved_by              UUID        REFERENCES user_profiles(id),
   anonymised_at            TIMESTAMPTZ,
   created_at               TIMESTAMPTZ NOT NULL DEFAULT now(),
   CONSTRAINT payment_payer CHECK ((account_id IS NOT NULL) OR (person_id IS NOT NULL)),
-  CONSTRAINT payments_invoice_unique_per_tenant UNIQUE (tenant_id, invoice_number)
+  CONSTRAINT payment_refund_amount_sign CHECK (
+    charge_type <> 'refund' OR total_amount_minor <= 0
+  )
 );
 
-CREATE INDEX idx_payments_tenant     ON payments(tenant_id);
-CREATE INDEX idx_payments_engagement ON payments(engagement_id);
-CREATE INDEX idx_payments_offering   ON payments(offering_id);
+CREATE INDEX idx_payments_tenant          ON payments(tenant_id);
+CREATE INDEX idx_payments_engagement      ON payments(engagement_id);
+CREATE INDEX idx_payments_offering        ON payments(offering_id);
+CREATE INDEX idx_payments_billing_account ON payments(billing_account_id);
 
-CREATE TABLE invoice_sequences (
-  tenant_id    UUID    PRIMARY KEY REFERENCES tenants(id),
-  last_number  INT     NOT NULL DEFAULT 0,
-  prefix       TEXT    NOT NULL DEFAULT 'INV',
-  year_prefix  BOOLEAN NOT NULL DEFAULT true,
-  current_year TEXT    NOT NULL DEFAULT EXTRACT(YEAR FROM now())::TEXT
-);
-
-CREATE OR REPLACE FUNCTION next_invoice_number(p_tenant_id UUID)
-RETURNS TEXT LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
-DECLARE
-  seq         RECORD;
-  new_number  INT;
-  invoice_num TEXT;
-  this_year   TEXT;
-BEGIN
-  this_year := EXTRACT(YEAR FROM now())::TEXT;
-
-  SELECT * INTO seq FROM invoice_sequences WHERE tenant_id = p_tenant_id FOR UPDATE;
-
-  IF NOT FOUND THEN
-    INSERT INTO invoice_sequences (tenant_id, last_number, current_year)
-    VALUES (p_tenant_id, 1, this_year) RETURNING * INTO seq;
-    new_number := 1;
-  ELSIF seq.current_year <> this_year THEN
-    UPDATE invoice_sequences SET last_number = 1, current_year = this_year
-    WHERE tenant_id = p_tenant_id RETURNING * INTO seq;
-    new_number := 1;
-  ELSE
-    UPDATE invoice_sequences SET last_number = last_number + 1
-    WHERE tenant_id = p_tenant_id RETURNING * INTO seq;
-    new_number := seq.last_number;
-  END IF;
-
-  IF seq.year_prefix THEN
-    invoice_num := seq.prefix || '-' || this_year || '-' || LPAD(new_number::TEXT, 4, '0');
-  ELSE
-    invoice_num := seq.prefix || '-' || LPAD(new_number::TEXT, 6, '0');
-  END IF;
-
-  RETURN invoice_num;
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION get_tenant_stripe_credentials(p_tenant_id UUID)
-RETURNS TABLE (stripe_publishable_key TEXT, stripe_secret_key TEXT, stripe_webhook_secret TEXT)
+-- Payment provider credential RPCs (service_role read; tenant_admin write)
+CREATE OR REPLACE FUNCTION get_tenant_payment_credentials(p_tenant_id UUID)
+RETURNS TABLE (
+  payment_provider_public_key TEXT,
+  payment_provider_secret_key TEXT,
+  payment_provider_webhook_secret TEXT
+)
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE enc_key TEXT;
 BEGIN
   IF NOT is_service_role() THEN
-    RAISE EXCEPTION 'get_tenant_stripe_credentials: service_role only';
+    RAISE EXCEPTION 'get_tenant_payment_credentials: service_role only';
   END IF;
   enc_key := current_setting('app.encryption_key', true);
   IF enc_key IS NULL OR enc_key = '' THEN
     RAISE EXCEPTION 'app.encryption_key is not configured';
   END IF;
   RETURN QUERY SELECT
-    t.stripe_publishable_key,
-    CASE WHEN t.stripe_secret_key_enc     IS NOT NULL THEN pgp_sym_decrypt(t.stripe_secret_key_enc,     enc_key) ELSE NULL END,
-    CASE WHEN t.stripe_webhook_secret_enc IS NOT NULL THEN pgp_sym_decrypt(t.stripe_webhook_secret_enc, enc_key) ELSE NULL END
+    t.payment_provider_public_key,
+    CASE WHEN t.payment_provider_secret_enc  IS NOT NULL THEN pgp_sym_decrypt(t.payment_provider_secret_enc,  enc_key) ELSE NULL END,
+    CASE WHEN t.payment_provider_webhook_enc IS NOT NULL THEN pgp_sym_decrypt(t.payment_provider_webhook_enc, enc_key) ELSE NULL END
   FROM tenants t WHERE t.id = p_tenant_id;
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION save_tenant_stripe_credentials(
-  p_publishable_key TEXT,
-  p_secret_key      TEXT,
-  p_webhook_secret  TEXT
+CREATE OR REPLACE FUNCTION save_tenant_payment_credentials(
+  p_public_key     TEXT,
+  p_secret_key     TEXT,
+  p_webhook_secret TEXT
 )
 RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
@@ -121,26 +91,211 @@ BEGIN
   enc_key := current_setting('app.encryption_key', true);
   IF enc_key IS NULL OR enc_key = '' THEN RAISE EXCEPTION 'app.encryption_key is not configured'; END IF;
   UPDATE tenants SET
-    stripe_publishable_key    = NULLIF(trim(p_publishable_key), ''),
-    stripe_secret_key_enc     = CASE WHEN p_secret_key     IS NOT NULL AND trim(p_secret_key)     <> '' THEN pgp_sym_encrypt(trim(p_secret_key),     enc_key) ELSE stripe_secret_key_enc     END,
-    stripe_webhook_secret_enc = CASE WHEN p_webhook_secret IS NOT NULL AND trim(p_webhook_secret) <> '' THEN pgp_sym_encrypt(trim(p_webhook_secret), enc_key) ELSE stripe_webhook_secret_enc END,
-    stripe_credentials_updated_at = now(),
+    payment_provider_public_key   = NULLIF(trim(p_public_key), ''),
+    payment_provider_secret_enc   = CASE WHEN p_secret_key     IS NOT NULL AND trim(p_secret_key)     <> '' THEN pgp_sym_encrypt(trim(p_secret_key),     enc_key) ELSE payment_provider_secret_enc   END,
+    payment_provider_webhook_enc  = CASE WHEN p_webhook_secret IS NOT NULL AND trim(p_webhook_secret) <> '' THEN pgp_sym_encrypt(trim(p_webhook_secret), enc_key) ELSE payment_provider_webhook_enc  END,
+    payment_provider_updated_at   = now(),
     updated_at = now()
   WHERE id = v_tenant_id;
 END;
 $$;
 
-REVOKE ALL ON FUNCTION next_invoice_number(UUID) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION next_invoice_number(UUID)                        TO service_role;
-GRANT EXECUTE ON FUNCTION get_tenant_stripe_credentials(UUID)              TO service_role;
-GRANT EXECUTE ON FUNCTION save_tenant_stripe_credentials(TEXT, TEXT, TEXT) TO authenticated;
+-- Invoicing provider credential RPCs
+CREATE OR REPLACE FUNCTION get_tenant_invoicing_credentials(p_tenant_id UUID)
+RETURNS TABLE (
+  invoicing_account_id TEXT,
+  invoicing_api_key    TEXT,
+  invoicing_secret     TEXT
+)
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE enc_key TEXT;
+BEGIN
+  IF NOT is_service_role() THEN
+    RAISE EXCEPTION 'get_tenant_invoicing_credentials: service_role only';
+  END IF;
+  enc_key := current_setting('app.encryption_key', true);
+  IF enc_key IS NULL OR enc_key = '' THEN
+    RAISE EXCEPTION 'app.encryption_key is not configured';
+  END IF;
+  RETURN QUERY SELECT
+    t.invoicing_account_id,
+    CASE WHEN t.invoicing_api_key_enc IS NOT NULL THEN pgp_sym_decrypt(t.invoicing_api_key_enc, enc_key) ELSE NULL END,
+    CASE WHEN t.invoicing_secret_enc     IS NOT NULL THEN pgp_sym_decrypt(t.invoicing_secret_enc,     enc_key) ELSE NULL END
+  FROM tenants t WHERE t.id = p_tenant_id;
+END;
+$$;
 
-ALTER TABLE payments          ENABLE ROW LEVEL SECURITY;
-ALTER TABLE invoice_sequences ENABLE ROW LEVEL SECURITY;
+CREATE OR REPLACE FUNCTION save_tenant_invoicing_credentials(
+  p_account_id TEXT,
+  p_api_key    TEXT,
+  p_secret     TEXT
+)
+RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  enc_key     TEXT;
+  v_tenant_id UUID;
+BEGIN
+  v_tenant_id := get_my_tenant_id();
+  IF v_tenant_id IS NULL THEN RAISE EXCEPTION 'Not authenticated'; END IF;
+  IF NOT EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND tenant_id = v_tenant_id AND 'tenant_admin' = ANY(role)) THEN
+    RAISE EXCEPTION 'tenant_admin role required';
+  END IF;
+  enc_key := current_setting('app.encryption_key', true);
+  IF enc_key IS NULL OR enc_key = '' THEN RAISE EXCEPTION 'app.encryption_key is not configured'; END IF;
+  UPDATE tenants SET
+    invoicing_account_id           = NULLIF(trim(p_account_id), ''),
+    invoicing_api_key_enc          = CASE WHEN p_api_key IS NOT NULL AND trim(p_api_key) <> '' THEN pgp_sym_encrypt(trim(p_api_key), enc_key) ELSE invoicing_api_key_enc END,
+    invoicing_secret_enc           = CASE WHEN p_secret    IS NOT NULL AND trim(p_secret)    <> '' THEN pgp_sym_encrypt(trim(p_secret),    enc_key) ELSE invoicing_secret_enc     END,
+    invoicing_credentials_updated_at = now(),
+    updated_at = now()
+  WHERE id = v_tenant_id;
+END;
+$$;
+
+-- Safe card display RPC (Stage 8 UI; auth enforced here)
+CREATE OR REPLACE FUNCTION get_billing_account_payment_method(p_billing_account_id UUID)
+RETURNS TABLE (card_brand TEXT, last4 TEXT, exp_month INT, exp_year INT, is_default BOOLEAN)
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  v_tenant_id  UUID;
+  v_account_id UUID;
+  v_person_id  UUID;
+BEGIN
+  SELECT ba.tenant_id, ba.account_id, ba.person_id
+    INTO v_tenant_id, v_account_id, v_person_id
+  FROM billing_accounts ba
+  WHERE ba.id = p_billing_account_id;
+
+  IF v_tenant_id IS NULL THEN
+    RETURN;
+  END IF;
+
+  IF NOT (
+    is_super_admin()
+    OR EXISTS (
+      SELECT 1 FROM user_profiles
+      WHERE id = auth.uid()
+        AND tenant_id = v_tenant_id
+        AND 'tenant_admin' = ANY(role)
+    )
+    OR (
+      v_tenant_id = get_my_tenant_id()
+      AND (
+        (v_account_id IS NOT NULL AND v_account_id IN (SELECT get_my_account_ids()))
+        OR (v_person_id IS NOT NULL AND v_person_id = get_my_person_id())
+      )
+    )
+  ) THEN
+    RETURN;
+  END IF;
+
+  RETURN QUERY
+  SELECT pmt.card_brand, pmt.last4, pmt.exp_month, pmt.exp_year, pmt.is_default
+  FROM payment_method_tokens pmt
+  WHERE pmt.billing_account_id = p_billing_account_id
+    AND pmt.revoked_at IS NULL
+    AND pmt.is_default = true
+  LIMIT 1;
+END;
+$$;
+
+CREATE TABLE payment_method_tokens (
+  id                  UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id           UUID        NOT NULL REFERENCES tenants(id),
+  billing_account_id  UUID        NOT NULL REFERENCES billing_accounts(id),
+  provider            TEXT        NOT NULL,
+  provider_token      TEXT        NOT NULL,
+  card_brand          TEXT,
+  last4               TEXT,
+  exp_month           INT         CHECK (exp_month BETWEEN 1 AND 12),
+  exp_year            INT,
+  is_default          BOOLEAN     NOT NULL DEFAULT false,
+  revoked_at          TIMESTAMPTZ,
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_pmt_tenant  ON payment_method_tokens(tenant_id);
+CREATE INDEX idx_pmt_account ON payment_method_tokens(billing_account_id);
+CREATE UNIQUE INDEX idx_pmt_one_default ON payment_method_tokens(billing_account_id)
+  WHERE is_default AND revoked_at IS NULL;
+
+CREATE TABLE billing_schedules (
+  id                       UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id                UUID        NOT NULL REFERENCES tenants(id),
+  engagement_id            UUID        NOT NULL UNIQUE REFERENCES engagements(id),
+  billing_account_id       UUID        REFERENCES billing_accounts(id),
+  payment_method_token_id  UUID        REFERENCES payment_method_tokens(id) ON DELETE SET NULL,
+  next_billing_date        DATE        NOT NULL,
+  next_attempt_at          TIMESTAMPTZ,
+  last_attempt_at          TIMESTAMPTZ,
+  last_error               TEXT,
+  attempt_count            INT         NOT NULL DEFAULT 0,
+  status                   TEXT        NOT NULL DEFAULT 'active'
+                           CHECK (status IN ('active','paused','suspended','cancelled')),
+  created_at               TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at               TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_billing_schedules_tenant ON billing_schedules(tenant_id);
+CREATE INDEX idx_billing_schedules_due ON billing_schedules(status, next_billing_date, next_attempt_at)
+  WHERE status = 'active';
+
+CREATE TABLE invoicing_token_cache (
+  tenant_id   UUID        PRIMARY KEY REFERENCES tenants(id),
+  token       TEXT        NOT NULL,
+  expires_at  TIMESTAMPTZ NOT NULL
+);
+
+CREATE TABLE document_queue (
+  id                    UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id             UUID        NOT NULL REFERENCES tenants(id),
+  payment_id            UUID        NOT NULL REFERENCES payments(id),
+  document_kind         TEXT        NOT NULL CHECK (document_kind IN ('sale','refund')),
+  attempts              INT         NOT NULL DEFAULT 0,
+  last_error            TEXT,
+  scheduled_for         TIMESTAMPTZ NOT NULL DEFAULT now(),
+  processing_started_at TIMESTAMPTZ,
+  succeeded_at          TIMESTAMPTZ,
+  status                TEXT        NOT NULL DEFAULT 'pending'
+                        CHECK (status IN ('pending','processing','succeeded','dead')),
+  created_at            TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_document_queue_due ON document_queue(scheduled_for)
+  WHERE status = 'pending';
+CREATE UNIQUE INDEX idx_document_queue_one_active ON document_queue(payment_id, document_kind)
+  WHERE status IN ('pending', 'processing');
+
+GRANT EXECUTE ON FUNCTION get_tenant_payment_credentials(UUID)              TO service_role;
+GRANT EXECUTE ON FUNCTION save_tenant_payment_credentials(TEXT, TEXT, TEXT) TO authenticated;
+GRANT EXECUTE ON FUNCTION get_tenant_invoicing_credentials(UUID)            TO service_role;
+GRANT EXECUTE ON FUNCTION save_tenant_invoicing_credentials(TEXT, TEXT, TEXT) TO authenticated;
+GRANT EXECUTE ON FUNCTION get_billing_account_payment_method(UUID)          TO authenticated;
+
+ALTER TABLE payments               ENABLE ROW LEVEL SECURITY;
+ALTER TABLE payment_method_tokens  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE billing_schedules      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE invoicing_token_cache  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE document_queue         ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY payments_super_admin    ON payments FOR ALL    USING (is_super_admin());
 CREATE POLICY payments_admin_all      ON payments FOR ALL    USING (tenant_id = get_my_tenant_id() AND EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND 'tenant_admin' = ANY(role)));
 CREATE POLICY payments_account_select ON payments FOR SELECT USING (tenant_id = get_my_tenant_id() AND (person_id = get_my_person_id() OR account_id IN (SELECT get_my_account_ids())));
 
-CREATE POLICY invoice_sequences_super_admin ON invoice_sequences FOR ALL    USING (is_super_admin());
-CREATE POLICY invoice_sequences_admin       ON invoice_sequences FOR SELECT USING (tenant_id = get_my_tenant_id() AND EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND 'tenant_admin' = ANY(role)));
+CREATE POLICY pmt_super_admin ON payment_method_tokens FOR ALL USING (is_super_admin());
+CREATE POLICY pmt_admin_all ON payment_method_tokens FOR ALL
+  USING (tenant_id = get_my_tenant_id() AND EXISTS (
+    SELECT 1 FROM user_profiles WHERE id = auth.uid() AND 'tenant_admin' = ANY(role)));
+
+CREATE POLICY billing_schedules_super_admin ON billing_schedules FOR ALL USING (is_super_admin());
+CREATE POLICY billing_schedules_admin ON billing_schedules FOR ALL
+  USING (tenant_id = get_my_tenant_id() AND EXISTS (
+    SELECT 1 FROM user_profiles WHERE id = auth.uid() AND 'tenant_admin' = ANY(role)));
+
+REVOKE ALL ON invoicing_token_cache FROM anon;
+REVOKE ALL ON invoicing_token_cache FROM authenticated;
+CREATE POLICY invoicing_token_cache_super_admin ON invoicing_token_cache FOR ALL
+  USING (is_super_admin());
+
+CREATE POLICY document_queue_super_admin ON document_queue FOR ALL USING (is_super_admin());
+CREATE POLICY document_queue_admin_select ON document_queue FOR SELECT
+  USING (tenant_id = get_my_tenant_id() AND EXISTS (
+    SELECT 1 FROM user_profiles WHERE id = auth.uid() AND 'tenant_admin' = ANY(role)));

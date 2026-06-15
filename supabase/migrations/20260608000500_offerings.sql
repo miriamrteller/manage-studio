@@ -65,8 +65,6 @@ CREATE TABLE offerings (
   renewal_policy    TEXT        NOT NULL DEFAULT 'none'
                     CHECK (renewal_policy IN ('none', 'fixed_season', 'auto_renew')),
   setup_fee_minor   INT         NOT NULL DEFAULT 0,
-  stripe_product_id TEXT,
-  stripe_price_id   TEXT,
   waiver_required   BOOLEAN     NOT NULL DEFAULT true,
   cover_image_path  TEXT,
   status            TEXT        NOT NULL DEFAULT 'active'

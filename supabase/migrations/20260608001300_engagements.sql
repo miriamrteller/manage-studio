@@ -16,8 +16,7 @@ CREATE TABLE engagements (
   status                 TEXT        NOT NULL DEFAULT 'pending_payment'
                          CHECK (status IN ('pending_payment', 'active', 'admin_review', 'pending_offer', 'cancelled', 'withdrawn', 'pending_waiver')),
   billing_status         TEXT        CHECK (billing_status IN ('current', 'past_due', 'suspended', 'cancelled')),
-  stripe_subscription_id TEXT,
-  stripe_customer_id     TEXT,
+  provider_customer_ref  TEXT,
   payment_received_at    TIMESTAMPTZ,
   cancelled_at           TIMESTAMPTZ,
   cancellation_reason    TEXT,
@@ -42,6 +41,8 @@ COMMENT ON COLUMN engagements.age_override_reason IS 'Optional note explaining t
 COMMENT ON COLUMN engagements.age_review_note     IS 'Optional parent note when requesting age exception review.';
 COMMENT ON COLUMN engagements.age_at_season_start IS 'Snapshot age in whole years at season start when engagement was created.';
 COMMENT ON COLUMN engagements.waiver_evidence_id  IS 'The exact signed waiver record that covers this enrolment; set at checkout.';
+COMMENT ON COLUMN engagements.billing_status IS
+  'Managed exclusively by the billing engine (Stage 6). Source of truth for financial standing is payments + billing_schedules; this is a denormalised convenience flag.';
 
 CREATE UNIQUE INDEX idx_engagements_active_with_season ON engagements(person_id, offering_id, season_id)
   WHERE status NOT IN ('cancelled', 'withdrawn') AND season_id IS NOT NULL;

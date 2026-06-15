@@ -23,22 +23,33 @@ CREATE TABLE tenants (
                                 CHECK (business_preset IN ('programs', 'services', 'catalog')),
   labels                        JSONB       NOT NULL DEFAULT '{}'::jsonb,
   from_email                    TEXT,
-  stripe_publishable_key        TEXT,
-  stripe_secret_key_enc         BYTEA,
-  stripe_webhook_secret_enc     BYTEA,
-  stripe_account_id             TEXT,
-  stripe_credentials_updated_at TIMESTAMPTZ,
+  -- Payment capture (money movement). Slug validated in app/Zod — no Postgres CHECK enum.
+  payment_provider              TEXT        NOT NULL DEFAULT 'stripe',
+  payment_provider_public_key   TEXT,
+  payment_provider_secret_enc   BYTEA,
+  payment_provider_webhook_enc  BYTEA,
+  payment_provider_account_id   TEXT,
+  payment_provider_updated_at   TIMESTAMPTZ,
+  -- Invoicing / tax documents (separate from payment capture)
+  invoicing_provider            TEXT        NOT NULL DEFAULT 'green_invoice',
+  invoicing_account_id          TEXT,
+  invoicing_api_key_enc         BYTEA,
+  invoicing_secret_enc          BYTEA,
+  invoicing_credentials_updated_at TIMESTAMPTZ,
+  invoicing_auth_valid_until    TIMESTAMPTZ,
+  invoicing_auth_checked_at     TIMESTAMPTZ,
+  billing_policy                JSONB       NOT NULL DEFAULT '{}'::jsonb,
   waiver_require_otp            BOOLEAN     NOT NULL DEFAULT false,
   created_at                    TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at                    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-COMMENT ON COLUMN tenants.stripe_secret_key_enc IS 'pgp_sym_encrypt with app.encryption_key (manual runbook). Never expose to clients.';
+COMMENT ON COLUMN tenants.payment_provider_secret_enc IS 'pgp_sym_encrypt with app.encryption_key (manual runbook). Never expose to clients.';
 COMMENT ON COLUMN tenants.language_default IS 'Primary language for tenant. dir (rtl/ltr) is computed from this in the app.';
 COMMENT ON COLUMN tenants.country IS 'Country for regional settings (VAT rate, currency, locale).';
 COMMENT ON COLUMN tenants.from_email IS
   'Verified sender address for transactional email (waiver reminders, payment confirmations). '
-  'When NULL, the send-waiver-reminder / stripe-webhook Edge Functions skip outbound email for the tenant.';
+  'When NULL, the send-waiver-reminder / handle-payment-event Edge Functions skip outbound email for the tenant.';
 COMMENT ON COLUMN tenants.prices_include_vat IS
   'When true, offerings.price_minor is VAT-inclusive (customer pays this amount). '
   'When false, price_minor is pretax and VAT is added at checkout. See SPEC §2.5.1.';
