@@ -88,6 +88,29 @@ function PaymentFormInner({
   );
 }
 
+function MockPaymentShell({
+  onPaid,
+  onPrevious,
+}: {
+  onPaid: () => void;
+  onPrevious: () => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">{t('enrolment.mock_payment_hint', { defaultValue: 'Mock provider — payment completes on the server when you continue.' })}</p>
+      <div className="flex gap-2">
+        <Button type="button" variant="outline" className="flex-1" onClick={onPrevious}>
+          {t('common.back')}
+        </Button>
+        <Button type="button" variant="primary" className="flex-1" onClick={onPaid}>
+          {t('enrolment.mock_pay_simulate', { defaultValue: 'Simulate payment' })}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function StripeElementsShell({
   clientSecret,
   publishableKey,
@@ -119,6 +142,8 @@ export function TokenEnrolmentPaymentForm({
   const { t } = useTranslation();
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [publishableKey, setPublishableKey] = useState<string | null>(null);
+  const [paymentProvider, setPaymentProvider] = useState<string | null>(null);
+  const [mockCompleted, setMockCompleted] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -130,13 +155,15 @@ export function TokenEnrolmentPaymentForm({
         headers: { Authorization: `WaiverToken ${enrolmentToken}` },
       });
 
-      if (error || !data?.clientSecret) {
+      if (error || (!data?.clientSecret && !data?.mockCompleted)) {
         setLoadError(error?.message ?? data?.error ?? t('enrolment.payment_setup_failed'));
         return;
       }
 
-      setClientSecret(data.clientSecret);
+      setClientSecret(data.clientSecret ?? null);
       setPublishableKey(data.publishableKey ?? null);
+      setPaymentProvider(data.paymentProvider ?? null);
+      setMockCompleted(Boolean(data.mockCompleted));
     };
 
     void loadIntent();
@@ -148,6 +175,43 @@ export function TokenEnrolmentPaymentForm({
         {loadError}
       </p>
     );
+  }
+
+  if (!mockCompleted && paymentProvider !== 'mock' && (!clientSecret || !publishableKey)) {
+    return <p role="status">{t('common.loading')}</p>;
+  }
+
+  return (
+    <CheckoutShell
+      paymentProvider={paymentProvider}
+      mockCompleted={mockCompleted}
+      clientSecret={clientSecret}
+      publishableKey={publishableKey}
+      onPaid={onPaid}
+      onPrevious={onPrevious}
+    />
+  );
+}
+
+function CheckoutShell({
+  paymentProvider,
+  mockCompleted,
+  clientSecret,
+  publishableKey,
+  onPaid,
+  onPrevious,
+}: {
+  paymentProvider?: string | null;
+  mockCompleted?: boolean;
+  clientSecret: string | null;
+  publishableKey: string | null;
+  onPaid: () => void;
+  onPrevious: () => void;
+}) {
+  const { t } = useTranslation();
+
+  if (mockCompleted || paymentProvider === 'mock') {
+    return <MockPaymentShell onPaid={onPaid} onPrevious={onPrevious} />;
   }
 
   if (!clientSecret || !publishableKey) {
@@ -177,6 +241,8 @@ function AuthenticatedEnrolmentPaymentForm({
   const tenant = useTenant();
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [publishableKey, setPublishableKey] = useState<string | null>(null);
+  const [paymentProvider, setPaymentProvider] = useState<string | null>(null);
+  const [mockCompleted, setMockCompleted] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -194,17 +260,29 @@ function AuthenticatedEnrolmentPaymentForm({
         body: { offering_id: classId, engagement_id: engagementId },
       });
 
-      if (error || !data?.clientSecret) {
+      if (error || (!data?.clientSecret && !data?.mockCompleted)) {
         setLoadError(error?.message ?? data?.error ?? t('enrolment.payment_setup_failed'));
         return;
       }
 
-      setClientSecret(data.clientSecret);
-      setPublishableKey(data.publishableKey ?? tenant?.stripe_publishable_key ?? null);
+      setClientSecret(data.clientSecret ?? null);
+      setPublishableKey(
+        data.publishableKey ?? tenant?.payment_provider_public_key ?? tenant?.stripe_publishable_key ?? null,
+      );
+      setPaymentProvider(data.paymentProvider ?? null);
+      setMockCompleted(Boolean(data.mockCompleted));
     };
 
     void loadIntent();
-  }, [requireAuth, user, classId, engagementId, tenant?.stripe_publishable_key, t]);
+  }, [
+    requireAuth,
+    user,
+    classId,
+    engagementId,
+    tenant?.payment_provider_public_key,
+    tenant?.stripe_publishable_key,
+    t,
+  ]);
 
   if (requireAuth && (authLoading || !user)) {
     return <p role="status">{t('common.loading')}</p>;
@@ -218,12 +296,14 @@ function AuthenticatedEnrolmentPaymentForm({
     );
   }
 
-  if (!clientSecret || !publishableKey) {
+  if (!mockCompleted && paymentProvider !== 'mock' && (!clientSecret || !publishableKey)) {
     return <p role="status">{t('common.loading')}</p>;
   }
 
   return (
-    <StripeElementsShell
+    <CheckoutShell
+      paymentProvider={paymentProvider}
+      mockCompleted={mockCompleted}
       clientSecret={clientSecret}
       publishableKey={publishableKey}
       onPaid={onPaid}

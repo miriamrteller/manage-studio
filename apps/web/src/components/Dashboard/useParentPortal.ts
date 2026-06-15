@@ -21,7 +21,8 @@ export interface ParentPayment {
   currency: string;
   status: string;
   paid_at: string | null;
-  invoice_number: string | null;
+  external_document_number: string | null;
+  invoice_url: string | null;
   description: string | null;
   person_id: string | null;
 }
@@ -101,7 +102,7 @@ export function useParentPortal(): ParentPortalState {
       const { data: paymentRows, error: paymentError } = await supabase
         .from('payments')
         .select(
-          'id, total_amount_minor, currency, status, paid_at, invoice_number, description, person_id',
+          'id, total_amount_minor, currency, status, paid_at, external_document_number, invoice_url, description, person_id',
         )
         .eq('tenant_id', tenant.id)
         .order('paid_at', { ascending: false, nullsFirst: false });
@@ -114,7 +115,8 @@ export function useParentPortal(): ParentPortalState {
         currency: p.currency as string,
         status: p.status as string,
         paid_at: (p.paid_at as string | null) ?? null,
-        invoice_number: (p.invoice_number as string | null) ?? null,
+        external_document_number: (p.external_document_number as string | null) ?? null,
+        invoice_url: (p.invoice_url as string | null) ?? null,
         description: (p.description as string | null) ?? null,
         person_id: (p.person_id as string | null) ?? null,
       }));

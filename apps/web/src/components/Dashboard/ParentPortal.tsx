@@ -210,7 +210,24 @@ export function ParentPortal() {
                       {formatMoney(payment.total_amount_minor, payment.currency)}
                     </td>
                     <td className="px-4 py-2 capitalize text-gray-700">{payment.status}</td>
-                    <td className="px-4 py-2 text-gray-600">{payment.invoice_number ?? '—'}</td>
+                    <td className="px-4 py-2 text-gray-600">
+                      {payment.external_document_number ? (
+                        payment.invoice_url ? (
+                          <a
+                            href={payment.invoice_url}
+                            className="text-primary underline"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            {payment.external_document_number}
+                          </a>
+                        ) : (
+                          payment.external_document_number
+                        )
+                      ) : (
+                        '—'
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
