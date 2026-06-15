@@ -1,6 +1,12 @@
 export { EnrolmentStepper } from './EnrolmentStepper';
 export type { EnrolmentStep, EnrolmentStepperProps } from './EnrolmentStepper';
 export { StepSelectStudent } from './StepSelectStudent';
+export { StepClass } from './StepClass';
+export { StepNotification } from './StepNotification';
+export { StepAdminCheckout } from './StepAdminCheckout';
+export { StepCheckout } from './StepCheckout';
+export { StepConfirmation } from './StepConfirmation';
+export { StepBackButton } from './StepBackButton';
 export { AdminEnrolmentPaymentStep } from './AdminEnrolmentPaymentStep';
 export type { AdminPaymentChoice } from './AdminEnrolmentPaymentStep';
 export { AdminEnrolStudentModal } from './AdminEnrolStudentModal';
