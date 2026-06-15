@@ -19,23 +19,35 @@ export async function handlePaymentEventInternal(
     if (metadata.charge_type === "renewal" && metadata.billing_schedule_id) {
       const { data: schedule } = await service
         .from("billing_schedules")
-        .select("attempt_count")
+        .select("attempt_count, engagement_id")
         .eq("id", metadata.billing_schedule_id)
         .single();
 
       const nextAttempt = (schedule?.attempt_count as number | undefined ?? 0) + 1;
-      const dayOffsets = [0, 3, 4];
-      const offsetDays = dayOffsets[Math.min(nextAttempt - 1, dayOffsets.length - 1)] ?? 4;
-      const nextAttemptAt = new Date(Date.now() + offsetDays * 24 * 60 * 60 * 1000).toISOString();
+      const { dunningNextAttemptAt } = await import("./billing-time.ts");
+
+      const updates: Record<string, unknown> = {
+        attempt_count: nextAttempt,
+        last_attempt_at: new Date().toISOString(),
+        last_error: event.failureMessage ?? "Payment failed",
+      };
+
+      if (nextAttempt >= 3) {
+        updates.status = "suspended";
+        updates.next_attempt_at = null;
+        if (schedule?.engagement_id) {
+          await service
+            .from("engagements")
+            .update({ billing_status: "suspended" })
+            .eq("id", schedule.engagement_id);
+        }
+      } else {
+        updates.next_attempt_at = dunningNextAttemptAt(nextAttempt);
+      }
 
       await service
         .from("billing_schedules")
-        .update({
-          attempt_count: nextAttempt,
-          next_attempt_at: nextAttemptAt,
-          last_error: event.failureMessage ?? "Payment failed",
-          last_attempt_at: new Date().toISOString(),
-        })
+        .update(updates)
         .eq("id", metadata.billing_schedule_id);
     }
 
