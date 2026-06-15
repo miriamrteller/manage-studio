@@ -67,6 +67,13 @@ Deno.serve(async (req) => {
   if (body.mode === "batch" || (!body.queue_id && !body.payment_id)) {
     results.staleReset = await resetStaleProcessingRows(service);
 
+    const retentionCutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    await service
+      .from("document_queue")
+      .delete()
+      .eq("status", "succeeded")
+      .lt("succeeded_at", retentionCutoff);
+
     const { data: dueRows, error } = await service
       .from("document_queue")
       .select("id, tenant_id, payment_id, document_kind, attempts, status")

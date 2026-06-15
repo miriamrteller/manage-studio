@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAdminDashboard } from './useAdminDashboard';
 import { useEntityLabels } from '@/hooks/useEntityLabels';
+import { FinanceHealthCard } from '@/features/finance/components/FinanceHealthCard';
 
 /**
  * AdminPanel: Smart component for admin dashboard
@@ -44,6 +45,8 @@ export function AdminPanel() {
           {t('pages.admin.setup.description')}
         </p>
       </section>
+
+      <FinanceHealthCard />
 
       {/* Setup Navigation Cards */}
       <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

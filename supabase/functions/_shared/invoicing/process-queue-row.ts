@@ -96,9 +96,29 @@ export async function processQueueRow(
         attempts: nextAttempts,
         last_error: message,
         processing_started_at: null,
-        scheduled_for: isDead ? row.attempts : backoffScheduledFor(nextAttempts),
+        scheduled_for: isDead ? now : backoffScheduledFor(nextAttempts),
       })
       .eq("id", row.id);
+
+    if (isDead) {
+      const { data: existingAlert } = await service
+        .from("audit_log")
+        .select("id")
+        .eq("tenant_id", row.tenant_id)
+        .eq("action", "document_queue_dead_alert")
+        .eq("entity_id", row.id)
+        .maybeSingle();
+
+      if (!existingAlert) {
+        await service.from("audit_log").insert({
+          tenant_id: row.tenant_id,
+          action: "document_queue_dead_alert",
+          entity_type: "document_queue",
+          entity_id: row.id,
+          after_state: { payment_id: row.payment_id, last_error: message },
+        });
+      }
+    }
 
     return isDead ? "dead" : "retry";
   }
