@@ -144,4 +144,26 @@ export class StripePaymentProvider implements PaymentProvider {
 
     throw new Error(`Unhandled Stripe event type: ${event.type}`);
   }
+
+  async refundCharge(params: {
+    providerPaymentRef: string;
+    amountMinor: number;
+  }): Promise<{ providerRefundRef: string }> {
+    const { data: payment } = await this.service
+      .from("payments")
+      .select("tenant_id")
+      .eq("provider_payment_ref", params.providerPaymentRef)
+      .maybeSingle();
+
+    if (!payment?.tenant_id) {
+      throw new Error("Payment not found for refund");
+    }
+
+    const { stripe } = await this.getStripe(payment.tenant_id as string);
+    const refund = await stripe.refunds.create({
+      payment_intent: params.providerPaymentRef,
+      amount: params.amountMinor,
+    });
+    return { providerRefundRef: refund.id };
+  }
 }

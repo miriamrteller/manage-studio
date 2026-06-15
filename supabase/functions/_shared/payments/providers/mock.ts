@@ -1,4 +1,3 @@
-import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import { buildMockPaymentEvent } from "../handle-payment-event.ts";
 import type { ChargeMetadata, ChargeParams, ChargeResult, PaymentEvent, PaymentProvider } from "../types.ts";
@@ -30,6 +29,13 @@ export class MockPaymentProvider implements PaymentProvider {
     const parsed = JSON.parse(rawBody) as PaymentEvent;
     ChargeMetadataSchema.parse(parsed.metadata);
     return parsed;
+  }
+
+  async refundCharge(params: {
+    providerPaymentRef: string;
+    amountMinor: number;
+  }): Promise<{ providerRefundRef: string }> {
+    return { providerRefundRef: `mock_ref_${params.providerPaymentRef}_${params.amountMinor}` };
   }
 }
 
