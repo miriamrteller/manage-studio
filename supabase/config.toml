@@ -75,3 +75,13 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/clear-enrolment-resume/index.ts"
 
+[functions.issue-document]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/issue-document/index.ts"
+
+[functions.verify-invoicing-credentials]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/verify-invoicing-credentials/index.ts"
+
