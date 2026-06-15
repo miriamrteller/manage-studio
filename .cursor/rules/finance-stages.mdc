@@ -25,6 +25,7 @@ Use `docs/plans/finance/AGENT-RUNBOOK.md` for the exact prompt and gates.
 - **Webhook replay:** duplicate `provider_payment_ref` → skip INSERT, **always** run idempotent `finalisePayment`.
 - **Mock providers in CI/dev** — no real Stripe/GI charges unless the user requests a manual runbook step.
 - **Do not `git commit` or `git push`** unless the user explicitly says to (e.g. "commit Stage N").
+- **Workflow A (git):** Single branch `finance/module` for all stages; one commit per stage; **do not** merge to `main` or open PRs until the user asks after Stage 9.
 - **Do not run `pnpm db:sync` or any db push** until the user confirms Stage 1 reset is done (Stage 1 only).
 
 ## DB & seed (linked remote dev only)
