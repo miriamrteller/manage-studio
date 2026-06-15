@@ -8,9 +8,9 @@
 -- Includes BOTH legacy (pre-Phase-A) and current generic names so reset works
 -- whether the DB still has classes/families/enrolments OR offerings/accounts/engagements.
 --
--- Usage (Supabase SQL Editor):
+-- Usage (Supabase SQL Editor on linked DEV project — not Supabase local):
 --   1. Run this entire script
---   2. pnpm db:push
+--   2. pnpm db:sync          (push migrations + types + email-dist copy)
 --   3. Run seed.sql in SQL Editor
 -- =============================================================================
 
@@ -168,6 +168,6 @@ BEGIN
     RAISE NOTICE 'Dev DB reset complete. No public app tables remain.';
   END IF;
 
-  RAISE NOTICE 'Next: pnpm db:push — then seed.sql in SQL Editor';
+  RAISE NOTICE 'Next: pnpm db:sync — then seed.sql in SQL Editor';
 END;
 $$;

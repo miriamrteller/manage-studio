@@ -1,6 +1,8 @@
 -- Seed data for Ballet School Management System
--- Creates test tenant, terms, levels, and classes for local dev / enrolment testing
+-- Creates test tenant, terms, levels, and classes for dev / enrolment testing
 -- Matches VITE_DEV_TENANT_SUBDOMAIN=creativeballet
+--
+-- After Stage 1 finance schema lands: also run supabase/seed-finance.sql (see AGENT-RUNBOOK).
 --
 -- IMPORTANT: Tenant Configuration (colors, language, currency, VAT rate)
 -- These fields are configured by school administrators during onboarding setup.
@@ -342,17 +344,13 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at = now();
 
 -- ============================================================================
--- INVOICE SEQUENCE (20260608001600_finance.sql)
+-- FINANCE (legacy — removed in Stage 1 schema)
+-- invoice_sequences / next_invoice_number are dropped by Stage 1.
+-- Post-Stage-1 payment fixtures: supabase/seed-finance.sql
 -- ============================================================================
-INSERT INTO invoice_sequences (tenant_id, last_number, prefix, year_prefix, current_year)
-VALUES ('00000000-0000-0000-0000-000000000001'::uuid, 0, 'INV', true, EXTRACT(YEAR FROM now())::TEXT)
-ON CONFLICT (tenant_id) DO NOTHING;
 
 -- ============================================================================
--- AUTH USERS (local db reset — fixed UUIDs match user_profiles below)
--- handle_new_user trigger creates base profiles; ON CONFLICT below sets roles.
--- Hosted projects: run `node scripts/seed-auth-parent.mjs` then re-run seed.
--- ============================================================================
+-- AUTH USERS (hosted: run scripts/seed-auth-parent.mjs first if needed)
 DO $$
 DECLARE
   v_encrypted_pw TEXT := crypt('devPassword123', gen_salt('bf'));

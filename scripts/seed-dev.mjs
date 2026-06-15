@@ -1,0 +1,107 @@
+#!/usr/bin/env node
+/**
+ * Run supabase/seed.sql (and optionally seed-finance.sql) against linked dev via psql.
+ *
+ * Requires in repo-root .env:
+ *   SUPABASE_PROJECT_REF
+ *   SUPABASE_DB_PASSWORD
+ * Or override: SUPABASE_DB_URL=postgresql://postgres:...@db.<ref>.supabase.co:5432/postgres
+ *
+ * Usage:
+ *   pnpm seed:dev                 # seed.sql only
+ *   pnpm seed:dev -- --finance    # seed.sql + seed-finance.sql (post Stage 1 schema)
+ *   pnpm seed:dev -- --checklist  # print manual SQL Editor steps (no psql)
+ *
+ * Hosted parent login: run `pnpm seed:auth-parent` before seed if auth.users missing.
+ */
+import { spawnSync } from 'node:child_process';
+import { existsSync, readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { loadEnv } from './load-env.mjs';
+
+loadEnv();
+
+const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+const args = process.argv.slice(2);
+const checklistOnly = args.includes('--checklist');
+const withFinance = args.includes('--finance');
+
+function printChecklist() {
+  console.log(`
+Dev seed checklist (linked Supabase — not local Docker)
+======================================================
+1. [YOU] reset_dev_db.sql in SQL Editor (full rebuild only — Stage 1)
+2. [AGENT] pnpm db:sync
+3. [YOU] pnpm seed:auth-parent  (hosted dev — skip if auth users already exist)
+4. [YOU] pnpm seed:dev          (or paste seed.sql in SQL Editor)
+5. [YOU] pnpm seed:dev -- --finance   (after Stage 1 schema — or paste seed-finance.sql)
+
+Finance test logins (see supabase/seed-finance.sql header):
+  Parent: miriamrstern@gmail.com / devPassword123
+  Admin:  miriamrteller@gmail.com / devPassword123
+`);
+}
+
+function resolveDbUrl() {
+  if (process.env.SUPABASE_DB_URL) {
+    return process.env.SUPABASE_DB_URL;
+  }
+  const ref = process.env.SUPABASE_PROJECT_REF;
+  const password = process.env.SUPABASE_DB_PASSWORD;
+  if (!ref || !password) {
+    return null;
+  }
+  const encoded = encodeURIComponent(password);
+  return `postgresql://postgres:${encoded}@db.${ref}.supabase.co:5432/postgres`;
+}
+
+function runPsqlFile(dbUrl, relativePath) {
+  const filePath = join(root, relativePath);
+  if (!existsSync(filePath)) {
+    console.error(`Missing file: ${relativePath}`);
+    process.exit(1);
+  }
+  console.log(`Running ${relativePath} ...`);
+  const result = spawnSync(
+    'psql',
+    [dbUrl, '-v', 'ON_ERROR_STOP=1', '-f', filePath],
+    { stdio: 'inherit', shell: process.platform === 'win32' },
+  );
+  if (result.error) {
+    console.error(`
+psql not found or failed to start: ${result.error.message}
+
+Run manually in Supabase SQL Editor:
+  ${relativePath}
+`);
+    process.exit(1);
+  }
+  if (result.status !== 0) {
+    process.exit(result.status ?? 1);
+  }
+}
+
+if (checklistOnly) {
+  printChecklist();
+  process.exit(0);
+}
+
+const dbUrl = resolveDbUrl();
+if (!dbUrl) {
+  console.error('Set SUPABASE_PROJECT_REF + SUPABASE_DB_PASSWORD (or SUPABASE_DB_URL) in .env');
+  printChecklist();
+  process.exit(1);
+}
+
+runPsqlFile(dbUrl, 'supabase/seed.sql');
+
+if (withFinance) {
+  runPsqlFile(dbUrl, 'supabase/seed-finance.sql');
+} else {
+  console.log(
+    '\nTip: after Stage 1 finance schema, run: pnpm seed:dev -- --finance',
+  );
+}
+
+console.log('\nSeed complete.');

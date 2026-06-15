@@ -1,0 +1,58 @@
+---
+description: Finance module — execute one stage plan at a time (docs/plans/finance)
+globs: docs/plans/finance/**
+alwaysApply: false
+---
+
+# Finance stage implementation
+
+When implementing a finance stage, follow **one stage file only** per session.
+
+## Required reading (in order)
+
+1. `docs/plans/finance/00-overview.md`
+2. The active `docs/plans/finance/stage-N-*.md`
+3. `.instructions.md` (deterministic finance; no AI in money logic)
+
+Use `docs/plans/finance/AGENT-RUNBOOK.md` for the exact prompt and gates.
+
+## Hard rules
+
+- **Stage order:** 1 → 2 → 3 → 4 → (5, 6 after 4) → 7 → 8 → 9. Stage 2 before Stage 3.
+- **Schema frozen after Stage 1.** Stages 2–9 must not alter tables unless the plan sends you back to Stage 1.
+- **No vendor names in schema/shared orchestration** — adapters live under `_shared/payments/providers/` and `_shared/invoicing/providers/`.
+- **Single success path:** `finalise-payment` + `enqueueDocument` — never duplicate activation or document enqueue inline.
+- **Webhook replay:** duplicate `provider_payment_ref` → skip INSERT, **always** run idempotent `finalisePayment`.
+- **Mock providers in CI/dev** — no real Stripe/GI charges unless the user requests a manual runbook step.
+- **Do not `git commit` or `git push`** unless the user explicitly says to (e.g. "commit Stage N").
+- **Do not run `pnpm db:sync` or any db push** until the user confirms Stage 1 reset is done (Stage 1 only).
+
+## DB & seed (linked remote dev only)
+
+Supabase **local/Docker is not used.** Do not run `supabase start`, `db:reset-local`, or `db:reset-and-types:local`.
+
+### Stage 1 rebuild
+
+1. User runs `supabase/reset_dev_db.sql` in SQL Editor (dev only)
+2. User confirms "reset done"
+3. Agent runs `pnpm db:sync`
+4. User runs `pnpm seed:auth-parent` (hosted dev, if needed) then `pnpm seed:dev -- --finance`
+
+### Routine
+
+- Migrations + types: `pnpm db:sync`
+- Types only: `pnpm db:types:all`
+- Seed checklist: `pnpm seed:dev:checklist`
+- Stage prompt: `pnpm finance:prompt 3` (paste output into Agent chat)
+
+Verify after Stage 1: `grep -ri stripe_ supabase/migrations/` → empty.
+
+## Completion report
+
+When done, return:
+
+1. DoD checklist from the stage plan (pass/fail per item)
+2. Files changed
+3. Commands run and outcomes
+4. Blockers (secrets, manual smoke tests, SQL Editor steps)
+5. **Stop** — wait for user to say "commit Stage N" before the next stage
