@@ -6,6 +6,9 @@ import OtpEmail from '../email-templates/OtpEmail.js';
 import PaymentReminderEmail from '../email-templates/PaymentReminderEmail.js';
 import WaitingListOfferEmail from '../email-templates/WaitingListOfferEmail.js';
 import WelcomeEmail from '../email-templates/WelcomeEmail.js';
+import EnrolmentConfirmationEmail from '../email-templates/EnrolmentConfirmationEmail.js';
+import WaiverReminderEmail from '../email-templates/WaiverReminderEmail.js';
+import WaiverCancelledEmail from '../email-templates/WaiverCancelledEmail.js';
 import { getEmailColors } from '../config/email-colors.js';
 import { EMAIL_TEMPLATE_NAMES, getEmailFooterStrings, getEmailStrings, interpolateTemplate, } from '../i18n/email.js';
 import { deepMergeStrings } from './merge-strings.js';
@@ -100,6 +103,31 @@ function buildComponent(input, strings, colors, footerStrings) {
                 enrollNowUrl: str(v.enrollNowUrl) || str(v.enrollUrl) || str(v.enrollmentUrl, '#'),
                 termName: str(v.termName) || str(v.enrolledTermName) || undefined,
                 classDetails: v.classDetails,
+            });
+        case EMAIL_TEMPLATE_NAMES.ENROLMENT_CONFIRMATION:
+            return React.createElement(EnrolmentConfirmationEmail, {
+                ...common,
+                recipientName: str(v.recipientName) || str(v.studentName, 'there'),
+                className: str(v.className) || str(v.enrolledClassName),
+                pendingWaiver: Boolean(v.pendingWaiver),
+                signUrl: str(v.signUrl) || undefined,
+                deadlineDate: str(v.deadlineDate) || undefined,
+            });
+        case EMAIL_TEMPLATE_NAMES.WAIVER_REMINDER:
+            return React.createElement(WaiverReminderEmail, {
+                ...common,
+                recipientName: str(v.recipientName) || str(v.studentName, 'there'),
+                className: str(v.className) || str(v.enrolledClassName),
+                signUrl: str(v.signUrl, '#'),
+                deadlineDate: str(v.deadlineDate, new Date().toISOString()),
+                isUrgent: Boolean(v.isUrgent),
+            });
+        case EMAIL_TEMPLATE_NAMES.WAIVER_CANCELLED:
+            return React.createElement(WaiverCancelledEmail, {
+                ...common,
+                recipientName: str(v.recipientName) || str(v.studentName, 'there'),
+                className: str(v.className) || str(v.enrolledClassName),
+                refundNote: str(v.refundNote, 'A full refund has been issued to your original payment method.'),
             });
         default:
             throw new Error(`Unsupported email template: ${templateName}`);

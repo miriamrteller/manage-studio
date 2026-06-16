@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { loadStripe } from '@stripe/stripe-js';
 import { Button } from '@/components/ui/button';
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
@@ -131,43 +132,120 @@ function StripeElementsShell({
   );
 }
 
-/** Token-based checkout — no session or tenant hooks. */
-export function TokenEnrolmentPaymentForm({
+interface CheckoutIntentData {
+  clientSecret: string | null;
+  publishableKey: string | null;
+  paymentProvider: string | null;
+  mockCompleted: boolean;
+}
+
+interface CheckoutIntentState extends CheckoutIntentData {
+  loadError: string | null;
+  isLoading: boolean;
+}
+
+const checkoutIntentInflight = new Map<string, Promise<CheckoutIntentData>>();
+
+async function fetchCheckoutIntent(input: {
+  classId: string;
+  engagementId: string;
+  enrolmentToken?: string;
+  fallbackPublishableKey?: string | null;
+  setupFailedMessage: string;
+}): Promise<CheckoutIntentData> {
+  const cacheKey = `${input.engagementId}:${input.classId}:${input.enrolmentToken ?? ''}`;
+  const inflight = checkoutIntentInflight.get(cacheKey);
+  if (inflight) return inflight;
+
+  const promise = (async () => {
+    const { data, error } = await supabase.functions.invoke('create-checkout', {
+      body: {
+        offering_id: input.classId,
+        engagement_id: input.engagementId,
+        ...(input.enrolmentToken ? { enrolment_token: input.enrolmentToken } : {}),
+      },
+      ...(input.enrolmentToken
+        ? { headers: { Authorization: `WaiverToken ${input.enrolmentToken}` } }
+        : {}),
+    });
+
+    if (error || (!data?.clientSecret && !data?.mockCompleted)) {
+      throw new Error(
+        error?.message ??
+          (typeof data?.error === 'string' ? data.error : null) ??
+          input.setupFailedMessage,
+      );
+    }
+
+    return {
+      clientSecret: data.clientSecret ?? null,
+      publishableKey: data.publishableKey ?? input.fallbackPublishableKey ?? null,
+      paymentProvider: data.paymentProvider ?? null,
+      mockCompleted: Boolean(data.mockCompleted),
+    };
+  })();
+
+  checkoutIntentInflight.set(cacheKey, promise);
+  try {
+    return await promise;
+  } finally {
+    checkoutIntentInflight.delete(cacheKey);
+  }
+}
+
+function useCheckoutIntent({
   classId,
   engagementId,
+  enabled,
   enrolmentToken,
+  fallbackPublishableKey,
+}: {
+  classId: string;
+  engagementId: string;
+  enabled: boolean;
+  enrolmentToken?: string;
+  fallbackPublishableKey?: string | null;
+}): CheckoutIntentState {
+  const { t } = useTranslation();
+  const queryEnabled = enabled && Boolean(classId && engagementId);
+
+  const { data, error, isPending } = useQuery({
+    queryKey: ['checkout-intent', engagementId, classId, enrolmentToken ?? null],
+    queryFn: () =>
+      fetchCheckoutIntent({
+        classId,
+        engagementId,
+        enrolmentToken,
+        fallbackPublishableKey,
+        setupFailedMessage: t('enrolment.payment_setup_failed'),
+      }),
+    enabled: queryEnabled,
+    staleTime: Infinity,
+    retry: false,
+  });
+
+  return {
+    clientSecret: data?.clientSecret ?? null,
+    publishableKey: data?.publishableKey ?? null,
+    paymentProvider: data?.paymentProvider ?? null,
+    mockCompleted: data?.mockCompleted ?? false,
+    loadError: error?.message ?? null,
+    isLoading: queryEnabled && isPending,
+  };
+}
+
+function CheckoutIntentShell({
+  checkout,
   onPaid,
   onPrevious,
-}: BasePaymentFormProps & { enrolmentToken: string }) {
+}: {
+  checkout: CheckoutIntentState;
+  onPaid: () => void;
+  onPrevious: () => void;
+}) {
   const { t } = useTranslation();
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [publishableKey, setPublishableKey] = useState<string | null>(null);
-  const [paymentProvider, setPaymentProvider] = useState<string | null>(null);
-  const [mockCompleted, setMockCompleted] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!engagementId || !classId || !enrolmentToken) return;
-
-    const loadIntent = async () => {
-      const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { offering_id: classId, engagement_id: engagementId, enrolment_token: enrolmentToken },
-        headers: { Authorization: `WaiverToken ${enrolmentToken}` },
-      });
-
-      if (error || (!data?.clientSecret && !data?.mockCompleted)) {
-        setLoadError(error?.message ?? data?.error ?? t('enrolment.payment_setup_failed'));
-        return;
-      }
-
-      setClientSecret(data.clientSecret ?? null);
-      setPublishableKey(data.publishableKey ?? null);
-      setPaymentProvider(data.paymentProvider ?? null);
-      setMockCompleted(Boolean(data.mockCompleted));
-    };
-
-    void loadIntent();
-  }, [classId, engagementId, enrolmentToken, t]);
+  const { clientSecret, publishableKey, paymentProvider, mockCompleted, loadError, isLoading } =
+    checkout;
 
   if (loadError) {
     return (
@@ -177,7 +255,10 @@ export function TokenEnrolmentPaymentForm({
     );
   }
 
-  if (!mockCompleted && paymentProvider !== 'mock' && (!clientSecret || !publishableKey)) {
+  if (
+    isLoading ||
+    (!mockCompleted && paymentProvider !== 'mock' && (!clientSecret || !publishableKey))
+  ) {
     return <p role="status">{t('common.loading')}</p>;
   }
 
@@ -191,6 +272,24 @@ export function TokenEnrolmentPaymentForm({
       onPrevious={onPrevious}
     />
   );
+}
+
+/** Token-based checkout — no session or tenant hooks. */
+export function TokenEnrolmentPaymentForm({
+  classId,
+  engagementId,
+  enrolmentToken,
+  onPaid,
+  onPrevious,
+}: BasePaymentFormProps & { enrolmentToken: string }) {
+  const checkout = useCheckoutIntent({
+    classId,
+    engagementId,
+    enrolmentToken,
+    enabled: Boolean(classId && engagementId && enrolmentToken),
+  });
+
+  return <CheckoutIntentShell checkout={checkout} onPaid={onPaid} onPrevious={onPrevious} />;
 }
 
 function CheckoutShell({
@@ -239,11 +338,6 @@ function AuthenticatedEnrolmentPaymentForm({
   const navigate = useNavigate();
   const { user, isLoading: authLoading } = useCurrentUser();
   const tenant = useTenant();
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [publishableKey, setPublishableKey] = useState<string | null>(null);
-  const [paymentProvider, setPaymentProvider] = useState<string | null>(null);
-  const [mockCompleted, setMockCompleted] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     if (requireAuth && !authLoading && !user) {
@@ -251,65 +345,21 @@ function AuthenticatedEnrolmentPaymentForm({
     }
   }, [requireAuth, authLoading, user, navigate]);
 
-  useEffect(() => {
-    if (requireAuth && !user) return;
-    if (!engagementId || !classId) return;
-
-    const loadIntent = async () => {
-      const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { offering_id: classId, engagement_id: engagementId },
-      });
-
-      if (error || (!data?.clientSecret && !data?.mockCompleted)) {
-        setLoadError(error?.message ?? data?.error ?? t('enrolment.payment_setup_failed'));
-        return;
-      }
-
-      setClientSecret(data.clientSecret ?? null);
-      setPublishableKey(
-        data.publishableKey ?? tenant?.payment_provider_public_key ?? tenant?.stripe_publishable_key ?? null,
-      );
-      setPaymentProvider(data.paymentProvider ?? null);
-      setMockCompleted(Boolean(data.mockCompleted));
-    };
-
-    void loadIntent();
-  }, [
-    requireAuth,
-    user,
+  const checkout = useCheckoutIntent({
     classId,
     engagementId,
-    tenant?.payment_provider_public_key,
-    tenant?.stripe_publishable_key,
-    t,
-  ]);
+    enabled: Boolean(
+      classId && engagementId && (!requireAuth || (!authLoading && user)),
+    ),
+    fallbackPublishableKey:
+      tenant?.payment_provider_public_key ?? tenant?.stripe_publishable_key ?? null,
+  });
 
   if (requireAuth && (authLoading || !user)) {
     return <p role="status">{t('common.loading')}</p>;
   }
 
-  if (loadError) {
-    return (
-      <p className="text-sm text-destructive" role="alert">
-        {loadError}
-      </p>
-    );
-  }
-
-  if (!mockCompleted && paymentProvider !== 'mock' && (!clientSecret || !publishableKey)) {
-    return <p role="status">{t('common.loading')}</p>;
-  }
-
-  return (
-    <CheckoutShell
-      paymentProvider={paymentProvider}
-      mockCompleted={mockCompleted}
-      clientSecret={clientSecret}
-      publishableKey={publishableKey}
-      onPaid={onPaid}
-      onPrevious={onPrevious}
-    />
-  );
+  return <CheckoutIntentShell checkout={checkout} onPaid={onPaid} onPrevious={onPrevious} />;
 }
 
 export function EnrolmentPaymentForm({

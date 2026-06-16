@@ -1,11 +1,12 @@
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
+import { EnrolmentStatusAction } from '@/features/enrolment/components/EnrolmentStatusAction';
 import {
   CANCELLABLE_PRE_PAYMENT_STATUSES,
   canCancelPrePaymentEnrolment,
   type EngagementStatus,
 } from '@/features/enrolment/lib/enrolmentTransitions';
-
+import { isPendingEnrolmentActionStatus } from '@/features/enrolment/lib/pendingEnrolmentAction';
 export const ENROLMENT_STATUS_COLORS: Record<string, { bg: string; text: string }> = {
   active: { bg: 'var(--color-success-light)', text: 'var(--color-success)' },
   pending_payment: { bg: 'var(--color-warning-light)', text: 'var(--color-warning)' },
@@ -35,6 +36,7 @@ export function canShowCancelEnrolment(status: string): boolean {
 interface EnrolmentRowActionsProps {
   className: string;
   status: string;
+  engagementId?: string;
   billingLabel?: string | null;
   onCancel?: () => void;
 }
@@ -42,23 +44,29 @@ interface EnrolmentRowActionsProps {
 export function EnrolmentRowActions({
   className,
   status,
+  engagementId,
   billingLabel,
   onCancel,
 }: EnrolmentRowActionsProps) {
   const { t } = useTranslation();
   const showCancel = onCancel != null && canShowCancelEnrolment(status);
   const colors = ENROLMENT_STATUS_COLORS[status] ?? ENROLMENT_STATUS_COLORS.cancelled;
+  const showCompletionAction = Boolean(engagementId && isPendingEnrolmentActionStatus(status));
 
   return (
     <li className="py-2 flex justify-between items-center gap-3">
       <span className="font-medium">{className}</span>
       <div className="flex items-center gap-2 flex-shrink-0">
-        <span
-          className="px-2 py-0.5 rounded text-xs font-medium"
-          style={{ backgroundColor: colors.bg, color: colors.text }}
-        >
-          {status.replace('_', ' ')}
-        </span>
+        {showCompletionAction && engagementId ? (
+          <EnrolmentStatusAction status={status} engagementId={engagementId} size="sm" />
+        ) : (
+          <span
+            className="px-2 py-0.5 rounded text-xs font-medium"
+            style={{ backgroundColor: colors.bg, color: colors.text }}
+          >
+            {t(`pages.portal.enrolment_status.${status}`, status.replace('_', ' '))}
+          </span>
+        )}
         {billingLabel && <span className="text-xs text-gray-500">{billingLabel}</span>}
         {showCancel && (
           <Button type="button" variant="outline" size="sm" onClick={onCancel}>

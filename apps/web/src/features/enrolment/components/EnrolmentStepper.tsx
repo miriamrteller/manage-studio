@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -29,6 +29,9 @@ import {
 } from '../onboardingService';
 import { EnrolmentIntakeService } from '../intakeService';
 import { EnrolmentService } from '../service';
+import { isOfferingEnrolled } from '../lib/enrolled-offerings';
+import { usePersonExistingEnrolments } from '../hooks/usePersonExistingEnrolments';
+import { hasParentRole } from '@/lib/parentRoles';
 import { getSelectedClassAgeError } from '../lib/selectedClassAgeValidation';
 import type { EnrollmentIntent } from '@/lib/enrollment-intent';
 import { persistEnrollmentIntent } from '@/lib/enrollment-intent';
@@ -58,7 +61,7 @@ export function EnrolmentStepper({
   const enrolmentContext = useEnrolmentContext(enrollmentIntent);
   const tenant = useTenant();
   const { user } = useCurrentUser();
-  const { createEnrolment, isCreating } = useEnrolment({ enabled: false });
+  const { isCreating } = useEnrolment({ enabled: false });
 
   const [enrolmentData, setEnrolmentData] = useState<Partial<Engagement>>(() => ({
     ...(initialClassId ? { offering_id: initialClassId } : {}),
@@ -73,6 +76,26 @@ export function EnrolmentStepper({
   const { classAgeOverride, setClassAgeOverride, handleClassAgeOverrideChange } = useAgeOverride();
   const classPreselected = Boolean(initialClassId && initialTermId);
   const showGuestVerifyStep = false;
+
+  const enrolledPersonId =
+    enrolmentData.person_id ?? enrolmentContext.preselectedPersonId ?? undefined;
+  const { data: enrolledOfferingKeys, isLoading: enrolledKeysLoading } =
+    usePersonExistingEnrolments(enrolledPersonId);
+
+  const preselectedAlreadyEnrolled = useMemo(() => {
+    if (!classPreselected || !initialClassId || !initialTermId || !enrolledPersonId) {
+      return false;
+    }
+    if (enrolledKeysLoading) return false;
+    return isOfferingEnrolled(enrolledOfferingKeys, initialClassId, initialTermId);
+  }, [
+    classPreselected,
+    initialClassId,
+    initialTermId,
+    enrolledPersonId,
+    enrolledKeysLoading,
+    enrolledOfferingKeys,
+  ]);
 
   const waiverFlow = useWaiverFlowState({
     enrolmentContextWaiverRequired: enrolmentContext.waiverRequired,
@@ -122,7 +145,6 @@ export function EnrolmentStepper({
       showWaiverStep: waiverFlow.showWaiverStep,
       waiverSignedInFlow: waiverFlow.waiverSignedInFlow,
       waiverEvidenceId: waiverFlow.waiverEvidenceId,
-      createEnrolment,
       navigate,
       t,
     };
@@ -153,6 +175,11 @@ export function EnrolmentStepper({
     setCurrentStep,
     steps,
     onPersonLoaded: handlePersonLoaded,
+    blockAutoSkip:
+      classPreselected &&
+      Boolean(enrolledPersonId) &&
+      (enrolledKeysLoading ||
+        isOfferingEnrolled(enrolledOfferingKeys, initialClassId ?? '', initialTermId ?? '')),
   });
 
   const accountStudentsQuery = useAccountStudents({
@@ -181,6 +208,8 @@ export function EnrolmentStepper({
   };
 
   const handlePersonNext = (newData?: Partial<Engagement>, dob?: string | null) => {
+    if (classPreselected && preselectedAlreadyEnrolled) return;
+
     if (classPreselected && dob) {
       const ageError = getSelectedClassAgeError(enrolmentContext.constraints, dob, t);
       if (ageError) {
@@ -244,7 +273,6 @@ export function EnrolmentStepper({
       setCurrentStep('confirmation');
       if (enrolment) {
         setEnrolmentData(enrolment);
-        onSuccess?.(enrolment);
       }
       sessionStorage.setItem('portalEngagementId', checkoutEnrolmentId);
     } catch (error) {
@@ -289,6 +317,34 @@ export function EnrolmentStepper({
               <p role="alert" className="text-sm text-red-600">
                 {enrolmentContext.error.message}
               </p>
+            )}
+            {!enrolmentContext.isLoading &&
+              enrolmentContext.canSkipPersonStep &&
+              classPreselected &&
+              enrolledKeysLoading && (
+                <p role="status">{t('common.loading')}</p>
+              )}
+            {!enrolmentContext.isLoading && classPreselected && preselectedAlreadyEnrolled && (
+              <div
+                className="rounded-md border border-green-300 bg-green-50 p-4 text-sm text-green-900 space-y-3"
+                role="status"
+              >
+                <p>
+                  {enrolmentContext.mode === 'admin'
+                    ? t('pages.enrolment.already_enrolled_preselected_admin')
+                    : t('pages.enrolment.already_enrolled_preselected')}
+                </p>
+                {user && hasParentRole(user.role) && enrolmentContext.mode !== 'admin' && (
+                  <Button type="button" variant="primary" onClick={() => navigate('/dashboard/portal')}>
+                    {t('pages.portal.view_enrolment')}
+                  </Button>
+                )}
+                {enrolmentContext.mode === 'admin' && (
+                  <Button type="button" variant="primary" onClick={() => navigate('/classes')}>
+                    {t('pages.enrol_complete.browse_classes')}
+                  </Button>
+                )}
+              </div>
             )}
             {!enrolmentContext.isLoading && !enrolmentContext.canSkipPersonStep && (
               <>
@@ -574,6 +630,11 @@ export function EnrolmentStepper({
             adminLinkEmailSent={adminCompletion.adminLinkEmailSent}
             adminLinkWarning={adminCompletion.adminLinkWarning}
             adminEngagementId={checkoutEnrolmentId}
+            closeLabel={
+              enrolmentContext.mode === 'parent'
+                ? t('pages.portal.view_enrolment', { defaultValue: 'View in portal' })
+                : undefined
+            }
             onClose={() => onSuccess?.(enrolmentData as Engagement)}
           />
         )}

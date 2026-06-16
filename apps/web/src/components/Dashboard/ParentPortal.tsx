@@ -1,10 +1,12 @@
-import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { useParentPortal, type EngagementWithOffering } from './useParentPortal';
 import { EditChildModal } from './EditChildModal';
 import { AddChildModal } from './AddChildModal';
+import { EnrolmentStatusAction } from '@/features/enrolment/components/EnrolmentStatusAction';
+import { readPortalHighlightState } from '@/lib/portalHighlight';
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -24,33 +26,32 @@ function formatMoney(amountMinor: number, currency: string): string {
   });
 }
 
-function EnrolmentStatusBadge({ status }: { status: string }) {
-  const { t } = useTranslation();
-  const label = t(`pages.portal.enrolment_status.${status}`, status);
-  const tone =
-    status === 'active'
-      ? 'bg-green-100 text-green-800'
-      : status === 'pending_payment'
-        ? 'bg-amber-100 text-amber-800'
-        : 'bg-gray-100 text-gray-700';
-
-  return (
-    <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${tone}`}>
-      {label}
-    </span>
-  );
-}
-
-function EnrolmentRow({ enrolment }: { enrolment: EngagementWithOffering }) {
+function EnrolmentRow({
+  enrolment,
+  highlighted,
+}: {
+  enrolment: EngagementWithOffering;
+  highlighted?: boolean;
+}) {
   const schedule = formatSchedule(enrolment.classDay, enrolment.classStartTime);
 
   return (
-    <li className="flex flex-wrap items-center justify-between gap-2 py-2 border-b border-gray-100 last:border-0">
+    <li
+      id={highlighted ? `portal-enrolment-${enrolment.id}` : undefined}
+      className={[
+        'flex flex-wrap items-center justify-between gap-2 py-2 border-b border-gray-100 last:border-0',
+        highlighted ? 'rounded-md bg-green-50 ring-2 ring-green-400 px-2 -mx-2' : '',
+      ].join(' ')}
+    >
       <div>
         <p className="font-medium text-gray-900">{enrolment.className ?? enrolment.offering_id}</p>
         {schedule && <p className="text-sm text-gray-500">{schedule}</p>}
       </div>
-      <EnrolmentStatusBadge status={enrolment.status} />
+      <EnrolmentStatusAction
+        status={enrolment.status}
+        engagementId={enrolment.id}
+        returnTo="/dashboard/portal"
+      />
     </li>
   );
 }
@@ -58,9 +59,50 @@ function EnrolmentRow({ enrolment }: { enrolment: EngagementWithOffering }) {
 export function ParentPortal() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [portalHighlight] = useState(() => readPortalHighlightState(location.state));
   const { data, isLoading, error } = useParentPortal();
   const [editingChildId, setEditingChildId] = useState<string | null>(null);
   const [showAddChild, setShowAddChild] = useState(false);
+  const [showSuccessBanner, setShowSuccessBanner] = useState(Boolean(portalHighlight?.enrolmentSuccess));
+  const scrolledRef = useRef(false);
+
+  const children = data?.children ?? [];
+  const payments = data?.payments ?? [];
+  const enrolmentsByPerson = data?.enrolmentsByPerson ?? {};
+
+  const highlightPersonId = useMemo(() => {
+    if (portalHighlight?.highlightPersonId) return portalHighlight.highlightPersonId;
+    if (!portalHighlight?.highlightEngagementId) return undefined;
+    for (const [personId, enrolments] of Object.entries(enrolmentsByPerson)) {
+      if (enrolments.some((entry) => entry.id === portalHighlight.highlightEngagementId)) {
+        return personId;
+      }
+    }
+    return undefined;
+  }, [enrolmentsByPerson, portalHighlight?.highlightEngagementId, portalHighlight?.highlightPersonId]);
+
+  useEffect(() => {
+    if (!portalHighlight || isLoading || scrolledRef.current) return;
+
+    const frame = requestAnimationFrame(() => {
+      const targetId = portalHighlight.highlightEngagementId
+        ? `portal-enrolment-${portalHighlight.highlightEngagementId}`
+        : highlightPersonId
+          ? `portal-child-${highlightPersonId}`
+          : null;
+
+      if (targetId) {
+        document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+      scrolledRef.current = true;
+      if (location.state) {
+        navigate(location.pathname, { replace: true, state: null });
+      }
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [highlightPersonId, isLoading, location.pathname, location.state, navigate, portalHighlight]);
 
   if (isLoading) {
     return (
@@ -78,13 +120,29 @@ export function ParentPortal() {
     );
   }
 
-  const children = data?.children ?? [];
-  const payments = data?.payments ?? [];
-  const enrolmentsByPerson = data?.enrolmentsByPerson ?? {};
   const editingChild = children.find((child) => child.id === editingChildId) ?? null;
 
   return (
     <div className="space-y-8">
+      {showSuccessBanner && (
+        <div
+          className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-900"
+          role="status"
+        >
+          <p className="font-medium">{t('pages.portal.enrolment_success_title')}</p>
+          <p className="mt-1">{t('pages.portal.enrolment_success_desc')}</p>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="mt-2 h-auto px-0 text-green-800 underline"
+            onClick={() => setShowSuccessBanner(false)}
+          >
+            {t('common.close')}
+          </Button>
+        </div>
+      )}
+
       <section className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-primary mb-2">
@@ -123,10 +181,15 @@ export function ParentPortal() {
           <ul className="space-y-4">
             {children.map((child) => {
               const enrolments = enrolmentsByPerson[child.id] ?? [];
+              const childHighlighted = child.id === highlightPersonId;
               return (
                 <li
                   key={child.id}
-                  className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
+                  id={`portal-child-${child.id}`}
+                  className={[
+                    'rounded-lg border bg-white p-4 shadow-sm',
+                    childHighlighted ? 'border-green-400 ring-2 ring-green-200' : 'border-gray-200',
+                  ].join(' ')}
                 >
                   <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
                     <div>
@@ -163,7 +226,11 @@ export function ParentPortal() {
                   ) : (
                     <ul className="mt-2" aria-label={t('pages.portal.enrolments_for', { name: child.name })}>
                       {enrolments.map((enrolment) => (
-                        <EnrolmentRow key={enrolment.id} enrolment={enrolment} />
+                        <EnrolmentRow
+                          key={enrolment.id}
+                          enrolment={enrolment}
+                          highlighted={enrolment.id === portalHighlight?.highlightEngagementId}
+                        />
                       ))}
                     </ul>
                   )}

@@ -78,6 +78,8 @@ export const PublicOfferingSchema = z.object({
     category_id: UUIDSchema.nullable().optional(),
     category_name: z.string().nullable().optional(),
     season_id: UUIDSchema.nullable().optional(),
+    season_start_date: z.string().date().nullable().optional(),
+    updated_at: TimestampSchema.optional(),
     day_of_week: z.number().int().min(0).max(6).nullable().optional(),
     start_time: TimeSchema,
     end_time: TimeSchema,
@@ -86,9 +88,11 @@ export const PublicOfferingSchema = z.object({
     max_capacity: z.number().positive(),
     min_age: z.number().int().nonnegative().nullable().optional(),
     max_age: z.number().int().nonnegative().nullable().optional(),
+    cover_image_path: z.string().nullable().optional(),
     billing_mode: z.enum(['one_time', 'recurring']).default('one_time'),
     billing_interval: z.enum(['monthly', 'quarterly', 'annual']).nullable().optional(),
     current_engagements: z.number().nonnegative().optional(),
+    waiver_required: z.boolean().optional(),
 });
 // Person (aligned with migration 20260526000200_people.sql)
 export const PersonSchema = z.object({
@@ -218,6 +222,7 @@ export const OfferingSchema = z.object({
     max_capacity: z.number().positive('Max capacity must be > 0'),
     min_age: z.number().int().nonnegative().nullable().optional(),
     max_age: z.number().int().nonnegative().nullable().optional(),
+    cover_image_path: z.string().nullable().optional(),
     price_minor: z.number().nonnegative('Price must be >= 0'),
     currency: z.string().default('ILS'),
     day_of_week: z.number().int().min(0).max(6).nullable().optional(),
@@ -228,8 +233,11 @@ export const OfferingSchema = z.object({
     delivery_mode: z.enum(['scheduled', 'intangible']).default('scheduled'),
     billing_interval: z.enum(['monthly', 'quarterly', 'annual']).nullable().optional(),
     status: z.enum(['active', 'cancelled', 'full']).default('active'),
+    waiver_required: z.boolean().default(true),
     created_at: TimestampSchema,
 }).refine((data) => {
+    if (data.delivery_mode === 'intangible')
+        return true;
     if (!data.start_time || !data.end_time)
         return true;
     return data.start_time < data.end_time;
@@ -284,13 +292,19 @@ export const EngagementSchema = z.object({
     offering_id: UUIDSchema,
     season_id: UUIDSchema.nullable().optional(),
     billing_account_id: UUIDSchema.nullable().optional(),
+    age_override_at: TimestampSchema.nullable().optional(),
+    age_override_by: UUIDSchema.nullable().optional(),
+    age_override_reason: z.string().max(500).nullable().optional(),
+    age_review_note: z.string().max(1000).nullable().optional(),
+    age_at_season_start: z.number().int().nonnegative().nullable().optional(),
     status: z
-        .enum(['pending_payment', 'active', 'admin_review', 'pending_offer', 'cancelled', 'withdrawn'])
+        .enum(['pending_payment', 'active', 'admin_review', 'pending_offer', 'cancelled', 'withdrawn', 'pending_waiver'])
         .default('pending_payment'),
     payment_received_at: TimestampSchema.nullable().optional(),
     cancelled_at: TimestampSchema.nullable().optional(),
     cancellation_reason: z.string().max(500).nullable().optional(),
     cancelled_by: UUIDSchema.nullable().optional(),
+    waiver_evidence_id: UUIDSchema.nullable().optional(),
     created_at: TimestampSchema,
     updated_at: TimestampSchema.optional(),
 });
@@ -414,4 +428,70 @@ export const ContactPreferencesUpdateSchema = z.object({
     whatsapp_verified: z.boolean().optional(),
     email_opted_in: z.boolean().optional(),
     preferred_channel: z.enum(['email', 'whatsapp']).nullable().optional(),
+});
+// =============================================================================
+// Waiver — consent templates, evidence, and request/response schemas
+// =============================================================================
+export const ConsentTemplateSchema = z.object({
+    id: UUIDSchema,
+    tenant_id: UUIDSchema,
+    name: z.string().min(1).max(200),
+    content: z.string().min(1),
+    version: z.number().int().positive(),
+    version_hash: z.string().length(64),
+    status: z.enum(['draft', 'approved', 'active', 'archived']),
+    created_at: TimestampSchema,
+    updated_at: TimestampSchema,
+});
+export const WaiverViewedRequestSchema = z.object({
+    person_id: UUIDSchema,
+    consent_template_id: UUIDSchema,
+});
+export const WaiverViewedResponseSchema = z.object({
+    view_token: z.string().min(1),
+    viewed_at_ts: z.number().int(),
+    expires_at: z.string(),
+});
+export const WaiverAcceptRequestSchema = z.object({
+    person_id: UUIDSchema,
+    consent_template_id: UUIDSchema,
+    consent_version: z.number().int().positive(),
+    typed_name: z.string().min(2).max(200),
+    idempotency_key: UUIDSchema,
+    view_token: z.string().min(1),
+    viewed_at_ts: z.number().int(),
+    account_member_id: UUIDSchema.optional(),
+    otp_verify_sid: z.string().optional(),
+});
+export const WaiverEvidenceSchema = z.object({
+    id: UUIDSchema,
+    tenant_id: UUIDSchema,
+    person_id: UUIDSchema,
+    account_member_id: UUIDSchema.nullable().optional(),
+    consent_template_id: UUIDSchema,
+    consent_version: z.number().int().positive(),
+    consent_version_hash: z.string().length(64),
+    wording_snapshot: z.string(),
+    pdf_storage_path: z.string(),
+    pdf_sha256: z.string().length(64),
+    record_hmac: z.string().length(64),
+    hmac_key_version: z.number().int().positive(),
+    viewed_at: TimestampSchema.nullable().optional(),
+    signed_by_name: z.string(),
+    signed_by_email: z.string().nullable().optional(),
+    signed_by_role: z.enum(['guardian', 'self', 'admin_attestation']),
+    signature_method: z.enum(['typed_name_checkbox', 'admin_upload']),
+    signed_at: TimestampSchema,
+    ip_address: z.string().nullable().optional(),
+    user_agent: z.string().nullable().optional(),
+    accept_language: z.string().nullable().optional(),
+    idempotency_key: z.string(),
+    otp_verify_sid: z.string().nullable().optional(),
+    guardian_confirmed: z.boolean().default(false),
+    status: z.enum(['signed', 'superseded', 'revoked']),
+    created_at: TimestampSchema,
+    offering_id: UUIDSchema.nullable().optional(),
+    // Joined display fields — present only when fetched via listEvidence (admin)
+    people: z.object({ name: z.string() }).nullable().optional(),
+    offerings: z.object({ name: z.string() }).nullable().optional(),
 });

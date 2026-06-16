@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -7,9 +7,13 @@ import { EnrolmentPaymentForm } from '@/features/enrolment/components/EnrolmentP
 import { WaiverStep } from '@/features/enrolment/components/WaiverStep';
 import { useWaiverStatus } from '@/features/enrolment/hooks/useWaiverStatus';
 import { computeClassTotal } from '@/features/enrolment/lib/computeClassTotal';
+import { resolvePendingEnrolmentAction } from '@/features/enrolment/lib/pendingEnrolmentAction';
 import { EnrolmentService } from '@/features/enrolment/service';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useTenant } from '@/hooks/useTenant';
+import { hasParentRole } from '@/lib/parentRoles';
+import { buildPortalHighlightState } from '@/lib/portalHighlight';
+import queryClient from '@/lib/query-client';
 import { TenantDB } from '@/lib/db';
 import { formatCurrency } from '@shared/format';
 import { OfferingSchema } from '@shared/schemas';
@@ -23,7 +27,6 @@ export function AuthenticatedCompletionView({ engagementId }: AuthenticatedCompl
   const navigate = useNavigate();
   const { user, isLoading: authLoading } = useCurrentUser();
   const tenant = useTenant();
-  const [paid, setPaid] = useState(false);
   const [waiverComplete, setWaiverComplete] = useState(false);
 
   const detailQuery = useQuery({
@@ -34,6 +37,9 @@ export function AuthenticatedCompletionView({ engagementId }: AuthenticatedCompl
       const enrolment = await EnrolmentService.get(tenant, engagementId);
       if (enrolment.status === 'active') {
         return { enrolment, classRow: null, alreadyPaid: true as const };
+      }
+      if (enrolment.status === 'pending_waiver') {
+        return { enrolment, classRow: null, pendingWaiver: true as const };
       }
       if (enrolment.status !== 'pending_payment') {
         throw new Error(t('pages.enrol_pay.not_payable'));
@@ -57,6 +63,14 @@ export function AuthenticatedCompletionView({ engagementId }: AuthenticatedCompl
     personId: detailQuery.data?.enrolment.person_id,
     offeringId: detailQuery.data?.classRow?.id,
   });
+
+  useEffect(() => {
+    if (detailQuery.data?.enrolment.status !== 'pending_waiver' || !engagementId) return;
+    const waiverAction = resolvePendingEnrolmentAction('pending_waiver', engagementId);
+    if (waiverAction) {
+      navigate(waiverAction.path, { replace: true });
+    }
+  }, [detailQuery.data?.enrolment.status, engagementId, navigate]);
 
   if (authLoading) {
     return (
@@ -112,15 +126,36 @@ export function AuthenticatedCompletionView({ engagementId }: AuthenticatedCompl
 
   const { enrolment, classRow, alreadyPaid } = detailQuery.data;
 
+  if (enrolment.status === 'pending_waiver') {
+    return (
+      <div className="p-8 text-center" role="status">
+        {t('common.loading')}
+      </div>
+    );
+  }
+
+  const finishCompletion = async () => {
+    if (user && hasParentRole(user.role)) {
+      await queryClient.invalidateQueries({ queryKey: ['parent-portal'] });
+      navigate('/dashboard/portal', {
+        state: buildPortalHighlightState(enrolment),
+      });
+      return;
+    }
+    navigate('/classes');
+  };
+
   const showWaiverFirst = !!waiverStatus.data?.required && !waiverComplete;
 
-  if (alreadyPaid || paid) {
+  if (alreadyPaid) {
     return (
       <div className="max-w-lg mx-auto p-6 space-y-4 text-center">
         <h1 className="text-2xl font-bold">{t('pages.enrol_pay.already_paid_title')}</h1>
         <p className="text-gray-600">{t('pages.enrol_pay.already_paid_desc')}</p>
-        <Button variant="primary" onClick={() => navigate('/classes')}>
-          {t('common.close')}
+        <Button variant="primary" onClick={finishCompletion}>
+          {user && hasParentRole(user.role)
+            ? t('pages.portal.view_enrolment')
+            : t('common.close')}
         </Button>
       </div>
     );
@@ -141,7 +176,7 @@ export function AuthenticatedCompletionView({ engagementId }: AuthenticatedCompl
           offeringId={classRow.id}
           tenantIdForInvalidation={tenant.id}
           onComplete={() => setWaiverComplete(true)}
-          onPrevious={() => navigate('/classes')}
+          onPrevious={() => void finishCompletion()}
           canGoBack
         />
       </div>
@@ -163,8 +198,8 @@ export function AuthenticatedCompletionView({ engagementId }: AuthenticatedCompl
       <EnrolmentPaymentForm
         classId={classRow.id}
         engagementId={enrolment.id}
-        onPaid={() => setPaid(true)}
-        onPrevious={() => navigate('/classes')}
+        onPaid={() => void finishCompletion()}
+        onPrevious={() => void finishCompletion()}
       />
     </div>
   );

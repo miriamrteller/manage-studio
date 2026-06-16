@@ -15,6 +15,7 @@ export interface StepConfirmationProps {
   adminLinkEmailSent?: boolean | null;
   adminLinkWarning?: string | null;
   adminEngagementId?: string | null;
+  closeLabel?: string;
   onClose: () => void;
 }
 
@@ -28,6 +29,7 @@ export function StepConfirmation({
   adminLinkEmailSent,
   adminLinkWarning,
   adminEngagementId,
+  closeLabel,
   onClose,
 }: StepConfirmationProps) {
   const { t } = useTranslation();
@@ -155,7 +157,7 @@ export function StepConfirmation({
       </div>
 
       <Button type="button" onClick={onClose} variant="primary" className="w-full">
-        {t('common.done') || 'Done'}
+        {closeLabel ?? t('common.done') ?? 'Done'}
       </Button>
     </div>
   );

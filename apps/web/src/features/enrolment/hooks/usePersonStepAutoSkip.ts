@@ -22,6 +22,8 @@ interface UsePersonStepAutoSkipParams {
   setCurrentStep: (step: EnrolmentStep) => void;
   steps: EnrolmentStep[];
   onPersonLoaded: (personId: string, dateOfBirth: string | null) => void;
+  /** When true, do not auto-advance past the person step (e.g. preselected class already enrolled). */
+  blockAutoSkip?: boolean;
 }
 
 export function usePersonStepAutoSkip({
@@ -35,9 +37,10 @@ export function usePersonStepAutoSkip({
   setCurrentStep,
   steps,
   onPersonLoaded,
+  blockAutoSkip = false,
 }: UsePersonStepAutoSkipParams) {
   useEffect(() => {
-    if (enrolmentContext.isLoading || personStepSkipped || !tenant) return;
+    if (blockAutoSkip || enrolmentContext.isLoading || personStepSkipped || !tenant) return;
     if (!enrolmentContext.canSkipPersonStep) return;
 
     const resolvedPersonId =
@@ -76,5 +79,6 @@ export function usePersonStepAutoSkip({
     setPersonStepSkipped,
     setCurrentStep,
     onPersonLoaded,
+    blockAutoSkip,
   ]);
 }

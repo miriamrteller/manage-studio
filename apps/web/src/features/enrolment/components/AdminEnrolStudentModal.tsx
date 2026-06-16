@@ -6,13 +6,12 @@ import { Button } from '@/components/ui/button';
 import { EnrolmentService } from '../service';
 import { buildPaymentLink } from '../lib/adminEnrolmentService';
 import {
-  filterClassesByAge,
   ageAt,
-  buildSeasonStartById,
   formatAgeRange,
-  isAgeEligible,
   personAgeAtSeasonStart,
 } from '../lib/check-requirements';
+import { useEnrolmentClassPicker } from '../hooks/useEnrolmentClassPicker';
+import { EnrolmentClassSelectList } from './EnrolmentClassSelectList';
 import {
   AdminEnrolmentPaymentStep,
   type AdminPaymentChoice,
@@ -91,40 +90,32 @@ export function AdminEnrolStudentModal({
   const { terms } = useTerms({ page: 1 });
   const { levels } = useLevels();
 
+  const classPicker = useEnrolmentClassPicker({
+    personId,
+    personDateOfBirth,
+    classes,
+    terms,
+    allowAgeOverride: true,
+    showAllClasses,
+  });
+
   const levelNameById = useMemo(
     () => new Map(levels.map((l) => [l.id, l.name])),
     [levels],
-  );
-
-  const seasonStartById = useMemo(() => buildSeasonStartById(terms), [terms]);
-
-  const person = useMemo(
-    () => ({ date_of_birth: personDateOfBirth }),
-    [personDateOfBirth],
-  );
-
-  const ageCheckOptions = useMemo(
-    () => ({ seasonStartById }),
-    [seasonStartById],
   );
 
   const displaySeasonStart = useMemo(() => {
     const fromClass = classes.find((c) => c.season_start_date)?.season_start_date;
     if (fromClass) return fromClass;
     const seasonId = classes.find((c) => c.season_id)?.season_id;
-    return seasonId ? seasonStartById[seasonId] : undefined;
-  }, [classes, seasonStartById]);
+    return seasonId ? classPicker.seasonStartById[seasonId] : undefined;
+  }, [classes, classPicker.seasonStartById]);
 
   const studentAge = useMemo(() => {
     if (!personDateOfBirth || !displaySeasonStart) return null;
     const age = ageAt(personDateOfBirth, parseLocalDate(displaySeasonStart));
     return Number.isNaN(age) ? null : age;
   }, [personDateOfBirth, displaySeasonStart]);
-
-  const { classes: availableClasses, ageFilteringActive } = useMemo(
-    () => filterClassesByAge(classes, person, ageCheckOptions),
-    [classes, person, ageCheckOptions],
-  );
 
   useEffect(() => {
     if (isOpen) {
@@ -145,30 +136,16 @@ export function AdminEnrolStudentModal({
     }
   }, [isOpen]);
 
-  const classSeasonStartDate = (cls: { season_id?: string | null; season_start_date?: string | null }) => {
-    if (cls.season_start_date) return cls.season_start_date;
-    if (cls.season_id && seasonStartById[cls.season_id]) return seasonStartById[cls.season_id];
-    return null;
-  };
-
-  const isClassAgeEligible = (cls: Offering) => {
-    return isAgeEligible(
-      {
-        min_age: cls.min_age,
-        max_age: cls.max_age,
-        season_id: cls.season_id,
-        season_start_date: classSeasonStartDate(cls),
-      },
-      person,
-      ageCheckOptions,
-    );
-  };
-
-  const selectedClassEligible = selectedClass ? isClassAgeEligible(selectedClass) : true;
+  const selectedClassEligible = selectedClass ? classPicker.isClassAgeEligible(selectedClass) : true;
+  const selectedClassAlreadyEnrolled = selectedClass
+    ? classPicker.isClassAlreadyEnrolled(selectedClass)
+    : false;
   const selectedClassAges = selectedClass
     ? formatAgeRange(selectedClass.min_age, selectedClass.max_age)
     : null;
-  const selectedClassSeasonStart = selectedClass ? classSeasonStartDate(selectedClass) : null;
+  const selectedClassSeasonStart = selectedClass
+    ? classPicker.classSeasonStartDate(selectedClass)
+    : null;
   const selectedClassStudentAge =
     personDateOfBirth && selectedClassSeasonStart
       ? personAgeAtSeasonStart(personDateOfBirth, selectedClassSeasonStart)
@@ -180,6 +157,7 @@ export function AdminEnrolStudentModal({
       queryClient.invalidateQueries({ queryKey: ['student-detail-enrolments', tenant.id, personId] }),
       queryClient.invalidateQueries({ queryKey: ['students-list-enrolments', tenant.id] }),
       queryClient.invalidateQueries({ queryKey: ['enrolments', tenant.id] }),
+      queryClient.invalidateQueries({ queryKey: ['person-existing-enrolments', tenant.id, personId] }),
     ]);
   };
 
@@ -201,7 +179,7 @@ export function AdminEnrolStudentModal({
   };
 
   const handleClassNext = async () => {
-    if (!selectedClass || !tenant) return;
+    if (!selectedClass || !tenant || selectedClassAlreadyEnrolled) return;
     if (!selectedClassEligible && !ageOverrideConfirmed) return;
     setError(null);
     setIsSubmitting(true);
@@ -236,8 +214,7 @@ export function AdminEnrolStudentModal({
       ? t('pages.admin_enrol.done_title')
       : t('pages.admin_enrol.title', { name: personName });
 
-  const hiddenByAgeCount = classes.length - availableClasses.length;
-  const displayClasses = showAllClasses ? classes : availableClasses;
+  const hiddenByAgeCount = classes.length - classPicker.availableClasses.length;
 
   return (
     <Modal
@@ -250,7 +227,7 @@ export function AdminEnrolStudentModal({
         <div className="space-y-4">
           <p className="text-sm text-gray-600">{t('pages.admin_enrol.class_desc')}</p>
 
-          {studentAge != null && ageFilteringActive && (
+          {studentAge != null && classPicker.ageFilteringActive && (
             <p className="text-sm text-gray-700" role="status">
               {enrolmentShowingForAgeMessage(studentAge, t)}
             </p>
@@ -266,7 +243,7 @@ export function AdminEnrolStudentModal({
             </p>
           )}
 
-          {!classesLoading && availableClasses.length === 0 && (
+          {!classesLoading && classPicker.displayClasses.length === 0 && (
             <p className="text-sm text-gray-500">{t('pages.enrolment.no_classes')}</p>
           )}
 
@@ -281,65 +258,46 @@ export function AdminEnrolStudentModal({
             </label>
           )}
 
-          {!classesLoading && displayClasses.length > 0 && (
-            <ul className="space-y-2 max-h-64 overflow-y-auto" role="listbox">
-              {displayClasses.map((cls) => {
-                const isSelected = selectedClass?.id === cls.id;
+          {!classesLoading && classPicker.displayClasses.length > 0 && (
+            <EnrolmentClassSelectList
+              classes={classPicker.displayClasses}
+              selectedClassId={selectedClass?.id ?? null}
+              onSelectClass={(cls) => {
+                setSelectedClass(cls as Offering);
+                setError(null);
+                setAgeOverrideConfirmed(false);
+                setAgeOverrideReason('');
+              }}
+              getClassAvailability={classPicker.getClassAvailability}
+              classSeasonStartDate={classPicker.classSeasonStartDate}
+              personDateOfBirth={personDateOfBirth}
+              listClassName="space-y-2 max-h-64 overflow-y-auto"
+              showAgeMismatchDetail
+              renderClassDetails={(cls) => {
                 const levelName = cls.category_id ? levelNameById.get(cls.category_id) : null;
                 const detailParts = [
                   levelName && levelName !== cls.name ? levelName : null,
                   formatTime(cls.start_time),
                 ].filter(Boolean);
-                const eligible = isClassAgeEligible(cls as Offering);
-                const classAges = formatAgeRange(cls.min_age, cls.max_age);
-                const classSeasonStart = classSeasonStartDate(cls);
-                const classStudentAge =
-                  personDateOfBirth && classSeasonStart
-                    ? personAgeAtSeasonStart(personDateOfBirth, classSeasonStart)
-                    : null;
 
                 return (
-                  <li key={cls.id}>
-                    <button
-                      type="button"
-                      role="option"
-                      aria-selected={isSelected}
-                      onClick={() => {
-                        setSelectedClass(cls as Offering);
-                        setError(null);
-                        setAgeOverrideConfirmed(false);
-                        setAgeOverrideReason('');
-                      }}
-                      className={`w-full text-left p-3 rounded-lg border transition-colors ${
-                        isSelected
-                          ? 'border-blue-600 bg-blue-50'
-                          : eligible
-                            ? 'border-gray-200 hover:border-gray-300'
-                            : 'border-amber-300 hover:border-amber-400 bg-amber-50/40'
-                      }`}
-                    >
-                      <p className="font-medium">{cls.name}</p>
-                      {detailParts.length > 0 && (
-                        <p className="text-xs text-gray-500 mt-0.5">{detailParts.join(' · ')}</p>
-                      )}
-                      <p className="text-sm font-medium mt-1">
-                        {tenant &&
-                          formatCurrency(
-                            computeClassTotal(cls, tenant).chargeMinor,
-                            tenant.currency ?? 'ILS',
-                            i18n.language,
-                          )}
-                      </p>
-                      {!eligible && classAges && classStudentAge != null && (
-                        <p className="text-xs text-amber-800 mt-1">
-                          {enrolmentAgeMismatchMessage(classStudentAge, classAges, t)}
-                        </p>
-                      )}
-                    </button>
-                  </li>
+                  <>
+                    <p className="font-medium">{cls.name}</p>
+                    {detailParts.length > 0 && (
+                      <p className="text-xs text-gray-500 mt-0.5">{detailParts.join(' · ')}</p>
+                    )}
+                    <p className="text-sm font-medium mt-1">
+                      {tenant &&
+                        formatCurrency(
+                          computeClassTotal(cls, tenant).chargeMinor,
+                          tenant.currency ?? 'ILS',
+                          i18n.language,
+                        )}
+                    </p>
+                  </>
                 );
-              })}
-            </ul>
+              }}
+            />
           )}
 
           {selectedClass && !selectedClassEligible && selectedClassAges && selectedClassStudentAge != null && (
@@ -377,7 +335,12 @@ export function AdminEnrolStudentModal({
             <Button
               variant="primary"
               className="flex-1"
-              disabled={!selectedClass || isSubmitting || (!selectedClassEligible && !ageOverrideConfirmed)}
+              disabled={
+                !selectedClass ||
+                selectedClassAlreadyEnrolled ||
+                isSubmitting ||
+                (!selectedClassEligible && !ageOverrideConfirmed)
+              }
               onClick={() => void handleClassNext()}
             >
               {isSubmitting ? t('common.loading') : t('common.next')}

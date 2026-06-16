@@ -3,10 +3,10 @@ import { handleOptions, jsonResponse } from "../_shared/cors.ts";
 import { createServiceClient, requireAuthUser } from "../_shared/supabase.ts";
 import { resolveOfferingPrice } from "../_shared/email-dist/pricing.js";
 import { extractWaiverToken, verifyWaiverToken } from "../_shared/waiver-token.ts";
-import { engagementHasSignedWaiver } from "../_shared/engagement-waiver.ts";
 import { resolveAllowedTokenRecipientEmails } from "../_shared/token-recipient.ts";
 import { getPaymentProviderForTenant } from "../_shared/payments/index.ts";
 import { applyMockSyncEvent, buildChargeMetadata } from "../_shared/payments/providers/mock.ts";
+import { ensureBillingAccountForStudent } from "../_shared/ensure-billing-account.ts";
 
 interface CreateCheckoutBody {
   offering_id: string;
@@ -104,8 +104,48 @@ serve(async (req) => {
       return jsonResponse({ error: "Engagement does not match tenant or offering" }, 403);
     }
 
+    const { data: tenant, error: tenantError } = await service
+      .from("tenants")
+      .select("vat_rate, prices_include_vat, currency, payment_provider, payment_provider_public_key")
+      .eq("id", tenantId)
+      .single();
+
+    if (tenantError || !tenant) {
+      return jsonResponse({ error: "Tenant not found" }, 404);
+    }
+
+    // Paid enrolments (e.g. mock checkout already finalised) — let the UI continue.
     if (engagement.status !== "pending_payment") {
+      if (engagement.status === "active" || engagement.status === "pending_waiver") {
+        return jsonResponse({
+          clientSecret: null,
+          paymentIntentId: null,
+          publishableKey: tenant.payment_provider_public_key,
+          amountMinor: null,
+          currency: (tenant.currency ?? "ILS").toUpperCase(),
+          paymentProvider: tenant.payment_provider,
+          mockCompleted: true,
+          alreadyPaid: true,
+        });
+      }
       return jsonResponse({ error: "Engagement is not payable" }, 403);
+    }
+
+    if (!engagement.billing_account_id) {
+      const billingAccountId = await ensureBillingAccountForStudent(
+        service,
+        engagement.tenant_id as string,
+        engagement.person_id as string,
+      );
+      const { error: linkError } = await service
+        .from("engagements")
+        .update({ billing_account_id: billingAccountId })
+        .eq("id", body.engagement_id);
+      if (linkError) {
+        console.error("[create-checkout] billing account link failed", linkError);
+        return jsonResponse({ error: "Failed to link billing account" }, 500);
+      }
+      engagement.billing_account_id = billingAccountId;
     }
 
     if (!engagement.billing_account_id) {
@@ -147,24 +187,8 @@ serve(async (req) => {
       return jsonResponse({ error: "Offering not found" }, 404);
     }
 
-    if (offering.waiver_required) {
-      const { satisfied } = await engagementHasSignedWaiver(service, body.engagement_id, tenantId, {
-        requireActiveTemplateMatch: false,
-      });
-      if (!satisfied) {
-        return jsonResponse({ error: "Waiver must be signed before payment" }, 403);
-      }
-    }
-
-    const { data: tenant, error: tenantError } = await service
-      .from("tenants")
-      .select("vat_rate, prices_include_vat, currency, payment_provider, payment_provider_public_key")
-      .eq("id", tenantId)
-      .single();
-
-    if (tenantError || !tenant) {
-      return jsonResponse({ error: "Tenant not found" }, 404);
-    }
+    // Waiver gating is enforced in the enrolment UI before checkout (parent/guest).
+    // Admin in-person pay and pay-then-sign flows finalise to pending_waiver after payment.
 
     const pricing = resolveOfferingPrice(
       { price_minor: offering.price_minor as number },

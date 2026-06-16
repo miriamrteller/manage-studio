@@ -1,3 +1,4 @@
+import { z } from 'zod';
 const DEFAULT_LABELS = {
     programs: {
         contact: { singular: 'Student', plural: 'Students' },
@@ -62,6 +63,36 @@ const PRESET_MODULES = {
         staff: false,
     },
 };
+const EntityLabelPairSchema = z.object({
+    singular: z.string(),
+    plural: z.string(),
+});
+const EntityLabelsOverrideSchema = z
+    .object({
+    contact: EntityLabelPairSchema.optional(),
+    account: EntityLabelPairSchema.optional(),
+    offering: EntityLabelPairSchema.optional(),
+    season: EntityLabelPairSchema.optional(),
+    category: EntityLabelPairSchema.optional(),
+    staff: EntityLabelPairSchema.optional(),
+    engagement: EntityLabelPairSchema.optional(),
+    session: EntityLabelPairSchema.optional(),
+})
+    .partial();
+export function parseEntityLabelOverrides(raw) {
+    try {
+        const result = EntityLabelsOverrideSchema.safeParse(typeof raw === 'string' ? JSON.parse(raw) : raw);
+        return result.success ? result.data : {};
+    }
+    catch {
+        return {};
+    }
+}
+export function safePreset(raw) {
+    if (raw === 'programs' || raw === 'services' || raw === 'catalog')
+        return raw;
+    return 'programs';
+}
 export function resolvePresetModules(preset) {
     return PRESET_MODULES[preset];
 }

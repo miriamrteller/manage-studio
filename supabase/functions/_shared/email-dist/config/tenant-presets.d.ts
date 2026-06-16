@@ -14,6 +14,8 @@ export type PresetModules = {
     categories: boolean;
     staff: boolean;
 };
+export declare function parseEntityLabelOverrides(raw: unknown): Partial<EntityLabels>;
+export declare function safePreset(raw: unknown): BusinessPreset;
 export declare function resolvePresetModules(preset: BusinessPreset): PresetModules;
 export declare function resolveEntityLabels(preset: BusinessPreset, overrides?: Partial<EntityLabels>): EntityLabels;
 export declare function getDefaultRoleForPreset(preset: BusinessPreset): string;

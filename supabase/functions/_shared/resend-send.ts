@@ -57,6 +57,8 @@ export async function sendRenderedEmail(
       description: str(variables.description),
       primaryColor: renderInput.tenantColors?.primary_color ?? "#2563eb",
       accentColor: renderInput.tenantColors?.accent_color ?? "#dc2626",
+      intro: str(variables.intro) || undefined,
+      ctaButton: str(variables.ctaButton) || undefined,
     });
     subject =
       subjectOverride ??

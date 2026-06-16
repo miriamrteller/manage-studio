@@ -533,6 +533,9 @@
       "guardian_summary": "הורה: {{name}}",
       "enrolled_in": "רשום/ה ב: {{classes}}",
       "ineligible_age": "לא מתאים/ה לטווח הגילאים של השיעור שנבחר",
+      "already_enrolled_class": "כבר רשום/ה לתקופה זו",
+      "already_enrolled_preselected": "התלמיד/ה כבר רשום/ה לשיעור שנבחר לתקופה זו. צפו בהרשמות בפורטל או בחרו שיעור אחר.",
+      "already_enrolled_preselected_admin": "התלמיד/ה כבר רשום/ה לשיעור שנבחר לתקופה זו. בחרו שיעור אחר כדי להמשיך.",
       "selected_class_age_mismatch": "גיל התלמיד/ה בתחילת העונה יהיה {{age}}. השיעור שנבחר מיועד לגילאים {{classAges}}.",
       "selected_class_age_mismatch_adult": "התלמיד/ה יהיה/תהיה מבוגר/ת בתחילת העונה. השיעור שנבחר מיועד לגילאים {{classAges}}.",
       "selected_class_age_ineligible_hint": "חזרו ובחרו שיעור אחר, או צרו קשר עם הסטודיו.",
@@ -705,7 +708,10 @@
         "cancelled": "בוטל",
         "withdrawn": "הוסר",
         "pending_waiver": "ממתין לחתימה"
-      }
+      },
+      "enrolment_success_title": "ההרשמה אושרה",
+      "enrolment_success_desc": "התשלום התקבל. השיעור החדש מופיע למטה עבור ילד/ה.",
+      "view_enrolment": "צפייה בפורטל"
     },
     "waivers": {
       "title": "כתבי ויתור",
@@ -837,6 +843,10 @@
     "payment_failed": "התשלום נכשל",
     "payment_setup_failed": "לא ניתן להתחיל תשלום",
     "pay_now": "שלם עכשיו",
+    "pending_action": {
+      "complete_payment": "השלמת תשלום",
+      "complete_waiver": "חתימה על ויתור"
+    },
     "missing_class_or_term": "יש לבחור שיעור ותקופה לפני התשלום",
     "waiver_scroll_prompt": "גלול עד הסוף כדי לאפשר חתימה",
     "waiver_document_region": "מסמך כתב ויתור",

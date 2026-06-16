@@ -2,23 +2,15 @@ import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 
 import type { NavigateFunction } from 'react-router-dom';
 import type { TFunction } from 'i18next';
 import type { Engagement } from '@shared/schemas';
+import { ensureBillingAccountForStudent } from '@/features/billing/ensureBillingAccountForStudent';
 import { EnrolmentIntakeService } from '../intakeService';
+import { EnrolmentService } from '../service';
 import { getSelectedClassAgeError } from '../lib/selectedClassAgeValidation';
 import type { EnrolmentConstraints } from '../hooks/useEnrolmentContext';
 import { evaluateCheckoutPreparation } from '../lib/prepareEnrolmentCheckout';
 import type { AgeOverrideState } from './useAgeOverride';
 import type { EnrolmentStep } from '../types/enrolmentStep';
 import type { TenantConfig } from '@/types/auth';
-
-interface CreateEnrolmentFn {
-  (
-    data: Partial<Engagement>,
-    options: {
-      onSuccess: (created: Engagement) => void;
-      onError: () => void;
-    },
-  ): void;
-}
 
 export interface UseCheckoutPreparationParams {
   currentStep: EnrolmentStep;
@@ -37,9 +29,34 @@ export interface UseCheckoutPreparationParams {
   showWaiverStep: boolean;
   waiverSignedInFlow: boolean;
   waiverEvidenceId: string | null;
-  createEnrolment: CreateEnrolmentFn;
   navigate: NavigateFunction;
   t: TFunction;
+}
+
+async function resolveCheckoutEngagement(
+  tenant: TenantConfig,
+  payload: Partial<Engagement>,
+  personId: string,
+  offeringId: string,
+  seasonId: string,
+): Promise<Engagement> {
+  let existing = await EnrolmentService.findPendingPaymentEngagement(tenant, {
+    personId,
+    offeringId,
+    seasonId,
+  });
+
+  if (existing) {
+    if (!existing.billing_account_id) {
+      const billingAccountId = await ensureBillingAccountForStudent(tenant, personId);
+      existing = await EnrolmentService.update(tenant, existing.id, {
+        billing_account_id: billingAccountId,
+      });
+    }
+    return existing;
+  }
+
+  return EnrolmentService.create(tenant, payload);
 }
 
 export function useCheckoutPreparation({
@@ -59,7 +76,6 @@ export function useCheckoutPreparation({
   showWaiverStep,
   waiverSignedInFlow,
   waiverEvidenceId,
-  createEnrolment,
   navigate,
   t,
 }: UseCheckoutPreparationParams) {
@@ -137,18 +153,16 @@ export function useCheckoutPreparation({
           return;
         }
 
-        createEnrolment(evaluation.payload, {
-          onSuccess: (created) => {
-            setCheckoutEnrolmentId(created.id);
-            setEnrolmentData(created);
-            setIsCheckoutPreparing(false);
-          },
-          onError: () => {
-            checkoutPrepareStartedRef.current = false;
-            setCheckoutError(t('enrolment.checkout_prepare_failed'));
-            setIsCheckoutPreparing(false);
-          },
-        });
+        const created = await resolveCheckoutEngagement(
+          tenant,
+          evaluation.payload,
+          personId!,
+          offeringId!,
+          seasonId!,
+        );
+        setCheckoutEnrolmentId(created.id);
+        setEnrolmentData(created);
+        setIsCheckoutPreparing(false);
       } catch (error) {
         checkoutPrepareStartedRef.current = false;
         setCheckoutError(
@@ -175,7 +189,6 @@ export function useCheckoutPreparation({
     showWaiverStep,
     waiverSignedInFlow,
     waiverEvidenceId,
-    createEnrolment,
     navigate,
     t,
     setCurrentStep,

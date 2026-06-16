@@ -1,5 +1,8 @@
 import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
 import { createServiceClient } from "../_shared/supabase.ts";
+import { resolveNotificationFromEmail } from "../_shared/notification-from.ts";
+import { resolveEnrolmentPaymentEmailDetails } from "../_shared/enrolment-payment-email.ts";
+import { resolveEnrolmentNotificationRecipient } from "../_shared/enrolment-recipient.ts";
 import { signWaiverToken } from "../_shared/waiver-token.ts";
 import {
   EMAIL_TEMPLATE_NAMES,
@@ -113,42 +116,22 @@ Deno.serve(async (req) => {
       .single();
     if (!student) return jsonResponse({ error: "Student not found" }, 404);
 
-    let guardianEmail = (student.email as string | null)?.toLowerCase() ?? null;
-    let guardianName = body.recipientName ?? (student.name as string);
-    if (student.account_id) {
-      const { data: accountHolder } = await service
-        .from("account_members")
-        .select("person_id")
-        .eq("tenant_id", tenantId)
-        .eq("account_id", student.account_id)
-        .eq("role", "account_holder")
-        .limit(1)
-        .maybeSingle();
-      if (accountHolder?.person_id) {
-        const { data: guardian } = await service
-          .from("people")
-          .select("name, email")
-          .eq("id", accountHolder.person_id)
-          .eq("tenant_id", tenantId)
-          .maybeSingle();
-        guardianEmail = (guardian?.email as string | null)?.toLowerCase() ?? guardianEmail;
-        guardianName = body.recipientName ?? (guardian?.name as string | undefined) ?? guardianName;
-      }
-    }
+    const resolvedRecipient = await resolveEnrolmentNotificationRecipient(
+      service,
+      tenantId,
+      engagement.person_id as string,
+    );
+    const guardianEmail = resolvedRecipient?.email ?? null;
+    const guardianName =
+      body.recipientName ?? resolvedRecipient?.name ?? (student.name as string);
 
     const isOverride = guardianEmail ? recipientEmail !== guardianEmail : false;
     if (isOverride && !body.overrideReason?.trim()) {
       return jsonResponse({ error: "overrideReason is required when recipient differs from guardian email" }, 400);
     }
 
-    const { data: offering } = await service
-      .from("offerings")
-      .select("name")
-      .eq("id", engagement.offering_id)
-      .eq("tenant_id", tenantId)
-      .single();
-
     const expireAt = Math.floor(Date.now() / 1000) + 7 * 24 * 3600;
+    const linkExpiresAt = new Date(expireAt * 1000);
     const wt = await signWaiverToken({
       eid: engagement.id as string,
       tid: tenantId,
@@ -161,13 +144,29 @@ Deno.serve(async (req) => {
     }
     const paymentUrl = `${appBaseUrl}/enrol/pay/${encodeURIComponent(engagement.id as string)}?t=${encodeURIComponent(wt)}`;
 
-    const fromEmail = (tenant.from_email as string | null) ?? Deno.env.get("NOTIFICATION_FROM_EMAIL");
+    const fromEmail = (() => {
+      try {
+        return resolveNotificationFromEmail(tenant.from_email as string | null);
+      } catch {
+        return null;
+      }
+    })();
     const language = tenant.language_default === "he" ? "he" : "en";
+    const paymentDetails = await resolveEnrolmentPaymentEmailDetails(service, {
+      tenantId,
+      offeringId: engagement.offering_id as string,
+      studentName: student.name as string,
+      language,
+      linkExpiresAt,
+    });
+
     let emailSent = false;
     let emailError: string | null = null;
 
     if (!fromEmail) {
       emailError = "Sender email is not configured";
+    } else if (!paymentDetails) {
+      emailError = "Could not load class pricing for email";
     } else {
       try {
         await sendRenderedEmail({
@@ -182,12 +181,18 @@ Deno.serve(async (req) => {
               accent_color: tenant.accent_color as string | null,
             },
             variables: {
-              subject: `Complete enrollment — ${(offering?.name as string) ?? "class"}`,
+              subject: language === "he"
+                ? `השלמת הרשמה — ${paymentDetails.className}`
+                : `Complete enrollment — ${paymentDetails.className}`,
               recipientName: guardianName,
-              enrolledClassName: (offering?.name as string) ?? "Class",
-              description: `${student.name as string} — ${(offering?.name as string) ?? "Class"}`,
+              enrolledClassName: paymentDetails.className,
+              description: paymentDetails.description,
+              amountOutstandingFormatted: paymentDetails.amountOutstandingFormatted,
+              amountFormatted: paymentDetails.amountOutstandingFormatted,
               paymentUrl,
-              dueDate: "—",
+              dueDate: paymentDetails.dueDate,
+              intro: paymentDetails.intro,
+              ctaButton: paymentDetails.ctaButton,
             },
           },
         });

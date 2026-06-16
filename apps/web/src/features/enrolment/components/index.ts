@@ -10,5 +10,7 @@ export { StepBackButton } from './StepBackButton';
 export { AdminEnrolmentPaymentStep } from './AdminEnrolmentPaymentStep';
 export type { AdminPaymentChoice } from './AdminEnrolmentPaymentStep';
 export { AdminEnrolStudentModal } from './AdminEnrolStudentModal';
+export { EnrolmentClassSelectList } from './EnrolmentClassSelectList';
+export type { ClassAvailabilityState } from './EnrolmentClassSelectList';
 export { TokenCompletionView } from './TokenCompletionView';
 export { AuthenticatedCompletionView } from './AuthenticatedCompletionView';

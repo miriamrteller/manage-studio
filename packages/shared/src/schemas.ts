@@ -294,6 +294,7 @@ export const OfferingSchema = z.object({
   waiver_required: z.boolean().default(true),
   created_at: TimestampSchema,
 }).refine((data) => {
+  if (data.delivery_mode === 'intangible') return true;
   if (!data.start_time || !data.end_time) return true;
   return data.start_time < data.end_time;
 }, {

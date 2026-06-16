@@ -1,5 +1,6 @@
 import type { Tenant } from '@shared/schemas';
 import type { PostgrestError } from '@supabase/supabase-js';
+import { ZodError } from 'zod';
 
 /**
  * BaseService: Shared error handling, retry logic, audit logging
@@ -24,6 +25,11 @@ export abstract class BaseService {
         return await fn();
       } catch (error) {
         const err = error instanceof Error ? error : new Error(String(error));
+
+        // Validation errors won't succeed on retry.
+        if (error instanceof ZodError) {
+          throw err;
+        }
         
         // Don't retry auth/RLS errors
         if (err.message.includes('permission denied') || err.message.includes('JWT')) {

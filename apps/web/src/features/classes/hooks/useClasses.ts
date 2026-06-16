@@ -95,6 +95,7 @@ export function useClasses({
       });
     },
     enabled: enabled && !publicOnly && !!tenant?.id,
+    staleTime: 5 * 60 * 1000,
   });
 
   // Create mutation

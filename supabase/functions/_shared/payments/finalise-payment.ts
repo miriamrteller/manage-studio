@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import { enqueueDocument } from "../enqueue-document.ts";
 import { engagementHasSignedWaiver } from "../engagement-waiver.ts";
+import { resolveEnrolmentNotificationRecipient, resolveAdminLinkRecipientEmail } from "../enrolment-recipient.ts";
+import { resolveNotificationFromEmail } from "../notification-from.ts";
 import { sendRenderedEmail, EMAIL_TEMPLATE_NAMES } from "../resend-send.ts";
 import { signWaiverToken } from "../waiver-token.ts";
 import { advanceBillingSchedule } from "./advance-billing-schedule.ts";
@@ -46,13 +48,57 @@ async function sendConfirmationEmail(
     .single();
   if (!engagement) return;
 
-  const [{ data: person }, { data: tenantRow }, { data: offeringRow }] = await Promise.all([
-    service.from("people").select("email, name, account_id").eq("id", engagement.person_id).single(),
+  const [{ data: tenantRow }, { data: offeringRow }] = await Promise.all([
     service.from("tenants").select("name, from_email, language_default").eq("id", params.tenantId).single(),
-    service.from("offerings").select("name").eq("id", engagement.offering_id).single(),
+    service
+      .from("offerings")
+      .select("name")
+      .eq("id", engagement.offering_id)
+      .single(),
   ]);
 
-  if (!person?.email || !tenantRow?.from_email) return;
+  const recipient = await resolveEnrolmentNotificationRecipient(
+    service,
+    params.tenantId,
+    engagement.person_id as string,
+  );
+  const fallbackEmail = recipient
+    ? null
+    : await resolveAdminLinkRecipientEmail(service, params.tenantId, params.engagementId);
+  const recipientEmail = recipient?.email ?? fallbackEmail;
+  const recipientName = recipient?.name ?? "there";
+
+  if (!recipientEmail || !tenantRow) {
+    await service.from("audit_log").insert({
+      tenant_id: params.tenantId,
+      action: "payment_confirmation_email_skipped",
+      entity_type: "payment",
+      entity_id: params.paymentId,
+      after_state: {
+        reason: !recipientEmail ? "no_recipient" : "missing_tenant",
+        engagement_id: params.engagementId,
+      },
+    });
+    return;
+  }
+
+  let fromEmail: string;
+  try {
+    fromEmail = resolveNotificationFromEmail(tenantRow.from_email);
+  } catch (error) {
+    await service.from("audit_log").insert({
+      tenant_id: params.tenantId,
+      action: "payment_confirmation_email_skipped",
+      entity_type: "payment",
+      entity_id: params.paymentId,
+      after_state: {
+        reason: "sender_not_configured",
+        message: error instanceof Error ? error.message : String(error),
+        engagement_id: params.engagementId,
+      },
+    });
+    return;
+  }
 
   const language = (tenantRow.language_default === "he" ? "he" : "en") as "en" | "he";
   const offeringName = offeringRow?.name ?? "";
@@ -65,19 +111,19 @@ async function sendConfirmationEmail(
       const wt = await signWaiverToken({
         eid: params.engagementId,
         tid: params.tenantId,
-        em: person.email,
+        em: recipientEmail,
         exp: expireAt,
       });
       const signUrl = `${APP_URL}/enrol/complete?engagementId=${encodeURIComponent(params.engagementId)}&wt=${wt}`;
       await sendRenderedEmail({
-        to: person.email,
-        from: tenantRow.from_email,
+        to: recipientEmail,
+        from: fromEmail,
         renderInput: {
           templateName: EMAIL_TEMPLATE_NAMES.ENROLMENT_CONFIRMATION,
           language,
           schoolName: tenantRow.name,
           variables: {
-            recipientName: person.name ?? "",
+            recipientName,
             className: offeringName,
             pendingWaiver: true,
             signUrl,
@@ -87,14 +133,14 @@ async function sendConfirmationEmail(
       });
     } else {
       await sendRenderedEmail({
-        to: person.email,
-        from: tenantRow.from_email,
+        to: recipientEmail,
+        from: fromEmail,
         renderInput: {
           templateName: EMAIL_TEMPLATE_NAMES.ENROLMENT_CONFIRMATION,
           language,
           schoolName: tenantRow.name,
           variables: {
-            recipientName: person.name ?? "",
+            recipientName,
             className: offeringName,
             pendingWaiver: false,
             receiptPendingNote: true,
@@ -108,9 +154,24 @@ async function sendConfirmationEmail(
       action: "payment_confirmation_email_sent",
       entity_type: "payment",
       entity_id: params.paymentId,
+      after_state: {
+        engagement_id: params.engagementId,
+        recipient_email: recipientEmail,
+      },
     });
   } catch (err) {
     console.error("[finalisePayment] confirmation email failed:", err);
+    await service.from("audit_log").insert({
+      tenant_id: params.tenantId,
+      action: "payment_confirmation_email_failed",
+      entity_type: "payment",
+      entity_id: params.paymentId,
+      after_state: {
+        engagement_id: params.engagementId,
+        recipient_email: recipientEmail,
+        message: err instanceof Error ? err.message : String(err),
+      },
+    });
   }
 }
 

@@ -534,6 +534,9 @@
       "guardian_summary": "Guardian: {{name}}",
       "enrolled_in": "Enrolled in: {{classes}}",
       "ineligible_age": "Not eligible for the selected class age range",
+      "already_enrolled_class": "Already enrolled for this term",
+      "already_enrolled_preselected": "This student is already enrolled in the selected class for this term. View their enrolments in the portal or choose a different class.",
+      "already_enrolled_preselected_admin": "This student is already enrolled in the selected class for this term. Choose a different class to continue.",
       "selected_class_age_mismatch": "This student will be age {{age}} at the start of the season. The selected class is for ages {{classAges}}.",
       "selected_class_age_mismatch_adult": "This student will be an adult at the start of the season. The selected class is for ages {{classAges}}.",
       "selected_class_age_ineligible_hint": "Please go back and choose a different class, or contact the studio for help.",
@@ -704,7 +707,10 @@
         "cancelled": "Cancelled",
         "withdrawn": "Withdrawn",
         "pending_waiver": "Awaiting signature"
-      }
+      },
+      "enrolment_success_title": "Enrollment confirmed",
+      "enrolment_success_desc": "Your payment was received. The new class appears below for your child.",
+      "view_enrolment": "View in portal"
     },
     "waivers": {
       "title": "Waivers",
@@ -836,6 +842,10 @@
     "payment_failed": "Payment failed",
     "payment_setup_failed": "Could not start payment",
     "pay_now": "Pay now",
+    "pending_action": {
+      "complete_payment": "Complete payment",
+      "complete_waiver": "Sign waiver"
+    },
     "missing_class_or_term": "Select a class and term before payment",
     "waiver_scroll_prompt": "Scroll to the bottom to enable signing",
     "waiver_document_region": "Waiver document",

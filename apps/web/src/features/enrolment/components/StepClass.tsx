@@ -7,11 +7,8 @@ import { useLevels } from '@/features/levels/hooks/useLevels';
 import { useTerms } from '@/features/terms/hooks/useTerms';
 import { useTenant } from '@/hooks/useTenant';
 import {
-  filterClassesByAge,
   getRequirementInfoNotes,
   ageAt,
-  buildSeasonStartById,
-  isAgeEligible,
   formatAgeRange,
   personAgeAtSeasonStart,
 } from '../lib/check-requirements';
@@ -25,6 +22,8 @@ import { computeClassTotal } from '../lib/computeClassTotal';
 import { formatCurrency } from '@shared/format';
 import type { Engagement } from '@shared/schemas';
 import type { AgeOverrideState } from '../hooks/useAgeOverride';
+import { useEnrolmentClassPicker } from '../hooks/useEnrolmentClassPicker';
+import { EnrolmentClassSelectList } from './EnrolmentClassSelectList';
 import { StepBackButton } from './StepBackButton';
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -67,22 +66,28 @@ export function StepClass({
   const { levels } = useLevels();
   const { requirements, isLoading: reqLoading } = useRequirements(selectedClassId ?? undefined);
 
+  const classPicker = useEnrolmentClassPicker({
+    personId: data.person_id,
+    personDateOfBirth,
+    classes,
+    terms,
+    allowAgeOverride,
+    showAllClasses,
+  });
+
   const levelNameById = useMemo(() => new Map(levels.map((l) => [l.id, l.name])), [levels]);
-  const seasonStartById = useMemo(() => buildSeasonStartById(terms), [terms]);
-  const person = useMemo(() => ({ date_of_birth: personDateOfBirth }), [personDateOfBirth]);
-  const ageCheckOptions = useMemo(() => ({ seasonStartById }), [seasonStartById]);
 
   const displaySeasonStart = useMemo(() => {
-    if (initialTermId && seasonStartById[initialTermId]) {
-      return seasonStartById[initialTermId];
+    if (initialTermId && classPicker.seasonStartById[initialTermId]) {
+      return classPicker.seasonStartById[initialTermId];
     }
     const fromClass = classes.find(
       (c: { season_start_date?: string | null }) => c.season_start_date,
     )?.season_start_date;
     if (fromClass) return fromClass;
     const seasonId = classes.find((c: { season_id?: string | null }) => c.season_id)?.season_id;
-    return seasonId ? seasonStartById[seasonId] : undefined;
-  }, [initialTermId, seasonStartById, classes]);
+    return seasonId ? classPicker.seasonStartById[seasonId] : undefined;
+  }, [initialTermId, classPicker.seasonStartById, classes]);
 
   const studentAge = useMemo(() => {
     if (!personDateOfBirth || !displaySeasonStart) return null;
@@ -90,47 +95,24 @@ export function StepClass({
     return Number.isNaN(age) ? null : age;
   }, [personDateOfBirth, displaySeasonStart]);
 
-  const { classes: availableClasses, ageFilteringActive } = useMemo(
-    () => filterClassesByAge(classes, person, ageCheckOptions),
-    [classes, person, ageCheckOptions],
-  );
-
-  const displayClasses = useMemo(
-    () => (allowAgeOverride && showAllClasses ? classes : availableClasses),
-    [allowAgeOverride, showAllClasses, classes, availableClasses],
-  );
-
   const selectedClass = useMemo(
-    () => displayClasses.find((c: { id: string }) => c.id === selectedClassId),
-    [displayClasses, selectedClassId],
+    () => classPicker.displayClasses.find((c: { id: string }) => c.id === selectedClassId),
+    [classPicker.displayClasses, selectedClassId],
   );
-
-  const classSeasonStartDate = (cls: {
-    season_id?: string | null;
-    season_start_date?: string | null;
-  }) => {
-    if (cls.season_start_date) return cls.season_start_date;
-    if (cls.season_id && seasonStartById[cls.season_id]) return seasonStartById[cls.season_id];
-    return null;
-  };
 
   const selectedClassEligible = selectedClass
-    ? isAgeEligible(
-        {
-          min_age: selectedClass.min_age,
-          max_age: selectedClass.max_age,
-          season_id: selectedClass.season_id,
-          season_start_date: classSeasonStartDate(selectedClass),
-        },
-        person,
-        ageCheckOptions,
-      )
+    ? classPicker.isClassAgeEligible(selectedClass)
     : true;
+  const selectedClassAlreadyEnrolled = selectedClass
+    ? classPicker.isClassAlreadyEnrolled(selectedClass)
+    : false;
 
   const selectedClassAges = selectedClass
     ? formatAgeRange(selectedClass.min_age, selectedClass.max_age)
     : null;
-  const selectedClassSeasonStart = selectedClass ? classSeasonStartDate(selectedClass) : null;
+  const selectedClassSeasonStart = selectedClass
+    ? classPicker.classSeasonStartDate(selectedClass)
+    : null;
   const selectedClassStudentAge =
     personDateOfBirth && selectedClassSeasonStart
       ? personAgeAtSeasonStart(personDateOfBirth, selectedClassSeasonStart)
@@ -139,7 +121,7 @@ export function StepClass({
   const infoNotes = useMemo(() => getRequirementInfoNotes(requirements), [requirements]);
 
   const handleNext = () => {
-    if (!selectedClass) return;
+    if (!selectedClass || selectedClassAlreadyEnrolled) return;
     if (!selectedClassEligible && !(allowAgeOverride && ageOverride.confirmed)) return;
     onNext(
       {
@@ -168,19 +150,19 @@ export function StepClass({
     );
   }
 
-  const filteredCount = classes.length - availableClasses.length;
+  const filteredCount = classes.length - classPicker.availableClasses.length;
 
   return (
     <div className="space-y-4">
       <p className="text-sm text-gray-600">{t('pages.enrolment.class_desc')}</p>
 
-      {studentAge != null && ageFilteringActive && (
+      {studentAge != null && classPicker.ageFilteringActive && (
         <p className="text-sm text-gray-700" role="status">
           {enrolmentShowingForAgeMessage(studentAge, t)}
         </p>
       )}
 
-      {studentAge != null && !ageFilteringActive && classes.length > 0 && (
+      {studentAge != null && !classPicker.ageFilteringActive && classes.length > 0 && (
         <div
           className="rounded-md bg-amber-50 border border-amber-200 p-3 text-sm text-amber-900"
           role="status"
@@ -189,7 +171,7 @@ export function StepClass({
         </div>
       )}
 
-      {filteredCount > 0 && ageFilteringActive && (
+      {filteredCount > 0 && classPicker.ageFilteringActive && (
         <p className="text-xs text-gray-500" role="status">
           {t('pages.enrolment.classes_filtered_by_age', { count: filteredCount })}
         </p>
@@ -206,9 +188,9 @@ export function StepClass({
         </label>
       )}
 
-      {displayClasses.length === 0 ? (
+      {classPicker.displayClasses.length === 0 ? (
         <div className="p-4 bg-gray-50 rounded-lg text-center text-sm text-gray-500 space-y-2">
-          {ageFilteringActive && studentAge != null ? (
+          {classPicker.ageFilteringActive && studentAge != null ? (
             <>
               <p>{t('pages.enrolment.no_classes_for_age')}</p>
               <p className="text-xs">{enrolmentNoClassesAgeHint(studentAge, t)}</p>
@@ -218,93 +200,50 @@ export function StepClass({
           )}
         </div>
       ) : (
-        <ul className="space-y-2" role="listbox" aria-label={t('pages.enrolment.class_select_label')}>
-          {displayClasses.map(
-            (cls: {
-              id: string;
-              name: string;
-              category_id?: string | null;
-              day_of_week?: number;
-              start_time?: string;
-              end_time?: string;
-              min_age?: number | null;
-              max_age?: number | null;
-              level_name?: string | null;
-              price_minor?: number;
-              currency?: string;
-            }) => {
-              const isSelected = cls.id === selectedClassId;
-              const levelName =
-                cls.level_name ?? (cls.category_id ? levelNameById.get(cls.category_id) : undefined);
-              const levelLabel = levelName && levelName !== cls.name ? levelName : null;
-              const eligible = isAgeEligible(
-                {
-                  min_age: cls.min_age,
-                  max_age: cls.max_age,
-                  season_id: (cls as { season_id?: string | null }).season_id ?? null,
-                  season_start_date: classSeasonStartDate(
-                    cls as { season_id?: string | null; season_start_date?: string | null },
-                  ),
-                },
-                person,
-                ageCheckOptions,
-              );
-              return (
-                <li key={cls.id}>
-                  <button
-                    type="button"
-                    role="option"
-                    aria-selected={isSelected}
-                    onClick={() => {
-                      setSelectedClassId(cls.id);
-                      onAgeOverrideChange(false, '');
-                    }}
-                    className={[
-                      'w-full text-start border-2 rounded-lg px-4 py-3 transition-colors',
-                      isSelected
-                        ? 'border-blue-600 bg-blue-50'
-                        : eligible
-                          ? 'border-gray-200 hover:border-gray-300 bg-white'
-                          : 'border-amber-300 hover:border-amber-400 bg-amber-50/40',
-                    ].join(' ')}
-                  >
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="min-w-0">
-                        <p className="font-medium text-gray-900">{cls.name}</p>
-                        {levelLabel && (
-                          <p className="text-sm text-gray-700 mt-0.5">{levelLabel}</p>
-                        )}
-                        <p className="text-sm text-gray-500 mt-0.5">
-                          {cls.day_of_week != null ? DAY_NAMES[cls.day_of_week] : ''}
-                          {cls.start_time &&
-                            `${cls.day_of_week != null ? ' · ' : ''}${formatTime(cls.start_time)}`}
-                          {cls.end_time && `–${formatTime(cls.end_time)}`}
-                        </p>
-                      </div>
-                      {cls.price_minor != null && tenant && (
-                        <span className="shrink-0 text-sm font-semibold text-gray-700">
-                          {formatCurrency(
-                            computeClassTotal(
-                              { price_minor: cls.price_minor, currency: cls.currency },
-                              tenant,
-                            ).chargeMinor,
-                            cls.currency ?? tenant.currency,
-                            i18n.language,
-                          )}
-                        </span>
-                      )}
-                    </div>
-                    {!eligible && (
-                      <p className="text-xs text-amber-800 mt-1">
-                        {t('pages.enrolment.ineligible_age')}
-                      </p>
-                    )}
-                  </button>
-                </li>
-              );
-            },
-          )}
-        </ul>
+        <EnrolmentClassSelectList
+          classes={classPicker.displayClasses}
+          selectedClassId={selectedClassId}
+          onSelectClass={(cls) => {
+            setSelectedClassId(cls.id);
+            onAgeOverrideChange(false, '');
+          }}
+          getClassAvailability={classPicker.getClassAvailability}
+          classSeasonStartDate={classPicker.classSeasonStartDate}
+          personDateOfBirth={personDateOfBirth}
+          ariaLabel={t('pages.enrolment.class_select_label')}
+          renderClassDetails={(cls) => {
+            const levelName =
+              cls.level_name ?? (cls.category_id ? levelNameById.get(cls.category_id) : undefined);
+            const levelLabel = levelName && levelName !== cls.name ? levelName : null;
+
+            return (
+              <>
+                <p className="font-medium text-gray-900">{cls.name}</p>
+                {levelLabel && <p className="text-sm text-gray-700 mt-0.5">{levelLabel}</p>}
+                <p className="text-sm text-gray-500 mt-0.5">
+                  {cls.day_of_week != null ? DAY_NAMES[cls.day_of_week] : ''}
+                  {cls.start_time &&
+                    `${cls.day_of_week != null ? ' · ' : ''}${formatTime(cls.start_time)}`}
+                  {cls.end_time && `–${formatTime(cls.end_time)}`}
+                </p>
+              </>
+            );
+          }}
+          renderClassMeta={(cls) =>
+            cls.price_minor != null && tenant ? (
+              <span className="shrink-0 text-sm font-semibold text-gray-700">
+                {formatCurrency(
+                  computeClassTotal(
+                    { price_minor: cls.price_minor, currency: cls.currency },
+                    tenant,
+                  ).chargeMinor,
+                  cls.currency ?? tenant.currency,
+                  i18n.language,
+                )}
+              </span>
+            ) : null
+          }
+        />
       )}
 
       {allowAgeOverride &&
@@ -355,6 +294,7 @@ export function StepClass({
           className={canGoBack ? 'flex-1' : 'w-full'}
           disabled={
             !selectedClass ||
+            selectedClassAlreadyEnrolled ||
             (!selectedClassEligible && !(allowAgeOverride && ageOverride.confirmed))
           }
         >

@@ -104,7 +104,18 @@ export class ClassService extends BaseService {
       if (error) throw error;
 
       return {
-        classes: (data || []).map(c => OfferingSchema.parse(c)),
+        classes: (data || []).flatMap((row) => {
+          const parsed = OfferingSchema.safeParse(row);
+          if (!parsed.success) {
+            console.warn(
+              '[ClassService.list] Skipping invalid offering:',
+              (row as { id?: string })?.id,
+              parsed.error.message,
+            );
+            return [];
+          }
+          return [parsed.data];
+        }),
         total: count || 0,
         page,
         pageSize,

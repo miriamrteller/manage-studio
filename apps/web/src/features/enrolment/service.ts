@@ -4,7 +4,8 @@ import { supabase } from '@/lib/supabase';
 import { EngagementSchema, type Engagement } from '@shared/schemas';
 import { z } from 'zod';
 import type { Tenant } from '@shared/schemas';
-import { NON_TERMINAL_ENGAGEMENT_STATUSES } from './lib/enrolmentTransitions';
+import { ensureBillingAccountForStudent } from '@/features/billing/ensureBillingAccountForStudent';
+import { ENROLMENT_BLOCKING_DUPLICATE_STATUSES } from './lib/enrolled-offerings';
 import { isAgeEligible } from './lib/check-requirements';
 
 const EnrolmentStatusSchema = z.enum([
@@ -105,6 +106,26 @@ export class EnrolmentService extends BaseService {
     }, 'EnrolmentService.get');
   }
 
+  /** Reuse an in-progress checkout when the user returns to the payment step. */
+  static async findPendingPaymentEngagement(
+    tenant: Tenant,
+    input: { personId: string; offeringId: string; seasonId: string },
+  ): Promise<Engagement | null> {
+    return this.withRetry(async () => {
+      const { data, error } = await TenantDB.selectFor('engagements', tenant)
+        .eq('person_id', input.personId)
+        .eq('offering_id', input.offeringId)
+        .eq('season_id', input.seasonId)
+        .eq('status', 'pending_payment')
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!data) return null;
+
+      return EngagementSchema.parse(data);
+    }, 'EnrolmentService.findPendingPaymentEngagement');
+  }
+
   /**
    * Create new enrolment
    * V1: Simple create without placement scoring
@@ -126,7 +147,7 @@ export class EnrolmentService extends BaseService {
           .eq('person_id', validated.person_id)
           .eq('offering_id', validated.offering_id)
           .eq('season_id', validated.season_id)
-          .in('status', [...NON_TERMINAL_ENGAGEMENT_STATUSES])
+          .in('status', [...ENROLMENT_BLOCKING_DUPLICATE_STATUSES])
           .maybeSingle();
 
         if (checkError) throw checkError;
@@ -197,6 +218,17 @@ export class EnrolmentService extends BaseService {
             age_override_reason: age_override_reason?.trim() || null,
           };
         }
+      }
+
+      if (
+        validated.person_id &&
+        !insertPayload.billing_account_id &&
+        (insertPayload.status === 'pending_payment' || validated.status === 'pending_payment')
+      ) {
+        insertPayload.billing_account_id = await ensureBillingAccountForStudent(
+          tenant,
+          validated.person_id,
+        );
       }
 
       const { data, error } = await TenantDB.insert('engagements', tenant, insertPayload)

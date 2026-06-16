@@ -15,6 +15,9 @@ export declare const EMAIL_TEMPLATE_NAMES: {
     readonly PAYMENT_REMINDER: "payment_reminder";
     readonly CLASS_CANCELLATION: "class_cancellation";
     readonly WAITING_LIST_OFFER: "waiting_list_offer";
+    readonly ENROLMENT_CONFIRMATION: "enrolment_confirmation";
+    readonly WAIVER_REMINDER: "waiver_reminder";
+    readonly WAIVER_CANCELLED: "waiver_cancelled";
 };
 export type EmailTemplateName = typeof EMAIL_TEMPLATE_NAMES[keyof typeof EMAIL_TEMPLATE_NAMES];
 /**

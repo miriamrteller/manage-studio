@@ -108,7 +108,13 @@ export default function AuthCallbackPage() {
         try {
           await linkGuardianForEngagement(engagementId);
           sessionStorage.removeItem('portalEngagementId');
-          navigate('/dashboard/portal', { replace: true });
+          navigate('/dashboard/portal', {
+            replace: true,
+            state: {
+              highlightEngagementId: engagementId,
+              enrolmentSuccess: true,
+            },
+          });
           return;
         } catch (linkError) {
           console.warn('Portal link after auth callback:', linkError);

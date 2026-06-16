@@ -1,8 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import type { Engagement } from '@shared/schemas';
 import { EnrolmentStepper } from '@/features/enrolment/components';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import queryClient from '@/lib/query-client';
+import { hasParentRole } from '@/lib/parentRoles';
+import { buildPortalHighlightState } from '@/lib/portalHighlight';
 import {
   persistEnrollmentIntent,
   readEnrollmentIntent,
@@ -18,7 +22,19 @@ export default function EnrolPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
-  const { isLoading } = useCurrentUser();
+  const { user, isLoading } = useCurrentUser();
+
+  const handleEnrolmentSuccess = useCallback(
+    async (enrolment: Engagement) => {
+      if (user && hasParentRole(user.role)) {
+        await queryClient.invalidateQueries({ queryKey: ['parent-portal'] });
+        navigate('/dashboard/portal', { state: buildPortalHighlightState(enrolment) });
+        return;
+      }
+      navigate('/classes');
+    },
+    [navigate, user],
+  );
   const [resumeState, setResumeState] = useState<EnrolmentResumeState | null>(null);
   const intent = readEnrollmentIntent(location.state as EnrollmentIntent | null);
   const resumeKey =
@@ -65,7 +81,7 @@ export default function EnrolPage() {
         initialResumeState={resumeState}
         skipNotificationStep
         onCancel={() => navigate('/classes')}
-        onSuccess={() => navigate('/classes')}
+        onSuccess={handleEnrolmentSuccess}
       />
     </div>
   );
