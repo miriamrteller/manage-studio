@@ -46,6 +46,9 @@ DROP TABLE IF EXISTS public.waiting_list                  CASCADE;
 DROP TABLE IF EXISTS public.waitlist                      CASCADE;
 
 -- engagements (legacy + current)
+DROP INDEX IF EXISTS public.idx_enrolment_resume_drafts_tenant;
+DROP INDEX IF EXISTS public.idx_enrolment_resume_drafts_expires;
+DROP TABLE IF EXISTS public.enrolment_resume_drafts          CASCADE;
 DROP TABLE IF EXISTS public.enrolments                    CASCADE;
 DROP TABLE IF EXISTS public.engagements                   CASCADE;
 

@@ -251,33 +251,46 @@ export type Database = {
       }
       billing_accounts: {
         Row: {
+          account_id: string | null
+          business_name: string | null
+          business_tax_id: string | null
           created_at: string
           id: string
-          payment_method: string | null
-          person_id: string
+          person_id: string | null
           status: string
           tenant_id: string
           updated_at: string
         }
         Insert: {
+          account_id?: string | null
+          business_name?: string | null
+          business_tax_id?: string | null
           created_at?: string
           id?: string
-          payment_method?: string | null
-          person_id: string
+          person_id?: string | null
           status?: string
           tenant_id: string
           updated_at?: string
         }
         Update: {
+          account_id?: string | null
+          business_name?: string | null
+          business_tax_id?: string | null
           created_at?: string
           id?: string
-          payment_method?: string | null
-          person_id?: string
+          person_id?: string | null
           status?: string
           tenant_id?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "billing_accounts_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "billing_accounts_person_id_fkey"
             columns: ["person_id"]
@@ -287,6 +300,83 @@ export type Database = {
           },
           {
             foreignKeyName: "billing_accounts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      billing_schedules: {
+        Row: {
+          attempt_count: number
+          billing_account_id: string | null
+          created_at: string
+          engagement_id: string
+          id: string
+          last_attempt_at: string | null
+          last_error: string | null
+          next_attempt_at: string | null
+          next_billing_date: string
+          payment_method_token_id: string | null
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          attempt_count?: number
+          billing_account_id?: string | null
+          created_at?: string
+          engagement_id: string
+          id?: string
+          last_attempt_at?: string | null
+          last_error?: string | null
+          next_attempt_at?: string | null
+          next_billing_date: string
+          payment_method_token_id?: string | null
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          attempt_count?: number
+          billing_account_id?: string | null
+          created_at?: string
+          engagement_id?: string
+          id?: string
+          last_attempt_at?: string | null
+          last_error?: string | null
+          next_attempt_at?: string | null
+          next_billing_date?: string
+          payment_method_token_id?: string | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_schedules_billing_account_id_fkey"
+            columns: ["billing_account_id"]
+            isOneToOne: false
+            referencedRelation: "billing_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_schedules_engagement_id_fkey"
+            columns: ["engagement_id"]
+            isOneToOne: true
+            referencedRelation: "engagements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_schedules_payment_method_token_id_fkey"
+            columns: ["payment_method_token_id"]
+            isOneToOne: false
+            referencedRelation: "payment_method_tokens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_schedules_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -458,6 +548,63 @@ export type Database = {
           },
         ]
       }
+      document_queue: {
+        Row: {
+          attempts: number
+          created_at: string
+          document_kind: string
+          id: string
+          last_error: string | null
+          payment_id: string
+          processing_started_at: string | null
+          scheduled_for: string
+          status: string
+          succeeded_at: string | null
+          tenant_id: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          document_kind: string
+          id?: string
+          last_error?: string | null
+          payment_id: string
+          processing_started_at?: string | null
+          scheduled_for?: string
+          status?: string
+          succeeded_at?: string | null
+          tenant_id: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          document_kind?: string
+          id?: string
+          last_error?: string | null
+          payment_id?: string
+          processing_started_at?: string | null
+          scheduled_for?: string
+          status?: string
+          succeeded_at?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_queue_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_queue_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       engagements: {
         Row: {
           age_at_season_start: number | null
@@ -475,10 +622,9 @@ export type Database = {
           offering_id: string
           payment_received_at: string | null
           person_id: string
+          provider_customer_ref: string | null
           season_id: string | null
           status: string
-          stripe_customer_id: string | null
-          stripe_subscription_id: string | null
           tenant_id: string
           updated_at: string
           waiver_48h_reminded_at: string | null
@@ -502,10 +648,9 @@ export type Database = {
           offering_id: string
           payment_received_at?: string | null
           person_id: string
+          provider_customer_ref?: string | null
           season_id?: string | null
           status?: string
-          stripe_customer_id?: string | null
-          stripe_subscription_id?: string | null
           tenant_id: string
           updated_at?: string
           waiver_48h_reminded_at?: string | null
@@ -529,10 +674,9 @@ export type Database = {
           offering_id?: string
           payment_received_at?: string | null
           person_id?: string
+          provider_customer_ref?: string | null
           season_id?: string | null
           status?: string
-          stripe_customer_id?: string | null
-          stripe_subscription_id?: string | null
           tenant_id?: string
           updated_at?: string
           waiver_48h_reminded_at?: string | null
@@ -694,31 +838,25 @@ export type Database = {
           },
         ]
       }
-      invoice_sequences: {
+      invoicing_token_cache: {
         Row: {
-          current_year: string
-          last_number: number
-          prefix: string
+          expires_at: string
           tenant_id: string
-          year_prefix: boolean
+          token: string
         }
         Insert: {
-          current_year?: string
-          last_number?: number
-          prefix?: string
+          expires_at: string
           tenant_id: string
-          year_prefix?: boolean
+          token: string
         }
         Update: {
-          current_year?: string
-          last_number?: number
-          prefix?: string
+          expires_at?: string
           tenant_id?: string
-          year_prefix?: boolean
+          token?: string
         }
         Relationships: [
           {
-            foreignKeyName: "invoice_sequences_tenant_id_fkey"
+            foreignKeyName: "invoicing_token_cache_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: true
             referencedRelation: "tenants"
@@ -923,8 +1061,6 @@ export type Database = {
           staff_id: string | null
           start_time: string
           status: string
-          stripe_price_id: string | null
-          stripe_product_id: string | null
           tenant_id: string
           updated_at: string
           waiver_required: boolean
@@ -952,8 +1088,6 @@ export type Database = {
           staff_id?: string | null
           start_time: string
           status?: string
-          stripe_price_id?: string | null
-          stripe_product_id?: string | null
           tenant_id: string
           updated_at?: string
           waiver_required?: boolean
@@ -981,8 +1115,6 @@ export type Database = {
           staff_id?: string | null
           start_time?: string
           status?: string
-          stripe_price_id?: string | null
-          stripe_product_id?: string | null
           tenant_id?: string
           updated_at?: string
           waiver_required?: boolean
@@ -1051,28 +1183,97 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_method_tokens: {
+        Row: {
+          billing_account_id: string
+          card_brand: string | null
+          created_at: string
+          exp_month: number | null
+          exp_year: number | null
+          id: string
+          is_default: boolean
+          last4: string | null
+          provider: string
+          provider_token: string
+          revoked_at: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          billing_account_id: string
+          card_brand?: string | null
+          created_at?: string
+          exp_month?: number | null
+          exp_year?: number | null
+          id?: string
+          is_default?: boolean
+          last4?: string | null
+          provider: string
+          provider_token: string
+          revoked_at?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          billing_account_id?: string
+          card_brand?: string | null
+          created_at?: string
+          exp_month?: number | null
+          exp_year?: number | null
+          id?: string
+          is_default?: boolean
+          last4?: string | null
+          provider?: string
+          provider_token?: string
+          revoked_at?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_method_tokens_billing_account_id_fkey"
+            columns: ["billing_account_id"]
+            isOneToOne: false
+            referencedRelation: "billing_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_method_tokens_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payments: {
         Row: {
           account_id: string | null
           anonymised_at: string | null
+          approved_by: string | null
+          billing_account_id: string | null
           charge_type: string
           created_at: string
+          created_by: string | null
           currency: string
           description: string | null
           engagement_id: string | null
+          external_document_id: string | null
+          external_document_number: string | null
           id: string
           invoice_issued_at: string | null
-          invoice_number: string | null
           invoice_url: string | null
           offering_id: string | null
           paid_at: string | null
+          payment_method: string | null
           person_id: string | null
           pretax_amount_minor: number
+          provider: string
+          provider_payment_ref: string | null
           refund_amount_minor: number | null
           refunded_at: string | null
+          refunds_payment_id: string | null
           status: string
-          stripe_invoice_id: string | null
-          stripe_payment_intent_id: string | null
           tenant_id: string
           total_amount_minor: number
           vat_amount_minor: number
@@ -1081,24 +1282,30 @@ export type Database = {
         Insert: {
           account_id?: string | null
           anonymised_at?: string | null
+          approved_by?: string | null
+          billing_account_id?: string | null
           charge_type?: string
           created_at?: string
+          created_by?: string | null
           currency?: string
           description?: string | null
           engagement_id?: string | null
+          external_document_id?: string | null
+          external_document_number?: string | null
           id?: string
           invoice_issued_at?: string | null
-          invoice_number?: string | null
           invoice_url?: string | null
           offering_id?: string | null
           paid_at?: string | null
+          payment_method?: string | null
           person_id?: string | null
           pretax_amount_minor: number
+          provider?: string
+          provider_payment_ref?: string | null
           refund_amount_minor?: number | null
           refunded_at?: string | null
+          refunds_payment_id?: string | null
           status?: string
-          stripe_invoice_id?: string | null
-          stripe_payment_intent_id?: string | null
           tenant_id: string
           total_amount_minor: number
           vat_amount_minor?: number
@@ -1107,24 +1314,30 @@ export type Database = {
         Update: {
           account_id?: string | null
           anonymised_at?: string | null
+          approved_by?: string | null
+          billing_account_id?: string | null
           charge_type?: string
           created_at?: string
+          created_by?: string | null
           currency?: string
           description?: string | null
           engagement_id?: string | null
+          external_document_id?: string | null
+          external_document_number?: string | null
           id?: string
           invoice_issued_at?: string | null
-          invoice_number?: string | null
           invoice_url?: string | null
           offering_id?: string | null
           paid_at?: string | null
+          payment_method?: string | null
           person_id?: string | null
           pretax_amount_minor?: number
+          provider?: string
+          provider_payment_ref?: string | null
           refund_amount_minor?: number | null
           refunded_at?: string | null
+          refunds_payment_id?: string | null
           status?: string
-          stripe_invoice_id?: string | null
-          stripe_payment_intent_id?: string | null
           tenant_id?: string
           total_amount_minor?: number
           vat_amount_minor?: number
@@ -1136,6 +1349,27 @@ export type Database = {
             columns: ["account_id"]
             isOneToOne: false
             referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_billing_account_id_fkey"
+            columns: ["billing_account_id"]
+            isOneToOne: false
+            referencedRelation: "billing_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -1157,6 +1391,13 @@ export type Database = {
             columns: ["person_id"]
             isOneToOne: false
             referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_refunds_payment_id_fkey"
+            columns: ["refunds_payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
             referencedColumns: ["id"]
           },
           {
@@ -1602,24 +1843,33 @@ export type Database = {
       tenants: {
         Row: {
           accent_color: string
+          billing_policy: Json
           business_preset: string
           country: string
           created_at: string
           currency: string
           from_email: string | null
           id: string
+          invoicing_account_id: string | null
+          invoicing_api_key_enc: string | null
+          invoicing_auth_checked_at: string | null
+          invoicing_auth_valid_until: string | null
+          invoicing_credentials_updated_at: string | null
+          invoicing_provider: string
+          invoicing_secret_enc: string | null
           labels: Json
           language_default: string
           name: string
+          payment_provider: string
+          payment_provider_account_id: string | null
+          payment_provider_public_key: string | null
+          payment_provider_secret_enc: string | null
+          payment_provider_updated_at: string | null
+          payment_provider_webhook_enc: string | null
           phone_region: string
           phone_region_updated_at: string
           prices_include_vat: boolean
           primary_color: string
-          stripe_account_id: string | null
-          stripe_credentials_updated_at: string | null
-          stripe_publishable_key: string | null
-          stripe_secret_key_enc: string | null
-          stripe_webhook_secret_enc: string | null
           subdomain: string
           updated_at: string
           vat_rate: number | null
@@ -1627,24 +1877,33 @@ export type Database = {
         }
         Insert: {
           accent_color?: string
+          billing_policy?: Json
           business_preset?: string
           country?: string
           created_at?: string
           currency?: string
           from_email?: string | null
           id?: string
+          invoicing_account_id?: string | null
+          invoicing_api_key_enc?: string | null
+          invoicing_auth_checked_at?: string | null
+          invoicing_auth_valid_until?: string | null
+          invoicing_credentials_updated_at?: string | null
+          invoicing_provider?: string
+          invoicing_secret_enc?: string | null
           labels?: Json
           language_default?: string
           name: string
+          payment_provider?: string
+          payment_provider_account_id?: string | null
+          payment_provider_public_key?: string | null
+          payment_provider_secret_enc?: string | null
+          payment_provider_updated_at?: string | null
+          payment_provider_webhook_enc?: string | null
           phone_region?: string
           phone_region_updated_at?: string
           prices_include_vat?: boolean
           primary_color?: string
-          stripe_account_id?: string | null
-          stripe_credentials_updated_at?: string | null
-          stripe_publishable_key?: string | null
-          stripe_secret_key_enc?: string | null
-          stripe_webhook_secret_enc?: string | null
           subdomain: string
           updated_at?: string
           vat_rate?: number | null
@@ -1652,24 +1911,33 @@ export type Database = {
         }
         Update: {
           accent_color?: string
+          billing_policy?: Json
           business_preset?: string
           country?: string
           created_at?: string
           currency?: string
           from_email?: string | null
           id?: string
+          invoicing_account_id?: string | null
+          invoicing_api_key_enc?: string | null
+          invoicing_auth_checked_at?: string | null
+          invoicing_auth_valid_until?: string | null
+          invoicing_credentials_updated_at?: string | null
+          invoicing_provider?: string
+          invoicing_secret_enc?: string | null
           labels?: Json
           language_default?: string
           name?: string
+          payment_provider?: string
+          payment_provider_account_id?: string | null
+          payment_provider_public_key?: string | null
+          payment_provider_secret_enc?: string | null
+          payment_provider_updated_at?: string | null
+          payment_provider_webhook_enc?: string | null
           phone_region?: string
           phone_region_updated_at?: string
           prices_include_vat?: boolean
           primary_color?: string
-          stripe_account_id?: string | null
-          stripe_credentials_updated_at?: string | null
-          stripe_publishable_key?: string | null
-          stripe_secret_key_enc?: string | null
-          stripe_webhook_secret_enc?: string | null
           subdomain?: string
           updated_at?: string
           vat_rate?: number | null
@@ -2005,6 +2273,16 @@ export type Database = {
       }
       cleanup_expired_otps: { Args: never; Returns: undefined }
       cleanup_old_verification_attempts: { Args: never; Returns: number }
+      get_billing_account_payment_method: {
+        Args: { p_billing_account_id: string }
+        Returns: {
+          card_brand: string
+          exp_month: number
+          exp_year: number
+          is_default: boolean
+          last4: string
+        }[]
+      }
       get_engagement_person_id: {
         Args: { p_engagement_id: string }
         Returns: string
@@ -2078,22 +2356,30 @@ export type Database = {
           labels: Json
           language_default: string
           name: string
+          payment_provider_public_key: string
+          payment_provider_secret_configured: boolean
+          payment_provider_updated_at: string
+          payment_provider_webhook_configured: boolean
           prices_include_vat: boolean
           primary_color: string
-          stripe_credentials_updated_at: string
-          stripe_publishable_key: string
-          stripe_secret_configured: boolean
-          stripe_webhook_configured: boolean
           tenant_subdomain: string
           vat_rate: number
         }[]
       }
-      get_tenant_stripe_credentials: {
+      get_tenant_invoicing_credentials: {
         Args: { p_tenant_id: string }
         Returns: {
-          stripe_publishable_key: string
-          stripe_secret_key: string
-          stripe_webhook_secret: string
+          invoicing_account_id: string
+          invoicing_api_key: string
+          invoicing_secret: string
+        }[]
+      }
+      get_tenant_payment_credentials: {
+        Args: { p_tenant_id: string }
+        Returns: {
+          payment_provider_public_key: string
+          payment_provider_secret_key: string
+          payment_provider_webhook_secret: string
         }[]
       }
       guest_enrolment_check_email: {
@@ -2152,7 +2438,6 @@ export type Database = {
         Args: { p_person_id: string }
         Returns: undefined
       }
-      next_invoice_number: { Args: { p_tenant_id: string }; Returns: string }
       provision_tenant: {
         Args: {
           p_accent_color?: string
@@ -2182,9 +2467,13 @@ export type Database = {
           student_person_id: string
         }[]
       }
-      save_tenant_stripe_credentials: {
+      save_tenant_invoicing_credentials: {
+        Args: { p_account_id: string; p_api_key: string; p_secret: string }
+        Returns: undefined
+      }
+      save_tenant_payment_credentials: {
         Args: {
-          p_publishable_key: string
+          p_public_key: string
           p_secret_key: string
           p_webhook_secret: string
         }
