@@ -1,9 +1,6 @@
-import { StripeSettingsForm } from '@/features/settings/components/StripeSettingsForm';
+import { Navigate } from 'react-router-dom';
 
+/** Legacy route — payment settings moved to provider-agnostic page. */
 export default function StripeSettingsPage() {
-  return (
-    <div className="p-6">
-      <StripeSettingsForm />
-    </div>
-  );
+  return <Navigate to="/admin/setup/payments" replace />;
 }

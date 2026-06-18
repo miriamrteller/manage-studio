@@ -221,6 +221,12 @@ export function StudentSlideOver({ personId, onClose }: StudentSlideOverProps) {
                         status={e.status}
                         engagementId={e.id}
                         billingLabel={e.billingAccount?.payment_method ?? null}
+                        linkContext={{
+                          studentName: person.name,
+                          className: e.className ?? e.offering_id,
+                          guardianEmail: resolveGuardianEmail({ person, guardian: guardian ?? undefined }),
+                          guardianName: guardian?.name ?? null,
+                        }}
                         onCancel={
                           canShowCancelEnrolment(e.status)
                             ? () =>

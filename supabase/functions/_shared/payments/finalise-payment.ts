@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { getEnv } from "../env.ts";
 import { enqueueDocument } from "../enqueue-document.ts";
 import { engagementHasSignedWaiver } from "../engagement-waiver.ts";
 import { resolveEnrolmentNotificationRecipient, resolveAdminLinkRecipientEmail } from "../enrolment-recipient.ts";
@@ -8,7 +9,7 @@ import { signWaiverToken } from "../waiver-token.ts";
 import { advanceBillingSchedule } from "./advance-billing-schedule.ts";
 import type { FinalisePaymentParams } from "./types.ts";
 
-const APP_URL = Deno.env.get("APP_URL") ?? "";
+const APP_URL = getEnv("APP_URL") ?? "";
 
 async function auditExists(
   service: SupabaseClient,

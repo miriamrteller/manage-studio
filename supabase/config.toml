@@ -40,6 +40,11 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/create-checkout/index.ts"
 
+[functions.confirm-mock-payment]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/confirm-mock-payment/index.ts"
+
 [functions.get-waiver-engagement]
 enabled = true
 verify_jwt = false

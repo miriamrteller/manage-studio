@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
-import { EnrolmentStatusAction } from '@/features/enrolment/components/EnrolmentStatusAction';
+import { EnrolmentStatusAction, type EnrolmentLinkContext } from '@/features/enrolment/components/EnrolmentStatusAction';
 import {
   CANCELLABLE_PRE_PAYMENT_STATUSES,
   canCancelPrePaymentEnrolment,
@@ -39,6 +39,7 @@ interface EnrolmentRowActionsProps {
   engagementId?: string;
   billingLabel?: string | null;
   onCancel?: () => void;
+  linkContext?: EnrolmentLinkContext;
 }
 
 export function EnrolmentRowActions({
@@ -47,6 +48,7 @@ export function EnrolmentRowActions({
   engagementId,
   billingLabel,
   onCancel,
+  linkContext,
 }: EnrolmentRowActionsProps) {
   const { t } = useTranslation();
   const showCancel = onCancel != null && canShowCancelEnrolment(status);
@@ -58,7 +60,13 @@ export function EnrolmentRowActions({
       <span className="font-medium">{className}</span>
       <div className="flex items-center gap-2 flex-shrink-0">
         {showCompletionAction && engagementId ? (
-          <EnrolmentStatusAction status={status} engagementId={engagementId} size="sm" />
+          <EnrolmentStatusAction
+            status={status}
+            engagementId={engagementId}
+            size="sm"
+            audience="admin"
+            linkContext={linkContext}
+          />
         ) : (
           <span
             className="px-2 py-0.5 rounded text-xs font-medium"

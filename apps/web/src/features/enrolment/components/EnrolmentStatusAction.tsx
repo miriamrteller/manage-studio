@@ -1,6 +1,9 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { useTenant } from '@/hooks/useTenant';
+import { SendAdminWaiverLinkModal } from './SendAdminWaiverLinkModal';
 import {
   pendingEnrolmentActionLabelKey,
   resolvePendingEnrolmentAction,
@@ -23,11 +26,21 @@ function EnrolmentStatusBadge({ status }: { status: string }) {
   );
 }
 
+export interface EnrolmentLinkContext {
+  studentName: string;
+  className: string;
+  guardianEmail?: string | null;
+  guardianName?: string | null;
+}
+
 interface EnrolmentStatusActionProps {
   status: string;
   engagementId: string;
   size?: 'sm' | 'md' | 'lg';
   returnTo?: string;
+  /** Parent portal navigates to completion pages; admin sends email links for waivers. */
+  audience?: 'parent' | 'admin';
+  linkContext?: EnrolmentLinkContext;
 }
 
 /**
@@ -38,25 +51,49 @@ export function EnrolmentStatusAction({
   engagementId,
   size = 'sm',
   returnTo,
+  audience = 'parent',
+  linkContext,
 }: EnrolmentStatusActionProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const tenant = useTenant();
+  const [waiverModalOpen, setWaiverModalOpen] = useState(false);
   const action = resolvePendingEnrolmentAction(status, engagementId);
 
   if (!action) {
     return <EnrolmentStatusBadge status={status} />;
   }
 
+  const labelKey =
+    audience === 'admin' && action.kind === 'complete_waiver'
+      ? 'enrolment.pending_action.send_waiver_link'
+      : pendingEnrolmentActionLabelKey(action.kind);
+
+  const handleClick = () => {
+    if (audience === 'admin' && action.kind === 'complete_waiver' && tenant && linkContext) {
+      setWaiverModalOpen(true);
+      return;
+    }
+    navigate(action.path, returnTo ? { state: { from: returnTo } } : undefined);
+  };
+
   return (
-    <Button
-      type="button"
-      variant="primary"
-      size={size}
-      onClick={() =>
-        navigate(action.path, returnTo ? { state: { from: returnTo } } : undefined)
-      }
-    >
-      {t(pendingEnrolmentActionLabelKey(action.kind))}
-    </Button>
+    <>
+      <Button type="button" variant="primary" size={size} onClick={handleClick}>
+        {t(labelKey)}
+      </Button>
+      {audience === 'admin' && action.kind === 'complete_waiver' && tenant && linkContext && (
+        <SendAdminWaiverLinkModal
+          open={waiverModalOpen}
+          onClose={() => setWaiverModalOpen(false)}
+          tenant={tenant}
+          engagementId={engagementId}
+          studentName={linkContext.studentName}
+          className={linkContext.className}
+          guardianEmail={linkContext.guardianEmail}
+          guardianName={linkContext.guardianName}
+        />
+      )}
+    </>
   );
 }

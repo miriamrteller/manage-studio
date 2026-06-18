@@ -73,29 +73,30 @@ export function ParentPortal() {
   const [showSuccessBanner, setShowSuccessBanner] = useState(Boolean(portalHighlight?.enrolmentSuccess));
   const scrolledRef = useRef(false);
 
-  const children = data?.children ?? [];
+  const children = data?.children;
   const payments = data?.payments ?? [];
-  const enrolmentsByPerson = data?.enrolmentsByPerson ?? {};
+  const enrolmentsByPerson = data?.enrolmentsByPerson;
 
   const enrolmentStatusOptions = useMemo(() => getEnrolmentStatusFilterOptions(t), [t]);
   const enrolmentStatusFilterValues = selectedEnrolmentStatuses.map((s) => s.value);
 
   const filteredChildren = useMemo(() => {
-    if (enrolmentStatusFilterValues.length === 0) return children;
-    return children.filter((child) => {
-      const enrolments = enrolmentsByPerson[child.id] ?? [];
+    const childList = children ?? [];
+    if (enrolmentStatusFilterValues.length === 0) return childList;
+    return childList.filter((child) => {
+      const enrolments = enrolmentsByPerson?.[child.id] ?? [];
       return filterEnrolmentsByStatus(enrolments, enrolmentStatusFilterValues).length > 0;
     });
   }, [children, enrolmentsByPerson, enrolmentStatusFilterValues]);
 
   const getVisibleEnrolments = (personId: string): EngagementWithOffering[] => {
-    const enrolments = enrolmentsByPerson[personId] ?? [];
+    const enrolments = enrolmentsByPerson?.[personId] ?? [];
     return filterEnrolmentsByStatus(enrolments, enrolmentStatusFilterValues);
   };
 
   const highlightPersonId = useMemo(() => {
     if (portalHighlight?.highlightPersonId) return portalHighlight.highlightPersonId;
-    if (!portalHighlight?.highlightEngagementId) return undefined;
+    if (!portalHighlight?.highlightEngagementId || !enrolmentsByPerson) return undefined;
     for (const [personId, enrolments] of Object.entries(enrolmentsByPerson)) {
       if (enrolments.some((entry) => entry.id === portalHighlight.highlightEngagementId)) {
         return personId;
@@ -142,7 +143,7 @@ export function ParentPortal() {
     );
   }
 
-  const editingChild = children.find((child) => child.id === editingChildId) ?? null;
+  const editingChild = (children ?? []).find((child) => child.id === editingChildId) ?? null;
 
   return (
     <div className="space-y-8">
@@ -197,7 +198,7 @@ export function ParentPortal() {
           </div>
         </div>
 
-        {children.length === 0 ? (
+        {(children ?? []).length === 0 ? (
           <div className="rounded-lg border border-dashed border-gray-300 p-6 text-center text-sm text-gray-600">
             <p>{t('pages.portal.no_children')}</p>
             <div className="mt-4 flex flex-wrap justify-center gap-2">

@@ -1,10 +1,12 @@
-import { EnrolmentStatusAction } from '@/features/enrolment/components/EnrolmentStatusAction';
+import { EnrolmentStatusAction, type EnrolmentLinkContext } from '@/features/enrolment/components/EnrolmentStatusAction';
 import type { StudentEnrolmentSummary } from '@/features/enrolment/lib/enrolmentFilterOptions';
 
 interface EnrolmentSummaryListProps {
   enrolments: StudentEnrolmentSummary[];
   returnTo?: string;
   compact?: boolean;
+  audience?: 'parent' | 'admin';
+  linkContext?: Omit<EnrolmentLinkContext, 'className'>;
 }
 
 /** Class enrolment rows with status chip or completion action when pending. */
@@ -12,6 +14,8 @@ export function EnrolmentSummaryList({
   enrolments,
   returnTo,
   compact = false,
+  audience = 'parent',
+  linkContext,
 }: EnrolmentSummaryListProps) {
   if (enrolments.length === 0) {
     return <span className="text-gray-400 text-xs">—</span>;
@@ -36,6 +40,15 @@ export function EnrolmentSummaryList({
             engagementId={enrolment.id}
             size="sm"
             returnTo={returnTo}
+            audience={audience}
+            linkContext={
+              linkContext
+                ? {
+                    ...linkContext,
+                    className: enrolment.className,
+                  }
+                : undefined
+            }
           />
         </li>
       ))}

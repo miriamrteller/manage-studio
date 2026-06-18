@@ -3,10 +3,11 @@ import { buildMockPaymentEvent } from "../../../../supabase/functions/_shared/pa
 import {
   MockPaymentProvider,
   buildChargeMetadata,
+  confirmMockPayment,
 } from "../../../../supabase/functions/_shared/payments/providers/mock.ts";
 
 const TENANT_ID = "00000000-0000-0000-0000-000000000001";
-const ENGAGEMENT_ID = "00000000-0000-0000-0000-000000000301";
+const ENGAGEMENT_ID = "00000000-0000-0000-0000-000000001001";
 const BILLING_ACCOUNT_ID = "00000000-0000-0000-0000-000000000408";
 const OFFERING_ID = "00000000-0000-0000-0000-000000000301";
 const PERSON_ID = "00000000-0000-0000-0000-000000000501";
@@ -18,7 +19,7 @@ export const PAYMENT_CONFIRMATION_AUDIT = {
 } as const;
 
 describe("mock payment checkout → confirmation email path", () => {
-  it("mock provider emits a sync payment.succeeded event on createCharge", async () => {
+  it("createCharge reserves intent without immediate finalisation", async () => {
     const provider = new MockPaymentProvider();
     const metadata = buildChargeMetadata({
       tenantId: TENANT_ID,
@@ -40,10 +41,8 @@ describe("mock payment checkout → confirmation email path", () => {
       metadata,
     });
 
-    expect(result.emitSyncEvent).toBeDefined();
-    expect(result.emitSyncEvent?.type).toBe("payment.succeeded");
-    expect(result.emitSyncEvent?.metadata.engagement_id).toBe(ENGAGEMENT_ID);
-    expect(result.emitSyncEvent?.metadata.charge_type).toBe("initial");
+    expect(result.providerPaymentRef).toMatch(/^mock_pi_/);
+    expect("emitSyncEvent" in result).toBe(false);
   });
 
   it("buildMockPaymentEvent carries routing metadata for finalise + confirmation", () => {
@@ -71,6 +70,10 @@ describe("mock payment checkout → confirmation email path", () => {
     expect(event.offeringId).toBe(OFFERING_ID);
     expect(event.metadata.tenant_id).toBe(TENANT_ID);
     expect(event.metadata.charge_type).toBe("initial");
+  });
+
+  it("confirmMockPayment is the success path entry point after deferred checkout", () => {
+    expect(typeof confirmMockPayment).toBe("function");
   });
 
   it("documents confirmation audit actions after initial mock charge finalise", () => {

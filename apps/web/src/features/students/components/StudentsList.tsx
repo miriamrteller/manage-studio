@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { Fragment, useState, useMemo, useCallback, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -277,6 +277,19 @@ export function StudentsList() {
             enrolments={enrolmentsByPerson.get(row.original.id) ?? []}
             returnTo="/admin/students"
             compact
+            audience="admin"
+            linkContext={{
+              studentName: row.original.name,
+              guardianEmail: resolveGuardianEmail({
+                person: row.original,
+                family: row.original.account_id
+                  ? familyMap.get(row.original.account_id)
+                  : undefined,
+              }),
+              guardianName: row.original.account_id
+                ? familyMap.get(row.original.account_id)?.contact_person_name ?? null
+                : null,
+            }}
           />
         ),
       }),
@@ -661,9 +674,8 @@ export function StudentsList() {
             </thead>
             <tbody>
               {table.getRowModel().rows.map((row) => (
-                <>
+                <Fragment key={row.id}>
                   <tr
-                    key={row.id}
                     className="border-b hover:bg-gray-50 transition-colors"
                     style={{ borderColor: 'var(--color-border-default)' }}
                   >
@@ -674,7 +686,7 @@ export function StudentsList() {
                     ))}
                   </tr>
                   {row.getIsExpanded() && (
-                    <tr key={`${row.id}-expanded`} className="bg-gray-50">
+                    <tr className="bg-gray-50">
                       <td colSpan={columns.length} className="px-6 py-4">
                         <ExpandedStudentRow
                           person={row.original}
@@ -686,7 +698,7 @@ export function StudentsList() {
                       </td>
                     </tr>
                   )}
-                </>
+                </Fragment>
               ))}
             </tbody>
           </table>

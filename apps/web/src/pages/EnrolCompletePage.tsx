@@ -339,7 +339,7 @@ function ErrorCard({ message }: { message: string }) {
     <div className="rounded-lg border-2 border-red-400 bg-red-50 p-5 space-y-3">
       <p className="text-sm text-red-800">{message}</p>
       <Button type="button" variant="secondary" onClick={() => { window.location.href = '/'; }}>
-        {t('common.go_home')}
+        {t('accessibility.go_home')}
       </Button>
     </div>
   );

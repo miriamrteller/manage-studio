@@ -8,6 +8,7 @@ import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-
 import { supabase } from '@/lib/supabase';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useTenant } from '@/hooks/useTenant';
+import { formatCurrency } from '@shared/format';
 
 interface BasePaymentFormProps {
   classId: string;
@@ -89,23 +90,123 @@ function PaymentFormInner({
   );
 }
 
+const MOCK_DECLINE_CARD = '4580000000000000';
+
 function MockPaymentShell({
+  classId,
+  engagementId,
+  enrolmentToken,
+  amountMinor,
+  currency,
+  mockPaymentRef,
   onPaid,
   onPrevious,
 }: {
+  classId: string;
+  engagementId: string;
+  enrolmentToken?: string;
+  amountMinor: number | null;
+  currency: string | null;
+  mockPaymentRef: string | null;
   onPaid: () => void;
   onPrevious: () => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const [cardNumber, setCardNumber] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [isPaying, setIsPaying] = useState(false);
+
+  const handleConfirm = async (scenario: 'success' | 'decline') => {
+    setIsPaying(true);
+    setError(null);
+
+    const { data, error: invokeError } = await supabase.functions.invoke('confirm-mock-payment', {
+      body: {
+        offering_id: classId,
+        engagement_id: engagementId,
+        ...(enrolmentToken ? { enrolment_token: enrolmentToken } : {}),
+        scenario,
+        mock_card_number: scenario === 'decline' ? MOCK_DECLINE_CARD : cardNumber || undefined,
+        mock_payment_ref: mockPaymentRef ?? undefined,
+      },
+      ...(enrolmentToken
+        ? { headers: { Authorization: `WaiverToken ${enrolmentToken}` } }
+        : {}),
+    });
+
+    setIsPaying(false);
+
+    if (invokeError) {
+      setError(invokeError.message ?? t('enrolment.payment_failed'));
+      return;
+    }
+
+    if (data?.code === 'MOCK_PAYMENT_DECLINED') {
+      setError(t('enrolment.mock_payment_declined', { defaultValue: 'Payment was declined.' }));
+      return;
+    }
+
+    if (data?.error) {
+      setError(String(data.error));
+      return;
+    }
+
+    if (data?.confirmed) {
+      onPaid();
+      return;
+    }
+
+    setError(t('enrolment.payment_failed'));
+  };
+
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">{t('enrolment.mock_payment_hint', { defaultValue: 'Mock provider — payment completes on the server when you continue.' })}</p>
+      <p className="text-sm text-muted-foreground">
+        {t('enrolment.mock_payment_hint', {
+          defaultValue: 'Test payment — enter card details and pay to complete enrolment.',
+        })}
+      </p>
+      {amountMinor != null && currency && (
+        <p className="text-sm font-medium">
+          {t('enrolment.checkout_total', { defaultValue: 'Total' })}:{' '}
+          {formatCurrency(amountMinor, currency, i18n.language)}
+        </p>
+      )}
+      <label className="block text-sm font-medium">
+        {t('enrolment.mock_card_number', { defaultValue: 'Test card number' })}
+        <input
+          type="text"
+          inputMode="numeric"
+          className="mt-1 w-full border border-border rounded px-3 py-2"
+          value={cardNumber}
+          onChange={(e) => setCardNumber(e.target.value)}
+          placeholder="4580458045804580"
+          autoComplete="off"
+        />
+      </label>
+      <p className="text-xs text-muted-foreground">
+        {t('enrolment.mock_decline_hint', {
+          defaultValue: `Use ${MOCK_DECLINE_CARD} to simulate decline.`,
+        })}
+      </p>
+      {error && (
+        <p className="text-sm text-destructive" role="alert">
+          {error}
+        </p>
+      )}
       <div className="flex gap-2">
-        <Button type="button" variant="outline" className="flex-1" onClick={onPrevious}>
+        <Button type="button" variant="outline" className="flex-1" onClick={onPrevious} disabled={isPaying}>
           {t('common.back')}
         </Button>
-        <Button type="button" variant="primary" className="flex-1" onClick={onPaid}>
-          {t('enrolment.mock_pay_simulate', { defaultValue: 'Simulate payment' })}
+        <Button
+          type="button"
+          variant="primary"
+          className="flex-1"
+          onClick={() => handleConfirm('success')}
+          disabled={isPaying}
+          isLoading={isPaying}
+        >
+          {t('enrolment.pay_now')}
         </Button>
       </div>
     </div>
@@ -137,6 +238,10 @@ interface CheckoutIntentData {
   publishableKey: string | null;
   paymentProvider: string | null;
   mockCompleted: boolean;
+  mockPending: boolean;
+  amountMinor: number | null;
+  currency: string | null;
+  mockPaymentRef: string | null;
 }
 
 interface CheckoutIntentState extends CheckoutIntentData {
@@ -169,7 +274,12 @@ async function fetchCheckoutIntent(input: {
         : {}),
     });
 
-    if (error || (!data?.clientSecret && !data?.mockCompleted)) {
+    const mockReady =
+      Boolean(data?.mockCompleted) ||
+      Boolean(data?.mockPending) ||
+      data?.paymentProvider === 'mock';
+
+    if (error || (!data?.clientSecret && !mockReady)) {
       throw new Error(
         error?.message ??
           (typeof data?.error === 'string' ? data.error : null) ??
@@ -182,6 +292,10 @@ async function fetchCheckoutIntent(input: {
       publishableKey: data.publishableKey ?? input.fallbackPublishableKey ?? null,
       paymentProvider: data.paymentProvider ?? null,
       mockCompleted: Boolean(data.mockCompleted),
+      mockPending: Boolean(data.mockPending),
+      amountMinor: typeof data.amountMinor === 'number' ? data.amountMinor : null,
+      currency: typeof data.currency === 'string' ? data.currency : null,
+      mockPaymentRef: typeof data.paymentIntentId === 'string' ? data.paymentIntentId : null,
     };
   })();
 
@@ -229,23 +343,53 @@ function useCheckoutIntent({
     publishableKey: data?.publishableKey ?? null,
     paymentProvider: data?.paymentProvider ?? null,
     mockCompleted: data?.mockCompleted ?? false,
+    mockPending: data?.mockPending ?? false,
+    amountMinor: data?.amountMinor ?? null,
+    currency: data?.currency ?? null,
+    mockPaymentRef: data?.mockPaymentRef ?? null,
     loadError: error?.message ?? null,
     isLoading: queryEnabled && isPending,
   };
 }
 
 function CheckoutIntentShell({
+  classId,
+  engagementId,
+  enrolmentToken,
   checkout,
   onPaid,
   onPrevious,
 }: {
+  classId: string;
+  engagementId: string;
+  enrolmentToken?: string;
   checkout: CheckoutIntentState;
   onPaid: () => void;
   onPrevious: () => void;
 }) {
   const { t } = useTranslation();
-  const { clientSecret, publishableKey, paymentProvider, mockCompleted, loadError, isLoading } =
-    checkout;
+  const {
+    clientSecret,
+    publishableKey,
+    paymentProvider,
+    mockCompleted,
+    mockPending,
+    amountMinor,
+    currency,
+    mockPaymentRef,
+    loadError,
+    isLoading,
+  } = checkout;
+
+  useEffect(() => {
+    if (mockCompleted) {
+      onPaid();
+    }
+  }, [mockCompleted, onPaid]);
+
+  if (mockCompleted) {
+    return <p role="status">{t('common.loading')}</p>;
+  }
 
   if (loadError) {
     return (
@@ -257,17 +401,23 @@ function CheckoutIntentShell({
 
   if (
     isLoading ||
-    (!mockCompleted && paymentProvider !== 'mock' && (!clientSecret || !publishableKey))
+    (!mockPending && paymentProvider !== 'mock' && (!clientSecret || !publishableKey))
   ) {
     return <p role="status">{t('common.loading')}</p>;
   }
 
   return (
     <CheckoutShell
+      classId={classId}
+      engagementId={engagementId}
+      enrolmentToken={enrolmentToken}
       paymentProvider={paymentProvider}
-      mockCompleted={mockCompleted}
+      mockPending={mockPending}
       clientSecret={clientSecret}
       publishableKey={publishableKey}
+      amountMinor={amountMinor}
+      currency={currency}
+      mockPaymentRef={mockPaymentRef}
       onPaid={onPaid}
       onPrevious={onPrevious}
     />
@@ -289,28 +439,60 @@ export function TokenEnrolmentPaymentForm({
     enabled: Boolean(classId && engagementId && enrolmentToken),
   });
 
-  return <CheckoutIntentShell checkout={checkout} onPaid={onPaid} onPrevious={onPrevious} />;
+  return (
+    <CheckoutIntentShell
+      classId={classId}
+      engagementId={engagementId}
+      enrolmentToken={enrolmentToken}
+      checkout={checkout}
+      onPaid={onPaid}
+      onPrevious={onPrevious}
+    />
+  );
 }
 
 function CheckoutShell({
+  classId,
+  engagementId,
+  enrolmentToken,
   paymentProvider,
-  mockCompleted,
+  mockPending,
   clientSecret,
   publishableKey,
+  amountMinor,
+  currency,
+  mockPaymentRef,
   onPaid,
   onPrevious,
 }: {
+  classId: string;
+  engagementId: string;
+  enrolmentToken?: string;
   paymentProvider?: string | null;
-  mockCompleted?: boolean;
+  mockPending?: boolean;
   clientSecret: string | null;
   publishableKey: string | null;
+  amountMinor: number | null;
+  currency: string | null;
+  mockPaymentRef: string | null;
   onPaid: () => void;
   onPrevious: () => void;
 }) {
   const { t } = useTranslation();
 
-  if (mockCompleted || paymentProvider === 'mock') {
-    return <MockPaymentShell onPaid={onPaid} onPrevious={onPrevious} />;
+  if (mockPending || paymentProvider === 'mock') {
+    return (
+      <MockPaymentShell
+        classId={classId}
+        engagementId={engagementId}
+        enrolmentToken={enrolmentToken}
+        amountMinor={amountMinor}
+        currency={currency}
+        mockPaymentRef={mockPaymentRef}
+        onPaid={onPaid}
+        onPrevious={onPrevious}
+      />
+    );
   }
 
   if (!clientSecret || !publishableKey) {
@@ -359,7 +541,15 @@ function AuthenticatedEnrolmentPaymentForm({
     return <p role="status">{t('common.loading')}</p>;
   }
 
-  return <CheckoutIntentShell checkout={checkout} onPaid={onPaid} onPrevious={onPrevious} />;
+  return (
+    <CheckoutIntentShell
+      classId={classId}
+      engagementId={engagementId}
+      checkout={checkout}
+      onPaid={onPaid}
+      onPrevious={onPrevious}
+    />
+  );
 }
 
 export function EnrolmentPaymentForm({

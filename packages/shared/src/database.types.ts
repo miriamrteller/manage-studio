@@ -2353,9 +2353,11 @@ export type Database = {
           country: string
           currency: string
           id: string
+          invoicing_provider: string
           labels: Json
           language_default: string
           name: string
+          payment_provider: string
           payment_provider_public_key: string
           payment_provider_secret_configured: boolean
           payment_provider_updated_at: string

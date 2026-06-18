@@ -3,21 +3,22 @@ import { buildMockPaymentEvent } from "../handle-payment-event.ts";
 import type { ChargeMetadata, ChargeParams, ChargeResult, PaymentEvent, PaymentProvider } from "../types.ts";
 import { ChargeMetadataSchema } from "../types.ts";
 
+export const MOCK_PAYMENT_DECLINED_CODE = "MOCK_PAYMENT_DECLINED";
+
+/** Grow simulator decline test PAN (reused for mock UX in G0). */
+export const MOCK_DECLINE_CARD_SUFFIX = "4580000000000000";
+
+export type MockPaymentScenario = "success" | "decline";
+
 export class MockPaymentProvider implements PaymentProvider {
   readonly slug = "mock";
 
+  /** Reserves a mock intent only — finalisation happens in confirm-mock-payment. */
   async createCharge(params: ChargeParams): Promise<ChargeResult> {
     const providerPaymentRef = `mock_pi_${crypto.randomUUID()}`;
-    const emitSyncEvent = buildMockPaymentEvent({
-      providerPaymentRef,
-      amountMinor: params.amountMinor,
-      currency: params.currency,
-      metadata: params.metadata,
-    });
     return {
       clientSecret: providerPaymentRef,
       providerPaymentRef,
-      emitSyncEvent,
     };
   }
 
@@ -39,7 +40,44 @@ export class MockPaymentProvider implements PaymentProvider {
   }
 }
 
-/** Apply mock sync path immediately (CI/dev). */
+export interface ConfirmMockPaymentParams {
+  service: SupabaseClient;
+  metadata: ChargeMetadata;
+  amountMinor: number;
+  currency: string;
+  scenario: MockPaymentScenario;
+  providerPaymentRef?: string;
+}
+
+export type ConfirmMockPaymentResult =
+  | { ok: true; paymentId: string; duplicate: boolean; alreadyPaid?: boolean }
+  | { ok: false; code: "MOCK_PAYMENT_DECLINED"; message: string };
+
+export async function confirmMockPayment(
+  params: ConfirmMockPaymentParams,
+): Promise<ConfirmMockPaymentResult> {
+  if (params.scenario === "decline") {
+    return {
+      ok: false,
+      code: MOCK_PAYMENT_DECLINED_CODE,
+      message: "Mock payment declined",
+    };
+  }
+
+  const providerPaymentRef = params.providerPaymentRef ?? `mock_pi_${crypto.randomUUID()}`;
+  const event = buildMockPaymentEvent({
+    providerPaymentRef,
+    amountMinor: params.amountMinor,
+    currency: params.currency,
+    metadata: params.metadata,
+  });
+
+  const { handlePaymentEventInternal } = await import("../handle-payment-event.ts");
+  const result = await handlePaymentEventInternal(params.service, event, "mock");
+  return { ok: true, paymentId: result.paymentId, duplicate: result.duplicate };
+}
+
+/** Apply mock sync path (renewals / tests). */
 export async function applyMockSyncEvent(
   service: SupabaseClient,
   event: PaymentEvent,
@@ -74,4 +112,12 @@ export function buildChargeMetadata(input: {
     vat_amount_minor: String(input.vatMinor),
     total_amount_minor: String(input.totalMinor),
   };
+}
+
+export function scenarioFromMockCardNumber(cardNumber: string | undefined): MockPaymentScenario {
+  const normalized = (cardNumber ?? "").replace(/\s/g, "");
+  if (normalized === MOCK_DECLINE_CARD_SUFFIX) {
+    return "decline";
+  }
+  return "success";
 }

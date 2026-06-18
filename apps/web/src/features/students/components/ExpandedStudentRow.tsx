@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { EnrolmentSummaryList } from '@/features/enrolment/components/EnrolmentSummaryList';
 import type { StudentEnrolmentSummary } from '@/features/enrolment/lib/enrolmentFilterOptions';
+import { resolveGuardianEmail } from '@/features/enrolment/lib/resolveGuardianEmail';
 import type { Person } from '@shared/schemas';
 
 interface ExpandedStudentRowProps {
@@ -107,7 +108,21 @@ export function ExpandedStudentRow({
           {t('pages.students.classes_column')}
         </p>
         {enrolments.length > 0 ? (
-          <EnrolmentSummaryList enrolments={enrolments} returnTo="/admin/students" />
+          <EnrolmentSummaryList
+            enrolments={enrolments}
+            returnTo="/admin/students"
+            audience="admin"
+            linkContext={{
+              studentName: person.name,
+              guardianEmail: resolveGuardianEmail({
+                person,
+                family: person.account_id ? familyMap.get(person.account_id) : undefined,
+              }),
+              guardianName: person.account_id
+                ? familyMap.get(person.account_id)?.contact_person_name ?? null
+                : null,
+            }}
+          />
         ) : (
           <div className="space-y-2">
             <p className="text-gray-400">{t('pages.students.no_classes')}</p>

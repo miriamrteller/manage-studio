@@ -414,7 +414,18 @@
       "payment_success": "Payment received — enrolment is now active.",
       "method_cash": "Cash",
       "method_check": "Check",
-      "method_bank": "Bank transfer"
+      "method_bank": "Bank transfer",
+      "waiver_link_title": "Send waiver link — {{name}}",
+      "waiver_link_desc": "Email a secure link so the guardian can sign the waiver. The link is for the guardian, not the admin account.",
+      "send_waiver_link_action": "Send waiver link",
+      "waiver_link_sent": "Waiver link sent to {{email}}.",
+      "waiver_link_not_emailed": "Waiver link was created but email delivery failed for {{email}}. Copy the link below and send it manually.",
+      "waiver_link_copy": "Waiver link",
+      "copy_waiver_link_action": "Copy waiver link",
+      "override_reason": "Reason for using a different email",
+      "override_reason_placeholder": "Parent requested alternate email",
+      "link_copied": "Link copied to clipboard.",
+      "link_copy_failed": "Could not copy automatically. Select and copy the link manually."
     },
     "enrol_pay": {
       "title": "Complete payment",
@@ -847,7 +858,8 @@
     "pay_now": "Pay now",
     "pending_action": {
       "complete_payment": "Complete payment",
-      "complete_waiver": "Sign waiver"
+      "complete_waiver": "Sign waiver",
+      "send_waiver_link": "Send waiver link"
     },
     "missing_class_or_term": "Select a class and term before payment",
     "waiver_scroll_prompt": "Scroll to the bottom to enable signing",

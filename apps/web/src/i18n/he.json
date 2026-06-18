@@ -414,7 +414,18 @@
       "payment_success": "התשלום התקבל — ההרשמה פעילה.",
       "method_cash": "מזומן",
       "method_check": "צ'ק",
-      "method_bank": "העברה בנקאית"
+      "method_bank": "העברה בנקאית",
+      "waiver_link_title": "שליחת קישור לחתימה על ויתור — {{name}}",
+      "waiver_link_desc": "שלחו קישור מאובטח כדי שההורה יוכל לחתום על כתב הויתור. הקישור מיועד להורה, לא לחשבון המנהל.",
+      "send_waiver_link_action": "שליחת קישור לחתימה",
+      "waiver_link_sent": "קישור לחתימה נשלח אל {{email}}.",
+      "waiver_link_not_emailed": "הקישור נוצר אך שליחת האימייל ל-{{email}} נכשלה. העתיקו את הקישור למטה ושלחו ידנית.",
+      "waiver_link_copy": "קישור לחתימה",
+      "copy_waiver_link_action": "העתקת קישור לחתימה",
+      "override_reason": "סיבה לשימוש בכתובת אימייל אחרת",
+      "override_reason_placeholder": "ההורה ביקש כתובת חלופית",
+      "link_copied": "הקישור הועתק ללוח.",
+      "link_copy_failed": "לא ניתן להעתיק אוטומטית. בחרו והעתיקו את הקישור ידנית."
     },
     "enrol_pay": {
       "title": "השלמת תשלום",
@@ -848,7 +859,8 @@
     "pay_now": "שלם עכשיו",
     "pending_action": {
       "complete_payment": "השלמת תשלום",
-      "complete_waiver": "חתימה על ויתור"
+      "complete_waiver": "חתימה על ויתור",
+      "send_waiver_link": "שליחת קישור לחתימה"
     },
     "missing_class_or_term": "יש לבחור שיעור ותקופה לפני התשלום",
     "waiver_scroll_prompt": "גלול עד הסוף כדי לאפשר חתימה",
