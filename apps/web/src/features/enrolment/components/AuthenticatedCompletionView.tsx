@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { EnrolmentPaymentForm } from '@/features/enrolment/components/EnrolmentPaymentForm';
 import { WaiverStep } from '@/features/enrolment/components/WaiverStep';
-import { useWaiverStatus } from '@/features/enrolment/hooks/useWaiverStatus';
+import { useEnrolmentWaiverGate } from '@/features/enrolment/hooks/useEnrolmentWaiverGate';
 import { computeClassTotal } from '@/features/enrolment/lib/computeClassTotal';
 import { resolvePendingEnrolmentAction } from '@/features/enrolment/lib/pendingEnrolmentAction';
 import { EnrolmentService } from '@/features/enrolment/service';
@@ -28,6 +28,7 @@ export function AuthenticatedCompletionView({ engagementId }: AuthenticatedCompl
   const { user, isLoading: authLoading } = useCurrentUser();
   const tenant = useTenant();
   const [waiverComplete, setWaiverComplete] = useState(false);
+  const [linkingWaiver, setLinkingWaiver] = useState(false);
 
   const detailQuery = useQuery({
     queryKey: ['enrol-pay-detail', tenant?.id, engagementId],
@@ -59,10 +60,46 @@ export function AuthenticatedCompletionView({ engagementId }: AuthenticatedCompl
     enabled: !!tenant?.id && !!engagementId && !!user,
   });
 
-  const waiverStatus = useWaiverStatus({
+  const waiverGate = useEnrolmentWaiverGate({
+    engagementId,
     personId: detailQuery.data?.enrolment.person_id,
     offeringId: detailQuery.data?.classRow?.id,
+    enabled: detailQuery.data?.alreadyPaid === false && !!detailQuery.data?.classRow,
   });
+
+  useEffect(() => {
+    if (!tenant || !engagementId || !waiverGate.data?.alreadySigned || !waiverGate.data.evidenceId) {
+      return;
+    }
+    if (detailQuery.data?.enrolment.waiver_evidence_id === waiverGate.data.evidenceId) {
+      return;
+    }
+
+    let cancelled = false;
+    setLinkingWaiver(true);
+    void EnrolmentService.update(tenant, engagementId, {
+      waiver_evidence_id: waiverGate.data.evidenceId,
+    })
+      .then(() => {
+        if (!cancelled) setWaiverComplete(true);
+      })
+      .catch((err) => {
+        console.error('[AuthenticatedCompletionView] waiver link failed:', err);
+      })
+      .finally(() => {
+        if (!cancelled) setLinkingWaiver(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    tenant,
+    engagementId,
+    waiverGate.data?.alreadySigned,
+    waiverGate.data?.evidenceId,
+    detailQuery.data?.enrolment.waiver_evidence_id,
+  ]);
 
   useEffect(() => {
     if (detailQuery.data?.enrolment.status !== 'pending_waiver' || !engagementId) return;
@@ -103,7 +140,7 @@ export function AuthenticatedCompletionView({ engagementId }: AuthenticatedCompl
     );
   }
 
-  if (detailQuery.isLoading) {
+  if (detailQuery.isLoading || waiverGate.isLoading || linkingWaiver) {
     return (
       <div className="p-8 text-center" role="status">
         {t('common.loading')}
@@ -145,7 +182,19 @@ export function AuthenticatedCompletionView({ engagementId }: AuthenticatedCompl
     navigate('/classes');
   };
 
-  const showWaiverFirst = !!waiverStatus.data?.required && !waiverComplete;
+  const waiverGateData = waiverGate.data;
+  const showWaiverFirst =
+    Boolean(waiverGateData?.required) &&
+    !waiverGateData?.alreadySigned &&
+    !waiverComplete &&
+    Boolean(waiverGateData?.template);
+
+  const handleWaiverComplete = async (evidenceId: string) => {
+    if (tenant && engagementId) {
+      await EnrolmentService.update(tenant, engagementId, { waiver_evidence_id: evidenceId });
+    }
+    setWaiverComplete(true);
+  };
 
   if (alreadyPaid) {
     return (
@@ -167,15 +216,19 @@ export function AuthenticatedCompletionView({ engagementId }: AuthenticatedCompl
 
   const pricing = computeClassTotal(classRow, tenant);
 
-  if (showWaiverFirst && waiverStatus.data?.template) {
+  if (showWaiverFirst && waiverGateData?.template) {
     return (
       <div className="max-w-lg mx-auto space-y-6">
         <WaiverStep
           personId={enrolment.person_id}
-          template={waiverStatus.data.template}
+          template={waiverGateData.template}
           offeringId={classRow.id}
+          engagementId={enrolment.id}
           tenantIdForInvalidation={tenant.id}
-          onComplete={() => setWaiverComplete(true)}
+          studentName={waiverGateData.studentName ?? undefined}
+          className={classRow.name}
+          isMinorStudent={waiverGateData.isMinorStudent}
+          onComplete={(evidenceId) => void handleWaiverComplete(evidenceId)}
           onPrevious={() => void finishCompletion()}
           canGoBack
         />

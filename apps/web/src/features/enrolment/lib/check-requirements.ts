@@ -22,9 +22,13 @@ export interface AgeCheckOptions {
 }
 
 export function buildSeasonStartById(
-  terms: Array<{ id: string; start_date: string }>,
+  terms: Array<{ id: string; start_date?: string | null }>,
 ): Record<string, string> {
-  return Object.fromEntries(terms.map((t) => [t.id, t.start_date]));
+  return Object.fromEntries(
+    terms
+      .filter((term): term is { id: string; start_date: string } => Boolean(term.start_date))
+      .map((term) => [term.id, term.start_date]),
+  );
 }
 
 function resolveAgeReferenceDate(

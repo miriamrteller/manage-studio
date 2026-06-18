@@ -25,6 +25,7 @@ interface UseStudentsOptions {
   status?: 'active' | 'inactive' | 'all';
   classIds?: string[];
   categoryIds?: string[];
+  enrolmentStatuses?: string[];
   accountIds?: string[];
   minAge?: number | null;
   maxAge?: number | null;
@@ -39,6 +40,7 @@ export function useStudents({
   status = 'active',
   classIds = [],
   categoryIds = [],
+  enrolmentStatuses = [],
   accountIds = [],
   minAge = null,
   maxAge = null,
@@ -48,7 +50,8 @@ export function useStudents({
   enabled = true,
 }: UseStudentsOptions = {}) {
   const tenant = useTenant();
-  const hasEnrolmentFilter = classIds.length > 0 || categoryIds.length > 0;
+  const hasEnrolmentFilter =
+    classIds.length > 0 || categoryIds.length > 0 || enrolmentStatuses.length > 0;
 
   const allEnrolledIdsQuery = useQuery({
     queryKey: ['all-enrolled-person-ids', tenant?.id],
@@ -60,10 +63,10 @@ export function useStudents({
   });
 
   const enrolledIdsQuery = useQuery({
-    queryKey: ['enrolled-person-ids', tenant?.id, classIds, categoryIds],
+    queryKey: ['enrolled-person-ids', tenant?.id, classIds, categoryIds, enrolmentStatuses],
     queryFn: async () => {
       if (!tenant) throw new Error('Tenant not initialized');
-      return resolveEnrolledPersonIds(tenant, { classIds, categoryIds });
+      return resolveEnrolledPersonIds(tenant, { classIds, categoryIds, enrolmentStatuses });
     },
     enabled: enabled && !!tenant?.id && hasEnrolmentFilter,
   });
@@ -76,6 +79,7 @@ export function useStudents({
       status,
       classIds,
       categoryIds,
+      enrolmentStatuses,
       accountIds,
       minAge,
       maxAge,

@@ -5,11 +5,18 @@ import type { Tenant } from '@shared/schemas';
 /** Non-terminal engagement statuses used for student-list enrolment scope. */
 export const STUDENT_LIST_ENROLMENT_STATUSES = NON_TERMINAL_ENGAGEMENT_STATUSES;
 
+/** Includes post-payment waiver pending — shown in lists and student scope. */
+export const STUDENT_LIST_DISPLAY_ENROLMENT_STATUSES = [
+  ...NON_TERMINAL_ENGAGEMENT_STATUSES,
+  'pending_waiver',
+] as const;
+
 const GUARDIAN_ACCOUNT_MEMBER_ROLES = ['account_holder', 'member'] as const;
 
 interface EngagementFilterOptions {
   classIds?: string[];
   categoryIds?: string[];
+  enrolmentStatuses?: string[];
 }
 
 /**
@@ -19,9 +26,16 @@ interface EngagementFilterOptions {
  */
 export async function resolveEnrolledPersonIds(
   tenant: Tenant,
-  { classIds = [], categoryIds = [] }: EngagementFilterOptions
+  { classIds = [], categoryIds = [], enrolmentStatuses = [] }: EngagementFilterOptions
 ): Promise<string[] | null> {
-  if (classIds.length === 0 && categoryIds.length === 0) return null;
+  if (classIds.length === 0 && categoryIds.length === 0 && enrolmentStatuses.length === 0) {
+    return null;
+  }
+
+  const statuses =
+    enrolmentStatuses.length > 0
+      ? enrolmentStatuses
+      : [...STUDENT_LIST_DISPLAY_ENROLMENT_STATUSES];
 
   let matchingClassIds: string[] | null = null;
 
@@ -43,9 +57,12 @@ export async function resolveEnrolledPersonIds(
     }
   }
 
-  const { data, error } = await TenantDB.selectFor('engagements', tenant)
-    .in('offering_id', matchingClassIds!)
-    .in('status', [...STUDENT_LIST_ENROLMENT_STATUSES]);
+  let engagementQuery = TenantDB.selectFor('engagements', tenant).in('status', statuses);
+  if (matchingClassIds !== null) {
+    engagementQuery = engagementQuery.in('offering_id', matchingClassIds);
+  }
+
+  const { data, error } = await engagementQuery;
   if (error) throw error;
 
   return [...new Set((data || []).map((e: { person_id: string }) => e.person_id))];
@@ -54,7 +71,7 @@ export async function resolveEnrolledPersonIds(
 /** Person IDs with any active enrolment (for student-list scope). */
 export async function resolveAllEnrolledPersonIds(tenant: Tenant): Promise<string[]> {
   const { data, error } = await TenantDB.selectFor('engagements', tenant)
-    .in('status', [...STUDENT_LIST_ENROLMENT_STATUSES])
+    .in('status', [...STUDENT_LIST_DISPLAY_ENROLMENT_STATUSES])
     .select('person_id');
   if (error) throw error;
 

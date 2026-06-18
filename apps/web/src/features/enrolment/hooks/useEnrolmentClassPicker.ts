@@ -91,7 +91,7 @@ export function useEnrolmentClassPicker<T extends EnrolmentClassPickerClass>({
   );
 
   const isClassAlreadyEnrolled = useCallback(
-    (cls: Pick<T, 'id' | 'season_id'>) =>
+    (cls: { id: string; season_id?: string | null }) =>
       isOfferingEnrolled(enrolledOfferingKeys, cls.id, cls.season_id),
     [enrolledOfferingKeys],
   );

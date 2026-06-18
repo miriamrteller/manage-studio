@@ -18,6 +18,8 @@ interface WaiverStepProps {
    * instead of the current Supabase session. Used for the guest email-link flow.
    */
   waiverToken?: string;
+  /** When set, links signed evidence to this pending_payment engagement (authenticated checkout). */
+  engagementId?: string;
   /** Called with the evidence_id returned by accept-waiver so the stepper can link it to the engagement. */
   onComplete: (evidenceId: string) => void;
   onPrevious: () => void;
@@ -54,6 +56,7 @@ function WaiverStepInner({
   offeringId,
   accountMemberId,
   waiverToken,
+  engagementId,
   onComplete,
   onPrevious,
   canGoBack,
@@ -116,6 +119,31 @@ function WaiverStepInner({
     setTokenExpired(false);
   }
 
+  async function readInvokeErrorMessage(error: unknown, fallback: string): Promise<string> {
+    if (error && typeof error === 'object' && 'context' in error) {
+      try {
+        const response = (error as { context?: Response }).context;
+        if (response) {
+          const body = (await response.json()) as { message?: string; error?: string };
+          if (body.message) return body.message;
+          if (body.error === 'guardian_confirmation_required') {
+            return t('enrolment.waiver_guardian_required', {
+              defaultValue:
+                'This student is a minor. Please confirm you are signing as their parent or guardian.',
+            });
+          }
+          if (body.error) return body.error;
+        }
+      } catch {
+        // fall through
+      }
+    }
+    if (error instanceof Error && error.message && !error.message.includes('non-2xx')) {
+      return error.message;
+    }
+    return fallback;
+  }
+
   async function handleSubmit() {
     if (!viewTokenRef.current || !affirmed || typedName.trim().length < 2) return;
     setIsSubmitting(true);
@@ -134,6 +162,7 @@ function WaiverStepInner({
         // account_members.id for guardian waivers (not accountId / accounts.id)
         account_member_id: accountMemberId,
         guardian_confirmed: guardianConfirmed,
+        ...(engagementId ? { engagement_id: engagementId } : {}),
       },
       headers: waiverToken ? { Authorization: `WaiverToken ${waiverToken}` } : undefined,
     });
@@ -143,7 +172,7 @@ function WaiverStepInner({
       setViewTokenReady(false);
       setTokenExpired(true);
     } else if (error) {
-      setSubmitError(error.message ?? t('common.error'));
+      setSubmitError(await readInvokeErrorMessage(error, t('common.error')));
     } else if (data?.evidence_id) {
       if (invalidateTenantId) {
         void invalidateWaiverStatus(queryClient, invalidateTenantId, personId, offeringId);

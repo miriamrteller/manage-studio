@@ -1,10 +1,12 @@
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
+import { EnrolmentSummaryList } from '@/features/enrolment/components/EnrolmentSummaryList';
+import type { StudentEnrolmentSummary } from '@/features/enrolment/lib/enrolmentFilterOptions';
 import type { Person } from '@shared/schemas';
 
 interface ExpandedStudentRowProps {
   person: Person;
-  enrolmentsByPerson: Map<string, string[]>;
+  enrolments: StudentEnrolmentSummary[];
   familyMap: Map<string, { contact_person_name: string | null; contact_phone: string | null; contact_email: string | null }>;
   contactPrefsMap: Map<string, { preferred_channel: string; whatsapp_verified: boolean; whatsapp_number: string | null }>;
   onEnrol?: (person: Person) => void;
@@ -16,7 +18,7 @@ interface ExpandedStudentRowProps {
  */
 export function ExpandedStudentRow({
   person,
-  enrolmentsByPerson,
+  enrolments,
   familyMap,
   contactPrefsMap,
   onEnrol,
@@ -24,7 +26,6 @@ export function ExpandedStudentRow({
   const { t } = useTranslation();
   const family = person.account_id ? familyMap.get(person.account_id) : null;
   const cp = contactPrefsMap.get(person.id);
-  const classNames = enrolmentsByPerson.get(person.id) ?? [];
 
   const studentHasContact = !!(
     person.email || person.emergency_contact_name || person.emergency_contact_phone
@@ -105,12 +106,8 @@ export function ExpandedStudentRow({
         <p className="font-semibold text-gray-600 mb-1 text-xs uppercase tracking-wide">
           {t('pages.students.classes_column')}
         </p>
-        {classNames.length > 0 ? (
-          <ul className="space-y-0.5">
-            {classNames.map((cn) => (
-              <li key={cn} className="text-gray-700">{cn}</li>
-            ))}
-          </ul>
+        {enrolments.length > 0 ? (
+          <EnrolmentSummaryList enrolments={enrolments} returnTo="/admin/students" />
         ) : (
           <div className="space-y-2">
             <p className="text-gray-400">{t('pages.students.no_classes')}</p>

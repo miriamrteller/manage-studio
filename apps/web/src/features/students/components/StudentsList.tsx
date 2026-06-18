@@ -31,7 +31,13 @@ import { FamilyMultiSelect } from '@/features/families/components/FamilyMultiSel
 import { useClasses } from '@/features/classes/hooks/useClasses';
 import { useLevels } from '@/features/levels/hooks/useLevels';
 import { useStudents } from '../hooks/useStudents';
-import { STUDENT_LIST_ENROLMENT_STATUSES } from '../lib/resolveEnrolledPersonIds';
+import { STUDENT_LIST_DISPLAY_ENROLMENT_STATUSES } from '../lib/resolveEnrolledPersonIds';
+import {
+  filterEnrolmentsByStatus,
+  getEnrolmentStatusFilterOptions,
+  type StudentEnrolmentSummary,
+} from '@/features/enrolment/lib/enrolmentFilterOptions';
+import { EnrolmentSummaryList } from '@/features/enrolment/components/EnrolmentSummaryList';
 import { DEFAULT_PERSON_SORT, type PersonSortField } from '../lib/personSort';
 import { AdminEnrolStudentModal } from '@/features/enrolment/components/AdminEnrolStudentModal';
 import { resolveGuardianEmail } from '@/features/enrolment/lib/resolveGuardianEmail';
@@ -53,6 +59,7 @@ export function StudentsList() {
   const tenant = useTenant();
   const queryClient = useQueryClient();
 
+  const [selectedEnrolmentStatuses, setSelectedEnrolmentStatuses] = useState<FilterOption[]>([]);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('active');
   const [selectedClasses, setSelectedClasses] = useState<FilterOption[]>([]);
   const [selectedLevels, setSelectedLevels] = useState<FilterOption[]>([]);
@@ -86,6 +93,7 @@ export function StudentsList() {
     status: statusFilter,
     classIds: selectedClasses.map((c) => c.value),
     categoryIds: selectedLevels.map((l) => l.value),
+    enrolmentStatuses: selectedEnrolmentStatuses.map((s) => s.value),
     accountIds: selectedFamilies.map((f) => f.value),
     minAge,
     maxAge,
@@ -102,7 +110,7 @@ export function StudentsList() {
       if (!tenant || personIds.length === 0) return [];
       const { data, error } = await TenantDB.selectFor('engagements', tenant)
         .in('person_id', personIds)
-        .in('status', [...STUDENT_LIST_ENROLMENT_STATUSES]);
+        .in('status', [...STUDENT_LIST_DISPLAY_ENROLMENT_STATUSES]);
       if (error) throw error;
       return data || [];
     },
@@ -174,16 +182,29 @@ export function StudentsList() {
       ),
     [classNamesQuery.data]
   );
+  const enrolmentStatusFilterValues = selectedEnrolmentStatuses.map((s) => s.value);
+
   const enrolmentsByPerson = useMemo(() => {
-    const map = new Map<string, string[]>();
+    const map = new Map<string, StudentEnrolmentSummary[]>();
     for (const e of enrolmentsQuery.data ?? []) {
       const existing = map.get(e.person_id) ?? [];
-      const cn = classNameMap.get(e.offering_id);
-      if (cn) existing.push(cn);
+      const cn = classNameMap.get(e.offering_id) ?? e.offering_id;
+      existing.push({
+        id: e.id as string,
+        offeringId: e.offering_id as string,
+        className: cn,
+        status: e.status as StudentEnrolmentSummary['status'],
+      });
       map.set(e.person_id, existing);
     }
-    return map;
-  }, [enrolmentsQuery.data, classNameMap]);
+    if (enrolmentStatusFilterValues.length === 0) return map;
+    const filtered = new Map<string, StudentEnrolmentSummary[]>();
+    for (const [personId, entries] of map) {
+      const next = filterEnrolmentsByStatus(entries, enrolmentStatusFilterValues);
+      if (next.length > 0) filtered.set(personId, next);
+    }
+    return filtered;
+  }, [enrolmentsQuery.data, classNameMap, enrolmentStatusFilterValues]);
 
   const familyMap = useMemo(
     () =>
@@ -251,26 +272,13 @@ export function StudentsList() {
       columnHelper.accessor('id', {
         id: 'classes',
         header: t('pages.students.classes_column'),
-        cell: ({ row }) => {
-          const names = enrolmentsByPerson.get(row.original.id) ?? [];
-          if (names.length === 0) return <span className="text-gray-400 text-xs">—</span>;
-          return (
-            <div className="flex flex-wrap gap-1">
-              {names.map((n) => (
-                <span
-                  key={n}
-                  className="px-2 py-0.5 rounded-full text-xs font-medium"
-                  style={{
-                    backgroundColor: 'var(--color-info-light)',
-                    color: 'var(--color-info)',
-                  }}
-                >
-                  {n}
-                </span>
-              ))}
-            </div>
-          );
-        },
+        cell: ({ row }) => (
+          <EnrolmentSummaryList
+            enrolments={enrolmentsByPerson.get(row.original.id) ?? []}
+            returnTo="/admin/students"
+            compact
+          />
+        ),
       }),
       columnHelper.accessor('date_of_birth', {
         header: t('pages.people.age_label'),
@@ -382,15 +390,18 @@ export function StudentsList() {
     [levels]
   );
 
+  const enrolmentStatusOptions = useMemo(() => getEnrolmentStatusFilterOptions(t), [t]);
+
   const activeFilterCount = useMemo(() => {
     let count = 0;
     if (statusFilter !== 'active') count++;
     count += selectedClasses.length;
     count += selectedLevels.length;
     count += selectedFamilies.length;
+    count += selectedEnrolmentStatuses.length;
     if (minAge != null || maxAge != null) count++;
     return count;
-  }, [statusFilter, selectedClasses, selectedLevels, selectedFamilies, minAge, maxAge]);
+  }, [statusFilter, selectedClasses, selectedLevels, selectedFamilies, selectedEnrolmentStatuses, minAge, maxAge]);
 
   const activeFilterChips = useMemo((): ActiveFilterChip[] => {
     const chips: ActiveFilterChip[] = [];
@@ -434,6 +445,18 @@ export function StudentsList() {
         },
       });
     }
+    for (const enrolmentStatus of selectedEnrolmentStatuses) {
+      chips.push({
+        key: `enrolment-status-${enrolmentStatus.value}`,
+        label: enrolmentStatus.label,
+        onRemove: () => {
+          setSelectedEnrolmentStatuses((prev) =>
+            prev.filter((s) => s.value !== enrolmentStatus.value),
+          );
+          resetPage();
+        },
+      });
+    }
     if (minAge != null || maxAge != null) {
       const parts = [];
       if (minAge != null) parts.push(`${t('common.filters.age_min')}: ${minAge}`);
@@ -449,13 +472,14 @@ export function StudentsList() {
       });
     }
     return chips;
-  }, [statusFilter, selectedClasses, selectedLevels, selectedFamilies, minAge, maxAge, t]);
+  }, [statusFilter, selectedClasses, selectedLevels, selectedFamilies, selectedEnrolmentStatuses, minAge, maxAge, t]);
 
   const handleClearAllFilters = () => {
     setStatusFilter('active');
     setSelectedClasses([]);
     setSelectedLevels([]);
     setSelectedFamilies([]);
+    setSelectedEnrolmentStatuses([]);
     setMinAge(null);
     setMaxAge(null);
     resetPage();
@@ -517,6 +541,17 @@ export function StudentsList() {
             ))}
           </div>
         </div>
+
+        <FilterMultiSelect
+          id="enrolment-status-filter"
+          label={t('pages.students.filter_by_enrolment_status')}
+          options={enrolmentStatusOptions}
+          selected={selectedEnrolmentStatuses}
+          onChange={(next) => {
+            setSelectedEnrolmentStatuses(next);
+            resetPage();
+          }}
+        />
 
         {classes.length > 0 && (
           <FilterMultiSelect
@@ -643,7 +678,7 @@ export function StudentsList() {
                       <td colSpan={columns.length} className="px-6 py-4">
                         <ExpandedStudentRow
                           person={row.original}
-                          enrolmentsByPerson={enrolmentsByPerson}
+                          enrolments={enrolmentsByPerson.get(row.original.id) ?? []}
                           familyMap={familyMap}
                           contactPrefsMap={contactPrefsMap}
                           onEnrol={openEnrolModal}

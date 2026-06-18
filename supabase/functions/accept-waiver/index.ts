@@ -278,6 +278,31 @@ Deno.serve(async (req) => {
       if (linkError) {
         return jsonResponse({ error: "Failed to link waiver to engagement" }, 500);
       }
+    } else if (
+      body.engagement_id &&
+      typeof body.engagement_id === "string"
+    ) {
+      const { data: authEngagement } = await service
+        .from("engagements")
+        .select("id, person_id, offering_id, status")
+        .eq("id", body.engagement_id)
+        .eq("tenant_id", tenantId)
+        .maybeSingle();
+      if (
+        authEngagement?.person_id === body.person_id &&
+        authEngagement.status === "pending_payment" &&
+        (!offeringId || authEngagement.offering_id === offeringId)
+      ) {
+        const { error: linkError } = await service
+          .from("engagements")
+          .update({ waiver_evidence_id: returnedId })
+          .eq("id", body.engagement_id)
+          .eq("tenant_id", tenantId)
+          .eq("status", "pending_payment");
+        if (linkError) {
+          return jsonResponse({ error: "Failed to link waiver to engagement" }, 500);
+        }
+      }
     } else {
       // Existing post-payment flow: activate all pending_waiver engagements for this person.
       const { error: activateError } = await service

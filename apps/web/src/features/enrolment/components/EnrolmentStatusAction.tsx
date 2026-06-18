@@ -26,7 +26,7 @@ function EnrolmentStatusBadge({ status }: { status: string }) {
 interface EnrolmentStatusActionProps {
   status: string;
   engagementId: string;
-  size?: 'sm' | 'default';
+  size?: 'sm' | 'md' | 'lg';
   returnTo?: string;
 }
 

@@ -2,6 +2,11 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
+import { FilterMultiSelect, type FilterOption } from '@/components/shared/table';
+import {
+  filterEnrolmentsByStatus,
+  getEnrolmentStatusFilterOptions,
+} from '@/features/enrolment/lib/enrolmentFilterOptions';
 import { useParentPortal, type EngagementWithOffering } from './useParentPortal';
 import { EditChildModal } from './EditChildModal';
 import { AddChildModal } from './AddChildModal';
@@ -64,12 +69,29 @@ export function ParentPortal() {
   const { data, isLoading, error } = useParentPortal();
   const [editingChildId, setEditingChildId] = useState<string | null>(null);
   const [showAddChild, setShowAddChild] = useState(false);
+  const [selectedEnrolmentStatuses, setSelectedEnrolmentStatuses] = useState<FilterOption[]>([]);
   const [showSuccessBanner, setShowSuccessBanner] = useState(Boolean(portalHighlight?.enrolmentSuccess));
   const scrolledRef = useRef(false);
 
   const children = data?.children ?? [];
   const payments = data?.payments ?? [];
   const enrolmentsByPerson = data?.enrolmentsByPerson ?? {};
+
+  const enrolmentStatusOptions = useMemo(() => getEnrolmentStatusFilterOptions(t), [t]);
+  const enrolmentStatusFilterValues = selectedEnrolmentStatuses.map((s) => s.value);
+
+  const filteredChildren = useMemo(() => {
+    if (enrolmentStatusFilterValues.length === 0) return children;
+    return children.filter((child) => {
+      const enrolments = enrolmentsByPerson[child.id] ?? [];
+      return filterEnrolmentsByStatus(enrolments, enrolmentStatusFilterValues).length > 0;
+    });
+  }, [children, enrolmentsByPerson, enrolmentStatusFilterValues]);
+
+  const getVisibleEnrolments = (personId: string): EngagementWithOffering[] => {
+    const enrolments = enrolmentsByPerson[personId] ?? [];
+    return filterEnrolmentsByStatus(enrolments, enrolmentStatusFilterValues);
+  };
 
   const highlightPersonId = useMemo(() => {
     if (portalHighlight?.highlightPersonId) return portalHighlight.highlightPersonId;
@@ -156,13 +178,23 @@ export function ParentPortal() {
       </section>
 
       <section aria-labelledby="portal-children-heading">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
           <h3 id="portal-children-heading" className="text-lg font-semibold text-gray-900">
             {t('pages.portal.children_heading')}
           </h3>
-          <Button variant="outline" size="sm" onClick={() => setShowAddChild(true)}>
-            {t('pages.portal.add_child')}
-          </Button>
+          <div className="flex flex-wrap items-end gap-2">
+            <FilterMultiSelect
+              id="portal-enrolment-status-filter"
+              label={t('pages.portal.filter_by_enrolment_status')}
+              options={enrolmentStatusOptions}
+              selected={selectedEnrolmentStatuses}
+              onChange={setSelectedEnrolmentStatuses}
+              className="min-w-48"
+            />
+            <Button variant="outline" size="sm" onClick={() => setShowAddChild(true)}>
+              {t('pages.portal.add_child')}
+            </Button>
+          </div>
         </div>
 
         {children.length === 0 ? (
@@ -177,10 +209,12 @@ export function ParentPortal() {
               </Button>
             </div>
           </div>
+        ) : filteredChildren.length === 0 ? (
+          <p className="text-sm text-gray-500">{t('pages.portal.no_enrolments_for_filter')}</p>
         ) : (
           <ul className="space-y-4">
-            {children.map((child) => {
-              const enrolments = enrolmentsByPerson[child.id] ?? [];
+            {filteredChildren.map((child) => {
+              const enrolments = getVisibleEnrolments(child.id);
               const childHighlighted = child.id === highlightPersonId;
               return (
                 <li
