@@ -5,6 +5,7 @@ import {
   getStepAfterPerson,
 } from '@/features/enrolment/lib/buildEnrolmentSteps';
 import { evaluateCheckoutPreparation } from '@/features/enrolment/lib/prepareEnrolmentCheckout';
+import { buildEnrolledOfferingKey } from '@/features/enrolment/lib/enrolled-offerings';
 
 describe('buildEnrolmentSteps', () => {
   it('includes all steps for full parent flow with waiver', () => {
@@ -145,6 +146,23 @@ describe('evaluateCheckoutPreparation', () => {
     ).toMatchObject({
       kind: 'ready',
       isGuestCheckout: true,
+    });
+  });
+
+  it('blocks checkout when student is already enrolled for the class and term', () => {
+    const enrolledOfferingKeys = new Set([
+      buildEnrolledOfferingKey('offering-1', 'season-1'),
+    ]);
+
+    expect(
+      evaluateCheckoutPreparation({
+        ...baseInput,
+        enrolledOfferingKeys,
+      }),
+    ).toEqual({
+      kind: 'blocked',
+      reason: 'already_enrolled',
+      errorMessage: 'pages.enrolment.already_enrolled_preselected',
     });
   });
 });

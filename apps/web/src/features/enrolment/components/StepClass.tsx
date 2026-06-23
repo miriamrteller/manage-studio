@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { useClasses } from '@/features/classes/hooks/useClasses';
@@ -107,6 +107,21 @@ export function StepClass({
     ? classPicker.isClassAlreadyEnrolled(selectedClass)
     : false;
 
+  useEffect(() => {
+    if (!selectedClassId || classPicker.enrolledKeysLoading) return;
+    const cls = classPicker.displayClasses.find((c: { id: string }) => c.id === selectedClassId);
+    if (cls && classPicker.isClassAlreadyEnrolled(cls)) {
+      setSelectedClassId(null);
+    }
+  }, [
+    selectedClassId,
+    classPicker.enrolledKeysLoading,
+    classPicker.displayClasses,
+    classPicker.isClassAlreadyEnrolled,
+  ]);
+
+  const enrolmentKeysLoading = Boolean(data.person_id && classPicker.enrolledKeysLoading);
+
   const selectedClassAges = selectedClass
     ? formatAgeRange(selectedClass.min_age, selectedClass.max_age)
     : null;
@@ -134,7 +149,7 @@ export function StepClass({
     );
   };
 
-  if (isLoading) {
+  if (isLoading || enrolmentKeysLoading) {
     return (
       <p role="status" className="text-sm text-gray-500">
         {t('common.loading')}
@@ -293,6 +308,7 @@ export function StepClass({
           variant="primary"
           className={canGoBack ? 'flex-1' : 'w-full'}
           disabled={
+            enrolmentKeysLoading ||
             !selectedClass ||
             selectedClassAlreadyEnrolled ||
             (!selectedClassEligible && !(allowAgeOverride && ageOverride.confirmed))

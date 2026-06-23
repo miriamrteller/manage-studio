@@ -14,6 +14,19 @@ export abstract class BaseService {
    * Retry wrapper for transient failures (network, timeouts).
    * Does NOT retry auth/RLS errors — those are permanent.
    */
+  protected static isNonRetryableError(error: Error): boolean {
+    if (error instanceof ZodError) return true;
+
+    const msg = error.message.toLowerCase();
+    if (msg.includes('permission denied') || msg.includes('jwt')) return true;
+    if (msg.includes('already enrolled')) return true;
+    if (msg.includes('not eligible')) return true;
+    if (msg.includes('only admins can override')) return true;
+    if (msg.includes('not found')) return true;
+
+    return false;
+  }
+
   protected static async withRetry<T>(
     fn: () => Promise<T>,
     operationName: string
@@ -26,13 +39,7 @@ export abstract class BaseService {
       } catch (error) {
         const err = error instanceof Error ? error : new Error(String(error));
 
-        // Validation errors won't succeed on retry.
-        if (error instanceof ZodError) {
-          throw err;
-        }
-        
-        // Don't retry auth/RLS errors
-        if (err.message.includes('permission denied') || err.message.includes('JWT')) {
+        if (this.isNonRetryableError(err)) {
           throw err;
         }
 

@@ -27,6 +27,7 @@ import {
 import { useTenant } from '@/hooks/useTenant';
 import { formatCurrency } from '@shared/format';
 import { computeClassTotal } from '../lib/computeClassTotal';
+import { mapEnrolmentFlowError } from '../lib/mapEnrolmentFlowError';
 import type { Offering } from '@shared/schemas';
 
 type AdminEnrolStep = 'class' | 'payment' | 'done';
@@ -140,6 +141,13 @@ export function AdminEnrolStudentModal({
   const selectedClassAlreadyEnrolled = selectedClass
     ? classPicker.isClassAlreadyEnrolled(selectedClass)
     : false;
+
+  useEffect(() => {
+    if (!selectedClass || classPicker.enrolledKeysLoading) return;
+    if (classPicker.isClassAlreadyEnrolled(selectedClass)) {
+      setSelectedClass(null);
+    }
+  }, [selectedClass, classPicker.enrolledKeysLoading, classPicker.isClassAlreadyEnrolled]);
   const selectedClassAges = selectedClass
     ? formatAgeRange(selectedClass.min_age, selectedClass.max_age)
     : null;
@@ -188,7 +196,7 @@ export function AdminEnrolStudentModal({
       setEnrolmentId(id);
       setStep('payment');
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('common.error'));
+      setError(mapEnrolmentFlowError(err, t, 'admin'));
     } finally {
       setIsSubmitting(false);
     }
@@ -233,9 +241,9 @@ export function AdminEnrolStudentModal({
             </p>
           )}
 
-          {classesLoading && (
+          {classesLoading || classPicker.enrolledKeysLoading ? (
             <p className="text-sm text-gray-500">{t('common.loading')}</p>
-          )}
+          ) : null}
 
           {classesError && (
             <p className="text-sm text-destructive" role="alert">
@@ -243,7 +251,9 @@ export function AdminEnrolStudentModal({
             </p>
           )}
 
-          {!classesLoading && classPicker.displayClasses.length === 0 && (
+          {!classesLoading &&
+            !classPicker.enrolledKeysLoading &&
+            classPicker.displayClasses.length === 0 && (
             <p className="text-sm text-gray-500">{t('pages.enrolment.no_classes')}</p>
           )}
 
@@ -258,7 +268,7 @@ export function AdminEnrolStudentModal({
             </label>
           )}
 
-          {!classesLoading && classPicker.displayClasses.length > 0 && (
+          {!classesLoading && !classPicker.enrolledKeysLoading && classPicker.displayClasses.length > 0 && (
             <EnrolmentClassSelectList
               classes={classPicker.displayClasses}
               selectedClassId={selectedClass?.id ?? null}
@@ -336,6 +346,7 @@ export function AdminEnrolStudentModal({
               variant="primary"
               className="flex-1"
               disabled={
+                classPicker.enrolledKeysLoading ||
                 !selectedClass ||
                 selectedClassAlreadyEnrolled ||
                 isSubmitting ||

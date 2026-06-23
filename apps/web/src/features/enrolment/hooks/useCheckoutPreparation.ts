@@ -8,6 +8,7 @@ import { EnrolmentService } from '../service';
 import { getSelectedClassAgeError } from '../lib/selectedClassAgeValidation';
 import type { EnrolmentConstraints } from '../hooks/useEnrolmentContext';
 import { evaluateCheckoutPreparation } from '../lib/prepareEnrolmentCheckout';
+import { mapEnrolmentFlowError } from '../lib/mapEnrolmentFlowError';
 import type { AgeOverrideState } from './useAgeOverride';
 import type { EnrolmentStep } from '../types/enrolmentStep';
 import type { TenantConfig } from '@/types/auth';
@@ -29,6 +30,7 @@ export interface UseCheckoutPreparationParams {
   showWaiverStep: boolean;
   waiverSignedInFlow: boolean;
   waiverEvidenceId: string | null;
+  enrolledOfferingKeys?: Set<string>;
   navigate: NavigateFunction;
   t: TFunction;
 }
@@ -76,6 +78,7 @@ export function useCheckoutPreparation({
   showWaiverStep,
   waiverSignedInFlow,
   waiverEvidenceId,
+  enrolledOfferingKeys,
   navigate,
   t,
 }: UseCheckoutPreparationParams) {
@@ -111,6 +114,7 @@ export function useCheckoutPreparation({
       personDateOfBirth,
       classAgeOverride,
       waiverEvidenceId,
+      enrolledOfferingKeys,
       constraints,
       t,
       showWaiverStep,
@@ -121,7 +125,10 @@ export function useCheckoutPreparation({
     if (evaluation.kind === 'blocked') {
       if (evaluation.reason === 'waiver_required') {
         setCurrentStep('waiver');
-      } else if (evaluation.reason === 'ineligible_age' && evaluation.errorMessage) {
+      } else if (
+        (evaluation.reason === 'ineligible_age' || evaluation.reason === 'already_enrolled') &&
+        evaluation.errorMessage
+      ) {
         setCheckoutError(evaluation.errorMessage);
       }
       return;
@@ -165,9 +172,7 @@ export function useCheckoutPreparation({
         setIsCheckoutPreparing(false);
       } catch (error) {
         checkoutPrepareStartedRef.current = false;
-        setCheckoutError(
-          error instanceof Error ? error.message : t('enrolment.checkout_prepare_failed'),
-        );
+        setCheckoutError(mapEnrolmentFlowError(error, t, mode));
         setIsCheckoutPreparing(false);
       }
     };
@@ -189,6 +194,7 @@ export function useCheckoutPreparation({
     showWaiverStep,
     waiverSignedInFlow,
     waiverEvidenceId,
+    enrolledOfferingKeys,
     navigate,
     t,
     setCurrentStep,

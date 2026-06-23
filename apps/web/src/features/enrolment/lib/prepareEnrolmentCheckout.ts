@@ -2,6 +2,7 @@ import type { Engagement } from '@shared/schemas';
 import type { TFunction } from 'i18next';
 import type { EnrolmentConstraints } from '../hooks/useEnrolmentContext';
 import type { AgeOverrideState } from '../hooks/useAgeOverride';
+import { isOfferingEnrolled } from './enrolled-offerings';
 
 export interface PrepareEnrolmentCheckoutInput {
   tenant: { id: string };
@@ -15,12 +16,13 @@ export interface PrepareEnrolmentCheckoutInput {
   classAgeOverride: AgeOverrideState;
   waiverEvidenceId: string | null;
   constraints: EnrolmentConstraints;
+  enrolledOfferingKeys?: Set<string>;
   t: TFunction;
 }
 
 export interface PrepareEnrolmentCheckoutBlocked {
   kind: 'blocked';
-  reason: 'missing_fields' | 'waiver_required' | 'ineligible_age';
+  reason: 'missing_fields' | 'waiver_required' | 'ineligible_age' | 'already_enrolled';
   errorMessage?: string;
 }
 
@@ -56,10 +58,22 @@ export function evaluateCheckoutPreparation(
     isGuestCheckout,
     mode,
     waiverEvidenceId,
+    enrolledOfferingKeys,
   } = input;
 
   if (!personId || !offeringId || !seasonId) {
     return { kind: 'blocked', reason: 'missing_fields' };
+  }
+
+  if (isOfferingEnrolled(enrolledOfferingKeys, offeringId, seasonId)) {
+    return {
+      kind: 'blocked',
+      reason: 'already_enrolled',
+      errorMessage:
+        mode === 'admin'
+          ? t('pages.enrolment.already_enrolled_preselected_admin')
+          : t('pages.enrolment.already_enrolled_preselected'),
+    };
   }
 
   if (showWaiverStep && !waiverSignedInFlow) {

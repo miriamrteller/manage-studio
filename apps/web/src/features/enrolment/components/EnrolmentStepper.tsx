@@ -145,6 +145,7 @@ export function EnrolmentStepper({
       showWaiverStep: waiverFlow.showWaiverStep,
       waiverSignedInFlow: waiverFlow.waiverSignedInFlow,
       waiverEvidenceId: waiverFlow.waiverEvidenceId,
+      enrolledOfferingKeys,
       navigate,
       t,
     };
@@ -208,7 +209,7 @@ export function EnrolmentStepper({
   };
 
   const handlePersonNext = (newData?: Partial<Engagement>, dob?: string | null) => {
-    if (classPreselected && preselectedAlreadyEnrolled) return;
+    if (classPreselected && (enrolledKeysLoading || preselectedAlreadyEnrolled)) return;
 
     if (classPreselected && dob) {
       const ageError = getSelectedClassAgeError(enrolmentContext.constraints, dob, t);
@@ -234,6 +235,13 @@ export function EnrolmentStepper({
     className?: string,
     waiverRequired?: boolean,
   ) => {
+    if (
+      newData?.offering_id &&
+      newData?.season_id &&
+      isOfferingEnrolled(enrolledOfferingKeys, newData.offering_id, newData.season_id)
+    ) {
+      return;
+    }
     if (newData) setEnrolmentData((prev) => ({ ...prev, ...newData }));
     if (className) setSelectedClassName(className);
     if (waiverRequired !== undefined) waiverFlow.setLocalWaiverRequired(waiverRequired);
@@ -319,7 +327,6 @@ export function EnrolmentStepper({
               </p>
             )}
             {!enrolmentContext.isLoading &&
-              enrolmentContext.canSkipPersonStep &&
               classPreselected &&
               enrolledKeysLoading && (
                 <p role="status">{t('common.loading')}</p>
