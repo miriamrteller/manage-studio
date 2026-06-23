@@ -190,25 +190,24 @@ export function useCheckoutPreparation({
             };
           })();
           checkoutPrepareInflight.set(key, inflight);
-          try {
-            return await inflight;
-          } finally {
-            checkoutPrepareInflight.delete(key);
-          }
         }
 
-        const { engagementId, charge } = await inflight;
-        setCheckoutEnrolmentId(engagementId);
-        setCheckoutCharge(charge);
-        setEnrolmentData((prev) => ({
-          ...prev,
-          id: engagementId,
-          person_id: personId,
-          offering_id: offeringId,
-          season_id: seasonId,
-          status: 'pending_payment',
-        }));
-        setIsCheckoutPreparing(false);
+        try {
+          const { engagementId, charge } = await inflight;
+          setCheckoutEnrolmentId(engagementId);
+          setCheckoutCharge(charge);
+          setEnrolmentData((prev) => ({
+            ...prev,
+            id: engagementId,
+            person_id: personId,
+            offering_id: offeringId,
+            season_id: seasonId,
+            status: 'pending_payment',
+          }));
+          setIsCheckoutPreparing(false);
+        } finally {
+          checkoutPrepareInflight.delete(key);
+        }
       } catch (error) {
         checkoutPrepareStartedRef.current = false;
         setCheckoutError(mapEnrolmentFlowError(error, t, mode));
