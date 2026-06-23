@@ -5,12 +5,20 @@
 import { describe, expect, it } from "vitest";
 import { renderEnrolmentConfirmationHtml } from "../../../../supabase/functions/_shared/render-enrolment-confirmation-email.ts";
 
+const paymentSummary = {
+  amountFormatted: "₪350",
+  paidOnFormatted: "Tuesday, 23 June 2026",
+  paymentMethodLabel: "Visa ending in 4242",
+};
+
 describe("renderEnrolmentConfirmationHtml", () => {
-  it("renders confirmed enrolment HTML without React runtime errors", () => {
+  it("renders confirmed enrolment HTML with class and payment details", () => {
     const html = renderEnrolmentConfirmationHtml({
       language: "en",
       schoolName: "Creative Ballet Academy",
-      recipientName: "Miriam",
+      recipientName: "Sarah",
+      studentName: "Miriam",
+      showStudentRow: true,
       className: "Primary (Monthly)",
       classDetails: {
         day: "Tuesday",
@@ -18,16 +26,41 @@ describe("renderEnrolmentConfirmationHtml", () => {
         startDate: "1 September 2026",
         teacher: "Coach Anna",
       },
+      paymentSummary,
       pendingWaiver: false,
       primaryColor: "#76335a",
       accentColor: "#e99ac4",
     });
 
     expect(html).toContain("Creative Ballet Academy");
+    expect(html).toContain("Sarah");
     expect(html).toContain("Miriam");
     expect(html).toContain("Primary (Monthly)");
     expect(html).toContain("Tuesday");
+    expect(html).toContain("₪350");
+    expect(html).toContain("Visa ending in 4242");
+    expect(html).toContain("Tax invoice");
+    expect(html).toContain("separate message");
     expect(html).not.toContain("{{SCHOOL_NAME}}");
+    expect(html).not.toContain("{{AMOUNT_PAID}}");
+  });
+
+  it("omits student row when showStudentRow is false", () => {
+    const html = renderEnrolmentConfirmationHtml({
+      language: "en",
+      schoolName: "Creative Ballet Academy",
+      recipientName: "Miriam",
+      studentName: "Miriam",
+      showStudentRow: false,
+      className: "Primary (Monthly)",
+      paymentSummary,
+      pendingWaiver: false,
+      primaryColor: "#76335a",
+      accentColor: "#e99ac4",
+    });
+
+    expect(html).not.toContain("{{STUDENT_NAME}}");
+    expect(html).toContain("Primary (Monthly)");
   });
 
   it("renders pending waiver variant with sign link", () => {
@@ -35,7 +68,10 @@ describe("renderEnrolmentConfirmationHtml", () => {
       language: "en",
       schoolName: "Creative Ballet Academy",
       recipientName: "Miriam",
+      studentName: "Miriam",
+      showStudentRow: false,
       className: "Primary (Monthly)",
+      paymentSummary,
       pendingWaiver: true,
       signUrl: "https://example.com/enrol/complete?wt=test",
       deadlineDate: new Date("2026-09-01").toISOString(),
@@ -45,5 +81,27 @@ describe("renderEnrolmentConfirmationHtml", () => {
 
     expect(html).toContain("Sign Your Waiver");
     expect(html).toContain("https://example.com/enrol/complete?wt=test");
+  });
+
+  it("renders Hebrew tax invoice notice in he shell", () => {
+    const html = renderEnrolmentConfirmationHtml({
+      language: "he",
+      schoolName: "Creative Ballet Academy",
+      recipientName: "שרה",
+      studentName: "מירiam",
+      showStudentRow: true,
+      className: "Primary (Monthly)",
+      paymentSummary: {
+        amountFormatted: "₪350",
+        paidOnFormatted: "23 ביוני 2026",
+        paymentMethodLabel: "Visa המסתיים ב-4242",
+      },
+      pendingWaiver: false,
+      primaryColor: "#76335a",
+      accentColor: "#e99ac4",
+    });
+
+    expect(html).toContain("חשבונית מס");
+    expect(html).toContain("הודעה נפרדת");
   });
 });

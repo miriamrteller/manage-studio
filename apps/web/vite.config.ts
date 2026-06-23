@@ -6,10 +6,23 @@ import path from 'path'
 export default defineConfig({
   plugins: [react()],
   resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
-      '@shared': path.resolve(__dirname, '../../packages/shared/src'),
-    },
+    alias: [
+      { find: '@shared', replacement: path.resolve(__dirname, '../../packages/shared/src') },
+      { find: '@', replacement: path.resolve(__dirname, './src') },
+      // Mirror the edge-function import map ("shared/email") so tests that import
+      // _shared modules can resolve the email renderer from source.
+      {
+        find: 'shared/email',
+        replacement: path.resolve(__dirname, '../../packages/shared/src/email/render-template.ts'),
+      },
+      // Edge functions use Deno-style specifiers; map them to node packages for Vitest.
+      { find: /^npm:zod(@.*)?$/, replacement: 'zod' },
+      // The Deno Stripe SDK import is unresolvable in Node; stub it for factory tests.
+      {
+        find: /^https:\/\/esm\.sh\/stripe@.*/,
+        replacement: path.resolve(__dirname, './src/test/stripe-esm-stub.ts'),
+      },
+    ],
   },
   build: {
     rollupOptions: {
@@ -37,6 +50,6 @@ export default defineConfig({
   test: {
     globals: false,
     environment: 'node',
-    include: ['src/**/*.test.ts'],
+    include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
   },
 })

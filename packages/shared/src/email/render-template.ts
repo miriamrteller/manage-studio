@@ -178,15 +178,39 @@ function buildComponent(
           | undefined,
       });
 
-    case EMAIL_TEMPLATE_NAMES.ENROLMENT_CONFIRMATION:
+    case EMAIL_TEMPLATE_NAMES.ENROLMENT_CONFIRMATION: {
+      const studentName = str(v.studentName) || str(v.recipientName, 'there');
+      const recipientName = str(v.recipientName) || studentName;
+      const showStudentRow =
+        typeof v.showStudentRow === 'boolean'
+          ? v.showStudentRow
+          : studentName !== recipientName;
+      const paymentRaw = v.paymentSummary;
+      const paymentSummary =
+        paymentRaw && typeof paymentRaw === 'object' && !Array.isArray(paymentRaw)
+          ? (paymentRaw as Record<string, unknown>)
+          : {};
+
       return React.createElement(EnrolmentConfirmationEmail, {
         ...common,
-        recipientName: str(v.recipientName) || str(v.studentName, 'there'),
+        recipientName,
+        studentName,
+        showStudentRow,
         className: str(v.className) || str(v.enrolledClassName),
+        classDetails: v.classDetails as
+          | { day?: string; time?: string; startDate?: string; teacher?: string }
+          | undefined,
+        location: str(v.location) || undefined,
+        paymentSummary: {
+          amountFormatted: str(paymentSummary.amountFormatted, '—'),
+          paidOnFormatted: str(paymentSummary.paidOnFormatted, '—'),
+          paymentMethodLabel: str(paymentSummary.paymentMethodLabel, '—'),
+        },
         pendingWaiver: Boolean(v.pendingWaiver),
         signUrl: str(v.signUrl) || undefined,
         deadlineDate: str(v.deadlineDate) || undefined,
       });
+    }
 
     case EMAIL_TEMPLATE_NAMES.WAIVER_REMINDER:
       return React.createElement(WaiverReminderEmail, {

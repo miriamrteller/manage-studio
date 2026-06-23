@@ -11,15 +11,16 @@ When implementing a finance stage, follow **one stage file only** per session.
 ## Required reading (in order)
 
 1. `docs/plans/finance/00-overview.md`
-2. The active `docs/plans/finance/stage-N-*.md`
+2. The active `docs/plans/finance/stage-gN-*.md`
 3. `.instructions.md` (deterministic finance; no AI in money logic)
 
 Use `docs/plans/finance/AGENT-RUNBOOK.md` for the exact prompt and gates.
 
 ## Hard rules
 
-- **Stage order:** 1 → 2 → 3 → 4 → (5, 6 after 4) → 7 → 8 → 9. Stage 2 before Stage 3.
-- **Schema frozen after Stage 1.** Stages 2–9 must not alter tables unless the plan sends you back to Stage 1.
+- **Stage order (Grow extension):** G0 → G1 → G2 → G3 → G4 → G5 → G6 → G7. One stage per
+  session. (Baseline stages 1–9 are already shipped in code — see `00-overview.md`.)
+- **Schema frozen.** No new tables. Grow credential changes are RPC-only via new migrations.
 - **No vendor names in schema/shared orchestration** — adapters live under `_shared/payments/providers/` and `_shared/invoicing/providers/`.
 - **Single success path:** `finalise-payment` + `enqueueDocument` — never duplicate activation or document enqueue inline.
 - **Webhook replay:** duplicate `provider_payment_ref` → skip INSERT, **always** run idempotent `finalisePayment`.
@@ -44,9 +45,7 @@ Supabase **local/Docker is not used.** Do not run `supabase start`, `db:reset-lo
 - Migrations + types: `pnpm db:sync`
 - Types only: `pnpm db:types:all`
 - Seed checklist: `pnpm seed:dev:checklist`
-- Stage prompt: `pnpm finance:prompt 3` (paste output into Agent chat)
-
-Verify after Stage 1: `grep -ri stripe_ supabase/migrations/` → empty.
+- Stage prompt: `pnpm finance:prompt g3` (paste output into Agent chat)
 
 ## Completion report
 
@@ -56,4 +55,4 @@ When done, return:
 2. Files changed
 3. Commands run and outcomes
 4. Blockers (secrets, manual smoke tests, SQL Editor steps)
-5. **Stop** — wait for user to say "commit Stage N" before the next stage
+5. **Stop** — wait for user to say "commit Stage GN" before the next stage

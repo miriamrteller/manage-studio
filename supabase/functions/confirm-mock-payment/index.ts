@@ -38,7 +38,9 @@ Deno.serve(async (req) => {
     }
 
     const { session } = resolved;
-    if (session.tenant.payment_provider !== "mock") {
+    const paymentProvider = session.tenant.payment_provider;
+    const isMockGrow = paymentProvider === "grow" && Deno.env.get("GROW_MOCK") === "true";
+    if (paymentProvider !== "mock" && !isMockGrow) {
       return jsonResponse({ error: "Tenant is not configured for mock payments" }, 409);
     }
 
@@ -67,6 +69,7 @@ Deno.serve(async (req) => {
       currency: session.currency,
       scenario,
       providerPaymentRef: body.mock_payment_ref,
+      providerSlug: isMockGrow ? "grow" : "mock",
     });
 
     if (!result.ok) {

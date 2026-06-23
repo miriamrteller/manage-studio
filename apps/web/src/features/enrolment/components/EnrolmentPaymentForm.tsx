@@ -6,9 +6,14 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Button } from '@/components/ui/button';
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
 import { supabase } from '@/lib/supabase';
+import {
+  functionInvokeErrorMessage,
+  parseFunctionInvokeBody,
+} from '@/lib/parseFunctionInvokeError';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useTenant } from '@/hooks/useTenant';
 import { formatCurrency } from '@shared/format';
+import { GrowPaymentShell } from './GrowPaymentShell';
 
 interface BasePaymentFormProps {
   classId: string;
@@ -116,17 +121,19 @@ function MockPaymentShell({
   const [error, setError] = useState<string | null>(null);
   const [isPaying, setIsPaying] = useState(false);
 
-  const handleConfirm = async (scenario: 'success' | 'decline') => {
+  const handleConfirm = async () => {
     setIsPaying(true);
     setError(null);
 
+    // The outcome is driven entirely by the typed card number: the decline test card maps to a
+    // declined payment, anything else succeeds. We intentionally do NOT send an explicit scenario
+    // so the server can't be forced to "success" while the user typed the decline card.
     const { data, error: invokeError } = await supabase.functions.invoke('confirm-mock-payment', {
       body: {
         offering_id: classId,
         engagement_id: engagementId,
         ...(enrolmentToken ? { enrolment_token: enrolmentToken } : {}),
-        scenario,
-        mock_card_number: scenario === 'decline' ? MOCK_DECLINE_CARD : cardNumber || undefined,
+        mock_card_number: cardNumber || undefined,
         mock_payment_ref: mockPaymentRef ?? undefined,
       },
       ...(enrolmentToken
@@ -136,23 +143,25 @@ function MockPaymentShell({
 
     setIsPaying(false);
 
-    if (invokeError) {
-      setError(invokeError.message ?? t('enrolment.payment_failed'));
+    const body = await parseFunctionInvokeBody(data, invokeError);
+    const declinedMessage = t('enrolment.mock_payment_declined', {
+      defaultValue: 'Your card was declined. Please check the number or try a different card.',
+    });
+
+    if (body?.code === 'MOCK_PAYMENT_DECLINED') {
+      setError(declinedMessage);
       return;
     }
 
-    if (data?.code === 'MOCK_PAYMENT_DECLINED') {
-      setError(t('enrolment.mock_payment_declined', { defaultValue: 'Payment was declined.' }));
-      return;
-    }
-
-    if (data?.error) {
-      setError(String(data.error));
-      return;
-    }
-
-    if (data?.confirmed) {
+    if (body?.confirmed) {
       onPaid();
+      return;
+    }
+
+    if (invokeError || body?.error) {
+      setError(
+        functionInvokeErrorMessage(invokeError, body, t('enrolment.payment_failed')),
+      );
       return;
     }
 
@@ -185,6 +194,11 @@ function MockPaymentShell({
         />
       </label>
       <p className="text-xs text-muted-foreground">
+        {t('enrolment.mock_success_hint', {
+          defaultValue: 'Use 4580458045804580 for a successful test payment.',
+        })}
+      </p>
+      <p className="text-xs text-muted-foreground">
         {t('enrolment.mock_decline_hint', {
           defaultValue: `Use ${MOCK_DECLINE_CARD} to simulate decline.`,
         })}
@@ -202,7 +216,7 @@ function MockPaymentShell({
           type="button"
           variant="primary"
           className="flex-1"
-          onClick={() => handleConfirm('success')}
+          onClick={() => handleConfirm()}
           disabled={isPaying}
           isLoading={isPaying}
         >
@@ -242,6 +256,8 @@ interface CheckoutIntentData {
   amountMinor: number | null;
   currency: string | null;
   mockPaymentRef: string | null;
+  pageUrl: string | null;
+  pendingWebhook: boolean;
 }
 
 interface CheckoutIntentState extends CheckoutIntentData {
@@ -278,8 +294,9 @@ async function fetchCheckoutIntent(input: {
       Boolean(data?.mockCompleted) ||
       Boolean(data?.mockPending) ||
       data?.paymentProvider === 'mock';
+    const growReady = data?.paymentProvider === 'grow' && Boolean(data?.pageUrl);
 
-    if (error || (!data?.clientSecret && !mockReady)) {
+    if (error || (!data?.clientSecret && !mockReady && !growReady)) {
       throw new Error(
         error?.message ??
           (typeof data?.error === 'string' ? data.error : null) ??
@@ -296,6 +313,8 @@ async function fetchCheckoutIntent(input: {
       amountMinor: typeof data.amountMinor === 'number' ? data.amountMinor : null,
       currency: typeof data.currency === 'string' ? data.currency : null,
       mockPaymentRef: typeof data.paymentIntentId === 'string' ? data.paymentIntentId : null,
+      pageUrl: typeof data.pageUrl === 'string' ? data.pageUrl : null,
+      pendingWebhook: Boolean(data.pendingWebhook),
     };
   })();
 
@@ -347,6 +366,8 @@ function useCheckoutIntent({
     amountMinor: data?.amountMinor ?? null,
     currency: data?.currency ?? null,
     mockPaymentRef: data?.mockPaymentRef ?? null,
+    pageUrl: data?.pageUrl ?? null,
+    pendingWebhook: data?.pendingWebhook ?? false,
     loadError: error?.message ?? null,
     isLoading: queryEnabled && isPending,
   };
@@ -377,6 +398,7 @@ function CheckoutIntentShell({
     amountMinor,
     currency,
     mockPaymentRef,
+    pageUrl,
     loadError,
     isLoading,
   } = checkout;
@@ -399,9 +421,11 @@ function CheckoutIntentShell({
     );
   }
 
+  const growReady = paymentProvider === 'grow' && Boolean(pageUrl);
+
   if (
     isLoading ||
-    (!mockPending && paymentProvider !== 'mock' && (!clientSecret || !publishableKey))
+    (!mockPending && paymentProvider !== 'mock' && !growReady && (!clientSecret || !publishableKey))
   ) {
     return <p role="status">{t('common.loading')}</p>;
   }
@@ -418,6 +442,7 @@ function CheckoutIntentShell({
       amountMinor={amountMinor}
       currency={currency}
       mockPaymentRef={mockPaymentRef}
+      pageUrl={pageUrl}
       onPaid={onPaid}
       onPrevious={onPrevious}
     />
@@ -462,6 +487,7 @@ function CheckoutShell({
   amountMinor,
   currency,
   mockPaymentRef,
+  pageUrl,
   onPaid,
   onPrevious,
 }: {
@@ -475,12 +501,16 @@ function CheckoutShell({
   amountMinor: number | null;
   currency: string | null;
   mockPaymentRef: string | null;
+  pageUrl: string | null;
   onPaid: () => void;
   onPrevious: () => void;
 }) {
   const { t } = useTranslation();
 
-  if (mockPending || paymentProvider === 'mock') {
+  const isMockGrowPage =
+    paymentProvider === 'grow' && Boolean(pageUrl?.includes('mock.grow.local'));
+
+  if (mockPending || paymentProvider === 'mock' || isMockGrowPage) {
     return (
       <MockPaymentShell
         classId={classId}
@@ -489,6 +519,18 @@ function CheckoutShell({
         amountMinor={amountMinor}
         currency={currency}
         mockPaymentRef={mockPaymentRef}
+        onPaid={onPaid}
+        onPrevious={onPrevious}
+      />
+    );
+  }
+
+  if (paymentProvider === 'grow' && pageUrl) {
+    return (
+      <GrowPaymentShell
+        engagementId={engagementId}
+        pageUrl={pageUrl}
+        enrolmentToken={enrolmentToken}
         onPaid={onPaid}
         onPrevious={onPrevious}
       />

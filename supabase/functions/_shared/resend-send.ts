@@ -75,11 +75,22 @@ export async function sendRenderedEmail(
       classDetailsRaw && typeof classDetailsRaw === "object" && !Array.isArray(classDetailsRaw)
         ? (classDetailsRaw as Record<string, unknown>)
         : undefined;
+    const paymentRaw = variables.paymentSummary;
+    const paymentSummary =
+      paymentRaw && typeof paymentRaw === "object" && !Array.isArray(paymentRaw)
+        ? (paymentRaw as Record<string, unknown>)
+        : {};
+    const studentName = str(variables.studentName) || str(variables.recipientName, "there");
+    const recipientName = str(variables.recipientName) || studentName;
 
     html = renderEnrolmentConfirmationHtml({
       language,
       schoolName: renderInput.schoolName,
-      recipientName: str(variables.recipientName, "there"),
+      recipientName,
+      studentName,
+      showStudentRow: typeof variables.showStudentRow === "boolean"
+        ? variables.showStudentRow
+        : studentName !== recipientName,
       className: str(variables.className) || str(variables.enrolledClassName, "class"),
       classDetails: classDetails
         ? {
@@ -89,6 +100,12 @@ export async function sendRenderedEmail(
           teacher: str(classDetails.teacher),
         }
         : undefined,
+      location: str(variables.location) || undefined,
+      paymentSummary: {
+        amountFormatted: str(paymentSummary.amountFormatted, "—"),
+        paidOnFormatted: str(paymentSummary.paidOnFormatted, "—"),
+        paymentMethodLabel: str(paymentSummary.paymentMethodLabel, "—"),
+      },
       pendingWaiver: Boolean(variables.pendingWaiver),
       signUrl: str(variables.signUrl) || undefined,
       deadlineDate: str(variables.deadlineDate) || undefined,

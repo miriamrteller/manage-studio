@@ -95,6 +95,21 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/handle-payment-event/index.ts"
 
+[functions.handle-invoice-event]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/handle-invoice-event/index.ts"
+
+[functions.get-payment-status]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/get-payment-status/index.ts"
+
+[functions.verify-grow-credentials]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/verify-grow-credentials/index.ts"
+
 [functions.record-payment]
 enabled = true
 verify_jwt = false

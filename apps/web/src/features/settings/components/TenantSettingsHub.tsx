@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { useTenant } from '@/hooks/useTenant';
 import { SchoolProfileForm } from './SchoolProfileForm';
 import { BrandingSettingsForm } from './BrandingSettingsForm';
 import { LocaleSettingsForm } from './LocaleSettingsForm';
@@ -42,6 +43,9 @@ function SettingsLinkCard({
 
 export function TenantSettingsHub() {
   const { t } = useTranslation();
+  const tenant = useTenant();
+  // IL tenants run on Grow, which bundles payment capture and invoicing into one surface.
+  const usesGrow = tenant?.country === 'IL' || tenant?.payment_provider === 'grow';
 
   return (
     <div className="space-y-10 max-w-3xl">
@@ -64,21 +68,28 @@ export function TenantSettingsHub() {
             description={t('settings.tax.description')}
             href="/admin/setup/tax"
           />
-          <SettingsLinkCard
-            title={t('settings.payments.title', { defaultValue: 'Payment provider' })}
-            description={t('settings.payments.description', { defaultValue: 'Payment capture credentials' })}
-            href="/admin/setup/payments"
-          />
-          <SettingsLinkCard
-            title={t('settings.invoicing.title', { defaultValue: 'Invoicing provider' })}
-            description={t('settings.invoicing.description', { defaultValue: 'Tax document credentials' })}
-            href="/admin/setup/invoicing"
-          />
-          <SettingsLinkCard
-            title={t('settings.stripe.title')}
-            description={t('settings.stripe.description')}
-            href="/admin/setup/stripe"
-          />
+          {usesGrow ? (
+            <SettingsLinkCard
+              title={t('settings.grow.title', { defaultValue: 'Payments & invoices (Grow)' })}
+              description={t('settings.grow.hub_description', {
+                defaultValue: 'Card payments and tax documents in one place',
+              })}
+              href="/admin/setup/grow"
+            />
+          ) : (
+            <>
+              <SettingsLinkCard
+                title={t('settings.payments.title', { defaultValue: 'Payment provider' })}
+                description={t('settings.payments.description', { defaultValue: 'Payment capture credentials' })}
+                href="/admin/setup/payments"
+              />
+              <SettingsLinkCard
+                title={t('settings.invoicing.title', { defaultValue: 'Invoicing provider' })}
+                description={t('settings.invoicing.description', { defaultValue: 'Tax document credentials' })}
+                href="/admin/setup/invoicing"
+              />
+            </>
+          )}
           <SettingsLinkCard
             title={t('settings.hub.compliance_title')}
             description={t('settings.hub.compliance_description')}

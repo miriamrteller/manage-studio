@@ -47,6 +47,8 @@ export interface ConfirmMockPaymentParams {
   currency: string;
   scenario: MockPaymentScenario;
   providerPaymentRef?: string;
+  /** Defaults to `mock`; use `grow` when confirming mock Grow hosted-page charges. */
+  providerSlug?: string;
 }
 
 export type ConfirmMockPaymentResult =
@@ -73,7 +75,11 @@ export async function confirmMockPayment(
   });
 
   const { handlePaymentEventInternal } = await import("../handle-payment-event.ts");
-  const result = await handlePaymentEventInternal(params.service, event, "mock");
+  const result = await handlePaymentEventInternal(
+    params.service,
+    event,
+    params.providerSlug ?? "mock",
+  );
   return { ok: true, paymentId: result.paymentId, duplicate: result.duplicate };
 }
 

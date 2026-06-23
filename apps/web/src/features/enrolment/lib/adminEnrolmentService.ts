@@ -1,10 +1,7 @@
-import { TenantDB } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
-import type { Offering, Engagement, Tenant } from '@shared/schemas';
-import { EnrolmentService } from '../service';
-import { computeClassTotal } from './computeClassTotal';
+import type { Tenant } from '@shared/schemas';
 
-export type OfflinePaymentMethod = 'cash' | 'check' | 'bank_transfer';
+export type OfflinePaymentMethod = 'cash' | 'bank_transfer';
 export interface SendCompletionLinkResult {
   paymentUrl: string;
   emailSent: boolean;
@@ -30,58 +27,32 @@ export function buildWaiverLink(engagementId: string, token?: string): string {
 }
 
 export class AdminEnrolmentService {
-  /** Mark enrolment active (or pending_waiver) and record an offline payment (admin in-person). */
+  /**
+   * Record an admin in-person offline payment via the canonical record-payment edge
+   * function (payment insert → finalise-payment → document enqueue). The edge function
+   * resolves pricing, billing account, and waiver-gated activation server-side.
+   */
   static async recordOfflinePayment(
-    tenant: Tenant,
     engagementId: string,
-    classRow: Pick<Offering, 'price_minor' | 'currency' | 'waiver_required'>,
-    personId: string,
-    accountId: string | null,
     paymentMethod: OfflinePaymentMethod,
-  ): Promise<Engagement> {
-    const { pretaxMinor, vatMinor, totalMinor, vatRate, currency } = computeClassTotal(
-      classRow,
-      tenant,
-    );
-    const paidAt = new Date().toISOString();
-
-    // Waiver gate: engagement-scoped evidence only
-    let targetStatus: 'active' | 'pending_waiver' = 'active';
-    if (classRow.waiver_required) {
-      const { data: engagementRow, error: engagementError } = await TenantDB.selectFor('engagements', tenant)
-        .select('waiver_evidence_id')
-        .eq('id', engagementId)
-        .maybeSingle();
-      if (engagementError) throw engagementError;
-      if (!engagementRow?.waiver_evidence_id) {
-        targetStatus = 'pending_waiver';
-      }
-    }
-
-    const enrolment = await EnrolmentService.update(tenant, engagementId, {
-      status: targetStatus,
-      payment_received_at: paidAt,
+    note?: string,
+  ): Promise<{ paymentId: string }> {
+    const { data, error } = await supabase.functions.invoke('record-payment', {
+      body: {
+        engagement_id: engagementId,
+        method: paymentMethod,
+        note: note || undefined,
+      },
     });
 
-    const { error: paymentError } = await TenantDB.insert('payments', tenant, {
-      account_id: accountId,
-      person_id: personId,
-      engagement_id: engagementId,
-      pretax_amount_minor: pretaxMinor,
-      vat_rate: vatRate,
-      vat_amount_minor: vatMinor,
-      total_amount_minor: totalMinor,
-      currency,
-      status: 'succeeded',
-      paid_at: paidAt,
-      description: `Offline ${paymentMethod} — enrolment ${engagementId}`,
-    });
-
-    if (paymentError) {
-      throw paymentError;
+    if (error) {
+      throw new Error(error.message || 'Failed to record offline payment');
+    }
+    if (data && typeof data === 'object' && 'error' in data && data.error) {
+      throw new Error(String(data.error));
     }
 
-    return enrolment;
+    return { paymentId: (data as { paymentId?: string } | null)?.paymentId ?? '' };
   }
 
   /** Email a payment link for a pending_payment enrolment. */

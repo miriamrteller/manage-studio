@@ -29,6 +29,10 @@ export interface ChargeResult {
   clientSecret?: string;
   providerPaymentRef: string;
   customerRef?: string;
+  /** Hosted-page providers (Grow): URL the frontend opens; result is confirmed by webhook. */
+  pageUrl?: string;
+  /** True when the charge completes asynchronously via webhook (no inline finalise). */
+  pendingWebhook?: true;
   /** Mock sync path — caller should invoke handlePaymentEventInternal when true. */
   emitSyncEvent?: PaymentEvent;
 }

@@ -2282,6 +2282,10 @@ export type Database = {
                 Args: never;
                 Returns: number;
             };
+            get_app_encryption_key: {
+                Args: never;
+                Returns: string;
+            };
             get_billing_account_payment_method: {
                 Args: {
                     p_billing_account_id: string;
@@ -2381,9 +2385,11 @@ export type Database = {
                     country: string;
                     currency: string;
                     id: string;
+                    invoicing_provider: string;
                     labels: Json;
                     language_default: string;
                     name: string;
+                    payment_provider: string;
                     payment_provider_public_key: string;
                     payment_provider_secret_configured: boolean;
                     payment_provider_updated_at: string;
@@ -2518,6 +2524,14 @@ export type Database = {
                     guardian_person_id: string;
                     student_person_id: string;
                 }[];
+            };
+            save_tenant_grow_credentials: {
+                Args: {
+                    p_api_key: string;
+                    p_page_code: string;
+                    p_user_id: string;
+                };
+                Returns: undefined;
             };
             save_tenant_invoicing_credentials: {
                 Args: {

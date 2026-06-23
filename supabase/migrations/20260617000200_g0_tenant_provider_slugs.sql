@@ -1,5 +1,8 @@
 -- G0: Expose payment/invoicing provider slugs on public tenant config (no secrets).
 
+-- Adding columns changes the function's return type, which CREATE OR REPLACE cannot do; drop first.
+DROP FUNCTION IF EXISTS get_tenant_config_by_subdomain(TEXT);
+
 CREATE OR REPLACE FUNCTION get_tenant_config_by_subdomain(p_subdomain TEXT)
 RETURNS TABLE (
   id                            UUID,

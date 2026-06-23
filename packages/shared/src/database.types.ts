@@ -2273,6 +2273,7 @@ export type Database = {
       }
       cleanup_expired_otps: { Args: never; Returns: undefined }
       cleanup_old_verification_attempts: { Args: never; Returns: number }
+      get_app_encryption_key: { Args: never; Returns: string }
       get_billing_account_payment_method: {
         Args: { p_billing_account_id: string }
         Returns: {
@@ -2468,6 +2469,10 @@ export type Database = {
           guardian_person_id: string
           student_person_id: string
         }[]
+      }
+      save_tenant_grow_credentials: {
+        Args: { p_api_key: string; p_page_code: string; p_user_id: string }
+        Returns: undefined
       }
       save_tenant_invoicing_credentials: {
         Args: { p_account_id: string; p_api_key: string; p_secret: string }

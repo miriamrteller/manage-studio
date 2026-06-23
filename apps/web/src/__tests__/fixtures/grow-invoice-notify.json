@@ -1,0 +1,12 @@
+{
+  "_comment": "Redacted Grow (Meshulam) document/invoice notify sample. Source: manual sandbox capture, IDs scrubbed.",
+  "status": 1,
+  "data": {
+    "transactionId": "9988776",
+    "transactionUniqueIdentifier": "idem_11111111-1111-1111-1111-111111111111",
+    "documentId": "DOC-555000",
+    "documentNumber": "INV-2026-0042",
+    "documentUrl": "https://sandbox.meshulam.co.il/docs/redacted.pdf",
+    "cField1": "00000000-0000-0000-0000-0000000000aa"
+  }
+}

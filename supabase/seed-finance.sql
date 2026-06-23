@@ -15,17 +15,37 @@
 -- | pending Esther → Monthly Primary (310) | B recurring initial | Pay + save card + schedule |
 -- | active Ruti + payment 1101 | E refund, parent portal | Admin refund; parent sees receipt |
 -- | offering 311 ₪1 no waiver | A smoke | Cheapest happy path |
--- | tenant mock/mock | G | No Stripe/GI secrets needed for mock adapter |
+-- | tenant grow/grow + demo creds | G | Use with GROW_MOCK=true (Edge secret); no live Meshulam calls |
 --
 -- Renewals (Flow C): not pre-seeded — create via Stage 6 after recurring enrol or cron test.
+--
+-- Walkthrough (dev only): /admin/dev/finance-walkthrough
+--   Lists the scenarios above and inspects the payment → document → email pipeline per
+--   engagement. Enable outside dev builds with VITE_ENABLE_FINANCE_WALKTHROUGH=true.
 
 -- ============================================================================
--- TENANT — mock providers for dev (no live PSP / GI calls)
+-- DEV ENCRYPTION KEY — stored in private.platform_config (migration
+-- 20260622000000_app_encryption_key_platform_config.sql). On hosted Supabase,
+-- ALTER DATABASE SET app.encryption_key is permission-denied; the table fallback
+-- is used instead. Production can still override via the GUC runbook.
+-- ============================================================================
+
+-- ============================================================================
+-- TENANT — Grow bundled provider with Meshulam documentation demo credentials.
+-- Pair with Supabase secret GROW_MOCK=true so Edge Functions use MockGrowPaymentProvider
+-- and never hit the live sandbox API. Real sandbox creds replace these when ready.
 -- ============================================================================
 UPDATE tenants
 SET
-  payment_provider   = 'mock',
-  invoicing_provider = 'mock'
+  payment_provider             = 'grow',
+  invoicing_provider           = 'grow',
+  payment_provider_account_id  = '4ec1d595ae764243',
+  payment_provider_public_key  = 'b73ca07591f8',
+  payment_provider_secret_enc  = pgp_sym_encrypt(
+    'grow-mock-dev-key-00000000',
+    '0uT6CrQXiMJab+raSRxxx0j7ZLYvwKCb2HCoQusCfiY='
+  ),
+  payment_provider_updated_at  = now()
 WHERE id = '00000000-0000-0000-0000-000000000001'::uuid;
 
 -- ============================================================================
@@ -70,6 +90,8 @@ ON CONFLICT (id) DO UPDATE SET
   delivery_mode = EXCLUDED.delivery_mode,
   start_time = EXCLUDED.start_time,
   end_time = EXCLUDED.end_time,
+  min_age = EXCLUDED.min_age,
+  max_age = EXCLUDED.max_age,
   status = EXCLUDED.status;
 
 -- ============================================================================

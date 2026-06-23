@@ -1,17 +1,15 @@
-/**
- * issue-document — async tax document worker (Flow F).
- *
- * Invoked by pg_cron every 15 minutes (manual setup after deploy):
- * SELECT cron.schedule(
- *   'document-queue-retry',
- *   '*/15 * * * *',
- *   $$ SELECT net.http_post(
- *        url := '<issue-document-url>',
- *        headers := jsonb_build_object('x-cron-secret', '<CRON_SECRET>'),
- *        body := '{"mode":"batch"}'::jsonb
- *      ); $$
- * );
- */
+// issue-document — async tax document worker (Flow F).
+//
+// Invoked by pg_cron every 15 minutes (manual setup after deploy):
+// SELECT cron.schedule(
+//   'document-queue-retry',
+//   '*/15 * * * *',
+//   $$ SELECT net.http_post(
+//        url := '<issue-document-url>',
+//        headers := jsonb_build_object('x-cron-secret', '<CRON_SECRET>'),
+//        body := '{"mode":"batch"}'::jsonb
+//      ); $$
+// );
 import { z } from "npm:zod@3.22.4";
 import { jsonResponse } from "../_shared/cors.ts";
 import { createServiceClient } from "../_shared/supabase.ts";

@@ -112,6 +112,28 @@ Deno.serve(async (req) => {
       continue;
     }
 
+    // Grow renewals charge a saved card token server-to-server; load the account's default
+    // token so the provider can use createTransactionWithToken instead of a hosted page.
+    let savedToken: string | undefined;
+    if (tenant.payment_provider === "grow") {
+      const { data: tokenRow } = await service
+        .from("payment_method_tokens")
+        .select("provider_token")
+        .eq("billing_account_id", billingAccountId)
+        .is("revoked_at", null)
+        .eq("is_default", true)
+        .maybeSingle();
+      savedToken = (tokenRow?.provider_token as string | null) ?? undefined;
+      if (!savedToken) {
+        failed += 1;
+        await service
+          .from("billing_schedules")
+          .update({ last_error: "No saved Grow card token", last_attempt_at: new Date().toISOString() })
+          .eq("id", schedule.id);
+        continue;
+      }
+    }
+
     const provider = await getPaymentProviderForTenant(service, schedule.tenant_id as string);
     const metadata = buildChargeMetadata({
       tenantId: schedule.tenant_id as string,
@@ -134,6 +156,7 @@ Deno.serve(async (req) => {
         idempotencyKey: renewalIdempotencyKey(engagement.id as string, periodYm),
         metadata,
         customerRef: (engagement.provider_customer_ref as string | null) ?? undefined,
+        savedToken,
       });
 
       if (result.emitSyncEvent) {

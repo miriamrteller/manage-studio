@@ -10,7 +10,23 @@ interface EnrolmentConfirmationEmailProps {
         preview?: string;
         greeting?: string;
         enrollment_confirmed?: string;
+        enrollment_confirmed_for_student?: string;
         enrollment_reserved?: string;
+        enrollment_reserved_for_student?: string;
+        class_details_heading?: string;
+        payment_summary_heading?: string;
+        student_label?: string;
+        class_label?: string;
+        day_label?: string;
+        time_label?: string;
+        start_date_label?: string;
+        teacher_label?: string;
+        location_label?: string;
+        amount_paid_label?: string;
+        paid_on_label?: string;
+        payment_method_label?: string;
+        tax_invoice_label?: string;
+        tax_invoice_notice?: string;
         waiver_warning_heading?: string;
         waiver_warning_body?: string;
         waiver_cta?: string;
@@ -18,17 +34,26 @@ interface EnrolmentConfirmationEmailProps {
         no_show_policy?: string;
         confirmation_note?: string;
     };
-    /** Student name */
     recipientName: string;
-    /** Class name */
+    studentName: string;
+    showStudentRow?: boolean;
     className: string;
-    /** If true, shows the pending waiver warning and sign CTA */
+    classDetails?: {
+        day?: string;
+        time?: string;
+        startDate?: string;
+        teacher?: string;
+    };
+    location?: string;
+    paymentSummary: {
+        amountFormatted: string;
+        paidOnFormatted: string;
+        paymentMethodLabel: string;
+    };
     pendingWaiver: boolean;
-    /** Magic link URL for signing the waiver (required when pendingWaiver=true) */
     signUrl?: string;
-    /** ISO datetime string of the waiver deadline */
     deadlineDate?: string;
 }
-export default function EnrolmentConfirmationEmail({ schoolName, schoolLogoUrl, language, colors, footerStrings, strings, recipientName, className, pendingWaiver, signUrl, deadlineDate, }: EnrolmentConfirmationEmailProps): import("react/jsx-runtime").JSX.Element;
+export default function EnrolmentConfirmationEmail({ schoolName, schoolLogoUrl, language, colors, footerStrings, strings, recipientName, studentName, showStudentRow, className, classDetails, location, paymentSummary, pendingWaiver, signUrl, deadlineDate, }: EnrolmentConfirmationEmailProps): import("react/jsx-runtime").JSX.Element;
 export {};
 //# sourceMappingURL=EnrolmentConfirmationEmail.d.ts.map

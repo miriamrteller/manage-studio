@@ -2,28 +2,26 @@
 /**
  * Print the Agent prompt for a finance stage from AGENT-RUNBOOK.md.
  *
- * Usage: pnpm finance:prompt 1
- *        pnpm finance:prompt 0   (kickoff)
+ * Usage: pnpm finance:prompt g0
+ *        pnpm finance:prompt g4   (Grow extension stages g0-g7)
  */
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const stageArg = process.argv[2];
-if (!stageArg || !/^(0|[1-9])$/.test(stageArg)) {
-  console.error('Usage: pnpm finance:prompt <0-9>');
-  console.error('  0 = kickoff, 1-9 = implementation stages');
+const rawArg = process.argv[2]?.toLowerCase();
+if (!rawArg || !/^g[0-7]$/.test(rawArg)) {
+  console.error('Usage: pnpm finance:prompt <g0-g7>');
+  console.error('  g0 = test harness, g1-g7 = Grow extension stages');
   process.exit(1);
 }
 
+const stageArg = rawArg.toUpperCase();
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const runbookPath = join(root, 'docs/plans/finance/AGENT-RUNBOOK.md');
 const runbook = readFileSync(runbookPath, 'utf8');
 
-const heading =
-  stageArg === '0'
-    ? '## Stage 0 — Kickoff'
-    : `## Stage ${stageArg} —`;
+const heading = `## Stage ${stageArg} —`;
 
 const start = runbook.indexOf(heading);
 if (start === -1) {

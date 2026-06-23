@@ -1,5 +1,5 @@
 export { TaxSettingsForm } from './TaxSettingsForm';
-export { StripeSettingsForm } from './StripeSettingsForm';
+export { GrowSettingsForm } from './GrowSettingsForm';
 export { SchoolProfileForm } from './SchoolProfileForm';
 export { BrandingSettingsForm } from './BrandingSettingsForm';
 export { LocaleSettingsForm } from './LocaleSettingsForm';

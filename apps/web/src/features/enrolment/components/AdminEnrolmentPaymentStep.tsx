@@ -36,9 +36,7 @@ export interface AdminEnrolmentPaymentStepProps {
 export function AdminEnrolmentPaymentStep({
   tenant,
   engagementId,
-  personId,
   personName,
-  familyId,
   guardianEmail,
   guardianName,
   classRow,
@@ -102,14 +100,7 @@ export function AdminEnrolmentPaymentStep({
         return;
       }
 
-      await AdminEnrolmentService.recordOfflinePayment(
-        tenant,
-        engagementId,
-        classRow,
-        personId,
-        familyId ?? null,
-        offlineMethod,
-      );
+      await AdminEnrolmentService.recordOfflinePayment(engagementId, offlineMethod);
 
       onComplete({
         message: t('pages.admin_enrol.offline_recorded'),
@@ -228,7 +219,6 @@ export function AdminEnrolmentPaymentStep({
             onChange={(e) => setOfflineMethod(e.target.value as OfflinePaymentMethod)}
           >
             <option value="cash">{t('pages.admin_enrol.method_cash')}</option>
-            <option value="check">{t('pages.admin_enrol.method_check')}</option>
             <option value="bank_transfer">{t('pages.admin_enrol.method_bank')}</option>
           </select>
           <Button

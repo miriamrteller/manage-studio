@@ -2,7 +2,8 @@ import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4
 import { getEnv } from "../env.ts";
 import { enqueueDocument } from "../enqueue-document.ts";
 import { engagementHasSignedWaiver } from "../engagement-waiver.ts";
-import { resolveEnrolmentNotificationRecipient, resolveAdminLinkRecipientEmail } from "../enrolment-recipient.ts";
+import { resolveAdminLinkRecipientEmail } from "../enrolment-recipient.ts";
+import { buildEnrolmentConfirmationPayload } from "../build-enrolment-confirmation-payload.ts";
 import { resolveNotificationFromEmail } from "../notification-from.ts";
 import { sendRenderedEmail, EMAIL_TEMPLATE_NAMES } from "../resend-send.ts";
 import { signWaiverToken } from "../waiver-token.ts";
@@ -10,73 +11,6 @@ import { advanceBillingSchedule } from "./advance-billing-schedule.ts";
 import type { FinalisePaymentParams } from "./types.ts";
 
 const APP_URL = getEnv("APP_URL") ?? "";
-
-const WEEKDAY_NAMES: Record<"en" | "he", string[]> = {
-  en: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
-  he: ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"],
-};
-
-function formatWeekday(dow: number | null | undefined, language: "en" | "he"): string | undefined {
-  if (dow == null || dow < 0 || dow > 6) return undefined;
-  return WEEKDAY_NAMES[language][dow];
-}
-
-/** "15:30:00" -> "15:30"; combines start/end into "15:30–16:15". */
-function formatTimeRange(
-  start: string | null | undefined,
-  end: string | null | undefined,
-): string | undefined {
-  const hhmm = (t: string | null | undefined) =>
-    typeof t === "string" && t.length >= 5 ? t.slice(0, 5) : undefined;
-  const s = hhmm(start);
-  const e = hhmm(end);
-  if (s && e) return `${s}–${e}`;
-  return s ?? e;
-}
-
-function formatStartDate(iso: string | null | undefined, language: "en" | "he"): string | undefined {
-  if (!iso) return undefined;
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return undefined;
-  return d.toLocaleDateString(language === "he" ? "he-IL" : "en-GB", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-}
-
-/** Loads schedule + start date + teacher for the offering, formatted for the email. */
-async function buildClassDetails(
-  service: SupabaseClient,
-  offeringId: string,
-  language: "en" | "he",
-): Promise<{ day?: string; time?: string; startDate?: string; teacher?: string }> {
-  const { data: offering } = await service
-    .from("offerings")
-    .select("day_of_week, start_time, end_time, season_id, staff_id")
-    .eq("id", offeringId)
-    .maybeSingle();
-  if (!offering) return {};
-
-  const [seasonRes, staffRes] = await Promise.all([
-    offering.season_id
-      ? service.from("seasons").select("start_date").eq("id", offering.season_id).maybeSingle()
-      : Promise.resolve({ data: null }),
-    offering.staff_id
-      ? service.from("staff").select("name").eq("id", offering.staff_id).maybeSingle()
-      : Promise.resolve({ data: null }),
-  ]);
-
-  return {
-    day: formatWeekday(offering.day_of_week as number | null, language),
-    time: formatTimeRange(offering.start_time as string | null, offering.end_time as string | null),
-    startDate: formatStartDate((seasonRes.data as { start_date?: string } | null)?.start_date, language),
-    teacher: typeof (staffRes.data as { name?: unknown } | null)?.name === "string"
-      ? (staffRes.data as { name: string }).name
-      : undefined,
-  };
-}
 
 async function auditExists(
   service: SupabaseClient,
@@ -109,41 +43,86 @@ async function sendConfirmationEmail(
     return;
   }
 
-  const { data: engagement } = await service
-    .from("engagements")
-    .select("person_id, offering_id")
-    .eq("id", params.engagementId)
-    .single();
-  if (!engagement) return;
+  const pendingWaiver = params.engagementStatus === "pending_waiver";
+  let signUrl: string | undefined;
 
-  const [{ data: tenantRow }, { data: offeringRow }] = await Promise.all([
-    service.from("tenants").select("name, from_email, language_default").eq("id", params.tenantId).single(),
-    service
-      .from("offerings")
-      .select("name")
-      .eq("id", engagement.offering_id)
-      .single(),
-  ]);
+  if (pendingWaiver && APP_URL) {
+    const payloadPreview = await buildEnrolmentConfirmationPayload(service, {
+      tenantId: params.tenantId,
+      paymentId: params.paymentId,
+      engagementId: params.engagementId,
+      pendingWaiver: true,
+      deadlineDate: params.waiverDeadline ?? undefined,
+    });
 
-  const recipient = await resolveEnrolmentNotificationRecipient(
-    service,
-    params.tenantId,
-    engagement.person_id as string,
-  );
-  const fallbackEmail = recipient
-    ? null
-    : await resolveAdminLinkRecipientEmail(service, params.tenantId, params.engagementId);
-  const recipientEmail = recipient?.email ?? fallbackEmail;
-  const recipientName = recipient?.name ?? "there";
+    if (!payloadPreview?.recipientEmail) {
+      await service.from("audit_log").insert({
+        tenant_id: params.tenantId,
+        action: "payment_confirmation_email_skipped",
+        entity_type: "payment",
+        entity_id: params.paymentId,
+        after_state: {
+          reason: "no_recipient",
+          engagement_id: params.engagementId,
+        },
+      });
+      return;
+    }
 
-  if (!recipientEmail || !tenantRow) {
+    const expireAt = params.waiverDeadline
+      ? Math.floor(new Date(params.waiverDeadline).getTime() / 1000)
+      : Math.floor(Date.now() / 1000) + 7 * 24 * 3600;
+    const wt = await signWaiverToken({
+      eid: params.engagementId,
+      tid: params.tenantId,
+      em: payloadPreview.recipientEmail,
+      exp: expireAt,
+    });
+    signUrl = `${APP_URL}/enrol/complete?engagementId=${encodeURIComponent(params.engagementId)}&wt=${wt}`;
+  }
+
+  const payload = await buildEnrolmentConfirmationPayload(service, {
+    tenantId: params.tenantId,
+    paymentId: params.paymentId,
+    engagementId: params.engagementId,
+    pendingWaiver,
+    signUrl,
+    deadlineDate: params.waiverDeadline ?? undefined,
+  });
+
+  if (!payload) {
+    const fallbackEmail = await resolveAdminLinkRecipientEmail(
+      service,
+      params.tenantId,
+      params.engagementId,
+    );
     await service.from("audit_log").insert({
       tenant_id: params.tenantId,
       action: "payment_confirmation_email_skipped",
       entity_type: "payment",
       entity_id: params.paymentId,
       after_state: {
-        reason: !recipientEmail ? "no_recipient" : "missing_tenant",
+        reason: fallbackEmail ? "missing_payment_or_tenant" : "no_recipient",
+        engagement_id: params.engagementId,
+      },
+    });
+    return;
+  }
+
+  const { data: tenantRow } = await service
+    .from("tenants")
+    .select("from_email, primary_color, accent_color")
+    .eq("id", params.tenantId)
+    .single();
+
+  if (!tenantRow) {
+    await service.from("audit_log").insert({
+      tenant_id: params.tenantId,
+      action: "payment_confirmation_email_skipped",
+      entity_type: "payment",
+      entity_id: params.paymentId,
+      after_state: {
+        reason: "missing_tenant",
         engagement_id: params.engagementId,
       },
     });
@@ -168,57 +147,21 @@ async function sendConfirmationEmail(
     return;
   }
 
-  const language = (tenantRow.language_default === "he" ? "he" : "en") as "en" | "he";
-  const offeringName = offeringRow?.name ?? "";
-  const classDetails = await buildClassDetails(service, engagement.offering_id as string, language);
-
   try {
-    if (params.engagementStatus === "pending_waiver" && APP_URL) {
-      const expireAt = params.waiverDeadline
-        ? Math.floor(new Date(params.waiverDeadline).getTime() / 1000)
-        : Math.floor(Date.now() / 1000) + 7 * 24 * 3600;
-      const wt = await signWaiverToken({
-        eid: params.engagementId,
-        tid: params.tenantId,
-        em: recipientEmail,
-        exp: expireAt,
-      });
-      const signUrl = `${APP_URL}/enrol/complete?engagementId=${encodeURIComponent(params.engagementId)}&wt=${wt}`;
-      await sendRenderedEmail({
-        to: recipientEmail,
-        from: fromEmail,
-        renderInput: {
-          templateName: EMAIL_TEMPLATE_NAMES.ENROLMENT_CONFIRMATION,
-          language,
-          schoolName: tenantRow.name,
-          variables: {
-            recipientName,
-            className: offeringName,
-            classDetails,
-            pendingWaiver: true,
-            signUrl,
-            deadlineDate: params.waiverDeadline ?? undefined,
-          },
+    await sendRenderedEmail({
+      to: payload.recipientEmail,
+      from: fromEmail,
+      renderInput: {
+        templateName: EMAIL_TEMPLATE_NAMES.ENROLMENT_CONFIRMATION,
+        language: payload.language,
+        schoolName: payload.schoolName,
+        tenantColors: {
+          primary_color: tenantRow.primary_color,
+          accent_color: tenantRow.accent_color,
         },
-      });
-    } else {
-      await sendRenderedEmail({
-        to: recipientEmail,
-        from: fromEmail,
-        renderInput: {
-          templateName: EMAIL_TEMPLATE_NAMES.ENROLMENT_CONFIRMATION,
-          language,
-          schoolName: tenantRow.name,
-          variables: {
-            recipientName,
-            className: offeringName,
-            classDetails,
-            pendingWaiver: false,
-            receiptPendingNote: true,
-          },
-        },
-      });
-    }
+        variables: payload.variables,
+      },
+    });
 
     await service.from("audit_log").insert({
       tenant_id: params.tenantId,
@@ -227,7 +170,7 @@ async function sendConfirmationEmail(
       entity_id: params.paymentId,
       after_state: {
         engagement_id: params.engagementId,
-        recipient_email: recipientEmail,
+        recipient_email: payload.recipientEmail,
       },
     });
   } catch (err) {
@@ -239,7 +182,7 @@ async function sendConfirmationEmail(
       entity_id: params.paymentId,
       after_state: {
         engagement_id: params.engagementId,
-        recipient_email: recipientEmail,
+        recipient_email: payload.recipientEmail,
         message: err instanceof Error ? err.message : String(err),
       },
     });

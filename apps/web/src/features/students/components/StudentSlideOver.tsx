@@ -14,6 +14,9 @@ import { formatDate, calculateAge } from '@/lib/utils';
 import { formatPersonAgeLabel } from '@/lib/personAge';
 import { EnrolmentRowActions, canShowCancelEnrolment } from './EnrolmentRowActions';
 import { CancelEnrolmentDialog } from './CancelEnrolmentDialog';
+import { RecordPaymentModal } from '@/features/finance/components/RecordPaymentModal';
+import { RefundPaymentModal } from '@/features/finance/components/RefundPaymentModal';
+import { formatCurrency } from '@shared/format';
 
 interface StudentSlideOverProps {
   personId: string;
@@ -31,12 +34,20 @@ interface CancelTarget {
  * and billing accounts found via enrolments.
  */
 export function StudentSlideOver({ personId, onClose }: StudentSlideOverProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const tenant = useTenant();
   const queryClient = useQueryClient();
 
-  const { person, family, guardian, members, contactPrefs, enrolments, isLoading, error } =
+  const { person, family, guardian, members, contactPrefs, enrolments, payments, isLoading, error } =
     useStudentDetail(personId);
+
+  const [recordingEngagementId, setRecordingEngagementId] = useState<string | null>(null);
+  const [refundingPaymentId, setRefundingPaymentId] = useState<string | null>(null);
+
+  const invalidateFinanceCaches = () => {
+    void queryClient.invalidateQueries({ queryKey: ['student-detail-payments', tenant?.id, personId] });
+    void queryClient.invalidateQueries({ queryKey: ['student-detail-enrolments', tenant?.id, personId] });
+  };
 
   const [isEditingPerson, setIsEditingPerson] = useState(false);
   const [isEditingContact, setIsEditingContact] = useState(false);
@@ -215,28 +226,48 @@ export function StudentSlideOver({ personId, onClose }: StudentSlideOverProps) {
                 ) : (
                   <ul className="divide-y text-sm" style={{ borderColor: 'var(--color-border-default)' }}>
                     {enrolments.map((e) => (
-                      <EnrolmentRowActions
-                        key={e.id}
-                        className={e.className ?? e.offering_id}
-                        status={e.status}
-                        engagementId={e.id}
-                        billingLabel={e.billingAccount?.payment_method ?? null}
-                        linkContext={{
-                          studentName: person.name,
-                          className: e.className ?? e.offering_id,
-                          guardianEmail: resolveGuardianEmail({ person, guardian: guardian ?? undefined }),
-                          guardianName: guardian?.name ?? null,
-                        }}
-                        onCancel={
-                          canShowCancelEnrolment(e.status)
-                            ? () =>
-                                setCancelTarget({
-                                  engagementId: e.id,
-                                  className: e.className ?? e.offering_id,
-                                })
-                            : undefined
-                        }
-                      />
+                      <li key={e.id} className="space-y-2 py-1">
+                        <EnrolmentRowActions
+                          className={e.className ?? e.offering_id}
+                          status={e.status}
+                          engagementId={e.id}
+                          billingLabel={e.billingAccount?.payment_method ?? null}
+                          linkContext={{
+                            studentName: person.name,
+                            className: e.className ?? e.offering_id,
+                            guardianEmail: resolveGuardianEmail({ person, guardian: guardian ?? undefined }),
+                            guardianName: guardian?.name ?? null,
+                          }}
+                          onCancel={
+                            canShowCancelEnrolment(e.status)
+                              ? () =>
+                                  setCancelTarget({
+                                    engagementId: e.id,
+                                    className: e.className ?? e.offering_id,
+                                  })
+                              : undefined
+                          }
+                        />
+                        {e.status === 'pending_payment' && (
+                          recordingEngagementId === e.id ? (
+                            <RecordPaymentModal
+                              engagementId={e.id}
+                              onRecorded={() => {
+                                invalidateFinanceCaches();
+                                setRecordingEngagementId(null);
+                              }}
+                            />
+                          ) : (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setRecordingEngagementId(e.id)}
+                            >
+                              {t('finance.record_payment.open', { defaultValue: 'Record offline payment' })}
+                            </Button>
+                          )
+                        )}
+                      </li>
                     ))}
                   </ul>
                 )}
@@ -414,9 +445,59 @@ export function StudentSlideOver({ personId, onClose }: StudentSlideOverProps) {
                     ))}
                   </ul>
                 )}
-                <p className="text-xs text-gray-400 italic">
-                  {t('pages.students.payment_history_placeholder')}
-                </p>
+                <div className="mt-3">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                    {t('finance.payment_history.title', { defaultValue: 'Payment history' })}
+                  </p>
+                  {payments.length === 0 ? (
+                    <p className="text-sm text-gray-400">
+                      {t('finance.payment_history.empty', { defaultValue: 'No payments yet.' })}
+                    </p>
+                  ) : (
+                    <ul className="divide-y text-sm" style={{ borderColor: 'var(--color-border-default)' }}>
+                      {payments.map((p) => {
+                        const refundable =
+                          p.charge_type !== 'refund' &&
+                          (p.status === 'succeeded' || p.status === 'partially_refunded');
+                        return (
+                          <li key={p.id} className="py-2 space-y-1">
+                            <div className="flex justify-between">
+                              <span>{formatCurrency(p.total_amount_minor, p.currency, i18n.language)}</span>
+                              <span className="text-xs text-gray-400">
+                                {t(`finance.payment_status.${p.status}`, { defaultValue: p.status })}
+                              </span>
+                            </div>
+                            {p.description && <p className="text-xs text-gray-400">{p.description}</p>}
+                            {refundable && (
+                              refundingPaymentId === p.id ? (
+                                <RefundPaymentModal
+                                  paymentId={p.id}
+                                  totalMinor={p.total_amount_minor}
+                                  alreadyRefundedMinor={p.refund_amount_minor ?? 0}
+                                  currency={p.currency}
+                                  provider={p.provider}
+                                  onRefunded={() => {
+                                    invalidateFinanceCaches();
+                                    setRefundingPaymentId(null);
+                                  }}
+                                  onCancel={() => setRefundingPaymentId(null)}
+                                />
+                              ) : (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setRefundingPaymentId(p.id)}
+                                >
+                                  {t('finance.refund_payment.open', { defaultValue: 'Refund' })}
+                                </Button>
+                              )
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
               </section>
             </>
           )}

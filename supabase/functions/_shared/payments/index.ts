@@ -1,5 +1,8 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { getEnv } from "../env.ts";
 import { MockPaymentProvider } from "./providers/mock.ts";
+import { MockGrowPaymentProvider } from "./providers/mock-grow.ts";
+import { GrowPaymentProvider } from "./providers/grow.ts";
 import { StripePaymentProvider } from "./providers/stripe.ts";
 import { parsePaymentProviderSlug, type PaymentProviderSlug } from "./registry.ts";
 import type { PaymentProvider } from "./types.ts";
@@ -14,6 +17,11 @@ export function getPaymentProvider(
       return new MockPaymentProvider();
     case "stripe":
       return new StripePaymentProvider(service);
+    case "grow":
+      // Never hit the live Meshulam API in CI/dev — use the mock when GROW_MOCK=true.
+      return getEnv("GROW_MOCK") === "true"
+        ? new MockGrowPaymentProvider()
+        : new GrowPaymentProvider(service);
     default: {
       const _exhaustive: never = parsed;
       return _exhaustive;

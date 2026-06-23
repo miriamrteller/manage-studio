@@ -5,3 +5,4 @@ export { EmailPrimaryButton } from './EmailPrimaryButton.js';
 export { EmailCodeBox } from './EmailCodeBox.js';
 export { EmailOtpCode, EmailCodeWithCopy } from './EmailCodeWithCopy.js';
 export { EmailLinkBox } from './EmailLinkBox.js';
+export { EmailDetailsTable } from './EmailDetailsTable.js';

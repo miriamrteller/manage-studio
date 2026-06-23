@@ -69,10 +69,19 @@ Deno.serve(async (req) => {
   if (original.provider !== "manual" && original.provider_payment_ref) {
     const provider = await getPaymentProviderForTenant(service, tenantId);
     if (provider.refundCharge) {
-      await provider.refundCharge({
-        providerPaymentRef: original.provider_payment_ref as string,
-        amountMinor: refundAmount,
-      });
+      try {
+        await provider.refundCharge({
+          providerPaymentRef: original.provider_payment_ref as string,
+          amountMinor: refundAmount,
+        });
+      } catch (err) {
+        // Surface the provider's message (e.g. Grow's same-day full-refund constraint) so the
+        // refund modal can show it instead of a generic 500.
+        return jsonResponse(
+          { error: err instanceof Error ? err.message : "Provider refund failed" },
+          422,
+        );
+      }
     }
   }
 

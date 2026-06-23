@@ -1,11 +1,13 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import { MockInvoicingProvider } from "./providers/mock.ts";
 import { GreenInvoiceProvider } from "./providers/green-invoice.ts";
+import { GrowInvoicingProvider } from "./providers/grow.ts";
 import { parseInvoicingProviderSlug, type InvoicingProviderSlug } from "./registry.ts";
 import type { InvoicingProvider } from "./types.ts";
 
 const mockProvider = new MockInvoicingProvider();
 const greenInvoiceProvider = new GreenInvoiceProvider();
+const growProvider = new GrowInvoicingProvider();
 
 export function getInvoicingProvider(slug: string | null | undefined): InvoicingProvider {
   const parsed: InvoicingProviderSlug = parseInvoicingProviderSlug(slug);
@@ -14,6 +16,8 @@ export function getInvoicingProvider(slug: string | null | undefined): Invoicing
       return mockProvider;
     case "green_invoice":
       return greenInvoiceProvider;
+    case "grow":
+      return growProvider;
     default: {
       const _exhaustive: never = parsed;
       return _exhaustive;

@@ -33,6 +33,19 @@ export interface EngagementWithDetails {
   billingAccount: BillingAccount | null;
 }
 
+export interface StudentPayment {
+  id: string;
+  engagement_id: string | null;
+  charge_type: string;
+  status: string;
+  total_amount_minor: number;
+  refund_amount_minor: number | null;
+  currency: string;
+  provider: string;
+  paid_at: string | null;
+  description: string | null;
+}
+
 /**
  * useStudentDetail: All data needed for the StudentSlideOver panel.
  * Runs parallel queries — each independent of the others.
@@ -143,6 +156,19 @@ export function useStudentDetail(personId: string | null) {
     enabled: isReady,
   });
 
+  const paymentsQuery = useQuery({
+    queryKey: ['student-detail-payments', tenant?.id, personId],
+    queryFn: async (): Promise<StudentPayment[]> => {
+      if (!tenant || !personId) return [];
+      const { data, error } = await TenantDB.selectFor('payments', tenant)
+        .eq('person_id', personId)
+        .order('paid_at', { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as StudentPayment[];
+    },
+    enabled: isReady,
+  });
+
   // Fetch classes for enrolments and billing accounts where set
   const enrolments = enrolmentsQuery.data ?? [];
 
@@ -220,6 +246,7 @@ export function useStudentDetail(personId: string | null) {
     members: membersWithNames,
     contactPrefs: contactPrefsQuery.data ?? null,
     enrolments: enrolmentsWithDetails,
+    payments: paymentsQuery.data ?? [],
     isLoading,
     error: personQuery.error,
   };

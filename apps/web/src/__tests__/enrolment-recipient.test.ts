@@ -29,19 +29,15 @@ function createMockService(handlers: {
           }
           if (table === "user_profiles" && handlers.userProfiles?.[value]) {
             return {
-              eq: () => ({
-                maybeSingle: async () => handlers.userProfiles![value],
-              }),
+              maybeSingle: async () => handlers.userProfiles![value],
             };
           }
           if (table === "account_members") {
             return {
               eq: () => ({
                 eq: () => ({
-                  eq: () => ({
-                    limit: () => ({
-                      maybeSingle: async () => handlers.accountMembers ?? { data: null, error: null },
-                    }),
+                  limit: () => ({
+                    maybeSingle: async () => handlers.accountMembers ?? { data: null, error: null },
                   }),
                 }),
               }),
@@ -49,14 +45,12 @@ function createMockService(handlers: {
           }
           if (table === "audit_log") {
             return {
-              select: () => ({
+              eq: () => ({
                 eq: () => ({
                   eq: () => ({
-                    eq: () => ({
-                      order: () => ({
-                        limit: () => ({
-                          maybeSingle: async () => handlers.auditLog ?? { data: null, error: null },
-                        }),
+                    order: () => ({
+                      limit: () => ({
+                        maybeSingle: async () => handlers.auditLog ?? { data: null, error: null },
                       }),
                     }),
                   }),

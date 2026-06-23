@@ -2,14 +2,23 @@ import { jsonResponse } from "../_shared/cors.ts";
 import { createServiceClient } from "../_shared/supabase.ts";
 import { handlePaymentEventInternal } from "../_shared/payments/handle-payment-event.ts";
 import { getPaymentProviderForTenant } from "../_shared/payments/index.ts";
+import { peekGrowTenantId } from "../_shared/payments/grow/metadata.ts";
 
+/**
+ * Resolve the tenant before provider dispatch. Stripe nests metadata under
+ * `data.object.metadata`; Grow routes per-tenant via the `cField1` custom field. We support
+ * both shapes so the handler is not hard-coded to a single provider's body.
+ */
 function peekTenantId(rawBody: string): string | undefined {
   try {
     const parsed = JSON.parse(rawBody) as {
       data?: { object?: { metadata?: { tenant_id?: string } } };
       metadata?: { tenant_id?: string };
     };
-    return parsed.data?.object?.metadata?.tenant_id ?? parsed.metadata?.tenant_id;
+    const stripeShaped =
+      parsed.data?.object?.metadata?.tenant_id ?? parsed.metadata?.tenant_id;
+    if (stripeShaped) return stripeShaped;
+    return peekGrowTenantId(parsed as Record<string, unknown>);
   } catch {
     return undefined;
   }
