@@ -8,10 +8,12 @@ import type { Engagement } from '@shared/schemas';
 import { AdminEnrolmentPaymentStep } from './AdminEnrolmentPaymentStep';
 import type { AdminPaymentChoice } from './AdminEnrolmentPaymentStep';
 import { StepBackButton } from './StepBackButton';
+import type { CheckoutChargePayload } from '../lib/checkoutBootstrapTypes';
 
 export interface StepAdminCheckoutProps {
   enrolmentData: Partial<Engagement>;
   checkoutEnrolmentId: string | null;
+  checkoutCharge: CheckoutChargePayload | null;
   checkoutError: string | null;
   isPreparing: boolean;
   onComplete: (result: {
@@ -28,6 +30,7 @@ export interface StepAdminCheckoutProps {
 export function StepAdminCheckout({
   enrolmentData,
   checkoutEnrolmentId,
+  checkoutCharge,
   checkoutError,
   isPreparing,
   onComplete,
@@ -132,6 +135,7 @@ export function StepAdminCheckout({
       classRow={offering}
       emailInputId="stepper-payment-link-email"
       offlineMethodId="stepper-offline-method"
+      preloadedCharge={checkoutCharge}
       onComplete={onComplete}
       onPrevious={onPrevious}
     />

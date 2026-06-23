@@ -79,23 +79,6 @@ export function EnrolmentStepper({
 
   const enrolledPersonId =
     enrolmentData.person_id ?? enrolmentContext.preselectedPersonId ?? undefined;
-  const { data: enrolledOfferingKeys, isLoading: enrolledKeysLoading } =
-    usePersonExistingEnrolments(enrolledPersonId);
-
-  const preselectedAlreadyEnrolled = useMemo(() => {
-    if (!classPreselected || !initialClassId || !initialTermId || !enrolledPersonId) {
-      return false;
-    }
-    if (enrolledKeysLoading) return false;
-    return isOfferingEnrolled(enrolledOfferingKeys, initialClassId, initialTermId);
-  }, [
-    classPreselected,
-    initialClassId,
-    initialTermId,
-    enrolledPersonId,
-    enrolledKeysLoading,
-    enrolledOfferingKeys,
-  ]);
 
   const waiverFlow = useWaiverFlowState({
     enrolmentContextWaiverRequired: enrolmentContext.waiverRequired,
@@ -128,6 +111,24 @@ export function EnrolmentStepper({
     onCancel,
   });
 
+  const { data: enrolledOfferingKeys, isLoading: enrolledKeysLoading } =
+    usePersonExistingEnrolments(enrolledPersonId, currentStep !== 'checkout');
+
+  const preselectedAlreadyEnrolled = useMemo(() => {
+    if (!classPreselected || !initialClassId || !initialTermId || !enrolledPersonId) {
+      return false;
+    }
+    if (enrolledKeysLoading) return false;
+    return isOfferingEnrolled(enrolledOfferingKeys, initialClassId, initialTermId);
+  }, [
+    classPreselected,
+    initialClassId,
+    initialTermId,
+    enrolledPersonId,
+    enrolledKeysLoading,
+    enrolledOfferingKeys,
+  ]);
+
   const checkoutParams: UseCheckoutPreparationParams = {
       currentStep,
       setCurrentStep,
@@ -150,7 +151,7 @@ export function EnrolmentStepper({
       t,
     };
 
-  const { checkoutEnrolmentId, checkoutError, isCheckoutPreparing, resetCheckoutState, setCheckoutError } =
+  const { checkoutEnrolmentId, checkoutCharge, checkoutError, isCheckoutPreparing, resetCheckoutState, setCheckoutError } =
     useCheckoutPreparation(checkoutParams);
 
   const handlePreviousStep = () => {
@@ -186,6 +187,7 @@ export function EnrolmentStepper({
   const accountStudentsQuery = useAccountStudents({
     accountId: enrolmentContext.constraints.accountId ?? enrolmentContext.guardian?.accountId,
     enabled:
+      currentStep !== 'checkout' &&
       enrolmentContext.mode === 'parent' &&
       !enrolmentContext.canSkipPersonStep &&
       !enrolmentContext.isLoading &&
@@ -602,6 +604,7 @@ export function EnrolmentStepper({
           <StepAdminCheckout
             enrolmentData={enrolmentData}
             checkoutEnrolmentId={checkoutEnrolmentId}
+            checkoutCharge={checkoutCharge}
             checkoutError={checkoutError}
             isPreparing={isCheckoutPreparing || (isCreating && !checkoutEnrolmentId)}
             onComplete={(result) => {
@@ -617,6 +620,7 @@ export function EnrolmentStepper({
           <StepCheckout
             enrolmentData={enrolmentData}
             checkoutEnrolmentId={checkoutEnrolmentId}
+            checkoutCharge={checkoutCharge}
             checkoutError={checkoutError}
             isPreparing={isCheckoutPreparing || (isCreating && !checkoutEnrolmentId)}
             requireAuth={enrolmentContext.mode !== 'guest' && Boolean(user)}

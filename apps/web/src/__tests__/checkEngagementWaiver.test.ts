@@ -1,18 +1,45 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { resolveEnrolmentWaiverGate } from '@/features/enrolment/lib/checkEngagementWaiver';
 
-const MINOR_AGE_MS = 18 * 365.25 * 24 * 60 * 60 * 1000;
+vi.mock('@/lib/db', () => ({
+  TenantDB: {
+    selectFor: vi.fn(() => ({
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      maybeSingle: vi.fn(),
+      single: vi.fn(),
+    })),
+  },
+}));
 
-function isMinorDateOfBirth(dateOfBirth: string | null | undefined): boolean {
-  if (!dateOfBirth) return false;
-  return new Date(dateOfBirth) > new Date(Date.now() - MINOR_AGE_MS);
-}
+const tenant = { id: '00000000-0000-0000-0000-000000000001' } as const;
 
-describe('enrolment waiver gate helpers', () => {
-  it('treats Esther Stern DOB as a minor', () => {
-    expect(isMinorDateOfBirth('2021-05-15')).toBe(true);
+describe('resolveEnrolmentWaiverGate (client baseline)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
   });
 
-  it('treats adult DOB as not minor', () => {
-    expect(isMinorDateOfBirth('1988-03-15')).toBe(false);
+  it('returns not required when offering has no waiver', async () => {
+    const { TenantDB } = await import('@/lib/db');
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      maybeSingle: vi.fn(),
+      single: vi.fn(),
+    };
+    vi.mocked(TenantDB.selectFor).mockReturnValue(chain as never);
+
+    chain.maybeSingle
+      .mockResolvedValueOnce({ data: { waiver_required: false } })
+      .mockResolvedValueOnce({ data: { name: 'Student', date_of_birth: '2015-01-01' } })
+      .mockResolvedValueOnce({ data: { waiver_evidence_id: null } });
+
+    const result = await resolveEnrolmentWaiverGate(tenant as never, {
+      engagementId: '00000000-0000-0000-0000-000000000301',
+      personId: '00000000-0000-0000-0000-000000000101',
+      offeringId: '00000000-0000-0000-0000-000000000201',
+    });
+
+    expect(result.required).toBe(false);
   });
 });

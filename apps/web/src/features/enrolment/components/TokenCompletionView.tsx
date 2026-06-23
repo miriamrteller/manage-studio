@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
-import { TokenEnrolmentPaymentForm } from '@/features/enrolment/components/EnrolmentPaymentForm';
+import { CheckoutPaymentShell } from '@/features/enrolment/components/CheckoutPaymentShell';
 import { WaiverStep } from '@/features/enrolment/components/WaiverStep';
-import type { TokenCompletionData } from '@/features/enrolment/lib/enrolmentCompletionTypes';
+import { useCheckoutBootstrap } from '@/features/enrolment/hooks/useCheckoutBootstrap';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { supabase } from '@/lib/supabase';
 import { formatCurrency } from '@shared/format';
+import type { ConsentTemplate } from '@shared/schemas';
 
 interface TokenCompletionViewProps {
   engagementId: string;
@@ -28,37 +28,27 @@ export function TokenCompletionView({ engagementId, effectiveToken }: TokenCompl
   const tokenInUrl = searchParams.get('t');
   const tokenReturnPath = `/enrol/pay/${encodeURIComponent(engagementId)}?t=${encodeURIComponent(effectiveToken)}`;
 
-  const tokenQuery = useQuery({
-    queryKey: ['enrol-pay-token-detail', engagementId, effectiveToken],
-    queryFn: async () => {
-      const fnUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-enrolment-completion`;
-      const resp = await fetch(fnUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `WaiverToken ${effectiveToken}`,
-          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY as string,
-        },
-      });
-      const data = (await resp.json()) as Record<string, unknown>;
-      if (!resp.ok) {
-        throw new Error((data.error as string) ?? t('common.error'));
-      }
-      return data as unknown as TokenCompletionData;
-    },
-    enabled: !!engagementId && !!effectiveToken,
+  const bootstrap = useCheckoutBootstrap({
+    phase: 'pay',
+    mode: 'existing_engagement',
+    engagementId,
+    enrolmentToken: effectiveToken,
+    enabled: Boolean(engagementId && effectiveToken),
   });
 
+  const context = bootstrap.context;
+  const charge = bootstrap.charge;
+
   useEffect(() => {
-    if (tokenStripped || !tokenInUrl || !tokenQuery.isSuccess) return;
+    if (tokenStripped || !tokenInUrl || !context) return;
     const next = new URLSearchParams(searchParams);
     next.delete('t');
     setSearchParams(next, { replace: true });
     setTokenStripped(true);
-  }, [tokenInUrl, tokenQuery.isSuccess, tokenStripped, searchParams, setSearchParams]);
+  }, [tokenInUrl, context, tokenStripped, searchParams, setSearchParams]);
 
   useEffect(() => {
-    if (!tokenQuery.isLoading) {
+    if (!bootstrap.isLoading) {
       setShowSlowLoadingHelp(false);
       return;
     }
@@ -68,22 +58,22 @@ export function TokenCompletionView({ engagementId, effectiveToken }: TokenCompl
     }, 8000);
 
     return () => window.clearTimeout(timer);
-  }, [tokenQuery.isLoading]);
-
-  const tokenPayload = tokenQuery.data;
+  }, [bootstrap.isLoading]);
 
   const tokenShowWaiver = useMemo(
     () =>
       Boolean(
-        tokenPayload?.waiverRequired &&
-          !tokenPayload.waiverAlreadySigned &&
+        context?.waiverRequired &&
+          !context.waiverAlreadySigned &&
           !waiverComplete &&
-          tokenPayload.template,
-      ),
-    [tokenPayload, waiverComplete],
+          context.template,
+      ) || bootstrap.blockReason === 'waiver_required',
+    [context, waiverComplete, bootstrap.blockReason],
   );
 
-  if (tokenQuery.isLoading) {
+  const waiverTemplate = context?.template as ConsentTemplate | null;
+
+  if (bootstrap.isLoading) {
     return (
       <div className="max-w-lg mx-auto p-6 space-y-4 text-center">
         <p role="status">{t('common.loading')}</p>
@@ -95,7 +85,7 @@ export function TokenCompletionView({ engagementId, effectiveToken }: TokenCompl
                   'This secure link is taking longer than expected. You can retry or refresh this page.',
               })}
             </p>
-            <Button variant="outline" className="w-full" onClick={() => void tokenQuery.refetch()}>
+            <Button variant="outline" className="w-full" onClick={() => void bootstrap.refetch()}>
               {t('common.retry', { defaultValue: 'Retry' })}
             </Button>
             <Button
@@ -124,11 +114,11 @@ export function TokenCompletionView({ engagementId, effectiveToken }: TokenCompl
     );
   }
 
-  if (tokenQuery.error || !tokenPayload) {
+  if (bootstrap.loadError || !context) {
     return (
       <div className="max-w-lg mx-auto p-6 space-y-4">
         <p className="text-destructive">
-          {tokenQuery.error instanceof Error ? tokenQuery.error.message : t('common.error')}
+          {bootstrap.loadError ?? t('common.error')}
         </p>
         <p className="text-sm text-gray-600">
           {t('pages.enrol_pay.error_recovery_help', {
@@ -137,7 +127,7 @@ export function TokenCompletionView({ engagementId, effectiveToken }: TokenCompl
           })}
         </p>
         <div className="space-y-2">
-          <Button variant="outline" className="w-full" onClick={() => void tokenQuery.refetch()}>
+          <Button variant="outline" className="w-full" onClick={() => void bootstrap.refetch()}>
             {t('common.retry', { defaultValue: 'Retry' })}
           </Button>
           <Button
@@ -148,17 +138,6 @@ export function TokenCompletionView({ engagementId, effectiveToken }: TokenCompl
             }}
           >
             {t('pages.enrol_pay.refresh_secure_link', { defaultValue: 'Refresh secure link' })}
-          </Button>
-          <Button
-            variant="ghost"
-            className="w-full"
-            onClick={() =>
-              navigate('/login', {
-                state: { from: tokenReturnPath },
-              })
-            }
-          >
-            {t('pages.login.title', { defaultValue: 'Sign in' })}
           </Button>
           <Button variant="ghost" className="w-full" onClick={() => navigate('/classes')}>
             {t('common.back')}
@@ -183,7 +162,7 @@ export function TokenCompletionView({ engagementId, effectiveToken }: TokenCompl
           onClick={async () => {
             const tokenForRedirect = effectiveToken;
             await supabase.auth.signOut();
-            const base = `/enrol/pay/${encodeURIComponent(tokenPayload.engagementId)}`;
+            const base = `/enrol/pay/${encodeURIComponent(context.engagementId)}`;
             const withToken = tokenForRedirect
               ? `${base}?t=${encodeURIComponent(tokenForRedirect)}`
               : base;
@@ -196,7 +175,7 @@ export function TokenCompletionView({ engagementId, effectiveToken }: TokenCompl
     );
   }
 
-  const alreadyPaid = tokenPayload.alreadyComplete || paid;
+  const alreadyPaid = context.alreadyComplete || paid;
   if (alreadyPaid) {
     return (
       <div className="max-w-lg mx-auto p-6 space-y-4 text-center">
@@ -209,21 +188,35 @@ export function TokenCompletionView({ engagementId, effectiveToken }: TokenCompl
     );
   }
 
-  if (tokenShowWaiver && tokenPayload.template) {
+  if (tokenShowWaiver && waiverTemplate) {
     return (
       <div className="max-w-lg mx-auto space-y-6">
         <WaiverStep
-          personId={tokenPayload.personId}
-          template={tokenPayload.template}
-          offeringId={tokenPayload.offeringId}
+          personId={context.personId}
+          template={waiverTemplate}
+          offeringId={context.offeringId}
           waiverToken={effectiveToken}
-          studentName={tokenPayload.studentName}
-          className={tokenPayload.className}
-          isMinorStudent={tokenPayload.isMinorStudent}
-          onComplete={() => setWaiverComplete(true)}
+          studentName={context.studentName}
+          className={context.className}
+          isMinorStudent={context.isMinorStudent}
+          onComplete={() => {
+            setWaiverComplete(true);
+            void bootstrap.refetch();
+          }}
           onPrevious={() => navigate('/classes')}
           canGoBack
         />
+      </div>
+    );
+  }
+
+  if (!charge) {
+    return (
+      <div className="max-w-lg mx-auto p-6 space-y-4">
+        <p className="text-destructive">{t('enrolment.payment_setup_failed')}</p>
+        <Button variant="outline" onClick={() => void bootstrap.refetch()}>
+          {t('common.retry', { defaultValue: 'Retry' })}
+        </Button>
       </div>
     );
   }
@@ -233,17 +226,18 @@ export function TokenCompletionView({ engagementId, effectiveToken }: TokenCompl
       <h1 className="text-2xl font-bold">{t('pages.enrol_pay.title')}</h1>
 
       <div className="rounded-lg border border-gray-200 p-4 space-y-2">
-        <p className="font-medium">{tokenPayload.className}</p>
+        <p className="font-medium">{context.className}</p>
         <p className="text-sm text-gray-600">
           {t('pages.admin_enrol.amount_due')}:{' '}
-          {formatCurrency(tokenPayload.amountMinor, tokenPayload.currency, i18n.language)}
+          {formatCurrency(context.amountMinor, context.currency, i18n.language)}
         </p>
       </div>
 
-      <TokenEnrolmentPaymentForm
-        classId={tokenPayload.offeringId}
-        engagementId={tokenPayload.engagementId}
+      <CheckoutPaymentShell
+        classId={context.offeringId}
+        engagementId={context.engagementId}
         enrolmentToken={effectiveToken}
+        charge={charge}
         onPaid={() => setPaid(true)}
         onPrevious={() => navigate('/classes')}
       />

@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { EnrolmentPaymentForm } from './EnrolmentPaymentForm';
+import { useCheckoutBootstrap } from '../hooks/useCheckoutBootstrap';
+import type { CheckoutChargePayload } from '../lib/checkoutBootstrapTypes';
 import {
   AdminEnrolmentService,
   type OfflinePaymentMethod,
@@ -31,6 +33,7 @@ export interface AdminEnrolmentPaymentStepProps {
   onPrevious?: () => void;
   emailInputId?: string;
   offlineMethodId?: string;
+  preloadedCharge?: CheckoutChargePayload | null;
 }
 
 export function AdminEnrolmentPaymentStep({
@@ -44,6 +47,7 @@ export function AdminEnrolmentPaymentStep({
   onPrevious,
   emailInputId = 'payment-link-email',
   offlineMethodId = 'offline-method',
+  preloadedCharge = null,
 }: AdminEnrolmentPaymentStepProps) {
   const { t, i18n } = useTranslation();
   const [view, setView] = useState<'choices' | 'pay_now'>('choices');
@@ -55,6 +59,16 @@ export function AdminEnrolmentPaymentStep({
   const guardianEmailNormalized = guardianEmail?.toLowerCase() ?? '';
 
   const pricing = computeClassTotal(classRow, tenant);
+
+  const payBootstrap = useCheckoutBootstrap({
+    phase: 'pay',
+    mode: 'existing_engagement',
+    engagementId,
+    offeringId: classRow.id,
+    enabled: view === 'pay_now' && !preloadedCharge,
+  });
+
+  const effectiveCharge = preloadedCharge ?? payBootstrap.charge;
 
   const handlePaymentChoice = async (choice: AdminPaymentChoice) => {
     setError(null);
@@ -114,12 +128,34 @@ export function AdminEnrolmentPaymentStep({
   };
 
   if (view === 'pay_now') {
+    if (!preloadedCharge && payBootstrap.isLoading) {
+      return (
+        <div className="space-y-4">
+          <p role="status">{t('common.loading')}</p>
+        </div>
+      );
+    }
+
+    if (!effectiveCharge) {
+      return (
+        <div className="space-y-4">
+          <p className="text-sm text-destructive" role="alert">
+            {payBootstrap.loadError ?? t('enrolment.payment_setup_failed')}
+          </p>
+          <Button variant="outline" onClick={() => setView('choices')}>
+            {t('common.back')}
+          </Button>
+        </div>
+      );
+    }
+
     return (
       <div className="space-y-4">
         <p className="text-sm text-gray-600">{t('pages.admin_enrol.pay_now_inline')}</p>
         <EnrolmentPaymentForm
           classId={classRow.id}
           engagementId={engagementId}
+          preloadedCharge={effectiveCharge}
           onPaid={() =>
             onComplete({
               message: t('pages.admin_enrol.payment_success'),

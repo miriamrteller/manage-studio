@@ -1,12 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
-import { EnrolmentPaymentForm } from '@/features/enrolment/components/EnrolmentPaymentForm';
+import { CheckoutPaymentShell } from '@/features/enrolment/components/CheckoutPaymentShell';
 import { WaiverStep } from '@/features/enrolment/components/WaiverStep';
-import { useEnrolmentWaiverGate } from '@/features/enrolment/hooks/useEnrolmentWaiverGate';
-import { computeClassTotal } from '@/features/enrolment/lib/computeClassTotal';
+import { useCheckoutBootstrap } from '@/features/enrolment/hooks/useCheckoutBootstrap';
 import { resolvePendingEnrolmentAction } from '@/features/enrolment/lib/pendingEnrolmentAction';
 import { EnrolmentService } from '@/features/enrolment/service';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
@@ -14,9 +12,8 @@ import { useTenant } from '@/hooks/useTenant';
 import { hasParentRole } from '@/lib/parentRoles';
 import { buildPortalHighlightState } from '@/lib/portalHighlight';
 import queryClient from '@/lib/query-client';
-import { TenantDB } from '@/lib/db';
 import { formatCurrency } from '@shared/format';
-import { OfferingSchema } from '@shared/schemas';
+import type { ConsentTemplate, Engagement } from '@shared/schemas';
 
 interface AuthenticatedCompletionViewProps {
   engagementId: string | undefined;
@@ -30,58 +27,29 @@ export function AuthenticatedCompletionView({ engagementId }: AuthenticatedCompl
   const [waiverComplete, setWaiverComplete] = useState(false);
   const [linkingWaiver, setLinkingWaiver] = useState(false);
 
-  const detailQuery = useQuery({
-    queryKey: ['enrol-pay-detail', tenant?.id, engagementId],
-    queryFn: async () => {
-      if (!tenant || !engagementId) throw new Error('Missing params');
-
-      const enrolment = await EnrolmentService.get(tenant, engagementId);
-      if (enrolment.status === 'active') {
-        return { enrolment, classRow: null, alreadyPaid: true as const };
-      }
-      if (enrolment.status === 'pending_waiver') {
-        return { enrolment, classRow: null, pendingWaiver: true as const };
-      }
-      if (enrolment.status !== 'pending_payment') {
-        throw new Error(t('pages.enrol_pay.not_payable'));
-      }
-
-      const { data: classData, error: classError } = await TenantDB.selectFor('offerings', tenant)
-        .eq('id', enrolment.offering_id)
-        .single();
-      if (classError) throw classError;
-
-      return {
-        enrolment,
-        classRow: OfferingSchema.parse(classData),
-        alreadyPaid: false as const,
-      };
-    },
+  const bootstrap = useCheckoutBootstrap({
+    phase: 'pay',
+    mode: 'existing_engagement',
+    engagementId,
     enabled: !!tenant?.id && !!engagementId && !!user,
   });
 
-  const waiverGate = useEnrolmentWaiverGate({
-    engagementId,
-    personId: detailQuery.data?.enrolment.person_id,
-    offeringId: detailQuery.data?.classRow?.id,
-    enabled: detailQuery.data?.alreadyPaid === false && !!detailQuery.data?.classRow,
-  });
+  const context = bootstrap.context;
+  const charge = bootstrap.charge;
 
   useEffect(() => {
-    if (!tenant || !engagementId || !waiverGate.data?.alreadySigned || !waiverGate.data.evidenceId) {
-      return;
-    }
-    if (detailQuery.data?.enrolment.waiver_evidence_id === waiverGate.data.evidenceId) {
+    if (!tenant || !engagementId || !context?.waiverAlreadySigned || !context.waiverEvidenceId) {
       return;
     }
 
     let cancelled = false;
     setLinkingWaiver(true);
-    void EnrolmentService.update(tenant, engagementId, {
-      waiver_evidence_id: waiverGate.data.evidenceId,
-    })
-      .then(() => {
-        if (!cancelled) setWaiverComplete(true);
+    void EnrolmentService.get(tenant, engagementId)
+      .then((enrolment) => {
+        if (enrolment.waiver_evidence_id === context.waiverEvidenceId) return null;
+        return EnrolmentService.update(tenant, engagementId, {
+          waiver_evidence_id: context.waiverEvidenceId,
+        });
       })
       .catch((err) => {
         console.error('[AuthenticatedCompletionView] waiver link failed:', err);
@@ -93,21 +61,15 @@ export function AuthenticatedCompletionView({ engagementId }: AuthenticatedCompl
     return () => {
       cancelled = true;
     };
-  }, [
-    tenant,
-    engagementId,
-    waiverGate.data?.alreadySigned,
-    waiverGate.data?.evidenceId,
-    detailQuery.data?.enrolment.waiver_evidence_id,
-  ]);
+  }, [tenant, engagementId, context?.waiverAlreadySigned, context?.waiverEvidenceId]);
 
   useEffect(() => {
-    if (detailQuery.data?.enrolment.status !== 'pending_waiver' || !engagementId) return;
+    if (context?.status !== 'pending_waiver' || !engagementId) return;
     const waiverAction = resolvePendingEnrolmentAction('pending_waiver', engagementId);
     if (waiverAction) {
       navigate(waiverAction.path, { replace: true });
     }
-  }, [detailQuery.data?.enrolment.status, engagementId, navigate]);
+  }, [context?.status, engagementId, navigate]);
 
   if (authLoading) {
     return (
@@ -140,7 +102,7 @@ export function AuthenticatedCompletionView({ engagementId }: AuthenticatedCompl
     );
   }
 
-  if (detailQuery.isLoading || waiverGate.isLoading || linkingWaiver) {
+  if (bootstrap.isLoading || linkingWaiver) {
     return (
       <div className="p-8 text-center" role="status">
         {t('common.loading')}
@@ -148,11 +110,11 @@ export function AuthenticatedCompletionView({ engagementId }: AuthenticatedCompl
     );
   }
 
-  if (detailQuery.error || !detailQuery.data) {
+  if (bootstrap.loadError || !context) {
     return (
       <div className="max-w-lg mx-auto p-6 space-y-4">
         <p className="text-destructive">
-          {detailQuery.error instanceof Error ? detailQuery.error.message : t('common.error')}
+          {bootstrap.loadError ?? t('common.error')}
         </p>
         <Button variant="outline" onClick={() => navigate('/classes')}>
           {t('common.back')}
@@ -161,9 +123,7 @@ export function AuthenticatedCompletionView({ engagementId }: AuthenticatedCompl
     );
   }
 
-  const { enrolment, classRow, alreadyPaid } = detailQuery.data;
-
-  if (enrolment.status === 'pending_waiver') {
+  if (context.status === 'pending_waiver') {
     return (
       <div className="p-8 text-center" role="status">
         {t('common.loading')}
@@ -175,28 +135,31 @@ export function AuthenticatedCompletionView({ engagementId }: AuthenticatedCompl
     if (user && hasParentRole(user.role)) {
       await queryClient.invalidateQueries({ queryKey: ['parent-portal'] });
       navigate('/dashboard/portal', {
-        state: buildPortalHighlightState(enrolment),
+        state: buildPortalHighlightState({
+          id: context.engagementId,
+          person_id: context.personId,
+          offering_id: context.offeringId,
+        } as Engagement),
       });
       return;
     }
     navigate('/classes');
   };
 
-  const waiverGateData = waiverGate.data;
+  const waiverTemplate = context.template as ConsentTemplate | null;
   const showWaiverFirst =
-    Boolean(waiverGateData?.required) &&
-    !waiverGateData?.alreadySigned &&
-    !waiverComplete &&
-    Boolean(waiverGateData?.template);
+    Boolean(context.waiverRequired && !context.waiverAlreadySigned && !waiverComplete && waiverTemplate) ||
+    bootstrap.blockReason === 'waiver_required';
 
   const handleWaiverComplete = async (evidenceId: string) => {
     if (tenant && engagementId) {
       await EnrolmentService.update(tenant, engagementId, { waiver_evidence_id: evidenceId });
     }
     setWaiverComplete(true);
+    void bootstrap.refetch();
   };
 
-  if (alreadyPaid) {
+  if (context.alreadyComplete) {
     return (
       <div className="max-w-lg mx-auto p-6 space-y-4 text-center">
         <h1 className="text-2xl font-bold">{t('pages.enrol_pay.already_paid_title')}</h1>
@@ -210,28 +173,33 @@ export function AuthenticatedCompletionView({ engagementId }: AuthenticatedCompl
     );
   }
 
-  if (!classRow || !tenant) {
-    return null;
-  }
-
-  const pricing = computeClassTotal(classRow, tenant);
-
-  if (showWaiverFirst && waiverGateData?.template) {
+  if (showWaiverFirst && waiverTemplate) {
     return (
       <div className="max-w-lg mx-auto space-y-6">
         <WaiverStep
-          personId={enrolment.person_id}
-          template={waiverGateData.template}
-          offeringId={classRow.id}
-          engagementId={enrolment.id}
-          tenantIdForInvalidation={tenant.id}
-          studentName={waiverGateData.studentName ?? undefined}
-          className={classRow.name}
-          isMinorStudent={waiverGateData.isMinorStudent}
+          personId={context.personId}
+          template={waiverTemplate}
+          offeringId={context.offeringId}
+          engagementId={context.engagementId}
+          tenantIdForInvalidation={tenant?.id}
+          studentName={context.studentName}
+          className={context.className}
+          isMinorStudent={context.isMinorStudent}
           onComplete={(evidenceId) => void handleWaiverComplete(evidenceId)}
           onPrevious={() => void finishCompletion()}
           canGoBack
         />
+      </div>
+    );
+  }
+
+  if (!charge) {
+    return (
+      <div className="max-w-lg mx-auto p-6 space-y-4">
+        <p className="text-destructive">{t('enrolment.payment_setup_failed')}</p>
+        <Button variant="outline" onClick={() => void bootstrap.refetch()}>
+          {t('common.retry', { defaultValue: 'Retry' })}
+        </Button>
       </div>
     );
   }
@@ -241,16 +209,17 @@ export function AuthenticatedCompletionView({ engagementId }: AuthenticatedCompl
       <h1 className="text-2xl font-bold">{t('pages.enrol_pay.title')}</h1>
 
       <div className="rounded-lg border border-gray-200 p-4 space-y-2">
-        <p className="font-medium">{classRow.name}</p>
+        <p className="font-medium">{context.className}</p>
         <p className="text-sm text-gray-600">
           {t('pages.admin_enrol.amount_due')}:{' '}
-          {formatCurrency(pricing.totalMinor, pricing.currency, i18n.language)}
+          {formatCurrency(context.amountMinor, context.currency, i18n.language)}
         </p>
       </div>
 
-      <EnrolmentPaymentForm
-        classId={classRow.id}
-        engagementId={enrolment.id}
+      <CheckoutPaymentShell
+        classId={context.offeringId}
+        engagementId={context.engagementId}
+        charge={charge}
         onPaid={() => void finishCompletion()}
         onPrevious={() => void finishCompletion()}
       />

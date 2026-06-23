@@ -36,7 +36,7 @@
     "email:preview": "pnpm -C packages/shared build && node scripts/preview-email.mjs",
     "email:bundle": "pnpm -C packages/shared build && node scripts/copy-email-bundle.mjs",
     "deploy:email-functions": "pnpm email:bundle && supabase functions deploy send-auth-email --no-verify-jwt && supabase functions deploy send-otp-email && supabase functions deploy send-notification",
-    "deploy:payment-functions": "pnpm email:bundle && supabase functions deploy confirm-mock-payment && supabase functions deploy handle-payment-event && supabase functions deploy create-checkout",
+    "deploy:payment-functions": "pnpm email:bundle && supabase functions deploy confirm-mock-payment --no-verify-jwt && supabase functions deploy handle-payment-event && supabase functions deploy create-checkout --no-verify-jwt && supabase functions deploy prepare-enrolment-checkout --no-verify-jwt && supabase functions deploy get-enrolment-completion --no-verify-jwt",
     "secrets:email": "node scripts/sync-email-secrets.mjs && pnpm exec supabase secrets set --env-file supabase/.temp/email-secrets.env",
     "test:auth-email-hook": "node scripts/test-send-auth-email-hook.mjs"
   },

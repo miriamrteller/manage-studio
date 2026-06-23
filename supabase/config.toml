@@ -40,6 +40,11 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/create-checkout/index.ts"
 
+[functions.prepare-enrolment-checkout]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/prepare-enrolment-checkout/index.ts"
+
 [functions.confirm-mock-payment]
 enabled = true
 verify_jwt = false

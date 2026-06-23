@@ -3,7 +3,10 @@ import { useTenant } from '@/hooks/useTenant';
 import { EnrolmentService } from '../service';
 import { buildEnrolledOfferingKeys } from '../lib/enrolled-offerings';
 
-export function usePersonExistingEnrolments(personId?: string) {
+export function usePersonExistingEnrolments(
+  personId?: string,
+  enabled: boolean = true,
+) {
   const tenant = useTenant();
 
   return useQuery({
@@ -18,7 +21,7 @@ export function usePersonExistingEnrolments(personId?: string) {
 
       return buildEnrolledOfferingKeys(enrolments);
     },
-    enabled: Boolean(tenant?.id && personId),
+    enabled: enabled && Boolean(tenant?.id && personId),
     staleTime: 60 * 1000,
   });
 }

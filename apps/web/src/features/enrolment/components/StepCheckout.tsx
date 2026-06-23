@@ -1,11 +1,13 @@
 import { useTranslation } from 'react-i18next';
 import type { Engagement } from '@shared/schemas';
+import type { CheckoutChargePayload } from '../lib/checkoutBootstrapTypes';
 import { EnrolmentPaymentForm } from './EnrolmentPaymentForm';
 import { StepBackButton } from './StepBackButton';
 
 export interface StepCheckoutProps {
   enrolmentData: Partial<Engagement>;
   checkoutEnrolmentId: string | null;
+  checkoutCharge: CheckoutChargePayload | null;
   checkoutError: string | null;
   isPreparing: boolean;
   requireAuth: boolean;
@@ -17,6 +19,7 @@ export interface StepCheckoutProps {
 export function StepCheckout({
   enrolmentData,
   checkoutEnrolmentId,
+  checkoutCharge,
   checkoutError,
   isPreparing,
   requireAuth,
@@ -64,6 +67,7 @@ export function StepCheckout({
         classId={enrolmentData.offering_id}
         engagementId={checkoutEnrolmentId}
         requireAuth={requireAuth}
+        preloadedCharge={checkoutCharge}
         onPaid={onPaymentSuccess}
         onPrevious={onPrevious}
       />
