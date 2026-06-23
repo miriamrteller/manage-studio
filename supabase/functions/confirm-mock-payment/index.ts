@@ -70,6 +70,7 @@ Deno.serve(async (req) => {
       scenario,
       providerPaymentRef: body.mock_payment_ref,
       providerSlug: isMockGrow ? "grow" : "mock",
+      mockCardNumber: body.mock_card_number,
     });
 
     if (!result.ok) {

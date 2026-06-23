@@ -31,7 +31,7 @@ const DEFAULT_STRINGS = {
     no_show_policy: 'Deadline: {deadlineDate}. If the waiver is not signed by this date, your enrollment will be automatically cancelled and a full refund issued.',
     confirmation_note: 'Please contact us if you have any questions.',
 };
-export default function EnrolmentConfirmationEmail({ schoolName, schoolLogoUrl, language, colors, footerStrings, strings, recipientName, studentName, showStudentRow = false, className, classDetails, location, paymentSummary, pendingWaiver, signUrl, deadlineDate, }) {
+export default function EnrolmentConfirmationEmail({ schoolName, schoolLogoUrl, language, colors, footerStrings, strings, recipientName, studentName, headline, showStudentRow = false, className, classDetails, location, paymentSummary, pendingWaiver, signUrl, deadlineDate, }) {
     const s = { ...DEFAULT_STRINGS, ...strings };
     const greeting = s.greeting.replace('{recipientName}', recipientName);
     const preview = s.preview.replace('{className}', className);
@@ -42,9 +42,8 @@ export default function EnrolmentConfirmationEmail({ schoolName, schoolLogoUrl, 
         : showStudentRow
             ? s.enrollment_confirmed_for_student
             : s.enrollment_confirmed;
-    const mainText = mainTextTemplate
-        .replace('{className}', className)
-        .replace('{studentName}', studentName);
+    const mainText = headline ??
+        mainTextTemplate.replace('{className}', className).replace('{studentName}', studentName);
     const classRows = [
         ...(showStudentRow ? [{ label: s.student_label, value: studentName }] : []),
         { label: s.class_label, value: className },

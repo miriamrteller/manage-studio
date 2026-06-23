@@ -49,6 +49,44 @@ export interface ConfirmMockPaymentParams {
   providerPaymentRef?: string;
   /** Defaults to `mock`; use `grow` when confirming mock Grow hosted-page charges. */
   providerSlug?: string;
+  /** Saves a default card token for confirmation emails (mock / GROW_MOCK flows). */
+  mockCardNumber?: string;
+}
+
+function cardBrandFromNumber(cardNumber: string): string {
+  const digit = cardNumber.replace(/\s/g, "")[0];
+  if (digit === "4") return "Visa";
+  if (digit === "5") return "Mastercard";
+  return "Card";
+}
+
+async function saveMockCardToken(
+  service: SupabaseClient,
+  metadata: ChargeMetadata,
+  cardNumber: string,
+): Promise<void> {
+  const normalized = cardNumber.replace(/\s/g, "");
+  const last4 = normalized.length >= 4 ? normalized.slice(-4) : null;
+  if (!last4) return;
+
+  const { data: existing } = await service
+    .from("payment_method_tokens")
+    .select("id")
+    .eq("billing_account_id", metadata.billing_account_id)
+    .is("revoked_at", null)
+    .eq("is_default", true)
+    .maybeSingle();
+  if (existing) return;
+
+  await service.from("payment_method_tokens").insert({
+    tenant_id: metadata.tenant_id,
+    billing_account_id: metadata.billing_account_id,
+    provider: "mock",
+    provider_token: `mock_tok_${crypto.randomUUID()}`,
+    card_brand: cardBrandFromNumber(normalized),
+    last4,
+    is_default: true,
+  });
 }
 
 export type ConfirmMockPaymentResult =
@@ -67,6 +105,9 @@ export async function confirmMockPayment(
   }
 
   const providerPaymentRef = params.providerPaymentRef ?? `mock_pi_${crypto.randomUUID()}`;
+  if (params.mockCardNumber) {
+    await saveMockCardToken(params.service, params.metadata, params.mockCardNumber);
+  }
   const event = buildMockPaymentEvent({
     providerPaymentRef,
     amountMinor: params.amountMinor,

@@ -142,12 +142,14 @@ export function AdminEnrolStudentModal({
     ? classPicker.isClassAlreadyEnrolled(selectedClass)
     : false;
 
+  const { enrolledKeysLoading, isClassAlreadyEnrolled } = classPicker;
+
   useEffect(() => {
-    if (!selectedClass || classPicker.enrolledKeysLoading) return;
-    if (classPicker.isClassAlreadyEnrolled(selectedClass)) {
+    if (!selectedClass || enrolledKeysLoading) return;
+    if (isClassAlreadyEnrolled(selectedClass)) {
       setSelectedClass(null);
     }
-  }, [selectedClass, classPicker.enrolledKeysLoading, classPicker.isClassAlreadyEnrolled]);
+  }, [selectedClass, enrolledKeysLoading, isClassAlreadyEnrolled]);
   const selectedClassAges = selectedClass
     ? formatAgeRange(selectedClass.min_age, selectedClass.max_age)
     : null;

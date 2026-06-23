@@ -107,18 +107,15 @@ export function StepClass({
     ? classPicker.isClassAlreadyEnrolled(selectedClass)
     : false;
 
+  const { enrolledKeysLoading, displayClasses, isClassAlreadyEnrolled } = classPicker;
+
   useEffect(() => {
-    if (!selectedClassId || classPicker.enrolledKeysLoading) return;
-    const cls = classPicker.displayClasses.find((c: { id: string }) => c.id === selectedClassId);
-    if (cls && classPicker.isClassAlreadyEnrolled(cls)) {
+    if (!selectedClassId || enrolledKeysLoading) return;
+    const cls = displayClasses.find((c: { id: string }) => c.id === selectedClassId);
+    if (cls && isClassAlreadyEnrolled(cls)) {
       setSelectedClassId(null);
     }
-  }, [
-    selectedClassId,
-    classPicker.enrolledKeysLoading,
-    classPicker.displayClasses,
-    classPicker.isClassAlreadyEnrolled,
-  ]);
+  }, [selectedClassId, enrolledKeysLoading, displayClasses, isClassAlreadyEnrolled]);
 
   const enrolmentKeysLoading = Boolean(data.person_id && classPicker.enrolledKeysLoading);
 

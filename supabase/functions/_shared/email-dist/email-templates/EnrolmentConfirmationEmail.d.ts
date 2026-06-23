@@ -36,6 +36,8 @@ interface EnrolmentConfirmationEmailProps {
     };
     recipientName: string;
     studentName: string;
+    /** When set, used instead of computing from showStudentRow / pendingWaiver (shell placeholder). */
+    headline?: string;
     showStudentRow?: boolean;
     className: string;
     classDetails?: {
@@ -54,6 +56,6 @@ interface EnrolmentConfirmationEmailProps {
     signUrl?: string;
     deadlineDate?: string;
 }
-export default function EnrolmentConfirmationEmail({ schoolName, schoolLogoUrl, language, colors, footerStrings, strings, recipientName, studentName, showStudentRow, className, classDetails, location, paymentSummary, pendingWaiver, signUrl, deadlineDate, }: EnrolmentConfirmationEmailProps): import("react/jsx-runtime").JSX.Element;
+export default function EnrolmentConfirmationEmail({ schoolName, schoolLogoUrl, language, colors, footerStrings, strings, recipientName, studentName, headline, showStudentRow, className, classDetails, location, paymentSummary, pendingWaiver, signUrl, deadlineDate, }: EnrolmentConfirmationEmailProps): import("react/jsx-runtime").JSX.Element;
 export {};
 //# sourceMappingURL=EnrolmentConfirmationEmail.d.ts.map

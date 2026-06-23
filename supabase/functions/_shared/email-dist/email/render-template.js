@@ -119,6 +119,7 @@ function buildComponent(input, strings, colors, footerStrings) {
                 recipientName,
                 studentName,
                 showStudentRow,
+                headline: str(v.headline) || undefined,
                 className: str(v.className) || str(v.enrolledClassName),
                 classDetails: v.classDetails,
                 location: str(v.location) || undefined,

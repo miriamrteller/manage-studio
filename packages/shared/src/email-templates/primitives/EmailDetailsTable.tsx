@@ -3,6 +3,17 @@ import React from 'react';
 export interface EmailDetailsTableRow {
   label: string;
   value: string;
+  /** When set (or when value is a {{TOKEN}} placeholder), row can be stripped in email shells. */
+  optionalRowToken?: string;
+}
+
+function optionalRowKey(row: EmailDetailsTableRow): string | undefined {
+  if (row.optionalRowToken) return row.optionalRowToken;
+  const value = row.value.trim();
+  if (value.startsWith('{{') && value.endsWith('}}')) {
+    return value.slice(2, -2);
+  }
+  return undefined;
 }
 
 export interface EmailDetailsTableProps {
@@ -33,8 +44,13 @@ export function EmailDetailsTable({ heading, rows }: EmailDetailsTableProps) {
             {heading}
           </td>
         </tr>
-        {rows.map((row) => (
-          <tr key={row.label}>
+        {rows.map((row) => {
+          const rowKey = optionalRowKey(row);
+          return (
+          <tr
+            key={row.label}
+            {...(rowKey ? { 'data-ms-opt-row': rowKey } : {})}
+          >
             <td
               style={{
                 padding: '4px 16px',
@@ -50,7 +66,8 @@ export function EmailDetailsTable({ heading, rows }: EmailDetailsTableProps) {
               {row.value}
             </td>
           </tr>
-        ))}
+          );
+        })}
         <tr>
           <td colSpan={2} style={{ height: '8px' }} />
         </tr>

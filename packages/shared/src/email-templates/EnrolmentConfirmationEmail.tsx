@@ -40,6 +40,8 @@ interface EnrolmentConfirmationEmailProps {
   };
   recipientName: string;
   studentName: string;
+  /** When set, used instead of computing from showStudentRow / pendingWaiver (shell placeholder). */
+  headline?: string;
   showStudentRow?: boolean;
   className: string;
   classDetails?: {
@@ -102,6 +104,7 @@ export default function EnrolmentConfirmationEmail({
   strings,
   recipientName,
   studentName,
+  headline,
   showStudentRow = false,
   className,
   classDetails,
@@ -124,9 +127,9 @@ export default function EnrolmentConfirmationEmail({
       ? s.enrollment_confirmed_for_student
       : s.enrollment_confirmed;
 
-  const mainText = mainTextTemplate
-    .replace('{className}', className)
-    .replace('{studentName}', studentName);
+  const mainText =
+    headline ??
+    mainTextTemplate.replace('{className}', className).replace('{studentName}', studentName);
 
   const classRows: Array<{ label: string; value: string }> = [
     ...(showStudentRow ? [{ label: s.student_label, value: studentName }] : []),

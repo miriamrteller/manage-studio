@@ -196,6 +196,7 @@ function buildComponent(
         recipientName,
         studentName,
         showStudentRow,
+        headline: str(v.headline) || undefined,
         className: str(v.className) || str(v.enrolledClassName),
         classDetails: v.classDetails as
           | { day?: string; time?: string; startDate?: string; teacher?: string }

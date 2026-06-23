@@ -1,6 +1,8 @@
 export interface EmailDetailsTableRow {
     label: string;
     value: string;
+    /** When set (or when value is a {{TOKEN}} placeholder), row can be stripped in email shells. */
+    optionalRowToken?: string;
 }
 export interface EmailDetailsTableProps {
     heading: string;
