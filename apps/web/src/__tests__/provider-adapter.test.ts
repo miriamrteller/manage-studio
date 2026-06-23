@@ -12,7 +12,6 @@
 import { describe, it, expect } from 'vitest';
 import {
   ProviderVatResponseSchema,
-  ProviderValidationError,
 } from '@shared/vat/provider-adapter';
 import {
   buildInvoiceDisplayLines,
