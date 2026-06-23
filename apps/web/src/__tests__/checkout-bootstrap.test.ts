@@ -18,13 +18,17 @@ describe('parsePrepareEnrolmentCheckoutBody', () => {
     }
   });
 
-  it('requires offering_id for existing_engagement pay phase', () => {
+  it('accepts existing_engagement pay without offering_id', () => {
     const parsed = parsePrepareEnrolmentCheckoutBody({
       phase: 'pay',
       mode: 'existing_engagement',
       engagement_id: '00000000-0000-0000-0000-000000000301',
+      enrolment_token: 'token',
     });
-    expect(parsed.ok).toBe(false);
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) {
+      expect(parsed.body.offering_id).toBeUndefined();
+    }
   });
 
   it('requires pay phase for create_engagement', () => {

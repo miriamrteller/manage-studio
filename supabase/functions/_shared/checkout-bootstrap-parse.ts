@@ -29,11 +29,7 @@ export function parsePrepareEnrolmentCheckoutBody(
       return { ok: false, error: "engagement_id is required" };
     }
     const offeringId = body.offering_id;
-    if (phase === "pay") {
-      if (typeof offeringId !== "string" || !UUID_RE.test(offeringId)) {
-        return { ok: false, error: "offering_id is required for pay phase" };
-      }
-    } else if (offeringId != null && (typeof offeringId !== "string" || !UUID_RE.test(offeringId))) {
+    if (offeringId != null && (typeof offeringId !== "string" || !UUID_RE.test(offeringId))) {
       return { ok: false, error: "offering_id must be a UUID when provided" };
     }
 

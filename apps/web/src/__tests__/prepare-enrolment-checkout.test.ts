@@ -43,7 +43,17 @@ describe("prepare-enrolment-checkout parsing (integration contract)", () => {
     expect(parsed.ok).toBe(true);
   });
 
-  it("accepts token pay link pay payload", () => {
+  it("accepts token pay link pay payload without offering_id", () => {
+    const parsed = parsePrepareEnrolmentCheckoutBody({
+      phase: "pay",
+      mode: "existing_engagement",
+      engagement_id: ENGAGEMENT_ID,
+      enrolment_token: "token",
+    });
+    expect(parsed.ok).toBe(true);
+  });
+
+  it("accepts token pay link pay payload with offering_id", () => {
     const parsed = parsePrepareEnrolmentCheckoutBody({
       phase: "pay",
       mode: "existing_engagement",

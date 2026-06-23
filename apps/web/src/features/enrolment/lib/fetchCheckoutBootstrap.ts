@@ -1,5 +1,8 @@
 import { supabase } from '@/lib/supabase';
-import { parseFunctionInvokeBody } from '@/lib/parseFunctionInvokeError';
+import {
+  functionInvokeErrorMessage,
+  parseFunctionInvokeBody,
+} from '@/lib/parseFunctionInvokeError';
 import type {
   PrepareEnrolmentCheckoutBody,
   PrepareEnrolmentCheckoutResponse,
@@ -29,12 +32,22 @@ export async function fetchCheckoutBootstrap(
     });
 
     const parsed = await parseFunctionInvokeBody(data, error);
+    if (
+      parsed &&
+      typeof parsed === 'object' &&
+      parsed.context &&
+      typeof parsed.context === 'object'
+    ) {
+      return parsed as unknown as PrepareEnrolmentCheckoutResponse;
+    }
+
     if (error || parsed?.error) {
       throw new Error(
-        error?.message ??
-          (typeof parsed?.error === 'string' ? parsed.error : null) ??
-          options?.setupFailedMessage ??
-          'Checkout setup failed',
+        functionInvokeErrorMessage(
+          error,
+          parsed,
+          options?.setupFailedMessage ?? 'Checkout setup failed',
+        ),
       );
     }
 
