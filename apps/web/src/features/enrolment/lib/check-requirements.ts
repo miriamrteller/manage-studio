@@ -62,8 +62,8 @@ export function anyClassHasAgeBand(classes: ClassAgeContext[]): boolean {
 }
 
 /**
- * When DOB is known, only classes with a defined age band that includes the student are eligible.
- * Classes with no min_age AND no max_age are not eligible (caller should skip filtering if no class has ages).
+ * When DOB is known, classes with min_age and/or max_age must include the student's age.
+ * Classes with no age band (both null) are open to all ages.
  */
 export function isAgeEligible(
   cls: ClassAgeContext,
@@ -72,7 +72,7 @@ export function isAgeEligible(
 ): boolean {
   if (!person.date_of_birth) return true;
 
-  if (cls.min_age == null && cls.max_age == null) return false;
+  if (cls.min_age == null && cls.max_age == null) return true;
 
   const ref = resolveAgeReferenceDate(cls, options);
   if (!ref) return true;

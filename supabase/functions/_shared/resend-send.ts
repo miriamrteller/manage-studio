@@ -7,6 +7,10 @@ import {
   type RenderEmailTemplateInput,
 } from "shared/email";
 import { renderPaymentReminderHtml } from "./render-payment-email.ts";
+import {
+  buildEnrolmentConfirmationSubject,
+  renderEnrolmentConfirmationHtml,
+} from "./render-enrolment-confirmation-email.ts";
 
 export {
   EMAIL_TEMPLATE_NAMES,
@@ -64,6 +68,37 @@ export async function sendRenderedEmail(
       subjectOverride ??
       renderInput.subject ??
       `Payment required — ${str(variables.enrolledClassName) || str(variables.className) || "class"}`;
+  } else if (renderInput.templateName === EMAIL_TEMPLATE_NAMES.ENROLMENT_CONFIRMATION) {
+    const language = renderInput.language === "he" ? "he" : "en";
+    const classDetailsRaw = variables.classDetails;
+    const classDetails =
+      classDetailsRaw && typeof classDetailsRaw === "object" && !Array.isArray(classDetailsRaw)
+        ? (classDetailsRaw as Record<string, unknown>)
+        : undefined;
+
+    html = renderEnrolmentConfirmationHtml({
+      language,
+      schoolName: renderInput.schoolName,
+      recipientName: str(variables.recipientName, "there"),
+      className: str(variables.className) || str(variables.enrolledClassName, "class"),
+      classDetails: classDetails
+        ? {
+          day: str(classDetails.day),
+          time: str(classDetails.time),
+          startDate: str(classDetails.startDate),
+          teacher: str(classDetails.teacher),
+        }
+        : undefined,
+      pendingWaiver: Boolean(variables.pendingWaiver),
+      signUrl: str(variables.signUrl) || undefined,
+      deadlineDate: str(variables.deadlineDate) || undefined,
+      primaryColor: renderInput.tenantColors?.primary_color ?? "#2563eb",
+      accentColor: renderInput.tenantColors?.accent_color ?? "#dc2626",
+    });
+    subject =
+      subjectOverride ??
+      renderInput.subject ??
+      buildEnrolmentConfirmationSubject(language, renderInput.schoolName);
   } else {
     const rendered = await renderEmailTemplate({
       ...renderInput,

@@ -66,9 +66,9 @@ describe('check-requirements', () => {
       expect(isAgeEligible(pilates, adult, { referenceDate: SEASON_START })).toBe(true);
     });
 
-    it('excludes classes with no age band when DOB is known', () => {
+    it('treats classes with no age band as open to all ages when DOB is known', () => {
       const person = { date_of_birth: '2018-01-01' };
-      expect(isAgeEligible({ min_age: null, max_age: null }, person, { referenceDate: SEASON_START })).toBe(false);
+      expect(isAgeEligible({ min_age: null, max_age: null }, person, { referenceDate: SEASON_START })).toBe(true);
     });
 
     it('uses season_start_date on the class when provided', () => {

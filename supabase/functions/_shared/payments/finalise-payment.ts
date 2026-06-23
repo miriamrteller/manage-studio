@@ -11,6 +11,73 @@ import type { FinalisePaymentParams } from "./types.ts";
 
 const APP_URL = getEnv("APP_URL") ?? "";
 
+const WEEKDAY_NAMES: Record<"en" | "he", string[]> = {
+  en: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+  he: ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"],
+};
+
+function formatWeekday(dow: number | null | undefined, language: "en" | "he"): string | undefined {
+  if (dow == null || dow < 0 || dow > 6) return undefined;
+  return WEEKDAY_NAMES[language][dow];
+}
+
+/** "15:30:00" -> "15:30"; combines start/end into "15:30–16:15". */
+function formatTimeRange(
+  start: string | null | undefined,
+  end: string | null | undefined,
+): string | undefined {
+  const hhmm = (t: string | null | undefined) =>
+    typeof t === "string" && t.length >= 5 ? t.slice(0, 5) : undefined;
+  const s = hhmm(start);
+  const e = hhmm(end);
+  if (s && e) return `${s}–${e}`;
+  return s ?? e;
+}
+
+function formatStartDate(iso: string | null | undefined, language: "en" | "he"): string | undefined {
+  if (!iso) return undefined;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return undefined;
+  return d.toLocaleDateString(language === "he" ? "he-IL" : "en-GB", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
+
+/** Loads schedule + start date + teacher for the offering, formatted for the email. */
+async function buildClassDetails(
+  service: SupabaseClient,
+  offeringId: string,
+  language: "en" | "he",
+): Promise<{ day?: string; time?: string; startDate?: string; teacher?: string }> {
+  const { data: offering } = await service
+    .from("offerings")
+    .select("day_of_week, start_time, end_time, season_id, staff_id")
+    .eq("id", offeringId)
+    .maybeSingle();
+  if (!offering) return {};
+
+  const [seasonRes, staffRes] = await Promise.all([
+    offering.season_id
+      ? service.from("seasons").select("start_date").eq("id", offering.season_id).maybeSingle()
+      : Promise.resolve({ data: null }),
+    offering.staff_id
+      ? service.from("staff").select("name").eq("id", offering.staff_id).maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
+
+  return {
+    day: formatWeekday(offering.day_of_week as number | null, language),
+    time: formatTimeRange(offering.start_time as string | null, offering.end_time as string | null),
+    startDate: formatStartDate((seasonRes.data as { start_date?: string } | null)?.start_date, language),
+    teacher: typeof (staffRes.data as { name?: unknown } | null)?.name === "string"
+      ? (staffRes.data as { name: string }).name
+      : undefined,
+  };
+}
+
 async function auditExists(
   service: SupabaseClient,
   tenantId: string,
@@ -103,6 +170,7 @@ async function sendConfirmationEmail(
 
   const language = (tenantRow.language_default === "he" ? "he" : "en") as "en" | "he";
   const offeringName = offeringRow?.name ?? "";
+  const classDetails = await buildClassDetails(service, engagement.offering_id as string, language);
 
   try {
     if (params.engagementStatus === "pending_waiver" && APP_URL) {
@@ -126,6 +194,7 @@ async function sendConfirmationEmail(
           variables: {
             recipientName,
             className: offeringName,
+            classDetails,
             pendingWaiver: true,
             signUrl,
             deadlineDate: params.waiverDeadline ?? undefined,
@@ -143,6 +212,7 @@ async function sendConfirmationEmail(
           variables: {
             recipientName,
             className: offeringName,
+            classDetails,
             pendingWaiver: false,
             receiptPendingNote: true,
           },
@@ -322,11 +392,46 @@ export async function finalisePayment(
   }
 
   if (!params.skipDocumentEnqueue) {
-    await enqueueDocument(service, {
-      tenantId: params.tenantId,
-      paymentId,
-      documentKind: "sale",
-    });
+    // Bundled providers (Grow) may have already written the document via the invoice
+    // webhook before this finalise ran. Skip enqueue when the document already exists to
+    // avoid a duplicate document_queue row / double issuance.
+    const { data: paymentDoc } = await service
+      .from("payments")
+      .select("external_document_id")
+      .eq("id", paymentId)
+      .maybeSingle();
+
+    if (!paymentDoc?.external_document_id) {
+      await enqueueDocument(service, {
+        tenantId: params.tenantId,
+        paymentId,
+        documentKind: "sale",
+      });
+
+      // Mock invoicing is instant and dev/CI-only, and there is no cron worker draining the
+      // queue locally, so issue the document inline to complete the full flow synchronously.
+      // Real providers (grow/green_invoice) still issue async via the webhook/worker.
+      const { data: invTenant } = await service
+        .from("tenants")
+        .select("invoicing_provider")
+        .eq("id", params.tenantId)
+        .maybeSingle();
+
+      if (invTenant?.invoicing_provider === "mock") {
+        const { data: queueRow } = await service
+          .from("document_queue")
+          .select("id, tenant_id, payment_id, document_kind, attempts, status")
+          .eq("payment_id", paymentId)
+          .eq("document_kind", "sale")
+          .in("status", ["pending", "processing"])
+          .maybeSingle();
+
+        if (queueRow) {
+          const { processQueueRow } = await import("../invoicing/process-queue-row.ts");
+          await processQueueRow(service, queueRow as Parameters<typeof processQueueRow>[1]);
+        }
+      }
+    }
   }
 
   if (params.chargeType === "renewal") {

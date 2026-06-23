@@ -1,4 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
+import { loadEnv } from '../../scripts/load-env.mjs';
+
+// Load repo-root .env + apps/web/.env.local so finance E2E can use VITE_SUPABASE_* / SUPABASE_*.
+loadEnv();
 
 /**
  * Playwright Configuration for Ballet School Management System

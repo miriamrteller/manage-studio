@@ -764,6 +764,28 @@
       "col_role": "תפקיד",
       "col_version": "גרסה",
       "col_signed_at": "תאריך חתימה"
+    },
+    "enrol_complete": {
+      "page_title": "חתמו על כתב הויתור",
+      "missing_id": "לא סופק מזהה הרשמה. בדקו את הקישור בדוא\"ל.",
+      "engagement_not_found": "לא מצאנו את ההרשמה שלכם. בדקו את הקישור בדוא\"ל או צרו קשר.",
+      "no_active_template": "לא נמצא תבנית ויתור פעילה. צרו קשר.",
+      "link_expired_heading": "הקישור שלך פג תוקף",
+      "link_expired_body": "קישורי קסם פגים לאחר שעה. הזינו את כתובת הדוא\"ל לקבלת קישור חדש.",
+      "your_email_label": "כתובת הדוא\"ל שלך",
+      "email_placeholder": "you@example.com",
+      "resend_btn": "שלח קישור חדש",
+      "resend_sent_heading": "בדקו את תיבת הדואר",
+      "resend_sent_body": "קישור חדש נשלח לדוא\"ל שלך. תוקפו שעה.",
+      "already_signed_heading": "הויתור כבר נחתם",
+      "already_signed_body": "כתב הויתור נחתם וההרשמה שלך פעילה.",
+      "cancelled_heading": "ההרשמה בוטלה",
+      "cancelled_body": "הרשמה זו בוטלה כיוון שהויתור לא נחתם בזמן. הוחזר החזר כספי. ניתן להירשם מחדש.",
+      "signed_heading": "הויתור נחתם — ברוכים הבאים!",
+      "signed_body": "כתב הויתור נחתם וההרשמה שלך פעילה. להתראות בשיעור!",
+      "go_to_dashboard": "עברו ללוח הבקרה",
+      "browse_classes": "עיון בשיעורים",
+      "sign_prompt": "אנא קראו בעיון את כתב הויתור וחתמו למטה כדי להפעיל את ההרשמה."
     }
   },
   "signup": {
@@ -842,6 +864,38 @@
     "weekly": "שבועי",
     "annual": "שנתי"
   },
+  "finance": {
+    "record_payment": {
+      "open": "רישום תשלום ידני",
+      "title": "רישום תשלום ידני",
+      "method": "אמצעי תשלום",
+      "cash": "מזומן",
+      "bank": "העברה בנקאית",
+      "note": "הערה (לא חובה)",
+      "submit": "רישום תשלום",
+      "success": "התשלום נרשם."
+    },
+    "refund_payment": {
+      "open": "החזר",
+      "title": "החזר תשלום",
+      "amount": "סכום ההחזר",
+      "reason": "סיבה (לא חובה)",
+      "submit": "ביצוע החזר",
+      "success": "ההחזר בוצע.",
+      "grow_note": "ב‑Grow ניתן בדרך כלל לבצע החזר מלא רק ביום החיוב עצמו. הודעת הספק תוצג למטה אם ההחזר נדחה."
+    },
+    "payment_history": {
+      "title": "היסטוריית תשלומים",
+      "empty": "אין תשלומים עדיין."
+    },
+    "payment_status": {
+      "succeeded": "שולם",
+      "partially_refunded": "הוחזר חלקית",
+      "refunded": "הוחזר",
+      "pending": "ממתין",
+      "failed": "נכשל"
+    }
+  },
   "enrolment": {
     "step": "שלב",
     "step_person": "פרטים אישיים",
@@ -856,7 +910,19 @@
     "payment_confirm_pending": "התשלום התקבל. האישור עשוי להתעכב רגע.",
     "payment_failed": "התשלום נכשל",
     "payment_setup_failed": "לא ניתן להתחיל תשלום",
+    "mock_payment_hint": "תשלום לבדיקה — הזינ/י פרטי כרטיס ולחצ/י שלם להשלמת ההרשמה.",
+    "mock_card_number": "מספר כרטיס לבדיקה",
+    "mock_success_hint": "השתמש/י ב-4580458045804580 לתשלום מוצלח.",
+    "mock_decline_hint": "השתמש/י ב-4580000000000000 לדימוי כרטיס שסורב.",
+    "mock_payment_declined": "הכרטיס סורב. בדק/י את המספר או נסה/י כרטיס אחר.",
+    "checkout_total": "סה״כ",
     "pay_now": "שלם עכשיו",
+    "grow_payment_title": "תשלום מאובטח",
+    "grow_mock_title": "עמוד תשלום Grow (הדמיה)",
+    "grow_mock_hint": "מצב GROW_MOCK פעיל, ולכן עמוד התשלום מדומה והתשלום מאושר אוטומטית.",
+    "grow_waiting": "ממתינים לאישור התשלום… זה עשוי לקחת כמה שניות.",
+    "grow_timeout": "טרם התקבל אישור. אם השלמת את התשלום, המתן רגע ונסה שוב.",
+    "grow_retry": "נסה שוב",
     "pending_action": {
       "complete_payment": "השלמת תשלום",
       "complete_waiver": "חתימה על ויתור",
@@ -906,6 +972,23 @@
       "not_configured": "לא מוגדר",
       "last_updated": "עודכן לאחרונה",
       "saved": "הגדרות Stripe נשמרו"
+    },
+    "grow": {
+      "title": "תשלומים וחשבוניות (Grow)",
+      "description": "Grow גובה תשלומי כרטיס ומפיק את מסמך המס יחד. הזן את פרטי Grow (משולם) למטה.",
+      "hub_description": "תשלומי כרטיס ומסמכי מס במקום אחד",
+      "provider": "ספק",
+      "user_id": "מזהה משתמש Grow",
+      "page_code": "קוד עמוד",
+      "api_key": "מפתח API",
+      "api_key_status": "מפתח API",
+      "configured": "מוגדר",
+      "not_configured": "לא מוגדר",
+      "saved": "פרטי Grow נשמרו.",
+      "test_connection": "בדיקת חיבור",
+      "health_title": "סטטוס חיבור",
+      "health_ok": "מחובר ל‑Grow.",
+      "health_failed": "לא ניתן להתחבר ל‑Grow."
     },
     "hub": {
       "page_title": "הגדרות בית הספר",
@@ -984,28 +1067,6 @@
       "back": "חזרה",
       "next": "הבא",
       "skip_integrations": "דלג לעת עתה"
-    },
-    "enrol_complete": {
-      "page_title": "חתמו על כתב הויתור",
-      "missing_id": "לא סופק מזהה הרשמה. בדקו את הקישור בדוא\"ל.",
-      "engagement_not_found": "לא מצאנו את ההרשמה שלכם. בדקו את הקישור בדוא\"ל או צרו קשר.",
-      "no_active_template": "לא נמצא תבנית ויתור פעילה. צרו קשר.",
-      "link_expired_heading": "הקישור שלך פג תוקף",
-      "link_expired_body": "קישורי קסם פגים לאחר שעה. הזינו את כתובת הדוא\"ל לקבלת קישור חדש.",
-      "your_email_label": "כתובת הדוא\"ל שלך",
-      "email_placeholder": "you@example.com",
-      "resend_btn": "שלח קישור חדש",
-      "resend_sent_heading": "בדקו את תיבת הדואר",
-      "resend_sent_body": "קישור חדש נשלח לדוא\"ל שלך. תוקפו שעה.",
-      "already_signed_heading": "הויתור כבר נחתם",
-      "already_signed_body": "כתב הויתור נחתם וההרשמה שלך פעילה.",
-      "cancelled_heading": "ההרשמה בוטלה",
-      "cancelled_body": "הרשמה זו בוטלה כיוון שהויתור לא נחתם בזמן. הוחזר החזר כספי. ניתן להירשם מחדש.",
-      "signed_heading": "הויתור נחתם — ברוכים הבאים!",
-      "signed_body": "כתב הויתור נחתם וההרשמה שלך פעילה. להתראות בשיעור!",
-      "go_to_dashboard": "עברו ללוח הבקרה",
-      "browse_classes": "עיון בשיעורים",
-      "sign_prompt": "אנא קראו בעיון את כתב הויתור וחתמו למטה כדי להפעיל את ההרשמה."
     }
   },
   "accessibility": {

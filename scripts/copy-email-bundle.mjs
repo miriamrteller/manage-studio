@@ -20,3 +20,4 @@ console.log(`Copied email bundle: ${src} -> ${dest}`);
 // Pre-render HTML shells (React Email cannot run reliably in Deno Edge).
 await import(pathToFileURL(join(dirname(fileURLToPath(import.meta.url)), 'build-auth-email-shells.mjs')).href);
 await import(pathToFileURL(join(dirname(fileURLToPath(import.meta.url)), 'build-payment-email-shells.mjs')).href);
+await import(pathToFileURL(join(dirname(fileURLToPath(import.meta.url)), 'build-enrolment-confirmation-email-shells.mjs')).href);
