@@ -6,12 +6,15 @@ on:
   pull_request:
     branches: [main, develop]
 
+# Grant all jobs the minimum permissions needed to checkout private repo
+permissions:
+  contents: read
+  pull-requests: read
+
 jobs:
   # Detect which files changed
   detect-changes:
     runs-on: ubuntu-latest
-    permissions:
-      pull-requests: read
     outputs:
       ui-changed: ${{ steps.filter.outputs.ui }}
     steps:
