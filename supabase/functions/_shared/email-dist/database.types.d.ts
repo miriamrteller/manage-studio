@@ -838,6 +838,89 @@ export type Database = {
           },
         ]
       }
+      expenses: {
+        Row: {
+          category_id: string
+          corrects_expense_id: string | null
+          created_at: string
+          created_by: string
+          currency: string
+          description: string
+          expense_date: string
+          id: string
+          pretax_amount_minor: number
+          receipt_storage_path: string | null
+          supplier_name: string | null
+          supplier_vat_number: string | null
+          tenant_id: string
+          total_amount_minor: number
+          vat_amount_minor: number
+        }
+        Insert: {
+          category_id: string
+          corrects_expense_id?: string | null
+          created_at?: string
+          created_by: string
+          currency?: string
+          description: string
+          expense_date: string
+          id: string
+          pretax_amount_minor: number
+          receipt_storage_path?: string | null
+          supplier_name?: string | null
+          supplier_vat_number?: string | null
+          tenant_id: string
+          total_amount_minor: number
+          vat_amount_minor?: number
+        }
+        Update: {
+          category_id?: string
+          corrects_expense_id?: string | null
+          created_at?: string
+          created_by?: string
+          currency?: string
+          description?: string
+          expense_date?: string
+          id?: string
+          pretax_amount_minor?: number
+          receipt_storage_path?: string | null
+          supplier_name?: string | null
+          supplier_vat_number?: string | null
+          tenant_id?: string
+          total_amount_minor?: number
+          vat_amount_minor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expenses_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "expense_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_corrects_expense_id_fkey"
+            columns: ["corrects_expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoicing_token_cache: {
         Row: {
           expires_at: string
@@ -2276,6 +2359,23 @@ export type Database = {
       }
       cleanup_expired_otps: { Args: never; Returns: undefined }
       cleanup_old_verification_attempts: { Args: never; Returns: number }
+      create_expense: {
+        Args: {
+          p_category_id: string
+          p_corrects_expense_id?: string
+          p_currency: string
+          p_description: string
+          p_expense_date: string
+          p_expense_id: string
+          p_pretax_amount_minor: number
+          p_receipt_storage_path: string
+          p_supplier_name: string
+          p_supplier_vat_number: string
+          p_total_amount_minor: number
+          p_vat_amount_minor: number
+        }
+        Returns: string
+      }
       get_app_encryption_key: { Args: never; Returns: string }
       get_billing_account_payment_method: {
         Args: { p_billing_account_id: string }
@@ -2290,6 +2390,16 @@ export type Database = {
       get_engagement_person_id: {
         Args: { p_engagement_id: string }
         Returns: string
+      }
+      get_finance_summary: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: {
+          failed_payments_7d: number
+          net_expenses_minor: number
+          net_revenue_minor: number
+          outstanding_engagements: number
+          payment_count: number
+        }[]
       }
       get_my_account_ids: { Args: never; Returns: string[] }
       get_my_person_id: { Args: never; Returns: string }
