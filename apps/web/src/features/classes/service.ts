@@ -34,6 +34,7 @@ const ClassInputSchema = z.object({
   billing_mode: z.enum(['one_time', 'recurring']).optional(),
   billing_interval: z.enum(['monthly', 'quarterly', 'annual']).nullable().optional(),
   status: z.enum(['active', 'cancelled', 'full']).optional(),
+  location: z.string().max(500).nullable().optional(),
 });
 
 const CoverImagePathSchema = z.string().nullable();

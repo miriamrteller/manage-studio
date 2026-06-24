@@ -40,7 +40,12 @@ export interface StepClassProps {
   allowAgeOverride?: boolean;
   ageOverride: AgeOverrideState;
   onAgeOverrideChange: (confirmed: boolean, reason: string) => void;
-  onNext: (data?: Partial<Engagement>, className?: string, waiverRequired?: boolean) => void;
+  onNext: (
+    data?: Partial<Engagement>,
+    className?: string,
+    waiverRequired?: boolean,
+    location?: string | null,
+  ) => void;
   onPrevious: () => void;
   canGoBack?: boolean;
 }
@@ -143,6 +148,7 @@ export function StepClass({
       },
       selectedClass.name,
       (selectedClass?.waiver_required ?? false) as boolean,
+      selectedClass.location ?? null,
     );
   };
 
@@ -238,6 +244,9 @@ export function StepClass({
                     `${cls.day_of_week != null ? ' · ' : ''}${formatTime(cls.start_time)}`}
                   {cls.end_time && `–${formatTime(cls.end_time)}`}
                 </p>
+                {cls.location && (
+                  <p className="text-sm text-gray-500 mt-0.5">{cls.location}</p>
+                )}
               </>
             );
           }}

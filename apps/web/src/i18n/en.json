@@ -163,6 +163,8 @@
       "term": "Term",
       "level": "Level",
       "teacher": "Teacher",
+      "location": "Location",
+      "location_placeholder": "e.g. Studio B, 12 Rothschild Blvd, Tel Aviv",
       "cover_image": "Cover image",
       "cover_image_hint": "JPEG, PNG or WebP. Max 2 MB.",
       "remove_cover_image": "Remove image",
@@ -532,7 +534,8 @@
       "ages_min_only": "{{min}}+",
       "ages_max_only": "Up to {{max}}",
       "level": "Level",
-      "capacity": "Capacity"
+      "capacity": "Capacity",
+      "location": "Location"
     },
     "enrolment": {
       "person_desc": "Who are you enrolling today?",
@@ -629,6 +632,7 @@
       "create_new_adult": "Create new adult student",
       "guardian_email_required": "Guardian email is required for confirmation and portal access.",
       "class_label": "Class",
+      "location_label": "Location",
       "status_label": "Status",
       "date_label": "Date"
     },

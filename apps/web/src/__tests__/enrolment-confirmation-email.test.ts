@@ -88,6 +88,47 @@ describe("renderEnrolmentConfirmationHtml", () => {
     expect(html).toContain("https://example.com/enrol/complete?wt=test");
   });
 
+  it("renders location in HTML when provided", () => {
+    const html = renderEnrolmentConfirmationHtml({
+      language: "en",
+      schoolName: "Creative Ballet Academy",
+      recipientName: "Sarah",
+      studentName: "Miriam",
+      showStudentRow: true,
+      className: "Primary (Monthly)",
+      location: "Studio B, 12 Rothschild Blvd, Tel Aviv",
+      classDetails: {
+        day: "Tuesday",
+        time: "17:00–17:45",
+      },
+      paymentSummary,
+      pendingWaiver: false,
+      primaryColor: "#76335a",
+      accentColor: "#e99ac4",
+    });
+
+    expect(html).toContain("Location");
+    expect(html).toContain("Studio B, 12 Rothschild Blvd, Tel Aviv");
+    expect(html).not.toContain("{{LOCATION}}");
+  });
+
+  it("omits location row when not provided", () => {
+    const html = renderEnrolmentConfirmationHtml({
+      language: "en",
+      schoolName: "Creative Ballet Academy",
+      recipientName: "Sarah",
+      studentName: "Miriam",
+      showStudentRow: true,
+      className: "Primary (Monthly)",
+      paymentSummary,
+      pendingWaiver: false,
+      primaryColor: "#76335a",
+      accentColor: "#e99ac4",
+    });
+
+    expect(html).not.toContain("{{LOCATION}}");
+  });
+
   it("renders Hebrew tax invoice notice in he shell", () => {
     const html = renderEnrolmentConfirmationHtml({
       language: "he",

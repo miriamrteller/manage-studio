@@ -258,6 +258,7 @@ export function AdminClassesList() {
                 <th className="px-4 py-3 text-start font-medium">{t('form.class.term')}</th>
                 <th className="px-4 py-3 text-start font-medium">{t('form.class.level')}</th>
                 <th className="px-4 py-3 text-start font-medium">{t('pages.classes.ages')}</th>
+                <th className="px-4 py-3 text-start font-medium">{t('form.class.location')}</th>
                 <SortableHeader
                   label={t('pages.classes.time')}
                   sortKey="schedule"
@@ -306,6 +307,7 @@ export function AdminClassesList() {
                     {classItem.category_id ? levelById.get(classItem.category_id) || '—' : '—'}
                   </td>
                   <td className="px-4 py-3">{ageRange || '—'}</td>
+                  <td className="px-4 py-3">{classItem.location || '—'}</td>
                   <td className="px-4 py-3">
                     {classItem.day_of_week != null
                       ? `${t(`form.class.day_${classItem.day_of_week}`)}, `
@@ -361,7 +363,7 @@ export function AdminClassesList() {
                 </tr>
                 {expandedClassId === classItem.id && (
                   <tr>
-                    <td colSpan={9} className="p-0">
+                    <td colSpan={10} className="p-0">
                       <ClassRequirementsPanel
                         classId={classItem.id}
                         className={classItem.name}

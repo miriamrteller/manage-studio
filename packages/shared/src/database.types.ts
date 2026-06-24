@@ -1050,6 +1050,7 @@ export type Database = {
           end_time: string
           id: string
           is_public: boolean
+          location: string | null
           max_age: number | null
           max_capacity: number
           min_age: number | null
@@ -1077,6 +1078,7 @@ export type Database = {
           end_time: string
           id?: string
           is_public?: boolean
+          location?: string | null
           max_age?: number | null
           max_capacity?: number
           min_age?: number | null
@@ -1104,6 +1106,7 @@ export type Database = {
           end_time?: string
           id?: string
           is_public?: boolean
+          location?: string | null
           max_age?: number | null
           max_capacity?: number
           min_age?: number | null
@@ -2331,6 +2334,7 @@ export type Database = {
           day_of_week: number
           end_time: string
           id: string
+          location: string
           max_age: number
           max_capacity: number
           min_age: number

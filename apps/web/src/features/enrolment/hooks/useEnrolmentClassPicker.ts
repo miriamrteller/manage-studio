@@ -16,6 +16,7 @@ export interface EnrolmentClassPickerClass extends ClassAgeContext {
   name: string;
   season_id?: string | null;
   season_start_date?: string | null;
+  location?: string | null;
 }
 
 interface UseEnrolmentClassPickerOptions<T extends EnrolmentClassPickerClass> {

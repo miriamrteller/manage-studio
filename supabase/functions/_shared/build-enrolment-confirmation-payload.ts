@@ -44,16 +44,15 @@ function formatStartDate(iso: string | null | undefined, language: EmailLanguage
 
 export async function buildClassDetailsForEmail(
   service: SupabaseClient,
-  offeringId: string,
+  offering: {
+    day_of_week?: number | null;
+    start_time?: string | null;
+    end_time?: string | null;
+    season_id?: string | null;
+    staff_id?: string | null;
+  },
   language: EmailLanguage,
 ): Promise<{ day?: string; time?: string; startDate?: string; teacher?: string }> {
-  const { data: offering } = await service
-    .from("offerings")
-    .select("day_of_week, start_time, end_time, season_id, staff_id")
-    .eq("id", offeringId)
-    .maybeSingle();
-  if (!offering) return {};
-
   const [seasonRes, staffRes] = await Promise.all([
     offering.season_id
       ? service.from("seasons").select("start_date").eq("id", offering.season_id).maybeSingle()
@@ -79,6 +78,7 @@ export interface EnrolmentConfirmationEmailVariables {
   showStudentRow: boolean;
   className: string;
   classDetails: { day?: string; time?: string; startDate?: string; teacher?: string };
+  location?: string;
   pendingWaiver: boolean;
   signUrl?: string;
   deadlineDate?: string;
@@ -128,7 +128,11 @@ export async function buildEnrolmentConfirmationPayload(
     language,
   ] = await Promise.all([
     service.from("tenants").select("name, language_default, primary_color, accent_color").eq("id", input.tenantId).single(),
-    service.from("offerings").select("name").eq("id", offeringId).single(),
+    service
+      .from("offerings")
+      .select("name, day_of_week, start_time, end_time, season_id, staff_id, location")
+      .eq("id", offeringId)
+      .single(),
     service.from("people").select("name").eq("id", personId).eq("tenant_id", input.tenantId).single(),
     service
       .from("payments")
@@ -156,7 +160,11 @@ export async function buildEnrolmentConfirmationPayload(
 
   const locale = language === "he" ? "he-IL" : "en-GB";
   const className = (offeringRow?.name as string | undefined) ?? "";
-  const classDetails = await buildClassDetailsForEmail(service, offeringId, language);
+  const classDetails = offeringRow
+    ? await buildClassDetailsForEmail(service, offeringRow, language)
+    : {};
+  const locationRaw = typeof offeringRow?.location === "string" ? offeringRow.location.trim() : "";
+  const location = locationRaw || undefined;
 
   const templateStrings = getEmailStrings(language, EMAIL_TEMPLATE_NAMES.ENROLMENT_CONFIRMATION);
 
@@ -203,6 +211,7 @@ export async function buildEnrolmentConfirmationPayload(
       showStudentRow,
       className,
       classDetails,
+      ...(location ? { location } : {}),
       pendingWaiver: input.pendingWaiver,
       signUrl: input.signUrl,
       deadlineDate: input.deadlineDate,

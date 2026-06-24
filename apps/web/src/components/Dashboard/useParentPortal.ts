@@ -13,6 +13,7 @@ export interface EngagementWithOffering extends Engagement {
   className: string | null;
   classDay: number | null;
   classStartTime: string | null;
+  classLocation: string | null;
 }
 
 export interface ParentPayment {
@@ -71,7 +72,7 @@ export function useParentPortal(): ParentPortalState {
       if (personIds.length > 0) {
         const { data: enrolmentRows, error: enrolmentError } = await supabase
           .from('engagements')
-          .select('*, offerings(name, day_of_week, start_time)')
+          .select('*, offerings(name, day_of_week, start_time, location)')
           .in('person_id', personIds)
           .order('created_at', { ascending: false });
 
@@ -83,6 +84,7 @@ export function useParentPortal(): ParentPortalState {
             name?: string;
             day_of_week?: number;
             start_time?: string;
+            location?: string | null;
           } | null;
 
           const entry: EngagementWithOffering = {
@@ -90,6 +92,10 @@ export function useParentPortal(): ParentPortalState {
             className: offering?.name ?? null,
             classDay: offering?.day_of_week ?? null,
             classStartTime: offering?.start_time ?? null,
+            classLocation:
+              typeof offering?.location === 'string' && offering.location.trim()
+                ? offering.location.trim()
+                : null,
           };
 
           if (!enrolmentsByPerson[enrolment.person_id]) {

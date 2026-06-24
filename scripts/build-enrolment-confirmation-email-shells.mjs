@@ -63,6 +63,7 @@ async function renderShell(language, pendingWaiver) {
         startDate: PLACEHOLDER.classStartDate,
         teacher: PLACEHOLDER.classTeacher,
       },
+      location: PLACEHOLDER.location,
       paymentSummary: {
         amountFormatted: BUILD_AMOUNT,
         paidOnFormatted: BUILD_PAID_ON,

@@ -298,6 +298,9 @@ export function AdminEnrolStudentModal({
                     {detailParts.length > 0 && (
                       <p className="text-xs text-gray-500 mt-0.5">{detailParts.join(' · ')}</p>
                     )}
+                    {cls.location && (
+                      <p className="text-xs text-gray-500 mt-0.5">{cls.location}</p>
+                    )}
                     <p className="text-sm font-medium mt-1">
                       {tenant &&
                         formatCurrency(

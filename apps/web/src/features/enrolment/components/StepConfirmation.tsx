@@ -8,6 +8,7 @@ import type { AdminPaymentChoice } from './AdminEnrolmentPaymentStep';
 export interface StepConfirmationProps {
   enrolment: Engagement;
   className: string;
+  location?: string | null;
   guardianEmail?: string | null;
   adminDoneMessage?: string | null;
   adminPaymentChoice?: AdminPaymentChoice | null;
@@ -22,6 +23,7 @@ export interface StepConfirmationProps {
 export function StepConfirmation({
   enrolment,
   className,
+  location,
   guardianEmail,
   adminDoneMessage,
   adminPaymentChoice,
@@ -147,6 +149,11 @@ export function StepConfirmation({
         <p>
           <strong>{t('pages.enrolment.class_label')}:</strong> {className || enrolment.offering_id}
         </p>
+        {location && (
+          <p>
+            <strong>{t('pages.enrolment.location_label')}:</strong> {location}
+          </p>
+        )}
         <p>
           <strong>{t('pages.enrolment.status_label')}:</strong> {enrolment.status}
         </p>

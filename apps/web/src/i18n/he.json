@@ -163,6 +163,8 @@
       "term": "תקופה",
       "level": "רמה",
       "teacher": "מורה",
+      "location": "מיקום",
+      "location_placeholder": "למשל אולם ב', כתובת הסטודיו",
       "cover_image": "תמונת שער",
       "cover_image_hint": "JPEG, PNG או WebP. עד 2MB.",
       "remove_cover_image": "הסר תמונה",
@@ -532,7 +534,8 @@
       "ages_min_only": "{{min}}+",
       "ages_max_only": "עד גיל {{max}}",
       "level": "רמה",
-      "capacity": "קיבולת"
+      "capacity": "קיבולת",
+      "location": "מיקום"
     },
     "enrolment": {
       "person_desc": "למי אתם נרשמים היום?",
@@ -628,6 +631,7 @@
       "create_new_adult": "יצירת תלמיד/ה בוגר/ת",
       "guardian_email_required": "נדרש דוא\"ל הורה לאישור ולגישה לפורטל.",
       "class_label": "שיעור",
+      "location_label": "מיקום",
       "status_label": "סטטוס",
       "date_label": "תאריך"
     },

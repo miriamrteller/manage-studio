@@ -76,7 +76,8 @@ INSERT INTO offerings (
   id, tenant_id, season_id, category_id, name,
   day_of_week, start_time, end_time,
   min_age, max_age,
-  max_capacity, price_minor, currency, delivery_mode, billing_mode, is_public, status
+  max_capacity, price_minor, currency, delivery_mode, billing_mode, is_public, status,
+  location
 )
 VALUES
   (
@@ -87,7 +88,8 @@ VALUES
     'Mini',
     1, '15:30:00', '16:15:00',
     3, 4,
-    10, 24000, 'ILS', 'scheduled', 'one_time', true, 'active'
+    10, 24000, 'ILS', 'scheduled', 'one_time', true, 'active',
+    'Studio A, 12 Rothschild Blvd, Tel Aviv'
   ),
   (
     '00000000-0000-0000-0000-000000000302'::uuid,
@@ -97,7 +99,8 @@ VALUES
     'Pre-Primary',
     1, '16:15:00', '17:00:00',
     4, 6,
-    16, 24000, 'ILS', 'scheduled', 'one_time', true, 'active'
+    16, 24000, 'ILS', 'scheduled', 'one_time', true, 'active',
+    NULL
   ),
   (
     '00000000-0000-0000-0000-000000000303'::uuid,
@@ -107,7 +110,8 @@ VALUES
     'Primary',
     1, '17:00:00', '17:45:00',
     5, 7,
-    20, 24000, 'ILS', 'scheduled', 'one_time', true, 'active'
+    20, 24000, 'ILS', 'scheduled', 'one_time', true, 'active',
+    NULL
   ),
   (
     '00000000-0000-0000-0000-000000000304'::uuid,
@@ -117,7 +121,8 @@ VALUES
     'Grade 1',
     1, '17:45:00', '18:30:00',
     7, 10,
-    20, 24000, 'ILS', 'scheduled', 'one_time', true, 'active'
+    20, 24000, 'ILS', 'scheduled', 'one_time', true, 'active',
+    NULL
   ),
   (
     '00000000-0000-0000-0000-000000000305'::uuid,
@@ -127,7 +132,8 @@ VALUES
     'Grade 2',
     1, '18:30:00', '19:15:00',
     9, 13,
-    20, 24000, 'ILS', 'scheduled', 'one_time', true, 'active'
+    20, 24000, 'ILS', 'scheduled', 'one_time', true, 'active',
+    NULL
   ),
   (
     '00000000-0000-0000-0000-000000000306'::uuid,
@@ -137,7 +143,8 @@ VALUES
     'Grade 3',
     1, '19:15:00', '20:00:00',
     10, 16,
-    20, 24000, 'ILS', 'scheduled', 'one_time', true, 'active'
+    20, 24000, 'ILS', 'scheduled', 'one_time', true, 'active',
+    NULL
   ),
   (
     '00000000-0000-0000-0000-000000000309'::uuid,
@@ -147,7 +154,8 @@ VALUES
     'Pilates',
     1, '20:00:00', '20:45:00',
     18, NULL,
-    15, 24000, 'ILS', 'scheduled', 'one_time', true, 'active'
+    15, 24000, 'ILS', 'scheduled', 'one_time', true, 'active',
+    'Studio B, 12 Rothschild Blvd, Tel Aviv'
   )
 ON CONFLICT (id) DO UPDATE SET
   season_id = EXCLUDED.season_id,
@@ -163,7 +171,8 @@ ON CONFLICT (id) DO UPDATE SET
   currency = EXCLUDED.currency,
   billing_mode = EXCLUDED.billing_mode,
   is_public = EXCLUDED.is_public,
-  status = EXCLUDED.status;
+  status = EXCLUDED.status,
+  location = EXCLUDED.location;
 
 DELETE FROM offerings
 WHERE tenant_id = '00000000-0000-0000-0000-000000000001'::uuid

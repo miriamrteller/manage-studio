@@ -86,6 +86,12 @@ export function ClassCard({ class: cls, currency }: ClassCardProps) {
               {ageLabel}
             </p>
           )}
+          {cls.location && (
+            <p>
+              <span className="font-semibold">{t('pages.classes.location')}:</span>{' '}
+              {cls.location}
+            </p>
+          )}
 
           <p className="text-lg font-semibold text-primary">
             {formatCurrency(displayMinor, currency, i18n.language)}

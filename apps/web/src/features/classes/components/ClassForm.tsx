@@ -14,6 +14,18 @@ const optionalUuidField = z.preprocess(
   z.string().uuid().nullable().optional(),
 );
 
+const optionalLocationField = z.preprocess(
+  (val) => {
+    if (val == null || val === '') return null;
+    if (typeof val === 'string') {
+      const trimmed = val.trim();
+      return trimmed === '' ? null : trimmed;
+    }
+    return val;
+  },
+  z.string().max(500).nullable().optional(),
+);
+
 const ClassFormSchema = z.object({
   season_id: z.string().uuid('Term is required'),
   category_id: optionalUuidField,
@@ -33,6 +45,7 @@ const ClassFormSchema = z.object({
   is_public: z.enum(['true', 'false']).optional(),
   billing_mode: z.enum(['one_time', 'recurring']).optional(),
   status: z.enum(['active', 'cancelled', 'full']).optional(),
+  location: optionalLocationField,
 });
 
 type OfferingFormValues = z.infer<typeof ClassFormSchema>;
@@ -64,6 +77,7 @@ function toFormValues(classItem: Partial<Offering> | undefined, defaultCurrency:
     is_public: (classItem?.is_public ?? true) ? 'true' : 'false',
     billing_mode: classItem?.billing_mode ?? 'one_time',
     status: classItem?.status || 'active',
+    location: classItem?.location ?? '',
   };
 }
 
@@ -85,6 +99,7 @@ function toClassPayload(values: OfferingFormValues): Partial<Offering> {
     delivery_mode: 'scheduled',
     billing_mode: values.billing_mode ?? 'one_time',
     status: values.status,
+    location: values.location?.trim() || null,
   };
 }
 
@@ -194,6 +209,14 @@ export function ClassForm({
         error={form.formState.errors.name?.message}
         required
         {...form.register('name')}
+      />
+
+      <FormInput
+        htmlFor="location"
+        label={t('form.class.location')}
+        placeholder={t('form.class.location_placeholder')}
+        error={form.formState.errors.location?.message}
+        {...form.register('location')}
       />
 
       <div className="space-y-2">

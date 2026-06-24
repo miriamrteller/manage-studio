@@ -802,7 +802,7 @@ Landing pages and public class listings need data before a user logs in. The acc
 | `20260608001500_engagement_rls.sql` | engagement-dependent RLS on `offering_sessions` + `billing_accounts` | 000300, 000800, 001100, 001300 |
 | `20260608001600_finance.sql` | `payments`, `invoice_sequences`, Stripe RPCs | 000200, 000300, 000500, 001300 |
 | `20260608001700_storage.sql` | `offering-images` + `waiver-pdfs` buckets + storage RLS | 000200, 000300, 000500 |
-| `20260608001800_public_rpcs.sql` | `get_public_offerings_by_subdomain(p_subdomain)` (incl. `season_start_date`, `cover_image_path`, `waiver_required`), `get_tenant_config_by_subdomain(p_subdomain)` — `anon` safe | 000200, 000500 |
+| `20260608001800_public_rpcs.sql` | `get_public_offerings_by_subdomain(p_subdomain)` (incl. `season_start_date`, `cover_image_path`, `waiver_required`, `location`), `get_tenant_config_by_subdomain(p_subdomain)` — `anon` safe | 000200, 000500 |
 | `20260608001900_auth_trigger.sql` | `handle_new_user` on `auth.users` (reads `raw_user_meta_data`, tenant fallback) | 000200 |
 | `20260608002000_admin_rpcs.sql` | `get_my_profile()`, `link_auth_user_to_person()` (incl. `pending_waiver`) | 000200, 000300, 001300 |
 | `20260608002100_guest_enrolment_rpcs.sql` | `guest_enrolment_check_email/create_family/create_adult/create_engagement` | 000300, 001100, 001300 |
@@ -1019,6 +1019,8 @@ CREATE TABLE classes (
 #### 4.2.5 Class requirements (implemented — not inline enum on `classes`)
 
 > **Age bands (V1 implementation):** `offerings.min_age` / `offerings.max_age` are first-class columns (not requirement templates). Age is evaluated at **season start**, not today's date. Parents/guests are hard-blocked; admins may override with audit trail; parents may request studio review → `admin_review` engagement + admin email. **Agent checklist:** [docs/plans/2026-06-02-age-override-and-review-request.md](docs/plans/2026-06-02-age-override-and-review-request.md)
+
+> **`offerings.location` (V1):** Optional nullable `TEXT` (max 500 chars) — human-readable display text for where the class meets (room name, address, or directions). Not a normalized address, geocode, or venue FK. Included in `get_public_offerings_by_subdomain` for public listings; shown in admin, parent portal, enrolment UI, and enrolment confirmation email when set.
 
 > **Legacy blueprint numbering** — see §4.2.0 for authoritative filenames.
 > **Files:** `20260608001000_requirements.sql` (templates, overrides, offering links).
