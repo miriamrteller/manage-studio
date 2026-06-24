@@ -4,8 +4,8 @@
  * Non-async (synchronous) for use in Supabase Edge Functions
  * Adheres to SPEC.md 1.9.1: No hard-coded UI strings
  */
-import enTemplates from './email-templates-en.json' with { type: 'json' };
-import heTemplates from './email-templates-he.json' with { type: 'json' };
+import enTemplates from './email-templates-en.json' assert { type: 'json' };
+import heTemplates from './email-templates-he.json' assert { type: 'json' };
 import { z } from 'zod';
 /**
  * Supported template names
