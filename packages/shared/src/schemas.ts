@@ -492,6 +492,104 @@ export const ExpenseCategorySchema = z.object({
 
 export type ExpenseCategory = z.infer<typeof ExpenseCategorySchema>;
 
+// =============================================================================
+// Finance admin — hub summary, expenses, payments log
+// =============================================================================
+
+export const FinanceSummarySchema = z.object({
+  net_revenue_minor: z.number().int(),
+  payment_count: z.number().int().nonnegative(),
+  outstanding_engagements: z.number().int().nonnegative(),
+  failed_payments_7d: z.number().int().nonnegative(),
+  net_expenses_minor: z.number().int(),
+});
+
+export type FinanceSummary = z.infer<typeof FinanceSummarySchema>;
+
+export const ExpenseSchema = z.object({
+  id: UUIDSchema,
+  tenant_id: UUIDSchema,
+  category_id: UUIDSchema,
+  description: z.string().min(1).max(500),
+  pretax_amount_minor: z.number().int(),
+  vat_amount_minor: z.number().int().nonnegative(),
+  total_amount_minor: z.number().int(),
+  currency: z.string().min(1),
+  supplier_name: z.string().nullable().optional(),
+  supplier_vat_number: z.string().nullable().optional(),
+  receipt_storage_path: z.string().nullable().optional(),
+  expense_date: DateSchema,
+  corrects_expense_id: UUIDSchema.nullable().optional(),
+  created_by: UUIDSchema,
+  created_at: TimestampSchema,
+});
+
+export type Expense = z.infer<typeof ExpenseSchema>;
+
+export const ExpenseCreateInputSchema = z.object({
+  p_expense_id: UUIDSchema,
+  p_category_id: UUIDSchema,
+  p_description: z.string().min(1).max(500),
+  p_pretax_amount_minor: z.number().int(),
+  p_vat_amount_minor: z.number().int().nonnegative(),
+  p_total_amount_minor: z.number().int(),
+  p_currency: z.string().min(1),
+  p_supplier_name: z.string().max(200).nullable().optional(),
+  p_supplier_vat_number: z.string().max(20).nullable().optional(),
+  p_receipt_storage_path: z.string().nullable().optional(),
+  p_expense_date: DateSchema,
+  p_corrects_expense_id: UUIDSchema.nullable().optional(),
+});
+
+export type ExpenseCreateInput = z.infer<typeof ExpenseCreateInputSchema>;
+
+const PaymentLogPersonSchema = z.object({ id: UUIDSchema, name: z.string() }).nullable();
+const PaymentLogOfferingSchema = z.object({ id: UUIDSchema, name: z.string() }).nullable();
+const PaymentLogEngagementSchema = z.object({
+  id: UUIDSchema,
+  status: z.string(),
+}).nullable();
+
+export const PaymentLogRowSchema = z.object({
+  id: UUIDSchema,
+  person_id: UUIDSchema.nullable().optional(),
+  account_id: UUIDSchema.nullable().optional(),
+  offering_id: UUIDSchema.nullable().optional(),
+  engagement_id: UUIDSchema.nullable().optional(),
+  pretax_amount_minor: z.number().int(),
+  vat_amount_minor: z.number().int(),
+  total_amount_minor: z.number().int(),
+  currency: z.string(),
+  status: z.enum([
+    'pending',
+    'succeeded',
+    'failed',
+    'refunded',
+    'partially_refunded',
+    'disputed',
+  ]),
+  charge_type: z.enum(['initial', 'renewal', 'setup', 'adjustment', 'refund']),
+  provider: z.string(),
+  payment_method: z.enum(['card', 'cash', 'bank_transfer', 'other']).nullable().optional(),
+  paid_at: TimestampSchema.nullable().optional(),
+  created_at: TimestampSchema,
+  external_document_number: z.string().nullable().optional(),
+  invoice_url: z.string().nullable().optional(),
+  person: PaymentLogPersonSchema.optional(),
+  offering: PaymentLogOfferingSchema.optional(),
+  engagement: PaymentLogEngagementSchema.optional(),
+});
+
+export type PaymentLogRow = z.infer<typeof PaymentLogRowSchema>;
+
+export const FinancePeriodKeySchema = z.enum([
+  'month_current',
+  'month_previous',
+  'season_active',
+]);
+
+export type FinancePeriodKey = z.infer<typeof FinancePeriodKeySchema>;
+
 // Notification payload for send-notification Edge Function
 export const NotificationPayloadSchema = z.object({
   tenantId: UUIDSchema,
