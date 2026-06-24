@@ -34,6 +34,8 @@ export interface EnrolmentContextValue {
    * Null when the offering hasn't loaded yet (no classId in intent, or still loading).
    */
   waiverRequired: boolean | null;
+  /** Preselected offering display info (name + location) when classId is in intent. */
+  selectedOffering?: { name: string; location: string | null };
 }
 
 function hasAdultStudentRole(roles: string[]): boolean {
@@ -59,6 +61,8 @@ export function useEnrolmentContext(intent: EnrollmentIntent | null): EnrolmentC
         if (!row) return null;
         return {
           id: row.id as string,
+          name: row.name as string,
+          location: (row.location as string | null) ?? null,
           min_age: row.min_age as number | null,
           max_age: row.max_age as number | null,
           season_start_date: (row.season_start_date ?? null) as string | null,
@@ -69,7 +73,7 @@ export function useEnrolmentContext(intent: EnrollmentIntent | null): EnrolmentC
       if (!tenant?.id) return null;
       const { data, error } = await supabase
         .from('offerings')
-        .select('id, min_age, max_age, season_id, waiver_required, seasons(start_date)')
+        .select('id, name, location, min_age, max_age, season_id, waiver_required, seasons(start_date)')
         .eq('tenant_id', tenant.id)
         .eq('id', intent.classId)
         .maybeSingle();
@@ -78,6 +82,8 @@ export function useEnrolmentContext(intent: EnrollmentIntent | null): EnrolmentC
       const season = data.seasons as { start_date?: string } | null;
       return {
         id: data.id,
+        name: data.name as string,
+        location: (data.location as string | null) ?? null,
         min_age: data.min_age,
         max_age: data.max_age,
         season_start_date: season?.start_date ?? null,
@@ -169,5 +175,12 @@ export function useEnrolmentContext(intent: EnrollmentIntent | null): EnrolmentC
     error,
     // null = offering not loaded yet; false = loaded, waiver not required; true = required
     waiverRequired: offeringQuery.data != null ? (offeringQuery.data.waiver_required ?? false) : null,
+    selectedOffering:
+      intent?.classId && offeringQuery.data
+        ? {
+            name: offeringQuery.data.name ?? '',
+            location: offeringQuery.data.location ?? null,
+          }
+        : undefined,
   };
 }

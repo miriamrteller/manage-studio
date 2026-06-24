@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -70,12 +70,21 @@ export function EnrolmentStepper({
   const [personDateOfBirth, setPersonDateOfBirth] = useState<string | null>(null);
   const [personAgeError, setPersonAgeError] = useState<string | null>(null);
   const [selectedClassName, setSelectedClassName] = useState('');
+  const [selectedClassLocation, setSelectedClassLocation] = useState<string | null>(null);
   const [personStepSkipped, setPersonStepSkipped] = useState(false);
   const [guestGuardianEmail, setGuestGuardianEmail] = useState<string | null>(null);
 
   const { classAgeOverride, setClassAgeOverride, handleClassAgeOverrideChange } = useAgeOverride();
   const classPreselected = Boolean(initialClassId && initialTermId);
   const showGuestVerifyStep = false;
+
+  useEffect(() => {
+    const offering = enrolmentContext.selectedOffering;
+    if (initialClassId && offering) {
+      setSelectedClassName(offering.name);
+      setSelectedClassLocation(offering.location ?? null);
+    }
+  }, [initialClassId, enrolmentContext.selectedOffering]);
 
   const enrolledPersonId =
     enrolmentData.person_id ?? enrolmentContext.preselectedPersonId ?? undefined;
@@ -236,6 +245,7 @@ export function EnrolmentStepper({
     newData?: Partial<Engagement>,
     className?: string,
     waiverRequired?: boolean,
+    location?: string | null,
   ) => {
     if (
       newData?.offering_id &&
@@ -246,6 +256,7 @@ export function EnrolmentStepper({
     }
     if (newData) setEnrolmentData((prev) => ({ ...prev, ...newData }));
     if (className) setSelectedClassName(className);
+    if (location !== undefined) setSelectedClassLocation(location);
     if (waiverRequired !== undefined) waiverFlow.setLocalWaiverRequired(waiverRequired);
     goToNextStep();
   };
@@ -634,6 +645,7 @@ export function EnrolmentStepper({
           <StepConfirmation
             enrolment={enrolmentData as Engagement}
             className={selectedClassName}
+            location={selectedClassLocation}
             guardianEmail={guestGuardianEmail}
             adminDoneMessage={adminCompletion.adminDoneMessage}
             adminPaymentChoice={adminCompletion.adminPaymentChoice}

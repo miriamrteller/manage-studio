@@ -51,6 +51,9 @@ function EnrolmentRow({
       <div>
         <p className="font-medium text-gray-900">{enrolment.className ?? enrolment.offering_id}</p>
         {schedule && <p className="text-sm text-gray-500">{schedule}</p>}
+        {enrolment.classLocation && (
+          <p className="text-sm text-gray-500">{enrolment.classLocation}</p>
+        )}
       </div>
       <EnrolmentStatusAction
         status={enrolment.status}

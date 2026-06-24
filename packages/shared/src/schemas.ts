@@ -123,6 +123,7 @@ export const PublicOfferingSchema = z.object({
   billing_interval: z.enum(['monthly', 'quarterly', 'annual']).nullable().optional(),
   current_engagements: z.number().nonnegative().optional(),
   waiver_required: z.boolean().optional(),
+  location: z.string().max(500).nullable().optional(),
 });
 
 export type PublicOffering = z.infer<typeof PublicOfferingSchema>;
@@ -292,6 +293,7 @@ export const OfferingSchema = z.object({
   billing_interval: z.enum(['monthly', 'quarterly', 'annual']).nullable().optional(),
   status: z.enum(['active', 'cancelled', 'full']).default('active'),
   waiver_required: z.boolean().default(true),
+  location: z.string().max(500).nullable().optional(),
   created_at: TimestampSchema,
 }).refine((data) => {
   if (data.delivery_mode === 'intangible') return true;

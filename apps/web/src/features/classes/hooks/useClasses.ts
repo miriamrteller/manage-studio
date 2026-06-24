@@ -24,6 +24,7 @@ function normalizePublicOffering(row: Record<string, unknown>) {
     season_start_date: row.season_start_date ?? null,
     cover_image_path: row.cover_image_path ?? null,
     updated_at: row.updated_at ?? null,
+    location: typeof row.location === 'string' && row.location.trim() ? row.location.trim() : null,
   };
 }
 
