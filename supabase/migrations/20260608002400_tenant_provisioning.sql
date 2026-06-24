@@ -60,6 +60,7 @@ DECLARE
   v_tenant_id UUID;
   v_subdomain TEXT;
   v_preset    TEXT;
+  v_country   TEXT;
 BEGIN
   IF NOT is_super_admin() THEN
     RAISE EXCEPTION 'Only super_admin can provision tenants';
@@ -70,6 +71,7 @@ BEGIN
     WHEN p_business_preset IN ('programs', 'services', 'catalog') THEN p_business_preset
     ELSE 'programs'
   END;
+  v_country := CASE WHEN p_country IN ('IL', 'US') THEN p_country ELSE 'IL' END;
 
   IF p_name IS NULL OR trim(p_name) = '' THEN
     RAISE EXCEPTION 'p_name is required';
@@ -100,7 +102,9 @@ BEGIN
     phone_region,
     vat_rate,
     prices_include_vat,
-    from_email
+    from_email,
+    payment_provider,
+    invoicing_provider
   )
   VALUES (
     trim(p_name),
@@ -110,12 +114,14 @@ BEGIN
     COALESCE(NULLIF(trim(p_primary_color), ''), '#76335a'),
     COALESCE(NULLIF(trim(p_accent_color), ''), '#e99ac4'),
     CASE WHEN p_language_default IN ('he', 'en') THEN p_language_default ELSE 'he' END,
-    CASE WHEN p_country IN ('IL', 'US') THEN p_country ELSE 'IL' END,
+    v_country,
     COALESCE(NULLIF(upper(trim(p_currency)), ''), 'ILS'),
     COALESCE(NULLIF(upper(trim(p_phone_region)), ''), 'IL'),
     COALESCE(p_vat_rate, 0.17),
     COALESCE(p_prices_include_vat, true),
-    NULLIF(trim(p_from_email), '')
+    NULLIF(trim(p_from_email), ''),
+    CASE WHEN v_country = 'IL' THEN 'grow' ELSE 'stripe' END,
+    CASE WHEN v_country = 'IL' THEN 'grow' ELSE 'green_invoice' END
   )
   RETURNING id INTO v_tenant_id;
 

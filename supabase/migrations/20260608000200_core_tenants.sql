@@ -6,6 +6,59 @@
 
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
+-- Hosted Supabase cannot set custom GUCs via ALTER DATABASE (permission denied).
+-- Store the dev encryption key in a private table and resolve via get_app_encryption_key(),
+-- which prefers the GUC when present (production runbook) and falls back to platform_config.
+CREATE SCHEMA private;
+
+CREATE TABLE private.platform_config (
+  key   TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
+
+REVOKE ALL ON SCHEMA private FROM PUBLIC;
+REVOKE ALL ON private.platform_config FROM PUBLIC;
+REVOKE ALL ON private.platform_config FROM anon;
+REVOKE ALL ON private.platform_config FROM authenticated;
+
+-- Dev default (matches supabase/seed-finance.sql). Production: set app.encryption_key GUC or
+-- UPDATE this row via a secured runbook step — never expose to clients.
+INSERT INTO private.platform_config (key, value)
+VALUES ('encryption_key', '0uT6CrQXiMJab+raSRxxx0j7ZLYvwKCb2HCoQusCfiY=')
+ON CONFLICT (key) DO NOTHING;
+
+CREATE OR REPLACE FUNCTION get_app_encryption_key()
+RETURNS TEXT
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = private, public, extensions
+AS $$
+DECLARE
+  enc_key TEXT;
+BEGIN
+  enc_key := nullif(current_setting('app.encryption_key', true), '');
+  IF enc_key IS NOT NULL THEN
+    RETURN enc_key;
+  END IF;
+
+  SELECT value INTO enc_key
+  FROM private.platform_config
+  WHERE key = 'encryption_key'
+  LIMIT 1;
+
+  IF enc_key IS NULL OR enc_key = '' THEN
+    RAISE EXCEPTION 'app.encryption_key is not configured';
+  END IF;
+
+  RETURN enc_key;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION get_app_encryption_key() FROM PUBLIC;
+REVOKE ALL ON FUNCTION get_app_encryption_key() FROM anon;
+REVOKE ALL ON FUNCTION get_app_encryption_key() FROM authenticated;
+
 CREATE TABLE tenants (
   id                            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   name                          TEXT        NOT NULL,

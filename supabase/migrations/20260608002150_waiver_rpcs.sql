@@ -5,13 +5,16 @@
 -- DEPENDENCIES: 000300, 001300
 -- =============================================================================
 
--- Authorizes via people.email = auth.email() so it works for newly-authenticated
--- users who have no user_profiles row yet. Returns any status (caller handles each).
+-- Authorizes adult self-enrolment, guardian email on the family account, or linked user_profile.
 CREATE OR REPLACE FUNCTION get_pending_waiver_engagement(p_engagement_id UUID)
 RETURNS TABLE(person_id UUID, offering_id UUID, current_status TEXT)
 LANGUAGE plpgsql SECURITY DEFINER
 SET search_path = public AS $$
 BEGIN
+  IF auth.uid() IS NULL THEN
+    RETURN;
+  END IF;
+
   RETURN QUERY
     SELECT
       e.person_id,
@@ -20,7 +23,28 @@ BEGIN
     FROM engagements e
     JOIN people p ON p.id = e.person_id
     WHERE e.id = p_engagement_id
-      AND p.email = auth.email();   -- authorizes via JWT email, no user_profiles needed
+      AND (
+        (p.email IS NOT NULL AND lower(trim(p.email)) = lower(trim(auth.email())))
+        OR
+        EXISTS (
+          SELECT 1
+          FROM account_members am
+          JOIN people guardian ON guardian.id = am.person_id
+          WHERE p.account_id IS NOT NULL
+            AND am.account_id = p.account_id
+            AND am.role = 'account_holder'
+            AND guardian.email IS NOT NULL
+            AND lower(trim(guardian.email)) = lower(trim(auth.email()))
+        )
+        OR
+        EXISTS (
+          SELECT 1
+          FROM account_members am
+          WHERE p.account_id IS NOT NULL
+            AND am.account_id = p.account_id
+            AND am.user_profile_id = auth.uid()
+        )
+      );
 END;
 $$;
 

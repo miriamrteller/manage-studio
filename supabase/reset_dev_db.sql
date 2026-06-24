@@ -7,6 +7,7 @@
 --
 -- Includes BOTH legacy (pre-Phase-A) and current generic names so reset works
 -- whether the DB still has classes/families/enrolments OR offerings/accounts/engagements.
+-- Also drops private.platform_config, get_app_encryption_key, save_tenant_grow_credentials.
 --
 -- Usage (Supabase SQL Editor on linked DEV project — not Supabase local):
 --   1. Run this entire script
@@ -97,9 +98,14 @@ DROP TABLE IF EXISTS public.verification_attempts         CASCADE;
 DROP TABLE IF EXISTS public.user_profiles                 CASCADE;
 DROP TABLE IF EXISTS public.tenants                       CASCADE;
 
+DROP TABLE IF EXISTS private.platform_config              CASCADE;
+DROP SCHEMA IF EXISTS private CASCADE;
+
 -- ---------------------------------------------------------------------------
 -- 3. Drop all custom functions / triggers (legacy + current)
 -- ---------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.save_tenant_grow_credentials(TEXT, TEXT, TEXT)          CASCADE;
+DROP FUNCTION IF EXISTS public.get_app_encryption_key()                                CASCADE;
 DROP FUNCTION IF EXISTS public.get_my_tenant_id()                                        CASCADE;
 DROP FUNCTION IF EXISTS public.is_super_admin()                                          CASCADE;
 DROP FUNCTION IF EXISTS public.is_service_role()                                         CASCADE;

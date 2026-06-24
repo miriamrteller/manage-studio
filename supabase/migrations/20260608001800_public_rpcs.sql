@@ -1,8 +1,8 @@
 -- =============================================================================
 -- 001800: Public RPCs (anon-safe)
--- get_public_offerings_by_subdomain — final signature with season_start_date,
---   cover_image_path, updated_at and waiver_required.
--- get_tenant_config_by_subdomain  — branding + preset + payment provider public key.
+-- get_public_offerings_by_subdomain — season_start_date, cover_image_path,
+--   updated_at, waiver_required, location.
+-- get_tenant_config_by_subdomain  — branding, preset, provider slugs, payment public key.
 -- DEPENDENCIES: 000200, 000500
 -- =============================================================================
 
@@ -29,7 +29,8 @@ RETURNS TABLE (
   billing_interval  TEXT,
   cover_image_path  TEXT,
   updated_at        TIMESTAMPTZ,
-  waiver_required   BOOLEAN
+  waiver_required   BOOLEAN,
+  location          TEXT
 )
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -63,7 +64,8 @@ BEGIN
     o.billing_interval,
     o.cover_image_path,
     o.updated_at,
-    COALESCE(o.waiver_required, false) AS waiver_required
+    COALESCE(o.waiver_required, false) AS waiver_required,
+    o.location
   FROM offerings o
   JOIN tenants t ON o.tenant_id = t.id
   LEFT JOIN seasons s ON s.id = o.season_id
@@ -91,6 +93,8 @@ RETURNS TABLE (
   accent_color                  TEXT,
   business_preset               TEXT,
   labels                        JSONB,
+  payment_provider              TEXT,
+  invoicing_provider            TEXT,
   payment_provider_public_key        TEXT,
   payment_provider_secret_configured BOOLEAN,
   payment_provider_webhook_configured BOOLEAN,
@@ -119,6 +123,8 @@ BEGIN
     t.accent_color,
     t.business_preset,
     t.labels,
+    t.payment_provider,
+    t.invoicing_provider,
     t.payment_provider_public_key,
     (t.payment_provider_secret_enc  IS NOT NULL),
     (t.payment_provider_webhook_enc IS NOT NULL),

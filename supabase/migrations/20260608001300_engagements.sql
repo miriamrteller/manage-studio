@@ -101,3 +101,37 @@ ALTER TABLE waitlist ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "super_admin manages all waitlist" ON waitlist FOR ALL    USING (is_super_admin());
 CREATE POLICY "admins manage waitlist"           ON waitlist FOR ALL    USING (tenant_id = get_my_tenant_id() AND EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND 'tenant_admin' = ANY(role)));
 CREATE POLICY "people see own waitlist"          ON waitlist FOR SELECT USING (person_id = get_my_person_id() OR person_id IN (SELECT id FROM people WHERE account_id IN (SELECT get_my_account_ids())));
+
+-- =============================================================================
+-- Enrolment resume drafts (login handoff resilience)
+-- Service-role only table used by Edge Functions:
+--   save-enrolment-resume / load-enrolment-resume / clear-enrolment-resume
+-- =============================================================================
+
+CREATE TABLE enrolment_resume_drafts (
+  id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id     UUID        NOT NULL REFERENCES tenants(id),
+  engagement_id UUID        REFERENCES engagements(id),
+  resume_key    TEXT        NOT NULL UNIQUE,
+  state_json    JSONB       NOT NULL,
+  expires_at    TIMESTAMPTZ NOT NULL,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_enrolment_resume_drafts_tenant
+  ON enrolment_resume_drafts(tenant_id, created_at DESC);
+
+CREATE INDEX idx_enrolment_resume_drafts_expires
+  ON enrolment_resume_drafts(expires_at);
+
+ALTER TABLE enrolment_resume_drafts ENABLE ROW LEVEL SECURITY;
+
+REVOKE ALL ON enrolment_resume_drafts FROM anon;
+REVOKE ALL ON enrolment_resume_drafts FROM authenticated;
+
+CREATE POLICY enrolment_resume_drafts_service_only
+  ON enrolment_resume_drafts
+  FOR ALL
+  USING (is_service_role())
+  WITH CHECK (is_service_role());

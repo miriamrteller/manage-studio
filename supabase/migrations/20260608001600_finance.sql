@@ -55,16 +55,13 @@ RETURNS TABLE (
   payment_provider_secret_key TEXT,
   payment_provider_webhook_secret TEXT
 )
-LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions AS $$
 DECLARE enc_key TEXT;
 BEGIN
   IF NOT is_service_role() THEN
     RAISE EXCEPTION 'get_tenant_payment_credentials: service_role only';
   END IF;
-  enc_key := current_setting('app.encryption_key', true);
-  IF enc_key IS NULL OR enc_key = '' THEN
-    RAISE EXCEPTION 'app.encryption_key is not configured';
-  END IF;
+  enc_key := get_app_encryption_key();
   RETURN QUERY SELECT
     t.payment_provider_public_key,
     CASE WHEN t.payment_provider_secret_enc  IS NOT NULL THEN pgp_sym_decrypt(t.payment_provider_secret_enc,  enc_key) ELSE NULL END,
@@ -78,7 +75,7 @@ CREATE OR REPLACE FUNCTION save_tenant_payment_credentials(
   p_secret_key     TEXT,
   p_webhook_secret TEXT
 )
-RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions AS $$
 DECLARE
   enc_key     TEXT;
   v_tenant_id UUID;
@@ -88,8 +85,7 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND tenant_id = v_tenant_id AND 'tenant_admin' = ANY(role)) THEN
     RAISE EXCEPTION 'tenant_admin role required';
   END IF;
-  enc_key := current_setting('app.encryption_key', true);
-  IF enc_key IS NULL OR enc_key = '' THEN RAISE EXCEPTION 'app.encryption_key is not configured'; END IF;
+  enc_key := get_app_encryption_key();
   UPDATE tenants SET
     payment_provider_public_key   = NULLIF(trim(p_public_key), ''),
     payment_provider_secret_enc   = CASE WHEN p_secret_key     IS NOT NULL AND trim(p_secret_key)     <> '' THEN pgp_sym_encrypt(trim(p_secret_key),     enc_key) ELSE payment_provider_secret_enc   END,
@@ -107,16 +103,13 @@ RETURNS TABLE (
   invoicing_api_key    TEXT,
   invoicing_secret     TEXT
 )
-LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions AS $$
 DECLARE enc_key TEXT;
 BEGIN
   IF NOT is_service_role() THEN
     RAISE EXCEPTION 'get_tenant_invoicing_credentials: service_role only';
   END IF;
-  enc_key := current_setting('app.encryption_key', true);
-  IF enc_key IS NULL OR enc_key = '' THEN
-    RAISE EXCEPTION 'app.encryption_key is not configured';
-  END IF;
+  enc_key := get_app_encryption_key();
   RETURN QUERY SELECT
     t.invoicing_account_id,
     CASE WHEN t.invoicing_api_key_enc IS NOT NULL THEN pgp_sym_decrypt(t.invoicing_api_key_enc, enc_key) ELSE NULL END,
@@ -130,7 +123,7 @@ CREATE OR REPLACE FUNCTION save_tenant_invoicing_credentials(
   p_api_key    TEXT,
   p_secret     TEXT
 )
-RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions AS $$
 DECLARE
   enc_key     TEXT;
   v_tenant_id UUID;
@@ -140,13 +133,48 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND tenant_id = v_tenant_id AND 'tenant_admin' = ANY(role)) THEN
     RAISE EXCEPTION 'tenant_admin role required';
   END IF;
-  enc_key := current_setting('app.encryption_key', true);
-  IF enc_key IS NULL OR enc_key = '' THEN RAISE EXCEPTION 'app.encryption_key is not configured'; END IF;
+  enc_key := get_app_encryption_key();
   UPDATE tenants SET
     invoicing_account_id           = NULLIF(trim(p_account_id), ''),
     invoicing_api_key_enc          = CASE WHEN p_api_key IS NOT NULL AND trim(p_api_key) <> '' THEN pgp_sym_encrypt(trim(p_api_key), enc_key) ELSE invoicing_api_key_enc END,
     invoicing_secret_enc           = CASE WHEN p_secret    IS NOT NULL AND trim(p_secret)    <> '' THEN pgp_sym_encrypt(trim(p_secret),    enc_key) ELSE invoicing_secret_enc     END,
     invoicing_credentials_updated_at = now(),
+    updated_at = now()
+  WHERE id = v_tenant_id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION save_tenant_grow_credentials(
+  p_user_id   TEXT,
+  p_page_code TEXT,
+  p_api_key   TEXT
+)
+RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions AS $$
+DECLARE
+  enc_key     TEXT;
+  v_tenant_id UUID;
+BEGIN
+  v_tenant_id := get_my_tenant_id();
+  IF v_tenant_id IS NULL THEN RAISE EXCEPTION 'Not authenticated'; END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM user_profiles
+    WHERE id = auth.uid() AND tenant_id = v_tenant_id AND 'tenant_admin' = ANY(role)
+  ) THEN
+    RAISE EXCEPTION 'tenant_admin role required';
+  END IF;
+  enc_key := get_app_encryption_key();
+
+  UPDATE tenants SET
+    payment_provider             = 'grow',
+    invoicing_provider           = 'grow',
+    payment_provider_account_id  = NULLIF(trim(p_user_id), ''),
+    payment_provider_public_key  = NULLIF(trim(p_page_code), ''),
+    payment_provider_secret_enc  = CASE
+      WHEN p_api_key IS NOT NULL AND trim(p_api_key) <> ''
+      THEN pgp_sym_encrypt(trim(p_api_key), enc_key)
+      ELSE payment_provider_secret_enc
+    END,
+    payment_provider_updated_at  = now(),
     updated_at = now()
   WHERE id = v_tenant_id;
 END;
@@ -268,6 +296,7 @@ GRANT EXECUTE ON FUNCTION get_tenant_payment_credentials(UUID)              TO s
 GRANT EXECUTE ON FUNCTION save_tenant_payment_credentials(TEXT, TEXT, TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION get_tenant_invoicing_credentials(UUID)            TO service_role;
 GRANT EXECUTE ON FUNCTION save_tenant_invoicing_credentials(TEXT, TEXT, TEXT) TO authenticated;
+GRANT EXECUTE ON FUNCTION save_tenant_grow_credentials(TEXT, TEXT, TEXT)   TO authenticated;
 GRANT EXECUTE ON FUNCTION get_billing_account_payment_method(UUID)          TO authenticated;
 
 ALTER TABLE payments               ENABLE ROW LEVEL SECURITY;

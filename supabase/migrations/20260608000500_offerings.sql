@@ -1,7 +1,7 @@
 -- =============================================================================
 -- 000500: Seasons, Categories, Staff, Offerings
 -- staff created before offerings so offerings.staff_id FK resolves in-file.
--- min_age / max_age / waiver_required / cover_image_path are first-class columns.
+-- min_age / max_age / waiver_required / cover_image_path / location are first-class columns.
 -- DEPENDENCIES: 000200
 -- =============================================================================
 
@@ -67,6 +67,7 @@ CREATE TABLE offerings (
   setup_fee_minor   INT         NOT NULL DEFAULT 0,
   waiver_required   BOOLEAN     NOT NULL DEFAULT true,
   cover_image_path  TEXT,
+  location          TEXT,
   status            TEXT        NOT NULL DEFAULT 'active'
                     CHECK (status IN ('active', 'cancelled', 'full')),
   created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -77,11 +78,17 @@ CREATE TABLE offerings (
   CONSTRAINT offerings_cover_image_path_format CHECK (
     cover_image_path IS NULL
     OR cover_image_path = tenant_id::text || '/' || id::text || '/cover.webp'
+  ),
+  CONSTRAINT offerings_location_length CHECK (
+    location IS NULL OR char_length(location) <= 500
   )
 );
 
 COMMENT ON COLUMN offerings.cover_image_path IS
   'Supabase Storage path for class card cover image: {tenant_id}/{offering_id}/cover.webp';
+
+COMMENT ON COLUMN offerings.location IS
+  'Human-readable class location for listings and emails. Display text only — not a normalized address.';
 
 CREATE INDEX idx_seasons_tenant    ON seasons(tenant_id);
 CREATE INDEX idx_categories_tenant ON categories(tenant_id);

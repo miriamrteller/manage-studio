@@ -1,0 +1,43 @@
+---
+description: Admin dashboard finance — one stage plan at a time (docs/plans/admin-dashboard-finance)
+globs: docs/plans/admin-dashboard-finance/**,apps/web/src/features/finance-admin/**
+alwaysApply: false
+---
+
+# Admin dashboard finance stages
+
+When implementing admin finance, follow **one stage file only** per session.
+
+## Required reading (order)
+
+1. `docs/plans/admin-dashboard-finance/CONTRACTS.md` — **locked; overrides stage prose**
+2. `docs/plans/admin-dashboard-finance/00-overview.md`
+3. Active `docs/plans/admin-dashboard-finance/stage-fN-*.md`
+4. `.instructions.md`
+
+Prompt helper: `pnpm finance-admin:prompt fN`
+
+## Hard rules
+
+- **Order:** F1 → F2 → F3 → F4 → F5 → F6. One stage per session.
+- **Feature root:** `apps/web/src/features/finance-admin/` only for new finance-admin UI.
+- **No client-side full-table SUM** for P&L — use `get_finance_summary` RPC (+ expenses total in F6).
+- **Payments log:** `.range()` pagination; `PAGE_SIZE = 50`.
+- **Expenses:** `create_expense` RPC only with `p_expense_id` — never `.from('expenses').insert()` from client; never `logAudit` on expense create (RPC audits).
+- **Payments query:** `supabase.from('payments').select(…)` with joins — not `TenantDB.selectFor` for joined selects.
+- **Offerings column:** `name` not `title`.
+- **Immutable:** no UPDATE/DELETE on `payments` or `expenses` in admin finance UI.
+- **VAT:** `calculateVat` / `addVatToPretax` from `@shared/pricing` — not `resolveOfferingPrice`.
+- **Seasons:** use `seasons.status = 'active'` — never `terms` or `is_current`.
+- **Grow:** mock tenant acceptance; live Grow sandbox not required for F stages.
+- **Migrations:** new files only; never edit shipped migrations in place.
+- **DB sync:** `pnpm db:sync` only after F3/F4/F6 migrations when user confirms.
+- **No git commit/push** unless user explicitly requests.
+
+## Completion report
+
+1. DoD checklist (PASS/FAIL each item)
+2. Files changed
+3. Commands + outcomes
+4. Blockers
+5. **Stop** — wait for "commit Stage FN"

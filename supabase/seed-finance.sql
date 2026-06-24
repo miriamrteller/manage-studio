@@ -24,10 +24,9 @@
 --   engagement. Enable outside dev builds with VITE_ENABLE_FINANCE_WALKTHROUGH=true.
 
 -- ============================================================================
--- DEV ENCRYPTION KEY — stored in private.platform_config (migration
--- 20260622000000_app_encryption_key_platform_config.sql). On hosted Supabase,
--- ALTER DATABASE SET app.encryption_key is permission-denied; the table fallback
--- is used instead. Production can still override via the GUC runbook.
+-- DEV ENCRYPTION KEY — stored in private.platform_config (squashed into
+-- 20260608000200_core_tenants.sql). On hosted Supabase, ALTER DATABASE SET
+-- app.encryption_key is permission-denied; the table fallback is used instead.
 -- ============================================================================
 
 -- ============================================================================
