@@ -76,20 +76,31 @@ export class FinanceSummaryService extends BaseService {
 
     if (error) throw error;
     return (data ?? []).map((row) => ({
-      id: row.id as string,
+      id: String(row.id),
       person_id: row.person_id as string | null,
       offering_id: row.offering_id as string | null,
-      status: row.status as string,
-      person: normalizeRelation(row.person),
-      offering: normalizeRelation(row.offering),
+      status: String(row.status),
+      person: normalizeRelation(row.person as unknown),
+      offering: normalizeRelation(row.offering as unknown),
     }));
   }
 }
 
-function normalizeRelation(
-  value: { id: string; name: string } | { id: string; name: string }[] | null | undefined,
-): { id: string; name: string } | null {
+function normalizeRelation(value: unknown): { id: string; name: string } | null {
   if (!value) return null;
-  if (Array.isArray(value)) return value[0] ?? null;
-  return value;
+  if (Array.isArray(value)) {
+    const first = value[0];
+    if (!first || typeof first !== 'object') return null;
+    return {
+      id: String((first as { id: unknown }).id),
+      name: String((first as { name: unknown }).name),
+    };
+  }
+  if (typeof value === 'object') {
+    return {
+      id: String((value as { id: unknown }).id),
+      name: String((value as { name: unknown }).name),
+    };
+  }
+  return null;
 }
