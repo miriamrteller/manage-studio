@@ -29,7 +29,7 @@ export function timingSafeEqual(a: string, b: string): boolean {
 async function importHmacKey(keyString: string): Promise<CryptoKey> {
   return crypto.subtle.importKey(
     "raw",
-    new TextEncoder().encode(keyString),
+    new TextEncoder().encode(keyString).buffer as ArrayBuffer,
     { name: "HMAC", hash: "SHA-256" },
     false,
     ["sign"],
@@ -45,7 +45,7 @@ export async function hmacSha256Base64url(
   const sig = await crypto.subtle.sign(
     "HMAC",
     key,
-    new TextEncoder().encode(message),
+    new TextEncoder().encode(message).buffer as ArrayBuffer,
   );
   return encodeBase64Url(new Uint8Array(sig));
 }
@@ -59,7 +59,7 @@ export async function hmacSha256Hex(
   const sig = await crypto.subtle.sign(
     "HMAC",
     key,
-    new TextEncoder().encode(message),
+    new TextEncoder().encode(message).buffer as ArrayBuffer,
   );
   return Array.from(new Uint8Array(sig))
     .map((b) => b.toString(16).padStart(2, "0"))
@@ -68,8 +68,10 @@ export async function hmacSha256Hex(
 
 /** Returns lowercase hex SHA-256. Used for pdf_sha256 and consent_version_hash. */
 export async function sha256Hex(data: Uint8Array | string): Promise<string> {
-  const bytes =
-    typeof data === "string" ? new TextEncoder().encode(data) : data;
+  const bytes: ArrayBuffer =
+    typeof data === "string"
+      ? new TextEncoder().encode(data).buffer as ArrayBuffer
+      : data.buffer as ArrayBuffer;
   const hash = await crypto.subtle.digest("SHA-256", bytes);
   return Array.from(new Uint8Array(hash))
     .map((b) => b.toString(16).padStart(2, "0"))

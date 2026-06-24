@@ -1,3 +1,4 @@
+// @ts-self-types="./render-template.d.ts"
 import React from 'react';
 import { render } from '@react-email/render';
 import ClassCancellationEmail from '../email-templates/ClassCancellationEmail.js';
