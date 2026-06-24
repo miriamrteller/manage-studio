@@ -62,6 +62,12 @@ export const navigationConfig: NavItem[] = [
     sectionKey: 'administration',
   },
   {
+    path: '/admin/finance',
+    labelKey: 'nav.finance',
+    requiredRoles: ['tenant_admin'],
+    sectionKey: 'administration',
+  },
+  {
     path: '/admin/setup',
     labelKey: 'pages.admin.setup.title',
     requiredRoles: ['tenant_admin'],

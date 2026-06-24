@@ -29,6 +29,10 @@ import EnrolPage from "./pages/EnrolPage";
 import EnrolPayPage from "./pages/EnrolPayPage";
 import EnrolCompletePage from "./pages/EnrolCompletePage";
 import NotFoundPage from "./pages/NotFoundPage";
+import FinanceHubPage from "./pages/FinanceHubPage";
+import PaymentsLogPage from "./pages/PaymentsLogPage";
+import ExpensesPage from "./pages/ExpensesPage";
+import ExpenseCategoriesPage from "./pages/ExpenseCategoriesPage";
 import { LanguageProvider } from "./contexts/LanguageContext";
 
 function RootLayout() {
@@ -71,6 +75,10 @@ const router = createBrowserRouter([
       { path: "admin/people", element: <AdminRoute><Navigate to="/admin/students" replace /></AdminRoute> },
       { path: "admin/families", element: <AdminRoute><FamiliesPage /></AdminRoute> },
       { path: "admin/families/:id", element: <AdminRoute><FamilyDetailPage /></AdminRoute> },
+      { path: "admin/finance", element: <AdminRoute><FinanceHubPage /></AdminRoute> },
+      { path: "admin/finance/payments", element: <AdminRoute><PaymentsLogPage /></AdminRoute> },
+      { path: "admin/finance/expenses", element: <AdminRoute><ExpensesPage /></AdminRoute> },
+      { path: "admin/finance/expenses/categories", element: <AdminRoute><ExpenseCategoriesPage /></AdminRoute> },
       { path: "admin/setup", element: <AdminRoute><AdminDashboard /></AdminRoute> },
       { path: "admin/setup/billing", element: <AdminRoute><BillingPage /></AdminRoute> },
       { path: "admin/setup/levels", element: <AdminRoute><LevelsPage /></AdminRoute> },

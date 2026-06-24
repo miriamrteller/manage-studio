@@ -1,4 +1,5 @@
 import { TIMEZONE } from '@/lib/constants';
+import type { FinancePeriodKey } from '@shared/schemas';
 
 export type DateRange = { startDate: string; endDate: string };
 
@@ -42,4 +43,22 @@ export function seasonToDateRange(
   endDate: string,
 ): DateRange {
   return { startDate, endDate };
+}
+
+export function parseFinancePeriodKey(value: string | null): FinancePeriodKey {
+  if (value === 'month_previous' || value === 'season_active') return value;
+  return 'month_current';
+}
+
+export function resolvePeriodDateRange(
+  period: FinancePeriodKey,
+  activeSeason?: { start_date: string; end_date: string } | null,
+): DateRange {
+  if (period === 'month_previous') {
+    return getJerusalemPreviousMonthRange();
+  }
+  if (period === 'season_active' && activeSeason) {
+    return seasonToDateRange(activeSeason.start_date, activeSeason.end_date);
+  }
+  return getJerusalemMonthRange();
 }

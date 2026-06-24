@@ -1,6 +1,7 @@
 import type { Tenant } from '@shared/schemas';
 import type { PostgrestError } from '@supabase/supabase-js';
 import { ZodError } from 'zod';
+import { supabase } from '@/lib/supabase';
 
 /**
  * BaseService: Shared error handling, retry logic, audit logging
@@ -96,8 +97,20 @@ export abstract class BaseService {
     table: string,
     recordId: string
   ): Promise<void> {
-    // TODO: Implement after audit_log schema is confirmed
-    // For now, silent no-op to avoid breaking changes
-    console.debug(`[Audit] ${action} ${table}/${recordId} by tenant ${tenant.id}`);
+    const { data: userData } = await supabase.auth.getUser();
+    const actorId = userData.user?.id;
+    if (!actorId) return;
+
+    const { error } = await supabase.from('audit_log').insert({
+      tenant_id: tenant.id,
+      actor_id: actorId,
+      action,
+      entity_type: table,
+      entity_id: recordId,
+    });
+
+    if (error) {
+      console.warn('[Audit] failed to write audit_log:', error.message);
+    }
   }
 }
