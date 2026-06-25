@@ -1,5 +1,6 @@
 import type { Person } from '@shared/schemas';
-import { isAgeEligible, type ClassAgeContext } from './check-requirements';
+import { type ClassAgeContext } from './check-requirements';
+import { evaluateAgeEnrolment, type AgeEnrolmentActor } from './ageEnrolmentPolicy';
 import { personAgeLabel } from '@/lib/personAge';
 
 export interface StudentCandidateConstraints {
@@ -8,6 +9,7 @@ export interface StudentCandidateConstraints {
   /** Season start date for age-at-season-start checks (YYYY-MM-DD). */
   seasonStartDate?: string | null;
   excludePersonIds?: string[];
+  actor?: AgeEnrolmentActor;
 }
 
 export interface FilteredStudentCandidates {
@@ -51,16 +53,17 @@ export function filterStudentCandidates<T extends Person>(
       continue;
     }
 
-    if (
-      constraints.ageBand &&
-      (constraints.ageBand.min_age != null || constraints.ageBand.max_age != null) &&
-      person.date_of_birth &&
-      !isAgeEligible(constraints.ageBand, person, {
-        referenceDate: constraints.seasonStartDate ?? undefined,
-      })
-    ) {
-      ineligible.push({ person, reason: 'age' });
-      continue;
+    if (constraints.ageBand && person.date_of_birth) {
+      const decision = evaluateAgeEnrolment({
+        dateOfBirth: person.date_of_birth,
+        ageBand: constraints.ageBand,
+        seasonStartDate: constraints.seasonStartDate,
+        actor: constraints.actor ?? 'parent',
+      });
+      if (decision.canValidate && !decision.eligible) {
+        ineligible.push({ person, reason: 'age' });
+        continue;
+      }
     }
 
     if (constraints.excludePersonIds?.includes(person.id)) {

@@ -184,8 +184,13 @@ export function StepSelectStudent({
     subMode === 'new_adult';
 
   const { eligible, ineligible } = useMemo(
-    () => filterStudentCandidates(students, constraints, guardianPersonId),
-    [students, constraints, guardianPersonId],
+    () =>
+      filterStudentCandidates(
+        students,
+        { ...constraints, actor: mode === 'admin' ? 'admin' : mode === 'guest' ? 'guest' : 'parent' },
+        guardianPersonId,
+      ),
+    [students, constraints, guardianPersonId, mode],
   );
 
   // Age eligibility for the guardian themselves — used to offer self-enrolment in parent mode.
@@ -202,8 +207,14 @@ export function StepSelectStudent({
     );
   }, [guardian, constraints]);
 
-  const studentDobAgeCheck = useSelectedClassAgeValidation(constraints, studentDob);
-  const adultDobAgeCheck = useSelectedClassAgeValidation(constraints, adultDob);
+  const studentDobAgeCheck = useSelectedClassAgeValidation(constraints, studentDob, {
+    actor: mode === 'admin' ? 'admin' : mode === 'guest' ? 'guest' : 'parent',
+    ageOverrideConfirmed: canBypassAgeBlock ? true : undefined,
+  });
+  const adultDobAgeCheck = useSelectedClassAgeValidation(constraints, adultDob, {
+    actor: mode === 'admin' ? 'admin' : mode === 'guest' ? 'guest' : 'parent',
+    ageOverrideConfirmed: canBypassAgeBlock ? true : undefined,
+  });
   const adultAge = useMemo(() => (adultDob ? ageAt(adultDob) : NaN), [adultDob]);
   const adultNeedsGuardian = useMemo(() => {
     if (!adultDob) return false;

@@ -83,7 +83,10 @@ export function evaluateCheckoutPreparation(
   if (
     classPreselected &&
     personDateOfBirth &&
-    getSelectedClassAgeError(constraints, personDateOfBirth, t)
+    getSelectedClassAgeError(constraints, personDateOfBirth, t, {
+      actor: mode === 'admin' ? 'admin' : mode === 'guest' ? 'guest' : 'parent',
+      ageOverrideConfirmed: classAgeOverride.confirmed,
+    })
   ) {
     return {
       kind: 'blocked',
@@ -98,7 +101,10 @@ export function evaluateCheckoutPreparation(
     Boolean(
       classPreselected &&
         personDateOfBirth &&
-        getSelectedClassAgeError(constraints, personDateOfBirth, t),
+        getSelectedClassAgeError(constraints, personDateOfBirth, t, {
+          actor: 'admin',
+          ageOverrideConfirmed: classAgeOverride.confirmed,
+        }),
     );
 
   return {
