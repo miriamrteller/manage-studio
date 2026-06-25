@@ -5,6 +5,7 @@ import { createServiceClient, requireAuthUser } from "../_shared/supabase.ts";
 import {
   isSupportedEmailTemplate,
   sendRenderedEmail,
+  EMAIL_TEMPLATE_NAMES,
 } from "../_shared/resend-send.ts";
 import {
   getEmailTemplateOverrides,
@@ -72,14 +73,27 @@ serve(async (req: Request) => {
       return jsonResponse({ error: "Method not allowed" }, 405);
     }
 
+    const payload: NotificationPayload = await req.json();
+
+    if (
+      !payload.tenantId ||
+      !payload.templateName ||
+      !payload.channel
+    ) {
+      return jsonResponse({ error: "Missing required fields" }, 400);
+    }
+
+    const service = createServiceClient();
+
+    if (payload.templateName === EMAIL_TEMPLATE_NAMES.ENROLMENT_AGE_REVIEW_REQUESTED) {
+      return await handleAgeReviewRequestedNotification(service, payload, req);
+    }
+
     const auth = await requireAuthUser(req);
     if ("error" in auth) {
       return jsonResponse({ error: auth.error }, auth.status);
     }
 
-    const payload: NotificationPayload = await req.json();
-
-    const service = createServiceClient();
     const { data: profile, error: profileError } = await service
       .from("user_profiles")
       .select("tenant_id, role")
@@ -102,15 +116,6 @@ serve(async (req: Request) => {
 
     if (payload.tenantId !== profile.tenant_id) {
       return jsonResponse({ error: "Tenant mismatch" }, 403);
-    }
-
-    // Validate required fields
-    if (
-      !payload.tenantId ||
-      !payload.templateName ||
-      !payload.channel
-    ) {
-      return jsonResponse({ error: "Missing required fields" }, 400);
     }
 
     // Validate recipient contact info
@@ -476,4 +481,146 @@ async function getTemplateSid(
   } catch {
     return null;
   }
+}
+
+function getAppBaseUrl(req: Request): string {
+  const appUrl = Deno.env.get("APP_URL") ?? "";
+  if (appUrl) return appUrl;
+  const origin = req.headers.get("origin")?.trim();
+  if (!origin) return "";
+  try {
+    return new URL(origin).origin;
+  } catch {
+    return "";
+  }
+}
+
+async function handleAgeReviewRequestedNotification(
+  service: SupabaseClient,
+  payload: NotificationPayload,
+  req: Request,
+): Promise<Response> {
+  if (payload.channel !== "email") {
+    return jsonResponse({ error: "Age review requested notifications support email only" }, 400);
+  }
+
+  const variables = payload.variables ?? {};
+  const engagementId = typeof variables.engagementId === "string" ? variables.engagementId : "";
+  if (!engagementId) {
+    return jsonResponse({ error: "engagementId is required" }, 400);
+  }
+
+  const { data: engagement, error: engagementError } = await service
+    .from("engagements")
+    .select("id, tenant_id, status, created_at")
+    .eq("id", engagementId)
+    .eq("tenant_id", payload.tenantId)
+    .maybeSingle();
+
+  if (engagementError || !engagement) {
+    return jsonResponse({ error: "Engagement not found" }, 404);
+  }
+
+  if (engagement.status !== "admin_review") {
+    return jsonResponse({ error: "Engagement is not pending age review" }, 409);
+  }
+
+  const createdAt = new Date(engagement.created_at as string).getTime();
+  if (Date.now() - createdAt > 15 * 60 * 1000) {
+    return jsonResponse({ error: "Review notification window expired" }, 409);
+  }
+
+  const { data: admins } = await service
+    .from("user_profiles")
+    .select("email, role")
+    .eq("tenant_id", payload.tenantId)
+    .not("email", "is", null);
+
+  const adminEmails = (admins ?? [])
+    .filter((row) => {
+      const roles = Array.isArray(row.role) ? row.role as string[] : [];
+      return roles.includes("tenant_admin") || roles.includes("super_admin");
+    })
+    .map((row) => (row.email as string).trim().toLowerCase())
+    .filter(Boolean);
+
+  if (adminEmails.length === 0) {
+    return jsonResponse({ error: "No admin recipients configured" }, 400);
+  }
+
+  const appBaseUrl = getAppBaseUrl(req);
+  const reviewUrl = appBaseUrl
+    ? `${appBaseUrl}/admin/students?engagement=${encodeURIComponent(engagementId)}`
+    : String(variables.reviewUrl ?? "#");
+
+  const tenant = await getTenantEmailConfig(service, payload.tenantId);
+  const language = tenant.language;
+  const overrides = await getEmailTemplateOverrides(
+    service,
+    payload.tenantId,
+    payload.templateName,
+    language,
+  );
+
+  const fromEmail =
+    Deno.env.get("NOTIFICATION_FROM_EMAIL") ??
+    "Manage Studio <noreply@manage-studio.app>";
+
+  let sentCount = 0;
+  let lastExternalId: string | undefined;
+  let failureReason: string | undefined;
+
+  for (const recipientEmail of adminEmails) {
+    try {
+      const result = await sendRenderedEmail({
+        to: recipientEmail,
+        from: fromEmail,
+        renderInput: {
+          templateName: EMAIL_TEMPLATE_NAMES.ENROLMENT_AGE_REVIEW_REQUESTED,
+          language,
+          schoolName: tenant.name,
+          tenantColors: {
+            primary_color: tenant.primary_color,
+            accent_color: tenant.accent_color,
+          },
+          stringOverrides: overrides,
+          variables: {
+            ...variables,
+            reviewUrl,
+          },
+        },
+      });
+      lastExternalId = result.id;
+      sentCount += 1;
+    } catch (error) {
+      failureReason = error instanceof Error ? error.message : "Unknown error";
+    }
+  }
+
+  try {
+    await service.from("notification_log").insert({
+      tenant_id: payload.tenantId,
+      recipient_email: adminEmails.join(","),
+      channel: "email",
+      template_name: payload.templateName,
+      variables: { ...variables, reviewUrl, adminRecipientCount: adminEmails.length },
+      external_msg_id: lastExternalId,
+      status: sentCount > 0 ? "sent" : "failed",
+      failure_reason: sentCount > 0 ? null : failureReason,
+      sent_at: new Date().toISOString(),
+    });
+  } catch (logError) {
+    console.error("Failed to log age review notification:", logError);
+  }
+
+  if (sentCount === 0) {
+    return jsonResponse({ success: false, status: "failed", failureReason }, 400);
+  }
+
+  return jsonResponse({
+    success: true,
+    status: "sent",
+    externalMsgId: lastExternalId,
+    sentCount,
+  });
 }

@@ -4,7 +4,10 @@ import { Button } from '@/components/ui/button';
 import { PersonSearchCombobox } from '@/components/shared/PersonSearchCombobox';
 import { GuestExistingAccountPrompt } from './GuestExistingAccountPrompt';
 import { useGuestEmailRegistrationCheck } from '../hooks/useGuestEmailRegistrationCheck';
-import { isExistingEmailError } from '../intakeService';
+import { isExistingEmailError, EnrolmentIntakeService } from '../intakeService';
+import { useTenant } from '@/hooks/useTenant';
+import { EnrolmentOnboardingService } from '../onboardingService';
+import { mapAgeReviewRpcError } from '../lib/ageReviewService';
 import { filterStudentCandidates } from '../lib/filterStudentCandidates';
 import { isAgeEligible } from '../lib/check-requirements';
 import { ADULT_AGE_THRESHOLD, ageAt, formatEnrolmentStudentAgeLine } from '@/lib/personAge';
@@ -22,6 +25,7 @@ import { useAdminGuardianEmailLookup } from '../hooks/useAdminGuardianEmailLooku
 import { useFamilyStudents, partitionFamilyStudents } from '../hooks/useFamilyStudents';
 import type { Person } from '@shared/schemas';
 import type { EnrolmentConstraints, EnrolmentMode } from '../hooks/useEnrolmentContext';
+import type { AgeEnrolmentActor } from '../lib/ageEnrolmentPolicy';
 import type { GuardianAccountLookup, GuardianProfile } from '../onboardingService';
 import type { StudentWithEnrolments } from '../hooks/useAccountStudents';
 
@@ -86,6 +90,17 @@ interface StepSelectStudentProps {
   constraints: EnrolmentConstraints;
   allowAgeOverride?: boolean;
   ageOverrideConfirmed?: boolean;
+  classPreselected?: boolean;
+  selectedClassName?: string;
+  enrolmentActor?: AgeEnrolmentActor;
+  onSubmitAgeReview?: (input: {
+    note: string;
+    personId: string;
+    studentName: string;
+  }) => Promise<void>;
+  ageReviewSubmitting?: boolean;
+  ageReviewError?: string | null;
+  onBrowseClasses?: () => void;
   guardian: GuardianProfile | null;
   students: StudentWithEnrolments[];
   guardianPersonId: string | null;
@@ -126,6 +141,13 @@ export function StepSelectStudent({
   constraints,
   allowAgeOverride = false,
   ageOverrideConfirmed = false,
+  classPreselected = false,
+  selectedClassName = '',
+  enrolmentActor = 'parent',
+  onSubmitAgeReview,
+  ageReviewSubmitting = false,
+  ageReviewError = null,
+  onBrowseClasses,
   guardian,
   students,
   guardianPersonId,
@@ -139,8 +161,14 @@ export function StepSelectStudent({
   onSignInRequest,
 }: StepSelectStudentProps) {
   const canBypassAgeBlock = allowAgeOverride && ageOverrideConfirmed;
+  const showAgeReviewInsteadOfNext =
+    classPreselected &&
+    !canBypassAgeBlock &&
+    enrolmentActor !== 'admin' &&
+    Boolean(onSubmitAgeReview);
 
   const { t } = useTranslation();
+  const tenant = useTenant();
   const [subMode, setSubMode] = useState<SubMode>(() => initialSubMode(mode, isAdultIntake));
   const [error, setError] = useState<string | null>(null);
   const [forceExistingEmailPrompt, setForceExistingEmailPrompt] = useState(false);
@@ -158,6 +186,105 @@ export function StepSelectStudent({
   const [pickChildGuardianName, setPickChildGuardianName] = useState('');
   const [pickChildGuardianEmail, setPickChildGuardianEmail] = useState('');
   const [linkedFamily, setLinkedFamily] = useState<GuardianAccountLookup | null>(null);
+  const [localAgeReviewError, setLocalAgeReviewError] = useState<string | null>(null);
+
+  const submitAgeReviewRequest = async (note: string) => {
+    if (!onSubmitAgeReview || !tenant) return;
+    setLocalAgeReviewError(null);
+    setIsSubmitting(true);
+    try {
+      let personId = '';
+      let resolvedStudentName = studentName;
+
+      if (subMode === 'new_family') {
+        const guardianNameForSubmit = resolvedLinkedFamily?.guardianName ?? guardianName;
+        if (mode === 'guest') {
+          if (!guardianEmail) throw new Error(t('pages.enrolment.guardian_email_required'));
+          const result = await EnrolmentIntakeService.createGuestFamily(tenant, {
+            guardian: {
+              name: guardianNameForSubmit,
+              email: guardianEmail,
+              phone: guardianPhone,
+            },
+            student: { name: studentName, dateOfBirth: studentDob },
+          });
+          personId = result.studentPersonId;
+        } else if (resolvedLinkedFamily?.accountId) {
+          const person = await EnrolmentOnboardingService.createChildForAccount(
+            tenant,
+            resolvedLinkedFamily.accountId,
+            {
+              student_name: studentName,
+              student_date_of_birth: studentDob,
+            },
+          );
+          personId = person.id;
+        } else {
+          const person = await EnrolmentOnboardingService.createStudentWithGuardianEmail(tenant, {
+            student_name: studentName,
+            student_date_of_birth: studentDob,
+            guardian_name: guardianNameForSubmit,
+            guardian_email: guardianEmail || undefined,
+            guardian_phone: guardianPhone || undefined,
+            guardian_role: 'account_holder',
+          });
+          personId = person.id;
+        }
+      } else if (subMode === 'new_adult') {
+        resolvedStudentName = adultName;
+        if (adultNeedsGuardian) {
+          const person = await EnrolmentOnboardingService.createStudentWithGuardianEmail(tenant, {
+            student_name: adultName,
+            student_date_of_birth: adultDob,
+            guardian_name: guardianName,
+            guardian_email: guardianEmail || undefined,
+            guardian_phone: guardianPhone || undefined,
+            guardian_role: 'account_holder',
+          });
+          personId = person.id;
+        } else if (mode === 'guest') {
+          if (!adultEmail) throw new Error(t('pages.enrolment.guardian_email_required'));
+          const result = await EnrolmentIntakeService.createGuestAdult(tenant, {
+            name: adultName,
+            email: adultEmail,
+            phone: adultPhone,
+            dateOfBirth: adultDob,
+          });
+          personId = result.personId;
+        } else {
+          const { person } = await EnrolmentOnboardingService.createAdultSolo(tenant, {
+            name: adultName,
+            email: adultEmail || undefined,
+            phone: adultPhone || undefined,
+            date_of_birth: adultDob || undefined,
+          });
+          personId = person.id;
+        }
+      } else if (subMode === 'new_child') {
+        if (!guardian?.accountId) throw new Error(t('pages.enrolment.no_account_linked'));
+        const person = await EnrolmentOnboardingService.createChildForAccount(tenant, guardian.accountId, {
+          student_name: studentName,
+          student_date_of_birth: studentDob,
+        });
+        personId = person.id;
+      } else {
+        throw new Error(t('pages.enrolment.age_review_error_generic'));
+      }
+
+      await onSubmitAgeReview({ note, personId, studentName: resolvedStudentName });
+    } catch (err) {
+      if (isExistingEmailError(err)) {
+        setForceExistingEmailPrompt(true);
+        setLocalAgeReviewError(null);
+      } else {
+        const message = err instanceof Error ? err.message : String(err);
+        setLocalAgeReviewError(t(mapAgeReviewRpcError(message)));
+      }
+      throw err;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const guestEmailCheckEnabled = mode === 'guest' && Boolean(onSignInRequest);
   const adminEmailCheckEnabled = mode === 'admin' && subMode === 'new_family';
@@ -330,7 +457,7 @@ export function StepSelectStudent({
           setError(null);
           setForceExistingEmailPrompt(false);
           if (showGuardianExistingPrompt) return;
-          if (studentDobAgeCheck.blocked && !canBypassAgeBlock) return;
+          if (studentDobAgeCheck.blocked && !canBypassAgeBlock && !showAgeReviewInsteadOfNext) return;
           setIsSubmitting(true);
           try {
             const guardianNameForSubmit =
@@ -442,7 +569,18 @@ export function StepSelectStudent({
           <legend className="text-sm font-semibold px-1">{t('pages.enrolment.student_section')}</legend>
           <input type="text" required className="form-input w-full" value={studentName} onChange={(e) => setStudentName(e.target.value)} placeholder={t('form.person.name')} />
           <input type="date" required className="form-input w-full" value={studentDob} onChange={(e) => setStudentDob(e.target.value)} />
-          <SelectedClassAgeAlert constraints={constraints} dateOfBirth={studentDob} />
+          <SelectedClassAgeAlert
+            constraints={constraints}
+            dateOfBirth={studentDob}
+            actor={enrolmentActor}
+            ageOverrideConfirmed={ageOverrideConfirmed}
+            studentName={studentName || t('pages.enrolment.student_section')}
+            className={selectedClassName}
+            onSubmitAgeReview={showAgeReviewInsteadOfNext ? submitAgeReviewRequest : undefined}
+            onBrowseClasses={onBrowseClasses}
+            ageReviewSubmitting={ageReviewSubmitting || isSubmitting}
+            ageReviewError={ageReviewError ?? localAgeReviewError}
+          />
         </fieldset>
         {error && <p className="text-sm text-red-600">{error}</p>}
         <div className="flex gap-2">
@@ -463,7 +601,12 @@ export function StepSelectStudent({
             type="submit"
             variant="primary"
             className="flex-1"
-            disabled={isSubmitting || showGuardianExistingPrompt || guardianEmailCheck.isChecking || (studentDobAgeCheck.blocked && !canBypassAgeBlock)}
+            disabled={
+              isSubmitting ||
+              showGuardianExistingPrompt ||
+              guardianEmailCheck.isChecking ||
+              (studentDobAgeCheck.blocked && !canBypassAgeBlock && !showAgeReviewInsteadOfNext)
+            }
           >
             {isSubmitting ? t('common.loading') : t('common.next')}
           </Button>
@@ -481,7 +624,7 @@ export function StepSelectStudent({
           setError(null);
           setForceExistingEmailPrompt(false);
           if (showAdultExistingPrompt) return;
-          if (adultDobAgeCheck.blocked && !canBypassAgeBlock) return;
+          if (adultDobAgeCheck.blocked && !canBypassAgeBlock && !showAgeReviewInsteadOfNext) return;
           setIsSubmitting(true);
           try {
             if (adultNeedsGuardian) {
@@ -570,7 +713,18 @@ export function StepSelectStudent({
                 : t('pages.enrolment.status_adult', { defaultValue: 'Adult - no guardian needed' })}
             </p>
           )}
-          <SelectedClassAgeAlert constraints={constraints} dateOfBirth={adultDob} />
+          <SelectedClassAgeAlert
+            constraints={constraints}
+            dateOfBirth={adultDob}
+            actor={enrolmentActor}
+            ageOverrideConfirmed={ageOverrideConfirmed}
+            studentName={adultName || t('pages.enrolment.personal_section')}
+            className={selectedClassName}
+            onSubmitAgeReview={showAgeReviewInsteadOfNext ? submitAgeReviewRequest : undefined}
+            onBrowseClasses={onBrowseClasses}
+            ageReviewSubmitting={ageReviewSubmitting || isSubmitting}
+            ageReviewError={ageReviewError ?? localAgeReviewError}
+          />
         </fieldset>
         {adultNeedsGuardian && (
           <fieldset className="border rounded p-4 space-y-3">
@@ -621,7 +775,12 @@ export function StepSelectStudent({
             type="submit"
             variant="primary"
             className="flex-1"
-            disabled={isSubmitting || showAdultExistingPrompt || adultEmailCheck.isChecking || (adultDobAgeCheck.blocked && !canBypassAgeBlock)}
+            disabled={
+              isSubmitting ||
+              showAdultExistingPrompt ||
+              adultEmailCheck.isChecking ||
+              (adultDobAgeCheck.blocked && !canBypassAgeBlock && !showAgeReviewInsteadOfNext)
+            }
           >
             {isSubmitting ? t('common.loading') : t('common.next')}
           </Button>
@@ -637,7 +796,7 @@ export function StepSelectStudent({
         onSubmit={async (e) => {
           e.preventDefault();
           setError(null);
-          if (studentDobAgeCheck.blocked && !canBypassAgeBlock) return;
+          if (studentDobAgeCheck.blocked && !canBypassAgeBlock && !showAgeReviewInsteadOfNext) return;
           setIsSubmitting(true);
           try {
             await onCreateMinor({ student_name: studentName, student_date_of_birth: studentDob });
@@ -661,14 +820,33 @@ export function StepSelectStudent({
           <legend className="text-sm font-semibold px-1">{t('pages.enrolment.student_section')}</legend>
           <input type="text" required className="form-input w-full" value={studentName} onChange={(e) => setStudentName(e.target.value)} />
           <input type="date" required className="form-input w-full" value={studentDob} onChange={(e) => setStudentDob(e.target.value)} />
-          <SelectedClassAgeAlert constraints={constraints} dateOfBirth={studentDob} />
+          <SelectedClassAgeAlert
+            constraints={constraints}
+            dateOfBirth={studentDob}
+            actor={enrolmentActor}
+            ageOverrideConfirmed={ageOverrideConfirmed}
+            studentName={studentName || t('pages.enrolment.student_section')}
+            className={selectedClassName}
+            onSubmitAgeReview={showAgeReviewInsteadOfNext ? submitAgeReviewRequest : undefined}
+            onBrowseClasses={onBrowseClasses}
+            ageReviewSubmitting={ageReviewSubmitting || isSubmitting}
+            ageReviewError={ageReviewError ?? localAgeReviewError}
+          />
         </fieldset>
         {error && <p className="text-sm text-red-600">{error}</p>}
         <div className="flex gap-2">
           <Button type="button" variant="outline" className="flex-1" onClick={() => setSubMode('choose')}>
             {t('common.back')}
           </Button>
-          <Button type="submit" variant="primary" className="flex-1" disabled={isSubmitting || (studentDobAgeCheck.blocked && !canBypassAgeBlock)}>
+          <Button
+            type="submit"
+            variant="primary"
+            className="flex-1"
+            disabled={
+              isSubmitting ||
+              (studentDobAgeCheck.blocked && !canBypassAgeBlock && !showAgeReviewInsteadOfNext)
+            }
+          >
             {isSubmitting ? t('common.loading') : t('common.next')}
           </Button>
         </div>

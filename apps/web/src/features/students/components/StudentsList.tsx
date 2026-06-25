@@ -56,6 +56,7 @@ export function StudentsList() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const classIdFromUrl = searchParams.get('class');
+  const engagementIdFromUrl = searchParams.get('engagement');
   const tenant = useTenant();
   const queryClient = useQueryClient();
 
@@ -72,6 +73,7 @@ export function StudentsList() {
   const [page, setPage] = useState(1);
   const [expanded, setExpanded] = useState<ExpandedState>({});
   const [slideOverPersonId, setSlideOverPersonId] = useState<string | null>(null);
+  const [highlightEngagementId, setHighlightEngagementId] = useState<string | null>(null);
   const [enrolModalStudent, setEnrolModalStudent] = useState<{
     personId: string;
     personName: string;
@@ -388,6 +390,27 @@ export function StudentsList() {
     () => classes.map((c: { id: string; name: string }) => ({ value: c.id, label: c.name })),
     [classes]
   );
+
+  useEffect(() => {
+    if (!engagementIdFromUrl || !tenant?.id) return;
+
+    let cancelled = false;
+    void (async () => {
+      const { data, error } = await TenantDB.selectFor('engagements', tenant)
+        .select('person_id')
+        .eq('id', engagementIdFromUrl)
+        .maybeSingle();
+
+      if (cancelled || error || !data?.person_id) return;
+
+      setSlideOverPersonId(data.person_id as string);
+      setHighlightEngagementId(engagementIdFromUrl);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [engagementIdFromUrl, tenant]);
 
   useEffect(() => {
     if (!classIdFromUrl || classOptions.length === 0) return;
@@ -735,7 +758,11 @@ export function StudentsList() {
       {slideOverPersonId && (
         <StudentSlideOver
           personId={slideOverPersonId}
-          onClose={() => setSlideOverPersonId(null)}
+          highlightEngagementId={highlightEngagementId}
+          onClose={() => {
+            setSlideOverPersonId(null);
+            setHighlightEngagementId(null);
+          }}
         />
       )}
 

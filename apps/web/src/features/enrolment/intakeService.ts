@@ -154,4 +154,55 @@ export class EnrolmentIntakeService {
     }
     return { engagementId, enrolmentToken };
   }
+
+  static async requestGuestAgeReview(
+    tenant: Tenant,
+    input: {
+      studentPersonId: string;
+      offeringId: string;
+      seasonId: string;
+      note: string;
+    },
+  ): Promise<{ engagementId: string }> {
+    const { data, error } = await supabase.rpc('guest_enrolment_request_age_review', {
+      p_subdomain: tenant.subdomain,
+      p_student_person_id: input.studentPersonId,
+      p_offering_id: input.offeringId,
+      p_season_id: input.seasonId,
+      p_note: input.note,
+    });
+
+    parseRpcError(error, data);
+
+    const row = data as { engagementId?: string };
+    if (!row?.engagementId) {
+      throw new Error('Failed to create age review engagement');
+    }
+    return { engagementId: row.engagementId };
+  }
+
+  static async requestAgeReview(
+    _tenant: Tenant,
+    input: {
+      personId: string;
+      offeringId: string;
+      seasonId: string;
+      note: string;
+    },
+  ): Promise<{ engagementId: string }> {
+    const { data, error } = await supabase.rpc('request_age_review_engagement', {
+      p_person_id: input.personId,
+      p_offering_id: input.offeringId,
+      p_season_id: input.seasonId,
+      p_note: input.note,
+    });
+
+    parseRpcError(error, data);
+
+    const row = data as { engagementId?: string };
+    if (!row?.engagementId) {
+      throw new Error('Failed to create age review engagement');
+    }
+    return { engagementId: row.engagementId };
+  }
 }

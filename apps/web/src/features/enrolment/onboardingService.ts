@@ -37,6 +37,8 @@ export const NewAdultOnboardingInputSchema = z.object({
   name: z.string().min(1, 'Name required'),
   email: z.string().email('Invalid email').optional(),
   gender: z.enum(['male', 'female', 'other']).optional(),
+  date_of_birth: z.string().date('Invalid date format').optional(),
+  phone: z.string().optional(),
 });
 
 export type NewAdultOnboardingInput = z.infer<typeof NewAdultOnboardingInputSchema>;
@@ -295,9 +297,11 @@ export class EnrolmentOnboardingService extends BaseService {
     input: NewAdultOnboardingInput,
   ): Promise<AdultOnboardingResult> {
     const validated = NewAdultOnboardingInputSchema.parse(input);
+    const { phone, ...personFields } = validated;
 
     const { data, error } = await TenantDB.insert('people', tenant, {
-      ...validated,
+      ...personFields,
+      ...(phone ? { emergency_contact_phone: phone } : {}),
       status: 'active' as const,
     })
       .select()

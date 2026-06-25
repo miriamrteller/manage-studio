@@ -152,5 +152,32 @@
     "body": "ההרשמה שלך ל{className} בוטלה אוטומטית כיוון שכתב הויתור הנדרש לא נחתם לפני המועד האחרון.",
     "refund_note": "{refundNote}",
     "contact_note": "אם לדעתך מדובר בטעות, או אם ברצונך להירשם מחדש, צרו קשר."
+  },
+  "enrolment_age_review_requested": {
+    "subject": "בקשת בדיקת גיל — {studentName}",
+    "preview": "הורה ביקש/ה בדיקת סטודיו עבור {className}",
+    "greeting": "שלום,",
+    "intro": "הורה ביקש/ה בדיקת סטודיו עבור הרשמה שאינה מתאימה לגיל.",
+    "student_label": "תלמיד/ה",
+    "class_label": "שיעור",
+    "age_label": "גיל בתחילת העונה / טווח השיעור",
+    "note_label": "הערת ההורה",
+    "cta_button": "פתיחת הבקשה"
+  },
+  "enrolment_age_review_approved": {
+    "subject": "ההרשמה אושרה — {className}",
+    "preview": "בקשת בדיקת הגיל שלך אושרה",
+    "greeting": "שלום {recipientName},",
+    "body": "חדשות טובות! {schoolName} אישר/ה את {studentName} ל{className}. ניתן להשלים תשלום בקישור למטה.",
+    "cta_button": "השלמת תשלום",
+    "footer_note": "לשאלות, צרו קשר עם הסטודיו."
+  },
+  "enrolment_age_review_declined": {
+    "subject": "עדכון בדיקת גיל — {className}",
+    "preview": "עדכון לגבי בקשת בדיקת הגיל",
+    "greeting": "שלום {recipientName},",
+    "body": "לאחר בדיקה, {schoolName} לא יכול/ה לאשר את {studentName} ל{className} על פי דרישות הגיל של השיעור.",
+    "reason_label": "הערה מהסטודיו",
+    "footer_note": "ניתן לעיין בשיעורים אחרים או ליצור קשר עם הסטודיו."
   }
 }

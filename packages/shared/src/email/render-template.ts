@@ -8,6 +8,9 @@ import PaymentReminderEmail from '../email-templates/PaymentReminderEmail.js';
 import WaitingListOfferEmail from '../email-templates/WaitingListOfferEmail.js';
 import WelcomeEmail from '../email-templates/WelcomeEmail.js';
 import EnrolmentConfirmationEmail from '../email-templates/EnrolmentConfirmationEmail.js';
+import EnrolmentAgeReviewRequestedEmail from '../email-templates/EnrolmentAgeReviewRequestedEmail.js';
+import EnrolmentAgeReviewApprovedEmail from '../email-templates/EnrolmentAgeReviewApprovedEmail.js';
+import EnrolmentAgeReviewDeclinedEmail from '../email-templates/EnrolmentAgeReviewDeclinedEmail.js';
 import WaiverReminderEmail from '../email-templates/WaiverReminderEmail.js';
 import WaiverCancelledEmail from '../email-templates/WaiverCancelledEmail.js';
 import { getEmailColors } from '../config/email-colors.js';
@@ -229,6 +232,36 @@ function buildComponent(
         recipientName: str(v.recipientName) || str(v.studentName, 'there'),
         className: str(v.className) || str(v.enrolledClassName),
         refundNote: str(v.refundNote, 'A full refund has been issued to your original payment method.'),
+      });
+
+    case EMAIL_TEMPLATE_NAMES.ENROLMENT_AGE_REVIEW_REQUESTED:
+      return React.createElement(EnrolmentAgeReviewRequestedEmail, {
+        ...common,
+        studentName: str(v.studentName),
+        className: str(v.className),
+        studentAge:
+          typeof v.studentAge === 'number' ? v.studentAge : str(v.studentAge) || undefined,
+        classAgeRange: str(v.classAgeRange) || undefined,
+        parentNote: str(v.parentNote),
+        reviewUrl: str(v.reviewUrl, '#'),
+      });
+
+    case EMAIL_TEMPLATE_NAMES.ENROLMENT_AGE_REVIEW_APPROVED:
+      return React.createElement(EnrolmentAgeReviewApprovedEmail, {
+        ...common,
+        recipientName: str(v.recipientName, 'there'),
+        studentName: str(v.studentName),
+        className: str(v.className),
+        payUrl: str(v.payUrl, '#'),
+      });
+
+    case EMAIL_TEMPLATE_NAMES.ENROLMENT_AGE_REVIEW_DECLINED:
+      return React.createElement(EnrolmentAgeReviewDeclinedEmail, {
+        ...common,
+        recipientName: str(v.recipientName, 'there'),
+        studentName: str(v.studentName),
+        className: str(v.className),
+        declineReason: str(v.declineReason) || undefined,
       });
 
     default:

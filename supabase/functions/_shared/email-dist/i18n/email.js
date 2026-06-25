@@ -21,6 +21,9 @@ export const EMAIL_TEMPLATE_NAMES = {
     ENROLMENT_CONFIRMATION: 'enrolment_confirmation',
     WAIVER_REMINDER: 'waiver_reminder',
     WAIVER_CANCELLED: 'waiver_cancelled',
+    ENROLMENT_AGE_REVIEW_REQUESTED: 'enrolment_age_review_requested',
+    ENROLMENT_AGE_REVIEW_APPROVED: 'enrolment_age_review_approved',
+    ENROLMENT_AGE_REVIEW_DECLINED: 'enrolment_age_review_declined',
 };
 /**
  * Supported languages for email templates
@@ -113,6 +116,9 @@ const TemplateNameSchema = z.enum([
     EMAIL_TEMPLATE_NAMES.ENROLMENT_CONFIRMATION,
     EMAIL_TEMPLATE_NAMES.WAIVER_REMINDER,
     EMAIL_TEMPLATE_NAMES.WAIVER_CANCELLED,
+    EMAIL_TEMPLATE_NAMES.ENROLMENT_AGE_REVIEW_REQUESTED,
+    EMAIL_TEMPLATE_NAMES.ENROLMENT_AGE_REVIEW_APPROVED,
+    EMAIL_TEMPLATE_NAMES.ENROLMENT_AGE_REVIEW_DECLINED,
 ]);
 const LanguageSchema = z.enum(['en', 'he']);
 /**

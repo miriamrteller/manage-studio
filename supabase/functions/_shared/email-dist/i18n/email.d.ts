@@ -18,6 +18,9 @@ export declare const EMAIL_TEMPLATE_NAMES: {
     readonly ENROLMENT_CONFIRMATION: "enrolment_confirmation";
     readonly WAIVER_REMINDER: "waiver_reminder";
     readonly WAIVER_CANCELLED: "waiver_cancelled";
+    readonly ENROLMENT_AGE_REVIEW_REQUESTED: "enrolment_age_review_requested";
+    readonly ENROLMENT_AGE_REVIEW_APPROVED: "enrolment_age_review_approved";
+    readonly ENROLMENT_AGE_REVIEW_DECLINED: "enrolment_age_review_declined";
 };
 export type EmailTemplateName = typeof EMAIL_TEMPLATE_NAMES[keyof typeof EMAIL_TEMPLATE_NAMES];
 /**

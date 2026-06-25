@@ -67,6 +67,7 @@ export class AdminEnrolmentService {
       engagementId: string;
       totalMinor: number;
       currency: string;
+      skipNotificationEmail?: boolean;
     },
   ): Promise<SendCompletionLinkResult> {
     const { data, error } = await supabase.functions.invoke('send-admin-enrolment-link', {
@@ -76,6 +77,7 @@ export class AdminEnrolmentService {
         recipientEmail: options.recipientEmail,
         recipientName: options.recipientName,
         overrideReason: options.overrideReason,
+        skipNotificationEmail: options.skipNotificationEmail,
       },
     });
 

@@ -7,6 +7,7 @@ import {
   type AgeEnrolmentActor,
 } from './ageEnrolmentPolicy';
 import { enrolmentAgeMismatchMessage } from '@/lib/personAge';
+import { AgeReviewRequestForm } from '../components/AgeReviewRequestForm';
 import type { EnrolmentConstraints } from '../hooks/useEnrolmentContext';
 
 export type { AgeEnrolmentActor };
@@ -51,22 +52,42 @@ export function SelectedClassAgeAlert({
   dateOfBirth,
   actor,
   ageOverrideConfirmed,
+  studentName,
+  className,
+  onSubmitAgeReview,
+  onBrowseClasses,
+  ageReviewSubmitting = false,
+  ageReviewError = null,
 }: {
   constraints: EnrolmentConstraints;
   dateOfBirth: string;
   actor?: AgeEnrolmentActor;
   ageOverrideConfirmed?: boolean;
+  studentName?: string;
+  className?: string;
+  onSubmitAgeReview?: (note: string) => Promise<void>;
+  onBrowseClasses?: () => void;
+  ageReviewSubmitting?: boolean;
+  ageReviewError?: string | null;
 }) {
   const { t } = useTranslation();
+  const resolvedActor = actor ?? 'parent';
   const { blocked, studentAge, classAges } = useSelectedClassAgeValidation(
     constraints,
     dateOfBirth,
-    { actor, ageOverrideConfirmed },
+    { actor: resolvedActor, ageOverrideConfirmed },
   );
 
   if (!blocked || studentAge == null || !classAges) {
     return null;
   }
+
+  const showReviewForm =
+    resolvedActor !== 'admin' &&
+    onSubmitAgeReview != null &&
+    onBrowseClasses != null &&
+    studentName &&
+    className;
 
   return (
     <div
@@ -75,6 +96,18 @@ export function SelectedClassAgeAlert({
     >
       <p>{enrolmentAgeMismatchMessage(studentAge, classAges, t)}</p>
       <p className="text-xs">{t('pages.enrolment.selected_class_age_ineligible_hint')}</p>
+      {showReviewForm && (
+        <AgeReviewRequestForm
+          studentName={studentName}
+          className={className}
+          studentAge={studentAge}
+          classAges={classAges}
+          onSubmit={onSubmitAgeReview}
+          onBrowseClasses={onBrowseClasses}
+          isSubmitting={ageReviewSubmitting}
+          error={ageReviewError}
+        />
+      )}
     </div>
   );
 }

@@ -921,6 +921,44 @@ export type Database = {
           },
         ]
       }
+      grow_webhook_secrets: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          key_version: number
+          rotated_at: string | null
+          secret_enc: string
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          key_version?: number
+          rotated_at?: string | null
+          secret_enc: string
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          key_version?: number
+          rotated_at?: string | null
+          secret_enc?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "grow_webhook_secrets_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoicing_token_cache: {
         Row: {
           expires_at: string
@@ -1269,6 +1307,38 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_document_access_log: {
+        Row: {
+          accessed_at: string
+          accessed_by: string | null
+          action: string
+          id: number
+          payment_id: string
+        }
+        Insert: {
+          accessed_at?: string
+          accessed_by?: string | null
+          action?: string
+          id?: number
+          payment_id: string
+        }
+        Update: {
+          accessed_at?: string
+          accessed_by?: string | null
+          action?: string
+          id?: number
+          payment_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_document_access_log_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_method_tokens: {
         Row: {
           billing_account_id: string
@@ -1343,12 +1413,16 @@ export type Database = {
           created_by: string | null
           currency: string
           description: string | null
+          document_pdf_path: string | null
+          document_stored_at: string | null
+          document_type: string | null
           engagement_id: string | null
           external_document_id: string | null
           external_document_number: string | null
           id: string
           invoice_issued_at: string | null
           invoice_url: string | null
+          legal_hold: boolean
           offering_id: string | null
           paid_at: string | null
           payment_method: string | null
@@ -1359,6 +1433,7 @@ export type Database = {
           refund_amount_minor: number | null
           refunded_at: string | null
           refunds_payment_id: string | null
+          retention_expires_at: string | null
           status: string
           tenant_id: string
           total_amount_minor: number
@@ -1375,12 +1450,16 @@ export type Database = {
           created_by?: string | null
           currency?: string
           description?: string | null
+          document_pdf_path?: string | null
+          document_stored_at?: string | null
+          document_type?: string | null
           engagement_id?: string | null
           external_document_id?: string | null
           external_document_number?: string | null
           id?: string
           invoice_issued_at?: string | null
           invoice_url?: string | null
+          legal_hold?: boolean
           offering_id?: string | null
           paid_at?: string | null
           payment_method?: string | null
@@ -1391,6 +1470,7 @@ export type Database = {
           refund_amount_minor?: number | null
           refunded_at?: string | null
           refunds_payment_id?: string | null
+          retention_expires_at?: string | null
           status?: string
           tenant_id: string
           total_amount_minor: number
@@ -1407,12 +1487,16 @@ export type Database = {
           created_by?: string | null
           currency?: string
           description?: string | null
+          document_pdf_path?: string | null
+          document_stored_at?: string | null
+          document_type?: string | null
           engagement_id?: string | null
           external_document_id?: string | null
           external_document_number?: string | null
           id?: string
           invoice_issued_at?: string | null
           invoice_url?: string | null
+          legal_hold?: boolean
           offering_id?: string | null
           paid_at?: string | null
           payment_method?: string | null
@@ -1423,6 +1507,7 @@ export type Database = {
           refund_amount_minor?: number | null
           refunded_at?: string | null
           refunds_payment_id?: string | null
+          retention_expires_at?: string | null
           status?: string
           tenant_id?: string
           total_amount_minor?: number
@@ -1936,6 +2021,7 @@ export type Database = {
           currency: string
           from_email: string | null
           id: string
+          invoice_license_number: string | null
           invoicing_account_id: string | null
           invoicing_api_key_enc: string | null
           invoicing_auth_checked_at: string | null
@@ -1959,6 +2045,7 @@ export type Database = {
           subdomain: string
           updated_at: string
           vat_rate: number | null
+          vat_type: number
           waiver_require_otp: boolean
         }
         Insert: {
@@ -1970,6 +2057,7 @@ export type Database = {
           currency?: string
           from_email?: string | null
           id?: string
+          invoice_license_number?: string | null
           invoicing_account_id?: string | null
           invoicing_api_key_enc?: string | null
           invoicing_auth_checked_at?: string | null
@@ -1993,6 +2081,7 @@ export type Database = {
           subdomain: string
           updated_at?: string
           vat_rate?: number | null
+          vat_type?: number
           waiver_require_otp?: boolean
         }
         Update: {
@@ -2004,6 +2093,7 @@ export type Database = {
           currency?: string
           from_email?: string | null
           id?: string
+          invoice_license_number?: string | null
           invoicing_account_id?: string | null
           invoicing_api_key_enc?: string | null
           invoicing_auth_checked_at?: string | null
@@ -2027,6 +2117,7 @@ export type Database = {
           subdomain?: string
           updated_at?: string
           vat_rate?: number | null
+          vat_type?: number
           waiver_require_otp?: boolean
         }
         Relationships: []
@@ -2349,6 +2440,41 @@ export type Database = {
     }
     Functions: {
       admin_enrolment_lookup_email: { Args: { p_email: string }; Returns: Json }
+      admin_get_document_signed_url_path: {
+        Args: { p_payment_id: string }
+        Returns: string
+      }
+      admin_get_payment_document: {
+        Args: { p_payment_id: string }
+        Returns: {
+          document_pdf_path: string
+          document_stored_at: string
+          document_type: string
+          external_document_id: string
+          external_document_number: string
+          invoice_url: string
+          legal_hold: boolean
+          payment_id: string
+          retention_expires_at: string
+          tenant_id: string
+        }[]
+      }
+      approve_age_review_engagement: {
+        Args: { p_admin_reason?: string; p_engagement_id: string }
+        Returns: Json
+      }
+      assert_age_ineligible_for_offering: {
+        Args: {
+          p_offering_id: string
+          p_person_id: string
+          p_tenant_id: string
+        }
+        Returns: number
+      }
+      assert_can_request_age_review: {
+        Args: { p_person_id: string; p_tenant_id: string }
+        Returns: undefined
+      }
       cancel_engagement: {
         Args: { p_engagement_id: string; p_reason?: string }
         Returns: Json
@@ -2376,6 +2502,14 @@ export type Database = {
         }
         Returns: string
       }
+      decline_age_review_engagement: {
+        Args: { p_engagement_id: string; p_reason?: string }
+        Returns: Json
+      }
+      engagement_age_at_season_start: {
+        Args: { p_offering_id: string; p_person_id: string }
+        Returns: number
+      }
       get_app_encryption_key: { Args: never; Returns: string }
       get_billing_account_payment_method: {
         Args: { p_billing_account_id: string }
@@ -2399,6 +2533,12 @@ export type Database = {
           net_revenue_minor: number
           outstanding_engagements: number
           payment_count: number
+        }[]
+      }
+      get_grow_webhook_secret: {
+        Args: { p_tenant_id: string }
+        Returns: {
+          webhook_secret: string
         }[]
       }
       get_my_account_ids: { Args: never; Returns: string[] }
@@ -2533,6 +2673,16 @@ export type Database = {
         }
         Returns: Json
       }
+      guest_enrolment_request_age_review: {
+        Args: {
+          p_note: string
+          p_offering_id: string
+          p_season_id: string
+          p_student_person_id: string
+          p_subdomain: string
+        }
+        Returns: Json
+      }
       increment_verification_attempt: {
         Args: {
           p_channel: string
@@ -2574,6 +2724,19 @@ export type Database = {
         }
         Returns: string
       }
+      request_age_review_engagement: {
+        Args: {
+          p_note: string
+          p_offering_id: string
+          p_person_id: string
+          p_season_id: string
+        }
+        Returns: Json
+      }
+      resolve_engagement_billing_account: {
+        Args: { p_student_person_id: string; p_tenant_id: string }
+        Returns: string
+      }
       resolve_engagement_guardian: {
         Args: { p_engagement_id: string }
         Returns: {
@@ -2583,6 +2746,10 @@ export type Database = {
           guardian_person_id: string
           student_person_id: string
         }[]
+      }
+      save_grow_webhook_secret: {
+        Args: { p_secret: string }
+        Returns: undefined
       }
       save_tenant_grow_credentials: {
         Args: { p_api_key: string; p_page_code: string; p_user_id: string }

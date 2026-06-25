@@ -33,6 +33,7 @@ export interface UseCheckoutPreparationParams {
   enrolledOfferingKeys?: Set<string>;
   navigate: NavigateFunction;
   t: TFunction;
+  reviewSubmitted?: boolean;
 }
 
 const checkoutPrepareInflight = new Map<
@@ -69,6 +70,7 @@ export function useCheckoutPreparation({
   enrolledOfferingKeys,
   navigate,
   t,
+  reviewSubmitted = false,
 }: UseCheckoutPreparationParams) {
   const [checkoutEnrolmentId, setCheckoutEnrolmentId] = useState<string | null>(null);
   const [checkoutCharge, setCheckoutCharge] = useState<CheckoutChargePayload | null>(null);
@@ -91,6 +93,7 @@ export function useCheckoutPreparation({
     }
     if (checkoutEnrolmentId) return;
     if (checkoutPrepareStartedRef.current) return;
+    if (reviewSubmitted) return;
     if (!tenant) return;
 
     const evaluation = evaluateCheckoutPreparation({
@@ -235,6 +238,7 @@ export function useCheckoutPreparation({
     enrolledOfferingKeys,
     navigate,
     t,
+    reviewSubmitted,
     setCurrentStep,
     setEnrolmentData,
   ]);

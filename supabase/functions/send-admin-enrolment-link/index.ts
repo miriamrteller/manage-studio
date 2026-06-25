@@ -14,6 +14,7 @@ interface SendAdminEnrolmentLinkBody {
   recipientEmail: string;
   recipientName?: string;
   overrideReason?: string;
+  skipNotificationEmail?: boolean;
 }
 
 const APP_URL = Deno.env.get("APP_URL") ?? "";
@@ -163,7 +164,9 @@ Deno.serve(async (req) => {
     let emailSent = false;
     let emailError: string | null = null;
 
-    if (!fromEmail) {
+    if (body.skipNotificationEmail) {
+      emailSent = false;
+    } else if (!fromEmail) {
       emailError = "Sender email is not configured";
     } else if (!paymentDetails) {
       emailError = "Could not load class pricing for email";

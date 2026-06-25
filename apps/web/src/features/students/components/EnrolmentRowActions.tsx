@@ -37,6 +37,7 @@ interface EnrolmentRowActionsProps {
   className: string;
   status: string;
   engagementId?: string;
+  ageOverrideAt?: string | null;
   billingLabel?: string | null;
   onCancel?: () => void;
   linkContext?: EnrolmentLinkContext;
@@ -46,6 +47,7 @@ export function EnrolmentRowActions({
   className,
   status,
   engagementId,
+  ageOverrideAt,
   billingLabel,
   onCancel,
   linkContext,
@@ -59,6 +61,11 @@ export function EnrolmentRowActions({
     <li className="py-2 flex justify-between items-center gap-3">
       <span className="font-medium">{className}</span>
       <div className="flex items-center gap-2 flex-shrink-0">
+        {ageOverrideAt && (
+          <span className="px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+            {t('pages.enrolment.age_exception_badge')}
+          </span>
+        )}
         {showCompletionAction && engagementId ? (
           <EnrolmentStatusAction
             status={status}

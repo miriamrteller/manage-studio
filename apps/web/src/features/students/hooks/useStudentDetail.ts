@@ -246,6 +246,8 @@ export function useStudentDetail(personId: string | null) {
     members: membersWithNames,
     contactPrefs: contactPrefsQuery.data ?? null,
     enrolments: enrolmentsWithDetails,
+    engagementRecords: enrolments,
+    offerings: classesQuery.data ?? [],
     payments: paymentsQuery.data ?? [],
     isLoading,
     error: personQuery.error,

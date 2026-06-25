@@ -34,6 +34,9 @@ import { usePersonExistingEnrolments } from '../hooks/usePersonExistingEnrolment
 import { hasParentRole } from '@/lib/parentRoles';
 import { getSelectedClassAgeError } from '../lib/selectedClassAgeValidation';
 import { evaluateAgeEnrolment, type AgeEnrolmentActor } from '../lib/ageEnrolmentPolicy';
+import { formatAgeRange } from '../lib/check-requirements';
+import { mapAgeReviewRpcError } from '../lib/ageReviewService';
+import { notifyAdminsAgeReviewSubmitted } from '../lib/sendAgeReviewNotifications';
 import { AgeOverridePanel } from './AgeOverridePanel';
 import type { EnrollmentIntent } from '@/lib/enrollment-intent';
 import { persistEnrollmentIntent } from '@/lib/enrollment-intent';
@@ -76,6 +79,9 @@ export function EnrolmentStepper({
   const [selectedClassLocation, setSelectedClassLocation] = useState<string | null>(null);
   const [personStepSkipped, setPersonStepSkipped] = useState(false);
   const [guestGuardianEmail, setGuestGuardianEmail] = useState<string | null>(null);
+  const [reviewSubmitted, setReviewSubmitted] = useState(false);
+  const [ageReviewSubmitting, setAgeReviewSubmitting] = useState(false);
+  const [ageReviewError, setAgeReviewError] = useState<string | null>(null);
 
   const { classAgeOverride, setClassAgeOverride, handleClassAgeOverrideChange } = useAgeOverride();
   const classPreselected = Boolean(initialClassId && initialTermId);
@@ -167,6 +173,7 @@ export function EnrolmentStepper({
       enrolledOfferingKeys,
       navigate,
       t,
+      reviewSubmitted,
     };
 
   const { checkoutEnrolmentId, checkoutCharge, checkoutError, isCheckoutPreparing, resetCheckoutState, setCheckoutError } =
@@ -229,6 +236,7 @@ export function EnrolmentStepper({
   };
 
   const handlePersonNext = (newData?: Partial<Engagement>, dob?: string | null) => {
+    if (reviewSubmitted) return;
     if (classPreselected && (enrolledKeysLoading || preselectedAlreadyEnrolled)) return;
 
     if (classPreselected && dob) {
@@ -255,6 +263,76 @@ export function EnrolmentStepper({
     if (newData) setEnrolmentData((prev) => ({ ...prev, ...newData }));
     setPersonDateOfBirth(dob ?? null);
     goToNextStep();
+  };
+
+  const handleAgeReviewRequest = async (input: {
+    note: string;
+    personId: string;
+    studentName: string;
+  }) => {
+    if (!tenant || !initialClassId || !initialTermId) {
+      throw new Error(t('pages.enrolment.age_review_error_generic'));
+    }
+
+    setAgeReviewSubmitting(true);
+    setAgeReviewError(null);
+
+    try {
+      const classAges = enrolmentContext.constraints.ageBand
+        ? formatAgeRange(
+            enrolmentContext.constraints.ageBand.min_age,
+            enrolmentContext.constraints.ageBand.max_age,
+          )
+        : null;
+      const studentAge = personDateOfBirth
+        ? evaluateAgeEnrolment({
+            dateOfBirth: personDateOfBirth,
+            ageBand: enrolmentContext.constraints.ageBand,
+            seasonStartDate: enrolmentContext.constraints.seasonStartDate,
+            actor: enrolmentActor,
+          }).studentAge
+        : null;
+
+      const requestResult =
+        enrolmentContext.mode === 'guest'
+          ? await EnrolmentIntakeService.requestGuestAgeReview(tenant, {
+              studentPersonId: input.personId,
+              offeringId: initialClassId,
+              seasonId: initialTermId,
+              note: input.note,
+            })
+          : await EnrolmentIntakeService.requestAgeReview(tenant, {
+              personId: input.personId,
+              offeringId: initialClassId,
+              seasonId: initialTermId,
+              note: input.note,
+            });
+
+      setEnrolmentData((prev) => ({
+        ...prev,
+        person_id: input.personId,
+        offering_id: initialClassId,
+        season_id: initialTermId,
+        id: requestResult.engagementId,
+        status: 'admin_review',
+      }));
+      setReviewSubmitted(true);
+
+      await notifyAdminsAgeReviewSubmitted(tenant, {
+        engagementId: requestResult.engagementId,
+        studentName: input.studentName,
+        className: selectedClassName,
+        studentAge,
+        classAgeRange: classAges,
+        parentNote: input.note,
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      setAgeReviewError(t(mapAgeReviewRpcError(message)));
+      throw err;
+    } finally {
+      setAgeReviewSubmitting(false);
+    }
   };
 
   const handleClassNext = (
@@ -382,7 +460,19 @@ export function EnrolmentStepper({
                 )}
               </div>
             )}
-            {!enrolmentContext.isLoading && !enrolmentContext.canSkipPersonStep && (
+            {!enrolmentContext.isLoading && reviewSubmitted && (
+              <div
+                className="rounded-md border border-green-300 bg-green-50 p-4 text-sm text-green-900 space-y-2"
+                role="status"
+              >
+                <p className="font-semibold">{t('pages.enrolment.age_review_submitted_title')}</p>
+                <p>{t('pages.enrolment.age_review_submitted_body')}</p>
+                <Button type="button" variant="outline" onClick={() => navigate('/classes')}>
+                  {t('pages.enrol_complete.browse_classes')}
+                </Button>
+              </div>
+            )}
+            {!enrolmentContext.isLoading && !reviewSubmitted && !enrolmentContext.canSkipPersonStep && (
               <>
                 {personAgeError && (
                   <div
@@ -427,6 +517,13 @@ export function EnrolmentStepper({
                   constraints={enrolmentContext.constraints}
                   allowAgeOverride={classPreselected && enrolmentContext.mode === 'admin'}
                   ageOverrideConfirmed={classAgeOverride.confirmed}
+                  classPreselected={classPreselected}
+                  selectedClassName={selectedClassName}
+                  enrolmentActor={enrolmentActor}
+                  onSubmitAgeReview={classPreselected ? handleAgeReviewRequest : undefined}
+                  ageReviewSubmitting={ageReviewSubmitting}
+                  ageReviewError={ageReviewError}
+                  onBrowseClasses={() => navigate('/classes')}
                   guardian={enrolmentContext.guardian}
                   students={accountStudentsQuery.data?.students ?? []}
                   guardianPersonId={accountStudentsQuery.data?.guardianPersonId ?? null}

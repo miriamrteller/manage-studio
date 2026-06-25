@@ -152,5 +152,32 @@
     "body": "Your enrollment in {className} has been automatically cancelled because the required waiver was not signed before the deadline.",
     "refund_note": "{refundNote}",
     "contact_note": "If you believe this is an error, or if you would like to re-enroll, please contact us."
+  },
+  "enrolment_age_review_requested": {
+    "subject": "Age review requested — {studentName}",
+    "preview": "A parent requested studio review for {className}",
+    "greeting": "Hello,",
+    "intro": "A parent has requested studio review for an age-ineligible enrolment.",
+    "student_label": "Student",
+    "class_label": "Class",
+    "age_label": "Age at season start / class range",
+    "note_label": "Parent note",
+    "cta_button": "Review request"
+  },
+  "enrolment_age_review_approved": {
+    "subject": "Enrolment approved — {className}",
+    "preview": "Your age review request was approved",
+    "greeting": "Hi {recipientName},",
+    "body": "Good news! {schoolName} has approved {studentName} for {className}. You can complete payment using the link below.",
+    "cta_button": "Complete payment",
+    "footer_note": "If you have questions, please contact the studio."
+  },
+  "enrolment_age_review_declined": {
+    "subject": "Age review update — {className}",
+    "preview": "Update on your age review request",
+    "greeting": "Hi {recipientName},",
+    "body": "After review, {schoolName} is unable to approve {studentName} for {className} based on the class age requirements.",
+    "reason_label": "Note from the studio",
+    "footer_note": "You may browse other classes or contact the studio if you have questions."
   }
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { PersonForm } from '@/features/people/components/PersonForm';
@@ -13,13 +13,16 @@ import { resolveGuardianEmail } from '@/features/enrolment/lib/resolveGuardianEm
 import { formatDate, calculateAge } from '@/lib/utils';
 import { formatPersonAgeLabel } from '@/lib/personAge';
 import { EnrolmentRowActions, canShowCancelEnrolment } from './EnrolmentRowActions';
+import { AgeReviewAdminPanel } from './AgeReviewAdminPanel';
 import { CancelEnrolmentDialog } from './CancelEnrolmentDialog';
+import { formatAgeRange } from '@/features/enrolment/lib/check-requirements';
 import { RecordPaymentModal } from '@/features/finance/components/RecordPaymentModal';
 import { RefundPaymentModal } from '@/features/finance/components/RefundPaymentModal';
 import { formatCurrency } from '@shared/format';
 
 interface StudentSlideOverProps {
   personId: string;
+  highlightEngagementId?: string | null;
   onClose: () => void;
 }
 
@@ -33,12 +36,16 @@ interface CancelTarget {
  * Shows student info, enrolments, guardian/family, notification preferences,
  * and billing accounts found via enrolments.
  */
-export function StudentSlideOver({ personId, onClose }: StudentSlideOverProps) {
+export function StudentSlideOver({
+  personId,
+  highlightEngagementId = null,
+  onClose,
+}: StudentSlideOverProps) {
   const { t, i18n } = useTranslation();
   const tenant = useTenant();
   const queryClient = useQueryClient();
 
-  const { person, family, guardian, members, contactPrefs, enrolments, payments, isLoading, error } =
+  const { person, family, guardian, members, contactPrefs, enrolments, engagementRecords, offerings, payments, isLoading, error } =
     useStudentDetail(personId);
 
   const [recordingEngagementId, setRecordingEngagementId] = useState<string | null>(null);
@@ -58,6 +65,12 @@ export function StudentSlideOver({ personId, onClose }: StudentSlideOverProps) {
   const [contactSaving, setContactSaving] = useState(false);
   const [enrolModalOpen, setEnrolModalOpen] = useState(false);
   const [cancelTarget, setCancelTarget] = useState<CancelTarget | null>(null);
+
+  useEffect(() => {
+    if (!highlightEngagementId) return;
+    const node = document.querySelector(`[data-engagement-id="${highlightEngagementId}"]`);
+    node?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [highlightEngagementId, engagementRecords, isLoading]);
 
   const startEditContact = () => {
     setContactName(guardian?.name ?? '');
@@ -225,50 +238,76 @@ export function StudentSlideOver({ personId, onClose }: StudentSlideOverProps) {
                   <p className="text-sm text-gray-400">{t('pages.students.no_enrolments')}</p>
                 ) : (
                   <ul className="divide-y text-sm" style={{ borderColor: 'var(--color-border-default)' }}>
-                    {enrolments.map((e) => (
-                      <li key={e.id} className="space-y-2 py-1">
-                        <EnrolmentRowActions
-                          className={e.className ?? e.offering_id}
-                          status={e.status}
-                          engagementId={e.id}
-                          billingLabel={e.billingAccount?.payment_method ?? null}
-                          linkContext={{
-                            studentName: person.name,
-                            className: e.className ?? e.offering_id,
-                            guardianEmail: resolveGuardianEmail({ person, guardian: guardian ?? undefined }),
-                            guardianName: guardian?.name ?? null,
-                          }}
-                          onCancel={
-                            canShowCancelEnrolment(e.status)
-                              ? () =>
-                                  setCancelTarget({
-                                    engagementId: e.id,
-                                    className: e.className ?? e.offering_id,
-                                  })
-                              : undefined
-                          }
-                        />
-                        {e.status === 'pending_payment' && (
-                          recordingEngagementId === e.id ? (
-                            <RecordPaymentModal
-                              engagementId={e.id}
-                              onRecorded={() => {
-                                invalidateFinanceCaches();
-                                setRecordingEngagementId(null);
+                    {engagementRecords.map((engagement) => {
+                      const summary = enrolments.find((entry) => entry.id === engagement.id);
+                      const className = summary?.className ?? engagement.offering_id;
+                      const offering = offerings.find((item) => item.id === engagement.offering_id);
+                      const classAges = offering
+                        ? formatAgeRange(offering.min_age ?? null, offering.max_age ?? null)
+                        : null;
+                      return (
+                        <li key={engagement.id} className="space-y-2 py-1">
+                          {engagement.status === 'admin_review' && person && (
+                            <AgeReviewAdminPanel
+                              details={{
+                                engagement,
+                                className,
+                                classAges,
+                                student: person,
+                                guardian,
+                              }}
+                              highlighted={highlightEngagementId === engagement.id}
+                              onUpdated={() => {
+                                void queryClient.invalidateQueries({
+                                  queryKey: ['student-detail-enrolments', tenant?.id, personId],
+                                });
                               }}
                             />
-                          ) : (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setRecordingEngagementId(e.id)}
-                            >
-                              {t('finance.record_payment.open', { defaultValue: 'Record offline payment' })}
-                            </Button>
-                          )
-                        )}
-                      </li>
-                    ))}
+                          )}
+                          <EnrolmentRowActions
+                            className={className}
+                            status={engagement.status}
+                            engagementId={engagement.id}
+                            ageOverrideAt={engagement.age_override_at}
+                            billingLabel={summary?.billingAccount?.payment_method ?? null}
+                            linkContext={{
+                              studentName: person.name,
+                              className,
+                              guardianEmail: resolveGuardianEmail({ person, guardian: guardian ?? undefined }),
+                              guardianName: guardian?.name ?? null,
+                            }}
+                            onCancel={
+                              canShowCancelEnrolment(engagement.status)
+                                ? () =>
+                                    setCancelTarget({
+                                      engagementId: engagement.id,
+                                      className,
+                                    })
+                                : undefined
+                            }
+                          />
+                          {engagement.status === 'pending_payment' && (
+                            recordingEngagementId === engagement.id ? (
+                              <RecordPaymentModal
+                                engagementId={engagement.id}
+                                onRecorded={() => {
+                                  invalidateFinanceCaches();
+                                  setRecordingEngagementId(null);
+                                }}
+                              />
+                            ) : (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setRecordingEngagementId(engagement.id)}
+                              >
+                                {t('finance.record_payment.open', { defaultValue: 'Record offline payment' })}
+                              </Button>
+                            )
+                          )}
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
               </section>
