@@ -1,7 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { PaymentLogRowSchema } from '@shared/schemas';
 import { getProviderLabelKey } from '@/features/finance-admin/services/paymentsLogService';
-import { isRefundRow } from '@/features/finance-admin/lib/paymentsLogDisplay';
+import {
+  getCaptureSourceLabelKey,
+  getPaymentCaptureSource,
+  isRefundRow,
+} from '@/features/finance-admin/lib/paymentsLogDisplay';
 
 describe('payments-log', () => {
   it('parses PaymentLogRow with nested person and offering', () => {
@@ -30,7 +34,19 @@ describe('payments-log', () => {
     ).toBe(true);
   });
 
-  it('maps manual provider to i18n key', () => {
-    expect(getProviderLabelKey('manual')).toBe('finance.provider.manual');
+  it('maps manual provider to manual capture source', () => {
+    expect(getPaymentCaptureSource('manual')).toBe('manual');
+    expect(getCaptureSourceLabelKey('manual')).toBe('finance.capture_source.manual');
+  });
+
+  it('maps gateway providers to online capture source', () => {
+    for (const provider of ['grow', 'stripe', 'mock']) {
+      expect(getPaymentCaptureSource(provider)).toBe('online');
+    }
+    expect(getCaptureSourceLabelKey('online')).toBe('finance.capture_source.online');
+  });
+
+  it('maps gateway slug to i18n key for detail drawer', () => {
+    expect(getProviderLabelKey('grow')).toBe('finance.provider.grow');
   });
 });

@@ -2,7 +2,11 @@ import { useTranslation } from 'react-i18next';
 import { formatCurrency } from '@shared/format';
 import { Button } from '@/components/ui/button';
 import type { PaymentLogRow } from '@shared/schemas';
-import { getPayerDisplay } from '../lib/paymentsLogDisplay';
+import {
+  getCaptureSourceLabelKey,
+  getPayerDisplay,
+  getPaymentCaptureSource,
+} from '../lib/paymentsLogDisplay';
 import { getProviderLabelKey } from '../services/paymentsLogService';
 
 interface PaymentDetailDrawerProps {
@@ -13,6 +17,7 @@ interface PaymentDetailDrawerProps {
 export function PaymentDetailDrawer({ row, onClose }: PaymentDetailDrawerProps) {
   const { t, i18n } = useTranslation();
   const payer = getPayerDisplay(row, t('finance.payments.family_payment'));
+  const captureSource = getPaymentCaptureSource(row.provider);
 
   return (
   <>
@@ -65,8 +70,15 @@ export function PaymentDetailDrawer({ row, onClose }: PaymentDetailDrawerProps) 
           <dd>{t(`finance.charge_type.${row.charge_type}`, { defaultValue: row.charge_type })}</dd>
         </div>
         <div>
-          <dt className="font-medium">{t('finance.payments.col_provider')}</dt>
-          <dd>{t(getProviderLabelKey(row.provider), { defaultValue: row.provider })}</dd>
+          <dt className="font-medium">{t('finance.payments.col_capture_source')}</dt>
+          <dd>
+            {t(getCaptureSourceLabelKey(captureSource))}
+            {captureSource === 'online' && (
+              <span className="block text-muted-foreground">
+                {t(getProviderLabelKey(row.provider), { defaultValue: row.provider })}
+              </span>
+            )}
+          </dd>
         </div>
         <div>
           <dt className="font-medium">{t('finance.payments.col_method')}</dt>

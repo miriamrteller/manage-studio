@@ -1,8 +1,11 @@
 import { useTranslation } from 'react-i18next';
 import { formatCurrency } from '@shared/format';
 import type { PaymentLogRow } from '@shared/schemas';
-import { getPayerDisplay } from '../lib/paymentsLogDisplay';
-import { getProviderLabelKey } from '../services/paymentsLogService';
+import {
+  getCaptureSourceLabelKey,
+  getPayerDisplay,
+  getPaymentCaptureSource,
+} from '../lib/paymentsLogDisplay';
 
 interface PaymentsLogTableProps {
   rows: PaymentLogRow[];
@@ -25,7 +28,7 @@ export function PaymentsLogTable({ rows, onRowClick }: PaymentsLogTableProps) {
             <th className="px-3 py-2 text-start font-medium">{t('finance.payments.col_total')}</th>
             <th className="px-3 py-2 text-start font-medium">{t('finance.payments.col_status')}</th>
             <th className="px-3 py-2 text-start font-medium">{t('finance.payments.col_charge_type')}</th>
-            <th className="px-3 py-2 text-start font-medium">{t('finance.payments.col_provider')}</th>
+            <th className="px-3 py-2 text-start font-medium">{t('finance.payments.col_capture_source')}</th>
             <th className="px-3 py-2 text-start font-medium">{t('finance.payments.col_method')}</th>
             <th className="px-3 py-2 text-start font-medium">{t('finance.payments.col_document')}</th>
             <th className="px-3 py-2 text-start font-medium">{t('finance.payments.col_engagement')}</th>
@@ -62,7 +65,7 @@ export function PaymentsLogTable({ rows, onRowClick }: PaymentsLogTableProps) {
                   {t(`finance.charge_type.${row.charge_type}`, { defaultValue: row.charge_type })}
                 </td>
                 <td className="px-3 py-2">
-                  {t(getProviderLabelKey(row.provider), { defaultValue: row.provider })}
+                  {t(getCaptureSourceLabelKey(getPaymentCaptureSource(row.provider)))}
                 </td>
                 <td className="px-3 py-2">
                   {row.payment_method

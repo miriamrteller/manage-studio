@@ -919,14 +919,16 @@
       "col_vat": "VAT",
       "col_total": "Total",
       "col_status": "Status",
-      "col_charge_type": "Charge type",
+      "col_charge_type": "Payment reason",
       "col_provider": "Provider",
+      "col_capture_source": "Payment source",
       "col_method": "Method",
       "col_document": "Document",
       "col_engagement": "Enrolment",
       "filter_status": "Status",
-      "filter_charge_type": "Charge type",
+      "filter_charge_type": "Payment reason",
       "filter_provider": "Provider",
+      "filter_capture_source": "Payment source",
       "filter_date_from": "Paid from",
       "filter_date_to": "Paid to",
       "filter_payer_search": "Search payer",
@@ -934,11 +936,15 @@
       "detail_title": "Payment details"
     },
     "charge_type": {
-      "initial": "Initial",
-      "renewal": "Renewal",
-      "setup": "Setup",
-      "adjustment": "Adjustment",
+      "initial": "Enrolment payment",
+      "renewal": "Monthly renewal",
+      "setup": "Setup fee",
+      "adjustment": "Manual adjustment",
       "refund": "Refund"
+    },
+    "capture_source": {
+      "manual": "Manual",
+      "online": "Online"
     },
     "provider": {
       "manual": "Manual",

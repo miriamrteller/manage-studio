@@ -920,14 +920,16 @@
       "col_vat": "מע״מ",
       "col_total": "סה״כ",
       "col_status": "סטטוס",
-      "col_charge_type": "סוג חיוב",
+      "col_charge_type": "סיבת תשלום",
       "col_provider": "ספק",
+      "col_capture_source": "מקור תשלום",
       "col_method": "אמצעי",
       "col_document": "מסמך",
       "col_engagement": "הרשמה",
       "filter_status": "סטטוס",
       "filter_charge_type": "סוג חיוב",
       "filter_provider": "ספק",
+      "filter_capture_source": "מקור תשלום",
       "filter_date_from": "שולם מ-",
       "filter_date_to": "שולם עד",
       "filter_payer_search": "חיפוש משלם",
@@ -935,11 +937,15 @@
       "detail_title": "פרטי תשלום"
     },
     "charge_type": {
-      "initial": "ראשוני",
-      "renewal": "חידוש",
-      "setup": "הקמה",
-      "adjustment": "התאמה",
+      "initial": "תשלום הרשמה",
+      "renewal": "חידוש חודשי",
+      "setup": "דמי הקמה",
+      "adjustment": "התאמה ידנית",
       "refund": "החזר"
+    },
+    "capture_source": {
+      "manual": "ידני",
+      "online": "מקוון"
     },
     "provider": {
       "manual": "ידני",
