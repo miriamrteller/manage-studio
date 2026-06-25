@@ -927,7 +927,7 @@
       "col_document": "מסמך",
       "col_engagement": "הרשמה",
       "filter_status": "סטטוס",
-      "filter_charge_type": "סוג חיוב",
+      "filter_charge_type": "סיבת תשלום",
       "filter_provider": "ספק",
       "filter_capture_source": "מקור תשלום",
       "filter_date_from": "שולם מ-",
