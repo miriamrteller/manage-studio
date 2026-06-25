@@ -58,9 +58,18 @@ export function parseGrowNotify(body: Record<string, unknown>): ParsedGrowNotify
   const amountMinor = data.sum != null
     ? minorFromGrowAmount(data.sum)
     : Number(metadata.total_amount_minor ?? 0);
-  const vatRate = Number(metadata.vat_rate ?? 0.17);
-  const pretax = Number(metadata.pretax_amount_minor) || Math.round(amountMinor / (1 + vatRate));
-  const vatMinor = Number(metadata.vat_amount_minor) || amountMinor - pretax;
+  // Tax Delegation Doctrine: never hardcode a tax rate.
+  // Use vat_rate from metadata when present; derive from amounts if possible;
+  // fall back to 0 (no-tax assumption) — never assume a specific rate.
+  const pretaxFromMeta = Number(metadata.pretax_amount_minor);
+  const vatFromMeta = Number(metadata.vat_amount_minor);
+  const vatRate = metadata.vat_rate != null
+    ? Number(metadata.vat_rate)
+    : pretaxFromMeta > 0
+      ? (amountMinor - pretaxFromMeta) / pretaxFromMeta
+      : 0;
+  const pretax = pretaxFromMeta || Math.round(amountMinor / (1 + vatRate));
+  const vatMinor = vatFromMeta || amountMinor - pretax;
 
   const succeeded = String(status) === "1" || status === 1;
 
