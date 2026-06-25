@@ -5,8 +5,8 @@ Agent-optimized implementation plans. Create before coding (see `.instructions.m
 | Date | Feature | Status |
 | --- | --- | --- |
 | 2026-06-25 | [Age override PR A](age-override-pr-a.md) | ✅ Complete |
-| 2026-06-25 | [Age override PR B](age-override-pr-b.md) | 🟡 Finish wiring + smoke (Steps 3–9) |
-| 2026-06-25 | [Age override overview](2026-06-02-age-override-and-review-request.md) | PR A done; PR B wiring largely landed |
+| 2026-06-25 | [Age override PR B](age-override-pr-b.md) | 🟡 ~95% — merge after bug fixes + E2E smoke |
+| 2026-06-25 | [Age override overview](2026-06-02-age-override-and-review-request.md) | PR A done; PR B code complete on WIP branch |
 | 2026-06-25 | [Admin operations overview](admin-overview-dashboard.md) | Planned — Phase 1F |
 | 2026-06-25 | [Notification blast composer](notification-blast-composer.md) | Planned — Phase 1F |
 | 2026-06-25 | [Parent portal polish](parent-portal-polish.md) | Planned — Phase 1G |
