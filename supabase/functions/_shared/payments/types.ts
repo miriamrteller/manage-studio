@@ -23,6 +23,7 @@ export interface ChargeParams {
   metadata: ChargeMetadata;
   savedToken?: string;
   customerRef?: string;
+  installments?: number; // GAP 1: number of installments (1–12); defaults to 1
 }
 
 export interface ChargeResult {

@@ -8,6 +8,16 @@ interface GrowCredentials {
   userId: string;
   pageCode: string;
   apiKey: string;
+  /**
+   * Tenant business license / tax ID for Grow invoice.
+   * null = omit pageField[invoiceLicenseNumber] from payload (field not configured).
+   */
+  invoiceLicenseNumber: string | null;
+  /**
+   * Grow vatType for productData[N][vatType].
+   * 1 = VAT included (default), 2 = before VAT, 3 = exempt.
+   */
+  vatType: number;
 }
 
 interface GrowNotifyData {
@@ -58,9 +68,18 @@ export function parseGrowNotify(body: Record<string, unknown>): ParsedGrowNotify
   const amountMinor = data.sum != null
     ? minorFromGrowAmount(data.sum)
     : Number(metadata.total_amount_minor ?? 0);
-  const vatRate = Number(metadata.vat_rate ?? 0.17);
-  const pretax = Number(metadata.pretax_amount_minor) || Math.round(amountMinor / (1 + vatRate));
-  const vatMinor = Number(metadata.vat_amount_minor) || amountMinor - pretax;
+  // Tax Delegation Doctrine: never hardcode a tax rate.
+  // Use vat_rate from metadata when present; derive from amounts if possible;
+  // fall back to 0 (no-tax assumption) — never assume a specific rate.
+  const pretaxFromMeta = Number(metadata.pretax_amount_minor);
+  const vatFromMeta = Number(metadata.vat_amount_minor);
+  const vatRate = metadata.vat_rate != null
+    ? Number(metadata.vat_rate)
+    : pretaxFromMeta > 0
+      ? (amountMinor - pretaxFromMeta) / pretaxFromMeta
+      : 0;
+  const pretax = pretaxFromMeta || Math.round(amountMinor / (1 + vatRate));
+  const vatMinor = vatFromMeta || amountMinor - pretax;
 
   const succeeded = String(status) === "1" || status === 1;
 
@@ -149,7 +168,7 @@ export class GrowPaymentProvider implements PaymentProvider {
     // The Grow user id is stored in the vendor-generic account id column (not a secret).
     const { data: tenant } = await this.service
       .from("tenants")
-      .select("payment_provider_account_id")
+      .select("payment_provider_account_id, invoice_license_number, vat_type")
       .eq("id", tenantId)
       .single();
 
@@ -161,6 +180,8 @@ export class GrowPaymentProvider implements PaymentProvider {
       userId: tenant.payment_provider_account_id as string,
       pageCode: cred.payment_provider_public_key,
       apiKey: cred.payment_provider_secret_key,
+      invoiceLicenseNumber: (tenant.invoice_license_number as string | null) ?? null,
+      vatType: typeof tenant.vat_type === "number" ? tenant.vat_type : 1,
     };
   }
 
@@ -221,11 +242,17 @@ export class GrowPaymentProvider implements PaymentProvider {
       sum: growAmountFromMinor(params.amountMinor),
       description: `${params.metadata.charge_type} ${params.metadata.engagement_id}`,
       paymentNum: 1,
-      maxPaymentNum: 1,
+      maxPaymentNum: params.installments ?? 1, // GAP 1: installments support (1–12)
       transactionUniqueIdentifier: params.idempotencyKey,
       // Save the card token on the first (enrolment) charge so renewals can reuse it (G6).
       saveCardToken: params.metadata.charge_type === "initial" ? 1 : 0,
       ...(notifyUrl ? { notifyUrl } : {}),
+      // Gap 2 — CN-GROW-002-REV: Osek Patur / VAT type pass-through.
+      // Pure pass-through: OpalSwift never computes or validates tax values.
+      ...(creds.invoiceLicenseNumber
+        ? { "pageField[invoiceLicenseNumber]": creds.invoiceLicenseNumber }
+        : {}),
+      "productData[0][vatType]": creds.vatType,
       ...customFields,
     };
 
@@ -266,6 +293,11 @@ export class GrowPaymentProvider implements PaymentProvider {
         sum: growAmountFromMinor(params.amountMinor),
         description: `${params.metadata.charge_type} ${params.metadata.engagement_id}`,
         transactionUniqueIdentifier: params.idempotencyKey,
+        // Gap 2 — CN-GROW-002-REV: same pass-through as createCharge.
+        ...(creds.invoiceLicenseNumber
+          ? { "pageField[invoiceLicenseNumber]": creds.invoiceLicenseNumber }
+          : {}),
+        "productData[0][vatType]": creds.vatType,
         ...toGrowCustomFields(params.metadata),
       }),
     });
@@ -278,10 +310,45 @@ export class GrowPaymentProvider implements PaymentProvider {
 
   async constructEvent(rawBody: string, _headers: Headers, _tenantId: string): Promise<PaymentEvent> {
     const body = JSON.parse(rawBody) as Record<string, unknown>;
+
+    // GAP 4: Webhook key validation — authenticate the request came from Grow before processing.
+    // Key is stored encrypted in grow_webhook_secrets (per-tenant, rotatable).
+    // If no key is stored for this tenant, validation is skipped (opt-in).
+    const tenantIdFromBody = peekGrowTenantId(body);
+    if (tenantIdFromBody) {
+      const data = (body.data as Record<string, unknown> | undefined) ?? body;
+      const inboundKey = (data.webhookKey ?? body.webhookKey) as string | undefined;
+      if (inboundKey) {
+        const { data: keyRows } = await this.service.rpc("get_grow_webhook_secret", {
+          p_tenant_id: tenantIdFromBody,
+        });
+        const storedKey = Array.isArray(keyRows) && keyRows.length > 0
+          ? (keyRows[0] as { webhook_secret: string }).webhook_secret
+          : null;
+        if (storedKey && inboundKey !== storedKey) {
+          throw new Error("Grow webhook key mismatch — request rejected");
+        }
+      }
+    }
+
     const parsed = parseGrowNotify(body);
 
     // Grow requires the merchant to acknowledge the transaction; always approve on success.
     if (parsed.event.type === "payment.succeeded") {
+      // GAP 3: Replay protection — if this transaction reference already reached 'succeeded'
+      // in our DB, skip approveTransaction and persistCardToken to prevent double-processing.
+      const ref = parsed.event.providerPaymentRef;
+      const { data: existing } = await this.service
+        .from("payments")
+        .select("id, status")
+        .eq("provider_payment_ref", ref)
+        .maybeSingle();
+
+      if (existing?.status === "succeeded") {
+        // Already finalised — return the event without triggering side-effects again.
+        return parsed.event;
+      }
+
       await this.approveTransaction(parsed.event.metadata.tenant_id, parsed);
       await this.persistCardToken(parsed.event.metadata, body);
     }

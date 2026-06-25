@@ -1,73 +1,52 @@
 /**
- * Invoice display helpers — null-safe accessors for provider-authoritative fields.
+ * Invoice display helpers for Grow-settled payments.
  *
- * CNB-001: allocationNumber is nullable. Null is legally valid for sub-threshold
- * and osek-patur invoices (Tax Authority Regulation 6770 §2, Circular 1/2023).
+ * Grow issues the VAT document internally (including any allocation number).
+ * OpalSwift receives the document reference (documentNumber, documentUrl) from
+ * Grow's invoice webhook — never the VAT breakdown or allocation number.
  *
- * RULE: Never render "null" string on the face of a tax document.
- *       Omit the allocationNumber line entirely when the value is null.
+ * These helpers work with fields actually stored in the payments table.
  */
-import type { ProviderVatResponse } from '@shared/vat/provider-adapter';
 
-/**
- * Returns the allocation number string when present, or null.
- * Use this to conditionally render the מספר הקצאה field in UI and PDF.
- *
- * CNB-001 null-guard: safe to call with null — never throws.
- */
-export function getAllocationNumber(
-  charge: Pick<ProviderVatResponse, 'allocationNumber'>,
-): string | null {
-  // Explicit null-coalesce: satisfies the null-guard requirement even if
-  // the field arrives as undefined from a partial DB read.
-  return charge.allocationNumber ?? null;
+/** Fields available after Grow's invoice webhook has been applied to a payment row. */
+export interface GrowSettledCharge {
+  /** Grow invoice / asmachta number, e.g. "INV-2024-001". Null if not yet received. */
+  externalDocumentNumber: string | null;
+  /** Grow-hosted PDF URL (convenience; may expire — prefer document_pdf_path for legal copy). */
+  documentUrl: string | null;
+  /** Total charge amount in minor units (agorot). */
+  amountMinor: number;
+  /** Payment row status. */
+  status: 'succeeded' | 'failed';
 }
 
 /**
- * Builds display lines for a Hebrew tax invoice.
- *
- * CNB-001 null-guard: the מספר הקצאה line is conditionally included.
- * When allocationNumber is null, the line is omitted — never prints "null"
- * on the face of the document (RF-02 from the VAT plan).
- *
- * @returns Array of display strings, RTL-safe, ready for PDF or screen render.
+ * Builds display lines for a Grow payment document reference.
+ * Returns only fields OpalSwift actually stores from Grow's invoice webhook.
+ * Never renders "null" as a string on a display surface.
  */
-export function buildInvoiceDisplayLines(charge: ProviderVatResponse): string[] {
+export function buildInvoiceDisplayLines(charge: GrowSettledCharge): string[] {
   const lines: string[] = [
-    `חשבונית מס: ${charge.serialNumber}`,
-    `סכום לפני מע"מ: ${charge.pretax}`,
-    `מע"מ: ${charge.vat}`,
-    `סה"כ: ${charge.total}`,
+    `סכום: ${(charge.amountMinor / 100).toFixed(2)} ₪`,
   ];
-
-  // CNB-001 null-guard: conditionally render — never render null as a string.
-  if (charge.allocationNumber != null) {
-    lines.push(`מספר הקצאה: ${charge.allocationNumber}`);
+  if (charge.externalDocumentNumber != null) {
+    lines.push(`מספר חשבונית: ${charge.externalDocumentNumber}`);
   }
-
+  if (charge.documentUrl != null) {
+    lines.push(`קישור להורדה: ${charge.documentUrl}`);
+  }
   return lines;
 }
 
 /**
- * Whether this charge is awaiting a Tax Authority allocation number.
- * Invoices with status 'pending_allocation' are legally issued but incomplete
- * for B2B invoices above threshold. They must not be presented to the buyer
- * until resolved (7-day SLA per Tax Authority rules).
- */
-export function isPendingAllocation(charge: ProviderVatResponse): boolean {
-  return charge.status === 'pending_allocation';
-}
-
-/**
  * Returns a human-readable settlement status label in Hebrew.
- * Safe to call with any status value including null allocationNumber.
  */
-export function getSettlementStatusLabel(charge: ProviderVatResponse): string {
+export function getSettlementStatusLabel(
+  charge: Pick<GrowSettledCharge, 'status'>,
+): string {
   switch (charge.status) {
-    case 'settled':
+    case 'succeeded':
       return 'שולם';
-    case 'pending_allocation':
-      return 'ממתין למספר הקצאה';
     case 'failed':
       return 'נכשל';
     default: {
