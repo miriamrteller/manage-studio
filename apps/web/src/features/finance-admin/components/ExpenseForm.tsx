@@ -6,6 +6,7 @@ import { computeExpenseAmounts } from '../lib/expenseAmounts';
 import { normalizeIsraeliTaxId } from '../lib/financeAdminUtils';
 import { ExpenseService } from '../services/expenseService';
 import { useExpenseCategories } from '../hooks/useExpenses';
+import { ExpenseCategorySelect } from './ExpenseCategorySelect';
 import type { Expense } from '@shared/schemas';
 
 interface ExpenseFormProps {
@@ -120,22 +121,7 @@ export function ExpenseForm({ correctsExpense, onSuccess, onCancel, onSubmit }: 
     <form onSubmit={handleSubmit} className="space-y-4 p-4">
       {error && <div className="alert-error" role="alert">{error}</div>}
 
-      <label className="block text-sm">
-        <span className="block font-medium mb-1">{t('finance.categories.name')}</span>
-        <select
-          className="w-full border rounded px-3 py-2"
-          value={categoryId}
-          onChange={(e) => setCategoryId(e.target.value)}
-          required
-        >
-          <option value="">{t('common.select')}</option>
-          {categories
-            .filter((c) => c.is_active)
-            .map((category) => (
-              <option key={category.id} value={category.id}>{category.name}</option>
-            ))}
-        </select>
-      </label>
+      <ExpenseCategorySelect value={categoryId} onChange={setCategoryId} />
 
       <label className="block text-sm">
         <span className="block font-medium mb-1">{t('finance.expenses.description')}</span>
