@@ -13,7 +13,6 @@ import {
   personAgeAtSeasonStart,
 } from '../lib/check-requirements';
 import {
-  enrolmentAgeMismatchMessage,
   enrolmentNoClassesAgeHint,
   enrolmentShowingForAgeMessage,
   parseLocalDate,
@@ -24,6 +23,7 @@ import type { Engagement } from '@shared/schemas';
 import type { AgeOverrideState } from '../hooks/useAgeOverride';
 import { useEnrolmentClassPicker } from '../hooks/useEnrolmentClassPicker';
 import { EnrolmentClassSelectList } from './EnrolmentClassSelectList';
+import { AgeOverridePanel } from './AgeOverridePanel';
 import { StepBackButton } from './StepBackButton';
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -267,29 +267,16 @@ export function StepClass({
         />
       )}
 
-      {allowAgeOverride &&
-        selectedClass &&
-        !selectedClassEligible &&
-        selectedClassAges &&
-        selectedClassStudentAge != null && (
-          <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 space-y-2">
-            <p>{enrolmentAgeMismatchMessage(selectedClassStudentAge, selectedClassAges, t)}</p>
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={ageOverride.confirmed}
-                onChange={(e) => onAgeOverrideChange(e.target.checked, ageOverride.reason)}
-              />
-              {t('pages.enrolment.age_override_label')}
-            </label>
-            <textarea
-              className="w-full rounded border border-amber-300 p-2 text-sm bg-white"
-              placeholder={t('pages.enrolment.age_override_reason_placeholder')}
-              value={ageOverride.reason}
-              onChange={(e) => onAgeOverrideChange(ageOverride.confirmed, e.target.value)}
-            />
-          </div>
-        )}
+      {allowAgeOverride && selectedClass && !selectedClassEligible && (
+        <AgeOverridePanel
+          studentAge={selectedClassStudentAge}
+          classAges={selectedClassAges}
+          confirmed={ageOverride.confirmed}
+          reason={ageOverride.reason}
+          onConfirmedChange={(confirmed) => onAgeOverrideChange(confirmed, ageOverride.reason)}
+          onReasonChange={(reason) => onAgeOverrideChange(ageOverride.confirmed, reason)}
+        />
+      )}
 
       {selectedClassId && reqLoading && (
         <p className="text-sm text-gray-500">{t('pages.enrolment.loading_class_info')}</p>

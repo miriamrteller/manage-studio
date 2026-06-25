@@ -33,6 +33,8 @@ import { isOfferingEnrolled } from '../lib/enrolled-offerings';
 import { usePersonExistingEnrolments } from '../hooks/usePersonExistingEnrolments';
 import { hasParentRole } from '@/lib/parentRoles';
 import { getSelectedClassAgeError } from '../lib/selectedClassAgeValidation';
+import { evaluateAgeEnrolment, type AgeEnrolmentActor } from '../lib/ageEnrolmentPolicy';
+import { AgeOverridePanel } from './AgeOverridePanel';
 import type { EnrollmentIntent } from '@/lib/enrollment-intent';
 import { persistEnrollmentIntent } from '@/lib/enrollment-intent';
 import type { Engagement } from '@shared/schemas';
@@ -69,6 +71,7 @@ export function EnrolmentStepper({
   }));
   const [personDateOfBirth, setPersonDateOfBirth] = useState<string | null>(null);
   const [personAgeError, setPersonAgeError] = useState<string | null>(null);
+  const [attemptedPersonDob, setAttemptedPersonDob] = useState<string | null>(null);
   const [selectedClassName, setSelectedClassName] = useState('');
   const [selectedClassLocation, setSelectedClassLocation] = useState<string | null>(null);
   const [personStepSkipped, setPersonStepSkipped] = useState(false);
@@ -76,6 +79,12 @@ export function EnrolmentStepper({
 
   const { classAgeOverride, setClassAgeOverride, handleClassAgeOverrideChange } = useAgeOverride();
   const classPreselected = Boolean(initialClassId && initialTermId);
+  const enrolmentActor: AgeEnrolmentActor =
+    enrolmentContext.mode === 'admin'
+      ? 'admin'
+      : enrolmentContext.mode === 'guest'
+        ? 'guest'
+        : 'parent';
   const showGuestVerifyStep = false;
 
   useEffect(() => {
@@ -223,19 +232,26 @@ export function EnrolmentStepper({
     if (classPreselected && (enrolledKeysLoading || preselectedAlreadyEnrolled)) return;
 
     if (classPreselected && dob) {
-      const ageError = getSelectedClassAgeError(enrolmentContext.constraints, dob, t);
+      const ageError = getSelectedClassAgeError(enrolmentContext.constraints, dob, t, {
+        actor: enrolmentActor,
+        ageOverrideConfirmed: classAgeOverride.confirmed,
+      });
       if (ageError) {
         if (enrolmentContext.mode === 'admin' && classAgeOverride.confirmed) {
           setPersonAgeError(null);
+          setAttemptedPersonDob(null);
         } else {
           setPersonAgeError(ageError);
+          setAttemptedPersonDob(dob);
           return;
         }
       } else {
         setPersonAgeError(ageError);
+        setAttemptedPersonDob(null);
       }
     }
     setPersonAgeError(null);
+    setAttemptedPersonDob(null);
     if (newData) setEnrolmentData((prev) => ({ ...prev, ...newData }));
     setPersonDateOfBirth(dob ?? null);
     goToNextStep();
@@ -374,33 +390,34 @@ export function EnrolmentStepper({
                     role="alert"
                   >
                     <p>{personAgeError}</p>
-                    {classPreselected && enrolmentContext.mode === 'admin' && (
-                      <>
-                        <label className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            checked={classAgeOverride.confirmed}
-                            onChange={(e) =>
-                              setClassAgeOverride((prev) => ({
-                                ...prev,
-                                confirmed: e.target.checked,
-                              }))
-                            }
-                          />
-                          {t('pages.enrolment.age_override_label')}
-                        </label>
-                        <textarea
-                          className="w-full rounded border border-red-300 p-2 text-sm bg-white text-gray-900"
-                          placeholder={t('pages.enrolment.age_override_reason_placeholder')}
-                          value={classAgeOverride.reason}
-                          onChange={(e) =>
-                            setClassAgeOverride((prev) => ({
-                              ...prev,
-                              reason: e.target.value,
-                            }))
-                          }
-                        />
-                      </>
+                    {classPreselected && enrolmentContext.mode === 'admin' && attemptedPersonDob && (
+                      <AgeOverridePanel
+                        showMismatchWarning={false}
+                        studentAge={
+                          evaluateAgeEnrolment({
+                            dateOfBirth: attemptedPersonDob,
+                            ageBand: enrolmentContext.constraints.ageBand,
+                            seasonStartDate: enrolmentContext.constraints.seasonStartDate,
+                            actor: 'admin',
+                          }).studentAge
+                        }
+                        classAges={
+                          evaluateAgeEnrolment({
+                            dateOfBirth: attemptedPersonDob,
+                            ageBand: enrolmentContext.constraints.ageBand,
+                            seasonStartDate: enrolmentContext.constraints.seasonStartDate,
+                            actor: 'admin',
+                          }).classAges
+                        }
+                        confirmed={classAgeOverride.confirmed}
+                        reason={classAgeOverride.reason}
+                        onConfirmedChange={(confirmed) =>
+                          setClassAgeOverride((prev) => ({ ...prev, confirmed }))
+                        }
+                        onReasonChange={(reason) =>
+                          setClassAgeOverride((prev) => ({ ...prev, reason }))
+                        }
+                      />
                     )}
                   </div>
                 )}

@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import { ensureBillingAccountForStudent } from "./ensure-billing-account.ts";
-import { isAgeEligible } from "./age-eligibility.ts";
+import { isAgeEligible, personAgeAtSeasonStart } from "./age-eligibility.ts";
 import { ENROLMENT_BLOCKING_DUPLICATE_STATUSES } from "./enrolment-statuses.ts";
 import { assertAdminAgeOverride, assertCanCreateEngagement } from "./authorize-engagement-create.ts";
 
@@ -149,6 +149,14 @@ export async function resolveOrCreateEngagement(
     tenantId,
     personId,
   );
+
+  const personDob = (person?.date_of_birth as string | null) ?? null;
+  if (personDob && seasonStartDate) {
+    const snapshot = personAgeAtSeasonStart(personDob, seasonStartDate);
+    if (snapshot != null) {
+      insertPayload.age_at_season_start = snapshot;
+    }
+  }
 
   const { data: created, error: createError } = await service
     .from("engagements")

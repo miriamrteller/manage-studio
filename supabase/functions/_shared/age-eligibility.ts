@@ -45,3 +45,13 @@ export function isAgeEligible(
   if (offering.max_age != null && age > offering.max_age) return false;
   return true;
 }
+
+export function personAgeAtSeasonStart(
+  dateOfBirth: string,
+  seasonStartDate: string,
+): number | null {
+  const ref = parseLocalDate(seasonStartDate);
+  if (Number.isNaN(ref.getTime())) return null;
+  const age = ageAt(dateOfBirth, ref);
+  return Number.isNaN(age) ? null : age;
+}

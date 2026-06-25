@@ -6,7 +6,7 @@ import { z } from 'zod';
 import type { Tenant } from '@shared/schemas';
 import { ensureBillingAccountForStudent } from '@/features/billing/ensureBillingAccountForStudent';
 import { ENROLMENT_BLOCKING_DUPLICATE_STATUSES } from './lib/enrolled-offerings';
-import { isAgeEligible } from './lib/check-requirements';
+import { isAgeEligible, personAgeAtSeasonStart } from './lib/check-requirements';
 
 const EnrolmentStatusSchema = z.enum([
   'pending_payment',
@@ -217,6 +217,13 @@ export class EnrolmentService extends BaseService {
             age_override_by: user.id,
             age_override_reason: age_override_reason?.trim() || null,
           };
+        }
+
+        if (person?.date_of_birth && seasonStartDate) {
+          const snapshot = personAgeAtSeasonStart(person.date_of_birth, seasonStartDate);
+          if (snapshot != null) {
+            insertPayload = { ...insertPayload, age_at_season_start: snapshot };
+          }
         }
       }
 

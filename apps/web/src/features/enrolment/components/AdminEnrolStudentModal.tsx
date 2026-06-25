@@ -12,6 +12,7 @@ import {
 } from '../lib/check-requirements';
 import { useEnrolmentClassPicker } from '../hooks/useEnrolmentClassPicker';
 import { EnrolmentClassSelectList } from './EnrolmentClassSelectList';
+import { AgeOverridePanel } from './AgeOverridePanel';
 import {
   AdminEnrolmentPaymentStep,
   type AdminPaymentChoice,
@@ -20,7 +21,6 @@ import { useClasses } from '@/features/classes/hooks/useClasses';
 import { useLevels } from '@/features/levels/hooks/useLevels';
 import { useTerms } from '@/features/terms/hooks/useTerms';
 import {
-  enrolmentAgeMismatchMessage,
   enrolmentShowingForAgeMessage,
   parseLocalDate,
 } from '@/lib/personAge';
@@ -315,26 +315,15 @@ export function AdminEnrolStudentModal({
             />
           )}
 
-          {selectedClass && !selectedClassEligible && selectedClassAges && selectedClassStudentAge != null && (
-            <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 space-y-2">
-              <p>
-                {enrolmentAgeMismatchMessage(selectedClassStudentAge, selectedClassAges, t)}
-              </p>
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={ageOverrideConfirmed}
-                  onChange={(e) => setAgeOverrideConfirmed(e.target.checked)}
-                />
-                {t('pages.enrolment.age_override_label')}
-              </label>
-              <textarea
-                className="w-full rounded border border-amber-300 p-2 text-sm bg-white"
-                placeholder={t('pages.enrolment.age_override_reason_placeholder')}
-                value={ageOverrideReason}
-                onChange={(e) => setAgeOverrideReason(e.target.value)}
-              />
-            </div>
+          {selectedClass && !selectedClassEligible && (
+            <AgeOverridePanel
+              studentAge={selectedClassStudentAge}
+              classAges={selectedClassAges}
+              confirmed={ageOverrideConfirmed}
+              reason={ageOverrideReason}
+              onConfirmedChange={setAgeOverrideConfirmed}
+              onReasonChange={setAgeOverrideReason}
+            />
           )}
 
           {error && (

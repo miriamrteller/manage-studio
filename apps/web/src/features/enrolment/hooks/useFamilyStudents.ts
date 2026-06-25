@@ -85,5 +85,5 @@ export function partitionFamilyStudents(
   guardianPersonId: string | null,
   constraints: EnrolmentConstraints,
 ) {
-  return filterStudentCandidates(students, constraints, guardianPersonId);
+  return filterStudentCandidates(students, { ...constraints, actor: 'admin' }, guardianPersonId);
 }

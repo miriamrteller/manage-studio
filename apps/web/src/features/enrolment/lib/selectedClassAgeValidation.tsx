@@ -2,12 +2,14 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import {
-  formatAgeRange,
-  isPersonEligibleForSelectedClass,
-  personAgeAtSeasonStart,
-} from './check-requirements';
+  evaluateAgeEnrolment,
+  shouldBlockAgeEnrolment,
+  type AgeEnrolmentActor,
+} from './ageEnrolmentPolicy';
 import { enrolmentAgeMismatchMessage } from '@/lib/personAge';
 import type { EnrolmentConstraints } from '../hooks/useEnrolmentContext';
+
+export type { AgeEnrolmentActor };
 
 export interface SelectedClassAgeValidation {
   /** True when DOB fails the selected class age band at season start. */
@@ -19,43 +21,48 @@ export interface SelectedClassAgeValidation {
 export function useSelectedClassAgeValidation(
   constraints: EnrolmentConstraints,
   dateOfBirth: string,
+  options?: {
+    actor?: AgeEnrolmentActor;
+    ageOverrideConfirmed?: boolean;
+  },
 ): SelectedClassAgeValidation {
+  const actor = options?.actor ?? 'parent';
+  const ageOverrideConfirmed = options?.ageOverrideConfirmed;
+
   return useMemo(() => {
-    const classAges = constraints.ageBand
-      ? formatAgeRange(constraints.ageBand.min_age, constraints.ageBand.max_age)
-      : null;
-
-    if (!dateOfBirth) {
-      return { blocked: false, studentAge: null, classAges };
-    }
-
-    const eligible = isPersonEligibleForSelectedClass(
+    const decision = evaluateAgeEnrolment({
       dateOfBirth,
-      constraints.ageBand,
-      constraints.seasonStartDate,
-    );
+      ageBand: constraints.ageBand,
+      seasonStartDate: constraints.seasonStartDate,
+      actor,
+      ageOverrideConfirmed,
+    });
 
-    if (eligible === null) {
-      return { blocked: false, studentAge: null, classAges };
-    }
-
-    const studentAge = constraints.seasonStartDate
-      ? personAgeAtSeasonStart(dateOfBirth, constraints.seasonStartDate)
-      : null;
-
-    return { blocked: !eligible, studentAge, classAges };
-  }, [constraints, dateOfBirth]);
+    return {
+      blocked: shouldBlockAgeEnrolment(decision, actor, ageOverrideConfirmed),
+      studentAge: decision.studentAge,
+      classAges: decision.classAges,
+    };
+  }, [constraints, dateOfBirth, actor, ageOverrideConfirmed]);
 }
 
 export function SelectedClassAgeAlert({
   constraints,
   dateOfBirth,
+  actor,
+  ageOverrideConfirmed,
 }: {
   constraints: EnrolmentConstraints;
   dateOfBirth: string;
+  actor?: AgeEnrolmentActor;
+  ageOverrideConfirmed?: boolean;
 }) {
   const { t } = useTranslation();
-  const { blocked, studentAge, classAges } = useSelectedClassAgeValidation(constraints, dateOfBirth);
+  const { blocked, studentAge, classAges } = useSelectedClassAgeValidation(
+    constraints,
+    dateOfBirth,
+    { actor, ageOverrideConfirmed },
+  );
 
   if (!blocked || studentAge == null || !classAges) {
     return null;
@@ -76,22 +83,27 @@ export function getSelectedClassAgeError(
   constraints: EnrolmentConstraints,
   dateOfBirth: string | null | undefined,
   t: TFunction,
+  options?: {
+    actor?: AgeEnrolmentActor;
+    ageOverrideConfirmed?: boolean;
+  },
 ): string | null {
   if (!dateOfBirth) return null;
 
-  const eligible = isPersonEligibleForSelectedClass(
+  const actor = options?.actor ?? 'parent';
+  const decision = evaluateAgeEnrolment({
     dateOfBirth,
-    constraints.ageBand,
-    constraints.seasonStartDate,
-  );
-  if (eligible !== false) return null;
+    ageBand: constraints.ageBand,
+    seasonStartDate: constraints.seasonStartDate,
+    actor,
+    ageOverrideConfirmed: options?.ageOverrideConfirmed,
+  });
 
-  const studentAge = constraints.seasonStartDate
-    ? personAgeAtSeasonStart(dateOfBirth, constraints.seasonStartDate)
-    : null;
-  const classAges = constraints.ageBand
-    ? formatAgeRange(constraints.ageBand.min_age, constraints.ageBand.max_age)
-    : null;
+  if (!shouldBlockAgeEnrolment(decision, actor, options?.ageOverrideConfirmed)) {
+    return null;
+  }
+
+  const { studentAge, classAges } = decision;
 
   if (studentAge == null || !classAges) {
     return t('pages.enrolment.ineligible_age');
