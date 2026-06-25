@@ -324,3 +324,20 @@ VALUES (
 ON CONFLICT (id) DO UPDATE SET
   status = EXCLUDED.status,
   succeeded_at = EXCLUDED.succeeded_at;
+
+-- ============================================================================
+-- GROW WEBHOOK SECRETS — dev fixture for creativeballet tenant
+-- Seed mock webhook key so handle-payment-document + constructEvent key
+-- validation can be exercised in the dev environment.
+-- Pair with GROW_MOCK=true — no live Grow calls are made.
+-- ============================================================================
+INSERT INTO grow_webhook_secrets (tenant_id, secret_enc, key_version)
+VALUES (
+  '00000000-0000-0000-0000-000000000001'::uuid,
+  pgp_sym_encrypt(
+    'grow-mock-webhook-key-dev-00000001',
+    '0uT6CrQXiMJab+raSRxxx0j7ZLYvwKCb2HCoQusCfiY='
+  ),
+  1
+)
+ON CONFLICT (tenant_id, key_version) DO NOTHING;
