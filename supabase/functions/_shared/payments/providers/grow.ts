@@ -221,11 +221,15 @@ export class GrowPaymentProvider implements PaymentProvider {
       sum: growAmountFromMinor(params.amountMinor),
       description: `${params.metadata.charge_type} ${params.metadata.engagement_id}`,
       paymentNum: 1,
-      maxPaymentNum: 1,
+      maxPaymentNum: params.installments ?? 1, // GAP 1: installments support (1–12)
       transactionUniqueIdentifier: params.idempotencyKey,
       // Save the card token on the first (enrolment) charge so renewals can reuse it (G6).
       saveCardToken: params.metadata.charge_type === "initial" ? 1 : 0,
       ...(notifyUrl ? { notifyUrl } : {}),
+      // GAP 2: Osek Patur — pass allocationNumber when present
+      ...(params.metadata.allocation_number
+        ? { allocationNumber: params.metadata.allocation_number }
+        : {}),
       ...customFields,
     };
 
@@ -278,10 +282,45 @@ export class GrowPaymentProvider implements PaymentProvider {
 
   async constructEvent(rawBody: string, _headers: Headers, _tenantId: string): Promise<PaymentEvent> {
     const body = JSON.parse(rawBody) as Record<string, unknown>;
+
+    // GAP 4: Webhook key validation — authenticate the request came from Grow before processing.
+    // Key is stored encrypted in grow_webhook_secrets (per-tenant, rotatable).
+    // If no key is stored for this tenant, validation is skipped (opt-in).
+    const tenantIdFromBody = peekGrowTenantId(body);
+    if (tenantIdFromBody) {
+      const data = (body.data as Record<string, unknown> | undefined) ?? body;
+      const inboundKey = (data.webhookKey ?? body.webhookKey) as string | undefined;
+      if (inboundKey) {
+        const { data: keyRows } = await this.service.rpc("get_grow_webhook_secret", {
+          p_tenant_id: tenantIdFromBody,
+        });
+        const storedKey = Array.isArray(keyRows) && keyRows.length > 0
+          ? (keyRows[0] as { webhook_secret: string }).webhook_secret
+          : null;
+        if (storedKey && inboundKey !== storedKey) {
+          throw new Error("Grow webhook key mismatch — request rejected");
+        }
+      }
+    }
+
     const parsed = parseGrowNotify(body);
 
     // Grow requires the merchant to acknowledge the transaction; always approve on success.
     if (parsed.event.type === "payment.succeeded") {
+      // GAP 3: Replay protection — if this transaction reference already reached 'succeeded'
+      // in our DB, skip approveTransaction and persistCardToken to prevent double-processing.
+      const ref = parsed.event.providerPaymentRef;
+      const { data: existing } = await this.service
+        .from("payments")
+        .select("id, status")
+        .eq("provider_payment_ref", ref)
+        .maybeSingle();
+
+      if (existing?.status === "succeeded") {
+        // Already finalised — return the event without triggering side-effects again.
+        return parsed.event;
+      }
+
       await this.approveTransaction(parsed.event.metadata.tenant_id, parsed);
       await this.persistCardToken(parsed.event.metadata, body);
     }

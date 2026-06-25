@@ -12,6 +12,7 @@ export const ChargeMetadataSchema = z.object({
   pretax_amount_minor: z.string().optional(),
   vat_amount_minor: z.string().optional(),
   total_amount_minor: z.string().optional(),
+  allocation_number: z.string().optional(), // GAP 2: Osek Patur — passed to Grow as allocationNumber
 });
 
 export type ChargeMetadata = z.infer<typeof ChargeMetadataSchema>;
@@ -23,6 +24,7 @@ export interface ChargeParams {
   metadata: ChargeMetadata;
   savedToken?: string;
   customerRef?: string;
+  installments?: number; // GAP 1: number of installments (1–12); defaults to 1
 }
 
 export interface ChargeResult {
