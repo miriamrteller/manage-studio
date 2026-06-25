@@ -44,7 +44,7 @@ coverage/
 .turbo/
 
 # AI Docs
-# /docs/
+/docs/archive/
 
 # Temp
 .temp/

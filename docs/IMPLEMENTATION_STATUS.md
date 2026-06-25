@@ -39,7 +39,7 @@ Rough completion against [SPEC.md §6 V1 Implementation](../SPEC.md#6-v1-impleme
 | Finance baseline (Stages 1–9) | [finance/00-overview.md](plans/finance/00-overview.md) | ✅ `01600` + extensions | ✅ | Provider abstraction, mock/Stripe/GI adapters |
 | Grow extension (G0–G6) | [finance/00-overview.md](plans/finance/00-overview.md) | ✅ `250003`–`250006` | ✅ | Registry, webhooks, checkout shell, admin doc RPCs |
 | Grow G7 settings + verify | [finance/stage-g7-settings-cleanup.md](plans/finance/stage-g7-settings-cleanup.md) | ✅ | ✅ | `GrowSettingsForm`, `verify-grow-credentials`, `FinanceHealthCard` — **live sandbox E2E still manual** |
-| **Age override (PR A)** | [age-override-pr-a.md](plans/age-override-pr-a.md) | ✅ `260001` | ✅ | Policy module, panel, snapshot, guest age gate, tests |
+| **Age override (PR A)** | [archive/age-override-pr-a.md](plans/archive/age-override-pr-a.md) | ✅ `260001` | ✅ | Policy module, panel, snapshot, guest age gate, tests |
 | **Parent age review (PR B)** | [age-override-pr-b.md](plans/age-override-pr-b.md) | ✅ `260002` | 🟡 **~95%** | **Code complete on WIP branch** — merge pending bug fixes + manual E2E smoke |
 | Phase 1F admin operations overview | [admin-overview-dashboard.md](plans/admin-overview-dashboard.md) | ❌ | ❌ | `useAdminDashboard` still placeholder |
 | Notification blast composer | [notification-blast-composer.md](plans/notification-blast-composer.md) | ❌ | ❌ | `send-notification` exists; no compose UI |

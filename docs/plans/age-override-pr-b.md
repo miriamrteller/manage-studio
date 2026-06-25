@@ -6,7 +6,7 @@ Let **guests and parents** request studio review when age-blocked (`admin_review
 
 **Repo:** `manage-studio`  
 **SPEC:** §4.2.5 · [overview](2026-06-02-age-override-and-review-request.md)  
-**Requires PR A merged first:** [PR A — harden admin override](age-override-pr-a.md) (policy module, guest age guard, `engagement_age_at_season_start` SQL helper)
+**Requires PR A merged first:** [PR A — harden admin override](archive/age-override-pr-a.md) (policy module, guest age guard, `engagement_age_at_season_start` SQL helper) — ✅ complete
 
 ---
 

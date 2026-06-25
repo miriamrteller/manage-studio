@@ -589,9 +589,11 @@ ballet-school-system/
 │   │   ├── THIRD_PARTY_SERVICES.md    # Twilio, Resend, Stripe setup
 │   │   ├── ENVIRONMENTS.md            # Dev/staging/prod config (Phase 2)
 │   │   └── TROUBLESHOOTING.md         # Common issues (Phase 2)
+│   ├── IMPLEMENTATION_STATUS.md       # Living feature checklist
 │   └── plans/
-│       ├── 2026-05-08-phase1a.md
-│       └── ...
+│       ├── README.md                  # Active plans index
+│       ├── archive/                   # Shipped / superseded plans
+│       └── …                          # See docs/plans/README.md
 ├── supabase/
 │   ├── migrations/                    # 25 timestamped SQL files; see Section 4.2.0
 │   │   ├── 20260608000200_core_tenants.sql
@@ -2736,7 +2738,7 @@ Items intentionally **not** in the first finance migration or V1 checkout scope:
 
 **Shipped (V1):** Admin cancel pre-payment enrolment — `cancel_engagement` RPC + admin UI; see [docs/plans/2026-06-02-unenrol-phase-1.md](docs/plans/2026-06-02-unenrol-phase-1.md).
 
-**In progress (V1):** Age override hardening + parent review request — [docs/plans/2026-06-02-age-override-and-review-request.md](docs/plans/2026-06-02-age-override-and-review-request.md).
+**In progress (V1):** Parent age review (PR B) — [docs/plans/age-override-pr-b.md](docs/plans/age-override-pr-b.md) · index: [docs/plans/2026-06-02-age-override-and-review-request.md](docs/plans/2026-06-02-age-override-and-review-request.md).
 
 Track live status in [docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md).
 
