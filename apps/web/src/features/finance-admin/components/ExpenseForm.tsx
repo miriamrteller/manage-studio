@@ -163,8 +163,11 @@ export function ExpenseForm({ correctsExpense, onSuccess, onCancel, onSubmit }: 
             className="w-full border rounded px-3 py-2"
             value={supplierVat}
             onChange={(e) => setSupplierVat(e.target.value)}
+            inputMode="numeric"
+            autoComplete="off"
             required
           />
+          <span className="block text-muted-foreground mt-1">{t('finance.expenses.supplier_vat_hint')}</span>
         </label>
       )}
 
