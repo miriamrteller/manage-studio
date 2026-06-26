@@ -852,6 +852,8 @@
     "unpin_menu": "בטל הצמדת תפריט",
     "students": "תלמידים",
     "finance": "כספים",
+    "setup_overview": "סקירת הגדרות",
+    "platform_onboard": "הקמת סטודיו חדש",
     "people": "תלמידים ומבוגרים",
     "families": "משפחות",
     "my_account": "החשבון שלי",
@@ -867,6 +869,9 @@
     "section": {
       "browse": "גלישה",
       "administration": "ניהול",
+      "finance": "כספים",
+      "setup": "הגדרות",
+      "platform": "פלטפורמה",
       "portal": "הפורטל שלי",
       "learning": "הלמידה שלי",
       "account": "חשבון"

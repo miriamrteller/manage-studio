@@ -851,6 +851,8 @@
     "unpin_menu": "Unpin menu",
     "students": "Students",
     "finance": "Finance",
+    "setup_overview": "Setup overview",
+    "platform_onboard": "Onboard tenant",
     "people": "Students & Adults",
     "families": "Families",
     "my_account": "My Account",
@@ -866,6 +868,9 @@
     "section": {
       "browse": "Browse",
       "administration": "Administration",
+      "finance": "Finance",
+      "setup": "Setup",
+      "platform": "Platform",
       "portal": "My portal",
       "learning": "My learning",
       "account": "Account"
