@@ -1,7 +1,7 @@
 # Parent self-enrolment — Overview (Stages P1–P3)
 
 **SPEC:** Phase 1G-adjacent — parent portal self-enrolment for adult classes  
-**Status:** Planned — agent-ready (2026-06-25)  
+**Status:** ✅ Complete (2026-06-28) — shipped `f0c327a` on `feat/UI-fixes`  
 **Normative:** [CONTRACTS.md](CONTRACTS.md) (locked)  
 **Related:** [parent-portal-polish.md](../parent-portal-polish.md) (notifications/upcoming — separate)
 
