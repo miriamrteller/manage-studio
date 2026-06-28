@@ -3,6 +3,7 @@ import {
   AdminDashboardService,
   NoActiveSeasonError,
 } from '@/features/admin-dashboard/services/adminDashboardService';
+import { useTenant } from '@/hooks/useTenant';
 import type { AdminDashboardOverview } from '@shared/schemas';
 
 export interface AdminDashboardState {
@@ -15,8 +16,9 @@ export interface AdminDashboardState {
 }
 
 export function useAdminDashboard(): AdminDashboardState {
+  const tenant = useTenant();
   const { data: overview, isLoading, error, refetch } = useQuery({
-    queryKey: ['admin-dashboard-overview'],
+    queryKey: ['admin-dashboard-overview', tenant?.id],
     queryFn: () => AdminDashboardService.getOverview(),
     retry: false, // AdminDashboardService.withRetry handles retries internally
   });

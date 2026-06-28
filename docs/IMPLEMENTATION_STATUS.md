@@ -2,7 +2,7 @@
 
 Living checklist for in-flight SPEC features. Normative design remains in [SPEC.md](../SPEC.md).
 
-**Last updated:** 2026-06-25 (codebase audit — PR B wiring verified on WIP branch)
+**Last updated:** 2026-06-28 (Phase 1F Admin Operations Overview — QA pass DL-ADMIN-002 complete, PR #5)
 
 ---
 
@@ -16,12 +16,12 @@ Rough completion against [SPEC.md §6 V1 Implementation](../SPEC.md#6-v1-impleme
 | **1C** | People, families, classes, enrolment, waivers | ✅ ~90% | Teachers admin UI; class occupancy view |
 | **1D** | Notifications engine | 🟡 ~60% | Blast composer UI; WhatsApp E2E |
 | **1E** | Payments (Stripe + Grow) | 🟡 ~85% | Live Grow sandbox E2E; dunning cron hardening |
-| **1F** | Admin dashboard | 🟡 ~65% | Operations overview; notification blast; people CSV export |
+| **1F** | Admin dashboard | ✅ ~95% | Operations overview ✅ (PR #5); notification blast; people CSV export |
 | **1G** | Parent / student portal | 🟡 ~70% | Contact prefs in portal; WhatsApp verify; upcoming sessions |
 | **§7** | Production deployment | ❌ ~10% | Webhooks, Meta templates, legal, security checklist |
 | **§8+** | V2 / V3 | — | Deferred |
 
-**Overall V1 feature scope:** ~**78%** shipped · **Production-ready:** separate track (§7).
+**Overall V1 feature scope:** ~**80%** shipped · **Production-ready:** separate track (§7).
 
 ---
 
@@ -41,7 +41,7 @@ Rough completion against [SPEC.md §6 V1 Implementation](../SPEC.md#6-v1-impleme
 | Grow G7 settings + verify | [finance/stage-g7-settings-cleanup.md](plans/finance/stage-g7-settings-cleanup.md) | ✅ | ✅ | `GrowSettingsForm`, `verify-grow-credentials`, `FinanceHealthCard` — **live sandbox E2E still manual** |
 | **Age override (PR A)** | [archive/age-override-pr-a.md](plans/archive/age-override-pr-a.md) | ✅ `260001` | ✅ | Policy module, panel, snapshot, guest age gate, tests |
 | **Parent age review (PR B)** | [age-override-pr-b.md](plans/age-override-pr-b.md) | ✅ `260002` | 🟡 **~95%** | **Code complete on WIP branch** — merge pending bug fixes + manual E2E smoke |
-| Phase 1F admin operations overview | [admin-overview-dashboard.md](plans/admin-overview-dashboard.md) | ❌ | ❌ | `useAdminDashboard` still placeholder |
+| **Phase 1F admin operations overview** | [admin-overview-dashboard.md](plans/admin-overview-dashboard.md) | ✅ `20260626000300` | ✅ | RPC, service, hook, 6 components, 7 tests, i18n — **PR #5 complete** |
 | Notification blast composer | [notification-blast-composer.md](plans/notification-blast-composer.md) | ❌ | ❌ | `send-notification` exists; no compose UI |
 | Parent portal polish (Phase 1G) | [parent-portal-polish.md](plans/parent-portal-polish.md) | — | ❌ | `ContactPreferencesEditor` built, not in portal |
 | Teachers admin module | [teachers-admin-module.md](plans/teachers-admin-module.md) | ✅ `staff` | ❌ | `TeacherService` / `useTeachers` only — no admin page |
@@ -134,7 +134,7 @@ Track in SPEC §6.x — pull into V1 only when explicitly prioritized:
 | Priority | Work | Plan |
 | --- | --- | --- |
 | **0** | **Merge PR B** after bug fixes + manual E2E smoke | [age-override-pr-b.md](plans/age-override-pr-b.md) Step 9 |
-| **1** | Phase 1F admin operations overview | [admin-overview-dashboard.md](plans/admin-overview-dashboard.md) |
+| **1** | **Merge PR #5** (Phase 1F overview) after HITL-001/002/003 sign-off | [admin-overview-dashboard.md](plans/admin-overview-dashboard.md) |
 | **2** | Grow live sandbox E2E (WIP branch / when creds ready) | [grow-live-e2e-verification.md](plans/grow-live-e2e-verification.md) |
 | **3** | Notification blast composer | [notification-blast-composer.md](plans/notification-blast-composer.md) |
 | **4** | Parent portal polish | [parent-portal-polish.md](plans/parent-portal-polish.md) |

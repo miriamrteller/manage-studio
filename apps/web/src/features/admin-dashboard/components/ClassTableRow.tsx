@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { OccupancyBar } from './OccupancyBar';
 import type { AdminDashboardTodayClass } from '../types';
 
@@ -15,6 +16,7 @@ export const ClassTableRow = ({
   showWaitlist = true,
   className = '',
 }: ClassTableRowProps) => {
+  const { t } = useTranslation();
   const handleClick = () => {
     onClick?.(cls.id);
   };
@@ -48,7 +50,7 @@ export const ClassTableRow = ({
       <td className="px-4 py-3 text-sm">
         {showWaitlist && cls.waitlist_count > 0 && (
           <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
-            {cls.waitlist_count} waiting
+            {t('pages.admin.overview.waitlist_count', { count: cls.waitlist_count })}
           </span>
         )}
       </td>
