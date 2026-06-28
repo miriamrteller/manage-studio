@@ -1,0 +1,32 @@
+{
+  "_comment": "NOT a sandbox capture — official IPN field catalog from iCount create-cc-page help (https://help.icount.co.il/credit-card-processing/create-cc-page/). Use to implement parser field names only. Replace with icount-ipn-notify.json after sandbox capture before I2.",
+  "_source": "help.icount.co.il/credit-card-processing/create-cc-page/",
+  "_customFieldRule": "Redirect URL params prefixed m__ are echoed in IPN with prefix removed.",
+  "documentedFields": {
+    "cp": { "type": "int", "description": "CC page number" },
+    "sum": { "type": "float", "description": "Amount paid" },
+    "currency_code": { "type": "char(3)", "description": "Currency code" },
+    "num_of_payments": { "type": "int", "description": "Installment count" },
+    "confirmation_code": { "type": "string", "description": "Acquirer confirmation / shovar" },
+    "doctype": { "type": "string", "description": "Issued document type (e.g. invrec)" },
+    "docnum": { "type": "int", "description": "Issued document number" },
+    "customer_id": { "type": "int", "description": "iCount internal client id" },
+    "customer_name": { "type": "string", "description": "Invoice name" },
+    "customer_fname": { "type": "string", "description": "First name" },
+    "customer_lname": { "type": "string", "description": "Last name" },
+    "customer_email": { "type": "string", "description": "Email" },
+    "customer_phone": { "type": "string", "description": "Phone" },
+    "customer_vat_id": { "type": "string", "description": "ID / company number" },
+    "customer_country": { "type": "string", "description": "Country" },
+    "customer_city": { "type": "string", "description": "City" },
+    "customer_zip": { "type": "string", "description": "Zip" },
+    "customer_street": { "type": "string", "description": "Street" },
+    "customer_street_number": { "type": "string", "description": "Street number" },
+    "customer_dob": { "type": "date", "description": "Date of birth yyyy-mm-dd" }
+  },
+  "plannedCustomFields": {
+    "tenant_id": "Pass as m__tenant_id on redirect URL",
+    "payment_id": "Pass as m__payment_id on redirect URL",
+    "engagement_id": "Pass as m__engagement_id on redirect URL"
+  }
+}

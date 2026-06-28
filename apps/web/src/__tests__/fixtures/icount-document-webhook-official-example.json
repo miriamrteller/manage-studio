@@ -1,0 +1,39 @@
+[
+  {
+    "_comment": "Source: iCount help center official document webhook example (https://help.icount.co.il/integration/webhooks/). PII already anonymized in source; IDs scrubbed further for repo.",
+    "doctype": "invrec",
+    "docnum": "3006",
+    "timeissued": "2024-01-11 12:16:48",
+    "clientname": "ישראל ישראלי",
+    "dateissued": "2024-01-11",
+    "totalsum": "2778.63",
+    "totalvat": "472.37",
+    "vat_percent": "17",
+    "totalwithvat": "3251",
+    "currency": "5",
+    "client_id": "12",
+    "vat_id": "1111111111",
+    "cc_payments": [
+      {
+        "id": "8",
+        "doctype": "invrec",
+        "docnumber": "3006",
+        "cc_cardtype": "VISA",
+        "cctotal": "1930",
+        "cc_shovar": "455544545",
+        "cc_cardnumber": "4555",
+        "deal_id": "",
+        "sum": "1930",
+        "payment_date": "2024-01-11"
+      }
+    ],
+    "client": {
+      "email": "israel@example.com",
+      "phone": "025900000",
+      "mobile": "0500001111",
+      "client_vat_id": "1111111111"
+    },
+    "doc_link": "https://app.icount.co.il/hash/p_print.php?code=REDACTED",
+    "pdf_link": "https://s3.amazonaws.com/icount-pdfs/REDACTED_example.pdf"
+  }
+]

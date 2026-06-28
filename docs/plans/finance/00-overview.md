@@ -31,6 +31,17 @@ keeping the code vendor-generic (adapters only; no Grow names in schema or orche
 | G6 | Grow recurring billing + refund polish | [stage-g6-recurring-refunds.md](stage-g6-recurring-refunds.md) |
 | G7 | Grow settings, cleanup, production readiness | [stage-g7-settings-cleanup.md](stage-g7-settings-cleanup.md) |
 
+## Extension track (planned): iCount I0–I5
+
+Add **iCount** as bundled IL default for **new** tenants; **Grow stays**. Blocked on I0 SPIKE-ADR approval.
+
+| Stage | Focus | Doc |
+|-------|-------|-----|
+| I0 | API spike + SPIKE-ADR (**in progress**) | [icount/stage-i0-spike.md](icount/stage-i0-spike.md) |
+| I1–I5 | Registry → defaults | [icount/00-overview.md](icount/00-overview.md) |
+
+See [icount/SPIKE-ADR.md](icount/SPIKE-ADR.md) for architecture decision (CC page + IPN + document webhook).
+
 ## Architecture (target state after G7)
 
 ```mermaid
