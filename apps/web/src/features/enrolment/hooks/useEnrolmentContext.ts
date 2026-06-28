@@ -5,7 +5,12 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useTenant } from '@/hooks/useTenant';
 import { hasParentRole } from '@/lib/parentRoles';
 import { isAdminEnrolmentMode, type EnrollmentIntent } from '@/lib/enrollment-intent';
-import { EnrolmentOnboardingService, type GuardianProfile } from '../onboardingService';
+import type { GuardianProfile } from '../onboardingService';
+import { resolveGuardianProfile, type ResolveGuardianProfileResult } from '../lib/resolveGuardianProfile';
+import {
+  computeGuardianSetupRequired,
+  type GuardianResolveStatus,
+} from '../lib/guardianSetupRequired';
 import { isAdultOffering } from '../lib/offering-intake';
 import type { ClassAgeContext } from '../lib/check-requirements';
 import { resolveTenantSubdomain } from '@/lib/resolveTenantSubdomain';
@@ -22,6 +27,10 @@ export interface EnrolmentContextValue {
   mode: EnrolmentMode;
   constraints: EnrolmentConstraints;
   guardian: GuardianProfile | null;
+  guardianResolveStatus: GuardianResolveStatus;
+  guardianSetupRequired: boolean;
+  guardianAccountId?: string;
+  guardianAccountMemberId?: string;
   /** True when the selected/preselected class is for adults (min age 18+). */
   isAdultIntake: boolean;
   canSkipPersonStep: boolean;
@@ -93,17 +102,24 @@ export function useEnrolmentContext(intent: EnrollmentIntent | null): EnrolmentC
     enabled: !!intent?.classId && (!!tenant?.id || !!resolveTenantSubdomain()),
   });
 
+  const guardianQueryEnabled =
+    !!tenant?.id &&
+    !!user?.id &&
+    hasParentRole(user.role) &&
+    !(user.role.includes('tenant_admin') && isAdminEnrolmentMode(intent, user));
+
   const guardianQuery = useQuery({
     queryKey: ['enrolment-guardian', tenant?.id, user?.id],
-    queryFn: async () => {
+    queryFn: async (): Promise<ResolveGuardianProfileResult | null> => {
       if (!tenant || !user?.id) return null;
-      return EnrolmentOnboardingService.getGuardianProfile(tenant, user.id, user.email);
+      return resolveGuardianProfile({
+        tenant,
+        userProfileId: user.id,
+        userEmail: user.email,
+        userPersonId: user.person_id,
+      });
     },
-    enabled:
-      !!tenant?.id &&
-      !!user?.id &&
-      hasParentRole(user.role) &&
-      !(user.role.includes('tenant_admin') && isAdminEnrolmentMode(intent, user)),
+    enabled: guardianQueryEnabled,
   });
 
   const adminMode = isAdminEnrolmentMode(intent, user);
@@ -116,7 +132,7 @@ export function useEnrolmentContext(intent: EnrollmentIntent | null): EnrolmentC
     if (user.role.includes('tenant_admin') && !hasParentRole(user.role)) {
       return 'admin';
     }
-    if (hasParentRole(user.role) && guardianQuery.data) {
+    if (hasParentRole(user.role) && guardianQuery.data?.status === 'found') {
       return 'parent';
     }
     if (user.person_id && hasAdultStudentRole(user.role)) {
@@ -155,19 +171,59 @@ export function useEnrolmentContext(intent: EnrollmentIntent | null): EnrolmentC
     return false;
   }, [intent?.personId, mode, user?.person_id, adminMode]);
 
+  const guardianResolveStatus: GuardianResolveStatus = useMemo(() => {
+    if (!guardianQueryEnabled) return 'loading';
+    if (guardianQuery.isLoading) return 'loading';
+    if (guardianQuery.error) return 'error';
+    const result = guardianQuery.data;
+    if (!result) return 'error';
+    if (result.status === 'found') return 'found';
+    if (result.status === 'missing_person') return 'missing_person';
+    if (result.status === 'missing_account') return 'missing_account';
+    return 'error';
+  }, [guardianQuery.data, guardianQuery.error, guardianQuery.isLoading, guardianQueryEnabled]);
+
+  const guardian = guardianQuery.data?.status === 'found' ? guardianQuery.data.profile : null;
+
+  const guardianSetupRequired = useMemo(
+    () =>
+      computeGuardianSetupRequired({
+        isAdultIntake,
+        resolveStatus: guardianResolveStatus,
+        dateOfBirth: guardian?.dateOfBirth ?? null,
+      }),
+    [guardian?.dateOfBirth, guardianResolveStatus, isAdultIntake],
+  );
+
   const isLoading =
     userLoading ||
     (!!intent?.classId && offeringQuery.isLoading) ||
-    (mode === 'parent' && !adminMode && guardianQuery.isLoading);
+    (guardianQueryEnabled && guardianQuery.isLoading);
+
+  const guardianQueryError =
+    guardianQuery.data?.status === 'missing_account'
+      ? guardianQuery.data.error
+      : guardianQuery.data?.status === 'error'
+        ? guardianQuery.data.error
+        : guardianQuery.error instanceof Error
+          ? guardianQuery.error
+          : null;
 
   const error =
-    (offeringQuery.error instanceof Error ? offeringQuery.error : null) ??
-    (guardianQuery.error instanceof Error ? guardianQuery.error : null);
+    (offeringQuery.error instanceof Error ? offeringQuery.error : null) ?? guardianQueryError;
 
   return {
     mode,
     constraints,
-    guardian: guardianQuery.data ?? null,
+    guardian,
+    guardianResolveStatus,
+    guardianSetupRequired,
+    guardianAccountId:
+      guardianQuery.data?.status === 'missing_person' ? guardianQuery.data.accountId : undefined,
+    guardianAccountMemberId:
+      guardianQuery.data?.status === 'missing_person'
+        ? guardianQuery.data.accountMemberId
+        : undefined,
     isAdultIntake,
     canSkipPersonStep,
     preselectedPersonId: intent?.personId,

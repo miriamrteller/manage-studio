@@ -4,6 +4,7 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useTenant } from '@/hooks/useTenant';
 import { PersonSchema, type Person } from '@shared/schemas';
 import { EnrolmentOnboardingService } from '../onboardingService';
+import { coalesceGuardianPersonId } from '../lib/resolveGuardianProfile';
 
 export interface StudentWithEnrolments extends Person {
   activeClassNames: string[];
@@ -64,16 +65,17 @@ export function useAccountStudents(options: { accountId?: string; enabled?: bool
         }
       }
 
-      let guardianPersonId: string | null = user.person_id ?? null;
-      if (!guardianPersonId) {
-        const { data: memberRows } = await supabase
-          .from('account_members')
-          .select('person_id')
-          .eq('account_id', accountId)
-          .eq('user_profile_id', user.id)
-          .limit(1);
-        guardianPersonId = memberRows?.[0]?.person_id ?? null;
-      }
+      const { data: memberRows } = await supabase
+        .from('account_members')
+        .select('person_id')
+        .eq('account_id', accountId)
+        .eq('user_profile_id', user.id)
+        .limit(1);
+
+      const guardianPersonId = coalesceGuardianPersonId(
+        memberRows?.[0]?.person_id as string | null | undefined,
+        user.person_id,
+      );
 
       return {
         accountId,

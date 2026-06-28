@@ -11,6 +11,7 @@ import {
 } from '@shared/schemas';
 import { z } from 'zod';
 import type { Tenant } from '@shared/schemas';
+import { resolveGuardianProfile } from './lib/resolveGuardianProfile';
 
 export const NewMinorOnboardingInputSchema = z.object({
   student_name: z.string().min(1, 'Student name required'),
@@ -105,31 +106,94 @@ export class EnrolmentOnboardingService extends BaseService {
     tenant: Tenant,
     userProfileId: string,
     userEmail: string | null | undefined,
+    options?: { userPersonId?: string | null },
   ): Promise<GuardianProfile> {
-    const accountId = await this.getParentAccountId(userProfileId);
+    const result = await resolveGuardianProfile({
+      tenant,
+      userProfileId,
+      userEmail,
+      userPersonId: options?.userPersonId ?? undefined,
+    });
 
-    const { data: memberRows, error: memberError } = await TenantDB.selectFor('account_members', tenant)
-      .eq('account_id', accountId)
-      .eq('user_profile_id', userProfileId)
-      .limit(1);
-
-    if (memberError) throw memberError;
-
-    const member = memberRows?.[0];
-    if (!member) {
-      throw new Error('Guardian membership not found.');
+    if (result.status === 'found') return result.profile;
+    if (result.status === 'missing_account') {
+      throw new Error('No family account linked to this login.');
     }
+    if (result.status === 'missing_person') {
+      throw new Error('Guardian person not linked to this account.');
+    }
+    throw result.error;
+  }
 
-    const guardian = await this.getPerson(tenant, member.person_id as string);
-    return {
-      personId: guardian.id,
-      accountId,
-      accountMemberId: member.id as string,  // account_members PK — needed for waiver guardian attribution
-      name: guardian.name,
-      email: guardian.email ?? userEmail ?? null,
-      phone: guardian.emergency_contact_phone ?? null,
-      dateOfBirth: guardian.date_of_birth ?? null,
+  static async ensureGuardianPersonForParent(
+    tenant: Tenant,
+    input: {
+      userProfileId: string;
+      userEmail: string | null | undefined;
+      accountId: string;
+      accountMemberId: string;
+      name: string;
+      dateOfBirth: string;
+      phone?: string | null;
+    },
+  ): Promise<GuardianProfile> {
+    const name = input.name.trim();
+    if (!name) throw new Error('Name required');
+
+    const personPayload = {
+      name,
+      email: input.userEmail ?? null,
+      date_of_birth: input.dateOfBirth,
+      emergency_contact_phone: input.phone?.trim() || null,
+      status: 'active' as const,
     };
+
+    const { data: personData, error: personError } = await TenantDB.insert('people', tenant, personPayload)
+      .select()
+      .single();
+    if (personError) throw new Error(`Failed to create guardian: ${personError.message}`);
+    const person = PersonSchema.parse(personData);
+    await this.logAudit(tenant, 'CREATE', 'people', person.id);
+
+    const { error: memberError } = await TenantDB.update(
+      'account_members',
+      tenant,
+      input.accountMemberId,
+      { person_id: person.id },
+    );
+    if (memberError) throw new Error(`Failed to link guardian: ${memberError.message}`);
+    await this.logAudit(tenant, 'UPDATE', 'account_members', input.accountMemberId);
+
+    const { error: profileError } = await supabase
+      .from('user_profiles')
+      .update({ person_id: person.id })
+      .eq('id', input.userProfileId);
+    if (profileError) throw new Error(`Failed to link user profile: ${profileError.message}`);
+
+    return {
+      personId: person.id,
+      accountId: input.accountId,
+      accountMemberId: input.accountMemberId,
+      name: person.name,
+      email: person.email ?? input.userEmail ?? null,
+      phone: person.emergency_contact_phone ?? null,
+      dateOfBirth: person.date_of_birth ?? null,
+    };
+  }
+
+  static async updateGuardianDateOfBirth(
+    tenant: Tenant,
+    personId: string,
+    dateOfBirth: string,
+  ): Promise<Person> {
+    const { data, error } = await TenantDB.update('people', tenant, personId, {
+      date_of_birth: dateOfBirth,
+    })
+      .select()
+      .single();
+    if (error) throw new Error(`Failed to update date of birth: ${error.message}`);
+    await this.logAudit(tenant, 'UPDATE', 'people', personId);
+    return PersonSchema.parse(data);
   }
 
   static async getPerson(tenant: Tenant, personId: string): Promise<Person> {
