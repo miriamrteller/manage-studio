@@ -1,5 +1,9 @@
 import type { PaymentLogRow } from '@shared/schemas';
 
+/** Shared styling for invoice/receipt links in the payments log UI. */
+export const paymentDocumentLinkClassName =
+  'font-medium text-primary underline underline-offset-2 hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary';
+
 export type PayerDisplayKind = 'person' | 'family' | 'empty';
 
 export interface PayerDisplay {

@@ -6,6 +6,7 @@ import {
   getCaptureSourceLabelKey,
   getPayerDisplay,
   getPaymentCaptureSource,
+  paymentDocumentLinkClassName,
 } from '../lib/paymentsLogDisplay';
 import { getProviderLabelKey } from '../services/paymentsLogService';
 
@@ -84,7 +85,12 @@ export function PaymentDetailDrawer({ row, onClose }: PaymentDetailDrawerProps) 
           <dt className="font-medium">{t('finance.payments.col_document')}</dt>
           <dd>
             {row.external_document_number && row.invoice_url ? (
-              <a href={row.invoice_url} target="_blank" rel="noopener noreferrer">
+              <a
+                href={row.invoice_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={paymentDocumentLinkClassName}
+              >
                 {row.external_document_number}
               </a>
             ) : (

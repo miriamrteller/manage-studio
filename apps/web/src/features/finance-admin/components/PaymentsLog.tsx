@@ -12,6 +12,7 @@ import { usePaymentsLog } from '../hooks/usePaymentsLog';
 import { PaymentsLogService } from '../services/paymentsLogService';
 import type { PaymentLogRow } from '@shared/schemas';
 import { exportPaymentsCsv } from '../lib/csvExport';
+import { datedCsvFilename } from '../lib/financeAdminUtils';
 
 export function PaymentsLog() {
   const { t } = useTranslation();
@@ -70,7 +71,7 @@ export function PaymentsLog() {
         pageSize: 5000,
         filters: effectiveFilters,
       });
-      exportPaymentsCsv(exportRows, `payments-${tenant.subdomain}.csv`, t);
+      exportPaymentsCsv(exportRows, datedCsvFilename('payments', tenant.subdomain), t);
     } catch (err) {
       setExportError(err instanceof Error ? err.message : t('common.error'));
     }

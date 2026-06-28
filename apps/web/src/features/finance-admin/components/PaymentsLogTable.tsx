@@ -5,6 +5,7 @@ import {
   getCaptureSourceLabelKey,
   getPayerDisplay,
   getPaymentCaptureSource,
+  paymentDocumentLinkClassName,
 } from '../lib/paymentsLogDisplay';
 
 interface PaymentsLogTableProps {
@@ -70,6 +71,7 @@ export function PaymentsLogTable({ rows, onRowClick }: PaymentsLogTableProps) {
                       href={row.invoice_url!}
                       target="_blank"
                       rel="noopener noreferrer"
+                      className={paymentDocumentLinkClassName}
                       onClick={(e) => e.stopPropagation()}
                     >
                       {row.external_document_number}
