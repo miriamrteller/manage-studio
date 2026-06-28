@@ -10,18 +10,9 @@ import {
 import { useParentPortal, type EngagementWithOffering } from './useParentPortal';
 import { EditChildModal } from './EditChildModal';
 import { AddChildModal } from './AddChildModal';
-import { EnrolmentStatusAction } from '@/features/enrolment/components/EnrolmentStatusAction';
+import { EnrolmentRow } from './EnrolmentRow';
+import { GuardianSelfSection, GuardianSetupRequiredCard } from './GuardianSelfSection';
 import { readPortalHighlightState } from '@/lib/portalHighlight';
-
-const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-function formatSchedule(day: number | null, startTime: string | null): string {
-  if (day == null && !startTime) return '';
-  const dayLabel = day != null ? DAY_NAMES[day] : '';
-  const timeLabel = startTime ? startTime.slice(0, 5) : '';
-  if (dayLabel && timeLabel) return `${dayLabel} · ${timeLabel}`;
-  return dayLabel || timeLabel;
-}
 
 function formatMoney(amountMinor: number, currency: string): string {
   return (amountMinor / 100).toLocaleString(undefined, {
@@ -29,39 +20,6 @@ function formatMoney(amountMinor: number, currency: string): string {
     currency,
     minimumFractionDigits: 0,
   });
-}
-
-function EnrolmentRow({
-  enrolment,
-  highlighted,
-}: {
-  enrolment: EngagementWithOffering;
-  highlighted?: boolean;
-}) {
-  const schedule = formatSchedule(enrolment.classDay, enrolment.classStartTime);
-
-  return (
-    <li
-      id={highlighted ? `portal-enrolment-${enrolment.id}` : undefined}
-      className={[
-        'flex flex-wrap items-center justify-between gap-2 py-2 border-b border-gray-100 last:border-0',
-        highlighted ? 'rounded-md bg-green-50 ring-2 ring-green-400 px-2 -mx-2' : '',
-      ].join(' ')}
-    >
-      <div>
-        <p className="font-medium text-gray-900">{enrolment.className ?? enrolment.offering_id}</p>
-        {schedule && <p className="text-sm text-gray-500">{schedule}</p>}
-        {enrolment.classLocation && (
-          <p className="text-sm text-gray-500">{enrolment.classLocation}</p>
-        )}
-      </div>
-      <EnrolmentStatusAction
-        status={enrolment.status}
-        engagementId={enrolment.id}
-        returnTo="/dashboard/portal"
-      />
-    </li>
-  );
 }
 
 export function ParentPortal() {
@@ -77,6 +35,8 @@ export function ParentPortal() {
   const scrolledRef = useRef(false);
 
   const children = data?.children;
+  const guardian = data?.guardian;
+  const guardianMissing = data?.guardianMissing ?? false;
   const payments = data?.payments ?? [];
   const enrolmentsByPerson = data?.enrolmentsByPerson;
 
@@ -114,9 +74,11 @@ export function ParentPortal() {
     const frame = requestAnimationFrame(() => {
       const targetId = portalHighlight.highlightEngagementId
         ? `portal-enrolment-${portalHighlight.highlightEngagementId}`
-        : highlightPersonId
-          ? `portal-child-${highlightPersonId}`
-          : null;
+        : highlightPersonId === guardian?.personId
+          ? 'portal-guardian-self'
+          : highlightPersonId
+            ? `portal-child-${highlightPersonId}`
+            : null;
 
       if (targetId) {
         document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -128,7 +90,7 @@ export function ParentPortal() {
     });
 
     return () => cancelAnimationFrame(frame);
-  }, [highlightPersonId, isLoading, location.pathname, location.state, navigate, portalHighlight]);
+  }, [guardian?.personId, highlightPersonId, isLoading, location.pathname, location.state, navigate, portalHighlight]);
 
   if (isLoading) {
     return (
@@ -180,6 +142,31 @@ export function ParentPortal() {
           {t('pages.portal.enrol_new')}
         </Button>
       </section>
+
+      {guardian && (
+        <GuardianSelfSection
+          guardian={guardian}
+          enrolments={getVisibleEnrolments(guardian.personId)}
+          highlightedEngagementId={portalHighlight?.highlightEngagementId}
+          onEnrol={() =>
+            navigate('/enrol', {
+              state: {
+                personId: guardian.personId,
+                from: '/dashboard/portal',
+                mode: 'parent',
+              },
+            })
+          }
+        />
+      )}
+
+      {guardianMissing && !guardian && (
+        <GuardianSetupRequiredCard
+          onCompleteProfile={() =>
+            navigate('/enrol', { state: { from: '/dashboard/portal', mode: 'parent' } })
+          }
+        />
+      )}
 
       <section aria-labelledby="portal-children-heading">
         <div className="mb-4 flex flex-wrap items-end justify-between gap-3">

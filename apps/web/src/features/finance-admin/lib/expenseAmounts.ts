@@ -1,10 +1,5 @@
-import { calculateVat, addVatToPretax } from '@shared/pricing';
-
 export interface ExpenseAmountInput {
   amountMinor: number;
-  vatRate: number;
-  pricesIncludeVat: boolean;
-  isVatEligible: boolean;
 }
 
 export interface ExpenseAmountBreakdown {
@@ -13,38 +8,11 @@ export interface ExpenseAmountBreakdown {
   totalAmountMinor: number;
 }
 
-/** Deterministic expense VAT — mirrors create_expense RPC and @shared/pricing. */
+/** Store expense as a single gross total — no local VAT split. */
 export function computeExpenseAmounts(input: ExpenseAmountInput): ExpenseAmountBreakdown {
-  const vatRate = Number(input.vatRate ?? 0.17);
-
-  if (!input.isVatEligible) {
-    if (input.pricesIncludeVat) {
-      return {
-        pretaxAmountMinor: input.amountMinor,
-        vatAmountMinor: 0,
-        totalAmountMinor: input.amountMinor,
-      };
-    }
-    return {
-      pretaxAmountMinor: input.amountMinor,
-      vatAmountMinor: 0,
-      totalAmountMinor: input.amountMinor,
-    };
-  }
-
-  if (input.pricesIncludeVat) {
-    const { pretax, vat, total } = calculateVat(input.amountMinor, vatRate);
-    return {
-      pretaxAmountMinor: pretax,
-      vatAmountMinor: vat,
-      totalAmountMinor: total,
-    };
-  }
-
-  const { pretax, vat, total } = addVatToPretax(input.amountMinor, vatRate);
   return {
-    pretaxAmountMinor: pretax,
-    vatAmountMinor: vat,
-    totalAmountMinor: total,
+    pretaxAmountMinor: input.amountMinor,
+    vatAmountMinor: 0,
+    totalAmountMinor: input.amountMinor,
   };
 }

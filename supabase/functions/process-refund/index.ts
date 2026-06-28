@@ -100,10 +100,6 @@ Deno.serve(async (req) => {
     })
     .eq("id", original.id);
 
-  const pretaxPortion = Math.round(
-    refundAmount * ((original.pretax_amount_minor as number) / (original.total_amount_minor as number)),
-  );
-
   const { data: refundRow, error: refundInsertError } = await service
     .from("payments")
     .insert({
@@ -117,9 +113,9 @@ Deno.serve(async (req) => {
       provider: original.provider,
       provider_payment_ref: `refund_${original.id}_${Date.now()}`,
       payment_method: original.payment_method,
-      pretax_amount_minor: -pretaxPortion,
-      vat_rate: original.vat_rate,
-      vat_amount_minor: -(refundAmount - pretaxPortion),
+      pretax_amount_minor: 0,
+      vat_rate: 0,
+      vat_amount_minor: 0,
       total_amount_minor: -refundAmount,
       currency: original.currency,
       status: "succeeded",

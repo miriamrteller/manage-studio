@@ -8,6 +8,11 @@ import {
   type Person,
   type Engagement,
 } from '@shared/schemas';
+import type { GuardianProfile } from '@/features/enrolment/onboardingService';
+import {
+  collectPortalPersonIds,
+  resolveGuardianProfile,
+} from '@/features/enrolment/lib/resolveGuardianProfile';
 
 export interface EngagementWithOffering extends Engagement {
   className: string | null;
@@ -29,6 +34,8 @@ export interface ParentPayment {
 }
 
 export interface ParentPortalData {
+  guardian: GuardianProfile | null;
+  guardianMissing: boolean;
   children: Person[];
   enrolmentsByPerson: Record<string, EngagementWithOffering[]>;
   payments: ParentPayment[];
@@ -38,6 +45,27 @@ export interface ParentPortalState {
   data: ParentPortalData | null;
   isLoading: boolean;
   error: Error | null;
+}
+
+function mapEngagementRow(row: Record<string, unknown>): EngagementWithOffering {
+  const enrolment = EngagementSchema.parse(row);
+  const offering = row.offerings as {
+    name?: string;
+    day_of_week?: number;
+    start_time?: string;
+    location?: string | null;
+  } | null;
+
+  return {
+    ...enrolment,
+    className: offering?.name ?? null,
+    classDay: offering?.day_of_week ?? null,
+    classStartTime: offering?.start_time ?? null,
+    classLocation:
+      typeof offering?.location === 'string' && offering.location.trim()
+        ? offering.location.trim()
+        : null,
+  };
 }
 
 export function useParentPortal(): ParentPortalState {
@@ -51,6 +79,20 @@ export function useParentPortal(): ParentPortalState {
         throw new Error('User not authenticated');
       }
 
+      const guardianResult = await resolveGuardianProfile({
+        tenant,
+        userProfileId: user.id,
+        userEmail: user.email,
+        userPersonId: user.person_id,
+      });
+
+      if (guardianResult.status === 'missing_account') {
+        throw guardianResult.error;
+      }
+
+      const guardian = guardianResult.status === 'found' ? guardianResult.profile : null;
+      const guardianMissing = guardianResult.status === 'missing_person';
+
       const { data: peopleRows, error: peopleError } = await supabase
         .from('people')
         .select('*')
@@ -62,8 +104,8 @@ export function useParentPortal(): ParentPortalState {
       const children = (peopleRows ?? [])
         .map((row) => PersonSchema.parse(row))
         .filter((person) => person.account_id != null);
-      const personIds = children.map((p) => p.id);
 
+      const personIds = collectPortalPersonIds(children, guardian?.personId);
       const enrolmentsByPerson: Record<string, EngagementWithOffering[]> = {};
       for (const id of personIds) {
         enrolmentsByPerson[id] = [];
@@ -79,29 +121,11 @@ export function useParentPortal(): ParentPortalState {
         if (enrolmentError) throw enrolmentError;
 
         for (const row of enrolmentRows ?? []) {
-          const enrolment = EngagementSchema.parse(row);
-          const offering = row.offerings as {
-            name?: string;
-            day_of_week?: number;
-            start_time?: string;
-            location?: string | null;
-          } | null;
-
-          const entry: EngagementWithOffering = {
-            ...enrolment,
-            className: offering?.name ?? null,
-            classDay: offering?.day_of_week ?? null,
-            classStartTime: offering?.start_time ?? null,
-            classLocation:
-              typeof offering?.location === 'string' && offering.location.trim()
-                ? offering.location.trim()
-                : null,
-          };
-
-          if (!enrolmentsByPerson[enrolment.person_id]) {
-            enrolmentsByPerson[enrolment.person_id] = [];
+          const entry = mapEngagementRow(row as Record<string, unknown>);
+          if (!enrolmentsByPerson[entry.person_id]) {
+            enrolmentsByPerson[entry.person_id] = [];
           }
-          enrolmentsByPerson[enrolment.person_id].push(entry);
+          enrolmentsByPerson[entry.person_id].push(entry);
         }
       }
 
@@ -127,7 +151,7 @@ export function useParentPortal(): ParentPortalState {
         person_id: (p.person_id as string | null) ?? null,
       }));
 
-      return { children, enrolmentsByPerson, payments };
+      return { guardian, guardianMissing, children, enrolmentsByPerson, payments };
     },
     enabled: !!tenant?.id && !!user?.id,
   });

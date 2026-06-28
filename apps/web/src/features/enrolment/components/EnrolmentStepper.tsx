@@ -525,6 +525,9 @@ export function EnrolmentStepper({
                   ageReviewError={ageReviewError}
                   onBrowseClasses={() => navigate('/classes')}
                   guardian={enrolmentContext.guardian}
+                  guardianSetupRequired={enrolmentContext.guardianSetupRequired}
+                  guardianAccountId={enrolmentContext.guardianAccountId}
+                  guardianAccountMemberId={enrolmentContext.guardianAccountMemberId}
                   students={accountStudentsQuery.data?.students ?? []}
                   guardianPersonId={accountStudentsQuery.data?.guardianPersonId ?? null}
                   studentsLoading={accountStudentsQuery.isLoading}

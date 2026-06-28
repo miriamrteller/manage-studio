@@ -75,27 +75,16 @@ Deno.serve(async (req) => {
 
   const [{ data: offering }, { data: tenant }] = await Promise.all([
     service.from("offerings").select("price_minor, currency").eq("id", engagement.offering_id).single(),
-    service.from("tenants").select("vat_rate, prices_include_vat, currency").eq("id", tenantId).single(),
+    service.from("tenants").select("currency").eq("id", tenantId).single(),
   ]);
 
   if (!offering || !tenant) {
     return jsonResponse({ error: "Offering or tenant not found" }, 404);
   }
 
-  const pricing = resolveOfferingPrice(
-    { price_minor: offering.price_minor as number },
-    {
-      vat_rate: Number(tenant.vat_rate ?? 0.17),
-      prices_include_vat: tenant.prices_include_vat !== false,
-    },
-  );
+  const pricing = resolveOfferingPrice({ price_minor: offering.price_minor as number });
 
   const totalMinor = body.amount_minor ?? pricing.totalMinor;
-  const vatRate = pricing.vatRate;
-  const pretaxMinor = body.amount_minor
-    ? Math.round(totalMinor / (1 + vatRate))
-    : pricing.pretaxMinor;
-  const vatMinor = totalMinor - pretaxMinor;
 
   const { data: person } = await service
     .from("people")
@@ -118,9 +107,9 @@ Deno.serve(async (req) => {
       provider: "manual",
       provider_payment_ref: manualRef,
       payment_method: body.method,
-      pretax_amount_minor: pretaxMinor,
-      vat_rate: vatRate,
-      vat_amount_minor: vatMinor,
+      pretax_amount_minor: 0,
+      vat_rate: 0,
+      vat_amount_minor: 0,
       total_amount_minor: totalMinor,
       currency: (offering.currency ?? tenant.currency ?? "ILS").toUpperCase(),
       status: "succeeded",

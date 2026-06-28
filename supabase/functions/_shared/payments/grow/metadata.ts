@@ -22,9 +22,6 @@ interface PackedAux {
   bs?: string;
   of?: string;
   pe?: string;
-  vr?: string;
-  pa?: string;
-  va?: string;
   ta?: string;
 }
 
@@ -34,9 +31,6 @@ export function toGrowCustomFields(metadata: ChargeMetadata): GrowCustomFields {
     bs: metadata.billing_schedule_id,
     of: metadata.offering_id,
     pe: metadata.person_id,
-    vr: metadata.vat_rate,
-    pa: metadata.pretax_amount_minor,
-    va: metadata.vat_amount_minor,
     ta: metadata.total_amount_minor,
   };
   return {
@@ -63,9 +57,6 @@ export function fromGrowCustomFields(fields: Partial<GrowCustomFields>): ChargeM
     billing_schedule_id: aux.bs,
     offering_id: aux.of,
     person_id: aux.pe,
-    vat_rate: aux.vr,
-    pretax_amount_minor: aux.pa,
-    vat_amount_minor: aux.va,
     total_amount_minor: aux.ta,
   });
 }

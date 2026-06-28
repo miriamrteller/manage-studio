@@ -4,10 +4,11 @@ import type { PresetModules } from '@shared/index';
 /**
  * Navigation Configuration
  *
- * Defines routes shown in the nav drawer, filtered by user roles.
+ * Defines routes shown in the nav drawer, filtered by user roles and tenant settings.
  *
  * Role values come from useCurrentUser().user.role (array of strings):
  * - 'tenant_admin': Full system access
+ * - 'super_admin': Platform onboarding
  * - 'parent', 'guardian', or 'account_holder': Parent portal access
  * - 'student' or 'adult_student': Student dashboard access
  * - 'teacher': (reserved for future use)
@@ -16,21 +17,25 @@ import type { PresetModules } from '@shared/index';
 export type NavSectionKey =
   | 'browse'
   | 'administration'
+  | 'finance'
   | 'setup'
+  | 'platform'
   | 'portal'
   | 'learning';
+
+export type NavTenantFilter = 'grow' | 'not_grow';
 
 export interface NavItem {
   path: string;
   labelKey: string;
   requiredRoles: string[];
   sectionKey: NavSectionKey;
-  /** Non-clickable section heading inside the drawer */
-  isGroupLabel?: boolean;
   /** Indented child item (e.g. setup sub-pages) */
   indent?: boolean;
   /** Hide item when the named module is disabled for this tenant */
   moduleKey?: keyof PresetModules;
+  /** Show only for Grow vs non-Grow payment/invoicing setup */
+  tenantFilter?: NavTenantFilter;
 }
 
 export interface NavSection {
@@ -39,15 +44,22 @@ export interface NavSection {
   items: NavItem[];
 }
 
+export interface NavTenantContext {
+  country?: string | null;
+  payment_provider?: string | null;
+}
+
 export const SECTION_LABELS: Record<NavSectionKey, string> = {
   browse: 'nav.section.browse',
   administration: 'nav.section.administration',
-  setup: 'pages.admin.setup.title',
+  finance: 'nav.section.finance',
+  setup: 'nav.section.setup',
+  platform: 'nav.section.platform',
   portal: 'nav.section.portal',
   learning: 'nav.section.learning',
 };
 
-/** Authenticated navigation items (flattened; no dropdowns) */
+/** Authenticated navigation items (flattened; grouped in the drawer) */
 export const navigationConfig: NavItem[] = [
   {
     path: '/classes',
@@ -62,14 +74,41 @@ export const navigationConfig: NavItem[] = [
     sectionKey: 'administration',
   },
   {
-    path: '/admin/finance',
-    labelKey: 'nav.finance',
+    path: '/admin/families',
+    labelKey: 'nav.families',
     requiredRoles: ['tenant_admin'],
     sectionKey: 'administration',
   },
   {
+    path: '/admin/finance',
+    labelKey: 'finance.hub.title',
+    requiredRoles: ['tenant_admin'],
+    sectionKey: 'finance',
+  },
+  {
+    path: '/admin/finance/payments',
+    labelKey: 'finance.payments.title',
+    requiredRoles: ['tenant_admin'],
+    sectionKey: 'finance',
+    indent: true,
+  },
+  {
+    path: '/admin/finance/expenses',
+    labelKey: 'finance.expenses.title',
+    requiredRoles: ['tenant_admin'],
+    sectionKey: 'finance',
+    indent: true,
+  },
+  {
+    path: '/admin/finance/expenses/categories',
+    labelKey: 'finance.categories.title',
+    requiredRoles: ['tenant_admin'],
+    sectionKey: 'finance',
+    indent: true,
+  },
+  {
     path: '/admin/setup',
-    labelKey: 'pages.admin.setup.title',
+    labelKey: 'nav.setup_overview',
     requiredRoles: ['tenant_admin'],
     sectionKey: 'setup',
   },
@@ -79,6 +118,37 @@ export const navigationConfig: NavItem[] = [
     requiredRoles: ['tenant_admin'],
     sectionKey: 'setup',
     indent: true,
+  },
+  {
+    path: '/admin/setup/tax',
+    labelKey: 'settings.tax.title',
+    requiredRoles: ['tenant_admin'],
+    sectionKey: 'setup',
+    indent: true,
+  },
+  {
+    path: '/admin/setup/grow',
+    labelKey: 'settings.grow.title',
+    requiredRoles: ['tenant_admin'],
+    sectionKey: 'setup',
+    indent: true,
+    tenantFilter: 'grow',
+  },
+  {
+    path: '/admin/setup/payments',
+    labelKey: 'settings.payments.title',
+    requiredRoles: ['tenant_admin'],
+    sectionKey: 'setup',
+    indent: true,
+    tenantFilter: 'not_grow',
+  },
+  {
+    path: '/admin/setup/invoicing',
+    labelKey: 'settings.invoicing.title',
+    requiredRoles: ['tenant_admin'],
+    sectionKey: 'setup',
+    indent: true,
+    tenantFilter: 'not_grow',
   },
   {
     path: '/admin/setup/billing',
@@ -116,6 +186,12 @@ export const navigationConfig: NavItem[] = [
     requiredRoles: ['tenant_admin'],
     sectionKey: 'setup',
     indent: true,
+  },
+  {
+    path: '/platform/onboard',
+    labelKey: 'nav.platform_onboard',
+    requiredRoles: ['super_admin'],
+    sectionKey: 'platform',
   },
   {
     path: '/dashboard/portal',
@@ -156,10 +232,25 @@ export const publicNavigationConfig: NavItem[] = [
 const SECTION_ORDER: NavSectionKey[] = [
   'browse',
   'administration',
+  'finance',
   'setup',
+  'platform',
   'portal',
   'learning',
 ];
+
+export function tenantUsesGrow(tenant: NavTenantContext | null | undefined): boolean {
+  return tenant?.country === 'IL' || tenant?.payment_provider === 'grow';
+}
+
+export function matchesTenantFilter(
+  item: NavItem,
+  tenant: NavTenantContext | null | undefined,
+): boolean {
+  if (!item.tenantFilter) return true;
+  const usesGrow = tenantUsesGrow(tenant);
+  return item.tenantFilter === 'grow' ? usesGrow : !usesGrow;
+}
 
 /**
  * Check if a user (with given roles) can access a route.
@@ -172,11 +263,31 @@ export function canAccessRoute(userRoles: string[], requiredRoles: string[]): bo
 }
 
 /**
+ * Longest-prefix match so hub routes (e.g. /admin/finance) are not active on sub-pages.
+ */
+export function resolveActiveNavPath(pathname: string, items: NavItem[]): string | null {
+  if (pathname === '/' || pathname === '/classes') {
+    return '/classes';
+  }
+
+  let best: string | null = null;
+  for (const item of items) {
+    const { path } = item;
+    if (pathname === path || pathname.startsWith(`${path}/`)) {
+      if (!best || path.length > best.length) {
+        best = path;
+      }
+    }
+  }
+  return best;
+}
+
+/**
  * Build grouped nav sections for the drawer, hiding empty groups.
  */
 export function buildNavSections(
   items: NavItem[],
-  userRoles: string[] | null
+  userRoles: string[] | null,
 ): NavSection[] {
   const roles = userRoles ?? [];
   const visibleItems = items.filter((item) => canAccessRoute(roles, item.requiredRoles));

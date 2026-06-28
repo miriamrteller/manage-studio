@@ -63,7 +63,7 @@ export function useTenant(): TenantConfig | null {
         language_default: row.language_default,
         country: row.country,
         currency: row.currency,
-        vat_rate: Number(row.vat_rate ?? 0.17),
+        vat_rate: Number(row.vat_rate ?? 0),
         prices_include_vat: row.prices_include_vat !== false,
         white_label: whiteLabel || undefined,
         locale: getLocale(row.language_default as 'he' | 'en', row.country as 'IL' | 'US'),

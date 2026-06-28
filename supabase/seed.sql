@@ -4,11 +4,9 @@
 --
 -- After Stage 1 finance schema lands: also run supabase/seed-finance.sql (see AGENT-RUNBOOK).
 --
--- IMPORTANT: Tenant Configuration (colors, language, currency, VAT rate)
--- These fields are configured by school administrators during onboarding setup.
--- End-users (students, parents, teachers) send ONLY the subdomain to the frontend.
--- The frontend receives this configuration from the database and applies it to the UI.
--- End-users NEVER send or modify configuration data—this is read-only from their perspective.
+-- IMPORTANT: Tenant Configuration (colors, language, currency)
+-- Class prices (offerings.price_minor) are gross amounts families pay.
+-- VAT on receipts/invoices is handled by the payment/invoicing provider.
 
 -- ============================================================================
 -- TENANTS (20260608000200_core_tenants.sql)
@@ -23,7 +21,7 @@ VALUES (
   '#76335a',
   '#e99ac4',
   'ILS',
-  0.17,
+  0,
   true,
   'IL',
   'programs',

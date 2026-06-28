@@ -1,5 +1,9 @@
 import type { PaymentLogRow } from '@shared/schemas';
 
+/** Shared styling for invoice/receipt links in the payments log UI. */
+export const paymentDocumentLinkClassName =
+  'font-medium text-primary underline underline-offset-2 hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary';
+
 export type PayerDisplayKind = 'person' | 'family' | 'empty';
 
 export interface PayerDisplay {
@@ -22,6 +26,16 @@ export function getPayerDisplay(
 
 export function isRefundRow(row: Pick<PaymentLogRow, 'charge_type' | 'total_amount_minor'>): boolean {
   return row.charge_type === 'refund' || row.total_amount_minor < 0;
+}
+
+export type PaymentCaptureSource = 'manual' | 'online';
+
+export function getPaymentCaptureSource(provider: string): PaymentCaptureSource {
+  return provider === 'manual' ? 'manual' : 'online';
+}
+
+export function getCaptureSourceLabelKey(source: PaymentCaptureSource): string {
+  return `finance.capture_source.${source}`;
 }
 
 /** Date filter applies to paid_at only — pending rows excluded when filter active. */

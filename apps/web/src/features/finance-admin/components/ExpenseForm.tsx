@@ -6,6 +6,7 @@ import { computeExpenseAmounts } from '../lib/expenseAmounts';
 import { normalizeIsraeliTaxId } from '../lib/financeAdminUtils';
 import { ExpenseService } from '../services/expenseService';
 import { useExpenseCategories } from '../hooks/useExpenses';
+import { ExpenseCategorySelect } from './ExpenseCategorySelect';
 import type { Expense } from '@shared/schemas';
 
 interface ExpenseFormProps {
@@ -50,15 +51,10 @@ export function ExpenseForm({ correctsExpense, onSuccess, onCancel, onSubmit }: 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const selectedCategory = categories.find((c) => c.id === categoryId);
-  const vatRate = Number(tenant?.vat_rate ?? 0.17);
-  const pricesIncludeVat = tenant?.prices_include_vat ?? true;
   const amountMinor = Math.round(parseFloat(amountInput || '0') * 100);
 
   const breakdown = computeExpenseAmounts({
     amountMinor: isCorrection ? -Math.abs(amountMinor) : amountMinor,
-    vatRate,
-    pricesIncludeVat,
-    isVatEligible: selectedCategory?.is_vat_eligible ?? true,
   });
 
   const signedBreakdown = isCorrection
@@ -68,9 +64,6 @@ export function ExpenseForm({ correctsExpense, onSuccess, onCancel, onSubmit }: 
         totalAmountMinor: -Math.abs(breakdown.totalAmountMinor),
       }
     : breakdown;
-
-  const needsSupplierVat =
-    (selectedCategory?.is_vat_eligible ?? true) && signedBreakdown.vatAmountMinor !== 0;
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -96,7 +89,7 @@ export function ExpenseForm({ correctsExpense, onSuccess, onCancel, onSubmit }: 
           p_vat_amount_minor: signedBreakdown.vatAmountMinor,
           p_total_amount_minor: signedBreakdown.totalAmountMinor,
           p_supplier_name: supplierName.trim() || null,
-          p_supplier_vat_number: needsSupplierVat
+          p_supplier_vat_number: supplierVat.trim()
             ? normalizeIsraeliTaxId(supplierVat) ?? supplierVat.trim()
             : null,
           p_expense_date: expenseDate,
@@ -120,22 +113,7 @@ export function ExpenseForm({ correctsExpense, onSuccess, onCancel, onSubmit }: 
     <form onSubmit={handleSubmit} className="space-y-4 p-4">
       {error && <div className="alert-error" role="alert">{error}</div>}
 
-      <label className="block text-sm">
-        <span className="block font-medium mb-1">{t('finance.categories.name')}</span>
-        <select
-          className="w-full border rounded px-3 py-2"
-          value={categoryId}
-          onChange={(e) => setCategoryId(e.target.value)}
-          required
-        >
-          <option value="">{t('common.select')}</option>
-          {categories
-            .filter((c) => c.is_active)
-            .map((category) => (
-              <option key={category.id} value={category.id}>{category.name}</option>
-            ))}
-        </select>
-      </label>
+      <ExpenseCategorySelect value={categoryId} onChange={setCategoryId} />
 
       <label className="block text-sm">
         <span className="block font-medium mb-1">{t('finance.expenses.description')}</span>
@@ -170,15 +148,17 @@ export function ExpenseForm({ correctsExpense, onSuccess, onCancel, onSubmit }: 
         />
       </label>
 
-      {needsSupplierVat && (
+      {selectedCategory?.is_vat_eligible && (
         <label className="block text-sm">
           <span className="block font-medium mb-1">{t('finance.expenses.supplier_vat')}</span>
           <input
             className="w-full border rounded px-3 py-2"
             value={supplierVat}
             onChange={(e) => setSupplierVat(e.target.value)}
-            required
+            inputMode="numeric"
+            autoComplete="off"
           />
+          <span className="block text-muted-foreground mt-1">{t('finance.expenses.supplier_vat_hint')}</span>
         </label>
       )}
 

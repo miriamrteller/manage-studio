@@ -2,12 +2,6 @@ import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4
 import { finalisePayment } from "./finalise-payment.ts";
 import { ChargeMetadataSchema, type PaymentEvent } from "./types.ts";
 
-function parseAmount(value: string | undefined, fallback: number): number {
-  if (!value) return fallback;
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
-
 export async function handlePaymentEventInternal(
   service: SupabaseClient,
   event: PaymentEvent,
@@ -137,25 +131,15 @@ export async function handlePaymentEventInternal(
 export function buildMockPaymentEvent(
   params: ChargeParamsLike,
 ): PaymentEvent {
-  const vatRate = Number(params.metadata.vat_rate ?? 0.17);
-  const pretax = parseAmount(
-    params.metadata.pretax_amount_minor,
-    Math.round(params.amountMinor / (1 + vatRate)),
-  );
-  const vatMinor = parseAmount(
-    params.metadata.vat_amount_minor,
-    params.amountMinor - pretax,
-  );
-
   return {
     type: "payment.succeeded",
     providerPaymentRef: params.providerPaymentRef,
     metadata: params.metadata,
     amountMinor: params.amountMinor,
     currency: params.currency,
-    pretaxAmountMinor: pretax,
-    vatAmountMinor: vatMinor,
-    vatRate,
+    pretaxAmountMinor: 0,
+    vatAmountMinor: 0,
+    vatRate: 0,
     offeringId: params.metadata.offering_id,
     personId: params.metadata.person_id,
   };

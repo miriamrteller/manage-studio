@@ -87,7 +87,7 @@ Deno.serve(async (req) => {
 
     const { data: tenant } = await service
       .from("tenants")
-      .select("vat_rate, prices_include_vat, currency, payment_provider")
+      .select("currency, payment_provider")
       .eq("id", schedule.tenant_id)
       .single();
 
@@ -96,13 +96,7 @@ Deno.serve(async (req) => {
       continue;
     }
 
-    const pricing = resolveOfferingPrice(
-      { price_minor: offering.price_minor as number },
-      {
-        vat_rate: Number(tenant.vat_rate ?? 0.17),
-        prices_include_vat: tenant.prices_include_vat !== false,
-      },
-    );
+    const pricing = resolveOfferingPrice({ price_minor: offering.price_minor as number });
 
     const billingAccountId =
       (schedule.billing_account_id as string | null) ??

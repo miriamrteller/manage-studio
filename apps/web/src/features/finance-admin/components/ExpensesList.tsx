@@ -10,6 +10,7 @@ import { useExpenses, useExpenseCategories } from '../hooks/useExpenses';
 import { ExpenseForm } from './ExpenseForm';
 import { ExpenseService } from '../services/expenseService';
 import { exportExpensesCsv } from '../lib/csvExport';
+import { datedCsvFilename } from '../lib/financeAdminUtils';
 import type { Expense } from '@shared/schemas';
 
 export function ExpensesList() {
@@ -64,7 +65,7 @@ export function ExpensesList() {
         pageSize: 5000,
         filters,
       });
-      exportExpensesCsv(rows, `expenses-${tenant.subdomain}.csv`);
+      exportExpensesCsv(rows, datedCsvFilename('expenses', tenant.subdomain));
     } catch (err) {
       setExportError(err instanceof Error ? err.message : t('common.error'));
     }

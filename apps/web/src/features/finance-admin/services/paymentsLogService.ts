@@ -2,13 +2,14 @@ import { BaseService } from '@/services/base.service';
 import { supabase } from '@/lib/supabase';
 import { PaymentLogRowSchema } from '@shared/schemas';
 import type { Tenant } from '@shared/schemas';
+import type { PaymentCaptureSource } from '../lib/paymentsLogDisplay';
 
 export const PAYMENTS_LOG_PAGE_SIZE = 50;
 
 export interface PaymentsLogFilters {
   statuses?: string[];
   chargeTypes?: string[];
-  providers?: string[];
+  captureSources?: PaymentCaptureSource[];
   dateFrom?: string | null;
   dateTo?: string | null;
   personIds?: string[];
@@ -54,8 +55,12 @@ export class PaymentsLogService extends BaseService {
       if (filters.chargeTypes?.length) {
         query = query.in('charge_type', filters.chargeTypes);
       }
-      if (filters.providers?.length) {
-        query = query.in('provider', filters.providers);
+      if (filters.captureSources?.length === 1) {
+        if (filters.captureSources[0] === 'manual') {
+          query = query.eq('provider', 'manual');
+        } else {
+          query = query.neq('provider', 'manual');
+        }
       }
       if (filters.dateFrom) {
         query = query.gte('paid_at', `${filters.dateFrom}T00:00:00`);

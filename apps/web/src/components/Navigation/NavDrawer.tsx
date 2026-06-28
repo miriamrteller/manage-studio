@@ -5,11 +5,12 @@ import { Pin, PinOff, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useEntityLabels } from '@/hooks/useEntityLabels';
+import { useTenant } from '@/hooks/useTenant';
 import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
 import { useNavDrawer } from './NavDrawerContext';
 import { useNavItems } from './useNavItems';
-import type { NavItem } from './navigationConfig';
+import { resolveActiveNavPath, type NavItem } from './navigationConfig';
 
 const FOCUSABLE =
   'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -41,6 +42,7 @@ export function NavDrawer() {
   const location = useLocation();
   const { user } = useCurrentUser();
   const { labels, modules } = useEntityLabels();
+  const tenant = useTenant();
   const {
     isOpen,
     isPinned,
@@ -58,6 +60,7 @@ export function NavDrawer() {
     userRoles: user?.role ?? null,
     isAuthenticated: Boolean(user),
     modules,
+    tenant,
   });
 
   function navLabel(item: NavItem): string {
@@ -78,6 +81,7 @@ export function NavDrawer() {
   }
 
   const navItems = sections.flatMap((section) => section.items);
+  const activePath = resolveActiveNavPath(location.pathname, navItems);
 
   const handleNavigate = (path: string) => {
     navigate(path);
@@ -90,13 +94,7 @@ export function NavDrawer() {
     navigate('/login', { replace: true });
   };
 
-  const isActivePath = (path: string) => {
-    if (path === '/classes') {
-      return location.pathname === '/' || location.pathname === '/classes';
-    }
-    if (path === '/') return location.pathname === '/';
-    return location.pathname === path || location.pathname.startsWith(`${path}/`);
-  };
+  const isActivePath = (path: string) => activePath === path;
 
   // Overlay: focus trap + Escape + initial focus
   useEffect(() => {
@@ -173,27 +171,35 @@ export function NavDrawer() {
 
       {/* Nav links */}
       <nav className="flex-1 overflow-y-auto py-2" aria-label={t('nav.menu')}>
-        <ul>
-          {navItems.map((item) => {
-            const active = isActivePath(item.path);
-            return (
-              <li key={item.path}>
-                <button
-                  type="button"
-                  onClick={() => handleNavigate(item.path)}
-                  aria-current={active ? 'page' : undefined}
-                  className={cn(
-                    'w-full text-start px-4 py-2.5 text-sm transition-colors',
-                    'hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-on-primary focus-visible:outline-offset-[-2px]',
-                    active && 'bg-primary-hover font-medium'
-                  )}
-                >
-                  {navLabel(item)}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
+        {sections.map((section) => (
+          <div key={section.sectionKey} className="mb-2">
+            <h3 className="px-4 pt-3 pb-1 text-xs font-semibold uppercase tracking-wide opacity-70">
+              {t(section.labelKey)}
+            </h3>
+            <ul>
+              {section.items.map((item) => {
+                const active = isActivePath(item.path);
+                return (
+                  <li key={item.path}>
+                    <button
+                      type="button"
+                      onClick={() => handleNavigate(item.path)}
+                      aria-current={active ? 'page' : undefined}
+                      className={cn(
+                        'w-full text-start py-2.5 text-sm transition-colors',
+                        item.indent ? 'ps-8 pe-4' : 'px-4',
+                        'hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-on-primary focus-visible:outline-offset-[-2px]',
+                        active && 'bg-primary-hover font-medium',
+                      )}
+                    >
+                      {navLabel(item)}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
       </nav>
 
       {/* Account footer (authenticated) */}
