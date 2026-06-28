@@ -713,3 +713,34 @@ export const WaiverEvidenceSchema = z.object({
 });
 
 export type WaiverEvidence = z.infer<typeof WaiverEvidenceSchema>;
+
+// =============================================================================
+// Admin dashboard overview (Phase 1F)
+// =============================================================================
+
+export const AdminDashboardTodayClassSchema = z.object({
+  id: UUIDSchema,
+  name: z.string().min(1),
+  /** Postgres TIME string, HH:MM:SS */
+  start_time: z.string().regex(/^\d{2}:\d{2}:\d{2}$/),
+  /** Postgres TIME string, HH:MM:SS */
+  end_time: z.string().regex(/^\d{2}:\d{2}:\d{2}$/),
+  location: z.string().nullable().optional(),
+  max_capacity: z.number().int().positive(),
+  enrolled_count: z.number().int().nonnegative(),
+  waitlist_count: z.number().int().nonnegative(),
+  staff_name: z.string().nullable().optional(),
+});
+
+export const AdminDashboardOverviewSchema = z.object({
+  season_id: UUIDSchema.nullable(),
+  season_name: z.string().nullable(),
+  today_classes: z.array(AdminDashboardTodayClassSchema),
+  term_enrolments_count: z.number().int().nonnegative(),
+  admin_review_count: z.number().int().nonnegative(),
+  pending_payment_count: z.number().int().nonnegative(),
+  finance: FinanceSummarySchema,
+});
+
+export type AdminDashboardTodayClass = z.infer<typeof AdminDashboardTodayClassSchema>;
+export type AdminDashboardOverview = z.infer<typeof AdminDashboardOverviewSchema>;

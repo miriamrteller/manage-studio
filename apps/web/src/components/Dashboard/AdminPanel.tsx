@@ -4,36 +4,18 @@ import { Button } from '@/components/ui/button';
 import { useAdminDashboard } from './useAdminDashboard';
 import { useEntityLabels } from '@/hooks/useEntityLabels';
 import { FinanceHealthCard } from '@/features/finance/components/FinanceHealthCard';
+import { AdminOverviewSection } from '@/features/admin-dashboard/components/AdminOverviewSection';
 
 /**
- * AdminPanel: Smart component for admin dashboard
- * - Fetches admin data using useAdminDashboard hook
- * - Manages loading/error states
- * - Renders admin setup navigation cards
- * 
- * WCAG: Semantic structure, proper heading hierarchy, focus management
+ * AdminPanel: Smart component for admin dashboard.
+ * Mounts AdminOverviewSection (Phase 1F) above setup nav cards.
+ * AdminOverviewSection owns its own loading/error/no-season states.
  */
 export function AdminPanel() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { isLoading, error } = useAdminDashboard();
+  const { overview, isLoading, error, refetch } = useAdminDashboard();
   const { labels, modules } = useEntityLabels();
-
-  if (isLoading) {
-    return (
-      <div role="status" aria-live="polite">
-        {t('common.loading')}
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div role="alert" className="bg-red-50 border border-red-200 rounded p-4 text-red-700">
-        {t('errors.dashboard_load_failed')}
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-8">
@@ -45,6 +27,14 @@ export function AdminPanel() {
           {t('pages.admin.setup.description')}
         </p>
       </section>
+
+      {/* Phase 1F: Operations overview — today's classes, metrics, quick actions */}
+      <AdminOverviewSection
+        overview={overview}
+        isLoading={isLoading}
+        error={error}
+        onRefresh={refetch}
+      />
 
       <FinanceHealthCard />
 

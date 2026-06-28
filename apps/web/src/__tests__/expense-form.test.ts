@@ -15,7 +15,7 @@ describe('expense-form amounts', () => {
     const base = computeExpenseAmounts({ amountMinor: 1170 });
     const correction = {
       pretaxAmountMinor: -base.pretaxAmountMinor,
-      vatAmountMinor: -base.vatAmountMinor,
+      vatAmountMinor: -base.vatAmountMinor || 0, // Normalize -0 to 0
       totalAmountMinor: -base.totalAmountMinor,
     };
     expect(correction.totalAmountMinor).toBe(-1170);

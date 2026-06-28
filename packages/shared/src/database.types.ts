@@ -2510,6 +2510,7 @@ export type Database = {
         Args: { p_offering_id: string; p_person_id: string }
         Returns: number
       }
+      get_admin_dashboard_overview: { Args: never; Returns: Json }
       get_app_encryption_key: { Args: never; Returns: string }
       get_billing_account_payment_method: {
         Args: { p_billing_account_id: string }
@@ -2639,6 +2640,7 @@ export type Database = {
           payment_provider_webhook_secret: string
         }[]
       }
+      get_tenant_today: { Args: { p_tenant_id: string }; Returns: string }
       guest_enrolment_check_email: {
         Args: { p_email: string; p_subdomain: string }
         Returns: Json

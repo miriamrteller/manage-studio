@@ -1,27 +1,35 @@
-/**
- * useAdminDashboard: Admin dashboard data fetching and state management
- * 
- * Placeholder for Phase 1B - to be expanded with:
- * - Class management (view, edit, delete)
- * - Enrolment management
- * - Payment tracking
- * - Analytics and reporting
- */
+import { useQuery } from '@tanstack/react-query';
+import {
+  AdminDashboardService,
+  NoActiveSeasonError,
+} from '@/features/admin-dashboard/services/adminDashboardService';
+import { useTenant } from '@/hooks/useTenant';
+import type { AdminDashboardOverview } from '@shared/schemas';
 
 export interface AdminDashboardState {
+  overview: AdminDashboardOverview | undefined;
   isLoading: boolean;
   error: Error | null;
+  refetch: () => void;
+  /** True when the tenant has no active season (P0001 from RPC). */
+  isNoActiveSeason: boolean;
 }
 
 export function useAdminDashboard(): AdminDashboardState {
-  // Placeholder: in Phase 1B, fetch:
-  // - Recent enrolments
-  // - Pending payments
-  // - Class statistics
-  // - Teacher payroll data
+  const tenant = useTenant();
+  const { data: overview, isLoading, error, refetch } = useQuery({
+    queryKey: ['admin-dashboard-overview', tenant?.id],
+    queryFn: () => AdminDashboardService.getOverview(),
+    retry: false, // AdminDashboardService.withRetry handles retries internally
+  });
+
+  const isNoActiveSeason = error instanceof NoActiveSeasonError;
 
   return {
-    isLoading: false,
-    error: null,
+    overview,
+    isLoading,
+    error: error instanceof Error ? error : null,
+    refetch,
+    isNoActiveSeason,
   };
 }
