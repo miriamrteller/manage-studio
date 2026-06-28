@@ -48,8 +48,8 @@ export class StripePaymentProvider implements PaymentProvider {
             : {}),
           ...(params.metadata.offering_id ? { offering_id: params.metadata.offering_id } : {}),
           ...(params.metadata.person_id ? { person_id: params.metadata.person_id } : {}),
-          vat_rate: params.metadata.vat_rate ?? "0.17",
-          pretax_amount_minor: params.metadata.pretax_amount_minor ?? String(params.amountMinor),
+          vat_rate: params.metadata.vat_rate ?? "0",
+          pretax_amount_minor: params.metadata.pretax_amount_minor ?? "0",
           vat_amount_minor: params.metadata.vat_amount_minor ?? "0",
           total_amount_minor: params.metadata.total_amount_minor ?? String(params.amountMinor),
         },
@@ -108,10 +108,6 @@ export class StripePaymentProvider implements PaymentProvider {
     });
 
     const amountReceived = intent.amount_received ?? intent.amount;
-    const vatRate = Number(metadata.vat_rate ?? 0.17);
-    const pretax = Number(metadata.pretax_amount_minor) ||
-      Math.round(amountReceived / (1 + vatRate));
-    const vatMinor = Number(metadata.vat_amount_minor) || amountReceived - pretax;
 
     if (event.type === "payment_intent.succeeded") {
       return {
@@ -120,9 +116,9 @@ export class StripePaymentProvider implements PaymentProvider {
         metadata,
         amountMinor: amountReceived,
         currency: intent.currency,
-        pretaxAmountMinor: pretax,
-        vatAmountMinor: vatMinor,
-        vatRate,
+        pretaxAmountMinor: 0,
+        vatAmountMinor: 0,
+        vatRate: 0,
         offeringId: metadata.offering_id,
         personId: metadata.person_id,
       };
@@ -135,9 +131,9 @@ export class StripePaymentProvider implements PaymentProvider {
         metadata,
         amountMinor: amountReceived,
         currency: intent.currency,
-        pretaxAmountMinor: pretax,
-        vatAmountMinor: vatMinor,
-        vatRate,
+        pretaxAmountMinor: 0,
+        vatAmountMinor: 0,
+        vatRate: 0,
         failureMessage: intent.last_payment_error?.message,
       };
     }

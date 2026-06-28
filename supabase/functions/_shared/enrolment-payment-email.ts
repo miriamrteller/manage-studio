@@ -56,20 +56,14 @@ export async function resolveEnrolmentPaymentEmailDetails(
       .single(),
     service
       .from("tenants")
-      .select("vat_rate, prices_include_vat, currency, language_default")
+      .select("currency, language_default")
       .eq("id", input.tenantId)
       .single(),
   ]);
 
   if (!offering || !tenant) return null;
 
-  const pricing = resolveOfferingPrice(
-    { price_minor: offering.price_minor as number },
-    {
-      vat_rate: Number(tenant.vat_rate ?? 0.17),
-      prices_include_vat: tenant.prices_include_vat !== false,
-    },
-  );
+  const pricing = resolveOfferingPrice({ price_minor: offering.price_minor as number });
 
   const currency = (offering.currency ?? tenant.currency ?? "ILS").toUpperCase();
   const locale = input.language === "he" ? "he-IL" : "en-GB";

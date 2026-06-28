@@ -50,14 +50,6 @@ export function PaymentDetailDrawer({ row, onClose }: PaymentDetailDrawerProps) 
           <dd>{row.offering?.name ?? '—'}</dd>
         </div>
         <div>
-          <dt className="font-medium">{t('finance.payments.col_pretax')}</dt>
-          <dd>{formatCurrency(row.pretax_amount_minor, row.currency, i18n.language)}</dd>
-        </div>
-        <div>
-          <dt className="font-medium">{t('finance.payments.col_vat')}</dt>
-          <dd>{formatCurrency(row.vat_amount_minor, row.currency, i18n.language)}</dd>
-        </div>
-        <div>
           <dt className="font-medium">{t('finance.payments.col_total')}</dt>
           <dd>{formatCurrency(row.total_amount_minor, row.currency, i18n.language)}</dd>
         </div>

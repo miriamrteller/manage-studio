@@ -23,8 +23,6 @@ export function PaymentsLogTable({ rows, onRowClick }: PaymentsLogTableProps) {
             <th className="px-3 py-2 text-start font-medium">{t('finance.payments.col_date')}</th>
             <th className="px-3 py-2 text-start font-medium">{t('finance.payments.col_payer')}</th>
             <th className="px-3 py-2 text-start font-medium">{t('finance.payments.col_class')}</th>
-            <th className="px-3 py-2 text-start font-medium">{t('finance.payments.col_pretax')}</th>
-            <th className="px-3 py-2 text-start font-medium">{t('finance.payments.col_vat')}</th>
             <th className="px-3 py-2 text-start font-medium">{t('finance.payments.col_total')}</th>
             <th className="px-3 py-2 text-start font-medium">{t('finance.payments.col_status')}</th>
             <th className="px-3 py-2 text-start font-medium">{t('finance.payments.col_charge_type')}</th>
@@ -49,12 +47,6 @@ export function PaymentsLogTable({ rows, onRowClick }: PaymentsLogTableProps) {
                 <td className="px-3 py-2">{dateLabel}</td>
                 <td className="px-3 py-2">{payer.label ?? '—'}</td>
                 <td className="px-3 py-2">{row.offering?.name ?? '—'}</td>
-                <td className="px-3 py-2">
-                  {formatCurrency(row.pretax_amount_minor, row.currency, i18n.language)}
-                </td>
-                <td className="px-3 py-2">
-                  {formatCurrency(row.vat_amount_minor, row.currency, i18n.language)}
-                </td>
                 <td className="px-3 py-2">
                   {formatCurrency(row.total_amount_minor, row.currency, i18n.language)}
                 </td>

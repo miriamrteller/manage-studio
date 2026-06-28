@@ -53,7 +53,7 @@ export class GreenInvoiceProvider implements InvoicingProvider {
         {
           description: input.documentKind === "refund" ? "Credit note" : "Payment",
           quantity: 1,
-          price: input.pretaxAmountMinor / 100,
+          price: input.totalAmountMinor / 100,
           vatType: 0,
         },
       ],

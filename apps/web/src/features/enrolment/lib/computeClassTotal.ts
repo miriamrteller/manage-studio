@@ -17,15 +17,12 @@ export interface ClassTotalBreakdown {
   mode: OfferingPriceBreakdown['mode'];
 }
 
-/** Resolve charge and VAT breakdown; matches create-checkout (SPEC §2.5.1). */
+/** Resolve gross charge amount for display and checkout (no local VAT split). */
 export function computeClassTotal(
   classRow: ClassPricing,
-  tenant: Pick<Tenant, 'vat_rate' | 'currency' | 'prices_include_vat'>,
+  tenant: Pick<Tenant, 'currency'>,
 ): ClassTotalBreakdown {
-  const breakdown = resolveOfferingPrice(classRow, {
-    vat_rate: tenant.vat_rate,
-    prices_include_vat: tenant.prices_include_vat ?? true,
-  });
+  const breakdown = resolveOfferingPrice(classRow);
   return {
     pretaxMinor: breakdown.pretaxMinor,
     vatMinor: breakdown.vatMinor,

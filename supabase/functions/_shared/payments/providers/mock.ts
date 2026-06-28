@@ -154,9 +154,9 @@ export function buildChargeMetadata(input: {
     billing_schedule_id: input.billingScheduleId,
     offering_id: input.offeringId,
     person_id: input.personId,
-    vat_rate: String(input.vatRate),
-    pretax_amount_minor: String(input.pretaxMinor),
-    vat_amount_minor: String(input.vatMinor),
+    vat_rate: "0",
+    pretax_amount_minor: "0",
+    vat_amount_minor: "0",
     total_amount_minor: String(input.totalMinor),
   };
 }

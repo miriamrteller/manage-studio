@@ -102,11 +102,6 @@ export function OperatorOnboardingWizard() {
         }
       }
 
-      const vatParsed = Number(form.vatRatePercent);
-      if (Number.isNaN(vatParsed) || vatParsed < 0 || vatParsed > 100) {
-        throw new Error(t('settings.tax.vat_rate_invalid'));
-      }
-
       const { data, error: rpcError } = await supabase.rpc('provision_tenant', {
         p_name: form.name.trim(),
         p_subdomain: form.subdomain.trim().toLowerCase(),
@@ -118,8 +113,8 @@ export function OperatorOnboardingWizard() {
         p_country: form.country,
         p_currency: form.currency.trim().toUpperCase(),
         p_phone_region: form.phoneRegion.trim().toUpperCase(),
-        p_vat_rate: vatParsed / 100,
-        p_prices_include_vat: form.pricesIncludeVat,
+        p_vat_rate: 0,
+        p_prices_include_vat: true,
         p_admin_email: form.adminEmail.trim() || null,
       });
       if (rpcError) throw rpcError;
@@ -381,24 +376,8 @@ export function OperatorOnboardingWizard() {
 
       {step === 'tax' && (
         <section className="space-y-4 max-w-md">
-          <input
-            type="number"
-            min={0}
-            max={100}
-            step={0.01}
-            className="form-input w-full"
-            value={form.vatRatePercent}
-            onChange={(e) => updateForm('vatRatePercent', e.target.value)}
-            aria-label={t('settings.onboarding.vat_rate')}
-          />
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={form.pricesIncludeVat}
-              onChange={(e) => updateForm('pricesIncludeVat', e.target.checked)}
-            />
-            {t('settings.onboarding.prices_include_vat')}
-          </label>
+          <p className="text-sm text-muted-foreground">{t('settings.tax.no_local_vat')}</p>
+          <p className="text-sm text-muted-foreground">{t('settings.tax.class_price_hint')}</p>
         </section>
       )}
 
