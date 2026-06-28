@@ -2,7 +2,7 @@
 
 Living checklist for in-flight SPEC features. Normative design remains in [SPEC.md](../SPEC.md).
 
-**Last updated:** 2026-06-28 (merged `main` into PR #5; Phase 1F admin overview + UI fixes status reconciled)
+**Last updated:** 2026-06-28 (Phase 1F Admin Operations Overview — QA pass DL-ADMIN-002 complete, PR #5; feat/UI-fixes merged: parent self-enrolment, VAT gross refactor, nav)
 
 ---
 
@@ -45,7 +45,7 @@ Rough completion against [SPEC.md §6 V1 Implementation](../SPEC.md#6-v1-impleme
 | **Parent self-enrolment (P1–P3)** | [parent-self-enrolment/00-overview.md](plans/parent-self-enrolment/00-overview.md) | — | ✅ | `resolveGuardianProfile`, portal **Myself**, `GuardianProfileSetupPanel` (`f0c327a`) |
 | **Phase 1F admin operations overview** | [admin-overview-dashboard.md](plans/admin-overview-dashboard.md) | ✅ `20260626000300` | ✅ | RPC, service, hook, 6 components, 7 tests, i18n — **PR #5 complete** |
 | Notification blast composer | [notification-blast-composer.md](plans/notification-blast-composer.md) | ❌ | ❌ | `send-notification` exists; no compose UI |
-| Parent portal polish | [parent-portal-polish.md](plans/parent-portal-polish.md) | — | 🟡 | **Myself → parent-self-enrolment ✅**; contact prefs + upcoming still ❌ |
+| Parent portal polish (Phase 1G) | [parent-portal-polish.md](plans/parent-portal-polish.md) | — | 🟡 | **Myself → parent-self-enrolment ✅**; contact prefs + upcoming still ❌ |
 | Teachers admin module | [teachers-admin-module.md](plans/teachers-admin-module.md) | ✅ `staff` | ❌ | `TeacherService` / `useTeachers` only — no admin page |
 | Code rename epic (ex-D5) | [code-rename-epic.md](plans/code-rename-epic.md) | — | — | Deferred |
 
@@ -55,16 +55,29 @@ Rough completion against [SPEC.md §6 V1 Implementation](../SPEC.md#6-v1-impleme
 
 ### PR A ✅ Complete
 
-Policy module, admin override panel, `age_at_season_start` snapshot, guest age gate, tests.
+| Item | Status |
+| --- | --- |
+| `ageEnrolmentPolicy.ts` + tests | ✅ |
+| `AgeOverridePanel.tsx` | ✅ |
+| `age_at_season_start` on create (web + edge) | ✅ |
+| `20260626000100` helper + guest age gate | ✅ |
 
 ### PR B ✅ Complete (code)
 
 | Item | Status |
 | --- | --- |
-| RPCs + intake + `ageReviewService` + emails | ✅ |
-| Request form, admin panel, stepper + step wiring | ✅ |
-| Admin deep link `?engagement=` + i18n + badge | ✅ |
-| Unit tests | ✅ |
+| `20260626000200` review/approve/decline RPCs | ✅ |
+| `intakeService.requestAgeReview` / `requestGuestAgeReview` | ✅ |
+| `ageReviewService`, `sendAgeReviewNotifications` | ✅ |
+| Email templates + `render-template` + email i18n | ✅ |
+| `AgeReviewRequestForm`, `AgeReviewAdminPanel` | ✅ |
+| `SelectedClassAgeAlert` + `StepSelectStudent` review path | ✅ |
+| `EnrolmentStepper` → `onSubmitAgeReview`, review confirmation | ✅ |
+| `StudentSlideOver` mounts `AgeReviewAdminPanel` | ✅ |
+| `StudentsList` handles `?engagement=` deep link + highlight | ✅ |
+| App i18n (`pages.enrolment.age_review_*`, `age_exception_badge`) | ✅ EN + HE |
+| `EnrolmentRowActions` age exception badge | ✅ |
+| Unit tests (`ageReviewRequest.test.ts`, `ageEnrolmentPolicy.test.ts`) | ✅ |
 | **Manual E2E smoke** (request → email → approve/decline → pay) | ⏳ Recommended before prod |
 
 ---
@@ -89,14 +102,16 @@ Shipped on `feat/UI-fixes` (`f0c327a`):
 
 | Migration | Purpose |
 | --- | --- |
-| `20260625000300` | Grow webhook secrets |
+| `20260625000300` | Grow webhook secrets (encrypted, rotatable) |
 | `20260625000500` | Admin resend document RPCs |
 | `20260608001600` (+ edits) | Payments + Grow document columns + credential RPCs (consolidated) |
 | `20260608000200` (+ edits) | Tenant payment provider columns |
 
+Code: Grow payment/invoicing providers, `handle-payment-document`, gap tests, Osek Patur pass-through fix.
+
 **VAT (2026-06-28):** App charges **gross** offering price; pretax/VAT split removed from `packages/shared/src/pricing.ts`. Israeli tax breakdown comes from Grow/Green Invoice on issued documents.
 
-**Still manual:** end-to-end charge on real Meshulam sandbox — [grow-live-e2e-verification.md](plans/grow-live-e2e-verification.md).
+**Still manual:** end-to-end charge on real Meshulam sandbox. Dev path: `GROW_MOCK=true` + finance walkthrough. Plan: [grow-live-e2e-verification.md](plans/grow-live-e2e-verification.md).
 
 ---
 
@@ -115,9 +130,17 @@ Shipped on `feat/UI-fixes` (`f0c327a`):
 
 ---
 
-## §6.x deferred backlog
+## §6.x deferred backlog (intentionally post–V1 slice)
 
-1. Guest checkout · 2. Stripe Connect · 3. `discount_rules` at checkout · 4. Per-tenant Twilio/Resend · 5. Multi-region · 6. Unenrol Phase 2 · 7. Unenrol Phase 3
+Track in SPEC §6.x — pull into V1 only when explicitly prioritized:
+
+1. Guest checkout
+2. Stripe Connect
+3. `discount_rules` at checkout
+4. Per-tenant Twilio/Resend
+5. Multi-region
+6. **Unenrol Phase 2** — post-payment withdrawal + refund wizard
+7. **Unenrol Phase 3** — parent withdrawal requests (depends on Phase 1G)
 
 **Shipped:** Unenrol Phase 1 · Age override + review · Parent self-enrolment (Myself).
 
@@ -127,11 +150,11 @@ Shipped on `feat/UI-fixes` (`f0c327a`):
 
 | Priority | Work | Plan / notes |
 | --- | --- | --- |
-| **0** | **Merge PR #5** (Phase 1F overview) after HITL-001/002/003 sign-off | [admin-overview-dashboard.md](plans/admin-overview-dashboard.md) |
+| **0** | Grow live sandbox E2E (when creds ready) | [grow-live-e2e-verification.md](plans/grow-live-e2e-verification.md) |
 | **1** | **Parent portal polish** — contact prefs + upcoming sessions | [parent-portal-polish.md](plans/parent-portal-polish.md) |
-| **2** | Grow live sandbox E2E | [grow-live-e2e-verification.md](plans/grow-live-e2e-verification.md) |
-| **3** | Notification blast composer | [notification-blast-composer.md](plans/notification-blast-composer.md) |
-| **4** | Teachers admin CRUD | [teachers-admin-module.md](plans/teachers-admin-module.md) |
-| **5** | PR B + parent self-enrolment manual smoke | Before pilot launch |
-| Later | §7 production deployment | [SPEC.md §7](../SPEC.md#7-v1-production-deployment) |
-| Optional | Unenrol Phase 2 (refunds) | No plan yet |
+| **2** | Notification blast composer | [notification-blast-composer.md](plans/notification-blast-composer.md) |
+| **3** | Teachers admin CRUD | [teachers-admin-module.md](plans/teachers-admin-module.md) |
+| **4** | PR B manual E2E smoke (recommended before prod) | [age-override-pr-b.md](plans/age-override-pr-b.md) Step 9 |
+| **5** | Unenrol Phase 2 (refunds) | No plan yet |
+| Later | §7 production deployment checklist | [SPEC.md §7](../SPEC.md#7-v1-production-deployment) |
+| Deferred | Code rename epic, V2 features | [code-rename-epic.md](plans/code-rename-epic.md) · SPEC §8 |
