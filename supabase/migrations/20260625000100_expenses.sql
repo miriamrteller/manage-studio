@@ -1,5 +1,6 @@
 -- =============================================================================
 -- Finance admin: expenses (immutable) + create_expense RPC + receipt storage
+-- Gross-only amounts: pretax_amount_minor = total_amount_minor, vat_amount_minor = 0.
 -- DEPENDENCIES: 000200, 000600 (expense_categories), 000700 (audit_log)
 -- =============================================================================
 
@@ -29,6 +30,9 @@ CREATE TABLE expenses (
 
 CREATE INDEX idx_expenses_tenant_date ON expenses(tenant_id, expense_date DESC);
 CREATE INDEX idx_expenses_tenant_category ON expenses(tenant_id, category_id);
+
+COMMENT ON TABLE expenses IS
+  'Immutable expense rows. Amounts are gross-only: pretax_amount_minor = total_amount_minor, vat_amount_minor = 0.';
 
 -- ---------------------------------------------------------------------------
 -- Immutability
@@ -94,7 +98,7 @@ GRANT SELECT ON public.expenses TO authenticated;
 REVOKE INSERT, UPDATE, DELETE ON public.expenses FROM authenticated;
 
 -- ---------------------------------------------------------------------------
--- create_expense — SECURITY DEFINER; sole insert path
+-- create_expense — SECURITY DEFINER; sole insert path (gross-only, no local VAT)
 -- ---------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.create_expense(
   p_expense_id            UUID,
@@ -116,17 +120,10 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
-  v_tenant_id            UUID;
-  v_currency             TEXT;
-  v_vat_rate             NUMERIC;
-  v_prices_include_vat   BOOLEAN;
-  v_is_vat_eligible      BOOLEAN;
-  v_expected_pretax      INT;
-  v_expected_vat         INT;
-  v_expected_total       INT;
-  v_today                DATE;
-  v_digits               TEXT;
-  v_receipt_pattern      TEXT;
+  v_tenant_id       UUID;
+  v_currency        TEXT;
+  v_today           DATE;
+  v_receipt_pattern TEXT;
 BEGIN
   IF auth.uid() IS NULL THEN
     RAISE EXCEPTION 'Authentication required';
@@ -153,16 +150,14 @@ BEGIN
     RAISE EXCEPTION 'description must be 1-500 characters';
   END IF;
 
-  SELECT is_vat_eligible INTO v_is_vat_eligible
-  FROM expense_categories
-  WHERE id = p_category_id AND tenant_id = v_tenant_id AND is_active = true;
-
-  IF NOT FOUND THEN
+  IF NOT EXISTS (
+    SELECT 1 FROM expense_categories
+    WHERE id = p_category_id AND tenant_id = v_tenant_id AND is_active = true
+  ) THEN
     RAISE EXCEPTION 'invalid or inactive expense category';
   END IF;
 
-  SELECT t.currency, t.vat_rate, t.prices_include_vat
-  INTO v_currency, v_vat_rate, v_prices_include_vat
+  SELECT t.currency INTO v_currency
   FROM tenants t
   WHERE t.id = v_tenant_id;
 
@@ -189,44 +184,17 @@ BEGIN
       RAISE EXCEPTION 'correction amounts must be zero or negative';
     END IF;
   ELSE
-    IF p_pretax_amount_minor <= 0 OR p_total_amount_minor <= 0 THEN
-      RAISE EXCEPTION 'expense amounts must be positive';
+    IF p_total_amount_minor <= 0 THEN
+      RAISE EXCEPTION 'expense amount must be positive';
     END IF;
   END IF;
 
-  IF NOT v_is_vat_eligible THEN
-    v_expected_vat := 0;
-    IF v_prices_include_vat THEN
-      v_expected_total := p_total_amount_minor;
-      v_expected_pretax := p_total_amount_minor;
-    ELSE
-      v_expected_pretax := p_pretax_amount_minor;
-      v_expected_total := p_pretax_amount_minor;
-    END IF;
-  ELSIF v_prices_include_vat THEN
-    v_expected_total := p_total_amount_minor;
-    v_expected_pretax := round(p_total_amount_minor / (1 + v_vat_rate))::int;
-    v_expected_vat := p_total_amount_minor - v_expected_pretax;
-  ELSE
-    v_expected_pretax := p_pretax_amount_minor;
-    v_expected_vat := round(p_pretax_amount_minor * v_vat_rate)::int;
-    v_expected_total := p_pretax_amount_minor + v_expected_vat;
+  IF p_vat_amount_minor <> 0 THEN
+    RAISE EXCEPTION 'vat_amount_minor must be zero';
   END IF;
 
-  IF p_pretax_amount_minor <> v_expected_pretax
-     OR p_vat_amount_minor <> v_expected_vat
-     OR p_total_amount_minor <> v_expected_total THEN
-    RAISE EXCEPTION 'amounts do not match server VAT calculation';
-  END IF;
-
-  IF v_is_vat_eligible AND v_expected_vat > 0 THEN
-    IF p_supplier_vat_number IS NULL OR trim(p_supplier_vat_number) = '' THEN
-      RAISE EXCEPTION 'supplier_vat_number required for VAT-eligible expenses';
-    END IF;
-    v_digits := regexp_replace(p_supplier_vat_number, '[^0-9]', '', 'g');
-    IF length(v_digits) <> 9 THEN
-      RAISE EXCEPTION 'supplier_vat_number must contain 9 digits';
-    END IF;
+  IF p_pretax_amount_minor <> p_total_amount_minor THEN
+    RAISE EXCEPTION 'pretax_amount_minor must equal total_amount_minor';
   END IF;
 
   IF p_receipt_storage_path IS NOT NULL THEN

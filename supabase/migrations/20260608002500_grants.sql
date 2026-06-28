@@ -35,6 +35,7 @@ GRANT SELECT ON TABLE
   public.billing_schedules,
   public.invoicing_token_cache,
   public.document_queue,
+  public.payment_document_access_log,
   public.tenant_notification_templates,
   public.tenant_email_customizations,
   public.expense_categories,

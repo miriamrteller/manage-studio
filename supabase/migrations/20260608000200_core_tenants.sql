@@ -68,8 +68,10 @@ CREATE TABLE tenants (
   primary_color                 TEXT        NOT NULL DEFAULT '#76335a',
   accent_color                  TEXT        NOT NULL DEFAULT '#e99ac4',
   currency                      TEXT        NOT NULL DEFAULT 'ILS',
-  vat_rate                      NUMERIC(5,4) DEFAULT 0.17,
+  vat_rate                      NUMERIC(5,4) DEFAULT 0,
   prices_include_vat            BOOLEAN     NOT NULL DEFAULT true,
+  invoice_license_number        TEXT        NULL,
+  vat_type                      INTEGER     NOT NULL DEFAULT 1,
   phone_region                  TEXT        NOT NULL DEFAULT 'IL',
   phone_region_updated_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
   business_preset               TEXT        NOT NULL DEFAULT 'programs'
@@ -99,13 +101,18 @@ CREATE TABLE tenants (
 
 COMMENT ON COLUMN tenants.payment_provider_secret_enc IS 'pgp_sym_encrypt with app.encryption_key (manual runbook). Never expose to clients.';
 COMMENT ON COLUMN tenants.language_default IS 'Primary language for tenant. dir (rtl/ltr) is computed from this in the app.';
-COMMENT ON COLUMN tenants.country IS 'Country for regional settings (VAT rate, currency, locale).';
+COMMENT ON COLUMN tenants.country IS 'Country for regional settings (currency, locale).';
 COMMENT ON COLUMN tenants.from_email IS
   'Verified sender address for transactional email (waiver reminders, payment confirmations). '
   'When NULL, the send-waiver-reminder / handle-payment-event Edge Functions skip outbound email for the tenant.';
+COMMENT ON COLUMN tenants.vat_rate IS
+  'Legacy field — not used for local VAT computation. Always 0 for new tenants. Grow/GI own tax documents.';
 COMMENT ON COLUMN tenants.prices_include_vat IS
-  'When true, offerings.price_minor is VAT-inclusive (customer pays this amount). '
-  'When false, price_minor is pretax and VAT is added at checkout. See SPEC §2.5.1.';
+  'When true, offerings.price_minor is the amount families pay (gross). App does not split VAT locally.';
+COMMENT ON COLUMN tenants.invoice_license_number IS
+  'Tenant business license / tax ID (ח.פ or ת.ז). Pass-through to Grow only — no validation.';
+COMMENT ON COLUMN tenants.vat_type IS
+  'Grow vatType pass-through: 1=included (default), 2=before VAT, 3=exempt. Grow owns document legality.';
 
 CREATE TABLE user_profiles (
   id         UUID        PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,

@@ -33,6 +33,7 @@ DROP TABLE IF EXISTS public.waiver_events                 CASCADE;
 DROP TABLE IF EXISTS public.waiver_evidence               CASCADE;
 
 DROP TABLE IF EXISTS public.payments                      CASCADE;
+DROP TABLE IF EXISTS public.payment_document_access_log   CASCADE;
 DROP TABLE IF EXISTS public.document_queue                CASCADE;
 DROP TABLE IF EXISTS public.invoicing_token_cache           CASCADE;
 DROP TABLE IF EXISTS public.billing_schedules               CASCADE;
@@ -91,6 +92,8 @@ DROP TABLE IF EXISTS public.accounts                      CASCADE;
 DROP TABLE IF EXISTS public.notification_log              CASCADE;
 DROP TABLE IF EXISTS public.tenant_notification_templates CASCADE;
 DROP TABLE IF EXISTS public.tenant_email_customizations   CASCADE;
+DROP TABLE IF EXISTS public.expenses                      CASCADE;
+DROP TABLE IF EXISTS public.grow_webhook_secrets          CASCADE;
 DROP TABLE IF EXISTS public.expense_categories            CASCADE;
 DROP TABLE IF EXISTS public.audit_log                     CASCADE;
 DROP TABLE IF EXISTS public.otp_codes                     CASCADE;
@@ -146,6 +149,39 @@ DROP FUNCTION IF EXISTS public.admin_enrolment_lookup_email(TEXT)               
 DROP FUNCTION IF EXISTS public.cancel_engagement(UUID, TEXT)                           CASCADE;
 DROP FUNCTION IF EXISTS public.check_subdomain_available(TEXT)                          CASCADE;
 
+DO $$
+DECLARE
+  r RECORD;
+BEGIN
+  FOR r IN
+    SELECT p.oid::regprocedure AS sig
+    FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public'
+      AND p.proname IN (
+        'create_expense',
+        'get_finance_summary',
+        'reject_expense_mutation',
+        'validate_expense_category_tenant',
+        'payments_set_retention_expires_at',
+        'admin_get_payment_document',
+        'admin_get_document_signed_url_path',
+        'get_grow_webhook_secret',
+        'save_grow_webhook_secret',
+        'engagement_age_at_season_start',
+        'assert_age_ineligible_for_offering',
+        'resolve_engagement_billing_account',
+        'assert_can_request_age_review',
+        'request_age_review_engagement',
+        'guest_enrolment_request_age_review',
+        'approve_age_review_engagement',
+        'decline_age_review_engagement'
+      )
+  LOOP
+    EXECUTE 'DROP FUNCTION IF EXISTS ' || r.sig || ' CASCADE';
+  END LOOP;
+END $$;
+
 -- sign_waiver and provision_tenant have evolved through several parameter-count
 -- overloads. Drop EVERY overload by name regardless of signature.
 DO $$
@@ -162,6 +198,15 @@ BEGIN
     EXECUTE 'DROP FUNCTION IF EXISTS ' || r.sig || ' CASCADE';
   END LOOP;
 END $$;
+
+-- ---------------------------------------------------------------------------
+-- 3b. Drop app storage policies (buckets/objects persist — Supabase blocks
+--     direct DELETE on storage tables; migrations use DROP POLICY IF EXISTS)
+-- ---------------------------------------------------------------------------
+DROP POLICY IF EXISTS "legal_documents_service_role_all" ON storage.objects;
+DROP POLICY IF EXISTS "legal_documents_admin_select" ON storage.objects;
+DROP POLICY IF EXISTS "Admins insert own tenant expense receipts" ON storage.objects;
+DROP POLICY IF EXISTS "Admins read own tenant expense receipts" ON storage.objects;
 
 -- ---------------------------------------------------------------------------
 -- 4. Clear migration history so Supabase CLI re-applies all migrations
@@ -186,6 +231,6 @@ BEGIN
     RAISE NOTICE 'Dev DB reset complete. No public app tables remain.';
   END IF;
 
-  RAISE NOTICE 'Next: pnpm db:sync — then seed.sql in SQL Editor';
+  RAISE NOTICE 'Next: pnpm db:sync — then pnpm seed:dev — then pnpm seed:dev -- --finance';
 END;
 $$;

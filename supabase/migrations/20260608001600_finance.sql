@@ -1,6 +1,7 @@
 -- =============================================================================
 -- 001600: Finance — Payments + Provider RPCs + Billing/Invoicing tables
 -- payments lives here because payments.engagement_id FKs engagements (001300).
+-- Includes Grow document persistence (retention, access log, legal-documents bucket).
 -- DEPENDENCIES: 000200, 000300, 000500, 001300, 001100
 -- =============================================================================
 
@@ -26,6 +27,18 @@ CREATE TABLE payments (
   external_document_number TEXT,
   invoice_issued_at        TIMESTAMPTZ,
   invoice_url              TEXT,
+  document_stored_at       TIMESTAMPTZ,
+  document_pdf_path        TEXT,
+  document_type            TEXT
+                           CHECK (document_type IN (
+                             'standard_invoice',
+                             'credit_note',
+                             'osek_patur_receipt',
+                             'cross_border',
+                             'disputed'
+                           )),
+  retention_expires_at     TIMESTAMPTZ,
+  legal_hold               BOOLEAN     NOT NULL DEFAULT false,
   status                   TEXT        NOT NULL DEFAULT 'pending'
                            CHECK (status IN ('pending', 'succeeded', 'failed', 'refunded', 'partially_refunded', 'disputed')),
   description              TEXT,
@@ -47,6 +60,18 @@ CREATE INDEX idx_payments_tenant          ON payments(tenant_id);
 CREATE INDEX idx_payments_engagement      ON payments(engagement_id);
 CREATE INDEX idx_payments_offering        ON payments(offering_id);
 CREATE INDEX idx_payments_billing_account ON payments(billing_account_id);
+CREATE INDEX idx_payments_external_document_id
+  ON payments (external_document_id)
+  WHERE external_document_id IS NOT NULL;
+
+COMMENT ON COLUMN payments.pretax_amount_minor IS 'Legacy — store 0 for new payments. Gross total is total_amount_minor.';
+COMMENT ON COLUMN payments.vat_amount_minor IS 'Legacy — store 0 for new payments.';
+COMMENT ON COLUMN payments.vat_rate IS 'Legacy — store 0 for new payments.';
+COMMENT ON COLUMN payments.document_stored_at IS 'Timestamp when Grow invoice document was first received and stored locally.';
+COMMENT ON COLUMN payments.document_pdf_path IS 'Opaque Supabase Storage key for immutable legal PDF copy in the legal-documents bucket.';
+COMMENT ON COLUMN payments.document_type IS 'Determines retention period: standard_invoice/credit_note/osek_patur_receipt = 7 yr; cross_border/disputed = 10 yr.';
+COMMENT ON COLUMN payments.retention_expires_at IS 'Auto-set on document insert by trigger. Automated deletion job never runs before this date.';
+COMMENT ON COLUMN payments.legal_hold IS 'When true, automated deletion is blocked regardless of retention_expires_at.';
 
 -- Payment provider credential RPCs (service_role read; tenant_admin write)
 CREATE OR REPLACE FUNCTION get_tenant_payment_credentials(p_tenant_id UUID)
@@ -328,3 +353,97 @@ CREATE POLICY document_queue_super_admin ON document_queue FOR ALL USING (is_sup
 CREATE POLICY document_queue_admin_select ON document_queue FOR SELECT
   USING (tenant_id = get_my_tenant_id() AND EXISTS (
     SELECT 1 FROM user_profiles WHERE id = auth.uid() AND 'tenant_admin' = ANY(role)));
+
+-- Grow document retention trigger
+CREATE OR REPLACE FUNCTION payments_set_retention_expires_at()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.document_stored_at IS NOT NULL AND OLD.document_stored_at IS NULL THEN
+    NEW.retention_expires_at := CASE NEW.document_type
+      WHEN 'cross_border' THEN NEW.document_stored_at + interval '10 years'
+      WHEN 'disputed'     THEN NEW.document_stored_at + interval '10 years'
+      ELSE                     NEW.document_stored_at + interval '7 years'
+    END;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER payments_retention_expires_at_trigger
+  BEFORE UPDATE ON payments
+  FOR EACH ROW
+  EXECUTE FUNCTION payments_set_retention_expires_at();
+
+-- Audit log: who accessed or resent each invoice document
+CREATE TABLE payment_document_access_log (
+  id           bigserial    PRIMARY KEY,
+  payment_id   uuid         NOT NULL REFERENCES payments(id) ON DELETE CASCADE,
+  accessed_by  uuid         REFERENCES auth.users(id),
+  action       text         NOT NULL DEFAULT 'view'
+                            CHECK (action IN ('view', 'download', 'resend', 'legal_hold_set', 'legal_hold_released')),
+  accessed_at  timestamptz  NOT NULL DEFAULT now()
+);
+
+COMMENT ON TABLE payment_document_access_log IS
+  '7-year legal retention: complete audit trail of who accessed, downloaded, or resent each invoice document.';
+
+CREATE INDEX idx_doc_access_log_payment
+  ON payment_document_access_log (payment_id);
+CREATE INDEX idx_doc_access_log_user
+  ON payment_document_access_log (accessed_by)
+  WHERE accessed_by IS NOT NULL;
+
+ALTER TABLE payment_document_access_log ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY pdal_super_admin ON payment_document_access_log
+  FOR ALL USING (is_super_admin());
+
+CREATE POLICY pdal_tenant_admin_select ON payment_document_access_log
+  FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM payments p
+      WHERE p.id = payment_document_access_log.payment_id
+        AND p.tenant_id = get_my_tenant_id()
+    )
+    AND EXISTS (
+      SELECT 1 FROM user_profiles
+      WHERE id = auth.uid()
+        AND tenant_id = get_my_tenant_id()
+        AND 'tenant_admin' = ANY(role)
+    )
+  );
+
+CREATE POLICY pdal_service_role_insert ON payment_document_access_log
+  FOR INSERT
+  WITH CHECK (is_service_role());
+
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'legal-documents',
+  'legal-documents',
+  false,
+  52428800,
+  ARRAY['application/pdf']
+)
+ON CONFLICT (id) DO NOTHING;
+
+DROP POLICY IF EXISTS "legal_documents_service_role_all" ON storage.objects;
+DROP POLICY IF EXISTS "legal_documents_admin_select" ON storage.objects;
+
+CREATE POLICY "legal_documents_service_role_all"
+  ON storage.objects FOR ALL
+  TO service_role
+  USING (bucket_id = 'legal-documents');
+
+CREATE POLICY "legal_documents_admin_select"
+  ON storage.objects FOR SELECT
+  TO authenticated
+  USING (
+    bucket_id = 'legal-documents'
+    AND EXISTS (
+      SELECT 1 FROM user_profiles
+      WHERE id = auth.uid()
+        AND 'tenant_admin' = ANY(role)
+    )
+  );
