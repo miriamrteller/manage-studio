@@ -20,11 +20,9 @@ const CHARGE_TYPE_OPTIONS: FilterOption[] = [
   { value: 'refund', label: 'refund' },
 ];
 
-const PROVIDER_OPTIONS: FilterOption[] = [
+const CAPTURE_SOURCE_OPTIONS: FilterOption[] = [
   { value: 'manual', label: 'manual' },
-  { value: 'mock', label: 'mock' },
-  { value: 'grow', label: 'grow' },
-  { value: 'stripe', label: 'stripe' },
+  { value: 'online', label: 'online' },
 ];
 
 interface PaymentsLogFiltersProps {
@@ -60,13 +58,13 @@ export function PaymentsLogFiltersBar({
     [filters.chargeTypes, t],
   );
 
-  const providerSelected = useMemo(
+  const captureSourceSelected = useMemo(
     () =>
-      (filters.providers ?? []).map((value) => ({
+      (filters.captureSources ?? []).map((value) => ({
         value,
-        label: t(`finance.provider.${value}`, { defaultValue: value }),
+        label: t(`finance.capture_source.${value}`, { defaultValue: value }),
       })),
-    [filters.providers, t],
+    [filters.captureSources, t],
   );
 
   const statusOptions = STATUS_OPTIONS.map((opt) => ({
@@ -79,9 +77,9 @@ export function PaymentsLogFiltersBar({
     label: t(`finance.charge_type.${opt.value}`, { defaultValue: opt.value }),
   }));
 
-  const providerOptions = PROVIDER_OPTIONS.map((opt) => ({
+  const captureSourceOptions = CAPTURE_SOURCE_OPTIONS.map((opt) => ({
     value: opt.value,
-    label: t(`finance.provider.${opt.value}`, { defaultValue: opt.value }),
+    label: t(`finance.capture_source.${opt.value}`, { defaultValue: opt.value }),
   }));
 
   const hasDateFilter = Boolean(filters.dateFrom || filters.dateTo);
@@ -108,12 +106,15 @@ export function PaymentsLogFiltersBar({
           }
         />
         <FilterMultiSelect
-          id="payments-provider-filter"
-          label={t('finance.payments.filter_provider')}
-          options={providerOptions}
-          selected={providerSelected}
+          id="payments-capture-source-filter"
+          label={t('finance.payments.filter_capture_source')}
+          options={captureSourceOptions}
+          selected={captureSourceSelected}
           onChange={(selected) =>
-            onChange({ ...filters, providers: selected.map((s) => s.value) })
+            onChange({
+              ...filters,
+              captureSources: selected.map((s) => s.value as 'manual' | 'online'),
+            })
           }
         />
         <label className="block text-sm">

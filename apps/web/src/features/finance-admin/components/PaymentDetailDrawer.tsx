@@ -2,7 +2,12 @@ import { useTranslation } from 'react-i18next';
 import { formatCurrency } from '@shared/format';
 import { Button } from '@/components/ui/button';
 import type { PaymentLogRow } from '@shared/schemas';
-import { getPayerDisplay } from '../lib/paymentsLogDisplay';
+import {
+  getCaptureSourceLabelKey,
+  getPayerDisplay,
+  getPaymentCaptureSource,
+  paymentDocumentLinkClassName,
+} from '../lib/paymentsLogDisplay';
 import { getProviderLabelKey } from '../services/paymentsLogService';
 
 interface PaymentDetailDrawerProps {
@@ -13,6 +18,7 @@ interface PaymentDetailDrawerProps {
 export function PaymentDetailDrawer({ row, onClose }: PaymentDetailDrawerProps) {
   const { t, i18n } = useTranslation();
   const payer = getPayerDisplay(row, t('finance.payments.family_payment'));
+  const captureSource = getPaymentCaptureSource(row.provider);
 
   return (
   <>
@@ -45,14 +51,6 @@ export function PaymentDetailDrawer({ row, onClose }: PaymentDetailDrawerProps) 
           <dd>{row.offering?.name ?? '—'}</dd>
         </div>
         <div>
-          <dt className="font-medium">{t('finance.payments.col_pretax')}</dt>
-          <dd>{formatCurrency(row.pretax_amount_minor, row.currency, i18n.language)}</dd>
-        </div>
-        <div>
-          <dt className="font-medium">{t('finance.payments.col_vat')}</dt>
-          <dd>{formatCurrency(row.vat_amount_minor, row.currency, i18n.language)}</dd>
-        </div>
-        <div>
           <dt className="font-medium">{t('finance.payments.col_total')}</dt>
           <dd>{formatCurrency(row.total_amount_minor, row.currency, i18n.language)}</dd>
         </div>
@@ -65,8 +63,15 @@ export function PaymentDetailDrawer({ row, onClose }: PaymentDetailDrawerProps) 
           <dd>{t(`finance.charge_type.${row.charge_type}`, { defaultValue: row.charge_type })}</dd>
         </div>
         <div>
-          <dt className="font-medium">{t('finance.payments.col_provider')}</dt>
-          <dd>{t(getProviderLabelKey(row.provider), { defaultValue: row.provider })}</dd>
+          <dt className="font-medium">{t('finance.payments.col_capture_source')}</dt>
+          <dd>
+            {t(getCaptureSourceLabelKey(captureSource))}
+            {captureSource === 'online' && (
+              <span className="block text-muted-foreground">
+                {t(getProviderLabelKey(row.provider), { defaultValue: row.provider })}
+              </span>
+            )}
+          </dd>
         </div>
         <div>
           <dt className="font-medium">{t('finance.payments.col_method')}</dt>
@@ -80,7 +85,12 @@ export function PaymentDetailDrawer({ row, onClose }: PaymentDetailDrawerProps) 
           <dt className="font-medium">{t('finance.payments.col_document')}</dt>
           <dd>
             {row.external_document_number && row.invoice_url ? (
-              <a href={row.invoice_url} target="_blank" rel="noopener noreferrer">
+              <a
+                href={row.invoice_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={paymentDocumentLinkClassName}
+              >
                 {row.external_document_number}
               </a>
             ) : (

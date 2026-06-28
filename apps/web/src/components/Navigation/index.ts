@@ -7,5 +7,8 @@ export {
   publicNavigationConfig,
   canAccessRoute,
   buildNavSections,
+  matchesTenantFilter,
+  resolveActiveNavPath,
+  tenantUsesGrow,
 } from './navigationConfig';
-export type { NavItem, NavSection, NavSectionKey } from './navigationConfig';
+export type { NavItem, NavSection, NavSectionKey, NavTenantFilter } from './navigationConfig';

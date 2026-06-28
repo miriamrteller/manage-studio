@@ -1,8 +1,12 @@
 import { useTranslation } from 'react-i18next';
 import { formatCurrency } from '@shared/format';
 import type { PaymentLogRow } from '@shared/schemas';
-import { getPayerDisplay } from '../lib/paymentsLogDisplay';
-import { getProviderLabelKey } from '../services/paymentsLogService';
+import {
+  getCaptureSourceLabelKey,
+  getPayerDisplay,
+  getPaymentCaptureSource,
+  paymentDocumentLinkClassName,
+} from '../lib/paymentsLogDisplay';
 
 interface PaymentsLogTableProps {
   rows: PaymentLogRow[];
@@ -20,12 +24,10 @@ export function PaymentsLogTable({ rows, onRowClick }: PaymentsLogTableProps) {
             <th className="px-3 py-2 text-start font-medium">{t('finance.payments.col_date')}</th>
             <th className="px-3 py-2 text-start font-medium">{t('finance.payments.col_payer')}</th>
             <th className="px-3 py-2 text-start font-medium">{t('finance.payments.col_class')}</th>
-            <th className="px-3 py-2 text-start font-medium">{t('finance.payments.col_pretax')}</th>
-            <th className="px-3 py-2 text-start font-medium">{t('finance.payments.col_vat')}</th>
             <th className="px-3 py-2 text-start font-medium">{t('finance.payments.col_total')}</th>
             <th className="px-3 py-2 text-start font-medium">{t('finance.payments.col_status')}</th>
             <th className="px-3 py-2 text-start font-medium">{t('finance.payments.col_charge_type')}</th>
-            <th className="px-3 py-2 text-start font-medium">{t('finance.payments.col_provider')}</th>
+            <th className="px-3 py-2 text-start font-medium">{t('finance.payments.col_capture_source')}</th>
             <th className="px-3 py-2 text-start font-medium">{t('finance.payments.col_method')}</th>
             <th className="px-3 py-2 text-start font-medium">{t('finance.payments.col_document')}</th>
             <th className="px-3 py-2 text-start font-medium">{t('finance.payments.col_engagement')}</th>
@@ -47,12 +49,6 @@ export function PaymentsLogTable({ rows, onRowClick }: PaymentsLogTableProps) {
                 <td className="px-3 py-2">{payer.label ?? '—'}</td>
                 <td className="px-3 py-2">{row.offering?.name ?? '—'}</td>
                 <td className="px-3 py-2">
-                  {formatCurrency(row.pretax_amount_minor, row.currency, i18n.language)}
-                </td>
-                <td className="px-3 py-2">
-                  {formatCurrency(row.vat_amount_minor, row.currency, i18n.language)}
-                </td>
-                <td className="px-3 py-2">
                   {formatCurrency(row.total_amount_minor, row.currency, i18n.language)}
                 </td>
                 <td className="px-3 py-2">
@@ -62,7 +58,7 @@ export function PaymentsLogTable({ rows, onRowClick }: PaymentsLogTableProps) {
                   {t(`finance.charge_type.${row.charge_type}`, { defaultValue: row.charge_type })}
                 </td>
                 <td className="px-3 py-2">
-                  {t(getProviderLabelKey(row.provider), { defaultValue: row.provider })}
+                  {t(getCaptureSourceLabelKey(getPaymentCaptureSource(row.provider)))}
                 </td>
                 <td className="px-3 py-2">
                   {row.payment_method
@@ -75,6 +71,7 @@ export function PaymentsLogTable({ rows, onRowClick }: PaymentsLogTableProps) {
                       href={row.invoice_url!}
                       target="_blank"
                       rel="noopener noreferrer"
+                      className={paymentDocumentLinkClassName}
                       onClick={(e) => e.stopPropagation()}
                     >
                       {row.external_document_number}

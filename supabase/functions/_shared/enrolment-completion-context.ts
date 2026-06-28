@@ -93,7 +93,7 @@ export async function loadEnrolmentCompletionContext(
 
   const { data: tenant } = await service
     .from("tenants")
-    .select("id, vat_rate, prices_include_vat, currency")
+    .select("id, currency")
     .eq("id", tenantId)
     .single();
 
@@ -101,13 +101,7 @@ export async function loadEnrolmentCompletionContext(
     return { ok: false, error: "Tenant not found", status: 404 };
   }
 
-  const pricing = resolveOfferingPrice(
-    { price_minor: offering.price_minor as number },
-    {
-      vat_rate: Number(tenant.vat_rate ?? 0.17),
-      prices_include_vat: tenant.prices_include_vat !== false,
-    },
-  );
+  const pricing = resolveOfferingPrice({ price_minor: offering.price_minor as number });
 
   let template: WaiverTemplateRow | null = null;
   if (offering.waiver_required) {

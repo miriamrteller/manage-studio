@@ -1,7 +1,7 @@
 -- =============================================================================
 -- 000500: Admin document RPCs — retrieve stored document fields + signed URL path
 -- GAP 5: Admin-only access to Grow invoice documents with full audit logging.
--- DEPENDENCIES: 000400 (payment_document_access_log, payments.document_*)
+-- DEPENDENCIES: 20260608001600_finance.sql (payment_document_access_log, payments.document_*)
 -- =============================================================================
 
 -- ---------------------------------------------------------------------------

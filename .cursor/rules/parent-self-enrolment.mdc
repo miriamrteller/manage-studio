@@ -1,0 +1,38 @@
+---
+description: Parent self-enrolment — one stage plan at a time (docs/plans/parent-self-enrolment)
+globs: docs/plans/parent-self-enrolment/**,apps/web/src/components/Dashboard/**,apps/web/src/features/enrolment/**
+alwaysApply: false
+---
+
+# Parent self-enrolment stages (P1–P3)
+
+When implementing parent Myself / adult self-enrolment, follow **one stage file only** per session.
+
+## Required reading (order)
+
+1. `docs/plans/parent-self-enrolment/CONTRACTS.md` — **locked; overrides stage prose**
+2. `docs/plans/parent-self-enrolment/00-overview.md`
+3. Active `docs/plans/parent-self-enrolment/stage-pN-*.md`
+4. `.instructions.md`
+
+Prompt helper: `pnpm parent-self-enrolment:prompt pN`
+
+## Hard rules
+
+- **Order:** P1 → P2 → P3. One stage per session.
+- **Guardian resolution:** single entry point `resolveGuardianProfile.ts` — no duplicate logic in hooks.
+- **Guardian person:** `account_id` must remain **NULL** on guardian `people` rows.
+- **Portal children list:** only `people.account_id != null`; guardian shown only in **Myself** section.
+- **Adult intake (parent mode):** Myself or guardian setup panel — never block without a documented path (CONTRACTS).
+- **EnrollmentIntent from portal:** `{ personId, from: '/dashboard/portal', mode: 'parent' }`.
+- **No SQL migrations** in this epic.
+- **No autoFocus** on new form fields (`jsx-a11y/no-autofocus`).
+- **No git commit/push** unless user explicitly requests.
+
+## Completion report
+
+1. DoD checklist (PASS/FAIL each item)
+2. Files changed
+3. Commands + outcomes
+4. Blockers
+5. **Stop** — wait for "commit Stage PN" or "start P{N+1}"

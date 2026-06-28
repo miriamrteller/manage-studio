@@ -1,14 +1,16 @@
 /**
- * Canonical offering price resolution (SPEC §2.5.1).
- * Used by web, Edge Functions (via email-dist bundle), and offline payments.
+ * Offering price resolution — gross amounts only.
+ * VAT breakdown on receipts/invoices comes from the invoicing provider (Grow, Green Invoice).
+ * This module must not split pretax/VAT.
  */
-export type VatPricingMode = 'inclusive' | 'exclusive';
+export type VatPricingMode = 'gross';
 export interface OfferingPriceInput {
     price_minor: number;
 }
+/** @deprecated Tenant VAT fields are not used for local computation. Kept for call-site compatibility. */
 export interface TenantPricingInput {
-    vat_rate: number;
-    prices_include_vat: boolean;
+    vat_rate?: number;
+    prices_include_vat?: boolean;
 }
 export interface OfferingPriceBreakdown {
     listMinor: number;
@@ -19,17 +21,5 @@ export interface OfferingPriceBreakdown {
     vatRate: number;
     mode: VatPricingMode;
 }
-/** Split gross total into pretax + VAT (remainder avoids rounding drift). */
-export declare function calculateVat(totalMinor: number, vatRate: number): {
-    pretax: number;
-    vat: number;
-    total: number;
-};
-/** Add VAT to a net (pretax) amount. */
-export declare function addVatToPretax(pretaxMinor: number, vatRate: number): {
-    pretax: number;
-    vat: number;
-    total: number;
-};
-export declare function resolveOfferingPrice(offering: OfferingPriceInput, tenant: TenantPricingInput): OfferingPriceBreakdown;
+export declare function resolveOfferingPrice(offering: OfferingPriceInput, _tenant?: TenantPricingInput): OfferingPriceBreakdown;
 //# sourceMappingURL=pricing.d.ts.map

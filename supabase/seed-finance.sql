@@ -48,6 +48,51 @@ SET
 WHERE id = '00000000-0000-0000-0000-000000000001'::uuid;
 
 -- ============================================================================
+-- EXPENSE CATEGORIES — creativeballet (normally seeded by provision_tenant)
+-- ============================================================================
+INSERT INTO expense_categories (id, tenant_id, name, description, is_vat_eligible, sort_order)
+VALUES
+  ('f0000000-0000-0000-0000-000000000001'::uuid, '00000000-0000-0000-0000-000000000001'::uuid, 'שכירות סטודיו', 'Studio rent', true, 1),
+  ('f0000000-0000-0000-0000-000000000002'::uuid, '00000000-0000-0000-0000-000000000001'::uuid, 'שכר מורים', 'Teacher wages', false, 2),
+  ('f0000000-0000-0000-0000-000000000003'::uuid, '00000000-0000-0000-0000-000000000001'::uuid, 'ציוד', 'Equipment and supplies', true, 3),
+  ('f0000000-0000-0000-0000-000000000004'::uuid, '00000000-0000-0000-0000-000000000001'::uuid, 'שיווק', 'Marketing and advertising', true, 4),
+  ('f0000000-0000-0000-0000-000000000005'::uuid, '00000000-0000-0000-0000-000000000001'::uuid, 'תוכנה ומנויים', 'Software subscriptions', true, 5),
+  ('f0000000-0000-0000-0000-000000000006'::uuid, '00000000-0000-0000-0000-000000000001'::uuid, 'ביטוח', 'Insurance', true, 6),
+  ('f0000000-0000-0000-0000-000000000007'::uuid, '00000000-0000-0000-0000-000000000001'::uuid, 'חשמל ומים', 'Utilities', true, 7),
+  ('f0000000-0000-0000-0000-000000000008'::uuid, '00000000-0000-0000-0000-000000000001'::uuid, 'שירותים מקצועיים', 'Accountant, lawyer, consultant', true, 8),
+  ('f0000000-0000-0000-0000-000000000009'::uuid, '00000000-0000-0000-0000-000000000001'::uuid, 'אחר', 'Other', true, 9)
+ON CONFLICT (tenant_id, name) DO UPDATE SET
+  description = EXCLUDED.description,
+  is_vat_eligible = EXCLUDED.is_vat_eligible,
+  sort_order = EXCLUDED.sort_order;
+
+-- ============================================================================
+-- SAMPLE EXPENSE — gross-only studio rent for P&L smoke test
+-- ============================================================================
+INSERT INTO expenses (
+  id, tenant_id, category_id, description,
+  pretax_amount_minor, vat_amount_minor, total_amount_minor, currency,
+  supplier_name, expense_date, created_by
+)
+VALUES (
+  'f0000000-0000-0000-0000-000000000101'::uuid,
+  '00000000-0000-0000-0000-000000000001'::uuid,
+  'f0000000-0000-0000-0000-000000000001'::uuid,
+  'June studio rent',
+  500000,
+  0,
+  500000,
+  'ILS',
+  'Landlord Co.',
+  (now() AT TIME ZONE 'Asia/Jerusalem')::date - 14,
+  '51149671-b030-4931-9a0d-ca1862ae4f0b'::uuid
+)
+ON CONFLICT (id) DO UPDATE SET
+  pretax_amount_minor = EXCLUDED.pretax_amount_minor,
+  vat_amount_minor = EXCLUDED.vat_amount_minor,
+  total_amount_minor = EXCLUDED.total_amount_minor;
+
+-- ============================================================================
 -- OFFERINGS — recurring + ₪1 smoke offering
 -- ============================================================================
 INSERT INTO offerings (
@@ -266,7 +311,7 @@ ON CONFLICT (id) DO UPDATE SET
 
 -- ============================================================================
 -- PAYMENT — succeeded Pre-Primary (Ruti) for parent portal + refund testing
--- VAT-inclusive ₪240 (24000 minor), rate 17%
+-- Gross-only ₪240 (24000 minor); no local VAT split
 -- ============================================================================
 INSERT INTO payments (
   id, tenant_id, account_id, person_id, offering_id, engagement_id,
@@ -288,9 +333,9 @@ VALUES (
   'mock_pi_seed_ruti_preprimary_001',
   'card',
   '00000000-0000-0000-0000-000000000408'::uuid,
-  20513,
-  0.17,
-  3487,
+  0,
+  0,
+  0,
   24000,
   'ILS',
   'mock_doc_seed_1101',
@@ -302,6 +347,10 @@ VALUES (
   now() - interval '7 days'
 )
 ON CONFLICT (id) DO UPDATE SET
+  pretax_amount_minor = EXCLUDED.pretax_amount_minor,
+  vat_amount_minor = EXCLUDED.vat_amount_minor,
+  vat_rate = EXCLUDED.vat_rate,
+  total_amount_minor = EXCLUDED.total_amount_minor,
   external_document_id = EXCLUDED.external_document_id,
   external_document_number = EXCLUDED.external_document_number,
   invoice_url = EXCLUDED.invoice_url,

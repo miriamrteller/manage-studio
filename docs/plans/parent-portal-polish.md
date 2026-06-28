@@ -7,6 +7,7 @@ Wire **account settings** into the parent/student portal: contact preferences (`
 **Repo:** `manage-studio`  
 **SPEC:** §Phase 1G — contact preference management, dashboard with enrolled children + upcoming classes  
 **Depends on:** `ContactPreferencesEditor` ✅ (built, not mounted) · `useContactPreferences` ✅ · `ParentPortal` ✅ (children + payments)  
+**Superseded by:** [parent-self-enrolment P2](parent-self-enrolment/stage-p2-portal-myself.md) for **Myself** / adult parent view — do not duplicate Step 4 here.  
 **Out of scope:** Parent withdrawal requests (Unenrol Phase 3), new enrolment flow changes, student/parent route differentiation beyond copy
 
 ---
@@ -122,16 +123,9 @@ i18n: `pages.portal.upcoming_heading`, `pages.portal.no_upcoming`, `pages.portal
 
 ## Step 4 — Adult student view
 
+> **Moved to [parent-self-enrolment P2](parent-self-enrolment/stage-p2-portal-myself.md).** Implement Myself section there; skip this step in parent-portal-polish.
+
 **Audit:** `useParentPortal` — confirm adult student with `people.user_profile_id = auth.uid` sees their enrolments.
-
-If children list empty but user has self person row:
-
-- Show single **"My enrolments"** card (reuse enrolment row UI)
-- Hide "Add child" when role is `student` or `adult_student` (check `useCurrentUser`)
-
-**Modify:** `ParentPortal.tsx` with role-aware conditionals via `useCurrentUser().user.role`
-
-i18n: `pages.portal.my_enrolments_heading`
 
 ---
 

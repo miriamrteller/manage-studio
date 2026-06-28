@@ -104,6 +104,10 @@ export function useExpenseCategories(enabled = true) {
       input: Partial<ExpenseCategory>,
       callbacks?: { onSuccess?: () => void; onError?: (error: Error) => void },
     ) => createMutation.mutate(input, callbacks),
+    createCategoryAsync: async (input: Partial<ExpenseCategory>) => {
+      if (!tenant) throw new Error('Tenant not initialized');
+      return createMutation.mutateAsync(input);
+    },
     updateCategory: (
       params: { id: string; input: Partial<ExpenseCategory> },
       callbacks?: { onSuccess?: () => void; onError?: (error: Error) => void },

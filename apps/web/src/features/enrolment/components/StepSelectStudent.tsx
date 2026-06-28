@@ -28,6 +28,7 @@ import type { EnrolmentConstraints, EnrolmentMode } from '../hooks/useEnrolmentC
 import type { AgeEnrolmentActor } from '../lib/ageEnrolmentPolicy';
 import type { GuardianAccountLookup, GuardianProfile } from '../onboardingService';
 import type { StudentWithEnrolments } from '../hooks/useAccountStudents';
+import { GuardianProfileSetupPanel } from './GuardianProfileSetupPanel';
 
 interface EnrolmentPersonSearchComboboxProps {
   onSelectPerson: (person: Person, dateOfBirth: string | null) => void;
@@ -102,6 +103,9 @@ interface StepSelectStudentProps {
   ageReviewError?: string | null;
   onBrowseClasses?: () => void;
   guardian: GuardianProfile | null;
+  guardianSetupRequired?: boolean;
+  guardianAccountId?: string;
+  guardianAccountMemberId?: string;
   students: StudentWithEnrolments[];
   guardianPersonId: string | null;
   studentsLoading: boolean;
@@ -149,6 +153,9 @@ export function StepSelectStudent({
   ageReviewError = null,
   onBrowseClasses,
   guardian,
+  guardianSetupRequired = false,
+  guardianAccountId,
+  guardianAccountMemberId,
   students,
   guardianPersonId,
   studentsLoading,
@@ -858,6 +865,18 @@ export function StepSelectStudent({
     <div className="space-y-4">
       <p className="text-sm text-gray-600">{t('pages.enrolment.select_student_desc')}</p>
 
+      {guardianSetupRequired && (guardian || (guardianAccountId && guardianAccountMemberId)) && (
+        <GuardianProfileSetupPanel
+          mode={guardian ? 'update_dob' : 'create'}
+          personId={guardian?.personId}
+          defaultName={guardian?.name ?? ''}
+          defaultDateOfBirth={guardian?.dateOfBirth ?? ''}
+          accountId={guardian?.accountId ?? guardianAccountId!}
+          accountMemberId={guardian?.accountMemberId ?? guardianAccountMemberId!}
+          onComplete={(personId, dateOfBirth) => onSelectPerson(personId, dateOfBirth)}
+        />
+      )}
+
       {studentsLoading && <p role="status">{t('common.loading')}</p>}
       {studentsError && (
         <p role="alert" className="text-sm text-red-600">
@@ -865,7 +884,7 @@ export function StepSelectStudent({
         </p>
       )}
 
-      {!studentsLoading && mode === 'parent' && (
+      {!studentsLoading && mode === 'parent' && !guardianSetupRequired && (
         <ul className="space-y-2" aria-label={t('pages.enrolment.select_student_desc')}>
           {eligible.map((student) => (
             <li key={student.id}>
@@ -933,7 +952,7 @@ export function StepSelectStudent({
         </ul>
       )}
 
-      {mode === 'parent' && (
+      {mode === 'parent' && !guardianSetupRequired && (
         <Button
           type="button"
           variant="outline"

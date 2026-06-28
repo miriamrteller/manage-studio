@@ -19,8 +19,8 @@ describe('parseGrowNotify', () => {
     expect(event.type).toBe('payment.succeeded');
     expect(event.providerPaymentRef).toBe('idem_11111111-1111-1111-1111-111111111111');
     expect(event.amountMinor).toBe(35000);
-    expect(event.pretaxAmountMinor).toBe(29915);
-    expect(event.vatAmountMinor).toBe(5085);
+    expect(event.pretaxAmountMinor).toBe(0);
+    expect(event.vatAmountMinor).toBe(0);
     expect(event.metadata.tenant_id).toBe('00000000-0000-0000-0000-0000000000aa');
     expect(event.metadata.charge_type).toBe('initial');
 

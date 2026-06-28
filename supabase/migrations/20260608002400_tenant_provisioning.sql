@@ -46,7 +46,7 @@ CREATE OR REPLACE FUNCTION provision_tenant(
   p_country            TEXT DEFAULT 'IL',
   p_currency           TEXT DEFAULT 'ILS',
   p_phone_region       TEXT DEFAULT 'IL',
-  p_vat_rate           NUMERIC DEFAULT 0.17,
+  p_vat_rate           NUMERIC DEFAULT 0,
   p_prices_include_vat BOOLEAN DEFAULT true,
   p_admin_email        TEXT DEFAULT NULL,
   p_from_email         TEXT DEFAULT NULL
@@ -117,7 +117,7 @@ BEGIN
     v_country,
     COALESCE(NULLIF(upper(trim(p_currency)), ''), 'ILS'),
     COALESCE(NULLIF(upper(trim(p_phone_region)), ''), 'IL'),
-    COALESCE(p_vat_rate, 0.17),
+    COALESCE(p_vat_rate, 0),
     COALESCE(p_prices_include_vat, true),
     NULLIF(trim(p_from_email), ''),
     CASE WHEN v_country = 'IL' THEN 'grow' ELSE 'stripe' END,

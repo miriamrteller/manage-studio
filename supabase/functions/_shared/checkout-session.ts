@@ -193,13 +193,7 @@ export async function resolveCheckoutSession(
     return { ok: false, status: 404, error: "Offering not found" };
   }
 
-  const pricing = resolveOfferingPrice(
-    { price_minor: offering.price_minor as number },
-    {
-      vat_rate: Number(tenant.vat_rate ?? 0.17),
-      prices_include_vat: tenant.prices_include_vat !== false,
-    },
-  );
+  const pricing = resolveOfferingPrice({ price_minor: offering.price_minor as number });
 
   const currency = (offering.currency ?? tenant.currency ?? "ILS").toUpperCase();
   const metadata = buildChargeMetadata({

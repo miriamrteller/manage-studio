@@ -1022,7 +1022,7 @@ CREATE TABLE classes (
 
 #### 4.2.5 Class requirements (implemented — not inline enum on `classes`)
 
-> **Age bands (V1 implementation):** `offerings.min_age` / `offerings.max_age` are first-class columns (not requirement templates). Age is evaluated at **season start**, not today's date. Parents/guests are hard-blocked; admins may override with audit trail (`age_override_*` on `engagements`); parents may request studio review → `admin_review` engagement + admin email. **Status (2026-06-25):** PR A ✅ complete; PR B 🟡 ~95% (code on WIP branch — merge pending bug fixes + E2E smoke). See [docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md) and [docs/plans/age-override-pr-b.md](docs/plans/age-override-pr-b.md).
+> **Age bands (V1 implementation):** `offerings.min_age` / `offerings.max_age` are first-class columns (not requirement templates). Age is evaluated at **season start**, not today's date. Parents/guests are hard-blocked; admins may override with audit trail (`age_override_*` on `engagements`); parents may request studio review → `admin_review` engagement + admin email. **Status (2026-06-28):** PR A + PR B ✅ complete on `feat/UI-fixes`. Manual E2E smoke recommended before prod. See [docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md).
 
 > **`offerings.location` (V1):** Optional nullable `TEXT` (max 500 chars) — human-readable display text for where the class meets (room name, address, or directions). Not a normalized address, geocode, or venue FK. Included in `get_public_offerings_by_subdomain` for public listings; shown in admin, parent portal, enrolment UI, and enrolment confirmation email when set.
 
@@ -2736,9 +2736,7 @@ Items intentionally **not** in the first finance migration or V1 checkout scope:
 6. **Unenrol Phase 2 — post-payment withdrawal** — `active` → `withdrawn`; refund wizard (none / partial / full) with immutable negative `payments` rows; Stripe refund for online. See [docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md).
 7. **Unenrol Phase 3 — parent withdrawal requests & refund policy** — parent-initiated request queue; tenant-configurable pro-rata rules; optional account credit. Depends on Phase 1G parent portal.
 
-**Shipped (V1):** Admin cancel pre-payment enrolment — `cancel_engagement` RPC + admin UI; see [docs/plans/2026-06-02-unenrol-phase-1.md](docs/plans/2026-06-02-unenrol-phase-1.md).
-
-**In progress (V1):** Parent age review (PR B) — [docs/plans/age-override-pr-b.md](docs/plans/age-override-pr-b.md) · index: [docs/plans/2026-06-02-age-override-and-review-request.md](docs/plans/2026-06-02-age-override-and-review-request.md).
+**Shipped (V1):** Admin cancel pre-payment enrolment — [docs/plans/2026-06-02-unenrol-phase-1.md](docs/plans/2026-06-02-unenrol-phase-1.md). Age override + parent review — [docs/plans/2026-06-02-age-override-and-review-request.md](docs/plans/2026-06-02-age-override-and-review-request.md). Parent self-enrolment (Myself) — [docs/plans/parent-self-enrolment/00-overview.md](docs/plans/parent-self-enrolment/00-overview.md).
 
 Track live status in [docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md).
 
