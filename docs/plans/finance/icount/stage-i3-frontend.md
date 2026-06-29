@@ -24,10 +24,22 @@ Do not flip dev seed to `icount/icount` until I5. For UI testing: RPC `save_tena
 
 ---
 
+## TDD — provider isolation (write tests **first**)
+
+Implement [PROVIDER-ISOLATION-TDD.md](PROVIDER-ISOLATION-TDD.md) **I3-T1 … I3-T6** before UI changes:
+
+- IL + `icount` slug must not use Grow nav / `growReady` / Grow checkout shell
+- Mismatched payment/invoicing slugs → bundled helper false
+
+Suggested files: extend `navigation-config.test.ts`, `enrolment-provider-routing.test.ts`, `bundled-provider-slug.test.ts`
+
+---
+
 ## DoD
 
 - [ ] Tenant with `icount/icount` + `ICOUNT_MOCK` sees icount nav + mock checkout
 - [ ] Grow tenant unchanged
+- [ ] **I3-T1 … I3-T6** green
 - [ ] axe/i18n clean
 - [ ] `pnpm -C apps/web test` green
 

@@ -30,12 +30,24 @@ Live iCount HTTP, IPN parser, frontend, I5 provisioning/seed
 - Mock factory: grow→MockGrow, icount→MockIcount (#20)
 - `confirm-mock-payment` → `finalise-payment` (backend-only)
 
+### TDD — provider isolation (write tests **first**)
+
+Implement [PROVIDER-ISOLATION-TDD.md](PROVIDER-ISOLATION-TDD.md) **I1-T1 … I1-T10** before registry/RPC code:
+
+- Dual mock env: both `GROW_MOCK` and `ICOUNT_MOCK` true — factory returns correct mock **per slug**
+- `confirm-mock-payment` rejects cross-provider mock (icount tenant + only `GROW_MOCK`, etc.)
+- `save_tenant_icount_credentials` sets `icount/icount` atomically; Grow RPC unchanged
+
+Suggested files: `icount-registry.test.ts`, `provider-isolation-mock.test.ts`, `icount-credential-rpc.test.ts`
+
 ---
 
 ## DoD
 
 - [ ] Registry before icount slug in DB (tests/RPC only until I5)
 - [ ] `ICOUNT_MOCK` mock path works
+- [ ] **I1-T1 … I1-T10** green
+- [ ] Grow registry + mock tests still green
 - [ ] `pnpm db:sync` + `pnpm db:types:all` + `pnpm db:types:email-dist`
 - [ ] `pnpm -C apps/web test` green
 

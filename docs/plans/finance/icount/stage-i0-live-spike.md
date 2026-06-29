@@ -14,6 +14,22 @@
 
 ---
 
+## TDD — write tests immediately after capture
+
+I0-live is **not** adapter code — it is fixture + contract tests that **block I2b**.
+
+| Step | Action |
+|------|--------|
+| 1 | Capture sandbox IPN → `icount-ipn-notify.json` |
+| 2 | Add skeleton parser test file (`icount-ipn-parse.test.ts`) — **LIVE-T1 … LIVE-T4** |
+| 3 | Run tests: LIVE-T1 passes (file exists); T2–T4 may use stub parser until I2b |
+| 4 | **LIVE-T3/T4 must fail** if Grow/icount parsers are wired without dispatch guards |
+| 5 | Sign SPIKE-ADR only when LIVE-T* + catalog probes complete |
+
+Full workflow: [PROVIDER-ISOLATION-TDD.md](PROVIDER-ISOLATION-TDD.md) § Post-account TDD workflow.
+
+---
+
 ## Scope IN
 
 1. **Sandbox setup** — [RUNBOOK.md](RUNBOOK.md) § Sandbox setup
@@ -40,6 +56,7 @@
 ## DoD checklist
 
 - [ ] `icount-ipn-notify.json` committed (real sandbox capture)
+- [ ] **LIVE-T1 … LIVE-T4** green ([PROVIDER-ISOLATION-TDD.md](PROVIDER-ISOLATION-TDD.md) — fixture contract before I2b parser)
 - [ ] `m__tenant_id` (or fallback strategy) verified in live IPN
 - [ ] Webhook signature approach confirmed or documented as URL-only (#8)
 - [ ] Catalog rows #1, #2, #6 updated with sandbox evidence

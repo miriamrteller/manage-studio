@@ -24,10 +24,22 @@
 
 ---
 
+## TDD — provider isolation
+
+**I4a (no account):** PDF handler tests — icount `pdf_link` fixture only; Grow PDF path regression.
+
+**I4b (after I0-live):** Write **I4-T1 … I4-T5 failing first** — billing/refund use **payment row provider slug**, not hardcoded `grow`. If SPIKE-ADR defers icount renewals/refunds (#3/#4), tests still assert **no Grow HTTP on icount rows** and document manual path.
+
+Suggested file: `provider-isolation-renewal-refund.test.ts`
+
+See [PROVIDER-ISOLATION-TDD.md](PROVIDER-ISOLATION-TDD.md) § Post-account TDD workflow (steps 6–7).
+
+---
+
 ## DoD
 
 - [ ] PDF handler uses official `pdf_link` shape (fixture)
 - [ ] Grow renewal/refund regression green
-- [ ] icount renewals/refunds: implemented **or** explicit deferral in SPIKE-ADR + RUNBOOK
+- [ ] **I4-T1 … I4-T5** green (or deferrals documented — no grow/icount cross-charge)
 
 **Stop:** Do not start I5 without I0-live + Pre-I5 gate.

@@ -131,6 +131,17 @@ If sandbox shows **no signature** on IPN/document webhooks, ADR records verifica
 
 ---
 
+## Provider isolation (#30)
+
+Grow and iCount adapters coexist; tenants must never cross providers. **TDD required** — see [PROVIDER-ISOLATION-TDD.md](PROVIDER-ISOLATION-TDD.md):
+
+- **Mock phase (I1, I2a, I3):** factory, confirm-mock, document webhook dispatch, UI routing
+- **Live phase (I0-live, I2b, I4, I5):** IPN vs Grow notify mutual rejection, billing/refund by slug, dual seed
+
+Dispatch rule: `getPaymentProviderForTenant(tenantId)` after resolving tenant from webhook metadata — never parse Grow payloads for icount tenants without slug dispatch.
+
+---
+
 ## Go/no-go checklist
 
 | Item | Status | Catalog row |
@@ -194,7 +205,7 @@ Unchanged from [00-overview.md](00-overview.md): iCount owns all tax document le
 
 | Gate | Approved |
 |------|----------|
-| **Draft architecture (I0-doc)** — Option A′ acceptable for mock build | ☐ |
+| **Draft architecture (I0-doc)** — Option A′ + mock-first + provider isolation TDD | ☑ (2026-06-28) |
 | **Live integration (I0-live)** — IPN capture + catalog complete for production | ☐ |
 
 **I1 may start** after draft architecture sign-off. **I5 may start** only after live integration sign-off.

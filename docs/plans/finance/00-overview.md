@@ -42,7 +42,7 @@ Add **iCount** as bundled IL default for **new** tenants; **Grow stays**. **Mock
 | I0-live | IPN capture + ADR approval | **Yes** (near project end) |
 | I2b → I5 | Live IPN, defaults, seed flip | Yes |
 
-Docs: [icount/00-overview.md](icount/00-overview.md) · [SPIKE-ADR.md](icount/SPIKE-ADR.md)
+Docs: [icount/00-overview.md](icount/00-overview.md) · [SPIKE-ADR.md](icount/SPIKE-ADR.md) · [PROVIDER-ISOLATION-TDD.md](icount/PROVIDER-ISOLATION-TDD.md)
 
 ## Architecture (target state after G7)
 

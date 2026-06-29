@@ -21,9 +21,20 @@ Auto-migrate Grow tenants; in-place shipped migration edits
 
 ---
 
+## TDD — dual seed (write tests **before** migration + seed flip)
+
+Per [PROVIDER-ISOLATION-TDD.md](PROVIDER-ISOLATION-TDD.md) **I5-T1 … I5-T3**:
+
+1. **I5-T1/T2** — failing tests with icount primary seed + Grow regression block (both mocks `true`)
+2. Apply migration + `seed-finance.sql` flip
+3. **I5-T3** — re-run I1-T3/T4 in same CI env (no cross-wiring after default change)
+
+---
+
 ## DoD
 
 - [ ] Pre-I5 gate checklist passes
+- [ ] **I5-T1 … I5-T3** green ([PROVIDER-ISOLATION-TDD.md](PROVIDER-ISOLATION-TDD.md) — dual seed, both mocks in CI)
 - [ ] Re-seed → creativeballet `icount/icount`
 - [ ] Grow regression seed documented
 - [ ] One live or simulator smoke after flip (user-run)

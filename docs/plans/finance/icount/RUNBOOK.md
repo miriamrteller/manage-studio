@@ -10,7 +10,8 @@ Use `ICOUNT_MOCK=true`. Dev seed stays `grow/grow` until I5.
 
 - Enrolment + finance tests via `MockIcount` + `confirm-mock-payment`
 - Document webhook tests via `icount-document-webhook-official-example.json`
-- Configure icount tenant via `save_tenant_icount_credentials` RPC (not seed flip)
+- **Provider isolation TDD:** [PROVIDER-ISOLATION-TDD.md](PROVIDER-ISOLATION-TDD.md) I1-T*, I2a-T*, I3-T*
+- Run CI with **both** `GROW_MOCK=true` and `ICOUNT_MOCK=true` for dual-tenant tests
 
 ---
 
@@ -25,7 +26,9 @@ Schedule near project end, before I2b / I5.
 5. Configure page IPN URL → `handle-payment-event` URL.
 6. Test redirect with `m__tenant_id`, `m__payment_id` ([create-cc-page](https://help.icount.co.il/credit-card-processing/create-cc-page/)).
 7. Save raw IPN POST → `apps/web/src/__tests__/fixtures/icount-ipn-notify.json`.
-8. Update [SPIKE-ADR.md](SPIKE-ADR.md) catalog + approval.
+8. **TDD:** add LIVE-T1 … LIVE-T4 tests (see [PROVIDER-ISOLATION-TDD.md](PROVIDER-ISOLATION-TDD.md) § Post-account TDD workflow).
+9. Update [SPIKE-ADR.md](SPIKE-ADR.md) catalog + approval.
+10. Implement I2b only after LIVE-T* + ADR sign-off; I2b-T1 … I2b-T6 before claiming I2b DoD.
 
 ---
 
@@ -57,9 +60,9 @@ https://app.icount.co.il/m/{cp}?cs={amount}&cd={description}&success_url={url}&i
 
 | Phase | Checklist |
 |-------|-----------|
-| A (mock) | `ICOUNT_MOCK` enrolment → finalise → document fields |
-| B (live) | Real/simulator payment → IPN → finalise; document webhook |
-| Always | Grow tenant regression (`GROW_MOCK`) |
+| A (mock) | `ICOUNT_MOCK` enrolment → finalise → document fields; **I1/I2a/I3 isolation tests** |
+| B (live) | Real/simulator payment → IPN → finalise; **I2b isolation tests**; Grow notify still grow-only |
+| Always | Grow tenant regression (`GROW_MOCK`); dual-mock CI (both flags true) |
 
 ---
 

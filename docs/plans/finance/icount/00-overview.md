@@ -57,7 +57,24 @@ I0-doc ✅  →  I1  →  I3  →  I2a  →  [ acquire account ]  →  I0-live  
 | I4 | Renewals, refunds, PDF | Partial | [stage-i4-parity.md](stage-i4-parity.md) |
 | I5 | Provisioning + seed default | Yes | [stage-i5-defaults.md](stage-i5-defaults.md) |
 
-**Operational:** [RUNBOOK.md](RUNBOOK.md)
+**Operational:** [RUNBOOK.md](RUNBOOK.md) · **Isolation TDD:** [PROVIDER-ISOLATION-TDD.md](PROVIDER-ISOLATION-TDD.md)
+
+---
+
+## Provider isolation (Grow vs iCount)
+
+Both wrappers live in one codebase. A tenant must **never** use the wrong provider’s adapter, parser, credentials, or UI.
+
+| Rule | Detail |
+|------|--------|
+| Dispatch by **slug** | `payment_provider` / `invoicing_provider` on `tenants` — not `country === 'IL'` |
+| Factory | `getPaymentProviderForTenant(tenantId)` after resolving tenant from webhook metadata |
+| Webhooks | Payment + document handlers **dispatch parser by tenant slug** (I2a/I2b) |
+| Mocks | `GROW_MOCK` + `ICOUNT_MOCK` may both be `true`; mock chosen **per slug** |
+| TDD | Failing isolation test **first** — see [PROVIDER-ISOLATION-TDD.md](PROVIDER-ISOLATION-TDD.md) |
+
+**Mock phase (no account):** I1-T*, I2a-T*, I3-T* in isolation doc.  
+**Live phase (after account):** LIVE-T*, I2b-T*, I4-T*, I5-T* in isolation doc.
 
 ---
 
@@ -92,6 +109,7 @@ Adapter HTTP calls cite [SPIKE-ADR.md](SPIKE-ADR.md) catalog. **No invented IPN 
 - [ ] I0-live complete + SPIKE-ADR approved
 - [ ] Mock + live smoke paths documented
 - [ ] `ICOUNT_MOCK` enrolment green; Grow regression green
+- [ ] **Provider isolation:** all applicable tests in [PROVIDER-ISOLATION-TDD.md](PROVIDER-ISOLATION-TDD.md) pass (mock + live sections)
 - [ ] I1–I4 DoD green (with documented I4 deferrals if any)
 
 ---
@@ -99,6 +117,7 @@ Adapter HTTP calls cite [SPIKE-ADR.md](SPIKE-ADR.md) catalog. **No invented IPN 
 ## Cross-stage rules
 
 - One stage per agent session; stop after DoD
+- **TDD:** write failing tests from [PROVIDER-ISOLATION-TDD.md](PROVIDER-ISOLATION-TDD.md) before implementation (each stage section)
 - **I0-doc does not block I1/I3/I2a**
 - **I0-live blocks I2b and I5**
 - I1–I4: dev seed stays `grow/grow` until I5
@@ -110,6 +129,7 @@ Adapter HTTP calls cite [SPIKE-ADR.md](SPIKE-ADR.md) catalog. **No invented IPN 
 
 - [ ] I0-live + SPIKE-ADR approved
 - [ ] I1–I5 DoD (I4 deferrals documented if needed)
+- [ ] **Provider isolation TDD** — mock + live test tables complete in [PROVIDER-ISOLATION-TDD.md](PROVIDER-ISOLATION-TDD.md)
 - [ ] Pre-I5 gate passed
 - [ ] Grow fully intact
 - [ ] New IL tenant + re-seed → `icount/icount`
