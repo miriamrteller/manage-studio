@@ -3,20 +3,23 @@
  * Print the Agent prompt for a finance stage from AGENT-RUNBOOK.md.
  *
  * Usage: pnpm finance:prompt g0
- *        pnpm finance:prompt g4   (Grow extension stages g0-g7)
+ *        pnpm finance:prompt g7
+ *        pnpm finance:prompt g8-research   (Grow silent signup research — docs only)
  */
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const rawArg = process.argv[2]?.toLowerCase();
-if (!rawArg || !/^g[0-7]$/.test(rawArg)) {
-  console.error('Usage: pnpm finance:prompt <g0-g7>');
-  console.error('  g0 = test harness, g1-g7 = Grow extension stages');
+if (!rawArg || (!/^g[0-8](-research)?$/.test(rawArg) && rawArg !== 'g8-research')) {
+  console.error('Usage: pnpm finance:prompt <g0-g7|g8-research>');
+  console.error('  g0-g7 = Grow extension implementation stages');
+  console.error('  g8-research = Grow silent signup research (docs only)');
   process.exit(1);
 }
 
-const stageArg = rawArg.toUpperCase();
+const stageArg =
+  rawArg === 'g8-research' ? 'G8-research' : rawArg.toUpperCase();
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const runbookPath = join(root, 'docs/plans/finance/AGENT-RUNBOOK.md');
 const runbook = readFileSync(runbookPath, 'utf8');

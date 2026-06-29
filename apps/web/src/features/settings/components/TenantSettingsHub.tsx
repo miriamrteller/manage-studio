@@ -2,6 +2,14 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useTenant } from '@/hooks/useTenant';
+import {
+  tenantUsesBundledPayments,
+} from '@/lib/tenantProviderRouting';
+import {
+  BUNDLED_PAYMENTS_SETUP_PATH,
+  bundledPaymentsHubDescription,
+  bundledPaymentsNavTitle,
+} from '@/lib/bundledProviderUi';
 import { SchoolProfileForm } from './SchoolProfileForm';
 import { BrandingSettingsForm } from './BrandingSettingsForm';
 import { LocaleSettingsForm } from './LocaleSettingsForm';
@@ -44,8 +52,6 @@ function SettingsLinkCard({
 export function TenantSettingsHub() {
   const { t } = useTranslation();
   const tenant = useTenant();
-  // IL tenants run on Grow, which bundles payment capture and invoicing into one surface.
-  const usesGrow = tenant?.country === 'IL' || tenant?.payment_provider === 'grow';
 
   return (
     <div className="space-y-10 max-w-3xl">
@@ -63,18 +69,11 @@ export function TenantSettingsHub() {
       <section className="space-y-4">
         <h2 className="text-lg font-semibold text-foreground">{t('settings.hub.more_settings')}</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <SettingsLinkCard
-            title={t('settings.tax.title')}
-            description={t('settings.tax.description')}
-            href="/admin/setup/tax"
-          />
-          {usesGrow ? (
+          {tenantUsesBundledPayments(tenant) ? (
             <SettingsLinkCard
-              title={t('settings.grow.title', { defaultValue: 'Payments & invoices (Grow)' })}
-              description={t('settings.grow.hub_description', {
-                defaultValue: 'Card payments and tax documents in one place',
-              })}
-              href="/admin/setup/grow"
+              title={bundledPaymentsNavTitle(t)}
+              description={bundledPaymentsHubDescription(t)}
+              href={BUNDLED_PAYMENTS_SETUP_PATH}
             />
           ) : (
             <>

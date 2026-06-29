@@ -10,5 +10,12 @@ export {
   matchesTenantFilter,
   resolveActiveNavPath,
   tenantUsesGrow,
+  tenantUsesIcount,
+  tenantUsesSplitProviders,
 } from './navigationConfig';
 export type { NavItem, NavSection, NavSectionKey, NavTenantFilter } from './navigationConfig';
+export {
+  tenantUsesBundledProvider,
+  isHostedPageCheckoutReady,
+  isMockHostedPaymentPage,
+} from '@/lib/tenantProviderRouting';

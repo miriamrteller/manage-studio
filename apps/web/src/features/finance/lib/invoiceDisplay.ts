@@ -1,14 +1,11 @@
 /**
- * Invoice display helpers for Grow-settled payments.
+ * Invoice display helpers for bundled-provider settled payments (Grow / iCount).
  *
- * Grow issues the VAT document internally (including any allocation number).
- * OpalSwift receives the document reference (documentNumber, documentUrl) from
- * Grow's invoice webhook — never the VAT breakdown or allocation number.
- *
- * These helpers work with fields actually stored in the payments table.
+ * The provider issues the VAT document internally. OpalSwift receives
+ * external_document_number and document_url from the document webhook — never VAT breakdown.
  */
 
-/** Fields available after Grow's invoice webhook has been applied to a payment row. */
+/** Fields available after a bundled provider invoice webhook has been applied. */
 export interface GrowSettledCharge {
   /** Grow invoice / asmachta number, e.g. "INV-2024-001". Null if not yet received. */
   externalDocumentNumber: string | null;
@@ -20,8 +17,11 @@ export interface GrowSettledCharge {
   status: 'succeeded' | 'failed';
 }
 
+/** Alias — same stored fields for Grow and iCount bundled document webhooks. */
+export type BundledSettledCharge = GrowSettledCharge;
+
 /**
- * Builds display lines for a Grow payment document reference.
+ * Builds display lines for a bundled payment document reference.
  * Returns only fields OpalSwift actually stores from Grow's invoice webhook.
  * Never renders "null" as a string on a display surface.
  */

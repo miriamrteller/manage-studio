@@ -1,7 +1,9 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
-import { buildMockPaymentEvent } from "../handle-payment-event.ts";
+import { buildMockIpnFromCharge } from "../icount/mock-api.ts";
+import { buildMockPaymentEvent } from "../mock-payment-event.ts";
 import type { ChargeMetadata, ChargeParams, ChargeResult, PaymentEvent, PaymentProvider } from "../types.ts";
 import { ChargeMetadataSchema } from "../types.ts";
+import { MockIcountPaymentProvider } from "./mock-icount.ts";
 
 export const MOCK_PAYMENT_DECLINED_CODE = "MOCK_PAYMENT_DECLINED";
 
@@ -47,7 +49,7 @@ export interface ConfirmMockPaymentParams {
   currency: string;
   scenario: MockPaymentScenario;
   providerPaymentRef?: string;
-  /** Defaults to `mock`; use `grow` when confirming mock Grow hosted-page charges. */
+  /** Defaults to `mock`; use `grow` or `icount` when confirming mock hosted-page charges. */
   providerSlug?: string;
   /** Saves a default card token for confirmation emails (mock / GROW_MOCK flows). */
   mockCardNumber?: string;
@@ -64,6 +66,7 @@ async function saveMockCardToken(
   service: SupabaseClient,
   metadata: ChargeMetadata,
   cardNumber: string,
+  providerSlug: string,
 ): Promise<void> {
   const normalized = cardNumber.replace(/\s/g, "");
   const last4 = normalized.length >= 4 ? normalized.slice(-4) : null;
@@ -81,7 +84,7 @@ async function saveMockCardToken(
   await service.from("payment_method_tokens").insert({
     tenant_id: metadata.tenant_id,
     billing_account_id: metadata.billing_account_id,
-    provider: "mock",
+    provider: providerSlug,
     provider_token: `mock_tok_${crypto.randomUUID()}`,
     card_brand: cardBrandFromNumber(normalized),
     last4,
@@ -104,23 +107,44 @@ export async function confirmMockPayment(
     };
   }
 
+  const providerSlug = params.providerSlug ?? "mock";
   const providerPaymentRef = params.providerPaymentRef ?? `mock_pi_${crypto.randomUUID()}`;
   if (params.mockCardNumber) {
-    await saveMockCardToken(params.service, params.metadata, params.mockCardNumber);
+    await saveMockCardToken(
+      params.service,
+      params.metadata,
+      params.mockCardNumber,
+      providerSlug,
+    );
   }
+
+  const { handlePaymentEventInternal } = await import("../handle-payment-event.ts");
+
+  if (providerSlug === "icount") {
+    const provider = new MockIcountPaymentProvider();
+    const ipnBody = buildMockIpnFromCharge({
+      providerPaymentRef,
+      amountMinor: params.amountMinor,
+      currency: params.currency,
+      metadata: params.metadata,
+    });
+    const headers = new Headers({ "x-mock-signature": "mock-valid" });
+    const event = await provider.constructEvent(
+      ipnBody,
+      headers,
+      params.metadata.tenant_id,
+    );
+    const result = await handlePaymentEventInternal(params.service, event, "icount");
+    return { ok: true, paymentId: result.paymentId, duplicate: result.duplicate };
+  }
+
   const event = buildMockPaymentEvent({
     providerPaymentRef,
     amountMinor: params.amountMinor,
     currency: params.currency,
     metadata: params.metadata,
   });
-
-  const { handlePaymentEventInternal } = await import("../handle-payment-event.ts");
-  const result = await handlePaymentEventInternal(
-    params.service,
-    event,
-    params.providerSlug ?? "mock",
-  );
+  const result = await handlePaymentEventInternal(params.service, event, providerSlug);
   return { ok: true, paymentId: result.paymentId, duplicate: result.duplicate };
 }
 
@@ -128,9 +152,10 @@ export async function confirmMockPayment(
 export async function applyMockSyncEvent(
   service: SupabaseClient,
   event: PaymentEvent,
+  providerSlug = "mock",
 ): Promise<void> {
   const { handlePaymentEventInternal } = await import("../handle-payment-event.ts");
-  await handlePaymentEventInternal(service, event, "mock");
+  await handlePaymentEventInternal(service, event, providerSlug);
 }
 
 export function buildChargeMetadata(input: {

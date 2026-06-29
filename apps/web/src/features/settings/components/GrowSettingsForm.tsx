@@ -21,7 +21,7 @@ function StatusRow({ label, value }: { label: string; value: string }) {
  * issuance. Stores the Grow user id, page code, and API key via save_tenant_grow_credentials and
  * surfaces a live connection test through FinanceHealthCard.
  */
-export function GrowSettingsForm() {
+export function GrowSettingsForm({ embedded = false }: { embedded?: boolean }) {
   const { t } = useTranslation();
   const tenant = useTenant();
   const [userId, setUserId] = useState('');
@@ -50,15 +50,19 @@ export function GrowSettingsForm() {
 
   return (
     <section className="space-y-4 max-w-lg">
-      <h2 className="text-lg font-semibold text-foreground">
-        {t('settings.grow.title', { defaultValue: 'Payments & invoices (Grow)' })}
-      </h2>
-      <p className="text-sm text-muted-foreground">
-        {t('settings.grow.description', {
-          defaultValue:
-            'Grow captures card payments and issues the tax document together. Enter your Grow (Meshulam) credentials below.',
-        })}
-      </p>
+      {!embedded && (
+        <>
+          <h2 className="text-lg font-semibold text-foreground">
+            {t('settings.grow.title', { defaultValue: 'Payments & invoices (Grow)' })}
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {t('settings.grow.description', {
+              defaultValue:
+                'Grow captures card payments and issues the tax document together. Enter your Grow (Meshulam) credentials below.',
+            })}
+          </p>
+        </>
+      )}
 
       <dl className="text-sm space-y-2">
         <StatusRow
@@ -125,7 +129,7 @@ export function GrowSettingsForm() {
         {t('common.save')}
       </Button>
 
-      <FinanceHealthCard />
+      <FinanceHealthCard provider="grow" />
     </section>
   );
 }

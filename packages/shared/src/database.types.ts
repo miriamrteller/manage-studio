@@ -2753,8 +2753,16 @@ export type Database = {
         Args: { p_secret: string }
         Returns: undefined
       }
+      save_icount_webhook_secret: {
+        Args: { p_secret: string }
+        Returns: undefined
+      }
       save_tenant_grow_credentials: {
         Args: { p_api_key: string; p_page_code: string; p_user_id: string }
+        Returns: undefined
+      }
+      save_tenant_icount_credentials: {
+        Args: { p_api_token: string; p_company_id: string; p_page_id: string }
         Returns: undefined
       }
       save_tenant_invoicing_credentials: {

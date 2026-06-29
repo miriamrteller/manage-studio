@@ -269,39 +269,77 @@ export function OperatorOnboardingWizard() {
 
       {step === 'terminology' && (
         <section className="space-y-4">
-          <p className="text-sm text-muted-foreground">{t('settings.onboarding.labels_optional')}</p>
-          <div className="space-y-3">
+          <div className="space-y-2 text-sm text-muted-foreground">
+            <p>{t('settings.onboarding.labels_intro')}</p>
+            <p>{t('settings.onboarding.labels_how')}</p>
+            <p>
+              {t('settings.onboarding.labels_defaults', {
+                preset: t(`settings.onboarding.preset_${form.businessPreset}`),
+              })}
+            </p>
+          </div>
+          <div className="hidden sm:grid sm:grid-cols-3 gap-2 text-xs font-medium text-muted-foreground px-0.5">
+            <span>{t('settings.onboarding.labels_concept')}</span>
+            <span>{t('settings.onboarding.labels_singular')}</span>
+            <span>{t('settings.onboarding.labels_plural')}</span>
+          </div>
+          <div className="space-y-4">
             {ENTITY_KEYS.map((key) => (
-              <div key={key} className="grid grid-cols-1 sm:grid-cols-3 gap-2 items-end">
-                <span className="text-sm font-medium capitalize">{key}</span>
-                <input
-                  className="form-input"
-                  placeholder={defaultLabels[key].singular}
-                  value={form.labelOverrides[key]?.singular ?? ''}
-                  onChange={(e) =>
-                    updateForm('labelOverrides', {
-                      ...form.labelOverrides,
-                      [key]: {
-                        singular: e.target.value,
-                        plural: form.labelOverrides[key]?.plural ?? '',
-                      },
-                    })
-                  }
-                />
-                <input
-                  className="form-input"
-                  placeholder={defaultLabels[key].plural}
-                  value={form.labelOverrides[key]?.plural ?? ''}
-                  onChange={(e) =>
-                    updateForm('labelOverrides', {
-                      ...form.labelOverrides,
-                      [key]: {
-                        singular: form.labelOverrides[key]?.singular ?? '',
-                        plural: e.target.value,
-                      },
-                    })
-                  }
-                />
+              <div key={key} className="space-y-1">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:items-center">
+                  <div>
+                    <span className="text-sm font-medium">
+                      {t(`settings.onboarding.entity_${key}`)}
+                    </span>
+                    <p className="text-xs text-muted-foreground sm:pr-2">
+                      {t(`settings.onboarding.entity_${key}_desc`)}
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="sr-only sm:not-sr-only sm:hidden text-xs text-muted-foreground">
+                      {t('settings.onboarding.labels_singular')}
+                    </label>
+                    <input
+                      className="form-input w-full"
+                      aria-label={t('settings.onboarding.labels_singular_for', {
+                        entity: t(`settings.onboarding.entity_${key}`),
+                      })}
+                      placeholder={defaultLabels[key].singular}
+                      value={form.labelOverrides[key]?.singular ?? ''}
+                      onChange={(e) =>
+                        updateForm('labelOverrides', {
+                          ...form.labelOverrides,
+                          [key]: {
+                            singular: e.target.value,
+                            plural: form.labelOverrides[key]?.plural ?? '',
+                          },
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="sr-only sm:not-sr-only sm:hidden text-xs text-muted-foreground">
+                      {t('settings.onboarding.labels_plural')}
+                    </label>
+                    <input
+                      className="form-input w-full"
+                      aria-label={t('settings.onboarding.labels_plural_for', {
+                        entity: t(`settings.onboarding.entity_${key}`),
+                      })}
+                      placeholder={defaultLabels[key].plural}
+                      value={form.labelOverrides[key]?.plural ?? ''}
+                      onChange={(e) =>
+                        updateForm('labelOverrides', {
+                          ...form.labelOverrides,
+                          [key]: {
+                            singular: form.labelOverrides[key]?.singular ?? '',
+                            plural: e.target.value,
+                          },
+                        })
+                      }
+                    />
+                  </div>
+                </div>
               </div>
             ))}
           </div>
@@ -376,8 +414,8 @@ export function OperatorOnboardingWizard() {
 
       {step === 'tax' && (
         <section className="space-y-4 max-w-md">
-          <p className="text-sm text-muted-foreground">{t('settings.tax.no_local_vat')}</p>
-          <p className="text-sm text-muted-foreground">{t('settings.tax.class_price_hint')}</p>
+          <p className="text-sm text-muted-foreground">{t('settings.onboarding.tax_no_local_vat')}</p>
+          <p className="text-sm text-muted-foreground">{t('settings.onboarding.tax_price_hint')}</p>
         </section>
       )}
 

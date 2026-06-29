@@ -33,21 +33,21 @@ OpalSwift `IcountPaymentProvider.createCharge` therefore returns a **built redir
 
 ## API Reference Catalog (#29)
 
-Each row cites **official documentation**. Rows marked **Sandbox: pending** require [I0-live](stage-i0-live-spike.md) before **I2b** implements live parsers/API calls. **I1 / I2a / I3** use mocks + official fixtures only.
+Each row cites **official documentation** from **two surfaces**: [help center](https://help.icount.co.il/) (checkout/webhooks) and [API v3](https://apiv3.icount.co.il/) (REST). Full module mapping: [API-V3-REFERENCE.md](API-V3-REFERENCE.md). Rows marked **Sandbox: pending** require [I0-live](stage-i0-live-spike.md) before **I2b** implements live parsers/API calls. **I1 / I2a / I3** use mocks + official fixtures only.
 
-| # | Our method / handler | iCount surface (official) | HTTP | Doc URL | Sandbox |
-|---|----------------------|---------------------------|------|---------|---------|
-| 1 | `verifyCredentials` | API v3 module (auth required) — e.g. probe via authenticated API token | POST | [API v3 overview](https://www.icount.co.il/features/api/) · base `https://api.icount.co.il/api/v3.php/` (returns `auth_required` without token) | **pending** — exact module TBD with token |
-| 2 | `createCharge` | CC page redirect: `https://app.icount.co.il/m/{cp}?cs=&cd=&success_url=&ipn_url=&m__*` | GET redirect | [create-cc-page — URL params + IPN](https://help.icount.co.il/credit-card-processing/create-cc-page/) | **pending** — capture built URL + payer flow |
-| 3 | `chargeWithToken` (renewals) | Saved-card charge / standing order — help describes UI + HK module; **API module not documented in help center** | TBD | [storing-credit-cards](https://help.icount.co.il/credit-card-processing/storing-credit-cards/) · [standing-orders](https://help.icount.co.il/standing-orders/) | **pending — go/no-go blocker for auto-renewal** |
-| 4 | `refundCharge` | Credit note / refund document + terminal refund — help references credit docs and clearing-terminal refund | TBD | [credit-card-from-iphone — refund note](https://help.icount.co.il/credit-card-processing/credit-card-from-iphone/) · API v3 `doc/*` (authenticated) | **pending** |
-| 5 | Post-payment ack (#7) | **N/A** — no Grow `approveTransaction` equivalent in published CC page / IPN docs | — | [create-cc-page IPN section](https://help.icount.co.il/credit-card-processing/create-cc-page/) | N/A |
-| 6 | `constructEvent` / `handle-payment-event` | CC page **IPN** — POST with fields `cp`, `sum`, `currency_code`, `confirmation_code`, `doctype`, `docnum`, `customer_*`, custom `m__*` echoed without prefix | POST | [create-cc-page — IPN field table](https://help.icount.co.il/credit-card-processing/create-cc-page/) | **pending** — capture raw POST body + Content-Type |
-| 7 | `parseIcount*Notify` / `handle-invoice-event` | **Document Webhook** — JSON array of document objects | POST | [integration/webhooks — full example](https://help.icount.co.il/integration/webhooks/) | **partial** — official example fixture committed; live capture still recommended |
-| 8 | `handle-payment-document` | `pdf_link` (+ optional `doc_link`) on document webhook payload | IN | [integration/webhooks — `pdf_link` in example](https://help.icount.co.il/integration/webhooks/) | **partial** — same as row 7 |
-| 9 | `issueDocument` (Option C only) | API v3 `doc/create` (form-encoded per API v3 convention) | POST | [API v3 overview](https://www.icount.co.il/features/api/) | N/A for Option A′ |
-| 10 | Client upsert (if required) | API v3 client module | POST | [API v3 overview](https://www.icount.co.il/features/api/) | **pending** — only if pay flow requires pre-created `client_id` |
-| 11 | `admin-resend-document` | UI “resend WebHook” from document search — no public REST path documented | UI | [integration/webhooks — resend section](https://help.icount.co.il/integration/webhooks/) | N/A — manual ops only |
+| # | Our method / handler | iCount surface | HTTP | Help doc | API v3 doc | Sandbox |
+|---|----------------------|----------------|------|----------|------------|---------|
+| 1 | `verifyCredentials` | Authenticated probe | POST | — | [auth/info](https://apiv3.icount.co.il/#/module/auth/info) · [company/info](https://apiv3.icount.co.il/#/module/company/info) · [cc/provider](https://apiv3.icount.co.il/#/module/cc/provider) | **pending** — pick probe in I0-live |
+| 2 | `createCharge` | CC page redirect `https://app.icount.co.il/m/{cp}?…` | GET redirect | [create-cc-page](https://help.icount.co.il/credit-card-processing/create-cc-page/) | — *(not REST)* | **pending** |
+| 3 | `chargeWithToken` (renewals) | Saved-card / recurring charge | POST | [storing-credit-cards](https://help.icount.co.il/credit-card-processing/storing-credit-cards/) · [standing-orders](https://help.icount.co.il/standing-orders/) | [cc/bill](https://apiv3.icount.co.il/#/module/cc/bill) · [hk/charge](https://apiv3.icount.co.il/#/module/hk/charge) · [cc_storage](https://apiv3.icount.co.il/#/module/cc_storage/token_info) | **pending** — renewals A/B/C |
+| 4 | `refundCharge` | Credit note + terminal refund | POST | [credit-card-from-iphone — refund](https://help.icount.co.il/credit-card-processing/credit-card-from-iphone/) | [doc/create](https://apiv3.icount.co.il/#/module/doc/create) (`refund`) · [doc/cancel](https://apiv3.icount.co.il/#/module/doc/cancel) | **pending** |
+| 5 | Post-payment ack | **N/A** | — | [create-cc-page IPN](https://help.icount.co.il/credit-card-processing/create-cc-page/) | — | N/A |
+| 6 | `constructEvent` / `handle-payment-event` | CC page **IPN** POST | POST | [create-cc-page — IPN table](https://help.icount.co.il/credit-card-processing/create-cc-page/) | — *(not REST)* | **pending** — raw capture |
+| 7 | `parseIcount*Notify` / `handle-invoice-event` | Document **webhook** JSON array | POST | [integration/webhooks](https://help.icount.co.il/integration/webhooks/) | [webhook/add](https://apiv3.icount.co.il/#/module/webhook/add) *(config only)* | **partial** — fixture committed |
+| 8 | `handle-payment-document` | `pdf_link` on webhook payload | IN | [integration/webhooks](https://help.icount.co.il/integration/webhooks/) | — | **partial** |
+| 9 | `issueDocument` (Option C) | `doc/create` | POST | — | [doc/create](https://apiv3.icount.co.il/#/module/doc/create) · [doc/types](https://apiv3.icount.co.il/#/module/doc/types) | N/A for Option A′ |
+| 10 | Client upsert | `client/*` | POST | — | [client/create](https://apiv3.icount.co.il/#/module/client/create) · [client/create_or_update](https://apiv3.icount.co.il/#/module/client/create_or_update) | **pending** |
+| 11 | `admin-resend-document` | Resend / replay | POST/UI | [webhooks — resend UI](https://help.icount.co.il/integration/webhooks/) | [doc/email](https://apiv3.icount.co.il/#/module/doc/email) | N/A — manual ops |
 
 ---
 
@@ -116,7 +116,7 @@ If IPN already includes `doctype` + `docnum`, document webhook may be redundant 
 | Tenant column | iCount mapping (proposed) |
 |---------------|---------------------------|
 | `payment_provider_account_id` | iCount company id (`cid`) — confirm in sandbox |
-| `payment_provider_public_key` | CC page id (`cp`) |
+| `payment_provider_public_key` | CC page id — **`cp`** in URLs/IPN ([GLOSSARY](GLOSSARY.md)) |
 | `payment_provider_secret_enc` | API token (Settings → API) |
 | `payment_provider_webhook_enc` | If IPN/webhook signing exists — **confirm in sandbox** (#8) |
 | `invoicing_*` | Same as payment for bundled `icount/icount` |
@@ -127,7 +127,52 @@ Settings UI (I3): **API token + CC page id (+ cid if required)** — not Grow-st
 
 **Proposed:** `payment_provider_webhook_enc` + `save_icount_webhook_secret` RPC (Stripe pattern). Do **not** generalize `grow_webhook_secrets` (#19 deferred).
 
-If sandbox shows **no signature** on IPN/document webhooks, ADR records verification as “URL secrecy + idempotency only” and documents risk.
+If sandbox shows **no HMAC** on IPN/document webhooks, use the **compensating controls** below — not “URL secrecy only” without detail.
+
+---
+
+## Webhook security model
+
+iCount help docs do **not** document IPN HMAC. OpalSwift assumes **defense in depth** until I0-live capture proves otherwise.
+
+### Compensating controls (implement in I2b / I2a handlers)
+
+| Control | Implementation |
+|---------|----------------|
+| **Idempotency** | Unique constraint on `(tenant_id, provider_payment_ref)` or `confirmation_code`; replays within TTL → 200 no-op |
+| **Tenant routing** | Require `m__tenant_id` (or payment-row lookup per Risk #22); reject if slug ≠ `icount` |
+| **`cp` validation** | IPN `cp` must match tenant `payment_provider_public_key` |
+| **Unguessable URL** | Long random path segment on edge URL; optional per-tenant secret in query/header if capture supports |
+| **IP allowlist** | **Only if** I0-live or iCount publishes egress IPs — do not invent ranges |
+| **Rate limit** | Per-tenant webhook throttle; alert on spike ([ADAPTER-PATTERNS.md](ADAPTER-PATTERNS.md)) |
+| **No cross-parse** | Grow parser on icount body → fail closed (LIVE-T3/T4, I2b-T*) |
+
+Update this section after I0-live if capture shows signature header or shared secret.
+
+---
+
+## Renewals decision (I0-live)
+
+**Forced outcome** — no indefinite “TBD” after I0-live. Sign one row in SPIKE-ADR approval:
+
+| Outcome | Condition | OpalSwift action |
+|---------|-----------|------------------|
+| **A — API confirmed** | Catalog #3 module documented + sandbox charge succeeds | Implement I4b `chargeWithToken`; enable auto-renewal for `icount` |
+| **B — Deferred** | No API in partner/authenticated docs | Sign deferral; **disable** auto-renewal for `icount` tenants; [manual billing RUNBOOK](RUNBOOK.md); Grow renewal tests stay green |
+| **C — Option B architecture** | Renewals impossible on Option A′ | Revisit SPIKE-ADR fallback (iCount invoicing only + other payment) — **blocks I5** |
+
+Same pattern for **refunds (#4)** with outcomes: API confirmed / deferred manual credit note / block.
+
+---
+
+## Provider isolation (#30)
+
+Grow and iCount adapters coexist; tenants must never cross providers. **TDD required** — see [PROVIDER-ISOLATION-TDD.md](PROVIDER-ISOLATION-TDD.md):
+
+- **Mock phase (I1, I2a, I3):** factory, confirm-mock, document webhook dispatch, UI routing
+- **Live phase (I0-live, I2b, I4, I5):** IPN vs Grow notify mutual rejection, billing/refund by slug, dual seed
+
+Dispatch rule: `getPaymentProviderForTenant(tenantId)` after resolving tenant from webhook metadata — never parse Grow payloads for icount tenants without slug dispatch.
 
 ---
 
@@ -141,10 +186,11 @@ If sandbox shows **no signature** on IPN/document webhooks, ADR records verifica
 | Payment webhook shape + verification | **Fields documented** — raw capture pending | #6 |
 | Post-payment ack | **N/A** | #5 |
 | Document delivery → handler mapping | **Documented** | #7, #8 |
-| Saved card / standing order API (renewals) | **Not documented in help — sandbox/API docs required** | #3 |
+| Saved card / standing order API (renewals) | **Mapped in apiv3** (`cc/bill`, `hk/charge`) — sandbox + outcome A/B/C pending | #3 |
 | Refund API | **Pending** | #4 |
 | Webhook secret storage | **Proposed** (#8 above) | #8 |
-| Rate limits | API v3: verify in authenticated docs | — |
+| Rate limits | **I0-live:** probe + record in [ADAPTER-PATTERNS.md](ADAPTER-PATTERNS.md); conservative defaults until then | — |
+| Silent tenant signup | **I6-research** → **I6-impl**; manual I3 fallback always | [stage-i6-silent-provisioning.md](stage-i6-silent-provisioning.md) |
 | Sandbox credentials | **User action required** | — |
 
 ### Stage gates (mock-first track)
@@ -152,7 +198,8 @@ If sandbox shows **no signature** on IPN/document webhooks, ADR records verifica
 | Gate | When | Unblocks |
 |------|------|----------|
 | **I0-doc** | Help docs + draft ADR + official fixtures | **I1, I3, I2a** |
-| **I0-live** | Account + IPN capture + ADR approval | **I2b, I5**; I4 renewals/refunds |
+| **I0-live** | Account + IPN capture + ADR approval + renewals/refunds decision + rate limits | **I2b, I5**; I4b |
+| **V1 complete** | Pre-I5 + **I6** silent signup | Product launch |
 
 **Proceed to I1** when user accepts draft architecture (Option A′). **Do not** wait for an iCount account or `icount-ipn-notify.json`.
 
@@ -160,8 +207,10 @@ If sandbox shows **no signature** on IPN/document webhooks, ADR records verifica
 
 - [ ] `icount-ipn-notify.json` committed (sandbox capture)
 - [ ] `m__tenant_id` routing verified live (or fallback signed off)
-- [ ] Renewals (#3): API confirmed **or** deferral documented
-- [ ] Refunds (#4): API confirmed **or** deferral documented
+- [ ] Renewals (#3): **Outcome A, B, or C** signed ([§ Renewals decision](#renewals-decision-i0-live))
+- [ ] Refunds (#4): confirmed **or** deferral signed
+- [ ] Rate limits recorded ([ADAPTER-PATTERNS.md](ADAPTER-PATTERNS.md))
+- [ ] [Webhook security model](#webhook-security-model) confirmed or updated from capture
 - [ ] SPIKE-ADR approval row signed
 
 **Block Option A′ for production default (I5)** if live IPN cannot carry correlatable payment id + tenant metadata.
@@ -187,6 +236,7 @@ Unchanged from [00-overview.md](00-overview.md): iCount owns all tax document le
 | `icount-document-webhook-official-example.json` | Help center official example | I2a+ |
 | `icount-ipn-official-fields.json` | Official IPN field catalog (not a notify body) | Reference only |
 | `icount-ipn-notify.json` | **I0-live** sandbox capture | I2b+ |
+| `apiv3-module-index.json` | [apiv3.icount.co.il](https://apiv3.icount.co.il/) module snapshot | I0-live, I6-research |
 
 ---
 
@@ -194,7 +244,8 @@ Unchanged from [00-overview.md](00-overview.md): iCount owns all tax document le
 
 | Gate | Approved |
 |------|----------|
-| **Draft architecture (I0-doc)** — Option A′ acceptable for mock build | ☐ |
+| **Draft architecture (I0-doc)** — Option A′ + mock-first + provider isolation TDD | ☑ (2026-06-28) |
 | **Live integration (I0-live)** — IPN capture + catalog complete for production | ☐ |
+| **V1 complete** — I6 silent signup + Pre-I5 gate | ☐ |
 
-**I1 may start** after draft architecture sign-off. **I5 may start** only after live integration sign-off.
+**I1 may start** after draft architecture sign-off. **I5 may start** only after live integration sign-off. **V1 complete** requires I6 ([00-overview.md](00-overview.md#v1-complete-gate)).

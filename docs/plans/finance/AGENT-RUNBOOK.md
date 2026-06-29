@@ -190,5 +190,26 @@ Stripe cleanup, FinanceHealthCard Grow status, and docs/plans/finance/GROW-RUNBO
 
 Commands: pnpm -C apps/web test
 
-Stop after the G7 DoD checklist. This is the final stage.
+Stop after the G7 DoD checklist. Do not start Stage G8 unless the user asks for G8-research.
+```
+
+---
+
+## Stage G8-research — Silent Grow signup (docs only)
+
+```
+Stage G8-research only — docs, no code.
+
+@docs/plans/finance/stage-g8-silent-provisioning.md
+@docs/plans/finance/GROW-API-REFERENCE.md
+@docs/plans/finance/GROW-RUNBOOK.md
+@docs/plans/finance/00-overview.md
+@supabase/migrations/20260608002400_tenant_provisioning.sql
+
+Deliver docs/plans/finance/G8-ADR.md per G8-research DoD in stage-g8-silent-provisioning.md:
+partner/marketplace onboarding API auth model, OpalSwift→Grow field mapping,
+success/failure paths (manual bundled Grow settings fallback), SHAAM manual steps,
+go/no-go for G8-impl.
+
+Do not implement edge functions. Do not block I2a/I6. Stop after research sign-off checklist.
 ```

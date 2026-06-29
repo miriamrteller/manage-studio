@@ -2,6 +2,8 @@ import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4
 import { finalisePayment } from "./finalise-payment.ts";
 import { ChargeMetadataSchema, type PaymentEvent } from "./types.ts";
 
+export { buildMockPaymentEvent } from "./mock-payment-event.ts";
+
 export async function handlePaymentEventInternal(
   service: SupabaseClient,
   event: PaymentEvent,
@@ -126,28 +128,4 @@ export async function handlePaymentEventInternal(
   });
 
   return { paymentId: paymentRow.id, duplicate: Boolean(existing) };
-}
-
-export function buildMockPaymentEvent(
-  params: ChargeParamsLike,
-): PaymentEvent {
-  return {
-    type: "payment.succeeded",
-    providerPaymentRef: params.providerPaymentRef,
-    metadata: params.metadata,
-    amountMinor: params.amountMinor,
-    currency: params.currency,
-    pretaxAmountMinor: 0,
-    vatAmountMinor: 0,
-    vatRate: 0,
-    offeringId: params.metadata.offering_id,
-    personId: params.metadata.person_id,
-  };
-}
-
-interface ChargeParamsLike {
-  providerPaymentRef: string;
-  amountMinor: number;
-  currency: string;
-  metadata: PaymentEvent["metadata"];
 }

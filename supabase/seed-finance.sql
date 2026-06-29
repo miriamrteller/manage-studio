@@ -16,6 +16,7 @@
 -- | active Ruti + payment 1101 | E refund, parent portal | Admin refund; parent sees receipt |
 -- | offering 311 ₪1 no waiver | A smoke | Cheapest happy path |
 -- | tenant grow/grow + demo creds | G | Use with GROW_MOCK=true (Edge secret); no live Meshulam calls |
+-- | tenant icount/icount + demo creds | G | Use with ICOUNT_MOCK=true — switch provider on bundled settings page |
 --
 -- Renewals (Flow C): not pre-seeded — create via Stage 6 after recurring enrol or cron test.
 --
@@ -33,6 +34,8 @@
 -- TENANT — Grow bundled provider with Meshulam documentation demo credentials.
 -- Pair with Supabase secret GROW_MOCK=true so Edge Functions use MockGrowPaymentProvider
 -- and never hit the live sandbox API. Real sandbox creds replace these when ready.
+-- iCount: choose iCount on /admin/setup/bundled-payments and save icount credentials
+-- (ICOUNT_MOCK=true for mock). Grow remains the default dev seed — no provider replaces another.
 -- ============================================================================
 UPDATE tenants
 SET
@@ -44,6 +47,7 @@ SET
     'grow-mock-dev-key-00000000',
     '0uT6CrQXiMJab+raSRxxx0j7ZLYvwKCb2HCoQusCfiY='
   ),
+  payment_provider_webhook_enc = NULL,
   payment_provider_updated_at  = now()
 WHERE id = '00000000-0000-0000-0000-000000000001'::uuid;
 

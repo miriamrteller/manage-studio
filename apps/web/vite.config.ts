@@ -2,9 +2,26 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 
+/** Map Deno `npm:` specifiers in edge-function imports to Node packages for Vitest. */
+function denoNpmImportMap() {
+  const zodEntry = path.resolve(__dirname, 'node_modules/zod/index.js');
+  return {
+    name: 'deno-npm-import-map',
+    resolveId(source: string) {
+      if (source === 'npm:zod@3.22.4' || /^npm:zod@/.test(source)) {
+        return zodEntry;
+      }
+      if (source === 'zod') {
+        return zodEntry;
+      }
+      return null;
+    },
+  };
+}
+
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), denoNpmImportMap()],
   resolve: {
     alias: [
       { find: '@shared', replacement: path.resolve(__dirname, '../../packages/shared/src') },
@@ -16,6 +33,7 @@ export default defineConfig({
         replacement: path.resolve(__dirname, '../../packages/shared/src/email/render-template.ts'),
       },
       // Edge functions use Deno-style specifiers; map them to node packages for Vitest.
+      { find: 'npm:zod@3.22.4', replacement: 'zod' },
       { find: /^npm:zod(@.*)?$/, replacement: 'zod' },
       // The Deno Stripe SDK import is unresolvable in Node; stub it for factory tests.
       {

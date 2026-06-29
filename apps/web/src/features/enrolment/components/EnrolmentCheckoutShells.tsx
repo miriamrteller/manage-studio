@@ -10,6 +10,8 @@ import {
 } from '@/lib/parseFunctionInvokeError';
 import { formatCurrency } from '@shared/format';
 import { GrowPaymentShell } from './GrowPaymentShell';
+import { IcountPaymentShell } from './IcountPaymentShell';
+import { isMockHostedPaymentPage } from '@/lib/tenantProviderRouting';
 
 function PaymentFormInner({
   onPaid,
@@ -257,10 +259,9 @@ export function ProviderCheckoutShell({
 }) {
   const { t } = useTranslation();
 
-  const isMockGrowPage =
-    paymentProvider === 'grow' && Boolean(pageUrl?.includes('mock.grow.local'));
+  const isMockHostedPage = isMockHostedPaymentPage(paymentProvider, pageUrl);
 
-  if (mockPending || paymentProvider === 'mock' || isMockGrowPage) {
+  if (mockPending || paymentProvider === 'mock' || isMockHostedPage) {
     return (
       <MockPaymentShell
         classId={classId}
@@ -269,6 +270,18 @@ export function ProviderCheckoutShell({
         amountMinor={amountMinor}
         currency={currency}
         mockPaymentRef={mockPaymentRef}
+        onPaid={onPaid}
+        onPrevious={onPrevious}
+      />
+    );
+  }
+
+  if (paymentProvider === 'icount' && pageUrl) {
+    return (
+      <IcountPaymentShell
+        engagementId={engagementId}
+        pageUrl={pageUrl}
+        enrolmentToken={enrolmentToken}
         onPaid={onPaid}
         onPrevious={onPrevious}
       />

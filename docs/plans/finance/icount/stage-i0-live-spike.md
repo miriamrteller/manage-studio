@@ -1,6 +1,8 @@
 # Stage I0-live — Live integration spike (iCount account required)
 
-**Goal:** Close SPIKE-ADR with **sandbox captures** and user approval. Schedule when the project is **almost finished** — not at epic start.
+**Status:** ⏸ Deferred — schedule at **end of project** after other work. See [00-overview.md § Deferred I0-live track](00-overview.md#deferred-i0-live-track-project-policy).
+
+**Goal:** Close SPIKE-ADR with **sandbox captures** and user approval.
 
 **Prerequisite:** I1 + I3 + **I2a** complete (mock path green in CI). iCount sandbox account procured.
 
@@ -14,18 +16,36 @@
 
 ---
 
+## TDD — write tests immediately after capture
+
+I0-live is **not** adapter code — it is fixture + contract tests that **block I2b**.
+
+| Step | Action |
+|------|--------|
+| 1 | Capture sandbox IPN → `icount-ipn-notify.json` |
+| 2 | Add skeleton parser test file (`icount-ipn-parse.test.ts`) — **LIVE-T1 … LIVE-T4** |
+| 3 | Run tests: LIVE-T1 passes (file exists); T2–T4 may use stub parser until I2b |
+| 4 | **LIVE-T3/T4 must fail** if Grow/icount parsers are wired without dispatch guards |
+| 5 | Sign SPIKE-ADR only when LIVE-T* + catalog probes complete |
+
+Full workflow: [PROVIDER-ISOLATION-TDD.md](PROVIDER-ISOLATION-TDD.md) § Post-account TDD workflow.
+
+---
+
 ## Scope IN
 
 1. **Sandbox setup** — [RUNBOOK.md](RUNBOOK.md) § Sandbox setup
 2. **Capture raw IPN POST** → `apps/web/src/__tests__/fixtures/icount-ipn-notify.json` (headers + body; redacted)
 3. **Optional:** live document webhook capture (compare to official example)
-4. **Probe API v3** with account token:
+4. **Probe API v3** with account token — module/method list in [API-V3-REFERENCE.md](API-V3-REFERENCE.md):
    - `verifyCredentials` module (#1)
-   - Renewal / saved-card charge (#3) — go/no-go for auto-billing
-   - Refund / credit note (#4)
-5. **Update SPIKE-ADR** catalog rows from **pending** → **complete** or **N/A / deferred**
-6. **Sign SPIKE-ADR approval** row
-7. **Document deferrals** if renewals/refunds have no API (manual runbook until later)
+   - Renewal / saved-card charge (#3) — **sign outcome A/B/C** ([SPIKE-ADR § Renewals decision](SPIKE-ADR.md#renewals-decision-i0-live))
+   - Refund / credit note (#4) — confirm or defer
+   - **Rate limits** — record headers/docs; update [ADAPTER-PATTERNS.md](ADAPTER-PATTERNS.md)
+5. **Webhook security** — confirm HMAC or update [SPIKE-ADR § Webhook security model](SPIKE-ADR.md#webhook-security-model) from capture
+6. **Update SPIKE-ADR** catalog rows from **pending** → **complete** or **N/A / deferred**
+7. **Sign SPIKE-ADR approval** row
+8. **Document deferrals** if renewals/refunds have no API (manual runbook until later)
 
 ---
 
@@ -40,12 +60,14 @@
 ## DoD checklist
 
 - [ ] `icount-ipn-notify.json` committed (real sandbox capture)
+- [ ] **LIVE-T1 … LIVE-T4** green ([PROVIDER-ISOLATION-TDD.md](PROVIDER-ISOLATION-TDD.md) — fixture contract before I2b parser)
 - [ ] `m__tenant_id` (or fallback strategy) verified in live IPN
-- [ ] Webhook signature approach confirmed or documented as URL-only (#8)
+- [ ] Webhook security model confirmed or updated from capture ([SPIKE-ADR](SPIKE-ADR.md#webhook-security-model))
+- [ ] Rate limits recorded ([ADAPTER-PATTERNS.md](ADAPTER-PATTERNS.md))
+- [ ] Renewals (#3): **Outcome A, B, or C** signed
+- [ ] Refunds (#4): confirmed **or** deferral signed
 - [ ] Catalog rows #1, #2, #6 updated with sandbox evidence
-- [ ] Renewals (#3): API confirmed **or** explicit deferral signed in ADR
-- [ ] Refunds (#4): API confirmed **or** explicit deferral signed in ADR
-- [ ] SPIKE-ADR approval row signed
+- [ ] SPIKE-ADR live approval row signed
 - [ ] One manual CC page payment smoke documented in RUNBOOK
 
 ---

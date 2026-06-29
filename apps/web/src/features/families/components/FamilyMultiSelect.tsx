@@ -63,9 +63,73 @@ export function FamilyMultiSelect({ selected, onChange, id }: FamilyMultiSelectP
         {t('pages.students.filter_by_family')}
       </span>
 
+      <div className="relative">
+        <input
+          id={inputId}
+          type="text"
+          role="combobox"
+          aria-expanded={isOpen}
+          aria-controls={listboxId}
+          aria-autocomplete="list"
+          aria-labelledby={`${inputId}-label`}
+          placeholder={t('pages.students.family_search_placeholder')}
+          value={inputValue}
+          onChange={(e) => {
+            setInputValue(e.target.value);
+            setIsOpen(true);
+          }}
+          onFocus={() => setIsOpen(true)}
+          className="form-input w-full"
+          autoComplete="off"
+        />
+
+        {isOpen && inputValue.trim().length >= 1 && (
+          <ul
+            id={listboxId}
+            role="listbox"
+            aria-multiselectable="true"
+            aria-labelledby={`${inputId}-label`}
+            className="absolute z-20 mt-1 w-full max-h-48 overflow-y-auto rounded-md border bg-white shadow-lg"
+            style={{ borderColor: 'var(--color-border-default)' }}
+          >
+            {isSearching && (
+              <li className="px-3 py-2 text-sm text-gray-500" role="presentation">
+                {t('common.loading')}
+              </li>
+            )}
+            {!isSearching && families.length === 0 && (
+              <li className="px-3 py-2 text-sm text-gray-500" role="presentation">
+                {t('common.no_results_found')}
+              </li>
+            )}
+            {!isSearching &&
+              families.map((family) => {
+                const isSelected = selectedIds.has(family.id);
+                return (
+                  <li key={family.id} role="option" aria-selected={isSelected}>
+                    <button
+                      type="button"
+                      className={`w-full px-3 py-2 text-start text-sm hover:bg-gray-50 ${
+                        isSelected ? 'bg-gray-50 font-medium' : ''
+                      }`}
+                      onClick={() => handleToggle(family)}
+                      aria-pressed={isSelected}
+                    >
+                      <span className="font-medium">{familyLabel(family)}</span>
+                      {family.contact_person_name && family.name && (
+                        <span className="block text-xs text-gray-500">{family.contact_person_name}</span>
+                      )}
+                    </button>
+                  </li>
+                );
+              })}
+          </ul>
+        )}
+      </div>
+
       {selected.length > 0 && (
         <div
-          className="flex flex-wrap gap-2 mb-2"
+          className="flex flex-wrap gap-2 mt-2"
           role="group"
           aria-label={t('pages.students.filter_by_family_selected')}
         >
@@ -87,68 +151,6 @@ export function FamilyMultiSelect({ selected, onChange, id }: FamilyMultiSelectP
             </span>
           ))}
         </div>
-      )}
-
-      <input
-        id={inputId}
-        type="text"
-        role="combobox"
-        aria-expanded={isOpen}
-        aria-controls={listboxId}
-        aria-autocomplete="list"
-        aria-labelledby={`${inputId}-label`}
-        placeholder={t('pages.students.family_search_placeholder')}
-        value={inputValue}
-        onChange={(e) => {
-          setInputValue(e.target.value);
-          setIsOpen(true);
-        }}
-        onFocus={() => setIsOpen(true)}
-        className="form-input w-full"
-        autoComplete="off"
-      />
-
-      {isOpen && inputValue.trim().length >= 1 && (
-        <ul
-          id={listboxId}
-          role="listbox"
-          aria-multiselectable="true"
-          aria-labelledby={`${inputId}-label`}
-          className="absolute z-20 mt-1 w-full max-h-48 overflow-y-auto rounded-md border bg-white shadow-lg"
-          style={{ borderColor: 'var(--color-border-default)' }}
-        >
-          {isSearching && (
-            <li className="px-3 py-2 text-sm text-gray-500" role="presentation">
-              {t('common.loading')}
-            </li>
-          )}
-          {!isSearching && families.length === 0 && (
-            <li className="px-3 py-2 text-sm text-gray-500" role="presentation">
-              {t('common.no_results_found')}
-            </li>
-          )}
-          {!isSearching &&
-            families.map((family) => {
-              const isSelected = selectedIds.has(family.id);
-              return (
-                <li key={family.id} role="option" aria-selected={isSelected}>
-                  <button
-                    type="button"
-                    className={`w-full px-3 py-2 text-start text-sm hover:bg-gray-50 ${
-                      isSelected ? 'bg-gray-50 font-medium' : ''
-                    }`}
-                    onClick={() => handleToggle(family)}
-                    aria-pressed={isSelected}
-                  >
-                    <span className="font-medium">{familyLabel(family)}</span>
-                    {family.contact_person_name && family.name && (
-                      <span className="block text-xs text-gray-500">{family.contact_person_name}</span>
-                    )}
-                  </button>
-                </li>
-              );
-            })}
-        </ul>
       )}
     </div>
   );

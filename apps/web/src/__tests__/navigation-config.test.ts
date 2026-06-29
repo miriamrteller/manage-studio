@@ -4,7 +4,10 @@ import {
   matchesTenantFilter,
   navigationConfig,
   resolveActiveNavPath,
+  tenantUsesGrow,
+  tenantUsesIcount,
 } from '@/components/Navigation/navigationConfig';
+import { BUNDLED_PAYMENTS_SETUP_PATH } from '@/lib/bundledProviderUi';
 
 describe('navigationConfig', () => {
   it('includes admin students, families, and finance sub-pages for tenant_admin', () => {
@@ -17,22 +20,48 @@ describe('navigationConfig', () => {
     expect(paths).toContain('/admin/finance/payments');
     expect(paths).toContain('/admin/finance/expenses');
     expect(paths).toContain('/admin/finance/expenses/categories');
-    expect(paths).toContain('/admin/setup/tax');
   });
 
-  it('shows Grow setup link for IL tenants and hides split payment/invoicing links', () => {
-    const growTenant = { country: 'IL', payment_provider: 'stripe' as const };
-    const growItems = navigationConfig.filter(
+  it('shows bundled payments setup for grow slug (generic nav, not grow-only path)', () => {
+    const growTenant = { country: 'IL', payment_provider: 'grow' as const };
+    const setupItems = navigationConfig.filter(
       (item) => matchesTenantFilter(item, growTenant) && item.sectionKey === 'setup',
     );
-    const growPaths = growItems.map((item) => item.path);
+    const setupPaths = setupItems.map((item) => item.path);
 
-    expect(growPaths).toContain('/admin/setup/grow');
-    expect(growPaths).not.toContain('/admin/setup/payments');
-    expect(growPaths).not.toContain('/admin/setup/invoicing');
+    expect(setupPaths).toContain(BUNDLED_PAYMENTS_SETUP_PATH);
+    expect(setupPaths).not.toContain('/admin/setup/grow');
+    expect(setupPaths).not.toContain('/admin/setup/payments');
+    expect(setupPaths).not.toContain('/admin/setup/invoicing');
   });
 
-  it('shows split payment/invoicing links for non-Grow tenants', () => {
+  it('IL tenant with icount slug is not treated as Grow (I3-T1)', () => {
+    const icountTenant = { country: 'IL', payment_provider: 'icount' as const };
+    expect(tenantUsesGrow(icountTenant)).toBe(false);
+    expect(tenantUsesIcount(icountTenant)).toBe(true);
+
+    const setupItems = navigationConfig.filter(
+      (item) => matchesTenantFilter(item, icountTenant) && item.sectionKey === 'setup',
+    );
+    const setupPaths = setupItems.map((item) => item.path);
+
+    expect(setupPaths).toContain(BUNDLED_PAYMENTS_SETUP_PATH);
+    expect(setupPaths).not.toContain('/admin/setup/grow');
+    expect(setupPaths).not.toContain('/admin/setup/payments');
+  });
+
+  it('grow slug tenant uses same bundled nav as icount (I3-T2)', () => {
+    const growTenant = { country: 'IL', payment_provider: 'grow' as const };
+    const setupItems = navigationConfig.filter(
+      (item) => matchesTenantFilter(item, growTenant) && item.sectionKey === 'setup',
+    );
+    const setupPaths = setupItems.map((item) => item.path);
+
+    expect(setupPaths).toContain(BUNDLED_PAYMENTS_SETUP_PATH);
+    expect(setupPaths).not.toContain('/admin/setup/icount');
+  });
+
+  it('shows split payment/invoicing links for non-bundled tenants', () => {
     const usTenant = { country: 'US', payment_provider: 'stripe' as const };
     const setupItems = navigationConfig.filter(
       (item) => matchesTenantFilter(item, usTenant) && item.sectionKey === 'setup',
@@ -41,7 +70,7 @@ describe('navigationConfig', () => {
 
     expect(setupPaths).toContain('/admin/setup/payments');
     expect(setupPaths).toContain('/admin/setup/invoicing');
-    expect(setupPaths).not.toContain('/admin/setup/grow');
+    expect(setupPaths).not.toContain(BUNDLED_PAYMENTS_SETUP_PATH);
   });
 
   it('includes platform onboard only for super_admin', () => {

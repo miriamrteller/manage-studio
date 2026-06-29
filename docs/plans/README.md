@@ -9,7 +9,7 @@ Agent-optimized implementation plans. Create before coding (see `.instructions.m
 
 | Date | Feature | Status |
 | --- | --- | --- |
-| 2026-06-28 | [iCount IL default (mock-first)](finance/icount/00-overview.md) | I0-doc done — **I1 next** (no account yet) |
+| 2026-06-29 | [iCount IL default (mock-first)](finance/icount/00-overview.md) | **Mock phase ✅** — I0-live deferred; I6-research optional |
 | 2026-06-28 | [Admin operations overview](admin-overview-dashboard.md) | Planned — Phase 1F |
 | 2026-06-28 | [Parent portal polish](parent-portal-polish.md) | Planned — contact prefs + upcoming |
 | 2026-06-28 | [Notification blast composer](notification-blast-composer.md) | Planned — Phase 1F |

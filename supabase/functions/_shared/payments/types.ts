@@ -55,6 +55,8 @@ export interface PaymentEvent {
 export interface PaymentProvider {
   readonly slug: string;
   createCharge(params: ChargeParams): Promise<ChargeResult>;
+  /** Saved-card / standing-order charge (renewals). Optional until provider implements API v3 cc/bill. */
+  chargeWithToken?(params: ChargeParams): Promise<ChargeResult>;
   constructEvent(rawBody: string, headers: Headers, tenantId: string): Promise<PaymentEvent>;
   saveCard?(params: {
     customerRef: string;

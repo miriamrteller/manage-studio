@@ -12,6 +12,7 @@ interface GrowPaymentShellProps {
   enrolmentToken?: string;
   onPaid: () => void;
   onPrevious: () => void;
+  provider?: 'grow' | 'icount';
 }
 
 type PollPhase = 'paying' | 'timeout' | 'failed';
@@ -33,6 +34,7 @@ export function GrowPaymentShell({
   enrolmentToken,
   onPaid,
   onPrevious,
+  provider = 'grow',
 }: GrowPaymentShellProps) {
   const { t } = useTranslation();
   const [phase, setPhase] = useState<PollPhase>('paying');
@@ -87,28 +89,42 @@ export function GrowPaymentShell({
     };
   }, [checkStatus, attempt]);
 
-  const isMockPage = pageUrl.includes('mock.grow.local');
+  const isMockPage =
+    provider === 'icount'
+      ? pageUrl.includes('mock.icount.local')
+      : pageUrl.includes('mock.grow.local');
 
   return (
     <div className="space-y-4">
       {isMockPage ? (
         <div
           className="w-full border border-dashed border-border rounded-lg p-6 text-center space-y-2 bg-muted/30"
-          data-testid="grow-mock-page"
+          data-testid={provider === 'icount' ? 'icount-mock-page' : 'grow-mock-page'}
         >
           <p className="font-medium">
-            {t('enrolment.grow_mock_title', { defaultValue: 'Mock Grow payment page' })}
+            {provider === 'icount'
+              ? t('enrolment.icount_mock_title', { defaultValue: 'Mock iCount payment page' })
+              : t('enrolment.grow_mock_title', { defaultValue: 'Mock Grow payment page' })}
           </p>
           <p className="text-sm text-muted-foreground">
-            {t('enrolment.grow_mock_hint', {
-              defaultValue:
-                'GROW_MOCK is on, so the hosted page is simulated and the payment auto-confirms.',
-            })}
+            {provider === 'icount'
+              ? t('enrolment.icount_mock_hint', {
+                  defaultValue:
+                    'ICOUNT_MOCK is on, so the hosted page is simulated and the payment auto-confirms.',
+                })
+              : t('enrolment.grow_mock_hint', {
+                  defaultValue:
+                    'GROW_MOCK is on, so the hosted page is simulated and the payment auto-confirms.',
+                })}
           </p>
         </div>
       ) : (
         <iframe
-          title={t('enrolment.grow_payment_title', { defaultValue: 'Secure payment' })}
+          title={
+            provider === 'icount'
+              ? t('enrolment.icount_payment_title', { defaultValue: 'Secure payment' })
+              : t('enrolment.grow_payment_title', { defaultValue: 'Secure payment' })
+          }
           src={pageUrl}
           className="w-full h-[520px] border border-border rounded-lg"
         />
@@ -116,9 +132,12 @@ export function GrowPaymentShell({
 
       {phase === 'paying' && (
         <p className="text-sm text-muted-foreground" role="status" aria-live="polite">
-          {t('enrolment.grow_waiting', {
-            defaultValue: 'Waiting for payment confirmation… this can take a few seconds.',
-          })}
+          {t(
+            provider === 'icount' ? 'enrolment.icount_waiting' : 'enrolment.grow_waiting',
+            {
+              defaultValue: 'Waiting for payment confirmation… this can take a few seconds.',
+            },
+          )}
         </p>
       )}
 
@@ -130,10 +149,13 @@ export function GrowPaymentShell({
 
       {phase === 'timeout' && (
         <p className="text-sm text-destructive" role="alert">
-          {t('enrolment.grow_timeout', {
-            defaultValue:
-              'We have not received confirmation yet. If you completed payment, please wait a moment and retry.',
-          })}
+          {t(
+            provider === 'icount' ? 'enrolment.icount_timeout' : 'enrolment.grow_timeout',
+            {
+              defaultValue:
+                'We have not received confirmation yet. If you completed payment, please wait a moment and retry.',
+            },
+          )}
         </p>
       )}
 
@@ -148,7 +170,10 @@ export function GrowPaymentShell({
             className="flex-1"
             onClick={() => setAttempt((n) => n + 1)}
           >
-            {t('enrolment.grow_retry', { defaultValue: 'Retry' })}
+            {t(
+              provider === 'icount' ? 'enrolment.icount_retry' : 'enrolment.grow_retry',
+              { defaultValue: 'Retry' },
+            )}
           </Button>
         )}
       </div>

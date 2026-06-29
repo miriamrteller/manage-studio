@@ -46,28 +46,6 @@ export function FilterMultiSelect({
         {label}
       </span>
 
-      {selected.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-2" aria-labelledby={`${id}-label`}>
-          {selected.map((item) => (
-            <span
-              key={item.value}
-              className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs border"
-              style={{ borderColor: 'var(--color-border-default)' }}
-            >
-              {item.label}
-              <button
-                type="button"
-                onClick={() => handleRemove(item.value)}
-                className="text-gray-500 hover:text-gray-800"
-                aria-label={`${t('common.remove')} ${item.label}`}
-              >
-                ✕
-              </button>
-            </span>
-          ))}
-        </div>
-      )}
-
       {available.length > 0 ? (
         <select
           id={id}
@@ -87,6 +65,28 @@ export function FilterMultiSelect({
         options.length > 0 && (
           <p className="text-xs text-gray-500">{t('common.filters.all_selected')}</p>
         )
+      )}
+
+      {selected.length > 0 && (
+        <div className="flex flex-wrap gap-2 mt-2" aria-labelledby={`${id}-label`}>
+          {selected.map((item) => (
+            <span
+              key={item.value}
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs border"
+              style={{ borderColor: 'var(--color-border-default)' }}
+            >
+              {item.label}
+              <button
+                type="button"
+                onClick={() => handleRemove(item.value)}
+                className="text-gray-500 hover:text-gray-800"
+                aria-label={`${t('common.remove')} ${item.label}`}
+              >
+                ✕
+              </button>
+            </span>
+          ))}
+        </div>
       )}
     </div>
   );

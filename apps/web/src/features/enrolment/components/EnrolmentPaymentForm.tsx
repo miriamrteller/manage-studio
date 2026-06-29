@@ -8,6 +8,7 @@ import { useTenant } from '@/hooks/useTenant';
 import { CheckoutPaymentShell } from './CheckoutPaymentShell';
 import { ProviderCheckoutShell } from './EnrolmentCheckoutShells';
 import type { CheckoutChargePayload } from '../lib/checkoutBootstrapTypes';
+import { isHostedPageCheckoutReady } from '@/lib/tenantProviderRouting';
 
 interface BasePaymentFormProps {
   classId: string;
@@ -72,9 +73,9 @@ async function fetchCheckoutIntent(input: {
       Boolean(data?.mockCompleted) ||
       Boolean(data?.mockPending) ||
       data?.paymentProvider === 'mock';
-    const growReady = data?.paymentProvider === 'grow' && Boolean(data?.pageUrl);
+    const hostedPageReady = isHostedPageCheckoutReady(data?.paymentProvider, data?.pageUrl);
 
-    if (error || (!data?.clientSecret && !mockReady && !growReady)) {
+    if (error || (!data?.clientSecret && !mockReady && !hostedPageReady)) {
       throw new Error(
         error?.message ??
           (typeof data?.error === 'string' ? data.error : null) ??
@@ -199,11 +200,11 @@ function CheckoutIntentShell({
     );
   }
 
-  const growReady = paymentProvider === 'grow' && Boolean(pageUrl);
+  const hostedPageReady = isHostedPageCheckoutReady(paymentProvider, pageUrl);
 
   if (
     isLoading ||
-    (!mockPending && paymentProvider !== 'mock' && !growReady && (!clientSecret || !publishableKey))
+    (!mockPending && paymentProvider !== 'mock' && !hostedPageReady && (!clientSecret || !publishableKey))
   ) {
     return <p role="status">{t('common.loading')}</p>;
   }

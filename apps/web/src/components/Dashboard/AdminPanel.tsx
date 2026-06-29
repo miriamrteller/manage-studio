@@ -5,6 +5,8 @@ import { useAdminDashboard } from './useAdminDashboard';
 import { useEntityLabels } from '@/hooks/useEntityLabels';
 import { FinanceHealthCard } from '@/features/finance/components/FinanceHealthCard';
 import { AdminOverviewSection } from '@/features/admin-dashboard/components/AdminOverviewSection';
+import { useTenant } from '@/hooks/useTenant';
+import { getBundledPaymentProviderSlug } from '@/lib/tenantProviderRouting';
 
 /**
  * AdminPanel: Smart component for admin dashboard.
@@ -16,6 +18,8 @@ export function AdminPanel() {
   const navigate = useNavigate();
   const { overview, isLoading, error, refetch } = useAdminDashboard();
   const { labels, modules } = useEntityLabels();
+  const tenant = useTenant();
+  const healthProvider = getBundledPaymentProviderSlug(tenant);
 
   return (
     <div className="space-y-8">
@@ -36,7 +40,7 @@ export function AdminPanel() {
         onRefresh={refetch}
       />
 
-      <FinanceHealthCard />
+      {healthProvider && <FinanceHealthCard provider={healthProvider} />}
 
       {/* Setup Navigation Cards */}
       <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -73,26 +77,6 @@ export function AdminPanel() {
               fullWidth
               onClick={() => navigate('/admin/setup/settings')}
               aria-label={t('settings.hub.page_title')}
-            >
-              {t('common.manage')} →
-            </Button>
-          </div>
-        </div>
-
-        {/* Tax / VAT Card */}
-        <div className="card border border-gray-200 hover:border-primary hover:shadow-md transition-all">
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900">
-              {t('settings.tax.title')}
-            </h3>
-            <p className="text-sm text-gray-600">
-              {t('settings.tax.description')}
-            </p>
-            <Button
-              variant="primary"
-              fullWidth
-              onClick={() => navigate('/admin/setup/tax')}
-              aria-label={t('settings.tax.title')}
             >
               {t('common.manage')} →
             </Button>
