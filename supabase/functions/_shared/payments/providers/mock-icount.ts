@@ -1,5 +1,9 @@
-import { buildMockPaymentEvent } from "../mock-payment-event.ts";
-import { ChargeMetadataSchema } from "../types.ts";
+import {
+  buildMockCcBillRequest,
+  MOCK_ICOUNT_API_V3_BASE,
+  parseMockCcBillResponse,
+} from "../icount/mock-api.ts";
+import { parseIcountIpn } from "../icount/ipn.ts";
 import type { ChargeParams, ChargeResult, PaymentEvent, PaymentProvider } from "../types.ts";
 
 /**
@@ -13,16 +17,6 @@ export class MockIcountPaymentProvider implements PaymentProvider {
   async createCharge(params: ChargeParams): Promise<ChargeResult> {
     const providerPaymentRef = `mockicount_${crypto.randomUUID()}`;
     const amount = (params.amountMinor / 100).toFixed(2);
-
-    if (params.savedToken) {
-      const event = buildMockPaymentEvent({
-        providerPaymentRef,
-        amountMinor: params.amountMinor,
-        currency: params.currency,
-        metadata: params.metadata,
-      });
-      return { providerPaymentRef, emitSyncEvent: event };
-    }
 
     const query = new URLSearchParams({
       cs: amount,
@@ -38,21 +32,47 @@ export class MockIcountPaymentProvider implements PaymentProvider {
     };
   }
 
+  async chargeWithToken(params: ChargeParams): Promise<ChargeResult> {
+    if (!params.savedToken) {
+      throw new Error("Mock iCount cc/bill requires savedToken");
+    }
+
+    const requestFields = buildMockCcBillRequest(params);
+    const responseJson = {
+      status: true,
+      confirmation_code: `mockicount_${crypto.randomUUID()}`,
+      doctype: "invrec",
+      docnum: 3010,
+      sum: requestFields.sum,
+      currency_code: requestFields.currency_code,
+    };
+
+    const parsed = parseMockCcBillResponse(responseJson);
+    void MOCK_ICOUNT_API_V3_BASE;
+
+    return {
+      providerPaymentRef: parsed.confirmationCode,
+      pendingWebhook: true,
+    };
+  }
+
   async constructEvent(rawBody: string, headers: Headers, _tenantId: string): Promise<PaymentEvent> {
     const sig = headers.get("x-mock-signature");
     if (sig !== "mock-valid") {
       throw new Error("Invalid mock iCount signature");
     }
-    const parsed = JSON.parse(rawBody) as PaymentEvent;
-    ChargeMetadataSchema.parse(parsed.metadata);
-    return parsed;
+    return parseIcountIpn(rawBody);
   }
 
   async refundCharge(params: {
     providerPaymentRef: string;
     amountMinor: number;
   }): Promise<{ providerRefundRef: string }> {
-    return { providerRefundRef: `mockicount_ref_${params.providerPaymentRef}_${params.amountMinor}` };
+    const sum = (params.amountMinor / 100).toFixed(2);
+    void sum;
+    return {
+      providerRefundRef: `mockicount_refund_${params.providerPaymentRef}_${params.amountMinor}`,
+    };
   }
 
   async verifyCredentials(_tenantId: string): Promise<{ valid: boolean; message: string }> {

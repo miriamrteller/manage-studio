@@ -1,0 +1,8 @@
+{
+  "_comment": "Provisional until I0-live sandbox capture. Form fields for API v3 doc/create credit note refund.",
+  "doctype": "refund",
+  "original_confirmation_code": "mockicount_renewal_xyz789",
+  "sum": 350.0,
+  "currency_code": "ILS",
+  "reason": "OpalSwift refund"
+}

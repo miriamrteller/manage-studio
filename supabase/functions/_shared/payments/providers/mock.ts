@@ -1,7 +1,9 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { buildMockIpnFromCharge } from "../icount/mock-api.ts";
 import { buildMockPaymentEvent } from "../mock-payment-event.ts";
 import type { ChargeMetadata, ChargeParams, ChargeResult, PaymentEvent, PaymentProvider } from "../types.ts";
 import { ChargeMetadataSchema } from "../types.ts";
+import { MockIcountPaymentProvider } from "./mock-icount.ts";
 
 export const MOCK_PAYMENT_DECLINED_CODE = "MOCK_PAYMENT_DECLINED";
 
@@ -64,6 +66,7 @@ async function saveMockCardToken(
   service: SupabaseClient,
   metadata: ChargeMetadata,
   cardNumber: string,
+  providerSlug: string,
 ): Promise<void> {
   const normalized = cardNumber.replace(/\s/g, "");
   const last4 = normalized.length >= 4 ? normalized.slice(-4) : null;
@@ -128,9 +131,10 @@ export async function confirmMockPayment(
 export async function applyMockSyncEvent(
   service: SupabaseClient,
   event: PaymentEvent,
+  providerSlug = "mock",
 ): Promise<void> {
   const { handlePaymentEventInternal } = await import("../handle-payment-event.ts");
-  await handlePaymentEventInternal(service, event, "mock");
+  await handlePaymentEventInternal(service, event, providerSlug);
 }
 
 export function buildChargeMetadata(input: {

@@ -65,7 +65,7 @@ export async function createCheckoutCharge(
 
   if (result.emitSyncEvent) {
     const { applyMockSyncEvent } = await import("./payments/providers/mock.ts");
-    await applyMockSyncEvent(service, result.emitSyncEvent);
+    await applyMockSyncEvent(service, result.emitSyncEvent, tenant.payment_provider);
   }
 
   const isMock = tenant.payment_provider === "mock";

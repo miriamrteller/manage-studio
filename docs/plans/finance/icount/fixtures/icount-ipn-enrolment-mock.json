@@ -1,0 +1,19 @@
+{
+  "_comment": "Provisional until I0-live sandbox capture. Simulated IPN body after CC page enrolment payment.",
+  "cp": 12345,
+  "sum": 350.0,
+  "currency_code": "ILS",
+  "confirmation_code": "mockicount_enrol_abc123",
+  "doctype": "invrec",
+  "docnum": 3006,
+  "num_of_payments": 1,
+  "customer_id": 9001,
+  "customer_email": "payer@example.com",
+  "tenant_id": "00000000-0000-0000-0000-0000000000bb",
+  "engagement_id": "00000000-0000-0000-0000-000000001001",
+  "billing_account_id": "00000000-0000-0000-0000-000000000408",
+  "charge_type": "initial",
+  "offering_id": "00000000-0000-0000-0000-000000000311",
+  "person_id": "00000000-0000-0000-0000-000000000501",
+  "total_amount_minor": "35000"
+}

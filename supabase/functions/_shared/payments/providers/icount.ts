@@ -84,6 +84,10 @@ export class IcountPaymentProvider implements PaymentProvider {
     return { providerPaymentRef, pageUrl, pendingWebhook: true };
   }
 
+  async chargeWithToken(_params: ChargeParams): Promise<ChargeResult> {
+    throw new Error("iCount chargeWithToken pending I0-live / I4-live");
+  }
+
   async constructEvent(_rawBody: string, _headers: Headers, _tenantId: string): Promise<PaymentEvent> {
     throw new Error("iCount IPN parser requires I0-live capture (I2b)");
   }

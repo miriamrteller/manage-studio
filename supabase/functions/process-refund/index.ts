@@ -2,7 +2,7 @@ import { z } from "npm:zod@3.22.4";
 import { handleOptions, jsonResponse } from "../_shared/cors.ts";
 import { createServiceClient, requireAuthUser } from "../_shared/supabase.ts";
 import { enqueueDocument } from "../_shared/enqueue-document.ts";
-import { getPaymentProviderForTenant } from "../_shared/payments/index.ts";
+import { executeProviderRefund } from "../_shared/payments/refund-provider.ts";
 
 const ProcessRefundBodySchema = z.object({
   payment_id: z.string().uuid(),
@@ -67,21 +67,22 @@ Deno.serve(async (req) => {
   }
 
   if (original.provider !== "manual" && original.provider_payment_ref) {
-    const provider = await getPaymentProviderForTenant(service, tenantId);
-    if (provider.refundCharge) {
-      try {
-        await provider.refundCharge({
-          providerPaymentRef: original.provider_payment_ref as string,
-          amountMinor: refundAmount,
-        });
-      } catch (err) {
-        // Surface the provider's message (e.g. Grow's same-day full-refund constraint) so the
-        // refund modal can show it instead of a generic 500.
-        return jsonResponse(
-          { error: err instanceof Error ? err.message : "Provider refund failed" },
-          422,
-        );
-      }
+    try {
+      await executeProviderRefund(
+        service,
+        {
+          provider: original.provider as string,
+          provider_payment_ref: original.provider_payment_ref as string,
+        },
+        refundAmount,
+      );
+    } catch (err) {
+      // Surface the provider's message (e.g. Grow's same-day full-refund constraint) so the
+      // refund modal can show it instead of a generic 500.
+      return jsonResponse(
+        { error: err instanceof Error ? err.message : "Provider refund failed" },
+        422,
+      );
     }
   }
 

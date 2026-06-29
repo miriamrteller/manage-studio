@@ -1,0 +1,11 @@
+{
+  "_comment": "Provisional until I0-live sandbox capture. Form fields for API v3 cc/bill saved-card charge.",
+  "cc_storage_id": "icount_saved_tok_abc",
+  "sum": 350.0,
+  "currency_code": "ILS",
+  "description": "OpalSwift renewal",
+  "tenant_id": "00000000-0000-0000-0000-0000000000bb",
+  "engagement_id": "11111111-1111-1111-1111-111111111111",
+  "billing_schedule_id": "55555555-5555-5555-5555-555555555555",
+  "charge_type": "renewal"
+}
