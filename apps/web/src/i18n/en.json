@@ -1059,7 +1059,9 @@
       "reason": "Reason (optional)",
       "submit": "Process refund",
       "success": "Refund processed.",
-      "grow_note": "Grow typically allows a full refund only on the same day as the charge. The provider message is shown below if it rejects the refund."
+      "grow_note": "Grow typically allows a full refund only on the same day as the charge. The provider message is shown below if it rejects the refund.",
+      "icount_note": "iCount may issue a credit note instead of reversing the charge. The provider message is shown below if the refund is rejected. Mock mode completes instantly.",
+      "bundled_note": "The refund is sent to your payment provider. Any provider message is shown below if it fails."
     },
     "payment_history": {
       "title": "Payment history",

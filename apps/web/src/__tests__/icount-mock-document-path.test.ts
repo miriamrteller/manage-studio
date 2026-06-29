@@ -2,7 +2,7 @@
  * I2a: mock payment → document webhook path for iCount bundled flow.
  * Run: pnpm -C apps/web test icount-mock-document-path.test.ts
  */
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { confirmMockPayment, buildChargeMetadata } from '../../../../supabase/functions/_shared/payments/providers/mock.ts';
 import { handleInvoiceEventInternal } from '../../../../supabase/functions/_shared/payments/handle-invoice-event.ts';
 import { buildMockIcountDocumentWebhookBody } from '../../../../supabase/functions/_shared/payments/icount/document.ts';
@@ -67,12 +67,27 @@ function makeDocumentService() {
         update: () => ({ eq: () => ({ in: async () => ({ error: null }) }) }),
       };
     },
+    storage: {
+      from: () => ({
+        upload: async () => ({ error: null }),
+      }),
+    },
   } as never;
 
   return { service, paymentUpdates };
 }
 
 describe('confirm-mock-payment + mock iCount document webhook', () => {
+  beforeEach(() => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(new Uint8Array([0x25, 0x50, 0x44, 0x46]), { status: 200 }),
+    );
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('confirm-mock-payment delegates to handlePaymentEventInternal with icount slug', async () => {
     const { handlePaymentEventInternal } = await import(
       '../../../../supabase/functions/_shared/payments/handle-payment-event.ts'
@@ -121,5 +136,9 @@ describe('confirm-mock-payment + mock iCount document webhook', () => {
       expect(docResult.paymentId).toBe('pay-mock-icount');
     }
     expect(paymentUpdates[0]).toMatchObject({ external_document_id: 'invrec_3006' });
+    expect(paymentUpdates[0]).toMatchObject({
+      document_pdf_path: `documents/${ICOUNT_TENANT}/${MOCK_PAYMENT_REF}/invrec_3006.pdf`,
+      document_stored_at: expect.any(String),
+    });
   });
 });

@@ -63,6 +63,22 @@ export function RefundPaymentModal({
           })}
         </p>
       )}
+      {provider === 'icount' && (
+        <p className="text-xs text-muted-foreground">
+          {t('finance.refund_payment.icount_note', {
+            defaultValue:
+              'iCount may issue a credit note instead of reversing the charge. The provider message is shown below if the refund is rejected. Mock mode completes instantly.',
+          })}
+        </p>
+      )}
+      {provider !== 'grow' && provider !== 'icount' && (
+        <p className="text-xs text-muted-foreground">
+          {t('finance.refund_payment.bundled_note', {
+            defaultValue:
+              'The refund is sent to your payment provider. Any provider message is shown below if it fails.',
+          })}
+        </p>
+      )}
       <label className="block text-sm">
         {t('finance.refund_payment.reason', { defaultValue: 'Reason (optional)' })}
         <input

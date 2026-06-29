@@ -101,6 +101,11 @@ function makeService(options: {
         },
       };
     },
+    storage: {
+      from: () => ({
+        upload: async () => ({ error: null }),
+      }),
+    },
   } as never;
 
   return { service, paymentUpdates, queueUpdates };
@@ -110,6 +115,9 @@ describe('handle-invoice-event isolation (I2a-T1 … I2a-T4)', () => {
   beforeEach(() => {
     vi.spyOn(growProvider, 'parseGrowInvoiceNotify');
     vi.spyOn(icountDocument, 'parseIcountDocumentWebhook');
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(new Uint8Array([0x25, 0x50, 0x44, 0x46]), { status: 200 }),
+    );
   });
 
   afterEach(() => {
@@ -141,6 +149,9 @@ describe('handle-invoice-event isolation (I2a-T1 … I2a-T4)', () => {
     expect(growProvider.parseGrowInvoiceNotify).toHaveBeenCalled();
     expect(icountDocument.parseIcountDocumentWebhook).not.toHaveBeenCalled();
     expect(paymentUpdates[0]).toMatchObject({ external_document_id: 'DOC-555000' });
+    expect(paymentUpdates[0]).toMatchObject({
+      document_pdf_path: expect.stringContaining('documents/'),
+    });
   });
 
   it('I2a-T2: iCount fixture on icount tenant uses iCount parser only', async () => {
