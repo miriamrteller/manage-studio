@@ -11,6 +11,8 @@ Use these terms consistently in code, docs, and agent prompts. **Do not mix syno
 | **Bundled** | `payment_provider === invoicing_provider === 'icount'` | Atomic credential RPC |
 | **IPN** | CC page instant payment notification POST | `handle-payment-event` |
 | **Document webhook** | JSON array POST with `pdf_link`, `cc_payments[]` | `handle-invoice-event` |
+| **API v3** | REST modules at `POST /api/v3.php/{module}/{method}` | Bearer token; form-encoded body |
+| **apiv3 docs** | Interactive catalog | [apiv3.icount.co.il](https://apiv3.icount.co.il/) — see [API-V3-REFERENCE.md](API-V3-REFERENCE.md) |
 
 **Redirect template (official):**
 

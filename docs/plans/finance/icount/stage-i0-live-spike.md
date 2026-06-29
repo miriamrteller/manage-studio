@@ -35,7 +35,7 @@ Full workflow: [PROVIDER-ISOLATION-TDD.md](PROVIDER-ISOLATION-TDD.md) § Post-ac
 1. **Sandbox setup** — [RUNBOOK.md](RUNBOOK.md) § Sandbox setup
 2. **Capture raw IPN POST** → `apps/web/src/__tests__/fixtures/icount-ipn-notify.json` (headers + body; redacted)
 3. **Optional:** live document webhook capture (compare to official example)
-4. **Probe API v3** with account token:
+4. **Probe API v3** with account token — module/method list in [API-V3-REFERENCE.md](API-V3-REFERENCE.md):
    - `verifyCredentials` module (#1)
    - Renewal / saved-card charge (#3) — **sign outcome A/B/C** ([SPIKE-ADR § Renewals decision](SPIKE-ADR.md#renewals-decision-i0-live))
    - Refund / credit note (#4) — confirm or defer

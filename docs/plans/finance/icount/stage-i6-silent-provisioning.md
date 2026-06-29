@@ -2,7 +2,7 @@
 
 **Goal:** New IL tenants get a working iCount account **without** manually pasting cid + API token in settings — before **V1 complete**. **Does not block** the integration track (I3 → I2a → I0-live → I2b → I5).
 
-**Read with:** [00-overview.md](00-overview.md) (dual tracks) · [SPIKE-ADR.md](SPIKE-ADR.md) · [v3-0-operator-onboarding-wizard.md](../../v3-0-operator-onboarding-wizard.md)
+**Read with:** [00-overview.md](00-overview.md) (dual tracks) · [SPIKE-ADR.md](SPIKE-ADR.md) · [API-V3-REFERENCE.md](API-V3-REFERENCE.md) (registration module) · [v3-0-operator-onboarding-wizard.md](../../v3-0-operator-onboarding-wizard.md)
 
 ---
 
@@ -34,7 +34,7 @@ Provisioning track:   I6-research (now) ──→ I6-impl (before V1 complete)
 
 ### Scope IN
 
-1. Identify **official** iCount partner / reseller / OTP signup API (sales docs, partner portal — **not** help-center invention #29).
+1. Identify **official** iCount partner / reseller / OTP signup API — start with apiv3 [`registration`](https://apiv3.icount.co.il/#/module/registration/register) module (`register`, `wizard`, `otp_*`, `cid_valid`) plus any partner-only docs (sales portal — **not** help-center invention).
 2. Map OpalSwift data from `provision_tenant` + operator wizard to iCount signup payload (business name, VAT id, contact, subdomain, etc.).
 3. Document **success path**: API response → `cid`, `cp`, API token → `save_tenant_icount_credentials` (or platform-level write).
 4. Document **failure path**: fallback to manual I3 settings + admin banner copy.

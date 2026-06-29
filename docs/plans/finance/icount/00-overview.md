@@ -2,7 +2,7 @@
 
 Add **iCount** as a bundled payment + invoice provider and set it as the **default for new IL tenants**. **Grow is not removed.**
 
-**Read before any stage:** this file → active `stage-iN-*.md` → [SPIKE-ADR.md](SPIKE-ADR.md) → [GLOSSARY.md](GLOSSARY.md) → `.instructions.md`
+**Read before any stage:** this file → active `stage-iN-*.md` → [SPIKE-ADR.md](SPIKE-ADR.md) → [API-V3-REFERENCE.md](API-V3-REFERENCE.md) → [GLOSSARY.md](GLOSSARY.md) → `.instructions.md`
 
 ---
 
@@ -29,7 +29,7 @@ Until **I6** ships, **manual credentials** via I3 `IcountSettingsForm` is the su
 
 ## Mock-first, account-last track
 
-**Policy:** Do **not** require an iCount account until the project is almost finished. Build ~60–70% on mocks + official help docs; use the account for a focused **integration week** before I5.
+**Policy:** Do **not** require an iCount account until the project is almost finished. Build ~60–70% on mocks + **help center fixtures** + **API v3 plan mapping** ([API-V3-REFERENCE.md](API-V3-REFERENCE.md)); use the account for a focused **integration week** before I5.
 
 | Phase | Account? | What you get |
 |-------|----------|--------------|
@@ -76,7 +76,7 @@ Until **I6** ships, **manual credentials** via I3 `IcountSettingsForm` is the su
 | I5 | Default slug + seed flip | Yes | [stage-i5-defaults.md](stage-i5-defaults.md) |
 | **I6** | Silent iCount signup | Partner API | [stage-i6-silent-provisioning.md](stage-i6-silent-provisioning.md) |
 
-**Reference:** [RUNBOOK.md](RUNBOOK.md) · [PROVIDER-ISOLATION-TDD.md](PROVIDER-ISOLATION-TDD.md) · [ADAPTER-PATTERNS.md](ADAPTER-PATTERNS.md) · [GLOSSARY.md](GLOSSARY.md)
+**Reference:** [RUNBOOK.md](RUNBOOK.md) · [API-V3-REFERENCE.md](API-V3-REFERENCE.md) · [PROVIDER-ISOLATION-TDD.md](PROVIDER-ISOLATION-TDD.md) · [ADAPTER-PATTERNS.md](ADAPTER-PATTERNS.md) · [GLOSSARY.md](GLOSSARY.md)
 
 ---
 

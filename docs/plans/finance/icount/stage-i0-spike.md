@@ -2,7 +2,7 @@
 
 **Goal:** Lock architecture from **official iCount help docs only**. Produce draft [SPIKE-ADR.md](SPIKE-ADR.md) + fixtures. **No adapter code. No sandbox account required.**
 
-**Status:** Complete (2026-06-28).
+**Status:** Complete (2026-06-28). **API v3 mapping** added 2026-06-29 → [API-V3-REFERENCE.md](API-V3-REFERENCE.md).
 
 ---
 
@@ -14,12 +14,14 @@
 
 ## Scope IN
 
-1. **SPIKE-ADR.md** — Option A′ (CC page redirect + IPN + document webhook) + API catalog from help center
-2. **Fixtures** from official sources only:
+1. **SPIKE-ADR.md** — Option A′ (CC page redirect + IPN + document webhook) + API catalog (help + apiv3)
+2. **API-V3-REFERENCE.md** — REST module mapping from [apiv3.icount.co.il](https://apiv3.icount.co.il/) + snapshot fixture
+3. **Fixtures** from official sources only:
    - `icount-document-webhook-official-example.json`
    - `icount-ipn-official-fields.json` (field catalog — **not** a notify body)
-3. **Plan on disk** — `docs/plans/finance/icount/`
-4. **Mock-first track** documented in [00-overview.md](00-overview.md)
+   - `apiv3-module-index.json` (apiv3 sidebar snapshot)
+4. **Plan on disk** — `docs/plans/finance/icount/`
+5. **Mock-first track** documented in [00-overview.md](00-overview.md)
 
 ---
 
@@ -34,7 +36,8 @@
 ## DoD checklist
 
 - [x] SPIKE-ADR drafted (Option A′)
-- [x] API catalog rows cite official doc URLs
+- [x] API catalog rows cite help + apiv3 URLs
+- [x] [API-V3-REFERENCE.md](API-V3-REFERENCE.md) + module index snapshot
 - [x] Document webhook fixture committed
 - [x] IPN official field catalog committed
 - [x] #7 post-payment ack = N/A
