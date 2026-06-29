@@ -2,7 +2,7 @@
 
 **Goal:** New IL tenants get a working iCount account **without** manually pasting cid + API token in settings — before **V1 complete**. **Does not block** the integration track (I3 → I2a → I0-live → I2b → I5).
 
-**Read with:** [00-overview.md](00-overview.md) (dual tracks) · [SPIKE-ADR.md](SPIKE-ADR.md) · [API-V3-REFERENCE.md](API-V3-REFERENCE.md) (registration module) · [v3-0-operator-onboarding-wizard.md](../../v3-0-operator-onboarding-wizard.md)
+**Read with:** [00-overview.md](00-overview.md) (dual tracks) · [SPIKE-ADR.md](SPIKE-ADR.md) · [API-V3-REFERENCE.md](API-V3-REFERENCE.md) (registration module) · [v3-0-operator-onboarding-wizard.md](../../v3-0-operator-onboarding-wizard.md) · [stage-g8-silent-provisioning.md](../stage-g8-silent-provisioning.md) (symmetric Grow track)
 
 ---
 
@@ -103,3 +103,18 @@ See [00-overview.md](00-overview.md#v1-complete-gate). I6-impl DoD required unle
 | **I6-impl** | ❌ No — needs I6-research sign-off + partner credentials |
 
 **Stop:** One sub-stage per session (research **or** impl).
+
+### Paste prompt (I6-research)
+
+```text
+Stage I6-research only — docs, no code.
+
+Read @docs/plans/finance/icount/stage-i6-silent-provisioning.md (I6-research section),
+@docs/plans/finance/icount/API-V3-REFERENCE.md, and @docs/plans/finance/icount/SPIKE-ADR.md.
+
+Deliver docs/plans/finance/icount/I6-ADR.md per I6-research DoD:
+partner/registration API auth model, OpalSwift→iCount field mapping,
+success/failure paths (manual bundled settings fallback), security/secrets.
+
+Stop after research — no I6-impl. Do not block I2a/G8-research.
+```
