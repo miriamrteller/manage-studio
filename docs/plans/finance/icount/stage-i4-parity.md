@@ -6,8 +6,10 @@
 
 ## I4a — No account (can ship with I2a)
 
+**Implementation plan:** [stage-i4a-no-account.md](stage-i4a-no-account.md)
+
 - Generalize `handle-payment-document` for `pdf_link` from document webhook fixture (#6)
-- Token invalidation on credential RPC slug change (#9)
+- Token invalidation on credential RPC slug change (#9) — **done**
 - `RefundPaymentModal` generic bundled-provider copy (#14)
 
 ---

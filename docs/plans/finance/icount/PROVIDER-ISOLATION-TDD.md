@@ -43,6 +43,8 @@
 | `apps/web/src/__tests__/provider-isolation-renewal-refund.test.ts` | I4 | Billing/refund use payment row slug |
 | `apps/web/src/__tests__/icount-ipn-parse.test.ts` | I4-mock-parity | IPN parser from official field fixtures |
 | `apps/web/src/__tests__/icount-mock-renewal-flow.test.ts` | I4-mock-parity | cc/bill + IPN delivery; no emitSyncEvent |
+| `apps/web/src/__tests__/bundled-document-pdf.test.ts` | I4a | Shared PDF fetch/storage helper |
+| `apps/web/src/__tests__/icount-document-pdf-retention.test.ts` | I4a | iCount `pdf_link` → `document_pdf_path` |
 | `apps/web/src/__tests__/provider-isolation-dual-seed.test.ts` | I5 | icount default + Grow regression tenant |
 
 Deno edge tests may mirror parse/peek logic under `supabase/functions/_shared/payments/icount/__tests__/` if preferred — web tests above are the minimum bar per finance runbook.
@@ -148,6 +150,15 @@ Do **not** implement live IPN parsers or flip defaults until this sequence compl
 | I4-T6 | iCount renewal cron / mock | `chargeWithToken` only; **never** `createCharge` with token |
 | I4-T7 | iCount enrolment `createCharge` | Hosted page only; **never** `chargeWithToken` |
 | I4-T8 | MockIcount `constructEvent` | Rejects JSON PaymentEvent blobs; parses URL-encoded IPN |
+
+### I4a — PDF retention + refund UI (no account)
+
+| # | Test case | Assert |
+|---|-----------|--------|
+| I4a-T1 | iCount document fixture → `applyBundledDocumentNotify` | `pdf_link` → `document_pdf_path` when fetch succeeds |
+| I4a-T2 | Grow document via `handle-invoice-event` | Regression — still applies bundled fields |
+| I4a-T3 | `handle-payment-document` Grow endpoint | Shared PDF helper; HTTP contract unchanged |
+| I4a-T4 | `RefundPaymentModal` | Provider note for `grow` and `icount` |
 
 ### I5 — Dual seed (TDD before default flip)
 
