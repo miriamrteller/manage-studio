@@ -2,7 +2,9 @@ import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4
 import { getEnv } from "../env.ts";
 import { MockPaymentProvider } from "./providers/mock.ts";
 import { MockGrowPaymentProvider } from "./providers/mock-grow.ts";
+import { MockIcountPaymentProvider } from "./providers/mock-icount.ts";
 import { GrowPaymentProvider } from "./providers/grow.ts";
+import { IcountPaymentProvider } from "./providers/icount.ts";
 import { StripePaymentProvider } from "./providers/stripe.ts";
 import { parsePaymentProviderSlug, type PaymentProviderSlug } from "./registry.ts";
 import type { PaymentProvider } from "./types.ts";
@@ -22,6 +24,10 @@ export function getPaymentProvider(
       return getEnv("GROW_MOCK") === "true"
         ? new MockGrowPaymentProvider()
         : new GrowPaymentProvider(service);
+    case "icount":
+      return getEnv("ICOUNT_MOCK") === "true"
+        ? new MockIcountPaymentProvider()
+        : new IcountPaymentProvider(service);
     default: {
       const _exhaustive: never = parsed;
       return _exhaustive;

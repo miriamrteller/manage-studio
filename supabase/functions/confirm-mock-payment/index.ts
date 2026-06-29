@@ -6,6 +6,7 @@ import {
   confirmMockPayment,
   scenarioFromMockCardNumber,
 } from "../_shared/payments/providers/mock.ts";
+import { resolveMockConfirmEligibility } from "../_shared/payments/mock-confirm-eligibility.ts";
 
 const ConfirmMockPaymentBodySchema = z.object({
   offering_id: z.string().uuid(),
@@ -39,8 +40,8 @@ Deno.serve(async (req) => {
 
     const { session } = resolved;
     const paymentProvider = session.tenant.payment_provider;
-    const isMockGrow = paymentProvider === "grow" && Deno.env.get("GROW_MOCK") === "true";
-    if (paymentProvider !== "mock" && !isMockGrow) {
+    const mockEligibility = resolveMockConfirmEligibility(paymentProvider);
+    if (!mockEligibility.ok) {
       return jsonResponse({ error: "Tenant is not configured for mock payments" }, 409);
     }
 
@@ -69,7 +70,7 @@ Deno.serve(async (req) => {
       currency: session.currency,
       scenario,
       providerPaymentRef: body.mock_payment_ref,
-      providerSlug: isMockGrow ? "grow" : "mock",
+      providerSlug: mockEligibility.providerSlug,
       mockCardNumber: body.mock_card_number,
     });
 

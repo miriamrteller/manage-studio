@@ -47,7 +47,7 @@ export interface ConfirmMockPaymentParams {
   currency: string;
   scenario: MockPaymentScenario;
   providerPaymentRef?: string;
-  /** Defaults to `mock`; use `grow` when confirming mock Grow hosted-page charges. */
+  /** Defaults to `mock`; use `grow` or `icount` when confirming mock hosted-page charges. */
   providerSlug?: string;
   /** Saves a default card token for confirmation emails (mock / GROW_MOCK flows). */
   mockCardNumber?: string;
