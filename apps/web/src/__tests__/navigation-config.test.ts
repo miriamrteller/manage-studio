@@ -20,7 +20,6 @@ describe('navigationConfig', () => {
     expect(paths).toContain('/admin/finance/payments');
     expect(paths).toContain('/admin/finance/expenses');
     expect(paths).toContain('/admin/finance/expenses/categories');
-    expect(paths).toContain('/admin/setup/tax');
   });
 
   it('shows bundled payments setup for grow slug (generic nav, not grow-only path)', () => {

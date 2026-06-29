@@ -16,7 +16,6 @@ import StripeSettingsPage from "./pages/StripeSettingsPage";
 import BundledPaymentsSettingsPage from "./pages/BundledPaymentsSettingsPage";
 import PaymentSettingsPage from "./pages/PaymentSettingsPage";
 import InvoicingSettingsPage from "./pages/InvoicingSettingsPage";
-import TaxSettingsPage from "./pages/TaxSettingsPage";
 import TenantSettingsPage from "./pages/TenantSettingsPage";
 import PlatformOnboardPage from "./pages/PlatformOnboardPage";
 import FinanceWalkthroughPage from "./pages/FinanceWalkthroughPage";
@@ -85,7 +84,7 @@ const router = createBrowserRouter([
       { path: "admin/setup/terms", element: <AdminRoute><TermsPage /></AdminRoute> },
       { path: "admin/setup/classes", element: <AdminRoute><AdminClassesPage /></AdminRoute> },
       { path: "admin/setup/settings", element: <AdminRoute><TenantSettingsPage /></AdminRoute> },
-      { path: "admin/setup/tax", element: <AdminRoute><TaxSettingsPage /></AdminRoute> },
+      { path: "admin/setup/tax", element: <AdminRoute><Navigate to="/admin/setup/classes" replace /></AdminRoute> },
       { path: "admin/setup/stripe", element: <AdminRoute><StripeSettingsPage /></AdminRoute> },
       { path: "admin/setup/bundled-payments", element: <AdminRoute><BundledPaymentsSettingsPage /></AdminRoute> },
       { path: "admin/setup/grow", element: <AdminRoute><Navigate to="/admin/setup/bundled-payments" replace /></AdminRoute> },

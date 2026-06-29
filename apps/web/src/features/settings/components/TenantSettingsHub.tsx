@@ -69,11 +69,6 @@ export function TenantSettingsHub() {
       <section className="space-y-4">
         <h2 className="text-lg font-semibold text-foreground">{t('settings.hub.more_settings')}</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <SettingsLinkCard
-            title={t('settings.tax.title')}
-            description={t('settings.tax.description')}
-            href="/admin/setup/tax"
-          />
           {tenantUsesBundledPayments(tenant) ? (
             <SettingsLinkCard
               title={bundledPaymentsNavTitle(t)}

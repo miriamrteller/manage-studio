@@ -131,13 +131,6 @@ export const navigationConfig: NavItem[] = [
     indent: true,
   },
   {
-    path: '/admin/setup/tax',
-    labelKey: 'settings.tax.title',
-    requiredRoles: ['tenant_admin'],
-    sectionKey: 'setup',
-    indent: true,
-  },
-  {
     path: '/admin/setup/bundled-payments',
     labelKey: 'settings.bundled.nav_title',
     requiredRoles: ['tenant_admin'],
