@@ -19,14 +19,31 @@ export function TaxSettingsForm() {
         <p className="text-sm text-muted-foreground">{t('settings.tax.description')}</p>
       </header>
 
-      <div className="rounded border border-border bg-muted/30 p-4 space-y-3 text-sm">
-        <p>{t('settings.tax.no_local_vat')}</p>
-        {bundledSlug ? (
-          <p>{bundledTaxVatMessage(t, bundledSlug)}</p>
-        ) : (
-          <p>{t('settings.tax.invoicing_handles_vat')}</p>
-        )}
-        <p className="font-medium">{t('settings.tax.class_price_hint')}</p>
+      <div className="rounded border border-border bg-muted/30 p-4 space-y-5 text-sm">
+        <div>
+          <h3 className="font-medium text-foreground">{t('settings.tax.what_we_do_title')}</h3>
+          <ul className="mt-2 list-disc ps-5 space-y-1 text-muted-foreground">
+            <li>{t('settings.tax.what_we_do_charge')}</li>
+            <li>{t('settings.tax.what_we_do_store')}</li>
+            <li>{t('settings.tax.what_we_do_display')}</li>
+          </ul>
+        </div>
+
+        <div>
+          <h3 className="font-medium text-foreground">{t('settings.tax.what_we_dont_title')}</h3>
+          <ul className="mt-2 list-disc ps-5 space-y-1 text-muted-foreground">
+            <li>{t('settings.tax.what_we_dont_calculate')}</li>
+            <li>{t('settings.tax.what_we_dont_incl_excl')}</li>
+            <li>{t('settings.tax.what_we_dont_documents')}</li>
+            <li>{t('settings.tax.what_we_dont_status')}</li>
+          </ul>
+        </div>
+
+        <p className="text-muted-foreground">
+          {bundledSlug ? bundledTaxVatMessage(t, bundledSlug) : t('settings.tax.invoicing_handles_vat')}
+        </p>
+
+        <p className="font-medium text-foreground">{t('settings.tax.class_price_rule')}</p>
         <p className="text-xs text-muted-foreground">{t('settings.tax.not_tax_advice')}</p>
       </div>
     </section>

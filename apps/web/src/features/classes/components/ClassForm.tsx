@@ -309,19 +309,11 @@ export function ClassForm({
 
         <FormInput
           htmlFor="price_major"
-          label={
-            tenant?.prices_include_vat !== false
-              ? t('form.class.price_incl_vat')
-              : t('form.class.price_excl_vat')
-          }
+          label={t('form.class.price_families_pay')}
           type="number"
           min="0"
           step="0.01"
-          helperText={
-            tenant?.prices_include_vat !== false
-              ? t('form.class.price_incl_vat_help')
-              : t('form.class.price_excl_vat_help')
-          }
+          helperText={t('form.class.price_families_pay_help')}
           error={form.formState.errors.price_major?.message}
           required
           {...form.register('price_major', { valueAsNumber: true })}
