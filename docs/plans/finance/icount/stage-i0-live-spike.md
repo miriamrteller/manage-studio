@@ -37,11 +37,13 @@ Full workflow: [PROVIDER-ISOLATION-TDD.md](PROVIDER-ISOLATION-TDD.md) § Post-ac
 3. **Optional:** live document webhook capture (compare to official example)
 4. **Probe API v3** with account token:
    - `verifyCredentials` module (#1)
-   - Renewal / saved-card charge (#3) — go/no-go for auto-billing
-   - Refund / credit note (#4)
-5. **Update SPIKE-ADR** catalog rows from **pending** → **complete** or **N/A / deferred**
-6. **Sign SPIKE-ADR approval** row
-7. **Document deferrals** if renewals/refunds have no API (manual runbook until later)
+   - Renewal / saved-card charge (#3) — **sign outcome A/B/C** ([SPIKE-ADR § Renewals decision](SPIKE-ADR.md#renewals-decision-i0-live))
+   - Refund / credit note (#4) — confirm or defer
+   - **Rate limits** — record headers/docs; update [ADAPTER-PATTERNS.md](ADAPTER-PATTERNS.md)
+5. **Webhook security** — confirm HMAC or update [SPIKE-ADR § Webhook security model](SPIKE-ADR.md#webhook-security-model) from capture
+6. **Update SPIKE-ADR** catalog rows from **pending** → **complete** or **N/A / deferred**
+7. **Sign SPIKE-ADR approval** row
+8. **Document deferrals** if renewals/refunds have no API (manual runbook until later)
 
 ---
 
@@ -58,11 +60,12 @@ Full workflow: [PROVIDER-ISOLATION-TDD.md](PROVIDER-ISOLATION-TDD.md) § Post-ac
 - [ ] `icount-ipn-notify.json` committed (real sandbox capture)
 - [ ] **LIVE-T1 … LIVE-T4** green ([PROVIDER-ISOLATION-TDD.md](PROVIDER-ISOLATION-TDD.md) — fixture contract before I2b parser)
 - [ ] `m__tenant_id` (or fallback strategy) verified in live IPN
-- [ ] Webhook signature approach confirmed or documented as URL-only (#8)
+- [ ] Webhook security model confirmed or updated from capture ([SPIKE-ADR](SPIKE-ADR.md#webhook-security-model))
+- [ ] Rate limits recorded ([ADAPTER-PATTERNS.md](ADAPTER-PATTERNS.md))
+- [ ] Renewals (#3): **Outcome A, B, or C** signed
+- [ ] Refunds (#4): confirmed **or** deferral signed
 - [ ] Catalog rows #1, #2, #6 updated with sandbox evidence
-- [ ] Renewals (#3): API confirmed **or** explicit deferral signed in ADR
-- [ ] Refunds (#4): API confirmed **or** explicit deferral signed in ADR
-- [ ] SPIKE-ADR approval row signed
+- [ ] SPIKE-ADR live approval row signed
 - [ ] One manual CC page payment smoke documented in RUNBOOK
 
 ---

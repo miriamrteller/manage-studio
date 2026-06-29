@@ -30,6 +30,8 @@ Implement [PROVIDER-ISOLATION-TDD.md](PROVIDER-ISOLATION-TDD.md) **I2a-T1 … I2
 - Grow fixture on icount tenant → **must not** apply Grow notify
 - Grow regression suite unchanged
 
+**Error handling:** apply webhook rules from [ADAPTER-PATTERNS.md](ADAPTER-PATTERNS.md) (parse fail → 4xx, idempotent replay).
+
 Suggested files: `handle-invoice-event-isolation.test.ts`, `icount-document-webhook-parse.test.ts`
 
 ### DoD (I2a)
@@ -47,13 +49,14 @@ Suggested files: `handle-invoice-event-isolation.test.ts`, `icount-document-webh
 
 ## I2b — Live backend (account required)
 
-**Prerequisite:** I2a + [I0-live](stage-i0-live-spike.md) (SPIKE-ADR approved, `icount-ipn-notify.json` committed).
+**Prerequisite:** I2a + [I0-live](stage-i0-live-spike.md) (SPIKE-ADR approved, `icount-ipn-notify.json` committed, [webhook security model](SPIKE-ADR.md#webhook-security-model) finalized).
 
 ### Scope IN
 
 - `constructEvent`: parse **sandbox-captured** IPN only (#6, #29)
+- Implement [SPIKE-ADR § Webhook security model](SPIKE-ADR.md#webhook-security-model) compensating controls
 - `peekIcountTenantId` from captured fields (#3)
-- `verify-icount-credentials` + `config.toml` (#1, #11 partial)
+- `verify-icount-credentials` + `config.toml` (#1, #11 partial) — respect [rate limits](ADAPTER-PATTERNS.md)
 - Initial card token save **if** IPN capture includes token (#21)
 - RUNBOOK secrets draft (#26)
 - Manual sandbox smoke (user-run)
@@ -75,9 +78,11 @@ Suggested files: `icount-ipn-parse.test.ts`, `icount-ipn-isolation.test.ts`, `pa
 ### DoD (I2b)
 
 - [ ] IPN parser matches `icount-ipn-notify.json` — no invented fields
+- [ ] Webhook security controls from SPIKE-ADR implemented + tested
 - [ ] **I2b-T1 … I2b-T6** green
+- [ ] Outbound calls follow [ADAPTER-PATTERNS.md](ADAPTER-PATTERNS.md) retry/rate rules
 - [ ] Every outbound `fetch` maps to SPIKE-ADR catalog row
 - [ ] Manual sandbox: one CC page payment → IPN → finalise
 - [ ] `pnpm -C apps/web test` green
 
-**Stop:** Do not start I5. I4 may proceed per deferral notes in SPIKE-ADR.
+**Stop:** Do not start I5 without Pre-I5 gate. I4 may proceed per deferral notes in SPIKE-ADR. **I6** may proceed in parallel if research complete.

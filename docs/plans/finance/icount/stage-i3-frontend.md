@@ -12,7 +12,7 @@
 - `TenantSettingsHub`, `TaxSettingsForm` — bundled-provider copy only
 - `EnrolmentPaymentForm` — `hostedPageReady` by slug, not `growReady`
 - `EnrolmentCheckoutShells` — icount + `mock.icount.local`
-- `IcountSettingsForm` per SPIKE-ADR draft credentials (#28)
+- `IcountSettingsForm` per SPIKE-ADR draft credentials (#28) — **manual path until I6 silent signup**
 - `FinanceHealthCard` — provider prop; live verify waits for I2b (#24)
 - `invoiceDisplay.ts`, payments log i18n, e2e updates
 
@@ -20,7 +20,7 @@
 
 ## Prerequisite (seed)
 
-Do not flip dev seed to `icount/icount` until I5. For UI testing: RPC `save_tenant_icount_credentials` on a test tenant **or** temporary slug in tests only.
+Do not flip dev seed to `icount/icount` until I5. For UI testing: RPC `save_tenant_icount_credentials` on a test tenant **or** temporary slug in tests only. This is the **supported path until I6** ([stage-i6-silent-provisioning.md](stage-i6-silent-provisioning.md)).
 
 ---
 

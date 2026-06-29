@@ -20,7 +20,9 @@
 | `refundCharge` | I0-live catalog row #4 |
 | Deploy list finalization (#11) | I2b |
 
-**If I0-live defers renewals/refunds:** document manual billing runbook; disable auto-renewal for `icount` tenants until API confirmed. **Grow renewal tests must stay green.**
+**If I0-live defers renewals/refunds:** document manual billing runbook; disable auto-renewal for `icount` tenants until API confirmed. **Grow renewal tests must stay green.** Forced outcomes: [SPIKE-ADR § Renewals decision](SPIKE-ADR.md#renewals-decision-i0-live).
+
+**Error handling:** [ADAPTER-PATTERNS.md](ADAPTER-PATTERNS.md) for billing cron and refund paths.
 
 ---
 

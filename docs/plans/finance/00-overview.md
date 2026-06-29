@@ -31,18 +31,21 @@ keeping the code vendor-generic (adapters only; no Grow names in schema or orche
 | G6 | Grow recurring billing + refund polish | [stage-g6-recurring-refunds.md](stage-g6-recurring-refunds.md) |
 | G7 | Grow settings, cleanup, production readiness | [stage-g7-settings-cleanup.md](stage-g7-settings-cleanup.md) |
 
-## Extension track (planned): iCount I0–I5
+## Extension track (planned): iCount I0–I6
 
-Add **iCount** as bundled IL default for **new** tenants; **Grow stays**. **Mock-first, account-last** — see [icount/00-overview.md](icount/00-overview.md).
+Add **iCount** as bundled IL default for **new** tenants; **Grow stays**. **Dual tracks** — integration + silent signup — see [icount/00-overview.md](icount/00-overview.md).
 
 | Phase | Focus | Account? |
 |-------|-------|----------|
 | I0-doc | Draft SPIKE-ADR + fixtures | No ✅ |
-| I1 → I3 → I2a | Mock registry, UI, document webhook | No |
-| I0-live | IPN capture + ADR approval | **Yes** (near project end) |
+| I1 | Registry, mock, credential RPC | No ✅ |
+| I3 → I2a | UI + document webhook (mock) | No — **next** |
+| I6-research | Partner API / silent signup research | No — **parallel** |
+| I0-live | IPN capture + ADR approval + rate limits | **Yes** |
 | I2b → I5 | Live IPN, defaults, seed flip | Yes |
+| I6-impl | Silent provisioning | Partner creds — **V1 complete** |
 
-Docs: [icount/00-overview.md](icount/00-overview.md) · [SPIKE-ADR.md](icount/SPIKE-ADR.md) · [PROVIDER-ISOLATION-TDD.md](icount/PROVIDER-ISOLATION-TDD.md)
+Docs: [icount/00-overview.md](icount/00-overview.md) · [SPIKE-ADR.md](icount/SPIKE-ADR.md) · [PROVIDER-ISOLATION-TDD.md](icount/PROVIDER-ISOLATION-TDD.md) · [stage-i6-silent-provisioning.md](icount/stage-i6-silent-provisioning.md)
 
 ## Architecture (target state after G7)
 

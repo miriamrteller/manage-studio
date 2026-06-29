@@ -1,5 +1,7 @@
 # Stage I1 — Registry, mock, credentials (mirror G3)
 
+**Status:** Complete (2026-06-28).
+
 **Goal:** Plumb `icount` into both registries and tenant config. **No live iCount HTTP. No UI.**
 
 **Prerequisite:** [I0-doc](stage-i0-spike.md) complete (SPIKE-ADR **draft** accepted — **not** I0-live, **not** IPN capture).

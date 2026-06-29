@@ -116,7 +116,7 @@ If IPN already includes `doctype` + `docnum`, document webhook may be redundant 
 | Tenant column | iCount mapping (proposed) |
 |---------------|---------------------------|
 | `payment_provider_account_id` | iCount company id (`cid`) — confirm in sandbox |
-| `payment_provider_public_key` | CC page id (`cp`) |
+| `payment_provider_public_key` | CC page id — **`cp`** in URLs/IPN ([GLOSSARY](GLOSSARY.md)) |
 | `payment_provider_secret_enc` | API token (Settings → API) |
 | `payment_provider_webhook_enc` | If IPN/webhook signing exists — **confirm in sandbox** (#8) |
 | `invoicing_*` | Same as payment for bundled `icount/icount` |
@@ -127,7 +127,41 @@ Settings UI (I3): **API token + CC page id (+ cid if required)** — not Grow-st
 
 **Proposed:** `payment_provider_webhook_enc` + `save_icount_webhook_secret` RPC (Stripe pattern). Do **not** generalize `grow_webhook_secrets` (#19 deferred).
 
-If sandbox shows **no signature** on IPN/document webhooks, ADR records verification as “URL secrecy + idempotency only” and documents risk.
+If sandbox shows **no HMAC** on IPN/document webhooks, use the **compensating controls** below — not “URL secrecy only” without detail.
+
+---
+
+## Webhook security model
+
+iCount help docs do **not** document IPN HMAC. OpalSwift assumes **defense in depth** until I0-live capture proves otherwise.
+
+### Compensating controls (implement in I2b / I2a handlers)
+
+| Control | Implementation |
+|---------|----------------|
+| **Idempotency** | Unique constraint on `(tenant_id, provider_payment_ref)` or `confirmation_code`; replays within TTL → 200 no-op |
+| **Tenant routing** | Require `m__tenant_id` (or payment-row lookup per Risk #22); reject if slug ≠ `icount` |
+| **`cp` validation** | IPN `cp` must match tenant `payment_provider_public_key` |
+| **Unguessable URL** | Long random path segment on edge URL; optional per-tenant secret in query/header if capture supports |
+| **IP allowlist** | **Only if** I0-live or iCount publishes egress IPs — do not invent ranges |
+| **Rate limit** | Per-tenant webhook throttle; alert on spike ([ADAPTER-PATTERNS.md](ADAPTER-PATTERNS.md)) |
+| **No cross-parse** | Grow parser on icount body → fail closed (LIVE-T3/T4, I2b-T*) |
+
+Update this section after I0-live if capture shows signature header or shared secret.
+
+---
+
+## Renewals decision (I0-live)
+
+**Forced outcome** — no indefinite “TBD” after I0-live. Sign one row in SPIKE-ADR approval:
+
+| Outcome | Condition | OpalSwift action |
+|---------|-----------|------------------|
+| **A — API confirmed** | Catalog #3 module documented + sandbox charge succeeds | Implement I4b `chargeWithToken`; enable auto-renewal for `icount` |
+| **B — Deferred** | No API in partner/authenticated docs | Sign deferral; **disable** auto-renewal for `icount` tenants; [manual billing RUNBOOK](RUNBOOK.md); Grow renewal tests stay green |
+| **C — Option B architecture** | Renewals impossible on Option A′ | Revisit SPIKE-ADR fallback (iCount invoicing only + other payment) — **blocks I5** |
+
+Same pattern for **refunds (#4)** with outcomes: API confirmed / deferred manual credit note / block.
 
 ---
 
@@ -155,7 +189,8 @@ Dispatch rule: `getPaymentProviderForTenant(tenantId)` after resolving tenant fr
 | Saved card / standing order API (renewals) | **Not documented in help — sandbox/API docs required** | #3 |
 | Refund API | **Pending** | #4 |
 | Webhook secret storage | **Proposed** (#8 above) | #8 |
-| Rate limits | API v3: verify in authenticated docs | — |
+| Rate limits | **I0-live:** probe + record in [ADAPTER-PATTERNS.md](ADAPTER-PATTERNS.md); conservative defaults until then | — |
+| Silent tenant signup | **I6-research** → **I6-impl**; manual I3 fallback always | [stage-i6-silent-provisioning.md](stage-i6-silent-provisioning.md) |
 | Sandbox credentials | **User action required** | — |
 
 ### Stage gates (mock-first track)
@@ -163,7 +198,8 @@ Dispatch rule: `getPaymentProviderForTenant(tenantId)` after resolving tenant fr
 | Gate | When | Unblocks |
 |------|------|----------|
 | **I0-doc** | Help docs + draft ADR + official fixtures | **I1, I3, I2a** |
-| **I0-live** | Account + IPN capture + ADR approval | **I2b, I5**; I4 renewals/refunds |
+| **I0-live** | Account + IPN capture + ADR approval + renewals/refunds decision + rate limits | **I2b, I5**; I4b |
+| **V1 complete** | Pre-I5 + **I6** silent signup | Product launch |
 
 **Proceed to I1** when user accepts draft architecture (Option A′). **Do not** wait for an iCount account or `icount-ipn-notify.json`.
 
@@ -171,8 +207,10 @@ Dispatch rule: `getPaymentProviderForTenant(tenantId)` after resolving tenant fr
 
 - [ ] `icount-ipn-notify.json` committed (sandbox capture)
 - [ ] `m__tenant_id` routing verified live (or fallback signed off)
-- [ ] Renewals (#3): API confirmed **or** deferral documented
-- [ ] Refunds (#4): API confirmed **or** deferral documented
+- [ ] Renewals (#3): **Outcome A, B, or C** signed ([§ Renewals decision](#renewals-decision-i0-live))
+- [ ] Refunds (#4): confirmed **or** deferral signed
+- [ ] Rate limits recorded ([ADAPTER-PATTERNS.md](ADAPTER-PATTERNS.md))
+- [ ] [Webhook security model](#webhook-security-model) confirmed or updated from capture
 - [ ] SPIKE-ADR approval row signed
 
 **Block Option A′ for production default (I5)** if live IPN cannot carry correlatable payment id + tenant metadata.
@@ -207,5 +245,6 @@ Unchanged from [00-overview.md](00-overview.md): iCount owns all tax document le
 |------|----------|
 | **Draft architecture (I0-doc)** — Option A′ + mock-first + provider isolation TDD | ☑ (2026-06-28) |
 | **Live integration (I0-live)** — IPN capture + catalog complete for production | ☐ |
+| **V1 complete** — I6 silent signup + Pre-I5 gate | ☐ |
 
-**I1 may start** after draft architecture sign-off. **I5 may start** only after live integration sign-off.
+**I1 may start** after draft architecture sign-off. **I5 may start** only after live integration sign-off. **V1 complete** requires I6 ([00-overview.md](00-overview.md#v1-complete-gate)).

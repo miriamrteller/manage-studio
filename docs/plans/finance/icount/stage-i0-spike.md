@@ -48,15 +48,17 @@
 
 | Stage | Blocked by I0-doc? |
 |-------|-------------------|
-| **I1** | **No** — proceed when user accepts draft architecture |
-| **I3** | **No** — after I1 |
-| **I2a** (mock backend) | **No** — after I1 (document webhook uses official fixture) |
+| **I1** | **No** — ✅ done |
+| **I3** | **No** — **next** |
+| **I2a** (mock backend) | **No** — after I3 (or parallel if I3 done) |
+| **I6-research** | **No** — parallel ([stage-i6-silent-provisioning.md](stage-i6-silent-provisioning.md)) |
 | **I0-live** | N/A — separate stage; needs iCount account |
 | **I2b** (live IPN) | **Yes** — needs I0-live |
-| **I5** | **Yes** — needs I0-live + Pre-I5 gate |
+| **I5** | **Yes** — needs Pre-I5 gate (not I6) |
+| **V1 complete** | **Yes** — needs I6-impl |
 
 ---
 
 ## Stop condition
 
-I0-doc is **done**. Next: **I1** (or user review of SPIKE-ADR draft). Do **not** wait for an iCount account.
+I0-doc is **done**. I1 is **done**. Next: **I3** (integration) and/or **I6-research** (parallel). Do **not** wait for an iCount account.
