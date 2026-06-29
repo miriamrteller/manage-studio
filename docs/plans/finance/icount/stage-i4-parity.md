@@ -1,23 +1,33 @@
 # Stage I4 — Renewals, refunds, PDF retention (mirror G6)
 
-**Goal:** Parity with Grow G6 where SPIKE-ADR catalog supports it.
+**Prerequisite:** I2a minimum. **Live icount renewals/refunds require I0-live** unless SPIKE-ADR documents deferral.
 
-## Scope IN
+---
 
-- `run-monthly-billing` — icount branch (or defer if catalog #3 blocked)
-- `process-refund` — icount `refundCharge` per catalog #4
-- Generalize `handle-payment-document` for `pdf_link` (#6)
+## I4a — No account (can ship with I2a)
+
+- Generalize `handle-payment-document` for `pdf_link` from document webhook fixture (#6)
 - Token invalidation on credential RPC slug change (#9)
-- `deploy:payment-functions` + full `config.toml` list (#11)
-- `RefundPaymentModal` icount note (#14)
+- `RefundPaymentModal` generic bundled-provider copy (#14)
 
-## Go/no-go
+---
 
-If SPIKE-ADR marked renewals blocked → disable auto-renewal for icount tenants until API found.
+## I4b — Account required (or defer)
+
+| Feature | Blocker |
+|---------|---------|
+| `run-monthly-billing` icount branch | I0-live catalog row #3 |
+| `refundCharge` | I0-live catalog row #4 |
+| Deploy list finalization (#11) | I2b |
+
+**If I0-live defers renewals/refunds:** document manual billing runbook; disable auto-renewal for `icount` tenants until API confirmed. **Grow renewal tests must stay green.**
+
+---
 
 ## DoD
 
+- [ ] PDF handler uses official `pdf_link` shape (fixture)
 - [ ] Grow renewal/refund regression green
-- [ ] Catalog rows #3–#4 implemented or explicitly deferred in RUNBOOK
+- [ ] icount renewals/refunds: implemented **or** explicit deferral in SPIKE-ADR + RUNBOOK
 
-**Stop:** Do not start I5.
+**Stop:** Do not start I5 without I0-live + Pre-I5 gate.

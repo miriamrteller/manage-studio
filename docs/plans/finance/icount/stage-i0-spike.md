@@ -1,80 +1,62 @@
-# Stage I0 — iCount API spike and architecture lock
+# Stage I0-doc — Documentation spike (no iCount account)
 
-**Goal:** Prove Option A (bundled iCount) against **real** iCount documentation and sandbox captures. Produce an approved [SPIKE-ADR.md](SPIKE-ADR.md). **No adapter code.**
+**Goal:** Lock architecture from **official iCount help docs only**. Produce draft [SPIKE-ADR.md](SPIKE-ADR.md) + fixtures. **No adapter code. No sandbox account required.**
 
-**Blocks:** I1 and all later stages.
+**Status:** Complete (2026-06-28).
 
 ---
 
 ## Risks addressed
 
-#3, #6, #7, #8, #17, #29 (+ Option A vs B/C gate)
+#6 (document webhook shape), #7 (post-ack N/A), #8 (proposed), #17, #29 (partial — catalog from docs)
 
 ---
 
 ## Scope IN
 
-1. **SPIKE-ADR.md** — architecture decision + API Reference Catalog (#1–#11)
-2. **Fixtures** under `apps/web/src/__tests__/fixtures/`:
-   - Document webhook: official help example (committed)
-   - IPN: official field catalog (committed) + **sandbox capture required** before I2
-3. **Credential mapping** — tenant columns → iCount fields (in ADR)
-4. **Go/no-go checklist** — each item cites catalog row
-5. **Plan on disk** — this folder (`docs/plans/finance/icount/`)
+1. **SPIKE-ADR.md** — Option A′ (CC page redirect + IPN + document webhook) + API catalog from help center
+2. **Fixtures** from official sources only:
+   - `icount-document-webhook-official-example.json`
+   - `icount-ipn-official-fields.json` (field catalog — **not** a notify body)
+3. **Plan on disk** — `docs/plans/finance/icount/`
+4. **Mock-first track** documented in [00-overview.md](00-overview.md)
 
 ---
 
 ## Scope OUT
 
-- Any `icount.ts` adapter, registry, migration, UI
-- Invented API endpoints or synthetic webhook bodies presented as captures
-- Pre-filling catalog rows without doc URL or sandbox evidence
-
----
-
-## Sandbox procedure (user + agent)
-
-1. Enable **CC pages** module; create a dev pay page; note `cp` (page id).
-2. Enable **WebHooks** module; point document webhook at a request bin or dev edge URL.
-3. Enable **credit simulator** ([developers-credit-card-terminal](https://help.icount.co.il/credit-card-processing/developers-credit-card-terminal/)).
-4. Create API token (Settings → API).
-5. Run test payment via redirect URL with `m__tenant_id`, `m__payment_id`, `ipn_url`, `success_url`.
-6. Capture raw **IPN POST** (headers + body) → save as `icount-ipn-notify.json`.
-7. Capture **document webhook** from live account (compare to official example).
-8. Probe API v3 authenticated modules for verify (#1), renewal charge (#3), refund (#4).
-
----
-
-## Deliverables
-
-| Deliverable | Path |
-|-------------|------|
-| SPIKE-ADR | [SPIKE-ADR.md](SPIKE-ADR.md) |
-| Stage docs | `stage-i0-spike.md` … `stage-i5-defaults.md` |
-| Overview | [00-overview.md](00-overview.md) |
-| RUNBOOK skeleton | [RUNBOOK.md](RUNBOOK.md) |
-| Document fixture | `apps/web/src/__tests__/fixtures/icount-document-webhook-official-example.json` |
-| IPN field reference | `apps/web/src/__tests__/fixtures/icount-ipn-official-fields.json` |
-| IPN sandbox capture | `apps/web/src/__tests__/fixtures/icount-ipn-notify.json` (**pending**) |
+- Live sandbox captures (`icount-ipn-notify.json`) → [stage-i0-live-spike.md](stage-i0-live-spike.md)
+- Any adapter, registry, migration, UI code
+- Invented IPN POST bodies
 
 ---
 
 ## DoD checklist
 
-- [x] SPIKE-ADR drafted with Option A′ (CC page + IPN + document webhook)
+- [x] SPIKE-ADR drafted (Option A′)
 - [x] API catalog rows cite official doc URLs
-- [x] #3 tenant routing designed (`m__tenant_id`); verified in sandbox when capture lands
-- [x] #7 post-payment ack = N/A documented
+- [x] Document webhook fixture committed
+- [x] IPN official field catalog committed
+- [x] #7 post-payment ack = N/A
 - [x] #8 webhook secret approach proposed
-- [x] Document webhook fixture committed (official example)
-- [x] IPN official field catalog committed (not a synthetic notify body)
-- [ ] IPN sandbox capture committed (`icount-ipn-notify.json`) **← user action**
-- [ ] Renewals/refunds catalog rows confirmed in sandbox **or** deferral signed off
-- [ ] User approval row in SPIKE-ADR signed
+- [x] Plan files on disk
 - [x] No adapter code started
+
+---
+
+## What this unblocks
+
+| Stage | Blocked by I0-doc? |
+|-------|-------------------|
+| **I1** | **No** — proceed when user accepts draft architecture |
+| **I3** | **No** — after I1 |
+| **I2a** (mock backend) | **No** — after I1 (document webhook uses official fixture) |
+| **I0-live** | N/A — separate stage; needs iCount account |
+| **I2b** (live IPN) | **Yes** — needs I0-live |
+| **I5** | **Yes** — needs I0-live + Pre-I5 gate |
 
 ---
 
 ## Stop condition
 
-Report DoD (pass/fail per row). **Do not start I1** until SPIKE-ADR is approved and IPN sandbox capture is committed (or user accepts documented deferrals).
+I0-doc is **done**. Next: **I1** (or user review of SPIKE-ADR draft). Do **not** wait for an iCount account.

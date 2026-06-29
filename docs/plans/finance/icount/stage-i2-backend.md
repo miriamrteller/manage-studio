@@ -1,32 +1,61 @@
-# Stage I2 — Payment adapter, webhooks, documents (mirror G4)
+# Stage I2 — Payment adapter, webhooks (I2a mock + I2b live)
 
-**Goal:** CC page redirect + IPN parser + document webhook dispatch per SPIKE-ADR Option A′.
+Split per **mock-first, account-last** track. Run **I2a** without an iCount account; run **I2b** only after [I0-live](stage-i0-live-spike.md).
 
-## Scope IN
+---
 
-- `IcountPaymentProvider`: `createCharge` (build redirect URL), `constructEvent` (IPN parse), no post-ack (#7 N/A)
-- `peekIcountTenantId` — prefer `tenant_id` from IPN custom fields; SPIKE-ADR fallback (#22)
-- Generalize `handle-invoice-event` for icount document webhook JSON array
-- `verify-icount-credentials` edge fn + `config.toml`
-- Deno Tax Delegation guard (`gaps.test.ts`) (#16)
-- Initial card token save if IPN/sandbox exposes token (#21)
-- Draft RUNBOOK secrets section (#26)
+## I2a — Mock backend (no account)
 
-## Scope OUT
+**Prerequisite:** I1 complete.
 
-PDF handler (I4), frontend, renewals, provisioning/seed
+### Scope IN
 
-## Tests
+- `createCharge`: build redirect URL per SPIKE-ADR (help docs); **MockIcount** returns `mock.icount.local` with same query params
+- Generalize `handle-invoice-event` for icount **document webhook** JSON array (official fixture)
+- `applyBundledDocumentNotify` shared dispatch (Grow unchanged)
+- Risk #22 fallback design in code (payment lookup) — unit test with mocks
+- Deno Tax Delegation guard (#16)
+- **Do not** implement live `constructEvent` / IPN parser
+- **Do not** implement `verify-icount-credentials` live HTTP
 
-- `icount-webhook-parse.test.ts` with I0 fixtures
-- Grow regression tests unchanged
-- Idempotency + bundled skip ordering
+### Scope OUT
 
-## DoD
+Live IPN, verify edge fn, PDF handler (I4), frontend, I5
 
-- [ ] Every outbound `fetch` maps to SPIKE-ADR catalog row
+### DoD (I2a)
+
+- [ ] Document webhook parse tests use `icount-document-webhook-official-example.json`
 - [ ] `handle-invoice-event` dispatches icount + Grow
-- [ ] Manual sandbox smoke (user-run)
+- [ ] Mock payment + document path via `confirm-mock-payment` + mock invoice handler
+- [ ] Grow regression green
 - [ ] `pnpm -C apps/web test` green
 
-**Stop:** Do not start I3.
+**Stop after I2a:** Proceed to **I3** if not done, or pause until account for I0-live.
+
+---
+
+## I2b — Live backend (account required)
+
+**Prerequisite:** I2a + [I0-live](stage-i0-live-spike.md) (SPIKE-ADR approved, `icount-ipn-notify.json` committed).
+
+### Scope IN
+
+- `constructEvent`: parse **sandbox-captured** IPN only (#6, #29)
+- `peekIcountTenantId` from captured fields (#3)
+- `verify-icount-credentials` + `config.toml` (#1, #11 partial)
+- Initial card token save **if** IPN capture includes token (#21)
+- RUNBOOK secrets draft (#26)
+- Manual sandbox smoke (user-run)
+
+### Scope OUT
+
+I5, full I4 renewals/refunds (unless I0-live confirmed API)
+
+### DoD (I2b)
+
+- [ ] IPN parser matches `icount-ipn-notify.json` — no invented fields
+- [ ] Every outbound `fetch` maps to SPIKE-ADR catalog row
+- [ ] Manual sandbox: one CC page payment → IPN → finalise
+- [ ] `pnpm -C apps/web test` green
+
+**Stop:** Do not start I5. I4 may proceed per deferral notes in SPIKE-ADR.

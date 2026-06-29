@@ -33,14 +33,16 @@ keeping the code vendor-generic (adapters only; no Grow names in schema or orche
 
 ## Extension track (planned): iCount I0–I5
 
-Add **iCount** as bundled IL default for **new** tenants; **Grow stays**. Blocked on I0 SPIKE-ADR approval.
+Add **iCount** as bundled IL default for **new** tenants; **Grow stays**. **Mock-first, account-last** — see [icount/00-overview.md](icount/00-overview.md).
 
-| Stage | Focus | Doc |
-|-------|-------|-----|
-| I0 | API spike + SPIKE-ADR (**in progress**) | [icount/stage-i0-spike.md](icount/stage-i0-spike.md) |
-| I1–I5 | Registry → defaults | [icount/00-overview.md](icount/00-overview.md) |
+| Phase | Focus | Account? |
+|-------|-------|----------|
+| I0-doc | Draft SPIKE-ADR + fixtures | No ✅ |
+| I1 → I3 → I2a | Mock registry, UI, document webhook | No |
+| I0-live | IPN capture + ADR approval | **Yes** (near project end) |
+| I2b → I5 | Live IPN, defaults, seed flip | Yes |
 
-See [icount/SPIKE-ADR.md](icount/SPIKE-ADR.md) for architecture decision (CC page + IPN + document webhook).
+Docs: [icount/00-overview.md](icount/00-overview.md) · [SPIKE-ADR.md](icount/SPIKE-ADR.md)
 
 ## Architecture (target state after G7)
 

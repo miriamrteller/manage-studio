@@ -1,18 +1,31 @@
 # iCount — RUNBOOK (linked remote dev)
 
-Draft from I0/I2; finalize at I5. Mirror [../GROW-RUNBOOK.md](../GROW-RUNBOOK.md) patterns.
+Mirror [../GROW-RUNBOOK.md](../GROW-RUNBOOK.md). See [00-overview.md](00-overview.md#mock-first-account-last-track) for when an account is needed.
 
 ---
 
-## Sandbox setup (I0)
+## Phase A — Mock build (no account)
+
+Use `ICOUNT_MOCK=true`. Dev seed stays `grow/grow` until I5.
+
+- Enrolment + finance tests via `MockIcount` + `confirm-mock-payment`
+- Document webhook tests via `icount-document-webhook-official-example.json`
+- Configure icount tenant via `save_tenant_icount_credentials` RPC (not seed flip)
+
+---
+
+## Phase B — Sandbox setup (I0-live — account required)
+
+Schedule near project end, before I2b / I5.
 
 1. Enable modules: **CC pages**, **WebHooks**, **credit simulator** ([help](https://help.icount.co.il/credit-card-processing/developers-credit-card-terminal/)).
 2. Create dev CC page → note page id (`cp`).
 3. Settings → API → create token.
-4. Configure document webhook URL → dev edge or request bin.
-5. Configure page IPN URL → payment webhook endpoint.
-6. Test redirect with `m__tenant_id`, `m__payment_id` ([create-cc-page params](https://help.icount.co.il/credit-card-processing/create-cc-page/)).
-7. Save raw IPN POST as `apps/web/src/__tests__/fixtures/icount-ipn-notify.json`.
+4. Configure document webhook URL → dev edge.
+5. Configure page IPN URL → `handle-payment-event` URL.
+6. Test redirect with `m__tenant_id`, `m__payment_id` ([create-cc-page](https://help.icount.co.il/credit-card-processing/create-cc-page/)).
+7. Save raw IPN POST → `apps/web/src/__tests__/fixtures/icount-ipn-notify.json`.
+8. Update [SPIKE-ADR.md](SPIKE-ADR.md) catalog + approval.
 
 ---
 
@@ -20,52 +33,39 @@ Draft from I0/I2; finalize at I5. Mirror [../GROW-RUNBOOK.md](../GROW-RUNBOOK.md
 
 | Secret | Purpose |
 |--------|---------|
-| `ICOUNT_MOCK` | `"true"` → MockIcount in CI/dev |
-| `ICOUNT_API_BASE` | Default `https://api.icount.co.il/api/v3.php` (confirm in SPIKE-ADR) |
-| `ICOUNT_NOTIFY_URL` | IPN URL passed on CC page redirect |
-| `ICOUNT_DOCUMENT_NOTIFY_URL` | If separate from IPN (usually document webhook in iCount UI) |
-
-Reuse `app.encryption_key` for credential encryption.
+| `ICOUNT_MOCK` | `"true"` → MockIcount in CI/dev (Phase A) |
+| `ICOUNT_API_BASE` | `https://api.icount.co.il/api/v3.php` (confirm at I0-live) |
+| `ICOUNT_NOTIFY_URL` | IPN URL on CC page redirect (Phase B) |
 
 ---
 
-## Dev re-seed (after I5)
+## Dev re-seed (I5 only)
 
-```bash
-pnpm db:sync
-# seed.sql then seed-finance.sql per supabase/seed-finance.sql header
-```
-
-Primary tenant (`creativeballet`) → `icount/icount` + `ICOUNT_MOCK=true`.
-
-### Grow regression
-
-Uncomment Grow block in `seed-finance.sql` + `GROW_MOCK=true` — do not change primary seed.
+Primary tenant → `icount/icount`. Grow regression: uncomment block in `seed-finance.sql`.
 
 ---
 
-## CC page redirect template (from SPIKE-ADR)
+## CC page redirect template
 
 ```
 https://app.icount.co.il/m/{cp}?cs={amount}&cd={description}&success_url={url}&ipn_url={url}&m__tenant_id={uuid}&m__payment_id={uuid}
 ```
 
-Amount/currency rules per iCount help — confirm in sandbox.
+---
+
+## Manual smoke
+
+| Phase | Checklist |
+|-------|-----------|
+| A (mock) | `ICOUNT_MOCK` enrolment → finalise → document fields |
+| B (live) | Real/simulator payment → IPN → finalise; document webhook |
+| Always | Grow tenant regression (`GROW_MOCK`) |
 
 ---
 
-## Manual smoke checklist
+## Deferred until I0-live (unless ADR says otherwise)
 
-- [ ] icount enrolment (mock then sandbox)
-- [ ] IPN → payment finalised
-- [ ] Document webhook → `external_document_*` set
-- [ ] Grow tenant regression unchanged
-
----
-
-## Open items (I0)
-
-- [ ] `icount-ipn-notify.json` sandbox capture
-- [ ] Renewal API (#3) — standing order / saved card API module
-- [ ] Refund API (#4) — credit note path
-- [ ] SPIKE-ADR user approval
+- [ ] `icount-ipn-notify.json`
+- [ ] Renewal API (#3)
+- [ ] Refund API (#4)
+- [ ] Live SPIKE-ADR approval

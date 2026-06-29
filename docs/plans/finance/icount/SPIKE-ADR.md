@@ -1,8 +1,9 @@
-# SPIKE-ADR — iCount integration architecture (I0)
+# SPIKE-ADR — iCount integration architecture
 
-**Status:** Draft — pending user approval and sandbox captures marked below  
+**Status:** Draft (architecture locked from help docs) — **live approval** pending [I0-live](stage-i0-live-spike.md)  
 **Date:** 2026-06-28  
-**Epic:** Add iCount as bundled IL default; Grow stays supported
+**Epic:** Add iCount as bundled IL default; Grow stays supported  
+**Track:** [Mock-first, account-last](00-overview.md#mock-first-account-last-track)
 
 ---
 
@@ -32,7 +33,7 @@ OpalSwift `IcountPaymentProvider.createCharge` therefore returns a **built redir
 
 ## API Reference Catalog (#29)
 
-Each row cites **official documentation**. Rows marked **Sandbox: pending** require a capture from your iCount account before I2 implements parsers/adapters.
+Each row cites **official documentation**. Rows marked **Sandbox: pending** require [I0-live](stage-i0-live-spike.md) before **I2b** implements live parsers/API calls. **I1 / I2a / I3** use mocks + official fixtures only.
 
 | # | Our method / handler | iCount surface (official) | HTTP | Doc URL | Sandbox |
 |---|----------------------|---------------------------|------|---------|---------|
@@ -146,16 +147,24 @@ If sandbox shows **no signature** on IPN/document webhooks, ADR records verifica
 | Rate limits | API v3: verify in authenticated docs | — |
 | Sandbox credentials | **User action required** | — |
 
-### Option A′ gate
+### Stage gates (mock-first track)
 
-**Proceed to I1** when:
+| Gate | When | Unblocks |
+|------|------|----------|
+| **I0-doc** | Help docs + draft ADR + official fixtures | **I1, I3, I2a** |
+| **I0-live** | Account + IPN capture + ADR approval | **I2b, I5**; I4 renewals/refunds |
 
-- [ ] User approves this ADR architecture (CC page + IPN, not Grow REST clone)
-- [ ] Sandbox IPN capture committed (`icount-ipn-notify.json`)
-- [ ] Renewals: either row #3 confirmed **or** ADR accepts manual billing / standing-order UI-only path until API found
-- [ ] Refund: row #4 confirmed **or** I4 scoped to admin manual refund runbook initially
+**Proceed to I1** when user accepts draft architecture (Option A′). **Do not** wait for an iCount account or `icount-ipn-notify.json`.
 
-**Block Option A′** if IPN cannot carry correlatable payment id + tenant metadata.
+**Proceed to I2b / I5** only when I0-live DoD passes:
+
+- [ ] `icount-ipn-notify.json` committed (sandbox capture)
+- [ ] `m__tenant_id` routing verified live (or fallback signed off)
+- [ ] Renewals (#3): API confirmed **or** deferral documented
+- [ ] Refunds (#4): API confirmed **or** deferral documented
+- [ ] SPIKE-ADR approval row signed
+
+**Block Option A′ for production default (I5)** if live IPN cannot carry correlatable payment id + tenant metadata.
 
 ---
 
@@ -171,21 +180,21 @@ Unchanged from [00-overview.md](00-overview.md): iCount owns all tax document le
 
 ---
 
-## Fixtures committed in I0
+## Fixtures
 
-| File | Source |
-|------|--------|
-| `apps/web/src/__tests__/fixtures/icount-document-webhook-official-example.json` | iCount help center official webhook example (redacted) |
-| `apps/web/src/__tests__/fixtures/icount-ipn-official-fields.json` | Official IPN field catalog from create-cc-page (not a synthetic notify body) |
-| `icount-ipn-notify.json` | **Not yet** — requires sandbox capture |
+| File | Source | Used in |
+|------|--------|---------|
+| `icount-document-webhook-official-example.json` | Help center official example | I2a+ |
+| `icount-ipn-official-fields.json` | Official IPN field catalog (not a notify body) | Reference only |
+| `icount-ipn-notify.json` | **I0-live** sandbox capture | I2b+ |
 
 ---
 
 ## Approval
 
-| Role | Name | Date | Approved |
-|------|------|------|----------|
-| Product / owner | | | ☐ |
-| Engineering | | | ☐ |
+| Gate | Approved |
+|------|----------|
+| **Draft architecture (I0-doc)** — Option A′ acceptable for mock build | ☐ |
+| **Live integration (I0-live)** — IPN capture + catalog complete for production | ☐ |
 
-**Do not start I1 until both checks above and SPIKE-ADR approval row are complete.**
+**I1 may start** after draft architecture sign-off. **I5 may start** only after live integration sign-off.
