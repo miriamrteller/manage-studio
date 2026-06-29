@@ -1,6 +1,8 @@
 # Stage I0-live — Live integration spike (iCount account required)
 
-**Goal:** Close SPIKE-ADR with **sandbox captures** and user approval. Schedule when the project is **almost finished** — not at epic start.
+**Status:** ⏸ Deferred — schedule at **end of project** after other work. See [00-overview.md § Deferred I0-live track](00-overview.md#deferred-i0-live-track-project-policy).
+
+**Goal:** Close SPIKE-ADR with **sandbox captures** and user approval.
 
 **Prerequisite:** I1 + I3 + **I2a** complete (mock path green in CI). iCount sandbox account procured.
 

@@ -1,6 +1,6 @@
 # Stage I4a — PDF retention + refund UI (no account)
 
-**Status:** Complete  
+**Status:** Complete (2026-06-29)  
 **Prerequisite:** I2a complete; I4-mock-parity complete; token invalidation migration shipped  
 **Blocks:** Nothing — safe before I0-live  
 **Related:** [stage-i4-parity.md](stage-i4-parity.md), [stage-i4-mock-parity.md](stage-i4-mock-parity.md), [SPIKE-ADR.md](SPIKE-ADR.md) rows #7–8, [PROVIDER-ISOLATION-TDD.md](PROVIDER-ISOLATION-TDD.md)
@@ -224,8 +224,13 @@ Constraints:
 
 ## After I4a
 
-Mock-phase integration surface is complete without an account. Next:
+Mock-phase integration is **complete**. See [00-overview.md § Mock-phase milestone](00-overview.md#mock-phase-milestone--complete).
 
-1. **I6-research** (parallel, docs)
-2. **I0-live** (sandbox capture + ADR renewals/refunds decision)
-3. **I2b → I4-live → I5**
+**While finishing other project work (optional parallel):**
+
+1. **I6-research** → `I6-ADR.md`
+2. **G8-research** → `G8-ADR.md` (optional)
+
+**Deferred integration week (end of project — needs iCount account):**
+
+1. **I0-live** → **I2b** → **I4-live** → **I5** → **I6-impl** (V1 complete)

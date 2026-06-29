@@ -6,6 +6,8 @@ Split per **mock-first, account-last** track. Run **I2a** without an iCount acco
 
 ## I2a — Mock backend (no account)
 
+**Status:** Complete (2026-06-29).
+
 **Prerequisite:** I1 complete.
 
 ### Scope IN
@@ -36,14 +38,14 @@ Suggested files: `handle-invoice-event-isolation.test.ts`, `icount-document-webh
 
 ### DoD (I2a)
 
-- [ ] Document webhook parse tests use `icount-document-webhook-official-example.json`
-- [ ] `handle-invoice-event` dispatches icount + Grow by slug
-- [ ] **I2a-T1 … I2a-T5** green
-- [ ] Mock payment + document path via `confirm-mock-payment` + mock invoice handler
-- [ ] Grow regression green
-- [ ] `pnpm -C apps/web test` green
+- [x] Document webhook parse tests use `icount-document-webhook-official-example.json`
+- [x] `handle-invoice-event` dispatches icount + Grow by slug
+- [x] **I2a-T1 … I2a-T5** green
+- [x] Mock payment + document path via `confirm-mock-payment` + mock invoice handler
+- [x] Grow regression green
+- [x] `pnpm -C apps/web test` green
 
-**Stop after I2a:** Proceed to **I3** if not done, or pause until account for I0-live.
+**Stop after I2a:** Mock phase continues with I4 — see [00-overview.md](00-overview.md#mock-phase-milestone--complete). Live work waits for [I0-live](stage-i0-live-spike.md).
 
 ---
 

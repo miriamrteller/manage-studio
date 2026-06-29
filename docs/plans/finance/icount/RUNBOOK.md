@@ -6,15 +6,19 @@ Mirror [../GROW-RUNBOOK.md](../GROW-RUNBOOK.md). See [00-overview.md](00-overvie
 
 ---
 
-## Phase A — Mock build (no account)
+## Phase A — Mock build (no account) ✅ Complete
 
 Use `ICOUNT_MOCK=true`. Dev seed stays `grow/grow` until I5.
 
-- Enrolment + finance tests via `MockIcount` + `confirm-mock-payment`
-- Document webhook tests via `icount-document-webhook-official-example.json`
-- **Provider isolation TDD:** [PROVIDER-ISOLATION-TDD.md](PROVIDER-ISOLATION-TDD.md) I1-T*, I2a-T*, I3-T*
-- Run CI with **both** `GROW_MOCK=true` and `ICOUNT_MOCK=true` for dual-tenant tests
-- **Tenant iCount setup:** manual via admin settings (I3) until [I6](stage-i6-silent-provisioning.md) silent signup ships
+- [x] Enrolment + finance tests via `MockIcount` + `confirm-mock-payment` (IPN path)
+- [x] Mock renewals via `chargeWithToken` + mock `cc/bill` + IPN delivery
+- [x] Document webhook tests via `icount-document-webhook-official-example.json`
+- [x] PDF retention via `fetchAndStoreBundledDocumentPdf` (I4a)
+- [x] **Provider isolation TDD:** I1-T*, I2a-T*, I3-T*, I4-T*, I4a-T*
+- [x] CI with **both** `GROW_MOCK=true` and `ICOUNT_MOCK=true`
+- [x] **Tenant iCount setup:** manual via admin settings (I3) until [I6](stage-i6-silent-provisioning.md)
+
+See [00-overview.md § Mock-phase milestone](00-overview.md#mock-phase-milestone--complete).
 
 ---
 

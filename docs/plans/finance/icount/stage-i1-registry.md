@@ -46,11 +46,11 @@ Suggested files: `icount-registry.test.ts`, `provider-isolation-mock.test.ts`, `
 
 ## DoD
 
-- [ ] Registry before icount slug in DB (tests/RPC only until I5)
-- [ ] `ICOUNT_MOCK` mock path works
-- [ ] **I1-T1 … I1-T10** green
-- [ ] Grow registry + mock tests still green
-- [ ] `pnpm db:sync` + `pnpm db:types:all` + `pnpm db:types:email-dist`
-- [ ] `pnpm -C apps/web test` green
+- [x] Registry before icount slug in DB (tests/RPC only until I5)
+- [x] `ICOUNT_MOCK` mock path works
+- [x] **I1-T1 … I1-T10** green
+- [x] Grow registry + mock tests still green
+- [x] `pnpm db:sync` + `pnpm db:types:all` + `pnpm db:types:email-dist`
+- [x] `pnpm -C apps/web test` green
 
-**Stop:** Do not start I2a until I1 DoD passes. **I3 may start next** (does not require I2).
+**Stop:** I2a / I3 next (either order OK). Do not start I5.

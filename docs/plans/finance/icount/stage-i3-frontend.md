@@ -39,10 +39,10 @@ Suggested files: extend `navigation-config.test.ts`, `enrolment-provider-routing
 
 ## DoD
 
-- [ ] Tenant with `icount/icount` + `ICOUNT_MOCK` sees icount nav + mock checkout
-- [ ] Grow tenant unchanged
-- [ ] **I3-T1 … I3-T6** green
-- [ ] axe/i18n clean
-- [ ] `pnpm -C apps/web test` green
+- [x] Tenant with `icount/icount` + `ICOUNT_MOCK` sees icount nav + mock checkout
+- [x] Grow tenant unchanged
+- [x] **I3-T1 … I3-T6** green
+- [x] axe/i18n clean
+- [x] `pnpm -C apps/web test` green
 
-**Stop:** I4 or I2a next (either order OK). Do not start I5.
+**Stop:** Mock phase complete — see [00-overview.md](00-overview.md). Do not start I5.

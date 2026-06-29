@@ -1,6 +1,6 @@
 # Stage I6 — Silent iCount signup (parallel track)
 
-**Goal:** New IL tenants get a working iCount account **without** manually pasting cid + API token in settings — before **V1 complete**. **Does not block** the integration track (I3 → I2a → I0-live → I2b → I5).
+**Goal:** New IL tenants get a working iCount account **without** manually pasting cid + API token in settings — before **V1 complete**. **Does not block** mock phase (complete) or other project work. Live integration ([I0-live](stage-i0-live-spike.md)) is deferred until end of project.
 
 **Read with:** [00-overview.md](00-overview.md) (dual tracks) · [SPIKE-ADR.md](SPIKE-ADR.md) · [API-V3-REFERENCE.md](API-V3-REFERENCE.md) (registration module) · [v3-0-operator-onboarding-wizard.md](../../v3-0-operator-onboarding-wizard.md) · [stage-g8-silent-provisioning.md](../stage-g8-silent-provisioning.md) (symmetric Grow track)
 
@@ -20,8 +20,12 @@ Integration stages **must not wait** on I6. Manual settings is the supported pat
 ## Dual-track rule
 
 ```text
-Integration track:  I1 ✅ → I3 → I2a → I0-live → I2b → I4* → I5
-Provisioning track:   I6-research (now) ──→ I6-impl (before V1 complete)
+Mock phase (done):  I1 ✅ → I3 ✅ → I2a ✅ → I4-mock-parity ✅ → I4a ✅
+
+Integration track (deferred — end of project):
+  I0-live → I2b → I4-live → I5
+
+Provisioning track:   I6-research ──→ I6-impl (before V1 complete)
 ```
 
 **I5** may ship with manual setup only. **V1 complete** requires **I6** (or signed deferral with date — user policy: **no open-ended deferral**).
