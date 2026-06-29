@@ -1,4 +1,4 @@
-import { buildMockPaymentEvent } from "../handle-payment-event.ts";
+import { buildMockPaymentEvent } from "../mock-payment-event.ts";
 import { ChargeMetadataSchema } from "../types.ts";
 import type { ChargeParams, ChargeResult, PaymentEvent, PaymentProvider } from "../types.ts";
 

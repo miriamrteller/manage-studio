@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
-import { buildMockPaymentEvent } from "../handle-payment-event.ts";
+import { buildMockPaymentEvent } from "../mock-payment-event.ts";
 import type { ChargeMetadata, ChargeParams, ChargeResult, PaymentEvent, PaymentProvider } from "../types.ts";
 import { ChargeMetadataSchema } from "../types.ts";
 

@@ -1,10 +1,14 @@
 import { handleOptions, jsonResponse } from "../_shared/cors.ts";
+import { getEnv } from "../_shared/env.ts";
+import { MockGrowPaymentProvider } from "../_shared/payments/providers/mock-grow.ts";
+import { GrowPaymentProvider } from "../_shared/payments/providers/grow.ts";
 import { createServiceClient, requireAuthUser } from "../_shared/supabase.ts";
-import { getPaymentProviderForTenant } from "../_shared/payments/index.ts";
 
 /**
  * Auth health ping for a tenant's Grow (Meshulam) credentials, used by the settings
  * "Test connection" button. Returns `{ ok, valid, message }` without ever charging.
+ *
+ * Imports providers directly (not payments/index.ts) so deploy bundle stays free of email deps.
  */
 Deno.serve(async (req) => {
   const options = handleOptions(req);
@@ -34,20 +38,23 @@ Deno.serve(async (req) => {
   }
 
   const tenantId = profile.tenant_id as string;
-  const provider = await getPaymentProviderForTenant(service, tenantId);
+  const { data: tenant, error: tenantError } = await service
+    .from("tenants")
+    .select("payment_provider")
+    .eq("id", tenantId)
+    .single();
 
-  // Accept both the live Grow adapter and the GROW_MOCK stand-in (both expose slug "grow").
-  const growProvider = provider as {
-    slug: string;
-    verifyCredentials?: (tenantId: string) => Promise<{ valid: boolean; message: string }>;
-  };
-  if (growProvider.slug !== "grow" || typeof growProvider.verifyCredentials !== "function") {
+  if (tenantError || tenant?.payment_provider !== "grow") {
     return jsonResponse(
       { ok: false, valid: false, message: "Tenant is not configured for Grow" },
       400,
     );
   }
 
-  const health = await growProvider.verifyCredentials(tenantId);
+  const provider = getEnv("GROW_MOCK") === "true"
+    ? new MockGrowPaymentProvider()
+    : new GrowPaymentProvider(service);
+
+  const health = await provider.verifyCredentials(tenantId);
   return jsonResponse({ ok: health.valid, provider: "grow", ...health }, health.valid ? 200 : 502);
 });

@@ -1,10 +1,14 @@
 import { handleOptions, jsonResponse } from "../_shared/cors.ts";
+import { getEnv } from "../_shared/env.ts";
+import { MockIcountPaymentProvider } from "../_shared/payments/providers/mock-icount.ts";
+import { IcountPaymentProvider } from "../_shared/payments/providers/icount.ts";
 import { createServiceClient, requireAuthUser } from "../_shared/supabase.ts";
-import { getPaymentProviderForTenant } from "../_shared/payments/index.ts";
 
 /**
  * Auth health ping for a tenant's iCount credentials. Uses MockIcount when ICOUNT_MOCK=true.
  * Live HTTP probe lands in I2b.
+ *
+ * Imports providers directly (not payments/index.ts) so deploy bundle stays free of email deps.
  */
 Deno.serve(async (req) => {
   const options = handleOptions(req);
@@ -34,19 +38,23 @@ Deno.serve(async (req) => {
   }
 
   const tenantId = profile.tenant_id as string;
-  const provider = await getPaymentProviderForTenant(service, tenantId);
+  const { data: tenant, error: tenantError } = await service
+    .from("tenants")
+    .select("payment_provider")
+    .eq("id", tenantId)
+    .single();
 
-  const icountProvider = provider as {
-    slug: string;
-    verifyCredentials?: (tenantId: string) => Promise<{ valid: boolean; message: string }>;
-  };
-  if (icountProvider.slug !== "icount" || typeof icountProvider.verifyCredentials !== "function") {
+  if (tenantError || tenant?.payment_provider !== "icount") {
     return jsonResponse(
       { ok: false, valid: false, message: "Tenant is not configured for iCount" },
       400,
     );
   }
 
-  const health = await icountProvider.verifyCredentials(tenantId);
+  const provider = getEnv("ICOUNT_MOCK") === "true"
+    ? new MockIcountPaymentProvider()
+    : new IcountPaymentProvider(service);
+
+  const health = await provider.verifyCredentials(tenantId);
   return jsonResponse({ ok: health.valid, provider: "icount", ...health }, health.valid ? 200 : 502);
 });
