@@ -1,5 +1,7 @@
 # Stage I3 — UI: IL routing trap + iCount paths (mirror G5/G7)
 
+**Status:** Complete (2026-06-28).
+
 **Goal:** Slug-based bundled routing; icount settings + checkout shell with **`ICOUNT_MOCK`**. **Extend, don't delete Grow UI.**
 
 **Prerequisite:** I1 complete. **Does not require I2** (mock checkout uses `confirm-mock-payment` from I1).

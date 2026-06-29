@@ -5,6 +5,8 @@ import { useAdminDashboard } from './useAdminDashboard';
 import { useEntityLabels } from '@/hooks/useEntityLabels';
 import { FinanceHealthCard } from '@/features/finance/components/FinanceHealthCard';
 import { AdminOverviewSection } from '@/features/admin-dashboard/components/AdminOverviewSection';
+import { useTenant } from '@/hooks/useTenant';
+import { getBundledPaymentProviderSlug } from '@/lib/tenantProviderRouting';
 
 /**
  * AdminPanel: Smart component for admin dashboard.
@@ -16,6 +18,8 @@ export function AdminPanel() {
   const navigate = useNavigate();
   const { overview, isLoading, error, refetch } = useAdminDashboard();
   const { labels, modules } = useEntityLabels();
+  const tenant = useTenant();
+  const healthProvider = getBundledPaymentProviderSlug(tenant);
 
   return (
     <div className="space-y-8">
@@ -36,7 +40,7 @@ export function AdminPanel() {
         onRefresh={refetch}
       />
 
-      <FinanceHealthCard />
+      {healthProvider && <FinanceHealthCard provider={healthProvider} />}
 
       {/* Setup Navigation Cards */}
       <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

@@ -1,10 +1,12 @@
 import { useTranslation } from 'react-i18next';
 import { useTenant } from '@/hooks/useTenant';
+import { getBundledPaymentProviderSlug } from '@/lib/tenantProviderRouting';
+import { bundledTaxVatMessage } from '@/lib/bundledProviderUi';
 
 export function TaxSettingsForm() {
   const { t } = useTranslation();
   const tenant = useTenant();
-  const usesGrow = tenant?.country === 'IL' || tenant?.payment_provider === 'grow';
+  const bundledSlug = getBundledPaymentProviderSlug(tenant);
 
   if (!tenant) {
     return null;
@@ -19,8 +21,8 @@ export function TaxSettingsForm() {
 
       <div className="rounded border border-border bg-muted/30 p-4 space-y-3 text-sm">
         <p>{t('settings.tax.no_local_vat')}</p>
-        {usesGrow ? (
-          <p>{t('settings.tax.grow_handles_vat')}</p>
+        {bundledSlug ? (
+          <p>{bundledTaxVatMessage(t, bundledSlug)}</p>
         ) : (
           <p>{t('settings.tax.invoicing_handles_vat')}</p>
         )}

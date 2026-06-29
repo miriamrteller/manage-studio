@@ -13,7 +13,7 @@ import FamiliesPage from "./pages/FamiliesPage";
 import FamilyDetailPage from "./pages/FamilyDetailPage";
 import BillingPage from "./pages/BillingPage";
 import StripeSettingsPage from "./pages/StripeSettingsPage";
-import GrowSettingsPage from "./pages/GrowSettingsPage";
+import BundledPaymentsSettingsPage from "./pages/BundledPaymentsSettingsPage";
 import PaymentSettingsPage from "./pages/PaymentSettingsPage";
 import InvoicingSettingsPage from "./pages/InvoicingSettingsPage";
 import TaxSettingsPage from "./pages/TaxSettingsPage";
@@ -87,7 +87,9 @@ const router = createBrowserRouter([
       { path: "admin/setup/settings", element: <AdminRoute><TenantSettingsPage /></AdminRoute> },
       { path: "admin/setup/tax", element: <AdminRoute><TaxSettingsPage /></AdminRoute> },
       { path: "admin/setup/stripe", element: <AdminRoute><StripeSettingsPage /></AdminRoute> },
-      { path: "admin/setup/grow", element: <AdminRoute><GrowSettingsPage /></AdminRoute> },
+      { path: "admin/setup/bundled-payments", element: <AdminRoute><BundledPaymentsSettingsPage /></AdminRoute> },
+      { path: "admin/setup/grow", element: <AdminRoute><Navigate to="/admin/setup/bundled-payments" replace /></AdminRoute> },
+      { path: "admin/setup/icount", element: <AdminRoute><Navigate to="/admin/setup/bundled-payments" replace /></AdminRoute> },
       { path: "admin/setup/payments", element: <AdminRoute><PaymentSettingsPage /></AdminRoute> },
       { path: "admin/setup/invoicing", element: <AdminRoute><InvoicingSettingsPage /></AdminRoute> },
       { path: "admin/setup/waivers", element: <AdminRoute><WaiversPage /></AdminRoute> },

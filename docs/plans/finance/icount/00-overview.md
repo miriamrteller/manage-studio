@@ -35,7 +35,7 @@ Until **I6** ships, **manual credentials** via I3 `IcountSettingsForm` is the su
 |-------|----------|--------------|
 | **I0-doc** | No | SPIKE-ADR draft, official fixtures — **done** |
 | **I1** | No | Registry, MockIcount, credential RPC — **done** |
-| **I3** | No | IL≠Grow fix, icount settings + checkout UI (mock); **manual credentials OK** |
+| **I3** | No | IL≠Grow fix, icount settings + checkout UI (mock); **manual credentials OK** — **done** |
 | **I2a** | No | Document webhook parser, redirect URL builder, mock backend parity |
 | **I0-live** | **Yes** | IPN capture, API probe, renewals/refunds decision, rate limits |
 | **I2b** | Yes | Live IPN parser, `verify-credentials`, sandbox smoke |

@@ -1,5 +1,16 @@
 import { PARENT_ROLE_NAMES } from '@/lib/parentRoles';
 import type { PresetModules } from '@shared/index';
+import {
+  tenantUsesSplitProviders,
+  tenantUsesBundledPayments,
+} from '@/lib/tenantProviderRouting';
+
+export {
+  tenantUsesGrow,
+  tenantUsesIcount,
+  tenantUsesSplitProviders,
+  tenantUsesBundledPayments,
+} from '@/lib/tenantProviderRouting';
 
 /**
  * Navigation Configuration
@@ -23,7 +34,7 @@ export type NavSectionKey =
   | 'portal'
   | 'learning';
 
-export type NavTenantFilter = 'grow' | 'not_grow';
+export type NavTenantFilter = 'bundled' | 'split';
 
 export interface NavItem {
   path: string;
@@ -34,7 +45,7 @@ export interface NavItem {
   indent?: boolean;
   /** Hide item when the named module is disabled for this tenant */
   moduleKey?: keyof PresetModules;
-  /** Show only for Grow vs non-Grow payment/invoicing setup */
+  /** Show only for bundled (grow/icount) vs split (stripe+…) payment setup */
   tenantFilter?: NavTenantFilter;
 }
 
@@ -127,12 +138,12 @@ export const navigationConfig: NavItem[] = [
     indent: true,
   },
   {
-    path: '/admin/setup/grow',
-    labelKey: 'settings.grow.title',
+    path: '/admin/setup/bundled-payments',
+    labelKey: 'settings.bundled.nav_title',
     requiredRoles: ['tenant_admin'],
     sectionKey: 'setup',
     indent: true,
-    tenantFilter: 'grow',
+    tenantFilter: 'bundled',
   },
   {
     path: '/admin/setup/payments',
@@ -140,7 +151,7 @@ export const navigationConfig: NavItem[] = [
     requiredRoles: ['tenant_admin'],
     sectionKey: 'setup',
     indent: true,
-    tenantFilter: 'not_grow',
+    tenantFilter: 'split',
   },
   {
     path: '/admin/setup/invoicing',
@@ -148,7 +159,7 @@ export const navigationConfig: NavItem[] = [
     requiredRoles: ['tenant_admin'],
     sectionKey: 'setup',
     indent: true,
-    tenantFilter: 'not_grow',
+    tenantFilter: 'split',
   },
   {
     path: '/admin/setup/billing',
@@ -239,17 +250,19 @@ const SECTION_ORDER: NavSectionKey[] = [
   'learning',
 ];
 
-export function tenantUsesGrow(tenant: NavTenantContext | null | undefined): boolean {
-  return tenant?.country === 'IL' || tenant?.payment_provider === 'grow';
-}
-
 export function matchesTenantFilter(
   item: NavItem,
   tenant: NavTenantContext | null | undefined,
 ): boolean {
   if (!item.tenantFilter) return true;
-  const usesGrow = tenantUsesGrow(tenant);
-  return item.tenantFilter === 'grow' ? usesGrow : !usesGrow;
+  switch (item.tenantFilter) {
+    case 'bundled':
+      return tenantUsesBundledPayments(tenant);
+    case 'split':
+      return tenantUsesSplitProviders(tenant);
+    default:
+      return true;
+  }
 }
 
 /**
