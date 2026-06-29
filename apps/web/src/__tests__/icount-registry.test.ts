@@ -65,6 +65,35 @@ describe('MockIcountPaymentProvider', () => {
     expect(result.pendingWebhook).toBe(true);
     expect(result.emitSyncEvent).toBeUndefined();
   });
+
+  it('createCharge ignores savedToken (renewals use chargeWithToken)', async () => {
+    const provider = new MockIcountPaymentProvider();
+    const result = await provider.createCharge({
+      amountMinor: 100,
+      currency: 'ILS',
+      idempotencyKey: 'idem-icount-2',
+      metadata,
+      savedToken: 'tok_should_not_matter',
+    });
+
+    expect(result.pageUrl).toBeDefined();
+    expect(result.emitSyncEvent).toBeUndefined();
+  });
+
+  it('chargeWithToken returns pendingWebhook for cc/bill renewals', async () => {
+    const provider = new MockIcountPaymentProvider();
+    const result = await provider.chargeWithToken({
+      amountMinor: 100,
+      currency: 'ILS',
+      idempotencyKey: 'renew-1',
+      metadata: { ...metadata, charge_type: 'renewal' },
+      savedToken: 'icount_saved_tok',
+    });
+
+    expect(result.pendingWebhook).toBe(true);
+    expect(result.emitSyncEvent).toBeUndefined();
+    expect(result.providerPaymentRef).toMatch(/^mockicount_/);
+  });
 });
 
 describe('getPaymentProvider icount selection', () => {

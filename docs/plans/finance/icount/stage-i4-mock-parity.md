@@ -1,6 +1,6 @@
 # Stage I4-mock-parity — iCount mock matches true API surfaces
 
-**Status:** Ready to implement  
+**Status:** Complete (2026-06-29)  
 **Prerequisite:** I1, I2a, I3 complete; I4 isolation tests exist  
 **Blocks:** I4-live (after I0-live); does **not** require iCount sandbox account  
 **Related:** [stage-i4-parity.md](stage-i4-parity.md), [SPIKE-ADR.md](SPIKE-ADR.md), [PROVIDER-ISOLATION-TDD.md](PROVIDER-ISOLATION-TDD.md)
@@ -118,11 +118,11 @@ New isolation rows (PROVIDER-ISOLATION-TDD):
 
 ## DoD
 
-- [ ] No `emitSyncEvent` on MockIcount
-- [ ] Enrolment and renewal finalise via `constructEvent(IPN)`
-- [ ] `createCharge` and `chargeWithToken` are separate paths
-- [ ] I4-T1…T8 green with `GROW_MOCK` + `ICOUNT_MOCK`
-- [ ] `pnpm -C apps/web test` green (Grow regression)
+- [x] No `emitSyncEvent` on MockIcount
+- [x] Enrolment and renewal finalise via `constructEvent(IPN)`
+- [x] `createCharge` and `chargeWithToken` are separate paths
+- [x] I4-T1…T8 green with `GROW_MOCK` + `ICOUNT_MOCK`
+- [x] `pnpm -C apps/web test` green (Grow regression)
 
 ---
 

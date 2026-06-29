@@ -41,6 +41,8 @@
 | `apps/web/src/__tests__/icount-ipn-isolation.test.ts` | I2b | IPN never parsed as Grow |
 | `apps/web/src/__tests__/payment-webhook-peek-isolation.test.ts` | I2b | `peekTenantId` routes to correct adapter |
 | `apps/web/src/__tests__/provider-isolation-renewal-refund.test.ts` | I4 | Billing/refund use payment row slug |
+| `apps/web/src/__tests__/icount-ipn-parse.test.ts` | I4-mock-parity | IPN parser from official field fixtures |
+| `apps/web/src/__tests__/icount-mock-renewal-flow.test.ts` | I4-mock-parity | cc/bill + IPN delivery; no emitSyncEvent |
 | `apps/web/src/__tests__/provider-isolation-dual-seed.test.ts` | I5 | icount default + Grow regression tenant |
 
 Deno edge tests may mirror parse/peek logic under `supabase/functions/_shared/payments/icount/__tests__/` if preferred — web tests above are the minimum bar per finance runbook.
@@ -143,6 +145,9 @@ Do **not** implement live IPN parsers or flip defaults until this sequence compl
 | I4-T3 | Refund payment row `provider=grow` | Grow `refundCharge` |
 | I4-T4 | Refund payment row `provider=icount` | Icount `refundCharge` (or documented manual deferral) |
 | I4-T5 | Switch credentials grow → icount via RPC | Stale grow tokens removed; icount tokens isolated |
+| I4-T6 | iCount renewal cron / mock | `chargeWithToken` only; **never** `createCharge` with token |
+| I4-T7 | iCount enrolment `createCharge` | Hosted page only; **never** `chargeWithToken` |
+| I4-T8 | MockIcount `constructEvent` | Rejects JSON PaymentEvent blobs; parses URL-encoded IPN |
 
 ### I5 — Dual seed (TDD before default flip)
 

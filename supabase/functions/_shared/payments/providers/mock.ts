@@ -84,7 +84,7 @@ async function saveMockCardToken(
   await service.from("payment_method_tokens").insert({
     tenant_id: metadata.tenant_id,
     billing_account_id: metadata.billing_account_id,
-    provider: "mock",
+    provider: providerSlug,
     provider_token: `mock_tok_${crypto.randomUUID()}`,
     card_brand: cardBrandFromNumber(normalized),
     last4,
@@ -107,23 +107,44 @@ export async function confirmMockPayment(
     };
   }
 
+  const providerSlug = params.providerSlug ?? "mock";
   const providerPaymentRef = params.providerPaymentRef ?? `mock_pi_${crypto.randomUUID()}`;
   if (params.mockCardNumber) {
-    await saveMockCardToken(params.service, params.metadata, params.mockCardNumber);
+    await saveMockCardToken(
+      params.service,
+      params.metadata,
+      params.mockCardNumber,
+      providerSlug,
+    );
   }
+
+  const { handlePaymentEventInternal } = await import("../handle-payment-event.ts");
+
+  if (providerSlug === "icount") {
+    const provider = new MockIcountPaymentProvider();
+    const ipnBody = buildMockIpnFromCharge({
+      providerPaymentRef,
+      amountMinor: params.amountMinor,
+      currency: params.currency,
+      metadata: params.metadata,
+    });
+    const headers = new Headers({ "x-mock-signature": "mock-valid" });
+    const event = await provider.constructEvent(
+      ipnBody,
+      headers,
+      params.metadata.tenant_id,
+    );
+    const result = await handlePaymentEventInternal(params.service, event, "icount");
+    return { ok: true, paymentId: result.paymentId, duplicate: result.duplicate };
+  }
+
   const event = buildMockPaymentEvent({
     providerPaymentRef,
     amountMinor: params.amountMinor,
     currency: params.currency,
     metadata: params.metadata,
   });
-
-  const { handlePaymentEventInternal } = await import("../handle-payment-event.ts");
-  const result = await handlePaymentEventInternal(
-    params.service,
-    event,
-    params.providerSlug ?? "mock",
-  );
+  const result = await handlePaymentEventInternal(params.service, event, providerSlug);
   return { ok: true, paymentId: result.paymentId, duplicate: result.duplicate };
 }
 

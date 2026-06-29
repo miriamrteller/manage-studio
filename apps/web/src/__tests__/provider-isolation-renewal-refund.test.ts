@@ -11,6 +11,9 @@ import {
   providerUsesSavedTokenRenewal,
 } from '../../../../supabase/functions/_shared/payments/renewal-billing.ts';
 import { executeProviderRefund } from '../../../../supabase/functions/_shared/payments/refund-provider.ts';
+import * as mockApi from '../../../../supabase/functions/_shared/payments/icount/mock-api.ts';
+import { parseIcountIpn } from '../../../../supabase/functions/_shared/payments/icount/ipn.ts';
+import { encodeIcountIpnBody } from '../../../../supabase/functions/_shared/payments/icount/ipn.ts';
 import { MockGrowPaymentProvider } from '../../../../supabase/functions/_shared/payments/providers/mock-grow.ts';
 import { MockIcountPaymentProvider } from '../../../../supabase/functions/_shared/payments/providers/mock-icount.ts';
 import * as mockSync from '../../../../supabase/functions/_shared/payments/providers/mock.ts';
@@ -176,10 +179,12 @@ describe('run-monthly-billing provider isolation (I4-T1, I4-T2)', () => {
     );
   });
 
-  it('I4-T2: icount tenant renewal uses MockIcount only — no Grow HTTP', async () => {
+  it('I4-T2: icount tenant renewal uses chargeWithToken + mock IPN — no Grow HTTP', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const growSpy = vi.spyOn(MockGrowPaymentProvider.prototype, 'createCharge');
-    const icountSpy = vi.spyOn(MockIcountPaymentProvider.prototype, 'createCharge');
+    const icountCreateSpy = vi.spyOn(MockIcountPaymentProvider.prototype, 'createCharge');
+    const icountChargeSpy = vi.spyOn(MockIcountPaymentProvider.prototype, 'chargeWithToken');
+    const deliverSpy = vi.spyOn(mockApi, 'deliverMockIcountIpn').mockResolvedValue(undefined);
 
     const service = makeBillingService({
       paymentProvider: 'icount',
@@ -199,14 +204,12 @@ describe('run-monthly-billing provider isolation (I4-T1, I4-T2)', () => {
     );
 
     expect(result.outcome).toBe('charged');
-    expect(icountSpy).toHaveBeenCalledOnce();
+    expect(icountChargeSpy).toHaveBeenCalledOnce();
+    expect(icountCreateSpy).not.toHaveBeenCalled();
     expect(growSpy).not.toHaveBeenCalled();
     expect(fetchSpy).not.toHaveBeenCalled();
-    expect(mockSync.applyMockSyncEvent).toHaveBeenCalledWith(
-      service,
-      expect.objectContaining({ type: 'payment.succeeded' }),
-      'icount',
-    );
+    expect(deliverSpy).toHaveBeenCalledOnce();
+    expect(mockSync.applyMockSyncEvent).not.toHaveBeenCalled();
   });
 
   it('loads saved token for icount renewals (regression fix)', async () => {
@@ -326,5 +329,90 @@ describe('Grow regression (I4 mock DoD)', () => {
   it('grow-renewal-charge and grow-refund test files remain importable', async () => {
     await expect(import('./grow-renewal-charge.test.ts')).resolves.toBeDefined();
     await expect(import('./grow-refund.test.ts')).resolves.toBeDefined();
+  });
+});
+
+describe('iCount mock parity isolation (I4-T6, I4-T7, I4-T8)', () => {
+  const renewalMetadata = {
+    tenant_id: ICOUNT_TENANT,
+    engagement_id: ENGAGEMENT_ID,
+    billing_account_id: BILLING_ACCOUNT_ID,
+    charge_type: 'renewal' as const,
+    billing_schedule_id: SCHEDULE_ID,
+    offering_id: OFFERING_ID,
+    person_id: PERSON_ID,
+    vat_rate: '0',
+    pretax_amount_minor: '0',
+    vat_amount_minor: '0',
+    total_amount_minor: '35000',
+  };
+
+  it('I4-T6: icount renewal never calls createCharge', async () => {
+    const createSpy = vi.spyOn(MockIcountPaymentProvider.prototype, 'createCharge');
+    const chargeSpy = vi.spyOn(MockIcountPaymentProvider.prototype, 'chargeWithToken');
+    vi.spyOn(mockApi, 'deliverMockIcountIpn').mockResolvedValue(undefined);
+
+    process.env.GROW_MOCK = 'true';
+    process.env.ICOUNT_MOCK = 'true';
+
+    await processBillingSchedule(
+      makeBillingService({ paymentProvider: 'icount', tenantId: ICOUNT_TENANT }),
+      {
+        id: SCHEDULE_ID,
+        tenant_id: ICOUNT_TENANT,
+        engagement_id: ENGAGEMENT_ID,
+        billing_account_id: BILLING_ACCOUNT_ID,
+        attempt_count: 0,
+      },
+      '2026-06',
+    );
+
+    expect(chargeSpy).toHaveBeenCalledOnce();
+    expect(createSpy).not.toHaveBeenCalled();
+
+    delete process.env.GROW_MOCK;
+    delete process.env.ICOUNT_MOCK;
+    vi.restoreAllMocks();
+  });
+
+  it('I4-T7: icount enrolment createCharge never calls chargeWithToken', async () => {
+    const provider = new MockIcountPaymentProvider();
+    const createSpy = vi.spyOn(provider, 'createCharge');
+    const chargeSpy = vi.spyOn(provider, 'chargeWithToken');
+
+    await provider.createCharge({
+      amountMinor: 35000,
+      currency: 'ILS',
+      idempotencyKey: 'enrol-1',
+      metadata: { ...renewalMetadata, charge_type: 'initial', billing_schedule_id: undefined },
+    });
+
+    expect(createSpy).toHaveBeenCalledOnce();
+    expect(chargeSpy).not.toHaveBeenCalled();
+  });
+
+  it('I4-T8: MockIcount constructEvent rejects JSON PaymentEvent blobs', async () => {
+    const provider = new MockIcountPaymentProvider();
+    const jsonBody = JSON.stringify({
+      type: 'payment.succeeded',
+      providerPaymentRef: 'mockicount_bad',
+      metadata: renewalMetadata,
+      amountMinor: 35000,
+      currency: 'ILS',
+    });
+    const headers = new Headers({ 'x-mock-signature': 'mock-valid' });
+
+    await expect(provider.constructEvent(jsonBody, headers, ICOUNT_TENANT)).rejects.toThrow(
+      /rejected JSON PaymentEvent/i,
+    );
+  });
+
+  it('parseIcountIpn rejects Grow notify bodies', () => {
+    const growBody = encodeIcountIpnBody({
+      transactionId: '12345',
+      sum: 350,
+      currency_code: 'ILS',
+    });
+    expect(() => parseIcountIpn(growBody)).toThrow(/Grow notify/i);
   });
 });
