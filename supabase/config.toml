@@ -115,6 +115,11 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/verify-grow-credentials/index.ts"
 
+[functions.verify-icount-credentials]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/verify-icount-credentials/index.ts"
+
 [functions.record-payment]
 enabled = true
 verify_jwt = false
