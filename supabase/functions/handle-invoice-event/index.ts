@@ -1,16 +1,12 @@
 import { jsonResponse } from "../_shared/cors.ts";
 import { createServiceClient } from "../_shared/supabase.ts";
-import { parseGrowInvoiceNotify } from "../_shared/payments/providers/grow.ts";
-import { applyGrowInvoiceNotify } from "../_shared/payments/grow/invoice.ts";
+import { handleInvoiceEventInternal } from "../_shared/payments/handle-invoice-event.ts";
 
 /**
- * Grow document webhook.
+ * Bundled document webhook (Grow + iCount).
  *
- * Grow issues the tax document bundled with the charge and delivers it on a separate notify.
- * This handler upserts the document fields onto the matching payment row and reconciles the
- * `document_queue` so the generic invoicing worker never tries to re-issue it. It is idempotent:
- * if the payment already carries an `external_document_id`, the event is acknowledged as a
- * duplicate without a second write.
+ * Dispatches by tenant `invoicing_provider` slug — never by country or body shape alone.
+ * Upserts document fields onto the matching payment row and reconciles `document_queue`.
  */
 Deno.serve(async (req) => {
   if (req.method !== "POST") {
@@ -20,25 +16,23 @@ Deno.serve(async (req) => {
   const rawBody = await req.text();
 
   try {
-    const parsed = parseGrowInvoiceNotify(JSON.parse(rawBody) as Record<string, unknown>);
     const service = createServiceClient();
-    const result = await applyGrowInvoiceNotify(service, parsed);
+    const result = await handleInvoiceEventInternal(service, rawBody);
 
-    if (result.status === "payment_not_found") {
-      // The payment notify may not have landed yet; ask Grow to retry.
-      return jsonResponse({ error: "Payment not found for document" }, 409);
+    if (!result.ok) {
+      return jsonResponse({ error: result.error }, result.status);
     }
 
     return jsonResponse({
       received: true,
       paymentId: result.paymentId,
-      duplicate: result.status === "duplicate",
+      duplicate: result.duplicate,
     });
   } catch (error) {
     console.error("[handle-invoice-event]", error);
     return jsonResponse(
       { error: error instanceof Error ? error.message : "Webhook error" },
-      400,
+      500,
     );
   }
 });
