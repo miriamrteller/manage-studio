@@ -1,6 +1,6 @@
 # Stage I4a — PDF retention + refund UI (no account)
 
-**Status:** Ready to implement  
+**Status:** Complete  
 **Prerequisite:** I2a complete; I4-mock-parity complete; token invalidation migration shipped  
 **Blocks:** Nothing — safe before I0-live  
 **Related:** [stage-i4-parity.md](stage-i4-parity.md), [stage-i4-mock-parity.md](stage-i4-mock-parity.md), [SPIKE-ADR.md](SPIKE-ADR.md) rows #7–8, [PROVIDER-ISOLATION-TDD.md](PROVIDER-ISOLATION-TDD.md)
@@ -12,8 +12,8 @@
 | I4a item | Status |
 |----------|--------|
 | Token invalidation on credential RPC (#9) | **Done** — `20260629000100_provider_token_invalidation.sql`, I4-T5 |
-| PDF retention for iCount `pdf_link` (#6 / SPIKE #8) | **Not done** |
-| `RefundPaymentModal` bundled-provider copy (#14) | **Not done** |
+| PDF retention for iCount `pdf_link` (#6 / SPIKE #8) | **Done** |
+| `RefundPaymentModal` bundled-provider copy (#14) | **Done** |
 
 ---
 
@@ -178,13 +178,13 @@ No backend changes — `process-refund` already slug-dispatches.
 
 ## DoD
 
-- [ ] `fetchAndStoreBundledDocumentPdf` extracted; Grow `handle-payment-document` uses it
-- [ ] iCount official fixture path stores PDF when fetch mocked success
-- [ ] `applyBundledDocumentNotify` sets `document_pdf_path` + `document_stored_at` when URL present
-- [ ] `RefundPaymentModal` shows `icount` + `grow` notes (not grow-only)
-- [ ] I4a-T1…T4 green
-- [ ] Grow document + refund regression green
-- [ ] Token invalidation (I4-T5) still green — no RPC changes expected
+- [x] `fetchAndStoreBundledDocumentPdf` extracted; Grow `handle-payment-document` uses it
+- [x] iCount official fixture path stores PDF when fetch mocked success
+- [x] `applyBundledDocumentNotify` sets `document_pdf_path` + `document_stored_at` when URL present
+- [x] `RefundPaymentModal` shows `icount` + `grow` notes (not grow-only)
+- [x] I4a-T1…T4 green
+- [x] Grow document + refund regression green
+- [x] Token invalidation (I4-T5) still green — no RPC changes expected
 
 ---
 

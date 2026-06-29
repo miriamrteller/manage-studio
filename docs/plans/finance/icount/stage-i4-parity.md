@@ -8,9 +8,9 @@
 
 **Implementation plan:** [stage-i4a-no-account.md](stage-i4a-no-account.md)
 
-- Generalize `handle-payment-document` for `pdf_link` from document webhook fixture (#6)
+- Generalize `handle-payment-document` for `pdf_link` from document webhook fixture (#6) — **done** ([stage-i4a-no-account.md](stage-i4a-no-account.md))
 - Token invalidation on credential RPC slug change (#9) — **done**
-- `RefundPaymentModal` generic bundled-provider copy (#14)
+- `RefundPaymentModal` generic bundled-provider copy (#14) — **done**
 
 ---
 
@@ -42,8 +42,9 @@ See [PROVIDER-ISOLATION-TDD.md](PROVIDER-ISOLATION-TDD.md) § Post-account TDD w
 
 ## DoD
 
-- [ ] PDF handler uses official `pdf_link` shape (fixture)
+- [x] PDF handler uses official `pdf_link` shape (fixture)
 - [ ] Grow renewal/refund regression green
 - [ ] **I4-T1 … I4-T5** green (or deferrals documented — no grow/icount cross-charge)
+- [x] **I4a-T1 … I4a-T4** green (PDF retention + refund UI — see [stage-i4a-no-account.md](stage-i4a-no-account.md))
 
 **Stop:** Do not start I5 without I0-live + Pre-I5 gate.

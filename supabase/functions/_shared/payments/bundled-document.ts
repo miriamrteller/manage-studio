@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { fetchAndStoreBundledDocumentPdf } from "./bundled-document-pdf.ts";
 
 /** Canonical bundled document fields — shared by Grow and iCount document webhooks. */
 export interface ParsedBundledDocument {
@@ -40,6 +41,18 @@ export async function applyBundledDocumentNotify(
   }
 
   const now = new Date().toISOString();
+
+  let pdfPath: string | null = null;
+  if (parsed.documentUrl) {
+    const stored = await fetchAndStoreBundledDocumentPdf(service, {
+      tenantId: parsed.tenantId,
+      providerPaymentRef: parsed.providerPaymentRef,
+      externalDocumentId: parsed.externalDocumentId,
+      documentUrl: parsed.documentUrl,
+    });
+    pdfPath = stored.pdfPath;
+  }
+
   const { error: updateError } = await service
     .from("payments")
     .update({
@@ -47,6 +60,8 @@ export async function applyBundledDocumentNotify(
       external_document_number: parsed.externalDocumentNumber ?? null,
       invoice_url: parsed.documentUrl ?? null,
       invoice_issued_at: now,
+      document_stored_at: parsed.documentUrl ? now : null,
+      document_pdf_path: pdfPath,
     })
     .eq("id", payment.id);
 
