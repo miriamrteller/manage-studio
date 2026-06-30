@@ -1,5 +1,7 @@
 # Phase 1G — Parent portal polish (paste into new agent chat)
 
+**Status:** ✅ **Shipped** (2026-06-30) on branch `feat/parent-portal-polish` — commit `fcad476`. Step 7 (1G-b `notify_*`) **deferred**. Full WhatsApp OTP verify **deferred** (hint only shipped).
+
 ## Mission
 
 Complete the **parent/student portal** account settings slice: mount **notification preferences**, add **upcoming sessions (7 days)**, i18n, and small portal UX fixes. Reuses existing hooks/components — no new migrations in V1 slice.
@@ -12,20 +14,25 @@ Complete the **parent/student portal** account settings slice: mount **notificat
 
 ---
 
-## Current state (verified 2026-06-29)
+## Current state (verified 2026-06-30 — post-ship)
 
 | Item | Status |
 | --- | --- |
-| `ParentPortal.tsx` | Children, **Myself** (`GuardianSelfSection`), payments, enrol CTA, highlight scroll |
-| `useParentPortal.ts` | Guardian + children + `enrolmentsByPerson` + payments |
-| `ContactPreferencesEditor.tsx` | Built — **hardcoded EN**, not mounted in portal |
-| `WhatsAppOtpVerifier.tsx` | Built — hardcoded EN; **not wired** (V1: hint only) |
-| `useContactPreferences` | RLS-backed read/update; creates row if missing |
-| Upcoming sessions | ❌ No aggregated 7-day view |
-| `EnrolmentRow.tsx` | `returnTo` hardcoded `/dashboard/portal` — fix for `/dashboard/student` |
-| Portal i18n | `pages.portal.*` exists; **no** `preferences.*` keys yet |
+| `ParentPortal.tsx` | Children, **Myself**, payments, enrol CTA, highlight scroll, **notification prefs button**, **upcoming sessions**, **set login password** |
+| `useParentPortal.ts` | Guardian + children + `enrolmentsByPerson` + payments; loading flash fix on refetch |
+| `ContactPreferencesEditor.tsx` | ✅ i18n EN+HE, mounted in portal, WhatsApp verify hint, single-form + `bindFormSubmit` |
+| `WhatsAppOtpVerifier.tsx` | Built — **not wired** (V1: hint only in prefs modal) |
+| `useContactPreferences` | RLS-backed read/update; `setQueryData` on save (no modal reload flash) |
+| Upcoming sessions | ✅ `upcomingSessions.ts` + `UpcomingSessionsSection` + unit tests |
+| `EnrolmentRow.tsx` | ✅ `returnTo={location.pathname}` for `/dashboard/student` |
+| Portal i18n | ✅ `pages.portal.*`, `pages.portal.preferences.*`, upcoming keys EN+HE |
+| Adult DOB display | ✅ `formatPersonDateOfBirthDisplay` — 18+ shows “Adult” / “מבוגר”, never calendar date |
+| Parent login password | ✅ `SetPasswordDialog` in portal header (`pages.portal.login_password`) |
+| Form submit safety | ✅ `bindFormSubmit` — prevents native GET submit / password-in-URL on portal modals |
 
 **Already shipped elsewhere — do not redo:** Myself section, guardian setup, `resolveGuardianProfile` ([parent-self-enrolment P2/P3](parent-self-enrolment/stage-p2-portal-myself.md)).
+
+**Deferred (not in this PR):** Step 7 — `notify_*` scope toggles (1G-b); full `WhatsAppOtpVerifier` i18n + embed.
 
 ---
 
@@ -287,12 +294,15 @@ Place below WhatsApp number / preferred-channel block, above Cancel/Save.
 
 ## Step 6 — Tests + manual smoke
 
-**Unit:**
+**Unit (run on ship):**
 
 ```bash
 pnpm -C apps/web test upcomingSessions.test.ts
 pnpm -C apps/web test parent-portal-guardian.test.ts   # regression
+pnpm -C apps/web test bindFormSubmit.test.ts setPassword.test.ts personAgeDisplay.test.ts
 ```
+
+**Regtest (build + lint + a11y e2e):** ✅ passed 2026-06-30.
 
 **Manual:**
 
@@ -305,7 +315,9 @@ pnpm -C apps/web test parent-portal-guardian.test.ts   # regression
 
 ## Step 7 — Optional Phase 1G-b: `notify_*` toggles
 
-**Only if user requests in same PR:**
+**Status:** ⏸️ **Deferred** — not implemented in `feat/parent-portal-polish` (per mission scope).
+
+**Only if user requests in a follow-up PR:**
 
 1. Extend `ContactPreferencesSchema` + `ContactPreferencesUpdateSchema` in `packages/shared/src/schemas.ts`:
 
@@ -325,27 +337,49 @@ notify_announcements: z.boolean().optional(),
 
 ## Definition of done
 
-- [ ] `ContactPreferencesEditor` fully i18n (EN + HE) + verify hint when opted in and unverified
-- [ ] Preferences button + modal on `/dashboard/portal` (and works on `/dashboard/student`)
-- [ ] `UpcomingSessionsSection` with `buildUpcomingSessions` + tests
-- [ ] `EnrolmentRow` uses dynamic `returnTo`
-- [ ] `pnpm -C apps/web test` green for new + existing portal tests
-- [ ] Update `docs/IMPLEMENTATION_STATUS.md` — parent portal polish → ✅ (or 🟡 if 1G-b deferred)
+- [x] `ContactPreferencesEditor` fully i18n (EN + HE) + verify hint when opted in and unverified
+- [x] Preferences button + modal on `/dashboard/portal` (and works on `/dashboard/student`)
+- [x] `UpcomingSessionsSection` with `buildUpcomingSessions` + tests
+- [x] `EnrolmentRow` uses dynamic `returnTo`
+- [x] `pnpm -C apps/web test` green for new + existing portal tests
+- [x] Update `docs/IMPLEMENTATION_STATUS.md` — parent portal polish → ✅ (1G-b deferred)
+
+### Also shipped on this branch (beyond original plan)
+
+- [x] `SetPasswordDialog` + portal header “Login password” (Supabase `updateUser` password)
+- [x] `bindFormSubmit` + form fixes (`ContactPreferencesEditor`, `SetPasswordDialog`, `AddChildModal`, `PersonForm`; `FormField` error display)
+- [x] Login vs set-password schema split (`PasswordLoginSchema` vs `NewPasswordSchema`)
+- [x] Adult DOB never shown as calendar date in portal/admin read-only views (`formatPersonDateOfBirthDisplay`)
+
+### Explicitly not done
+
+- [ ] Step 7 — `notify_*` scope toggles (1G-b)
+- [ ] Full `WhatsAppOtpVerifier` i18n + portal embed
 
 ---
 
 ## File checklist
 
-| Action | Path |
-| --- | --- |
-| Edit | `ContactPreferencesEditor.tsx` |
-| Edit | `ParentPortal.tsx` |
-| Edit | `EnrolmentRow.tsx` |
-| New | `features/enrolment/lib/upcomingSessions.ts` |
-| New | `components/Dashboard/UpcomingSessionsSection.tsx` |
-| New | `__tests__/upcomingSessions.test.ts` |
-| Edit | `i18n/en.json`, `i18n/he.json` |
-| Edit | `docs/IMPLEMENTATION_STATUS.md` |
+| Action | Path | Status |
+| --- | --- | --- |
+| Edit | `ContactPreferencesEditor.tsx` | ✅ |
+| Edit | `ParentPortal.tsx` | ✅ |
+| Edit | `EnrolmentRow.tsx` | ✅ |
+| Edit | `GuardianSelfSection.tsx` | ✅ (adult DOB display) |
+| New | `features/enrolment/lib/upcomingSessions.ts` | ✅ |
+| New | `components/Dashboard/UpcomingSessionsSection.tsx` | ✅ |
+| New | `__tests__/upcomingSessions.test.ts` | ✅ |
+| Edit | `i18n/en.json`, `i18n/he.json` | ✅ |
+| Edit | `docs/IMPLEMENTATION_STATUS.md` | ✅ |
+| New | `lib/bindFormSubmit.ts` | ✅ |
+| New | `__tests__/bindFormSubmit.test.ts` | ✅ |
+| New | `components/shared/SetPasswordDialog.tsx` | ✅ |
+| New | `features/auth/setLoginPassword.ts`, `sessionAuthMethod.ts` | ✅ |
+| Edit | `lib/personAge.ts` (`formatPersonDateOfBirthDisplay`) | ✅ |
+| Edit | `PersonDetail.tsx`, `StudentSlideOver.tsx`, `AgeReviewAdminPanel.tsx` | ✅ (adult DOB) |
+| Edit | `useContactPreferences.ts`, `useParentPortal.ts` | ✅ |
+| Edit | `components/ui/form.tsx` (`FormField` fieldState) | ✅ |
+| Edit | `packages/shared/src/schemas.ts` (login password schema) | ✅ |
 
 ---
 
