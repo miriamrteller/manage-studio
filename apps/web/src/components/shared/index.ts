@@ -6,6 +6,7 @@ export { OtpCodeForm } from './OtpCodeForm';
 export { AuthMessage } from './AuthMessage';
 export { ClassCard } from './ClassCard';
 export { ContactPreferencesEditor } from './ContactPreferencesEditor';
+export { SetPasswordDialog } from './SetPasswordDialog';
 export { NotificationLog } from './NotificationLog';
 export { WhatsAppOtpVerifier } from './WhatsAppOtpVerifier';
 export { EmptyState } from './EmptyState';

@@ -44,7 +44,9 @@ export {
 export {
   signupFormSchema,
   loginEmailOtpVerifySchema,
+  createSetPasswordFormSchema,
   type SignupForm,
   type LoginEmailOtpVerify,
+  type SetPasswordForm,
 } from './auth';
 export { signupFormSchema as SignupFormSchema } from './auth';
