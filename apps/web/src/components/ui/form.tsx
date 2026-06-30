@@ -2,6 +2,7 @@ import React from 'react';
 import {
   Controller,
   type Control,
+  type ControllerFieldState,
   type ControllerRenderProps,
   type FieldPath,
   type FieldValues,
@@ -19,6 +20,7 @@ export interface FormFieldProps<
   name: TName;
   render: (props: {
     field: ControllerRenderProps<TFieldValues, TName>;
+    fieldState: ControllerFieldState;
   }) => React.ReactNode;
 }
 
@@ -30,7 +32,7 @@ export const FormField = function FormField<
     <Controller
       control={control}
       name={name}
-      render={({ field }) => <>{render({ field })}</>}
+      render={({ field, fieldState }) => <>{render({ field, fieldState })}</>}
     />
   );
 };

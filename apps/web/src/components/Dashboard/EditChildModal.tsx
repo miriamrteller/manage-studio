@@ -48,10 +48,10 @@ export function EditChildModal({ child, onClose }: EditChildModalProps) {
           onSubmit={async (data) => {
             if (!tenant) throw new Error('Tenant not initialized');
             await PersonService.updateForParent(tenant, child.id, data);
-            await queryClient.invalidateQueries({
+            void queryClient.invalidateQueries({
               queryKey: ['parent-portal', tenant.id, user?.id],
             });
-            await queryClient.invalidateQueries({
+            void queryClient.invalidateQueries({
               queryKey: ['account-students', tenant.id, user?.id],
             });
             onClose();

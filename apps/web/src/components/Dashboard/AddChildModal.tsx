@@ -32,10 +32,10 @@ export function AddChildModal({ onClose }: AddChildModalProps) {
         student_name: name,
         student_date_of_birth: dateOfBirth,
       });
-      await queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: ['parent-portal', tenant.id, user.id],
       });
-      await queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: ['account-students', tenant.id, user.id],
       });
       onClose();
@@ -70,7 +70,7 @@ export function AddChildModal({ onClose }: AddChildModalProps) {
           </Button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4 p-4">
+        <form method="post" noValidate onSubmit={handleSubmit} className="space-y-4 p-4">
           <p className="text-sm text-gray-600">{t('pages.portal.add_child_desc')}</p>
           <fieldset className="space-y-3">
             <legend className="sr-only">{t('pages.enrolment.student_section')}</legend>

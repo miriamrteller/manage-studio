@@ -16,6 +16,7 @@ import { UpcomingSessionsSection } from './UpcomingSessionsSection';
 import { ContactPreferencesEditor } from '@/components/shared/ContactPreferencesEditor';
 import { SetPasswordDialog } from '@/components/shared/SetPasswordDialog';
 import { buildUpcomingSessions } from '@/features/enrolment/lib/upcomingSessions';
+import { formatPersonDateOfBirthDisplay } from '@/lib/personAge';
 import { readPortalHighlightState } from '@/lib/portalHighlight';
 
 function formatMoney(amountMinor: number, currency: string): string {
@@ -27,7 +28,7 @@ function formatMoney(amountMinor: number, currency: string): string {
 }
 
 export function ParentPortal() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const [portalHighlight] = useState(() => readPortalHighlightState(location.state));
@@ -253,7 +254,7 @@ export function ParentPortal() {
                       {child.date_of_birth && (
                         <p className="text-sm text-gray-500">
                           {t('form.person.date_of_birth')}:{' '}
-                          {new Date(child.date_of_birth).toLocaleDateString()}
+                          {formatPersonDateOfBirthDisplay(child.date_of_birth, t, i18n.language)}
                         </p>
                       )}
                     </div>

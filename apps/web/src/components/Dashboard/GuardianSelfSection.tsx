@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import type { GuardianProfile } from '@/features/enrolment/onboardingService';
+import { formatPersonDateOfBirthDisplay } from '@/lib/personAge';
 import { EnrolmentRow } from './EnrolmentRow';
 import type { EngagementWithOffering } from './useParentPortal';
 
@@ -17,7 +18,8 @@ export function GuardianSelfSection({
   highlightedEngagementId,
   onEnrol,
 }: GuardianSelfSectionProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const birthLabel = formatPersonDateOfBirthDisplay(guardian.dateOfBirth, t, i18n.language);
 
   return (
     <section aria-labelledby="portal-myself-heading" id="portal-guardian-self">
@@ -32,10 +34,9 @@ export function GuardianSelfSection({
               ({t('pages.enrolment.enrol_myself')})
             </span>
           </p>
-          {guardian.dateOfBirth ? (
+          {birthLabel ? (
             <p className="text-sm text-gray-500">
-              {t('form.person.date_of_birth')}:{' '}
-              {new Date(guardian.dateOfBirth).toLocaleDateString()}
+              {t('form.person.date_of_birth')}: {birthLabel}
             </p>
           ) : (
             <p className="text-sm text-amber-700">{t('pages.portal.myself_dob_missing')}</p>

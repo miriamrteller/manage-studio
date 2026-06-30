@@ -7,8 +7,8 @@ import { usePerson } from '../hooks/usePerson';
 import { PersonForm } from './PersonForm';
 import { PersonService } from '../service';
 import { MedicalNotes } from './MedicalNotes';
-import { formatDate, calculateAge } from '@/lib/utils';
-import { formatPersonAgeLabel } from '@/lib/personAge';
+import { calculateAge } from '@/lib/utils';
+import { formatPersonAgeLabel, formatPersonDateOfBirthDisplay } from '@/lib/personAge';
 
 interface PersonDetailProps {
   id: string;
@@ -25,7 +25,7 @@ interface PersonDetailProps {
  * - WCAG 2.1 AA compliant
  */
 export function PersonDetail({ id, onClose }: PersonDetailProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const tenant = useTenant();
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
@@ -139,7 +139,7 @@ export function PersonDetail({ id, onClose }: PersonDetailProps) {
               {t('pages.people.date_of_birth_label')}
             </dt>
             <dd className="text-gray-900">
-              {formatDate(person.date_of_birth)}
+              {formatPersonDateOfBirthDisplay(person.date_of_birth, t, i18n.language)}
             </dd>
           </div>
         )}

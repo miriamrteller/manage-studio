@@ -4,6 +4,7 @@ import {
   enrolmentShowingForAgeMessage,
   formatEnrolmentStudentAgeLine,
   formatPersonAgeLabel,
+  formatPersonDateOfBirthDisplay,
   formatPersonSearchAgeLine,
   isAdultAge,
   personAgeLabel,
@@ -64,5 +65,13 @@ describe('personAge display', () => {
     expect(formatEnrolmentStudentAgeLine('2020-01-01', t)).toMatch(/^Age \d+$/);
     expect(formatPersonSearchAgeLine('1994-08-12', t)).toBe('Adult');
     expect(formatPersonSearchAgeLine('2020-01-01', t)).toMatch(/^Age \d+$/);
+  });
+
+  it('never shows a calendar date for adult DOB display', () => {
+    expect(formatPersonDateOfBirthDisplay('1988-03-15', t)).toBe('Adult');
+    expect(formatPersonDateOfBirthDisplay('1994-08-12', t)).toBe('Adult');
+    const minor = formatPersonDateOfBirthDisplay('2020-01-01', t, 'en-US');
+    expect(minor).not.toBe('Adult');
+    expect(minor).toMatch(/\d/);
   });
 });

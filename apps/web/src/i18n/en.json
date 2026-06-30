@@ -793,7 +793,8 @@
         "saving": "Saving...",
         "cancel": "Cancel",
         "verify_whatsapp_hint": "Save your number, then contact the studio to verify WhatsApp.",
-        "whatsapp_verified": "WhatsApp verified"
+        "whatsapp_verified": "WhatsApp verified",
+        "error_save": "Could not save preferences. Please try again."
       },
       "password": {
         "set_title": "Set login password",

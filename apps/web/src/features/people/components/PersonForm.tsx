@@ -8,6 +8,7 @@ import { PersonFormFields } from './PersonFormFields';
 import { PersonFormMessages } from './PersonFormMessages';
 import { ConsentFields } from './ConsentFields';
 import { calculateAge } from '@/lib/utils';
+import { bindFormSubmit } from '@/lib/bindFormSubmit';
 
 // Schema source: SPEC.md Migration 002
 // Notes: System fields (id, tenant_id, account_id, user_profile_id) are NOT in form.
@@ -69,7 +70,9 @@ export const PersonForm = ({ person, onSubmit, isLoading, variant = 'default' }:
 
   return (
     <form
-      onSubmit={form.handleSubmit(handleSubmit)}
+      method="post"
+      noValidate
+      onSubmit={bindFormSubmit(form.handleSubmit, handleSubmit)}
       className="space-y-4 p-4"
     >
       <PersonFormMessages

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
@@ -12,7 +12,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
-  Form,
   FormControl,
   FormDescription,
   FormField,
@@ -26,6 +25,7 @@ import { createSetPasswordFormSchema, type SetPasswordForm } from '@/schemas';
 import { setLoginPassword } from '@/features/auth/lib/setLoginPassword';
 import { sessionUsedPassword } from '@/features/auth/lib/sessionAuthMethod';
 import { resolveAuthErrorMessage } from '@/lib/authErrors';
+import { bindFormSubmit } from '@/lib/bindFormSubmit';
 
 interface SetPasswordDialogProps {
   open: boolean;
@@ -38,7 +38,6 @@ export function SetPasswordDialog({ open, onOpenChange }: SetPasswordDialogProps
   const { user } = useCurrentUser();
   const [saving, setSaving] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const requiresCurrentPassword = sessionUsedPassword(session);
   const schema = useMemo(
@@ -48,12 +47,24 @@ export function SetPasswordDialog({ open, onOpenChange }: SetPasswordDialogProps
 
   const form = useForm<SetPasswordForm>({
     resolver: zodResolver(schema),
+    mode: 'onSubmit',
+    reValidateMode: 'onChange',
     defaultValues: {
       currentPassword: '',
       password: '',
       confirmPassword: '',
     },
   });
+
+  useEffect(() => {
+    if (!open) return;
+    form.reset({
+      currentPassword: '',
+      password: '',
+      confirmPassword: '',
+    });
+    setSubmitError(null);
+  }, [form, open]);
 
   const onSubmit = async (data: SetPasswordForm) => {
     if (!user?.email) {
@@ -63,7 +74,6 @@ export function SetPasswordDialog({ open, onOpenChange }: SetPasswordDialogProps
 
     setSaving(true);
     setSubmitError(null);
-    setSuccessMessage(null);
 
     try {
       await setLoginPassword({
@@ -71,7 +81,7 @@ export function SetPasswordDialog({ open, onOpenChange }: SetPasswordDialogProps
         password: data.password,
         currentPassword: data.currentPassword?.trim() || undefined,
       });
-      setSuccessMessage(t('pages.portal.password.success'));
+      onOpenChange(false);
       form.reset();
     } catch (error) {
       const message = error instanceof Error ? error.message : t('pages.portal.password.error_save');
@@ -89,7 +99,6 @@ export function SetPasswordDialog({ open, onOpenChange }: SetPasswordDialogProps
     if (!nextOpen) {
       form.reset();
       setSubmitError(null);
-      setSuccessMessage(null);
     }
     onOpenChange(nextOpen);
   };
@@ -116,95 +125,98 @@ export function SetPasswordDialog({ open, onOpenChange }: SetPasswordDialogProps
           </p>
         )}
 
-        {successMessage && (
-          <p className="text-sm text-green-700" role="status">
-            {successMessage}
-          </p>
-        )}
-
         {submitError && (
           <p className="text-sm text-red-600" role="alert">
             {submitError}
           </p>
         )}
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {requiresCurrentPassword && (
-              <FormField
-                control={form.control}
-                name="currentPassword"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t('pages.portal.password.current')}</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="password"
-                        autoComplete="current-password"
-                        disabled={saving}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+        <form
+          method="post"
+          noValidate
+          onSubmit={bindFormSubmit(form.handleSubmit, onSubmit)}
+          className="space-y-4"
+        >
+          {requiresCurrentPassword && (
+            <FormField
+              control={form.control}
+              name="currentPassword"
+              render={({ field, fieldState }) => (
+                <FormItem>
+                  <FormLabel>{t('pages.portal.password.current')}</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="password"
+                      autoComplete="current-password"
+                      disabled={saving}
+                      {...field}
+                    />
+                  </FormControl>
+                  {fieldState.error?.message ? (
+                    <FormMessage>{fieldState.error.message}</FormMessage>
+                  ) : null}
+                </FormItem>
+              )}
+            />
+          )}
+
+          <FormField
+            control={form.control}
+            name="password"
+            render={({ field, fieldState }) => (
+              <FormItem>
+                <FormLabel>{t('pages.portal.password.new')}</FormLabel>
+                <FormDescription>{t('pages.portal.password.requirements')}</FormDescription>
+                <FormControl>
+                  <Input
+                    type="password"
+                    autoComplete="new-password"
+                    disabled={saving}
+                    {...field}
+                  />
+                </FormControl>
+                {fieldState.error?.message ? (
+                  <FormMessage>{fieldState.error.message}</FormMessage>
+                ) : null}
+              </FormItem>
             )}
+          />
 
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('pages.portal.password.new')}</FormLabel>
-                  <FormDescription>{t('pages.portal.password.requirements')}</FormDescription>
-                  <FormControl>
-                    <Input
-                      type="password"
-                      autoComplete="new-password"
-                      disabled={saving}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          <FormField
+            control={form.control}
+            name="confirmPassword"
+            render={({ field, fieldState }) => (
+              <FormItem>
+                <FormLabel>{t('pages.portal.password.confirm')}</FormLabel>
+                <FormControl>
+                  <Input
+                    type="password"
+                    autoComplete="new-password"
+                    disabled={saving}
+                    {...field}
+                  />
+                </FormControl>
+                {fieldState.error?.message ? (
+                  <FormMessage>{fieldState.error.message}</FormMessage>
+                ) : null}
+              </FormItem>
+            )}
+          />
 
-            <FormField
-              control={form.control}
-              name="confirmPassword"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('pages.portal.password.confirm')}</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="password"
-                      autoComplete="new-password"
-                      disabled={saving}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="flex justify-end gap-3 pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => handleOpenChange(false)}
-                disabled={saving}
-              >
-                {t('pages.portal.password.cancel')}
-              </Button>
-              <Button type="submit" disabled={saving || Boolean(successMessage)}>
-                {saving ? t('pages.portal.password.saving') : t('pages.portal.password.save')}
-              </Button>
-            </div>
-          </form>
-        </Form>
+          <div className="flex justify-end gap-3 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => handleOpenChange(false)}
+              disabled={saving}
+            >
+              {t('pages.portal.password.cancel')}
+            </Button>
+            <Button type="submit" disabled={saving}>
+              {saving ? t('pages.portal.password.saving') : t('pages.portal.password.save')}
+            </Button>
+          </div>
+        </form>
       </DialogContent>
     </Dialog>
   );

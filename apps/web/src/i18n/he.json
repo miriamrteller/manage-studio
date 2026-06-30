@@ -792,7 +792,8 @@
         "saving": "שומר...",
         "cancel": "ביטול",
         "verify_whatsapp_hint": "שמרו את המספר, ולאחר מכן פנו לסטודיו לאימות WhatsApp.",
-        "whatsapp_verified": "WhatsApp מאומת"
+        "whatsapp_verified": "WhatsApp מאומת",
+        "error_save": "לא ניתן לשמור את ההעדפות. נסו שוב."
       },
       "password": {
         "set_title": "הגדרת סיסמת כניסה",
