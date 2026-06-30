@@ -1587,4 +1587,146 @@ export declare const WaiverEvidenceSchema: z.ZodObject<{
     } | null | undefined;
 }>;
 export type WaiverEvidence = z.infer<typeof WaiverEvidenceSchema>;
+export declare const AdminDashboardTodayClassSchema: z.ZodObject<{
+    id: z.ZodString;
+    name: z.ZodString;
+    /** Postgres TIME string, HH:MM:SS */
+    start_time: z.ZodString;
+    /** Postgres TIME string, HH:MM:SS */
+    end_time: z.ZodString;
+    location: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    max_capacity: z.ZodNumber;
+    enrolled_count: z.ZodNumber;
+    waitlist_count: z.ZodNumber;
+    staff_name: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+}, "strip", z.ZodTypeAny, {
+    id: string;
+    name: string;
+    start_time: string;
+    end_time: string;
+    max_capacity: number;
+    enrolled_count: number;
+    waitlist_count: number;
+    location?: string | null | undefined;
+    staff_name?: string | null | undefined;
+}, {
+    id: string;
+    name: string;
+    start_time: string;
+    end_time: string;
+    max_capacity: number;
+    enrolled_count: number;
+    waitlist_count: number;
+    location?: string | null | undefined;
+    staff_name?: string | null | undefined;
+}>;
+export declare const AdminDashboardOverviewSchema: z.ZodObject<{
+    season_id: z.ZodNullable<z.ZodString>;
+    season_name: z.ZodNullable<z.ZodString>;
+    today_classes: z.ZodArray<z.ZodObject<{
+        id: z.ZodString;
+        name: z.ZodString;
+        /** Postgres TIME string, HH:MM:SS */
+        start_time: z.ZodString;
+        /** Postgres TIME string, HH:MM:SS */
+        end_time: z.ZodString;
+        location: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+        max_capacity: z.ZodNumber;
+        enrolled_count: z.ZodNumber;
+        waitlist_count: z.ZodNumber;
+        staff_name: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    }, "strip", z.ZodTypeAny, {
+        id: string;
+        name: string;
+        start_time: string;
+        end_time: string;
+        max_capacity: number;
+        enrolled_count: number;
+        waitlist_count: number;
+        location?: string | null | undefined;
+        staff_name?: string | null | undefined;
+    }, {
+        id: string;
+        name: string;
+        start_time: string;
+        end_time: string;
+        max_capacity: number;
+        enrolled_count: number;
+        waitlist_count: number;
+        location?: string | null | undefined;
+        staff_name?: string | null | undefined;
+    }>, "many">;
+    term_enrolments_count: z.ZodNumber;
+    admin_review_count: z.ZodNumber;
+    pending_payment_count: z.ZodNumber;
+    finance: z.ZodObject<{
+        net_revenue_minor: z.ZodNumber;
+        payment_count: z.ZodNumber;
+        outstanding_engagements: z.ZodNumber;
+        failed_payments_7d: z.ZodNumber;
+        net_expenses_minor: z.ZodNumber;
+    }, "strip", z.ZodTypeAny, {
+        net_revenue_minor: number;
+        payment_count: number;
+        outstanding_engagements: number;
+        failed_payments_7d: number;
+        net_expenses_minor: number;
+    }, {
+        net_revenue_minor: number;
+        payment_count: number;
+        outstanding_engagements: number;
+        failed_payments_7d: number;
+        net_expenses_minor: number;
+    }>;
+}, "strip", z.ZodTypeAny, {
+    season_id: string | null;
+    season_name: string | null;
+    today_classes: {
+        id: string;
+        name: string;
+        start_time: string;
+        end_time: string;
+        max_capacity: number;
+        enrolled_count: number;
+        waitlist_count: number;
+        location?: string | null | undefined;
+        staff_name?: string | null | undefined;
+    }[];
+    term_enrolments_count: number;
+    admin_review_count: number;
+    pending_payment_count: number;
+    finance: {
+        net_revenue_minor: number;
+        payment_count: number;
+        outstanding_engagements: number;
+        failed_payments_7d: number;
+        net_expenses_minor: number;
+    };
+}, {
+    season_id: string | null;
+    season_name: string | null;
+    today_classes: {
+        id: string;
+        name: string;
+        start_time: string;
+        end_time: string;
+        max_capacity: number;
+        enrolled_count: number;
+        waitlist_count: number;
+        location?: string | null | undefined;
+        staff_name?: string | null | undefined;
+    }[];
+    term_enrolments_count: number;
+    admin_review_count: number;
+    pending_payment_count: number;
+    finance: {
+        net_revenue_minor: number;
+        payment_count: number;
+        outstanding_engagements: number;
+        failed_payments_7d: number;
+        net_expenses_minor: number;
+    };
+}>;
+export type AdminDashboardTodayClass = z.infer<typeof AdminDashboardTodayClassSchema>;
+export type AdminDashboardOverview = z.infer<typeof AdminDashboardOverviewSchema>;
 //# sourceMappingURL=schemas.d.ts.map
