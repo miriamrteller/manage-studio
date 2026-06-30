@@ -5,7 +5,7 @@ import {
   type EmailLanguage,
   type EmailTemplateName,
   type RenderEmailTemplateInput,
-} from "shared/email";
+} from "./email-dist/email/render-template.js";
 import { renderPaymentReminderHtml } from "./render-payment-email.ts";
 import {
   buildEnrolmentConfirmationSubject,

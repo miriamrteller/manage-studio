@@ -8,7 +8,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { formatDate } from '@/lib/utils';
+import { formatPersonDateOfBirthDisplay } from '@/lib/personAge';
 import {
   approveAgeReviewEngagement,
   declineAgeReviewEngagement,
@@ -41,7 +41,7 @@ export function AgeReviewAdminPanel({
   highlighted = false,
   onUpdated,
 }: AgeReviewAdminPanelProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const tenant = useTenant();
   const { engagement, className, classAges, student, guardian } = details;
 
@@ -135,7 +135,11 @@ export function AgeReviewAdminPanel({
         </div>
         <div>
           <dt className="text-xs uppercase tracking-wide opacity-70">{t('form.person.date_of_birth')}</dt>
-          <dd>{student.date_of_birth ? formatDate(student.date_of_birth) : '—'}</dd>
+          <dd>
+            {student.date_of_birth
+              ? formatPersonDateOfBirthDisplay(student.date_of_birth, t, i18n.language)
+              : '—'}
+          </dd>
         </div>
         <div>
           <dt className="text-xs uppercase tracking-wide opacity-70">{t('pages.classes.ages')}</dt>

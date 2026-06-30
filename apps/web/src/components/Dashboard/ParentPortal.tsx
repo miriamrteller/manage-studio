@@ -12,6 +12,11 @@ import { EditChildModal } from './EditChildModal';
 import { AddChildModal } from './AddChildModal';
 import { EnrolmentRow } from './EnrolmentRow';
 import { GuardianSelfSection, GuardianSetupRequiredCard } from './GuardianSelfSection';
+import { UpcomingSessionsSection } from './UpcomingSessionsSection';
+import { ContactPreferencesEditor } from '@/components/shared/ContactPreferencesEditor';
+import { SetPasswordDialog } from '@/components/shared/SetPasswordDialog';
+import { buildUpcomingSessions } from '@/features/enrolment/lib/upcomingSessions';
+import { formatPersonDateOfBirthDisplay } from '@/lib/personAge';
 import { readPortalHighlightState } from '@/lib/portalHighlight';
 
 function formatMoney(amountMinor: number, currency: string): string {
@@ -23,13 +28,15 @@ function formatMoney(amountMinor: number, currency: string): string {
 }
 
 export function ParentPortal() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const [portalHighlight] = useState(() => readPortalHighlightState(location.state));
   const { data, isLoading, error } = useParentPortal();
   const [editingChildId, setEditingChildId] = useState<string | null>(null);
   const [showAddChild, setShowAddChild] = useState(false);
+  const [prefsOpen, setPrefsOpen] = useState(false);
+  const [passwordOpen, setPasswordOpen] = useState(false);
   const [selectedEnrolmentStatuses, setSelectedEnrolmentStatuses] = useState<FilterOption[]>([]);
   const [showSuccessBanner, setShowSuccessBanner] = useState(Boolean(portalHighlight?.enrolmentSuccess));
   const scrolledRef = useRef(false);
@@ -56,6 +63,20 @@ export function ParentPortal() {
     const enrolments = enrolmentsByPerson?.[personId] ?? [];
     return filterEnrolmentsByStatus(enrolments, enrolmentStatusFilterValues);
   };
+
+  const personNames = useMemo(() => {
+    const names: Record<string, string> = {};
+    for (const child of children ?? []) names[child.id] = child.name;
+    if (guardian) names[guardian.personId] = guardian.name;
+    return names;
+  }, [children, guardian]);
+
+  const upcomingSessions = useMemo(
+    () => buildUpcomingSessions(enrolmentsByPerson ?? {}, personNames),
+    [enrolmentsByPerson, personNames],
+  );
+
+  const showPersonNameOnUpcoming = Object.keys(personNames).length > 1;
 
   const highlightPersonId = useMemo(() => {
     if (portalHighlight?.highlightPersonId) return portalHighlight.highlightPersonId;
@@ -138,10 +159,21 @@ export function ParentPortal() {
           </h2>
           <p className="text-gray-600">{t('pages.portal.subtitle')}</p>
         </div>
-        <Button variant="primary" onClick={() => navigate('/enrol')}>
-          {t('pages.portal.enrol_new')}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => setPrefsOpen(true)}>
+            {t('pages.portal.notification_preferences')}
+          </Button>
+          <Button variant="outline" onClick={() => setPasswordOpen(true)}>
+            {t('pages.portal.login_password')}
+          </Button>
+          <Button variant="primary" onClick={() => navigate('/enrol')}>
+            {t('pages.portal.enrol_new')}
+          </Button>
+        </div>
       </section>
+
+      <ContactPreferencesEditor open={prefsOpen} onOpenChange={setPrefsOpen} />
+      <SetPasswordDialog open={passwordOpen} onOpenChange={setPasswordOpen} />
 
       {guardian && (
         <GuardianSelfSection
@@ -222,7 +254,7 @@ export function ParentPortal() {
                       {child.date_of_birth && (
                         <p className="text-sm text-gray-500">
                           {t('form.person.date_of_birth')}:{' '}
-                          {new Date(child.date_of_birth).toLocaleDateString()}
+                          {formatPersonDateOfBirthDisplay(child.date_of_birth, t, i18n.language)}
                         </p>
                       )}
                     </div>
@@ -271,6 +303,11 @@ export function ParentPortal() {
       )}
 
       {showAddChild && <AddChildModal onClose={() => setShowAddChild(false)} />}
+
+      <UpcomingSessionsSection
+        sessions={upcomingSessions}
+        showPersonName={showPersonNameOnUpcoming}
+      />
 
       <section aria-labelledby="portal-payments-heading">
         <h3 id="portal-payments-heading" className="text-lg font-semibold text-gray-900 mb-4">

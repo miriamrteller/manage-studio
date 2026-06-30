@@ -38,3 +38,28 @@ export const loginEmailOtpVerifySchema = z.object({
 });
 
 export type LoginEmailOtpVerify = z.infer<typeof loginEmailOtpVerifySchema>;
+
+type TranslateFn = (key: string) => string;
+
+export function createSetPasswordFormSchema(t: TranslateFn, requiresCurrentPassword: boolean) {
+  const passwordField = z
+    .string()
+    .min(6, t('pages.portal.password.error_min'))
+    .regex(/[A-Z]/, t('pages.portal.password.error_uppercase'))
+    .regex(/[0-9]/, t('pages.portal.password.error_number'));
+
+  return z
+    .object({
+      currentPassword: requiresCurrentPassword
+        ? z.string().min(1, t('pages.portal.password.error_current_required'))
+        : z.string().optional(),
+      password: passwordField,
+      confirmPassword: z.string(),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
+      message: t('pages.portal.password.error_mismatch'),
+      path: ['confirmPassword'],
+    });
+}
+
+export type SetPasswordForm = z.infer<ReturnType<typeof createSetPasswordFormSchema>>;

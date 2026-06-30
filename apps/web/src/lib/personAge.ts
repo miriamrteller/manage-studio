@@ -49,6 +49,19 @@ export function personAgeDisplayLabel(
   return formatPersonAgeLabel(age, t);
 }
 
+/** User-facing DOB: minors get a calendar date; adults never see a specific date. */
+export function formatPersonDateOfBirthDisplay(
+  dateOfBirth: string | null | undefined,
+  t: TFunction,
+  locale?: string,
+): string | null {
+  if (!dateOfBirth) return null;
+  const age = ageAt(dateOfBirth);
+  if (Number.isNaN(age)) return null;
+  if (isAdultAge(age)) return t('pages.students.age_adult');
+  return parseLocalDate(dateOfBirth).toLocaleDateString(locale);
+}
+
 export function enrolmentShowingForAgeMessage(studentAge: number, t: TFunction): string {
   if (isAdultAge(studentAge)) {
     return t('pages.enrolment.showing_for_age_18_plus');

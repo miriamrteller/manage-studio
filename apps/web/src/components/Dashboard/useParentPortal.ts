@@ -158,7 +158,7 @@ export function useParentPortal(): ParentPortalState {
 
   return {
     data: query.data ?? null,
-    isLoading: query.isLoading,
+    isLoading: !query.data && query.isPending,
     error: query.error instanceof Error ? query.error : null,
   };
 }

@@ -10,8 +10,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useStudentDetail } from '../hooks/useStudentDetail';
 import { AdminEnrolStudentModal } from '@/features/enrolment/components/AdminEnrolStudentModal';
 import { resolveGuardianEmail } from '@/features/enrolment/lib/resolveGuardianEmail';
-import { formatDate, calculateAge } from '@/lib/utils';
-import { formatPersonAgeLabel } from '@/lib/personAge';
+import { calculateAge } from '@/lib/utils';
+import { formatPersonAgeLabel, formatPersonDateOfBirthDisplay } from '@/lib/personAge';
 import { EnrolmentRowActions, canShowCancelEnrolment } from './EnrolmentRowActions';
 import { AgeReviewAdminPanel } from './AgeReviewAdminPanel';
 import { CancelEnrolmentDialog } from './CancelEnrolmentDialog';
@@ -112,6 +112,10 @@ export function StudentSlideOver({
   const billingAccounts = [...billingAccountsMap.values()];
 
   const age = person?.date_of_birth ? calculateAge(person.date_of_birth) : undefined;
+  const dobDisplay = formatPersonDateOfBirthDisplay(person?.date_of_birth, t, i18n.language);
+  const adultLabel = t('pages.students.age_adult');
+  const dobSuffix =
+    dobDisplay && dobDisplay !== adultLabel ? ` (${dobDisplay})` : '';
 
   return (
     <>
@@ -136,7 +140,7 @@ export function StudentSlideOver({
             {age !== undefined && age !== null && (
               <p className="text-sm text-gray-500">
                 {t('pages.people.age_label')}: {formatPersonAgeLabel(age, t)}
-                {person?.date_of_birth && ` (${formatDate(person.date_of_birth)})`}
+                {dobSuffix}
               </p>
             )}
           </div>

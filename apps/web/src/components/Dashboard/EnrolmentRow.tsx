@@ -1,3 +1,4 @@
+import { useLocation } from 'react-router-dom';
 import { EnrolmentStatusAction } from '@/features/enrolment/components/EnrolmentStatusAction';
 import type { EngagementWithOffering } from './useParentPortal';
 
@@ -18,6 +19,7 @@ export function EnrolmentRow({
   enrolment: EngagementWithOffering;
   highlighted?: boolean;
 }) {
+  const location = useLocation();
   const schedule = formatSchedule(enrolment.classDay, enrolment.classStartTime);
 
   return (
@@ -38,7 +40,7 @@ export function EnrolmentRow({
       <EnrolmentStatusAction
         status={enrolment.status}
         engagementId={enrolment.id}
-        returnTo="/dashboard/portal"
+        returnTo={location.pathname}
       />
     </li>
   );
