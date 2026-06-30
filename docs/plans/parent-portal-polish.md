@@ -2,50 +2,57 @@
 
 ## Mission
 
-Wire **account settings** into the parent/student portal: contact preferences (`ContactPreferencesEditor`), upcoming sessions summary, and i18n polish. Adult student portal reuses the same components via `PortalDashboard`.
+Complete the **parent/student portal** account settings slice: mount **notification preferences**, add **upcoming sessions (7 days)**, i18n, and small portal UX fixes. Reuses existing hooks/components — no new migrations in V1 slice.
 
 **Repo:** `manage-studio`  
-**SPEC:** §Phase 1G — contact preference management, dashboard with enrolled children + upcoming classes  
-**Depends on:** `ContactPreferencesEditor` ✅ (built, not mounted) · `useContactPreferences` ✅ · `ParentPortal` ✅ (children + payments)  
-**Superseded by:** [parent-self-enrolment P2](parent-self-enrolment/stage-p2-portal-myself.md) for **Myself** / adult parent view — do not duplicate Step 4 here.  
-**Out of scope:** Parent withdrawal requests (Unenrol Phase 3), new enrolment flow changes, student/parent route differentiation beyond copy
+**SPEC:** §Phase 1G — contact preference management; dashboard with enrolled children + upcoming classes  
+**Branch:** branch from `main` (or continue after merging `feat/icount-integration` — **no payment work in this PR**)  
+**Depends on:** `ContactPreferencesEditor` ✅ · `useContactPreferences` ✅ · `ParentPortal` ✅ · parent self-enrolment P1–P3 ✅ ([parent-self-enrolment/00-overview.md](parent-self-enrolment/00-overview.md))  
+**Out of scope:** WhatsApp OTP full flow i18n, `notify_*` scope toggles (optional 1G-b), parent withdrawal, portal theming
 
 ---
 
-## Current state (verified 2026-06-25)
+## Current state (verified 2026-06-29)
 
 | Item | Status |
 | --- | --- |
-| `ParentPortal.tsx` | Children, enrolments, payments, add/edit child, enrol CTA |
-| `ContactPreferencesEditor.tsx` | Full modal — **hardcoded EN strings**, not used in portal |
-| `useContactPreferences` | Works via RLS; creates row if missing |
-| `ContactPreferencesSchema` (shared) | **Missing** DB columns: `notify_*` toggles |
-| `ContactPreferencesUpdateSchema` | Only email/whatsapp channel fields |
-| Upcoming sessions | Enrolments show day/time but **no "this week" aggregation** |
-| WhatsApp OTP verify | Edge function exists; editor does not trigger verify flow |
+| `ParentPortal.tsx` | Children, **Myself** (`GuardianSelfSection`), payments, enrol CTA, highlight scroll |
+| `useParentPortal.ts` | Guardian + children + `enrolmentsByPerson` + payments |
+| `ContactPreferencesEditor.tsx` | Built — **hardcoded EN**, not mounted in portal |
+| `WhatsAppOtpVerifier.tsx` | Built — hardcoded EN; **not wired** (V1: hint only) |
+| `useContactPreferences` | RLS-backed read/update; creates row if missing |
+| Upcoming sessions | ❌ No aggregated 7-day view |
+| `EnrolmentRow.tsx` | `returnTo` hardcoded `/dashboard/portal` — fix for `/dashboard/student` |
+| Portal i18n | `pages.portal.*` exists; **no** `preferences.*` keys yet |
+
+**Already shipped elsewhere — do not redo:** Myself section, guardian setup, `resolveGuardianProfile` ([parent-self-enrolment P2/P3](parent-self-enrolment/stage-p2-portal-myself.md)).
 
 ---
 
-## Locked semantics (V1 slice)
+## Locked semantics (V1)
 
 | Feature | Behavior |
 | --- | --- |
-| Settings entry | Button *"Notification preferences"* in portal header → opens `ContactPreferencesEditor` |
-| Editable fields V1 | `email_opted_in`, `whatsapp_opted_in`, `whatsapp_number`, `preferred_channel` (email/whatsapp only in form — voice hidden) |
-| Notification scope V1 | **Defer** `notify_*` toggles unless schema extended in this PR — document as Phase 1G-b |
-| Upcoming classes | Section listing **next 7 days** of sessions from active enrolments (`active`, `pending_payment`, `pending_waiver`) using offering `day_of_week` + `start_time` |
-| Adult student | Same portal route `/dashboard/student` — hide "children" section when user has no dependent people; show self enrolments (verify `useParentPortal` returns adult's own `people` row) |
-| i18n | Move all `ContactPreferencesEditor` strings to `pages.portal.preferences.*` |
+| **Settings entry** | Outline button *"Notification preferences"* in portal header (beside "Register for a class") → opens `ContactPreferencesEditor` modal |
+| **Editable fields** | `email_opted_in`, `whatsapp_opted_in`, `whatsapp_number` (E.164 when opted in), `preferred_channel` ∈ `email` \| `whatsapp` only — hide `voice` in UI |
+| **WhatsApp verify** | If `whatsapp_opted_in && !whatsapp_verified` after save → show **inline hint** in modal (i18n). Do **not** embed full `WhatsAppOtpVerifier` in V1 unless trivial |
+| **Upcoming sessions** | Next **7 calendar days** from local midnight today; include enrolments with `status IN ('active', 'pending_payment', 'pending_waiver')` and scheduled offering (`day_of_week` + `start_time` both set) |
+| **Person label** | Show child/guardian name on each upcoming row when parent has multiple people |
+| **Empty upcoming** | Section still visible with `no_upcoming` copy (not hidden) |
+| **Student route** | `/dashboard/student` uses same `ParentPortal`; pay/status links use **current pathname** as `returnTo` |
+| **1G-b (optional)** | `notify_*` toggles — only if explicitly requested in same PR |
 
 ---
 
 ## Hard rules
 
-1. **No new migration** unless extending `ContactPreferencesUpdateSchema` for `notify_*` fields (optional Step 7).
-2. Reuse existing `ContactPreferencesEditor` — extend props/i18n, do not fork a second editor.
-3. Portal changes only in `ParentPortal.tsx` + small extracted components — keep page thin.
-4. Do not break enrolment highlight / pay link flows already in portal.
-5. **No git commit/push** unless user explicitly asks.
+1. **No SQL migration** in V1 slice.
+2. Reuse **`ContactPreferencesEditor`** — extend i18n + portal mount; do not fork a second editor.
+3. Portal UI changes in `ParentPortal.tsx` + **new small components** under `components/Dashboard/` — keep `ParentPortal` readable.
+4. Upcoming logic in **pure functions** (`upcomingSessions.ts`) with unit tests — no DB calls in helper.
+5. Do not break portal highlight scroll, success banner, or enrolment pay links.
+6. All user-facing strings in `en.json` / `he.json` — remove hardcoded EN from touched components.
+7. **No git commit/push** unless user explicitly asks.
 
 ---
 
@@ -53,111 +60,230 @@ Wire **account settings** into the parent/student portal: contact preferences (`
 
 1. `apps/web/src/components/Dashboard/ParentPortal.tsx`
 2. `apps/web/src/components/Dashboard/useParentPortal.ts`
-3. `apps/web/src/components/shared/ContactPreferencesEditor.tsx`
-4. `apps/web/src/features/notifications/hooks/useContactPreferences.ts`
-5. `packages/shared/src/schemas.ts` — `ContactPreferencesSchema`, `ContactPreferencesUpdateSchema`
-6. `apps/web/src/router.tsx` — ParentRoute vs StudentRoute
+3. `apps/web/src/components/Dashboard/EnrolmentRow.tsx`
+4. `apps/web/src/components/shared/ContactPreferencesEditor.tsx`
+5. `apps/web/src/features/notifications/hooks/useContactPreferences.ts`
+6. `packages/shared/src/schemas.ts` — `ContactPreferencesUpdateSchema`
+7. `supabase/migrations/20260608000400_contact_prefs.sql` — DB columns (reference only)
+8. `apps/web/src/pages/PortalDashboard.tsx` — both parent + student routes
 
 ---
 
-## Step 1 — i18n for ContactPreferencesEditor
+## Step 1 — i18n: ContactPreferencesEditor
 
-**Modify:** `ContactPreferencesEditor.tsx`
+**Modify:** `apps/web/src/components/shared/ContactPreferencesEditor.tsx`
 
-- Replace hardcoded EN with `useTranslation()` keys
-- Keys under `pages.portal.preferences.*`:
+- Add `useTranslation()`
+- Replace all hardcoded strings + inline EN/HE comments with keys under `pages.portal.preferences.*`
+- Replace `'Saving...'` / `'Save Preferences'` / WhatsApp `(disabled)` with i18n
+- `useEffect`: when `open && preferences`, call `form.reset({ ... })` so modal shows loaded prefs
 
+**Keys (minimum):**
+
+```json
+"pages.portal.preferences": {
+  "title": "...",
+  "description": "...",
+  "email_opted_in": "...",
+  "email_opted_in_desc": "...",
+  "whatsapp_opted_in": "...",
+  "whatsapp_opted_in_desc": "...",
+  "whatsapp_number": "...",
+  "whatsapp_number_hint": "...",
+  "preferred_channel": "...",
+  "preferred_channel_desc": "...",
+  "channel_email": "...",
+  "channel_whatsapp": "...",
+  "channel_whatsapp_disabled": "...",
+  "save": "...",
+  "saving": "...",
+  "cancel": "...",
+  "verify_whatsapp_hint": "Save your number, then contact the studio to verify WhatsApp."
+}
 ```
-title, description, email_opted_in, whatsapp_opted_in, whatsapp_number,
-whatsapp_number_hint, preferred_channel, save, cancel
-```
 
-**Files:** `apps/web/src/i18n/en.json`, `he.json`
+**Files:** `apps/web/src/i18n/en.json`, `he.json` — mirror structure exactly.
 
 ---
 
-## Step 2 — Mount editor in portal
+## Step 2 — Mount preferences in portal
 
-**Modify:** `ParentPortal.tsx`
+**Modify:** `apps/web/src/components/Dashboard/ParentPortal.tsx`
 
 ```tsx
+import { ContactPreferencesEditor } from '@/components/shared/ContactPreferencesEditor';
+
 const [prefsOpen, setPrefsOpen] = useState(false);
 
-// In header actions (next to "Enrol new"):
+// Header actions — flex wrap with enrol button:
 <Button variant="outline" onClick={() => setPrefsOpen(true)}>
   {t('pages.portal.notification_preferences')}
+</Button>
+<Button variant="primary" onClick={() => navigate('/enrol')}>
+  {t('pages.portal.enrol_new')}
 </Button>
 
 <ContactPreferencesEditor open={prefsOpen} onOpenChange={setPrefsOpen} />
 ```
 
-Add portal i18n key: `pages.portal.notification_preferences`
+Add i18n: `pages.portal.notification_preferences`
+
+**Optional:** show `whatsapp_verified` badge in modal when `preferences?.whatsapp_verified` (read-only text).
 
 ---
 
-## Step 3 — Upcoming sessions component
+## Step 2b — Student route `returnTo`
+
+**Modify:** `apps/web/src/components/Dashboard/EnrolmentRow.tsx`
+
+```tsx
+import { useLocation } from 'react-router-dom';
+// ...
+const location = useLocation();
+<EnrolmentStatusAction
+  ...
+  returnTo={location.pathname}
+/>
+```
+
+Ensures `/dashboard/student` pay links return correctly.
+
+---
+
+## Step 3 — Upcoming sessions (pure logic)
+
+**New:** `apps/web/src/features/enrolment/lib/upcomingSessions.ts`
+
+```typescript
+export interface UpcomingSessionInput {
+  engagementId: string;
+  personId: string;
+  personName: string;
+  className: string;
+  classDay: number;       // 0=Sun … 6=Sat (Postgres DOW)
+  classStartTime: string; // "HH:MM:SS" or "HH:MM"
+  classLocation?: string | null;
+  status: string;
+}
+
+export interface UpcomingSessionOccurrence {
+  engagementId: string;
+  personId: string;
+  personName: string;
+  className: string;
+  occursAt: Date;         // local datetime of next occurrence
+  classLocation?: string | null;
+}
+
+export const UPCOMING_SESSION_STATUSES = ['active', 'pending_payment', 'pending_waiver'] as const;
+
+/** Next occurrence of classDay/startTime on or after startOfToday, within horizonDays (default 7). */
+export function nextOccurrenceOnOrAfter(
+  classDay: number,
+  startTime: string,
+  fromDate: Date,
+  horizonDays: number,
+): Date | null;
+
+/** Flatten enrolmentsByPerson → filter → map → sort by occursAt ascending. */
+export function buildUpcomingSessions(
+  enrolmentsByPerson: Record<string, EngagementWithOffering[]>,
+  personNames: Record<string, string>,
+  options?: { fromDate?: Date; horizonDays?: number },
+): UpcomingSessionOccurrence[];
+```
+
+**Rules:**
+
+- Parse `startTime` as local time on the computed calendar date.
+- If `classDay === fromDate.getDay()` and time ≥ now → today; else next matching DOW within horizon.
+- Skip rows missing `classDay` or `classStartTime`.
+- Deduplicate: same `engagementId` once (one row per enrolment).
+
+**New tests:** `apps/web/src/__tests__/upcomingSessions.test.ts`
+
+Cases:
+
+1. Today is class day, time later today → included  
+2. Today is class day, time already passed → next week if within 7 days, else excluded  
+3. Thu today, class Mon → next Mon within horizon  
+4. Status `cancelled` excluded  
+5. Missing schedule excluded  
+
+---
+
+## Step 4 — UpcomingSessionsSection UI
 
 **New:** `apps/web/src/components/Dashboard/UpcomingSessionsSection.tsx`
 
-**Input:** `enrolmentsByPerson`, `children` (or flat list of `EngagementWithOffering`)
-
-**Logic:**
+**Props:**
 
 ```typescript
-// For each enrolment with classDay != null && classStartTime:
-// Map day_of_week to next occurrence within 7 days from today (local timezone)
-// Sort by datetime ascending
-// Display: date label, class name, time, location, child name (if parent view)
+interface UpcomingSessionsSectionProps {
+  sessions: UpcomingSessionOccurrence[];
+}
 ```
 
-**Helper:** `apps/web/src/features/enrolment/lib/upcomingSessions.ts`
+**Render:**
 
-- Pure functions + unit tests (no DB)
-- Handle DOW wrap (e.g. today Thu, class Mon → next Mon)
+- `<section aria-labelledby="portal-upcoming-heading">`
+- Heading: `t('pages.portal.upcoming_heading')`
+- List: date (locale `toLocaleDateString`), time, class name, person name, location
+- Empty: `t('pages.portal.no_upcoming')`
+- Use existing card/border patterns from children section
 
-**Render:** Section between children and payments in `ParentPortal.tsx`
+**Modify:** `ParentPortal.tsx`
 
-i18n: `pages.portal.upcoming_heading`, `pages.portal.no_upcoming`, `pages.portal.upcoming_for_child`
+- `useMemo` to build `personNames` from `children` + `guardian`
+- `useMemo` → `buildUpcomingSessions(enrolmentsByPerson, personNames)`
+- Insert `<UpcomingSessionsSection />` **after** children/Myself block, **before** payments
 
----
+**i18n keys:**
 
-## Step 4 — Adult student view
-
-> **Moved to [parent-self-enrolment P2](parent-self-enrolment/stage-p2-portal-myself.md).** Implement Myself section there; skip this step in parent-portal-polish.
-
-**Audit:** `useParentPortal` — confirm adult student with `people.user_profile_id = auth.uid` sees their enrolments.
+```
+pages.portal.upcoming_heading
+pages.portal.no_upcoming
+pages.portal.upcoming_on_date   // "{{date}} · {{time}} · {{className}}"
+pages.portal.upcoming_for       // "{{personName}}"
+```
 
 ---
 
 ## Step 5 — WhatsApp verify (minimal)
 
-If `whatsapp_opted_in` toggled on and number changed:
+**In `ContactPreferencesEditor` only:**
 
-- Show inline hint: *"Save preferences, then verify"* OR call existing verify flow if `verify-whatsapp-otp` is wired elsewhere
+After successful save, if `data.whatsapp_opted_in && !preferences?.whatsapp_verified`:
 
-**Audit first:** grep `verify-whatsapp-otp` in web app. If no UI exists, add TODO banner only — do not block ship on OTP UI.
+- Show `FormDescription` or small `Alert` with `t('pages.portal.preferences.verify_whatsapp_hint')`
 
----
-
-## Step 6 — Tests
-
-**New:** `apps/web/src/__tests__/upcomingSessions.test.ts`
-
-- Next occurrence calculation edge cases (today is class day, week wrap)
-
-**Manual smoke:**
-
-1. Parent portal → open preferences → toggle email opt-out → save → reload persists
-2. Upcoming section shows classes in next 7 days
-3. Hebrew locale renders RTL form labels
+**Do not** wire `WhatsAppOtpVerifier` unless user expands scope — component needs its own i18n pass (separate PR).
 
 ---
 
-## Step 7 — Optional: notification scope toggles (Phase 1G-b)
+## Step 6 — Tests + manual smoke
 
-If requested in same PR:
+**Unit:**
 
-1. Extend `ContactPreferencesSchema` + `ContactPreferencesUpdateSchema` with:
+```bash
+pnpm -C apps/web test upcomingSessions.test.ts
+pnpm -C apps/web test parent-portal-guardian.test.ts   # regression
+```
+
+**Manual:**
+
+1. Parent `/dashboard/portal` → Notification preferences → toggle email off → save → reload → persists  
+2. Upcoming section shows classes in next 7 days (seed offering with `day_of_week` matching today/tomorrow)  
+3. Hebrew locale: preferences modal + upcoming section RTL labels  
+4. `/dashboard/student` (if test user exists) → pay link returns to student dashboard  
+
+---
+
+## Step 7 — Optional Phase 1G-b: `notify_*` toggles
+
+**Only if user requests in same PR:**
+
+1. Extend `ContactPreferencesSchema` + `ContactPreferencesUpdateSchema` in `packages/shared/src/schemas.ts`:
 
 ```typescript
 notify_offering_cancellation: z.boolean().optional(),
@@ -167,23 +293,41 @@ notify_schedule_change: z.boolean().optional(),
 notify_announcements: z.boolean().optional(),
 ```
 
-2. Add checkboxes to editor (grouped "What we notify you about")
-3. No migration needed — columns exist in DB
+2. `pnpm -C packages/shared build`
+3. Add checkbox group in editor under `pages.portal.preferences.scope_heading`
+4. Columns already exist in DB — no migration
 
 ---
 
 ## Definition of done
 
-- [ ] Preferences modal reachable from portal; fully i18n
-- [ ] Upcoming sessions section with tests
-- [ ] Adult student view does not show empty children UX incorrectly
-- [ ] `pnpm -C apps/web test` passes
-- [ ] Update `docs/IMPLEMENTATION_STATUS.md`
+- [ ] `ContactPreferencesEditor` fully i18n (EN + HE)
+- [ ] Preferences button + modal on `/dashboard/portal` (and works on `/dashboard/student`)
+- [ ] `UpcomingSessionsSection` with `buildUpcomingSessions` + tests
+- [ ] `EnrolmentRow` uses dynamic `returnTo`
+- [ ] `pnpm -C apps/web test` green for new + existing portal tests
+- [ ] Update `docs/IMPLEMENTATION_STATUS.md` — parent portal polish → ✅ (or 🟡 if 1G-b deferred)
+
+---
+
+## File checklist
+
+| Action | Path |
+| --- | --- |
+| Edit | `ContactPreferencesEditor.tsx` |
+| Edit | `ParentPortal.tsx` |
+| Edit | `EnrolmentRow.tsx` |
+| New | `features/enrolment/lib/upcomingSessions.ts` |
+| New | `components/Dashboard/UpcomingSessionsSection.tsx` |
+| New | `__tests__/upcomingSessions.test.ts` |
+| Edit | `i18n/en.json`, `i18n/he.json` |
+| Edit | `docs/IMPLEMENTATION_STATUS.md` |
 
 ---
 
 ## Out of scope
 
-- Invoice download changes (already in payments table)
-- Parent self-service withdrawal
-- Portal theming / branding beyond existing tenant colors
+- Invoice download changes (payments table already has links)
+- Parent self-service withdrawal (Unenrol Phase 3)
+- Full `WhatsAppOtpVerifier` i18n + portal embed
+- Notification blast composer (separate plan)
