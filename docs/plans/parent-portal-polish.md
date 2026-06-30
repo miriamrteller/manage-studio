@@ -35,8 +35,8 @@ Complete the **parent/student portal** account settings slice: mount **notificat
 | --- | --- |
 | **Settings entry** | Outline button *"Notification preferences"* in portal header (beside "Register for a class") → opens `ContactPreferencesEditor` modal |
 | **Editable fields** | `email_opted_in`, `whatsapp_opted_in`, `whatsapp_number` (E.164 when opted in), `preferred_channel` ∈ `email` \| `whatsapp` only — hide `voice` in UI |
-| **WhatsApp verify** | If `whatsapp_opted_in && !whatsapp_verified` after save → show **inline hint** in modal (i18n). Do **not** embed full `WhatsAppOtpVerifier` in V1 unless trivial |
-| **Upcoming sessions** | Next **7 calendar days** from local midnight today; include enrolments with `status IN ('active', 'pending_payment', 'pending_waiver')` and scheduled offering (`day_of_week` + `start_time` both set) |
+| **WhatsApp verify** | While modal is open, if `whatsapp_opted_in && !preferences?.whatsapp_verified` → show **inline hint** below WhatsApp fields (i18n). **Keep** close-on-save behavior unchanged. Do **not** embed `WhatsAppOtpVerifier` |
+| **Upcoming sessions** | Weekly next occurrence per enrolment; **horizon** = local calendar dates **today through today + 6** (7 dates inclusive); `occursAt >= fromDate`; statuses `active`, `pending_payment`, `pending_waiver`; requires `day_of_week` + `start_time` |
 | **Person label** | Show child/guardian name on each upcoming row when parent has multiple people |
 | **Empty upcoming** | Section still visible with `no_upcoming` copy (not hidden) |
 | **Student route** | `/dashboard/student` uses same `ParentPortal`; pay/status links use **current pathname** as `returnTo` |
@@ -102,7 +102,9 @@ Complete the **parent/student portal** account settings slice: mount **notificat
 }
 ```
 
-**Files:** `apps/web/src/i18n/en.json`, `he.json` — mirror structure exactly.
+**Files:** `apps/web/src/i18n/en.json`, `he.json` — nest under `pages.portal.preferences` (same shape as other `pages.portal.*` keys).
+
+**Hebrew:** copy literal strings from existing `/* HE: ... */` comments in `ContactPreferencesEditor.tsx` for each field; translate new keys (`verify_whatsapp_hint`, upcoming section) to natural Hebrew.
 
 ---
 
@@ -115,13 +117,15 @@ import { ContactPreferencesEditor } from '@/components/shared/ContactPreferences
 
 const [prefsOpen, setPrefsOpen] = useState(false);
 
-// Header actions — flex wrap with enrol button:
-<Button variant="outline" onClick={() => setPrefsOpen(true)}>
-  {t('pages.portal.notification_preferences')}
-</Button>
-<Button variant="primary" onClick={() => navigate('/enrol')}>
-  {t('pages.portal.enrol_new')}
-</Button>
+// Replace single header button with a flex group (section already has flex-wrap):
+<div className="flex flex-wrap gap-2">
+  <Button variant="outline" onClick={() => setPrefsOpen(true)}>
+    {t('pages.portal.notification_preferences')}
+  </Button>
+  <Button variant="primary" onClick={() => navigate('/enrol')}>
+    {t('pages.portal.enrol_new')}
+  </Button>
+</div>
 
 <ContactPreferencesEditor open={prefsOpen} onOpenChange={setPrefsOpen} />
 ```
@@ -155,16 +159,7 @@ Ensures `/dashboard/student` pay links return correctly.
 **New:** `apps/web/src/features/enrolment/lib/upcomingSessions.ts`
 
 ```typescript
-export interface UpcomingSessionInput {
-  engagementId: string;
-  personId: string;
-  personName: string;
-  className: string;
-  classDay: number;       // 0=Sun … 6=Sat (Postgres DOW)
-  classStartTime: string; // "HH:MM:SS" or "HH:MM"
-  classLocation?: string | null;
-  status: string;
-}
+import type { EngagementWithOffering } from '@/components/Dashboard/useParentPortal';
 
 export interface UpcomingSessionOccurrence {
   engagementId: string;
@@ -177,12 +172,12 @@ export interface UpcomingSessionOccurrence {
 
 export const UPCOMING_SESSION_STATUSES = ['active', 'pending_payment', 'pending_waiver'] as const;
 
-/** Next occurrence of classDay/startTime on or after startOfToday, within horizonDays (default 7). */
+/** Next weekly occurrence on/after fromDate; null if local calendar date falls outside horizon. */
 export function nextOccurrenceOnOrAfter(
   classDay: number,
   startTime: string,
   fromDate: Date,
-  horizonDays: number,
+  horizonDays: number = 7,
 ): Date | null;
 
 /** Flatten enrolmentsByPerson → filter → map → sort by occursAt ascending. */
@@ -195,17 +190,22 @@ export function buildUpcomingSessions(
 
 **Rules:**
 
-- Parse `startTime` as local time on the computed calendar date.
-- If `classDay === fromDate.getDay()` and time ≥ now → today; else next matching DOW within horizon.
-- Skip rows missing `classDay` or `classStartTime`.
-- Deduplicate: same `engagementId` once (one row per enrolment).
+- `startOfToday` = local midnight of `fromDate`'s calendar day.
+- `horizonLastDate` = `startOfToday + (horizonDays - 1)` calendar days (default **7 dates**: today … today+6).
+- Parse `startTime` (`HH:MM` or `HH:MM:SS`) as **local** time on the occurrence date.
+- Find next weekly match: if today is `classDay` and `classStartTime >= fromDate` (same local time) → today; else next matching DOW.
+- Include iff occurrence local date ∈ `[startOfToday, horizonLastDate]` **and** `occursAt >= fromDate`.
+- Filter `status ∈ UPCOMING_SESSION_STATUSES`; skip rows missing `classDay` or `classStartTime`.
+- One row per enrolment (`engagement.id`); sort ascending by `occursAt`.
+
+**Map from `EngagementWithOffering`:** `id` → `engagementId`, `person_id` → `personId`, `personNames[person_id]` → `personName`, `className`, `classDay`, `classStartTime`, `classLocation`, `status`.
 
 **New tests:** `apps/web/src/__tests__/upcomingSessions.test.ts`
 
 Cases:
 
 1. Today is class day, time later today → included  
-2. Today is class day, time already passed → next week if within 7 days, else excluded  
+2. Today is class day, time already passed → next week's same weekday **excluded** (falls on day 7, outside today…today+6)  
 3. Thu today, class Mon → next Mon within horizon  
 4. Status `cancelled` excluded  
 5. Missing schedule excluded  
@@ -234,9 +234,20 @@ interface UpcomingSessionsSectionProps {
 
 **Modify:** `ParentPortal.tsx`
 
-- `useMemo` to build `personNames` from `children` + `guardian`
-- `useMemo` → `buildUpcomingSessions(enrolmentsByPerson, personNames)`
-- Insert `<UpcomingSessionsSection />` **after** children/Myself block, **before** payments
+- Build `personNames` in `useMemo`:
+
+```typescript
+const personNames = useMemo(() => {
+  const names: Record<string, string> = {};
+  for (const child of children ?? []) names[child.id] = child.name;
+  if (guardian) names[guardian.personId] = guardian.name;
+  return names;
+}, [children, guardian]);
+```
+
+- `useMemo(() => buildUpcomingSessions(enrolmentsByPerson ?? {}, personNames), [...])`
+- Insert `<UpcomingSessionsSection sessions={upcomingSessions} />` **after** children/Myself block, **before** payments
+- Show `personName` on each row only when `Object.keys(personNames).length > 1`
 
 **i18n keys:**
 
@@ -249,15 +260,28 @@ pages.portal.upcoming_for       // "{{personName}}"
 
 ---
 
-## Step 5 — WhatsApp verify (minimal)
+## Step 5 — WhatsApp verify hint (minimal)
 
-**In `ContactPreferencesEditor` only:**
+**In `ContactPreferencesEditor` only — do not change close-on-save:**
 
-After successful save, if `data.whatsapp_opted_in && !preferences?.whatsapp_verified`:
+Keep existing `onSuccess: () => { onOpenChange(false); form.reset(); }`.
 
-- Show `FormDescription` or small `Alert` with `t('pages.portal.preferences.verify_whatsapp_hint')`
+Show hint **while modal is open** (not after save):
 
-**Do not** wire `WhatsAppOtpVerifier` unless user expands scope — component needs its own i18n pass (separate PR).
+```tsx
+const showVerifyHint =
+  whatsappOptedIn && preferences?.whatsapp_verified === false;
+
+{showVerifyHint && (
+  <p className="text-sm text-muted-foreground" role="status">
+    {t('pages.portal.preferences.verify_whatsapp_hint')}
+  </p>
+)}
+```
+
+Place below WhatsApp number / preferred-channel block, above Cancel/Save.
+
+**Do not** wire `WhatsAppOtpVerifier` — separate PR for full OTP i18n.
 
 ---
 
@@ -301,7 +325,7 @@ notify_announcements: z.boolean().optional(),
 
 ## Definition of done
 
-- [ ] `ContactPreferencesEditor` fully i18n (EN + HE)
+- [ ] `ContactPreferencesEditor` fully i18n (EN + HE) + verify hint when opted in and unverified
 - [ ] Preferences button + modal on `/dashboard/portal` (and works on `/dashboard/student`)
 - [ ] `UpcomingSessionsSection` with `buildUpcomingSessions` + tests
 - [ ] `EnrolmentRow` uses dynamic `returnTo`
