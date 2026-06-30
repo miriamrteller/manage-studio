@@ -1,5 +1,7 @@
 # Phase 1G — Parent portal polish (paste into new agent chat)
 
+**Status:** ✅ **Shipped** (2026-06-30) on branch `feat/parent-portal-polish` — commit `fcad476`. Follow-ups documented: **Step 7** (1G-b `notify_*`), **Step 8** (WhatsApp OTP verify). V1 shipped hint-only for WhatsApp.
+
 ## Mission
 
 Complete the **parent/student portal** account settings slice: mount **notification preferences**, add **upcoming sessions (7 days)**, i18n, and small portal UX fixes. Reuses existing hooks/components — no new migrations in V1 slice.
@@ -26,6 +28,8 @@ Complete the **parent/student portal** account settings slice: mount **notificat
 | Portal i18n | `pages.portal.*` exists; **no** `preferences.*` keys yet |
 
 **Already shipped elsewhere — do not redo:** Myself section, guardian setup, `resolveGuardianProfile` ([parent-self-enrolment P2/P3](parent-self-enrolment/stage-p2-portal-myself.md)).
+
+**Deferred (not in this PR):** [Step 7](#step-7--optional-phase-1g-b-notify_-toggles) — `notify_*` scope toggles (1G-b); [Step 8](#step-8--whatsapp-otp-verify-in-portal-deferred) — full `WhatsAppOtpVerifier` i18n + embed.
 
 ---
 
@@ -294,7 +298,9 @@ pnpm -C apps/web test upcomingSessions.test.ts
 pnpm -C apps/web test parent-portal-guardian.test.ts   # regression
 ```
 
-**Manual:**
+**Regtest (build + lint + a11y e2e):** ✅ passed 2026-06-30.
+
+**Manual (recommended before prod):** ⏳ not formally signed off — run checklist below on `/dashboard/portal` and `/dashboard/student`.
 
 1. Parent `/dashboard/portal` → Notification preferences → toggle email off → save → reload → persists  
 2. Upcoming section shows classes in next 7 days (seed offering with `day_of_week` matching today/tomorrow)  
@@ -323,35 +329,94 @@ notify_announcements: z.boolean().optional(),
 
 ---
 
+## Step 8 — WhatsApp OTP verify in portal (deferred)
+
+**Status:** ⏸️ **Deferred** — V1 shipped **inline hint only** in `ContactPreferencesEditor` (Step 5). Full self-service verify is a follow-up PR.
+
+**Goal:** Parent verifies WhatsApp from the notification preferences modal; `contact_preferences.whatsapp_verified` flips to `true` without studio manual step.
+
+**Pre-flight (agent MUST read):**
+
+1. `apps/web/src/components/shared/WhatsAppOtpVerifier.tsx` — built, **hardcoded EN**, WhatsApp send path stubbed (`// WhatsApp OTP send is wired in a later phase`)
+2. `apps/web/src/components/shared/ContactPreferencesEditor.tsx` — hint at `pages.portal.preferences.verify_whatsapp_hint`
+3. `apps/web/src/features/notifications/hooks/useSendOtpEmail.ts`, `useVerifyWhatsAppOtp.ts`
+4. Edge: `verify-whatsapp-otp`, `send-otp-email` (email fallback already used in verifier)
+5. `supabase/migrations/20260608000400_contact_prefs.sql` — `whatsapp_verified` column (no migration needed)
+
+**Follow-up PR checklist:**
+
+1. **i18n** — move all `WhatsAppOtpVerifier` strings to `pages.portal.preferences.verify_*` (EN + HE); reuse existing `whatsapp_verified` badge keys where possible
+2. **Embed** — in `ContactPreferencesEditor`, when `whatsapp_opted_in && !preferences?.whatsapp_verified`, render `<WhatsAppOtpVerifier />` below WhatsApp fields (replace studio-contact hint, or show hint only until number saved)
+3. **WhatsApp send** — wire real send in `handleSendOtp` (likely `send-otp-sms` edge or Twilio path used elsewhere); remove client-side `generateOtpCode()` for production path
+4. **Forms** — apply `bindFormSubmit` to verifier forms (same pattern as prefs modal)
+5. **Cache** — on `onVerificationSuccess`, refetch/update contact prefs (`useContactPreferences` / `setQueryData`) so verified badge appears without full page reload
+6. **UX** — keep email fallback tab; disable “preferred channel WhatsApp” until verified (already partially enforced in editor)
+7. **Tests** — extend `notifications.hooks.test.ts`; optional component test for embed visibility rules
+8. **Manual smoke** — portal → prefs → opt in WhatsApp → save number → verify via email OTP (dev) → badge “Verified” → reload persists
+
+**Definition of done (Step 8):**
+
+- [ ] `WhatsAppOtpVerifier` fully i18n (EN + HE)
+- [ ] Embedded in portal prefs modal with correct show/hide rules
+- [ ] WhatsApp and/or email OTP send + verify updates `whatsapp_verified`
+- [ ] Portal manual smoke passes (see Step 6 + item 8 above)
+
+**No SQL migration** in this slice.
+
+---
+
 ## Definition of done
 
-- [ ] `ContactPreferencesEditor` fully i18n (EN + HE) + verify hint when opted in and unverified
-- [ ] Preferences button + modal on `/dashboard/portal` (and works on `/dashboard/student`)
-- [ ] `UpcomingSessionsSection` with `buildUpcomingSessions` + tests
-- [ ] `EnrolmentRow` uses dynamic `returnTo`
-- [ ] `pnpm -C apps/web test` green for new + existing portal tests
-- [ ] Update `docs/IMPLEMENTATION_STATUS.md` — parent portal polish → ✅ (or 🟡 if 1G-b deferred)
+- [x] `ContactPreferencesEditor` fully i18n (EN + HE) + verify hint when opted in and unverified
+- [x] Preferences button + modal on `/dashboard/portal` (and works on `/dashboard/student`)
+- [x] `UpcomingSessionsSection` with `buildUpcomingSessions` + tests
+- [x] `EnrolmentRow` uses dynamic `returnTo`
+- [x] `pnpm -C apps/web test` green for new + existing portal tests
+- [x] Update `docs/IMPLEMENTATION_STATUS.md` — parent portal polish → ✅ (1G-b deferred)
+
+### Also shipped on this branch (beyond original plan)
+
+- [x] `SetPasswordDialog` + portal header “Login password” (Supabase `updateUser` password)
+- [x] `bindFormSubmit` + form fixes (`ContactPreferencesEditor`, `SetPasswordDialog`, `AddChildModal`, `PersonForm`; `FormField` error display)
+- [x] Login vs set-password schema split (`PasswordLoginSchema` vs `NewPasswordSchema`)
+- [x] Adult DOB never shown as calendar date in portal/admin read-only views (`formatPersonDateOfBirthDisplay`)
+
+### Explicitly not done
+
+- [ ] Step 7 — `notify_*` scope toggles (1G-b) — see Step 7
+- [ ] Step 8 — `WhatsAppOtpVerifier` i18n + portal embed + wired send/verify — see Step 8
 
 ---
 
 ## File checklist
 
-| Action | Path |
-| --- | --- |
-| Edit | `ContactPreferencesEditor.tsx` |
-| Edit | `ParentPortal.tsx` |
-| Edit | `EnrolmentRow.tsx` |
-| New | `features/enrolment/lib/upcomingSessions.ts` |
-| New | `components/Dashboard/UpcomingSessionsSection.tsx` |
-| New | `__tests__/upcomingSessions.test.ts` |
-| Edit | `i18n/en.json`, `i18n/he.json` |
-| Edit | `docs/IMPLEMENTATION_STATUS.md` |
+| Action | Path | Status |
+| --- | --- | --- |
+| Edit | `ContactPreferencesEditor.tsx` | ✅ |
+| Edit | `ParentPortal.tsx` | ✅ |
+| Edit | `EnrolmentRow.tsx` | ✅ |
+| Edit | `GuardianSelfSection.tsx` | ✅ (adult DOB display) |
+| New | `features/enrolment/lib/upcomingSessions.ts` | ✅ |
+| New | `components/Dashboard/UpcomingSessionsSection.tsx` | ✅ |
+| New | `__tests__/upcomingSessions.test.ts` | ✅ |
+| Edit | `i18n/en.json`, `i18n/he.json` | ✅ |
+| Edit | `docs/IMPLEMENTATION_STATUS.md` | ✅ (sync 2026-06-30) |
+| New | `lib/bindFormSubmit.ts` | ✅ |
+| New | `__tests__/bindFormSubmit.test.ts` | ✅ |
+| New | `components/shared/SetPasswordDialog.tsx` | ✅ |
+| New | `features/auth/setLoginPassword.ts`, `sessionAuthMethod.ts` | ✅ |
+| Edit | `lib/personAge.ts` (`formatPersonDateOfBirthDisplay`) | ✅ |
+| Edit | `PersonDetail.tsx`, `StudentSlideOver.tsx`, `AgeReviewAdminPanel.tsx` | ✅ (adult DOB) |
+| Edit | `useContactPreferences.ts`, `useParentPortal.ts` | ✅ |
+| Edit | `components/ui/form.tsx` (`FormField` fieldState) | ✅ |
+| Edit | `packages/shared/src/schemas.ts` (login password schema) | ✅ |
 
 ---
 
 ## Out of scope
 
 - Invoice download changes (payments table already has links)
-- Parent self-service withdrawal (Unenrol Phase 3)
-- Full `WhatsAppOtpVerifier` i18n + portal embed
-- Notification blast composer (separate plan)
+- Parent self-service withdrawal (Unenrol Phase 3) — [IMPLEMENTATION_STATUS.md](../IMPLEMENTATION_STATUS.md) §6.x #7
+- Notification blast composer — [notification-blast-composer.md](notification-blast-composer.md)
+
+**Deferred follow-ups (documented in this plan):** Step 7 (`notify_*`), Step 8 (WhatsApp OTP verify).

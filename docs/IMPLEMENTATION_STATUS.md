@@ -2,7 +2,7 @@
 
 Living checklist for in-flight SPEC features. Normative design remains in [SPEC.md](../SPEC.md).
 
-**Last updated:** 2026-06-30 (Phase 1G Parent portal polish — contact prefs, upcoming sessions; 1G-b notify_* deferred)
+**Last updated:** 2026-06-30 (Phase 1G parent portal polish shipped on `feat/parent-portal-polish` — prefs, upcoming, login password, adult DOB, form fixes; **1G-b** + **WhatsApp OTP** deferred)
 
 ---
 
@@ -45,7 +45,7 @@ Rough completion against [SPEC.md §6 V1 Implementation](../SPEC.md#6-v1-impleme
 | **Parent self-enrolment (P1–P3)** | [parent-self-enrolment/00-overview.md](plans/parent-self-enrolment/00-overview.md) | — | ✅ | `resolveGuardianProfile`, portal **Myself**, `GuardianProfileSetupPanel` (`f0c327a`) |
 | **Phase 1F admin operations overview** | [admin-overview-dashboard.md](plans/admin-overview-dashboard.md) | ✅ `20260626000300` | ✅ | RPC, service, hook, 6 components, 7 tests, i18n — **PR #5 complete** |
 | Notification blast composer | [notification-blast-composer.md](plans/notification-blast-composer.md) | ❌ | ❌ | `send-notification` exists; no compose UI |
-| Parent portal polish (Phase 1G) | [parent-portal-polish.md](plans/parent-portal-polish.md) | — | ✅ | Contact prefs modal, upcoming 7-day sessions, i18n EN+HE, dynamic `returnTo`; **1G-b `notify_*` deferred** |
+| Parent portal polish (Phase 1G) | [parent-portal-polish.md](plans/parent-portal-polish.md) | — | ✅ | Shipped `fcad476`: prefs modal, upcoming 7-day, i18n, `returnTo`, login password, adult DOB display, form submit fixes; **Step 7 `notify_*`** + **Step 8 WhatsApp OTP** deferred |
 | Teachers admin module | [teachers-admin-module.md](plans/teachers-admin-module.md) | ✅ `staff` | ❌ | `TeacherService` / `useTeachers` only — no admin page |
 | Code rename epic (ex-D5) | [code-rename-epic.md](plans/code-rename-epic.md) | — | — | Deferred |
 
@@ -94,7 +94,26 @@ Shipped on `feat/UI-fixes` (`f0c327a`):
 | `ensureGuardianPersonForParent` / DOB update | ✅ |
 | Tests (`guardian-profile-setup`, `parent-portal-guardian`) | ✅ |
 
-**Still separate:** WhatsApp OTP verify in portal (full `WhatsAppOtpVerifier` i18n + embed); optional 1G-b `notify_*` toggles.
+**Still separate:** [parent-portal-polish.md](plans/parent-portal-polish.md) Step 8 — full `WhatsAppOtpVerifier` i18n + portal embed; Step 7 — optional 1G-b `notify_*` toggles.
+
+---
+
+## Parent portal polish (Phase 1G) — detail ✅
+
+Shipped on `feat/parent-portal-polish` (`fcad476`):
+
+| Item | Status |
+| --- | --- |
+| Notification preferences modal (EN + HE, verify hint) | ✅ |
+| Upcoming sessions (7-day, `buildUpcomingSessions` + tests) | ✅ |
+| `EnrolmentRow` dynamic `returnTo` | ✅ |
+| Portal login password (`SetPasswordDialog`) | ✅ |
+| Adult DOB display (`formatPersonDateOfBirthDisplay`) | ✅ |
+| Form submit safety (`bindFormSubmit`, prefs cache update) | ✅ |
+| Regtest (build + lint + a11y e2e) | ✅ 2026-06-30 |
+| **Manual portal smoke** (Step 6 checklist) | ⏳ Recommended before prod |
+| **Step 7 — `notify_*` scope toggles (1G-b)** | ❌ Deferred — [Step 7](plans/parent-portal-polish.md#step-7--optional-phase-1g-b-notify_-toggles) |
+| **Step 8 — WhatsApp OTP verify in portal** | 🟡 Hint only — [Step 8](plans/parent-portal-polish.md#step-8--whatsapp-otp-verify-in-portal-deferred) |
 
 ---
 
@@ -153,8 +172,10 @@ Track in SPEC §6.x — pull into V1 only when explicitly prioritized:
 | **0** | Grow live sandbox E2E (when creds ready) | [grow-live-e2e-verification.md](plans/grow-live-e2e-verification.md) |
 | **1** | Notification blast composer | [notification-blast-composer.md](plans/notification-blast-composer.md) |
 | **2** | Teachers admin CRUD | [teachers-admin-module.md](plans/teachers-admin-module.md) |
-| **3** | Parent portal 1G-b — `notify_*` scope toggles (optional) | [parent-portal-polish.md](plans/parent-portal-polish.md) Step 7 |
-| **4** | PR B manual E2E smoke (recommended before prod) | [age-override-pr-b.md](plans/age-override-pr-b.md) Step 9 |
-| **5** | Unenrol Phase 2 (refunds) | No plan yet |
+| **3** | Parent portal Step 8 — WhatsApp OTP verify in prefs modal | [parent-portal-polish.md](plans/parent-portal-polish.md) Step 8 |
+| **4** | Parent portal 1G-b — `notify_*` scope toggles (optional) | [parent-portal-polish.md](plans/parent-portal-polish.md) Step 7 |
+| **5** | PR B manual E2E smoke (recommended before prod) | [age-override-pr-b.md](plans/age-override-pr-b.md) Step 9 |
+| **6** | Parent portal manual smoke (Step 6 checklist) | [parent-portal-polish.md](plans/parent-portal-polish.md) Step 6 |
+| **7** | Unenrol Phase 2 (refunds) | No plan yet |
 | Later | §7 production deployment checklist | [SPEC.md §7](../SPEC.md#7-v1-production-deployment) |
 | Deferred | Code rename epic, V2 features | [code-rename-epic.md](plans/code-rename-epic.md) · SPEC §8 |
