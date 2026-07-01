@@ -1,25 +1,41 @@
 # Phase 1F — Notification blast composer (paste into new agent chat)
 
+**Status:** **Ready** for automated implementation (hardened 2026-06-30)
+
 ## Mission
 
-Build admin UI to **compose and send email announcements** to filtered recipients (all families / by level / by class). Use existing `send-notification` edge function + Resend. V1 is **email only**; WhatsApp blast is a follow-up.
+Build admin UI to **compose and send email announcements** to filtered recipients (all families / by level / by class). Use existing `send-notification` edge function + **Resend only** (no Twilio in V1). Trusted send path: edge re-resolves recipients server-side — never trust a client-supplied email list.
 
 **Repo:** `manage-studio`  
 **SPEC:** §Phase 1F — *Notifications: compose email blast; select recipients by class/level/all*  
-**Depends on:** `send-notification` ✅ · `contact_preferences` ✅ · Resend templates pipeline ✅  
-**Out of scope:** AI draft (SPEC V2), per-tenant Resend keys (§6.x #4), WhatsApp blast (Step 8 optional stub)
+**Branch:** branch from `main` (independent of iCount / parent portal)  
+**Depends on:** `send-notification` ✅ · `contact_preferences` ✅ · Resend pipeline ✅ · `notification_log` ✅  
+**Out of scope:** AI draft (SPEC V2), per-tenant Resend keys (§6.x #4), WhatsApp blast (Step 8), parent `notify_*` UI (1G-b deferred — DB default `true` still applies)
 
 ---
 
-## Current state (verified 2026-06-25)
+## External dependencies (V1)
+
+| Service | Required? | Notes |
+| --- | --- | --- |
+| **Resend** (`RESEND_API_KEY`, `NOTIFICATION_FROM_EMAIL`) | **Yes** for live send smoke | Same as age-review / enrolment emails |
+| **Twilio** | **No** | WhatsApp deferred |
+| **Stripe / Grow / iCount** | **No** | |
+
+Build + unit tests + preview RPC work **without** Resend. Manual send smoke needs Resend in edge env.
+
+---
+
+## Current state (verified 2026-06-30)
 
 | Item | Status |
 | --- | --- |
-| `send-notification` | ✅ Routes email/WhatsApp; admin auth for most templates |
-| `NotificationPayloadSchema` | ✅ `packages/shared/src/schemas.ts` |
-| Email templates | Transactional only — **no admin announcement template** |
-| Admin UI | ❌ No compose page or route |
-| Recipient resolution | ❌ No RPC — must not query all emails client-side without tenant guard |
+| `send-notification` | ✅ Single-recipient email; admin auth; `notification_log` insert |
+| `NotificationPayloadSchema` | ✅ `packages/shared/src/schemas.ts` (transactional only) |
+| Email templates | Transactional only — **no** `admin_announcement` |
+| `preview_notification_blast_recipients` RPC | ❌ |
+| Admin compose UI / route | ❌ |
+| `notify_announcements` column | ✅ DB default `true`; no parent UI toggle yet (1G-b) |
 
 ---
 
@@ -27,48 +43,64 @@ Build admin UI to **compose and send email announcements** to filtered recipient
 
 | Rule | Value |
 | --- | --- |
-| Channels V1 | **Email only** |
-| Recipient scope | `all` \| `level` (category_id) \| `class` (offering_id) |
-| Eligibility | Primary contact email exists AND `contact_preferences.email_opted_in = true` AND `notify_announcements = true` (default true in DB) |
-| Dedup | One email per **unique email address** per blast (guardian may appear once even if multiple children) |
-| Subject/body | Admin-entered plain text; body rendered in branded React email template |
-| Send model | **Preview → confirm → send**; show recipient count before send |
-| Audit | Insert row per send into `notification_log` (existing table) via edge function path |
-| Rate limit | Batch in edge function — max **200 recipients per request**; UI loops batches with progress |
-
-**Template name (locked):** `admin_announcement` → add to `EMAIL_TEMPLATE_NAMES.ADMIN_ANNOUNCEMENT`
+| **Channel** | Email only |
+| **Recipient scope** | `all` \| `level` (`category_id`) \| `class` (`offering_id`) |
+| **Who receives** | **Account primary contact** (`accounts.person_id`) for families where an enrolled student has `people.account_id` set |
+| **Engagement filter** | Status ∈ `active`, `pending_payment`, `pending_waiver`, `admin_review`, `pending_offer` — scoped by `all` / level / class |
+| **Eligibility** | Primary contact email non-empty AND `contact_preferences.email_opted_in` (default true if no row) AND `notify_announcements` (default true if no row) |
+| **Dedup** | One email per **lowercase trimmed address** per blast |
+| **Subject / body** | Admin plain text; subject max **200** chars; body min **10**, max **5000** |
+| **Send model** | Preview (RPC) → confirm dialog → **one** edge invoke (`mode: 'admin_blast'`) that re-resolves + sends all |
+| **Send cap** | Max **500** recipients per blast (edge returns 400 if preview count > 500) |
+| **Audit** | One `notification_log` row per recipient send attempt |
+| **Auth** | **`tenant_admin` or `super_admin` only** for preview RPC and blast send (**not** `staff`) |
+| **Template** | `admin_announcement` → `EMAIL_TEMPLATE_NAMES.ADMIN_ANNOUNCEMENT` |
 
 ---
 
 ## Hard rules
 
-1. **New migration:** `supabase/migrations/20260626000400_notification_blast_rpcs.sql`
-2. Recipient resolution **must** be SECURITY DEFINER RPC — never expose cross-tenant emails via naive client SELECT.
-3. Extend `send-notification` to accept `ADMIN_ANNOUNCEMENT` template; variables: `subject`, `body`, `schoolName`.
-4. Admin-only: `tenant_admin` / `super_admin` (match existing send-notification auth).
-5. Run `pnpm email:bundle` after new React email template.
-6. **No git commit/push** unless user explicitly asks.
+1. **New migration:** `supabase/migrations/20260626000400_notification_blast_rpcs.sql` — two functions (see Step 1).
+2. Recipient resolution **only** via `resolve_notification_blast_recipients` (service role) / `preview_notification_blast_recipients` (authenticated admin wrapper). **Never** SELECT all emails client-side.
+3. **Single trusted send path:** edge `mode: 'admin_blast'` re-runs `resolve_notification_blast_recipients` — do **not** accept client `recipients[]`.
+4. `notification_log` uses **`recipient_account_member_id`** (not `family_member`).
+5. Run `pnpm email:bundle` after new React email template; `pnpm -C packages/shared build` if shared schemas change.
+6. Class dropdown uses **`useClasses`** (not `useOfferings`).
+7. **No git commit/push** unless user explicitly asks.
 
 ---
 
 ## Pre-flight (agent MUST read)
 
 1. `supabase/functions/send-notification/index.ts` — auth, email branch, `notification_log` insert
-2. `packages/shared/src/i18n/email.ts` — register template name
-3. `packages/shared/src/email-templates/EnrolmentConfirmationEmail.tsx` — layout pattern
-4. `supabase/migrations/20260608000400_contact_prefs.sql` — `notify_announcements`
-5. `apps/web/src/features/enrolment/lib/sendAgeReviewNotifications.ts` — client invoke pattern
-6. `apps/web/src/router.tsx` + `navigationConfig.ts` — add route + nav item
+2. `supabase/migrations/20260608002200_admin_enrolment_rpcs.sql` — `admin_enrolment_lookup_email` auth pattern
+3. `supabase/migrations/20260608000400_contact_prefs.sql` — `notify_announcements`
+4. `supabase/migrations/20260608000600_communications.sql` — `notification_log` columns
+5. `packages/shared/src/i18n/email.ts` + `packages/shared/src/email/render-template.ts`
+6. `packages/shared/src/email-templates/EnrolmentConfirmationEmail.tsx` — layout pattern
+7. `apps/web/src/features/enrolment/lib/sendAgeReviewNotifications.ts` — `supabase.functions.invoke` pattern
+8. `apps/web/src/features/classes/hooks/useClasses.ts` + `apps/web/src/features/levels/hooks/useLevels.ts`
+9. `apps/web/src/router.tsx` + `apps/web/src/components/Navigation/navigationConfig.ts`
 
 ---
 
-## Step 1 — Migration: recipient resolution RPC
+## Step 1 — Migration: recipient RPCs
 
 **File:** `supabase/migrations/20260626000400_notification_blast_rpcs.sql`
 
+**Constants (comment in migration):**
+
 ```sql
-CREATE OR REPLACE FUNCTION public.preview_notification_blast_recipients(
-  p_scope TEXT,          -- 'all' | 'level' | 'class'
+-- In-scope engagement statuses for blast recipient resolution:
+-- active, pending_payment, pending_waiver, admin_review, pending_offer
+```
+
+**Function A — internal resolver (service role only):**
+
+```sql
+CREATE OR REPLACE FUNCTION public.resolve_notification_blast_recipients(
+  p_tenant_id UUID,
+  p_scope TEXT,
   p_category_id UUID DEFAULT NULL,
   p_offering_id UUID DEFAULT NULL
 )
@@ -78,65 +110,216 @@ RETURNS TABLE (
   person_id UUID,
   account_member_id UUID
 )
--- Auth: tenant_admin/super_admin, tenant guard
--- Scope logic:
---   all: distinct billing contacts / account_members with email from active enrolments OR all families
---   level: engagements → offerings.category_id = p_category_id
---   class: engagements.offering_id = p_offering_id
--- Join contact_preferences; filter email_opted_in AND notify_announcements
--- DISTINCT ON (lower(recipient_email))
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF p_tenant_id IS NULL THEN
+    RAISE EXCEPTION 'tenant_id required';
+  END IF;
+  IF p_scope NOT IN ('all', 'level', 'class') THEN
+    RAISE EXCEPTION 'Invalid scope: %', p_scope;
+  END IF;
+  IF p_scope = 'level' AND p_category_id IS NULL THEN
+    RAISE EXCEPTION 'category_id required for level scope';
+  END IF;
+  IF p_scope = 'class' AND p_offering_id IS NULL THEN
+    RAISE EXCEPTION 'offering_id required for class scope';
+  END IF;
+
+  RETURN QUERY
+  WITH scoped AS (
+    SELECT DISTINCT ac.id AS account_id
+    FROM engagements e
+    INNER JOIN people student
+      ON student.id = e.person_id AND student.tenant_id = e.tenant_id
+    INNER JOIN accounts ac
+      ON ac.id = student.account_id AND ac.tenant_id = e.tenant_id
+    INNER JOIN offerings o
+      ON o.id = e.offering_id AND o.tenant_id = e.tenant_id
+    WHERE e.tenant_id = p_tenant_id
+      AND student.account_id IS NOT NULL
+      AND e.status IN (
+        'active', 'pending_payment', 'pending_waiver', 'admin_review', 'pending_offer'
+      )
+      AND (
+        p_scope = 'all'
+        OR (p_scope = 'level' AND o.category_id = p_category_id)
+        OR (p_scope = 'class' AND e.offering_id = p_offering_id)
+      )
+  ),
+  candidates AS (
+    SELECT
+      lower(trim(contact.email)) AS email_key,
+      trim(contact.email) AS recipient_email,
+      contact.name AS recipient_name,
+      contact.id AS person_id,
+      am.id AS account_member_id,
+      COALESCE(cp.email_opted_in, true) AS email_opted_in,
+      COALESCE(cp.notify_announcements, true) AS notify_announcements
+    FROM scoped s
+    INNER JOIN accounts ac
+      ON ac.id = s.account_id AND ac.tenant_id = p_tenant_id
+    INNER JOIN people contact
+      ON contact.id = ac.person_id AND contact.tenant_id = p_tenant_id
+    LEFT JOIN account_members am
+      ON am.account_id = ac.id
+     AND am.person_id = contact.id
+     AND am.role = 'account_holder'
+    LEFT JOIN contact_preferences cp
+      ON cp.person_id = contact.id
+     AND cp.tenant_id = p_tenant_id
+     AND cp.account_member_id IS NULL
+    WHERE contact.email IS NOT NULL
+      AND trim(contact.email) <> ''
+  )
+  SELECT DISTINCT ON (c.email_key)
+    c.recipient_email,
+    c.recipient_name,
+    c.person_id,
+    c.account_member_id
+  FROM candidates c
+  WHERE c.email_opted_in
+    AND c.notify_announcements
+  ORDER BY c.email_key, c.recipient_name;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.resolve_notification_blast_recipients(UUID, TEXT, UUID, UUID) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.resolve_notification_blast_recipients(UUID, TEXT, UUID, UUID) TO service_role;
+```
+
+**Function B — preview wrapper (web UI):**
+
+```sql
+CREATE OR REPLACE FUNCTION public.preview_notification_blast_recipients(
+  p_scope TEXT,
+  p_category_id UUID DEFAULT NULL,
+  p_offering_id UUID DEFAULT NULL
+)
+RETURNS TABLE (
+  recipient_email TEXT,
+  recipient_name TEXT,
+  person_id UUID,
+  account_member_id UUID
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_tenant_id UUID;
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Authentication required';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM user_profiles
+    WHERE id = auth.uid()
+      AND ('tenant_admin' = ANY(role) OR 'super_admin' = ANY(role))
+  ) THEN
+    RAISE EXCEPTION 'Forbidden';
+  END IF;
+
+  v_tenant_id := get_my_tenant_id();
+  IF v_tenant_id IS NULL THEN
+    RAISE EXCEPTION 'Tenant not found';
+  END IF;
+
+  RETURN QUERY
+  SELECT * FROM public.resolve_notification_blast_recipients(
+    v_tenant_id, p_scope, p_category_id, p_offering_id
+  );
+END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.preview_notification_blast_recipients(TEXT, UUID, UUID) TO authenticated;
 ```
 
-**Recipient source (locked for V1):** Prefer **account primary contact** (`accounts` → `people` / `account_members`) for families with any non-terminal engagement in scope. If no account email, skip row.
-
-Document exact JOIN in migration comments; match patterns from `admin_enrolment_lookup_email` in `20260608002200_admin_enrolment_rpcs.sql`.
-
-Optional second RPC `log_notification_blast` — only if edge function cannot write batch audit; prefer extending edge function.
+After migration: regenerate types if your workflow requires (`pnpm db:types` or project equivalent).
 
 ---
 
 ## Step 2 — Email template
 
-**Add:** `packages/shared/src/email-templates/AdminAnnouncementEmail.tsx`
+**New:** `packages/shared/src/email-templates/AdminAnnouncementEmail.tsx`
 
-- Props: `schoolName`, `subject`, `body` (plain text, preserve line breaks with `<br/>` or `white-space: pre-wrap`)
-- Extend `BaseEmailTemplate`
+- Props: `schoolName`, `language`, `colors`, `footerStrings`, `strings`, **`subject`**, **`body`** (plain text)
+- Render `subject` as `<Heading>`, `body` in `<Text style={{ whiteSpace: 'pre-wrap' }}>` inside `BaseEmailTemplate`
+- No merge fields beyond admin subject/body in V1
 
 **Update:**
 
-- `packages/shared/src/i18n/email.ts` → `ADMIN_ANNOUNCEMENT: 'admin_announcement'`
-- `packages/shared/src/i18n/email-templates-en.json` + `he.json` — default subject prefix optional
-- `packages/shared/src/email/render-template.ts` — add case
-- `supabase/functions/_shared/resend-send.ts` — ensure bundled dist includes template (via `pnpm email:bundle`)
+| File | Change |
+| --- | --- |
+| `packages/shared/src/i18n/email.ts` | `ADMIN_ANNOUNCEMENT: 'admin_announcement'` |
+| `packages/shared/src/i18n/email-templates-en.json` | `"admin_announcement": { "preview": "Announcement from {schoolName}" }` |
+| `packages/shared/src/i18n/email-templates-he.json` | Hebrew mirror |
+| `packages/shared/src/email/render-template.ts` | Import + `switch` case; pass `subject: str(v.subject)`, `body: str(v.body)` |
 
 ```bash
 pnpm email:bundle
 ```
 
+**Send subject:** edge passes admin `subject` as `variables.subject` **and** `sendRenderedEmail({ subject: adminSubject, ... })` (existing pattern in `send-notification`).
+
 ---
 
-## Step 3 — Edge function: batch send helper
+## Step 3 — Edge function: `admin_blast` handler (locked)
 
 **Modify:** `supabase/functions/send-notification/index.ts`
 
-Add handler `handleAdminAnnouncementBatch` OR extend POST body schema:
+**Early in POST handler** (before generic single-recipient flow):
 
 ```typescript
-// Option A — new endpoint shape (preferred for batch):
-{ mode: 'blast', tenantId, subject, body, recipients: [{ email, personId?, accountMemberId? }] }
+interface AdminBlastPayload {
+  mode: 'admin_blast';
+  tenantId: string;
+  scope: 'all' | 'level' | 'class';
+  categoryId?: string;
+  offeringId?: string;
+  subject: string;
+  body: string;
+}
 ```
 
-- Validate admin auth + tenant match (existing pattern)
-- Loop recipients (cap 200); call `sendRenderedEmail` with `ADMIN_ANNOUNCEMENT`
-- Insert `notification_log` per recipient (copy existing insert block)
-- Return `{ sent: number, failed: number, errors?: string[] }`
+**Flow (`handleAdminAnnouncementBlast`):**
 
-**Do not** trust client-supplied recipient list without re-validating emails belong to tenant — either re-call preview RPC server-side inside edge function or pass recipient IDs only and resolve in function with service role.
+1. `requireAuthUser(req)` — reject if missing
+2. Load profile; require **`tenant_admin` or `super_admin`** (reject `staff`-only)
+3. Validate `payload.tenantId === profile.tenant_id`
+4. Validate `subject` length 1–200, `body` length 10–5000
+5. Validate scope params (`categoryId` if `level`, `offeringId` if `class`)
+6. `service.rpc('resolve_notification_blast_recipients', { p_tenant_id, p_scope, p_category_id, p_offering_id })`
+7. If `recipients.length > 500` → 400 `{ error: 'Too many recipients (max 500)' }`
+8. If `recipients.length === 0` → 400 `{ error: 'No eligible recipients' }`
+9. Load tenant email config once; loop recipients sequentially:
+   - `sendRenderedEmail` with `EMAIL_TEMPLATE_NAMES.ADMIN_ANNOUNCEMENT`, `variables: { subject, body, recipientName }`
+   - Insert `notification_log` per attempt:
 
-**Recommended:** Edge function accepts `scope + categoryId/offeringId + subject + body`, re-runs preview query with service client, sends — **single trusted path**.
+```typescript
+await service.from('notification_log').insert({
+  tenant_id: payload.tenantId,
+  recipient_person_id: row.person_id,
+  recipient_account_member_id: row.account_member_id,
+  recipient_email: row.recipient_email,
+  channel: 'email',
+  template_name: EMAIL_TEMPLATE_NAMES.ADMIN_ANNOUNCEMENT,
+  subject: payload.subject,
+  body_preview: payload.body.slice(0, 200),
+  variables: { subject: payload.subject, body: payload.body },
+  external_msg_id: result?.id ?? null,
+  status: sent ? 'sent' : 'failed',
+  failure_reason: failureReason ?? null,
+  sent_at: new Date().toISOString(),
+});
+```
+
+10. Return `{ sent, failed, total, errors?: string[] }`
+
+**Do not** add Option A client `recipients[]` path.
 
 ---
 
@@ -146,39 +329,110 @@ Add handler `handleAdminAnnouncementBatch` OR extend POST body schema:
 
 | File | Purpose |
 | --- | --- |
+| `lib/notificationBlastSchema.ts` | Zod: scope, categoryId, offeringId, subject, body |
+| `lib/notificationBlastConstants.ts` | `BLAST_MAX_RECIPIENTS = 500`, scope enum |
 | `services/notificationBlastService.ts` | `previewRecipients`, `sendBlast` |
-| `hooks/useNotificationBlast.ts` | form state, preview query, send mutation |
-| `components/NotificationBlastForm.tsx` | scope selectors, subject, body, preview table |
-| `components/RecipientPreviewTable.tsx` | email + name, count badge |
+| `hooks/useNotificationBlast.ts` | preview query + send mutation |
+| `components/RecipientPreviewTable.tsx` | email, name, count badge |
+| `components/NotificationBlastForm.tsx` | full form |
 
-**Page:** `apps/web/src/pages/NotificationsPage.tsx` → `<NotificationBlastForm />`
+**Service:**
 
-**Route:** `/admin/notifications` in `router.tsx` (AdminRoute)
+```typescript
+// previewRecipients
+await supabase.rpc('preview_notification_blast_recipients', {
+  p_scope: scope,
+  p_category_id: scope === 'level' ? categoryId : null,
+  p_offering_id: scope === 'class' ? offeringId : null,
+});
 
-**Nav:** `navigationConfig.ts` — administration section, `labelKey: 'nav.notifications'`, `requiredRoles: ['tenant_admin']`
+// sendBlast
+await supabase.functions.invoke('send-notification', {
+  body: {
+    mode: 'admin_blast',
+    tenantId: tenant.id,
+    scope,
+    categoryId: scope === 'level' ? categoryId : undefined,
+    offeringId: scope === 'class' ? offeringId : undefined,
+    subject,
+    body,
+  },
+});
+```
+
+**Page:** `apps/web/src/pages/NotificationsPage.tsx`
+
+```tsx
+export default function NotificationsPage() {
+  return <NotificationBlastForm />;
+}
+```
+
+**Route** — add to `router.tsx` with other admin routes:
+
+```tsx
+{ path: 'admin/notifications', element: <AdminRoute><NotificationsPage /></AdminRoute> },
+```
+
+**Nav** — `navigationConfig.ts`, **administration** section (after families):
+
+```typescript
+{
+  path: '/admin/notifications',
+  labelKey: 'nav.notifications',
+  requiredRoles: ['tenant_admin'],
+  sectionKey: 'administration',
+},
+```
 
 ---
 
 ## Step 5 — Form UX (locked)
 
-1. **Scope** radio: All / Level / Class
-2. **Level** dropdown: `useLevels` or categories list (hidden unless level scope)
-3. **Class** dropdown: active season offerings (`useOfferings` / existing classes hook)
-4. **Subject** input (required, max 200)
-5. **Body** textarea (required, min 10, max 5000)
-6. **Preview recipients** button → RPC → table + count
-7. **Send** button disabled until preview run; confirmation dialog: *"Send to N recipients?"*
-8. Progress: if >200 recipients, chunk with `isSending` state
+1. **Scope** radio: All / Level / Class (`notificationBlastSchema`)
+2. **Level** `<Select>` — `useLevels({ page: 1 })`; visible only when scope = `level`; value = `category.id`
+3. **Class** `<Select>` — `useClasses({ page: 1 })`; visible only when scope = `class`; value = offering `id`, label = `name`
+4. **Subject** — required, max 200
+5. **Body** — textarea, required, min 10, max 5000
+6. **Preview recipients** — calls RPC; renders `RecipientPreviewTable`; store count in state
+7. **Send** — disabled until successful preview; if count > 500 show error (don't call edge)
+8. **Confirm dialog** — `t('pages.notifications.confirm_send', { count })`
+9. **Success** — toast with `{ sent, failed, total }` from edge response
 
-Use `react-hook-form` + zod schema `NotificationBlastFormSchema` in feature lib.
+Use `react-hook-form` + `@hookform/resolvers/zod`.
+
+**Page shell:** match `FamiliesPage` — title + description from i18n, form in card.
 
 ---
 
 ## Step 6 — i18n
 
-**Keys:** `pages.notifications.*`, `nav.notifications` in `en.json` / `he.json`
+**Keys (minimum):**
 
-Include: title, description, scope labels, preview, send, confirm dialog, success toast, error generic.
+```
+nav.notifications
+pages.notifications.title
+pages.notifications.description
+pages.notifications.scope_all
+pages.notifications.scope_level
+pages.notifications.scope_class
+pages.notifications.level_label
+pages.notifications.class_label
+pages.notifications.subject_label
+pages.notifications.body_label
+pages.notifications.preview_button
+pages.notifications.preview_count        // "{{count}} recipients"
+pages.notifications.preview_empty
+pages.notifications.preview_over_limit   // "Maximum {{max}} recipients per send"
+pages.notifications.send_button
+pages.notifications.confirm_send         // "Send to {{count}} recipients?"
+pages.notifications.confirm_cancel
+pages.notifications.send_success         // "Sent {{sent}} of {{total}}"
+pages.notifications.send_partial           // "{{failed}} failed"
+pages.notifications.error_generic
+```
+
+Mirror in `he.json`. Nest under existing `pages` / `nav` structure.
 
 ---
 
@@ -186,41 +440,71 @@ Include: title, description, scope labels, preview, send, confirm dialog, succes
 
 **Unit:**
 
-- `AdminAnnouncementEmail` render smoke (if existing email test pattern)
-- `NotificationBlastFormSchema` validation
+```bash
+pnpm -C apps/web test notificationBlastSchema
+pnpm -C packages/shared test render-template   # if existing pattern covers new case; else skip
+```
 
-**Manual smoke:**
+Add `apps/web/src/__tests__/notificationBlastSchema.test.ts` — scope requires categoryId/offeringId, subject/body length bounds.
 
-1. Preview `all` — count > 0 in dev seed
-2. Send to your own email — receive branded message
-3. `notification_log` row created
-4. Parent with `email_opted_in = false` excluded
+**Manual smoke** (needs Resend):
+
+1. `/admin/notifications` → Preview **All** — count ≥ 0 in dev seed
+2. Send to your own admin email — branded message received
+3. `notification_log` rows for each recipient
+4. Set a test contact `email_opted_in = false` — excluded from preview
 
 ---
 
-## Step 8 — WhatsApp (optional / defer)
+## Step 8 — WhatsApp (defer)
 
-If timeboxed: add disabled UI hint *"WhatsApp blast coming soon"* — do **not** half-ship Twilio bulk without template approval.
+Do **not** implement. Optional UI stub only if explicitly requested:
 
-Future: second channel toggle, filter `whatsapp_opted_in AND whatsapp_verified`, reuse Twilio branch in `send-notification`.
+> WhatsApp announcements coming soon
+
+Requires Twilio + Meta templates (§7) — out of V1.
 
 ---
 
 ## Definition of done
 
-- [ ] RPC preview works for all three scopes
-- [ ] New email template bundled and sent via edge function
-- [ ] `/admin/notifications` reachable from nav
-- [ ] Preview → confirm → send flow complete
-- [ ] Audit rows in `notification_log`
+- [ ] Migration applied; preview RPC works for `all` / `level` / `class`
+- [ ] `AdminAnnouncementEmail` bundled; `pnpm email:bundle` run
+- [ ] `send-notification` `admin_blast` handler sends + logs with `recipient_account_member_id`
+- [ ] `/admin/notifications` in router + nav
+- [ ] Preview → confirm → send flow; 500 cap enforced in UI + edge
 - [ ] i18n EN + HE
-- [ ] Update `docs/IMPLEMENTATION_STATUS.md`
+- [ ] Schema unit tests green
+- [ ] Update `docs/IMPLEMENTATION_STATUS.md` — notification blast → ✅
+
+---
+
+## File checklist
+
+| Action | Path |
+| --- | --- |
+| New | `supabase/migrations/20260626000400_notification_blast_rpcs.sql` |
+| Edit | `supabase/functions/send-notification/index.ts` |
+| New | `packages/shared/src/email-templates/AdminAnnouncementEmail.tsx` |
+| Edit | `packages/shared/src/i18n/email.ts` |
+| Edit | `packages/shared/src/i18n/email-templates-en.json`, `email-templates-he.json` |
+| Edit | `packages/shared/src/email/render-template.ts` |
+| New | `apps/web/src/features/notifications-admin/**` (see Step 4) |
+| New | `apps/web/src/pages/NotificationsPage.tsx` |
+| Edit | `apps/web/src/router.tsx` |
+| Edit | `apps/web/src/components/Navigation/navigationConfig.ts` |
+| Edit | `apps/web/src/i18n/en.json`, `he.json` |
+| New | `apps/web/src/__tests__/notificationBlastSchema.test.ts` |
+| Edit | `docs/IMPLEMENTATION_STATUS.md` |
+| Run | `pnpm email:bundle` |
 
 ---
 
 ## Out of scope
 
-- Scheduled sends / drafts
-- Rich HTML editor
-- Per-recipient merge fields beyond name
-- Parent unsubscribe link (future — use `notify_announcements` toggle in portal polish plan)
+- Client-supplied recipient lists
+- WhatsApp / Twilio blast
+- Scheduled sends, drafts, rich HTML editor
+- Per-recipient merge fields beyond name in template
+- Parent `notify_announcements` toggle UI (1G-b — separate plan)
+- `staff` role sending blasts
