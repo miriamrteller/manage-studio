@@ -2,7 +2,7 @@
 
 Living checklist for in-flight SPEC features. Normative design remains in [SPEC.md](../SPEC.md).
 
-**Last updated:** 2026-06-30 (Phase 1G merged to `main` via PR #8 — prefs, upcoming, login password, adult DOB, form fixes; iCount mock-phase synced; **1G-b** + **WhatsApp OTP** deferred)
+**Last updated:** 2026-07-01 (Notification blast composer — RPCs `60701000100`, `admin_blast` edge handler, `/admin/notifications`, `AdminAnnouncementEmail`; WhatsApp blast deferred)
 
 ---
 
@@ -14,9 +14,9 @@ Rough completion against [SPEC.md §6 V1 Implementation](../SPEC.md#6-v1-impleme
 | --- | --- | --- | --- |
 | **1A–1B** | Skeleton, auth, tenant context | ✅ ~95% | A11y CI gates, polish |
 | **1C** | People, families, classes, enrolment, waivers | ✅ ~92% | Teachers admin UI; classes list occupancy bar (overview ✅) |
-| **1D** | Notifications engine | 🟡 ~65% | Blast composer UI; notification log page; WhatsApp E2E |
+| **1D** | Notifications engine | 🟡 ~85% | Notification log page; WhatsApp E2E |
 | **1E** | Payments (Stripe + Grow + iCount mock) | 🟡 ~88% | Live Grow sandbox E2E; iCount I0-live+; dunning cron hardening |
-| **1F** | Admin dashboard | ✅ ~95% | Operations overview ✅ (PR #5); notification blast; people CSV export |
+| **1F** | Admin dashboard | ✅ ~95% | Operations overview ✅ (PR #5); people CSV export |
 | **1G** | Parent / student portal | ✅ ~92% | WhatsApp OTP verify in portal; `notify_*` scope toggles (1G-b) |
 | **§7** | Production deployment | ❌ ~10% | Webhooks, Meta templates, legal, security checklist |
 | **§8+** | V2 / V3 | — | Deferred |
@@ -46,7 +46,7 @@ Rough completion against [SPEC.md §6 V1 Implementation](../SPEC.md#6-v1-impleme
 | **Parent age review (PR B)** | [age-override-pr-b.md](plans/age-override-pr-b.md) | ✅ `260002` | ✅ | Shipped `baa6dd1` — **manual E2E smoke recommended** before prod |
 | **Parent self-enrolment (P1–P3)** | [parent-self-enrolment/00-overview.md](plans/parent-self-enrolment/00-overview.md) | — | ✅ | `resolveGuardianProfile`, portal **Myself**, `GuardianProfileSetupPanel` (`f0c327a`) |
 | **Phase 1F admin operations overview** | [admin-overview-dashboard.md](plans/admin-overview-dashboard.md) | ✅ `20260626000300` | ✅ | RPC, service, hook, 6 components, 7 tests, i18n — **PR #5 complete** |
-| Notification blast composer | [notification-blast-composer.md](plans/notification-blast-composer.md) | ❌ | ❌ | `send-notification` exists; no compose UI |
+| Notification blast composer | [notification-blast-composer.md](plans/notification-blast-composer.md) | ✅ `60701000100` | ✅ | `/admin/notifications`, preview RPC, `admin_blast` send, `AdminAnnouncementEmail`, schema tests — **manual Resend smoke recommended** |
 | Parent portal polish (Phase 1G) | [parent-portal-polish.md](plans/parent-portal-polish.md) | — | ✅ | Merged PR #8 (`0ea9004`, includes `fcad476`): prefs modal, upcoming 7-day, i18n, `returnTo`, login password, adult DOB display, form submit fixes; **Step 7 `notify_*`** + **Step 8 WhatsApp OTP** deferred |
 | Teachers admin module | [teachers-admin-module.md](plans/teachers-admin-module.md) | ✅ `staff` | ❌ | `TeacherService` / `useTeachers` only — no admin page |
 | Code rename epic (ex-D5) | [code-rename-epic.md](plans/code-rename-epic.md) | — | — | Deferred |
@@ -146,7 +146,7 @@ Merged to `main` via PR #8 (`0ea9004`; core work in `fcad476`):
 | Admin overview occupancy bar | Phase 1F — Dashboard | ✅ `OccupancyBar` on today's classes table |
 | Classes list occupancy + waitlist bar | Phase 1F — Classes | 🟡 `AdminClassesList` shows capacity number only |
 | Notification log page | Phase 1F — Notifications | 🟡 Component + hook; no admin route |
-| WhatsApp blast (urgent) | Phase 1F — Notifications | ❌ |
+| WhatsApp blast (urgent) | Phase 1F — Notifications | ❌ Deferred (Twilio) |
 | Contact prefs in portal | Phase 1G | ✅ |
 | Upcoming sessions (7-day) | Phase 1G | ✅ |
 | WhatsApp OTP verify in portal | Phase 1G | 🟡 Hint only; full OTP flow deferred |
@@ -177,10 +177,10 @@ Track in SPEC §6.x — pull into V1 only when explicitly prioritized:
 | --- | --- | --- |
 | **0** | Grow live sandbox E2E (when creds ready) | [grow-live-e2e-verification.md](plans/grow-live-e2e-verification.md) |
 | **0b** | iCount I0-live sandbox (when creds ready) | [finance/icount/00-overview.md](plans/finance/icount/00-overview.md) I0-live block |
-| **1** | Notification blast composer | [notification-blast-composer.md](plans/notification-blast-composer.md) |
-| **2** | Teachers admin CRUD | [teachers-admin-module.md](plans/teachers-admin-module.md) |
-| **3** | Parent portal Step 8 — WhatsApp OTP verify in prefs modal | [parent-portal-polish.md](plans/parent-portal-polish.md) Step 8 |
-| **4** | Parent portal 1G-b — `notify_*` scope toggles (optional) | [parent-portal-polish.md](plans/parent-portal-polish.md) Step 7 |
+| **1** | Teachers admin CRUD | [teachers-admin-module.md](plans/teachers-admin-module.md) |
+| **2** | Parent portal Step 8 — WhatsApp OTP verify in prefs modal | [parent-portal-polish.md](plans/parent-portal-polish.md) Step 8 |
+| **3** | Parent portal 1G-b — `notify_*` scope toggles (optional) | [parent-portal-polish.md](plans/parent-portal-polish.md) Step 7 |
+| **4** | Notification blast manual smoke (Resend) | [notification-blast-composer.md](plans/notification-blast-composer.md) Step 7 |
 | **5** | PR B manual E2E smoke (recommended before prod) | [age-override-pr-b.md](plans/age-override-pr-b.md) Step 9 |
 | **6** | Parent portal manual smoke (Step 6 checklist) | [parent-portal-polish.md](plans/parent-portal-polish.md) Step 6 |
 | **7** | Unenrol Phase 2 (refunds) | No plan yet |

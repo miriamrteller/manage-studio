@@ -16,6 +16,7 @@ describe('navigationConfig', () => {
 
     expect(paths).toContain('/admin/students');
     expect(paths).toContain('/admin/families');
+    expect(paths).toContain('/admin/notifications');
     expect(paths).toContain('/admin/finance');
     expect(paths).toContain('/admin/finance/payments');
     expect(paths).toContain('/admin/finance/expenses');

@@ -13,6 +13,7 @@ import EnrolmentAgeReviewApprovedEmail from '../email-templates/EnrolmentAgeRevi
 import EnrolmentAgeReviewDeclinedEmail from '../email-templates/EnrolmentAgeReviewDeclinedEmail.js';
 import WaiverReminderEmail from '../email-templates/WaiverReminderEmail.js';
 import WaiverCancelledEmail from '../email-templates/WaiverCancelledEmail.js';
+import AdminAnnouncementEmail from '../email-templates/AdminAnnouncementEmail.js';
 import { getEmailColors } from '../config/email-colors.js';
 import {
   EMAIL_TEMPLATE_NAMES,
@@ -262,6 +263,13 @@ function buildComponent(
         studentName: str(v.studentName),
         className: str(v.className),
         declineReason: str(v.declineReason) || undefined,
+      });
+
+    case EMAIL_TEMPLATE_NAMES.ADMIN_ANNOUNCEMENT:
+      return React.createElement(AdminAnnouncementEmail, {
+        ...common,
+        subject: str(v.subject),
+        body: str(v.body),
       });
 
     default:

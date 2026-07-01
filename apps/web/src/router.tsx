@@ -10,6 +10,7 @@ import DashboardRedirectPage from "./pages/DashboardRedirectPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import StudentsPage from "./pages/StudentsPage";
 import FamiliesPage from "./pages/FamiliesPage";
+import NotificationsPage from "./pages/NotificationsPage";
 import FamilyDetailPage from "./pages/FamilyDetailPage";
 import BillingPage from "./pages/BillingPage";
 import StripeSettingsPage from "./pages/StripeSettingsPage";
@@ -73,6 +74,7 @@ const router = createBrowserRouter([
       // Legacy redirects — keep URLs working
       { path: "admin/people", element: <AdminRoute><Navigate to="/admin/students" replace /></AdminRoute> },
       { path: "admin/families", element: <AdminRoute><FamiliesPage /></AdminRoute> },
+      { path: "admin/notifications", element: <AdminRoute><NotificationsPage /></AdminRoute> },
       { path: "admin/families/:id", element: <AdminRoute><FamilyDetailPage /></AdminRoute> },
       { path: "admin/finance", element: <AdminRoute><FinanceHubPage /></AdminRoute> },
       { path: "admin/finance/payments", element: <AdminRoute><PaymentsLogPage /></AdminRoute> },
