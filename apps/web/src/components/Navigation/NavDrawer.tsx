@@ -130,11 +130,11 @@ export function NavDrawer() {
       aria-label={t('nav.menu')}
       className={cn(
         'nav-drawer-panel flex flex-col bg-primary text-on-primary border-e border-primary-active',
-        'w-[var(--nav-drawer-width)] h-full',
+        'w-[var(--nav-drawer-width)]',
         isPinned
-          ? 'shrink-0 sticky top-0 self-start min-h-screen'
+          ? 'h-dvh max-h-dvh shrink-0 sticky top-0 overflow-hidden'
           : cn(
-              'fixed inset-y-0 start-0 z-50 shadow-xl transition-transform duration-200 ease-in-out',
+              'fixed inset-y-0 start-0 z-50 h-full shadow-xl transition-transform duration-200 ease-in-out',
               isOpen ? 'translate-x-0' : 'ltr:-translate-x-full rtl:translate-x-full'
             )
       )}
@@ -170,7 +170,7 @@ export function NavDrawer() {
       </div>
 
       {/* Nav links */}
-      <nav className="flex-1 overflow-y-auto py-2" aria-label={t('nav.menu')}>
+      <nav className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain py-2" aria-label={t('nav.menu')}>
         {sections.map((section) => (
           <div key={section.sectionKey} className="mb-2">
             <h3 className="px-4 pt-3 pb-1 text-xs font-semibold uppercase tracking-wide opacity-70">
