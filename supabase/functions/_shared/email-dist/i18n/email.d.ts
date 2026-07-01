@@ -21,6 +21,7 @@ export declare const EMAIL_TEMPLATE_NAMES: {
     readonly ENROLMENT_AGE_REVIEW_REQUESTED: "enrolment_age_review_requested";
     readonly ENROLMENT_AGE_REVIEW_APPROVED: "enrolment_age_review_approved";
     readonly ENROLMENT_AGE_REVIEW_DECLINED: "enrolment_age_review_declined";
+    readonly ADMIN_ANNOUNCEMENT: "admin_announcement";
 };
 export type EmailTemplateName = typeof EMAIL_TEMPLATE_NAMES[keyof typeof EMAIL_TEMPLATE_NAMES];
 /**

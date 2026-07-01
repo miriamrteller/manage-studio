@@ -62,14 +62,17 @@ export const UserProfileSchema = z.object({
 export const LoginFormSchema = z.object({
     email: EmailSchema,
 });
-// Password login form
+// Password login form — complexity rules apply when setting a password, not at sign-in
 export const PasswordLoginSchema = z.object({
     email: EmailSchema,
-    password: z.string()
-        .min(6, 'Password must be at least 6 characters')
-        .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
-        .regex(/[0-9]/, 'Password must contain at least one number'),
+    password: z.string().min(1, 'Password is required'),
 });
+/** Rules for new passwords (portal set-password, etc.) */
+export const NewPasswordSchema = z
+    .string()
+    .min(6, 'Password must be at least 6 characters')
+    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+    .regex(/[0-9]/, 'Password must contain at least one number');
 // Public class (for landing page — matches get_public_offerings_by_subdomain RPC)
 export const PublicOfferingSchema = z.object({
     id: UUIDSchema,

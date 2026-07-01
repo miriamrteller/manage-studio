@@ -140,6 +140,9 @@ export declare const PasswordLoginSchema: z.ZodObject<{
     password: string;
 }>;
 export type PasswordLogin = z.infer<typeof PasswordLoginSchema>;
+/** Rules for new passwords (portal set-password, etc.) */
+export declare const NewPasswordSchema: z.ZodString;
+export type NewPassword = z.infer<typeof NewPasswordSchema>;
 export declare const PublicOfferingSchema: z.ZodObject<{
     id: z.ZodString;
     tenant_id: z.ZodString;

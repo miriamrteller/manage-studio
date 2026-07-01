@@ -179,5 +179,8 @@
         "body": "לאחר בדיקה, {schoolName} לא יכול/ה לאשר את {studentName} ל{className} על פי דרישות הגיל של השיעור.",
         "reason_label": "הערה מהסטודיו",
         "footer_note": "ניתן לעיין בשיעורים אחרים או ליצור קשר עם הסטודיו."
+    },
+    "admin_announcement": {
+        "preview": "הודעה מ-{schoolName}"
     }
 }

@@ -2707,6 +2707,19 @@ export type Database = {
         Args: { p_person_id: string }
         Returns: undefined
       }
+      preview_notification_blast_recipients: {
+        Args: {
+          p_category_id?: string
+          p_offering_id?: string
+          p_scope: string
+        }
+        Returns: {
+          account_member_id: string
+          person_id: string
+          recipient_email: string
+          recipient_name: string
+        }[]
+      }
       provision_tenant: {
         Args: {
           p_accent_color?: string
@@ -2747,6 +2760,20 @@ export type Database = {
           guardian_name: string
           guardian_person_id: string
           student_person_id: string
+        }[]
+      }
+      resolve_notification_blast_recipients: {
+        Args: {
+          p_category_id?: string
+          p_offering_id?: string
+          p_scope: string
+          p_tenant_id: string
+        }
+        Returns: {
+          account_member_id: string
+          person_id: string
+          recipient_email: string
+          recipient_name: string
         }[]
       }
       save_grow_webhook_secret: {
