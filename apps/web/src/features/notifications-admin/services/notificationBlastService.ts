@@ -1,4 +1,8 @@
 import { supabase } from '@/lib/supabase';
+import {
+  functionInvokeErrorMessage,
+  parseFunctionInvokeBody,
+} from '@/lib/parseFunctionInvokeError';
 import type { Tenant } from '@shared/schemas';
 import type { BlastRecipientPreview, NotificationBlastFormValues } from '../lib/notificationBlastSchema';
 
@@ -41,13 +45,17 @@ export async function sendBlast(
     },
   });
 
-  if (error) {
-    throw new Error(error.message);
+  const responseBody = await parseFunctionInvokeBody(data, error);
+
+  if (error || responseBody?.error) {
+    throw new Error(
+      functionInvokeErrorMessage(error, responseBody, 'Failed to send notification blast'),
+    );
   }
 
-  if (data?.error) {
-    throw new Error(String(data.error));
+  if (!responseBody || typeof responseBody.sent !== 'number') {
+    throw new Error('Unexpected response from send-notification');
   }
 
-  return data as BlastSendResult;
+  return responseBody as BlastSendResult;
 }
