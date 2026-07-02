@@ -91,6 +91,12 @@ export const navigationConfig: NavItem[] = [
     sectionKey: 'administration',
   },
   {
+    path: '/admin/notifications',
+    labelKey: 'nav.notifications',
+    requiredRoles: ['tenant_admin'],
+    sectionKey: 'administration',
+  },
+  {
     path: '/admin/finance',
     labelKey: 'finance.hub.title',
     requiredRoles: ['tenant_admin'],

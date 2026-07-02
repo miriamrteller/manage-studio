@@ -6,8 +6,8 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "scripts": {
-    "build": "tsc",
-    "lint": "tsc --noEmit"
+    "build": "node --max-old-space-size=8192 ./node_modules/typescript/bin/tsc",
+    "lint": "node --max-old-space-size=8192 ./node_modules/typescript/bin/tsc --noEmit"
   },
   "dependencies": {
     "@react-email/components": "^0.0.14",

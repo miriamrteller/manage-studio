@@ -179,5 +179,8 @@
         "body": "After review, {schoolName} is unable to approve {studentName} for {className} based on the class age requirements.",
         "reason_label": "Note from the studio",
         "footer_note": "You may browse other classes or contact the studio if you have questions."
+    },
+    "admin_announcement": {
+        "preview": "Announcement from {schoolName}"
     }
 }

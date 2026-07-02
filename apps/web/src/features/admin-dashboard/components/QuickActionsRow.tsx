@@ -38,7 +38,7 @@ export const QuickActionsRow = ({
         </Button>
         <Button
           variant="primary"
-          onClick={onSendNotification ?? (() => navigate('#'))}
+          onClick={onSendNotification ?? (() => navigate('/admin/notifications'))}
         >
           {t('pages.admin.overview.send_notification')}
         </Button>

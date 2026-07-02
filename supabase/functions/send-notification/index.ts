@@ -23,6 +23,26 @@ interface NotificationPayload {
   variables?: Record<string, unknown>;
 }
 
+interface AdminBlastPayload {
+  mode: "admin_blast";
+  tenantId: string;
+  scope: "all" | "level" | "class" | "account";
+  categoryId?: string;
+  offeringId?: string;
+  accountId?: string;
+  recipientQuery?: string;
+  selectedPersonIds?: string[];
+  subject: string;
+  body: string;
+}
+
+interface BlastRecipientRow {
+  recipient_email: string;
+  recipient_name: string | null;
+  person_id: string;
+  account_member_id: string | null;
+}
+
 interface TenantConfig {
   id: string;
   name: string;
@@ -73,7 +93,18 @@ serve(async (req: Request) => {
       return jsonResponse({ error: "Method not allowed" }, 405);
     }
 
-    const payload: NotificationPayload = await req.json();
+    const rawBody = await req.json();
+
+    if (rawBody?.mode === "admin_blast") {
+      const service = createServiceClient();
+      return await handleAdminAnnouncementBlast(
+        service,
+        rawBody as AdminBlastPayload,
+        req,
+      );
+    }
+
+    const payload: NotificationPayload = rawBody;
 
     if (
       !payload.tenantId ||
@@ -622,5 +653,196 @@ async function handleAgeReviewRequestedNotification(
     status: "sent",
     externalMsgId: lastExternalId,
     sentCount,
+  });
+}
+
+async function handleAdminAnnouncementBlast(
+  service: SupabaseClient,
+  payload: AdminBlastPayload,
+  _req: Request,
+): Promise<Response> {
+  const auth = await requireAuthUser(_req);
+  if ("error" in auth) {
+    return jsonResponse({ error: auth.error }, auth.status);
+  }
+
+  const { data: profile, error: profileError } = await service
+    .from("user_profiles")
+    .select("tenant_id, role")
+    .eq("id", auth.user.id)
+    .single();
+
+  if (profileError || !profile?.tenant_id) {
+    return jsonResponse({ error: "User profile not found" }, 403);
+  }
+
+  const roles = (profile.role ?? []) as string[];
+  const canBlast =
+    roles.includes("tenant_admin") || roles.includes("super_admin");
+
+  if (!canBlast) {
+    return jsonResponse({ error: "Not authorized to send notification blasts" }, 403);
+  }
+
+  if (payload.tenantId !== profile.tenant_id) {
+    return jsonResponse({ error: "Tenant mismatch" }, 403);
+  }
+
+  const subject = payload.subject?.trim() ?? "";
+  const body = payload.body?.trim() ?? "";
+
+  if (subject.length < 1 || subject.length > 200) {
+    return jsonResponse({ error: "Subject must be 1–200 characters" }, 400);
+  }
+
+  if (body.length < 10 || body.length > 5000) {
+    return jsonResponse({ error: "Body must be 10–5000 characters" }, 400);
+  }
+
+  if (payload.scope === "level" && !payload.categoryId) {
+    return jsonResponse({ error: "categoryId required for level scope" }, 400);
+  }
+
+  if (payload.scope === "class" && !payload.offeringId) {
+    return jsonResponse({ error: "offeringId required for class scope" }, 400);
+  }
+
+  if (payload.scope === "account" && !payload.accountId) {
+    return jsonResponse({ error: "accountId required for account scope" }, 400);
+  }
+
+  const recipientQuery = payload.recipientQuery?.trim() ?? "";
+
+  const { data: recipients, error: resolveError } = await service.rpc(
+    "resolve_notification_blast_recipients",
+    {
+      p_tenant_id: payload.tenantId,
+      p_scope: payload.scope,
+      p_category_id: payload.scope === "level" ? payload.categoryId : null,
+      p_offering_id: payload.scope === "class" ? payload.offeringId : null,
+      p_account_id: payload.scope === "account" ? payload.accountId : null,
+      p_recipient_query: recipientQuery || null,
+    },
+  );
+
+  if (resolveError) {
+    return jsonResponse({ error: resolveError.message }, 400);
+  }
+
+  let rows = (recipients ?? []) as BlastRecipientRow[];
+
+  if (payload.selectedPersonIds !== undefined) {
+    if (!Array.isArray(payload.selectedPersonIds)) {
+      return jsonResponse({ error: "selectedPersonIds must be an array" }, 400);
+    }
+
+    const selectedSet = new Set(
+      payload.selectedPersonIds.filter(
+        (id): id is string => typeof id === "string" && id.length > 0,
+      ),
+    );
+
+    if (selectedSet.size === 0) {
+      return jsonResponse({ error: "No recipients selected" }, 400);
+    }
+
+    const resolvedIds = new Set(rows.map((row) => row.person_id));
+    for (const id of selectedSet) {
+      if (!resolvedIds.has(id)) {
+        return jsonResponse({ error: "Invalid recipient selection" }, 400);
+      }
+    }
+
+    rows = rows.filter((row) => selectedSet.has(row.person_id));
+  }
+
+  if (rows.length > 500) {
+    return jsonResponse({ error: "Too many recipients (max 500)" }, 400);
+  }
+
+  if (rows.length === 0) {
+    return jsonResponse({ error: "No eligible recipients" }, 400);
+  }
+
+  const tenant = await getTenantEmailConfig(service, payload.tenantId);
+  const language = tenant.language;
+  const overrides = await getEmailTemplateOverrides(
+    service,
+    payload.tenantId,
+    EMAIL_TEMPLATE_NAMES.ADMIN_ANNOUNCEMENT,
+    language,
+  );
+
+  const fromEmail =
+    Deno.env.get("NOTIFICATION_FROM_EMAIL") ??
+    "Manage Studio <noreply@manage-studio.app>";
+
+  let sent = 0;
+  let failed = 0;
+  const errors: string[] = [];
+
+  for (const row of rows) {
+    let externalMsgId: string | null = null;
+    let status: "sent" | "failed" = "sent";
+    let failureReason: string | null = null;
+
+    try {
+      const result = await sendRenderedEmail({
+        to: row.recipient_email,
+        from: fromEmail,
+        subject,
+        renderInput: {
+          templateName: EMAIL_TEMPLATE_NAMES.ADMIN_ANNOUNCEMENT,
+          language,
+          schoolName: tenant.name,
+          tenantColors: {
+            primary_color: tenant.primary_color,
+            accent_color: tenant.accent_color,
+          },
+          stringOverrides: overrides,
+          variables: {
+            subject,
+            body,
+            recipientName: row.recipient_name ?? undefined,
+          },
+        },
+      });
+      externalMsgId = result.id;
+      sent += 1;
+    } catch (error) {
+      status = "failed";
+      failureReason = error instanceof Error ? error.message : "Unknown error";
+      failed += 1;
+      if (errors.length < 10) {
+        errors.push(`${row.recipient_email}: ${failureReason}`);
+      }
+    }
+
+    try {
+      await service.from("notification_log").insert({
+        tenant_id: payload.tenantId,
+        recipient_person_id: row.person_id,
+        recipient_account_member_id: row.account_member_id,
+        recipient_email: row.recipient_email,
+        channel: "email",
+        template_name: EMAIL_TEMPLATE_NAMES.ADMIN_ANNOUNCEMENT,
+        subject,
+        body_preview: body.slice(0, 200),
+        variables: { subject, body },
+        external_msg_id: externalMsgId,
+        status,
+        failure_reason: failureReason,
+        sent_at: new Date().toISOString(),
+      });
+    } catch (logError) {
+      console.error("Failed to log notification blast:", logError);
+    }
+  }
+
+  return jsonResponse({
+    sent,
+    failed,
+    total: rows.length,
+    ...(errors.length > 0 ? { errors } : {}),
   });
 }
