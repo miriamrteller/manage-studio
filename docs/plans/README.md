@@ -10,10 +10,11 @@ Agent-optimized implementation plans. Create before coding (see `.instructions.m
 | Date | Feature | Status |
 | --- | --- | --- |
 | 2026-06-29 | [iCount IL default (mock-first)](finance/icount/00-overview.md) | **Mock phase ✅** — I0-live deferred; I6-research optional |
-| 2026-06-28 | [Admin operations overview](admin-overview-dashboard.md) | Planned — Phase 1F |
-| 2026-06-30 | [Notification blast composer](notification-blast-composer.md) | **Ready** — agent plan (email blast) |
+| 2026-07-01 | [Notification log viewer](notification-log-page.md) | **Ready** — tabs on `/admin/notifications` |
+| 2026-07-01 | [Teachers admin module](teachers-admin-module.md) | **Ready** — `/admin/setup/teachers` CRUD |
+| 2026-06-30 | [Notification blast composer](notification-blast-composer.md) | ✅ Shipped |
 | 2026-06-29 | [Parent portal polish](parent-portal-polish.md) | ✅ Shipped |
-| 2026-06-28 | [Teachers admin module](teachers-admin-module.md) | Planned |
+| 2026-06-28 | [Admin operations overview](admin-overview-dashboard.md) | ✅ Shipped |
 | 2026-06-28 | [Grow live sandbox E2E](grow-live-e2e-verification.md) | Manual QA — optional |
 | 2026-06-07 | [Code rename epic (ex-D5)](code-rename-epic.md) | Deferred |
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Heading, Text } from '@react-email/components';
+import { Text } from '@react-email/components';
 import BaseEmailTemplate, { type EmailColorConfig, type EmailFooterStrings } from './BaseEmailTemplate.js';
 
 interface AdminAnnouncementEmailProps {
@@ -38,9 +38,17 @@ export default function AdminAnnouncementEmail({
       colors={colors}
       footerStrings={footerStrings}
     >
-      <Heading as="h1" style={{ fontSize: '20px', fontWeight: 700, marginBottom: '16px' }}>
+      <Text
+        style={{
+          fontSize: '20px',
+          fontWeight: 700,
+          marginTop: 0,
+          marginBottom: '16px',
+          lineHeight: '1.4',
+        }}
+      >
         {subject}
-      </Heading>
+      </Text>
       <Text style={{ fontSize: '16px', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>{body}</Text>
     </BaseEmailTemplate>
   );

@@ -7,16 +7,26 @@ export function useNotificationBlast() {
   const tenant = useTenant();
 
   const previewMutation = useMutation({
-    mutationFn: (values: Pick<NotificationBlastFormValues, 'scope' | 'categoryId' | 'offeringId'>) =>
-      previewRecipients(values),
+    mutationFn: (
+      values: Pick<
+        NotificationBlastFormValues,
+        'scope' | 'categoryId' | 'offeringId' | 'accountId'
+      >,
+    ) => previewRecipients(values),
   });
 
   const sendMutation = useMutation({
-    mutationFn: (values: NotificationBlastFormValues) => {
+    mutationFn: ({
+      values,
+      selectedRecipientEmails,
+    }: {
+      values: NotificationBlastFormValues;
+      selectedRecipientEmails: string[];
+    }) => {
       if (!tenant) {
         throw new Error('Tenant not initialized');
       }
-      return sendBlast(tenant, values);
+      return sendBlast(tenant, values, selectedRecipientEmails);
     },
   });
 

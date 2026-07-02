@@ -7,6 +7,7 @@ import {
   type RenderEmailTemplateInput,
 } from "./email-dist/email/render-template.js";
 import { renderPaymentReminderHtml } from "./render-payment-email.ts";
+import { renderAdminAnnouncementHtml } from "./render-admin-announcement-email.ts";
 import {
   buildEnrolmentConfirmationSubject,
   renderEnrolmentConfirmationHtml,
@@ -116,6 +117,16 @@ export async function sendRenderedEmail(
       subjectOverride ??
       renderInput.subject ??
       buildEnrolmentConfirmationSubject(language, renderInput.schoolName);
+  } else if (renderInput.templateName === EMAIL_TEMPLATE_NAMES.ADMIN_ANNOUNCEMENT) {
+    html = renderAdminAnnouncementHtml({
+      language: renderInput.language === "he" ? "he" : "en",
+      schoolName: renderInput.schoolName,
+      subject: str(variables.subject),
+      body: str(variables.body),
+      primaryColor: renderInput.tenantColors?.primary_color ?? "#2563eb",
+      accentColor: renderInput.tenantColors?.accent_color ?? "#dc2626",
+    });
+    subject = subjectOverride ?? str(variables.subject) ?? renderInput.subject ?? "Announcement";
   } else {
     const rendered = await renderEmailTemplate({
       ...renderInput,

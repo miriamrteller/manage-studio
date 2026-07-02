@@ -16,12 +16,16 @@ import { useClasses } from '@/features/classes/hooks/useClasses';
 import { useLevels } from '@/features/levels/hooks/useLevels';
 import { BLAST_MAX_RECIPIENTS } from '../lib/notificationBlastConstants';
 import {
+  notificationBlastPreviewSchema,
   notificationBlastSchema,
   type BlastRecipientPreview,
   type NotificationBlastFormValues,
 } from '../lib/notificationBlastSchema';
 import { useNotificationBlast } from '../hooks/useNotificationBlast';
 import { RecipientPreviewTable } from './RecipientPreviewTable';
+import { AccountBlastPicker, formatAccountLabel } from './AccountBlastPicker';
+import type { BlastAccountSearchResult } from '../lib/notificationBlastSchema';
+import { normalizeRecipientEmail } from '../lib/recipientHumanSearch';
 
 export function NotificationBlastForm() {
   const { t } = useTranslation();
@@ -30,10 +34,13 @@ export function NotificationBlastForm() {
   const { classes, isLoading: classesLoading } = useClasses({ page: 1, publicOnly: false });
 
   const [previewRows, setPreviewRows] = useState<BlastRecipientPreview[] | null>(null);
+  const [selectedRecipientEmails, setSelectedRecipientEmails] = useState<Set<string>>(new Set());
   const [previewValidated, setPreviewValidated] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [previewError, setPreviewError] = useState<string | null>(null);
   const [sendSuccess, setSendSuccess] = useState<string | null>(null);
+  const [selectedAccountLabel, setSelectedAccountLabel] = useState<string | null>(null);
 
   const form = useForm<NotificationBlastFormValues>({
     resolver: zodResolver(notificationBlastSchema),
@@ -47,36 +54,57 @@ export function NotificationBlastForm() {
 
   const scope = form.watch('scope');
   const previewCount = previewRows?.length ?? 0;
+  const selectedCount = previewRows
+    ? previewRows.filter((row) =>
+        selectedRecipientEmails.has(normalizeRecipientEmail(row.recipient_email)),
+      ).length
+    : 0;
   const overLimit = previewCount > BLAST_MAX_RECIPIENTS;
-  const canSend = previewValidated && previewRows !== null && previewCount > 0 && !overLimit;
+  const canSend =
+    previewValidated && previewRows !== null && selectedCount > 0 && !overLimit;
 
   const resetPreview = () => {
     setPreviewRows(null);
+    setSelectedRecipientEmails(new Set());
     setPreviewValidated(false);
+    setPreviewError(null);
     setSendSuccess(null);
   };
 
   const handlePreview = async () => {
     setActionError(null);
+    setPreviewError(null);
     setSendSuccess(null);
-    resetPreview();
 
-    const valid = await form.trigger();
-    if (!valid) {
+    const values = form.getValues();
+    const parsed = notificationBlastPreviewSchema.safeParse(values);
+    if (!parsed.success) {
+      for (const issue of parsed.error.issues) {
+        const field = issue.path[0];
+        if (
+          field === 'scope' ||
+          field === 'categoryId' ||
+          field === 'offeringId' ||
+          field === 'accountId'
+        ) {
+          form.setError(field, { message: issue.message });
+        }
+      }
+      setPreviewError(t('pages.notifications.preview_validation_error'));
       return;
     }
 
+    resetPreview();
+
     try {
-      const values = form.getValues();
-      const rows = await previewRecipients({
-        scope: values.scope,
-        categoryId: values.categoryId,
-        offeringId: values.offeringId,
-      });
+      const rows = await previewRecipients(parsed.data);
       setPreviewRows(rows);
+      setSelectedRecipientEmails(
+        new Set(rows.map((row) => normalizeRecipientEmail(row.recipient_email))),
+      );
       setPreviewValidated(true);
     } catch (error) {
-      setActionError(error instanceof Error ? error.message : t('pages.notifications.error_generic'));
+      setPreviewError(error instanceof Error ? error.message : t('pages.notifications.error_generic'));
     }
   };
 
@@ -86,7 +114,10 @@ export function NotificationBlastForm() {
 
     try {
       const values = form.getValues();
-      const result = await sendBlast(values);
+      const result = await sendBlast({
+        values,
+        selectedRecipientEmails: Array.from(selectedRecipientEmails),
+      });
       setConfirmOpen(false);
       resetPreview();
 
@@ -130,14 +161,18 @@ export function NotificationBlastForm() {
         >
           <fieldset className="space-y-2">
             <legend className="text-sm font-medium">{t('pages.notifications.recipient_scope')}</legend>
-            <div className="flex flex-col gap-2 sm:flex-row sm:gap-4">
-              {(['all', 'level', 'class'] as const).map((value) => (
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-4">
+              {(['all', 'level', 'class', 'account'] as const).map((value) => (
                 <label key={value} className="flex items-center gap-2 text-sm">
                   <input
                     type="radio"
                     value={value}
                     {...form.register('scope', {
-                      onChange: () => resetPreview(),
+                      onChange: () => {
+                        setSelectedAccountLabel(null);
+                        form.setValue('accountId', undefined);
+                        resetPreview();
+                      },
                     })}
                   />
                   {t(`pages.notifications.scope_${value}`)}
@@ -192,6 +227,26 @@ export function NotificationBlastForm() {
             </div>
           )}
 
+          {scope === 'account' && (
+            <AccountBlastPicker
+              accountId={form.watch('accountId')}
+              selectedLabel={selectedAccountLabel}
+              onSelect={(account: BlastAccountSearchResult) => {
+                form.setValue('accountId', account.account_id, { shouldValidate: true });
+                setSelectedAccountLabel(formatAccountLabel(account));
+                resetPreview();
+              }}
+              onClear={() => {
+                form.setValue('accountId', undefined, { shouldValidate: true });
+                setSelectedAccountLabel(null);
+                resetPreview();
+              }}
+            />
+          )}
+          {scope === 'account' && form.formState.errors.accountId && (
+            <p className="text-sm text-destructive">{form.formState.errors.accountId.message}</p>
+          )}
+
           <FormInput
             htmlFor="blast-subject"
             label={t('pages.notifications.subject_label')}
@@ -216,16 +271,54 @@ export function NotificationBlastForm() {
             )}
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handlePreview}
-              isLoading={isPreviewing}
-              disabled={isPreviewing || isSending}
-            >
-              {t('pages.notifications.preview_button')}
-            </Button>
+        </form>
+
+        <section className="space-y-4 border-t border-gray-200 pt-6" aria-labelledby="blast-review-heading">
+          <div className="space-y-1">
+            <h2 id="blast-review-heading" className="text-base font-semibold">
+              {t('pages.notifications.preview_section_title')}
+            </h2>
+            <p className="text-sm text-muted-foreground">{t('pages.notifications.preview_section_hint')}</p>
+          </div>
+
+          {previewRows === null ? (
+            <p className="rounded-md border border-dashed border-gray-300 bg-gray-50 px-4 py-6 text-sm text-muted-foreground">
+              {t('pages.notifications.preview_empty_state')}
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {overLimit && (
+                <p className="text-sm text-destructive" role="alert">
+                  {t('pages.notifications.preview_over_limit', { max: BLAST_MAX_RECIPIENTS })}
+                </p>
+              )}
+              <RecipientPreviewTable
+                recipients={previewRows}
+                selectedEmails={selectedRecipientEmails}
+                onSelectedEmailsChange={setSelectedRecipientEmails}
+              />
+            </div>
+          )}
+
+          {previewError && (
+            <p className="text-sm text-destructive" role="alert">
+              {previewError}
+            </p>
+          )}
+
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handlePreview}
+            isLoading={isPreviewing}
+            disabled={isPreviewing || isSending}
+          >
+            {previewRows === null
+              ? t('pages.notifications.preview_button')
+              : t('pages.notifications.preview_button_update')}
+          </Button>
+
+          <div className="space-y-2 border-t border-gray-100 pt-4">
             <Button
               type="button"
               variant="primary"
@@ -234,19 +327,21 @@ export function NotificationBlastForm() {
             >
               {t('pages.notifications.send_button')}
             </Button>
-          </div>
-        </form>
-
-        {previewRows !== null && (
-          <div className="space-y-2 border-t border-gray-200 pt-4">
-            {overLimit && (
-              <p className="text-sm text-destructive" role="alert">
-                {t('pages.notifications.preview_over_limit', { max: BLAST_MAX_RECIPIENTS })}
+            {!canSend && !isSending && !isPreviewing && (
+              <p className="text-sm text-muted-foreground" role="status">
+                {previewRows === null
+                  ? t('pages.notifications.send_disabled_no_preview')
+                  : previewCount === 0
+                    ? t('pages.notifications.send_disabled_no_recipients')
+                    : selectedCount === 0
+                      ? t('pages.notifications.send_disabled_none_selected')
+                      : overLimit
+                        ? t('pages.notifications.send_disabled_over_limit', { max: BLAST_MAX_RECIPIENTS })
+                        : null}
               </p>
             )}
-            <RecipientPreviewTable recipients={previewRows} />
           </div>
-        )}
+        </section>
       </div>
 
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
@@ -254,7 +349,7 @@ export function NotificationBlastForm() {
           <DialogHeader>
             <DialogTitle>{t('pages.notifications.send_button')}</DialogTitle>
             <DialogDescription>
-              {t('pages.notifications.confirm_send', { count: previewCount })}
+              {t('pages.notifications.confirm_send', { count: selectedCount })}
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end gap-2">

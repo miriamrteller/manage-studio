@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { notificationBlastSchema } from '@/features/notifications-admin/lib/notificationBlastSchema';
+import { notificationBlastPreviewSchema, notificationBlastSchema } from '@/features/notifications-admin/lib/notificationBlastSchema';
 
 describe('notificationBlastSchema', () => {
   const validBase = {
@@ -80,5 +80,46 @@ describe('notificationBlastSchema', () => {
       offeringId: '22222222-2222-2222-2222-222222222222',
     });
     expect(result.success).toBe(true);
+  });
+
+  it('requires accountId when scope is account', () => {
+    const result = notificationBlastSchema.safeParse({
+      ...validBase,
+      scope: 'account',
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues.some((issue) => issue.path.includes('accountId'))).toBe(true);
+    }
+  });
+
+  it('accepts account scope with accountId', () => {
+    const result = notificationBlastSchema.safeParse({
+      ...validBase,
+      scope: 'account',
+      accountId: '33333333-3333-3333-3333-333333333333',
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts optional recipientQuery on all scope', () => {
+    const result = notificationBlastSchema.safeParse({
+      ...validBase,
+      scope: 'all',
+      recipientQuery: 'smith@',
+    });
+    expect(result.success).toBe(true);
+  });
+});
+
+describe('notificationBlastPreviewSchema', () => {
+  it('accepts all scope without subject or body', () => {
+    const result = notificationBlastPreviewSchema.safeParse({ scope: 'all' });
+    expect(result.success).toBe(true);
+  });
+
+  it('requires categoryId when scope is level', () => {
+    const result = notificationBlastPreviewSchema.safeParse({ scope: 'level' });
+    expect(result.success).toBe(false);
   });
 });

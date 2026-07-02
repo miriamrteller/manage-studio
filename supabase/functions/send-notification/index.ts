@@ -26,9 +26,12 @@ interface NotificationPayload {
 interface AdminBlastPayload {
   mode: "admin_blast";
   tenantId: string;
-  scope: "all" | "level" | "class";
+  scope: "all" | "level" | "class" | "account";
   categoryId?: string;
   offeringId?: string;
+  accountId?: string;
+  recipientQuery?: string;
+  selectedPersonIds?: string[];
   subject: string;
   body: string;
 }
@@ -704,6 +707,12 @@ async function handleAdminAnnouncementBlast(
     return jsonResponse({ error: "offeringId required for class scope" }, 400);
   }
 
+  if (payload.scope === "account" && !payload.accountId) {
+    return jsonResponse({ error: "accountId required for account scope" }, 400);
+  }
+
+  const recipientQuery = payload.recipientQuery?.trim() ?? "";
+
   const { data: recipients, error: resolveError } = await service.rpc(
     "resolve_notification_blast_recipients",
     {
@@ -711,6 +720,8 @@ async function handleAdminAnnouncementBlast(
       p_scope: payload.scope,
       p_category_id: payload.scope === "level" ? payload.categoryId : null,
       p_offering_id: payload.scope === "class" ? payload.offeringId : null,
+      p_account_id: payload.scope === "account" ? payload.accountId : null,
+      p_recipient_query: recipientQuery || null,
     },
   );
 
@@ -718,7 +729,32 @@ async function handleAdminAnnouncementBlast(
     return jsonResponse({ error: resolveError.message }, 400);
   }
 
-  const rows = (recipients ?? []) as BlastRecipientRow[];
+  let rows = (recipients ?? []) as BlastRecipientRow[];
+
+  if (payload.selectedPersonIds !== undefined) {
+    if (!Array.isArray(payload.selectedPersonIds)) {
+      return jsonResponse({ error: "selectedPersonIds must be an array" }, 400);
+    }
+
+    const selectedSet = new Set(
+      payload.selectedPersonIds.filter(
+        (id): id is string => typeof id === "string" && id.length > 0,
+      ),
+    );
+
+    if (selectedSet.size === 0) {
+      return jsonResponse({ error: "No recipients selected" }, 400);
+    }
+
+    const resolvedIds = new Set(rows.map((row) => row.person_id));
+    for (const id of selectedSet) {
+      if (!resolvedIds.has(id)) {
+        return jsonResponse({ error: "Invalid recipient selection" }, 400);
+      }
+    }
+
+    rows = rows.filter((row) => selectedSet.has(row.person_id));
+  }
 
   if (rows.length > 500) {
     return jsonResponse({ error: "Too many recipients (max 500)" }, 400);

@@ -1,98 +1,184 @@
 # Teachers admin module (paste into new agent chat)
 
+**Status:** **Ready** for automated implementation (hardened 2026-07-01)
+
 ## Mission
 
-Add **`/admin/setup/teachers`** CRUD page for the `staff` table. Service layer exists (`TeacherService`, `useTeachers`); only admin UI, routing, nav, and schema alignment are missing.
+Add **`/admin/setup/teachers`** CRUD page for the `staff` table. Service layer exists (`TeacherService`, `useTeachers`); fix **schema drift**, add admin UI, routing, and nav. Class form **already** has `staff_id` dropdown — verify only.
 
 **Repo:** `manage-studio`  
-**SPEC:** Implicit in offerings (`staff_id` FK) and Phase 1F people/operations — no dedicated SPEC screen name  
-**Depends on:** `staff` table ✅ · `TeacherService` ✅ · `useTeachers` ✅  
-**Out of scope:** Teacher login role, payroll runs, linking `user_profile_id` to auth users (optional field in form)
+**SPEC:** Implicit in offerings (`staff_id` FK) and Phase 1C setup  
+**Branch:** branch from `main`  
+**Depends on:** `staff` table ✅ · RLS `admins manage staff` ✅ · `TeacherService` ✅ · `useTeachers` ✅ · `ClassForm` staff select ✅  
+**Out of scope:** Teacher login role, payroll runs, linking `user_profile_id` to auth users, AdminPanel setup card
 
 ---
 
-## Current state (verified 2026-06-25)
+## External dependencies
+
+| Service | Required? |
+| --- | --- |
+| Resend / Twilio / payments | **No** |
+| Migration | **No** (unless RLS gap found — none expected) |
+
+---
+
+## Current state (verified 2026-07-01)
 
 | Item | Status |
 | --- | --- |
-| `staff` table | ✅ `20260608000500_offerings.sql` |
-| `TeacherService` / `useTeachers` | ✅ CRUD via `TenantDB` |
-| `StaffSchema` | ⚠️ **Drift:** Zod uses `contract_type: employee \| contractor`; DB CHECK is `hourly \| salary \| freelance` |
-| Admin page | ❌ |
-| Nav / route | ❌ |
-| Offerings admin | Can assign `staff_id` only if staff rows exist — no UI to create them |
+| `staff` table | ✅ `hourly \| salary \| freelance`; `user_profile_id` nullable |
+| `TeacherService` / `useTeachers` | ✅ CRUD |
+| `StaffSchema` | ⚠️ **Drift:** `contract_type` `employee \| contractor`; `user_profile_id` required in Zod but nullable in DB |
+| `TeacherInputSchema` | ⚠️ Same enum drift |
+| Admin page / route / nav | ❌ |
+| `ClassForm.tsx` | ✅ `staff_id` select via `useTeachers` — **no change required** |
 
 ---
 
-## Locked semantics
+## Locked semantics (V1)
 
-| Field | V1 behavior |
+| Field | Behavior |
 | --- | --- |
 | `name` | Required |
-| `email`, `phone` | Optional |
-| `contract_type` | **Align to DB:** `hourly`, `salary`, `freelance` (fix shared schema) |
-| `hourly_rate_minor` | Optional; show when `contract_type = 'hourly'` |
-| `user_profile_id` | Hidden in V1 OR optional advanced UUID field — do not require login link |
-| Delete | Soft-block if offerings reference `staff_id` — show error from FK or pre-check count |
+| `email`, `phone` | Optional; empty string → `null` on save |
+| `contract_type` | **`hourly` \| `salary` \| `freelance`** (match DB); default **`hourly`** |
+| `hourly_rate_minor` | Optional integer; **show only when** `contract_type === 'hourly'` |
+| `user_profile_id` | **Hidden** in V1 — do not expose in form |
+| **Create** | Requires `name` + `contract_type` |
+| **Delete** | Block if any `offerings.staff_id = id`; show `delete_blocked_in_use` toast |
+| **List** | Paginated (50), client search on name/email OK |
+| **Auth** | `tenant_admin` (RLS + AdminRoute) |
 
 ---
 
 ## Hard rules
 
-1. **Fix `StaffSchema` first** in `packages/shared/src/schemas.ts` — match DB CHECK exactly.
-2. Update `TeacherInputSchema` in `service.ts` to same enum.
-3. Run `pnpm -C packages/shared build` before web changes.
-4. Follow **LevelsList** pattern for list + modal form (`apps/web/src/features/levels/components/LevelsList.tsx`).
-5. Route: `/admin/setup/teachers` under AdminRoute (setup section).
-6. **No migration** unless RLS gap found — verify policies on `staff` allow tenant_admin CRUD.
-7. **No git commit/push** unless user explicitly asks.
+1. **Fix `StaffSchema` + `TeacherInputSchema` first** — must parse real DB rows before UI work.
+2. Run `pnpm -C packages/shared build` before web changes.
+3. Mirror **`LevelsList` + `LevelForm`** patterns exactly (`apps/web/src/features/levels/components/`).
+4. Route: `/admin/setup/teachers` under `AdminRoute`, **setup** nav section, **after levels**.
+5. **Skip** AdminPanel card (Step 4) and **skip** ClassForm changes (already wired).
+6. **No git commit/push** unless user explicitly asks.
 
 ---
 
 ## Pre-flight (agent MUST read)
 
 1. `supabase/migrations/20260608000500_offerings.sql` — `staff` DDL + RLS
-2. `apps/web/src/features/teachers/service.ts`
-3. `apps/web/src/features/teachers/hooks/useTeachers.ts`
+2. `packages/shared/src/schemas.ts` — `StaffSchema`
+3. `apps/web/src/features/teachers/service.ts` + `hooks/useTeachers.ts`
 4. `apps/web/src/features/levels/components/LevelsList.tsx` + `LevelForm.tsx`
-5. `apps/web/src/components/Navigation/navigationConfig.ts`
-6. Grep offerings admin for `staff_id` assignment — ensure dropdown can consume `useTeachers`
+5. `apps/web/src/features/classes/components/ClassForm.tsx` — confirm `staff_id` select (read-only audit)
+6. `apps/web/src/router.tsx` + `navigationConfig.ts`
 
 ---
 
 ## Step 1 — Fix shared schema drift
 
-**File:** `packages/shared/src/schemas.ts`
+**Modify:** `packages/shared/src/schemas.ts`
 
 ```typescript
-contract_type: z.enum(['hourly', 'salary', 'freelance']).default('hourly'),
+export const StaffSchema = z.object({
+  id: UUIDSchema,
+  tenant_id: UUIDSchema,
+  user_profile_id: UUIDSchema.nullable().optional(),
+  name: z.string().min(1, 'Teacher name required'),
+  email: z.string().email().nullable().optional(),
+  phone: z.string().nullable().optional(),
+  contract_type: z.enum(['hourly', 'salary', 'freelance']).default('hourly'),
+  hourly_rate_minor: z.number().int().nonnegative().nullable().optional(),
+  created_at: TimestampSchema,
+  updated_at: TimestampSchema.optional(),
+});
 ```
 
-**File:** `apps/web/src/features/teachers/service.ts` — sync `TeacherInputSchema`
+**Modify:** `apps/web/src/features/teachers/service.ts`
 
-Add regression test in `apps/web/src/__tests__/staff-schema.test.ts` parsing sample DB row.
+```typescript
+const TeacherInputSchema = z.object({
+  name: z.string().min(1, 'Teacher name required'),
+  email: z.string().email().nullable().optional().or(z.literal('')),
+  phone: z.string().nullable().optional(),
+  contract_type: z.enum(['hourly', 'salary', 'freelance']).default('hourly'),
+  hourly_rate_minor: z.number().int().nonnegative().nullable().optional(),
+});
+```
+
+**Add `TeacherService.canDelete`:**
+
+```typescript
+static async canDelete(tenant: Tenant, id: string): Promise<boolean> {
+  const { count, error } = await TenantDB.selectFor('offerings', tenant, { count: 'exact', head: true })
+    .eq('staff_id', id);
+  if (error) throw error;
+  return (count ?? 0) === 0;
+}
+```
+
+**Update `delete`:** call `canDelete` first; if false throw `new Error('TEACHER_IN_USE')` (map to i18n in UI).
+
+**New test:** `apps/web/src/__tests__/staff-schema.test.ts`
+
+```typescript
+const dbRow = {
+  id: '11111111-1111-4111-8111-111111111111',
+  tenant_id: '22222222-2222-4222-8222-222222222222',
+  user_profile_id: null,
+  name: 'Maya Cohen',
+  email: 'maya@example.com',
+  phone: null,
+  contract_type: 'hourly',
+  hourly_rate_minor: 15000,
+  created_at: '2026-01-01T00:00:00Z',
+  updated_at: '2026-01-01T00:00:00Z',
+};
+expect(() => StaffSchema.parse(dbRow)).not.toThrow();
+```
+
+```bash
+pnpm -C packages/shared build
+pnpm -C apps/web test staff-schema.test.ts
+```
 
 ---
 
 ## Step 2 — Feature UI
 
-**New directory:** `apps/web/src/features/teachers/components/`
+**New:** `apps/web/src/features/teachers/components/TeacherForm.tsx`
 
-| File | Purpose |
+- Dialog/modal form (mirror `LevelForm` structure)
+- Fields: `name`, `email`, `phone`, `contract_type` (`<select>`), `hourly_rate_minor` (number input, visible when hourly)
+- `react-hook-form` + zod resolver from `TeacherInputSchema`
+- Normalize empty email to `null` on submit
+
+**New:** `apps/web/src/features/teachers/components/TeachersList.tsx`
+
+Copy structure from `LevelsList.tsx`:
+
+| LevelsList | TeachersList |
 | --- | --- |
-| `TeachersList.tsx` | Table, search, add/edit/delete (mirror LevelsList) |
-| `TeacherForm.tsx` | Dialog form: name, email, phone, contract_type, hourly_rate_minor |
+| `useLevels` | `useTeachers` |
+| `LevelForm` | `TeacherForm` |
+| `labels.category.*` | `pages.teachers.*` |
+| Sort by name (default) | Sort by `name` ascending (service already orders) |
 
-**Hooks:** reuse `useTeachers` — extend with search if needed (client filter OK for ≤50 rows).
+**Table columns:** Name, Email, Phone, Contract type (i18n label), Hourly rate (formatted money or `—`), Actions (Edit / Delete)
 
-**Delete guard:**
+**Delete flow:**
 
 ```typescript
-// Before delete: count offerings where staff_id = id
-// If > 0: toast error t('pages.teachers.delete_blocked_in_use')
+const inUse = !(await TeacherService.canDelete(tenant, id));
+if (inUse) {
+  toast.error(t('pages.teachers.delete_blocked_in_use'));
+  return;
+}
+// else confirm dialog → deleteTeacher
 ```
 
-Use `TenantDB.selectFor('offerings', tenant).eq('staff_id', id).limit(1)` in service method `TeacherService.canDelete`.
+Use existing toast pattern from project (or `alert-error` if no toast helper).
+
+**Export:** `apps/web/src/features/teachers/components/index.ts`
 
 ---
 
@@ -101,18 +187,20 @@ Use `TenantDB.selectFor('offerings', tenant).eq('staff_id', id).limit(1)` in ser
 **New:** `apps/web/src/pages/TeachersPage.tsx`
 
 ```tsx
+import { TeachersList } from '@/features/teachers/components/TeachersList';
+
 export default function TeachersPage() {
   return <TeachersList />;
 }
 ```
 
-**Modify:** `apps/web/src/router.tsx`
+**Modify:** `apps/web/src/router.tsx` (with other setup routes):
 
 ```tsx
 { path: 'admin/setup/teachers', element: <AdminRoute><TeachersPage /></AdminRoute> },
 ```
 
-**Modify:** `navigationConfig.ts` — setup section, after classes:
+**Modify:** `navigationConfig.ts` — insert **after** `/admin/setup/levels`:
 
 ```typescript
 {
@@ -126,58 +214,96 @@ export default function TeachersPage() {
 
 ---
 
-## Step 4 — Admin setup hub card (optional)
+## Step 4 — ClassForm audit (verify only)
 
-**Modify:** `AdminPanel.tsx` — add card linking to teachers (if not redundant with nav). Skip if nav-only is enough.
+**Read:** `apps/web/src/features/classes/components/ClassForm.tsx`
 
----
+Confirm `staff_id` `<select>` populated from `teachers` prop. **No code change** unless broken after schema fix. Document in PR notes: "ClassForm already supported staff assignment."
 
-## Step 5 — Offerings integration (small)
-
-**Audit:** class form component for teacher dropdown.
-
-If missing: add optional `staff_id` select populated from `useTeachers().teachers` in class create/edit form (`AdminClassesPage` feature). **Separate commit within same PR OK.**
+**Skip:** `AdminPanel.tsx` setup card — nav entry is sufficient.
 
 ---
 
-## Step 6 — i18n
+## Step 5 — i18n
 
-**Keys:** `pages.teachers.*`, `nav.teachers`, form labels, contract type labels:
+**Keys:** `nav.teachers`, `pages.teachers.*`
 
+```json
+"nav": { "teachers": "Teachers" },
+"pages": {
+  "teachers": {
+    "title": "Teachers",
+    "description": "Manage instructors assigned to classes.",
+    "empty_title": "No teachers yet",
+    "empty_message": "Add teachers to assign them when creating classes.",
+    "contract_hourly": "Hourly",
+    "contract_salary": "Salary",
+    "contract_freelance": "Freelance",
+    "hourly_rate": "Hourly rate",
+    "delete_blocked_in_use": "This teacher is assigned to one or more classes and cannot be deleted.",
+    "form_name": "Name",
+    "form_email": "Email",
+    "form_phone": "Phone",
+    "form_contract_type": "Contract type"
+  }
+}
 ```
-contract_hourly, contract_salary, contract_freelance
-delete_blocked_in_use, empty_title, description
-```
 
-EN + HE in `en.json` / `he.json`.
+Mirror in `he.json` (natural Hebrew).
+
+Reuse `common.add_entity`, `common.edit`, `common.delete`, `common.search` where LevelsList does.
 
 ---
 
-## Step 7 — Tests + manual smoke
+## Step 6 — Tests + manual smoke
 
-**Unit:** StaffSchema parse test with DB-shaped row
+**Unit:** `staff-schema.test.ts` (Step 1)
 
 **Manual:**
 
 1. Create teacher → appears in list
-2. Assign to offering in class admin → saves
-3. Delete teacher with offering → blocked with message
-4. Delete unused teacher → succeeds
+2. Edit contract type to salary → hourly rate field hidden
+3. Assign teacher on **Manage classes** → saves
+4. Delete teacher assigned to class → blocked message
+5. Delete unused teacher → succeeds
+6. Hebrew locale on teachers page
 
 ---
 
 ## Definition of done
 
-- [ ] Schema drift fixed; shared package rebuilt
+- [ ] `StaffSchema` parses DB-shaped rows; shared package rebuilt
 - [ ] `/admin/setup/teachers` CRUD works
-- [ ] Nav entry visible to tenant_admin
+- [ ] Nav entry visible to `tenant_admin`
+- [ ] Delete blocked when `offerings.staff_id` references teacher
 - [ ] i18n EN + HE
-- [ ] Update `docs/IMPLEMENTATION_STATUS.md`
+- [ ] `staff-schema.test.ts` green
+- [ ] Update `docs/IMPLEMENTATION_STATUS.md` — teachers admin → ✅
+
+---
+
+## File checklist
+
+| Action | Path |
+| --- | --- |
+| Edit | `packages/shared/src/schemas.ts` |
+| Edit | `features/teachers/service.ts` |
+| New | `features/teachers/components/TeacherForm.tsx` |
+| New | `features/teachers/components/TeachersList.tsx` |
+| New | `features/teachers/components/index.ts` |
+| New | `pages/TeachersPage.tsx` |
+| Edit | `router.tsx` |
+| Edit | `navigationConfig.ts` |
+| Edit | `i18n/en.json`, `he.json` |
+| New | `__tests__/staff-schema.test.ts` |
+| Edit | `docs/IMPLEMENTATION_STATUS.md` |
 
 ---
 
 ## Out of scope
 
-- `teacher` role portal / session
-- Payroll calculation using `hourly_rate_minor`
+- `teacher` role portal / login
+- Payroll using `hourly_rate_minor`
 - Invite-by-email to link `user_profile_id`
+- AdminPanel setup hub card
+- Changes to `ClassForm` (already has staff dropdown)
