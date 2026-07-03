@@ -31,6 +31,20 @@ describe('Phase 1D Schemas', () => {
       expect(() => NotificationLogSchema.parse(log)).not.toThrow();
     });
 
+    it('should accept a row with null sent_at and created_at set', () => {
+      const log = {
+        id: '550e8400-e29b-41d4-a716-446655440000',
+        tenant_id: '550e8400-e29b-41d4-a716-446655440001',
+        recipient_email: 'test@example.com',
+        channel: 'email' as const,
+        template_name: 'admin_announcement',
+        status: 'pending' as const,
+        created_at: new Date().toISOString(),
+        sent_at: null,
+      };
+      expect(() => NotificationLogSchema.parse(log)).not.toThrow();
+    });
+
     it('should reject invalid channel', () => {
       const log = {
         id: '550e8400-e29b-41d4-a716-446655440000',

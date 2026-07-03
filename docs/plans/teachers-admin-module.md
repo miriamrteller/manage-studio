@@ -1,6 +1,8 @@
-# Teachers admin module (paste into new agent chat)
+# Teachers admin module — V2.11 (paste into new agent chat when prioritized)
 
-**Status:** **Ready** for automated implementation (hardened 2026-07-01)
+**Status:** **Deferred to V2.11** — removed from V1 scope (2026-07-03). Agent plan ready; do **not** implement until V2.11 is explicitly prioritized.
+
+**SPEC:** [SPEC.md §8 V2.11](../../SPEC.md#v211--teachers-admin-module) · §6.x item 8 cross-ref
 
 ## Mission
 
@@ -8,7 +10,7 @@ Add **`/admin/setup/teachers`** CRUD page for the `staff` table. Service layer e
 
 **Repo:** `manage-studio`  
 **SPEC:** Implicit in offerings (`staff_id` FK) and Phase 1C setup  
-**Branch:** branch from `main`  
+**Branch:** branch from `main` when **V2.11** starts — not part of V1 close-out  
 **Depends on:** `staff` table ✅ · RLS `admins manage staff` ✅ · `TeacherService` ✅ · `useTeachers` ✅ · `ClassForm` staff select ✅  
 **Out of scope:** Teacher login role, payroll runs, linking `user_profile_id` to auth users, AdminPanel setup card
 
@@ -278,7 +280,7 @@ Reuse `common.add_entity`, `common.edit`, `common.delete`, `common.search` where
 - [ ] Delete blocked when `offerings.staff_id` references teacher
 - [ ] i18n EN + HE
 - [ ] `staff-schema.test.ts` green
-- [ ] Update `docs/IMPLEMENTATION_STATUS.md` — teachers admin → ✅
+- [ ] Update `docs/IMPLEMENTATION_STATUS.md` — teachers admin V2.11 → ✅
 
 ---
 

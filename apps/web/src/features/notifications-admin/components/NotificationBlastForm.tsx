@@ -27,7 +27,11 @@ import { AccountBlastPicker, formatAccountLabel } from './AccountBlastPicker';
 import type { BlastAccountSearchResult } from '../lib/notificationBlastSchema';
 import { normalizeRecipientEmail } from '../lib/recipientHumanSearch';
 
-export function NotificationBlastForm() {
+interface NotificationBlastFormProps {
+  onSentSuccess?: () => void;
+}
+
+export function NotificationBlastForm({ onSentSuccess }: NotificationBlastFormProps = {}) {
   const { t } = useTranslation();
   const { previewRecipients, isPreviewing, sendBlast, isSending } = useNotificationBlast();
   const { levels, isLoading: levelsLoading } = useLevels({ page: 1 });
@@ -139,6 +143,7 @@ export function NotificationBlastForm() {
           : t('pages.notifications.send_success', { sent: result.sent, total: result.total });
 
       setSendSuccess(successMessage);
+      onSentSuccess?.();
     } catch (error) {
       setActionError(error instanceof Error ? error.message : t('pages.notifications.error_generic'));
       setConfirmOpen(false);
@@ -154,12 +159,7 @@ export function NotificationBlastForm() {
   };
 
   return (
-    <div className="space-y-4 p-4">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold">{t('pages.notifications.title')}</h1>
-        <p className="text-gray-600">{t('pages.notifications.description')}</p>
-      </div>
-
+    <div className="space-y-4">
       <div className="card p-4 space-y-6 max-w-2xl">
         {actionError && (
           <div className="alert-error" role="alert">
