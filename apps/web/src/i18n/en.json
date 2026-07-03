@@ -394,6 +394,7 @@
       "send_disabled_no_preview": "Load the list above to see who will receive this email before sending.",
       "send_disabled_no_recipients": "No one matches your current filters. Try adjusting recipients or filters, then refresh the list.",
       "send_disabled_none_selected": "Select at least one person to send to.",
+      "send_disabled_compose_incomplete": "Add a subject and message before sending.",
       "send_disabled_over_limit": "Too many recipients (max {{max}}). Narrow your selection and refresh the list.",
       "confirm_send": "Send to {{count}} recipients?",
       "confirm_cancel": "Cancel",

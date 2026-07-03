@@ -52,7 +52,9 @@ export function NotificationBlastForm() {
     mode: 'onBlur',
   });
 
+  form.watch(['subject', 'body', 'scope', 'categoryId', 'offeringId', 'accountId']);
   const scope = form.watch('scope');
+  const composeValid = notificationBlastSchema.safeParse(form.getValues()).success;
   const previewCount = previewRows?.length ?? 0;
   const selectedCount = previewRows
     ? previewRows.filter((row) =>
@@ -61,7 +63,11 @@ export function NotificationBlastForm() {
     : 0;
   const overLimit = previewCount > BLAST_MAX_RECIPIENTS;
   const canSend =
-    previewValidated && previewRows !== null && selectedCount > 0 && !overLimit;
+    composeValid &&
+    previewValidated &&
+    previewRows !== null &&
+    selectedCount > 0 &&
+    !overLimit;
 
   const resetPreview = () => {
     setPreviewRows(null);
@@ -112,6 +118,12 @@ export function NotificationBlastForm() {
     setActionError(null);
     setSendSuccess(null);
 
+    const valid = await form.trigger();
+    if (!valid) {
+      setConfirmOpen(false);
+      return;
+    }
+
     try {
       const values = form.getValues();
       const result = await sendBlast({
@@ -131,6 +143,14 @@ export function NotificationBlastForm() {
       setActionError(error instanceof Error ? error.message : t('pages.notifications.error_generic'));
       setConfirmOpen(false);
     }
+  };
+
+  const handleOpenConfirm = async () => {
+    const valid = await form.trigger();
+    if (!valid) {
+      return;
+    }
+    setConfirmOpen(true);
   };
 
   return (
@@ -323,7 +343,7 @@ export function NotificationBlastForm() {
               type="button"
               variant="primary"
               disabled={!canSend || isSending || isPreviewing}
-              onClick={() => setConfirmOpen(true)}
+              onClick={handleOpenConfirm}
             >
               {t('pages.notifications.send_button')}
             </Button>
@@ -331,7 +351,9 @@ export function NotificationBlastForm() {
               <p className="text-sm text-muted-foreground" role="status">
                 {previewRows === null
                   ? t('pages.notifications.send_disabled_no_preview')
-                  : previewCount === 0
+                  : !composeValid
+                    ? t('pages.notifications.send_disabled_compose_incomplete')
+                    : previewCount === 0
                     ? t('pages.notifications.send_disabled_no_recipients')
                     : selectedCount === 0
                       ? t('pages.notifications.send_disabled_none_selected')

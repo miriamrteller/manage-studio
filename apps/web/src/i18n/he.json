@@ -394,6 +394,7 @@
       "send_disabled_no_preview": "טען את הרשימה למעלה כדי לראות למי נשלח האימייל לפני השליחה.",
       "send_disabled_no_recipients": "אף אחד לא תואם את המסננים הנוכחיים. נסה לעדכן את הנמענים או המסננים, ואז רענן את הרשימה.",
       "send_disabled_none_selected": "יש לבחור לפחות אדם אחד לשליחה.",
+      "send_disabled_compose_incomplete": "יש להוסיף נושא והודעה לפני השליחה.",
       "send_disabled_over_limit": "יותר מדי נמענים (מקסימום {{max}}). צמצם את הבחירה ורענן את הרשימה.",
       "confirm_send": "לשלוח ל-{{count}} נמענים?",
       "confirm_cancel": "ביטול",

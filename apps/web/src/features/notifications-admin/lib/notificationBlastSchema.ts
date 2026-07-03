@@ -58,7 +58,7 @@ export const notificationBlastSchema = z
   .object({
     ...blastScopeFields,
     subject: z.string().trim().min(1, 'Subject is required').max(200),
-    body: z.string().trim().min(10, 'Body must be at least 10 characters').max(5000),
+    body: z.string().trim().min(1, 'Message is required').max(5000),
   })
   .superRefine(refineBlastScope);
 

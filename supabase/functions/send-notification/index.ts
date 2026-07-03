@@ -695,8 +695,8 @@ async function handleAdminAnnouncementBlast(
     return jsonResponse({ error: "Subject must be 1–200 characters" }, 400);
   }
 
-  if (body.length < 10 || body.length > 5000) {
-    return jsonResponse({ error: "Body must be 10–5000 characters" }, 400);
+  if (body.length < 1 || body.length > 5000) {
+    return jsonResponse({ error: "Body must be 1–5000 characters" }, 400);
   }
 
   if (payload.scope === "level" && !payload.categoryId) {

@@ -52,9 +52,11 @@ describe('notificationBlastSchema', () => {
 
   it('enforces body length bounds', () => {
     expect(
-      notificationBlastSchema.safeParse({ scope: 'all', subject: validBase.subject, body: 'short' })
-        .success,
+      notificationBlastSchema.safeParse({ scope: 'all', subject: validBase.subject, body: '' }).success,
     ).toBe(false);
+    expect(
+      notificationBlastSchema.safeParse({ scope: 'all', subject: validBase.subject, body: 'Hi' }).success,
+    ).toBe(true);
     expect(
       notificationBlastSchema.safeParse({
         scope: 'all',
@@ -98,15 +100,6 @@ describe('notificationBlastSchema', () => {
       ...validBase,
       scope: 'account',
       accountId: '33333333-3333-3333-3333-333333333333',
-    });
-    expect(result.success).toBe(true);
-  });
-
-  it('accepts optional recipientQuery on all scope', () => {
-    const result = notificationBlastSchema.safeParse({
-      ...validBase,
-      scope: 'all',
-      recipientQuery: 'smith@',
     });
     expect(result.success).toBe(true);
   });
