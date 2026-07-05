@@ -125,6 +125,20 @@ Unit tests run without Resend (mock `sendRenderedEmail`).
 
 ---
 
+## Quality bar (industry · TDD · ops)
+
+| Pillar | Requirement |
+| --- | --- |
+| **Industry** | Transactional payment emails; honour `email_opted_in`; separate from marketing (`notify_announcements` not checked). Renewal = charge retry + notify; enrolment = notify + pay link + terminal cancel (SPEC Day 3/7/14). |
+| **TDD** | **Write tests before implementation** for pure functions: `buildDunningKey`, `hasDunningNotificationBeenSent` (mock Supabase), `buildRenewalDunningEmailCopy`, then obligation helper with mocked send. |
+| **Reliability** | Optimistic concurrency; partial unique index; `23505` handling; obligation before email; email failure never rolls back obligation; missing-token path advances ladder (today only logs `last_error`). |
+| **Scalability** | Cron batch limits (renewal 50 existing; enrolment 100); log WARNING when `BATCH_LIMIT` reached (mirror `send-waiver-reminder`). |
+| **Maintainability** | Single mutator per track; shared collections; extend `resolveEnrolmentNotificationRecipient` → `{ email, name, personId }`. |
+| **Robustness** | Missing recipient / opt-out / sender: skip send, obligation stands (renewal + enrolment). |
+| **Security** | Cron: `CRON_SECRET` **required in prod** (`401` if set and header wrong; dev may omit). Service-role only in edge fns. Pay links: signed `WaiverToken` bound to recipient email. Do not log full provider error payloads in `audit_log` — truncate `failureMessage` to 500 chars. No card/PII in `notification_log.variables` beyond recipient email. Extend `resolveEnrolmentNotificationRecipient` → `{ email, name, personId }` for opt-out lookup (student vs account_holder person id). |
+
+---
+
 ## Pre-flight (agent MUST read)
 
 1. `supabase/migrations/20260608001600_finance.sql` — `billing_schedules`
@@ -200,10 +214,11 @@ export async function hasDunningNotificationBeenSent(
   service: SupabaseClient,
   tenantId: string,
   dunningKey: string,
+  templateName = 'payment_reminder',
 ): Promise<boolean>;
 ```
 
-Query `notification_log` where `tenant_id`, `template_name = 'payment_reminder'`, `variables->>dunning_key = dunningKey`, `status IN ('sent','delivered','read','pending')`.
+Query `notification_log` where `tenant_id`, `template_name = templateName`, `variables->>dunning_key = dunningKey`, `status IN ('sent','delivered','read','pending')`.
 
 **Failed sends:** rows with `status = 'failed'` may include the same `dunning_key`; they do **not** count as sent (allows Resend retry). Only one **`sent`** row per key — enforced by partial unique index + pre-check.
 
@@ -393,7 +408,7 @@ if (!updated) {
 
 8. If suspending: `engagements.update({ billing_status: 'suspended' }).eq('id', engagement_id)`.
 9. `appBase = (Deno.env.get('APP_URL') ?? '').replace(/\/$/, '')`.
-10. Call `sendPaymentDunningReminder` with `attemptCount: nextAttempt`, `nextActionAt: updated.next_attempt_at`, `paymentUrl: appBase ? `${appBase}/dashboard/portal` : '#''`.
+10. Call `sendPaymentDunningReminder` with `attemptCount: nextAttempt`, `nextActionAt: updated.next_attempt_at`, `paymentUrl: appBase ? `${appBase}/dashboard/portal` : '#'` (skip send if no `APP_URL` — obligation still advances).
 11. Return `{ attemptCount: nextAttempt, nextAttemptAt: updated.next_attempt_at, suspended: nextAttempt >= 3 }`.
 
 Move **all** inline schedule failure logic from `handle-payment-event.ts` and `renewal-billing.ts` here.
@@ -432,7 +447,13 @@ Remove inline `billing_schedules` update block.
 
 ---
 
-## Step 5 — Tests
+## Step 5 — Tests (TDD order)
+
+**Write in this order:**
+
+1. `payment-dunning-collections.test.ts` — `buildDunningKey`, `hasDunningNotificationBeenSent` (pure / mocked DB)
+2. Renewal copy helpers (if extracted) — EN/HE attempt 1–3 strings
+3. `applyBillingScheduleDunningFailure` integration tests (mock Supabase + mock `sendPaymentDunningReminder`)
 
 **File:** `apps/web/src/__tests__/payment-dunning-collections.test.ts`
 
@@ -445,7 +466,8 @@ Remove inline `billing_schedules` update block.
 | Double webhook + catch | schedule not double-incremented; one notification_log row |
 | Missing recipient | no throw; notification_log failed or skip |
 | `email_opted_in=false` | skip send; schedule still incremented; no `sent` notification_log row |
-| Missing token path | attempt 1 + notify |
+| Unique violation `23505` on insert | treated as `already_sent` |
+| `failureMessage` truncation in audit | max 500 chars if optional audit added |
 
 Mock `sendRenderedEmail` and Supabase client per `provider-isolation-renewal-refund.test.ts`.
 
@@ -505,6 +527,7 @@ pnpm -C apps/web test payment-dunning-collections.test.ts billing-time.test.ts p
 | Add | `supabase/functions/_shared/collections/build-dunning-email-context.ts` |
 | Add | `supabase/functions/_shared/collections/send-payment-dunning-reminder.ts` |
 | Add | `supabase/functions/_shared/payments/apply-billing-schedule-dunning-failure.ts` |
+| Edit | `supabase/functions/_shared/enrolment-recipient.ts` — add `personId` to return type |
 | Edit | `supabase/functions/_shared/payments/handle-payment-event.ts` |
 | Edit | `supabase/functions/_shared/payments/renewal-billing.ts` |
 | Edit | `packages/shared/src/schemas.ts` |
@@ -536,3 +559,4 @@ pnpm -C apps/web test payment-dunning-collections.test.ts billing-time.test.ts p
 | **Low** | Opt-out semantics undocumented for renewal | Locked: obligation advances, email skipped |
 | **Low** | Catch + webhook double-advance | Documented V1 accept |
 | **Out of scope** | Portal CTA requires login (renewals only) | OK — payers already enrolled |
+| **Low** | `hasDunningNotificationBeenSent` must accept `templateName` param | Fixed — for cancellation reuse in enrolment plan |
