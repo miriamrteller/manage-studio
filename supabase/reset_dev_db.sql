@@ -89,6 +89,8 @@ DROP TABLE IF EXISTS public.people                        CASCADE;
 DROP TABLE IF EXISTS public.families                      CASCADE;
 DROP TABLE IF EXISTS public.accounts                      CASCADE;
 
+DROP INDEX IF EXISTS public.idx_notification_log_dunning_key;
+DROP INDEX IF EXISTS public.idx_offerings_season_dow_status;
 DROP TABLE IF EXISTS public.notification_log              CASCADE;
 DROP TABLE IF EXISTS public.tenant_notification_templates CASCADE;
 DROP TABLE IF EXISTS public.tenant_email_customizations   CASCADE;
@@ -175,8 +177,29 @@ BEGIN
         'request_age_review_engagement',
         'guest_enrolment_request_age_review',
         'approve_age_review_engagement',
-        'decline_age_review_engagement'
+        'decline_age_review_engagement',
+        'save_icount_webhook_secret',
+        'save_tenant_icount_credentials',
+        'get_tenant_today',
+        'get_admin_dashboard_overview'
       )
+  LOOP
+    EXECUTE 'DROP FUNCTION IF EXISTS ' || r.sig || ' CASCADE';
+  END LOOP;
+END $$;
+
+
+
+DO $$
+DECLARE
+  r RECORD;
+BEGIN
+  FOR r IN
+    SELECT p.oid::regprocedure AS sig
+    FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public'
+      AND p.proname IN ('resolve_notification_blast_recipients', 'preview_notification_blast_recipients')
   LOOP
     EXECUTE 'DROP FUNCTION IF EXISTS ' || r.sig || ' CASCADE';
   END LOOP;
@@ -231,6 +254,6 @@ BEGIN
     RAISE NOTICE 'Dev DB reset complete. No public app tables remain.';
   END IF;
 
-  RAISE NOTICE 'Next: pnpm db:sync — then pnpm seed:dev — then pnpm seed:dev -- --finance';
+  RAISE NOTICE 'Next: third squash reset complete. Run pnpm db:push, then seed.sql, then seed-finance.sql.';
 END;
 $$;

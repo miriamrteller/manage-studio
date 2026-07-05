@@ -31,6 +31,8 @@ CREATE TABLE engagements (
   waiver_deadline        TIMESTAMPTZ,
   waiver_48h_reminded_at TIMESTAMPTZ,
   waiver_5d_reminded_at  TIMESTAMPTZ,
+  payment_dunning_attempt_count INT NOT NULL DEFAULT 0,
+  payment_dunning_next_at       TIMESTAMPTZ,
   created_at             TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at             TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -43,6 +45,10 @@ COMMENT ON COLUMN engagements.age_at_season_start IS 'Snapshot age in whole year
 COMMENT ON COLUMN engagements.waiver_evidence_id  IS 'The exact signed waiver record that covers this enrolment; set at checkout.';
 COMMENT ON COLUMN engagements.billing_status IS
   'Managed exclusively by the billing engine (Stage 6). Source of truth for financial standing is payments + billing_schedules; this is a denormalised convenience flag.';
+COMMENT ON COLUMN engagements.payment_dunning_attempt_count IS
+  'Unpaid enrolment dunning ladder (§6.x #8). Zero until pending_payment cron runs. Not used for renewals.';
+COMMENT ON COLUMN engagements.payment_dunning_next_at IS
+  'Next enrolment payment reminder action time (Jerusalem policy). NULL when inactive.';
 
 CREATE UNIQUE INDEX idx_engagements_active_with_season ON engagements(person_id, offering_id, season_id)
   WHERE status NOT IN ('cancelled', 'withdrawn') AND season_id IS NOT NULL;

@@ -189,6 +189,14 @@ BEGIN
   END IF;
   enc_key := get_app_encryption_key();
 
+  UPDATE payment_method_tokens SET
+    revoked_at = now(),
+    is_default = false,
+    updated_at = now()
+  WHERE tenant_id = v_tenant_id
+    AND provider <> 'grow'
+    AND revoked_at IS NULL;
+
   UPDATE tenants SET
     payment_provider             = 'grow',
     invoicing_provider           = 'grow',
@@ -197,6 +205,50 @@ BEGIN
     payment_provider_secret_enc  = CASE
       WHEN p_api_key IS NOT NULL AND trim(p_api_key) <> ''
       THEN pgp_sym_encrypt(trim(p_api_key), enc_key)
+      ELSE payment_provider_secret_enc
+    END,
+    payment_provider_updated_at  = now(),
+    updated_at = now()
+  WHERE id = v_tenant_id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION save_tenant_icount_credentials(
+  p_company_id TEXT,
+  p_page_id    TEXT,
+  p_api_token  TEXT
+)
+RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions AS $$
+DECLARE
+  enc_key     TEXT;
+  v_tenant_id UUID;
+BEGIN
+  v_tenant_id := get_my_tenant_id();
+  IF v_tenant_id IS NULL THEN RAISE EXCEPTION 'Not authenticated'; END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM user_profiles
+    WHERE id = auth.uid() AND tenant_id = v_tenant_id AND 'tenant_admin' = ANY(role)
+  ) THEN
+    RAISE EXCEPTION 'tenant_admin role required';
+  END IF;
+  enc_key := get_app_encryption_key();
+
+  UPDATE payment_method_tokens SET
+    revoked_at = now(),
+    is_default = false,
+    updated_at = now()
+  WHERE tenant_id = v_tenant_id
+    AND provider <> 'icount'
+    AND revoked_at IS NULL;
+
+  UPDATE tenants SET
+    payment_provider             = 'icount',
+    invoicing_provider           = 'icount',
+    payment_provider_account_id  = NULLIF(trim(p_company_id), ''),
+    payment_provider_public_key  = NULLIF(trim(p_page_id), ''),
+    payment_provider_secret_enc  = CASE
+      WHEN p_api_token IS NOT NULL AND trim(p_api_token) <> ''
+      THEN pgp_sym_encrypt(trim(p_api_token), enc_key)
       ELSE payment_provider_secret_enc
     END,
     payment_provider_updated_at  = now(),
@@ -322,6 +374,7 @@ GRANT EXECUTE ON FUNCTION save_tenant_payment_credentials(TEXT, TEXT, TEXT) TO a
 GRANT EXECUTE ON FUNCTION get_tenant_invoicing_credentials(UUID)            TO service_role;
 GRANT EXECUTE ON FUNCTION save_tenant_invoicing_credentials(TEXT, TEXT, TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION save_tenant_grow_credentials(TEXT, TEXT, TEXT)   TO authenticated;
+GRANT EXECUTE ON FUNCTION save_tenant_icount_credentials(TEXT, TEXT, TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION get_billing_account_payment_method(UUID)          TO authenticated;
 
 ALTER TABLE payments               ENABLE ROW LEVEL SECURITY;
@@ -447,3 +500,625 @@ CREATE POLICY "legal_documents_admin_select"
         AND 'tenant_admin' = ANY(role)
     )
   );
+
+
+CREATE OR REPLACE FUNCTION save_icount_webhook_secret(p_secret TEXT)
+RETURNS VOID
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions
+AS $$
+DECLARE
+  enc_key     TEXT;
+  v_tenant_id UUID;
+BEGIN
+  v_tenant_id := get_my_tenant_id();
+  IF v_tenant_id IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM user_profiles
+    WHERE id = auth.uid()
+      AND tenant_id = v_tenant_id
+      AND 'tenant_admin' = ANY(role)
+  ) THEN
+    RAISE EXCEPTION 'tenant_admin role required';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM tenants
+    WHERE id = v_tenant_id
+      AND payment_provider = 'icount'
+      AND invoicing_provider = 'icount'
+  ) THEN
+    RAISE EXCEPTION 'Tenant must use icount/icount bundled providers';
+  END IF;
+
+  enc_key := get_app_encryption_key();
+
+  UPDATE tenants SET
+    payment_provider_webhook_enc = CASE
+      WHEN p_secret IS NOT NULL AND trim(p_secret) <> ''
+      THEN pgp_sym_encrypt(trim(p_secret), enc_key)
+      ELSE payment_provider_webhook_enc
+    END,
+    payment_provider_updated_at = now(),
+    updated_at = now()
+  WHERE id = v_tenant_id;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION save_icount_webhook_secret(TEXT) TO authenticated;
+
+
+-- =============================================================================
+-- Finance admin: aggregated summary RPC (revenue, expenses, outstanding)
+-- DEPENDENCIES: 000200, 000500, 001300, 001600, 20260625000100 (expenses)
+-- =============================================================================
+
+CREATE OR REPLACE FUNCTION public.get_finance_summary(
+  p_start_date DATE,
+  p_end_date   DATE
+)
+RETURNS TABLE (
+  net_revenue_minor        BIGINT,
+  payment_count            BIGINT,
+  outstanding_engagements  BIGINT,
+  failed_payments_7d       BIGINT,
+  net_expenses_minor       BIGINT
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_tenant_id UUID;
+  v_season_id UUID;
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Authentication required';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM user_profiles
+    WHERE id = auth.uid()
+      AND ('tenant_admin' = ANY(role) OR 'super_admin' = ANY(role))
+  ) THEN
+    RAISE EXCEPTION 'Forbidden';
+  END IF;
+
+  v_tenant_id := get_my_tenant_id();
+  IF v_tenant_id IS NULL THEN
+    RAISE EXCEPTION 'Tenant not found';
+  END IF;
+
+  IF p_end_date < p_start_date THEN
+    RAISE EXCEPTION 'Invalid date range';
+  END IF;
+
+  SELECT id INTO v_season_id
+  FROM seasons
+  WHERE tenant_id = v_tenant_id AND status = 'active'
+  LIMIT 1;
+
+  RETURN QUERY
+  SELECT
+    COALESCE((
+      SELECT SUM(total_amount_minor)
+      FROM payments
+      WHERE tenant_id = v_tenant_id
+        AND status IN ('succeeded', 'partially_refunded')
+        AND paid_at IS NOT NULL
+        AND paid_at::date BETWEEN p_start_date AND p_end_date
+    ), 0)::bigint,
+    COALESCE((
+      SELECT COUNT(*)::bigint
+      FROM payments
+      WHERE tenant_id = v_tenant_id
+        AND status = 'succeeded'
+        AND charge_type IN ('initial', 'renewal')
+        AND paid_at IS NOT NULL
+        AND paid_at::date BETWEEN p_start_date AND p_end_date
+    ), 0)::bigint,
+    COALESCE((
+      SELECT COUNT(*)::bigint
+      FROM engagements
+      WHERE tenant_id = v_tenant_id
+        AND status = 'pending_payment'
+        AND season_id IS NOT DISTINCT FROM v_season_id
+    ), 0)::bigint,
+    COALESCE((
+      SELECT COUNT(*)::bigint
+      FROM payments
+      WHERE tenant_id = v_tenant_id
+        AND status = 'failed'
+        AND created_at >= (now() - interval '7 days')
+    ), 0)::bigint,
+    COALESCE((
+      SELECT SUM(total_amount_minor)
+      FROM expenses
+      WHERE tenant_id = v_tenant_id
+        AND expense_date BETWEEN p_start_date AND p_end_date
+    ), 0)::bigint;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.get_finance_summary(DATE, DATE) TO authenticated;
+
+
+-- =============================================================================
+-- 000300: Grow webhook secrets — per-tenant, encrypted, rotatable
+-- GAP 4: Authenticates inbound Grow webhooks by comparing a pre-shared key
+--        stored here against the webhookKey field Grow sends in every callback.
+-- DEPENDENCIES: 000200 (get_app_encryption_key), 001600 (tenants)
+-- =============================================================================
+
+CREATE TABLE IF NOT EXISTS grow_webhook_secrets (
+  id           uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id    uuid        NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  secret_enc   text        NOT NULL,    -- pgp_sym_encrypt'd with app encryption key
+  key_version  integer     NOT NULL DEFAULT 1,
+  created_at   timestamptz NOT NULL DEFAULT now(),
+  rotated_at   timestamptz,
+  expires_at   timestamptz,             -- populated on rotation to allow 24-hr overlap
+  UNIQUE (tenant_id, key_version)
+);
+
+COMMENT ON TABLE  grow_webhook_secrets                IS 'Per-tenant Grow webhook pre-shared keys. Encrypted at rest. Rotate every 90 days.';
+COMMENT ON COLUMN grow_webhook_secrets.secret_enc     IS 'AES-256 / pgp_sym_encrypt; decrypted only by get_grow_webhook_secret() SECURITY DEFINER.';
+COMMENT ON COLUMN grow_webhook_secrets.key_version    IS 'Monotonically increasing; latest version is active unless expires_at has passed.';
+COMMENT ON COLUMN grow_webhook_secrets.expires_at     IS 'During rotation, old key expires 24 h after new key is inserted. Both accepted until then.';
+
+CREATE INDEX IF NOT EXISTS idx_grow_webhook_secrets_tenant
+  ON grow_webhook_secrets (tenant_id);
+
+-- ---------------------------------------------------------------------------
+-- RPC: get_grow_webhook_secret — service_role only; decrypts and returns the
+-- current active secret for a tenant. Called by GrowPaymentProvider.constructEvent.
+-- ---------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION get_grow_webhook_secret(p_tenant_id UUID)
+RETURNS TABLE (webhook_secret TEXT)
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions
+AS $$
+DECLARE
+  enc_key TEXT;
+BEGIN
+  IF NOT is_service_role() THEN
+    RAISE EXCEPTION 'get_grow_webhook_secret: service_role only';
+  END IF;
+  enc_key := get_app_encryption_key();
+  RETURN QUERY
+  SELECT pgp_sym_decrypt(s.secret_enc, enc_key)
+  FROM grow_webhook_secrets s
+  WHERE s.tenant_id = p_tenant_id
+    AND (s.expires_at IS NULL OR s.expires_at > now())
+  ORDER BY s.key_version DESC
+  LIMIT 1;
+END;
+$$;
+
+-- ---------------------------------------------------------------------------
+-- RPC: save_grow_webhook_secret — tenant_admin only; inserts a new version
+-- and sets expires_at on the previous version to now() + 24 hours (overlap window).
+-- ---------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION save_grow_webhook_secret(p_secret TEXT)
+RETURNS VOID
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions
+AS $$
+DECLARE
+  enc_key     TEXT;
+  v_tenant_id UUID;
+  v_version   INT;
+BEGIN
+  v_tenant_id := get_my_tenant_id();
+  IF v_tenant_id IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM user_profiles
+    WHERE id = auth.uid()
+      AND tenant_id = v_tenant_id
+      AND 'tenant_admin' = ANY(role)
+  ) THEN
+    RAISE EXCEPTION 'tenant_admin role required';
+  END IF;
+
+  enc_key := get_app_encryption_key();
+
+  -- Compute next version number
+  SELECT COALESCE(MAX(key_version), 0) + 1
+    INTO v_version
+  FROM grow_webhook_secrets
+  WHERE tenant_id = v_tenant_id;
+
+  -- Set 24-hour expiry on the currently active key (rotation overlap window)
+  UPDATE grow_webhook_secrets
+  SET expires_at = now() + interval '24 hours',
+      rotated_at = now()
+  WHERE tenant_id = v_tenant_id
+    AND (expires_at IS NULL OR expires_at > now())
+    AND key_version = v_version - 1;
+
+  -- Insert the new key version
+  INSERT INTO grow_webhook_secrets (tenant_id, secret_enc, key_version)
+  VALUES (v_tenant_id, pgp_sym_encrypt(p_secret, enc_key), v_version);
+END;
+$$;
+
+-- ---------------------------------------------------------------------------
+-- RLS
+-- ---------------------------------------------------------------------------
+ALTER TABLE grow_webhook_secrets ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY gws_super_admin ON grow_webhook_secrets
+  FOR ALL USING (is_super_admin());
+
+-- Admins can see their own tenant's rows (but secret_enc is encrypted — no plaintext exposed)
+CREATE POLICY gws_tenant_admin_select ON grow_webhook_secrets
+  FOR SELECT
+  USING (
+    tenant_id = get_my_tenant_id()
+    AND EXISTS (
+      SELECT 1 FROM user_profiles
+      WHERE id = auth.uid()
+        AND tenant_id = get_my_tenant_id()
+        AND 'tenant_admin' = ANY(role)
+    )
+  );
+
+-- ---------------------------------------------------------------------------
+-- Grants
+-- ---------------------------------------------------------------------------
+GRANT EXECUTE ON FUNCTION get_grow_webhook_secret(UUID) TO service_role;
+GRANT EXECUTE ON FUNCTION save_grow_webhook_secret(TEXT) TO authenticated;
+
+
+-- =============================================================================
+-- 000500: Admin document RPCs — retrieve stored document fields + signed URL path
+-- GAP 5: Admin-only access to Grow invoice documents with full audit logging.
+-- DEPENDENCIES: 20260608001600_finance.sql (payment_document_access_log, payments.document_*)
+-- =============================================================================
+
+-- ---------------------------------------------------------------------------
+-- RPC: admin_get_payment_document
+-- Returns all document fields for a payment. Logs every call to audit table.
+-- Caller must be tenant_admin for the tenant that owns the payment.
+-- ---------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION admin_get_payment_document(p_payment_id uuid)
+RETURNS TABLE (
+  payment_id               uuid,
+  external_document_id     text,
+  external_document_number text,
+  invoice_url              text,
+  document_pdf_path        text,
+  document_stored_at       timestamptz,
+  document_type            text,
+  retention_expires_at     timestamptz,
+  legal_hold               boolean,
+  tenant_id                uuid
+)
+SECURITY DEFINER
+SET search_path = public
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  v_tenant_id uuid;
+BEGIN
+  -- Verify caller is a tenant_admin
+  IF NOT EXISTS (
+    SELECT 1 FROM user_profiles
+    WHERE id = auth.uid()
+      AND 'tenant_admin' = ANY(role)
+  ) THEN
+    RAISE EXCEPTION 'admin_get_payment_document: tenant_admin role required';
+  END IF;
+
+  -- Verify payment belongs to caller's tenant
+  SELECT p.tenant_id INTO v_tenant_id
+  FROM payments p
+  WHERE p.id = p_payment_id;
+
+  IF v_tenant_id IS NULL THEN
+    RAISE EXCEPTION 'admin_get_payment_document: payment not found';
+  END IF;
+
+  IF v_tenant_id <> get_my_tenant_id() THEN
+    RAISE EXCEPTION 'admin_get_payment_document: cross-tenant access denied';
+  END IF;
+
+  -- Audit log
+  INSERT INTO payment_document_access_log (payment_id, accessed_by, action)
+  VALUES (p_payment_id, auth.uid(), 'view');
+
+  RETURN QUERY
+  SELECT
+    p.id,
+    p.external_document_id,
+    p.external_document_number,
+    p.invoice_url,
+    p.document_pdf_path,
+    p.document_stored_at,
+    p.document_type,
+    p.retention_expires_at,
+    p.legal_hold,
+    p.tenant_id
+  FROM payments p
+  WHERE p.id = p_payment_id;
+END;
+$$;
+
+-- ---------------------------------------------------------------------------
+-- RPC: admin_get_document_signed_url_path
+-- Returns the storage path for the stored PDF so the client can generate a
+-- short-lived signed URL via supabase.storage.from('legal-documents').createSignedUrl(path, 300).
+-- (Supabase does not support Storage signed-URL generation inside PL/pgSQL.)
+-- Logs a 'download' event to the audit table.
+-- ---------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION admin_get_document_signed_url_path(p_payment_id uuid)
+RETURNS text
+SECURITY DEFINER
+SET search_path = public
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  v_pdf_path  text;
+  v_tenant_id uuid;
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM user_profiles
+    WHERE id = auth.uid()
+      AND 'tenant_admin' = ANY(role)
+  ) THEN
+    RAISE EXCEPTION 'admin_get_document_signed_url_path: tenant_admin role required';
+  END IF;
+
+  SELECT p.document_pdf_path, p.tenant_id
+    INTO v_pdf_path, v_tenant_id
+  FROM payments p
+  WHERE p.id = p_payment_id;
+
+  IF v_tenant_id IS NULL THEN
+    RAISE EXCEPTION 'admin_get_document_signed_url_path: payment not found';
+  END IF;
+
+  IF v_tenant_id <> get_my_tenant_id() THEN
+    RAISE EXCEPTION 'admin_get_document_signed_url_path: cross-tenant access denied';
+  END IF;
+
+  IF v_pdf_path IS NULL THEN
+    RAISE EXCEPTION 'admin_get_document_signed_url_path: no stored PDF for payment %', p_payment_id;
+  END IF;
+
+  -- Audit log
+  INSERT INTO payment_document_access_log (payment_id, accessed_by, action)
+  VALUES (p_payment_id, auth.uid(), 'download');
+
+  -- Client calls: supabase.storage.from('legal-documents').createSignedUrl(path, 300)
+  RETURN v_pdf_path;
+END;
+$$;
+
+-- ---------------------------------------------------------------------------
+-- Grants
+-- ---------------------------------------------------------------------------
+GRANT EXECUTE ON FUNCTION admin_get_payment_document(uuid)           TO authenticated;
+GRANT EXECUTE ON FUNCTION admin_get_document_signed_url_path(uuid)   TO authenticated;
+
+-- =============================================================================
+-- Finance admin: expenses (immutable) + create_expense RPC
+-- Gross-only amounts: pretax_amount_minor = total_amount_minor, vat_amount_minor = 0.
+-- =============================================================================
+
+CREATE TABLE expenses (
+  id                    UUID PRIMARY KEY,
+  tenant_id             UUID NOT NULL REFERENCES tenants(id),
+  category_id           UUID NOT NULL REFERENCES expense_categories(id),
+  description           TEXT NOT NULL CHECK (char_length(description) BETWEEN 1 AND 500),
+  pretax_amount_minor   INT NOT NULL,
+  vat_amount_minor      INT NOT NULL DEFAULT 0 CHECK (vat_amount_minor >= 0),
+  total_amount_minor    INT NOT NULL,
+  currency              TEXT NOT NULL DEFAULT 'ILS',
+  supplier_name         TEXT CHECK (supplier_name IS NULL OR char_length(supplier_name) <= 200),
+  supplier_vat_number   TEXT CHECK (supplier_vat_number IS NULL OR char_length(supplier_vat_number) <= 20),
+  receipt_storage_path  TEXT,
+  expense_date          DATE NOT NULL,
+  corrects_expense_id   UUID REFERENCES expenses(id),
+  created_by            UUID NOT NULL REFERENCES user_profiles(id),
+  created_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT expenses_total_check CHECK (total_amount_minor = pretax_amount_minor + vat_amount_minor),
+  CONSTRAINT expenses_correction_sign CHECK (
+    corrects_expense_id IS NULL OR (
+      total_amount_minor <= 0 AND pretax_amount_minor <= 0 AND vat_amount_minor <= 0
+    )
+  )
+);
+
+CREATE INDEX idx_expenses_tenant_date ON expenses(tenant_id, expense_date DESC);
+CREATE INDEX idx_expenses_tenant_category ON expenses(tenant_id, category_id);
+
+COMMENT ON TABLE expenses IS
+  'Immutable expense rows. Amounts are gross-only: pretax_amount_minor = total_amount_minor, vat_amount_minor = 0.';
+
+CREATE OR REPLACE FUNCTION public.reject_expense_mutation()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SET search_path = public
+AS $$
+BEGIN
+  RAISE EXCEPTION 'expenses are immutable';
+END;
+$$;
+
+CREATE TRIGGER expenses_no_update
+  BEFORE UPDATE ON expenses
+  FOR EACH ROW EXECUTE FUNCTION public.reject_expense_mutation();
+
+CREATE TRIGGER expenses_no_delete
+  BEFORE DELETE ON expenses
+  FOR EACH ROW EXECUTE FUNCTION public.reject_expense_mutation();
+
+CREATE OR REPLACE FUNCTION public.validate_expense_category_tenant()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SET search_path = public
+AS $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM expense_categories c
+    WHERE c.id = NEW.category_id
+      AND c.tenant_id = NEW.tenant_id
+      AND c.is_active = true
+  ) THEN
+    RAISE EXCEPTION 'invalid or inactive expense category for tenant';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER expenses_validate_category
+  BEFORE INSERT ON expenses
+  FOR EACH ROW EXECUTE FUNCTION public.validate_expense_category_tenant();
+
+ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY expenses_super_admin ON expenses
+  FOR ALL USING (is_super_admin());
+
+CREATE POLICY expenses_admin_select ON expenses
+  FOR SELECT USING (
+    tenant_id = get_my_tenant_id()
+    AND EXISTS (
+      SELECT 1 FROM user_profiles
+      WHERE id = auth.uid() AND 'tenant_admin' = ANY(role)
+    )
+  );
+
+GRANT SELECT ON public.expenses TO authenticated;
+REVOKE INSERT, UPDATE, DELETE ON public.expenses FROM authenticated;
+
+CREATE OR REPLACE FUNCTION public.create_expense(
+  p_expense_id            UUID,
+  p_category_id           UUID,
+  p_description           TEXT,
+  p_pretax_amount_minor   INT,
+  p_vat_amount_minor      INT,
+  p_total_amount_minor    INT,
+  p_currency              TEXT,
+  p_supplier_name         TEXT,
+  p_supplier_vat_number   TEXT,
+  p_receipt_storage_path  TEXT,
+  p_expense_date          DATE,
+  p_corrects_expense_id   UUID DEFAULT NULL
+)
+RETURNS UUID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_tenant_id       UUID;
+  v_currency        TEXT;
+  v_today           DATE;
+  v_receipt_pattern TEXT;
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Authentication required';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM user_profiles
+    WHERE id = auth.uid()
+      AND ('tenant_admin' = ANY(role) OR 'super_admin' = ANY(role))
+  ) THEN
+    RAISE EXCEPTION 'Forbidden';
+  END IF;
+
+  v_tenant_id := get_my_tenant_id();
+  IF v_tenant_id IS NULL THEN
+    RAISE EXCEPTION 'Tenant not found';
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM expenses WHERE id = p_expense_id) THEN
+    RAISE EXCEPTION 'expense id already exists';
+  END IF;
+
+  IF char_length(trim(p_description)) < 1 OR char_length(p_description) > 500 THEN
+    RAISE EXCEPTION 'description must be 1-500 characters';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM expense_categories
+    WHERE id = p_category_id AND tenant_id = v_tenant_id AND is_active = true
+  ) THEN
+    RAISE EXCEPTION 'invalid or inactive expense category';
+  END IF;
+
+  SELECT t.currency INTO v_currency
+  FROM tenants t
+  WHERE t.id = v_tenant_id;
+
+  IF p_currency IS DISTINCT FROM v_currency THEN
+    RAISE EXCEPTION 'currency must match tenant currency';
+  END IF;
+
+  v_today := (now() AT TIME ZONE 'Asia/Jerusalem')::date;
+  IF p_expense_date > v_today THEN
+    RAISE EXCEPTION 'expense_date cannot be in the future';
+  END IF;
+
+  IF p_corrects_expense_id IS NOT NULL THEN
+    IF NOT EXISTS (
+      SELECT 1 FROM expenses
+      WHERE id = p_corrects_expense_id AND tenant_id = v_tenant_id
+    ) THEN
+      RAISE EXCEPTION 'corrects_expense_id not found for tenant';
+    END IF;
+    IF p_description NOT LIKE '[Correction]%' THEN
+      RAISE EXCEPTION 'correction description must start with [Correction]';
+    END IF;
+    IF p_pretax_amount_minor > 0 OR p_vat_amount_minor > 0 OR p_total_amount_minor > 0 THEN
+      RAISE EXCEPTION 'correction amounts must be zero or negative';
+    END IF;
+  ELSE
+    IF p_total_amount_minor <= 0 THEN
+      RAISE EXCEPTION 'expense amount must be positive';
+    END IF;
+  END IF;
+
+  IF p_vat_amount_minor <> 0 THEN
+    RAISE EXCEPTION 'vat_amount_minor must be zero';
+  END IF;
+
+  IF p_pretax_amount_minor <> p_total_amount_minor THEN
+    RAISE EXCEPTION 'pretax_amount_minor must equal total_amount_minor';
+  END IF;
+
+  IF p_receipt_storage_path IS NOT NULL THEN
+    v_receipt_pattern := v_tenant_id::text || '/' || p_expense_id::text || '/receipt.';
+    IF left(p_receipt_storage_path, length(v_receipt_pattern)) <> v_receipt_pattern THEN
+      RAISE EXCEPTION 'invalid receipt_storage_path';
+    END IF;
+  END IF;
+
+  INSERT INTO expenses (
+    id, tenant_id, category_id, description,
+    pretax_amount_minor, vat_amount_minor, total_amount_minor, currency,
+    supplier_name, supplier_vat_number, receipt_storage_path,
+    expense_date, corrects_expense_id, created_by
+  ) VALUES (
+    p_expense_id, v_tenant_id, p_category_id, trim(p_description),
+    p_pretax_amount_minor, p_vat_amount_minor, p_total_amount_minor, p_currency,
+    NULLIF(trim(p_supplier_name), ''), NULLIF(trim(p_supplier_vat_number), ''),
+    p_receipt_storage_path, p_expense_date, p_corrects_expense_id, auth.uid()
+  );
+
+  INSERT INTO audit_log (
+    tenant_id, actor_id, action, entity_type, entity_id
+  ) VALUES (
+    v_tenant_id, auth.uid(), 'CREATE', 'expenses', p_expense_id
+  );
+
+  RETURN p_expense_id;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.create_expense(
+  UUID, UUID, TEXT, INT, INT, INT, TEXT, TEXT, TEXT, TEXT, DATE, UUID
+) TO authenticated;

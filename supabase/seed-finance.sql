@@ -4,7 +4,7 @@
 --
 -- Run AFTER supabase/seed.sql on linked dev:
 --   1. reset_dev_db.sql (if full rebuild)
---   2. pnpm db:sync
+--   2. pnpm db:push
 --   3. supabase/seed.sql
 --   4. this file
 --
@@ -255,7 +255,8 @@ ON CONFLICT (id) DO NOTHING;
 -- ============================================================================
 INSERT INTO engagements (
   id, tenant_id, person_id, offering_id, season_id, billing_account_id,
-  waiver_evidence_id, status, billing_status, payment_received_at
+  waiver_evidence_id, status, billing_status, payment_received_at, created_at,
+  payment_dunning_attempt_count, payment_dunning_next_at
 )
 VALUES
   (
@@ -268,6 +269,9 @@ VALUES
     '00000000-0000-0000-0000-000000000902'::uuid,
     'pending_payment',
     NULL,
+    NULL,
+    now() - interval '5 days',
+    0,
     NULL
   ),
   (
@@ -280,7 +284,10 @@ VALUES
     '00000000-0000-0000-0000-000000000901'::uuid,
     'pending_payment',
     NULL,
-    NULL
+    NULL,
+    now() - interval '2 days',
+    1,
+    now() - interval '1 hour'
   ),
   (
     '00000000-0000-0000-0000-000000001003'::uuid,
@@ -292,7 +299,10 @@ VALUES
     NULL,
     'active',
     'current',
-    now() - interval '7 days'
+    now() - interval '7 days',
+    now() - interval '7 days',
+    0,
+    NULL
   ),
   (
     '00000000-0000-0000-0000-000000001004'::uuid,
@@ -304,6 +314,9 @@ VALUES
     '00000000-0000-0000-0000-000000000903'::uuid,
     'pending_payment',
     NULL,
+    NULL,
+    now() - interval '1 day',
+    0,
     NULL
   )
 ON CONFLICT (id) DO UPDATE SET
@@ -311,7 +324,10 @@ ON CONFLICT (id) DO UPDATE SET
   waiver_evidence_id = EXCLUDED.waiver_evidence_id,
   status = EXCLUDED.status,
   billing_status = EXCLUDED.billing_status,
-  payment_received_at = EXCLUDED.payment_received_at;
+  payment_received_at = EXCLUDED.payment_received_at,
+  created_at = EXCLUDED.created_at,
+  payment_dunning_attempt_count = EXCLUDED.payment_dunning_attempt_count,
+  payment_dunning_next_at = EXCLUDED.payment_dunning_next_at;
 
 -- ============================================================================
 -- PAYMENT — succeeded Pre-Primary (Ruti) for parent portal + refund testing
