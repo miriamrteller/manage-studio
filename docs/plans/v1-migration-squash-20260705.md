@@ -7,6 +7,7 @@
 | Criterion | Status |
 | --- | --- |
 | Exact fold map (13 incrementals → base files) | ✅ |
+| Dashboard RPC tenant bug fix during fold | ⚠️ **Required** — `get_my_tenant_id()` not `auth.uid()` |
 | Supersession rules (290001 over 016/280001, 01120000 over blast) | ✅ |
 | `reset_dev_db.sql` additions listed | ✅ |
 | `seed-finance.sql` fixture rows specified | ✅ |
@@ -178,7 +179,7 @@ On existing `pending_payment` engagement **`00000000-0000-0000-0000-000000001001
 | `payment_dunning_attempt_count` | `0` |
 | `payment_dunning_next_at` | `NULL` |
 
-Optional second row **`1002`** (if not conflicting):
+Optional second row **`1002`** (**already seeded** as `pending_payment` — **UPDATE**, do not insert a duplicate):
 
 | Field | Value |
 | --- | --- |
@@ -264,13 +265,57 @@ SELECT proname FROM pg_proc WHERE proname = 'get_finance_summary';
 
 ---
 
-## Audit notes
+## Audit notes (2026-07-05 — Supabase apply + architecture)
+
+### Apply blockers (must fix during squash)
+
+| Severity | Issue | Resolution |
+| --- | --- | --- |
+| **High** | `get_admin_dashboard_overview` uses `auth.uid()` as `v_tenant_id` (line 100 in `20260626000300`) — comment says “same as `get_finance_summary`” but that RPC uses `get_my_tenant_id()`. Dashboard always misses seasons/counts → **P0001 “No active season”** for every real tenant. | When folding into `02000`, change to `v_tenant_id := get_my_tenant_id();` + NULL check (mirror `get_finance_summary`). |
+| **High** | `save_tenant_grow_credentials` exists in base `01600` **and** `290001` — fold must **replace in place** (lines ~172–206), not append a second definition. | Delete old body; paste `290001` version (token invalidation). |
+| **High** | Three blast migrations — only `01120000` survives | Fold `01120000` only (includes overload drop DO block). |
+| **Medium** | `save_tenant_icount_credentials`: fold **`290001` only**; **`280001`** contributes **`save_icount_webhook_secret` only** — including both icount cred RPCs duplicates definition. | Step 1 supersession rule — verify agent did not paste `280001` cred RPC. |
+
+### Apply-safe (no migration error; verify agent discipline)
+
+| Severity | Issue | Resolution |
+| --- | --- | --- |
+| **Low** | Notification blast folded into `00600` runs **before** `01300` engagements — OK for **plpgsql** (`CREATE FUNCTION` does not require relations at define time). | Keep in `00600` or move to `02000` if you prefer dependency clarity — not a Supabase apply error. |
+| **Low** | `get_tenant_today` DO block: no `tenants.timezone` column in V1 base → always UTC `CURRENT_DATE`. Admin “today’s classes” uses UTC date, not Jerusalem. | Accept for V1 or add `timezone` column + branch (3) in a follow-on — not a squash apply error. |
+| **Low** | `reset_dev_db` plan places `DROP INDEX idx_offerings_season_dow_status` before `notification_log`, but index is on `offerings` (already dropped ~line 75). | Harmless `IF EXISTS` no-op; optional: move drop before `DROP TABLE offerings`. |
+| **Low** | `reset_dev_db` already drops `expenses`, `grow_webhook_secrets`, and many finance RPCs — Step 5 is **partial** (still add dashboard/blast/icount RPCs + dunning index drop). | Complete Step 5 additions only. |
+
+### Grants / reset completeness
+
+| Severity | Issue | Resolution |
+| --- | --- | --- |
+| **Medium** | `02500_grants.sql` has `expense_categories` but not `expenses` or `grow_webhook_secrets`. | Step 3 — confirmed still required. |
+| **Medium** | `reset_dev_db` DO block missing: `get_admin_dashboard_overview`, `get_tenant_today`, `save_tenant_icount_credentials`, `save_icount_webhook_secret`, blast RPC overload drop loop. | Step 5 — add to existing DO block / new loop. |
+
+### Seed plan corrections
+
+| Severity | Issue | Resolution |
+| --- | --- | --- |
+| **Medium** | Engagement **`1002`** already exists as `pending_payment` in `seed-finance.sql` — plan “optional if not conflicting” is ambiguous. | **Update row `1002`** for step-2 dunning fixture (`payment_dunning_attempt_count = 1`, backdated `payment_dunning_next_at`). Extend `ON CONFLICT DO UPDATE` with `created_at`, dunning columns. |
+| **Low** | Row **`1001`**: set `created_at = now() - interval '5 days'` in INSERT/UPDATE so Day 3+ cron eligibility is deterministic. | Step 6a — include in conflict update. |
+
+### Data placement (industry alignment — locked hybrid architecture)
+
+| Data | Table | Verdict |
+| --- | --- | --- |
+| Enrolment dunning ladder | `engagements.payment_dunning_*` | ✅ Correct — state on enrolment aggregate |
+| Renewal dunning / retries | `billing_schedules.attempt_count`, `next_attempt_at`, `last_error` | ✅ Correct — billing obligation SSOT |
+| Dunning send idempotency | `notification_log.variables->>'dunning_key'` + partial unique index | ✅ Acceptable V1; dedicated `idempotency_key` column would be cleaner at scale |
+| Expenses (immutable ledger) | `expenses` + correction rows | ✅ Standard finance pattern |
+| Grow webhook rotation | `grow_webhook_secrets` (versioned) | ✅ Correct — separate from API creds on `tenants` |
+| Grow/iCount API creds | `tenants.payment_provider_*_enc` | ✅ Standard multi-tenant encrypted columns |
+| iCount webhook secret | `tenants.payment_provider_webhook_enc` | ✅ OK for single rotating secret; document asymmetry vs Grow table in SPEC |
+| Async invoicing | `document_queue` | ✅ Standard outbox |
+| OTP / verification cleanup | SQL RPCs in `00700` | ✅ Correct — no edge fn needed |
+
+### Original squash checklist
 
 | Severity | Issue | Resolution |
 | --- | --- | --- |
 | **High** | Chat-only plan not on disk | This file |
-| **High** | 290001 vs 016 duplicate `save_tenant_grow_credentials` | Replace with 290001 body |
-| **High** | Three blast migrations — only final survives | Fold 01120000 only |
-| **Medium** | `02500` missing `expenses` / `grow_webhook_secrets` SELECT | Step 3 |
-| **Medium** | `reset_dev_db` missing new RPCs/indexes | Step 5 |
 | **Low** | finance `00-overview` says 016 frozen | SPEC pre-prod squash policy wins |
