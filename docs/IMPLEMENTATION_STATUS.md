@@ -2,7 +2,7 @@
 
 Living checklist for in-flight SPEC features. Normative design remains in [SPEC.md](../SPEC.md).
 
-**Last updated:** 2026-07-05 (Payment dunning V1 architecture locked in plans)
+**Last updated:** 2026-07-05 (Payment dunning V1 — renewal + enrolment unpaid shipped)
 
 ---
 
@@ -15,7 +15,7 @@ Rough completion against [SPEC.md §6 V1 Implementation](../SPEC.md#6-v1-impleme
 | **1A–1B** | Skeleton, auth, tenant context | ✅ ~95% | A11y CI gates, polish |
 | **1C** | People, families, classes, enrolment, waivers | ✅ ~95% | Classes list occupancy bar (overview ✅); teachers admin → V2.11 |
 | **1D** | Notifications engine | 🟡 ~90% | WhatsApp E2E |
-| **1E** | Payments (Stripe + Grow + iCount mock) | 🟡 ~88% | Live Grow sandbox E2E; iCount I0-live+; dunning cron hardening |
+| **1E** | Payments (Stripe + Grow + iCount mock) | 🟡 ~92% | Live Grow sandbox E2E; iCount I0-live+ |
 | **1F** | Admin dashboard | ✅ ~95% | Operations overview ✅ (PR #5); people CSV export |
 | **1G** | Parent / student portal | ✅ ~92% | WhatsApp OTP verify in portal; `notify_*` scope toggles (1G-b) |
 | **§7** | Production deployment | ❌ ~10% | Webhooks, Meta templates, legal, security checklist |
@@ -52,8 +52,8 @@ Rough completion against [SPEC.md §6 V1 Implementation](../SPEC.md#6-v1-impleme
 | Parent portal polish (Phase 1G) | [parent-portal-polish.md](plans/parent-portal-polish.md) | — | ✅ | Merged PR #8 (`0ea9004`, includes `fcad476`): prefs modal, upcoming 7-day, i18n, `returnTo`, login password, adult DOB display, form submit fixes; **Step 7 `notify_*`** + **Step 8 WhatsApp OTP** deferred |
 | **Guest checkout + guest enrolment** | [2026-06-02-guest-enrollment-portal-provisioning.md](plans/2026-06-02-guest-enrollment-portal-provisioning.md) | ✅ `guest_enrolment_*` | ✅ | `/enrol` no login gate; `create-enrolment-intake`; `resolveCheckoutSession` JWT or `enrolment_token`; admin payment link reuses `PAYMENT_REMINDER` |
 | Teachers admin module (V2.11) | [teachers-admin-module.md](plans/teachers-admin-module.md) | ✅ `staff` | 🟡 partial | **Deferred V2.11** — `TeacherService` / `useTeachers` + class-form `staff_id`; no admin page |
-| **Payment dunning — collections layer + renewal emails** | [payment-dunning-notifications.md](plans/payment-dunning-notifications.md) | 🟡 migration `20260705000100` | 🟡 partial | V1 arch: obligation on domain row + `_shared/collections/` + `notification_log.dunning_key`. Renewal ladder ✅; emails + migration ❌ |
-| **Enrolment unpaid dunning (§6.x #8)** | [enrolment-payment-dunning.md](plans/enrolment-payment-dunning.md) | columns in `20260705000100` | ❌ | **Ready** after collections PR — cron Day 3/7/14 |
+| **Payment dunning — collections layer + renewal emails** | [payment-dunning-notifications.md](plans/payment-dunning-notifications.md) | ✅ `20260705000100` | ✅ | `_shared/collections/`, `applyBillingScheduleDunningFailure`, `PAYMENT_REMINDER` renewal track, `notification_log.dunning_key` |
+| **Enrolment unpaid dunning (§6.x #8)** | [enrolment-payment-dunning.md](plans/enrolment-payment-dunning.md) | ✅ columns in `20260705000100` | ✅ | `run-enrolment-payment-dunning` cron Day 3/7/14; `applyEnrolmentPaymentDunningStep`; `CLASS_CANCELLATION` on day 14 |
 | Code rename epic (ex-D5) | [code-rename-epic.md](plans/code-rename-epic.md) | — | — | Deferred |
 
 ---
@@ -156,8 +156,8 @@ Merged to `main` via PR #8 (`0ea9004`; core work in `fcad476`):
 | Upcoming sessions (7-day) | Phase 1G | ✅ |
 | WhatsApp OTP verify in portal | Phase 1G | 🟡 Hint only; full OTP flow deferred |
 | `notify_*` scope toggles | Phase 1G | ❌ DB yes; schema/editor no (1G-b deferred) |
-| Payment dunning (renewal ladder + emails) | Phase 1E | 🟡 Ladder ✅; collections + emails ❌ — [payment-dunning-notifications.md](plans/payment-dunning-notifications.md) |
-| Enrolment unpaid dunning cron | §6.x #8 | ❌ Agent-ready plan — [enrolment-payment-dunning.md](plans/enrolment-payment-dunning.md) (after collections PR) |
+| Payment dunning (renewal ladder + emails) | Phase 1E | ✅ — [payment-dunning-notifications.md](plans/payment-dunning-notifications.md) |
+| Enrolment unpaid dunning cron | §6.x #8 | ✅ — [enrolment-payment-dunning.md](plans/enrolment-payment-dunning.md) |
 
 ---
 
@@ -172,9 +172,8 @@ Track in SPEC §6.x — pull into V1 only when explicitly prioritized:
 5. **Unenrol Phase 2** — post-payment withdrawal + refund wizard
 6. **Unenrol Phase 3** — parent withdrawal requests (depends on Phase 1G)
 7. **Teachers admin UI** — V2.11 only ([teachers-admin-module.md](plans/teachers-admin-module.md)); not V1
-8. **Automated enrolment dunning cron** — `pending_payment` Day 3/7/14 without admin action
 
-**Shipped:** Guest checkout + guest enrolment · Unenrol Phase 1 · Age override + review · Parent self-enrolment (Myself).
+**Shipped:** Guest checkout + guest enrolment · Unenrol Phase 1 · Age override + review · Parent self-enrolment (Myself) · **Payment dunning (renewal + enrolment unpaid §6.x #8)**.
 
 ---
 
@@ -184,16 +183,14 @@ Track in SPEC §6.x — pull into V1 only when explicitly prioritized:
 | --- | --- | --- |
 | **0** | Grow live sandbox E2E (when creds ready) | [grow-live-e2e-verification.md](plans/grow-live-e2e-verification.md) |
 | **0b** | iCount I0-live sandbox (when creds ready) | [finance/icount/00-overview.md](plans/finance/icount/00-overview.md) I0-live block |
-| **1** | Payment dunning — migration + collections + renewal emails | [payment-dunning-notifications.md](plans/payment-dunning-notifications.md) |
-| **1b** | Enrolment unpaid dunning cron (after #1) | [enrolment-payment-dunning.md](plans/enrolment-payment-dunning.md) — **ready** |
-| **2** | People directory CSV export | SPEC Phase 1F — no plan yet |
-| **3** | Classes list occupancy + waitlist bar | SPEC Phase 1F — partial (`AdminClassesList`) |
-| **4** | Parent portal Step 8 — WhatsApp OTP verify in prefs modal | [parent-portal-polish.md](plans/parent-portal-polish.md) Step 8 |
-| **5** | Parent portal 1G-b — `notify_*` scope toggles (optional) | [parent-portal-polish.md](plans/parent-portal-polish.md) Step 7 |
-| **6** | Notification blast manual smoke (Resend) | [notification-blast-composer.md](plans/notification-blast-composer.md) Step 7 |
-| **7** | PR B manual E2E smoke (recommended before prod) | [age-override-pr-b.md](plans/age-override-pr-b.md) Step 9 |
-| **8** | Parent portal manual smoke (Step 6 checklist) | [parent-portal-polish.md](plans/parent-portal-polish.md) Step 6 |
-| **9** | Unenrol Phase 2 (refunds) | No plan yet |
+| **1** | People directory CSV export | SPEC Phase 1F — no plan yet |
+| **2** | Classes list occupancy + waitlist bar | SPEC Phase 1F — partial (`AdminClassesList`) |
+| **3** | Parent portal Step 8 — WhatsApp OTP verify in prefs modal | [parent-portal-polish.md](plans/parent-portal-polish.md) Step 8 |
+| **4** | Parent portal 1G-b — `notify_*` scope toggles (optional) | [parent-portal-polish.md](plans/parent-portal-polish.md) Step 7 |
+| **5** | Notification blast manual smoke (Resend) | [notification-blast-composer.md](plans/notification-blast-composer.md) Step 7 |
+| **6** | PR B manual E2E smoke (recommended before prod) | [age-override-pr-b.md](plans/age-override-pr-b.md) Step 9 |
+| **7** | Parent portal manual smoke (Step 6 checklist) | [parent-portal-polish.md](plans/parent-portal-polish.md) Step 6 |
+| **8** | Unenrol Phase 2 (refunds) | No plan yet |
 | Later | §7 production deployment checklist | [SPEC.md §7](../SPEC.md#7-v1-production-deployment) |
 | **V2.11** | Teachers admin CRUD | [teachers-admin-module.md](plans/teachers-admin-module.md) · [SPEC §8 V2.11](../SPEC.md#v211--teachers-admin-module) |
 | Deferred | Code rename epic, other V2 features | [code-rename-epic.md](plans/code-rename-epic.md) · SPEC §8 |

@@ -13,38 +13,13 @@ export async function handlePaymentEventInternal(
 
   if (event.type === "payment.failed") {
     if (metadata.charge_type === "renewal" && metadata.billing_schedule_id) {
-      const { data: schedule } = await service
-        .from("billing_schedules")
-        .select("attempt_count, engagement_id")
-        .eq("id", metadata.billing_schedule_id)
-        .single();
-
-      const nextAttempt = (schedule?.attempt_count as number | undefined ?? 0) + 1;
-      const { dunningNextAttemptAt } = await import("./billing-time.ts");
-
-      const updates: Record<string, unknown> = {
-        attempt_count: nextAttempt,
-        last_attempt_at: new Date().toISOString(),
-        last_error: event.failureMessage ?? "Payment failed",
-      };
-
-      if (nextAttempt >= 3) {
-        updates.status = "suspended";
-        updates.next_attempt_at = null;
-        if (schedule?.engagement_id) {
-          await service
-            .from("engagements")
-            .update({ billing_status: "suspended" })
-            .eq("id", schedule.engagement_id);
-        }
-      } else {
-        updates.next_attempt_at = dunningNextAttemptAt(nextAttempt);
-      }
-
-      await service
-        .from("billing_schedules")
-        .update(updates)
-        .eq("id", metadata.billing_schedule_id);
+      const { applyBillingScheduleDunningFailure } = await import(
+        "./apply-billing-schedule-dunning-failure.ts"
+      );
+      await applyBillingScheduleDunningFailure(service, {
+        billingScheduleId: metadata.billing_schedule_id,
+        failureMessage: event.failureMessage ?? "Payment failed",
+      });
     }
 
     await service.from("audit_log").insert({

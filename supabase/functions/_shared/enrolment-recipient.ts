@@ -28,7 +28,7 @@ export async function resolveEnrolmentNotificationRecipient(
   service: SupabaseClient,
   tenantId: string,
   personId: string,
-): Promise<{ email: string; name: string } | null> {
+): Promise<{ email: string; name: string; personId: string } | null> {
   const { data: student, error: studentError } = await service
     .from("people")
     .select("email, name, account_id, user_profile_id")
@@ -40,7 +40,11 @@ export async function resolveEnrolmentNotificationRecipient(
 
   const studentEmail = await resolvePersonEmail(service, student);
   if (studentEmail) {
-    return { email: studentEmail, name: (student.name as string) ?? "" };
+    return {
+      email: studentEmail,
+      name: (student.name as string) ?? "",
+      personId,
+    };
   }
 
   if (!student.account_id) return null;
@@ -69,6 +73,7 @@ export async function resolveEnrolmentNotificationRecipient(
   return {
     email: guardianEmail,
     name: (guardian?.name as string) ?? (student.name as string) ?? "",
+    personId: accountHolder.person_id as string,
   };
 }
 

@@ -385,6 +385,8 @@ export const EngagementSchema = z.object({
   cancelled_at: TimestampSchema.nullable().optional(),
   cancellation_reason: z.string().max(500).nullable().optional(),
   cancelled_by: UUIDSchema.nullable().optional(),
+  payment_dunning_attempt_count: z.number().int().nonnegative().default(0).optional(),
+  payment_dunning_next_at: TimestampSchema.nullable().optional(),
   waiver_evidence_id: UUIDSchema.nullable().optional(),
   created_at: TimestampSchema,
   updated_at: TimestampSchema.optional(),

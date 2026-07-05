@@ -173,23 +173,17 @@ export async function processBillingSchedule(
     savedToken = await loadRenewalSavedToken(service, billingAccountId);
 
     if (!savedToken) {
-
-      await service
-
-        .from("billing_schedules")
-
-        .update({
-
-          last_error: `No saved ${paymentProvider} card token`,
-
-          last_attempt_at: new Date().toISOString(),
-
-        })
-
-        .eq("id", schedule.id);
-
+      // V1 accept: Grow may surface the same failure via sync throw and later webhook;
+      // optimistic attempt_count guard prevents duplicate increments within the same count,
+      // but sequential paths can advance twice for one charge attempt.
+      const { applyBillingScheduleDunningFailure } = await import(
+        "./apply-billing-schedule-dunning-failure.ts"
+      );
+      await applyBillingScheduleDunningFailure(service, {
+        billingScheduleId: schedule.id,
+        failureMessage: "No saved card token",
+      });
       return { outcome: "failed", error: `No saved ${paymentProvider} card token` };
-
     }
 
   }
@@ -291,55 +285,18 @@ export async function processBillingSchedule(
     return { outcome: "charged" };
 
   } catch (err) {
-
-    const attemptCount = schedule.attempt_count + 1;
-
-    const updates: Record<string, unknown> = {
-
-      attempt_count: attemptCount,
-
-      last_attempt_at: new Date().toISOString(),
-
-      last_error: err instanceof Error ? err.message : "Charge failed",
-
-    };
-
-
-
-    if (attemptCount >= 3) {
-
-      updates.status = "suspended";
-
-      updates.next_attempt_at = null;
-
-      await service
-
-        .from("engagements")
-
-        .update({ billing_status: "suspended" })
-
-        .eq("id", engagement.id);
-
-    } else {
-
-      const { dunningNextAttemptAt } = await import("./billing-time.ts");
-
-      updates.next_attempt_at = dunningNextAttemptAt(attemptCount);
-
-    }
-
-
-
-    await service.from("billing_schedules").update(updates).eq("id", schedule.id);
+    const { applyBillingScheduleDunningFailure } = await import(
+      "./apply-billing-schedule-dunning-failure.ts"
+    );
+    await applyBillingScheduleDunningFailure(service, {
+      billingScheduleId: schedule.id,
+      failureMessage: err instanceof Error ? err.message : "Charge failed",
+    });
 
     return {
-
       outcome: "failed",
-
       error: err instanceof Error ? err.message : "Charge failed",
-
     };
-
   }
 
 }

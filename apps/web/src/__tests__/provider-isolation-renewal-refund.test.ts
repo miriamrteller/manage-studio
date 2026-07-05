@@ -18,6 +18,10 @@ import { MockGrowPaymentProvider } from '../../../../supabase/functions/_shared/
 import { MockIcountPaymentProvider } from '../../../../supabase/functions/_shared/payments/providers/mock-icount.ts';
 import * as mockSync from '../../../../supabase/functions/_shared/payments/providers/mock.ts';
 
+vi.mock('../../../../supabase/functions/_shared/collections/send-payment-dunning-reminder.ts', () => ({
+  sendPaymentDunningReminder: vi.fn().mockResolvedValue({ sent: false }),
+}));
+
 const GROW_TENANT = '00000000-0000-0000-0000-0000000000aa';
 const ICOUNT_TENANT = '00000000-0000-0000-0000-0000000000bb';
 const ENGAGEMENT_ID = '11111111-1111-1111-1111-111111111111';
@@ -80,6 +84,11 @@ function makeBillingService(options: {
                 data: {
                   currency: 'ILS',
                   payment_provider: options.paymentProvider,
+                  name: 'Studio',
+                  language_default: 'en',
+                  from_email: 'studio@test.com',
+                  primary_color: '#000',
+                  accent_color: '#fff',
                 },
                 error: null,
               }),
@@ -106,8 +115,83 @@ function makeBillingService(options: {
       }
 
       if (table === 'billing_schedules') {
+        const scheduleRow = {
+          id: SCHEDULE_ID,
+          tenant_id: options.tenantId,
+          engagement_id: ENGAGEMENT_ID,
+          attempt_count: 0,
+          status: 'active',
+          next_attempt_at: null as string | null,
+        };
+
         return {
-          update: () => ({ eq: async () => ({ error: null }) }),
+          select: () => ({
+            eq: () => ({
+              single: async () => ({
+                data: scheduleRow,
+                error: null,
+              }),
+            }),
+          }),
+          update: (updates: Record<string, unknown>) => ({
+            eq: () => {
+              const chain: Record<string, unknown> = {
+                eq: () => chain,
+                neq: () => ({
+                  select: () => ({
+                    maybeSingle: async () => {
+                      Object.assign(scheduleRow, updates);
+                      return {
+                        data: {
+                          attempt_count: scheduleRow.attempt_count,
+                          next_attempt_at: scheduleRow.next_attempt_at,
+                          status: scheduleRow.status,
+                        },
+                        error: null,
+                      };
+                    },
+                  }),
+                }),
+                then: (resolve: (v: unknown) => void) => resolve({ error: null }),
+              };
+              return chain;
+            },
+          }),
+        };
+      }
+
+      if (table === 'notification_log' || table === 'contact_preferences') {
+        return {
+          select: () => ({
+            eq: () => ({
+              eq: () => ({
+                filter: () => ({
+                  in: () => ({
+                    limit: () => ({
+                      maybeSingle: async () => ({ data: null, error: null }),
+                    }),
+                  }),
+                }),
+                maybeSingle: async () => ({ data: null, error: null }),
+              }),
+            }),
+          }),
+          insert: async () => ({ error: null }),
+        };
+      }
+
+      if (table === 'people') {
+        return {
+          select: () => ({
+            eq: () => ({
+              eq: () => ({
+                single: async () => ({
+                  data: { name: 'Student', email: 'test@example.com' },
+                  error: null,
+                }),
+              }),
+            }),
+          }),
         };
       }
 
@@ -134,13 +218,24 @@ describe('renewal token helpers', () => {
 });
 
 describe('run-monthly-billing provider isolation (I4-T1, I4-T2)', () => {
+  const originalDeno = globalThis.Deno;
+
   beforeEach(() => {
+    globalThis.Deno = {
+      env: {
+        get: (k: string) => {
+          if (k === 'APP_URL') return 'https://app.test';
+          return process.env[k];
+        },
+      },
+    } as typeof globalThis.Deno;
     process.env.GROW_MOCK = 'true';
     process.env.ICOUNT_MOCK = 'true';
     vi.spyOn(mockSync, 'applyMockSyncEvent').mockResolvedValue(undefined);
   });
 
   afterEach(() => {
+    globalThis.Deno = originalDeno;
     delete process.env.GROW_MOCK;
     delete process.env.ICOUNT_MOCK;
     vi.restoreAllMocks();

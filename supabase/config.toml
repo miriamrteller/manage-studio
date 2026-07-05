@@ -130,6 +130,11 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/run-monthly-billing/index.ts"
 
+[functions.run-enrolment-payment-dunning]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/run-enrolment-payment-dunning/index.ts"
+
 [functions.process-refund]
 enabled = true
 verify_jwt = false
