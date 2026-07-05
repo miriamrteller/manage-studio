@@ -98,7 +98,7 @@ Unit tests run without Resend (mock `sendRenderedEmail`).
 | **Obligation mutator** | `applyBillingScheduleDunningFailure` — **only** place that increments schedule `attempt_count` / suspend |
 | **Notifier** | `sendPaymentDunningReminder` with `kind: 'renewal'` — **no** provider imports |
 | **Recipient** | `resolveEnrolmentNotificationRecipient(tenantId, person_id)` |
-| **Opt-out** | Skip if `contact_preferences.email_opted_in === false` (no row = send) |
+| **Opt-out** | Skip **email only** — obligation update (schedule increment / suspend) already committed before send; do not roll back |
 | **Template** | `EMAIL_TEMPLATE_NAMES.PAYMENT_REMINDER` |
 | **CTA** | `${APP_URL}/dashboard/portal` |
 | **Copy** | Attempt 1–2: retry date from `next_attempt_at`. Attempt 3 (suspended): suspend copy (EN + HE) |
@@ -157,10 +157,11 @@ COMMENT ON COLUMN engagements.payment_dunning_attempt_count IS
 COMMENT ON COLUMN engagements.payment_dunning_next_at IS
   'Next enrolment payment reminder action time (Jerusalem policy in follow-on plan). NULL when inactive.';
 
--- Idempotency for all payment dunning reminder sends (renewal + future enrolment_unpaid).
+-- Idempotency: one successful send per dunning_key (failed rows may retry).
 CREATE UNIQUE INDEX IF NOT EXISTS idx_notification_log_dunning_key
   ON notification_log (tenant_id, template_name, (variables->>'dunning_key'))
-  WHERE (variables->>'dunning_key') IS NOT NULL;
+  WHERE (variables->>'dunning_key') IS NOT NULL
+    AND status IN ('sent', 'delivered', 'read', 'pending');
 ```
 
 **Also update:**
@@ -235,9 +236,10 @@ export async function buildDunningEmailContext(
     paymentUrl: string;
     language: 'en' | 'he';
   },
-): Promise<{ recipientEmail: string; recipientName: string; variables: Record<string, unknown>; subject: string } | null>;
+): Promise<{ recipientEmail: string; recipientName: string; recipientPersonId: string; variables: Record<string, unknown>; subject: string } | null>;
 ```
 
+`recipientPersonId` = the `people.id` whose email is used (student if direct email; else account_holder). Extend `resolveEnrolmentNotificationRecipient` to return `{ email, name, personId }` **or** resolve `personId` inside `buildDunningEmailContext` with the same branching logic.
 - **`renewal`:** use `buildRenewalDunningEmailCopy` below; `paymentUrl` from caller.
 - **`enrolment_unpaid`:** `return null` in this PR — full implementation in [enrolment-payment-dunning.md](enrolment-payment-dunning.md) (agent-ready, blocked on this PR).
 
@@ -333,7 +335,9 @@ await service.from('notification_log').insert({
 });
 ```
 
-9. On Resend throw — insert `notification_log` with `status: 'failed'`, same `dunning_key` in variables, `failure_reason` message. Do **not** throw to caller (obligation update already committed).
+9. On Resend throw — insert `notification_log` with `status: 'failed'`, same `dunning_key` in variables, `failure_reason` message. Do **not** throw to caller (obligation update already committed). Multiple `failed` rows per key are allowed (index excludes them); a later successful `sent` row satisfies idempotency.
+
+10. On `notification_log` insert **unique violation** (`23505` on `idx_notification_log_dunning_key`) — treat as `{ sent: false, skipped: 'already_sent' }` (concurrent cron/webhook).
 
 **Renewal call shape (from obligation helper):**
 
@@ -418,6 +422,8 @@ Remove inline `billing_schedules` update block.
 
 **Do not** call dunning from provider adapters.
 
+**Known provider edge (V1 accept):** Some adapters may surface the same renewal failure via **both** a synchronous throw (cron catch) and a later webhook. Optimistic `attempt_count` guard prevents duplicate increments **within the same count**, but two paths in sequence can advance twice for one charge attempt. Production Stripe renewals are typically webhook-only; document in code comment. Do not add provider refs to dunning SSOT in V1.
+
 ---
 
 ## Step 4 — Refactor admin link (optional, recommended)
@@ -438,7 +444,7 @@ Remove inline `billing_schedules` update block.
 | Attempt 3 | suspended + suspend copy |
 | Double webhook + catch | schedule not double-incremented; one notification_log row |
 | Missing recipient | no throw; notification_log failed or skip |
-| `email_opted_in=false` | skip send; no duplicate key insert |
+| `email_opted_in=false` | skip send; schedule still incremented; no `sent` notification_log row |
 | Missing token path | attempt 1 + notify |
 
 Mock `sendRenderedEmail` and Supabase client per `provider-isolation-renewal-refund.test.ts`.
@@ -516,4 +522,17 @@ pnpm -C apps/web test payment-dunning-collections.test.ts billing-time.test.ts p
 | WhatsApp reminders | Deferred |
 | Waiver cron merge | Never — separate domain |
 | Refactor `send-admin-enrolment-link` | Optional later |
-| Cancel enrolment on billing suspend | V2 |
+| Cancel enrolment on billing suspend | V2 — engagement stays `active` with `billing_status=suspended` |
+
+---
+
+## Audit notes (2026-07-05)
+
+| Severity | Issue | Resolution |
+| --- | --- | --- |
+| **Critical** | Unique index on all `dunning_key` rows blocked Resend retries after `failed` | Index now partial on successful statuses only |
+| **Medium** | `recipientPersonId` for opt-out not returned by `resolveEnrolmentNotificationRecipient` | Plan requires `personId` in context builder |
+| **Medium** | Concurrent duplicate sends | Handle `23505` on insert |
+| **Low** | Opt-out semantics undocumented for renewal | Locked: obligation advances, email skipped |
+| **Low** | Catch + webhook double-advance | Documented V1 accept |
+| **Out of scope** | Portal CTA requires login (renewals only) | OK — payers already enrolled |

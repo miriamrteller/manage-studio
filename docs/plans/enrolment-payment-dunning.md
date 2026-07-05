@@ -62,16 +62,7 @@ Do **not** use `billing_schedules`. Do **not** add a `dunning_cases` table.
 - **Payment success:** clear dunning fields in `finalise-payment` (Step 5).
 - **Waiting list:** insert `audit_log` with `-- TODO: process-waiting-list V2.2` comment only (match `cancel_engagement` RPC).
 
-**Day 14 cancellation (locked):** service-role `engagements` update (mirror `send-waiver-reminder` cancel path — **do not** call `cancel_engagement` RPC; it requires `auth.uid()` admin).
-
-```ts
-await service.from('engagements').update({
-  status: 'cancelled',
-  cancelled_at: new Date().toISOString(),
-  cancellation_reason: 'payment_dunning_exhausted',
-  payment_dunning_next_at: null,
-}).eq('id', engagementId).eq('status', 'pending_payment');
-```
+**Day 14 cancellation (locked):** service-role **single atomic update** (Step 4) — status `cancelled` + `payment_dunning_attempt_count: 3` in one write. Do **not** call `cancel_engagement` RPC (requires admin JWT). Does **not** set `cancelled_by` (system cancel — mirror `send-waiver-reminder`).
 
 ---
 
@@ -226,10 +217,13 @@ export async function applyEnrolmentPaymentDunningStep(
 1. Load engagement: `id, tenant_id, person_id, offering_id, status, created_at, payment_dunning_attempt_count, payment_dunning_next_at`.
 2. If `status !== 'pending_payment'` → skip `{ reason: 'not_pending_payment' }`.
 3. If `payment_dunning_attempt_count >= 3` → skip.
-4. **Bootstrap** — if `payment_dunning_next_at === null` && count === 0: set `payment_dunning_next_at = enrolmentDunningActionDueAt(created_at, 1)` (update only; if still in future, return skip `{ reason: 'not_due' }`).
+4. **Bootstrap** — if `payment_dunning_next_at === null` && count === 0:
+   - Set `payment_dunning_next_at = enrolmentDunningActionDueAt(created_at, 1)`.
+   - If that timestamp is **still in the future** → return `{ outcome: 'skipped', reason: 'not_due' }`.
+   - If **due now or past** → **continue in the same invocation** (do not return after bootstrap).
 5. If `now < payment_dunning_next_at` → skip `{ reason: 'not_due' }`.
 6. `nextAttempt = payment_dunning_attempt_count + 1` (1, 2, or 3).
-7. **Optimistic update:**
+7. **Attempts 1–2 — optimistic update:**
 
 ```ts
 const nextAt =
@@ -252,15 +246,41 @@ const { data: updated } = await service
 if (!updated) return { outcome: 'skipped', reason: 'concurrent_update' };
 ```
 
-8. **Attempts 1–2:**
-   - Resolve recipient via `resolveEnrolmentNotificationRecipient`.
-   - `buildEnrolmentPayUrl({ appBaseUrl, engagementId, tenantId, recipientEmail })`.
+8. **Attempts 1–2 (after update):**
+   - Resolve recipient via `resolveEnrolmentNotificationRecipient` (+ `personId` for opt-out — same as renewal plan).
+   - If **no recipient email** → audit skip `{ reason: 'no_recipient' }`; **do not roll back** increment (avoid infinite retry on same attempt).
+   - `buildEnrolmentPayUrl({ appBaseUrl, engagementId, tenantId, recipientEmail })` — if `appBaseUrl` empty → audit skip send; **still increment** (same as opt-out).
    - `sendPaymentDunningReminder({ kind: 'enrolment_unpaid', subjectId: engagementId, paymentUrl, ... })`.
    - Return `{ outcome: 'reminded', attemptCount: nextAttempt }`.
 
-9. **Attempt 3:**
-   - Cancel engagement (locked SQL above) with `.eq('status', 'pending_payment')`.
-   - Send cancellation email:
+9. **Attempt 3 — single atomic cancel** (do **not** increment in a separate update first):
+
+```ts
+// Idempotency: skip if cancellation already logged or engagement cancelled
+const cancelKey = buildDunningKey('enrolment_unpaid', engagementId, 3);
+if (await hasCancellationAlreadyHandled(service, tenantId, engagementId)) {
+  return { outcome: 'skipped', reason: 'already_cancelled' };
+}
+
+const { data: cancelled } = await service
+  .from('engagements')
+  .update({
+    status: 'cancelled',
+    cancelled_at: new Date().toISOString(),
+    cancellation_reason: 'payment_dunning_exhausted',
+    payment_dunning_attempt_count: 3,
+    payment_dunning_next_at: null,
+  })
+  .eq('id', engagementId)
+  .eq('status', 'pending_payment')
+  .eq('payment_dunning_attempt_count', payment_dunning_attempt_count)
+  .select('id, tenant_id, person_id, offering_id')
+  .maybeSingle();
+
+if (!cancelled) return { outcome: 'skipped', reason: 'concurrent_update' };
+```
+
+   - Send cancellation email (best-effort — **cancel stands even if email fails**):
 
 ```ts
 await sendRenderedEmail({
@@ -283,9 +303,11 @@ await sendRenderedEmail({
 });
 ```
 
-   - Insert `notification_log` with `template_name: 'class_cancellation'`, `variables.dunning_key: enrolment_unpaid:${engagementId}:3`, `variables.dunning_kind: 'enrolment_unpaid'`.
+   - Insert `notification_log` with `template_name: 'class_cancellation'`, `status: 'sent'`, `variables.dunning_key: enrolment_unpaid:${engagementId}:3` (uses same partial unique index — one successful cancel email per engagement).
    - `audit_log` `engagement.dunning_cancelled` with `{ attempt_count: 3 }` + TODO waiting list comment.
    - Return `{ outcome: 'cancelled', attemptCount: 3 }`.
+
+Add `hasCancellationAlreadyHandled`: engagement `status === 'cancelled'` OR existing `notification_log` row with `template_name = 'class_cancellation'` and `dunning_key = enrolment_unpaid:<id>:3` with successful status.
 
 ---
 
@@ -359,11 +381,9 @@ entrypoint = "./functions/run-enrolment-payment-dunning/index.ts"
 | Already paid / `active` | skip |
 | Concurrent double cron | one increment only |
 | Idempotency | same attempt no duplicate `notification_log` sent row |
-| `email_opted_in=false` | skip reminder; attempt still increments **or** skip increment? **Locked: skip send but still increment** — obligation advances; parent can pay via portal/admin. Document in code. |
-
-**Locked semantics for opt-out on reminders:** increment obligation + schedule next step; **skip email only** (studio still releases slot on day 14).
-
-**Run:**
+| `email_opted_in=false` | skip send; attempt still increments |
+| Missing recipient / no APP_URL | skip send; attempt still increments; audit reason |
+**Locked semantics for skipped sends (opt-out, no recipient, no APP_URL):** increment obligation + schedule next step; **skip email only** (studio still releases slot on day 14).
 
 ```bash
 pnpm -C apps/web test enrolment-dunning-time.test.ts enrolment-payment-dunning.test.ts payment-dunning-collections.test.ts
@@ -399,6 +419,7 @@ Update `SPEC.md` §6.x item 8 footnote → shipped link (optional one-line if ag
 - [ ] `buildEnrolmentPayUrl` + admin link refactor
 - [ ] `buildDunningEmailContext` enrolment_unpaid implemented
 - [ ] `applyEnrolmentPaymentDunningStep` + cron function
+- [ ] `hasCancellationAlreadyHandled` idempotency for day 14
 - [ ] `finalise-payment` clears dunning fields
 - [ ] `config.toml` entry
 - [ ] Tests green
@@ -433,3 +454,19 @@ Update `SPEC.md` §6.x item 8 footnote → shipped link (optional one-line if ag
 | WhatsApp Day 3/7/14 | Twilio deferred |
 | Admin link → collections refactor | Manual path keeps separate audit |
 | `cancel_engagement` RPC for cron | Requires admin JWT — use service update |
+
+---
+
+## Audit notes (2026-07-05)
+
+| Severity | Issue | Resolution |
+| --- | --- | --- |
+| **Critical** | Partial unique index (renewal plan) must exclude `failed` — enrolment inherits same migration | Fixed in renewal Step 0 |
+| **High** | Bootstrap could require two cron passes | Same-invocation fall-through after bootstrap |
+| **High** | Attempt 3 split update → cancel could fail leaving `count=3`, still `pending_payment` | Single atomic cancel update |
+| **Medium** | Day 14 cancel email failure could block cancel | Cancel first; email best-effort |
+| **Medium** | Duplicate cancel on cron replay | `hasCancellationAlreadyHandled` |
+| **Medium** | `recipientPersonId` for opt-out | Same fix as renewal plan |
+| **Low** | Admin manual link + cron both email parent | Accept — different idempotency keys |
+| **Low** | Waiting list not triggered | V2.2 TODO (SPEC-aligned) |
+| **Out of scope** | `admin_review` / `pending_offer` unpaid | Not `pending_payment` — correct |
