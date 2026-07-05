@@ -439,9 +439,10 @@ export const NotificationLogSchema = z.object({
   subject: z.string().nullable().optional(),
   body_preview: z.string().nullable().optional(),
   external_msg_id: z.string().nullable().optional(),
-  status: z.enum(['sent', 'delivered', 'read', 'failed', 'bounced']).default('sent'),
+  status: z.enum(['sent', 'delivered', 'read', 'failed', 'bounced', 'pending']).default('sent'),
   failure_reason: z.string().nullable().optional(),
-  sent_at: TimestampSchema,
+  created_at: TimestampSchema.optional(),
+  sent_at: TimestampSchema.nullable().optional(),
 });
 
 export type NotificationLog = z.infer<typeof NotificationLogSchema>;

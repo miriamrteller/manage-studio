@@ -7,6 +7,28 @@ import { GrowPaymentProvider } from '../../../../supabase/functions/_shared/paym
 import paymentNotify from './fixtures/grow-payment-notify.json';
 
 function makeService() {
+  // Terminal rows returned per table by single()/maybeSingle().
+  const singleRowByTable: Record<string, unknown> = {
+    tenants: { payment_provider_account_id: 'grow_user_1' },
+  };
+  // maybeSingle() lookups (replay check, existing card token) default to null.
+  const maybeSingleRowByTable: Record<string, unknown> = {
+    payments: null,
+    payment_method_tokens: null,
+  };
+
+  const makeBuilder = (table: string) => {
+    const builder: Record<string, unknown> = {
+      select: () => builder,
+      eq: () => builder,
+      is: () => builder,
+      single: async () => ({ data: singleRowByTable[table] ?? null, error: null }),
+      maybeSingle: async () => ({ data: maybeSingleRowByTable[table] ?? null, error: null }),
+      insert: async () => ({ data: null, error: null }),
+    };
+    return builder;
+  };
+
   return {
     rpc: async () => ({
       data: [
@@ -17,13 +39,7 @@ function makeService() {
       ],
       error: null,
     }),
-    from: () => ({
-      select: () => ({
-        eq: () => ({
-          single: async () => ({ data: { payment_provider_account_id: 'grow_user_1' }, error: null }),
-        }),
-      }),
-    }),
+    from: (table: string) => makeBuilder(table),
   } as never;
 }
 

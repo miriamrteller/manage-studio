@@ -638,7 +638,7 @@ src/
 │   ├── payments/
 │   ├── expenses/                      # Admin expense tracking — V1
 │   ├── communications/
-│   ├── teachers/
+│   ├── teachers/                      # V2.11 — admin CRUD + teacher portal; V1: staff table + service only
 │   ├── schedule/
 │   └── admin/
 ├── components/
@@ -2373,10 +2373,11 @@ Build in this strict order (each module depends on previous):
 > supabase.from('terms').select('*').eq('tenant_id', tenantId).eq('status', 'active').single()
 > ```
 > Never use `.eq('is_current', true)` — that column does not exist.
-| 4     | Classes + Requirements | Create class, define requirements, assign teacher             | Levels, Terms, Migrations 005 |
+| 4     | Classes + Requirements | Create class, define requirements, optional `staff_id` on offering (no teachers admin UI in V1) | Levels, Terms, Migrations 005 |
 | 5     | Class sessions         | Generate sessions via Edge Function on class creation         | Classes module |
 | 6     | Enrolment              | 4-step wizard (no placement questionnaire in V1)              | People, Families, Classes, Sessions (Migrations 006) |
-| 7     | Teachers               | Profile, class assignment, type (contractor/employee)         | Classes module |
+
+> **Teachers admin (deferred V2.11):** V1 includes the `staff` table, `staff_id` on `offerings`, `TeacherService` / `useTeachers`, and optional teacher select on the class form — but **no** `/admin/setup/teachers` CRUD page, teacher login portal, or payroll. Add staff rows via seed/dev SQL until V2.11 ships. Plan: [docs/plans/teachers-admin-module.md](docs/plans/teachers-admin-module.md).
 
 #### V1 enrolment wizard (simplified — no placement scoring)
 
@@ -2735,6 +2736,7 @@ Items intentionally **not** in the first finance migration or V1 checkout scope:
 5. **Multi-region** — `tenants.region` and routing (V3).
 6. **Unenrol Phase 2 — post-payment withdrawal** — `active` → `withdrawn`; refund wizard (none / partial / full) with immutable negative `payments` rows; Stripe refund for online. See [docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md).
 7. **Unenrol Phase 3 — parent withdrawal requests & refund policy** — parent-initiated request queue; tenant-configurable pro-rata rules; optional account credit. Depends on Phase 1G parent portal.
+8. **Teachers admin UI** — `/admin/setup/teachers` CRUD, schema alignment, nav. V1 uses `staff` table + class-form `staff_id` only. See [§8 V2.11](#v211--teachers-admin-module).
 
 **Shipped (V1):** Admin cancel pre-payment enrolment — [docs/plans/2026-06-02-unenrol-phase-1.md](docs/plans/2026-06-02-unenrol-phase-1.md). Age override + parent review — [docs/plans/2026-06-02-age-override-and-review-request.md](docs/plans/2026-06-02-age-override-and-review-request.md). Parent self-enrolment (Myself) — [docs/plans/parent-self-enrolment/00-overview.md](docs/plans/parent-self-enrolment/00-overview.md).
 
@@ -2886,6 +2888,16 @@ Medical form PDF upload. Photo/media consent per event. GDPR deletion request fl
 ### V2.10 — Progress reports
 
 Teacher writes end-of-term note per student. Admin reviews. System sends PDF to family via email and stores in student record.
+
+### V2.11 — Teachers admin module
+
+Admin CRUD for the `staff` table at **`/admin/setup/teachers`**: name, contact, contract type (`hourly` \| `salary` \| `freelance`), optional hourly rate. Delete blocked when assigned to offerings. Fix shared `StaffSchema` drift with DB.
+
+**V1 already shipped (foundation only):** `staff` table + RLS, `offerings.staff_id` FK, `TeacherService` / `useTeachers`, optional teacher dropdown on class create/edit — staff rows via seed or direct insert until this module ships.
+
+**Out of scope for V2.11:** `teacher` role login portal, payroll runs, `teacher_pay_records`, linking `user_profile_id` to auth invites.
+
+**Plan:** [docs/plans/teachers-admin-module.md](docs/plans/teachers-admin-module.md)
 
 ---
 
