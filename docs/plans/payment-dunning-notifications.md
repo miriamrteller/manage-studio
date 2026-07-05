@@ -1,44 +1,66 @@
-# Phase 1E — Billing-schedule dunning notifications (paste into new agent chat)
+# Phase 1E — Payment dunning: collections layer + renewal track (paste into new agent chat)
 
-**Status:** **Ready** for automated implementation (2026-07-05, hardened for provider decoupling)
+**Status:** **Ready** for automated implementation (2026-07-05, hardened 2026-07-05)
+
+### Agent-readiness checklist
+
+| Criterion | Status |
+| --- | --- |
+| V1 architecture locked (hybrid obligation + collections) | ✅ |
+| One pre-V1 migration with exact SQL | ✅ |
+| Single obligation mutator + single notifier | ✅ |
+| Provider decoupling rules | ✅ |
+| Idempotency SSOT (`notification_log.dunning_key`) | ✅ |
+| Exact EN/HE copy strings (Step 1b) | ✅ |
+| Email opt-out lookup pattern | ✅ |
+| Schedule concurrency / double-fire guard | ✅ |
+| Test matrix + run commands | ✅ |
+| Enrolment unpaid cron | ❌ follow-on plan (intentional) |
+
+**Verdict:** Ready to paste into a new agent chat for **renewal track + foundation**. Matches industry-standard hybrid for studio SaaS at this scale — not a generic billing-platform engine (correct for V1).
 
 ## Mission
 
-Wire **`PAYMENT_REMINDER`** emails when a **`billing_schedules`** row enters a failed-attempt state (recurring monthly billing dunning ladder). Retry timing and suspend logic already ship — this plan **consolidates all failure entry points** into one provider-agnostic module and adds payer notification.
+Implement the **V1 payment-dunning architecture** (obligation-on-domain-table + **shared collections code** + **`notification_log` idempotency**), then wire **renewal** failures (`billing_schedules`) to send **`PAYMENT_REMINDER`** emails.
+
+This PR ships **renewal track only**. Enrolment unpaid dunning (§6.x #8) is a **follow-on plan** reusing the same collections module and migration columns added here.
 
 **Repo:** `manage-studio`  
 **SPEC:** Phase 1E dunning · [finance/stage-6-recurring-billing.md](finance/stage-6-recurring-billing.md)  
 **Branch:** branch from `main`  
-**Depends on:** `billing_schedules` ✅ · `dunningNextAttemptAt` ✅ · `PAYMENT_REMINDER` template + `renderPaymentReminderHtml` ✅ · `resolveEnrolmentNotificationRecipient` ✅ · Resend pipeline ✅  
-**Out of scope:** WhatsApp dunning · new email templates · **`pending_payment` / initial checkout dunning** (§6.x #8 — separate track) · admin blast · Stripe dashboard Smart Retries · enrolment cancel on suspend
+**Follow-on:** [enrolment-payment-dunning.md](enrolment-payment-dunning.md) (not this PR)  
+**Depends on:** `billing_schedules` ✅ · `dunningNextAttemptAt` ✅ · `PAYMENT_REMINDER` ✅ · `notification_log` ✅ · Resend ✅  
+**Out of scope:** WhatsApp · new templates · initial checkout fail dunning · waiver reminders (`send-waiver-reminder` stays separate) · generic `dunning_cases` table · Stripe Smart Retries
 
 ---
 
-## Architecture — what is (and is not) decoupled
+## V1 architecture decision (locked — do not diverge)
 
-### ✅ Decoupled from payment providers (V1 renewal track)
+Industry-standard **hybrid** for studio SaaS at this scale:
 
-Dunning **state** lives on **`billing_schedules`** + **`engagements.billing_status`**, not on Stripe / Grow / iCount objects.
+```text
+Layer 1 — Obligation (state on domain row, one SSOT per kind)
+  ├─ Renewals:     billing_schedules (attempt_count, next_attempt_at, status)  ← already exists
+  ├─ Unpaid enrol: engagements.payment_dunning_*                               ← add in Step 0 (unused until follow-on)
+  └─ Waivers:      engagements.waiver_*_reminded_at                            ← existing; do not touch
 
-| Failure origin | Today | After this plan |
-| --- | --- | --- |
-| Stripe `payment_intent.payment_failed` webhook | `handle-payment-event.ts` inline update | → **`applyBillingScheduleDunningFailure`** |
-| Grow / mock `emitSyncEvent` (`payment.failed`) | same webhook handler | → same |
-| iCount IPN / mock IPN failure | same webhook handler | → same |
-| `createCharge` / `chargeWithToken` throws before webhook | `renewal-billing.ts` catch (duplicate logic) | → same |
-| Missing saved card token at cron time | Updates `last_error` only — **skips ladder** | → same helper (counts as attempt 1) |
+Layer 2 — Payment execution (provider adapters, thin)
+  └─ Normalized events → obligation updates only via apply* helpers
 
-The dunning module must **not** import `getPaymentProviderForTenant`, provider adapters, or branch on `payment_provider`. Inputs are **`billingScheduleId` + `failureMessage`** only.
+Layer 3 — Collections (shared code, provider-agnostic)
+  └─ sendPaymentDunningReminder({ kind, dunningKey, ... })  ← one module for all payment dunning kinds
 
-### ❌ Not a unified dunning engine across payment types
+Layer 4 — Notification idempotency
+  └─ notification_log.variables.dunning_key + partial unique index
+```
 
-| Payment context | Dunning today | This plan |
-| --- | --- | --- |
-| **Recurring renewal** (`billing_schedules`, `charge_type=renewal`) | Ladder + suspend ✅; emails ❌ | **In scope** |
-| **Initial checkout fail** (`charge_type=initial`) | Provider / Stripe retries only; no app ladder | Out of scope |
-| **`pending_payment` enrolment** (never paid) | Manual `send-admin-enrolment-link` | Out of scope (§6.x #8) |
+**Do not** introduce a generic `dunning_cases` table or duplicate `billing_schedules.attempt_count` elsewhere.
 
-Do **not** try to wire this plan into `create-checkout`, guest pay, or initial webhook failures. A future **engagement dunning** track would be a separate plan (`pending_payment` + cron), reusing the same **email** template but not `billing_schedules`.
+| Kind | Obligation SSOT | Retry charge? | CTA |
+| --- | --- | --- | --- |
+| `renewal` | `billing_schedules` | Yes — `run-monthly-billing` | Portal `/dashboard/portal` |
+| `enrolment_unpaid` | `engagements.payment_dunning_*` | No — remind + pay link | Signed enrolment URL (follow-on) |
+| `waiver` | `engagements.waiver_*` | N/A | Separate cron |
 
 ---
 
@@ -46,11 +68,11 @@ Do **not** try to wire this plan into `create-checkout`, guest pay, or initial w
 
 | Service | Required? | Notes |
 | --- | --- | --- |
-| **Resend** (`RESEND_API_KEY`, tenant `from_email`) | **Yes** for live send smoke | Same as enrolment / admin link emails |
-| **Twilio** | **No** | WhatsApp deferred |
-| New env vars | **No** | Uses existing `APP_URL` |
+| **Resend** + tenant `from_email` | Yes for live smoke | Same as admin enrolment link |
+| **Twilio** | No | |
+| New env vars | No | Uses `APP_URL` |
 
-Unit tests run **without** Resend (mock `sendRenderedEmail`).
+Unit tests run without Resend (mock `sendRenderedEmail`).
 
 ---
 
@@ -58,131 +80,323 @@ Unit tests run **without** Resend (mock `sendRenderedEmail`).
 
 | Item | Status |
 | --- | --- |
-| Dunning ladder (Day 4 / Day 8 retries) | ✅ `dunningNextAttemptAt` in `billing-time.ts` |
-| `run-monthly-billing` cron | ✅ Calls `processBillingSchedule` |
-| Failure → schedule update | ✅ `handle-payment-event.ts` (`payment.failed`, `charge_type=renewal`) |
-| Failure → schedule update (API throw) | ✅ `renewal-billing.ts` catch block |
-| Third failure → `billing_status=suspended` | ✅ Both paths |
-| **`PAYMENT_REMINDER` on failure** | ❌ Not called |
-| Admin suspend notification | ❌ Audit only today |
-| Missing saved token at cron | ❌ No ladder increment | **Fix:** route through dunning helper |
+| Renewal ladder on `billing_schedules` | ✅ |
+| Failure paths (webhook + cron catch) | ✅ duplicated inline |
+| Missing saved token at cron | ❌ skips ladder |
+| Shared collections module | ❌ |
+| `notification_log` dunning idempotency | ❌ |
+| `engagements.payment_dunning_*` columns | ❌ |
+| Renewal `PAYMENT_REMINDER` emails | ❌ |
 
 ---
 
-## Locked semantics (V1)
+## Locked semantics — renewal track (this PR)
 
 | Rule | Value |
 | --- | --- |
-| **Scope** | **`charge_type === 'renewal'`** failures only (recurring monthly billing) |
-| **Trigger** | After schedule row updated with new `attempt_count` (1 or 2 = retry; 3 = suspended) |
-| **Recipient** | `resolveEnrolmentNotificationRecipient(tenantId, engagement.person_id)` |
-| **Respect opt-out** | Skip send if guardian has `contact_preferences.email_opted_in === false` (no row = send) |
-| **Template** | Existing `EMAIL_TEMPLATE_NAMES.PAYMENT_REMINDER` — no new React template |
-| **CTA URL** | `${APP_URL}/dashboard/portal` (parent portal; signed-in pay / card update) |
-| **Copy by attempt** | Attempt **1–2:** standard reminder intro + `dueDate` = formatted `next_attempt_at` from schedule update. Attempt **3 (suspended):** use `daysSinceOverdue: 8` + `intro_overdue` strings from i18n JSON via `renderPaymentReminderHtml` / pass through `variables.intro` override |
-| **Amount** | `resolveOfferingPrice(offering.price_minor)` for current catalogue price (same as renewal charge) |
-| **Idempotency** | Before send, query `audit_log` for `action='renewal.dunning_email_sent'` + `entity_id=billing_schedule_id` + `after_state.attempt_count` matching current attempt — skip if exists |
-| **Audit success** | Insert `audit_log` `renewal.dunning_email_sent` with `{ attempt_count, recipient_email, engagement_id }` |
-| **Audit skip/fail** | `renewal.dunning_email_skipped` / `renewal.dunning_email_failed` with reason |
-| **`notification_log`** | **Optional V1** — do **not** block on it; audit_log is SSOT for this feature |
-| **Admin email on suspend** | **Out of scope** — suspend already visible in admin finance; no new admin template in V1 |
+| **Scope** | `charge_type === 'renewal'` + `billing_schedule_id` |
+| **Obligation mutator** | `applyBillingScheduleDunningFailure` — **only** place that increments schedule `attempt_count` / suspend |
+| **Notifier** | `sendPaymentDunningReminder` with `kind: 'renewal'` — **no** provider imports |
+| **Recipient** | `resolveEnrolmentNotificationRecipient(tenantId, person_id)` |
+| **Opt-out** | Skip if `contact_preferences.email_opted_in === false` (no row = send) |
+| **Template** | `EMAIL_TEMPLATE_NAMES.PAYMENT_REMINDER` |
+| **CTA** | `${APP_URL}/dashboard/portal` |
+| **Copy** | Attempt 1–2: retry date from `next_attempt_at`. Attempt 3 (suspended): suspend copy (EN + HE) |
+| **Amount** | `resolveOfferingPrice(offering.price_minor)` |
+| **Dunning key** | `renewal:<billing_schedule_id>:<attempt_count>` |
+| **Idempotency SSOT** | `notification_log` — skip send if row exists with same `dunning_key` + `template_name = payment_reminder` |
+| **Audit** | Insert `notification_log` on every send attempt; optional `audit_log` `billing_schedule.dunning_notified` for ops |
+| **Admin email on suspend** | Out of scope |
 
 ---
 
 ## Hard rules
 
-1. **No SQL migration.**
-2. **Single entry point:** `applyBillingScheduleDunningFailure` — all schedule failure paths call this and **only** this for ladder + email. No inline schedule updates elsewhere.
-3. **Provider-agnostic:** dunning modules must not import payment provider code or read `tenants.payment_provider`.
-4. **Idempotent ladder:** if `attempt_count` is already ≥ input `previousAttemptCount + 1` for this failure generation, skip schedule update + email (guards webhook + catch double-fire).
-5. Email send failures must **not** roll back schedule updates (log + continue).
-6. **Do not** change dunning timing (`dunningNextAttemptAt`) or suspend threshold (3).
-7. Run `pnpm -C apps/web test billing-time.test.ts provider-isolation-renewal-refund.test.ts renewal-dunning-email.test.ts`.
-8. **No git commit/push** unless user explicitly asks.
+1. **One migration** (Step 0) — last schema change for payment dunning before V1 prod.
+2. **Never** move renewal `attempt_count` off `billing_schedules`.
+3. **Single schedule mutator:** `applyBillingScheduleDunningFailure` — remove all inline schedule failure updates elsewhere.
+4. **Single notifier:** `sendPaymentDunningReminder` in `_shared/collections/` — renewal and future enrolment kinds share this file.
+5. **Provider-agnostic:** collections + obligation helpers must not import `providers/` or read `payment_provider`.
+6. **Idempotent:** check `dunning_key` before send; unique index prevents duplicate rows under concurrency.
+7. Email failures must **not** roll back schedule updates.
+8. **Do not** change `dunningNextAttemptAt` ladder or suspend threshold (3).
+9. Run `pnpm -C packages/shared build` after schema/types change; run tests listed in Step 6.
+10. **No git commit/push** unless user explicitly asks.
 
 ---
 
 ## Pre-flight (agent MUST read)
 
-1. `supabase/functions/_shared/payments/handle-payment-event.ts` — renewal failure branch (~L14–48)
-2. `supabase/functions/_shared/payments/renewal-billing.ts` — catch block (~L293–343)
-3. `supabase/functions/_shared/payments/billing-time.ts` — `dunningNextAttemptAt`
-4. `supabase/functions/_shared/enrolment-payment-email.ts` — copy helpers pattern
-5. `supabase/functions/_shared/enrolment-recipient.ts` — `resolveEnrolmentNotificationRecipient`
-6. `supabase/functions/_shared/render-payment-email.ts` + `resend-send.ts` — `PAYMENT_REMINDER` path
-7. `supabase/functions/send-admin-enrolment-link/index.ts` — reference send block (~L174–201)
-8. `docs/plans/finance/stage-6-recurring-billing.md` — locked ladder policy
-9. `packages/shared/src/i18n/email-templates-en.json` — `payment_reminder.intro_overdue`
+1. `supabase/migrations/20260608001600_finance.sql` — `billing_schedules`
+2. `supabase/migrations/20260608001300_engagements.sql` — engagement shape
+3. `supabase/migrations/20260608000600_communications.sql` — `notification_log`
+4. `supabase/functions/_shared/payments/handle-payment-event.ts`
+5. `supabase/functions/_shared/payments/renewal-billing.ts`
+6. `supabase/functions/_shared/payments/billing-time.ts`
+7. `supabase/functions/send-admin-enrolment-link/index.ts` — `PAYMENT_REMINDER` send pattern
+8. `supabase/functions/send-notification/index.ts` — `notification_log` insert pattern
+9. `packages/shared/src/schemas.ts` — `EngagementSchema` (update after migration)
+10. `docs/plans/finance/stage-6-recurring-billing.md`
 
 ---
 
-## Step 1 — Email helper: `send-billing-schedule-dunning-reminder.ts`
+## Step 0 — Pre-V1 migration (foundation for both tracks)
 
-**File:** `supabase/functions/_shared/payments/send-billing-schedule-dunning-reminder.ts`
+**File:** `supabase/migrations/20260705000100_payment_dunning_foundation.sql`
 
-**Export:**
+```sql
+-- Payment dunning foundation (V1 locked architecture).
+-- Renewal SSOT remains billing_schedules; enrolment unpaid SSOT uses columns below (follow-on cron).
 
-```ts
-export async function sendBillingScheduleDunningReminder(
-  service: SupabaseClient,
-  input: {
-    tenantId: string;
-    engagementId: string;
-    billingScheduleId: string;
-    attemptCount: number; // 1 | 2 | 3 after this failure
-    nextAttemptAt: string | null; // null when suspended
-    lastError?: string | null;
-  },
-): Promise<{ sent: boolean; skipped?: string }>
+ALTER TABLE engagements
+  ADD COLUMN IF NOT EXISTS payment_dunning_attempt_count INT NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS payment_dunning_next_at TIMESTAMPTZ;
+
+COMMENT ON COLUMN engagements.payment_dunning_attempt_count IS
+  'Unpaid enrolment dunning ladder (§6.x #8). Zero until pending_payment cron runs. Not used for renewals.';
+COMMENT ON COLUMN engagements.payment_dunning_next_at IS
+  'Next enrolment payment reminder action time (Jerusalem policy in follow-on plan). NULL when inactive.';
+
+-- Idempotency for all payment dunning reminder sends (renewal + future enrolment_unpaid).
+CREATE UNIQUE INDEX IF NOT EXISTS idx_notification_log_dunning_key
+  ON notification_log (tenant_id, template_name, (variables->>'dunning_key'))
+  WHERE (variables->>'dunning_key') IS NOT NULL;
 ```
 
-**Implementation outline:**
+**Also update:**
 
-1. **Idempotency check** — `audit_log` query as locked above.
-2. Load **tenant** (`name`, `language_default`, `from_email`, colors), **engagement** (`person_id`, `offering_id`), **offering** (`name`, `price_minor`, `currency`).
-3. Resolve recipient via `resolveEnrolmentNotificationRecipient`.
-4. Check `contact_preferences.email_opted_in` for recipient person (join via account holder if needed — mirror blast eligibility pattern in `send-notification`).
-5. `resolveNotificationFromEmail(tenant.from_email)` — on missing sender, audit skip and return.
-6. Build copy:
-   - Add `buildBillingScheduleDunningEmailCopy({ language, attemptCount, className, studentName, nextAttemptAt })` in `enrolment-payment-email.ts` (or colocated in helper file if cleaner).
-   - EN attempt 1: *"We couldn't process your monthly payment for {class}. We'll retry on {date}."*
-   - EN attempt 3: *"Your enrollment billing is suspended after 3 failed payment attempts. Please update your payment method in the portal."*
-   - Mirror HE strings.
-7. `paymentUrl = (Deno.env.get("APP_URL") ?? "").replace(/\/$/, "") + "/dashboard/portal"` — if empty, still send with `#` and audit warning in `after_state`.
-8. `sendRenderedEmail({ templateName: PAYMENT_REMINDER, ... })` matching `send-admin-enrolment-link` variables shape.
-9. Audit success / catch failure.
+- `packages/shared/src/schemas.ts` — add to `EngagementSchema` (after `cancelled_by`):
+
+```ts
+  payment_dunning_attempt_count: z.number().int().nonnegative().default(0).optional(),
+  payment_dunning_next_at: TimestampSchema.nullable().optional(),
+```
+
+- `apps/web/src/__tests__/schemas.test.ts` — one parse test with the new fields
+- Regenerate types after migration:
+
+```bash
+pnpm db:types:all:local
+pnpm -C packages/shared build
+```
+
+(`db:types:all:local` requires local Supabase with migration applied; if unavailable, manually add columns to `packages/shared/src/database.types.ts` engagements Row/Insert/Update only — do not hand-edit edge `email-dist` copy; run `pnpm db:types:email-dist` after main types.)
+
+**Do not** add triggers, RPCs, or a `dunning_cases` table.
 
 ---
 
-## Step 2 — Single entry point: `apply-billing-schedule-dunning-failure.ts`
+## Step 1 — Shared collections module
+
+### 1a — `dunning-idempotency.ts`
+
+**File:** `supabase/functions/_shared/collections/dunning-idempotency.ts`
+
+```ts
+export function buildDunningKey(kind: 'renewal' | 'enrolment_unpaid', subjectId: string, attemptCount: number): string;
+
+export async function hasDunningNotificationBeenSent(
+  service: SupabaseClient,
+  tenantId: string,
+  dunningKey: string,
+): Promise<boolean>;
+```
+
+Query `notification_log` where `tenant_id`, `template_name = 'payment_reminder'`, `variables->>dunning_key = dunningKey`, `status IN ('sent','delivered','read','pending')`.
+
+**Failed sends:** rows with `status = 'failed'` may include the same `dunning_key`; they do **not** count as sent (allows Resend retry). Only one **`sent`** row per key — enforced by partial unique index + pre-check.
+
+```ts
+export function buildDunningKey(
+  kind: 'renewal' | 'enrolment_unpaid',
+  subjectId: string,
+  attemptCount: number,
+): string {
+  return `${kind}:${subjectId}:${attemptCount}`;
+}
+```
+
+### 1b — `build-dunning-email-context.ts`
+
+**File:** `supabase/functions/_shared/collections/build-dunning-email-context.ts`
+
+```ts
+export type DunningKind = 'renewal' | 'enrolment_unpaid';
+
+export async function buildDunningEmailContext(
+  service: SupabaseClient,
+  input: {
+    kind: DunningKind;
+    tenantId: string;
+    engagementId: string;
+    offeringId: string;
+    attemptCount: number;
+    nextActionAt: string | null; // next_attempt_at or payment_dunning_next_at
+    paymentUrl: string;
+    language: 'en' | 'he';
+  },
+): Promise<{ recipientEmail: string; recipientName: string; variables: Record<string, unknown>; subject: string } | null>;
+```
+
+- **`renewal`:** use `buildRenewalDunningEmailCopy` below; `paymentUrl` from caller.
+- **`enrolment_unpaid`:** `return null` immediately — **not called in this PR**.
+
+**Locked EN/HE copy — renewal (`buildRenewalDunningEmailCopy`):**
+
+| Attempt | EN `intro` | HE `intro` |
+| --- | --- | --- |
+| 1 | We couldn't process your monthly payment for {className}. We'll try again on {dueDate}. | לא הצלחנו לחייב את התשלום החודשי עבור {className}. ננסה שוב ב-{dueDate}. |
+| 2 | Your monthly payment for {className} is still outstanding. We'll retry on {dueDate}. | התשלום החודשי עבור {className} עדיין לא עבר. ננסה שוב ב-{dueDate}. |
+| 3 | Your billing for {className} is suspended after 3 failed payment attempts. Please update your payment method in the portal. | החיוב עבור {className} הושעה לאחר 3 ניסיונות כושלים. עדכנו את אמצעי התשלום בפורטל. |
+
+| Attempt | EN `ctaButton` | HE `ctaButton` |
+| --- | --- | --- |
+| 1–2 | Update payment method | עדכון אמצעי תשלום |
+| 3 | Open parent portal | כניסה לפורטל |
+
+- `dueDate` = `formatDate(nextActionAt, locale)` when `nextActionAt` set; attempt 3 use today's date formatted.
+- `description` = `{studentName} — {className}` (same as admin link).
+- `subject` (EN): attempt 3 → `Billing suspended — {className}`; else → `Payment failed — {className}`. HE: `החיוב הושעה — {className}` / `תשלום נכשל — {className}`.
+
+Reuse `resolveEnrolmentNotificationRecipient`, load student `people.name`, `resolveOfferingPrice`, `formatCurrency` / `formatDate` from `enrolment-payment-email.ts` / `email-dist/format.js`.
+
+### 1c — `send-payment-dunning-reminder.ts`
+
+**File:** `supabase/functions/_shared/collections/send-payment-dunning-reminder.ts`
+
+```ts
+export async function sendPaymentDunningReminder(
+  service: SupabaseClient,
+  input: {
+    kind: DunningKind;
+    tenantId: string;
+    engagementId: string;
+    offeringId: string;
+    subjectId: string;       // billing_schedule_id OR engagement_id (for key)
+    attemptCount: number;
+    nextActionAt: string | null;
+    paymentUrl: string;
+    recipientPersonId?: string; // for notification_log + opt-out lookup
+  },
+): Promise<{ sent: boolean; skipped?: string }>;
+```
+
+**Flow:**
+
+1. `dunningKey = buildDunningKey(kind, subjectId, attemptCount)`
+2. If `hasDunningNotificationBeenSent` → return `{ sent: false, skipped: 'already_sent' }`
+3. Load tenant (`name`, `language_default`, `from_email`, `primary_color`, `accent_color`).
+4. Resolve recipient via `buildDunningEmailContext` (includes `resolveEnrolmentNotificationRecipient`).
+5. **Email opt-out** — after recipient resolved, load guardian/student `people.id` used for email; query:
+
+```ts
+const { data: prefs } = await service
+  .from('contact_preferences')
+  .select('email_opted_in')
+  .eq('tenant_id', tenantId)
+  .eq('person_id', recipientPersonId)
+  .maybeSingle();
+if (prefs?.email_opted_in === false) {
+  return { sent: false, skipped: 'email_opted_out' };
+}
+```
+
+(`recipientPersonId` = person row whose email was chosen — resolve from same path as `resolveEnrolmentNotificationRecipient`, not engagement.student only.)
+
+6. `resolveNotificationFromEmail(tenant.from_email)` — on error return `{ sent: false, skipped: 'sender_not_configured' }`
+7. `sendRenderedEmail` with `EMAIL_TEMPLATE_NAMES.PAYMENT_REMINDER` and variables:
+
+| Variable | Source |
+| --- | --- |
+| `recipientName` | context |
+| `enrolledClassName` / `className` | offering name |
+| `amountOutstandingFormatted` | `resolveOfferingPrice` |
+| `amountFormatted` | same |
+| `dueDate` | context |
+| `paymentUrl` | input |
+| `description` | context |
+| `intro`, `ctaButton` | context |
+
+8. On success — insert **`notification_log`**:
+
+```ts
+await service.from('notification_log').insert({
+  tenant_id: tenantId,
+  recipient_person_id: recipientPersonId,
+  recipient_email: recipientEmail,
+  channel: 'email',
+  template_name: 'payment_reminder',
+  variables: { ...emailVariables, dunning_key: dunningKey, dunning_kind: kind },
+  external_msg_id: result.id,
+  status: 'sent',
+  sent_at: new Date().toISOString(),
+});
+```
+
+9. On Resend throw — insert `notification_log` with `status: 'failed'`, same `dunning_key` in variables, `failure_reason` message. Do **not** throw to caller (obligation update already committed).
+
+**Renewal call shape (from obligation helper):**
+
+```ts
+await sendPaymentDunningReminder(service, {
+  kind: 'renewal',
+  tenantId,
+  engagementId,
+  offeringId,
+  subjectId: billingScheduleId,
+  attemptCount,
+  nextActionAt: nextAttemptAt,
+  paymentUrl: `${appBase}/dashboard/portal`,
+});
+```
+
+---
+
+## Step 2 — Renewal obligation helper
 
 **File:** `supabase/functions/_shared/payments/apply-billing-schedule-dunning-failure.ts`
-
-**Export:**
 
 ```ts
 export async function applyBillingScheduleDunningFailure(
   service: SupabaseClient,
-  input: {
-    billingScheduleId: string;
-    failureMessage: string;
-  },
-): Promise<{ attemptCount: number; nextAttemptAt: string | null; suspended: boolean; skipped?: boolean }>
+  input: { billingScheduleId: string; failureMessage: string },
+): Promise<{ attemptCount: number; nextAttemptAt: string | null; suspended: boolean; skipped?: boolean }>;
 ```
 
 **Behavior:**
 
-1. Load schedule row: `id, tenant_id, engagement_id, attempt_count, status`.
-2. If `status === 'suspended'` → return early (no-op).
-3. Compute `nextAttempt = attempt_count + 1`. Apply existing ladder logic (`dunningNextAttemptAt`, suspend at 3, update `engagements.billing_status`).
-4. Call `sendBillingScheduleDunningReminder` with loaded tenant/engagement ids.
-5. **No provider imports.**
+1. Load schedule: `id, tenant_id, engagement_id, attempt_count, status`.
+2. If `status === 'suspended'` → `{ skipped: true, attemptCount: attempt_count, nextAttemptAt: null, suspended: true }`.
+3. Load engagement `person_id, offering_id`.
+4. `expectedCount = attempt_count`; `nextAttempt = expectedCount + 1`.
+5. Build `updates`: `attempt_count: nextAttempt`, `last_attempt_at: now()`, `last_error: failureMessage`.
+6. If `nextAttempt >= 3`: `status: 'suspended'`, `next_attempt_at: null`; else `next_attempt_at: dunningNextAttemptAt(nextAttempt)`.
+7. **Optimistic update** — prevents webhook + catch double increment:
 
-Move **all** inline schedule failure updates from `handle-payment-event.ts` and `renewal-billing.ts` into this function.
+```ts
+const { data: updated, error } = await service
+  .from('billing_schedules')
+  .update(updates)
+  .eq('id', billingScheduleId)
+  .eq('attempt_count', expectedCount)
+  .neq('status', 'suspended')
+  .select('attempt_count, next_attempt_at, status')
+  .maybeSingle();
+if (!updated) {
+  return { skipped: true, attemptCount: expectedCount, nextAttemptAt: null, suspended: false };
+}
+```
+
+8. If suspending: `engagements.update({ billing_status: 'suspended' }).eq('id', engagement_id)`.
+9. `appBase = (Deno.env.get('APP_URL') ?? '').replace(/\/$/, '')`.
+10. Call `sendPaymentDunningReminder` with `attemptCount: nextAttempt`, `nextActionAt: updated.next_attempt_at`, `paymentUrl: appBase ? `${appBase}/dashboard/portal` : '#''`.
+11. Return `{ attemptCount: nextAttempt, nextAttemptAt: updated.next_attempt_at, suspended: nextAttempt >= 3 }`.
+
+Move **all** inline schedule failure logic from `handle-payment-event.ts` and `renewal-billing.ts` here.
 
 ---
 
-## Step 3 — Wire call sites (thin adapters only)
+## Step 3 — Wire payment entry points (thin adapters)
 
 ### 3a — `handle-payment-event.ts`
 
@@ -191,78 +405,88 @@ On `payment.failed` when `metadata.charge_type === 'renewal'` && `metadata.billi
 ```ts
 await applyBillingScheduleDunningFailure(service, {
   billingScheduleId: metadata.billing_schedule_id,
-  failureMessage: event.failureMessage ?? "Payment failed",
+  failureMessage: event.failureMessage ?? 'Payment failed',
 });
 ```
 
-Remove inline `billing_schedules` update block entirely.
+Remove inline `billing_schedules` update block.
 
 ### 3b — `renewal-billing.ts`
 
-**Catch block** — replace inline update with:
+- **Catch block** → same `applyBillingScheduleDunningFailure` call.
+- **Missing saved token branch** (~L175–192) → same call with `failureMessage: 'No saved card token'`.
 
-```ts
-await applyBillingScheduleDunningFailure(service, {
-  billingScheduleId: schedule.id,
-  failureMessage: err instanceof Error ? err.message : "Charge failed",
-});
-```
-
-**Missing saved token branch** (~L175–192) — replace `last_error`-only update with same call (`failureMessage: 'No saved card token'`).
-
-Do **not** call dunning from provider adapters.
+**Do not** call dunning from provider adapters.
 
 ---
 
-## Step 4 — Tests
+## Step 4 — Refactor admin link (optional, recommended)
 
-**File:** `apps/web/src/__tests__/renewal-dunning-email.test.ts`
+`send-admin-enrolment-link` already sends `PAYMENT_REMINDER` for manual unpaid enrolment. **Do not refactor in this PR** unless trivial — note for follow-on: manual admin send does **not** use `dunning_key` (different idempotency: admin action). Enrolment cron will use `enrolment_unpaid:<engagement_id>:<attempt>`.
 
-Use vi.mock on `sendRenderedEmail` / `resend-send.ts`:
+---
+
+## Step 5 — Tests
+
+**File:** `apps/web/src/__tests__/payment-dunning-collections.test.ts`
 
 | Case | Assert |
 | --- | --- |
-| Attempt 1 failure | Schedule `attempt_count=1`, `next_attempt_at` set, email mocked once, audit `renewal.dunning_email_sent` |
-| Attempt 3 failure | Schedule `status=suspended`, engagement `billing_status=suspended`, email with suspend copy |
-| Idempotency | Second call same attempt → no second email |
-| Missing recipient | Audit `renewal.dunning_email_skipped`, no throw |
-| `email_opted_in=false` | Skip send |
-| Missing token at cron | Ladder attempt 1 + email |
-| Double webhook + catch | Second call no-op (`skipped: true`) |
+| `buildDunningKey('renewal', id, 2)` | Stable string format |
+| Idempotency helper | Second check returns true after log insert |
+| `applyBillingScheduleDunningFailure` attempt 1 | schedule updated + `sendPaymentDunningReminder` mocked once |
+| Attempt 3 | suspended + suspend copy |
+| Double webhook + catch | schedule not double-incremented; one notification_log row |
+| Missing recipient | no throw; notification_log failed or skip |
+| `email_opted_in=false` | skip send; no duplicate key insert |
+| Missing token path | attempt 1 + notify |
 
-Reuse patterns from `provider-isolation-renewal-refund.test.ts` for Supabase mock client if needed.
+Mock `sendRenderedEmail` and Supabase client per `provider-isolation-renewal-refund.test.ts`.
+
+**Also run:**
+
+```bash
+pnpm -C apps/web test billing-time.test.ts provider-isolation-renewal-refund.test.ts payment-dunning-collections.test.ts
+```
 
 ---
 
-## Step 5 — Docs
+## Step 6 — Docs + verification commands
 
-Update `docs/IMPLEMENTATION_STATUS.md`:
+Update `docs/IMPLEMENTATION_STATUS.md` (see Definition of done).
 
-- Recurring billing dunning emails → ✅ (after implementation)
-- Phase 1E remaining: note manual smoke with mock renewal failure
+**Post-impl command block:**
+
+```bash
+pnpm db:types:all:local
+pnpm -C packages/shared build
+pnpm -C apps/web test payment-dunning-collections.test.ts billing-time.test.ts provider-isolation-renewal-refund.test.ts
+```
 
 ---
 
 ## Manual smoke (post-impl)
 
-1. Tenant with recurring offering + saved mock token + active `billing_schedules` row.
-2. Force renewal failure (mock provider decline or `payment.failed` webhook with renewal metadata).
-3. Confirm payer receives `PAYMENT_REMINDER` Resend delivery.
-4. Confirm `audit_log` row `renewal.dunning_email_sent`.
-5. Repeat until attempt 3 → verify suspend + final email tone.
+1. Apply migration locally.
+2. Recurring tenant + mock token + due `billing_schedules` row.
+3. Force renewal failure (mock decline or `payment.failed` webhook).
+4. Verify one Resend delivery + one `notification_log` row with `variables.dunning_key`.
+5. Replay same failure → no second email (idempotency).
+6. Third failure → suspend + final email tone.
 
 ---
 
 ## Definition of done
 
-- [ ] `applyBillingScheduleDunningFailure` is the **only** schedule failure mutator
-- [ ] All three entry paths use it (webhook, catch, missing token)
-- [ ] Provider-agnostic (no imports from `providers/`)
-- [ ] Idempotent per `(billing_schedule_id, attempt_count)`
-- [ ] EN + HE copy for attempts 1–3
-- [ ] Unit tests green
+- [ ] Step 0 migration applied; `EngagementSchema` updated
+- [ ] `_shared/collections/` module (idempotency, context, send)
+- [ ] `applyBillingScheduleDunningFailure` is sole renewal schedule mutator
+- [ ] All three renewal entry paths wired (webhook, catch, missing token)
+- [ ] Idempotency via `notification_log.dunning_key` + unique index
+- [ ] EN + HE renewal copy for attempts 1–3
+- [ ] Tests green
 - [ ] `docs/IMPLEMENTATION_STATUS.md` updated
-- [ ] No migration
+- [ ] No generic dunning table; no waiver changes
 
 ---
 
@@ -270,22 +494,26 @@ Update `docs/IMPLEMENTATION_STATUS.md`:
 
 | Action | Path |
 | --- | --- |
+| Add | `supabase/migrations/20260705000100_payment_dunning_foundation.sql` |
+| Add | `supabase/functions/_shared/collections/dunning-idempotency.ts` |
+| Add | `supabase/functions/_shared/collections/build-dunning-email-context.ts` |
+| Add | `supabase/functions/_shared/collections/send-payment-dunning-reminder.ts` |
 | Add | `supabase/functions/_shared/payments/apply-billing-schedule-dunning-failure.ts` |
-| Add | `supabase/functions/_shared/payments/send-billing-schedule-dunning-reminder.ts` |
-| Edit | `supabase/functions/_shared/enrolment-payment-email.ts` (renewal copy helpers) |
 | Edit | `supabase/functions/_shared/payments/handle-payment-event.ts` |
 | Edit | `supabase/functions/_shared/payments/renewal-billing.ts` |
-| Add | `apps/web/src/__tests__/renewal-dunning-email.test.ts` |
+| Edit | `packages/shared/src/schemas.ts` |
+| Edit | `apps/web/src/__tests__/schemas.test.ts` |
+| Add | `apps/web/src/__tests__/payment-dunning-collections.test.ts` |
 | Edit | `docs/IMPLEMENTATION_STATUS.md` |
 
 ---
 
-## Out of scope (explicit deferrals)
+## Out of scope (this PR)
 
-| Item | Track | Notes |
-| --- | --- | --- |
-| Automated `pending_payment` Day 3/7/14 | Engagement track | §6.x #8 — separate plan; reuse `PAYMENT_REMINDER` only |
-| WhatsApp `payment_reminder` | — | Twilio deferred |
-| `payment_reminder_urgent` separate template | — | Use `intro_overdue` / attempt-3 copy on same template |
-| Cancel enrolment on suspend | — | SPEC V2; suspend + manual admin action |
-| `notification_log` rows | — | Optional follow-up |
+| Item | Where |
+| --- | --- |
+| `run-enrolment-payment-dunning` cron | [enrolment-payment-dunning.md](enrolment-payment-dunning.md) |
+| WhatsApp reminders | Deferred |
+| Waiver cron merge | Never — separate domain |
+| Refactor `send-admin-enrolment-link` | Optional later |
+| Cancel enrolment on billing suspend | V2 |

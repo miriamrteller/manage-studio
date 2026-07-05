@@ -2,7 +2,7 @@
 
 Living checklist for in-flight SPEC features. Normative design remains in [SPEC.md](../SPEC.md).
 
-**Last updated:** 2026-07-05 (Guest checkout marked shipped; dunning plan agent-ready)
+**Last updated:** 2026-07-05 (Payment dunning V1 architecture locked in plans)
 
 ---
 
@@ -50,7 +50,8 @@ Rough completion against [SPEC.md §6 V1 Implementation](../SPEC.md#6-v1-impleme
 | Parent portal polish (Phase 1G) | [parent-portal-polish.md](plans/parent-portal-polish.md) | — | ✅ | Merged PR #8 (`0ea9004`, includes `fcad476`): prefs modal, upcoming 7-day, i18n, `returnTo`, login password, adult DOB display, form submit fixes; **Step 7 `notify_*`** + **Step 8 WhatsApp OTP** deferred |
 | **Guest checkout + guest enrolment** | [2026-06-02-guest-enrollment-portal-provisioning.md](plans/2026-06-02-guest-enrollment-portal-provisioning.md) | ✅ `guest_enrolment_*` | ✅ | `/enrol` no login gate; `create-enrolment-intake`; `resolveCheckoutSession` JWT or `enrolment_token`; admin payment link reuses `PAYMENT_REMINDER` |
 | Teachers admin module (V2.11) | [teachers-admin-module.md](plans/teachers-admin-module.md) | ✅ `staff` | 🟡 partial | **Deferred V2.11** — `TeacherService` / `useTeachers` + class-form `staff_id`; no admin page |
-| **Recurring billing dunning emails** | [payment-dunning-notifications.md](plans/payment-dunning-notifications.md) | ✅ `billing_schedules` | 🟡 partial | Retry ladder + suspend ✅; **PAYMENT_REMINDER emails not wired** on failure paths |
+| **Payment dunning — collections layer + renewal emails** | [payment-dunning-notifications.md](plans/payment-dunning-notifications.md) | 🟡 migration `20260705000100` | 🟡 partial | V1 arch: obligation on domain row + `_shared/collections/` + `notification_log.dunning_key`. Renewal ladder ✅; emails + migration ❌ |
+| **Enrolment unpaid dunning (§6.x #8)** | [enrolment-payment-dunning.md](plans/enrolment-payment-dunning.md) | columns in same migration | ❌ | Blocked on collections PR; uses `engagements.payment_dunning_*` |
 | Code rename epic (ex-D5) | [code-rename-epic.md](plans/code-rename-epic.md) | — | — | Deferred |
 
 ---
@@ -153,8 +154,8 @@ Merged to `main` via PR #8 (`0ea9004`; core work in `fcad476`):
 | Upcoming sessions (7-day) | Phase 1G | ✅ |
 | WhatsApp OTP verify in portal | Phase 1G | 🟡 Hint only; full OTP flow deferred |
 | `notify_*` scope toggles | Phase 1G | ❌ DB yes; schema/editor no (1G-b deferred) |
-| Payment dunning (renewal ladder) | Phase 1E | 🟡 Cron + suspend ✅; payer/admin emails ❌ — [payment-dunning-notifications.md](plans/payment-dunning-notifications.md) |
-| Automated `pending_payment` dunning | Phase 1E / §6.x | ❌ Manual admin link only |
+| Payment dunning (renewal ladder + emails) | Phase 1E | 🟡 Ladder ✅; collections + emails ❌ — [payment-dunning-notifications.md](plans/payment-dunning-notifications.md) |
+| Enrolment unpaid dunning cron | §6.x #8 | ❌ Follow-on — [enrolment-payment-dunning.md](plans/enrolment-payment-dunning.md) |
 
 ---
 
@@ -181,7 +182,8 @@ Track in SPEC §6.x — pull into V1 only when explicitly prioritized:
 | --- | --- | --- |
 | **0** | Grow live sandbox E2E (when creds ready) | [grow-live-e2e-verification.md](plans/grow-live-e2e-verification.md) |
 | **0b** | iCount I0-live sandbox (when creds ready) | [finance/icount/00-overview.md](plans/finance/icount/00-overview.md) I0-live block |
-| **1** | Recurring billing dunning emails (renewal failures) | [payment-dunning-notifications.md](plans/payment-dunning-notifications.md) |
+| **1** | Payment dunning — migration + collections + renewal emails | [payment-dunning-notifications.md](plans/payment-dunning-notifications.md) |
+| **1b** | Enrolment unpaid dunning cron (after #1) | [enrolment-payment-dunning.md](plans/enrolment-payment-dunning.md) |
 | **2** | People directory CSV export | SPEC Phase 1F — no plan yet |
 | **3** | Classes list occupancy + waitlist bar | SPEC Phase 1F — partial (`AdminClassesList`) |
 | **4** | Parent portal Step 8 — WhatsApp OTP verify in prefs modal | [parent-portal-polish.md](plans/parent-portal-polish.md) Step 8 |

@@ -1,5 +1,7 @@
 # Stage 6 — Recurring Billing (Scheduler + Dunning)
 
+> **Implementation plan (V1):** [payment-dunning-notifications.md](../payment-dunning-notifications.md) — obligation on `billing_schedules`, shared `_shared/collections/` notifier, `notification_log.dunning_key` idempotency. Enrolment unpaid track: [enrolment-payment-dunning.md](../enrolment-payment-dunning.md).
+
 > **Depends on:** Stage 3 (`finalise-payment`, `saveCard`, renewal metadata), Stage 4, Stage 2.
 > **Outcome:** Flows B and C — schedules, monthly billing, dunning.
 
