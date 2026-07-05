@@ -1,12 +1,12 @@
 # Phase 1E / §6.x #8 — Enrolment unpaid payment dunning (paste into new agent chat)
 
-**Status:** **Ready** for automated implementation (2026-07-05, hardened)
+**Status:** ✅ **Shipped** (2026-07-05, PR #11)
 
 ### Agent-readiness checklist
 
 | Criterion | Status |
 | --- | --- |
-| Depends on renewal collections PR | ⚠️ **Blocked until** [payment-dunning-notifications.md](payment-dunning-notifications.md) merges |
+| Depends on renewal collections PR | ✅ Shipped with [payment-dunning-notifications.md](payment-dunning-notifications.md) |
 | V1 architecture (engagement obligation + shared collections) | ✅ |
 | Uses foundation migration only (no new SQL) | ✅ |
 | Locked Day 3 / 7 / 14 policy (SPEC-aligned) | ✅ |
@@ -17,7 +17,7 @@
 | Test matrix + run commands | ✅ |
 | Waiting list automation | ❌ V2.2 TODO (audit only) |
 
-**Verdict:** Ready to paste into a new agent chat **after** the renewal/collections PR lands. Same industry-standard hybrid as renewal plan — **not** a separate dunning engine.
+**Verdict:** Shipped. Same industry-standard hybrid as renewal plan.
 
 ---
 
@@ -78,16 +78,16 @@ Do **not** use `billing_schedules`. Do **not** add a `dunning_cases` table.
 
 ---
 
-## Current state (after renewal PR)
+## Current state (shipped 2026-07-05, PR #11)
 
-| Item | Expected |
+| Item | Status |
 | --- | --- |
 | `engagements.payment_dunning_*` columns | ✅ from `20260705000100` |
 | `idx_notification_log_dunning_key` | ✅ |
 | `_shared/collections/send-payment-dunning-reminder.ts` | ✅ |
-| `buildDunningEmailContext` `enrolment_unpaid` | ❌ stub → implement |
-| `run-enrolment-payment-dunning` | ❌ |
-| Bootstrap `payment_dunning_next_at` | ❌ |
+| `buildDunningEmailContext` `enrolment_unpaid` | ✅ |
+| `run-enrolment-payment-dunning` | ✅ |
+| Bootstrap `payment_dunning_next_at` | ✅ |
 
 ---
 

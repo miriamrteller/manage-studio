@@ -2,7 +2,7 @@
 
 Living checklist for in-flight SPEC features. Normative design remains in [SPEC.md](../SPEC.md).
 
-**Last updated:** 2026-07-05 (Payment dunning V1 — renewal + enrolment unpaid shipped)
+**Last updated:** 2026-07-05 (Payment dunning V1 shipped — PR #11)
 
 ---
 
@@ -15,7 +15,7 @@ Rough completion against [SPEC.md §6 V1 Implementation](../SPEC.md#6-v1-impleme
 | **1A–1B** | Skeleton, auth, tenant context | ✅ ~95% | A11y CI gates, polish |
 | **1C** | People, families, classes, enrolment, waivers | ✅ ~95% | Classes list occupancy bar (overview ✅); teachers admin → V2.11 |
 | **1D** | Notifications engine | 🟡 ~90% | WhatsApp E2E |
-| **1E** | Payments (Stripe + Grow + iCount mock) | 🟡 ~92% | Live Grow sandbox E2E; iCount I0-live+ |
+| **1E** | Payments (Grow + iCount mock; Stripe in registry) | 🟡 ~94% | Live Grow sandbox E2E; iCount I0-live+ |
 | **1F** | Admin dashboard | ✅ ~95% | Operations overview ✅ (PR #5); people CSV export |
 | **1G** | Parent / student portal | ✅ ~92% | WhatsApp OTP verify in portal; `notify_*` scope toggles (1G-b) |
 | **§7** | Production deployment | ❌ ~10% | Webhooks, Meta templates, legal, security checklist |
@@ -132,6 +132,7 @@ Merged to `main` via PR #8 (`0ea9004`; core work in `fcad476`):
 | `20260625000500` | Admin resend document RPCs |
 | `20260608001600` (+ edits) | Payments + Grow/iCount document columns + credential RPCs (consolidated) |
 | `20260608000200` (+ edits) | Tenant payment provider columns |
+| `20260705000100` | Payment dunning foundation — `engagements.payment_dunning_*`, `notification_log.dunning_key` partial unique index |
 
 **Grow:** payment/invoicing providers, `handle-payment-document`, gap tests, Osek Patur pass-through fix.
 
@@ -140,6 +141,27 @@ Merged to `main` via PR #8 (`0ea9004`; core work in `fcad476`):
 **VAT (2026-06-28):** App charges **gross** offering price; pretax/VAT split removed from `packages/shared/src/pricing.ts`. Israeli tax breakdown comes from Grow/Green Invoice/iCount on issued documents.
 
 **Still manual:** end-to-end charge on real Meshulam sandbox (Grow) and iCount sandbox (I0-live block). Dev paths: `GROW_MOCK=true` / `ICOUNT_MOCK=true` + finance walkthrough. Plan: [grow-live-e2e-verification.md](plans/grow-live-e2e-verification.md).
+
+---
+
+## Payment dunning V1 — detail ✅
+
+Shipped PR #11 (`feat/payment-dunning-v1`):
+
+| Item | Status |
+| --- | --- |
+| Migration `20260705000100` | ✅ |
+| `_shared/collections/` (idempotency, email context, send) | ✅ |
+| `applyBillingScheduleDunningFailure` — sole renewal mutator | ✅ |
+| Wired: `handle-payment-event`, `renewal-billing` (webhook, catch, missing token) | ✅ |
+| `run-enrolment-payment-dunning` cron + `config.toml` | ✅ |
+| `applyEnrolmentPaymentDunningStep` + Jerusalem calendar catch-up | ✅ |
+| `buildEnrolmentPayUrl` + admin link refactor | ✅ |
+| `finalise-payment` clears dunning on pay success | ✅ |
+| Tests (28 cases across 3 dunning test files) | ✅ |
+| **Manual smoke** (Resend renewal + enrolment cron) | ⏳ Recommended before prod |
+
+Plans: [payment-dunning-notifications.md](plans/payment-dunning-notifications.md), [enrolment-payment-dunning.md](plans/enrolment-payment-dunning.md).
 
 ---
 

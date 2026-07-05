@@ -1,6 +1,6 @@
 # Stage 6 — Recurring Billing (Scheduler + Dunning)
 
-> **Implementation plan (V1):** [payment-dunning-notifications.md](../payment-dunning-notifications.md) — obligation on `billing_schedules`, shared `_shared/collections/` notifier, `notification_log.dunning_key` idempotency. Enrolment unpaid track: [enrolment-payment-dunning.md](../enrolment-payment-dunning.md).
+> **Implementation plan (V1):** ✅ Shipped — [payment-dunning-notifications.md](../payment-dunning-notifications.md) (obligation on `billing_schedules`, shared `_shared/collections/` notifier, `notification_log.dunning_key` idempotency). Enrolment unpaid track: [enrolment-payment-dunning.md](../enrolment-payment-dunning.md).
 
 > **Depends on:** Stage 3 (`finalise-payment`, `saveCard`, renewal metadata), Stage 4, Stage 2.
 > **Outcome:** Flows B and C — schedules, monthly billing, dunning.
@@ -81,18 +81,15 @@ document queue row, and schedule advance in one flow.
 
 ### Failure path
 
-Handled in **`handle-payment-event`** on `payment.failed` when `metadata.charge_type === 'renewal'`
-(or inline for mock immediate failures):
+Handled via **`applyBillingScheduleDunningFailure`** (sole mutator) on:
 
-- `attempt_count += 1`, `last_attempt_at = now()`, `last_error` set.
-- Set `next_attempt_at` per ladder (do **not** move `next_billing_date`):
-  - after attempt 1 failure → `now() + interval '3 days'` (retry Day 4)
-  - after attempt 2 failure → `now() + interval '4 days'` (retry Day 8)
-- `attempt_count >= 3` → `engagements.billing_status = 'suspended'`, schedule `status = 'suspended'`,
-  dunning emails to admin + payer.
+- `handle-payment-event` when `payment.failed` + `metadata.charge_type === 'renewal'`
+- `renewal-billing` cron catch when `createCharge` throws
+- `renewal-billing` when saved token missing (Grow/iCount token renewal)
 
-Cron failure path for charge API errors (before webhook): same dunning update inline in
-`run-monthly-billing` when `createCharge` throws.
+Updates: `attempt_count += 1`, `last_attempt_at`, `last_error`; `next_attempt_at` per `dunningNextAttemptAt` ladder (do **not** move `next_billing_date`). At attempt 3: suspend schedule + `engagements.billing_status = 'suspended'` + **`PAYMENT_REMINDER`** email via `sendPaymentDunningReminder({ kind: 'renewal' })`. Idempotency: `notification_log.variables.dunning_key`.
+
+Cron failure path for charge API errors (before webhook): same helper when `createCharge` throws.
 
 ### pg_cron
 
@@ -113,7 +110,7 @@ Pause/resume schedule (`paused` ↔ `active`). Dashboard card → Stage 9.
 - [ ] Mock renewal (sync path) → renewal payment + metadata + document + schedule advanced.
 - [ ] Stripe renewal (webhook path) → same outcome with PaymentIntent metadata.
 - [ ] Failures use `next_attempt_at` only; `next_billing_date` unchanged until success.
-- [ ] Third failure suspends + emails; ladder matches Day 1 / 4 / 8.
+- [x] Third failure suspends + emails; ladder matches Day 1 / 4 / 8.
 - [ ] Same-month idempotency key prevents double charge.
 - [ ] `finalisePayment('renewal')` does not re-activate engagement.
 - [ ] Pause/resume; catalogue price changes reflected.

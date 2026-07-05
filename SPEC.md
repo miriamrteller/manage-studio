@@ -2636,7 +2636,7 @@ export async function sendWhatsApp(
 
 ### Phase 1E — Payments (Days 27–34)
 
-> **V1 locked decisions (2026):** Each school uses its own **Standard Stripe account** (pass-through). **No Stripe Connect in V1.** **Guest checkout is shipped:** public `/enrol` + signed **`enrolment_token`** (`WaiverToken` JWT) for `create-checkout` without a Supabase session — **not** a `checkout_session` DB table. Authenticated checkout remains supported for signed-in families. First DB slice: `payments`, `invoice_sequences`, `next_invoice_number()`, tenant Stripe columns only — **`discount_rules` and `teacher_pay_records` deferred.** Tenant keys entered via **admin settings UI**; secrets encrypted at rest (Vault preferred). Webhook resolves tenant via **`metadata.tenant_id`** on PaymentIntent.
+> **V1 locked decisions (2026):** **Grow (Meshulam)** is the production default for IL bundled tenants (`payment_provider = 'grow'`). **Stripe** remains in the provider registry for future split/US tenants — **not V1 shipping target** (no Stripe Connect in V1). **Guest checkout is shipped:** public `/enrol` + signed **`enrolment_token`** (`WaiverToken` JWT) for `create-checkout` without a Supabase session — **not** a `checkout_session` DB table. Authenticated checkout remains supported for signed-in families. First DB slice: `payments`, `invoice_sequences`, `next_invoice_number()`, tenant payment-provider columns — **`discount_rules` and `teacher_pay_records` deferred.** Tenant keys entered via **admin settings UI**; secrets encrypted at rest (Vault preferred). Webhooks resolve tenant via **`metadata.tenant_id`** on charge events. **Payment dunning shipped (2026-07):** renewal emails via `applyBillingScheduleDunningFailure` + `_shared/collections/`; enrolment unpaid Day 3/7/14 via `run-enrolment-payment-dunning` — see [payment-dunning-notifications.md](docs/plans/payment-dunning-notifications.md), [enrolment-payment-dunning.md](docs/plans/enrolment-payment-dunning.md).
 
 All Stripe API calls creating or modifying payment objects happen in Edge Functions. Frontend receives `clientSecret` only.
 
@@ -2686,14 +2686,30 @@ On payment success:
 4. Insert into `audit_log`
 5. Trigger `send-notification` for confirmation
 
-Dunning (configure in Stripe dashboard — retry schedule):
+Dunning (V1 — app-owned email ladder; provider-agnostic):
+
+**Renewal track** (`billing_schedules` SSOT — obligation on schedule row):
 
 ```
-Day 0:  Decline → Stripe auto-retries
-Day 3:  Retry → send payment_reminder WhatsApp + email
-Day 7:  Retry → send payment_reminder_urgent
-Day 14: Exhausted → enrolment → cancelled; trigger waiting list; send cancellation notice
+Day 1:  First renewal charge attempt (run-monthly-billing)
+Day 4:  Second attempt (+3d after failure) → PAYMENT_REMINDER email (attempt 1)
+Day 8:  Third attempt (+4d after failure) → PAYMENT_REMINDER email (attempt 2)
+After 3 failures: billing_status=suspended + PAYMENT_REMINDER email (attempt 3, suspend copy)
 ```
+
+Implemented: `applyBillingScheduleDunningFailure` → `sendPaymentDunningReminder({ kind: 'renewal' })`; idempotency via `notification_log.variables.dunning_key`. Entry paths: `payment.failed` webhook, cron catch, missing saved token.
+
+**Enrolment unpaid track** (`engagements.payment_dunning_*` SSOT — absolute calendar from `created_at`, Jerusalem):
+
+```
+Day 3:  PAYMENT_REMINDER (standard) — signed /enrol/pay link
+Day 7:  PAYMENT_REMINDER (urgent)
+Day 14: Cancel engagement + CLASS_CANCELLATION email (waiting list automation → V2.2 TODO)
+```
+
+Implemented: `run-enrolment-payment-dunning` cron (daily 03:00 Asia/Jerusalem); manual admin link (`send-admin-enrolment-link`) runs independently without incrementing dunning counters.
+
+**Deferred:** WhatsApp dunning reminders (Twilio); provider-native smart retries (Grow dashboard).
 
 ### Phase 1F — Admin dashboard (Days 35–42)
 
@@ -2737,9 +2753,8 @@ Items intentionally **not** in the first finance migration or V1 checkout scope:
 5. **Unenrol Phase 2 — post-payment withdrawal** — `active` → `withdrawn`; refund wizard (none / partial / full) with immutable negative `payments` rows; Stripe refund for online. See [docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md).
 6. **Unenrol Phase 3 — parent withdrawal requests & refund policy** — parent-initiated request queue; tenant-configurable pro-rata rules; optional account credit. Depends on Phase 1G parent portal.
 7. **Teachers admin UI** — `/admin/setup/teachers` CRUD, schema alignment, nav. V1 uses `staff` table + class-form `staff_id` only. See [§8 V2.11](#v211--teachers-admin-module).
-8. **Automated enrolment dunning cron** — ✅ Shipped — `run-enrolment-payment-dunning` Day 3/7/14 ([enrolment-payment-dunning.md](docs/plans/enrolment-payment-dunning.md)).
 
-**Shipped (V1):** Guest checkout + guest enrolment — [docs/plans/2026-06-02-guest-enrollment-portal-provisioning.md](docs/plans/2026-06-02-guest-enrollment-portal-provisioning.md) (`guest_enrolment_*` RPCs, `create-enrolment-intake`, signed `enrolment_token`, `/enrol` without login gate). Admin cancel pre-payment enrolment — [docs/plans/2026-06-02-unenrol-phase-1.md](docs/plans/2026-06-02-unenrol-phase-1.md). Age override + parent review — [docs/plans/2026-06-02-age-override-and-review-request.md](docs/plans/2026-06-02-age-override-and-review-request.md). Parent self-enrolment (Myself) — [docs/plans/parent-self-enrolment/00-overview.md](docs/plans/parent-self-enrolment/00-overview.md). **Payment dunning (renewal + enrolment unpaid)** — [docs/plans/payment-dunning-notifications.md](docs/plans/payment-dunning-notifications.md), [docs/plans/enrolment-payment-dunning.md](docs/plans/enrolment-payment-dunning.md).
+**Shipped (V1):** Guest checkout + guest enrolment — [docs/plans/2026-06-02-guest-enrollment-portal-provisioning.md](docs/plans/2026-06-02-guest-enrollment-portal-provisioning.md) (`guest_enrolment_*` RPCs, `create-enrolment-intake`, signed `enrolment_token`, `/enrol` without login gate). Admin cancel pre-payment enrolment — [docs/plans/2026-06-02-unenrol-phase-1.md](docs/plans/2026-06-02-unenrol-phase-1.md). Age override + parent review — [docs/plans/2026-06-02-age-override-and-review-request.md](docs/plans/2026-06-02-age-override-and-review-request.md). Parent self-enrolment (Myself) — [docs/plans/parent-self-enrolment/00-overview.md](docs/plans/parent-self-enrolment/00-overview.md). **Payment dunning (renewal + enrolment unpaid)** — [docs/plans/payment-dunning-notifications.md](docs/plans/payment-dunning-notifications.md), [docs/plans/enrolment-payment-dunning.md](docs/plans/enrolment-payment-dunning.md) (`run-enrolment-payment-dunning`, Day 3/7/14).
 
 Track live status in [docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md).
 

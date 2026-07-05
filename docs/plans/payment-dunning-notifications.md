@@ -1,6 +1,6 @@
 # Phase 1E — Payment dunning: collections layer + renewal track (paste into new agent chat)
 
-**Status:** **Ready** for automated implementation (2026-07-05, hardened 2026-07-05)
+**Status:** ✅ **Shipped** (2026-07-05, PR #11)
 
 ### Agent-readiness checklist
 
@@ -15,9 +15,9 @@
 | Email opt-out lookup pattern | ✅ |
 | Schedule concurrency / double-fire guard | ✅ |
 | Test matrix + run commands | ✅ |
-| Enrolment unpaid cron | ❌ [enrolment-payment-dunning.md](enrolment-payment-dunning.md) — agent-ready after this PR |
+| Enrolment unpaid cron | ✅ [enrolment-payment-dunning.md](enrolment-payment-dunning.md) — shipped same PR |
 
-**Verdict:** Ready to paste into a new agent chat for **renewal track + foundation**. Matches industry-standard hybrid for studio SaaS at this scale — not a generic billing-platform engine (correct for V1).
+**Verdict:** Shipped. Renewal track + foundation migration. Enrolment cron shipped in same PR — see [enrolment-payment-dunning.md](enrolment-payment-dunning.md).
 
 ## Mission
 
@@ -80,17 +80,16 @@ Unit tests run without Resend (mock `sendRenderedEmail`).
 
 ---
 
-## Current state (verified 2026-07-05)
+## Current state (shipped 2026-07-05, PR #11)
 
 | Item | Status |
 | --- | --- |
 | Renewal ladder on `billing_schedules` | ✅ |
-| Failure paths (webhook + cron catch) | ✅ duplicated inline |
-| Missing saved token at cron | ❌ skips ladder |
-| Shared collections module | ❌ |
-| `notification_log` dunning idempotency | ❌ |
-| `engagements.payment_dunning_*` columns | ❌ |
-| Renewal `PAYMENT_REMINDER` emails | ❌ |
+| Failure paths (webhook + cron catch + missing token) | ✅ via `applyBillingScheduleDunningFailure` |
+| Shared collections module | ✅ |
+| `notification_log` dunning idempotency | ✅ |
+| `engagements.payment_dunning_*` columns | ✅ |
+| Renewal `PAYMENT_REMINDER` emails | ✅ |
 
 ---
 

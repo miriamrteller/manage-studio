@@ -10,8 +10,8 @@ Agent-optimized implementation plans. Create before coding (see `.instructions.m
 | Date | Feature | Status |
 | --- | --- | --- |
 | 2026-06-29 | [iCount IL default (mock-first)](finance/icount/00-overview.md) | **Mock phase ✅** — I0-live deferred; I6-research optional |
-| 2026-07-05 | [Payment dunning — collections + renewal](payment-dunning-notifications.md) | **Ready** — Step 0 migration + `_shared/collections/` + renewal track |
-| — | [Enrolment unpaid dunning §6.x #8](enrolment-payment-dunning.md) | **Ready** — after collections PR; Day 3/7/14 cron |
+| 2026-07-05 | [Payment dunning — collections + renewal](payment-dunning-notifications.md) | ✅ Shipped — PR #11 |
+| 2026-07-05 | [Enrolment unpaid dunning §6.x #8](enrolment-payment-dunning.md) | ✅ Shipped — PR #11 (same) |
 | 2026-07-05 | [Notification log — message detail viewer](notification-log-detail-viewer.md) | ✅ Shipped — dialog from stored `subject` / `variables` / `body_preview` |
 | 2026-07-05 | [Notification log — recipient search](notification-log-recipient-search.md) | ✅ Shipped — debounced email/phone filter on History tab |
 | 2026-07-01 | [Notification log viewer](notification-log-page.md) | ✅ Shipped — History tab on `/admin/notifications` |
@@ -32,6 +32,7 @@ Agent-optimized implementation plans. Create before coding (see `.instructions.m
 | Date | Feature | Status |
 | --- | --- | --- |
 | 2026-06-28 | [Parent self-enrolment P1–P3](parent-self-enrolment/00-overview.md) | ✅ Complete |
+| 2026-07-05 | [Payment dunning V1](payment-dunning-notifications.md) | ✅ Shipped — renewal + enrolment unpaid ([enrolment plan](enrolment-payment-dunning.md)) |
 | 2026-06-28 | [Age override PR B](age-override-pr-b.md) | ✅ Complete — [index](2026-06-02-age-override-and-review-request.md) |
 | 2026-06-25 | Age override PR A | ✅ — [archive/age-override-pr-a.md](archive/age-override-pr-a.md) |
 | 2026-06-24 | Offering `location` | Complete |

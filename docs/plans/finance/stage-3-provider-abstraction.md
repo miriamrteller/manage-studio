@@ -191,7 +191,7 @@ const result = await provider.createCharge({
 > **Do not** short-circuit on duplicate `provider_payment_ref`. A prior attempt may have inserted
 > the payment row then crashed before finalise; replay must complete side effects.
 
-- On `payment.failed` with `charge_type === 'renewal'`: update schedule dunning fields
+- On `payment.failed` with `charge_type === 'renewal'`: call `applyBillingScheduleDunningFailure` (schedule dunning + email)
   (`attempt_count`, `next_attempt_at`, `last_error`) — do **not** call `finalisePayment`.
 - Signature headers: `stripe-signature` / `x-mock-signature`.
 
