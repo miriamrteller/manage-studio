@@ -15,7 +15,7 @@
 | Email opt-out lookup pattern | ✅ |
 | Schedule concurrency / double-fire guard | ✅ |
 | Test matrix + run commands | ✅ |
-| Enrolment unpaid cron | ❌ follow-on plan (intentional) |
+| Enrolment unpaid cron | ❌ [enrolment-payment-dunning.md](enrolment-payment-dunning.md) — agent-ready after this PR |
 
 **Verdict:** Ready to paste into a new agent chat for **renewal track + foundation**. Matches industry-standard hybrid for studio SaaS at this scale — not a generic billing-platform engine (correct for V1).
 
@@ -239,7 +239,7 @@ export async function buildDunningEmailContext(
 ```
 
 - **`renewal`:** use `buildRenewalDunningEmailCopy` below; `paymentUrl` from caller.
-- **`enrolment_unpaid`:** `return null` immediately — **not called in this PR**.
+- **`enrolment_unpaid`:** `return null` in this PR — full implementation in [enrolment-payment-dunning.md](enrolment-payment-dunning.md) (agent-ready, blocked on this PR).
 
 **Locked EN/HE copy — renewal (`buildRenewalDunningEmailCopy`):**
 

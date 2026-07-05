@@ -51,7 +51,7 @@ Rough completion against [SPEC.md §6 V1 Implementation](../SPEC.md#6-v1-impleme
 | **Guest checkout + guest enrolment** | [2026-06-02-guest-enrollment-portal-provisioning.md](plans/2026-06-02-guest-enrollment-portal-provisioning.md) | ✅ `guest_enrolment_*` | ✅ | `/enrol` no login gate; `create-enrolment-intake`; `resolveCheckoutSession` JWT or `enrolment_token`; admin payment link reuses `PAYMENT_REMINDER` |
 | Teachers admin module (V2.11) | [teachers-admin-module.md](plans/teachers-admin-module.md) | ✅ `staff` | 🟡 partial | **Deferred V2.11** — `TeacherService` / `useTeachers` + class-form `staff_id`; no admin page |
 | **Payment dunning — collections layer + renewal emails** | [payment-dunning-notifications.md](plans/payment-dunning-notifications.md) | 🟡 migration `20260705000100` | 🟡 partial | V1 arch: obligation on domain row + `_shared/collections/` + `notification_log.dunning_key`. Renewal ladder ✅; emails + migration ❌ |
-| **Enrolment unpaid dunning (§6.x #8)** | [enrolment-payment-dunning.md](plans/enrolment-payment-dunning.md) | columns in same migration | ❌ | Blocked on collections PR; uses `engagements.payment_dunning_*` |
+| **Enrolment unpaid dunning (§6.x #8)** | [enrolment-payment-dunning.md](plans/enrolment-payment-dunning.md) | columns in `20260705000100` | ❌ | **Ready** after collections PR — cron Day 3/7/14 |
 | Code rename epic (ex-D5) | [code-rename-epic.md](plans/code-rename-epic.md) | — | — | Deferred |
 
 ---
@@ -155,7 +155,7 @@ Merged to `main` via PR #8 (`0ea9004`; core work in `fcad476`):
 | WhatsApp OTP verify in portal | Phase 1G | 🟡 Hint only; full OTP flow deferred |
 | `notify_*` scope toggles | Phase 1G | ❌ DB yes; schema/editor no (1G-b deferred) |
 | Payment dunning (renewal ladder + emails) | Phase 1E | 🟡 Ladder ✅; collections + emails ❌ — [payment-dunning-notifications.md](plans/payment-dunning-notifications.md) |
-| Enrolment unpaid dunning cron | §6.x #8 | ❌ Follow-on — [enrolment-payment-dunning.md](plans/enrolment-payment-dunning.md) |
+| Enrolment unpaid dunning cron | §6.x #8 | ❌ Agent-ready plan — [enrolment-payment-dunning.md](plans/enrolment-payment-dunning.md) (after collections PR) |
 
 ---
 
@@ -183,7 +183,7 @@ Track in SPEC §6.x — pull into V1 only when explicitly prioritized:
 | **0** | Grow live sandbox E2E (when creds ready) | [grow-live-e2e-verification.md](plans/grow-live-e2e-verification.md) |
 | **0b** | iCount I0-live sandbox (when creds ready) | [finance/icount/00-overview.md](plans/finance/icount/00-overview.md) I0-live block |
 | **1** | Payment dunning — migration + collections + renewal emails | [payment-dunning-notifications.md](plans/payment-dunning-notifications.md) |
-| **1b** | Enrolment unpaid dunning cron (after #1) | [enrolment-payment-dunning.md](plans/enrolment-payment-dunning.md) |
+| **1b** | Enrolment unpaid dunning cron (after #1) | [enrolment-payment-dunning.md](plans/enrolment-payment-dunning.md) — **ready** |
 | **2** | People directory CSV export | SPEC Phase 1F — no plan yet |
 | **3** | Classes list occupancy + waitlist bar | SPEC Phase 1F — partial (`AdminClassesList`) |
 | **4** | Parent portal Step 8 — WhatsApp OTP verify in prefs modal | [parent-portal-polish.md](plans/parent-portal-polish.md) Step 8 |
