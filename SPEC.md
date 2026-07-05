@@ -784,6 +784,9 @@ Landing pages and public class listings need data before a user logs in. The acc
 
 #### 4.2.0 Implemented schema index (V1 slice)
 
+- **2026-07-05 — third squash:** folded `20260625*`–`20260705*` incrementals into the base `20260608*` chain; archived originals under `supabase/migrations_backup/incremental_20260705/`.
+- This index now reflects a single authoritative chain (`20260608000200`–`20260608002600`).
+
 > **2026-06-08 — consolidated chain.** The original 34-file history (`20260526*`–`20260610*`) was rewritten into the 25-file `20260608*` chain below, baking every `ALTER` into its base `CREATE TABLE`. The superseded files are retained read-only under `supabase/migrations_backup/legacy_20260608/`. Filename order = apply order.
 
 > **2026-06-24 — second squash.** Seven post-consolidation incrementals (`20260609*`–`20260624*`) were folded into the base chain (encryption platform config, grow provisioning, enrolment resume drafts, offering location, waiver auth fix). Archived at `supabase/migrations_backup/incremental_20260624/`.
@@ -1026,7 +1029,7 @@ CREATE TABLE classes (
 
 > **`offerings.location` (V1):** Optional nullable `TEXT` (max 500 chars) — human-readable display text for where the class meets (room name, address, or directions). Not a normalized address, geocode, or venue FK. Included in `get_public_offerings_by_subdomain` for public listings; shown in admin, parent portal, enrolment UI, and enrolment confirmation email when set.
 
-> **Legacy blueprint numbering** — see §4.2.0 for authoritative filenames.
+> **Legacy blueprint numbering** — see §4.2.0 for authoritative filenames. The full `expenses` table is included in V1 (not deferred).
 > **Files:** `20260608001000_requirements.sql` (templates, overrides, offering links).
 > Replaces the older single-table `class_requirements` with `requirement_type` CHECK from the blueprint below.
 
@@ -2027,6 +2030,10 @@ Public RPCs (accessible to `anon`) additionally MUST filter by `p_subdomain` and
 ---
 
 #### 4.3.4 Operational Dependencies
+
+- Scheduled jobs are now managed by migration `20260608002600_scheduled_jobs.sql` (pg_cron + pg_net, UTC schedules for Jerusalem business intent).
+- Required deploy-time DB settings (no hardcoded secrets in SQL): `app.settings.supabase_functions_url`, `app.settings.cron_secret`.
+- Production prerequisite: `CRON_SECRET` must be set both in Edge Function secrets and DB GUC before enabling cron jobs.
 
 | Dependency | Where configured | Notes |
 |------------|-----------------|-------|

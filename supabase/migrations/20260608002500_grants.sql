@@ -39,6 +39,8 @@ GRANT SELECT ON TABLE
   public.tenant_notification_templates,
   public.tenant_email_customizations,
   public.expense_categories,
+  public.expenses,
+  public.grow_webhook_secrets,
   public.notification_log,
   public.audit_log,
   public.verification_attempts

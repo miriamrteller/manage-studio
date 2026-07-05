@@ -2,11 +2,13 @@
 
 Living checklist for in-flight SPEC features. Normative design remains in [SPEC.md](../SPEC.md).
 
-**Last updated:** 2026-07-05 (Payment dunning V1 shipped — PR #11)
+**Last updated:** 2026-07-05 (Third migration squash + pg_cron scheduling migration)
 
 ---
 
 ## V1 phase progress (SPEC §6)
+
+- Migration chain now uses the squashed `20260608*` base plus `20260608002600`; post-base incrementals are archived under `supabase/migrations_backup/incremental_20260705/`.
 
 Rough completion against [SPEC.md §6 V1 Implementation](../SPEC.md#6-v1-implementation). Not a hour estimate — feature presence only.
 

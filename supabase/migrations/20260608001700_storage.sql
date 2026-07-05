@@ -168,3 +168,44 @@ CREATE POLICY "Users read own waiver PDFs"
       )
     )
   );
+
+-- ---------------------------------------------------------------------------
+-- expense-receipts bucket (private)
+-- ---------------------------------------------------------------------------
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'expense-receipts',
+  'expense-receipts',
+  false,
+  5242880,
+  ARRAY['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
+)
+ON CONFLICT (id) DO UPDATE SET
+  public             = EXCLUDED.public,
+  file_size_limit    = EXCLUDED.file_size_limit,
+  allowed_mime_types = EXCLUDED.allowed_mime_types;
+
+DROP POLICY IF EXISTS "Admins insert own tenant expense receipts" ON storage.objects;
+DROP POLICY IF EXISTS "Admins read own tenant expense receipts" ON storage.objects;
+
+CREATE POLICY "Admins insert own tenant expense receipts"
+  ON storage.objects FOR INSERT
+  WITH CHECK (
+    bucket_id = 'expense-receipts'
+    AND (storage.foldername(name))[1] = public.get_my_tenant_id()::text
+    AND EXISTS (
+      SELECT 1 FROM public.user_profiles
+      WHERE id = auth.uid() AND 'tenant_admin' = ANY(role)
+    )
+  );
+
+CREATE POLICY "Admins read own tenant expense receipts"
+  ON storage.objects FOR SELECT
+  USING (
+    bucket_id = 'expense-receipts'
+    AND (storage.foldername(name))[1] = public.get_my_tenant_id()::text
+    AND EXISTS (
+      SELECT 1 FROM public.user_profiles
+      WHERE id = auth.uid() AND 'tenant_admin' = ANY(role)
+    )
+  );

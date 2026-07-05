@@ -30,3 +30,19 @@ pg_cron batch (see `issue-document/index.ts` header for the cron schedule).
 `VITE_ENABLE_FINANCE_WALKTHROUGH=true`. It needs the finance seed
 (`pnpm seed:dev -- --finance`) on a tenant configured with `payment_provider=mock` and
 `invoicing_provider=mock` so no live PSP / invoicing secrets are required.
+
+
+## Scheduled jobs (pg_cron + Edge Functions)
+
+| Variable | Where | Purpose |
+|----------|-------|---------|
+| `CRON_SECRET` | Edge function secret + DB GUC (`app.settings.cron_secret`) | Shared auth for scheduled HTTP calls (`x-cron-secret`). Must match in both places. |
+| `app.settings.supabase_functions_url` | DB GUC | Base URL used by `net.http_post` in cron jobs (`https://<project-ref>.supabase.co`). |
+| `APP_URL` | Edge function secret | Required for payment dunning email links; set before enabling the dunning cron job. |
+
+Pre-deploy SQL (manual):
+
+```sql
+ALTER DATABASE postgres SET app.settings.supabase_functions_url = 'https://<project-ref>.supabase.co';
+ALTER DATABASE postgres SET app.settings.cron_secret = '<matches supabase secrets set CRON_SECRET>';
+```
