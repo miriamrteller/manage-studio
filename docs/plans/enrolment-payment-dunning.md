@@ -29,6 +29,7 @@ Automated **Day 3 / 7 / 14** follow-up for engagements in **`pending_payment`**:
 **SPEC:** Phase 1E dunning · §6.x #8 · SPEC Day 3/7/14 prose  
 **Branch:** branch from `main` (after renewal dunning PR)  
 **Depends on:** [payment-dunning-notifications.md](payment-dunning-notifications.md) ✅ · migration `20260705000100_payment_dunning_foundation.sql` ✅  
+**Payment provider:** N/A — enrolment dunning is email + signed pay link only (no charge retry; works with Grow default checkout)
 **Out of scope:** Renewal billing · waiver cron · admin manual link behaviour change · waiting list offer (V2.2) · WhatsApp · new templates
 
 ---

@@ -30,7 +30,7 @@ This PR ships **renewal track only**. Enrolment unpaid dunning (§6.x #8) is a *
 **Branch:** branch from `main`  
 **Follow-on:** [enrolment-payment-dunning.md](enrolment-payment-dunning.md) (not this PR)  
 **Depends on:** `billing_schedules` ✅ · `dunningNextAttemptAt` ✅ · `PAYMENT_REMINDER` ✅ · `notification_log` ✅ · Resend ✅  
-**Out of scope:** WhatsApp · new templates · initial checkout fail dunning · waiver reminders (`send-waiver-reminder` stays separate) · generic `dunning_cases` table · Stripe Smart Retries
+**Out of scope:** WhatsApp · new templates · initial checkout fail dunning · waiver reminders (`send-waiver-reminder` stays separate) · generic `dunning_cases` table · provider-native smart retries (Meshulam/Grow dashboard retries — app owns email ladder only)
 
 ---
 
@@ -61,6 +61,10 @@ Layer 4 — Notification idempotency
 | `renewal` | `billing_schedules` | Yes — `run-monthly-billing` | Portal `/dashboard/portal` |
 | `enrolment_unpaid` | `engagements.payment_dunning_*` | No — remind + pay link | Signed enrolment URL (follow-on) |
 | `waiver` | `engagements.waiver_*` | N/A | Separate cron |
+
+---
+
+**Payment provider context:** V1 production default is **Grow (Meshulam)** — IL bundled provisioning sets `payment_provider = 'grow'`. Stripe remains in the registry for legacy/split tenants but is **not** the dunning target. Collections + obligation layers must stay provider-agnostic (no `providers/` imports).
 
 ---
 
@@ -437,7 +441,7 @@ Remove inline `billing_schedules` update block.
 
 **Do not** call dunning from provider adapters.
 
-**Known provider edge (V1 accept):** Some adapters may surface the same renewal failure via **both** a synchronous throw (cron catch) and a later webhook. Optimistic `attempt_count` guard prevents duplicate increments **within the same count**, but two paths in sequence can advance twice for one charge attempt. Production Stripe renewals are typically webhook-only; document in code comment. Do not add provider refs to dunning SSOT in V1.
+**Known provider edge (V1 accept):** Some adapters (notably **Grow** `createTransactionWithToken` + IPN/webhook) may surface the same renewal failure via **both** a synchronous throw (cron catch) and a later webhook. Optimistic `attempt_count` guard prevents duplicate increments **within the same count**, but two paths in sequence can advance twice for one charge attempt. Document in code comment — do not add provider refs to dunning SSOT in V1.
 
 ---
 
