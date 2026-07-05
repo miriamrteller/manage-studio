@@ -12,6 +12,8 @@ Agent-optimized implementation plans. Create before coding (see `.instructions.m
 | 2026-06-29 | [iCount IL default (mock-first)](finance/icount/00-overview.md) | **Mock phase ✅** — I0-live deferred; I6-research optional |
 | 2026-07-05 | [Payment dunning — collections + renewal](payment-dunning-notifications.md) | **Ready** — Step 0 migration + `_shared/collections/` + renewal track |
 | — | [Enrolment unpaid dunning §6.x #8](enrolment-payment-dunning.md) | **Ready** — after collections PR; Day 3/7/14 cron |
+| 2026-07-05 | [Notification log — message detail viewer](notification-log-detail-viewer.md) | ✅ Shipped — dialog from stored `subject` / `variables` / `body_preview` |
+| 2026-07-05 | [Notification log — recipient search](notification-log-recipient-search.md) | ✅ Shipped — debounced email/phone filter on History tab |
 | 2026-07-01 | [Notification log viewer](notification-log-page.md) | ✅ Shipped — History tab on `/admin/notifications` |
 | 2026-06-30 | [Notification blast composer](notification-blast-composer.md) | ✅ Shipped |
 | 2026-06-29 | [Parent portal polish](parent-portal-polish.md) | ✅ Shipped |

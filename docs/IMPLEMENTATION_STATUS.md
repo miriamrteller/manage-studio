@@ -42,6 +42,8 @@ Rough completion against [SPEC.md §6 V1 Implementation](../SPEC.md#6-v1-impleme
 | Grow G7 settings + verify | [finance/stage-g7-settings-cleanup.md](plans/finance/stage-g7-settings-cleanup.md) | ✅ | ✅ | `GrowSettingsForm`, `verify-grow-credentials`, `FinanceHealthCard` — **live sandbox E2E still manual** |
 | **iCount extension (I0–I4a mock)** | [finance/icount/00-overview.md](plans/finance/icount/00-overview.md) | ✅ `01600` / `00200` | ✅ | Mock-phase complete: `IcountSettingsForm`, bundled checkout, IPN/document adapters, `ICOUNT_MOCK` — **I0-live, I5 default flip deferred** |
 | Notification log viewer | [notification-log-page.md](plans/notification-log-page.md) | ✅ | ✅ | `NotificationLog` mounted on `/admin/notifications` History tab; full i18n (EN + HE), Template column, `sent_at ?? created_at` date |
+| Notification log detail viewer | [notification-log-detail-viewer.md](plans/notification-log-detail-viewer.md) | ✅ | ✅ | Row click / View opens dialog with subject, body, metadata; `otp_code` redacted |
+| Notification log recipient search | [notification-log-recipient-search.md](plans/notification-log-recipient-search.md) | ✅ | ✅ | Debounced name/email/phone filter on History tab |
 | **Age override (PR A)** | [archive/age-override-pr-a.md](plans/archive/age-override-pr-a.md) | ✅ `260001` | ✅ | Policy module, panel, snapshot, guest age gate, tests |
 | **Parent age review (PR B)** | [age-override-pr-b.md](plans/age-override-pr-b.md) | ✅ `260002` | ✅ | Shipped `baa6dd1` — **manual E2E smoke recommended** before prod |
 | **Parent self-enrolment (P1–P3)** | [parent-self-enrolment/00-overview.md](plans/parent-self-enrolment/00-overview.md) | — | ✅ | `resolveGuardianProfile`, portal **Myself**, `GuardianProfileSetupPanel` (`f0c327a`) |
