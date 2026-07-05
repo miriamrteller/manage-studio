@@ -65,8 +65,8 @@ function runPsqlFile(dbUrl, relativePath) {
   console.log(`Running ${relativePath} ...`);
   const result = spawnSync(
     'psql',
-    [dbUrl, '-v', 'ON_ERROR_STOP=1', '-f', filePath],
-    { stdio: 'inherit', shell: process.platform === 'win32' },
+    ['-d', dbUrl, '-v', 'ON_ERROR_STOP=1', '-f', filePath],
+    { stdio: 'inherit', shell: false },
   );
   if (result.error) {
     console.error(`

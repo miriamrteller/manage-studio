@@ -30,6 +30,8 @@
     "db:sync": "pnpm db:push && pnpm db:types",
     "seed:dev": "node scripts/seed-dev.mjs",
     "seed:dev:checklist": "node scripts/seed-dev.mjs -- --checklist",
+    "smoke:cron:dev": "node scripts/smoke-cron-dev.mjs",
+    "smoke:cron:dev:checklist": "node scripts/smoke-cron-dev.mjs -- --checklist",
     "finance:prompt": "node scripts/finance-stage-prompt.mjs",
     "finance-admin:prompt": "node scripts/finance-admin-stage-prompt.mjs",
     "parent-self-enrolment:prompt": "node scripts/parent-self-enrolment-prompt.mjs",
