@@ -1,7 +1,7 @@
 # Guest Enrollment & Parent Portal Provisioning
 
 **Date:** 2026-06-02  
-**Status:** Ready for implementation  
+**Status:** ✅ Shipped (2026-06)  
 **Depends on:** [2026-06-02-enrollment-flow.md](./2026-06-02-enrollment-flow.md) (context-aware student selection, `EnrolmentOnboardingService`)
 
 ---

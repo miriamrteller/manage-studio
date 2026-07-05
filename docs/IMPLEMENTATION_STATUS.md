@@ -2,7 +2,7 @@
 
 Living checklist for in-flight SPEC features. Normative design remains in [SPEC.md](../SPEC.md).
 
-**Last updated:** 2026-07-03 (Teachers admin deferred to V2.11; removed from V1 scope)
+**Last updated:** 2026-07-05 (Guest checkout marked shipped; dunning plan agent-ready)
 
 ---
 
@@ -48,7 +48,9 @@ Rough completion against [SPEC.md §6 V1 Implementation](../SPEC.md#6-v1-impleme
 | **Phase 1F admin operations overview** | [admin-overview-dashboard.md](plans/admin-overview-dashboard.md) | ✅ `20260626000300` | ✅ | RPC, service, hook, 6 components, 7 tests, i18n — **PR #5 complete** |
 | Notification blast composer | [notification-blast-composer.md](plans/notification-blast-composer.md) | ✅ `60701000100` | ✅ | `/admin/notifications`, preview RPC, `admin_blast` send, `AdminAnnouncementEmail`, schema tests — **manual Resend smoke recommended** |
 | Parent portal polish (Phase 1G) | [parent-portal-polish.md](plans/parent-portal-polish.md) | — | ✅ | Merged PR #8 (`0ea9004`, includes `fcad476`): prefs modal, upcoming 7-day, i18n, `returnTo`, login password, adult DOB display, form submit fixes; **Step 7 `notify_*`** + **Step 8 WhatsApp OTP** deferred |
+| **Guest checkout + guest enrolment** | [2026-06-02-guest-enrollment-portal-provisioning.md](plans/2026-06-02-guest-enrollment-portal-provisioning.md) | ✅ `guest_enrolment_*` | ✅ | `/enrol` no login gate; `create-enrolment-intake`; `resolveCheckoutSession` JWT or `enrolment_token`; admin payment link reuses `PAYMENT_REMINDER` |
 | Teachers admin module (V2.11) | [teachers-admin-module.md](plans/teachers-admin-module.md) | ✅ `staff` | 🟡 partial | **Deferred V2.11** — `TeacherService` / `useTeachers` + class-form `staff_id`; no admin page |
+| **Recurring billing dunning emails** | [payment-dunning-notifications.md](plans/payment-dunning-notifications.md) | ✅ `billing_schedules` | 🟡 partial | Retry ladder + suspend ✅; **PAYMENT_REMINDER emails not wired** on failure paths |
 | Code rename epic (ex-D5) | [code-rename-epic.md](plans/code-rename-epic.md) | — | — | Deferred |
 
 ---
@@ -151,7 +153,8 @@ Merged to `main` via PR #8 (`0ea9004`; core work in `fcad476`):
 | Upcoming sessions (7-day) | Phase 1G | ✅ |
 | WhatsApp OTP verify in portal | Phase 1G | 🟡 Hint only; full OTP flow deferred |
 | `notify_*` scope toggles | Phase 1G | ❌ DB yes; schema/editor no (1G-b deferred) |
-| Payment dunning (Day 3/7/14) | Phase 1E | 🟡 Templates + cron; journey not verified |
+| Payment dunning (renewal ladder) | Phase 1E | 🟡 Cron + suspend ✅; payer/admin emails ❌ — [payment-dunning-notifications.md](plans/payment-dunning-notifications.md) |
+| Automated `pending_payment` dunning | Phase 1E / §6.x | ❌ Manual admin link only |
 
 ---
 
@@ -159,16 +162,16 @@ Merged to `main` via PR #8 (`0ea9004`; core work in `fcad476`):
 
 Track in SPEC §6.x — pull into V1 only when explicitly prioritized:
 
-1. Guest checkout
-2. Stripe Connect
-3. `discount_rules` at checkout
-4. Per-tenant Twilio/Resend
-5. Multi-region
-6. **Unenrol Phase 2** — post-payment withdrawal + refund wizard
-7. **Unenrol Phase 3** — parent withdrawal requests (depends on Phase 1G)
-8. **Teachers admin UI** — V2.11 only ([teachers-admin-module.md](plans/teachers-admin-module.md)); not V1
+1. Stripe Connect
+2. `discount_rules` at checkout
+3. Per-tenant Twilio/Resend
+4. Multi-region
+5. **Unenrol Phase 2** — post-payment withdrawal + refund wizard
+6. **Unenrol Phase 3** — parent withdrawal requests (depends on Phase 1G)
+7. **Teachers admin UI** — V2.11 only ([teachers-admin-module.md](plans/teachers-admin-module.md)); not V1
+8. **Automated enrolment dunning cron** — `pending_payment` Day 3/7/14 without admin action
 
-**Shipped:** Unenrol Phase 1 · Age override + review · Parent self-enrolment (Myself).
+**Shipped:** Guest checkout + guest enrolment · Unenrol Phase 1 · Age override + review · Parent self-enrolment (Myself).
 
 ---
 
@@ -178,13 +181,15 @@ Track in SPEC §6.x — pull into V1 only when explicitly prioritized:
 | --- | --- | --- |
 | **0** | Grow live sandbox E2E (when creds ready) | [grow-live-e2e-verification.md](plans/grow-live-e2e-verification.md) |
 | **0b** | iCount I0-live sandbox (when creds ready) | [finance/icount/00-overview.md](plans/finance/icount/00-overview.md) I0-live block |
-| **1** | Notification log viewer (tabs on `/admin/notifications`) | [notification-log-page.md](plans/notification-log-page.md) |
-| **2** | Parent portal Step 8 — WhatsApp OTP verify in prefs modal | [parent-portal-polish.md](plans/parent-portal-polish.md) Step 8 |
-| **3** | Parent portal 1G-b — `notify_*` scope toggles (optional) | [parent-portal-polish.md](plans/parent-portal-polish.md) Step 7 |
-| **4** | Notification blast manual smoke (Resend) | [notification-blast-composer.md](plans/notification-blast-composer.md) Step 7 |
-| **5** | PR B manual E2E smoke (recommended before prod) | [age-override-pr-b.md](plans/age-override-pr-b.md) Step 9 |
-| **6** | Parent portal manual smoke (Step 6 checklist) | [parent-portal-polish.md](plans/parent-portal-polish.md) Step 6 |
-| **7** | Unenrol Phase 2 (refunds) | No plan yet |
+| **1** | Recurring billing dunning emails (renewal failures) | [payment-dunning-notifications.md](plans/payment-dunning-notifications.md) |
+| **2** | People directory CSV export | SPEC Phase 1F — no plan yet |
+| **3** | Classes list occupancy + waitlist bar | SPEC Phase 1F — partial (`AdminClassesList`) |
+| **4** | Parent portal Step 8 — WhatsApp OTP verify in prefs modal | [parent-portal-polish.md](plans/parent-portal-polish.md) Step 8 |
+| **5** | Parent portal 1G-b — `notify_*` scope toggles (optional) | [parent-portal-polish.md](plans/parent-portal-polish.md) Step 7 |
+| **6** | Notification blast manual smoke (Resend) | [notification-blast-composer.md](plans/notification-blast-composer.md) Step 7 |
+| **7** | PR B manual E2E smoke (recommended before prod) | [age-override-pr-b.md](plans/age-override-pr-b.md) Step 9 |
+| **8** | Parent portal manual smoke (Step 6 checklist) | [parent-portal-polish.md](plans/parent-portal-polish.md) Step 6 |
+| **9** | Unenrol Phase 2 (refunds) | No plan yet |
 | Later | §7 production deployment checklist | [SPEC.md §7](../SPEC.md#7-v1-production-deployment) |
 | **V2.11** | Teachers admin CRUD | [teachers-admin-module.md](plans/teachers-admin-module.md) · [SPEC §8 V2.11](../SPEC.md#v211--teachers-admin-module) |
 | Deferred | Code rename epic, other V2 features | [code-rename-epic.md](plans/code-rename-epic.md) · SPEC §8 |

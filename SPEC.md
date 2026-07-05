@@ -2636,13 +2636,14 @@ export async function sendWhatsApp(
 
 ### Phase 1E — Payments (Days 27–34)
 
-> **V1 locked decisions (2026):** Each school uses its own **Standard Stripe account** (pass-through). **No Stripe Connect in V1.** **Checkout requires an authenticated Supabase session** — guest checkout is deferred. First DB slice: `payments`, `invoice_sequences`, `next_invoice_number()`, tenant Stripe columns only — **`discount_rules` and `teacher_pay_records` deferred.** Tenant keys entered via **admin settings UI**; secrets encrypted at rest (Vault preferred). Webhook resolves tenant via **`metadata.tenant_id`** on PaymentIntent.
+> **V1 locked decisions (2026):** Each school uses its own **Standard Stripe account** (pass-through). **No Stripe Connect in V1.** **Guest checkout is shipped:** public `/enrol` + signed **`enrolment_token`** (`WaiverToken` JWT) for `create-checkout` without a Supabase session — **not** a `checkout_session` DB table. Authenticated checkout remains supported for signed-in families. First DB slice: `payments`, `invoice_sequences`, `next_invoice_number()`, tenant Stripe columns only — **`discount_rules` and `teacher_pay_records` deferred.** Tenant keys entered via **admin settings UI**; secrets encrypted at rest (Vault preferred). Webhook resolves tenant via **`metadata.tenant_id`** on PaymentIntent.
 
 All Stripe API calls creating or modifying payment objects happen in Edge Functions. Frontend receives `clientSecret` only.
 
 Key Edge Functions:
 
-- `create-checkout` (V1): validates session; loads offering + tenant; **`resolveOfferingPrice()`** (§2.5.1); creates PaymentIntent with `amount = totalMinor` and VAT breakdown in metadata; returns `clientSecret` (invoice number assigned on webhook success, not at intent creation)
+- `create-checkout` (V1): **`resolveCheckoutSession()`** — Supabase JWT **or** signed `enrolment_token`; loads offering + tenant; **`resolveOfferingPrice()`** (§2.5.1); creates PaymentIntent with `amount = totalMinor` and VAT breakdown in metadata; returns `clientSecret` (invoice number assigned on webhook success, not at intent creation)
+- `create-enrolment-intake`: service-role intake for guest wizard (`guest_enrolment_*` RPCs); creates family + `pending_payment` engagement server-side
 - `create-payment-intent`: legacy alias — align with `create-checkout` or remove; **frontend uses `create-checkout` only**
 - `stripe-webhook`: idempotent handler for `payment_intent.succeeded`, `payment_intent.payment_failed`, `invoice.payment_failed`, `customer.subscription.deleted`; persists metadata pretax/vat/total into `payments` without recalculating from catalogue price
 
@@ -2729,16 +2730,16 @@ Screens:
 
 Items intentionally **not** in the first finance migration or V1 checkout scope:
 
-1. **Guest checkout** — `checkout_session` row + opaque token + rate limits (V1 requires auth session to pay).
-2. **Stripe Connect** — `stripe_account_id` column may exist nullable; Connect onboarding is a later phase.
-3. **`discount_rules` at checkout** — table defined in full schema; not required for first payment slice.
-4. **Per-tenant Twilio/Resend** — migrate `send-notification` off platform env keys; fix client-supplied `tenantId` trust model.
-5. **Multi-region** — `tenants.region` and routing (V3).
-6. **Unenrol Phase 2 — post-payment withdrawal** — `active` → `withdrawn`; refund wizard (none / partial / full) with immutable negative `payments` rows; Stripe refund for online. See [docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md).
-7. **Unenrol Phase 3 — parent withdrawal requests & refund policy** — parent-initiated request queue; tenant-configurable pro-rata rules; optional account credit. Depends on Phase 1G parent portal.
-8. **Teachers admin UI** — `/admin/setup/teachers` CRUD, schema alignment, nav. V1 uses `staff` table + class-form `staff_id` only. See [§8 V2.11](#v211--teachers-admin-module).
+1. **Stripe Connect** — `stripe_account_id` column may exist nullable; Connect onboarding is a later phase.
+2. **`discount_rules` at checkout** — table defined in full schema; not required for first payment slice.
+3. **Per-tenant Twilio/Resend** — migrate `send-notification` off platform env keys; fix client-supplied `tenantId` trust model.
+4. **Multi-region** — `tenants.region` and routing (V3).
+5. **Unenrol Phase 2 — post-payment withdrawal** — `active` → `withdrawn`; refund wizard (none / partial / full) with immutable negative `payments` rows; Stripe refund for online. See [docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md).
+6. **Unenrol Phase 3 — parent withdrawal requests & refund policy** — parent-initiated request queue; tenant-configurable pro-rata rules; optional account credit. Depends on Phase 1G parent portal.
+7. **Teachers admin UI** — `/admin/setup/teachers` CRUD, schema alignment, nav. V1 uses `staff` table + class-form `staff_id` only. See [§8 V2.11](#v211--teachers-admin-module).
+8. **Automated enrolment dunning cron** — Day 3/7/14 reminders for `pending_payment` engagements without admin action (manual path: `send-admin-enrolment-link` + `PAYMENT_REMINDER` today).
 
-**Shipped (V1):** Admin cancel pre-payment enrolment — [docs/plans/2026-06-02-unenrol-phase-1.md](docs/plans/2026-06-02-unenrol-phase-1.md). Age override + parent review — [docs/plans/2026-06-02-age-override-and-review-request.md](docs/plans/2026-06-02-age-override-and-review-request.md). Parent self-enrolment (Myself) — [docs/plans/parent-self-enrolment/00-overview.md](docs/plans/parent-self-enrolment/00-overview.md).
+**Shipped (V1):** Guest checkout + guest enrolment — [docs/plans/2026-06-02-guest-enrollment-portal-provisioning.md](docs/plans/2026-06-02-guest-enrollment-portal-provisioning.md) (`guest_enrolment_*` RPCs, `create-enrolment-intake`, signed `enrolment_token`, `/enrol` without login gate). Admin cancel pre-payment enrolment — [docs/plans/2026-06-02-unenrol-phase-1.md](docs/plans/2026-06-02-unenrol-phase-1.md). Age override + parent review — [docs/plans/2026-06-02-age-override-and-review-request.md](docs/plans/2026-06-02-age-override-and-review-request.md). Parent self-enrolment (Myself) — [docs/plans/parent-self-enrolment/00-overview.md](docs/plans/parent-self-enrolment/00-overview.md).
 
 Track live status in [docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md).
 
