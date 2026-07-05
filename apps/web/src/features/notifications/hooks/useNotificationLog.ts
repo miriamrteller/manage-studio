@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useTenant } from '@/hooks/useTenant';
 import type { NotificationLog } from '@shared/schemas';
+import { applyRecipientFilter, resolveRecipientSearchIds } from '@/features/notifications/lib/notificationLogQuery';
 
 interface UseNotificationLogOptions {
   pageSize?: number;
@@ -9,6 +10,7 @@ interface UseNotificationLogOptions {
   channel?: 'email' | 'whatsapp' | 'voice';
   status?: 'sent' | 'delivered' | 'read' | 'failed' | 'bounced';
   sortOrder?: 'asc' | 'desc';
+  recipientQuery?: string;
 }
 
 interface NotificationLogResponse {
@@ -22,7 +24,7 @@ interface NotificationLogResponse {
 /**
  * Hook: useNotificationLog
  * Fetches paginated notification log for tenant
- * Supports filtering by channel and status
+ * Supports filtering by channel, status, and recipient name/email/phone
  */
 export function useNotificationLog(options: UseNotificationLogOptions = {}) {
   const tenant = useTenant();
@@ -32,9 +34,20 @@ export function useNotificationLog(options: UseNotificationLogOptions = {}) {
   const offset = (page - 1) * pageSize;
 
   const query = useQuery({
-    queryKey: ['notificationLog', tenant?.id, page, pageSize, options.channel, options.status, sortOrder],
+    queryKey: [
+      'notificationLog',
+      tenant?.id,
+      page,
+      pageSize,
+      options.channel,
+      options.status,
+      options.recipientQuery,
+      sortOrder,
+    ],
     queryFn: async (): Promise<NotificationLogResponse> => {
       if (!tenant?.id) throw new Error('Tenant not found');
+
+      const recipientSearchIds = await resolveRecipientSearchIds(tenant.id, options.recipientQuery);
 
       let queryBuilder = supabase
         .from('notification_log')
@@ -49,6 +62,7 @@ export function useNotificationLog(options: UseNotificationLogOptions = {}) {
       if (options.status) {
         queryBuilder = queryBuilder.eq('status', options.status);
       }
+      queryBuilder = applyRecipientFilter(queryBuilder, options.recipientQuery, recipientSearchIds);
 
       let countQuery = supabase
         .from('notification_log')
@@ -61,6 +75,7 @@ export function useNotificationLog(options: UseNotificationLogOptions = {}) {
       if (options.status) {
         countQuery = countQuery.eq('status', options.status);
       }
+      countQuery = applyRecipientFilter(countQuery, options.recipientQuery, recipientSearchIds);
 
       const [dataResult, countResult] = await Promise.all([
         queryBuilder.range(offset, offset + pageSize - 1),

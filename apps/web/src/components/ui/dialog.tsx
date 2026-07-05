@@ -14,9 +14,9 @@ export const DialogTrigger = ({ children, onClick }: { children: React.ReactNode
   <button onClick={onClick}>{children}</button>
 );
 
-export const DialogContent = ({ children }: { children: React.ReactNode; className?: string }) => (
+export const DialogContent = ({ children, className }: { children: React.ReactNode; className?: string }) => (
   <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-    <div className="bg-white rounded-lg p-6 max-w-sm mx-4">{children}</div>
+    <div className={`bg-white rounded-lg p-6 mx-4 w-full ${className ?? 'max-w-sm'}`}>{children}</div>
   </div>
 );
 
