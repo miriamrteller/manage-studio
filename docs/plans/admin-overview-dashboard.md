@@ -1,5 +1,7 @@
 # Phase 1F — Admin operations overview (paste into new agent chat)
 
+> **Shipped.** RPC folded into `20260608002000_admin_rpcs.sql` (third squash, 2026-07-05). Archived incremental: `migrations_backup/incremental_20260705/20260626000300_admin_dashboard_overview_rpc.sql`.
+
 ## Mission
 
 Replace the **placeholder** `useAdminDashboard` with a real **operations overview** on `/admin/setup` and `/dashboard/admin`: today's classes, enrolments this term, revenue/outstanding this month, and quick-action links. Reuse existing finance RPCs where possible.

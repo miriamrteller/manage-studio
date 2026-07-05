@@ -5,69 +5,54 @@ This document outlines the refactored component architecture for reliable, scala
 ## Core Principles
 
 1. **Separation of Concerns**: Pages (composition), Components (UI), Hooks (logic)
-2. **Feature-Based Organization**: Each feature has its own folder under `components/`
+2. **Feature-Based Organization**: Domain code lives under `src/features/[name]/` (components, hooks, services); shared shells under `src/components/`
 3. **Smart + Presentational Split**: Hooks contain logic; components are UI-only
 4. **Centralized Schemas**: All validation in `src/schemas/`
 5. **Accessibility First**: WCAG 2.1 Level AA on all components
 6. **No Magic**: Explicit data flow, no implicit state management
 
-## Folder Structure
+## Folder Structure (implemented — hybrid)
+
+New work goes in **`features/`**. Legacy code may still live under **`components/`** (Dashboard, Navigation, Auth) — migrate when touching those areas.
 
 ```
 src/
+├── features/                   # Primary: domain modules
+│   ├── enrolment/
+│   │   ├── components/
+│   │   ├── hooks/
+│   │   ├── lib/
+│   │   └── service.ts
+│   ├── finance-admin/
+│   ├── admin-dashboard/
+│   ├── people/
+│   ├── classes/                # offerings UI (rename deferred — see code-rename-epic)
+│   └── …
+│
 ├── layouts/                    # Structural shells (auth, nav, footer)
-│   ├── PublicLayout.tsx       # No auth required
-│   ├── ProtectedLayout.tsx    # Auth required
-│   └── RouteGuards.tsx        # Role-based access control
+│   ├── PublicLayout.tsx
+│   ├── ProtectedLayout.tsx
+│   └── RouteGuards.tsx
 │
-├── pages/                      # Light composition containers
-│   ├── LoginPage.tsx          # Layout + LoginForm + Links
-│   ├── ClassesPage.tsx        # Layout + ClassesList
-│   ├── AdminDashboard.tsx     # Layout + AdminRoute + AdminPanel
-│   └── PortalDashboard.tsx    # Layout + ParentRoute + ParentPortal
+├── pages/                      # Route composition (thin — import from features/)
+│   ├── AdminClassesPage.tsx
+│   ├── AdminDashboard.tsx
+│   └── …
 │
-├── components/
-│   ├── Auth/                  # Feature: Authentication
-│   │   ├── LoginForm.tsx      # Smart: Form state + submission
-│   │   ├── AuthMessage.tsx    # Presentational: Message display
-│   │   └── index.ts
-│   │
-│   ├── Classes/               # Feature: Class listing
-│   │   ├── ClassesList.tsx    # Smart: Fetch + display classes
-│   │   ├── ClassCard.tsx      # Presentational: Single class
-│   │   └── index.ts
-│   │
-│   ├── Dashboard/             # Feature: Admin & parent dashboards
-│   │   ├── AdminPanel.tsx     # Smart: Admin dashboard
-│   │   ├── ParentPortal.tsx   # Smart: Parent portal
-│   │   ├── PortalCard.tsx     # Presentational: Dashboard card
-│   │   └── index.ts
-│   │
-│   └── ui/                    # Headless UI primitives
-│       ├── button.tsx         # Base button component
-│       ├── card.tsx           # Base card component
-│       ├── input.tsx          # Base input component
-│       ├── dialog.tsx         # Base dialog component
-│       └── ...other primitives
+├── components/                 # Shared + legacy feature shells
+│   ├── Dashboard/              # Legacy — AdminPanel, useAdminDashboard
+│   ├── Navigation/
+│   ├── shared/
+│   └── ui/                     # shadcn/ui — do not hand-edit
 │
-├── hooks/
-│   ├── useLogin.ts            # Feature: Login form logic
-│   ├── useClasses.ts          # Feature: Classes fetching
-│   ├── useAdminDashboard.ts   # Feature: Admin dashboard data
-│   ├── useParentPortal.ts     # Feature: Parent portal data
-│   ├── useAuth.ts             # Shared: Auth session
-│   ├── useCurrentUser.ts      # Shared: User profile
-│   └── useTenant.ts           # Shared: Tenant config
-│
-├── schemas/                    # Centralized validation
-│   ├── index.ts               # Re-exports from shared + web schemas
-│   └── auth.ts                # SignupForm (web-app specific)
-│
-└── lib/
-    ├── supabase.ts            # Supabase client
-    ├── query-client.ts        # React Query setup
-    └── ...
+├── hooks/                      # Cross-cutting hooks (useTenant, useAuth, …)
+├── services/                   # BaseService and shared clients
+├── lib/
+├── i18n/
+└── router.tsx
 ```
+
+**Schemas:** Zod types live in `packages/shared` (`@shared/schemas`); web-only schemas in `apps/web/src/schemas/` if needed.
 
 ## Component Types
 

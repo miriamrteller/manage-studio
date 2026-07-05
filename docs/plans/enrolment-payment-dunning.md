@@ -28,7 +28,7 @@ Automated **Day 3 / 7 / 14** follow-up for engagements in **`pending_payment`**:
 **Repo:** `manage-studio`  
 **SPEC:** Phase 1E dunning · §6.x #8 · SPEC Day 3/7/14 prose  
 **Branch:** branch from `main` (after renewal dunning PR)  
-**Depends on:** [payment-dunning-notifications.md](payment-dunning-notifications.md) ✅ · migration `20260705000100_payment_dunning_foundation.sql` ✅  
+**Depends on:** [payment-dunning-notifications.md](payment-dunning-notifications.md) ✅ · schema in **`01300`** + **`00600`** (folded from archived `20260705000100`)  
 **Payment provider:** N/A — enrolment dunning is email + signed pay link only (no charge retry; works with Grow default checkout)
 **Out of scope:** Renewal billing · waiver cron · admin manual link behaviour change · waiting list offer (V2.2) · WhatsApp · new templates
 
@@ -82,7 +82,7 @@ Do **not** use `billing_schedules`. Do **not** add a `dunning_cases` table.
 
 | Item | Status |
 | --- | --- |
-| `engagements.payment_dunning_*` columns | ✅ from `20260705000100` |
+| `engagements.payment_dunning_*` columns | ✅ in `20260608001300_engagements.sql` |
 | `idx_notification_log_dunning_key` | ✅ |
 | `_shared/collections/send-payment-dunning-reminder.ts` | ✅ |
 | `buildDunningEmailContext` `enrolment_unpaid` | ✅ |

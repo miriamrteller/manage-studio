@@ -17,7 +17,9 @@
 | Test matrix + run commands | ✅ |
 | Enrolment unpaid cron | ✅ [enrolment-payment-dunning.md](enrolment-payment-dunning.md) — shipped same PR |
 
-**Verdict:** Shipped. Renewal track + foundation migration. Enrolment cron shipped in same PR — see [enrolment-payment-dunning.md](enrolment-payment-dunning.md).
+**Verdict:** Shipped. Renewal track + foundation schema. Enrolment cron shipped in same PR — see [enrolment-payment-dunning.md](enrolment-payment-dunning.md).
+
+> **Post-squash (2026-07-05):** Dunning columns + `idx_notification_log_dunning_key` folded into `20260608001300_engagements.sql` and `20260608000600_communications.sql`. Original incremental archived at `migrations_backup/incremental_20260705/`.
 
 ## Mission
 
@@ -159,7 +161,8 @@ Unit tests run without Resend (mock `sendRenderedEmail`).
 
 ## Step 0 — Pre-V1 migration (foundation for both tracks)
 
-**File:** `supabase/migrations/20260705000100_payment_dunning_foundation.sql`
+**File (historical — pre-squash):** `supabase/migrations/20260705000100_payment_dunning_foundation.sql`  
+**Authoritative (post-squash):** `20260608001300_engagements.sql` (columns) + `20260608000600_communications.sql` (dunning index)
 
 ```sql
 -- Payment dunning foundation (V1 locked architecture).

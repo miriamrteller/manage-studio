@@ -1,4 +1,6 @@
-# Agent prompt — V1 migration squash + pg_cron (paste entire block below into new agent chat)
+# Agent prompt — V1 migration squash + pg_cron (**completed 2026-07-05**)
+
+> Historical agent prompt. Squash + `02600` cron are **shipped**. Chain: **26 files** in `supabase/migrations/`. Keep for reference only.
 
 ---
 

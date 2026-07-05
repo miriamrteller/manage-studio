@@ -595,11 +595,12 @@ ballet-school-system/
 │       ├── archive/                   # Shipped / superseded plans
 │       └── …                          # See docs/plans/README.md
 ├── supabase/
-│   ├── migrations/                    # 25 timestamped SQL files; see Section 4.2.0
+│   ├── migrations/                    # 26 timestamped SQL files; see Section 4.2.0
 │   │   ├── 20260608000200_core_tenants.sql
 │   │   ├── 20260608000300_people.sql
-│   │   ├── … (000200–002500; see 4.2.0)
-│   │   └── 20260608002500_grants.sql
+│   │   ├── … (00200–02600; see 4.2.0)
+│   │   └── 20260608002600_scheduled_jobs.sql
+│   ├── migrations_backup/incremental_20260705/  # third squash archive (2026-07-05)
 │   ├── migrations_backup/legacy_20260608/  # superseded pre-consolidation migrations
 │   ├── reset_dev_db.sql               # Dev-only: drop schema + clear migration history
 │   ├── scripts/                       # link-parent-user.sql, verify-seed.sql
@@ -649,8 +650,8 @@ src/
 │   └── utils.ts
 ├── hooks/
 │   ├── useTenant.ts
-│   ├── useCurrentUser.ts
-│   └── useFeatureFlag.ts
+│   └── useCurrentUser.ts
+│   # useFeatureFlag.ts — planned V3.4 (not implemented)
 ├── i18n/
 │   ├── he.json                        # Hebrew translations
 │   ├── en.json                        # English translations
@@ -787,7 +788,7 @@ Landing pages and public class listings need data before a user logs in. The acc
 - **2026-07-05 — third squash:** folded `20260625*`–`20260705*` incrementals into the base `20260608*` chain; archived originals under `supabase/migrations_backup/incremental_20260705/`.
 - This index now reflects a single authoritative chain (`20260608000200`–`20260608002600`).
 
-> **2026-06-08 — consolidated chain.** The original 34-file history (`20260526*`–`20260610*`) was rewritten into the 25-file `20260608*` chain below, baking every `ALTER` into its base `CREATE TABLE`. The superseded files are retained read-only under `supabase/migrations_backup/legacy_20260608/`. Filename order = apply order.
+> **2026-06-08 — consolidated chain.** The original 34-file history (`20260526*`–`20260610*`) was rewritten into the `20260608*` chain below, baking every `ALTER` into its base `CREATE TABLE`. The superseded files are retained read-only under `supabase/migrations_backup/legacy_20260608/`. Filename order = apply order. **Current chain length: 26 files** (`00200`–`02600`, including `02150_waiver_rpcs`).
 
 > **2026-06-24 — second squash.** Seven post-consolidation incrementals (`20260609*`–`20260624*`) were folded into the base chain (encryption platform config, grow provisioning, enrolment resume drafts, offering location, waiver auth fix). Archived at `supabase/migrations_backup/incremental_20260624/`.
 
@@ -797,31 +798,32 @@ Landing pages and public class listings need data before a user logs in. The acc
 | `20260608000300_people.sql` | `people`, `accounts`, `account_members`, circular FK, `get_my_account_ids()`, `get_my_person_id()`, `is_minor()` | 000200 |
 | `20260608000400_contact_prefs.sql` | `contact_preferences` | 000200, 000300 |
 | `20260608000500_offerings.sql` | `seasons`, `categories`, `staff`, `offerings` (incl. `waiver_required`, `cover_image_path`, `location`) | 000200 |
-| `20260608000600_communications.sql` | `notification_log`, `tenant_notification_templates`, `tenant_email_customizations`, `expense_categories` | 000200, 000300 |
+| `20260608000600_communications.sql` | `notification_log`, `tenant_notification_templates`, `tenant_email_customizations`, `expense_categories`; notification blast RPCs; `idx_notification_log_dunning_key` | 000200, 000300 |
 | `20260608000700_audit_security.sql` | `audit_log`, `otp_codes`, `verification_attempts` + cleanup/rate-limit RPCs | 000200 |
 | `20260608000800_offering_sessions.sql` | `offering_sessions` | 000200, 000500 |
 | `20260608000900_consent_templates.sql` | `consent_templates` + content-immutability trigger | 000200 |
 | `20260608001000_requirements.sql` | `requirement_templates`, `requirement_overrides`, `offering_requirements` | 000200, 000300, 000500 |
 | `20260608001100_billing_accounts.sql` | `billing_accounts` | 000200, 000300 |
 | `20260608001200_waiver_evidence.sql` | `waiver_evidence` (incl. `offering_id`, `guardian_confirmed`), `waiver_events`, immutability triggers, RLS, `sign_waiver()` (26-param) | 000200, 000300, 000500, 000700, 000900 |
-| `20260608001300_engagements.sql` | `engagements` (incl. age-override, waiver-deadline, `waiver_evidence_id` FK), `waitlist`, `enrolment_resume_drafts` | 000200, 000300, 000500, 000800, 001100, 001200 |
+| `20260608001300_engagements.sql` | `engagements` (incl. age-override, waiver-deadline, `payment_dunning_*`, `waiver_evidence_id` FK), `waitlist`, `enrolment_resume_drafts` | 000200, 000300, 000500, 000800, 001100, 001200 |
 | `20260608001400_attendance.sql` | `attendance`, `service_credits` | 000200, 000300, 000500, 000800, 001300 |
 | `20260608001500_engagement_rls.sql` | engagement-dependent RLS on `offering_sessions` + `billing_accounts` | 000300, 000800, 001100, 001300 |
-| `20260608001600_finance.sql` | `payments`, credential RPCs (incl. `save_tenant_grow_credentials`), billing/invoicing tables | 000200, 000300, 000500, 001300, 001100 |
-| `20260608001700_storage.sql` | `offering-images` + `waiver-pdfs` buckets + storage RLS | 000200, 000300, 000500 |
+| `20260608001600_finance.sql` | `payments`, `expenses`, `grow_webhook_secrets`, credential RPCs (Grow/iCount + token invalidation), `get_finance_summary`, admin document RPCs, billing/invoicing tables | 000200, 000300, 000500, 001300, 001100 |
+| `20260608001700_storage.sql` | `offering-images`, `waiver-pdfs`, `expense-receipts` buckets + storage RLS | 000200, 000300, 000500 |
 | `20260608001800_public_rpcs.sql` | `get_public_offerings_by_subdomain(p_subdomain)` (incl. `season_start_date`, `cover_image_path`, `waiver_required`, `location`), `get_tenant_config_by_subdomain(p_subdomain)` — `anon` safe | 000200, 000500 |
 | `20260608001900_auth_trigger.sql` | `handle_new_user` on `auth.users` (reads `raw_user_meta_data`, tenant fallback) | 000200 |
-| `20260608002000_admin_rpcs.sql` | `get_my_profile()`, `link_auth_user_to_person()` (incl. `pending_waiver`) | 000200, 000300, 001300 |
-| `20260608002100_guest_enrolment_rpcs.sql` | `guest_enrolment_check_email/create_family/create_adult/create_engagement` | 000300, 001100, 001300 |
+| `20260608002000_admin_rpcs.sql` | `get_my_profile()`, `link_auth_user_to_person()`, `get_tenant_today()`, `get_admin_dashboard_overview()`, `idx_offerings_season_dow_status` | 000200, 000300, 001300, 001600 |
+| `20260608002100_guest_enrolment_rpcs.sql` | `guest_enrolment_*`, `engagement_age_at_season_start()`, guest age gate on create | 000300, 001100, 001300 |
 | `20260608002150_waiver_rpcs.sql` | `get_pending_waiver_engagement()`, `get_engagement_person_id()` | 000300, 001300 |
-| `20260608002200_admin_enrolment_rpcs.sql` | `search_enrolment_students()` (incl. `pending_waiver`), `admin_enrolment_lookup_email()`, `resolve_engagement_guardian()`, `link_auth_user_to_guardian_for_engagement()` | 000200, 000300, 001300 |
+| `20260608002200_admin_enrolment_rpcs.sql` | `search_enrolment_students()`, `admin_enrolment_lookup_email()`, guardian link RPCs, age-review RPCs | 000200, 000300, 001300 |
 | `20260608002300_engagement_actions.sql` | `cancel_engagement()` (incl. `pending_waiver`) | 000200, 000700, 001300, 001600 |
 | `20260608002400_tenant_provisioning.sql` | `check_subdomain_available()`, `provision_tenant()` (incl. `p_from_email`, IL grow defaults) | 000200, 000600 |
-| `20260608002500_grants.sql` | Schema + table `GRANT`s for `authenticated` / `anon` / `service_role` (incl. `waiver_evidence`, `waiver_events`) | all prior |
+| `20260608002500_grants.sql` | Schema + table `GRANT`s for `authenticated` / `anon` / `service_role` (incl. `waiver_evidence`, `waiver_events`, `expenses`, `grow_webhook_secrets`) | all prior |
+| `20260608002600_scheduled_jobs.sql` | `pg_cron` + `pg_net` extensions; scheduled HTTP jobs (billing, dunning, waiver, issue-document) + SQL cleanup RPCs | 000700, Edge fn auth via GUCs |
 
 > **RLS fixes applied in-place** in all files listed above. See §4.1 and §4.1.1 for the security model these migrations implement.
 
-Sections **4.2.1–4.2.8** below document the **implemented V1 shape**. The subsection numbering is legacy (blueprint era) — authoritative filenames are in the index above. Older blueprint tables (`discount_rules`, full `expenses`, platform `plan` on tenants, etc.) remain in the long-term design notes where marked **Deferred**.
+Sections **4.2.1–4.2.8** below document the **implemented V1 shape**. The subsection numbering is legacy (blueprint era) — authoritative filenames are in the index above. Older blueprint tables (`discount_rules`, platform `plan` on tenants, etc.) remain in the long-term design notes where marked **Deferred**. The **`expenses`** table is implemented in `20260608001600_finance.sql` (third squash, 2026-07-05).
 
 #### 4.2.1 Migration 001 — Tenants and user profiles
 
@@ -1587,7 +1589,7 @@ CREATE POLICY waiver_events_insert ON waiver_events FOR INSERT
 
 #### Migration 009 — Expenses
 
-> **V1 repo status:** `expense_categories` exists (`20260608000600_communications.sql`). Full `expenses` table below is **not** migrated yet — deferred until P&L UI ships.
+> **V1 repo status:** `expense_categories` in `20260608000600_communications.sql`; full **`expenses`** table + `create_expense` RPC in **`20260608001600_finance.sql`** (folded 2026-07-05). Admin P&L UI shipped — see [admin-dashboard-finance](docs/plans/admin-dashboard-finance/00-overview.md).
 
 > **Required in V1.** Without this table you have no P&L and cannot calculate profit.
 > Your accountant needs both sides from day one.
@@ -2267,7 +2269,7 @@ pnpm dlx shadcn@latest init   # New York style, Zinc, CSS variables: yes
 - [ ] `tailwindcss-rtl` plugin added to `tailwind.config.ts`
 - [ ] `format.ts` utilities created (currency, date, phone)
 - [ ] i18next configured with `he.json` as primary, `en.json` as secondary
-- [ ] FullCalendar Hebrew locale imported
+- [ ] FullCalendar Hebrew locale imported *(deps present; admin calendar UI deferred — not V1-shipped)*
 - [ ] All Tailwind spacing uses `ms-`, `me-` not `ml-`, `mr-`
 - [ ] **WCAG 2.1 AA:** Install `@axe-core/react`, `axe-playwright`, `eslint-plugin-jsx-a11y` (run `pnpm dlx snyk test` first)
 - [ ] **WCAG 2.1 AA:** Configure ESLint with jsx-a11y plugin and rules in `.eslintrc.json`
@@ -2786,18 +2788,24 @@ Track live status in [docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.
 
 ```
 DATABASE
-[ ] All migrations applied and verified in Supabase dashboard (repo uses numbered files under supabase/migrations/ — count grows; see docs/IMPLEMENTATION_STATUS.md)
-[ ] Types regenerated: supabase gen types typescript --linked
+[ ] All 26 migrations applied and verified in Supabase dashboard (see §4.2.0 index)
+[ ] Types regenerated: pnpm db:types:all:local (or supabase gen types typescript --linked)
 [ ] RLS verified: parent sees only own family; teacher sees only own tenant
 [ ] Invoice sequences table seeded for your tenant
 [ ] VAT rate set correctly on tenant row (0.17 if עוסק מורשה, 0 if עוסק פטור)
 [ ] `prices_include_vat` matches how school quotes prices (default `true` for parent-facing schools)
+[ ] pg_cron + pg_net extensions enabled; `cron.job` lists 7 scheduled jobs (02600)
+[ ] Database GUCs set: app.settings.supabase_functions_url, app.settings.cron_secret (match Edge CRON_SECRET)
 
-STRIPE
-[ ] Webhook endpoint pointing to stripe-webhook Edge Function
-[ ] Events: payment_intent.succeeded, payment_intent.payment_failed,
-    invoice.payment_failed, customer.subscription.deleted
-[ ] End-to-end test: payment → enrolment active → invoice generated
+GROW (V1 default — IL bundled tenants)
+[ ] Grow sandbox credentials saved via admin settings (bundled payments)
+[ ] Grow webhook secret saved; inbound webhooks authenticated
+[ ] handle-payment-event / handle-payment-document webhooks tested end-to-end
+[ ] End-to-end test: charge → enrolment active → tax document issued (Grow mock or sandbox)
+
+STRIPE (registry only — not V1 shipping target for IL)
+[ ] If US/split tenant: webhook endpoint → stripe-webhook Edge Function
+[ ] Events: payment_intent.succeeded, payment_intent.payment_failed (as applicable)
 
 WHATSAPP
 [ ] Twilio account set up with Israeli phone number
@@ -2820,23 +2828,29 @@ LEGAL
 SECURITY
 [ ] tsc --noEmit: zero errors
 [ ] All secrets in Supabase Vault / Edge Function secrets — none in code
+[ ] CRON_SECRET + APP_URL set for scheduled edge jobs (dunning, billing, waiver, issue-document)
 [ ] Source maps disabled in production Vite config
 ```
 
 ### Secrets configuration
 
 ```bash
+# Edge Function secrets (platform + cron auth)
 supabase secrets set \
-  STRIPE_SECRET_KEY=sk_live_... \
-  STRIPE_WEBHOOK_SECRET=whsec_... \
+  CRON_SECRET=<random-string> \
+  APP_URL=https://your-app.example.com \
   RESEND_API_KEY=re_... \
   TWILIO_ACCOUNT_SID=AC... \
   TWILIO_AUTH_TOKEN=... \
   ANTHROPIC_API_KEY=sk-ant-...
 
-# Production: per-tenant Stripe keys are stored encrypted in tenants table (Vault preferred).
-# Do NOT use platform-wide live STRIPE_SECRET_KEY to charge schools' customers.
-# RESEND/TWILIO below may remain platform-level until send-notification per-tenant migration (Section 6.x).
+# Cron HTTP jobs read DB GUCs (set in SQL Editor — not Edge secrets):
+# ALTER DATABASE postgres SET app.settings.supabase_functions_url = 'https://<project-ref>.supabase.co';
+# ALTER DATABASE postgres SET app.settings.cron_secret = '<same as CRON_SECRET>';
+
+# Per-tenant payment keys: admin settings UI → encrypted on tenants row (Grow default for IL).
+# Stripe keys on tenants row for future split/US tenants only — not V1 IL default.
+# RESEND/TWILIO may remain platform-level until send-notification per-tenant migration (§6.x #3).
 ```
 
 ### Rollback plan

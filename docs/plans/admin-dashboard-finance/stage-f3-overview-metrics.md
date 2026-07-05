@@ -9,9 +9,10 @@
 
 ## Scope IN
 
-### Migration `supabase/migrations/20260625000100_finance_summary_rpc.sql`
+### Migration (post-squash authoritative path)
 
-**RPC only** — do not edit shipped migrations.
+**Folded into:** `supabase/migrations/20260608001600_finance.sql` (`get_finance_summary`).  
+**Archived incremental:** `migrations_backup/incremental_20260705/20260625000200_finance_summary_rpc.sql`
 
 Implement `get_finance_summary(p_start_date DATE, p_end_date DATE)` with **exact auth guard** from `search_enrolment_students` (see `20260608002200_admin_enrolment_rpcs.sql` lines 25–40):
 

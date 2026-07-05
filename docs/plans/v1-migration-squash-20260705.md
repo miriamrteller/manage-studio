@@ -1,22 +1,22 @@
 # V1 migration third squash + reset + seed (paste into new agent chat)
 
-**Status:** **Ready** for automated implementation (2026-07-05)
+**Status:** **Shipped** (2026-07-05) — incrementals folded; chain is **26 files** (`00200`–`02600`, incl. `02150` + `02600_scheduled_jobs`)
 
 ### Agent-readiness checklist
 
 | Criterion | Status |
 | --- | --- |
 | Exact fold map (13 incrementals → base files) | ✅ |
-| Dashboard RPC tenant bug fix during fold | ⚠️ **Required** — `get_my_tenant_id()` not `auth.uid()` |
+| Dashboard RPC tenant bug fix during fold | ✅ Fixed — `get_my_tenant_id()` in `02000` |
 | Supersession rules (290001 over 016/280001, 01120000 over blast) | ✅ |
 | `reset_dev_db.sql` additions listed | ✅ |
 | `seed-finance.sql` fixture rows specified | ✅ |
 | Archive path + delete incrementals | ✅ |
 | Verification commands | ✅ |
 | SPEC §4.2.0 update instructions | ✅ |
-| pg_cron scheduling | ❌ **Out of scope** — [v1-pg-cron-scheduled-jobs.md](v1-pg-cron-scheduled-jobs.md) follow-on |
+| pg_cron scheduling | ✅ [v1-pg-cron-scheduled-jobs.md](v1-pg-cron-scheduled-jobs.md) — `02600` |
 
-**Verdict:** Ready to paste into a new agent chat. **Schema-only PR** — no app code changes unless types/tests fail after `db:types`.
+**Verdict:** Shipped. Schema folded; **`02600`** cron added separately.
 
 ---
 
@@ -33,7 +33,7 @@ Perform the **third pre-V1 migration squash**: fold **13 post-base incrementals*
 
 ## Hard rules
 
-1. **Do not** add new numbered migrations after squash — end state is **24 files only** in `supabase/migrations/`.
+1. Squash end state was **25 base files** (`00200`–`02500` incl. `02150`); **`02600_scheduled_jobs`** added separately → **26 total**.
 2. **Replace** function bodies where incrementals supersede base (do not leave duplicate definitions).
 3. For notification blast: fold **only** `20260701120000_notification_blast_human_search.sql` (final RPC signatures).
 4. For Grow/iCount creds: fold **`20260629000100`** versions of `save_tenant_grow_credentials` and `save_tenant_icount_credentials` (token invalidation). Fold **`save_icount_webhook_secret`** from `20260628000100`.
@@ -128,7 +128,7 @@ Add to `GRANT SELECT ON TABLE` list for `authenticated`:
 
 3. Delete the 13 files from `supabase/migrations/`
 
-**End state:** exactly **24** files: `20260608000200` through `20260608002500`.
+**End state (achieved):** **25** squashed base files (`20260608000200` through `20260608002500`, incl. `02150`); **`02600`** is a forward migration (pg_cron).
 
 ---
 
@@ -239,7 +239,7 @@ SELECT indexname FROM pg_indexes WHERE indexname = 'idx_notification_log_dunning
 SELECT proname FROM pg_proc WHERE proname = 'get_finance_summary';
 ```
 
-**Confirm:** `supabase/migrations/` lists **24 files only** — no `20260625*` or `202607*`.
+**Confirm:** `supabase/migrations/` lists **26 files** — no `20260625*` or `202607*` incrementals.
 
 ---
 
@@ -271,7 +271,7 @@ SELECT proname FROM pg_proc WHERE proname = 'get_finance_summary';
 
 | Severity | Issue | Resolution |
 | --- | --- | --- |
-| **High** | `get_admin_dashboard_overview` uses `auth.uid()` as `v_tenant_id` (line 100 in `20260626000300`) — comment says “same as `get_finance_summary`” but that RPC uses `get_my_tenant_id()`. Dashboard always misses seasons/counts → **P0001 “No active season”** for every real tenant. | When folding into `02000`, change to `v_tenant_id := get_my_tenant_id();` + NULL check (mirror `get_finance_summary`). |
+| **High** | `get_admin_dashboard_overview` tenant bug | **Fixed during squash** — uses `get_my_tenant_id()` in `02000` |
 | **High** | `save_tenant_grow_credentials` exists in base `01600` **and** `290001` — fold must **replace in place** (lines ~172–206), not append a second definition. | Delete old body; paste `290001` version (token invalidation). |
 | **High** | Three blast migrations — only `01120000` survives | Fold `01120000` only (includes overload drop DO block). |
 | **Medium** | `save_tenant_icount_credentials`: fold **`290001` only**; **`280001`** contributes **`save_icount_webhook_secret` only** — including both icount cred RPCs duplicates definition. | Step 1 supersession rule — verify agent did not paste `280001` cred RPC. |
