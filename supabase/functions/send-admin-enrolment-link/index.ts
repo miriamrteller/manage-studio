@@ -2,8 +2,8 @@ import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
 import { createServiceClient } from "../_shared/supabase.ts";
 import { resolveNotificationFromEmail } from "../_shared/notification-from.ts";
 import { resolveEnrolmentPaymentEmailDetails } from "../_shared/enrolment-payment-email.ts";
+import { buildEnrolmentPayUrl } from "../_shared/enrolment-pay-url.ts";
 import { resolveEnrolmentNotificationRecipient } from "../_shared/enrolment-recipient.ts";
-import { signWaiverToken } from "../_shared/waiver-token.ts";
 import {
   EMAIL_TEMPLATE_NAMES,
   sendRenderedEmail,
@@ -132,18 +132,16 @@ Deno.serve(async (req) => {
     }
 
     const expireAt = Math.floor(Date.now() / 1000) + 7 * 24 * 3600;
-    const linkExpiresAt = new Date(expireAt * 1000);
-    const wt = await signWaiverToken({
-      eid: engagement.id as string,
-      tid: tenantId,
-      em: recipientEmail,
-      exp: expireAt,
-    });
     const appBaseUrl = getAppBaseUrl(req);
     if (!appBaseUrl) {
       return jsonResponse({ error: "APP_URL is not configured and request origin is unavailable" }, 500);
     }
-    const paymentUrl = `${appBaseUrl}/enrol/pay/${encodeURIComponent(engagement.id as string)}?t=${encodeURIComponent(wt)}`;
+    const { paymentUrl, linkExpiresAt } = await buildEnrolmentPayUrl({
+      appBaseUrl,
+      engagementId: engagement.id as string,
+      tenantId,
+      recipientEmail,
+    });
 
     const fromEmail = (() => {
       try {

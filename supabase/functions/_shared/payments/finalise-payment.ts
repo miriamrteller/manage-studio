@@ -232,6 +232,8 @@ async function activateInitialEngagement(
       status: engagementStatus,
       billing_status: "current",
       payment_received_at: new Date().toISOString(),
+      payment_dunning_attempt_count: 0,
+      payment_dunning_next_at: null,
       ...(waiverDeadline ? { waiver_deadline: waiverDeadline } : {}),
     })
     .eq("id", engagementId);

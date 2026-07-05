@@ -103,6 +103,7 @@ describe("resolveEnrolmentNotificationRecipient", () => {
     expect(recipient).toEqual({
       email: "miriamrstern@gmail.com",
       name: "Miriam R Stern",
+      personId: "00000000-0000-0000-0000-000000000504",
     });
   });
 

@@ -14,6 +14,7 @@ import {
   OtpEmailPayloadSchema,
   VerifyWhatsAppOtpPayloadSchema,
   ContactPreferencesUpdateSchema,
+  EngagementSchema,
 } from '@shared/schemas';
 
 describe('Phase 1D Schemas', () => {
@@ -270,6 +271,24 @@ describe('Phase 1D Schemas', () => {
         channel: 'whatsapp' as const,
       };
       expect(() => NotificationPayloadSchema.parse(payload)).not.toThrow();
+    });
+  });
+
+  describe('EngagementSchema', () => {
+    it('parses engagement with payment dunning fields', () => {
+      const engagement = {
+        id: '550e8400-e29b-41d4-a716-446655440000',
+        tenant_id: '550e8400-e29b-41d4-a716-446655440001',
+        person_id: '550e8400-e29b-41d4-a716-446655440002',
+        offering_id: '550e8400-e29b-41d4-a716-446655440003',
+        status: 'pending_payment' as const,
+        payment_dunning_attempt_count: 1,
+        payment_dunning_next_at: '2026-06-08T00:00:00.000Z',
+        created_at: new Date().toISOString(),
+      };
+      const parsed = EngagementSchema.parse(engagement);
+      expect(parsed.payment_dunning_attempt_count).toBe(1);
+      expect(parsed.payment_dunning_next_at).toBe('2026-06-08T00:00:00.000Z');
     });
   });
 });

@@ -620,6 +620,8 @@ export type Database = {
           created_at: string
           id: string
           offering_id: string
+          payment_dunning_attempt_count: number
+          payment_dunning_next_at: string | null
           payment_received_at: string | null
           person_id: string
           provider_customer_ref: string | null
@@ -646,6 +648,8 @@ export type Database = {
           created_at?: string
           id?: string
           offering_id: string
+          payment_dunning_attempt_count?: number
+          payment_dunning_next_at?: string | null
           payment_received_at?: string | null
           person_id: string
           provider_customer_ref?: string | null
@@ -672,6 +676,8 @@ export type Database = {
           created_at?: string
           id?: string
           offering_id?: string
+          payment_dunning_attempt_count?: number
+          payment_dunning_next_at?: string | null
           payment_received_at?: string | null
           person_id?: string
           provider_customer_ref?: string | null
@@ -2709,12 +2715,16 @@ export type Database = {
       }
       preview_notification_blast_recipients: {
         Args: {
+          p_account_id?: string
           p_category_id?: string
           p_offering_id?: string
+          p_recipient_query?: string
           p_scope: string
         }
         Returns: {
           account_member_id: string
+          account_name: string
+          class_names: string
           person_id: string
           recipient_email: string
           recipient_name: string
@@ -2764,13 +2774,17 @@ export type Database = {
       }
       resolve_notification_blast_recipients: {
         Args: {
+          p_account_id?: string
           p_category_id?: string
           p_offering_id?: string
+          p_recipient_query?: string
           p_scope: string
           p_tenant_id: string
         }
         Returns: {
           account_member_id: string
+          account_name: string
+          class_names: string
           person_id: string
           recipient_email: string
           recipient_name: string
@@ -2807,6 +2821,15 @@ export type Database = {
       search_enrolment_students: {
         Args: { p_limit?: number; p_query: string }
         Returns: Json
+      }
+      search_notification_blast_accounts: {
+        Args: { p_query: string }
+        Returns: {
+          account_id: string
+          account_name: string
+          contact_email: string
+          contact_name: string
+        }[]
       }
       sign_waiver: {
         Args: {
