@@ -2528,6 +2528,7 @@ export type Database = {
           last4: string
         }[]
       }
+      get_cron_secret: { Args: never; Returns: string }
       get_engagement_person_id: {
         Args: { p_engagement_id: string }
         Returns: string
@@ -2607,6 +2608,7 @@ export type Database = {
           waiver_required: boolean
         }[]
       }
+      get_supabase_functions_url: { Args: never; Returns: string }
       get_tenant_config_by_subdomain: {
         Args: { p_subdomain: string }
         Returns: {

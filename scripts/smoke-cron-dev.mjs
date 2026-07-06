@@ -8,8 +8,8 @@
  *
  * Usage:
  *   pnpm smoke:cron:dev              # all automated checks
- *   pnpm smoke:cron:dev -- --set-gucs   # ALTER DATABASE GUCs (needs CRON_SECRET)
- *   pnpm smoke:cron:dev -- --print-gucs-sql  # paste into SQL Editor if psql fails
+ *   pnpm smoke:cron:dev -- --set-gucs   # UPSERT private.platform_config (needs CRON_SECRET)
+ *   pnpm smoke:cron:dev -- --print-gucs-sql  # paste into SQL Editor (no psql needed)
  *   pnpm smoke:cron:dev -- --with-tests # also run vitest dunning tests
  *   pnpm smoke:cron:dev -- --checklist  # agent prompt + human preflight
  *
@@ -20,7 +20,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadEnv } from './load-env.mjs';
 import {
-  resolveDbUrl,
+  resolveConnectableDbUrl,
   resolveFunctionsBaseUrl,
   resolveProjectRef,
   runPsqlQuery,
@@ -44,23 +44,27 @@ function record(name, pass, detail, skip = false) {
   console.log(`[${tag}] ${name}${detail ? ` — ${detail}` : ''}`);
 }
 
-function buildGucsSql(functionsBase, cronSecret) {
-  return [
-    `ALTER DATABASE postgres SET app.settings.supabase_functions_url = ${sqlLiteral(functionsBase)};`,
-    `ALTER DATABASE postgres SET app.settings.cron_secret = ${sqlLiteral(cronSecret)};`,
-  ];
+function buildCronConfigSql(functionsBase, cronSecret) {
+  return `INSERT INTO private.platform_config (key, value) VALUES
+  ('supabase_functions_url', ${sqlLiteral(functionsBase)}),
+  ('cron_secret', ${sqlLiteral(cronSecret)})
+ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;`;
 }
 
-function printGucsSql(functionsBase, cronSecret) {
+/** @deprecated alias */
+function buildGucsSql(functionsBase, cronSecret) {
+  return [buildCronConfigSql(functionsBase, cronSecret)];
+}
+
+function printCronConfigSql(functionsBase, cronSecret) {
   console.log(`
 Could not connect via psql. Run this in Supabase Dashboard → SQL Editor:
 
-${buildGucsSql(functionsBase, cronSecret).join('\n')}
+${buildCronConfigSql(functionsBase, cronSecret)}
 
 Then re-run: pnpm smoke:cron:dev
 
-Tip: For psql on Windows, set SUPABASE_DB_URL in .env to the full URI from
-Dashboard → Project Settings → Database → Connection string (Session mode).
+Note: ALTER DATABASE ... SET app.settings.* fails on hosted Supabase (permission denied).
 `);
 }
 
@@ -165,13 +169,6 @@ async function main() {
     process.exit(0);
   }
 
-  const dbUrl = resolveDbUrl();
-  if (!dbUrl) {
-    console.error('Missing SUPABASE_PROJECT_REF + SUPABASE_DB_PASSWORD (or SUPABASE_DB_URL) in .env');
-    printAgentChecklist();
-    process.exit(1);
-  }
-
   const cronSecret = process.env.CRON_SECRET?.trim() || '';
   const functionsBase = resolveFunctionsBaseUrl();
 
@@ -180,8 +177,28 @@ async function main() {
       console.error('Need CRON_SECRET in .env and a resolvable project ref');
       process.exit(1);
     }
-    console.log(buildGucsSql(functionsBase, cronSecret).join('\n'));
+    console.log(
+      `-- Paste into Supabase Dashboard → SQL Editor → Run\n\n${buildCronConfigSql(functionsBase, cronSecret)}`,
+    );
     process.exit(0);
+  }
+
+  let dbUrl;
+  try {
+    dbUrl = resolveConnectableDbUrl(root);
+  } catch (e) {
+    console.error(e.message);
+    if (cronSecret && functionsBase) {
+      console.error('\nAlternatively, set cron config without psql:\n');
+      console.log(buildCronConfigSql(functionsBase, cronSecret));
+    }
+    printAgentChecklist();
+    process.exit(1);
+  }
+  if (!dbUrl) {
+    console.error('Missing SUPABASE_PROJECT_REF + SUPABASE_DB_PASSWORD (or SUPABASE_DB_URL) in .env');
+    printAgentChecklist();
+    process.exit(1);
   }
 
   if (args.has('--set-gucs')) {
@@ -193,15 +210,13 @@ async function main() {
       console.error('Cannot resolve project ref for functions URL');
       process.exit(1);
     }
-    console.log('Setting database GUCs via psql...');
+    console.log('Setting cron config in private.platform_config via psql...');
     try {
-      for (const sql of buildGucsSql(functionsBase, cronSecret)) {
-        runPsqlQuery(dbUrl, sql);
-      }
-      console.log('GUCs set. New connections (and cron jobs) will pick them up.\n');
+      runPsqlQuery(dbUrl, buildCronConfigSql(functionsBase, cronSecret));
+      console.log('Cron config set. pg_cron jobs will read it on next run.\n');
     } catch (e) {
       console.error(e.message);
-      printGucsSql(functionsBase, cronSecret);
+      printCronConfigSql(functionsBase, cronSecret);
       process.exit(1);
     }
   }
@@ -226,7 +241,7 @@ async function main() {
         `SELECT COUNT(*) FROM supabase_migrations.schema_migrations WHERE version LIKE '202606%'`,
       ),
     );
-    record('migrations (202606*)', n >= 26, `count=${n} (expect ≥26)`);
+    record('migrations (202606*)', n >= 27, `count=${n} (expect ≥27)`);
   } catch (e) {
     record('migrations (202606*)', false, e.message);
   }
@@ -286,24 +301,40 @@ async function main() {
     record('cron.job rows', false, e.message);
   }
 
-  // --- GUCs ---
+  // --- Cron config (platform_config; hosted Supabase cannot ALTER DATABASE GUCs) ---
   try {
-    const url = runPsqlQuery(
+    const cfg = runPsqlQuery(
       dbUrl,
-      `SELECT current_setting('app.settings.supabase_functions_url', true)`,
+      `SELECT COUNT(*) FROM private.platform_config
+       WHERE key IN ('supabase_functions_url', 'cron_secret') AND length(value) > 0`,
     );
-    const hasUrl = url.length > 0 && url.includes('.supabase.co');
-    record('GUC supabase_functions_url', hasUrl, hasUrl ? 'set' : 'missing — run --set-gucs');
+    const n = Number(cfg);
+    record('cron platform_config', n === 2, n === 2 ? 'both keys set' : `count=${n} — run --print-gucs-sql`);
   } catch (e) {
-    record('GUC supabase_functions_url', false, e.message);
+    record('cron platform_config', false, e.message);
   }
 
   try {
-    const secretSet =
-      runPsqlQuery(dbUrl, `SELECT current_setting('app.settings.cron_secret', true)`).length > 0;
-    record('GUC cron_secret', secretSet, secretSet ? 'set' : 'missing — run --set-gucs');
+    const url = runPsqlQuery(dbUrl, `SELECT get_supabase_functions_url()`);
+    const hasUrl = url.length > 0 && url.includes('.supabase.co');
+    record('get_supabase_functions_url()', hasUrl, hasUrl ? 'ok' : 'empty');
   } catch (e) {
-    record('GUC cron_secret', false, e.message);
+    record(
+      'get_supabase_functions_url()',
+      false,
+      e.message.includes('not configured') ? 'missing — run --print-gucs-sql' : e.message,
+    );
+  }
+
+  try {
+    const secretLen = Number(runPsqlQuery(dbUrl, `SELECT length(get_cron_secret())`));
+    record('get_cron_secret()', secretLen > 0, secretLen > 0 ? 'ok' : 'missing — run --print-gucs-sql');
+  } catch (e) {
+    record(
+      'get_cron_secret()',
+      false,
+      e.message.includes('not configured') ? 'missing — run --print-gucs-sql' : e.message,
+    );
   }
 
   // --- Seed fixtures ---

@@ -46,11 +46,11 @@ Optional: `SUPABASE_DB_URL=postgresql://...` instead of ref + password.
 # 1. Seeds (if not done)
 pnpm seed:dev -- --finance
 
-# 2. DB GUCs (once per project — matches Edge CRON_SECRET)
-pnpm smoke:cron:dev -- --set-gucs
-# If psql fails on Windows (DNS / host name): paste output of:
+# 2. DB cron config (once per project — matches Edge CRON_SECRET)
+pnpm db:push   # includes 02700_cron_platform_config if not applied yet
 pnpm smoke:cron:dev -- --print-gucs-sql
-# into Supabase Dashboard → SQL Editor, then run smoke again.
+# Paste into Supabase Dashboard → SQL Editor → Run
+# (ALTER DATABASE app.settings.* fails on hosted Supabase — use platform_config)
 
 # 3. Full automated smoke
 pnpm smoke:cron:dev
@@ -74,7 +74,7 @@ pnpm smoke:cron:dev -- --with-tests
 | Folded RPCs | `get_finance_summary`, `get_admin_dashboard_overview`, `resolve_notification_blast_recipients` |
 | Extensions | `pg_cron` + `pg_net` |
 | Cron jobs | ≥ 7 rows in `cron.job` |
-| GUCs | `app.settings.supabase_functions_url`, `app.settings.cron_secret` |
+| Cron config | `private.platform_config` keys + `get_supabase_functions_url()` / `get_cron_secret()` |
 | Seed fixtures | Engagements `...1001`, `...1002` |
 | HTTP dunning | POST → **200** (needs `CRON_SECRET`) |
 | Dunning side effects | Counters move on `1001`/`1002` when eligible |
@@ -109,6 +109,10 @@ SELECT column_name FROM information_schema.columns
   WHERE table_name = 'engagements' AND column_name LIKE 'payment_dunning%';
 SELECT jobid, schedule FROM cron.job ORDER BY schedule;
 SELECT current_setting('app.settings.supabase_functions_url', true);
+-- After 02700 migration:
+SELECT get_supabase_functions_url();
+SELECT COUNT(*) FROM private.platform_config
+  WHERE key IN ('supabase_functions_url', 'cron_secret') AND length(value) > 0;
 ```
 
 Manual dunning POST:
@@ -127,10 +131,12 @@ curl -sS -X POST "https://YOUR_REF.supabase.co/functions/v1/run-enrolment-paymen
 | Failure | Fix |
 | --- | --- |
 | psql not found | Install PostgreSQL client or use Dashboard SQL + manual curl |
-| DNS / host name errors | Set **`SUPABASE_DB_URL`** in `.env` to Dashboard → Database → **Connection string (URI, session mode)** — not only `db.<ref>.supabase.co` |
+| DNS / host name errors | Scripts auto-fallback to linked **session pooler** (`aws-1-<region>.pooler…`). If that fails, set **`SUPABASE_DB_URL`** from Dashboard → Database → **Connection string (URI, session mode)** |
+| password authentication failed | Set **`SUPABASE_DB_PASSWORD`** to your real DB password from Dashboard (not a placeholder), or paste the full session-mode URI as **`SUPABASE_DB_URL`** |
 | `extra command-line argument` warnings (Windows) | Fixed in script (`shell: false`); pull latest and retry |
 | extensions count ≠ 2 | Enable pg_cron + pg_net in Dashboard |
-| GUC missing | `pnpm smoke:cron:dev -- --set-gucs` |
+| GUC / ALTER DATABASE permission denied | Use **`private.platform_config`** — run `pnpm smoke:cron:dev -- --print-gucs-sql` after `pnpm db:push` (migration `02700`) |
+| GUC missing | `pnpm smoke:cron:dev -- --print-gucs-sql` → SQL Editor |
 | HTTP 401 | Align `.env` `CRON_SECRET`, Edge secret, and DB GUC |
 | Fixtures missing | `pnpm seed:dev -- --finance` |
 | cron.job count < 7 | Re-run `pnpm db:push`; confirm `02600` applied |

@@ -19,6 +19,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadEnv } from './load-env.mjs';
+import { resolveConnectableDbUrl } from './lib/psql-dev.mjs';
 
 loadEnv();
 
@@ -41,19 +42,6 @@ Finance test logins (see supabase/seed-finance.sql header):
   Parent: miriamrstern@gmail.com / devPassword123
   Admin:  miriamrteller@gmail.com / devPassword123
 `);
-}
-
-function resolveDbUrl() {
-  if (process.env.SUPABASE_DB_URL) {
-    return process.env.SUPABASE_DB_URL;
-  }
-  const ref = process.env.SUPABASE_PROJECT_REF;
-  const password = process.env.SUPABASE_DB_PASSWORD;
-  if (!ref || !password) {
-    return null;
-  }
-  const encoded = encodeURIComponent(password);
-  return `postgresql://postgres:${encoded}@db.${ref}.supabase.co:5432/postgres`;
 }
 
 function runPsqlFile(dbUrl, relativePath) {
@@ -87,7 +75,14 @@ if (checklistOnly) {
   process.exit(0);
 }
 
-const dbUrl = resolveDbUrl();
+let dbUrl;
+try {
+  dbUrl = resolveConnectableDbUrl(root);
+} catch (e) {
+  console.error(e.message);
+  printChecklist();
+  process.exit(1);
+}
 if (!dbUrl) {
   console.error('Set SUPABASE_PROJECT_REF + SUPABASE_DB_PASSWORD (or SUPABASE_DB_URL) in .env');
   printChecklist();
