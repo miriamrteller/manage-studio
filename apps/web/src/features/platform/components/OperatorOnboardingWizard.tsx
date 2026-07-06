@@ -107,6 +107,7 @@ export function OperatorOnboardingWizard() {
   const [subdomainStatus, setSubdomainStatus] = useState<'idle' | 'ok' | 'taken' | 'invalid'>('idle');
   const [error, setError] = useState<string | null>(null);
   const [createdSubdomain, setCreatedSubdomain] = useState<string | null>(null);
+  const [createdTenantId, setCreatedTenantId] = useState<string | null>(null);
 
   const step = STEPS[stepIndex];
 
@@ -144,11 +145,44 @@ export function OperatorOnboardingWizard() {
       if (rpcError) throw rpcError;
       return data as string;
     },
-    onSuccess: () => {
+    onSuccess: (tenantId) => {
+      setCreatedTenantId(tenantId);
       setCreatedSubdomain(form.subdomain.trim().toLowerCase());
     },
     onError: (err: Error) => {
       setError(err.message || t('settings.onboarding.error_provision'));
+    },
+  });
+
+  const grantTenantAdmin = useMutation({
+    mutationFn: async () => {
+      if (!createdTenantId) throw new Error('Missing tenant id');
+      const email = form.ownerEmail.trim();
+      if (!email) throw new Error('Enter owner email first');
+
+      const { data: profile, error: lookupError } = await supabase
+        .from('user_profiles')
+        .select('id, role')
+        .eq('tenant_id', createdTenantId)
+        .eq('email', email)
+        .maybeSingle();
+
+      if (lookupError) throw lookupError;
+      if (!profile) {
+        throw new Error('Owner account not found yet. Ask them to complete signup, then try again.');
+      }
+
+      const currentRoles = Array.isArray(profile.role) ? profile.role : [];
+      const nextRoles = currentRoles.includes('tenant_admin')
+        ? currentRoles
+        : [...currentRoles, 'tenant_admin'];
+
+      const { error: updateError } = await supabase
+        .from('user_profiles')
+        .update({ role: nextRoles })
+        .eq('id', profile.id);
+
+      if (updateError) throw updateError;
     },
   });
 
@@ -211,13 +245,6 @@ export function OperatorOnboardingWizard() {
     const host = typeof window !== 'undefined' ? window.location.host : 'localhost:5173';
     const baseHost = host.includes('.') ? host.split('.').slice(1).join('.') : host;
     const signupUrl = `${typeof window !== 'undefined' ? window.location.protocol : 'http:'}//${createdSubdomain}.${baseHost}/signup`;
-    const safeOwnerEmail = form.ownerEmail.trim().replace(/'/g, "''");
-    const sqlRoleGrant = `UPDATE public.user_profiles
-SET role = ARRAY(
-  SELECT DISTINCT unnest(COALESCE(role, ARRAY[]::text[]) || ARRAY['tenant_admin'])
-)
-WHERE email = '${safeOwnerEmail}'
-  AND tenant_id = (SELECT id FROM public.tenants WHERE subdomain = '${createdSubdomain}');`;
 
     return (
       <section className="max-w-lg space-y-4">
@@ -231,7 +258,12 @@ WHERE email = '${safeOwnerEmail}'
             <li>
               Open the tenant signup page:
               <div className="mt-1">
-                <a className="font-mono text-xs underline break-all" href={signupUrl}>
+                <a
+                  className="font-mono text-xs underline break-all"
+                  href={signupUrl}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                >
                   {signupUrl}
                 </a>
               </div>
@@ -241,10 +273,24 @@ WHERE email = '${safeOwnerEmail}'
               {form.ownerEmail ? ` with ${form.ownerEmail}` : ''}.
             </li>
             <li>
-              Grant <code>tenant_admin</code> role in Supabase SQL Editor:
-              <pre className="mt-2 overflow-x-auto rounded bg-base-200 p-2 text-xs">
-                <code>{sqlRoleGrant}</code>
-              </pre>
+              Grant <code>tenant_admin</code> role directly here:
+              <div className="mt-2 flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => grantTenantAdmin.mutate()}
+                  disabled={grantTenantAdmin.isPending || !form.ownerEmail.trim()}
+                >
+                  {grantTenantAdmin.isPending ? 'Granting...' : 'Grant tenant_admin'}
+                </Button>
+                {grantTenantAdmin.isSuccess && (
+                  <span className="text-xs text-green-700">Role granted successfully.</span>
+                )}
+              </div>
+              {grantTenantAdmin.isError && (
+                <p className="mt-2 text-xs text-red-600">
+                  {(grantTenantAdmin.error as Error).message}
+                </p>
+              )}
             </li>
           </ol>
         </div>
