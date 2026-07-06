@@ -1,19 +1,4 @@
-export const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, stripe-signature",
-};
-
-export function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-}
-
-export function handleOptions(req: Request): Response | null {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
-  return null;
-}
+// Re-export from packages/edge-runtime — canonical home as of Batch 5
+// This shim exists for migration safety; update callers to import directly from
+// ../../packages/edge-runtime/src/cors.ts (or the re-export below disappears in Batch 6)
+export * from "../../packages/edge-runtime/src/cors.ts";
