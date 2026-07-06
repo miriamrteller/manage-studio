@@ -133,7 +133,23 @@ export function resolveConnectableDbUrl(cwd = scriptRoot) {
 
   const ref = resolveProjectRef();
   const password = process.env.SUPABASE_DB_PASSWORD?.trim();
-  if (!ref || !password) {
+
+  if (!ref) {
+    return null;
+  }
+
+  if (!password) {
+    const fromCli = resolveDbUrlFromSupabaseCli(cwd);
+    if (fromCli) {
+      console.log('Using database credentials from linked Supabase CLI.');
+      try {
+        runPsqlQuery(fromCli, 'SELECT 1');
+        cachedConnectableDbUrl = fromCli;
+        return fromCli;
+      } catch (e) {
+        throw e;
+      }
+    }
     return null;
   }
 

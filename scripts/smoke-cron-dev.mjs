@@ -196,7 +196,17 @@ async function main() {
     process.exit(1);
   }
   if (!dbUrl) {
-    console.error('Missing SUPABASE_PROJECT_REF + SUPABASE_DB_PASSWORD (or SUPABASE_DB_URL) in .env');
+    const ref = resolveProjectRef();
+    if (!ref) {
+      console.error('Missing SUPABASE_PROJECT_REF (or VITE_SUPABASE_URL) in .env');
+    } else {
+      console.error(
+        'Missing database credentials. Add one of:\n' +
+          '  SUPABASE_DB_PASSWORD=<from Dashboard → Database>\n' +
+          '  SUPABASE_DB_URL=<session-mode URI from Dashboard>\n' +
+          'Or run: supabase link  (uses linked CLI password when available)',
+      );
+    }
     printAgentChecklist();
     process.exit(1);
   }

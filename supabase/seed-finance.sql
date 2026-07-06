@@ -91,10 +91,7 @@ VALUES (
   (now() AT TIME ZONE 'Asia/Jerusalem')::date - 14,
   '51149671-b030-4931-9a0d-ca1862ae4f0b'::uuid
 )
-ON CONFLICT (id) DO UPDATE SET
-  pretax_amount_minor = EXCLUDED.pretax_amount_minor,
-  vat_amount_minor = EXCLUDED.vat_amount_minor,
-  total_amount_minor = EXCLUDED.total_amount_minor;
+ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================================
 -- OFFERINGS — recurring + ₪1 smoke offering
