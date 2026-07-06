@@ -3,67 +3,102 @@ import { useTranslation } from 'react-i18next';
 import { useMutation } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
-import {
-  resolveEntityLabels,
-  type BusinessPreset,
-  type EntityKey,
-} from '@shared/index';
+
+type TenantPlan = 'essential' | 'professional';
+type TenantVertical = 'photographer' | 'beautician' | 'dance-studio' | 'generic';
+type PaymentProvider = 'grow' | 'stripe' | 'icount' | 'mock';
+type InvoicingProvider = 'grow' | 'green_invoice' | 'icount';
 
 const SUBDOMAIN_RE = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/;
 const HEX_COLOR = /^#[0-9A-Fa-f]{6}$/;
-const ENTITY_KEYS: EntityKey[] = [
-  'contact',
-  'account',
-  'offering',
-  'season',
-  'category',
-  'staff',
-  'engagement',
-  'session',
-];
 
 export interface ProvisionFormState {
   name: string;
   subdomain: string;
-  businessPreset: BusinessPreset;
-  labelOverrides: Partial<Record<EntityKey, { singular: string; plural: string }>>;
+  plan: TenantPlan;
+  vertical: TenantVertical;
   primaryColor: string;
   accentColor: string;
   languageDefault: 'he' | 'en';
   country: 'IL' | 'US';
   currency: string;
   phoneRegion: string;
-  vatRatePercent: string;
-  pricesIncludeVat: boolean;
-  adminEmail: string;
+  paymentProvider: PaymentProvider;
+  invoicingProvider: InvoicingProvider;
+  ownerEmail: string;
 }
 
 const INITIAL_STATE: ProvisionFormState = {
   name: '',
   subdomain: '',
-  businessPreset: 'programs',
-  labelOverrides: {},
-  primaryColor: '#76335a',
-  accentColor: '#e99ac4',
+  plan: 'essential',
+  vertical: 'generic',
+  primaryColor: '#6366F1',
+  accentColor: '#8B5CF6',
   languageDefault: 'he',
   country: 'IL',
   currency: 'ILS',
   phoneRegion: 'IL',
-  vatRatePercent: '17',
-  pricesIncludeVat: true,
-  adminEmail: '',
+  paymentProvider: 'grow',
+  invoicingProvider: 'grow',
+  ownerEmail: '',
 };
 
 const STEPS = [
   'identity',
-  'terminology',
+  'plan',
+  'vertical',
   'branding',
   'locale',
   'tax',
-  'integrations',
-  'starter',
   'review',
 ] as const;
+
+const PLAN_OPTIONS: Array<{
+  value: TenantPlan;
+  title: string;
+  description: string;
+}> = [
+  {
+    value: 'essential',
+    title: 'Essential',
+    description:
+      'Appointment-based booking. Single and deposit+ payment flows. Best for: Solo practitioners, photographers, beauticians.',
+  },
+  {
+    value: 'professional',
+    title: 'Professional',
+    description:
+      'Class enrollment with calendar-accurate terms, student & multi-child family billing. Best for: Dance studios, academies.',
+  },
+];
+
+const VERTICAL_OPTIONS: Array<{
+  value: TenantVertical;
+  label: string;
+  description: string;
+}> = [
+  {
+    value: 'photographer',
+    label: 'Photographer',
+    description: 'Shoots & galleries, gated delivery',
+  },
+  {
+    value: 'beautician',
+    label: 'Beautician / Salon',
+    description: 'Appointment booking, client cards',
+  },
+  {
+    value: 'dance-studio',
+    label: 'Dance Studio',
+    description: 'Classes, terms, family billing',
+  },
+  {
+    value: 'generic',
+    label: 'Other',
+    description: 'General purpose',
+  },
+];
 
 export function OperatorOnboardingWizard() {
   const { t } = useTranslation();
@@ -91,31 +126,20 @@ export function OperatorOnboardingWizard() {
 
   const provision = useMutation({
     mutationFn: async () => {
-      const labelsPayload: Record<string, { singular: string; plural: string }> = {};
-      for (const key of ENTITY_KEYS) {
-        const pair = form.labelOverrides[key];
-        if (pair?.singular?.trim() && pair?.plural?.trim()) {
-          labelsPayload[key] = {
-            singular: pair.singular.trim(),
-            plural: pair.plural.trim(),
-          };
-        }
-      }
-
-      const { data, error: rpcError } = await supabase.rpc('provision_tenant', {
+      const { data, error: rpcError } = await supabase.rpc('provision_tenant_v2', {
         p_name: form.name.trim(),
         p_subdomain: form.subdomain.trim().toLowerCase(),
-        p_business_preset: form.businessPreset,
-        p_labels: labelsPayload,
-        p_primary_color: form.primaryColor,
-        p_accent_color: form.accentColor,
+        p_plan: form.plan,
+        p_vertical: form.vertical,
+        p_owner_email: form.ownerEmail.trim() || null,
         p_language_default: form.languageDefault,
         p_country: form.country,
         p_currency: form.currency.trim().toUpperCase(),
         p_phone_region: form.phoneRegion.trim().toUpperCase(),
-        p_vat_rate: 0,
-        p_prices_include_vat: true,
-        p_admin_email: form.adminEmail.trim() || null,
+        p_payment_provider: form.paymentProvider,
+        p_invoicing_provider: form.invoicingProvider,
+        p_primary_color: form.primaryColor,
+        p_accent_color: form.accentColor,
       });
       if (rpcError) throw rpcError;
       return data as string;
@@ -127,8 +151,6 @@ export function OperatorOnboardingWizard() {
       setError(err.message || t('settings.onboarding.error_provision'));
     },
   });
-
-  const defaultLabels = resolveEntityLabels(form.businessPreset);
 
   function updateForm<K extends keyof ProvisionFormState>(key: K, value: ProvisionFormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -142,15 +164,16 @@ export function OperatorOnboardingWizard() {
           SUBDOMAIN_RE.test(form.subdomain.trim().toLowerCase()) &&
           subdomainStatus === 'ok'
         );
-      case 'terminology':
+      case 'plan':
+        return true;
+      case 'vertical':
+        return true;
       case 'branding':
         return HEX_COLOR.test(form.primaryColor) && HEX_COLOR.test(form.accentColor);
       case 'locale':
         return form.currency.trim().length >= 3 && form.phoneRegion.trim().length >= 2;
-      case 'tax': {
-        const v = Number(form.vatRatePercent);
-        return !Number.isNaN(v) && v >= 0 && v <= 100;
-      }
+      case 'tax':
+        return form.paymentProvider.length > 0 && form.invoicingProvider.length > 0;
       default:
         return true;
     }
@@ -185,17 +208,46 @@ export function OperatorOnboardingWizard() {
   }
 
   if (createdSubdomain) {
+    const host = typeof window !== 'undefined' ? window.location.host : 'localhost:5173';
+    const baseHost = host.includes('.') ? host.split('.').slice(1).join('.') : host;
+    const signupUrl = `${typeof window !== 'undefined' ? window.location.protocol : 'http:'}//${createdSubdomain}.${baseHost}/signup`;
+    const safeOwnerEmail = form.ownerEmail.trim().replace(/'/g, "''");
+    const sqlRoleGrant = `UPDATE public.user_profiles
+SET role = ARRAY(
+  SELECT DISTINCT unnest(COALESCE(role, ARRAY[]::text[]) || ARRAY['tenant_admin'])
+)
+WHERE email = '${safeOwnerEmail}'
+  AND tenant_id = (SELECT id FROM public.tenants WHERE subdomain = '${createdSubdomain}');`;
+
     return (
       <section className="max-w-lg space-y-4">
         <h2 className="text-xl font-semibold">{t('settings.onboarding.success_title')}</h2>
         <p role="status">
           {t('settings.onboarding.success_message', { subdomain: createdSubdomain })}
         </p>
-        {form.adminEmail && (
-          <p className="text-sm text-muted-foreground">
-            {t('settings.onboarding.admin_email_help')} {form.adminEmail}
-          </p>
-        )}
+        <div className="rounded-md border border-border bg-muted/20 p-4 space-y-3 text-sm">
+          <p className="font-medium">Next steps</p>
+          <ol className="list-decimal pl-5 space-y-2">
+            <li>
+              Open the tenant signup page:
+              <div className="mt-1">
+                <a className="font-mono text-xs underline break-all" href={signupUrl}>
+                  {signupUrl}
+                </a>
+              </div>
+            </li>
+            <li>
+              Create the owner account
+              {form.ownerEmail ? ` with ${form.ownerEmail}` : ''}.
+            </li>
+            <li>
+              Grant <code>tenant_admin</code> role in Supabase SQL Editor:
+              <pre className="mt-2 overflow-x-auto rounded bg-base-200 p-2 text-xs">
+                <code>{sqlRoleGrant}</code>
+              </pre>
+            </li>
+          </ol>
+        </div>
       </section>
     );
   }
@@ -249,100 +301,58 @@ export function OperatorOnboardingWizard() {
               <p className="text-xs text-red-600">{t('settings.onboarding.subdomain_taken')}</p>
             )}
           </div>
-          <div className="space-y-2">
-            <label className="block text-sm font-medium" htmlFor="ob-preset">
-              {t('settings.onboarding.business_preset')}
-            </label>
-            <select
-              id="ob-preset"
-              className="form-input w-full"
-              value={form.businessPreset}
-              onChange={(e) => updateForm('businessPreset', e.target.value as BusinessPreset)}
-            >
-              <option value="programs">{t('settings.onboarding.preset_programs')}</option>
-              <option value="services">{t('settings.onboarding.preset_services')}</option>
-              <option value="catalog">{t('settings.onboarding.preset_catalog')}</option>
-            </select>
-          </div>
         </section>
       )}
 
-      {step === 'terminology' && (
-        <section className="space-y-4">
-          <div className="space-y-2 text-sm text-muted-foreground">
-            <p>{t('settings.onboarding.labels_intro')}</p>
-            <p>{t('settings.onboarding.labels_how')}</p>
-            <p>
-              {t('settings.onboarding.labels_defaults', {
-                preset: t(`settings.onboarding.preset_${form.businessPreset}`),
-              })}
-            </p>
+      {step === 'plan' && (
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {PLAN_OPTIONS.map((option) => {
+            const selected = form.plan === option.value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                className={`text-left rounded-xl p-4 transition ${
+                  selected
+                    ? 'border-2 border-primary bg-primary/5'
+                    : 'border border-border cursor-pointer hover:border-primary/50'
+                }`}
+                onClick={() => updateForm('plan', option.value)}
+              >
+                <h3 className="text-base font-semibold">✦ {option.title}</h3>
+                <p className="mt-2 text-sm text-muted-foreground">{option.description}</p>
+              </button>
+            );
+          })}
+        </section>
+      )}
+
+      {step === 'vertical' && (
+        <section className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {VERTICAL_OPTIONS.map((option) => {
+              const selected = form.vertical === option.value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  className={`text-left rounded-xl p-4 transition ${
+                    selected
+                      ? 'border-2 border-primary bg-primary/5'
+                      : 'border border-border cursor-pointer hover:border-primary/50'
+                  }`}
+                  onClick={() => updateForm('vertical', option.value)}
+                >
+                  <h3 className="text-base font-semibold">{option.label}</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">{option.description}</p>
+                </button>
+              );
+            })}
           </div>
-          <div className="hidden sm:grid sm:grid-cols-3 gap-2 text-xs font-medium text-muted-foreground px-0.5">
-            <span>{t('settings.onboarding.labels_concept')}</span>
-            <span>{t('settings.onboarding.labels_singular')}</span>
-            <span>{t('settings.onboarding.labels_plural')}</span>
-          </div>
-          <div className="space-y-4">
-            {ENTITY_KEYS.map((key) => (
-              <div key={key} className="space-y-1">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:items-center">
-                  <div>
-                    <span className="text-sm font-medium">
-                      {t(`settings.onboarding.entity_${key}`)}
-                    </span>
-                    <p className="text-xs text-muted-foreground sm:pr-2">
-                      {t(`settings.onboarding.entity_${key}_desc`)}
-                    </p>
-                  </div>
-                  <div className="space-y-1">
-                    <label className="sr-only sm:not-sr-only sm:hidden text-xs text-muted-foreground">
-                      {t('settings.onboarding.labels_singular')}
-                    </label>
-                    <input
-                      className="form-input w-full"
-                      aria-label={t('settings.onboarding.labels_singular_for', {
-                        entity: t(`settings.onboarding.entity_${key}`),
-                      })}
-                      placeholder={defaultLabels[key].singular}
-                      value={form.labelOverrides[key]?.singular ?? ''}
-                      onChange={(e) =>
-                        updateForm('labelOverrides', {
-                          ...form.labelOverrides,
-                          [key]: {
-                            singular: e.target.value,
-                            plural: form.labelOverrides[key]?.plural ?? '',
-                          },
-                        })
-                      }
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="sr-only sm:not-sr-only sm:hidden text-xs text-muted-foreground">
-                      {t('settings.onboarding.labels_plural')}
-                    </label>
-                    <input
-                      className="form-input w-full"
-                      aria-label={t('settings.onboarding.labels_plural_for', {
-                        entity: t(`settings.onboarding.entity_${key}`),
-                      })}
-                      placeholder={defaultLabels[key].plural}
-                      value={form.labelOverrides[key]?.plural ?? ''}
-                      onChange={(e) =>
-                        updateForm('labelOverrides', {
-                          ...form.labelOverrides,
-                          [key]: {
-                            singular: form.labelOverrides[key]?.singular ?? '',
-                            plural: e.target.value,
-                          },
-                        })
-                      }
-                    />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+          <p className="text-xs text-muted-foreground">
+            Dance Studio automatically uses the Professional layout. Other verticals use Essential
+            by default.
+          </p>
         </section>
       )}
 
@@ -414,17 +424,41 @@ export function OperatorOnboardingWizard() {
 
       {step === 'tax' && (
         <section className="space-y-4 max-w-md">
-          <p className="text-sm text-muted-foreground">{t('settings.onboarding.tax_no_local_vat')}</p>
-          <p className="text-sm text-muted-foreground">{t('settings.onboarding.tax_price_hint')}</p>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium" htmlFor="ob-payment-provider">
+              Payment provider
+            </label>
+            <select
+              id="ob-payment-provider"
+              className="form-input w-full"
+              value={form.paymentProvider}
+              onChange={(e) => updateForm('paymentProvider', e.target.value as PaymentProvider)}
+            >
+              <option value="grow">Grow</option>
+              <option value="stripe">Stripe</option>
+              <option value="icount">iCount</option>
+              <option value="mock">Mock (testing)</option>
+            </select>
+          </div>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium" htmlFor="ob-invoicing-provider">
+              Invoice provider
+            </label>
+            <select
+              id="ob-invoicing-provider"
+              className="form-input w-full"
+              value={form.invoicingProvider}
+              onChange={(e) => updateForm('invoicingProvider', e.target.value as InvoicingProvider)}
+            >
+              <option value="grow">Grow</option>
+              <option value="green_invoice">Green Invoice</option>
+              <option value="icount">iCount</option>
+            </select>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            You can change providers later in tenant settings.
+          </p>
         </section>
-      )}
-
-      {step === 'integrations' && (
-        <p className="text-sm text-muted-foreground">{t('settings.onboarding.integrations_skip')}</p>
-      )}
-
-      {step === 'starter' && (
-        <p className="text-sm text-muted-foreground">{t('settings.onboarding.starter_seed')}</p>
       )}
 
       {step === 'review' && (
@@ -440,20 +474,32 @@ export function OperatorOnboardingWizard() {
               <dd className="font-mono">{form.subdomain}</dd>
             </div>
             <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">{t('settings.onboarding.business_preset')}</dt>
-              <dd>{form.businessPreset}</dd>
+              <dt className="text-muted-foreground">Plan</dt>
+              <dd className="capitalize">{form.plan}</dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">Vertical</dt>
+              <dd className="capitalize">{form.vertical.replace('-', ' ')}</dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">Payment provider</dt>
+              <dd className="capitalize">{form.paymentProvider.replace('_', ' ')}</dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">Invoice provider</dt>
+              <dd className="capitalize">{form.invoicingProvider.replace('_', ' ')}</dd>
             </div>
           </dl>
           <div className="space-y-2">
-            <label className="block text-sm font-medium" htmlFor="ob-admin-email">
+            <label className="block text-sm font-medium" htmlFor="ob-owner-email">
               {t('settings.onboarding.admin_email')}
             </label>
             <input
-              id="ob-admin-email"
+              id="ob-owner-email"
               type="email"
               className="form-input w-full"
-              value={form.adminEmail}
-              onChange={(e) => updateForm('adminEmail', e.target.value)}
+              value={form.ownerEmail}
+              onChange={(e) => updateForm('ownerEmail', e.target.value)}
             />
             <p className="text-xs text-muted-foreground">{t('settings.onboarding.admin_email_help')}</p>
           </div>
