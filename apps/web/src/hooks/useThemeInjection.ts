@@ -62,7 +62,8 @@ export function useThemeInjection(): void {
       Object.entries(colorSystem).forEach(([key, value]) => {
         // `deriveColorSystem` keys use underscores (primary_hover, neutral_100);
         // CSS variables across the app are hyphenated (--color-primary-hover, --color-neutral-100).
-        const cssVarKey = key.replaceAll('_', '-');
+        // Using split/join instead of replaceAll for ES2020 tsconfig compatibility.
+        const cssVarKey = key.split('_').join('-');
         root.style.setProperty(`--color-${cssVarKey}`, value);
       });
 
