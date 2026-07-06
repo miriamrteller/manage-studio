@@ -38,8 +38,9 @@ export interface UseCheckoutPreparationParams {
 
 const checkoutPrepareInflight = new Map<
   string,
-  Promise<{ engagementId: string; charge: CheckoutChargePayload }>
+  Promise<{ engagementId: string; charge: CheckoutChargePayload | null }>
 >();
+const WAIVER_REDIRECT_SENTINEL = '__waiver_redirect__';
 
 function prepareKey(
   tenantId: string,
@@ -154,9 +155,9 @@ export function useCheckoutPreparation({
         }
 
         const key = prepareKey(tenant.id, personId!, offeringId!, seasonId!);
-        let inflight = checkoutPrepareInflight.get(key);
-        if (!inflight) {
-          inflight = (async () => {
+        const inflight =
+          checkoutPrepareInflight.get(key) ??
+          (async () => {
             const payload = evaluation.payload;
             const ageOverrideConfirmed =
               'age_override_confirmed' in payload && payload.age_override_confirmed === true;
@@ -181,7 +182,22 @@ export function useCheckoutPreparation({
             });
 
             if (result.blockReason === 'waiver_required') {
-              throw new Error(t('enrolment.waiver_required_before_checkout', { defaultValue: 'Waiver required' }));
+              // Server can still return a newly-created engagement when payment is blocked by waiver.
+              // Keep that engagement for admin follow-up actions (send link/offline), and for
+              // non-admin flows route back to waiver when the waiver step is available.
+              if (mode === 'admin') {
+                return {
+                  engagementId: result.context.engagementId,
+                  charge: result.charge,
+                };
+              }
+              if (showWaiverStep) {
+                setCurrentStep('waiver');
+                throw new Error(WAIVER_REDIRECT_SENTINEL);
+              }
+              throw new Error(
+                t('enrolment.waiver_required_before_checkout', { defaultValue: 'Waiver required' }),
+              );
             }
             if (!result.charge) {
               throw new Error(t('enrolment.payment_setup_failed'));
@@ -192,6 +208,7 @@ export function useCheckoutPreparation({
               charge: result.charge,
             };
           })();
+        if (!checkoutPrepareInflight.has(key)) {
           checkoutPrepareInflight.set(key, inflight);
         }
 
@@ -212,6 +229,11 @@ export function useCheckoutPreparation({
           checkoutPrepareInflight.delete(key);
         }
       } catch (error) {
+        if (error instanceof Error && error.message === WAIVER_REDIRECT_SENTINEL) {
+          checkoutPrepareStartedRef.current = false;
+          setIsCheckoutPreparing(false);
+          return;
+        }
         checkoutPrepareStartedRef.current = false;
         setCheckoutError(mapEnrolmentFlowError(error, t, mode));
         setIsCheckoutPreparing(false);
