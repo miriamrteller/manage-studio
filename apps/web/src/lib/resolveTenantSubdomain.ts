@@ -5,18 +5,14 @@ const RESERVED_SUBDOMAINS = new Set(['localhost', 'www', '127', '0']);
 /**
  * Resolves tenant subdomain for multi-tenant routing and auth metadata.
  *
- * Dev: VITE_DEV_TENANT_SUBDOMAIN
- * Prod: first label of hostname (excluding IPs and reserved names)
+ * Prefer URL hostname subdomain when present (e.g. therapist.localhost).
+ * Fallback to VITE_DEV_TENANT_SUBDOMAIN for plain localhost dev.
  */
 export function resolveTenantSubdomain(): string | null {
   const devSubdomain = import.meta.env.VITE_DEV_TENANT_SUBDOMAIN as string | undefined;
 
-  if (devSubdomain) {
-    return devSubdomain;
-  }
-
   if (typeof window === 'undefined') {
-    return null;
+    return devSubdomain || null;
   }
 
   const hostname = window.location.hostname;
@@ -36,8 +32,8 @@ export function resolveTenantSubdomain(): string | null {
   }
 
   if (subdomain && RESERVED_SUBDOMAINS.has(subdomain)) {
-    return null;
+    subdomain = null;
   }
 
-  return subdomain;
+  return subdomain || devSubdomain || null;
 }

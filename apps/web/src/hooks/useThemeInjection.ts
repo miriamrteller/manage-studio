@@ -60,7 +60,10 @@ export function useThemeInjection(): void {
 
       // 2. Inject all derived colors into :root
       Object.entries(colorSystem).forEach(([key, value]) => {
-        root.style.setProperty(`--color-${key}`, value);
+        // `deriveColorSystem` keys use underscores (primary_hover, neutral_100);
+        // CSS variables across the app are hyphenated (--color-primary-hover, --color-neutral-100).
+        const cssVarKey = key.replaceAll('_', '-');
+        root.style.setProperty(`--color-${cssVarKey}`, value);
       });
 
       // 2b. Inject accessible text colors for primary/secondary surfaces
