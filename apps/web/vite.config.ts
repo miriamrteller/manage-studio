@@ -22,6 +22,9 @@ function denoNpmImportMap() {
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react(), denoNpmImportMap()],
+  server: {
+    host: '0.0.0.0',
+  },
   resolve: {
     alias: [
       { find: '@shared', replacement: path.resolve(__dirname, '../../packages/shared/src') },

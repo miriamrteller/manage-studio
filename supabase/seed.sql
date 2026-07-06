@@ -43,6 +43,49 @@ VALUES (
   from_email = EXCLUDED.from_email,
   waiver_require_otp = EXCLUDED.waiver_require_otp;
 
+-- Add demo tenants
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM tenants WHERE subdomain = 'therapist') THEN
+    PERFORM provision_tenant(
+      p_name := 'Therapist Demo',
+      p_subdomain := 'therapist',
+      p_business_preset := 'services',
+      p_primary_color := '#EC4899',
+      p_accent_color := '#FBCFE8',
+      p_language_default := 'he'
+    );
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM tenants WHERE subdomain = 'photographer') THEN
+    PERFORM provision_tenant(
+      p_name := 'Photographer Demo',
+      p_subdomain := 'photographer',
+      p_business_preset := 'services',
+      p_primary_color := '#1E293B',
+      p_accent_color := '#94A3B8',
+      p_language_default := 'he'
+    );
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM tenants WHERE subdomain = 'sofer') THEN
+    PERFORM provision_tenant(
+      p_name := 'Sofer Demo',
+      p_subdomain := 'sofer',
+      p_business_preset := 'services',
+      p_primary_color := '#D97706',
+      p_accent_color := '#FDE68A',
+      p_language_default := 'he'
+    );
+  END IF;
+END $$;
+
 -- ============================================================================
 -- SEASONS + CATEGORIES + OFFERINGS (20260608000500_offerings.sql)
 -- Age ranges live on offerings.min_age / offerings.max_age (not requirement templates)
