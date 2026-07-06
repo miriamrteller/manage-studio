@@ -1,5 +1,5 @@
-import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
-import { createServiceClient } from "../_shared/supabase.ts";
+import { corsHeaders, jsonResponse } from "../../packages/edge-runtime/src/cors.ts";
+import { createServiceClient } from "../../packages/edge-runtime/src/supabase.ts";
 import {
   currentHmacVersion,
   getHmacKey,
@@ -7,7 +7,7 @@ import {
   hmacSha256Hex,
   sha256Hex,
   timingSafeEqual,
-} from "../_shared/hmac.ts";
+} from "../../packages/edge-runtime/src/hmac.ts";
 import {
   extractWaiverToken,
   verifyWaiverToken,

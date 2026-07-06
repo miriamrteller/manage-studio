@@ -19,8 +19,8 @@
  */
 
 import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
-import { jsonResponse } from "../_shared/cors.ts";
-import { createServiceClient } from "../_shared/supabase.ts";
+import { jsonResponse } from "../../packages/edge-runtime/src/cors.ts";
+import { createServiceClient } from "../../packages/edge-runtime/src/supabase.ts";
 import {
   sendRenderedEmail,
   EMAIL_TEMPLATE_NAMES,

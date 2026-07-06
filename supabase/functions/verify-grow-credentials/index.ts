@@ -1,8 +1,8 @@
-import { handleOptions, jsonResponse } from "../_shared/cors.ts";
-import { getEnv } from "../_shared/env.ts";
+import { handleOptions, jsonResponse } from "../../packages/edge-runtime/src/cors.ts";
+import { getEnv } from "../../packages/edge-runtime/src/env.ts";
 import { MockGrowPaymentProvider } from "../_shared/payments/providers/mock-grow.ts";
 import { GrowPaymentProvider } from "../_shared/payments/providers/grow.ts";
-import { createServiceClient, requireAuthUser } from "../_shared/supabase.ts";
+import { createServiceClient, requireAuthUser } from "../../packages/edge-runtime/src/supabase.ts";
 
 /**
  * Auth health ping for a tenant's Grow (Meshulam) credentials, used by the settings

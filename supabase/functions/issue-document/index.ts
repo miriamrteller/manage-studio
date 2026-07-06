@@ -11,8 +11,8 @@
 //      ); $$
 // );
 import { z } from "npm:zod@3.22.4";
-import { jsonResponse } from "../_shared/cors.ts";
-import { createServiceClient } from "../_shared/supabase.ts";
+import { jsonResponse } from "../../packages/edge-runtime/src/cors.ts";
+import { createServiceClient } from "../../packages/edge-runtime/src/supabase.ts";
 import { DOCUMENT_BATCH_SIZE } from "../_shared/invoicing/backoff.ts";
 import {
   processQueueRow,

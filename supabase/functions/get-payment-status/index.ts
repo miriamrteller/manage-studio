@@ -1,5 +1,5 @@
-import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
-import { createServiceClient, requireAuthUser } from "../_shared/supabase.ts";
+import { corsHeaders, jsonResponse } from "../../packages/edge-runtime/src/cors.ts";
+import { createServiceClient, requireAuthUser } from "../../packages/edge-runtime/src/supabase.ts";
 import { extractWaiverToken, verifyWaiverToken } from "../_shared/waiver-token.ts";
 import { resolveAllowedTokenRecipientEmails } from "../_shared/token-recipient.ts";
 

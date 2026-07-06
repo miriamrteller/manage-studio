@@ -1,5 +1,5 @@
-import { handleOptions, jsonResponse } from "../_shared/cors.ts";
-import { createServiceClient, requireAuthUser } from "../_shared/supabase.ts";
+import { handleOptions, jsonResponse } from "../../packages/edge-runtime/src/cors.ts";
+import { createServiceClient, requireAuthUser } from "../../packages/edge-runtime/src/supabase.ts";
 import { getInvoicingProviderForTenant } from "../_shared/invoicing/index.ts";
 
 Deno.serve(async (req) => {
