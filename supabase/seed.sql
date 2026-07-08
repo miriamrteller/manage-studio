@@ -760,3 +760,53 @@ VALUES (
   '2026-01-15 10:30:00+02'::timestamptz
 )
 ON CONFLICT (id) DO NOTHING;
+
+-- ============================================================
+-- Test tenants for local dev — provision via provision_tenant_v2
+-- ============================================================
+
+-- Ensure test owner users exist in auth.users first.
+-- In local Supabase dev these UUIDs are stable; adjust if your local
+-- auth.users already has conflicting rows.
+
+DO $$
+DECLARE
+  v_ballet_owner_id   uuid := 'aaaaaaaa-0000-0000-0000-000000000001';
+  v_photo_owner_id    uuid := 'aaaaaaaa-0000-0000-0000-000000000002';
+  v_beauty_owner_id   uuid := 'aaaaaaaa-0000-0000-0000-000000000003';
+BEGIN
+
+  -- Insert owner users if they don't already exist
+  INSERT INTO auth.users (id, email, encrypted_password, email_confirmed_at, created_at, updated_at)
+  VALUES
+    (v_ballet_owner_id,  'owner@ballet.test',  crypt('devpassword', gen_salt('bf')), now(), now(), now()),
+    (v_photo_owner_id,   'owner@photo.test',   crypt('devpassword', gen_salt('bf')), now(), now(), now()),
+    (v_beauty_owner_id,  'owner@beauty.test',  crypt('devpassword', gen_salt('bf')), now(), now(), now())
+  ON CONFLICT (id) DO NOTHING;
+
+  -- Provision tenants
+  PERFORM provision_tenant_v2(
+    p_subdomain    => 'belladance',
+    p_display_name => 'Bella Dance Academy',
+    p_owner_id     => v_ballet_owner_id,
+    p_plan         => 'professional',
+    p_vertical     => 'dance_studio'
+  );
+
+  PERFORM provision_tenant_v2(
+    p_subdomain    => 'lensstudio',
+    p_display_name => 'Lens Studio Photography',
+    p_owner_id     => v_photo_owner_id,
+    p_plan         => 'essential',
+    p_vertical     => 'photography_studio'
+  );
+
+  PERFORM provision_tenant_v2(
+    p_subdomain    => 'velvetbeauty',
+    p_display_name => 'Velvet Beauty Clinic',
+    p_owner_id     => v_beauty_owner_id,
+    p_plan         => 'essential',
+    p_vertical     => 'beauty_clinic'
+  );
+
+END $$;
