@@ -933,7 +933,7 @@ export type Database = {
           deprecated_at: string | null
           description: string
           key: string
-          skin_restriction: Database["public"]["Enums"]["tenant_skin"] | null
+          skin_restriction: string | null
           successor_key: string | null
           tier_minimum: Database["public"]["Enums"]["tenant_plan"]
         }
@@ -942,7 +942,7 @@ export type Database = {
           deprecated_at?: string | null
           description: string
           key: string
-          skin_restriction?: Database["public"]["Enums"]["tenant_skin"] | null
+          skin_restriction?: string | null
           successor_key?: string | null
           tier_minimum: Database["public"]["Enums"]["tenant_plan"]
         }
@@ -951,11 +951,18 @@ export type Database = {
           deprecated_at?: string | null
           description?: string
           key?: string
-          skin_restriction?: Database["public"]["Enums"]["tenant_skin"] | null
+          skin_restriction?: string | null
           successor_key?: string | null
           tier_minimum?: Database["public"]["Enums"]["tenant_plan"]
         }
         Relationships: [
+          {
+            foreignKeyName: "feature_definitions_skin_restriction_fkey"
+            columns: ["skin_restriction"]
+            isOneToOne: false
+            referencedRelation: "verticals"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "feature_definitions_successor_key_fkey"
             columns: ["successor_key"]
@@ -2001,31 +2008,31 @@ export type Database = {
       }
       tenant_feature_overrides: {
         Row: {
-          enabled: boolean
-          expires_at: string | null
+          created_at: string
           feature_key: string
-          id: string
-          set_at: string
+          is_enabled: boolean
+          note: string | null
           set_by: string
           tenant_id: string
+          updated_at: string
         }
         Insert: {
-          enabled?: boolean
-          expires_at?: string | null
+          created_at?: string
           feature_key: string
-          id?: string
-          set_at?: string
+          is_enabled?: boolean
+          note?: string | null
           set_by?: string
           tenant_id: string
+          updated_at?: string
         }
         Update: {
-          enabled?: boolean
-          expires_at?: string | null
+          created_at?: string
           feature_key?: string
-          id?: string
-          set_at?: string
+          is_enabled?: boolean
+          note?: string | null
           set_by?: string
           tenant_id?: string
+          updated_at?: string
         }
         Relationships: [
           {
@@ -2121,6 +2128,7 @@ export type Database = {
           labels: Json
           language_default: string
           name: string
+          onboarding_status: string
           payment_provider: string
           payment_provider_account_id: string | null
           payment_provider_public_key: string | null
@@ -2132,14 +2140,13 @@ export type Database = {
           plan: Database["public"]["Enums"]["tenant_plan"]
           prices_include_vat: boolean
           primary_color: string
-          skin: Database["public"]["Enums"]["tenant_skin"]
-          sub_status: Database["public"]["Enums"]["subscription_status"]
+          skin: string
+          sub_status: string
           subdomain: string
           trial_ends_at: string | null
           updated_at: string
           vat_rate: number | null
           vat_type: number
-          vertical: Database["public"]["Enums"]["tenant_vertical"]
           waiver_require_otp: boolean
         }
         Insert: {
@@ -2162,6 +2169,7 @@ export type Database = {
           labels?: Json
           language_default?: string
           name: string
+          onboarding_status?: string
           payment_provider?: string
           payment_provider_account_id?: string | null
           payment_provider_public_key?: string | null
@@ -2173,14 +2181,13 @@ export type Database = {
           plan?: Database["public"]["Enums"]["tenant_plan"]
           prices_include_vat?: boolean
           primary_color?: string
-          skin?: Database["public"]["Enums"]["tenant_skin"]
-          sub_status?: Database["public"]["Enums"]["subscription_status"]
+          skin?: string
+          sub_status?: string
           subdomain: string
           trial_ends_at?: string | null
           updated_at?: string
           vat_rate?: number | null
           vat_type?: number
-          vertical?: Database["public"]["Enums"]["tenant_vertical"]
           waiver_require_otp?: boolean
         }
         Update: {
@@ -2203,6 +2210,7 @@ export type Database = {
           labels?: Json
           language_default?: string
           name?: string
+          onboarding_status?: string
           payment_provider?: string
           payment_provider_account_id?: string | null
           payment_provider_public_key?: string | null
@@ -2211,20 +2219,27 @@ export type Database = {
           payment_provider_webhook_enc?: string | null
           phone_region?: string
           phone_region_updated_at?: string
-          plan?: Database["public"]["Enums"]["tenant_plan"] | null
+          plan?: Database["public"]["Enums"]["tenant_plan"]
           prices_include_vat?: boolean
           primary_color?: string
-          skin?: Database["public"]["Enums"]["tenant_skin"] | null
-          sub_status?: Database["public"]["Enums"]["subscription_status"] | null
+          skin?: string
+          sub_status?: string
           subdomain?: string
           trial_ends_at?: string | null
           updated_at?: string
           vat_rate?: number | null
           vat_type?: number
-          vertical?: Database["public"]["Enums"]["tenant_vertical"] | null
           waiver_require_otp?: boolean
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "tenants_skin_fkey"
+            columns: ["skin"]
+            isOneToOne: false
+            referencedRelation: "verticals"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_profiles: {
         Row: {
@@ -2313,6 +2328,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      verticals: {
+        Row: {
+          created_at: string
+          display_name: string
+          id: string
+          is_active: boolean
+          plan_restriction: Database["public"]["Enums"]["tenant_plan"] | null
+        }
+        Insert: {
+          created_at?: string
+          display_name: string
+          id: string
+          is_active?: boolean
+          plan_restriction?: Database["public"]["Enums"]["tenant_plan"] | null
+        }
+        Update: {
+          created_at?: string
+          display_name?: string
+          id?: string
+          is_active?: boolean
+          plan_restriction?: Database["public"]["Enums"]["tenant_plan"] | null
+        }
+        Relationships: []
       }
       waitlist: {
         Row: {
@@ -2711,9 +2750,9 @@ export type Database = {
         Args: { p_subdomain: string }
         Returns: {
           accent_color: string
-          business_preset: string
           country: string
           currency: string
+          enabled_features: string[]
           id: string
           invoicing_provider: string
           labels: Json
@@ -2724,30 +2763,15 @@ export type Database = {
           payment_provider_secret_configured: boolean
           payment_provider_updated_at: string
           payment_provider_webhook_configured: boolean
+          plan: Database["public"]["Enums"]["tenant_plan"]
           prices_include_vat: boolean
           primary_color: string
+          skin: string
           tenant_subdomain: string
           vat_rate: number
         }[]
       }
-      get_tenant_config_by_subdomain_v2: {
-        Args: { p_subdomain: string }
-        Returns: {
-          display_name: string | null
-          features: Record<string, boolean>
-          id: string
-          plan: Database["public"]["Enums"]["tenant_plan"]
-          skin: Database["public"]["Enums"]["tenant_skin"]
-          sub_status: Database["public"]["Enums"]["subscription_status"]
-          subdomain: string
-          trial_ends_at: string | null
-          vertical: Database["public"]["Enums"]["tenant_vertical"]
-        }[]
-      }
-      get_tenant_features: {
-        Args: { p_tenant_id: string }
-        Returns: Record<string, boolean>
-      }
+      get_tenant_features: { Args: { p_tenant_id: string }; Returns: string[] }
       get_tenant_invoicing_credentials: {
         Args: { p_tenant_id: string }
         Returns: {
@@ -2850,30 +2874,11 @@ export type Database = {
       }
       provision_tenant: {
         Args: {
-          p_accent_color?: string
-          p_admin_email?: string
-          p_business_preset?: string
-          p_country?: string
-          p_currency?: string
-          p_from_email?: string
-          p_labels?: Json
-          p_language_default?: string
           p_name: string
-          p_phone_region?: string
-          p_prices_include_vat?: boolean
-          p_primary_color?: string
+          p_owner_email?: string
+          p_plan: string
           p_subdomain: string
-          p_vat_rate?: number
-        }
-        Returns: string
-      }
-      provision_tenant_v2: {
-        Args: {
-          p_display_name?: string
-          p_owner_id: string
-          p_plan?: Database["public"]["Enums"]["tenant_plan"]
-          p_subdomain: string
-          p_vertical?: Database["public"]["Enums"]["tenant_vertical"]
+          p_vertical: string
         }
         Returns: string
       }
@@ -2992,19 +2997,7 @@ export type Database = {
       }
     }
     Enums: {
-      subscription_status:
-        | "trialing"
-        | "active"
-        | "past_due"
-        | "canceled"
-        | "suspended"
       tenant_plan: "essential" | "professional"
-      tenant_skin: "essential" | "professional"
-      tenant_vertical:
-        | "photographer"
-        | "beautician"
-        | "dance-studio"
-        | "generic"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3135,36 +3128,7 @@ export const Constants = {
   },
   public: {
     Enums: {
-      subscription_status: [
-        "trialing",
-        "active",
-        "past_due",
-        "canceled",
-        "suspended",
-      ],
       tenant_plan: ["essential", "professional"],
-      tenant_skin: ["essential", "professional"],
-      tenant_vertical: [
-        "photographer",
-        "beautician",
-        "dance-studio",
-        "generic",
-      ],
     },
   },
 } as const
-
-// ─── Convenience aliases from Batch 4 ───────────────────────────────────────
-
-export type TenantPlan = Database["public"]["Enums"]["tenant_plan"]
-export type TenantSkin = Database["public"]["Enums"]["tenant_skin"]
-export type TenantVertical = Database["public"]["Enums"]["tenant_vertical"]
-export type SubscriptionStatus = Database["public"]["Enums"]["subscription_status"]
-
-export type FeatureDefinitionRow =
-  Database["public"]["Tables"]["feature_definitions"]["Row"]
-
-export type TenantFeatureOverrideRow =
-  Database["public"]["Tables"]["tenant_feature_overrides"]["Row"]
-
-export type TenantFeaturesResult = Record<string, boolean>

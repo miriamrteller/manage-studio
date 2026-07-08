@@ -94,6 +94,9 @@ DROP INDEX IF EXISTS public.idx_offerings_season_dow_status;
 DROP TABLE IF EXISTS public.notification_log              CASCADE;
 DROP TABLE IF EXISTS public.tenant_notification_templates CASCADE;
 DROP TABLE IF EXISTS public.tenant_email_customizations   CASCADE;
+DROP TABLE IF EXISTS public.tenant_feature_overrides      CASCADE;
+DROP TABLE IF EXISTS public.feature_definitions           CASCADE;
+DROP TABLE IF EXISTS public.verticals                     CASCADE;
 DROP TABLE IF EXISTS public.expenses                      CASCADE;
 DROP TABLE IF EXISTS public.grow_webhook_secrets          CASCADE;
 DROP TABLE IF EXISTS public.expense_categories            CASCADE;
@@ -130,6 +133,7 @@ DROP FUNCTION IF EXISTS public.get_engagement_person_id(UUID)                   
 DROP FUNCTION IF EXISTS public.get_public_classes_by_subdomain(TEXT)                     CASCADE;
 DROP FUNCTION IF EXISTS public.get_public_offerings_by_subdomain(TEXT)                   CASCADE;
 DROP FUNCTION IF EXISTS public.get_tenant_config_by_subdomain(TEXT)                      CASCADE;
+DROP FUNCTION IF EXISTS public.get_tenant_features(UUID)                                 CASCADE;
 DROP FUNCTION IF EXISTS public.next_invoice_number(UUID)                                 CASCADE;
 DROP FUNCTION IF EXISTS public.get_tenant_stripe_credentials(UUID)                       CASCADE;
 DROP FUNCTION IF EXISTS public.save_tenant_stripe_credentials(TEXT, TEXT, TEXT)          CASCADE;
@@ -187,6 +191,14 @@ BEGIN
     EXECUTE 'DROP FUNCTION IF EXISTS ' || r.sig || ' CASCADE';
   END LOOP;
 END $$;
+
+-- ---------------------------------------------------------------------------
+-- 3c. Drop custom enum/types introduced in newer migrations
+-- ---------------------------------------------------------------------------
+DROP TYPE IF EXISTS public.subscription_status CASCADE;
+DROP TYPE IF EXISTS public.tenant_vertical CASCADE;
+DROP TYPE IF EXISTS public.tenant_skin CASCADE;
+DROP TYPE IF EXISTS public.tenant_plan CASCADE;
 
 
 

@@ -127,7 +127,7 @@ export function OperatorOnboardingWizard() {
 
   const provision = useMutation({
     mutationFn: async () => {
-      const { data, error: rpcError } = await supabase.rpc('provision_tenant_v2', {
+      const { data, error: rpcError } = await supabase.rpc('provision_tenant', {
         p_name: form.name.trim(),
         p_subdomain: form.subdomain.trim().toLowerCase(),
         p_plan: form.plan,

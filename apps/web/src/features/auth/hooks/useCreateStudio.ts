@@ -73,7 +73,7 @@ export function useCreateStudio() {
 
       // Step 2: Provision tenant
       const { error: rpcError } = await supabase.rpc(
-        'provision_tenant_v2',
+        'provision_tenant',
         {
           p_subdomain: data.subdomain,
           p_display_name: data.studioName,

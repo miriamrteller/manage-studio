@@ -762,7 +762,7 @@ VALUES (
 ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================
--- Test tenants for local dev — provision via provision_tenant_v2
+-- Test tenants for local dev — provision via provision_tenant
 -- ============================================================
 
 -- Ensure test owner users exist in auth.users first.
@@ -784,29 +784,32 @@ BEGIN
     (v_beauty_owner_id,  'owner@beauty.test',  crypt('devpassword', gen_salt('bf')), now(), now(), now())
   ON CONFLICT (id) DO NOTHING;
 
-  -- Provision tenants
-  PERFORM provision_tenant_v2(
-    p_subdomain    => 'belladance',
-    p_display_name => 'Bella Dance Academy',
-    p_owner_id     => v_ballet_owner_id,
-    p_plan         => 'professional',
-    p_vertical     => 'dance_studio'
+  -- Provision tenants (impersonate each owner so provision_tenant can link tenant_admin via auth.uid())
+  PERFORM set_config('request.jwt.claim.sub', v_ballet_owner_id::text, true);
+  PERFORM provision_tenant(
+    p_name        => 'Bella Dance Academy',
+    p_subdomain   => 'belladance',
+    p_plan        => 'professional',
+    p_vertical    => 'dance-studio',
+    p_owner_email => 'owner@ballet.test'
   );
 
-  PERFORM provision_tenant_v2(
-    p_subdomain    => 'lensstudio',
-    p_display_name => 'Lens Studio Photography',
-    p_owner_id     => v_photo_owner_id,
-    p_plan         => 'essential',
-    p_vertical     => 'photography_studio'
+  PERFORM set_config('request.jwt.claim.sub', v_photo_owner_id::text, true);
+  PERFORM provision_tenant(
+    p_name        => 'Lens Studio Photography',
+    p_subdomain   => 'lensstudio',
+    p_plan        => 'essential',
+    p_vertical    => 'photographer',
+    p_owner_email => 'owner@photo.test'
   );
 
-  PERFORM provision_tenant_v2(
-    p_subdomain    => 'velvetbeauty',
-    p_display_name => 'Velvet Beauty Clinic',
-    p_owner_id     => v_beauty_owner_id,
-    p_plan         => 'essential',
-    p_vertical     => 'beauty_clinic'
+  PERFORM set_config('request.jwt.claim.sub', v_beauty_owner_id::text, true);
+  PERFORM provision_tenant(
+    p_name        => 'Velvet Beauty Clinic',
+    p_subdomain   => 'velvetbeauty',
+    p_plan        => 'essential',
+    p_vertical    => 'beautician',
+    p_owner_email => 'owner@beauty.test'
   );
 
 END $$;
