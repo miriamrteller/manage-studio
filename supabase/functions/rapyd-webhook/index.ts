@@ -1,37 +1,41 @@
 /**
  * rapyd-webhook — inbound Rapyd webhook handler
  *
- * Validation sequence (spec §4):
- *  1. Signature verification (HMAC-SHA256)
- *  2. Timestamp replay-attack check (> 60s → reject)
- *  3. Idempotency check (duplicate → HTTP 200 immediately)
+ * Validation sequence (spec §4) — QA-verified order:
+ *  1. Tenant lookup          (needed to resolve secret for sig verify)
+ *  2. Signature verification (HMAC-SHA256, spec step 1)
+ *  3. Replay-attack check    (> 60s → reject, spec step 2)
  *  4. Tenant isolation check (cross-tenant → HTTP 403)
- *  5. Insert webhook_events record (outcome = 'processing')
- *  6. Return HTTP 200 immediately (< 30s requirement)
- *  7. Async: createInvoice → createITAAllocation (if B2B) → sendSMS → mark fully_invoiced
+ *  5. Idempotency check      (duplicate → HTTP 200 immediately)
+ *  6. Insert webhook_events record (outcome = 'processing')
+ *  7. Return HTTP 200 immediately (< 30s requirement)
+ *  8. Async: createInvoice → createITAAllocation (if B2B) → sendSMS → mark fully_invoiced
  *
  * Error codes (§6.1): SIGNATURE_MISMATCH, WEBHOOK_REPLAY_ATTACK, DUPLICATE_WEBHOOK,
  *   CROSS_TENANT_ATTEMPT, PAYMENT_PROVIDER_UNAVAILABLE, SHAAM_UNAVAILABLE
+ *
+ * Adapter Mandate compliance: no concrete adapter imported here.
+ *   Sig verification → standalone verifyRapydWebhookSignature utility.
+ *   Business logic providers resolved via providerForInvoicing factory only.
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { RapydAdapter }         from '../_shared/payments/providers/rapyd.ts';
-import { YeshInvoiceAdapter }   from '../_shared/payments/providers/yesh.ts';
-import { providerForPayment, providerForInvoicing, SupabaseVaultResolver } from '../_shared/payments/providers/index.ts';
+import { verifyRapydWebhookSignature } from '../_shared/payments/rapyd-verify.ts';
+import { providerForInvoicing, SupabaseVaultResolver } from '../_shared/payments/providers/index.ts';
 import type { RapydWebhookPayload, TenantProviderConfig } from '../_shared/payments/providers/types.ts';
 
-const WEBHOOK_URL_PATH = '/functions/v1/rapyd-webhook';
+const WEBHOOK_URL_PATH      = '/functions/v1/rapyd-webhook';
 const REPLAY_WINDOW_SECONDS = 60;
 
 Deno.serve(async (req: Request) => {
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
   );
   const secretResolver = new SupabaseVaultResolver(supabase);
   const operationId    = crypto.randomUUID();
 
-  // ── Read raw body (needed for signature verification) ─────────────────────
+  // ── Read raw body (required before JSON.parse for sig verification) ────────
   const bodyString = await req.text();
   let raw: RapydWebhookPayload;
 
@@ -40,27 +44,17 @@ Deno.serve(async (req: Request) => {
   } catch {
     return new Response(
       JSON.stringify({ error: 'INVALID_JSON', request_id: operationId }),
-      { status: 400, headers: { 'Content-Type': 'application/json' } }
+      { status: 400, headers: { 'Content-Type': 'application/json' } },
     );
   }
 
-  // ── Extract webhook headers ───────────────────────────────────────────────
-  const salt      = req.headers.get('salt')      ?? '';
-  const timestamp = req.headers.get('timestamp') ?? '';
-  const signature = req.headers.get('signature') ?? '';
-
-  // ── 1. Replay-attack check FIRST (cheap, no DB) ───────────────────────────
-  const tsSeconds = parseInt(timestamp, 10);
-  const nowSeconds = Math.floor(Date.now() / 1000);
-  if (isNaN(tsSeconds) || Math.abs(nowSeconds - tsSeconds) > REPLAY_WINDOW_SECONDS) {
-    return new Response(
-      JSON.stringify({ error: 'WEBHOOK_REPLAY_ATTACK', request_id: operationId }),
-      { status: 401, headers: { 'Content-Type': 'application/json' } }
-    );
-  }
-
-  // ── 2. Resolve tenant from access_key ─────────────────────────────────────
+  // ── Extract webhook headers ────────────────────────────────────────────────
+  const salt      = req.headers.get('salt')       ?? '';
+  const timestamp = req.headers.get('timestamp')  ?? '';
+  const signature = req.headers.get('signature')  ?? '';
   const accessKey = req.headers.get('access_key') ?? '';
+
+  // ── 1. Tenant lookup (must precede sig verify — secret is per-tenant) ──────
   const { data: tenantRows } = await supabase
     .from('tenant_configs')
     .select('id, payment_provider, invoicing_provider, rapyd_config, yesh_config')
@@ -71,32 +65,43 @@ Deno.serve(async (req: Request) => {
   if (!tenantRows?.length) {
     return new Response(
       JSON.stringify({ error: 'TENANT_NOT_FOUND', request_id: operationId }),
-      { status: 404, headers: { 'Content-Type': 'application/json' } }
+      { status: 404, headers: { 'Content-Type': 'application/json' } },
     );
   }
 
-  const tenant = tenantRows[0] as TenantProviderConfig;
-  const paymentProvider = await providerForPayment(tenant, secretResolver) as RapydAdapter;
+  const tenant    = tenantRows[0] as TenantProviderConfig;
+  const secretRef = (tenant.rapyd_config as { secret_key_ref: string }).secret_key_ref;
+  const secretKey = await secretResolver.resolve(secretRef);
 
-  // ── 3. Signature verification ──────────────────────────────────────────────
-  const signatureValid = await paymentProvider.verifyWebhookSignature(
-    WEBHOOK_URL_PATH, salt, timestamp, bodyString, signature
+  // ── 2. Signature verification (spec §4, step 1) ────────────────────────────
+  const signatureValid = await verifyRapydWebhookSignature(
+    accessKey, secretKey, WEBHOOK_URL_PATH, salt, timestamp, bodyString, signature,
   );
 
   if (!signatureValid) {
     await supabase.from('webhook_events').insert({
-      idempotency_key: `${raw.data?.id ?? 'unknown'}_${raw.type}_failed_sig`,
+      idempotency_key:  `${raw.data?.id ?? 'unknown'}_${raw.type}_failed_sig`,
       rapyd_event_type: raw.type,
       outcome:          'rejected_signature',
       raw_payload:      raw,
     });
     return new Response(
       JSON.stringify({ error: 'SIGNATURE_MISMATCH', request_id: operationId }),
-      { status: 401, headers: { 'Content-Type': 'application/json' } }
+      { status: 401, headers: { 'Content-Type': 'application/json' } },
     );
   }
 
-  // ── 4. Tenant isolation check ─────────────────────────────────────────────
+  // ── 3. Replay-attack check (spec §4, step 2) — after sig verify ───────────
+  const tsSeconds  = parseInt(timestamp, 10);
+  const nowSeconds = Math.floor(Date.now() / 1000);
+  if (isNaN(tsSeconds) || Math.abs(nowSeconds - tsSeconds) > REPLAY_WINDOW_SECONDS) {
+    return new Response(
+      JSON.stringify({ error: 'WEBHOOK_REPLAY_ATTACK', request_id: operationId }),
+      { status: 401, headers: { 'Content-Type': 'application/json' } },
+    );
+  }
+
+  // ── 4. Tenant isolation check ──────────────────────────────────────────────
   const payloadTenantId = String(raw.data?.metadata?.['tenant_id'] ?? '');
   if (payloadTenantId && payloadTenantId !== tenant.id) {
     await supabase.from('webhook_events').insert({
@@ -108,11 +113,11 @@ Deno.serve(async (req: Request) => {
     console.error(`SECURITY: cross-tenant attempt. Auth tenant: ${tenant.id}, payload tenant: ${payloadTenantId}`);
     return new Response(
       JSON.stringify({ error: 'CROSS_TENANT_ATTEMPT', request_id: operationId }),
-      { status: 403, headers: { 'Content-Type': 'application/json' } }
+      { status: 403, headers: { 'Content-Type': 'application/json' } },
     );
   }
 
-  // ── 5. Idempotency check ──────────────────────────────────────────────────
+  // ── 5. Idempotency check ───────────────────────────────────────────────────
   const idempotencyKey = `${raw.data?.id}_${raw.type}`;
   const { data: existing } = await supabase
     .from('webhook_events')
@@ -124,16 +129,16 @@ Deno.serve(async (req: Request) => {
     if (existing[0].outcome === 'processed') {
       return new Response(
         JSON.stringify({ status: 'received', operation_id: operationId, note: 'DUPLICATE_WEBHOOK' }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } }
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
       );
     }
     return new Response(
       JSON.stringify({ error: 'CONFLICTING_PROCESSING_STATE', request_id: operationId }),
-      { status: 409, headers: { 'Content-Type': 'application/json' } }
+      { status: 409, headers: { 'Content-Type': 'application/json' } },
     );
   }
 
-  // ── 6. Record webhook as processing and return 200 immediately ────────────
+  // ── 6. Record webhook as processing ───────────────────────────────────────
   await supabase.from('webhook_events').insert({
     idempotency_key:  idempotencyKey,
     rapyd_event_type: raw.type,
@@ -141,34 +146,32 @@ Deno.serve(async (req: Request) => {
     raw_payload:      raw,
   });
 
-  // Return HTTP 200 before async processing (spec §4f: < 30s requirement)
+  // ── 7. Return HTTP 200 immediately (spec §4f: < 30s) ──────────────────────
   const response = new Response(
     JSON.stringify({ status: 'received', operation_id: operationId }),
-    { status: 200, headers: { 'Content-Type': 'application/json' } }
+    { status: 200, headers: { 'Content-Type': 'application/json' } },
   );
 
-  // ── 7. Async business logic ───────────────────────────────────────────────
+  // ── 8. Async business logic ────────────────────────────────────────────────
   EdgeRuntime.waitUntil(processWebhook(supabase, secretResolver, tenant, raw, idempotencyKey));
 
   return response;
 });
 
 async function processWebhook(
-  supabase:        ReturnType<typeof createClient>,
-  secretResolver:  SupabaseVaultResolver,
-  tenant:          TenantProviderConfig,
-  raw:             RapydWebhookPayload,
-  idempotencyKey:  string
+  supabase:       ReturnType<typeof createClient>,
+  secretResolver: SupabaseVaultResolver,
+  tenant:         TenantProviderConfig,
+  raw:            RapydWebhookPayload,
+  idempotencyKey: string,
 ): Promise<void> {
   try {
     const eventType = raw.type;
 
-    // Only act on payment events that require invoice creation
     if (
       eventType !== 'PAYMENT.SUCCEEDED' &&
       eventType !== 'PAYMENT.SUBSCRIPTION.PAID'
     ) {
-      // Refunds handled separately
       if (eventType === 'PAYMENT.REFUND.COMPLETED') {
         await handleRefundEvent(supabase, raw);
       }
@@ -195,13 +198,10 @@ async function processWebhook(
     if (invoiceRows?.length) {
       invoiceId = invoiceRows[0].id;
       b2bFlag   = invoiceRows[0].b2b_flag;
-
-      // Update status to payment_confirmed
       await supabase.from('invoices')
         .update({ status: 'payment_confirmed', updated_at: new Date().toISOString() })
         .eq('id', invoiceId);
     } else {
-      // Create new invoice record (b2b_flag derived from metadata — never from amount)
       b2bFlag = Boolean(paymentData.metadata?.['b2b_flag'] ?? false);
       const { data: newInvoice } = await supabase.from('invoices').insert({
         tenant_id:        tenant.id,
@@ -242,22 +242,21 @@ async function processWebhook(
       updated_at:  new Date().toISOString(),
     }).eq('id', invoiceId);
 
-    // ITA allocation for B2B invoices — Yesh decides eligibility, OpalSwift stores result
+    // ITA allocation for B2B — Yesh decides eligibility; OpalSwift stores result verbatim
     if (b2bFlag) {
       const allocResp = await invoicingProvider.createITAAllocation(invoiceResp.docnum);
       await supabase.from('invoices').update({
-        allocation_number:     allocResp.allocationNumber,
-        allocation_status:     allocResp.allocationNumber ? 'obtained' : allocResp.status,
+        allocation_number:      allocResp.allocationNumber,
+        allocation_status:      allocResp.allocationNumber ? 'obtained' : allocResp.status,
         allocation_skip_reason: allocResp.skipReason ?? null,
-        updated_at:            new Date().toISOString(),
+        updated_at:             new Date().toISOString(),
       }).eq('id', invoiceId);
 
-      // If SHAAM unavailable, queue for retry
       if (allocResp.skipReason === 'shaam_unavailable') {
         await supabase.from('invoice_retry_queue').insert({
-          invoice_id:    invoiceId,
-          tenant_id:     tenant.id,
-          next_retry_at: new Date().toISOString(),
+          invoice_id:      invoiceId,
+          tenant_id:       tenant.id,
+          next_retry_at:   new Date().toISOString(),
           last_error_code: 'SHAAM_UNAVAILABLE',
         });
       }
@@ -267,17 +266,15 @@ async function processWebhook(
     if (paymentData.metadata?.['client_phone']) {
       await invoicingProvider.sendInvoiceSMS(
         invoiceResp.docnum,
-        String(paymentData.metadata['client_phone'])
+        String(paymentData.metadata['client_phone']),
       );
     }
 
-    // Mark fully invoiced
     await supabase.from('invoices').update({
       status:     'fully_invoiced',
       updated_at: new Date().toISOString(),
     }).eq('id', invoiceId);
 
-    // Mark webhook processed
     await supabase.from('webhook_events').update({
       outcome:      'processed',
       processed_at: new Date().toISOString(),
@@ -285,13 +282,13 @@ async function processWebhook(
 
   } catch (err) {
     console.error('processWebhook error:', err);
-    // Don't throw — let webhook_event stay in 'processing' for ops investigation
+    // Do not throw — leave webhook_event in 'processing' for ops investigation
   }
 }
 
 async function handleRefundEvent(
   supabase: ReturnType<typeof createClient>,
-  raw:      RapydWebhookPayload
+  raw:      RapydWebhookPayload,
 ): Promise<void> {
   const originalPaymentId = String(raw.data?.metadata?.['original_payment_id'] ?? '');
   if (!originalPaymentId) return;
