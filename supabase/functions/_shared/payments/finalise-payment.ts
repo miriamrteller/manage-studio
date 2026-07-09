@@ -8,6 +8,7 @@ import { resolveNotificationFromEmail } from "../notification-from.ts";
 import { sendRenderedEmail, EMAIL_TEMPLATE_NAMES } from "../resend-send.ts";
 import { signWaiverToken } from "../waiver-token.ts";
 import { advanceBillingSchedule } from "./advance-billing-schedule.ts";
+import { syncBookingEventInsert } from "../sync-booking-event.ts";
 import type { FinalisePaymentParams } from "./types.ts";
 
 const APP_URL = getEnv("APP_URL") ?? "";
@@ -334,6 +335,11 @@ export async function finalisePayment(
       engagementStatus: status,
       waiverDeadline,
     });
+
+    // Push confirmed appointment bookings to Google Calendar (best-effort, non-blocking).
+    if (status === "active") {
+      await syncBookingEventInsert(service, params.tenantId, params.engagementId);
+    }
   }
 
   if (!params.skipDocumentEnqueue) {

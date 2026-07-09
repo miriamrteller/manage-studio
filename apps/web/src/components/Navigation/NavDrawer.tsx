@@ -5,6 +5,7 @@ import { Pin, PinOff, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useEntityLabels } from '@/hooks/useEntityLabels';
+import { useFeatureGate } from '@/hooks/useFeatureGate';
 import { useTenant } from '@/hooks/useTenant';
 import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
@@ -44,6 +45,7 @@ export function NavDrawer() {
   const { user } = useCurrentUser();
   const { labels, modules } = useEntityLabels();
   const tenant = useTenant();
+  const { hasFeature } = useFeatureGate();
   const {
     isOpen,
     isPinned,
@@ -62,6 +64,7 @@ export function NavDrawer() {
     isAuthenticated: Boolean(user),
     modules,
     tenant,
+    hasFeature,
   });
 
   function navLabel(item: NavItem): string {

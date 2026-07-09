@@ -1,5 +1,6 @@
 import { PARENT_ROLE_NAMES } from '@/lib/parentRoles';
-import type { PresetModules } from '@shared/index';
+import type { PresetModules, FeatureKey } from '@shared/index';
+import { FEATURES } from '@shared/index';
 import {
   tenantUsesSplitProviders,
   tenantUsesBundledPayments,
@@ -47,6 +48,8 @@ export interface NavItem {
   moduleKey?: keyof PresetModules;
   /** Show only for bundled (grow/icount) vs split (stripe+…) payment setup */
   tenantFilter?: NavTenantFilter;
+  /** Hide item unless the tenant has this feature flag enabled */
+  featureKey?: FeatureKey;
 }
 
 export interface NavSection {
@@ -95,6 +98,13 @@ export const navigationConfig: NavItem[] = [
     labelKey: 'nav.notifications',
     requiredRoles: ['tenant_admin'],
     sectionKey: 'administration',
+  },
+  {
+    path: '/admin/appointments',
+    labelKey: 'nav.appointments',
+    requiredRoles: ['tenant_admin'],
+    sectionKey: 'administration',
+    featureKey: FEATURES.scheduling.clientBooking,
   },
   {
     path: '/admin/finance',
@@ -189,6 +199,22 @@ export const navigationConfig: NavItem[] = [
     requiredRoles: ['tenant_admin'],
     sectionKey: 'setup',
     indent: true,
+  },
+  {
+    path: '/admin/setup/calendar',
+    labelKey: 'nav.calendar',
+    requiredRoles: ['tenant_admin'],
+    sectionKey: 'setup',
+    indent: true,
+    featureKey: FEATURES.scheduling.calendarView,
+  },
+  {
+    path: '/admin/setup/booking',
+    labelKey: 'nav.booking_settings',
+    requiredRoles: ['tenant_admin'],
+    sectionKey: 'setup',
+    indent: true,
+    featureKey: FEATURES.scheduling.adminBooking,
   },
   {
     path: '/admin/setup/waivers',
