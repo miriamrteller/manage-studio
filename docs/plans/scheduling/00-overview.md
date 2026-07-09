@@ -63,5 +63,7 @@ Same V1 spine: Grow / iCount / Rapyd–Yesh → `create-checkout` → `finalise-
 ## Related
 
 - [google-calendar-integration.md](google-calendar-integration.md)
+- [deployment-and-testing.md](deployment-and-testing.md) — deploy commands, `APP_URL`/secrets per environment, testing plan
+- [stage-s2-schema.md](stage-s2-schema.md)
 - `packages/shared/src/config/feature-registry.ts`
-- Migrations: `02800`, `02900`
+- Migrations: `03100`–`03600`

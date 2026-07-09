@@ -48,3 +48,6 @@ coverage/
 
 # Temp
 .temp/
+
+# Sensitive
+*client_secret*.json
