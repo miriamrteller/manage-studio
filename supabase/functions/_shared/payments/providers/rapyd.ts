@@ -26,6 +26,7 @@ import type {
   RapydWebhookPayload,
   RapydCheckoutRequest,
   RapydCheckoutResponse,
+  CurrencyCode,
 } from './types.ts';
 import { PaymentProviderError, WebhookError } from './types.ts';
 
@@ -194,7 +195,7 @@ export class RapydAdapter implements IPaymentProvider {
       paymentId:   data.id,
       status,
       amount:      data.amount.toFixed(2),
-      currency:    data.currency,
+      currency:    data.currency as CurrencyCode,
       tenantId,
       metadata:    data.metadata,
       processedAt: new Date().toISOString(),

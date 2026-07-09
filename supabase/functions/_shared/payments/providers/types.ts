@@ -15,7 +15,8 @@ export type AllocationStatus =
   | 'obtained'
   | 'expired'
   | 'rejected'
-  | 'not_required';
+  | 'not_required'
+  | 'error';
 export type AllocationSkipReason =
   | 'not_required'
   | 'amount_below_threshold'

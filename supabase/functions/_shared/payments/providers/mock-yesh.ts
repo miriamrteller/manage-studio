@@ -19,6 +19,7 @@ import type {
 import { InvoicingProviderError } from './types.ts';
 
 export class MockYeshInvoiceAdapter implements IInvoicingProvider {
+  private static _counter = 0;
   // Injectable overrides for specific test scenarios
   public simulateShaamUnavailable = false;
   public simulateB2cFlag          = false;
@@ -31,13 +32,13 @@ export class MockYeshInvoiceAdapter implements IInvoicingProvider {
   async createInvoice(data: InvoiceData): Promise<InvoiceResponse> {
     if (this.simulateCredentialError) {
       throw new InvoicingProviderError(
-        'Yesh API key invalid or expired',
+        'INVOICING_CREDENTIAL_ERROR: Yesh API key invalid or expired',
         'INVOICING_CREDENTIAL_ERROR',
         401
       );
     }
 
-    const docnum = `DOC-${Date.now()}`;
+    const docnum = `DOC-${++MockYeshInvoiceAdapter._counter}-${Date.now()}`;
     return {
       docnum,
       lawNumber:          `LAW-${Date.now()}`,
