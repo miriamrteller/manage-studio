@@ -11,7 +11,7 @@
 -- ============================================================================
 -- TENANTS (20260608000200_core_tenants.sql)
 -- ============================================================================
-INSERT INTO tenants (id, name, subdomain, language_default, country, primary_color, accent_color, currency, vat_rate, prices_include_vat, phone_region, business_preset, labels, from_email, waiver_require_otp)
+INSERT INTO tenants (id, name, subdomain, language_default, country, primary_color, accent_color, currency, vat_rate, prices_include_vat, phone_region, business_preset, labels, from_email, waiver_require_otp, payment_provider, invoicing_provider)
 VALUES (
   '00000000-0000-0000-0000-000000000001'::uuid,
   'Creative Ballet Academy',
@@ -27,7 +27,9 @@ VALUES (
   'programs',
   '{}'::jsonb,
   'noreply@creativeballet.co.il',  -- verified sender for transactional email (waiver reminders, receipts)
-  false  -- OTP before waiver signing disabled by default; enable only if Twilio Verify is configured
+  false,  -- OTP before waiver signing disabled by default; enable only if Twilio Verify is configured
+  'grow',
+  'grow'
 ) ON CONFLICT (subdomain) DO UPDATE SET
   name = EXCLUDED.name,
   language_default = EXCLUDED.language_default,
@@ -41,7 +43,9 @@ VALUES (
   business_preset = EXCLUDED.business_preset,
   labels = EXCLUDED.labels,
   from_email = EXCLUDED.from_email,
-  waiver_require_otp = EXCLUDED.waiver_require_otp;
+  waiver_require_otp = EXCLUDED.waiver_require_otp,
+  payment_provider = EXCLUDED.payment_provider,
+  invoicing_provider = EXCLUDED.invoicing_provider;
 
 -- ============================================================================
 -- SEASONS + CATEGORIES + OFFERINGS (20260608000500_offerings.sql)
@@ -760,3 +764,69 @@ VALUES (
   '2026-01-15 10:30:00+02'::timestamptz
 )
 ON CONFLICT (id) DO NOTHING;
+
+-- ============================================================
+-- Test tenants for local dev — provision via provision_tenant
+-- ============================================================
+
+-- Ensure test owner users exist in auth.users first.
+-- In local Supabase dev these UUIDs are stable; adjust if your local
+-- auth.users already has conflicting rows.
+
+DO $$
+DECLARE
+  v_ballet_owner_id   uuid := 'aaaaaaaa-0000-0000-0000-000000000001';
+  v_photo_owner_id    uuid := 'aaaaaaaa-0000-0000-0000-000000000002';
+  v_beauty_owner_id   uuid := 'aaaaaaaa-0000-0000-0000-000000000003';
+BEGIN
+
+  -- Insert owner users if they don't already exist
+  INSERT INTO auth.users (id, email, encrypted_password, email_confirmed_at, created_at, updated_at)
+  VALUES
+    (v_ballet_owner_id,  'owner@ballet.test',  crypt('devpassword', gen_salt('bf')), now(), now(), now()),
+    (v_photo_owner_id,   'owner@photo.test',   crypt('devpassword', gen_salt('bf')), now(), now(), now()),
+    (v_beauty_owner_id,  'owner@beauty.test',  crypt('devpassword', gen_salt('bf')), now(), now(), now())
+  ON CONFLICT (id) DO NOTHING;
+
+  -- Provision tenants (idempotent: only create when subdomain is missing)
+  -- Impersonate each owner so provision_tenant can link tenant_admin via auth.uid().
+  IF NOT EXISTS (SELECT 1 FROM tenants WHERE subdomain = 'belladance') THEN
+    PERFORM set_config('request.jwt.claim.sub', v_ballet_owner_id::text, true);
+    PERFORM provision_tenant(
+      p_name        => 'Bella Dance Academy',
+      p_subdomain   => 'belladance',
+      p_plan        => 'professional',
+      p_vertical    => 'dance-studio',
+      p_owner_email => 'owner@ballet.test'
+    );
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM tenants WHERE subdomain = 'lensstudio') THEN
+    PERFORM set_config('request.jwt.claim.sub', v_photo_owner_id::text, true);
+    PERFORM provision_tenant(
+      p_name        => 'Lens Studio Photography',
+      p_subdomain   => 'lensstudio',
+      p_plan        => 'essential',
+      p_vertical    => 'photographer',
+      p_owner_email => 'owner@photo.test'
+    );
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM tenants WHERE subdomain = 'velvetbeauty') THEN
+    PERFORM set_config('request.jwt.claim.sub', v_beauty_owner_id::text, true);
+    PERFORM provision_tenant(
+      p_name        => 'Velvet Beauty Clinic',
+      p_subdomain   => 'velvetbeauty',
+      p_plan        => 'essential',
+      p_vertical    => 'beautician',
+      p_owner_email => 'owner@beauty.test'
+    );
+  END IF;
+
+  -- Ensure seeded tenants all use grow/grow on re-seed as well.
+  UPDATE tenants
+  SET payment_provider = 'grow',
+      invoicing_provider = 'grow'
+  WHERE subdomain IN ('creativeballet', 'belladance', 'lensstudio', 'velvetbeauty');
+
+END $$;

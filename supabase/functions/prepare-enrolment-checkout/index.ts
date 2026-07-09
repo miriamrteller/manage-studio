@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { handleOptions, jsonResponse } from "../_shared/cors.ts";
+import { handleOptions, jsonResponse } from "../../packages/edge-runtime/src/cors.ts";
 import {
   parsePrepareEnrolmentCheckoutBody,
   prepareEnrolmentCheckout,

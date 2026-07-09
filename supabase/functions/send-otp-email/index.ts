@@ -3,7 +3,7 @@ import {
   EMAIL_TEMPLATE_NAMES,
   sendRenderedEmail,
 } from "../_shared/resend-send.ts";
-import { createServiceClient } from "../_shared/supabase.ts";
+import { createServiceClient } from "../../packages/edge-runtime/src/supabase.ts";
 import {
   getEmailTemplateOverrides,
   getTenantEmailConfig,

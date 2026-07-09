@@ -1,6 +1,6 @@
 import { z } from "npm:zod@3.22.4";
-import { handleOptions, jsonResponse } from "../_shared/cors.ts";
-import { createServiceClient, requireAuthUser } from "../_shared/supabase.ts";
+import { handleOptions, jsonResponse } from "../../packages/edge-runtime/src/cors.ts";
+import { createServiceClient, requireAuthUser } from "../../packages/edge-runtime/src/supabase.ts";
 import { enqueueDocument } from "../_shared/enqueue-document.ts";
 import { executeProviderRefund } from "../_shared/payments/refund-provider.ts";
 

@@ -4,7 +4,7 @@ import { sendHtmlEmail } from "../_shared/resend-client.ts";
 
 const MAGIC_LINK_TEMPLATE = "magic_link";
 import { renderAuthMagicLinkHtml } from "../_shared/render-auth-email.ts";
-import { createServiceClient } from "../_shared/supabase.ts";
+import { createServiceClient } from "../../packages/edge-runtime/src/supabase.ts";
 import {
   getEmailTemplateOverrides,
   getTenantForAuthUser,

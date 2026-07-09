@@ -1,8 +1,8 @@
-import { handleOptions, jsonResponse } from "../_shared/cors.ts";
-import { getEnv } from "../_shared/env.ts";
+import { handleOptions, jsonResponse } from "../../packages/edge-runtime/src/cors.ts";
+import { getEnv } from "../../packages/edge-runtime/src/env.ts";
 import { MockIcountPaymentProvider } from "../_shared/payments/providers/mock-icount.ts";
 import { IcountPaymentProvider } from "../_shared/payments/providers/icount.ts";
-import { createServiceClient, requireAuthUser } from "../_shared/supabase.ts";
+import { createServiceClient, requireAuthUser } from "../../packages/edge-runtime/src/supabase.ts";
 
 /**
  * Auth health ping for a tenant's iCount credentials. Uses MockIcount when ICOUNT_MOCK=true.

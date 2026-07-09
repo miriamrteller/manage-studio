@@ -1,5 +1,5 @@
 import { z } from "npm:zod@3.22.4";
-import { handleOptions, jsonResponse } from "../_shared/cors.ts";
+import { handleOptions, jsonResponse } from "../../packages/edge-runtime/src/cors.ts";
 import { resolveCheckoutSession } from "../_shared/checkout-session.ts";
 import {
   MOCK_PAYMENT_DECLINED_CODE,

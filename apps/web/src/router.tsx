@@ -6,6 +6,8 @@ import { ClassesPage } from "./pages/ClassesPage";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import AuthCallbackPage from "./pages/AuthCallbackPage";
+import CreateStudioPage from '@/pages/CreateStudioPage';
+import SessionHandoffPage from '@/pages/auth/SessionHandoffPage';
 import DashboardRedirectPage from "./pages/DashboardRedirectPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import StudentsPage from "./pages/StudentsPage";
@@ -19,6 +21,7 @@ import PaymentSettingsPage from "./pages/PaymentSettingsPage";
 import InvoicingSettingsPage from "./pages/InvoicingSettingsPage";
 import TenantSettingsPage from "./pages/TenantSettingsPage";
 import PlatformOnboardPage from "./pages/PlatformOnboardPage";
+import PlatformFeaturesPage from "./pages/PlatformFeaturesPage";
 import FinanceWalkthroughPage from "./pages/FinanceWalkthroughPage";
 import LevelsPage from "./pages/LevelsPage";
 import TermsPage from "./pages/TermsPage";
@@ -55,6 +58,14 @@ const router = createBrowserRouter([
         <AuthCallbackPage />
       </LanguageProvider>
     ),
+  },
+  {
+    path: '/create-studio',
+    element: <CreateStudioPage />,
+  },
+  {
+    path: '/auth/session-handoff',
+    element: <SessionHandoffPage />,
   },
   {
     path: '/',
@@ -96,6 +107,7 @@ const router = createBrowserRouter([
       { path: "admin/setup/waivers", element: <AdminRoute><WaiversPage /></AdminRoute> },
       { path: "admin/dev/finance-walkthrough", element: <AdminRoute><FinanceWalkthroughPage /></AdminRoute> },
       { path: "platform/onboard", element: <SuperAdminRoute><PlatformOnboardPage /></SuperAdminRoute> },
+      { path: "platform/features", element: <SuperAdminRoute><PlatformFeaturesPage /></SuperAdminRoute> },
 
       // LEGACY ROUTES (Phase 1B) — kept for backward compatibility
       { path: "dashboard/admin", element: <AdminRoute><AdminDashboard /></AdminRoute> },

@@ -1,5 +1,5 @@
-import { jsonResponse } from "../_shared/cors.ts";
-import { createServiceClient } from "../_shared/supabase.ts";
+import { jsonResponse } from "../../packages/edge-runtime/src/cors.ts";
+import { createServiceClient } from "../../packages/edge-runtime/src/supabase.ts";
 import { handleInvoiceEventInternal } from "../_shared/payments/handle-invoice-event.ts";
 
 /**
