@@ -173,11 +173,42 @@ Detailed SPEC.md documentation exists. Developer read it. Forms were still built
 | ---------------------------------------------- | -------------------------------------------------------- |
 | Zod                                            | Runtime validation of all external data                  |
 | date-fns                                       | Date manipulation with locale support                    |
-| FullCalendar + `@fullcalendar/core/locales/he` | Schedule views with Hebrew locale                        |
+| FullCalendar + `@fullcalendar/core/locales/he` | **Timetable display only** (month/week); not the booking engine |
 | Recharts                                       | Finance dashboard charts                                 |
 | Lucide React                                   | Icon set                                                 |
 | clsx + tailwind-merge                          | Conditional class composition                            |
 | i18next + react-i18next                        | Internationalisation (Hebrew primary, English secondary) |
+
+### 2.2.1 Scheduling — three layers (native booking + Google Calendar)
+
+**Product decisions (2026-07):**
+
+- **Cal.com is out of scope** — no OAuth, webhooks, or Platform Atoms.
+- **Appointment booking** is first-party UI + Postgres + existing checkout — **not** outsourced to a booking SaaS.
+- **Google Calendar** is the **external calendar integration** for appointment tenants: OAuth connect, **free/busy** for availability, **push events** when a booking is confirmed.
+
+| Layer | Purpose | Stack | Feature flag |
+| --- | --- | --- | --- |
+| **Calendar view** | Month/week timetable for offerings/sessions; click → detail → enrol or book | **FullCalendar** (read-only) | `scheduling:calendar.view` |
+| **Slot booking** | Client picks slot → waiver → `create-checkout` → `issue-document` | Custom React + edge functions | `scheduling:booking.client`, `scheduling:booking.admin` |
+| **Google Calendar** | Staff calendar sync for appointment offerings | Google Calendar API (OAuth 2.0, refresh tokens encrypted at rest) | `scheduling:integration.google_calendar` |
+
+**Division of responsibility:**
+
+| Concern | Owner |
+| --- | --- |
+| Slot picker UI, holds, pricing, payment, invoice | **Manage Studio** (native) |
+| “Is this time already busy on the provider’s calendar?” | **Google Calendar** (`freebusy.query`) when integration enabled |
+| “Show this appointment on the provider’s phone calendar” | **Google Calendar** (`events.insert` / update on confirm; delete on cancel) |
+| Group class term enrolment | **`/enrol`** wizard — unchanged; optional export to Google later |
+
+**Do not use FullCalendar or Google embed widgets for checkout** — payment stays on the existing finance spine (Grow / iCount / Rapyd–Yesh).
+
+**Google setup (tenant admin):** Settings → Integrations → Connect Google Calendar → select calendar id → working hours + slot templates still live in Manage Studio; Google blocks times that are busy externally.
+
+**Group classes (Professional):** recurring offerings → FullCalendar expansion → **`/enrol`**. Google Calendar integration is **optional** for appointment/skills offerings (`scheduling:integration.google_calendar`).
+
+**Plans:** [docs/plans/scheduling/00-overview.md](docs/plans/scheduling/00-overview.md), [docs/plans/scheduling/google-calendar-integration.md](docs/plans/scheduling/google-calendar-integration.md)
 
 ### 2.3 Infrastructure (per tenant — pass-through model)
 
@@ -2936,6 +2967,18 @@ Admin CRUD for the `staff` table at **`/admin/setup/teachers`**: name, contact, 
 
 **Plan:** [docs/plans/teachers-admin-module.md](docs/plans/teachers-admin-module.md)
 
+### V2.12 — Native scheduling (calendar + slot booking + Google Calendar)
+
+**Calendar (FullCalendar):** Public `/classes/calendar` and admin timetable — month/week view; click → detail; group classes → `/enrol`.
+
+**Slot booking (custom module):** Essential default — admin availability templates, client slot picker, hold → `create-checkout` → `issue-document`.
+
+**Google Calendar integration:** OAuth per tenant (or per staff member); `freebusy.query` subtracts external busy time from offered slots; on booking confirm, `events.insert` with client name, offering, location, and link to engagement. Cancel/reschedule updates or deletes the Google event. Tokens stored encrypted (`private.platform_config` or dedicated credentials table — see plan).
+
+**Not in scope:** Cal.com; Google Appointment Schedule embed as checkout replacement; AI scheduling assistant (deferred).
+
+**Plans:** [docs/plans/scheduling/00-overview.md](docs/plans/scheduling/00-overview.md), [docs/plans/scheduling/google-calendar-integration.md](docs/plans/scheduling/google-calendar-integration.md)
+
 ---
 
 ## 9. V3 SaaS Roadmap
@@ -2982,7 +3025,9 @@ Your Stripe account (separate from tenant Stripe accounts) charges schools month
 
 ### V3.4 — Feature flags
 
-`feature_flags` table: per-tenant feature toggles. Used to: roll out V2 features gradually, restrict features by plan, A/B test new workflows.
+**Shipped (V1):** `feature_definitions` + `tenant_feature_overrides` + `get_tenant_features()` — see `packages/shared/src/config/feature-registry.ts` and migration `03000`. Used to roll out modules (e.g. native scheduling, calendar view) by plan/vertical and per-tenant overrides.
+
+Legacy note: Cal.com keys (`scheduling:appointments.calcom`, `scheduling:atoms.platform`) are **deprecated** — successor `scheduling:booking.client` (migration `02800`).
 
 ### V3.5 — Super-admin dashboard
 

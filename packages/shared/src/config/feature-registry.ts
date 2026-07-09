@@ -84,12 +84,16 @@ export const FEATURES = {
     publicBooking: 'offerings:booking.public',
   },
 
-  // Scheduling and appointments
+  // Scheduling — native booking + optional Google Calendar sync (Cal.com out of scope)
   scheduling: {
-    /** 1:1 appointment scheduling via Cal.com OAuth */
-    appointments: 'scheduling:appointments.calcom',
-    /** Cal.com Platform Atoms integration */
-    platformAtoms: 'scheduling:atoms.platform',
+    /** Month/week timetable (FullCalendar) — offerings + sessions, read-only */
+    calendarView: 'scheduling:calendar.view',
+    /** Client self-service slot booking → checkout → invoice */
+    clientBooking: 'scheduling:booking.client',
+    /** Admin availability rules and slot management */
+    adminBooking: 'scheduling:booking.admin',
+    /** Google Calendar OAuth — free/busy + push booked appointments as events */
+    googleCalendar: 'scheduling:integration.google_calendar',
     /** No-show and late cancellation fee capture */
     penalties: 'scheduling:penalties.capture',
     /** AI-powered scheduling assistant */
@@ -241,6 +245,16 @@ export const FEATURE_DEPENDENCIES: Partial<Record<FeatureKey, FeatureKey[]>> = {
   [FEATURES.offerings.guestEnrollment]: [FEATURES.offerings.enrollment],
   // Public booking requires enrollment wizard
   [FEATURES.offerings.publicBooking]: [FEATURES.offerings.enrollment],
+  // Client slot booking requires offerings + checkout path
+  [FEATURES.scheduling.clientBooking]: [FEATURES.offerings.crud, FEATURES.billing.accounts],
+  [FEATURES.scheduling.adminBooking]: [FEATURES.scheduling.clientBooking],
+  // Google Calendar requires admin booking + tenant OAuth setup
+  [FEATURES.scheduling.googleCalendar]: [
+    FEATURES.scheduling.adminBooking,
+    FEATURES.scheduling.clientBooking,
+  ],
+  // Calendar view requires offerings CRUD
+  [FEATURES.scheduling.calendarView]: [FEATURES.offerings.crud],
   // Refunds require billing accounts
   [FEATURES.billing.refunds]: [FEATURES.billing.accounts],
   // Quotes require billing accounts
@@ -291,7 +305,7 @@ export function validateFeatureSet(features: FeatureKey[]): { valid: boolean; er
 /**
  * ESSENTIAL Tier Default Features
  *
- * Appointment-based freelancers with 1:1 Cal.com scheduling.
+ * Appointment-based freelancers with native slot booking (Essential tier).
  * Supports single payments or deposit+balance model.
  * Individual clients — no family billing units.
  *
@@ -316,11 +330,10 @@ export const ESSENTIAL_FEATURES: FeatureKey[] = [
   FEATURES.offerings.enrollment,
   FEATURES.offerings.guestEnrollment,
 
-  // Appointment scheduling
-  // scheduling:appointments.calcom has skin_restriction = NULL in the DB — any tenant can opt-in.
-  // Essential tenants receive it by default via this preset.
-  // Professional tenants opt-in via a single tenant_feature_overrides row.
-  FEATURES.scheduling.appointments,
+  // Native appointment scheduling (Essential default)
+  FEATURES.scheduling.clientBooking,
+  FEATURES.scheduling.adminBooking,
+  FEATURES.scheduling.googleCalendar,
 
   // Payment processing
   FEATURES.billing.grow,
@@ -358,10 +371,9 @@ export const ESSENTIAL_FEATURES: FeatureKey[] = [
  *
  * Note: preset lives in packages/domain/skins/professional/ per ADR-001
  *
- * Note: scheduling:appointments.calcom is NOT in this preset — this is intentional.
- * Professional tenants are class-based by default. Add the key via a single
- * tenant_feature_overrides row when a studio requests private lessons alongside
- * group classes.
+ * Note: scheduling:booking.client is NOT in this preset — class enrolment is the default path.
+ * Professional tenants enable slot booking via tenant_feature_overrides when offering
+ * private lessons or Essential-style services alongside group classes.
  */
 export const PROFESSIONAL_FEATURES: FeatureKey[] = [
   // Core platform
@@ -388,8 +400,8 @@ export const PROFESSIONAL_FEATURES: FeatureKey[] = [
   FEATURES.offerings.guestEnrollment,
   FEATURES.offerings.publicBooking,
 
-  // Scheduling add-ons (class-based tenants may add Cal.com via override)
-  FEATURES.scheduling.platformAtoms,
+  // Timetable display + optional slot booking add-ons
+  FEATURES.scheduling.calendarView,
   FEATURES.scheduling.penalties,
   FEATURES.scheduling.aiAssistant,
 
