@@ -5,18 +5,8 @@
 -- DEPENDENCIES: 003000
 -- =============================================================================
 
-UPDATE feature_definitions
-SET
-  deprecated_at = now(),
-  successor_key = 'scheduling:booking.client'
-WHERE key = 'scheduling:appointments.calcom';
-
-UPDATE feature_definitions
-SET
-  deprecated_at = now(),
-  successor_key = NULL
-WHERE key = 'scheduling:atoms.platform';
-
+-- Insert the new definitions FIRST so successor_key references below resolve
+-- (feature_definitions.successor_key is a self-FK to feature_definitions.key).
 INSERT INTO feature_definitions (key, description, tier_minimum, skin_restriction)
 VALUES
   (
@@ -38,6 +28,18 @@ VALUES
     NULL
   )
 ON CONFLICT (key) DO NOTHING;
+
+UPDATE feature_definitions
+SET
+  deprecated_at = now(),
+  successor_key = 'scheduling:booking.client'
+WHERE key = 'scheduling:appointments.calcom';
+
+UPDATE feature_definitions
+SET
+  deprecated_at = now(),
+  successor_key = NULL
+WHERE key = 'scheduling:atoms.platform';
 
 -- Preserve overrides from deprecated Cal.com key
 UPDATE tenant_feature_overrides
