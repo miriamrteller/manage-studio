@@ -416,12 +416,28 @@ export interface YeshConfig {
   company_id:   string;
 }
 
+export interface TranzilaConfig {
+  /**
+   * Per-tenant terminal name — stored encrypted in tenant_credentials.
+   * Provisioned manually via my.tranzila.com (no API provisioning — Q2 resolution).
+   * Credential rotation:
+   *   vault:secret/tenants/{tenantId}/tranzila#app_key
+   *   vault:secret/tenants/{tenantId}/tranzila#secret_key
+   * NOTE: TRANZILA_STO_TERMINAL_NAME is a platform-level env var for OpalSwift's
+   * own subscription billing. It is NOT per-tenant and must NOT be stored here.
+   */
+  terminal_name: string;
+}
+
 export interface TenantProviderConfig {
   id:                 string;
-  payment_provider:   'rapyd' | 'icount_paypage' | 'grow';
-  invoicing_provider: 'yesh' | 'icount';
+  payment_provider:   'rapyd' | 'icount_paypage' | 'grow' | 'tranzila';
+  invoicing_provider: 'yesh' | 'icount' | 'tranzila';
   rapyd_config?:      RapydConfig;
   yesh_config?:       YeshConfig;
+  tranzila_config?:   TranzilaConfig;
+  /** Injected by factory callers — required for TranzilaInvoicingAdapter (PDF storage + DB writes) */
+  supabaseClient?:    unknown;
 }
 
 // ── Error Classes ─────────────────────────────────────────────────────────────

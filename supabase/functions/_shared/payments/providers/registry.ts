@@ -1,11 +1,16 @@
 /**
  * registry.ts — Provider slug constants
- * These are the only string values allowed in tenant_configs.payment_provider
- * and tenant_configs.invoicing_provider columns.
+ *
+ * These are the ONLY string values allowed in:
+ *   tenant_configs.payment_provider
+ *   tenant_configs.invoicing_provider
+ *
+ * Update both arrays when registering a new provider, then add the corresponding
+ * case to providerForPayment() and/or providerForInvoicing() in ./index.ts.
  */
 
-export const PAYMENT_PROVIDERS = ['rapyd', 'icount_paypage', 'grow'] as const;
+export const PAYMENT_PROVIDERS = ["rapyd", "icount_paypage", "grow", "tranzila"] as const;
 export type  PaymentProviderSlug = typeof PAYMENT_PROVIDERS[number];
 
-export const INVOICING_PROVIDERS = ['yesh', 'icount'] as const;
+export const INVOICING_PROVIDERS = ["yesh", "icount", "tranzila"] as const;
 export type  InvoicingProviderSlug = typeof INVOICING_PROVIDERS[number];
