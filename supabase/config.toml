@@ -145,3 +145,49 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/check-invoicing-auth/index.ts"
 
+# --- Scheduling (native booking + Google Calendar) ---------------------------
+# Public / anon-callable booking endpoints (no user session).
+[functions.prepare-booking-checkout]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/prepare-booking-checkout/index.ts"
+
+[functions.get-available-slots]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/get-available-slots/index.ts"
+
+# Cron-invoked (authorised via x-cron-secret header, not JWT).
+[functions.expire-scheduling-holds]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/expire-scheduling-holds/index.ts"
+
+# Admin endpoints — JWT verified in-function via requireAuthUser (repo convention:
+# gateway verify_jwt=false so browser preflight gets full CORS headers).
+[functions.google-calendar-oauth-start]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/google-calendar-oauth-start/index.ts"
+
+[functions.google-calendar-oauth-callback]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/google-calendar-oauth-callback/index.ts"
+
+[functions.google-calendar-disconnect]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/google-calendar-disconnect/index.ts"
+
+[functions.google-calendar-sync-event]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/google-calendar-sync-event/index.ts"
+
+# Standalone free/busy has no in-function auth — lock it at the gateway.
+[functions.google-calendar-freebusy]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/google-calendar-freebusy/index.ts"
+

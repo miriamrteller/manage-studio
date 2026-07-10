@@ -51,3 +51,8 @@ coverage/
 
 # Sensitive
 *client_secret*.json
+
+# Windows dev junction bridging supabase/functions imports ("../../packages/...")
+# to the repo-root packages/ dir. Created locally for `supabase functions deploy`
+# on Windows without Docker; must not be committed.
+/supabase/packages

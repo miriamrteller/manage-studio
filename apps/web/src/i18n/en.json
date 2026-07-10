@@ -631,7 +631,11 @@
       "ages_max_only": "Up to {{max}}",
       "level": "Level",
       "capacity": "Capacity",
-      "location": "Location"
+      "location": "Location",
+      "view_calendar": "Calendar",
+      "view_list": "List",
+      "view_toggle_label": "Change view",
+      "class_details": "Class details"
     },
     "enrolment": {
       "person_desc": "Who are you enrolling today?",

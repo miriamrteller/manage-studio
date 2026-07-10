@@ -631,7 +631,11 @@
       "ages_max_only": "עד גיל {{max}}",
       "level": "רמה",
       "capacity": "קיבולת",
-      "location": "מיקום"
+      "location": "מיקום",
+      "view_calendar": "יומן",
+      "view_list": "רשימה",
+      "view_toggle_label": "שינוי תצוגה",
+      "class_details": "פרטי החוג"
     },
     "enrolment": {
       "person_desc": "למי אתם נרשמים היום?",

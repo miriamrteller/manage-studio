@@ -29,6 +29,28 @@ export class ScheduleService extends BaseService {
     }, 'ScheduleService.listEvents');
   }
 
+  /**
+   * Anon-safe public timetable feed by subdomain. Returns public, active
+   * classes/sessions only (no blocks, no appointments). Powers the client-facing
+   * calendar on the classes landing page.
+   */
+  static async listPublicEvents(
+    subdomain: string,
+    range: { start: Date; end: Date },
+  ): Promise<ScheduleEvent[]> {
+    if (!subdomain) throw new Error('Tenant subdomain required');
+
+    return this.withRetry(async () => {
+      const { data, error } = await supabase.rpc('get_public_schedule_events_by_subdomain', {
+        p_subdomain: subdomain,
+        p_start: range.start.toISOString(),
+        p_end: range.end.toISOString(),
+      });
+      if (error) throw error;
+      return (data ?? []) as ScheduleEvent[];
+    }, 'ScheduleService.listPublicEvents');
+  }
+
   static async createBlock(
     tenant: Tenant,
     block: { summary: string; start_time: string; end_time: string },

@@ -3,19 +3,21 @@ import { useTranslation } from 'react-i18next';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
-import interactionPlugin from '@fullcalendar/interaction';
-import type { DatesSetArg, EventClickArg, DateSelectArg } from '@fullcalendar/core';
+import type { DatesSetArg, EventClickArg } from '@fullcalendar/core';
 import heLocale from '@fullcalendar/core/locales/he';
+import { Modal } from '@/components/ui/modal';
+import { ClassCard } from '@/components/shared';
 import { useTenant } from '@/hooks/useTenant';
-import { useScheduleEvents } from '../hooks/useScheduleEvents';
+import type { PublicOffering } from '@/schemas';
+import { usePublicScheduleEvents } from '../hooks/usePublicScheduleEvents';
 import { useNextEventDate } from '../hooks/useNextEventDate';
 import { useFitViewportHeight } from '../hooks/useFitViewportHeight';
-import { SCHEDULE_EVENT_COLORS, type ScheduleEvent } from '../types';
+import { SCHEDULE_EVENT_COLORS } from '../types';
 
 // Hoisted to module scope so their references are stable across renders.
 // Passing fresh objects/arrays makes FullCalendar reprocess options and re-fire
 // datesSet on every render, which can trigger an infinite update loop.
-const CALENDAR_PLUGINS = [dayGridPlugin, timeGridPlugin, interactionPlugin];
+const CALENDAR_PLUGINS = [dayGridPlugin, timeGridPlugin];
 const CALENDAR_LOCALES = [heLocale];
 const HEADER_TOOLBAR = {
   start: 'prev,next today',
@@ -23,36 +25,43 @@ const HEADER_TOOLBAR = {
   end: 'dayGridMonth,timeGridWeek,timeGridDay',
 } as const;
 
-interface ScheduleCalendarProps {
-  /** Called when the user selects an empty range to block time. */
-  onCreateBlock?: (range: { start: Date; end: Date }) => void;
-  /** Called when the user clicks an event to open a detail panel. */
-  onEventClick?: (event: ScheduleEvent) => void;
+interface PublicScheduleCalendarProps {
+  /** Public offerings already fetched for the list view; used to resolve the popover details. */
+  offerings: PublicOffering[];
 }
 
 /**
- * Read-only timetable (FullCalendar) over classes, sessions, appointments, and
- * blocked time. Hebrew locale + RTL by default. All times are Asia/Jerusalem.
+ * Client-facing timetable (FullCalendar) over public, active classes and sessions.
+ * Read-only: no blocked time, no appointments. Clicking an event opens a details
+ * popover with the matching class card (including its Enrol action).
+ * Hebrew locale + RTL by default. All times are Asia/Jerusalem.
  */
-export function ScheduleCalendar({ onCreateBlock, onEventClick }: ScheduleCalendarProps) {
-  const { i18n } = useTranslation();
+export function PublicScheduleCalendar({ offerings }: PublicScheduleCalendarProps) {
+  const { t, i18n } = useTranslation();
   const tenant = useTenant();
   const calendarRef = useRef<FullCalendar>(null);
   const didAutoNavigate = useRef(false);
   const { ref: fitRef, height } = useFitViewportHeight<HTMLDivElement>();
   const [range, setRange] = useState<{ start: Date; end: Date } | null>(null);
-  const { data: events = [], isLoading } = useScheduleEvents(range);
-  const { data: nextEventDate } = useNextEventDate({ source: 'admin', tenant });
+  const [selectedOfferingId, setSelectedOfferingId] = useState<string | null>(null);
+  const { data: events = [], isLoading } = usePublicScheduleEvents(range);
+  const { data: nextEventDate } = useNextEventDate({ source: 'public', subdomain: tenant?.subdomain });
 
   const isRtl = i18n.language !== 'en';
 
-  // Open on the month containing the next upcoming event (once, on first load).
+  // Open on the month containing the next upcoming class (once, on first load).
   useEffect(() => {
     if (nextEventDate && !didAutoNavigate.current && calendarRef.current) {
       didAutoNavigate.current = true;
       calendarRef.current.getApi().gotoDate(nextEventDate);
     }
   }, [nextEventDate]);
+
+  const offeringsById = useMemo(() => {
+    const map = new Map<string, PublicOffering>();
+    for (const o of offerings) map.set(o.id, o);
+    return map;
+  }, [offerings]);
 
   const calendarEvents = useMemo(
     () =>
@@ -63,14 +72,12 @@ export function ScheduleCalendar({ onCreateBlock, onEventClick }: ScheduleCalend
         end: e.ends_at,
         backgroundColor: SCHEDULE_EVENT_COLORS[e.event_type],
         borderColor: SCHEDULE_EVENT_COLORS[e.event_type],
-        extendedProps: {
-          event_type: e.event_type,
-          ref_id: e.ref_id ?? null,
-          offering_id: e.offering_id ?? null,
-        },
+        extendedProps: { offering_id: e.offering_id ?? null },
       })),
     [events],
   );
+
+  const selectedOffering = selectedOfferingId ? offeringsById.get(selectedOfferingId) ?? null : null;
 
   function handleDatesSet(arg: DatesSetArg) {
     // Only update when the window actually changed. FullCalendar fires datesSet
@@ -82,25 +89,9 @@ export function ScheduleCalendar({ onCreateBlock, onEventClick }: ScheduleCalend
     );
   }
 
-  function handleSelect(arg: DateSelectArg) {
-    onCreateBlock?.({ start: arg.start, end: arg.end });
-  }
-
   function handleEventClick(arg: EventClickArg) {
-    const props = arg.event.extendedProps as {
-      event_type: ScheduleEvent['event_type'];
-      ref_id: string | null;
-      offering_id: string | null;
-    };
-    onEventClick?.({
-      id: arg.event.id,
-      title: arg.event.title,
-      starts_at: arg.event.startStr,
-      ends_at: arg.event.endStr,
-      event_type: props.event_type,
-      ref_id: props.ref_id,
-      offering_id: props.offering_id,
-    });
+    const props = arg.event.extendedProps as { offering_id: string | null };
+    if (props.offering_id) setSelectedOfferingId(props.offering_id);
   }
 
   return (
@@ -117,13 +108,20 @@ export function ScheduleCalendar({ onCreateBlock, onEventClick }: ScheduleCalend
         height="100%"
         expandRows
         nowIndicator
-        selectable={!!onCreateBlock}
-        selectMirror
         events={calendarEvents}
         datesSet={handleDatesSet}
-        select={handleSelect}
         eventClick={handleEventClick}
       />
+
+      <Modal
+        isOpen={!!selectedOffering}
+        title={selectedOffering?.name ?? t('pages.classes.class_details')}
+        onClose={() => setSelectedOfferingId(null)}
+      >
+        {selectedOffering && (
+          <ClassCard class={selectedOffering} currency={tenant?.currency || 'ILS'} />
+        )}
+      </Modal>
     </div>
   );
 }
