@@ -88,10 +88,10 @@ serve(async (req: Request): Promise<Response> => {
       .from("payment_callbacks_log")
       .insert({ pr_id: prId, raw_payload: rawPayload, processed: false });
 
-    // ── 5. Lookup booking ───────────────────────────────────────────────────
+    // ── 5. Lookup booking — include b2b_flag (R-02) ─────────────────────────
     const { data: booking } = await supabase
       .from("bookings")
-      .select("id, tenant_id, client_name, client_email, service_name, amount, state")
+      .select("id, tenant_id, client_name, client_email, service_name, amount, state, b2b_flag")
       .eq("pr_id", prId)
       .single();
 
@@ -157,6 +157,8 @@ async function _triggerPostPaymentAsync(
     client_email: string;
     service_name: string;
     amount:       number | string;
+    /** R-02: read from bookings row — never hardcoded. */
+    b2b_flag:     boolean;
   },
 ): Promise<void> {
   // Load tenant invoicing setting
@@ -196,7 +198,8 @@ async function _triggerPostPaymentAsync(
     clientEmail: booking.client_email,
     amount:      String(booking.amount),
     currency:    "ILS",
-    b2bFlag:     false,
+    // R-02: pass b2b_flag from the bookings row — never hardcode false.
+    b2bFlag:     booking.b2b_flag,
     lineItems: [{
       description: booking.service_name,
       quantity:    1,

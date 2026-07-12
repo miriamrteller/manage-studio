@@ -53,7 +53,7 @@ import {
 
 const TRANZILA_API_BASE = "https://api.tranzila.com";
 const REQUEST_TIMEOUT_MS = 5_000;
-const RETRY_DELAYS_MS = [0, 200, 500]; // max 2 retries
+const RETRY_DELAYS_MS = [0, 200, 500]; // max 2 retries — for idempotent operations only
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
@@ -186,7 +186,9 @@ export class TranzilaPaymentAdapter implements IPaymentProvider {
     }
 
     const headers = await this._buildHeaders();
-    const res = await this._request<{
+
+    // R-01: chargeToken MUST use _requestOnce() — duplicate charges on retry are unacceptable.
+    const res = await this._requestOnce<{
       error_code:     number;
       transaction_id?: string;
       amount?:        number;
@@ -224,7 +226,8 @@ export class TranzilaPaymentAdapter implements IPaymentProvider {
     };
     if (amount !== undefined) body.amount = amount;
 
-    const res = await this._request<{
+    // R-01: issueRefund MUST use _requestOnce() — duplicate refunds on retry are unacceptable.
+    const res = await this._requestOnce<{
       error_code:     number;
       refund_id?:     string;
       amount?:        number;
@@ -404,13 +407,44 @@ export class TranzilaPaymentAdapter implements IPaymentProvider {
   }
 
   /**
-   * Generic HTTP client.
+   * _requestOnce — single-attempt HTTP client. NO retry.
+   *
+   * Use for non-idempotent operations where a duplicate request would cause real-world harm:
+   *   - chargeToken()  — duplicate charge
+   *   - issueRefund()  — duplicate refund
+   *
+   * Timeout: 5 seconds. AbortError is not caught — propagates to caller.
+   */
+  private async _requestOnce<T>(
+    url:     string,
+    body:    Record<string, unknown>,
+    headers: TranzilaAuthHeaders,
+  ): Promise<T> {
+    const ctrl    = new AbortController();
+    const timeout = setTimeout(() => ctrl.abort(), REQUEST_TIMEOUT_MS);
+    try {
+      const res = await fetch(url, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json", ...headers } as Record<string, string>,
+        body:    JSON.stringify(body),
+        signal:  ctrl.signal,
+      });
+      return await res.json() as T;
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  /**
+   * _request — HTTP client WITH retry.
    *
    * Retry policy (spec §4):
    *   - Max 2 retries, delays: 200ms then 500ms.
    *   - Idempotent operations only: GET + createPaymentLink (DCdisable deduplication).
    *   - Abort on 5-second timeout (no retry after abort).
    *
+   * ⚠️ IMPORTANT: chargeToken() and issueRefund() MUST NOT use this method.
+   *    Use _requestOnce() for those — duplicate charges/refunds are unacceptable.
    * ⚠️ IMPORTANT: createInvoice() MUST NOT use this method.
    *    Invoice creation is handled by TranzilaInvoicingAdapter._requestNoRetry().
    */

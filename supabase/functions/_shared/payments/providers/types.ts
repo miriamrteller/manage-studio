@@ -97,6 +97,12 @@ export interface InvoiceData {
   b2bFlag:     boolean;
   dueDate?:    string;  // ISO date
   language?:   'he' | 'en';
+  /**
+   * Tranzila document type code — e.g. 'IR' (Invoice + Receipt), 'I' (Invoice only).
+   * Optional: defaults to 'IR' if not supplied. Caller-supplied values are passed through
+   * to the Tranzila API without modification. (R-03 fix)
+   */
+  documentType?: string;
 }
 
 export interface LineItem {

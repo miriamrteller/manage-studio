@@ -44,6 +44,9 @@ import {
 const TRANZILA_INVOICE_URL = "https://billing5.tranzila.com";
 const REQUEST_TIMEOUT_MS   = 5_000;
 
+/** Default Tranzila document type: Invoice + Receipt. Callers may override via InvoiceData.documentType. */
+const DEFAULT_DOCUMENT_TYPE = "IR";
+
 // ── Config ────────────────────────────────────────────────────────────────────
 
 export interface TranzilaInvoicingConfig {
@@ -117,18 +120,21 @@ export class TranzilaInvoicingAdapter implements IInvoicingProvider {
     const headers = await this._buildHeaders();
     const now     = new Date().toISOString().split("T")[0];
 
+    // R-03: use caller-supplied documentType; fall back to 'IR' (Invoice + Receipt).
+    const documentType = data.documentType ?? DEFAULT_DOCUMENT_TYPE;
+
     const body: TranzilaCreateDocumentRequest = {
-      terminal_name:      this.cfg.terminalName,
-      document_type:      "IR",         // Invoice + Receipt (default)
-      document_date:      now,
+      terminal_name:          this.cfg.terminalName,
+      document_type:          documentType,
+      document_date:          now,
       document_currency_code: "ILS",
-      document_language:  data.language === "en" ? "eng" : "heb",
-      response_language:  "hebrew",
-      action:             1,
-      client_name:        data.clientName,
-      client_email:       data.clientEmail,
-      created_by_system:  "opalswift",
-      created_by_user:    data.tenantId,
+      document_language:      data.language === "en" ? "eng" : "heb",
+      response_language:      "hebrew",
+      action:                 1,
+      client_name:            data.clientName,
+      client_email:           data.clientEmail,
+      created_by_system:      "opalswift",
+      created_by_user:        data.tenantId,
       items: data.lineItems.map(li => ({
         name:          li.description,
         unit_price:    Number(li.unitPrice),
@@ -172,7 +178,8 @@ export class TranzilaInvoicingAdapter implements IInvoicingProvider {
       ).toFixed(2),
       currency_code:    "ILS",
       issue_date:       result.created_at?.split("T")[0] ?? now,
-      doc_type:         "IR",
+      // R-03: store the actual document type used, not a hardcoded constant.
+      doc_type:         documentType,
       txnindex:         result.txnindex,
       created_by_user:  data.tenantId,
     });
