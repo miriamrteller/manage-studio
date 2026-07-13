@@ -635,7 +635,10 @@
       "view_calendar": "יומן",
       "view_list": "רשימה",
       "view_toggle_label": "שינוי תצוגה",
-      "class_details": "פרטי החוג"
+      "class_details": "פרטי החוג",
+      "next_class": "החוג הבא",
+      "fit_to_screen": "התאמה למסך",
+      "show_all_events": "הצג הכל"
     },
     "enrolment": {
       "person_desc": "למי אתם נרשמים היום?",
@@ -1055,6 +1058,9 @@
       "title": "לוח זמנים",
       "subtitle": "שיעורים, מפגשים, פגישות וזמן חסום — לתצוגה בלבד",
       "not_available": "תצוגת לוח הזמנים אינה זמינה בתוכנית הנוכחית.",
+      "next_event": "האירוע הבא",
+      "fit_to_screen": "התאמה למסך",
+      "show_all_events": "הצג הכל",
       "detail_title": "פרטי אירוע",
       "field_type": "סוג",
       "field_start": "התחלה",

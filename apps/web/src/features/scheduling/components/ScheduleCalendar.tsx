@@ -10,18 +10,15 @@ import { useTenant } from '@/hooks/useTenant';
 import { useScheduleEvents } from '../hooks/useScheduleEvents';
 import { useNextEventDate } from '../hooks/useNextEventDate';
 import { useFitViewportHeight } from '../hooks/useFitViewportHeight';
-import { SCHEDULE_EVENT_COLORS, type ScheduleEvent } from '../types';
+import { makeDayCellContent, renderDayHeaderContent, shadedDayClassNames } from './calendarContent';
+import { createScheduleColorResolver } from '../lib/eventColors';
+import { type ScheduleEvent } from '../types';
 
 // Hoisted to module scope so their references are stable across renders.
 // Passing fresh objects/arrays makes FullCalendar reprocess options and re-fire
 // datesSet on every render, which can trigger an infinite update loop.
 const CALENDAR_PLUGINS = [dayGridPlugin, timeGridPlugin, interactionPlugin];
 const CALENDAR_LOCALES = [heLocale];
-const HEADER_TOOLBAR = {
-  start: 'prev,next today',
-  center: 'title',
-  end: 'dayGridMonth,timeGridWeek,timeGridDay',
-} as const;
 
 interface ScheduleCalendarProps {
   /** Called when the user selects an empty range to block time. */
@@ -35,14 +32,21 @@ interface ScheduleCalendarProps {
  * blocked time. Hebrew locale + RTL by default. All times are Asia/Jerusalem.
  */
 export function ScheduleCalendar({ onCreateBlock, onEventClick }: ScheduleCalendarProps) {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const tenant = useTenant();
   const calendarRef = useRef<FullCalendar>(null);
   const didAutoNavigate = useRef(false);
   const { ref: fitRef, height } = useFitViewportHeight<HTMLDivElement>();
   const [range, setRange] = useState<{ start: Date; end: Date } | null>(null);
+  // Whole month at a glance by default (busy days collapse to "+N more"); the
+  // toolbar toggle expands to show every event (which may scroll the page).
+  const [fitToScreen, setFitToScreen] = useState(true);
   const { data: events = [], isLoading } = useScheduleEvents(range);
   const { data: nextEventDate } = useNextEventDate({ source: 'admin', tenant });
+  // Latest next-event date, read lazily by the toolbar button click handler so the
+  // button config can stay stable across data refetches.
+  const nextEventDateRef = useRef<Date | null>(null);
+  nextEventDateRef.current = nextEventDate ?? null;
 
   const isRtl = i18n.language !== 'en';
 
@@ -54,22 +58,60 @@ export function ScheduleCalendar({ onCreateBlock, onEventClick }: ScheduleCalend
     }
   }, [nextEventDate]);
 
+  const resolveColor = useMemo(() => createScheduleColorResolver(events), [events]);
+  const dayCellContent = useMemo(() => makeDayCellContent(i18n.language), [i18n.language]);
+
+  // "Next event" jumps to the month of the next upcoming event (handler reads the
+  // latest date via ref). "Fit"/"Show all" toggles whether busy days collapse.
+  const customButtons = useMemo(
+    () => ({
+      nextEvent: {
+        text: t('scheduling.calendar.next_event'),
+        click: () => {
+          const d = nextEventDateRef.current;
+          if (d && calendarRef.current) calendarRef.current.getApi().gotoDate(d);
+        },
+      },
+      fitToggle: {
+        text: fitToScreen
+          ? t('scheduling.calendar.show_all_events')
+          : t('scheduling.calendar.fit_to_screen'),
+        click: () => setFitToScreen((v) => !v),
+      },
+    }),
+    [t, fitToScreen],
+  );
+
+  // Only surface the next-event button when there is an upcoming event to jump to.
+  const headerToolbar = useMemo(
+    () => ({
+      start: nextEventDate ? 'prev,next today nextEvent' : 'prev,next today',
+      center: 'title',
+      end: 'fitToggle dayGridMonth,timeGridWeek,timeGridDay',
+    }),
+    [nextEventDate],
+  );
+
   const calendarEvents = useMemo(
     () =>
-      events.map((e) => ({
-        id: e.id,
-        title: e.title,
-        start: e.starts_at,
-        end: e.ends_at,
-        backgroundColor: SCHEDULE_EVENT_COLORS[e.event_type],
-        borderColor: SCHEDULE_EVENT_COLORS[e.event_type],
-        extendedProps: {
-          event_type: e.event_type,
-          ref_id: e.ref_id ?? null,
-          offering_id: e.offering_id ?? null,
-        },
-      })),
-    [events],
+      events.map((e) => {
+        const color = resolveColor(e);
+        return {
+          id: e.id,
+          title: e.title,
+          start: e.starts_at,
+          end: e.ends_at,
+          backgroundColor: color.background,
+          borderColor: color.border,
+          textColor: color.text,
+          extendedProps: {
+            event_type: e.event_type,
+            ref_id: e.ref_id ?? null,
+            offering_id: e.offering_id ?? null,
+          },
+        };
+      }),
+    [events, resolveColor],
   );
 
   function handleDatesSet(arg: DatesSetArg) {
@@ -104,7 +146,12 @@ export function ScheduleCalendar({ onCreateBlock, onEventClick }: ScheduleCalend
   }
 
   return (
-    <div ref={fitRef} className="relative" style={{ height }} aria-busy={isLoading}>
+    <div
+      ref={fitRef}
+      className={`relative${fitToScreen ? ' fc-daycell-scroll' : ''}`}
+      style={{ height: fitToScreen ? height : undefined }}
+      aria-busy={isLoading}
+    >
       <FullCalendar
         ref={calendarRef}
         plugins={CALENDAR_PLUGINS}
@@ -113,10 +160,16 @@ export function ScheduleCalendar({ onCreateBlock, onEventClick }: ScheduleCalend
         locale={i18n.language === 'en' ? 'en' : 'he'}
         direction={isRtl ? 'rtl' : 'ltr'}
         timeZone="Asia/Jerusalem"
-        headerToolbar={HEADER_TOOLBAR}
-        height="100%"
-        expandRows
+        headerToolbar={headerToolbar}
+        customButtons={customButtons}
+        height={fitToScreen ? '100%' : 'auto'}
+        expandRows={fitToScreen}
+        dayMaxEvents={false}
         nowIndicator
+        eventDisplay="block"
+        dayCellContent={dayCellContent}
+        dayCellClassNames={shadedDayClassNames}
+        dayHeaderContent={renderDayHeaderContent}
         selectable={!!onCreateBlock}
         selectMirror
         events={calendarEvents}

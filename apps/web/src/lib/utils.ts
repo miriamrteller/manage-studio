@@ -291,6 +291,90 @@ export function getBackgroundForPrimaryColor(
   return detectColorTemperature(primaryHex);
 }
 
+function clampNumber(n: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, n));
+}
+
+/** Linear interpolation between two hues along the shortest path around the wheel. */
+function lerpHue(a: number, b: number, t: number): number {
+  const delta = ((b - a + 540) % 360) - 180;
+  return (a + delta * t + 360) % 360;
+}
+
+/**
+ * Darken a hex color by reducing its HSL lightness by `deltaL` percentage points.
+ * Used e.g. for event borders that should be a shade darker than the fill.
+ */
+export function darkenColor(hex: string, deltaL = 14): string {
+  const [r, g, b] = hexToRgb(hex);
+  const [h, s, l] = rgbToHsl(r, g, b);
+  const [nr, ng, nb] = hslToRgb(h, s, clampNumber(l - deltaL, 0, 100));
+  return rgbToHex(nr, ng, nb);
+}
+
+/**
+ * Build a categorical palette of `count` distinct, on-brand colors by spreading
+ * hue (and blending saturation) from the primary toward the secondary color. When
+ * no secondary is given, the primary's complement is used as the far anchor.
+ * Lightness is held in a readable band so text contrast stays predictable.
+ */
+export function deriveCategoricalPalette(
+  count: number,
+  primaryHex: string,
+  secondaryHex?: string
+): string[] {
+  const [pr, pg, pb] = hexToRgb(primaryHex);
+  const [pHue, pSat] = rgbToHsl(pr, pg, pb);
+
+  let sHue: number;
+  let sSat: number;
+  if (secondaryHex) {
+    const [sr, sg, sb] = hexToRgb(secondaryHex);
+    const [h2, s2] = rgbToHsl(sr, sg, sb);
+    sHue = h2;
+    sSat = s2;
+  } else {
+    sHue = (pHue + 180) % 360;
+    sSat = pSat;
+  }
+
+  const n = Math.max(1, count);
+  const colors: string[] = [];
+  for (let i = 0; i < n; i += 1) {
+    const t = n === 1 ? 0 : i / (n - 1);
+    const hue = lerpHue(pHue, sHue, t);
+    const sat = clampNumber(pSat + (sSat - pSat) * t, 45, 75);
+    const light = 52;
+    const [r, g, b] = hslToRgb(hue, sat, light);
+    colors.push(rgbToHex(r, g, b));
+  }
+  return colors;
+}
+
+/**
+ * Build a vivid rainbow palette of `count` colors by spreading hue evenly around
+ * the full wheel at a fixed saturation/lightness. Maximises how distinguishable
+ * adjacent categories are — unlike a brand-derived palette, which clusters hues in
+ * a narrow band. `startHue` rotates the whole wheel so the first colour can be tuned.
+ */
+export function deriveRainbowPalette(
+  count: number,
+  { startHue = 0, saturation = 70, lightness = 52 }: {
+    startHue?: number;
+    saturation?: number;
+    lightness?: number;
+  } = {}
+): string[] {
+  const n = Math.max(1, count);
+  const colors: string[] = [];
+  for (let i = 0; i < n; i += 1) {
+    const hue = (startHue + (i * 360) / n) % 360;
+    const [r, g, b] = hslToRgb(hue, saturation, lightness);
+    colors.push(rgbToHex(r, g, b));
+  }
+  return colors;
+}
+
 // Date and utility functions
 
 import { differenceInYears } from 'date-fns';

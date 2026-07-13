@@ -635,7 +635,10 @@
       "view_calendar": "Calendar",
       "view_list": "List",
       "view_toggle_label": "Change view",
-      "class_details": "Class details"
+      "class_details": "Class details",
+      "next_class": "Next class",
+      "fit_to_screen": "Fit to screen",
+      "show_all_events": "Show all"
     },
     "enrolment": {
       "person_desc": "Who are you enrolling today?",
@@ -1056,6 +1059,9 @@
       "title": "Calendar",
       "subtitle": "Classes, sessions, appointments, and blocked time — read only",
       "not_available": "Calendar view is not available on your current plan.",
+      "next_event": "Next event",
+      "fit_to_screen": "Fit to screen",
+      "show_all_events": "Show all",
       "detail_title": "Event details",
       "field_type": "Type",
       "field_start": "Start",

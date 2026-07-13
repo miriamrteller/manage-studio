@@ -300,3 +300,38 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* Scheduling calendar: grey out Shabbat, holidays, and their eve. */
+.fc .fc-shaded-day {
+  background-color: #f3f4f6 !important;
+}
+
+/*
+ * Fit-to-screen month view: keep the whole month locked to the viewport but let a
+ * busy day's event list scroll inside its cell (instead of collapsing to "+N more").
+ * The day frame becomes a flex column with a fixed height; only the events area
+ * scrolls, so the day number/holiday label stay pinned.
+ */
+.fc-daycell-scroll .fc-daygrid-day-frame {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+.fc-daycell-scroll .fc-daygrid-day-events {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+/* Slim scrollbar so it doesn't dominate the small cell. */
+.fc-daycell-scroll .fc-daygrid-day-events {
+  scrollbar-width: thin;
+}
+.fc-daycell-scroll .fc-daygrid-day-events::-webkit-scrollbar {
+  width: 6px;
+}
+.fc-daycell-scroll .fc-daygrid-day-events::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
