@@ -82,6 +82,8 @@ function toFormValues(classItem: Partial<Offering> | undefined, defaultCurrency:
 }
 
 function toClassPayload(values: OfferingFormValues): Partial<Offering> {
+  const billingMode = values.billing_mode ?? 'one_time';
+
   return {
     season_id: values.season_id,
     category_id: values.category_id || null,
@@ -97,7 +99,8 @@ function toClassPayload(values: OfferingFormValues): Partial<Offering> {
     end_time: values.end_time,
     is_public: values.is_public === 'true',
     delivery_mode: 'scheduled',
-    billing_mode: values.billing_mode ?? 'one_time',
+    billing_mode: billingMode,
+    billing_interval: billingMode === 'recurring' ? 'monthly' : null,
     status: values.status,
     location: values.location?.trim() || null,
   };
