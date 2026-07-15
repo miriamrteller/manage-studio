@@ -3,6 +3,8 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { GoogleCalendarService } from '@/features/scheduling/googleCalendarService';
 
+const STORAGE_PREFIX = 'gcal-oauth-done:';
+
 /**
  * OAuth redirect target for Google Calendar. Exchanges the code via the callback
  * Edge Function, then returns the admin to booking settings.
@@ -12,11 +14,11 @@ export default function GoogleCalendarCallbackPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
-  const ran = useRef(false);
+  const started = useRef(false);
 
   useEffect(() => {
-    if (ran.current) return;
-    ran.current = true;
+    if (started.current) return;
+    started.current = true;
 
     const code = searchParams.get('code');
     const state = searchParams.get('state');
@@ -30,6 +32,15 @@ export default function GoogleCalendarCallbackPage() {
       setError('Missing code or state');
       return;
     }
+
+    // OAuth codes are single-use. React Strict Mode remounts would otherwise
+    // exchange the same code twice and the second call always 500s.
+    const dedupeKey = `${STORAGE_PREFIX}${code}`;
+    if (sessionStorage.getItem(dedupeKey)) {
+      navigate('/admin/setup/booking', { replace: true });
+      return;
+    }
+    sessionStorage.setItem(dedupeKey, '1');
 
     GoogleCalendarService.complete(code, state)
       .then(() => navigate('/admin/setup/booking', { replace: true }))

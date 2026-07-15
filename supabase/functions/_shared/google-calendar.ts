@@ -64,8 +64,11 @@ export async function exchangeCode(
       grant_type: "authorization_code",
     }),
   });
-  const data = (await res.json()) as GoogleTokenResponse & { error?: string };
-  if (!res.ok) throw new Error(data.error ?? "Google token exchange failed");
+  const data = (await res.json()) as GoogleTokenResponse & { error?: string; error_description?: string };
+  if (!res.ok) {
+    const detail = data.error_description ?? data.error ?? "Google token exchange failed";
+    throw new Error(detail);
+  }
   return {
     accessToken: data.access_token,
     refreshToken: data.refresh_token ?? null,

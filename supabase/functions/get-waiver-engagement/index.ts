@@ -9,6 +9,7 @@
  *
  * Response:
  *   { personId, offeringId, tenantId, template: { id, version, name, content } }
+ *   (version is a positive integer)
  */
 
 import { corsHeaders, jsonResponse } from "../../packages/edge-runtime/src/cors.ts";
@@ -84,7 +85,7 @@ Deno.serve(async (req) => {
       tenantId: payload.tid,
       template: {
         id: template.id as string,
-        version: template.version as string,
+        version: template.version as number,
         name: template.name as string,
         content: template.content as string,
       },

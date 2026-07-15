@@ -12,8 +12,26 @@ import { GoogleCalendarService } from '@/features/scheduling/googleCalendarServi
 const STATUS_STYLES: Record<string, string> = {
   active: 'bg-green-100 text-green-800',
   pending_payment: 'bg-amber-100 text-amber-800',
+  pending_waiver: 'bg-amber-100 text-amber-800',
   cancelled: 'bg-gray-100 text-gray-600',
 };
+
+function isSyncableAppointment(status: string): boolean {
+  return status === 'active' || status === 'pending_waiver';
+}
+
+function calendarButtonTitle(
+  row: AppointmentRow,
+  connected: boolean,
+  t: (key: string) => string,
+): string | undefined {
+  if (!connected) return t('scheduling.appointments.google_calendar_not_connected');
+  if (row.google_event_id) return t('scheduling.appointments.already_in_google_calendar');
+  if (!isSyncableAppointment(row.status)) {
+    return t('scheduling.appointments.google_calendar_status_required');
+  }
+  return undefined;
+}
 
 export default function AdminAppointmentsPage() {
   const { t, i18n } = useTranslation();
@@ -60,7 +78,7 @@ export default function AdminAppointmentsPage() {
   }
 
   function canAddToGoogleCalendar(row: AppointmentRow): boolean {
-    return googleCalendarConnected && row.status === 'active' && !row.google_event_id;
+    return googleCalendarConnected && isSyncableAppointment(row.status) && !row.google_event_id;
   }
 
   if (!gateLoading && !canView) {
@@ -112,22 +130,25 @@ export default function AdminAppointmentsPage() {
                   <td className="p-2 text-end">
                     <div className="flex flex-col items-end gap-1 sm:flex-row sm:justify-end">
                       {googleCalendarEnabled && row.status !== 'cancelled' && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          isLoading={syncingId === row.id}
-                          disabled={!canAddToGoogleCalendar(row)}
-                          title={
-                            googleCalendarConnected
-                              ? undefined
-                              : t('scheduling.appointments.google_calendar_not_connected')
-                          }
-                          onClick={() => addToGoogleCalendar(row)}
-                        >
-                          {row.google_event_id
-                            ? t('scheduling.appointments.added_to_google_calendar')
-                            : t('scheduling.appointments.add_to_google_calendar')}
-                        </Button>
+                        row.google_event_id ? (
+                          <span
+                            className="rounded-full bg-green-50 px-2 py-1 text-xs text-green-800"
+                            title={calendarButtonTitle(row, googleCalendarConnected, t)}
+                          >
+                            {t('scheduling.appointments.added_to_google_calendar')}
+                          </span>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            isLoading={syncingId === row.id}
+                            disabled={!canAddToGoogleCalendar(row)}
+                            title={calendarButtonTitle(row, googleCalendarConnected, t)}
+                            onClick={() => addToGoogleCalendar(row)}
+                          >
+                            {t('scheduling.appointments.add_to_google_calendar')}
+                          </Button>
+                        )
                       )}
                       {row.status !== 'cancelled' && (
                         <Button variant="ghost" size="sm" onClick={() => cancel(row.id)}>

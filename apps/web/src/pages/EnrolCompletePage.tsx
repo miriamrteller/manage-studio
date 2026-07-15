@@ -6,14 +6,14 @@ import { useTenant } from '@/hooks/useTenant';
 import { Button } from '@/components/ui/button';
 import { WaiverStep } from '@/features/enrolment/components/WaiverStep';
 import { TenantDB } from '@/lib/db';
-import { ConsentTemplateSchema } from '@shared/schemas';
-import type { ConsentTemplate } from '@shared/schemas';
+import { WaiverSigningConsentTemplateSchema } from '@shared/schemas';
+import type { WaiverSigningConsentTemplate } from '@shared/schemas';
 import { linkAuthUserToPerson } from '@/features/enrolment/linkAuthUser';
 
 type PageState =
   | { kind: 'loading' }
   | { kind: 'link_expired'; email: string }
-  | { kind: 'ready'; personId: string; offeringId: string; template: ConsentTemplate; waiverToken: string | null }
+  | { kind: 'ready'; personId: string; offeringId: string; template: WaiverSigningConsentTemplate; waiverToken: string | null }
   | { kind: 'already_signed' }
   | { kind: 'cancelled' }
   | { kind: 'signed' }
@@ -75,14 +75,22 @@ export default function EnrolCompletePage() {
           if (data.alreadySigned) { setState({ kind: 'already_signed' }); return; }
           if (data.cancelled)     { setState({ kind: 'cancelled' });      return; }
 
+          const parsedTemplate = WaiverSigningConsentTemplateSchema.safeParse(data.template);
+          if (!parsedTemplate.success) {
+            console.error('[EnrolCompletePage] invalid waiver template:', parsedTemplate.error);
+            setState({ kind: 'error', message: t('pages.enrol_complete.no_active_template') });
+            return;
+          }
+
           setState({
             kind: 'ready',
             personId: data.personId as string,
             offeringId: data.offeringId as string,
-            template: ConsentTemplateSchema.parse(data.template),
+            template: parsedTemplate.data,
             waiverToken,
           });
-        } catch {
+        } catch (err) {
+          console.error('[EnrolCompletePage] waiver token init failed:', err);
           setState({ kind: 'error', message: t('common.error') });
         }
         return;
@@ -141,11 +149,17 @@ export default function EnrolCompletePage() {
         return;
       }
 
+      const parsedTemplate = WaiverSigningConsentTemplateSchema.safeParse(templateRow);
+      if (!parsedTemplate.success) {
+        setState({ kind: 'error', message: t('pages.enrol_complete.no_active_template') });
+        return;
+      }
+
       setState({
         kind: 'ready',
         personId: eng.person_id,
         offeringId: eng.offering_id,
-        template: ConsentTemplateSchema.parse(templateRow),
+        template: parsedTemplate.data,
         waiverToken: null,
       });
     };

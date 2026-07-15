@@ -50,6 +50,9 @@ Deno.serve(async (req) => {
   }
 
   const redirectUri = `${APP_URL}/admin/setup/integrations/google/callback`;
+  if (!APP_URL) {
+    return jsonResponse({ error: "APP_URL is not configured on the server" }, 500);
+  }
 
   try {
     const tokens = await exchangeCode(body.code, redirectUri);
@@ -63,7 +66,7 @@ Deno.serve(async (req) => {
       p_email: email,
       p_calendar_id: "primary",
     });
-    if (error) throw error;
+    if (error) throw new Error(error.message ?? "Failed to save Google credentials");
 
     return jsonResponse({ ok: true, email });
   } catch (e) {

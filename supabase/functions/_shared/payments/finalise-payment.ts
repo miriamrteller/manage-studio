@@ -349,7 +349,7 @@ export async function finalisePayment(
     });
 
     // Push confirmed appointment bookings to Google Calendar (best-effort, non-blocking).
-    if (status === "active") {
+    if (status === "active" || status === "pending_waiver") {
       await syncBookingEventInsert(service, params.tenantId, params.engagementId);
     }
   }

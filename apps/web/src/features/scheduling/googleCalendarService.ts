@@ -1,4 +1,8 @@
 import { supabase } from '@/lib/supabase';
+import {
+  functionInvokeErrorMessage,
+  parseFunctionInvokeBody,
+} from '@/lib/parseFunctionInvokeError';
 
 export interface GoogleCalendarConnection {
   connected: boolean;
@@ -28,7 +32,12 @@ export const GoogleCalendarService = {
     const { data, error } = await supabase.functions.invoke('google-calendar-oauth-callback', {
       body: { code, state },
     });
-    if (error) throw error;
+    const body = await parseFunctionInvokeBody(data, error);
+    if (error) {
+      throw new Error(
+        functionInvokeErrorMessage(error, body, 'Google Calendar connection failed'),
+      );
+    }
     return { email: (data as { email?: string | null })?.email ?? null };
   },
 

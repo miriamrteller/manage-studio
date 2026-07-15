@@ -24,7 +24,7 @@ export function EnrolmentPaymentSuccess({
         endsAt: appointment.endsAt,
         location: appointment.location,
         description: appointment.schoolName
-          ? t('scheduling.booking.calendar_event_description', { schoolName: appointment.schoolName })
+          ? t('scheduling.book.calendar_event_description', { schoolName: appointment.schoolName })
           : undefined,
       }
     : null;

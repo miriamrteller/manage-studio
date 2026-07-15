@@ -23,14 +23,14 @@ export function AddToCalendarActions({ event }: AddToCalendarActionsProps) {
           window.open(buildGoogleCalendarEventUrl(event), '_blank', 'noopener,noreferrer');
         }}
       >
-        {t('scheduling.booking.add_to_google_calendar')}
+        {t('scheduling.book.add_to_google_calendar')}
       </Button>
       <Button
         variant="ghost"
         className="w-full text-sm"
         onClick={() => downloadIcsEvent(event)}
       >
-        {t('scheduling.booking.download_calendar_file')}
+        {t('scheduling.book.download_calendar_file')}
       </Button>
     </div>
   );

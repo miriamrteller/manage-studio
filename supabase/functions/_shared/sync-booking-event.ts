@@ -21,7 +21,7 @@ export async function syncBookingEventInsert(
 
     if (!eng || !eng.booked_starts_at || !eng.booked_ends_at) return;
     if (eng.google_event_id) return; // already synced
-    if (eng.status !== "active") return;
+    if (eng.status !== "active" && eng.status !== "pending_waiver") return;
 
     const conn = await getValidAccessToken(service, tenantId);
     if (!conn) return; // Google not connected — non-blocking skip

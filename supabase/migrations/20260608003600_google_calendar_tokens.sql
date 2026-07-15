@@ -28,7 +28,7 @@ RETURNS TABLE (
 )
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 DECLARE
   enc_key TEXT;
@@ -59,7 +59,7 @@ CREATE OR REPLACE FUNCTION save_tenant_google_credentials(
 RETURNS VOID
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 DECLARE
   enc_key TEXT;
@@ -92,7 +92,7 @@ CREATE OR REPLACE FUNCTION update_tenant_google_access_token(
 RETURNS VOID
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 DECLARE
   enc_key TEXT;

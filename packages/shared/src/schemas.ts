@@ -668,6 +668,16 @@ export const ConsentTemplateSchema = z.object({
 
 export type ConsentTemplate = z.infer<typeof ConsentTemplateSchema>;
 
+/** Minimal consent template fields required for the waiver signing UI. */
+export const WaiverSigningConsentTemplateSchema = ConsentTemplateSchema.pick({
+  id: true,
+  version: true,
+  name: true,
+  content: true,
+});
+
+export type WaiverSigningConsentTemplate = z.infer<typeof WaiverSigningConsentTemplateSchema>;
+
 export const WaiverViewedRequestSchema = z.object({
   person_id: UUIDSchema,
   consent_template_id: UUIDSchema,
