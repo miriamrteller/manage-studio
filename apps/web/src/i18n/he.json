@@ -534,6 +534,7 @@
       "not_payable": "לא ניתן לשלם עבור הרשמה זו באינטרנט.",
       "already_paid_title": "התשלום הושלם",
       "already_paid_desc": "ההרשמה כבר שולמה. תודה!",
+      "already_paid_appointment_desc": "הפגישה שלך אושרה. תודה!",
       "secure_link_required": "עמוד זה דורש קישור השלמה מאובטח. פתח/י את הקישור המלא מהדוא\"ל או התחבר/י כדי להמשיך.",
       "admin_session_block": "קישור השלמה זה מיועד לאפוטרופוס. יש להתנתק מחשבון המנהל או לפתוח את הקישור בחלון פרטי.",
       "sign_out_and_continue": "התנתק/י והמשך/י"
@@ -1133,7 +1134,10 @@
       "no_slots": "אין שעות פנויות בתאריך זה.",
       "continue": "המשך לתשלום",
       "hold_note": "השעה תישמר עבורך עד להשלמת התשלום.",
-      "duration_mins": "{{count}} דקות"
+      "duration_mins": "{{count}} דקות",
+      "add_to_google_calendar": "הוסף ל-Google Calendar",
+      "download_calendar_file": "הורד קובץ יומן (.ics)",
+      "calendar_event_description": "פגישה ב-{{schoolName}}"
     },
     "appointments": {
       "title": "פגישות",

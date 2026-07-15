@@ -45,7 +45,7 @@ export async function loadEnrolmentCompletionContext(
 
   const { data: engagement, error: engagementError } = await service
     .from("engagements")
-    .select("id, tenant_id, person_id, offering_id, status, waiver_evidence_id")
+    .select("id, tenant_id, person_id, offering_id, status, waiver_evidence_id, booked_starts_at, booked_ends_at")
     .eq("id", engagementId)
     .eq("tenant_id", tenantId)
     .single();
@@ -82,7 +82,7 @@ export async function loadEnrolmentCompletionContext(
 
   const { data: offering } = await service
     .from("offerings")
-    .select("id, name, currency, price_minor, waiver_required")
+    .select("id, name, currency, price_minor, waiver_required, location")
     .eq("id", engagement.offering_id)
     .eq("tenant_id", tenantId)
     .single();
@@ -93,7 +93,7 @@ export async function loadEnrolmentCompletionContext(
 
   const { data: tenant } = await service
     .from("tenants")
-    .select("id, currency")
+    .select("id, currency, name")
     .eq("id", tenantId)
     .single();
 
@@ -165,6 +165,18 @@ export async function loadEnrolmentCompletionContext(
       new Date(Date.now() - 18 * 365.25 * 24 * 60 * 60 * 1000)
     : false;
 
+  const bookedStartsAt = engagement.booked_starts_at as string | null;
+  const bookedEndsAt = engagement.booked_ends_at as string | null;
+  const appointment = bookedStartsAt && bookedEndsAt
+    ? {
+      startsAt: bookedStartsAt,
+      endsAt: bookedEndsAt,
+      serviceName: offering.name as string,
+      location: (offering.location as string | null) ?? null,
+      schoolName: tenant.name as string,
+    }
+    : null;
+
   return {
     ok: true,
     context: {
@@ -183,6 +195,7 @@ export async function loadEnrolmentCompletionContext(
       isMinorStudent,
       amountMinor: pricing.totalMinor,
       currency: (offering.currency ?? tenant.currency ?? "ILS").toUpperCase(),
+      appointment,
     },
   };
 }
@@ -205,5 +218,6 @@ export function flattenCompletionContext(context: EnrolmentCompletionContext): R
     isMinorStudent: context.isMinorStudent,
     amountMinor: context.amountMinor,
     currency: context.currency,
+    appointment: context.appointment ?? null,
   };
 }

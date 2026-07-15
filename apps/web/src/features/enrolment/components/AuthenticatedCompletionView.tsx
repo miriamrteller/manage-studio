@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { EnrolmentPaymentSuccess } from '@/features/enrolment/components/EnrolmentPaymentSuccess';
 import { CheckoutPaymentShell } from '@/features/enrolment/components/CheckoutPaymentShell';
 import { WaiverStep } from '@/features/enrolment/components/WaiverStep';
 import { useCheckoutBootstrap } from '@/features/enrolment/hooks/useCheckoutBootstrap';
@@ -26,6 +27,7 @@ export function AuthenticatedCompletionView({ engagementId }: AuthenticatedCompl
   const tenant = useTenant();
   const [waiverComplete, setWaiverComplete] = useState(false);
   const [linkingWaiver, setLinkingWaiver] = useState(false);
+  const [paid, setPaid] = useState(false);
 
   const bootstrap = useCheckoutBootstrap({
     phase: 'pay',
@@ -159,17 +161,17 @@ export function AuthenticatedCompletionView({ engagementId }: AuthenticatedCompl
     void bootstrap.refetch();
   };
 
-  if (context.alreadyComplete) {
+  if (context.alreadyComplete || paid) {
     return (
-      <div className="max-w-lg mx-auto p-6 space-y-4 text-center">
-        <h1 className="text-2xl font-bold">{t('pages.enrol_pay.already_paid_title')}</h1>
-        <p className="text-gray-600">{t('pages.enrol_pay.already_paid_desc')}</p>
-        <Button variant="primary" onClick={finishCompletion}>
-          {user && hasParentRole(user.role)
+      <EnrolmentPaymentSuccess
+        appointment={context.appointment}
+        onClose={() => void finishCompletion()}
+        closeLabel={
+          user && hasParentRole(user.role)
             ? t('pages.portal.view_enrolment')
-            : t('common.close')}
-        </Button>
-      </div>
+            : t('common.close')
+        }
+      />
     );
   }
 
@@ -220,7 +222,7 @@ export function AuthenticatedCompletionView({ engagementId }: AuthenticatedCompl
         classId={context.offeringId}
         engagementId={context.engagementId}
         charge={charge}
-        onPaid={() => void finishCompletion()}
+        onPaid={() => setPaid(true)}
         onPrevious={() => void finishCompletion()}
       />
     </div>

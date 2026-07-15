@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { EnrolmentPaymentSuccess } from '@/features/enrolment/components/EnrolmentPaymentSuccess';
 import { CheckoutPaymentShell } from '@/features/enrolment/components/CheckoutPaymentShell';
 import { WaiverStep } from '@/features/enrolment/components/WaiverStep';
 import { useCheckoutBootstrap } from '@/features/enrolment/hooks/useCheckoutBootstrap';
@@ -178,13 +179,11 @@ export function TokenCompletionView({ engagementId, effectiveToken }: TokenCompl
   const alreadyPaid = context.alreadyComplete || paid;
   if (alreadyPaid) {
     return (
-      <div className="max-w-lg mx-auto p-6 space-y-4 text-center">
-        <h1 className="text-2xl font-bold">{t('pages.enrol_pay.already_paid_title')}</h1>
-        <p className="text-gray-600">{t('pages.enrol_pay.already_paid_desc')}</p>
-        <Button variant="primary" onClick={() => navigate('/classes')}>
-          {t('common.close')}
-        </Button>
-      </div>
+      <EnrolmentPaymentSuccess
+        appointment={context.appointment}
+        onClose={() => navigate('/classes')}
+        closeLabel={t('common.close')}
+      />
     );
   }
 

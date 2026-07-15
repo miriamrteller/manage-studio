@@ -35,6 +35,14 @@ export interface CheckoutChargePayload {
   pendingWebhook: boolean;
 }
 
+export interface AppointmentCalendarDetails {
+  startsAt: string;
+  endsAt: string;
+  serviceName: string;
+  location: string | null;
+  schoolName: string;
+}
+
 export interface EnrolmentCompletionContext {
   engagementId: string;
   personId: string;
@@ -51,6 +59,8 @@ export interface EnrolmentCompletionContext {
   isMinorStudent: boolean;
   amountMinor: number;
   currency: string;
+  /** Set when this engagement is an appointment booking (booked_starts_at). */
+  appointment?: AppointmentCalendarDetails | null;
 }
 
 export type BootstrapBlockReason =

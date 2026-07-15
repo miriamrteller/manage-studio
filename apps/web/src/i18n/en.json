@@ -534,6 +534,7 @@
       "not_payable": "This enrolment cannot be paid online.",
       "already_paid_title": "Payment complete",
       "already_paid_desc": "This enrolment has already been paid. Thank you!",
+      "already_paid_appointment_desc": "Your appointment is confirmed. Thank you!",
       "secure_link_required": "This page requires a secure completion link. Open the full link from the email, or sign in to continue.",
       "admin_session_block": "This completion link is for the guardian. Sign out of the admin account or open the link in a private window.",
       "sign_out_and_continue": "Sign out and continue"
@@ -1134,7 +1135,10 @@
       "no_slots": "No available times on this date.",
       "continue": "Continue to payment",
       "hold_note": "This time will be held for you until payment is complete.",
-      "duration_mins": "{{count}} minutes"
+      "duration_mins": "{{count}} minutes",
+      "add_to_google_calendar": "Add to Google Calendar",
+      "download_calendar_file": "Download calendar file (.ics)",
+      "calendar_event_description": "Appointment at {{schoolName}}"
     },
     "appointments": {
       "title": "Appointments",
