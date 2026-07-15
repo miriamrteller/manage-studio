@@ -38,7 +38,18 @@ pg_cron batch (see `issue-document/index.ts` header for the cron schedule).
 |----------|-------|---------|
 | `CRON_SECRET` | Edge function secret + DB GUC (`app.settings.cron_secret`) | Shared auth for scheduled HTTP calls (`x-cron-secret`). Must match in both places. |
 | `app.settings.supabase_functions_url` | DB GUC | Base URL used by `net.http_post` in cron jobs (`https://<project-ref>.supabase.co`). |
-| `APP_URL` | Edge function secret | Required for payment dunning email links; set before enabling the dunning cron job. |
+| `APP_URL` | Edge function secret | Required for payment dunning email links, waiver/pay links, and Google Calendar OAuth `redirect_uri`. Set before enabling dunning cron or GCal connect. |
+
+## Google Calendar (appointment scheduling)
+
+| Variable | Where | Purpose |
+|----------|-------|---------|
+| `GOOGLE_CALENDAR_CLIENT_ID` | Edge function secret | OAuth client id |
+| `GOOGLE_CALENDAR_CLIENT_SECRET` | Edge function secret | OAuth client secret; also HMAC key for signed OAuth `state` |
+| `GOOGLE_CALENDAR_MOCK` | Edge function secret | When `true`, stubs free/busy and event insert/delete (dev only; unset in prod) |
+| `APP_URL` | Edge function secret | Builds `{APP_URL}/admin/setup/integrations/google/callback` — must match Google Console Authorized redirect URI |
+
+Sync from repo `.env`: `pnpm secrets:google-calendar`. See [scheduling/deployment-and-testing.md](../plans/scheduling/deployment-and-testing.md) and [scheduling/google-calendar-integration.md](../plans/scheduling/google-calendar-integration.md).
 
 Pre-deploy SQL (manual):
 

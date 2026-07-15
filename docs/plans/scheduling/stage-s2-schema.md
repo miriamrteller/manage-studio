@@ -1,6 +1,6 @@
 # Scheduling S2 — booking schema (SSOT)
 
-**Status:** Implemented · migrations `003400` (schema + RPCs) and `003500` (cron).
+**Status:** Implemented · migrations `003400`–`003500` (base), plus `003700`–`004200` (offering type, grants, hours RPC, pending_waiver occupancy).
 
 Part of [00-overview.md](00-overview.md). Reuses `engagements` as the booking source of truth — **no** parallel `appointments` / `booking_services` tables.
 
@@ -26,9 +26,15 @@ Part of [00-overview.md](00-overview.md). Reuses `engagements` as the booking so
 
 `day_of_week` (0=Sun..6=Sat), `start_time`, `end_time`, `is_active`. Times are wall-clock in `Asia/Jerusalem`.
 
+**Replace-all:** admin UI calls `replace_tenant_scheduling_hours(p_hours jsonb)` — delete + insert in one transaction (`04100`). Do not client-side delete-then-insert.
+
 ### `scheduling_holds` (short-lived reservations)
 
-`offering_id`, `starts_at`, `ends_at`, `expires_at`, client contact fields, `engagement_id` (set once a booking is created), `reminder_sent_at`, `released_at`. Open hold = `released_at IS NULL AND expires_at > now()`.
+`offering_id`, `starts_at`, `ends_at`, `expires_at`, `client_name`, `client_email`, `client_phone`, `engagement_id` (set once a booking is created), `reminder_sent_at`, `released_at`.
+
+Open hold = `released_at IS NULL AND expires_at > now()`.
+
+`prepare-booking-checkout` requires `body.client_email` to match `hold.client_email` (case-insensitive).
 
 ### `scheduling_blocks` (from `003300`)
 
@@ -40,11 +46,24 @@ Manually blocked time; `event_type = 'blocked'` in the calendar feed.
 
 ### `engagements` (+ appointment columns)
 
-`booked_starts_at`, `booked_ends_at` (both-null or both-set check), `google_event_id` (S3d), `scheduling_hold_id`. Appointment engagements are ordinary engagements with `booked_*` set; they flow through the same `pending_payment → active` checkout lifecycle.
+`booked_starts_at`, `booked_ends_at` (both-null or both-set check), `google_event_id`, `scheduling_hold_id`.
 
-### `offerings` (+ bookable flags)
+Lifecycle for appointments:
 
-`is_bookable` (1:1 service vs group class), `duration_mins` (fallback to settings when null).
+```
+pending_payment → active | pending_waiver  (on paid finalise)
+pending_payment → cancelled                (hold expiry, or slot taken on late pay)
+```
+
+`finalise-payment` never reactivates `cancelled` / `withdrawn`. If another engagement already owns the slot, the loser is cancelled with `slot_taken_on_payment`.
+
+### `offerings`
+
+| Column | Notes |
+| --- | --- |
+| `offering_type` | `'class'` \| `'appointment'` (`03700`; replaces dropped `is_bookable`) |
+| `duration_mins` | Appointment length; falls back to settings when null |
+| `start_time` / `end_time` / `day_of_week` | Required for classes; null for appointments |
 
 ---
 
@@ -52,19 +71,23 @@ Manually blocked time; `event_type = 'blocked'` in the calendar feed.
 
 | RPC | Grants | Purpose |
 | --- | --- | --- |
-| `get_available_slots(subdomain, offering_id, date)` | anon, auth | Candidate slots minus holds/booked/blocks; Jerusalem TZ; enforces notice/window/max-per-day. Google freebusy layered in by S3c. |
-| `create_scheduling_hold(subdomain, offering_id, starts_at, ends_at, name, email, phone)` | anon, auth | Advisory-locked per tenant; re-validates then inserts hold; returns `hold_id`, `expires_at`. |
-| `release_scheduling_hold(hold_id)` | anon, auth | Idempotent release (only if not yet linked to an engagement). |
-| `get_schedule_events(tenant_id, start, end)` | auth (admin) | Extended in `003400` to include `appointment` rows from booked engagements. |
+| `get_available_slots(subdomain, offering_id, date)` | anon, auth | Candidates minus holds / booked (`pending_payment`\|`active`\|`pending_waiver`) / blocks. Google freebusy layered by Edge. |
+| `create_scheduling_hold(...)` | anon, auth | Advisory-locked; same occupancy set; returns `hold_id`, `expires_at`. |
+| `release_scheduling_hold(hold_id)` | anon, auth | Idempotent if not linked to an engagement. |
+| `get_bookable_offerings_by_subdomain` | anon, auth | Active appointment offerings when booking enabled. |
+| `get_schedule_events(tenant_id, start, end)` | auth (admin) | Classes + sessions + blocks + appointments (incl. pending_waiver). |
+| `replace_tenant_scheduling_hours(p_hours)` | auth (admin) | Atomic hours replace. |
+| `get_google_calendar_connection` | auth | Connected? + email (no tokens). |
+| `save_tenant_google_credentials` / `get_tenant_google_credentials` | service_role | Encrypted token I/O (`search_path` includes `extensions`). |
 
 ---
 
 ## Concurrency
 
-`create_scheduling_hold` takes `pg_advisory_xact_lock(hashtext(tenant_id))` before re-checking overlaps, preventing double-booking under concurrent requests for a single-provider (per-tenant V1) calendar.
+`create_scheduling_hold` takes `pg_advisory_xact_lock(hashtext(tenant_id))` before re-checking overlaps.
 
 ---
 
-## Expiry (cron `003500` → `expire-scheduling-holds`)
+## Expiry (cron → `expire-scheduling-holds`)
 
-Every minute: send pre-expiry reminder (once, if `expiry_reminder_mins` set), then release holds past `expires_at`. Linked engagements that are still `pending_payment`, unpaid, and have `booked_starts_at` are cancelled with reason `booking_hold_expired`. Group-class dunning is never affected.
+Every minute: optional pre-expiry reminder, then release holds past `expires_at`. Linked engagements that are still `pending_payment`, unpaid, and have `booked_starts_at` are cancelled with reason `booking_hold_expired`. Group-class dunning is never affected.

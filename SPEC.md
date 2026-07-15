@@ -185,30 +185,36 @@ Detailed SPEC.md documentation exists. Developer read it. Forms were still built
 
 - **Cal.com is out of scope** — no OAuth, webhooks, or Platform Atoms.
 - **Appointment booking** is first-party UI + Postgres + existing checkout — **not** outsourced to a booking SaaS.
-- **Google Calendar** is the **external calendar integration** for appointment tenants: OAuth connect, **free/busy** for availability, **push events** when a booking is confirmed.
+- **Google Calendar** is the **external calendar integration** for appointment tenants: OAuth connect, **free/busy** for availability, **push events** when a booking is confirmed (`active` or `pending_waiver`).
+- **Client “Add to calendar”** after payment uses a Google Calendar template URL + `.ics` download — **no** client OAuth.
 
 | Layer | Purpose | Stack | Feature flag |
 | --- | --- | --- | --- |
-| **Calendar view** | Month/week timetable for offerings/sessions; click → detail → enrol or book | **FullCalendar** (read-only) | `scheduling:calendar.view` |
-| **Slot booking** | Client picks slot → waiver → `create-checkout` → `issue-document` | Custom React + edge functions | `scheduling:booking.client`, `scheduling:booking.admin` |
-| **Google Calendar** | Staff calendar sync for appointment offerings | Google Calendar API (OAuth 2.0, refresh tokens encrypted at rest) | `scheduling:integration.google_calendar` |
+| **Calendar view** | Month/week timetable for class offerings/sessions | **FullCalendar** (read-only) on `/classes` | `scheduling:calendar.view` |
+| **Slot booking** | Client picks slot on `/book` → hold → pay → optional waiver | Custom React + edge functions | `scheduling:booking.client`, `scheduling:booking.admin` |
+| **Google Calendar** | Studio calendar sync for appointments | Google Calendar API (OAuth 2.0, refresh tokens encrypted at rest; signed OAuth `state`) | `scheduling:integration.google_calendar` |
 
 **Division of responsibility:**
 
 | Concern | Owner |
 | --- | --- |
 | Slot picker UI, holds, pricing, payment, invoice | **Manage Studio** (native) |
-| “Is this time already busy on the provider’s calendar?” | **Google Calendar** (`freebusy.query`) when integration enabled |
-| “Show this appointment on the provider’s phone calendar” | **Google Calendar** (`events.insert` / update on confirm; delete on cancel) |
-| Group class term enrolment | **`/enrol`** wizard — unchanged; optional export to Google later |
+| “Is this time already busy on the provider’s calendar?” | **Google Calendar** (`freebusy.query`) when integration enabled (fail-closed) |
+| “Show this appointment on the **studio** calendar” | **Google Calendar** (`events.insert` on confirm; `delete` on cancel) |
+| “Add to **my** (client) calendar” | Manage Studio calendar URL + `.ics` on payment success |
+| Group class term enrolment | **`/enrol`** wizard — unchanged |
 
-**Do not use FullCalendar or Google embed widgets for checkout** — payment stays on the existing finance spine (Grow / iCount / Rapyd–Yesh).
+**Do not use FullCalendar or Google embed widgets for checkout** — payment stays on the existing finance spine (Grow / iCount / Mock).
 
-**Google setup (tenant admin):** Settings → Integrations → Connect Google Calendar → select calendar id → working hours + slot templates still live in Manage Studio; Google blocks times that are busy externally.
+**Offering model:** `offerings.offering_type` is `'class'` or `'appointment'` (not `is_bookable`). Appointment availability uses `tenant_scheduling_hours`; occupancy includes `pending_payment`, `active`, and `pending_waiver`.
 
-**Group classes (Professional):** recurring offerings → FullCalendar expansion → **`/enrol`**. Google Calendar integration is **optional** for appointment/skills offerings (`scheduling:integration.google_calendar`).
+**Google setup (tenant admin):** Booking Settings → Connect Google Calendar → OAuth callback `{APP_URL}/admin/setup/integrations/google/callback`. Working hours + slot rules stay in Manage Studio; Google blocks externally busy times.
 
-**Plans:** [docs/plans/scheduling/00-overview.md](docs/plans/scheduling/00-overview.md), [docs/plans/scheduling/google-calendar-integration.md](docs/plans/scheduling/google-calendar-integration.md)
+**Safety (booking):** checkout email must match the hold’s `client_email`; `finalise-payment` does not reactivate cancelled/expired holds; hours replace is transactional (`replace_tenant_scheduling_hours`).
+
+**Group classes (Professional):** recurring offerings → FullCalendar → **`/enrol`**. Google Calendar is **optional** for appointments (`scheduling:integration.google_calendar`).
+
+**Plans:** [docs/plans/scheduling/00-overview.md](docs/plans/scheduling/00-overview.md), [docs/plans/scheduling/google-calendar-integration.md](docs/plans/scheduling/google-calendar-integration.md), [docs/plans/scheduling/deployment-and-testing.md](docs/plans/scheduling/deployment-and-testing.md)
 
 ### 2.3 Infrastructure (per tenant — pass-through model)
 
@@ -819,7 +825,7 @@ Landing pages and public class listings need data before a user logs in. The acc
 - **2026-07-05 — third squash:** folded `20260625*`–`20260705*` incrementals into the base `20260608*` chain; archived originals under `supabase/migrations_backup/incremental_20260705/`.
 - This index now reflects a single authoritative chain (`20260608000200`–`20260608002600`).
 
-> **2026-06-08 — consolidated chain.** The original 34-file history (`20260526*`–`20260610*`) was rewritten into the `20260608*` chain below, baking every `ALTER` into its base `CREATE TABLE`. The superseded files are retained read-only under `supabase/migrations_backup/legacy_20260608/`. Filename order = apply order. **Current chain length: 26 files** (`00200`–`02600`, including `02150_waiver_rpcs`).
+> **2026-06-08 — consolidated chain.** The original 34-file history (`20260526*`–`20260610*`) was rewritten into the `20260608*` chain below, baking every `ALTER` into its base `CREATE TABLE`. The superseded files are retained read-only under `supabase/migrations_backup/legacy_20260608/`. Filename order = apply order. **Base V1 chain: 26 files** (`00200`–`02600`, including `02150_waiver_rpcs`). **Post-chain scheduling / features:** `03000`–`04200` (feature flags, Google Calendar tokens, booking schema, `offering_type`, grants, hours RPC, pending_waiver occupancy) — see [scheduling/stage-s2-schema.md](docs/plans/scheduling/stage-s2-schema.md) and [deployment-and-testing.md](docs/plans/scheduling/deployment-and-testing.md).
 
 > **2026-06-24 — second squash.** Seven post-consolidation incrementals (`20260609*`–`20260624*`) were folded into the base chain (encryption platform config, grow provisioning, enrolment resume drafts, offering location, waiver auth fix). Archived at `supabase/migrations_backup/incremental_20260624/`.
 
@@ -2969,15 +2975,17 @@ Admin CRUD for the `staff` table at **`/admin/setup/teachers`**: name, contact, 
 
 ### V2.12 — Native scheduling (calendar + slot booking + Google Calendar)
 
-**Calendar (FullCalendar):** Public `/classes/calendar` and admin timetable — month/week view; click → detail; group classes → `/enrol`.
+**Status:** Core shipped (S0–S4). Penalties / no-show (S5) deferred.
 
-**Slot booking (custom module):** Essential default — admin availability templates, client slot picker, hold → `create-checkout` → `issue-document`.
+**Calendar (FullCalendar):** Public `/classes` timetable for class offerings; appointments use `/book` (not the class calendar for checkout).
 
-**Google Calendar integration:** OAuth per tenant (or per staff member); `freebusy.query` subtracts external busy time from offered slots; on booking confirm, `events.insert` with client name, offering, location, and link to engagement. Cancel/reschedule updates or deletes the Google event. Tokens stored encrypted (`private.platform_config` or dedicated credentials table — see plan).
+**Slot booking:** `offering_type = 'appointment'` services, admin hours/settings/services, client `/book[/:offeringId]`, hold → `prepare-booking-checkout` → existing pay spine → optional guest waiver (`get-waiver-engagement`). Appointment confirmation emails to client + tenant admins. Client post-pay “Add to Google Calendar” / `.ics` (no OAuth).
 
-**Not in scope:** Cal.com; Google Appointment Schedule embed as checkout replacement; AI scheduling assistant (deferred).
+**Google Calendar integration:** Per-tenant OAuth (`tenant_admin`); HMAC-signed `state`; `freebusy.query` subtracts busy time (fail-closed); on confirm (`active` / `pending_waiver`), `events.insert` + `google_event_id`; cancel deletes; admin can sync manually. Tokens encrypted via pgcrypto RPCs.
 
-**Plans:** [docs/plans/scheduling/00-overview.md](docs/plans/scheduling/00-overview.md), [docs/plans/scheduling/google-calendar-integration.md](docs/plans/scheduling/google-calendar-integration.md)
+**Not in scope:** Cal.com; Google Appointment Schedule embed as checkout; AI scheduling assistant; per-staff OAuth (V2.11+).
+
+**Plans:** [docs/plans/scheduling/00-overview.md](docs/plans/scheduling/00-overview.md), [docs/plans/scheduling/google-calendar-integration.md](docs/plans/scheduling/google-calendar-integration.md), [docs/plans/scheduling/deployment-and-testing.md](docs/plans/scheduling/deployment-and-testing.md)
 
 ---
 
