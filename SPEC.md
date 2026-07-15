@@ -173,11 +173,48 @@ Detailed SPEC.md documentation exists. Developer read it. Forms were still built
 | ---------------------------------------------- | -------------------------------------------------------- |
 | Zod                                            | Runtime validation of all external data                  |
 | date-fns                                       | Date manipulation with locale support                    |
-| FullCalendar + `@fullcalendar/core/locales/he` | Schedule views with Hebrew locale                        |
+| FullCalendar + `@fullcalendar/core/locales/he` | **Timetable display only** (month/week); not the booking engine |
 | Recharts                                       | Finance dashboard charts                                 |
 | Lucide React                                   | Icon set                                                 |
 | clsx + tailwind-merge                          | Conditional class composition                            |
 | i18next + react-i18next                        | Internationalisation (Hebrew primary, English secondary) |
+
+### 2.2.1 Scheduling — three layers (native booking + Google Calendar)
+
+**Product decisions (2026-07):**
+
+- **Cal.com is out of scope** — no OAuth, webhooks, or Platform Atoms.
+- **Appointment booking** is first-party UI + Postgres + existing checkout — **not** outsourced to a booking SaaS.
+- **Google Calendar** is the **external calendar integration** for appointment tenants: OAuth connect, **free/busy** for availability, **push events** when a booking is confirmed (`active` or `pending_waiver`).
+- **Client “Add to calendar”** after payment uses a Google Calendar template URL + `.ics` download — **no** client OAuth.
+
+| Layer | Purpose | Stack | Feature flag |
+| --- | --- | --- | --- |
+| **Calendar view** | Month/week timetable for class offerings/sessions | **FullCalendar** (read-only) on `/classes` | `scheduling:calendar.view` |
+| **Slot booking** | Client picks slot on `/book` → hold → pay → optional waiver | Custom React + edge functions | `scheduling:booking.client`, `scheduling:booking.admin` |
+| **Google Calendar** | Studio calendar sync for appointments | Google Calendar API (OAuth 2.0, refresh tokens encrypted at rest; signed OAuth `state`) | `scheduling:integration.google_calendar` |
+
+**Division of responsibility:**
+
+| Concern | Owner |
+| --- | --- |
+| Slot picker UI, holds, pricing, payment, invoice | **Manage Studio** (native) |
+| “Is this time already busy on the provider’s calendar?” | **Google Calendar** (`freebusy.query`) when integration enabled (fail-closed) |
+| “Show this appointment on the **studio** calendar” | **Google Calendar** (`events.insert` on confirm; `delete` on cancel) |
+| “Add to **my** (client) calendar” | Manage Studio calendar URL + `.ics` on payment success |
+| Group class term enrolment | **`/enrol`** wizard — unchanged |
+
+**Do not use FullCalendar or Google embed widgets for checkout** — payment stays on the existing finance spine (Grow / iCount / Mock).
+
+**Offering model:** `offerings.offering_type` is `'class'` or `'appointment'` (not `is_bookable`). Appointment availability uses `tenant_scheduling_hours`; occupancy includes `pending_payment`, `active`, and `pending_waiver`.
+
+**Google setup (tenant admin):** Booking Settings → Connect Google Calendar → OAuth callback `{APP_URL}/admin/setup/integrations/google/callback`. Working hours + slot rules stay in Manage Studio; Google blocks externally busy times.
+
+**Safety (booking):** checkout email must match the hold’s `client_email`; `finalise-payment` does not reactivate cancelled/expired holds; hours replace is transactional (`replace_tenant_scheduling_hours`).
+
+**Group classes (Professional):** recurring offerings → FullCalendar → **`/enrol`**. Google Calendar is **optional** for appointments (`scheduling:integration.google_calendar`).
+
+**Plans:** [docs/plans/scheduling/00-overview.md](docs/plans/scheduling/00-overview.md), [docs/plans/scheduling/google-calendar-integration.md](docs/plans/scheduling/google-calendar-integration.md), [docs/plans/scheduling/deployment-and-testing.md](docs/plans/scheduling/deployment-and-testing.md)
 
 ### 2.3 Infrastructure (per tenant — pass-through model)
 
@@ -788,7 +825,7 @@ Landing pages and public class listings need data before a user logs in. The acc
 - **2026-07-05 — third squash:** folded `20260625*`–`20260705*` incrementals into the base `20260608*` chain; archived originals under `supabase/migrations_backup/incremental_20260705/`.
 - This index now reflects a single authoritative chain (`20260608000200`–`20260608002600`).
 
-> **2026-06-08 — consolidated chain.** The original 34-file history (`20260526*`–`20260610*`) was rewritten into the `20260608*` chain below, baking every `ALTER` into its base `CREATE TABLE`. The superseded files are retained read-only under `supabase/migrations_backup/legacy_20260608/`. Filename order = apply order. **Current chain length: 26 files** (`00200`–`02600`, including `02150_waiver_rpcs`).
+> **2026-06-08 — consolidated chain.** The original 34-file history (`20260526*`–`20260610*`) was rewritten into the `20260608*` chain below, baking every `ALTER` into its base `CREATE TABLE`. The superseded files are retained read-only under `supabase/migrations_backup/legacy_20260608/`. Filename order = apply order. **Base V1 chain: 26 files** (`00200`–`02600`, including `02150_waiver_rpcs`). **Post-chain scheduling / features:** `03000`–`04200` (feature flags, Google Calendar tokens, booking schema, `offering_type`, grants, hours RPC, pending_waiver occupancy) — see [scheduling/stage-s2-schema.md](docs/plans/scheduling/stage-s2-schema.md) and [deployment-and-testing.md](docs/plans/scheduling/deployment-and-testing.md).
 
 > **2026-06-24 — second squash.** Seven post-consolidation incrementals (`20260609*`–`20260624*`) were folded into the base chain (encryption platform config, grow provisioning, enrolment resume drafts, offering location, waiver auth fix). Archived at `supabase/migrations_backup/incremental_20260624/`.
 
@@ -2936,6 +2973,20 @@ Admin CRUD for the `staff` table at **`/admin/setup/teachers`**: name, contact, 
 
 **Plan:** [docs/plans/teachers-admin-module.md](docs/plans/teachers-admin-module.md)
 
+### V2.12 — Native scheduling (calendar + slot booking + Google Calendar)
+
+**Status:** Core shipped (S0–S4). Penalties / no-show (S5) deferred.
+
+**Calendar (FullCalendar):** Public `/classes` timetable for class offerings; appointments use `/book` (not the class calendar for checkout).
+
+**Slot booking:** `offering_type = 'appointment'` services, admin hours/settings/services, client `/book[/:offeringId]`, hold → `prepare-booking-checkout` → existing pay spine → optional guest waiver (`get-waiver-engagement`). Appointment confirmation emails to client + tenant admins. Client post-pay “Add to Google Calendar” / `.ics` (no OAuth).
+
+**Google Calendar integration:** Per-tenant OAuth (`tenant_admin`); HMAC-signed `state`; `freebusy.query` subtracts busy time (fail-closed); on confirm (`active` / `pending_waiver`), `events.insert` + `google_event_id`; cancel deletes; admin can sync manually. Tokens encrypted via pgcrypto RPCs.
+
+**Not in scope:** Cal.com; Google Appointment Schedule embed as checkout; AI scheduling assistant; per-staff OAuth (V2.11+).
+
+**Plans:** [docs/plans/scheduling/00-overview.md](docs/plans/scheduling/00-overview.md), [docs/plans/scheduling/google-calendar-integration.md](docs/plans/scheduling/google-calendar-integration.md), [docs/plans/scheduling/deployment-and-testing.md](docs/plans/scheduling/deployment-and-testing.md)
+
 ---
 
 ## 9. V3 SaaS Roadmap
@@ -2982,7 +3033,9 @@ Your Stripe account (separate from tenant Stripe accounts) charges schools month
 
 ### V3.4 — Feature flags
 
-`feature_flags` table: per-tenant feature toggles. Used to: roll out V2 features gradually, restrict features by plan, A/B test new workflows.
+**Shipped (V1):** `feature_definitions` + `tenant_feature_overrides` + `get_tenant_features()` — see `packages/shared/src/config/feature-registry.ts` and migration `03000`. Used to roll out modules (e.g. native scheduling, calendar view) by plan/vertical and per-tenant overrides.
+
+Legacy note: Cal.com keys (`scheduling:appointments.calcom`, `scheduling:atoms.platform`) are **deprecated** — successor `scheduling:booking.client` (migration `02800`).
 
 ### V3.5 — Super-admin dashboard
 

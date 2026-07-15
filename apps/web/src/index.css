@@ -300,3 +300,199 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* Scheduling calendar: grey out Shabbat, holidays, and their eve. */
+.fc .fc-shaded-day {
+  background-color: #f3f4f6 !important;
+}
+
+/*
+ * Fit-to-screen month view: lock the whole month to the viewport and let a busy
+ * day's event list scroll inside its cell (instead of collapsing to "+N more").
+ *
+ * FullCalendar's `expandRows` only grows short rows to fill space — it never shrinks
+ * a row taller than its events — so a busy day makes the grid overflow the viewport.
+ * We force the week rows to split the available height evenly by taking each day
+ * cell's content out of normal flow (absolute fill), so content can't drive the row
+ * height. The frame is a flex column with the day number/holiday label pinned and
+ * only the events area scrolling.
+ */
+.fc-daycell-scroll .fc-daygrid-body,
+.fc-daycell-scroll .fc-daygrid-body > table,
+.fc-daycell-scroll .fc-daygrid-body .fc-daygrid-day-frame {
+  height: 100%;
+}
+.fc-daycell-scroll .fc-daygrid-day {
+  position: relative;
+}
+.fc-daycell-scroll .fc-daygrid-day-frame {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0 !important;
+  overflow: hidden;
+}
+.fc-daycell-scroll .fc-daygrid-day-top,
+.fc-daycell-scroll .fc-daygrid-day-bottom {
+  flex: 0 0 auto;
+}
+.fc-daycell-scroll .fc-daygrid-day-events {
+  flex: 1 1 auto;
+  min-height: 0 !important;
+  overflow-y: auto;
+  /* Slim scrollbar so it doesn't dominate the small cell. */
+  scrollbar-width: thin;
+}
+.fc-daycell-scroll .fc-daygrid-day-events::-webkit-scrollbar {
+  width: 6px;
+}
+.fc-daycell-scroll .fc-daygrid-day-events::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+/*
+ * Compact the cell so events fill from just under the date and more fit before
+ * scrolling: tighten the day-number header, drop default gaps, and shrink each
+ * event (padding, font, inter-event margin).
+ */
+.fc-daycell-scroll .fc-daygrid-day-top {
+  padding: 1px 2px 0;
+}
+.fc-daycell-scroll .fc-daygrid-day-events {
+  margin: 0;
+  padding: 0 2px 2px;
+}
+.fc-daycell-scroll .fc-daygrid-event-harness {
+  margin-top: 1px !important;
+}
+.fc-daycell-scroll .fc-daygrid-event-harness:first-child {
+  margin-top: 0 !important;
+}
+.fc-daycell-scroll .fc-daygrid-event {
+  margin: 0;
+  padding: 0 3px;
+  font-size: 10px;
+  line-height: 1.35;
+  border-radius: 3px;
+}
+.fc-daycell-scroll .fc-daygrid-event .fc-event-time {
+  font-weight: 600;
+  padding: 0;
+}
+.fc-daycell-scroll .fc-daygrid-event .fc-event-title {
+  padding: 0;
+}
+
+/* Booking calendar: slots render as solid pressable buttons on the grid. */
+.fc-booking-calendar .fc-booking-slot {
+  cursor: pointer;
+  border: none !important;
+  background: transparent !important;
+  margin: 1px 2px !important;
+  padding: 0 !important;
+}
+.fc-booking-calendar .fc-booking-slot .fc-event-main {
+  padding: 0 !important;
+  height: 100%;
+}
+.fc-booking-calendar .fc-booking-slot-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  width: 100%;
+  height: 100%;
+  min-height: 2rem;
+  padding: 0.2rem 0.35rem;
+  border-radius: 0.375rem;
+  border: 1px solid var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-on-primary, #fff);
+  font-weight: 600;
+  line-height: 1.2;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.08);
+  transition: filter 0.15s ease, box-shadow 0.15s ease;
+}
+.fc-booking-calendar .fc-booking-slot:hover .fc-booking-slot-btn {
+  filter: brightness(1.08);
+}
+.fc-booking-calendar .fc-booking-slot-selected .fc-booking-slot-btn {
+  background: var(--color-primary-hover, #5f2549);
+  border-color: var(--color-primary-hover, #5f2549);
+  box-shadow: 0 0 0 2px var(--color-primary-light, #a85a7e);
+}
+.fc-booking-calendar .fc-booking-slot-btn__time {
+  font-size: 0.8rem;
+}
+.fc-booking-calendar .fc-booking-slot-btn__label {
+  font-size: 0.65rem;
+  font-weight: 500;
+  opacity: 0.9;
+}
+.fc-booking-calendar .fc-daygrid-event .fc-booking-slot-btn {
+  min-height: 1.5rem;
+  flex-direction: row;
+}
+.fc-booking-calendar .fc-daygrid-event .fc-booking-slot-btn__time {
+  font-size: 0.7rem;
+}
+
+/*
+ * Booking calendar mobile: stack the toolbar, shrink chrome, keep events tappable.
+ * Scoped to .fc-booking-calendar so the classes timetable is unchanged.
+ */
+@media (max-width: 767px) {
+  .fc-booking-calendar {
+    /* Avoid horizontal page scroll from FullCalendar tables. */
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+  .fc-booking-calendar .fc-header-toolbar {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+  .fc-booking-calendar .fc-toolbar-chunk {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.25rem;
+  }
+  .fc-booking-calendar .fc-toolbar-title {
+    font-size: 1.05rem;
+    line-height: 1.3;
+    text-align: center;
+  }
+  .fc-booking-calendar .fc-button {
+    padding: 0.4rem 0.55rem;
+    font-size: 0.75rem;
+    min-height: 2.25rem;
+  }
+  .fc-booking-calendar .fc-button-group {
+    display: inline-flex;
+    flex-wrap: wrap;
+  }
+  .fc-booking-calendar .fc-timegrid-slot-label {
+    font-size: 0.65rem;
+  }
+  .fc-booking-calendar .fc-col-header-cell-cushion {
+    font-size: 0.75rem;
+    padding: 4px 2px;
+  }
+  .fc-booking-calendar .fc-booking-slot-btn__time {
+    font-size: 0.75rem;
+  }
+  .fc-booking-calendar .fc-booking-slot-btn__label {
+    display: none;
+  }
+  .fc-booking-calendar .fc-scrollgrid,
+  .fc-booking-calendar .fc-scrollgrid table {
+    width: 100% !important;
+  }
+}
+

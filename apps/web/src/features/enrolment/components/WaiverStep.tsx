@@ -5,11 +5,11 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { useTenant } from '@/hooks/useTenant';
 import { invalidateWaiverStatus } from '../hooks/useWaiverStatus';
-import type { ConsentTemplate } from '@shared/schemas';
+import type { WaiverSigningConsentTemplate } from '@shared/schemas';
 
 interface WaiverStepProps {
   personId: string;
-  template: ConsentTemplate;
+  template: WaiverSigningConsentTemplate;
   offeringId: string;
   /** account_members.id for the signing guardian (NOT accountId). Absent for self-signing adults. */
   accountMemberId?: string;

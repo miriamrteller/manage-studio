@@ -1,5 +1,6 @@
 import { PARENT_ROLE_NAMES } from '@/lib/parentRoles';
-import type { PresetModules } from '@shared/index';
+import type { PresetModules, FeatureKey } from '@shared/index';
+import { FEATURES } from '@shared/index';
 import {
   tenantUsesSplitProviders,
   tenantUsesBundledPayments,
@@ -47,6 +48,8 @@ export interface NavItem {
   moduleKey?: keyof PresetModules;
   /** Show only for bundled (grow/icount) vs split (stripe+…) payment setup */
   tenantFilter?: NavTenantFilter;
+  /** Hide item unless the tenant has this feature flag enabled */
+  featureKey?: FeatureKey;
 }
 
 export interface NavSection {
@@ -79,6 +82,13 @@ export const navigationConfig: NavItem[] = [
     sectionKey: 'browse',
   },
   {
+    path: '/book',
+    labelKey: 'nav.book_appointment',
+    requiredRoles: [],
+    sectionKey: 'browse',
+    featureKey: FEATURES.scheduling.clientBooking,
+  },
+  {
     path: '/admin/students',
     labelKey: 'nav.students',
     requiredRoles: ['tenant_admin'],
@@ -95,6 +105,13 @@ export const navigationConfig: NavItem[] = [
     labelKey: 'nav.notifications',
     requiredRoles: ['tenant_admin'],
     sectionKey: 'administration',
+  },
+  {
+    path: '/admin/appointments',
+    labelKey: 'nav.appointments',
+    requiredRoles: ['tenant_admin'],
+    sectionKey: 'administration',
+    featureKey: FEATURES.scheduling.clientBooking,
   },
   {
     path: '/admin/finance',
@@ -191,6 +208,22 @@ export const navigationConfig: NavItem[] = [
     indent: true,
   },
   {
+    path: '/admin/setup/services',
+    labelKey: 'nav.booking_services',
+    requiredRoles: ['tenant_admin'],
+    sectionKey: 'setup',
+    indent: true,
+    featureKey: FEATURES.scheduling.adminBooking,
+  },
+  {
+    path: '/admin/setup/booking',
+    labelKey: 'nav.booking_settings',
+    requiredRoles: ['tenant_admin'],
+    sectionKey: 'setup',
+    indent: true,
+    featureKey: FEATURES.scheduling.adminBooking,
+  },
+  {
     path: '/admin/setup/waivers',
     labelKey: 'nav.waivers',
     requiredRoles: ['tenant_admin'],
@@ -224,6 +257,13 @@ export const publicNavigationConfig: NavItem[] = [
     labelKey: 'nav.classes',
     requiredRoles: [],
     sectionKey: 'browse',
+  },
+  {
+    path: '/book',
+    labelKey: 'nav.book_appointment',
+    requiredRoles: [],
+    sectionKey: 'browse',
+    featureKey: FEATURES.scheduling.clientBooking,
   },
   {
     path: '/login',

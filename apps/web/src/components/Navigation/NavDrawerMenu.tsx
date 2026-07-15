@@ -60,6 +60,34 @@ export function NavDrawerMenu({
   return (
     <nav className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain py-1" aria-label={t('nav.menu')}>
       {sections.map((section) => {
+        if (section.sectionKey === 'browse') {
+          return (
+            <div key={section.sectionKey} className="border-b border-primary-active/40 last:border-b-0">
+              <ul>
+                {section.items.map((item) => {
+                  const active = activePath === item.path;
+                  return (
+                    <li key={item.path}>
+                      <button
+                        type="button"
+                        onClick={() => onNavigate(item.path)}
+                        aria-current={active ? 'page' : undefined}
+                        className={cn(
+                          'w-full px-4 py-2.5 text-start text-sm font-medium transition-colors',
+                          'hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-on-primary focus-visible:outline-offset-[-2px]',
+                          active && 'bg-primary-hover',
+                        )}
+                      >
+                        {navLabel(item)}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          );
+        }
+
         if (section.items.length === 1) {
           const item = section.items[0];
           const active = activePath === item.path;

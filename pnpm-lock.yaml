@@ -54,6 +54,9 @@ importers:
       '@fullcalendar/timegrid':
         specifier: ^6.1.10
         version: 6.1.20(@fullcalendar/core@6.1.20)
+      '@hebcal/core':
+        specifier: ^6.6.0
+        version: 6.6.0
       '@hookform/resolvers':
         specifier: ^3.3.4
         version: 3.10.0(react-hook-form@7.75.0(react@18.3.1))
@@ -559,6 +562,17 @@ packages:
     resolution: {integrity: sha512-4H+/MWbz3ntA50lrPif+7TsvMeX3R1GSYjiLULz0+zEJ7/Yfd9pupZmAwUs/PBpA6aAcFmeRr0laWfcz1a9V1A==}
     peerDependencies:
       '@fullcalendar/core': ~6.1.20
+
+  '@hebcal/core@6.6.0':
+    resolution: {integrity: sha512-LNQ8XrmG0+F9ZiYMj40kK1/ISnGi3e2XZnktXk3PjEHV/PyHWzIbVuc/q+XnOQDwN98vxGOII3WskDtT0AvZ0g==}
+    engines: {node: '>= 18'}
+
+  '@hebcal/hdate@0.22.5':
+    resolution: {integrity: sha512-olfU0L0Bi+AgkFsrSa/4t+LT3jAW6Q58EFROV8AhyzAqc+8TfAjZYd/wl8yUSqDJjVohlD3ynekCxdZZ230cQQ==}
+
+  '@hebcal/noaa@0.12.1':
+    resolution: {integrity: sha512-pHx4gTYQzOkwSyPx3IrSZQfD+CCscDcLGA/Uae/49bE4uWA+KsI0x1A7hcpEzu9MJE0SX7SbLnj9g70Qb6zx5A==}
+    engines: {node: '>=18'}
 
   '@hookform/resolvers@3.10.0':
     resolution: {integrity: sha512-79Dv+3mDF7i+2ajj7SkypSKHhl1cbln1OGavqrsF7p6mbUv11xpqpacPsGDCTRvCSjEEIez2ef1NveSVL3b0Ag==}
@@ -2750,6 +2764,10 @@ packages:
   queue-microtask@1.2.3:
     resolution: {integrity: sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A==}
 
+  quick-lru@7.3.0:
+    resolution: {integrity: sha512-k9lSsjl36EJdK7I06v7APZCbyGT2vMTsYSRX1Q2nbYmnkBqgUhRkAuzH08Ciotteu/PLJmIF2+tti7o3C/ts2g==}
+    engines: {node: '>=18'}
+
   react-dom@18.2.0:
     resolution: {integrity: sha512-6IMTriUmvsjHUjNtEDudZfuDQUoWXVxKHhlEGSk81n4YFS+r/Kl99wXiwlVXtPBtJenozv2P+hxDsw9eA7Xo6g==}
     peerDependencies:
@@ -3093,6 +3111,15 @@ packages:
 
   tailwindcss@4.3.0:
     resolution: {integrity: sha512-y6nxMGB1nMW9R6k96e5gdIFzcfL/gTJRNaqGes1YvkLnPVXzWgbqFF2yLC0T8G774n24cx3Pe8XrKoniCOAH+Q==}
+
+  temporal-polyfill@1.0.1:
+    resolution: {integrity: sha512-N2SoI9olnW7BUsU8RosDphZQl9s+WJ8O7PoJMFCr/e5/1rFkVI4GNOWaSeySG+UoP04foPYsnLWbJmbXOiShZg==}
+
+  temporal-spec@1.0.0:
+    resolution: {integrity: sha512-00Ahj1e1ifaERTMOIIGpOCdOo9IEk2m6GGSMedsn9a2SIsGLdOTbmME1Htv6IM82b6VHrzSUTIVc7YHy6hdhFQ==}
+
+  temporal-utils@1.0.1:
+    resolution: {integrity: sha512-HAixuesxFQIUaQk3ptX2jhfO/FsOkgVkDDMawvp6n/fkB1q6BKfs3lURw9I+pK/2e2e/q/vrLrxmeqauBoyGMQ==}
 
   text-table@0.2.0:
     resolution: {integrity: sha512-N+8UisAXDGk8PFXP4HAzVR9nbfmVJ3zYLAWiTIoqC5v5isinhr+r5uaO8+7r3BMfuNIufIsA7RdpVgacC2cSpw==}
@@ -3682,6 +3709,19 @@ snapshots:
     dependencies:
       '@fullcalendar/core': 6.1.20
       '@fullcalendar/daygrid': 6.1.20(@fullcalendar/core@6.1.20)
+
+  '@hebcal/core@6.6.0':
+    dependencies:
+      '@hebcal/hdate': 0.22.5
+      '@hebcal/noaa': 0.12.1
+      quick-lru: 7.3.0
+      temporal-polyfill: 1.0.1
+
+  '@hebcal/hdate@0.22.5': {}
+
+  '@hebcal/noaa@0.12.1':
+    dependencies:
+      temporal-polyfill: 1.0.1
 
   '@hookform/resolvers@3.10.0(react-hook-form@7.75.0(react@18.3.1))':
     dependencies:
@@ -5959,6 +5999,8 @@ snapshots:
 
   queue-microtask@1.2.3: {}
 
+  quick-lru@7.3.0: {}
+
   react-dom@18.2.0(react@18.2.0):
     dependencies:
       loose-envify: 1.4.0
@@ -6416,6 +6458,15 @@ snapshots:
       - yaml
 
   tailwindcss@4.3.0: {}
+
+  temporal-polyfill@1.0.1:
+    dependencies:
+      temporal-spec: 1.0.0
+      temporal-utils: 1.0.1
+
+  temporal-spec@1.0.0: {}
+
+  temporal-utils@1.0.1: {}
 
   text-table@0.2.0: {}
 

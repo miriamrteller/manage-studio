@@ -58,6 +58,17 @@ export default function DashboardRedirectPage() {
       return;
     }
 
+    const from =
+      location.state &&
+      typeof location.state === 'object' &&
+      typeof (location.state as { from?: unknown }).from === 'string'
+        ? (location.state as { from: string }).from
+        : null;
+    if (from?.startsWith('/') && !from.startsWith('//')) {
+      navigate(from, { replace: true });
+      return;
+    }
+
     // Determine redirect based on user role
     // Users can have multiple roles, so check in priority order
     if (user.role.includes('tenant_admin')) {

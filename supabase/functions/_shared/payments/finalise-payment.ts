@@ -4,10 +4,12 @@ import { enqueueDocument } from "../enqueue-document.ts";
 import { engagementHasSignedWaiver } from "../engagement-waiver.ts";
 import { resolveAdminLinkRecipientEmail } from "../enrolment-recipient.ts";
 import { buildEnrolmentConfirmationPayload } from "../build-enrolment-confirmation-payload.ts";
+import { sendAppointmentConfirmationEmails } from "../send-appointment-confirmation-emails.ts";
 import { resolveNotificationFromEmail } from "../notification-from.ts";
 import { sendRenderedEmail, EMAIL_TEMPLATE_NAMES } from "../resend-send.ts";
 import { signWaiverToken } from "../waiver-token.ts";
 import { advanceBillingSchedule } from "./advance-billing-schedule.ts";
+import { syncBookingEventInsert } from "../sync-booking-event.ts";
 import type { FinalisePaymentParams } from "./types.ts";
 
 const APP_URL = getEnv("APP_URL") ?? "";
@@ -39,6 +41,17 @@ async function sendConfirmationEmail(
     waiverDeadline: string | null;
   },
 ): Promise<void> {
+  const { data: engagementBrief } = await service
+    .from("engagements")
+    .select("booked_starts_at")
+    .eq("id", params.engagementId)
+    .maybeSingle();
+
+  if (engagementBrief?.booked_starts_at) {
+    await sendAppointmentConfirmationEmails(service, params);
+    return;
+  }
+
   if (await auditExists(service, params.tenantId, "payment_confirmation_email_sent", params.paymentId)) {
     return;
   }
@@ -193,10 +206,10 @@ async function activateInitialEngagement(
   service: SupabaseClient,
   tenantId: string,
   engagementId: string,
-): Promise<{ status: string; waiverDeadline: string | null }> {
+): Promise<{ status: string; waiverDeadline: string | null; skipped: boolean }> {
   const { data: engagement } = await service
     .from("engagements")
-    .select("status, payment_received_at, offering_id")
+    .select("status, payment_received_at, offering_id, booked_starts_at, booked_ends_at")
     .eq("id", engagementId)
     .single();
 
@@ -204,7 +217,84 @@ async function activateInitialEngagement(
     engagement?.status === "active" ||
     (engagement?.status === "pending_waiver" && engagement.payment_received_at)
   ) {
-    return { status: engagement.status as string, waiverDeadline: null };
+    return { status: engagement.status as string, waiverDeadline: null, skipped: false };
+  }
+
+  // Late payment after hold expiry (or withdraw) must not revive the booking.
+  if (engagement?.status === "cancelled" || engagement?.status === "withdrawn") {
+    if (!(await auditExists(service, tenantId, "payment_activation_skipped", engagementId))) {
+      await service.from("audit_log").insert({
+        tenant_id: tenantId,
+        action: "payment_activation_skipped",
+        entity_type: "engagement",
+        entity_id: engagementId,
+        after_state: {
+          reason: "terminal_status",
+          status: engagement.status,
+        },
+      });
+    }
+    return { status: engagement.status as string, waiverDeadline: null, skipped: true };
+  }
+
+  if (engagement?.status !== "pending_payment") {
+    if (!(await auditExists(service, tenantId, "payment_activation_skipped", engagementId))) {
+      await service.from("audit_log").insert({
+        tenant_id: tenantId,
+        action: "payment_activation_skipped",
+        entity_type: "engagement",
+        entity_id: engagementId,
+        after_state: {
+          reason: "unexpected_status",
+          status: engagement?.status ?? null,
+        },
+      });
+    }
+    return {
+      status: (engagement?.status as string) ?? "unknown",
+      waiverDeadline: null,
+      skipped: true,
+    };
+  }
+
+  // Appointment: refuse activation if another booking already owns the slot.
+  if (engagement.booked_starts_at && engagement.booked_ends_at) {
+    const { data: conflicts } = await service
+      .from("engagements")
+      .select("id")
+      .eq("tenant_id", tenantId)
+      .neq("id", engagementId)
+      .not("booked_starts_at", "is", null)
+      .in("status", ["pending_payment", "active", "pending_waiver"])
+      .lt("booked_starts_at", engagement.booked_ends_at)
+      .gt("booked_ends_at", engagement.booked_starts_at)
+      .limit(1);
+
+    if (conflicts && conflicts.length > 0) {
+      await service
+        .from("engagements")
+        .update({
+          status: "cancelled",
+          cancelled_at: new Date().toISOString(),
+          cancellation_reason: "slot_taken_on_payment",
+        })
+        .eq("id", engagementId)
+        .eq("status", "pending_payment");
+
+      if (!(await auditExists(service, tenantId, "payment_activation_skipped", engagementId))) {
+        await service.from("audit_log").insert({
+          tenant_id: tenantId,
+          action: "payment_activation_skipped",
+          entity_type: "engagement",
+          entity_id: engagementId,
+          after_state: {
+            reason: "slot_taken",
+            conflicting_engagement_id: conflicts[0].id,
+          },
+        });
+      }
+      return { status: "cancelled", waiverDeadline: null, skipped: true };
+    }
   }
 
   let engagementStatus = "active";
@@ -236,9 +326,10 @@ async function activateInitialEngagement(
       payment_dunning_next_at: null,
       ...(waiverDeadline ? { waiver_deadline: waiverDeadline } : {}),
     })
-    .eq("id", engagementId);
+    .eq("id", engagementId)
+    .eq("status", "pending_payment");
 
-  return { status: engagementStatus, waiverDeadline };
+  return { status: engagementStatus, waiverDeadline, skipped: false };
 }
 
 async function ensureRecurringScheduleStub(
@@ -306,34 +397,41 @@ export async function finalisePayment(
     }
     await advanceBillingSchedule(service, params.billingScheduleId);
   } else {
-    const { status, waiverDeadline } = await activateInitialEngagement(
+    const { status, waiverDeadline, skipped } = await activateInitialEngagement(
       service,
       params.tenantId,
       params.engagementId,
     );
 
-    const { data: engagement } = await service
-      .from("engagements")
-      .select("billing_account_id")
-      .eq("id", params.engagementId)
-      .single();
+    if (!skipped) {
+      const { data: engagement } = await service
+        .from("engagements")
+        .select("billing_account_id")
+        .eq("id", params.engagementId)
+        .single();
 
-    if (engagement?.billing_account_id) {
-      await ensureRecurringScheduleStub(
-        service,
-        params.engagementId,
-        params.tenantId,
-        engagement.billing_account_id as string,
-      );
+      if (engagement?.billing_account_id) {
+        await ensureRecurringScheduleStub(
+          service,
+          params.engagementId,
+          params.tenantId,
+          engagement.billing_account_id as string,
+        );
+      }
+
+      await sendConfirmationEmail(service, {
+        tenantId: params.tenantId,
+        paymentId,
+        engagementId: params.engagementId,
+        engagementStatus: status,
+        waiverDeadline,
+      });
+
+      // Push confirmed appointment bookings to Google Calendar (best-effort, non-blocking).
+      if (status === "active" || status === "pending_waiver") {
+        await syncBookingEventInsert(service, params.tenantId, params.engagementId);
+      }
     }
-
-    await sendConfirmationEmail(service, {
-      tenantId: params.tenantId,
-      paymentId,
-      engagementId: params.engagementId,
-      engagementStatus: status,
-      waiverDeadline,
-    });
   }
 
   if (!params.skipDocumentEnqueue) {

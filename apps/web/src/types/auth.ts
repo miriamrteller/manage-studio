@@ -63,6 +63,8 @@ export type TenantConfig = {
   business_preset: BusinessPreset;
   entity_labels: EntityLabels;
   modules: PresetModules;
+  /** Feature keys enabled for this tenant (anon-safe, from get_tenant_config_by_subdomain). */
+  enabled_features: string[];
 };
 
 /**

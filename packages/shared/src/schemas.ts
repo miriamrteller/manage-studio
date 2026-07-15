@@ -290,9 +290,14 @@ export const OfferingSchema = z.object({
   cover_image_path: z.string().nullable().optional(),
   price_minor: z.number().nonnegative('Price must be >= 0'),
   currency: z.string().default('ILS'),
+  // 'class' = weekly group offering (enrolment); 'appointment' = 1:1 bookable service.
+  offering_type: z.enum(['class', 'appointment']).default('class'),
+  // Appointment length in minutes; required for appointments, unused for classes.
+  duration_mins: z.number().int().positive().nullable().optional(),
   day_of_week: z.number().int().min(0).max(6).nullable().optional(),
-  start_time: TimeSchema,
-  end_time: TimeSchema,
+  // Weekly slot: present for classes, null for appointments.
+  start_time: TimeSchema.nullable().optional(),
+  end_time: TimeSchema.nullable().optional(),
   is_public: z.boolean().default(true),
   billing_mode: z.enum(['one_time', 'recurring']).default('one_time'),
   delivery_mode: z.enum(['scheduled', 'intangible']).default('scheduled'),
@@ -662,6 +667,16 @@ export const ConsentTemplateSchema = z.object({
 });
 
 export type ConsentTemplate = z.infer<typeof ConsentTemplateSchema>;
+
+/** Minimal consent template fields required for the waiver signing UI. */
+export const WaiverSigningConsentTemplateSchema = ConsentTemplateSchema.pick({
+  id: true,
+  version: true,
+  name: true,
+  content: true,
+});
+
+export type WaiverSigningConsentTemplate = z.infer<typeof WaiverSigningConsentTemplateSchema>;
 
 export const WaiverViewedRequestSchema = z.object({
   person_id: UUIDSchema,

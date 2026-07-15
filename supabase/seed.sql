@@ -11,7 +11,7 @@
 -- ============================================================================
 -- TENANTS (20260608000200_core_tenants.sql)
 -- ============================================================================
-INSERT INTO tenants (id, name, subdomain, language_default, country, primary_color, accent_color, currency, vat_rate, prices_include_vat, phone_region, business_preset, labels, from_email, waiver_require_otp, payment_provider, invoicing_provider)
+INSERT INTO tenants (id, name, subdomain, language_default, country, primary_color, accent_color, currency, vat_rate, prices_include_vat, phone_region, business_preset, labels, from_email, waiver_require_otp, payment_provider, invoicing_provider, plan, skin)
 VALUES (
   '00000000-0000-0000-0000-000000000001'::uuid,
   'Creative Ballet Academy',
@@ -29,7 +29,9 @@ VALUES (
   'noreply@creativeballet.co.il',  -- verified sender for transactional email (waiver reminders, receipts)
   false,  -- OTP before waiver signing disabled by default; enable only if Twilio Verify is configured
   'grow',
-  'grow'
+  'grow',
+  'professional',
+  'dance-studio'
 ) ON CONFLICT (subdomain) DO UPDATE SET
   name = EXCLUDED.name,
   language_default = EXCLUDED.language_default,
@@ -45,7 +47,9 @@ VALUES (
   from_email = EXCLUDED.from_email,
   waiver_require_otp = EXCLUDED.waiver_require_otp,
   payment_provider = EXCLUDED.payment_provider,
-  invoicing_provider = EXCLUDED.invoicing_provider;
+  invoicing_provider = EXCLUDED.invoicing_provider,
+  plan = 'professional',
+  skin = 'dance-studio';
 
 -- ============================================================================
 -- SEASONS + CATEGORIES + OFFERINGS (20260608000500_offerings.sql)
@@ -76,42 +80,23 @@ ON CONFLICT (id) DO UPDATE SET
 
 INSERT INTO offerings (
   id, tenant_id, season_id, category_id, name,
+  offering_type,
   day_of_week, start_time, end_time,
   min_age, max_age,
   max_capacity, price_minor, currency, delivery_mode, billing_mode, is_public, status,
   location
 )
 VALUES
-  (
-    '00000000-0000-0000-0000-000000000301'::uuid,
-    '00000000-0000-0000-0000-000000000001'::uuid,
-    '00000000-0000-0000-0000-000000000102'::uuid,
-    '00000000-0000-0000-0000-000000000201'::uuid,
-    'Mini',
-    1, '15:30:00', '16:15:00',
-    3, 4,
-    10, 24000, 'ILS', 'scheduled', 'one_time', true, 'active',
-    'Studio A, 12 Rothschild Blvd, Tel Aviv'
-  ),
-  (
-    '00000000-0000-0000-0000-000000000302'::uuid,
-    '00000000-0000-0000-0000-000000000001'::uuid,
-    '00000000-0000-0000-0000-000000000102'::uuid,
-    '00000000-0000-0000-0000-000000000202'::uuid,
-    'Pre-Primary',
-    1, '16:15:00', '17:00:00',
-    4, 6,
-    16, 24000, 'ILS', 'scheduled', 'one_time', true, 'active',
-    NULL
-  ),
+  -- Sunday (day_of_week 0)
   (
     '00000000-0000-0000-0000-000000000303'::uuid,
     '00000000-0000-0000-0000-000000000001'::uuid,
     '00000000-0000-0000-0000-000000000102'::uuid,
     '00000000-0000-0000-0000-000000000203'::uuid,
     'Primary',
-    1, '17:00:00', '17:45:00',
-    5, 7,
+    'class',
+    0, '16:30:00', '17:15:00',
+    4, 4,
     20, 24000, 'ILS', 'scheduled', 'one_time', true, 'active',
     NULL
   ),
@@ -121,8 +106,9 @@ VALUES
     '00000000-0000-0000-0000-000000000102'::uuid,
     '00000000-0000-0000-0000-000000000204'::uuid,
     'Grade 1',
-    1, '17:45:00', '18:30:00',
-    7, 10,
+    'class',
+    0, '17:15:00', '18:00:00',
+    6, 6,
     20, 24000, 'ILS', 'scheduled', 'one_time', true, 'active',
     NULL
   ),
@@ -132,8 +118,9 @@ VALUES
     '00000000-0000-0000-0000-000000000102'::uuid,
     '00000000-0000-0000-0000-000000000205'::uuid,
     'Grade 2',
-    1, '18:30:00', '19:15:00',
-    9, 13,
+    'class',
+    0, '18:00:00', '18:45:00',
+    8, 8,
     20, 24000, 'ILS', 'scheduled', 'one_time', true, 'active',
     NULL
   ),
@@ -143,26 +130,66 @@ VALUES
     '00000000-0000-0000-0000-000000000102'::uuid,
     '00000000-0000-0000-0000-000000000206'::uuid,
     'Grade 3',
-    1, '19:15:00', '20:00:00',
-    10, 16,
+    'class',
+    0, '18:45:00', '19:45:00',
+    10, 12,
+    20, 24000, 'ILS', 'scheduled', 'one_time', true, 'active',
+    NULL
+  ),
+  -- Wednesday (day_of_week 3)
+  (
+    '00000000-0000-0000-0000-000000000307'::uuid,
+    '00000000-0000-0000-0000-000000000001'::uuid,
+    '00000000-0000-0000-0000-000000000102'::uuid,
+    '00000000-0000-0000-0000-000000000203'::uuid,
+    'Primary',
+    'class',
+    3, '16:30:00', '17:15:00',
+    5, 5,
     20, 24000, 'ILS', 'scheduled', 'one_time', true, 'active',
     NULL
   ),
   (
-    '00000000-0000-0000-0000-000000000309'::uuid,
+    '00000000-0000-0000-0000-000000000308'::uuid,
     '00000000-0000-0000-0000-000000000001'::uuid,
     '00000000-0000-0000-0000-000000000102'::uuid,
-    '00000000-0000-0000-0000-000000000207'::uuid,
-    'Pilates',
-    1, '20:00:00', '20:45:00',
-    18, NULL,
-    15, 24000, 'ILS', 'scheduled', 'one_time', true, 'active',
-    'Studio B, 12 Rothschild Blvd, Tel Aviv'
+    '00000000-0000-0000-0000-000000000204'::uuid,
+    'Grade 1',
+    'class',
+    3, '17:15:00', '18:00:00',
+    7, 7,
+    20, 24000, 'ILS', 'scheduled', 'one_time', true, 'active',
+    NULL
+  ),
+  (
+    '00000000-0000-0000-0000-000000000301'::uuid,
+    '00000000-0000-0000-0000-000000000001'::uuid,
+    '00000000-0000-0000-0000-000000000102'::uuid,
+    '00000000-0000-0000-0000-000000000205'::uuid,
+    'Grade 2',
+    'class',
+    3, '18:00:00', '18:45:00',
+    9, 9,
+    20, 24000, 'ILS', 'scheduled', 'one_time', true, 'active',
+    NULL
+  ),
+  (
+    '00000000-0000-0000-0000-000000000302'::uuid,
+    '00000000-0000-0000-0000-000000000001'::uuid,
+    '00000000-0000-0000-0000-000000000102'::uuid,
+    '00000000-0000-0000-0000-000000000206'::uuid,
+    'Grade 3',
+    'class',
+    3, '18:45:00', '19:45:00',
+    12, 14,
+    20, 24000, 'ILS', 'scheduled', 'one_time', true, 'active',
+    NULL
   )
 ON CONFLICT (id) DO UPDATE SET
   season_id = EXCLUDED.season_id,
   category_id = EXCLUDED.category_id,
   name = EXCLUDED.name,
+  offering_type = EXCLUDED.offering_type,
   day_of_week = EXCLUDED.day_of_week,
   start_time = EXCLUDED.start_time,
   end_time = EXCLUDED.end_time,
@@ -176,12 +203,11 @@ ON CONFLICT (id) DO UPDATE SET
   status = EXCLUDED.status,
   location = EXCLUDED.location;
 
-DELETE FROM offerings
+-- Retire legacy seed offerings (Mini, Pre-Primary, Pilates) without breaking FK history.
+UPDATE offerings
+SET status = 'cancelled', updated_at = now()
 WHERE tenant_id = '00000000-0000-0000-0000-000000000001'::uuid
-  AND id IN (
-    '00000000-0000-0000-0000-000000000307'::uuid,
-    '00000000-0000-0000-0000-000000000308'::uuid
-  );
+  AND id = '00000000-0000-0000-0000-000000000309'::uuid;
 
 -- All seed offerings require a signed waiver before enrolment completes.
 -- (offerings.waiver_required defaults to true; set explicitly so re-seeding a
@@ -189,6 +215,100 @@ WHERE tenant_id = '00000000-0000-0000-0000-000000000001'::uuid
 UPDATE offerings
 SET waiver_required = true
 WHERE tenant_id = '00000000-0000-0000-0000-000000000001'::uuid;
+
+-- ============================================================================
+-- SCHEDULING — booking settings, availability hours, appointment services
+-- Enables /book immediately after seed (requires scheduling:booking.client).
+-- Classes: Sunday + Wednesday timetable above. Appointments: bookable 1:1 services.
+-- ============================================================================
+INSERT INTO tenant_scheduling_settings (
+  tenant_id,
+  buffer_mins,
+  slot_duration_mins,
+  max_per_day,
+  advance_notice_hrs,
+  booking_window_days,
+  hold_expiry_mins,
+  expiry_reminder_mins,
+  is_booking_enabled
+)
+VALUES (
+  '00000000-0000-0000-0000-000000000001'::uuid,
+  0,
+  60,
+  NULL,
+  24,
+  60,
+  20,
+  15,
+  true
+)
+ON CONFLICT (tenant_id) DO UPDATE SET
+  buffer_mins = EXCLUDED.buffer_mins,
+  slot_duration_mins = EXCLUDED.slot_duration_mins,
+  max_per_day = EXCLUDED.max_per_day,
+  advance_notice_hrs = EXCLUDED.advance_notice_hrs,
+  booking_window_days = EXCLUDED.booking_window_days,
+  hold_expiry_mins = EXCLUDED.hold_expiry_mins,
+  expiry_reminder_mins = EXCLUDED.expiry_reminder_mins,
+  is_booking_enabled = EXCLUDED.is_booking_enabled,
+  updated_at = now();
+
+DELETE FROM tenant_scheduling_hours
+WHERE tenant_id = '00000000-0000-0000-0000-000000000001'::uuid;
+
+INSERT INTO tenant_scheduling_hours (tenant_id, day_of_week, start_time, end_time, is_active)
+VALUES
+  ('00000000-0000-0000-0000-000000000001'::uuid, 0, '16:30:00', '19:45:00', true),  -- Sunday
+  ('00000000-0000-0000-0000-000000000001'::uuid, 3, '16:30:00', '19:45:00', true);  -- Wednesday
+
+INSERT INTO offerings (
+  id, tenant_id, season_id, category_id, name,
+  offering_type, duration_mins,
+  day_of_week, start_time, end_time,
+  min_age, max_age,
+  max_capacity, price_minor, currency, delivery_mode, billing_mode, is_public, status,
+  location
+)
+VALUES
+  (
+    '00000000-0000-0000-0000-000000000310'::uuid,
+    '00000000-0000-0000-0000-000000000001'::uuid,
+    NULL,
+    NULL,
+    'Party',
+    'appointment',
+    60,
+    NULL, NULL, NULL,
+    NULL, NULL,
+    1, 50000, 'ILS', 'scheduled', 'one_time', true, 'active',
+    'Studio A, 12 Rothschild Blvd, Tel Aviv'
+  ),
+  (
+    '00000000-0000-0000-0000-000000000311'::uuid,
+    '00000000-0000-0000-0000-000000000001'::uuid,
+    NULL,
+    NULL,
+    'Workshop',
+    'appointment',
+    90,
+    NULL, NULL, NULL,
+    NULL, NULL,
+    1, 35000, 'ILS', 'scheduled', 'one_time', true, 'active',
+    NULL
+  )
+ON CONFLICT (id) DO UPDATE SET
+  name = EXCLUDED.name,
+  offering_type = EXCLUDED.offering_type,
+  duration_mins = EXCLUDED.duration_mins,
+  day_of_week = EXCLUDED.day_of_week,
+  start_time = EXCLUDED.start_time,
+  end_time = EXCLUDED.end_time,
+  price_minor = EXCLUDED.price_minor,
+  currency = EXCLUDED.currency,
+  is_public = EXCLUDED.is_public,
+  status = EXCLUDED.status,
+  location = EXCLUDED.location;
 
 -- ============================================================================
 -- PEOPLE + ACCOUNTS (20260608000300_people.sql)
@@ -702,8 +822,8 @@ ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================================
 -- WAIVER EVIDENCE + EVENTS (20260608001200_waiver_evidence.sql)
--- Sara Gold (adult, self-signing) accepted the active waiver for her Pilates
--- enrolment. Demonstrates offering_id + guardian_confirmed=false (self signer).
+-- Sara Gold (adult, self-signing) accepted the active waiver for her Grade 3
+-- (Sunday) enrolment. Demonstrates offering_id + guardian_confirmed=false (self signer).
 -- pdf_sha256 / record_hmac are placeholders (64 hex zeros) — NOT valid digests;
 -- a real signing flow computes these in the accept-waiver Edge Function.
 -- Rows are immutable (UPDATE/DELETE blocked), so re-seed uses ON CONFLICT DO NOTHING.
@@ -721,7 +841,7 @@ SELECT
   '00000000-0000-0000-0000-000000000001'::uuid,
   '00000000-0000-0000-0000-000000000503'::uuid,   -- Sara Gold
   NULL,                                            -- adult self-signer; no account_member
-  '00000000-0000-0000-0000-000000000309'::uuid,   -- Pilates
+  '00000000-0000-0000-0000-000000000306'::uuid,   -- Grade 3 (Sunday)
   ct.id,
   ct.version,
   ct.version_hash,
@@ -758,7 +878,7 @@ VALUES (
   jsonb_build_object(
     'ip', '203.0.113.42',
     'consent_version', 1,
-    'offering_id', '00000000-0000-0000-0000-000000000309',
+    'offering_id', '00000000-0000-0000-0000-000000000306',
     'guardian_confirmed', false
   ),
   '2026-01-15 10:30:00+02'::timestamptz

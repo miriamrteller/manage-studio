@@ -56,7 +56,7 @@ Rough completion against [SPEC.md §6 V1 Implementation](../SPEC.md#6-v1-impleme
 | Teachers admin module (V2.11) | [teachers-admin-module.md](plans/teachers-admin-module.md) | ✅ `staff` | 🟡 partial | **Deferred V2.11** — `TeacherService` / `useTeachers` + class-form `staff_id`; no admin page |
 | **Payment dunning — collections layer + renewal emails** | [payment-dunning-notifications.md](plans/payment-dunning-notifications.md) | ✅ `00600` + `01300` | ✅ | `_shared/collections/`, `applyBillingScheduleDunningFailure`, `PAYMENT_REMINDER` renewal track, `notification_log.dunning_key` |
 | **Enrolment unpaid dunning (§6.x #8)** | [enrolment-payment-dunning.md](plans/enrolment-payment-dunning.md) | ✅ `01300` + `02600` cron | ✅ | `run-enrolment-payment-dunning` cron Day 3/7/14; `applyEnrolmentPaymentDunningStep`; `CLASS_CANCELLATION` on day 14 |
-| Code rename epic (ex-D5) | [code-rename-epic.md](plans/code-rename-epic.md) | — | — | Deferred |
+| Native scheduling (calendar + slot booking + Google Calendar) | [scheduling/00-overview.md](plans/scheduling/00-overview.md) | ✅ `03100`–`04200` | ✅ S0–S4 | `/book`, Services, Appointments, GCal OAuth + free/busy + sync, appointment emails, client Add to Calendar; S5 penalties open |
 
 ---
 

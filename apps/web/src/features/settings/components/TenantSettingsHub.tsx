@@ -1,7 +1,9 @@
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { FEATURES } from '@shared/index';
 import { Button } from '@/components/ui/button';
 import { useTenant } from '@/hooks/useTenant';
+import { useFeatureGate } from '@/hooks/useFeatureGate';
 import {
   tenantUsesBundledPayments,
 } from '@/lib/tenantProviderRouting';
@@ -52,6 +54,7 @@ function SettingsLinkCard({
 export function TenantSettingsHub() {
   const { t } = useTranslation();
   const tenant = useTenant();
+  const { hasFeature } = useFeatureGate();
 
   return (
     <div className="space-y-10 max-w-3xl">
@@ -88,6 +91,13 @@ export function TenantSettingsHub() {
                 href="/admin/setup/invoicing"
               />
             </>
+          )}
+          {hasFeature(FEATURES.scheduling.adminBooking) && (
+            <SettingsLinkCard
+              title={t('scheduling.booking.settings_title')}
+              description={t('scheduling.booking.settings_subtitle')}
+              href="/admin/setup/booking"
+            />
           )}
           <SettingsLinkCard
             title={t('settings.hub.compliance_title')}

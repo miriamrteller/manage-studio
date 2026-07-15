@@ -3,6 +3,8 @@ export const Constants = {
         Enums: {},
     },
     public: {
-        Enums: {},
+        Enums: {
+            tenant_plan: ["essential", "professional"],
+        },
     },
 };

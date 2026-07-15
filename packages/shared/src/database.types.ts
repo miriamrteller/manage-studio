@@ -614,10 +614,13 @@ export type Database = {
           age_review_note: string | null
           billing_account_id: string | null
           billing_status: string | null
+          booked_ends_at: string | null
+          booked_starts_at: string | null
           cancellation_reason: string | null
           cancelled_at: string | null
           cancelled_by: string | null
           created_at: string
+          google_event_id: string | null
           id: string
           offering_id: string
           payment_dunning_attempt_count: number
@@ -625,6 +628,7 @@ export type Database = {
           payment_received_at: string | null
           person_id: string
           provider_customer_ref: string | null
+          scheduling_hold_id: string | null
           season_id: string | null
           status: string
           tenant_id: string
@@ -642,10 +646,13 @@ export type Database = {
           age_review_note?: string | null
           billing_account_id?: string | null
           billing_status?: string | null
+          booked_ends_at?: string | null
+          booked_starts_at?: string | null
           cancellation_reason?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
           created_at?: string
+          google_event_id?: string | null
           id?: string
           offering_id: string
           payment_dunning_attempt_count?: number
@@ -653,6 +660,7 @@ export type Database = {
           payment_received_at?: string | null
           person_id: string
           provider_customer_ref?: string | null
+          scheduling_hold_id?: string | null
           season_id?: string | null
           status?: string
           tenant_id: string
@@ -670,10 +678,13 @@ export type Database = {
           age_review_note?: string | null
           billing_account_id?: string | null
           billing_status?: string | null
+          booked_ends_at?: string | null
+          booked_starts_at?: string | null
           cancellation_reason?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
           created_at?: string
+          google_event_id?: string | null
           id?: string
           offering_id?: string
           payment_dunning_attempt_count?: number
@@ -681,6 +692,7 @@ export type Database = {
           payment_received_at?: string | null
           person_id?: string
           provider_customer_ref?: string | null
+          scheduling_hold_id?: string | null
           season_id?: string | null
           status?: string
           tenant_id?: string
@@ -724,6 +736,13 @@ export type Database = {
             columns: ["person_id"]
             isOneToOne: false
             referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "engagements_scheduling_hold_id_fkey"
+            columns: ["scheduling_hold_id"]
+            isOneToOne: false
+            referencedRelation: "scheduling_holds"
             referencedColumns: ["id"]
           },
           {
@@ -1219,7 +1238,8 @@ export type Database = {
           currency: string
           day_of_week: number | null
           delivery_mode: string
-          end_time: string
+          duration_mins: number | null
+          end_time: string | null
           id: string
           is_public: boolean
           location: string | null
@@ -1227,12 +1247,13 @@ export type Database = {
           max_capacity: number
           min_age: number | null
           name: string
+          offering_type: string
           price_minor: number
           renewal_policy: string
           season_id: string | null
           setup_fee_minor: number
           staff_id: string | null
-          start_time: string
+          start_time: string | null
           status: string
           tenant_id: string
           updated_at: string
@@ -1247,7 +1268,8 @@ export type Database = {
           currency?: string
           day_of_week?: number | null
           delivery_mode?: string
-          end_time: string
+          duration_mins?: number | null
+          end_time?: string | null
           id?: string
           is_public?: boolean
           location?: string | null
@@ -1255,12 +1277,13 @@ export type Database = {
           max_capacity?: number
           min_age?: number | null
           name: string
+          offering_type?: string
           price_minor?: number
           renewal_policy?: string
           season_id?: string | null
           setup_fee_minor?: number
           staff_id?: string | null
-          start_time: string
+          start_time?: string | null
           status?: string
           tenant_id: string
           updated_at?: string
@@ -1275,7 +1298,8 @@ export type Database = {
           currency?: string
           day_of_week?: number | null
           delivery_mode?: string
-          end_time?: string
+          duration_mins?: number | null
+          end_time?: string | null
           id?: string
           is_public?: boolean
           location?: string | null
@@ -1283,12 +1307,13 @@ export type Database = {
           max_capacity?: number
           min_age?: number | null
           name?: string
+          offering_type?: string
           price_minor?: number
           renewal_policy?: string
           season_id?: string | null
           setup_fee_minor?: number
           staff_id?: string | null
-          start_time?: string
+          start_time?: string | null
           status?: string
           tenant_id?: string
           updated_at?: string
@@ -1818,6 +1843,121 @@ export type Database = {
           },
         ]
       }
+      scheduling_blocks: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          end_time: string
+          id: string
+          start_time: string
+          summary: string
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          end_time: string
+          id?: string
+          start_time: string
+          summary?: string
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          end_time?: string
+          id?: string
+          start_time?: string
+          summary?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduling_blocks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduling_blocks_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scheduling_holds: {
+        Row: {
+          client_email: string | null
+          client_name: string | null
+          client_phone: string | null
+          created_at: string
+          ends_at: string
+          engagement_id: string | null
+          expires_at: string
+          id: string
+          offering_id: string
+          released_at: string | null
+          reminder_sent_at: string | null
+          starts_at: string
+          tenant_id: string
+        }
+        Insert: {
+          client_email?: string | null
+          client_name?: string | null
+          client_phone?: string | null
+          created_at?: string
+          ends_at: string
+          engagement_id?: string | null
+          expires_at: string
+          id?: string
+          offering_id: string
+          released_at?: string | null
+          reminder_sent_at?: string | null
+          starts_at: string
+          tenant_id: string
+        }
+        Update: {
+          client_email?: string | null
+          client_name?: string | null
+          client_phone?: string | null
+          created_at?: string
+          ends_at?: string
+          engagement_id?: string | null
+          expires_at?: string
+          id?: string
+          offering_id?: string
+          released_at?: string | null
+          reminder_sent_at?: string | null
+          starts_at?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduling_holds_engagement_id_fkey"
+            columns: ["engagement_id"]
+            isOneToOne: false
+            referencedRelation: "engagements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduling_holds_offering_id_fkey"
+            columns: ["offering_id"]
+            isOneToOne: false
+            referencedRelation: "offerings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduling_holds_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       seasons: {
         Row: {
           created_at: string
@@ -2107,6 +2247,91 @@ export type Database = {
           },
         ]
       }
+      tenant_scheduling_hours: {
+        Row: {
+          created_at: string
+          day_of_week: number
+          end_time: string
+          id: string
+          is_active: boolean
+          start_time: string
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          day_of_week: number
+          end_time: string
+          id?: string
+          is_active?: boolean
+          start_time: string
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          is_active?: boolean
+          start_time?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_scheduling_hours_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenant_scheduling_settings: {
+        Row: {
+          advance_notice_hrs: number
+          booking_window_days: number
+          buffer_mins: number
+          expiry_reminder_mins: number | null
+          hold_expiry_mins: number
+          is_booking_enabled: boolean
+          max_per_day: number | null
+          slot_duration_mins: number
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          advance_notice_hrs?: number
+          booking_window_days?: number
+          buffer_mins?: number
+          expiry_reminder_mins?: number | null
+          hold_expiry_mins?: number
+          is_booking_enabled?: boolean
+          max_per_day?: number | null
+          slot_duration_mins?: number
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          advance_notice_hrs?: number
+          booking_window_days?: number
+          buffer_mins?: number
+          expiry_reminder_mins?: number | null
+          hold_expiry_mins?: number
+          is_booking_enabled?: boolean
+          max_per_day?: number | null
+          slot_duration_mins?: number
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_scheduling_settings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenants: {
         Row: {
           accent_color: string
@@ -2116,6 +2341,12 @@ export type Database = {
           created_at: string
           currency: string
           from_email: string | null
+          google_calendar_access_token_enc: string | null
+          google_calendar_connected_at: string | null
+          google_calendar_email: string | null
+          google_calendar_id: string | null
+          google_calendar_refresh_token_enc: string | null
+          google_calendar_token_expires_at: string | null
           id: string
           invoice_license_number: string | null
           invoicing_account_id: string | null
@@ -2157,6 +2388,12 @@ export type Database = {
           created_at?: string
           currency?: string
           from_email?: string | null
+          google_calendar_access_token_enc?: string | null
+          google_calendar_connected_at?: string | null
+          google_calendar_email?: string | null
+          google_calendar_id?: string | null
+          google_calendar_refresh_token_enc?: string | null
+          google_calendar_token_expires_at?: string | null
           id?: string
           invoice_license_number?: string | null
           invoicing_account_id?: string | null
@@ -2198,6 +2435,12 @@ export type Database = {
           created_at?: string
           currency?: string
           from_email?: string | null
+          google_calendar_access_token_enc?: string | null
+          google_calendar_connected_at?: string | null
+          google_calendar_email?: string | null
+          google_calendar_id?: string | null
+          google_calendar_refresh_token_enc?: string | null
+          google_calendar_token_expires_at?: string | null
           id?: string
           invoice_license_number?: string | null
           invoicing_account_id?: string | null
@@ -2645,9 +2888,28 @@ export type Database = {
         }
         Returns: string
       }
+      create_scheduling_hold: {
+        Args: {
+          p_client_email: string
+          p_client_name: string
+          p_client_phone?: string
+          p_ends_at: string
+          p_offering_id: string
+          p_starts_at: string
+          p_subdomain: string
+        }
+        Returns: {
+          expires_at: string
+          hold_id: string
+        }[]
+      }
       decline_age_review_engagement: {
         Args: { p_engagement_id: string; p_reason?: string }
         Returns: Json
+      }
+      disconnect_tenant_google_calendar: {
+        Args: { p_tenant_id: string }
+        Returns: undefined
       }
       engagement_age_at_season_start: {
         Args: { p_offering_id: string; p_person_id: string }
@@ -2655,6 +2917,13 @@ export type Database = {
       }
       get_admin_dashboard_overview: { Args: never; Returns: Json }
       get_app_encryption_key: { Args: never; Returns: string }
+      get_available_slots: {
+        Args: { p_date: string; p_offering_id: string; p_subdomain: string }
+        Returns: {
+          ends_at: string
+          starts_at: string
+        }[]
+      }
       get_billing_account_payment_method: {
         Args: { p_billing_account_id: string }
         Returns: {
@@ -2663,6 +2932,17 @@ export type Database = {
           exp_year: number
           is_default: boolean
           last4: string
+        }[]
+      }
+      get_bookable_offerings_by_subdomain: {
+        Args: { p_subdomain: string }
+        Returns: {
+          currency: string
+          duration_mins: number
+          id: string
+          location: string
+          name: string
+          price_minor: number
         }[]
       }
       get_cron_secret: { Args: never; Returns: string }
@@ -2678,6 +2958,13 @@ export type Database = {
           net_revenue_minor: number
           outstanding_engagements: number
           payment_count: number
+        }[]
+      }
+      get_google_calendar_connection: {
+        Args: never
+        Returns: {
+          connected: boolean
+          email: string
         }[]
       }
       get_grow_webhook_secret: {
@@ -2745,6 +3032,29 @@ export type Database = {
           waiver_required: boolean
         }[]
       }
+      get_public_schedule_events_by_subdomain: {
+        Args: { p_end: string; p_start: string; p_subdomain: string }
+        Returns: {
+          ends_at: string
+          event_type: string
+          id: string
+          offering_id: string
+          starts_at: string
+          title: string
+        }[]
+      }
+      get_schedule_events: {
+        Args: { p_end: string; p_start: string; p_tenant_id: string }
+        Returns: {
+          ends_at: string
+          event_type: string
+          id: string
+          offering_id: string
+          ref_id: string
+          starts_at: string
+          title: string
+        }[]
+      }
       get_supabase_functions_url: { Args: never; Returns: string }
       get_tenant_config_by_subdomain: {
         Args: { p_subdomain: string }
@@ -2772,6 +3082,16 @@ export type Database = {
         }[]
       }
       get_tenant_features: { Args: { p_tenant_id: string }; Returns: string[] }
+      get_tenant_google_credentials: {
+        Args: { p_tenant_id: string }
+        Returns: {
+          access_token: string
+          calendar_id: string
+          email: string
+          refresh_token: string
+          token_expires_at: string
+        }[]
+      }
       get_tenant_invoicing_credentials: {
         Args: { p_tenant_id: string }
         Returns: {
@@ -2882,6 +3202,14 @@ export type Database = {
         }
         Returns: string
       }
+      release_scheduling_hold: {
+        Args: { p_hold_id: string }
+        Returns: undefined
+      }
+      replace_tenant_scheduling_hours: {
+        Args: { p_hours: Json }
+        Returns: undefined
+      }
       request_age_review_engagement: {
         Args: {
           p_note: string
@@ -2929,6 +3257,17 @@ export type Database = {
       }
       save_icount_webhook_secret: {
         Args: { p_secret: string }
+        Returns: undefined
+      }
+      save_tenant_google_credentials: {
+        Args: {
+          p_access_token: string
+          p_calendar_id: string
+          p_email: string
+          p_expires_at: string
+          p_refresh_token: string
+          p_tenant_id: string
+        }
         Returns: undefined
       }
       save_tenant_grow_credentials: {
@@ -2994,6 +3333,14 @@ export type Database = {
           p_wording_snapshot: string
         }
         Returns: string
+      }
+      update_tenant_google_access_token: {
+        Args: {
+          p_access_token: string
+          p_expires_at: string
+          p_tenant_id: string
+        }
+        Returns: undefined
       }
     }
     Enums: {

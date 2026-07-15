@@ -26,7 +26,12 @@ import FinanceWalkthroughPage from "./pages/FinanceWalkthroughPage";
 import LevelsPage from "./pages/LevelsPage";
 import TermsPage from "./pages/TermsPage";
 import AdminClassesPage from "./pages/AdminClassesPage";
+import AdminAppointmentsPage from "./pages/AdminAppointmentsPage";
+import BookingSettingsPage from "./pages/BookingSettingsPage";
+import BookingServicesPage from "./pages/BookingServicesPage";
+import GoogleCalendarCallbackPage from "./pages/GoogleCalendarCallbackPage";
 import WaiversPage from "./pages/WaiversPage";
+import BookingPage from "./pages/BookingPage";
 import PortalDashboard from "./pages/PortalDashboard";
 import EnrolPage from "./pages/EnrolPage";
 import EnrolPayPage from "./pages/EnrolPayPage";
@@ -78,6 +83,8 @@ const router = createBrowserRouter([
       { path: 'enrol', element: <EnrolPage /> },
       { path: 'enrol/pay/:engagementId', element: <EnrolPayPage /> },
       { path: 'enrol/complete', element: <EnrolCompletePage /> },
+      { path: 'book', element: <BookingPage /> },
+      { path: 'book/:offeringId', element: <BookingPage /> },
       { path: 'dashboard', element: <DashboardRedirectPage /> },
 
       // ADMIN ROUTES
@@ -86,6 +93,7 @@ const router = createBrowserRouter([
       { path: "admin/people", element: <AdminRoute><Navigate to="/admin/students" replace /></AdminRoute> },
       { path: "admin/families", element: <AdminRoute><FamiliesPage /></AdminRoute> },
       { path: "admin/notifications", element: <AdminRoute><NotificationsPage /></AdminRoute> },
+      { path: "admin/appointments", element: <AdminRoute><AdminAppointmentsPage /></AdminRoute> },
       { path: "admin/families/:id", element: <AdminRoute><FamilyDetailPage /></AdminRoute> },
       { path: "admin/finance", element: <AdminRoute><FinanceHubPage /></AdminRoute> },
       { path: "admin/finance/payments", element: <AdminRoute><PaymentsLogPage /></AdminRoute> },
@@ -96,6 +104,12 @@ const router = createBrowserRouter([
       { path: "admin/setup/levels", element: <AdminRoute><LevelsPage /></AdminRoute> },
       { path: "admin/setup/terms", element: <AdminRoute><TermsPage /></AdminRoute> },
       { path: "admin/setup/classes", element: <AdminRoute><AdminClassesPage /></AdminRoute> },
+      // Legacy redirect — the admin-only calendar was removed in favour of the
+      // client-facing classes calendar on /classes.
+      { path: "admin/setup/calendar", element: <AdminRoute><Navigate to="/classes" replace /></AdminRoute> },
+      { path: "admin/setup/booking", element: <AdminRoute><BookingSettingsPage /></AdminRoute> },
+      { path: "admin/setup/services", element: <AdminRoute><BookingServicesPage /></AdminRoute> },
+      { path: "admin/setup/integrations/google/callback", element: <AdminRoute><GoogleCalendarCallbackPage /></AdminRoute> },
       { path: "admin/setup/settings", element: <AdminRoute><TenantSettingsPage /></AdminRoute> },
       { path: "admin/setup/tax", element: <AdminRoute><Navigate to="/admin/setup/classes" replace /></AdminRoute> },
       { path: "admin/setup/stripe", element: <AdminRoute><StripeSettingsPage /></AdminRoute> },

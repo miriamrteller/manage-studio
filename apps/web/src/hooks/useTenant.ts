@@ -80,6 +80,7 @@ export function useTenant(): TenantConfig | null {
         business_preset: preset,
         entity_labels: resolveEntityLabels(preset, overrides),
         modules: resolvePresetModules(preset),
+        enabled_features: Array.isArray(row.enabled_features) ? row.enabled_features : [],
       } as TenantConfig;
     },
     enabled: !!subdomain,
