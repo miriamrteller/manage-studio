@@ -26,9 +26,9 @@ import FinanceWalkthroughPage from "./pages/FinanceWalkthroughPage";
 import LevelsPage from "./pages/LevelsPage";
 import TermsPage from "./pages/TermsPage";
 import AdminClassesPage from "./pages/AdminClassesPage";
-import AdminCalendarPage from "./pages/AdminCalendarPage";
 import AdminAppointmentsPage from "./pages/AdminAppointmentsPage";
 import BookingSettingsPage from "./pages/BookingSettingsPage";
+import BookingServicesPage from "./pages/BookingServicesPage";
 import GoogleCalendarCallbackPage from "./pages/GoogleCalendarCallbackPage";
 import WaiversPage from "./pages/WaiversPage";
 import BookingPage from "./pages/BookingPage";
@@ -104,8 +104,11 @@ const router = createBrowserRouter([
       { path: "admin/setup/levels", element: <AdminRoute><LevelsPage /></AdminRoute> },
       { path: "admin/setup/terms", element: <AdminRoute><TermsPage /></AdminRoute> },
       { path: "admin/setup/classes", element: <AdminRoute><AdminClassesPage /></AdminRoute> },
-      { path: "admin/setup/calendar", element: <AdminRoute><AdminCalendarPage /></AdminRoute> },
+      // Legacy redirect — the admin-only calendar was removed in favour of the
+      // client-facing classes calendar on /classes.
+      { path: "admin/setup/calendar", element: <AdminRoute><Navigate to="/classes" replace /></AdminRoute> },
       { path: "admin/setup/booking", element: <AdminRoute><BookingSettingsPage /></AdminRoute> },
+      { path: "admin/setup/services", element: <AdminRoute><BookingServicesPage /></AdminRoute> },
       { path: "admin/setup/integrations/google/callback", element: <AdminRoute><GoogleCalendarCallbackPage /></AdminRoute> },
       { path: "admin/setup/settings", element: <AdminRoute><TenantSettingsPage /></AdminRoute> },
       { path: "admin/setup/tax", element: <AdminRoute><Navigate to="/admin/setup/classes" replace /></AdminRoute> },

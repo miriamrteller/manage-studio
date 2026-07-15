@@ -25,11 +25,14 @@ export function makeDayCellContent(language: string) {
     const hebrewDay = hebrewDayFmt.format(arg.date);
     const shade = getDayShade(arg.date);
     return (
-      <div className="flex flex-col items-center leading-tight">
-        <span>{arg.dayNumberText}</span>
-        <span className="text-[10px] font-normal text-gray-400">{hebrewDay}</span>
+      <div className="flex flex-col items-center leading-none">
+        {/* Gregorian day + Hebrew day on one line to leave more room for events. */}
+        <span className="flex items-baseline gap-1">
+          <span>{arg.dayNumberText}</span>
+          <span className="text-[10px] font-normal text-gray-400">{hebrewDay}</span>
+        </span>
         {shade.he && (
-          <span className="mt-0.5 max-w-[7rem] truncate text-center text-[9px] font-normal text-gray-500">
+          <span className="max-w-[7rem] truncate text-center text-[9px] font-normal text-gray-500">
             {shade.he}
           </span>
         )}

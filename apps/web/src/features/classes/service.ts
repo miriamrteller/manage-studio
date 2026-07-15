@@ -26,9 +26,11 @@ const ClassInputSchema = z.object({
   max_age: z.number().int().nonnegative().nullable().optional(),
   price_minor: z.number().nonnegative('Price must be >= 0').optional(),
   currency: z.string().optional(),
+  offering_type: z.enum(['class', 'appointment']).optional(),
+  duration_mins: z.number().int().positive().nullable().optional(),
   day_of_week: z.number().int().min(0).max(6).nullable().optional(),
-  start_time: TimeSchema.optional(),
-  end_time: TimeSchema.optional(),
+  start_time: TimeSchema.nullable().optional(),
+  end_time: TimeSchema.nullable().optional(),
   is_public: z.boolean().optional(),
   delivery_mode: z.enum(['scheduled', 'intangible']).optional(),
   billing_mode: z.enum(['one_time', 'recurring']).optional(),
@@ -73,7 +75,10 @@ export class ClassService extends BaseService {
     const ascending = sortOrder === 'asc';
 
     return this.withRetry(async () => {
-      let query = TenantDB.selectFor('offerings', tenant, { count: 'exact' });
+      // Classes admin lists group offerings only; appointment services have their
+      // own management surface.
+      let query = TenantDB.selectFor('offerings', tenant, { count: 'exact' })
+        .eq('offering_type', 'class');
 
       if (seasonIds.length > 0) {
         query = query.in('season_id', seasonIds);

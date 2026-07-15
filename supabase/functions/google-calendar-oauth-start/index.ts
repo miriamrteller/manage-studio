@@ -5,7 +5,7 @@
  */
 import { handleOptions, jsonResponse } from "../../packages/edge-runtime/src/cors.ts";
 import { createServiceClient, requireAuthUser } from "../../packages/edge-runtime/src/supabase.ts";
-import { buildAuthUrl } from "../_shared/google-calendar.ts";
+import { buildAuthUrl, isGoogleMock } from "../_shared/google-calendar.ts";
 import { requireFeature } from "../_shared/feature-gate.ts";
 
 const APP_URL = Deno.env.get("APP_URL") ?? "";
@@ -41,7 +41,12 @@ Deno.serve(async (req) => {
   const nonce = crypto.randomUUID();
   const state = btoa(JSON.stringify({ tenant_id: tenantId, nonce }));
   const redirectUri = `${APP_URL}/admin/setup/integrations/google/callback`;
-  const url = buildAuthUrl(state, redirectUri);
+
+  // In mock mode there is no real Google client; skip the consent screen and send
+  // the admin straight to our callback with a stub code so the (mocked) exchange runs.
+  const url = isGoogleMock()
+    ? `${redirectUri}?code=mock-code&state=${encodeURIComponent(state)}`
+    : buildAuthUrl(state, redirectUri);
 
   return jsonResponse({ url, state });
 });

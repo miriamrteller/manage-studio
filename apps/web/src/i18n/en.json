@@ -1020,6 +1020,7 @@
     "families": "Families",
     "notifications": "Notifications",
     "appointments": "Appointments",
+    "book_appointment": "Book",
     "my_account": "My Account",
     "portal": "Portal",
     "student_dashboard": "Student Dashboard",
@@ -1030,6 +1031,7 @@
     "manage_classes": "Manage Classes",
     "calendar": "Calendar",
     "booking_settings": "Booking Settings",
+    "booking_services": "Bookable Services",
     "waivers": "Waivers",
     "requirements": "Requirements",
     "section": {
@@ -1091,7 +1093,30 @@
       "start_time": "From",
       "end_time": "To",
       "saved": "Settings saved.",
-      "save": "Save settings"
+      "save": "Save settings",
+      "manage_services": "Manage bookable services",
+      "manage_services_hint": "Add and edit the 1:1 services clients can book on your booking page."
+    },
+    "services": {
+      "title": "Bookable Services",
+      "subtitle": "The 1:1 services clients can book on your booking page.",
+      "not_available": "Appointment services are not available on your current plan.",
+      "add": "Add service",
+      "edit": "Edit service",
+      "name": "Service name",
+      "duration": "Duration (minutes)",
+      "price": "Price",
+      "location": "Location (optional)",
+      "is_public": "Show on booking page",
+      "none": "No services yet. Add your first bookable service.",
+      "save": "Save service",
+      "cancel": "Cancel",
+      "remove": "Remove",
+      "remove_confirm": "Remove this service? Existing bookings are kept.",
+      "saved": "Service saved.",
+      "removed": "Service removed.",
+      "duration_suffix": "min",
+      "settings_hint": "Availability hours and booking rules are configured in Booking Settings."
     },
     "book": {
       "title": "Book an appointment",

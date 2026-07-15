@@ -82,6 +82,13 @@ export const navigationConfig: NavItem[] = [
     sectionKey: 'browse',
   },
   {
+    path: '/book',
+    labelKey: 'nav.book_appointment',
+    requiredRoles: [],
+    sectionKey: 'browse',
+    featureKey: FEATURES.scheduling.clientBooking,
+  },
+  {
     path: '/admin/students',
     labelKey: 'nav.students',
     requiredRoles: ['tenant_admin'],
@@ -201,12 +208,12 @@ export const navigationConfig: NavItem[] = [
     indent: true,
   },
   {
-    path: '/admin/setup/calendar',
-    labelKey: 'nav.calendar',
+    path: '/admin/setup/services',
+    labelKey: 'nav.booking_services',
     requiredRoles: ['tenant_admin'],
     sectionKey: 'setup',
     indent: true,
-    featureKey: FEATURES.scheduling.calendarView,
+    featureKey: FEATURES.scheduling.adminBooking,
   },
   {
     path: '/admin/setup/booking',
@@ -250,6 +257,13 @@ export const publicNavigationConfig: NavItem[] = [
     labelKey: 'nav.classes',
     requiredRoles: [],
     sectionKey: 'browse',
+  },
+  {
+    path: '/book',
+    labelKey: 'nav.book_appointment',
+    requiredRoles: [],
+    sectionKey: 'browse',
+    featureKey: FEATURES.scheduling.clientBooking,
   },
   {
     path: '/login',

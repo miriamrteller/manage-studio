@@ -168,7 +168,7 @@ secret set — nothing to switch, just set each project once.
 ### 6.3 Availability + holds (S2)
 - In `/admin/setup/booking`: enable booking, set weekly hours, slot duration, buffer,
   advance notice, window, `max_per_day`, hold expiry.
-- Mark an offering `is_bookable`.
+- In `/admin/setup/services`: add a bookable service (offering with `offering_type='appointment'`, a duration and price).
 - `get_available_slots` (via `/book`) respects hours, duration+buffer step, advance notice,
   booking window, and excludes existing holds / booked engagements / blocks.
 - Concurrency: two rapid holds on the same slot → second fails ("slot no longer available")

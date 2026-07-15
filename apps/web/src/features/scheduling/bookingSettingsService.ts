@@ -23,15 +23,6 @@ export interface BookingHours {
   is_active: boolean;
 }
 
-export interface BookableOffering {
-  id: string;
-  name: string;
-  duration_mins: number | null;
-  price_minor: number;
-  currency: string;
-  is_bookable: boolean;
-}
-
 export const DEFAULT_BOOKING_SETTINGS: BookingSettings = {
   buffer_mins: 0,
   slot_duration_mins: 60,
@@ -104,35 +95,4 @@ export class BookingSettingsService extends BaseService {
     }, 'BookingSettingsService.saveHours');
   }
 
-  static async getBookableOfferings(tenant: Tenant): Promise<BookableOffering[]> {
-    return this.withRetry(async () => {
-      const { data, error } = await TenantDB.selectFor('offerings', tenant)
-        .eq('status', 'active')
-        .order('name', { ascending: true });
-      if (error) throw error;
-      return (data ?? []).map((o: Record<string, unknown>) => ({
-        id: o.id as string,
-        name: o.name as string,
-        duration_mins: (o.duration_mins as number | null) ?? null,
-        price_minor: (o.price_minor as number) ?? 0,
-        currency: (o.currency as string) ?? 'ILS',
-        is_bookable: Boolean(o.is_bookable),
-      }));
-    }, 'BookingSettingsService.getBookableOfferings');
-  }
-
-  static async setOfferingBookable(
-    tenant: Tenant,
-    offeringId: string,
-    isBookable: boolean,
-    durationMins: number | null,
-  ): Promise<void> {
-    return this.withRetry(async () => {
-      const { error } = await TenantDB.update('offerings', tenant, offeringId, {
-        is_bookable: isBookable,
-        duration_mins: durationMins,
-      });
-      if (error) throw error;
-    }, 'BookingSettingsService.setOfferingBookable');
-  }
 }

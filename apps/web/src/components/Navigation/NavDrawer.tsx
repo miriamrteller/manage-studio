@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Pin, PinOff, X } from 'lucide-react';
+import type { FeatureKey } from '@shared/index';
 import { Button } from '@/components/ui/button';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useEntityLabels } from '@/hooks/useEntityLabels';
@@ -46,6 +47,12 @@ export function NavDrawer() {
   const { labels, modules } = useEntityLabels();
   const tenant = useTenant();
   const { hasFeature } = useFeatureGate();
+  // Resolve feature flags from the authenticated gate OR the anon-safe tenant config
+  // (enabled_features), so client-facing items like booking show for guests too.
+  const hasFeatureResolved = useCallback(
+    (key: FeatureKey) => hasFeature(key) || (tenant?.enabled_features?.includes(key) ?? false),
+    [hasFeature, tenant],
+  );
   const {
     isOpen,
     isPinned,
@@ -64,7 +71,7 @@ export function NavDrawer() {
     isAuthenticated: Boolean(user),
     modules,
     tenant,
-    hasFeature,
+    hasFeature: hasFeatureResolved,
   });
 
   function navLabel(item: NavItem): string {

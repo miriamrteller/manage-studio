@@ -1239,21 +1239,21 @@ export type Database = {
           day_of_week: number | null
           delivery_mode: string
           duration_mins: number | null
-          end_time: string
+          end_time: string | null
           id: string
-          is_bookable: boolean
           is_public: boolean
           location: string | null
           max_age: number | null
           max_capacity: number
           min_age: number | null
           name: string
+          offering_type: string
           price_minor: number
           renewal_policy: string
           season_id: string | null
           setup_fee_minor: number
           staff_id: string | null
-          start_time: string
+          start_time: string | null
           status: string
           tenant_id: string
           updated_at: string
@@ -1269,21 +1269,21 @@ export type Database = {
           day_of_week?: number | null
           delivery_mode?: string
           duration_mins?: number | null
-          end_time: string
+          end_time?: string | null
           id?: string
-          is_bookable?: boolean
           is_public?: boolean
           location?: string | null
           max_age?: number | null
           max_capacity?: number
           min_age?: number | null
           name: string
+          offering_type?: string
           price_minor?: number
           renewal_policy?: string
           season_id?: string | null
           setup_fee_minor?: number
           staff_id?: string | null
-          start_time: string
+          start_time?: string | null
           status?: string
           tenant_id: string
           updated_at?: string
@@ -1299,21 +1299,21 @@ export type Database = {
           day_of_week?: number | null
           delivery_mode?: string
           duration_mins?: number | null
-          end_time?: string
+          end_time?: string | null
           id?: string
-          is_bookable?: boolean
           is_public?: boolean
           location?: string | null
           max_age?: number | null
           max_capacity?: number
           min_age?: number | null
           name?: string
+          offering_type?: string
           price_minor?: number
           renewal_policy?: string
           season_id?: string | null
           setup_fee_minor?: number
           staff_id?: string | null
-          start_time?: string
+          start_time?: string | null
           status?: string
           tenant_id?: string
           updated_at?: string

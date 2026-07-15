@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { FEATURES } from '@shared/index';
 import { useTenant } from '@/hooks/useTenant';
@@ -48,15 +49,6 @@ export default function BookingSettingsPage() {
     enabled: !!tenant?.id && canManage,
   });
 
-  const offeringsQuery = useQuery({
-    queryKey: ['bookableOfferings', tenant?.id],
-    queryFn: async () => {
-      if (!tenant?.id) return [];
-      return BookingSettingsService.getBookableOfferings(tenant as never);
-    },
-    enabled: !!tenant?.id && canManage,
-  });
-
   useEffect(() => {
     if (settingsQuery.data) {
       setSettings(settingsQuery.data.s);
@@ -92,16 +84,6 @@ export default function BookingSettingsPage() {
       setStatus({ kind: 'error', msg: e instanceof Error ? e.message : String(e) });
     } finally {
       setSaving(false);
-    }
-  }
-
-  async function toggleBookable(offeringId: string, isBookable: boolean, duration: number | null) {
-    if (!tenant?.id) return;
-    try {
-      await BookingSettingsService.setOfferingBookable(tenant as never, offeringId, isBookable, duration);
-      await offeringsQuery.refetch();
-    } catch (e) {
-      setStatus({ kind: 'error', msg: e instanceof Error ? e.message : String(e) });
     }
   }
 
@@ -261,19 +243,14 @@ export default function BookingSettingsPage() {
         </div>
       </section>
 
-      <section className="card border border-gray-200 space-y-3 p-4">
-        <h2 className="text-lg font-semibold">{t('scheduling.book.choose_service')}</h2>
-        <div className="space-y-2">
-          {(offeringsQuery.data ?? []).map((o) => (
-            <label key={o.id} className="flex items-center gap-3">
-              <Checkbox
-                checked={o.is_bookable}
-                onCheckedChange={(c) => toggleBookable(o.id, c, o.duration_mins)}
-              />
-              <span>{o.name}</span>
-            </label>
-          ))}
-        </div>
+      <section className="card border border-gray-200 space-y-2 p-4">
+        <h2 className="text-lg font-semibold">{t('scheduling.booking.manage_services')}</h2>
+        <p className="text-sm text-gray-500">{t('scheduling.booking.manage_services_hint')}</p>
+        <Link to="/admin/setup/services">
+          <Button variant="outline" size="sm">
+            {t('nav.booking_services')}
+          </Button>
+        </Link>
       </section>
 
       <div>

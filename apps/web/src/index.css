@@ -307,24 +307,41 @@ body {
 }
 
 /*
- * Fit-to-screen month view: keep the whole month locked to the viewport but let a
- * busy day's event list scroll inside its cell (instead of collapsing to "+N more").
- * The day frame becomes a flex column with a fixed height; only the events area
- * scrolls, so the day number/holiday label stay pinned.
+ * Fit-to-screen month view: lock the whole month to the viewport and let a busy
+ * day's event list scroll inside its cell (instead of collapsing to "+N more").
+ *
+ * FullCalendar's `expandRows` only grows short rows to fill space — it never shrinks
+ * a row taller than its events — so a busy day makes the grid overflow the viewport.
+ * We force the week rows to split the available height evenly by taking each day
+ * cell's content out of normal flow (absolute fill), so content can't drive the row
+ * height. The frame is a flex column with the day number/holiday label pinned and
+ * only the events area scrolling.
  */
+.fc-daycell-scroll .fc-daygrid-body,
+.fc-daycell-scroll .fc-daygrid-body > table,
+.fc-daycell-scroll .fc-daygrid-body .fc-daygrid-day-frame {
+  height: 100%;
+}
+.fc-daycell-scroll .fc-daygrid-day {
+  position: relative;
+}
 .fc-daycell-scroll .fc-daygrid-day-frame {
+  position: absolute;
+  inset: 0;
   display: flex;
   flex-direction: column;
-  height: 100%;
+  min-height: 0 !important;
   overflow: hidden;
+}
+.fc-daycell-scroll .fc-daygrid-day-top,
+.fc-daycell-scroll .fc-daygrid-day-bottom {
+  flex: 0 0 auto;
 }
 .fc-daycell-scroll .fc-daygrid-day-events {
   flex: 1 1 auto;
-  min-height: 0;
+  min-height: 0 !important;
   overflow-y: auto;
-}
-/* Slim scrollbar so it doesn't dominate the small cell. */
-.fc-daycell-scroll .fc-daygrid-day-events {
+  /* Slim scrollbar so it doesn't dominate the small cell. */
   scrollbar-width: thin;
 }
 .fc-daycell-scroll .fc-daygrid-day-events::-webkit-scrollbar {
@@ -333,5 +350,38 @@ body {
 .fc-daycell-scroll .fc-daygrid-day-events::-webkit-scrollbar-thumb {
   background-color: rgba(0, 0, 0, 0.2);
   border-radius: 3px;
+}
+
+/*
+ * Compact the cell so events fill from just under the date and more fit before
+ * scrolling: tighten the day-number header, drop default gaps, and shrink each
+ * event (padding, font, inter-event margin).
+ */
+.fc-daycell-scroll .fc-daygrid-day-top {
+  padding: 1px 2px 0;
+}
+.fc-daycell-scroll .fc-daygrid-day-events {
+  margin: 0;
+  padding: 0 2px 2px;
+}
+.fc-daycell-scroll .fc-daygrid-event-harness {
+  margin-top: 1px !important;
+}
+.fc-daycell-scroll .fc-daygrid-event-harness:first-child {
+  margin-top: 0 !important;
+}
+.fc-daycell-scroll .fc-daygrid-event {
+  margin: 0;
+  padding: 0 3px;
+  font-size: 10px;
+  line-height: 1.35;
+  border-radius: 3px;
+}
+.fc-daycell-scroll .fc-daygrid-event .fc-event-time {
+  font-weight: 600;
+  padding: 0;
+}
+.fc-daycell-scroll .fc-daygrid-event .fc-event-title {
+  padding: 0;
 }
 

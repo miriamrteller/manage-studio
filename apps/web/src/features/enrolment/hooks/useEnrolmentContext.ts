@@ -85,6 +85,7 @@ export function useEnrolmentContext(intent: EnrollmentIntent | null): EnrolmentC
         .select('id, name, location, min_age, max_age, season_id, waiver_required, seasons(start_date)')
         .eq('tenant_id', tenant.id)
         .eq('id', intent.classId)
+        .eq('offering_type', 'class')
         .maybeSingle();
       if (error) throw error;
       if (!data) return null;
