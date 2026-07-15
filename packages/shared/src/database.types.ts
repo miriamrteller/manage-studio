@@ -3206,6 +3206,10 @@ export type Database = {
         Args: { p_hold_id: string }
         Returns: undefined
       }
+      replace_tenant_scheduling_hours: {
+        Args: { p_hours: Json }
+        Returns: undefined
+      }
       request_age_review_engagement: {
         Args: {
           p_note: string

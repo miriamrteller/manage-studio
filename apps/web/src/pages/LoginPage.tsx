@@ -62,6 +62,13 @@ export default function LoginPage() {
     postLoginState?.from,
   ]);
 
+  const returnTo =
+    typeof postLoginState?.from === 'string' &&
+    postLoginState.from.startsWith('/') &&
+    !postLoginState.from.startsWith('//')
+      ? postLoginState.from
+      : undefined;
+
   const {
     isLoading,
     message,
@@ -73,7 +80,7 @@ export default function LoginPage() {
     resendEmailCode,
     backToCodeSend,
   } = useLogin({
-    to: resumeKey ? '/enrol' : '/dashboard',
+    to: resumeKey ? '/enrol' : returnTo ?? '/dashboard',
     state: postLoginState,
   });
 

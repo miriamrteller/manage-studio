@@ -73,25 +73,19 @@ export class BookingSettingsService extends BaseService {
     }, 'BookingSettingsService.getHours');
   }
 
-  /** Replace-all: remove existing hours then insert the new set. */
-  static async saveHours(tenant: Tenant, hours: BookingHours[]): Promise<void> {
+  /** Replace-all hours in one DB transaction (delete + insert). */
+  static async saveHours(_tenant: Tenant, hours: BookingHours[]): Promise<void> {
     return this.withRetry(async () => {
-      const { error: delError } = await supabase
-        .from('tenant_scheduling_hours')
-        .delete()
-        .eq('tenant_id', tenant.id);
-      if (delError) throw delError;
-
-      if (hours.length === 0) return;
-      const rows = hours.map((h) => ({
-        tenant_id: tenant.id,
+      const payload = hours.map((h) => ({
         day_of_week: h.day_of_week,
         start_time: h.start_time,
         end_time: h.end_time,
         is_active: h.is_active,
       }));
-      const { error: insError } = await supabase.from('tenant_scheduling_hours').insert(rows);
-      if (insError) throw insError;
+      const { error } = await supabase.rpc('replace_tenant_scheduling_hours', {
+        p_hours: payload,
+      });
+      if (error) throw error;
     }, 'BookingSettingsService.saveHours');
   }
 

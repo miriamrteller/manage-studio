@@ -64,7 +64,9 @@ export async function prepareBookingCheckout(
   // Load and validate the hold
   const { data: hold } = await service
     .from("scheduling_holds")
-    .select("id, tenant_id, offering_id, starts_at, ends_at, expires_at, released_at, engagement_id")
+    .select(
+      "id, tenant_id, offering_id, starts_at, ends_at, expires_at, released_at, engagement_id, client_email",
+    )
     .eq("id", body.hold_id)
     .maybeSingle();
 
@@ -72,6 +74,14 @@ export async function prepareBookingCheckout(
   if (hold.released_at) return { ok: false, error: "Hold released", status: 410 };
   if (new Date(hold.expires_at as string).getTime() <= Date.now()) {
     return { ok: false, error: "Hold expired", status: 410 };
+  }
+
+  // Bind checkout to the identity that created the hold (prevents hold_id hijack).
+  const holdEmail = typeof hold.client_email === "string"
+    ? hold.client_email.trim().toLowerCase()
+    : "";
+  if (!holdEmail || holdEmail !== body.client_email) {
+    return { ok: false, error: "Hold email mismatch", status: 403 };
   }
 
   const offeringId = hold.offering_id as string;

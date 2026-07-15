@@ -137,10 +137,18 @@ export function BookingCalendar({
     data: nextSlot = null,
     isLoading: nextSlotLoading,
     isFetched: nextSlotFetched,
+    isError: nextSlotError,
+    refetch: refetchNextSlot,
   } = useNextAvailableSlot(subdomain, offeringId);
   nextSlotRef.current = nextSlot;
 
-  const { data: slots = [], isLoading, isFetching } = useAvailableSlots(
+  const {
+    data: slots = [],
+    isLoading,
+    isFetching,
+    isError: slotsError,
+    refetch: refetchSlots,
+  } = useAvailableSlots(
     subdomain,
     offeringId,
     range,
@@ -295,6 +303,25 @@ export function BookingCalendar({
     );
   }
 
+  if (nextSlotError) {
+    return (
+      <div
+        className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900"
+        role="alert"
+      >
+        <p className="font-medium">{t('scheduling.book.availability_error_title')}</p>
+        <p className="mt-1 text-red-800">{t('scheduling.book.availability_error_body')}</p>
+        <button
+          type="button"
+          className="mt-3 text-sm font-medium text-red-900 underline underline-offset-2"
+          onClick={() => void refetchNextSlot()}
+        >
+          {t('common.try_again')}
+        </button>
+      </div>
+    );
+  }
+
   if (!nextSlot) {
     return (
       <div
@@ -315,6 +342,22 @@ export function BookingCalendar({
 
   return (
     <div className="space-y-4">
+      {slotsError && (
+        <div
+          className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900"
+          role="alert"
+        >
+          <p className="font-medium">{t('scheduling.book.availability_error_title')}</p>
+          <p className="mt-1 text-red-800">{t('scheduling.book.availability_error_body')}</p>
+          <button
+            type="button"
+            className="mt-3 text-sm font-medium text-red-900 underline underline-offset-2"
+            onClick={() => void refetchSlots()}
+          >
+            {t('common.try_again')}
+          </button>
+        </div>
+      )}
       <div
         ref={fitRef}
         className={`fc-booking-calendar relative${useFitHeight ? ' fc-daycell-scroll' : ''}`}

@@ -5,6 +5,9 @@ import { GoogleCalendarService } from '@/features/scheduling/googleCalendarServi
 
 const STORAGE_PREFIX = 'gcal-oauth-done:';
 
+/** In-flight exchanges keyed by code — shared across Strict Mode remounts. */
+const inflightByCode = new Map<string, Promise<void>>();
+
 /**
  * OAuth redirect target for Google Calendar. Exchanges the code via the callback
  * Edge Function, then returns the admin to booking settings.
@@ -33,16 +36,26 @@ export default function GoogleCalendarCallbackPage() {
       return;
     }
 
-    // OAuth codes are single-use. React Strict Mode remounts would otherwise
-    // exchange the same code twice and the second call always 500s.
-    const dedupeKey = `${STORAGE_PREFIX}${code}`;
-    if (sessionStorage.getItem(dedupeKey)) {
+    // OAuth codes are single-use. React Strict Mode remounts must share one exchange.
+    const successKey = `${STORAGE_PREFIX}${code}`;
+    if (sessionStorage.getItem(successKey) === 'ok') {
       navigate('/admin/setup/booking', { replace: true });
       return;
     }
-    sessionStorage.setItem(dedupeKey, '1');
 
-    GoogleCalendarService.complete(code, state)
+    let exchange = inflightByCode.get(code);
+    if (!exchange) {
+      exchange = GoogleCalendarService.complete(code, state)
+        .then(() => {
+          sessionStorage.setItem(successKey, 'ok');
+        })
+        .finally(() => {
+          inflightByCode.delete(code);
+        });
+      inflightByCode.set(code, exchange);
+    }
+
+    exchange
       .then(() => navigate('/admin/setup/booking', { replace: true }))
       .catch((e) => setError(e instanceof Error ? e.message : String(e)));
   }, [searchParams, navigate]);

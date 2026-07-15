@@ -22,6 +22,11 @@ function LoadingState() {
   );
 }
 
+/** Path + search so OAuth callbacks (and similar) survive a login redirect. */
+function returnToFromLocation(location: ReturnType<typeof useLocation>): string {
+  return `${location.pathname}${location.search}`;
+}
+
 /**
  * AdminRoute: requires role to include 'tenant_admin'
  */
@@ -34,7 +39,7 @@ export function AdminRoute({ children }: { children: ReactNode }) {
   }
 
   if (!user || !user.role.includes('tenant_admin')) {
-    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
+    return <Navigate to="/login" state={{ from: returnToFromLocation(location) }} replace />;
   }
 
   return <>{children}</>;
@@ -52,7 +57,7 @@ export function TeacherRoute({ children }: { children: ReactNode }) {
   }
 
   if (!user || !user.role.includes('teacher')) {
-    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
+    return <Navigate to="/login" state={{ from: returnToFromLocation(location) }} replace />;
   }
 
   return <>{children}</>;
@@ -70,7 +75,7 @@ export function ParentRoute({ children }: { children: ReactNode }) {
   }
 
   if (!user || !hasParentRole(user.role)) {
-    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
+    return <Navigate to="/login" state={{ from: returnToFromLocation(location) }} replace />;
   }
 
   return <>{children}</>;
@@ -88,7 +93,7 @@ export function SuperAdminRoute({ children }: { children: ReactNode }) {
   }
 
   if (!user || !user.role.includes('super_admin')) {
-    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
+    return <Navigate to="/login" state={{ from: returnToFromLocation(location) }} replace />;
   }
 
   return <>{children}</>;
@@ -110,7 +115,7 @@ export function StudentRoute({ children }: { children: ReactNode }) {
   );
 
   if (!user || !hasStudentRole) {
-    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
+    return <Navigate to="/login" state={{ from: returnToFromLocation(location) }} replace />;
   }
 
   return <>{children}</>;

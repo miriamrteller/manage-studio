@@ -1,11 +1,12 @@
 /**
  * google-calendar-oauth-start
  * Returns a Google OAuth consent URL for the authenticated tenant admin.
- * state = base64(tenant_id + nonce) for CSRF protection on the callback.
+ * state is HMAC-signed (tenant + admin user + expiry) for CSRF protection.
  */
 import { handleOptions, jsonResponse } from "../../packages/edge-runtime/src/cors.ts";
 import { createServiceClient, requireAuthUser } from "../../packages/edge-runtime/src/supabase.ts";
 import { buildAuthUrl, isGoogleMock } from "../_shared/google-calendar.ts";
+import { signGoogleOAuthState } from "../_shared/google-oauth-state.ts";
 import { requireFeature } from "../_shared/feature-gate.ts";
 
 const APP_URL = Deno.env.get("APP_URL") ?? "";
@@ -17,6 +18,10 @@ Deno.serve(async (req) => {
 
   const auth = await requireAuthUser(req);
   if ("error" in auth) return jsonResponse({ error: auth.error }, auth.status);
+
+  if (!APP_URL) {
+    return jsonResponse({ error: "APP_URL is not configured on the server" }, 500);
+  }
 
   const service = createServiceClient();
   const { data: profile } = await service
@@ -38,8 +43,14 @@ Deno.serve(async (req) => {
     throw res;
   }
 
-  const nonce = crypto.randomUUID();
-  const state = btoa(JSON.stringify({ tenant_id: tenantId, nonce }));
+  let state: string;
+  try {
+    state = await signGoogleOAuthState(tenantId, auth.user.id);
+  } catch (e) {
+    console.error("[google-calendar-oauth-start] state signing failed", e);
+    return jsonResponse({ error: "OAuth is not configured" }, 500);
+  }
+
   const redirectUri = `${APP_URL}/admin/setup/integrations/google/callback`;
 
   // In mock mode there is no real Google client; skip the consent screen and send

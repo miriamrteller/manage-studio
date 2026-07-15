@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
@@ -41,11 +41,13 @@ export default function EnrolCompletePage() {
   const [resendEmail, setResendEmail] = useState('');
   const [resendSent, setResendSent] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
-  const hasInitialized = useRef(false);
 
   useEffect(() => {
-    if (hasInitialized.current || !engagementId) return;
-    hasInitialized.current = true;
+    if (!engagementId) return;
+    // Session path needs tenant for the consent template query.
+    if (!waiverToken && !tenant) return;
+
+    let cancelled = false;
 
     const init = async () => {
       // --- Path 1: guest waiver token (no session required) ---
@@ -62,6 +64,7 @@ export default function EnrolCompletePage() {
             body: JSON.stringify({}),
           });
           const data = await resp.json() as Record<string, unknown>;
+          if (cancelled) return;
 
           if (!resp.ok) {
             if (resp.status === 401) {
@@ -90,6 +93,7 @@ export default function EnrolCompletePage() {
             waiverToken,
           });
         } catch (err) {
+          if (cancelled) return;
           console.error('[EnrolCompletePage] waiver token init failed:', err);
           setState({ kind: 'error', message: t('common.error') });
         }
@@ -99,6 +103,7 @@ export default function EnrolCompletePage() {
       // --- Path 2: session-based (user logged in) ---
       const { data: sessionData } = await supabase.auth.getSession();
       const session = sessionData?.session;
+      if (cancelled) return;
 
       if (!session?.user) {
         setState({ kind: 'link_expired', email: '' });
@@ -115,11 +120,13 @@ export default function EnrolCompletePage() {
       } catch (linkErr) {
         console.warn('[EnrolCompletePage] person linking failed:', linkErr);
       }
+      if (cancelled) return;
 
       const { data: engagementRows, error: engError } = await supabase.rpc(
         'get_pending_waiver_engagement',
         { p_engagement_id: engagementId },
       );
+      if (cancelled) return;
 
       if (engError || !engagementRows?.length) {
         setState({ kind: 'error', message: t('pages.enrol_complete.engagement_not_found') });
@@ -135,14 +142,13 @@ export default function EnrolCompletePage() {
       if (eng.current_status === 'active')    { setState({ kind: 'already_signed' }); return; }
       if (eng.current_status === 'cancelled') { setState({ kind: 'cancelled' });      return; }
 
-      if (!tenant) { setState({ kind: 'loading' }); return; }
-
       const { data: templateRow, error: tmplError } = await TenantDB.selectFor(
         'consent_templates',
-        tenant,
+        tenant!,
       )
         .eq('status', 'active')
         .maybeSingle();
+      if (cancelled) return;
 
       if (tmplError || !templateRow) {
         setState({ kind: 'error', message: t('pages.enrol_complete.no_active_template') });
@@ -165,15 +171,10 @@ export default function EnrolCompletePage() {
     };
 
     void init();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [engagementId, tenant, waiverToken]);
-
-  // Re-run init when tenant loads (session path only)
-  useEffect(() => {
-    if (state.kind === 'loading' && tenant && engagementId && hasInitialized.current && !waiverToken) {
-      hasInitialized.current = false;
-    }
-  }, [state.kind, tenant, engagementId, waiverToken]);
+    return () => {
+      cancelled = true;
+    };
+  }, [engagementId, tenant, waiverToken, t]);
 
   const handleResend = async () => {
     if (!resendEmail.trim()) return;

@@ -39,14 +39,26 @@ export const BookingService = {
    * Slots go through the get-available-slots Edge Function, which layers Google
    * Calendar free/busy on top of the DB availability RPC when the tenant is
    * connected (fail-closed on calendar errors).
+   *
+   * Pass a single `date` or an inclusive `startDate`/`endDate` window (YYYY-MM-DD,
+   * Asia/Jerusalem calendar dates) for the booking FullCalendar.
    */
   async getAvailableSlots(
     subdomain: string,
     offeringId: string,
-    date: string,
+    range: string | { startDate: string; endDate: string },
   ): Promise<AvailableSlot[]> {
+    const body =
+      typeof range === 'string'
+        ? { subdomain, offering_id: offeringId, date: range }
+        : {
+            subdomain,
+            offering_id: offeringId,
+            start_date: range.startDate,
+            end_date: range.endDate,
+          };
     const { data, error } = await supabase.functions.invoke('get-available-slots', {
-      body: { subdomain, offering_id: offeringId, date },
+      body,
     });
     if (error) throw error;
     return ((data as { slots?: AvailableSlot[] })?.slots ?? []) as AvailableSlot[];

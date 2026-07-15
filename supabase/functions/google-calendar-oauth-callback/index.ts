@@ -6,6 +6,8 @@
 import { handleOptions, jsonResponse } from "../../packages/edge-runtime/src/cors.ts";
 import { createServiceClient, requireAuthUser } from "../../packages/edge-runtime/src/supabase.ts";
 import { exchangeCode, fetchGoogleEmail } from "../_shared/google-calendar.ts";
+import { verifyGoogleOAuthState } from "../_shared/google-oauth-state.ts";
+import { requireFeature } from "../_shared/feature-gate.ts";
 
 const APP_URL = Deno.env.get("APP_URL") ?? "";
 
@@ -25,6 +27,10 @@ Deno.serve(async (req) => {
   }
   if (!body.code || !body.state) return jsonResponse({ error: "code and state are required" }, 400);
 
+  if (!APP_URL) {
+    return jsonResponse({ error: "APP_URL is not configured on the server" }, 500);
+  }
+
   const service = createServiceClient();
   const { data: profile } = await service
     .from("user_profiles")
@@ -38,21 +44,19 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "Admin access required" }, 403);
   }
 
-  // CSRF: state must belong to the caller's tenant
-  let stateTenant: string | null = null;
   try {
-    stateTenant = (JSON.parse(atob(body.state)) as { tenant_id?: string }).tenant_id ?? null;
-  } catch {
-    stateTenant = null;
+    await requireFeature(tenantId, "scheduling:integration.google_calendar", service);
+  } catch (res) {
+    if (res instanceof Response) return jsonResponse({ error: "feature_not_available" }, 403);
+    throw res;
   }
-  if (stateTenant !== tenantId) {
-    return jsonResponse({ error: "Invalid state" }, 400);
+
+  const statePayload = await verifyGoogleOAuthState(body.state, tenantId, auth.user.id);
+  if (!statePayload) {
+    return jsonResponse({ error: "Invalid or expired state" }, 400);
   }
 
   const redirectUri = `${APP_URL}/admin/setup/integrations/google/callback`;
-  if (!APP_URL) {
-    return jsonResponse({ error: "APP_URL is not configured on the server" }, 500);
-  }
 
   try {
     const tokens = await exchangeCode(body.code, redirectUri);
