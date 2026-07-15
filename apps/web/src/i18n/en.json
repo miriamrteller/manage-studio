@@ -1079,6 +1079,7 @@
       "not_available": "Appointment booking is not available on your current plan.",
       "enable": "Enable appointment booking",
       "enable_hint": "When enabled, clients can book through your public booking page.",
+      "enable_required": "Booking is currently disabled. Clients will not see any services on the booking page until you enable booking and save these settings.",
       "slot_duration": "Appointment length (minutes)",
       "buffer": "Buffer between appointments (minutes)",
       "max_per_day": "Max appointments per day",
@@ -1116,7 +1117,8 @@
       "saved": "Service saved.",
       "removed": "Service removed.",
       "duration_suffix": "min",
-      "settings_hint": "Availability hours and booking rules are configured in Booking Settings."
+      "settings_hint": "Availability hours and booking rules are configured in Booking Settings.",
+      "booking_disabled_warning": "Booking is disabled. Enable it in Booking Settings and save — otherwise clients will see an empty booking page even if services are listed here."
     },
     "book": {
       "title": "Book an appointment",
@@ -1146,7 +1148,10 @@
       "none": "No appointments yet.",
       "status_active": "Confirmed",
       "status_pending_payment": "Awaiting payment",
-      "status_cancelled": "Cancelled"
+      "status_cancelled": "Cancelled",
+      "add_to_google_calendar": "Add to Google Calendar",
+      "added_to_google_calendar": "In Google Calendar",
+      "google_calendar_not_connected": "Connect Google Calendar in Booking Settings to enable"
     },
     "integrations": {
       "google_title": "Google Calendar",

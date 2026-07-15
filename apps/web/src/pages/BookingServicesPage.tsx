@@ -12,6 +12,7 @@ import {
   ServicesService,
   type AppointmentService,
 } from '@/features/scheduling/servicesService';
+import { BookingSettingsService } from '@/features/scheduling/bookingSettingsService';
 
 interface ServiceFormState {
   id: string | null;
@@ -51,6 +52,17 @@ export default function BookingServicesPage() {
     },
     enabled: !!tenant?.id && canManage,
   });
+
+  const bookingSettingsQuery = useQuery({
+    queryKey: ['bookingSettings', tenant?.id],
+    queryFn: async () => {
+      if (!tenant?.id) return null;
+      return BookingSettingsService.getSettings(tenant as never);
+    },
+    enabled: !!tenant?.id && canManage,
+  });
+
+  const bookingEnabled = bookingSettingsQuery.data?.is_booking_enabled ?? false;
 
   function startAdd() {
     setStatus(null);
@@ -148,6 +160,15 @@ export default function BookingServicesPage() {
           role={status.kind === 'error' ? 'alert' : 'status'}
         >
           {status.msg}
+        </div>
+      )}
+
+      {!bookingEnabled && !bookingSettingsQuery.isLoading && (
+        <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900" role="status">
+          {t('scheduling.services.booking_disabled_warning')}{' '}
+          <Link to="/admin/setup/booking" className="font-medium underline">
+            {t('nav.booking_settings')}
+          </Link>
         </div>
       )}
 

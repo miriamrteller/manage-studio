@@ -27,6 +27,8 @@ export const EMAIL_TEMPLATE_NAMES = {
   ENROLMENT_AGE_REVIEW_APPROVED: 'enrolment_age_review_approved',
   ENROLMENT_AGE_REVIEW_DECLINED: 'enrolment_age_review_declined',
   ADMIN_ANNOUNCEMENT: 'admin_announcement',
+  APPOINTMENT_CONFIRMATION: 'appointment_confirmation',
+  APPOINTMENT_TENANT_NOTIFICATION: 'appointment_tenant_notification',
 } as const;
 
 export type EmailTemplateName = typeof EMAIL_TEMPLATE_NAMES[keyof typeof EMAIL_TEMPLATE_NAMES];
@@ -149,6 +151,8 @@ const TemplateNameSchema = z.enum([
   EMAIL_TEMPLATE_NAMES.ENROLMENT_AGE_REVIEW_APPROVED,
   EMAIL_TEMPLATE_NAMES.ENROLMENT_AGE_REVIEW_DECLINED,
   EMAIL_TEMPLATE_NAMES.ADMIN_ANNOUNCEMENT,
+  EMAIL_TEMPLATE_NAMES.APPOINTMENT_CONFIRMATION,
+  EMAIL_TEMPLATE_NAMES.APPOINTMENT_TENANT_NOTIFICATION,
 ]);
 
 const LanguageSchema = z.enum(['en', 'he']);

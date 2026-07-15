@@ -8,6 +8,7 @@ export interface AppointmentRow {
   status: string;
   booked_starts_at: string;
   booked_ends_at: string;
+  google_event_id: string | null;
   offering_name: string | null;
   client_name: string | null;
   client_email: string | null;
@@ -18,7 +19,7 @@ export class AppointmentsService extends BaseService {
     return this.withRetry(async () => {
       const { data, error } = await supabase
         .from('engagements')
-        .select('id, status, booked_starts_at, booked_ends_at, offerings(name), people(name, email)')
+        .select('id, status, booked_starts_at, booked_ends_at, google_event_id, offerings(name), people(name, email)')
         .eq('tenant_id', tenant.id)
         .not('booked_starts_at', 'is', null)
         .order('booked_starts_at', { ascending: false });
@@ -31,6 +32,7 @@ export class AppointmentsService extends BaseService {
           status: row.status as string,
           booked_starts_at: row.booked_starts_at as string,
           booked_ends_at: row.booked_ends_at as string,
+          google_event_id: (row.google_event_id as string | null) ?? null,
           offering_name: offering?.name ?? null,
           client_name: person?.name ?? null,
           client_email: person?.email ?? null,

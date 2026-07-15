@@ -48,6 +48,7 @@ entrypoint = "./functions/prepare-enrolment-checkout/index.ts"
 [functions.confirm-mock-payment]
 enabled = true
 verify_jwt = false
+import_map = "./functions/import_map.json"
 entrypoint = "./functions/confirm-mock-payment/index.ts"
 
 [functions.get-waiver-engagement]
@@ -98,6 +99,7 @@ entrypoint = "./functions/verify-invoicing-credentials/index.ts"
 [functions.handle-payment-event]
 enabled = true
 verify_jwt = false
+import_map = "./functions/import_map.json"
 entrypoint = "./functions/handle-payment-event/index.ts"
 
 [functions.handle-invoice-event]

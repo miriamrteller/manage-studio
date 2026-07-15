@@ -4,6 +4,7 @@ import { enqueueDocument } from "../enqueue-document.ts";
 import { engagementHasSignedWaiver } from "../engagement-waiver.ts";
 import { resolveAdminLinkRecipientEmail } from "../enrolment-recipient.ts";
 import { buildEnrolmentConfirmationPayload } from "../build-enrolment-confirmation-payload.ts";
+import { sendAppointmentConfirmationEmails } from "../send-appointment-confirmation-emails.ts";
 import { resolveNotificationFromEmail } from "../notification-from.ts";
 import { sendRenderedEmail, EMAIL_TEMPLATE_NAMES } from "../resend-send.ts";
 import { signWaiverToken } from "../waiver-token.ts";
@@ -40,6 +41,17 @@ async function sendConfirmationEmail(
     waiverDeadline: string | null;
   },
 ): Promise<void> {
+  const { data: engagementBrief } = await service
+    .from("engagements")
+    .select("booked_starts_at")
+    .eq("id", params.engagementId)
+    .maybeSingle();
+
+  if (engagementBrief?.booked_starts_at) {
+    await sendAppointmentConfirmationEmails(service, params);
+    return;
+  }
+
   if (await auditExists(service, params.tenantId, "payment_confirmation_email_sent", params.paymentId)) {
     return;
   }

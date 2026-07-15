@@ -229,9 +229,14 @@ export const OfferingSchema = z.object({
     cover_image_path: z.string().nullable().optional(),
     price_minor: z.number().nonnegative('Price must be >= 0'),
     currency: z.string().default('ILS'),
+    // 'class' = weekly group offering (enrolment); 'appointment' = 1:1 bookable service.
+    offering_type: z.enum(['class', 'appointment']).default('class'),
+    // Appointment length in minutes; required for appointments, unused for classes.
+    duration_mins: z.number().int().positive().nullable().optional(),
     day_of_week: z.number().int().min(0).max(6).nullable().optional(),
-    start_time: TimeSchema,
-    end_time: TimeSchema,
+    // Weekly slot: present for classes, null for appointments.
+    start_time: TimeSchema.nullable().optional(),
+    end_time: TimeSchema.nullable().optional(),
     is_public: z.boolean().default(true),
     billing_mode: z.enum(['one_time', 'recurring']).default('one_time'),
     delivery_mode: z.enum(['scheduled', 'intangible']).default('scheduled'),
@@ -309,6 +314,8 @@ export const EngagementSchema = z.object({
     cancelled_at: TimestampSchema.nullable().optional(),
     cancellation_reason: z.string().max(500).nullable().optional(),
     cancelled_by: UUIDSchema.nullable().optional(),
+    payment_dunning_attempt_count: z.number().int().nonnegative().default(0).optional(),
+    payment_dunning_next_at: TimestampSchema.nullable().optional(),
     waiver_evidence_id: UUIDSchema.nullable().optional(),
     created_at: TimestampSchema,
     updated_at: TimestampSchema.optional(),
@@ -353,9 +360,10 @@ export const NotificationLogSchema = z.object({
     subject: z.string().nullable().optional(),
     body_preview: z.string().nullable().optional(),
     external_msg_id: z.string().nullable().optional(),
-    status: z.enum(['sent', 'delivered', 'read', 'failed', 'bounced']).default('sent'),
+    status: z.enum(['sent', 'delivered', 'read', 'failed', 'bounced', 'pending']).default('sent'),
     failure_reason: z.string().nullable().optional(),
-    sent_at: TimestampSchema,
+    created_at: TimestampSchema.optional(),
+    sent_at: TimestampSchema.nullable().optional(),
 });
 // Audit log (immutable record of all data changes)
 export const AuditLogSchema = z.object({

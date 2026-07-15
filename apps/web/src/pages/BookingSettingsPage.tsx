@@ -117,6 +117,11 @@ export default function BookingSettingsPage() {
       )}
 
       <section className="card border border-gray-200 space-y-4 p-4">
+        {!settings.is_booking_enabled && (
+          <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900" role="status">
+            {t('scheduling.booking.enable_required')}
+          </div>
+        )}
         <label className="flex items-center gap-2">
           <Checkbox
             checked={settings.is_booking_enabled}

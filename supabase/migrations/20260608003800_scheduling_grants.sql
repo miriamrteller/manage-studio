@@ -24,3 +24,12 @@ GRANT INSERT, UPDATE, DELETE ON TABLE
   public.scheduling_blocks,
   public.scheduling_holds
 TO authenticated;
+
+-- Edge Functions (prepare-booking-checkout, expire-scheduling-holds, etc.) use the
+-- service_role key. Tables created after 002500 do not inherit its blanket grant.
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE
+  public.tenant_scheduling_settings,
+  public.tenant_scheduling_hours,
+  public.scheduling_blocks,
+  public.scheduling_holds
+TO service_role;

@@ -97,3 +97,22 @@ export async function resolveAdminLinkRecipientEmail(
   const recipient = (auditRow?.after_state as { recipient_email?: string } | null)?.recipient_email;
   return normalizeEmail(recipient);
 }
+
+/** Tenant admin inboxes for operational notifications (e.g. new appointment bookings). */
+export async function resolveTenantAdminNotificationEmails(
+  service: SupabaseClient,
+  tenantId: string,
+): Promise<string[]> {
+  const { data: rows } = await service
+    .from("user_profiles")
+    .select("email")
+    .eq("tenant_id", tenantId)
+    .contains("role", ["tenant_admin"]);
+
+  const emails = new Set<string>();
+  for (const row of rows ?? []) {
+    const email = normalizeEmail(row.email as string | null | undefined);
+    if (email) emails.add(email);
+  }
+  return [...emails];
+}

@@ -1078,6 +1078,7 @@
       "not_available": "הזמנת פגישות אינה זמינה בתוכנית הנוכחית.",
       "enable": "אפשר הזמנת פגישות",
       "enable_hint": "כאשר מופעל, לקוחות יכולים להזמין דרך עמוד ההזמנה הציבורי.",
+      "enable_required": "ההזמנה כבויה כרגע. לקוחות לא יראו שירותים בעמוד ההזמנה עד שתפעיל/י הזמנה ותשמור/י את ההגדרות.",
       "slot_duration": "משך פגישה (דקות)",
       "buffer": "זמן מרווח בין פגישות (דקות)",
       "max_per_day": "מקסימום פגישות ביום",
@@ -1115,7 +1116,8 @@
       "saved": "השירות נשמר.",
       "removed": "השירות הוסר.",
       "duration_suffix": "דק'",
-      "settings_hint": "שעות הזמינות וכללי ההזמנה מוגדרים בהגדרות הזמנה."
+      "settings_hint": "שעות הזמינות וכללי ההזמנה מוגדרים בהגדרות הזמנה.",
+      "booking_disabled_warning": "ההזמנה כבויה. הפעל/י בהגדרות הזמנה ושמור/י — אחרת לקוחות יראו עמוד הזמנה ריק גם אם יש שירותים כאן."
     },
     "book": {
       "title": "הזמנת פגישה",
@@ -1145,7 +1147,10 @@
       "none": "אין פגישות עדיין.",
       "status_active": "מאושר",
       "status_pending_payment": "ממתין לתשלום",
-      "status_cancelled": "בוטל"
+      "status_cancelled": "בוטל",
+      "add_to_google_calendar": "הוסף ל-Google Calendar",
+      "added_to_google_calendar": "ב-Google Calendar",
+      "google_calendar_not_connected": "חבר את Google Calendar בהגדרות הזמנות כדי לאפשר"
     },
     "integrations": {
       "google_title": "Google Calendar",

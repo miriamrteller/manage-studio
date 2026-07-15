@@ -36,4 +36,11 @@ export const GoogleCalendarService = {
     const { error } = await supabase.functions.invoke('google-calendar-disconnect', { body: {} });
     if (error) throw error;
   },
+
+  async syncAppointment(engagementId: string, action: 'insert' | 'delete'): Promise<void> {
+    const { error } = await supabase.functions.invoke('google-calendar-sync-event', {
+      body: { engagement_id: engagementId, action },
+    });
+    if (error) throw error;
+  },
 };

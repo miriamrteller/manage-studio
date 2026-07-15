@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { FEATURES } from '@shared/index';
@@ -5,6 +6,8 @@ import { useTenant } from '@/hooks/useTenant';
 import { useFeatureGate } from '@/hooks/useFeatureGate';
 import { Button } from '@/components/ui/button';
 import { AppointmentsService, type AppointmentRow } from '@/features/scheduling/appointmentsService';
+import { formatAppointmentWhen } from '@/features/scheduling/lib/formatAppointmentWhen';
+import { GoogleCalendarService } from '@/features/scheduling/googleCalendarService';
 
 const STATUS_STYLES: Record<string, string> = {
   active: 'bg-green-100 text-green-800',
@@ -13,12 +16,14 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 export default function AdminAppointmentsPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const tenant = useTenant();
   const queryClient = useQueryClient();
   const { hasFeature, isLoading: gateLoading } = useFeatureGate();
+  const [syncingId, setSyncingId] = useState<string | null>(null);
 
   const canView = hasFeature(FEATURES.scheduling.clientBooking) || hasFeature(FEATURES.scheduling.adminBooking);
+  const googleCalendarEnabled = hasFeature(FEATURES.scheduling.googleCalendar);
 
   const { data: rows = [] } = useQuery<AppointmentRow[]>({
     queryKey: ['appointments', tenant?.id],
@@ -26,11 +31,36 @@ export default function AdminAppointmentsPage() {
     enabled: !!tenant?.id && canView,
   });
 
+  const { data: googleConnection } = useQuery({
+    queryKey: ['googleCalendarConnection'],
+    queryFn: () => GoogleCalendarService.getConnection(),
+    enabled: googleCalendarEnabled,
+  });
+
+  const googleCalendarConnected = Boolean(googleConnection?.connected);
+
   async function cancel(id: string) {
     if (!tenant?.id) return;
     if (!window.confirm(t('scheduling.appointments.cancel') + '?')) return;
     await AppointmentsService.cancel(tenant as never, id);
     await queryClient.invalidateQueries({ queryKey: ['appointments'] });
+  }
+
+  async function addToGoogleCalendar(row: AppointmentRow) {
+    if (!googleCalendarConnected || row.google_event_id) return;
+    setSyncingId(row.id);
+    try {
+      await GoogleCalendarService.syncAppointment(row.id, 'insert');
+      await queryClient.invalidateQueries({ queryKey: ['appointments'] });
+    } catch (e) {
+      window.alert(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSyncingId(null);
+    }
+  }
+
+  function canAddToGoogleCalendar(row: AppointmentRow): boolean {
+    return googleCalendarConnected && row.status === 'active' && !row.google_event_id;
   }
 
   if (!gateLoading && !canView) {
@@ -64,27 +94,47 @@ export default function AdminAppointmentsPage() {
               </tr>
             </thead>
             <tbody>
-              {rows.map((r) => (
-                <tr key={r.id} className="border-b border-gray-100">
+              {rows.map((row) => (
+                <tr key={row.id} className="border-b border-gray-100">
                   <td className="p-2">
-                    {new Date(r.booked_starts_at).toLocaleString([], { timeZone: 'Asia/Jerusalem' })}
+                    {formatAppointmentWhen(row.booked_starts_at, i18n.language)}
                   </td>
-                  <td className="p-2">{r.offering_name ?? '—'}</td>
+                  <td className="p-2">{row.offering_name ?? '—'}</td>
                   <td className="p-2">
-                    <div>{r.client_name ?? '—'}</div>
-                    <div className="text-gray-500">{r.client_email}</div>
+                    <div>{row.client_name ?? '—'}</div>
+                    <div className="text-gray-500">{row.client_email}</div>
                   </td>
                   <td className="p-2">
-                    <span className={`rounded-full px-2 py-0.5 text-xs ${STATUS_STYLES[r.status] ?? 'bg-gray-100 text-gray-600'}`}>
-                      {t(`scheduling.appointments.status_${r.status}`, { defaultValue: r.status })}
+                    <span className={`rounded-full px-2 py-0.5 text-xs ${STATUS_STYLES[row.status] ?? 'bg-gray-100 text-gray-600'}`}>
+                      {t(`scheduling.appointments.status_${row.status}`, { defaultValue: row.status })}
                     </span>
                   </td>
                   <td className="p-2 text-end">
-                    {r.status !== 'cancelled' && (
-                      <Button variant="ghost" size="sm" onClick={() => cancel(r.id)}>
-                        {t('scheduling.appointments.cancel')}
-                      </Button>
-                    )}
+                    <div className="flex flex-col items-end gap-1 sm:flex-row sm:justify-end">
+                      {googleCalendarEnabled && row.status !== 'cancelled' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          isLoading={syncingId === row.id}
+                          disabled={!canAddToGoogleCalendar(row)}
+                          title={
+                            googleCalendarConnected
+                              ? undefined
+                              : t('scheduling.appointments.google_calendar_not_connected')
+                          }
+                          onClick={() => addToGoogleCalendar(row)}
+                        >
+                          {row.google_event_id
+                            ? t('scheduling.appointments.added_to_google_calendar')
+                            : t('scheduling.appointments.add_to_google_calendar')}
+                        </Button>
+                      )}
+                      {row.status !== 'cancelled' && (
+                        <Button variant="ghost" size="sm" onClick={() => cancel(row.id)}>
+                          {t('scheduling.appointments.cancel')}
+                        </Button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
