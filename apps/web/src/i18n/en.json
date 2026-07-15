@@ -1124,6 +1124,7 @@
     "book": {
       "title": "Book an appointment",
       "not_enabled": "Appointment booking is not currently available.",
+      "invalid_service": "That service isn’t available to book. Showing available services instead.",
       "choose_service": "Choose a service",
       "choose_date": "Choose a date",
       "choose_time": "Choose a time",

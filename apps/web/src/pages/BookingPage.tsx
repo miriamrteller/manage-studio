@@ -36,13 +36,14 @@ export default function BookingPage() {
   const subdomain = tenant?.subdomain ?? '';
   const detailsRef = useRef<HTMLElement>(null);
 
-  const [selectedOffering, setSelectedOffering] = useState<string | null>(offeringParam ?? null);
+  const [selectedOffering, setSelectedOffering] = useState<string | null>(null);
   const [slot, setSlot] = useState<AvailableSlot | null>(null);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [invalidDeepLink, setInvalidDeepLink] = useState(false);
 
   const offeringsQuery = useQuery<BookableOffering[]>({
     queryKey: ['bookableOfferings', subdomain],
@@ -56,16 +57,34 @@ export default function BookingPage() {
     [offerings, selectedOffering],
   );
 
-  // Always show the calendar under the services: default to the deep-linked
-  // offering, otherwise the first bookable service.
+  // Resolve selection from the URL once offerings load. Invalid / disabled deep
+  // links fall back to the first bookable service and clean the URL.
   useEffect(() => {
-    if (selectedOffering) return;
     if (offerings.length === 0) return;
-    const fromParam = offeringParam && offerings.some((o) => o.id === offeringParam)
-      ? offeringParam
-      : offerings[0].id;
-    setSelectedOffering(fromParam);
-  }, [offerings, offeringParam, selectedOffering]);
+
+    if (offeringParam && offerings.some((o) => o.id === offeringParam)) {
+      setSelectedOffering(offeringParam);
+      setInvalidDeepLink(false);
+      return;
+    }
+
+    if (offeringParam) {
+      setInvalidDeepLink(true);
+      navigate('/book', { replace: true });
+    } else {
+      setInvalidDeepLink(false);
+    }
+
+    setSelectedOffering((prev) =>
+      prev && offerings.some((o) => o.id === prev) ? prev : offerings[0].id,
+    );
+  }, [offerings, offeringParam, navigate]);
+
+  function selectOffering(id: string) {
+    setSelectedOffering(id);
+    setInvalidDeepLink(false);
+    navigate(`/book/${id}`, { replace: true });
+  }
 
   useEffect(() => {
     setSlot(null);
@@ -128,6 +147,12 @@ export default function BookingPage() {
         </div>
       )}
 
+      {invalidDeepLink && (
+        <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900" role="status">
+          {t('scheduling.book.invalid_service')}
+        </div>
+      )}
+
       {/* Services (capped + scroll) above calendar — pick service, then see its slots */}
       <section className="space-y-4 sm:space-y-5">
         <div className="space-y-2">
@@ -150,7 +175,7 @@ export default function BookingPage() {
                 <li key={o.id}>
                   <button
                     type="button"
-                    onClick={() => setSelectedOffering(o.id)}
+                    onClick={() => selectOffering(o.id)}
                     className={cn(
                       'min-h-11 w-full rounded-md border px-3 py-2.5 text-start transition',
                       selected
