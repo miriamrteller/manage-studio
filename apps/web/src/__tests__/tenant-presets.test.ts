@@ -31,6 +31,13 @@ describe('resolveEntityLabels', () => {
     expect(labels.engagement).toEqual({ singular: 'Enrolment', plural: 'Enrolments' });
     expect(labels.session).toEqual({ singular: 'Session', plural: 'Sessions' });
   });
+
+  it('returns Hebrew defaults when locale is he', () => {
+    const labels = resolveEntityLabels('programs', {}, 'he');
+    expect(labels.offering).toEqual({ singular: 'שיעור', plural: 'שיעורים' });
+    expect(labels.contact).toEqual({ singular: 'תלמיד', plural: 'תלמידים' });
+    expect(labels.account).toEqual({ singular: 'משפחה', plural: 'משפחות' });
+  });
 });
 
 describe('parseEntityLabelOverrides', () => {

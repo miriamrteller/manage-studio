@@ -135,7 +135,7 @@ export default function FinanceWalkthroughPage() {
             className="mt-1 w-full border border-gray-300 rounded px-3 py-2 font-mono text-sm"
             value={offeringId}
             onChange={(e) => setOfferingId(e.target.value)}
-            placeholder="00000000-0000-0000-0000-000000000311"
+            placeholder="00000000-0000-0000-0000-000000000313"
           />
         </label>
         <div className="flex flex-wrap gap-2">

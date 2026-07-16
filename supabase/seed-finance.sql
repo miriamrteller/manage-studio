@@ -132,9 +132,8 @@ ON CONFLICT (id) DO UPDATE SET
   status = EXCLUDED.status,
   waiver_required = EXCLUDED.waiver_required;
 
--- NOTE: seed.sql also uses …0310/…0311 as appointment demos (Party/Workshop).
--- Finance seed reuses those ids as class offerings — must reset offering_type +
--- duration_mins + weekly slot so offerings_type_shape stays satisfied.
+-- Dedicated finance offering ids (…0312/…0313). Do not reuse …0310/…0311 —
+-- seed.sql owns those as appointment demos (Party/Workshop).
 INSERT INTO offerings (
   id, tenant_id, season_id, category_id, name,
   offering_type, duration_mins,
@@ -145,7 +144,7 @@ INSERT INTO offerings (
 )
 VALUES
   (
-    '00000000-0000-0000-0000-000000000310'::uuid,
+    '00000000-0000-0000-0000-000000000312'::uuid,
     '00000000-0000-0000-0000-000000000001'::uuid,
     '00000000-0000-0000-0000-000000000102'::uuid,
     '00000000-0000-0000-0000-000000000203'::uuid,
@@ -157,7 +156,7 @@ VALUES
     true, true, 'active', NULL
   ),
   (
-    '00000000-0000-0000-0000-000000000311'::uuid,
+    '00000000-0000-0000-0000-000000000313'::uuid,
     '00000000-0000-0000-0000-000000000001'::uuid,
     '00000000-0000-0000-0000-000000000102'::uuid,
     '00000000-0000-0000-0000-000000000201'::uuid,
@@ -254,7 +253,7 @@ FROM consent_templates ct
 WHERE ct.id = '00000000-0000-0000-0000-000000000801'::uuid
 ON CONFLICT (id) DO NOTHING;
 
--- Recurring offering waiver for Esther (310)
+-- Recurring offering waiver for Esther (312 — Primary Monthly)
 INSERT INTO waiver_evidence (
   id, tenant_id, person_id, account_member_id, offering_id,
   consent_template_id, consent_version, consent_version_hash, wording_snapshot,
@@ -268,7 +267,7 @@ SELECT
   '00000000-0000-0000-0000-000000000001'::uuid,
   '00000000-0000-0000-0000-000000000501'::uuid,
   '00000000-0000-0000-0000-000000000701'::uuid,
-  '00000000-0000-0000-0000-000000000310'::uuid,
+  '00000000-0000-0000-0000-000000000312'::uuid,
   ct.id,
   ct.version,
   ct.version_hash,
@@ -353,7 +352,7 @@ VALUES
     '00000000-0000-0000-0000-000000001004'::uuid,
     '00000000-0000-0000-0000-000000000001'::uuid,
     '00000000-0000-0000-0000-000000000501'::uuid,
-    '00000000-0000-0000-0000-000000000310'::uuid,
+    '00000000-0000-0000-0000-000000000312'::uuid,
     '00000000-0000-0000-0000-000000000102'::uuid,
     '00000000-0000-0000-0000-000000000408'::uuid,
     '00000000-0000-0000-0000-000000000903'::uuid,

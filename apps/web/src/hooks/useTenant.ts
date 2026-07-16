@@ -78,7 +78,9 @@ export function useTenant(): TenantConfig | null {
         payment_provider_updated_at: row.payment_provider_updated_at ?? null,
         invoicing_provider: row.invoicing_provider ?? 'green_invoice',
         business_preset: preset,
-        entity_labels: resolveEntityLabels(preset, overrides),
+        entity_label_overrides: overrides,
+        // English defaults here; LabelsProvider re-resolves for active UI language.
+        entity_labels: resolveEntityLabels(preset, overrides, 'en'),
         modules: resolvePresetModules(preset),
         enabled_features: Array.isArray(row.enabled_features) ? row.enabled_features : [],
       } as TenantConfig;
