@@ -632,11 +632,12 @@ ballet-school-system/
 │       ├── archive/                   # Shipped / superseded plans
 │       └── …                          # See docs/plans/README.md
 ├── supabase/
-│   ├── migrations/                    # 26 timestamped SQL files; see Section 4.2.0
+│   ├── migrations/                    # 28 timestamped SQL files; see Section 4.2.0
 │   │   ├── 20260608000200_core_tenants.sql
 │   │   ├── 20260608000300_people.sql
-│   │   ├── … (00200–02600; see 4.2.0)
-│   │   └── 20260608002600_scheduled_jobs.sql
+│   │   ├── … (00200–02800; see 4.2.0)
+│   │   └── 20260608002800_scheduled_jobs.sql
+│   ├── migrations_backup/incremental_20260716/  # fourth squash archive (2026-07-16)
 │   ├── migrations_backup/incremental_20260705/  # third squash archive (2026-07-05)
 │   ├── migrations_backup/legacy_20260608/  # superseded pre-consolidation migrations
 │   ├── reset_dev_db.sql               # Dev-only: drop schema + clear migration history
@@ -822,19 +823,19 @@ Landing pages and public class listings need data before a user logs in. The acc
 
 #### 4.2.0 Implemented schema index (V1 slice)
 
+- **2026-07-16 — fourth squash:** folded scheduling/features/Google (`03000`–`04200`) into the base chain; merged Rapyd/Yesh/Tranzila onto `tenants`/`payments` (no `tenant_configs` / parallel `bookings`). Archived under `supabase/migrations_backup/incremental_20260716/`. Authoritative chain: `20260608000200`–`20260608002800` (28 files). Plan: [v1-migration-squash-20260716.md](docs/plans/v1-migration-squash-20260716.md).
 - **2026-07-05 — third squash:** folded `20260625*`–`20260705*` incrementals into the base `20260608*` chain; archived originals under `supabase/migrations_backup/incremental_20260705/`.
-- This index now reflects a single authoritative chain (`20260608000200`–`20260608002600`).
 
-> **2026-06-08 — consolidated chain.** The original 34-file history (`20260526*`–`20260610*`) was rewritten into the `20260608*` chain below, baking every `ALTER` into its base `CREATE TABLE`. The superseded files are retained read-only under `supabase/migrations_backup/legacy_20260608/`. Filename order = apply order. **Base V1 chain: 26 files** (`00200`–`02600`, including `02150_waiver_rpcs`). **Post-chain scheduling / features:** `03000`–`04200` (feature flags, Google Calendar tokens, booking schema, `offering_type`, grants, hours RPC, pending_waiver occupancy) — see [scheduling/stage-s2-schema.md](docs/plans/scheduling/stage-s2-schema.md) and [deployment-and-testing.md](docs/plans/scheduling/deployment-and-testing.md).
+> **2026-06-08 — consolidated chain.** The original 34-file history (`20260526*`–`20260610*`) was rewritten into the `20260608*` chain below, baking every `ALTER` into its base `CREATE TABLE`. The superseded files are retained read-only under `supabase/migrations_backup/legacy_20260608/`. Filename order = apply order.
 
 > **2026-06-24 — second squash.** Seven post-consolidation incrementals (`20260609*`–`20260624*`) were folded into the base chain (encryption platform config, grow provisioning, enrolment resume drafts, offering location, waiver auth fix). Archived at `supabase/migrations_backup/incremental_20260624/`.
 
 | File | Creates / updates | Depends on |
 |------|-------------------|------------|
-| `20260608000200_core_tenants.sql` | `tenants` (incl. `from_email`), `user_profiles`, `private.platform_config`, `get_app_encryption_key()`, RLS helpers (`get_my_tenant_id()`, `is_super_admin()`, `is_service_role()`) | — |
+| `20260608000200_core_tenants.sql` | `tenant_plan`, `verticals`, `tenants` (plan/skin/Google/Rapyd/Yesh/Tranzila cols), `user_profiles`, `private.platform_config`, RLS helpers | — |
 | `20260608000300_people.sql` | `people`, `accounts`, `account_members`, circular FK, `get_my_account_ids()`, `get_my_person_id()`, `is_minor()` | 000200 |
 | `20260608000400_contact_prefs.sql` | `contact_preferences` | 000200, 000300 |
-| `20260608000500_offerings.sql` | `seasons`, `categories`, `staff`, `offerings` (incl. `waiver_required`, `cover_image_path`, `location`) | 000200 |
+| `20260608000500_offerings.sql` | `seasons`, `categories`, `staff`, `offerings` (final `offering_type` / `duration_mins` / shape CHECK) | 000200 |
 | `20260608000600_communications.sql` | `notification_log`, `tenant_notification_templates`, `tenant_email_customizations`, `expense_categories`; notification blast RPCs; `idx_notification_log_dunning_key` | 000200, 000300 |
 | `20260608000700_audit_security.sql` | `audit_log`, `otp_codes`, `verification_attempts` + cleanup/rate-limit RPCs | 000200 |
 | `20260608000800_offering_sessions.sql` | `offering_sessions` | 000200, 000500 |
@@ -842,10 +843,10 @@ Landing pages and public class listings need data before a user logs in. The acc
 | `20260608001000_requirements.sql` | `requirement_templates`, `requirement_overrides`, `offering_requirements` | 000200, 000300, 000500 |
 | `20260608001100_billing_accounts.sql` | `billing_accounts` | 000200, 000300 |
 | `20260608001200_waiver_evidence.sql` | `waiver_evidence` (incl. `offering_id`, `guardian_confirmed`), `waiver_events`, immutability triggers, RLS, `sign_waiver()` (26-param) | 000200, 000300, 000500, 000700, 000900 |
-| `20260608001300_engagements.sql` | `engagements` (incl. age-override, waiver-deadline, `payment_dunning_*`, `waiver_evidence_id` FK), `waitlist`, `enrolment_resume_drafts` | 000200, 000300, 000500, 000800, 001100, 001200 |
+| `20260608001300_engagements.sql` | `engagements` (age/dunning/waiver + `booked_*` / `scheduling_hold_id` column), `waitlist`, `enrolment_resume_drafts` | 000200, 000300, 000500, 000800, 001100, 001200 |
 | `20260608001400_attendance.sql` | `attendance`, `service_credits` | 000200, 000300, 000500, 000800, 001300 |
 | `20260608001500_engagement_rls.sql` | engagement-dependent RLS on `offering_sessions` + `billing_accounts` | 000300, 000800, 001100, 001300 |
-| `20260608001600_finance.sql` | `payments`, `expenses`, `grow_webhook_secrets`, credential RPCs (Grow/iCount + token invalidation), `get_finance_summary`, admin document RPCs, billing/invoicing tables | 000200, 000300, 000500, 001300, 001100 |
+| `20260608001600_finance.sql` | `payments` (+ Yesh allocation / Tranzila refs / `b2b_flag`), expenses, Grow/iCount/Rapyd/Yesh/Tranzila credential RPCs, billing tables | 000200, 000300, 000500, 001300, 001100 |
 | `20260608001700_storage.sql` | `offering-images`, `waiver-pdfs`, `expense-receipts` buckets + storage RLS | 000200, 000300, 000500 |
 | `20260608001800_public_rpcs.sql` | `get_public_offerings_by_subdomain(p_subdomain)` (incl. `season_start_date`, `cover_image_path`, `waiver_required`, `location`), `get_tenant_config_by_subdomain(p_subdomain)` — `anon` safe | 000200, 000500 |
 | `20260608001900_auth_trigger.sql` | `handle_new_user` on `auth.users` (reads `raw_user_meta_data`, tenant fallback) | 000200 |
@@ -854,9 +855,11 @@ Landing pages and public class listings need data before a user logs in. The acc
 | `20260608002150_waiver_rpcs.sql` | `get_pending_waiver_engagement()`, `get_engagement_person_id()` | 000300, 001300 |
 | `20260608002200_admin_enrolment_rpcs.sql` | `search_enrolment_students()`, `admin_enrolment_lookup_email()`, guardian link RPCs, age-review RPCs | 000200, 000300, 001300 |
 | `20260608002300_engagement_actions.sql` | `cancel_engagement()` (incl. `pending_waiver`) | 000200, 000700, 001300, 001600 |
-| `20260608002400_tenant_provisioning.sql` | `check_subdomain_available()`, `provision_tenant()` (incl. `p_from_email`, IL grow defaults) | 000200, 000600 |
-| `20260608002500_grants.sql` | Schema + table `GRANT`s for `authenticated` / `anon` / `service_role` (incl. `waiver_evidence`, `waiver_events`, `expenses`, `grow_webhook_secrets`) | all prior |
-| `20260608002600_scheduled_jobs.sql` | `pg_cron` + `pg_net` extensions; scheduled HTTP jobs (billing, dunning, waiver, issue-document) + SQL cleanup RPCs | 000700, Edge fn auth via GUCs |
+| `20260608002400_tenant_provisioning.sql` | `check_subdomain_available()` (`provision_tenant` in 002500) | 000200 |
+| `20260608002500_feature_flag_system.sql` | `feature_definitions`, `tenant_feature_overrides`, seeds, `get_tenant_features`, `provision_tenant`, `get_tenant_config_by_subdomain` | 000200, 001600, 002400 |
+| `20260608002600_scheduling.sql` | scheduling tables, hold FK, final slot/hold/schedule RPCs, Google credential RPCs | 000300, 000500, 001300, 002500 |
+| `20260608002700_grants.sql` | Schema + table `GRANT`s (V1 + features + scheduling) | all prior tables |
+| `20260608002800_scheduled_jobs.sql` | `pg_cron` + `pg_net`; billing/dunning/waiver/document + expire-holds + platform_config cron secrets | 000700, 002600 |
 
 > **RLS fixes applied in-place** in all files listed above. See §4.1 and §4.1.1 for the security model these migrations implement.
 
@@ -2070,7 +2073,7 @@ Public RPCs (accessible to `anon`) additionally MUST filter by `p_subdomain` and
 
 #### 4.3.4 Operational Dependencies
 
-- Scheduled jobs are now managed by migration `20260608002600_scheduled_jobs.sql` (pg_cron + pg_net, UTC schedules for Jerusalem business intent).
+- Scheduled jobs are now managed by migration `20260608002800_scheduled_jobs.sql` (pg_cron + pg_net, UTC schedules for Jerusalem business intent).
 - Required deploy-time DB settings (no hardcoded secrets in SQL): `app.settings.supabase_functions_url`, `app.settings.cron_secret`.
 - Production prerequisite: `CRON_SECRET` must be set both in Edge Function secrets and DB GUC before enabling cron jobs.
 

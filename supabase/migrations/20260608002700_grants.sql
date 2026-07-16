@@ -1,7 +1,7 @@
 -- =============================================================================
--- 002500: All table + schema grants
--- Must run LAST — all tables must exist before grants can reference them.
--- DEPENDENCIES: all previous migrations
+-- 002700: All table + schema grants
+-- Must run AFTER feature + scheduling tables exist.
+-- DEPENDENCIES: all previous migrations through 002600
 -- =============================================================================
 
 GRANT USAGE ON SCHEMA public TO authenticated;
@@ -43,7 +43,14 @@ GRANT SELECT ON TABLE
   public.grow_webhook_secrets,
   public.notification_log,
   public.audit_log,
-  public.verification_attempts
+  public.verification_attempts,
+  public.verticals,
+  public.feature_definitions,
+  public.tenant_feature_overrides,
+  public.tenant_scheduling_settings,
+  public.tenant_scheduling_hours,
+  public.scheduling_blocks,
+  public.scheduling_holds
 TO authenticated;
 
 GRANT INSERT ON TABLE public.audit_log        TO authenticated;
@@ -76,8 +83,13 @@ GRANT INSERT, UPDATE, DELETE ON TABLE
   public.tenant_notification_templates,
   public.tenant_email_customizations,
   public.expense_categories,
-  public.verification_attempts
+  public.verification_attempts,
+  public.tenant_scheduling_hours,
+  public.scheduling_blocks,
+  public.scheduling_holds
 TO authenticated;
+
+GRANT INSERT, UPDATE ON TABLE public.tenant_scheduling_settings TO authenticated;
 
 GRANT UPDATE ON TABLE public.tenants TO authenticated;
 

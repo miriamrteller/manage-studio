@@ -1,4 +1,5 @@
 import { createContext, ReactNode, useMemo } from 'react';
+import { useLanguage } from '@/hooks/useLanguage';
 import { useTenant } from '@/hooks/useTenant';
 import {
   resolveEntityLabels,
@@ -17,7 +18,7 @@ export interface LabelsContextType {
 // Module-level constant — never recreated between renders.
 // Used as the context default and as the loading fallback before tenant data arrives.
 const FALLBACK: LabelsContextType = {
-  labels: resolveEntityLabels('programs'),
+  labels: resolveEntityLabels('programs', {}, 'he'),
   modules: resolvePresetModules('programs'),
   preset: 'programs',
 };
@@ -29,25 +30,33 @@ export const LabelsContext = createContext<LabelsContextType>(FALLBACK);
 /**
  * LabelsProvider
  *
- * Resolves entity labels once when tenant data arrives from React Query.
- * Sits alongside LanguageProvider in RootLayout — both read from the same
+ * Resolves entity labels when tenant data arrives and when the UI language changes.
+ * Sits inside LanguageProvider in RootLayout — both read from the same
  * cached useTenant() query (React Query deduplicates, no extra network calls).
  *
  * Components consume labels via useEntityLabels(), not useTenant() directly.
  */
 export function LabelsProvider({ children }: { children: ReactNode }) {
   const tenant = useTenant();
+  const { language } = useLanguage();
 
-  // Recomputes only when the tenant object reference changes (i.e. on refetch).
-  // React Query returns a stable TenantConfig reference from cache between renders.
   const value = useMemo<LabelsContextType>(() => {
-    if (!tenant) return FALLBACK;
+    if (!tenant) {
+      return {
+        ...FALLBACK,
+        labels: resolveEntityLabels('programs', {}, language),
+      };
+    }
     return {
-      labels: tenant.entity_labels,
+      labels: resolveEntityLabels(
+        tenant.business_preset,
+        tenant.entity_label_overrides,
+        language,
+      ),
       modules: tenant.modules,
       preset: tenant.business_preset,
     };
-  }, [tenant]);
+  }, [tenant, language]);
 
   return <LabelsContext.Provider value={value}>{children}</LabelsContext.Provider>;
 }

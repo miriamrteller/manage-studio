@@ -33,8 +33,18 @@ CREATE TABLE engagements (
   waiver_5d_reminded_at  TIMESTAMPTZ,
   payment_dunning_attempt_count INT NOT NULL DEFAULT 0,
   payment_dunning_next_at       TIMESTAMPTZ,
+  -- Appointment booking (scheduling) — FK to scheduling_holds added in 002600
+  booked_starts_at              TIMESTAMPTZ,
+  booked_ends_at                TIMESTAMPTZ,
+  google_event_id               TEXT,
+  scheduling_hold_id            UUID,
   created_at             TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at             TIMESTAMPTZ NOT NULL DEFAULT now()
+  updated_at             TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT engagements_booked_pair CHECK (
+    (booked_starts_at IS NULL AND booked_ends_at IS NULL)
+    OR (booked_starts_at IS NOT NULL AND booked_ends_at IS NOT NULL
+        AND booked_ends_at > booked_starts_at)
+  )
 );
 
 COMMENT ON COLUMN engagements.age_override_at     IS 'Set when a tenant admin overrides age eligibility.';
@@ -54,7 +64,7 @@ CREATE UNIQUE INDEX idx_engagements_active_with_season ON engagements(person_id,
   WHERE status NOT IN ('cancelled', 'withdrawn') AND season_id IS NOT NULL;
 
 CREATE UNIQUE INDEX idx_engagements_active_no_season ON engagements(person_id, offering_id)
-  WHERE status NOT IN ('cancelled', 'withdrawn') AND season_id IS NULL;
+  WHERE status NOT IN ('cancelled', 'withdrawn') AND season_id IS NULL AND booked_starts_at IS NULL;
 
 CREATE INDEX idx_engagements_tenant          ON engagements(tenant_id);
 CREATE INDEX idx_engagements_person          ON engagements(person_id);

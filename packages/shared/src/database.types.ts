@@ -1481,8 +1481,12 @@ export type Database = {
       payments: {
         Row: {
           account_id: string | null
+          allocation_number: string | null
+          allocation_skip_reason: string | null
+          allocation_status: string | null
           anonymised_at: string | null
           approved_by: string | null
+          b2b_flag: boolean
           billing_account_id: string | null
           charge_type: string
           created_at: string
@@ -1513,13 +1517,20 @@ export type Database = {
           status: string
           tenant_id: string
           total_amount_minor: number
+          tranzila_auth_number: string | null
+          tranzila_pr_id: string | null
+          tranzila_reference_txn_id: string | null
           vat_amount_minor: number
           vat_rate: number
         }
         Insert: {
           account_id?: string | null
+          allocation_number?: string | null
+          allocation_skip_reason?: string | null
+          allocation_status?: string | null
           anonymised_at?: string | null
           approved_by?: string | null
+          b2b_flag?: boolean
           billing_account_id?: string | null
           charge_type?: string
           created_at?: string
@@ -1550,13 +1561,20 @@ export type Database = {
           status?: string
           tenant_id: string
           total_amount_minor: number
+          tranzila_auth_number?: string | null
+          tranzila_pr_id?: string | null
+          tranzila_reference_txn_id?: string | null
           vat_amount_minor?: number
           vat_rate?: number
         }
         Update: {
           account_id?: string | null
+          allocation_number?: string | null
+          allocation_skip_reason?: string | null
+          allocation_status?: string | null
           anonymised_at?: string | null
           approved_by?: string | null
+          b2b_flag?: boolean
           billing_account_id?: string | null
           charge_type?: string
           created_at?: string
@@ -1587,6 +1605,9 @@ export type Database = {
           status?: string
           tenant_id?: string
           total_amount_minor?: number
+          tranzila_auth_number?: string | null
+          tranzila_pr_id?: string | null
+          tranzila_reference_txn_id?: string | null
           vat_amount_minor?: number
           vat_rate?: number
         }
@@ -2363,6 +2384,7 @@ export type Database = {
           payment_provider: string
           payment_provider_account_id: string | null
           payment_provider_public_key: string | null
+          payment_provider_sandbox: boolean
           payment_provider_secret_enc: string | null
           payment_provider_updated_at: string | null
           payment_provider_webhook_enc: string | null
@@ -2371,14 +2393,17 @@ export type Database = {
           plan: Database["public"]["Enums"]["tenant_plan"]
           prices_include_vat: boolean
           primary_color: string
+          rapyd_config: Json | null
           skin: string
           sub_status: string
           subdomain: string
+          tranzila_terminal_name: string | null
           trial_ends_at: string | null
           updated_at: string
           vat_rate: number | null
           vat_type: number
           waiver_require_otp: boolean
+          yesh_config: Json | null
         }
         Insert: {
           accent_color?: string
@@ -2410,6 +2435,7 @@ export type Database = {
           payment_provider?: string
           payment_provider_account_id?: string | null
           payment_provider_public_key?: string | null
+          payment_provider_sandbox?: boolean
           payment_provider_secret_enc?: string | null
           payment_provider_updated_at?: string | null
           payment_provider_webhook_enc?: string | null
@@ -2418,14 +2444,17 @@ export type Database = {
           plan?: Database["public"]["Enums"]["tenant_plan"]
           prices_include_vat?: boolean
           primary_color?: string
+          rapyd_config?: Json | null
           skin?: string
           sub_status?: string
           subdomain: string
+          tranzila_terminal_name?: string | null
           trial_ends_at?: string | null
           updated_at?: string
           vat_rate?: number | null
           vat_type?: number
           waiver_require_otp?: boolean
+          yesh_config?: Json | null
         }
         Update: {
           accent_color?: string
@@ -2457,6 +2486,7 @@ export type Database = {
           payment_provider?: string
           payment_provider_account_id?: string | null
           payment_provider_public_key?: string | null
+          payment_provider_sandbox?: boolean
           payment_provider_secret_enc?: string | null
           payment_provider_updated_at?: string | null
           payment_provider_webhook_enc?: string | null
@@ -2465,14 +2495,17 @@ export type Database = {
           plan?: Database["public"]["Enums"]["tenant_plan"]
           prices_include_vat?: boolean
           primary_color?: string
+          rapyd_config?: Json | null
           skin?: string
           sub_status?: string
           subdomain?: string
+          tranzila_terminal_name?: string | null
           trial_ends_at?: string | null
           updated_at?: string
           vat_rate?: number | null
           vat_type?: number
           waiver_require_otp?: boolean
+          yesh_config?: Json | null
         }
         Relationships: [
           {
@@ -3108,7 +3141,31 @@ export type Database = {
           payment_provider_webhook_secret: string
         }[]
       }
+      get_tenant_rapyd_credentials: {
+        Args: { p_tenant_id: string }
+        Returns: {
+          access_key: string
+          customer_id: string
+          sandbox: boolean
+          secret_key: string
+        }[]
+      }
       get_tenant_today: { Args: { p_tenant_id: string }; Returns: string }
+      get_tenant_tranzila_credentials: {
+        Args: { p_tenant_id: string }
+        Returns: {
+          app_key: string
+          secret_key: string
+          terminal_name: string
+        }[]
+      }
+      get_tenant_yesh_credentials: {
+        Args: { p_tenant_id: string }
+        Returns: {
+          api_key: string
+          company_id: string
+        }[]
+      }
       guest_enrolment_check_email: {
         Args: { p_email: string; p_subdomain: string }
         Returns: Json
@@ -3290,6 +3347,26 @@ export type Database = {
         }
         Returns: undefined
       }
+      save_tenant_rapyd_credentials: {
+        Args: {
+          p_access_key: string
+          p_sandbox?: boolean
+          p_secret_key: string
+        }
+        Returns: undefined
+      }
+      save_tenant_tranzila_credentials: {
+        Args: {
+          p_app_key: string
+          p_secret_key: string
+          p_terminal_name: string
+        }
+        Returns: undefined
+      }
+      save_tenant_yesh_credentials: {
+        Args: { p_api_key: string; p_company_id: string }
+        Returns: undefined
+      }
       search_enrolment_students: {
         Args: { p_limit?: number; p_query: string }
         Returns: Json
@@ -3302,6 +3379,10 @@ export type Database = {
           contact_email: string
           contact_name: string
         }[]
+      }
+      set_tenant_rapyd_customer_id: {
+        Args: { p_customer_id: string; p_tenant_id: string }
+        Returns: undefined
       }
       sign_waiver: {
         Args: {

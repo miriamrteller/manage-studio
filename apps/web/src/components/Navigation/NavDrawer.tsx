@@ -85,7 +85,8 @@ export function NavDrawer() {
       case '/admin/setup/terms':
         return labels.season.plural;
       case '/admin/setup/classes':
-        return `${t('nav.manage')} ${labels.offering.plural}`;
+        // Prefer dedicated i18n key so Hebrew is "ניהול שיעורים", not "ניהול" + plural.
+        return t('nav.manage_classes');
       default:
         return t(item.labelKey);
     }

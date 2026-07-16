@@ -1,7 +1,7 @@
 -- =============================================================================
 -- 000500: Seasons, Categories, Staff, Offerings
 -- staff created before offerings so offerings.staff_id FK resolves in-file.
--- min_age / max_age / waiver_required / cover_image_path / location are first-class columns.
+-- Final shape: offering_type (class|appointment), duration_mins, nullable weekly slot.
 -- DEPENDENCIES: 000200
 -- =============================================================================
 
@@ -48,9 +48,12 @@ CREATE TABLE offerings (
   category_id       UUID        REFERENCES categories(id),
   staff_id          UUID        REFERENCES staff(id),
   name              TEXT        NOT NULL,
+  offering_type     TEXT        NOT NULL DEFAULT 'class'
+                    CHECK (offering_type IN ('class', 'appointment')),
   day_of_week       INT         CHECK (day_of_week BETWEEN 0 AND 6),
-  start_time        TIME        NOT NULL,
-  end_time          TIME        NOT NULL,
+  start_time        TIME,
+  end_time          TIME,
+  duration_mins     INT         CHECK (duration_mins IS NULL OR duration_mins > 0),
   max_capacity      INT         NOT NULL DEFAULT 15,
   min_age           INT,
   max_age           INT,
@@ -81,6 +84,17 @@ CREATE TABLE offerings (
   ),
   CONSTRAINT offerings_location_length CHECK (
     location IS NULL OR char_length(location) <= 500
+  ),
+  CONSTRAINT offerings_type_shape CHECK (
+    (offering_type = 'class'
+       AND start_time IS NOT NULL
+       AND end_time   IS NOT NULL)
+    OR
+    (offering_type = 'appointment'
+       AND duration_mins IS NOT NULL
+       AND day_of_week   IS NULL
+       AND start_time    IS NULL
+       AND end_time      IS NULL)
   )
 );
 
@@ -89,6 +103,9 @@ COMMENT ON COLUMN offerings.cover_image_path IS
 
 COMMENT ON COLUMN offerings.location IS
   'Human-readable class location for listings and emails. Display text only — not a normalized address.';
+
+COMMENT ON COLUMN offerings.offering_type IS
+  'class = weekly group offering (enrolment); appointment = 1:1 bookable service (native slot booking).';
 
 CREATE INDEX idx_seasons_tenant    ON seasons(tenant_id);
 CREATE INDEX idx_categories_tenant ON categories(tenant_id);
@@ -99,6 +116,7 @@ CREATE INDEX idx_offerings_staff   ON offerings(staff_id);
 CREATE INDEX idx_offerings_public  ON offerings(is_public) WHERE is_public = true;
 CREATE INDEX idx_offerings_age     ON offerings(min_age, max_age);
 CREATE INDEX idx_offerings_billing ON offerings(billing_mode, billing_interval);
+CREATE INDEX idx_offerings_type    ON offerings(tenant_id, offering_type);
 
 ALTER TABLE seasons    ENABLE ROW LEVEL SECURITY;
 ALTER TABLE categories ENABLE ROW LEVEL SECURITY;

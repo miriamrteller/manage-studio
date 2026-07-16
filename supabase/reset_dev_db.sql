@@ -82,6 +82,25 @@ DROP TABLE IF EXISTS public.seasons                       CASCADE;
 
 DROP TABLE IF EXISTS public.contact_preferences           CASCADE;
 
+-- scheduling (post–fourth squash)
+DROP TABLE IF EXISTS public.scheduling_holds              CASCADE;
+DROP TABLE IF EXISTS public.scheduling_blocks             CASCADE;
+DROP TABLE IF EXISTS public.tenant_scheduling_hours       CASCADE;
+DROP TABLE IF EXISTS public.tenant_scheduling_settings    CASCADE;
+
+-- OpalSwift / Jul strays (if a half-applied chain left them)
+DROP TABLE IF EXISTS public.payment_callbacks_log         CASCADE;
+DROP TABLE IF EXISTS public.tranzila_tokens               CASCADE;
+DROP TABLE IF EXISTS public.tenant_invoices               CASCADE;
+DROP TABLE IF EXISTS public.client_payment_tokens         CASCADE;
+DROP TABLE IF EXISTS public.invoice_retry_queue           CASCADE;
+DROP TABLE IF EXISTS public.webhook_events                CASCADE;
+DROP TABLE IF EXISTS public.invoices                      CASCADE;
+DROP TABLE IF EXISTS public.bookings                      CASCADE;
+DROP TABLE IF EXISTS public.tenant_configs                CASCADE;
+DROP TABLE IF EXISTS public.tenant_credentials            CASCADE;
+DROP TABLE IF EXISTS public.tenant_settings               CASCADE;
+
 -- accounts (legacy + current)
 DROP TABLE IF EXISTS public.family_members                CASCADE;
 DROP TABLE IF EXISTS public.account_members               CASCADE;
@@ -91,6 +110,7 @@ DROP TABLE IF EXISTS public.accounts                      CASCADE;
 
 DROP INDEX IF EXISTS public.idx_notification_log_dunning_key;
 DROP INDEX IF EXISTS public.idx_offerings_season_dow_status;
+DROP INDEX IF EXISTS public.idx_tenants_rapyd_access_key;
 DROP TABLE IF EXISTS public.notification_log              CASCADE;
 DROP TABLE IF EXISTS public.tenant_notification_templates CASCADE;
 DROP TABLE IF EXISTS public.tenant_email_customizations   CASCADE;
@@ -105,6 +125,7 @@ DROP TABLE IF EXISTS public.otp_codes                     CASCADE;
 DROP TABLE IF EXISTS public.verification_attempts         CASCADE;
 DROP TABLE IF EXISTS public.user_profiles                 CASCADE;
 DROP TABLE IF EXISTS public.tenants                       CASCADE;
+DROP TYPE IF EXISTS public.tenant_plan                    CASCADE;
 
 DROP TABLE IF EXISTS private.platform_config              CASCADE;
 DROP SCHEMA IF EXISTS private CASCADE;
@@ -184,8 +205,27 @@ BEGIN
         'decline_age_review_engagement',
         'save_icount_webhook_secret',
         'save_tenant_icount_credentials',
+        'save_tenant_rapyd_credentials',
+        'get_tenant_rapyd_credentials',
+        'set_tenant_rapyd_customer_id',
+        'save_tenant_yesh_credentials',
+        'get_tenant_yesh_credentials',
+        'save_tenant_tranzila_credentials',
+        'get_tenant_tranzila_credentials',
         'get_tenant_today',
-        'get_admin_dashboard_overview'
+        'get_admin_dashboard_overview',
+        'get_available_slots',
+        'create_scheduling_hold',
+        'release_scheduling_hold',
+        'get_schedule_events',
+        'get_public_schedule_events_by_subdomain',
+        'get_bookable_offerings_by_subdomain',
+        'replace_tenant_scheduling_hours',
+        'get_tenant_google_credentials',
+        'save_tenant_google_credentials',
+        'update_tenant_google_access_token',
+        'disconnect_tenant_google_calendar',
+        'get_google_calendar_connection'
       )
   LOOP
     EXECUTE 'DROP FUNCTION IF EXISTS ' || r.sig || ' CASCADE';

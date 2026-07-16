@@ -49,6 +49,14 @@ CREATE TABLE payments (
   created_by               UUID        REFERENCES user_profiles(id),
   approved_by              UUID        REFERENCES user_profiles(id),
   anonymised_at            TIMESTAMPTZ,
+  -- Yesh / Tranzila document + provider refs (no parallel invoices/bookings tables)
+  b2b_flag                 BOOLEAN     NOT NULL DEFAULT false,
+  allocation_number        TEXT,
+  allocation_status        TEXT,
+  allocation_skip_reason   TEXT,
+  tranzila_reference_txn_id TEXT,
+  tranzila_auth_number     TEXT,
+  tranzila_pr_id           TEXT,
   created_at               TIMESTAMPTZ NOT NULL DEFAULT now(),
   CONSTRAINT payment_payer CHECK ((account_id IS NOT NULL) OR (person_id IS NOT NULL)),
   CONSTRAINT payment_refund_amount_sign CHECK (
@@ -257,6 +265,224 @@ BEGIN
 END;
 $$;
 
+-- ── Rapyd / Yesh / Tranzila credential RPCs (pgp_sym_encrypt; mirror Grow auth) ──
+
+CREATE OR REPLACE FUNCTION save_tenant_rapyd_credentials(
+  p_access_key TEXT,
+  p_secret_key TEXT,
+  p_sandbox    BOOLEAN DEFAULT TRUE
+)
+RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions AS $$
+DECLARE
+  enc_key     TEXT;
+  v_tenant_id UUID;
+BEGIN
+  v_tenant_id := get_my_tenant_id();
+  IF v_tenant_id IS NULL THEN RAISE EXCEPTION 'Not authenticated'; END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM user_profiles
+    WHERE id = auth.uid() AND tenant_id = v_tenant_id AND 'tenant_admin' = ANY(role)
+  ) THEN
+    RAISE EXCEPTION 'tenant_admin role required';
+  END IF;
+  IF p_access_key IS NULL OR trim(p_access_key) = '' THEN
+    RAISE EXCEPTION 'p_access_key is required';
+  END IF;
+  enc_key := get_app_encryption_key();
+
+  UPDATE payment_method_tokens SET
+    revoked_at = now(), is_default = false, updated_at = now()
+  WHERE tenant_id = v_tenant_id AND provider <> 'rapyd' AND revoked_at IS NULL;
+
+  UPDATE tenants SET
+    payment_provider            = 'rapyd',
+    payment_provider_sandbox    = COALESCE(p_sandbox, true),
+    payment_provider_public_key = NULLIF(trim(p_access_key), ''),
+    rapyd_config = jsonb_strip_nulls(jsonb_build_object(
+      'access_key', trim(p_access_key),
+      'sandbox', COALESCE(p_sandbox, true),
+      'customer_id', rapyd_config->>'customer_id'
+    )),
+    payment_provider_secret_enc = CASE
+      WHEN p_secret_key IS NOT NULL AND trim(p_secret_key) <> ''
+      THEN pgp_sym_encrypt(trim(p_secret_key), enc_key)
+      ELSE payment_provider_secret_enc
+    END,
+    payment_provider_updated_at = now(),
+    updated_at = now()
+  WHERE id = v_tenant_id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION get_tenant_rapyd_credentials(p_tenant_id UUID)
+RETURNS TABLE (
+  access_key  TEXT,
+  secret_key  TEXT,
+  sandbox     BOOLEAN,
+  customer_id TEXT
+)
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions AS $$
+DECLARE enc_key TEXT;
+BEGIN
+  IF NOT is_service_role() THEN
+    RAISE EXCEPTION 'get_tenant_rapyd_credentials: service_role only';
+  END IF;
+  enc_key := get_app_encryption_key();
+  RETURN QUERY SELECT
+    COALESCE(t.rapyd_config->>'access_key', t.payment_provider_public_key),
+    CASE WHEN t.payment_provider_secret_enc IS NOT NULL
+      THEN pgp_sym_decrypt(t.payment_provider_secret_enc, enc_key) ELSE NULL END,
+    COALESCE((t.rapyd_config->>'sandbox')::boolean, t.payment_provider_sandbox),
+    t.rapyd_config->>'customer_id'
+  FROM tenants t
+  WHERE t.id = p_tenant_id AND t.payment_provider = 'rapyd';
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION set_tenant_rapyd_customer_id(
+  p_tenant_id   UUID,
+  p_customer_id TEXT
+)
+RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  IF NOT is_service_role() THEN
+    RAISE EXCEPTION 'set_tenant_rapyd_customer_id: service_role only';
+  END IF;
+  UPDATE tenants SET
+    rapyd_config = COALESCE(rapyd_config, '{}'::jsonb)
+      || jsonb_build_object('customer_id', p_customer_id),
+    updated_at = now()
+  WHERE id = p_tenant_id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION save_tenant_yesh_credentials(
+  p_company_id TEXT,
+  p_api_key    TEXT
+)
+RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions AS $$
+DECLARE
+  enc_key     TEXT;
+  v_tenant_id UUID;
+BEGIN
+  v_tenant_id := get_my_tenant_id();
+  IF v_tenant_id IS NULL THEN RAISE EXCEPTION 'Not authenticated'; END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM user_profiles
+    WHERE id = auth.uid() AND tenant_id = v_tenant_id AND 'tenant_admin' = ANY(role)
+  ) THEN
+    RAISE EXCEPTION 'tenant_admin role required';
+  END IF;
+  IF p_company_id IS NULL OR trim(p_company_id) = '' THEN
+    RAISE EXCEPTION 'p_company_id is required';
+  END IF;
+  enc_key := get_app_encryption_key();
+
+  UPDATE tenants SET
+    invoicing_provider   = 'yesh',
+    invoicing_account_id = NULLIF(trim(p_company_id), ''),
+    yesh_config = jsonb_build_object('company_id', trim(p_company_id)),
+    invoicing_api_key_enc = CASE
+      WHEN p_api_key IS NOT NULL AND trim(p_api_key) <> ''
+      THEN pgp_sym_encrypt(trim(p_api_key), enc_key)
+      ELSE invoicing_api_key_enc
+    END,
+    invoicing_credentials_updated_at = now(),
+    updated_at = now()
+  WHERE id = v_tenant_id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION get_tenant_yesh_credentials(p_tenant_id UUID)
+RETURNS TABLE (
+  company_id TEXT,
+  api_key    TEXT
+)
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions AS $$
+DECLARE enc_key TEXT;
+BEGIN
+  IF NOT is_service_role() THEN
+    RAISE EXCEPTION 'get_tenant_yesh_credentials: service_role only';
+  END IF;
+  enc_key := get_app_encryption_key();
+  RETURN QUERY SELECT
+    COALESCE(t.yesh_config->>'company_id', t.invoicing_account_id),
+    CASE WHEN t.invoicing_api_key_enc IS NOT NULL
+      THEN pgp_sym_decrypt(t.invoicing_api_key_enc, enc_key) ELSE NULL END
+  FROM tenants t
+  WHERE t.id = p_tenant_id AND t.invoicing_provider = 'yesh';
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION save_tenant_tranzila_credentials(
+  p_terminal_name TEXT,
+  p_app_key       TEXT,
+  p_secret_key    TEXT
+)
+RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions AS $$
+DECLARE
+  enc_key     TEXT;
+  v_tenant_id UUID;
+BEGIN
+  v_tenant_id := get_my_tenant_id();
+  IF v_tenant_id IS NULL THEN RAISE EXCEPTION 'Not authenticated'; END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM user_profiles
+    WHERE id = auth.uid() AND tenant_id = v_tenant_id AND 'tenant_admin' = ANY(role)
+  ) THEN
+    RAISE EXCEPTION 'tenant_admin role required';
+  END IF;
+  IF p_terminal_name IS NULL OR trim(p_terminal_name) = '' THEN
+    RAISE EXCEPTION 'p_terminal_name is required';
+  END IF;
+  IF trim(p_terminal_name) !~ '^[a-z][a-z0-9]{2,15}$' THEN
+    RAISE EXCEPTION 'Invalid tranzila_terminal_name format';
+  END IF;
+  enc_key := get_app_encryption_key();
+
+  UPDATE payment_method_tokens SET
+    revoked_at = now(), is_default = false, updated_at = now()
+  WHERE tenant_id = v_tenant_id AND provider <> 'tranzila' AND revoked_at IS NULL;
+
+  UPDATE tenants SET
+    payment_provider       = 'tranzila',
+    invoicing_provider     = 'tranzila',
+    tranzila_terminal_name = trim(p_terminal_name),
+    payment_provider_public_key = NULLIF(trim(p_app_key), ''),
+    payment_provider_secret_enc = CASE
+      WHEN p_secret_key IS NOT NULL AND trim(p_secret_key) <> ''
+      THEN pgp_sym_encrypt(trim(p_secret_key), enc_key)
+      ELSE payment_provider_secret_enc
+    END,
+    payment_provider_updated_at = now(),
+    updated_at = now()
+  WHERE id = v_tenant_id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION get_tenant_tranzila_credentials(p_tenant_id UUID)
+RETURNS TABLE (
+  terminal_name TEXT,
+  app_key       TEXT,
+  secret_key    TEXT
+)
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions AS $$
+DECLARE enc_key TEXT;
+BEGIN
+  IF NOT is_service_role() THEN
+    RAISE EXCEPTION 'get_tenant_tranzila_credentials: service_role only';
+  END IF;
+  enc_key := get_app_encryption_key();
+  RETURN QUERY SELECT
+    t.tranzila_terminal_name,
+    t.payment_provider_public_key,
+    CASE WHEN t.payment_provider_secret_enc IS NOT NULL
+      THEN pgp_sym_decrypt(t.payment_provider_secret_enc, enc_key) ELSE NULL END
+  FROM tenants t
+  WHERE t.id = p_tenant_id AND t.payment_provider = 'tranzila';
+END;
+$$;
+
 -- Safe card display RPC (Stage 8 UI; auth enforced here)
 CREATE OR REPLACE FUNCTION get_billing_account_payment_method(p_billing_account_id UUID)
 RETURNS TABLE (card_brand TEXT, last4 TEXT, exp_month INT, exp_year INT, is_default BOOLEAN)
@@ -375,6 +601,18 @@ GRANT EXECUTE ON FUNCTION get_tenant_invoicing_credentials(UUID)            TO s
 GRANT EXECUTE ON FUNCTION save_tenant_invoicing_credentials(TEXT, TEXT, TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION save_tenant_grow_credentials(TEXT, TEXT, TEXT)   TO authenticated;
 GRANT EXECUTE ON FUNCTION save_tenant_icount_credentials(TEXT, TEXT, TEXT) TO authenticated;
+GRANT EXECUTE ON FUNCTION save_tenant_rapyd_credentials(TEXT, TEXT, BOOLEAN) TO authenticated;
+GRANT EXECUTE ON FUNCTION save_tenant_yesh_credentials(TEXT, TEXT) TO authenticated;
+GRANT EXECUTE ON FUNCTION save_tenant_tranzila_credentials(TEXT, TEXT, TEXT) TO authenticated;
+
+REVOKE ALL ON FUNCTION get_tenant_rapyd_credentials(UUID) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION get_tenant_yesh_credentials(UUID) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION get_tenant_tranzila_credentials(UUID) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION set_tenant_rapyd_customer_id(UUID, TEXT) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION get_tenant_rapyd_credentials(UUID) TO service_role;
+GRANT EXECUTE ON FUNCTION get_tenant_yesh_credentials(UUID) TO service_role;
+GRANT EXECUTE ON FUNCTION get_tenant_tranzila_credentials(UUID) TO service_role;
+GRANT EXECUTE ON FUNCTION set_tenant_rapyd_customer_id(UUID, TEXT) TO service_role;
 GRANT EXECUTE ON FUNCTION get_billing_account_payment_method(UUID)          TO authenticated;
 
 ALTER TABLE payments               ENABLE ROW LEVEL SECURITY;

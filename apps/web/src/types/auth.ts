@@ -61,6 +61,8 @@ export type TenantConfig = {
   payment_provider_updated_at?: string | null;
   invoicing_provider?: string;
   business_preset: BusinessPreset;
+  /** Tenant-specific label overrides (raw); resolve with UI language via resolveEntityLabels. */
+  entity_label_overrides: Partial<EntityLabels>;
   entity_labels: EntityLabels;
   modules: PresetModules;
   /** Feature keys enabled for this tenant (anon-safe, from get_tenant_config_by_subdomain). */
