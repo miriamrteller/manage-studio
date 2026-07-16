@@ -184,6 +184,19 @@ VALUES
     12, 14,
     20, 24000, 'ILS', 'scheduled', 'one_time', true, 'active',
     NULL
+  ),
+  -- Adult class — kept for seed-finance Sara Gold self-pay (…0309)
+  (
+    '00000000-0000-0000-0000-000000000309'::uuid,
+    '00000000-0000-0000-0000-000000000001'::uuid,
+    '00000000-0000-0000-0000-000000000102'::uuid,
+    '00000000-0000-0000-0000-000000000207'::uuid,
+    'Pilates',
+    'class',
+    1, '10:00:00', '11:00:00',
+    18, NULL,
+    15, 28000, 'ILS', 'scheduled', 'one_time', true, 'active',
+    NULL
   )
 ON CONFLICT (id) DO UPDATE SET
   season_id = EXCLUDED.season_id,
@@ -202,12 +215,6 @@ ON CONFLICT (id) DO UPDATE SET
   is_public = EXCLUDED.is_public,
   status = EXCLUDED.status,
   location = EXCLUDED.location;
-
--- Retire legacy seed offerings (Mini, Pre-Primary, Pilates) without breaking FK history.
-UPDATE offerings
-SET status = 'cancelled', updated_at = now()
-WHERE tenant_id = '00000000-0000-0000-0000-000000000001'::uuid
-  AND id = '00000000-0000-0000-0000-000000000309'::uuid;
 
 -- All seed offerings require a signed waiver before enrolment completes.
 -- (offerings.waiver_required defaults to true; set explicitly so re-seeding a
@@ -822,8 +829,8 @@ ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================================
 -- WAIVER EVIDENCE + EVENTS (20260608001200_waiver_evidence.sql)
--- Sara Gold (adult, self-signing) accepted the active waiver for her Grade 3
--- (Sunday) enrolment. Demonstrates offering_id + guardian_confirmed=false (self signer).
+-- Sara Gold (adult, self-signing) accepted the active waiver for Pilates (…0309).
+-- Demonstrates offering_id + guardian_confirmed=false (self signer).
 -- pdf_sha256 / record_hmac are placeholders (64 hex zeros) — NOT valid digests;
 -- a real signing flow computes these in the accept-waiver Edge Function.
 -- Rows are immutable (UPDATE/DELETE blocked), so re-seed uses ON CONFLICT DO NOTHING.
@@ -841,7 +848,7 @@ SELECT
   '00000000-0000-0000-0000-000000000001'::uuid,
   '00000000-0000-0000-0000-000000000503'::uuid,   -- Sara Gold
   NULL,                                            -- adult self-signer; no account_member
-  '00000000-0000-0000-0000-000000000306'::uuid,   -- Grade 3 (Sunday)
+  '00000000-0000-0000-0000-000000000309'::uuid,   -- Pilates (adult)
   ct.id,
   ct.version,
   ct.version_hash,

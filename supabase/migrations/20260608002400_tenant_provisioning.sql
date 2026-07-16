@@ -1,7 +1,7 @@
 -- =============================================================================
--- 002400: Tenant provisioning helpers — super_admin + self-service operator signup
+-- 002400: Tenant provisioning helpers — self-service operator signup
 -- check_subdomain_available: any authenticated user (used by signup wizard)
--- provision_tenant: moved to 003000 (needs tenant_plan ENUM + verticals table)
+-- provision_tenant: final body in 002500_feature_flag_system.sql
 -- DEPENDENCIES: 000200
 -- =============================================================================
 
@@ -38,5 +38,5 @@ $$;
 
 GRANT EXECUTE ON FUNCTION check_subdomain_available(TEXT) TO authenticated;
 
--- NOTE: provision_tenant is defined in 003000_feature_flag_system.sql
--- after tenant_plan ENUM, verticals table, and tenants.plan / tenants.skin columns exist.
+-- NOTE: provision_tenant is defined in 002500_feature_flag_system.sql
+-- (tenant_plan + verticals already exist from 000200).

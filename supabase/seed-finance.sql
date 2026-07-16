@@ -10,10 +10,10 @@
 --
 -- Test matrix (creativeballet tenant):
 -- | Fixture | Flow | How to use |
--- | pending Esther → Mini (301) | A card pay | Login parent miriamrstern@gmail.com → pay engagement |
+-- | pending Esther → Grade 2 Wed (301) | A card pay | Login parent miriamrstern@gmail.com → pay engagement |
 -- | pending Sara → Pilates (309) | A adult self-pay | Guest or admin; waiver already signed |
 -- | pending Esther → Monthly Primary (310) | B recurring initial | Pay + save card + schedule |
--- | active Ruti + payment 1101 | E refund, parent portal | Admin refund; parent sees receipt |
+-- | active Ruti → Grade 3 Wed (302) + payment 1101 | E refund, parent portal | Admin refund; parent sees receipt |
 -- | offering 311 ₪1 no waiver | A smoke | Cheapest happy path |
 -- | tenant grow/grow + demo creds | G | Use with GROW_MOCK=true (Edge secret); no live Meshulam calls |
 -- | tenant icount/icount + demo creds | G | Use with ICOUNT_MOCK=true — switch provider on bundled settings page |
@@ -94,14 +94,54 @@ VALUES (
 ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================================
--- OFFERINGS — recurring + ₪1 smoke offering
+-- OFFERINGS — ensure finance FKs exist + recurring / ₪1 smoke offerings
 -- ============================================================================
+-- Pilates (…0309) is required by Sara's pending engagement; upsert in case
+-- seed.sql was an older copy that omitted it.
 INSERT INTO offerings (
   id, tenant_id, season_id, category_id, name,
+  offering_type, duration_mins,
   day_of_week, start_time, end_time,
   min_age, max_age,
   max_capacity, price_minor, currency, delivery_mode, billing_mode, billing_interval,
-  waiver_required, is_public, status
+  waiver_required, is_public, status, location
+)
+VALUES (
+  '00000000-0000-0000-0000-000000000309'::uuid,
+  '00000000-0000-0000-0000-000000000001'::uuid,
+  '00000000-0000-0000-0000-000000000102'::uuid,
+  '00000000-0000-0000-0000-000000000207'::uuid,
+  'Pilates',
+  'class', NULL,
+  1, '10:00:00', '11:00:00',
+  18, NULL,
+  15, 28000, 'ILS', 'scheduled', 'one_time', NULL,
+  true, true, 'active', NULL
+)
+ON CONFLICT (id) DO UPDATE SET
+  season_id = EXCLUDED.season_id,
+  category_id = EXCLUDED.category_id,
+  name = EXCLUDED.name,
+  offering_type = EXCLUDED.offering_type,
+  duration_mins = EXCLUDED.duration_mins,
+  day_of_week = EXCLUDED.day_of_week,
+  start_time = EXCLUDED.start_time,
+  end_time = EXCLUDED.end_time,
+  min_age = EXCLUDED.min_age,
+  max_age = EXCLUDED.max_age,
+  status = EXCLUDED.status,
+  waiver_required = EXCLUDED.waiver_required;
+
+-- NOTE: seed.sql also uses …0310/…0311 as appointment demos (Party/Workshop).
+-- Finance seed reuses those ids as class offerings — must reset offering_type +
+-- duration_mins + weekly slot so offerings_type_shape stays satisfied.
+INSERT INTO offerings (
+  id, tenant_id, season_id, category_id, name,
+  offering_type, duration_mins,
+  day_of_week, start_time, end_time,
+  min_age, max_age,
+  max_capacity, price_minor, currency, delivery_mode, billing_mode, billing_interval,
+  waiver_required, is_public, status, location
 )
 VALUES
   (
@@ -110,10 +150,11 @@ VALUES
     '00000000-0000-0000-0000-000000000102'::uuid,
     '00000000-0000-0000-0000-000000000203'::uuid,
     'Primary (Monthly)',
+    'class', NULL,
     2, '17:00:00', '17:45:00',
     5, 7,
     20, 24000, 'ILS', 'scheduled', 'recurring', 'monthly',
-    true, true, 'active'
+    true, true, 'active', NULL
   ),
   (
     '00000000-0000-0000-0000-000000000311'::uuid,
@@ -121,23 +162,30 @@ VALUES
     '00000000-0000-0000-0000-000000000102'::uuid,
     '00000000-0000-0000-0000-000000000201'::uuid,
     'Finance Smoke (₪1)',
+    'class', NULL,
     NULL, '00:00:00', '00:00:00',
     NULL, NULL,
     99, 100, 'ILS', 'intangible', 'one_time', NULL,
-    false, true, 'active'
+    false, true, 'active', NULL
   )
 ON CONFLICT (id) DO UPDATE SET
+  season_id = EXCLUDED.season_id,
+  category_id = EXCLUDED.category_id,
   name = EXCLUDED.name,
+  offering_type = EXCLUDED.offering_type,
+  duration_mins = EXCLUDED.duration_mins,
+  day_of_week = EXCLUDED.day_of_week,
+  start_time = EXCLUDED.start_time,
+  end_time = EXCLUDED.end_time,
   price_minor = EXCLUDED.price_minor,
   billing_mode = EXCLUDED.billing_mode,
   billing_interval = EXCLUDED.billing_interval,
   waiver_required = EXCLUDED.waiver_required,
   delivery_mode = EXCLUDED.delivery_mode,
-  start_time = EXCLUDED.start_time,
-  end_time = EXCLUDED.end_time,
   min_age = EXCLUDED.min_age,
   max_age = EXCLUDED.max_age,
-  status = EXCLUDED.status;
+  status = EXCLUDED.status,
+  location = EXCLUDED.location;
 
 -- ============================================================================
 -- BILLING ACCOUNT — Stern household (account_id + payer person_id)
@@ -164,7 +212,7 @@ ON CONFLICT (id) DO UPDATE SET
 -- WHERE id = '00000000-0000-0000-0000-000000000408'::uuid;
 
 -- ============================================================================
--- WAIVER — Esther Stern for Mini (301) so checkout can proceed
+-- WAIVER — Esther Stern for Grade 2 Wed (301) so checkout can proceed
 -- ============================================================================
 INSERT INTO waiver_evidence (
   id, tenant_id, person_id, account_member_id, offering_id,
