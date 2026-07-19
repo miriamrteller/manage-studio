@@ -882,6 +882,13 @@
         "cancel": "Cancel",
         "verify_whatsapp_hint": "Save your number, then contact the studio to verify WhatsApp.",
         "whatsapp_verified": "WhatsApp verified",
+        "scope_heading": "What to notify me about",
+        "scope_desc": "Choose which topics you want updates for (still sent on your preferred channel).",
+        "notify_offering_cancellation": "Class or appointment cancellations",
+        "notify_payment_due": "Payment reminders",
+        "notify_waitlist": "Waiting list offers",
+        "notify_schedule_change": "Schedule changes",
+        "notify_announcements": "School announcements",
         "error_save": "Could not save preferences. Please try again."
       },
       "password": {

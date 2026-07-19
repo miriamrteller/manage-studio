@@ -1,6 +1,6 @@
 # Phase 1G — Parent portal polish (paste into new agent chat)
 
-**Status:** ✅ **Shipped** (2026-06-30) on branch `feat/parent-portal-polish` — commit `fcad476`. Follow-ups documented: **Step 7** (1G-b `notify_*`), **Step 8** (WhatsApp OTP verify). V1 shipped hint-only for WhatsApp.
+**Status:** ✅ **Shipped** (2026-06-30) on branch `feat/parent-portal-polish` — commit `fcad476`. **Step 7** (1G-b `notify_*`) ✅ shipped 2026-07-19. **Step 8** (WhatsApp OTP verify) still deferred — V1 hint-only for WhatsApp.
 
 ## Mission
 
@@ -10,7 +10,7 @@ Complete the **parent/student portal** account settings slice: mount **notificat
 **SPEC:** §Phase 1G — contact preference management; dashboard with enrolled children + upcoming classes  
 **Branch:** branch from `main` (or continue after merging `feat/icount-integration` — **no payment work in this PR**)  
 **Depends on:** `ContactPreferencesEditor` ✅ · `useContactPreferences` ✅ · `ParentPortal` ✅ · parent self-enrolment P1–P3 ✅ ([parent-self-enrolment/00-overview.md](parent-self-enrolment/00-overview.md))  
-**Out of scope:** WhatsApp OTP full flow i18n, `notify_*` scope toggles (optional 1G-b), parent withdrawal, portal theming
+**Out of scope:** WhatsApp OTP full flow i18n (Step 8), parent withdrawal, portal theming
 
 ---
 
@@ -29,7 +29,7 @@ Complete the **parent/student portal** account settings slice: mount **notificat
 
 **Already shipped elsewhere — do not redo:** Myself section, guardian setup, `resolveGuardianProfile` ([parent-self-enrolment P2/P3](parent-self-enrolment/stage-p2-portal-myself.md)).
 
-**Deferred (not in this PR):** [Step 7](#step-7--optional-phase-1g-b-notify_-toggles) — `notify_*` scope toggles (1G-b); [Step 8](#step-8--whatsapp-otp-verify-in-portal-deferred) — full `WhatsAppOtpVerifier` i18n + embed.
+**Deferred:** [Step 8](#step-8--whatsapp-otp-verify-in-portal-deferred) — full `WhatsAppOtpVerifier` i18n + embed (after live WhatsApp).
 
 ---
 
@@ -311,21 +311,11 @@ pnpm -C apps/web test parent-portal-guardian.test.ts   # regression
 
 ## Step 7 — Optional Phase 1G-b: `notify_*` toggles
 
-**Only if user requests in same PR:**
+**Status:** ✅ **Shipped** (2026-07-19) — schema + `NotifyScopeFields` in portal prefs modal; DB columns already existed (no migration).
 
-1. Extend `ContactPreferencesSchema` + `ContactPreferencesUpdateSchema` in `packages/shared/src/schemas.ts`:
-
-```typescript
-notify_offering_cancellation: z.boolean().optional(),
-notify_payment_due: z.boolean().optional(),
-notify_waitlist: z.boolean().optional(),
-notify_schedule_change: z.boolean().optional(),
-notify_announcements: z.boolean().optional(),
-```
-
-2. `pnpm -C packages/shared build`
-3. Add checkbox group in editor under `pages.portal.preferences.scope_heading`
-4. Columns already exist in DB — no migration
+1. ~~Extend `ContactPreferencesSchema` + `ContactPreferencesUpdateSchema`~~ ✅
+2. ~~Checkbox group under `pages.portal.preferences.scope_heading`~~ ✅ (`NotifyScopeFields`)
+3. Columns already exist in DB — no migration
 
 ---
 
@@ -383,7 +373,7 @@ notify_announcements: z.boolean().optional(),
 
 ### Explicitly not done
 
-- [ ] Step 7 — `notify_*` scope toggles (1G-b) — see Step 7
+- [x] Step 7 — `notify_*` scope toggles (1G-b) — see Step 7
 - [ ] Step 8 — `WhatsAppOtpVerifier` i18n + portal embed + wired send/verify — see Step 8
 
 ---

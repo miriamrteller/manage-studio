@@ -881,6 +881,13 @@
         "cancel": "ביטול",
         "verify_whatsapp_hint": "שמרו את המספר, ולאחר מכן פנו לסטודיו לאימות WhatsApp.",
         "whatsapp_verified": "WhatsApp מאומת",
+        "scope_heading": "על מה לעדכן אותי",
+        "scope_desc": "בחרו אילו נושאים לקבל (עדיין בערוץ המועדף עליכם).",
+        "notify_offering_cancellation": "ביטולי שיעורים או פגישות",
+        "notify_payment_due": "תזכורות תשלום",
+        "notify_waitlist": "הצעות מרשימת המתנה",
+        "notify_schedule_change": "שינויי לוח זמנים",
+        "notify_announcements": "הודעות בית הספר",
         "error_save": "לא ניתן לשמור את ההעדפות. נסו שוב."
       },
       "password": {

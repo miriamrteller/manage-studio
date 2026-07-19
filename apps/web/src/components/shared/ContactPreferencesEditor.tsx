@@ -22,12 +22,29 @@ import {
 } from '@/components/ui/form';
 import { useContactPreferences } from '@/features/notifications/hooks/useContactPreferences';
 import { ContactPreferencesUpdateSchema } from '@shared/schemas';
-import type { ContactPreferencesUpdate } from '@shared/schemas';
+import type { ContactPreferences, ContactPreferencesUpdate } from '@shared/schemas';
 import { bindFormSubmit } from '@/lib/bindFormSubmit';
+import { NotifyScopeFields } from '@/components/shared/NotifyScopeFields';
 
 interface ContactPreferencesEditorProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+}
+
+function toFormValues(preferences?: ContactPreferences | null): ContactPreferencesUpdate {
+  return {
+    email_opted_in: preferences?.email_opted_in ?? true,
+    whatsapp_opted_in: preferences?.whatsapp_opted_in ?? false,
+    whatsapp_number: preferences?.whatsapp_number ?? '',
+    preferred_channel:
+      (preferences?.preferred_channel === 'voice' ? 'email' : preferences?.preferred_channel) ??
+      'email',
+    notify_offering_cancellation: preferences?.notify_offering_cancellation ?? true,
+    notify_payment_due: preferences?.notify_payment_due ?? true,
+    notify_waitlist: preferences?.notify_waitlist ?? true,
+    notify_schedule_change: preferences?.notify_schedule_change ?? true,
+    notify_announcements: preferences?.notify_announcements ?? true,
+  };
 }
 
 export function ContactPreferencesEditor({
@@ -41,25 +58,12 @@ export function ContactPreferencesEditor({
 
   const form = useForm<ContactPreferencesUpdate>({
     resolver: zodResolver(ContactPreferencesUpdateSchema),
-    defaultValues: {
-      email_opted_in: preferences?.email_opted_in ?? true,
-      whatsapp_opted_in: preferences?.whatsapp_opted_in ?? false,
-      whatsapp_number: preferences?.whatsapp_number ?? '',
-      preferred_channel:
-        (preferences?.preferred_channel === 'voice' ? 'email' : preferences?.preferred_channel) ??
-        'email',
-    },
+    defaultValues: toFormValues(preferences),
   });
 
   useEffect(() => {
     if (open && preferences) {
-      form.reset({
-        email_opted_in: preferences.email_opted_in,
-        whatsapp_opted_in: preferences.whatsapp_opted_in,
-        whatsapp_number: preferences.whatsapp_number ?? '',
-        preferred_channel:
-          preferences.preferred_channel === 'voice' ? 'email' : preferences.preferred_channel,
-      });
+      form.reset(toFormValues(preferences));
       setSubmitError(null);
     }
   }, [open, preferences, form]);
@@ -82,7 +86,7 @@ export function ContactPreferencesEditor({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[480px]">
         <DialogHeader>
           <DialogTitle>{t('pages.portal.preferences.title')}</DialogTitle>
           <DialogDescription>{t('pages.portal.preferences.description')}</DialogDescription>
@@ -212,6 +216,8 @@ export function ContactPreferencesEditor({
               {t('pages.portal.preferences.verify_whatsapp_hint')}
             </p>
           )}
+
+          <NotifyScopeFields control={form.control} disabled={isUpdating || saving} />
 
           <div className="flex justify-end gap-3">
             <Button

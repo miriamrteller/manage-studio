@@ -137,6 +137,17 @@ describe('Phase 1D Schemas', () => {
       expect(() => ContactPreferencesUpdateSchema.parse(update)).not.toThrow();
     });
 
+    it('should accept notify_* scope toggles', () => {
+      const update = {
+        notify_offering_cancellation: false,
+        notify_payment_due: true,
+        notify_waitlist: false,
+        notify_schedule_change: true,
+        notify_announcements: false,
+      };
+      expect(() => ContactPreferencesUpdateSchema.parse(update)).not.toThrow();
+    });
+
     it('should reject invalid hex color', () => {
       const update = {
         whatsapp_number: '+972123456789',
