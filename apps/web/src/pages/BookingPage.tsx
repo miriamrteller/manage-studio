@@ -9,6 +9,7 @@ import { BookingCalendar } from '@/features/scheduling/components/BookingCalenda
 import { BookingService, type AvailableSlot, type BookableOffering } from '@/features/scheduling/bookingService';
 import { useIsNarrowViewport } from '@/features/scheduling/hooks/useIsNarrowViewport';
 import { cn } from '@/lib/utils';
+import { formatOfferingPrice } from '@/lib/formatOfferingPrice';
 
 function formatWhen(slot: AvailableSlot): string {
   const start = new Date(slot.starts_at);
@@ -28,7 +29,7 @@ function formatWhen(slot: AvailableSlot): string {
 }
 
 export default function BookingPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { offeringId: offeringParam } = useParams<{ offeringId?: string }>();
   const tenant = useTenant();
   const navigate = useNavigate();
@@ -189,7 +190,13 @@ export default function BookingPage() {
                         ? t('scheduling.book.duration_mins', { count: o.duration_mins })
                         : ''}
                       {' · '}
-                      {(o.price_minor / 100).toLocaleString()} {o.currency}
+                      {formatOfferingPrice(
+                        t,
+                        o.price_minor,
+                        o.currency || 'ILS',
+                        i18n.language,
+                        { billing_mode: 'one_time' },
+                      )}
                     </div>
                   </button>
                 </li>

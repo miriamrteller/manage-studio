@@ -75,7 +75,7 @@ function toFormValues(classItem: Partial<Offering> | undefined, defaultCurrency:
     start_time: classItem?.start_time || '09:00',
     end_time: classItem?.end_time || '10:00',
     is_public: (classItem?.is_public ?? true) ? 'true' : 'false',
-    billing_mode: classItem?.billing_mode ?? 'one_time',
+    billing_mode: classItem?.billing_mode ?? 'recurring',
     status: classItem?.status || 'active',
     location: classItem?.location ?? '',
   };

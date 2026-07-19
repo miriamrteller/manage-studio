@@ -1,12 +1,13 @@
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { formatCurrency, formatTime } from '@shared/format';
+import { formatTime } from '@shared/format';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useTenant } from '@/hooks/useTenant';
 import { computeClassTotal } from '@/features/enrolment/lib/computeClassTotal';
 import { formatClassAgeRange } from '@/features/classes/lib/formatClassAgeRange';
 import { getOfferingCoverPublicUrl } from '@/features/classes/lib/offeringImageStorage';
+import { formatOfferingPrice } from '@/lib/formatOfferingPrice';
 import type { PublicOffering } from '@/schemas';
 
 /**
@@ -94,7 +95,7 @@ export function ClassCard({ class: cls, currency }: ClassCardProps) {
           )}
 
           <p className="text-lg font-semibold text-primary">
-            {formatCurrency(displayMinor, currency, i18n.language)}
+            {formatOfferingPrice(t, displayMinor, currency, i18n.language, cls)}
           </p>
         </div>
 

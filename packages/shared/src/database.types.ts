@@ -626,6 +626,7 @@ export type Database = {
           payment_dunning_attempt_count: number
           payment_dunning_next_at: string | null
           payment_received_at: string | null
+          penalty_applied_at: string | null
           person_id: string
           provider_customer_ref: string | null
           scheduling_hold_id: string | null
@@ -658,6 +659,7 @@ export type Database = {
           payment_dunning_attempt_count?: number
           payment_dunning_next_at?: string | null
           payment_received_at?: string | null
+          penalty_applied_at?: string | null
           person_id: string
           provider_customer_ref?: string | null
           scheduling_hold_id?: string | null
@@ -690,6 +692,7 @@ export type Database = {
           payment_dunning_attempt_count?: number
           payment_dunning_next_at?: string | null
           payment_received_at?: string | null
+          penalty_applied_at?: string | null
           person_id?: string
           provider_customer_ref?: string | null
           scheduling_hold_id?: string | null
@@ -2314,7 +2317,9 @@ export type Database = {
           expiry_reminder_mins: number | null
           hold_expiry_mins: number
           is_booking_enabled: boolean
+          late_cancel_hours: number
           max_per_day: number | null
+          retain_payment_on_penalty: boolean
           slot_duration_mins: number
           tenant_id: string
           updated_at: string
@@ -2326,7 +2331,9 @@ export type Database = {
           expiry_reminder_mins?: number | null
           hold_expiry_mins?: number
           is_booking_enabled?: boolean
+          late_cancel_hours?: number
           max_per_day?: number | null
+          retain_payment_on_penalty?: boolean
           slot_duration_mins?: number
           tenant_id: string
           updated_at?: string
@@ -2338,7 +2345,9 @@ export type Database = {
           expiry_reminder_mins?: number | null
           hold_expiry_mins?: number
           is_booking_enabled?: boolean
+          late_cancel_hours?: number
           max_per_day?: number | null
+          retain_payment_on_penalty?: boolean
           slot_duration_mins?: number
           tenant_id?: string
           updated_at?: string

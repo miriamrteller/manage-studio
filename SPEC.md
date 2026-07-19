@@ -3011,6 +3011,12 @@ Admin CRUD for the `staff` table at **`/admin/setup/teachers`**: name, contact, 
 
 **Plans:** [docs/plans/scheduling/00-overview.md](docs/plans/scheduling/00-overview.md), [docs/plans/scheduling/google-calendar-integration.md](docs/plans/scheduling/google-calendar-integration.md), [docs/plans/scheduling/deployment-and-testing.md](docs/plans/scheduling/deployment-and-testing.md)
 
+### V2.13 — Minimal CRM
+
+Lightweight studio CRM on top of people/families: notes, follow-ups / next actions, and simple pipeline or tags for leads and active families. Not a full sales CRM — enough for admin to track outreach without leaving Manage Studio.
+
+**V1 foundation:** people + families directories, contact preferences, notification log. **Not V1 scope.**
+
 ---
 
 ## 9. V3 SaaS Roadmap

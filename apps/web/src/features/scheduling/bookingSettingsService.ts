@@ -13,6 +13,10 @@ export interface BookingSettings {
   hold_expiry_mins: number;
   expiry_reminder_mins: number | null;
   is_booking_enabled: boolean;
+  /** Hours before start within which cancel is late (S5). */
+  late_cancel_hours: number;
+  /** When true, paid no-show / late cancel sets penalty_applied_at (S5). */
+  retain_payment_on_penalty: boolean;
 }
 
 export interface BookingHours {
@@ -32,6 +36,8 @@ export const DEFAULT_BOOKING_SETTINGS: BookingSettings = {
   hold_expiry_mins: 20,
   expiry_reminder_mins: null,
   is_booking_enabled: false,
+  late_cancel_hours: 24,
+  retain_payment_on_penalty: true,
 };
 
 export const HOLD_EXPIRY_OPTIONS = [15, 20, 25, 30, 45, 60, 90, 120] as const;
@@ -47,7 +53,7 @@ export class BookingSettingsService extends BaseService {
         .maybeSingle();
       if (error) throw error;
       if (!data) return { ...DEFAULT_BOOKING_SETTINGS };
-      return data as BookingSettings;
+      return { ...DEFAULT_BOOKING_SETTINGS, ...(data as BookingSettings) };
     }, 'BookingSettingsService.getSettings');
   }
 

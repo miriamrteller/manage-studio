@@ -115,7 +115,7 @@ VALUES (
   'class', NULL,
   1, '10:00:00', '11:00:00',
   18, NULL,
-  15, 28000, 'ILS', 'scheduled', 'one_time', NULL,
+  15, 28000, 'ILS', 'scheduled', 'recurring', 'monthly',
   true, true, 'active', NULL
 )
 ON CONFLICT (id) DO UPDATE SET
@@ -129,6 +129,8 @@ ON CONFLICT (id) DO UPDATE SET
   end_time = EXCLUDED.end_time,
   min_age = EXCLUDED.min_age,
   max_age = EXCLUDED.max_age,
+  billing_mode = EXCLUDED.billing_mode,
+  billing_interval = EXCLUDED.billing_interval,
   status = EXCLUDED.status,
   waiver_required = EXCLUDED.waiver_required;
 

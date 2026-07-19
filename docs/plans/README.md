@@ -31,6 +31,7 @@ Agent-optimized implementation plans. Create before coding (see `.instructions.m
 | 2026-07 | People directory CSV export | **V2 start** — Phase 1F polish; not required for V1 runtime |
 | 2026-07 | Classes list occupancy + waitlist bar | **V2 start** — overview already shows occupancy/waitlist |
 | 2026-07 | [Waiting list automation](../SPEC.md) (V2.2) | Schema + overview counts in V1; `process-waiting-list` stays V2.2 |
+| 2026-07 | Minimal CRM (V2.13) | Notes, follow-ups, light lead/family pipeline — [SPEC §8 V2.13](../SPEC.md) |
 | 2026-07-01 | [Teachers admin module](teachers-admin-module.md) | **V2.11** — agent plan ready; not V1 scope |
 
 ## Shipped reference (keep for SPEC links)

@@ -1,6 +1,7 @@
 import { Fragment, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { formatCurrency, formatTime } from '@shared/format';
+import { formatTime } from '@shared/format';
+import { formatOfferingPrice } from '@/lib/formatOfferingPrice';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/shared';
 import { FilterMultiSelect, ListSearchInput, SortableHeader, type FilterOption } from '@/components/shared/table';
@@ -318,10 +319,12 @@ export function AdminClassesList() {
                   <td className="px-4 py-3">{classItem.max_capacity}</td>
                   <td className="px-4 py-3">
                     {tenant &&
-                      formatCurrency(
+                      formatOfferingPrice(
+                        t,
                         computeClassTotal(classItem, tenant).chargeMinor,
                         currency,
                         i18n.language,
+                        classItem,
                       )}
                   </td>
                   <td className="px-4 py-3">

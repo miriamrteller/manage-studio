@@ -1205,7 +1205,10 @@
     "monthly": "חודשי",
     "per_session": "לשיעור",
     "weekly": "שבועי",
-    "annual": "שנתי"
+    "annual": "שנתי",
+    "one_time": "חד פעמי",
+    "price_per_month": "{{amount}} / חודש",
+    "price_one_time": "{{amount}} (חד פעמי)"
   },
   "finance": {
     "hub": {

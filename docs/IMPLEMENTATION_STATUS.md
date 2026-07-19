@@ -21,7 +21,7 @@ Rough completion against [SPEC.md §6 V1 Implementation](../SPEC.md#6-v1-impleme
 | **1F** | Admin dashboard | ✅ ~95% | People CSV + classes occupancy bar → **V2 start** (not V1-blocking) |
 | **1G** | Parent / student portal | ✅ ~95% | WhatsApp OTP (**last**); `notify_*` scope toggles ✅ |
 | **§7** | Production deployment | ❌ ~10% | Webhooks, Meta templates, legal, security checklist |
-| **§8+** | V2 / V3 | — | V2 start: people CSV, classes occupancy bar, V2.2 waitlist |
+| **§8+** | V2 / V3 | — | V2 start: people CSV, classes occupancy bar, V2.2 waitlist, **V2.13 minimal CRM** |
 
 **Overall V1 feature scope:** ~**80%** shipped · **Production-ready:** separate track (§7).
 
@@ -207,10 +207,12 @@ Track in SPEC §6.x — pull into V1 only when explicitly prioritized:
 
 | Priority | Work | Plan / notes |
 | --- | --- | --- |
-| **0** | Soft verify — S5 penalties + portal prefs (`notify_*`); mock finance / Resend smokes | [scheduling/00-overview.md](plans/scheduling/00-overview.md); [parent-portal-polish.md](plans/parent-portal-polish.md) Step 6–7 |
+| **0** | Soft verify — S5 + portal prefs; run `pnpm -C apps/web e2e:features` (seeded) / `e2e:ui` | Playwright: `public|portal|admin|booking|enrolment-features.spec.ts` |
+
 | **1** | Parent portal 1G-b `notify_*` ✅ | [parent-portal-polish.md](plans/parent-portal-polish.md) Step 7 |
 | **Last** | Live payments: **Grow single-user** E2E for Creative Ballet; then WhatsApp | [grow-live-e2e-verification.md](plans/grow-live-e2e-verification.md) · portal Step 8 |
 | Later | §7 production deployment checklist | [SPEC.md §7](../SPEC.md#7-v1-production-deployment) |
-| **V2 start** | People CSV · classes occupancy/waitlist bar · **V2.2** waitlist automation | Not V1-blocking |
+| **V2 start** | People CSV · classes occupancy/waitlist bar · **V2.2** waitlist · **V2.13** minimal CRM | Not V1-blocking |
 | **V2.11** | Teachers admin CRUD | [teachers-admin-module.md](plans/teachers-admin-module.md) |
+| **V2.13** | Minimal CRM (notes, follow-ups, light pipeline) | [SPEC.md §8 V2.13](../SPEC.md) — plan when prioritized |
 | Deferred | Unenrol Phase 2, code rename, other V2 | [code-rename-epic.md](plans/code-rename-epic.md) · SPEC §8 |

@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { Page } from '@playwright/test';
+import { loginAsParent as loginAsParentAuth, SEED_USERS } from './auth';
 
 /** Seeded finance fixtures on creativeballet (see supabase/seed-finance.sql). */
 export const FINANCE_SEED = {
@@ -7,8 +8,8 @@ export const FINANCE_SEED = {
   /** Esther → Mini Ballet — pending_payment with waiver already signed. */
   engagementId: '00000000-0000-0000-0000-000000001001',
   offeringId: '00000000-0000-0000-0000-000000000301',
-  parentEmail: 'miriamrstern@gmail.com',
-  parentPassword: process.env.E2E_PARENT_PASSWORD ?? 'devPassword123',
+  parentEmail: SEED_USERS.parentEmail,
+  parentPassword: SEED_USERS.password,
   successCard: '4580458045804580',
   declineCard: '4580000000000000',
 } as const;
@@ -83,18 +84,7 @@ export async function resetPendingPaymentEngagement(
 }
 
 export async function loginAsParent(page: Page, thenNavigateTo?: string): Promise<void> {
-  await page.goto('/login');
-
-  await page.getByRole('tab', { name: 'Password' }).click();
-  await page.getByLabel('Email').fill(FINANCE_SEED.parentEmail);
-  await page.getByLabel('Password').fill(FINANCE_SEED.parentPassword);
-  await page.getByRole('button', { name: 'Sign In' }).click();
-
-  await page.waitForURL(/\/dashboard/, { timeout: 30_000 });
-
-  if (thenNavigateTo) {
-    await page.goto(thenNavigateTo);
-  }
+  await loginAsParentAuth(page, thenNavigateTo);
 }
 
 export async function waitForConfirmationEmailAudit(

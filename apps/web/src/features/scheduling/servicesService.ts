@@ -62,6 +62,8 @@ export class ServicesService extends BaseService {
       const { data, error } = await TenantDB.insert('offerings', tenant, {
         ...values,
         offering_type: 'appointment',
+        billing_mode: 'one_time',
+        billing_interval: null,
         // Appointments carry no weekly slot; availability comes from booking hours.
         day_of_week: null,
         start_time: null,

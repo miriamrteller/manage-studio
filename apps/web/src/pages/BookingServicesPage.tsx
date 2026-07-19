@@ -13,6 +13,7 @@ import {
   type AppointmentService,
 } from '@/features/scheduling/servicesService';
 import { BookingSettingsService } from '@/features/scheduling/bookingSettingsService';
+import { formatOfferingPrice } from '@/lib/formatOfferingPrice';
 
 interface ServiceFormState {
   id: string | null;
@@ -35,7 +36,7 @@ const EMPTY_FORM: ServiceFormState = {
 };
 
 export default function BookingServicesPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const tenant = useTenant();
   const { hasFeature, isLoading: gateLoading } = useFeatureGate();
   const canManage = hasFeature(FEATURES.scheduling.adminBooking);
@@ -185,10 +186,13 @@ export default function BookingServicesPage() {
               <p className="truncate font-medium">{svc.name}</p>
               <p className="text-sm text-gray-500">
                 {svc.duration_mins} {t('scheduling.services.duration_suffix')} ·{' '}
-                {(svc.price_minor / 100).toLocaleString(undefined, {
-                  style: 'currency',
-                  currency: svc.currency || 'ILS',
-                })}
+                {formatOfferingPrice(
+                  t,
+                  svc.price_minor,
+                  svc.currency || 'ILS',
+                  i18n.language,
+                  { billing_mode: 'one_time' },
+                )}
               </p>
             </div>
             <div className="flex shrink-0 gap-2">

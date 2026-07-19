@@ -13,6 +13,9 @@
     "a11y:e2e": "playwright test e2e/accessibility-compliance.spec.ts --reporter=html",
     "a11y:e2e:regtest": "playwright test e2e/accessibility-compliance.spec.ts --project=chromium --reporter=html",
     "a11y:e2e:full": "playwright test e2e/accessibility-compliance.spec.ts --reporter=html",
+    "e2e": "playwright test --project=chromium",
+    "e2e:ui": "playwright test --ui --project=chromium",
+    "e2e:features": "playwright test e2e/public-features.spec.ts e2e/portal-features.spec.ts e2e/admin-features.spec.ts e2e/booking-features.spec.ts e2e/enrolment-features.spec.ts --project=chromium",
     "e2e:finance": "playwright test e2e/finance-payment.spec.ts --project=chromium"
   },
   "dependencies": {

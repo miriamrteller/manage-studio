@@ -18,7 +18,7 @@ import {
   parseLocalDate,
 } from '@/lib/personAge';
 import { computeClassTotal } from '../lib/computeClassTotal';
-import { formatCurrency } from '@shared/format';
+import { formatOfferingPrice } from '@/lib/formatOfferingPrice';
 import type { Engagement } from '@shared/schemas';
 import type { AgeOverrideState } from '../hooks/useAgeOverride';
 import { useEnrolmentClassPicker } from '../hooks/useEnrolmentClassPicker';
@@ -253,13 +253,15 @@ export function StepClass({
           renderClassMeta={(cls) =>
             cls.price_minor != null && tenant ? (
               <span className="shrink-0 text-sm font-semibold text-gray-700">
-                {formatCurrency(
+                {formatOfferingPrice(
+                  t,
                   computeClassTotal(
                     { price_minor: cls.price_minor, currency: cls.currency },
                     tenant,
                   ).chargeMinor,
                   cls.currency ?? tenant.currency,
                   i18n.language,
+                  cls,
                 )}
               </span>
             ) : null

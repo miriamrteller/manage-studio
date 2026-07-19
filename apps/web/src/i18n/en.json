@@ -1206,7 +1206,10 @@
     "monthly": "Monthly",
     "per_session": "Per Session",
     "weekly": "Weekly",
-    "annual": "Annual"
+    "annual": "Annual",
+    "one_time": "One-time",
+    "price_per_month": "{{amount}} / month",
+    "price_one_time": "{{amount}} (one-time)"
   },
   "finance": {
     "hub": {

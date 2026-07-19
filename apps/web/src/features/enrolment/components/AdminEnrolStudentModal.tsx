@@ -25,7 +25,7 @@ import {
   parseLocalDate,
 } from '@/lib/personAge';
 import { useTenant } from '@/hooks/useTenant';
-import { formatCurrency } from '@shared/format';
+import { formatOfferingPrice } from '@/lib/formatOfferingPrice';
 import { computeClassTotal } from '../lib/computeClassTotal';
 import { mapEnrolmentFlowError } from '../lib/mapEnrolmentFlowError';
 import type { Offering } from '@shared/schemas';
@@ -303,10 +303,12 @@ export function AdminEnrolStudentModal({
                     )}
                     <p className="text-sm font-medium mt-1">
                       {tenant &&
-                        formatCurrency(
+                        formatOfferingPrice(
+                          t,
                           computeClassTotal(cls, tenant).chargeMinor,
                           tenant.currency ?? 'ILS',
                           i18n.language,
+                          cls,
                         )}
                     </p>
                   </>
