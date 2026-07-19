@@ -2,26 +2,26 @@
 
 Living checklist for in-flight SPEC features. Normative design remains in [SPEC.md](../SPEC.md).
 
-**Last updated:** 2026-07-05
+**Last updated:** 2026-07-19
 
 ---
 
 ## V1 phase progress (SPEC §6)
 
-- Migration chain: **26 files** — squashed `20260608000200`–`20260608002600` (incl. `02150_waiver_rpcs`, `02600_scheduled_jobs`); post-base incrementals archived under `supabase/migrations_backup/incremental_20260705/`.
+- Migration chain: **29 files** — squashed `20260608000200`–`20260608002800` (PR #17) + `02900` S5 penalties; prior incrementals under `supabase/migrations_backup/`.
 
 Rough completion against [SPEC.md §6 V1 Implementation](../SPEC.md#6-v1-implementation). Not a hour estimate — feature presence only.
 
 | Phase | Scope | ~Done | Remaining |
 | --- | --- | --- | --- |
 | **1A–1B** | Skeleton, auth, tenant context | ✅ ~95% | A11y CI gates, polish |
-| **1C** | People, families, classes, enrolment, waivers | ✅ ~95% | Classes list occupancy bar (overview ✅); teachers admin → V2.11 |
-| **1D** | Notifications engine | 🟡 ~90% | WhatsApp E2E |
-| **1E** | Payments (Grow + iCount mock; Stripe in registry) | 🟡 ~94% | Live Grow sandbox E2E; iCount I0-live+ |
-| **1F** | Admin dashboard | ✅ ~95% | Operations overview ✅ (PR #5); people CSV export |
-| **1G** | Parent / student portal | ✅ ~92% | WhatsApp OTP verify in portal; `notify_*` scope toggles (1G-b) |
+| **1C** | People, families, classes, enrolment, waivers | ✅ ~95% | Teachers admin → V2.11; waitlist automation → V2.2 |
+| **1D** | Notifications engine | 🟡 ~90% | WhatsApp E2E (**last**, with live payments) |
+| **1E** | Payments (Grow + iCount mock; Stripe in registry) | 🟡 ~94% | Live Grow/iCount sandbox E2E (**last**) |
+| **1F** | Admin dashboard | ✅ ~95% | People CSV + classes occupancy bar → **V2 start** (not V1-blocking) |
+| **1G** | Parent / student portal | ✅ ~92% | WhatsApp OTP (**last**); `notify_*` toggles optional |
 | **§7** | Production deployment | ❌ ~10% | Webhooks, Meta templates, legal, security checklist |
-| **§8+** | V2 / V3 | — | Deferred |
+| **§8+** | V2 / V3 | — | V2 start: people CSV, classes occupancy bar, V2.2 waitlist |
 
 **Overall V1 feature scope:** ~**80%** shipped · **Production-ready:** separate track (§7).
 
@@ -56,7 +56,7 @@ Rough completion against [SPEC.md §6 V1 Implementation](../SPEC.md#6-v1-impleme
 | Teachers admin module (V2.11) | [teachers-admin-module.md](plans/teachers-admin-module.md) | ✅ `staff` | 🟡 partial | **Deferred V2.11** — `TeacherService` / `useTeachers` + class-form `staff_id`; no admin page |
 | **Payment dunning — collections layer + renewal emails** | [payment-dunning-notifications.md](plans/payment-dunning-notifications.md) | ✅ `00600` + `01300` | ✅ | `_shared/collections/`, `applyBillingScheduleDunningFailure`, `PAYMENT_REMINDER` renewal track, `notification_log.dunning_key` |
 | **Enrolment unpaid dunning (§6.x #8)** | [enrolment-payment-dunning.md](plans/enrolment-payment-dunning.md) | ✅ `01300` + `02600` cron | ✅ | `run-enrolment-payment-dunning` cron Day 3/7/14; `applyEnrolmentPaymentDunningStep`; `CLASS_CANCELLATION` on day 14 |
-| Native scheduling (calendar + slot booking + Google Calendar) | [scheduling/00-overview.md](plans/scheduling/00-overview.md) | ✅ `03100`–`04200` | ✅ S0–S4 | `/book`, Services, Appointments, GCal OAuth + free/busy + sync, appointment emails, client Add to Calendar; S5 penalties open |
+| Native scheduling (calendar + slot booking + Google Calendar) | [scheduling/00-overview.md](plans/scheduling/00-overview.md) | ✅ `02600` + `02900` | ✅ S0–S5 | `/book`, Services, Appointments, GCal; S5 no-show / late-cancel retain payment (no PSP) |
 
 ---
 
@@ -136,6 +136,8 @@ Merged to `main` via PR #8 (`0ea9004`; core work in `fcad476`):
 | `20260608000600` | `idx_notification_log_dunning_key`, notification blast RPCs |
 | `20260608002600` | pg_cron + pg_net scheduled jobs (billing, dunning, waiver, issue-document, OTP cleanup) |
 
+**Creative Ballet / early IL:** Grow single-user until scale — [SPEC.md](../SPEC.md) Phase 1E V1 locked decisions.
+
 **Grow:** payment/invoicing providers, `handle-payment-document`, gap tests, Osek Patur pass-through fix.
 
 **iCount (mock-phase ✅):** `_shared/payments/icount/` (mock-api, ipn, document), `providers/icount.ts`, `IcountSettingsForm` in bundled payments, provider-isolation tests. Dev path: `ICOUNT_MOCK=true`. Plan: [finance/icount/00-overview.md](plans/finance/icount/00-overview.md). **Deferred:** I0-live sandbox, live renewals/refunds, I5 IL default flip.
@@ -171,9 +173,9 @@ Plans: [payment-dunning-notifications.md](plans/payment-dunning-notifications.md
 
 | Item | SPEC | Code today |
 | --- | --- | --- |
-| People directory CSV export | Phase 1F — People | ❌ |
+| People directory CSV export | Phase 1F — People | ❌ → **V2 start** (not V1-blocking) |
 | Admin overview occupancy bar | Phase 1F — Dashboard | ✅ `OccupancyBar` on today's classes table |
-| Classes list occupancy + waitlist bar | Phase 1F — Classes | 🟡 `AdminClassesList` shows capacity number only |
+| Classes list occupancy + waitlist bar | Phase 1F — Classes | 🟡 → **V2 start** (`AdminClassesList` capacity only; overview has bar) |
 | Notification log page | Phase 1F — Notifications | ✅ Mounted on `/admin/notifications` History tab |
 | WhatsApp blast (urgent) | Phase 1F — Notifications | ❌ Deferred (Twilio) |
 | Contact prefs in portal | Phase 1G | ✅ |
@@ -205,16 +207,11 @@ Track in SPEC §6.x — pull into V1 only when explicitly prioritized:
 
 | Priority | Work | Plan / notes |
 | --- | --- | --- |
-| **0** | Grow live sandbox E2E (when creds ready) | [grow-live-e2e-verification.md](plans/grow-live-e2e-verification.md) |
-| **0b** | iCount I0-live sandbox (when creds ready) | [finance/icount/00-overview.md](plans/finance/icount/00-overview.md) I0-live block |
-| **1** | People directory CSV export | SPEC Phase 1F — no plan yet |
-| **2** | Classes list occupancy + waitlist bar | SPEC Phase 1F — partial (`AdminClassesList`) |
-| **3** | Parent portal Step 8 — WhatsApp OTP verify in prefs modal | [parent-portal-polish.md](plans/parent-portal-polish.md) Step 8 |
-| **4** | Parent portal 1G-b — `notify_*` scope toggles (optional) | [parent-portal-polish.md](plans/parent-portal-polish.md) Step 7 |
-| **5** | Notification blast manual smoke (Resend) | [notification-blast-composer.md](plans/notification-blast-composer.md) Step 7 |
-| **6** | PR B manual E2E smoke (recommended before prod) | [age-override-pr-b.md](plans/age-override-pr-b.md) Step 9 |
-| **7** | Parent portal manual smoke (Step 6 checklist) | [parent-portal-polish.md](plans/parent-portal-polish.md) Step 6 |
-| **8** | Unenrol Phase 2 (refunds) | No plan yet |
+| **0** | Soft verify — fresh DB (incl. `02900` S5); mock finance walkthrough; Resend smokes | [v1-migration-squash-20260716.md](plans/v1-migration-squash-20260716.md); blast / age-review / portal checklists |
+| **1** | Scheduling S5 ✅ — apply `02900` on environments still missing it | [scheduling/00-overview.md](plans/scheduling/00-overview.md) · `scheduling:penalties.capture` |
+| **2** | Parent portal 1G-b — `notify_*` scope toggles (optional, no WhatsApp) | [parent-portal-polish.md](plans/parent-portal-polish.md) Step 7 |
+| **Last** | Live payments: **Grow single-user** E2E for Creative Ballet; then WhatsApp | [grow-live-e2e-verification.md](plans/grow-live-e2e-verification.md) · portal Step 8 |
 | Later | §7 production deployment checklist | [SPEC.md §7](../SPEC.md#7-v1-production-deployment) |
-| **V2.11** | Teachers admin CRUD | [teachers-admin-module.md](plans/teachers-admin-module.md) · [SPEC §8 V2.11](../SPEC.md#v211--teachers-admin-module) |
-| Deferred | Code rename epic, other V2 features | [code-rename-epic.md](plans/code-rename-epic.md) · SPEC §8 |
+| **V2 start** | People CSV · classes occupancy/waitlist bar · **V2.2** waitlist automation | Not V1-blocking |
+| **V2.11** | Teachers admin CRUD | [teachers-admin-module.md](plans/teachers-admin-module.md) |
+| Deferred | Unenrol Phase 2, code rename, other V2 | [code-rename-epic.md](plans/code-rename-epic.md) · SPEC §8 |

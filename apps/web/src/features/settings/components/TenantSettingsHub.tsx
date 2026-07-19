@@ -78,7 +78,7 @@ export function TenantSettingsHub() {
               description={bundledPaymentsHubDescription(t)}
               href={BUNDLED_PAYMENTS_SETUP_PATH}
             />
-          ) : (
+          ) : hasFeature(FEATURES.billing.stripe) || tenant?.payment_provider === 'mock' ? (
             <>
               <SettingsLinkCard
                 title={t('settings.payments.title', { defaultValue: 'Payment provider' })}
@@ -91,7 +91,7 @@ export function TenantSettingsHub() {
                 href="/admin/setup/invoicing"
               />
             </>
-          )}
+          ) : null}
           {hasFeature(FEATURES.scheduling.adminBooking) && (
             <SettingsLinkCard
               title={t('scheduling.booking.settings_title')}

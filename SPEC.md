@@ -2685,7 +2685,7 @@ export async function sendWhatsApp(
 
 ### Phase 1E — Payments (Days 27–34)
 
-> **V1 locked decisions (2026):** **Grow (Meshulam)** is the production default for IL bundled tenants (`payment_provider = 'grow'`). **Stripe** remains in the provider registry for future split/US tenants — **not V1 shipping target** (no Stripe Connect in V1). **Guest checkout is shipped:** public `/enrol` + signed **`enrolment_token`** (`WaiverToken` JWT) for `create-checkout` without a Supabase session — **not** a `checkout_session` DB table. Authenticated checkout remains supported for signed-in families. First DB slice: `payments`, `invoice_sequences`, `next_invoice_number()`, tenant payment-provider columns — **`discount_rules` and `teacher_pay_records` deferred.** Tenant keys entered via **admin settings UI**; secrets encrypted at rest (Vault preferred). Webhooks resolve tenant via **`metadata.tenant_id`** on charge events. **Payment dunning shipped (2026-07):** renewal emails via `applyBillingScheduleDunningFailure` + `_shared/collections/`; enrolment unpaid Day 3/7/14 via `run-enrolment-payment-dunning` — see [payment-dunning-notifications.md](docs/plans/payment-dunning-notifications.md), [enrolment-payment-dunning.md](docs/plans/enrolment-payment-dunning.md).
+> **V1 locked decisions (2026, updated 2026-07-19):** **Creative Ballet and early IL tenants ship on Grow (Meshulam) single-user** — bundled pay + tax docs; credentials entered manually in admin settings; `payment_provider` / `invoicing_provider` = `grow`. **No Grow merchant auto-signup** until volume justifies multi-tenant Grow (G8 deferred). Revisit cheaper/split options (Yesh, Invoice4u, iCount, Tranzila) only when scaling beyond single-user Grow. **Stripe** — not for Israeli businesses; dormant/hidden from UI and plan defaults (adapter kept). **Rapyd** — needs higher volume; dormant (do not delete yet). **Guest checkout is shipped:** public `/enrol` + signed **`enrolment_token`** (`WaiverToken` JWT) for `create-checkout` without a Supabase session — **not** a `checkout_session` DB table. Authenticated checkout remains supported for signed-in families. First DB slice: `payments`, `invoice_sequences`, `next_invoice_number()`, tenant payment-provider columns — **`discount_rules` and `teacher_pay_records` deferred.** Tenant keys entered via **admin settings UI**; secrets encrypted at rest (Vault preferred). Webhooks resolve tenant via **`metadata.tenant_id`** on charge events. **Payment dunning shipped (2026-07):** renewal emails via `applyBillingScheduleDunningFailure` + `_shared/collections/`; enrolment unpaid Day 3/7/14 via `run-enrolment-payment-dunning` — see [payment-dunning-notifications.md](docs/plans/payment-dunning-notifications.md), [enrolment-payment-dunning.md](docs/plans/enrolment-payment-dunning.md).
 
 All Stripe API calls creating or modifying payment objects happen in Edge Functions. Frontend receives `clientSecret` only.
 
@@ -2837,15 +2837,11 @@ DATABASE
 [ ] pg_cron + pg_net extensions enabled; `cron.job` lists 7 scheduled jobs (02600)
 [ ] Database GUCs set: app.settings.supabase_functions_url, app.settings.cron_secret (match Edge CRON_SECRET)
 
-GROW (V1 default — IL bundled tenants)
-[ ] Grow sandbox credentials saved via admin settings (bundled payments)
+GROW SINGLE-USER (Creative Ballet / early IL — current path)
+[ ] Grow single-user credentials saved via admin settings (manual; no merchant auto-signup)
 [ ] Grow webhook secret saved; inbound webhooks authenticated
-[ ] handle-payment-event / handle-payment-document webhooks tested end-to-end
-[ ] End-to-end test: charge → enrolment active → tax document issued (Grow mock or sandbox)
-
-STRIPE (registry only — not V1 shipping target for IL)
-[ ] If US/split tenant: webhook endpoint → stripe-webhook Edge Function
-[ ] Events: payment_intent.succeeded, payment_intent.payment_failed (as applicable)
+[ ] handle-payment-event / handle-payment-document tested end-to-end
+[ ] End-to-end: charge → enrolment active → tax document issued (sandbox or live)
 
 WHATSAPP
 [ ] Twilio account set up with Israeli phone number
@@ -2888,8 +2884,8 @@ supabase secrets set \
 # ALTER DATABASE postgres SET app.settings.supabase_functions_url = 'https://<project-ref>.supabase.co';
 # ALTER DATABASE postgres SET app.settings.cron_secret = '<same as CRON_SECRET>';
 
-# Per-tenant payment keys: admin settings UI → encrypted on tenants row (Grow default for IL).
-# Stripe keys on tenants row for future split/US tenants only — not V1 IL default.
+# Per-tenant payment/invoice keys: admin settings UI → encrypted on tenants row.
+# First live IL: Grow single-user (manual creds; no merchant auto-signup). Scale later.
 # RESEND/TWILIO may remain platform-level until send-notification per-tenant migration (§6.x #3).
 ```
 
@@ -2978,7 +2974,7 @@ Admin CRUD for the `staff` table at **`/admin/setup/teachers`**: name, contact, 
 
 ### V2.12 — Native scheduling (calendar + slot booking + Google Calendar)
 
-**Status:** Core shipped (S0–S4). Penalties / no-show (S5) deferred.
+**Status:** Core shipped (S0–S5). Penalties / no-show: flag-gated admin no-show / late-cancel with payment retained (no live PSP capture). Live Grow/iCount and WhatsApp stay last.
 
 **Calendar (FullCalendar):** Public `/classes` timetable for class offerings; appointments use `/book` (not the class calendar for checkout).
 

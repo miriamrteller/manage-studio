@@ -60,7 +60,7 @@ export function InvoicingSettingsForm() {
       </p>
       <p className="text-sm">
         {t('settings.invoicing.provider', { defaultValue: 'Provider' })}:{' '}
-        <strong>{tenant?.invoicing_provider ?? 'green_invoice'}</strong>
+        <strong>{tenant?.invoicing_provider ?? 'grow'}</strong>
       </p>
 
       <label className="block text-sm font-medium">

@@ -94,7 +94,10 @@ export declare const FEATURES: {
     readonly billing: {
         /** Grow (Meshulam) payment gateway */
         readonly grow: "billing:payments.grow";
-        /** Stripe payment gateway */
+        /**
+         * Stripe payment gateway — DORMANT / hidden from product UI.
+         * Not for Israeli businesses; kept in registry for future non-IL/split only.
+         */
         readonly stripe: "billing:payments.stripe";
         /** Mock payment processor for testing */
         readonly mock: "billing:payments.mock";

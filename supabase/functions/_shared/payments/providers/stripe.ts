@@ -1,3 +1,8 @@
+/**
+ * Stripe payment adapter — DORMANT for IL product UI (not usable for Israeli businesses).
+ * Kept for registry/tests and possible future non-IL/split tenants. Do not wire into
+ * onboarding or Essential/Professional feature defaults.
+ */
 import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import type { ChargeParams, ChargeResult, PaymentEvent, PaymentProvider } from "../types.ts";

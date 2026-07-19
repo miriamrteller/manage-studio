@@ -99,7 +99,11 @@ export const FEATURES = {
     billing: {
         /** Grow (Meshulam) payment gateway */
         grow: 'billing:payments.grow',
-        /** Stripe payment gateway */
+        /**
+         * Stripe payment gateway — DORMANT / hidden from product UI.
+         * Not for Israeli businesses; kept in registry for future non-IL/split only.
+         * Not included in Essential/Professional defaults; re-enable via tenant override if ever needed.
+         */
         stripe: 'billing:payments.stripe',
         /** Mock payment processor for testing */
         mock: 'billing:payments.mock',
@@ -308,9 +312,8 @@ export const ESSENTIAL_FEATURES = [
     FEATURES.scheduling.clientBooking,
     FEATURES.scheduling.adminBooking,
     FEATURES.scheduling.googleCalendar,
-    // Payment processing
+    // Payment processing (Stripe dormant — not in defaults)
     FEATURES.billing.grow,
-    FEATURES.billing.stripe,
     FEATURES.billing.accounts,
     FEATURES.billing.refunds,
     FEATURES.billing.quotes,
@@ -370,9 +373,8 @@ export const PROFESSIONAL_FEATURES = [
     FEATURES.scheduling.calendarView,
     FEATURES.scheduling.penalties,
     FEATURES.scheduling.aiAssistant,
-    // Payment processing with recurring
+    // Payment processing with recurring (Stripe dormant — not in defaults)
     FEATURES.billing.grow,
-    FEATURES.billing.stripe,
     FEATURES.billing.accounts,
     FEATURES.billing.refunds,
     FEATURES.billing.recurring,

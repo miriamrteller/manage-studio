@@ -6,7 +6,8 @@ import { supabase } from '@/lib/supabase';
 
 type TenantPlan = 'essential' | 'professional';
 type TenantVertical = 'photographer' | 'beautician' | 'dance-studio' | 'generic';
-type PaymentProvider = 'grow' | 'stripe' | 'icount' | 'mock';
+/** Stripe omitted — dormant / not for IL; adapter kept in codebase. */
+type PaymentProvider = 'grow' | 'icount' | 'mock';
 type InvoicingProvider = 'grow' | 'green_invoice' | 'icount';
 
 const SUBDOMAIN_RE = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/;
@@ -481,7 +482,6 @@ export function OperatorOnboardingWizard() {
               onChange={(e) => updateForm('paymentProvider', e.target.value as PaymentProvider)}
             >
               <option value="grow">Grow</option>
-              <option value="stripe">Stripe</option>
               <option value="icount">iCount</option>
               <option value="mock">Mock (testing)</option>
             </select>

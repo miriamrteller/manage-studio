@@ -8,5 +8,5 @@ export const InvoicingProviderSlugSchema = z.enum(INVOICING_PROVIDER_SLUGS);
 export function parseInvoicingProviderSlug(
   value: string | null | undefined,
 ): InvoicingProviderSlug {
-  return InvoicingProviderSlugSchema.parse(value ?? "green_invoice");
+  return InvoicingProviderSlugSchema.parse(value ?? "grow");
 }

@@ -168,6 +168,8 @@ export const navigationConfig: NavItem[] = [
     sectionKey: 'setup',
     indent: true,
     tenantFilter: 'split',
+    /** Stripe dormant — split payment settings only when feature re-enabled (or mock via override). */
+    featureKey: FEATURES.billing.stripe,
   },
   {
     path: '/admin/setup/invoicing',
@@ -176,6 +178,7 @@ export const navigationConfig: NavItem[] = [
     sectionKey: 'setup',
     indent: true,
     tenantFilter: 'split',
+    featureKey: FEATURES.billing.stripe,
   },
   {
     path: '/admin/setup/billing',

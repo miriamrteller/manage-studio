@@ -62,16 +62,17 @@ describe('navigationConfig', () => {
     expect(setupPaths).not.toContain('/admin/setup/icount');
   });
 
-  it('shows split payment/invoicing links for non-bundled tenants', () => {
+  it('split payment/invoicing nav matches non-bundled tenants but requires stripe feature (dormant)', () => {
     const usTenant = { country: 'US', payment_provider: 'stripe' as const };
     const setupItems = navigationConfig.filter(
       (item) => matchesTenantFilter(item, usTenant) && item.sectionKey === 'setup',
     );
-    const setupPaths = setupItems.map((item) => item.path);
+    const payments = setupItems.find((item) => item.path === '/admin/setup/payments');
+    const invoicing = setupItems.find((item) => item.path === '/admin/setup/invoicing');
 
-    expect(setupPaths).toContain('/admin/setup/payments');
-    expect(setupPaths).toContain('/admin/setup/invoicing');
-    expect(setupPaths).not.toContain(BUNDLED_PAYMENTS_SETUP_PATH);
+    expect(payments?.featureKey).toBe('billing:payments.stripe');
+    expect(invoicing?.featureKey).toBe('billing:payments.stripe');
+    expect(setupItems.map((item) => item.path)).not.toContain(BUNDLED_PAYMENTS_SETUP_PATH);
   });
 
   it('includes platform onboard only for super_admin', () => {
