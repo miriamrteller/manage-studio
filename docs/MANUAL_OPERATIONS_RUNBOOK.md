@@ -73,17 +73,23 @@ App code uses `${window.location.origin}/auth/callback` — every origin must be
 
 ## Edge Function secrets
 
+**Full pre-prod manual checklist (Grow `userId` / `pageCode` / `apiKey`, etc.):** [SPEC.md §7](../SPEC.md#7-v1-production-deployment).
+
+Push all known Edge secrets from repo-root `.env` (linked project):
+
 ```bash
-supabase secrets set \
-  RESEND_API_KEY=re_... \
-  NOTIFICATION_FROM_EMAIL="Name <noreply@domain.com>" \
-  TWILIO_ACCOUNT_SID=AC... \
-  TWILIO_AUTH_TOKEN=... \
-  STRIPE_SECRET_KEY=sk_... \
-  STRIPE_WEBHOOK_SECRET=whsec_...
+pnpm secrets:edge
 ```
 
-List secrets (names only): Dashboard → Edge Functions → Secrets.
+Writes `supabase/.temp/edge-secrets.env` then runs `supabase secrets set --env-file …`.  
+Required in `.env`: `APP_URL`, `CRON_SECRET`, `RESEND_API_KEY`, `NOTIFICATION_FROM_EMAIL`, `SEND_EMAIL_HOOK_SECRET`.  
+Derives `GROW_NOTIFY_URL` / `ICOUNT_NOTIFY_URL` / `ISSUE_DOCUMENT_URL` from `VITE_SUPABASE_URL` or `SUPABASE_PROJECT_REF` when omitted.  
+Optional keys (copied if set): Twilio, Google Calendar, `GROW_API_BASE`, `GROW_MOCK`, Anthropic, etc.
+
+Grow merchant keys are **not** Edge secrets — enter `userId`, `pageCode`, `apiKey` in admin settings (`save_tenant_grow_credentials`). See [GROW-RUNBOOK.md](./plans/finance/GROW-RUNBOOK.md).
+
+List secrets (names only): Dashboard → Edge Functions → Secrets.  
+Narrower helpers still work: `pnpm secrets:email`, `pnpm secrets:google-calendar`.
 
 ---
 
@@ -101,5 +107,8 @@ Do not assume configuring Resend Edge secrets fixes magic-link login — Auth SM
 
 ## Related docs
 
+- [SPEC.md §7 — Pre-deployment checklist](../SPEC.md#7-v1-production-deployment)
+- [deployment/MANUAL_OPERATIONS_RUNBOOK.md](./deployment/MANUAL_OPERATIONS_RUNBOOK.md) — cron / platform_config
+- [plans/finance/GROW-RUNBOOK.md](./plans/finance/GROW-RUNBOOK.md)
 - [AUTH_EMAIL_SETUP.md](./deployment/AUTH_EMAIL_SETUP.md)
 - [THIRD_PARTY_SERVICES.md](./deployment/THIRD_PARTY_SERVICES.md)

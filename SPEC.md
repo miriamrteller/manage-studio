@@ -2824,69 +2824,94 @@ Track live status in [docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.
 
 ## 7. V1 Production Deployment
 
-### Pre-deployment checklist
+### Pre-deployment checklist (manual)
+
+Canonical list of ops that **must be done by a human** before Creative Ballet / production. Grow detail also in [GROW-RUNBOOK.md](docs/plans/finance/GROW-RUNBOOK.md).
 
 ```
 DATABASE
-[ ] All 26 migrations applied and verified in Supabase dashboard (see §4.2.0 index)
-[ ] Types regenerated: pnpm db:types:all:local (or supabase gen types typescript --linked)
+[ ] Migrations applied and verified in Supabase dashboard (see §4.2.0 index)
+[ ] Types regenerated: pnpm db:types:all (linked) when schema changed
 [ ] RLS verified: parent sees only own family; teacher sees only own tenant
-[ ] Invoice sequences table seeded for your tenant
-[ ] VAT rate set correctly on tenant row (0.17 if עוסק מורשה, 0 if עוסק פטור)
-[ ] `prices_include_vat` matches how school quotes prices (default `true` for parent-facing schools)
-[ ] pg_cron + pg_net extensions enabled; `cron.job` lists 7 scheduled jobs (02600)
-[ ] Database GUCs set: app.settings.supabase_functions_url, app.settings.cron_secret (match Edge CRON_SECRET)
+[ ] Invoice sequences seeded for the tenant
+[ ] Tenant VAT: vat_rate (0.17 עוסק מורשה / 0 עוסק פטור), prices_include_vat
+[ ] pg_cron + pg_net enabled; cron.job lists scheduled jobs (02600)
+[ ] Platform cron config (SQL Editor → private.platform_config):
+      supabase_functions_url = https://<project-ref>.supabase.co
+      cron_secret            = <same value as Edge CRON_SECRET>
+[ ] Postgres encryption GUC for credential RPCs:
+      app.encryption_key     = <strong random secret — never commit>
 
-GROW SINGLE-USER (Creative Ballet / early IL — current path)
-[ ] Grow single-user credentials saved via admin settings (manual; no merchant auto-signup)
-[ ] Grow webhook secret saved; inbound webhooks authenticated
-[ ] handle-payment-event / handle-payment-document tested end-to-end
-[ ] End-to-end: charge → enrolment active → tax document issued (sandbox or live)
+GROW SINGLE-USER — per-tenant credentials (Meshulam dashboard → admin UI)
+  Enter at Settings → Payments & invoices (Grow) / bundled-payments
+  RPC: save_tenant_grow_credentials
+[ ] userId   → tenants.payment_provider_account_id   (Grow “User ID”)
+[ ] pageCode → tenants.payment_provider_public_key   (payment page / דף תשלום code)
+[ ] apiKey   → tenants.payment_provider_secret_enc   (Grow API key; encrypted)
+[ ] Test connection succeeds (verify-grow-credentials / FinanceHealthCard)
+[ ] Grow webhook pre-shared key saved via save_grow_webhook_secret
+      → grow_webhook_secrets.secret_enc (no dedicated settings field yet — call RPC)
+[ ] SHAAM / חשבוניות ישראל connected inside Grow dashboard (not in this app)
+[ ] Edge secrets (platform):
+      GROW_NOTIFY_URL = https://<project-ref>.supabase.co/functions/v1/handle-payment-event
+      GROW_API_BASE   = https://sandbox.meshulam.co.il/api/light/server/1.0
+                        (prod: https://api.meshulam.co.il/api/light/server/1.0)
+      GROW_MOCK       = unset or false for live/sandbox charges
+[ ] In Grow dashboard: payment notify URL → handle-payment-event (above)
+[ ] In Grow dashboard: document/invoice notify URL →
+      https://<project-ref>.supabase.co/functions/v1/handle-invoice-event
+[ ] End-to-end: charge → enrolment active → tax document PDF
+      (sandbox first — docs/plans/grow-live-e2e-verification.md)
 
-WHATSAPP
-[ ] Twilio account set up with Israeli phone number
-[ ] All message templates approved by Meta (allow 5 days)
-[ ] Test WhatsApp message delivered to your own number
-[ ] Opt-in collection and OTP verification tested in enrolment flow
+WHATSAPP (when enabling)
+[ ] Twilio Account SID + Auth Token (Edge: TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+[ ] Israeli WhatsApp-capable Twilio number
+[ ] Meta message templates approved
+[ ] Test WhatsApp delivery + enrolment opt-in / OTP path
 
 EMAIL
-[ ] Resend domain verified (SPF + DKIM)
-[ ] All email templates tested to Gmail, Walla Mail, and Gmail Israeli accounts
-[ ] Supabase Auth Magic Link template includes {{ .Token }} for login Code tab
-[ ] Email OTP login tested cross-device (request on desktop, enter code on phone)
+[ ] Resend API key (Edge: RESEND_API_KEY)
+[ ] Domain verified (SPF + DKIM); from_email on tenant (e.g. noreply@creativeballet.co.il)
+[ ] Auth SMTP / magic-link templates; {{ .Token }} on Code tab
+[ ] Email OTP login tested cross-device
 
 LEGAL
-[ ] Privacy Policy live and linked in footer
-[ ] Terms of Service live and linked at enrolment
-[ ] Waiver text confirmed by lawyer and stored as accepted snapshot on each enrolment
-[ ] Background checks on file for all teachers working with minors
+[ ] Privacy Policy + Terms linked
+[ ] Waiver text lawyer-confirmed; accepted snapshot on enrolments
+[ ] Background checks for teachers with minors
 
-SECURITY
+SECURITY / PLATFORM EDGE SECRETS
 [ ] tsc --noEmit: zero errors
-[ ] All secrets in Supabase Vault / Edge Function secrets — none in code
-[ ] CRON_SECRET + APP_URL set for scheduled edge jobs (dunning, billing, waiver, issue-document)
 [ ] Source maps disabled in production Vite config
+[ ] CRON_SECRET=<random>          (Edge + private.platform_config.cron_secret)
+[ ] APP_URL=https://<prod-app>    (dunning / absolute links)
+[ ] RESEND_API_KEY=re_...
+[ ] TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN (if WhatsApp on)
+[ ] ANTHROPIC_API_KEY (if AI features on)
+[ ] No secrets in git
 ```
 
 ### Secrets configuration
 
 ```bash
-# Edge Function secrets (platform + cron auth)
-supabase secrets set \
-  CRON_SECRET=<random-string> \
-  APP_URL=https://your-app.example.com \
-  RESEND_API_KEY=re_... \
-  TWILIO_ACCOUNT_SID=AC... \
-  TWILIO_AUTH_TOKEN=... \
-  ANTHROPIC_API_KEY=sk-ant-...
+# Edge Function secrets (platform) — from repo-root .env (linked project):
+pnpm secrets:edge
 
-# Cron HTTP jobs read DB GUCs (set in SQL Editor — not Edge secrets):
-# ALTER DATABASE postgres SET app.settings.supabase_functions_url = 'https://<project-ref>.supabase.co';
-# ALTER DATABASE postgres SET app.settings.cron_secret = '<same as CRON_SECRET>';
+# Or manually:
+# supabase secrets set --env-file supabase/.temp/edge-secrets.env
+# (generated by: node scripts/sync-edge-secrets.mjs)
 
-# Per-tenant payment/invoice keys: admin settings UI → encrypted on tenants row.
-# First live IL: Grow single-user (manual creds; no merchant auto-signup). Scale later.
-# RESEND/TWILIO may remain platform-level until send-notification per-tenant migration (§6.x #3).
+# Do NOT set GROW_MOCK=true on the live/sandbox project under test.
+
+# Cron HTTP (SQL Editor → private.platform_config — see deployment/MANUAL_OPERATIONS_RUNBOOK.md):
+#   supabase_functions_url, cron_secret (= CRON_SECRET)
+
+# DB encryption (required before save_tenant_grow_credentials):
+#   SET / alter app.encryption_key per project runbook — never commit the value
+
+# Per-tenant Grow (admin UI, not Edge secrets):
+#   userId, pageCode, apiKey  → save_tenant_grow_credentials
+#   webhook pre-shared key    → save_grow_webhook_secret
 ```
 
 ### Rollback plan

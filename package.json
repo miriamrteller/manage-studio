@@ -45,6 +45,7 @@
     "deploy:scheduling-functions": "node scripts/deploy-scheduling-functions.mjs",
     "secrets:email": "node scripts/sync-email-secrets.mjs && pnpm exec supabase secrets set --env-file supabase/.temp/email-secrets.env",
     "secrets:google-calendar": "node scripts/sync-google-calendar-secrets.mjs && pnpm exec supabase secrets set --env-file supabase/.temp/google-calendar-secrets.env && pnpm exec supabase secrets unset GOOGLE_CALENDAR_MOCK",
+    "secrets:edge": "node scripts/sync-edge-secrets.mjs && pnpm exec supabase secrets set --env-file supabase/.temp/edge-secrets.env",
     "test:auth-email-hook": "node scripts/test-send-auth-email-hook.mjs"
   },
   "devDependencies": {

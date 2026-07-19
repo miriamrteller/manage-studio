@@ -19,7 +19,7 @@ Rough completion against [SPEC.md §6 V1 Implementation](../SPEC.md#6-v1-impleme
 | **1D** | Notifications engine | 🟡 ~90% | WhatsApp E2E (**last**, with live payments) |
 | **1E** | Payments (Grow + iCount mock; Stripe in registry) | 🟡 ~94% | Live Grow/iCount sandbox E2E (**last**) |
 | **1F** | Admin dashboard | ✅ ~95% | People CSV + classes occupancy bar → **V2 start** (not V1-blocking) |
-| **1G** | Parent / student portal | ✅ ~92% | WhatsApp OTP (**last**); `notify_*` toggles optional |
+| **1G** | Parent / student portal | ✅ ~95% | WhatsApp OTP (**last**); `notify_*` scope toggles ✅ |
 | **§7** | Production deployment | ❌ ~10% | Webhooks, Meta templates, legal, security checklist |
 | **§8+** | V2 / V3 | — | V2 start: people CSV, classes occupancy bar, V2.2 waitlist |
 
@@ -51,7 +51,7 @@ Rough completion against [SPEC.md §6 V1 Implementation](../SPEC.md#6-v1-impleme
 | **Parent self-enrolment (P1–P3)** | [parent-self-enrolment/00-overview.md](plans/parent-self-enrolment/00-overview.md) | — | ✅ | `resolveGuardianProfile`, portal **Myself**, `GuardianProfileSetupPanel` (`f0c327a`) |
 | **Phase 1F admin operations overview** | [admin-overview-dashboard.md](plans/admin-overview-dashboard.md) | ✅ `02000` | ✅ | RPC, service, hook, 6 components, 7 tests, i18n — **PR #5 complete** |
 | Notification blast composer | [notification-blast-composer.md](plans/notification-blast-composer.md) | ✅ `00600` | ✅ | `/admin/notifications`, preview RPC, `admin_blast` send, `AdminAnnouncementEmail`, schema tests — **manual Resend smoke recommended** |
-| Parent portal polish (Phase 1G) | [parent-portal-polish.md](plans/parent-portal-polish.md) | — | ✅ | Merged PR #8 (`0ea9004`, includes `fcad476`): prefs modal, upcoming 7-day, i18n, `returnTo`, login password, adult DOB display, form submit fixes; **Step 7 `notify_*`** + **Step 8 WhatsApp OTP** deferred |
+| Parent portal polish (Phase 1G) | [parent-portal-polish.md](plans/parent-portal-polish.md) | — | ✅ | Merged PR #8; **Step 7 `notify_*` ✅** (2026-07-19); Step 8 WhatsApp OTP deferred (**last**) |
 | **Guest checkout + guest enrolment** | [2026-06-02-guest-enrollment-portal-provisioning.md](plans/2026-06-02-guest-enrollment-portal-provisioning.md) | ✅ `guest_enrolment_*` | ✅ | `/enrol` no login gate; `create-enrolment-intake`; `resolveCheckoutSession` JWT or `enrolment_token`; admin payment link reuses `PAYMENT_REMINDER` |
 | Teachers admin module (V2.11) | [teachers-admin-module.md](plans/teachers-admin-module.md) | ✅ `staff` | 🟡 partial | **Deferred V2.11** — `TeacherService` / `useTeachers` + class-form `staff_id`; no admin page |
 | **Payment dunning — collections layer + renewal emails** | [payment-dunning-notifications.md](plans/payment-dunning-notifications.md) | ✅ `00600` + `01300` | ✅ | `_shared/collections/`, `applyBillingScheduleDunningFailure`, `PAYMENT_REMINDER` renewal track, `notification_log.dunning_key` |
@@ -103,7 +103,7 @@ Shipped on `feat/UI-fixes` (`f0c327a`):
 | `ensureGuardianPersonForParent` / DOB update | ✅ |
 | Tests (`guardian-profile-setup`, `parent-portal-guardian`) | ✅ |
 
-**Still separate:** [parent-portal-polish.md](plans/parent-portal-polish.md) Step 8 — full `WhatsAppOtpVerifier` i18n + portal embed; Step 7 — optional 1G-b `notify_*` toggles.
+**Still separate:** [parent-portal-polish.md](plans/parent-portal-polish.md) Step 8 — full `WhatsAppOtpVerifier` i18n + portal embed (**last**, with live WhatsApp).
 
 ---
 
@@ -121,8 +121,8 @@ Merged to `main` via PR #8 (`0ea9004`; core work in `fcad476`):
 | Form submit safety (`bindFormSubmit`, prefs cache update) | ✅ |
 | Regtest (build + lint + a11y e2e) | ✅ 2026-06-30 |
 | **Manual portal smoke** (Step 6 checklist) | ⏳ Recommended before prod |
-| **Step 7 — `notify_*` scope toggles (1G-b)** | ❌ Deferred — [Step 7](plans/parent-portal-polish.md#step-7--optional-phase-1g-b-notify_-toggles) |
-| **Step 8 — WhatsApp OTP verify in portal** | 🟡 Hint only — [Step 8](plans/parent-portal-polish.md#step-8--whatsapp-otp-verify-in-portal-deferred) |
+| **Step 7 — `notify_*` scope toggles (1G-b)** | ✅ — [Step 7](plans/parent-portal-polish.md#step-7--optional-phase-1g-b-notify_-toggles) |
+| **Step 8 — WhatsApp OTP verify in portal** | 🟡 Hint only — [Step 8](plans/parent-portal-polish.md#step-8--whatsapp-otp-verify-in-portal-deferred) (**last**) |
 
 ---
 
@@ -180,8 +180,8 @@ Plans: [payment-dunning-notifications.md](plans/payment-dunning-notifications.md
 | WhatsApp blast (urgent) | Phase 1F — Notifications | ❌ Deferred (Twilio) |
 | Contact prefs in portal | Phase 1G | ✅ |
 | Upcoming sessions (7-day) | Phase 1G | ✅ |
-| WhatsApp OTP verify in portal | Phase 1G | 🟡 Hint only; full OTP flow deferred |
-| `notify_*` scope toggles | Phase 1G | ❌ DB yes; schema/editor no (1G-b deferred) |
+| WhatsApp OTP verify in portal | Phase 1G | 🟡 Hint only; full OTP flow deferred (**last**) |
+| `notify_*` scope toggles | Phase 1G | ✅ Portal prefs (`NotifyScopeFields`) |
 | Payment dunning (renewal ladder + emails) | Phase 1E | ✅ — [payment-dunning-notifications.md](plans/payment-dunning-notifications.md) |
 | Enrolment unpaid dunning cron | §6.x #8 | ✅ — [enrolment-payment-dunning.md](plans/enrolment-payment-dunning.md) |
 
@@ -207,9 +207,8 @@ Track in SPEC §6.x — pull into V1 only when explicitly prioritized:
 
 | Priority | Work | Plan / notes |
 | --- | --- | --- |
-| **0** | Soft verify — fresh DB (incl. `02900` S5); mock finance walkthrough; Resend smokes | [v1-migration-squash-20260716.md](plans/v1-migration-squash-20260716.md); blast / age-review / portal checklists |
-| **1** | Scheduling S5 ✅ — apply `02900` on environments still missing it | [scheduling/00-overview.md](plans/scheduling/00-overview.md) · `scheduling:penalties.capture` |
-| **2** | Parent portal 1G-b — `notify_*` scope toggles (optional, no WhatsApp) | [parent-portal-polish.md](plans/parent-portal-polish.md) Step 7 |
+| **0** | Soft verify — S5 penalties + portal prefs (`notify_*`); mock finance / Resend smokes | [scheduling/00-overview.md](plans/scheduling/00-overview.md); [parent-portal-polish.md](plans/parent-portal-polish.md) Step 6–7 |
+| **1** | Parent portal 1G-b `notify_*` ✅ | [parent-portal-polish.md](plans/parent-portal-polish.md) Step 7 |
 | **Last** | Live payments: **Grow single-user** E2E for Creative Ballet; then WhatsApp | [grow-live-e2e-verification.md](plans/grow-live-e2e-verification.md) · portal Step 8 |
 | Later | §7 production deployment checklist | [SPEC.md §7](../SPEC.md#7-v1-production-deployment) |
 | **V2 start** | People CSV · classes occupancy/waitlist bar · **V2.2** waitlist automation | Not V1-blocking |

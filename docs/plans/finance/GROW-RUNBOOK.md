@@ -7,13 +7,21 @@ flow, so for Israeli tenants `payment_provider = invoicing_provider = 'grow'`.
 ## 1. Sandbox setup
 
 1. Create a Meshulam/Grow sandbox account and a payment page ("דף תשלום").
-2. Collect three values from the Grow dashboard:
-   - User ID (`userId`) — stored in `tenants.payment_provider_account_id`.
-   - Page code (`pageCode`) — stored in `tenants.payment_provider_public_key`.
-   - API key (`apiKey`) — encrypted into `tenants.payment_provider_secret_enc`.
-3. Save them in the app under Settings → "Payments & invoices (Grow)"
-   (`/admin/setup/grow`), which calls the `save_tenant_grow_credentials` RPC.
-4. Press "Test connection" to ping `verify-grow-credentials`.
+2. Collect values from the Grow dashboard and enter them in the app
+   (Settings → Payments & invoices / bundled-payments — `save_tenant_grow_credentials`):
+
+| Grow dashboard field | App / RPC param | Stored as |
+| --- | --- | --- |
+| User ID | `userId` / `p_user_id` | `tenants.payment_provider_account_id` |
+| Page code (דף תשלום) | `pageCode` / `p_page_code` | `tenants.payment_provider_public_key` |
+| API key | `apiKey` / `p_api_key` | `tenants.payment_provider_secret_enc` (encrypted) |
+
+3. Press "Test connection" (`verify-grow-credentials` / FinanceHealthCard).
+4. Save Grow webhook pre-shared key via `save_grow_webhook_secret` → `grow_webhook_secrets`
+   (used by `constructEvent`; no dedicated settings field in UI yet).
+5. Point Grow dashboard notify URLs at deployed Edge functions (see §4).
+
+**Full pre-prod manual list (DB, email, WhatsApp, legal):** [SPEC.md §7](../../../SPEC.md#7-v1-production-deployment).
 
 ## 2. SHAAM / Israel Invoice connection
 
