@@ -56,3 +56,7 @@ coverage/
 # to the repo-root packages/ dir. Created locally for `supabase functions deploy`
 # on Windows without Docker; must not be committed.
 /supabase/packages
+
+# Local credential scripts — never commit filled-in secrets
+*.local.ts
+scripts/seed-yesh-vault.local.ts

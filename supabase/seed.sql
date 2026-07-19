@@ -28,8 +28,8 @@ VALUES (
   '{}'::jsonb,
   'noreply@creativeballet.co.il',  -- verified sender for transactional email (waiver reminders, receipts)
   false,  -- OTP before waiver signing disabled by default; enable only if Twilio Verify is configured
-  'grow',
-  'grow',
+  'tranzila',
+  'yesh',
   'professional',
   'dance-studio'
 ) ON CONFLICT (subdomain) DO UPDATE SET
@@ -950,10 +950,32 @@ BEGIN
     );
   END IF;
 
-  -- Ensure seeded tenants all use grow/grow on re-seed as well.
+  -- Ensure seeded test tenants use grow/grow on re-seed.
+  -- Creative Ballet intentionally excluded: it uses tranzila + yesh.
   UPDATE tenants
   SET payment_provider = 'grow',
       invoicing_provider = 'grow'
-  WHERE subdomain IN ('creativeballet', 'belladance', 'lensstudio', 'velvetbeauty');
+  -- Creative Ballet intentionally excluded — it runs on tranzila/yesh.
+  WHERE subdomain IN ('belladance', 'lensstudio', 'velvetbeauty');
 
 END $$;
+
+-- ============================================================================
+-- YESH VAULT SECRETS — Creative Ballet dev tenant
+-- ============================================================================
+-- Vault secret insertion requires live Supabase access and cannot run inline
+-- in seed.sql. Run the dev-setup script instead:
+--
+--   1. Copy scripts/seed-yesh-vault.ts to scripts/seed-yesh-vault.local.ts
+--   2. Fill in <YESH_USER_KEY> and <YESH_SECRET_KEY> with actual dev values
+--   3. Run:
+--        SUPABASE_URL=http://127.0.0.1:54321 \
+--        SUPABASE_SERVICE_ROLE_KEY=<service-role-key> \
+--        deno run --allow-env --allow-net scripts/seed-yesh-vault.local.ts
+--
+-- Vault paths written by that script:
+--   secret/tenants/00000000-0000-0000-0000-000000000001/yesh#api_key
+--   secret/tenants/00000000-0000-0000-0000-000000000001/yesh#secret_key
+--
+-- HITL: Miriam must run the above script once after initial seed.
+-- ============================================================================
