@@ -159,6 +159,7 @@ Or batch: `pnpm deploy:scheduling-functions` + `pnpm deploy:payment-functions`.
 ### 6.1 Feature flags
 - Enable `scheduling:calendar.view`, `scheduling:booking.client`, `scheduling:booking.admin`,
   and optionally `scheduling:integration.google_calendar`.
+- Professional: `scheduling:penalties.capture` for S5 no-show / late-cancel (Booking Settings + Appointments).
 - Nav: **Classes** and **Book** are top-level (no Browse accordion). Guests see Book when
   `enabled_features` includes client booking.
 
@@ -167,6 +168,7 @@ Or batch: `pnpm deploy:scheduling-functions` + `pnpm deploy:payment-functions`.
 
 ### 6.3 Availability + holds
 - Booking Settings: hours (atomic save), buffer, window, hold TTL.
+- With `scheduling:penalties.capture`: late-cancel hours + retain-payment toggle; Appointments **Mark no-show** → `no_show`; cancel inside window → `late_cancellation` + `penalty_applied_at` when paid and retain is on; early cancel stays `admin_cancelled`. No PSP charge/refund in S5.
 - Services: `offering_type='appointment'`.
 - Slots exclude holds, blocks, and `pending_payment` / `active` / `pending_waiver`.
 - Concurrent holds on same slot → second fails.

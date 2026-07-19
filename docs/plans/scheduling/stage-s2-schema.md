@@ -21,6 +21,8 @@ Part of [00-overview.md](00-overview.md). Reuses `engagements` as the booking so
 | `hold_expiry_mins` | int | RESERVED hold TTL; one of 15,20,25,30,45,60,90,120 (default 20) |
 | `expiry_reminder_mins` | int null | pre-expiry nudge; 5/10/15 or null=off |
 | `is_booking_enabled` | bool | master switch for `/book` |
+| `late_cancel_hours` | int | S5 — hours before start for late cancel (default 24) |
+| `retain_payment_on_penalty` | bool | S5 — set `engagements.penalty_applied_at` on paid no-show/late cancel |
 
 ### `tenant_scheduling_hours` (weekly windows)
 
@@ -46,13 +48,14 @@ Manually blocked time; `event_type = 'blocked'` in the calendar feed.
 
 ### `engagements` (+ appointment columns)
 
-`booked_starts_at`, `booked_ends_at` (both-null or both-set check), `google_event_id`, `scheduling_hold_id`.
+`booked_starts_at`, `booked_ends_at` (both-null or both-set check), `google_event_id`, `scheduling_hold_id`, `penalty_applied_at` (S5).
 
 Lifecycle for appointments:
 
 ```
 pending_payment → active | pending_waiver  (on paid finalise)
 pending_payment → cancelled                (hold expiry, or slot taken on late pay)
+active | pending_waiver → cancelled        (admin cancel / no-show; reasons admin_cancelled | late_cancellation | no_show)
 ```
 
 `finalise-payment` never reactivates `cancelled` / `withdrawn`. If another engagement already owns the slot, the loser is cancelled with `slot_taken_on_payment`.

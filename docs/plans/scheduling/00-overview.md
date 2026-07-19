@@ -1,6 +1,6 @@
 # Scheduling — overview (calendar + native slot booking + Google Calendar)
 
-**Status:** Implemented (S0–S4 core) · Penalties / no-show (S5) still open
+**Status:** Implemented (S0–S5) — penalties record retained payment only (no PSP charge/refund)
 
 Normative: [SPEC.md §2.2.1](../../SPEC.md), [SPEC §8 V2.12](../../SPEC.md).
 
@@ -85,7 +85,7 @@ Appointment-specific after pay:
 | S3 | Client book UI + checkout + deep-link validation | ✅ |
 | S3b–S3d | Google OAuth, freebusy, event sync | ✅ |
 | S4 | Admin availability / services / appointments | ✅ |
-| S5 | Penalties / no-show | Open |
+| S5 | Penalties / no-show — flag-gated mark no-show + late-cancel window; record retained payment (no PSP charge/refund) | ✅ |
 
 ---
 
@@ -95,4 +95,4 @@ Appointment-specific after pay:
 - [deployment-and-testing.md](deployment-and-testing.md) — deploy commands, `APP_URL`/secrets, testing plan
 - [stage-s2-schema.md](stage-s2-schema.md)
 - `packages/shared/src/config/feature-registry.ts`
-- Migrations: `03100`–`04200`
+- Migrations: scheduling in `02600`; S5 penalties `02900` (`late_cancel_hours`, `retain_payment_on_penalty`, `penalty_applied_at`)

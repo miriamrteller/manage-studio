@@ -18,8 +18,9 @@ import {
   type BookingHours,
 } from '@/features/scheduling/bookingSettingsService';
 import { GoogleCalendarSettings } from '@/features/scheduling/components/GoogleCalendarSettings';
+import { BookingPenaltySettingsFields } from '@/features/scheduling/components/BookingPenaltySettingsFields';
+import { BookingHoursEditor } from '@/features/scheduling/components/BookingHoursEditor';
 
-const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 const DAY_LABELS_HE = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
 const DAY_LABELS_EN = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -35,6 +36,7 @@ export default function BookingSettingsPage() {
   const [status, setStatus] = useState<{ kind: 'ok' | 'error'; msg: string } | null>(null);
 
   const canManage = hasFeature(FEATURES.scheduling.adminBooking);
+  const penaltiesEnabled = hasFeature(FEATURES.scheduling.penalties);
 
   const settingsQuery = useQuery({
     queryKey: ['bookingSettings', tenant?.id],
@@ -201,52 +203,19 @@ export default function BookingSettingsPage() {
               ))}
             </Select>
           </Field>
+          {penaltiesEnabled && (
+            <BookingPenaltySettingsFields settings={settings} onUpdate={update} />
+          )}
         </div>
       </section>
 
-      <section className="card border border-gray-200 space-y-4 p-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">{t('scheduling.booking.hours_title')}</h2>
-          <Button variant="outline" size="sm" onClick={addHours}>
-            {t('scheduling.booking.add_hours')}
-          </Button>
-        </div>
-        <div className="space-y-3">
-          {hours.map((h, i) => (
-            <div key={h.id ?? i} className="flex flex-wrap items-end gap-3">
-              <Field label={t('scheduling.booking.day_of_week')}>
-                <Select
-                  value={h.day_of_week}
-                  onChange={(e) => updateHour(i, { day_of_week: Number(e.target.value) })}
-                >
-                  {DAY_KEYS.map((_, idx) => (
-                    <option key={idx} value={idx}>
-                      {dayLabels[idx]}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-              <Field label={t('scheduling.booking.start_time')}>
-                <Input
-                  type="time"
-                  value={h.start_time.slice(0, 5)}
-                  onChange={(e) => updateHour(i, { start_time: e.target.value })}
-                />
-              </Field>
-              <Field label={t('scheduling.booking.end_time')}>
-                <Input
-                  type="time"
-                  value={h.end_time.slice(0, 5)}
-                  onChange={(e) => updateHour(i, { end_time: e.target.value })}
-                />
-              </Field>
-              <Button variant="ghost" size="sm" onClick={() => removeHour(i)} aria-label={t('common.remove')}>
-                {t('common.remove')}
-              </Button>
-            </div>
-          ))}
-        </div>
-      </section>
+      <BookingHoursEditor
+        hours={hours}
+        dayLabels={dayLabels}
+        onAdd={addHours}
+        onUpdate={updateHour}
+        onRemove={removeHour}
+      />
 
       <section className="card border border-gray-200 space-y-2 p-4">
         <h2 className="text-lg font-semibold">{t('scheduling.booking.manage_services')}</h2>

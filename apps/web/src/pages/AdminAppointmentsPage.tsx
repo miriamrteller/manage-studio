@@ -4,10 +4,12 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { FEATURES } from '@shared/index';
 import { useTenant } from '@/hooks/useTenant';
 import { useFeatureGate } from '@/hooks/useFeatureGate';
-import { Button } from '@/components/ui/button';
 import { AppointmentsService, type AppointmentRow } from '@/features/scheduling/appointmentsService';
+import { BookingSettingsService } from '@/features/scheduling/bookingSettingsService';
+import { AppointmentRowActions } from '@/features/scheduling/components/AppointmentRowActions';
 import { formatAppointmentWhen } from '@/features/scheduling/lib/formatAppointmentWhen';
 import { GoogleCalendarService } from '@/features/scheduling/googleCalendarService';
+import type { AppointmentCloseAction } from '@/features/scheduling/lib/resolveAppointmentPenalty';
 
 const STATUS_STYLES: Record<string, string> = {
   active: 'bg-green-100 text-green-800',
@@ -38,15 +40,24 @@ export default function AdminAppointmentsPage() {
   const tenant = useTenant();
   const queryClient = useQueryClient();
   const { hasFeature, isLoading: gateLoading } = useFeatureGate();
+  const [closingId, setClosingId] = useState<string | null>(null);
   const [syncingId, setSyncingId] = useState<string | null>(null);
 
-  const canView = hasFeature(FEATURES.scheduling.clientBooking) || hasFeature(FEATURES.scheduling.adminBooking);
+  const canView =
+    hasFeature(FEATURES.scheduling.clientBooking) || hasFeature(FEATURES.scheduling.adminBooking);
   const googleCalendarEnabled = hasFeature(FEATURES.scheduling.googleCalendar);
+  const penaltiesEnabled = hasFeature(FEATURES.scheduling.penalties);
 
   const { data: rows = [] } = useQuery<AppointmentRow[]>({
     queryKey: ['appointments', tenant?.id],
     queryFn: () => AppointmentsService.list(tenant as never),
     enabled: !!tenant?.id && canView,
+  });
+
+  const { data: bookingSettings } = useQuery({
+    queryKey: ['bookingSettings', tenant?.id],
+    queryFn: () => BookingSettingsService.getSettings(tenant as never),
+    enabled: !!tenant?.id && penaltiesEnabled,
   });
 
   const { data: googleConnection } = useQuery({
@@ -57,11 +68,23 @@ export default function AdminAppointmentsPage() {
 
   const googleCalendarConnected = Boolean(googleConnection?.connected);
 
-  async function cancel(id: string) {
+  async function closeAppointment(row: AppointmentRow, action: AppointmentCloseAction) {
     if (!tenant?.id) return;
-    if (!window.confirm(t('scheduling.appointments.cancel') + '?')) return;
-    await AppointmentsService.cancel(tenant as never, id);
-    await queryClient.invalidateQueries({ queryKey: ['appointments'] });
+    const label =
+      action === 'no_show'
+        ? t('scheduling.appointments.mark_no_show')
+        : t('scheduling.appointments.cancel');
+    if (!window.confirm(`${label}?`)) return;
+    setClosingId(row.id);
+    try {
+      await AppointmentsService.close(tenant as never, row, action, {
+        penaltiesEnabled,
+        settings: bookingSettings ?? null,
+      });
+      await queryClient.invalidateQueries({ queryKey: ['appointments'] });
+    } finally {
+      setClosingId(null);
+    }
   }
 
   async function addToGoogleCalendar(row: AppointmentRow) {
@@ -75,10 +98,6 @@ export default function AdminAppointmentsPage() {
     } finally {
       setSyncingId(null);
     }
-  }
-
-  function canAddToGoogleCalendar(row: AppointmentRow): boolean {
-    return googleCalendarConnected && isSyncableAppointment(row.status) && !row.google_event_id;
   }
 
   if (!gateLoading && !canView) {
@@ -123,39 +142,40 @@ export default function AdminAppointmentsPage() {
                     <div className="text-gray-500">{row.client_email}</div>
                   </td>
                   <td className="p-2">
-                    <span className={`rounded-full px-2 py-0.5 text-xs ${STATUS_STYLES[row.status] ?? 'bg-gray-100 text-gray-600'}`}>
-                      {t(`scheduling.appointments.status_${row.status}`, { defaultValue: row.status })}
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs ${STATUS_STYLES[row.status] ?? 'bg-gray-100 text-gray-600'}`}
+                    >
+                      {t(`scheduling.appointments.status_${row.status}`, {
+                        defaultValue: row.status,
+                      })}
                     </span>
+                    {row.status === 'cancelled' && row.cancellation_reason && (
+                      <div className="mt-1 text-xs text-gray-500">
+                        {t(`scheduling.appointments.reason_${row.cancellation_reason}`, {
+                          defaultValue: row.cancellation_reason,
+                        })}
+                        {row.penalty_applied_at
+                          ? ` · ${t('scheduling.appointments.payment_retained')}`
+                          : ''}
+                      </div>
+                    )}
                   </td>
                   <td className="p-2 text-end">
-                    <div className="flex flex-col items-end gap-1 sm:flex-row sm:justify-end">
-                      {googleCalendarEnabled && row.status !== 'cancelled' && (
-                        row.google_event_id ? (
-                          <span
-                            className="rounded-full bg-green-50 px-2 py-1 text-xs text-green-800"
-                            title={calendarButtonTitle(row, googleCalendarConnected, t)}
-                          >
-                            {t('scheduling.appointments.added_to_google_calendar')}
-                          </span>
-                        ) : (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            isLoading={syncingId === row.id}
-                            disabled={!canAddToGoogleCalendar(row)}
-                            title={calendarButtonTitle(row, googleCalendarConnected, t)}
-                            onClick={() => addToGoogleCalendar(row)}
-                          >
-                            {t('scheduling.appointments.add_to_google_calendar')}
-                          </Button>
-                        )
-                      )}
-                      {row.status !== 'cancelled' && (
-                        <Button variant="ghost" size="sm" onClick={() => cancel(row.id)}>
-                          {t('scheduling.appointments.cancel')}
-                        </Button>
-                      )}
-                    </div>
+                    <AppointmentRowActions
+                      row={row}
+                      penaltiesEnabled={penaltiesEnabled}
+                      googleCalendarEnabled={googleCalendarEnabled}
+                      canAddToGoogleCalendar={
+                        googleCalendarConnected &&
+                        isSyncableAppointment(row.status) &&
+                        !row.google_event_id
+                      }
+                      calendarTitle={calendarButtonTitle(row, googleCalendarConnected, t)}
+                      closingId={closingId}
+                      syncingId={syncingId}
+                      onClose={closeAppointment}
+                      onAddToGoogle={addToGoogleCalendar}
+                    />
                   </td>
                 </tr>
               ))}

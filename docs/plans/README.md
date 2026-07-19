@@ -9,9 +9,9 @@ Agent-optimized implementation plans. Create before coding (see `.instructions.m
 
 | Date | Feature | Status |
 | --- | --- | --- |
-| 2026-07 | [Native scheduling + Google Calendar](scheduling/00-overview.md) | **S0–S4 ✅** — [GCal](scheduling/google-calendar-integration.md) · [deploy/test](scheduling/deployment-and-testing.md); S5 penalties open |
+| 2026-07 | [Native scheduling + Google Calendar](scheduling/00-overview.md) | **S0–S5 ✅** — [GCal](scheduling/google-calendar-integration.md) · [deploy/test](scheduling/deployment-and-testing.md); live payments/WhatsApp last |
 | 2026-06-29 | [iCount IL default (mock-first)](finance/icount/00-overview.md) | **Mock phase ✅** — I0-live deferred; I6-research optional |
-| 2026-07-16 | [V1 migration fourth squash + payment merge](v1-migration-squash-20260716.md) | **Ready to verify** — branch `chore/migration-fourth-squash`; reset → push → seed → types |
+| 2026-07-16 | [V1 migration fourth squash + payment merge](v1-migration-squash-20260716.md) | **Shipped** on `main` (PR #17) — fresh DB reset → push → seed → types still recommended |
 | 2026-07-05 | [V1 migration third squash](v1-migration-squash-20260705.md) | **Shipped** — folded into `20260608*` base chain |
 | 2026-07-05 | [V1 pg_cron scheduled jobs](v1-pg-cron-scheduled-jobs.md) | **Shipped** — implemented in `20260608002800` (fourth squash) |
 | 2026-07-05 | [Enrolment unpaid dunning §6.x #8](enrolment-payment-dunning.md) | ✅ Shipped — PR #11 (same) |
@@ -28,6 +28,9 @@ Agent-optimized implementation plans. Create before coding (see `.instructions.m
 
 | Date | Feature | Status |
 | --- | --- | --- |
+| 2026-07 | People directory CSV export | **V2 start** — Phase 1F polish; not required for V1 runtime |
+| 2026-07 | Classes list occupancy + waitlist bar | **V2 start** — overview already shows occupancy/waitlist |
+| 2026-07 | [Waiting list automation](../SPEC.md) (V2.2) | Schema + overview counts in V1; `process-waiting-list` stays V2.2 |
 | 2026-07-01 | [Teachers admin module](teachers-admin-module.md) | **V2.11** — agent plan ready; not V1 scope |
 
 ## Shipped reference (keep for SPEC links)
