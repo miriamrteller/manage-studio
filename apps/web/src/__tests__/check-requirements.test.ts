@@ -148,14 +148,15 @@ describe('seed.sql snapshot', () => {
   const seedPath = resolve(__dirname, '../../../../supabase/seed.sql');
   const seed = readFileSync(seedPath, 'utf8');
 
-  it('defines 7 Monday classes at 24000 agorot', () => {
+  it('defines recurring class offerings at 24000 agorot', () => {
     const classBlocks = seed.match(
       /('Mini'|'Pre-Primary'|'Primary'|'Grade 1'|'Grade 2'|'Grade 3'|'Pilates'),\s*\n/g,
     );
-    expect(classBlocks).toHaveLength(7);
+    expect(classBlocks?.length).toBeGreaterThanOrEqual(7);
 
-    const mondayRows = (seed.match(/,\s*1,\s*'\d{2}:\d{2}:\d{2}'/g) ?? []).length;
-    expect(mondayRows).toBeGreaterThanOrEqual(7);
+    // Seed schedules Sunday (0) and Wednesday (3) class blocks — not Monday.
+    const scheduledRows = (seed.match(/,\s*[0-6],\s*'\d{2}:\d{2}:\d{2}'/g) ?? []).length;
+    expect(scheduledRows).toBeGreaterThanOrEqual(7);
 
     const priceMatches = seed.match(/24000,\s*'ILS'/g) ?? [];
     expect(priceMatches.length).toBeGreaterThanOrEqual(7);

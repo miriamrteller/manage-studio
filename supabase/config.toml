@@ -122,6 +122,11 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/verify-icount-credentials/index.ts"
 
+[functions.verify-invoice4u-credentials]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/verify-invoice4u-credentials/index.ts"
+
 [functions.record-payment]
 enabled = true
 verify_jwt = false
