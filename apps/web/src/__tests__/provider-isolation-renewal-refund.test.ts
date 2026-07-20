@@ -16,6 +16,7 @@ import { parseIcountIpn } from '../../../../supabase/functions/_shared/payments/
 import { encodeIcountIpnBody } from '../../../../supabase/functions/_shared/payments/icount/ipn.ts';
 import { MockGrowPaymentProvider } from '../../../../supabase/functions/_shared/payments/providers/mock-grow.ts';
 import { MockIcountPaymentProvider } from '../../../../supabase/functions/_shared/payments/providers/mock-icount.ts';
+import { MockInvoice4uPaymentProvider } from '../../../../supabase/functions/_shared/payments/providers/mock-invoice4u.ts';
 import * as mockSync from '../../../../supabase/functions/_shared/payments/providers/mock.ts';
 
 vi.mock('../../../../supabase/functions/_shared/collections/send-payment-dunning-reminder.ts', () => ({
@@ -24,6 +25,7 @@ vi.mock('../../../../supabase/functions/_shared/collections/send-payment-dunning
 
 const GROW_TENANT = '00000000-0000-0000-0000-0000000000aa';
 const ICOUNT_TENANT = '00000000-0000-0000-0000-0000000000bb';
+const INVOICE4U_TENANT = '00000000-0000-0000-0000-0000000000cc';
 const ENGAGEMENT_ID = '11111111-1111-1111-1111-111111111111';
 const BILLING_ACCOUNT_ID = '22222222-2222-2222-2222-222222222222';
 const SCHEDULE_ID = '55555555-5555-5555-5555-555555555555';
@@ -31,7 +33,7 @@ const OFFERING_ID = '33333333-3333-3333-3333-333333333333';
 const PERSON_ID = '44444444-4444-4444-4444-444444444444';
 
 function makeBillingService(options: {
-  paymentProvider: 'grow' | 'icount';
+  paymentProvider: 'grow' | 'icount' | 'invoice4u';
   tenantId: string;
   savedToken?: string | null;
 }) {
@@ -209,9 +211,10 @@ function makeBillingService(options: {
 }
 
 describe('renewal token helpers', () => {
-  it('providerUsesSavedTokenRenewal includes grow and icount only', () => {
+  it('providerUsesSavedTokenRenewal includes grow, icount, and invoice4u', () => {
     expect(providerUsesSavedTokenRenewal('grow')).toBe(true);
     expect(providerUsesSavedTokenRenewal('icount')).toBe(true);
+    expect(providerUsesSavedTokenRenewal('invoice4u')).toBe(true);
     expect(providerUsesSavedTokenRenewal('stripe')).toBe(false);
     expect(providerUsesSavedTokenRenewal('mock')).toBe(false);
   });
@@ -231,6 +234,7 @@ describe('run-monthly-billing provider isolation (I4-T1, I4-T2)', () => {
     } as typeof globalThis.Deno;
     process.env.GROW_MOCK = 'true';
     process.env.ICOUNT_MOCK = 'true';
+    process.env.INVOICE4U_MOCK = 'true';
     vi.spyOn(mockSync, 'applyMockSyncEvent').mockResolvedValue(undefined);
   });
 
@@ -238,6 +242,7 @@ describe('run-monthly-billing provider isolation (I4-T1, I4-T2)', () => {
     globalThis.Deno = originalDeno;
     delete process.env.GROW_MOCK;
     delete process.env.ICOUNT_MOCK;
+    delete process.env.INVOICE4U_MOCK;
     vi.restoreAllMocks();
   });
 
@@ -342,19 +347,62 @@ describe('run-monthly-billing provider isolation (I4-T1, I4-T2)', () => {
       expect(result.error).toMatch(/icount/i);
     }
   });
+
+  it('U4-mock: invoice4u renewal uses chargeWithToken + sync event — not Grow/iCount', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const growSpy = vi.spyOn(MockGrowPaymentProvider.prototype, 'createCharge');
+    const icountSpy = vi.spyOn(MockIcountPaymentProvider.prototype, 'chargeWithToken');
+    const invoice4uChargeSpy = vi.spyOn(MockInvoice4uPaymentProvider.prototype, 'chargeWithToken');
+    const invoice4uCreateSpy = vi.spyOn(MockInvoice4uPaymentProvider.prototype, 'createCharge');
+
+    const service = makeBillingService({
+      paymentProvider: 'invoice4u',
+      tenantId: INVOICE4U_TENANT,
+      savedToken: 'i4u_customer_1001',
+    });
+
+    const result = await processBillingSchedule(
+      service,
+      {
+        id: SCHEDULE_ID,
+        tenant_id: INVOICE4U_TENANT,
+        engagement_id: ENGAGEMENT_ID,
+        billing_account_id: BILLING_ACCOUNT_ID,
+        attempt_count: 0,
+      },
+      '2026-06',
+    );
+
+    expect(result.outcome).toBe('charged');
+    expect(invoice4uChargeSpy).toHaveBeenCalledOnce();
+    expect(invoice4uChargeSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ savedToken: 'i4u_customer_1001' }),
+    );
+    expect(invoice4uCreateSpy).not.toHaveBeenCalled();
+    expect(growSpy).not.toHaveBeenCalled();
+    expect(icountSpy).not.toHaveBeenCalled();
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(mockSync.applyMockSyncEvent).toHaveBeenCalledWith(
+      service,
+      expect.objectContaining({ type: 'payment.succeeded' }),
+      'invoice4u',
+    );
+  });
 });
 
-describe('process-refund provider isolation (I4-T3, I4-T4)', () => {
+describe('process-refund provider isolation (I4-T3, I4-T4, U4-mock)', () => {
   const service = {} as never;
 
   beforeEach(() => {
     process.env.GROW_MOCK = 'true';
     process.env.ICOUNT_MOCK = 'true';
+    process.env.INVOICE4U_MOCK = 'true';
   });
 
   afterEach(() => {
     delete process.env.GROW_MOCK;
     delete process.env.ICOUNT_MOCK;
+    delete process.env.INVOICE4U_MOCK;
     vi.restoreAllMocks();
   });
 
@@ -390,6 +438,28 @@ describe('process-refund provider isolation (I4-T3, I4-T4)', () => {
     expect(fetchSpy).not.toHaveBeenCalled();
     expect(result).toBeUndefined();
   });
+
+  it('U4-mock: refund on invoice4u payment row uses PaymentId via MockInvoice4u refundCharge', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const growSpy = vi.spyOn(MockGrowPaymentProvider.prototype, 'refundCharge');
+    const icountSpy = vi.spyOn(MockIcountPaymentProvider.prototype, 'refundCharge');
+    const invoice4uSpy = vi.spyOn(MockInvoice4uPaymentProvider.prototype, 'refundCharge');
+
+    await executeProviderRefund(
+      service,
+      { provider: 'invoice4u', provider_payment_ref: '22222222-2222-2222-2222-222222222201' },
+      35000,
+    );
+
+    expect(invoice4uSpy).toHaveBeenCalledOnce();
+    expect(invoice4uSpy).toHaveBeenCalledWith({
+      providerPaymentRef: '22222222-2222-2222-2222-222222222201',
+      amountMinor: 35000,
+    });
+    expect(growSpy).not.toHaveBeenCalled();
+    expect(icountSpy).not.toHaveBeenCalled();
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
 });
 
 describe('credential RPC token invalidation (I4-T5)', () => {
@@ -417,6 +487,16 @@ describe('credential RPC token invalidation (I4-T5)', () => {
     expect(growBlock).toContain('UPDATE payment_method_tokens SET');
     expect(growBlock).toContain("provider <> 'grow'");
     expect(growBlock).toContain('revoked_at = now()');
+  });
+
+  it('save_tenant_invoice4u_credentials revokes non-invoice4u tokens', () => {
+    const invoice4uMigration = readFileSync(
+      resolve(migrationsDir, '20260720000100_invoice4u_credentials.sql'),
+      'utf8',
+    );
+    expect(invoice4uMigration).toContain("AND provider <> 'invoice4u'");
+    expect(invoice4uMigration).toContain('UPDATE payment_method_tokens SET');
+    expect(invoice4uMigration).toContain('revoked_at = now()');
   });
 });
 
