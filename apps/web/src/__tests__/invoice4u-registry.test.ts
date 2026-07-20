@@ -1,8 +1,8 @@
 /**
- * U1: Invoice4U registered in payment + invoicing registries; mock adapter behaviour.
+ * U1/U2a: Invoice4U registered in payment + invoicing registries; mock adapter behaviour.
  * Run: pnpm -C apps/web test invoice4u-registry.test.ts
  */
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import {
   PAYMENT_PROVIDER_SLUGS,
   parsePaymentProviderSlug,
@@ -32,6 +32,55 @@ const metadata = buildChargeMetadata({
   totalMinor: 100,
 });
 
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function makePendingInsertService() {
+  const insert = vi.fn().mockReturnValue({
+    select: () => ({
+      single: async () => ({ data: { id: 'pay-pending-1' }, error: null }),
+    }),
+  });
+  return {
+    from: (table: string) => {
+      if (table === 'engagements') {
+        return {
+          select: () => ({
+            eq: () => ({
+              single: async () => ({
+                data: {
+                  id: metadata.engagement_id,
+                  person_id: metadata.person_id,
+                  offering_id: metadata.offering_id,
+                  billing_account_id: metadata.billing_account_id,
+                },
+                error: null,
+              }),
+            }),
+          }),
+        };
+      }
+      if (table === 'people') {
+        return {
+          select: () => ({
+            eq: () => ({
+              single: async () => ({
+                data: { account_id: '00000000-0000-0000-0000-000000000201' },
+                error: null,
+              }),
+            }),
+          }),
+        };
+      }
+      if (table === 'payments') {
+        return { insert };
+      }
+      return {};
+    },
+    _insert: insert,
+  } as never;
+}
+
 describe('Invoice4U registries (U1)', () => {
   it('accepts invoice4u as a payment provider slug', () => {
     expect(PAYMENT_PROVIDER_SLUGS).toContain('invoice4u');
@@ -52,8 +101,9 @@ describe('Invoice4U registries (U1)', () => {
 });
 
 describe('MockInvoice4uPaymentProvider', () => {
-  it('issues a hosted-page charge on mock.invoice4u.local without auto-finalising', async () => {
-    const provider = new MockInvoice4uPaymentProvider();
+  it('issues a hosted-page charge on mock.invoice4u.local and inserts pending (D5)', async () => {
+    const service = makePendingInsertService();
+    const provider = new MockInvoice4uPaymentProvider(service);
     const result = await provider.createCharge({
       amountMinor: 100,
       currency: 'ILS',
@@ -61,14 +111,16 @@ describe('MockInvoice4uPaymentProvider', () => {
       metadata,
     });
 
-    expect(result.providerPaymentRef).toMatch(/^mockinvoice4u_/);
+    expect(result.providerPaymentRef).toMatch(UUID_RE);
     expect(result.pageUrl).toContain('mock.invoice4u.local');
+    expect(result.pageUrl).toContain(result.providerPaymentRef);
     expect(result.pendingWebhook).toBe(true);
     expect(result.emitSyncEvent).toBeUndefined();
+    expect((service as { _insert: ReturnType<typeof vi.fn> })._insert).toHaveBeenCalled();
   });
 
   it('auto-finalises saved-token charges for mock renewals', async () => {
-    const provider = new MockInvoice4uPaymentProvider();
+    const provider = new MockInvoice4uPaymentProvider({} as never);
     const result = await provider.createCharge({
       amountMinor: 100,
       currency: 'ILS',
@@ -83,7 +135,7 @@ describe('MockInvoice4uPaymentProvider', () => {
   });
 
   it('chargeWithToken returns emitSyncEvent for renewals', async () => {
-    const provider = new MockInvoice4uPaymentProvider();
+    const provider = new MockInvoice4uPaymentProvider({} as never);
     const result = await provider.chargeWithToken({
       amountMinor: 100,
       currency: 'ILS',
@@ -93,7 +145,7 @@ describe('MockInvoice4uPaymentProvider', () => {
     });
 
     expect(result.emitSyncEvent?.type).toBe('payment.succeeded');
-    expect(result.providerPaymentRef).toMatch(/^mockinvoice4u_/);
+    expect(result.providerPaymentRef).toMatch(UUID_RE);
   });
 });
 

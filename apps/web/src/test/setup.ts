@@ -1,4 +1,6 @@
 import '@testing-library/jest-dom';
+import { afterEach } from 'vitest';
+import { cleanup } from '@testing-library/react';
 
 /**
  * Edge-function modules read `Deno.env` at import time. Vitest runs in Node —
@@ -13,3 +15,8 @@ if (typeof globalThis.Deno === 'undefined') {
     },
   } as typeof globalThis.Deno;
 }
+
+/** Shared jsdom across files (e.g. --threads false) must not leak rendered trees. */
+afterEach(() => {
+  cleanup();
+});

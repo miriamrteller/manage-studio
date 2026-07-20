@@ -138,6 +138,31 @@ export async function confirmMockPayment(
     return { ok: true, paymentId: result.paymentId, duplicate: result.duplicate };
   }
 
+  if (providerSlug === "invoice4u") {
+    const { buildMockInvoice4uCallbackBody } = await import("../invoice4u/callback.ts");
+    const { processInvoice4uPaymentCallback } = await import(
+      "../invoice4u/process-callback.ts"
+    );
+    const callbackBody = buildMockInvoice4uCallbackBody({
+      orderIdClientUsage: providerPaymentRef,
+      paymentId: crypto.randomUUID(),
+      amountMinor: params.amountMinor,
+      success: true,
+    });
+    const result = await processInvoice4uPaymentCallback(params.service, callbackBody);
+    if (result.status === "amount_mismatch" || result.status === "failed") {
+      return {
+        ok: false,
+        code: MOCK_PAYMENT_DECLINED_CODE,
+        message:
+          result.status === "amount_mismatch"
+            ? "Mock Invoice4U amount mismatch"
+            : "Mock Invoice4U payment failed",
+      };
+    }
+    return { ok: true, paymentId: result.paymentId, duplicate: result.duplicate };
+  }
+
   const event = buildMockPaymentEvent({
     providerPaymentRef,
     amountMinor: params.amountMinor,

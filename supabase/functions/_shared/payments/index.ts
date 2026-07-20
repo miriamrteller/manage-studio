@@ -32,7 +32,7 @@ export function getPaymentProvider(
         : new IcountPaymentProvider(service);
     case "invoice4u":
       return getEnv("INVOICE4U_MOCK") === "true"
-        ? new MockInvoice4uPaymentProvider()
+        ? new MockInvoice4uPaymentProvider(service)
         : new Invoice4uPaymentProvider(service);
     default: {
       const _exhaustive: never = parsed;

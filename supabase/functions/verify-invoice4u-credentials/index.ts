@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
   }
 
   if (getEnv("INVOICE4U_MOCK") === "true") {
-    const provider = new MockInvoice4uPaymentProvider();
+    const provider = new MockInvoice4uPaymentProvider(service);
     const health = await provider.verifyCredentials(tenantId);
     return jsonResponse(
       { ok: health.valid, provider: "invoice4u", ...health },

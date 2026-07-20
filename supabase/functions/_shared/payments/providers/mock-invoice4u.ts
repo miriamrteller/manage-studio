@@ -1,25 +1,26 @@
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import {
+  buildMockInvoice4uCallbackBody,
+  parseInvoice4uCallback,
+} from "../invoice4u/callback.ts";
+import { insertPendingInvoice4uPayment } from "../invoice4u/pending-charge.ts";
 import { buildMockPaymentEvent } from "../mock-payment-event.ts";
-import { ChargeMetadataSchema } from "../types.ts";
 import type { ChargeParams, ChargeResult, PaymentEvent, PaymentProvider } from "../types.ts";
 
 /**
  * Mock Invoice4U payment adapter — CI/dev stand-in for the live API.
  *
- * Returned only when `payment_provider='invoice4u'` and `INVOICE4U_MOCK=true`.
- *
- * Hosted enrolment charges return a `pageUrl` and `pendingWebhook` — the parent
- * confirms via the mock card UI (`confirm-mock-payment`), matching Grow/iCount UX.
- *
- * Server-side token charges (renewals) return `emitSyncEvent` so cron/tests can
- * finalise without a hosted page.
+ * Hosted charges INSERT a pending payment (D5) then return mock.invoice4u.local pageUrl.
+ * Token renewals emit a sync event (no pending hosted row — D14).
  */
 export class MockInvoice4uPaymentProvider implements PaymentProvider {
   readonly slug = "invoice4u";
 
-  async createCharge(params: ChargeParams): Promise<ChargeResult> {
-    const providerPaymentRef = `mockinvoice4u_${crypto.randomUUID()}`;
+  constructor(private readonly service: SupabaseClient) {}
 
+  async createCharge(params: ChargeParams): Promise<ChargeResult> {
     if (params.savedToken) {
+      const providerPaymentRef = crypto.randomUUID();
       const event = buildMockPaymentEvent({
         providerPaymentRef,
         amountMinor: params.amountMinor,
@@ -29,9 +30,17 @@ export class MockInvoice4uPaymentProvider implements PaymentProvider {
       return { providerPaymentRef, emitSyncEvent: event };
     }
 
+    const orderId = crypto.randomUUID();
+    await insertPendingInvoice4uPayment(this.service, {
+      orderId,
+      amountMinor: params.amountMinor,
+      currency: params.currency,
+      metadata: params.metadata,
+    });
+
     return {
-      providerPaymentRef,
-      pageUrl: `https://mock.invoice4u.local/pay/${providerPaymentRef}`,
+      providerPaymentRef: orderId,
+      pageUrl: `https://mock.invoice4u.local/pay/${orderId}`,
       pendingWebhook: true,
     };
   }
@@ -40,7 +49,7 @@ export class MockInvoice4uPaymentProvider implements PaymentProvider {
     if (!params.savedToken) {
       throw new Error("Mock Invoice4U ChargeWithToken requires savedToken");
     }
-    const providerPaymentRef = `mockinvoice4u_${crypto.randomUUID()}`;
+    const providerPaymentRef = crypto.randomUUID();
     const event = buildMockPaymentEvent({
       providerPaymentRef,
       amountMinor: params.amountMinor,
@@ -55,9 +64,21 @@ export class MockInvoice4uPaymentProvider implements PaymentProvider {
     if (sig !== "mock-valid") {
       throw new Error("Invalid mock Invoice4U signature");
     }
-    const parsed = JSON.parse(rawBody) as PaymentEvent;
-    ChargeMetadataSchema.parse(parsed.metadata);
-    return parsed;
+
+    // Form callback path — metadata filled by processInvoice4uPaymentCallback from pending row.
+    // For constructEvent unit use, callers may pass JSON PaymentEvent instead.
+    if (rawBody.trim().startsWith("{") && !rawBody.includes("OrderIdClientUsage")) {
+      return JSON.parse(rawBody) as PaymentEvent;
+    }
+
+    // Minimal parse for signature tests — real fulfilment uses processInvoice4uPaymentCallback.
+    const placeholderMeta = {
+      tenant_id: "00000000-0000-0000-0000-000000000001",
+      engagement_id: "00000000-0000-0000-0000-000000000001",
+      billing_account_id: "00000000-0000-0000-0000-000000000001",
+      charge_type: "initial" as const,
+    };
+    return parseInvoice4uCallback(rawBody, placeholderMeta).event;
   }
 
   async refundCharge(params: {
@@ -73,3 +94,5 @@ export class MockInvoice4uPaymentProvider implements PaymentProvider {
     return { valid: true, message: "Mock Invoice4U credentials accepted (INVOICE4U_MOCK)." };
   }
 }
+
+export { buildMockInvoice4uCallbackBody };
