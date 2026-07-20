@@ -16,7 +16,7 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-function renderCard(provider: 'grow' | 'icount') {
+function renderCard(provider: 'grow' | 'icount' | 'invoice4u') {
   const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
@@ -49,5 +49,16 @@ describe('FinanceHealthCard provider routing (I3-T6)', () => {
       expect(invoke).toHaveBeenCalledWith('verify-icount-credentials', { body: {} }),
     );
     expect(invoke).not.toHaveBeenCalledWith('verify-grow-credentials', expect.anything());
+  });
+
+  it('calls verify-invoice4u-credentials for invoice4u provider', async () => {
+    invoke.mockResolvedValue({ data: { valid: true }, error: null });
+    renderCard('invoice4u');
+    fireEvent.click(screen.getByRole('button', { name: 'Test connection' }));
+    await waitFor(() =>
+      expect(invoke).toHaveBeenCalledWith('verify-invoice4u-credentials', { body: {} }),
+    );
+    expect(invoke).not.toHaveBeenCalledWith('verify-grow-credentials', expect.anything());
+    expect(invoke).not.toHaveBeenCalledWith('verify-icount-credentials', expect.anything());
   });
 });

@@ -33,4 +33,17 @@ describe('hosted page checkout routing (I3-T3, I3-T4)', () => {
     expect(isMockHostedPaymentPage('grow', pageUrl)).toBe(true);
     expect(isMockHostedPaymentPage('icount', pageUrl)).toBe(false);
   });
+
+  it('treats invoice4u + pageUrl as hosted checkout ready', () => {
+    expect(
+      isHostedPageCheckoutReady('invoice4u', 'https://mock.invoice4u.local/pay/ref-1'),
+    ).toBe(true);
+  });
+
+  it('detects mock invoice4u page without matching grow/icount domains', () => {
+    const pageUrl = 'https://mock.invoice4u.local/pay/ref-1';
+    expect(isMockHostedPaymentPage('invoice4u', pageUrl)).toBe(true);
+    expect(isMockHostedPaymentPage('grow', pageUrl)).toBe(false);
+    expect(isMockHostedPaymentPage('icount', pageUrl)).toBe(false);
+  });
 });

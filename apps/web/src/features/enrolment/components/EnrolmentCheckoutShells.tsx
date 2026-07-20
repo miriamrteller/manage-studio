@@ -11,6 +11,7 @@ import {
 import { formatCurrency } from '@shared/format';
 import { GrowPaymentShell } from './GrowPaymentShell';
 import { IcountPaymentShell } from './IcountPaymentShell';
+import { Invoice4uPaymentShell } from './Invoice4uPaymentShell';
 import { isMockHostedPaymentPage } from '@/lib/tenantProviderRouting';
 
 function PaymentFormInner({
@@ -279,6 +280,18 @@ export function ProviderCheckoutShell({
   if (paymentProvider === 'icount' && pageUrl) {
     return (
       <IcountPaymentShell
+        engagementId={engagementId}
+        pageUrl={pageUrl}
+        enrolmentToken={enrolmentToken}
+        onPaid={onPaid}
+        onPrevious={onPrevious}
+      />
+    );
+  }
+
+  if (paymentProvider === 'invoice4u' && pageUrl) {
+    return (
+      <Invoice4uPaymentShell
         engagementId={engagementId}
         pageUrl={pageUrl}
         enrolmentToken={enrolmentToken}

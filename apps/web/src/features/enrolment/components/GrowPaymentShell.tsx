@@ -12,7 +12,7 @@ interface GrowPaymentShellProps {
   enrolmentToken?: string;
   onPaid: () => void;
   onPrevious: () => void;
-  provider?: 'grow' | 'icount';
+  provider?: 'grow' | 'icount' | 'invoice4u';
 }
 
 type PollPhase = 'paying' | 'timeout' | 'failed';

@@ -13,8 +13,24 @@ import {
 } from '@/lib/tenantProviderRouting';
 import { GrowSettingsForm } from './GrowSettingsForm';
 import { IcountSettingsForm } from './IcountSettingsForm';
+import { Invoice4uSettingsForm } from './Invoice4uSettingsForm';
 
-/** Bundled IL setup — generic shell with equal Grow / iCount choice. */
+function BundledProviderForm({ slug }: { slug: BundledPaymentProviderSlug }) {
+  switch (slug) {
+    case 'grow':
+      return <GrowSettingsForm embedded />;
+    case 'icount':
+      return <IcountSettingsForm embedded />;
+    case 'invoice4u':
+      return <Invoice4uSettingsForm embedded />;
+    default: {
+      const _exhaustive: never = slug;
+      return _exhaustive;
+    }
+  }
+}
+
+/** Bundled IL setup — generic shell with equal Grow / iCount / Invoice4U choice. */
 export function BundledPaymentsSettings() {
   const { t } = useTranslation();
   const tenant = useTenant();
@@ -76,7 +92,7 @@ export function BundledPaymentsSettings() {
         </div>
       </fieldset>
 
-      {selected === 'grow' ? <GrowSettingsForm embedded /> : <IcountSettingsForm embedded />}
+      <BundledProviderForm slug={selected} />
     </div>
   );
 }
