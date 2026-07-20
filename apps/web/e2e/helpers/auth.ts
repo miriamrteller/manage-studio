@@ -19,11 +19,23 @@ export function seededE2eEnabled(): boolean {
 
 async function loginWithPassword(page: Page, email: string, password: string): Promise<void> {
   await page.goto('/login');
-  await page.getByRole('tab', { name: /password|סיסמה/i }).click();
-  await page.getByLabel(/email|דוא"?ל/i).fill(email);
-  await page.getByLabel(/password|סיסמה/i).fill(password);
-  await page.getByRole('button', { name: /sign in|התחבר/i }).click();
-  await page.waitForURL(/\/dashboard/, { timeout: 30_000 });
+  // Default tab is already password (LoginForm authMode='password').
+  await page.locator('input[type="email"]').first().fill(email);
+  await page.locator('input[type="password"]').first().fill(password);
+  await page.locator('form').getByRole('button', { name: /sign in|התחבר/i }).click();
+
+  const alert = page.getByRole('alert');
+  const result = await Promise.race([
+    page.waitForURL(/\/dashboard/, { timeout: 30_000 }).then(() => 'ok' as const),
+    alert
+      .waitFor({ state: 'visible', timeout: 30_000 })
+      .then(async () => `fail:${(await alert.textContent()) ?? 'login error'}` as const),
+  ]);
+  if (result !== 'ok') {
+    throw new Error(
+      `Login failed for ${email}. ${result.replace(/^fail:/, '')} — ensure auth user exists (pnpm seed:auth-parent for parent; admin must have password set on hosted).`,
+    );
+  }
 }
 
 export async function loginAsParent(page: Page, thenNavigateTo?: string): Promise<void> {

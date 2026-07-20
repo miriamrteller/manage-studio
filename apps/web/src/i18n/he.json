@@ -1055,7 +1055,10 @@
   "footer": {
     "school_name_fallback": "בית הספר לבלט",
     "school_management": "ניהול בית הספר",
-    "all_rights": "כל הזכויות שמורות"
+    "all_rights": "כל הזכויות שמורות",
+    "legal_nav": "מידע משפטי",
+    "privacy": "מדיניות פרטיות",
+    "terms": "תנאי שימוש"
   },
   "scheduling": {
     "event_type": {

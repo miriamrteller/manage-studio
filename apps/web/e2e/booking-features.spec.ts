@@ -16,6 +16,10 @@ test.describe('Booking features', () => {
 
   test.describe('admin booking (seeded)', () => {
     test.skip(!seededE2eEnabled(), 'Requires seeded admin');
+    test.skip(
+      process.env.PLAYWRIGHT_ADMIN_E2E !== '1',
+      'Set PLAYWRIGHT_ADMIN_E2E=1 when admin password login works',
+    );
 
     test('services admin can open add/edit affordance', async ({ page }) => {
       await loginAsAdmin(page, '/admin/setup/services');

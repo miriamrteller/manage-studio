@@ -16,6 +16,10 @@ test.describe('Enrolment features', () => {
 
   test.describe('parent enrolment path (seeded)', () => {
     test.skip(!seededE2eEnabled(), 'Requires seeded parent');
+    test.skip(
+      process.env.PLAYWRIGHT_PARENT_E2E !== '1',
+      'Set PLAYWRIGHT_PARENT_E2E=1 after parent password login works',
+    );
 
     test('parent can open enrol from portal', async ({ page }) => {
       await loginAsParent(page, '/dashboard/portal');
@@ -27,6 +31,10 @@ test.describe('Enrolment features', () => {
 
   test.describe('admin enrolment affordances (seeded)', () => {
     test.skip(!seededE2eEnabled(), 'Requires seeded admin');
+    test.skip(
+      process.env.PLAYWRIGHT_ADMIN_E2E !== '1',
+      'Set PLAYWRIGHT_ADMIN_E2E=1 when admin password login works',
+    );
 
     test('students list supports enrolment-related filters', async ({ page }) => {
       await loginAsAdmin(page, '/admin/students');

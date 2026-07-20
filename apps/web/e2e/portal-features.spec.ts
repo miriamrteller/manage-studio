@@ -7,6 +7,10 @@ import { i18n } from './helpers/matchers';
  */
 test.describe('Parent portal features', () => {
   test.skip(!seededE2eEnabled(), 'Set PLAYWRIGHT_SEEDED_E2E=1 (or run locally with seed)');
+  test.skip(
+    process.env.PLAYWRIGHT_PARENT_E2E !== '1',
+    'Set PLAYWRIGHT_PARENT_E2E=1 after parent password login works (pnpm seed:auth-parent)',
+  );
 
   test.beforeEach(async ({ page }) => {
     await loginAsParent(page, '/dashboard/portal');

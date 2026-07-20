@@ -2,6 +2,18 @@
 
 Environment variables required for the finance pipeline to run end-to-end on hosted dev.
 
+## Where secrets live (do not commit)
+
+| Layer | Store | Notes |
+| --- | --- | --- |
+| Local scripts / CLI | Repo-root `.env` (gitignored) | Template: [`.env.example`](../../.env.example) |
+| Vite SPA | `apps/web/.env.local` + **Vercel** env | Template: [`apps/web/.env.local.example`](../../apps/web/.env.local.example) |
+| Edge Functions | Supabase → Edge secrets | `pnpm secrets:edge` / `secrets:email` / `secrets:google-calendar` |
+| Cron auth | Edge `CRON_SECRET` **and** `private.platform_config.cron_secret` | Must match |
+| Per-tenant Grow | Admin UI (DB encrypted) | Never put merchant `apiKey` in `.env` |
+
+**Prod hygiene:** unset `GROW_MOCK`, `ICOUNT_MOCK`, `GOOGLE_CALENDAR_MOCK`, `SYNC_ISSUE_DOCUMENT_IN_DEV`. Set `APP_URL` to the real SPA origin. Use a separate Supabase project for production.
+
 ## Document pipeline (issue-document worker)
 
 The payment success path enqueues a `document_queue` row; a worker turns it into a tax

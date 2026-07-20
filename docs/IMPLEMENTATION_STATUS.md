@@ -207,11 +207,10 @@ Track in SPEC §6.x — pull into V1 only when explicitly prioritized:
 
 | Priority | Work | Plan / notes |
 | --- | --- | --- |
-| **0** | Soft verify — S5 + portal prefs; run `pnpm -C apps/web e2e:features` (seeded) / `e2e:ui` | Playwright: `public|portal|admin|booking|enrolment-features.spec.ts` |
-
-| **1** | Parent portal 1G-b `notify_*` ✅ | [parent-portal-polish.md](plans/parent-portal-polish.md) Step 7 |
-| **Last** | Live payments: **Grow single-user** E2E for Creative Ballet; then WhatsApp | [grow-live-e2e-verification.md](plans/grow-live-e2e-verification.md) · portal Step 8 |
-| Later | §7 production deployment checklist | [SPEC.md §7](../SPEC.md#7-v1-production-deployment) |
+| **0** | Soft verify — public e2e ✅ (`e2e:features` without parent/admin flags); portal/admin after `seed:auth-*` + `PLAYWRIGHT_PARENT_E2E=1` / `PLAYWRIGHT_ADMIN_E2E=1` | Playwright feature specs |
+| **1** | Prod hardening ✅ in-repo — env map, sourcemaps off, footer legal URLs, monitoring stub; §7 remainder is human/ops | [`.env.example`](../.env.example) · [THIRD_PARTY_SERVICES.md](deployment/THIRD_PARTY_SERVICES.md) |
+| **Last** | Live payments: **Grow single-user** E2E; then WhatsApp | [grow-live-e2e-verification.md](plans/grow-live-e2e-verification.md) · portal Step 8 |
+| Later | §7 remainder — separate prod Supabase/Vercel, counsel pages URLs, Sentry package, live Grow/WA | [SPEC.md §7](../SPEC.md#7-v1-production-deployment) |
 | **V2 start** | People CSV · classes occupancy/waitlist bar · **V2.2** waitlist · **V2.13** minimal CRM | Not V1-blocking |
 | **V2.11** | Teachers admin CRUD | [teachers-admin-module.md](plans/teachers-admin-module.md) |
 | **V2.13** | Minimal CRM (notes, follow-ups, light pipeline) | [SPEC.md §8 V2.13](../SPEC.md) — plan when prioritized |

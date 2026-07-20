@@ -10,6 +10,7 @@ import {
   useNavDrawer,
 } from '../components/Navigation';
 import { cn } from '../lib/utils';
+import { LegalFooterLinks } from '../components/LegalFooterLinks';
 
 const PUBLIC_PATHS = new Set(['/', '/classes', '/login', '/signup', '/enrol']);
 
@@ -50,9 +51,12 @@ function AppLayoutContent({ children }: { children: ReactNode }) {
                 </h2>
                 <p className="text-sm opacity-80">{t('footer.school_management')}</p>
               </div>
-              <div className="text-sm opacity-80">
-                &copy; {new Date().getFullYear()}{' '}
-                {tenant?.name ?? t('footer.school_name_fallback')}. {t('footer.all_rights')}
+              <div className="space-y-3 text-sm opacity-80">
+                <LegalFooterLinks />
+                <p>
+                  &copy; {new Date().getFullYear()}{' '}
+                  {tenant?.name ?? t('footer.school_name_fallback')}. {t('footer.all_rights')}
+                </p>
               </div>
             </div>
           </div>

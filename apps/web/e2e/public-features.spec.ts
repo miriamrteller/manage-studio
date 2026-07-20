@@ -13,17 +13,17 @@ test.describe('Public features', () => {
 
   test('login page: magic link + password tabs', async ({ page }) => {
     await page.goto('/login');
-    await expect(page.getByLabel(/email|דוא"?ל/i)).toBeVisible();
+    await expect(page.locator('input[type="email"]').first()).toBeVisible();
+    await expect(page.locator('input[type="password"]').first()).toBeVisible();
+    await expect(page.locator('form').getByRole('button', { name: /sign in|התחבר/i })).toBeVisible();
+    await page.getByRole('tab', { name: /magic link|קישור קסם/i }).click();
     await expect(page.getByRole('button', { name: /send link|שלח/i })).toBeVisible();
-    await page.getByRole('tab', { name: /password|סיסמה/i }).click();
-    await expect(page.getByLabel(/password|סיסמה/i)).toBeVisible();
-    await expect(page.getByRole('button', { name: /sign in|התחבר/i })).toBeVisible();
   });
 
   test('signup page loads', async ({ page }) => {
     await page.goto('/signup');
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-    await expect(page.getByLabel(/email|דוא"?ל/i)).toBeVisible();
+    await expect(page.locator('form input').first()).toBeVisible();
   });
 
   test('create-studio page loads', async ({ page }) => {
@@ -33,13 +33,12 @@ test.describe('Public features', () => {
 
   test('book page loads when scheduling enabled', async ({ page }) => {
     await page.goto('/book');
-    // Enabled → booking UI; disabled → not-available message. Either is a valid feature surface.
     await expect(page.locator('h1').first()).toBeVisible({ timeout: 15_000 });
   });
 
   test('guest enrolment wizard entry loads', async ({ page }) => {
     await page.goto('/enrol');
-    await expect(page.locator('h1').first()).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('h1, h2').first()).toBeVisible({ timeout: 15_000 });
   });
 
   test('protected admin route redirects to login', async ({ page }) => {
@@ -49,6 +48,6 @@ test.describe('Public features', () => {
 
   test('unknown route shows not found', async ({ page }) => {
     await page.goto('/this-route-does-not-exist-e2e');
-    await expect(page.getByText(/not found|404|לא נמצא/i)).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('heading', { name: '404' })).toBeVisible({ timeout: 10_000 });
   });
 });

@@ -2876,19 +2876,21 @@ EMAIL
 [ ] Email OTP login tested cross-device
 
 LEGAL
-[ ] Privacy Policy + Terms linked
+[ ] Privacy Policy + Terms linked (footer: set VITE_PRIVACY_POLICY_URL + VITE_TERMS_URL on Vercel / .env.local)
 [ ] Waiver text lawyer-confirmed; accepted snapshot on enrolments
 [ ] Background checks for teachers with minors
 
 SECURITY / PLATFORM EDGE SECRETS
 [ ] tsc --noEmit: zero errors
-[ ] Source maps disabled in production Vite config
+[ ] Source maps disabled in production Vite config (vite.config.ts build.sourcemap=false)
 [ ] CRON_SECRET=<random>          (Edge + private.platform_config.cron_secret)
-[ ] APP_URL=https://<prod-app>    (dunning / absolute links)
+[ ] APP_URL=https://<prod-app>    (dunning / absolute links — not localhost)
+[ ] GROW_MOCK / GOOGLE_CALENDAR_MOCK / SYNC_ISSUE_DOCUMENT_IN_DEV unset on prod
 [ ] RESEND_API_KEY=re_...
 [ ] TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN (if WhatsApp on)
 [ ] ANTHROPIC_API_KEY (if AI features on)
-[ ] No secrets in git
+[ ] VITE_SENTRY_DSN + @sentry/react when enabling error monitoring
+[ ] No secrets in git (see .env.example environment map)
 ```
 
 ### Secrets configuration

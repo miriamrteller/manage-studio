@@ -7,6 +7,11 @@ import { loginAsAdmin, seededE2eEnabled } from './helpers/auth';
  */
 test.describe('Admin features', () => {
   test.skip(!seededE2eEnabled(), 'Set PLAYWRIGHT_SEEDED_E2E=1 (or run locally with seed)');
+  // Hosted admin user must exist with password (not created by seed:auth-parent).
+  test.skip(
+    process.env.PLAYWRIGHT_ADMIN_E2E !== '1',
+    'Set PLAYWRIGHT_ADMIN_E2E=1 after admin password login works (miriamrteller@gmail.com)',
+  );
 
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);

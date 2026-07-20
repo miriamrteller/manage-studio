@@ -46,6 +46,8 @@ export default defineConfig({
     ],
   },
   build: {
+    // SPEC §7 — do not ship source maps to production clients
+    sourcemap: false,
     rollupOptions: {
       output: {
         manualChunks: {
