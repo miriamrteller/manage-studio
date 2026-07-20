@@ -83,11 +83,11 @@ INSERT INTO offerings (
   offering_type,
   day_of_week, start_time, end_time,
   min_age, max_age,
-  max_capacity, price_minor, currency, delivery_mode, billing_mode, is_public, status,
+  max_capacity, price_minor, currency, delivery_mode, billing_mode, billing_interval, is_public, status,
   location
 )
 VALUES
-  -- Sunday (day_of_week 0)
+  -- Sunday (day_of_week 0) — class offerings are monthly recurring
   (
     '00000000-0000-0000-0000-000000000303'::uuid,
     '00000000-0000-0000-0000-000000000001'::uuid,
@@ -97,7 +97,7 @@ VALUES
     'class',
     0, '16:30:00', '17:15:00',
     4, 4,
-    20, 24000, 'ILS', 'scheduled', 'one_time', true, 'active',
+    20, 24000, 'ILS', 'scheduled', 'recurring', 'monthly', true, 'active',
     NULL
   ),
   (
@@ -109,7 +109,7 @@ VALUES
     'class',
     0, '17:15:00', '18:00:00',
     6, 6,
-    20, 24000, 'ILS', 'scheduled', 'one_time', true, 'active',
+    20, 24000, 'ILS', 'scheduled', 'recurring', 'monthly', true, 'active',
     NULL
   ),
   (
@@ -121,7 +121,7 @@ VALUES
     'class',
     0, '18:00:00', '18:45:00',
     8, 8,
-    20, 24000, 'ILS', 'scheduled', 'one_time', true, 'active',
+    20, 24000, 'ILS', 'scheduled', 'recurring', 'monthly', true, 'active',
     NULL
   ),
   (
@@ -133,7 +133,7 @@ VALUES
     'class',
     0, '18:45:00', '19:45:00',
     10, 12,
-    20, 24000, 'ILS', 'scheduled', 'one_time', true, 'active',
+    20, 24000, 'ILS', 'scheduled', 'recurring', 'monthly', true, 'active',
     NULL
   ),
   -- Wednesday (day_of_week 3)
@@ -146,7 +146,7 @@ VALUES
     'class',
     3, '16:30:00', '17:15:00',
     5, 5,
-    20, 24000, 'ILS', 'scheduled', 'one_time', true, 'active',
+    20, 24000, 'ILS', 'scheduled', 'recurring', 'monthly', true, 'active',
     NULL
   ),
   (
@@ -158,7 +158,7 @@ VALUES
     'class',
     3, '17:15:00', '18:00:00',
     7, 7,
-    20, 24000, 'ILS', 'scheduled', 'one_time', true, 'active',
+    20, 24000, 'ILS', 'scheduled', 'recurring', 'monthly', true, 'active',
     NULL
   ),
   (
@@ -170,7 +170,7 @@ VALUES
     'class',
     3, '18:00:00', '18:45:00',
     9, 9,
-    20, 24000, 'ILS', 'scheduled', 'one_time', true, 'active',
+    20, 24000, 'ILS', 'scheduled', 'recurring', 'monthly', true, 'active',
     NULL
   ),
   (
@@ -182,7 +182,7 @@ VALUES
     'class',
     3, '18:45:00', '19:45:00',
     12, 14,
-    20, 24000, 'ILS', 'scheduled', 'one_time', true, 'active',
+    20, 24000, 'ILS', 'scheduled', 'recurring', 'monthly', true, 'active',
     NULL
   ),
   -- Adult class — kept for seed-finance Sara Gold self-pay (…0309)
@@ -195,7 +195,7 @@ VALUES
     'class',
     1, '10:00:00', '11:00:00',
     18, NULL,
-    15, 28000, 'ILS', 'scheduled', 'one_time', true, 'active',
+    15, 28000, 'ILS', 'scheduled', 'recurring', 'monthly', true, 'active',
     NULL
   )
 ON CONFLICT (id) DO UPDATE SET
@@ -212,6 +212,7 @@ ON CONFLICT (id) DO UPDATE SET
   price_minor = EXCLUDED.price_minor,
   currency = EXCLUDED.currency,
   billing_mode = EXCLUDED.billing_mode,
+  billing_interval = EXCLUDED.billing_interval,
   is_public = EXCLUDED.is_public,
   status = EXCLUDED.status,
   location = EXCLUDED.location;
@@ -269,12 +270,13 @@ VALUES
   ('00000000-0000-0000-0000-000000000001'::uuid, 0, '16:30:00', '19:45:00', true),  -- Sunday
   ('00000000-0000-0000-0000-000000000001'::uuid, 3, '16:30:00', '19:45:00', true);  -- Wednesday
 
+-- Appointment services / workshops — single (one-time) payment
 INSERT INTO offerings (
   id, tenant_id, season_id, category_id, name,
   offering_type, duration_mins,
   day_of_week, start_time, end_time,
   min_age, max_age,
-  max_capacity, price_minor, currency, delivery_mode, billing_mode, is_public, status,
+  max_capacity, price_minor, currency, delivery_mode, billing_mode, billing_interval, is_public, status,
   location
 )
 VALUES
@@ -288,7 +290,7 @@ VALUES
     60,
     NULL, NULL, NULL,
     NULL, NULL,
-    1, 50000, 'ILS', 'scheduled', 'one_time', true, 'active',
+    1, 50000, 'ILS', 'scheduled', 'one_time', NULL, true, 'active',
     'Studio A, 12 Rothschild Blvd, Tel Aviv'
   ),
   (
@@ -301,7 +303,7 @@ VALUES
     90,
     NULL, NULL, NULL,
     NULL, NULL,
-    1, 35000, 'ILS', 'scheduled', 'one_time', true, 'active',
+    1, 35000, 'ILS', 'scheduled', 'one_time', NULL, true, 'active',
     NULL
   )
 ON CONFLICT (id) DO UPDATE SET
@@ -313,6 +315,8 @@ ON CONFLICT (id) DO UPDATE SET
   end_time = EXCLUDED.end_time,
   price_minor = EXCLUDED.price_minor,
   currency = EXCLUDED.currency,
+  billing_mode = EXCLUDED.billing_mode,
+  billing_interval = EXCLUDED.billing_interval,
   is_public = EXCLUDED.is_public,
   status = EXCLUDED.status,
   location = EXCLUDED.location;
@@ -950,32 +954,10 @@ BEGIN
     );
   END IF;
 
-  -- Ensure seeded test tenants use grow/grow on re-seed.
-  -- Creative Ballet intentionally excluded: it uses tranzila + yesh.
+  -- Ensure seeded tenants all use grow/grow on re-seed as well.
   UPDATE tenants
   SET payment_provider = 'grow',
       invoicing_provider = 'grow'
-  -- Creative Ballet intentionally excluded — it runs on tranzila/yesh.
   WHERE subdomain IN ('belladance', 'lensstudio', 'velvetbeauty');
 
 END $$;
-
--- ============================================================================
--- YESH VAULT SECRETS — Creative Ballet dev tenant
--- ============================================================================
--- Vault secret insertion requires live Supabase access and cannot run inline
--- in seed.sql. Run the dev-setup script instead:
---
---   1. Copy scripts/seed-yesh-vault.ts to scripts/seed-yesh-vault.local.ts
---   2. Fill in <YESH_USER_KEY> and <YESH_SECRET_KEY> with actual dev values
---   3. Run:
---        SUPABASE_URL=http://127.0.0.1:54321 \
---        SUPABASE_SERVICE_ROLE_KEY=<service-role-key> \
---        deno run --allow-env --allow-net scripts/seed-yesh-vault.local.ts
---
--- Vault paths written by that script:
---   secret/tenants/00000000-0000-0000-0000-000000000001/yesh#api_key
---   secret/tenants/00000000-0000-0000-0000-000000000001/yesh#secret_key
---
--- HITL: Miriam must run the above script once after initial seed.
--- ============================================================================
