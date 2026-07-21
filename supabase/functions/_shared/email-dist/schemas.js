@@ -147,11 +147,17 @@ export const ContactPreferencesSchema = z.object({
     tenant_id: UUIDSchema,
     person_id: UUIDSchema.nullable(),
     account_member_id: UUIDSchema.nullable().optional(),
-    email: z.string().email().nullable(),
+    /** Not a DB column — optional on read for client enrichment. */
+    email: z.string().email().nullable().optional(),
     email_opted_in: z.boolean().default(true),
     whatsapp_number: z.string().nullable(),
     whatsapp_opted_in: z.boolean().default(false),
     whatsapp_verified: z.boolean().default(false),
+    notify_offering_cancellation: z.boolean().default(true),
+    notify_payment_due: z.boolean().default(true),
+    notify_waitlist: z.boolean().default(true),
+    notify_schedule_change: z.boolean().default(true),
+    notify_announcements: z.boolean().default(true),
     preferred_channel: z.enum(['email', 'whatsapp', 'voice']).default('email'),
     language: z.enum(['he', 'en']).default('he'),
 });
@@ -522,6 +528,11 @@ export const ContactPreferencesUpdateSchema = z.object({
     whatsapp_verified: z.boolean().optional(),
     email_opted_in: z.boolean().optional(),
     preferred_channel: z.enum(['email', 'whatsapp']).nullable().optional(),
+    notify_offering_cancellation: z.boolean().optional(),
+    notify_payment_due: z.boolean().optional(),
+    notify_waitlist: z.boolean().optional(),
+    notify_schedule_change: z.boolean().optional(),
+    notify_announcements: z.boolean().optional(),
 });
 // =============================================================================
 // Waiver — consent templates, evidence, and request/response schemas
@@ -536,6 +547,13 @@ export const ConsentTemplateSchema = z.object({
     status: z.enum(['draft', 'approved', 'active', 'archived']),
     created_at: TimestampSchema,
     updated_at: TimestampSchema,
+});
+/** Minimal consent template fields required for the waiver signing UI. */
+export const WaiverSigningConsentTemplateSchema = ConsentTemplateSchema.pick({
+    id: true,
+    version: true,
+    name: true,
+    content: true,
 });
 export const WaiverViewedRequestSchema = z.object({
     person_id: UUIDSchema,

@@ -24,9 +24,8 @@ interface PaymentStatus {
 }
 
 /**
- * Grow (Meshulam) hosted-page checkout. We embed the hosted page in an iframe and poll
- * `get-payment-status` until the webhook finalises the charge, since Grow confirms payments
- * server-side rather than inline. After the timeout we surface a retry CTA.
+ * Hosted-page checkout shell (Grow / iCount / Invoice4U). Embeds the hosted page
+ * (or a mock panel) and polls `get-payment-status` until the webhook finalises.
  */
 export function GrowPaymentShell({
   engagementId,
@@ -42,6 +41,9 @@ export function GrowPaymentShell({
   const [attempt, setAttempt] = useState(0);
   const onPaidRef = useRef(onPaid);
   onPaidRef.current = onPaid;
+
+  const i18nPrefix =
+    provider === 'icount' ? 'icount' : provider === 'invoice4u' ? 'invoice4u' : 'grow';
 
   const checkStatus = useCallback(async (): Promise<PaymentStatus> => {
     const { data, error } = await supabase.functions.invoke('get-payment-status', {
@@ -90,41 +92,41 @@ export function GrowPaymentShell({
   }, [checkStatus, attempt]);
 
   const isMockPage =
+    (provider === 'icount' && pageUrl.includes('mock.icount.local')) ||
+    (provider === 'invoice4u' && pageUrl.includes('mock.invoice4u.local')) ||
+    (provider === 'grow' && pageUrl.includes('mock.grow.local'));
+
+  const mockTestId =
     provider === 'icount'
-      ? pageUrl.includes('mock.icount.local')
-      : pageUrl.includes('mock.grow.local');
+      ? 'icount-mock-page'
+      : provider === 'invoice4u'
+        ? 'invoice4u-mock-page'
+        : 'grow-mock-page';
 
   return (
     <div className="space-y-4">
       {isMockPage ? (
         <div
           className="w-full border border-dashed border-border rounded-lg p-6 text-center space-y-2 bg-muted/30"
-          data-testid={provider === 'icount' ? 'icount-mock-page' : 'grow-mock-page'}
+          data-testid={mockTestId}
         >
           <p className="font-medium">
-            {provider === 'icount'
-              ? t('enrolment.icount_mock_title', { defaultValue: 'Mock iCount payment page' })
-              : t('enrolment.grow_mock_title', { defaultValue: 'Mock Grow payment page' })}
+            {t(`enrolment.${i18nPrefix}_mock_title`, {
+              defaultValue: `Mock ${provider} payment page`,
+            })}
           </p>
           <p className="text-sm text-muted-foreground">
-            {provider === 'icount'
-              ? t('enrolment.icount_mock_hint', {
-                  defaultValue:
-                    'ICOUNT_MOCK is on, so the hosted page is simulated and the payment auto-confirms.',
-                })
-              : t('enrolment.grow_mock_hint', {
-                  defaultValue:
-                    'GROW_MOCK is on, so the hosted page is simulated and the payment auto-confirms.',
-                })}
+            {t(`enrolment.${i18nPrefix}_mock_hint`, {
+              defaultValue:
+                'Mock mode is on, so the hosted page is simulated and the payment auto-confirms.',
+            })}
           </p>
         </div>
       ) : (
         <iframe
-          title={
-            provider === 'icount'
-              ? t('enrolment.icount_payment_title', { defaultValue: 'Secure payment' })
-              : t('enrolment.grow_payment_title', { defaultValue: 'Secure payment' })
-          }
+          title={t(`enrolment.${i18nPrefix}_payment_title`, {
+            defaultValue: 'Secure payment',
+          })}
           src={pageUrl}
           className="w-full h-[520px] border border-border rounded-lg"
         />
@@ -132,12 +134,9 @@ export function GrowPaymentShell({
 
       {phase === 'paying' && (
         <p className="text-sm text-muted-foreground" role="status" aria-live="polite">
-          {t(
-            provider === 'icount' ? 'enrolment.icount_waiting' : 'enrolment.grow_waiting',
-            {
-              defaultValue: 'Waiting for payment confirmation… this can take a few seconds.',
-            },
-          )}
+          {t(`enrolment.${i18nPrefix}_waiting`, {
+            defaultValue: 'Waiting for payment confirmation… this can take a few seconds.',
+          })}
         </p>
       )}
 
@@ -149,13 +148,10 @@ export function GrowPaymentShell({
 
       {phase === 'timeout' && (
         <p className="text-sm text-destructive" role="alert">
-          {t(
-            provider === 'icount' ? 'enrolment.icount_timeout' : 'enrolment.grow_timeout',
-            {
-              defaultValue:
-                'We have not received confirmation yet. If you completed payment, please wait a moment and retry.',
-            },
-          )}
+          {t(`enrolment.${i18nPrefix}_timeout`, {
+            defaultValue:
+              'We have not received confirmation yet. If you completed payment, please wait a moment and retry.',
+          })}
         </p>
       )}
 
@@ -170,10 +166,7 @@ export function GrowPaymentShell({
             className="flex-1"
             onClick={() => setAttempt((n) => n + 1)}
           >
-            {t(
-              provider === 'icount' ? 'enrolment.icount_retry' : 'enrolment.grow_retry',
-              { defaultValue: 'Retry' },
-            )}
+            {t(`enrolment.${i18nPrefix}_retry`, { defaultValue: 'Retry' })}
           </Button>
         )}
       </div>
