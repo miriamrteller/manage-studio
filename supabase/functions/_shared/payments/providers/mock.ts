@@ -1,8 +1,11 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import { buildMockIpnFromCharge } from "../icount/mock-api.ts";
+import { buildMockInvoice4uCallbackBody } from "../invoice4u/callback.ts";
+import { processInvoice4uPaymentCallback } from "../invoice4u/process-callback.ts";
 import { buildMockPaymentEvent } from "../mock-payment-event.ts";
 import type { ChargeMetadata, ChargeParams, ChargeResult, PaymentEvent, PaymentProvider } from "../types.ts";
 import { ChargeMetadataSchema } from "../types.ts";
+import { handlePaymentEventInternal } from "../handle-payment-event.ts";
 import { MockIcountPaymentProvider } from "./mock-icount.ts";
 
 export const MOCK_PAYMENT_DECLINED_CODE = "MOCK_PAYMENT_DECLINED";
@@ -118,8 +121,6 @@ export async function confirmMockPayment(
     );
   }
 
-  const { handlePaymentEventInternal } = await import("../handle-payment-event.ts");
-
   if (providerSlug === "icount") {
     const provider = new MockIcountPaymentProvider();
     const ipnBody = buildMockIpnFromCharge({
@@ -139,10 +140,6 @@ export async function confirmMockPayment(
   }
 
   if (providerSlug === "invoice4u") {
-    const { buildMockInvoice4uCallbackBody } = await import("../invoice4u/callback.ts");
-    const { processInvoice4uPaymentCallback } = await import(
-      "../invoice4u/process-callback.ts"
-    );
     const callbackBody = buildMockInvoice4uCallbackBody({
       orderIdClientUsage: providerPaymentRef,
       paymentId: crypto.randomUUID(),
@@ -179,7 +176,6 @@ export async function applyMockSyncEvent(
   event: PaymentEvent,
   providerSlug = "mock",
 ): Promise<void> {
-  const { handlePaymentEventInternal } = await import("../handle-payment-event.ts");
   await handlePaymentEventInternal(service, event, providerSlug);
 }
 
