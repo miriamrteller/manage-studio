@@ -218,10 +218,10 @@ export class Invoice4uPaymentProvider implements PaymentProvider {
    * Terminal capability flags — the acceptance check for tokenization (309) and
    * standing orders (310) being enabled on the clearing terminal.
    *
-   * OPEN QUESTION (U0-live): GetClearingAccount is not in the public API docs, though
-   * the U0 probe called it successfully. The request shape here mirrors the documented
-   * `token`-taking methods (IsAuthenticated, GetClearingLogByParams); confirm against a
-   * live account and correct if it expects something else.
+   * GetClearingAccount is absent from Invoice4U's public API docs. The request shape
+   * below mirrors the documented `token`-taking methods, and was CONFIRMED against the
+   * live QA account on 2026-07-21: it returned 200 with the capability flags populated
+   * (hasTerminal:false, since no terminal was attached yet).
    */
   async getTerminalCapabilities(tenantId: string) {
     const { apiKey } = await this.getCredentials(tenantId);
