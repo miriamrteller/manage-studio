@@ -94,7 +94,9 @@ function makeService(options: {
         };
       }
 
+      // Catch-all, incl. audit_log — shared payment code audits document writes.
       return {
+        insert: async () => ({ error: null }),
         update: (payload: Record<string, unknown>) => {
           queueUpdates.push(payload);
           return { eq: () => ({ in: async () => ({ error: null }) }) };

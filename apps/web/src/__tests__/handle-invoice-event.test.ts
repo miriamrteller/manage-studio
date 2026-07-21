@@ -32,7 +32,9 @@ function makeService(payment: { id: string; external_document_id: string | null 
           },
         };
       }
+      // Catch-all, incl. audit_log — shared payment code audits document writes.
       return {
+        insert: async () => ({ error: null }),
         update: (payload: Record<string, unknown>) => {
           queueUpdates.push(payload);
           return { eq: () => ({ in: async () => ({ error: null }) }) };
@@ -52,7 +54,10 @@ describe('applyGrowInvoiceNotify', () => {
 
     const result = await applyGrowInvoiceNotify(service, parsed);
 
-    expect(result).toEqual({ status: 'applied', paymentId: 'pay-1' });
+    // pdfStored is false because PDF retrieval cannot succeed under jsdom: undici
+    // rejects jsdom's AbortSignal. That makes this a useful assertion rather than an
+    // annoyance — it pins that the document still applies when PDF storage fails.
+    expect(result).toEqual({ status: 'applied', paymentId: 'pay-1', pdfStored: false });
     expect(paymentUpdates[0]).toMatchObject({
       external_document_id: 'DOC-555000',
       external_document_number: 'INV-2026-0042',
@@ -69,7 +74,7 @@ describe('applyGrowInvoiceNotify', () => {
 
     const result = await applyGrowInvoiceNotify(service, parsed);
 
-    expect(result).toEqual({ status: 'duplicate', paymentId: 'pay-1' });
+    expect(result).toEqual({ status: 'duplicate', paymentId: 'pay-1', pdfStored: false });
     expect(paymentUpdates).toHaveLength(0);
   });
 

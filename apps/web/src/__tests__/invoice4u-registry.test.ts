@@ -75,7 +75,9 @@ function makePendingInsertService() {
       if (table === 'payments') {
         return { insert };
       }
-      return {};
+      // Catch-all, incl. audit_log — insertPendingInvoice4uPayment audits the
+      // pending row it creates. Unlike the payments insert this is not chained.
+      return { insert: async () => ({ error: null }) };
     },
     _insert: insert,
   } as never;
