@@ -8,7 +8,6 @@ import {
   functionInvokeErrorMessage,
   parseFunctionInvokeBody,
 } from '@/lib/parseFunctionInvokeError';
-import { formatOfferingPrice } from '@/lib/formatOfferingPrice';
 import { GrowPaymentShell } from './GrowPaymentShell';
 import { IcountPaymentShell } from './IcountPaymentShell';
 import { Invoice4uPaymentShell } from './Invoice4uPaymentShell';
@@ -86,10 +85,6 @@ export function MockPaymentShell({
   classId,
   engagementId,
   enrolmentToken,
-  amountMinor,
-  currency,
-  billingMode,
-  billingInterval,
   mockPaymentRef,
   onPaid,
   onPrevious,
@@ -97,19 +92,19 @@ export function MockPaymentShell({
   classId: string;
   engagementId: string;
   enrolmentToken?: string;
-  amountMinor: number | null;
-  currency: string | null;
+  /** Kept for call-site compatibility; amount is shown by the parent checkout summary. */
+  amountMinor?: number | null;
+  currency?: string | null;
   billingMode?: string | null;
   billingInterval?: string | null;
   mockPaymentRef: string | null;
   onPaid: () => void;
   onPrevious: () => void;
 }) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const [cardNumber, setCardNumber] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isPaying, setIsPaying] = useState(false);
-  const isMonthly = billingMode === 'recurring' && billingInterval === 'monthly';
 
   const handleConfirm = async () => {
     setIsPaying(true);
@@ -162,20 +157,6 @@ export function MockPaymentShell({
           defaultValue: 'Test payment — enter card details and pay to complete enrolment.',
         })}
       </p>
-      {amountMinor != null && currency && (
-        <div className="space-y-1">
-          <p className="text-sm font-medium">
-            {t('enrolment.checkout_total', { defaultValue: 'Total' })}:{' '}
-            {formatOfferingPrice(t, amountMinor, currency, i18n.language, {
-              billing_mode: billingMode,
-              billing_interval: billingInterval,
-            })}
-          </p>
-          {isMonthly && (
-            <p className="text-xs text-muted-foreground">{t('enrolment.checkout_monthly_hint')}</p>
-          )}
-        </div>
-      )}
       <label className="block text-sm font-medium">
         {t('enrolment.mock_card_number', { defaultValue: 'Test card number' })}
         <input
