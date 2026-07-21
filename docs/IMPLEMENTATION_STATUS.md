@@ -212,7 +212,7 @@ Track in SPEC §6.x — pull into V1 only when explicitly prioritized:
 | **0** | Soft verify — public e2e ✅ (`e2e:features` without parent/admin flags); portal/admin after `seed:auth-*` + `PLAYWRIGHT_PARENT_E2E=1` / `PLAYWRIGHT_ADMIN_E2E=1` | Playwright feature specs |
 | **1** | Prod hardening ✅ in-repo — env map, sourcemaps off, footer legal URLs, monitoring stub; §7 remainder is human/ops | [`.env.example`](../.env.example) · [THIRD_PARTY_SERVICES.md](deployment/THIRD_PARTY_SERVICES.md) |
 | **Last** | Live payments: **Invoice4U** mock then QA E2E; then WhatsApp | [finance/invoice4u/OVERNIGHT-AGENT.md](plans/finance/invoice4u/OVERNIGHT-AGENT.md) |
-| Later | §7 remainder — separate prod Supabase + Cloudflare Pages, counsel pages URLs, Sentry package, live Grow/WA | [SPEC.md §7](../SPEC.md#7-v1-production-deployment) |
+| Later | §7 remainder — separate prod Supabase + Cloudflare Workers, counsel pages URLs, Sentry package, live Grow/WA | [SPEC.md §7](../SPEC.md#7-v1-production-deployment) |
 | **V2 start** | People CSV · classes occupancy/waitlist bar · **V2.2** waitlist · **V2.13** minimal CRM · **V2.14** holiday scheduling | Not V1-blocking |
 | **V2.11** | Teachers admin CRUD | [teachers-admin-module.md](plans/teachers-admin-module.md) |
 | **V2.13** | Minimal CRM (notes, follow-ups, light pipeline) | [SPEC.md §8 V2.13](../SPEC.md) — plan when prioritized |
