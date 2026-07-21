@@ -51,7 +51,13 @@ Deno.serve(async (req) => {
     );
   }
 
-  if (getEnv("INVOICE4U_MOCK") === "true") {
+  // INVOICE4U_LIVE_VERIFY lets this read-only check reach the real API while charges
+  // stay mocked. Without it, confirming a QA key or watching for the terminal to be
+  // enabled would mean unsetting INVOICE4U_MOCK — which arms live charging everywhere.
+  // IsAuthenticated and GetClearingAccount move no money.
+  const liveVerify = getEnv("INVOICE4U_LIVE_VERIFY") === "true";
+
+  if (getEnv("INVOICE4U_MOCK") === "true" && !liveVerify) {
     const provider = new MockInvoice4uPaymentProvider(service);
     const health = await provider.verifyCredentials(tenantId);
     return jsonResponse(
@@ -60,14 +66,31 @@ Deno.serve(async (req) => {
     );
   }
 
-  // Live verify lands in U2b — stub fails closed so UI can show "not yet available".
   const provider = new Invoice4uPaymentProvider(service);
   try {
     const health = await provider.verifyCredentials(tenantId);
-    return jsonResponse(
-      { ok: health.valid, provider: "invoice4u", ...health },
-      health.valid ? 200 : 502,
-    );
+    if (!health.valid) {
+      return jsonResponse({ ok: false, provider: "invoice4u", ...health }, 502);
+    }
+
+    // Auth alone is not enough to take a payment: the terminal must also have
+    // tokenization (309) and standing orders (310) enabled. Reported here so the
+    // admin screen answers "can we actually charge yet?", not just "is the key valid?".
+    let capabilities = null;
+    let capabilityError: string | null = null;
+    try {
+      capabilities = await provider.getTerminalCapabilities(tenantId);
+    } catch (err) {
+      capabilityError = err instanceof Error ? err.message : String(err);
+    }
+
+    return jsonResponse({
+      ok: true,
+      provider: "invoice4u",
+      ...health,
+      capabilities,
+      capabilityError,
+    });
   } catch (err) {
     return jsonResponse(
       {
@@ -76,7 +99,7 @@ Deno.serve(async (req) => {
         provider: "invoice4u",
         message: err instanceof Error ? err.message : "Invoice4U verify not available",
       },
-      501,
+      502,
     );
   }
 });

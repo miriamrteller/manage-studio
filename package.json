@@ -23,7 +23,7 @@
     "db:pull": "supabase db pull",
     "db:types": "node scripts/gen-database-types.mjs",
     "db:types:local": "node scripts/gen-database-types.mjs --local",
-    "db:types:email-dist": "node scripts/copy-database-types.mjs",
+    "db:types:email-dist": "pnpm email:bundle",
     "db:types:all": "node scripts/gen-database-types.mjs --all",
     "db:types:all:local": "node scripts/gen-database-types.mjs --local --all",
     "db:reset-and-types:local": "pnpm db:reset-local && pnpm db:types:all:local",
@@ -51,10 +51,10 @@
   "devDependencies": {
     "@react-email/components": "^1.0.12",
     "@react-email/render": "^2.0.8",
-    "@supabase/cli": "latest",
     "husky": "^9.0.0",
     "lint-staged": "^17.0.4",
     "standardwebhooks": "^1.0.0",
+    "supabase": "^2.109.1",
     "typescript": "^5.3.3"
   },
   "dependencies": {

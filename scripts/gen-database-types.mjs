@@ -5,10 +5,10 @@
  * Usage:
  *   node scripts/gen-database-types.mjs           # --linked (hosted dev)
  *   node scripts/gen-database-types.mjs --local   # local Supabase
- *   node scripts/gen-database-types.mjs --all     # also copy to email-dist
+ *   node scripts/gen-database-types.mjs --all     # also rebuild email-dist (tsc)
  */
 import { spawnSync } from 'node:child_process';
-import { copyFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -18,10 +18,6 @@ const useLocal = args.includes('--local');
 const withEmailDist = args.includes('--all');
 
 const outPath = join(root, 'packages/shared/src/database.types.ts');
-const emailDistPath = join(
-  root,
-  'supabase/functions/_shared/email-dist/database.types.d.ts',
-);
 
 const supabaseArgs = ['exec', 'supabase', 'gen', 'types', 'typescript'];
 supabaseArgs.push(useLocal ? '--local' : '--linked');
@@ -70,6 +66,19 @@ if (content !== previous) {
 }
 
 if (withEmailDist) {
-  copyFileSync(outPath, emailDistPath);
-  console.log(`Copied ${outPath} -> ${emailDistPath}`);
+  // email-dist is BUILD OUTPUT of packages/shared — tsc emits database.types.d.ts
+  // there when compiling src/database.types.ts. Copying the source over it produced
+  // a semantically identical but textually different file, so alternating between
+  // this script and `pnpm email:bundle` rewrote ~7k lines every time and buried real
+  // changes. Build it instead of copying it; tsc is the single owner.
+  console.log('Rebuilding email-dist so tsc owns the emitted types...');
+  const bundle = spawnSync('pnpm', ['email:bundle'], {
+    cwd: root,
+    stdio: 'inherit',
+    shell: process.platform === 'win32',
+  });
+  if (bundle.status !== 0) {
+    console.error('email:bundle failed — email-dist types are stale.');
+    process.exit(bundle.status ?? 1);
+  }
 }
