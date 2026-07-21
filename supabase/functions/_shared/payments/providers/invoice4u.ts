@@ -6,6 +6,7 @@ import {
 } from "../invoice4u/pending-charge.ts";
 import { invoice4uApiBase, invoice4uIsQaMode, invoice4uPost } from "../invoice4u/client.ts";
 import { resolveInvoice4uCustomer } from "../invoice4u/customer.ts";
+import { parseClearingTerminalCapabilities } from "../invoice4u/response.ts";
 import { verifyInvoice4uPaymentSucceeded } from "../invoice4u/verify-callback.ts";
 import type { ChargeParams, ChargeResult, PaymentEvent, PaymentProvider } from "../types.ts";
 
@@ -211,6 +212,21 @@ export class Invoice4uPaymentProvider implements PaymentProvider {
     throw new Error(
       "Invoice4U refundCharge is U4-live — see docs/plans/finance/invoice4u/stage-u4-live.md",
     );
+  }
+
+  /**
+   * Terminal capability flags — the acceptance check for tokenization (309) and
+   * standing orders (310) being enabled on the clearing terminal.
+   *
+   * OPEN QUESTION (U0-live): GetClearingAccount is not in the public API docs, though
+   * the U0 probe called it successfully. The request shape here mirrors the documented
+   * `token`-taking methods (IsAuthenticated, GetClearingLogByParams); confirm against a
+   * live account and correct if it expects something else.
+   */
+  async getTerminalCapabilities(tenantId: string) {
+    const { apiKey } = await this.getCredentials(tenantId);
+    const payload = await invoice4uPost("GetClearingAccount", { token: apiKey });
+    return parseClearingTerminalCapabilities(payload);
   }
 
   /** Credential check for the admin settings screen — IsAuthenticated. */
