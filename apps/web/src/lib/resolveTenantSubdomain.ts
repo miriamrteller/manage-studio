@@ -28,34 +28,38 @@ const RESERVED_SUBDOMAINS = new Set([
 ]);
 
 /**
- * Resolves tenant subdomain for multi-tenant routing and auth metadata.
+ * Dev-only tenant fallback for plain `localhost` (no subdomain in the host).
  *
- * Prefer URL hostname subdomain when present (e.g. therapist.localhost).
- * Falls back to VITE_DEV_TENANT_SUBDOMAIN for plain localhost dev — DEV BUILDS ONLY.
- *
- * The dev fallback is deliberately gated on `import.meta.env.DEV`: if it ever shipped
- * to production, every unmatched host would silently serve one specific tenant's data.
+ * `import.meta.env.DEV` is replaced with a literal at build time, so this branch is
+ * dead-code-eliminated from production bundles — the fallback cannot leak to prod
+ * even if VITE_DEV_TENANT_SUBDOMAIN is set on the build. That matters: if it were
+ * honoured in prod, every unmatched host would silently serve one tenant's data.
  */
-export function resolveTenantSubdomain(): string | null {
-  const devSubdomain = import.meta.env.DEV
-    ? (import.meta.env.VITE_DEV_TENANT_SUBDOMAIN as string | undefined)
-    : undefined;
+function devTenantFallback(): string | null {
+  if (!import.meta.env.DEV) return null;
+  return (import.meta.env.VITE_DEV_TENANT_SUBDOMAIN as string | undefined)?.trim() || null;
+}
 
-  if (typeof window === 'undefined') {
-    return devSubdomain || null;
-  }
-
-  const hostname = window.location.hostname;
-  const isIP = /^\d+\.\d+\.\d+\.\d+$/.test(hostname);
-  if (isIP) {
+/**
+ * Pure hostname → tenant resolution.
+ *
+ * Exported for tests: the build-time DEV gate above cannot be toggled at runtime
+ * (`vi.stubEnv('DEV', …)` has no effect on a statically replaced literal), so
+ * production behaviour is exercised by passing `devFallback: null` here.
+ */
+export function resolveTenantSubdomainFromHostname(
+  hostname: string,
+  rootHostname: string,
+  devFallback: string | null,
+): string | null {
+  if (/^\d+\.\d+\.\d+\.\d+$/.test(hostname)) {
     return null;
   }
 
-  // The apex itself (opalswift.com) and its www alias are the marketing site,
-  // never a tenant. Without this, `opalswift.com` splits to a "opalswift" subdomain.
-  const root = appRootHostname();
-  if (hostname === root || hostname === `www.${root}`) {
-    return devSubdomain || null;
+  // The apex (opalswift.com) and its www alias are the marketing site, never a
+  // tenant. Without this, `opalswift.com` splits to an "opalswift" subdomain.
+  if (hostname === rootHostname || hostname === `www.${rootHostname}`) {
+    return devFallback;
   }
 
   const parts = hostname.split('.');
@@ -72,5 +76,25 @@ export function resolveTenantSubdomain(): string | null {
     subdomain = null;
   }
 
-  return subdomain || devSubdomain || null;
+  return subdomain || devFallback;
+}
+
+/**
+ * Resolves tenant subdomain for multi-tenant routing and auth metadata.
+ *
+ * Prefers the URL hostname subdomain (e.g. creativeballet.opalswift.com), falling
+ * back to VITE_DEV_TENANT_SUBDOMAIN on plain localhost in dev builds only.
+ */
+export function resolveTenantSubdomain(): string | null {
+  const devFallback = devTenantFallback();
+
+  if (typeof window === 'undefined') {
+    return devFallback;
+  }
+
+  return resolveTenantSubdomainFromHostname(
+    window.location.hostname,
+    appRootHostname(),
+    devFallback,
+  );
 }

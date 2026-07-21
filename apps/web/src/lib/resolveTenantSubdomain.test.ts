@@ -1,5 +1,17 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { resolveTenantSubdomain } from './resolveTenantSubdomain';
+import {
+  resolveTenantSubdomain,
+  resolveTenantSubdomainFromHostname,
+} from './resolveTenantSubdomain';
+
+const ROOT = 'opalswift.com';
+
+/**
+ * Production builds have no dev fallback — `import.meta.env.DEV` is replaced with a
+ * literal at build time, so it cannot be stubbed at runtime. Passing devFallback:null
+ * to the pure resolver is what a production bundle actually does.
+ */
+const prod = (hostname: string) => resolveTenantSubdomainFromHostname(hostname, ROOT, null);
 
 /** jsdom's location is read-only; replace it wholesale for the duration of a test. */
 function setHostname(hostname: string) {
@@ -13,81 +25,70 @@ afterEach(() => {
   vi.unstubAllEnvs();
 });
 
-describe('resolveTenantSubdomain', () => {
-  describe('production hosts', () => {
-    // VITE_APP_ROOT_DOMAIN is what tells the resolver where the apex is.
-    const asProd = () => {
-      vi.stubEnv('DEV', false);
-      vi.stubEnv('VITE_APP_ROOT_DOMAIN', 'opalswift.com');
-      vi.stubEnv('VITE_DEV_TENANT_SUBDOMAIN', 'creativeballet');
-    };
-
-    it('resolves a tenant subdomain', () => {
-      asProd();
-      setHostname('creativeballet.opalswift.com');
-      expect(resolveTenantSubdomain()).toBe('creativeballet');
-    });
-
-    it('returns null on the apex — the marketing site is not a tenant', () => {
-      asProd();
-      setHostname('opalswift.com');
-      expect(resolveTenantSubdomain()).toBeNull();
-    });
-
-    it('returns null on www', () => {
-      asProd();
-      setHostname('www.opalswift.com');
-      expect(resolveTenantSubdomain()).toBeNull();
-    });
-
-    it('returns null on the tenant-less app shell', () => {
-      asProd();
-      setHostname('app.opalswift.com');
-      expect(resolveTenantSubdomain()).toBeNull();
-    });
-
-    it.each(['api', 'admin', 'auth', 'cdn', 'static'])(
-      'returns null for reserved subdomain %s',
-      (reserved) => {
-        asProd();
-        setHostname(`${reserved}.opalswift.com`);
-        expect(resolveTenantSubdomain()).toBeNull();
-      },
-    );
-
-    // The critical one: if the dev fallback leaked into a production build, every
-    // unmatched host would silently serve one specific tenant's data.
-    it('never falls back to VITE_DEV_TENANT_SUBDOMAIN in a production build', () => {
-      asProd();
-      setHostname('app.opalswift.com');
-      expect(resolveTenantSubdomain()).not.toBe('creativeballet');
-      expect(resolveTenantSubdomain()).toBeNull();
-    });
-
-    it('returns null for a bare IP', () => {
-      asProd();
-      setHostname('192.168.1.10');
-      expect(resolveTenantSubdomain()).toBeNull();
-    });
+describe('resolveTenantSubdomainFromHostname — production', () => {
+  it('resolves a tenant subdomain', () => {
+    expect(prod('creativeballet.opalswift.com')).toBe('creativeballet');
   });
 
-  describe('local development', () => {
-    const asDev = () => {
-      vi.stubEnv('DEV', true);
-      vi.stubEnv('VITE_APP_ROOT_DOMAIN', 'localhost:5173');
-      vi.stubEnv('VITE_DEV_TENANT_SUBDOMAIN', 'creativeballet');
-    };
+  it('returns null on the apex — the marketing site is not a tenant', () => {
+    expect(prod('opalswift.com')).toBeNull();
+  });
 
-    it('resolves subdomain from a *.localhost host', () => {
-      asDev();
-      setHostname('therapist.localhost');
-      expect(resolveTenantSubdomain()).toBe('therapist');
-    });
+  it('returns null on www', () => {
+    expect(prod('www.opalswift.com')).toBeNull();
+  });
 
-    it('falls back to VITE_DEV_TENANT_SUBDOMAIN on plain localhost', () => {
-      asDev();
-      setHostname('localhost');
-      expect(resolveTenantSubdomain()).toBe('creativeballet');
-    });
+  it('returns null on the tenant-less app shell', () => {
+    expect(prod('app.opalswift.com')).toBeNull();
+  });
+
+  it.each(['api', 'admin', 'auth', 'cdn', 'static', 'assets', 'mail'])(
+    'returns null for reserved subdomain %s',
+    (reserved) => {
+      expect(prod(`${reserved}.opalswift.com`)).toBeNull();
+    },
+  );
+
+  it('returns null for a bare IP', () => {
+    expect(prod('192.168.1.10')).toBeNull();
+  });
+
+  // The security property: a production bundle has no dev fallback, so an unmatched
+  // host resolves to no tenant rather than silently serving one tenant's data.
+  it('never falls back to a dev tenant when there is no fallback', () => {
+    expect(prod('app.opalswift.com')).not.toBe('creativeballet');
+    expect(prod('opalswift.com')).not.toBe('creativeballet');
+  });
+});
+
+describe('resolveTenantSubdomainFromHostname — dev fallback', () => {
+  const devFallback = (hostname: string) =>
+    resolveTenantSubdomainFromHostname(hostname, 'localhost', 'creativeballet');
+
+  it('uses the fallback on plain localhost', () => {
+    expect(devFallback('localhost')).toBe('creativeballet');
+  });
+
+  it('prefers a real subdomain over the fallback', () => {
+    expect(devFallback('therapist.localhost')).toBe('therapist');
+  });
+
+  it('still refuses reserved names, falling back instead', () => {
+    expect(devFallback('www.localhost')).toBe('creativeballet');
+  });
+});
+
+describe('resolveTenantSubdomain — window integration', () => {
+  it('reads the hostname from window.location', () => {
+    vi.stubEnv('VITE_APP_ROOT_DOMAIN', ROOT);
+    setHostname('creativeballet.opalswift.com');
+    expect(resolveTenantSubdomain()).toBe('creativeballet');
+  });
+
+  it('resolves reserved hosts without a tenant subdomain', () => {
+    vi.stubEnv('VITE_APP_ROOT_DOMAIN', ROOT);
+    vi.stubEnv('VITE_DEV_TENANT_SUBDOMAIN', '');
+    setHostname('app.opalswift.com');
+    expect(resolveTenantSubdomain()).toBeNull();
   });
 });
