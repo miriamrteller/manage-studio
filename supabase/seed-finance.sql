@@ -15,8 +15,8 @@
 -- | pending Esther → Monthly Primary (310) | B recurring initial | Pay + save card + schedule |
 -- | active Ruti → Grade 3 Wed (302) + payment 1101 | E refund, parent portal | Admin refund; parent sees receipt |
 -- | offering 311 ₪1 no waiver | A smoke | Cheapest happy path |
--- | tenant grow/grow + demo creds | G | Use with GROW_MOCK=true (Edge secret); no live Meshulam calls |
--- | tenant icount/icount + demo creds | G | Use with ICOUNT_MOCK=true — switch provider on bundled settings page |
+-- | tenant invoice4u/invoice4u + demo creds | G | Use with INVOICE4U_MOCK=true (Edge secret); no live Invoice4U calls |
+-- | tenant grow/grow or icount/icount | G | Switch provider on /admin/setup/bundled-payments + matching *_MOCK |
 --
 -- Renewals (Flow C): not pre-seeded — create via Stage 6 after recurring enrol or cron test.
 --
@@ -31,20 +31,19 @@
 -- ============================================================================
 
 -- ============================================================================
--- TENANT — Grow bundled provider with Meshulam documentation demo credentials.
--- Pair with Supabase secret GROW_MOCK=true so Edge Functions use MockGrowPaymentProvider
--- and never hit the live sandbox API. Real sandbox creds replace these when ready.
--- iCount: choose iCount on /admin/setup/bundled-payments and save icount credentials
--- (ICOUNT_MOCK=true for mock). Grow remains the default dev seed — no provider replaces another.
+-- TENANT — Invoice4U bundled (Creative Ballet default).
+-- public_key = clearing company type (7 = Meshulam). Pair with Edge secret
+-- INVOICE4U_MOCK=true so Edge Functions use MockInvoice4uPaymentProvider.
+-- Real QA/prod API key replaces the mock GUID when ready (U0-live).
 -- ============================================================================
 UPDATE tenants
 SET
-  payment_provider             = 'grow',
-  invoicing_provider           = 'grow',
-  payment_provider_account_id  = '4ec1d595ae764243',
-  payment_provider_public_key  = 'b73ca07591f8',
+  payment_provider             = 'invoice4u',
+  invoicing_provider           = 'invoice4u',
+  payment_provider_account_id  = 'Creative Ballet QA',
+  payment_provider_public_key  = '7',
   payment_provider_secret_enc  = pgp_sym_encrypt(
-    'grow-mock-dev-key-00000000',
+    '00000000-0000-4000-8000-000000004f55',
     '0uT6CrQXiMJab+raSRxxx0j7ZLYvwKCb2HCoQusCfiY='
   ),
   payment_provider_webhook_enc = NULL,

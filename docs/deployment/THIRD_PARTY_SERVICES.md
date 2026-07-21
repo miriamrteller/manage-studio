@@ -12,7 +12,7 @@ Environment variables required for the finance pipeline to run end-to-end on hos
 | Cron auth | Edge `CRON_SECRET` **and** `private.platform_config.cron_secret` | Must match |
 | Per-tenant Grow | Admin UI (DB encrypted) | Never put merchant `apiKey` in `.env` |
 
-**Prod hygiene:** unset `GROW_MOCK`, `ICOUNT_MOCK`, `GOOGLE_CALENDAR_MOCK`, `SYNC_ISSUE_DOCUMENT_IN_DEV`. Set `APP_URL` to the real SPA origin. Use a separate Supabase project for production.
+**Prod hygiene:** unset `GROW_MOCK`, `ICOUNT_MOCK`, `INVOICE4U_MOCK`, `GOOGLE_CALENDAR_MOCK`, `SYNC_ISSUE_DOCUMENT_IN_DEV`. Set `APP_URL` to the real SPA origin. Use a separate Supabase project for production.
 
 ## Document pipeline (issue-document worker)
 
