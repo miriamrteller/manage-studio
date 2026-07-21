@@ -220,7 +220,7 @@ Detailed SPEC.md documentation exists. Developer read it. Forms were still built
 
 | Service        | Who pays       | How configured                                      |
 | -------------- | -------------- | --------------------------------------------------- |
-| Vercel         | Platform owner | Central; serves all tenants via wildcard subdomain  |
+| Cloudflare Pages | Platform owner | Central SPA host; serves all tenants via wildcard subdomain (CDN/DNS/WAF on Cloudflare). Vercel is an acceptable alternative. |
 | Supabase Cloud | Platform owner | Central database; tenant isolation via RLS          |
 | Stripe         | Each tenant    | Their own Stripe account key stored encrypted       |
 | Resend         | Each tenant    | Their own API key stored encrypted                  |
@@ -285,7 +285,7 @@ Edge Functions
 | Custom Express/Node server | Supabase Edge Functions cover all backend needs                                       |
 | Redux / Zustand            | TanStack Query handles server state; React built-ins for UI state                     |
 | SMS                        | WhatsApp covers the Israeli market; SMS adds cost and a third provider for no benefit |
-| Docker                     | Not needed; Vercel + Supabase handle deployment                                       |
+| Docker                     | Not needed; Cloudflare Pages (or Vercel) + Supabase handle deployment                 |
 
 ### 2.5 Data and calculation strategy
 
@@ -2876,7 +2876,7 @@ EMAIL
 [ ] Email OTP login tested cross-device
 
 LEGAL
-[ ] Privacy Policy + Terms linked (footer: set VITE_PRIVACY_POLICY_URL + VITE_TERMS_URL on Vercel / .env.local)
+[ ] Privacy Policy + Terms linked (footer: set VITE_PRIVACY_POLICY_URL + VITE_TERMS_URL on Cloudflare Pages / .env.local)
 [ ] Waiver text lawyer-confirmed; accepted snapshot on enrolments
 [ ] Background checks for teachers with minors
 
@@ -2920,7 +2920,7 @@ pnpm secrets:edge
 
 | Layer          | Method                                                                                          |
 | -------------- | ----------------------------------------------------------------------------------------------- |
-| Frontend       | Vercel → Deployments → promote previous (instant)                                               |
+| Frontend       | Cloudflare Pages → rollback to previous deployment (or Vercel Deployments → promote previous)   |
 | Database       | Supabase point-in-time recovery (Pro plan). Additive-only migrations mean this is rarely needed |
 | Edge Functions | Redeploy previous git commit                                                                    |
 

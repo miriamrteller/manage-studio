@@ -7,7 +7,7 @@ Environment variables required for the finance pipeline to run end-to-end on hos
 | Layer | Store | Notes |
 | --- | --- | --- |
 | Local scripts / CLI | Repo-root `.env` (gitignored) | Template: [`.env.example`](../../.env.example) |
-| Vite SPA | `apps/web/.env.local` + **Vercel** env | Template: [`apps/web/.env.local.example`](../../apps/web/.env.local.example) |
+| Vite SPA | `apps/web/.env.local` + **Cloudflare Pages** env (Vercel OK as alt) | Template: [`apps/web/.env.local.example`](../../apps/web/.env.local.example) |
 | Edge Functions | Supabase → Edge secrets | `pnpm secrets:edge` / `secrets:email` / `secrets:google-calendar` |
 | Cron auth | Edge `CRON_SECRET` **and** `private.platform_config.cron_secret` | Must match |
 | Per-tenant Grow | Admin UI (DB encrypted) | Never put merchant `apiKey` in `.env` |

@@ -3,7 +3,7 @@
 **Pre-production / go-live checklist (manual):** [SPEC.md §7 — Pre-deployment checklist](../SPEC.md#7-v1-production-deployment)  
 Includes exact **Grow** fields (`userId`, `pageCode`, `apiKey`), webhook secret RPC, Edge `GROW_*` secrets, cron config, Resend/Twilio.  
 Grow-only detail: [plans/finance/GROW-RUNBOOK.md](../plans/finance/GROW-RUNBOOK.md).  
-**Env map (local vs Edge vs Vercel):** [THIRD_PARTY_SERVICES.md](THIRD_PARTY_SERVICES.md) · repo [`.env.example`](../../.env.example).
+**Env map (local vs Edge vs Cloudflare Pages):** [THIRD_PARTY_SERVICES.md](THIRD_PARTY_SERVICES.md) · repo [`.env.example`](../../.env.example).
 
 ## Fresh DB + cron validation (remote dev)
 
