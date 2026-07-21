@@ -77,5 +77,11 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.ts'],
     // Parallel workers OOM on Windows when transforming edge-function graphs.
     threads: false,
+    // Provide placeholder Supabase config so modules that read import.meta.env
+    // at init time don't throw in the CI/Vitest environment.
+    env: {
+      VITE_SUPABASE_URL: 'https://placeholder.supabase.co',
+      VITE_SUPABASE_ANON_KEY: 'placeholder-anon-key',
+    },
   },
 })
