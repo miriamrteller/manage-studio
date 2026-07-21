@@ -43,6 +43,8 @@ export async function createCheckoutCharge(
         alreadyPaid: true,
         pageUrl: null,
         pendingWebhook: false,
+        billingMode: null,
+        billingInterval: null,
       },
     };
   }
@@ -84,6 +86,8 @@ export async function createCheckoutCharge(
       pageUrl: result.pageUrl ?? null,
       pendingWebhook: result.pendingWebhook ?? false,
       alreadyPaid: false,
+      billingMode: session.offering.billing_mode,
+      billingInterval: session.offering.billing_interval,
     },
   };
 }

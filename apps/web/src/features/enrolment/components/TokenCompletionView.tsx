@@ -8,7 +8,7 @@ import { WaiverStep } from '@/features/enrolment/components/WaiverStep';
 import { useCheckoutBootstrap } from '@/features/enrolment/hooks/useCheckoutBootstrap';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { supabase } from '@/lib/supabase';
-import { formatCurrency } from '@shared/format';
+import { formatOfferingPrice } from '@/lib/formatOfferingPrice';
 import type { ConsentTemplate } from '@shared/schemas';
 
 interface TokenCompletionViewProps {
@@ -228,8 +228,14 @@ export function TokenCompletionView({ engagementId, effectiveToken }: TokenCompl
         <p className="font-medium">{context.className}</p>
         <p className="text-sm text-gray-600">
           {t('pages.admin_enrol.amount_due')}:{' '}
-          {formatCurrency(context.amountMinor, context.currency, i18n.language)}
+          {formatOfferingPrice(t, context.amountMinor, context.currency, i18n.language, {
+            billing_mode: context.billingMode,
+            billing_interval: context.billingInterval,
+          })}
         </p>
+        {context.billingMode === 'recurring' && context.billingInterval === 'monthly' && (
+          <p className="text-xs text-gray-500">{t('enrolment.checkout_monthly_hint')}</p>
+        )}
       </div>
 
       <CheckoutPaymentShell

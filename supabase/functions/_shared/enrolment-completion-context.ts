@@ -82,7 +82,7 @@ export async function loadEnrolmentCompletionContext(
 
   const { data: offering } = await service
     .from("offerings")
-    .select("id, name, currency, price_minor, waiver_required, location")
+    .select("id, name, currency, price_minor, waiver_required, location, billing_mode, billing_interval")
     .eq("id", engagement.offering_id)
     .eq("tenant_id", tenantId)
     .single();
@@ -195,6 +195,8 @@ export async function loadEnrolmentCompletionContext(
       isMinorStudent,
       amountMinor: pricing.totalMinor,
       currency: (offering.currency ?? tenant.currency ?? "ILS").toUpperCase(),
+      billingMode: (offering.billing_mode as string | null) ?? null,
+      billingInterval: (offering.billing_interval as string | null) ?? null,
       appointment,
     },
   };
@@ -218,6 +220,8 @@ export function flattenCompletionContext(context: EnrolmentCompletionContext): R
     isMinorStudent: context.isMinorStudent,
     amountMinor: context.amountMinor,
     currency: context.currency,
+    billingMode: context.billingMode ?? null,
+    billingInterval: context.billingInterval ?? null,
     appointment: context.appointment ?? null,
   };
 }

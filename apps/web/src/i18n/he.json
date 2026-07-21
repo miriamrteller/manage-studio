@@ -1386,6 +1386,7 @@
     "step_confirmation": "אישור",
     "checkout_desc": "סקירה ותשלום",
     "checkout_prepare_failed": "לא ניתן להכין הרשמה לתשלום",
+    "checkout_monthly_hint": "מנוי חודשי — סכום זה ייגבה בכל חודש.",
     "payment_confirm_pending": "התשלום התקבל. האישור עשוי להתעכב רגע.",
     "payment_failed": "התשלום נכשל",
     "payment_setup_failed": "לא ניתן להתחיל תשלום",

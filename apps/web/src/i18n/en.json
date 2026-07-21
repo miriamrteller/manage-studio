@@ -1387,6 +1387,7 @@
     "step_confirmation": "Confirmation",
     "checkout_desc": "Review and complete payment",
     "checkout_prepare_failed": "Could not prepare enrolment for payment",
+    "checkout_monthly_hint": "Monthly subscription — this amount is charged every month.",
     "payment_confirm_pending": "Payment received. Confirmation may take a moment.",
     "payment_failed": "Payment failed",
     "payment_setup_failed": "Could not start payment",

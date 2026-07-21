@@ -13,7 +13,7 @@ import { useTenant } from '@/hooks/useTenant';
 import { hasParentRole } from '@/lib/parentRoles';
 import { buildPortalHighlightState } from '@/lib/portalHighlight';
 import queryClient from '@/lib/query-client';
-import { formatCurrency } from '@shared/format';
+import { formatOfferingPrice } from '@/lib/formatOfferingPrice';
 import type { ConsentTemplate, Engagement } from '@shared/schemas';
 
 interface AuthenticatedCompletionViewProps {
@@ -214,8 +214,14 @@ export function AuthenticatedCompletionView({ engagementId }: AuthenticatedCompl
         <p className="font-medium">{context.className}</p>
         <p className="text-sm text-gray-600">
           {t('pages.admin_enrol.amount_due')}:{' '}
-          {formatCurrency(context.amountMinor, context.currency, i18n.language)}
+          {formatOfferingPrice(t, context.amountMinor, context.currency, i18n.language, {
+            billing_mode: context.billingMode,
+            billing_interval: context.billingInterval,
+          })}
         </p>
+        {context.billingMode === 'recurring' && context.billingInterval === 'monthly' && (
+          <p className="text-xs text-gray-500">{t('enrolment.checkout_monthly_hint')}</p>
+        )}
       </div>
 
       <CheckoutPaymentShell
