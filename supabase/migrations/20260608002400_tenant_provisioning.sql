@@ -42,9 +42,23 @@ AS $$
 DECLARE
   v_subdomain TEXT;
 BEGIN
-  -- Authenticated users (signup wizard) or service_role (server-side provisioning,
-  -- where there is no auth.uid()).
-  IF auth.uid() IS NULL AND current_setting('role', true) IS DISTINCT FROM 'service_role' THEN
+  -- This gate exists to stop ANONYMOUS subdomain enumeration over PostgREST.
+  -- Callers allowed:
+  --   • authenticated users        — auth.uid() is set (signup wizard)
+  --   • service_role               — server-side provisioning, no JWT; PostgREST
+  --                                  SET ROLEs, and SECURITY DEFINER leaves the
+  --                                  `role` GUC intact so this still reads true
+  --   • superusers                 — psql / the Supabase SQL editor. Gating them is
+  --                                  pointless: they can read `tenants` directly.
+  --
+  -- session_user (not current_user) is the discriminator — SECURITY DEFINER rewrites
+  -- current_user to the owner, so it would always look like postgres here.
+  IF auth.uid() IS NULL
+     AND current_setting('role', true) IS DISTINCT FROM 'service_role'
+     AND NOT EXISTS (
+       SELECT 1 FROM pg_user WHERE usename = session_user AND usesuper
+     )
+  THEN
     RAISE EXCEPTION 'Authentication required';
   END IF;
 
