@@ -192,24 +192,29 @@ $$;
 GRANT EXECUTE ON FUNCTION get_tenant_features(UUID) TO authenticated, service_role;
 
 -- =============================================================================
--- STEP 8 — provision_tenant (replaces 002400 version)
--- Drops the old signature (business_preset etc.) and creates the new one.
--- Callable by any authenticated user — supports both super-admin manual
--- provisioning and the self-service operator signup wizard.
--- p_owner_email is stored on the tenant for reference; the auth link uses auth.uid().
+-- STEP 8 — provision_tenant
+--
+-- service_role ONLY. Paid signup provisions server-side from the payment webhook
+-- after the charge is verified; granting this to `authenticated` would let any
+-- signed-up user create unlimited tenants with no payment gate.
+--
+-- p_owner_id makes the owner explicit so the function works server-side, where
+-- there is no auth.uid(). It falls back to auth.uid() for a super_admin calling
+-- it interactively. p_owner_email is stored on the tenant for reference only.
 -- =============================================================================
 
--- Drop old signature from 002400 (different param types — cannot CREATE OR REPLACE)
-DROP FUNCTION IF EXISTS provision_tenant(
-  TEXT, TEXT, TEXT, JSONB, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, NUMERIC, BOOLEAN, TEXT, TEXT
-);
+-- Defensive: a dev DB migrated before p_owner_id existed still carries the 5-arg
+-- overload. Both would then match a 5-argument call and PostgREST errors on the
+-- ambiguity. Harmless on a fresh database.
+DROP FUNCTION IF EXISTS provision_tenant(TEXT, TEXT, TEXT, TEXT, TEXT);
 
 CREATE OR REPLACE FUNCTION provision_tenant(
   p_name        TEXT,
   p_subdomain   TEXT,
   p_plan        TEXT,   -- 'essential' | 'professional'
   p_vertical    TEXT,   -- verticals.id
-  p_owner_email TEXT DEFAULT NULL
+  p_owner_email TEXT DEFAULT NULL,
+  p_owner_id    UUID DEFAULT NULL  -- explicit owner for server-side provisioning
 )
 RETURNS UUID
 LANGUAGE plpgsql
@@ -219,10 +224,17 @@ AS $$
 DECLARE
   v_tenant_id UUID;
   v_subdomain TEXT;
+  v_owner_id  UUID;
 BEGIN
-  -- Callable by any authenticated user (wizard) or super_admin (manual provisioning).
-  IF auth.uid() IS NULL THEN
-    RAISE EXCEPTION 'Authentication required';
+  -- Owner is explicit (server-side, no JWT) or the caller (interactive super_admin).
+  v_owner_id := COALESCE(p_owner_id, auth.uid());
+
+  IF v_owner_id IS NULL THEN
+    RAISE EXCEPTION 'p_owner_id is required when there is no authenticated caller';
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM auth.users WHERE id = v_owner_id) THEN
+    RAISE EXCEPTION 'Owner user does not exist: %', v_owner_id;
   END IF;
 
   IF p_name IS NULL OR trim(p_name) = '' THEN
@@ -236,7 +248,12 @@ BEGIN
   IF v_subdomain !~ '^[a-z0-9]([a-z0-9-]*[a-z0-9])?$' THEN
     RAISE EXCEPTION 'Invalid subdomain format';
   END IF;
-  IF NOT check_subdomain_available(v_subdomain) THEN
+  IF is_reserved_subdomain(v_subdomain) THEN
+    RAISE EXCEPTION 'Subdomain is reserved: %', v_subdomain;
+  END IF;
+  -- Not check_subdomain_available(): it requires auth.uid() or the service_role
+  -- GUC, and this function is SECURITY DEFINER so the role check would misfire.
+  IF EXISTS (SELECT 1 FROM tenants t WHERE t.subdomain = v_subdomain) THEN
     RAISE EXCEPTION 'Subdomain already taken: %', v_subdomain;
   END IF;
 
@@ -267,11 +284,10 @@ BEGIN
   )
   RETURNING id INTO v_tenant_id;
 
-  -- Link the calling user as tenant_admin.
-  -- In the self-service wizard, auth.uid() IS the new operator filling the form.
+  -- Link the resolved owner as tenant_admin.
   -- p_owner_email is stored on tenants.from_email for reference only.
   INSERT INTO user_profiles (id, tenant_id, role)
-  VALUES (auth.uid(), v_tenant_id, ARRAY['tenant_admin'])
+  VALUES (v_owner_id, v_tenant_id, ARRAY['tenant_admin'])
   ON CONFLICT (id) DO UPDATE SET
     tenant_id  = v_tenant_id,
     role       = ARRAY['tenant_admin'],
@@ -302,7 +318,12 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION provision_tenant(TEXT, TEXT, TEXT, TEXT, TEXT) TO authenticated;
+COMMENT ON FUNCTION provision_tenant(TEXT, TEXT, TEXT, TEXT, TEXT, UUID) IS
+  'Creates a tenant and links its owner as tenant_admin. service_role only — paid signup calls this from the payment webhook after the charge is verified.';
+
+-- Provisioning is server-side only; see the header note above.
+REVOKE ALL ON FUNCTION provision_tenant(TEXT, TEXT, TEXT, TEXT, TEXT, UUID) FROM authenticated, anon, PUBLIC;
+GRANT EXECUTE ON FUNCTION provision_tenant(TEXT, TEXT, TEXT, TEXT, TEXT, UUID) TO service_role;
 
 -- =============================================================================
 -- STEP 9 — get_tenant_config_by_subdomain (replaces 001800 version)
@@ -391,7 +412,9 @@ WHERE plan = 'essential'   -- default sentinel — not yet explicitly set
 -- SELECT key, tier_minimum, skin_restriction FROM feature_definitions LIMIT 10;
 -- SELECT id, display_name, plan_restriction FROM verticals;
 -- SELECT plan, skin, sub_status FROM tenants LIMIT 3;
--- SELECT provision_tenant('Test Studio', 'teststudio', 'essential', 'photographer');
+-- provision_tenant needs an explicit owner in the SQL editor — auth.uid() is NULL there:
+-- SELECT provision_tenant('Test Studio', 'teststudio', 'essential', 'photographer',
+--                         'owner@example.com', (SELECT id FROM auth.users LIMIT 1));
 -- SELECT get_tenant_features('<tenant-id-from-above>');
 -- SELECT id, plan, skin, enabled_features FROM get_tenant_config_by_subdomain('teststudio');
 
