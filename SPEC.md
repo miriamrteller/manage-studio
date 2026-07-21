@@ -3019,6 +3019,20 @@ Lightweight studio CRM on top of people/families: notes, follow-ups / next actio
 
 **V1 foundation:** people + families directories, contact preferences, notification log. **Not V1 scope.**
 
+### V2.14 — Holiday-aware class & service scheduling
+
+When creating a class term (or generating `offering_sessions` from start/end dates + weekday), automatically exclude Israeli national / Jewish holidays that fall on class days. After generation, show an admin list of holidays that coincided with scheduled class days (name + date) so the studio can see what was skipped.
+
+**Services / appointments (optional toggle):** Same holiday calendar can optionally block or grey out bookable slots on holidays (and optionally eves), configurable per tenant or per service — not forced on every appointment offering.
+
+**Exports (admin download):**
+- Yearly holiday list (civil year or Hebrew year) — CSV/PDF: date, holiday name (he/en), type (Yom Tov / national / etc.).
+- Yearly class schedule with holidays — CSV/PDF: planned class sessions for the year/term, with holiday rows or annotations where a class day was skipped or falls on a holiday.
+
+**V1 foundation:** Hebcal-based calendar shading only (`holidayShading.ts` on scheduling calendar) — visual only; does not remove sessions, block booking, or export. **Not V1 scope.**
+
+**Reuse:** Existing `@hebcal/core` holiday flags already used for shading; extend into session generation, optional booking availability rules, and export generators.
+
 ---
 
 ## 9. V3 SaaS Roadmap

@@ -21,7 +21,7 @@ Rough completion against [SPEC.md §6 V1 Implementation](../SPEC.md#6-v1-impleme
 | **1F** | Admin dashboard | ✅ ~95% | People CSV + classes occupancy bar → **V2 start** (not V1-blocking) |
 | **1G** | Parent / student portal | ✅ ~95% | WhatsApp OTP (**last**); `notify_*` scope toggles ✅ |
 | **§7** | Production deployment | ❌ ~10% | Webhooks, Meta templates, legal, security checklist |
-| **§8+** | V2 / V3 | — | V2 start: people CSV, classes occupancy bar, V2.2 waitlist, **V2.13 minimal CRM** |
+| **§8+** | V2 / V3 | — | V2 start: people CSV, classes occupancy bar, V2.2 waitlist, **V2.13 minimal CRM**, **V2.14 holiday-aware scheduling** |
 
 **Overall V1 feature scope:** ~**80%** shipped · **Production-ready:** separate track (§7).
 
@@ -211,7 +211,8 @@ Track in SPEC §6.x — pull into V1 only when explicitly prioritized:
 | **1** | Prod hardening ✅ in-repo — env map, sourcemaps off, footer legal URLs, monitoring stub; §7 remainder is human/ops | [`.env.example`](../.env.example) · [THIRD_PARTY_SERVICES.md](deployment/THIRD_PARTY_SERVICES.md) |
 | **Last** | Live payments: **Invoice4U** mock then QA E2E; then WhatsApp | [finance/invoice4u/OVERNIGHT-AGENT.md](plans/finance/invoice4u/OVERNIGHT-AGENT.md) |
 | Later | §7 remainder — separate prod Supabase/Vercel, counsel pages URLs, Sentry package, live Grow/WA | [SPEC.md §7](../SPEC.md#7-v1-production-deployment) |
-| **V2 start** | People CSV · classes occupancy/waitlist bar · **V2.2** waitlist · **V2.13** minimal CRM | Not V1-blocking |
+| **V2 start** | People CSV · classes occupancy/waitlist bar · **V2.2** waitlist · **V2.13** minimal CRM · **V2.14** holiday scheduling | Not V1-blocking |
 | **V2.11** | Teachers admin CRUD | [teachers-admin-module.md](plans/teachers-admin-module.md) |
 | **V2.13** | Minimal CRM (notes, follow-ups, light pipeline) | [SPEC.md §8 V2.13](../SPEC.md) — plan when prioritized |
+| **V2.14** | Holiday-aware class/service scheduling + yearly holiday & schedule exports | [SPEC.md §8 V2.14](../SPEC.md) — plan when prioritized |
 | Deferred | Unenrol Phase 2, code rename, other V2 | [code-rename-epic.md](plans/code-rename-epic.md) · SPEC §8 |
