@@ -268,6 +268,14 @@ describe('processInvoice4uPaymentCallback (U2a)', () => {
     expect(result.status).toBe('failed');
     expect(service.getRow().status).toBe('failed');
     expect(finalisePayment).not.toHaveBeenCalled();
+    expect(service.audits.some((a) => a.action === 'payment.failed')).toBe(true);
+    const failAudit = service.audits.find((a) => a.action === 'payment.failed')!;
+    expect(failAudit.entity_id).toBe('pay-pending-1');
+    expect(failAudit.after_state).toMatchObject({
+      engagement_id: metadata.engagement_id,
+      payment_id: 'pay-pending-1',
+      order_id_client_usage: ORDER_ID,
+    });
   });
 
   it('replays succeeded PaymentId via PaymentId lookup', async () => {

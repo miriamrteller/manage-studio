@@ -136,6 +136,8 @@ Merged to `main` via PR #8 (`0ea9004`; core work in `fcad476`):
 | `20260608000600` | `idx_notification_log_dunning_key`, notification blast RPCs |
 | `20260608002600` | pg_cron + pg_net scheduled jobs (billing, dunning, waiver, issue-document, OTP cleanup) |
 
+**Tax document persistence (all providers):** Every issued tax document is written to `payments` (`external_document_*`, `invoice_url`, `invoice_issued_at`, optional `document_pdf_path`) and audited as `payment_document_recorded` via shared `persistPaymentDocumentFields` / `applyBundledDocumentNotify` (Grow, iCount, Invoice4U callback, and `document_queue` issue path). Tenant admins are emailed the invoice (`payment_document_admin_email_sent`); cron `check-missing-documents` (every 15m) alerts when a succeeded payment still lacks a tax doc after 30 minutes and retries admin invoice emails until sent. Pending Invoice4U charges audit `payment.pending_created`; failures use normalized `payment.failed` `after_state`.
+
 **IL product path:** **Invoice4U** bundled — [SPEC.md](../SPEC.md) Phase 1E · [finance/invoice4u/](plans/finance/invoice4u/00-overview.md).
 
 **Invoice4U:** plan + overnight brief ready; implementation on `feat/invoice4u-provider` (mock U1→U4-mock first).

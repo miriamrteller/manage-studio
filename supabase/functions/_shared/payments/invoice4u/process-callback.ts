@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import { applyBundledDocumentNotify } from "../bundled-document.ts";
 import { finalisePayment } from "../finalise-payment.ts";
+import { auditPaymentFailed } from "../payment-audit.ts";
 import type { ChargeMetadata } from "../types.ts";
 import {
   extractInvoice4uCallbackData,
@@ -114,15 +115,15 @@ export async function processInvoice4uPaymentCallback(
     if (pending.status === "pending") {
       await service.from("payments").update({ status: "failed" }).eq("id", pending.id);
     }
-    await service.from("audit_log").insert({
-      tenant_id: pending.tenant_id,
-      action: "payment.failed",
-      entity_type: "payment",
-      entity_id: pending.engagement_id,
-      after_state: {
+    await auditPaymentFailed(service, {
+      tenantId: pending.tenant_id,
+      entityId: pending.id,
+      afterState: {
         provider_payment_ref: parsed.paymentId ?? orderId,
+        message: parsed.event.failureMessage ?? null,
+        engagement_id: pending.engagement_id ?? "",
+        payment_id: pending.id,
         order_id_client_usage: orderId,
-        message: parsed.event.failureMessage,
       },
     });
     return { paymentId: pending.id, duplicate: false, status: "failed" };

@@ -91,6 +91,11 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/issue-document/index.ts"
 
+[functions.check-missing-documents]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/check-missing-documents/index.ts"
+
 [functions.verify-invoicing-credentials]
 enabled = true
 verify_jwt = false

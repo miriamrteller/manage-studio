@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { auditPaymentPendingCreated } from "../payment-audit.ts";
 import type { ChargeMetadata } from "../types.ts";
 
 /**
@@ -64,7 +65,19 @@ export async function insertPendingInvoice4uPayment(
     throw insertError ?? new Error("Pending Invoice4U payment insert failed");
   }
 
-  return { paymentId: inserted.id as string };
+  const paymentId = inserted.id as string;
+  await auditPaymentPendingCreated(service, {
+    tenantId: metadata.tenant_id,
+    paymentId,
+    providerPaymentRef: orderId,
+    engagementId: metadata.engagement_id,
+    chargeType: metadata.charge_type,
+    provider: "invoice4u",
+    amountMinor,
+    currency: currency.toUpperCase(),
+  });
+
+  return { paymentId };
 }
 
 /** Load pending (or any) payment by OrderIdClientUsage / provider_payment_ref. */

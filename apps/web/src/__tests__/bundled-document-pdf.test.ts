@@ -3,6 +3,14 @@
  * Run: pnpm -C apps/web test bundled-document-pdf.test.ts
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+
+vi.mock('../../../../supabase/functions/_shared/payments/send-payment-document-admin-email.ts', () => ({
+  sendPaymentDocumentAdminEmail: vi.fn(async () => ({ sent: true })),
+  PAYMENT_DOCUMENT_ADMIN_EMAIL_SENT: 'payment_document_admin_email_sent',
+  PAYMENT_DOCUMENT_ADMIN_EMAIL_FAILED: 'payment_document_admin_email_failed',
+  PAYMENT_DOCUMENT_ADMIN_EMAIL_SKIPPED: 'payment_document_admin_email_skipped',
+}));
+
 import { fetchAndStoreBundledDocumentPdf } from '../../../../supabase/functions/_shared/payments/bundled-document-pdf.ts';
 import { handlePaymentDocumentInternal } from '../../../../supabase/functions/_shared/payments/handle-payment-document.ts';
 import growInvoiceNotify from './fixtures/grow-invoice-notify.json';
@@ -106,8 +114,9 @@ describe('handlePaymentDocumentInternal (I4a-T3)', () => {
     vi.restoreAllMocks();
   });
 
-  it('uses shared PDF helper and returns ok with document fields', async () => {
+  it('uses shared apply path with payment fields + audit', async () => {
     const paymentUpdates: Record<string, unknown>[] = [];
+    const audits: Record<string, unknown>[] = [];
     const expectedPath = `documents/${TENANT_ID}/${PAYMENT_REF}/${DOC_ID}.pdf`;
 
     const service = {
@@ -130,6 +139,23 @@ describe('handlePaymentDocumentInternal (I4a-T3)', () => {
             },
           };
         }
+        if (table === 'audit_log') {
+          return {
+            insert: async (row: Record<string, unknown>) => {
+              audits.push(row);
+              return { error: null };
+            },
+          };
+        }
+        if (table === 'document_queue') {
+          return {
+            update: () => ({
+              eq: () => ({
+                in: async () => ({ error: null }),
+              }),
+            }),
+          };
+        }
         return {};
       },
       storage: {
@@ -148,8 +174,13 @@ describe('handlePaymentDocumentInternal (I4a-T3)', () => {
     expect(paymentUpdates[0]).toMatchObject({
       external_document_id: DOC_ID,
       invoice_url: PDF_URL,
+      invoice_issued_at: expect.any(String),
       document_pdf_path: expectedPath,
       document_stored_at: expect.any(String),
+    });
+    expect(audits[0]).toMatchObject({
+      action: 'payment_document_recorded',
+      entity_id: 'pay-grow',
     });
   });
 
