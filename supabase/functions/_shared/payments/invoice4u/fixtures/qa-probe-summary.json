@@ -1,0 +1,67 @@
+{
+  "ident": "ms-u0-20260721172907",
+  "with-client-and-cash-payment": {
+    "status": 500
+  },
+  "minimal-no-client": {
+    "status": 500
+  },
+  "invoice-receipt-type1": {
+    "status": 200,
+    "Errors": [],
+    "DocumentNumber": 10001,
+    "ID": "cf23a91e-91b4-4e0f-8831-01d09e657890"
+  },
+  "goodDocApiId": "ms-u0-20260721172907-c",
+  "goodDoc": {
+    "DocumentNumber": 10001,
+    "ID": "cf23a91e-91b4-4e0f-8831-01d09e657890",
+    "PrintOriginalPDFLink": "https://newviewqa.invoice4u.co.il/Views/PDF.aspx?cipher=enDAt5%2fdfv877%2fuqbp6F8vvNAhF2YSY%2f8o%2fzdo28ubk59Xx1h0bHrq%2fUacSaNkRuYrUQQt9h9OIIbylKh53%2fduAlSNrKuUziybTUzAEG85vlBBCu8aqBhP%2fixC5XeDmJv%2bYtEkqij1gamyN%2buSIUBA%3d%3d",
+    "CipherText": "ZukJqGKRRjueX%2fFTSFGcPlYL8TJZeKGzkhqLRoHGkacwEJcmPwp95yoc0NTjrpZNNITHSPEn9nN2q%2bYb6my0oCEPsfmTM4WDdQkhp%2bZzmO1mUSSwfT6gKzZzwbfs1ly3"
+  },
+  "GetClearingAccount": {
+    "status": 200,
+    "Errors": [],
+    "keys": [
+      "__type",
+      "Errors",
+      "Info",
+      "OpenInfo",
+      "RecaptchaToken",
+      "CompanyType",
+      "DateCreated",
+      "EmvTerminalNumber",
+      "ExpirationDateSO",
+      "ExpirationDateToken",
+      "IsActive",
+      "IsApplePay",
+      "IsBitService",
+      "IsEMVService",
+      "IsGooglePay",
+      "IsNewApi",
+      "IsStandingOrder",
+      "IsToken",
+      "Password",
+      "Terminal"
+    ]
+  },
+  "GetClearingAccounts": {
+    "status": 404,
+    "keys": [
+      "raw"
+    ]
+  },
+  "clearing": {
+    "status": 200,
+    "Errors": [
+      {
+        "__type": "CommonError:#Invoice.Common",
+        "Error": "ClearingTerminalDoesntExists",
+        "ID": 96,
+        "Paramters": null
+      }
+    ],
+    "ClearingRedirectUrl": null,
+    "order": "ms-order-1784644148194"
+  }
+}

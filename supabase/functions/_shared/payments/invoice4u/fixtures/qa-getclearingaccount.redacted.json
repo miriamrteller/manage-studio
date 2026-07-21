@@ -1,0 +1,30 @@
+{
+  "status": 200,
+  "body": {
+    "d": {
+      "__type": "ClearingAccount:#Invoice.Common",
+      "Errors": [],
+      "Info": [],
+      "OpenInfo": [],
+      "RecaptchaToken": null,
+      "CompanyType": 0,
+      "DateCreated": null,
+      "EmvTerminalNumber": null,
+      "ExpirationDateSO": null,
+      "ExpirationDateToken": null,
+      "IsActive": null,
+      "IsApplePay": null,
+      "IsBitService": null,
+      "IsEMVService": null,
+      "IsGooglePay": null,
+      "IsNewApi": null,
+      "IsStandingOrder": null,
+      "IsToken": null,
+      "Password": null,
+      "Terminal": null,
+      "UpayType": 0,
+      "UserID": 0,
+      "UserName": null
+    }
+  }
+}

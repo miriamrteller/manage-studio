@@ -1,0 +1,33 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "opalswift-app",
+  "compatibility_date": "2026-07-21",
+
+  // Vite build output. `not_found_handling` serves index.html for unmatched paths so
+  // client-side routes (/login, /admin/...) survive a hard refresh.
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  },
+
+  // Tenants are served from a wildcard, so this must be a ROUTE, not a Custom Domain —
+  // Custom Domains match exactly and never match wildcards.
+  //
+  // Requires a proxied wildcard DNS record for *.opalswift.com (all Cloudflare plans).
+  // Universal SSL covers the apex plus first-level subdomains, so no ACM is needed.
+  //
+  // `app.opalswift.com` is listed explicitly: it serves the tenant-less shell
+  // (signup, post-payment onboarding, session handoff). It also matches the wildcard,
+  // but naming it documents the intent and survives future route reshuffles.
+  //
+  // The apex (opalswift.com) is deliberately NOT here — that is the marketing site,
+  // deployed from its own Worker.
+  "routes": [
+    { "pattern": "*.opalswift.com/*", "zone_name": "opalswift.com" },
+    { "pattern": "app.opalswift.com/*", "zone_name": "opalswift.com" }
+  ],
+
+  "observability": {
+    "enabled": true
+  }
+}
