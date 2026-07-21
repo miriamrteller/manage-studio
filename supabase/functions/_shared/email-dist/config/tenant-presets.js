@@ -1,5 +1,5 @@
 import { z } from 'zod';
-const DEFAULT_LABELS = {
+const DEFAULT_LABELS_EN = {
     programs: {
         contact: { singular: 'Student', plural: 'Students' },
         account: { singular: 'Family', plural: 'Families' },
@@ -30,6 +30,43 @@ const DEFAULT_LABELS = {
         engagement: { singular: 'Order', plural: 'Orders' },
         session: { singular: 'Session', plural: 'Sessions' },
     },
+};
+/** Hebrew defaults aligned with apps/web nav copy (programs vertical). */
+const DEFAULT_LABELS_HE = {
+    programs: {
+        contact: { singular: 'תלמיד', plural: 'תלמידים' },
+        account: { singular: 'משפחה', plural: 'משפחות' },
+        offering: { singular: 'שיעור', plural: 'שיעורים' },
+        season: { singular: 'תקופה', plural: 'תקופות' },
+        category: { singular: 'רמה', plural: 'רמות' },
+        staff: { singular: 'מורה', plural: 'מורים' },
+        engagement: { singular: 'הרשמה', plural: 'הרשמות' },
+        session: { singular: 'מפגש', plural: 'מפגשים' },
+    },
+    services: {
+        contact: { singular: 'איש קשר', plural: 'אנשי קשר' },
+        account: { singular: 'לקוח', plural: 'לקוחות' },
+        offering: { singular: 'שירות', plural: 'שירותים' },
+        season: { singular: 'רבעון', plural: 'רבעונים' },
+        category: { singular: 'קטגוריה', plural: 'קטגוריות' },
+        staff: { singular: 'איש צוות', plural: 'צוות' },
+        engagement: { singular: 'התקשרות', plural: 'התקשרויות' },
+        session: { singular: 'מפגש', plural: 'מפגשים' },
+    },
+    catalog: {
+        contact: { singular: 'לקוח', plural: 'לקוחות' },
+        account: { singular: 'חשבון', plural: 'חשבונות' },
+        offering: { singular: 'מוצר', plural: 'מוצרים' },
+        season: { singular: 'עונה', plural: 'עונות' },
+        category: { singular: 'קטגוריה', plural: 'קטגוריות' },
+        staff: { singular: 'צוות', plural: 'צוות' },
+        engagement: { singular: 'הזמנה', plural: 'הזמנות' },
+        session: { singular: 'מפגש', plural: 'מפגשים' },
+    },
+};
+const DEFAULT_LABELS_BY_LOCALE = {
+    en: DEFAULT_LABELS_EN,
+    he: DEFAULT_LABELS_HE,
 };
 const PRESET_MODULES = {
     programs: {
@@ -96,8 +133,9 @@ export function safePreset(raw) {
 export function resolvePresetModules(preset) {
     return PRESET_MODULES[preset];
 }
-export function resolveEntityLabels(preset, overrides = {}) {
-    return { ...DEFAULT_LABELS[preset], ...overrides };
+export function resolveEntityLabels(preset, overrides = {}, locale = 'en') {
+    const defaults = DEFAULT_LABELS_BY_LOCALE[locale][preset];
+    return { ...defaults, ...overrides };
 }
 export function getDefaultRoleForPreset(preset) {
     switch (preset) {

@@ -75,5 +75,7 @@ export default defineConfig({
     environment: 'jsdom',
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
     setupFiles: ['./src/test/setup.ts'],
+    // Parallel workers OOM on Windows when transforming edge-function graphs.
+    threads: false,
   },
 })

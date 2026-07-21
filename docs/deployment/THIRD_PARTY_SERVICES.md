@@ -12,7 +12,7 @@ Environment variables required for the finance pipeline to run end-to-end on hos
 | Cron auth | Edge `CRON_SECRET` **and** `private.platform_config.cron_secret` | Must match |
 | Per-tenant Grow | Admin UI (DB encrypted) | Never put merchant `apiKey` in `.env` |
 
-**Prod hygiene:** unset `GROW_MOCK`, `ICOUNT_MOCK`, `GOOGLE_CALENDAR_MOCK`, `SYNC_ISSUE_DOCUMENT_IN_DEV`. Set `APP_URL` to the real SPA origin. Use a separate Supabase project for production.
+**Prod hygiene:** unset `GROW_MOCK`, `ICOUNT_MOCK`, `INVOICE4U_MOCK`, `GOOGLE_CALENDAR_MOCK`, `SYNC_ISSUE_DOCUMENT_IN_DEV`. Set `APP_URL` to the real SPA origin. Use a separate Supabase project for production.
 
 ## Document pipeline (issue-document worker)
 
@@ -29,11 +29,17 @@ If neither `ISSUE_DOCUMENT_URL` nor `SYNC_ISSUE_DOCUMENT_IN_DEV` is set, `enqueu
 logs a structured `document_queue_pending_no_worker` warning and the row waits for the
 pg_cron batch (see `issue-document/index.ts` header for the cron schedule).
 
+**Missing tax-doc watchdog:** Edge function `check-missing-documents` (pg_cron every 15 minutes,
+migration `20260721000100_check_missing_documents_cron.sql`) emails tenant admins when a
+succeeded payment still has no `external_document_id` after 30 minutes, and retries admin
+invoice emails until `payment_document_admin_email_sent` is audited. Uses the same
+`CRON_SECRET` / `x-cron-secret` pattern as `issue-document`.
+
 ## Email (Resend)
 
 | Variable | Where | Purpose |
 |----------|-------|---------|
-| `RESEND_API_KEY` | edge function secret | Sends payment confirmation / receipt emails from `finalise-payment`. Without it, the email step is skipped and audited as `..._skipped`. |
+| `RESEND_API_KEY` | edge function secret | Sends payment confirmation / receipt emails from `finalise-payment`, admin tax-invoice copies, and missing-document alerts. Without it, those email steps are skipped/failed and audited. |
 | `NOTIFICATION_FROM_EMAIL` | edge function secret | Optional platform sender override. |
 
 ## Finance walkthrough (dev only)

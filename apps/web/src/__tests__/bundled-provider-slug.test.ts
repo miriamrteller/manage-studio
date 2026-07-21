@@ -17,6 +17,15 @@ describe('tenantUsesBundledProvider (I3-T5)', () => {
     ).toBe(true);
   });
 
+  it('returns true for matching invoice4u/invoice4u slugs', () => {
+    expect(
+      tenantUsesBundledProvider({
+        payment_provider: 'invoice4u',
+        invoicing_provider: 'invoice4u',
+      }),
+    ).toBe(true);
+  });
+
   it('returns false when payment and invoicing slugs mismatch', () => {
     expect(
       tenantUsesBundledProvider({ payment_provider: 'icount', invoicing_provider: 'grow' }),

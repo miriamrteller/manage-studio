@@ -71,7 +71,15 @@ export function RefundPaymentModal({
           })}
         </p>
       )}
-      {provider !== 'grow' && provider !== 'icount' && (
+      {provider === 'invoice4u' && (
+        <p className="text-xs text-muted-foreground">
+          {t('finance.refund_payment.invoice4u_note', {
+            defaultValue:
+              'Invoice4U refunds the card charge and may issue a credit document when the original payment created a tax receipt.',
+          })}
+        </p>
+      )}
+      {provider !== 'grow' && provider !== 'icount' && provider !== 'invoice4u' && (
         <p className="text-xs text-muted-foreground">
           {t('finance.refund_payment.bundled_note', {
             defaultValue:

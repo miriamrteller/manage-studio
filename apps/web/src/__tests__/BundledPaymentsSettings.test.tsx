@@ -40,12 +40,13 @@ afterEach(() => {
 });
 
 describe('BundledPaymentsSettings', () => {
-  it('shows generic page title and equal Grow / iCount provider options', () => {
+  it('shows generic page title and equal Grow / iCount / Invoice4U provider options', () => {
     renderSettings();
 
     expect(screen.getByRole('heading', { level: 1, name: 'Payments & invoices' })).toBeTruthy();
     expect(screen.getByRole('radio', { name: 'Grow' })).toBeTruthy();
     expect(screen.getByRole('radio', { name: 'iCount' })).toBeTruthy();
+    expect(screen.getByRole('radio', { name: 'Invoice4U' })).toBeTruthy();
   });
 
   it('switches credential form when admin selects the other provider', () => {
@@ -58,5 +59,11 @@ describe('BundledPaymentsSettings', () => {
 
     expect(screen.getByLabelText('Company id (cid)')).toBeTruthy();
     expect(screen.queryByLabelText('Grow user ID')).toBeNull();
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Invoice4U' }));
+
+    expect(screen.getByLabelText('Organisation API key')).toBeTruthy();
+    expect(screen.getByLabelText('Clearing company')).toBeTruthy();
+    expect(screen.queryByLabelText('Company id (cid)')).toBeNull();
   });
 });

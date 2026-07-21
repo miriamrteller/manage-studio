@@ -16,7 +16,7 @@ import { renewalIdempotencyKey } from "./billing-time.ts";
 
 /** Bundled providers that charge renewals via a saved card token (mock or live). */
 
-export const RENEWAL_TOKEN_PROVIDERS = ["grow", "icount"] as const;
+export const RENEWAL_TOKEN_PROVIDERS = ["grow", "icount", "invoice4u"] as const;
 
 export type RenewalTokenProvider = (typeof RENEWAL_TOKEN_PROVIDERS)[number];
 
@@ -265,6 +265,24 @@ export async function processBillingSchedule(
           tenantId: schedule.tenant_id,
 
         });
+
+      }
+
+    } else if (paymentProvider === "invoice4u") {
+
+      // D14 — Invoice4U renewals use ChargeWithToken (CustomerId), not createCharge(savedToken).
+
+      if (!provider.chargeWithToken) {
+
+        throw new Error("Invoice4U chargeWithToken not implemented");
+
+      }
+
+      const result = await provider.chargeWithToken(chargeParams);
+
+      if (result.emitSyncEvent) {
+
+        await applyMockSyncEvent(service, result.emitSyncEvent, paymentProvider);
 
       }
 

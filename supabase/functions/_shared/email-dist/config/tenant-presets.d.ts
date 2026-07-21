@@ -14,9 +14,10 @@ export type PresetModules = {
     categories: boolean;
     staff: boolean;
 };
+export type EntityLabelLocale = 'en' | 'he';
 export declare function parseEntityLabelOverrides(raw: unknown): Partial<EntityLabels>;
 export declare function safePreset(raw: unknown): BusinessPreset;
 export declare function resolvePresetModules(preset: BusinessPreset): PresetModules;
-export declare function resolveEntityLabels(preset: BusinessPreset, overrides?: Partial<EntityLabels>): EntityLabels;
+export declare function resolveEntityLabels(preset: BusinessPreset, overrides?: Partial<EntityLabels>, locale?: EntityLabelLocale): EntityLabels;
 export declare function getDefaultRoleForPreset(preset: BusinessPreset): string;
 //# sourceMappingURL=tenant-presets.d.ts.map

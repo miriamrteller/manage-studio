@@ -10,7 +10,8 @@ Agent-optimized implementation plans. Create before coding (see `.instructions.m
 | Date | Feature | Status |
 | --- | --- | --- |
 | 2026-07 | [Native scheduling + Google Calendar](scheduling/00-overview.md) | **S0–S5 ✅** — [GCal](scheduling/google-calendar-integration.md) · [deploy/test](scheduling/deployment-and-testing.md); live payments/WhatsApp last |
-| 2026-06-29 | [iCount IL default (mock-first)](finance/icount/00-overview.md) | **Mock phase ✅** — I0-live deferred; I6-research optional |
+| 2026-07-20 | [Invoice4U IL bundled](finance/invoice4u/00-overview.md) | **ACTIVE** — overnight mock U1→U4-mock on `feat/invoice4u-provider` |
+| 2026-06-29 | [iCount IL (mock-first)](finance/icount/00-overview.md) | **Mock phase ✅** — fallback; live deferred |
 | 2026-07-16 | [V1 migration fourth squash + payment merge](v1-migration-squash-20260716.md) | **Shipped** on `main` (PR #17) — fresh DB reset → push → seed → types still recommended |
 | 2026-07-05 | [V1 migration third squash](v1-migration-squash-20260705.md) | **Shipped** — folded into `20260608*` base chain |
 | 2026-07-05 | [V1 pg_cron scheduled jobs](v1-pg-cron-scheduled-jobs.md) | **Shipped** — implemented in `20260608002800` (fourth squash) |
@@ -32,6 +33,7 @@ Agent-optimized implementation plans. Create before coding (see `.instructions.m
 | 2026-07 | Classes list occupancy + waitlist bar | **V2 start** — overview already shows occupancy/waitlist |
 | 2026-07 | [Waiting list automation](../SPEC.md) (V2.2) | Schema + overview counts in V1; `process-waiting-list` stays V2.2 |
 | 2026-07 | Minimal CRM (V2.13) | Notes, follow-ups, light lead/family pipeline — [SPEC §8 V2.13](../SPEC.md) |
+| 2026-07 | Payment / invoice audit polish (V2.15) | Detail timeline UI; optional column history / decline rows — [SPEC §8 V2.15](../SPEC.md); after prod hardening |
 | 2026-07-01 | [Teachers admin module](teachers-admin-module.md) | **V2.11** — agent plan ready; not V1 scope |
 
 ## Shipped reference (keep for SPEC links)

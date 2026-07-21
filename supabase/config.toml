@@ -91,6 +91,11 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/issue-document/index.ts"
 
+[functions.check-missing-documents]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/check-missing-documents/index.ts"
+
 [functions.verify-invoicing-credentials]
 enabled = true
 verify_jwt = false
@@ -121,6 +126,11 @@ entrypoint = "./functions/verify-grow-credentials/index.ts"
 enabled = true
 verify_jwt = false
 entrypoint = "./functions/verify-icount-credentials/index.ts"
+
+[functions.verify-invoice4u-credentials]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/verify-invoice4u-credentials/index.ts"
 
 [functions.record-payment]
 enabled = true

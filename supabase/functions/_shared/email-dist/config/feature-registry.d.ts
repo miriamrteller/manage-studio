@@ -97,6 +97,7 @@ export declare const FEATURES: {
         /**
          * Stripe payment gateway — DORMANT / hidden from product UI.
          * Not for Israeli businesses; kept in registry for future non-IL/split only.
+         * Not included in Essential/Professional defaults; re-enable via tenant override if ever needed.
          */
         readonly stripe: "billing:payments.stripe";
         /** Mock payment processor for testing */

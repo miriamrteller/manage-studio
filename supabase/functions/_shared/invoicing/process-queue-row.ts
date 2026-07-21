@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { persistPaymentDocumentFields } from "../payments/bundled-document.ts";
 import { buildCanonicalDocumentInput } from "./build-canonical-input.ts";
 import {
   backoffScheduledFor,
@@ -60,21 +61,34 @@ export async function processQueueRow(
     await provider.authenticate(service, row.tenant_id);
     const result = await provider.issueDocument(service, input);
 
-    const { error: paymentError } = await service
+    const { data: paymentRow, error: paymentLookupError } = await service
       .from("payments")
-      .update({
-        external_document_id: result.externalDocumentId,
-        external_document_number: result.externalDocumentNumber,
-        invoice_url: result.documentUrl,
-        invoice_issued_at: now,
-      })
-      .eq("id", row.payment_id);
+      .select("id, provider_payment_ref, external_document_id")
+      .eq("id", row.payment_id)
+      .maybeSingle();
 
-    if (paymentError) {
-      throw new InvoicingProviderError(`Payment update failed: ${paymentError.message}`, {
+    if (paymentLookupError) {
+      throw new InvoicingProviderError(`Payment lookup failed: ${paymentLookupError.message}`, {
         retryable: true,
       });
     }
+    if (!paymentRow) {
+      throw new InvoicingProviderError("Payment not found for document queue row", {
+        retryable: false,
+      });
+    }
+
+    // Shared persist + audit trail (same as Grow / iCount / Invoice4U bundled path).
+    await persistPaymentDocumentFields(service, {
+      tenantId: row.tenant_id,
+      paymentId: row.payment_id,
+      providerPaymentRef:
+        (paymentRow.provider_payment_ref as string | null) ?? row.payment_id,
+      externalDocumentId: result.externalDocumentId,
+      externalDocumentNumber: result.externalDocumentNumber,
+      documentUrl: result.documentUrl,
+      skipIfPresent: true,
+    });
 
     await service
       .from("document_queue")

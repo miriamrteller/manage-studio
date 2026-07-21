@@ -34,9 +34,14 @@ keeping the code vendor-generic (adapters only; no Grow names in schema or orche
 
 **G8-research** (docs only) may run in parallel with iCount **I2a** / **I6-research**. Manual Grow setup (bundled settings → Grow) remains valid until G8-impl.
 
-## Extension track (planned): iCount I0–I6
+## Extension track (active): Invoice4U U0–U7
 
-Add **iCount** as bundled IL default for **new** tenants; **Grow stays**. **Dual tracks** — integration + silent signup — see [icount/00-overview.md](icount/00-overview.md).
+**Product (2026-07-20):** **Invoice4U** bundled IL target. Overnight mock: [invoice4u/OVERNIGHT-AGENT.md](invoice4u/OVERNIGHT-AGENT.md). Grow/iCount adapters kept as fallbacks. Do not route billing through Make.com.
+
+## Fallback tracks
+
+- **iCount** mock ✅ — [icount/00-overview.md](icount/00-overview.md)
+- **Grow** shipped — [GROW-RUNBOOK.md](GROW-RUNBOOK.md)
 
 | Phase | Focus | Account? |
 |-------|-------|----------|

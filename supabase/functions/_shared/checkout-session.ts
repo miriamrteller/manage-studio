@@ -37,6 +37,8 @@ export interface ResolvedCheckoutSession {
     tenant_id: string;
     price_minor: number;
     currency: string | null;
+    billing_mode: string | null;
+    billing_interval: string | null;
   };
   pretaxMinor: number;
   vatMinor: number;
@@ -185,7 +187,7 @@ export async function resolveCheckoutSession(
 
   const { data: offering, error: offeringError } = await service
     .from("offerings")
-    .select("id, tenant_id, price_minor, currency")
+    .select("id, tenant_id, price_minor, currency, billing_mode, billing_interval")
     .eq("id", body.offering_id)
     .single();
 
@@ -235,6 +237,8 @@ export async function resolveCheckoutSession(
         tenant_id: offering.tenant_id as string,
         price_minor: offering.price_minor as number,
         currency: offering.currency as string | null,
+        billing_mode: (offering.billing_mode as string | null) ?? null,
+        billing_interval: (offering.billing_interval as string | null) ?? null,
       },
       pretaxMinor: pricing.pretaxMinor,
       vatMinor: pricing.vatMinor,

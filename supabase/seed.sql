@@ -28,8 +28,8 @@ VALUES (
   '{}'::jsonb,
   'noreply@creativeballet.co.il',  -- verified sender for transactional email (waiver reminders, receipts)
   false,  -- OTP before waiver signing disabled by default; enable only if Twilio Verify is configured
-  'grow',
-  'grow',
+  'invoice4u',
+  'invoice4u',
   'professional',
   'dance-studio'
 ) ON CONFLICT (subdomain) DO UPDATE SET
@@ -954,10 +954,15 @@ BEGIN
     );
   END IF;
 
-  -- Ensure seeded tenants all use grow/grow on re-seed as well.
+  -- Creative Ballet → Invoice4U (IL bundled target). Other demo tenants stay Grow.
+  UPDATE tenants
+  SET payment_provider = 'invoice4u',
+      invoicing_provider = 'invoice4u'
+  WHERE subdomain = 'creativeballet';
+
   UPDATE tenants
   SET payment_provider = 'grow',
       invoicing_provider = 'grow'
-  WHERE subdomain IN ('creativeballet', 'belladance', 'lensstudio', 'velvetbeauty');
+  WHERE subdomain IN ('belladance', 'lensstudio', 'velvetbeauty');
 
 END $$;

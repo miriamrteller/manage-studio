@@ -1,8 +1,11 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import { buildMockIpnFromCharge } from "../icount/mock-api.ts";
+import { buildMockInvoice4uCallbackBody } from "../invoice4u/callback.ts";
+import { processInvoice4uPaymentCallback } from "../invoice4u/process-callback.ts";
 import { buildMockPaymentEvent } from "../mock-payment-event.ts";
 import type { ChargeMetadata, ChargeParams, ChargeResult, PaymentEvent, PaymentProvider } from "../types.ts";
 import { ChargeMetadataSchema } from "../types.ts";
+import { handlePaymentEventInternal } from "../handle-payment-event.ts";
 import { MockIcountPaymentProvider } from "./mock-icount.ts";
 
 export const MOCK_PAYMENT_DECLINED_CODE = "MOCK_PAYMENT_DECLINED";
@@ -118,8 +121,6 @@ export async function confirmMockPayment(
     );
   }
 
-  const { handlePaymentEventInternal } = await import("../handle-payment-event.ts");
-
   if (providerSlug === "icount") {
     const provider = new MockIcountPaymentProvider();
     const ipnBody = buildMockIpnFromCharge({
@@ -135,6 +136,27 @@ export async function confirmMockPayment(
       params.metadata.tenant_id,
     );
     const result = await handlePaymentEventInternal(params.service, event, "icount");
+    return { ok: true, paymentId: result.paymentId, duplicate: result.duplicate };
+  }
+
+  if (providerSlug === "invoice4u") {
+    const callbackBody = buildMockInvoice4uCallbackBody({
+      orderIdClientUsage: providerPaymentRef,
+      paymentId: crypto.randomUUID(),
+      amountMinor: params.amountMinor,
+      success: true,
+    });
+    const result = await processInvoice4uPaymentCallback(params.service, callbackBody);
+    if (result.status === "amount_mismatch" || result.status === "failed") {
+      return {
+        ok: false,
+        code: MOCK_PAYMENT_DECLINED_CODE,
+        message:
+          result.status === "amount_mismatch"
+            ? "Mock Invoice4U amount mismatch"
+            : "Mock Invoice4U payment failed",
+      };
+    }
     return { ok: true, paymentId: result.paymentId, duplicate: result.duplicate };
   }
 
@@ -154,7 +176,6 @@ export async function applyMockSyncEvent(
   event: PaymentEvent,
   providerSlug = "mock",
 ): Promise<void> {
-  const { handlePaymentEventInternal } = await import("../handle-payment-event.ts");
   await handlePaymentEventInternal(service, event, providerSlug);
 }
 

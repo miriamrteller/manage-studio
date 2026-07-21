@@ -33,6 +33,9 @@ export interface CheckoutChargePayload {
   alreadyPaid: boolean;
   pageUrl: string | null;
   pendingWebhook: boolean;
+  /** From offering — drives "/ month" on checkout UI. */
+  billingMode?: string | null;
+  billingInterval?: string | null;
 }
 
 export interface AppointmentCalendarDetails {
@@ -59,6 +62,8 @@ export interface EnrolmentCompletionContext {
   isMinorStudent: boolean;
   amountMinor: number;
   currency: string;
+  billingMode?: string | null;
+  billingInterval?: string | null;
   /** Set when this engagement is an appointment booking (booked_starts_at). */
   appointment?: AppointmentCalendarDetails | null;
 }
@@ -88,5 +93,7 @@ export function chargeToCheckoutIntent(charge: CheckoutChargePayload) {
     mockPaymentRef: charge.paymentIntentId,
     pageUrl: charge.pageUrl,
     pendingWebhook: charge.pendingWebhook,
+    billingMode: charge.billingMode ?? null,
+    billingInterval: charge.billingInterval ?? null,
   };
 }

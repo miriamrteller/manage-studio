@@ -32,6 +32,9 @@ const OPTIONAL = [
   'GROW_MOCK',
   'ICOUNT_NOTIFY_URL',
   'ICOUNT_MOCK',
+  'INVOICE4U_API_BASE',
+  'INVOICE4U_NOTIFY_URL',
+  'INVOICE4U_MOCK',
   'ISSUE_DOCUMENT_URL',
   'SYNC_ISSUE_DOCUMENT_IN_DEV',
   'GREEN_INVOICE_API_BASE',
@@ -107,6 +110,9 @@ if (projectUrl) {
   if (!secrets.ICOUNT_NOTIFY_URL) {
     secrets.ICOUNT_NOTIFY_URL = `${projectUrl}/functions/v1/handle-payment-event`;
   }
+  if (!secrets.INVOICE4U_NOTIFY_URL) {
+    secrets.INVOICE4U_NOTIFY_URL = `${projectUrl}/functions/v1/handle-payment-event`;
+  }
   if (!secrets.ISSUE_DOCUMENT_URL) {
     secrets.ISSUE_DOCUMENT_URL = `${projectUrl}/functions/v1/issue-document`;
   }
@@ -119,6 +125,12 @@ if (projectUrl) {
 if ((secrets.GROW_MOCK ?? '').toLowerCase() === 'true') {
   console.warn(
     'Warning: GROW_MOCK=true will be pushed — live Meshulam charges will not run. Unset for sandbox/live E2E.',
+  );
+}
+
+if ((secrets.INVOICE4U_MOCK ?? '').toLowerCase() === 'true') {
+  console.warn(
+    'Warning: INVOICE4U_MOCK=true will be pushed — live Invoice4U charges will not run. Unset for QA/live E2E.',
   );
 }
 

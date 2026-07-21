@@ -3,13 +3,24 @@ import { createServiceClient } from "../../packages/edge-runtime/src/supabase.ts
 import { handlePaymentEventInternal } from "../_shared/payments/handle-payment-event.ts";
 import { getPaymentProviderForTenant } from "../_shared/payments/index.ts";
 import { peekGrowTenantId } from "../_shared/payments/grow/metadata.ts";
+import { peekInvoice4uOrderId } from "../_shared/payments/invoice4u/callback.ts";
+import { loadPaymentByProviderRef } from "../_shared/payments/invoice4u/pending-charge.ts";
+import { processInvoice4uPaymentCallback } from "../_shared/payments/invoice4u/process-callback.ts";
 
 /**
- * Resolve the tenant before provider dispatch. Stripe nests metadata under
- * `data.object.metadata`; Grow routes per-tenant via the `cField1` custom field. We support
- * both shapes so the handler is not hard-coded to a single provider's body.
+ * Resolve the tenant before provider dispatch.
+ * Order: Invoice4U form Data= (pending row) → JSON/Stripe metadata → Grow cField peek.
  */
-function peekTenantId(rawBody: string): string | undefined {
+async function peekTenantId(
+  service: ReturnType<typeof createServiceClient>,
+  rawBody: string,
+): Promise<string | undefined> {
+  const orderId = peekInvoice4uOrderId(rawBody);
+  if (orderId) {
+    const pending = await loadPaymentByProviderRef(service, orderId);
+    if (pending?.tenant_id) return pending.tenant_id;
+  }
+
   try {
     const parsed = JSON.parse(rawBody) as {
       data?: { object?: { metadata?: { tenant_id?: string } } };
@@ -33,7 +44,20 @@ Deno.serve(async (req) => {
 
   try {
     const service = createServiceClient();
-    const tenantId = peekTenantId(rawBody);
+
+    // Invoice4U form callback — dedicated pending-row path (D5/D12)
+    if (peekInvoice4uOrderId(rawBody)) {
+      const result = await processInvoice4uPaymentCallback(service, rawBody);
+      if (result.status === "amount_mismatch") {
+        return jsonResponse(
+          { error: "Amount mismatch", received: false, ...result },
+          400,
+        );
+      }
+      return jsonResponse({ received: true, ...result });
+    }
+
+    const tenantId = await peekTenantId(service, rawBody);
 
     if (!tenantId) {
       return jsonResponse({ error: "Missing tenant_id in metadata" }, 400);

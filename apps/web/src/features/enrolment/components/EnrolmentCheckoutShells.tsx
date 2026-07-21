@@ -8,9 +8,9 @@ import {
   functionInvokeErrorMessage,
   parseFunctionInvokeBody,
 } from '@/lib/parseFunctionInvokeError';
-import { formatCurrency } from '@shared/format';
 import { GrowPaymentShell } from './GrowPaymentShell';
 import { IcountPaymentShell } from './IcountPaymentShell';
+import { Invoice4uPaymentShell } from './Invoice4uPaymentShell';
 import { isMockHostedPaymentPage } from '@/lib/tenantProviderRouting';
 
 function PaymentFormInner({
@@ -85,8 +85,6 @@ export function MockPaymentShell({
   classId,
   engagementId,
   enrolmentToken,
-  amountMinor,
-  currency,
   mockPaymentRef,
   onPaid,
   onPrevious,
@@ -94,13 +92,16 @@ export function MockPaymentShell({
   classId: string;
   engagementId: string;
   enrolmentToken?: string;
-  amountMinor: number | null;
-  currency: string | null;
+  /** Kept for call-site compatibility; amount is shown by the parent checkout summary. */
+  amountMinor?: number | null;
+  currency?: string | null;
+  billingMode?: string | null;
+  billingInterval?: string | null;
   mockPaymentRef: string | null;
   onPaid: () => void;
   onPrevious: () => void;
 }) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const [cardNumber, setCardNumber] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isPaying, setIsPaying] = useState(false);
@@ -156,12 +157,6 @@ export function MockPaymentShell({
           defaultValue: 'Test payment — enter card details and pay to complete enrolment.',
         })}
       </p>
-      {amountMinor != null && currency && (
-        <p className="text-sm font-medium">
-          {t('enrolment.checkout_total', { defaultValue: 'Total' })}:{' '}
-          {formatCurrency(amountMinor, currency, i18n.language)}
-        </p>
-      )}
       <label className="block text-sm font-medium">
         {t('enrolment.mock_card_number', { defaultValue: 'Test card number' })}
         <input
@@ -238,6 +233,8 @@ export function ProviderCheckoutShell({
   publishableKey,
   amountMinor,
   currency,
+  billingMode,
+  billingInterval,
   mockPaymentRef,
   pageUrl,
   onPaid,
@@ -252,6 +249,8 @@ export function ProviderCheckoutShell({
   publishableKey: string | null;
   amountMinor: number | null;
   currency: string | null;
+  billingMode?: string | null;
+  billingInterval?: string | null;
   mockPaymentRef: string | null;
   pageUrl: string | null;
   onPaid: () => void;
@@ -269,6 +268,8 @@ export function ProviderCheckoutShell({
         enrolmentToken={enrolmentToken}
         amountMinor={amountMinor}
         currency={currency}
+        billingMode={billingMode}
+        billingInterval={billingInterval}
         mockPaymentRef={mockPaymentRef}
         onPaid={onPaid}
         onPrevious={onPrevious}
@@ -279,6 +280,18 @@ export function ProviderCheckoutShell({
   if (paymentProvider === 'icount' && pageUrl) {
     return (
       <IcountPaymentShell
+        engagementId={engagementId}
+        pageUrl={pageUrl}
+        enrolmentToken={enrolmentToken}
+        onPaid={onPaid}
+        onPrevious={onPrevious}
+      />
+    );
+  }
+
+  if (paymentProvider === 'invoice4u' && pageUrl) {
+    return (
+      <Invoice4uPaymentShell
         engagementId={engagementId}
         pageUrl={pageUrl}
         enrolmentToken={enrolmentToken}

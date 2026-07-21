@@ -9,7 +9,7 @@ import {
   type OfflinePaymentMethod,
 } from '../lib/adminEnrolmentService';
 import { computeClassTotal } from '../lib/computeClassTotal';
-import { formatCurrency } from '@shared/format';
+import { formatOfferingPrice } from '@/lib/formatOfferingPrice';
 import type { Offering, Tenant } from '@shared/schemas';
 
 export type AdminPaymentChoice = 'pay_now' | 'send_link' | 'offline';
@@ -152,6 +152,16 @@ export function AdminEnrolmentPaymentStep({
     return (
       <div className="space-y-4">
         <p className="text-sm text-gray-600">{t('pages.admin_enrol.pay_now_inline')}</p>
+        <div className="rounded-lg bg-gray-50 p-3 text-sm space-y-1">
+          <p className="font-medium">{classRow.name}</p>
+          <p className="text-gray-600">
+            {t('pages.admin_enrol.amount_due')}:{' '}
+            {formatOfferingPrice(t, pricing.totalMinor, pricing.currency, i18n.language, classRow)}
+          </p>
+          {classRow.billing_mode === 'recurring' && classRow.billing_interval === 'monthly' && (
+            <p className="text-xs text-gray-500">{t('enrolment.checkout_monthly_hint')}</p>
+          )}
+        </div>
         <EnrolmentPaymentForm
           classId={classRow.id}
           engagementId={engagementId}
@@ -174,8 +184,11 @@ export function AdminEnrolmentPaymentStep({
         <p className="font-medium">{classRow.name}</p>
         <p className="text-gray-600 mt-1">
           {t('pages.admin_enrol.amount_due')}:{' '}
-          {formatCurrency(pricing.totalMinor, pricing.currency, i18n.language)}
+          {formatOfferingPrice(t, pricing.totalMinor, pricing.currency, i18n.language, classRow)}
         </p>
+        {classRow.billing_mode === 'recurring' && classRow.billing_interval === 'monthly' && (
+          <p className="text-xs text-gray-500 mt-1">{t('enrolment.checkout_monthly_hint')}</p>
+        )}
       </div>
 
       <p className="text-sm text-gray-600">{t('pages.admin_enrol.payment_desc')}</p>

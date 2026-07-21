@@ -3344,6 +3344,14 @@ export type Database = {
         Args: { p_api_token: string; p_company_id: string; p_page_id: string }
         Returns: undefined
       }
+      save_tenant_invoice4u_credentials: {
+        Args: {
+          p_account_label?: string
+          p_api_key: string
+          p_clearing_company_type: string
+        }
+        Returns: undefined
+      }
       save_tenant_invoicing_credentials: {
         Args: { p_account_id: string; p_api_key: string; p_secret: string }
         Returns: undefined

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import { finalisePayment } from "./finalise-payment.ts";
+import { auditPaymentFailed } from "./payment-audit.ts";
 import { ChargeMetadataSchema, type PaymentEvent } from "./types.ts";
 
 export { buildMockPaymentEvent } from "./mock-payment-event.ts";
@@ -22,14 +23,13 @@ export async function handlePaymentEventInternal(
       });
     }
 
-    await service.from("audit_log").insert({
-      tenant_id: metadata.tenant_id,
-      action: "payment.failed",
-      entity_type: "payment",
-      entity_id: metadata.engagement_id,
-      after_state: {
+    await auditPaymentFailed(service, {
+      tenantId: metadata.tenant_id,
+      entityId: metadata.engagement_id,
+      afterState: {
         provider_payment_ref: event.providerPaymentRef,
-        message: event.failureMessage,
+        message: event.failureMessage ?? null,
+        engagement_id: metadata.engagement_id,
       },
     });
 

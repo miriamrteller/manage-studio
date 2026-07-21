@@ -17,11 +17,11 @@ Rough completion against [SPEC.md §6 V1 Implementation](../SPEC.md#6-v1-impleme
 | **1A–1B** | Skeleton, auth, tenant context | ✅ ~95% | A11y CI gates, polish |
 | **1C** | People, families, classes, enrolment, waivers | ✅ ~95% | Teachers admin → V2.11; waitlist automation → V2.2 |
 | **1D** | Notifications engine | 🟡 ~90% | WhatsApp E2E (**last**, with live payments) |
-| **1E** | Payments (Grow + iCount mock; Stripe in registry) | 🟡 ~94% | Live Grow/iCount sandbox E2E (**last**) |
+| **1E** | Payments (Grow + iCount mock; Invoice4U active plan) | 🟡 ~94% | **Invoice4U** mock U1→U4-mock on `feat/invoice4u-provider` ([OVERNIGHT-AGENT](plans/finance/invoice4u/OVERNIGHT-AGENT.md)) |
 | **1F** | Admin dashboard | ✅ ~95% | People CSV + classes occupancy bar → **V2 start** (not V1-blocking) |
 | **1G** | Parent / student portal | ✅ ~95% | WhatsApp OTP (**last**); `notify_*` scope toggles ✅ |
 | **§7** | Production deployment | ❌ ~10% | Webhooks, Meta templates, legal, security checklist |
-| **§8+** | V2 / V3 | — | V2 start: people CSV, classes occupancy bar, V2.2 waitlist, **V2.13 minimal CRM** |
+| **§8+** | V2 / V3 | — | V2 start: people CSV, classes occupancy bar, V2.2 waitlist, **V2.13 minimal CRM**, **V2.14 holiday-aware scheduling** |
 
 **Overall V1 feature scope:** ~**80%** shipped · **Production-ready:** separate track (§7).
 
@@ -136,15 +136,17 @@ Merged to `main` via PR #8 (`0ea9004`; core work in `fcad476`):
 | `20260608000600` | `idx_notification_log_dunning_key`, notification blast RPCs |
 | `20260608002600` | pg_cron + pg_net scheduled jobs (billing, dunning, waiver, issue-document, OTP cleanup) |
 
-**Creative Ballet / early IL:** Grow single-user until scale — [SPEC.md](../SPEC.md) Phase 1E V1 locked decisions.
+**Tax document persistence (all providers):** Every issued tax document is written to `payments` (`external_document_*`, `invoice_url`, `invoice_issued_at`, optional `document_pdf_path`) and audited as `payment_document_recorded` via shared `persistPaymentDocumentFields` / `applyBundledDocumentNotify` (Grow, iCount, Invoice4U callback, and `document_queue` issue path). Tenant admins are emailed the invoice (`payment_document_admin_email_sent`); cron `check-missing-documents` (every 15m) alerts when a succeeded payment still lacks a tax doc after 30 minutes and retries admin invoice emails until sent. Pending Invoice4U charges audit `payment.pending_created`; failures use normalized `payment.failed` `after_state`. **Further polish** (payment-detail audit UI, optional column history / decline rows) → [SPEC §8 V2.15](../SPEC.md).
 
-**Grow:** payment/invoicing providers, `handle-payment-document`, gap tests, Osek Patur pass-through fix.
+**IL product path:** **Invoice4U** bundled — [SPEC.md](../SPEC.md) Phase 1E · [finance/invoice4u/](plans/finance/invoice4u/00-overview.md).
 
-**iCount (mock-phase ✅):** `_shared/payments/icount/` (mock-api, ipn, document), `providers/icount.ts`, `IcountSettingsForm` in bundled payments, provider-isolation tests. Dev path: `ICOUNT_MOCK=true`. Plan: [finance/icount/00-overview.md](plans/finance/icount/00-overview.md). **Deferred:** I0-live sandbox, live renewals/refunds, I5 IL default flip.
+**Invoice4U:** plan + overnight brief ready; implementation on `feat/invoice4u-provider` (mock U1→U4-mock first).
 
-**VAT (2026-06-28):** App charges **gross** offering price; pretax/VAT split removed from `packages/shared/src/pricing.ts`. Israeli tax breakdown comes from Grow/Green Invoice/iCount on issued documents.
+**Grow / iCount:** adapters kept as fallbacks. Dev mocks: `GROW_MOCK` / `ICOUNT_MOCK` / (upcoming) `INVOICE4U_MOCK`.
 
-**Still manual:** end-to-end charge on real Meshulam sandbox (Grow) and iCount sandbox (I0-live block). Dev paths: `GROW_MOCK=true` / `ICOUNT_MOCK=true` + finance walkthrough. Plan: [grow-live-e2e-verification.md](plans/grow-live-e2e-verification.md).
+**VAT (2026-06-28):** App charges **gross**; tax breakdown from provider documents.
+
+**Still manual after mock:** Invoice4U QA register → U0-live.
 
 ---
 
@@ -209,9 +211,11 @@ Track in SPEC §6.x — pull into V1 only when explicitly prioritized:
 | --- | --- | --- |
 | **0** | Soft verify — public e2e ✅ (`e2e:features` without parent/admin flags); portal/admin after `seed:auth-*` + `PLAYWRIGHT_PARENT_E2E=1` / `PLAYWRIGHT_ADMIN_E2E=1` | Playwright feature specs |
 | **1** | Prod hardening ✅ in-repo — env map, sourcemaps off, footer legal URLs, monitoring stub; §7 remainder is human/ops | [`.env.example`](../.env.example) · [THIRD_PARTY_SERVICES.md](deployment/THIRD_PARTY_SERVICES.md) |
-| **Last** | Live payments: **Grow single-user** E2E; then WhatsApp | [grow-live-e2e-verification.md](plans/grow-live-e2e-verification.md) · portal Step 8 |
+| **Last** | Live payments: **Invoice4U** mock then QA E2E; then WhatsApp | [finance/invoice4u/OVERNIGHT-AGENT.md](plans/finance/invoice4u/OVERNIGHT-AGENT.md) |
 | Later | §7 remainder — separate prod Supabase/Vercel, counsel pages URLs, Sentry package, live Grow/WA | [SPEC.md §7](../SPEC.md#7-v1-production-deployment) |
-| **V2 start** | People CSV · classes occupancy/waitlist bar · **V2.2** waitlist · **V2.13** minimal CRM | Not V1-blocking |
+| **V2 start** | People CSV · classes occupancy/waitlist bar · **V2.2** waitlist · **V2.13** minimal CRM · **V2.14** holiday scheduling | Not V1-blocking |
 | **V2.11** | Teachers admin CRUD | [teachers-admin-module.md](plans/teachers-admin-module.md) |
 | **V2.13** | Minimal CRM (notes, follow-ups, light pipeline) | [SPEC.md §8 V2.13](../SPEC.md) — plan when prioritized |
+| **V2.14** | Holiday-aware class/service scheduling + yearly holiday & schedule exports | [SPEC.md §8 V2.14](../SPEC.md) — plan when prioritized |
+| **V2.15** | Payment / invoice audit polish (detail timeline UI; optional deeper history) | [SPEC.md §8 V2.15](../SPEC.md) — after prod hardening / live Invoice4U |
 | Deferred | Unenrol Phase 2, code rename, other V2 | [code-rename-epic.md](plans/code-rename-epic.md) · SPEC §8 |

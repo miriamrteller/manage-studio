@@ -3,6 +3,7 @@ import { MockInvoicingProvider } from "./providers/mock.ts";
 import { GreenInvoiceProvider } from "./providers/green-invoice.ts";
 import { GrowInvoicingProvider } from "./providers/grow.ts";
 import { IcountInvoicingProvider } from "./providers/icount.ts";
+import { Invoice4uInvoicingProvider } from "./providers/invoice4u.ts";
 import { parseInvoicingProviderSlug, type InvoicingProviderSlug } from "./registry.ts";
 import type { InvoicingProvider } from "./types.ts";
 
@@ -10,6 +11,7 @@ const mockProvider = new MockInvoicingProvider();
 const greenInvoiceProvider = new GreenInvoiceProvider();
 const growProvider = new GrowInvoicingProvider();
 const icountProvider = new IcountInvoicingProvider();
+const invoice4uProvider = new Invoice4uInvoicingProvider();
 
 export function getInvoicingProvider(slug: string | null | undefined): InvoicingProvider {
   const parsed: InvoicingProviderSlug = parseInvoicingProviderSlug(slug);
@@ -22,6 +24,8 @@ export function getInvoicingProvider(slug: string | null | undefined): Invoicing
       return growProvider;
     case "icount":
       return icountProvider;
+    case "invoice4u":
+      return invoice4uProvider;
     default: {
       const _exhaustive: never = parsed;
       return _exhaustive;

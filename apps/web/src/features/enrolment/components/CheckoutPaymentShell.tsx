@@ -47,6 +47,8 @@ export function CheckoutPaymentShell({
       currency={intent.currency}
       mockPaymentRef={intent.mockPaymentRef}
       pageUrl={intent.pageUrl}
+      billingMode={intent.billingMode}
+      billingInterval={intent.billingInterval}
       onPaid={onPaid}
       onPrevious={onPrevious}
     />

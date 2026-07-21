@@ -2685,7 +2685,7 @@ export async function sendWhatsApp(
 
 ### Phase 1E — Payments (Days 27–34)
 
-> **V1 locked decisions (2026, updated 2026-07-19):** **Creative Ballet and early IL tenants ship on Grow (Meshulam) single-user** — bundled pay + tax docs; credentials entered manually in admin settings; `payment_provider` / `invoicing_provider` = `grow`. **No Grow merchant auto-signup** until volume justifies multi-tenant Grow (G8 deferred). Revisit cheaper/split options (Yesh, Invoice4u, iCount, Tranzila) only when scaling beyond single-user Grow. **Stripe** — not for Israeli businesses; dormant/hidden from UI and plan defaults (adapter kept). **Rapyd** — needs higher volume; dormant (do not delete yet). **Guest checkout is shipped:** public `/enrol` + signed **`enrolment_token`** (`WaiverToken` JWT) for `create-checkout` without a Supabase session — **not** a `checkout_session` DB table. Authenticated checkout remains supported for signed-in families. First DB slice: `payments`, `invoice_sequences`, `next_invoice_number()`, tenant payment-provider columns — **`discount_rules` and `teacher_pay_records` deferred.** Tenant keys entered via **admin settings UI**; secrets encrypted at rest (Vault preferred). Webhooks resolve tenant via **`metadata.tenant_id`** on charge events. **Payment dunning shipped (2026-07):** renewal emails via `applyBillingScheduleDunningFailure` + `_shared/collections/`; enrolment unpaid Day 3/7/14 via `run-enrolment-payment-dunning` — see [payment-dunning-notifications.md](docs/plans/payment-dunning-notifications.md), [enrolment-payment-dunning.md](docs/plans/enrolment-payment-dunning.md).
+> **V1 locked decisions (2026, updated 2026-07-20):** **IL bundled target = Invoice4U** (`payment_provider` / `invoicing_provider` = `invoice4u`) — single-org pay + tax docs; credentials in admin settings. Renewals = app-owned `run-monthly-billing` + `ChargeWithToken` (not standing orders). Plan: [finance/invoice4u/](docs/plans/finance/invoice4u/00-overview.md) · overnight [OVERNIGHT-AGENT.md](docs/plans/finance/invoice4u/OVERNIGHT-AGENT.md). **Grow** and **iCount** adapters remain as fallbacks (not deleted). **No** Make.com in the payment path. **Stripe** — not for Israeli businesses; dormant. **Rapyd** — dormant. **Guest checkout is shipped:** public `/enrol` + signed **`enrolment_token`** (`WaiverToken` JWT) for `create-checkout` without a Supabase session — **not** a `checkout_session` DB table. Authenticated checkout remains supported for signed-in families. First DB slice: `payments`, `invoice_sequences`, `next_invoice_number()`, tenant payment-provider columns — **`discount_rules` and `teacher_pay_records` deferred.** Tenant keys entered via **admin settings UI**; secrets encrypted at rest (Vault preferred). Webhooks resolve tenant via charge metadata / payment row. **Payment dunning shipped (2026-07):** renewal emails via `applyBillingScheduleDunningFailure` + `_shared/collections/`; enrolment unpaid Day 3/7/14 via `run-enrolment-payment-dunning` — see [payment-dunning-notifications.md](docs/plans/payment-dunning-notifications.md), [enrolment-payment-dunning.md](docs/plans/enrolment-payment-dunning.md).
 
 All Stripe API calls creating or modifying payment objects happen in Edge Functions. Frontend receives `clientSecret` only.
 
@@ -3018,6 +3018,34 @@ Admin CRUD for the `staff` table at **`/admin/setup/teachers`**: name, contact, 
 Lightweight studio CRM on top of people/families: notes, follow-ups / next actions, and simple pipeline or tags for leads and active families. Not a full sales CRM — enough for admin to track outreach without leaving Manage Studio.
 
 **V1 foundation:** people + families directories, contact preferences, notification log. **Not V1 scope.**
+
+### V2.14 — Holiday-aware class & service scheduling
+
+When creating a class term (or generating `offering_sessions` from start/end dates + weekday), automatically exclude Israeli national / Jewish holidays that fall on class days. After generation, show an admin list of holidays that coincided with scheduled class days (name + date) so the studio can see what was skipped.
+
+**Services / appointments (optional toggle):** Same holiday calendar can optionally block or grey out bookable slots on holidays (and optionally eves), configurable per tenant or per service — not forced on every appointment offering.
+
+**Exports (admin download):**
+- Yearly holiday list (civil year or Hebrew year) — CSV/PDF: date, holiday name (he/en), type (Yom Tov / national / etc.).
+- Yearly class schedule with holidays — CSV/PDF: planned class sessions for the year/term, with holiday rows or annotations where a class day was skipped or falls on a holiday.
+
+**V1 foundation:** Hebcal-based calendar shading only (`holidayShading.ts` on scheduling calendar) — visual only; does not remove sessions, block booking, or export. **Not V1 scope.**
+
+**Reuse:** Existing `@hebcal/core` holiday flags already used for shading; extend into session generation, optional booking availability rules, and export generators.
+
+### V2.15 — Payment / invoice audit polish
+
+Post–V1 finance hardening for richer dispute and ops visibility. **Keep boundaries:** `payments` = money ledger; `audit_log` = lifecycle events; `payment_document_recorded` = tax-doc trail. Do **not** turn audit into a full column-change rewrite of the finance log.
+
+**V1 already shipped (completeness path):** tax docs persisted + `payment_document_recorded`; admin invoice email with cron retry; missing-doc watchdog (`check-missing-documents`); `payment.pending_created`; normalized `payment.failed` `after_state`.
+
+**Deferred to this slice:**
+
+1. **Payment detail audit timeline (UI)** — admin payment drawer/page shows related `audit_log` rows for that `payment_id` / engagement (pending → succeeded/failed → document recorded → admin email).
+2. **Optional deeper ledger history** — append-only history of material `payments` column changes only if product needs it beyond lifecycle audits (default: skip; avoid noise).
+3. **Failed-attempt payment rows** — persist a `payments` row (or dedicated attempts table) for every card decline only if ops needs in-app decline history; provider dashboards already cover this (default: skip).
+
+**Not V1-blocking; schedule after production hardening / live Invoice4U.**
 
 ---
 

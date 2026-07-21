@@ -3,6 +3,7 @@ import type { Engagement } from '@shared/schemas';
 import type { CheckoutChargePayload } from '../lib/checkoutBootstrapTypes';
 import { EnrolmentPaymentForm } from './EnrolmentPaymentForm';
 import { StepBackButton } from './StepBackButton';
+import { formatOfferingPrice } from '@/lib/formatOfferingPrice';
 
 export interface StepCheckoutProps {
   enrolmentData: Partial<Engagement>;
@@ -27,7 +28,7 @@ export function StepCheckout({
   onPrevious,
   canGoBack = true,
 }: StepCheckoutProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   if (!enrolmentData.offering_id || !enrolmentData.season_id) {
     return (
@@ -60,9 +61,32 @@ export function StepCheckout({
     );
   }
 
+  const isMonthly =
+    checkoutCharge?.billingMode === 'recurring' && checkoutCharge?.billingInterval === 'monthly';
+
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">{t('enrolment.checkout_desc')}</p>
+      {checkoutCharge?.amountMinor != null && checkoutCharge.currency && (
+        <div className="rounded-lg bg-muted/40 px-3 py-2 space-y-1">
+          <p className="text-sm font-medium">
+            {t('enrolment.checkout_total')}:{' '}
+            {formatOfferingPrice(
+              t,
+              checkoutCharge.amountMinor,
+              checkoutCharge.currency,
+              i18n.language,
+              {
+                billing_mode: checkoutCharge.billingMode,
+                billing_interval: checkoutCharge.billingInterval,
+              },
+            )}
+          </p>
+          {isMonthly && (
+            <p className="text-xs text-muted-foreground">{t('enrolment.checkout_monthly_hint')}</p>
+          )}
+        </div>
+      )}
       <EnrolmentPaymentForm
         classId={enrolmentData.offering_id}
         engagementId={checkoutEnrolmentId}
