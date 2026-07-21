@@ -55,7 +55,9 @@ function makeService() {
         };
       }
 
+      // Catch-all, incl. audit_log — shared payment code audits document writes.
       return {
+        insert: async () => ({ error: null }),
         update: () => ({ eq: () => ({ in: async () => ({ error: null }) }) }),
       };
     },
@@ -114,11 +116,14 @@ describe('iCount document PDF retention (I4a-T1)', () => {
     );
 
     expect(result.ok).toBe(true);
+    // PDF storage failed, so both PDF columns stay null — bundled-document.ts sets
+    // `document_stored_at: pdfPath ? now : null`. The URL is still recorded, which is
+    // the point of the test: a failed PDF fetch must not lose the document reference.
     expect(paymentUpdates[0]).toMatchObject({
       external_document_id: DOC_ID,
       invoice_url: PDF_URL,
       document_pdf_path: null,
-      document_stored_at: expect.any(String),
+      document_stored_at: null,
     });
   });
 });

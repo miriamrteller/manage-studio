@@ -63,7 +63,9 @@ function makeDocumentService() {
           }),
         };
       }
+      // Catch-all, incl. audit_log — shared payment code audits document writes.
       return {
+        insert: async () => ({ error: null }),
         update: () => ({ eq: () => ({ in: async () => ({ error: null }) }) }),
       };
     },
