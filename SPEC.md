@@ -3033,6 +3033,20 @@ When creating a class term (or generating `offering_sessions` from start/end dat
 
 **Reuse:** Existing `@hebcal/core` holiday flags already used for shading; extend into session generation, optional booking availability rules, and export generators.
 
+### V2.15 — Payment / invoice audit polish
+
+Post–V1 finance hardening for richer dispute and ops visibility. **Keep boundaries:** `payments` = money ledger; `audit_log` = lifecycle events; `payment_document_recorded` = tax-doc trail. Do **not** turn audit into a full column-change rewrite of the finance log.
+
+**V1 already shipped (completeness path):** tax docs persisted + `payment_document_recorded`; admin invoice email with cron retry; missing-doc watchdog (`check-missing-documents`); `payment.pending_created`; normalized `payment.failed` `after_state`.
+
+**Deferred to this slice:**
+
+1. **Payment detail audit timeline (UI)** — admin payment drawer/page shows related `audit_log` rows for that `payment_id` / engagement (pending → succeeded/failed → document recorded → admin email).
+2. **Optional deeper ledger history** — append-only history of material `payments` column changes only if product needs it beyond lifecycle audits (default: skip; avoid noise).
+3. **Failed-attempt payment rows** — persist a `payments` row (or dedicated attempts table) for every card decline only if ops needs in-app decline history; provider dashboards already cover this (default: skip).
+
+**Not V1-blocking; schedule after production hardening / live Invoice4U.**
+
 ---
 
 ## 9. V3 SaaS Roadmap

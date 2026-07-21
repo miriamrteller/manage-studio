@@ -136,7 +136,7 @@ Merged to `main` via PR #8 (`0ea9004`; core work in `fcad476`):
 | `20260608000600` | `idx_notification_log_dunning_key`, notification blast RPCs |
 | `20260608002600` | pg_cron + pg_net scheduled jobs (billing, dunning, waiver, issue-document, OTP cleanup) |
 
-**Tax document persistence (all providers):** Every issued tax document is written to `payments` (`external_document_*`, `invoice_url`, `invoice_issued_at`, optional `document_pdf_path`) and audited as `payment_document_recorded` via shared `persistPaymentDocumentFields` / `applyBundledDocumentNotify` (Grow, iCount, Invoice4U callback, and `document_queue` issue path). Tenant admins are emailed the invoice (`payment_document_admin_email_sent`); cron `check-missing-documents` (every 15m) alerts when a succeeded payment still lacks a tax doc after 30 minutes and retries admin invoice emails until sent. Pending Invoice4U charges audit `payment.pending_created`; failures use normalized `payment.failed` `after_state`.
+**Tax document persistence (all providers):** Every issued tax document is written to `payments` (`external_document_*`, `invoice_url`, `invoice_issued_at`, optional `document_pdf_path`) and audited as `payment_document_recorded` via shared `persistPaymentDocumentFields` / `applyBundledDocumentNotify` (Grow, iCount, Invoice4U callback, and `document_queue` issue path). Tenant admins are emailed the invoice (`payment_document_admin_email_sent`); cron `check-missing-documents` (every 15m) alerts when a succeeded payment still lacks a tax doc after 30 minutes and retries admin invoice emails until sent. Pending Invoice4U charges audit `payment.pending_created`; failures use normalized `payment.failed` `after_state`. **Further polish** (payment-detail audit UI, optional column history / decline rows) → [SPEC §8 V2.15](../SPEC.md).
 
 **IL product path:** **Invoice4U** bundled — [SPEC.md](../SPEC.md) Phase 1E · [finance/invoice4u/](plans/finance/invoice4u/00-overview.md).
 
@@ -217,4 +217,5 @@ Track in SPEC §6.x — pull into V1 only when explicitly prioritized:
 | **V2.11** | Teachers admin CRUD | [teachers-admin-module.md](plans/teachers-admin-module.md) |
 | **V2.13** | Minimal CRM (notes, follow-ups, light pipeline) | [SPEC.md §8 V2.13](../SPEC.md) — plan when prioritized |
 | **V2.14** | Holiday-aware class/service scheduling + yearly holiday & schedule exports | [SPEC.md §8 V2.14](../SPEC.md) — plan when prioritized |
+| **V2.15** | Payment / invoice audit polish (detail timeline UI; optional deeper history) | [SPEC.md §8 V2.15](../SPEC.md) — after prod hardening / live Invoice4U |
 | Deferred | Unenrol Phase 2, code rename, other V2 | [code-rename-epic.md](plans/code-rename-epic.md) · SPEC §8 |
