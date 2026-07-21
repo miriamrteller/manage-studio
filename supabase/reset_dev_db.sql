@@ -175,6 +175,7 @@ DROP FUNCTION IF EXISTS public.search_enrolment_students(TEXT, INT)             
 DROP FUNCTION IF EXISTS public.admin_enrolment_lookup_email(TEXT)                      CASCADE;
 DROP FUNCTION IF EXISTS public.cancel_engagement(UUID, TEXT)                           CASCADE;
 DROP FUNCTION IF EXISTS public.check_subdomain_available(TEXT)                          CASCADE;
+DROP FUNCTION IF EXISTS public.is_reserved_subdomain(TEXT)                               CASCADE;
 
 DO $$
 DECLARE
