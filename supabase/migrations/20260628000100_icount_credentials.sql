@@ -23,6 +23,16 @@ BEGIN
   END IF;
   enc_key := get_app_encryption_key();
 
+  -- I4: revoke saved card tokens from any other provider when switching to iCount
+  -- (folded from ex-20260629000100_provider_token_invalidation).
+  UPDATE payment_method_tokens SET
+    revoked_at = now(),
+    is_default = false,
+    updated_at = now()
+  WHERE tenant_id = v_tenant_id
+    AND provider <> 'icount'
+    AND revoked_at IS NULL;
+
   UPDATE tenants SET
     payment_provider             = 'icount',
     invoicing_provider           = 'icount',

@@ -268,7 +268,6 @@ BEGIN
   INSERT INTO tenants (
     name, subdomain, plan, skin,
     language_default, country, currency, phone_region,
-    vat_rate, prices_include_vat,
     from_email,
     payment_provider, invoicing_provider
   )
@@ -278,7 +277,6 @@ BEGIN
     p_plan::tenant_plan,
     p_vertical,
     'he', 'IL', 'ILS', 'IL',
-    0, true,
     NULLIF(trim(COALESCE(p_owner_email, '')), ''),
     'grow', 'grow'
   )
@@ -339,8 +337,6 @@ RETURNS TABLE (
   language_default                  TEXT,
   country                           TEXT,
   currency                          TEXT,
-  vat_rate                          NUMERIC,
-  prices_include_vat                BOOLEAN,
   primary_color                     TEXT,
   accent_color                      TEXT,
   plan                              tenant_plan,
@@ -371,8 +367,6 @@ BEGIN
     t.language_default,
     t.country,
     t.currency,
-    t.vat_rate,
-    t.prices_include_vat,
     t.primary_color,
     t.accent_color,
     t.plan,

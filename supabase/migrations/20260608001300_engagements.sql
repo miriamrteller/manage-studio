@@ -38,6 +38,8 @@ CREATE TABLE engagements (
   booked_ends_at                TIMESTAMPTZ,
   google_event_id               TEXT,
   scheduling_hold_id            UUID,
+  -- Set when a no-show or late cancellation retains payment as penalty (S5; no PSP charge)
+  penalty_applied_at            TIMESTAMPTZ,
   created_at             TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at             TIMESTAMPTZ NOT NULL DEFAULT now(),
   CONSTRAINT engagements_booked_pair CHECK (

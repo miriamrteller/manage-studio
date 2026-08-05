@@ -7,11 +7,6 @@ export type VatPricingMode = 'gross';
 export interface OfferingPriceInput {
     price_minor: number;
 }
-/** @deprecated Tenant VAT fields are not used for local computation. Kept for call-site compatibility. */
-export interface TenantPricingInput {
-    vat_rate?: number;
-    prices_include_vat?: boolean;
-}
 export interface OfferingPriceBreakdown {
     listMinor: number;
     chargeMinor: number;
@@ -21,5 +16,5 @@ export interface OfferingPriceBreakdown {
     vatRate: number;
     mode: VatPricingMode;
 }
-export declare function resolveOfferingPrice(offering: OfferingPriceInput, _tenant?: TenantPricingInput): OfferingPriceBreakdown;
+export declare function resolveOfferingPrice(offering: OfferingPriceInput): OfferingPriceBreakdown;
 //# sourceMappingURL=pricing.d.ts.map

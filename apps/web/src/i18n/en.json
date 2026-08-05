@@ -1623,7 +1623,6 @@
       "country": "Country",
       "currency": "Currency",
       "phone_region": "Phone region",
-      "vat_rate": "VAT rate (%)",
       "integrations_skip": "Integrations can be configured later in school settings.",
       "starter_seed": "Default expense categories will be created automatically.",
       "admin_email": "Admin email (for invite instructions)",

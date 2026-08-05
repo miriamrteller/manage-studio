@@ -44,8 +44,16 @@ CREATE TABLE tenant_scheduling_settings (
                        CHECK (hold_expiry_mins IN (15,20,25,30,45,60,90,120)),
   expiry_reminder_mins INT         CHECK (expiry_reminder_mins IS NULL OR expiry_reminder_mins IN (5,10,15)),
   is_booking_enabled   BOOLEAN     NOT NULL DEFAULT false,
+  -- S5 no-show / late-cancellation penalties (folded from ex-002900)
+  late_cancel_hours    INT         NOT NULL DEFAULT 24 CHECK (late_cancel_hours >= 0),
+  retain_payment_on_penalty BOOLEAN NOT NULL DEFAULT true,
   updated_at           TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+COMMENT ON COLUMN tenant_scheduling_settings.late_cancel_hours IS
+  'Hours before booked_starts_at within which admin cancel is treated as late_cancellation';
+COMMENT ON COLUMN tenant_scheduling_settings.retain_payment_on_penalty IS
+  'When true, paid no-show / late cancel sets penalty_applied_at (payment kept; no auto-refund)';
 
 ALTER TABLE tenant_scheduling_settings ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "super_admin manages all scheduling_settings"

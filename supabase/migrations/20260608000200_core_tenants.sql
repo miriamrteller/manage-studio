@@ -6,9 +6,19 @@
 
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- Hosted Supabase cannot set custom GUCs via ALTER DATABASE (permission denied).
--- Store the dev encryption key in a private table and resolve via get_app_encryption_key(),
--- which prefers the GUC when present (production runbook) and falls back to platform_config.
+-- Hosted Supabase cannot set custom GUCs via ALTER DATABASE (permission denied),
+-- so the encryption key lives in a private table and is resolved via
+-- get_app_encryption_key(), which prefers the GUC when present (self-hosted) and
+-- falls back to platform_config.
+--
+-- This migration deliberately seeds NO key. A key committed here would silently
+-- become production's key the moment the chain is replayed on a new project —
+-- get_app_encryption_key() would find it, encrypt real provider credentials with
+-- a value that is public in git, and never raise. Instead:
+--   dev  → supabase/seed.sql inserts a throwaway key (seeds never run on prod)
+--   prod → docs/deployment/GO-LIVE-PLAN.md Phase B inserts a generated key
+-- With no key configured the credential RPCs raise, which is the intended
+-- behaviour: loud failure beats silent insecurity.
 CREATE SCHEMA private;
 
 CREATE TABLE private.platform_config (
@@ -20,12 +30,6 @@ REVOKE ALL ON SCHEMA private FROM PUBLIC;
 REVOKE ALL ON private.platform_config FROM PUBLIC;
 REVOKE ALL ON private.platform_config FROM anon;
 REVOKE ALL ON private.platform_config FROM authenticated;
-
--- Dev default (matches supabase/seed-finance.sql). Production: set app.encryption_key GUC or
--- UPDATE this row via a secured runbook step — never expose to clients.
-INSERT INTO private.platform_config (key, value)
-VALUES ('encryption_key', '0uT6CrQXiMJab+raSRxxx0j7ZLYvwKCb2HCoQusCfiY=')
-ON CONFLICT (key) DO NOTHING;
 
 CREATE OR REPLACE FUNCTION get_app_encryption_key()
 RETURNS TEXT
@@ -48,7 +52,15 @@ BEGIN
   LIMIT 1;
 
   IF enc_key IS NULL OR enc_key = '' THEN
-    RAISE EXCEPTION 'app.encryption_key is not configured';
+    RAISE EXCEPTION 'app.encryption_key is not configured (dev: pnpm seed:dev / prod: GO-LIVE-PLAN.md Phase B)'
+      USING HINT = 'INSERT INTO private.platform_config (key, value) VALUES (''encryption_key'', <generated>);';
+  END IF;
+
+  -- This value leaked into git history when it was seeded by this migration.
+  -- Refuse it everywhere so a copy-paste can never re-establish it as a real key.
+  IF enc_key = '0uT6CrQXiMJab+raSRxxx0j7ZLYvwKCb2HCoQusCfiY=' THEN
+    RAISE EXCEPTION 'Refusing to use the retired dev encryption key (public in git history).'
+      USING HINT = 'Generate a fresh key: openssl rand -base64 32';
   END IF;
 
   RETURN enc_key;
@@ -86,8 +98,12 @@ CREATE TABLE tenants (
   primary_color                 TEXT        NOT NULL DEFAULT '#76335a',
   accent_color                  TEXT        NOT NULL DEFAULT '#e99ac4',
   currency                      TEXT        NOT NULL DEFAULT 'ILS',
-  vat_rate                      NUMERIC(5,4) DEFAULT 0,
-  prices_include_vat            BOOLEAN     NOT NULL DEFAULT true,
+  -- No vat_rate / prices_include_vat here by design. VAT is provider-authoritative:
+  -- the invoicing provider returns pretax/vat/total and the app never recomputes them
+  -- (see packages/shared/src/vat/provider-adapter.ts). Tenant-level VAT knobs existed
+  -- for a local split that no longer happens; keeping them invited a mismatch between
+  -- what an admin set and what the tax document actually said. Grow/iCount/Invoice4U
+  -- pass-through lives in vat_type + invoice_license_number below.
   invoice_license_number        TEXT        NULL,
   vat_type                      INTEGER     NOT NULL DEFAULT 1,
   phone_region                  TEXT        NOT NULL DEFAULT 'IL',
@@ -147,10 +163,6 @@ COMMENT ON COLUMN tenants.country IS 'Country for regional settings (currency, l
 COMMENT ON COLUMN tenants.from_email IS
   'Verified sender address for transactional email (waiver reminders, payment confirmations). '
   'When NULL, the send-waiver-reminder / handle-payment-event Edge Functions skip outbound email for the tenant.';
-COMMENT ON COLUMN tenants.vat_rate IS
-  'Legacy field — not used for local VAT computation. Always 0 for new tenants. Grow/GI own tax documents.';
-COMMENT ON COLUMN tenants.prices_include_vat IS
-  'When true, offerings.price_minor is the amount families pay (gross). App does not split VAT locally.';
 COMMENT ON COLUMN tenants.invoice_license_number IS
   'Tenant business license / tax ID (ח.פ or ת.ז). Pass-through to Grow only — no validation.';
 COMMENT ON COLUMN tenants.vat_type IS

@@ -26,8 +26,6 @@ export interface ResolvedCheckoutSession {
     billing_account_id: string;
   };
   tenant: {
-    vat_rate: number | null;
-    prices_include_vat: boolean | null;
     currency: string | null;
     payment_provider: string;
     payment_provider_public_key: string | null;
@@ -133,7 +131,7 @@ export async function resolveCheckoutSession(
 
   const { data: tenant, error: tenantError } = await service
     .from("tenants")
-    .select("vat_rate, prices_include_vat, currency, payment_provider, payment_provider_public_key")
+    .select("currency, payment_provider, payment_provider_public_key")
     .eq("id", tenantId)
     .single();
 
@@ -226,8 +224,6 @@ export async function resolveCheckoutSession(
         billing_account_id: billingAccountId,
       },
       tenant: {
-        vat_rate: tenant.vat_rate as number | null,
-        prices_include_vat: tenant.prices_include_vat as boolean | null,
         currency: tenant.currency as string | null,
         payment_provider: tenant.payment_provider as string,
         payment_provider_public_key: tenant.payment_provider_public_key as string | null,

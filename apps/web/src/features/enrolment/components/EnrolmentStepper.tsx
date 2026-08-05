@@ -372,8 +372,6 @@ export function EnrolmentStepper({
           language: tenant.language_default,
           country: tenant.country,
           currency: tenant.currency,
-          vat_rate: tenant.vat_rate,
-          prices_include_vat: tenant.prices_include_vat,
         },
         checkoutEnrolmentId,
       );

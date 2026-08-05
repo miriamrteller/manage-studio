@@ -2425,7 +2425,6 @@ export type Database = {
                     phone_region: string;
                     phone_region_updated_at: string;
                     plan: Database["public"]["Enums"]["tenant_plan"];
-                    prices_include_vat: boolean;
                     primary_color: string;
                     skin: string;
                     sub_status: string;
@@ -2433,7 +2432,6 @@ export type Database = {
                     tranzila_terminal_name: string | null;
                     trial_ends_at: string | null;
                     updated_at: string;
-                    vat_rate: number | null;
                     vat_type: number;
                     waiver_require_otp: boolean;
                     yesh_config: Json | null;
@@ -2475,7 +2473,6 @@ export type Database = {
                     phone_region?: string;
                     phone_region_updated_at?: string;
                     plan?: Database["public"]["Enums"]["tenant_plan"];
-                    prices_include_vat?: boolean;
                     primary_color?: string;
                     skin?: string;
                     sub_status?: string;
@@ -2483,7 +2480,6 @@ export type Database = {
                     tranzila_terminal_name?: string | null;
                     trial_ends_at?: string | null;
                     updated_at?: string;
-                    vat_rate?: number | null;
                     vat_type?: number;
                     waiver_require_otp?: boolean;
                     yesh_config?: Json | null;
@@ -2525,7 +2521,6 @@ export type Database = {
                     phone_region?: string;
                     phone_region_updated_at?: string;
                     plan?: Database["public"]["Enums"]["tenant_plan"];
-                    prices_include_vat?: boolean;
                     primary_color?: string;
                     skin?: string;
                     sub_status?: string;
@@ -2533,7 +2528,6 @@ export type Database = {
                     tranzila_terminal_name?: string | null;
                     trial_ends_at?: string | null;
                     updated_at?: string;
-                    vat_rate?: number | null;
                     vat_type?: number;
                     waiver_require_otp?: boolean;
                     yesh_config?: Json | null;
@@ -3222,11 +3216,9 @@ export type Database = {
                     payment_provider_updated_at: string;
                     payment_provider_webhook_configured: boolean;
                     plan: Database["public"]["Enums"]["tenant_plan"];
-                    prices_include_vat: boolean;
                     primary_color: string;
                     skin: string;
                     tenant_subdomain: string;
-                    vat_rate: number;
                 }[];
             };
             get_tenant_features: {
