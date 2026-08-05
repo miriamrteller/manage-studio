@@ -3,7 +3,7 @@ import { resolveOfferingPrice } from "./email-dist/pricing.js";
 import { ensureBillingAccountForStudent } from "./ensure-billing-account.ts";
 import { buildChargeMetadata } from "./payments/providers/mock.ts";
 import type { ChargeMetadata } from "./payments/types.ts";
-import { createServiceClient, requireAuthUser } from "../../../packages/edge-runtime/src/supabase.ts";
+import { createServiceClient, requireAuthUser } from "./edge-runtime/supabase.ts";
 import { resolveAllowedTokenRecipientEmails } from "./token-recipient.ts";
 import { extractWaiverToken, verifyWaiverToken } from "./waiver-token.ts";
 

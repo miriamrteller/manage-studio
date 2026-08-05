@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
-import { handleOptions, jsonResponse } from "../../../packages/edge-runtime/src/cors.ts";
-import { createServiceClient, requireAuthUser } from "../../../packages/edge-runtime/src/supabase.ts";
+import { handleOptions, jsonResponse } from "../_shared/edge-runtime/cors.ts";
+import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/supabase.ts";
 import {
   isSupportedEmailTemplate,
   sendRenderedEmail,

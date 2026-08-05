@@ -1,5 +1,5 @@
-import { corsHeaders, jsonResponse } from "../../../packages/edge-runtime/src/cors.ts";
-import { createServiceClient } from "../../../packages/edge-runtime/src/supabase.ts";
+import { corsHeaders, jsonResponse } from "../_shared/edge-runtime/cors.ts";
+import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { resolveNotificationFromEmail } from "../_shared/notification-from.ts";
 import { resolveEnrolmentNotificationRecipient } from "../_shared/enrolment-recipient.ts";
 import { signWaiverToken } from "../_shared/waiver-token.ts";

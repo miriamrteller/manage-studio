@@ -1,5 +1,5 @@
-import { corsHeaders, jsonResponse } from "../../../packages/edge-runtime/src/cors.ts";
-import { createServiceClient } from "../../../packages/edge-runtime/src/supabase.ts";
+import { corsHeaders, jsonResponse } from "../_shared/edge-runtime/cors.ts";
+import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 
 interface SaveResumeBody {
   resumeKey: string;

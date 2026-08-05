@@ -51,9 +51,4 @@ coverage/
 
 # Sensitive
 *client_secret*.json
-
-# Legacy: a Windows dev junction used to live here to bridge "../../packages/..."
-# imports to the repo-root packages/ dir. Edge functions now import the tracked
-# repo-root path directly, so the junction is obsolete — delete it locally if present.
-# Kept ignored so a stale junction on an existing checkout is never committed.
-/supabase/packages
+

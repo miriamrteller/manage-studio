@@ -2,8 +2,8 @@
  * google-calendar-disconnect
  * Revokes the stored Google token and clears tenant Google Calendar columns.
  */
-import { handleOptions, jsonResponse } from "../../../packages/edge-runtime/src/cors.ts";
-import { createServiceClient, requireAuthUser } from "../../../packages/edge-runtime/src/supabase.ts";
+import { handleOptions, jsonResponse } from "../_shared/edge-runtime/cors.ts";
+import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/supabase.ts";
 import { revokeToken } from "../_shared/google-calendar.ts";
 
 Deno.serve(async (req) => {

@@ -4,8 +4,8 @@
  * Insert normally happens automatically on payment finalisation; this function
  * handles the cancel (delete) path and manual re-sync. Non-blocking by design.
  */
-import { handleOptions, jsonResponse } from "../../../packages/edge-runtime/src/cors.ts";
-import { createServiceClient, requireAuthUser } from "../../../packages/edge-runtime/src/supabase.ts";
+import { handleOptions, jsonResponse } from "../_shared/edge-runtime/cors.ts";
+import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/supabase.ts";
 import { syncBookingEventDelete, syncBookingEventInsert } from "../_shared/sync-booking-event.ts";
 
 Deno.serve(async (req) => {

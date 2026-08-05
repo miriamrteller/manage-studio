@@ -10,8 +10,8 @@
  * Failure policy: if the tenant is connected but free/busy fails after one retry,
  * we FAIL CLOSED (drop all slots for the window) to minimise double-booking risk.
  */
-import { handleOptions, jsonResponse } from "../../../packages/edge-runtime/src/cors.ts";
-import { createServiceClient } from "../../../packages/edge-runtime/src/supabase.ts";
+import { handleOptions, jsonResponse } from "../_shared/edge-runtime/cors.ts";
+import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { freeBusy, getValidAccessToken, type BusyInterval } from "../_shared/google-calendar.ts";
 
 interface Slot {
