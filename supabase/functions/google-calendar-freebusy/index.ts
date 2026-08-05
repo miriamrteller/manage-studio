@@ -4,8 +4,8 @@
  * Used internally by the availability path (get-available-slots) and for testing.
  * Returns { connected: false } when the tenant has not connected Google Calendar.
  */
-import { handleOptions, jsonResponse } from "../../packages/edge-runtime/src/cors.ts";
-import { createServiceClient } from "../../packages/edge-runtime/src/supabase.ts";
+import { handleOptions, jsonResponse } from "../../../packages/edge-runtime/src/cors.ts";
+import { createServiceClient } from "../../../packages/edge-runtime/src/supabase.ts";
 import { freeBusy, getValidAccessToken } from "../_shared/google-calendar.ts";
 
 Deno.serve(async (req) => {

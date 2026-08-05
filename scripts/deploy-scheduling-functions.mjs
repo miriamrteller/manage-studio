@@ -11,10 +11,9 @@
  * verify_jwt for each function is pinned in supabase/config.toml, so we deploy
  * without flags and let config govern.
  *
- * Windows note: functions import `../../packages/edge-runtime/...`, which needs
- * `supabase/packages` to resolve to the repo-root `packages/`. On macOS/Linux
- * (or with Docker) this is handled; on a bare Windows checkout create a junction:
- *   mklink /J supabase\packages <repo>\packages   (or New-Item -ItemType Junction)
+ * Functions import the tracked repo-root `../../../packages/edge-runtime/...`
+ * directly, so no `supabase/packages` junction is needed on any platform. If an
+ * old checkout still has that junction, delete it — it is gitignored and stale.
  */
 import { spawnSync } from 'node:child_process';
 

@@ -1,4 +1,4 @@
-import { createServiceClient, requireAuthUser } from "./supabase.ts";
+import { createServiceClient, requireAuthUser } from "../../../packages/edge-runtime/src/supabase.ts";
 import { extractWaiverToken, verifyWaiverToken } from "./waiver-token.ts";
 import { loadEnrolmentCompletionContext } from "./enrolment-completion-context.ts";
 import { createCheckoutCharge } from "./create-checkout-charge.ts";

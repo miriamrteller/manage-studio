@@ -36,6 +36,7 @@ DROP TABLE IF EXISTS public.payments                      CASCADE;
 DROP TABLE IF EXISTS public.payment_document_access_log   CASCADE;
 DROP TABLE IF EXISTS public.document_queue                CASCADE;
 DROP TABLE IF EXISTS public.invoicing_token_cache           CASCADE;
+DROP TABLE IF EXISTS public.payment_provider_token_cache    CASCADE;
 DROP TABLE IF EXISTS public.billing_schedules               CASCADE;
 DROP TABLE IF EXISTS public.payment_method_tokens           CASCADE;
 DROP TABLE IF EXISTS public.invoice_sequences             CASCADE;
@@ -176,6 +177,7 @@ DROP FUNCTION IF EXISTS public.admin_enrolment_lookup_email(TEXT)               
 DROP FUNCTION IF EXISTS public.cancel_engagement(UUID, TEXT)                           CASCADE;
 DROP FUNCTION IF EXISTS public.check_subdomain_available(TEXT)                          CASCADE;
 DROP FUNCTION IF EXISTS public.is_reserved_subdomain(TEXT)                               CASCADE;
+DROP FUNCTION IF EXISTS public.save_tenant_ypay_credentials(TEXT, TEXT, TEXT)            CASCADE;
 
 DO $$
 DECLARE

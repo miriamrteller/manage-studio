@@ -1,4 +1,4 @@
-import { createServiceClient } from "./supabase.ts";
+import { createServiceClient } from "../../../packages/edge-runtime/src/supabase.ts";
 import { resolveCheckoutSession } from "./checkout-session.ts";
 import { getPaymentProviderForTenant } from "./payments/index.ts";
 import type { CheckoutChargePayload } from "./checkout-bootstrap-types.ts";

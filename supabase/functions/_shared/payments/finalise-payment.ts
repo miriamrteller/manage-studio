@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
-import { getEnv } from "../env.ts";
+import { getEnv } from "../../../../packages/edge-runtime/src/env.ts";
 import { enqueueDocument } from "../enqueue-document.ts";
 import { engagementHasSignedWaiver } from "../engagement-waiver.ts";
 import { resolveAdminLinkRecipientEmail } from "../enrolment-recipient.ts";

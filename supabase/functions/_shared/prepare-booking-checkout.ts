@@ -1,4 +1,4 @@
-import { createServiceClient } from "./supabase.ts";
+import { createServiceClient } from "../../../packages/edge-runtime/src/supabase.ts";
 import { ensureBillingAccountForStudent } from "./ensure-billing-account.ts";
 import { requireFeature } from "./feature-gate.ts";
 import { signWaiverToken } from "./waiver-token.ts";

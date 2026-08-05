@@ -8,7 +8,7 @@
  * alone is rejected because the HMAC (and uid binding) will not match.
  */
 
-import { hmacSha256Base64url, timingSafeEqual } from "./hmac.ts";
+import { hmacSha256Base64url, timingSafeEqual } from "../../../packages/edge-runtime/src/hmac.ts";
 import { isGoogleMock } from "./google-calendar.ts";
 
 export interface GoogleOAuthStatePayload {
