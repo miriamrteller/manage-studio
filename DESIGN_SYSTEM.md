@@ -26,7 +26,7 @@ Colors are resolved at runtime from the tenant's white-label config via `useTena
 
 ## 2. Elevation (Box Shadows)
 
-Four elevation levels are defined in `index.css` as CSS custom properties:
+Five elevation levels are defined in `index.css` as CSS custom properties:
 
 ```css
 --elevation-0: none;
