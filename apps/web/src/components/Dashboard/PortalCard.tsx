@@ -45,7 +45,7 @@ export function PortalCard({
         type="button"
         variant="ghost"
         onClick={onClick}
-        className={`text-left block w-full ${baseClasses}`}
+        className={`text-start block w-full ${baseClasses}`}
         aria-label={title}
       >
         <h3 className="font-bold text-lg mb-1">{title}</h3>

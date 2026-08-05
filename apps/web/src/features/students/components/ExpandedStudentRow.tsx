@@ -86,7 +86,7 @@ export function ExpandedStudentRow({
             <p>
               {cp.preferred_channel === 'whatsapp' ? '💬 WhatsApp' : '✉ Email'}
               {cp.preferred_channel === 'whatsapp' && (
-                <span className={`ml-2 text-xs ${cp.whatsapp_verified ? 'text-green-600' : 'text-amber-600'}`}>
+                <span className={`ms-2 text-xs ${cp.whatsapp_verified ? 'text-green-600' : 'text-amber-600'}`}>
                   {cp.whatsapp_verified
                     ? t('pages.students.whatsapp_verified')
                     : t('pages.students.whatsapp_unverified')}

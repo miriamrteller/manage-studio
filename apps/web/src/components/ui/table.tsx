@@ -21,5 +21,5 @@ export const TableCell = ({ children, className = '' }: { children: React.ReactN
 );
 
 export const TableHead = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
-  <th className={`px-4 py-2 text-left font-semibold ${className}`}>{children}</th>
+  <th className={`px-4 py-2 text-start font-semibold ${className}`}>{children}</th>
 );
