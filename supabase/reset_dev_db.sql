@@ -111,7 +111,6 @@ DROP TABLE IF EXISTS public.accounts                      CASCADE;
 
 DROP INDEX IF EXISTS public.idx_notification_log_dunning_key;
 DROP INDEX IF EXISTS public.idx_offerings_season_dow_status;
-DROP INDEX IF EXISTS public.idx_tenants_rapyd_access_key;
 DROP TABLE IF EXISTS public.notification_log              CASCADE;
 DROP TABLE IF EXISTS public.tenant_notification_templates CASCADE;
 DROP TABLE IF EXISTS public.tenant_email_customizations   CASCADE;
@@ -208,9 +207,6 @@ BEGIN
         'decline_age_review_engagement',
         'save_icount_webhook_secret',
         'save_tenant_icount_credentials',
-        'save_tenant_rapyd_credentials',
-        'get_tenant_rapyd_credentials',
-        'set_tenant_rapyd_customer_id',
         'save_tenant_yesh_credentials',
         'get_tenant_yesh_credentials',
         'save_tenant_tranzila_credentials',

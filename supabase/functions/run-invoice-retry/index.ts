@@ -58,7 +58,7 @@ Deno.serve(async (_req: Request) => {
       // Resolve tenant config
       const { data: tenantRows } = await supabase
         .from('tenant_configs')
-        .select('id, payment_provider, invoicing_provider, rapyd_config, yesh_config')
+        .select('id, payment_provider, invoicing_provider, yesh_config')
         .eq('id', entry.tenant_id)
         .eq('is_active', true)
         .limit(1);
