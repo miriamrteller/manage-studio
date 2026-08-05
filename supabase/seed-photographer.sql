@@ -7,13 +7,23 @@ DECLARE
   v_tenant_id UUID;
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM tenants WHERE subdomain = 'photographer') THEN
+    -- Owner must exist before provisioning: provision_tenant links it as tenant_admin.
+    INSERT INTO auth.users (id, email, encrypted_password, email_confirmed_at, created_at, updated_at)
+    VALUES (
+      'aaaaaaaa-0000-0000-0000-000000000013'::uuid,
+      'owner@photographer.test',
+      crypt('devpassword', gen_salt('bf')),
+      now(), now(), now()
+    )
+    ON CONFLICT (id) DO NOTHING;
+
     PERFORM provision_tenant(
-      p_name := 'Photographer Demo',
-      p_subdomain := 'photographer',
-      p_business_preset := 'services',
-      p_primary_color := '#F97316',
-      p_accent_color := '#FDE68A',
-      p_language_default := 'he'
+      p_name        := 'Photographer Demo',
+      p_subdomain   := 'photographer',
+      p_plan        := 'essential',
+      p_vertical    := 'photographer',
+      p_owner_email := 'owner@photographer.test',
+      p_owner_id    := 'aaaaaaaa-0000-0000-0000-000000000013'::uuid
     );
   END IF;
 

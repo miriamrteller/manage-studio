@@ -7,13 +7,23 @@ DECLARE
   v_tenant_id UUID;
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM tenants WHERE subdomain = 'artclass') THEN
+    -- Owner must exist before provisioning: provision_tenant links it as tenant_admin.
+    INSERT INTO auth.users (id, email, encrypted_password, email_confirmed_at, created_at, updated_at)
+    VALUES (
+      'aaaaaaaa-0000-0000-0000-000000000012'::uuid,
+      'owner@artclass.test',
+      crypt('devpassword', gen_salt('bf')),
+      now(), now(), now()
+    )
+    ON CONFLICT (id) DO NOTHING;
+
     PERFORM provision_tenant(
-      p_name := 'Art Class Demo',
-      p_subdomain := 'artclass',
-      p_business_preset := 'programs',
-      p_primary_color := '#1D4ED8',
-      p_accent_color := '#93C5FD',
-      p_language_default := 'he'
+      p_name        := 'Art Class Demo',
+      p_subdomain   := 'artclass',
+      p_plan        := 'essential',
+      p_vertical    := 'generic',
+      p_owner_email := 'owner@artclass.test',
+      p_owner_id    := 'aaaaaaaa-0000-0000-0000-000000000012'::uuid
     );
   END IF;
 

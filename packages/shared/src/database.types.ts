@@ -1481,6 +1481,38 @@ export type Database = {
           },
         ]
       }
+      payment_provider_token_cache: {
+        Row: {
+          expires_at: string
+          provider: string
+          tenant_id: string
+          token: string
+          updated_at: string
+        }
+        Insert: {
+          expires_at: string
+          provider: string
+          tenant_id: string
+          token: string
+          updated_at?: string
+        }
+        Update: {
+          expires_at?: string
+          provider?: string
+          tenant_id?: string
+          token?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_provider_token_cache_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payments: {
         Row: {
           account_id: string | null
@@ -2402,7 +2434,6 @@ export type Database = {
           plan: Database["public"]["Enums"]["tenant_plan"]
           prices_include_vat: boolean
           primary_color: string
-          rapyd_config: Json | null
           skin: string
           sub_status: string
           subdomain: string
@@ -2453,7 +2484,6 @@ export type Database = {
           plan?: Database["public"]["Enums"]["tenant_plan"]
           prices_include_vat?: boolean
           primary_color?: string
-          rapyd_config?: Json | null
           skin?: string
           sub_status?: string
           subdomain: string
@@ -2504,7 +2534,6 @@ export type Database = {
           plan?: Database["public"]["Enums"]["tenant_plan"]
           prices_include_vat?: boolean
           primary_color?: string
-          rapyd_config?: Json | null
           skin?: string
           sub_status?: string
           subdomain?: string
@@ -3150,15 +3179,6 @@ export type Database = {
           payment_provider_webhook_secret: string
         }[]
       }
-      get_tenant_rapyd_credentials: {
-        Args: { p_tenant_id: string }
-        Returns: {
-          access_key: string
-          customer_id: string
-          sandbox: boolean
-          secret_key: string
-        }[]
-      }
       get_tenant_today: { Args: { p_tenant_id: string }; Returns: string }
       get_tenant_tranzila_credentials: {
         Args: { p_tenant_id: string }
@@ -3366,14 +3386,6 @@ export type Database = {
         }
         Returns: undefined
       }
-      save_tenant_rapyd_credentials: {
-        Args: {
-          p_access_key: string
-          p_sandbox?: boolean
-          p_secret_key: string
-        }
-        Returns: undefined
-      }
       save_tenant_tranzila_credentials: {
         Args: {
           p_app_key: string
@@ -3384,6 +3396,14 @@ export type Database = {
       }
       save_tenant_yesh_credentials: {
         Args: { p_api_key: string; p_company_id: string }
+        Returns: undefined
+      }
+      save_tenant_ypay_credentials: {
+        Args: {
+          p_account_label?: string
+          p_client_id: string
+          p_client_secret: string
+        }
         Returns: undefined
       }
       search_enrolment_students: {
@@ -3398,10 +3418,6 @@ export type Database = {
           contact_email: string
           contact_name: string
         }[]
-      }
-      set_tenant_rapyd_customer_id: {
-        Args: { p_customer_id: string; p_tenant_id: string }
-        Returns: undefined
       }
       sign_waiver: {
         Args: {
