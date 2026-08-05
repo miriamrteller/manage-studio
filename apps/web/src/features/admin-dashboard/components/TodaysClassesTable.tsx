@@ -20,11 +20,11 @@ export const TodaysClassesTable = ({
   const thead = (
     <thead>
       <tr className="border-b bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
-        <th className="px-4 py-2 text-left">{t('pages.admin.overview.col_time', 'Time')}</th>
-        <th className="px-4 py-2 text-left">{t('pages.admin.overview.col_name', 'Class')}</th>
-        <th className="px-4 py-2 text-left">{t('pages.admin.overview.col_location', 'Location')}</th>
-        <th className="px-4 py-2 text-left">{t('pages.admin.overview.col_occupancy', 'Occupancy')}</th>
-        <th className="px-4 py-2 text-left">{t('pages.admin.overview.col_waitlist', 'Waitlist')}</th>
+        <th className="px-4 py-2 text-start">{t('pages.admin.overview.col_time', 'Time')}</th>
+        <th className="px-4 py-2 text-start">{t('pages.admin.overview.col_name', 'Class')}</th>
+        <th className="px-4 py-2 text-start">{t('pages.admin.overview.col_location', 'Location')}</th>
+        <th className="px-4 py-2 text-start">{t('pages.admin.overview.col_occupancy', 'Occupancy')}</th>
+        <th className="px-4 py-2 text-start">{t('pages.admin.overview.col_waitlist', 'Waitlist')}</th>
       </tr>
     </thead>
   );

@@ -255,7 +255,7 @@ export function OperatorOnboardingWizard() {
         </p>
         <div className="rounded-md border border-border bg-muted/20 p-4 space-y-3 text-sm">
           <p className="font-medium">Next steps</p>
-          <ol className="list-decimal pl-5 space-y-2">
+          <ol className="list-decimal ps-5 space-y-2">
             <li>
               Open the tenant signup page:
               <div className="mt-1">
@@ -359,7 +359,7 @@ export function OperatorOnboardingWizard() {
               <button
                 key={option.value}
                 type="button"
-                className={`text-left rounded-xl p-4 transition ${
+                className={`text-start rounded-xl p-4 transition ${
                   selected
                     ? 'border-2 border-primary bg-primary/5'
                     : 'border border-border cursor-pointer hover:border-primary/50'
@@ -383,7 +383,7 @@ export function OperatorOnboardingWizard() {
                 <button
                   key={option.value}
                   type="button"
-                  className={`text-left rounded-xl p-4 transition ${
+                  className={`text-start rounded-xl p-4 transition ${
                     selected
                       ? 'border-2 border-primary bg-primary/5'
                       : 'border border-border cursor-pointer hover:border-primary/50'

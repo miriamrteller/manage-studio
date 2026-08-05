@@ -329,7 +329,7 @@ function WaiverStepInner({
           </Button>
         )}
         <Button
-          className="ml-auto"
+          className="ms-auto"
           onClick={handleSubmit}
           disabled={!canSubmit}
         >

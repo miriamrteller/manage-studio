@@ -34,7 +34,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         disabled={isDisabled}
-        className={`rounded transition-opacity disabled:opacity-50 focus-visible:outline-2 outline-offset-2 ${variantClasses[variant]} ${sizeClasses[size]} ${widthClass} ${className}`}
+        className={`rounded transition-opacity disabled:opacity-50 focus-visible:outline-2 outline-offset-2 interact-lift interact-scale motion-safe ${variantClasses[variant]} ${sizeClasses[size]} ${widthClass} ${className}`}
         {...props}
       >
         {isLoading ? (
