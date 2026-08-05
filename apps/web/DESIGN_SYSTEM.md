@@ -4,6 +4,12 @@ _Introduced by DL-DESIGN-001 (design system polish). This documents the token
 system, elevation, typography, spacing, RTL, and accessibility conventions
 added in that batch, adapted to this repo's actual CSS-variable architecture._
 
+> **Authority note:** the root [`DESIGN_SYSTEM.md`](../../DESIGN_SYSTEM.md) is the
+> canonical rulebook for colour, elevation, typography, RTL and motion. This
+> document is the `apps/web` companion — it records repo-specific
+> implementation detail and deviations, and it must never contradict the root
+> doc. Where the two ever disagree, the root doc wins.
+
 ## Token System
 - All colors use CSS custom properties from `:root` in `src/index.css`.
 - Tenant branding automatically applies through `useThemeInjection()`, which
@@ -20,6 +26,11 @@ added in that batch, adapted to this repo's actual CSS-variable architecture._
   this matches near-universal design system convention and there is no
   brand-derived "foreground" HSL-triplet variable in this codebase to derive
   a colored shadow from.
+- Static elevation uses the utility class (`elevation-1`, `elevation-2`, …).
+  For **hover** elevation use the arbitrary-value syntax
+  `hover:[box-shadow:var(--elevation-2)]` — Tailwind JIT does not emit
+  `hover:` variants for custom utilities registered via `@layer utilities`,
+  so `hover:elevation-2` is a dead class.
 - Use semantic z-index tiers: `--z-base`, `--z-raised`, `--z-overlay`,
   `--z-modal`, `--z-toast`, `--z-tooltip`.
 
@@ -49,32 +60,83 @@ added in that batch, adapted to this repo's actual CSS-variable architecture._
   (`--spacing-3`/`--spacing-4` padding) instead of ad hoc Tailwind padding.
 
 ## RTL Support
+
+The app is bilingual: Hebrew (RTL) and English (LTR). `dir` is set only on the
+`<html>` element by `DocumentLanguageSync`. **All layout must use logical CSS
+properties.** This section mirrors §4 of the root `DESIGN_SYSTEM.md`.
+
 - Use logical properties: `ms-*`, `me-*`, `ps-*`, `pe-*`, `text-start`,
-  `text-end`, `start-*`, `end-*`.
-- Physical direction classes (`ml-`, `mr-`, `pl-`, `pr-`, `text-left`,
-  `text-right`, `left-*`, `right-*` used for edge-anchoring) are deprecated.
-- `tailwindcss-rtl` is now enabled in `tailwind.config.js`.
+  `text-end`, `start-*`, `end-*` (these map to `inset-inline-start` /
+  `inset-inline-end`).
+- Physical direction properties and classes are **forbidden**, not merely
+  discouraged: `margin-left`/`margin-right`, `padding-left`/`padding-right`,
+  `left`/`right`, and their Tailwind equivalents `ml-*`, `mr-*`, `pl-*`,
+  `pr-*`, `text-left`, `text-right`, `left-*`, `right-*`.
+- `tailwindcss-rtl` is enabled in `tailwind.config.js`.
 - FullCalendar toolbar direction/order adapts automatically under `[dir="rtl"]`.
-- One exception left as physical on purpose: the loading-spinner's
-  `border-r-transparent` in `button.tsx` — it creates the visual "gap" on a
-  *rotating* circle and has no reading-direction meaning, so converting it to
-  `border-e-transparent` would be a no-op at best.
-- Absolute-positioned elements that are centered via `left-1/2
-  -translate-x-1/2` were deliberately **left untouched** — that pattern mixes
-  a logical position with a physical transform, and swapping to
-  `start-1/2 -translate-x-1/2` would break centering under `dir="rtl"`
-  (the translate always moves along the physical X-axis).
+
+### Quick reference
+
+| Physical (forbidden) | Logical (required) |
+|---|---|
+| `ml-*` / `mr-*` | `ms-*` / `me-*` |
+| `pl-*` / `pr-*` | `ps-*` / `pe-*` |
+| `left-*` / `right-*` | `start-*` / `end-*` (`inset-inline-start-*` / `inset-inline-end-*`) |
+| `border-l` / `border-r` | `border-s` / `border-e` |
+| `rounded-l-*` / `rounded-r-*` | `rounded-s-*` / `rounded-e-*` |
+| `text-left` / `text-right` | `text-start` / `text-end` |
+
+### Centering absolutely-positioned elements
+
+Do **not** centre with a physical offset plus a physical transform. That
+pattern pins the element to a physical edge and then shifts it along the
+physical X-axis, so it drifts or breaks the moment `dir` flips. Use
+`margin-inline: auto` across a logical inset, or Flexbox/Grid:
+
+```tsx
+// ✅ RTL-safe — flex centring
+<div className="flex justify-center">…</div>
+
+// ✅ RTL-safe — absolute centring via logical inset + auto inline margin
+<div className="absolute inset-x-0 mx-auto w-fit">…</div>
+
+// ✅ RTL-safe — grid centring
+<div className="absolute inset-0 grid place-items-center">…</div>
+
+// ❌ Forbidden — physical offset + physical transform
+<div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}>…</div>
+```
+
+The same rule applies to vertical centring: prefer
+`inset-0 grid place-items-center` or a flex container over a physical
+`top: 50%` + `translateY(-50%)` pair, so block-axis offsets stay consistent
+with the logical box model.
+
+Any remaining call sites still using a physical offset + transform to centre
+are **technical debt to be migrated**, not an approved exception. Migrate them
+to one of the RTL-safe forms above when you touch the component.
+
+### The one narrow exception
+
+`button.tsx`'s loading spinner keeps `border-r-transparent`. This is *not* a
+layout or reading-direction property: it creates the visual "gap" on a
+continuously *rotating* circle, so it carries no inline-axis meaning and
+`border-e-transparent` would be a no-op. This exception covers that single
+decorative case only. It is not a licence to use physical properties for
+positioning, spacing, or centring anywhere else.
 
 ## Accessibility
 - All animations respect `prefers-reduced-motion` (global override in
   `index.css`, plus explicit guards on the micro-interaction/animation
-  utility classes).
+  utility classes). Pair animated classes with `motion-safe:`.
 - `Modal` (native `<dialog>`) and `Dialog` (compound component) both now:
   focus-trap while open, focus the first focusable element on open, return
   focus to the previously-focused element on close, and use
   `role="dialog"`/`aria-modal`/`aria-labelledby`/`aria-describedby`.
 - Use semantic HTML and proper heading hierarchy; prefer the typography
   components over ad hoc heading classes going forward.
+- Never suppress `:focus-visible`; use
+  `focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]`.
 
 ## Component Guidelines
 - Extend base classes, don't override.
