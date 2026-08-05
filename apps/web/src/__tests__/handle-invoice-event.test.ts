@@ -2,9 +2,24 @@
  * G4b: the Grow document webhook upserts document fields idempotently and settles the queue.
  * Run: pnpm -C apps/web test handle-invoice-event.test.ts
  */
-import { describe, it, expect } from 'vitest';
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 import { applyGrowInvoiceNotify } from '../../../../supabase/functions/_shared/payments/grow/invoice.ts';
 import type { ParsedGrowInvoice } from '../../../../supabase/functions/_shared/payments/providers/grow.ts';
+
+/**
+ * The document path calls fetchAndStoreBundledDocumentPdf, which does a real
+ * fetch(documentUrl) with a 30s AbortSignal.timeout. Locally that fails instantly
+ * (jsdom's AbortSignal is rejected by undici) and looks harmless; on CI the signal
+ * is valid, so the request actually goes out to sandbox.meshulam.co.il and hangs
+ * past vitest's 5s limit. Stub fetch so this stays a unit test.
+ */
+beforeEach(() => {
+  vi.stubGlobal('fetch', vi.fn(async () => new Response('nope', { status: 404 })));
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 const parsed: ParsedGrowInvoice = {
   tenantId: '00000000-0000-0000-0000-0000000000aa',
