@@ -2,8 +2,8 @@
  * Cron: alert admins when succeeded payments lack tax docs, and retry
  * admin invoice emails until payment_document_admin_email_sent is audited.
  */
-import { jsonResponse } from "../../packages/edge-runtime/src/cors.ts";
-import { createServiceClient } from "../../packages/edge-runtime/src/supabase.ts";
+import { jsonResponse } from "../../../packages/edge-runtime/src/cors.ts";
+import { createServiceClient } from "../../../packages/edge-runtime/src/supabase.ts";
 import { runCheckMissingDocuments } from "../_shared/payments/check-missing-documents.ts";
 
 const CRON_SECRET = Deno.env.get("CRON_SECRET") ?? "";

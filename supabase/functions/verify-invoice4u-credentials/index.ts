@@ -1,8 +1,8 @@
-import { handleOptions, jsonResponse } from "../../packages/edge-runtime/src/cors.ts";
-import { getEnv } from "../../packages/edge-runtime/src/env.ts";
+import { handleOptions, jsonResponse } from "../../../packages/edge-runtime/src/cors.ts";
+import { getEnv } from "../../../packages/edge-runtime/src/env.ts";
 import { MockInvoice4uPaymentProvider } from "../_shared/payments/providers/mock-invoice4u.ts";
 import { Invoice4uPaymentProvider } from "../_shared/payments/providers/invoice4u.ts";
-import { createServiceClient, requireAuthUser } from "../../packages/edge-runtime/src/supabase.ts";
+import { createServiceClient, requireAuthUser } from "../../../packages/edge-runtime/src/supabase.ts";
 
 /**
  * Auth health ping for a tenant's Invoice4U credentials.

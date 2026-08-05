@@ -15,8 +15,8 @@
  * Security: invoked via pg_cron net.http_post with x-cron-secret header.
  */
 
-import { jsonResponse } from "../../packages/edge-runtime/src/cors.ts";
-import { createServiceClient } from "../../packages/edge-runtime/src/supabase.ts";
+import { jsonResponse } from "../../../packages/edge-runtime/src/cors.ts";
+import { createServiceClient } from "../../../packages/edge-runtime/src/supabase.ts";
 import { sendHtmlEmail } from "../_shared/resend-client.ts";
 
 const CRON_SECRET = Deno.env.get("CRON_SECRET") ?? "";
