@@ -88,9 +88,22 @@ promote dev.** Dev carries mock-payment rows, demo tenants and test seeds.
 - [ ] **RLS spot-check with real data**: a parent sees only their own family; a
       teacher sees only their own tenant. Worth doing by hand — it is the one
       thing no test covers.
-- [ ] **Create the owner's `auth.users` row before provisioning.** `provision_tenant`
-      raises `Owner user does not exist` otherwise. Miriam signs up on the prod
-      project, then take that user's id for the next step.
+- [ ] **Bootstrap the first user — the trigger and the RPC deadlock otherwise.**
+      `handle_new_user()` raises `No tenant available for new user` when the
+      `tenants` table is empty, and `provision_tenant` raises `Owner user does
+      not exist` when the owner has no `auth.users` row. On a fresh project both
+      are true, so neither can go first. Break it by disabling the trigger for
+      the bootstrap only:
+      ```sql
+      ALTER TABLE auth.users DISABLE TRIGGER on_auth_user_created;
+      -- create the owner (Dashboard → Authentication → Users → Add user)
+      -- then run provision_tenant below, then:
+      ALTER TABLE auth.users ENABLE TRIGGER on_auth_user_created;
+      ```
+      No profile is lost: `provision_tenant` upserts the owner's `user_profiles`
+      row as `tenant_admin`, which is what the owner needs anyway — the trigger
+      would only have given them the default `account_holder` role.
+      This is a one-time bootstrap; every later signup goes through the trigger.
 - [ ] Provision the Creative Ballet tenant. `provision_tenant` is `service_role`
       only, so call it from the SQL editor with an explicit `p_owner_id`
       (`auth.uid()` is NULL there):
