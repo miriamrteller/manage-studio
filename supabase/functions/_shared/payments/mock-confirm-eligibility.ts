@@ -1,4 +1,4 @@
-import { getEnv } from "../env.ts";
+import { getEnv } from "../../../../packages/edge-runtime/src/env.ts";
 
 export type MockConfirmProviderSlug = "mock" | "grow" | "icount" | "invoice4u";
 

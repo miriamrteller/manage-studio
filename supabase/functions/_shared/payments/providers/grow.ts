@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
-import { getEnv } from "../../env.ts";
+import { getEnv } from "../../../../../packages/edge-runtime/src/env.ts";
 import type { ChargeParams, ChargeResult, PaymentEvent, PaymentProvider } from "../types.ts";
 import { growAmountFromMinor, minorFromGrowAmount } from "../grow/amount.ts";
 import { fromGrowCustomFields, peekGrowTenantId, toGrowCustomFields } from "../grow/metadata.ts";
