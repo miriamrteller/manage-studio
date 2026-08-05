@@ -128,6 +128,10 @@ To center an absolutely-positioned element horizontally in a way that works in b
 | `border-l` / `border-r` | `border-s` / `border-e` |
 | `rounded-l-*` / `rounded-r-*` | `rounded-s-*` / `rounded-e-*` |
 
+### Exception — spinner/loading animations
+
+`border-r-transparent` is permitted in spinner and loading-animation components (e.g. `button.tsx`'s loading state). This is **not** a layout or reading-direction property: it creates the visual "gap" on a continuously rotating circle, so it carries no inline-axis meaning and `border-e-transparent` would be a no-op. This exception covers that single decorative technique only — it is **not** a licence to use physical border, spacing, or positioning properties anywhere else.
+
 ---
 
 ## 5. Motion & Transitions
