@@ -12,7 +12,7 @@
  * stays valid for exactly as long as the guest has to sign.
  */
 
-import { hmacSha256Base64url, timingSafeEqual } from "../../../packages/edge-runtime/src/hmac.ts";
+import { hmacSha256Base64url, timingSafeEqual } from "./edge-runtime/hmac.ts";
 
 export interface WaiverTokenPayload {
   eid: string; // engagement ID

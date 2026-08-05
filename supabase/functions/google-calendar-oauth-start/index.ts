@@ -3,8 +3,8 @@
  * Returns a Google OAuth consent URL for the authenticated tenant admin.
  * state is HMAC-signed (tenant + admin user + expiry) for CSRF protection.
  */
-import { handleOptions, jsonResponse } from "../../../packages/edge-runtime/src/cors.ts";
-import { createServiceClient, requireAuthUser } from "../../../packages/edge-runtime/src/supabase.ts";
+import { handleOptions, jsonResponse } from "../_shared/edge-runtime/cors.ts";
+import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/supabase.ts";
 import { buildAuthUrl, isGoogleMock } from "../_shared/google-calendar.ts";
 import { signGoogleOAuthState } from "../_shared/google-oauth-state.ts";
 import { requireFeature } from "../_shared/feature-gate.ts";

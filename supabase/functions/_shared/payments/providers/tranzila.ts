@@ -6,7 +6,7 @@
  * ──────────────────────────────────────────────────────────────────────────────
  * ADAPTER MANDATE
  * This file MUST NOT be imported directly by edge functions or any caller outside
- * the providerFor*() factories in ./index.ts. Direct instantiation is prohibited.
+ * TranzilaPaymentProvider (./tranzila-payment.ts), which the payments registry selects.
  * ──────────────────────────────────────────────────────────────────────────────
  *
  * TAX DELEGATION DOCTRINE
@@ -36,7 +36,14 @@ import type {
   ChargeResponse,
   RefundResponse,
 } from "./types.ts";
-import type { SecretResolver } from "./index.ts";
+/**
+ * Resolves a credential reference to its value. TranzilaPaymentProvider supplies an
+ * implementation backed by get_tenant_tranzila_credentials; previously this came from
+ * the retired providerFor*() factory's vault resolver.
+ */
+export interface SecretResolver {
+  resolve(ref: string): Promise<string>;
+}
 import {
   mapTranzilaError,
   type TranzilaAuthHeaders,

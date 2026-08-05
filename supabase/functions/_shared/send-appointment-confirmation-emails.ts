@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
-import { getEnv } from "../../../packages/edge-runtime/src/env.ts";
+import { getEnv } from "./edge-runtime/env.ts";
 import { buildAppointmentConfirmationPayload } from "./build-appointment-confirmation-payload.ts";
 import { resolveAdminLinkRecipientEmail } from "./enrolment-recipient.ts";
 import { resolveNotificationFromEmail } from "./notification-from.ts";

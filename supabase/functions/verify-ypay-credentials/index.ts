@@ -1,8 +1,8 @@
-import { handleOptions, jsonResponse } from "../../../packages/edge-runtime/src/cors.ts";
-import { getEnv } from "../../../packages/edge-runtime/src/env.ts";
+import { handleOptions, jsonResponse } from "../_shared/edge-runtime/cors.ts";
+import { getEnv } from "../_shared/edge-runtime/env.ts";
 import { MockYpayPaymentProvider } from "../_shared/payments/providers/mock-ypay.ts";
 import { YpayPaymentProvider } from "../_shared/payments/providers/ypay.ts";
-import { createServiceClient, requireAuthUser } from "../../../packages/edge-runtime/src/supabase.ts";
+import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/supabase.ts";
 
 /**
  * Auth health ping for a tenant's YPay credentials — hits accessToken.

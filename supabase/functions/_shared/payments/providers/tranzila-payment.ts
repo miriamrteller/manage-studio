@@ -85,8 +85,9 @@ export class TranzilaPaymentProvider implements PaymentProvider {
   }
 
   /**
-   * Tranzila posts its result to tranzila-payment-callback. The underlying adapter
-   * owns signature/status verification; we map its result onto a PaymentEvent.
+   * Tranzila posts its result to handle-payment-event, which resolves this provider
+   * from the tenant. The underlying adapter owns signature/status verification;
+   * we map its result onto a PaymentEvent.
    */
   async constructEvent(rawBody: string, _headers: Headers, tenantId: string): Promise<PaymentEvent> {
     const adapter = await this.adapterFor(tenantId);

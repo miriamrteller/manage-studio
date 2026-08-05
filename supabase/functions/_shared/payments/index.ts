@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
-import { getEnv } from "../../../../packages/edge-runtime/src/env.ts";
+import { getEnv } from "../edge-runtime/env.ts";
 import { MockPaymentProvider } from "./providers/mock.ts";
 import { MockGrowPaymentProvider } from "./providers/mock-grow.ts";
 import { MockIcountPaymentProvider } from "./providers/mock-icount.ts";

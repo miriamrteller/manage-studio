@@ -2,7 +2,7 @@ import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4
 
 import { resolveOfferingPrice } from "../email-dist/pricing.js";
 
-import { getEnv } from "../../../../packages/edge-runtime/src/env.ts";
+import { getEnv } from "../edge-runtime/env.ts";
 
 import { deliverMockIcountIpn } from "./icount/mock-api.ts";
 

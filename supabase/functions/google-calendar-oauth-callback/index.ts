@@ -3,8 +3,8 @@
  * Exchanges the OAuth code (POSTed by the frontend callback page with the admin's
  * Bearer token), stores encrypted tokens, and returns the connected email.
  */
-import { handleOptions, jsonResponse } from "../../../packages/edge-runtime/src/cors.ts";
-import { createServiceClient, requireAuthUser } from "../../../packages/edge-runtime/src/supabase.ts";
+import { handleOptions, jsonResponse } from "../_shared/edge-runtime/cors.ts";
+import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/supabase.ts";
 import { exchangeCode, fetchGoogleEmail } from "../_shared/google-calendar.ts";
 import { verifyGoogleOAuthState } from "../_shared/google-oauth-state.ts";
 import { requireFeature } from "../_shared/feature-gate.ts";
