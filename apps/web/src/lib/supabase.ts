@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@shared/database.types';
 
 // Enforce environment variables at initialization
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -17,7 +18,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
  * - Auto-refreshes tokens before expiry
  * - No hardcoded secrets in code (all from env vars)
  */
-export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+export const supabase: SupabaseClient<Database> = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
     flowType: 'pkce',
     persistSession: true,
