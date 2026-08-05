@@ -60,8 +60,15 @@ promote dev.** Dev carries mock-payment rows, demo tenants and test seeds.
       lowest-latency option for Israeli users and the one that keeps the transfer
       lawful without extra paperwork. Reasoning in [Region choice](#region-choice).
       Do **not** inherit dev's `ap-northeast-2` (Seoul).
+- [ ] Fill in `.env.prod`, then `pnpm env:use prod`. There is no `NODE_ENV`
+      selector — `scripts/load-env.mjs` only ever reads the repo-root `.env`, so
+      `.env` *is* the active environment. `.env.dev` / `.env.prod` are the stored
+      copies; `pnpm env:use <dev|prod>` swaps one in and prints which project
+      and `APP_URL` are now live. Switch back with `pnpm env:use dev`.
 - [ ] `supabase link` to the new ref, then `pnpm db:push` — the 32-migration
       chain is the source of truth and replays clean (proven on the dev reset).
+      ⚠️ `supabase link` is a **separate** switch from `pnpm env:use`: changing
+      the env file does not retarget the CLI, and vice versa. Both must agree.
 - [ ] `pnpm db:types:all` — then `git diff` the generated types. They should come
       back **identical** to what is committed. Any diff means the chain did not
       replay the way we think it did; stop and read the diff before continuing.

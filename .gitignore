@@ -19,10 +19,12 @@ out/
 .DS_Store
 
 # Environment
-.env
-.env.local
-.env.*.local
-.env.e2e
+# Broad on purpose: every .env* is ignored, then .env.example files are
+# re-included. The previous list matched only exact names, so a .env.prod or a
+# .env.dev.bak would have sat untracked-but-committable, full of live secrets.
+.env*
+!.env.example
+!apps/web/.env.local.example
 
 # Logs
 logs/
