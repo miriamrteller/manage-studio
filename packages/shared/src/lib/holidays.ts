@@ -25,7 +25,7 @@
  *
  * @module holidays
  */
-import { HDate, HebrewCalendar, flags } from '@hebcal/core';
+import { HDate, HebrewCalendar, flags, type HolidayEvent } from '@hebcal/core';
 
 /**
  * Holiday categories that are visually shaded on the calendar. Byte-for-byte the mask
@@ -96,7 +96,7 @@ function civilDay(date: Date): Date {
 }
 
 /** Holiday events on a civil day, restricted to Israeli observance. */
-function eventsOn(date: Date) {
+function eventsOn(date: Date): HolidayEvent[] {
   return HebrewCalendar.getHolidaysOnDate(new HDate(civilDay(date)), true) ?? [];
 }
 

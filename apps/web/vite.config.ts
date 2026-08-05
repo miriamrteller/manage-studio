@@ -5,6 +5,7 @@ import path from 'path'
 /** Map Deno `npm:` specifiers in edge-function imports to Node packages for Vitest. */
 function denoNpmImportMap() {
   const zodEntry = path.resolve(__dirname, 'node_modules/zod/index.js');
+  const hebcalEntry = path.resolve(__dirname, 'node_modules/@hebcal/core/dist/esm/index.js');
   return {
     name: 'deno-npm-import-map',
     resolveId(source: string) {
@@ -13,6 +14,13 @@ function denoNpmImportMap() {
       }
       if (source === 'zod') {
         return zodEntry;
+      }
+      // supabase/functions/_shared/holidays.ts imports npm:@hebcal/core@^6.6.0. That
+      // file lives outside apps/web, so bare-specifier resolution (walking up from the
+      // importer's directory) never reaches apps/web/node_modules under pnpm's strict,
+      // non-hoisted layout. Resolve to an absolute path, same as the zod entry above.
+      if (source === '@hebcal/core' || /^npm:@hebcal\/core(@.*)?$/.test(source)) {
+        return hebcalEntry;
       }
       return null;
     },
@@ -38,9 +46,8 @@ export default defineConfig({
       // Edge functions use Deno-style specifiers; map them to node packages for Vitest.
       { find: 'npm:zod@3.22.4', replacement: 'zod' },
       { find: /^npm:zod(@.*)?$/, replacement: 'zod' },
-      // supabase/functions/_shared/holidays.ts imports npm:@hebcal/core; the web app
-      // already depends on the same major, so point Vitest at the node package.
-      { find: /^npm:@hebcal\/core(@.*)?$/, replacement: '@hebcal/core' },
+      // npm:@hebcal/core is handled by the denoNpmImportMap() plugin above (it needs
+      // to resolve to an absolute path, not a bare specifier — see that plugin for why).
       // The Deno Stripe SDK import is unresolvable in Node; stub it for factory tests.
       {
         find: /^https:\/\/esm\.sh\/stripe@.*/,
