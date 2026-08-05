@@ -38,6 +38,9 @@ export default defineConfig({
       // Edge functions use Deno-style specifiers; map them to node packages for Vitest.
       { find: 'npm:zod@3.22.4', replacement: 'zod' },
       { find: /^npm:zod(@.*)?$/, replacement: 'zod' },
+      // supabase/functions/_shared/holidays.ts imports npm:@hebcal/core; the web app
+      // already depends on the same major, so point Vitest at the node package.
+      { find: /^npm:@hebcal\/core(@.*)?$/, replacement: '@hebcal/core' },
       // The Deno Stripe SDK import is unresolvable in Node; stub it for factory tests.
       {
         find: /^https:\/\/esm\.sh\/stripe@.*/,

@@ -47,11 +47,14 @@ export function makeDayCellContent(language: string) {
 }
 
 /**
- * Adds a shading class to Shabbat/holiday/eve day cells. Stable module-scope
- * reference so FullCalendar doesn't reprocess options on every render.
+ * Adds a shading class to Shabbat/holiday/eve day cells, plus `fc-skipped-day` for
+ * holidays whose recurring class occurrences are skipped (DL-HOLIDAY-001). Stable
+ * module-scope reference so FullCalendar doesn't reprocess options on every render.
  */
 export function shadedDayClassNames(arg: DayCellContentArg): string[] {
-  return getDayShade(arg.date).shaded ? ['fc-shaded-day'] : [];
+  const shade = getDayShade(arg.date);
+  if (!shade.shaded) return [];
+  return shade.isSkipped ? ['fc-shaded-day', 'fc-skipped-day'] : ['fc-shaded-day'];
 }
 
 /**

@@ -7,6 +7,7 @@
     "@react-email/render": "npm:@react-email/render@2.0.8",
     "@react-email/components": "npm:@react-email/components@1.0.12",
     "@react-email/components/": "npm:@react-email/components@1.0.12/",
+    "@hebcal/core": "npm:@hebcal/core@^6.6.0",
     "zod": "npm:zod@3.22.4",
     "shared/email": "./_shared/email-dist/email/render-template.js"
   }

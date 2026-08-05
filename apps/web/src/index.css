@@ -310,6 +310,23 @@ body {
 }
 
 /*
+ * Holidays whose recurring class occurrences are skipped (DL-HOLIDAY-001): Yom Tov,
+ * Chol HaMoed, Chanukah and public fast days. Shabbat, eves and minor/modern
+ * observances stay plain `fc-shaded-day` because their classes still run.
+ */
+.fc .fc-skipped-day {
+  background-color: #fef2f2 !important;
+  background-image: repeating-linear-gradient(
+    135deg,
+    transparent,
+    transparent 5px,
+    rgba(220, 38, 38, 0.08) 5px,
+    rgba(220, 38, 38, 0.08) 10px
+  );
+  box-shadow: inset 0 0 0 1px rgba(220, 38, 38, 0.25);
+}
+
+/*
  * Fit-to-screen month view: lock the whole month to the viewport and let a busy
  * day's event list scroll inside its cell (instead of collapsing to "+N more").
  *
