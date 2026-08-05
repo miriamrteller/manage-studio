@@ -216,7 +216,7 @@ export function ClassRequirementsPanel({ classId, className }: ClassRequirements
                 <div className="space-y-0.5">
                   <span className="font-medium">{tpl?.name ?? req.id}</span>
                   {tpl?.requirement_type && (
-                    <span className="text-xs ml-2" style={{ color: 'var(--color-text-secondary)' }}>
+                    <span className="text-xs ms-2" style={{ color: 'var(--color-text-secondary)' }}>
                       {typeLabel(tpl.requirement_type)}
                     </span>
                   )}

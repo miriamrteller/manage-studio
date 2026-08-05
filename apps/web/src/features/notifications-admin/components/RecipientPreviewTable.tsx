@@ -118,7 +118,7 @@ export function RecipientPreviewTable({
           )}
           <div className="overflow-x-auto border border-gray-200 rounded-md">
             <table className="min-w-full text-sm">
-              <thead className="bg-gray-50 text-left">
+              <thead className="bg-gray-50 text-start">
                 <tr>
                   <th className="w-10 px-3 py-2">
                     <Checkbox

@@ -117,7 +117,7 @@ export function LoginForm({
           variant="secondary"
           size="sm"
           onClick={onMessageDismiss}
-          className="w-full text-left justify-start"
+          className="w-full text-start justify-start"
           aria-label={t('common.dismiss_message')}
         >
           <AuthMessage type={message.type} text={message.text} />

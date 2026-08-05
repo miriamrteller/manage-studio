@@ -43,7 +43,7 @@ export const ClassTableRow = ({
             enrolled={cls.enrolled_count}
             capacity={cls.max_capacity}
             showPercentage={false}
-            className="ml-1 w-16"
+            className="ms-1 w-16"
           />
         </div>
       </td>

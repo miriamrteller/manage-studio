@@ -310,13 +310,13 @@ function EvidenceSection() {
           <table className="w-full text-sm">
             <thead className="bg-muted/50">
               <tr>
-                <th className="px-3 py-2 text-left font-medium">{t('pages.waivers.col_student')}</th>
-                <th className="px-3 py-2 text-left font-medium">{t('pages.waivers.col_class')}</th>
-                <th className="px-3 py-2 text-left font-medium">{t('pages.waivers.col_signed_by')}</th>
-                <th className="px-3 py-2 text-left font-medium">{t('pages.waivers.col_email')}</th>
-                <th className="px-3 py-2 text-left font-medium">{t('pages.waivers.col_role')}</th>
-                <th className="px-3 py-2 text-left font-medium">{t('pages.waivers.col_version')}</th>
-                <th className="px-3 py-2 text-left font-medium">{t('pages.waivers.col_signed_at')}</th>
+                <th className="px-3 py-2 text-start font-medium">{t('pages.waivers.col_student')}</th>
+                <th className="px-3 py-2 text-start font-medium">{t('pages.waivers.col_class')}</th>
+                <th className="px-3 py-2 text-start font-medium">{t('pages.waivers.col_signed_by')}</th>
+                <th className="px-3 py-2 text-start font-medium">{t('pages.waivers.col_email')}</th>
+                <th className="px-3 py-2 text-start font-medium">{t('pages.waivers.col_role')}</th>
+                <th className="px-3 py-2 text-start font-medium">{t('pages.waivers.col_version')}</th>
+                <th className="px-3 py-2 text-start font-medium">{t('pages.waivers.col_signed_at')}</th>
               </tr>
             </thead>
             <tbody>
@@ -383,7 +383,7 @@ export default function WaiversPage() {
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <div>
                     <span className="font-medium">{template.name}</span>
-                    <span className="text-xs text-muted-foreground ml-2">v{template.version}</span>
+                    <span className="text-xs text-muted-foreground ms-2">v{template.version}</span>
                   </div>
                   <StatusBadge status={template.status} />
                 </div>
