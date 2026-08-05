@@ -5,8 +5,6 @@ interface TypographyProps extends React.HTMLAttributes<HTMLElement> {
   as?: React.ElementType;
 }
 
-// eslint-disable-next-line react/display-name -- displayName is assigned
-// synchronously inside the factory, immediately after creation, below.
 function makeTypographyComponent(
   defaultTag: React.ElementType,
   textClass: string,
