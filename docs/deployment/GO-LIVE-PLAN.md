@@ -60,8 +60,15 @@ promote dev.** Dev carries mock-payment rows, demo tenants and test seeds.
       lowest-latency option for Israeli users and the one that keeps the transfer
       lawful without extra paperwork. Reasoning in [Region choice](#region-choice).
       Do **not** inherit dev's `ap-northeast-2` (Seoul).
+- [ ] Fill in `.env.prod`, then `pnpm env:use prod`. There is no `NODE_ENV`
+      selector — `scripts/load-env.mjs` only ever reads the repo-root `.env`, so
+      `.env` *is* the active environment. `.env.dev` / `.env.prod` are the stored
+      copies; `pnpm env:use <dev|prod>` swaps one in and prints which project
+      and `APP_URL` are now live. Switch back with `pnpm env:use dev`.
 - [ ] `supabase link` to the new ref, then `pnpm db:push` — the 32-migration
       chain is the source of truth and replays clean (proven on the dev reset).
+      ⚠️ `supabase link` is a **separate** switch from `pnpm env:use`: changing
+      the env file does not retarget the CLI, and vice versa. Both must agree.
 - [ ] `pnpm db:types:all` — then `git diff` the generated types. They should come
       back **identical** to what is committed. Any diff means the chain did not
       replay the way we think it did; stop and read the diff before continuing.
@@ -88,9 +95,22 @@ promote dev.** Dev carries mock-payment rows, demo tenants and test seeds.
 - [ ] **RLS spot-check with real data**: a parent sees only their own family; a
       teacher sees only their own tenant. Worth doing by hand — it is the one
       thing no test covers.
-- [ ] **Create the owner's `auth.users` row before provisioning.** `provision_tenant`
-      raises `Owner user does not exist` otherwise. Miriam signs up on the prod
-      project, then take that user's id for the next step.
+- [ ] **Bootstrap the first user — the trigger and the RPC deadlock otherwise.**
+      `handle_new_user()` raises `No tenant available for new user` when the
+      `tenants` table is empty, and `provision_tenant` raises `Owner user does
+      not exist` when the owner has no `auth.users` row. On a fresh project both
+      are true, so neither can go first. Break it by disabling the trigger for
+      the bootstrap only:
+      ```sql
+      ALTER TABLE auth.users DISABLE TRIGGER on_auth_user_created;
+      -- create the owner (Dashboard → Authentication → Users → Add user)
+      -- then run provision_tenant below, then:
+      ALTER TABLE auth.users ENABLE TRIGGER on_auth_user_created;
+      ```
+      No profile is lost: `provision_tenant` upserts the owner's `user_profiles`
+      row as `tenant_admin`, which is what the owner needs anyway — the trigger
+      would only have given them the default `account_holder` role.
+      This is a one-time bootstrap; every later signup goes through the trigger.
 - [ ] Provision the Creative Ballet tenant. `provision_tenant` is `service_role`
       only, so call it from the SQL editor with an explicit `p_owner_id`
       (`auth.uid()` is NULL there):
