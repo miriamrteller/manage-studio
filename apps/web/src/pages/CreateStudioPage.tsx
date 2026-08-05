@@ -196,7 +196,7 @@ export default function CreateStudioPage() {
                   key={option.value}
                   type="button"
                   onClick={() => handlePlanSelect(option.value)}
-                  className="w-full rounded-lg border-2 border-gray-200 p-4 text-left hover:border-indigo-500 hover:bg-indigo-50 transition-colors"
+                  className="w-full rounded-lg border-2 border-gray-200 p-4 text-start hover:border-indigo-500 hover:bg-indigo-50 transition-colors"
                 >
                   <p className="font-semibold text-gray-900">{option.label}</p>
                   <p className="mt-1 text-sm text-gray-500">{option.description}</p>
@@ -223,7 +223,7 @@ export default function CreateStudioPage() {
                   key={option.value}
                   type="button"
                   onClick={() => setVertical(option.value)}
-                  className={`rounded-lg border-2 p-3 text-left text-sm font-medium transition-colors ${
+                  className={`rounded-lg border-2 p-3 text-start text-sm font-medium transition-colors ${
                     vertical === option.value
                       ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
                       : 'border-gray-200 text-gray-700 hover:border-indigo-300 hover:bg-indigo-50'

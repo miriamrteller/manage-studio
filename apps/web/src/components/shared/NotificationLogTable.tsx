@@ -52,13 +52,13 @@ export function NotificationLogTable({
               currentField={sortField}
               currentOrder={sortOrder}
               onSort={onSort}
-              className="px-4 py-2 text-left font-medium"
+              className="px-4 py-2 text-start font-medium"
             />
-            <th className="px-4 py-2 text-left">{t('pages.notifications.log_channel')}</th>
-            <th className="px-4 py-2 text-left">{t('pages.notifications.log_recipient')}</th>
-            <th className="px-4 py-2 text-left">{t('pages.notifications.log_template')}</th>
-            <th className="px-4 py-2 text-left">{t('pages.notifications.log_status')}</th>
-            <th className="px-4 py-2 text-left">
+            <th className="px-4 py-2 text-start">{t('pages.notifications.log_channel')}</th>
+            <th className="px-4 py-2 text-start">{t('pages.notifications.log_recipient')}</th>
+            <th className="px-4 py-2 text-start">{t('pages.notifications.log_template')}</th>
+            <th className="px-4 py-2 text-start">{t('pages.notifications.log_status')}</th>
+            <th className="px-4 py-2 text-start">
               <span className="sr-only">{t('pages.notifications.log_detail_view')}</span>
             </th>
           </tr>

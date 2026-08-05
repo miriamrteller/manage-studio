@@ -55,7 +55,7 @@ export function WaiverSignedSummary({
             {t('common.back')}
           </Button>
         )}
-        <Button className="ml-auto" onClick={onContinue}>
+        <Button className="ms-auto" onClick={onContinue}>
           {t('enrolment.waiver_continue_to_payment', { defaultValue: 'Continue to Payment' })}
         </Button>
       </div>
