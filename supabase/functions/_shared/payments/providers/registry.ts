@@ -9,7 +9,7 @@
  * case to providerForPayment() and/or providerForInvoicing() in ./index.ts.
  */
 
-export const PAYMENT_PROVIDERS = ["rapyd", "icount_paypage", "grow", "tranzila"] as const;
+export const PAYMENT_PROVIDERS = ["icount_paypage", "grow", "tranzila"] as const;
 export type  PaymentProviderSlug = typeof PAYMENT_PROVIDERS[number];
 
 export const INVOICING_PROVIDERS = ["yesh", "icount", "tranzila"] as const;

@@ -7,13 +7,23 @@ DECLARE
   v_tenant_id UUID;
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM tenants WHERE subdomain = 'sofer') THEN
+    -- Owner must exist before provisioning: provision_tenant links it as tenant_admin.
+    INSERT INTO auth.users (id, email, encrypted_password, email_confirmed_at, created_at, updated_at)
+    VALUES (
+      'aaaaaaaa-0000-0000-0000-000000000014'::uuid,
+      'owner@sofer.test',
+      crypt('devpassword', gen_salt('bf')),
+      now(), now(), now()
+    )
+    ON CONFLICT (id) DO NOTHING;
+
     PERFORM provision_tenant(
-      p_name := 'Sofer Demo',
-      p_subdomain := 'sofer',
-      p_business_preset := 'services',
-      p_primary_color := '#6D1A36',
-      p_accent_color := '#D4A5B6',
-      p_language_default := 'he'
+      p_name        := 'Sofer Demo',
+      p_subdomain   := 'sofer',
+      p_plan        := 'essential',
+      p_vertical    := 'generic',
+      p_owner_email := 'owner@sofer.test',
+      p_owner_id    := 'aaaaaaaa-0000-0000-0000-000000000014'::uuid
     );
   END IF;
 
