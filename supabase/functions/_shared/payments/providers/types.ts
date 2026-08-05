@@ -35,9 +35,7 @@ export type RefundStatus        = 'completed' | 'failed' | 'pending' | 'cancelle
 
 // ── PA-1: Opaque WebhookPayload ───────────────────────────────────────────────
 // No provider identity leaks through the adapter boundary.
-// RapydAdapter.handleWebhook() maps RapydWebhookPayload → WebhookPayload internally.
 // All future payment adapters (Grow, iCount PayPage) implement the same mapping.
-// No caller outside an adapter ever sees RapydWebhookPayload.
 
 export interface WebhookPayload {
   readonly eventId:   string;
@@ -228,7 +226,7 @@ export interface IInvoicingProvider {
 
 /**
  * IPaymentProvider — the only payment type visible to callers outside the factory.
- * Implemented by: RapydAdapter, GrowAdapter, ICountPayPageAdapter
+ * Implemented by: TranzilaPaymentAdapter, GrowAdapter, ICountPayPageAdapter
  */
 export interface IPaymentProvider {
   createCheckout(amount: number, meta: PaymentMeta): Promise<CheckoutResponse>;
@@ -239,93 +237,18 @@ export interface IPaymentProvider {
   issueRefund(paymentId: string, amount?: number): Promise<RefundResponse>;
 }
 
-// ── Rapyd Internal Types (never exposed outside RapydAdapter) ────────────────
 
-/** Rapyd-native webhook shape — never leaves the adapter boundary. */
-export interface RapydWebhookPayload {
-  id:                   string;
-  type:                 string;
-  data: {
-    id:                  string;
-    amount:              number;
-    currency:            string;
-    status:              string;
-    payment_method_type: string;
-    created_at:          number;
-    metadata:            Record<string, unknown>;
-  };
-  trigger_operation_id: string;
-  status:               string;
-  created_at:           number;
-}
 
-export interface RapydStatus {
-  error_code:     string;
-  status:         string;   // "SUCCESS" | "ERROR"
-  message:        string;
-  response_code:  string;
-  operation_id:   string;
-}
 
-export interface RapydCheckoutRequest {
-  amount:                          string;  // MUST be string: "12.50"
-  currency:                        string;
-  country:                         string;
-  payment_method_types_include?:   string[];
-  payment_method_types_exclude?:   string[];
-  customer?:                       string;
-  merchant_reference_id?:          string;
-  description?:                    string;
-  metadata?:                       Record<string, string>;
-  complete_checkout_url?:          string;
-  error_payment_url?:              string;
-  expiration?:                     number;
-  payment_expiration?:             number;
-  // escrow: NOT USED — OpalSwift does not hold funds in escrow.
-}
 
-export interface RapydCheckoutResponse {
-  status: RapydStatus;
-  data?: {
-    id:                      string;
-    redirect_url:            string;
-    status:                  string;
-    page_expiration:         number;
-    merchant_reference_id?:  string;
-    customer?:               string;
-    payment?: {
-      id:         string;
-      amount:     number;
-      currency:   string;
-      status:     string;
-      created_at: number;
-    };
-  };
-}
 
-export interface RapydRefundRequest {
-  payment:               string;
-  amount?:               string;  // MUST be string for partial refunds
-  currency?:             string;
-  reason?:               string;
-  metadata?:             Record<string, string>;
-  merchant_reference_id?: string;
-}
 
-export interface RapydSubscriptionRequest {
-  customer:                string;
-  payment_method:          string;
-  subscription_items: Array<{
-    plan:       string;
-    quantity?:  number;
-  }>;
-  billing_cycle_anchor?:   number;
-  cancel_at_period_end?:   boolean;
-  days_until_due?:         number;
-  metadata?:               Record<string, string>;
-  trial_end?:              number;
-  trial_period_days?:      number;
-}
+
+
+
+
+
+
 
 // ── Yesh Internal Types ───────────────────────────────────────────────────────
 
@@ -410,12 +333,7 @@ export interface YeshVATReportResponse {
 
 // ── Tenant Config Types ───────────────────────────────────────────────────────
 
-export interface RapydConfig {
-  access_key:    string;   // non-sensitive, safe in DB
-  secret_key_ref: string;  // vault reference — NEVER plaintext
-  sandbox:       boolean;
-  customer_id?:  string;
-}
+
 
 export interface YeshConfig {
   api_key_ref:  string;  // vault reference — NEVER plaintext
@@ -437,9 +355,8 @@ export interface TranzilaConfig {
 
 export interface TenantProviderConfig {
   id:                 string;
-  payment_provider:   'rapyd' | 'icount_paypage' | 'grow' | 'tranzila';
+  payment_provider:   'icount_paypage' | 'grow' | 'tranzila';
   invoicing_provider: 'yesh' | 'icount' | 'tranzila';
-  rapyd_config?:      RapydConfig;
   yesh_config?:       YeshConfig;
   tranzila_config?:   TranzilaConfig;
   /** Injected by factory callers — required for TranzilaInvoicingAdapter (PDF storage + DB writes) */
@@ -486,7 +403,7 @@ export class ValidationError extends Error {
 export class AuthenticationError extends Error {
   constructor(
     message: string,
-    public provider: 'yesh' | 'rapyd'
+    public provider: 'yesh'
   ) {
     super(message);
     this.name = 'AuthenticationError';

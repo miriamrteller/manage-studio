@@ -19,7 +19,6 @@
 
 import type { IPaymentProvider, IInvoicingProvider, TenantProviderConfig } from "./types.ts";
 import { YeshInvoiceAdapter }              from "./yesh.ts";
-import { RapydAdapter }                    from "./rapyd.ts";
 import { TranzilaPaymentAdapter }          from "./tranzila.ts";
 import { TranzilaInvoicingAdapter }        from "./tranzila-invoicing.ts";
 import { MockTranzilaPaymentAdapter }      from "./mock-tranzila.ts";
@@ -69,21 +68,13 @@ export class SupabaseVaultResolver implements SecretResolver {
 
 /**
  * Creates the appropriate IPaymentProvider for the tenant.
- * ONLY this function may instantiate RapydAdapter, TranzilaPaymentAdapter, etc.
+ * ONLY this function may instantiate TranzilaPaymentAdapter, YeshInvoiceAdapter, etc.
  */
 export async function providerForPayment(
   tenant: TenantProviderConfig,
   secretResolver: SecretResolver,
 ): Promise<IPaymentProvider> {
   switch (tenant.payment_provider) {
-    case "rapyd": {
-      if (!tenant.rapyd_config) {
-        throw new Error(`Tenant ${tenant.id} has payment_provider='rapyd' but no rapyd_config`);
-      }
-      const resolvedSecretKey = await secretResolver.resolve(tenant.rapyd_config.secret_key_ref);
-      return new RapydAdapter({ ...tenant.rapyd_config, resolvedSecretKey });
-    }
-
     case "tranzila": {
       if (!tenant.tranzila_config) {
         throw new Error(

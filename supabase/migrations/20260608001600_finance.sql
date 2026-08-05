@@ -265,96 +265,7 @@ BEGIN
 END;
 $$;
 
--- ── Rapyd / Yesh / Tranzila credential RPCs (pgp_sym_encrypt; mirror Grow auth) ──
-
-CREATE OR REPLACE FUNCTION save_tenant_rapyd_credentials(
-  p_access_key TEXT,
-  p_secret_key TEXT,
-  p_sandbox    BOOLEAN DEFAULT TRUE
-)
-RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions AS $$
-DECLARE
-  enc_key     TEXT;
-  v_tenant_id UUID;
-BEGIN
-  v_tenant_id := get_my_tenant_id();
-  IF v_tenant_id IS NULL THEN RAISE EXCEPTION 'Not authenticated'; END IF;
-  IF NOT EXISTS (
-    SELECT 1 FROM user_profiles
-    WHERE id = auth.uid() AND tenant_id = v_tenant_id AND 'tenant_admin' = ANY(role)
-  ) THEN
-    RAISE EXCEPTION 'tenant_admin role required';
-  END IF;
-  IF p_access_key IS NULL OR trim(p_access_key) = '' THEN
-    RAISE EXCEPTION 'p_access_key is required';
-  END IF;
-  enc_key := get_app_encryption_key();
-
-  UPDATE payment_method_tokens SET
-    revoked_at = now(), is_default = false, updated_at = now()
-  WHERE tenant_id = v_tenant_id AND provider <> 'rapyd' AND revoked_at IS NULL;
-
-  UPDATE tenants SET
-    payment_provider            = 'rapyd',
-    payment_provider_sandbox    = COALESCE(p_sandbox, true),
-    payment_provider_public_key = NULLIF(trim(p_access_key), ''),
-    rapyd_config = jsonb_strip_nulls(jsonb_build_object(
-      'access_key', trim(p_access_key),
-      'sandbox', COALESCE(p_sandbox, true),
-      'customer_id', rapyd_config->>'customer_id'
-    )),
-    payment_provider_secret_enc = CASE
-      WHEN p_secret_key IS NOT NULL AND trim(p_secret_key) <> ''
-      THEN pgp_sym_encrypt(trim(p_secret_key), enc_key)
-      ELSE payment_provider_secret_enc
-    END,
-    payment_provider_updated_at = now(),
-    updated_at = now()
-  WHERE id = v_tenant_id;
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION get_tenant_rapyd_credentials(p_tenant_id UUID)
-RETURNS TABLE (
-  access_key  TEXT,
-  secret_key  TEXT,
-  sandbox     BOOLEAN,
-  customer_id TEXT
-)
-LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions AS $$
-DECLARE enc_key TEXT;
-BEGIN
-  IF NOT is_service_role() THEN
-    RAISE EXCEPTION 'get_tenant_rapyd_credentials: service_role only';
-  END IF;
-  enc_key := get_app_encryption_key();
-  RETURN QUERY SELECT
-    COALESCE(t.rapyd_config->>'access_key', t.payment_provider_public_key),
-    CASE WHEN t.payment_provider_secret_enc IS NOT NULL
-      THEN pgp_sym_decrypt(t.payment_provider_secret_enc, enc_key) ELSE NULL END,
-    COALESCE((t.rapyd_config->>'sandbox')::boolean, t.payment_provider_sandbox),
-    t.rapyd_config->>'customer_id'
-  FROM tenants t
-  WHERE t.id = p_tenant_id AND t.payment_provider = 'rapyd';
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION set_tenant_rapyd_customer_id(
-  p_tenant_id   UUID,
-  p_customer_id TEXT
-)
-RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
-BEGIN
-  IF NOT is_service_role() THEN
-    RAISE EXCEPTION 'set_tenant_rapyd_customer_id: service_role only';
-  END IF;
-  UPDATE tenants SET
-    rapyd_config = COALESCE(rapyd_config, '{}'::jsonb)
-      || jsonb_build_object('customer_id', p_customer_id),
-    updated_at = now()
-  WHERE id = p_tenant_id;
-END;
-$$;
+-- ── Yesh / Tranzila credential RPCs (pgp_sym_encrypt; mirror Grow auth) ──
 
 CREATE OR REPLACE FUNCTION save_tenant_yesh_credentials(
   p_company_id TEXT,
@@ -601,18 +512,13 @@ GRANT EXECUTE ON FUNCTION get_tenant_invoicing_credentials(UUID)            TO s
 GRANT EXECUTE ON FUNCTION save_tenant_invoicing_credentials(TEXT, TEXT, TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION save_tenant_grow_credentials(TEXT, TEXT, TEXT)   TO authenticated;
 GRANT EXECUTE ON FUNCTION save_tenant_icount_credentials(TEXT, TEXT, TEXT) TO authenticated;
-GRANT EXECUTE ON FUNCTION save_tenant_rapyd_credentials(TEXT, TEXT, BOOLEAN) TO authenticated;
 GRANT EXECUTE ON FUNCTION save_tenant_yesh_credentials(TEXT, TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION save_tenant_tranzila_credentials(TEXT, TEXT, TEXT) TO authenticated;
 
-REVOKE ALL ON FUNCTION get_tenant_rapyd_credentials(UUID) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION get_tenant_yesh_credentials(UUID) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION get_tenant_tranzila_credentials(UUID) FROM PUBLIC, anon, authenticated;
-REVOKE ALL ON FUNCTION set_tenant_rapyd_customer_id(UUID, TEXT) FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION get_tenant_rapyd_credentials(UUID) TO service_role;
 GRANT EXECUTE ON FUNCTION get_tenant_yesh_credentials(UUID) TO service_role;
 GRANT EXECUTE ON FUNCTION get_tenant_tranzila_credentials(UUID) TO service_role;
-GRANT EXECUTE ON FUNCTION set_tenant_rapyd_customer_id(UUID, TEXT) TO service_role;
 GRANT EXECUTE ON FUNCTION get_billing_account_payment_method(UUID)          TO authenticated;
 
 ALTER TABLE payments               ENABLE ROW LEVEL SECURITY;

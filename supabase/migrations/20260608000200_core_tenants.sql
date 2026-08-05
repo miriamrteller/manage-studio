@@ -105,7 +105,7 @@ CREATE TABLE tenants (
   onboarding_status             TEXT        NOT NULL DEFAULT 'pending'
                                 CHECK (onboarding_status IN ('pending','complete')),
   -- Payment capture (money movement). Slug validated in app/Zod — no Postgres CHECK enum.
-  -- Allowed app slugs: stripe|mock|grow|icount|rapyd|tranzila
+  -- Allowed app slugs: stripe|mock|grow|icount|invoice4u|ypay
   payment_provider              TEXT        NOT NULL DEFAULT 'stripe',
   payment_provider_public_key   TEXT,
   payment_provider_secret_enc   BYTEA,
@@ -114,9 +114,7 @@ CREATE TABLE tenants (
   payment_provider_updated_at   TIMESTAMPTZ,
   payment_provider_sandbox      BOOLEAN     NOT NULL DEFAULT true,
   -- Provider-specific non-secret config (secrets stay in *_enc BYTEA)
-  -- rapyd_config: { access_key, sandbox, customer_id? }
   -- yesh_config:  { company_id }
-  rapyd_config                  JSONB,
   yesh_config                   JSONB,
   tranzila_terminal_name        TEXT
                                 CHECK (tranzila_terminal_name IS NULL
@@ -159,16 +157,11 @@ COMMENT ON COLUMN tenants.vat_type IS
   'Grow vatType pass-through: 1=included (default), 2=before VAT, 3=exempt. Grow owns document legality.';
 COMMENT ON COLUMN tenants.plan IS 'Access tier: essential (appointments) or professional (class enrolment).';
 COMMENT ON COLUMN tenants.skin IS 'Vertical id (FK verticals). Controls theming and feature skin_restriction.';
-COMMENT ON COLUMN tenants.rapyd_config IS
-  'Non-secret Rapyd fields: access_key, sandbox, customer_id. Secret key lives in payment_provider_secret_enc.';
 COMMENT ON COLUMN tenants.yesh_config IS
   'Non-secret Yesh fields: company_id. API key lives in invoicing_api_key_enc.';
 COMMENT ON COLUMN tenants.tranzila_terminal_name IS
   'Per-tenant Tranzila terminal name. App/secret keys in payment_provider_*_enc when payment_provider=tranzila.';
 
-CREATE INDEX idx_tenants_rapyd_access_key
-  ON tenants ((rapyd_config->>'access_key'))
-  WHERE rapyd_config->>'access_key' IS NOT NULL;
 
 CREATE TABLE user_profiles (
   id         UUID        PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
