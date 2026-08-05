@@ -5,10 +5,12 @@ import { MockGrowPaymentProvider } from "./providers/mock-grow.ts";
 import { MockIcountPaymentProvider } from "./providers/mock-icount.ts";
 import { MockInvoice4uPaymentProvider } from "./providers/mock-invoice4u.ts";
 import { MockYpayPaymentProvider } from "./providers/mock-ypay.ts";
+import { MockTranzilaPaymentProvider } from "./providers/mock-tranzila-payment.ts";
 import { GrowPaymentProvider } from "./providers/grow.ts";
 import { IcountPaymentProvider } from "./providers/icount.ts";
 import { Invoice4uPaymentProvider } from "./providers/invoice4u.ts";
 import { YpayPaymentProvider } from "./providers/ypay.ts";
+import { TranzilaPaymentProvider } from "./providers/tranzila-payment.ts";
 import { StripePaymentProvider } from "./providers/stripe.ts";
 import { parsePaymentProviderSlug, type PaymentProviderSlug } from "./registry.ts";
 import type { PaymentProvider } from "./types.ts";
@@ -40,6 +42,10 @@ export function getPaymentProvider(
       return getEnv("YPAY_MOCK") === "true"
         ? new MockYpayPaymentProvider(service)
         : new YpayPaymentProvider(service);
+    case "tranzila":
+      return getEnv("TRANZILA_MOCK") === "true"
+        ? new MockTranzilaPaymentProvider(service)
+        : new TranzilaPaymentProvider(service);
     default: {
       const _exhaustive: never = parsed;
       return _exhaustive;
