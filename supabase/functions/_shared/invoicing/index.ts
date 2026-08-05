@@ -5,6 +5,8 @@ import { GrowInvoicingProvider } from "./providers/grow.ts";
 import { IcountInvoicingProvider } from "./providers/icount.ts";
 import { Invoice4uInvoicingProvider } from "./providers/invoice4u.ts";
 import { YpayInvoicingProvider } from "./providers/ypay.ts";
+import { TranzilaInvoicingProvider } from "./providers/tranzila.ts";
+import { YeshInvoicingProvider } from "./providers/yesh.ts";
 import { parseInvoicingProviderSlug, type InvoicingProviderSlug } from "./registry.ts";
 import type { InvoicingProvider } from "./types.ts";
 
@@ -14,6 +16,8 @@ const growProvider = new GrowInvoicingProvider();
 const icountProvider = new IcountInvoicingProvider();
 const invoice4uProvider = new Invoice4uInvoicingProvider();
 const ypayProvider = new YpayInvoicingProvider();
+const tranzilaProvider = new TranzilaInvoicingProvider();
+const yeshProvider = new YeshInvoicingProvider();
 
 export function getInvoicingProvider(slug: string | null | undefined): InvoicingProvider {
   const parsed: InvoicingProviderSlug = parseInvoicingProviderSlug(slug);
@@ -30,6 +34,10 @@ export function getInvoicingProvider(slug: string | null | undefined): Invoicing
       return invoice4uProvider;
     case "ypay":
       return ypayProvider;
+    case "tranzila":
+      return tranzilaProvider;
+    case "yesh":
+      return yeshProvider;
     default: {
       const _exhaustive: never = parsed;
       return _exhaustive;
