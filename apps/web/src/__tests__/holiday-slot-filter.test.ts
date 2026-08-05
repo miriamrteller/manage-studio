@@ -105,15 +105,15 @@ describe('edge and shared modules must not drift', () => {
       if (isSkippedHolidayIsoDate(iso)) skippedCount += 1;
       cursor.setUTCDate(cursor.getUTCDate() + 1);
     }
-    // 59 shaded observances, of which 31 remove classes/slots. The other 28 are
-    // shaded-only: national days (Yom HaShoah, Yom HaZikaron, Yom HaAtzma'ut, Yom
-    // Yerushalayim, Rabin/Herzl/Ben-Gurion Day, Sigd, Family Day, Hebrew Language Day),
-    // minor holidays (Purim, Shushan Purim, Tu BiShvat, Lag BaOmer, Pesach Sheni,
-    // Chanukah's 8th day, Leil Selichot) and optional fasts (Yom Kippur Katan,
-    // Ta'anit BeHaB). See the open question in the PR: if the studio also closes on
-    // Purim / Yom HaAtzma'ut, widen the skip set.
+    // 59 shaded observances, of which 33 remove classes/slots — the Yom Tov / Chol
+    // HaMoed / Chanukah / public-fast days plus the two studio closures (Purim,
+    // Yom HaAtzma'ut) added by ALWAYS_SKIPPED_DESCS on 2026-08-06. The other 26 are
+    // shaded-only: national days (Yom HaShoah, Yom HaZikaron, Yom Yerushalayim,
+    // Rabin/Herzl/Ben-Gurion Day, Sigd, Family Day, Hebrew Language Day), minor
+    // holidays (Shushan Purim, Tu BiShvat, Lag BaOmer, Pesach Sheni, Chanukah's 8th
+    // day, Leil Selichot) and optional fasts (Yom Kippur Katan, Ta'anit BeHaB).
     expect(shadedCount).toBe(59);
-    expect(skippedCount).toBe(31);
+    expect(skippedCount).toBe(33);
   });
 
   it('skips exactly the Yom Tov / Chol HaMoed / Chanukah / public-fast days of 5786', () => {
@@ -127,14 +127,14 @@ describe('edge and shared modules must not drift', () => {
       '2026-04-01', // Ta'anit Bechorot / Erev Pesach
       '2026-04-08', // Pesach VII
       '2026-05-22', // Shavuot
+      '2026-03-03', // Purim — studio cancel decision (2026-08-06)
+      '2026-04-22', // Yom HaAtzma'ut — studio cancel decision (2026-08-06)
     ]) {
       expect(isSkippedHolidayIsoDate(iso), `expected ${iso} to be skipped`).toBe(true);
     }
     for (const iso of [
       '2025-12-22', // Chanukah 8th day (MINOR_HOLIDAY)
       '2026-02-02', // Tu BiShvat
-      '2026-03-03', // Purim
-      '2026-04-22', // Yom HaAtzma'ut
       '2026-05-05', // Lag BaOmer
       '2025-11-20', // Sigd + Yom Kippur Katan
       '2026-04-30', // Ta'anit BeHaB

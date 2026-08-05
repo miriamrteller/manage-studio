@@ -1,6 +1,6 @@
 /**
  * DL-HOLIDAY-001 — shared holiday utility, calendar shading and public-schedule filter.
- * Covers spec test IDs T-01…T-19 and T-26/T-27.
+ * Covers spec test IDs T-01…T-19 and T-26…T-29.
  * Run: pnpm -C apps/web test holidays.test.ts
  *
  * Dates were verified against @hebcal/core (Israeli observance, `il = true`).
@@ -102,6 +102,18 @@ describe('isHoliday — major holidays (T-01…T-10)', () => {
   });
 });
 
+describe('studio cancel decisions (T-28, T-29)', () => {
+  it('T-28 Purim 5785 (Mar 14 2025) is now a skipped holiday', () => {
+    expect(isSkippedHoliday(d(2025, 3, 14))).toBe(true);
+    expect(isHoliday(d(2025, 3, 14))).toBe(true);
+  });
+
+  it("T-29 Yom HaAtzma'ut 5785 (May 1 2025) is now a skipped holiday", () => {
+    expect(isSkippedHoliday(d(2025, 5, 1))).toBe(true);
+    expect(isHoliday(d(2025, 5, 1))).toBe(true);
+  });
+});
+
 describe('isHoliday — eves, fasts and regular days (T-11…T-16)', () => {
   it('T-11 Erev Rosh Hashana (Oct 2 2024) is not itself a holiday but is an eve', () => {
     expect(isHoliday(d(2024, 10, 2))).toBe(false);
@@ -193,13 +205,13 @@ describe('calendar shading — isSkipped (T-26)', () => {
     }
   });
 
-  it('shades but does not skip minor/modern holidays (Purim, Yom HaAtzmaut)', () => {
+  it("shades AND skips Purim and Yom HaAtzma'ut (studio cancel decision)", () => {
     const purim = getDayShade(marker(2025, 3, 14));
     expect(purim.shaded).toBe(true);
-    expect(purim.isSkipped).toBe(false);
+    expect(purim.isSkipped).toBe(true);
     const atzmaut = getDayShade(marker(2025, 5, 1));
     expect(atzmaut.shaded).toBe(true);
-    expect(atzmaut.isSkipped).toBe(false);
+    expect(atzmaut.isSkipped).toBe(true);
   });
 
   it('shades but does not skip Shabbat, and keeps the legacy shape', () => {
@@ -303,6 +315,17 @@ describe('public schedule filtering (T-18, T-19, T-27)', () => {
   it('keeps classes on shaded-only days (Rabin Memorial Day)', () => {
     const events = [event({ id: 'offering-1-2024-11-13', starts_at: '2024-11-13T06:00:00Z' })];
     expect(filterHolidayOccurrences(events)).toHaveLength(1);
+  });
+
+  it("drops recurring class occurrences on Purim and Yom HaAtzma'ut (5785)", () => {
+    // Purim 5785 = Mar 14 2025, Yom HaAtzma'ut 5785 = May 1 2025
+    const events = [
+      event({ id: 'offering-1-2025-03-14', starts_at: '2025-03-14T06:00:00Z' }),
+      event({ id: 'offering-1-2025-05-01', starts_at: '2025-05-01T06:00:00Z' }),
+      event({ id: 'offering-1-2025-03-15', starts_at: '2025-03-15T06:00:00Z' }), // normal Sat after Purim
+    ];
+    const result = filterHolidayOccurrences(events);
+    expect(result.map((e) => e.id)).toEqual(['offering-1-2025-03-15']);
   });
 
   it('T-27 a weekly class through Sukkot 5785 loses Oct 17–24', () => {

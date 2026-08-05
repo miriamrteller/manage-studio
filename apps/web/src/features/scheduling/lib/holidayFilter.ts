@@ -16,11 +16,12 @@ import type { ScheduleEvent } from '../types';
  * holiday means it. The Israel civil day of `starts_at` is what gets tested, so the
  * result never depends on the viewer's timezone.
  *
- * "Holiday" here means `SKIP_FLAGS` (Yom Tov, Chol HaMoed, Chanukah, fasts) — the same
+ * "Holiday" here means `SKIP_FLAGS` (Yom Tov, Chol HaMoed, Chanukah, fasts) plus the
+ * named studio closures in `ALWAYS_SKIPPED_DESCS` (Purim, Yom HaAtzma'ut) — the same
  * predicate that drives `DayShade.isSkipped` and the holiday export, so the calendar,
  * the timetable and the exported "skipped dates" list can never disagree. Shaded-only
- * days (Purim, Yom HaAtzma'ut, Rabin Memorial Day, Sigd, Tu BiShvat, Lag BaOmer …) keep
- * their classes; see `@shared/lib/holidays` for how to widen this.
+ * days (Rabin Memorial Day, Sigd, Tu BiShvat, Lag BaOmer …) keep their classes; see
+ * `@shared/lib/holidays` for how to widen this.
  */
 export function filterHolidayOccurrences(events: ScheduleEvent[]): ScheduleEvent[] {
   return events.filter((event) => {

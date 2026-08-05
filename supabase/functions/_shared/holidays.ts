@@ -41,10 +41,15 @@ export const SKIP_FLAGS =
  */
 const NEVER_SKIPPED_DESCS = new Set(["Ta'anit BeHaB"]);
 
+/** Studio decision (2026-08-06): cancel sessions on these days. See shared module. */
+const ALWAYS_SKIPPED_DESCS = new Set(["Purim", "Yom HaAtzma'ut"]);
+
 type HolidayEvent = { getFlags(): number; getDesc(): string };
 
 function skipsSchedule(ev: HolidayEvent): boolean {
   const eventFlags = ev.getFlags();
+  // Studio override: always cancel regardless of SKIP_FLAGS mask
+  if ((eventFlags & SHADE_FLAGS) !== 0 && ALWAYS_SKIPPED_DESCS.has(ev.getDesc())) return true;
   if ((eventFlags & SKIP_FLAGS) === 0) return false;
   if ((eventFlags & flags.YOM_KIPPUR_KATAN) !== 0) return false;
   return !NEVER_SKIPPED_DESCS.has(ev.getDesc());
@@ -85,9 +90,10 @@ export function isHolidayIsoDate(isoDate: string): boolean {
  * canonical "no bookable slots today" predicate. Invalid input → false.
  *
  * Deliberately narrower than `isHolidayIsoDate`: days that are ordinary working days in
- * Israel (Rabin Memorial Day, Sigd, Tu BiShvat, Lag BaOmer, Purim, Yom HaAtzma'ut …) are
- * shaded on the calendar but remain bookable, and this matches `DayShade.isSkipped` in
- * the web app so the calendar and the booking widget cannot disagree.
+ * Israel (Rabin Memorial Day, Sigd, Tu BiShvat, Lag BaOmer …) are shaded on the calendar
+ * but remain bookable, and this matches `DayShade.isSkipped` in the web app so the
+ * calendar and the booking widget cannot disagree. The named studio closures in
+ * `ALWAYS_SKIPPED_DESCS` (Purim, Yom HaAtzma'ut) are skipped regardless of the mask.
  */
 export function isSkippedHolidayIsoDate(isoDate: string): boolean {
   if (!ISO_DATE_RE.test(isoDate)) return false;

@@ -9,9 +9,10 @@ import { SHADE_FLAGS, isSkippedHoliday } from '@shared/lib/holidays';
  * The masks and the skip predicate now live in `@shared/lib/holidays` so the calendar
  * shading, the public schedule filter and the edge-function slot filter cannot drift
  * apart. `isSkippedHoliday()` is the narrower set whose dates are dropped from recurring
- * generation (Yom Tov, fasts, Chol HaMoed, Chanukah) — minor/modern holidays such as
- * Purim or Yom HaAtzma'ut, and optional custom fasts such as Yom Kippur Katan, are
- * shaded but keep their classes.
+ * generation (Yom Tov, fasts, Chol HaMoed, Chanukah, plus the named studio closures
+ * Purim and Yom HaAtzma'ut) — other minor/modern holidays such as Tu BiShvat or Lag
+ * BaOmer, and optional custom fasts such as Yom Kippur Katan, are shaded but keep
+ * their classes.
  */
 
 interface HolidayNames {

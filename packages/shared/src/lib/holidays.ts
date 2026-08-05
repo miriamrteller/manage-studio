@@ -18,14 +18,15 @@
  *   holiday export lists. `isSkippedHoliday()` / `isSkippedHolidayInIsrael()`.
  *   Scheduling filters intentionally use the narrower mask so that days which are
  *   ordinary working days in Israel (Yitzhak Rabin Memorial Day, Sigd, Tu BiShvat,
- *   Lag BaOmer, Purim, Yom HaAtzma'ut …) stay shaded but keep their classes, and so the
+ *   Lag BaOmer …) stay shaded but keep their classes, and so the
  *   "skipped dates" export always matches what actually disappeared from the schedule.
+ *   `ALWAYS_SKIPPED_DESCS` adds back specific studio closures (Purim, Yom HaAtzma'ut).
  *   To skip every shaded holiday instead, swap `isSkippedHoliday*` for `isHoliday*` in
  *   `holidayFilter.ts` and `supabase/functions/_shared/holidays.ts`.
  *
  * @module holidays
  */
-import { HDate, HebrewCalendar, flags, type HolidayEvent } from '@hebcal/core';
+import { HDate, HebrewCalendar, flags } from '@hebcal/core';
 
 /**
  * Holiday categories that are visually shaded on the calendar. Byte-for-byte the mask
@@ -43,8 +44,9 @@ export const SHADE_FLAGS =
 
 /**
  * Narrower mask for the calendar's "skipped" state: Yom Tov, fasts, Chol HaMoed and
- * Chanukah candle days. Minor/modern holidays (Purim, Yom HaAtzma'ut …) are shaded
- * but not marked skipped, per spec §7.
+ * Chanukah candle days. Minor/modern holidays (Tu BiShvat, Lag BaOmer, Sigd …) are
+ * shaded but not marked skipped, per spec §7 — except for the named studio closures in
+ * `ALWAYS_SKIPPED_DESCS`, which skip regardless of this mask.
  */
 export const SKIP_FLAGS =
   flags.CHAG |
@@ -65,8 +67,17 @@ export const SKIP_FLAGS =
  */
 const NEVER_SKIPPED_DESCS = new Set(["Ta'anit BeHaB"]);
 
+/**
+ * Studio decision (2026-08-06): these holidays cancel sessions even though they are
+ * technically ordinary working days in Israel. Override SKIP_FLAGS by name.
+ * `getDesc()` returns hebcal's stable ASCII key, unlike the localised `render()`.
+ */
+const ALWAYS_SKIPPED_DESCS = new Set(["Purim", "Yom HaAtzma'ut"]);
+
 function skipsSchedule(ev: { getFlags(): number; getDesc(): string }): boolean {
   const eventFlags = ev.getFlags();
+  // Studio override: always cancel regardless of SKIP_FLAGS mask
+  if ((eventFlags & SHADE_FLAGS) !== 0 && ALWAYS_SKIPPED_DESCS.has(ev.getDesc())) return true;
   if ((eventFlags & SKIP_FLAGS) === 0) return false;
   if ((eventFlags & flags.YOM_KIPPUR_KATAN) !== 0) return false;
   return !NEVER_SKIPPED_DESCS.has(ev.getDesc());
@@ -96,7 +107,7 @@ function civilDay(date: Date): Date {
 }
 
 /** Holiday events on a civil day, restricted to Israeli observance. */
-function eventsOn(date: Date): HolidayEvent[] {
+function eventsOn(date: Date) {
   return HebrewCalendar.getHolidaysOnDate(new HDate(civilDay(date)), true) ?? [];
 }
 
@@ -113,7 +124,11 @@ export function isHoliday(date: Date): boolean {
   return eventsOn(date).some((ev) => (ev.getFlags() & SHADE_FLAGS) !== 0);
 }
 
-/** True when `date` is a holiday in the narrower "skip recurring sessions" set. */
+/**
+ * True when `date` is a holiday in the narrower "skip recurring sessions" set,
+ * i.e. `SKIP_FLAGS` minus `NEVER_SKIPPED_DESCS`, plus the named studio closures in
+ * `ALWAYS_SKIPPED_DESCS` (Purim, Yom HaAtzma'ut).
+ */
 export function isSkippedHoliday(date: Date): boolean {
   return eventsOn(date).some(skipsSchedule);
 }
