@@ -464,14 +464,22 @@ describe('process-refund provider isolation (I4-T3, I4-T4, U4-mock)', () => {
 
 describe('credential RPC token invalidation (I4-T5)', () => {
   const migrationsDir = resolve(__dirname, '../../../../supabase/migrations');
-  const tokenMigration = readFileSync(
-    resolve(migrationsDir, '20260629000100_provider_token_invalidation.sql'),
+
+  // ex-20260629000100_provider_token_invalidation.sql was folded into the migrations
+  // that define these functions, so each is now asserted against its final definition
+  // rather than against a later patch.
+  const icountMigration = readFileSync(
+    resolve(migrationsDir, '20260628000100_icount_credentials.sql'),
+    'utf8',
+  );
+  const growMigration = readFileSync(
+    resolve(migrationsDir, '20260608001600_finance.sql'),
     'utf8',
   );
 
   it('save_tenant_icount_credentials revokes non-icount tokens for the tenant', () => {
     const icountBlock =
-      tokenMigration.match(
+      icountMigration.match(
         /CREATE OR REPLACE FUNCTION save_tenant_icount_credentials[\s\S]*?END;\s*\$\$;/,
       )?.[0] ?? '';
     expect(icountBlock).toContain('UPDATE payment_method_tokens SET');
@@ -481,7 +489,7 @@ describe('credential RPC token invalidation (I4-T5)', () => {
 
   it('save_tenant_grow_credentials revokes non-grow tokens for the tenant', () => {
     const growBlock =
-      tokenMigration.match(
+      growMigration.match(
         /CREATE OR REPLACE FUNCTION save_tenant_grow_credentials[\s\S]*?END;\s*\$\$;/,
       )?.[0] ?? '';
     expect(growBlock).toContain('UPDATE payment_method_tokens SET');

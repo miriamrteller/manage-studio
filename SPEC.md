@@ -98,7 +98,7 @@ Each school configures their own Twilio, Resend, and Stripe keys. You store them
 WCAG 2.1 Level AA is a legal requirement for Israeli community centers (דינ נגישות לאנשים עם מוגבלות, 1998). All UI features must pass automated axe-core tests before merge. Manual NVDA Hebrew smoke tests verify 15 minutes pre-deployment. Accessibility is part of the Definition of Done for every feature.
 
 **1.12 Tenant branding and configuration are separate from code.**
-Each tenant has configurable properties: `language_default`, `country`, `currency`, `vat_rate`, `prices_include_vat`, `primary_color`, `accent_color`, and future fields like `logo_url`.
+Each tenant has configurable properties: `language_default`, `country`, `currency`, `primary_color`, `accent_color`, and future fields like `logo_url`.
 
 - **Never hardcode tenant-specific values** in components (no `text-[#76335a]`, no `'he-IL'` strings).
 - **Always use CSS variables and configuration hooks** (`useTenant()` for locale, CSS variables for colors/fonts).
@@ -293,56 +293,49 @@ Edge Functions
 
 **Problem (V1 bug):** `offerings.price_minor` is shown raw in the catalogue (e.g. ₪240) while checkout/email/Stripe add 17% VAT (₪280.80). Admin expects the entered price to be what the customer pays.
 
+> **Superseded 2026-06-28, rewritten 2026-08-05.** The design below originally
+> split VAT locally from tenant-level flags. It no longer does. VAT is
+> **provider-authoritative**: the invoicing provider returns `pretax`, `vat` and
+> `total`, and the application never recomputes them. `tenants.vat_rate` and
+> `tenants.prices_include_vat` have been removed from the schema.
+
 **Locked decisions:**
 
 | Decision | Value |
 | -------- | ----- |
-| Tenant flag | `tenants.prices_include_vat BOOLEAN NOT NULL DEFAULT true` |
-| Default for IL B2C schools | `true` — admin-entered price is **gross** (what customer pays) |
-| Alternative mode | `false` — admin-entered price is **net**; VAT added at checkout |
-| V1 scope | Tenant-level flag only (no per-offering inclusive/exclusive override) |
-| `offerings.price_minor` | Always the admin-entered list price; meaning depends on `prices_include_vat` |
-| Rate | `vat_rate = tenant.vat_rate ?? 0.17` (V1; per-offering `vat_rate` deferred until `offerings.vat_rate` column exists) |
-| Dev schema changes | Edit **base** migration `20260608000200_core_tenants.sql` (do not add a one-off `ALTER` migration in dev); reset DB and re-push all migrations (see §2.5.3) |
+| Who owns the VAT split | The invoicing provider (Grow / iCount / Invoice4U / Green Invoice / Yesh) |
+| `offerings.price_minor` | Always **gross** — the amount the family pays |
+| App-side VAT arithmetic | None. `resolveOfferingPrice()` returns `vatMinor: 0`, `vatRate: 0`, `mode: 'gross'` |
+| Recorded VAT | `payments.pretax_amount_minor` / `vat_amount_minor` / `vat_rate`, written from the provider response at time of payment |
+| `vatRateApplied` from a provider | Display only — never derive a monetary value from it |
+| Pass-through to provider | `tenants.vat_type` (1=included, 2=before VAT, 3=exempt) and `invoice_license_number`. The provider owns document legality |
+| Dev schema changes | Edit the **base** migration (do not layer a one-off `ALTER`); reset the DB and re-push (see §2.5.3) |
 
 **Single implementation module:** `packages/shared/src/pricing.ts` (exported from `@shared`). All UI, Edge Functions, and offline payment recording call `resolveOfferingPrice()` — never duplicate formulas in Deno or React.
 
 **`resolveOfferingPrice()` contract** (all amounts in minor currency units):
 
-| Field | Inclusive (`prices_include_vat = true`) | Exclusive (`= false`) |
-| ----- | --------------------------------------- | --------------------- |
-| `listMinor` | `price_minor` | `price_minor` |
-| `chargeMinor` | `price_minor` | `price_minor + round(price_minor × vat_rate)` |
-| `pretaxMinor` | `round(price_minor / (1 + vat_rate))` | `price_minor` |
-| `vatMinor` | `chargeMinor - pretaxMinor` | `chargeMinor - pretaxMinor` |
-| `totalMinor` | same as `chargeMinor` | same as `chargeMinor` |
+| Field | Value |
+| ----- | ----- |
+| `listMinor` | `price_minor` |
+| `chargeMinor` | `price_minor` |
+| `totalMinor` | `price_minor` |
+| `pretaxMinor` | `0` — the provider decides this, not us |
+| `vatMinor` | `0` — as above |
+| `vatRate` | `0` |
+| `mode` | `'gross'` |
 
 **Display rules:**
 
 - Customer-facing surfaces (class cards, enrolment, payment email, pay page) show **`chargeMinor`** via `formatCurrency()` from `packages/shared/src/format.ts`.
-- Admin class form label/help reflects tenant mode (“incl. VAT” / “excl. VAT”).
-- Checkout summary (Phase 1C) may show pretax + VAT lines for transparency; **total line must equal `chargeMinor`**.
-
-**VAT split helper (inclusive mode)** — Issue #12; V1 uses `Math.round` on pretax (banker's rounding deferred):
+- The admin class form states that the entered price is the gross amount families pay. There is no tenant VAT mode to reflect.
+- A checkout summary must not invent a pretax/VAT breakdown. The authoritative split appears on the provider's tax document.
 
 ```typescript
-// packages/shared/src/pricing.ts
-export function calculateVat(totalMinor: number, vatRate: number) {
-  const pretaxExact = totalMinor / (1 + vatRate);
-  const pretax = Math.round(pretaxExact);
-  const vat = totalMinor - pretax;
-  return { pretax, vat, total: totalMinor };
-}
-
-export function addVatToPretax(pretaxMinor: number, vatRate: number) {
-  const vat = Math.round(pretaxMinor * vatRate);
-  return { pretax: pretaxMinor, vat, total: pretaxMinor + vat };
-}
-
+// packages/shared/src/pricing.ts — the whole contract
 export function resolveOfferingPrice(
   offering: { price_minor: number },
-  tenant: { vat_rate: number; prices_include_vat: boolean },
-) { /* implements table above; V1 uses tenant.vat_rate only */ }
+): OfferingPriceBreakdown; // gross-only; takes no tenant argument
 ```
 
 `apps/web/src/features/enrolment/lib/computeClassTotal.ts` remains a thin wrapper around `resolveOfferingPrice()` for backwards compatibility.
@@ -353,7 +346,7 @@ Manage Studio is the **system of record for enrolment pricing consistency**. Thi
 
 | Layer | Owner | Responsibility |
 | ----- | ----- | -------------- |
-| **List price semantics** | Manage Studio | `price_minor` + `prices_include_vat` → `resolveOfferingPrice()` |
+| **List price semantics** | Manage Studio | `price_minor` is gross → `resolveOfferingPrice()` |
 | **UI / email / quotes** | Manage Studio | Always `chargeMinor`; optional VAT breakdown |
 | **`payments` row** | Manage Studio | Immutable `pretax_amount_minor`, `vat_amount_minor`, `total_amount_minor`, `vat_rate` at time of payment |
 | **Card capture** | Stripe | `PaymentIntent.amount = totalMinor` (minor units); metadata carries our breakdown for webhook |
@@ -363,7 +356,7 @@ Manage Studio is the **system of record for enrolment pricing consistency**. Thi
 **Stripe (V1):**
 
 - Edge Function `create-checkout` loads offering + tenant, calls `resolveOfferingPrice()`, creates `PaymentIntent` with `amount: totalMinor`.
-- Metadata: `pretax_amount_minor`, `vat_amount_minor`, `total_amount_minor`, `vat_rate`, `prices_include_vat` (string), `tenant_id`, `engagement_id`, `offering_id`.
+- Metadata: `pretax_amount_minor`, `vat_amount_minor`, `total_amount_minor`, `vat_rate` (all from the provider response), `tenant_id`, `engagement_id`, `offering_id`.
 - `stripe-webhook` persists metadata into `payments` — does not re-derive VAT from `offerings.price_minor` alone.
 - Stripe Tax / automatic tax products are **out of scope for V1**; Israeli VAT is app-computed.
 
@@ -376,21 +369,19 @@ Manage Studio is the **system of record for enrolment pricing consistency**. Thi
 
 **Anti-patterns (forbidden):**
 
-- Showing `offerings.price_minor` to parents when `prices_include_vat` does not match display intent.
+- Deriving a pretax/VAT split in the app instead of using the provider response.
 - Adding VAT on top of an inclusive price in `create-checkout`.
 - Letting Stripe dashboard tax settings override per-enrolment amounts.
 - Recomputing VAT inside the Morning/Green Invoice adapter from gross catalogue price.
 
 #### 2.5.3 Dev schema change workflow (V1 — edit base migrations)
 
-> **`prices_include_vat`:** Steps 1–4 and reset completed (2026-06). Proceed with Phases 2–5 in [docs/plans/2026-06-02-vat-pricing.md](docs/plans/2026-06-02-vat-pricing.md).
-
 When changing core columns in **dev only** (no production tenants yet):
 
-1. Edit the **original** migration file (e.g. add `prices_include_vat` to `20260608000200_core_tenants.sql`).
+1. Edit the **original** migration file (e.g. add or drop a `tenants` column in `20260608000200_core_tenants.sql`).
 2. Update `get_tenant_config_by_subdomain` in `20260608001800_public_rpcs.sql` to return the new column.
-3. Grep repo for `vat_rate`, `price_minor`, `pretax`, `computeClassTotal`, `create-checkout` — align Edge Functions and web.
-4. Update `supabase/seed.sql` tenant `INSERT` (include `prices_include_vat = true`).
+3. Grep the repo for the column name and its camelCase form — align Edge Functions, web, generated types and seeds.
+4. Update the `supabase/seed.sql` tenant `INSERT` (and the `ON CONFLICT DO UPDATE` list).
 5. Reset and re-apply (local):
    ```bash
    pnpm db:reset-local          # or: supabase/reset_dev_db.sql then pnpm db:push
@@ -490,7 +481,6 @@ type TenantConfig = {
   language_default: 'he' | 'en';
   country: 'IL' | 'US';
   currency: string;
-  vat_rate: number;
   white_label?: TenantWhiteLabel;
   locale: string; // Derived via getLocale(language_default, country), e.g. 'he-IL'
   // No dir property — use resolveLanguage() + languageToDir() for <html> only
@@ -885,8 +875,7 @@ CREATE TABLE tenants (
   primary_color             TEXT        NOT NULL DEFAULT '#76335a',
   accent_color              TEXT        NOT NULL DEFAULT '#e99ac4',
   currency                  TEXT        NOT NULL DEFAULT 'ILS',
-  vat_rate                  NUMERIC(5,4) DEFAULT 0.17,
-  prices_include_vat        BOOLEAN     NOT NULL DEFAULT true,  -- see §2.5.1
+  -- No vat_rate / prices_include_vat: VAT is provider-authoritative (see §2.5.1)
   phone_region              TEXT        NOT NULL DEFAULT 'IL',
   phone_region_updated_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
   -- Stripe (Standard account per school; Connect deferred)
@@ -2241,7 +2230,6 @@ export async function getTenantConfig(
     twilioAccountSid: tenant.twilio_account_sid,
     twilioAuthToken: tenant.twilio_auth_token,
     twilioWhatsAppNumber: tenant.twilio_whatsapp_number,
-    vatRate: tenant.vat_rate,
     currency: tenant.currency,
     locale: getLocale(tenant.language_default, tenant.country),
   };
@@ -2834,13 +2822,20 @@ DATABASE
 [ ] Types regenerated: pnpm db:types:all (linked) when schema changed
 [ ] RLS verified: parent sees only own family; teacher sees only own tenant
 [ ] Invoice sequences seeded for the tenant
-[ ] Tenant VAT: vat_rate (0.17 עוסק מורשה / 0 עוסק פטור), prices_include_vat
+    (No tenant VAT step: VAT is provider-authoritative. tenants.vat_rate /
+     prices_include_vat were removed — the app never splits pretax/VAT.)
 [ ] pg_cron + pg_net enabled; cron.job lists scheduled jobs (02600)
 [ ] Platform cron config (SQL Editor → private.platform_config):
       supabase_functions_url = https://<project-ref>.supabase.co
       cron_secret            = <same value as Edge CRON_SECRET>
-[ ] Postgres encryption GUC for credential RPCs:
-      app.encryption_key     = <strong random secret — never commit>
+[ ] Encryption key for credential RPCs (SQL Editor → private.platform_config):
+      encryption_key         = <strong random secret — never commit>
+    NOT ALTER DATABASE: hosted Supabase denies custom GUCs, which is why
+    get_app_encryption_key() falls back to the table. The migrations seed no
+    key, so credential RPCs raise until this row exists — set it BEFORE
+    saving any provider credentials. No re-encrypt path: changing it later
+    orphans everything already encrypted.
+[ ] node scripts/verify-prod-config.mjs passes (pnpm verify:prod)
 
 GROW SINGLE-USER — per-tenant credentials (Meshulam dashboard → admin UI)
   Enter at Settings → Payments & invoices (Grow) / bundled-payments
@@ -3071,7 +3066,6 @@ Post–V1 finance hardening for richer dispute and ops visibility. **Keep bounda
 | `labels` | Yes (optional) | Deferred v1 |
 | `primary_color`, `accent_color` | Yes | Yes |
 | `language_default`, `country`, `currency`, `phone_region` | Yes | Yes |
-| `vat_rate`, `prices_include_vat` | Yes | Yes (tax page) |
 | Stripe keys | Yes (skippable) | Yes |
 | Twilio/Resend | Yes (skippable) | Yes (§6.x #4 prerequisite) |
 | Levels/terms/offerings | Optional seed | Existing setup pages |
@@ -3228,20 +3222,16 @@ describe("calculateVat", () => {
 });
 
 describe("resolveOfferingPrice", () => {
-  it("inclusive: charge equals list price_minor", () => {
-    const r = resolveOfferingPrice(
-      { price_minor: 24000 },
-      { vat_rate: 0.17, prices_include_vat: true },
-    );
+  it("is gross-only: charge equals list price_minor", () => {
+    const r = resolveOfferingPrice({ price_minor: 24000 });
     expect(r.chargeMinor).toBe(24000);
-    expect(r.pretaxMinor + r.vatMinor).toBe(24000);
+    expect(r.totalMinor).toBe(24000);
   });
-  it("exclusive: charge adds VAT to list", () => {
-    const r = resolveOfferingPrice(
-      { price_minor: 24000 },
-      { vat_rate: 0.17, prices_include_vat: false },
-    );
-    expect(r.chargeMinor).toBe(28080);
+  it("does not split VAT — the provider owns that", () => {
+    const r = resolveOfferingPrice({ price_minor: 24000 });
+    expect(r.pretaxMinor).toBe(0);
+    expect(r.vatMinor).toBe(0);
+    expect(r.mode).toBe("gross");
   });
 });
 

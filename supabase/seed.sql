@@ -9,9 +9,22 @@
 -- VAT on receipts/invoices is handled by the payment/invoicing provider.
 
 -- ============================================================================
+-- DEV ENCRYPTION KEY — throwaway, dev only.
+--
+-- Deliberately seeded here and NOT in 20260608000200_core_tenants.sql: seeds
+-- never run against production, so the migration chain cannot carry a key into
+-- a real project. On prod this row is inserted once, by hand, with a generated
+-- value (docs/deployment/GO-LIVE-PLAN.md Phase B). Until then the credential
+-- RPCs raise rather than encrypt with something public.
+-- ============================================================================
+INSERT INTO private.platform_config (key, value)
+VALUES ('encryption_key', 'UEJrMG6V+56CEafyEu+H8wIzIdm+fO3El58wQ7323nU=')
+ON CONFLICT (key) DO NOTHING;
+
+-- ============================================================================
 -- TENANTS (20260608000200_core_tenants.sql)
 -- ============================================================================
-INSERT INTO tenants (id, name, subdomain, language_default, country, primary_color, accent_color, currency, vat_rate, prices_include_vat, phone_region, business_preset, labels, from_email, waiver_require_otp, payment_provider, invoicing_provider, plan, skin)
+INSERT INTO tenants (id, name, subdomain, language_default, country, primary_color, accent_color, currency, phone_region, business_preset, labels, from_email, waiver_require_otp, payment_provider, invoicing_provider, plan, skin)
 VALUES (
   '00000000-0000-0000-0000-000000000001'::uuid,
   'Creative Ballet Academy',
@@ -21,8 +34,6 @@ VALUES (
   '#76335a',
   '#e99ac4',
   'ILS',
-  0,
-  true,
   'IL',
   'programs',
   '{}'::jsonb,
@@ -39,8 +50,6 @@ VALUES (
   primary_color = EXCLUDED.primary_color,
   accent_color = EXCLUDED.accent_color,
   currency = EXCLUDED.currency,
-  vat_rate = EXCLUDED.vat_rate,
-  prices_include_vat = EXCLUDED.prices_include_vat,
   phone_region = EXCLUDED.phone_region,
   business_preset = EXCLUDED.business_preset,
   labels = EXCLUDED.labels,

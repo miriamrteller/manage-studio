@@ -17,11 +17,10 @@ Before starting, confirm:
 
 - [ ] Meshulam/Grow **sandbox** account + payment page created
 - [ ] Sandbox credentials: `userId`, `pageCode`, `apiKey`
-- [ ] App encryption: Postgres GUC `app.encryption_key` set (local + deployed)
+- [ ] App encryption: `encryption_key` row in `private.platform_config` set to a non-dev value (hosted Supabase denies the `app.encryption_key` GUC)
 - [ ] Edge functions deployed: `verify-grow-credentials`, `create-checkout`, `handle-payment-event`, `handle-invoice-event`
 - [ ] Public webhook URL reachable by Grow (`GROW_NOTIFY_URL` / deployed function URL)
 - [ ] IL test tenant with `payment_provider = 'grow'`, `invoicing_provider = 'grow'`
-- [ ] VAT fields set on tenant (`vat_rate`, `prices_include_vat`, business type)
 - [ ] **Not** running with `GROW_MOCK=true` for this test
 
 ---

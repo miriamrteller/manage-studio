@@ -18,6 +18,49 @@
 SET client_min_messages = WARNING;
 
 -- ---------------------------------------------------------------------------
+-- 0. SAFETY GUARD — abort if this looks like production.
+--
+-- The comment above says "never run on production", which is worth exactly as
+-- much as the reader's attention at 1am. This makes it enforceable.
+--
+-- Signal: the encryption key. Dev's is a throwaway seeded by supabase/seed.sql;
+-- production's is generated once and stored in a password manager. If the key
+-- is anything other than a known dev value, this is not a dev database.
+-- A DB with no key at all is a fresh/mid-reset dev DB, which is fine.
+--
+-- Deliberate override (e.g. a new dev sandbox with its own key):
+--   comment out this block for the single run, do not edit the allow-list.
+-- ---------------------------------------------------------------------------
+DO $guard$
+DECLARE
+  v_key TEXT;
+  v_dev_keys TEXT[] := ARRAY[
+    'UEJrMG6V+56CEafyEu+H8wIzIdm+fO3El58wQ7323nU=',  -- current dev key (supabase/seed.sql)
+    '0uT6CrQXiMJab+raSRxxx0j7ZLYvwKCb2HCoQusCfiY='   -- retired dev key (was seeded by 000200)
+  ];
+BEGIN
+  IF to_regclass('private.platform_config') IS NULL THEN
+    RAISE NOTICE 'No private.platform_config — treating as a fresh dev database.';
+    RETURN;
+  END IF;
+
+  SELECT value INTO v_key FROM private.platform_config WHERE key = 'encryption_key';
+
+  IF v_key IS NULL THEN
+    RAISE NOTICE 'No encryption key set — treating as a fresh dev database.';
+    RETURN;
+  END IF;
+
+  IF NOT (v_key = ANY(v_dev_keys)) THEN
+    RAISE EXCEPTION
+      'ABORTED: this database has a non-dev encryption key, so it is not a dev database. Refusing to drop everything.';
+  END IF;
+
+  RAISE NOTICE 'Dev encryption key recognised — proceeding with reset.';
+END;
+$guard$;
+
+-- ---------------------------------------------------------------------------
 -- 1. Drop auth trigger first (references auth.users, not a public table)
 -- ---------------------------------------------------------------------------
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;

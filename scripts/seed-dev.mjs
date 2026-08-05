@@ -23,6 +23,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadEnv } from './load-env.mjs';
 import { resolveConnectableDbUrl } from './lib/psql-dev.mjs';
+import { assertDevProject } from './lib/assert-dev-project.mjs';
 
 loadEnv();
 
@@ -90,6 +91,9 @@ if (checklistOnly) {
   printChecklist();
   process.exit(0);
 }
+
+// Destructive: overwrites tenant/demo rows. Never let a prod link get seeded.
+assertDevProject('pnpm seed:dev');
 
 let dbUrl;
 try {

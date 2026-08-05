@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 import {
   DraggableWidget,
   type DashboardWidget,
-} from '@/components/dashboard/DraggableWidget';
+} from '@/components/Dashboard/DraggableWidget';
 
 export type { DashboardWidget };
 

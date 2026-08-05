@@ -10,12 +10,6 @@ export interface OfferingPriceInput {
   price_minor: number;
 }
 
-/** @deprecated Tenant VAT fields are not used for local computation. Kept for call-site compatibility. */
-export interface TenantPricingInput {
-  vat_rate?: number;
-  prices_include_vat?: boolean;
-}
-
 export interface OfferingPriceBreakdown {
   listMinor: number;
   chargeMinor: number;
@@ -28,7 +22,6 @@ export interface OfferingPriceBreakdown {
 
 export function resolveOfferingPrice(
   offering: OfferingPriceInput,
-  _tenant?: TenantPricingInput,
 ): OfferingPriceBreakdown {
   const listMinor = offering.price_minor;
   return {

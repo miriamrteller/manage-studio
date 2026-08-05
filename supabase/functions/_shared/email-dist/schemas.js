@@ -24,8 +24,6 @@ export const TenantSchema = z.object({
     language: z.enum(['he', 'en']).default('he'),
     country: z.enum(['IL', 'US']).default('IL'),
     currency: z.string().default('ILS'),
-    vat_rate: z.number().min(0).max(1).default(0.17),
-    prices_include_vat: z.boolean().default(true),
 });
 // Tenant white-label configuration (brand customization)
 export const TenantWhiteLabelSchema = z.object({

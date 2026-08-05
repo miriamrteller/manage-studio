@@ -3,7 +3,7 @@
  * VAT breakdown on receipts/invoices comes from the invoicing provider (Grow, Green Invoice).
  * This module must not split pretax/VAT.
  */
-export function resolveOfferingPrice(offering, _tenant) {
+export function resolveOfferingPrice(offering) {
     const listMinor = offering.price_minor;
     return {
         listMinor,
