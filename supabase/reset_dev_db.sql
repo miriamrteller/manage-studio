@@ -208,6 +208,12 @@ BEGIN
         'save_icount_webhook_secret',
         'save_tenant_icount_credentials',
         'save_tenant_yesh_credentials',
+        -- Legacy Rapyd RPCs: no longer created by the migration chain, but still
+        -- present on any DB migrated before Rapyd was removed. Drop so a reset
+        -- leaves nothing the chain would not recreate.
+        'save_tenant_rapyd_credentials',
+        'get_tenant_rapyd_credentials',
+        'set_tenant_rapyd_customer_id',
         'get_tenant_yesh_credentials',
         'save_tenant_tranzila_credentials',
         'get_tenant_tranzila_credentials',
