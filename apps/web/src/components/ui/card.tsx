@@ -7,11 +7,8 @@ export const Card = ({
   ...rest
 }: React.HTMLAttributes<HTMLDivElement> & { children: React.ReactNode; className?: string }) => (
   <div
-    className={`border border-[var(--border-default)] rounded-lg p-6 bg-[var(--surface-base)] elevation-1 hover:elevation-2 interact-lift motion-safe transition-shadow duration-200 ease-out ${onClick ? 'cursor-pointer' : ''} ${className}`}
+    className={`border border-[var(--border-default)] rounded-lg p-6 bg-[var(--surface-base)] elevation-1 hover:[box-shadow:var(--elevation-2)] interact-lift motion-safe transition-shadow duration-200 ease-out ${onClick ? 'cursor-pointer' : ''} ${className}`}
     onClick={onClick}
-    // Interactive cards (onClick present) get keyboard + a11y semantics
-    // equivalent to a native button, per WCAG "keyboard" / "focus-order"
-    // requirements called out in the spec's a11y test coverage section.
     role={onClick ? 'button' : undefined}
     tabIndex={onClick ? 0 : undefined}
     onKeyDown={
