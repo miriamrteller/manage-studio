@@ -1,3 +1,8 @@
+/* Pipeline 2 (DL-DESIGN-008): component-level touch-target remediation.
+ * A CSS @import has to precede every other rule, so it sits above the
+ * @tailwind directives; Vite/postcss-import inlines it at build time. */
+@import './styles/touch-targets.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -817,4 +822,300 @@ dialog.modal-dialog::backdrop {
 [dir='rtl'] .fc-toolbar-chunk {
   display: flex;
   flex-direction: row-reverse;
+}
+
+/* ============================================================
+ * DESIGN SYSTEM POLISH v2 — Pipeline 2 additions (DL-DESIGN-008)
+ *
+ * Builds on the DL-DESIGN-001 token layer already present above
+ * (--surface-*, --state-*, --border-*, --spacing-*, --elevation-0..4,
+ * --z-*, typography scale, Heebo font stacks). Nothing below redefines
+ * a Pipeline 1 token; new names are declared as aliases so there stays
+ * exactly one source of truth per value.
+ *
+ * DELIBERATE OMISSION — logical-property helpers (ms-*, me-*, ps-*, pe-*,
+ * text-start, text-end, start-*, end-*, rounded-s-*, border-s-*):
+ * these are NOT hand-written here. `tailwindcss-rtl` is enabled in
+ * tailwind.config.js (DL-DESIGN-001) and already generates all of them,
+ * including responsive/state variants. Re-declaring e.g. `.ms-4` as plain
+ * CSS after `@tailwind utilities` would win on source order and silently
+ * break every responsive variant (`md:ms-8` would stop working), so the
+ * plugin remains the single source of those utilities. Only genuinely new,
+ * non-colliding utilities are defined below.
+ * ============================================================ */
+
+:root {
+  /* --- Heebo font aliases (Pipeline 2 spec names) ---
+     The webfont itself is loaded once from index.html (weights 300-700).
+     These alias the Pipeline 1 stacks rather than restating them. */
+  --font-primary: var(--font-family-sans);
+  --font-rtl: var(--font-family-hebrew);
+
+  /* --- Elevation aliases used by Pipeline 2 components --- */
+  --elevation-floating: var(--elevation-4);
+  --elevation-drag: var(--elevation-4);
+  --elevation-overlay: var(--elevation-3);
+
+  /* --- Extra z-index tiers, slotted into the Pipeline 1 ramp ---
+     base 0 < raised 10 < overlay 20 < floating 25 < modal 30
+     < drag 35 < toast 40 < tooltip 50 */
+  --z-floating: 25;
+  --z-drag: 35;
+
+  /* --- Third-party brand colours ---
+     These are fixed brand assets, not theme values: WhatsApp's brand guidelines
+     require its own green. They live here as tokens so no component ever
+     hard-codes a hex, and so a tenant theme can never accidentally recolour a
+     third-party brand mark. */
+  --color-whatsapp: #25d366;
+  --color-whatsapp-hover: #1da851;
+  --color-whatsapp-active: #178c43;
+  --color-whatsapp-foreground: #ffffff;
+
+  /* --- Mobile chrome metrics --- */
+  --mobile-tab-height: 56px;
+  --touch-target-min: 48px;
+}
+
+/* ============================================================
+ * Skeleton shimmer
+ * Scoped to `.skeleton.animate-pulse` on purpose: `animate-pulse` is a
+ * built-in Tailwind utility used elsewhere in the app, and globally
+ * replacing it with a gradient background would repaint every existing
+ * pulse. Skeletons opt in by carrying both classes.
+ * ============================================================ */
+@keyframes shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: calc(200px + 100%) 0;
+  }
+}
+
+.skeleton.animate-pulse {
+  background-color: var(--surface-sunken);
+  background-image: linear-gradient(
+    90deg,
+    var(--surface-sunken) 25%,
+    var(--surface-base) 50%,
+    var(--surface-sunken) 75%
+  );
+  background-size: 200px 100%;
+  background-repeat: no-repeat;
+  animation: shimmer 2s infinite linear;
+}
+
+/* Sweep follows the reading direction. */
+[dir='rtl'] .skeleton.animate-pulse {
+  animation-direction: reverse;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton.animate-pulse {
+    animation: none;
+    background-image: none;
+    background-color: var(--surface-sunken);
+  }
+}
+
+/* ============================================================
+ * Toast viewport + item (RTL-aware)
+ * ============================================================ */
+.toast-container {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  inset-inline-end: 1rem;
+  max-width: 420px;
+  width: calc(100% - 2rem);
+}
+
+/* Explicit physical reset for the RTL case, for browsers where the
+   `right` longhand would otherwise still apply. */
+[dir='rtl'] .toast-container {
+  right: auto;
+  left: 1rem;
+}
+
+.toast-item {
+  transition: transform 200ms ease-out, opacity 200ms ease-out;
+}
+
+@keyframes toast-slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* A selector cannot prefix @keyframes, so RTL gets its own keyframes and
+   the animation-name is swapped for [dir='rtl']. */
+@keyframes toast-slide-in-rtl {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in {
+  animation: toast-slide-in 200ms ease-out;
+}
+
+[dir='rtl'] .animate-slide-in {
+  animation-name: toast-slide-in-rtl;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-slide-in,
+  [dir='rtl'] .animate-slide-in {
+    animation: none;
+  }
+  .toast-item {
+    transition: none;
+  }
+}
+
+/* ============================================================
+ * Touch targets (base utility; per-component remediation lives in
+ * styles/touch-targets.css, imported at the top of this file)
+ * ============================================================ */
+.touch-target {
+  min-height: var(--touch-target-min);
+  min-width: var(--touch-target-min);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Grows the hit area of a visually-small control without changing its box.
+   The focus ring stays on the visual element, not the extended zone. */
+.touch-target-extend {
+  position: relative;
+}
+
+.touch-target-extend::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  min-height: var(--touch-target-min);
+  min-width: var(--touch-target-min);
+  height: 100%;
+  width: 100%;
+}
+
+/* Desktop pointers do not need the expansion. */
+@media (pointer: fine) {
+  .touch-target-extend::after {
+    content: none;
+  }
+}
+
+/* ============================================================
+ * RTL directional icon mirroring
+ * Directional glyphs (arrows, chevrons, next/prev) flip; semantic glyphs
+ * (close, search, settings, logo) must never flip, so mirroring is opt-in.
+ * ============================================================ */
+[dir='rtl'] .icon-directional,
+[dir='rtl'] .mirror-rtl {
+  transform: scaleX(-1);
+}
+
+/* Force-mirror in both directions (rare; e.g. pre-mirrored artwork). */
+.mirror-always {
+  transform: scaleX(-1);
+}
+
+/* ============================================================
+ * Elevation-tier z-index utilities
+ * Named `z-elevation-*` per spec. Tailwind's config has no `zIndex`
+ * extension, so these are plain classes reading the --z-* ramp.
+ * ============================================================ */
+.z-elevation-base {
+  z-index: var(--z-base);
+}
+.z-elevation-raised {
+  z-index: var(--z-raised);
+}
+.z-elevation-overlay {
+  z-index: var(--z-overlay);
+}
+.z-elevation-floating {
+  z-index: var(--z-floating);
+}
+.z-elevation-modal {
+  z-index: var(--z-modal);
+}
+.z-elevation-drag {
+  z-index: var(--z-drag);
+}
+.z-elevation-toast {
+  z-index: var(--z-toast);
+}
+.z-elevation-tooltip {
+  z-index: var(--z-tooltip);
+}
+
+/* Matching shadow aliases so components can name the tier they mean. */
+.shadow-elevation-overlay {
+  box-shadow: var(--elevation-overlay);
+}
+.shadow-elevation-modal {
+  box-shadow: var(--elevation-4);
+}
+.shadow-elevation-floating {
+  box-shadow: var(--elevation-floating);
+}
+
+/* ============================================================
+ * Safe-area padding for bottom-anchored mobile chrome
+ * ============================================================ */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.pb-safe-tabs {
+  padding-bottom: calc(var(--mobile-tab-height) + env(safe-area-inset-bottom, 0px));
+}
+
+/* ============================================================
+ * Hebrew / RTL numeric alignment inside tables
+ * Numbers stay LTR-internal even in an RTL table, aligned to the
+ * inline-end edge, which is the Israeli convention for figures.
+ * ============================================================ */
+.numeric-cell {
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+  unicode-bidi: plaintext;
+}
+
+/* ============================================================
+ * cmdk (command palette) structural styling
+ * ============================================================ */
+[cmdk-group-heading] {
+  padding: var(--spacing-3) var(--spacing-4) var(--spacing-2);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+[cmdk-item][data-selected='true'] {
+  background-color: var(--state-hover);
+}
+
+[cmdk-item][data-disabled='true'] {
+  opacity: 0.5;
+  pointer-events: none;
 }
