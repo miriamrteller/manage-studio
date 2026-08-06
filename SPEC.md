@@ -378,18 +378,56 @@ Manage Studio is the **system of record for enrolment pricing consistency**. Thi
 
 When changing core columns in **dev only** (no production tenants yet):
 
-1. Edit the **original** migration file (e.g. add or drop a `tenants` column in `20260608000200_core_tenants.sql`).
-2. Update `get_tenant_config_by_subdomain` in `20260608001800_public_rpcs.sql` to return the new column.
-3. Grep the repo for the column name and its camelCase form — align Edge Functions, web, generated types and seeds.
-4. Update the `supabase/seed.sql` tenant `INSERT` (and the `ON CONFLICT DO UPDATE` list).
-5. Reset and re-apply (local):
+1. Edit the **original** migration file (e.g. add or drop a `tenants` column in
+   `20260608000200_core_tenants.sql`). Do not layer a one-off `ALTER` migration.
+
+2. **Find the FINAL definition of any function you touch — it is often not the
+   first one.** Several objects are defined early and then replaced later, and
+   editing the earlier copy is a silent no-op because the later one wins.
+   Known cases:
+   - `get_tenant_config_by_subdomain` → final in `20260608002500_feature_flag_system.sql`
+     (STEP 9, "replaces 001800 version"), **not** `20260608001800_public_rpcs.sql`
+   - `provision_tenant` → final in `20260608002500`, not `20260608002400`
+   - `save_tenant_grow_credentials` → final in `20260608001600_finance.sql`
+
+   Always `grep -rn "<function name>" supabase/migrations/` and edit the
+   **highest-numbered** occurrence.
+
+3. Grep the repo for the column name and its camelCase form — align Edge
+   Functions, web, generated types and seeds.
+
+4. Update `supabase/seed.sql` — both the `INSERT` column list **and** the
+   `ON CONFLICT DO UPDATE` list. Check the vertical seeds
+   (`seed-artclass|photographer|sofer|therapist.sql`) and `seed-finance.sql` too.
+
+5. Reset and re-apply. **This project uses a remote dev project — there is no
+   local Docker stack, so `pnpm db:reset-local` does not apply:**
    ```bash
-   pnpm db:reset-local          # or: supabase/reset_dev_db.sql then pnpm db:push
-   psql ... -f supabase/seed.sql   # if seed not auto-run on reset
-   pnpm db:types
-   pnpm email:bundle            # refresh edge _shared/email-dist after shared build
+   # 1. Run supabase/reset_dev_db.sql in the Supabase SQL editor (clears
+   #    migration history + drops all objects). It self-guards: it aborts if the
+   #    database does not carry a known dev encryption key.
+   pnpm db:push          # replays the whole chain
+   pnpm db:types:all     # NOT db:types — :all also refreshes edge email-dist
+   pnpm seed:dev -- --all-skins --finance
    ```
-6. Remote dev project: `pnpm db:push` after reset script clears migration history (see §4.2).
+   `db:types:all` should report **Unchanged** if you already hand-edited
+   `database.types.ts`. A diff means the chain did not replay as expected — read
+   it before continuing.
+
+6. **Delete any open Supabase preview branch, or expect its check to fail.**
+   Preview branches have their own database with their own `schema_migrations`
+   table; resetting dev does not touch them. A branch whose preview DB already
+   applied a migration you have since renamed or deleted fails with:
+
+   > `Remote migration versions not found in local migrations directory.`
+
+   Fresh PR branches are fine — they replay the current chain from scratch. It
+   is long-lived branches, created before the edit, that break. Delete the
+   preview branch (Supabase dashboard → Branches) so it re-seeds, and rebase or
+   recreate the git branch.
+
+7. Run `pnpm -C apps/web test` and `pnpm -C apps/web exec tsc --noEmit`. Fixtures
+   that mock tenant rows usually need the new column too.
 
 **Implementation plan (agent checklist):** [docs/plans/2026-06-02-vat-pricing.md](docs/plans/2026-06-02-vat-pricing.md)
 
