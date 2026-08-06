@@ -71,6 +71,33 @@ export function resolveDbUrlFromSupabaseCli(cwd = scriptRoot) {
   if (!host || !user || !password) {
     return null;
   }
+
+  // This fallback asks the SUPABASE LINK where to connect, but every caller
+  // decided what it was allowed to touch by reading .env — `pnpm env:use` and
+  // `supabase link` are independent switches and routinely disagree.
+  //
+  // So the dev guard could pass on the env ref while the connection underneath
+  // was aimed at the linked project. assertDevProject() would report all clear
+  // and psql would open a session on production; only a password mismatch stood
+  // between `pnpm seed:dev` and seeding a real database. Refuse instead, and say
+  // which switch to move.
+  //
+  // The pooler username carries the ref (postgres.<ref>), which is why the check
+  // reads it from there rather than trusting the host.
+  const linkedRef = user.match(/^postgres\.([a-z]{20})$/)?.[1] ?? null;
+  const expectedRef = resolveProjectRef();
+  if (linkedRef && expectedRef && linkedRef !== expectedRef) {
+    throw new Error(
+      `Refusing to connect: the Supabase CLI link and .env point at different projects.\n\n` +
+        `  .env  SUPABASE_PROJECT_REF : ${expectedRef}\n` +
+        `  supabase link             : ${linkedRef}\n\n` +
+        `The direct host was unreachable, so the connection fell back to the linked\n` +
+        `project — which is not the one .env names. Point both at the same project:\n\n` +
+        `  supabase link --project-ref ${expectedRef}      (move the link to match .env)\n` +
+        `  pnpm env:use <dev|prod>                          (move .env to match the link)\n`,
+    );
+  }
+
   const encoded = encodeURIComponent(password);
   return `postgresql://${user}:${encoded}@${host}:${port}/postgres`;
 }
