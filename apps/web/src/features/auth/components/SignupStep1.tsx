@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { PhoneInput } from '@/components/ui/phone-input';
 import type { SignupForm } from '@/schemas/auth';
 
 interface SignupStep1Props {
@@ -12,12 +11,11 @@ interface SignupStep1Props {
   loading?: boolean;
 }
 
+// Signup is email-only for now: the SMS/WhatsApp path needs Twilio (deferred)
+// and its verify step invokes a `verify-otp` Edge Function that does not exist.
 export default function SignupStep1({ onSubmit, loading }: SignupStep1Props) {
   const { t } = useTranslation();
-  const { register, watch, formState: { errors } } = useFormContext<SignupForm>();
-
-  const channel = watch('channel');
-  const showPhoneField = channel === 'sms' || channel === 'whatsapp';
+  const { register, formState: { errors } } = useFormContext<SignupForm>();
 
   return (
     <form onSubmit={onSubmit} className="space-y-6" aria-label={t('signup.step1.subtitle')}>
@@ -61,50 +59,6 @@ export default function SignupStep1({ onSubmit, loading }: SignupStep1Props) {
           </p>
         )}
       </div>
-
-      <fieldset className="space-y-3">
-        <legend className="block text-sm font-medium">{t('signup.step1.channel')}</legend>
-        <div className="space-y-2">
-          <label className="flex items-center">
-            <input
-              type="radio"
-              value="email"
-              {...register('channel')}
-              className="me-2"
-              aria-label={t('signup.step1.channelEmail')}
-            />
-            <span>{t('signup.step1.channelEmail')}</span>
-          </label>
-          <label className="flex items-center">
-            <input
-              type="radio"
-              value="sms"
-              {...register('channel')}
-              className="me-2"
-              aria-label={t('signup.step1.channelSms')}
-            />
-            <span>{t('signup.step1.channelSms')}</span>
-          </label>
-          <label className="flex items-center">
-            <input
-              type="radio"
-              value="whatsapp"
-              {...register('channel')}
-              className="me-2"
-              aria-label={t('signup.step1.channelWhatsapp')}
-            />
-            <span>{t('signup.step1.channelWhatsapp')}</span>
-          </label>
-        </div>
-      </fieldset>
-
-      {showPhoneField && (
-        <PhoneInput
-          name="phone"
-          label={t('signup.step1.phone')}
-          required={showPhoneField}
-        />
-      )}
 
       <Button type="submit" disabled={loading} className="w-full">
         {loading ? t('common.loading') : t('signup.step1.continue')}
