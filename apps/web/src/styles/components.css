@@ -1,0 +1,87 @@
+/* Toast animations */
+@keyframes toast-slide-in-ltr {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes toast-slide-in-rtl {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.toast-slide-in {
+  animation: toast-slide-in-ltr 0.3s ease-out;
+}
+
+[dir="rtl"] .toast-slide-in {
+  animation: toast-slide-in-rtl 0.3s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast-slide-in {
+    animation: none;
+  }
+  
+  [dir="rtl"] .toast-slide-in {
+    animation: none;
+  }
+}
+
+/* Skeleton shimmer RTL support */
+[dir="rtl"] .animate-pulse {
+  background: linear-gradient(
+    to left,
+    var(--surface-sunken),
+    var(--surface-base, var(--surface-raised)),
+    var(--surface-sunken)
+  );
+  background-size: 200% 100%;
+}
+
+/* Confirmation dialog animations */
+@keyframes dialog-overlay-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes dialog-content-scale {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.dialog-overlay {
+  animation: dialog-overlay-fade 0.15s ease-out;
+}
+
+.dialog-content {
+  animation: dialog-content-scale 0.15s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dialog-overlay,
+  .dialog-content {
+    animation: none;
+  }
+}

@@ -75,7 +75,7 @@ export default function DashboardRedirectPage() {
       navigate('/admin/setup', { replace: true });
     } else if (hasParentRole(user.role)) {
       navigate('/dashboard/portal', { replace: true });
-    } else if (user.role.some((r) => ['student', 'adult_student'].includes(r))) {
+    } else if (user.role.some((r: string) => ['student', 'adult_student'].includes(r))) {
       navigate('/dashboard/student', { replace: true });
     } else {
       // No recognized role - fallback to classes

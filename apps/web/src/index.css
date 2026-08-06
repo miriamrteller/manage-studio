@@ -2,6 +2,8 @@
  * A CSS @import has to precede every other rule, so it sits above the
  * @tailwind directives; Vite/postcss-import inlines it at build time. */
 @import './styles/touch-targets.css';
+@import './styles/rtl-icons.css';
+@import './styles/components.css';
 
 @tailwind base;
 @tailwind components;
@@ -307,23 +309,6 @@ body {
 /* Scheduling calendar: grey out Shabbat, holidays, and their eve. */
 .fc .fc-shaded-day {
   background-color: #f3f4f6 !important;
-}
-
-/*
- * Holidays whose recurring class occurrences are skipped (DL-HOLIDAY-001): Yom Tov,
- * Chol HaMoed, Chanukah and public fast days. Shabbat, eves and minor/modern
- * observances stay plain `fc-shaded-day` because their classes still run.
- */
-.fc .fc-skipped-day {
-  background-color: #fef2f2 !important;
-  background-image: repeating-linear-gradient(
-    135deg,
-    transparent,
-    transparent 5px,
-    rgba(220, 38, 38, 0.08) 5px,
-    rgba(220, 38, 38, 0.08) 10px
-  );
-  box-shadow: inset 0 0 0 1px rgba(220, 38, 38, 0.25);
 }
 
 /*

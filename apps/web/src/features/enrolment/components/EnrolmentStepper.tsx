@@ -369,7 +369,7 @@ export function EnrolmentStepper({
           id: tenant.id,
           name: tenant.name,
           subdomain: tenant.subdomain,
-          language: tenant.language_default,
+          language: tenant.language_default ?? tenant.language,
           country: tenant.country,
           currency: tenant.currency,
         },

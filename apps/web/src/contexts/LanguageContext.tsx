@@ -48,7 +48,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       isProfileChecked,
     });
 
-    setLanguageState(resolved);
+    setLanguageState((resolved ?? 'he') as AppLanguage);
     localStorage.setItem('language', resolved);
   }, [
     isProfileChecked,
@@ -72,7 +72,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
       const userId = session?.user?.id;
       if (user && userId) {
-        queryClient.setQueryData<UserProfile | null>(['currentUser', userId], (old) =>
+        queryClient.setQueryData<UserProfile | null>(['currentUser', userId], (old: UserProfile | null | undefined) =>
           old ? { ...old, language: lang } : old,
         );
 
