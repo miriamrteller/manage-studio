@@ -1,5 +1,8 @@
 import { serve } from 'std/http/server.ts';
-import { createClient } from '@supabase/supabase-js';
+import { createServiceClient } from '../_shared/edge-runtime/supabase.ts';
+import { checkAndIncrementAttempt, normaliseContactPoint } from '../_shared/rate-limit.ts';
+
+type ServiceClient = ReturnType<typeof createServiceClient>;
 
 interface TwilioVerifyRequest {
   To: string;
@@ -78,43 +81,8 @@ async function callTwilioVerifyAPI(
   }
 }
 
-async function checkAndIncrementAttempt(
-  supabase: ReturnType<typeof createClient>,
-  tenantId: string,
-  contactPoint: string,
-  channel: 'sms' | 'whatsapp',
-): Promise<{ allowed: boolean; blockedUntil?: string; message?: string }> {
-  try {
-    const { data, error } = await supabase.rpc('increment_verification_attempt', {
-      p_tenant_id: tenantId,
-      p_contact_point: contactPoint,
-      p_channel: channel,
-    });
-
-    if (error) {
-      console.error('RPC error:', error);
-      return { allowed: false, message: 'Database error' };
-    }
-
-    const { attempt_count, blocked_until } = data?.[0] || {};
-
-    if (blocked_until && new Date(blocked_until) > new Date()) {
-      return {
-        allowed: false,
-        blockedUntil: blocked_until,
-        message: `Rate limited. Try again after ${blocked_until}`,
-      };
-    }
-
-    return { allowed: true };
-  } catch (error) {
-    console.error('Attempt check failed:', error);
-    return { allowed: false, message: 'Rate limit check failed' };
-  }
-}
-
 async function logToNotificationLog(
-  supabase: ReturnType<typeof createClient>,
+  supabase: ServiceClient,
   tenantId: string,
   recipientPhone: string,
   channel: 'sms' | 'whatsapp',
@@ -160,10 +128,9 @@ serve(async (req) => {
       );
     }
 
-    // Initialize Supabase
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    // Initialize Supabase. The shared factory throws on missing config instead
+    // of building a client from '' and failing later with an opaque error.
+    const supabase = createServiceClient();
 
     // Get Twilio credentials
     const twilioAccountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
@@ -192,7 +159,12 @@ serve(async (req) => {
     const phoneE164 = phoneValidation.e164;
 
     // Check rate limit
-    const attemptCheck = await checkAndIncrementAttempt(supabase, tenant_id, phoneE164, channel);
+    const attemptCheck = await checkAndIncrementAttempt(
+      supabase,
+      tenant_id,
+      normaliseContactPoint(phoneE164),
+      channel,
+    );
     if (!attemptCheck.allowed) {
       await logToNotificationLog(supabase, tenant_id, phoneE164, channel, 'rate_limited', 'failed', attemptCheck.message);
       return new Response(

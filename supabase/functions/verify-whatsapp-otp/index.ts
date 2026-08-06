@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
+import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 
 interface VerifyOtpPayload {
   phone: string;
@@ -75,9 +75,7 @@ serve(async (req: Request) => {
 
     const twilioAccountSid = Deno.env.get("TWILIO_ACCOUNT_SID")!;
     const twilioAuthToken = Deno.env.get("TWILIO_AUTH_TOKEN")!;
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabase = createServiceClient();
 
     // Verify OTP via Twilio Verify
     let verificationValid = false;
