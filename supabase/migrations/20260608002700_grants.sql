@@ -96,6 +96,45 @@ GRANT UPDATE ON TABLE public.tenants TO authenticated;
 -- waiver_evidence / waiver_events are SELECT-only for authenticated; all writes
 -- go through sign_waiver() (service_role). No INSERT/UPDATE/DELETE grant here.
 
+-- =============================================================================
+-- Column-level lockdown of tenant secrets.
+--
+-- The `users see own tenant` RLS policy is deliberately broad — every member of
+-- a tenant needs the row for branding, locale and feature config, and five admin
+-- forms read it directly. But row access is not column access: with a plain
+-- table-level GRANT SELECT, any authenticated user in the tenant — including a
+-- parent — could read the studio's encrypted provider credentials. Verified by
+-- `pnpm verify:rls`, which asserts exactly this.
+--
+-- Postgres cannot subtract a column from a table-level grant, so the table-level
+-- SELECT is revoked and re-granted per column, excluding everything matching
+-- '%_enc'. Generated rather than hardcoded so a future encrypted column is
+-- excluded automatically — fail-closed, matching the naming convention already
+-- used for every secret in this schema.
+--
+-- Edge Functions are unaffected (service_role), and so are the SECURITY DEFINER
+-- RPCs, which execute as owner.
+-- =============================================================================
+DO $$
+DECLARE
+  cols TEXT;
+BEGIN
+  SELECT string_agg(quote_ident(column_name), ', ' ORDER BY ordinal_position)
+    INTO cols
+  FROM information_schema.columns
+  WHERE table_schema = 'public'
+    AND table_name = 'tenants'
+    AND column_name NOT LIKE '%\_enc';
+
+  EXECUTE 'REVOKE SELECT ON TABLE public.tenants FROM anon, authenticated';
+  EXECUTE format('GRANT SELECT (%s) ON TABLE public.tenants TO anon, authenticated', cols);
+END;
+$$;
+
+-- grow_webhook_secrets exists only to hold a secret; clients never read it.
+-- The pre-shared key is consumed by handle-payment-event (service_role).
+REVOKE SELECT ON TABLE public.grow_webhook_secrets FROM anon, authenticated;
+
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO authenticated;
 
 GRANT ALL ON ALL TABLES    IN SCHEMA public TO service_role;
