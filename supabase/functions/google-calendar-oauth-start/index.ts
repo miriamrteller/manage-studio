@@ -8,7 +8,12 @@ import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/su
 import { buildAuthUrl, isGoogleMock } from "../_shared/google-calendar.ts";
 import { signGoogleOAuthState } from "../_shared/google-oauth-state.ts";
 import { requireFeature } from "../_shared/feature-gate.ts";
+import { platformAppUrl } from "../_shared/tenant-url.ts";
 
+// The ONLY legitimate use of APP_URL: Google requires the redirect_uri to match
+// EXACTLY the one registered, so it must be a single concrete platform origin —
+// never a tenant host and never a wildcard. Parent-facing links use
+// tenantBaseUrl(subdomain). See _shared/tenant-url.ts.
 const APP_URL = Deno.env.get("APP_URL") ?? "";
 
 Deno.serve(async (req) => {

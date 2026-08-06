@@ -57,6 +57,41 @@ export function tenantBaseUrl(subdomain: string | null | undefined): string {
   return `https://${sub}.${root}`;
 }
 
+/**
+ * The PLATFORM's own origin. Exactly one thing may use this: an OAuth
+ * redirect_uri.
+ *
+ * It is NOT a pattern and cannot contain a wildcard. Two independent reasons:
+ *
+ *   1. It is concatenated with a path — `${APP_URL}/admin/...` — so
+ *      "https://*.opalswift.com" yields a string that is not a URL.
+ *   2. Google requires redirect URIs to match EXACTLY: scheme, host, port and
+ *      path. Wildcards are not permitted, so a pattern could never be
+ *      registered in the first place.
+ *
+ * Wildcards belong to the layers that MATCH rather than CONSTRUCT — the DNS
+ * record and the Cloudflare Workers route (`*.opalswift.com/*` in
+ * apps/web/wrangler.jsonc). Per-tenant addressing is tenantBaseUrl().
+ *
+ * If you are about to use this to build a link that a PARENT will click, you
+ * want tenantBaseUrl(subdomain) instead — otherwise every tenant's families are
+ * sent to whichever studio happens to be named in APP_URL.
+ */
+export function platformAppUrl(): string {
+  const url = getEnv("APP_URL")?.trim();
+  if (!url) {
+    throw new Error("APP_URL is not configured on the server");
+  }
+  if (url.includes("*")) {
+    throw new Error(
+      "APP_URL must be a concrete origin, not a wildcard — it is concatenated " +
+        "with a path, and OAuth redirect URIs must match exactly. For per-tenant " +
+        "links use tenantBaseUrl(subdomain).",
+    );
+  }
+  return url.replace(/\/$/, "");
+}
+
 /** Columns a caller must select for tenantBaseUrl() to work. */
 export const TENANT_URL_COLUMNS = "subdomain";
 
