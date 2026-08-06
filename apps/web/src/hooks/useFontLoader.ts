@@ -81,7 +81,7 @@ export function injectFontPair(pairId: string): void {
 }
 
 export function useFontLoader(): void {
-  const { tenant } = useTenant();
+  const tenant = useTenant();
 
   useEffect(() => {
     injectFontPair(tenant?.font_pair ?? 'reliable');
