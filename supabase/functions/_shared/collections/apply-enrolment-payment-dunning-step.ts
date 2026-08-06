@@ -1,4 +1,4 @@
-import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
 import { formatDate } from "../email-dist/format.js";
 import { buildEnrolmentPayUrl } from "../enrolment-pay-url.ts";
 import { resolveEnrolmentNotificationRecipient } from "../enrolment-recipient.ts";

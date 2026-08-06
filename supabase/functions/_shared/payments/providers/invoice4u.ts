@@ -1,4 +1,4 @@
-import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
 import { parseInvoice4uCallback, peekInvoice4uOrderId } from "../invoice4u/callback.ts";
 import {
   insertPendingInvoice4uPayment,

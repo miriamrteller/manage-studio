@@ -1,4 +1,4 @@
-import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
 import { buildMockIpnFromCharge } from "../icount/mock-api.ts";
 import { buildMockInvoice4uCallbackBody } from "../invoice4u/callback.ts";
 import { processInvoice4uPaymentCallback } from "../invoice4u/process-callback.ts";

@@ -1,4 +1,4 @@
-import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
 
 /** Resolve payer + billing account for a student engagement (matches guest_enrolment_create_engagement). */
 export async function ensureBillingAccountForStudent(

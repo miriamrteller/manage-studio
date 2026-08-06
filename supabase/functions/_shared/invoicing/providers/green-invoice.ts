@@ -1,4 +1,4 @@
-import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
 import { z } from "npm:zod@3.22.4";
 import { refreshInvoicingToken } from "../refresh-token.ts";
 import type {

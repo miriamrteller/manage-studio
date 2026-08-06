@@ -1,4 +1,4 @@
-import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
 
 /** Advance billing schedule after successful renewal payment (Jerusalem month anchor). */
 export async function advanceBillingSchedule(

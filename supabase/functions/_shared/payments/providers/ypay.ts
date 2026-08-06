@@ -1,4 +1,4 @@
-import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
 import { getYpayAccessToken, ypayPost, ypayVerifyAccessToken, YpayApiError } from "../ypay/client.ts";
 import { getYpayCredentials } from "../ypay/credentials.ts";
 import { resolveYpayCustomer } from "../ypay/customer.ts";

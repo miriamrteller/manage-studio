@@ -1,4 +1,4 @@
-import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
 import { dunningNextAttemptAt } from "./billing-time.ts";
 import { sendPaymentDunningReminder } from "../collections/send-payment-dunning-reminder.ts";
 

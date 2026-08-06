@@ -1,4 +1,4 @@
-import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
 import { fetchAndStoreBundledDocumentPdf } from "./bundled-document-pdf.ts";
 import { sendPaymentDocumentAdminEmail } from "./send-payment-document-admin-email.ts";
 

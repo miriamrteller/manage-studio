@@ -12,7 +12,7 @@
  * FAIL CLOSED: if the transaction can't be confirmed successful, the payment is not
  * finalised — it stays pending for reconciliation rather than granting access.
  */
-import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
 import { getYpayAccessToken, ypayPost } from "./client.ts";
 import { getYpayCredentials } from "./credentials.ts";
 
