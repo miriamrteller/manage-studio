@@ -111,6 +111,10 @@ CREATE TABLE tenants (
   business_preset               TEXT        NOT NULL DEFAULT 'programs'
                                 CHECK (business_preset IN ('programs', 'services', 'catalog')),
   labels                        JSONB       NOT NULL DEFAULT '{}'::jsonb,
+  -- Branding (folded from ex-20260806000100_font_pair_and_logo)
+  font_pair                     TEXT,
+  logo_url                      TEXT,
+  logo_dark_url                 TEXT,
   -- Email identity. Three columns, three jobs — see the comments below.
   contact_email                 TEXT        NOT NULL
                                 CHECK (position('@' IN contact_email) > 1),

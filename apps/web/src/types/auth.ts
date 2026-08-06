@@ -15,10 +15,7 @@ export type TenantConfig = {
   language: 'he' | 'en';
   language_default?: 'he' | 'en';
   country: 'IL' | 'US';
-  currency: string;
-  vat_rate?: number;
-  prices_include_vat?: boolean;
-  white_label?: TenantWhiteLabel;
+  currency: string;  white_label?: TenantWhiteLabel;
   locale: string;
   stripe_publishable_key?: string | null;
   stripe_secret_configured?: boolean;

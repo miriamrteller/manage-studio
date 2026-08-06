@@ -360,7 +360,10 @@ RETURNS TABLE (
   payment_provider_secret_configured     BOOLEAN,
   payment_provider_webhook_configured    BOOLEAN,
   payment_provider_updated_at            TIMESTAMPTZ,
-  enabled_features                  TEXT[]
+  enabled_features                  TEXT[],
+  font_pair                         TEXT,
+  logo_url                          TEXT,
+  logo_dark_url                     TEXT
 )
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -390,7 +393,10 @@ BEGIN
     (t.payment_provider_secret_enc  IS NOT NULL),
     (t.payment_provider_webhook_enc IS NOT NULL),
     t.payment_provider_updated_at,
-    get_tenant_features(t.id)
+    get_tenant_features(t.id),
+    t.font_pair,
+    t.logo_url,
+    t.logo_dark_url
   FROM tenants t
   WHERE t.subdomain = trim(p_subdomain)
   LIMIT 1;
