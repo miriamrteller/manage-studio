@@ -15,6 +15,7 @@ import { sendRenderedEmail, EMAIL_TEMPLATE_NAMES } from "../resend-send.ts";
 import { signWaiverToken } from "../waiver-token.ts";
 import { advanceBillingSchedule } from "./advance-billing-schedule.ts";
 import { syncBookingEventInsert } from "../sync-booking-event.ts";
+import { tenantBaseUrlFor } from "../tenant-url.ts";
 import type { FinalisePaymentParams } from "./types.ts";
 
 const APP_URL = getEnv("APP_URL") ?? "";
@@ -96,7 +97,9 @@ async function sendConfirmationEmail(
       em: payloadPreview.recipientEmail,
       exp: expireAt,
     });
-    signUrl = `${APP_URL}/enrol/complete?engagementId=${encodeURIComponent(params.engagementId)}&wt=${wt}`;
+    // Tenant-specific link: derived from tenants.subdomain, not the platform APP_URL.
+    const tenantBase = await tenantBaseUrlFor(service, params.tenantId);
+    signUrl = `${tenantBase}/enrol/complete?engagementId=${encodeURIComponent(params.engagementId)}&wt=${wt}`;
   }
 
   const payload = await buildEnrolmentConfirmationPayload(service, {

@@ -29,10 +29,10 @@ import {
   resolveTenantSender,
   type TenantSenderInput,
 } from "../_shared/notification-from.ts";
+import { tenantBaseUrl } from "../_shared/tenant-url.ts";
 import { signWaiverToken } from "../_shared/waiver-token.ts";
 
 const CRON_SECRET = Deno.env.get("CRON_SECRET") ?? "";
-const APP_URL = Deno.env.get("APP_URL") ?? "";
 const BATCH_LIMIT = 100;
 
 interface PendingEngagement {
@@ -225,7 +225,7 @@ Deno.serve(async (req) => {
 
       // 2. 48-hour reminder (final notice, not yet sent)
       if (msUntilDeadline <= MS_48H && !eng.waiver_48h_reminded_at) {
-        if (personEmail && sender && APP_URL) {
+        if (personEmail && sender) {
           try {
             const expireAt = Math.floor(deadline.getTime() / 1000);
             const wt = await signWaiverToken({
@@ -234,7 +234,7 @@ Deno.serve(async (req) => {
               em: personEmail,
               exp: expireAt,
             });
-            const signUrl = `${APP_URL}/enrol/complete?engagementId=${encodeURIComponent(eng.id)}&wt=${wt}`;
+            const signUrl = `${tenantBaseUrl(eng.tenants?.subdomain)}/enrol/complete?engagementId=${encodeURIComponent(eng.id)}&wt=${wt}`;
 
             await sendRenderedEmail({
               to: personEmail,
@@ -274,7 +274,7 @@ Deno.serve(async (req) => {
 
       // 3. 5-day reminder (first notice, not yet sent)
       if (msUntilDeadline <= MS_5D && !eng.waiver_5d_reminded_at) {
-        if (personEmail && sender && APP_URL) {
+        if (personEmail && sender) {
           try {
             const expireAt = Math.floor(deadline.getTime() / 1000);
             const wt = await signWaiverToken({
@@ -283,7 +283,7 @@ Deno.serve(async (req) => {
               em: personEmail,
               exp: expireAt,
             });
-            const signUrl = `${APP_URL}/enrol/complete?engagementId=${encodeURIComponent(eng.id)}&wt=${wt}`;
+            const signUrl = `${tenantBaseUrl(eng.tenants?.subdomain)}/enrol/complete?engagementId=${encodeURIComponent(eng.id)}&wt=${wt}`;
 
             await sendRenderedEmail({
               to: personEmail,

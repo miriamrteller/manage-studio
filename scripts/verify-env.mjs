@@ -107,6 +107,24 @@ for (const v of [...viteReads, ...example].filter((v) => v.startsWith('VITE_')))
   if (hit) problems.push(`CRITICAL  ${v} looks secret (matches "${hit}") but VITE_ vars are inlined into the browser bundle`);
 }
 
+// --- dynamically-named vars, which no static scan can see --------------------
+// `getHmacKey()` builds `WAIVER_HMAC_KEY_V${version}`. A template-literal name
+// is invisible to the patterns above, which is exactly how a secret that
+// accept-waiver throws without stayed undeclared everywhere. Any new one needs
+// adding here by hand — that is the cost of a computed env name.
+{
+  const dynamic = scan(['supabase/functions'], [/env\s*\??\.\s*get\(\s*`([A-Z_][A-Z0-9_]*)\$\{/g]);
+  for (const prefix of dynamic) {
+    const declared = [...example].some((k) => k.startsWith(prefix));
+    if (!declared) {
+      problems.push(
+        `UNDOCUMENTED-DYNAMIC  ${prefix}<n> is built dynamically and read by an Edge Function, ` +
+          `but no ${prefix}* key is declared in .env.example`,
+      );
+    }
+  }
+}
+
 // --- read but never documented ----------------------------------------------
 for (const v of [...edgeReads].sort()) {
   if (PLATFORM_PROVIDED.has(v)) continue;
@@ -130,8 +148,13 @@ const SCRIPT_ONLY = new Set([
   'PLAYWRIGHT_FINANCE_DEV', 'E2E_PARENT_PASSWORD', 'E2E_ADMIN_PASSWORD',
   'VITE_BUILD_SOURCE_MAP', 'SENTRY_DSN', 'ANTHROPIC_API_KEY',
 ]);
+/** Names assembled at runtime, so no literal read ever appears in source. */
+const DYNAMIC_NAME_PATTERNS = [/^WAIVER_HMAC_KEY_V\d+$/];
+
 for (const v of [...example].sort()) {
-  if (!allReads.has(v) && !SCRIPT_ONLY.has(v)) notes.push(`unread  ${v} is documented in .env.example but nothing reads it`);
+  if (allReads.has(v) || SCRIPT_ONLY.has(v)) continue;
+  if (DYNAMIC_NAME_PATTERNS.some((re) => re.test(v))) continue;
+  notes.push(`unread  ${v} is documented in .env.example but nothing reads it`);
 }
 
 // --- .env.prod still holding placeholders ------------------------------------

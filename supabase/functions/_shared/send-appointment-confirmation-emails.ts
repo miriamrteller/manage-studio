@@ -74,7 +74,8 @@ export async function sendAppointmentConfirmationEmails(
         em: recipientEmail,
         exp: expireAt,
       });
-      signUrl = `${APP_URL}/enrol/complete?engagementId=${encodeURIComponent(params.engagementId)}&wt=${wt}`;
+      const tenantBase = await tenantBaseUrlFor(service, params.tenantId);
+      signUrl = `${tenantBase}/enrol/complete?engagementId=${encodeURIComponent(params.engagementId)}&wt=${wt}`;
     }
   }
 
