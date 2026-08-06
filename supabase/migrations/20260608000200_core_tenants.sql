@@ -154,6 +154,10 @@ CREATE TABLE tenants (
   invoicing_auth_checked_at     TIMESTAMPTZ,
   billing_policy                JSONB       NOT NULL DEFAULT '{}'::jsonb,
   waiver_require_otp            BOOLEAN     NOT NULL DEFAULT false,
+  -- Per-tenant HMAC secret for waiver/pay link tokens. Generated lazily by
+  -- get_tenant_waiver_link_secret(); never entered by a human. A platform-wide
+  -- secret would let one leaked value forge links for every tenant.
+  waiver_link_secret_enc        BYTEA,
   -- Google Calendar OAuth tokens (encrypted)
   google_calendar_refresh_token_enc BYTEA,
   google_calendar_access_token_enc  BYTEA,

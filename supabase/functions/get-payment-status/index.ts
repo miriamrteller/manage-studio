@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
     let authorized = false;
 
     const rawToken = extractWaiverToken(authHeader) ?? body.enrolment_token ?? null;
-    const verifiedToken = rawToken ? await verifyWaiverToken(rawToken) : null;
+    const verifiedToken = rawToken ? await verifyWaiverToken(service, rawToken) : null;
 
     if (verifiedToken) {
       if (verifiedToken.eid !== body.engagement_id || verifiedToken.tid !== tenantId) {

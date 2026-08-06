@@ -5,13 +5,19 @@
  * Format:  <base64url-payload>.<base64url-hmac-sig>
  * Payload: { eid, tid, em, exp } — short keys keep email URLs tidy.
  *
- * Uses env var WAIVER_LINK_SECRET (distinct from WAIVER_HMAC_KEY_V* which
- * is reserved for the waiver-evidence record HMAC).
+ * Signed with a PER-TENANT secret (tenants.waiver_link_secret_enc, via the
+ * get_tenant_waiver_link_secret RPC — generated lazily, service_role only).
+ * The verifier reads `tid` from the unverified payload purely as a lookup
+ * key — the standard key-id pattern — then verifies the signature against
+ * that tenant's secret, so a leaked secret forges links for one tenant,
+ * not all of them. Distinct from WAIVER_HMAC_KEY_V* which is reserved for
+ * the waiver-evidence record HMAC and deliberately stays out of the DB.
  *
  * Expiry should be set to the engagement's waiver_deadline so the link
  * stays valid for exactly as long as the guest has to sign.
  */
 
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
 import { hmacSha256Base64url, timingSafeEqual } from "./edge-runtime/hmac.ts";
 
 export interface WaiverTokenPayload {
@@ -21,10 +27,19 @@ export interface WaiverTokenPayload {
   exp: number; // unix timestamp (seconds) — hard expiry
 }
 
-function getSecret(): string {
-  const s = Deno.env.get("WAIVER_LINK_SECRET");
-  if (!s) throw new Error("WAIVER_LINK_SECRET env var is not set");
-  return s;
+async function getTenantSecret(
+  service: SupabaseClient,
+  tenantId: string,
+): Promise<string> {
+  const { data, error } = await service.rpc("get_tenant_waiver_link_secret", {
+    p_tenant_id: tenantId,
+  });
+  if (error || typeof data !== "string" || data.length === 0) {
+    throw new Error(
+      `waiver link secret unavailable for tenant ${tenantId}: ${error?.message ?? "empty result"}`,
+    );
+  }
+  return data;
 }
 
 function encodeB64url(bytes: Uint8Array): string {
@@ -42,12 +57,14 @@ function decodeB64url(s: string): Uint8Array {
 }
 
 export async function signWaiverToken(
+  service: SupabaseClient,
   payload: WaiverTokenPayload,
 ): Promise<string> {
+  const secret = await getTenantSecret(service, payload.tid);
   const payloadB64 = encodeB64url(
     new TextEncoder().encode(JSON.stringify(payload)),
   );
-  const sig = await hmacSha256Base64url(getSecret(), payloadB64);
+  const sig = await hmacSha256Base64url(secret, payloadB64);
   return `${payloadB64}.${sig}`;
 }
 
@@ -56,6 +73,7 @@ export async function signWaiverToken(
  * Never throws — all errors collapse to null so callers can return 401.
  */
 export async function verifyWaiverToken(
+  service: SupabaseClient,
   token: string,
 ): Promise<WaiverTokenPayload | null> {
   try {
@@ -65,9 +83,9 @@ export async function verifyWaiverToken(
     const payloadB64 = token.slice(0, dotIdx);
     const sig = token.slice(dotIdx + 1);
 
-    const expectedSig = await hmacSha256Base64url(getSecret(), payloadB64);
-    if (!timingSafeEqual(sig, expectedSig)) return null;
-
+    // The payload is UNVERIFIED at this point — tid is used only to look up
+    // which tenant's secret to verify against (key-id pattern). Nothing else
+    // is trusted until the signature check passes.
     const payload = JSON.parse(
       new TextDecoder().decode(decodeB64url(payloadB64)),
     ) as WaiverTokenPayload;
@@ -80,6 +98,10 @@ export async function verifyWaiverToken(
     ) {
       return null;
     }
+
+    const secret = await getTenantSecret(service, payload.tid);
+    const expectedSig = await hmacSha256Base64url(secret, payloadB64);
+    if (!timingSafeEqual(sig, expectedSig)) return null;
 
     if (payload.exp < Math.floor(Date.now() / 1000)) return null; // expired
 

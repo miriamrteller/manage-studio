@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
     const rawWaiverToken = extractWaiverToken(authHeader);
     if (rawWaiverToken) {
       // Guest path — validate the waiver link token
-      const wtp = await verifyWaiverToken(rawWaiverToken);
+      const wtp = await verifyWaiverToken(service, rawWaiverToken);
       if (!wtp) return jsonResponse({ error: "WaiverToken invalid or expired" }, 401);
       tenantId = wtp.tid;
     } else {

@@ -141,7 +141,7 @@ Deno.serve(async (req) => {
       ? Math.floor(new Date(waiverDeadline).getTime() / 1000)
       : Math.floor(Date.now() / 1000) + 7 * 24 * 3600;
 
-    const wt = await signWaiverToken({
+    const wt = await signWaiverToken(service, {
       eid: engagement.id as string,
       tid: tenantId,
       em: recipientEmail,

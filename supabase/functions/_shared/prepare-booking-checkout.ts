@@ -1,3 +1,4 @@
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
 import { createServiceClient } from "./edge-runtime/supabase.ts";
 import { ensureBillingAccountForStudent } from "./ensure-billing-account.ts";
 import { requireFeature } from "./feature-gate.ts";
@@ -88,7 +89,7 @@ export async function prepareBookingCheckout(
 
   // Reuse an existing engagement for this hold if the client resubmits
   if (hold.engagement_id) {
-    const token = await mintToken(hold.engagement_id as string, tenantId, body.client_email, hold.expires_at as string);
+    const token = await mintToken(service, hold.engagement_id as string, tenantId, body.client_email, hold.expires_at as string);
     return {
       ok: true,
       response: {
@@ -155,7 +156,7 @@ export async function prepareBookingCheckout(
     .update({ engagement_id: engagementId })
     .eq("id", hold.id);
 
-  const token = await mintToken(engagementId, tenantId, body.client_email, hold.expires_at as string);
+  const token = await mintToken(service, engagementId, tenantId, body.client_email, hold.expires_at as string);
 
   return {
     ok: true,
@@ -169,6 +170,7 @@ export async function prepareBookingCheckout(
 }
 
 async function mintToken(
+  service: SupabaseClient,
   engagementId: string,
   tenantId: string,
   email: string,
@@ -177,7 +179,7 @@ async function mintToken(
   // Token lives at least long enough to complete payment; capped by hold expiry.
   const holdExp = Math.floor(new Date(holdExpiresAt).getTime() / 1000);
   const minExp = Math.floor(Date.now() / 1000) + 3600;
-  return signWaiverToken({
+  return signWaiverToken(service, {
     eid: engagementId,
     tid: tenantId,
     em: email,

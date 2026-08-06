@@ -2445,6 +2445,7 @@ export type Database = {
           trial_ends_at: string | null
           updated_at: string
           vat_type: number
+          waiver_link_secret_enc: string | null
           waiver_require_otp: boolean
           yesh_config: Json | null
         }
@@ -2498,6 +2499,7 @@ export type Database = {
           trial_ends_at?: string | null
           updated_at?: string
           vat_type?: number
+          waiver_link_secret_enc?: string | null
           waiver_require_otp?: boolean
           yesh_config?: Json | null
         }
@@ -2551,6 +2553,7 @@ export type Database = {
           trial_ends_at?: string | null
           updated_at?: string
           vat_type?: number
+          waiver_link_secret_enc?: string | null
           waiver_require_otp?: boolean
           yesh_config?: Json | null
         }
@@ -3197,6 +3200,10 @@ export type Database = {
           secret_key: string
           terminal_name: string
         }[]
+      }
+      get_tenant_waiver_link_secret: {
+        Args: { p_tenant_id: string }
+        Returns: string
       }
       get_tenant_yesh_credentials: {
         Args: { p_tenant_id: string }

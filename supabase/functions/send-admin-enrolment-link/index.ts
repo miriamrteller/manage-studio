@@ -136,7 +136,7 @@ Deno.serve(async (req) => {
     if (!appBaseUrl) {
       return jsonResponse({ error: "APP_URL is not configured and request origin is unavailable" }, 500);
     }
-    const { paymentUrl, linkExpiresAt } = await buildEnrolmentPayUrl({
+    const { paymentUrl, linkExpiresAt } = await buildEnrolmentPayUrl(service, {
       appBaseUrl,
       engagementId: engagement.id as string,
       tenantId,
