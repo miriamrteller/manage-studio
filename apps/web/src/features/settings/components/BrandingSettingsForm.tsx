@@ -15,7 +15,7 @@ interface BrandingFormData {
 
 export function BrandingSettingsForm() {
   const { t } = useTranslation();
-  const { tenant } = useTenant();
+  const tenant = useTenant();
   const fontLinkRef = useRef<HTMLLinkElement | null>(null);
 
   const [formData, setFormData] = useState<BrandingFormData>({
@@ -34,8 +34,8 @@ export function BrandingSettingsForm() {
   useEffect(() => {
     if (tenant) {
       setFormData({
-        primary_color: tenant.primary_color ?? '#6366f1',
-        accent_color: tenant.accent_color ?? '#ec4899',
+        primary_color: tenant.white_label?.primary_color ?? '#6366f1',
+        accent_color: tenant.white_label?.accent_color ?? '#ec4899',
         font_pair: (tenant.font_pair as FontPairId) ?? 'reliable',
       });
     }
