@@ -1,3 +1,4 @@
+import React from 'react';
 import { Command } from 'cmdk';
 import { ReactNode, useEffect, useRef } from 'react';
 
@@ -43,6 +44,14 @@ export function CommandPalette({
     }
   };
 
+  const handleOverlayKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      if (e.target === overlayRef.current) {
+        onClose();
+      }
+    }
+  };
+
   if (!open) return null;
 
   const groupedItems = items.reduce<Record<string, CommandItem[]>>((acc, item) => {
@@ -60,6 +69,9 @@ export function CommandPalette({
     <div
       ref={overlayRef}
       onClick={handleOverlayClick}
+      onKeyDown={handleOverlayKeyDown}
+      role="button"
+      tabIndex={0}
       style={{
         position: 'fixed',
         inset: 0,

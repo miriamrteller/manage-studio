@@ -1,7 +1,7 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { cn } from '../../lib/utils';
 
-export interface Toast {
+export interface ToastData {
   id: string;
   title?: string;
   description?: string;
@@ -10,11 +10,11 @@ export interface Toast {
   onDismiss: (id: string) => void;
 }
 
-export interface ToastProps extends Toast {
+export interface ToastProps extends ToastData {
   className?: string;
 }
 
-const variantStyles: Record<Toast['variant'], string> = {
+const variantStyles: Record<ToastData['variant'], string> = {
   default: 'bg-[var(--surface-raised)] border-[var(--border-default)] text-[var(--color-text-primary)]',
   success: 'bg-[var(--color-success)] border-[var(--color-success)] text-white',
   warning: 'bg-[var(--color-warning)] border-[var(--color-warning)] text-[var(--color-text-primary)]',
@@ -96,7 +96,7 @@ const Toast = ({ id, title, description, variant, duration, onDismiss, className
 };
 
 export interface ToastContainerProps {
-  toasts: Toast[];
+  toasts: ToastData[];
   className?: string;
 }
 
@@ -120,12 +120,12 @@ const ToastContainer = ({ toasts, className }: ToastContainerProps) => {
   );
 };
 
-type ToastOptions = Omit<Toast, 'id' | 'onDismiss' | 'duration'> & {
+type ToastOptions = Omit<ToastData, 'id' | 'onDismiss' | 'duration'> & {
   duration?: number;
 };
 
 interface ToastContextValue {
-  toasts: Toast[];
+  toasts: ToastData[];
   toast: (options: ToastOptions) => string;
   dismiss: (id: string) => void;
   dismissAll: () => void;
@@ -134,7 +134,7 @@ interface ToastContextValue {
 const ToastContext = createContext<ToastContextValue | null>(null);
 
 export const ToastProvider = ({ children }: { children: React.ReactNode }) => {
-  const [toasts, setToasts] = useState<Toast[]>([]);
+  const [toasts, setToasts] = useState<ToastData[]>([]);
 
   const dismiss = useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
@@ -146,7 +146,7 @@ export const ToastProvider = ({ children }: { children: React.ReactNode }) => {
 
   const toast = useCallback((options: ToastOptions): string => {
     const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-    const newToast: Toast = {
+    const newToast: ToastData = {
       id,
       variant: options.variant ?? 'default',
       duration: options.duration ?? 5000,
@@ -182,3 +182,4 @@ export const useToast = (): Omit<ToastContextValue, 'toasts'> => {
 };
 
 export { Toast, ToastContainer };
+export type { ToastData as Toast };

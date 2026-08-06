@@ -80,7 +80,7 @@ export function SettingsLayout({
       dir={isRTL ? 'rtl' : 'ltr'}
     >
       {/* Desktop Sidebar */}
-      <nav
+      <div
         role="tablist"
         aria-label={t('settings.navigation', 'Settings Navigation')}
         onKeyDown={handleKeyDown}
@@ -122,10 +122,10 @@ export function SettingsLayout({
             </button>
           );
         })}
-      </nav>
+      </div>
 
       {/* Mobile Tab Strip */}
-      <nav
+      <div
         role="tablist"
         aria-label={t('settings.navigation', 'Settings Navigation')}
         onKeyDown={handleKeyDown}
@@ -162,7 +162,7 @@ export function SettingsLayout({
             </button>
           );
         })}
-      </nav>
+      </div>
 
       {/* Content Panel */}
       <div

@@ -29,7 +29,6 @@ export function MobileTabs({
 
   return (
     <nav
-      role="tablist"
       aria-label="Mobile navigation"
       className={`md:hidden fixed bottom-0 left-0 right-0 w-full bg-[--surface-raised] border-t border-[--border-subtle] z-50 ${className}`}
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
@@ -44,10 +43,7 @@ export function MobileTabs({
             <Link
               key={tab.id}
               to={tab.href}
-              role="tab"
-              aria-selected={isActive}
               aria-current={isActive ? 'page' : undefined}
-              tabIndex={isActive ? 0 : -1}
               onClick={() => onTabChange(tab.id)}
               className={`
                 relative flex flex-col items-center justify-center flex-1 min-h-[48px] px-2 py-1
