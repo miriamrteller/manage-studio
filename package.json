@@ -33,6 +33,7 @@
     "seed:dev:skins": "node scripts/seed-dev.mjs -- --all-skins",
     "env:use": "node scripts/use-env.mjs",
     "verify:prod": "node scripts/verify-prod-config.mjs",
+    "verify:env": "node scripts/verify-env.mjs",
     "smoke:cron:dev": "node scripts/smoke-cron-dev.mjs",
     "smoke:cron:dev:checklist": "node scripts/smoke-cron-dev.mjs -- --checklist",
     "finance:prompt": "node scripts/finance-stage-prompt.mjs",
