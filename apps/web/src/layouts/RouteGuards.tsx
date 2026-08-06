@@ -110,7 +110,7 @@ export function StudentRoute({ children }: { children: ReactNode }) {
     return <LoadingState />;
   }
 
-  const hasStudentRole = user?.role.some((r) =>
+  const hasStudentRole = user?.role.some((r: string) =>
     ['student', 'adult_student'].includes(r)
   );
 
