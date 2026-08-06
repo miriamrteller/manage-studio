@@ -24,7 +24,7 @@ ON CONFLICT (key) DO NOTHING;
 -- ============================================================================
 -- TENANTS (20260608000200_core_tenants.sql)
 -- ============================================================================
-INSERT INTO tenants (id, name, subdomain, language_default, country, primary_color, accent_color, currency, phone_region, business_preset, labels, contact_email, from_email, from_email_verified_at, waiver_require_otp, payment_provider, invoicing_provider, plan, skin)
+INSERT INTO tenants (id, name, subdomain, language_default, country, primary_color, accent_color, currency, phone_region, business_preset, labels, contact_email, from_email, from_email_verified_at, waiver_require_otp, payment_provider, invoicing_provider, plan, skin, font_pair)
 VALUES (
   '00000000-0000-0000-0000-000000000001'::uuid,
   'Creative Ballet Academy',
@@ -44,7 +44,8 @@ VALUES (
   'invoice4u',
   'invoice4u',
   'professional',
-  'dance-studio'
+  'dance-studio',
+  'elegant'  -- font_pair: NULL means the 'reliable' default, so seeding one exercises the branded path
 ) ON CONFLICT (subdomain) DO UPDATE SET
   name = EXCLUDED.name,
   language_default = EXCLUDED.language_default,
@@ -62,7 +63,8 @@ VALUES (
   payment_provider = EXCLUDED.payment_provider,
   invoicing_provider = EXCLUDED.invoicing_provider,
   plan = 'professional',
-  skin = 'dance-studio';
+  skin = 'dance-studio',
+  font_pair = EXCLUDED.font_pair;
 
 -- ============================================================================
 -- SEASONS + CATEGORIES + OFFERINGS (20260608000500_offerings.sql)
@@ -979,6 +981,13 @@ BEGIN
   SET payment_provider = 'grow',
       invoicing_provider = 'grow'
   WHERE subdomain IN ('belladance', 'lensstudio', 'velvetbeauty');
+
+  -- font_pair per vertical (DL-DESIGN-009). provision_tenant does not take one,
+  -- so these two are set after the fact; creativeballet carries its own in the
+  -- INSERT above. Everything else stays NULL on purpose — NULL is the 'reliable'
+  -- default, and leaving most tenants there keeps that path exercised too.
+  UPDATE tenants SET font_pair = 'dynamic' WHERE subdomain = 'belladance';
+  UPDATE tenants SET font_pair = 'warm'    WHERE subdomain = 'velvetbeauty';
 
 END $$;
 

@@ -109,6 +109,21 @@ is what they need anyway.
   is built dynamically, so no static check saw it.
 - **The waiver evidence seal could not be verified.** `record_hmac` was written
   and never read back. `verify-waiver-evidence.ts` closes that.
+- **The dev guard checked one switch and connected through the other.**
+  `assertDevProject()` reads the ref from `.env`, but when the direct host is
+  unreachable (it is — IPv6-only on Windows) `resolveConnectableDbUrl()` falls
+  back to asking the **link** where to connect. With `.env` on dev and the link
+  on prod, `pnpm seed:dev` passed its guard and opened a session on production;
+  only a password mismatch stopped it seeding demo tenants and the public dev
+  encryption key into the real database. `resolveDbUrlFromSupabaseCli()` now
+  refuses when the linked ref and the `.env` ref disagree, and names both. This
+  covers `seed:dev`, `verify:rls`, `verify:prod`, `smoke:cron:dev` and
+  `apply-pending-migrations`, which all share that resolver.
+- **`seed.sql` never set `font_pair`.** The orphan `seed_updates_font_pair.sql`
+  from PR #38 was referenced nowhere, so branding was unexercised in dev.
+  Creative Ballet now carries `font_pair` in its own `INSERT`; the two
+  `provision_tenant` demo tenants get theirs beside the existing provider
+  `UPDATE`s. The orphan file is deleted.
 
 ---
 
@@ -126,10 +141,14 @@ is what they need anyway.
 - **No backups.** Free tier has no PITR and no daily backups. A `pg_dump` job was
   planned and not built. **Do this before real payment data lands.**
 - **Twilio/WhatsApp** deferred; platform vs per-tenant undecided.
-- **`supabase/seed_updates_font_pair.sql` is an orphan.** PR #38 added it as a
-  one-off; nothing references it and `seed.sql` never sets `font_pair`, so every
-  seeded tenant has it NULL and the branding feature is unexercised in dev. Fold
-  its three `UPDATE`s into `seed.sql` and delete the file.
+- **Cloudflare Email Sending needs the Workers Paid plan.** The account is on
+  Free, where outbound sending is *not available* — every Email Sending endpoint
+  returns `Unauthorized [2036]` even for a credential holding `email_sending
+  (write)` on the right account. Email **Routing** is already configured on
+  `opalswift.com` and is free on all plans; it is the inbound half and does not
+  help. Upgrade, then `npx wrangler email sending enable opalswift.com`. Note
+  that Email Sending is a **public beta** and PR #39 removed Resend, so the whole
+  transactional path — auth emails, dunning, waivers, receipts — has no fallback.
 
 ---
 

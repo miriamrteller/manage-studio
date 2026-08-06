@@ -68,6 +68,23 @@ function declaredIn(file) {
   return out;
 }
 
+/**
+ * Live key→value pairs from an env file, commented-out lines excluded.
+ *
+ * Separate from declaredIn() because the two questions differ: a commented
+ * declaration documents a var, but only an uncommented one configures it.
+ * Never print a value from this map — only its emptiness.
+ */
+function valuesIn(file) {
+  const out = new Map();
+  if (!existsSync(join(root, file))) return out;
+  for (const line of readFileSync(join(root, file), 'utf8').split('\n')) {
+    const m = line.match(/^\s*([A-Z_][A-Z0-9_]*)=(.*)$/);
+    if (m) out.set(m[1], m[2].trim().replace(/^["']|["']$/g, ''));
+  }
+  return out;
+}
+
 // Optional chaining is used in places (`globalThis.Deno?.env.get(...)`), so the
 // dots must be optional too — an over-strict pattern here produces false
 // "documented but unread" findings, which is worse than no check at all.
@@ -157,11 +174,72 @@ for (const v of [...example].sort()) {
   notes.push(`unread  ${v} is documented in .env.example but nothing reads it`);
 }
 
-// --- .env.prod still holding placeholders ------------------------------------
+// --- .env.prod not actually filled in ----------------------------------------
+// Two ways a var can be unconfigured, and only one of them used to be caught:
+//
+//   FOO=<paste here>   an obvious placeholder — always was flagged
+//   FOO=               empty — read as "declared, therefore done" and was not
+//
+// The empty form is the dangerous one precisely because it looks finished.
+// CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_EMAIL_API_TOKEN sat empty in .env.prod
+// while this script reported no problems, because `=<...>` was the only shape
+// it knew about.
+//
+// Severity splits on REQUIRED in sync-edge-secrets.mjs: that list is the repo's
+// own statement of what must be set for a deploy to work, so an unfilled one is
+// a hard problem. Anything else is a note — plenty of vars are legitimately
+// blank (GOOGLE_CALENDAR_* when Calendar is not launching, the mock flags).
 if (existsSync(join(root, '.env.prod'))) {
-  const raw = readFileSync(join(root, '.env.prod'), 'utf8');
-  const unfilled = [...raw.matchAll(/^([A-Z_][A-Z0-9_]*)=(<[^>]*>)/gm)].map((m) => m[1]);
-  if (unfilled.length) notes.push(`.env.prod still has ${unfilled.length} placeholder(s): ${unfilled.join(', ')}`);
+  const prodValues = valuesIn('.env.prod');
+  const placeholder = [];
+  const empty = [];
+
+  for (const [key, value] of prodValues) {
+    if (/^<[^>]*>$/.test(value)) placeholder.push(key);
+    else if (value === '') empty.push(key);
+  }
+
+  const unfilled = [...placeholder, ...empty];
+  const blocking = unfilled.filter((k) => required.has(k) || /^WAIVER_HMAC_KEY_V\d+$/.test(k));
+  const advisory = unfilled.filter((k) => !blocking.includes(k));
+
+  for (const key of blocking.sort()) {
+    problems.push(
+      `UNFILLED-REQUIRED  ${key} is ${placeholder.includes(key) ? 'still a placeholder' : 'empty'} ` +
+        `in .env.prod, and sync-edge-secrets lists it as REQUIRED — pnpm secrets:edge will abort`,
+    );
+  }
+  if (advisory.length) {
+    notes.push(
+      `.env.prod has ${advisory.length} unfilled var(s): ` +
+        advisory
+          .sort()
+          .map((k) => `${k}${placeholder.includes(k) ? ' (placeholder)' : ' (empty)'}`)
+          .join(', '),
+    );
+  }
+}
+
+// --- .env.dev and .env.prod declaring different key sets ---------------------
+// A key present in one and missing from the other means configuring prod by
+// copying dev (or the reverse) silently drops it. Advisory rather than blocking:
+// some divergence is deliberate, and the allowlist below records which.
+{
+  const devKeys = declaredIn('.env.dev');
+  const prodKeys = declaredIn('.env.prod');
+
+  /** Divergences that are correct on purpose. */
+  const INTENTIONAL_DIVERGENCE = new Set([
+    // Ignored in prod builds by design; the plan says leave it out entirely so
+    // there is no doubt about which tenant a prod bundle resolves.
+    'VITE_DEV_TENANT_SUBDOMAIN',
+  ]);
+
+  const devOnly = [...devKeys].filter((k) => !prodKeys.has(k) && !INTENTIONAL_DIVERGENCE.has(k));
+  const prodOnly = [...prodKeys].filter((k) => !devKeys.has(k) && !INTENTIONAL_DIVERGENCE.has(k));
+
+  if (devOnly.length) notes.push(`in .env.dev but not .env.prod: ${devOnly.sort().join(', ')}`);
+  if (prodOnly.length) notes.push(`in .env.prod but not .env.dev: ${prodOnly.sort().join(', ')}`);
 }
 
 console.log(`\nEdge vars read : ${edgeReads.size}`);
