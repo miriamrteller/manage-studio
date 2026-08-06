@@ -16,14 +16,14 @@ rather than assuming, and say plainly when something is unverified.
 
 | | State |
 |---|---|
-| Prod schema | ✅ 32 migrations applied. Regenerating types from prod produced a **one-line** diff (`PostgrestVersion` only) — schema is identical to dev |
+| Prod schema | ✅ 32 migrations applied (chain folded; reset+replayed after PR #38). Regenerating types from prod produced a **one-line** diff (`PostgrestVersion` only) — schema is identical to dev |
 | Prod cron config | ✅ `supabase_functions_url` + `cron_secret` rows set; `pg_cron`/`pg_net` on; 9 jobs scheduled |
 | Prod encryption key | ❌ **not set** — owner must insert it (see below) |
 | Prod tenant | ❌ not provisioned — needs the owner `auth.users` row first |
-| Edge Functions | ⚠️ deployed to prod, but **email credentials are not set**, so any send fails |
+| Edge Functions | ⚠️ deployed to prod, but **Cloudflare Email credentials are not set**, so any send fails |
 | Auth Send Email hook | ⚠️ **live** on prod, pointing at `send-auth-email`. Cannot be disabled, only deleted |
-| Dev | `acmujrhavgbamdilzuew`, 32 migrations, seeded, 8 tenants |
-| CI | green. `main` @ PR #37; PR #39 open and green |
+| Dev | `acmujrhavgbamdilzuew`, 32 migrations, seeded, 8 tenants, screenshot user test@example.com / 123456 (sign-in verified) |
+| CI | green. `main` @ PR #37; PR #39 open (Cloudflare email + env hardening + fold) |
 
 **The repo is currently linked to PRODUCTION** and `.env` holds prod values.
 `pnpm seed:dev` will refuse to run — that is the guard working.
