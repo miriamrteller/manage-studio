@@ -31,6 +31,8 @@
     "seed:dev": "node scripts/seed-dev.mjs",
     "seed:dev:checklist": "node scripts/seed-dev.mjs -- --checklist",
     "seed:dev:skins": "node scripts/seed-dev.mjs -- --all-skins",
+    "env:use": "node scripts/use-env.mjs",
+    "verify:prod": "node scripts/verify-prod-config.mjs",
     "smoke:cron:dev": "node scripts/smoke-cron-dev.mjs",
     "smoke:cron:dev:checklist": "node scripts/smoke-cron-dev.mjs -- --checklist",
     "finance:prompt": "node scripts/finance-stage-prompt.mjs",
@@ -46,7 +48,8 @@
     "secrets:email": "node scripts/sync-email-secrets.mjs && pnpm exec supabase secrets set --env-file supabase/.temp/email-secrets.env",
     "secrets:google-calendar": "node scripts/sync-google-calendar-secrets.mjs && pnpm exec supabase secrets set --env-file supabase/.temp/google-calendar-secrets.env && pnpm exec supabase secrets unset GOOGLE_CALENDAR_MOCK",
     "secrets:edge": "node scripts/sync-edge-secrets.mjs && pnpm exec supabase secrets set --env-file supabase/.temp/edge-secrets.env",
-    "test:auth-email-hook": "node scripts/test-send-auth-email-hook.mjs"
+    "test:auth-email-hook": "node scripts/test-send-auth-email-hook.mjs",
+    "verify:rls": "node scripts/verify-rls.mjs"
   },
   "devDependencies": {
     "@react-email/components": "^1.0.12",
