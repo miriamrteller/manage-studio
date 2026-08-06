@@ -7,6 +7,12 @@ export interface TenantEmailConfig {
   language: "en" | "he";
   primary_color: string;
   accent_color: string;
+  // Sender identity — see _shared/notification-from.ts. Optional so the
+  // tenant-not-found fallback below stays constructible; resolveTenantSender()
+  // then throws rather than inventing a From address.
+  contact_email?: string;
+  from_email?: string | null;
+  from_email_verified_at?: string | null;
 }
 
 const DEFAULT_TENANT: TenantEmailConfig = {
@@ -30,7 +36,7 @@ export async function getTenantEmailConfig(
 ): Promise<TenantEmailConfig> {
   const { data, error } = await supabase
     .from("tenants")
-    .select("id, name, subdomain, language_default, primary_color, accent_color")
+    .select("id, name, subdomain, language_default, primary_color, accent_color, contact_email, from_email, from_email_verified_at")
     .eq("id", tenantId)
     .single();
 
@@ -46,6 +52,9 @@ export async function getTenantEmailConfig(
     language: data.language_default === "he" ? "he" : "en",
     primary_color: data.primary_color || DEFAULT_TENANT.primary_color,
     accent_color: data.accent_color || DEFAULT_TENANT.accent_color,
+    contact_email: data.contact_email,
+    from_email: data.from_email,
+    from_email_verified_at: data.from_email_verified_at,
   };
 }
 
@@ -55,7 +64,7 @@ export async function getTenantBySubdomain(
 ): Promise<TenantEmailConfig | null> {
   const { data, error } = await supabase
     .from("tenants")
-    .select("id, name, subdomain, language_default, primary_color, accent_color")
+    .select("id, name, subdomain, language_default, primary_color, accent_color, contact_email, from_email, from_email_verified_at")
     .eq("subdomain", subdomain)
     .maybeSingle();
 
@@ -70,6 +79,9 @@ export async function getTenantBySubdomain(
     language: data.language_default === "he" ? "he" : "en",
     primary_color: data.primary_color || DEFAULT_TENANT.primary_color,
     accent_color: data.accent_color || DEFAULT_TENANT.accent_color,
+    contact_email: data.contact_email,
+    from_email: data.from_email,
+    from_email_verified_at: data.from_email_verified_at,
   };
 }
 

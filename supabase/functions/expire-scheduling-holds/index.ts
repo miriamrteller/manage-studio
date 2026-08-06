@@ -17,6 +17,7 @@
 
 import { jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
+import { resolveTenantSender, TENANT_SENDER_COLUMNS, type TenantSenderInput } from "../_shared/notification-from.ts";
 import { sendHtmlEmail } from "../_shared/resend-client.ts";
 
 const CRON_SECRET = Deno.env.get("CRON_SECRET") ?? "";
@@ -43,7 +44,10 @@ interface TenantSettings {
 interface TenantInfo {
   id: string;
   name: string | null;
+  subdomain: string;
+  contact_email: string;
   from_email: string | null;
+  from_email_verified_at: string | null;
   language_default: string | null;
 }
 
@@ -106,7 +110,7 @@ Deno.serve(async (req) => {
     if (tenantCache.has(tenantId)) return tenantCache.get(tenantId)!;
     const { data } = await service
       .from("tenants")
-      .select("id, name, from_email, language_default")
+      .select(`id, name, language_default, ${TENANT_SENDER_COLUMNS}`)
       .eq("id", tenantId)
       .maybeSingle();
     if (data) tenantCache.set(tenantId, data as TenantInfo);
@@ -132,12 +136,13 @@ Deno.serve(async (req) => {
       if (msLeft > settings.expiry_reminder_mins * 60_000) continue;
 
       const tenant = await getTenant(hold.tenant_id);
-      const from = tenant?.from_email;
-      if (from) {
+      const sender = tenant ? resolveTenantSender(tenant as unknown as TenantSenderInput) : null;
+      if (sender) {
         try {
           await sendHtmlEmail({
             to: hold.client_email,
-            from,
+            from: sender.from,
+            replyTo: sender.replyTo,
             subject: (tenant?.language_default !== "en")
               ? "שריון הפגישה שלך עומד לפוג"
               : "Your appointment hold is expiring soon",
@@ -211,11 +216,13 @@ Deno.serve(async (req) => {
     const settings = await getSettings(hold.tenant_id);
     if (settings?.expiry_reminder_mins && hold.client_email) {
       const tenant = await getTenant(hold.tenant_id);
-      if (tenant?.from_email) {
+      const releasedSender = tenant ? resolveTenantSender(tenant as unknown as TenantSenderInput) : null;
+      if (releasedSender) {
         try {
           await sendHtmlEmail({
             to: hold.client_email,
-            from: tenant.from_email,
+            from: releasedSender.from,
+            replyTo: releasedSender.replyTo,
             subject: (tenant.language_default !== "en")
               ? "שריון הפגישה שוחרר"
               : "Your appointment hold was released",

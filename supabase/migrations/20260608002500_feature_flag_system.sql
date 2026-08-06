@@ -241,6 +241,15 @@ BEGIN
     RAISE EXCEPTION 'p_name is required';
   END IF;
 
+  -- Hard block: no tenant without a reachable human. This becomes contact_email
+  -- and therefore the Reply-To on every email the tenant ever sends.
+  IF p_owner_email IS NULL OR trim(p_owner_email) = '' THEN
+    RAISE EXCEPTION 'p_owner_email is required — it becomes the tenant Reply-To address';
+  END IF;
+  IF position('@' IN p_owner_email) < 2 THEN
+    RAISE EXCEPTION 'p_owner_email is not a valid email address: %', p_owner_email;
+  END IF;
+
   v_subdomain := lower(trim(p_subdomain));
   IF v_subdomain IS NULL OR v_subdomain = '' THEN
     RAISE EXCEPTION 'p_subdomain is required';
@@ -268,7 +277,7 @@ BEGIN
   INSERT INTO tenants (
     name, subdomain, plan, skin,
     language_default, country, currency, phone_region,
-    from_email,
+    contact_email,
     payment_provider, invoicing_provider
   )
   VALUES (
@@ -277,7 +286,10 @@ BEGIN
     p_plan::tenant_plan,
     p_vertical,
     'he', 'IL', 'ILS', 'IL',
-    NULLIF(trim(COALESCE(p_owner_email, '')), ''),
+    -- Reply-To for every outbound email. from_email is left NULL on purpose:
+    -- the tenant sends as <subdomain>@PLATFORM_EMAIL_DOMAIN until they add and
+    -- verify a branded domain of their own.
+    lower(trim(p_owner_email)),
     'grow', 'grow'
   )
   RETURNING id INTO v_tenant_id;

@@ -2399,10 +2399,12 @@ export type Database = {
           accent_color: string
           billing_policy: Json
           business_preset: string
+          contact_email: string
           country: string
           created_at: string
           currency: string
           from_email: string | null
+          from_email_verified_at: string | null
           google_calendar_access_token_enc: string | null
           google_calendar_connected_at: string | null
           google_calendar_email: string | null
@@ -2447,10 +2449,12 @@ export type Database = {
           accent_color?: string
           billing_policy?: Json
           business_preset?: string
+          contact_email: string
           country?: string
           created_at?: string
           currency?: string
           from_email?: string | null
+          from_email_verified_at?: string | null
           google_calendar_access_token_enc?: string | null
           google_calendar_connected_at?: string | null
           google_calendar_email?: string | null
@@ -2495,10 +2499,12 @@ export type Database = {
           accent_color?: string
           billing_policy?: Json
           business_preset?: string
+          contact_email?: string
           country?: string
           created_at?: string
           currency?: string
           from_email?: string | null
+          from_email_verified_at?: string | null
           google_calendar_access_token_enc?: string | null
           google_calendar_connected_at?: string | null
           google_calendar_email?: string | null

@@ -26,7 +26,14 @@ AS $$
     'dev', 'staging', 'test', 'qa', 'demo', 'preview',
     'status', 'docs', 'help', 'support', 'billing', 'account', 'blog',
     -- reserved by convention / RFC 2142
-    'localhost', 'postmaster', 'webmaster', 'hostmaster', 'abuse', 'security'
+    'localhost', 'postmaster', 'webmaster', 'hostmaster', 'abuse', 'security',
+    -- Email local-parts. A tenant without its own verified domain sends from
+    -- <subdomain>@PLATFORM_EMAIL_DOMAIN, so the subdomain doubles as an address.
+    -- 'hello' is the live inbound address on the opalswift.com landing page —
+    -- without this, a tenant taking that subdomain would send as the platform.
+    'hello', 'info', 'contact', 'sales', 'team', 'noreply', 'no-reply',
+    'donotreply', 'do-not-reply', 'notifications', 'notify', 'alerts',
+    'bounce', 'bounces', 'feedback', 'marketing', 'newsletter', 'root'
   ]);
 $$;
 

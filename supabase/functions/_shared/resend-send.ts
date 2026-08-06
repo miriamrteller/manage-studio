@@ -24,6 +24,8 @@ export interface SendRenderedEmailOptions {
   to: string;
   from: string;
   subject?: string;
+  /** Studio's real inbox — see resolveTenantSender(). */
+  replyTo?: string;
   renderInput: RenderEmailTemplateInput;
 }
 
@@ -141,5 +143,6 @@ export async function sendRenderedEmail(
     from: options.from,
     subject,
     html,
+    replyTo: options.replyTo,
   });
 }

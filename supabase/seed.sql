@@ -24,7 +24,7 @@ ON CONFLICT (key) DO NOTHING;
 -- ============================================================================
 -- TENANTS (20260608000200_core_tenants.sql)
 -- ============================================================================
-INSERT INTO tenants (id, name, subdomain, language_default, country, primary_color, accent_color, currency, phone_region, business_preset, labels, from_email, waiver_require_otp, payment_provider, invoicing_provider, plan, skin)
+INSERT INTO tenants (id, name, subdomain, language_default, country, primary_color, accent_color, currency, phone_region, business_preset, labels, contact_email, from_email, from_email_verified_at, waiver_require_otp, payment_provider, invoicing_provider, plan, skin)
 VALUES (
   '00000000-0000-0000-0000-000000000001'::uuid,
   'Creative Ballet Academy',
@@ -37,7 +37,9 @@ VALUES (
   'IL',
   'programs',
   '{}'::jsonb,
-  'noreply@creativeballet.co.il',  -- verified sender for transactional email (waiver reminders, receipts)
+  'info@creativeballetacademy.com',  -- contact_email: Reply-To on every send; the studio's real inbox
+  'info@creativeballetacademy.com',  -- from_email: branded sender (dev only — see verified_at below)
+  now(),  -- from_email_verified_at: pretend-verified in dev so the branded path is exercised
   false,  -- OTP before waiver signing disabled by default; enable only if Twilio Verify is configured
   'invoice4u',
   'invoice4u',
@@ -53,7 +55,9 @@ VALUES (
   phone_region = EXCLUDED.phone_region,
   business_preset = EXCLUDED.business_preset,
   labels = EXCLUDED.labels,
+  contact_email = EXCLUDED.contact_email,
   from_email = EXCLUDED.from_email,
+  from_email_verified_at = EXCLUDED.from_email_verified_at,
   waiver_require_otp = EXCLUDED.waiver_require_otp,
   payment_provider = EXCLUDED.payment_provider,
   invoicing_provider = EXCLUDED.invoicing_provider,

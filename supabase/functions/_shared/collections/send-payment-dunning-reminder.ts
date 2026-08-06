@@ -1,5 +1,10 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
-import { resolveNotificationFromEmail } from "../notification-from.ts";
+import {
+  resolveTenantSender,
+  TENANT_SENDER_COLUMNS,
+  type TenantSender,
+  type TenantSenderInput,
+} from "../notification-from.ts";
 import { EMAIL_TEMPLATE_NAMES, sendRenderedEmail } from "../resend-send.ts";
 import {
   buildDunningKey,
@@ -38,7 +43,9 @@ export async function sendPaymentDunningReminder(
 
   const { data: tenant } = await service
     .from("tenants")
-    .select("name, language_default, from_email, primary_color, accent_color")
+    .select(
+      `name, language_default, primary_color, accent_color, ${TENANT_SENDER_COLUMNS}`,
+    )
     .eq("id", input.tenantId)
     .single();
 
@@ -78,9 +85,9 @@ export async function sendPaymentDunningReminder(
     return { sent: false, skipped: "email_opted_out" };
   }
 
-  let fromEmail: string;
+  let sender: TenantSender;
   try {
-    fromEmail = resolveNotificationFromEmail(tenant.from_email as string | null);
+    sender = resolveTenantSender(tenant as unknown as TenantSenderInput);
   } catch {
     return { sent: false, skipped: "sender_not_configured" };
   }
@@ -94,7 +101,8 @@ export async function sendPaymentDunningReminder(
   try {
     const result = await sendRenderedEmail({
       to: context.recipientEmail,
-      from: fromEmail,
+      from: sender.from,
+      replyTo: sender.replyTo,
       renderInput: {
         templateName: EMAIL_TEMPLATE_NAMES.PAYMENT_REMINDER,
         language,

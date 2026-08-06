@@ -5,6 +5,8 @@ export async function sendHtmlEmail(options: {
   from: string;
   subject: string;
   html: string;
+  /** Studio's real inbox. Omitted only by auth email, which is platform-sent. */
+  replyTo?: string;
 }): Promise<{ id: string }> {
   const resendApiKey = Deno.env.get("RESEND_API_KEY");
   if (!resendApiKey) {
@@ -22,6 +24,7 @@ export async function sendHtmlEmail(options: {
       to: options.to,
       subject: options.subject,
       html: options.html,
+      ...(options.replyTo ? { reply_to: options.replyTo } : {}),
     }),
   });
 

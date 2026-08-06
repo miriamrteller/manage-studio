@@ -2,7 +2,7 @@ import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4
 import { formatDate } from "../email-dist/format.js";
 import { buildEnrolmentPayUrl } from "../enrolment-pay-url.ts";
 import { resolveEnrolmentNotificationRecipient } from "../enrolment-recipient.ts";
-import { resolveNotificationFromEmail } from "../notification-from.ts";
+import { resolveTenantSender, TENANT_SENDER_COLUMNS, type TenantSenderInput } from "../notification-from.ts";
 import { EMAIL_TEMPLATE_NAMES, sendRenderedEmail } from "../resend-send.ts";
 import {
   buildDunningKey,
@@ -244,7 +244,7 @@ async function cancelEngagementForDunning(
 
   const { data: tenant } = await service
     .from("tenants")
-    .select("name, from_email, language_default, primary_color, accent_color")
+    .select(`name, language_default, primary_color, accent_color, ${TENANT_SENDER_COLUMNS}`)
     .eq("id", cancelled.tenant_id)
     .single();
 
@@ -255,10 +255,11 @@ async function cancelEngagementForDunning(
 
   if (recipient && tenant) {
     try {
-      const fromEmail = resolveNotificationFromEmail(tenant.from_email as string | null);
+      const sender = resolveTenantSender(tenant as unknown as TenantSenderInput);
       const result = await sendRenderedEmail({
         to: recipient.email,
-        from: fromEmail,
+        from: sender.from,
+        replyTo: sender.replyTo,
         renderInput: {
           templateName: EMAIL_TEMPLATE_NAMES.CLASS_CANCELLATION,
           language,

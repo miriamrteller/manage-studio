@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import { resolveTenantAdminNotificationEmails } from "../enrolment-recipient.ts";
-import { resolveNotificationFromEmail } from "../notification-from.ts";
+import { resolveTenantSender, TENANT_SENDER_COLUMNS, type TenantSender, type TenantSenderInput } from "../notification-from.ts";
 import { sendHtmlEmail } from "../resend-client.ts";
 import { formatCurrency } from "../email-dist/format.js";
 import {
@@ -59,13 +59,13 @@ async function alertAdminsMissingDocument(
 
   const { data: tenant } = await service
     .from("tenants")
-    .select("name, from_email")
+    .select(`name, ${TENANT_SENDER_COLUMNS}`)
     .eq("id", payment.tenant_id)
     .maybeSingle();
 
-  let fromEmail: string;
+  let sender: TenantSender;
   try {
-    fromEmail = resolveNotificationFromEmail(tenant?.from_email as string | null | undefined);
+    sender = resolveTenantSender(tenant as unknown as TenantSenderInput);
   } catch (error) {
     await service.from("audit_log").insert({
       tenant_id: payment.tenant_id,
@@ -130,7 +130,8 @@ async function alertAdminsMissingDocument(
     try {
       await sendHtmlEmail({
         to: adminEmail,
-        from: fromEmail,
+        from: sender.from,
+        replyTo: sender.replyTo,
         subject,
         html,
       });

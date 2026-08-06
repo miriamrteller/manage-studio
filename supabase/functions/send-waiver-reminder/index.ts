@@ -25,6 +25,10 @@ import {
   sendRenderedEmail,
   EMAIL_TEMPLATE_NAMES,
 } from "../_shared/resend-send.ts";
+import {
+  resolveTenantSender,
+  type TenantSenderInput,
+} from "../_shared/notification-from.ts";
 import { signWaiverToken } from "../_shared/waiver-token.ts";
 
 const CRON_SECRET = Deno.env.get("CRON_SECRET") ?? "";
@@ -49,7 +53,10 @@ interface PendingEngagement {
   };
   tenants: {
     name: string | null;
+    subdomain: string;
+    contact_email: string;
     from_email: string | null;
+    from_email_verified_at: string | null;
     language_default: string | null;
     primary_color: string | null;
     accent_color: string | null;
@@ -91,7 +98,7 @@ Deno.serve(async (req) => {
        waiver_48h_reminded_at, waiver_5d_reminded_at,
        people ( email, name, account_id ),
        offerings ( name ),
-       tenants ( name, from_email, language_default, primary_color, accent_color ),
+       tenants ( name, language_default, primary_color, accent_color, subdomain, contact_email, from_email, from_email_verified_at ),
        payments ( stripe_payment_intent_id, total_amount_minor, currency )`,
     )
     .eq("status", "pending_waiver")
@@ -120,7 +127,7 @@ Deno.serve(async (req) => {
       const msUntilDeadline = deadline.getTime() - now.getTime();
       const language = (eng.tenants?.language_default === "he" ? "he" : "en") as "en" | "he";
       const personEmail = eng.people?.email;
-      const fromEmail = eng.tenants?.from_email;
+      const sender = eng.tenants ? resolveTenantSender(eng.tenants as unknown as TenantSenderInput) : null;
       const recipientName = eng.people?.name ?? "there";
       const className = eng.offerings?.name ?? "your class";
       const schoolName = eng.tenants?.name ?? "Studio";
@@ -185,10 +192,11 @@ Deno.serve(async (req) => {
         );
 
         // Send cancellation email
-        if (personEmail && fromEmail) {
+        if (personEmail && sender) {
           await sendRenderedEmail({
             to: personEmail,
-            from: fromEmail,
+            from: sender.from,
+            replyTo: sender.replyTo,
             renderInput: {
               templateName: EMAIL_TEMPLATE_NAMES.WAIVER_CANCELLED,
               language,
@@ -217,7 +225,7 @@ Deno.serve(async (req) => {
 
       // 2. 48-hour reminder (final notice, not yet sent)
       if (msUntilDeadline <= MS_48H && !eng.waiver_48h_reminded_at) {
-        if (personEmail && fromEmail && APP_URL) {
+        if (personEmail && sender && APP_URL) {
           try {
             const expireAt = Math.floor(deadline.getTime() / 1000);
             const wt = await signWaiverToken({
@@ -230,7 +238,8 @@ Deno.serve(async (req) => {
 
             await sendRenderedEmail({
               to: personEmail,
-              from: fromEmail,
+              from: sender.from,
+              replyTo: sender.replyTo,
               renderInput: {
                 templateName: EMAIL_TEMPLATE_NAMES.WAIVER_REMINDER,
                 language,
@@ -265,7 +274,7 @@ Deno.serve(async (req) => {
 
       // 3. 5-day reminder (first notice, not yet sent)
       if (msUntilDeadline <= MS_5D && !eng.waiver_5d_reminded_at) {
-        if (personEmail && fromEmail && APP_URL) {
+        if (personEmail && sender && APP_URL) {
           try {
             const expireAt = Math.floor(deadline.getTime() / 1000);
             const wt = await signWaiverToken({
@@ -278,7 +287,8 @@ Deno.serve(async (req) => {
 
             await sendRenderedEmail({
               to: personEmail,
-              from: fromEmail,
+              from: sender.from,
+              replyTo: sender.replyTo,
               renderInput: {
                 templateName: EMAIL_TEMPLATE_NAMES.WAIVER_REMINDER,
                 language,

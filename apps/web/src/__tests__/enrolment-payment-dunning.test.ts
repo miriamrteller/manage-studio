@@ -32,9 +32,7 @@ vi.mock('../../../../supabase/functions/_shared/resend-send.ts', () => ({
     CLASS_CANCELLATION: 'class_cancellation',
   },
 }));
-vi.mock('../../../../supabase/functions/_shared/notification-from.ts', () => ({
-  resolveNotificationFromEmail: () => 'noreply@test.com',
-}));
+// notification-from.ts is deliberately NOT mocked — see check-missing-documents.test.ts.
 
 type EngagementState = {
   status: string;
@@ -169,7 +167,10 @@ function makeEnrolmentDunningService(initial: Partial<EngagementState> = {}) {
                 data: {
                   name: 'Studio',
                   currency: 'ILS',
+                  subdomain: 'studio',
+                  contact_email: 'studio@test.com',
                   from_email: 'studio@test.com',
+                  from_email_verified_at: '2026-08-05T00:00:00Z',
                   language_default: 'en',
                   primary_color: '#000',
                   accent_color: '#fff',

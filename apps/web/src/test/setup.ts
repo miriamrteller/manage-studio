@@ -16,6 +16,13 @@ if (typeof globalThis.Deno === 'undefined') {
   } as typeof globalThis.Deno;
 }
 
+/**
+ * Tenants without a verified branded domain send as <subdomain>@this.
+ * resolveTenantSender() throws when it is unset — deliberately, so a missing
+ * config can never become a guessed sender domain. Tests need it configured.
+ */
+process.env.PLATFORM_EMAIL_DOMAIN ??= 'opalswift.test';
+
 /** Shared jsdom across files (e.g. --threads false) must not leak rendered trees. */
 afterEach(() => {
   cleanup();

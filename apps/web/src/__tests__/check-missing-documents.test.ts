@@ -12,9 +12,9 @@ vi.mock('../../../../supabase/functions/_shared/enrolment-recipient.ts', () => (
   resolveTenantAdminNotificationEmails: vi.fn(async () => ['admin@studio.test']),
 }));
 
-vi.mock('../../../../supabase/functions/_shared/notification-from.ts', () => ({
-  resolveNotificationFromEmail: vi.fn(() => 'noreply@studio.test'),
-}));
+// notification-from.ts is deliberately NOT mocked: the tenant fixtures below
+// carry a real sender identity, so these tests exercise resolveTenantSender()
+// rather than a stub that could drift from it.
 
 import { sendHtmlEmail } from '../../../../supabase/functions/_shared/resend-client.ts';
 import {
@@ -116,7 +116,7 @@ describe('runCheckMissingDocuments', () => {
             select: () => ({
               eq: () => ({
                 maybeSingle: async () => ({
-                  data: { name: 'Studio', from_email: null },
+                  data: { name: 'Studio', subdomain: 'studio', contact_email: 'studio@example.test', from_email: null, from_email_verified_at: null },
                   error: null,
                 }),
               }),
@@ -233,7 +233,7 @@ describe('runCheckMissingDocuments', () => {
             select: () => ({
               eq: () => ({
                 maybeSingle: async () => ({
-                  data: { name: 'Studio', from_email: null },
+                  data: { name: 'Studio', subdomain: 'studio', contact_email: 'studio@example.test', from_email: null, from_email_verified_at: null },
                   error: null,
                 }),
               }),

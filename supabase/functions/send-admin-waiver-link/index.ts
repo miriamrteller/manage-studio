@@ -1,6 +1,6 @@
 import { corsHeaders, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
-import { resolveNotificationFromEmail } from "../_shared/notification-from.ts";
+import { resolveTenantSender, TENANT_SENDER_COLUMNS, type TenantSenderInput } from "../_shared/notification-from.ts";
 import { resolveEnrolmentNotificationRecipient } from "../_shared/enrolment-recipient.ts";
 import { signWaiverToken } from "../_shared/waiver-token.ts";
 import {
@@ -102,7 +102,7 @@ Deno.serve(async (req) => {
 
     const { data: tenant } = await service
       .from("tenants")
-      .select("id, name, from_email, language_default, primary_color, accent_color")
+      .select(`id, name, language_default, primary_color, accent_color, ${TENANT_SENDER_COLUMNS}`)
       .eq("id", tenantId)
       .single();
     if (!tenant) return jsonResponse({ error: "Tenant not found" }, 404);
@@ -154,9 +154,9 @@ Deno.serve(async (req) => {
     }
     const signUrl = `${appBaseUrl}/enrol/complete?engagementId=${encodeURIComponent(engagement.id as string)}&wt=${encodeURIComponent(wt)}`;
 
-    const fromEmail = (() => {
+    const sender = (() => {
       try {
-        return resolveNotificationFromEmail(tenant.from_email as string | null);
+        return resolveTenantSender(tenant as unknown as TenantSenderInput);
       } catch {
         return null;
       }
@@ -167,13 +167,14 @@ Deno.serve(async (req) => {
     let emailSent = false;
     let emailError: string | null = null;
 
-    if (!fromEmail) {
+    if (!sender) {
       emailError = "Sender email is not configured";
     } else {
       try {
         await sendRenderedEmail({
           to: recipientEmail,
-          from: fromEmail,
+          from: sender.from,
+          replyTo: sender.replyTo,
           renderInput: {
             templateName: EMAIL_TEMPLATE_NAMES.WAIVER_REMINDER,
             language,

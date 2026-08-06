@@ -11,6 +11,10 @@ import {
   getEmailTemplateOverrides,
   getTenantEmailConfig,
 } from "../_shared/tenant-email.ts";
+import {
+  resolveTenantSender,
+  type TenantSenderInput,
+} from "../_shared/notification-from.ts";
 
 interface NotificationPayload {
   tenantId: string;
@@ -50,6 +54,13 @@ interface TenantConfig {
   dir: "ltr" | "rtl";
   primary_color?: string;
   accent_color?: string;
+  // Sender identity. Optional because the fallback paths below cannot supply it —
+  // when absent, resolveTenantSender() throws and the send is recorded as failed,
+  // which is correct: a wrong From is worse than no email.
+  subdomain?: string;
+  contact_email?: string;
+  from_email?: string | null;
+  from_email_verified_at?: string | null;
 }
 
 interface EmailSendResponse {
@@ -188,9 +199,7 @@ serve(async (req: Request) => {
             `[EMAIL] Sending ${payload.templateName} to ${payload.recipientEmail} (tenant: ${tenantConfig.name})`,
           );
 
-          const fromEmail =
-            Deno.env.get("NOTIFICATION_FROM_EMAIL") ??
-            "Manage Studio <noreply@manage-studio.app>";
+          const sender = resolveTenantSender(tenantConfig as unknown as TenantSenderInput);
 
           if (!isSupportedEmailTemplate(payload.templateName)) {
             failureReason = `Unsupported email template: ${payload.templateName}`;
@@ -215,7 +224,8 @@ serve(async (req: Request) => {
 
             const result = await sendRenderedEmail({
               to: payload.recipientEmail,
-              from: fromEmail,
+              from: sender.from,
+              replyTo: sender.replyTo,
               subject:
                 typeof variables.subject === "string"
                   ? variables.subject
@@ -384,6 +394,10 @@ async function getTenantConfig(
       dir,
       primary_color: data.primary_color || "#2563eb",
       accent_color: data.accent_color || "#dc2626",
+      subdomain: data.subdomain,
+      contact_email: data.contact_email,
+      from_email: data.from_email,
+      from_email_verified_at: data.from_email_verified_at,
     };
   } catch (error) {
     console.error("Error fetching tenant config:", error);
@@ -593,9 +607,7 @@ async function handleAgeReviewRequestedNotification(
     language,
   );
 
-  const fromEmail =
-    Deno.env.get("NOTIFICATION_FROM_EMAIL") ??
-    "Manage Studio <noreply@manage-studio.app>";
+  const sender = resolveTenantSender(tenant as unknown as TenantSenderInput);
 
   let sentCount = 0;
   let lastExternalId: string | undefined;
@@ -605,7 +617,8 @@ async function handleAgeReviewRequestedNotification(
     try {
       const result = await sendRenderedEmail({
         to: recipientEmail,
-        from: fromEmail,
+        from: sender.from,
+        replyTo: sender.replyTo,
         renderInput: {
           templateName: EMAIL_TEMPLATE_NAMES.ENROLMENT_AGE_REVIEW_REQUESTED,
           language,
@@ -773,9 +786,7 @@ async function handleAdminAnnouncementBlast(
     language,
   );
 
-  const fromEmail =
-    Deno.env.get("NOTIFICATION_FROM_EMAIL") ??
-    "Manage Studio <noreply@manage-studio.app>";
+  const sender = resolveTenantSender(tenant as unknown as TenantSenderInput);
 
   let sent = 0;
   let failed = 0;
@@ -789,7 +800,8 @@ async function handleAdminAnnouncementBlast(
     try {
       const result = await sendRenderedEmail({
         to: row.recipient_email,
-        from: fromEmail,
+        from: sender.from,
+        replyTo: sender.replyTo,
         subject,
         renderInput: {
           templateName: EMAIL_TEMPLATE_NAMES.ADMIN_ANNOUNCEMENT,

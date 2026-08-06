@@ -21,6 +21,9 @@ const REQUIRED = [
   'APP_URL',
   'CRON_SECRET',
   'RESEND_API_KEY',
+  // Fallback sending domain for tenants without a verified branded domain.
+  // Required: resolveTenantSender() throws without it rather than guessing.
+  'PLATFORM_EMAIL_DOMAIN',
   'NOTIFICATION_FROM_EMAIL',
   'SEND_EMAIL_HOOK_SECRET',
 ];

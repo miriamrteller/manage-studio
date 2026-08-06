@@ -1,6 +1,6 @@
 import { corsHeaders, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
-import { resolveNotificationFromEmail } from "../_shared/notification-from.ts";
+import { resolveTenantSender, TENANT_SENDER_COLUMNS, type TenantSenderInput } from "../_shared/notification-from.ts";
 import { resolveEnrolmentPaymentEmailDetails } from "../_shared/enrolment-payment-email.ts";
 import { buildEnrolmentPayUrl } from "../_shared/enrolment-pay-url.ts";
 import { resolveEnrolmentNotificationRecipient } from "../_shared/enrolment-recipient.ts";
@@ -104,7 +104,7 @@ Deno.serve(async (req) => {
 
     const { data: tenant } = await service
       .from("tenants")
-      .select("id, name, from_email, language_default, primary_color, accent_color")
+      .select(`id, name, language_default, primary_color, accent_color, ${TENANT_SENDER_COLUMNS}`)
       .eq("id", tenantId)
       .single();
     if (!tenant) return jsonResponse({ error: "Tenant not found" }, 404);
@@ -143,9 +143,9 @@ Deno.serve(async (req) => {
       recipientEmail,
     });
 
-    const fromEmail = (() => {
+    const sender = (() => {
       try {
-        return resolveNotificationFromEmail(tenant.from_email as string | null);
+        return resolveTenantSender(tenant as unknown as TenantSenderInput);
       } catch {
         return null;
       }
@@ -164,7 +164,7 @@ Deno.serve(async (req) => {
 
     if (body.skipNotificationEmail) {
       emailSent = false;
-    } else if (!fromEmail) {
+    } else if (!sender) {
       emailError = "Sender email is not configured";
     } else if (!paymentDetails) {
       emailError = "Could not load class pricing for email";
@@ -172,7 +172,8 @@ Deno.serve(async (req) => {
       try {
         await sendRenderedEmail({
           to: recipientEmail,
-          from: fromEmail,
+          from: sender.from,
+          replyTo: sender.replyTo,
           renderInput: {
             templateName: EMAIL_TEMPLATE_NAMES.PAYMENT_REMINDER,
             language,

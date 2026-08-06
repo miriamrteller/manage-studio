@@ -111,7 +111,11 @@ CREATE TABLE tenants (
   business_preset               TEXT        NOT NULL DEFAULT 'programs'
                                 CHECK (business_preset IN ('programs', 'services', 'catalog')),
   labels                        JSONB       NOT NULL DEFAULT '{}'::jsonb,
+  -- Email identity. Three columns, three jobs — see the comments below.
+  contact_email                 TEXT        NOT NULL
+                                CHECK (position('@' IN contact_email) > 1),
   from_email                    TEXT,
+  from_email_verified_at        TIMESTAMPTZ,
   -- Access tier + vertical skin (skin IS the vertical id)
   plan                          tenant_plan NOT NULL DEFAULT 'essential',
   skin                          TEXT        NOT NULL DEFAULT 'generic' REFERENCES verticals(id),
@@ -160,9 +164,17 @@ CREATE TABLE tenants (
 COMMENT ON COLUMN tenants.payment_provider_secret_enc IS 'pgp_sym_encrypt with app.encryption_key (manual runbook). Never expose to clients.';
 COMMENT ON COLUMN tenants.language_default IS 'Primary language for tenant. dir (rtl/ltr) is computed from this in the app.';
 COMMENT ON COLUMN tenants.country IS 'Country for regional settings (currency, locale).';
+COMMENT ON COLUMN tenants.contact_email IS
+  'The studio''s real inbox. Required — every outbound email sets Reply-To to this, so a parent '
+  'hitting reply reaches the studio regardless of which address the mail was sent from. '
+  'NOT NULL is the hard block: a tenant cannot operate without a reachable human.';
 COMMENT ON COLUMN tenants.from_email IS
-  'Verified sender address for transactional email (waiver reminders, payment confirmations). '
-  'When NULL, the send-waiver-reminder / handle-payment-event Edge Functions skip outbound email for the tenant.';
+  'Optional branded sender on the tenant''s own domain (e.g. info@creativeballetacademy.com). '
+  'Only used once from_email_verified_at is set; until then sending falls back to '
+  '<subdomain>@PLATFORM_EMAIL_DOMAIN, which is always deliverable. NULL = use the fallback.';
+COMMENT ON COLUMN tenants.from_email_verified_at IS
+  'Set when Resend confirms DKIM/SPF for from_email''s domain. Guards against a tenant typing a '
+  'branded address before adding DNS, which would hard-bounce every send.';
 COMMENT ON COLUMN tenants.invoice_license_number IS
   'Tenant business license / tax ID (ח.פ or ת.ז). Pass-through to Grow only — no validation.';
 COMMENT ON COLUMN tenants.vat_type IS

@@ -2,7 +2,12 @@ import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4
 import { getEnv } from "./edge-runtime/env.ts";
 import { buildAppointmentConfirmationPayload } from "./build-appointment-confirmation-payload.ts";
 import { resolveAdminLinkRecipientEmail } from "./enrolment-recipient.ts";
-import { resolveNotificationFromEmail } from "./notification-from.ts";
+import {
+  resolveTenantSender,
+  TENANT_SENDER_COLUMNS,
+  type TenantSender,
+  type TenantSenderInput,
+} from "./notification-from.ts";
 import {
   buildAppointmentClientSubject,
   buildAppointmentTenantSubject,
@@ -98,7 +103,7 @@ export async function sendAppointmentConfirmationEmails(
 
   const { data: tenantRow } = await service
     .from("tenants")
-    .select("from_email, primary_color, accent_color")
+    .select(`primary_color, accent_color, ${TENANT_SENDER_COLUMNS}`)
     .eq("id", params.tenantId)
     .single();
 
@@ -116,9 +121,9 @@ export async function sendAppointmentConfirmationEmails(
     return;
   }
 
-  let fromEmail: string;
+  let sender: TenantSender;
   try {
-    fromEmail = resolveNotificationFromEmail(tenantRow.from_email);
+    sender = resolveTenantSender(tenantRow as unknown as TenantSenderInput);
   } catch (error) {
     await service.from("audit_log").insert({
       tenant_id: params.tenantId,
@@ -140,7 +145,8 @@ export async function sendAppointmentConfirmationEmails(
     try {
       await sendHtmlEmail({
         to: payload.recipientEmail,
-        from: fromEmail,
+        from: sender.from,
+        replyTo: sender.replyTo,
         subject: buildAppointmentClientSubject(payload),
         html: renderAppointmentClientConfirmationHtml(payload, primaryColor),
       });
@@ -200,7 +206,8 @@ export async function sendAppointmentConfirmationEmails(
     try {
       await sendHtmlEmail({
         to: adminEmail,
-        from: fromEmail,
+        from: sender.from,
+        replyTo: sender.replyTo,
         subject: tenantSubject,
         html: tenantHtml,
       });

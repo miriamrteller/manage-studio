@@ -5,7 +5,12 @@ import { engagementHasSignedWaiver } from "../engagement-waiver.ts";
 import { resolveAdminLinkRecipientEmail } from "../enrolment-recipient.ts";
 import { buildEnrolmentConfirmationPayload } from "../build-enrolment-confirmation-payload.ts";
 import { sendAppointmentConfirmationEmails } from "../send-appointment-confirmation-emails.ts";
-import { resolveNotificationFromEmail } from "../notification-from.ts";
+import {
+  resolveTenantSender,
+  TENANT_SENDER_COLUMNS,
+  type TenantSender,
+  type TenantSenderInput,
+} from "../notification-from.ts";
 import { sendRenderedEmail, EMAIL_TEMPLATE_NAMES } from "../resend-send.ts";
 import { signWaiverToken } from "../waiver-token.ts";
 import { advanceBillingSchedule } from "./advance-billing-schedule.ts";
@@ -124,7 +129,7 @@ async function sendConfirmationEmail(
 
   const { data: tenantRow } = await service
     .from("tenants")
-    .select("from_email, primary_color, accent_color")
+    .select(`primary_color, accent_color, ${TENANT_SENDER_COLUMNS}`)
     .eq("id", params.tenantId)
     .single();
 
@@ -142,9 +147,9 @@ async function sendConfirmationEmail(
     return;
   }
 
-  let fromEmail: string;
+  let sender: TenantSender;
   try {
-    fromEmail = resolveNotificationFromEmail(tenantRow.from_email);
+    sender = resolveTenantSender(tenantRow as unknown as TenantSenderInput);
   } catch (error) {
     await service.from("audit_log").insert({
       tenant_id: params.tenantId,
@@ -163,7 +168,8 @@ async function sendConfirmationEmail(
   try {
     await sendRenderedEmail({
       to: payload.recipientEmail,
-      from: fromEmail,
+      from: sender.from,
+      replyTo: sender.replyTo,
       renderInput: {
         templateName: EMAIL_TEMPLATE_NAMES.ENROLMENT_CONFIRMATION,
         language: payload.language,
