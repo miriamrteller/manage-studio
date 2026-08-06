@@ -123,8 +123,33 @@ promote dev.** Dev carries mock-payment rows, demo tenants and test seeds.
       plan) is seeded by migration `000200`, not by a seed file — nothing extra
       to run first.
 - [ ] Seed invoice sequences.
-- [ ] Run `node scripts/verify-prod-config.mjs` — checks the key is set and is not
-      the dev value, cron config present, pg_cron/pg_net on, no dev tenants.
+- [ ] **`pnpm verify:prod`** — encryption key set and not the dev value, cron
+      config present, `pg_cron`/`pg_net` on, no seed tenant, chain applied.
+- [ ] **`pnpm verify:rls`** — 37 checks: a parent sees only their own family, a
+      foreign tenant_admin sees nothing of this tenant, `anon` is denied on
+      `people`/`payments`/`accounts`/`audit_log`, and no role can read the
+      encrypted `*_enc` credential columns. Replaces the manual RLS spot-check —
+      each negative assertion is paired with a positive control so "sees nothing"
+      cannot pass because a query is broken.
+- [ ] **`pnpm verify:env`** — every var the code reads is declared, nothing
+      secret sits in a `VITE_` var, and `.env.dev`/`.env.prod` carry identical
+      key sets.
+
+### Credentials: which go in `.env`, which go in the database
+
+Full rules and the two deliberate exceptions:
+[CREDENTIAL-OWNERSHIP.md](CREDENTIAL-OWNERSHIP.md). In short — platform values in
+the environment, tenant values encrypted in the database. A tenant credential in
+`.env` is single-tenant by construction: the second studio either shares the
+first one's account or cannot be onboarded.
+
+⚠️ **`WAIVER_HMAC_KEY_V<n>` and `WAIVER_LINK_SECRET` must be set before launch.**
+`accept-waiver` throws without the HMAC key, so **no parent can sign a waiver**.
+The name is built dynamically (`WAIVER_HMAC_KEY_V${WAIVER_HMAC_CURRENT_VERSION}`,
+default 1), which is why no static check saw it and why it was declared nowhere
+until 2026-08-06. Never delete an old version: `waiver_evidence.hmac_key_version`
+records which key signed each row, so retiring one makes those rows permanently
+unverifiable.
 
 ### Phase C — Edge secrets on the prod project
 
