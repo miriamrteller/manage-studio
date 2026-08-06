@@ -7,7 +7,9 @@
  * Responsibilities:
  *   1. Send 5-day-before reminder email (first notice)
  *   2. Send 48-hour-before reminder email (final notice)
- *   3. Auto-cancel engagements past their deadline + issue Stripe refund if paid
+ *   3. Auto-cancel engagements past their deadline; paid engagements are
+ *      flagged for a manual refund via audit_log (no automatic refund —
+ *      current providers restrict refunds, e.g. Grow allows same-day only)
  *
  * Processes LIMIT 100 records per run to avoid Edge Function timeouts.
  * If >100 records are found, it logs a warning — schedule should be made more
@@ -18,7 +20,6 @@
  *   supabase secrets set CRON_SECRET=<random-string>
  */
 
-import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
 import { jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import {
@@ -61,11 +62,14 @@ interface PendingEngagement {
     primary_color: string | null;
     accent_color: string | null;
   };
-  payments: {
-    stripe_payment_intent_id: string | null;
-    total_amount_minor: number | null;
-    currency: string | null;
-  } | null;
+  payments: PaymentRow[] | PaymentRow | null;
+}
+
+interface PaymentRow {
+  id: string;
+  status: string;
+  total_amount_minor: number | null;
+  currency: string | null;
 }
 
 Deno.serve(async (req) => {
@@ -99,7 +103,7 @@ Deno.serve(async (req) => {
        people ( email, name, account_id ),
        offerings ( name ),
        tenants ( name, language_default, primary_color, accent_color, subdomain, contact_email, from_email, from_email_verified_at ),
-       payments ( stripe_payment_intent_id, total_amount_minor, currency )`,
+       payments ( id, status, total_amount_minor, currency )`,
     )
     .eq("status", "pending_waiver")
     .not("waiver_deadline", "is", null)
@@ -132,49 +136,48 @@ Deno.serve(async (req) => {
       const className = eng.offerings?.name ?? "your class";
       const schoolName = eng.tenants?.name ?? "Studio";
 
-      // 1. Past deadline — cancel and refund
+      // 1. Past deadline — cancel. No automatic refund: current providers
+      // restrict refunds (Grow allows same-day only), so a paid engagement is
+      // flagged for the admin via audit_log instead.
       if (msUntilDeadline <= 0) {
-        let refundNote = "No payment was taken.";
-
-        // Attempt Stripe refund if paid
-        const payment = eng.payments;
-        if (payment?.stripe_payment_intent_id && payment.total_amount_minor) {
-          try {
-            const { data: creds } = await service.rpc(
-              "get_tenant_stripe_credentials",
-              { p_tenant_id: eng.tenant_id },
-            );
-            if (creds?.[0]?.stripe_secret_key) {
-              const stripe = new Stripe(
-                (creds[0] as { stripe_secret_key: string }).stripe_secret_key,
-                { apiVersion: "2023-10-16" },
-              );
-              await stripe.refunds.create(
-                {
-                  payment_intent: payment.stripe_payment_intent_id,
-                  reason: "requested_by_customer",
-                },
-                {
-                  idempotencyKey: `waiver-cancel-refund-${eng.id}`,
-                },
-              );
-              refundNote = "A full refund has been issued to your original payment method.";
-            }
-          } catch (refundErr) {
-            console.error(
-              "[send-waiver-reminder] Stripe refund failed:",
-              refundErr,
-              { engagementId: eng.id },
-            );
-            refundNote = "Please contact us to arrange your refund.";
-          }
-        }
+        const paymentRows = Array.isArray(eng.payments)
+          ? eng.payments
+          : eng.payments
+            ? [eng.payments]
+            : [];
+        const paidPayment = paymentRows.find(
+          (p) => p.status === "succeeded" && (p.total_amount_minor ?? 0) > 0,
+        );
+        const refundNote = paidPayment
+          ? "Please contact us to arrange your refund."
+          : "No payment was taken.";
 
         // Mark engagement cancelled
         await service
           .from("engagements")
           .update({ status: "cancelled" })
           .eq("id", eng.id);
+
+        if (paidPayment) {
+          await service.from("audit_log").insert({
+            tenant_id: eng.tenant_id,
+            action: "waiver_cancel_refund_required",
+            entity_type: "payment",
+            entity_id: paidPayment.id,
+            after_state: {
+              engagement_id: eng.id,
+              amount_minor: paidPayment.total_amount_minor,
+              currency: paidPayment.currency,
+              reason: "waiver_deadline_exceeded",
+            },
+          }).catch((e: unknown) =>
+            console.error(
+              "[send-waiver-reminder] refund-required audit insert failed:",
+              e,
+              { engagementId: eng.id },
+            )
+          );
+        }
 
         // Insert waiver revoked event (extra data goes in metadata JSONB)
         await service.from("waiver_events").insert({
