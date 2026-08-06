@@ -1,0 +1,85 @@
+/* DL-DESIGN-009: RTL directional icon mirroring */
+
+/* Directional icons that should be mirrored in RTL */
+[dir="rtl"] .icon-directional {
+  transform: scaleX(-1);
+}
+
+[dir="rtl"] .icon-chevron-right {
+  transform: scaleX(-1);
+}
+
+[dir="rtl"] .icon-chevron-left {
+  transform: scaleX(-1);
+}
+
+[dir="rtl"] .icon-arrow-right {
+  transform: scaleX(-1);
+}
+
+[dir="rtl"] .icon-arrow-left {
+  transform: scaleX(-1);
+}
+
+/* Icons that should NOT be mirrored (neutral/symmetrical) */
+.icon-neutral {
+  transform: none !important;
+}
+
+/* RTL-aware slide-in animation */
+@keyframes slide-in-rtl {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Standard LTR slide-in animation */
+@keyframes slide-in-ltr {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Apply RTL animation when in RTL mode */
+[dir="rtl"] .animate-slide-in {
+  animation-name: slide-in-rtl;
+}
+
+/* Respect reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .animate-slide-in,
+  [dir="rtl"] .animate-slide-in {
+    animation: none;
+  }
+}
+
+/* Additional utility classes for common directional icons */
+[dir="rtl"] .icon-external-link {
+  transform: scaleX(-1);
+}
+
+[dir="rtl"] .icon-reply {
+  transform: scaleX(-1);
+}
+
+[dir="rtl"] .icon-forward {
+  transform: scaleX(-1);
+}
+
+[dir="rtl"] .icon-logout {
+  transform: scaleX(-1);
+}
+
+[dir="rtl"] .icon-login {
+  transform: scaleX(-1);
+}

@@ -1,204 +1,184 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { cn } from '@/lib/utils';
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { cn } from '../../lib/utils';
 
-export type ToastVariant = 'default' | 'success' | 'warning' | 'error' | 'info';
-
-export interface ToastAction {
-  label: string;
-  onClick: () => void;
-}
-
-/**
- * Pipeline 2 shape: identified, stackable, title + description, dismissed by id.
- */
-export interface ToastItemProps {
+export interface Toast {
   id: string;
   title?: string;
   description?: string;
-  variant?: ToastVariant;
-  duration?: number;
-  className?: string;
-  action?: ToastAction;
+  variant: 'default' | 'success' | 'warning' | 'error';
+  duration: number;
   onDismiss: (id: string) => void;
 }
 
-/**
- * Pre-existing shape (DL-DESIGN-001 and earlier call sites). Kept so this file
- * stays a drop-in replacement — removing it would break every current caller.
- */
-export interface LegacyToastProps {
-  message: string;
-  type?: 'success' | 'error' | 'info' | 'warning';
-  duration?: number;
+export interface ToastProps extends Toast {
   className?: string;
-  action?: ToastAction;
-  onClose?: () => void;
 }
 
-export type ToastProps = ToastItemProps | LegacyToastProps;
-
-function isLegacy(props: ToastProps): props is LegacyToastProps {
-  return 'message' in props;
-}
-
-/**
- * Variant styling.
- *
- * NOTE ON TOKENS: the spec draft used `--surface-overlay` as the toast
- * background, but in this codebase `--surface-overlay` resolves to
- * `rgba(0, 0, 0, 0.5)` — it is the modal *scrim*, not a panel surface. Using
- * it here would render translucent black cards. `--surface-raised` is the
- * correct elevated-panel token, so it is used instead, with the semantic
- * colour carried by the border + text as the spec intended.
- */
-const VARIANT_CLASSES: Record<ToastVariant, string> = {
+const variantStyles: Record<Toast['variant'], string> = {
   default: 'bg-[var(--surface-raised)] border-[var(--border-default)] text-[var(--color-text-primary)]',
-  success: 'bg-[var(--surface-raised)] border-[var(--color-success)] text-[var(--color-success-active)]',
-  warning: 'bg-[var(--surface-raised)] border-[var(--color-warning)] text-[var(--color-warning-active)]',
-  error: 'bg-[var(--surface-raised)] border-[var(--color-error)] text-[var(--color-error-active)]',
-  info: 'bg-[var(--surface-raised)] border-[var(--color-info)] text-[var(--color-info-active)]',
+  success: 'bg-[var(--color-success)] border-[var(--color-success)] text-white',
+  warning: 'bg-[var(--color-warning)] border-[var(--color-warning)] text-[var(--color-text-primary)]',
+  error: 'bg-[var(--color-error)] border-[var(--color-error)] text-white',
 };
 
-/** Errors and warnings interrupt; everything else waits its turn. */
-const ASSERTIVE: ToastVariant[] = ['error', 'warning'];
-
-/**
- * toast: transient notification.
- *
- * Design system
- * - Fully token-driven (surface / border / semantic status / state tokens).
- * - Slides in from the inline-end edge; `.animate-slide-in` swaps to
- *   mirrored keyframes under [dir='rtl'] and is disabled entirely under
- *   `prefers-reduced-motion: reduce` (see index.css).
- *
- * Accessibility
- * - role="alert" + aria-live="assertive" for error/warning, role="status" +
- *   aria-live="polite" otherwise. (The draft paired role="alert" with
- *   aria-live="polite", which contradict each other — alert is implicitly
- *   assertive.) Each toast is its own live region; the container is a plain
- *   labelled region so live regions are never nested.
- * - Auto-dismiss pauses on hover and on keyboard focus, so a keyboard or
- *   screen-reader user cannot have the message yanked away mid-read
- *   (WCAG 2.2.1).
- * - The dismiss control is a real button with an accessible name and a 48px
- *   touch target.
- */
-export function Toast(props: ToastProps) {
-  const legacy = isLegacy(props);
-
-  const variant: ToastVariant = legacy ? props.type ?? 'info' : props.variant ?? 'default';
-  const title = legacy ? props.message : props.title;
-  const description = legacy ? undefined : props.description;
-  const duration = props.duration ?? 5000;
-  const { className, action } = props;
-
-  const [paused, setPaused] = useState(false);
-
-  // Held in a ref so changing the callback identity cannot restart the timer.
-  const dismissRef = useRef<(() => void) | undefined>(undefined);
-  dismissRef.current = legacy
-    ? props.onClose
-    : () => props.onDismiss(props.id);
-
-  const dismiss = useCallback(() => dismissRef.current?.(), []);
-
-  const dismissable = legacy ? Boolean(props.onClose) : true;
+const Toast = ({ id, title, description, variant, duration, onDismiss, className }: ToastProps) => {
+  const timerRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
-    if (duration <= 0 || paused || !dismissable) return;
-    const timer = setTimeout(() => dismissRef.current?.(), duration);
-    return () => clearTimeout(timer);
-  }, [duration, paused, dismissable]);
+    if (duration > 0) {
+      timerRef.current = setTimeout(() => {
+        onDismiss(id);
+      }, duration);
+    }
 
-  const assertive = ASSERTIVE.includes(variant);
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, [id, duration, onDismiss]);
+
+  const handleDismiss = () => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+    }
+    onDismiss(id);
+  };
+
+  return (
+    <div
+      role="alert"
+      aria-live="polite"
+      className={cn(
+        'pointer-events-auto w-full max-w-sm overflow-hidden rounded-lg border shadow-lg',
+        'toast-slide-in',
+        variantStyles[variant],
+        className
+      )}
+    >
+      <div className="flex items-start gap-3 p-4">
+        <div className="flex-1 min-w-0">
+          {title && (
+            <p className="text-sm font-semibold">{title}</p>
+          )}
+          {description && (
+            <p className={cn('text-sm', title && 'mt-1', variant === 'default' && 'text-[var(--color-text-secondary)]')}>
+              {description}
+            </p>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={handleDismiss}
+          className={cn(
+            'flex-shrink-0 rounded-md p-1 transition-opacity',
+            'hover:opacity-70 focus:outline-none focus:ring-2 focus:ring-offset-2',
+            variant === 'default' ? 'focus:ring-[var(--color-primary)]' : 'focus:ring-white/50'
+          )}
+          aria-label="Dismiss notification"
+        >
+          <svg
+            className="h-5 w-5"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            aria-hidden="true"
+          >
+            <path
+              fillRule="evenodd"
+              d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+              clipRule="evenodd"
+            />
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export interface ToastContainerProps {
+  toasts: Toast[];
+  className?: string;
+}
+
+const ToastContainer = ({ toasts, className }: ToastContainerProps) => {
+  if (toasts.length === 0) return null;
 
   return (
     <div
       className={cn(
-        'toast-item animate-slide-in rounded-lg border-2 p-4 shadow-elevation-overlay',
-        VARIANT_CLASSES[variant],
-        className,
+        'fixed top-4 inset-inline-end-4 z-50 flex flex-col gap-2 pointer-events-none',
+        className
       )}
-      role={assertive ? 'alert' : 'status'}
-      aria-live={assertive ? 'assertive' : 'polite'}
-      aria-atomic="true"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
-      onFocus={() => setPaused(true)}
-      onBlur={() => setPaused(false)}
+      style={{
+        insetInlineEnd: '1rem',
+      }}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          {title && <div className="mb-1 text-body-sm font-medium">{title}</div>}
-          {description && (
-            <div className="text-body-sm text-[var(--color-text-secondary)]">{description}</div>
-          )}
-        </div>
-
-        <div className="flex flex-shrink-0 items-center gap-1">
-          {action && (
-            <button
-              type="button"
-              onClick={action.onClick}
-              className={cn(
-                'touch-target rounded-sm px-2 text-body-sm font-medium underline',
-                'hover:bg-[var(--state-hover)]',
-                'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2',
-                'focus-visible:outline-[var(--state-focus)]',
-              )}
-            >
-              {action.label}
-            </button>
-          )}
-
-          {dismissable && (
-            <button
-              type="button"
-              onClick={dismiss}
-              aria-label="Dismiss notification"
-              className={cn(
-                'touch-target rounded-sm leading-none',
-                'hover:bg-[var(--state-hover)]',
-                'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2',
-                'focus-visible:outline-[var(--state-focus)]',
-              )}
-            >
-              <span aria-hidden="true">&times;</span>
-            </button>
-          )}
-        </div>
-      </div>
+      {toasts.map((toast) => (
+        <Toast key={toast.id} {...toast} />
+      ))}
     </div>
   );
+};
+
+type ToastOptions = Omit<Toast, 'id' | 'onDismiss' | 'duration'> & {
+  duration?: number;
+};
+
+interface ToastContextValue {
+  toasts: Toast[];
+  toast: (options: ToastOptions) => string;
+  dismiss: (id: string) => void;
+  dismissAll: () => void;
 }
 
-export interface ToastContainerProps {
-  toasts: ToastItemProps[];
-  className?: string;
-  /** Accessible name for the notification region. */
-  label?: string;
-}
+const ToastContext = createContext<ToastContextValue | null>(null);
 
-/**
- * Fixed viewport for stacked toasts. Anchored to the top inline-end corner,
- * which `.toast-container` mirrors for RTL (see index.css). `pointer-events`
- * are disabled on the positioning shell so the corner of the screen stays
- * clickable when no toast is present.
- */
-export function ToastContainer({ toasts, className = '', label = 'Notifications' }: ToastContainerProps) {
+export const ToastProvider = ({ children }: { children: React.ReactNode }) => {
+  const [toasts, setToasts] = useState<Toast[]>([]);
+
+  const dismiss = useCallback((id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
+  const dismissAll = useCallback(() => {
+    setToasts([]);
+  }, []);
+
+  const toast = useCallback((options: ToastOptions): string => {
+    const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    const newToast: Toast = {
+      id,
+      variant: options.variant ?? 'default',
+      duration: options.duration ?? 5000,
+      title: options.title,
+      description: options.description,
+      onDismiss: dismiss,
+    };
+
+    setToasts((prev) => [...prev, newToast]);
+    return id;
+  }, [dismiss]);
+
   return (
-    <div
-      className={cn('toast-container z-elevation-toast pointer-events-none', className)}
-      role="region"
-      aria-label={label}
-    >
-      <div className="pointer-events-auto flex flex-col gap-2">
-        {toasts.map((toast) => (
-          <Toast key={toast.id} {...toast} />
-        ))}
-      </div>
-    </div>
+    <ToastContext.Provider value={{ toasts, toast, dismiss, dismissAll }}>
+      {children}
+      <ToastContainer toasts={toasts} />
+    </ToastContext.Provider>
   );
-}
+};
 
-export default Toast;
+export const useToast = (): Omit<ToastContextValue, 'toasts'> => {
+  const context = useContext(ToastContext);
+  
+  if (!context) {
+    throw new Error('useToast must be used within a ToastProvider');
+  }
+
+  return {
+    toast: context.toast,
+    dismiss: context.dismiss,
+    dismissAll: context.dismissAll,
+  };
+};
+
+export { Toast, ToastContainer };
