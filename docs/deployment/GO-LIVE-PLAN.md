@@ -257,7 +257,19 @@ Sources: [Supabase available regions](https://supabase.com/docs/guides/platform/
 - **Pre-production migrations are edited in place**, not layered — so a schema
   change means a dev DB reset (`reset_dev_db.sql` → `db:push` → `db:types:all`
   → `seed:dev`). This stops once real tenant data exists; from then on, additive
-  only.
+  only. Full procedure: SPEC §2.5.3.
+- **Resetting dev does not fix Supabase preview branches.** Each preview branch
+  is a separate database with its own `schema_migrations`. Rename or delete a
+  migration and any pre-existing branch fails with *"Remote migration versions
+  not found in local migrations directory"* — which is exactly how PR #33's
+  Supabase check failed after the 34→32 flattening, despite dev being clean.
+  Fresh PR branches replay the current chain fine; long-lived ones must have
+  their preview branch deleted so it re-seeds.
+- **The final definition of a function is often not the first one.**
+  `get_tenant_config_by_subdomain`, `provision_tenant` and
+  `save_tenant_grow_credentials` are each declared once and then replaced in a
+  later migration. Editing the earlier copy compiles, applies, and does nothing.
+  Grep and edit the highest-numbered occurrence.
 - **One late `ALTER` is load-bearing and must stay.** `002600` adds the
   `engagements.scheduling_hold_id` foreign key after the fact because
   `scheduling_holds` does not exist yet at `001300`. That is a genuine forward
