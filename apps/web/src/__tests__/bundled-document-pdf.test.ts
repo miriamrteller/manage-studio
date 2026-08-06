@@ -163,6 +163,8 @@ describe('handlePaymentDocumentInternal (I4a-T3)', () => {
           upload: async () => ({ error: null }),
         }),
       },
+      // No stored webhook key — validation is opt-in and skipped.
+      rpc: async () => ({ data: [], error: null }),
     } as never;
 
     const result = await handlePaymentDocumentInternal(
@@ -199,6 +201,7 @@ describe('handlePaymentDocumentInternal (I4a-T3)', () => {
         }),
       }),
       storage: { from: () => ({ upload: vi.fn() }) },
+      rpc: async () => ({ data: [], error: null }),
     } as never;
 
     const result = await handlePaymentDocumentInternal(

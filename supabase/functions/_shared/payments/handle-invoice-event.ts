@@ -6,7 +6,11 @@ import {
   parseIcountDocumentWebhook,
   peekIcountDocumentPaymentRef,
 } from "./icount/document.ts";
-import { parseGrowInvoiceNotify } from "./providers/grow.ts";
+import {
+  GrowWebhookKeyError,
+  parseGrowInvoiceNotify,
+  verifyGrowWebhookKey,
+} from "./providers/grow.ts";
 
 function isGrowDocumentBody(body: unknown): boolean {
   if (typeof body !== "object" || body === null || Array.isArray(body)) return false;
@@ -19,7 +23,7 @@ function isIcountDocumentBody(body: unknown): boolean {
 
 export type HandleInvoiceEventResult =
   | { ok: true; paymentId: string; duplicate: boolean }
-  | { ok: false; status: 400 | 409; error: string };
+  | { ok: false; status: 400 | 401 | 409; error: string };
 
 async function resolveTenantForDocumentWebhook(
   service: SupabaseClient,
@@ -118,6 +122,7 @@ export async function handleInvoiceEventInternal(
         throw new Error("Grow invoice notify expected object body");
       }
       const parsed = parseGrowInvoiceNotify(body as Record<string, unknown>);
+      await verifyGrowWebhookKey(service, parsed.tenantId, body as Record<string, unknown>);
       const result = await applyBundledDocumentNotify(service, parsed);
       return mapApplyResult(result);
     }
@@ -134,6 +139,9 @@ export async function handleInvoiceEventInternal(
       error: "Invoicing provider does not accept document webhooks",
     };
   } catch (error) {
+    if (error instanceof GrowWebhookKeyError) {
+      return { ok: false, status: 401, error: error.message };
+    }
     return {
       ok: false,
       status: 400,

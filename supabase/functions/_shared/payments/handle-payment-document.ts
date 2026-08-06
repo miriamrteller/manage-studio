@@ -1,10 +1,14 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
 import { applyBundledDocumentNotify } from "./bundled-document.ts";
-import { parseGrowInvoiceNotify } from "./providers/grow.ts";
+import {
+  GrowWebhookKeyError,
+  parseGrowInvoiceNotify,
+  verifyGrowWebhookKey,
+} from "./providers/grow.ts";
 
 export type HandlePaymentDocumentResult =
   | { ok: true; duplicate?: boolean; skipped?: boolean }
-  | { ok: false; status: 400; error: string };
+  | { ok: false; status: 400 | 401; error: string };
 
 /**
  * Grow document callback — persists document fields, optional PDF retention, and audit trail
@@ -23,6 +27,15 @@ export async function handlePaymentDocumentInternal(
       status: 400,
       error: String(parseErr),
     };
+  }
+
+  try {
+    await verifyGrowWebhookKey(service, parsed.tenantId, body);
+  } catch (keyErr) {
+    if (keyErr instanceof GrowWebhookKeyError) {
+      return { ok: false, status: 401, error: keyErr.message };
+    }
+    throw keyErr;
   }
 
   const result = await applyBundledDocumentNotify(service, parsed);

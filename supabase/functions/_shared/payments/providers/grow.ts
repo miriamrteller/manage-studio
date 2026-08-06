@@ -136,6 +136,36 @@ export function parseGrowInvoiceNotify(body: Record<string, unknown>): ParsedGro
   };
 }
 
+/** Thrown when an inbound Grow notify fails pre-shared webhook key validation. */
+export class GrowWebhookKeyError extends Error {}
+
+/**
+ * GAP 4 — authenticate an inbound Grow notify against the tenant's pre-shared
+ * webhook key (`grow_webhook_secrets`, encrypted, rotatable). Validation is
+ * opt-in per tenant: with no key stored the notify is accepted. Once a key IS
+ * stored, the notify must carry a matching `webhookKey` — a missing key is
+ * rejected, not skipped, so the check cannot be bypassed by omitting the field.
+ */
+export async function verifyGrowWebhookKey(
+  service: SupabaseClient,
+  tenantId: string,
+  body: Record<string, unknown>,
+): Promise<void> {
+  const { data: keyRows } = await service.rpc("get_grow_webhook_secret", {
+    p_tenant_id: tenantId,
+  });
+  const storedKey = Array.isArray(keyRows) && keyRows.length > 0
+    ? (keyRows[0] as { webhook_secret: string }).webhook_secret
+    : null;
+  if (!storedKey) return;
+
+  const data = (body.data as Record<string, unknown> | undefined) ?? body;
+  const inboundKey = (data.webhookKey ?? body.webhookKey) as string | undefined;
+  if (inboundKey !== storedKey) {
+    throw new GrowWebhookKeyError("Grow webhook key mismatch — request rejected");
+  }
+}
+
 export class GrowPaymentProvider implements PaymentProvider {
   readonly slug = "grow";
 
@@ -299,24 +329,12 @@ export class GrowPaymentProvider implements PaymentProvider {
   async constructEvent(rawBody: string, _headers: Headers, _tenantId: string): Promise<PaymentEvent> {
     const body = JSON.parse(rawBody) as Record<string, unknown>;
 
-    // GAP 4: Webhook key validation — authenticate the request came from Grow before processing.
-    // Key is stored encrypted in grow_webhook_secrets (per-tenant, rotatable).
-    // If no key is stored for this tenant, validation is skipped (opt-in).
+    // GAP 4: Webhook key validation — authenticate the request came from Grow
+    // before processing. Opt-in per tenant; once a key is stored, a notify
+    // without a matching key is rejected (see verifyGrowWebhookKey).
     const tenantIdFromBody = peekGrowTenantId(body);
     if (tenantIdFromBody) {
-      const data = (body.data as Record<string, unknown> | undefined) ?? body;
-      const inboundKey = (data.webhookKey ?? body.webhookKey) as string | undefined;
-      if (inboundKey) {
-        const { data: keyRows } = await this.service.rpc("get_grow_webhook_secret", {
-          p_tenant_id: tenantIdFromBody,
-        });
-        const storedKey = Array.isArray(keyRows) && keyRows.length > 0
-          ? (keyRows[0] as { webhook_secret: string }).webhook_secret
-          : null;
-        if (storedKey && inboundKey !== storedKey) {
-          throw new Error("Grow webhook key mismatch — request rejected");
-        }
-      }
+      await verifyGrowWebhookKey(this.service, tenantIdFromBody, body);
     }
 
     const parsed = parseGrowNotify(body);
