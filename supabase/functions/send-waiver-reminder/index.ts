@@ -24,7 +24,7 @@ import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import {
   sendRenderedEmail,
   EMAIL_TEMPLATE_NAMES,
-} from "../_shared/resend-send.ts";
+} from "../_shared/email-send.ts";
 import {
   resolveTenantSender,
   type TenantSenderInput,

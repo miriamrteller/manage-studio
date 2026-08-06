@@ -1,6 +1,6 @@
 import "@supabase/functions-js/edge-runtime.d.ts";
 import { Webhook } from "https://esm.sh/standardwebhooks@1.0.0";
-import { sendHtmlEmail } from "../_shared/resend-client.ts";
+import { sendHtmlEmail } from "../_shared/email-client.ts";
 
 const MAGIC_LINK_TEMPLATE = "magic_link";
 import { renderAuthMagicLinkHtml } from "../_shared/render-auth-email.ts";

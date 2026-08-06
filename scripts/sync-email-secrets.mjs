@@ -36,7 +36,8 @@ function parseEnvFile(path) {
 
 const env = parseEnvFile(envPath);
 const required = [
-  'RESEND_API_KEY',
+  'CLOUDFLARE_ACCOUNT_ID',
+  'CLOUDFLARE_EMAIL_API_TOKEN',
   'NOTIFICATION_FROM_EMAIL',
   'SEND_EMAIL_HOOK_SECRET',
 ];

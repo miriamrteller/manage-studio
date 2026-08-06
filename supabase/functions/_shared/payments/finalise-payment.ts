@@ -11,7 +11,7 @@ import {
   type TenantSender,
   type TenantSenderInput,
 } from "../notification-from.ts";
-import { sendRenderedEmail, EMAIL_TEMPLATE_NAMES } from "../resend-send.ts";
+import { sendRenderedEmail, EMAIL_TEMPLATE_NAMES } from "../email-send.ts";
 import { signWaiverToken } from "../waiver-token.ts";
 import { advanceBillingSchedule } from "./advance-billing-schedule.ts";
 import { syncBookingEventInsert } from "../sync-booking-event.ts";

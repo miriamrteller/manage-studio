@@ -92,6 +92,11 @@ Hard-coded strings discovered during Phase reviews must be refactored immediatel
 before merge to main. Pattern: move string to translation file, add hook to component.
 
 **1.10 External API keys belong to tenants, not the platform.**
+> **Email provider superseded 2026-08-06.** Email is no longer per-tenant-keyed:
+> one platform Cloudflare Email Sending account sends for every tenant, and the
+> per-tenant part is identity (`tenants.contact_email` / `from_email`), not
+> credentials. See docs/deployment/CREDENTIAL-OWNERSHIP.md.
+
 Each school configures their own Twilio, Resend, and Stripe keys. You store them encrypted. Schools pay their own communication costs. This eliminates margin risk and billing complexity in early stages.
 
 **1.11 Accessibility is mandatory, not optional.**
@@ -159,7 +164,7 @@ Detailed SPEC.md documentation exists. Developer read it. Forms were still built
 | RTL support                     | `tailwindcss-rtl` plugin      | Adds `ms-`, `me-`, `ps-`, `pe-` logical utilities                   |
 | Backend                         | Supabase                      | Postgres + Auth + RLS + Edge Functions + Storage + Realtime         |
 | Payments                        | Stripe                        | Subscriptions, intents, webhooks, Connect                           |
-| Email                           | Resend + React Email          | Typed templates, per-tenant API keys                                |
+| Email                           | Cloudflare Email Sending + React Email | Typed templates; ONE platform account, per-tenant From/Reply-To |
 | WhatsApp + Voice                | Twilio                        | Only provider with reliable WhatsApp Business API in Israel         |
 | AI                              | Anthropic Claude API          | `claude-sonnet-4-6` for chatbot and communication drafting          |
 | **Accessibility (WCAG 2.1 AA)** | **ESLint jsx-a11y**           | **Write-time linting for semantic HTML, ARIA, keyboard nav**        |

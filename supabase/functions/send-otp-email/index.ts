@@ -2,7 +2,7 @@ import "@supabase/functions-js/edge-runtime.d.ts";
 import {
   EMAIL_TEMPLATE_NAMES,
   sendRenderedEmail,
-} from "../_shared/resend-send.ts";
+} from "../_shared/email-send.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import {
   getEmailTemplateOverrides,

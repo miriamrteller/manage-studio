@@ -3,7 +3,7 @@ import { formatDate } from "../email-dist/format.js";
 import { buildEnrolmentPayUrl } from "../enrolment-pay-url.ts";
 import { resolveEnrolmentNotificationRecipient } from "../enrolment-recipient.ts";
 import { resolveTenantSender, TENANT_SENDER_COLUMNS, type TenantSenderInput } from "../notification-from.ts";
-import { EMAIL_TEMPLATE_NAMES, sendRenderedEmail } from "../resend-send.ts";
+import { EMAIL_TEMPLATE_NAMES, sendRenderedEmail } from "../email-send.ts";
 import {
   buildDunningKey,
   hasCancellationAlreadyHandled,

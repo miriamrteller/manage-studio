@@ -1,6 +1,17 @@
 # Auth Email & Magic Link Setup
 
-This guide covers **Supabase Auth emails** (magic-link login/signup). Transactional emails (`send-otp-email`, `send-notification`) use the same React Email templates in `packages/shared` via Resend.
+> **Provider changed 2026-08-06: Resend → Cloudflare Email Sending.**
+> The hook wiring below is unchanged — Supabase Auth still calls the
+> `send-auth-email` Edge Function, which still renders the same React Email
+> templates. Only the transport changed. Where this page says Resend, read
+> Cloudflare; where it says `RESEND_API_KEY`, read `CLOUDFLARE_ACCOUNT_ID` +
+> `CLOUDFLARE_EMAIL_API_TOKEN`.
+>
+> Domain setup is no longer manual DNS: `npx wrangler email sending enable
+> <domain>` onboards it and writes the records, because Cloudflare already
+> hosts the DNS. Sending code lives in `_shared/email-client.ts`.
+
+This guide covers **Supabase Auth emails** (magic-link login/signup). Transactional emails (`send-otp-email`, `send-notification`) use the same React Email templates in `packages/shared` via Cloudflare Email Sending.
 
 ## Architecture
 

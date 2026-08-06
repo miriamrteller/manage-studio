@@ -14,7 +14,7 @@ import {
   renderAppointmentClientConfirmationHtml,
   renderAppointmentTenantNotificationHtml,
 } from "./render-appointment-confirmation-email.ts";
-import { sendHtmlEmail } from "./resend-client.ts";
+import { sendHtmlEmail } from "./email-client.ts";
 import { signWaiverToken } from "./waiver-token.ts";
 
 const APP_URL = getEnv("APP_URL") ?? "";

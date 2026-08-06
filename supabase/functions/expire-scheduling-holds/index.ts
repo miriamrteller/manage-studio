@@ -19,7 +19,7 @@ import { jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { resolveTenantSender, TENANT_SENDER_COLUMNS, type TenantSenderInput } from "../_shared/notification-from.ts";
 import { tenantBaseUrl } from "../_shared/tenant-url.ts";
-import { sendHtmlEmail } from "../_shared/resend-client.ts";
+import { sendHtmlEmail } from "../_shared/email-client.ts";
 
 const CRON_SECRET = Deno.env.get("CRON_SECRET") ?? "";
 const BATCH_LIMIT = 200;

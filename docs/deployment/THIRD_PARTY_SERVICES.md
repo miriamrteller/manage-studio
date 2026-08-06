@@ -35,11 +35,11 @@ succeeded payment still has no `external_document_id` after 30 minutes, and retr
 invoice emails until `payment_document_admin_email_sent` is audited. Uses the same
 `CRON_SECRET` / `x-cron-secret` pattern as `issue-document`.
 
-## Email (Resend)
+## Email (Cloudflare Email Sending)
 
 | Variable | Where | Purpose |
 |----------|-------|---------|
-| `RESEND_API_KEY` | edge function secret | Sends payment confirmation / receipt emails from `finalise-payment`, admin tax-invoice copies, and missing-document alerts. Without it, those email steps are skipped/failed and audited. |
+| `CLOUDFLARE_ACCOUNT_ID` + `CLOUDFLARE_EMAIL_API_TOKEN` | edge function secrets | Sends payment confirmation / receipt emails from `finalise-payment`, admin tax-invoice copies, and missing-document alerts. Without it, those email steps are skipped/failed and audited. |
 | `NOTIFICATION_FROM_EMAIL` | edge function secret | Optional platform sender override. |
 
 ## Finance walkthrough (dev only)

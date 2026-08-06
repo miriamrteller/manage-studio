@@ -29,7 +29,7 @@ export interface SendRenderedEmailOptions {
   renderInput: RenderEmailTemplateInput;
 }
 
-import { sendHtmlEmail } from "./resend-client.ts";
+import { sendHtmlEmail } from "./email-client.ts";
 
 export { sendHtmlEmail };
 

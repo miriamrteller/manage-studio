@@ -35,9 +35,18 @@ Sequenced by **lead time**, not by importance — the slow items gate everything
 
 These have external latency. Kick them off before anything else.
 
-- [ ] **Resend domain verification** — add SPF + DKIM DNS records for the sending
-      domain. DNS propagation plus Resend's check can take hours. Set
-      `from_email` on the tenant (e.g. `noreply@creativeballet.co.il`).
+- [ ] **Cloudflare Email Sending — onboard the sending domain.**
+      ```bash
+      npx wrangler email sending enable opalswift.com
+      ```
+      Cloudflare is already the DNS provider for `opalswift.com` and
+      `creativeballetacademy.com`, so it writes the records itself instead of
+      handing you a list to paste — which is why the per-tenant branded-domain
+      flow is one command per studio rather than a manual DKIM chore.
+      Repeat for each branded tenant domain, then set `tenants.from_email`
+      (e.g. `info@creativeballetacademy.com`) and `from_email_verified_at`.
+      Until a tenant has a verified domain it sends as
+      `<subdomain>@opalswift.com`, which is always deliverable.
 - [ ] **Invoice4U clearing terminal** — still outstanding. Chase with error 96 as
       the concrete ask: *"our QA account has no clearing terminal attached —
       GetClearingAccount returns hasTerminal:false."* Readiness check is
@@ -157,7 +166,7 @@ unverifiable.
       links, waiver/pay links and the Google Calendar `redirect_uri` all derive
       from it.
 - [ ] `CRON_SECRET` — same value as the DB GUC above.
-- [ ] `RESEND_API_KEY`, `NOTIFICATION_FROM_EMAIL`
+- [ ] `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_EMAIL_API_TOKEN`, `NOTIFICATION_FROM_EMAIL`
 - [ ] Provider base URLs pointed at **production**, not sandbox.
 - [ ] **Unset every mock flag**: `GROW_MOCK`, `ICOUNT_MOCK`, `INVOICE4U_MOCK`,
       `YPAY_MOCK`, `TRANZILA_MOCK`, `GOOGLE_CALENDAR_MOCK`,

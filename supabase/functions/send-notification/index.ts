@@ -6,7 +6,7 @@ import {
   isSupportedEmailTemplate,
   sendRenderedEmail,
   EMAIL_TEMPLATE_NAMES,
-} from "../_shared/resend-send.ts";
+} from "../_shared/email-send.ts";
 import {
   getEmailTemplateOverrides,
   getTenantEmailConfig,
@@ -172,10 +172,7 @@ serve(async (req: Request) => {
         },
         400,
       );
-    }
-
-    const resendApiKey = Deno.env.get("RESEND_API_KEY")!;
-    const twilioAccountSid = Deno.env.get("TWILIO_ACCOUNT_SID")!;
+    }    const twilioAccountSid = Deno.env.get("TWILIO_ACCOUNT_SID")!;
     const twilioAuthToken = Deno.env.get("TWILIO_AUTH_TOKEN")!;
     const twilioPhoneNumber = Deno.env.get("TWILIO_PHONE_NUMBER")!;
 

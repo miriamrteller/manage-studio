@@ -20,7 +20,10 @@ const outPath = join(root, 'supabase', '.temp', 'edge-secrets.env');
 const REQUIRED = [
   'APP_URL',
   'CRON_SECRET',
-  'RESEND_API_KEY',
+  // Cloudflare Email Sending (replaced Resend). The sending domain must be
+  // onboarded first: npx wrangler email sending enable <domain>
+  'CLOUDFLARE_ACCOUNT_ID',
+  'CLOUDFLARE_EMAIL_API_TOKEN',
   // Fallback sending domain for tenants without a verified branded domain.
   // Required: resolveTenantSender() throws without it rather than guessing.
   'PLATFORM_EMAIL_DOMAIN',
