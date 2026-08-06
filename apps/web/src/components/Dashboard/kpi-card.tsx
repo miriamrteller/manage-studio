@@ -148,7 +148,7 @@ export function KPICard({
 
       <div className="mt-2">
         {loading ? (
-          <Skeleton variant="text" width="60%" height="2.25rem" label={`Loading ${title}`} />
+          <Skeleton variant="text" width="60%" height="2.25rem" />
         ) : (
           <p className="numeric-cell text-h2 font-semibold text-[var(--color-text-primary)]">
             {formattedValue}

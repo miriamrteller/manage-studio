@@ -182,4 +182,5 @@ export const useToast = (): Omit<ToastContextValue, 'toasts'> => {
 };
 
 export { Toast, ToastContainer };
-export type { ToastData as Toast };
+export type { ToastData as ToastItem };
+export type { ToastProps as ToastItemProps };

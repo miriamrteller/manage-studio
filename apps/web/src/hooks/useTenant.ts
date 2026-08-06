@@ -56,7 +56,7 @@ export function useTenant(): TenantConfig | null {
         font_pair: row.font_pair ?? null,
         logo_url: row.logo_url ?? null,
         logo_dark_url: row.logo_dark_url ?? null,
-      } as TenantConfig;
+      } as unknown as TenantConfig;
     },
     enabled: !!subdomain,
     staleTime: 30 * 60 * 1000,

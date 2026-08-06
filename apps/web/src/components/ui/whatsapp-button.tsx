@@ -1,5 +1,3 @@
-import React from 'react';
-
 export interface WhatsAppButtonProps {
   phoneNumber: string;
   message?: string;

@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback } from 'react';
-import { parsePhoneNumber } from 'libphonenumber-js';
+import { parsePhoneNumber, type CountryCode } from 'libphonenumber-js';
 import { useFormContext } from 'react-hook-form';
 import { useTenant } from '@/hooks/useTenant';
 import { Input } from '@/components/ui/input';
@@ -24,7 +24,7 @@ export function PhoneInput({ name, label, required }: PhoneInputProps) {
       try {
         const parsed = parsePhoneNumber(
           inputValue,
-          tenant?.country || 'IL'
+          (tenant?.country || 'IL') as CountryCode
         );
         return parsed?.isValid() ? parsed.format('E.164') : inputValue;
       } catch {
@@ -44,7 +44,7 @@ export function PhoneInput({ name, label, required }: PhoneInputProps) {
     try {
       const parsed = parsePhoneNumber(
         value,
-        tenant?.country || 'IL'
+        (tenant?.country || 'IL') as CountryCode
       );
       return parsed?.formatNational() || value;
     } catch {

@@ -1,12 +1,13 @@
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { LucideIcon } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
 
 export interface SettingsSection {
   id: string;
   label: string;
   labelHe?: string;
-  icon: React.ComponentType<{ size?: number; className?: string }>;
+  icon: LucideIcon;
   component: React.ComponentType;
 }
 
@@ -22,7 +23,8 @@ export function SettingsLayout({
   onSectionChange,
 }: SettingsLayoutProps) {
   const { t } = useTranslation();
-  const { currentLanguage, direction } = useLanguage();
+  const { language: currentLanguage } = useLanguage();
+  const direction = currentLanguage === 'he' ? 'rtl' : 'ltr';
   const isRTL = direction === 'rtl';
 
   const activeSection = sections.find((s) => s.id === activeSectionId) ?? sections[0];
@@ -82,6 +84,7 @@ export function SettingsLayout({
       {/* Desktop Sidebar */}
       <div
         role="tablist"
+        tabIndex={0}
         aria-label={t('settings.navigation', 'Settings Navigation')}
         onKeyDown={handleKeyDown}
         className="hidden md:flex flex-col w-[220px] bg-[--surface-raised] border-[--border-subtle] flex-shrink-0"
@@ -127,6 +130,7 @@ export function SettingsLayout({
       {/* Mobile Tab Strip */}
       <div
         role="tablist"
+        tabIndex={0}
         aria-label={t('settings.navigation', 'Settings Navigation')}
         onKeyDown={handleKeyDown}
         className="md:hidden flex overflow-x-auto bg-[--surface-raised] border-b border-[--border-subtle] -mx-4 px-4"

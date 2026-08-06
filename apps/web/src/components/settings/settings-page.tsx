@@ -236,6 +236,7 @@ export function SettingsPage({
         title: 'Settings saved',
         description: `${activeSection?.title ?? 'Section'} updated.`,
         variant: 'success',
+        duration: 5000,
       });
     } catch (error) {
       pushToast({
@@ -253,7 +254,7 @@ export function SettingsPage({
   const handleReset = useCallback(() => {
     clearDraft(activeSectionId);
     form.reset(initialValues?.[activeSectionId] ?? {});
-    pushToast({ title: 'Changes discarded', variant: 'default' });
+    pushToast({ title: 'Changes discarded', variant: 'default', duration: 5000 });
   }, [activeSectionId, form, initialValues, pushToast]);
 
   /**
@@ -278,7 +279,6 @@ export function SettingsPage({
       <EmptyState
         title="No settings available"
         description="Your account does not have permission to view any settings sections."
-        headingLevel={2}
       />
     );
   }

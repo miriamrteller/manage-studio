@@ -12,10 +12,10 @@ export type TenantConfig = {
   id: string;
   name: string;
   subdomain: string;
-  language?: string;
-  language_default?: string;
-  country?: string;
-  currency?: string;
+  language: 'he' | 'en';
+  language_default?: 'he' | 'en';
+  country: 'IL' | 'US';
+  currency: string;
   vat_rate?: number;
   prices_include_vat?: boolean;
   white_label?: TenantWhiteLabel;
@@ -49,6 +49,19 @@ export type User = {
   tenant_id: string;
   created_at: string;
   updated_at: string;
+};
+
+export type UserProfile = {
+  id: string;
+  email?: string;
+  full_name?: string;
+  avatar_url?: string;
+  role: string[];
+  language?: 'he' | 'en';
+  tenant_id?: string;
+  person_id?: string;
+  created_at?: string;
+  updated_at?: string;
 };
 
 export type Session = {

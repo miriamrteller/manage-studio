@@ -193,13 +193,7 @@ export function DataTable<TData>({
                         padding: '12px 16px',
                       }}
                     >
-                      <Skeleton
-                        style={{
-                          height: '20px',
-                          width: '100%',
-                          borderRadius: '4px',
-                        }}
-                      />
+                      <Skeleton height="20px" width="100%" />
                     </td>
                   ))}
                 </tr>

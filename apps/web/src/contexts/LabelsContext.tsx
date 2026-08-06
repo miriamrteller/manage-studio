@@ -4,6 +4,7 @@ import { useTenant } from '@/hooks/useTenant';
 import {
   resolveEntityLabels,
   resolvePresetModules,
+  safePreset,
   type BusinessPreset,
   type EntityLabels,
   type PresetModules,
@@ -47,14 +48,15 @@ export function LabelsProvider({ children }: { children: ReactNode }) {
         labels: resolveEntityLabels('programs', {}, language),
       };
     }
+    const preset = safePreset(tenant.business_preset);
     return {
       labels: resolveEntityLabels(
-        tenant.business_preset,
+        preset,
         tenant.entity_label_overrides,
         language,
       ),
-      modules: tenant.modules,
-      preset: tenant.business_preset,
+      modules: resolvePresetModules(preset),
+      preset,
     };
   }, [tenant, language]);
 
