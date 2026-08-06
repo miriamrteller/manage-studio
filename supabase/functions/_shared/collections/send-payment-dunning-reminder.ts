@@ -5,7 +5,7 @@ import {
   type TenantSender,
   type TenantSenderInput,
 } from "../notification-from.ts";
-import { EMAIL_TEMPLATE_NAMES, sendRenderedEmail } from "../resend-send.ts";
+import { EMAIL_TEMPLATE_NAMES, sendRenderedEmail } from "../email-send.ts";
 import {
   buildDunningKey,
   hasDunningNotificationBeenSent,

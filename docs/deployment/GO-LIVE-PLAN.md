@@ -35,9 +35,18 @@ Sequenced by **lead time**, not by importance — the slow items gate everything
 
 These have external latency. Kick them off before anything else.
 
-- [ ] **Resend domain verification** — add SPF + DKIM DNS records for the sending
-      domain. DNS propagation plus Resend's check can take hours. Set
-      `from_email` on the tenant (e.g. `noreply@creativeballet.co.il`).
+- [ ] **Cloudflare Email Sending — onboard the sending domain.**
+      ```bash
+      npx wrangler email sending enable opalswift.com
+      ```
+      Cloudflare is already the DNS provider for `opalswift.com` and
+      `creativeballetacademy.com`, so it writes the records itself instead of
+      handing you a list to paste — which is why the per-tenant branded-domain
+      flow is one command per studio rather than a manual DKIM chore.
+      Repeat for each branded tenant domain, then set `tenants.from_email`
+      (e.g. `info@creativeballetacademy.com`) and `from_email_verified_at`.
+      Until a tenant has a verified domain it sends as
+      `<subdomain>@opalswift.com`, which is always deliverable.
 - [ ] **Invoice4U clearing terminal** — still outstanding. Chase with error 96 as
       the concrete ask: *"our QA account has no clearing terminal attached —
       GetClearingAccount returns hasTerminal:false."* Readiness check is
@@ -123,8 +132,33 @@ promote dev.** Dev carries mock-payment rows, demo tenants and test seeds.
       plan) is seeded by migration `000200`, not by a seed file — nothing extra
       to run first.
 - [ ] Seed invoice sequences.
-- [ ] Run `node scripts/verify-prod-config.mjs` — checks the key is set and is not
-      the dev value, cron config present, pg_cron/pg_net on, no dev tenants.
+- [ ] **`pnpm verify:prod`** — encryption key set and not the dev value, cron
+      config present, `pg_cron`/`pg_net` on, no seed tenant, chain applied.
+- [ ] **`pnpm verify:rls`** — 37 checks: a parent sees only their own family, a
+      foreign tenant_admin sees nothing of this tenant, `anon` is denied on
+      `people`/`payments`/`accounts`/`audit_log`, and no role can read the
+      encrypted `*_enc` credential columns. Replaces the manual RLS spot-check —
+      each negative assertion is paired with a positive control so "sees nothing"
+      cannot pass because a query is broken.
+- [ ] **`pnpm verify:env`** — every var the code reads is declared, nothing
+      secret sits in a `VITE_` var, and `.env.dev`/`.env.prod` carry identical
+      key sets.
+
+### Credentials: which go in `.env`, which go in the database
+
+Full rules and the two deliberate exceptions:
+[CREDENTIAL-OWNERSHIP.md](CREDENTIAL-OWNERSHIP.md). In short — platform values in
+the environment, tenant values encrypted in the database. A tenant credential in
+`.env` is single-tenant by construction: the second studio either shares the
+first one's account or cannot be onboarded.
+
+⚠️ **`WAIVER_HMAC_KEY_V<n>` and `WAIVER_LINK_SECRET` must be set before launch.**
+`accept-waiver` throws without the HMAC key, so **no parent can sign a waiver**.
+The name is built dynamically (`WAIVER_HMAC_KEY_V${WAIVER_HMAC_CURRENT_VERSION}`,
+default 1), which is why no static check saw it and why it was declared nowhere
+until 2026-08-06. Never delete an old version: `waiver_evidence.hmac_key_version`
+records which key signed each row, so retiring one makes those rows permanently
+unverifiable.
 
 ### Phase C — Edge secrets on the prod project
 
@@ -132,7 +166,7 @@ promote dev.** Dev carries mock-payment rows, demo tenants and test seeds.
       links, waiver/pay links and the Google Calendar `redirect_uri` all derive
       from it.
 - [ ] `CRON_SECRET` — same value as the DB GUC above.
-- [ ] `RESEND_API_KEY`, `NOTIFICATION_FROM_EMAIL`
+- [ ] `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_EMAIL_API_TOKEN`, `NOTIFICATION_FROM_EMAIL`
 - [ ] Provider base URLs pointed at **production**, not sandbox.
 - [ ] **Unset every mock flag**: `GROW_MOCK`, `ICOUNT_MOCK`, `INVOICE4U_MOCK`,
       `YPAY_MOCK`, `TRANZILA_MOCK`, `GOOGLE_CALENDAR_MOCK`,
@@ -156,7 +190,7 @@ which multi-tenant subdomains require.
 - [ ] Universal SSL covers apex + first-level subdomains free; no ACM needed.
 - [ ] Build vars (`VITE_*` are inlined at **build** time — changing one needs a
       rebuild, not a redeploy):
-      `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`,
+      `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`,
       `VITE_APP_ROOT_DOMAIN=opalswift.com`,
       `VITE_PRIVACY_POLICY_URL`, `VITE_TERMS_URL`.
       **Do not set `VITE_DEV_TENANT_SUBDOMAIN`** — it is ignored in prod builds by

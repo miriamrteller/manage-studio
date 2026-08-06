@@ -6,7 +6,7 @@ import {
   type TenantSender,
   type TenantSenderInput,
 } from "../notification-from.ts";
-import { sendHtmlEmail } from "../resend-client.ts";
+import { sendHtmlEmail } from "../email-client.ts";
 import { formatCurrency } from "../email-dist/format.js";
 
 export const PAYMENT_DOCUMENT_ADMIN_EMAIL_SENT = "payment_document_admin_email_sent";

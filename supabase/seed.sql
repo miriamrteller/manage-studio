@@ -981,3 +981,71 @@ BEGIN
   WHERE subdomain IN ('belladance', 'lensstudio', 'velvetbeauty');
 
 END $$;
+
+-- ============================================================================
+-- SCREENSHOT USER — dev only.
+--
+-- test@example.com / 123456, for screenshots and demos without touching a real
+-- inbox. example.com is IANA-reserved and can never receive mail, so a stray
+-- send cannot reach anyone.
+--
+-- Safe because seeds never run against production, and `pnpm seed:dev` refuses
+-- to run unless the linked project is dev. A known-password account on
+-- production would be a straightforward hole.
+--
+-- Done in SQL rather than via scripts/seed-auth-parent.mjs because that needs a
+-- service-role key, which .env.dev deliberately no longer carries.
+--
+-- Placed at the END of this file on purpose: the on_auth_user_created trigger
+-- raises "No tenant available for new user" if tenants is empty, so the tenant
+-- inserts above must have run first.
+--
+-- The auth.identities row is required too. Without it GoTrue has no email
+-- identity to match and password sign-in fails even though the user exists.
+-- ============================================================================
+-- auth.users lives outside the public schema, so reset_dev_db.sql does NOT drop
+-- it — this user survives resets, and re-seeding would collide on the unique
+-- email index (under a different id, so ON CONFLICT (id) does not catch it).
+-- Clear it first to keep the seed idempotent.
+DELETE FROM auth.identities WHERE identity_data ->> 'email' = 'test@example.com';
+DELETE FROM auth.users WHERE email = 'test@example.com';
+
+-- confirmation_token / recovery_token / email_change_token_new / email_change
+-- MUST be '' and not NULL. GoTrue scans them into non-nullable Go strings, so a
+-- NULL makes every sign-in fail with a 500 "Database error querying schema" —
+-- an error that names neither the column nor the user. Supabase's own signup
+-- writes ''; a hand-built row does not. These four have no column default,
+-- unlike phone_change / reauthentication_token which default to ''.
+INSERT INTO auth.users (
+  instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
+  raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+  confirmation_token, recovery_token, email_change_token_new, email_change
+)
+VALUES (
+  '00000000-0000-0000-0000-000000000000',
+  '00000000-0000-0000-0000-0000000005ee'::uuid,
+  'authenticated', 'authenticated',
+  'test@example.com',
+  extensions.crypt('123456', extensions.gen_salt('bf')),
+  now(),
+  '{"provider":"email","providers":["email"]}'::jsonb,
+  '{"subdomain":"creativeballet"}'::jsonb,
+  now(), now(),
+  '', '', '', ''
+)
+ON CONFLICT (id) DO UPDATE SET
+  encrypted_password = EXCLUDED.encrypted_password,
+  email_confirmed_at = EXCLUDED.email_confirmed_at;
+
+
+INSERT INTO auth.identities (
+  provider_id, user_id, identity_data, provider, last_sign_in_at,
+  created_at, updated_at
+)
+VALUES (
+  '00000000-0000-0000-0000-0000000005ee',
+  '00000000-0000-0000-0000-0000000005ee'::uuid,
+  '{"sub":"00000000-0000-0000-0000-0000000005ee","email":"test@example.com","email_verified":true,"phone_verified":false}'::jsonb,
+  'email', now(), now(), now()
+)
+ON CONFLICT (provider_id, provider) DO NOTHING;

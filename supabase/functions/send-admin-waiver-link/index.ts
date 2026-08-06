@@ -6,7 +6,7 @@ import { signWaiverToken } from "../_shared/waiver-token.ts";
 import {
   EMAIL_TEMPLATE_NAMES,
   sendRenderedEmail,
-} from "../_shared/resend-send.ts";
+} from "../_shared/email-send.ts";
 
 interface SendAdminWaiverLinkBody {
   engagementId: string;

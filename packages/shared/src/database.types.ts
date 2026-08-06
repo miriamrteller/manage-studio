@@ -2403,6 +2403,7 @@ export type Database = {
           country: string
           created_at: string
           currency: string
+          font_pair: string | null
           from_email: string | null
           from_email_verified_at: string | null
           google_calendar_access_token_enc: string | null
@@ -2422,6 +2423,8 @@ export type Database = {
           invoicing_secret_enc: string | null
           labels: Json
           language_default: string
+          logo_dark_url: string | null
+          logo_url: string | null
           name: string
           onboarding_status: string
           payment_provider: string
@@ -2453,6 +2456,7 @@ export type Database = {
           country?: string
           created_at?: string
           currency?: string
+          font_pair?: string | null
           from_email?: string | null
           from_email_verified_at?: string | null
           google_calendar_access_token_enc?: string | null
@@ -2472,6 +2476,8 @@ export type Database = {
           invoicing_secret_enc?: string | null
           labels?: Json
           language_default?: string
+          logo_dark_url?: string | null
+          logo_url?: string | null
           name: string
           onboarding_status?: string
           payment_provider?: string
@@ -2503,6 +2509,7 @@ export type Database = {
           country?: string
           created_at?: string
           currency?: string
+          font_pair?: string | null
           from_email?: string | null
           from_email_verified_at?: string | null
           google_calendar_access_token_enc?: string | null
@@ -2522,6 +2529,8 @@ export type Database = {
           invoicing_secret_enc?: string | null
           labels?: Json
           language_default?: string
+          logo_dark_url?: string | null
+          logo_url?: string | null
           name?: string
           onboarding_status?: string
           payment_provider?: string
@@ -3134,10 +3143,13 @@ export type Database = {
           country: string
           currency: string
           enabled_features: string[]
+          font_pair: string
           id: string
           invoicing_provider: string
           labels: Json
           language_default: string
+          logo_dark_url: string
+          logo_url: string
           name: string
           payment_provider: string
           payment_provider_public_key: string

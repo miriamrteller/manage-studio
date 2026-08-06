@@ -25,7 +25,7 @@ vi.mock(
   '../../../../supabase/functions/_shared/collections/send-payment-dunning-reminder.ts',
   () => ({ sendPaymentDunningReminder: sendPaymentDunningReminder }),
 );
-vi.mock('../../../../supabase/functions/_shared/resend-send.ts', () => ({
+vi.mock('../../../../supabase/functions/_shared/email-send.ts', () => ({
   sendRenderedEmail: sendRenderedEmail,
   EMAIL_TEMPLATE_NAMES: { PAYMENT_REMINDER: 'payment_reminder' },
 }));

@@ -7,7 +7,7 @@ import { resolveEnrolmentNotificationRecipient } from "../_shared/enrolment-reci
 import {
   EMAIL_TEMPLATE_NAMES,
   sendRenderedEmail,
-} from "../_shared/resend-send.ts";
+} from "../_shared/email-send.ts";
 
 interface SendAdminEnrolmentLinkBody {
   engagementId: string;

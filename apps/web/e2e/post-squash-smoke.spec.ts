@@ -5,13 +5,13 @@ import { test, expect } from '@playwright/test';
  *
  *   pnpm -C apps/web exec playwright test e2e/post-squash-smoke.spec.ts --project=chromium
  *
- * Requires VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY (repo .env via playwright loadEnv).
+ * Requires VITE_SUPABASE_URL + VITE_SUPABASE_PUBLISHABLE_KEY (repo .env via playwright loadEnv).
  * Optional SUPABASE_SERVICE_ROLE_KEY: ensures a bookable appointment exists even after
  * seed-finance overwrote …0310/…0311 as classes.
  */
 const subdomain = process.env.VITE_DEV_TENANT_SUBDOMAIN || 'creativeballet';
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
-const anonKey = process.env.VITE_SUPABASE_ANON_KEY || '';
+const anonKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
 const TENANT_ID = '00000000-0000-0000-0000-000000000001';
@@ -71,7 +71,7 @@ test.describe('post-squash smoke', () => {
   test.use({ baseURL: process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:5173' });
 
   test.beforeAll(async () => {
-    test.skip(!supabaseUrl || !anonKey, 'Missing VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY');
+    test.skip(!supabaseUrl || !anonKey, 'Missing VITE_SUPABASE_URL / VITE_SUPABASE_PUBLISHABLE_KEY');
     await ensureSmokeAppointment();
   });
 

@@ -25,7 +25,7 @@ vi.mock(
 vi.mock('../../../../supabase/functions/_shared/enrolment-pay-url.ts', () => ({
   buildEnrolmentPayUrl: buildEnrolmentPayUrl,
 }));
-vi.mock('../../../../supabase/functions/_shared/resend-send.ts', () => ({
+vi.mock('../../../../supabase/functions/_shared/email-send.ts', () => ({
   sendRenderedEmail: sendRenderedEmail,
   EMAIL_TEMPLATE_NAMES: {
     PAYMENT_REMINDER: 'payment_reminder',

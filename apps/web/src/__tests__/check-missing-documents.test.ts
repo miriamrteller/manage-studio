@@ -4,7 +4,7 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-vi.mock('../../../../supabase/functions/_shared/resend-client.ts', () => ({
+vi.mock('../../../../supabase/functions/_shared/email-client.ts', () => ({
   sendHtmlEmail: vi.fn(async () => ({ id: 'email-1' })),
 }));
 
@@ -16,7 +16,7 @@ vi.mock('../../../../supabase/functions/_shared/enrolment-recipient.ts', () => (
 // carry a real sender identity, so these tests exercise resolveTenantSender()
 // rather than a stub that could drift from it.
 
-import { sendHtmlEmail } from '../../../../supabase/functions/_shared/resend-client.ts';
+import { sendHtmlEmail } from '../../../../supabase/functions/_shared/email-client.ts';
 import {
   PAYMENT_DOCUMENT_MISSING_ALERT_SENT,
   runCheckMissingDocuments,
