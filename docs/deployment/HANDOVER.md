@@ -23,7 +23,7 @@ rather than assuming, and say plainly when something is unverified.
 | Edge Functions | ⚠️ deployed to prod, but **Cloudflare Email credentials are not set**, so any send fails |
 | Auth Send Email hook | ⚠️ **live** on prod, pointing at `send-auth-email`. Cannot be disabled, only deleted |
 | Dev | `acmujrhavgbamdilzuew`, 32 migrations, seeded, 8 tenants, screenshot user test@example.com / 123456 (sign-in verified) |
-| CI | green. `main` @ PR #37; PR #39 open (Cloudflare email + env hardening + fold) |
+| CI | green on `main` @ `1e3c907` (PR #39 merged 2026-08-06 15:05 UTC — Cloudflare email + env hardening + chain fold) |
 
 **The repo is currently linked to PRODUCTION** and `.env` holds prod values.
 `pnpm seed:dev` will refuse to run — that is the guard working.
@@ -126,6 +126,10 @@ is what they need anyway.
 - **No backups.** Free tier has no PITR and no daily backups. A `pg_dump` job was
   planned and not built. **Do this before real payment data lands.**
 - **Twilio/WhatsApp** deferred; platform vs per-tenant undecided.
+- **`supabase/seed_updates_font_pair.sql` is an orphan.** PR #38 added it as a
+  one-off; nothing references it and `seed.sql` never sets `font_pair`, so every
+  seeded tenant has it NULL and the branding feature is unexercised in dev. Fold
+  its three `UPDATE`s into `seed.sql` and delete the file.
 
 ---
 
