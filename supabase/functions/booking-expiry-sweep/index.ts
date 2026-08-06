@@ -13,14 +13,13 @@
  */
 
 import { serve }        from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
+import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
+
+type ServiceClient = ReturnType<typeof createServiceClient>;
 
 serve(async (_req: Request): Promise<Response> => {
   try {
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+    const supabase = createServiceClient();
 
     const now = new Date();
 
@@ -88,7 +87,7 @@ serve(async (_req: Request): Promise<Response> => {
 });
 
 async function _sendNudgeEmail(
-  supabase: ReturnType<typeof createClient>,
+  supabase: ServiceClient,
   booking: {
     id:           string;
     tenant_id:    string;

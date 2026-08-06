@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
+import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 
 /**
  * GAP 5 — Admin-triggered document resend.
@@ -26,10 +26,7 @@ serve(async (req: Request) => {
       );
     }
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+    const supabase = createServiceClient();
 
     // Fetch document fields for this payment
     const { data, error } = await supabase
