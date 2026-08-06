@@ -108,6 +108,8 @@ function makeService(options: {
         upload: async () => ({ error: null }),
       }),
     },
+    // No stored webhook key — Grow key validation is opt-in and skipped.
+    rpc: async () => ({ data: [], error: null }),
   } as never;
 
   return { service, paymentUpdates, queueUpdates };

@@ -21,10 +21,10 @@ serve(async (req: Request) => {
     const result = await handlePaymentDocumentInternal(supabase, body);
 
     if (!result.ok) {
-      console.error("handle-payment-document: parse error", result.error);
+      console.error("handle-payment-document: rejected", result.error);
       return new Response(
         JSON.stringify({ error: result.error }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
+        { status: result.status, headers: { "Content-Type": "application/json" } },
       );
     }
 

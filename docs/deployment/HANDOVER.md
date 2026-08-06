@@ -142,11 +142,15 @@ is what they need anyway.
   Authorization header, so every invocation 401'd at the gateway
   (`UNAUTHORIZED_NO_AUTH_HEADER`, proven live) — it has never run in any
   environment; now `verify_jwt = false` (it validates `x-cron-secret`
-  in-function). Still locked and needing work before use:
-  `handle-payment-document` (Grow document webhook — needs webhook
-  verification before the gateway opens), `twilio-webhook-status` (needs
-  Twilio signature validation), `booking-expiry-sweep` (no in-function auth
-  **and** never scheduled by any migration). `send-otp-email` /
+  in-function). `handle-payment-document` now validates the tenant's Grow
+  pre-shared key in-function (shared `verifyGrowWebhookKey`, also enforced
+  on `handle-invoice-event`'s Grow branch, which was live with **no**
+  webhook auth at all) and its gateway is open. Once a tenant stores a key,
+  a notify without a matching `webhookKey` is rejected — omission is no
+  longer a bypass, on the payment notify path too. Still locked and needing
+  work before use: `twilio-webhook-status` (needs Twilio signature
+  validation), `booking-expiry-sweep` (no in-function auth **and** never
+  scheduled by any migration). `send-otp-email` /
   `send-otp-sms` / `google-calendar-freebusy` stay locked deliberately:
   the only `send-otp-email` caller (`WhatsAppOtpVerifier`) is never
   rendered, waiver OTP is V2, freebusy has no callers, and the signup

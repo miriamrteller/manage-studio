@@ -217,12 +217,12 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/send-waiver-reminder/index.ts"
 
-# Grow document webhook — provider posts carry no JWT, but the function has
-# no webhook verification yet. Locked until that lands; unlocking now would
-# expose an unauthenticated write path onto payment rows.
+# Grow document webhook — provider posts carry no JWT. Authenticated
+# in-function via the tenant's pre-shared key (verifyGrowWebhookKey),
+# same as handle-invoice-event / handle-payment-event.
 [functions.handle-payment-document]
 enabled = true
-verify_jwt = true
+verify_jwt = false
 entrypoint = "./functions/handle-payment-document/index.ts"
 
 # Written as a cron sweep but never scheduled, and has no cron-secret check.
