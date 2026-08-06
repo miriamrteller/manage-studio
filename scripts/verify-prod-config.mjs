@@ -39,10 +39,22 @@ try {
   process.exit(1);
 }
 
-function q(sql) {
+/**
+ * The Supabase session pooler intermittently drops the first connection
+ * ("server closed the connection unexpectedly"). Observed twice while building
+ * this script. Retrying matters here specifically: a transient blip on a
+ * production readiness check reads as "your encryption key is missing", which
+ * is exactly the wrong thing to make someone doubt.
+ */
+function q(sql, attempt = 1) {
   const r = spawnSync('psql', ['-d', dbUrl, '-tAc', sql], { encoding: 'utf8', shell: false });
   if (r.error) throw new Error(`psql failed to start: ${r.error.message}`);
-  if (r.status !== 0) throw new Error((r.stderr || '').trim() || `psql exited ${r.status}`);
+  if (r.status !== 0) {
+    const err = (r.stderr || '').trim();
+    const transient = /server closed the connection|connection reset|could not connect|timeout expired/i.test(err);
+    if (transient && attempt < 3) return q(sql, attempt + 1);
+    throw new Error(err || `psql exited ${r.status}`);
+  }
   return (r.stdout || '').trim();
 }
 

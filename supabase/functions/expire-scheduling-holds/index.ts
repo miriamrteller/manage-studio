@@ -18,10 +18,10 @@
 import { jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { resolveTenantSender, TENANT_SENDER_COLUMNS, type TenantSenderInput } from "../_shared/notification-from.ts";
+import { tenantBaseUrl } from "../_shared/tenant-url.ts";
 import { sendHtmlEmail } from "../_shared/resend-client.ts";
 
 const CRON_SECRET = Deno.env.get("CRON_SECRET") ?? "";
-const APP_URL = Deno.env.get("APP_URL") ?? "";
 const BATCH_LIMIT = 200;
 
 interface HoldRow {
@@ -150,7 +150,7 @@ Deno.serve(async (req) => {
               tenant?.language_default ?? "he",
               tenant?.name ?? "",
               hold.starts_at,
-              `${APP_URL}/book`,
+              `${tenantBaseUrl(tenant?.subdomain)}/book`,
             ),
           });
           remindersSent++;
@@ -226,7 +226,7 @@ Deno.serve(async (req) => {
             subject: (tenant.language_default !== "en")
               ? "שריון הפגישה שוחרר"
               : "Your appointment hold was released",
-            html: releasedHtml(tenant.language_default ?? "he", tenant.name ?? "", `${APP_URL}/book`),
+            html: releasedHtml(tenant.language_default ?? "he", tenant.name ?? "", `${tenantBaseUrl(tenant.subdomain)}/book`),
           });
         } catch (e) {
           console.error("[expire-scheduling-holds] released send failed", hold.id, String(e));

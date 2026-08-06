@@ -92,6 +92,25 @@ function resolveSupabaseUrl(env) {
 const env = parseEnvFile(envPath);
 
 const missing = REQUIRED.filter((k) => !env[k]);
+
+/**
+ * Waiver evidence HMAC keys are named dynamically — getHmacKey() builds
+ * `WAIVER_HMAC_KEY_V${version}` from WAIVER_HMAC_CURRENT_VERSION (default 1).
+ * A dynamic name is invisible to any static list, which is how a secret that
+ * accept-waiver THROWS without ended up declared nowhere at all: on a fresh
+ * project no parent could sign a waiver.
+ *
+ * Every past version must keep being pushed. waiver_evidence.hmac_key_version
+ * records which key signed each row, so dropping an old key makes those rows
+ * permanently unverifiable — rotation adds a key, it never retires one.
+ */
+const hmacVersion = parseInt(env.WAIVER_HMAC_CURRENT_VERSION ?? '1', 10);
+const hmacKeys = Object.keys(env).filter((k) => /^WAIVER_HMAC_KEY_V\d+$/.test(k) && env[k]);
+const currentHmacKey = `WAIVER_HMAC_KEY_V${hmacVersion}`;
+if (!env[currentHmacKey]) {
+  missing.push(`${currentHmacKey} (WAIVER_HMAC_CURRENT_VERSION=${hmacVersion})`);
+}
+
 if (missing.length) {
   console.error(`Missing in .env: ${missing.join(', ')}`);
   process.exit(1);
@@ -103,6 +122,12 @@ for (const key of REQUIRED) {
 }
 for (const key of OPTIONAL) {
   if (env[key]) secrets[key] = env[key];
+}
+for (const key of hmacKeys) {
+  secrets[key] = env[key];
+}
+if (env.WAIVER_HMAC_CURRENT_VERSION) {
+  secrets.WAIVER_HMAC_CURRENT_VERSION = env.WAIVER_HMAC_CURRENT_VERSION;
 }
 
 const projectUrl = resolveSupabaseUrl(env);
