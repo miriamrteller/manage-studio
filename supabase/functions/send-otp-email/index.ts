@@ -5,6 +5,10 @@ import {
 } from "../_shared/email-send.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import {
+  checkAndIncrementAttempt,
+  normaliseContactPoint,
+} from "../_shared/rate-limit.ts";
+import {
   getEmailTemplateOverrides,
   getTenantEmailConfig,
 } from "../_shared/tenant-email.ts";
@@ -25,6 +29,12 @@ interface SendOtpEmailRequest {
 
 const DEFAULT_TENANT_ID =
   Deno.env.get("DEFAULT_TENANT_ID") ?? "00000000-0000-0000-0000-000000000001";
+
+/** Whole seconds until the block lifts, floored at 1 so Retry-After is never 0. */
+function retryAfterSeconds(blockedUntil: string): number {
+  const seconds = Math.ceil((new Date(blockedUntil).getTime() - Date.now()) / 1000);
+  return Number.isFinite(seconds) && seconds > 0 ? seconds : 1;
+}
 
 Deno.serve(async (req) => {
   if (req.method !== "POST") {
@@ -56,6 +66,41 @@ Deno.serve(async (req) => {
     }
 
     const supabase = createServiceClient();
+
+    // Before anything that costs an email. This endpoint needs only the
+    // publishable key, so without a limit it is an open send endpoint on the
+    // platform's own quota and sending reputation. Keyed on the address, so
+    // omitting tenantId to fall back to DEFAULT_TENANT_ID does not widen it.
+    const limit = await checkAndIncrementAttempt(
+      supabase,
+      tenantId,
+      normaliseContactPoint(email),
+      "email",
+    );
+    if (!limit.allowed) {
+      // 429 for a genuine limit, 503 when the limiter itself could not run —
+      // the caller should back off in both cases, but they are not the same
+      // event and collapsing them hides a broken limiter.
+      const rateLimited = limit.reason === "rate_limited";
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: rateLimited ? "rate_limited" : "rate_limit_unavailable",
+          message: limit.message,
+          ...(limit.blockedUntil ? { blocked_until: limit.blockedUntil } : {}),
+        }),
+        {
+          status: rateLimited ? 429 : 503,
+          headers: {
+            "Content-Type": "application/json",
+            ...(limit.blockedUntil
+              ? { "Retry-After": String(retryAfterSeconds(limit.blockedUntil)) }
+              : {}),
+          },
+        },
+      );
+    }
+
     const tenant = await getTenantEmailConfig(supabase, tenantId);
     const overrides = await getEmailTemplateOverrides(
       supabase,
