@@ -9,7 +9,7 @@
  * number (guest_enrolment_create_family writes it there). `people` has no dedicated
  * phone column. Kept YPay-local so providers stay decoupled.
  */
-import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
 
 export type YpayCustomer = {
   name: string;

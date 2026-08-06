@@ -1,4 +1,4 @@
-import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
 import { parseInvoicingProviderSlug } from "../invoicing/registry.ts";
 import { applyBundledDocumentNotify } from "./bundled-document.ts";
 import { peekGrowTenantId } from "./grow/metadata.ts";

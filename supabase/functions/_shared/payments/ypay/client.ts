@@ -13,7 +13,7 @@
  * Base URL from YPAY_API_BASE (default https://ypay.co.il/api/v1). The sandbox uses
  * the same host with sandbox client_id/secret.
  */
-import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
 import { ypayErrorMessage } from "./errors.ts";
 
 const DEFAULT_BASE = "https://ypay.co.il/api/v1";

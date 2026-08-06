@@ -12,7 +12,7 @@
  *
  * The RPC `get_tenant_features(p_tenant_id)` is created by the Batch 3 SQL migration.
  */
-import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.105.3';
 
 const featureCache = new Map<string, { features: Set<string>; expiry: number }>();
 const CACHE_TTL_MS = 5 * 60 * 1000;

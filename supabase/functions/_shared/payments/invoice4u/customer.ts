@@ -11,7 +11,7 @@
  * value here. `people` has no dedicated phone column; the only `phone` in the schema is
  * on `staff`. Worth renaming, but not while it is load-bearing for enrolment.
  */
-import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
 
 export type Invoice4uCustomer = {
   fullName: string;

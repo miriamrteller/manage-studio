@@ -4,7 +4,7 @@
  * onboarding or Essential/Professional feature defaults.
  */
 import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
-import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
 import type { ChargeParams, ChargeResult, PaymentEvent, PaymentProvider } from "../types.ts";
 import { ChargeMetadataSchema } from "../types.ts";
 

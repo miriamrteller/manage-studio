@@ -4,7 +4,7 @@
  * Token storage/refresh goes through SECURITY DEFINER RPCs (003600). Set
  * GOOGLE_CALENDAR_MOCK=true in dev to short-circuit all network calls (mirrors GROW_MOCK).
  */
-import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
 
 const CLIENT_ID = Deno.env.get("GOOGLE_CALENDAR_CLIENT_ID") ?? "";
 const CLIENT_SECRET = Deno.env.get("GOOGLE_CALENDAR_CLIENT_SECRET") ?? "";

@@ -1,4 +1,4 @@
-import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
 import { resolveTenantAdminNotificationEmails } from "../enrolment-recipient.ts";
 import { resolveTenantSender, TENANT_SENDER_COLUMNS, type TenantSender, type TenantSenderInput } from "../notification-from.ts";
 import { sendHtmlEmail } from "../resend-client.ts";

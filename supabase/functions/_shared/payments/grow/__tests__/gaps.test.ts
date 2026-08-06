@@ -411,7 +411,7 @@ const hasLiveCreds =
 
 if (hasLiveCreds) {
   Deno.test("[live-creds] credential smoke-check via verifyCredentials", async () => {
-    const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2.38.4");
+    const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2.105.3");
     const { GrowPaymentProvider } = await import("../providers/grow.ts");
 
     const client = createClient(

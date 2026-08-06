@@ -1,4 +1,4 @@
-import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
 import { ensureBillingAccountForStudent } from "./ensure-billing-account.ts";
 import { isAgeEligible, personAgeAtSeasonStart } from "./age-eligibility.ts";
 import { ENROLMENT_BLOCKING_DUPLICATE_STATUSES } from "./enrolment-statuses.ts";
