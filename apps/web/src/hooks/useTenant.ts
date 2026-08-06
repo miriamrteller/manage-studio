@@ -4,57 +4,28 @@ import { supabase } from '../lib/supabase';
 import { getLocale } from '../lib/language-helper';
 import { resolveTenantSubdomain } from '../lib/resolveTenantSubdomain';
 import type { TenantConfig } from '../types/auth';
-import {
-  parseEntityLabelOverrides,
-  resolveEntityLabels,
-  resolvePresetModules,
-  safePreset,
-} from '@shared/index';
+import { parseEntityLabelOverrides, resolveEntityLabels, resolvePresetModules, safePreset } from '@shared/index';
 
-/**
- * Resolves tenant from environment (dev) or subdomain (prod)
- * Fetches config from Supabase tenants table
- *
- * Dev: VITE_DEV_TENANT_SUBDOMAIN → queries by subdomain
- * Prod: window.location.hostname → extracts subdomain → queries by subdomain
- *
- * Returns: tenant config with language_default, computed locale
- * Direction is computed in useLanguage() hook, not here
- */
 export function useTenant(): TenantConfig | null {
   const subdomain = resolveTenantSubdomain();
-
-  if (typeof window !== 'undefined') {
-    // Log for debugging
-    console.debug('Resolved tenant subdomain:', subdomain);
-  }
-
-  // Query Supabase for tenant config using RPC (function, not table)
-  // This matches the DB schema and avoids 404s on non-existent views/tables.
   const { data: tenantConfig } = useQuery({
     queryKey: ['tenant', subdomain],
     queryFn: async () => {
-      if (!subdomain) {
-        return null;
-      }
-
-      const { data, error } = await supabase
-        .rpc('get_tenant_config_by_subdomain', { p_subdomain: subdomain });
-
+      if (!subdomain) return null;
+      const { data, error } = await supabase.rpc('get_tenant_config_by_subdomain', { p_subdomain: subdomain });
       if (error || !data || !Array.isArray(data) || data.length === 0) {
         console.warn('Failed to fetch tenant config:', error?.message || 'No data');
         return null;
       }
-
       const row = data[0];
       const whiteLabel = {
         primary_color: row.primary_color,
         accent_color: row.accent_color,
+        logo_url: row.logo_url ?? undefined,
+        logo_dark_url: row.logo_dark_url ?? undefined,
       };
-
       const preset = safePreset(row.business_preset);
       const overrides = parseEntityLabelOverrides(row.labels);
-
       return {
         id: row.id,
         name: row.name,
@@ -79,15 +50,16 @@ export function useTenant(): TenantConfig | null {
         invoicing_provider: row.invoicing_provider ?? 'grow',
         business_preset: preset,
         entity_label_overrides: overrides,
-        // English defaults here; LabelsProvider re-resolves for active UI language.
         entity_labels: resolveEntityLabels(preset, overrides, 'en'),
         modules: resolvePresetModules(preset),
         enabled_features: Array.isArray(row.enabled_features) ? row.enabled_features : [],
+        font_pair: row.font_pair ?? null,
+        logo_url: row.logo_url ?? null,
+        logo_dark_url: row.logo_dark_url ?? null,
       } as TenantConfig;
     },
     enabled: !!subdomain,
-    staleTime: 30 * 60 * 1000, // 30 minutes
+    staleTime: 30 * 60 * 1000,
   });
-
   return tenantConfig || null;
 }

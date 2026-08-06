@@ -2,6 +2,8 @@
  * A CSS @import has to precede every other rule, so it sits above the
  * @tailwind directives; Vite/postcss-import inlines it at build time. */
 @import './styles/touch-targets.css';
+@import './styles/rtl-icons.css';
+@import './styles/components.css';
 
 @tailwind base;
 @tailwind components;
