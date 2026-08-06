@@ -2,6 +2,7 @@ import { BaseService } from '@/services/base.service';
 import { TenantDB } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
 import type { Tenant } from '@shared/schemas';
+import { filterHolidayOccurrences } from './lib/holidayFilter';
 import type { ScheduleEvent, SchedulingBlock } from './types';
 
 /**
@@ -33,6 +34,12 @@ export class ScheduleService extends BaseService {
    * Anon-safe public timetable feed by subdomain. Returns public, active
    * classes/sessions only (no blocks, no appointments). Powers the client-facing
    * calendar on the classes landing page.
+   *
+   * Israeli holidays are filtered out of the recurring occurrences at read time
+   * (DL-HOLIDAY-001); explicit `offering_sessions` rows come back as
+   * `event_type: 'session'` and are always kept, which is the admin override.
+   * The admin feed (`listEvents`) is intentionally left unfiltered — the admin
+   * calendar shades holidays and marks them "skipped" instead of hiding them.
    */
   static async listPublicEvents(
     subdomain: string,
@@ -47,7 +54,7 @@ export class ScheduleService extends BaseService {
         p_end: range.end.toISOString(),
       });
       if (error) throw error;
-      return (data ?? []) as ScheduleEvent[];
+      return filterHolidayOccurrences((data ?? []) as ScheduleEvent[]);
     }, 'ScheduleService.listPublicEvents');
   }
 

@@ -7,12 +7,16 @@
  * Accepts either a single `date` or an inclusive `start_date`/`end_date` range
  * (capped) so the booking calendar can load a visible window in one request.
  *
+ * Israeli holidays are dropped before the RPC runs (DL-HOLIDAY-001). An explicit
+ * `offering_sessions` row for a date is an admin override and re-opens that date.
+ *
  * Failure policy: if the tenant is connected but free/busy fails after one retry,
  * we FAIL CLOSED (drop all slots for the window) to minimise double-booking risk.
  */
 import { handleOptions, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { freeBusy, getValidAccessToken, type BusyInterval } from "../_shared/google-calendar.ts";
+import { filterHolidayDates } from "../_shared/holidays.ts";
 
 interface Slot {
   starts_at: string;
@@ -97,6 +101,22 @@ Deno.serve(async (req) => {
   }
 
   const service = createServiceClient();
+
+  // Holiday filter (DL-HOLIDAY-001). Explicit sessions win: if an admin created an
+  // offering_sessions row for a holiday date, that date stays bookable. Dates are
+  // Israel civil dates, matching the RPC's Asia/Jerusalem slot generation.
+  const { data: overrideRows, error: overrideError } = await service
+    .from("offering_sessions")
+    .select("session_date")
+    .eq("offering_id", body.offering_id)
+    .in("session_date", dates);
+  if (overrideError) return jsonResponse({ error: overrideError.message }, 500);
+
+  const overrideDates = (overrideRows ?? []).map(
+    (row: { session_date: string }) => String(row.session_date).slice(0, 10),
+  );
+  dates = filterHolidayDates(dates, overrideDates);
+  if (dates.length === 0) return jsonResponse({ slots: [] });
 
   const dayResults = await Promise.all(
     dates.map((date) =>

@@ -1,22 +1,25 @@
-import { HDate, HebrewCalendar, flags } from '@hebcal/core';
+import { HDate, HebrewCalendar } from '@hebcal/core';
+import { SHADE_FLAGS, isSkippedHoliday } from '@shared/lib/holidays';
 
 /**
  * Holiday categories that should be visually greyed on the calendar. Covers major
  * Yom Tov, Chol HaMoed, minor holidays, Chanukah, fasts, and Israeli national days.
  * Rosh Chodesh, parsha, candle-lighting, omer, etc. are intentionally excluded.
+ *
+ * The masks and the skip predicate now live in `@shared/lib/holidays` so the calendar
+ * shading, the public schedule filter and the edge-function slot filter cannot drift
+ * apart. `isSkippedHoliday()` is the narrower set whose dates are dropped from recurring
+ * generation (Yom Tov, fasts, Chol HaMoed, Chanukah, plus the named studio closures
+ * Purim and Yom HaAtzma'ut) — other minor/modern holidays such as Tu BiShvat or Lag
+ * BaOmer, and optional custom fasts such as Yom Kippur Katan, are shaded but keep
+ * their classes.
  */
-const SHADE_FLAGS =
-  flags.CHAG |
-  flags.MINOR_HOLIDAY |
-  flags.MODERN_HOLIDAY |
-  flags.MINOR_FAST |
-  flags.MAJOR_FAST |
-  flags.CHOL_HAMOED |
-  flags.CHANUKAH_CANDLES;
 
 interface HolidayNames {
   he: string;
   en: string;
+  /** Whether recurring occurrences are skipped on this day (see `isSkippedHoliday`). */
+  skipped: boolean;
 }
 
 // Cache holiday names per civil day to avoid recomputing on every render.
@@ -35,7 +38,13 @@ function holidayNamesOn(greg: Date): HolidayNames | null {
   const events = HebrewCalendar.getHolidaysOnDate(new HDate(greg), true) ?? [];
   const relevant = events.filter((e) => (e.getFlags() & SHADE_FLAGS) !== 0);
   const names: HolidayNames | null =
-    relevant.length > 0 ? { he: relevant[0].render('he'), en: relevant[0].render('en') } : null;
+    relevant.length > 0
+      ? {
+          he: relevant[0].render('he'),
+          en: relevant[0].render('en'),
+          skipped: isSkippedHoliday(greg),
+        }
+      : null;
 
   nameCache.set(key, names);
   return names;
@@ -48,6 +57,12 @@ export interface DayShade {
   /** English label (shown alongside Hebrew in the English UI). */
   en?: string;
   isErev?: boolean;
+  /**
+   * True when the day itself is a holiday that is skipped when generating recurring
+   * class occurrences (see `isSkippedHoliday`). Shabbat and eves are shaded but not
+   * skipped, and minor/modern holidays are shaded only.
+   */
+  isSkipped: boolean;
 }
 
 /**
@@ -60,16 +75,31 @@ export function getDayShade(date: Date): DayShade {
 
   // The day itself: holiday takes precedence over the plain "Shabbat" label.
   const today = holidayNamesOn(greg);
-  if (today) return { shaded: true, he: today.he, en: today.en };
-  if (greg.getDay() === 6) return { shaded: true, he: 'שבת', en: 'Shabbat' };
+  if (today) {
+    return {
+      shaded: true,
+      he: today.he,
+      en: today.en,
+      isSkipped: today.skipped,
+    };
+  }
+  if (greg.getDay() === 6) return { shaded: true, he: 'שבת', en: 'Shabbat', isSkipped: false };
 
   // Eve: shade the day before a holiday or Shabbat.
   const next = new Date(greg.getFullYear(), greg.getMonth(), greg.getDate() + 1);
   const nextNames = holidayNamesOn(next);
   if (nextNames) {
-    return { shaded: true, he: `ערב ${nextNames.he}`, en: `Erev ${nextNames.en}`, isErev: true };
+    return {
+      shaded: true,
+      he: `ערב ${nextNames.he}`,
+      en: `Erev ${nextNames.en}`,
+      isErev: true,
+      isSkipped: false,
+    };
   }
-  if (next.getDay() === 6) return { shaded: true, he: 'ערב שבת', en: 'Erev Shabbat', isErev: true };
+  if (next.getDay() === 6) {
+    return { shaded: true, he: 'ערב שבת', en: 'Erev Shabbat', isErev: true, isSkipped: false };
+  }
 
-  return { shaded: false };
+  return { shaded: false, isSkipped: false };
 }
