@@ -203,3 +203,67 @@ enabled = true
 verify_jwt = true
 entrypoint = "./functions/google-calendar-freebusy/index.ts"
 
+# --- Previously missing from this file -------------------------------------
+# A function absent from config.toml deploys with the CLI default
+# verify_jwt = true. That default 401s any caller without a JWT — including
+# pg_cron (sends only x-cron-secret) and provider webhooks — before the
+# function runs. Every function must have an explicit entry here.
+
+# Cron target (every 6h, migration 002800). pg_cron sends no Authorization
+# header, so the gateway must not require a JWT; the function validates
+# x-cron-secret against CRON_SECRET itself.
+[functions.send-waiver-reminder]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/send-waiver-reminder/index.ts"
+
+# Grow document webhook — provider posts carry no JWT, but the function has
+# no webhook verification yet. Locked until that lands; unlocking now would
+# expose an unauthenticated write path onto payment rows.
+[functions.handle-payment-document]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/handle-payment-document/index.ts"
+
+# Written as a cron sweep but never scheduled, and has no cron-secret check.
+# Locked until it gets in-function auth and a schedule.
+[functions.booking-expiry-sweep]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/booking-expiry-sweep/index.ts"
+
+# Twilio status callback — carries no JWT. Locked until it validates the
+# Twilio signature (WhatsApp is deferred, so nothing calls it yet).
+[functions.twilio-webhook-status]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/twilio-webhook-status/index.ts"
+
+# Admin endpoints invoked with a session; user access tokens are JWTs under
+# the new key scheme, so the gateway check passes for signed-in callers.
+[functions.admin-resend-document]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/admin-resend-document/index.ts"
+
+[functions.send-admin-enrolment-link]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/send-admin-enrolment-link/index.ts"
+
+[functions.send-admin-waiver-link]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/send-admin-waiver-link/index.ts"
+
+[functions.verify-ypay-credentials]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/verify-ypay-credentials/index.ts"
+
+# Only reachable from WhatsAppOtpVerifier, which is not rendered anywhere.
+[functions.verify-whatsapp-otp]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/verify-whatsapp-otp/index.ts"
+

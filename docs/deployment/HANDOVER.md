@@ -135,9 +135,26 @@ is what they need anyway.
   with only the public key, so it is an open email-sending endpoint.
 - **Five functions call `createClient` directly** instead of the shared
   `createServiceClient()` factory — the real rotation risk, not the var name.
-- **Three functions still use gateway `verify_jwt`** (`send-otp-email`,
-  `send-otp-sms`, `google-calendar-freebusy`). Only matters if moving Edge
-  Functions onto `sb_secret_` keys.
+- **Gateway `verify_jwt` audit (2026-08-06, verified against both live projects).**
+  Functions absent from `config.toml` deploy with the CLI default
+  `verify_jwt = true`; nine were absent and all now have explicit entries.
+  Findings: `send-waiver-reminder` is a cron target but pg_cron sends no
+  Authorization header, so every invocation 401'd at the gateway
+  (`UNAUTHORIZED_NO_AUTH_HEADER`, proven live) — it has never run in any
+  environment; now `verify_jwt = false` (it validates `x-cron-secret`
+  in-function). Still locked and needing work before use:
+  `handle-payment-document` (Grow document webhook — needs webhook
+  verification before the gateway opens), `twilio-webhook-status` (needs
+  Twilio signature validation), `booking-expiry-sweep` (no in-function auth
+  **and** never scheduled by any migration). `send-otp-email` /
+  `send-otp-sms` / `google-calendar-freebusy` stay locked deliberately:
+  the only `send-otp-email` caller (`WhatsAppOtpVerifier`) is never
+  rendered, waiver OTP is V2, freebusy has no callers, and the signup
+  SMS/WhatsApp channels were removed from the UI (their verify step invoked
+  a `verify-otp` function that does not exist). Dev also carries six stale
+  deployed functions that no longer exist in the repo (`stripe-webhook`,
+  `rapyd-webhook`, `tranzila-payment-callback`, `create-payment-intent`,
+  `create-payment-link`, `run-invoice-retry`).
 - **No backups.** Free tier has no PITR and no daily backups. A `pg_dump` job was
   planned and not built. **Do this before real payment data lands.**
 - **Twilio/WhatsApp** deferred; platform vs per-tenant undecided.
