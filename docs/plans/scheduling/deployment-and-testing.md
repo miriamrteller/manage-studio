@@ -14,7 +14,7 @@ There are two independent layers with **different** config mechanics.
 
 | Layer | How it gets its URL/secrets | Switch per environment? |
 | --- | --- | --- |
-| **Frontend SPA** (`apps/web`) | `window.location.origin` at runtime; Supabase client from `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` baked in at **build time** | **No** for URLs (origin is derived). Only rebuild if the Supabase project changes. |
+| **Frontend SPA** (`apps/web`) | `window.location.origin` at runtime; Supabase client from `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY` baked in at **build time** | **No** for URLs (origin is derived). Only rebuild if the Supabase project changes. |
 | **Edge Functions** (`supabase/functions`) | `Deno.env.get(...)` from **Supabase's hosted secret store** (set via `supabase secrets set`) — **not** the repo `.env` at runtime | **Yes** — secrets are per Supabase project. |
 
 **Consequence:** deployed Edge Functions never read your local `.env`. `.env` is only

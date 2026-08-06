@@ -156,7 +156,7 @@ which multi-tenant subdomains require.
 - [ ] Universal SSL covers apex + first-level subdomains free; no ACM needed.
 - [ ] Build vars (`VITE_*` are inlined at **build** time — changing one needs a
       rebuild, not a redeploy):
-      `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`,
+      `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`,
       `VITE_APP_ROOT_DOMAIN=opalswift.com`,
       `VITE_PRIVACY_POLICY_URL`, `VITE_TERMS_URL`.
       **Do not set `VITE_DEV_TENANT_SUBDOMAIN`** — it is ignored in prod builds by

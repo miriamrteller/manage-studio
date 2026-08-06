@@ -18,7 +18,7 @@ import {
  *
  * Env is loaded from repo-root `.env` and `apps/web/.env.local` (see scripts/load-env.mjs):
  *   VITE_SUPABASE_URL=https://<ref>.supabase.co
- *   VITE_SUPABASE_ANON_KEY=...
+ *   VITE_SUPABASE_PUBLISHABLE_KEY=...
  *   VITE_DEV_TENANT_SUBDOMAIN=creativeballet
  *   SUPABASE_SERVICE_ROLE_KEY=...   (repo-root .env only — never commit)
  */

@@ -91,7 +91,7 @@ export default defineConfig({
     // at init time don't throw in the CI/Vitest environment.
     env: {
       VITE_SUPABASE_URL: 'https://placeholder.supabase.co',
-      VITE_SUPABASE_ANON_KEY: 'placeholder-anon-key',
+      VITE_SUPABASE_PUBLISHABLE_KEY: 'placeholder-anon-key',
     },
   },
 })

@@ -31,7 +31,7 @@ const SECRET_MARKERS = [
   'AUTH_TOKEN', 'CLIENT_SECRET', 'HMAC', 'CRON',
 ];
 /** Allowed despite matching: genuinely public by design. */
-const PUBLIC_ALLOWLIST = ['VITE_SUPABASE_ANON_KEY', 'VITE_STRIPE_PUBLISHABLE_KEY'];
+const PUBLIC_ALLOWLIST = ['VITE_SUPABASE_PUBLISHABLE_KEY', 'VITE_STRIPE_PUBLISHABLE_KEY'];
 
 function walk(dir, out = []) {
   if (!existsSync(dir)) return out;
