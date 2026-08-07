@@ -1,0 +1,118 @@
+# Nightly encrypted backup of the production database to Cloudflare R2.
+#
+# Free-tier Supabase has no PITR and no daily backups — this workflow is the
+# only thing standing between a bad day and data loss. Restore procedure
+# (full and per-tenant): docs/deployment/BACKUP-RESTORE-RUNBOOK.md
+#
+# Required repo secrets (see runbook §Setup):
+#   SUPABASE_PROD_DB_URL   session-pooler URL incl. password
+#   R2_ACCOUNT_ID          Cloudflare account id
+#   R2_ACCESS_KEY_ID       R2 API token key (Object Read & Write on the bucket)
+#   R2_SECRET_ACCESS_KEY   R2 API token secret
+#
+# Until those exist the job exits early with a notice instead of failing, so
+# this can merge before R2 is enabled on the account.
+
+name: backup-prod
+
+on:
+  schedule:
+    - cron: "0 1 * * *" # 01:00 UTC nightly (~04:00 Israel)
+  workflow_dispatch:
+
+concurrency:
+  group: backup-prod
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      BUCKET: manage-studio-db-backups
+      GPG_RECIPIENT: 77C1129EBECF2E881EB861931750DBBC7A803D6C
+      AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: auto
+      AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+      AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+    steps:
+      - name: Check secrets are configured
+        id: gate
+        run: |
+          if [ -z "${{ secrets.SUPABASE_PROD_DB_URL }}" ] || [ -z "${{ secrets.R2_ACCESS_KEY_ID }}" ]; then
+            echo "::notice::Backup secrets not configured yet — skipping (see BACKUP-RESTORE-RUNBOOK.md §Setup)."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.gate.outputs.ready == 'true'
+
+      - uses: supabase/setup-cli@v1
+        if: steps.gate.outputs.ready == 'true'
+        with:
+          version: latest
+
+      - name: Dump schema and data
+        if: steps.gate.outputs.ready == 'true'
+        run: |
+          set -euo pipefail
+          supabase db dump --db-url "${{ secrets.SUPABASE_PROD_DB_URL }}" -f schema.sql
+          supabase db dump --db-url "${{ secrets.SUPABASE_PROD_DB_URL }}" --data-only --use-copy -f data.sql
+          test -s schema.sql && test -s data.sql
+
+      - name: Build manifest
+        if: steps.gate.outputs.ready == 'true'
+        run: |
+          set -euo pipefail
+          MIGRATIONS=$(psql "${{ secrets.SUPABASE_PROD_DB_URL }}" -tAc \
+            "SELECT count(*) FROM supabase_migrations.schema_migrations")
+          STAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          jq -n \
+            --arg stamp "$STAMP" \
+            --arg sha "$GITHUB_SHA" \
+            --arg migrations "$MIGRATIONS" \
+            --arg schema_sha256 "$(sha256sum schema.sql | cut -d' ' -f1)" \
+            --arg data_sha256 "$(sha256sum data.sql | cut -d' ' -f1)" \
+            '{created_utc:$stamp, main_sha:$sha, migrations:($migrations|tonumber),
+              schema_sha256:$schema_sha256, data_sha256:$data_sha256,
+              project_ref:"oogxajjanbyqhljxcmql"}' > manifest.json
+          cat manifest.json
+
+      - name: Encrypt
+        if: steps.gate.outputs.ready == 'true'
+        run: |
+          set -euo pipefail
+          gpg --import .github/backup-encryption-public-key.asc
+          tar czf backup.tar.gz schema.sql data.sql manifest.json
+          gpg --batch --yes --trust-model always -r "$GPG_RECIPIENT" -o backup.tar.gz.gpg -e backup.tar.gz
+          shred -u schema.sql data.sql backup.tar.gz
+
+      - name: Upload to R2
+        if: steps.gate.outputs.ready == 'true'
+        run: |
+          set -euo pipefail
+          ENDPOINT="https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com"
+          DAY=$(date -u +%F)
+          KEY="nightly/${DAY}_${GITHUB_SHA::7}"
+          aws s3 cp backup.tar.gz.gpg "s3://${BUCKET}/${KEY}.tar.gz.gpg" --endpoint-url "$ENDPOINT"
+          aws s3 cp manifest.json    "s3://${BUCKET}/${KEY}.manifest.json" --endpoint-url "$ENDPOINT"
+          if [ "$(date -u +%d)" = "01" ]; then
+            aws s3 cp "s3://${BUCKET}/${KEY}.tar.gz.gpg" "s3://${BUCKET}/monthly/${DAY}_${GITHUB_SHA::7}.tar.gz.gpg" --endpoint-url "$ENDPOINT"
+            aws s3 cp "s3://${BUCKET}/${KEY}.manifest.json" "s3://${BUCKET}/monthly/${DAY}_${GITHUB_SHA::7}.manifest.json" --endpoint-url "$ENDPOINT"
+          fi
+          aws s3 ls "s3://${BUCKET}/nightly/" --endpoint-url "$ENDPOINT" | tail -3
+
+      - name: Apply retention lifecycle (idempotent)
+        if: steps.gate.outputs.ready == 'true'
+        run: |
+          set -euo pipefail
+          ENDPOINT="https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com"
+          aws s3api put-bucket-lifecycle-configuration --bucket "$BUCKET" --endpoint-url "$ENDPOINT" \
+            --lifecycle-configuration '{
+              "Rules": [
+                {"ID":"expire-nightly","Status":"Enabled","Filter":{"Prefix":"nightly/"},"Expiration":{"Days":30}},
+                {"ID":"expire-monthly","Status":"Enabled","Filter":{"Prefix":"monthly/"},"Expiration":{"Days":400}}
+              ]}'
