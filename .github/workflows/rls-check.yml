@@ -1,0 +1,73 @@
+# Advisory RLS verification — runs, reports, never blocks (same model as
+# Supabase Preview: it is deliberately NOT in the required checks, because it
+# depends on live external state — a seeded dev database that can be
+# mid-reset or unreachable).
+#
+# Runs the repo's 37-check suite (scripts/verify-rls.mjs) against the seeded
+# DEV project from a GitHub runner, which has clean IPv4 connectivity to the
+# session pooler (the local Windows machine drops these connections).
+#
+# Required repo secret: SUPABASE_DEV_DB_URL — dev session-pooler URL incl.
+# password. Until it exists the job skips with a notice.
+
+name: rls-check
+
+on:
+  pull_request:
+    paths:
+      - "supabase/**"
+      - "scripts/verify-rls.mjs"
+      - "scripts/lib/**"
+  push:
+    branches: [main]
+    paths:
+      - "supabase/**"
+  schedule:
+    - cron: "30 1 * * *" # nightly, after the backup run
+  workflow_dispatch:
+
+concurrency:
+  group: rls-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rls:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check secret is configured
+        id: gate
+        run: |
+          if [ -z "${{ secrets.SUPABASE_DEV_DB_URL }}" ]; then
+            echo "::notice::SUPABASE_DEV_DB_URL not set — skipping RLS verification."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.gate.outputs.ready == 'true'
+
+      - uses: actions/setup-node@v4
+        if: steps.gate.outputs.ready == 'true'
+        with:
+          node-version: "22"
+
+      # No pnpm install: the script uses node builtins + psql only, and psql
+      # ships on ubuntu-latest. One retry absorbs transient pooler drops so a
+      # single reset connection doesn't read as an RLS regression.
+      - name: Run verify:rls (2 attempts)
+        if: steps.gate.outputs.ready == 'true'
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DEV_DB_URL }}
+          SUPABASE_PROJECT_REF: acmujrhavgbamdilzuew
+        run: |
+          set +e
+          for attempt in 1 2; do
+            echo "== attempt $attempt"
+            node scripts/verify-rls.mjs && exit 0
+            code=$?
+            sleep 20
+          done
+          echo "::error::verify:rls did not pass after 2 attempts (exit $code) — check whether it is a real RLS failure or dev DB state (mid-reset / unseeded)."
+          exit "$code"
