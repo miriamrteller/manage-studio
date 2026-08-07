@@ -58,14 +58,14 @@ records against tampering. A seal stored in the same place as the thing it
 protects proves nothing — anyone who could alter a record could re-sign it. Its
 value comes from living somewhere the database cannot reach.
 
-**`WAIVER_LINK_SECRET` should become per-tenant, and has not yet.** It signs the
-token authorising a guest to sign or pay for one engagement — an authorisation
-capability, so the blast radius of a leak is every tenant. The token already
-carries `tid`, but that offers no protection against forgery: anyone holding the
-secret can mint a token for any tenant. Moving it to
-`tenants.waiver_link_secret_enc` bounds the damage. The verifier would read
-`tid` from the unverified payload purely as a lookup key — the standard key-id
-pattern — before verifying.
+**`WAIVER_LINK_SECRET` is per-tenant** (`tenants.waiver_link_secret_enc`). It
+signs the token authorising a guest to sign or pay for one engagement — an
+authorisation capability, so a platform-wide value would have made the blast
+radius of a leak every tenant. Each tenant's secret is generated lazily by
+`get_tenant_waiver_link_secret` (service_role only, never entered or seen by a
+human) and the verifier reads `tid` from the unverified payload purely as a
+lookup key — the standard key-id pattern — before verifying against that
+tenant's secret. There is no env var.
 
 ---
 

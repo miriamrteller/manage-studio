@@ -67,7 +67,7 @@ export async function resolveCheckoutSession(
   const bodyToken = typeof body.enrolment_token === "string" ? body.enrolment_token : null;
   const headerToken = extractWaiverToken(authHeader);
   const rawWaiverToken = headerToken ?? bodyToken;
-  const verifiedToken = rawWaiverToken ? await verifyWaiverToken(rawWaiverToken) : null;
+  const verifiedToken = rawWaiverToken ? await verifyWaiverToken(service, rawWaiverToken) : null;
 
   if (authHeader.startsWith("Bearer ")) {
     const auth = await requireAuthUser(req);

@@ -205,7 +205,7 @@ serve(async (req) => {
       }
 
       if (existing) {
-        const enrolmentToken = await signWaiverToken({
+        const enrolmentToken = await signWaiverToken(service, {
           eid: existing.id as string,
           tid: tenantId,
           em: tokenRecipientEmail,
@@ -276,7 +276,7 @@ serve(async (req) => {
         return jsonResponse({ error: engagementError?.message ?? "Failed to create engagement" }, 500);
       }
 
-      const enrolmentToken = await signWaiverToken({
+      const enrolmentToken = await signWaiverToken(service, {
         eid: engagement.id as string,
         tid: tenantId,
         em: tokenRecipientEmail,

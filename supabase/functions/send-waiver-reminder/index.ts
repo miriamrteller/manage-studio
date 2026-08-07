@@ -231,7 +231,7 @@ Deno.serve(async (req) => {
         if (personEmail && sender) {
           try {
             const expireAt = Math.floor(deadline.getTime() / 1000);
-            const wt = await signWaiverToken({
+            const wt = await signWaiverToken(service, {
               eid: eng.id,
               tid: eng.tenant_id,
               em: personEmail,
@@ -280,7 +280,7 @@ Deno.serve(async (req) => {
         if (personEmail && sender) {
           try {
             const expireAt = Math.floor(deadline.getTime() / 1000);
-            const wt = await signWaiverToken({
+            const wt = await signWaiverToken(service, {
               eid: eng.id,
               tid: eng.tenant_id,
               em: personEmail,

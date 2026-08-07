@@ -140,7 +140,7 @@ export async function applyEnrolmentPaymentDunningStep(
 
   if (baseUrl) {
     try {
-      const payLink = await buildEnrolmentPayUrl({
+      const payLink = await buildEnrolmentPayUrl(service, {
         appBaseUrl: baseUrl,
         engagementId,
         tenantId: updated.tenant_id as string,

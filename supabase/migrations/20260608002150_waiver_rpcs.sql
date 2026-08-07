@@ -76,6 +76,64 @@ REVOKE EXECUTE ON FUNCTION get_engagement_person_id(UUID) FROM PUBLIC;
 GRANT  EXECUTE ON FUNCTION get_engagement_person_id(UUID) TO authenticated;
 
 -- =============================================================================
+-- RPC: get_tenant_waiver_link_secret — service_role only.
+-- Per-tenant HMAC secret for waiver/pay link tokens (key-id pattern: the
+-- verifier reads tid from the unverified payload purely as a lookup key,
+-- then verifies against this secret). Generated lazily on first use so
+-- provisioning needs no change; never entered or seen by a human.
+-- Distinct from WAIVER_HMAC_KEY_V* (evidence seal), which deliberately
+-- stays OUT of the database — a seal stored with the thing it seals
+-- proves nothing.
+-- =============================================================================
+CREATE OR REPLACE FUNCTION get_tenant_waiver_link_secret(p_tenant_id UUID)
+RETURNS TEXT
+LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public, extensions AS $$
+DECLARE
+  enc_key  TEXT;
+  v_secret TEXT;
+BEGIN
+  IF NOT is_service_role() THEN
+    RAISE EXCEPTION 'get_tenant_waiver_link_secret: service_role only';
+  END IF;
+
+  enc_key := get_app_encryption_key();
+
+  SELECT pgp_sym_decrypt(t.waiver_link_secret_enc, enc_key)
+    INTO v_secret
+    FROM tenants t
+   WHERE t.id = p_tenant_id
+     AND t.waiver_link_secret_enc IS NOT NULL;
+
+  IF v_secret IS NOT NULL THEN
+    RETURN v_secret;
+  END IF;
+
+  -- First use for this tenant: generate, persist, return. The WHERE guard
+  -- makes concurrent first calls converge on whichever write lands first.
+  v_secret := encode(gen_random_bytes(32), 'base64');
+  UPDATE tenants
+     SET waiver_link_secret_enc = pgp_sym_encrypt(v_secret, enc_key)
+   WHERE id = p_tenant_id
+     AND waiver_link_secret_enc IS NULL;
+
+  SELECT pgp_sym_decrypt(t.waiver_link_secret_enc, enc_key)
+    INTO v_secret
+    FROM tenants t
+   WHERE t.id = p_tenant_id;
+
+  IF v_secret IS NULL THEN
+    RAISE EXCEPTION 'get_tenant_waiver_link_secret: unknown tenant %', p_tenant_id;
+  END IF;
+
+  RETURN v_secret;
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION get_tenant_waiver_link_secret(UUID) FROM PUBLIC;
+GRANT  EXECUTE ON FUNCTION get_tenant_waiver_link_secret(UUID) TO service_role;
+
+-- =============================================================================
 -- After deploy, schedule the waiver deadline checker via pg_cron + pg_net:
 --
 -- SELECT cron.schedule(

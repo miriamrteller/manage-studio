@@ -28,10 +28,9 @@ Deno.serve(async (req) => {
     const rawToken = extractWaiverToken(req.headers.get("authorization"));
     if (!rawToken) return jsonResponse({ error: "Missing or invalid WaiverToken" }, 401);
 
-    const payload = await verifyWaiverToken(rawToken);
-    if (!payload) return jsonResponse({ error: "WaiverToken invalid or expired" }, 401);
-
     const service = createServiceClient();
+    const payload = await verifyWaiverToken(service, rawToken);
+    if (!payload) return jsonResponse({ error: "WaiverToken invalid or expired" }, 401);
 
     // Load the engagement and verify it belongs to this token's tenant + engagement
     const { data: eng, error: engError } = await service

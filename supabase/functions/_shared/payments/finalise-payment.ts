@@ -91,7 +91,7 @@ async function sendConfirmationEmail(
     const expireAt = params.waiverDeadline
       ? Math.floor(new Date(params.waiverDeadline).getTime() / 1000)
       : Math.floor(Date.now() / 1000) + 7 * 24 * 3600;
-    const wt = await signWaiverToken({
+    const wt = await signWaiverToken(service, {
       eid: params.engagementId,
       tid: params.tenantId,
       em: payloadPreview.recipientEmail,

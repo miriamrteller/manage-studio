@@ -129,8 +129,13 @@ is what they need anyway.
 
 ## Known-open, deliberately
 
-- **`WAIVER_LINK_SECRET` should be per-tenant.** A leak forges links for every
-  tenant; the `tid` in the payload is no defence since a holder can mint any.
+- **`WAIVER_LINK_SECRET` is now per-tenant** (`tenants.waiver_link_secret_enc`,
+  generated lazily by `get_tenant_waiver_link_secret`, service_role only; the
+  verifier reads `tid` from the unverified payload as a lookup key). The env
+  var is gone from `.env*` and the Edge secret sync. Outstanding links signed
+  with the old platform secret no longer verify — pre-launch, none are real.
+  NOTE: signing/verification now needs the DB encryption key, so on prod no
+  waiver/pay link works until the owner inserts it — same gate as credentials.
 - **`send-otp-email` has no rate limiting.** `send-otp-sms` does. It is reachable
   with only the public key, so it is an open email-sending endpoint.
 - **Five functions call `createClient` directly** instead of the shared
