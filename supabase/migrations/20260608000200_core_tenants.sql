@@ -129,8 +129,9 @@ CREATE TABLE tenants (
   onboarding_status             TEXT        NOT NULL DEFAULT 'pending'
                                 CHECK (onboarding_status IN ('pending','complete')),
   -- Payment capture (money movement). Slug validated in app/Zod — no Postgres CHECK enum.
-  -- Allowed app slugs: stripe|mock|grow|icount|invoice4u|ypay
-  payment_provider              TEXT        NOT NULL DEFAULT 'stripe',
+  -- Allowed app slugs: stripe|mock|grow|icount|invoice4u|ypay|tranzila
+  -- Default matches provision_tenant (IL-only platform, Grow bundled product).
+  payment_provider              TEXT        NOT NULL DEFAULT 'grow',
   payment_provider_public_key   TEXT,
   payment_provider_secret_enc   BYTEA,
   payment_provider_webhook_enc  BYTEA,
@@ -144,8 +145,9 @@ CREATE TABLE tenants (
                                 CHECK (tranzila_terminal_name IS NULL
                                   OR tranzila_terminal_name ~ '^[a-z][a-z0-9]{2,15}$'),
   -- Invoicing / tax documents (separate from payment capture)
-  -- Allowed app slugs: green_invoice|grow|icount|yesh|tranzila
-  invoicing_provider            TEXT        NOT NULL DEFAULT 'green_invoice',
+  -- Allowed app slugs: green_invoice|mock|grow|icount|invoice4u|ypay|tranzila|yesh
+  -- Default matches provision_tenant (Grow bundles clearing + tax documents).
+  invoicing_provider            TEXT        NOT NULL DEFAULT 'grow',
   invoicing_account_id          TEXT,
   invoicing_api_key_enc         BYTEA,
   invoicing_secret_enc          BYTEA,
