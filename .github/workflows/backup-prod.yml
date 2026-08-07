@@ -37,6 +37,19 @@ jobs:
       AWS_REQUEST_CHECKSUM_CALCULATION: when_required
       AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
     steps:
+      # Free-tier Supabase pauses projects idle at the API gateway for ~7 days,
+      # and internal pg_cron activity does not reliably count. One real REST
+      # request per day per project keeps both alive until prod moves to Pro
+      # (planned before the first paying tenant). Publishable keys are public
+      # by design. Deliberately BEFORE the secrets gate so it works while the
+      # R2 secrets are still unset.
+      - name: Keepalive ping (prod + dev)
+        run: |
+          curl -sf -o /dev/null "https://oogxajjanbyqhljxcmql.supabase.co/rest/v1/verticals?select=id&limit=1" \
+            -H "apikey: sb_publishable_-bZQ2R-dGyWCeeN1hJo_dA_CGHhbOR9" && echo "prod ping ok"
+          curl -sf -o /dev/null "https://acmujrhavgbamdilzuew.supabase.co/rest/v1/verticals?select=id&limit=1" \
+            -H "apikey: sb_publishable_0tpFmqEIG_0eM4yJMMtk5g_GBJHffM1" && echo "dev ping ok"
+
       - name: Check secrets are configured
         id: gate
         run: |
