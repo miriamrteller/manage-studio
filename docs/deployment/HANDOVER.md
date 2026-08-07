@@ -164,8 +164,13 @@ is what they need anyway.
   deployed functions that no longer exist in the repo (`stripe-webhook`,
   `rapyd-webhook`, `tranzila-payment-callback`, `create-payment-intent`,
   `create-payment-link`, `run-invoice-retry`).
-- **No backups.** Free tier has no PITR and no daily backups. A `pg_dump` job was
-  planned and not built. **Do this before real payment data lands.**
+- **Backups: workflow built, waiting on R2.** Nightly encrypted dump to
+  Cloudflare R2 via GitHub Actions (`.github/workflows/backup-prod.yml`;
+  procedure + owner setup in `BACKUP-RESTORE-RUNBOOK.md`). The job no-ops
+  with a notice until the owner enables R2, creates the bucket + API token
+  and sets four repo secrets. **Must be live and restore-rehearsed before
+  real payment data lands.** Supabase Storage files (waiver/document PDFs)
+  are NOT covered — separate follow-up.
 - **Twilio/WhatsApp** deferred; platform vs per-tenant undecided.
 - **Cloudflare Email Sending needs the Workers Paid plan.** The account is on
   Free, where outbound sending is *not available* — every Email Sending endpoint
