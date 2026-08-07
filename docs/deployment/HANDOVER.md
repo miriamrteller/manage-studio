@@ -211,8 +211,18 @@ is what they need anyway.
 
 **C** — Edge secrets (`pnpm secrets:edge`, `pnpm secrets:email`) + redeploy.
 Blocked on the Cloudflare values.
-**D** — Cloudflare Workers: wildcard route `*.opalswift.com/*`, proxied wildcard
-DNS, build vars, auth redirect URL. `apps/web/wrangler.jsonc` is written but
-never deployed.
+**D** — ✅ **deployed 2026-08-07** (`opalswift-app`, routes `*.opalswift.com/*`
++ `app.opalswift.com/*`). Build vars live in `apps/web/.env.production`
+(gitignored, all public values; it must pin every var `.env.local` defines,
+because `.env.local` loads in ALL Vite modes). Bundle verified: prod ref and
+key baked in, zero dev references, no sourcemaps. Stack proven end-to-end via
+edge probe (forced SNI to the zone IP → HTTP 200, valid TLS, SPA served).
+Two owner steps remain: (1) proxied wildcard DNS — zone `opalswift.com`, type
+`A`, name `*`, value `192.0.2.1` (placeholder; the proxy intercepts),
+proxy ON; (2) Supabase Auth → URL Configuration → add
+`https://creativeballet.opalswift.com/auth/callback` to Redirect URLs (the
+CLI token lives in the OS credential store, so this is dashboard-only).
+Legal URLs are still empty — footer links hidden until set; filling them
+means rebuild + `wrangler deploy`, not just a config change.
 **E** — save provider credentials, Test connection green, one real end-to-end
 charge, confirm the provider's notify URL points at `handle-payment-event`.
