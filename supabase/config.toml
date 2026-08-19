@@ -267,3 +267,10 @@ enabled = true
 verify_jwt = true
 entrypoint = "./functions/verify-whatsapp-otp/index.ts"
 
+
+# Read-only CRM contacts feed for the mobile-crm app (v1 contract).
+# JWT verified at the gateway; the function additionally requires tenant_admin.
+[functions.crm-contacts]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/crm-contacts/index.ts"
