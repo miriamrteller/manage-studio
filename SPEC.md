@@ -379,24 +379,32 @@ Manage Studio is the **system of record for enrolment pricing consistency**. Thi
 - Letting Stripe dashboard tax settings override per-enrolment amounts.
 - Recomputing VAT inside the Morning/Green Invoice adapter from gross catalogue price.
 
-#### 2.5.3 Dev schema change workflow (V1 — edit base migrations)
+#### 2.5.3 Schema change workflow (additive migrations — production era)
 
-When changing core columns in **dev only** (no production tenants yet):
+> **Policy flip — 2026-08-19.** Production hardening brought a production
+> database online, so the V1 pre-production workflow (edit base migrations in
+> place → `reset_dev_db.sql` → replay) is **retired**. Schema changes are now
+> **additive-only** (§1.8): a NEW timestamped migration file, never an edit to
+> the `20260608*` base chain, and **no dev reset unless the owner explicitly
+> asks for one**. The squash-era plans stay as history in
+> `docs/plans/v1-migration-squash-*.md`.
 
-1. Edit the **original** migration file (e.g. add or drop a `tenants` column in
-   `20260608000200_core_tenants.sql`). Do not layer a one-off `ALTER` migration.
+1. Create a new migration `supabase/migrations/<YYYYMMDDHHMMSS>_<name>.sql`.
+   Additive rules (§1.8): add → deploy → verify → drop in a **later**
+   migration. Never edit, rename or delete an already-pushed migration file —
+   that desyncs `schema_migrations` on prod and on every preview branch.
 
-2. **Find the FINAL definition of any function you touch — it is often not the
-   first one.** Several objects are defined early and then replaced later, and
-   editing the earlier copy is a silent no-op because the later one wins.
-   Known cases:
+2. **Find the FINAL definition of any function you replace — it is often not
+   the first one.** Several objects are defined early in the base chain and
+   replaced later; basing your `CREATE OR REPLACE` on an earlier copy silently
+   reverts the later fix. Known cases:
    - `get_tenant_config_by_subdomain` → final in `20260608002500_feature_flag_system.sql`
      (STEP 9, "replaces 001800 version"), **not** `20260608001800_public_rpcs.sql`
    - `provision_tenant` → final in `20260608002500`, not `20260608002400`
    - `save_tenant_grow_credentials` → final in `20260608001600_finance.sql`
 
-   Always `grep -rn "<function name>" supabase/migrations/` and edit the
-   **highest-numbered** occurrence.
+   Always `grep -rn "<function name>" supabase/migrations/` and start from the
+   **highest-numbered** occurrence (which may now be a later additive file).
 
 3. Grep the repo for the column name and its camelCase form — align Edge
    Functions, web, generated types and seeds.
@@ -404,32 +412,22 @@ When changing core columns in **dev only** (no production tenants yet):
 4. Update `supabase/seed.sql` — both the `INSERT` column list **and** the
    `ON CONFLICT DO UPDATE` list. Check the vertical seeds
    (`seed-artclass|photographer|sofer|therapist.sql`) and `seed-finance.sql` too.
+   Seeds are upserts and must stay re-runnable against a dev DB that is never
+   reset.
 
-5. Reset and re-apply. **This project uses a remote dev project — there is no
-   local Docker stack, so `pnpm db:reset-local` does not apply:**
+5. Apply and regenerate — dev first (**verify the link**: `supabase link`
+   retargets the whole working copy; prod schema changes go through the
+   go-live runbook, never casually):
    ```bash
-   # 1. Run supabase/reset_dev_db.sql in the Supabase SQL editor (clears
-   #    migration history + drops all objects). It self-guards: it aborts if the
-   #    database does not carry a known dev encryption key.
-   pnpm db:push          # replays the whole chain
+   pnpm db:push          # applies only the new migration(s)
    pnpm db:types:all     # NOT db:types — :all also refreshes edge email-dist
-   pnpm seed:dev -- --all-skins --finance
+   pnpm seed:dev -- --all-skins --finance   # only when seed data changed
    ```
-   `db:types:all` should report **Unchanged** if you already hand-edited
-   `database.types.ts`. A diff means the chain did not replay as expected — read
-   it before continuing.
 
-6. **Delete any open Supabase preview branch, or expect its check to fail.**
-   Preview branches have their own database with their own `schema_migrations`
-   table; resetting dev does not touch them. A branch whose preview DB already
-   applied a migration you have since renamed or deleted fails with:
-
-   > `Remote migration versions not found in local migrations directory.`
-
-   Fresh PR branches are fine — they replay the current chain from scratch. It
-   is long-lived branches, created before the edit, that break. Delete the
-   preview branch (Supabase dashboard → Branches) so it re-seeds, and rebase or
-   recreate the git branch.
+6. Preview branches: fresh PR branches replay the whole chain including your
+   new file, so additive changes are safe. The *"Remote migration versions not
+   found in local migrations directory"* failure only happens when a migration
+   is renamed or deleted — which additive-only forbids anyway.
 
 7. Run `pnpm -C apps/web test` and `pnpm -C apps/web exec tsc --noEmit`. Fixtures
    that mock tenant rows usually need the new column too.
@@ -852,7 +850,7 @@ Landing pages and public class listings need data before a user logs in. The acc
 
 ⏱️ **TIMING:** Third-party credentials (Twilio, Resend, Stripe) are configured **after** schema deploy via admin UI or manual runbook. See [Third-Party Services Setup](docs/deployment/THIRD_PARTY_SERVICES.md) and [docs/MANUAL_OPERATIONS_RUNBOOK.md](docs/MANUAL_OPERATIONS_RUNBOOK.md).
 
-**Authoritative SQL:** `supabase/migrations/*.sql` — apply in filename order. **Dev-only schema edits:** change the original migration file (e.g. `001` for `tenants`), then reset — do not stack `ALTER` migrations while iterating locally (§2.5.3). Dev reset: `pnpm db:reset-local` or `supabase/reset_dev_db.sql` then `pnpm db:push`; run `supabase/seed.sql`; `pnpm db:types`; `pnpm email:bundle`.
+**Authoritative SQL:** `supabase/migrations/*.sql` — apply in filename order. **Schema changes are additive-only since 2026-08-19** (production DB live): new timestamped migration files, never edits to the `20260608*` base chain, and no dev reset unless the owner explicitly asks (§2.5.3). After a change: `pnpm db:push`; `pnpm db:types:all`; `pnpm email:bundle`; re-run seeds only if they changed.
 
 #### 4.2.0 Implemented schema index (V1 slice)
 
