@@ -1058,6 +1058,103 @@ export type Database = {
           },
         ]
       }
+      leads: {
+        Row: {
+          channel: string
+          company: string | null
+          converted_account_id: string | null
+          converted_at: string | null
+          created_at: string
+          deal_value_minor: number | null
+          email: string | null
+          id: string
+          interest: string | null
+          last_communication_note: string | null
+          last_contacted_at: string | null
+          marketing_consent: boolean
+          name: string
+          next_follow_up_at: string | null
+          note: string | null
+          offering_id: string | null
+          phone: string | null
+          source_ref: string | null
+          stage: string
+          tenant_id: string
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          channel?: string
+          company?: string | null
+          converted_account_id?: string | null
+          converted_at?: string | null
+          created_at?: string
+          deal_value_minor?: number | null
+          email?: string | null
+          id?: string
+          interest?: string | null
+          last_communication_note?: string | null
+          last_contacted_at?: string | null
+          marketing_consent?: boolean
+          name: string
+          next_follow_up_at?: string | null
+          note?: string | null
+          offering_id?: string | null
+          phone?: string | null
+          source_ref?: string | null
+          stage?: string
+          tenant_id: string
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          channel?: string
+          company?: string | null
+          converted_account_id?: string | null
+          converted_at?: string | null
+          created_at?: string
+          deal_value_minor?: number | null
+          email?: string | null
+          id?: string
+          interest?: string | null
+          last_communication_note?: string | null
+          last_contacted_at?: string | null
+          marketing_consent?: boolean
+          name?: string
+          next_follow_up_at?: string | null
+          note?: string | null
+          offering_id?: string | null
+          phone?: string | null
+          source_ref?: string | null
+          stage?: string
+          tenant_id?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_converted_account_id_fkey"
+            columns: ["converted_account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_offering_id_fkey"
+            columns: ["offering_id"]
+            isOneToOne: false
+            referencedRelation: "offerings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_log: {
         Row: {
           body_preview: string | null

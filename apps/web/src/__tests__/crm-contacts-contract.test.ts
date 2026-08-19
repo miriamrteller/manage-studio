@@ -33,6 +33,30 @@ function baseInput(overrides: Partial<CrmContactsInput> = {}): CrmContactsInput 
     payments: [],
     offerings: [],
     notifications: [],
+    leads: [],
+    ...overrides,
+  };
+}
+
+function partyLead(overrides: Partial<CrmContactsInput['leads'][number]> = {}) {
+  return {
+    id: 'lead-1',
+    name: 'Rivka Levy',
+    company: null,
+    title: null,
+    email: 'rivka@example.com',
+    phone: '+972521111111',
+    stage: 'contacted',
+    channel: 'whatsapp',
+    interest: 'Birthday party',
+    offering_id: null,
+    deal_value_minor: 45000,
+    note: 'Wants a Sunday slot',
+    next_follow_up_at: '2026-08-25T09:00:00Z',
+    last_contacted_at: '2026-08-18T14:00:00Z',
+    last_communication_note: 'Sent party package options',
+    marketing_consent: true,
+    converted_account_id: null,
     ...overrides,
   };
 }
@@ -101,6 +125,7 @@ describe('mapContacts contract compliance', () => {
 
   it('maps the guardian account: Won stage, real deal value, real touchpoints', () => {
     const [contact] = mapContacts(sternFamily()).contacts;
+    expect(contact.kind).toBe('client');
     expect(contact).toMatchObject({
       id: 'acc-1',
       name: 'Miriam R Stern',
@@ -164,6 +189,99 @@ describe('stage mapping table', () => {
       engagements: [{ person_id: 'p', status: 'cancelled', payment_received_at: null }],
     });
     expect(mapContacts(unpaid).contacts[0].previousClient).toBe(false);
+  });
+});
+
+describe('leads — separate entity, same pipeline', () => {
+  it('maps a lead with its own stage/channel/interest and validates against the contract', () => {
+    const envelope = mapContacts(baseInput({ leads: [partyLead()] }));
+    expect(contactsResponseSchemaV1.safeParse(envelope).success).toBe(true);
+
+    const [lead] = envelope.contacts;
+    expect(lead).toMatchObject({
+      id: 'lead-1',
+      kind: 'lead',
+      stage: 'Contacted',
+      channel: 'WhatsApp',
+      dealValue: 450,
+      lastProductInquired: 'Birthday party',
+      lastProductPurchased: null, // a lead has bought nothing by definition
+      previousClient: false,
+      marketingConsent: true,
+      note: 'Wants a Sunday slot',
+      lastCommunicationNote: 'Sent party package options',
+      nextFollowUpAt: '2026-08-25T09:00:00Z',
+    });
+  });
+
+  it('keeps leads and enrolled clients as separate contacts in one envelope', () => {
+    const input = sternFamily();
+    input.leads = [partyLead()];
+    const { contacts } = mapContacts(input);
+    expect(contacts.map((c) => `${c.name}:${c.kind}:${c.stage}`).sort()).toEqual([
+      'Miriam R Stern:client:Won',
+      'Rivka Levy:lead:Contacted',
+    ]);
+  });
+
+  it('excludes converted leads — the account takes over as the Won contact', () => {
+    const input = sternFamily();
+    input.leads = [
+      partyLead({ id: 'lead-2', converted_account_id: 'acc-1' }),
+      partyLead({ id: 'lead-3', name: 'Still Open' }),
+    ];
+    const ids = mapContacts(input).contacts.map((c) => c.id);
+    expect(ids).not.toContain('lead-2');
+    expect(ids).toContain('lead-3');
+  });
+
+  it('lead stage lost maps to Lost; offering_id backs lastProductInquired when interest is empty', () => {
+    const input = baseInput({
+      offerings: [{ id: 'off-9', name: 'Toddler Ballet Trial' }],
+      leads: [partyLead({ stage: 'lost', interest: null, offering_id: 'off-9' })],
+    });
+    const [lead] = mapContacts(input).contacts;
+    expect(lead.stage).toBe('Lost');
+    expect(lead.lastProductInquired).toBe('Toddler Ballet Trial');
+  });
+
+  it('a bare lead gets nulls, not placeholders', () => {
+    const input = baseInput({
+      leads: [
+        partyLead({
+          company: null,
+          title: null,
+          email: null,
+          phone: null,
+          interest: null,
+          deal_value_minor: null,
+          note: null,
+          next_follow_up_at: null,
+          last_contacted_at: null,
+          last_communication_note: null,
+          marketing_consent: false,
+          stage: 'new',
+          channel: 'email',
+        }),
+      ],
+    });
+    const envelope = mapContacts(input);
+    expect(contactsResponseSchemaV1.safeParse(envelope).success).toBe(true);
+    expect(envelope.contacts[0]).toMatchObject({
+      stage: 'New',
+      channel: 'Email',
+      company: null,
+      title: null,
+      email: null,
+      phone: null,
+      dealValue: null,
+      note: null,
+      lastContactedAt: null,
+      nextFollowUpAt: null,
+      lastCommunicationNote: null,
+      lastProductInquired: null,
+      marketingConsent: false,
+    });
   });
 });
 
