@@ -5,6 +5,7 @@ import type {
   CrmAccountRow,
   CrmContactPrefsRow,
   CrmEngagementRow,
+  CrmLeadRow,
   CrmNotificationRow,
   CrmOfferingRow,
   CrmPaymentRow,
@@ -15,6 +16,9 @@ import type {
 /**
  * crm-contacts — read-only GET serving the mobile-crm v1 data contract
  * (see _shared/crm-contract/contact.v1.ts for the vendored source of truth).
+ * Serves leads ∪ clients: pipeline inquiries from the `leads` table plus
+ * enrolled/billing relationships derived from accounts+engagements — two
+ * distinct entities, tagged via the contract's optional `kind` field.
  *
  * Auth: caller's Supabase JWT → user_profiles must carry tenant_admin (or
  * super_admin). All queries are scoped to the caller's own tenant; the
@@ -81,7 +85,7 @@ Deno.serve(async (req) => {
   const tenantId = profile.tenant_id as string;
 
   try {
-    const [tenant, accounts, people, prefs, engagements, payments, offerings, notifications] =
+    const [tenant, accounts, people, prefs, engagements, payments, offerings, notifications, leads] =
       await Promise.all([
         service.from("tenants").select("name, currency").eq("id", tenantId).single(),
         service.from("accounts").select("id, person_id").eq("tenant_id", tenantId),
@@ -100,9 +104,14 @@ Deno.serve(async (req) => {
           .eq("tenant_id", tenantId)
           .order("created_at", { ascending: false })
           .limit(1000),
+        service.from("leads")
+          .select(
+            "id, name, company, title, email, phone, stage, channel, interest, offering_id, deal_value_minor, note, next_follow_up_at, last_contacted_at, last_communication_note, marketing_consent, converted_account_id",
+          )
+          .eq("tenant_id", tenantId),
       ]);
 
-    const firstError = [tenant, accounts, people, prefs, engagements, payments, offerings, notifications]
+    const firstError = [tenant, accounts, people, prefs, engagements, payments, offerings, notifications, leads]
       .map((r) => r.error)
       .find(Boolean);
     if (firstError || !tenant.data) {
@@ -119,6 +128,7 @@ Deno.serve(async (req) => {
       payments: (payments.data ?? []) as CrmPaymentRow[],
       offerings: (offerings.data ?? []) as CrmOfferingRow[],
       notifications: (notifications.data ?? []) as CrmNotificationRow[],
+      leads: (leads.data ?? []) as CrmLeadRow[],
     });
 
     const parsed = contactsResponseSchemaV1.safeParse(envelope);

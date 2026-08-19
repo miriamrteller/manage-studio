@@ -3,11 +3,17 @@
  * Consumed by the crm-contacts edge function (Deno) and by the vitest
  * contract test in apps/web (Node) — keep this file dependency-free.
  *
- * A CRM "contact" is a billing relationship, not a student:
- *   - one contact per account (the guardian / primary contact person), and
- *   - one contact per adult student who has no account but has enrolments.
+ * The list is the union of two DISTINCT entities, tagged via the contract's
+ * optional `kind` field:
+ *   - `client` — a billing relationship: one contact per account (the
+ *     guardian / primary contact person), plus one per adult student who has
+ *     no account but has enrolments. At best a Won lead, in CRM terms.
+ *   - `lead` — a row of the `leads` table: an inquiry still in the pipeline
+ *     (New/Contacted/Qualified/Proposal/Lost). A converted lead
+ *     (converted_account_id set) is EXCLUDED — its account serves as the Won
+ *     client from then on, so the same relationship never appears twice.
  *
- * Stage ← enrolment status of ALL engagements in the contact's unit
+ * Client stage ← enrolment status of ALL engagements in the contact's unit
  * (the account's students, or the standalone adult), first match wins:
  *
  *   | condition on the unit's engagements                        | stage    |
@@ -31,7 +37,7 @@
  * it is the constant "Website" until lead-source capture lands in phase 2.
  */
 
-import type { ContactsResponseV1, ContactV1, StageV1 } from "./contact.v1.ts";
+import type { ChannelV1, ContactsResponseV1, ContactV1, StageV1 } from "./contact.v1.ts";
 
 export interface CrmTenantRow {
   name: string;
@@ -79,6 +85,26 @@ export interface CrmOfferingRow {
   name: string;
 }
 
+export interface CrmLeadRow {
+  id: string;
+  name: string;
+  company: string | null;
+  title: string | null;
+  email: string | null;
+  phone: string | null;
+  stage: string;
+  channel: string;
+  interest: string | null;
+  offering_id: string | null;
+  deal_value_minor: number | null;
+  note: string | null;
+  next_follow_up_at: string | null;
+  last_contacted_at: string | null;
+  last_communication_note: string | null;
+  marketing_consent: boolean;
+  converted_account_id: string | null;
+}
+
 export interface CrmNotificationRow {
   recipient_person_id: string | null;
   status: string;
@@ -97,7 +123,24 @@ export interface CrmContactsInput {
   payments: CrmPaymentRow[];
   offerings: CrmOfferingRow[];
   notifications: CrmNotificationRow[];
+  leads: CrmLeadRow[];
 }
+
+/** DB lowercase enums → contract enums. Unknown values fall back defensively. */
+const LEAD_STAGES: Record<string, StageV1> = {
+  new: "New",
+  contacted: "Contacted",
+  qualified: "Qualified",
+  proposal: "Proposal",
+  lost: "Lost",
+};
+const LEAD_CHANNELS: Record<string, ChannelV1> = {
+  email: "Email",
+  website: "Website",
+  whatsapp: "WhatsApp",
+  linkedin: "LinkedIn",
+  instagram: "Instagram",
+};
 
 const OPEN_STATUSES = new Set(["pending_payment", "pending_waiver", "pending_offer"]);
 const ENDED_STATUSES = new Set(["cancelled", "withdrawn"]);
@@ -226,6 +269,34 @@ export function mapContacts(input: CrmContactsInput): ContactsResponseV1 {
         : null,
       lastProductPurchased,
       lastProductInquired: null,
+      kind: "client",
+    });
+  }
+
+  for (const lead of input.leads) {
+    if (lead.converted_account_id !== null) continue; // the account is the contact now
+    const interest = nonEmpty(lead.interest) ??
+      (lead.offering_id !== null ? offeringNameById.get(lead.offering_id) ?? null : null);
+    contacts.push({
+      id: lead.id,
+      name: lead.name,
+      company: nonEmpty(lead.company),
+      title: nonEmpty(lead.title),
+      email: nonEmpty(lead.email),
+      phone: nonEmpty(lead.phone),
+      stage: LEAD_STAGES[lead.stage] ?? "New",
+      channel: LEAD_CHANNELS[lead.channel] ?? "Website",
+      dealValue: lead.deal_value_minor !== null ? Math.round(lead.deal_value_minor) / 100 : null,
+      lastContactedAt: lead.last_contacted_at,
+      nextFollowUpAt: lead.next_follow_up_at,
+      previousClient: false,
+      marketingConsent: lead.marketing_consent,
+      owner: input.tenant.name,
+      note: nonEmpty(lead.note),
+      lastCommunicationNote: nonEmpty(lead.last_communication_note),
+      lastProductPurchased: null, // leads have bought nothing yet by definition
+      lastProductInquired: interest,
+      kind: "lead",
     });
   }
 

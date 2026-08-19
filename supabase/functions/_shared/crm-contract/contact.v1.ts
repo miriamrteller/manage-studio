@@ -56,6 +56,12 @@ export const contactSchemaV1 = z.object({
   lastCommunicationNote: z.string().nullable(),
   lastProductPurchased: z.string().nullable(),
   lastProductInquired: z.string().nullable(),
+  /**
+   * Additive optional field (non-breaking per the versioning rule):
+   * distinguishes pipeline leads from enrolled/billing clients. Absent means
+   * the backend predates the field; the app treats absent as unspecified.
+   */
+  kind: z.enum(["lead", "client"]).optional(),
 });
 
 export const contactsResponseSchemaV1 = z.object({
@@ -73,5 +79,6 @@ export const DEFAULT_CURRENCY = "USD";
 
 export type StageV1 = z.infer<typeof stageSchemaV1>;
 export type ChannelV1 = z.infer<typeof channelSchemaV1>;
+export type KindV1 = NonNullable<z.infer<typeof contactSchemaV1>["kind"]>;
 export type ContactV1 = z.infer<typeof contactSchemaV1>;
 export type ContactsResponseV1 = z.infer<typeof contactsResponseSchemaV1>;
