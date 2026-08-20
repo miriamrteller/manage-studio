@@ -9,6 +9,7 @@ Agent-optimized implementation plans. Create before coding (see `.instructions.m
 
 | Date | Feature | Status |
 | --- | --- | --- |
+| 2026-08-19 | [CRM lead capture — multi-tenant, all channels](crm-lead-capture-channels.md) | **ACTIVE** — email ingest shipped (PR #52→#54→#55 stack); step 1 (self-onboard hardening) in progress; step 2 = capture endpoint + admin leads page |
 | 2026-07 | [Native scheduling + Google Calendar](scheduling/00-overview.md) | **S0–S5 ✅** — [GCal](scheduling/google-calendar-integration.md) · [deploy/test](scheduling/deployment-and-testing.md); live payments/WhatsApp last |
 | 2026-07-20 | [Invoice4U IL bundled](finance/invoice4u/00-overview.md) | **ACTIVE** — overnight mock U1→U4-mock on `feat/invoice4u-provider` |
 | 2026-06-29 | [iCount IL (mock-first)](finance/icount/00-overview.md) | **Mock phase ✅** — fallback; live deferred |
