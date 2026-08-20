@@ -12,6 +12,7 @@ import {
   extractPhone,
   parseLeadEmail,
 } from '../../../../supabase/functions/_shared/crm-contract/parse-lead-email.ts';
+import { channelFromSrc } from '../../../../supabase/functions/_shared/crm-contract/lead-ingest-core.ts';
 
 describe('parseLeadEmail', () => {
   it('extracts a full English inquiry', () => {
@@ -93,6 +94,23 @@ describe('bodySnippet', () => {
     const snippet = bodySnippet('word '.repeat(200));
     expect(snippet!.length).toBeLessThanOrEqual(300);
     expect(snippet!.endsWith('…')).toBe(true);
+  });
+});
+
+describe('channelFromSrc — capture-link tags → lead channel', () => {
+  it.each([
+    ['instagram', 'instagram'],
+    ['  Instagram ', 'instagram'],
+    ['linkedin', 'linkedin'],
+    ['whatsapp', 'whatsapp'],
+    ['email', 'email'],
+    ['facebook', 'website'], // not in the contract enum — honestly website
+    ['tiktok', 'website'],
+    [null, 'website'],
+    [undefined, 'website'],
+    ['', 'website'],
+  ])('%s → %s', (src, expected) => {
+    expect(channelFromSrc(src as string | null | undefined)).toBe(expected);
   });
 });
 
