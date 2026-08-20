@@ -30,7 +30,11 @@ jobs:
     timeout-minutes: 30
     env:
       BUCKET: manage-studio-db-backups
-      GPG_RECIPIENT: 77C1129EBECF2E881EB861931750DBBC7A803D6C
+      # v2 key (2026-08-17): the v1 private key was lost to temp-folder cleanup
+      # before any readable backup existed. The 2026-08-17 nightly object in R2
+      # is encrypted to v1 and permanently unreadable — delete or let retention
+      # expire it. v2's private half lives in the password manager.
+      GPG_RECIPIENT: 78851A6D0ECC930F318E33E69199DE35E6163A41
       AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
       AWS_DEFAULT_REGION: auto
@@ -118,14 +122,20 @@ jobs:
           fi
           aws s3 ls "s3://${BUCKET}/nightly/" --endpoint-url "$ENDPOINT" | tail -3
 
-      - name: Apply retention lifecycle (idempotent)
+      # Non-fatal: an Object Read & Write token cannot set bucket lifecycle
+      # (AccessDenied, seen 2026-08-17) — and a failed retention step must not
+      # mark a SUCCESSFUL backup as a failed run. Either bump the R2 token to
+      # Admin Read & Write on this bucket, or set the two rules once in the
+      # dashboard (nightly/ 30d, monthly/ 400d); the step then succeeds/no-ops.
+      - name: Apply retention lifecycle (best-effort)
         if: steps.gate.outputs.ready == 'true'
         run: |
-          set -euo pipefail
           ENDPOINT="https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com"
-          aws s3api put-bucket-lifecycle-configuration --bucket "$BUCKET" --endpoint-url "$ENDPOINT" \
+          if ! aws s3api put-bucket-lifecycle-configuration --bucket "$BUCKET" --endpoint-url "$ENDPOINT" \
             --lifecycle-configuration '{
               "Rules": [
                 {"ID":"expire-nightly","Status":"Enabled","Filter":{"Prefix":"nightly/"},"Expiration":{"Days":30}},
                 {"ID":"expire-monthly","Status":"Enabled","Filter":{"Prefix":"monthly/"},"Expiration":{"Days":400}}
-              ]}'
+              ]}'; then
+            echo "::warning::Could not set R2 lifecycle rules (token lacks bucket admin). Backup itself SUCCEEDED. Set the rules once in the dashboard or upgrade the token — see BACKUP-RESTORE-RUNBOOK.md."
+          fi
