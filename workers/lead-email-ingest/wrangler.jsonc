@@ -7,7 +7,6 @@
     // Non-secret: the crm-lead-ingest edge function on the TARGET Supabase
     // project. Dev value committed; override per environment at deploy time.
     "CRM_INGEST_URL": "https://acmujrhavgbamdilzuew.supabase.co/functions/v1/crm-lead-ingest"
-    // Optional: "FORWARD_TO": "<verified Email Routing destination address>"
   }
   // Secret (set once per environment, never committed):
   //   npx wrangler secret put CRM_INGEST_SECRET

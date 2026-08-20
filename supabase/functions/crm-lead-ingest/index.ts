@@ -1,6 +1,8 @@
 import { z } from "npm:zod@3.22.4";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
-import { parseLeadEmail } from "../_shared/crm-contract/parse-lead-email.ts";
+import { sendHtmlEmail } from "../_shared/email-client.ts";
+import { resolveTenantSender } from "../_shared/notification-from.ts";
+import { parseLeadEmail, type ParsedLeadFields } from "../_shared/crm-contract/parse-lead-email.ts";
 
 /**
  * crm-lead-ingest — write path for automated lead capture (phase 2b).
@@ -21,6 +23,82 @@ import { parseLeadEmail } from "../_shared/crm-contract/parse-lead-email.ts";
  *   3. otherwise                            → new lead (stage new, channel
  *                                             email, marketing_consent false)
  */
+
+interface NotifyTenant {
+  id: string;
+  name: string;
+  subdomain: string;
+  language_default: string;
+  contact_email: string;
+  from_email: string | null;
+  from_email_verified_at: string | null;
+}
+
+function esc(value: string): string {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+/**
+ * Best-effort "new lead" alert to the studio's inbox via the platform's Email
+ * SENDING path. Deliberately not an Email Routing forward: forwards require a
+ * click-verified destination per studio — a per-tenant onboarding task, which
+ * the self-onboard rule bans (docs/plans/crm-lead-capture-channels.md).
+ * Reply-To is the lead's own address, so the studio answers the inquirer with
+ * one click. Failures are logged and never affect the capture.
+ */
+async function notifyTenantOfLead(
+  service: ReturnType<typeof createServiceClient>,
+  tenant: NotifyTenant,
+  fields: ParsedLeadFields,
+  outcome: "created" | "updated",
+): Promise<void> {
+  try {
+    const he = tenant.language_default === "he";
+    const subject = outcome === "created"
+      ? (he ? `ליד חדש: ${fields.name}` : `New lead: ${fields.name}`)
+      : (he ? `הודעה חדשה מליד קיים: ${fields.name}` : `New message from lead: ${fields.name}`);
+
+    const rows: Array<[string, string | null]> = [
+      [he ? "שם" : "Name", fields.name],
+      [he ? "אימייל" : "Email", fields.email],
+      [he ? "טלפון" : "Phone", fields.phone],
+      [he ? "מתעניין/ת ב" : "Interested in", fields.interest],
+      [he ? "ההודעה" : "Message", fields.lastCommunicationNote],
+    ];
+    const html = `<!doctype html><html dir="${he ? "rtl" : "ltr"}"><body>` +
+      `<p>${he ? "התקבלה פנייה חדשה במערכת הלידים" : "A new inquiry landed in your leads inbox"} (${esc(tenant.name)}).</p>` +
+      `<table cellpadding="4">` +
+      rows
+        .filter(([, value]) => value)
+        .map(([label, value]) => `<tr><td><b>${label}</b></td><td>${esc(value as string)}</td></tr>`)
+        .join("") +
+      `</table>` +
+      `<p>${he ? "ניתן להשיב ישירות למייל זה כדי לענות לפונה." : "Reply to this email to answer the inquirer directly."}</p>` +
+      `</body></html>`;
+
+    const sender = resolveTenantSender(tenant);
+    const send = await sendHtmlEmail({
+      to: tenant.contact_email,
+      from: sender.from,
+      subject,
+      html,
+      replyTo: fields.email ?? sender.replyTo,
+    });
+
+    await service.from("notification_log").insert({
+      tenant_id: tenant.id,
+      recipient_email: tenant.contact_email,
+      channel: "email",
+      template_name: "crm_new_lead",
+      subject,
+      body_preview: fields.lastCommunicationNote,
+      external_msg_id: send.id,
+      status: "sent",
+    });
+  } catch (err) {
+    console.error("crm-lead-ingest: lead notification failed (capture unaffected)", err);
+  }
+}
 
 const payloadSchema = z.object({
   tenantSubdomain: z.string().min(1),
@@ -67,7 +145,7 @@ Deno.serve(async (req) => {
 
     const { data: tenant, error: tenantError } = await service
       .from("tenants")
-      .select("id")
+      .select("id, name, subdomain, language_default, contact_email, from_email, from_email_verified_at")
       .eq("subdomain", payload.tenantSubdomain)
       .single();
     if (tenantError || !tenant) {
@@ -112,6 +190,7 @@ Deno.serve(async (req) => {
           .eq("id", open.id)
           .eq("tenant_id", tenantId);
         if (updateError) throw updateError;
+        await notifyTenantOfLead(service, tenant as NotifyTenant, fields, "updated");
         return json({ outcome: "updated", leadId: open.id });
       }
     }
@@ -142,6 +221,7 @@ Deno.serve(async (req) => {
       throw insertError;
     }
 
+    await notifyTenantOfLead(service, tenant as NotifyTenant, fields, "created");
     return json({ outcome: "created", leadId: created.id }, 201);
   } catch (err) {
     console.error("crm-lead-ingest: unhandled error", err);

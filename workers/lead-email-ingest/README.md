@@ -2,17 +2,25 @@
 
 Cloudflare Email Worker for phase 2b of the CRM integration. An email sent to
 `leads-<subdomain>@opalswift.com` becomes (or refreshes) a row in the `leads`
-table, via the `crm-lead-ingest` Supabase edge function. The worker never
-bounces a sender: capture failures are logged and the optional onward forward
-still runs, so a broken ingest can lose a CRM row but never a customer email.
+table, via the `crm-lead-ingest` Supabase edge function — which then SENDS the
+studio a "new lead" alert (Reply-To = the inquirer, so answering is one
+click). No Email Routing forwarding: forwards need a click-verified
+destination per studio, a per-tenant onboarding task the self-onboard rule
+bans (docs/plans/crm-lead-capture-channels.md). The worker never bounces a
+sender; capture failures are logged only.
 
 ```
-mum's email → Email Routing (opalswift.com MX, already enabled)
-            → this worker: parse MIME (postal-mime), extract text
+mum's email → Email Routing CATCH-ALL (opalswift.com MX, already enabled)
+            → this worker: leads-<subdomain>@ only, others dropped
+            → parse MIME (postal-mime), extract text
             → POST crm-lead-ingest (Bearer CRM_INGEST_SECRET)
                  dedupe on Message-ID → create lead / update open lead
-            → optional forward to the studio's real inbox (FORWARD_TO)
+                 → "new lead" alert email to tenants.contact_email
 ```
+
+**Self-onboard:** the catch-all is bound ONCE, platform-side. From then on
+`leads-<any-tenant>@opalswift.com` works the moment the tenant row exists —
+no per-tenant routing rules, ever.
 
 Field mapping lives in `supabase/functions/_shared/crm-contract/parse-lead-email.ts`
 (tested from apps/web): From → name/email, body regex → phone, subject →
@@ -38,18 +46,13 @@ channel `email`, `marketing_consent` false (opt-in), `source_ref` = Message-ID.
    # this directory:
    npm install && npx wrangler deploy
    ```
-3. **Route the address (dashboard — one click)**: Cloudflare dashboard →
-   opalswift.com → Email → Email Routing → Routing rules → Create address →
-   `leads-creativeballet@opalswift.com` → Action **Send to a Worker** →
-   `lead-email-ingest`. One custom address per tenant, same worker for all —
-   the worker reads the tenant subdomain out of the local part.
-4. **Optional onward forwarding**: add the studio inbox as a *verified
-   destination address* (Email Routing → Destination addresses; the studio
-   clicks the confirmation email), then set it as a var:
-   ```bash
-   npx wrangler deploy --var FORWARD_TO:info@creativeballetacademy.com
-   ```
-   (or add `FORWARD_TO` to `wrangler.jsonc` vars).
+3. **Bind the catch-all (dashboard — one click, ONCE, platform-wide)**:
+   Cloudflare dashboard → opalswift.com → Email → Email Routing →
+   Routing rules → **Catch-all address** → Action **Send to a Worker** →
+   `lead-email-ingest` → enable. The worker captures only
+   `leads-<subdomain>@` and silently drops everything else (same outcome an
+   unrouted address had before). Do NOT create per-tenant addresses — the
+   whole point is that new tenants need no routing setup.
 
 ## Verify
 
