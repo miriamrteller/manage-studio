@@ -12,6 +12,7 @@ const policy = { rootDomain: 'opalswift.com', configuredOrigin: 'https://crm.exa
 describe('isAllowedCrmOrigin', () => {
   it.each([
     'http://localhost:8081',
+    'http://localhost:5173', // apps/web Vite dev — /inquire form
     'https://crm.example.com',
     'https://crm.example.com/', // trailing slash normalised
     'https://creativeballet.opalswift.com',

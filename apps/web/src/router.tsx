@@ -41,6 +41,8 @@ import FinanceHubPage from "./pages/FinanceHubPage";
 import PaymentsLogPage from "./pages/PaymentsLogPage";
 import ExpensesPage from "./pages/ExpensesPage";
 import ExpenseCategoriesPage from "./pages/ExpenseCategoriesPage";
+import LeadsPage from "./pages/LeadsPage";
+import InquirePage from "./pages/InquirePage";
 import { LanguageProvider } from "./contexts/LanguageContext";
 
 function RootLayout() {
@@ -94,6 +96,7 @@ const router = createBrowserRouter([
       { path: 'enrol/complete', element: <EnrolCompletePage /> },
       { path: 'book', element: <BookingPage /> },
       { path: 'book/:offeringId', element: <BookingPage /> },
+      { path: 'inquire', element: <InquirePage /> },
       { path: 'dashboard', element: <DashboardRedirectPage /> },
 
       // ADMIN ROUTES
@@ -102,6 +105,7 @@ const router = createBrowserRouter([
       { path: "admin/people", element: <AdminRoute><Navigate to="/admin/students" replace /></AdminRoute> },
       { path: "admin/families", element: <AdminRoute><FamiliesPage /></AdminRoute> },
       { path: "admin/notifications", element: <AdminRoute><NotificationsPage /></AdminRoute> },
+      { path: "admin/leads", element: <AdminRoute><LeadsPage /></AdminRoute> },
       { path: "admin/appointments", element: <AdminRoute><AdminAppointmentsPage /></AdminRoute> },
       { path: "admin/families/:id", element: <AdminRoute><FamilyDetailPage /></AdminRoute> },
       { path: "admin/finance", element: <AdminRoute><FinanceHubPage /></AdminRoute> },

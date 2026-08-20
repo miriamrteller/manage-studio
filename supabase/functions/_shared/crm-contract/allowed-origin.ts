@@ -2,7 +2,8 @@
  * CORS origin policy for the CRM endpoints — pure and testable.
  *
  * Allowed, in order:
- *   1. http://localhost:8081            — Expo web dev server
+ *   1. http://localhost:8081 (Expo web dev) and http://localhost:5173
+ *      (apps/web Vite dev — the /inquire form posts from there)
  *   2. one explicitly configured origin — CRM_CONTACTS_ALLOWED_ORIGIN secret
  *   3. https://<subdomain>.<rootDomain> — any single-label subdomain of the
  *      platform root domain (APP_ROOT_DOMAIN). The platform controls that DNS,
@@ -32,7 +33,9 @@ export function isAllowedCrmOrigin(origin: string | null, policy: CrmOriginPolic
   if (!origin) return false;
   const normalized = normalizeOrigin(origin);
 
-  if (normalized === "http://localhost:8081") return true;
+  if (normalized === "http://localhost:8081" || normalized === "http://localhost:5173") {
+    return true;
+  }
 
   if (policy.configuredOrigin && normalized === normalizeOrigin(policy.configuredOrigin)) {
     return true;
