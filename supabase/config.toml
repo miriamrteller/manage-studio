@@ -274,3 +274,10 @@ entrypoint = "./functions/verify-whatsapp-otp/index.ts"
 enabled = true
 verify_jwt = true
 entrypoint = "./functions/crm-contacts/index.ts"
+
+# Machine-to-machine write path for the lead email ingest worker.
+# Auth is the CRM_INGEST_SECRET bearer token (fail-closed), not a user JWT.
+[functions.crm-lead-ingest]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/crm-lead-ingest/index.ts"

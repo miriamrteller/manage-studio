@@ -1,4 +1,5 @@
 import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/supabase.ts";
+import { isAllowedCrmOrigin } from "../_shared/crm-contract/allowed-origin.ts";
 import { contactsResponseSchemaV1 } from "../_shared/crm-contract/contact.v1.ts";
 import { mapContacts } from "../_shared/crm-contract/map-contacts.ts";
 import type {
@@ -26,19 +27,24 @@ import type {
  * mapping regression fails loud (500) instead of feeding the app bad data.
  *
  * CORS is an explicit allowlist — never "*": http://localhost:8081 (Expo web
- * dev) plus one configurable origin via the CRM_CONTACTS_ALLOWED_ORIGIN secret.
+ * dev), one configurable origin via the CRM_CONTACTS_ALLOWED_ORIGIN secret,
+ * and any https tenant-portal origin under APP_ROOT_DOMAIN (see
+ * _shared/crm-contract/allowed-origin.ts — self-onboard: new tenants need no
+ * CORS config).
  *
  * Phase 1 scale note: reads are capped by PostgREST's default 1000-row page.
  * Pagination / server-side query delegation is a contract-v2 item.
  */
 
 function corsHeadersFor(req: Request): Record<string, string> {
-  const allowed = new Set(["http://localhost:8081"]);
-  const configured = Deno.env.get("CRM_CONTACTS_ALLOWED_ORIGIN")?.trim();
-  if (configured) allowed.add(configured.replace(/\/$/, ""));
-
   const origin = req.headers.get("Origin");
-  if (!origin || !allowed.has(origin)) return { Vary: "Origin" };
+  const allowed = isAllowedCrmOrigin(origin, {
+    // Any https://<subdomain>.<APP_ROOT_DOMAIN> origin is platform-controlled,
+    // so tenant portals work with zero per-tenant CORS config (self-onboard).
+    rootDomain: Deno.env.get("APP_ROOT_DOMAIN")?.trim() || null,
+    configuredOrigin: Deno.env.get("CRM_CONTACTS_ALLOWED_ORIGIN")?.trim() || null,
+  });
+  if (!origin || !allowed) return { Vary: "Origin" };
   return {
     "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
