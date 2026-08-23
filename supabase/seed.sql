@@ -1058,3 +1058,62 @@ VALUES (
   'email', now(), now(), now()
 )
 ON CONFLICT (provider_id, provider) DO NOTHING;
+
+-- ============================================================================
+-- LEADS (20260819000100_leads.sql) — CRM pipeline inquiries, distinct from
+-- enrolled accounts. Fixed UUIDs + upserts so re-seeding never duplicates.
+-- ============================================================================
+INSERT INTO leads (
+  id, tenant_id, name, company, title, email, phone,
+  stage, channel, interest, offering_id, deal_value_minor, note,
+  next_follow_up_at, last_contacted_at, last_communication_note,
+  marketing_consent, source_ref, created_at
+)
+VALUES
+  (
+    '00000000-0000-0000-0000-000000001501'::uuid,
+    '00000000-0000-0000-0000-000000000001'::uuid,
+    'Rivka Levy', NULL, NULL, 'rivka.levy@example.com', '+972521234501',
+    'contacted', 'whatsapp', 'Birthday party', NULL, 45000, 'Wants a Sunday afternoon slot',
+    now() + interval '3 days', now() - interval '1 day', 'Sent party package options',
+    true, NULL, now() - interval '4 days'
+  ),
+  (
+    '00000000-0000-0000-0000-000000001502'::uuid,
+    '00000000-0000-0000-0000-000000000001'::uuid,
+    'Noa Barak', NULL, NULL, 'noa.barak@example.com', NULL,
+    'new', 'email', 'Toddler class for age 3', NULL, NULL, NULL,
+    NULL, NULL, NULL,
+    false, 'seed-msgid-noa-1', now() - interval '1 day'
+  ),
+  (
+    '00000000-0000-0000-0000-000000001503'::uuid,
+    '00000000-0000-0000-0000-000000000001'::uuid,
+    'Gili Mor', 'Gan Ilanot', 'Kindergarten director', 'gili@ganilanot.example.com', '+972501234503',
+    'proposal', 'website', 'Weekly movement class for the gan', NULL, 320000, 'Quote sent, waiting on municipality budget',
+    now() + interval '7 days', now() - interval '2 days', 'Sent the group-class proposal PDF',
+    true, NULL, now() - interval '12 days'
+  ),
+  (
+    '00000000-0000-0000-0000-000000001504'::uuid,
+    '00000000-0000-0000-0000-000000000001'::uuid,
+    'Dafna Katz', NULL, NULL, 'dafna.katz@example.com', NULL,
+    'lost', 'instagram', 'Adult ballet beginners', NULL, NULL, 'Chose a studio closer to home',
+    NULL, now() - interval '20 days', 'Asked about evening hours',
+    false, NULL, now() - interval '30 days'
+  )
+ON CONFLICT (id) DO UPDATE SET
+  name = EXCLUDED.name,
+  company = EXCLUDED.company,
+  title = EXCLUDED.title,
+  email = EXCLUDED.email,
+  phone = EXCLUDED.phone,
+  stage = EXCLUDED.stage,
+  channel = EXCLUDED.channel,
+  interest = EXCLUDED.interest,
+  deal_value_minor = EXCLUDED.deal_value_minor,
+  note = EXCLUDED.note,
+  next_follow_up_at = EXCLUDED.next_follow_up_at,
+  last_contacted_at = EXCLUDED.last_contacted_at,
+  last_communication_note = EXCLUDED.last_communication_note,
+  marketing_consent = EXCLUDED.marketing_consent;
