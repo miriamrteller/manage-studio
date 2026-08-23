@@ -288,10 +288,11 @@ Sources: [Supabase available regions](https://supabase.com/docs/guides/platform/
   A local deploy passing does not prove a preview will.
 - **Type-only imports hide from `tsc`.** A dangling `import type` compiles fine
   and fails at bundle time. Seen twice in this codebase.
-- **Pre-production migrations are edited in place**, not layered — so a schema
-  change means a dev DB reset (`reset_dev_db.sql` → `db:push` → `db:types:all`
-  → `seed:dev`). This stops once real tenant data exists; from then on, additive
-  only. Full procedure: SPEC §2.5.3.
+- **Migrations are additive-only since 2026-08-19** (the production DB is
+  live). New timestamped migration files only — never edit the base chain,
+  never run `reset_dev_db.sql` unless the owner explicitly asks. The
+  pre-production edit-in-place-and-reset workflow is retired. Full procedure:
+  SPEC §2.5.3.
 - **Resetting dev does not fix Supabase preview branches.** Each preview branch
   is a separate database with its own `schema_migrations`. Rename or delete a
   migration and any pre-existing branch fails with *"Remote migration versions
