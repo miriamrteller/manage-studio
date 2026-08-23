@@ -185,9 +185,12 @@ is what they need anyway.
 
 ## Traps specific to this repo
 
-- **Pre-production migrations are edited in place**, never layered. A schema
-  change means: `reset_dev_db.sql` → `db:push` → `db:types:all` → `seed:dev`.
-  This stops once real tenant data exists.
+- **Migrations are additive-only (since 2026-08-19 — a production DB exists).**
+  A schema change means a NEW timestamped migration file → `db:push` →
+  `db:types:all` (→ `seed:dev` only if seeds changed). Never edit the
+  `20260608*` base chain and never run `reset_dev_db.sql` unless the owner
+  explicitly asks. The pre-production edit-in-place workflow is retired
+  (SPEC §2.5.3).
 - **Resetting dev does not fix Supabase preview branches.** They are separate
   databases. Renaming or deleting a migration breaks any pre-existing branch
   with *"Remote migration versions not found"*.
