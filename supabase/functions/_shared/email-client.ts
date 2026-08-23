@@ -73,6 +73,45 @@ function parseAddress(value: string): { address: string; name?: string } {
   return { address: value.trim() };
 }
 
+/**
+ * Resend transport (fallback). Same result shape as the Cloudflare path so
+ * callers are transport-agnostic; Resend does return a message id.
+ */
+async function sendViaResend(
+  apiKey: string,
+  options: { to: string; from: string; subject: string; html: string; replyTo?: string; text?: string },
+): Promise<SendEmailResult> {
+  const body: Record<string, unknown> = {
+    from: options.from,
+    to: [options.to],
+    subject: options.subject,
+    html: options.html,
+    text: options.text ?? htmlToText(options.html),
+  };
+  if (options.replyTo) body.reply_to = options.replyTo;
+
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(
+      `Resend send failed — HTTP ${response.status}: ${data?.message ?? data?.name ?? "unknown"}`,
+    );
+  }
+  return {
+    id: typeof data?.id === "string" ? data.id : null,
+    delivered: [options.to],
+    queued: [],
+    permanentBounces: [],
+  };
+}
+
 export async function sendHtmlEmail(options: {
   to: string;
   from: string;
@@ -87,9 +126,20 @@ export async function sendHtmlEmail(options: {
   const apiToken = getEnv("CLOUDFLARE_EMAIL_API_TOKEN")?.trim();
 
   if (!accountId || !apiToken) {
+    // Fallback transport. Cloudflare Email Sending is beta AND requires the
+    // Workers Paid plan; until that is purchased the platform would otherwise
+    // send nothing at all (lead alerts, magic links, receipts). opalswift.com is
+    // already a verified Resend sending domain (resend._domainkey + the
+    // send.opalswift.com return-path MX exist in DNS), so Resend covers every
+    // tenant's platform-domain sender. Cloudflare wins the moment its two
+    // variables are set — no code change.
+    const resendKey = getEnv("RESEND_API_KEY")?.trim();
+    if (resendKey) {
+      return sendViaResend(resendKey, options);
+    }
     throw new Error(
-      "Cloudflare Email is not configured — set CLOUDFLARE_ACCOUNT_ID and " +
-        "CLOUDFLARE_EMAIL_API_TOKEN.",
+      "Email transport not configured — set CLOUDFLARE_ACCOUNT_ID + " +
+        "CLOUDFLARE_EMAIL_API_TOKEN (primary) or RESEND_API_KEY (fallback).",
     );
   }
 

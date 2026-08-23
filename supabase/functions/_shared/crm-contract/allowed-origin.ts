@@ -2,8 +2,10 @@
  * CORS origin policy for the CRM endpoints — pure and testable.
  *
  * Allowed, in order:
- *   1. http://localhost:8081            — Expo web dev server
- *   2. one explicitly configured origin — CRM_CONTACTS_ALLOWED_ORIGIN secret
+ *   1. http://localhost:8081 (Expo web dev) and http://localhost:5173
+ *      (apps/web Vite dev — the /inquire form posts from there)
+ *   2. explicitly configured origins — CRM_CONTACTS_ALLOWED_ORIGIN secret,
+ *      comma-separated (e.g. a tenant's branded marketing site apex + www)
  *   3. https://<subdomain>.<rootDomain> — any single-label subdomain of the
  *      platform root domain (APP_ROOT_DOMAIN). The platform controls that DNS,
  *      so every such origin is ours; this is what makes new tenants work with
@@ -20,7 +22,7 @@ const SUBDOMAIN_LABEL = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
 export interface CrmOriginPolicy {
   /** Platform root domain, e.g. "opalswift.com". Null disables rule 3. */
   rootDomain: string | null;
-  /** One extra allowed origin (exact match). Null disables rule 2. */
+  /** Extra allowed origins, comma-separated (exact match each). Null disables rule 2. */
   configuredOrigin: string | null;
 }
 
@@ -32,10 +34,16 @@ export function isAllowedCrmOrigin(origin: string | null, policy: CrmOriginPolic
   if (!origin) return false;
   const normalized = normalizeOrigin(origin);
 
-  if (normalized === "http://localhost:8081") return true;
-
-  if (policy.configuredOrigin && normalized === normalizeOrigin(policy.configuredOrigin)) {
+  if (normalized === "http://localhost:8081" || normalized === "http://localhost:5173") {
     return true;
+  }
+
+  if (policy.configuredOrigin) {
+    const configured = policy.configuredOrigin
+      .split(",")
+      .map((entry) => normalizeOrigin(entry))
+      .filter(Boolean);
+    if (configured.includes(normalized)) return true;
   }
 
   if (policy.rootDomain) {

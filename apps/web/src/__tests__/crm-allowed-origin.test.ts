@@ -12,6 +12,7 @@ const policy = { rootDomain: 'opalswift.com', configuredOrigin: 'https://crm.exa
 describe('isAllowedCrmOrigin', () => {
   it.each([
     'http://localhost:8081',
+    'http://localhost:5173', // apps/web Vite dev — /inquire form
     'https://crm.example.com',
     'https://crm.example.com/', // trailing slash normalised
     'https://creativeballet.opalswift.com',
@@ -33,6 +34,16 @@ describe('isAllowedCrmOrigin', () => {
     'http://localhost:3000',
   ])('rejects %s', (origin) => {
     expect(isAllowedCrmOrigin(origin as string | null, policy)).toBe(false);
+  });
+
+  it('accepts a comma-separated configured-origin list (branded site apex + www)', () => {
+    const multi = {
+      rootDomain: 'opalswift.com',
+      configuredOrigin: 'https://creativeballetacademy.com, https://www.creativeballetacademy.com',
+    };
+    expect(isAllowedCrmOrigin('https://creativeballetacademy.com', multi)).toBe(true);
+    expect(isAllowedCrmOrigin('https://www.creativeballetacademy.com', multi)).toBe(true);
+    expect(isAllowedCrmOrigin('https://other.example.com', multi)).toBe(false);
   });
 
   it('with no root domain configured, only localhost and the configured origin pass', () => {

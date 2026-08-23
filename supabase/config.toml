@@ -281,3 +281,10 @@ entrypoint = "./functions/crm-contacts/index.ts"
 enabled = true
 verify_jwt = false
 entrypoint = "./functions/crm-lead-ingest/index.ts"
+
+# Public inquiry-form endpoint (rate-limited, honeypot, CORS allowlist).
+# No JWT by design - it captures leads from tenant sites and capture links.
+[functions.crm-lead-capture]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/crm-lead-capture/index.ts"
