@@ -16,7 +16,6 @@ interface BrandingFormData {
 export function BrandingSettingsForm() {
   const { t } = useTranslation();
   const tenant = useTenant();
-  const fontLinkRef = useRef<HTMLLinkElement | null>(null);
 
   const [formData, setFormData] = useState<BrandingFormData>({
     primary_color: '#6366f1',
@@ -40,31 +39,6 @@ export function BrandingSettingsForm() {
       });
     }
   }, [tenant]);
-
-  useEffect(() => {
-    const pair = FONT_PAIRS[formData.font_pair];
-    if (!pair) return;
-
-    if (fontLinkRef.current) {
-      fontLinkRef.current.remove();
-    }
-
-    const families = [pair.en, pair.he]
-      .map((f) => f.replace(/\s+/g, '+'))
-      .join('&family=');
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = `https://fonts.googleapis.com/css2?family=${families}&display=swap`;
-    document.head.appendChild(link);
-    fontLinkRef.current = link;
-
-    return () => {
-      if (fontLinkRef.current) {
-        fontLinkRef.current.remove();
-        fontLinkRef.current = null;
-      }
-    };
-  }, [formData.font_pair]);
 
   const saveBrandingMutation = useMutation({
     mutationFn: async (data: BrandingFormData) => {

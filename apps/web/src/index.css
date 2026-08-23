@@ -579,10 +579,15 @@ body {
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
 
-  /* --- Hebrew-optimized font stack (Batch 4.1) --- */
+  /* --- Hebrew-optimized font stack (Batch 4.1) ---
+     Webfonts are self-hosted (@fontsource imports in src/fonts.ts). The Hebrew
+     fallbacks must stay sans faces that actually ship Hebrew glyphs with a real
+     bold (Segoe UI/Arial on Windows, Arial Hebrew on macOS); otherwise the
+     browser's per-script fallback can pick a boldless serif face like David. */
   --font-family-sans: 'Heebo', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
     'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
-  --font-family-hebrew: 'Heebo', 'Noto Sans Hebrew', 'Arial Hebrew', sans-serif;
+  --font-family-hebrew: 'Heebo', 'Noto Sans Hebrew', 'Segoe UI', 'Arial Hebrew', 'Arial',
+    sans-serif;
 }
 
 /* Apply Hebrew-optimized font + line-heights in RTL context */
@@ -848,7 +853,8 @@ dialog.modal-dialog::backdrop {
 
 :root {
   /* --- Heebo font aliases (Pipeline 2 spec names) ---
-     The webfont itself is loaded once from index.html (weights 300-700).
+     The webfont itself is self-hosted and bundled once via the @fontsource
+     imports in src/fonts.ts (weights 300-700).
      These alias the Pipeline 1 stacks rather than restating them. */
   --font-primary: var(--font-family-sans);
   --font-rtl: var(--font-family-hebrew);

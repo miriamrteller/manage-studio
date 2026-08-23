@@ -37,9 +37,12 @@ added in that batch, adapted to this repo's actual CSS-variable architecture._
 ## Typography Scale
 - Use semantic components from `src/components/ui/typography.tsx`
   (`Display`, `H1`–`H4`, `BodyLarge`, `Body`, `BodySmall`, `Caption`).
-- Heebo (Google Fonts) loads via `index.html` and is applied globally through
-  `--font-family-sans`; `[dir="rtl"]` additionally raises the line-heights on
-  the typography utility classes for Hebrew legibility.
+- Webfonts are self-hosted: every tenant font pair (see `FONT_PAIRS` in
+  `src/hooks/useFontLoader.ts`) is bundled via the `@fontsource` imports in
+  `src/fonts.ts` — nothing is fetched from Google Fonts at runtime. Heebo is
+  the default and is applied globally through `--font-family-sans`;
+  `[dir="rtl"]` additionally raises the line-heights on the typography
+  utility classes for Hebrew legibility.
 
 ## Spacing System
 - An 8pt-grid spacing scale exists as `--spacing-0`…`--spacing-10` CSS

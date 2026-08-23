@@ -1,8 +1,9 @@
 # Security headers for the app Worker (Cloudflare static assets honors this
 # file, Pages-style). Applied to every response on every tenant host.
 #
-# No Content-Security-Policy yet — a React SPA with Supabase, Google Fonts
-# and inline styles needs a curated policy, and a wrong one bricks the app.
+# No Content-Security-Policy yet — a React SPA with Supabase and inline
+# styles needs a curated policy, and a wrong one bricks the app. (Fonts are
+# self-hosted via @fontsource, so no fonts.googleapis.com allowance needed.)
 # Tracked as a hardening follow-up; add it deliberately, not here in passing.
 
 /*
