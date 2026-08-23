@@ -36,6 +36,16 @@ describe('isAllowedCrmOrigin', () => {
     expect(isAllowedCrmOrigin(origin as string | null, policy)).toBe(false);
   });
 
+  it('accepts a comma-separated configured-origin list (branded site apex + www)', () => {
+    const multi = {
+      rootDomain: 'opalswift.com',
+      configuredOrigin: 'https://creativeballetacademy.com, https://www.creativeballetacademy.com',
+    };
+    expect(isAllowedCrmOrigin('https://creativeballetacademy.com', multi)).toBe(true);
+    expect(isAllowedCrmOrigin('https://www.creativeballetacademy.com', multi)).toBe(true);
+    expect(isAllowedCrmOrigin('https://other.example.com', multi)).toBe(false);
+  });
+
   it('with no root domain configured, only localhost and the configured origin pass', () => {
     const bare = { rootDomain: null, configuredOrigin: null };
     expect(isAllowedCrmOrigin('https://creativeballet.opalswift.com', bare)).toBe(false);
