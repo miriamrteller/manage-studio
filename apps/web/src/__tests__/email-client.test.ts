@@ -188,3 +188,53 @@ describe('Resend fallback (no Cloudflare config)', () => {
     await expect(sendHtmlEmail(base)).rejects.toThrow(/not configured/i);
   });
 });
+
+describe('EMAIL_TRANSPORT explicit switch (both pipes stay wired)', () => {
+  const resendOk = () =>
+    Promise.resolve({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ id: 'resend-msg-2' }),
+    } as unknown as Response);
+
+  afterEach(() => {
+    delete process.env.EMAIL_TRANSPORT;
+    delete process.env.RESEND_API_KEY;
+  });
+
+  it('resend: forces Resend even when both Cloudflare vars are set', async () => {
+    process.env.EMAIL_TRANSPORT = 'resend';
+    process.env.RESEND_API_KEY = 're_test';
+    fetchMock.mockReturnValueOnce(resendOk());
+
+    const result = await sendHtmlEmail(base);
+
+    expect(String(fetchMock.mock.calls[0][0])).toBe('https://api.resend.com/emails');
+    expect(result.id).toBe('resend-msg-2');
+  });
+
+  it('cloudflare: forces Cloudflare even when a Resend key is also set', async () => {
+    process.env.EMAIL_TRANSPORT = 'cloudflare';
+    process.env.RESEND_API_KEY = 're_test';
+
+    await sendHtmlEmail(base);
+
+    expect(String(fetchMock.mock.calls[0][0])).toContain('api.cloudflare.com');
+  });
+
+  it('resend without a key throws the specific misconfiguration, not a silent Cloudflare send', async () => {
+    process.env.EMAIL_TRANSPORT = 'resend';
+    await expect(sendHtmlEmail(base)).rejects.toThrow(/EMAIL_TRANSPORT=resend but RESEND_API_KEY/);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('cloudflare without its vars throws rather than silently falling back to Resend', async () => {
+    process.env.EMAIL_TRANSPORT = 'cloudflare';
+    process.env.RESEND_API_KEY = 're_test';
+    delete process.env.CLOUDFLARE_ACCOUNT_ID;
+    delete process.env.CLOUDFLARE_EMAIL_API_TOKEN;
+
+    await expect(sendHtmlEmail(base)).rejects.toThrow(/EMAIL_TRANSPORT=cloudflare but/);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+});

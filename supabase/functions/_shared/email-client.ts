@@ -122,24 +122,40 @@ export async function sendHtmlEmail(options: {
   /** Override the derived plain-text part. */
   text?: string;
 }): Promise<SendEmailResult> {
+  // Transport selection. Both pipes stay wired; EMAIL_TRANSPORT flips between
+  // them without touching credentials:
+  //   resend      — force Resend (launch: free tier, opalswift.com verified
+  //                 in Resend, tenants send as <subdomain>@opalswift.com)
+  //   cloudflare  — force Cloudflare Email Sending (requires Workers Paid;
+  //                 the scale path, unlocks per-tenant branded domains)
+  //   unset       — prefer Cloudflare when its two variables are set, else
+  //                 fall back to Resend (pre-switch behaviour, unchanged)
+  const transport = (getEnv("EMAIL_TRANSPORT") ?? "").trim().toLowerCase();
   const accountId = getEnv("CLOUDFLARE_ACCOUNT_ID")?.trim();
   const apiToken = getEnv("CLOUDFLARE_EMAIL_API_TOKEN")?.trim();
+  const resendKey = getEnv("RESEND_API_KEY")?.trim();
 
-  if (!accountId || !apiToken) {
-    // Fallback transport. Cloudflare Email Sending is beta AND requires the
-    // Workers Paid plan; until that is purchased the platform would otherwise
-    // send nothing at all (lead alerts, magic links, receipts). opalswift.com is
-    // already a verified Resend sending domain (resend._domainkey + the
-    // send.opalswift.com return-path MX exist in DNS), so Resend covers every
-    // tenant's platform-domain sender. Cloudflare wins the moment its two
-    // variables are set — no code change.
-    const resendKey = getEnv("RESEND_API_KEY")?.trim();
+  const useCloudflare = transport === "cloudflare"
+    ? true
+    : transport === "resend"
+    ? false
+    : Boolean(accountId && apiToken);
+
+  if (!useCloudflare) {
     if (resendKey) {
       return sendViaResend(resendKey, options);
     }
     throw new Error(
-      "Email transport not configured — set CLOUDFLARE_ACCOUNT_ID + " +
-        "CLOUDFLARE_EMAIL_API_TOKEN (primary) or RESEND_API_KEY (fallback).",
+      transport === "resend"
+        ? "EMAIL_TRANSPORT=resend but RESEND_API_KEY is not set."
+        : "Email transport not configured — set CLOUDFLARE_ACCOUNT_ID + " +
+          "CLOUDFLARE_EMAIL_API_TOKEN, or RESEND_API_KEY.",
+    );
+  }
+  if (!accountId || !apiToken) {
+    throw new Error(
+      "EMAIL_TRANSPORT=cloudflare but CLOUDFLARE_ACCOUNT_ID / " +
+        "CLOUDFLARE_EMAIL_API_TOKEN are not set.",
     );
   }
 
