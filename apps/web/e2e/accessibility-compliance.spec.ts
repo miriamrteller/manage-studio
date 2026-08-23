@@ -409,17 +409,19 @@ test.describe('Real-World Accessibility Validation', () => {
       return await window_.axe?.run?.() || { violations: [] };
     });
     
-    // Only check for CRITICAL violations (complete blockers)
-    // Ignore 'serious' or 'minor' which are often false positives
-    const criticalViolations = (results.violations || []).filter(
-      (v: AxeViolation) => v.impact === 'critical'
+    // Fail on CRITICAL violations (complete blockers) and on color-contrast.
+    // Other 'serious'/'minor' rules stay advisory (frequent false positives),
+    // but color-contrast is axe's only automated WCAG AA contrast check —
+    // filtering it out let sub-AA text ship unnoticed.
+    const blockingViolations = (results.violations || []).filter(
+      (v: AxeViolation) => v.impact === 'critical' || v.id === 'color-contrast'
     );
-    
-    if (criticalViolations.length > 0) {
-      console.log('Critical violations:', criticalViolations);
+
+    if (blockingViolations.length > 0) {
+      console.log('Blocking violations:', blockingViolations);
     }
-    
-    expect(criticalViolations.length).toBe(0);
+
+    expect(blockingViolations.length).toBe(0);
   });
 
   test('manual NVDA Hebrew validation needed', async ({ page }) => {
