@@ -5,6 +5,10 @@
 --
 -- ⚠️  NEVER run this on production. Dev only.
 --
+-- ⚠️  RETIRED FROM THE ROUTINE WORKFLOW (2026-08-19): a production DB now
+--     exists, so migrations are additive-only (SPEC §2.5.3) and dev is no
+--     longer reset. Run this ONLY when the owner explicitly asks for a reset.
+--
 -- Includes BOTH legacy (pre-Phase-A) and current generic names so reset works
 -- whether the DB still has classes/families/enrolments OR offerings/accounts/engagements.
 -- Also drops private.platform_config, get_app_encryption_key, save_tenant_grow_credentials.
