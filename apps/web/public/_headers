@@ -1,0 +1,13 @@
+# Security headers for the app Worker (Cloudflare static assets honors this
+# file, Pages-style). Applied to every response on every tenant host.
+#
+# No Content-Security-Policy yet — a React SPA with Supabase, Google Fonts
+# and inline styles needs a curated policy, and a wrong one bricks the app.
+# Tracked as a hardening follow-up; add it deliberately, not here in passing.
+
+/*
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()

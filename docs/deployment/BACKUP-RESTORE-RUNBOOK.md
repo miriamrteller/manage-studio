@@ -15,11 +15,24 @@ restore once after setup, and again before the first real tenant.**
 - Object layout: `nightly/<date>_<sha>.tar.gz.gpg` + `.manifest.json`
   (the manifest is plaintext: date, main SHA, migration count, checksums —
   it ties every dump to the exact app version that produced it)
-- Encryption: gpg to the `OpalSwift DB Backups` key
-  (`77C1129EBECF2E881EB861931750DBBC7A803D6C`). Public key lives in the repo
+- Encryption: gpg to the `OpalSwift DB Backups v2` key
+  (`78851A6D0ECC930F318E33E69199DE35E6163A41`). Public key lives in the repo
   (`.github/backup-encryption-public-key.asc`); the **private key exists
   only in the password manager**. Losing it makes every backup unreadable —
   it is exactly as precious as the DB encryption key.
+  *(History: the v1 key's private half was lost to temp-folder cleanup on
+  2026-08-16, before any readable backup existed. Every v1-era nightly —
+  2026-08-17 through the morning run of 2026-08-20, four in total, since the
+  schedule kept running until the v2 rotation merged — was permanently
+  unreadable; all were deleted on 2026-08-20. The first verified v2 backup
+  landed the same day and passed a full restore rehearsal: object downloaded
+  from R2, decrypted with the password-manager key, checksums matched the
+  manifest.)*
+- Retention lifecycle rules were set by hand in the dashboard on 2026-08-20
+  (prefix `nightly/` expire 30 days; prefix `monthly/` expire 400 days),
+  because the Object R&W token lacks bucket-admin rights. The workflow's own
+  lifecycle step stays best-effort and warns instead of failing — ignore the
+  warning; the dashboard rules govern.
 - The dump includes `private.platform_config` (cron secret, and the
   encryption key once set) and all tenant PII — which is *why* it is
   encrypted before upload.
