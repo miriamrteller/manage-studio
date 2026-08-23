@@ -25,6 +25,8 @@
  * tenant-branded.
  */
 
+import { getEnv } from "./edge-runtime/env.ts";
+
 export interface TenantSenderInput {
   subdomain: string;
   contact_email: string;
@@ -45,7 +47,7 @@ export interface TenantSender {
  * owns — ended up as the sender of record in three code paths.
  */
 function platformEmailDomain(): string {
-  const domain = Deno.env.get("PLATFORM_EMAIL_DOMAIN")?.trim();
+  const domain = getEnv("PLATFORM_EMAIL_DOMAIN")?.trim();
   if (!domain) {
     throw new Error(
       "PLATFORM_EMAIL_DOMAIN is not configured (e.g. opalswift.com). " +
@@ -53,6 +55,18 @@ function platformEmailDomain(): string {
     );
   }
   return domain.replace(/^@/, "").toLowerCase();
+}
+
+/**
+ * Branded senders are only honoured when the active transport can send from a
+ * tenant domain. Cloudflare Email Sending onboards tenant domains
+ * (`wrangler email sending enable <domain>`); the Resend fallback is verified
+ * for the platform domain only, so under Resend a branded From would 403
+ * ("domain is not verified") and the alert would silently never leave.
+ */
+function brandedTransportAvailable(): boolean {
+  return Boolean(getEnv("CLOUDFLARE_ACCOUNT_ID")?.trim()) &&
+    Boolean(getEnv("CLOUDFLARE_EMAIL_API_TOKEN")?.trim());
 }
 
 export function resolveTenantSender(tenant: TenantSenderInput): TenantSender {
@@ -66,7 +80,7 @@ export function resolveTenantSender(tenant: TenantSenderInput): TenantSender {
   const branded = tenant.from_email?.trim();
   const verified = Boolean(tenant.from_email_verified_at);
 
-  if (branded && verified) {
+  if (branded && verified && brandedTransportAvailable()) {
     return { from: branded, replyTo };
   }
 

@@ -145,3 +145,46 @@ describe('failure handling', () => {
     expect(r.delivered).toEqual(['a@b.test']);
   });
 });
+
+describe('Resend fallback (no Cloudflare config)', () => {
+  const resendOk = () =>
+    Promise.resolve({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ id: 'resend-msg-1' }),
+    } as unknown as Response);
+
+  it('falls back to Resend when only RESEND_API_KEY is set, with Resend wire format', async () => {
+    delete process.env.CLOUDFLARE_ACCOUNT_ID;
+    delete process.env.CLOUDFLARE_EMAIL_API_TOKEN;
+    process.env.RESEND_API_KEY = 're_test';
+    fetchMock.mockReturnValueOnce(resendOk());
+
+    const result = await sendHtmlEmail({ ...base, replyTo: 'parent@example.com' });
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe('https://api.resend.com/emails');
+    expect((init.headers as Record<string, string>).Authorization).toBe('Bearer re_test');
+    const sent = JSON.parse(init.body as string);
+    expect(sent.from).toBe(base.from); // Resend takes the RFC 5322 string as-is
+    expect(sent.to).toEqual([base.to]);
+    expect(sent.reply_to).toBe('parent@example.com');
+    expect(typeof sent.text).toBe('string');
+    expect(result.id).toBe('resend-msg-1');
+    expect(result.delivered).toEqual([base.to]);
+    delete process.env.RESEND_API_KEY;
+  });
+
+  it('prefers Cloudflare when both are configured', async () => {
+    process.env.RESEND_API_KEY = 're_test';
+    await sendHtmlEmail(base);
+    expect(String(fetchMock.mock.calls[0][0])).toContain('api.cloudflare.com');
+    delete process.env.RESEND_API_KEY;
+  });
+
+  it('still throws when neither transport is configured', async () => {
+    delete process.env.CLOUDFLARE_ACCOUNT_ID;
+    delete process.env.RESEND_API_KEY;
+    await expect(sendHtmlEmail(base)).rejects.toThrow(/not configured/i);
+  });
+});
