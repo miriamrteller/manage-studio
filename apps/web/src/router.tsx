@@ -44,6 +44,7 @@ import ExpenseCategoriesPage from "./pages/ExpenseCategoriesPage";
 import LeadsPage from "./pages/LeadsPage";
 import InquirePage from "./pages/InquirePage";
 import { LanguageProvider } from "./contexts/LanguageContext";
+import { RouteErrorFallback } from "./components/RouteErrorFallback";
 
 function RootLayout() {
   return (
@@ -86,63 +87,72 @@ const router = createBrowserRouter([
   {
     path: '/',
     element: <RootLayout />,
+    // Last-resort fallback if RootLayout itself throws (renders without the layout).
+    errorElement: <RouteErrorFallback />,
     children: [
-      { index: true, element: <ClassesPage /> },
-      { path: 'classes', element: <ClassesPage /> },
-      { path: 'login', element: <LoginPage /> },
-      { path: 'signup', element: <SignupPage /> },
-      { path: 'enrol', element: <EnrolPage /> },
-      { path: 'enrol/pay/:engagementId', element: <EnrolPayPage /> },
-      { path: 'enrol/complete', element: <EnrolCompletePage /> },
-      { path: 'book', element: <BookingPage /> },
-      { path: 'book/:offeringId', element: <BookingPage /> },
-      { path: 'inquire', element: <InquirePage /> },
-      { path: 'dashboard', element: <DashboardRedirectPage /> },
+      {
+        // Pathless wrapper: a page that throws during render is replaced by the
+        // fallback inside RootLayout's outlet, so the header and nav keep working.
+        errorElement: <RouteErrorFallback />,
+        children: [
+          { index: true, element: <ClassesPage /> },
+          { path: 'classes', element: <ClassesPage /> },
+          { path: 'login', element: <LoginPage /> },
+          { path: 'signup', element: <SignupPage /> },
+          { path: 'enrol', element: <EnrolPage /> },
+          { path: 'enrol/pay/:engagementId', element: <EnrolPayPage /> },
+          { path: 'enrol/complete', element: <EnrolCompletePage /> },
+          { path: 'book', element: <BookingPage /> },
+          { path: 'book/:offeringId', element: <BookingPage /> },
+          { path: 'inquire', element: <InquirePage /> },
+          { path: 'dashboard', element: <DashboardRedirectPage /> },
 
-      // ADMIN ROUTES
-      { path: "admin/students", element: <AdminRoute><StudentsPage /></AdminRoute> },
-      // Legacy redirects — keep URLs working
-      { path: "admin/people", element: <AdminRoute><Navigate to="/admin/students" replace /></AdminRoute> },
-      { path: "admin/families", element: <AdminRoute><FamiliesPage /></AdminRoute> },
-      { path: "admin/notifications", element: <AdminRoute><NotificationsPage /></AdminRoute> },
-      { path: "admin/leads", element: <AdminRoute><LeadsPage /></AdminRoute> },
-      { path: "admin/appointments", element: <AdminRoute><AdminAppointmentsPage /></AdminRoute> },
-      { path: "admin/families/:id", element: <AdminRoute><FamilyDetailPage /></AdminRoute> },
-      { path: "admin/finance", element: <AdminRoute><FinanceHubPage /></AdminRoute> },
-      { path: "admin/finance/payments", element: <AdminRoute><PaymentsLogPage /></AdminRoute> },
-      { path: "admin/finance/expenses", element: <AdminRoute><ExpensesPage /></AdminRoute> },
-      { path: "admin/finance/expenses/categories", element: <AdminRoute><ExpenseCategoriesPage /></AdminRoute> },
-      { path: "admin/setup", element: <AdminRoute><AdminDashboard /></AdminRoute> },
-      { path: "admin/setup/billing", element: <AdminRoute><BillingPage /></AdminRoute> },
-      { path: "admin/setup/levels", element: <AdminRoute><LevelsPage /></AdminRoute> },
-      { path: "admin/setup/terms", element: <AdminRoute><TermsPage /></AdminRoute> },
-      { path: "admin/setup/classes", element: <AdminRoute><AdminClassesPage /></AdminRoute> },
-      // Legacy redirect — the admin-only calendar was removed in favour of the
-      // client-facing classes calendar on /classes.
-      { path: "admin/setup/calendar", element: <AdminRoute><Navigate to="/classes" replace /></AdminRoute> },
-      { path: "admin/setup/booking", element: <AdminRoute><BookingSettingsPage /></AdminRoute> },
-      { path: "admin/setup/services", element: <AdminRoute><BookingServicesPage /></AdminRoute> },
-      { path: "admin/setup/integrations/google/callback", element: <AdminRoute><GoogleCalendarCallbackPage /></AdminRoute> },
-      { path: "admin/setup/settings", element: <AdminRoute><TenantSettingsPage /></AdminRoute> },
-      { path: "admin/setup/tax", element: <AdminRoute><Navigate to="/admin/setup/classes" replace /></AdminRoute> },
-      { path: "admin/setup/stripe", element: <AdminRoute><StripeSettingsPage /></AdminRoute> },
-      { path: "admin/setup/bundled-payments", element: <AdminRoute><BundledPaymentsSettingsPage /></AdminRoute> },
-      { path: "admin/setup/grow", element: <AdminRoute><Navigate to="/admin/setup/bundled-payments" replace /></AdminRoute> },
-      { path: "admin/setup/icount", element: <AdminRoute><Navigate to="/admin/setup/bundled-payments" replace /></AdminRoute> },
-      { path: "admin/setup/payments", element: <AdminRoute><PaymentSettingsPage /></AdminRoute> },
-      { path: "admin/setup/invoicing", element: <AdminRoute><InvoicingSettingsPage /></AdminRoute> },
-      { path: "admin/setup/waivers", element: <AdminRoute><WaiversPage /></AdminRoute> },
-      { path: "admin/dev/finance-walkthrough", element: <AdminRoute><FinanceWalkthroughPage /></AdminRoute> },
-      { path: "platform/onboard", element: <SuperAdminRoute><PlatformOnboardPage /></SuperAdminRoute> },
-      { path: "platform/features", element: <SuperAdminRoute><PlatformFeaturesPage /></SuperAdminRoute> },
+          // ADMIN ROUTES
+          { path: "admin/students", element: <AdminRoute><StudentsPage /></AdminRoute> },
+          // Legacy redirects — keep URLs working
+          { path: "admin/people", element: <AdminRoute><Navigate to="/admin/students" replace /></AdminRoute> },
+          { path: "admin/families", element: <AdminRoute><FamiliesPage /></AdminRoute> },
+          { path: "admin/notifications", element: <AdminRoute><NotificationsPage /></AdminRoute> },
+          { path: "admin/leads", element: <AdminRoute><LeadsPage /></AdminRoute> },
+          { path: "admin/appointments", element: <AdminRoute><AdminAppointmentsPage /></AdminRoute> },
+          { path: "admin/families/:id", element: <AdminRoute><FamilyDetailPage /></AdminRoute> },
+          { path: "admin/finance", element: <AdminRoute><FinanceHubPage /></AdminRoute> },
+          { path: "admin/finance/payments", element: <AdminRoute><PaymentsLogPage /></AdminRoute> },
+          { path: "admin/finance/expenses", element: <AdminRoute><ExpensesPage /></AdminRoute> },
+          { path: "admin/finance/expenses/categories", element: <AdminRoute><ExpenseCategoriesPage /></AdminRoute> },
+          { path: "admin/setup", element: <AdminRoute><AdminDashboard /></AdminRoute> },
+          { path: "admin/setup/billing", element: <AdminRoute><BillingPage /></AdminRoute> },
+          { path: "admin/setup/levels", element: <AdminRoute><LevelsPage /></AdminRoute> },
+          { path: "admin/setup/terms", element: <AdminRoute><TermsPage /></AdminRoute> },
+          { path: "admin/setup/classes", element: <AdminRoute><AdminClassesPage /></AdminRoute> },
+          // Legacy redirect — the admin-only calendar was removed in favour of the
+          // client-facing classes calendar on /classes.
+          { path: "admin/setup/calendar", element: <AdminRoute><Navigate to="/classes" replace /></AdminRoute> },
+          { path: "admin/setup/booking", element: <AdminRoute><BookingSettingsPage /></AdminRoute> },
+          { path: "admin/setup/services", element: <AdminRoute><BookingServicesPage /></AdminRoute> },
+          { path: "admin/setup/integrations/google/callback", element: <AdminRoute><GoogleCalendarCallbackPage /></AdminRoute> },
+          { path: "admin/setup/settings", element: <AdminRoute><TenantSettingsPage /></AdminRoute> },
+          { path: "admin/setup/tax", element: <AdminRoute><Navigate to="/admin/setup/classes" replace /></AdminRoute> },
+          { path: "admin/setup/stripe", element: <AdminRoute><StripeSettingsPage /></AdminRoute> },
+          { path: "admin/setup/bundled-payments", element: <AdminRoute><BundledPaymentsSettingsPage /></AdminRoute> },
+          { path: "admin/setup/grow", element: <AdminRoute><Navigate to="/admin/setup/bundled-payments" replace /></AdminRoute> },
+          { path: "admin/setup/icount", element: <AdminRoute><Navigate to="/admin/setup/bundled-payments" replace /></AdminRoute> },
+          { path: "admin/setup/payments", element: <AdminRoute><PaymentSettingsPage /></AdminRoute> },
+          { path: "admin/setup/invoicing", element: <AdminRoute><InvoicingSettingsPage /></AdminRoute> },
+          { path: "admin/setup/waivers", element: <AdminRoute><WaiversPage /></AdminRoute> },
+          { path: "admin/dev/finance-walkthrough", element: <AdminRoute><FinanceWalkthroughPage /></AdminRoute> },
+          { path: "platform/onboard", element: <SuperAdminRoute><PlatformOnboardPage /></SuperAdminRoute> },
+          { path: "platform/features", element: <SuperAdminRoute><PlatformFeaturesPage /></SuperAdminRoute> },
 
-      // LEGACY ROUTES (Phase 1B) — kept for backward compatibility
-      { path: "dashboard/admin", element: <AdminRoute><AdminDashboard /></AdminRoute> },
-      { path: "dashboard/portal", element: <ParentRoute><PortalDashboard /></ParentRoute> },
-      { path: "dashboard/student", element: <StudentRoute><PortalDashboard /></StudentRoute> },
+          // LEGACY ROUTES (Phase 1B) — kept for backward compatibility
+          { path: "dashboard/admin", element: <AdminRoute><AdminDashboard /></AdminRoute> },
+          { path: "dashboard/portal", element: <ParentRoute><PortalDashboard /></ParentRoute> },
+          { path: "dashboard/student", element: <StudentRoute><PortalDashboard /></StudentRoute> },
 
-      // 404
-      { path: "*", element: <NotFoundPage /> },
+          // 404
+          { path: "*", element: <NotFoundPage /> },
+        ],
+      },
     ],
   },
 ]);

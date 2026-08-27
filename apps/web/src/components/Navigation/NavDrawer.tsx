@@ -8,6 +8,7 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useEntityLabels } from '@/hooks/useEntityLabels';
 import { useFeatureGate } from '@/hooks/useFeatureGate';
 import { useTenant } from '@/hooks/useTenant';
+import { useBookingEnabled } from '@/features/scheduling/useBookingEnabled';
 import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
 import { useNavDrawer } from './NavDrawerContext';
@@ -73,6 +74,14 @@ export function NavDrawer() {
     tenant,
     hasFeature: hasFeatureResolved,
   });
+
+  // Grey out booking-dependent items (e.g. /book) only when we positively know
+  // the tenant has booking turned off; undefined (guest/loading) leaves them on.
+  const bookingEnabled = useBookingEnabled();
+  const isItemDisabled = useCallback(
+    (item: NavItem) => item.disableWhenBookingOff === true && bookingEnabled === false,
+    [bookingEnabled],
+  );
 
   function navLabel(item: NavItem): string {
     switch (item.path) {
@@ -184,6 +193,7 @@ export function NavDrawer() {
         activePath={activePath}
         onNavigate={handleNavigate}
         navLabel={navLabel}
+        isItemDisabled={isItemDisabled}
       />
 
       {/* Account footer (authenticated) */}

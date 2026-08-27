@@ -13,6 +13,7 @@ import {
 import { resolveAuthErrorMessage } from '@/lib/authErrors';
 import { buildAuthCallbackRedirect } from '@/lib/authRedirect';
 import { sendLoginEmailOtp, verifyLoginEmailOtp } from '@/lib/loginEmailOtp';
+import { verifySessionBelongsToTenant } from '@/lib/tenantMembership';
 
 export type PostLoginRedirect = {
   to?: string;
@@ -75,6 +76,25 @@ export function useLogin(
         state: redirect.state,
       });
     }, 800);
+  };
+
+  /**
+   * Tenant isolation: an account may only sign in on its own studio's
+   * subdomain. On a cross-tenant session the session is torn down before
+   * any redirect, so e.g. a studioaviv admin never lands inside
+   * creativeballet's app. Returns true when the login may proceed.
+   */
+  const ensureSessionBelongsToTenant = async (): Promise<boolean> => {
+    const membership = await verifySessionBelongsToTenant();
+    if (membership === 'wrong_tenant') {
+      await supabase.auth.signOut();
+      setMessage({
+        type: 'error',
+        text: t('pages.login.wrong_studio'),
+      });
+      return false;
+    }
+    return true;
   };
 
   const sendEmailCode = async (email: string) => {
@@ -140,7 +160,7 @@ export function useLogin(
             'pages.login.invalid_code',
           ),
         });
-      } else {
+      } else if (await ensureSessionBelongsToTenant()) {
         redirectAfterLogin();
       }
     } catch (error) {
@@ -196,7 +216,7 @@ export function useLogin(
               text: error.message || t('error.login_failed'),
             });
           }
-        } else {
+        } else if (await ensureSessionBelongsToTenant()) {
           redirectAfterLogin();
         }
       } else {

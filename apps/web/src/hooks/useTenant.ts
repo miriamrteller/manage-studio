@@ -7,8 +7,17 @@ import type { TenantConfig } from '../types/auth';
 import { parseEntityLabelOverrides, resolveEntityLabels, resolvePresetModules, safePreset } from '@shared/index';
 
 export function useTenant(): TenantConfig | null {
+  return useTenantQuery().tenant;
+}
+
+/**
+ * Tenant config plus its loading state, for callers that must distinguish
+ * "still resolving" from "resolved to nothing" (e.g. route guards enforcing
+ * tenant membership). Shares the query cache with useTenant().
+ */
+export function useTenantQuery(): { tenant: TenantConfig | null; isLoading: boolean } {
   const subdomain = resolveTenantSubdomain();
-  const { data: tenantConfig } = useQuery({
+  const { data: tenantConfig, isLoading } = useQuery({
     queryKey: ['tenant', subdomain],
     queryFn: async () => {
       if (!subdomain) return null;
@@ -58,5 +67,5 @@ export function useTenant(): TenantConfig | null {
     enabled: !!subdomain,
     staleTime: 30 * 60 * 1000,
   });
-  return tenantConfig || null;
+  return { tenant: tenantConfig || null, isLoading: !!subdomain && isLoading };
 }
