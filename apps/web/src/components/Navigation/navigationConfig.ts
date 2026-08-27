@@ -50,6 +50,12 @@ export interface NavItem {
   tenantFilter?: NavTenantFilter;
   /** Hide item unless the tenant has this feature flag enabled */
   featureKey?: FeatureKey;
+  /**
+   * Grey the item out (still visible, not clickable) while the tenant has
+   * online booking turned off in Booking Settings. Only takes effect when the
+   * viewer can read that setting (tenant admins) — see useBookingEnabled.
+   */
+  disableWhenBookingOff?: boolean;
 }
 
 export interface NavSection {
@@ -87,6 +93,7 @@ export const navigationConfig: NavItem[] = [
     requiredRoles: [],
     sectionKey: 'browse',
     featureKey: FEATURES.scheduling.clientBooking,
+    disableWhenBookingOff: true,
   },
   {
     path: '/admin/students',
@@ -273,6 +280,7 @@ export const publicNavigationConfig: NavItem[] = [
     requiredRoles: [],
     sectionKey: 'browse',
     featureKey: FEATURES.scheduling.clientBooking,
+    disableWhenBookingOff: true,
   },
   {
     path: '/login',
