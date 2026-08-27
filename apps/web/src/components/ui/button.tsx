@@ -9,16 +9,22 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ variant = 'default', size = 'md', fullWidth = false, isLoading = false, className = '', children, disabled, ...props }, ref) => {
+    // Solid variants carry the DL-DESIGN-009 finish: a translucent sheen
+    // gradient + emboss over the tenant color (hue-neutral overlays, so
+    // white-label colors show through untouched) and tinted elevation
+    // that lifts one level on hover and drops when pressed.
+    const raisedFinish =
+      '[background-image:var(--sheen-raised)] [box-shadow:var(--edge-emboss),var(--elevation-1)] hover:[box-shadow:var(--edge-emboss),var(--elevation-2)] active:[background-image:none] active:[box-shadow:var(--edge-emboss)]';
+
     const variantClasses = {
       default:
         'bg-[var(--color-neutral-200)] text-[var(--color-text-primary)] hover:bg-[var(--color-neutral-300)]',
-      primary: 'bg-primary text-on-primary hover:bg-primary-hover',
-      secondary: 'bg-secondary text-on-secondary hover:bg-secondary-hover',
+      primary: `bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active ${raisedFinish}`,
+      secondary: `bg-secondary text-on-secondary hover:bg-secondary-hover active:bg-secondary-active ${raisedFinish}`,
       outline:
-        'border border-[var(--color-border-default)] text-[var(--color-text-primary)] hover:bg-[var(--color-surface-secondary)]',
+        'border border-[var(--border-hairline)] text-[var(--color-text-primary)] hover:bg-[var(--tint-primary-05)] hover:border-[var(--tint-primary-25)] active:bg-[var(--tint-primary-10)]',
       ghost: 'hover:bg-[var(--color-neutral-100)]',
-      destructive:
-        'bg-error text-on-primary hover:bg-[var(--color-error-hover)] active:bg-[var(--color-error-active)] focus-visible:ring-2 focus-visible:ring-error',
+      destructive: `bg-error text-on-primary hover:bg-[var(--color-error-hover)] active:bg-[var(--color-error-active)] focus-visible:ring-2 focus-visible:ring-error ${raisedFinish}`,
     };
 
     const sizeClasses = {
@@ -34,7 +40,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         disabled={isDisabled}
-        className={`rounded transition-opacity disabled:opacity-50 focus-visible:outline-2 outline-offset-2 interact-lift interact-scale motion-safe ${variantClasses[variant]} ${sizeClasses[size]} ${widthClass} ${className}`}
+        className={`rounded-control transition-opacity disabled:opacity-50 focus-visible:outline-2 outline-offset-2 interact-lift interact-scale motion-safe ${variantClasses[variant]} ${sizeClasses[size]} ${widthClass} ${className}`}
         {...props}
       >
         {isLoading ? (

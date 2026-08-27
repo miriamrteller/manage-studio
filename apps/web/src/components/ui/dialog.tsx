@@ -128,7 +128,7 @@ export const DialogContent = ({
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
         className={cn(
-          'elevation-4 rounded-lg p-6 mx-4 w-full bg-[var(--surface-base)] motion-safe animate-scale-in',
+          'elevation-4 rounded-overlay p-6 mx-4 w-full bg-[var(--surface-base)] motion-safe animate-scale-in',
           className ?? 'max-w-sm'
         )}
       >
