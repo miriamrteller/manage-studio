@@ -24,6 +24,8 @@ const REQUIRED = [
   // onboarded first: npx wrangler email sending enable <domain>
   'CLOUDFLARE_ACCOUNT_ID',
   'CLOUDFLARE_EMAIL_API_TOKEN',
+  'RESEND_API_KEY',
+  'EMAIL_TRANSPORT',
   // Fallback sending domain for tenants without a verified branded domain.
   // Required: resolveTenantSender() throws without it rather than guessing.
   'PLATFORM_EMAIL_DOMAIN',

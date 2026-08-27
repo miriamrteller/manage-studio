@@ -51,6 +51,36 @@ importers:
       '@dnd-kit/utilities':
         specifier: ^3.2.2
         version: 3.2.2(react@18.3.1)
+      '@fontsource/assistant':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/crimson-text':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/frank-ruhl-libre':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/heebo':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/inter':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/miriam-libre':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/oswald':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/poppins':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/rubik':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/source-sans-3':
+        specifier: ^5.3.0
+        version: 5.3.0
       '@fullcalendar/core':
         specifier: ^6.1.10
         version: 6.1.20
@@ -587,6 +617,36 @@ packages:
     peerDependenciesMeta:
       '@noble/hashes':
         optional: true
+
+  '@fontsource/assistant@5.3.0':
+    resolution: {integrity: sha512-FJ0gSxkCdNeZgd2yIGmIkjU5SZOpDYs0j5IEWMQPBT5bRuvDqLA4T03KwmvMgWvov966coRVp0dcdd+oAo/MrA==}
+
+  '@fontsource/crimson-text@5.3.0':
+    resolution: {integrity: sha512-W1kLgOlsCD/8DhUNECgYvyx86+t3wAvA0w09juD3XtmwAtV6vuSEwijN4q8fnQ1LgQWV377jQiL8dpSYwLnoAw==}
+
+  '@fontsource/frank-ruhl-libre@5.3.0':
+    resolution: {integrity: sha512-t9cbVzyuEJZGYafP01s7FQ1KAkh/Fs2nakfPzZpPY8BtfvGlZxQRxXAqJ/qluyfZXilpqw0Hk+GlYiWfmSSRTg==}
+
+  '@fontsource/heebo@5.3.0':
+    resolution: {integrity: sha512-Z01U2fWWrfJnSE6SmDYtZJ1uCnKs8V3WSdip/lVDfKnsC1ASumb7IZmOrXjaYK+PVm7qGD3+4cwTAFOxG5uMaw==}
+
+  '@fontsource/inter@5.3.0':
+    resolution: {integrity: sha512-RofMylZmjlJEfELXeNHFWBRcSs75rGU/6bV2S2jfnvv/3rPXPGe0LgUJTklcHZ9lM4OZmAVFhcJPnACfb91A3g==}
+
+  '@fontsource/miriam-libre@5.3.0':
+    resolution: {integrity: sha512-Hgq3z9ITZNlE+kK0wuE87PAweG7Z7qoCdQOKlhirwaygtVHxzInTmCwGaNzW9KOkyiQg8/JrqZa29BZKzMluYQ==}
+
+  '@fontsource/oswald@5.3.0':
+    resolution: {integrity: sha512-16r2aHActe0pH+9FLdk/74/YxXM7HpGak05kAzx3RvSToiJwGvyhv6GvckPz+YuZmvL1nxWbEop2jAXRcXYPRg==}
+
+  '@fontsource/poppins@5.3.0':
+    resolution: {integrity: sha512-cms1nM7U6SN8epIV1WMVOV8VsA645aSm3wHfzIQnkk188U341ThbJGSl2Sv54V29gnDbT2arMPfLzvVIIVCceQ==}
+
+  '@fontsource/rubik@5.3.0':
+    resolution: {integrity: sha512-Nks2mn7vlE1jZVHuVgoKU2Ejqjvd+GJzLRdraCjo1xc79oo7O6vJ8pcvSfmKPGX3/Ln7nt09XWFzPeu2jWf0xQ==}
+
+  '@fontsource/source-sans-3@5.3.0':
+    resolution: {integrity: sha512-VrWixSgF93kOVSEkwjs9ImnAbxrBew4PgcnaJYEitG9TyJSwxjFUNJIgzB1XFP/acyAWcTDg7+sWe7JI8LTB9w==}
 
   '@fullcalendar/core@6.1.20':
     resolution: {integrity: sha512-1cukXLlePFiJ8YKXn/4tMKsy0etxYLCkXk8nUCFi11nRONF2Ba2CD5b21/ovtOO2tL6afTJfwmc1ed3HG7eB1g==}
@@ -4119,6 +4179,26 @@ snapshots:
   '@exodus/bytes@1.15.1(@noble/hashes@1.8.0)':
     optionalDependencies:
       '@noble/hashes': 1.8.0
+
+  '@fontsource/assistant@5.3.0': {}
+
+  '@fontsource/crimson-text@5.3.0': {}
+
+  '@fontsource/frank-ruhl-libre@5.3.0': {}
+
+  '@fontsource/heebo@5.3.0': {}
+
+  '@fontsource/inter@5.3.0': {}
+
+  '@fontsource/miriam-libre@5.3.0': {}
+
+  '@fontsource/oswald@5.3.0': {}
+
+  '@fontsource/poppins@5.3.0': {}
+
+  '@fontsource/rubik@5.3.0': {}
+
+  '@fontsource/source-sans-3@5.3.0': {}
 
   '@fullcalendar/core@6.1.20':
     dependencies:

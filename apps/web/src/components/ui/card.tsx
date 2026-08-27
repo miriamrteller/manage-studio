@@ -7,7 +7,7 @@ export const Card = ({
   ...rest
 }: React.HTMLAttributes<HTMLDivElement> & { children: React.ReactNode; className?: string }) => (
   <div
-    className={`border border-[var(--border-default)] rounded-lg p-6 bg-[var(--surface-base)] elevation-1 hover:[box-shadow:var(--elevation-2)] interact-lift motion-safe transition-shadow duration-200 ease-out ${onClick ? 'cursor-pointer' : ''} ${className}`}
+    className={`border border-[var(--border-hairline)] rounded-surface p-6 bg-[var(--surface-base)] elevation-1 hover:[box-shadow:var(--elevation-2)] interact-lift motion-safe transition-shadow duration-200 ease-out ${onClick ? 'cursor-pointer' : ''} ${className}`}
     onClick={onClick}
     role={onClick ? 'button' : undefined}
     tabIndex={onClick ? 0 : undefined}

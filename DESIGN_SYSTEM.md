@@ -1,7 +1,33 @@
 # Design System — manage-studio
 
-> Last updated: 2026-08-05  
+> Last updated: 2026-08-27  
 > Applies to: `apps/web/src/` — all components, pages, and utilities
+
+---
+
+## 0. The Finish Layer (DL-DESIGN-009)
+
+The "designed" feel — depth, light, and softness — comes from a token layer in
+`index.css` where **every value is derived at paint time from the tenant's
+injected brand primitives** via `color-mix()`. Nothing here introduces a
+literal color, so white-label branding and the font system stay fully in
+control.
+
+| Token | What it is |
+|---|---|
+| `--radius-control` / `--radius-surface` / `--radius-overlay` | Semantic radius ramp: buttons+inputs (10px), cards (14px), modals (20px). Utilities: `rounded-control`, `rounded-surface`, `rounded-overlay`. |
+| `--tint-primary-05/10/15/25` | Transparent washes of the tenant primary. Use these instead of any hardcoded `rgba()` tint. |
+| `--shadow-ink` | Near-black nudged toward the brand hue; the ink all elevation shadows are cast in. |
+| `--border-hairline` | Neutral border with a barely-there brand tint. Utility: `border-hairline`. |
+| `--focus-halo` / `--focus-halo-error` | Soft outer ring of the two-part focus style (crisp 2px outline + 4px halo). |
+| `--sheen-raised` / `--edge-emboss` | Translucent white/black overlays for raised controls — hue-neutral, so they sit on any tenant color. |
+| `--wash-brand` | Ambient radial brand-tint gradient for page/hero backgrounds. Utility: `bg-brand-wash`. |
+
+Rules:
+
+- **Never** hardcode a tint (`rgba(118,51,90,.1)`-style values are forbidden); use the `--tint-primary-*` ramp or `color-mix()` from a token.
+- Gradients on colored controls must be **overlays** (translucent white/black), never a second color — that is what keeps tenant hues intact.
+- Elevation levels 1–4 are layered (contact + ambient shadow) and brand-tinted automatically; just use `elevation-*` as before.
 
 ---
 
@@ -26,15 +52,21 @@ Colors are resolved at runtime from the tenant's white-label config via `useTena
 
 ## 2. Elevation (Box Shadows)
 
-Five elevation levels are defined in `index.css` as CSS custom properties:
+Five elevation levels are defined in `index.css` as CSS custom properties.
+Since DL-DESIGN-009 each level is a **layered** shadow (a tight "contact"
+shadow plus a wide soft "ambient" one) cast in `--shadow-ink` — near-black
+mixed toward the tenant primary hue — rather than flat `rgba(0,0,0,…)`:
 
 ```css
 --elevation-0: none;
---elevation-1: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
---elevation-2: 0 4px 6px rgba(0,0,0,.07), 0 2px 4px rgba(0,0,0,.06);
---elevation-3: 0 10px 15px rgba(0,0,0,.1), 0 4px 6px rgba(0,0,0,.05);
---elevation-4: 0 20px 25px rgba(0,0,0,.1), 0 10px 10px rgba(0,0,0,.04);
+--elevation-1: 0 1px 2px color-mix(in srgb, var(--shadow-ink) 7%, transparent),
+  0 1px 1px color-mix(in srgb, var(--shadow-ink) 5%, transparent);
+/* …levels 2–4 scale the same contact+ambient pair up; see index.css */
 ```
+
+Do not restate shadow values in components — always reference `--elevation-*`
+(or the `elevation-*` utility classes) so the tinted ramp stays the single
+source of truth.
 
 ### Usage in Tailwind
 

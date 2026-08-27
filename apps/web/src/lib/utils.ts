@@ -15,9 +15,12 @@ export function getAccessibleTextColor(hex: string): string {
 }
 
 export function darkenColor(hex: string, amount: number): string {
-  const r = Math.max(0, parseInt(hex.slice(1, 3), 16) - Math.round(255 * amount));
-  const g = Math.max(0, parseInt(hex.slice(3, 5), 16) - Math.round(255 * amount));
-  const b = Math.max(0, parseInt(hex.slice(5, 7), 16) - Math.round(255 * amount));
+  // Clamp both ends: a negative amount (lighten) on a bright channel could
+  // exceed 255 and emit a 3-digit channel, corrupting the hex string.
+  const clamp = (v: number) => Math.min(255, Math.max(0, v));
+  const r = clamp(parseInt(hex.slice(1, 3), 16) - Math.round(255 * amount));
+  const g = clamp(parseInt(hex.slice(3, 5), 16) - Math.round(255 * amount));
+  const b = clamp(parseInt(hex.slice(5, 7), 16) - Math.round(255 * amount));
   return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
 }
 
@@ -29,12 +32,22 @@ export function getBackgroundForPrimaryColor(hex: string): 'warm' | 'cool' {
 
 export function deriveColorSystem(primary: string, secondary?: string): Record<string, string> {
   const sec = secondary ?? darkenColor(primary, 0.15);
+  // Must cover EVERY --color-primary-*/--color-secondary-* state variable the
+  // CSS consumes (hover, active, light, dark). Any key missing here leaves the
+  // default burgundy fallback from index.css visible on tenant themes — that
+  // is exactly the bug where nav hover/active showed the wrong brand color.
+  // Darken amounts mirror the default family's hover (~9%) / active (~17%).
   return {
     primary,
     primary_dark: darkenColor(primary, 0.15),
     primary_light: darkenColor(primary, -0.15),
+    primary_hover: darkenColor(primary, 0.09),
+    primary_active: darkenColor(primary, 0.17),
     secondary: sec,
     secondary_dark: darkenColor(sec, 0.15),
+    secondary_light: darkenColor(sec, -0.15),
+    secondary_hover: darkenColor(sec, 0.09),
+    secondary_active: darkenColor(sec, 0.17),
   };
 }
 

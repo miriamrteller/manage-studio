@@ -38,6 +38,8 @@ const env = parseEnvFile(envPath);
 const required = [
   'CLOUDFLARE_ACCOUNT_ID',
   'CLOUDFLARE_EMAIL_API_TOKEN',
+  'RESEND_API_KEY',
+  'EMAIL_TRANSPORT',
   'NOTIFICATION_FROM_EMAIL',
   'SEND_EMAIL_HOOK_SECRET',
 ];
