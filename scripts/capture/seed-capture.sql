@@ -300,11 +300,12 @@ VALUES
   ('00000000-0000-0000-00c0-000000000510'::uuid,
    '00000000-0000-0000-00c0-000000000001'::uuid,
    ARRAY['account_holder'], 'dana.cohen@example.com', 'en', 'IL'),
-  -- super_admin included to match the dev admin seed: people/accounts RLS has
-  -- no tenant_admin INSERT policy, so admin intake needs the super_admin path.
+  -- tenant_admin only: super_admin is reserved for the platform owner
+  -- (enforced by trg_super_admin_reserved); admin intake works via the
+  -- 'admins manage people' policy.
   ('00000000-0000-0000-00c0-000000000511'::uuid,
    '00000000-0000-0000-00c0-000000000001'::uuid,
-   ARRAY['super_admin', 'tenant_admin'], 'admin@studioaviv.example.com', 'en', 'IL')
+   ARRAY['tenant_admin'], 'admin@studioaviv.example.com', 'en', 'IL')
 ON CONFLICT (id) DO UPDATE SET
   tenant_id = EXCLUDED.tenant_id,
   role = EXCLUDED.role,
