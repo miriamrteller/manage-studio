@@ -4,15 +4,17 @@ import type { UserProfile } from '@/types/auth';
 
 /**
  * Tenant membership: a signed-in user may only act on the tenant their
- * profile belongs to. `super_admin` is the platform role and passes on any
- * tenant. Everyone else must match the tenant resolved from the subdomain —
- * otherwise a studioaviv admin could open creativeballet's admin shell.
+ * profile belongs to — the profile's tenant_id must equal the tenant
+ * resolved from the subdomain, no exceptions. There is deliberately NO
+ * role-based bypass here (not even super_admin): dev/demo accounts have
+ * carried super_admin in the past, and any bypass turns one leaked account
+ * into an all-tenants key. Cross-tenant platform tooling, if ever needed,
+ * must be its own explicit surface — not a hole in login.
  */
 export function isMemberOfTenant(
   profile: Pick<UserProfile, 'role' | 'tenant_id'>,
   tenantId: string,
 ): boolean {
-  if (profile.role.includes('super_admin')) return true;
   return !!profile.tenant_id && profile.tenant_id === tenantId;
 }
 

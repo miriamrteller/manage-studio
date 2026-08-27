@@ -644,7 +644,10 @@ INSERT INTO user_profiles (
 ) VALUES (
   '51149671-b030-4931-9a0d-ca1862ae4f0b',
   '00000000-0000-0000-0000-000000000001'::uuid,
-  ARRAY['super_admin', 'tenant_admin'],
+  -- tenant_admin ONLY. super_admin bypasses every tenant-scoped RLS policy
+  -- (is_super_admin() policies exist on all tables) and must never be seeded
+  -- onto a per-tenant dev account, or that account works on every subdomain.
+  ARRAY['tenant_admin'],
   'miriamrteller@gmail.com',
   'en',
   'IL'
@@ -1119,3 +1122,111 @@ ON CONFLICT (id) DO UPDATE SET
   last_contacted_at = EXCLUDED.last_contacted_at,
   last_communication_note = EXCLUDED.last_communication_note,
   marketing_consent = EXCLUDED.marketing_consent;
+
+-- ============================================================================
+-- SECOND TENANT — Studio Aviv (studioaviv.localhost:5173)
+--
+-- Exists specifically so tenant isolation is testable in dev: its admin
+-- account must work ONLY on the studioaviv subdomain, and creativeballet's
+-- accounts must be rejected there (and vice versa). Blue "bold" theme so a
+-- theming leak between tenants is obvious at a glance next to
+-- creativeballet's purple/pink "elegant" theme.
+-- ============================================================================
+INSERT INTO tenants (id, name, subdomain, language_default, country, primary_color, accent_color, currency, phone_region, business_preset, labels, contact_email, from_email, from_email_verified_at, waiver_require_otp, payment_provider, invoicing_provider, plan, skin, font_pair)
+VALUES (
+  '00000000-0000-0000-0000-000000000002'::uuid,
+  'Studio Aviv',
+  'studioaviv',
+  'he',
+  'IL',
+  '#1e40af',  -- bold blue
+  '#93c5fd',  -- light blue accent
+  'ILS',
+  'IL',
+  'programs',
+  '{}'::jsonb,
+  'admin@studioaviv.example.com',
+  NULL,   -- from_email: unbranded — sends as studioaviv@platform domain (see #65)
+  NULL,
+  false,
+  'grow',
+  'grow',
+  'essential',
+  'dance-studio',
+  'bold'
+) ON CONFLICT (subdomain) DO UPDATE SET
+  name = EXCLUDED.name,
+  language_default = EXCLUDED.language_default,
+  country = EXCLUDED.country,
+  primary_color = EXCLUDED.primary_color,
+  accent_color = EXCLUDED.accent_color,
+  currency = EXCLUDED.currency,
+  phone_region = EXCLUDED.phone_region,
+  business_preset = EXCLUDED.business_preset,
+  contact_email = EXCLUDED.contact_email,
+  from_email = EXCLUDED.from_email,
+  from_email_verified_at = EXCLUDED.from_email_verified_at,
+  payment_provider = EXCLUDED.payment_provider,
+  invoicing_provider = EXCLUDED.invoicing_provider,
+  plan = EXCLUDED.plan,
+  skin = EXCLUDED.skin,
+  font_pair = EXCLUDED.font_pair;
+
+-- Studio Aviv dev admin — admin@studioaviv.example.com / devPassword123.
+-- Full auth.users row (empty-string token columns, matching identity): GoTrue
+-- fails password logins with "Database error querying schema" when the token
+-- columns are NULL or the identity row is missing.
+DO $$
+DECLARE
+  v_encrypted_pw TEXT := crypt('devPassword123', gen_salt('bf'));
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM auth.users WHERE id = '00000000-0000-0000-0000-000000000520'::uuid
+  ) THEN
+    INSERT INTO auth.users (
+      id, instance_id, aud, role, email, encrypted_password, email_confirmed_at,
+      raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+      confirmation_token, email_change, email_change_token_new, recovery_token
+    ) VALUES (
+      '00000000-0000-0000-0000-000000000520'::uuid,
+      '00000000-0000-0000-0000-000000000000'::uuid,
+      'authenticated',
+      'authenticated',
+      'admin@studioaviv.example.com',
+      v_encrypted_pw,
+      now(),
+      '{"provider":"email","providers":["email"]}'::jsonb,
+      '{"subdomain":"studioaviv"}'::jsonb,
+      now(), now(),
+      '', '', '', ''
+    );
+
+    INSERT INTO auth.identities (
+      id, user_id, identity_data, provider, provider_id,
+      last_sign_in_at, created_at, updated_at
+    ) VALUES (
+      '00000000-0000-0000-0000-000000000520'::uuid,
+      '00000000-0000-0000-0000-000000000520'::uuid,
+      '{"sub":"00000000-0000-0000-0000-000000000520","email":"admin@studioaviv.example.com"}'::jsonb,
+      'email',
+      '00000000-0000-0000-0000-000000000520',
+      now(), now(), now()
+    );
+  END IF;
+END $$;
+
+-- tenant_admin ONLY — never super_admin on a per-tenant dev account.
+INSERT INTO user_profiles (id, tenant_id, role, email, language, country)
+VALUES (
+  '00000000-0000-0000-0000-000000000520'::uuid,
+  '00000000-0000-0000-0000-000000000002'::uuid,
+  ARRAY['tenant_admin'],
+  'admin@studioaviv.example.com',
+  'he',
+  'IL'
+) ON CONFLICT (id) DO UPDATE SET
+  tenant_id = EXCLUDED.tenant_id,
+  role = EXCLUDED.role,
+  email = EXCLUDED.email,
+  language = EXCLUDED.language,
+  country = EXCLUDED.country;

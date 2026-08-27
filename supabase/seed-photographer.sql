@@ -8,14 +8,43 @@ DECLARE
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM tenants WHERE subdomain = 'photographer') THEN
     -- Owner must exist before provisioning: provision_tenant links it as tenant_admin.
-    INSERT INTO auth.users (id, email, encrypted_password, email_confirmed_at, created_at, updated_at)
+    -- Full auth row + identity (empty-string token columns): GoTrue rejects
+    -- password logins with "Database error querying schema" when the token
+    -- columns are NULL or the identity row is missing. Password matches the
+    -- other dev accounts: devPassword123.
+    INSERT INTO auth.users (
+      id, instance_id, aud, role, email, encrypted_password, email_confirmed_at,
+      raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+      confirmation_token, email_change, email_change_token_new, recovery_token
+    )
     VALUES (
       'aaaaaaaa-0000-0000-0000-000000000013'::uuid,
+      '00000000-0000-0000-0000-000000000000'::uuid,
+      'authenticated',
+      'authenticated',
       'owner@photographer.test',
-      crypt('devpassword', gen_salt('bf')),
-      now(), now(), now()
+      crypt('devPassword123', gen_salt('bf')),
+      now(),
+      '{"provider":"email","providers":["email"]}'::jsonb,
+      '{}'::jsonb,
+      now(), now(),
+      '', '', '', ''
     )
     ON CONFLICT (id) DO NOTHING;
+
+    INSERT INTO auth.identities (
+      id, user_id, identity_data, provider, provider_id,
+      last_sign_in_at, created_at, updated_at
+    )
+    VALUES (
+      'aaaaaaaa-0000-0000-0000-000000000013'::uuid,
+      'aaaaaaaa-0000-0000-0000-000000000013'::uuid,
+      '{"sub":"aaaaaaaa-0000-0000-0000-000000000013","email":"owner@photographer.test"}'::jsonb,
+      'email',
+      'aaaaaaaa-0000-0000-0000-000000000013',
+      now(), now(), now()
+    )
+    ON CONFLICT (provider_id, provider) DO NOTHING;
 
     PERFORM provision_tenant(
       p_name        := 'Photographer Demo',
