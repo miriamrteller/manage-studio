@@ -1,3 +1,35 @@
+# ============================================================================
+# Auth (local dev) — required for magic links / email codes on tenant
+# subdomains. Without site_url + additional_redirect_urls, GoTrue rejects the
+# redirect to http://<tenant>.localhost:5173/auth/callback and sends magic
+# links to its default site_url (localhost:3000 — a dead end), which is why
+# magic-link logins "did nothing".
+#
+# Emails in local dev NEVER reach real inboxes (even @gmail.com addresses):
+# read them in the mail catcher at http://localhost:54324 — magic links and
+# 6-digit codes for any address land there.
+# ============================================================================
+[auth]
+enabled = true
+site_url = "http://localhost:5173"
+additional_redirect_urls = [
+  "http://localhost:5173/**",
+  "http://*.localhost:5173/**",
+]
+enable_signup = true
+
+[auth.email]
+enable_signup = true
+enable_confirmations = false
+otp_length = 6
+otp_expiry = 3600
+# Dev convenience: no cooldown between resends while testing codes.
+max_frequency = "1s"
+
+# Local mail catcher (Inbucket/Mailpit) — http://localhost:54324
+[inbucket]
+enabled = true
+port = 54324
 
 [functions.send-otp-email]
 enabled = true

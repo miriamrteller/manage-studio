@@ -23,11 +23,20 @@ describe('isMemberOfTenant', () => {
     ).toBe(false);
   });
 
-  it('allows super_admin on any tenant (platform role)', () => {
+  it('rejects even super_admin on a foreign tenant — no role bypasses the match', () => {
     expect(
       isMemberOfTenant(
         { role: ['super_admin', 'tenant_admin'], tenant_id: CREATIVEBALLET },
         STUDIOAVIV,
+      ),
+    ).toBe(false);
+  });
+
+  it('allows super_admin on its own tenant like any other role', () => {
+    expect(
+      isMemberOfTenant(
+        { role: ['super_admin', 'tenant_admin'], tenant_id: CREATIVEBALLET },
+        CREATIVEBALLET,
       ),
     ).toBe(true);
   });
