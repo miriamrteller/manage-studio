@@ -332,6 +332,13 @@ body {
   font-family: var(--font-family-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Ambient brand wash (DL-DESIGN-009): tenant-tinted off-white ground with
+     a soft radial brand glow at the top — this is what makes cards and
+     raised controls read as elevated instead of floating on plain white. */
+  background-color: var(--color-bg-primary);
+  background-image: var(--wash-brand);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
 }
 
 /* Scheduling calendar: grey out Shabbat, holidays, and their eve. */
@@ -440,13 +447,15 @@ body {
   height: 100%;
   min-height: 2rem;
   padding: 0.2rem 0.35rem;
-  border-radius: 0.375rem;
+  border-radius: var(--radius-control, 0.375rem);
   border: 1px solid var(--color-primary);
   background: var(--color-primary);
+  /* DL-DESIGN-009 raised finish (hue-neutral sheen over the tenant color) */
+  background-image: var(--sheen-raised);
   color: var(--color-on-primary, #fff);
   font-weight: 600;
   line-height: 1.2;
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.08);
+  box-shadow: var(--edge-emboss), var(--elevation-1);
   transition: filter 0.15s ease, box-shadow 0.15s ease;
 }
 .fc-booking-calendar .fc-booking-slot:hover .fc-booking-slot-btn {
@@ -577,14 +586,14 @@ body {
      weight as the previous neutral ramp, but the light feels like it
      belongs to the brand. Tenant color drives this automatically. --- */
   --elevation-0: none;
-  --elevation-1: 0 1px 2px color-mix(in srgb, var(--shadow-ink) 7%, transparent),
-    0 1px 1px color-mix(in srgb, var(--shadow-ink) 5%, transparent);
-  --elevation-2: 0 2px 4px -1px color-mix(in srgb, var(--shadow-ink) 8%, transparent),
-    0 5px 12px -2px color-mix(in srgb, var(--shadow-ink) 8%, transparent);
-  --elevation-3: 0 4px 8px -2px color-mix(in srgb, var(--shadow-ink) 10%, transparent),
-    0 12px 24px -4px color-mix(in srgb, var(--shadow-ink) 10%, transparent);
-  --elevation-4: 0 8px 16px -4px color-mix(in srgb, var(--shadow-ink) 12%, transparent),
-    0 24px 48px -8px color-mix(in srgb, var(--shadow-ink) 14%, transparent);
+  --elevation-1: 0 1px 2px color-mix(in srgb, var(--shadow-ink) 12%, transparent),
+    0 2px 4px color-mix(in srgb, var(--shadow-ink) 8%, transparent);
+  --elevation-2: 0 2px 4px -1px color-mix(in srgb, var(--shadow-ink) 14%, transparent),
+    0 6px 14px -2px color-mix(in srgb, var(--shadow-ink) 14%, transparent);
+  --elevation-3: 0 4px 8px -2px color-mix(in srgb, var(--shadow-ink) 16%, transparent),
+    0 14px 28px -4px color-mix(in srgb, var(--shadow-ink) 18%, transparent);
+  --elevation-4: 0 8px 16px -4px color-mix(in srgb, var(--shadow-ink) 18%, transparent),
+    0 28px 56px -8px color-mix(in srgb, var(--shadow-ink) 22%, transparent);
 
   /* --- Z-Index Tiers --- */
   --z-base: 0;
@@ -1219,17 +1228,17 @@ dialog.modal-dialog::backdrop {
   /* --- Sheen & emboss overlays (hue-neutral, sit on any tenant color) --- */
   --sheen-raised: linear-gradient(
     to bottom,
-    rgb(255 255 255 / 0.14),
-    rgb(255 255 255 / 0) 55%
+    rgb(255 255 255 / 0.22),
+    rgb(255 255 255 / 0) 60%
   );
-  --edge-emboss: inset 0 1px 0 rgb(255 255 255 / 0.16),
-    inset 0 -1px 0 rgb(0 0 0 / 0.05);
+  --edge-emboss: inset 0 1px 0 rgb(255 255 255 / 0.25),
+    inset 0 -1px 0 rgb(0 0 0 / 0.08);
 
   /* --- Brand wash: ambient page/hero background gradient --- */
   --wash-brand: radial-gradient(
     120% 90% at 50% 0%,
-    var(--tint-primary-05),
-    transparent 60%
+    var(--tint-primary-10),
+    transparent 55%
   );
 }
 
