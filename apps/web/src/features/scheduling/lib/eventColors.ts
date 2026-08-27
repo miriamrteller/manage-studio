@@ -90,7 +90,9 @@ export function createScheduleColorResolver(
     const background = CLASS_PALETTE[index % CLASS_PALETTE.length];
     return {
       background,
-      border: darkenColor(background, 14),
+      // darkenColor takes a fraction of 255; `14` clamped every border to
+      // pure black instead of a 14% darker shade of the event colour.
+      border: darkenColor(background, 0.14),
       text: getAccessibleTextColor(background),
     };
   };
