@@ -146,7 +146,7 @@ VALUES (
   '{}'::jsonb,
   'info@studioaviv.example.com',
   'info@studioaviv.example.com',
-  now(),
+  NULL,  -- unverified: sends fall back to studioaviv@opalswift.com (see seed.sql note)
   false,
   'mock',
   'mock',
@@ -159,7 +159,8 @@ VALUES (
   accent_color = EXCLUDED.accent_color,
   payment_provider = EXCLUDED.payment_provider,
   invoicing_provider = EXCLUDED.invoicing_provider,
-  font_pair = EXCLUDED.font_pair;
+  font_pair = EXCLUDED.font_pair,
+  from_email_verified_at = EXCLUDED.from_email_verified_at;
 
 -- ----------------------------------------------------------------------------
 -- 2. SEASON + OFFERING — Ballet — Ages 6-9, Tuesdays 16:00, Fall 2026

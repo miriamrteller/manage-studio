@@ -38,8 +38,10 @@ VALUES (
   'programs',
   '{}'::jsonb,
   'info@creativeballetacademy.com',  -- contact_email: Reply-To on every send; the studio's real inbox
-  'info@creativeballetacademy.com',  -- from_email: branded sender (dev only — see verified_at below)
-  now(),  -- from_email_verified_at: pretend-verified in dev so the branded path is exercised
+  'info@creativeballetacademy.com',  -- from_email: aspirational branded sender (Cloudflare-era per-tenant domains)
+  NULL,   -- from_email_verified_at: NOT verified. The launch transport (Resend free tier) holds ONE
+          -- domain, so every tenant sends as <subdomain>@opalswift.com. Pretend-verifying here made
+          -- dev exercise a path production cannot take — real sends came back 403 from Resend.
   false,  -- OTP before waiver signing disabled by default; enable only if Twilio Verify is configured
   'invoice4u',
   'invoice4u',
