@@ -107,6 +107,9 @@
     "invalid_callback": "Invalid authentication callback. Please try logging in again.",
     "session_exchange_failed": "Failed to establish your session. Please try logging in again.",
     "unexpected": "An unexpected error occurred. Please try again.",
+    "page_crashed_title": "Something went wrong",
+    "page_crashed_description": "This page hit an unexpected error. The rest of the app is still available — go back or return to the home page.",
+    "page_crashed_details": "Error details",
     "user_not_found": "User account not found. Please contact support.",
     "session_setup_failed": "Session Setup Failed",
     "contact_support": "If this problem persists, please contact support.",
@@ -1094,6 +1097,7 @@
     "calendar": "Calendar",
     "booking_settings": "Booking Settings",
     "booking_services": "Bookable Services",
+    "booking_disabled_hint": "Online booking is turned off. Enable it under Setup → Booking Settings.",
     "waivers": "Waivers",
     "requirements": "Requirements",
     "section": {
@@ -1168,7 +1172,7 @@
     },
     "services": {
       "title": "Bookable Services",
-      "subtitle": "The 1:1 services clients can book on your booking page.",
+      "subtitle": "The one-off sessions clients can book with you online — for example workshops, 1:1 private lessons, trial classes, or consultations.",
       "not_available": "Appointment services are not available on your current plan.",
       "add": "Add service",
       "edit": "Edit service",
@@ -1177,7 +1181,7 @@
       "price": "Price",
       "location": "Location (optional)",
       "is_public": "Show on booking page",
-      "none": "No services yet. Add your first bookable service.",
+      "none": "No services yet. Click “Add service” to create your first one — for example a workshop or a private lesson.",
       "save": "Save service",
       "cancel": "Cancel",
       "remove": "Remove",
@@ -1185,7 +1189,7 @@
       "saved": "Service saved.",
       "removed": "Service removed.",
       "duration_suffix": "min",
-      "settings_hint": "Availability hours and booking rules are configured in Booking Settings.",
+      "settings_hint": "Add and manage your bookable services on this page. When clients can book them — availability hours and booking rules — is set under",
       "booking_disabled_warning": "Booking is disabled. Enable it in Booking Settings and save — otherwise clients will see an empty booking page even if services are listed here."
     },
     "book": {

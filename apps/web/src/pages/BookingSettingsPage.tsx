@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { FEATURES } from '@shared/index';
 import { useTenant } from '@/hooks/useTenant';
 import { useFeatureGate } from '@/hooks/useFeatureGate';
+import queryClient from '@/lib/query-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
@@ -39,7 +40,10 @@ export default function BookingSettingsPage() {
   const penaltiesEnabled = hasFeature(FEATURES.scheduling.penalties);
 
   const settingsQuery = useQuery({
-    queryKey: ['bookingSettings', tenant?.id],
+    // Not ['bookingSettings', id]: BookingServicesPage and useBookingEnabled cache
+    // the bare settings object under that key, and this query caches {s, h} —
+    // sharing the key serves the wrong shape from cache and crashes the page.
+    queryKey: ['bookingSettings', tenant?.id, 'withHours'],
     queryFn: async () => {
       if (!tenant?.id) return null;
       const [s, h] = await Promise.all([
@@ -53,8 +57,8 @@ export default function BookingSettingsPage() {
 
   useEffect(() => {
     if (settingsQuery.data) {
-      setSettings(settingsQuery.data.s);
-      setHours(settingsQuery.data.h);
+      setSettings(settingsQuery.data.s ?? DEFAULT_BOOKING_SETTINGS);
+      setHours(settingsQuery.data.h ?? []);
     }
   }, [settingsQuery.data]);
 
@@ -81,6 +85,9 @@ export default function BookingSettingsPage() {
     try {
       await BookingSettingsService.saveSettings(tenant as never, settings);
       await BookingSettingsService.saveHours(tenant as never, hours);
+      // Prefix match also refreshes the services page and the nav drawer's
+      // booking-enabled state, which cache under ['bookingSettings', id].
+      await queryClient.invalidateQueries({ queryKey: ['bookingSettings', tenant.id] });
       setStatus({ kind: 'ok', msg: t('scheduling.booking.saved') });
     } catch (e) {
       setStatus({ kind: 'error', msg: e instanceof Error ? e.message : String(e) });

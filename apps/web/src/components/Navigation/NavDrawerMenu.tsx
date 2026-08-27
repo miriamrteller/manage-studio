@@ -9,6 +9,8 @@ interface NavDrawerMenuProps {
   activePath: string | null;
   onNavigate: (path: string) => void;
   navLabel: (item: NavItem) => string;
+  /** Grey the item out (visible but not clickable), e.g. booking turned off. */
+  isItemDisabled?: (item: NavItem) => boolean;
 }
 
 function sectionContainsPath(section: NavSection, path: string | null): boolean {
@@ -21,6 +23,7 @@ export function NavDrawerMenu({
   activePath,
   onNavigate,
   navLabel,
+  isItemDisabled,
 }: NavDrawerMenuProps) {
   const { t } = useTranslation();
   const [expandedSections, setExpandedSections] = useState<Set<NavSectionKey>>(() => {
@@ -66,15 +69,19 @@ export function NavDrawerMenu({
               <ul>
                 {section.items.map((item) => {
                   const active = activePath === item.path;
+                  const disabled = isItemDisabled?.(item) ?? false;
                   return (
                     <li key={item.path}>
                       <button
                         type="button"
+                        disabled={disabled}
+                        title={disabled ? t('nav.booking_disabled_hint') : undefined}
                         onClick={() => onNavigate(item.path)}
                         aria-current={active ? 'page' : undefined}
                         className={cn(
                           'w-full px-4 py-2.5 text-start text-sm font-medium transition-colors',
-                          'hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-on-primary focus-visible:outline-offset-[-2px]',
+                          'focus-visible:outline-2 focus-visible:outline-on-primary focus-visible:outline-offset-[-2px]',
+                          disabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-primary-hover',
                           active && 'bg-primary-hover',
                         )}
                       >
@@ -91,15 +98,19 @@ export function NavDrawerMenu({
         if (section.items.length === 1) {
           const item = section.items[0];
           const active = activePath === item.path;
+          const disabled = isItemDisabled?.(item) ?? false;
           return (
             <div key={section.sectionKey} className="border-b border-primary-active/40 last:border-b-0">
               <button
                 type="button"
+                disabled={disabled}
+                title={disabled ? t('nav.booking_disabled_hint') : undefined}
                 onClick={() => onNavigate(item.path)}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
                   'w-full px-4 py-2.5 text-start text-sm font-medium transition-colors',
-                  'hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-on-primary focus-visible:outline-offset-[-2px]',
+                  'focus-visible:outline-2 focus-visible:outline-on-primary focus-visible:outline-offset-[-2px]',
+                  disabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-primary-hover',
                   active && 'bg-primary-hover',
                 )}
               >
@@ -139,16 +150,20 @@ export function NavDrawerMenu({
               <ul id={sectionPanelId}>
                 {section.items.map((item) => {
                   const active = activePath === item.path;
+                  const disabled = isItemDisabled?.(item) ?? false;
                   return (
                     <li key={item.path}>
                       <button
                         type="button"
+                        disabled={disabled}
+                        title={disabled ? t('nav.booking_disabled_hint') : undefined}
                         onClick={() => onNavigate(item.path)}
                         aria-current={active ? 'page' : undefined}
                         className={cn(
                           'w-full text-start py-2 text-sm transition-colors',
                           item.indent ? 'ps-8 pe-4' : 'px-4',
-                          'hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-on-primary focus-visible:outline-offset-[-2px]',
+                          'focus-visible:outline-2 focus-visible:outline-on-primary focus-visible:outline-offset-[-2px]',
+                          disabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-primary-hover',
                           active && 'bg-primary-hover font-medium',
                         )}
                       >
