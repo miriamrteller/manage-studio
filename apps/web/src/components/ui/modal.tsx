@@ -78,7 +78,7 @@ export function Modal({
       ref={dialogRef}
       data-size={size}
       className={cn(
-        'modal-dialog elevation-4 rounded-lg p-6 w-full',
+        'modal-dialog elevation-4 rounded-overlay p-6 w-full',
         SIZE_CLASSES[size],
         'motion-safe animate-scale-in',
         className
