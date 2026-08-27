@@ -2,7 +2,28 @@ import { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useCurrentUser } from '../hooks/useCurrentUser';
+import { useTenantQuery } from '../hooks/useTenant';
+import { isMemberOfTenant } from '@/lib/tenantMembership';
 import { hasParentRole } from '@/lib/parentRoles';
+
+/**
+ * useCurrentUser, scoped to the tenant of the current subdomain: a signed-in
+ * profile belonging to a DIFFERENT tenant is treated as no user at all, so a
+ * studioaviv admin bounces to /login on creativeballet instead of getting its
+ * admin shell. `super_admin` (platform role) passes on any tenant. Only
+ * enforced once tenant config resolves — an unresolved subdomain keeps the
+ * previous role-only behaviour rather than locking everyone out.
+ */
+function useTenantScopedUser() {
+  const { user, isLoading } = useCurrentUser();
+  const { tenant, isLoading: tenantLoading } = useTenantQuery();
+
+  const crossTenant = !!user && !!tenant && !isMemberOfTenant(user, tenant.id);
+  return {
+    user: crossTenant ? null : user,
+    isLoading: isLoading || tenantLoading,
+  };
+}
 
 /**
  * Loading state component used by all route guards
@@ -31,7 +52,7 @@ function returnToFromLocation(location: ReturnType<typeof useLocation>): string 
  * AdminRoute: requires role to include 'tenant_admin'
  */
 export function AdminRoute({ children }: { children: ReactNode }) {
-  const { user, isLoading } = useCurrentUser();
+  const { user, isLoading } = useTenantScopedUser();
   const location = useLocation();
 
   if (isLoading) {
@@ -49,7 +70,7 @@ export function AdminRoute({ children }: { children: ReactNode }) {
  * TeacherRoute: requires role to include 'teacher'
  */
 export function TeacherRoute({ children }: { children: ReactNode }) {
-  const { user, isLoading } = useCurrentUser();
+  const { user, isLoading } = useTenantScopedUser();
   const location = useLocation();
 
   if (isLoading) {
@@ -67,7 +88,7 @@ export function TeacherRoute({ children }: { children: ReactNode }) {
  * ParentRoute: requires a parent portal role (parent, guardian, or account_holder)
  */
 export function ParentRoute({ children }: { children: ReactNode }) {
-  const { user, isLoading } = useCurrentUser();
+  const { user, isLoading } = useTenantScopedUser();
   const location = useLocation();
 
   if (isLoading) {
@@ -85,7 +106,7 @@ export function ParentRoute({ children }: { children: ReactNode }) {
  * SuperAdminRoute: requires role to include 'super_admin'
  */
 export function SuperAdminRoute({ children }: { children: ReactNode }) {
-  const { user, isLoading } = useCurrentUser();
+  const { user, isLoading } = useTenantScopedUser();
   const location = useLocation();
 
   if (isLoading) {
@@ -103,7 +124,7 @@ export function SuperAdminRoute({ children }: { children: ReactNode }) {
  * StudentRoute: requires role to include 'student' or 'adult_student'
  */
 export function StudentRoute({ children }: { children: ReactNode }) {
-  const { user, isLoading } = useCurrentUser();
+  const { user, isLoading } = useTenantScopedUser();
   const location = useLocation();
 
   if (isLoading) {

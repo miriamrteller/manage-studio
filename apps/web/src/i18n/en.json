@@ -300,6 +300,7 @@
       "invalid_code": "That code is incorrect or has expired. Request a new code.",
       "invalid_credentials": "Invalid email or password.",
       "success_redirecting": "Login successful. Redirecting...",
+      "wrong_studio": "This account belongs to a different studio. Sign in on your own studio's address.",
       "check_email": "Check your email for a sign-in link."
     },
     "people": {
