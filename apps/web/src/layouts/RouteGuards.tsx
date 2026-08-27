@@ -10,10 +10,10 @@ import { hasParentRole } from '@/lib/parentRoles';
  * useCurrentUser, scoped to the tenant of the current subdomain: a signed-in
  * profile belonging to a DIFFERENT tenant is treated as no user at all, so a
  * studioaviv admin bounces to /login on creativeballet instead of getting its
- * admin shell. The match is strict — no role (super_admin included) bypasses
- * it; see isMemberOfTenant. Only enforced once tenant config resolves — an
- * unresolved subdomain keeps the previous role-only behaviour rather than
- * locking everyone out.
+ * admin shell. The single exception is the super_admin platform-owner role,
+ * which works on every subdomain; see isMemberOfTenant. Only enforced once
+ * tenant config resolves — an unresolved subdomain keeps the previous
+ * role-only behaviour rather than locking everyone out.
  */
 function useTenantScopedUser() {
   const { user, isLoading } = useCurrentUser();

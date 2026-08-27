@@ -23,22 +23,19 @@ describe('isMemberOfTenant', () => {
     ).toBe(false);
   });
 
-  it('rejects even super_admin on a foreign tenant — no role bypasses the match', () => {
+  it('allows super_admin (platform owner) on any tenant', () => {
     expect(
       isMemberOfTenant(
         { role: ['super_admin', 'tenant_admin'], tenant_id: CREATIVEBALLET },
         STUDIOAVIV,
       ),
-    ).toBe(false);
+    ).toBe(true);
   });
 
-  it('allows super_admin on its own tenant like any other role', () => {
+  it('tenant_admin alone never crosses tenants — only super_admin does', () => {
     expect(
-      isMemberOfTenant(
-        { role: ['super_admin', 'tenant_admin'], tenant_id: CREATIVEBALLET },
-        CREATIVEBALLET,
-      ),
-    ).toBe(true);
+      isMemberOfTenant({ role: ['tenant_admin'], tenant_id: CREATIVEBALLET }, STUDIOAVIV),
+    ).toBe(false);
   });
 
   it('rejects a profile with no tenant_id', () => {

@@ -5,16 +5,19 @@ import type { UserProfile } from '@/types/auth';
 /**
  * Tenant membership: a signed-in user may only act on the tenant their
  * profile belongs to — the profile's tenant_id must equal the tenant
- * resolved from the subdomain, no exceptions. There is deliberately NO
- * role-based bypass here (not even super_admin): dev/demo accounts have
- * carried super_admin in the past, and any bypass turns one leaked account
- * into an all-tenants key. Cross-tenant platform tooling, if ever needed,
- * must be its own explicit surface — not a hole in login.
+ * resolved from the subdomain.
+ *
+ * The ONE exception is `super_admin`, the platform-owner role: it works on
+ * every subdomain (matching the `is_super_admin()` bypass policies in RLS).
+ * That role must belong to exactly one deliberate platform account
+ * (miriamrteller in dev) and must NEVER be granted to per-tenant admins or
+ * demo accounts — any account that holds it is an all-tenants key.
  */
 export function isMemberOfTenant(
   profile: Pick<UserProfile, 'role' | 'tenant_id'>,
   tenantId: string,
 ): boolean {
+  if (profile.role.includes('super_admin')) return true;
   return !!profile.tenant_id && profile.tenant_id === tenantId;
 }
 

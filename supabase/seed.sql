@@ -644,10 +644,11 @@ INSERT INTO user_profiles (
 ) VALUES (
   '51149671-b030-4931-9a0d-ca1862ae4f0b',
   '00000000-0000-0000-0000-000000000001'::uuid,
-  -- tenant_admin ONLY. super_admin bypasses every tenant-scoped RLS policy
-  -- (is_super_admin() policies exist on all tables) and must never be seeded
-  -- onto a per-tenant dev account, or that account works on every subdomain.
-  ARRAY['tenant_admin'],
+  -- THE platform-owner account: super_admin works on every subdomain and
+  -- bypasses tenant RLS (is_super_admin() policies). This is the ONLY
+  -- account allowed to carry it — per-tenant/demo admins get tenant_admin
+  -- only, or they too would become all-tenants keys.
+  ARRAY['super_admin', 'tenant_admin'],
   'miriamrteller@gmail.com',
   'en',
   'IL'
