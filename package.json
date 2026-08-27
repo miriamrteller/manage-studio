@@ -29,6 +29,7 @@
     "db:reset-and-types:local": "pnpm db:reset-local && pnpm db:types:all:local",
     "db:sync": "pnpm db:push && pnpm db:types",
     "seed:dev": "node scripts/seed-dev.mjs",
+    "capture:assets": "node scripts/capture/run-capture.mjs",
     "seed:dev:checklist": "node scripts/seed-dev.mjs -- --checklist",
     "seed:dev:skins": "node scripts/seed-dev.mjs -- --all-skins",
     "env:use": "node scripts/use-env.mjs",
@@ -55,6 +56,7 @@
   "devDependencies": {
     "@react-email/components": "^1.0.12",
     "@react-email/render": "^2.0.8",
+    "ffmpeg-static": "^5.3.0",
     "husky": "^9.0.0",
     "lint-staged": "^17.0.4",
     "standardwebhooks": "^1.0.0",
@@ -67,5 +69,10 @@
   },
   "lint-staged": {
     "apps/web/**/*.{ts,tsx}": "apps/web/node_modules/.bin/eslint --fix"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "ffmpeg-static"
+    ]
   }
 }
