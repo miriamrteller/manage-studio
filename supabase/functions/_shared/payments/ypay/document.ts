@@ -177,10 +177,15 @@ export function isYpayTokenError(code: number | undefined): boolean {
   return code !== undefined && TOKEN_ERROR_CODES.has(code);
 }
 
-/** Transient accessToken outcomes: a token is already active (reuse it) or YPay's token service hiccuped. */
+/**
+ * Transient outcomes: a token is already active (reuse it), YPay's token service
+ * hiccuped, or the document service reported a general error. On /document a
+ * 3001 means "document type missing or invalid" (v2.1), so the legacy v1.9
+ * "already active token" reading of 3001 is NOT applied here — only the token
+ * request (client.ts) still honours it.
+ */
 const TRANSIENT_CODES: ReadonlySet<number> = new Set([
   YPAY_ERROR.TOKEN_ALREADY_ACTIVE,
-  YPAY_ERROR.TOKEN_ALREADY_ACTIVE_LEGACY,
   YPAY_ERROR.ACCESS_TOKEN_GENERAL_ERROR,
   YPAY_ERROR.DOCUMENT_GENERAL_ERROR,
 ]);

@@ -29,7 +29,10 @@ import {
   paymentNeedsClientDocumentEmail,
   renderClientDocumentEmail,
 } from '../../../../supabase/functions/_shared/payments/send-payment-document-client-email.ts';
-import { ypayDocTypeForVatType } from '../../../../supabase/functions/_shared/payments/ypay/document.ts';
+import {
+  isRetryableYpayDocumentError,
+  ypayDocTypeForVatType,
+} from '../../../../supabase/functions/_shared/payments/ypay/document.ts';
 import { YpayPaymentProvider } from '../../../../supabase/functions/_shared/payments/providers/ypay.ts';
 
 const TENANT = '00000000-0000-0000-0000-0000000000aa';
@@ -119,6 +122,22 @@ describe('ypay docType by VAT type', () => {
     expect(ypayDocTypeForVatType(1)).toBe(109);
     expect(ypayDocTypeForVatType(2)).toBe(109);
     expect(ypayDocTypeForVatType(null)).toBe(109);
+  });
+});
+
+describe('ypay /document retry policy (mirrors the Deno helper test)', () => {
+  it('token, token-race and general errors retry; rejected payloads go dead', () => {
+    expect(isRetryableYpayDocumentError({ code: 1004 })).toBe(true);
+    expect(isRetryableYpayDocumentError({ code: 2002 })).toBe(true);
+    expect(isRetryableYpayDocumentError({ code: 3006 })).toBe(true);
+    expect(isRetryableYpayDocumentError({ httpStatus: 503 })).toBe(true);
+    expect(isRetryableYpayDocumentError({})).toBe(true);
+    // 3001 on /document is "document type missing or invalid" (v2.1), never a token race.
+    expect(isRetryableYpayDocumentError({ code: 3001 })).toBe(false);
+    expect(isRetryableYpayDocumentError({ code: 3011 })).toBe(false);
+    expect(isRetryableYpayDocumentError({ code: 3022 })).toBe(false);
+    expect(isRetryableYpayDocumentError({ code: 2001 })).toBe(false);
+    expect(isRetryableYpayDocumentError({ httpStatus: 400 })).toBe(false);
   });
 });
 

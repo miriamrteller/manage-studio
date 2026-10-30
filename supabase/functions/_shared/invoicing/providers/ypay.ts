@@ -2,6 +2,7 @@ import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.
 import { getEnv } from "../../edge-runtime/env.ts";
 import { getYpayAccessToken, YpayApiError, ypayPost, type YpayCredentials } from "../../payments/ypay/client.ts";
 import { getYpayCredentials } from "../../payments/ypay/credentials.ts";
+import { YPAY_ERROR } from "../../payments/ypay/errors.ts";
 import {
   buildYpayDocumentPayload,
   isOfflinePaymentMethod,
@@ -164,8 +165,11 @@ async function tokenOrThrow(
     return await getYpayAccessToken(service, tenantId, credentials);
   } catch (error) {
     if (error instanceof YpayApiError) {
-      // Bad client id/secret is permanent; anything else (2002 token race, 5xx, network) is transient.
-      const retryable = isRetryableYpayDocumentError({ code: error.code, httpStatus: error.httpStatus });
+      // Bad client id/secret is permanent; anything else (2002 token race — 3001 on an
+      // older YPay build — 5xx, network) is transient.
+      const retryable =
+        error.code === YPAY_ERROR.TOKEN_ALREADY_ACTIVE_LEGACY ||
+        isRetryableYpayDocumentError({ code: error.code, httpStatus: error.httpStatus });
       throw new InvoicingProviderError(error.message, { retryable });
     }
     throw new InvoicingProviderError(error instanceof Error ? error.message : String(error), {
