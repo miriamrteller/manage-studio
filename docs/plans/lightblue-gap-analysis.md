@@ -101,7 +101,7 @@ Sources: [payment schedules & terms][lb-paysched], [payment schedule templates][
 | Payment schedule: any number of instalments, fixed or %, dates relative to shoot | Instalments as fixed / %, due relative to invoice or shoot date | 🟡 | `job_payment_requests` rows of any amount; quick "deposit X% + balance on shoot date" (`JobPaymentRequestForm.tsx`); card instalments via `max_installments`. No saved schedule, no "N days before shoot" rule | S | P2 |
 | Default payment schedule per shoot type | Schedule template per shoot type | ❌ | Not stored per package | S | P2 |
 | Automatic payment reminders | Auto reminders for each instalment | ✅ | `run-job-payment-reminders` (3 days before due + one overdue), idempotent | | |
-| Record offline payments | Cash / cheque / bank recorded | 🟡 | `record-job-payment` + `ManualPaymentDialog.tsx` record it, but the receipt document fails for YPay tenants (see `2026-10-30-photographer-b-payments.md` follow-ups). Bank transfer and Bit are common in Israel, so clients go without a receipt | M | P1 |
+| Record offline payments | Cash / cheque / bank recorded | ✅ | `record-job-payment` + `ManualPaymentDialog.tsx` record it; the receipt (קבלה / חשבונית מס קבלה by `vat_type`) is issued through YPay's standalone `/document` and emailed to the client (Thread H, `2026-10-30-photographer-h-offline-receipts.md`) | | |
 | Tax-compliant invoices (UK VAT, EN 16931 e-invoice export) | VAT invoices; EN 16931 export | ➖ | Israeli tax documents (חשבונית מס קבלה, allocation numbers) are issued by YPay / Grow / iCount / Invoice4U, not by us | | |
 
 ## 6. Client portal
@@ -214,7 +214,7 @@ Sources: [mobile app][lb-mobile], [mobile invoices][lb-mobile-inv], [pricing][lb
 ## Top 10 to build next
 
 1. **Signed contract PDF to both sides** (§4, M, P1) — generate and store the PDF in `accept-waiver`, attach it to a confirmation email. Clients expect a copy.
-2. **Receipt for offline payments on YPay** (§5, M, P1) — wire YPay's standalone `/document` call so bank / Bit / cash payments get a חשבונית מס קבלה.
+2. ~~**Receipt for offline payments on YPay** (§5, M, P1)~~ — done (Thread H): YPay's standalone `/document` issues the קבלה / חשבונית מס קבלה for bank / cash payments.
 3. **One-flow acceptance: accept → sign → pay deposit** (§3, M, P1) — service-side contract send on accept, then route the client straight to the deposit pay link.
 4. **Auto Google Calendar sync for shoots** (§2, S, P2) — call `google-calendar-sync-event` on shoot create, re-date and cancel.
 5. **Editable email templates** (§8, M, P2) — let the photographer change the subject and body of the five automatic emails, with merge tags.

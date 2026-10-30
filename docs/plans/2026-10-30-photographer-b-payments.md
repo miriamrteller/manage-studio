@@ -49,8 +49,7 @@ no refund API).
 
 ## Follow-ups
 
-- YPay standalone `/document` issuance for offline (cash/bank) payments: the
-  queued document fails non-retryably for YPay tenants today; the admin issues
-  the receipt in the YPay dashboard until the invoicing adapter is wired.
+- ~~YPay standalone `/document` issuance for offline (cash/bank) payments~~ —
+  done in Thread H ([2026-10-30-photographer-h-offline-receipts.md](2026-10-30-photographer-h-offline-receipts.md)).
 - Reminder lead time (3 days) is a constant; make it a tenant setting when a
   second photographer tenant needs a different one.

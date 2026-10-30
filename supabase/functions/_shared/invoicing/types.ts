@@ -15,6 +15,16 @@ export interface CanonicalDocumentInput {
   payer: { name: string; email?: string };
   buyer?: { businessTaxId?: string; businessName?: string };
   originalExternalDocumentId?: string;
+  /**
+   * How the money was received (payments.payment_method). Standalone issuers
+   * that document offline money (YPay /document) need it; bundled providers
+   * ignore it because the charge itself carries the method.
+   */
+  paymentMethod?: "card" | "cash" | "bank_transfer" | "other" | null;
+  /** When the money was received (payments.paid_at); the document is dated by it. */
+  paidAt?: string | null;
+  /** Free-text line description (payments.description), e.g. "Deposit — manual bank_transfer". */
+  description?: string | null;
 }
 
 export interface ExternalDocumentResult {

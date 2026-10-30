@@ -306,7 +306,7 @@ function PaymentsSection({
                   ) : r.status === 'paid' ? (
                     <>
                       <Badge variant="success">{t('pages.client_portal.payment_paid')}</Badge>
-                      {receiptUrl && (
+                      {receiptUrl ? (
                         <a
                           href={receiptUrl}
                           className="text-primary underline"
@@ -315,6 +315,8 @@ function PaymentsSection({
                         >
                           {t('pages.client_portal.payment_receipt')}
                         </a>
+                      ) : (
+                        <span className="text-gray-500">{t('pages.client_portal.payment_receipt_pending')}</span>
                       )}
                     </>
                   ) : (

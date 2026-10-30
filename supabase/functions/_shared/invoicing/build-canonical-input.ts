@@ -19,6 +19,21 @@ interface PaymentRow {
   currency: string;
   vat_rate: number;
   refunds_payment_id: string | null;
+  payment_method: string | null;
+  paid_at: string | null;
+  description: string | null;
+}
+
+function parsePaymentMethod(value: string | null): CanonicalDocumentInput["paymentMethod"] {
+  switch (value) {
+    case "card":
+    case "cash":
+    case "bank_transfer":
+    case "other":
+      return value;
+    default:
+      return null;
+  }
 }
 
 function parseLanguage(value: string | null | undefined): "he" | "en" {
@@ -32,7 +47,7 @@ export async function buildCanonicalDocumentInput(
   const { data: payment, error: paymentError } = await service
     .from("payments")
     .select(
-      "id, tenant_id, person_id, billing_account_id, engagement_id, pretax_amount_minor, vat_amount_minor, total_amount_minor, currency, vat_rate, refunds_payment_id",
+      "id, tenant_id, person_id, billing_account_id, engagement_id, pretax_amount_minor, vat_amount_minor, total_amount_minor, currency, vat_rate, refunds_payment_id, payment_method, paid_at, description",
     )
     .eq("id", params.paymentId)
     .single();
@@ -123,5 +138,8 @@ export async function buildCanonicalDocumentInput(
     },
     buyer,
     originalExternalDocumentId,
+    paymentMethod: parsePaymentMethod(row.payment_method),
+    paidAt: row.paid_at,
+    description: row.description,
   };
 }
