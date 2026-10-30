@@ -4,6 +4,31 @@ import { Button } from '@/components/ui/button';
 import { useJob } from '../hooks/useJobs';
 import { JOB_STATUSES, type JobRow, type JobStatus } from '../services/jobService';
 import { fromDateTimeLocal, jobStatusKey, toDateTimeLocal } from '../lib/jobStatus';
+import { safeGalleryUrl } from '../lib/galleryUrl';
+import { JobGalleryReleaseBadge } from './JobGalleryLink';
+
+/** Opens the typed gallery link in a new tab; disabled unless it is an http(s) URL. */
+function OpenGalleryButton({ url }: { url: string }) {
+  const { t } = useTranslation();
+  const href = safeGalleryUrl(url);
+  if (!href) {
+    return (
+      <Button type="button" variant="outline" disabled>
+        {t('pages.jobs.open_gallery')}
+      </Button>
+    );
+  }
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex items-center rounded-md border px-4 py-2 text-sm font-medium underline-offset-2 hover:underline"
+    >
+      {t('pages.jobs.open_gallery')}
+    </a>
+  );
+}
 
 /** Editable job fields: status, schedule, location, notes, gallery link. */
 export function JobDetailsForm({ job }: { job: JobRow }) {
@@ -89,7 +114,25 @@ export function JobDetailsForm({ job }: { job: JobRow }) {
           <label htmlFor="job-gallery-url" className="block text-sm font-medium mb-1">
             {t('pages.jobs.gallery_url')}
           </label>
-          <input id="job-gallery-url" type="url" dir="ltr" className="w-full border rounded px-3 py-2" value={galleryUrl} onChange={(e) => setGalleryUrl(e.target.value)} />
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              id="job-gallery-url"
+              type="url"
+              dir="ltr"
+              className="min-w-0 flex-1 border rounded px-3 py-2"
+              value={galleryUrl}
+              onChange={(e) => setGalleryUrl(e.target.value)}
+              aria-describedby="job-gallery-url-status"
+            />
+            <OpenGalleryButton url={galleryUrl} />
+          </div>
+          <div id="job-gallery-url-status" className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+            {galleryUrl.trim() && !safeGalleryUrl(galleryUrl) ? (
+              <span className="text-error">{t('pages.jobs.gallery_url_invalid')}</span>
+            ) : (
+              <JobGalleryReleaseBadge engagementId={job.engagement_id} />
+            )}
+          </div>
         </div>
         <div className="sm:col-span-2">
           <label htmlFor="job-edit-notes" className="block text-sm font-medium mb-1">

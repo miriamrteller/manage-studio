@@ -114,6 +114,21 @@
   --color-surface-overlay: rgba(0, 0, 0, 0.5);
 }
 
+/* Native form controls with no background of their own fall back to the
+   browser's grey (Chrome's ButtonFace on <select>, Safari's control fill).
+   Give them the same surface as the design-system inputs. :where() keeps the
+   specificity at zero, so any class (.form-*, :disabled states, Tailwind bg-*)
+   still wins. */
+@layer base {
+  :where(
+    select,
+    textarea,
+    input:not([type='checkbox'], [type='radio'], [type='range'], [type='color'], [type='file'], [type='submit'], [type='button'], [type='reset'], [type='image'])
+  ) {
+    background-color: var(--surface-base);
+  }
+}
+
 /* Accessibility: Focus visible on all interactive elements (WCAG 2.1 Level AA) */
 @layer components {
   /* Two-part focus ring (DL-DESIGN-009): crisp 2px outline for

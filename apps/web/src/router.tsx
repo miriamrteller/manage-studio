@@ -33,7 +33,7 @@ import GoogleCalendarCallbackPage from "./pages/GoogleCalendarCallbackPage";
 import WaiversPage from "./pages/WaiversPage";
 import BookingPage from "./pages/BookingPage";
 import PortalDashboard from "./pages/PortalDashboard";
-import EnrolPage from "./pages/EnrolPage";
+import { EnrolEntryRoute } from "./layouts/EnrolEntryRoute";
 import EnrolPayPage from "./pages/EnrolPayPage";
 import EnrolCompletePage from "./pages/EnrolCompletePage";
 import PayRequestPage from "./pages/PayRequestPage";
@@ -105,7 +105,7 @@ const router = createBrowserRouter([
           { path: 'classes', element: <ClassesPage /> },
           { path: 'login', element: <LoginPage /> },
           { path: 'signup', element: <SignupPage /> },
-          { path: 'enrol', element: <EnrolPage /> },
+          { path: 'enrol', element: <EnrolEntryRoute /> },
           { path: 'enrol/pay/:engagementId', element: <EnrolPayPage /> },
           { path: 'enrol/complete', element: <EnrolCompletePage /> },
           // Public pay link for a job (shoot) deposit/balance request — token is the capability.
