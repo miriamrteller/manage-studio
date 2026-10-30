@@ -24,3 +24,10 @@ send-otp-sms
 send-waiver-reminder
 verify-grow-credentials
 verify-icount-credentials
+# Photographer job payments (2026-10-30): no errors in their own code — they fail
+# only on the shared _shared/email-send.ts (email-dist type exports) and the
+# grow/tranzila provider errors every payment function already carries.
+# record-job-payment is clean and deliberately NOT listed.
+job-payment-request-public
+run-job-payment-reminders
+send-job-payment-link

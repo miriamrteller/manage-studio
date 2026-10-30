@@ -321,6 +321,30 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/crm-lead-capture/index.ts"
 
+# --- Photographer beta: job (shoot) deposit/balance payments ---------------
+# Public pay page backend: the request's public_token is the capability.
+[functions.job-payment-request-public]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/job-payment-request-public/index.ts"
+
+# JWT verified in-function (tenant_admin) so browser preflight gets full CORS headers.
+[functions.send-job-payment-link]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/send-job-payment-link/index.ts"
+
+[functions.record-job-payment]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/record-job-payment/index.ts"
+
+# pg_cron (x-cron-secret), see 20261030000200_job_payment_requests.sql.
+[functions.run-job-payment-reminders]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/run-job-payment-reminders/index.ts"
+
 # Public quote acceptance (photographer). The quote's 256-bit link token is the
 # credential; accept_quote() runs the whole booking in one transaction.
 [functions.accept-quote]

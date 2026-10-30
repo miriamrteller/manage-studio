@@ -36,6 +36,7 @@ import PortalDashboard from "./pages/PortalDashboard";
 import EnrolPage from "./pages/EnrolPage";
 import EnrolPayPage from "./pages/EnrolPayPage";
 import EnrolCompletePage from "./pages/EnrolCompletePage";
+import PayRequestPage from "./pages/PayRequestPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import FinanceHubPage from "./pages/FinanceHubPage";
 import PaymentsLogPage from "./pages/PaymentsLogPage";
@@ -107,6 +108,8 @@ const router = createBrowserRouter([
           { path: 'enrol', element: <EnrolPage /> },
           { path: 'enrol/pay/:engagementId', element: <EnrolPayPage /> },
           { path: 'enrol/complete', element: <EnrolCompletePage /> },
+          // Public pay link for a job (shoot) deposit/balance request — token is the capability.
+          { path: 'pay/:token', element: <PayRequestPage /> },
           { path: 'book', element: <BookingPage /> },
           { path: 'book/:offeringId', element: <BookingPage /> },
           { path: 'inquire', element: <InquirePage /> },

@@ -1,5 +1,7 @@
 import { useLocation } from 'react-router-dom';
 import { EnrolmentStatusAction } from '@/features/enrolment/components/EnrolmentStatusAction';
+import { ClientJobGalleryCard } from '@/features/jobs/components/ClientJobGalleryCard';
+import { useTenant } from '@/hooks/useTenant';
 import type { EngagementWithOffering } from './useParentPortal';
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -20,7 +22,10 @@ export function EnrolmentRow({
   highlighted?: boolean;
 }) {
   const location = useLocation();
+  const tenant = useTenant();
   const schedule = formatSchedule(enrolment.classDay, enrolment.classStartTime);
+  // Services verticals (photographer): deposit/balance requests + gated gallery link.
+  const showJobPayments = tenant?.business_preset === 'services';
 
   return (
     <li
@@ -42,6 +47,11 @@ export function EnrolmentRow({
         engagementId={enrolment.id}
         returnTo={location.pathname}
       />
+      {showJobPayments && (
+        <div className="basis-full">
+          <ClientJobGalleryCard engagementId={enrolment.id} currency={tenant?.currency ?? 'ILS'} />
+        </div>
+      )}
     </li>
   );
 }
