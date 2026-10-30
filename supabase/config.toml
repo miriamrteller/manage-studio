@@ -320,3 +320,18 @@ entrypoint = "./functions/crm-lead-ingest/index.ts"
 enabled = true
 verify_jwt = false
 entrypoint = "./functions/crm-lead-capture/index.ts"
+
+# Public quote acceptance (photographer). The quote's 256-bit link token is the
+# credential; accept_quote() runs the whole booking in one transaction.
+[functions.accept-quote]
+enabled = true
+verify_jwt = false
+import_map = "./functions/accept-quote/deno.json"
+entrypoint = "./functions/accept-quote/index.ts"
+
+# Hourly cron: shoot reminder / thank-you / gallery-ready emails (CRON_SECRET, fail-closed).
+[functions.run-shoot-emails]
+enabled = true
+verify_jwt = false
+import_map = "./functions/run-shoot-emails/deno.json"
+entrypoint = "./functions/run-shoot-emails/index.ts"

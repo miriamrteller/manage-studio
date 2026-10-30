@@ -24,6 +24,11 @@ export declare const EMAIL_TEMPLATE_NAMES: {
     readonly ADMIN_ANNOUNCEMENT: "admin_announcement";
     readonly APPOINTMENT_CONFIRMATION: "appointment_confirmation";
     readonly APPOINTMENT_TENANT_NOTIFICATION: "appointment_tenant_notification";
+    readonly QUOTE_SENT: "quote_sent";
+    readonly BOOKING_CONFIRMED: "booking_confirmed";
+    readonly SHOOT_REMINDER: "shoot_reminder";
+    readonly SHOOT_THANK_YOU: "shoot_thank_you";
+    readonly GALLERY_READY: "gallery_ready";
 };
 export type EmailTemplateName = typeof EMAIL_TEMPLATE_NAMES[keyof typeof EMAIL_TEMPLATE_NAMES];
 /**

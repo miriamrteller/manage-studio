@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/shared';
 import { useTenant } from '@/hooks/useTenant';
 import { useLeads } from '../hooks/useLeads';
+import { CreateQuoteButton } from '@/features/quotes/components/CreateQuoteButton';
 import { LEAD_CHANNELS, LEAD_STAGES, type LeadChannel, type LeadStage } from '../services/leadService';
 
 /**
@@ -269,6 +270,9 @@ export function LeadsList() {
                 <th className="px-3 py-2 text-start">{t('pages.crm.leads.stage')}</th>
                 <th className="px-3 py-2 text-start">{t('pages.crm.leads.last_contacted')}</th>
                 <th className="px-3 py-2 text-start">{t('pages.crm.leads.follow_up')}</th>
+                <th className="px-3 py-2 text-start">
+                  <span className="sr-only">{t('pages.quotes.create')}</span>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -313,6 +317,11 @@ export function LeadsList() {
                   </td>
                   <td className="px-3 py-2">{formatDate(lead.last_contacted_at, i18n.language)}</td>
                   <td className="px-3 py-2">{formatDate(lead.next_follow_up_at, i18n.language)}</td>
+                  <td className="px-3 py-2">
+                    {lead.converted_account_id === null && lead.stage !== 'lost' && (
+                      <CreateQuoteButton leadId={lead.id} />
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

@@ -120,6 +120,12 @@ export const navigationConfig: NavItem[] = [
     sectionKey: 'administration',
   },
   {
+    path: '/admin/quotes',
+    labelKey: 'nav.quotes',
+    requiredRoles: ['tenant_admin'],
+    sectionKey: 'administration',
+  },
+  {
     path: '/admin/appointments',
     labelKey: 'nav.appointments',
     requiredRoles: ['tenant_admin'],

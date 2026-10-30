@@ -43,6 +43,9 @@ import ExpensesPage from "./pages/ExpensesPage";
 import ExpenseCategoriesPage from "./pages/ExpenseCategoriesPage";
 import LeadsPage from "./pages/LeadsPage";
 import InquirePage from "./pages/InquirePage";
+import AdminQuotesPage from "./pages/AdminQuotesPage";
+import AdminQuoteEditorPage from "./pages/AdminQuoteEditorPage";
+import QuotePage from "./pages/QuotePage";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { RouteErrorFallback } from "./components/RouteErrorFallback";
 
@@ -105,6 +108,7 @@ const router = createBrowserRouter([
           { path: 'book', element: <BookingPage /> },
           { path: 'book/:offeringId', element: <BookingPage /> },
           { path: 'inquire', element: <InquirePage /> },
+          { path: 'quote/:token', element: <QuotePage /> },
           { path: 'dashboard', element: <DashboardRedirectPage /> },
 
           // ADMIN ROUTES
@@ -114,6 +118,8 @@ const router = createBrowserRouter([
           { path: "admin/families", element: <AdminRoute><FamiliesPage /></AdminRoute> },
           { path: "admin/notifications", element: <AdminRoute><NotificationsPage /></AdminRoute> },
           { path: "admin/leads", element: <AdminRoute><LeadsPage /></AdminRoute> },
+          { path: "admin/quotes", element: <AdminRoute><AdminQuotesPage /></AdminRoute> },
+          { path: "admin/quotes/:id", element: <AdminRoute><AdminQuoteEditorPage /></AdminRoute> },
           { path: "admin/appointments", element: <AdminRoute><AdminAppointmentsPage /></AdminRoute> },
           { path: "admin/families/:id", element: <AdminRoute><FamilyDetailPage /></AdminRoute> },
           { path: "admin/finance", element: <AdminRoute><FinanceHubPage /></AdminRoute> },

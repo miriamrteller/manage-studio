@@ -29,6 +29,12 @@ export const EMAIL_TEMPLATE_NAMES = {
   ADMIN_ANNOUNCEMENT: 'admin_announcement',
   APPOINTMENT_CONFIRMATION: 'appointment_confirmation',
   APPOINTMENT_TENANT_NOTIFICATION: 'appointment_tenant_notification',
+  // Photographer automatic emails (tenant_automatic_emails.email_key)
+  QUOTE_SENT: 'quote_sent',
+  BOOKING_CONFIRMED: 'booking_confirmed',
+  SHOOT_REMINDER: 'shoot_reminder',
+  SHOOT_THANK_YOU: 'shoot_thank_you',
+  GALLERY_READY: 'gallery_ready',
 } as const;
 
 export type EmailTemplateName = typeof EMAIL_TEMPLATE_NAMES[keyof typeof EMAIL_TEMPLATE_NAMES];
@@ -153,6 +159,11 @@ const TemplateNameSchema = z.enum([
   EMAIL_TEMPLATE_NAMES.ADMIN_ANNOUNCEMENT,
   EMAIL_TEMPLATE_NAMES.APPOINTMENT_CONFIRMATION,
   EMAIL_TEMPLATE_NAMES.APPOINTMENT_TENANT_NOTIFICATION,
+  EMAIL_TEMPLATE_NAMES.QUOTE_SENT,
+  EMAIL_TEMPLATE_NAMES.BOOKING_CONFIRMED,
+  EMAIL_TEMPLATE_NAMES.SHOOT_REMINDER,
+  EMAIL_TEMPLATE_NAMES.SHOOT_THANK_YOU,
+  EMAIL_TEMPLATE_NAMES.GALLERY_READY,
 ]);
 
 const LanguageSchema = z.enum(['en', 'he']);

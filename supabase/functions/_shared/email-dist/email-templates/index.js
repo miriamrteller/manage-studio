@@ -6,3 +6,9 @@ export { default as WelcomeEmail } from './WelcomeEmail.js';
 export { default as ClassCancellationEmail } from './ClassCancellationEmail.js';
 export { default as PaymentReminderEmail } from './PaymentReminderEmail.js';
 export { default as WaitingListOfferEmail } from './WaitingListOfferEmail.js';
+// Photographer automatic emails
+export { default as QuoteSentEmail } from './photographer/QuoteSentEmail.js';
+export { default as BookingConfirmedEmail } from './photographer/BookingConfirmedEmail.js';
+export { default as ShootReminderEmail } from './photographer/ShootReminderEmail.js';
+export { default as ShootThankYouEmail } from './photographer/ShootThankYouEmail.js';
+export { default as GalleryReadyEmail } from './photographer/GalleryReadyEmail.js';
