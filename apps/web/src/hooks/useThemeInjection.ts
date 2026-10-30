@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useTenant } from './useTenant';
 import { deriveColorSystem, getAccessibleTextColor, getBackgroundForPrimaryColor } from '../lib/utils';
 import { injectFontPair } from './useFontLoader';
+import { deriveSoftTheme } from '../lib/theme/deriveSoftTheme';
 
 export function useThemeInjection(): void {
   const tenant = useTenant();
@@ -20,6 +21,10 @@ export function useThemeInjection(): void {
       });
       root.style.setProperty('--color-on-primary', getAccessibleTextColor(primaryColor));
       root.style.setProperty('--color-on-secondary', getAccessibleTextColor(colorSystem.secondary));
+      // Soft theme: luminance-targeted tints, contrast-safe brand ink and button fill.
+      Object.entries(deriveSoftTheme(colorSystem.primary, colorSystem.secondary)).forEach(([cssVar, value]) => {
+        root.style.setProperty(cssVar, value);
+      });
       const bgVariant = getBackgroundForPrimaryColor(primaryColor);
       if (bgVariant === 'warm') {
         root.style.setProperty('--color-bg-primary', 'var(--color-bg-primary-warm)');

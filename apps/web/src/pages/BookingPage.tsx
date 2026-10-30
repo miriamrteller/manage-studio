@@ -180,7 +180,7 @@ export default function BookingPage() {
                     className={cn(
                       'min-h-11 w-full rounded-md border px-3 py-2.5 text-start transition',
                       selected
-                        ? 'border-[var(--color-primary)] bg-[var(--color-surface-secondary)] ring-1 ring-[var(--color-primary)]'
+                        ? 'border-[var(--color-primary)] bg-[var(--color-surface-secondary)] ring-1 ring-[var(--color-primary-ink)]'
                         : 'border-gray-200 bg-white hover:border-gray-300',
                     )}
                   >

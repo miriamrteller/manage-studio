@@ -21,6 +21,20 @@ export default {
         success: 'var(--color-success)',
         info: 'var(--color-info)',
       },
+      // Brand colour used as TEXT, rings or outlines goes through the derived
+      // "ink" (deriveSoftTheme): the tenant colour, darkened only as far as
+      // needed for 4.5:1. Fills (bg-primary, border-primary) keep the raw brand.
+      textColor: {
+        primary: 'var(--color-primary-ink)',
+        secondary: 'var(--color-accent-ink)',
+        accent: 'var(--color-accent-ink)',
+      },
+      ringColor: {
+        primary: 'var(--color-primary-ink)',
+      },
+      outlineColor: {
+        primary: 'var(--color-primary-ink)',
+      },
       // NOTE (DL-DESIGN-001): the spec's original plan mapped these onto the
       // *default* Tailwind spacing keys (0-10). This codebase uses stock
       // Tailwind spacing (p-4, px-3, py-2, gap-4, mb-6, ...) in ~1,750 places

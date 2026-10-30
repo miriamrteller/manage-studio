@@ -203,7 +203,7 @@ export function SettingsLayout({
           'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2',
           'focus-visible:outline-[var(--state-focus)]',
           isSelected
-            ? 'border-s-2 border-[var(--color-primary)] bg-[var(--state-active)] font-medium text-[var(--color-primary)]'
+            ? 'border-s-2 border-[var(--color-primary)] bg-[var(--state-active)] font-medium text-[var(--color-primary-ink)]'
             : 'text-[var(--color-text-secondary)] hover:bg-[var(--state-hover)]',
         )}
       >
