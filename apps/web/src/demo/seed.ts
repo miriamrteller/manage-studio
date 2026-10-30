@@ -12,6 +12,8 @@ export const CLIENT_USER_ID = 'd0000000-0000-4000-8000-00000000a002';
 export const ADMIN_EMAIL = 'studio@lumen-light.demo';
 export const TENANT_SUBDOMAIN = 'lumen';
 export const DEMO_GALLERY_HOST = 'https://gallery.lumen-light.demo';
+/** Invoice links point here; the demo bar opens the sample invoice instead. */
+export const DEMO_INVOICE_HOST = 'https://invoices.lumen-light.demo';
 
 const id = (n: number) => `d0000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 
@@ -344,7 +346,7 @@ export function buildSeed(): Tables {
           paid_at: at((dueDays ?? 0) - 1, 14),
           created_at: at((dueDays ?? 0) - 1, 14),
           external_document_number: String(30410 + payments.length),
-          invoice_url: null,
+          invoice_url: `${DEMO_INVOICE_HOST}/${paymentId}`,
         });
       }
       paymentRequests.push({
@@ -404,7 +406,63 @@ export function buildSeed(): Tables {
     lead(4, 'Tamar Events Agency', 'proposal', 'email', 'Two-hour coverage for a product launch evening', PKG.event, 2000, 'Asked for a quote with a second photographer option.', 8, 3, 'office@tamarevents.example.com', '03-611-8820'),
   ];
 
+  // Quotes: one per status the photographer works with. Totals are filled in
+  // by recalcQuote() when the demo client starts (same rules as the SQL).
+  const quotes: Row[] = [];
+  const quoteLines: Row[] = [];
+  const quote = (
+    n: number,
+    fields: Row,
+    lines: Array<[string, number, string | null, boolean, boolean]>,
+  ) => {
+    const qid = id(1200 + n);
+    quotes.push({
+      id: qid, tenant_id: TENANT_ID, lead_id: null, account_id: null, engagement_id: null,
+      public_token: `${'a1b2c3d4'.repeat(7)}${String(n).padStart(8, '0')}`, currency: 'ILS',
+      shoot_date: null, valid_until: day(14), notes: null, deposit_percent: 30, balance_max_installments: 3,
+      send_contract_on_accept: true, sent_at: null, sent_via: null, accepted_at: null, accepted_result: null,
+      declined_at: null, decline_reason: null, created_by: ADMIN_USER_ID, created_at: at(-7), updated_at: at(-7),
+      required_minor: 0, optional_selected_minor: 0, total_minor: 0, deposit_minor: 0, balance_minor: 0,
+      ...fields,
+    });
+    lines.forEach(([description, ils, offeringId, optional, selected], i) => {
+      quoteLines.push({
+        id: id(1300 + n * 10 + i), tenant_id: TENANT_ID, quote_id: qid, offering_id: offeringId, description,
+        qty: 1, unit_price_minor: ils * 100, line_total_minor: ils * 100, is_optional: optional,
+        is_selected: !optional || selected, sort_order: i + 1, created_at: at(-7),
+      });
+    });
+  };
+  quote(1, {
+    status: 'sent', title: 'Bar mitzvah: full evening', engagement_id: engagementId(2), account_id: accountId(2),
+    shoot_date: day(46), sent_at: at(-5, 11), sent_via: 'email', created_at: at(-6),
+    notes: 'Includes an online gallery with 350+ edited images. Album printed in Jerusalem, about 3 weeks.',
+  }, [
+    ['Bar Mitzvah: Full Evening (5 hours)', 4800, PKG.barMitzvah, false, true],
+    ['Pre-event family session at home', 950, PKG.family, true, false],
+    ['Printed album, 30 pages', 1200, null, true, false],
+  ]);
+  quote(2, {
+    status: 'sent', title: 'Product launch evening', lead_id: id(1104), shoot_date: day(21), sent_at: at(-2, 15),
+    sent_via: 'whatsapp', created_at: at(-3), valid_until: day(10),
+  }, [
+    ['Event Coverage (2 hours)', 2000, PKG.event, false, true],
+    ['Second photographer', 900, null, true, false],
+  ]);
+  quote(3, {
+    status: 'accepted', title: 'Company year-end evening', engagement_id: engagementId(3), account_id: accountId(3),
+    shoot_date: day(12), sent_at: at(-16), sent_via: 'email', accepted_at: at(-15, 18), created_at: at(-17),
+    accepted_result: { ok: true, engagement_id: engagementId(3) }, deposit_percent: 30,
+  }, [['Event Coverage (2 hours)', 2000, PKG.event, false, true]]);
+  quote(4, {
+    status: 'draft', title: 'Bar mitzvah in March', lead_id: id(1101), created_at: at(0, 8),
+  }, [['Bar Mitzvah: Full Evening (5 hours)', 4800, PKG.barMitzvah, false, true]]);
+
   return {
+    quotes,
+    quote_lines: quoteLines,
+    tenant_automatic_emails: [],
+    automatic_email_log: [],
     tenants: [tenant],
     user_profiles: [
       {

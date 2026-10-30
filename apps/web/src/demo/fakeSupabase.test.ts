@@ -79,8 +79,11 @@ describe('demo fake supabase client', () => {
     const asClient = client('client');
     const people = await asClient.from('people').select('id');
     expect(people.data).toEqual([{ id: 'p1' }]);
+    const own = await asClient.from('engagements').select('id');
+    expect(own.data).toEqual([{ id: 'e1' }]);
+    // job_details holds the gallery URL: clients never read it directly.
     const jobs = await asClient.from('job_details').select('engagement_id');
-    expect(jobs.data).toEqual([{ engagement_id: 'e1' }]);
+    expect(jobs.data).toEqual([]);
     const anon = await client(null).from('people').select('id');
     expect(anon.data).toEqual([]);
   });

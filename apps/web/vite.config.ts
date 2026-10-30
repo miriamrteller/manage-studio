@@ -61,12 +61,15 @@ function demoMode() {
       if (resolved && swaps[resolved.id] && !importer.startsWith(path.join(src, 'demo'))) return swaps[resolved.id];
       return null;
     },
-    // Full-page navigations to app paths would leave the artifact; route them
-    // through the hash router instead.
+    // Full-page navigations and absolute links to app paths would leave the
+    // artifact; route them through the hash router instead.
     transform(code: string, id: string) {
       if (!id.startsWith(src) || id.startsWith(path.join(src, 'demo'))) return null;
-      if (!code.includes('window.location.href = ')) return null;
-      return code.replace(/window\.location\.href = (['"`])\//g, 'window.location.hash = $1#/');
+      if (!code.includes('window.location.href = ') && !code.includes('window.location.origin')) return null;
+      return code
+        .replace(/window\.location\.href = (['"`])\//g, 'window.location.hash = $1#/')
+        // Absolute app links (pay links, quote links) become hash links on the current page.
+        .replace(/window\.location\.origin/g, "(window.location.href.split('#')[0] + '#')");
     },
     transformIndexHtml: {
       // 'pre' so the entry script is swapped before Vite collects it.

@@ -6,7 +6,43 @@ import { FakeSupabaseClient, type Row } from './fakeSupabase';
 import { baseFunctions } from './functions';
 import { baseRpcs } from './rpcs';
 import { ADMIN_EMAIL, ADMIN_USER_ID, buildSeed, CLIENT_USER_ID, DEMO_CLIENT } from './seed';
-import { extraFunctions, extraRpcs, hooks } from './extensions';
+import { extraFunctions, extraRpcs, hooks, recalcQuote } from './extensions';
+
+/**
+ * Embedded or private-mode browsers can throw on any storage access. The app
+ * reads localStorage during render (language, nav drawer), so fall back to an
+ * in-memory Storage when the real one is unusable.
+ */
+function ensureStorage(name: 'localStorage' | 'sessionStorage') {
+  try {
+    const s = window[name];
+    s.setItem('__demo_probe', '1');
+    s.removeItem('__demo_probe');
+  } catch {
+    const data = new Map<string, string>();
+    const memory: Storage = {
+      get length() {
+        return data.size;
+      },
+      clear: () => data.clear(),
+      getItem: (k) => data.get(k) ?? null,
+      key: (i) => [...data.keys()][i] ?? null,
+      removeItem: (k) => {
+        data.delete(k);
+      },
+      setItem: (k, v) => {
+        data.set(k, String(v));
+      },
+    };
+    try {
+      Object.defineProperty(window, name, { value: memory, configurable: true });
+    } catch {
+      // Nothing more we can do; the app's own guards apply.
+    }
+  }
+}
+ensureStorage('localStorage');
+ensureStorage('sessionStorage');
 
 export const DEMO_FUNCTIONS_BASE = 'https://demo.supabase.invalid/functions/v1/';
 
@@ -17,6 +53,9 @@ export const demoClient = new FakeSupabaseClient({
   hooks,
   debug: new URLSearchParams(window.location.search).has('demo-debug'),
 });
+
+// Fill quote totals with the same rules the SQL trigger uses.
+for (const q of demoClient.db.quotes ?? []) recalcQuote(demoClient.ctx(), q);
 
 export type DemoView = 'admin' | 'client' | 'signed-out';
 

@@ -7,11 +7,15 @@
 import type { DemoContext, Row } from './fakeSupabase';
 
 const PUBLIC_TABLES = new Set(['tenants', 'offerings', 'consent_templates', 'categories', 'seasons', 'staff']);
-const ADMIN_ONLY = new Set(['leads', 'audit_log', 'notification_log']);
+// Clients never read job_details (it holds the gallery URL) or quotes directly;
+// they go through get_client_job_gallery / get_public_quote.
+const ADMIN_ONLY = new Set([
+  'leads', 'audit_log', 'notification_log', 'job_details', 'quotes', 'quote_lines', 'tenant_automatic_emails',
+]);
 const BY_ACCOUNT = new Set(['accounts']);
 const BY_ACCOUNT_COL = new Set(['people', 'account_members']);
 const BY_PERSON = new Set(['engagements', 'payments', 'contact_preferences']);
-const BY_ENGAGEMENT = new Set(['job_details', 'job_payment_requests', 'waiver_evidence', 'quotes']);
+const BY_ENGAGEMENT = new Set(['job_payment_requests', 'waiver_evidence']);
 
 function isAdmin(ctx: DemoContext): boolean {
   const profile = ctx.db.user_profiles?.find((p) => p.id === ctx.user?.id);

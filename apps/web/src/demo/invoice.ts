@@ -15,16 +15,11 @@ function emit() {
   for (const l of listeners) l();
 }
 
-export function showInvoice(inv: Omit<DemoInvoice, 'number'>): DemoInvoice {
+export function showInvoice(inv: Omit<DemoInvoice, 'number'> & { number?: string }): DemoInvoice {
   counter += 1;
-  current = { ...inv, number: String(counter) };
+  current = { ...inv, number: inv.number ?? String(counter) };
   emit();
   return current;
-}
-
-export function nextInvoiceNumber(): string {
-  counter += 1;
-  return String(counter);
 }
 
 export function closeInvoice() {

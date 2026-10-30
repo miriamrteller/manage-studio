@@ -17,6 +17,7 @@ export type Tables = Record<string, Row[]>;
 
 export interface DemoError {
   message: string;
+  context?: Response;
   code?: string;
   details?: string | null;
   hint?: string | null;
@@ -828,8 +829,15 @@ export class FakeSupabaseClient {
           this.log('fn', name, 'ok');
           return { data: structuredCloneSafe(data), error: null };
         } catch (e) {
-          this.log('fn', name, e instanceof Error ? e.message : String(e));
-          return { data: null, error: { message: e instanceof Error ? e.message : String(e) } };
+          const message = e instanceof Error ? e.message : String(e);
+          this.log('fn', name, message);
+          // Like FunctionsHttpError: a non-2xx body is readable from error.context.
+          const errBody = (e as { body?: unknown }).body ?? { error: message };
+          const context = new Response(JSON.stringify(errBody), {
+            status: (e as { body?: unknown }).body ? 409 : 400,
+            headers: { 'Content-Type': 'application/json' },
+          });
+          return { data: null, error: { message, context } as DemoError };
         }
       },
     };

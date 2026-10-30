@@ -3,9 +3,10 @@ import { useTranslation } from 'react-i18next';
 import queryClient from '@/lib/query-client';
 import { currentView, demoClient, signInAs, type DemoView } from './demoClient';
 import { getOutbox, subscribeOutbox, type OutboxMessage } from './outbox';
-import { DEMO_GALLERY_HOST } from './seed';
+import { DEMO_GALLERY_HOST, DEMO_INVOICE_HOST } from './seed';
+import { invoiceForPayment } from './extensions';
 import { demoGallery } from './images/manifest';
-import { getInvoice, subscribeInvoice, closeInvoice, type DemoInvoice } from './invoice';
+import { getInvoice, subscribeInvoice, closeInvoice, showInvoice, type DemoInvoice } from './invoice';
 import { formatIls } from './functions';
 import './demo.css';
 
@@ -75,6 +76,17 @@ export function DemoBar() {
   const [galleryOpen, setGalleryOpen] = useState(false);
   const unread = Math.max(0, outbox.length - seen);
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      setGalleryOpen(false);
+      setOutboxOpen(false);
+      closeInvoice();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
+
   // Gallery links point at a placeholder host; open the sample gallery instead.
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
@@ -82,13 +94,23 @@ export function DemoBar() {
       if (a && a.href.startsWith(DEMO_GALLERY_HOST)) {
         e.preventDefault();
         setGalleryOpen(true);
+      } else if (a && a.href.startsWith(DEMO_INVOICE_HOST)) {
+        e.preventDefault();
+        const inv = invoiceForPayment(demoClient.ctx(), a.href.slice(DEMO_INVOICE_HOST.length + 1));
+        if (inv) showInvoice(inv);
       }
     };
     document.addEventListener('click', onClick, true);
     const realOpen = window.open.bind(window);
     window.open = (url?: string | URL, ...rest) => {
-      if (String(url ?? '').startsWith(DEMO_GALLERY_HOST)) {
+      const target = String(url ?? '');
+      if (target.startsWith(DEMO_GALLERY_HOST)) {
         setGalleryOpen(true);
+        return null;
+      }
+      if (target.startsWith(DEMO_INVOICE_HOST)) {
+        const inv = invoiceForPayment(demoClient.ctx(), target.slice(DEMO_INVOICE_HOST.length + 1));
+        if (inv) showInvoice(inv);
         return null;
       }
       return realOpen(url, ...rest);
