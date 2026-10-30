@@ -42,6 +42,8 @@ import PaymentsLogPage from "./pages/PaymentsLogPage";
 import ExpensesPage from "./pages/ExpensesPage";
 import ExpenseCategoriesPage from "./pages/ExpenseCategoriesPage";
 import LeadsPage from "./pages/LeadsPage";
+import JobsPage from "./pages/JobsPage";
+import JobDetailPage from "./pages/JobDetailPage";
 import InquirePage from "./pages/InquirePage";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { RouteErrorFallback } from "./components/RouteErrorFallback";
@@ -114,6 +116,8 @@ const router = createBrowserRouter([
           { path: "admin/families", element: <AdminRoute><FamiliesPage /></AdminRoute> },
           { path: "admin/notifications", element: <AdminRoute><NotificationsPage /></AdminRoute> },
           { path: "admin/leads", element: <AdminRoute><LeadsPage /></AdminRoute> },
+          { path: "admin/jobs", element: <AdminRoute><JobsPage /></AdminRoute> },
+          { path: "admin/jobs/:id", element: <AdminRoute><JobDetailPage /></AdminRoute> },
           { path: "admin/appointments", element: <AdminRoute><AdminAppointmentsPage /></AdminRoute> },
           { path: "admin/families/:id", element: <AdminRoute><FamilyDetailPage /></AdminRoute> },
           { path: "admin/finance", element: <AdminRoute><FinanceHubPage /></AdminRoute> },

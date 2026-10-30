@@ -3,6 +3,8 @@ import {
   resolveEntityLabels,
   parseEntityLabelOverrides,
   safePreset,
+  safeVertical,
+  isAppointmentVertical,
 } from '@shared/index';
 
 describe('resolveEntityLabels', () => {
@@ -37,6 +39,54 @@ describe('resolveEntityLabels', () => {
     expect(labels.offering).toEqual({ singular: 'שיעור', plural: 'שיעורים' });
     expect(labels.contact).toEqual({ singular: 'תלמיד', plural: 'תלמידים' });
     expect(labels.account).toEqual({ singular: 'משפחה', plural: 'משפחות' });
+  });
+
+  it('layers photographer vocabulary over the preset (en + he)', () => {
+    const en = resolveEntityLabels('services', {}, 'en', 'photographer');
+    expect(en.account).toEqual({ singular: 'Client', plural: 'Clients' });
+    expect(en.engagement).toEqual({ singular: 'Shoot', plural: 'Shoots' });
+    expect(en.offering).toEqual({ singular: 'Package', plural: 'Packages' });
+
+    const he = resolveEntityLabels('services', {}, 'he', 'photographer');
+    expect(he.account).toEqual({ singular: 'לקוח', plural: 'לקוחות' });
+    expect(he.engagement).toEqual({ singular: 'צילום', plural: 'צילומים' });
+    expect(he.offering).toEqual({ singular: 'חבילה', plural: 'חבילות' });
+  });
+
+  it('tenant overrides still win over photographer vocabulary', () => {
+    const labels = resolveEntityLabels(
+      'services',
+      { engagement: { singular: 'Session', plural: 'Sessions' } },
+      'en',
+      'photographer',
+    );
+    expect(labels.engagement).toEqual({ singular: 'Session', plural: 'Sessions' });
+    expect(labels.offering).toEqual({ singular: 'Package', plural: 'Packages' });
+  });
+
+  it('leaves dance/generic tenants unchanged', () => {
+    expect(resolveEntityLabels('programs', {}, 'en', 'dance-studio')).toEqual(
+      resolveEntityLabels('programs', {}, 'en'),
+    );
+    expect(resolveEntityLabels('programs', {}, 'he', 'generic')).toEqual(
+      resolveEntityLabels('programs', {}, 'he'),
+    );
+  });
+});
+
+describe('safeVertical / isAppointmentVertical', () => {
+  it('accepts known verticals and falls back to generic', () => {
+    expect(safeVertical('photographer')).toBe('photographer');
+    expect(safeVertical('dance-studio')).toBe('dance-studio');
+    expect(safeVertical('nope')).toBe('generic');
+    expect(safeVertical(undefined)).toBe('generic');
+  });
+
+  it('flags appointment-based verticals', () => {
+    expect(isAppointmentVertical('photographer')).toBe(true);
+    expect(isAppointmentVertical('beautician')).toBe(true);
+    expect(isAppointmentVertical('dance-studio')).toBe(false);
+    expect(isAppointmentVertical('generic')).toBe(false);
   });
 });
 

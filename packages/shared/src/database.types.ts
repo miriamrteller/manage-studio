@@ -1058,6 +1058,67 @@ export type Database = {
           },
         ]
       }
+      job_details: {
+        Row: {
+          created_at: string
+          engagement_id: string
+          gallery_released_at: string | null
+          gallery_url: string | null
+          job_status: string
+          lead_id: string | null
+          location: string | null
+          notes: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          engagement_id: string
+          gallery_released_at?: string | null
+          gallery_url?: string | null
+          job_status?: string
+          lead_id?: string | null
+          location?: string | null
+          notes?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          engagement_id?: string
+          gallery_released_at?: string | null
+          gallery_url?: string | null
+          job_status?: string
+          lead_id?: string | null
+          location?: string | null
+          notes?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_details_engagement_id_fkey"
+            columns: ["engagement_id"]
+            isOneToOne: true
+            referencedRelation: "engagements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_details_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_details_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leads: {
         Row: {
           channel: string
@@ -3051,6 +3112,17 @@ export type Database = {
       }
       cleanup_expired_otps: { Args: never; Returns: undefined }
       cleanup_old_verification_attempts: { Args: never; Returns: number }
+      convert_lead_to_job: {
+        Args: {
+          p_booked_ends_at?: string
+          p_booked_starts_at?: string
+          p_lead_id: string
+          p_location?: string
+          p_notes?: string
+          p_offering_id?: string
+        }
+        Returns: Json
+      }
       create_expense: {
         Args: {
           p_category_id: string
@@ -3067,6 +3139,20 @@ export type Database = {
           p_vat_amount_minor: number
         }
         Returns: string
+      }
+      create_job: {
+        Args: {
+          p_booked_ends_at?: string
+          p_booked_starts_at?: string
+          p_client_email?: string
+          p_client_name?: string
+          p_client_phone?: string
+          p_location?: string
+          p_notes?: string
+          p_offering_id: string
+          p_person_id?: string
+        }
+        Returns: Json
       }
       create_scheduling_hold: {
         Args: {
@@ -3368,6 +3454,37 @@ export type Database = {
       is_reserved_subdomain: { Args: { p_subdomain: string }; Returns: boolean }
       is_service_role: { Args: never; Returns: boolean }
       is_super_admin: { Args: never; Returns: boolean }
+      job_insert: {
+        Args: {
+          p_booked_ends_at: string
+          p_booked_starts_at: string
+          p_lead_id: string
+          p_location: string
+          p_notes: string
+          p_offering_id: string
+          p_person_id: string
+          p_tenant_id: string
+        }
+        Returns: string
+      }
+      job_resolve_client: {
+        Args: {
+          p_email: string
+          p_name: string
+          p_person_id: string
+          p_phone: string
+          p_tenant_id: string
+        }
+        Returns: {
+          account_id: string
+          created: boolean
+          person_id: string
+        }[]
+      }
+      job_store_client_phone: {
+        Args: { p_person_id: string; p_phone: string; p_tenant_id: string }
+        Returns: undefined
+      }
       link_auth_user_to_guardian_for_engagement: {
         Args: { p_engagement_id: string }
         Returns: undefined
