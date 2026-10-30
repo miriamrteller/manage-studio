@@ -1,3 +1,4 @@
+/* @ts-self-types="./styles.d.ts" */
 /** Shared inline style tokens for email primitives (email-client safe). */
 export const emailTypography = {
     body: {

@@ -1,3 +1,4 @@
+/* @ts-self-types="./OtpEmail.d.ts" */
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import BaseEmailTemplate from './BaseEmailTemplate.js';
 import { EmailCodeBox, EmailMutedText, EmailParagraph, EmailWarningText, } from './primitives/index.js';

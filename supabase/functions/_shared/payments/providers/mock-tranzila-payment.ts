@@ -13,7 +13,7 @@ export class MockTranzilaPaymentProvider implements PaymentProvider {
     void this.service;
   }
 
-  async createCharge(params: ChargeParams): Promise<ChargeResult> {
+  async createCharge(_params: ChargeParams): Promise<ChargeResult> {
     const ref = crypto.randomUUID();
     return {
       providerPaymentRef: ref,

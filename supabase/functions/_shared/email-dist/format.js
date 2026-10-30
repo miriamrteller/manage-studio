@@ -1,3 +1,4 @@
+/* @ts-self-types="./format.d.ts" */
 /**
  * Time formatting for HH:MM strings with locale support
  */

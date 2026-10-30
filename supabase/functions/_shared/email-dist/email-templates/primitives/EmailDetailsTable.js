@@ -1,3 +1,4 @@
+/* @ts-self-types="./EmailDetailsTable.d.ts" */
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 function optionalRowKey(row) {
     if (row.optionalRowToken)

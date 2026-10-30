@@ -1,3 +1,4 @@
+/* @ts-self-types="./format-payment-method.d.ts" */
 import { interpolateTemplate } from '../i18n/email.js';
 function str(value, fallback = '') {
     return typeof value === 'string' && value.trim() ? value.trim() : fallback;

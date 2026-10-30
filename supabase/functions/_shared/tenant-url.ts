@@ -101,6 +101,7 @@ export const TENANT_URL_COLUMNS = "subdomain";
  * keeps the tenant-awareness impossible to forget.
  */
 export async function tenantBaseUrlFor(
+  // deno-lint-ignore no-explicit-any -- chained Postgrest builder; only awaited
   service: { from: (t: string) => any },
   tenantId: string,
 ): Promise<string> {

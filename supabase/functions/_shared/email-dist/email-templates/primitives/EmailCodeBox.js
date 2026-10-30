@@ -1,3 +1,4 @@
+/* @ts-self-types="./EmailCodeBox.d.ts" */
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
 import { Text } from '@react-email/components';
 import { emailCodeBox } from './styles.js';

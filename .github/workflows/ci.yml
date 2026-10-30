@@ -85,15 +85,20 @@ jobs:
           deno-version: v2.x
       - name: Type-check
         run: bash scripts/check-edge-functions.sh
-      # Lint and tests are report-only until the existing backlog is cleared.
-      - name: Lint (report-only)
-        continue-on-error: true
+      # Lint rules left off on purpose:
+      # - no-import-prefix: functions use inline npm:/https: imports by design
+      #   (the esm.sh -> npm: migration is tracked separately).
+      # - require-await: provider methods stay async so a throw becomes a
+      #   rejected promise, which callers rely on.
+      # email-dist is generated output (pnpm email:bundle).
+      - name: Lint
         working-directory: supabase/functions
-        run: deno lint
-      - name: Unit tests (report-only)
-        continue-on-error: true
+        run: deno lint --rules-exclude=no-import-prefix,require-await --ignore=_shared/email-dist
+      # The repo-root package.json would make Deno look for npm: packages in a
+      # node_modules this job never installs; resolve them from Deno's cache.
+      - name: Unit tests
         working-directory: supabase/functions
-        run: deno test --allow-env --allow-read --allow-net
+        run: deno test --node-modules-dir=none --allow-env --allow-read --allow-net
 
   accessibility:
     needs: detect-changes

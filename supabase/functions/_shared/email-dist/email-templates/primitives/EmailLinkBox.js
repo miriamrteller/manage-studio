@@ -1,3 +1,4 @@
+/* @ts-self-types="./EmailLinkBox.d.ts" */
 import { jsx as _jsx } from "react/jsx-runtime";
 import { Link } from '@react-email/components';
 import { emailLinkBox } from './styles.js';

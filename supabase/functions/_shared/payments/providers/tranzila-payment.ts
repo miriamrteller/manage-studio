@@ -122,7 +122,7 @@ export class TranzilaPaymentProvider implements PaymentProvider {
     };
   }
 
-  async refundCharge(params: {
+  async refundCharge(_params: {
     providerPaymentRef: string;
     amountMinor: number;
   }): Promise<{ providerRefundRef: string }> {

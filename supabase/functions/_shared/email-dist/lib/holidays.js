@@ -1,3 +1,4 @@
+/* @ts-self-types="./holidays.d.ts" */
 /**
  * Israeli holiday detection shared by the web app and (in a Deno-flavoured twin)
  * the Supabase edge functions. See `supabase/functions/_shared/holidays.ts` for
