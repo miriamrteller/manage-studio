@@ -105,14 +105,14 @@ const SHOOTS: ShootSpec[] = [
   },
   {
     client: 5, pkg: PKG.family, status: 'shot', startDays: -3, startHour: 16,
-    location: 'Jaffa Port, Tel Aviv', notes: 'Shot at sunset. 180 frames to cull.',
-    signedDaysAgo: 20, createdDaysAgo: 30,
+    location: 'Jaffa Port, Tel Aviv', notes: 'Shot at sunset. 180 frames to cull. Proofing gallery uploaded.',
+    signedDaysAgo: 20, gallery: true, galleryReleased: false, createdDaysAgo: 30,
     requests: [['Deposit', 300, -22, 'paid'], ['Balance', 650, 4, 'sent']],
   },
   {
     client: 6, pkg: PKG.barMitzvah, status: 'editing', startDays: -10, startHour: 17,
-    location: 'Gan Oranim Events, Petah Tikva', notes: 'Editing in progress, sneak peek sent.',
-    signedDaysAgo: 40, createdDaysAgo: 55,
+    location: 'Gan Oranim Events, Petah Tikva', notes: 'Editing in progress, sneak peek gallery uploaded.',
+    signedDaysAgo: 40, gallery: true, galleryReleased: false, createdDaysAgo: 55,
     requests: [['Deposit', 1500, -45, 'paid'], ['Balance', 3300, 10, 'sent']],
   },
   {
