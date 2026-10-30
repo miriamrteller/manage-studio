@@ -52,9 +52,26 @@ export function formatJobPrice(priceMinor: number | null, currency: string | nul
   }
 }
 
+/**
+ * Authenticated signing path: only the job's own account members (the client
+ * household) or a tenant admin may sign. Guest links are scoped by token.
+ */
+export function canSignJobContract(params: {
+  roles: string[];
+  memberAccountIds: string[];
+  jobAccountId: string | null;
+}): boolean {
+  const { roles, memberAccountIds, jobAccountId } = params;
+  if (roles.includes("tenant_admin") || roles.includes("super_admin")) return true;
+  if (!jobAccountId) return false;
+  return memberAccountIds.includes(jobAccountId);
+}
+
 export interface JobContractContext {
   engagementId: string;
   personId: string;
+  /** The client account (people.account_id of the primary contact). */
+  accountId: string | null;
   offeringId: string;
   engagementStatus: string;
   waiverEvidenceId: string | null;
@@ -90,7 +107,7 @@ export async function loadJobContractContext(
   if (!eng) return null;
 
   const [{ data: person }, { data: offering }] = await Promise.all([
-    service.from("people").select("name, email").eq("id", eng.person_id as string).eq("tenant_id", tenantId).maybeSingle(),
+    service.from("people").select("name, email, account_id").eq("id", eng.person_id as string).eq("tenant_id", tenantId).maybeSingle(),
     service
       .from("offerings")
       .select("name, price_minor, currency, location")
@@ -104,6 +121,7 @@ export async function loadJobContractContext(
   return {
     engagementId: eng.id as string,
     personId: eng.person_id as string,
+    accountId: (person?.account_id as string | null) ?? null,
     offeringId: eng.offering_id as string,
     engagementStatus: (eng.status as string) ?? "active",
     waiverEvidenceId: (eng.waiver_evidence_id as string | null) ?? null,

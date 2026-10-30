@@ -28,6 +28,8 @@ Thread C owns `20261030000300` (quotes).
   (`is_public=false`, price 0) exists so bespoke quotes still have an
   `offering_id`.
 - Client = account (couple/family); primary contact = `accounts.person_id`;
+  client phone lives in `contact_preferences.whatsapp_number` (person_id keyed),
+  where WhatsApp sends read it;
   `engagements.person_id` = that primary contact.
 - Payments slot: `apps/web/src/features/jobs/components/JobPaymentsPanel.tsx`
   (`<JobPaymentsPanel engagementId />`), a stub Thread B replaces in place.

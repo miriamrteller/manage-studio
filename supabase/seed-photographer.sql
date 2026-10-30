@@ -216,15 +216,22 @@ By signing I confirm that I have read and understood this agreement and accept i
   ON CONFLICT (id) DO NOTHING;
 
   -- Demo clients: client = account, primary contact = accounts.person_id.
-  INSERT INTO people (id, tenant_id, name, email, emergency_contact_phone, status)
+  INSERT INTO people (id, tenant_id, name, email, status)
   VALUES
-    ('20000000-0000-0000-0000-000000000501'::uuid, v_tenant_id, 'נועה ואיתי לוי', 'noa.levi@example.com', '052-1234567', 'active'),
-    ('20000000-0000-0000-0000-000000000502'::uuid, v_tenant_id, 'Dana Cohen', 'dana.cohen@example.com', '054-7654321', 'active')
+    ('20000000-0000-0000-0000-000000000501'::uuid, v_tenant_id, 'נועה ואיתי לוי', 'noa.levi@example.com', 'active'),
+    ('20000000-0000-0000-0000-000000000502'::uuid, v_tenant_id, 'Dana Cohen', 'dana.cohen@example.com', 'active')
   ON CONFLICT (id) DO UPDATE SET
     name = EXCLUDED.name,
     email = EXCLUDED.email,
-    emergency_contact_phone = EXCLUDED.emergency_contact_phone,
     status = EXCLUDED.status;
+
+  -- Phones live in contact_preferences.whatsapp_number (what WhatsApp sends read).
+  INSERT INTO contact_preferences (id, tenant_id, person_id, email_opted_in, whatsapp_number, whatsapp_opted_in, whatsapp_verified)
+  VALUES
+    ('20000000-0000-0000-0000-000000000601'::uuid, v_tenant_id, '20000000-0000-0000-0000-000000000501'::uuid, true, '052-1234567', false, false),
+    ('20000000-0000-0000-0000-000000000602'::uuid, v_tenant_id, '20000000-0000-0000-0000-000000000502'::uuid, true, '054-7654321', false, false)
+  ON CONFLICT (id) DO UPDATE SET
+    whatsapp_number = EXCLUDED.whatsapp_number;
 
   INSERT INTO accounts (id, tenant_id, name, person_id)
   VALUES

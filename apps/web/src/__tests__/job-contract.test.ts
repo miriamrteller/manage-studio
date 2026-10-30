@@ -5,6 +5,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import {
+  canSignJobContract,
   formatJobDate,
   formatJobPrice,
   renderJobContract,
@@ -60,5 +61,28 @@ describe('formatJobDate / formatJobPrice', () => {
   it('formats minor units as currency and dashes a missing price', () => {
     expect(formatJobPrice(52000, 'ILS', 'en')).toContain('520');
     expect(formatJobPrice(null, 'ILS', 'en')).toBe('—');
+  });
+});
+
+describe('canSignJobContract (authenticated path)', () => {
+  const jobAccountId = 'acc-1';
+
+  it('allows a member of the job account', () => {
+    expect(canSignJobContract({ roles: ['account_holder'], memberAccountIds: ['acc-9', 'acc-1'], jobAccountId })).toBe(true);
+  });
+
+  it('allows tenant admins and super admins regardless of membership', () => {
+    expect(canSignJobContract({ roles: ['tenant_admin'], memberAccountIds: [], jobAccountId })).toBe(true);
+    expect(canSignJobContract({ roles: ['super_admin'], memberAccountIds: [], jobAccountId })).toBe(true);
+  });
+
+  it('rejects another tenant user who merely knows the UUIDs', () => {
+    expect(canSignJobContract({ roles: ['account_holder'], memberAccountIds: ['acc-2'], jobAccountId })).toBe(false);
+    expect(canSignJobContract({ roles: ['adult_student'], memberAccountIds: [], jobAccountId })).toBe(false);
+    expect(canSignJobContract({ roles: [], memberAccountIds: [], jobAccountId })).toBe(false);
+  });
+
+  it('rejects non-admins when the job has no account', () => {
+    expect(canSignJobContract({ roles: ['account_holder'], memberAccountIds: ['acc-1'], jobAccountId: null })).toBe(false);
   });
 });
