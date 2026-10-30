@@ -27,6 +27,52 @@ export type PresetModules = {
 
 export type EntityLabelLocale = 'en' | 'he';
 
+/**
+ * Vertical (tenants.skin / verticals.id). Appointment-based verticals reuse
+ * the `services` preset's modules but carry their own vocabulary: a
+ * photographer's engagement is a Shoot, their offering a Package.
+ */
+export type VerticalId = 'photographer' | 'beautician' | 'dance-studio' | 'generic';
+
+export const APPOINTMENT_VERTICALS: readonly VerticalId[] = ['photographer', 'beautician'];
+
+export function safeVertical(raw: unknown): VerticalId {
+  if (raw === 'photographer' || raw === 'beautician' || raw === 'dance-studio' || raw === 'generic') {
+    return raw;
+  }
+  return 'generic';
+}
+
+export function isAppointmentVertical(vertical: VerticalId): boolean {
+  return APPOINTMENT_VERTICALS.includes(vertical);
+}
+
+/** Vertical vocabulary layered over the preset defaults (before tenant overrides). */
+const VERTICAL_LABELS: Partial<Record<VerticalId, Record<EntityLabelLocale, Partial<EntityLabels>>>> = {
+  photographer: {
+    en: {
+      contact: { singular: 'Contact', plural: 'Contacts' },
+      account: { singular: 'Client', plural: 'Clients' },
+      offering: { singular: 'Package', plural: 'Packages' },
+      season: { singular: 'Season', plural: 'Seasons' },
+      category: { singular: 'Category', plural: 'Categories' },
+      staff: { singular: 'Photographer', plural: 'Photographers' },
+      engagement: { singular: 'Shoot', plural: 'Shoots' },
+      session: { singular: 'Shoot', plural: 'Shoots' },
+    },
+    he: {
+      contact: { singular: 'איש קשר', plural: 'אנשי קשר' },
+      account: { singular: 'לקוח', plural: 'לקוחות' },
+      offering: { singular: 'חבילה', plural: 'חבילות' },
+      season: { singular: 'עונה', plural: 'עונות' },
+      category: { singular: 'קטגוריה', plural: 'קטגוריות' },
+      staff: { singular: 'צלם', plural: 'צלמים' },
+      engagement: { singular: 'צילום', plural: 'צילומים' },
+      session: { singular: 'צילום', plural: 'צילומים' },
+    },
+  },
+};
+
 const DEFAULT_LABELS_EN: Record<BusinessPreset, EntityLabels> = {
   programs: {
     contact: { singular: 'Student', plural: 'Students' },
@@ -174,9 +220,11 @@ export function resolveEntityLabels(
   preset: BusinessPreset,
   overrides: Partial<EntityLabels> = {},
   locale: EntityLabelLocale = 'en',
+  vertical: VerticalId = 'generic',
 ): EntityLabels {
   const defaults = DEFAULT_LABELS_BY_LOCALE[locale][preset];
-  return { ...defaults, ...overrides };
+  const verticalLabels = VERTICAL_LABELS[vertical]?.[locale] ?? {};
+  return { ...defaults, ...verticalLabels, ...overrides };
 }
 
 export function getDefaultRoleForPreset(preset: BusinessPreset): string {

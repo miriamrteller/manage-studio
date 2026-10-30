@@ -2,7 +2,9 @@ import { describe, it, expect } from 'vitest';
 import {
   buildNavSections,
   matchesTenantFilter,
+  matchesVertical,
   navigationConfig,
+  publicNavigationConfig,
   resolveActiveNavPath,
   tenantUsesGrow,
   tenantUsesIcount,
@@ -95,5 +97,48 @@ describe('navigationConfig', () => {
     expect(resolveActiveNavPath('/admin/finance/expenses/categories', items)).toBe(
       '/admin/finance/expenses/categories',
     );
+  });
+});
+
+describe('vertical nav visibility', () => {
+  const adminPaths = (vertical: 'photographer' | 'dance-studio' | 'generic') =>
+    buildNavSections(
+      navigationConfig.filter((item) => matchesVertical(item, vertical)),
+      ['tenant_admin'],
+    ).flatMap((section) => section.items.map((item) => item.path));
+
+  it('photographer hides class-only pages and shows jobs', () => {
+    const paths = adminPaths('photographer');
+    expect(paths).toContain('/admin/jobs');
+    expect(paths).toContain('/admin/leads');
+    expect(paths).toContain('/admin/families');
+    expect(paths).not.toContain('/classes');
+    expect(paths).not.toContain('/admin/setup/levels');
+    expect(paths).not.toContain('/admin/setup/terms');
+    expect(paths).not.toContain('/admin/setup/classes');
+  });
+
+  it('dance and generic tenants are unchanged (no jobs, class pages intact)', () => {
+    for (const vertical of ['dance-studio', 'generic'] as const) {
+      const paths = adminPaths(vertical);
+      expect(paths).not.toContain('/admin/jobs');
+      expect(paths).toContain('/classes');
+      expect(paths).toContain('/admin/setup/levels');
+      expect(paths).toContain('/admin/setup/terms');
+      expect(paths).toContain('/admin/setup/classes');
+    }
+  });
+
+  it('treats a missing vertical as generic', () => {
+    const jobs = navigationConfig.find((item) => item.path === '/admin/jobs');
+    const classes = navigationConfig.find((item) => item.path === '/classes');
+    expect(jobs && matchesVertical(jobs, null)).toBe(false);
+    expect(classes && matchesVertical(classes, undefined)).toBe(true);
+  });
+
+  it('hides the public classes browse link for photographers only', () => {
+    const publicClasses = publicNavigationConfig.find((item) => item.path === '/classes');
+    expect(publicClasses && matchesVertical(publicClasses, 'photographer')).toBe(false);
+    expect(publicClasses && matchesVertical(publicClasses, 'dance-studio')).toBe(true);
   });
 });

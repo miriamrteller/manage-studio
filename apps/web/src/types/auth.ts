@@ -15,7 +15,8 @@ export type TenantConfig = {
   language: 'he' | 'en';
   language_default?: 'he' | 'en';
   country: 'IL' | 'US';
-  currency: string;  white_label?: TenantWhiteLabel;
+  currency: string;
+  white_label?: TenantWhiteLabel;
   locale: string;
   stripe_publishable_key?: string | null;
   stripe_secret_configured?: boolean;
@@ -28,6 +29,8 @@ export type TenantConfig = {
   payment_provider_updated_at?: string | null;
   invoicing_provider: string;
   business_preset: string;
+  /** Vertical id (tenants.skin): photographer | beautician | dance-studio | generic */
+  vertical: string;
   entity_label_overrides?: Record<string, Record<string, string>>;
   entity_labels?: Record<string, string>;
   modules?: string[];

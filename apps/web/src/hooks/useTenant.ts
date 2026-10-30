@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import { getLocale } from '../lib/language-helper';
 import { resolveTenantSubdomain } from '../lib/resolveTenantSubdomain';
 import type { TenantConfig } from '../types/auth';
-import { parseEntityLabelOverrides, resolveEntityLabels, resolvePresetModules, safePreset } from '@shared/index';
+import { parseEntityLabelOverrides, resolveEntityLabels, resolvePresetModules, safePreset, safeVertical } from '@shared/index';
 
 export function useTenant(): TenantConfig | null {
   return useTenantQuery().tenant;
@@ -35,6 +35,7 @@ export function useTenantQuery(): { tenant: TenantConfig | null; isLoading: bool
       };
       const preset = safePreset(row.business_preset);
       const overrides = parseEntityLabelOverrides(row.labels);
+      const vertical = safeVertical(row.skin);
       return {
         id: row.id,
         name: row.name,
@@ -42,7 +43,8 @@ export function useTenantQuery(): { tenant: TenantConfig | null; isLoading: bool
         language: row.language_default,
         language_default: row.language_default,
         country: row.country,
-        currency: row.currency,        white_label: whiteLabel || undefined,
+        currency: row.currency,
+        white_label: whiteLabel || undefined,
         locale: getLocale(row.language_default as 'he' | 'en', row.country as 'IL' | 'US'),
         stripe_publishable_key: row.payment_provider_public_key ?? row.stripe_publishable_key ?? null,
         stripe_secret_configured: Boolean(row.payment_provider_secret_configured ?? row.stripe_secret_configured),
@@ -55,8 +57,9 @@ export function useTenantQuery(): { tenant: TenantConfig | null; isLoading: bool
         payment_provider_updated_at: row.payment_provider_updated_at ?? null,
         invoicing_provider: row.invoicing_provider ?? 'grow',
         business_preset: preset,
+        vertical,
         entity_label_overrides: overrides,
-        entity_labels: resolveEntityLabels(preset, overrides, 'en'),
+        entity_labels: resolveEntityLabels(preset, overrides, 'en', vertical),
         modules: resolvePresetModules(preset),
         enabled_features: Array.isArray(row.enabled_features) ? row.enabled_features : [],
         font_pair: row.font_pair ?? null,
