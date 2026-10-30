@@ -9,7 +9,7 @@
  *
  * Response:
  *   { personId, offeringId, tenantId, template: { id, version, name, content } }
- *   (version is a positive integer)
+ *   (version is a positive integer). Job contracts also carry isJob: true.
  */
 
 import { corsHeaders, jsonResponse } from "../_shared/edge-runtime/cors.ts";
@@ -62,9 +62,11 @@ Deno.serve(async (req) => {
     });
 
     if (job) {
-      if (job.waiverEvidenceId) return jsonResponse({ alreadySigned: true }, 200);
+      // isJob: the page continues to the deposit (job-next-step). Dance
+      // responses stay exactly as they were.
+      if (job.waiverEvidenceId) return jsonResponse({ alreadySigned: true, isJob: true }, 200);
       if (job.engagementStatus === "cancelled" || job.jobStatus === "cancelled") {
-        return jsonResponse({ cancelled: true }, 200);
+        return jsonResponse({ cancelled: true, isJob: true }, 200);
       }
     } else {
       if (eng.status === "active") {
@@ -103,6 +105,7 @@ Deno.serve(async (req) => {
     }
 
     return jsonResponse({
+      ...(job ? { isJob: true } : {}),
       personId: eng.person_id as string,
       offeringId: eng.offering_id as string,
       tenantId: payload.tid,

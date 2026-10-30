@@ -13,9 +13,14 @@
 import { corsHeaders, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { resolveTenantSender, TENANT_SENDER_COLUMNS, type TenantSenderInput } from "../_shared/notification-from.ts";
-import { signWaiverToken } from "../_shared/waiver-token.ts";
 import { EMAIL_TEMPLATE_NAMES, sendRenderedEmail } from "../_shared/email-send.ts";
 import { loadJobContractContext } from "../_shared/job-contract.ts";
+import {
+  contractLinkBlocker,
+  hasActiveContractTemplate,
+  JOB_CONTRACT_EMAIL_LINK_TTL_SECONDS,
+  mintJobContractSignLink,
+} from "../_shared/jobs/contract-sign-link.ts";
 
 interface SendJobContractLinkBody {
   engagementId: string;
@@ -23,7 +28,6 @@ interface SendJobContractLinkBody {
 }
 
 const APP_URL = Deno.env.get("APP_URL") ?? "";
-const LINK_TTL_SECONDS = 14 * 24 * 3600;
 
 function getAppBaseUrl(req: Request): string {
   if (APP_URL) return APP_URL;
@@ -91,28 +95,21 @@ Deno.serve(async (req) => {
     const language = tenant.language_default === "he" ? "he" : "en";
 
     const job = await loadJobContractContext(service, { tenantId, engagementId: body.engagementId, language });
-    if (!job) return jsonResponse({ error: "Job not found" }, 404);
-    if (job.engagementStatus === "cancelled" || job.jobStatus === "cancelled") {
-      return jsonResponse({ error: "Job is cancelled" }, 409);
-    }
-    if (job.waiverEvidenceId) return jsonResponse({ error: "Contract already signed" }, 409);
-
-    const { data: template } = await service
-      .from("consent_templates")
-      .select("id")
-      .eq("tenant_id", tenantId)
-      .eq("status", "active")
-      .maybeSingle();
-    if (!template) return jsonResponse({ error: "No active contract template" }, 409);
-
-    const expireAt = Math.floor(Date.now() / 1000) + LINK_TTL_SECONDS;
-    const wt = await signWaiverToken(service, { eid: job.engagementId, tid: tenantId, em: recipientEmail, exp: expireAt });
+    const blocker = contractLinkBlocker(job, await hasActiveContractTemplate(service, tenantId));
+    if (blocker || !job) return jsonResponse({ error: blocker?.error ?? "Job not found" }, blocker?.status ?? 404);
 
     const appBaseUrl = getAppBaseUrl(req);
     if (!appBaseUrl) {
       return jsonResponse({ error: "APP_URL is not configured and request origin is unavailable" }, 500);
     }
-    const signUrl = `${appBaseUrl}/enrol/complete?engagementId=${encodeURIComponent(job.engagementId)}&wt=${encodeURIComponent(wt)}`;
+    const link = await mintJobContractSignLink(service, {
+      tenantId,
+      engagementId: job.engagementId,
+      email: recipientEmail,
+      ttlSeconds: JOB_CONTRACT_EMAIL_LINK_TTL_SECONDS,
+    });
+    const expireAt = link.expiresAt;
+    const signUrl = `${appBaseUrl}${link.path}`;
 
     const sender = (() => {
       try {

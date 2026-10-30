@@ -353,6 +353,13 @@ verify_jwt = false
 import_map = "./functions/accept-quote/deno.json"
 entrypoint = "./functions/accept-quote/index.ts"
 
+# After signing a job contract on /enrol/complete: where the client goes next
+# (deposit pay link or client portal). WaiverToken is the credential.
+[functions.job-next-step]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/job-next-step/index.ts"
+
 # Hourly cron: shoot reminder / thank-you / gallery-ready emails (CRON_SECRET, fail-closed).
 [functions.run-shoot-emails]
 enabled = true

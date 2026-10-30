@@ -22,11 +22,21 @@ export interface ShootEmailRow {
   value: string;
 }
 
+/** A numbered "next step" with its own button (e.g. sign, then pay). */
+export interface ShootEmailStep {
+  textKey: string;
+  ctaKey: string;
+  href: string;
+}
+
 interface ShootEmailLayoutProps extends ShootEmailCommonProps {
   defaults: Record<string, string>;
   values: Record<string, string>;
   rows?: ShootEmailRow[];
   ctaHref?: string;
+  /** String key for the body paragraph (default 'body'). */
+  bodyKey?: string;
+  steps?: ShootEmailStep[];
 }
 
 function pick(strings: Record<string, unknown> | undefined, defaults: Record<string, string>, key: string): string {
@@ -45,6 +55,8 @@ export default function ShootEmailLayout({
   values,
   rows = [],
   ctaHref,
+  bodyKey = 'body',
+  steps = [],
 }: ShootEmailLayoutProps) {
   const vars = { schoolName, ...values };
   const s = (key: string) => interpolateTemplate(pick(strings, defaults, key), vars);
@@ -59,7 +71,13 @@ export default function ShootEmailLayout({
       footerStrings={footerStrings}
     >
       <EmailParagraph>{s('greeting')}</EmailParagraph>
-      <EmailParagraph>{s('body')}</EmailParagraph>
+      <EmailParagraph>{s(bodyKey)}</EmailParagraph>
+      {steps.map((step, index) => (
+        <React.Fragment key={step.textKey}>
+          <EmailParagraph>{`${index + 1}. ${s(step.textKey)}`}</EmailParagraph>
+          <EmailPrimaryButton href={step.href}>{s(step.ctaKey)}</EmailPrimaryButton>
+        </React.Fragment>
+      ))}
       {rows.length > 0 && (
         <EmailDetailsTable
           heading={s('details_heading')}

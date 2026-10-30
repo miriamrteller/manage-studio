@@ -252,7 +252,12 @@
         "balance_label": "Balance",
         "balance_due_label": "Balance due",
         "cta": "View your booking",
-        "closing": "We are looking forward to it."
+        "closing": "We are looking forward to it.",
+        "body_next_steps": "Thank you for accepting the quote. Your shoot is booked! To finish, please:",
+        "step_sign": "Sign the contract.",
+        "step_sign_cta": "Sign the contract",
+        "step_pay": "Pay the deposit of {depositFormatted}.",
+        "step_pay_cta": "Pay the deposit"
     },
     "shoot_reminder": {
         "subject": "Reminder: your shoot with {schoolName}",

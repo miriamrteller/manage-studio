@@ -10,6 +10,7 @@ import {
 } from '../../services/publicQuoteService';
 import { PublicQuoteActions } from './PublicQuoteActions';
 import { PublicQuoteLines } from './PublicQuoteLines';
+import { PublicQuoteNextSteps } from './PublicQuoteNextSteps';
 
 export function PublicQuoteView({ token }: { token: string }) {
   const { t, i18n } = useTranslation();
@@ -95,6 +96,9 @@ function QuoteBody({ quote, token, tenantId, language, onSettled }: QuoteBodyPro
         <div className="alert-error" role="alert">
           {failure ?? (accept.error ?? decline.error)?.message}
         </div>
+      )}
+      {quote.status === 'accepted' && (
+        <PublicQuoteNextSteps result={accept.data ?? null} busy={accept.isPending} onResume={() => accept.mutate()} />
       )}
       {open && (
         <PublicQuoteActions busy={accept.isPending || decline.isPending}

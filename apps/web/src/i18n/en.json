@@ -237,6 +237,18 @@
     }
   },
   "pages": {
+    "booking_flow": {
+      "after_sign": {
+        "pay_heading": "Next: pay the deposit",
+        "pay_body": "The deposit of {{amount}} secures your date.",
+        "pay_button": "Pay deposit",
+        "redirecting": "Taking you to the deposit payment in {{count}} seconds…",
+        "stay": "Stay on this page",
+        "portal_body": "You are all set. You can see your booking at any time in your client portal.",
+        "portal_button": "Go to your client portal",
+        "error": "We could not load the next step. The payment link is also in your booking email."
+      }
+    },
     "client_portal": {
       "title": "My shoots",
       "subtitle": "Your shoots, contract, payments and gallery in one place.",
@@ -1070,6 +1082,16 @@
       "sign_prompt": "Please read the waiver carefully and sign below to activate your enrolment."
     },
     "jobs": {
+      "progress": {
+        "title": "Booking progress",
+        "quote_accepted": "Quote accepted",
+        "contract_signed": "Contract signed",
+        "deposit_paid": "Deposit paid",
+        "done_on": "Done {{date}}",
+        "done": "Done",
+        "waiting": "Waiting for the client",
+        "no_deposit": "No deposit on this booking"
+      },
       "title": "Shoots",
       "subtitle": "Every enquiry and booked shoot, from first contact to delivered gallery.",
       "new": "New shoot",
@@ -1318,6 +1340,16 @@
       }
     },
     "public_quote": {
+      "next_steps": {
+        "heading": "Next steps",
+        "intro_sign_then_pay": "Two quick steps to finish your booking: sign the contract, then pay the deposit.",
+        "intro_sign": "One last step to finish your booking: sign the contract.",
+        "intro_pay": "One last step to finish your booking: pay the deposit.",
+        "continue_to_sign": "Continue to sign the contract",
+        "continue_to_pay": "Continue to pay the deposit",
+        "emailed": "We have also emailed you these links, so you can come back to them later.",
+        "resume": "Continue your booking"
+      },
       "title": "Your quote",
       "for": "Prepared for {{name}}",
       "shoot_date": "Shoot date: {{date}}",

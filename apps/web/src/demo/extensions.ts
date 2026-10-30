@@ -14,7 +14,7 @@ import {
   type RpcHandler,
   type ViewHandler,
 } from './fakeSupabase';
-import { contractSignHref, formatIls } from './functions';
+import { contractSignHref, demoContractSignPath, demoDepositRequest, formatIls } from './functions';
 import { showInvoice } from './invoice';
 import { sendToOutbox } from './outbox';
 import { insertJob, resolveClient } from './rpcs';
@@ -315,13 +315,18 @@ function acceptQuote(ctx: DemoContext, token: string, selected: string[]): Row {
 
   const contact = quoteContact(ctx, q);
   if (contact.client_email && emailEnabled(ctx, 'booking_confirmed')) {
-    const deposit = rows(ctx, 'job_payment_requests').find((r) => r.id === ids[0]);
+    const deposit = demoDepositRequest(ctx, engagementId as string);
+    const signPath = demoContractSignPath(ctx, engagementId as string);
+    // Same order as the real email: sign the contract first, then pay the deposit.
     sendToOutbox({
       to: contact.client_email,
       subject: 'Your booking is confirmed',
       body: `Hi ${contact.client_name ?? ''}, thank you for accepting the quote (${formatIls(Number(q.total_minor))}). ` +
-        (deposit ? `The deposit of ${formatIls(Number(deposit.amount_minor))} is due today.` : ''),
-      link: deposit ? { label: 'Pay the deposit', href: appLink(`/pay/${deposit.public_token}`) } : undefined,
+        (signPath ? 'Step 1: sign the contract. ' : '') +
+        (deposit ? `${signPath ? 'Step 2: pay' : 'Pay'} the deposit of ${formatIls(Number(deposit.amount_minor))}, due today.` : ''),
+      link: signPath
+        ? { label: 'Sign the contract', href: appLink(signPath) }
+        : deposit ? { label: 'Pay the deposit', href: appLink(`/pay/${deposit.public_token}`) } : undefined,
     });
   }
   return { ...result, already_accepted: false };
@@ -664,7 +669,18 @@ export const extraFunctions: Record<string, FunctionHandler> = {
   'accept-quote': (body, ctx) => {
     const result = acceptQuote(ctx, String(body.token ?? ''), (body.selectedLineIds as string[] | undefined) ?? []);
     if (!result.ok) throw Object.assign(new DemoRpcError(String(result.code ?? 'not_open')), { body: result });
-    return result;
+    // Next steps, as accept-quote returns them: sign, then pay the deposit.
+    const engagementId = String(result.engagement_id);
+    const contractSignPath = demoContractSignPath(ctx, engagementId);
+    const deposit = demoDepositRequest(ctx, engagementId);
+    const depositPayPath = deposit && (deposit.status === 'pending' || deposit.status === 'sent')
+      ? `/pay/${String(deposit.public_token)}`
+      : null;
+    return {
+      ...result,
+      ...(contractSignPath ? { contractSignPath } : {}),
+      ...(depositPayPath ? { depositPayPath } : {}),
+    };
   },
 
   'send-notification': (body, ctx) => {
