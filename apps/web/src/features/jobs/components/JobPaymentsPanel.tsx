@@ -6,6 +6,7 @@ import { useTenant } from '@/hooks/useTenant';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useJobPaymentRequests } from '../hooks/useJobPaymentRequests';
+import { JOB_CONTACT_SELECT, jobContactFromRow, type JobContact, type JobContactRow } from '../lib/jobContact';
 import { formatMinor, isoDateInJerusalem } from '../lib/jobPaymentFormat';
 import type { JobPaymentRequest } from '../services/jobPaymentService';
 import { JobGalleryGate } from './JobGalleryGate';
@@ -15,11 +16,6 @@ import { ManualPaymentDialog, type ManualAction } from './ManualPaymentDialog';
 
 interface Props {
   engagementId: string;
-}
-
-interface JobContact {
-  bookedStartsAt: string | null;
-  phone: string | null;
 }
 
 /**
@@ -43,11 +39,10 @@ export function JobPaymentsPanel({ engagementId }: Props) {
     queryFn: async (): Promise<JobContact> => {
       const { data } = await supabase
         .from('engagements')
-        .select('booked_starts_at, people:person_id(emergency_contact_phone)')
+        .select(JOB_CONTACT_SELECT)
         .eq('id', engagementId)
         .maybeSingle();
-      const person = (data?.people ?? null) as { emergency_contact_phone: string | null } | null;
-      return { bookedStartsAt: (data?.booked_starts_at as string | null) ?? null, phone: person?.emergency_contact_phone ?? null };
+      return jobContactFromRow(data as JobContactRow | null);
     },
   });
 
