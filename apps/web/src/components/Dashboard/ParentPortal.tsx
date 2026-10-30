@@ -18,7 +18,6 @@ import { SetPasswordDialog } from '@/components/shared/SetPasswordDialog';
 import { buildUpcomingSessions } from '@/features/enrolment/lib/upcomingSessions';
 import { formatPersonDateOfBirthDisplay } from '@/lib/personAge';
 import { readPortalHighlightState } from '@/lib/portalHighlight';
-import { useTenant } from '@/hooks/useTenant';
 
 function formatMoney(amountMinor: number, currency: string): string {
   return (amountMinor / 100).toLocaleString(undefined, {
@@ -34,10 +33,6 @@ export function ParentPortal() {
   const location = useLocation();
   const [portalHighlight] = useState(() => readPortalHighlightState(location.state));
   const { data, isLoading, error } = useParentPortal();
-  const tenant = useTenant();
-  // Services verticals (photographer): the client books shoots for themselves —
-  // no children, class registration or weekly class schedule.
-  const isServices = tenant?.business_preset === 'services';
   const [editingChildId, setEditingChildId] = useState<string | null>(null);
   const [showAddChild, setShowAddChild] = useState(false);
   const [prefsOpen, setPrefsOpen] = useState(false);
@@ -162,9 +157,7 @@ export function ParentPortal() {
           <h2 className="text-2xl font-bold text-primary mb-2">
             {t('pages.portal_dashboard')}
           </h2>
-          <p className="text-gray-600">
-            {t(isServices ? 'pages.portal.subtitle_services' : 'pages.portal.subtitle')}
-          </p>
+          <p className="text-gray-600">{t('pages.portal.subtitle')}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => setPrefsOpen(true)}>
@@ -173,11 +166,9 @@ export function ParentPortal() {
           <Button variant="outline" onClick={() => setPasswordOpen(true)}>
             {t('pages.portal.login_password')}
           </Button>
-          {!isServices && (
-            <Button variant="primary" onClick={() => navigate('/enrol')}>
-              {t('pages.portal.enrol_new')}
-            </Button>
-          )}
+          <Button variant="primary" onClick={() => navigate('/enrol')}>
+            {t('pages.portal.enrol_new')}
+          </Button>
         </div>
       </section>
 
@@ -189,7 +180,6 @@ export function ParentPortal() {
           guardian={guardian}
           enrolments={getVisibleEnrolments(guardian.personId)}
           highlightedEngagementId={portalHighlight?.highlightEngagementId}
-          appointmentMode={isServices}
           onEnrol={() =>
             navigate('/enrol', {
               state: {
@@ -210,118 +200,114 @@ export function ParentPortal() {
         />
       )}
 
-      {!isServices && (
-        <>
-          <section aria-labelledby="portal-children-heading">
-            <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-              <h3 id="portal-children-heading" className="text-lg font-semibold text-gray-900">
-                {t('pages.portal.children_heading')}
-              </h3>
-              <div className="flex flex-wrap items-end gap-2">
-                <FilterMultiSelect
-                  id="portal-enrolment-status-filter"
-                  label={t('pages.portal.filter_by_enrolment_status')}
-                  options={enrolmentStatusOptions}
-                  selected={selectedEnrolmentStatuses}
-                  onChange={setSelectedEnrolmentStatuses}
-                  className="min-w-48"
-                />
-                <Button variant="outline" size="sm" onClick={() => setShowAddChild(true)}>
-                  {t('pages.portal.add_child')}
-                </Button>
-              </div>
+      <section aria-labelledby="portal-children-heading">
+        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+          <h3 id="portal-children-heading" className="text-lg font-semibold text-gray-900">
+            {t('pages.portal.children_heading')}
+          </h3>
+          <div className="flex flex-wrap items-end gap-2">
+            <FilterMultiSelect
+              id="portal-enrolment-status-filter"
+              label={t('pages.portal.filter_by_enrolment_status')}
+              options={enrolmentStatusOptions}
+              selected={selectedEnrolmentStatuses}
+              onChange={setSelectedEnrolmentStatuses}
+              className="min-w-48"
+            />
+            <Button variant="outline" size="sm" onClick={() => setShowAddChild(true)}>
+              {t('pages.portal.add_child')}
+            </Button>
+          </div>
+        </div>
+
+        {(children ?? []).length === 0 ? (
+          <div className="rounded-lg border border-dashed border-gray-300 p-6 text-center text-sm text-gray-600">
+            <p>{t('pages.portal.no_children')}</p>
+            <div className="mt-4 flex flex-wrap justify-center gap-2">
+              <Button variant="outline" onClick={() => setShowAddChild(true)}>
+                {t('pages.portal.add_child')}
+              </Button>
+              <Button variant="primary" onClick={() => navigate('/enrol')}>
+                {t('pages.portal.enrol_new')}
+              </Button>
             </div>
-
-            {(children ?? []).length === 0 ? (
-              <div className="rounded-lg border border-dashed border-gray-300 p-6 text-center text-sm text-gray-600">
-                <p>{t('pages.portal.no_children')}</p>
-                <div className="mt-4 flex flex-wrap justify-center gap-2">
-                  <Button variant="outline" onClick={() => setShowAddChild(true)}>
-                    {t('pages.portal.add_child')}
-                  </Button>
-                  <Button variant="primary" onClick={() => navigate('/enrol')}>
-                    {t('pages.portal.enrol_new')}
-                  </Button>
-                </div>
-              </div>
-            ) : filteredChildren.length === 0 ? (
-              <p className="text-sm text-gray-500">{t('pages.portal.no_enrolments_for_filter')}</p>
-            ) : (
-              <ul className="space-y-4">
-                {filteredChildren.map((child) => {
-                  const enrolments = getVisibleEnrolments(child.id);
-                  const childHighlighted = child.id === highlightPersonId;
-                  return (
-                    <li
-                      key={child.id}
-                      id={`portal-child-${child.id}`}
-                      className={[
-                        'rounded-lg border bg-white p-4 shadow-sm',
-                        childHighlighted ? 'border-green-400 ring-2 ring-green-200' : 'border-gray-200',
-                      ].join(' ')}
-                    >
-                      <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
-                        <div>
-                          <p className="font-semibold text-gray-900">{child.name}</p>
-                          {child.date_of_birth && (
-                            <p className="text-sm text-gray-500">
-                              {t('form.person.date_of_birth')}:{' '}
-                              {formatPersonDateOfBirthDisplay(child.date_of_birth, t, i18n.language)}
-                            </p>
-                          )}
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setEditingChildId(child.id)}
-                          >
-                            {t('pages.portal.edit_child')}
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() =>
-                              navigate('/enrol', { state: { personId: child.id, from: '/dashboard/portal' } })
-                            }
-                          >
-                            {t('pages.classes.enrol')}
-                          </Button>
-                        </div>
-                      </div>
-
-                      {enrolments.length === 0 ? (
-                        <p className="text-sm text-gray-500">{t('pages.portal.no_enrolments')}</p>
-                      ) : (
-                        <ul className="mt-2" aria-label={t('pages.portal.enrolments_for', { name: child.name })}>
-                          {enrolments.map((enrolment) => (
-                            <EnrolmentRow
-                              key={enrolment.id}
-                              enrolment={enrolment}
-                              highlighted={enrolment.id === portalHighlight?.highlightEngagementId}
-                            />
-                          ))}
-                        </ul>
+          </div>
+        ) : filteredChildren.length === 0 ? (
+          <p className="text-sm text-gray-500">{t('pages.portal.no_enrolments_for_filter')}</p>
+        ) : (
+          <ul className="space-y-4">
+            {filteredChildren.map((child) => {
+              const enrolments = getVisibleEnrolments(child.id);
+              const childHighlighted = child.id === highlightPersonId;
+              return (
+                <li
+                  key={child.id}
+                  id={`portal-child-${child.id}`}
+                  className={[
+                    'rounded-lg border bg-white p-4 shadow-sm',
+                    childHighlighted ? 'border-green-400 ring-2 ring-green-200' : 'border-gray-200',
+                  ].join(' ')}
+                >
+                  <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <p className="font-semibold text-gray-900">{child.name}</p>
+                      {child.date_of_birth && (
+                        <p className="text-sm text-gray-500">
+                          {t('form.person.date_of_birth')}:{' '}
+                          {formatPersonDateOfBirthDisplay(child.date_of_birth, t, i18n.language)}
+                        </p>
                       )}
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </section>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setEditingChildId(child.id)}
+                      >
+                        {t('pages.portal.edit_child')}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          navigate('/enrol', { state: { personId: child.id, from: '/dashboard/portal' } })
+                        }
+                      >
+                        {t('pages.classes.enrol')}
+                      </Button>
+                    </div>
+                  </div>
 
-          {editingChild && (
-            <EditChildModal child={editingChild} onClose={() => setEditingChildId(null)} />
-          )}
+                  {enrolments.length === 0 ? (
+                    <p className="text-sm text-gray-500">{t('pages.portal.no_enrolments')}</p>
+                  ) : (
+                    <ul className="mt-2" aria-label={t('pages.portal.enrolments_for', { name: child.name })}>
+                      {enrolments.map((enrolment) => (
+                        <EnrolmentRow
+                          key={enrolment.id}
+                          enrolment={enrolment}
+                          highlighted={enrolment.id === portalHighlight?.highlightEngagementId}
+                        />
+                      ))}
+                    </ul>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
 
-          {showAddChild && <AddChildModal onClose={() => setShowAddChild(false)} />}
-
-          <UpcomingSessionsSection
-            sessions={upcomingSessions}
-            showPersonName={showPersonNameOnUpcoming}
-          />
-        </>
+      {editingChild && (
+        <EditChildModal child={editingChild} onClose={() => setEditingChildId(null)} />
       )}
+
+      {showAddChild && <AddChildModal onClose={() => setShowAddChild(false)} />}
+
+      <UpcomingSessionsSection
+        sessions={upcomingSessions}
+        showPersonName={showPersonNameOnUpcoming}
+      />
 
       <section aria-labelledby="portal-payments-heading">
         <h3 id="portal-payments-heading" className="text-lg font-semibold text-gray-900 mb-4">
