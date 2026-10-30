@@ -22,9 +22,10 @@ export function decideContractPdfAccess(input: {
   /** account_members.account_id rows for the caller's login. */
   callerAccountIds: string[];
   job: { tenantId: string; personId: string; accountId: string | null } | null;
-  /** The job's evidence row, or null when the contract is unsigned. */
-  evidence: { pdf_storage_path: string | null; pdf_sha256: string | null } | null;
-  hasStoredPdf: (row: { pdf_storage_path: string | null; pdf_sha256: string | null }) => boolean;
+  /** True when the job's contract has a waiver_evidence row. */
+  signed: boolean;
+  /** Where the PDF is (contractPdfLocation), or null when none exists yet. */
+  pdf: { path: string } | null;
 }): ContractPdfAccess {
   const { job } = input;
   if (!job || !input.callerTenantId || input.callerTenantId !== job.tenantId) {
@@ -35,9 +36,24 @@ export function decideContractPdfAccess(input: {
     (input.callerPersonId !== null && input.callerPersonId === job.personId) ||
     (job.accountId !== null && input.callerAccountIds.includes(job.accountId));
   if (!isAdmin && !isOwnJob) return { ok: false, status: 404, error: "Shoot not found" };
-  if (!input.evidence) return { ok: false, status: 409, error: "Contract not signed yet" };
-  if (!input.hasStoredPdf(input.evidence)) {
-    return { ok: false, status: 409, error: "No PDF exists for this contract (signed before PDF copies were introduced)" };
+  if (!input.signed) return { ok: false, status: 409, error: "Contract not signed yet" };
+  if (!input.pdf) {
+    return { ok: false, status: 409, error: "The signed contract has no PDF yet — the studio can generate one from the shoot page" };
   }
   return { ok: true, role: isAdmin ? "admin" : "client" };
+}
+
+/** Only a tenant admin of the job's tenant may generate a PDF after signing. */
+export function decideContractPdfGenerateAccess(input: {
+  callerTenantId: string | null;
+  callerRoles: string[];
+  job: { tenantId: string } | null;
+}): { ok: true } | { ok: false; status: 403 | 404; error: string } {
+  if (!input.job || !input.callerTenantId || input.callerTenantId !== input.job.tenantId) {
+    return { ok: false, status: 404, error: "Shoot not found" };
+  }
+  if (!input.callerRoles.includes("tenant_admin") && !input.callerRoles.includes("super_admin")) {
+    return { ok: false, status: 403, error: "Forbidden" };
+  }
+  return { ok: true };
 }

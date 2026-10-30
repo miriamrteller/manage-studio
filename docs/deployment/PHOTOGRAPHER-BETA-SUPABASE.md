@@ -38,10 +38,13 @@ The four migrations added since the dev database was last pushed:
 - `20261030000400_search_clients_by_whatsapp.sql`: client search also matches
   WhatsApp numbers, and a typed `054…` matches a stored `+972 54…`.
 - `20261030000500_contract_signed_emails.sql`: allows the two signed-contract
-  email keys in `automatic_email_log` / `tenant_automatic_emails`.
+  email keys in `automatic_email_log` / `tenant_automatic_emails`; adds
+  `job_details.contract_pdf_pending` and `waiver_evidence_pdfs` (PDFs generated
+  after signing when the PDF failed at signing).
 
 New or changed edge functions: `send-job-contract-link`,
 `client-job-contract-link`, `job-contract-pdf-link` (signed-contract download),
+`job-contract-pdf-generate` (admin retry when the PDF failed at signing),
 `job-payment-request-public`, `record-job-payment`,
 `run-job-payment-reminders`, `send-job-payment-link`, `accept-quote`,
 `run-shoot-emails`, `handle-payment-event` (YPay callback path),

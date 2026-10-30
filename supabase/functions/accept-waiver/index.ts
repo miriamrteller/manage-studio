@@ -18,6 +18,7 @@ import {
   type ExistingWaiverEvidence,
   findExistingWaiverEvidence,
   notifyJobContractSigned,
+  recordContractPdfFailure,
 } from "../_shared/contract-pdf/job-contract-signing.ts";
 import { AUTOMATIC_EMAIL_TENANT_COLUMNS } from "../_shared/photographer-emails/send.ts";
 
@@ -358,6 +359,16 @@ Deno.serve(async (req) => {
         .is("waiver_evidence_id", null);
       if (linkError) {
         return jsonResponse({ error: "Failed to link contract to job" }, 500);
+      }
+      // PDF failed at signing: the row is sealed with the sentinel pair (signing
+      // still succeeded); flag the shoot so the admin can generate the PDF later.
+      if (pdf.failure && !replay) {
+        await recordContractPdfFailure(service, {
+          tenantId,
+          engagementId: jobContract.engagementId,
+          evidenceId: returnedId as string,
+          reason: pdf.failure,
+        });
       }
       // Signed copy to the client and the photographer (idempotent per shoot; never fails the signing).
       if (contractTenant) {

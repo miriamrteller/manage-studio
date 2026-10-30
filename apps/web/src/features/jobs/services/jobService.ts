@@ -36,6 +36,8 @@ export interface JobRow {
   price_minor: number | null;
   currency: string | null;
   contract_signed_at: string | null;
+  /** Signed, but the PDF failed at signing — the admin can generate it from the shoot page. */
+  contract_pdf_pending: boolean;
 }
 
 export interface JobPackage {
@@ -49,7 +51,7 @@ export interface JobPackage {
 }
 
 const JOB_SELECT =
-  'engagement_id, job_status, location, notes, lead_id, gallery_url, gallery_released_at, created_at, ' +
+  'engagement_id, job_status, location, notes, lead_id, gallery_url, gallery_released_at, contract_pdf_pending, created_at, ' +
   'engagements!inner(id, status, booked_starts_at, booked_ends_at, waiver_evidence_id, person_id, offering_id, ' +
   'people(name, email, contact_preferences(whatsapp_number)), offerings(name, price_minor, currency), waiver_evidence(signed_at))';
 
@@ -118,6 +120,7 @@ function toRow(raw: Record<string, unknown>): JobRow {
     price_minor: offering?.price_minor ?? null,
     currency: offering?.currency ?? null,
     contract_signed_at: evidence?.signed_at ?? null,
+    contract_pdf_pending: raw.contract_pdf_pending === true,
   };
 }
 
@@ -256,6 +259,21 @@ export class JobService extends BaseService {
     const body = (data ?? {}) as { error?: string; url?: string; expiresAt?: string };
     if (body.error) throw new Error(body.error);
     if (typeof body.url !== 'string' || !/^https?:\/\//.test(body.url)) throw new Error('Could not prepare the download');
+    return { url: body.url, expiresAt: body.expiresAt ?? '' };
+  }
+
+  /**
+   * Admin retry when the PDF failed at signing (edge: job-contract-pdf-generate).
+   * Renders from the sealed wording and returns a short-lived download link.
+   */
+  static async generateContractPdf(engagementId: string): Promise<{ url: string; expiresAt: string }> {
+    const { data, error } = await supabase.functions.invoke('job-contract-pdf-generate', {
+      body: { engagementId },
+    });
+    if (error) throw new Error(error.message);
+    const body = (data ?? {}) as { error?: string; url?: string; expiresAt?: string };
+    if (body.error) throw new Error(body.error);
+    if (typeof body.url !== 'string' || !/^https?:\/\//.test(body.url)) throw new Error('Could not generate the PDF');
     return { url: body.url, expiresAt: body.expiresAt ?? '' };
   }
 

@@ -52,6 +52,8 @@ export interface ContractPdfInput {
     signerEmail: string | null;
     evidenceId: string;
     consentVersionHash: string;
+    /** Set when the PDF was rendered after signing (admin retry), from the sealed wording. */
+    generatedAfterSigningAt?: string | null;
   };
 }
 
@@ -75,6 +77,8 @@ const STRINGS: Record<ContractPdfLanguage, Record<string, string>> = {
     note: "This document reproduces the wording the signer read and accepted. The signed record identified by the evidence ID above is the authoritative copy; the hash lets anyone confirm this wording is unchanged.",
     page: "Page {n} of {total}",
     tz: "Israel time",
+    generated_after: "PDF generated after signing",
+    generated_after_note: "This PDF was produced from the sealed wording after signing; its own hash is not part of the sealed record.",
   },
   he: {
     details: "פרטי הצילום",
@@ -95,6 +99,8 @@ const STRINGS: Record<ContractPdfLanguage, Record<string, string>> = {
     note: "מסמך זה משחזר את הנוסח שהחותם/ת קרא/ה ואישר/ה. הרשומה החתומה שמזוהה במזהה הראיה לעיל היא העותק המחייב; ה-hash מאפשר לכל אחד לוודא שהנוסח לא השתנה.",
     page: "עמוד {n} מתוך {total}",
     tz: "שעון ישראל",
+    generated_after: "ה-PDF הופק לאחר החתימה",
+    generated_after_note: "קובץ זה הופק מהנוסח החתום לאחר החתימה; ה-hash שלו עצמו אינו חלק מהרשומה החתומה.",
   },
 };
 
@@ -315,8 +321,14 @@ export async function renderContractPdf(input: ContractPdfInput): Promise<Uint8A
   w.row(s.version, String(input.templateVersion), fonts);
   w.row(s.evidence_id, input.signature.evidenceId, fonts);
   w.row(s.wording_hash, input.signature.consentVersionHash, fonts);
+  if (input.signature.generatedAfterSigningAt) {
+    w.row(s.generated_after, formatSignedAt(input.signature.generatedAfterSigningAt, language), fonts);
+  }
   w.space(6);
   w.paragraphs(s.note, fonts.regular, 8.5, 12, MUTED);
+  if (input.signature.generatedAfterSigningAt) {
+    w.paragraphs(s.generated_after_note, fonts.regular, 8.5, 12, MUTED);
+  }
 
   // --- Footer on every page ---
   const total = w.pages.length;

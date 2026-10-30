@@ -4,7 +4,7 @@ import ShootEmailLayout from './ShootEmailLayout.js';
 const DEFAULTS = {
     preview: '{clientName} signed the contract',
     greeting: 'Hello,',
-    body: '{clientName} has signed the shoot contract. The signed PDF is attached and can be downloaded from the shoot page at any time.',
+    body: '{clientName} has signed the shoot contract. Download the signed PDF with the button below or from the shoot page at any time.',
     details_heading: 'Contract summary',
     client_label: 'Client',
     shoot_date_label: 'Shoot date',

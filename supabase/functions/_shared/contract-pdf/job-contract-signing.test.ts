@@ -6,7 +6,13 @@
 import { assert, assertEquals, assertMatch } from "jsr:@std/assert@^1";
 import type { JobContractContext } from "../job-contract.ts";
 import type { sendHtmlEmail } from "../email-client.ts";
-import { type ContractEmailStorage, findExistingWaiverEvidence, notifyJobContractSigned } from "./job-contract-signing.ts";
+import {
+  type ContractEmailStorage,
+  findExistingWaiverEvidence,
+  notifyJobContractSigned,
+  recordContractPdfFailure,
+} from "./job-contract-signing.ts";
+import { PDF_DEFERRED_SENTINEL, PDF_SHA256_NONE } from "./evidence.ts";
 
 Deno.env.set("PLATFORM_EMAIL_DOMAIN", "opalswift.com");
 Deno.env.set("APP_ROOT_DOMAIN", "opalswift.com");
@@ -214,4 +220,60 @@ Deno.test("findExistingWaiverEvidence looks the row up by tenant + idempotency k
   };
   assertEquals(await findExistingWaiverEvidence(client, "t1", "idem-1"), row);
   assertEquals(filters, [["waiver_evidence", "id, pdf_storage_path, pdf_sha256, signed_at, signed_by_name, signed_by_email", "tenant_id", "t1", "idempotency_key", "idem-1"]]);
+});
+
+Deno.test("PDF failed at signing: emails still go out with app links and no attachment", async () => {
+  const { client } = fakeClient();
+  const { send, sent } = fakeSend();
+  const sentinel = { ...evidence, storagePath: PDF_DEFERRED_SENTINEL, pdfSha256: PDF_SHA256_NONE };
+  const result = await notifyJobContractSigned(client, { tenant, language: "en", job, evidence: sentinel, pdfBytes: null }, {
+    send,
+    attachmentsSupported: () => true,
+  });
+  assertEquals([result.client, result.studio], ["sent", "sent"]);
+  assertEquals(result.downloadUrl, null);
+  assertEquals(sent[0].attachments, undefined);
+  assert(sent[0].html.includes("https://or.opalswift.com/dashboard/portal"));
+  assert(sent[1].html.includes(`https://or.opalswift.com/admin/jobs/${ENGAGEMENT}`));
+});
+
+Deno.test("recordContractPdfFailure: audit row with the reason + contract_pdf_pending on the shoot; never throws", async () => {
+  const inserts: Array<[string, Record<string, unknown>]> = [];
+  const updates: Array<[string, Record<string, unknown>, unknown[]]> = [];
+  const client = {
+    from: (table: string) => ({
+      insert: (row: Record<string, unknown>) => {
+        inserts.push([table, row]);
+        return Promise.resolve({ error: null });
+      },
+      update: (patch: Record<string, unknown>) => {
+        const filters: unknown[] = [];
+        const q = {
+          eq: (c: string, v: string) => {
+            filters.push([c, v]);
+            return q;
+          },
+          then: (resolve: (v: unknown) => void) => {
+            updates.push([table, patch, filters]);
+            resolve({ error: null });
+          },
+        };
+        return q;
+      },
+    }),
+  };
+  await recordContractPdfFailure(client, { tenantId: "t1", engagementId: ENGAGEMENT, evidenceId: "ev1", reason: "bucket offline" });
+  assertEquals(inserts.length, 1);
+  assertEquals(inserts[0][0], "audit_log");
+  assertEquals(inserts[0][1].action, "job_contract_pdf_failed");
+  assertEquals(inserts[0][1].entity_id, "ev1");
+  assertEquals((inserts[0][1].after_state as Record<string, unknown>).reason, "bucket offline");
+  assertEquals(updates.length, 1);
+  assertEquals(updates[0][0], "job_details");
+  assertEquals(updates[0][1].contract_pdf_pending, true);
+  assertEquals(updates[0][2], [["engagement_id", ENGAGEMENT], ["tenant_id", "t1"]]);
+
+  // A failing client must not turn a recorded signing into an error.
+  const broken = { from: () => ({ insert: () => Promise.reject(new Error("db down")), update: () => ({ eq: () => ({ eq: () => Promise.reject(new Error("db down")) }) }) }) };
+  await recordContractPdfFailure(broken, { tenantId: "t1", engagementId: ENGAGEMENT, evidenceId: "ev1", reason: "x" });
 });

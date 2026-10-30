@@ -126,6 +126,13 @@ export const baseFunctions: Record<string, FunctionHandler> = {
     throw new DemoRpcError('Downloading the signed PDF is not available in the demo.');
   },
 
+  'job-contract-pdf-generate': (body, ctx) => {
+    const engagementId = String(body.engagementId ?? '');
+    const eng = rows(ctx, 'engagements').find((e) => e.id === engagementId);
+    if (!eng) throw new DemoRpcError('Shoot not found');
+    throw new DemoRpcError('Generating the signed PDF is not available in the demo.');
+  },
+
   'accept-waiver': (body, ctx) => {
     const engagementId =
       (body.engagement_id as string | undefined) ?? engagementFromToken(body.__authorization as string | undefined);

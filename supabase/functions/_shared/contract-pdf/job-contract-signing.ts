@@ -58,6 +58,43 @@ export async function findExistingWaiverEvidence(
   return (data as ExistingWaiverEvidence | null) ?? null;
 }
 
+/** Loosely typed insert/update client for the failure record. */
+export interface FailureRecordClient {
+  // deno-lint-ignore no-explicit-any -- chained Postgrest builder; only awaited
+  from: (table: string) => any;
+}
+
+/**
+ * The PDF could not be rendered or stored at signing. The row is already
+ * sealed with the sentinel pair (signing succeeded); here the failure becomes
+ * visible: an audit_log row with the reason, and job_details.contract_pdf_pending
+ * so the shoot page offers "Generate PDF". Never throws.
+ */
+export async function recordContractPdfFailure(
+  client: FailureRecordClient,
+  input: { tenantId: string; engagementId: string; evidenceId: string; reason: string },
+): Promise<void> {
+  try {
+    const { error: auditError } = await client.from("audit_log").insert({
+      tenant_id: input.tenantId,
+      actor_id: null,
+      action: "job_contract_pdf_failed",
+      entity_type: "waiver_evidence",
+      entity_id: input.evidenceId,
+      after_state: { engagement_id: input.engagementId, reason: input.reason.slice(0, 1000), sealed_with: "sentinel" },
+    });
+    if (auditError) console.error("[job-contract-signing] audit_log insert failed:", auditError.message);
+    const { error: flagError } = await client
+      .from("job_details")
+      .update({ contract_pdf_pending: true, updated_at: new Date().toISOString() })
+      .eq("engagement_id", input.engagementId)
+      .eq("tenant_id", input.tenantId);
+    if (flagError) console.error("[job-contract-signing] contract_pdf_pending flag failed:", flagError.message);
+  } catch (error) {
+    console.error("[job-contract-signing] recordContractPdfFailure:", error);
+  }
+}
+
 export interface SignedContractEvidence {
   id: string;
   storagePath: string;

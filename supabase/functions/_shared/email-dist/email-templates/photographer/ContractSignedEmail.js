@@ -4,7 +4,7 @@ import ShootEmailLayout from './ShootEmailLayout.js';
 const DEFAULTS = {
     preview: 'Your signed contract with {schoolName}',
     greeting: 'Hi {recipientName},',
-    body: 'Thank you for signing. Your copy of the signed contract is attached to this email and can also be downloaded with the button below (the link works for 72 hours; your client portal always has a fresh one).',
+    body: 'Thank you for signing. Download your copy of the signed contract with the button below. The link works for 72 hours; your client portal always has a fresh one.',
     details_heading: 'Contract summary',
     shoot_date_label: 'Shoot date',
     package_label: 'Package',

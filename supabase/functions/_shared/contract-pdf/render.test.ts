@@ -5,7 +5,7 @@
  * with pdftoppm — see the PR for the images; these tests pin the mechanics.
  */
 import { assert, assertEquals, assertMatch } from "jsr:@std/assert@^1";
-import { PDFDict, PDFDocument, PDFName } from "npm:pdf-lib@1.17.1";
+import { PDFDict, PDFDocument, PDFName, PDFStream } from "npm:pdf-lib@1.17.1";
 import { type ContractPdfInput, formatSignedAt, renderContractPdf } from "./render.ts";
 
 // 1×1 transparent PNG.
@@ -49,10 +49,12 @@ async function inspect(bytes: Uint8Array) {
   const fonts: string[] = [];
   let images = 0;
   for (const [, obj] of doc.context.enumerateIndirectObjects()) {
-    if (!(obj instanceof PDFDict)) continue;
-    const baseFont = obj.get(PDFName.of("BaseFont"));
+    // Fonts are dictionaries; images (and the font programs) are streams with a dictionary.
+    const dict = obj instanceof PDFDict ? obj : obj instanceof PDFStream ? obj.dict : null;
+    if (!dict) continue;
+    const baseFont = dict.get(PDFName.of("BaseFont"));
     if (baseFont) fonts.push(baseFont.toString());
-    if (obj.get(PDFName.of("Subtype"))?.toString() === "/Image") images++;
+    if (dict.get(PDFName.of("Subtype"))?.toString() === "/Image") images++;
   }
   const lang = doc.catalog.get(PDFName.of("Lang"))?.toString() ?? null;
   return { doc, fonts: [...new Set(fonts)], images, lang };
@@ -86,7 +88,8 @@ Deno.test("long wording paginates with a footer on every page", async () => {
 
 Deno.test("embeds a PNG logo, and ignores a logo it cannot decode", async () => {
   const withLogo = await renderContractPdf(input("en", { business: { name: "Lumen & Light", logo: { bytes: PNG_1PX, mimeType: "image/png" } } }));
-  assertEquals((await inspect(withLogo)).images, 1);
+  // A transparent PNG embeds as the image plus its soft mask, so at least one image object.
+  assert((await inspect(withLogo)).images >= 1);
 
   const broken = await renderContractPdf(
     input("en", { business: { name: "Lumen & Light", logo: { bytes: new Uint8Array([1, 2, 3]), mimeType: "image/png" } } }),

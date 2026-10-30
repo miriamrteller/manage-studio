@@ -28,6 +28,46 @@ export function contractPdfStoragePath(tenantId: string, engagementId: string, e
   return `contracts/${tenantId}/${engagementId}/${evidenceId}.pdf`;
 }
 
+/** Key for a PDF generated after signing (admin retry); distinct from the sealed path. */
+export function regeneratedContractPdfStoragePath(
+  tenantId: string,
+  engagementId: string,
+  evidenceId: string,
+  generatedAt: Date,
+): string {
+  const stamp = generatedAt.toISOString().replace(/[-:.]/g, "").slice(0, 15);
+  return `contracts/${tenantId}/${engagementId}/${evidenceId}-after-signing-${stamp}.pdf`;
+}
+
+/** Row of waiver_evidence_pdfs: a PDF generated after signing for a sentinel evidence row. */
+export interface RegeneratedContractPdf {
+  pdf_storage_path: string;
+  pdf_sha256: string;
+  generated_at: string;
+}
+
+export interface ContractPdfLocation {
+  path: string;
+  sha256: string;
+  /** "sealed": the hash is inside record_hmac. "after_signing": rendered later from the sealed wording. */
+  source: "sealed" | "after_signing";
+}
+
+/** Where a signed contract's PDF is, if anywhere: the sealed object, else a regenerated one. */
+export function contractPdfLocation(
+  evidence: { pdf_storage_path: string | null; pdf_sha256: string | null } | null,
+  regenerated: RegeneratedContractPdf | null,
+): ContractPdfLocation | null {
+  if (!evidence) return null;
+  if (hasStoredPdf(evidence)) {
+    return { path: evidence.pdf_storage_path as string, sha256: evidence.pdf_sha256 as string, source: "sealed" };
+  }
+  if (regenerated?.pdf_storage_path) {
+    return { path: regenerated.pdf_storage_path, sha256: regenerated.pdf_sha256, source: "after_signing" };
+  }
+  return null;
+}
+
 /** Suggested download name for the signed PDF. */
 export function contractPdfFilename(evidenceId: string): string {
   return `signed-contract-${evidenceId.slice(0, 8)}.pdf`;
@@ -76,6 +116,12 @@ export interface WaiverPdfArtifact {
   pdfSha256: string;
   /** The rendered bytes (for the email attachment); null when nothing was rendered. */
   bytes: Uint8Array | null;
+  /**
+   * Set when a job contract's PDF could not be rendered or stored: the row is
+   * then sealed with the sentinel pair and the shoot is flagged for the admin
+   * "Generate PDF" retry (see recordContractPdfFailure).
+   */
+  failure?: string;
 }
 
 /** What a dance waiver — or anything that is not a job contract — stores. */
@@ -182,10 +228,11 @@ export async function buildJobContractPdf(
  * - Job contract: render, hash, upload to the legal-documents bucket under a
  *   tenant-scoped key, and return the real path + hash for the sealed record.
  *
- * A render or upload failure throws: accept-waiver then fails the request and
- * the client retries with the same idempotency key. A job contract whose PDF
- * is missing for good would be worse than one more click, and a retry can
- * never double-sign (sign_waiver is idempotent on the key).
+ * Never throws for a job contract. A render or upload failure must not stop a
+ * client from signing a legal contract, so the artifact degrades to the same
+ * sentinel pair a dance waiver stores (the verifier already accepts it) with
+ * `failure` set; accept-waiver then flags the shoot and logs it, and the admin
+ * "Generate PDF" retry renders the PDF later from the sealed wording.
  */
 export async function prepareWaiverPdf(
   storage: ContractPdfStorage,
@@ -194,13 +241,17 @@ export async function prepareWaiverPdf(
 ): Promise<WaiverPdfArtifact> {
   if (!params.job) return NO_PDF;
 
-  const { bytes, pdfSha256 } = await buildJobContractPdf({ ...params, job: params.job }, deps);
-  const storagePath = contractPdfStoragePath(params.tenantId, params.job.engagementId, params.evidenceId);
-  const { error } = await storage
-    .from(CONTRACT_PDF_BUCKET)
-    .upload(storagePath, bytes, { contentType: CONTRACT_PDF_CONTENT_TYPE, upsert: false });
-  if (error) {
-    throw new Error(`Signed contract PDF could not be stored (${error.message}) — please try again.`);
+  try {
+    const { bytes, pdfSha256 } = await buildJobContractPdf({ ...params, job: params.job }, deps);
+    const storagePath = contractPdfStoragePath(params.tenantId, params.job.engagementId, params.evidenceId);
+    const { error } = await storage
+      .from(CONTRACT_PDF_BUCKET)
+      .upload(storagePath, bytes, { contentType: CONTRACT_PDF_CONTENT_TYPE, upsert: false });
+    if (error) throw new Error(`upload failed: ${error.message}`);
+    return { storagePath, pdfSha256, bytes };
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    console.error("[contract-pdf] PDF failed at signing; sealing with the sentinel pair:", reason);
+    return { ...NO_PDF, failure: reason };
   }
-  return { storagePath, pdfSha256, bytes };
 }

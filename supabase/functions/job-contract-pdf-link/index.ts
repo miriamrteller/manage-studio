@@ -15,7 +15,12 @@ import { corsHeaders, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { loadJobContractContext } from "../_shared/job-contract.ts";
 import { decideContractPdfAccess } from "../_shared/contract-pdf/access.ts";
-import { CONTRACT_PDF_BUCKET, contractPdfFilename, hasStoredPdf } from "../_shared/contract-pdf/evidence.ts";
+import {
+  CONTRACT_PDF_BUCKET,
+  contractPdfFilename,
+  contractPdfLocation,
+  type RegeneratedContractPdf,
+} from "../_shared/contract-pdf/evidence.ts";
 
 const LINK_TTL_SECONDS = 10 * 60;
 
@@ -55,16 +60,29 @@ Deno.serve(async (req) => {
       language: tenantRow?.language_default === "he" ? "he" : "en",
     });
 
+    // The sealed PDF, or — when the PDF failed at signing — the one the admin
+    // generated afterwards (waiver_evidence_pdfs).
     let evidence: { id: string; pdf_storage_path: string | null; pdf_sha256: string | null; signed_at: string } | null = null;
+    let regenerated: RegeneratedContractPdf | null = null;
     if (job?.waiverEvidenceId) {
-      const { data } = await service
-        .from("waiver_evidence")
-        .select("id, pdf_storage_path, pdf_sha256, signed_at")
-        .eq("id", job.waiverEvidenceId)
-        .eq("tenant_id", tenantId)
-        .maybeSingle();
+      const [{ data }, { data: after }] = await Promise.all([
+        service
+          .from("waiver_evidence")
+          .select("id, pdf_storage_path, pdf_sha256, signed_at")
+          .eq("id", job.waiverEvidenceId)
+          .eq("tenant_id", tenantId)
+          .maybeSingle(),
+        service
+          .from("waiver_evidence_pdfs")
+          .select("pdf_storage_path, pdf_sha256, generated_at")
+          .eq("waiver_evidence_id", job.waiverEvidenceId)
+          .eq("tenant_id", tenantId)
+          .maybeSingle(),
+      ]);
       evidence = (data as typeof evidence) ?? null;
+      regenerated = (after as RegeneratedContractPdf | null) ?? null;
     }
+    const pdf = contractPdfLocation(evidence, regenerated);
 
     const decision = decideContractPdfAccess({
       callerTenantId: tenantId,
@@ -72,15 +90,15 @@ Deno.serve(async (req) => {
       callerPersonId: (personRow?.id as string | undefined) ?? null,
       callerAccountIds: (memberships ?? []).map((m) => m.account_id as string),
       job: job ? { tenantId, personId: job.personId, accountId: job.accountId } : null,
-      evidence,
-      hasStoredPdf,
+      signed: Boolean(evidence),
+      pdf,
     });
     if (!decision.ok) return jsonResponse({ error: decision.error }, decision.status);
 
     const filename = contractPdfFilename(evidence!.id);
     const { data: signed, error: signError } = await service.storage
       .from(CONTRACT_PDF_BUCKET)
-      .createSignedUrl(evidence!.pdf_storage_path as string, LINK_TTL_SECONDS, { download: filename });
+      .createSignedUrl(pdf!.path, LINK_TTL_SECONDS, { download: filename });
     if (signError || !signed?.signedUrl) {
       console.error("[job-contract-pdf-link] signed URL failed:", signError?.message);
       return jsonResponse({ error: "Could not prepare the download" }, 500);
@@ -94,13 +112,14 @@ Deno.serve(async (req) => {
       action: "job_contract_pdf_link_issued",
       entity_type: "waiver_evidence",
       entity_id: evidence!.id,
-      after_state: { engagement_id: engagementId, role: decision.role, expires_in_seconds: LINK_TTL_SECONDS },
+      after_state: { engagement_id: engagementId, role: decision.role, source: pdf!.source, expires_in_seconds: LINK_TTL_SECONDS },
     });
 
     return jsonResponse({
       url: signed.signedUrl,
       expiresAt: new Date(Date.now() + LINK_TTL_SECONDS * 1000).toISOString(),
       signedAt: evidence!.signed_at,
+      source: pdf!.source,
       filename,
     });
   } catch (err) {

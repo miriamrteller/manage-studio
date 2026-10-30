@@ -5,7 +5,7 @@
  * - record_hmac built by the signer helper verifies with the UNCHANGED
  *   verify-waiver-evidence.ts, and a changed pdf_sha256 breaks it.
  */
-import { assert, assertEquals, assertRejects } from "jsr:@std/assert@^1";
+import { assert, assertEquals, assertMatch } from "jsr:@std/assert@^1";
 import { sha256Hex } from "../edge-runtime/hmac.ts";
 import { CANONICAL_FIELDS, verifyWaiverEvidence } from "../verify-waiver-evidence.ts";
 import type { JobContractContext } from "../job-contract.ts";
@@ -13,8 +13,10 @@ import {
   buildJobContractPdf,
   CONTRACT_PDF_BUCKET,
   type ContractPdfStorage,
+  contractPdfLocation,
   contractPdfStoragePath,
   hasStoredPdf,
+  regeneratedContractPdfStoragePath,
   NO_PDF,
   PDF_DEFERRED_SENTINEL,
   PDF_SHA256_NONE,
@@ -120,15 +122,42 @@ Deno.test("job contract: the PDF carries the job fields, signer and evidence id"
   assertEquals(input.signature.consentVersionHash, "a".repeat(64));
 });
 
-Deno.test("job contract: a storage failure fails the signing (no record with a missing PDF)", async () => {
+Deno.test("job contract: a storage failure never blocks signing — sentinel pair + failure reason, no throw", async () => {
   const storage: ContractPdfStorage = {
     from: () => ({ upload: () => Promise.resolve({ error: { message: "bucket offline" } }) }),
   };
-  await assertRejects(
-    () => prepareWaiverPdf(storage, { ...baseParams, job }, { render: () => Promise.resolve(new Uint8Array([1])), fetchLogo: () => Promise.resolve(null) }),
-    Error,
-    "bucket offline",
-  );
+  const artifact = await prepareWaiverPdf(storage, { ...baseParams, job }, {
+    render: () => Promise.resolve(new Uint8Array([1])),
+    fetchLogo: () => Promise.resolve(null),
+  });
+  assertEquals(artifact.storagePath, PDF_DEFERRED_SENTINEL);
+  assertEquals(artifact.pdfSha256, PDF_SHA256_NONE);
+  assertEquals(artifact.bytes, null);
+  assertMatch(artifact.failure ?? "", /bucket offline/);
+});
+
+Deno.test("job contract: a render failure degrades the same way, and nothing is uploaded", async () => {
+  const { storage, uploads } = fakeStorage();
+  const artifact = await prepareWaiverPdf(storage, { ...baseParams, job }, {
+    render: () => Promise.reject(new Error("font table corrupt")),
+    fetchLogo: () => Promise.resolve(null),
+  });
+  assertEquals([artifact.storagePath, artifact.pdfSha256], [PDF_DEFERRED_SENTINEL, PDF_SHA256_NONE]);
+  assertMatch(artifact.failure ?? "", /font table corrupt/);
+  assertEquals(uploads.length, 0);
+});
+
+Deno.test("contractPdfLocation: sealed PDF first, else the one generated after signing, else none", () => {
+  const sealed = { pdf_storage_path: "contracts/t/e/ev.pdf", pdf_sha256: "b".repeat(64) };
+  const sentinel = { pdf_storage_path: PDF_DEFERRED_SENTINEL, pdf_sha256: PDF_SHA256_NONE };
+  const after = { pdf_storage_path: "contracts/t/e/ev-after-signing-x.pdf", pdf_sha256: "c".repeat(64), generated_at: "2026-11-01T00:00:00.000Z" };
+  assertEquals(contractPdfLocation(sealed, after), { path: sealed.pdf_storage_path, sha256: sealed.pdf_sha256, source: "sealed" });
+  assertEquals(contractPdfLocation(sentinel, after), { path: after.pdf_storage_path, sha256: after.pdf_sha256, source: "after_signing" });
+  assertEquals(contractPdfLocation(sentinel, null), null);
+  assertEquals(contractPdfLocation(null, after), null);
+  const key = regeneratedContractPdfStoragePath(TENANT, ENGAGEMENT, EVIDENCE, new Date("2026-11-01T10:20:30.000Z"));
+  assertEquals(key, `contracts/${TENANT}/${ENGAGEMENT}/${EVIDENCE}-after-signing-20261101T102030.pdf`);
+  assert(key !== contractPdfStoragePath(TENANT, ENGAGEMENT, EVIDENCE));
 });
 
 // --- record_hmac: the signer helper and the existing verifier agree ---

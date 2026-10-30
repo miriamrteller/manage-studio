@@ -2,7 +2,8 @@
 
 Branch `photographer/g-contract-pdf`. Closes the P1 gap "Signed PDF emailed to both
 parties" from [lightblue-gap-analysis.md](lightblue-gap-analysis.md) §4.
-Owns migration `20261030000500_contract_signed_emails.sql` (two CHECK constraints).
+Owns migration `20261030000500_contract_signed_emails.sql` (two CHECK constraints,
+`job_details.contract_pdf_pending`, `waiver_evidence_pdfs`).
 
 ## Scope
 
@@ -25,6 +26,7 @@ Thread I owns `EnrolCompletePage` and `accept-quote`; neither is touched. The
 | Replay lookup + "contract signed" emails (client + studio) | `_shared/contract-pdf/job-contract-signing.ts` |
 | Access decision for downloads | `_shared/contract-pdf/access.ts` |
 | Download endpoint (10-minute signed URL, audit-logged) | `supabase/functions/job-contract-pdf-link/` |
+| Failure record + admin "Generate PDF" after signing (`waiver_evidence_pdfs`) | `_shared/contract-pdf/regenerate.ts`, `supabase/functions/job-contract-pdf-generate/` |
 | Email templates `contract_signed_client` / `contract_signed_studio` (en + he) | `packages/shared/src/email-templates/photographer/ContractSigned*.tsx`, shells regenerated |
 | Attachments on the Resend transport | `_shared/email-client.ts` (`attachments`, `supportsAttachments()`) |
 | Admin shoot page + client portal "Download signed contract" | `JobContractCard.tsx`, `ClientPortal.tsx`, services, i18n |
@@ -74,11 +76,25 @@ changed hash fails verification (`evidence.test.ts`). Dance rows keep the sentin
 and verify exactly as today. The PDF itself carries the evidence id and
 `consent_version_hash` (it cannot contain `record_hmac`, which is computed over it).
 
-Failure policy: a render or storage failure fails the signing request (nothing is
-inserted); the client retries with the same `idempotency_key`. A retry or double
-submit first looks the key up and reuses the stored row — no second render, no
-orphaned object. A truly concurrent pair can leave one orphan object (logged); the
-sealed row always points at its own file.
+Failure policy (changed in review): a render or storage failure must never block
+a client from signing a legal contract. `prepareWaiverPdf` then returns the same
+sentinel pair a dance waiver stores (the verifier accepts it unchanged) with a
+`failure` reason; signing proceeds, `recordContractPdfFailure` writes an
+`audit_log` row (`job_contract_pdf_failed`) and sets
+`job_details.contract_pdf_pending`, and the emails still go out with links to the
+client portal / admin shoot page instead of the PDF. The admin shoot page then
+shows "Generate PDF" (`job-contract-pdf-generate`, tenant admin only): it renders
+from the sealed `wording_snapshot` (plus the job's current details for the header),
+stores the PDF under its own key and records it in `waiver_evidence_pdfs` —
+never on the immutable evidence row, so the sealed record is untouched. Such a PDF
+is documented, in the table and inside the PDF itself, as *generated after signing*:
+it reproduces the sealed wording but its own hash is not part of `record_hmac`.
+A second click reuses the generated PDF. `job-contract-pdf-link` serves the sealed
+PDF first, else the generated one.
+
+A retry or double submit first looks the key up and reuses the stored row — no
+second render, no orphaned object. A truly concurrent pair can leave one orphan
+object (logged); the sealed row always points at its own file.
 
 ## Emails
 
@@ -114,5 +130,5 @@ storage RLS is unchanged.
 
 - Cloudflare transport: confirm the REST attachment shape and pass `attachments`
   there too.
-- Optional admin "regenerate PDF" for job contracts signed before this thread
-  (they keep the sentinels; the hash would not be sealed).
+- Job contracts signed before this thread keep the sentinels and are not flagged;
+  "Generate PDF" could be offered for them too (same `waiver_evidence_pdfs` path).
