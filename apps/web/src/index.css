@@ -37,16 +37,21 @@
   /* ===== LAYER 1: CORE PRIMITIVES ===== */
   
   /* Primary Color Family (School's custom burgundy: #76335a) */
+  /* Light/hover/active/dark follow deriveColorSystem() (mix toward white /
+     black), so first paint matches what useThemeInjection writes for the
+     default colours. */
   --color-primary: #76335a;
-  --color-primary-light: #a85a7e;
-  --color-primary-hover: #5f2549;
-  --color-primary-active: #4a1c35;
+  --color-primary-light: #986683;
+  --color-primary-hover: #6b2e52;
+  --color-primary-active: #622a4b;
+  --color-primary-dark: #642b4d;
 
   /* Secondary Color Family (School's custom mauve: #e99ac4) */
   --color-secondary: #e99ac4;
-  --color-secondary-light: #f0c0d9;
-  --color-secondary-hover: #dc7da5;
-  --color-secondary-active: #cf5987;
+  --color-secondary-light: #efb3d3;
+  --color-secondary-hover: #d48cb2;
+  --color-secondary-active: #c180a3;
+  --color-secondary-dark: #c683a7;
 
   /* Status Colors (Universal - not derived from primary) */
   --color-error: #dc2626;
@@ -97,8 +102,10 @@
   /* ===== LAYER 2: SEMANTIC INTENT ===== */
 
   /* Text Colors */
-  --color-text-primary: #1f2937; /* Dark gray for primary text */
-  --color-text-secondary: #6b7280; /* Medium gray for secondary text */
+  /* #111827 / #4b5563 keep >= 14:1 and >= 6:1 on every derived tint
+     (#6b7280 fell to 4.2:1 on tinted surfaces). */
+  --color-text-primary: #111827; /* Ink for primary text */
+  --color-text-secondary: #4b5563; /* Muted text, AA on white and tints */
   --color-text-muted: #9ca3af; /* Light gray for muted text */
   --color-text-inverted: #f9fafb; /* White for text on dark backgrounds */
 
@@ -141,7 +148,9 @@
   select:focus-visible,
   a:focus-visible {
     @apply outline-2 outline-offset-2;
-    outline-color: var(--color-primary);
+    /* Brand ink, not the raw brand: a light brand colour (yellow, pastel)
+       would give a ~1.5:1 outline on white. */
+    outline-color: var(--color-primary-ink);
     box-shadow: var(--focus-halo);
   }
 
@@ -1249,11 +1258,56 @@ dialog.modal-dialog::backdrop {
   --edge-emboss: inset 0 1px 0 rgb(255 255 255 / 0.25),
     inset 0 -1px 0 rgb(0 0 0 / 0.08);
 
+  /* --- Soft theme (deriveSoftTheme) ---
+     useThemeInjection overwrites these per tenant. The fallbacks are the
+     values derived for the default colours (#76335a / #e99ac4), so first
+     paint matches. Tints sit at fixed WCAG luminance (0.97 / 0.93 / 0.87 /
+     0.78); "ink" is the brand darkened only as far as 4.5:1 on white and
+     the lighter tints; "fill" is the brand unless no text colour reaches
+     4.5:1 on it. */
+  --color-primary-ink: #76335a;
+  --color-accent-ink: #8c5c76;
+  --color-primary-fill: #76335a;
+  --color-on-primary-fill: #ffffff;
+  --tint-ground: #fdfcfc;
+  --tint-1: #f9f7f8;
+  --tint-2: #f4eff2;
+  --tint-3: #ece2e8;
+  --tint-accent-1: #fdf5f9;
+  --tint-accent-2: #fbecf4;
+
+  /* Gradients composed from the tints. Defined here; applied to the page,
+     header and footer in Phase 2 (photographer-theme-proposal.md, 4.2). */
+  --wash-page:
+    radial-gradient(75% 60% at 0% 0%, var(--tint-3), transparent 70%),
+    radial-gradient(60% 55% at 100% 0%, var(--tint-accent-2), transparent 70%),
+    radial-gradient(70% 45% at 50% 100%, var(--tint-1), transparent 75%);
+  --gradient-header: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--tint-2) 88%, transparent),
+    color-mix(in srgb, var(--tint-accent-2) 88%, transparent)
+  );
+  --gradient-footer: linear-gradient(180deg, transparent, var(--tint-accent-1) 70%);
+
   /* --- Brand wash: ambient page/hero background gradient --- */
   --wash-brand: radial-gradient(
     120% 90% at 50% 0%,
     var(--tint-primary-10),
     transparent 55%
+  );
+}
+
+/* RTL: mirror the directional soft gradients so the primary glow stays at
+   inline-start. dir is set on <html>, the same element as the tokens. */
+[dir='rtl'] {
+  --wash-page:
+    radial-gradient(75% 60% at 100% 0%, var(--tint-3), transparent 70%),
+    radial-gradient(60% 55% at 0% 0%, var(--tint-accent-2), transparent 70%),
+    radial-gradient(70% 45% at 50% 100%, var(--tint-1), transparent 75%);
+  --gradient-header: linear-gradient(
+    270deg,
+    color-mix(in srgb, var(--tint-2) 88%, transparent),
+    color-mix(in srgb, var(--tint-accent-2) 88%, transparent)
   );
 }
 

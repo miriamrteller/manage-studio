@@ -127,7 +127,7 @@ const ConfirmationDialog = ({
               'border border-[var(--border-default)]',
               'transition-colors duration-150',
               'hover:bg-[var(--state-hover)]',
-              'focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2'
+              'focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-ink)] focus:ring-offset-2'
             )}
           >
             {cancelLabel}
@@ -142,7 +142,7 @@ const ConfirmationDialog = ({
               'focus:outline-none focus:ring-2 focus:ring-offset-2',
               variant === 'destructive'
                 ? 'bg-[var(--color-error)] text-white hover:opacity-90 focus:ring-[var(--color-error)]'
-                : 'bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] focus:ring-[var(--color-primary)]'
+                : 'bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] focus:ring-[var(--color-primary-ink)]'
             )}
           >
             {confirmLabel}

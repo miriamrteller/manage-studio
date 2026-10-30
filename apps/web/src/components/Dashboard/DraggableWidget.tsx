@@ -215,7 +215,7 @@ export function DraggableWidget({
                 'hover:bg-[var(--state-hover)]',
                 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2',
                 'focus-visible:outline-[var(--state-focus)]',
-                isGrabbed && 'bg-[var(--state-active)] text-[var(--color-primary)]',
+                isGrabbed && 'bg-[var(--state-active)] text-[var(--color-primary-ink)]',
               )}
             >
               {/* Decorative grip glyph; the accessible name lives on the button. */}

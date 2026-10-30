@@ -21,12 +21,12 @@ const EmptyState = forwardRef<HTMLDivElement, EmptyStateProps>(
       primary: cn(
         'bg-[var(--color-primary)] text-white',
         'hover:bg-[var(--color-primary-hover)]',
-        'focus:ring-[var(--color-primary)]'
+        'focus:ring-[var(--color-primary-ink)]'
       ),
       secondary: cn(
         'bg-[var(--surface-raised)] text-[var(--color-text-primary)] border border-[var(--border-default)]',
         'hover:bg-[var(--state-hover)]',
-        'focus:ring-[var(--color-primary)]'
+        'focus:ring-[var(--color-primary-ink)]'
       ),
     };
 

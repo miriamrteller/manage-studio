@@ -160,7 +160,7 @@ export function MobileTabs({
                   'focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2',
                   'focus-visible:outline-[var(--state-focus)]',
                   isActive
-                    ? 'bg-[var(--surface-sunken)] text-[var(--color-primary)]'
+                    ? 'bg-[var(--surface-sunken)] text-[var(--color-primary-ink)]'
                     : 'text-[var(--color-text-secondary)] active:bg-[var(--state-active)]',
                 )}
               >
