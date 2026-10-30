@@ -38,6 +38,7 @@ vi.mock('@/features/jobs/hooks/useJobPaymentRequests', () => ({
 }));
 vi.mock('@/features/jobs/components/JobPaymentsPanel', () => ({ JobPaymentsPanel: () => <p>payments panel</p> }));
 vi.mock('@/features/jobs/components/JobContractCard', () => ({ JobContractCard: () => <p>contract card</p> }));
+vi.mock('@/features/jobs/components/JobBookingProgress', () => ({ JobBookingProgress: () => null }));
 vi.mock('@/features/jobs/components/JobCreateForm', () => ({ JobCreateForm: () => null }));
 vi.mock('@/features/quotes/components/CreateQuoteButton', () => ({ CreateQuoteButton: () => null }));
 

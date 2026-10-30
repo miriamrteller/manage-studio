@@ -23,6 +23,8 @@ export interface AcceptQuoteResult {
   shoot_date?: string | null;
   balance_due_date?: string | null;
   send_contract?: boolean;
+  /** Deposit first (when deposit_minor > 0), then balance. */
+  payment_request_ids?: string[];
   code?: string;
 }
 
@@ -41,7 +43,15 @@ export interface DueShootEmail {
 
 export function bookingConfirmedVariables(
   result: AcceptQuoteResult,
-  input: { recipientName: string | null; quoteUrl: string; language: EmailLanguage },
+  input: {
+    recipientName: string | null;
+    quoteUrl: string;
+    language: EmailLanguage;
+    /** Absolute contract signing link (step 1), when the client should sign. */
+    signUrl?: string | null;
+    /** Absolute deposit pay link (step 2), while the deposit is unpaid. */
+    payUrl?: string | null;
+  },
 ): Record<string, string> {
   const currency = result.currency ?? "ILS";
   const money = (minor: number | undefined) =>
@@ -54,6 +64,9 @@ export function bookingConfirmedVariables(
     balanceFormatted: money(result.balance_minor),
     balanceDueDate: formatCalendarDate(result.balance_due_date, input.language),
     quoteUrl: input.quoteUrl,
+    // Only safe http(s) links; an absent step drops out of the email (render.ts).
+    ...(isSafeLink(input.signUrl) ? { signUrl: input.signUrl as string } : {}),
+    ...(isSafeLink(input.payUrl) ? { payUrl: input.payUrl as string } : {}),
   };
 }
 

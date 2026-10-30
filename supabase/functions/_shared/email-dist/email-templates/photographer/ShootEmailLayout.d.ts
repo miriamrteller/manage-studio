@@ -16,12 +16,21 @@ export interface ShootEmailRow {
     labelKey: string;
     value: string;
 }
+/** A numbered "next step" with its own button (e.g. sign, then pay). */
+export interface ShootEmailStep {
+    textKey: string;
+    ctaKey: string;
+    href: string;
+}
 interface ShootEmailLayoutProps extends ShootEmailCommonProps {
     defaults: Record<string, string>;
     values: Record<string, string>;
     rows?: ShootEmailRow[];
     ctaHref?: string;
+    /** String key for the body paragraph (default 'body'). */
+    bodyKey?: string;
+    steps?: ShootEmailStep[];
 }
-export default function ShootEmailLayout({ schoolName, schoolLogoUrl, language, colors, footerStrings, strings, defaults, values, rows, ctaHref, }: ShootEmailLayoutProps): import("react/jsx-runtime").JSX.Element;
+export default function ShootEmailLayout({ schoolName, schoolLogoUrl, language, colors, footerStrings, strings, defaults, values, rows, ctaHref, bodyKey, steps, }: ShootEmailLayoutProps): import("react/jsx-runtime").JSX.Element;
 export {};
 //# sourceMappingURL=ShootEmailLayout.d.ts.map

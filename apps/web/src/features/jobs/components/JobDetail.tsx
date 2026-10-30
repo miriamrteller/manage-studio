@@ -8,6 +8,7 @@ import { useJob } from '../hooks/useJobs';
 import { JobStatusBadge } from './JobsList';
 import { JobDetailsForm } from './JobDetailsForm';
 import { JobContractCard } from './JobContractCard';
+import { JobBookingProgress } from './JobBookingProgress';
 import { JobPaymentsPanel } from './JobPaymentsPanel';
 import { CreateQuoteButton } from '@/features/quotes/components/CreateQuoteButton';
 
@@ -78,6 +79,8 @@ export function JobDetail({ engagementId }: { engagementId: string }) {
           </dd>
         </dl>
       </section>
+
+      <JobBookingProgress job={job} />
 
       <JobDetailsForm job={job} />
 

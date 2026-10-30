@@ -17,7 +17,7 @@ const TEMPLATES = {
   quote_sent: ['recipientName', 'quoteUrl', 'totalFormatted', 'validUntil', 'shootDate'],
   booking_confirmed: [
     'recipientName', 'shootDate', 'totalFormatted', 'depositFormatted', 'balanceFormatted',
-    'balanceDueDate', 'quoteUrl',
+    'balanceDueDate', 'quoteUrl', 'signUrl', 'payUrl',
   ],
   shoot_reminder: ['recipientName', 'shootDate', 'shootTime', 'location'],
   shoot_thank_you: ['recipientName'],
@@ -25,6 +25,20 @@ const TEMPLATES = {
   contract_signed_client: ['recipientName', 'shootDate', 'packageName', 'signedAt', 'downloadUrl'],
   contract_signed_studio: ['clientName', 'shootDate', 'packageName', 'signedAt', 'downloadUrl'],
 };
+
+// Optional link variables (next steps) change the email's structure, so each
+// combination is its own pre-rendered shell. The base shell has none of them.
+// render.ts picks the variant from which of these variables are set.
+const VARIANTS = {
+  booking_confirmed: {
+    sign_pay: ['signUrl', 'payUrl'],
+    sign: ['signUrl'],
+    pay: ['payUrl'],
+  },
+};
+const OPTIONAL = Object.fromEntries(
+  Object.entries(VARIANTS).map(([key, variants]) => [key, new Set(Object.values(variants).flat())]),
+);
 
 const placeholder = (name) => `{{MS_${name.replace(/([A-Z])/g, '_$1').toUpperCase()}}}`;
 const SCHOOL = '{{MS_SCHOOL_NAME}}';
@@ -42,8 +56,13 @@ const strings = {
   he: JSON.parse(readFileSync(join(root, 'packages/shared/src/i18n/email-templates-he.json'), 'utf8')),
 };
 
-async function renderShell(templateName, language) {
-  const variables = Object.fromEntries(TEMPLATES[templateName].map((name) => [name, placeholder(name)]));
+async function renderShell(templateName, language, include = []) {
+  const optional = OPTIONAL[templateName] ?? new Set();
+  const variables = Object.fromEntries(
+    TEMPLATES[templateName]
+      .filter((name) => !optional.has(name) || include.includes(name))
+      .map((name) => [name, placeholder(name)]),
+  );
   const { html } = await renderEmailTemplate({
     templateName,
     language,
@@ -72,6 +91,17 @@ for (const templateName of Object.keys(TEMPLATES)) {
   };
 }
 
+const variantShells = {};
+for (const [templateName, variants] of Object.entries(VARIANTS)) {
+  variantShells[templateName] = {};
+  for (const [variant, include] of Object.entries(variants)) {
+    variantShells[templateName][variant] = {
+      en: await renderShell(templateName, 'en', include),
+      he: await renderShell(templateName, 'he', include),
+    };
+  }
+}
+
 const placeholders = Object.fromEntries(
   [...new Set(Object.values(TEMPLATES).flat())].map((name) => [name, placeholder(name)]),
 );
@@ -90,6 +120,11 @@ const PLACEHOLDERS: Record<string, string> = ${JSON.stringify(placeholders, null
 export const PHOTOGRAPHER_EMAIL_SUBJECTS: Record<PhotographerEmailKey, Record<PhotographerEmailLanguage, string>> = ${JSON.stringify(subjects, null, 2)};
 
 export const PHOTOGRAPHER_EMAIL_SHELLS: Record<PhotographerEmailKey, Record<PhotographerEmailLanguage, string>> = ${JSON.stringify(shells, null, 2)};
+
+/** Variant name → the optional variables it includes (see VARIANTS in the builder). */
+export const PHOTOGRAPHER_EMAIL_VARIANTS: Partial<Record<PhotographerEmailKey, Record<string, readonly string[]>>> = ${JSON.stringify(VARIANTS, null, 2)};
+
+export const PHOTOGRAPHER_EMAIL_VARIANT_SHELLS: Partial<Record<PhotographerEmailKey, Record<string, Record<PhotographerEmailLanguage, string>>>> = ${JSON.stringify(variantShells, null, 2)};
 
 function escapeHtml(value: string): string {
   return value

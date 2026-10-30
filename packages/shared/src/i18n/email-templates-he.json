@@ -252,7 +252,12 @@
     "balance_label": "יתרה",
     "balance_due_label": "מועד תשלום היתרה",
     "cta": "לצפייה בהזמנה",
-    "closing": "מחכים לראות אותך."
+    "closing": "מחכים לראות אותך.",
+    "body_next_steps": "תודה שאישרת את הצעת המחיר. הצילום שלך שוריין! כדי להשלים את ההזמנה:",
+    "step_sign": "חתימה על החוזה.",
+    "step_sign_cta": "לחתימה על החוזה",
+    "step_pay": "תשלום המקדמה בסך {depositFormatted}.",
+    "step_pay_cta": "לתשלום המקדמה"
   },
   "shoot_reminder": {
     "subject": "תזכורת: הצילום שלך ב{schoolName}",

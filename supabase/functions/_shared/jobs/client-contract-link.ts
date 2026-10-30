@@ -50,6 +50,4 @@ export function decideClientContractLink(input: {
 }
 
 /** App-relative signing URL (the client is already on the tenant's origin). */
-export function clientContractSignPath(engagementId: string, token: string): string {
-  return `/enrol/complete?engagementId=${encodeURIComponent(engagementId)}&wt=${encodeURIComponent(token)}`;
-}
+export { jobContractSignPath as clientContractSignPath } from "./contract-sign-link.ts";

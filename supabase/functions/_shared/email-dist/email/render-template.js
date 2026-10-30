@@ -212,6 +212,9 @@ function buildComponent(input, strings, colors, footerStrings) {
                 balanceFormatted: str(v.balanceFormatted, '—'),
                 balanceDueDate: str(v.balanceDueDate, '—'),
                 quoteUrl: str(v.quoteUrl, '#'),
+                // Optional next steps: absent → today's email without the steps.
+                signUrl: typeof v.signUrl === 'string' && v.signUrl ? v.signUrl : undefined,
+                payUrl: typeof v.payUrl === 'string' && v.payUrl ? v.payUrl : undefined,
             });
         case EMAIL_TEMPLATE_NAMES.SHOOT_REMINDER:
             return React.createElement(ShootReminderEmail, {

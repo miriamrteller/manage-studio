@@ -3,6 +3,8 @@ import {
   applyPhotographerEmailShell,
   PHOTOGRAPHER_EMAIL_SHELLS,
   PHOTOGRAPHER_EMAIL_SUBJECTS,
+  PHOTOGRAPHER_EMAIL_VARIANT_SHELLS,
+  PHOTOGRAPHER_EMAIL_VARIANTS,
   type PhotographerEmailKey,
   type PhotographerEmailLanguage,
 } from "../photographer-email-shells/generated.ts";
@@ -30,9 +32,32 @@ export interface RenderPhotographerEmailInput {
   variables: Record<string, string>;
 }
 
+/**
+ * Some emails have optional sections (booking_confirmed: sign / pay steps),
+ * pre-rendered as separate shells. Picks the variant whose optional
+ * variables are exactly the ones set; null → the base shell (none set).
+ */
+export function selectPhotographerEmailVariant(
+  key: PhotographerEmailKey,
+  variables: Record<string, string>,
+): string | null {
+  const variants = PHOTOGRAPHER_EMAIL_VARIANTS[key];
+  if (!variants) return null;
+  const optional = new Set(Object.values(variants).flat());
+  const present = [...optional].filter((name) => Boolean(variables[name])).sort().join(",");
+  if (!present) return null;
+  for (const [variant, names] of Object.entries(variants)) {
+    if ([...names].sort().join(",") === present) return variant;
+  }
+  return null;
+}
+
 export function renderPhotographerEmail(input: RenderPhotographerEmailInput): { html: string; subject: string } {
   const language: PhotographerEmailLanguage = input.language === "he" ? "he" : "en";
-  const html = applyPhotographerEmailShell(PHOTOGRAPHER_EMAIL_SHELLS[input.key][language], {
+  const variant = selectPhotographerEmailVariant(input.key, input.variables);
+  const shell = (variant ? PHOTOGRAPHER_EMAIL_VARIANT_SHELLS[input.key]?.[variant]?.[language] : undefined) ??
+    PHOTOGRAPHER_EMAIL_SHELLS[input.key][language];
+  const html = applyPhotographerEmailShell(shell, {
     schoolName: input.schoolName,
     primaryColor: input.primaryColor,
     accentColor: input.accentColor,

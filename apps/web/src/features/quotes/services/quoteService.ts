@@ -1,5 +1,6 @@
 import { BaseService } from '@/services/base.service';
 import { supabase } from '@/lib/supabase';
+import type { AcceptedQuoteSnapshot } from '@/features/jobs/lib/bookingProgress';
 import type { AutomaticEmailKey, QuoteDraft, QuoteStatus } from '../lib/quoteSchemas';
 
 /**
@@ -81,6 +82,22 @@ export class QuoteService extends BaseService {
     const { data, error } = await supabase.rpc('save_quote', { p_quote: quote, p_lines: lines });
     fail(error);
     return data as string;
+  }
+
+  /** The shoot's accepted quote (admin RLS), for the booking progress strip. */
+  static async acceptedForEngagement(engagementId: string): Promise<AcceptedQuoteSnapshot | null> {
+    return this.withRetry(async () => {
+      const { data, error } = await supabase
+        .from('quotes')
+        .select('accepted_at, accepted_result')
+        .eq('engagement_id', engagementId)
+        .eq('status', 'accepted')
+        .order('accepted_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      fail(error);
+      return (data ?? null) as AcceptedQuoteSnapshot | null;
+    }, 'QuoteService.acceptedForEngagement');
   }
 
   static async markSent(id: string, via: QuoteSendVia): Promise<void> {

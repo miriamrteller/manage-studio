@@ -9,14 +9,23 @@ import { TenantDB } from '@/lib/db';
 import { WaiverSigningConsentTemplateSchema } from '@shared/schemas';
 import type { WaiverSigningConsentTemplate } from '@shared/schemas';
 import { linkAuthUserToPerson } from '@/features/enrolment/linkAuthUser';
+import { JobAfterSignNextStep } from '@/features/jobs/components/JobAfterSignNextStep';
 
 type PageState =
   | { kind: 'loading' }
   | { kind: 'link_expired'; email: string }
-  | { kind: 'ready'; personId: string; offeringId: string; template: WaiverSigningConsentTemplate; waiverToken: string | null }
-  | { kind: 'already_signed' }
+  | {
+    kind: 'ready';
+    personId: string;
+    offeringId: string;
+    template: WaiverSigningConsentTemplate;
+    waiverToken: string | null;
+    /** Photographer job contract (get-waiver-engagement isJob): continue to the deposit after signing. */
+    isJob?: boolean;
+  }
+  | { kind: 'already_signed'; isJob?: boolean }
   | { kind: 'cancelled' }
-  | { kind: 'signed' }
+  | { kind: 'signed'; isJob?: boolean }
   | { kind: 'error'; message: string };
 
 /**
@@ -75,7 +84,10 @@ export default function EnrolCompletePage() {
             return;
           }
 
-          if (data.alreadySigned) { setState({ kind: 'already_signed' }); return; }
+          if (data.alreadySigned) {
+            setState(data.isJob === true ? { kind: 'already_signed', isJob: true } : { kind: 'already_signed' });
+            return;
+          }
           if (data.cancelled)     { setState({ kind: 'cancelled' });      return; }
 
           const parsedTemplate = WaiverSigningConsentTemplateSchema.safeParse(data.template);
@@ -91,6 +103,7 @@ export default function EnrolCompletePage() {
             offeringId: data.offeringId as string,
             template: parsedTemplate.data,
             waiverToken,
+            ...(data.isJob === true ? { isJob: true } : {}),
           });
         } catch (err) {
           if (cancelled) return;
@@ -260,6 +273,20 @@ export default function EnrolCompletePage() {
     );
   }
 
+  // Job contracts continue to the deposit (or the client portal); dance
+  // waivers keep the dashboard button exactly as before.
+  const dashboardButton = (
+    <Button type="button" variant="primary" onClick={() => { window.location.href = '/dashboard'; }} className="w-full">
+      {t('pages.enrol_complete.go_to_dashboard')}
+    </Button>
+  );
+  const nextStep = (isJob: boolean | undefined) =>
+    isJob && waiverToken ? (
+      <JobAfterSignNextStep engagementId={engagementId} waiverToken={waiverToken} fallback={dashboardButton} />
+    ) : (
+      dashboardButton
+    );
+
   if (state.kind === 'already_signed') {
     return (
       <PageShell>
@@ -267,9 +294,7 @@ export default function EnrolCompletePage() {
           <div className="text-5xl">✅</div>
           <h2 className="text-lg font-semibold">{t('pages.enrol_complete.already_signed_heading')}</h2>
           <p className="text-gray-600">{t('pages.enrol_complete.already_signed_body')}</p>
-          <Button type="button" variant="primary" onClick={() => { window.location.href = '/dashboard'; }} className="w-full">
-            {t('pages.enrol_complete.go_to_dashboard')}
-          </Button>
+          {nextStep(state.isJob)}
         </div>
       </PageShell>
     );
@@ -297,9 +322,7 @@ export default function EnrolCompletePage() {
           <div className="text-5xl">✅</div>
           <h2 className="text-lg font-semibold">{t('pages.enrol_complete.signed_heading')}</h2>
           <p className="text-gray-600">{t('pages.enrol_complete.signed_body')}</p>
-          <Button type="button" variant="primary" onClick={() => { window.location.href = '/dashboard'; }} className="w-full">
-            {t('pages.enrol_complete.go_to_dashboard')}
-          </Button>
+          {nextStep(state.isJob)}
         </div>
       </PageShell>
     );
@@ -325,7 +348,7 @@ export default function EnrolCompletePage() {
           template={state.template}
           offeringId={state.offeringId}
           waiverToken={state.waiverToken ?? undefined}
-          onComplete={() => setState({ kind: 'signed' })}
+          onComplete={() => setState(state.isJob ? { kind: 'signed', isJob: true } : { kind: 'signed' })}
           onPrevious={() => { /* no back on standalone page */ }}
           canGoBack={false}
         />
