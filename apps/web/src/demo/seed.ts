@@ -452,7 +452,13 @@ export function buildSeed(): Tables {
   quote(3, {
     status: 'accepted', title: 'Company year-end evening', engagement_id: engagementId(3), account_id: accountId(3),
     shoot_date: day(12), sent_at: at(-16), sent_via: 'email', accepted_at: at(-15, 18), created_at: at(-17),
-    accepted_result: { ok: true, engagement_id: engagementId(3) }, deposit_percent: 30,
+    // As accept_quote() stores it: the deposit request is the first id.
+    accepted_result: {
+      ok: true, engagement_id: engagementId(3), converted_lead: false, total_minor: 200000,
+      deposit_minor: 60000, balance_minor: 140000, currency: 'ILS',
+      payment_request_ids: [id(1030), id(1031)], send_contract: true,
+    },
+    deposit_percent: 30,
   }, [['Event Coverage (2 hours)', 2000, PKG.event, false, true]]);
   quote(4, {
     status: 'draft', title: 'Bar mitzvah in March', lead_id: id(1101), created_at: at(0, 8),
