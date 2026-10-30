@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Photographer Phase 1 Mockup</title>
+<!--
+  Throwaway mockup for docs/design/photographer-theme-proposal.md.
+  NOT wired into the app. Left pane = current look (values copied from
+  apps/web/src/index.css with the demo tenant's #1F5F5B / #E8B04B).
+  Right pane = the same markup under [data-vertical="photographer"] with the
+  Phase 1 tokens from the proposal. Add ?rtl to the URL to check Hebrew RTL.
+-->
+<style>
+  :root {
+    --color-primary: #1F5F5B;
+    --color-primary-hover: #184c49;
+    --color-secondary: #E8B04B;
+    --color-secondary-active: #d39a30;
+    --color-on-primary: #fff;
+    --color-on-secondary: #111;
+    --color-bg-primary: #fafbfc;
+    --color-text-primary: #1f2937;
+    --color-text-secondary: #6b7280;
+    --color-border-default: #eae6e5;
+    --surface-base: #fff;
+    --radius-control: .625rem;
+    --radius-surface: .875rem;
+    --tint-primary-10: color-mix(in srgb, var(--color-primary) 10%, transparent);
+    --shadow-ink: color-mix(in srgb, var(--color-primary) 30%, #0f172a);
+    --border-hairline: color-mix(in srgb, var(--color-primary) 8%, var(--color-border-default));
+    --elevation-1: 0 1px 2px color-mix(in srgb, var(--shadow-ink) 12%, transparent), 0 2px 4px color-mix(in srgb, var(--shadow-ink) 8%, transparent);
+    --elevation-2: 0 2px 4px -1px color-mix(in srgb, var(--shadow-ink) 14%, transparent), 0 6px 14px -2px color-mix(in srgb, var(--shadow-ink) 14%, transparent);
+    --sheen-raised: linear-gradient(to bottom, rgb(255 255 255 / .22), rgb(255 255 255 / 0) 60%);
+    --wash-brand: radial-gradient(120% 90% at 50% 0%, var(--tint-primary-10), transparent 55%);
+    /* Shared chrome for this comparison page */
+    --page-bg: #e9ecef; --label: #374151;
+  }
+
+  /* ===== Phase 1 photographer tokens (copy of the proposal's CSS) ===== */
+  [data-vertical="photographer"] {
+    --ph-ink: color-mix(in srgb, var(--color-primary) 22%, #111827);
+    --color-text-secondary: #4b5563;
+    --ph-ground: color-mix(in srgb, var(--color-primary) 2%, #fbfbfd);
+    --ph-wash:
+      radial-gradient(70% 55% at 0% 0%, color-mix(in srgb, var(--color-primary) 12%, transparent), transparent 70%),
+      radial-gradient(55% 50% at 100% 0%, color-mix(in srgb, var(--color-secondary) 14%, transparent), transparent 70%),
+      radial-gradient(60% 40% at 50% 100%, color-mix(in srgb, var(--color-primary) 6%, transparent), transparent 75%);
+    --ph-header-bg: linear-gradient(90deg,
+      color-mix(in srgb, var(--color-primary) 7%, rgb(255 255 255 / .78)),
+      color-mix(in srgb, var(--color-secondary) 9%, rgb(255 255 255 / .78)));
+    --ph-header-border: color-mix(in srgb, var(--color-primary) 10%, transparent);
+    --ph-glass: color-mix(in srgb, #fff 80%, transparent);
+    --ph-glass-border: color-mix(in srgb, #fff 70%, var(--color-primary) 6%);
+    --ph-footer-bg: linear-gradient(180deg, transparent, color-mix(in srgb, var(--color-secondary) 10%, transparent));
+    --ph-table-head: color-mix(in srgb, var(--color-primary) 4%, transparent);
+    --ph-row-hover: color-mix(in srgb, var(--color-primary) 5%, transparent);
+    --ph-btn: linear-gradient(135deg, rgb(255 255 255 / .16), rgb(255 255 255 / 0) 55%, rgb(0 0 0 / .08));
+    --radius-surface: 1.125rem;
+    --elevation-1: 0 1px 2px color-mix(in srgb, var(--shadow-ink) 6%, transparent), 0 8px 24px -6px color-mix(in srgb, var(--shadow-ink) 10%, transparent);
+    --elevation-2: 0 2px 4px color-mix(in srgb, var(--shadow-ink) 8%, transparent), 0 16px 36px -10px color-mix(in srgb, var(--shadow-ink) 16%, transparent);
+  }
+  [dir="rtl"] [data-vertical="photographer"], [data-vertical="photographer"][dir="rtl"] {
+    /* Mirror the two corner glows so primary always sits at inline-start */
+    --ph-wash:
+      radial-gradient(70% 55% at 100% 0%, color-mix(in srgb, var(--color-primary) 12%, transparent), transparent 70%),
+      radial-gradient(55% 50% at 0% 0%, color-mix(in srgb, var(--color-secondary) 14%, transparent), transparent 70%),
+      radial-gradient(60% 40% at 50% 100%, color-mix(in srgb, var(--color-primary) 6%, transparent), transparent 75%);
+  }
+
+  /* ===== Comparison page chrome ===== */
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page-bg); color: var(--label); font: 14px/1.5 Inter, system-ui, -apple-system, 'Segoe UI', Heebo, Arial, sans-serif; }
+  .intro { max-width: 1200px; margin: 0 auto; padding: 24px 16px 8px; }
+  .intro h1 { font-size: 20px; margin: 0 0 4px; }
+  .intro p { margin: 0; }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-width: 1600px; margin: 0 auto; padding: 16px; }
+  @media (max-width: 1000px) { .pair { grid-template-columns: 1fr; } }
+  .pane > h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; margin: 0 0 8px; }
+  .frame { border-radius: 10px; overflow: hidden; box-shadow: 0 1px 3px rgb(0 0 0 / .15); }
+
+  /* ===== "App" — current styles ===== */
+  .app { background-color: var(--color-bg-primary); background-image: var(--wash-brand); color: var(--color-text-primary); font-family: Inter, Heebo, system-ui, sans-serif; }
+  .hdr { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--color-primary); color: var(--color-on-primary); border-block-end: 1px solid var(--color-primary-hover); }
+  .hdr .brand { font-weight: 700; font-size: 16px; flex: 1; }
+  .hdr .pill { border: 1px solid currentColor; border-radius: 8px; padding: 2px 10px; font-size: 13px; }
+  .hdr .out { background: var(--color-secondary); color: var(--color-on-secondary); border-radius: 8px; padding: 3px 10px; font-size: 13px; }
+  main { padding: 24px 20px 32px; }
+  .title-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  h3.page { font-size: 26px; margin: 0; letter-spacing: -.01em; }
+  .sub { color: var(--color-text-secondary); margin: 6px 0 16px; }
+  .btn { display: inline-block; border-radius: var(--radius-control); padding: 8px 14px; background-color: var(--color-primary); background-image: var(--sheen-raised); color: var(--color-on-primary); font-weight: 500; box-shadow: inset 0 1px 0 rgb(255 255 255 / .25), var(--elevation-1); border: 0; font: inherit; }
+  .btn.sm { padding: 3px 12px; font-size: 13px; }
+  .card { background: var(--surface-base); border: 1px solid var(--border-hairline); border-radius: var(--radius-surface); box-shadow: var(--elevation-1); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: start; font-weight: 600; padding: 12px 14px; }
+  td { padding: 10px 14px; vertical-align: top; }
+  td small { display: block; color: var(--color-text-secondary); }
+  a.lnk { color: var(--color-text-primary); text-decoration: underline; }
+  .badge { display: inline-block; border-radius: 999px; padding: 1px 8px; font-size: 12px; }
+  .b-enq { background: #f3f4f6; color: #374151; }
+  .b-book { background: var(--color-primary); color: #fff; }
+  .b-del { background: #dcfce7; color: #15803d; }
+  .b-edit { background: #fef3c7; color: #92400e; }
+  .ftr { background: var(--color-secondary); color: var(--color-on-secondary); padding: 20px; border-block-start: 1px solid var(--color-secondary-active); font-size: 13px; }
+  .ftr b { display: block; font-size: 15px; }
+  .sec { font-size: 16px; font-weight: 600; margin: 22px 0 10px; }
+  .kv { display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; padding: 14px 16px; font-size: 13px; }
+  .kv dt { color: var(--color-text-secondary); }
+  .kv dd { margin: 0; }
+  .payrow { display: flex; align-items: center; gap: 10px; padding: 12px 16px; font-size: 13px; }
+  .payrow + .payrow { border-block-start: 1px solid var(--border-hairline); }
+  .payrow .grow { flex: 1; }
+  .payrow small { display: block; color: var(--color-text-secondary); }
+
+  /* ===== Phase 1 overrides (only inside the photographer scope) ===== */
+  [data-vertical="photographer"].app { background-color: var(--ph-ground); background-image: var(--ph-wash); color: var(--ph-ink); }
+  [data-vertical="photographer"] .hdr { background: var(--ph-header-bg); color: var(--ph-ink); border-block-end: 1px solid var(--ph-header-border); backdrop-filter: saturate(1.4) blur(12px); }
+  [data-vertical="photographer"] .hdr .brand { color: var(--color-primary); }
+  [data-vertical="photographer"] .hdr .pill { border-color: var(--ph-header-border); background: rgb(255 255 255 / .6); }
+  [data-vertical="photographer"] .hdr .out { background: transparent; color: var(--ph-ink); border: 1px solid var(--ph-header-border); }
+  [data-vertical="photographer"] h3.page { font-weight: 600; letter-spacing: -.02em; }
+  [data-vertical="photographer"] main { padding-block: 32px 40px; }
+  [data-vertical="photographer"] .card { overflow: hidden; background: var(--ph-glass); border-color: var(--ph-glass-border); backdrop-filter: blur(10px) saturate(1.2); }
+  [data-vertical="photographer"] thead tr { background: var(--ph-table-head); }
+  [data-vertical="photographer"] th { font-size: 12px; font-weight: 500; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: .04em; }
+  [data-vertical="photographer"] td { padding-block: 14px; }
+  [data-vertical="photographer"] tbody tr + tr { border-block-start: 1px solid color-mix(in srgb, var(--color-primary) 6%, transparent); }
+  [data-vertical="photographer"] tbody tr:hover { background: var(--ph-row-hover); }
+  [data-vertical="photographer"] a.lnk { color: var(--ph-ink); text-decoration-color: color-mix(in srgb, var(--color-primary) 35%, transparent); text-underline-offset: 3px; font-weight: 500; }
+  [data-vertical="photographer"] .btn { background-image: var(--ph-btn); border-radius: 999px; padding-inline: 18px; box-shadow: 0 6px 16px -6px color-mix(in srgb, var(--color-primary) 55%, transparent); }
+  [data-vertical="photographer"] .b-book { background: color-mix(in srgb, var(--color-primary) 12%, #fff); color: var(--color-primary); }
+  [data-vertical="photographer"] .ftr { background: var(--ph-footer-bg); color: var(--ph-ink); border-block-start: 1px solid color-mix(in srgb, var(--color-secondary) 25%, transparent); }
+  [data-vertical="photographer"] .sec { font-weight: 500; letter-spacing: -.01em; }
+</style>
+</head>
+<body>
+<div class="intro">
+  <h1>Photographer Phase 1, mockup</h1>
+  <p>Left: current look (demo tenant colours). Right: same markup with the Phase 1 photographer tokens. Not wired into the app. Add <code>?rtl</code> to the URL for Hebrew direction.</p>
+</div>
+
+<template id="shoots">
+  <header class="hdr"><span>☰</span><span class="brand">Lumen &amp; Light Photography</span><span class="pill">עברית</span><span class="out">Logout</span></header>
+  <main>
+    <div class="title-row"><h3 class="page">Shoots</h3><button class="btn">New shoot</button></div>
+    <p class="sub">Every enquiry and booked shoot, from first contact to delivered gallery.</p>
+    <div class="card">
+      <table>
+        <thead><tr><th>Client</th><th>Package</th><th>Date</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td><a class="lnk" href="#">Avi &amp; Michal Rosen</a><small>rosen.family@example.com</small></td><td>Family Session</td><td>Not scheduled yet</td><td><span class="badge b-enq">Enquiry</span></td></tr>
+          <tr><td><a class="lnk" href="#">Harbor Tech Ltd.</a><small>events@harbortech.example.com</small></td><td>Event Coverage</td><td>Wed 11 Nov, 20:00</td><td><span class="badge b-book">Booked</span></td></tr>
+          <tr><td><a class="lnk" href="#">Daniel Avraham</a><small>daniel.avraham@example.com</small></td><td>Event Coverage</td><td>Mon 12 Oct, 22:00</td><td><span class="badge b-del">Delivered</span></td></tr>
+          <tr><td><a class="lnk" href="#">Moshe Shapiro</a><small>moshe.shapiro@example.com</small></td><td>Bar Mitzvah: Full Evening</td><td>Tue 20 Oct, 20:00</td><td><span class="badge b-edit">Editing</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+  <footer class="ftr"><b>Lumen &amp; Light Photography</b>Studio Management</footer>
+</template>
+
+<template id="portal">
+  <header class="hdr"><span>☰</span><span class="brand">Lumen &amp; Light Photography</span><span class="pill">עברית</span><span class="out">Logout</span></header>
+  <main>
+    <h3 class="page">My shoots</h3>
+    <p class="sub">Your shoots, contract, payments and gallery in one place.</p>
+    <div class="card"><dl class="kv"><dt>Date</dt><dd>Monday, 12 October 2026 at 22:00</dd><dt>Location</dt><dd>Tel Aviv Port, Hangar 11</dd><dt>Package</dt><dd>Event Coverage (2 hours)</dd><dt>Status</dt><dd><span class="badge b-del">Delivered</span></dd></dl></div>
+    <div class="sec">Payments</div>
+    <div class="card">
+      <div class="payrow"><div class="grow">Deposit · ₪600<small>Paid 29 Sept 2026</small></div><span class="badge b-del">Paid</span></div>
+      <div class="payrow"><div class="grow">Balance · ₪1,400<small>Due 26 Oct 2026</small></div><button class="btn sm">Pay</button></div>
+    </div>
+    <div class="sec">Gallery</div>
+    <div class="card"><div class="payrow">Your gallery will be available once all payments are completed.</div></div>
+  </main>
+  <footer class="ftr"><b>Lumen &amp; Light Photography</b>Studio Management</footer>
+</template>
+
+<section class="pair" data-screen="shoots">
+  <div class="pane"><h2>Current: shoots list</h2><div class="frame app" data-slot="shoots"></div></div>
+  <div class="pane"><h2>Phase 1: shoots list</h2><div class="frame app" data-vertical="photographer" data-slot="shoots"></div></div>
+</section>
+<section class="pair" data-screen="portal">
+  <div class="pane"><h2>Current: client portal</h2><div class="frame app" data-slot="portal"></div></div>
+  <div class="pane"><h2>Phase 1: client portal</h2><div class="frame app" data-vertical="photographer" data-slot="portal"></div></div>
+</section>
+
+<script>
+  document.querySelectorAll('[data-slot]').forEach((el) => {
+    el.appendChild(document.getElementById(el.dataset.slot).content.cloneNode(true));
+  });
+  if (location.search.includes('rtl')) {
+    document.querySelectorAll('.frame').forEach((f) => { f.dir = 'rtl'; });
+  }
+</script>
+</body>
+</html>
