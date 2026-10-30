@@ -33,6 +33,10 @@ export interface AcceptQuoteResponse {
   code?: string;
   already_accepted?: boolean;
   contract_to_follow?: boolean;
+  /** /enrol/complete?… — sign the contract now (active template, unsigned). */
+  contractSignPath?: string;
+  /** /pay/:token — the unpaid deposit. */
+  depositPayPath?: string;
 }
 
 export async function fetchPublicQuote(token: string, tenantId: string): Promise<PublicQuote | null> {
