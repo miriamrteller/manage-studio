@@ -217,7 +217,7 @@ Deno.serve(async (req) => {
     if (settings?.expiry_reminder_mins && hold.client_email) {
       const tenant = await getTenant(hold.tenant_id);
       const releasedSender = tenant ? resolveTenantSender(tenant as unknown as TenantSenderInput) : null;
-      if (releasedSender) {
+      if (tenant && releasedSender) {
         try {
           await sendHtmlEmail({
             to: hold.client_email,

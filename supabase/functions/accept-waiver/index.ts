@@ -350,7 +350,8 @@ Deno.serve(async (req) => {
         .eq("tenant_id", tenantId)
         .maybeSingle();
       if (
-        authEngagement?.person_id === body.person_id &&
+        authEngagement &&
+        authEngagement.person_id === body.person_id &&
         authEngagement.status === "pending_payment" &&
         (!offeringId || authEngagement.offering_id === offeringId)
       ) {
