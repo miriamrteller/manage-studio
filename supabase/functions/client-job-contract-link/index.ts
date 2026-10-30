@@ -13,9 +13,9 @@
  */
 import { corsHeaders, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
-import { signWaiverToken } from "../_shared/waiver-token.ts";
 import { loadJobContractContext } from "../_shared/job-contract.ts";
-import { clientContractSignPath, decideClientContractLink } from "../_shared/jobs/client-contract-link.ts";
+import { decideClientContractLink } from "../_shared/jobs/client-contract-link.ts";
+import { mintJobContractSignLink } from "../_shared/jobs/contract-sign-link.ts";
 
 /** Short-lived: the client is redirected to the page immediately. */
 const LINK_TTL_SECONDS = 2 * 3600;
@@ -76,9 +76,13 @@ Deno.serve(async (req) => {
     });
     if (!decision.ok) return jsonResponse({ error: decision.error }, decision.status);
 
-    const exp = Math.floor(Date.now() / 1000) + LINK_TTL_SECONDS;
-    const wt = await signWaiverToken(service, { eid: engagementId, tid: tenantId, em: decision.email, exp });
-    return jsonResponse({ signPath: clientContractSignPath(engagementId, wt) });
+    const link = await mintJobContractSignLink(service, {
+      tenantId,
+      engagementId,
+      email: decision.email,
+      ttlSeconds: LINK_TTL_SECONDS,
+    });
+    return jsonResponse({ signPath: link.path });
   } catch (err) {
     console.error("[client-job-contract-link]", err);
     return jsonResponse({ error: "Internal error" }, 500);

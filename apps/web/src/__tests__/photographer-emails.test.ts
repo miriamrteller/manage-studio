@@ -17,6 +17,7 @@ import {
   isPhotographerEmailKey,
   PHOTOGRAPHER_EMAIL_KEYS,
   renderPhotographerEmail,
+  selectPhotographerEmailVariant,
 } from '../../../../supabase/functions/_shared/photographer-emails/render.ts';
 import { PHOTOGRAPHER_EMAIL_VARIABLES } from '../../../../supabase/functions/_shared/photographer-email-shells/generated.ts';
 
@@ -125,5 +126,69 @@ describe('photographer email shells', () => {
       variables: { recipientName: 'D', quoteUrl: 'https://s.example.test/quote/abc' },
     });
     expect(html).toContain('href="https://s.example.test/quote/abc"');
+  });
+});
+
+describe('booking_confirmed next steps (sign the contract, then pay the deposit)', () => {
+  const base = {
+    ok: true, total_minor: 100000, deposit_minor: 30000, balance_minor: 70000, currency: 'ILS',
+    shoot_date: '2026-11-20', balance_due_date: '2026-11-20',
+  };
+  const SIGN = 'https://s.example.test/enrol/complete?engagementId=e1&wt=tok.sig';
+  const PAY = 'https://s.example.test/pay/abc123';
+  const render = (signUrl: string | null, payUrl: string | null, language: 'en' | 'he' = 'en') =>
+    renderPhotographerEmail({
+      key: 'booking_confirmed', language, schoolName: 'S', primaryColor: '#000', accentColor: '#fff',
+      variables: bookingConfirmedVariables(base, {
+        recipientName: 'Dana', quoteUrl: 'https://s.example.test/quote/q', language, signUrl, payUrl,
+      }),
+    }).html;
+
+  it('includes both links, signing first', () => {
+    const html = render(SIGN, PAY);
+    const sign = html.indexOf(`href="${SIGN.replace(/&/g, '&amp;')}"`);
+    const pay = html.indexOf(`href="${PAY}"`);
+    expect(sign).toBeGreaterThan(-1);
+    expect(pay).toBeGreaterThan(sign);
+    expect(html).toContain('1. Sign the contract.');
+    expect(html).toMatch(/2\. Pay the deposit of .*300/);
+    expect(html).not.toContain('Payment details will follow in a separate message.');
+    expect(html).not.toMatch(/\{\{MS_[A-Z_]+\}\}/);
+  });
+
+  it('Hebrew keeps the same order', () => {
+    const html = render(SIGN, PAY, 'he');
+    expect(html).toContain('dir="rtl"');
+    expect(html.indexOf('לחתימה על החוזה')).toBeGreaterThan(-1);
+    expect(html.indexOf('לתשלום המקדמה')).toBeGreaterThan(html.indexOf('לחתימה על החוזה'));
+  });
+
+  it('no contract template → only the pay step', () => {
+    const html = render(null, PAY);
+    expect(html).toContain(`href="${PAY}"`);
+    expect(html).toContain('1. Pay the deposit of');
+    expect(html).not.toContain('Sign the contract');
+  });
+
+  it('no links → today\'s email, unchanged', () => {
+    const html = render(null, null);
+    expect(html).toContain('Payment details will follow in a separate message.');
+    expect(html).not.toContain('Sign the contract');
+    expect(html).not.toContain('Pay the deposit');
+  });
+
+  it('drops unsafe links instead of putting them on a button', () => {
+    const vars = bookingConfirmedVariables(base, {
+      recipientName: 'D', quoteUrl: '#', language: 'en', signUrl: 'javascript:alert(1)', payUrl: PAY,
+    });
+    expect(vars.signUrl).toBeUndefined();
+    expect(selectPhotographerEmailVariant('booking_confirmed', vars)).toBe('pay');
+  });
+
+  it('picks the variant from the optional variables that are set', () => {
+    expect(selectPhotographerEmailVariant('booking_confirmed', { signUrl: 'x', payUrl: 'y' })).toBe('sign_pay');
+    expect(selectPhotographerEmailVariant('booking_confirmed', { signUrl: 'x' })).toBe('sign');
+    expect(selectPhotographerEmailVariant('booking_confirmed', {})).toBeNull();
+    expect(selectPhotographerEmailVariant('quote_sent', { signUrl: 'x' })).toBeNull();
   });
 });
