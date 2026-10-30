@@ -5,6 +5,8 @@ export interface DemoInvoice {
   description: string;
   amountMinor: number;
   paidAt: string;
+  /** payments.payment_method: card, cash, bank_transfer… */
+  method?: string;
 }
 
 let current: DemoInvoice | null = null;

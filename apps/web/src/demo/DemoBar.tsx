@@ -23,6 +23,9 @@ const COPY = {
     to: 'To',
     galleryTitle: 'Gallery preview',
     invoiceTitle: 'Receipt / tax invoice',
+    receiptTitle: 'Receipt',
+    method: 'Paid by',
+    methods: { cash: 'Cash', bank_transfer: 'Bank transfer', card: 'Card' } as Record<string, string>,
     invoiceNote: 'Sample document. In the live app the payment provider issues this.',
     contractSigned: 'Signed by',
     contractNote: 'In the live app this opens the signed PDF, which is also emailed to the client and the studio.',
@@ -39,6 +42,9 @@ const COPY = {
     to: 'אל',
     galleryTitle: 'תצוגת גלריה',
     invoiceTitle: 'קבלה / חשבונית מס',
+    receiptTitle: 'קבלה',
+    method: 'אמצעי תשלום',
+    methods: { cash: 'מזומן', bank_transfer: 'העברה בנקאית', card: 'כרטיס אשראי' } as Record<string, string>,
     invoiceNote: 'מסמך לדוגמה. במערכת האמיתית ספק התשלומים מפיק אותו.',
     contractSigned: 'נחתם על ידי',
     contractNote: 'במערכת האמיתית נפתח כאן קובץ ה-PDF החתום, שנשלח גם ללקוח וגם לסטודיו.',
@@ -77,6 +83,8 @@ export function DemoBar() {
   const outbox = useOutbox();
   const invoice = useInvoice();
   const contract = useSyncExternalStore(subscribeContract, getContract);
+  // Cash / bank transfer get a standalone receipt (קבלה); card payments the provider's tax invoice.
+  const offlineReceipt = invoice?.method === 'cash' || invoice?.method === 'bank_transfer';
   const [outboxOpen, setOutboxOpen] = useState(false);
   const [seen, setSeen] = useState(0);
   const [galleryOpen, setGalleryOpen] = useState(false);
@@ -262,10 +270,10 @@ export function DemoBar() {
       )}
 
       {invoice && (
-        <div className="demo-modal" role="dialog" aria-modal="true" aria-label={c.invoiceTitle}>
+        <div className="demo-modal" role="dialog" aria-modal="true" aria-label={offlineReceipt ? c.receiptTitle : c.invoiceTitle}>
           <div className="demo-modal__inner demo-invoice" dir={lang === 'he' ? 'rtl' : 'ltr'}>
             <div className="demo-panel__head">
-              <h2>{c.invoiceTitle} #{invoice.number}</h2>
+              <h2>{offlineReceipt ? c.receiptTitle : c.invoiceTitle} #{invoice.number}</h2>
               <button type="button" className="demo-btn" onClick={closeInvoice}>{c.close}</button>
             </div>
             <dl className="demo-invoice__grid">
@@ -277,10 +285,16 @@ export function DemoBar() {
               <dd>{new Date(invoice.paidAt).toLocaleDateString(lang === 'he' ? 'he-IL' : 'en-GB')}</dd>
               <dt>{lang === 'he' ? 'פריט' : 'Item'}</dt>
               <dd>{invoice.description}</dd>
-              <dt>{lang === 'he' ? 'לפני מע״מ' : 'Before VAT'}</dt>
-              <dd dir="ltr">{formatIls(Math.round(invoice.amountMinor / 1.18))}</dd>
-              <dt>{lang === 'he' ? 'מע״מ 18%' : 'VAT 18%'}</dt>
-              <dd dir="ltr">{formatIls(invoice.amountMinor - Math.round(invoice.amountMinor / 1.18))}</dd>
+              <dt>{c.method}</dt>
+              <dd>{c.methods[invoice.method ?? 'card'] ?? invoice.method}</dd>
+              {!offlineReceipt && (
+                <>
+                  <dt>{lang === 'he' ? 'לפני מע״מ' : 'Before VAT'}</dt>
+                  <dd dir="ltr">{formatIls(Math.round(invoice.amountMinor / 1.18))}</dd>
+                  <dt>{lang === 'he' ? 'מע״מ 18%' : 'VAT 18%'}</dt>
+                  <dd dir="ltr">{formatIls(invoice.amountMinor - Math.round(invoice.amountMinor / 1.18))}</dd>
+                </>
+              )}
               <dt className="demo-invoice__total">{lang === 'he' ? 'סה״כ' : 'Total'}</dt>
               <dd className="demo-invoice__total" dir="ltr">{formatIls(invoice.amountMinor)} · {c.paid}</dd>
             </dl>
