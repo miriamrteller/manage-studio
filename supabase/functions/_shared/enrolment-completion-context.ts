@@ -41,7 +41,9 @@ export async function loadEnrolmentCompletionContext(
   | { ok: true; context: EnrolmentCompletionContext }
   | { ok: false; error: string; status: number }
 > {
-  const { engagementId, tenantId, tokenEmail, useRecentEvidenceFallback } = params;
+  // useRecentEvidenceFallback is accepted but not read: the recent-evidence
+  // lookup below always runs when the linked evidence is not valid.
+  const { engagementId, tenantId, tokenEmail } = params;
 
   const { data: engagement, error: engagementError } = await service
     .from("engagements")

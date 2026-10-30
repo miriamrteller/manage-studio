@@ -131,7 +131,6 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "overrideReason is required when recipient differs from guardian email" }, 400);
     }
 
-    const expireAt = Math.floor(Date.now() / 1000) + 7 * 24 * 3600;
     const appBaseUrl = getAppBaseUrl(req);
     if (!appBaseUrl) {
       return jsonResponse({ error: "APP_URL is not configured and request origin is unavailable" }, 500);

@@ -74,8 +74,18 @@ export interface TranzilaAdapterConfig {
 }
 
 interface SupabaseLike {
+  // deno-lint-ignore no-explicit-any -- chained Postgrest builder; callers only await it
   from: (table: string) => any;
 }
+
+/** Optional Tranzila-only fields some callers add to PaymentMeta / PlanParams. */
+type TranzilaPaymentMetaExtras = {
+  bookingId?: string;
+  language?: "hebrew" | "english";
+  clientId?: string;
+  paymentMethods?: number[];
+};
+type TranzilaPlanExtras = { tokenId?: string; firstChargeDate?: string };
 
 // ── HMAC helpers (Deno WebCrypto) ────────────────────────────────────────────
 
@@ -145,14 +155,14 @@ export class TranzilaPaymentAdapter implements IPaymentProvider {
 
   async createSubscription(plan: PlanParams): Promise<SubscriptionResponse> {
     // Tranzila STO v2 — requires tokenId in plan metadata
-    const tokenId = (plan as any).tokenId as string | undefined;
+    const tokenId = (plan as PlanParams & TranzilaPlanExtras).tokenId;
     if (!tokenId) {
       throw new Error(
         "STO_TOKEN_NOT_FOUND: token must be stored in tranzila_tokens before createSTO",
       );
     }
     const sto = await this.createSTO(tokenId, {
-      first_charge_date: (plan as any).firstChargeDate ?? plan.billingCycle,
+      first_charge_date: (plan as PlanParams & TranzilaPlanExtras).firstChargeDate ?? plan.billingCycle,
       charge_frequency:  "monthly",
       amount:            Number(plan.amount),
       currency:          "ILS",
@@ -322,7 +332,8 @@ export class TranzilaPaymentAdapter implements IPaymentProvider {
     meta: PaymentMeta,
   ): Promise<PaymentLinkResult> {
     const headers    = await this._buildHeaders();
-    const bookingId  = (meta as any).bookingId ?? crypto.randomUUID();
+    const extras     = meta as PaymentMeta & TranzilaPaymentMetaExtras;
+    const bookingId  = extras.bookingId ?? crypto.randomUUID();
     const timestamp  = Date.now();
 
     const body: TranzilaPayByLinkRequest = {
@@ -331,12 +342,12 @@ export class TranzilaPaymentAdapter implements IPaymentProvider {
       created_by_system: "OpalSwift",
       created_via:       "TRAPI",
       request_date:      null,
-      request_language:  (meta as any).language ?? "hebrew",
+      request_language:  extras.language ?? "hebrew",
       response_language: "hebrew",
       client: {
         name:        meta.clientName,
         email:       meta.clientEmail ?? "",
-        external_id: (meta as any).clientId,
+        external_id: extras.clientId,
       },
       items: [{
         name:          meta.description,
@@ -347,7 +358,7 @@ export class TranzilaPaymentAdapter implements IPaymentProvider {
         currency_code: "ILS",
       }],
       payment_plans:   [1],
-      payment_methods: (meta as any).paymentMethods ?? [1],
+      payment_methods: extras.paymentMethods ?? [1],
       payments_number: 1,
       // DCdisable deduplication token (spec §4, AF-4)
       user_defined_fields: [

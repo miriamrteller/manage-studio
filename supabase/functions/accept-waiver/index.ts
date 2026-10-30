@@ -234,14 +234,6 @@ Deno.serve(async (req) => {
     const acceptLang = req.headers.get("accept-language") ?? null;
     const signedAt = new Date().toISOString();
 
-    // --- Load tenant name for PDF header ---
-    const { data: tenant } = await service
-      .from("tenants")
-      .select("name")
-      .eq("id", tenantId)
-      .single();
-    const tenantName = tenant?.name ?? "Studio";
-
     // --- Compute hashes ---
     const consent_version_hash = await sha256Hex(wordingSnapshot);
 
