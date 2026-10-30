@@ -46,6 +46,42 @@
       "filter_term": "תקופה",
       "col_student": "לקוח/ה",
       "col_class": "חבילה"
+    },
+    "admin": {
+      "overview": {
+        "col_name": "צילום",
+        "manage_classes": "ניהול חבילות",
+        "no_classes_today": "אין צילומים מתוכננים להיום",
+        "term_enrolments": "הזמנות בתקופה",
+        "todays_classes": "הצילומים של היום"
+      },
+      "setup": {
+        "description": "ניהול חבילות, חשבונות תשלום והגדרות הסטודיו"
+      }
+    },
+    "billing": {
+      "description": "ניהול חשבונות תשלום וקישור לקוחות."
+    },
+    "crm": {
+      "leads": {
+        "description": "פניות שעדיין לא הוזמנו — חתונות, אירועים, צילומי תדמית וכל מה שבצנרת. לקוחות שהזמינו נמצאים תחת לקוחות.",
+        "interest_placeholder": "למשל חתונה, צילומי משפחה"
+      }
+    },
+    "notifications": {
+      "account_search_placeholder": "חיפוש לפי שם לקוח, איש קשר או אימייל",
+      "class_label": "חבילה",
+      "preview_validation_error": "יש לבחור קודם למי נשלח האימייל (למשל חבילה או לקוח)."
+    },
+    "people": {
+      "description": "ניהול הלקוחות ופרטי הקשר שלהם.",
+      "edit_title": "עריכת לקוח",
+      "empty_message": "הלקוחות יופיעו כאן כשתוסיפו צילום או תמירו פנייה.",
+      "empty_title": "אין לקוחות עדיין",
+      "enrol_button": "הוספת לקוח",
+      "title": "לקוחות",
+      "waiver_required": "יש לאשר את החוזה כדי להמשיך.",
+      "waiver_status_label": "חוזה"
     }
   },
   "enrolment": {
@@ -59,5 +95,38 @@
     "waiver_no_template": "עדיין לא הוגדר חוזה פעיל. צרו קשר עם הסטודיו.",
     "waiver_context_student": "לקוח/ה",
     "waiver_context_class": "חבילה"
+  },
+  "finance": {
+    "hub": {
+      "link_students": "צפייה בלקוחות",
+      "metric_outstanding": "הזמנות ממתינות לתשלום",
+      "no_active_season": "אין תקופה פעילה — הזמנות ממתינות לתשלום לא מוצגות."
+    },
+    "payments": {
+      "col_class": "חבילה",
+      "col_engagement": "צילום",
+      "family_payment": "תשלום לקוח"
+    }
+  },
+  "nav": {
+    "manage_classes": "ניהול חבילות"
+  },
+  "scheduling": {
+    "services": {
+      "none": "אין עדיין שירותים. לחצו על ״הוסף שירות״ כדי ליצור את השירות הראשון — למשל מיני סשן או פגישת ייעוץ.",
+      "subtitle": "המפגשים שלקוחות יכולים להזמין אונליין — למשל מיני סשן, צילומי תדמית או פגישות ייעוץ."
+    }
+  },
+  "settings": {
+    "hub": {
+      "compliance_description": "ניהול תבניות חוזה וחוזים חתומים.",
+      "compliance_title": "חוזים",
+      "name_required": "שם הסטודיו נדרש.",
+      "page_description": "עדכון פרופיל הסטודיו, מיתוג והגדרות אזוריות.",
+      "page_title": "הגדרות הסטודיו",
+      "profile_saved": "פרופיל הסטודיו נשמר.",
+      "profile_title": "פרופיל הסטודיו",
+      "school_name": "שם הסטודיו"
+    }
   }
 }

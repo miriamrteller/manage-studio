@@ -9,6 +9,8 @@ import { useJobs } from '../hooks/useJobs';
 import { JOB_STATUSES, type JobStatus } from '../services/jobService';
 import { JOB_STATUS_BADGE, jobStatusKey } from '../lib/jobStatus';
 import { JobCreateForm } from './JobCreateForm';
+import { JobGalleryRowLink } from './JobGalleryLink';
+import type { JobRow } from '../services/jobService';
 
 export function JobStatusBadge({ status }: { status: JobStatus }) {
   const { t } = useTranslation();
@@ -78,7 +80,16 @@ export function JobsList() {
       )}
 
       {visible.length > 0 && (
-        <div className="card overflow-x-auto">
+        // Phones: one stacked card per shoot (no sideways scrolling).
+        <ul className="space-y-3 sm:hidden" aria-label={labels.engagement.plural}>
+          {visible.map((job) => (
+            <JobCard key={job.engagement_id} job={job} />
+          ))}
+        </ul>
+      )}
+
+      {visible.length > 0 && (
+        <div className="card overflow-x-auto hidden sm:block">
           <table className="w-full text-sm">
             <thead>
               <tr>
@@ -115,6 +126,9 @@ export function JobsList() {
                   </td>
                   <td className="px-3 py-2">
                     {job.waiver_evidence_id ? t('pages.jobs.contract_signed') : t('pages.jobs.contract_unsigned')}
+                    <div>
+                      <JobGalleryRowLink url={job.gallery_url} clientName={job.client_name} />
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -123,5 +137,41 @@ export function JobsList() {
         </div>
       )}
     </div>
+  );
+}
+
+function JobCard({ job }: { job: JobRow }) {
+  const { t, i18n } = useTranslation();
+  return (
+    <li className="card space-y-2 p-4 text-sm">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <Link to={`/admin/jobs/${job.engagement_id}`} className="font-medium underline">
+            {job.client_name ?? '—'}
+          </Link>
+          {job.client_email && (
+            <div className="truncate text-xs text-muted-foreground" dir="ltr">
+              {job.client_email}
+            </div>
+          )}
+        </div>
+        <JobStatusBadge status={job.job_status} />
+      </div>
+      <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+        <dt className="text-muted-foreground">{t('pages.jobs.package')}</dt>
+        <dd>{job.package_name ?? '—'}</dd>
+        <dt className="text-muted-foreground">{t('pages.jobs.when')}</dt>
+        <dd>
+          {job.booked_starts_at
+            ? formatAppointmentWhen(job.booked_starts_at, i18n.language)
+            : t('pages.jobs.unscheduled')}
+        </dd>
+        <dt className="text-muted-foreground">{t('pages.jobs.location')}</dt>
+        <dd className="break-words">{job.location ?? '—'}</dd>
+        <dt className="text-muted-foreground">{t('pages.jobs.contract')}</dt>
+        <dd>{job.waiver_evidence_id ? t('pages.jobs.contract_signed') : t('pages.jobs.contract_unsigned')}</dd>
+      </dl>
+      <JobGalleryRowLink url={job.gallery_url} clientName={job.client_name} />
+    </li>
   );
 }

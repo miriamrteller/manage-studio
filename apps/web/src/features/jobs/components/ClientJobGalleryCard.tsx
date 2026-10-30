@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { useJobGallery, useJobPaymentRequests } from '../hooks/useJobPaymentRequests';
 import { formatDueDate, formatMinor } from '../lib/jobPaymentFormat';
 import { JobPaymentService } from '../services/jobPaymentService';
+import { safeGalleryUrl } from '../lib/galleryUrl';
 
 interface Props {
   engagementId: string;
@@ -27,9 +28,10 @@ export function ClientJobGalleryCard({ engagementId, currency, mode = 'full' }: 
 
 function GalleryLink({ gallery }: { gallery: ReturnType<typeof useJobGallery>['gallery'] }) {
   const { t } = useTranslation();
-  if (gallery?.released && gallery.gallery_url) {
+  const href = gallery?.released ? safeGalleryUrl(gallery.gallery_url) : null;
+  if (href) {
     return (
-      <a className="inline-block text-sm font-medium underline text-primary" href={gallery.gallery_url} target="_blank" rel="noreferrer">
+      <a className="inline-block text-sm font-medium underline text-primary" href={href} target="_blank" rel="noopener noreferrer">
         {t('pages.jobs.client_portal.openGallery')}
       </a>
     );

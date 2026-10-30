@@ -85,7 +85,7 @@ export function JobDetail({ engagementId }: { engagementId: string }) {
 
       <section className="card p-4 space-y-2" aria-labelledby="job-payments-heading">
         <h2 id="job-payments-heading" className="font-semibold">
-          {t('pages.jobs.payments')}
+          {t('pages.jobs.payments.title')}
         </h2>
         <JobPaymentsPanel engagementId={job.engagement_id} />
       </section>

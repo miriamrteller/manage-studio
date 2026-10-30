@@ -46,6 +46,42 @@
       "filter_term": "Period",
       "col_student": "Client",
       "col_class": "Package"
+    },
+    "admin": {
+      "overview": {
+        "col_name": "Shoot",
+        "manage_classes": "Manage packages",
+        "no_classes_today": "No shoots scheduled for today",
+        "term_enrolments": "Bookings this period",
+        "todays_classes": "Today's shoots"
+      },
+      "setup": {
+        "description": "Manage packages, payment accounts and studio settings"
+      }
+    },
+    "billing": {
+      "description": "Manage payment accounts and link clients."
+    },
+    "crm": {
+      "leads": {
+        "description": "Enquiries that haven't booked yet — weddings, events, portrait sessions, anything in the pipeline. Booked clients live under Clients.",
+        "interest_placeholder": "e.g. wedding, family portrait session"
+      }
+    },
+    "notifications": {
+      "account_search_placeholder": "Search by client name, contact name, or email",
+      "class_label": "Package",
+      "preview_validation_error": "Choose who should receive this email first (e.g. pick a package or a client)."
+    },
+    "people": {
+      "description": "Manage your clients and their contact details.",
+      "edit_title": "Edit client",
+      "empty_message": "Your clients appear here once you add a shoot or convert a lead.",
+      "empty_title": "No clients yet",
+      "enrol_button": "Add client",
+      "title": "Clients",
+      "waiver_required": "You must accept the contract to continue.",
+      "waiver_status_label": "Contract"
     }
   },
   "enrolment": {
@@ -59,5 +95,38 @@
     "waiver_no_template": "No active contract is set up yet. Please contact the studio.",
     "waiver_context_student": "Client",
     "waiver_context_class": "Package"
+  },
+  "finance": {
+    "hub": {
+      "link_students": "View clients",
+      "metric_outstanding": "Outstanding bookings",
+      "no_active_season": "No active period — outstanding bookings are not shown."
+    },
+    "payments": {
+      "col_class": "Package",
+      "col_engagement": "Shoot",
+      "family_payment": "Client payment"
+    }
+  },
+  "nav": {
+    "manage_classes": "Manage packages"
+  },
+  "scheduling": {
+    "services": {
+      "none": "No services yet. Click “Add service” to create your first one — for example a mini session or a consultation.",
+      "subtitle": "The sessions clients can book with you online — for example mini sessions, portrait sessions or consultations."
+    }
+  },
+  "settings": {
+    "hub": {
+      "compliance_description": "Manage contract templates and signed contracts.",
+      "compliance_title": "Contracts",
+      "name_required": "Studio name is required.",
+      "page_description": "Update your studio profile, branding, and regional defaults.",
+      "page_title": "Studio settings",
+      "profile_saved": "Studio profile saved.",
+      "profile_title": "Studio profile",
+      "school_name": "Studio name"
+    }
   }
 }
