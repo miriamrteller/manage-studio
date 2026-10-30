@@ -27,9 +27,77 @@ function denoNpmImportMap() {
   };
 }
 
+/**
+ * VITE_DEMO_MODE=true builds a browser-only demo (no Supabase): app imports of
+ * src/lib/supabase.ts and resolveTenantSubdomain.ts are swapped for the
+ * in-memory versions in src/demo/, routing uses a hash router, and the entry
+ * becomes src/demo/main.tsx. Without the flag none of src/demo is reachable,
+ * so the production bundle is unchanged.
+ */
+const DEMO_MODE = process.env.VITE_DEMO_MODE === 'true';
+
+function demoMode() {
+  const src = path.resolve(__dirname, 'src');
+  const swaps: Record<string, string> = {
+    [path.join(src, 'lib/supabase.ts')]: path.join(src, 'demo/supabase.ts'),
+    [path.join(src, 'lib/resolveTenantSubdomain.ts')]: path.join(src, 'demo/resolveTenantSubdomain.ts'),
+  };
+  const routerShim = path.join(src, 'demo/reactRouterDom.ts');
+  const stripeStub = path.join(src, 'demo/stripeStub.ts');
+  return {
+    name: 'demo-mode',
+    enforce: 'pre' as const,
+    async resolveId(
+      this: { resolve: (s: string, i?: string, o?: Record<string, unknown>) => Promise<{ id: string } | null> },
+      source: string,
+      importer: string | undefined,
+      options: Record<string, unknown>,
+    ) {
+      if (source === 'react-router-dom' && importer && importer !== routerShim) return routerShim;
+      // Stripe.js loads from js.stripe.com; the demo makes no external requests.
+      if (source === '@stripe/stripe-js') return stripeStub;
+      if (!importer || !/(^|\/)(supabase|resolveTenantSubdomain)$/.test(source)) return null;
+      const resolved = await this.resolve(source, importer, { ...options, skipSelf: true });
+      if (resolved && swaps[resolved.id] && !importer.startsWith(path.join(src, 'demo'))) return swaps[resolved.id];
+      return null;
+    },
+    // Full-page navigations and absolute links to app paths would leave the
+    // artifact; route them through the hash router instead.
+    transform(code: string, id: string) {
+      if (!id.startsWith(src) || id.startsWith(path.join(src, 'demo'))) return null;
+      if (!/window\.location\.(href = |origin|assign\()/.test(code)) return null;
+      return code
+        .replace(/window\.location\.href = (['"`])\//g, 'window.location.hash = $1#/')
+        // App-relative assign('/path') goes through the hash router too.
+        .replace(/window\.location\.assign\(/g, '__demoAssign(')
+        // Absolute app links (pay links, quote links) become hash links on the current page.
+        .replace(/window\.location\.origin/g, "(window.location.href.split('#')[0] + '#')");
+    },
+    transformIndexHtml: {
+      // 'pre' so the entry script is swapped before Vite collects it.
+      order: 'pre' as const,
+      handler(html: string) {
+        return html
+          .replace('/src/main.tsx', '/src/demo/main.tsx')
+          .replace(/<title>.*<\/title>/, '<title>Lumen &amp; Light Photography (demo)</title>')
+          .replace(/\s*<link rel="icon"[^>]*>/, '');
+      },
+    },
+  };
+}
+
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react(), denoNpmImportMap()],
+  plugins: [react(), denoNpmImportMap(), ...(DEMO_MODE ? [demoMode()] : [])],
+  ...(DEMO_MODE
+    ? {
+        base: './',
+        define: {
+          'import.meta.env.VITE_SUPABASE_URL': JSON.stringify('https://demo.supabase.invalid'),
+          'import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY': JSON.stringify('demo'),
+        },
+      }
+    : {}),
   server: {
     host: '0.0.0.0',
   },
@@ -58,6 +126,7 @@ export default defineConfig({
   build: {
     // SPEC §7 — do not ship source maps to production clients
     sourcemap: false,
+    ...(DEMO_MODE ? { outDir: 'dist-demo' } : {}),
     rollupOptions: {
       output: {
         manualChunks: {
