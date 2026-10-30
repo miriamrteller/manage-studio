@@ -5,7 +5,6 @@ import {
   currentHmacVersion,
   getHmacKey,
   hmacSha256Base64url,
-  hmacSha256Hex,
   sha256Hex,
   timingSafeEqual,
 } from "../_shared/edge-runtime/hmac.ts";
@@ -13,13 +12,23 @@ import {
   extractWaiverToken,
   verifyWaiverToken,
 } from "../_shared/waiver-token.ts";
+import { NO_PDF, prepareWaiverPdf, waiverRecordHmac, type WaiverPdfArtifact } from "../_shared/contract-pdf/evidence.ts";
+import {
+  type ContractEmailTenant,
+  type ExistingWaiverEvidence,
+  findExistingWaiverEvidence,
+  notifyJobContractSigned,
+  recordContractPdfFailure,
+} from "../_shared/contract-pdf/job-contract-signing.ts";
+import { AUTOMATIC_EMAIL_TENANT_COLUMNS } from "../_shared/photographer-emails/send.ts";
 
-// V1: PDF generation is deferred — the waiver_evidence row IS the tamper-evident
-// legal record (wording_snapshot + record_hmac over 14 canonical fields).
-// A PDF export can be generated on-demand from the admin panel in V2 once we
-// have a Unicode-capable font pipeline. For now we store a sentinel path so the
-// DB constraint (NOT NULL on pdf_storage_path) is satisfied without any upload.
-const PDF_DEFERRED_SENTINEL = "v1-deferred";
+// PDF policy (see _shared/contract-pdf/evidence.ts):
+// - Dance waivers: V1 behaviour — the waiver_evidence row IS the tamper-evident
+//   legal record (wording_snapshot + record_hmac over 15 canonical fields); a
+//   sentinel path and zeroed pdf_sha256 are stored, nothing is uploaded.
+// - Job (photographer) contracts: the signed PDF is rendered and uploaded to
+//   the legal-documents bucket BEFORE the evidence insert, so the real
+//   pdf_sha256 is one of the sealed fields; a copy is emailed to both parties.
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -120,12 +129,15 @@ Deno.serve(async (req) => {
     const contractEngagementId: string | null =
       waiverTokenEngagementId ?? (typeof body.engagement_id === "string" ? body.engagement_id : null);
     let jobContract: Awaited<ReturnType<typeof loadJobContractContext>> = null;
+    type ContractTenantRow = ContractEmailTenant & { logo_url: string | null };
+    let contractTenant: ContractTenantRow | null = null;
     if (contractEngagementId) {
       const { data: tenantRow } = await service
         .from("tenants")
-        .select("language_default")
+        .select(`${AUTOMATIC_EMAIL_TENANT_COLUMNS}, logo_url`)
         .eq("id", tenantId)
         .maybeSingle();
+      contractTenant = (tenantRow as ContractTenantRow | null) ?? null;
       jobContract = await loadJobContractContext(service, {
         tenantId,
         engagementId: contractEngagementId,
@@ -237,37 +249,58 @@ Deno.serve(async (req) => {
     // --- Compute hashes ---
     const consent_version_hash = await sha256Hex(wordingSnapshot);
 
-    // V1: no PDF upload — use sentinel path + zeroed hash
     const evidenceId = crypto.randomUUID();
-    const storagePath = PDF_DEFERRED_SENTINEL;
-    const pdf_sha256 = "0".repeat(64);
+    const contractLanguage: "he" | "en" = contractTenant?.language_default === "he" ? "he" : "en";
 
-    // --- Compute record_hmac over canonical alphabetically-sorted 15-field JSON ---
-    const canonical = JSON.stringify(
-      Object.fromEntries(
-        Object.entries({
-          accept_language:     acceptLang,
-          consent_template_id: body.consent_template_id,
-          consent_version:     template.version,
-          consent_version_hash,
-          guardian_confirmed:  guardianConfirmed,   // 15th field (g sorts between c and i)
-          idempotency_key:     body.idempotency_key,
-          ip_address:          ip,
-          pdf_sha256,
-          person_id:           body.person_id,
-          signed_at:           signedAt,
-          signed_by_email:     signedByEmail,
-          signed_by_name:      body.typed_name,
-          signed_by_role:      signedByRole,
-          tenant_id:           tenantId,
-          user_agent:          userAgent,
-        }).sort(([a], [b]) => a.localeCompare(b)),
-      ),
-    );
-    const record_hmac = await hmacSha256Hex(hmacKey, canonical);
+    // --- PDF: job contracts render + upload before the insert; everything else keeps the sentinel ---
+    // A replay (same idempotency_key) reuses the stored row instead of rendering again.
+    let replay: ExistingWaiverEvidence | null = null;
+    let pdf: WaiverPdfArtifact = NO_PDF;
+    if (jobContract && contractTenant) {
+      replay = await findExistingWaiverEvidence(service, tenantId, body.idempotency_key);
+      if (!replay) {
+        pdf = await prepareWaiverPdf(service.storage, {
+          job: jobContract,
+          tenantId,
+          tenant: { name: contractTenant.name, logo_url: contractTenant.logo_url },
+          language: contractLanguage,
+          template: { name: template.name as string, version: template.version as number },
+          wordingSnapshot,
+          evidenceId,
+          typedName: body.typed_name,
+          signedAt,
+          signerEmail: signedByEmail,
+          consentVersionHash: consent_version_hash,
+        });
+      }
+    }
+    const storagePath = pdf.storagePath;
+    const pdf_sha256 = pdf.pdfSha256;
+
+    // --- record_hmac over the canonical alphabetically-sorted 15-field JSON (SPEC §4.2.9) ---
+    const record_hmac = await waiverRecordHmac(hmacKey, {
+      accept_language:     acceptLang,
+      consent_template_id: body.consent_template_id,
+      consent_version:     template.version,
+      consent_version_hash,
+      guardian_confirmed:  guardianConfirmed,   // 15th field (g sorts between c and i)
+      idempotency_key:     body.idempotency_key,
+      ip_address:          ip,
+      pdf_sha256,
+      person_id:           body.person_id,
+      signed_at:           signedAt,
+      signed_by_email:     signedByEmail,
+      signed_by_name:      body.typed_name,
+      signed_by_role:      signedByRole,
+      tenant_id:           tenantId,
+      user_agent:          userAgent,
+    });
 
     // --- Atomic DB write via sign_waiver() SECURITY DEFINER RPC ---
-    const { data: returnedId, error: rpcError } = await service.rpc("sign_waiver", {
+    // (skipped on a job-contract replay: the row already exists and is reused as is)
+    const { data: returnedId, error: rpcError } = replay
+      ? { data: replay.id, error: null }
+      : await service.rpc("sign_waiver", {
       p_id: evidenceId,
       p_tenant_id: tenantId,
       p_person_id: body.person_id,
@@ -309,6 +342,13 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Concurrent double submit: sign_waiver returned the row the other request
+    // inserted. Reuse it (its PDF is the sealed one); ours is an orphan object.
+    if (jobContract && !replay && returnedId !== evidenceId) {
+      replay = await findExistingWaiverEvidence(service, tenantId, body.idempotency_key);
+      console.warn("[accept-waiver] concurrent replay; orphaned PDF object:", storagePath);
+    }
+
     if (jobContract) {
       // Job contract: the signed record is the contract; the job stays 'active'.
       const { error: linkError } = await service
@@ -319,6 +359,42 @@ Deno.serve(async (req) => {
         .is("waiver_evidence_id", null);
       if (linkError) {
         return jsonResponse({ error: "Failed to link contract to job" }, 500);
+      }
+      // PDF failed at signing: the row is sealed with the sentinel pair (signing
+      // still succeeded); flag the shoot so the admin can generate the PDF later.
+      if (pdf.failure && !replay) {
+        await recordContractPdfFailure(service, {
+          tenantId,
+          engagementId: jobContract.engagementId,
+          evidenceId: returnedId as string,
+          reason: pdf.failure,
+        });
+      }
+      // Signed copy to the client and the photographer (idempotent per shoot; never fails the signing).
+      if (contractTenant) {
+        await notifyJobContractSigned(service, {
+          tenant: contractTenant,
+          language: contractLanguage,
+          job: jobContract,
+          evidence: replay
+            ? {
+              id: replay.id,
+              storagePath: replay.pdf_storage_path,
+              pdfSha256: replay.pdf_sha256,
+              signedAt: new Date(replay.signed_at).toISOString(),
+              typedName: replay.signed_by_name,
+              signedByEmail: replay.signed_by_email,
+            }
+            : {
+              id: evidenceId,
+              storagePath,
+              pdfSha256: pdf_sha256,
+              signedAt,
+              typedName: body.typed_name,
+              signedByEmail,
+            },
+          pdfBytes: replay ? null : pdf.bytes,
+        });
       }
     } else if (waiverTokenEngagementId && tokenEngagementStatus === "pending_payment") {
       // Pre-payment tokenized flow: link evidence to this engagement only.

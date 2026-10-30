@@ -34,6 +34,8 @@ export const EMAIL_TEMPLATE_NAMES = {
     SHOOT_REMINDER: 'shoot_reminder',
     SHOOT_THANK_YOU: 'shoot_thank_you',
     GALLERY_READY: 'gallery_ready',
+    CONTRACT_SIGNED_CLIENT: 'contract_signed_client',
+    CONTRACT_SIGNED_STUDIO: 'contract_signed_studio',
 };
 /**
  * Supported languages for email templates
@@ -137,6 +139,8 @@ const TemplateNameSchema = z.enum([
     EMAIL_TEMPLATE_NAMES.SHOOT_REMINDER,
     EMAIL_TEMPLATE_NAMES.SHOOT_THANK_YOU,
     EMAIL_TEMPLATE_NAMES.GALLERY_READY,
+    EMAIL_TEMPLATE_NAMES.CONTRACT_SIGNED_CLIENT,
+    EMAIL_TEMPLATE_NAMES.CONTRACT_SIGNED_STUDIO,
 ]);
 const LanguageSchema = z.enum(['en', 'he']);
 /**

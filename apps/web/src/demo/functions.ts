@@ -116,6 +116,23 @@ export const baseFunctions: Record<string, FunctionHandler> = {
     viewed_at_ts: Math.floor(Date.now() / 1000),
   }),
 
+  // The real function mints a signed URL for a PDF in private storage; the demo
+  // has neither storage nor a PDF renderer, so it explains itself instead.
+  'job-contract-pdf-link': (body, ctx) => {
+    const engagementId = String(body.engagementId ?? '');
+    const eng = rows(ctx, 'engagements').find((e) => e.id === engagementId);
+    if (!eng) throw new DemoRpcError('Shoot not found');
+    if (!eng.waiver_evidence_id) throw new DemoRpcError('Contract not signed yet');
+    throw new DemoRpcError('Downloading the signed PDF is not available in the demo.');
+  },
+
+  'job-contract-pdf-generate': (body, ctx) => {
+    const engagementId = String(body.engagementId ?? '');
+    const eng = rows(ctx, 'engagements').find((e) => e.id === engagementId);
+    if (!eng) throw new DemoRpcError('Shoot not found');
+    throw new DemoRpcError('Generating the signed PDF is not available in the demo.');
+  },
+
   'accept-waiver': (body, ctx) => {
     const engagementId =
       (body.engagement_id as string | undefined) ?? engagementFromToken(body.__authorization as string | undefined);

@@ -91,7 +91,7 @@ describe('dueShootEmailVariables', () => {
 });
 
 describe('photographer email shells', () => {
-  it('covers the fixed set of five emails', () => {
+  it('covers the fixed set of emails', () => {
     expect([...PHOTOGRAPHER_EMAIL_KEYS].sort()).toEqual(Object.keys(PHOTOGRAPHER_EMAIL_VARIABLES).sort());
     expect(isPhotographerEmailKey('quote_sent')).toBe(true);
     expect(isPhotographerEmailKey('welcome')).toBe(false);
@@ -105,9 +105,10 @@ describe('photographer email shells', () => {
     expect(html).toContain('dir="rtl"');
     expect(html).not.toMatch(/\{\{MS_[A-Z_]+\}\}/);
     expect(html).not.toContain('var(--email-');
-    expect(html).toContain('v-recipientName');
-    expect(subject).toContain('סטודיו');
-    expect(subject).not.toContain('{schoolName}');
+    for (const name of PHOTOGRAPHER_EMAIL_VARIABLES[key]) expect(html).toContain(`v-${name}`);
+    // Subjects name the studio, except the studio's own copy of a signed contract, which names the client.
+    expect(subject).toContain(key === 'contract_signed_studio' ? 'v-clientName' : 'סטודיו');
+    expect(subject).not.toMatch(/\{[a-zA-Z]+\}/);
   });
 
   it('escapes HTML in values', () => {

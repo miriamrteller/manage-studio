@@ -563,7 +563,8 @@ Waiver signatures are legally sensitive records (minor participation and guardia
 - Signer affirms via checkbox + typed legal name (`typed_name_checkbox` method).
 - When signing on behalf of a minor, signer must additionally check a guardian declaration checkbox confirming parental/legal-guardian authority. Stored as `guardian_confirmed` in the tamper-evident record.
 - Edge Function `accept-waiver` atomically writes immutable evidence, events, and `audit_log` entry.
-- PDF generation is **V1-deferred** — the `waiver_evidence` DB record (with `wording_snapshot` + `record_hmac`) is the legally operative evidence for V1. A `v1-deferred` sentinel is stored in `pdf_storage_path`; on-demand PDF export from the admin panel is planned for V2.
+- **Dance waivers:** PDF generation is **V1-deferred** — the `waiver_evidence` DB record (with `wording_snapshot` + `record_hmac`) is the legally operative evidence. A `v1-deferred` sentinel is stored in `pdf_storage_path` and `pdf_sha256` is all zeros; on-demand PDF export from the admin panel is planned for V2.
+- **Photographer job contracts** (engagement with a `job_details` row): `accept-waiver` renders a PDF of the signed contract (business name + logo, contract title, the exact `wording_snapshot`, client / shoot date / package / location / price, typed name, signed-at in Asia/Jerusalem, evidence id, `consent_version_hash`) **before** the `sign_waiver()` insert, uploads it to the private `legal-documents` bucket at `contracts/{tenant_id}/{engagement_id}/{evidence_id}.pdf`, and stores the real path and SHA-256 on the row — so `pdf_sha256` inside `record_hmac` seals the stored file. Renderer: `_shared/contract-pdf/` (pdf-lib + fontkit with the embedded Alef font for Hebrew and Latin; bidi reordering per line via bidi-js, since pdf-lib does none). **A render or upload failure never blocks signing:** the row is then sealed with the same sentinel pair a dance waiver stores, an `audit_log` row (`job_contract_pdf_failed`) records the reason and `job_details.contract_pdf_pending` flags the shoot; the admin "Generate PDF" button (`job-contract-pdf-generate`) later renders from the sealed `wording_snapshot` into `waiver_evidence_pdfs` — a PDF *generated after signing*, stored outside the immutable evidence row, whose hash is therefore not part of `record_hmac` (the PDF says so). A replay with the same `idempotency_key` reuses the stored row and never renders twice. The signed copy is emailed to the signer and to the studio's `contact_email` (`contract_signed_client` / `contract_signed_studio`, claimed in `automatic_email_log` so retries never duplicate; attached on the Resend transport, always with a 72-hour signed download link). Admin shoot page and client portal download it through `job-contract-pdf-link` (session + server-side ownership check → 10-minute signed URL for the sealed PDF, else the one generated after signing; audit-logged); the bucket is never public.
 - `offering_id` on `waiver_evidence` links the signature to the specific class it was signed for. `waiver_evidence_id` on `engagements` links the enrolment back to the exact evidence row.
 - **Every enrolment requires a fresh signature** — there is no cross-enrolment reuse of prior evidence.
 
@@ -586,7 +587,7 @@ The self-hosted flow establishes evidential weight through the following control
 - **Non-repudiation** — SHA-256 of exact wording snapshot stored at signing time (`consent_version_hash`); independently reproducible from `wording_snapshot`.
 - **Viewing confirmed (server-gated)** — `view_token` issued by `waiver-viewed` Edge Function only after server confirms scroll-to-bottom event; `accept-waiver` rejects any submission without a valid, non-expired token.
 - **Tamper evidence** — immutability trigger at DB level (UPDATE/DELETE raise exception); HMAC-SHA256 (`record_hmac`) over 15 canonical evidence fields (see §4.2.9) using versioned secret key (`hmac_key_version`).
-- **Retention** — `waiver-pdfs` private bucket with configurable retention policy (minimum years per jurisdiction — legal counsel must approve before production).
+- **Retention** — signed job-contract PDFs live in the private `legal-documents` bucket (production retention lock: `supabase/scripts/apply-production-retention-lock.sql`); retention policy per jurisdiction — legal counsel must approve before production.
 - **Audit chain** — `waiver_events` append-only log + `audit_log` entry with full actor/timestamp trail; exportable for dispute resolution.
 - **Minor signer gate** — server rejects (403) any attempt by a minor to self-sign; frontend shows hard-block UI directing the user to log in as a parent/guardian.
 - **Per-enrolment signature** — every new enrolment requires a fresh signature; prior evidence from another enrolment is never reused.
@@ -627,7 +628,7 @@ This system is designed for Israeli studios enrolling students aged 3+. Key Isra
 Tenant must obtain local legal counsel approval for waiver wording, consent UX, and retention policy **before production enablement**. This is mandatory regardless of jurisdiction.
 
 **Deferred (V2+):**
-- On-demand PDF export from admin panel (V1 uses DB evidence record as the operative legal artifact).
+- On-demand PDF export for dance waivers from the admin panel (V1 uses the DB evidence record as the operative legal artifact; job contracts already get a PDF at signing — see above).
 - Manual admin attestation + paper waiver upload for at-door edge cases (full plan exists — see §6 deferred).
 - OTP enforcement for waiver signing (`waiver_require_otp` column and Twilio plumbing exist; UI enforcement and `verify-waiver-otp` Edge Function are V2).
 - External e-sign vendor integration is permanently out of scope for this system.
@@ -1518,8 +1519,8 @@ CREATE OR REPLACE FUNCTION sign_waiver(
   p_consent_version       INT,
   p_consent_version_hash  TEXT,
   p_wording_snapshot      TEXT,
-  p_pdf_storage_path      TEXT,          -- 'v1-deferred' sentinel in V1
-  p_pdf_sha256            TEXT,          -- '000...0' sentinel in V1
+  p_pdf_storage_path      TEXT,          -- 'v1-deferred' sentinel (dance); legal-documents key (job contracts)
+  p_pdf_sha256            TEXT,          -- '000...0' sentinel (dance); SHA-256 of the stored PDF (job contracts)
   p_record_hmac           TEXT,          -- 15-field canonical HMAC (see §4.2.9)
   p_hmac_key_version      SMALLINT,
   p_viewed_at             TIMESTAMPTZ,
@@ -2575,7 +2576,7 @@ Reminder timestamps (`waiver_48h_reminded_at`, `waiver_5d_reminded_at`) on the `
 
 **Evidence required per signed waiver:**
 - `consent_template_id`, `consent_version`, `consent_version_hash`, `wording_snapshot`
-- `pdf_storage_path` (V1: `'v1-deferred'` sentinel), `pdf_sha256` (V1: `'000...0'`)
+- `pdf_storage_path`, `pdf_sha256` (dance: `'v1-deferred'` / `'000...0'` sentinels; job contracts: the stored PDF's key and SHA-256, sealed by `record_hmac`)
 - `offering_id` (class the waiver was signed for), `guardian_confirmed`
 - Signer identity (`signed_by_name`, `signed_by_email`, `signed_by_role`)
 - `signature_method`, `signed_at` (UTC), `ip_address`, `user_agent`, `accept_language`
@@ -3538,7 +3539,7 @@ test.describe("ARIA Patterns", () => {
 
 **B. Hash integrity**
 - Stored `consent_version_hash` must match SHA-256 of `wording_snapshot`.
-- Stored `pdf_sha256` must match SHA-256 of file at `pdf_storage_path`.
+- Stored `pdf_sha256` must match SHA-256 of file at `pdf_storage_path` (job contracts; dance rows carry the sentinels). The signer's canonical builder and the verifier agree: `_shared/contract-pdf/evidence.test.ts`.
 - `record_hmac` must recompute correctly against the canonical JSON spec (§4.2.9) using the key version stored in `hmac_key_version`.
 
 **C. Idempotency**
