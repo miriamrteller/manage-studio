@@ -10,9 +10,9 @@
 import {
   assertEquals,
   assertRejects,
-  assertStringIncludes,
+  assertThrows,
 } from "https://deno.land/std@0.168.0/testing/asserts.ts";
-import { parseGrowInvoiceNotify, parseGrowNotify } from "../providers/grow.ts";
+import { parseGrowInvoiceNotify, parseGrowNotify } from "../../providers/grow.ts";
 
 // =============================================================================
 // Helper: minimal Grow notify body
@@ -26,12 +26,11 @@ function makeNotifyBody(overrides: Record<string, unknown> = {}): Record<string,
       transactionToken: "tok_xyz",
       sum: "240.00",
       paymentType: 1,
+      // Layout from grow/metadata.ts toGrowCustomFields().
       cField1: "00000000-0000-0000-0000-000000000001", // tenant_id
-      cField2: JSON.stringify({
-        engagement_id: "00000000-0000-0000-0000-000000001001",
-        billing_account_id: "00000000-0000-0000-0000-000000000408",
-        charge_type: "initial",
-      }),
+      cField2: "00000000-0000-0000-0000-000000001001", // engagement_id
+      cField3: "00000000-0000-0000-0000-000000000408", // billing_account_id
+      cField4: JSON.stringify({ ct: "initial" }),
       ...overrides,
     },
   };
@@ -92,7 +91,6 @@ Deno.test("GAP 3 — parseGrowNotify is pure and idempotent for same input", () 
 });
 
 Deno.test("GAP 3 — constructEvent skips approve + persistToken for already-succeeded payment", async () => {
-  const approveCalls: string[] = [];
   const persistCalls: string[] = [];
 
   // Stub SupabaseClient that returns an existing 'succeeded' payment
@@ -125,8 +123,8 @@ Deno.test("GAP 3 — constructEvent skips approve + persistToken for already-suc
   };
 
   // Dynamically import to avoid top-level await issues in test file
-  const { GrowPaymentProvider } = await import("../providers/grow.ts");
-  const provider = new GrowPaymentProvider(stubClient as unknown as Parameters<typeof GrowPaymentProvider>[0]);
+  const { GrowPaymentProvider } = await import("../../providers/grow.ts");
+  const provider = new GrowPaymentProvider(stubClient as unknown as ConstructorParameters<typeof GrowPaymentProvider>[0]);
 
   // Override private methods to track calls
   let approveWasCalled = false;
@@ -144,7 +142,7 @@ Deno.test("GAP 3 — constructEvent skips approve + persistToken for already-suc
 });
 
 Deno.test("GAP 3 — constructEvent calls approve + persist for new (not yet succeeded) payment", async () => {
-  const { GrowPaymentProvider } = await import("../providers/grow.ts");
+  const { GrowPaymentProvider } = await import("../../providers/grow.ts");
 
   const stubClient = {
     rpc: (_fn: string, _args: unknown) => Promise.resolve({ data: [], error: null }),
@@ -161,7 +159,7 @@ Deno.test("GAP 3 — constructEvent calls approve + persist for new (not yet suc
     }),
   };
 
-  const provider = new GrowPaymentProvider(stubClient as unknown as Parameters<typeof GrowPaymentProvider>[0]);
+  const provider = new GrowPaymentProvider(stubClient as unknown as ConstructorParameters<typeof GrowPaymentProvider>[0]);
 
   let approveWasCalled = false;
   let persistWasCalled = false;
@@ -181,7 +179,7 @@ Deno.test("GAP 3 — constructEvent calls approve + persist for new (not yet suc
 // GAP 4 — Webhook key validation
 // =============================================================================
 Deno.test("GAP 4 — constructEvent rejects when webhook key mismatches stored key", async () => {
-  const { GrowPaymentProvider } = await import("../providers/grow.ts");
+  const { GrowPaymentProvider } = await import("../../providers/grow.ts");
 
   const stubClient = {
     rpc: (fn: string, _args: unknown) => {
@@ -204,7 +202,7 @@ Deno.test("GAP 4 — constructEvent rejects when webhook key mismatches stored k
     }),
   };
 
-  const provider = new GrowPaymentProvider(stubClient as unknown as Parameters<typeof GrowPaymentProvider>[0]);
+  const provider = new GrowPaymentProvider(stubClient as unknown as ConstructorParameters<typeof GrowPaymentProvider>[0]);
 
   const body = makeNotifyBody({ webhookKey: "wrong-key-xyz" });
   const rawBody = JSON.stringify(body);
@@ -217,7 +215,7 @@ Deno.test("GAP 4 — constructEvent rejects when webhook key mismatches stored k
 });
 
 Deno.test("GAP 4 — constructEvent accepts when webhook key matches", async () => {
-  const { GrowPaymentProvider } = await import("../providers/grow.ts");
+  const { GrowPaymentProvider } = await import("../../providers/grow.ts");
 
   const stubClient = {
     rpc: (fn: string, _args: unknown) => {
@@ -239,7 +237,7 @@ Deno.test("GAP 4 — constructEvent accepts when webhook key matches", async () 
     }),
   };
 
-  const provider = new GrowPaymentProvider(stubClient as unknown as Parameters<typeof GrowPaymentProvider>[0]);
+  const provider = new GrowPaymentProvider(stubClient as unknown as ConstructorParameters<typeof GrowPaymentProvider>[0]);
 
   let approveWasCalled = false;
   // deno-lint-ignore no-explicit-any
@@ -254,7 +252,7 @@ Deno.test("GAP 4 — constructEvent accepts when webhook key matches", async () 
 });
 
 Deno.test("GAP 4 — constructEvent proceeds when no key is stored (opt-in validation)", async () => {
-  const { GrowPaymentProvider } = await import("../providers/grow.ts");
+  const { GrowPaymentProvider } = await import("../../providers/grow.ts");
 
   const stubClient = {
     rpc: (fn: string, _args: unknown) => {
@@ -276,7 +274,7 @@ Deno.test("GAP 4 — constructEvent proceeds when no key is stored (opt-in valid
     }),
   };
 
-  const provider = new GrowPaymentProvider(stubClient as unknown as Parameters<typeof GrowPaymentProvider>[0]);
+  const provider = new GrowPaymentProvider(stubClient as unknown as ConstructorParameters<typeof GrowPaymentProvider>[0]);
   // deno-lint-ignore no-explicit-any
   (provider as any).approveTransaction = () => Promise.resolve();
   // deno-lint-ignore no-explicit-any
@@ -334,7 +332,7 @@ Deno.test("GAP 5 — parseGrowInvoiceNotify: asmachta used as documentNumber fal
   assertEquals(result.externalDocumentNumber, "12345678");
 });
 
-Deno.test("GAP 5 — parseGrowInvoiceNotify: throws when tenantId (cField1) missing", async () => {
+Deno.test("GAP 5 — parseGrowInvoiceNotify: throws when tenantId (cField1) missing", () => {
   const body = {
     data: {
       transactionUniqueIdentifier: "txn_abc123",
@@ -342,26 +340,28 @@ Deno.test("GAP 5 — parseGrowInvoiceNotify: throws when tenantId (cField1) miss
       // no cField1
     },
   };
-  await assertRejects(
-    () => Promise.resolve(parseGrowInvoiceNotify(body)),
+  assertThrows(
+    () => parseGrowInvoiceNotify(body),
     Error,
+    "Grow invoice notify missing tenant, transaction, or document id",
   );
 });
 
-Deno.test("GAP 5 — parseGrowInvoiceNotify: throws when providerPaymentRef missing", async () => {
+Deno.test("GAP 5 — parseGrowInvoiceNotify: throws when providerPaymentRef missing", () => {
   const body = {
     data: {
       documentId: "doc_999",
       cField1: "00000000-0000-0000-0000-000000000001",
     },
   };
-  await assertRejects(
-    () => Promise.resolve(parseGrowInvoiceNotify(body)),
+  assertThrows(
+    () => parseGrowInvoiceNotify(body),
     Error,
+    "Grow invoice notify missing tenant, transaction, or document id",
   );
 });
 
-Deno.test("GAP 5 — parseGrowInvoiceNotify: throws when documentId missing", async () => {
+Deno.test("GAP 5 — parseGrowInvoiceNotify: throws when documentId missing", () => {
   const body = {
     data: {
       transactionUniqueIdentifier: "txn_abc123",
@@ -369,9 +369,10 @@ Deno.test("GAP 5 — parseGrowInvoiceNotify: throws when documentId missing", as
       // no documentId
     },
   };
-  await assertRejects(
-    () => Promise.resolve(parseGrowInvoiceNotify(body)),
+  assertThrows(
+    () => parseGrowInvoiceNotify(body),
     Error,
+    "Grow invoice notify missing tenant, transaction, or document id",
   );
 });
 
@@ -381,7 +382,7 @@ Deno.test("GAP 5 — parseGrowInvoiceNotify: throws when documentId missing", as
 Deno.test("COMPLIANCE — grow.ts contains no hardcoded VAT computation expressions", async () => {
   const decoder = new TextDecoder();
   const bytes = await Deno.readFile(
-    new URL("../providers/grow.ts", import.meta.url).pathname,
+    new URL("../../providers/grow.ts", import.meta.url).pathname,
   );
   const src = decoder.decode(bytes);
 
@@ -412,7 +413,7 @@ const hasLiveCreds =
 if (hasLiveCreds) {
   Deno.test("[live-creds] credential smoke-check via verifyCredentials", async () => {
     const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2.105.3");
-    const { GrowPaymentProvider } = await import("../providers/grow.ts");
+    const { GrowPaymentProvider } = await import("../../providers/grow.ts");
 
     const client = createClient(
       Deno.env.get("SUPABASE_URL")!,
