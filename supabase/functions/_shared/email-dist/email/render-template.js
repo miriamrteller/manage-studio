@@ -13,6 +13,11 @@ import EnrolmentAgeReviewDeclinedEmail from '../email-templates/EnrolmentAgeRevi
 import WaiverReminderEmail from '../email-templates/WaiverReminderEmail.js';
 import WaiverCancelledEmail from '../email-templates/WaiverCancelledEmail.js';
 import AdminAnnouncementEmail from '../email-templates/AdminAnnouncementEmail.js';
+import QuoteSentEmail from '../email-templates/photographer/QuoteSentEmail.js';
+import BookingConfirmedEmail from '../email-templates/photographer/BookingConfirmedEmail.js';
+import ShootReminderEmail from '../email-templates/photographer/ShootReminderEmail.js';
+import ShootThankYouEmail from '../email-templates/photographer/ShootThankYouEmail.js';
+import GalleryReadyEmail from '../email-templates/photographer/GalleryReadyEmail.js';
 import { getEmailColors } from '../config/email-colors.js';
 import { EMAIL_TEMPLATE_NAMES, getEmailFooterStrings, getEmailStrings, interpolateTemplate, } from '../i18n/email.js';
 import { deepMergeStrings } from './merge-strings.js';
@@ -184,6 +189,45 @@ function buildComponent(input, strings, colors, footerStrings) {
                 ...common,
                 subject: str(v.subject),
                 body: str(v.body),
+            });
+        case EMAIL_TEMPLATE_NAMES.QUOTE_SENT:
+            return React.createElement(QuoteSentEmail, {
+                ...common,
+                recipientName: str(v.recipientName, 'there'),
+                quoteUrl: str(v.quoteUrl, '#'),
+                totalFormatted: str(v.totalFormatted, '—'),
+                validUntil: str(v.validUntil, '—'),
+                shootDate: str(v.shootDate, '—'),
+            });
+        case EMAIL_TEMPLATE_NAMES.BOOKING_CONFIRMED:
+            return React.createElement(BookingConfirmedEmail, {
+                ...common,
+                recipientName: str(v.recipientName, 'there'),
+                shootDate: str(v.shootDate, '—'),
+                totalFormatted: str(v.totalFormatted, '—'),
+                depositFormatted: str(v.depositFormatted, '—'),
+                balanceFormatted: str(v.balanceFormatted, '—'),
+                balanceDueDate: str(v.balanceDueDate, '—'),
+                quoteUrl: str(v.quoteUrl, '#'),
+            });
+        case EMAIL_TEMPLATE_NAMES.SHOOT_REMINDER:
+            return React.createElement(ShootReminderEmail, {
+                ...common,
+                recipientName: str(v.recipientName, 'there'),
+                shootDate: str(v.shootDate, '—'),
+                shootTime: str(v.shootTime, '—'),
+                location: str(v.location, '—'),
+            });
+        case EMAIL_TEMPLATE_NAMES.SHOOT_THANK_YOU:
+            return React.createElement(ShootThankYouEmail, {
+                ...common,
+                recipientName: str(v.recipientName, 'there'),
+            });
+        case EMAIL_TEMPLATE_NAMES.GALLERY_READY:
+            return React.createElement(GalleryReadyEmail, {
+                ...common,
+                recipientName: str(v.recipientName, 'there'),
+                galleryUrl: str(v.galleryUrl, '#'),
             });
         default:
             throw new Error(`Unsupported email template: ${templateName}`);

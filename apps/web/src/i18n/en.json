@@ -1093,6 +1093,120 @@
       "price": "Price",
       "created_from_lead": "Created from lead",
       "error_generic": "Something went wrong. Please try again."
+    },
+    "quotes": {
+      "title": "Quotes",
+      "description": "Priced proposals for leads and shoots. The client picks add-ons and accepts online; accepting books the shoot and creates the deposit and balance payment requests.",
+      "create": "Create quote",
+      "new_title": "New quote",
+      "editor_title": "Quote",
+      "back": "← All quotes",
+      "from_leads": "Start from a lead",
+      "save": "Save quote",
+      "empty_title": "No quotes yet",
+      "empty_message": "Create a quote from a lead or a shoot.",
+      "columns": {
+        "client": "Client",
+        "status": "Status",
+        "total": "Total",
+        "shoot_date": "Shoot date",
+        "valid_until": "Valid until"
+      },
+      "status": {
+        "draft": "Draft",
+        "sent": "Sent",
+        "accepted": "Accepted",
+        "declined": "Declined",
+        "expired": "Expired"
+      },
+      "fields": {
+        "title": "Title (optional)",
+        "shoot_date": "Shoot date",
+        "valid_until": "Valid until",
+        "deposit_percent": "Deposit (%)",
+        "balance_installments": "Max installments for the balance",
+        "notes": "Notes for the client",
+        "send_contract": "Send the contract when the client accepts"
+      },
+      "lines": {
+        "title": "Packages and add-ons",
+        "description": "Description",
+        "qty": "Qty",
+        "unit_price": "Unit price",
+        "optional": "Optional add-on",
+        "remove": "Remove",
+        "package": "Package",
+        "choose_package": "Choose a package…",
+        "add_package": "Add as included",
+        "add_addon": "Add as optional add-on",
+        "add_custom": "Add custom line"
+      },
+      "totals": {
+        "required": "Included",
+        "addons": "Selected add-ons",
+        "total": "Total",
+        "deposit": "Deposit ({{percent}}%)",
+        "balance": "Balance (due on the shoot date)",
+        "vat_note": "Prices include VAT. The tax document shows the breakdown."
+      },
+      "send": {
+        "title": "Send to client",
+        "email": "Send by email",
+        "whatsapp": "Send on WhatsApp",
+        "copy_link": "Copy link",
+        "email_sent": "Quote emailed.",
+        "marked_sent": "Quote marked as sent.",
+        "link_copied": "Link copied. The quote is marked as sent.",
+        "no_email": "This client has no email address. Use WhatsApp or copy the link.",
+        "email_disabled": "The “Quote sent” email is switched off below.",
+        "whatsapp_message": "Hi {{name}}, here is your quote: {{url}}"
+      },
+      "automatic": {
+        "title": "Automatic emails",
+        "description": "Emails your clients get automatically, in your studio's language. Switch off any you don't want.",
+        "quote_sent": "Quote sent",
+        "quote_sent_hint": "When you send a quote by email.",
+        "booking_confirmed": "Booking confirmed",
+        "booking_confirmed_hint": "When the client accepts a quote.",
+        "shoot_reminder": "Shoot reminder",
+        "shoot_reminder_hint": "Two days before the shoot.",
+        "shoot_thank_you": "Thank you",
+        "shoot_thank_you_hint": "The day after the shoot.",
+        "gallery_ready": "Gallery ready",
+        "gallery_ready_hint": "When you release the gallery."
+      },
+      "errors": {
+        "invalid": "Check the quote: each line needs a description and a valid price, and there must be at least one line.",
+        "no_source": "Open a quote from a lead or a shoot.",
+        "not_found": "Quote not found."
+      }
+    },
+    "public_quote": {
+      "title": "Your quote",
+      "for": "Prepared for {{name}}",
+      "shoot_date": "Shoot date: {{date}}",
+      "valid_until": "Valid until {{date}}",
+      "addons": "Optional add-ons",
+      "accept": "Accept and book",
+      "decline": "Decline",
+      "decline_reason": "Would you like to tell us why? (optional)",
+      "confirm_decline": "Decline the quote",
+      "accepted": "Thank you! Your booking is confirmed. Payment details will follow.",
+      "contract_to_follow": "We will also send you the contract to sign.",
+      "declined": "You declined this quote. Changed your mind? Just get in touch.",
+      "expired": "This quote has expired. Get in touch and we will send you an updated one.",
+      "not_found": "This quote link is not valid.",
+      "errors": {
+        "expired": "This quote has expired.",
+        "not_open": "This quote can no longer be accepted.",
+        "not_found": "This quote link is not valid.",
+        "invalid_selection": "Something went wrong with your selection. Please refresh and try again.",
+        "shoot_cancelled": "This shoot was cancelled. Please get in touch.",
+        "no_package": "This quote is missing a package. Please get in touch.",
+        "invalid_request": "Something went wrong. Please refresh and try again.",
+        "server_error": "Something went wrong on our side. Please try again in a moment.",
+        "generic": "Something went wrong. Please try again."
+      }
     }
   },
   "signup": {
@@ -1174,7 +1288,8 @@
       "account": "Account"
     },
     "jobs": "Shoots",
-    "contracts": "Contracts"
+    "contracts": "Contracts",
+    "quotes": "Quotes"
   },
   "footer": {
     "school_name_fallback": "Ballet School",

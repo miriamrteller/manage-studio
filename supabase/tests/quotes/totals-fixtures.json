@@ -1,0 +1,42 @@
+{
+  "_comment": "Shared by apps/web/src/__tests__/quote-totals.test.ts and mirrored in 10_quotes_test.sql. Change both together.",
+  "deposit": [
+    { "total": 150, "percent": 33, "deposit": 50 },
+    { "total": 105001, "percent": 33, "deposit": 34650 },
+    { "total": 99, "percent": 50, "deposit": 50 },
+    { "total": 0, "percent": 30, "deposit": 0 },
+    { "total": 12345, "percent": 100, "deposit": 12345 },
+    { "total": 134997, "percent": 30, "deposit": 40499 },
+    { "total": 225000, "percent": 30, "deposit": 67500 }
+  ],
+  "quotes": [
+    {
+      "name": "draft with prints preselected",
+      "depositPercent": 30,
+      "lines": [
+        { "qty": 1, "unit_price_minor": 45000, "is_optional": false, "is_selected": true },
+        { "qty": 2, "unit_price_minor": 30000, "is_optional": false, "is_selected": true },
+        { "qty": 1, "unit_price_minor": 120000, "is_optional": true, "is_selected": false },
+        { "qty": 3, "unit_price_minor": 9999, "is_optional": true, "is_selected": true }
+      ],
+      "expected": { "requiredMinor": 105000, "optionalSelectedMinor": 29997, "totalMinor": 134997, "depositMinor": 40499, "balanceMinor": 94498 }
+    },
+    {
+      "name": "client ticks album, unticks prints",
+      "depositPercent": 30,
+      "lines": [
+        { "qty": 1, "unit_price_minor": 45000, "is_optional": false, "is_selected": true },
+        { "qty": 2, "unit_price_minor": 30000, "is_optional": false, "is_selected": true },
+        { "qty": 1, "unit_price_minor": 120000, "is_optional": true, "is_selected": true },
+        { "qty": 3, "unit_price_minor": 9999, "is_optional": true, "is_selected": false }
+      ],
+      "expected": { "requiredMinor": 105000, "optionalSelectedMinor": 120000, "totalMinor": 225000, "depositMinor": 67500, "balanceMinor": 157500 }
+    },
+    {
+      "name": "no deposit",
+      "depositPercent": 0,
+      "lines": [{ "qty": 2, "unit_price_minor": 5000, "is_optional": false, "is_selected": true }],
+      "expected": { "requiredMinor": 10000, "optionalSelectedMinor": 0, "totalMinor": 10000, "depositMinor": 0, "balanceMinor": 10000 }
+    }
+  ]
+}
