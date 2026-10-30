@@ -30,6 +30,7 @@ import {
   renderClientDocumentEmail,
 } from '../../../../supabase/functions/_shared/payments/send-payment-document-client-email.ts';
 import { ypayDocTypeForVatType } from '../../../../supabase/functions/_shared/payments/ypay/document.ts';
+import { YpayPaymentProvider } from '../../../../supabase/functions/_shared/payments/providers/ypay.ts';
 
 const TENANT = '00000000-0000-0000-0000-0000000000aa';
 const PERSON = 'person-1';
@@ -124,17 +125,18 @@ describe('ypay docType by VAT type', () => {
 describe('YpayInvoicingProvider.issueDocument — live /document call', () => {
   it('posts a bank-transfer invoice-receipt with the cached bearer token and returns the document', async () => {
     const { client } = seed({ vatType: 1 });
+    // Response shape from the YPay API document v2.1 ("Document Generator").
     const fetchMock = vi.fn(async () =>
-      ypayResponse({ responseCode: 1, document_id: '4411', document_number: '2026-0042', url: 'https://docs.ypay.test/4411.pdf' }),
+      ypayResponse({ responseCode: 1, serial_number: '900061', url: 'https://ypay.co.il/fsrv/business/1658/customers/44/official/12ca76.pdf' }),
     );
     vi.stubGlobal('fetch', fetchMock);
 
     const result = await new YpayInvoicingProvider().issueDocument(client as never, await canonical(client));
 
     expect(result).toEqual({
-      externalDocumentId: '4411',
-      externalDocumentNumber: '2026-0042',
-      documentUrl: 'https://docs.ypay.test/4411.pdf',
+      externalDocumentId: '900061',
+      externalDocumentNumber: '900061',
+      documentUrl: 'https://ypay.co.il/fsrv/business/1658/customers/44/official/12ca76.pdf',
     });
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, FetchInit];
@@ -142,17 +144,19 @@ describe('YpayInvoicingProvider.issueDocument — live /document call', () => {
     expect((init.headers as Record<string, string>).authorization).toBe('Bearer cached-token');
     const body = JSON.parse(String(init.body));
     expect(body.docType).toBe(109);
-    expect(body.chargeIdentifier).toBe(PAYMENT);
     expect(body.contact).toEqual({ email: 'dana@example.com', name: 'Dana Levi' });
     expect(body.items[0]).toMatchObject({ price: 1500, quantity: 1, vatIncluded: true });
-    expect(body.methods).toHaveLength(1);
-    expect(body.methods[0]).toMatchObject({ sum: 1500, date: '2026-10-30' });
+    // v2.1 Payment Methods: 2 = bank transfer; Method = { type, total, date }.
+    expect(body.methods).toEqual([{ type: 2, total: 1500, date: '2026-10-30' }]);
+    expect(body.details).toContain(PAYMENT);
     expect(body.mail).toBe(false);
+    expect(body.rounding).toBe(false);
+    expect(body).not.toHaveProperty('chargeIdentifier');
   });
 
   it('issues a plain receipt (108) for a VAT-exempt tenant paying cash', async () => {
     const { client } = seed({ vatType: 3, paymentMethod: 'cash' });
-    const fetchMock = vi.fn(async () => ypayResponse({ responseCode: 1, document_id: '9', url: 'https://docs.ypay.test/9.pdf' }));
+    const fetchMock = vi.fn(async () => ypayResponse({ responseCode: 1, serial_number: 9, url: 'https://docs.ypay.test/9.pdf' }));
     vi.stubGlobal('fetch', fetchMock);
 
     const result = await new YpayInvoicingProvider().issueDocument(client as never, await canonical(client));
@@ -161,12 +165,14 @@ describe('YpayInvoicingProvider.issueDocument — live /document call', () => {
     expect(result.externalDocumentNumber).toBe('9');
     const body = JSON.parse(String((fetchMock.mock.calls[0] as unknown as [string, FetchInit])[1].body));
     expect(body.docType).toBe(108);
-    expect(body.description).toBeUndefined();
+    // v2.1 Payment Methods: 1 = cash.
+    expect(body.methods[0].type).toBe(1);
+    expect(body.methods[0].total).toBe(body.items[0].price);
   });
 
-  it('maps a rejected payment-method payload (3013) to a non-retryable error', async () => {
+  it('maps a rejected payment-method payload (3011) to a non-retryable error', async () => {
     const { client } = seed();
-    vi.stubGlobal('fetch', vi.fn(async () => ypayResponse({ responseCode: 3013 })));
+    vi.stubGlobal('fetch', vi.fn(async () => ypayResponse({ responseCode: 3011 })));
 
     const err = await new YpayInvoicingProvider()
       .issueDocument(client as never, await canonical(client))
@@ -312,7 +318,7 @@ describe('document queue — offline receipt end to end', () => {
     expect(db.tables.payments[0].external_document_id).toBeNull();
     expect(sendHtmlEmail).not.toHaveBeenCalled();
 
-    vi.stubGlobal('fetch', vi.fn(async () => ypayResponse({ responseCode: 3013 })));
+    vi.stubGlobal('fetch', vi.fn(async () => ypayResponse({ responseCode: 3022 })));
     const second = await processQueueRow(client as never, { ...(row as object), attempts: 1 } as never);
     expect(second).toBe('dead');
     expect(row.status).toBe('dead');
@@ -351,5 +357,53 @@ describe('client receipt email wording', () => {
     expect(en.html).toContain('Studio &lt;x&gt;');
     expect(en.html).toContain('by bank transfer');
     expect(en.html).toContain('client portal');
+  });
+});
+
+describe('YpayPaymentProvider.createCharge — card path docType follows VAT status too', () => {
+  function cardSeed(vatType: number) {
+    const fake = makeFakeSupabase({
+      tenants: [{ id: TENANT, vat_type: vatType }],
+      engagements: [{ id: 'eng-1', person_id: PERSON, offering_id: 'off-1', billing_account_id: 'ba-1' }],
+      billing_accounts: [{ id: 'ba-1', person_id: PERSON, account_id: null, business_name: null, business_tax_id: null }],
+      people: [{ id: PERSON, name: 'Dana Levi', email: 'dana@example.com', account_id: null, emergency_contact_phone: null }],
+      payments: [],
+      audit_log: [],
+      payment_provider_token_cache: [{ tenant_id: TENANT, provider: 'ypay', token: 'cached-token', expires_at: FUTURE }],
+    });
+    fake.client.rpc = (async () => ({
+      data: [{ payment_provider_public_key: 'client-id', payment_provider_secret_key: 'client-secret' }],
+      error: null,
+    })) as never;
+    return fake;
+  }
+
+  async function chargeDocType(vatType: number): Promise<number> {
+    (globalThis as unknown as { Deno?: unknown }).Deno = {
+      env: { get: (k: string) => ({ YPAY_NOTIFY_URL: 'https://edge.test/handle-payment-event', APP_URL: 'https://app.test' })[k] },
+    };
+    try {
+      const { client } = cardSeed(vatType);
+      const fetchMock = vi.fn(async () => ypayResponse({ responseCode: 1, url: 'https://pay.ypay.test/x' }));
+      vi.stubGlobal('fetch', fetchMock);
+      const result = await new YpayPaymentProvider(client as never).createCharge({
+        amountMinor: 50000,
+        currency: 'ILS',
+        metadata: { tenant_id: TENANT, engagement_id: 'eng-1', billing_account_id: 'ba-1', charge_type: 'initial' },
+      } as never);
+      expect(result.pageUrl).toBe('https://pay.ypay.test/x');
+      const body = JSON.parse(String((fetchMock.mock.calls[0] as unknown as [string, FetchInit])[1].body));
+      return body.docType as number;
+    } finally {
+      delete (globalThis as unknown as { Deno?: unknown }).Deno;
+    }
+  }
+
+  it('VAT-registered tenant: invoice-receipt (109) as before', async () => {
+    expect(await chargeDocType(1)).toBe(109);
+  });
+
+  it('VAT-exempt tenant: receipt (108) instead of a tax invoice it may not issue', async () => {
+    expect(await chargeDocType(3)).toBe(108);
   });
 });

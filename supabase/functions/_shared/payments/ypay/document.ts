@@ -1,26 +1,29 @@
 /**
- * YPay standalone document issuance (API "Document Generator", POST /document).
+ * YPay standalone document issuance ("Document Generator", POST /document).
  *
  * Used for money that did NOT go through YPay's hosted page — cash and bank
  * transfers recorded by the photographer. YPay numbers and signs the document,
  * so the app never self-numbers a tax document (Israeli law requires a certified
  * system to issue it).
  *
- * The helpers here are pure so they can be unit-tested without a network.
+ * Field names and codes below are taken from the YPay API document v2.1
+ * (22-09-2026, https://ypay.co.il/assets/files/api/ypay_api_documentation.pdf):
  *
- * ┌────────────────────────────────────────────────────────────────────────┐
- * │ UNVERIFIED MAPPING — read before the first live offline receipt.      │
- * │                                                                        │
- * │ The YPay PDF (ypay.co.il/assets/files/api/ypay_api_documentation.pdf) │
- * │ documents /document as taking an array of "Method" objects (defined   │
- * │ in its "Common Objects" section) that say how the money was received. │
- * │ The field NAMES inside that object could not be read from the build    │
- * │ sandbox (host blocked), so `METHOD_FIELD` and `YPAY_METHOD_TYPE` below  │
- * │ follow the documented structure but are a best effort. YPay answers    │
- * │ responseCode 3013 ("Payment methods missing") when it rejects them;   │
- * │ that lands as a dead document_queue row + admin alert, never as a     │
- * │ wrong document. Fix the constants, redeploy, requeue.                 │
- * └────────────────────────────────────────────────────────────────────────┘
+ *   POST /document  { docType, mail, discount, discountType, rounding, signDoc,
+ *                     details, lang, currency, currencyRate, contact, items, methods }
+ *   Method          { type (M), total (M), date "Y-m-d" (O, default today),
+ *                     bankId / bankBranch / bankAccount / transactionId (cheque),
+ *                     cardType, payments (credit card), app_type (payment app) }
+ *   Payment Methods 1 מזומן (cash) · 2 העברה בנקאית (bank transfer) · 3 שיק (cheque)
+ *                   4 אשראי (credit card) · 5 PayPal · 6 payment app
+ *   Document Types  108 קבלה (receipt) · 109 חשבונית מס קבלה (invoice-receipt);
+ *                   0 is rejected by the Document Generator
+ *   Response        { url, serial_number, responseCode }
+ *   Items           "attached to the document, except for document type = 108";
+ *                   3022 fires when items total ≠ methods total, so both carry the
+ *                   same gross amount.
+ *
+ * The helpers here are pure so they can be unit-tested without a network.
  */
 import { YPAY_ERROR } from "./errors.ts";
 
@@ -49,22 +52,18 @@ export function isOfflinePaymentMethod(value: string | null | undefined): value 
   return value === "cash" || value === "bank_transfer";
 }
 
-/** Request field that carries the payment-method array. See UNVERIFIED MAPPING above. */
+/** Request field that carries the payment-method array (v2.1 "methods: Method[]", mandatory). */
 export const METHOD_FIELD = "methods";
 
-/**
- * YPay "Method.type" codes. See UNVERIFIED MAPPING above — these are the
- * conventional Israeli ordering (cash, cheque, card, bank transfer) and must be
- * confirmed against the PDF's "Common Objects → Method" table.
- */
+/** YPay "Payment Methods" table (v2.1 p.20): 1 cash, 2 bank transfer, 3 cheque, 4 credit card, 5 PayPal, 6 app. */
 export const YPAY_METHOD_TYPE: Record<OfflinePaymentMethod, number> = {
   cash: 1,
-  bank_transfer: 4,
+  bank_transfer: 2,
 };
 
 export interface YpayDocumentPayloadInput {
   docType: YpayDocType;
-  /** payments.id — echoed as the document's external reference for reconciliation. */
+  /** payments.id — written into `details` so the document can be traced back. */
   paymentId: string;
   paymentMethod: OfflinePaymentMethod;
   totalAmountMinor: number;
@@ -96,50 +95,46 @@ export function ypayDocumentDate(iso: string | null | undefined): string {
   }).format(safe);
 }
 
-/** Builds the POST /document body. Pure; see UNVERIFIED MAPPING for the Method object. */
+/** Builds the POST /document body (v2.1 "Document Generator"). Pure. */
 export function buildYpayDocumentPayload(input: YpayDocumentPayloadInput): Record<string, unknown> {
   const total = ypayMajorAmount(input.totalAmountMinor);
   const date = ypayDocumentDate(input.paidAt);
-  const method = {
-    type: YPAY_METHOD_TYPE[input.paymentMethod],
-    sum: total,
-    date,
-    // Free-text reference so the accountant can match the bank line / cash entry.
-    reference: `${input.paymentMethod === "cash" ? "cash" : "bank transfer"} ${input.paymentId}`,
-  };
 
-  const body: Record<string, unknown> = {
+  const details = [input.lineDescription?.trim(), `#${input.paymentId}`].filter(Boolean).join(" · ");
+
+  return {
     docType: input.docType,
+    mail: input.mail ?? false,
+    // The document must say exactly what was received; never let YPay round it.
+    rounding: false,
+    signDoc: true,
+    details,
     lang: input.language,
     currency: input.currency.toUpperCase(),
-    mail: input.mail ?? false,
-    signDoc: true,
-    closeDoc: true,
-    chargeIdentifier: input.paymentId,
     contact: {
       email: input.contact.email,
       name: input.contact.name,
       ...(input.contact.mobile ? { mobile: input.contact.mobile } : {}),
       ...(input.contact.businessId ? { businessID: input.contact.businessId } : {}),
     },
+    // Same gross amount as the method, or YPay answers 3022.
     items: [
       {
         price: total,
         quantity: 1,
         vatIncluded: true,
         name: input.lineName,
-        description: input.lineDescription ?? input.lineName,
+        description: input.lineDescription?.trim() || input.lineName,
       },
     ],
-    [METHOD_FIELD]: [method],
+    [METHOD_FIELD]: [
+      {
+        type: YPAY_METHOD_TYPE[input.paymentMethod],
+        total,
+        date,
+      },
+    ],
   };
-
-  // The PDF marks the free-text description as "not for docType 108".
-  if (input.docType === YPAY_DOC_TYPE_INVOICE_RECEIPT && input.lineDescription) {
-    body.description = input.lineDescription;
-  }
-
-  return body;
 }
 
 export interface YpayDocumentResponse {
@@ -159,23 +154,15 @@ function firstString(json: Record<string, unknown>, keys: string[]): string | nu
 }
 
 /**
- * Reads the document id / number / url out of a successful /document response.
- * YPay's callback uses `document_id`, `document_type`, `url`; the same tolerant
- * lookup covers the camel-case variants the PDF shows for direct responses.
+ * Reads the document out of a successful /document response.
+ * v2.1 documents `{ url, serial_number, responseCode }`; the payment callback
+ * uses `document_id` / `url`, so those spellings are accepted too.
  */
 export function parseYpayDocumentResponse(json: Record<string, unknown>): YpayDocumentResponse | null {
-  // Some responses nest the document under `document`.
-  const nested = json.document && typeof json.document === "object"
-    ? (json.document as Record<string, unknown>)
-    : null;
-  const source = nested ?? json;
-
-  const id = firstString(source, ["document_id", "documentId", "docId", "id"]);
-  if (!id) return null;
-  const number = firstString(source, ["document_number", "documentNumber", "docNumber", "number", "serial"]) ?? id;
-  const url = firstString(source, ["url", "document_url", "documentUrl", "pdfUrl", "link"]) ?? "";
-
-  return { externalDocumentId: id, externalDocumentNumber: number, documentUrl: url };
+  const number = firstString(json, ["serial_number", "serialNumber", "document_id", "documentId"]);
+  if (!number) return null;
+  const url = firstString(json, ["url", "document_url", "documentUrl"]) ?? "";
+  return { externalDocumentId: number, externalDocumentNumber: number, documentUrl: url };
 }
 
 /** YPay response codes that mean the cached token is unusable — clear it and retry. */
@@ -190,11 +177,20 @@ export function isYpayTokenError(code: number | undefined): boolean {
   return code !== undefined && TOKEN_ERROR_CODES.has(code);
 }
 
+/** Transient accessToken outcomes: a token is already active (reuse it) or YPay's token service hiccuped. */
+const TRANSIENT_CODES: ReadonlySet<number> = new Set([
+  YPAY_ERROR.TOKEN_ALREADY_ACTIVE,
+  YPAY_ERROR.TOKEN_ALREADY_ACTIVE_LEGACY,
+  YPAY_ERROR.ACCESS_TOKEN_GENERAL_ERROR,
+  YPAY_ERROR.DOCUMENT_GENERAL_ERROR,
+]);
+
 /**
  * Whether a failed /document call should be retried by the document queue.
  * Token problems and server/network failures are transient; a rejected payload
- * (bad docType, missing contact/items/methods, unknown currency) will fail the
- * same way every time and must surface to an admin instead.
+ * (bad docType, missing contact/items/methods, totals mismatch, unknown currency,
+ * bad credentials, Tax Authority rejection) fails the same way every time and
+ * must surface to an admin instead.
  */
 export function isRetryableYpayDocumentError(params: { code?: number; httpStatus?: number }): boolean {
   if (isYpayTokenError(params.code)) return true;
@@ -202,5 +198,5 @@ export function isRetryableYpayDocumentError(params: { code?: number; httpStatus
     // No responseCode: network failure, timeout, non-JSON body or HTTP error.
     return params.httpStatus === undefined || params.httpStatus >= 500;
   }
-  return params.code === YPAY_ERROR.TOKEN_ALREADY_ACTIVE;
+  return TRANSIENT_CODES.has(params.code);
 }

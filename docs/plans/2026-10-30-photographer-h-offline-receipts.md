@@ -70,26 +70,42 @@ with no network. The browser demo (`apps/web/src/demo`) already settles manual
 payments with a demo document; it now also drops the client receipt email in
 the demo outbox.
 
-## ⚠ Unverified field mapping — read before the first live offline receipt
+## Field mapping — confirmed against the YPay API document v2.1
 
-The build sandbox could not open the YPay PDF (host blocked), so the
-payment-method object inside the `/document` request follows the documented
-structure ("array of Method objects", error 3013 when missing) but its exact
-field names are a best effort. They live in one place:
-`supabase/functions/_shared/payments/ypay/document.ts` → `METHOD_FIELD`,
-`YPAY_METHOD_TYPE`, `buildYpayDocumentPayload`.
+Source: `https://ypay.co.il/assets/files/api/ypay_api_documentation.pdf`
+(v2.1, 22-09-2026; the sandbox network allow-list was opened for it after the
+first draft). What the adapter sends, quoted from the document:
 
-If YPay rejects the first live call the queue row goes **dead** (never a wrong
-document) and admins are alerted. Then: open the PDF's "Common Objects → Method"
-table, fix the constants, redeploy `issue-document`, and requeue the payment
-(`POST issue-document {"payment_id": …, "document_kind": "sale"}` or re-run the
-batch after setting the row back to `pending`).
+- Endpoint: `POST https://<YPAY_base_api_URI>/document`, header
+  `Authorization: Bearer access_token` — the same token as `/payment`.
+- Request (p.6): `docType` (M), `mail` (O, "ships the document to the contact
+  email"), `rounding` (O, "Whether to round the total amount. Default value is
+  true" — we send `false`), `signDoc`, `details` ("Document description"),
+  `lang` (he/en), `currency`, `contact` (M), `items` (M, `Item[]`), `methods`
+  (M, "Array of 'Method' object").
+- Method (p.18): `type` (M, "Reference 'Payment Methods'"), `total` (M, "Total
+  payment amount"), `date` (O, "Date format is Y-m-d. Default is current date");
+  cheque-only `bankId` / `bankBranch` / `bankAccount` / `transactionId`;
+  card-only `cardType` / `payments`; app-only `app_type`.
+- Payment Methods (p.20): **1 מזומן (cash) · 2 העברה בנקאית (bank transfer)** ·
+  3 שיק · 4 אשראי · 5 פייפאל · 6 אפליקציית תשלום.
+- Document Types (p.19): **108 קבלה · 109 חשבונית מס קבלה**; "docType = 0 (NONE)
+  is not a valid value for Document Generator API".
+- Item (p.17): "Item details attached to the document, except for document type
+  =108"; `vatIncluded` "True – vat is included in the item price. Default value is
+  true". Error 3022 = "Total items price not equal to total payment methods
+  amount", so the single item and the method carry the same gross amount.
+- Contact (p.16): `email` (M), `name` (M, max 255), `businessID` (O), `mobile` (O).
+- Response (p.7): `{ "url": "https://ypay.co.il/fsrv/business/…/official/12ca76.pdf",
+  "serial_number": "900061", "responseCode": 1 }` → stored as
+  `external_document_id` = `external_document_number` = `serial_number`,
+  `invoice_url` = `url`.
 
-Confirmed from the public documentation: endpoint path `/document`, same bearer
-token as `/payment`, docType 108 = receipt / 109 = invoice-receipt (0 rejected),
-`contact` (email + name mandatory), `items`, `lang`, `currency`, `mail`,
-`signDoc`, `closeDoc`, free-text `description` not allowed on 108, and the
-error codes above (already in `ypay/errors.ts`).
+The v2.1 error table also corrected the v1.9 transcription in
+`ypay/errors.ts`: bad credentials is **2001** (was 2003), "already an active
+token" is **2002** (was 3001; the client accepts both), 3001 is now "document
+type invalid", 3011/3012/3013 are payment-method errors, 3021/3022 item errors,
+5001–5006 contact errors, 7001–7003 method errors.
 
 ## Dance tenants
 
@@ -102,8 +118,9 @@ adapters did not change.
 ## Tests
 
 - `pnpm -C apps/web test ypay-offline-receipt` — docType rule, live `/document`
-  payload + bearer token, 3013 → dead, 503 → retry, 1004 → cache expired +
+  payload + bearer token, 3011/3022 → dead, 503 → retry, 1004 → cache expired +
   retry, card/refund/no-email refusals, mock mode, queue idempotency (replayed
-  row, pre-existing document), client email once, email wording he/en.
+  row, pre-existing document), client email once, email wording he/en, and the
+  card path's docType by VAT status.
 - `deno test supabase/functions/_shared/payments/ypay/__tests__/document.test.ts`
   — pure payload / parser / retry-policy helpers.

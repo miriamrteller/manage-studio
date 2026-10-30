@@ -164,7 +164,7 @@ async function tokenOrThrow(
     return await getYpayAccessToken(service, tenantId, credentials);
   } catch (error) {
     if (error instanceof YpayApiError) {
-      // Bad client id/secret is permanent; anything else (3001 token race, 5xx, network) is transient.
+      // Bad client id/secret is permanent; anything else (2002 token race, 5xx, network) is transient.
       const retryable = isRetryableYpayDocumentError({ code: error.code, httpStatus: error.httpStatus });
       throw new InvoicingProviderError(error.message, { retryable });
     }
