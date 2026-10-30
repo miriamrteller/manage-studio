@@ -154,6 +154,7 @@ export function invoiceForPayment(ctx: DemoContext, paymentId: string) {
     description: String(p.description ?? ''),
     amountMinor: Number(p.total_amount_minor),
     paidAt: String(p.paid_at ?? p.created_at),
+    method: String(p.payment_method ?? 'card'),
   };
 }
 
