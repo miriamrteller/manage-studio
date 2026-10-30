@@ -17,6 +17,7 @@ run-enrolment-payment-dunning
 run-monthly-billing
 send-admin-enrolment-link
 send-admin-waiver-link
+send-job-contract-link
 send-notification
 send-otp-email
 send-otp-sms
