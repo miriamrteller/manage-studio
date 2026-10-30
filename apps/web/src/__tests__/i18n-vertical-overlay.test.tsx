@@ -35,6 +35,9 @@ function flatten(obj: Json, prefix = '', out: Record<string, string> = {}): Reco
 const base = { en: flatten(enBase as Json), he: flatten(heBase as Json) };
 const overlay = { en: flatten(enOverlay as Json), he: flatten(heOverlay as Json) };
 
+/** Visible wording only: interpolation variable names ({{classes}}) are code, not copy. */
+const wording = (s: string) => s.replace(/\{\{[^}]*\}\}/g, '');
+
 const placeholders = (s: string) => new Set([...s.matchAll(/\{\{\s*([\w.]+)\s*\}\}/g)].map((m) => m[1]));
 
 describe('photographer overlay files', () => {
@@ -59,12 +62,12 @@ describe('photographer overlay files', () => {
   });
 
   it('English overlay never mentions class / waiver / enrol / student', () => {
-    const offenders = Object.entries(overlay.en).filter(([, v]) => /class|waiver|enrol|student/i.test(v));
+    const offenders = Object.entries(overlay.en).filter(([, v]) => /class|waiver|enrol|student/i.test(wording(v)));
     expect(offenders).toEqual([]);
   });
 
   it('Hebrew overlay never mentions שיעור / ויתור / הרשמה / תלמיד', () => {
-    const offenders = Object.entries(overlay.he).filter(([, v]) => /שיעור|ויתור|הרשמה|תלמיד/.test(v));
+    const offenders = Object.entries(overlay.he).filter(([, v]) => /שיעור|ויתור|הרשמה|תלמיד/.test(wording(v)));
     expect(offenders).toEqual([]);
   });
 
@@ -142,6 +145,15 @@ describe('runtime resolution through LabelsProvider', () => {
       unmount();
     }
     expect(overlay.he['pages.enrol_complete.signed_heading']).toBe('החוזה נחתם — תודה!');
+  });
+
+  it('client search subtitle uses client wording for photographers only', async () => {
+    const tPhoto = i18n.getFixedT('en', PHOTOGRAPHER_NAMESPACE);
+    const tBase = i18n.getFixedT('en', BASE_NAMESPACE);
+    expect(tPhoto('person_search.guardian', { name: 'Pat' })).toBe('Main contact: Pat');
+    expect(tPhoto('person_search.enrolled_in', { classes: 'Wedding Gold' })).toBe('Packages: Wedding Gold');
+    expect(tBase('person_search.guardian', { name: 'Pat' })).toBe('Parent: Pat');
+    expect(tBase('person_search.enrolled_in', { classes: 'Ballet 1' })).toBe('Enrolled: Ballet 1');
   });
 
   it('a Hebrew photographer never gets English overlay text', async () => {
