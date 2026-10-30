@@ -8,6 +8,7 @@ import {
 } from "../ypay/pending-charge.ts";
 import { parseYpayCallback, peekYpayChargeIdentifier } from "../ypay/callback.ts";
 import { verifyYpayTransaction } from "../ypay/verify-callback.ts";
+import { ypayDocTypeForVatType } from "../ypay/document.ts";
 import type { ChargeParams, ChargeResult, PaymentEvent, PaymentProvider } from "../types.ts";
 
 /**
@@ -15,15 +16,15 @@ import type { ChargeParams, ChargeResult, PaymentEvent, PaymentProvider } from "
  *
  * Hosted flow: POST /payment returns a UPAY-backed redirect URL; the outcome arrives
  * asynchronously on notifyUrl. A pending payment row is inserted before the redirect
- * (D5). The tax document is issued by YPay bundled with the charge (docType 109).
+ * (D5). The tax document is issued by YPay bundled with the charge: docType 109
+ * (invoice-receipt) for VAT-registered tenants, 108 (receipt) when tenants.vat_type
+ * marks the dealer VAT-exempt — see ypay/document.ts. Offline cash / bank money is
+ * documented standalone by invoicing/providers/ypay.ts.
  *
  * NOT SUPPORTED by the YPay API: saved-card tokenization and refunds. chargeWithToken
  * and refundCharge therefore throw. This means a YPay tenant cannot run unattended
  * monthly token renewals — YPay covers one-time and installment payments only.
  */
-
-/** docType 109 = invoice-receipt (חשבונית מס קבלה). */
-const DOC_TYPE_INVOICE_RECEIPT = 109;
 
 function resolveNotifyUrl(): string {
   const env = (globalThis as { Deno?: { env: { get(k: string): string | undefined } } }).Deno?.env;
@@ -44,6 +45,12 @@ function resolveAppUrl(path: string): string {
   return `${appUrl.replace(/\/+$/, "")}${path}`;
 }
 
+/** tenants.vat_type (1 included, 2 before VAT, 3 exempt); null when unreadable → invoice-receipt. */
+async function loadTenantVatType(service: SupabaseClient, tenantId: string): Promise<number | null> {
+  const { data } = await service.from("tenants").select("vat_type").eq("id", tenantId).maybeSingle();
+  return data?.vat_type == null ? null : Number(data.vat_type);
+}
+
 export class YpayPaymentProvider implements PaymentProvider {
   readonly slug = "ypay";
 
@@ -60,6 +67,7 @@ export class YpayPaymentProvider implements PaymentProvider {
     const credentials = await getYpayCredentials(this.service, metadata.tenant_id);
     const token = await getYpayAccessToken(this.service, metadata.tenant_id, credentials);
     const customer = await resolveYpayCustomer(this.service, metadata.billing_account_id);
+    const docType = ypayDocTypeForVatType(await loadTenantVatType(this.service, metadata.tenant_id));
 
     // chargeIdentifier must be unique per charge (YPay error 4001 otherwise).
     const chargeIdentifier = crypto.randomUUID();
@@ -75,7 +83,7 @@ export class YpayPaymentProvider implements PaymentProvider {
     const payload = await ypayPost("payment", token, {
       chargeIdentifier,
       payments: params.installments && params.installments > 1 ? params.installments : 1,
-      docType: DOC_TYPE_INVOICE_RECEIPT,
+      docType,
       mail: true,
       signDoc: true,
       lang: "he",

@@ -1,5 +1,9 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
 import { persistPaymentDocumentFields } from "../payments/bundled-document.ts";
+import {
+  paymentNeedsClientDocumentEmail,
+  sendPaymentDocumentClientEmail,
+} from "../payments/send-payment-document-client-email.ts";
 import { buildCanonicalDocumentInput } from "./build-canonical-input.ts";
 import {
   backoffScheduledFor,
@@ -53,17 +57,9 @@ export async function processQueueRow(
   }
 
   try {
-    const input = await buildCanonicalDocumentInput(service, {
-      paymentId: row.payment_id,
-      documentKind: row.document_kind,
-    });
-    const provider = await getInvoicingProviderForTenant(service, row.tenant_id);
-    await provider.authenticate(service, row.tenant_id);
-    const result = await provider.issueDocument(service, input);
-
     const { data: paymentRow, error: paymentLookupError } = await service
       .from("payments")
-      .select("id, provider_payment_ref, external_document_id")
+      .select("id, provider_payment_ref, external_document_id, provider, payment_method")
       .eq("id", row.payment_id)
       .maybeSingle();
 
@@ -77,6 +73,26 @@ export async function processQueueRow(
         retryable: false,
       });
     }
+
+    // Idempotency guard BEFORE calling the provider: a sale document already on the
+    // payment (bundled callback landed first, or a replayed/duplicate queue row) must
+    // never be issued twice — the provider would number a second legal document.
+    if (row.document_kind === "sale" && paymentRow.external_document_id) {
+      await service
+        .from("document_queue")
+        .update({ status: "succeeded", succeeded_at: now, last_error: null })
+        .eq("id", row.id);
+      await deliverClientDocumentEmail(service, row.tenant_id, row.payment_id, paymentRow);
+      return "succeeded";
+    }
+
+    const input = await buildCanonicalDocumentInput(service, {
+      paymentId: row.payment_id,
+      documentKind: row.document_kind,
+    });
+    const provider = await getInvoicingProviderForTenant(service, row.tenant_id);
+    await provider.authenticate(service, row.tenant_id);
+    const result = await provider.issueDocument(service, input);
 
     // Shared persist + audit trail (same as Grow / iCount / Invoice4U bundled path).
     await persistPaymentDocumentFields(service, {
@@ -94,6 +110,10 @@ export async function processQueueRow(
       .from("document_queue")
       .update({ status: "succeeded", succeeded_at: now, last_error: null })
       .eq("id", row.id);
+
+    if (row.document_kind === "sale") {
+      await deliverClientDocumentEmail(service, row.tenant_id, row.payment_id, paymentRow);
+    }
 
     return "succeeded";
   } catch (err) {
@@ -135,5 +155,31 @@ export async function processQueueRow(
     }
 
     return isDead ? "dead" : "retry";
+  }
+}
+
+/**
+ * Offline money (cash / bank transfer) is documented standalone, so the app emails
+ * the client; card providers send their own. Best-effort: failures are audited and
+ * check-missing-documents retries until `payment_document_client_email_sent`.
+ */
+async function deliverClientDocumentEmail(
+  service: SupabaseClient,
+  tenantId: string,
+  paymentId: string,
+  payment: { provider?: string | null; payment_method?: string | null },
+): Promise<void> {
+  if (
+    !paymentNeedsClientDocumentEmail({
+      provider: payment.provider ?? null,
+      payment_method: payment.payment_method ?? null,
+    })
+  ) {
+    return;
+  }
+  try {
+    await sendPaymentDocumentClientEmail(service, { tenantId, paymentId });
+  } catch (err) {
+    console.error("[issue-document] client document email failed:", err);
   }
 }

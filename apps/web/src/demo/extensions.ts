@@ -630,6 +630,17 @@ export const extraFunctions: Record<string, FunctionHandler> = {
     const req = rows(ctx, 'job_payment_requests').find((r) => r.id === body.request_id);
     if (!req) throw new DemoRpcError('Payment request not found');
     const paymentId = settleRequest(ctx, req, String(body.method ?? 'cash'), 'manual');
+    // Live: YPay /document issues the receipt and the app emails it to the client.
+    const inv = invoiceForPayment(ctx, paymentId);
+    const c = clientOf(ctx, req.engagement_id as string);
+    if (inv) {
+      sendToOutbox({
+        to: c.email,
+        subject: `Receipt ${inv.number} from Lumen & Light Photography`,
+        body: `Hi ${c.name}, we received your payment of ${formatIls(inv.amountMinor)} for ${req.label}. Thank you!`,
+        link: { label: 'Open the receipt', href: `${DEMO_INVOICE_HOST}/${paymentId}` },
+      });
+    }
     return { paymentId };
   },
 

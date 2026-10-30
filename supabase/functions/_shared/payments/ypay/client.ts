@@ -5,8 +5,8 @@
  *
  *  - **Bearer auth with a cached token.** POST /accessToken (client_id +
  *    client_secret) returns a token valid for one hour. Crucially, YPay rejects a
- *    second token request while one is still active (error 3001), so the token MUST
- *    be cached and reused — see getYpayAccessToken.
+ *    second token request while one is still active (error 2002; 3001 in the older
+ *    v1.9 table), so the token MUST be cached and reused — see getYpayAccessToken.
  *  - **Success is `responseCode: 1`.** Every response carries a numeric responseCode;
  *    anything other than 1 is a failure, surfaced with the mapped error message.
  *
@@ -14,7 +14,7 @@
  * the same host with sandbox client_id/secret.
  */
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
-import { ypayErrorMessage } from "./errors.ts";
+import { YPAY_ERROR, ypayErrorMessage } from "./errors.ts";
 
 const DEFAULT_BASE = "https://ypay.co.il/api/v1";
 const DEFAULT_TIMEOUT_MS = 20_000;
@@ -102,7 +102,7 @@ function assertYpayOk(path: string, status: number, json: YpayResponse, text: st
 /**
  * Returns a valid bearer token for the tenant, minting and caching one only when
  * the cache is empty or expired. Reuse is mandatory: re-requesting while a token is
- * still active fails with YPay error 3001.
+ * still active fails with YPay error 2002 (3001 in the older v1.9 table).
  */
 export async function getYpayAccessToken(
   service: SupabaseClient,
@@ -176,9 +176,11 @@ export async function ypayVerifyAccessToken(credentials: YpayCredentials): Promi
     { client_id: credentials.clientId, client_secret: credentials.clientSecret },
     {},
   );
-  // Error 3001 ("already an active token") means the credentials are valid — a token
-  // exists for them — so it counts as a successful auth check.
-  if (Number(json.responseCode) === 3001) return;
+  // "There is already an active token for this user" (2002 in API v2.1; 3001 in the
+  // older v1.9 table) means the credentials are valid — a token exists for them — so
+  // it counts as a successful auth check.
+  const code = Number(json.responseCode);
+  if (code === YPAY_ERROR.TOKEN_ALREADY_ACTIVE || code === YPAY_ERROR.TOKEN_ALREADY_ACTIVE_LEGACY) return;
   if (status < 200 || status >= 300 || typeof json.access_token !== "string") {
     const code = Number(json.responseCode);
     throw new YpayApiError(

@@ -28,6 +28,10 @@ export function JobPaymentRequestRow({
   const payUrl = JobPaymentService.payUrlFor(request.public_token);
   const collectable = request.status === 'pending' || request.status === 'sent';
   const amount = formatMinor(request.amount_minor, request.currency, language);
+  // Cash / bank money gets a receipt (קבלה) issued standalone; card charges carry the provider's invoice.
+  const offline = request.payment?.payment_method === 'cash' || request.payment?.payment_method === 'bank_transfer';
+  const documentKey = offline ? 'pages.jobs.payments.receipt' : 'pages.jobs.payments.invoice';
+  const documentPendingKey = offline ? 'pages.jobs.payments.receiptPending' : 'pages.jobs.payments.invoicePending';
   const waMessage = t('pages.jobs.payments.whatsappMessage', { studio: studioName, label: request.label, amount, url: payUrl });
 
   const copy = async () => {
@@ -83,10 +87,10 @@ export function JobPaymentRequestRow({
           <>
             {request.payment?.invoice_url ? (
               <a className="text-sm underline text-primary" href={request.payment.invoice_url} target="_blank" rel="noreferrer">
-                {t('pages.jobs.payments.invoice', { number: request.payment.external_document_number ?? '' })}
+                {t(documentKey, { number: request.payment.external_document_number ?? '' })}
               </a>
             ) : (
-              <span className="text-sm text-muted-foreground">{t('pages.jobs.payments.invoicePending')}</span>
+              <span className="text-sm text-muted-foreground">{t(documentPendingKey)}</span>
             )}
             <Button size="sm" variant="ghost" disabled={busy} onClick={onRefund}>
               {t('pages.jobs.payments.recordRefund')}
@@ -95,7 +99,7 @@ export function JobPaymentRequestRow({
         )}
         {request.status === 'refunded_manual' && request.payment?.invoice_url && (
           <a className="text-sm underline text-primary" href={request.payment.invoice_url} target="_blank" rel="noreferrer">
-            {t('pages.jobs.payments.invoice', { number: request.payment.external_document_number ?? '' })}
+            {t(documentKey, { number: request.payment.external_document_number ?? '' })}
           </a>
         )}
       </div>

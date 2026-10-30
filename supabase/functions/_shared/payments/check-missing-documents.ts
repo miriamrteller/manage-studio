@@ -7,6 +7,11 @@ import {
   PAYMENT_DOCUMENT_ADMIN_EMAIL_SENT,
   sendPaymentDocumentAdminEmail,
 } from "./send-payment-document-admin-email.ts";
+import {
+  PAYMENT_DOCUMENT_CLIENT_EMAIL_SENT,
+  paymentNeedsClientDocumentEmail,
+  sendPaymentDocumentClientEmail,
+} from "./send-payment-document-client-email.ts";
 
 /** Succeeded payments without a tax doc after this grace period are alerted. */
 export const MISSING_DOCUMENT_GRACE_MINUTES = 30;
@@ -177,11 +182,14 @@ export type CheckMissingDocumentsResult = {
   missingSkipped: number;
   adminEmailRetried: number;
   adminEmailSent: number;
+  clientEmailRetried: number;
+  clientEmailSent: number;
 };
 
 /**
  * 1) Alert admins for succeeded payments missing tax docs past the grace window.
  * 2) Retry admin invoice emails when a document exists but `_sent` audit is missing.
+ * 3) Same for the client receipt email on offline (cash / bank) payments.
  */
 export async function runCheckMissingDocuments(
   service: SupabaseClient,
@@ -197,6 +205,8 @@ export async function runCheckMissingDocuments(
     missingSkipped: 0,
     adminEmailRetried: 0,
     adminEmailSent: 0,
+    clientEmailRetried: 0,
+    clientEmailSent: 0,
   };
 
   const { data: missingRows, error: missingError } = await service
@@ -233,7 +243,7 @@ export async function runCheckMissingDocuments(
   // Retry admin invoice emails for recorded docs that never got `_sent`.
   const { data: documented, error: documentedError } = await service
     .from("payments")
-    .select("id, tenant_id")
+    .select("id, tenant_id, provider, payment_method")
     .eq("status", "succeeded")
     .not("external_document_id", "is", null)
     .order("invoice_issued_at", { ascending: true })
@@ -244,15 +254,28 @@ export async function runCheckMissingDocuments(
   for (const row of documented ?? []) {
     const paymentId = row.id as string;
     const tenantId = row.tenant_id as string;
-    if (await auditExists(service, tenantId, PAYMENT_DOCUMENT_ADMIN_EMAIL_SENT, paymentId)) {
-      continue;
+    if (!(await auditExists(service, tenantId, PAYMENT_DOCUMENT_ADMIN_EMAIL_SENT, paymentId))) {
+      result.adminEmailRetried += 1;
+      const sendResult = await sendPaymentDocumentAdminEmail(service, {
+        tenantId,
+        paymentId,
+      });
+      if (sendResult.sent) result.adminEmailSent += 1;
     }
-    result.adminEmailRetried += 1;
-    const sendResult = await sendPaymentDocumentAdminEmail(service, {
-      tenantId,
-      paymentId,
+
+    // Offline receipts: the app is the only one that tells the client.
+    const needsClientEmail = paymentNeedsClientDocumentEmail({
+      provider: (row.provider as string | null) ?? null,
+      payment_method: (row.payment_method as string | null) ?? null,
     });
-    if (sendResult.sent) result.adminEmailSent += 1;
+    if (
+      needsClientEmail &&
+      !(await auditExists(service, tenantId, PAYMENT_DOCUMENT_CLIENT_EMAIL_SENT, paymentId))
+    ) {
+      result.clientEmailRetried += 1;
+      const clientResult = await sendPaymentDocumentClientEmail(service, { tenantId, paymentId });
+      if (clientResult.sent) result.clientEmailSent += 1;
+    }
   }
 
   return result;

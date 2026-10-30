@@ -110,6 +110,15 @@ points:
 8. `pnpm verify:prod`, `pnpm verify:rls` and `pnpm verify:env` must all pass.
 9. Stop here. The photographer's YPay keys and the ₪1 live test happen with
    her at the meeting.
+10. **At the meeting, after the ₪1 card test: one offline receipt.** Mark a
+    small payment request paid as "bank transfer" in the job's payments panel
+    and check in the YPay dashboard that a קבלה / חשבונית מס קבלה (by the
+    tenant's `vat_type`) was issued with payment method העברה בנקאית and the
+    right amount, that the "Receipt N" link in the panel opens it, and that
+    the client email arrived. The request body follows the YPay API document
+    v2.1 (`supabase/functions/_shared/payments/ypay/document.ts`); if YPay
+    answers a 3xxx error the `document_queue` row goes dead and admins are
+    alerted — nothing wrong is issued. Fix, redeploy `issue-document`, requeue.
 
 ## Report
 

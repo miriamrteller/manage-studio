@@ -276,6 +276,7 @@
       "payment_refunded": "Refunded",
       "payment_paid_on": "Paid {{date}}",
       "payment_receipt": "Receipt",
+      "payment_receipt_pending": "Receipt on its way",
       "gallery_heading": "Gallery",
       "gallery_not_ready": "Your gallery will appear here once it's delivered.",
       "details_heading": "My details",
@@ -1184,6 +1185,8 @@
         "reopen": "Reopen",
         "invoice": "Invoice {{number}}",
         "invoicePending": "Invoice pending",
+        "receipt": "Receipt {{number}}",
+        "receiptPending": "Receipt pending",
         "recordRefund": "Record refund",
         "status": {
           "pending": "Not sent",

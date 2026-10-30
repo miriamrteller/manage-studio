@@ -276,6 +276,7 @@
       "payment_refunded": "הוחזר",
       "payment_paid_on": "שולם ב-{{date}}",
       "payment_receipt": "קבלה",
+      "payment_receipt_pending": "הקבלה בדרך",
       "gallery_heading": "גלריה",
       "gallery_not_ready": "הגלריה תופיע כאן ברגע שתימסר.",
       "details_heading": "הפרטים שלי",
@@ -1183,6 +1184,8 @@
         "reopen": "פתיחה מחדש",
         "invoice": "חשבונית {{number}}",
         "invoicePending": "החשבונית בהפקה",
+        "receipt": "קבלה {{number}}",
+        "receiptPending": "הקבלה בהפקה",
         "recordRefund": "רישום החזר",
         "status": {
           "pending": "טרם נשלח",

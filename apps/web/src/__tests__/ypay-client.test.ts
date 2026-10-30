@@ -141,14 +141,20 @@ describe('ypay client — credential check', () => {
     await expect(ypayVerifyAccessToken(creds)).resolves.toBeUndefined();
   });
 
-  // 3001 = "already an active token": the credentials are valid, a token just exists.
-  it('treats error 3001 as a valid credential', async () => {
+  // 2002 (v2.1; 3001 in the older v1.9 table) = "already an active token": the
+  // credentials are valid, a token just exists.
+  it('treats error 2002 as a valid credential', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => jsonResponse({ responseCode: 2002 })));
+    await expect(ypayVerifyAccessToken({ clientId: 'id', clientSecret: 'secret' })).resolves.toBeUndefined();
+  });
+
+  it('treats legacy error 3001 as a valid credential', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => jsonResponse({ responseCode: 3001 })));
     await expect(ypayVerifyAccessToken(creds)).resolves.toBeUndefined();
   });
 
-  it('fails on bad credentials (2003)', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => jsonResponse({ responseCode: 2003 })));
+  it('fails on bad credentials (2001)', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => jsonResponse({ responseCode: 2001 })));
     await expect(ypayVerifyAccessToken(creds)).rejects.toThrow(/client id or client secret/i);
   });
 });
