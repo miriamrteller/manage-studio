@@ -3,11 +3,12 @@ import { useTranslation } from 'react-i18next';
 import queryClient from '@/lib/query-client';
 import { currentView, demoClient, signInAs, type DemoView } from './demoClient';
 import { getOutbox, subscribeOutbox, type OutboxMessage } from './outbox';
-import { DEMO_GALLERY_HOST, DEMO_INVOICE_HOST } from './seed';
+import { DEMO_CONTRACT_HOST, DEMO_GALLERY_HOST, DEMO_INVOICE_HOST } from './seed';
+import { closeContract, getContract, showContract, subscribeContract } from './contractView';
 import { invoiceForPayment } from './extensions';
 import { demoGallery } from './images/manifest';
 import { getInvoice, subscribeInvoice, closeInvoice, showInvoice, type DemoInvoice } from './invoice';
-import { formatIls } from './functions';
+import { formatIls, signedContractView } from './functions';
 import './demo.css';
 
 const COPY = {
@@ -23,6 +24,8 @@ const COPY = {
     galleryTitle: 'Gallery preview',
     invoiceTitle: 'Receipt / tax invoice',
     invoiceNote: 'Sample document. In the live app the payment provider issues this.',
+    contractSigned: 'Signed by',
+    contractNote: 'In the live app this opens the signed PDF, which is also emailed to the client and the studio.',
     paid: 'Paid',
   },
   he: {
@@ -37,6 +40,8 @@ const COPY = {
     galleryTitle: 'תצוגת גלריה',
     invoiceTitle: 'קבלה / חשבונית מס',
     invoiceNote: 'מסמך לדוגמה. במערכת האמיתית ספק התשלומים מפיק אותו.',
+    contractSigned: 'נחתם על ידי',
+    contractNote: 'במערכת האמיתית נפתח כאן קובץ ה-PDF החתום, שנשלח גם ללקוח וגם לסטודיו.',
     paid: 'שולם',
   },
 } as const;
@@ -71,6 +76,7 @@ export function DemoBar() {
   const view = useView();
   const outbox = useOutbox();
   const invoice = useInvoice();
+  const contract = useSyncExternalStore(subscribeContract, getContract);
   const [outboxOpen, setOutboxOpen] = useState(false);
   const [seen, setSeen] = useState(0);
   const [galleryOpen, setGalleryOpen] = useState(false);
@@ -82,6 +88,7 @@ export function DemoBar() {
       setGalleryOpen(false);
       setOutboxOpen(false);
       closeInvoice();
+      closeContract();
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
@@ -97,6 +104,11 @@ export function DemoBar() {
         setGalleryOpen(true);
         return true;
       }
+      if (url.startsWith(DEMO_CONTRACT_HOST)) {
+        const view = signedContractView(demoClient.ctx(), url.slice(DEMO_CONTRACT_HOST.length + 1));
+        if (view) showContract(view);
+        return true;
+      }
       if (url.startsWith(DEMO_INVOICE_HOST)) {
         const inv = invoiceForPayment(demoClient.ctx(), url.slice(DEMO_INVOICE_HOST.length + 1));
         if (inv) showInvoice(inv);
@@ -107,9 +119,10 @@ export function DemoBar() {
     const rewrite = (root: Document | Element | DocumentFragment) => {
       root.querySelectorAll<HTMLAnchorElement>('a[href]').forEach((a) => {
         const href = a.getAttribute('href') ?? '';
-        if (!href.startsWith(DEMO_GALLERY_HOST) && !href.startsWith(DEMO_INVOICE_HOST)) return;
+        const host = [DEMO_GALLERY_HOST, DEMO_INVOICE_HOST, DEMO_CONTRACT_HOST].find((h) => href.startsWith(h));
+        if (!host) return;
         a.dataset.demoHref = href;
-        a.setAttribute('href', href.startsWith(DEMO_GALLERY_HOST) ? '#demo-gallery' : '#demo-invoice');
+        a.setAttribute('href', `#demo-${host === DEMO_GALLERY_HOST ? 'gallery' : host === DEMO_INVOICE_HOST ? 'invoice' : 'contract'}`);
         a.removeAttribute('target');
         a.removeAttribute('rel');
       });
@@ -227,6 +240,23 @@ export function DemoBar() {
                 <img key={g.src} src={g.src} alt={g.alt} loading="lazy" />
               ))}
             </div>
+          </div>
+        </div>
+      )}
+
+      {contract && (
+        <div className="demo-modal" role="dialog" aria-modal="true" aria-label={contract.title}>
+          <div className="demo-modal__inner demo-modal__inner--wide demo-contract" dir="auto">
+            <div className="demo-panel__head">
+              <h2>{contract.title}</h2>
+              <button type="button" className="demo-btn" onClick={closeContract}>{c.close}</button>
+            </div>
+            <pre className="demo-contract__text">{contract.content}</pre>
+            <p className="demo-contract__sig">
+              {c.contractSigned}: <strong>{contract.signerName}</strong> ·{' '}
+              {new Date(contract.signedAt).toLocaleString(lang === 'he' ? 'he-IL' : 'en-GB')}
+            </p>
+            <p className="demo-muted">{c.contractNote}</p>
           </div>
         </div>
       )}
