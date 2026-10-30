@@ -75,6 +75,26 @@ jobs:
       - name: Build
         run: pnpm run build
 
+  # Supabase Edge Functions (Deno). Nothing else checks these before deploy.
+  edge-functions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Type-check
+        run: bash scripts/check-edge-functions.sh
+      # Lint and tests are report-only until the existing backlog is cleared.
+      - name: Lint (report-only)
+        continue-on-error: true
+        working-directory: supabase/functions
+        run: deno lint
+      - name: Unit tests (report-only)
+        continue-on-error: true
+        working-directory: supabase/functions
+        run: deno test --allow-env --allow-read --allow-net
+
   accessibility:
     needs: detect-changes
     runs-on: ubuntu-latest

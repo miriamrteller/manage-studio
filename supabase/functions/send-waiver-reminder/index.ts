@@ -159,7 +159,7 @@ Deno.serve(async (req) => {
           .eq("id", eng.id);
 
         if (paidPayment) {
-          await service.from("audit_log").insert({
+          const { error: auditError } = await service.from("audit_log").insert({
             tenant_id: eng.tenant_id,
             action: "waiver_cancel_refund_required",
             entity_type: "payment",
@@ -170,17 +170,18 @@ Deno.serve(async (req) => {
               currency: paidPayment.currency,
               reason: "waiver_deadline_exceeded",
             },
-          }).catch((e: unknown) =>
+          });
+          if (auditError) {
             console.error(
               "[send-waiver-reminder] refund-required audit insert failed:",
-              e,
+              auditError,
               { engagementId: eng.id },
-            )
-          );
+            );
+          }
         }
 
         // Insert waiver revoked event (extra data goes in metadata JSONB)
-        await service.from("waiver_events").insert({
+        const { error: revokeEventError } = await service.from("waiver_events").insert({
           tenant_id: eng.tenant_id,
           waiver_evidence_id: null,
           event_type: "revoked",
@@ -190,9 +191,10 @@ Deno.serve(async (req) => {
             engagement_id: eng.id,
             reason: "waiver_deadline_exceeded",
           },
-        }).catch((e) =>
-          console.warn("[send-waiver-reminder] waiver_events insert failed:", e)
-        );
+        });
+        if (revokeEventError) {
+          console.warn("[send-waiver-reminder] waiver_events insert failed:", revokeEventError);
+        }
 
         // Send cancellation email
         if (personEmail && sender) {

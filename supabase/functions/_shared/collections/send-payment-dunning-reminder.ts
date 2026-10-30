@@ -145,7 +145,8 @@ export async function sendPaymentDunningReminder(
       status: "failed",
       failure_reason: failureReason,
       sent_at: null,
-    }).catch(() => undefined);
+    });
+    // Best effort: a failed log write must not mask the send failure.
 
     return { sent: false, skipped: "send_failed" };
   }
