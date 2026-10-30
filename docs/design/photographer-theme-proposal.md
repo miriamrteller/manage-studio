@@ -14,6 +14,7 @@
   
   CSS then builds the gradients (page wash, header, footer), glass surfaces and soft shadows from those tokens. The font pair still drives typography; pairs gain heading weight and tracking.
 - **It fixes contrast failures that exist today.** For tenants with a light or mid-tone primary (the photographer seed `#F97316`, therapist `#4CAF50`, any yellow or pastel), the brand colour used as text (81 `text-primary` uses) measures **1.5–2.8:1** on white. The muted grey `#6b7280` measures **4.24:1** on any tint. Both fail AA. In the proposed system every sample tenant clears AA on every pairing (section 5).
+- **Decided (owner, 2026-10-30):** the soft gradient look is the **default for every tenant**, using each tenant's own primary and accent as the tint colours. Tenants can switch their header and footer back to solid brand colour (T13, Phase 2). Logo contrast on the new light header is checked at upload and fixed automatically at render time (T14, Phase 2).
 - **Mockup:** `docs/design/tenant-theme-mockup.html` renders the shoots list and client portal for three tenants (dance burgundy + Elegant pair, photographer teal + Reliable, photographer orange + Warm), shown as they look today and as proposed. A colour picker re-derives everything live, and `?rtl` switches to Hebrew.
 
 ![Three tenants, today vs proposed](research/tenant-mockup-1440.png)
@@ -189,7 +190,8 @@ All global unless noted. Every proposal changes dance too; dance's own row in se
 | T10 | **WCAG-based on-colour** replaces `getAccessibleTextColor`; perceptual hover/active (mix toward black in sRGB: `mix(primary, #000, .91/.83)`) replaces `darkenColor` | `lib/utils.ts` | S | low (fixes W4/W5) |
 | T11 | **Accent default.** Make `accent_color` nullable. When null, derive an analogous accent (`hsl(h+30, s·0.85, l)`), so new non-dance tenants stop inheriting mauve. Existing rows keep their value; the dance tenant sets its mauve explicitly first. | migration + `deriveColorSystem` | M | med (fixes W6) |
 | T12 | **Font pairs get heading settings:** `FontPair` gains `headingWeight` and `headingTracking` (LTR only), exposed as `--heading-weight` / `--heading-tracking` and used by `text-h1..h3` and `Display`. Proposed values: Reliable 600 / −0.02em; Elegant 600 / 0; Dynamic 600 / −0.01em; Warm 600 / −0.01em; Bold 500 / 0.01em. **(verify)** | `useFontLoader.ts`, `index.css` typography | S | med |
-| T13 | **Optional `chrome_style`** tenant setting (`soft` default, `solid` = today's bars) for brands that want a coloured header | migration + settings UI + `AppHeader` | M | low |
+| T13 | **Header & footer style: Soft (default) / Solid.** New column `tenants.chrome_style text not null default 'soft' check (chrome_style in ('soft','solid'))`, a radio with live preview in branding settings, and `data-chrome` on `<html>` set by `useThemeInjection`. `solid` uses `--color-primary-fill` / `--color-on-primary-fill` (header) and the accent fill (footer), so it stays AA. Only the chrome switches: page wash, glass cards and tables stay soft for everyone. No per-element toggles and no intensity slider. | migration + `BrandingSettingsForm.tsx` + `useThemeInjection.ts` + `AppHeader.tsx` / `AppLayout.tsx` | M | med (escape hatch for brands and for logos made for a dark bar) |
+| T14 | **Logo contrast: check at upload, auto-fix at render.** See 4.4. | `BrandingSettingsForm.tsx`, new `lib/theme/logoTone.ts`, `AppHeader.tsx`, migration (3 columns) | M | high (prevents invisible logos on day one) |
 
 #### Contrast per proposal
 
@@ -208,6 +210,50 @@ All global unless noted. Every proposal changes dance too; dance's own row in se
 - Email addresses inside Hebrew rows should carry `dir="ltr"` (done in the mockup).
 
 ---
+
+### 4.4 Logo contrast (T14)
+
+**Why:** `AppHeader.tsx` shows `tenant.logo_url` on today's solid primary bar. Many tenants will have uploaded a white or light logo made for that bar. On the light soft header, such a logo can all but disappear.
+
+**Standard:** WCAG exempts logos from the text-contrast rule (1.4.3, "logotypes"), so this is about visibility rather than compliance. Target **3:1** (the non-text contrast level) between the logo's visible pixels and the header behind it.
+
+#### Check (at upload, and once for existing logos)
+
+New `lib/theme/logoTone.ts` draws the image on a small canvas (max 128px):
+- **Logo colour:** the average WCAG luminance of pixels with alpha > 0.5.
+- **Saturation spread:** whether the logo is close to one colour (`mono: true`) or multi-colour.
+- **Built-in background:** whether the four corners are opaque, i.e. the logo is a JPEG or PNG with its own background box.
+
+It returns `{ luminance, mono, hasPlate }`. It is stored in three new columns, `logo_luminance`, `logo_mono`, `logo_has_plate`, and the same for the dark-mode logo.
+
+- **At upload** the file is read locally (`FileReader` → `createImageBitmap`), so cross-site image loading (CORS) isn't involved.
+- **Existing tenants:** a one-off backfill runs the same check the first time an admin opens branding settings. This needs the `tenant-assets` bucket to send CORS headers for public objects **(verify)**. If it doesn't, the backfill can run in an Edge Function with an image decoder instead.
+- **SVG** logos are rasterised by the same canvas path.
+
+The header's background colour is known (`--tint-2` and `--tint-accent-2` for Soft, `--color-primary-fill` for Solid), so the ratio is plain arithmetic, both in the browser and in the settings preview.
+
+#### Automatic fix (render time; the uploaded file is never changed)
+
+`AppHeader` picks the first option that reaches 3:1:
+
+| Order | Fix | When it applies | Effect |
+|---|---|---|---|
+| 1 | **Use the other uploaded logo** | Tenant has both logos and the other one passes | No visual compromise: the tenant's own artwork |
+| 2 | **Logo already has a background** | `hasPlate` (corners opaque) | Already readable on any header; just round its corners to `--radius-sm` |
+| 3 | **Recolour to brand ink** | `mono` is true (one-colour logo, e.g. white wordmark) | Render as `<span>` with `mask: url(logo) center/contain no-repeat; background: var(--color-primary-ink)`. The logo shape, painted in the tenant's darkened brand colour, which is AA by construction. Works for PNG with transparency and SVG. |
+| 4 | **Brand-colour plate** | Multi-colour logo that fails | Logo on a small pill (`background: var(--color-primary-fill)`, `padding: 4px 10px`, `border-radius: 999px`). The logo appears on the colour it was designed for; the rest of the header stays soft. |
+| 5 | Nothing passes | Very rare (e.g. a mid-grey multi-colour logo on a mid-tone fill) | Keep option 4 and show the warning below |
+
+**Settings UI (`BrandingSettingsForm`):**
+- Previews show the logo on the Soft and Solid headers side by side.
+- When a fix is active, a non-blocking note explains what it did and offers alternatives, e.g. "Your logo is light, so on the soft header we show it in your brand colour. Upload a dark version, or switch to the solid header, to use it as-is."
+- An "Use my logo exactly as uploaded" checkbox stores `logo_autofix = false`, for tenants who really don't want automatic changes.
+
+Never automatic: switching the tenant to Solid on their behalf (that's their branding choice), and editing or re-uploading the image file.
+
+**RTL:** none of this depends on direction; the mask and the plate centre the logo with `center`.
+
+**Effort:** M. About 1 day for `logoTone` + tests (white wordmark, black wordmark, multi-colour PNG, JPEG with a white box, SVG), 1 day for the header rendering + settings preview, and half a day for the migration + backfill.
 
 ## 5. Contrast test matrix
 
@@ -252,9 +298,9 @@ Things to notice: the orange tenant's links turn into a burnt orange that passes
 | Phase | Items | Effort | Result |
 |---|---|---|---|
 | 1. Foundation + contrast | T1, T2, T3, T10 | 2–3 days | Derived tokens exist; all brand-as-text and muted text pass AA for any tenant. Visually small. |
-| 2. The soft look | T4, T5, T6, T7, T8, T9 | 2–3 days | Gradient header/footer, page wash, glass cards, airy tables, pill buttons, for every tenant in its own colours |
+| 2. The soft look (default for all tenants) | T4, T5, T6, T7, T8, T9 + **T13** (Soft/Solid choice) + **T14** (logo check and auto-fix) | 5–6 days | Gradient header/footer, page wash, glass cards, airy tables, pill buttons, for every tenant in its own colours; tenants can keep a solid bar; no invisible logos |
 | 3. Typography | T12 | 1 day | Pairs control heading weight and tracking |
-| 4. Data model | T11, T13 | 2–3 days (migration + settings UI) | No more inherited dance mauve; optional solid chrome |
+| 4. Data model | T11 | 1–2 days (migration) | No more inherited dance mauve |
 | Later | Imagery in lists/portal (package covers, portal hero with scrim), tinted empty states, status stepper, motion | 1–2 weeks | Product feels like a studio tool |
 
 **Before Phase 2 ships:** capture the references and tune the **(verify)** values (tint targets, radius, heading weights). Run visual regression on the dance tenant and get the owner to sign off on its new look, since dance is no longer protected.
@@ -263,7 +309,7 @@ Things to notice: the orange tenant's links turn into a burnt orange that passes
 
 1. `deriveSoftTheme()`: luminance-targeted tints plus contrast-safe brand ink and button fill, computed per tenant in `useThemeInjection` (T1).
 2. Point `text-primary` at the brand ink and switch muted text to `#4b5563`, fixing today's AA failures for light-brand tenants (T2, T3).
-3. Soft gradient header and footer instead of solid primary and accent bars (T4, T5).
+3. Soft gradient header and footer by default for every tenant, with a Soft/Solid choice and automatic logo-contrast fixes shipped alongside (T4, T5, T13, T14).
 4. Multi-stop page wash (primary corner + accent corner + bottom glow) behind glass cards with soft, brand-tinted shadows (4.2, T6).
 5. Font pairs carry heading weight and tracking, so Elegant/Reliable/Warm feel distinct under the same soft system (T12).
 
