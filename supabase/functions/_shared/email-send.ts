@@ -1,3 +1,5 @@
+// The bundle is plain JS; point Deno at its generated types.
+// @ts-types="./email-dist/email/render-template.d.ts"
 import {
   EMAIL_TEMPLATE_NAMES,
   isSupportedEmailTemplate,
@@ -29,7 +31,7 @@ export interface SendRenderedEmailOptions {
   renderInput: RenderEmailTemplateInput;
 }
 
-import { sendHtmlEmail } from "./email-client.ts";
+import { sendHtmlEmail, type SendEmailResult } from "./email-client.ts";
 
 export { sendHtmlEmail };
 
@@ -39,7 +41,7 @@ function str(value: unknown, fallback = ""): string {
 
 export async function sendRenderedEmail(
   options: SendRenderedEmailOptions,
-): Promise<{ id: string }> {
+): Promise<SendEmailResult> {
   const { renderInput, subject: subjectOverride } = options;
   const variables = renderInput.variables ?? {};
 

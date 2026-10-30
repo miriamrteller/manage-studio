@@ -1,0 +1,25 @@
+# Edge functions with type errors that predate CI type-checking (2026-10-30).
+# Type-only: they don't change runtime behaviour. Fix and remove over time;
+# the check fails on any function NOT listed here.
+accept-waiver
+admin-resend-document
+confirm-mock-payment
+create-checkout
+crm-lead-capture
+expire-scheduling-holds
+handle-invoice-event
+handle-payment-document
+handle-payment-event
+prepare-enrolment-checkout
+process-refund
+record-payment
+run-enrolment-payment-dunning
+run-monthly-billing
+send-admin-enrolment-link
+send-admin-waiver-link
+send-notification
+send-otp-email
+send-otp-sms
+send-waiver-reminder
+verify-grow-credentials
+verify-icount-credentials

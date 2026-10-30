@@ -411,41 +411,6 @@ async function getTenantConfig(
 }
 
 /**
- * Helper: Get email template overrides from DB
- * Returns null if no overrides exist (fail safe: use code defaults)
- */
-async function getEmailTemplateOverrides(
-  supabase: SupabaseClient,
-  tenantId: string,
-  templateName: string,
-  language: string
-): Promise<Record<string, unknown> | null> {
-  try {
-    const { data, error } = await supabase
-      .from("tenant_email_customizations")
-      .select("overrides")
-      .eq("tenant_id", tenantId)
-      .eq("template_name", templateName)
-      .eq("language", language)
-      .single();
-
-    if (error || !data) {
-      // No overrides found — return null to use code defaults
-      return null;
-    }
-
-    return data.overrides as Record<string, unknown>;
-  } catch (error) {
-    console.warn(
-      `Could not fetch email overrides for ${templateName}/${language}:`,
-      error
-    );
-    // Fail safe: return null, use code defaults
-    return null;
-  }
-}
-
-/**
  * Helper: Merge base email strings with tenant overrides
  * Code-first approach: base + overrides (overrides win)
  */
