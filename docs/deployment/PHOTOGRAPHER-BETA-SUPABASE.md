@@ -28,13 +28,15 @@ This brief only adds what the photographer work changed.
 
 ## What changed since the last deploy
 
-The migrations added since the dev database was last pushed:
+The four migrations added since the dev database was last pushed:
 
 - `20261030000100_job_details.sql`: shoots (`job_details`), `create_job`,
   `convert_lead_to_job`.
 - `20261030000200_job_payment_requests.sql`: deposit and balance requests,
   gallery gating, `client_job_details` view, daily reminder cron.
 - `20261030000300_quotes.sql`: quotes, `accept_quote`, automatic emails, a cron.
+- `20261030000400_search_clients_by_whatsapp.sql`: client search also matches
+  WhatsApp numbers, and a typed `054…` matches a stored `+972 54…`.
 
 New or changed edge functions: `send-job-contract-link`,
 `client-job-contract-link`, `job-payment-request-public`, `record-job-payment`,

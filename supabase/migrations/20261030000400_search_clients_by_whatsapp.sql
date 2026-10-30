@@ -7,8 +7,9 @@
 -- "New shoot" client search found nobody by phone.
 --
 -- Same function, two additions: the person's contact_preferences.whatsapp_number
--- joins the search text and the digits-only phone match, and a local Israeli
--- number typed as 054… also matches a WhatsApp number stored as +972 54…. Additive only: every
+-- joins the search text and the digits-only phone match, and Israeli numbers
+-- match in either form: a typed 054… finds a stored +972 54…, and a typed
+-- +972 54… finds a stored 054… (WhatsApp or emergency-contact phone). Additive only: every
 -- row that matched before still matches, with the same output shape, so the
 -- dance enrolment search is unchanged apart from also finding parents by their
 -- WhatsApp number.
@@ -30,6 +31,7 @@ DECLARE
   v_normalized TEXT;
   v_digits     TEXT;
   v_digits_il  TEXT;
+  v_digits_loc TEXT;
   v_result     JSONB;
 BEGIN
   IF auth.uid() IS NULL THEN
@@ -57,6 +59,8 @@ BEGIN
   v_digits := regexp_replace(v_normalized, '[^0-9]', '', 'g');
   -- Israeli local form (054…) also matches the stored international form (+972 54…).
   v_digits_il := CASE WHEN v_digits ~ '^0[1-9]' THEN '972' || substr(v_digits, 2) ELSE v_digits END;
+  -- …and the international form typed (+972 54…) matches a locally stored 054….
+  v_digits_loc := CASE WHEN v_digits ~ '^972[1-9]' THEN '0' || substr(v_digits, 4) ELSE v_digits END;
 
   WITH guardians AS (
     SELECT DISTINCT ON (am.account_id)
@@ -184,6 +188,8 @@ BEGIN
             OR regexp_replace(COALESCE(e.guardian_phone, ''), '[^0-9]', '', 'g') LIKE '%' || v_digits || '%'
             OR regexp_replace(COALESCE(e.whatsapp_number, ''), '[^0-9]', '', 'g') LIKE '%' || v_digits || '%'
             OR regexp_replace(COALESCE(e.whatsapp_number, ''), '[^0-9]', '', 'g') LIKE '%' || v_digits_il || '%'
+            OR regexp_replace(COALESCE(e.whatsapp_number, ''), '[^0-9]', '', 'g') LIKE '%' || v_digits_loc || '%'
+            OR regexp_replace(COALESCE(e.emergency_contact_phone, ''), '[^0-9]', '', 'g') LIKE '%' || v_digits_loc || '%'
             OR e.search_blob LIKE '%' || v_digits || '%'
           )
         )
