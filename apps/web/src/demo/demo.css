@@ -220,3 +220,17 @@
   border-top: 1px solid var(--demo-line);
   padding-top: 6px;
 }
+
+.demo-contract__text {
+  white-space: pre-wrap;
+  font: inherit;
+  margin: 0 0 12px;
+  padding: 12px;
+  border: 1px solid var(--demo-line);
+  border-radius: 8px;
+  max-height: 55vh;
+  overflow: auto;
+}
+.demo-contract__sig {
+  margin: 0 0 8px;
+}

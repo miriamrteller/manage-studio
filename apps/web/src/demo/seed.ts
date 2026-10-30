@@ -14,6 +14,8 @@ export const TENANT_SUBDOMAIN = 'lumen';
 export const DEMO_GALLERY_HOST = 'https://gallery.lumen-light.demo';
 /** Invoice links point here; the demo bar opens the sample invoice instead. */
 export const DEMO_INVOICE_HOST = 'https://invoices.lumen-light.demo';
+/** Signed-contract PDF links point here; the demo bar opens the contract in place. */
+export const DEMO_CONTRACT_HOST = 'https://contracts.lumen-light.demo';
 
 const id = (n: number) => `d0000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 
@@ -306,6 +308,8 @@ export function buildSeed(): Tables {
       lead_id: null,
       gallery_url: s.gallery ? `${DEMO_GALLERY_HOST}/${eid.slice(-4)}` : null,
       gallery_released_at: s.galleryReleased ? at(-6) : null,
+      // One signed shoot whose PDF "failed at signing", to show Generate PDF.
+      contract_pdf_pending: s.client === 4,
       created_at: at(-s.createdDaysAgo),
       updated_at: at(-1),
     });

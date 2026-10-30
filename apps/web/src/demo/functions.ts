@@ -4,7 +4,8 @@
  */
 import { DemoRpcError, type DemoContext, type FunctionHandler, type Row } from './fakeSupabase';
 import { sendToOutbox } from './outbox';
-import { TENANT_ID } from './seed';
+import { canRead } from './rls';
+import { ADMIN_EMAIL, DEMO_CONTRACT_HOST, TENANT_ID } from './seed';
 
 function rows(ctx: DemoContext, table: string): Row[] {
   return ctx.db[table] ?? (ctx.db[table] = []);
@@ -48,6 +49,40 @@ function renderContract(ctx: DemoContext, engagementId: string): { template: Row
     offeringId: eng.offering_id as string,
     signed: Boolean(eng.waiver_evidence_id),
   };
+}
+
+/** What the signed-contract PDF would show: the sealed wording, signer and time. */
+export function signedContractView(
+  ctx: DemoContext,
+  engagementId: string,
+): { title: string; content: string; signerName: string; signedAt: string } | null {
+  const eng = rows(ctx, 'engagements').find((e) => e.id === engagementId);
+  const evidence = rows(ctx, 'waiver_evidence').find((w) => w.id === eng?.waiver_evidence_id);
+  if (!eng || !evidence) return null;
+  const { template } = renderContract(ctx, engagementId);
+  return {
+    title: String(template.name),
+    content: String(template.content),
+    signerName: String(evidence.signer_name ?? ''),
+    signedAt: String(evidence.signed_at ?? ''),
+  };
+}
+
+function contractPdfLink(engagementId: string) {
+  return {
+    url: `${DEMO_CONTRACT_HOST}/${engagementId}`,
+    expiresAt: new Date(Date.now() + 10 * 60_000).toISOString(),
+  };
+}
+
+function isAdmin(ctx: DemoContext): boolean {
+  const p = rows(ctx, 'user_profiles').find((u) => u.id === ctx.user?.id);
+  return Array.isArray(p?.role) && (p?.role as string[]).includes('tenant_admin');
+}
+
+function emailEnabled(ctx: DemoContext, key: string): boolean {
+  const row = rows(ctx, 'tenant_automatic_emails').find((r) => r.email_key === key);
+  return row ? Boolean(row.enabled) : true;
 }
 
 export function engagementFromToken(token: string | null | undefined): string | null {
@@ -116,21 +151,26 @@ export const baseFunctions: Record<string, FunctionHandler> = {
     viewed_at_ts: Math.floor(Date.now() / 1000),
   }),
 
-  // The real function mints a signed URL for a PDF in private storage; the demo
-  // has neither storage nor a PDF renderer, so it explains itself instead.
+  // The real function mints a short-lived signed URL for the PDF in private
+  // storage. The demo returns a placeholder link that the demo bar opens as an
+  // in-page view of the signed contract.
   'job-contract-pdf-link': (body, ctx) => {
+    const engagementId = String(body.engagementId ?? '');
+    const eng = rows(ctx, 'engagements').find((e) => e.id === engagementId);
+    if (!eng || !ctx.user || !canRead('engagements', eng, ctx)) throw new DemoRpcError('Shoot not found');
+    if (!eng.waiver_evidence_id) throw new DemoRpcError('Contract not signed yet');
+    return contractPdfLink(engagementId);
+  },
+
+  'job-contract-pdf-generate': (body, ctx) => {
+    if (!isAdmin(ctx)) throw new DemoRpcError('Forbidden');
     const engagementId = String(body.engagementId ?? '');
     const eng = rows(ctx, 'engagements').find((e) => e.id === engagementId);
     if (!eng) throw new DemoRpcError('Shoot not found');
     if (!eng.waiver_evidence_id) throw new DemoRpcError('Contract not signed yet');
-    throw new DemoRpcError('Downloading the signed PDF is not available in the demo.');
-  },
-
-  'job-contract-pdf-generate': (body, ctx) => {
-    const engagementId = String(body.engagementId ?? '');
-    const eng = rows(ctx, 'engagements').find((e) => e.id === engagementId);
-    if (!eng) throw new DemoRpcError('Shoot not found');
-    throw new DemoRpcError('Generating the signed PDF is not available in the demo.');
+    const job = rows(ctx, 'job_details').find((j) => j.engagement_id === engagementId);
+    if (job) job.contract_pdf_pending = false;
+    return contractPdfLink(engagementId);
   },
 
   'accept-waiver': (body, ctx) => {
@@ -151,6 +191,25 @@ export const baseFunctions: Record<string, FunctionHandler> = {
       created_at: ctx.now(),
     });
     eng.waiver_evidence_id = evidenceId;
+    // Signed-contract copies (contract_signed_client / contract_signed_studio).
+    const person = rows(ctx, 'people').find((p) => p.id === eng.person_id);
+    const link = { label: 'Open the signed contract (PDF)', href: contractPdfLink(String(eng.id)).url };
+    if (person?.email && emailEnabled(ctx, 'contract_signed_client')) {
+      sendToOutbox({
+        to: String(person.email),
+        subject: 'Your signed photography agreement',
+        body: `Hi ${String(person.name ?? '')}, thank you for signing. A copy of your agreement is attached.`,
+        link,
+      });
+    }
+    if (emailEnabled(ctx, 'contract_signed_studio')) {
+      sendToOutbox({
+        to: ADMIN_EMAIL,
+        subject: `Contract signed: ${String(person?.name ?? '')}`,
+        body: `${String(body.typed_name ?? person?.name ?? '')} signed the photography agreement.`,
+        link,
+      });
+    }
     return { evidence_id: evidenceId };
   },
 };
