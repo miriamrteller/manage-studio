@@ -31,6 +31,15 @@ describe('demo search_enrolment_students (New shoot → client search)', () => {
     expect(await search('447-1188')).toEqual(['Daniel Avraham']);
   });
 
+  it('matches partial text anywhere in a word, any case (3 letters is enough)', async () => {
+    for (const q of ['dan', 'avr', 'AVR', 'niel', 'Dan Avr']) {
+      expect(await search(q)).toContain('Daniel Avraham');
+    }
+    // 3-digit phone fragment (053-447-1188)
+    expect(await search('447')).toContain('Daniel Avraham');
+    expect(await search('xyz')).toEqual([]);
+  });
+
   it('requires every token to match and returns the SQL row shape', async () => {
     expect(await search('daniel shapiro')).toEqual([]);
     const { data } = await demo().rpc('search_enrolment_students', { p_query: 'avraham', p_limit: 5 });
