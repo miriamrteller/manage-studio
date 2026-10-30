@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { useTenant } from '@/hooks/useTenant';
+import { useEntityLabels } from '@/hooks/useEntityLabels';
 import { invalidateWaiverStatus } from '../hooks/useWaiverStatus';
 import type { WaiverSigningConsentTemplate } from '@shared/schemas';
 
@@ -69,6 +70,8 @@ function WaiverStepInner({
 }: WaiverStepProps & { invalidateTenantId?: string }) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  // Photographer tenants sign a shoot contract, not a class waiver.
+  const isContract = useEntityLabels().vertical === 'photographer';
 
   // Stable idempotency key for the lifetime of this component mount
   const idempotencyKey = useRef(crypto.randomUUID());
@@ -220,13 +223,13 @@ function WaiverStepInner({
         <dl className="rounded-md border border-border bg-muted/40 px-4 py-3 text-sm grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
           {studentName && (
             <>
-              <dt className="font-medium text-muted-foreground">{t('enrolment.waiver_context_student', { defaultValue: 'Student' })}</dt>
+              <dt className="font-medium text-muted-foreground">{isContract ? t('enrolment.contract_context_client') : t('enrolment.waiver_context_student', { defaultValue: 'Student' })}</dt>
               <dd>{studentName}</dd>
             </>
           )}
           {className && (
             <>
-              <dt className="font-medium text-muted-foreground">{t('enrolment.waiver_context_class', { defaultValue: 'Class' })}</dt>
+              <dt className="font-medium text-muted-foreground">{isContract ? t('enrolment.contract_context_package') : t('enrolment.waiver_context_class', { defaultValue: 'Class' })}</dt>
               <dd>{className}{termName ? ` — ${termName}` : ''}</dd>
             </>
           )}
@@ -236,7 +239,7 @@ function WaiverStepInner({
       {/* Scrollable waiver document region */}
       <div
         role="region"
-        aria-label={t('enrolment.waiver_document_region', { defaultValue: 'Waiver document' })}
+        aria-label={isContract ? t('enrolment.contract_document_region') : t('enrolment.waiver_document_region', { defaultValue: 'Waiver document' })}
         className="relative h-72 overflow-y-auto rounded-md border border-border bg-muted/30 p-4 text-sm leading-relaxed whitespace-pre-wrap focus:outline-none"
         // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- scrollable region requires tabIndex for keyboard navigation per WAI-ARIA best practices
         tabIndex={0}
@@ -275,10 +278,10 @@ function WaiverStepInner({
               checked={affirmed}
               onChange={(e) => setAffirmed(e.target.checked)}
               className="mt-0.5"
-              aria-label={t('enrolment.waiver_checkbox_label', { defaultValue: 'I have read and accept this waiver' })}
+              aria-label={isContract ? t('enrolment.contract_checkbox_label') : t('enrolment.waiver_checkbox_label', { defaultValue: 'I have read and accept this waiver' })}
             />
             <span className="text-sm">
-              {t('enrolment.waiver_checkbox_label', { defaultValue: 'I have read and accept this waiver' })}
+              {isContract ? t('enrolment.contract_checkbox_label') : t('enrolment.waiver_checkbox_label', { defaultValue: 'I have read and accept this waiver' })}
             </span>
           </label>
 

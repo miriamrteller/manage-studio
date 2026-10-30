@@ -1032,7 +1032,18 @@
       "signed_body": "כתב הויתור נחתם וההרשמה שלך פעילה. להתראות בשיעור!",
       "go_to_dashboard": "עברו ללוח הבקרה",
       "browse_classes": "עיון בשיעורים",
-      "sign_prompt": "אנא קראו בעיון את כתב הויתור וחתמו למטה כדי להפעיל את ההרשמה."
+      "sign_prompt": "אנא קראו בעיון את כתב הויתור וחתמו למטה כדי להפעיל את ההרשמה.",
+      "job": {
+        "page_title": "חתימה על החוזה",
+        "sign_prompt": "יש לקרוא את החוזה בעיון ולחתום למטה כדי לאשר את ההזמנה.",
+        "signed_heading": "החוזה נחתם — תודה!",
+        "signed_body": "החוזה נחתם והצילום שלך שמור. מחכים לעבוד איתך!",
+        "already_signed_heading": "החוזה כבר נחתם",
+        "already_signed_body": "החוזה הזה כבר נחתם. מחכים לעבוד איתך!",
+        "cancelled_heading": "הצילום בוטל",
+        "cancelled_body": "הצילום בוטל, ולכן כבר לא ניתן לחתום על החוזה. אם נראה לך שזו טעות, אפשר לפנות אלינו.",
+        "back_home": "חזרה לדף הבית"
+      }
     },
     "jobs": {
       "title": "צילומים",
@@ -1769,6 +1780,10 @@
     "waiver_no_template": "לא הוגדר תבנית ויתור פעילה. אנא פנה/י למנהל הסטודיו.",
     "waiver_context_student": "תלמיד/ה",
     "waiver_context_class": "שיעור",
+    "contract_document_region": "מסמך החוזה",
+    "contract_checkbox_label": "קראתי ואני מאשר/ת את החוזה",
+    "contract_context_client": "לקוח/ה",
+    "contract_context_package": "חבילה",
     "waiver_guardian_confirm": "אני מאשר/ת כי הנני הורה/אפוטרופוס החוקי של {{studentName}} ומוסמך/ת לחתום על כתב ויתור זה בשמם.",
     "waiver_this_student": "התלמיד/ה הנרשם/ת",
     "waiver_minor_cannot_sign_title": "נדרשת חתימת הורה או אפוטרופוס",

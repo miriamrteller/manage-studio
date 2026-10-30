@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useTenant } from '@/hooks/useTenant';
+import { useEntityLabels } from '@/hooks/useEntityLabels';
 import { Button } from '@/components/ui/button';
 import { WaiverStep } from '@/features/enrolment/components/WaiverStep';
 import { TenantDB } from '@/lib/db';
@@ -33,6 +34,8 @@ type PageState =
 export default function EnrolCompletePage() {
   const { t } = useTranslation();
   const tenant = useTenant();
+  const ec = useEnrolCompleteCopy();
+  const isPhotographer = useEntityLabels().vertical === 'photographer';
   const [searchParams] = useSearchParams();
   const engagementId = searchParams.get('engagementId') ?? '';
   const waiverToken = searchParams.get('wt') ?? null;
@@ -265,8 +268,8 @@ export default function EnrolCompletePage() {
       <PageShell>
         <div className="text-center space-y-4">
           <div className="text-5xl">✅</div>
-          <h2 className="text-lg font-semibold">{t('pages.enrol_complete.already_signed_heading')}</h2>
-          <p className="text-gray-600">{t('pages.enrol_complete.already_signed_body')}</p>
+          <h2 className="text-lg font-semibold">{ec('already_signed_heading')}</h2>
+          <p className="text-gray-600">{ec('already_signed_body')}</p>
           <Button type="button" variant="primary" onClick={() => { window.location.href = '/dashboard'; }} className="w-full">
             {t('pages.enrol_complete.go_to_dashboard')}
           </Button>
@@ -280,10 +283,15 @@ export default function EnrolCompletePage() {
       <PageShell>
         <div className="text-center space-y-4">
           <div className="text-5xl">❌</div>
-          <h2 className="text-lg font-semibold">{t('pages.enrol_complete.cancelled_heading')}</h2>
-          <p className="text-gray-600">{t('pages.enrol_complete.cancelled_body')}</p>
-          <Button type="button" variant="secondary" onClick={() => { window.location.href = '/classes'; }} className="w-full">
-            {t('pages.enrol_complete.browse_classes')}
+          <h2 className="text-lg font-semibold">{ec('cancelled_heading')}</h2>
+          <p className="text-gray-600">{ec('cancelled_body')}</p>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => { window.location.href = isPhotographer ? '/' : '/classes'; }}
+            className="w-full"
+          >
+            {isPhotographer ? ec('back_home') : t('pages.enrol_complete.browse_classes')}
           </Button>
         </div>
       </PageShell>
@@ -295,8 +303,8 @@ export default function EnrolCompletePage() {
       <PageShell>
         <div className="text-center space-y-4">
           <div className="text-5xl">✅</div>
-          <h2 className="text-lg font-semibold">{t('pages.enrol_complete.signed_heading')}</h2>
-          <p className="text-gray-600">{t('pages.enrol_complete.signed_body')}</p>
+          <h2 className="text-lg font-semibold">{ec('signed_heading')}</h2>
+          <p className="text-gray-600">{ec('signed_body')}</p>
           <Button type="button" variant="primary" onClick={() => { window.location.href = '/dashboard'; }} className="w-full">
             {t('pages.enrol_complete.go_to_dashboard')}
           </Button>
@@ -318,7 +326,7 @@ export default function EnrolCompletePage() {
     <PageShell>
       <div className="space-y-4">
         <p className="text-sm text-gray-600">
-          {t('pages.enrol_complete.sign_prompt')}
+          {ec('sign_prompt')}
         </p>
         <WaiverStep
           personId={state.personId}
@@ -334,13 +342,24 @@ export default function EnrolCompletePage() {
   );
 }
 
-function PageShell({ children }: { children: ReactNode }) {
+/**
+ * Copy for this page. Photographer tenants sign a shoot contract here, not a
+ * class waiver, so they read from pages.enrol_complete.job.*.
+ */
+function useEnrolCompleteCopy() {
   const { t } = useTranslation();
+  const { vertical } = useEntityLabels();
+  const base = vertical === 'photographer' ? 'pages.enrol_complete.job' : 'pages.enrol_complete';
+  return (key: string) => t(`${base}.${key}`);
+}
+
+function PageShell({ children }: { children: ReactNode }) {
+  const ec = useEnrolCompleteCopy();
   return (
     <div className="min-h-screen bg-gray-50 flex items-start justify-center pt-10 px-4 pb-16">
       <div className="w-full max-w-xl">
         <h1 className="text-2xl font-bold text-gray-900 mb-6">
-          {t('pages.enrol_complete.page_title')}
+          {ec('page_title')}
         </h1>
         {children}
       </div>

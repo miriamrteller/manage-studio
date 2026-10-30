@@ -1033,7 +1033,18 @@
       "signed_body": "Your waiver has been signed and your enrolment is now active. See you in class!",
       "go_to_dashboard": "Go to my dashboard",
       "browse_classes": "Browse classes",
-      "sign_prompt": "Please read the waiver carefully and sign below to activate your enrolment."
+      "sign_prompt": "Please read the waiver carefully and sign below to activate your enrolment.",
+      "job": {
+        "page_title": "Sign your contract",
+        "sign_prompt": "Please read the contract carefully and sign below to confirm your booking.",
+        "signed_heading": "Contract signed — thank you!",
+        "signed_body": "Your contract is signed and your shoot is booked. We're looking forward to working with you!",
+        "already_signed_heading": "Contract already signed",
+        "already_signed_body": "This contract has already been signed. We're looking forward to working with you!",
+        "cancelled_heading": "Shoot cancelled",
+        "cancelled_body": "This shoot has been cancelled, so the contract can no longer be signed. If you think this is a mistake, please get in touch.",
+        "back_home": "Back to home"
+      }
     },
     "jobs": {
       "title": "Shoots",
@@ -1770,6 +1781,10 @@
     "waiver_no_template": "No active waiver template is set up. Please ask a studio administrator to add a waiver template before enrolling.",
     "waiver_context_student": "Student",
     "waiver_context_class": "Class",
+    "contract_document_region": "Contract document",
+    "contract_checkbox_label": "I have read and accept this contract",
+    "contract_context_client": "Client",
+    "contract_context_package": "Package",
     "waiver_guardian_confirm": "I confirm I am the parent or legal guardian of {{studentName}} and am authorised to sign this waiver on their behalf.",
     "waiver_this_student": "the enrolled student",
     "waiver_minor_cannot_sign_title": "A parent or guardian must sign",
