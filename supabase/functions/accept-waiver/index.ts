@@ -1,5 +1,6 @@
 import { corsHeaders, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
+import { loadJobContractContext, renderJobContract } from "../_shared/job-contract.ts";
 import {
   currentHmacVersion,
   getHmacKey,
@@ -113,6 +114,34 @@ Deno.serve(async (req) => {
       );
     }
 
+    // --- Job contract? Render merge fields exactly as get-waiver-engagement did ---
+    // (engagement with a job_details row). wording_snapshot/hash then cover the
+    // rendered text the client actually saw, not the raw template.
+    const contractEngagementId: string | null =
+      waiverTokenEngagementId ?? (typeof body.engagement_id === "string" ? body.engagement_id : null);
+    let jobContract: Awaited<ReturnType<typeof loadJobContractContext>> = null;
+    if (contractEngagementId) {
+      const { data: tenantRow } = await service
+        .from("tenants")
+        .select("language_default")
+        .eq("id", tenantId)
+        .maybeSingle();
+      jobContract = await loadJobContractContext(service, {
+        tenantId,
+        engagementId: contractEngagementId,
+        language: tenantRow?.language_default === "he" ? "he" : "en",
+      });
+      if (jobContract && jobContract.personId !== body.person_id) {
+        return jsonResponse({ error: "person_id does not match job" }, 401);
+      }
+      if (jobContract && (jobContract.engagementStatus === "cancelled" || jobContract.jobStatus === "cancelled")) {
+        return jsonResponse({ error: "Job is cancelled" }, 409);
+      }
+    }
+    const wordingSnapshot: string = jobContract
+      ? renderJobContract(template.content as string, jobContract.fields)
+      : (template.content as string);
+
     // --- Fetch student date_of_birth to determine minority status ---
     const { data: student } = await service
       .from("people")
@@ -193,7 +222,7 @@ Deno.serve(async (req) => {
     const tenantName = tenant?.name ?? "Studio";
 
     // --- Compute hashes ---
-    const consent_version_hash = await sha256Hex(template.content as string);
+    const consent_version_hash = await sha256Hex(wordingSnapshot);
 
     // V1: no PDF upload — use sentinel path + zeroed hash
     const evidenceId = crypto.randomUUID();
@@ -233,7 +262,7 @@ Deno.serve(async (req) => {
       p_consent_template_id: body.consent_template_id,
       p_consent_version: template.version,
       p_consent_version_hash: consent_version_hash,
-      p_wording_snapshot: template.content,
+      p_wording_snapshot: wordingSnapshot,
       p_pdf_storage_path: storagePath,
       p_pdf_sha256: pdf_sha256,
       p_record_hmac: record_hmac,
@@ -267,7 +296,18 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (waiverTokenEngagementId && tokenEngagementStatus === "pending_payment") {
+    if (jobContract) {
+      // Job contract: the signed record is the contract; the job stays 'active'.
+      const { error: linkError } = await service
+        .from("engagements")
+        .update({ waiver_evidence_id: returnedId })
+        .eq("id", jobContract.engagementId)
+        .eq("tenant_id", tenantId)
+        .is("waiver_evidence_id", null);
+      if (linkError) {
+        return jsonResponse({ error: "Failed to link contract to job" }, 500);
+      }
+    } else if (waiverTokenEngagementId && tokenEngagementStatus === "pending_payment") {
       // Pre-payment tokenized flow: link evidence to this engagement only.
       const { error: linkError } = await service
         .from("engagements")

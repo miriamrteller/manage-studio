@@ -1,5 +1,5 @@
 import { PARENT_ROLE_NAMES } from '@/lib/parentRoles';
-import type { PresetModules, FeatureKey } from '@shared/index';
+import type { PresetModules, FeatureKey, VerticalId } from '@shared/index';
 import { FEATURES } from '@shared/index';
 import {
   tenantUsesSplitProviders,
@@ -56,6 +56,10 @@ export interface NavItem {
    * viewer can read that setting (tenant admins) — see useBookingEnabled.
    */
   disableWhenBookingOff?: boolean;
+  /** Show only for these verticals (tenants.skin). Omit = every vertical. */
+  verticals?: VerticalId[];
+  /** Hide for these verticals (class-only pages hidden for appointment verticals). */
+  hideForVerticals?: VerticalId[];
 }
 
 export interface NavSection {
@@ -86,6 +90,7 @@ export const navigationConfig: NavItem[] = [
     labelKey: 'nav.classes',
     requiredRoles: [],
     sectionKey: 'browse',
+    hideForVerticals: ['photographer'],
   },
   {
     path: '/book',
@@ -94,6 +99,13 @@ export const navigationConfig: NavItem[] = [
     sectionKey: 'browse',
     featureKey: FEATURES.scheduling.clientBooking,
     disableWhenBookingOff: true,
+  },
+  {
+    path: '/admin/jobs',
+    labelKey: 'nav.jobs',
+    requiredRoles: ['tenant_admin'],
+    sectionKey: 'administration',
+    verticals: ['photographer'],
   },
   {
     path: '/admin/students',
@@ -202,6 +214,7 @@ export const navigationConfig: NavItem[] = [
   },
   {
     path: '/admin/setup/levels',
+    hideForVerticals: ['photographer'],
     labelKey: 'nav.levels',
     requiredRoles: ['tenant_admin'],
     sectionKey: 'setup',
@@ -210,6 +223,7 @@ export const navigationConfig: NavItem[] = [
   },
   {
     path: '/admin/setup/terms',
+    hideForVerticals: ['photographer'],
     labelKey: 'nav.terms',
     requiredRoles: ['tenant_admin'],
     sectionKey: 'setup',
@@ -218,6 +232,7 @@ export const navigationConfig: NavItem[] = [
   },
   {
     path: '/admin/setup/classes',
+    hideForVerticals: ['photographer'],
     labelKey: 'nav.manage_classes',
     requiredRoles: ['tenant_admin'],
     sectionKey: 'setup',
@@ -273,6 +288,7 @@ export const publicNavigationConfig: NavItem[] = [
     labelKey: 'nav.classes',
     requiredRoles: [],
     sectionKey: 'browse',
+    hideForVerticals: ['photographer'],
   },
   {
     path: '/book',
@@ -305,6 +321,14 @@ const SECTION_ORDER: NavSectionKey[] = [
   'portal',
   'learning',
 ];
+
+/** Vertical visibility: `verticals` is an allow-list, `hideForVerticals` a deny-list. */
+export function matchesVertical(item: NavItem, vertical: VerticalId | null | undefined): boolean {
+  const v = vertical ?? 'generic';
+  if (item.verticals && !item.verticals.includes(v)) return false;
+  if (item.hideForVerticals && item.hideForVerticals.includes(v)) return false;
+  return true;
+}
 
 export function matchesTenantFilter(
   item: NavItem,

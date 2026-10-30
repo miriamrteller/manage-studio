@@ -1,9 +1,11 @@
-﻿import { useMemo, useState, type FormEvent } from 'react';
+﻿import { useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/shared';
 import { useTenant } from '@/hooks/useTenant';
+import { useEntityLabels } from '@/hooks/useEntityLabels';
 import { useLeads } from '../hooks/useLeads';
+import { ConvertLeadPanel } from '@/features/jobs/components/ConvertLeadPanel';
 import { LEAD_CHANNELS, LEAD_STAGES, type LeadChannel, type LeadStage } from '../services/leadService';
 
 /**
@@ -52,9 +54,42 @@ function CopyField({ label, value }: { label: string; value: string }) {
   );
 }
 
+interface LeadRowGroupProps {
+  lead: { id: string; name: string; offering_id: string | null };
+  converting: boolean;
+  canConvert: boolean;
+  onConvert: () => void;
+  onClose: () => void;
+  children: ReactNode;
+}
+
+/** A lead row plus, when converting, the inline convert panel beneath it. */
+function LeadRowGroup({ lead, converting, canConvert, onClose, children }: LeadRowGroupProps) {
+  return (
+    <>
+      {children}
+      {canConvert && converting && (
+        <tr>
+          <td colSpan={8} className="px-3 py-2">
+            <ConvertLeadPanel
+              leadId={lead.id}
+              leadName={lead.name}
+              defaultOfferingId={lead.offering_id}
+              onClose={onClose}
+            />
+          </td>
+        </tr>
+      )}
+    </>
+  );
+}
+
 export function LeadsList() {
   const { t, i18n } = useTranslation();
   const tenant = useTenant();
+  const { vertical } = useEntityLabels();
+  const canConvert = vertical === 'photographer';
+  const [convertingId, setConvertingId] = useState<string | null>(null);
   const { leads, isLoading, error, createLead, isCreating, updateStage, isUpdatingStage } =
     useLeads();
 
@@ -269,11 +304,20 @@ export function LeadsList() {
                 <th className="px-3 py-2 text-start">{t('pages.crm.leads.stage')}</th>
                 <th className="px-3 py-2 text-start">{t('pages.crm.leads.last_contacted')}</th>
                 <th className="px-3 py-2 text-start">{t('pages.crm.leads.follow_up')}</th>
+                {canConvert && <th className="px-3 py-2 text-start">{t('pages.crm.leads.convert')}</th>}
               </tr>
             </thead>
             <tbody>
               {leads.map((lead) => (
-                <tr key={lead.id}>
+                <LeadRowGroup
+                  key={lead.id}
+                  converting={convertingId === lead.id}
+                  canConvert={canConvert}
+                  onConvert={() => setConvertingId(lead.id)}
+                  onClose={() => setConvertingId(null)}
+                  lead={lead}
+                >
+                <tr>
                   <td className="px-3 py-2 font-medium">
                     {lead.name}
                     {lead.converted_account_id && (
@@ -313,7 +357,19 @@ export function LeadsList() {
                   </td>
                   <td className="px-3 py-2">{formatDate(lead.last_contacted_at, i18n.language)}</td>
                   <td className="px-3 py-2">{formatDate(lead.next_follow_up_at, i18n.language)}</td>
+                  {canConvert && (
+                    <td className="px-3 py-2">
+                      {lead.converted_account_id ? (
+                        <span className="text-xs text-muted-foreground">{t('pages.crm.leads.converted')}</span>
+                      ) : (
+                        <Button variant="outline" size="sm" onClick={() => setConvertingId(lead.id)}>
+                          {t('pages.crm.leads.convert')}
+                        </Button>
+                      )}
+                    </td>
+                  )}
                 </tr>
+                </LeadRowGroup>
               ))}
             </tbody>
           </table>

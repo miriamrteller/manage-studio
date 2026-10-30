@@ -19,6 +19,7 @@ import {
   verifyWaiverToken,
 } from "../_shared/waiver-token.ts";
 import { resolveAllowedTokenRecipientEmails } from "../_shared/token-recipient.ts";
+import { loadJobContractContext, renderJobContract } from "../_shared/job-contract.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -44,16 +45,39 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "Engagement not found" }, 404);
     }
 
-    if (eng.status === "active") {
-      return jsonResponse({ alreadySigned: true }, 200);
-    }
+    // Job contracts (engagement with a job_details row): the active template
+    // is the contract and merge fields are rendered from the job. Jobs stay
+    // engagements.status='active' throughout, so "signed" is tracked by
+    // waiver_evidence_id rather than status.
+    const { data: tenantRow } = await service
+      .from("tenants")
+      .select("language_default")
+      .eq("id", payload.tid)
+      .maybeSingle();
+    const language = tenantRow?.language_default === "he" ? "he" : "en";
+    const job = await loadJobContractContext(service, {
+      tenantId: payload.tid,
+      engagementId: eng.id as string,
+      language,
+    });
 
-    if (eng.status === "cancelled") {
-      return jsonResponse({ cancelled: true }, 200);
-    }
+    if (job) {
+      if (job.waiverEvidenceId) return jsonResponse({ alreadySigned: true }, 200);
+      if (job.engagementStatus === "cancelled" || job.jobStatus === "cancelled") {
+        return jsonResponse({ cancelled: true }, 200);
+      }
+    } else {
+      if (eng.status === "active") {
+        return jsonResponse({ alreadySigned: true }, 200);
+      }
 
-    if (eng.status !== "pending_waiver") {
-      return jsonResponse({ error: "Engagement is not pending waiver" }, 409);
+      if (eng.status === "cancelled") {
+        return jsonResponse({ cancelled: true }, 200);
+      }
+
+      if (eng.status !== "pending_waiver") {
+        return jsonResponse({ error: "Engagement is not pending waiver" }, 409);
+      }
     }
 
     const tokenEmail = payload.em.trim().toLowerCase();
@@ -86,7 +110,9 @@ Deno.serve(async (req) => {
         id: template.id as string,
         version: template.version as number,
         name: template.name as string,
-        content: template.content as string,
+        content: job
+          ? renderJobContract(template.content as string, job.fields)
+          : (template.content as string),
       },
     });
   } catch (err) {

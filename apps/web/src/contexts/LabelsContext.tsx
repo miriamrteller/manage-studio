@@ -5,15 +5,19 @@ import {
   resolveEntityLabels,
   resolvePresetModules,
   safePreset,
+  safeVertical,
   type BusinessPreset,
   type EntityLabels,
   type PresetModules,
+  type VerticalId,
 } from '@shared/index';
 
 export interface LabelsContextType {
   labels: EntityLabels;
   modules: PresetModules;
   preset: BusinessPreset;
+  /** Vertical id (tenants.skin). 'generic' until the tenant loads. */
+  vertical: VerticalId;
 }
 
 // Module-level constant — never recreated between renders.
@@ -22,6 +26,7 @@ const FALLBACK: LabelsContextType = {
   labels: resolveEntityLabels('programs', {}, 'he'),
   modules: resolvePresetModules('programs'),
   preset: 'programs',
+  vertical: 'generic',
 };
 
 // Non-null default: consumers always receive valid labels with no null-checks needed.
@@ -49,14 +54,17 @@ export function LabelsProvider({ children }: { children: ReactNode }) {
       };
     }
     const preset = safePreset(tenant.business_preset);
+    const vertical = safeVertical(tenant.vertical);
     return {
       labels: resolveEntityLabels(
         preset,
         tenant.entity_label_overrides,
         language,
+        vertical,
       ),
       modules: resolvePresetModules(preset),
       preset,
+      vertical,
     };
   }, [tenant, language]);
 

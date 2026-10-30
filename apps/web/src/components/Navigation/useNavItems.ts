@@ -2,12 +2,13 @@ import { useMemo } from 'react';
 import {
   buildNavSections,
   matchesTenantFilter,
+  matchesVertical,
   navigationConfig,
   publicNavigationConfig,
   type NavSection,
   type NavTenantContext,
 } from './navigationConfig';
-import type { PresetModules, FeatureKey } from '@shared/index';
+import type { PresetModules, FeatureKey, VerticalId } from '@shared/index';
 
 export interface UseNavItemsOptions {
   userRoles: string[] | null;
@@ -16,6 +17,8 @@ export interface UseNavItemsOptions {
   tenant?: NavTenantContext | null;
   /** When provided, items with a featureKey are hidden unless the feature is enabled. */
   hasFeature?: (key: FeatureKey) => boolean;
+  /** Tenant vertical (tenants.skin); hides class-only pages for appointment verticals. */
+  vertical?: VerticalId | null;
 }
 
 interface UseNavItemsResult {
@@ -29,6 +32,7 @@ export function useNavItems({
   modules,
   tenant,
   hasFeature,
+  vertical,
 }: UseNavItemsOptions): UseNavItemsResult {
   const sections = useMemo(() => {
     const allItems = isAuthenticated ? navigationConfig : publicNavigationConfig;
@@ -36,10 +40,11 @@ export function useNavItems({
       (item) =>
         (item.moduleKey === undefined || modules?.[item.moduleKey] !== false) &&
         (item.featureKey === undefined || hasFeature === undefined || hasFeature(item.featureKey)) &&
-        matchesTenantFilter(item, tenant),
+        matchesTenantFilter(item, tenant) &&
+        matchesVertical(item, vertical),
     );
     return buildNavSections(items, isAuthenticated ? userRoles : []);
-  }, [userRoles, isAuthenticated, modules, tenant, hasFeature]);
+  }, [userRoles, isAuthenticated, modules, tenant, hasFeature, vertical]);
 
   return { sections, isAuthenticated };
 }
