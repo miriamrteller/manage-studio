@@ -882,6 +882,9 @@
     "portal": {
       "subtitle": "View your classes, your children's enrolments, and payment history.",
       "children_heading": "My children",
+      "subtitle_services": "Your shoots, payments and galleries.",
+      "my_shoots_heading": "My shoots",
+      "no_shoots": "No shoots booked yet.",
       "myself_heading": "Myself",
       "myself_dob_missing": "Add your date of birth when registering for an adult class.",
       "myself_setup_required": "Complete your profile to register yourself for adult classes.",

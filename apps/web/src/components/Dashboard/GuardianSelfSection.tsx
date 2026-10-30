@@ -10,6 +10,8 @@ interface GuardianSelfSectionProps {
   enrolments: EngagementWithOffering[];
   highlightedEngagementId?: string;
   onEnrol: () => void;
+  /** Appointment verticals (photographer): show "My shoots", no class enrolment or date of birth. */
+  appointmentMode?: boolean;
 }
 
 export function GuardianSelfSection({
@@ -17,6 +19,7 @@ export function GuardianSelfSection({
   enrolments,
   highlightedEngagementId,
   onEnrol,
+  appointmentMode = false,
 }: GuardianSelfSectionProps) {
   const { t, i18n } = useTranslation();
   const birthLabel = formatPersonDateOfBirthDisplay(guardian.dateOfBirth, t, i18n.language);
@@ -26,15 +29,20 @@ export function GuardianSelfSection({
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 id="portal-myself-heading" className="text-lg font-semibold text-gray-900">
-            {t('pages.portal.myself_heading')}
+            {t(appointmentMode ? 'pages.portal.my_shoots_heading' : 'pages.portal.myself_heading')}
           </h3>
           <p className="text-gray-900">
-            <span className="font-semibold">{guardian.name}</span>{' '}
-            <span className="text-sm font-normal text-gray-500">
-              ({t('pages.enrolment.enrol_myself')})
-            </span>
+            <span className="font-semibold">{guardian.name}</span>
+            {!appointmentMode && (
+              <>
+                {' '}
+                <span className="text-sm font-normal text-gray-500">
+                  ({t('pages.enrolment.enrol_myself')})
+                </span>
+              </>
+            )}
           </p>
-          {birthLabel ? (
+          {appointmentMode ? null : birthLabel ? (
             <p className="text-sm text-gray-500">
               {t('form.person.date_of_birth')}: {birthLabel}
             </p>
@@ -42,14 +50,18 @@ export function GuardianSelfSection({
             <p className="text-sm text-amber-700">{t('pages.portal.myself_dob_missing')}</p>
           )}
         </div>
-        <Button variant="outline" size="sm" onClick={onEnrol}>
-          {t('pages.classes.enrol')}
-        </Button>
+        {!appointmentMode && (
+          <Button variant="outline" size="sm" onClick={onEnrol}>
+            {t('pages.classes.enrol')}
+          </Button>
+        )}
       </div>
 
       <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
         {enrolments.length === 0 ? (
-          <p className="text-sm text-gray-500">{t('pages.portal.no_enrolments')}</p>
+          <p className="text-sm text-gray-500">
+            {t(appointmentMode ? 'pages.portal.no_shoots' : 'pages.portal.no_enrolments')}
+          </p>
         ) : (
           <ul className="mt-1" aria-label={t('pages.portal.enrolments_for_self')}>
             {enrolments.map((enrolment) => (
