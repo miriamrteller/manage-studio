@@ -89,6 +89,20 @@ export class JobPaymentService extends BaseService {
     }, 'JobPaymentService.list');
   }
 
+  /** All requests for several jobs at once (client portal; RLS scopes rows to the caller). */
+  static async listForEngagements(engagementIds: string[]): Promise<JobPaymentRequest[]> {
+    if (engagementIds.length === 0) return [];
+    return this.withRetry(async () => {
+      const { data, error } = await supabase
+        .from('job_payment_requests')
+        .select(COLUMNS)
+        .in('engagement_id', engagementIds)
+        .order('created_at', { ascending: true });
+      if (error) throw new Error(error.message);
+      return (data ?? []) as unknown as JobPaymentRequest[];
+    }, 'JobPaymentService.listForEngagements');
+  }
+
   /** Same RPC Thread C calls from an accepted quote. */
   static async create(engagementId: string, requests: JobPaymentRequestInput[]): Promise<JobPaymentRequest[]> {
     const { data, error } = await supabase.rpc('create_job_payment_requests', {

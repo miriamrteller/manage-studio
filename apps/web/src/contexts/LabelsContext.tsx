@@ -1,6 +1,7 @@
 import { createContext, ReactNode, useMemo } from 'react';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useTenant } from '@/hooks/useTenant';
+import { VerticalI18nProvider } from '@/i18n/VerticalI18nProvider';
 import {
   resolveEntityLabels,
   resolvePresetModules,
@@ -41,6 +42,10 @@ export const LabelsContext = createContext<LabelsContextType>(FALLBACK);
  * cached useTenant() query (React Query deduplicates, no extra network calls).
  *
  * Components consume labels via useEntityLabels(), not useTenant() directly.
+ *
+ * Sentences follow the same vertical: VerticalI18nProvider points t() at the
+ * vertical's wording overlay (photographer only); every other vertical keeps
+ * the base 'translation' namespace unchanged.
  */
 export function LabelsProvider({ children }: { children: ReactNode }) {
   const tenant = useTenant();
@@ -68,5 +73,9 @@ export function LabelsProvider({ children }: { children: ReactNode }) {
     };
   }, [tenant, language]);
 
-  return <LabelsContext.Provider value={value}>{children}</LabelsContext.Provider>;
+  return (
+    <LabelsContext.Provider value={value}>
+      <VerticalI18nProvider vertical={value.vertical}>{children}</VerticalI18nProvider>
+    </LabelsContext.Provider>
+  );
 }
