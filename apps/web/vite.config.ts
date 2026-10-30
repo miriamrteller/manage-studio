@@ -41,9 +41,6 @@ function demoMode() {
   const swaps: Record<string, string> = {
     [path.join(src, 'lib/supabase.ts')]: path.join(src, 'demo/supabase.ts'),
     [path.join(src, 'lib/resolveTenantSubdomain.ts')]: path.join(src, 'demo/resolveTenantSubdomain.ts'),
-    // Until the photographer ClientPortal is on main: an adult client page
-    // without the class-school parts (children, class registration).
-    [path.join(src, 'pages/PortalDashboard.tsx')]: path.join(src, 'demo/DemoClientPortal.tsx'),
   };
   const routerShim = path.join(src, 'demo/reactRouterDom.ts');
   const stripeStub = path.join(src, 'demo/stripeStub.ts');
@@ -59,7 +56,7 @@ function demoMode() {
       if (source === 'react-router-dom' && importer && importer !== routerShim) return routerShim;
       // Stripe.js loads from js.stripe.com; the demo makes no external requests.
       if (source === '@stripe/stripe-js') return stripeStub;
-      if (!importer || !/(^|\/)(supabase|resolveTenantSubdomain|PortalDashboard)$/.test(source)) return null;
+      if (!importer || !/(^|\/)(supabase|resolveTenantSubdomain)$/.test(source)) return null;
       const resolved = await this.resolve(source, importer, { ...options, skipSelf: true });
       if (resolved && swaps[resolved.id] && !importer.startsWith(path.join(src, 'demo'))) return swaps[resolved.id];
       return null;
@@ -68,9 +65,11 @@ function demoMode() {
     // artifact; route them through the hash router instead.
     transform(code: string, id: string) {
       if (!id.startsWith(src) || id.startsWith(path.join(src, 'demo'))) return null;
-      if (!code.includes('window.location.href = ') && !code.includes('window.location.origin')) return null;
+      if (!/window\.location\.(href = |origin|assign\()/.test(code)) return null;
       return code
         .replace(/window\.location\.href = (['"`])\//g, 'window.location.hash = $1#/')
+        // App-relative assign('/path') goes through the hash router too.
+        .replace(/window\.location\.assign\(/g, '__demoAssign(')
         // Absolute app links (pay links, quote links) become hash links on the current page.
         .replace(/window\.location\.origin/g, "(window.location.href.split('#')[0] + '#')");
     },

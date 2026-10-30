@@ -547,6 +547,8 @@ class QueryBuilder implements PromiseLike<DemoResult> {
   }
 
   private tableRows(): Row[] {
+    const view = this.client.views[this.table];
+    if (view) return view(this.client.ctx());
     const db = this.client.db;
     return db[this.table] ?? (db[this.table] = []);
   }
@@ -776,8 +778,12 @@ class FakeAuth {
 // client
 // ---------------------------------------------------------------------------
 
+/** Read-only computed tables (database views), evaluated on every query. */
+export type ViewHandler = (ctx: DemoContext) => Row[];
+
 export interface FakeSupabaseOptions {
   tables: Tables;
+  views?: Record<string, ViewHandler>;
   rpcs: Record<string, RpcHandler>;
   functions: Record<string, FunctionHandler>;
   hooks?: FakeHooks;
@@ -789,6 +795,7 @@ export class FakeSupabaseClient {
   user: DemoUser | null = null;
   auth: FakeAuth;
   hooks: FakeHooks;
+  views: Record<string, ViewHandler>;
   private rpcs: Record<string, RpcHandler>;
   private fns: Record<string, FunctionHandler>;
   private debug: boolean;
@@ -811,6 +818,7 @@ export class FakeSupabaseClient {
     this.rpcs = opts.rpcs;
     this.fns = opts.functions;
     this.hooks = opts.hooks ?? {};
+    this.views = opts.views ?? {};
     this.debug = Boolean(opts.debug);
     this.auth = new FakeAuth(this);
     this.functions = {

@@ -5,8 +5,16 @@
  * emails go to the demo outbox.
  */
 import queryClient from '@/lib/query-client';
-import { DemoRpcError, type DemoContext, type FakeHooks, type FunctionHandler, type Row, type RpcHandler } from './fakeSupabase';
-import { formatIls } from './functions';
+import {
+  DemoRpcError,
+  type DemoContext,
+  type FakeHooks,
+  type FunctionHandler,
+  type Row,
+  type RpcHandler,
+  type ViewHandler,
+} from './fakeSupabase';
+import { contractSignHref, formatIls } from './functions';
 import { showInvoice } from './invoice';
 import { sendToOutbox } from './outbox';
 import { insertJob, resolveClient } from './rpcs';
@@ -337,7 +345,110 @@ function insertRequest(ctx: DemoContext, engagementId: string, r: Row, createdBy
   return row;
 }
 
+// ---------------------------------------------------------------------------
+// client search (search_enrolment_students, 20260608002200_admin_enrolment_rpcs)
+// ---------------------------------------------------------------------------
+
+const digitsOnly = (v: unknown) => String(v ?? '').replace(/[^0-9]/g, '');
+const LIVE_ENGAGEMENT = new Set(['active', 'pending_payment', 'admin_review', 'pending_waiver']);
+
+/**
+ * Mirrors the SQL: active people in the tenant; every whitespace token must
+ * occur in a lower-cased blob of name / email / emergency contact / account
+ * name / guardian / package names, or (3+ digits) in a digits-only phone.
+ * Demo addition: the client's WhatsApp number (contact_preferences), which is
+ * where photographer client phones are stored.
+ */
+export function searchClients(ctx: DemoContext, query: string, limit: number): Row[] {
+  const normalized = query.trim().toLowerCase();
+  if (!normalized) return [];
+  const digits = digitsOnly(normalized);
+  const tokens = normalized.split(/\s+/).filter(Boolean);
+  const people = rows(ctx, 'people');
+  const holders = rows(ctx, 'account_members').filter((m) => m.role === 'account_holder');
+
+  const matches = people
+    .filter((p) => p.tenant_id === TENANT_ID && (p.status ?? 'active') === 'active')
+    .map((p) => {
+      const account = rows(ctx, 'accounts').find((a) => a.id === p.account_id);
+      const holder = holders.find((m) => m.account_id === p.account_id);
+      const guardian = people.find((g) => g.id === holder?.person_id);
+      const classNames = [
+        ...new Set(
+          rows(ctx, 'engagements')
+            .filter((e) => e.person_id === p.id && LIVE_ENGAGEMENT.has(String(e.status)))
+            .map((e) => String(rows(ctx, 'offerings').find((o) => o.id === e.offering_id)?.name ?? ''))
+            .filter(Boolean),
+        ),
+      ].sort();
+      const whatsapp = rows(ctx, 'contact_preferences').find((c) => c.person_id === p.id)?.whatsapp_number;
+      const phones = [p.emergency_contact_phone, guardian?.emergency_contact_phone, whatsapp].map(digitsOnly);
+      const blob = [
+        p.name, p.email, p.emergency_contact_name, p.emergency_contact_phone, digitsOnly(p.emergency_contact_phone),
+        account?.name, guardian?.name, guardian?.email, guardian?.emergency_contact_phone,
+        digitsOnly(guardian?.emergency_contact_phone), whatsapp, digitsOnly(whatsapp), classNames.join(' '),
+      ]
+        .filter((v) => v != null && v !== '')
+        .join(' ')
+        .toLowerCase();
+      const ok = tokens.every(
+        (tok) => blob.includes(tok) || (digits.length >= 3 && phones.some((ph) => ph.includes(digits))),
+      );
+      return ok ? { p, account, guardian, classNames, isHolder: holders.some((m) => m.person_id === p.id) } : null;
+    })
+    .filter((m): m is NonNullable<typeof m> => m !== null)
+    .sort((a, b) => String(a.p.name).localeCompare(String(b.p.name)))
+    .slice(0, Math.max(1, Math.min(limit || 15, 50)));
+
+  return matches.map(({ p, account, guardian, classNames, isHolder }) => ({
+    person: {
+      id: p.id, tenant_id: p.tenant_id, user_profile_id: p.user_profile_id ?? null, account_id: p.account_id ?? null,
+      name: p.name, email: p.email ?? null, date_of_birth: p.date_of_birth ?? null,
+      medical_notes: p.medical_notes ?? null, allergies: p.allergies ?? null,
+      emergency_contact_name: p.emergency_contact_name ?? null, emergency_contact_phone: p.emergency_contact_phone ?? null,
+      photo_consent: Boolean(p.photo_consent), media_consent: Boolean(p.media_consent), status: p.status ?? 'active',
+      waiver_accepted_at: p.waiver_accepted_at ?? null, waiver_version: p.waiver_version ?? null,
+      created_at: p.created_at, updated_at: p.updated_at ?? p.created_at,
+    },
+    accountName: account?.name ?? null,
+    guardianName: guardian?.name ?? null,
+    guardianEmail: guardian?.email ?? null,
+    guardianPhone: guardian?.emergency_contact_phone ?? null,
+    emergencyContactName: p.emergency_contact_name ?? null,
+    emergencyContactPhone: p.emergency_contact_phone ?? null,
+    activeClassNames: classNames,
+    isAccountHolder: isHolder,
+    familyAccountId: p.account_id ?? holders.find((m) => m.person_id === p.id)?.account_id ?? null,
+  }));
+}
+
+/** client_job_details view (20261030000200): no gallery_url / notes, own jobs only. */
+export const views: Record<string, ViewHandler> = {
+  client_job_details: (ctx) =>
+    rows(ctx, 'job_details')
+      .filter((jd) => {
+        if (isAdmin(ctx)) return true;
+        const eng = rows(ctx, 'engagements').find((e) => e.id === jd.engagement_id);
+        return Boolean(eng && ctx.user && canRead('engagements', eng, ctx));
+      })
+      .map((jd) => ({
+        engagement_id: jd.engagement_id,
+        tenant_id: jd.tenant_id,
+        job_status: jd.job_status,
+        location: jd.location ?? null,
+        created_at: jd.created_at,
+        updated_at: jd.updated_at,
+        gallery_released: jd.gallery_released_at != null || allPaid(ctx, jd.engagement_id as string),
+      })),
+};
+
 export const extraRpcs: Record<string, RpcHandler> = {
+  search_enrolment_students: (args, ctx) => {
+    if (!ctx.user) throw new DemoRpcError('Authentication required');
+    if (!isAdmin(ctx)) throw new DemoRpcError('Forbidden');
+    return searchClients(ctx, String(args.p_query ?? ''), Number(args.p_limit ?? 15));
+  },
+
   create_job_payment_requests: (args, ctx) => {
     requireAdmin(ctx, 'create_job_payment_requests');
     const engagementId = String(args.p_engagement_id);
@@ -477,6 +588,15 @@ export const extraRpcs: Record<string, RpcHandler> = {
 };
 
 export const extraFunctions: Record<string, FunctionHandler> = {
+  'client-job-contract-link': (body, ctx) => {
+    const id = String(body.engagementId ?? '');
+    const eng = rows(ctx, 'engagements').find((e) => e.id === id);
+    if (!eng || !ctx.user || !canRead('engagements', eng, ctx)) throw new DemoRpcError('Shoot not found');
+    if (eng.waiver_evidence_id) throw new DemoRpcError('Contract already signed');
+    // App-relative path, as the real function returns.
+    return { signPath: contractSignHref(id).slice(1) };
+  },
+
   'send-job-payment-link': (body, ctx) => {
     requireAdmin(ctx, 'send-job-payment-link');
     const req = rows(ctx, 'job_payment_requests').find((r) => r.id === body.request_id);

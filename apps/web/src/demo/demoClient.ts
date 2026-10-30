@@ -6,7 +6,7 @@ import { FakeSupabaseClient, type Row } from './fakeSupabase';
 import { baseFunctions } from './functions';
 import { baseRpcs } from './rpcs';
 import { ADMIN_EMAIL, ADMIN_USER_ID, buildSeed, CLIENT_USER_ID, DEMO_CLIENT } from './seed';
-import { extraFunctions, extraRpcs, hooks, recalcQuote } from './extensions';
+import { extraFunctions, extraRpcs, hooks, recalcQuote, views } from './extensions';
 
 /**
  * Embedded or private-mode browsers can throw on any storage access. The app
@@ -44,6 +44,13 @@ function ensureStorage(name: 'localStorage' | 'sessionStorage') {
 ensureStorage('localStorage');
 ensureStorage('sessionStorage');
 
+/** Used by the demo transform for window.location.assign(): app paths stay in the hash router. */
+(window as unknown as { __demoAssign: (url: string | URL) => void }).__demoAssign = (url) => {
+  const target = String(url);
+  if (target.startsWith('/')) window.location.hash = `#${target}`;
+  else window.location.assign(target);
+};
+
 export const DEMO_FUNCTIONS_BASE = 'https://demo.supabase.invalid/functions/v1/';
 
 export const demoClient = new FakeSupabaseClient({
@@ -51,6 +58,7 @@ export const demoClient = new FakeSupabaseClient({
   rpcs: { ...baseRpcs, ...extraRpcs },
   functions: { ...baseFunctions, ...extraFunctions },
   hooks,
+  views,
   debug: new URLSearchParams(window.location.search).has('demo-debug'),
 });
 
