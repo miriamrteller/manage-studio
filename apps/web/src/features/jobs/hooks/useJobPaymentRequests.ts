@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTenant } from '@/hooks/useTenant';
 import {
   JobPaymentService,
   type JobPaymentRequest,
@@ -15,6 +16,7 @@ export function jobGalleryKey(engagementId: string | undefined) {
 
 export function useJobPaymentRequests(engagementId: string | undefined) {
   const queryClient = useQueryClient();
+  const tenant = useTenant();
 
   const listQuery = useQuery({
     queryKey: jobPaymentRequestsKey(engagementId),
@@ -25,6 +27,8 @@ export function useJobPaymentRequests(engagementId: string | undefined) {
   const invalidate = async () => {
     await queryClient.invalidateQueries({ queryKey: jobPaymentRequestsKey(engagementId) });
     await queryClient.invalidateQueries({ queryKey: jobGalleryKey(engagementId) });
+    // Thread A's job detail query (JobService) shows payment state too.
+    await queryClient.invalidateQueries({ queryKey: ['jobs', tenant?.id, engagementId] });
   };
 
   const create = useMutation({

@@ -45,7 +45,7 @@ export function NavDrawer() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useCurrentUser();
-  const { labels, modules } = useEntityLabels();
+  const { labels, modules, vertical } = useEntityLabels();
   const tenant = useTenant();
   const { hasFeature } = useFeatureGate();
   // Resolve feature flags from the authenticated gate OR the anon-safe tenant config
@@ -73,6 +73,7 @@ export function NavDrawer() {
     modules,
     tenant,
     hasFeature: hasFeatureResolved,
+    vertical,
   });
 
   // Grey out booking-dependent items (e.g. /book) only when we positively know
@@ -87,6 +88,14 @@ export function NavDrawer() {
     switch (item.path) {
       case '/classes':
         return labels.offering.plural;
+      case '/admin/jobs':
+        return labels.engagement.plural;
+      case '/admin/students':
+        return vertical === 'photographer' ? labels.contact.plural : t(item.labelKey);
+      case '/admin/setup/services':
+        return vertical === 'photographer' ? labels.offering.plural : t(item.labelKey);
+      case '/admin/setup/waivers':
+        return vertical === 'photographer' ? t('nav.contracts') : t(item.labelKey);
       case '/admin/families':
         return labels.account.plural;
       case '/admin/setup/levels':

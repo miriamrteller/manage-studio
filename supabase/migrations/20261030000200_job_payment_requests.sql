@@ -402,6 +402,36 @@ BEGIN
 END
 $$;
 
+-- What a client MAY read about their job: everything except the gallery
+-- columns. Thread A's job_details_client_read policy is neutralised by the
+-- restrictive policy above, so client UIs read this view (or the RPCs) instead.
+-- security_barrier + an explicit ownership predicate: the view runs as its
+-- owner, so it must filter rows itself rather than rely on RLS.
+DO $$
+BEGIN
+  IF to_regclass('public.job_details') IS NOT NULL THEN
+    EXECUTE $v$
+      CREATE OR REPLACE VIEW client_job_details WITH (security_barrier = true) AS
+        SELECT jd.engagement_id, jd.tenant_id, jd.job_status, jd.location, jd.notes,
+               jd.created_at, jd.updated_at,
+               (jd.gallery_released_at IS NOT NULL OR job_payment_requests_all_paid(jd.engagement_id)) AS gallery_released
+        FROM job_details jd
+        WHERE jd.engagement_id IN (
+          SELECT e.id FROM engagements e
+          WHERE e.person_id = get_my_person_id()
+             OR e.person_id IN (SELECT p.id FROM people p WHERE p.account_id IN (SELECT get_my_account_ids()))
+        )
+        OR is_super_admin()
+        OR (jd.tenant_id = get_my_tenant_id() AND EXISTS (
+              SELECT 1 FROM user_profiles WHERE id = auth.uid() AND 'tenant_admin' = ANY(role)))
+    $v$;
+    EXECUTE 'GRANT SELECT ON client_job_details TO authenticated, service_role';
+    EXECUTE $c$COMMENT ON VIEW client_job_details IS
+      'Client-safe projection of job_details: no gallery_url / gallery_released_at. Use get_client_job_gallery() for the gated link.'$c$;
+  END IF;
+END
+$$;
+
 -- ---------------------------------------------------------------------------
 -- Part 2: daily balance reminders (3 days before due_date, then once overdue).
 -- Same pg_cron + pg_net shape as run-enrolment-payment-dunning (002800).

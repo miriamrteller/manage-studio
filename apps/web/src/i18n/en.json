@@ -400,7 +400,10 @@
         "capture_whatsapp": "WhatsApp status link",
         "capture_linkedin": "LinkedIn link",
         "empty_title": "No leads yet",
-        "empty_message": "Share your capture links, or add a lead manually when someone calls or messages."
+        "empty_message": "Share your capture links, or add a lead manually when someone calls or messages.",
+        "convert": "Convert to shoot",
+        "convert_hint": "Creates the client and a shoot from this lead. Pick a package and an optional date.",
+        "open_job": "Open shoot"
       },
       "inquire": {
         "title": "Get in touch",
@@ -1033,6 +1036,63 @@
       "sign_prompt": "Please read the waiver carefully and sign below to activate your enrolment."
     },
     "jobs": {
+      "title": "Shoots",
+      "subtitle": "Every enquiry and booked shoot, from first contact to delivered gallery.",
+      "new": "New shoot",
+      "empty_title": "No shoots yet",
+      "empty_message": "Create a shoot or convert a lead to get started.",
+      "client": "Client",
+      "package": "Package",
+      "when": "Date & time",
+      "location": "Location",
+      "status": "Status",
+      "notes": "Notes",
+      "contract": "Contract",
+      "payments": "Payments",
+      "gallery": "Gallery",
+      "gallery_url": "Gallery link",
+      "gallery_released_at": "Released to client",
+      "unscheduled": "Not scheduled yet",
+      "filter_all": "All",
+      "filter_status": "Filter by status",
+      "status_enquiry": "Enquiry",
+      "status_booked": "Booked",
+      "status_shot": "Shot",
+      "status_editing": "Editing",
+      "status_delivered": "Delivered",
+      "status_cancelled": "Cancelled",
+      "existing_client": "Existing client",
+      "new_client": "New client",
+      "client_search": "Search clients",
+      "client_name": "Client name",
+      "client_email": "Client email",
+      "client_phone": "Client phone",
+      "starts_at": "Start",
+      "ends_at": "End",
+      "ends_hint": "Leave empty to use the package duration.",
+      "create": "Create shoot",
+      "creating": "Creating…",
+      "save": "Save",
+      "saving": "Saving…",
+      "saved": "Saved",
+      "back": "Back to shoots",
+      "not_found": "Shoot not found",
+      "contract_signed": "Signed",
+      "contract_signed_at": "Signed on {{date}}",
+      "contract_unsigned": "Not signed",
+      "contract_send": "Send contract link",
+      "contract_sending": "Sending…",
+      "contract_sent": "Contract link sent to {{email}}",
+      "contract_recipient": "Send to",
+      "contract_no_email": "Add an email to the client before sending a contract.",
+      "contract_no_template": "No active contract template. Activate one under Setup → Contracts.",
+      "contract_merge_hint": "Templates can use {{client_name}}, {{shoot_date}}, {{location}}, {{package}} and {{price}}.",
+      "payments_placeholder": "Payment requests for this shoot will appear here.",
+      "schedule": "Schedule",
+      "details": "Details",
+      "price": "Price",
+      "created_from_lead": "Created from lead",
+      "error_generic": "Something went wrong. Please try again.",
       "payments": {
         "title": "Payments",
         "summary": "Paid: {{paid}} · Outstanding: {{outstanding}}",
@@ -1103,7 +1163,7 @@
           "unrelease": "Lock again"
         }
       },
-      "client": {
+      "client_portal": {
         "title": "Payments & gallery",
         "nothingDue": "Nothing due right now.",
         "pay": "Pay",
@@ -1203,7 +1263,9 @@
       "portal": "My portal",
       "learning": "My learning",
       "account": "Account"
-    }
+    },
+    "jobs": "Shoots",
+    "contracts": "Contracts"
   },
   "footer": {
     "school_name_fallback": "Ballet School",
@@ -1513,7 +1575,6 @@
       "grow_note": "Grow typically allows a full refund only on the same day as the charge. The provider message is shown below if it rejects the refund.",
       "icount_note": "iCount may issue a credit note instead of reversing the charge. The provider message is shown below if the refund is rejected. Mock mode completes instantly.",
       "invoice4u_note": "Invoice4U refunds the card charge and may issue a credit document when the original payment created a tax receipt. The provider message is shown below if it rejects the refund.",
-      "bundled_note": "The refund is sent to your payment provider. Any provider message is shown below if it fails.",
       "bundled_note": "The refund is sent to your payment provider. Any provider message is shown below if it fails."
     },
     "payment_history": {

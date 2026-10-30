@@ -27,9 +27,9 @@ export function ClientJobGalleryCard({ engagementId, currency }: Props) {
 
   return (
     <section className="space-y-3 rounded-md border p-3" aria-labelledby={`job-pay-${engagementId}`}>
-      <h3 id={`job-pay-${engagementId}`} className="font-medium">{t('pages.jobs.client.title')}</h3>
+      <h3 id={`job-pay-${engagementId}`} className="font-medium">{t('pages.jobs.client_portal.title')}</h3>
       {open.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{t('pages.jobs.client.nothingDue')}</p>
+        <p className="text-sm text-muted-foreground">{t('pages.jobs.client_portal.nothingDue')}</p>
       ) : (
         <ul className="space-y-2">
           {open.map((r) => (
@@ -39,7 +39,7 @@ export function ClientJobGalleryCard({ engagementId, currency }: Props) {
                 {r.due_date && <span className="text-muted-foreground"> · {t('pages.jobs.payments.dueOn', { date: formatDueDate(r.due_date, language) })}</span>}
               </span>
               <Button size="sm" variant="primary" onClick={() => window.location.assign(JobPaymentService.payUrlFor(r.public_token))}>
-                {t('pages.jobs.client.pay')}
+                {t('pages.jobs.client_portal.pay')}
               </Button>
             </li>
           ))}
@@ -47,10 +47,10 @@ export function ClientJobGalleryCard({ engagementId, currency }: Props) {
       )}
       {gallery?.released && gallery.gallery_url ? (
         <a className="inline-block text-sm font-medium underline text-primary" href={gallery.gallery_url} target="_blank" rel="noreferrer">
-          {t('pages.jobs.client.openGallery')}
+          {t('pages.jobs.client_portal.openGallery')}
         </a>
       ) : gallery?.has_gallery ? (
-        <p className="text-sm text-muted-foreground">{t('pages.jobs.client.galleryLocked')}</p>
+        <p className="text-sm text-muted-foreground">{t('pages.jobs.client_portal.galleryLocked')}</p>
       ) : null}
     </section>
   );
