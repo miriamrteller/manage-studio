@@ -136,6 +136,7 @@ export const navigationConfig: NavItem[] = [
     labelKey: 'nav.quotes',
     requiredRoles: ['tenant_admin'],
     sectionKey: 'administration',
+    verticals: ['photographer'],
   },
   {
     path: '/admin/appointments',

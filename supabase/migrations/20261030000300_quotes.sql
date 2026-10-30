@@ -5,7 +5,7 @@
 -- existing shoot). A shoot is an engagements row + job_details (Thread A,
 -- vertical-neutral "job"). The client opens /quote/:token, ticks optional
 -- add-ons and accepts. Acceptance is ONE transaction (accept_quote): lead →
--- job conversion, job_status 'booked', deposit + balance payment requests.
+-- job conversion, job_status 'booked', deposit + balance job_payment_requests.
 --
 -- Amounts are GROSS minor units (SPEC §2.5.1): the invoicing provider owns the
 -- pretax/VAT split, so no breakdown is stored here. The same formula lives in
@@ -15,7 +15,7 @@
 -- DEPENDENCIES:
 --   base chain (tenants, leads, accounts, people, offerings, engagements, audit_log)
 --   20261030000100_job_details.sql — job_details, job_resolve_client, job_insert (Thread A)
---   20261030000200_*               — create_shoot_payment_requests (Thread B)
+--   20261030000200_job_payment_requests.sql — job_payment_requests (Thread B)
 --   20260608002800 — get_supabase_functions_url / get_cron_secret
 -- =============================================================================
 
@@ -311,7 +311,9 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
   SELECT
     COALESCE(l.name, a.name, ap.name, ep.name),
     COALESCE(l.email, ap.email, ep.email),
-    COALESCE(l.phone, ap.emergency_contact_phone, ep.emergency_contact_phone)
+    COALESCE(l.phone,
+      (SELECT cp.whatsapp_number FROM contact_preferences cp
+       WHERE cp.person_id = COALESCE(ap.id, ep.id) AND cp.tenant_id = q.tenant_id LIMIT 1))
   FROM quotes q
   LEFT JOIN leads       l  ON l.id = q.lead_id
   LEFT JOIN accounts    a  ON a.id = q.account_id
@@ -328,15 +330,21 @@ RETURNS BOOLEAN LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS
     true);
 $$;
 
--- Package for the job a lead quote turns into: first included package line,
--- else the lead's own package (job_insert requires one).
+-- Package for the job a lead quote turns into (job_insert requires one):
+-- first included package line, else the lead's own package, else the tenant's
+-- hidden "Custom shoot" package (Thread A: appointment, not public, price 0).
+-- The agreed price lives on the quote + job_payment_requests, never on the offering.
 CREATE OR REPLACE FUNCTION quote_job_offering_id(p_quote_id UUID)
 RETURNS UUID LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
   SELECT COALESCE(
     (SELECT offering_id FROM quote_lines
      WHERE quote_id = p_quote_id AND offering_id IS NOT NULL AND NOT is_optional
      ORDER BY sort_order, created_at LIMIT 1),
-    (SELECT l.offering_id FROM quotes q JOIN leads l ON l.id = q.lead_id WHERE q.id = p_quote_id));
+    (SELECT l.offering_id FROM quotes q JOIN leads l ON l.id = q.lead_id WHERE q.id = p_quote_id),
+    (SELECT o.id FROM quotes q JOIN offerings o ON o.tenant_id = q.tenant_id
+     WHERE q.id = p_quote_id AND o.offering_type = 'appointment' AND NOT o.is_public
+       AND o.price_minor = 0 AND o.status = 'active'
+     ORDER BY o.created_at LIMIT 1));
 $$;
 
 CREATE OR REPLACE FUNCTION quote_lines_json(p_quote_id UUID)
@@ -392,7 +400,7 @@ BEGIN
                         valid_until, notes, deposit_percent, balance_max_installments,
                         send_contract_on_accept, created_by)
     VALUES (v_tenant, v_lead, v_account, v_engagement, NULLIF(trim(p_quote->>'title'), ''),
-            COALESCE(NULLIF(p_quote->>'currency', ''), 'ILS'),
+            COALESCE(NULLIF(p_quote->>'currency', ''), (SELECT currency FROM tenants WHERE id = v_tenant), 'ILS'),
             NULLIF(p_quote->>'shoot_date', '')::date, NULLIF(p_quote->>'valid_until', '')::date,
             NULLIF(trim(p_quote->>'notes'), ''), COALESCE((p_quote->>'deposit_percent')::int, 30),
             COALESCE((p_quote->>'balance_max_installments')::int, 1),
@@ -580,6 +588,7 @@ DECLARE
   v_balance_due  DATE;
   v_lang         TEXT;
   v_requests     JSONB := '[]'::jsonb;
+  v_request_ids  UUID[];
   v_result       JSONB;
 BEGIN
   -- 1. Lock. A concurrent second click blocks here, then sees 'accepted'.
@@ -668,6 +677,9 @@ BEGIN
   WHERE job_details.job_status IN ('enquiry', 'booked');
 
   -- 5. Payment requests (Thread B): deposit now, balance on the shoot date.
+  -- Written straight into job_payment_requests: create_job_payment_requests()
+  -- requires a signed-in tenant admin, and the accepting client is anonymous.
+  -- Mirrors that RPC (same columns, same audit action); created_by is NULL.
   SELECT COALESCE(v_q.shoot_date, (e.booked_starts_at AT TIME ZONE 'Asia/Jerusalem')::date)
   INTO v_shoot_date FROM engagements e WHERE e.id = v_engagement;
   v_balance_due := GREATEST(COALESCE(v_shoot_date, v_today), v_today);
@@ -686,7 +698,21 @@ BEGIN
       'max_installments', v_q.balance_max_installments);
   END IF;
   IF jsonb_array_length(v_requests) > 0 THEN
-    PERFORM create_shoot_payment_requests(p_engagement_id := v_engagement, p_requests := v_requests);
+    WITH ins AS (
+      INSERT INTO job_payment_requests (tenant_id, engagement_id, label, amount_minor, currency, due_date,
+                                        max_installments, created_by)
+      SELECT v_q.tenant_id, v_engagement, r->>'label', (r->>'amount_minor')::int, upper(v_q.currency),
+             (r->>'due_date')::date, (r->>'max_installments')::int, NULL
+      FROM jsonb_array_elements(v_requests) WITH ORDINALITY AS t(r, n)
+      ORDER BY n
+      RETURNING id
+    )
+    SELECT array_agg(id) INTO v_request_ids FROM ins;
+
+    INSERT INTO audit_log (tenant_id, actor_id, action, entity_type, entity_id, after_state)
+    VALUES (v_q.tenant_id, NULL, 'job_payment_request.created', 'engagement', v_engagement,
+            jsonb_build_object('request_ids', to_jsonb(v_request_ids), 'requests', v_requests,
+                               'source', 'quote_accepted', 'quote_id', v_q.id));
   END IF;
 
   -- 6. Settle the quote and keep the result for replay.
@@ -697,6 +723,7 @@ BEGIN
     'balance_minor', v_q.balance_minor, 'currency', v_q.currency,
     'shoot_date', v_shoot_date, 'balance_due_date', v_balance_due,
     'payment_requests', v_requests,
+    'payment_request_ids', to_jsonb(COALESCE(v_request_ids, '{}'::uuid[])),
     'send_contract', v_q.send_contract_on_accept);
 
   UPDATE quotes SET status = 'accepted', accepted_at = now(), engagement_id = v_engagement,

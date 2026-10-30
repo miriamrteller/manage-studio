@@ -1,7 +1,7 @@
 -- =============================================================================
--- Minimal stand-in for the Supabase base chain + Thread B's contract RPC, just
--- enough to apply Thread A's real 20261030000100_job_details.sql and
--- 20261030000300_quotes.sql on a plain Postgres 15+.
+-- Minimal stand-in for the Supabase base chain, just enough to apply Thread A's
+-- and Thread B's real migrations and 20261030000300_quotes.sql on a plain
+-- Postgres 15+.
 -- NOT a migration. Used only by supabase/tests/quotes/run.sh.
 -- =============================================================================
 
@@ -29,10 +29,13 @@ CREATE FUNCTION cron.schedule(p_schedule TEXT, p_command TEXT) RETURNS INT LANGU
 CREATE FUNCTION cron.unschedule(p_jobid INT) RETURNS BOOLEAN LANGUAGE sql AS
   $$ DELETE FROM cron.job WHERE jobid = p_jobid RETURNING true $$;
 
+CREATE EXTENSION IF NOT EXISTS pgcrypto;  -- Thread B's token default uses gen_random_bytes
+
 CREATE TABLE tenants (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   subdomain TEXT,
+  currency TEXT NOT NULL DEFAULT 'ILS',
   language_default TEXT NOT NULL DEFAULT 'he'
 );
 CREATE TABLE user_profiles (
@@ -73,11 +76,28 @@ CREATE TABLE offerings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL REFERENCES tenants(id),
   name TEXT NOT NULL,
+  offering_type TEXT NOT NULL DEFAULT 'class',
+  is_public BOOLEAN NOT NULL DEFAULT true,
   price_minor INT NOT NULL DEFAULT 0,
   duration_mins INT,
   status TEXT NOT NULL DEFAULT 'active',
-  location TEXT
+  location TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+CREATE TABLE contact_preferences (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id),
+  person_id UUID NOT NULL REFERENCES people(id),
+  email_opted_in BOOLEAN NOT NULL DEFAULT true,
+  whatsapp_number TEXT,
+  whatsapp_opted_in BOOLEAN NOT NULL DEFAULT false,
+  whatsapp_verified BOOLEAN NOT NULL DEFAULT false,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+-- Thread B adds payments.job_payment_request_id.
+CREATE TABLE payments (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id UUID REFERENCES tenants(id));
+CREATE FUNCTION get_supabase_functions_url() RETURNS TEXT LANGUAGE sql AS $$ SELECT 'http://functions.test' $$;
+CREATE FUNCTION get_cron_secret() RETURNS TEXT LANGUAGE sql AS $$ SELECT 'test' $$;
 CREATE TABLE leads (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL REFERENCES tenants(id),
@@ -129,33 +149,10 @@ CREATE FUNCTION get_my_person_id() RETURNS UUID LANGUAGE sql STABLE SECURITY DEF
 CREATE FUNCTION get_my_account_ids() RETURNS SETOF UUID LANGUAGE sql STABLE SECURITY DEFINER AS
   $$ SELECT account_id FROM account_members WHERE user_profile_id = auth.uid() $$;
 
--- Counts calls so tests can assert "exactly once".
-CREATE TABLE stub_calls (fn TEXT NOT NULL, args JSONB, at TIMESTAMPTZ DEFAULT clock_timestamp());
-
 -- Thread A (20261030000100_job_details.sql) is applied for real by run.sh.
 
--- ── Thread B contract (20261030000200) ──
-CREATE TABLE shoot_payment_requests (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  engagement_id UUID NOT NULL REFERENCES engagements(id),
-  label TEXT NOT NULL,
-  amount_minor INT NOT NULL,
-  due_date DATE NOT NULL,
-  max_installments INT NOT NULL
-);
-
-CREATE FUNCTION create_shoot_payment_requests(p_engagement_id UUID, p_requests JSONB) RETURNS SETOF UUID
-LANGUAGE plpgsql SECURITY DEFINER AS $$
-BEGIN
-  INSERT INTO stub_calls (fn, args) VALUES ('create_shoot_payment_requests', p_requests);
-  RETURN QUERY
-  INSERT INTO shoot_payment_requests (engagement_id, label, amount_minor, due_date, max_installments)
-  SELECT p_engagement_id, r->>'label', (r->>'amount_minor')::int, (r->>'due_date')::date,
-         (r->>'max_installments')::int
-  FROM jsonb_array_elements(p_requests) r
-  RETURNING id;
-END;
-$$;
+-- Thread B (20261030000200_job_payment_requests.sql) is applied for real by
+-- run.sh when available; 01_b_fallback.sql otherwise.
 
 GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;

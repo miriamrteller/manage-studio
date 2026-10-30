@@ -142,7 +142,8 @@ BEGIN
                     ARRAY[v_required, gen_random_uuid()]);
   ASSERT j->>'code' = 'invalid_selection', format('invalid selection: %s', j);
   ASSERT (SELECT status FROM quotes WHERE id = (SELECT v::uuid FROM ctx WHERE k = 'q1')) = 'sent', 'still sent';
-  ASSERT (SELECT count(*) FROM stub_calls) = 0, 'no downstream calls';
+  ASSERT (SELECT count(*) FROM job_payment_requests) = 0, 'no payment requests';
+  ASSERT (SELECT count(*) FROM job_details) = 0, 'no job';
 END $$;
 RESET ROLE;
 
@@ -174,14 +175,14 @@ BEGIN
   ASSERT (SELECT converted_account_id IS NOT NULL FROM leads WHERE id = '00000000-0000-0000-0000-0000000001e1'),
     'lead converted';
 
-  ASSERT (SELECT count(*) FROM shoot_payment_requests WHERE engagement_id = v_eng) = 2, 'two payment requests';
-  ASSERT (SELECT amount_minor FROM shoot_payment_requests WHERE engagement_id = v_eng AND label = 'מקדמה') = 67500,
+  ASSERT (SELECT count(*) FROM job_payment_requests WHERE engagement_id = v_eng) = 2, 'two payment requests';
+  ASSERT (SELECT amount_minor FROM job_payment_requests WHERE engagement_id = v_eng AND label = 'מקדמה') = 67500,
     'Hebrew deposit label + amount';
-  ASSERT (SELECT due_date FROM shoot_payment_requests WHERE engagement_id = v_eng AND label = 'יתרה') = current_date + 20,
+  ASSERT (SELECT due_date FROM job_payment_requests WHERE engagement_id = v_eng AND label = 'יתרה') = current_date + 20,
     'balance due on shoot date';
-  ASSERT (SELECT max_installments FROM shoot_payment_requests WHERE engagement_id = v_eng AND label = 'יתרה') = 3,
+  ASSERT (SELECT max_installments FROM job_payment_requests WHERE engagement_id = v_eng AND label = 'יתרה') = 3,
     'balance installments';
-  ASSERT (SELECT sum(amount_minor) FROM shoot_payment_requests WHERE engagement_id = v_eng) = q.total_minor,
+  ASSERT (SELECT sum(amount_minor) FROM job_payment_requests WHERE engagement_id = v_eng) = q.total_minor,
     'requests sum to total';
   ASSERT (SELECT count(*) FROM audit_log WHERE action = 'quote_accepted' AND entity_id = q.id) = 1, 'audited';
   INSERT INTO ctx VALUES ('eng1', v_eng::text);
@@ -196,7 +197,9 @@ BEGIN
   ASSERT j->>'engagement_id' = (SELECT v FROM ctx WHERE k = 'eng1'), 'same engagement';
   ASSERT (j->>'total_minor')::int = 225000, 'replayed totals (selection not re-applied)';
   ASSERT (SELECT count(*) FROM job_details WHERE lead_id = '00000000-0000-0000-0000-0000000001e1') = 1, 'converted once';
-  ASSERT (SELECT count(*) FROM stub_calls WHERE fn = 'create_shoot_payment_requests') = 1, 'requests once';
+  ASSERT (SELECT count(*) FROM job_payment_requests WHERE engagement_id = (SELECT v::uuid FROM ctx WHERE k = 'eng1')) = 2,
+    'requests created once';
+  ASSERT (SELECT count(*) FROM audit_log WHERE action = 'job_payment_request.created') = 1, 'request audit once';
   ASSERT (SELECT count(*) FROM audit_log WHERE action = 'quote_accepted') = 1, 'audited once';
   ASSERT (SELECT count(*) FROM audit_log WHERE entity_type = 'leads' AND after_state->>'transition' = 'quote_accepted') = 1,
     'lead conversion audited once';
@@ -315,6 +318,28 @@ BEGIN
     RAISE EXCEPTION 'sending a lead quote without a package should fail';
   EXCEPTION WHEN check_violation THEN NULL;
   END;
+END $$;
+RESET ROLE;
+
+-- With the tenant's hidden "Custom shoot" package (Thread A), the same quote can go out
+-- and the job is attached to that package; the price stays on the quote.
+INSERT INTO offerings (id, tenant_id, name, offering_type, is_public, price_minor) VALUES
+  ('00000000-0000-0000-0000-0000000000f4', '00000000-0000-0000-0000-0000000000a1', 'Custom shoot', 'appointment', false, 0);
+SET ROLE authenticated;
+INSERT INTO ctx SELECT 'q_np', id::text FROM quotes WHERE lead_id = '00000000-0000-0000-0000-0000000001e2';
+SELECT mark_quote_sent((SELECT v::uuid FROM ctx WHERE k = 'q_np'), 'email') IS NOT NULL AS sent;
+RESET ROLE;
+SET ROLE service_role;
+DO $$
+DECLARE j JSONB;
+BEGIN
+  j := accept_quote((SELECT public_token FROM quotes WHERE id = (SELECT v::uuid FROM ctx WHERE k = 'q_np')),
+                    '00000000-0000-0000-0000-0000000000a1', '{}');
+  ASSERT (j->>'ok')::boolean, format('custom-package accept: %s', j);
+  ASSERT (SELECT offering_id FROM engagements WHERE id = (j->>'engagement_id')::uuid)
+         = '00000000-0000-0000-0000-0000000000f4', 'job on the hidden custom package';
+  ASSERT (SELECT sum(amount_minor) FROM job_payment_requests WHERE engagement_id = (j->>'engagement_id')::uuid) = 1000,
+    'price from the quote, not the package';
 END $$;
 RESET ROLE;
 

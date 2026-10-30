@@ -15,8 +15,17 @@ createdb "$DB"
 trap 'dropdb --if-exists "$DB" >/dev/null 2>&1 || true' EXIT
 
 "${PSQL[@]}" -f "$HERE/00_stub_schema.sql"
-# Thread A's migration, unmodified.
+# Threads A and B, unmodified. B can be supplied from its branch until it merges:
+#   B_MIGRATION=<(git show origin/photographer/b-payments:supabase/migrations/20261030000200_job_payment_requests.sql)
 "${PSQL[@]}" -f "$ROOT/supabase/migrations/20261030000100_job_details.sql" >/dev/null
+B_MIGRATION="${B_MIGRATION:-$ROOT/supabase/migrations/20261030000200_job_payment_requests.sql}"
+if [[ -r "$B_MIGRATION" ]]; then
+  "${PSQL[@]}" -f "$B_MIGRATION" >/dev/null
+  echo "using Thread B migration: $B_MIGRATION"
+else
+  echo "Thread B migration not found; using 01_b_fallback.sql" >&2
+  "${PSQL[@]}" -f "$HERE/01_b_fallback.sql"
+fi
 "${PSQL[@]}" -f "$ROOT/supabase/migrations/20261030000300_quotes.sql" >/dev/null
 "${PSQL[@]}" -f "$HERE/10_quotes_test.sql"
 
@@ -42,7 +51,7 @@ R1="$(grep -E '^(true|false)$' "$HERE/.race1" || true)"
 rm -f "$HERE/.race1"
 
 CALLS="$("${PSQL[@]}" -At -c "SELECT count(*) FROM job_details WHERE lead_id = '00000000-0000-0000-0000-0000000001e9'")"
-REQS="$("${PSQL[@]}" -At -c "SELECT count(*) FROM shoot_payment_requests r JOIN quotes q ON q.engagement_id = r.engagement_id WHERE q.id = '00000000-0000-0000-0000-00000000c0c0'")"
+REQS="$("${PSQL[@]}" -At -c "SELECT count(*) FROM job_payment_requests r JOIN quotes q ON q.engagement_id = r.engagement_id WHERE q.id = '00000000-0000-0000-0000-00000000c0c0'")"
 
 if [[ "$R1" != "false" || "$R2" != "true" || "$CALLS" != "1" || "$REQS" != "2" ]]; then
   echo "race test FAILED: first=$R1 second=$R2 conversions=$CALLS payment_requests=$REQS" >&2

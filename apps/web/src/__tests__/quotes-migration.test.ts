@@ -35,7 +35,7 @@ describe('accept_quote transaction', () => {
       'FROM job_resolve_client(v_q.tenant_id, NULL, v_lead.name, v_lead.email, v_lead.phone)',
       'v_engagement := job_insert(',
       "DO UPDATE SET job_status = 'booked'",
-      'create_shoot_payment_requests(p_engagement_id := v_engagement, p_requests := v_requests)',
+      'INSERT INTO job_payment_requests (tenant_id, engagement_id, label, amount_minor',
       "UPDATE quotes SET status = 'accepted'",
       "'quote_accepted', 'quote', v_q.id",
     ].map((needle) => acceptBody.indexOf(needle));
@@ -55,8 +55,13 @@ describe('accept_quote transaction', () => {
     expect(sql).toMatch(/GRANT EXECUTE ON FUNCTION accept_quote\(TEXT, UUID, UUID\[\]\)\s+TO service_role;/);
   });
 
-  it('does not call convert_lead_to_job (it requires a signed-in admin; the client is anonymous)', () => {
+  it('calls neither admin-only RPC (convert_lead_to_job / create_job_payment_requests): the client is anonymous', () => {
     expect(acceptBody).not.toMatch(/(:=|PERFORM|FROM)\s+convert_lead_to_job\s*\(/);
+    expect(acceptBody).not.toMatch(/(:=|PERFORM|FROM)\s+create_job_payment_requests\s*\(/);
+  });
+
+  it('audits payment requests with the same action as Thread B', () => {
+    expect(acceptBody).toContain("'job_payment_request.created'");
   });
 
   it('refuses a lead quote without a package before mutating anything', () => {

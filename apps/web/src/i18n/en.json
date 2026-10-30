@@ -1179,6 +1179,12 @@
         "invalid": "Check the quote: each line needs a description and a valid price, and there must be at least one line.",
         "no_source": "Open a quote from a lead or a shoot.",
         "not_found": "Quote not found."
+      },
+      "accepted": {
+        "title": "Accepted",
+        "open_shoot": "Open the shoot",
+        "send_contract": "Send contract",
+        "contract_sent": "Contract link sent."
       }
     },
     "public_quote": {
@@ -1192,7 +1198,7 @@
       "decline_reason": "Would you like to tell us why? (optional)",
       "confirm_decline": "Decline the quote",
       "accepted": "Thank you! Your booking is confirmed. Payment details will follow.",
-      "contract_to_follow": "We will also send you the contract to sign.",
+      "contract_to_follow": "The studio will send you the contract to sign.",
       "declined": "You declined this quote. Changed your mind? Just get in touch.",
       "expired": "This quote has expired. Get in touch and we will send you an updated one.",
       "not_found": "This quote link is not valid.",

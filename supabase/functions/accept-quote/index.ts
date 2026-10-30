@@ -63,7 +63,8 @@ Deno.serve(async (req) => {
     console.error("[accept-quote] booking confirmation failed:", emailError);
   }
 
-  // send_contract: Thread A's contract-send flow hooks in here once it lands.
+  // send_contract: the admin sends it from the accepted quote (send-job-contract-link
+  // needs an admin session); the client page says the contract will follow.
   return jsonResponse({
     ok: true,
     already_accepted: Boolean(result.already_accepted),

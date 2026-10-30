@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useTenant } from '@/hooks/useTenant';
 import { QuoteEditor } from '@/features/quotes/components/QuoteEditor';
 import { QuoteSendPanel } from '@/features/quotes/components/QuoteSendPanel';
+import { AcceptedQuotePanel } from '@/features/quotes/components/AcceptedQuotePanel';
 import { QuoteStatusBadge } from '@/features/quotes/components/QuoteStatusBadge';
 import { useQuote } from '@/features/quotes/hooks/useQuotes';
 import { draftFromQuote, newQuoteDraft } from '@/features/quotes/lib/quoteDraft';
@@ -53,6 +54,7 @@ export default function AdminQuoteEditorPage() {
         <QuoteStatusBadge status={quote.status} />
       </div>
       <QuoteSendPanel quote={quote} />
+      <AcceptedQuotePanel quote={quote} />
       <QuoteEditor
         key={`${quote.id}-${quote.status}`}
         initial={draftFromQuote(quote)}
