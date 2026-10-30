@@ -8,6 +8,12 @@ const ProcessRefundBodySchema = z.object({
   payment_id: z.string().uuid(),
   amount_minor: z.number().int().positive().optional(),
   reason: z.string().max(500).optional(),
+  /**
+   * Record a refund the admin already made outside the platform (YPay has no
+   * refund API; cash handed back). Skips the provider call; still writes the
+   * refund ledger row, audit_log (approved_by) and queues the credit note.
+   */
+  manual: z.boolean().optional(),
 });
 
 Deno.serve(async (req) => {
@@ -66,7 +72,9 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "Invalid refund amount" }, 400);
   }
 
-  if (original.provider !== "manual" && original.provider_payment_ref) {
+  const manualRefund = body.manual === true || original.provider === "manual";
+
+  if (!manualRefund && original.provider_payment_ref) {
     try {
       await executeProviderRefund(
         service,
@@ -139,8 +147,28 @@ Deno.serve(async (req) => {
     entity_type: "payment",
     entity_id: original.id as string,
     actor_id: auth.user.id,
-    after_state: { refund_payment_id: refundRow.id, amount_minor: refundAmount },
+    after_state: {
+      refund_payment_id: refundRow.id,
+      amount_minor: refundAmount,
+      manual: manualRefund,
+      job_payment_request_id: original.job_payment_request_id ?? null,
+    },
   });
+
+  // Photographer deposit/balance: a FULL refund releases the request from the
+  // "all paid" gallery gate (refunded_manual); partial refunds keep it paid.
+  if (original.job_payment_request_id && newStatus === "refunded") {
+    await service
+      .from("job_payment_requests")
+      .update({
+        status: "refunded_manual",
+        refunded_at: new Date().toISOString(),
+        refund_note: body.reason ?? null,
+      })
+      .eq("id", original.job_payment_request_id)
+      .eq("payment_id", original.id)
+      .eq("status", "paid");
+  }
 
   await enqueueDocument(service, {
     tenantId,

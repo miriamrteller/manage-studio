@@ -81,11 +81,7 @@ export async function insertPendingYpayPayment(
   return { paymentId };
 }
 
-/** Load a payment by provider_payment_ref (chargeIdentifier or transactionId). */
-export async function loadYpayPaymentByRef(
-  service: SupabaseClient,
-  providerPaymentRef: string,
-): Promise<{
+export interface YpayPendingPaymentRow {
   id: string;
   tenant_id: string;
   engagement_id: string | null;
@@ -99,15 +95,23 @@ export async function loadYpayPaymentByRef(
   vat_amount_minor: number;
   vat_rate: number;
   currency: string;
-} | null> {
+  /** Set when the charge was created for a photographer deposit/balance request. */
+  job_payment_request_id: string | null;
+}
+
+/** Load a payment by provider_payment_ref (chargeIdentifier or transactionId). */
+export async function loadYpayPaymentByRef(
+  service: SupabaseClient,
+  providerPaymentRef: string,
+): Promise<YpayPendingPaymentRow | null> {
   const { data, error } = await service
     .from("payments")
     .select(
-      "id, tenant_id, engagement_id, charge_type, status, total_amount_minor, billing_account_id, person_id, offering_id, pretax_amount_minor, vat_amount_minor, vat_rate, currency",
+      "id, tenant_id, engagement_id, charge_type, status, total_amount_minor, billing_account_id, person_id, offering_id, pretax_amount_minor, vat_amount_minor, vat_rate, currency, job_payment_request_id",
     )
     .eq("provider_payment_ref", providerPaymentRef)
     .maybeSingle();
 
   if (error) throw error;
-  return (data ?? null) as never;
+  return (data ?? null) as YpayPendingPaymentRow | null;
 }
