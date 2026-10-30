@@ -31,15 +31,9 @@ serve(async (req: Request) => {
     // Fetch document fields for this payment
     const { data, error } = await supabase
       .from("payments")
-      .select([
-        "id",
-        "invoice_url",
-        "document_pdf_path",
-        "external_document_number",
-        "external_document_id",
-        "tenant_id",
-        "person_id",
-      ].join(", "))
+      .select(
+        "id, invoice_url, document_pdf_path, external_document_number, external_document_id, tenant_id, person_id",
+      )
       .eq("id", payment_id)
       .single();
 

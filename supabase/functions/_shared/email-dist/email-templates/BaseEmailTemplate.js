@@ -1,3 +1,4 @@
+/* @ts-self-types="./BaseEmailTemplate.d.ts" */
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { Body, Container, Head, Hr, Html, Img, Link, Preview, Section, Text, } from '@react-email/components';
 /**

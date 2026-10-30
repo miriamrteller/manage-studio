@@ -1,3 +1,4 @@
+/* @ts-self-types="./ShootEmailLayout.d.ts" */
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import BaseEmailTemplate from '../BaseEmailTemplate.js';
 import { EmailDetailsTable, EmailMutedText, EmailParagraph, EmailPrimaryButton } from '../primitives/index.js';

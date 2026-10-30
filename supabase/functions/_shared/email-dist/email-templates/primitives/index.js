@@ -1,3 +1,4 @@
+/* @ts-self-types="./index.d.ts" */
 export { EmailParagraph } from './EmailParagraph.js';
 export { EmailMutedText } from './EmailMutedText.js';
 export { EmailWarningText } from './EmailWarningText.js';

@@ -1,3 +1,4 @@
+/* @ts-self-types="./index.d.ts" */
 // Email template exports
 export { default as BaseEmailTemplate } from './BaseEmailTemplate.js';
 export { default as MagicLinkEmail } from './MagicLinkEmail.js';

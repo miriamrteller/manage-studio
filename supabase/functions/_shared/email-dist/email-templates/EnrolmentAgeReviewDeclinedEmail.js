@@ -1,3 +1,4 @@
+/* @ts-self-types="./EnrolmentAgeReviewDeclinedEmail.d.ts" */
 import { jsx as _jsx, Fragment as _Fragment, jsxs as _jsxs } from "react/jsx-runtime";
 import { Text } from '@react-email/components';
 import BaseEmailTemplate from './BaseEmailTemplate.js';

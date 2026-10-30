@@ -75,7 +75,7 @@ export async function createCheckoutCharge(
   return {
     ok: true,
     charge: {
-      clientSecret: result.clientSecret,
+      clientSecret: result.clientSecret ?? null,
       paymentIntentId: result.providerPaymentRef,
       publishableKey: tenant.payment_provider_public_key,
       amountMinor: session.totalMinor,

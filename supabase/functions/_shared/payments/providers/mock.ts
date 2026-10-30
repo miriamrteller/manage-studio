@@ -19,7 +19,7 @@ export class MockPaymentProvider implements PaymentProvider {
   readonly slug = "mock";
 
   /** Reserves a mock intent only — finalisation happens in confirm-mock-payment. */
-  async createCharge(params: ChargeParams): Promise<ChargeResult> {
+  async createCharge(_params: ChargeParams): Promise<ChargeResult> {
     const providerPaymentRef = `mock_pi_${crypto.randomUUID()}`;
     return {
       clientSecret: providerPaymentRef,

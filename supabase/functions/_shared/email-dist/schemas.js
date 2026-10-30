@@ -1,3 +1,4 @@
+/* @ts-self-types="./schemas.d.ts" */
 import { z } from 'zod';
 /**
  * Zod schemas for type-safe validation

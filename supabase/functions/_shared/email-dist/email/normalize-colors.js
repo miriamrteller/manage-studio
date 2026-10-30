@@ -1,3 +1,4 @@
+/* @ts-self-types="./normalize-colors.d.ts" */
 /** Extract hex from `var(--token, #hex)` for email clients that ignore CSS variables. */
 function resolveColor(value, fallback) {
     const varMatch = value.match(/var\([^,]+,\s*([^)]+)\)/);

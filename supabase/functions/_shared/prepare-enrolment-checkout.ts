@@ -3,10 +3,7 @@ import { extractWaiverToken, verifyWaiverToken } from "./waiver-token.ts";
 import { loadEnrolmentCompletionContext } from "./enrolment-completion-context.ts";
 import { createCheckoutCharge } from "./create-checkout-charge.ts";
 import { resolveOrCreateEngagement } from "./resolve-or-create-engagement.ts";
-import {
-  parsePrepareEnrolmentCheckoutBody,
-  resolveBootstrapBlockReason,
-} from "./checkout-bootstrap-parse.ts";
+import { resolveBootstrapBlockReason } from "./checkout-bootstrap-parse.ts";
 import type {
   PrepareEnrolmentCheckoutBody,
   PrepareEnrolmentCheckoutResponse,

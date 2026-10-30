@@ -1,3 +1,4 @@
+/* @ts-self-types="./QuoteSentEmail.d.ts" */
 import { jsx as _jsx } from "react/jsx-runtime";
 import ShootEmailLayout from './ShootEmailLayout.js';
 const DEFAULTS = {

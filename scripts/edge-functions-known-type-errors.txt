@@ -1,33 +1,3 @@
-# Edge functions with type errors that predate CI type-checking (2026-10-30).
-# Type-only: they don't change runtime behaviour. Fix and remove over time;
-# the check fails on any function NOT listed here.
-accept-waiver
-admin-resend-document
-confirm-mock-payment
-create-checkout
-crm-lead-capture
-expire-scheduling-holds
-handle-invoice-event
-handle-payment-document
-handle-payment-event
-prepare-enrolment-checkout
-process-refund
-record-payment
-run-enrolment-payment-dunning
-run-monthly-billing
-send-admin-enrolment-link
-send-admin-waiver-link
-send-job-contract-link
-send-notification
-send-otp-email
-send-otp-sms
-send-waiver-reminder
-verify-grow-credentials
-verify-icount-credentials
-# Photographer job payments (2026-10-30): no errors in their own code — they fail
-# only on the shared _shared/email-send.ts (email-dist type exports) and the
-# grow/tranzila provider errors every payment function already carries.
-# record-job-payment is clean and deliberately NOT listed.
-job-payment-request-public
-run-job-payment-reminders
-send-job-payment-link
+# Edge functions with type errors that predate CI type-checking.
+# Functions listed here warn instead of failing the check. Keep this empty:
+# fix new errors rather than adding names (one function per line).

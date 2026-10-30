@@ -1,3 +1,4 @@
+/* @ts-self-types="./PaymentReminderEmail.d.ts" */
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { Button, Link, Text, } from '@react-email/components';
 import BaseEmailTemplate from './BaseEmailTemplate.js';

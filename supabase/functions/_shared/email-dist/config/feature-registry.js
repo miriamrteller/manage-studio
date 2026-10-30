@@ -1,3 +1,4 @@
+/* @ts-self-types="./feature-registry.d.ts" */
 /**
  * Feature Flag Registry for OpalSwift Multi-Tenant SaaS
  *

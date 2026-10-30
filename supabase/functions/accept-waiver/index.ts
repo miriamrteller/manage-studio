@@ -234,14 +234,6 @@ Deno.serve(async (req) => {
     const acceptLang = req.headers.get("accept-language") ?? null;
     const signedAt = new Date().toISOString();
 
-    // --- Load tenant name for PDF header ---
-    const { data: tenant } = await service
-      .from("tenants")
-      .select("name")
-      .eq("id", tenantId)
-      .single();
-    const tenantName = tenant?.name ?? "Studio";
-
     // --- Compute hashes ---
     const consent_version_hash = await sha256Hex(wordingSnapshot);
 
@@ -350,7 +342,8 @@ Deno.serve(async (req) => {
         .eq("tenant_id", tenantId)
         .maybeSingle();
       if (
-        authEngagement?.person_id === body.person_id &&
+        authEngagement &&
+        authEngagement.person_id === body.person_id &&
         authEngagement.status === "pending_payment" &&
         (!offeringId || authEngagement.offering_id === offeringId)
       ) {
