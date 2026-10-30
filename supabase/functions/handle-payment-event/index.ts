@@ -6,6 +6,8 @@ import { peekGrowTenantId } from "../_shared/payments/grow/metadata.ts";
 import { peekInvoice4uOrderId } from "../_shared/payments/invoice4u/callback.ts";
 import { loadPaymentByProviderRef } from "../_shared/payments/invoice4u/pending-charge.ts";
 import { processInvoice4uPaymentCallback } from "../_shared/payments/invoice4u/process-callback.ts";
+import { peekYpayChargeIdentifier } from "../_shared/payments/ypay/callback.ts";
+import { processYpayPaymentCallback } from "../_shared/payments/ypay/process-callback.ts";
 
 /**
  * Resolve the tenant before provider dispatch.
@@ -53,6 +55,16 @@ Deno.serve(async (req) => {
           { error: "Amount mismatch", received: false, ...result },
           400,
         );
+      }
+      return jsonResponse({ received: true, ...result });
+    }
+
+    // YPay notifyUrl callback — dedicated pending-row path (unsigned callback; verified
+    // server-side; chargeIdentifier → transactionId upgrade; job requests settle here).
+    if (peekYpayChargeIdentifier(rawBody)) {
+      const result = await processYpayPaymentCallback(service, rawBody, req.headers);
+      if (result.status === "amount_mismatch" || result.status === "unverified") {
+        return jsonResponse({ error: result.status, received: false, ...result }, 400);
       }
       return jsonResponse({ received: true, ...result });
     }

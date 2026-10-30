@@ -91,13 +91,13 @@ export class YpayPaymentProvider implements PaymentProvider {
           price: totalMajor,
           quantity: 1,
           vatIncluded: true,
-          name: "enrolment",
-          description: `${metadata.charge_type} payment`,
+          name: params.lineItem?.name ?? "enrolment",
+          description: params.lineItem?.description ?? `${metadata.charge_type} payment`,
         },
       ],
       notifyUrl: resolveNotifyUrl(),
-      successUrl: resolveAppUrl("/enrol/complete"),
-      failureUrl: resolveAppUrl("/enrol/failed"),
+      successUrl: params.returnUrls?.success ?? resolveAppUrl("/enrol/complete"),
+      failureUrl: params.returnUrls?.failure ?? resolveAppUrl("/enrol/failed"),
     });
 
     const redirectUrl = payload.url;
