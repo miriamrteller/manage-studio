@@ -118,6 +118,8 @@ export const navigationConfig: NavItem[] = [
     labelKey: 'nav.families',
     requiredRoles: ['tenant_admin'],
     sectionKey: 'administration',
+    // Dance family accounts; photographers work from Contacts and Shoots. Route kept for deep links.
+    hideForVerticals: ['photographer'],
   },
   {
     path: '/admin/notifications',
@@ -192,6 +194,8 @@ export const navigationConfig: NavItem[] = [
     sectionKey: 'setup',
     indent: true,
     tenantFilter: 'bundled',
+    // Class-billing provider setup; still linked from the Settings hub.
+    hideForVerticals: ['photographer'],
   },
   {
     path: '/admin/setup/payments',

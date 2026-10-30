@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useTenant } from '@/hooks/useTenant';
 import { formatCurrency } from '@shared/format';
 import { fetchJobNextStep, type JobNextStep } from '../services/jobNextStepService';
+import { BackToPortalButton } from './BackToPortalButton';
 
 /** Seconds before the automatic move to the deposit payment page. */
 export const AUTO_REDIRECT_SECONDS = 3;
@@ -93,6 +94,7 @@ export function JobAfterSignNextStep({
           {t('pages.booking_flow.after_sign.stay')}
         </Button>
       )}
+      {!autoRedirect && <BackToPortalButton />}
     </section>
   );
 }
