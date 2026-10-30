@@ -87,36 +87,59 @@ export function DemoBar() {
     return () => document.removeEventListener('keydown', onKey);
   }, []);
 
-  // Gallery links point at a placeholder host; open the sample gallery instead.
+  // Gallery and invoice links point at placeholder hosts. The artifact host may
+  // take over clicks on external links (new tab / popup), so such links never
+  // stay in the page: they are rewritten to in-page anchors (no target) and
+  // open the sample gallery or invoice in place. window.open is covered too.
   useEffect(() => {
+    const openDemoTarget = (url: string): boolean => {
+      if (url.startsWith(DEMO_GALLERY_HOST)) {
+        setGalleryOpen(true);
+        return true;
+      }
+      if (url.startsWith(DEMO_INVOICE_HOST)) {
+        const inv = invoiceForPayment(demoClient.ctx(), url.slice(DEMO_INVOICE_HOST.length + 1));
+        if (inv) showInvoice(inv);
+        return true;
+      }
+      return false;
+    };
+    const rewrite = (root: Document | Element | DocumentFragment) => {
+      root.querySelectorAll<HTMLAnchorElement>('a[href]').forEach((a) => {
+        const href = a.getAttribute('href') ?? '';
+        if (!href.startsWith(DEMO_GALLERY_HOST) && !href.startsWith(DEMO_INVOICE_HOST)) return;
+        a.dataset.demoHref = href;
+        a.setAttribute('href', href.startsWith(DEMO_GALLERY_HOST) ? '#demo-gallery' : '#demo-invoice');
+        a.removeAttribute('target');
+        a.removeAttribute('rel');
+      });
+    };
+    rewrite(document);
+    const observer = new MutationObserver((records) => {
+      for (const r of records) {
+        if (r.type === 'attributes') rewrite((r.target.parentNode as Element | null) ?? document);
+        r.addedNodes.forEach((n) => {
+          if (n instanceof Element) rewrite((n.parentNode as Element | null) ?? n);
+        });
+      }
+    });
+    observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['href'] });
+
     const onClick = (e: MouseEvent) => {
-      const a = (e.target as HTMLElement | null)?.closest?.('a');
-      if (a && a.href.startsWith(DEMO_GALLERY_HOST)) {
+      const a = (e.target as Element | null)?.closest?.('a');
+      const url = a?.dataset.demoHref ?? a?.getAttribute('href') ?? '';
+      if (a && openDemoTarget(url)) {
         e.preventDefault();
-        setGalleryOpen(true);
-      } else if (a && a.href.startsWith(DEMO_INVOICE_HOST)) {
-        e.preventDefault();
-        const inv = invoiceForPayment(demoClient.ctx(), a.href.slice(DEMO_INVOICE_HOST.length + 1));
-        if (inv) showInvoice(inv);
+        e.stopPropagation();
       }
     };
-    document.addEventListener('click', onClick, true);
+    // Window capture runs before any document-level listener.
+    window.addEventListener('click', onClick, true);
     const realOpen = window.open.bind(window);
-    window.open = (url?: string | URL, ...rest) => {
-      const target = String(url ?? '');
-      if (target.startsWith(DEMO_GALLERY_HOST)) {
-        setGalleryOpen(true);
-        return null;
-      }
-      if (target.startsWith(DEMO_INVOICE_HOST)) {
-        const inv = invoiceForPayment(demoClient.ctx(), target.slice(DEMO_INVOICE_HOST.length + 1));
-        if (inv) showInvoice(inv);
-        return null;
-      }
-      return realOpen(url, ...rest);
-    };
+    window.open = (url?: string | URL, ...rest) => (openDemoTarget(String(url ?? '')) ? null : realOpen(url, ...rest));
     return () => {
-      document.removeEventListener('click', onClick, true);
+      observer.disconnect();
+      window.removeEventListener('click', onClick, true);
       window.open = realOpen;
     };
   }, []);
