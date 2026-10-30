@@ -7,6 +7,12 @@ import { JobPaymentService } from '../services/jobPaymentService';
 interface Props {
   engagementId: string;
   currency: string;
+  /**
+   * 'full' (default): outstanding requests with pay buttons + the gallery link.
+   * 'gallery': only the gallery state — for ClientPortal, which lists
+   * payments in its own section.
+   */
+  mode?: 'full' | 'gallery';
 }
 
 /**
@@ -14,7 +20,37 @@ interface Props {
  * which the server (get_client_job_gallery) only returns once everything is
  * paid or the studio released it. Nothing here can reveal the URL early.
  */
-export function ClientJobGalleryCard({ engagementId, currency }: Props) {
+export function ClientJobGalleryCard({ engagementId, currency, mode = 'full' }: Props) {
+  if (mode === 'gallery') return <GalleryOnly engagementId={engagementId} />;
+  return <FullCard engagementId={engagementId} currency={currency} />;
+}
+
+function GalleryLink({ gallery }: { gallery: ReturnType<typeof useJobGallery>['gallery'] }) {
+  const { t } = useTranslation();
+  if (gallery?.released && gallery.gallery_url) {
+    return (
+      <a className="inline-block text-sm font-medium underline text-primary" href={gallery.gallery_url} target="_blank" rel="noreferrer">
+        {t('pages.jobs.client_portal.openGallery')}
+      </a>
+    );
+  }
+  if (gallery?.has_gallery) {
+    return <p className="text-sm text-muted-foreground">{t('pages.jobs.client_portal.galleryLocked')}</p>;
+  }
+  return null;
+}
+
+function GalleryOnly({ engagementId }: { engagementId: string }) {
+  const { t } = useTranslation();
+  const { gallery, isLoading } = useJobGallery(engagementId);
+  if (isLoading) return null;
+  if (!gallery?.has_gallery) {
+    return <p className="text-sm text-muted-foreground">{t('pages.client_portal.gallery_not_ready')}</p>;
+  }
+  return <GalleryLink gallery={gallery} />;
+}
+
+function FullCard({ engagementId, currency }: { engagementId: string; currency: string }) {
   const { t, i18n } = useTranslation();
   const language = i18n.language;
   const { gallery, isLoading: galleryLoading } = useJobGallery(engagementId);
@@ -45,13 +81,7 @@ export function ClientJobGalleryCard({ engagementId, currency }: Props) {
           ))}
         </ul>
       )}
-      {gallery?.released && gallery.gallery_url ? (
-        <a className="inline-block text-sm font-medium underline text-primary" href={gallery.gallery_url} target="_blank" rel="noreferrer">
-          {t('pages.jobs.client_portal.openGallery')}
-        </a>
-      ) : gallery?.has_gallery ? (
-        <p className="text-sm text-muted-foreground">{t('pages.jobs.client_portal.galleryLocked')}</p>
-      ) : null}
+      <GalleryLink gallery={gallery} />
     </section>
   );
 }

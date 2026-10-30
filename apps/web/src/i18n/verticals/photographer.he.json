@@ -1,0 +1,63 @@
+{
+  "errors": {
+    "loading_tenant": "טוען את פרטי הסטודיו..."
+  },
+  "footer": {
+    "school_name_fallback": "סטודיו לצילום",
+    "school_management": "ניהול הסטודיו"
+  },
+  "pages": {
+    "enrol_complete": {
+      "page_title": "חתמו על החוזה",
+      "missing_id": "לא סופק מזהה הזמנה. בדקו את הקישור בדוא\"ל.",
+      "engagement_not_found": "לא מצאנו את ההזמנה שלכם. בדקו את הקישור בדוא\"ל או צרו איתנו קשר.",
+      "no_active_template": "לא נמצא חוזה פעיל. צרו איתנו קשר.",
+      "already_signed_heading": "החוזה כבר נחתם",
+      "already_signed_body": "החוזה נחתם והצילום שלכם שמור.",
+      "cancelled_heading": "הצילום בוטל",
+      "cancelled_body": "הצילום הזה בוטל, ולכן כבר לא ניתן לחתום על החוזה. לכל שאלה צרו איתנו קשר.",
+      "signed_heading": "החוזה נחתם — תודה!",
+      "signed_body": "החוזה נחתם והצילום שלכם שמור. מחכים לעבוד איתך!",
+      "browse_classes": "לחבילות הצילום",
+      "sign_prompt": "אנא קראו בעיון את החוזה וחתמו למטה כדי לאשר את ההזמנה."
+    },
+    "portal": {
+      "subtitle": "הצילומים, החוזה, התשלומים והגלריה שלכם — במקום אחד.",
+      "preferences": {
+        "description": "בחרו איך לקבל מאיתנו עדכונים",
+        "notify_offering_cancellation": "שינויים וביטולים של צילומים או פגישות",
+        "notify_announcements": "חדשות הסטודיו"
+      }
+    },
+    "waivers": {
+      "title": "חוזים",
+      "description": "ניהול תבניות חוזה וצפייה בחוזים חתומים.",
+      "draft_form_title": "תבנית חוזה חדשה",
+      "name_placeholder": "לדוגמה: חוזה צילום חתונה 2026",
+      "content_label": "נוסח החוזה",
+      "activate_confirm": "הגדרת תבנית זו כפעילה תהפוך אותה לחוזה של כל הזמנה חדשה. חוזים שכבר נחתמו לא ישתנו. להמשיך?",
+      "evidence_title": "חוזים חתומים",
+      "no_templates": "אין תבניות חוזה עדיין. צרו אחת כדי להתחיל.",
+      "no_evidence": "אין חוזים חתומים עדיין.",
+      "no_evidence_filtered": "לא נמצאו חוזים התואמים את הסינון.",
+      "v1_limit_note": "כל החבילות משתמשות בתבנית חוזה זו. שם הלקוח, תאריך הצילום, המיקום, החבילה והמחיר מתמלאים מפרטי כל צילום.",
+      "filter_student": "לקוח/ה",
+      "filter_class": "חבילה",
+      "filter_term": "תקופה",
+      "col_student": "לקוח/ה",
+      "col_class": "חבילה"
+    }
+  },
+  "enrolment": {
+    "waiver_scroll_prompt": "גללו עד סוף החוזה כדי לאפשר חתימה",
+    "waiver_document_region": "מסמך החוזה",
+    "waiver_checkbox_label": "קראתי את החוזה ואני מסכים/ה לו",
+    "waiver_submit": "חתימה על החוזה",
+    "waiver_token_expired": "אנא גללו שוב עד הסוף כדי לאשר שקראתם את החוזה.",
+    "waiver_already_signed": "החוזה נחתם",
+    "waiver_loading": "טוען את החוזה…",
+    "waiver_no_template": "עדיין לא הוגדר חוזה פעיל. צרו קשר עם הסטודיו.",
+    "waiver_context_student": "לקוח/ה",
+    "waiver_context_class": "חבילה"
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "errors": {
+    "loading_tenant": "Loading studio information..."
+  },
+  "footer": {
+    "school_name_fallback": "Photography Studio",
+    "school_management": "Studio Management"
+  },
+  "pages": {
+    "enrol_complete": {
+      "page_title": "Sign your contract",
+      "missing_id": "No booking ID was provided. Please check the link in your email.",
+      "engagement_not_found": "We could not find your booking. Please check the link in your email or contact us.",
+      "no_active_template": "No active contract found. Please contact us.",
+      "already_signed_heading": "Contract already signed",
+      "already_signed_body": "Your contract is signed and your shoot is booked.",
+      "cancelled_heading": "Shoot cancelled",
+      "cancelled_body": "This shoot has been cancelled, so the contract can no longer be signed. Please contact us if you have any questions.",
+      "signed_heading": "Contract signed — thank you!",
+      "signed_body": "Your contract is signed and your shoot is booked. We're looking forward to working with you!",
+      "browse_classes": "View packages",
+      "sign_prompt": "Please read the contract carefully and sign below to confirm your booking."
+    },
+    "portal": {
+      "subtitle": "Your shoots, contract, payments and gallery in one place.",
+      "preferences": {
+        "description": "Manage how you receive updates from us",
+        "notify_offering_cancellation": "Shoot or appointment changes and cancellations",
+        "notify_announcements": "Studio news"
+      }
+    },
+    "waivers": {
+      "title": "Contracts",
+      "description": "Manage contract templates and view signed contracts.",
+      "draft_form_title": "New Contract Template",
+      "name_placeholder": "e.g. Wedding Photography Contract 2026",
+      "content_label": "Contract text",
+      "activate_confirm": "Setting this template as active makes it the contract for every new booking. Contracts already signed are not affected. Continue?",
+      "evidence_title": "Signed Contracts",
+      "no_templates": "No contract templates yet. Create one to get started.",
+      "no_evidence": "No signed contracts yet.",
+      "no_evidence_filtered": "No contracts match the current filters.",
+      "v1_limit_note": "All packages share this contract template. Client name, shoot date, location, package and price are filled in from each shoot.",
+      "filter_student": "Client",
+      "filter_class": "Package",
+      "filter_term": "Period",
+      "col_student": "Client",
+      "col_class": "Package"
+    }
+  },
+  "enrolment": {
+    "waiver_scroll_prompt": "Scroll to the bottom of the contract to enable signing",
+    "waiver_document_region": "Contract document",
+    "waiver_checkbox_label": "I have read and accept this contract",
+    "waiver_submit": "Sign contract",
+    "waiver_token_expired": "Please scroll to the bottom again to confirm you have read the contract.",
+    "waiver_already_signed": "Contract signed",
+    "waiver_loading": "Loading contract…",
+    "waiver_no_template": "No active contract is set up yet. Please contact the studio.",
+    "waiver_context_student": "Client",
+    "waiver_context_class": "Package"
+  }
+}

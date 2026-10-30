@@ -3,6 +3,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuthSession } from '@/hooks/useAuth';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useTenantQuery } from '@/hooks/useTenant';
+import { useEntityLabels } from '@/hooks/useEntityLabels';
 import {
   clearEnrollmentIntent,
   readEnrollmentIntent,
@@ -15,7 +17,9 @@ import { hasParentRole } from '@/lib/parentRoles';
  * 
  * After login, this page checks the user's role and redirects to the most
  * appropriate authenticated page:
- * - If enrolling in a class → return to /enrol
+ * - If enrolling in a class → return to /enrol (not for photographer tenants:
+ *   their clients have no class enrolment / child setup, so the intent is
+ *   dropped and they continue to their portal below)
  * - tenant_admin → /admin/setup
  * - parent/guardian/account_holder → /dashboard/portal
  * - student/adult_student → /dashboard/student
@@ -30,6 +34,8 @@ export default function DashboardRedirectPage() {
   const location = useLocation();
   const { session, isLoading: sessionLoading } = useAuthSession();
   const { user, isLoading: profileLoading } = useCurrentUser();
+  const { isLoading: tenantLoading } = useTenantQuery();
+  const { vertical } = useEntityLabels();
   const isLoading = sessionLoading || profileLoading;
 
   useEffect(() => {
@@ -53,9 +59,13 @@ export default function DashboardRedirectPage() {
 
     const intent = readEnrollmentIntent(location.state as EnrollmentIntent | null);
     if (intent?.classId) {
+      // The vertical decides where the intent goes; wait for the tenant.
+      if (tenantLoading) return;
       clearEnrollmentIntent();
-      navigate('/enrol', { replace: true, state: intent });
-      return;
+      if (vertical !== 'photographer') {
+        navigate('/enrol', { replace: true, state: intent });
+        return;
+      }
     }
 
     const from =
@@ -81,7 +91,7 @@ export default function DashboardRedirectPage() {
       // No recognized role - fallback to classes
       navigate('/classes', { replace: true });
     }
-  }, [session, user, isLoading, navigate, location.state]);
+  }, [session, user, isLoading, navigate, location.state, tenantLoading, vertical]);
 
   if (!isLoading && session && !user) {
     return (
