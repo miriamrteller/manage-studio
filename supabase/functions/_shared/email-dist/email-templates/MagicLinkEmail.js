@@ -1,3 +1,4 @@
+/* @ts-self-types="./MagicLinkEmail.d.ts" */
 import { jsx as _jsx, Fragment as _Fragment, jsxs as _jsxs } from "react/jsx-runtime";
 import BaseEmailTemplate from './BaseEmailTemplate.js';
 import { EmailOtpCode, EmailLinkBox, EmailMutedText, EmailParagraph, EmailPrimaryButton, EmailWarningText, } from './primitives/index.js';

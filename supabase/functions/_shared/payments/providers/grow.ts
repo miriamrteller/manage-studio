@@ -247,7 +247,7 @@ export class GrowPaymentProvider implements PaymentProvider {
     // charge still confirms via the notify webhook, so we return pendingWebhook like the
     // hosted-page path rather than finalising inline.
     if (params.savedToken) {
-      return this.chargeWithToken(params, creds);
+      return this.chargeWithSavedToken(params, creds);
     }
 
     const customFields = toGrowCustomFields(params.metadata);
@@ -296,7 +296,7 @@ export class GrowPaymentProvider implements PaymentProvider {
     };
   }
 
-  private async chargeWithToken(
+  private async chargeWithSavedToken(
     params: ChargeParams,
     creds: GrowCredentials,
   ): Promise<ChargeResult> {

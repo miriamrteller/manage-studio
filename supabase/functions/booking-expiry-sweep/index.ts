@@ -55,14 +55,14 @@ serve(async (_req: Request): Promise<Response> => {
       .gt("pr_expires_at", now.toISOString());
 
     if (approaching) {
-      for (const booking of approaching) {
-        const nudgeMinutes = (booking as any).tenant_settings?.payment_nudge_minutes ?? 5;
-        const expiresAt    = new Date((booking as any).pr_expires_at);
+      for (const booking of approaching as unknown as NudgeCandidate[]) {
+        const nudgeMinutes = booking.tenant_settings?.payment_nudge_minutes ?? 5;
+        const expiresAt    = new Date(booking.pr_expires_at);
         const nudgeAt      = new Date(expiresAt.getTime() - nudgeMinutes * 60 * 1000);
 
         if (now >= nudgeAt && now < expiresAt) {
           // Within the nudge window — fire notification (fire-and-forget)
-          _sendNudgeEmail(supabase, booking as any).catch(err =>
+          _sendNudgeEmail(supabase, booking).catch(err =>
             console.error("[booking-expiry-sweep] nudge email error", err),
           );
         }
@@ -86,16 +86,19 @@ serve(async (_req: Request): Promise<Response> => {
   }
 });
 
+type NudgeCandidate = {
+  id:            string;
+  tenant_id:     string;
+  client_name:   string;
+  client_email:  string;
+  pr_link:       string;
+  pr_expires_at: string;
+  tenant_settings?: { payment_nudge_minutes?: number | null } | null;
+};
+
 async function _sendNudgeEmail(
-  supabase: ServiceClient,
-  booking: {
-    id:           string;
-    tenant_id:    string;
-    client_name:  string;
-    client_email: string;
-    pr_link:      string;
-    pr_expires_at: string;
-  },
+  _supabase: ServiceClient,
+  booking: NudgeCandidate,
 ): Promise<void> {
   // TODO: invoke send-notification edge function with nudge template
   console.log(

@@ -1,3 +1,4 @@
+/* @ts-self-types="./EmailPrimaryButton.d.ts" */
 import { jsx as _jsx } from "react/jsx-runtime";
 import { Button } from '@react-email/components';
 import { emailButtonPrimary } from './styles.js';

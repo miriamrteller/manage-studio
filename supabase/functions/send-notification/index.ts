@@ -178,7 +178,7 @@ serve(async (req: Request) => {
 
     const supabase = service;
 
-    let externalMsgId: string | undefined;
+    let externalMsgId: string | null | undefined;
     let status: "sent" | "failed" = "sent";
     let failureReason: string | undefined;
 
@@ -411,56 +411,6 @@ async function getTenantConfig(
 }
 
 /**
- * Helper: Merge base email strings with tenant overrides
- * Code-first approach: base + overrides (overrides win)
- */
-function mergeTemplateStrings(
-  baseStrings: Record<string, unknown>,
-  overrides: Record<string, unknown> | null
-): Record<string, unknown> {
-  if (!overrides || Object.keys(overrides).length === 0) {
-    return baseStrings;
-  }
-
-  // Deep merge: overrides on top of base
-  return deepMergeObjects(baseStrings, overrides);
-}
-
-/**
- * Helper: Deep merge two objects (recursive)
- */
-function deepMergeObjects(
-  target: Record<string, unknown>,
-  source: Record<string, unknown>
-): Record<string, unknown> {
-  const result = { ...target };
-
-  for (const key in source) {
-    if (Object.prototype.hasOwnProperty.call(source, key)) {
-      const sourceValue = source[key];
-
-      if (
-        sourceValue !== null &&
-        typeof sourceValue === "object" &&
-        !Array.isArray(sourceValue) &&
-        result[key] !== null &&
-        typeof result[key] === "object" &&
-        !Array.isArray(result[key])
-      ) {
-        result[key] = deepMergeObjects(
-          result[key] as Record<string, unknown>,
-          sourceValue as Record<string, unknown>
-        );
-      } else {
-        result[key] = sourceValue;
-      }
-    }
-  }
-
-  return result;
-}
-
-/**
  * Helper: Get template SID from tenant_notification_templates
  */
 async function getTemplateSid(
@@ -572,7 +522,7 @@ async function handleAgeReviewRequestedNotification(
   const sender = resolveTenantSender(tenant as unknown as TenantSenderInput);
 
   let sentCount = 0;
-  let lastExternalId: string | undefined;
+  let lastExternalId: string | null | undefined;
   let failureReason: string | undefined;
 
   for (const recipientEmail of adminEmails) {

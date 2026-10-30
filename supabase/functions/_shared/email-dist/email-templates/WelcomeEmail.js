@@ -1,3 +1,4 @@
+/* @ts-self-types="./WelcomeEmail.d.ts" */
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { Button, Text, } from '@react-email/components';
 import BaseEmailTemplate from './BaseEmailTemplate.js';

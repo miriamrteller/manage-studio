@@ -1,3 +1,4 @@
+/* @ts-self-types="./EmailWarningText.d.ts" */
 import { jsx as _jsx } from "react/jsx-runtime";
 import { Text } from '@react-email/components';
 import { emailTypography } from './styles.js';

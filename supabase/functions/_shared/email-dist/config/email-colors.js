@@ -1,3 +1,4 @@
+/* @ts-self-types="./email-colors.d.ts" */
 /**
  * Email Color Configuration
  * Provides tenant-customizable color defaults for email templates
