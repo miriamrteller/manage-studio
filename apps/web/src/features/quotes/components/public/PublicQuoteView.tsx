@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { computeQuoteTotals } from '@shared/index';
 import { useTenant } from '@/hooks/useTenant';
+import { BackToPortalButton } from '@/features/jobs/components/BackToPortalButton';
 import { QuoteTotalsSummary } from '../QuoteTotalsSummary';
 import { formatQuoteDate } from '../../lib/quoteFormat';
 import {
@@ -100,6 +101,7 @@ function QuoteBody({ quote, token, tenantId, language, onSettled }: QuoteBodyPro
       {quote.status === 'accepted' && (
         <PublicQuoteNextSteps result={accept.data ?? null} busy={accept.isPending} onResume={() => accept.mutate()} />
       )}
+      {quote.status === 'accepted' && <BackToPortalButton />}
       {open && (
         <PublicQuoteActions busy={accept.isPending || decline.isPending}
           onAccept={() => accept.mutate()} onDecline={(reason) => decline.mutate(reason)} />

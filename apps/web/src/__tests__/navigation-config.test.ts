@@ -111,7 +111,7 @@ describe('vertical nav visibility', () => {
     const paths = adminPaths('photographer');
     expect(paths).toContain('/admin/jobs');
     expect(paths).toContain('/admin/leads');
-    expect(paths).toContain('/admin/families');
+    expect(paths).not.toContain('/admin/families');
     expect(paths).not.toContain('/classes');
     expect(paths).not.toContain('/admin/setup/levels');
     expect(paths).not.toContain('/admin/setup/terms');

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatDueDate, formatMinor, statusBadgeVariant, statusI18nKey } from '../lib/jobPaymentFormat';
 import { JobPaymentService } from '../services/jobPaymentService';
+import { BackToPortalButton } from './BackToPortalButton';
 
 interface Props {
   token: string;
@@ -113,6 +114,9 @@ export function PublicPayRequest({ token, result }: Props) {
             </>
           )}
           {error && <p role="alert" className="text-sm text-error">{error}</p>}
+          {!awaitingWebhook && (
+            <BackToPortalButton variant={request.status === 'paid' ? 'primary' : 'secondary'} />
+          )}
         </CardContent>
       </Card>
     </main>

@@ -16,6 +16,12 @@ import { renderInApp, setLanguage, setTenant } from './helpers/verticalHarness';
 vi.mock('@/hooks/useTenant', async () => (await import('./helpers/fakeTenantState')).tenantHookMock());
 vi.mock('@/hooks/useLanguage', async () => (await import('./helpers/fakeTenantState')).languageHookMock());
 
+// Signed-out visitor unless a test sets a user (drives the back-to-portal link).
+const auth = vi.hoisted(() => ({ user: null as null | { id: string; email: string; role: string[] } }));
+vi.mock('@/hooks/useCurrentUser', () => ({
+  useCurrentUser: () => ({ user: auth.user, isLoading: false, isProfileChecked: true }),
+}));
+
 const invoke = vi.fn();
 const rpc = vi.fn();
 vi.mock('@/lib/supabase', () => ({
@@ -90,6 +96,7 @@ async function signContract(name = 'Pat Client') {
 
 beforeEach(async () => {
   await setLanguage('en');
+  auth.user = null;
   invoke.mockReset();
   rpc.mockReset();
   invoke.mockImplementation(async (name: string) => {
@@ -241,7 +248,7 @@ describe('/enrol/complete — job contract continues to the deposit', () => {
     expect(await screen.findByRole('button', { name: 'Pay deposit' })).toBeInTheDocument();
   });
 
-  it('next step unavailable (e.g. token rejected) → today\'s dashboard button with a note', async () => {
+  it('next step unavailable (e.g. token rejected) → the way back to the portal, with a note', async () => {
     mockFunctions({
       'get-waiver-engagement': { body: ready },
       'job-next-step': { body: { error: 'token_mismatch' }, status: 403 },
@@ -249,7 +256,8 @@ describe('/enrol/complete — job contract continues to the deposit', () => {
     renderSignPage();
     await signContract();
     expect(await screen.findByText('We could not load the next step. The payment link is also in your booking email.')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Go to my dashboard' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Sign in to see my bookings' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Go to my dashboard' })).not.toBeInTheDocument();
   });
 
   it('Hebrew', async () => {
