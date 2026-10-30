@@ -1,305 +1,286 @@
-# Photographer theme proposal: a softer, gradient-led look
+# Soft, gradient-led theme derived from each tenant's brand
 
 > Status: research and proposal only. No app code is changed by this PR.
-> Scope: photographer vertical (`tenants.skin = 'photographer'`). The dance-studio look must not change.
 > Date: 2026-10-30
+> **Scope (revised by the owner mid-task):** proposals may be global, for every tenant including dance. The focus is per-tenant customisation: the Light Blue / OpalSwift-style look is derived from each tenant's primary colour, accent and font pair, so every tenant gets it in its own brand.
 
 ## Summary
 
-- **The two references could not be studied.** This session's network policy blocked `lightbluesoftware.com`, `www.lightbluesoftware.com`, `opalswift.com`, `www.opalswift.com` and `web.archive.org` (proxy answered 403 to CONNECT, and server-side fetch could not resolve them). Following the brief, I did **not** reconstruct their design from memory. The "what they do" columns below are empty until someone captures them. `docs/design/research/capture-references.js` is ready to run once the hosts are allowed (it saves screenshots at 1280/390 and extracts computed colours, gradients, fonts, radii, shadows and motion to JSON).
-- **Our side is fully captured.** Photographer demo screenshots (shoots list, shoot detail, quote, client portal, pay page, at 1280 and 390, plus Hebrew RTL) are in `docs/design/research/ours/`.
-- **The proposal follows the owner's brief** ("subtle gradient colouring") and our own finish layer, which already has the parts needed: `--wash-brand`, the `--tint-primary-*` ramp, tinted shadows and sheen overlays. What makes the current photographer screens feel heavy is not missing gradients. It is the **solid teal header and solid mustard footer**: two full-width, fully saturated bars at the top and bottom of every page. Phase 1 replaces them with light, tinted, gradient chrome and adds a multi-stop background wash and translucent cards.
-- **Everything is scoped to `html[data-vertical="photographer"]`.** Dance tenants never get the attribute, so they get none of these rules.
-- **One contrast problem to fix along the way:** our muted text `#6b7280` drops to **4.28:1** on an 8% primary tint, below AA. The photographer scope switches muted text to `#4b5563` (6.3:1 even on a 12% tint).
-- A throwaway mockup (`docs/design/photographer-phase1-mockup.html`) shows the shoots list and client portal, current vs Phase 1, side by side.
+- **The references could not be studied.** This session's network policy blocked `lightbluesoftware.com`, `www.lightbluesoftware.com`, `opalswift.com`, `www.opalswift.com` and `web.archive.org`. I did not reconstruct their design from memory. The comparison's "Reference" column is blank, and values to tune once they're captured are marked **(verify)**. `docs/design/research/capture-references.js` captures them (screenshots plus computed colours, gradients, fonts, radii, shadows, motion) once the hosts are allowed.
+- **The proposed look is a derived token system, not a palette.** A new `deriveSoftTheme(primary, accent)`, called from `useThemeInjection`, computes:
+  - four tints of the primary and two of the accent at **fixed luminance targets**, so every brand colour gets equally subtle washes;
+  - a **contrast-safe "brand ink"** (the primary, darkened only as far as needed for 4.5:1 when used as text);
+  - a **button fill** with a WCAG-correct text colour.
+  
+  CSS then builds the gradients (page wash, header, footer), glass surfaces and soft shadows from those tokens. The font pair still drives typography; pairs gain heading weight and tracking.
+- **It fixes contrast failures that exist today.** For tenants with a light or mid-tone primary (the photographer seed `#F97316`, therapist `#4CAF50`, any yellow or pastel), the brand colour used as text (81 `text-primary` uses) measures **1.5–2.8:1** on white. The muted grey `#6b7280` measures **4.24:1** on any tint. Both fail AA. In the proposed system every sample tenant clears AA on every pairing (section 5).
+- **Mockup:** `docs/design/tenant-theme-mockup.html` renders the shoots list and client portal for three tenants (dance burgundy + Elegant pair, photographer teal + Reliable, photographer orange + Warm), shown as they look today and as proposed. A colour picker re-derives everything live, and `?rtl` switches to Hebrew.
 
-![Phase 1 mockup, current (left) vs proposed (right)](research/mockup-phase1-1440.png)
+![Three tenants, today vs proposed](research/tenant-mockup-1440.png)
 
 ---
 
 ## 1. Reference sites: not captured
 
-| Host | Result | Detail |
-|---|---|---|
-| `lightbluesoftware.com`, `www.lightbluesoftware.com` | Blocked | Agent proxy: `CONNECT tunnel failed, response 403` (policy denial). WebFetch: `ENOTFOUND`. |
-| `opalswift.com`, `www.opalswift.com` | Blocked | Same as above. |
-| `web.archive.org` (fallback) | Blocked | Proxy 403. |
+| Host | Result |
+|---|---|
+| `lightbluesoftware.com`, `www.lightbluesoftware.com` | Proxy `CONNECT 403` (policy denial); WebFetch `ENOTFOUND` |
+| `opalswift.com`, `www.opalswift.com` | Same |
+| `web.archive.org` (fallback) | Proxy 403 |
 
-**To unblock:** in the cloud environment settings (environment menu in the session title bar, then Edit), add these hosts under Network access → Allowed domains, or pick a broader access level. See https://code.claude.com/docs/en/cloud-environments#network-access. Then run:
-
-```sh
-NODE_PATH=$(npm root -g) node docs/design/research/capture-references.js
-```
-
-and fill the empty "Reference" column in section 3. Proposals in section 4 marked **(verify)** are the ones most likely to need tuning against the real references (exact hue of the gradients, typeface choice, radius).
+**To unblock:** add the hosts in the cloud environment's settings (environment menu in the session title bar → Edit → Network access → Allowed domains). Steps: https://code.claude.com/docs/en/cloud-environments#network-access. Then run `NODE_PATH=$(npm root -g) node docs/design/research/capture-references.js` and fill the blank column in section 3.
 
 ---
 
-## 2. Our current system (what exists today)
+## 2. How tenant theming works today
 
-Sources: `DESIGN_SYSTEM.md`, `apps/web/DESIGN_SYSTEM.md`, `apps/web/src/index.css`, `useThemeInjection.ts`, `useFontLoader.ts`, `tailwind.config.js`, `components/ui/*`, `layouts/AppLayout.tsx`, `components/Navigation/AppHeader.tsx`.
+### Data (table `tenants`, migration `20260608000200_core_tenants.sql`)
 
-| Layer | What we have | Notes |
+| Column | Default | Notes |
 |---|---|---|
-| Colour primitives | `--color-primary/secondary` + hover/active/light, written at runtime by `useThemeInjection()` from `white_label.primary_color` / `accent_color` | Demo photographer tenant: primary `#1F5F5B` (teal), accent `#E8B04B` (mustard). |
-| Ground | `--color-bg-primary` cool `#fafbfc` or warm `#fffbf5`, chosen from primary hue | Measured in demo: `rgb(250,251,252)`. |
-| Finish layer (DL-DESIGN-009) | `--tint-primary-05/10/15/25`, `--shadow-ink`, `--border-hairline`, `--sheen-raised`, `--edge-emboss`, `--focus-halo`, `--wash-brand` | All derived via `color-mix()`, so white-label safe. |
-| Page gradient | `--wash-brand: radial-gradient(120% 90% at 50% 0%, primary 10%, transparent 55%)` on `body`, fixed | Single-hue, centred, fades out within the top half. Barely visible under the solid header. |
-| Header | `AppHeader.tsx`: `bg-primary text-on-primary border-primary-active` | Solid tenant primary, full width. |
-| Footer | `AppLayout.tsx`: `bg-secondary text-on-secondary border-secondary-active`, `mt-16` | Solid tenant accent. With the demo mustard it is the loudest element on every page. |
-| Cards | `.card` / `Card`: white, hairline border, `--radius-surface` 14px, `elevation-1`, lift on hover | Opaque white. |
-| Elevation | 5 levels, contact + ambient, tinted ink | Fairly crisp (12% / 8% alpha). |
-| Buttons | Solid primary + `--sheen-raised` overlay + emboss, `--radius-control` 10px | Rule: gradients on coloured controls must be overlays only. |
-| Tables | `table.tsx`: `border-b border-gray-200` rows, bold header, no header tint | `border-gray-200` is a hardcoded Tailwind grey (minor rule break). |
-| Type | Font pairs per tenant (`reliable` Inter/Heebo, `elegant` Crimson Text/Frank Ruhl Libre, `dynamic`, `warm`, `bold`); self-hosted @fontsource | Demo uses `reliable`. RTL raises line-heights. |
-| Radius | 4 / 6 / 10 / 14 / 20 / pill | |
-| Vertical hooks | `tenant.vertical` (from `tenants.skin`) is already on the tenant object; flag `ui:theme.photographer` exists in the registry and is on in the demo seed | **Nothing reads the flag yet.** `useFeatureGate` returns `false` for every key until `get_tenant_features` exists in that environment. |
+| `primary_color` | `'#76335a'` NOT NULL | The dance school's burgundy. Every tenant that never changed it is burgundy. |
+| `accent_color` | `'#e99ac4'` NOT NULL | The dance school's mauve. **Every tenant has an accent**: one that never picked an accent silently gets dance mauve. The "no accent" code path in `deriveColorSystem` is never reached from the DB. |
+| `font_pair` | nullable | `reliable` / `elegant` / `dynamic` / `warm` / `bold`; null means `reliable`. |
+| `logo_url`, `logo_dark_url` | nullable | Rendered from the tenant object by components. |
+| `skin` | | Vertical (`photographer`, `dance-studio`, …), exposed as `tenant.vertical`. |
 
-### Screens captured
+### Pipeline
 
-| Screen | 1280 | 390 |
+1. `useTenant()` (`hooks/useTenant.ts`) fetches the row and builds `white_label = { primary_color, accent_color, logo_url, logo_dark_url }`.
+2. `useThemeInjection()` (`hooks/useThemeInjection.ts`, mounted once in `App.tsx`) runs on tenant change:
+   - `deriveColorSystem(primary, secondary_color || accent_color)` (`lib/utils.ts`) returns `primary`, `primary_dark/light/hover/active`, and the same five for `secondary`. Variants come from `darkenColor()`, which **subtracts a fixed amount from each RGB channel** (hover −9%, active −17%, dark −15%, light +15%). Each key becomes `--color-<key>` on `<html>`.
+   - `--color-on-primary` / `--color-on-secondary` come from `getAccessibleTextColor()`: black if *perceived* brightness `(0.299R + 0.587G + 0.114B)/255 > 0.5`, else white. **This is not the WCAG ratio.** It happens to be right for all samples tested, but it can pick the lower-contrast option for mid-tones.
+   - `--color-bg-primary/secondary` switch to a warm (`#fffbf5`) or cool (`#fafbfc`) off-white depending on `R > B`.
+   - `--logo-url` / `--logo-dark-url` are set only from `white_label.logo.url`, a shape `useTenant` never produces. Nothing reads these variables, so this branch is dead code.
+   - `injectFontPair(tenant.font_pair)` sets `--font-en`, `--font-he`, `--font-family-sans`, `--font-family-hebrew`. (`useFontLoader()` does the same, but nothing mounts it.)
+3. `index.css` layers:
+   - **Layer 1 primitives** (`--color-primary…`, status colours, neutral scale). Note: `--color-neutral-*` is a fixed warm grey; the comment says it is "derived from primary" but nothing derives it.
+   - **Layer 2 semantics** (`--color-text-primary #1f2937`, `--color-text-secondary #6b7280`, borders, surfaces).
+   - **Finish layer** (DL-DESIGN-009): `--tint-primary-05/10/15/25` (`color-mix` of primary with transparent), `--shadow-ink`, `--border-hairline`, `--focus-halo`, `--sheen-raised`, `--edge-emboss`, `--wash-brand` (one centred radial at 10% primary), radius ramp 4/6/10/14/20.
+   - Component classes (`.card`, `.btn-*`, `.form-*`).
+4. `tailwind.config.js` maps `primary`, `secondary`, `on-primary`, `accent`, status colours to the CSS variables. **`text-primary` and `bg-primary` therefore share one value**, so the brand colour as text has no contrast guard.
+5. Chrome: `AppHeader.tsx` is solid `bg-primary`; the footer in `AppLayout.tsx` is solid `bg-secondary`.
+
+### Weaknesses this proposal addresses
+
+| # | Weakness | Effect |
 |---|---|---|
-| Shoots list | [shoots-list-1280](research/ours/shoots-list-1280.png) | [shoots-list-390](research/ours/shoots-list-390.png) |
-| Shoot detail | [shoot-detail-1280](research/ours/shoot-detail-1280.png) | [shoot-detail-390](research/ours/shoot-detail-390.png) |
-| Quote page | [quote-page-1280](research/ours/quote-page-1280.png) | [quote-page-390](research/ours/quote-page-390.png) |
-| Client portal | [client-portal-1280](research/ours/client-portal-1280.png) | [client-portal-390](research/ours/client-portal-390.png) |
-| Pay page | [pay-page-1280](research/ours/pay-page-1280.png) | [pay-page-390](research/ours/pay-page-390.png) |
-| Hebrew RTL | [shoots-list-he-1280](research/ours/shoots-list-he-1280.png), [client-portal-he-1280](research/ours/client-portal-he-1280.png) | |
+| W1 | Primary used as text has no contrast guard | Orange / green / yellow / pastel tenants: links, brand name and active states at 1.5–2.8:1 |
+| W2 | `#6b7280` muted text | 4.24:1 on any tint; fails AA wherever a tinted surface sits behind captions |
+| W3 | Tints are fixed percentages (`color-mix` 10%) | 10% of yellow is invisible; 10% of navy is heavy. Brands get unequal "subtlety" |
+| W4 | `getAccessibleTextColor` uses perceived brightness, not WCAG | Risky for mid-tones |
+| W5 | `darkenColor` subtracts RGB evenly | Hover states drift in hue and saturation for saturated colours |
+| W6 | Accent default is dance mauve for everyone | Non-dance tenants inherit pink accents unless they change it |
+| W7 | Solid primary header + solid accent footer | The heaviest elements on every page; opposite of the soft look |
 
 ---
 
 ## 3. Comparison, area by area
 
-"Reference" is blank on purpose (hosts blocked, see section 1). "Brief" is the owner's stated direction.
+"Reference" is intentionally blank (section 1). "Brief" is the owner's direction.
 
-| Area | Reference (Light Blue / OpalSwift) | Brief | Ours today | Gap |
+| Area | Reference | Brief | Ours today | Gap |
 |---|---|---|---|---|
-| Colour and gradients | *not captured* | Subtle gradient colouring | One centred radial wash at 10% primary, mostly hidden by a solid header; the rest is flat | No multi-hue, low-opacity gradient behind content; saturated colour is spent on chrome rather than used as atmosphere |
-| Header / nav | *not captured* | Light, airy | Solid primary bar, white text | Heaviest element on screen; reads as "admin tool" more than "studio" |
-| Footer | *not captured* | — | Solid accent (mustard) block, 80–100px tall | Loud and competes with content; on 390 it is a large yellow slab |
-| Surfaces / cards | *not captured* | Soft, glassy | Opaque white, crisp 1px hairline, 14px radius, tight shadow | No translucency, so the background gradient can't show through; shadows feel sharp |
-| Typography | *not captured* | — | Inter / Heebo, bold 700 page titles | Fine for admin; a lighter heading weight and slightly tighter tracking would read softer **(verify)** |
-| Buttons / inputs | *not captured* | — | Solid primary, 10px radius, sheen | OK; could move to pill radius and a soft coloured glow for primary CTAs |
-| Tables / lists | *not captured* | Generous whitespace | Tight rows, bold black header, grey row lines | Header has no tint, rows dense, no hover state |
-| Empty states | *not captured* | — | Plain sentence in a white card ("Your gallery will be available…") | No icon/illustration, no tint |
-| Imagery | *not captured* | Photographer brand | Demo has package cover photos, but none appear on the shoots list or portal | Photographers sell images; the product shows none |
+| Colour / gradients | *not captured* | Subtle gradient colouring | One centred 10% radial, hidden under a solid header | No multi-hue, low-contrast atmosphere; colour spent on chrome |
+| Header / nav | *not captured* | Light, airy | Solid primary bar | Heavy; reads as admin tool |
+| Footer | *not captured* | | Solid accent block | Loudest element with light accents (mustard, mauve, pale yellow) |
+| Surfaces | *not captured* | Soft, glassy | Opaque white, 14px, crisp shadow | No translucency, so the wash can't show through |
+| Typography | *not captured* | | Font pair sets family only; headings 700 everywhere | Pairs can't express heading weight or tracking **(verify)** |
+| Buttons / inputs | *not captured* | | Solid primary, 10px, sheen | Fine; pill + coloured glow would soften |
+| Tables / lists | *not captured* | Whitespace | Dense rows, bold header, grey lines | No header tint or hover |
+| Empty states | *not captured* | | Plain sentence in a white card | No tint, icon or warmth |
+| Imagery | *not captured* | | Package covers exist but aren't shown in lists or portal | Photographers sell images; the UI shows none |
 
 ---
 
-## 4. Proposals
+## 4. The derived token system
 
-### How scoping works (applies to all phases)
+### 4.1 Derivation (JS, once per tenant)
 
-Set two attributes on `<html>` in the existing theme injection. Dance tenants never receive them.
+New file `apps/web/src/lib/theme/deriveSoftTheme.ts`; reference implementation in `docs/design/research/derive-theme.mjs`. Called from `useThemeInjection` next to `deriveColorSystem`; each returned key is written to `<html>` like today.
 
 ```ts
-// apps/web/src/hooks/useThemeInjection.ts — inside the effect, after colours
-root.dataset.vertical = tenant.vertical ?? 'generic';      // 'photographer' | 'dance-studio' | …
-// cleanup on tenant change / unmount:
-// return () => { delete root.dataset.vertical; };
+const INK = '#111827';   // body text
+const MUTED = '#4b5563'; // muted text (replaces #6b7280)
+const TINT_TARGETS = { ground: 0.97, t1: 0.93, t2: 0.87, t3: 0.78 }; // WCAG relative luminance
+
+export function deriveSoftTheme(primary: string, accent: string) {
+  const t = mapValues(TINT_TARGETS, (L) => tintTo(primary, L)); // mix toward white until luminance == L
+  const a = mapValues(TINT_TARGETS, (L) => tintTo(accent, L));
+  const fill = contrast(onColor(primary), primary) >= 4.5
+    ? primary
+    : pushUntil(primary, [WHITE], BLACK, 4.5);                     // darken only if no text colour passes
+  return {
+    '--color-primary-fill': fill,
+    '--color-on-primary-fill': onColor(fill),                     // white or INK, whichever has the higher WCAG ratio
+    '--color-on-primary': onColor(primary),                       // replaces getAccessibleTextColor
+    '--color-primary-ink': pushUntil(primary, [WHITE, t.ground, t.t1, t.t2], BLACK, 4.5),
+    '--color-accent-ink': pushUntil(accent, [WHITE, a.ground, a.t1, a.t2], BLACK, 4.5),
+    '--tint-ground': t.ground, '--tint-1': t.t1, '--tint-2': t.t2, '--tint-3': t.t3,
+    '--tint-accent-1': a.t1, '--tint-accent-2': a.t2,
+    '--color-text-primary': INK, '--color-text-secondary': MUTED,
+  };
+}
 ```
 
-All new CSS lives in one new file, `apps/web/src/styles/vertical-photographer.css`, imported from `index.css`, and every selector starts with `[data-vertical="photographer"]`. A dance page cannot match any rule in it.
+Why JS rather than pure `color-mix()`:
+- **Equal visibility:** a luminance target needs a solve (bisection, 24 steps). Fixed percentages can't do it (W3).
+- **Guaranteed contrast:** `pushUntil` checks the WCAG ratio against the real surfaces. CSS can't measure contrast. `contrast-color()` only picks black or white and can't darken a brand colour to a target ratio.
+- **Cost:** one function, under 1 ms, runs once per tenant load.
 
-**Flag:** gate on `tenant.vertical === 'photographer'` alone for now. `ui:theme.photographer` can't be relied on yet because `useFeatureGate` returns `false` until the `get_tenant_features` RPC exists. Once it does, add `&& hasFeature(FEATURES.ui.themePhotographer)` so the look can be rolled out tenant by tenant. (Decision for the owner: theme all photographers immediately, or only flagged ones.)
+Why tints are opaque colours rather than alpha: an opaque tint has a known luminance, so the contrast numbers below hold on any page. Fades use `color-mix(in srgb, var(--tint-n) X%, transparent)` on top of a known ground.
 
-**White-labelling:** every value below is `color-mix()` of `--color-primary` / `--color-secondary` with white, transparent or neutral ink, exactly like the existing finish layer. No literal brand colours. A photographer who sets primary to navy gets navy glows.
-
-**Global vs scoped:** everything in Phases 1–2 is scoped. Items marked **global** would also change dance and are listed only as options.
-
-### Phase 1: the "subtle gradient" feel (quick wins)
-
-Total effort about 1–2 days. Shown in the mockup.
-
-#### P1.1 Multi-stop background wash · Effort S · Impact high
-
-Replace the single centred glow with two corner glows (primary at inline-start, accent at inline-end) and a faint bottom glow, on a near-white ground.
+### 4.2 Composition (CSS, `index.css`, replaces the `--wash-brand` block)
 
 ```css
-[data-vertical="photographer"] {
-  --ph-ground: color-mix(in srgb, var(--color-primary) 2%, #fbfbfd);
-  --ph-wash:
-    radial-gradient(70% 55% at 0% 0%,    color-mix(in srgb, var(--color-primary) 12%, transparent),   transparent 70%),
-    radial-gradient(55% 50% at 100% 0%,  color-mix(in srgb, var(--color-secondary) 14%, transparent), transparent 70%),
-    radial-gradient(60% 40% at 50% 100%, color-mix(in srgb, var(--color-primary) 6%, transparent),    transparent 75%);
-  --wash-brand: var(--ph-wash);           /* body already paints --wash-brand */
-  --color-bg-primary: var(--ph-ground);
+:root {
+  /* Fallbacks before the tenant loads = dance defaults, so first paint matches */
+  --tint-ground: #fdfcfc; --tint-1: #f9f7f8; --tint-2: #f4eff2; --tint-3: #ece2e8;
+  --tint-accent-1: #fdf5f9; --tint-accent-2: #fbecf4;
+  --color-primary-ink: var(--color-primary);
+  --color-primary-fill: var(--color-primary);
+  --color-on-primary-fill: var(--color-on-primary);
+
+  --wash-page:
+    radial-gradient(75% 60% at 0% 0%,    var(--tint-3),        transparent 70%),
+    radial-gradient(60% 55% at 100% 0%,  var(--tint-accent-2), transparent 70%),
+    radial-gradient(70% 45% at 50% 100%, var(--tint-1),        transparent 75%);
+  --gradient-header: linear-gradient(90deg,
+    color-mix(in srgb, var(--tint-2) 88%, transparent),
+    color-mix(in srgb, var(--tint-accent-2) 88%, transparent));
+  --gradient-footer: linear-gradient(180deg, transparent, var(--tint-accent-1) 70%);
+  --surface-glass: color-mix(in srgb, #fff 78%, transparent);
+  --border-glass: color-mix(in srgb, var(--tint-3) 60%, #fff);
+  --elevation-soft: 0 1px 2px color-mix(in srgb, var(--shadow-ink) 6%, transparent),
+                    0 10px 28px -8px color-mix(in srgb, var(--shadow-ink) 14%, transparent);
+  --glow-primary: 0 6px 16px -6px color-mix(in srgb, var(--color-primary-fill) 55%, transparent);
+
+  --wash-brand: var(--wash-page);            /* body already paints --wash-brand */
+  --color-bg-primary: var(--tint-ground);
 }
-/* RTL: keep primary at the inline-start corner */
-[data-vertical="photographer"][dir="rtl"] {
-  --ph-wash:
-    radial-gradient(70% 55% at 100% 0%,  color-mix(in srgb, var(--color-primary) 12%, transparent),   transparent 70%),
-    radial-gradient(55% 50% at 0% 0%,    color-mix(in srgb, var(--color-secondary) 14%, transparent), transparent 70%),
-    radial-gradient(60% 40% at 50% 100%, color-mix(in srgb, var(--color-primary) 6%, transparent),    transparent 75%);
-}
-```
-
-- Contrast: the peak tint behind text is about 12% primary. Body text `#1f2937` stays at 12.2:1. Muted text needs P1.6.
-- RTL: mirrored by the second block (`dir` is on `<html>`, same element as `data-vertical`).
-- Risk: a very saturated accent (bright yellow) at 14% is still pale (text 14.0:1 measured on `#f5d90a`).
-
-#### P1.2 Light gradient header instead of solid primary · Effort S · Impact high
-
-```css
-[data-vertical="photographer"] {
-  --ph-ink: color-mix(in srgb, var(--color-primary) 22%, #111827);
-  --ph-header-bg: linear-gradient(90deg,
-    color-mix(in srgb, var(--color-primary) 7%, rgb(255 255 255 / .78)),
-    color-mix(in srgb, var(--color-secondary) 9%, rgb(255 255 255 / .78)));
-  --ph-header-border: color-mix(in srgb, var(--color-primary) 10%, transparent);
-}
-[data-vertical="photographer"] .app-header {
-  background: var(--ph-header-bg);
-  color: var(--ph-ink);
-  border-block-end-color: var(--ph-header-border);
-  backdrop-filter: saturate(1.4) blur(12px);
-}
-[data-vertical="photographer"] .app-header .app-header__brand { color: var(--color-primary); }
-```
-
-- Where: `AppHeader.tsx` needs a stable hook class (`app-header`, `app-header__brand`) next to its current Tailwind classes. That is a no-op for dance.
-- Logout button: today it's `bg-secondary`. In scope, render it as an outline button (`border: 1px solid var(--ph-header-border)`) so the header carries no solid colour.
-- RTL: `90deg` runs left to right physically. Use `[dir="rtl"]` with `270deg` if the primary end should stay at inline-start, as in P1.1.
-- Contrast: brand name in primary on a ~7% primary tint ≥ 6.1:1 for the demo teal. **Constraint:** a tenant with a light primary (say `#a0e0ff`) would get a low-contrast brand name. Fall back to `--ph-ink` when `getAccessibleTextColor(primary)` returns dark text (i.e. the primary is light). `useThemeInjection` already computes this, so it can set `--ph-brand-text` accordingly.
-
-#### P1.3 Quiet footer · Effort S · Impact high
-
-```css
-[data-vertical="photographer"] .app-footer {
-  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--color-secondary) 10%, transparent));
-  color: var(--ph-ink);
-  border-block-start: 1px solid color-mix(in srgb, var(--color-secondary) 25%, transparent);
+[dir="rtl"] {                                /* primary glow stays at inline-start */
+  --wash-page:
+    radial-gradient(75% 60% at 100% 0%,  var(--tint-3),        transparent 70%),
+    radial-gradient(60% 55% at 0% 0%,    var(--tint-accent-2), transparent 70%),
+    radial-gradient(70% 45% at 50% 100%, var(--tint-1),        transparent 75%);
+  --gradient-header: linear-gradient(270deg,
+    color-mix(in srgb, var(--tint-2) 88%, transparent),
+    color-mix(in srgb, var(--tint-accent-2) 88%, transparent));
 }
 ```
 
-- Where: add `app-footer` to the `<footer>` in `AppLayout.tsx`.
-- Contrast: ink on a 10% accent tint is above 13:1.
+`dir` and the tokens both live on `<html>`, so the RTL block overrides cleanly. The warm/cool off-white switch (`getBackgroundForPrimaryColor`) is no longer needed: `--tint-ground` already carries the brand's own warmth.
 
-#### P1.4 Translucent ("glassy") cards and softer elevation · Effort S · Impact med-high
+### 4.3 Proposals
 
-```css
-[data-vertical="photographer"] {
-  --ph-glass: color-mix(in srgb, #fff 80%, transparent);
-  --ph-glass-border: color-mix(in srgb, #fff 70%, var(--color-primary) 6%);
-  --radius-surface: 1.125rem;   /* 18px, up from 14px (verify) */
-  --elevation-1: 0 1px 2px color-mix(in srgb, var(--shadow-ink) 6%, transparent),
-                 0 8px 24px -6px color-mix(in srgb, var(--shadow-ink) 10%, transparent);
-  --elevation-2: 0 2px 4px color-mix(in srgb, var(--shadow-ink) 8%, transparent),
-                 0 16px 36px -10px color-mix(in srgb, var(--shadow-ink) 16%, transparent);
-  --surface-base: var(--ph-glass);
-  --border-hairline: var(--ph-glass-border);
-}
-[data-vertical="photographer"] .card,
-[data-vertical="photographer"] .ui-card { backdrop-filter: blur(10px) saturate(1.2); }
-```
+All global unless noted. Every proposal changes dance too; dance's own row in section 5 shows it stays AA and keeps its burgundy and mauve character.
 
-- Where: tokens only. `Card` and `.card` already read `--surface-base`, `--border-hairline`, `--radius-surface` and `--elevation-*`. `Card` needs a `ui-card` hook class for the blur.
-- Caveat: `--surface-base` also paints native inputs (`:where(select, textarea, input)`). Inputs should stay opaque white, so add `[data-vertical="photographer"] :where(input, select, textarea) { background-color: #fff; }`. Modals (`.modal-dialog`) also use `--surface-base`; keep them opaque with `--surface-overlay-panel: #fff`.
-- Performance: `backdrop-filter` on many cards can cost paint time on low-end Android. If needed, drop the blur on `max-width: 640px` (the 80% white still works without it).
-
-#### P1.5 Table polish: tinted header, airy rows, hover · Effort S · Impact med
-
-```css
-[data-vertical="photographer"] .ui-table thead tr { background: color-mix(in srgb, var(--color-primary) 4%, transparent); }
-[data-vertical="photographer"] .ui-table th {
-  font-size: .75rem; font-weight: 500; letter-spacing: .04em; text-transform: uppercase;
-  color: var(--color-text-secondary);
-}
-[data-vertical="photographer"][dir="rtl"] .ui-table th { letter-spacing: 0; text-transform: none; font-size: .8125rem; }
-[data-vertical="photographer"] .ui-table td { padding-block: .875rem; }
-[data-vertical="photographer"] .ui-table tbody tr { border-color: color-mix(in srgb, var(--color-primary) 6%, transparent); }
-[data-vertical="photographer"] .ui-table tbody tr:hover { background: color-mix(in srgb, var(--color-primary) 5%, transparent); }
-```
-
-- Where: `components/ui/table.tsx` adds `ui-table`. The shoots list (`JobsPage`) needs to use it if it renders its own `<table>`.
-- RTL: Hebrew has no case and letter-spacing hurts Hebrew legibility, so both are reset under `dir="rtl"`.
-- Also fix `border-gray-200` in `TableRow`: a hardcoded grey, technically a white-label rule break. This one is **global** (it would touch dance tables, though the visual change is nil if replaced with `var(--border-default)`).
-
-#### P1.6 Darker muted text in scope (contrast fix) · Effort S · Impact low (visual), required
-
-```css
-[data-vertical="photographer"] { --color-text-secondary: #4b5563; }
-```
-
-Measured: `#6b7280` on 8 / 12 / 16% teal tint = 4.28 / 4.02 / 3.77:1 (fails AA). `#4b5563` = 6.70 / 6.29 / 5.90:1 (passes). Without this, P1.1 and P1.5 would break AA for captions, emails under client names and table headers.
-
-#### P1.7 Pill primary buttons with a soft coloured glow · Effort S · Impact med (verify)
-
-```css
-[data-vertical="photographer"] .btn-primary {
-  border-radius: 9999px;
-  padding-inline: 1.125rem;
-  background-image: linear-gradient(135deg, rgb(255 255 255 / .16), rgb(255 255 255 / 0) 55%, rgb(0 0 0 / .08));
-  box-shadow: 0 6px 16px -6px color-mix(in srgb, var(--color-primary) 55%, transparent);
-}
-```
-
-Overlay-only gradient, so it follows the design-system rule and keeps the tenant hue. `--color-on-primary` is unchanged, so text contrast is unchanged (white on `#1F5F5B` = 7.38:1).
-
-Also in scope: "Booked" badge from solid primary to tinted (`primary 12%` background, primary text, 6.1:1), so the only solid colour on the list is the main CTA.
-
-### Phase 2: typography, imagery, empty states (about 1 week)
-
-| # | Change | Effort | Impact | Notes |
+| # | Change | Files | Effort | Impact |
 |---|---|---|---|---|
-| P2.1 | **Heading weight and tracking.** In scope, `text-h1..h3` and page titles at weight 600 (from 700), `letter-spacing: -0.02em` for LTR only. | S | med | RTL keeps 0 tracking. **(verify)** against reference type. |
-| P2.2 | **New font pair `studio`** for photographers: a display serif for headings with Inter body, e.g. `Fraunces` (EN) + `Frank Ruhl Libre` (HE, already bundled), body Inter / Heebo. Added to `FONT_PAIRS` and `fonts.ts`; default for new photographer tenants via the preset, tenants can still choose. | M | high | Adds ~40–60 kB (woff2, two weights, latin subset). Needs a heading font variable (`--font-heading`) because pairs today set only one family per script. Hebrew serif headings must be checked at small sizes. **(verify)** |
-| P2.3 | **Page hero band.** A `PageHeader` variant with its own stronger gradient (`--ph-hero: linear-gradient(135deg, primary 10%, secondary 10%)` over the ground, `--radius-overlay`) for the title + subtitle + CTA on list pages. | M | med | One component, opt-in per page. |
-| P2.4 | **Imagery on shoots list and portal.** 40px rounded thumbnail of the package cover (`offerings.cover_image_url`) in the shoots list's first column; the client portal's shoot card gets a 16:9 cover with a bottom gradient scrim (`linear-gradient(to top, rgb(0 0 0/.55), transparent 60%)`) under white text. | M | high | Scrim keeps white text ≥ 4.5:1 on any photo. Mirrors fine in RTL. Falls back to a gradient tile when there is no cover. |
-| P2.5 | **Empty states.** `empty-state.tsx` gets a tinted circular icon well (`--tint-primary-10`) and a gradient dashed border in scope; copy via the photographer i18n overlay. | S | med | |
-| P2.6 | **Status timeline in the portal.** Enquiry → Booked → Shot → Editing → Delivered as a horizontal stepper (vertical on 390), current step in primary, done steps tinted. | M | med | Logical properties only; the connector line runs inline-start → inline-end. |
+| T1 | **`deriveSoftTheme` + tokens** (4.1, 4.2) | new `lib/theme/deriveSoftTheme.ts` (+ unit tests on the section 5 matrix); `useThemeInjection.ts`; `index.css` | M | foundation |
+| T2 | **Brand ink for text.** Tailwind: `theme.extend.textColor.primary = 'var(--color-primary-ink)'` so the 81 `text-primary` uses become safe automatically, while `bg-primary` keeps the raw brand. Same for `text-accent`. Also links and `.form-label` accents | `tailwind.config.js` | S | high (fixes W1) |
+| T3 | **Muted text `#4b5563`** and body ink `#111827` | `index.css` Layer 2 | S | med (fixes W2) |
+| T4 | **Soft header:** `--gradient-header` + `backdrop-filter: blur(12px) saturate(1.3)`, ink text, brand name in `--color-primary-ink`, outline buttons on `--border-glass` | `AppHeader.tsx` (swap `bg-primary text-on-primary` for an `app-header` class) | S | high |
+| T5 | **Soft footer:** `--gradient-footer`, ink text | `AppLayout.tsx` | S | high |
+| T6 | **Glass surfaces:** `.card` / `Card` use `--surface-glass`, `--border-glass`, `--elevation-soft`, `--radius-surface: 18px` **(verify)**. Inputs and modals stay opaque white. | `index.css`, `card.tsx` | S | med-high |
+| T7 | **Tables:** `thead` on `--tint-1`, rows divided by `--tint-2`, hover `--tint-1`, `padding-block: .75rem`; small uppercase headers in LTR only | `table.tsx` (also replaces hardcoded `border-gray-200`) | S | med |
+| T8 | **Primary buttons:** `--color-primary-fill` + `--color-on-primary-fill`, pill radius, `--glow-primary`, overlay-only sheen (keeps the existing rule) | `button.tsx`, `index.css` `.btn-primary` | S | med |
+| T9 | **Badges:** "brand" status badge (Booked) as `--tint-2` with `--color-primary-ink` text instead of a solid fill | `badge.tsx` | S | low-med |
+| T10 | **WCAG-based on-colour** replaces `getAccessibleTextColor`; perceptual hover/active (mix toward black in sRGB: `mix(primary, #000, .91/.83)`) replaces `darkenColor` | `lib/utils.ts` | S | low (fixes W4/W5) |
+| T11 | **Accent default.** Make `accent_color` nullable. When null, derive an analogous accent (`hsl(h+30, s·0.85, l)`), so new non-dance tenants stop inheriting mauve. Existing rows keep their value; the dance tenant sets its mauve explicitly first. | migration + `deriveColorSystem` | M | med (fixes W6) |
+| T12 | **Font pairs get heading settings:** `FontPair` gains `headingWeight` and `headingTracking` (LTR only), exposed as `--heading-weight` / `--heading-tracking` and used by `text-h1..h3` and `Display`. Proposed values: Reliable 600 / −0.02em; Elegant 600 / 0; Dynamic 600 / −0.01em; Warm 600 / −0.01em; Bold 500 / 0.01em. **(verify)** | `useFontLoader.ts`, `index.css` typography | S | med |
+| T13 | **Optional `chrome_style`** tenant setting (`soft` default, `solid` = today's bars) for brands that want a coloured header | migration + settings UI + `AppHeader` | M | low |
 
-### Phase 3: larger, optional
+#### Contrast per proposal
 
-| # | Change | Effort | Impact | Notes |
-|---|---|---|---|---|
-| P3.1 | Client-facing pages (quote, pay, portal) get a distinct "client" layout: no admin header, tenant logo centred, a full-bleed hero from the tenant's portfolio. | L | high | Needs a tenant "hero image" setting. |
-| P3.2 | Motion: 150–200 ms fade/raise on cards entering, gradient drift on the hero (`background-position` animation, 20 s, `motion-safe` only). | S–M | low-med | Respect `prefers-reduced-motion` (already global). |
-| P3.3 | Dark variant for the photographer client gallery link page. | L | med | Only if references show it. |
-| P3.4 | **Global, would affect dance:** promote P1.4 (softer elevation) and P1.6 (darker muted text) to `:root`. P1.6 is an accessibility improvement for everyone; the trade-off is that dance pages would get slightly darker captions. Recommend proposing P1.6 globally as a separate PR with dance screenshots for sign-off. | S | low | Must not ship without explicit owner approval. |
+- T2: brand ink ≥ 4.5:1 on white, ground, tint-1 and tint-2 **by construction**; matrix lowest is 4.58 (yellow).
+- T3 / T4 / T5 / T7: text sits only on white, ground, tint-1..3 or accent tint-1/2. All have luminance ≥ 0.78, so ink stays ≥ 14:1 and muted ≥ 6.6:1 (tint-2) / about 6:1 (tint-3) for any brand. Luminance-targeted tints make this hue-independent.
+- T8: fill ratio ≥ 4.5:1 by construction; matrix lowest is 6.33 (orange with ink text).
+- T9: ink on tint-2 is the same guarantee as T2.
+- Status badges (success / warning) keep their fixed palettes, unaffected by tenants.
+- Focus ring: `--focus-halo` stays; the 2px solid outline should use `--color-primary-ink` so it reaches 3:1 non-text contrast for light brands (today a yellow outline on white is 1.5:1).
+
+#### RTL notes
+
+- Gradients with direction (page wash, header) are mirrored in a `[dir="rtl"]` block, so the primary always sits at inline-start. The footer fade is vertical and needs nothing.
+- Hebrew: no `text-transform`, `letter-spacing: 0` on headers and table heads (T7, T12); the existing RTL line-heights stay.
+- Hebrew pair faces (Heebo, Frank Ruhl Libre, Rubik, Assistant, Miriam Libre) render correctly in the mockup with `?rtl`.
+- Email addresses inside Hebrew rows should carry `dir="ltr"` (done in the mockup).
 
 ---
 
-## 5. Phased plan
+## 5. Contrast test matrix
+
+Generated by `node docs/design/research/derive-theme.mjs` (saved as `research/contrast-matrix.md`). WCAG 2.x ratios. "Today" columns use the current code paths.
+
+| Tenant | Primary / accent | On-primary today → proposed (ratio) | Button fill (ratio) | Primary as text on white → brand ink on tint-2 | Body ink on tint-2 / tint-3 | Muted today → proposed on tint-2 |
+|---|---|---|---|---|---|---|
+| Dance studio (current tenant default) | `#76335a` / `#e99ac4` | white 8.78 → white 8.78 | `#76335a` 8.78 | 8.78 → `#76335a` 7.73 | 15.61 / 14.03 | 4.25 → 6.65 |
+| Photographer demo | `#1F5F5B` / `#E8B04B` | white 7.38 → white 7.38 | `#1F5F5B` 7.38 | 7.38 → `#1f5f5b` 6.47 | 15.56 / 14.06 | 4.24 → 6.63 |
+| Photographer seed | `#F97316` / `#FDE68A` | black 7.49 → ink 6.33 | `#F97316` 6.33 | **2.80** → `#ae500f` 4.65 | 15.55 / 14.03 | 4.24 → 6.62 |
+| Art class seed | `#1D4ED8` / `#93C5FD` | white 6.70 → white 6.70 | `#1D4ED8` 6.70 | 6.70 → `#1d4ed8` 5.87 | 15.55 / 14.07 | 4.24 → 6.62 |
+| Therapist seed | `#4CAF50` / `#C8E6C9` | black 7.56 → ink 6.38 | `#4CAF50` 6.38 | **2.78** → `#357a38` 4.61 | 15.56 / 14.03 | 4.24 → 6.63 |
+| Sofer seed | `#6D1A36` / `#D4A5B6` | white 11.34 → white 11.34 | `#6D1A36` 11.34 | 11.34 → `#6d1a36` 9.97 | 15.60 / 14.04 | 4.25 → 6.64 |
+| Stress: light yellow | `#FACC15` / `#afe926` (derived) | black 13.71 → ink 11.58 | `#FACC15` 11.58 | **1.53** → `#826a0b` 4.58 | 15.55 / 14.10 | 4.24 → 6.62 |
+| Stress: pale sky | `#93C5FD` / `#9d9bf5` (derived) | black 11.65 → ink 9.84 | `#93C5FD` 9.84 | **1.80** → `#526e8e` 4.65 | 15.64 / 14.02 | 4.26 → 6.66 |
+| Stress: near-black | `#111827` / `#161325` (derived) | white 17.74 → white 17.74 | `#111827` 17.74 | 17.74 → `#111827` 15.55 | 15.55 / 14.06 | 4.24 → 6.62 |
+
+Reading it:
+- **Bold** = fails AA today. Every proposed column is ≥ 4.5.
+- Dark brands (dance, teal, sofer, navy) keep their exact primary as ink; only light brands get darkened ink.
+- The on-primary change from pure black to `#111827` lowers ratios slightly, but all stay ≥ 6.3. Keeping `#000` is also fine if preferred.
+- Suggested unit test: assert every proposed column ≥ 4.5 for these 9 rows plus ~200 random colours.
+
+---
+
+## 6. Mockup
+
+`docs/design/tenant-theme-mockup.html` (static, not wired into the app, fonts bundled in `docs/design/fonts/`):
+
+- **Rows:** Today, shoots list · Proposed, shoots list · Proposed, client portal · a custom tenant from colour pickers.
+- **Columns:** Dance studio `#76335a` / `#e99ac4` + Elegant (Crimson Text / Frank Ruhl Libre) · Photographer demo `#1f5f5b` / `#e8b04b` + Reliable (Inter / Heebo) · Photographer seed `#f97316` / `#fde68a` + Warm (Source Sans 3 / Rubik).
+- All proposed colours are computed by the inline copy of `deriveSoftTheme()`; nothing is hand-tuned per tenant.
+
+Screenshots: [1440](research/tenant-mockup-1440.png) · [1440 Hebrew RTL](research/tenant-mockup-1440-rtl.png) · [390](research/tenant-mockup-390.png)
+
+Things to notice: the orange tenant's links turn into a burnt orange that passes AA (`#ae500f`). The dance tenant keeps its burgundy and pink identity, now as a blush wash instead of a pink footer slab.
+
+---
+
+## 7. Phased plan
 
 | Phase | Items | Effort | Result |
 |---|---|---|---|
-| 0 | `data-vertical` on `<html>` in `useThemeInjection`; hook classes `app-header`, `app-footer`, `ui-card`, `ui-table`, `btn-primary` (no visual change); new `styles/vertical-photographer.css` | S (half a day) | Plumbing. Visual regression tests on dance pages should show zero diff. |
-| 1 | P1.1–P1.7 | S each, 1–2 days total | The "subtle gradient" feel: light gradient chrome, multi-hue wash, glassy cards, airy tables, AA-safe muted text |
-| 2 | P2.1–P2.6 | about 1 week | Typography with character, photos in the product, nicer empty states and portal |
-| 3 | P3.x | later | Client-facing layout, motion |
+| 1. Foundation + contrast | T1, T2, T3, T10 | 2–3 days | Derived tokens exist; all brand-as-text and muted text pass AA for any tenant. Visually small. |
+| 2. The soft look | T4, T5, T6, T7, T8, T9 | 2–3 days | Gradient header/footer, page wash, glass cards, airy tables, pill buttons, for every tenant in its own colours |
+| 3. Typography | T12 | 1 day | Pairs control heading weight and tracking |
+| 4. Data model | T11, T13 | 2–3 days (migration + settings UI) | No more inherited dance mauve; optional solid chrome |
+| Later | Imagery in lists/portal (package covers, portal hero with scrim), tinted empty states, status stepper, motion | 1–2 weeks | Product feels like a studio tool |
 
-**Before Phase 1 ships:** capture the references (section 1) and adjust the tokens marked **(verify)**; take dance screenshots before and after to prove zero diff; check contrast in both the default photographer palette and one light-primary tenant.
+**Before Phase 2 ships:** capture the references and tune the **(verify)** values (tint targets, radius, heading weights). Run visual regression on the dance tenant and get the owner to sign off on its new look, since dance is no longer protected.
 
-### Top 5 changes
+### Top 5
 
-1. Replace the solid primary header with a light primary → accent gradient header with blur (P1.2).
-2. Replace the solid mustard footer with a faint accent fade (P1.3).
-3. Multi-stop corner-glow background wash, primary + accent, RTL-mirrored (P1.1).
-4. Translucent cards with softer, wider shadows and 18px radius (P1.4).
-5. Airy tables with a tinted header and row hover, plus the muted-text contrast fix (P1.5 + P1.6).
+1. `deriveSoftTheme()`: luminance-targeted tints plus contrast-safe brand ink and button fill, computed per tenant in `useThemeInjection` (T1).
+2. Point `text-primary` at the brand ink and switch muted text to `#4b5563`, fixing today's AA failures for light-brand tenants (T2, T3).
+3. Soft gradient header and footer instead of solid primary and accent bars (T4, T5).
+4. Multi-stop page wash (primary corner + accent corner + bottom glow) behind glass cards with soft, brand-tinted shadows (4.2, T6).
+5. Font pairs carry heading weight and tracking, so Elegant/Reliable/Warm feel distinct under the same soft system (T12).
 
 ---
 
-## 6. Accessibility and RTL checklist
+## 8. Files in this PR
 
-- Contrast figures above were computed with the WCAG relative-luminance formula against the demo palette (`#1F5F5B` / `#E8B04B`) and two stress colours (`#f5d90a`, `#a0e0ff`).
-- Any tint behind text stays ≤ 16% of a tenant colour; with `#4b5563` muted text that keeps ≥ 5.9:1 for the demo teal.
-- No new physical properties: gradients are mirrored with `[dir="rtl"]` blocks; spacing uses `padding-block`, `border-block-*`.
-- Hebrew: no uppercase, no positive letter-spacing; RTL line-heights in `index.css` remain.
-- Focus ring (`--focus-halo`) is unchanged and still visible on glass cards (tested in mockup).
-- `backdrop-filter` has no fallback issue: without support, the 80% white card is still readable.
+- `docs/design/photographer-theme-proposal.md`: this document
+- `docs/design/tenant-theme-mockup.html` + `docs/design/fonts/*.woff2` (copied from the app's `@fontsource` packages, OFL)
+- `docs/design/research/derive-theme.mjs`: reference derivation + matrix generator
+- `docs/design/research/contrast-matrix.md`: generated matrix
+- `docs/design/research/tenant-mockup-*.png`: mockup screenshots
+- `docs/design/research/ours/*.png`: current photographer demo (shoots list, shoot detail, quote, client portal, pay page; 1280 + 390; Hebrew)
+- `docs/design/research/capture-references.js`: reference capture, to run once the hosts are allowed
 
-## 7. Files in this PR
+## 9. Sources
 
-- `docs/design/photographer-theme-proposal.md` (this file)
-- `docs/design/photographer-phase1-mockup.html`: static mockup, current vs Phase 1, shoots list + client portal (`?rtl` for Hebrew direction)
-- `docs/design/research/ours/*.png`: photographer demo screenshots
-- `docs/design/research/mockup-phase1-*.png`: mockup screenshots (1440, 1440 RTL, 390)
-- `docs/design/research/capture-references.js`: reference capture script, to run once the hosts are allowed
-
-## 8. Sources
-
-- Our code: `apps/web/src/index.css` (finish layer, lines ~1195–1278; body wash ~346), `apps/web/src/hooks/useThemeInjection.ts`, `apps/web/src/hooks/useFontLoader.ts`, `apps/web/src/components/Navigation/AppHeader.tsx:29`, `apps/web/src/layouts/AppLayout.tsx:45`, `apps/web/src/components/ui/card.tsx`, `apps/web/src/components/ui/table.tsx`, `packages/shared/src/config/feature-registry.ts` (`ui:theme.photographer`), `apps/web/src/hooks/useFeatureGate.ts`.
+- Code: `supabase/migrations/20260608000200_core_tenants.sql:98-99`, `supabase/seed-*.sql`, `apps/web/src/hooks/useTenant.ts`, `apps/web/src/hooks/useThemeInjection.ts`, `apps/web/src/lib/utils.ts` (`deriveColorSystem`, `darkenColor`, `getAccessibleTextColor`, `getBackgroundForPrimaryColor`), `apps/web/src/hooks/useFontLoader.ts`, `apps/web/src/fonts.ts`, `apps/web/src/index.css`, `apps/web/tailwind.config.js`, `apps/web/src/components/Navigation/AppHeader.tsx:29`, `apps/web/src/layouts/AppLayout.tsx:45`, `apps/web/src/components/ui/{card,table,badge,button}.tsx`, `DESIGN_SYSTEM.md`, `apps/web/DESIGN_SYSTEM.md`.
 - Demo build: `VITE_DEMO_MODE=true pnpm --filter web build`, served from `apps/web/dist-demo`, captured with Playwright (Chromium).
-- References: https://www.lightbluesoftware.com/ and https://opalswift.com/ were **not reachable** from this session (see section 1).
+- References: https://www.lightbluesoftware.com/ and https://opalswift.com/ were **not reachable** (section 1).
