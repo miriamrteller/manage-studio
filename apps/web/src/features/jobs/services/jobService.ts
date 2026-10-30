@@ -51,7 +51,7 @@ export interface JobPackage {
 const JOB_SELECT =
   'engagement_id, job_status, location, notes, lead_id, gallery_url, gallery_released_at, created_at, ' +
   'engagements!inner(id, status, booked_starts_at, booked_ends_at, waiver_evidence_id, person_id, offering_id, ' +
-  'people(name, email, emergency_contact_phone), offerings(name, price_minor, currency), waiver_evidence(signed_at))';
+  'people(name, email, contact_preferences(whatsapp_number)), offerings(name, price_minor, currency), waiver_evidence(signed_at))';
 
 const JobStatusSchema = z.enum(JOB_STATUSES);
 
@@ -86,7 +86,14 @@ export type ConvertLeadInput = z.input<typeof ConvertLeadSchema>;
 
 function toRow(raw: Record<string, unknown>): JobRow {
   const eng = (raw.engagements ?? {}) as Record<string, unknown>;
-  const person = (eng.people ?? null) as { name?: string; email?: string; emergency_contact_phone?: string } | null;
+  const person = (eng.people ?? null) as {
+    name?: string;
+    email?: string;
+    contact_preferences?: { whatsapp_number?: string | null }[] | { whatsapp_number?: string | null } | null;
+  } | null;
+  const prefs = Array.isArray(person?.contact_preferences)
+    ? person?.contact_preferences[0]
+    : person?.contact_preferences;
   const offering = (eng.offerings ?? null) as { name?: string; price_minor?: number; currency?: string } | null;
   const evidence = (eng.waiver_evidence ?? null) as { signed_at?: string } | null;
   return {
@@ -105,7 +112,7 @@ function toRow(raw: Record<string, unknown>): JobRow {
     person_id: eng.person_id as string,
     client_name: person?.name ?? null,
     client_email: person?.email ?? null,
-    client_phone: person?.emergency_contact_phone ?? null,
+    client_phone: prefs?.whatsapp_number ?? null,
     offering_id: eng.offering_id as string,
     package_name: offering?.name ?? null,
     price_minor: offering?.price_minor ?? null,

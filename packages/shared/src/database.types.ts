@@ -3481,6 +3481,10 @@ export type Database = {
           person_id: string
         }[]
       }
+      job_store_client_phone: {
+        Args: { p_person_id: string; p_phone: string; p_tenant_id: string }
+        Returns: undefined
+      }
       link_auth_user_to_guardian_for_engagement: {
         Args: { p_engagement_id: string }
         Returns: undefined

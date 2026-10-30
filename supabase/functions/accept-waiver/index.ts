@@ -1,6 +1,6 @@
 import { corsHeaders, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
-import { loadJobContractContext, renderJobContract } from "../_shared/job-contract.ts";
+import { canSignJobContract, loadJobContractContext, renderJobContract } from "../_shared/job-contract.ts";
 import {
   currentHmacVersion,
   getHmacKey,
@@ -136,6 +136,27 @@ Deno.serve(async (req) => {
       }
       if (jobContract && (jobContract.engagementStatus === "cancelled" || jobContract.jobStatus === "cancelled")) {
         return jsonResponse({ error: "Job is cancelled" }, 409);
+      }
+      // Authenticated path: knowing two UUIDs must not let another tenant user
+      // sign a client's contract — require membership of the job's account or
+      // a tenant admin. (Guest path is already scoped by the waiver token.)
+      if (jobContract && !rawWaiverToken && actorId) {
+        const [{ data: actorProfile }, { data: memberships }] = await Promise.all([
+          service.from("user_profiles").select("role").eq("id", actorId).maybeSingle(),
+          service
+            .from("account_members")
+            .select("account_id")
+            .eq("tenant_id", tenantId)
+            .eq("user_profile_id", actorId),
+        ]);
+        const allowed = canSignJobContract({
+          roles: (actorProfile?.role as string[] | null) ?? [],
+          memberAccountIds: (memberships ?? []).map((m) => m.account_id as string),
+          jobAccountId: jobContract.accountId,
+        });
+        if (!allowed) {
+          return jsonResponse({ error: "Not allowed to sign this contract" }, 403);
+        }
       }
     }
     const wordingSnapshot: string = jobContract

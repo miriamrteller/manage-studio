@@ -98,6 +98,51 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.job_details TO authenticate
 GRANT ALL ON TABLE public.job_details TO service_role;
 
 -- =============================================================================
+-- Internal helper: store the client's phone where notifications read it.
+-- people has no phone column; WhatsApp sends (send-notification, pay links)
+-- resolve contact_preferences.whatsapp_number by person_id, so the number
+-- lives there. Opt-in flags mirror the web enrolment flow defaults
+-- (whatsapp_opted_in = false until the client opts in / verifies).
+-- Never overwrites a number that is already set.
+-- =============================================================================
+CREATE OR REPLACE FUNCTION public.job_store_client_phone(
+  p_tenant_id UUID,
+  p_person_id UUID,
+  p_phone     TEXT
+)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_phone TEXT := NULLIF(trim(coalesce(p_phone, '')), '');
+BEGIN
+  IF v_phone IS NULL THEN
+    RETURN;
+  END IF;
+
+  UPDATE contact_preferences
+  SET whatsapp_number = v_phone, updated_at = now()
+  WHERE tenant_id = p_tenant_id
+    AND person_id = p_person_id
+    AND NULLIF(trim(coalesce(whatsapp_number, '')), '') IS NULL;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM contact_preferences WHERE tenant_id = p_tenant_id AND person_id = p_person_id
+  ) THEN
+    INSERT INTO contact_preferences (
+      tenant_id, person_id, email_opted_in, whatsapp_number, whatsapp_opted_in, whatsapp_verified
+    )
+    VALUES (p_tenant_id, p_person_id, true, v_phone, false, false);
+  END IF;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.job_store_client_phone(UUID, UUID, TEXT) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.job_store_client_phone(UUID, UUID, TEXT) TO service_role;
+
+-- =============================================================================
 -- Internal helper: resolve (or create) the client for a job.
 -- Client = account; primary contact = accounts.person_id. Reuses an existing
 -- person by (tenant, email) because people.email is unique per tenant.
@@ -137,10 +182,8 @@ BEGIN
     IF v_name IS NULL THEN
       RAISE EXCEPTION 'Client name is required';
     END IF;
-    -- people has no phone column; the guest-enrolment flow stores the contact
-    -- phone in emergency_contact_phone, so jobs do the same.
-    INSERT INTO people (tenant_id, name, email, emergency_contact_phone, status)
-    VALUES (p_tenant_id, v_name, v_email, NULLIF(trim(coalesce(p_phone, '')), ''), 'active')
+    INSERT INTO people (tenant_id, name, email, status)
+    VALUES (p_tenant_id, v_name, v_email, 'active')
     RETURNING id INTO v_person_id;
 
     INSERT INTO accounts (tenant_id, name, person_id)
@@ -151,6 +194,8 @@ BEGIN
 
     INSERT INTO account_members (tenant_id, account_id, person_id, role, user_profile_id)
     VALUES (p_tenant_id, v_account_id, v_person_id, 'account_holder', NULL);
+
+    PERFORM job_store_client_phone(p_tenant_id, v_person_id, p_phone);
 
     RETURN QUERY SELECT v_person_id, v_account_id, true;
     RETURN;
@@ -169,6 +214,8 @@ BEGIN
     END IF;
     UPDATE people SET account_id = v_account_id, updated_at = now() WHERE id = v_person_id;
   END IF;
+
+  PERFORM job_store_client_phone(p_tenant_id, v_person_id, p_phone);
 
   RETURN QUERY SELECT v_person_id, v_account_id, false;
 END;
