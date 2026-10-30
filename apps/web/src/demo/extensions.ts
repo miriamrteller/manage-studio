@@ -350,14 +350,18 @@ function insertRequest(ctx: DemoContext, engagementId: string, r: Row, createdBy
 // ---------------------------------------------------------------------------
 
 const digitsOnly = (v: unknown) => String(v ?? '').replace(/[^0-9]/g, '');
+/** Israeli numbers: international 972X… and local 0X… compare as the local form. */
+const localPhoneDigits = (digits: string) => (digits.startsWith('972') ? `0${digits.slice(3)}` : digits);
 const LIVE_ENGAGEMENT = new Set(['active', 'pending_payment', 'admin_review', 'pending_waiver']);
 
 /**
  * Mirrors the SQL: active people in the tenant; every whitespace token must
  * occur in a lower-cased blob of name / email / emergency contact / account
  * name / guardian / package names, or (3+ digits) in a digits-only phone.
- * Demo addition: the client's WhatsApp number (contact_preferences), which is
- * where photographer client phones are stored.
+ * Also matches the client's WhatsApp number (contact_preferences), where
+ * photographer client phones are stored, and treats a local Israeli number
+ * (0X…) and the international form (+972 X…) as the same number
+ * (mirrors migration 20261030000400).
  */
 export function searchClients(ctx: DemoContext, query: string, limit: number): Row[] {
   const normalized = query.trim().toLowerCase();
@@ -391,9 +395,11 @@ export function searchClients(ctx: DemoContext, query: string, limit: number): R
         .filter((v) => v != null && v !== '')
         .join(' ')
         .toLowerCase();
-      const ok = tokens.every(
-        (tok) => blob.includes(tok) || (digits.length >= 3 && phones.some((ph) => ph.includes(digits))),
-      );
+      const localDigits = localPhoneDigits(digits);
+      const phoneMatch =
+        digits.length >= 3 &&
+        phones.some((ph) => ph !== '' && (ph.includes(digits) || localPhoneDigits(ph).includes(localDigits)));
+      const ok = tokens.every((tok) => blob.includes(tok) || phoneMatch);
       return ok ? { p, account, guardian, classNames, isHolder: holders.some((m) => m.person_id === p.id) } : null;
     })
     .filter((m): m is NonNullable<typeof m> => m !== null)

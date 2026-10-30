@@ -50,7 +50,7 @@ interface ClientSpec {
 
 const CLIENTS: ClientSpec[] = [
   { n: 1, name: 'Avi & Michal Rosen', email: 'rosen.family@example.com', phone: '052-381-4410' },
-  { n: 2, name: 'Yossi Ben-David', email: 'yossi.bendavid@example.com', phone: '054-772-1903' },
+  { n: 2, name: 'Yossi Ben-David', email: 'yossi.bendavid@example.com', phone: '+972 54-772-1903' },
   { n: 3, name: 'Harbor Tech Ltd. (Eli Mizrahi)', email: 'events@harbortech.example.com', phone: '03-555-0142' },
   { n: 4, name: 'Olive & Stone Ceramics', email: 'hello@oliveandstone.example.com', phone: '058-640-2271' },
   { n: 5, name: 'David Peretz', email: 'david.peretz@example.com', phone: '050-918-3367' },

@@ -40,6 +40,25 @@ describe('demo search_enrolment_students (New shoot → client search)', () => {
     expect(await search('xyz')).toEqual([]);
   });
 
+  it('matches a local Israeli number against the stored international form and back', async () => {
+    const c = demo();
+    c.db.people.push({
+      id: 'p-intl', tenant_id: c.db.tenants[0].id, account_id: null, name: 'Intl Phone Client',
+      email: 'intl@example.com', status: 'active', created_at: '2026-01-01T00:00:00Z',
+    });
+    c.db.contact_preferences.push({ id: 'cp-intl', person_id: 'p-intl', whatsapp_number: '+972 54-123-4567' });
+    const find = async (q: string) =>
+      ((await c.rpc('search_enrolment_students', { p_query: q })).data as { person: { name: string } }[]).map(
+        (r) => r.person.name,
+      );
+    expect(await find('054-123')).toEqual(['Intl Phone Client']);
+    expect(await find('0541234567')).toEqual(['Intl Phone Client']);
+    expect(await find('+972 54 123')).toEqual(['Intl Phone Client']);
+    // Seeded client stored as +972 54-772-1903, searched locally — and a local one searched internationally.
+    expect(await search('054-772')).toEqual(['Yossi Ben-David']);
+    expect(await search('972534471188')).toEqual(['Daniel Avraham']);
+  });
+
   it('requires every token to match and returns the SQL row shape', async () => {
     expect(await search('daniel shapiro')).toEqual([]);
     const { data } = await demo().rpc('search_enrolment_students', { p_query: 'avraham', p_limit: 5 });
