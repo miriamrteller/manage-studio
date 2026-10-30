@@ -284,5 +284,30 @@
         "body": "התמונות מוכנות! אפשר לפתוח את הגלריה כדי לצפות ולהוריד אותן.",
         "cta": "לפתיחת הגלריה",
         "closing": "מקווים שתאהבו."
+    },
+    "contract_signed_client": {
+        "subject": "החוזה החתום שלך עם {schoolName}",
+        "preview": "החוזה החתום שלך עם {schoolName}",
+        "greeting": "שלום {recipientName},",
+        "body": "תודה על החתימה. אפשר להוריד עותק של החוזה החתום בכפתור למטה. הקישור תקף ל-72 שעות; בפורטל הלקוחות תמיד יש קישור עדכני.",
+        "details_heading": "סיכום החוזה",
+        "shoot_date_label": "תאריך הצילום",
+        "package_label": "חבילה",
+        "signed_at_label": "מועד החתימה",
+        "cta": "להורדת החוזה החתום",
+        "closing": "מומלץ לשמור הודעה זו."
+    },
+    "contract_signed_studio": {
+        "subject": "{clientName} חתם/ה על החוזה",
+        "preview": "{clientName} חתם/ה על החוזה",
+        "greeting": "שלום,",
+        "body": "{clientName} חתם/ה על חוזה הצילום. אפשר להוריד את ה-PDF החתום בכפתור למטה או מעמוד הצילום בכל עת.",
+        "details_heading": "סיכום החוזה",
+        "client_label": "לקוח/ה",
+        "shoot_date_label": "תאריך הצילום",
+        "package_label": "חבילה",
+        "signed_at_label": "מועד החתימה",
+        "cta": "להורדת החוזה החתום",
+        "closing": "עותק זה נשלח אוטומטית עם חתימת הלקוח/ה."
     }
 }

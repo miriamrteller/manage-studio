@@ -119,7 +119,9 @@ describe('waiver evidence verification', () => {
       resolve(__dirname, '../../../../supabase/functions/accept-waiver/index.ts'),
       'utf8',
     );
-    const block = src.match(/Object\.entries\(\{([\s\S]*?)\}\)\.sort/)?.[1] ?? '';
+    // The signer builds the object inline and hands it to waiverRecordHmac()
+    // (_shared/contract-pdf/evidence.ts), which sorts and serialises it.
+    const block = src.match(/waiverRecordHmac\(hmacKey, \{([\s\S]*?)\n\s*\}\)/)?.[1] ?? '';
     // Two gotchas, both of which silently undercount rather than fail loudly:
     //   - `consent_version_hash,` and `pdf_sha256,` use ES shorthand, no colon
     //   - `pdf_sha256` contains digits, so the name class must allow 0-9

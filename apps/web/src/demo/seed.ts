@@ -14,6 +14,8 @@ export const TENANT_SUBDOMAIN = 'lumen';
 export const DEMO_GALLERY_HOST = 'https://gallery.lumen-light.demo';
 /** Invoice links point here; the demo bar opens the sample invoice instead. */
 export const DEMO_INVOICE_HOST = 'https://invoices.lumen-light.demo';
+/** Signed-contract PDF links point here; the demo bar opens the contract in place. */
+export const DEMO_CONTRACT_HOST = 'https://contracts.lumen-light.demo';
 
 const id = (n: number) => `d0000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 
@@ -306,6 +308,8 @@ export function buildSeed(): Tables {
       lead_id: null,
       gallery_url: s.gallery ? `${DEMO_GALLERY_HOST}/${eid.slice(-4)}` : null,
       gallery_released_at: s.galleryReleased ? at(-6) : null,
+      // One signed shoot whose PDF "failed at signing", to show Generate PDF.
+      contract_pdf_pending: s.client === 4,
       created_at: at(-s.createdDaysAgo),
       updated_at: at(-1),
     });
@@ -452,7 +456,13 @@ export function buildSeed(): Tables {
   quote(3, {
     status: 'accepted', title: 'Company year-end evening', engagement_id: engagementId(3), account_id: accountId(3),
     shoot_date: day(12), sent_at: at(-16), sent_via: 'email', accepted_at: at(-15, 18), created_at: at(-17),
-    accepted_result: { ok: true, engagement_id: engagementId(3) }, deposit_percent: 30,
+    // As accept_quote() stores it: the deposit request is the first id.
+    accepted_result: {
+      ok: true, engagement_id: engagementId(3), converted_lead: false, total_minor: 200000,
+      deposit_minor: 60000, balance_minor: 140000, currency: 'ILS',
+      payment_request_ids: [id(1030), id(1031)], send_contract: true,
+    },
+    deposit_percent: 30,
   }, [['Event Coverage (2 hours)', 2000, PKG.event, false, true]]);
   quote(4, {
     status: 'draft', title: 'Bar mitzvah in March', lead_id: id(1101), created_at: at(0, 8),

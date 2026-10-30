@@ -276,13 +276,14 @@ describe('PortalDashboard — photographer tenant renders ClientPortal', () => {
     }
   });
 
-  it('a signed contract shows Signed and no Sign now', () => {
+  it('a signed contract shows Signed, a download button and no Sign now', () => {
     portal.client = clientData();
     portal.client.shoots[0].contractSigned = true;
     renderInApp(<PortalDashboard />, { path: '/dashboard/portal' });
     const contract = screen.getByRole('region', { name: 'Contract' });
     expect(within(contract).getByText('Signed')).toBeInTheDocument();
-    expect(within(contract).queryByRole('button')).toBeNull();
+    expect(within(contract).queryByRole('button', { name: 'Sign now' })).toBeNull();
+    expect(within(contract).getByRole('button', { name: 'Download signed contract' })).toBeInTheDocument();
   });
 
   it('no shoots yet: friendly empty state, still no child setup', () => {

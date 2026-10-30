@@ -284,5 +284,30 @@
     "body": "Your photos are ready! Open your gallery to view and download them.",
     "cta": "Open your gallery",
     "closing": "We hope you love them."
+  },
+  "contract_signed_client": {
+    "subject": "Your signed contract with {schoolName}",
+    "preview": "Your signed contract with {schoolName}",
+    "greeting": "Hi {recipientName},",
+    "body": "Thank you for signing. Download your copy of the signed contract with the button below. The link works for 72 hours; your client portal always has a fresh one.",
+    "details_heading": "Contract summary",
+    "shoot_date_label": "Shoot date",
+    "package_label": "Package",
+    "signed_at_label": "Signed at",
+    "cta": "Download the signed contract",
+    "closing": "Keep this email for your records."
+  },
+  "contract_signed_studio": {
+    "subject": "{clientName} signed the contract",
+    "preview": "{clientName} signed the contract",
+    "greeting": "Hello,",
+    "body": "{clientName} has signed the shoot contract. Download the signed PDF with the button below or from the shoot page at any time.",
+    "details_heading": "Contract summary",
+    "client_label": "Client",
+    "shoot_date_label": "Shoot date",
+    "package_label": "Package",
+    "signed_at_label": "Signed at",
+    "cta": "Download the signed contract",
+    "closing": "This copy was sent automatically when the client signed."
   }
 }

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useJob } from '../hooks/useJobs';
-import type { JobRow } from '../services/jobService';
+import { JobService, type JobRow } from '../services/jobService';
 
 function formatSignedDate(iso: string, language: string): string {
   try {
@@ -29,8 +29,30 @@ export function JobContractCard({ job }: { job: JobRow }) {
   const { sendContract, isSendingContract, contractError } = useJob(job.engagement_id);
   const [recipient, setRecipient] = useState(job.client_email ?? '');
   const [sentTo, setSentTo] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [generating, setGenerating] = useState(false);
+  const [generated, setGenerated] = useState(false);
 
   const signed = Boolean(job.waiver_evidence_id);
+  // The PDF failed at signing (the record is sealed with the sentinels):
+  // offer the admin retry, which stores the PDF outside the sealed record.
+  const pdfPending = signed && job.contract_pdf_pending && !generated;
+
+  // Signed copies live in the private legal-documents bucket; the edge function
+  // checks the admin's tenant and mints a 10-minute signed URL.
+  const handleDownload = async () => {
+    setDownloading(true);
+    setDownloadError(null);
+    try {
+      const { url } = await JobService.signedContractPdfUrl(job.engagement_id);
+      window.open(url, '_blank', 'noopener');
+    } catch (err) {
+      setDownloadError(err instanceof Error ? err.message : t('pages.jobs.contract_download_error'));
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   const handleSend = async (event: FormEvent) => {
     event.preventDefault();
@@ -42,6 +64,20 @@ export function JobContractCard({ job }: { job: JobRow }) {
       setSentTo(email);
     } catch {
       // contractError is rendered below
+    }
+  };
+
+  const handleGenerate = async () => {
+    setGenerating(true);
+    setDownloadError(null);
+    try {
+      const { url } = await JobService.generateContractPdf(job.engagement_id);
+      setGenerated(true);
+      window.open(url, '_blank', 'noopener');
+    } catch (err) {
+      setDownloadError(err instanceof Error ? err.message : t('pages.jobs.contract_pdf_generate_error'));
+    } finally {
+      setGenerating(false);
     }
   };
 
@@ -63,6 +99,33 @@ export function JobContractCard({ job }: { job: JobRow }) {
           </span>
         )}
       </p>
+
+      {signed && (
+        <div className="space-y-2">
+          {pdfPending ? (
+            <>
+              <p className="text-sm text-amber-800" role="status">
+                {t('pages.jobs.contract_pdf_pending')}
+              </p>
+              <Button type="button" variant="secondary" size="sm" onClick={() => void handleGenerate()} disabled={generating}>
+                {generating ? t('pages.jobs.contract_pdf_generating') : t('pages.jobs.contract_pdf_generate')}
+              </Button>
+            </>
+          ) : (
+            <Button type="button" variant="secondary" size="sm" onClick={() => void handleDownload()} disabled={downloading}>
+              {downloading ? t('pages.jobs.contract_downloading') : t('pages.jobs.contract_download')}
+            </Button>
+          )}
+          <p className="text-xs text-muted-foreground">{t('pages.jobs.contract_download_hint')}</p>
+          <div aria-live="polite">
+            {downloadError && (
+              <div className="alert-error" role="alert">
+                {downloadError}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {!signed && job.job_status !== 'cancelled' && (
         <form onSubmit={handleSend} className="space-y-2">
