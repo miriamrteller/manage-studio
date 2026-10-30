@@ -1,0 +1,222 @@
+/* Demo-only chrome. Plain CSS (not Tailwind) so the production stylesheet is unaffected. */
+.demo-bar {
+  --demo-bg: #12312f;
+  --demo-fg: #f4f1e8;
+  --demo-accent: #e8b04b;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 8px max(16px, env(safe-area-inset-right, 0px)) 8px max(16px, env(safe-area-inset-left, 0px));
+  background: var(--demo-bg);
+  color: var(--demo-fg);
+  font: 500 13px/1.4 system-ui, -apple-system, 'Segoe UI', sans-serif;
+  position: relative;
+  z-index: 60;
+}
+.demo-bar__note {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.demo-bar__badge {
+  background: var(--demo-accent);
+  color: #1d1a12;
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  flex: none;
+}
+.demo-bar__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.demo-bar__label {
+  opacity: 0.8;
+}
+.demo-seg {
+  display: inline-flex;
+  border: 1px solid rgba(244, 241, 232, 0.4);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.demo-seg button {
+  background: transparent;
+  color: inherit;
+  border: 0;
+  padding: 5px 12px;
+  font: inherit;
+  cursor: pointer;
+}
+.demo-seg button[aria-pressed='true'] {
+  background: var(--demo-fg);
+  color: var(--demo-bg);
+}
+.demo-btn {
+  background: transparent;
+  color: inherit;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.demo-seg button:focus-visible,
+.demo-btn:focus-visible,
+.demo-link:focus-visible {
+  outline: 2px solid var(--demo-accent, #e8b04b);
+  outline-offset: 2px;
+}
+.demo-count {
+  background: var(--demo-accent);
+  color: #1d1a12;
+  border-radius: 999px;
+  min-width: 18px;
+  padding: 0 5px;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+}
+.demo-panel,
+.demo-modal__inner {
+  --demo-surface: #ffffff;
+  --demo-text: #1c2524;
+  --demo-muted: #5b6765;
+  --demo-line: #dfe5e3;
+  background: var(--demo-surface);
+  color: var(--demo-text);
+  font: 400 14px/1.5 system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  .demo-panel,
+  .demo-modal__inner {
+    --demo-surface: #1b2423;
+    --demo-text: #e9efed;
+    --demo-muted: #a3b0ad;
+    --demo-line: #34413f;
+  }
+}
+.demo-panel {
+  position: fixed;
+  z-index: 70;
+  inset-block-start: 56px;
+  inset-inline-end: max(16px, env(safe-area-inset-right, 0px));
+  width: min(420px, calc(100vw - 32px));
+  max-height: 70vh;
+  overflow: auto;
+  border-radius: 10px;
+  border: 1px solid var(--demo-line);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+  padding: 14px 16px;
+}
+.demo-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.demo-panel__head h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 650;
+}
+.demo-muted {
+  color: var(--demo-muted);
+  margin: 0;
+}
+.demo-outbox {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.demo-outbox li {
+  border: 1px solid var(--demo-line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: grid;
+  gap: 4px;
+}
+.demo-outbox__meta {
+  font-size: 12px;
+  color: var(--demo-muted);
+}
+.demo-outbox__subject {
+  font-weight: 600;
+}
+.demo-outbox__body {
+  margin: 0;
+  white-space: pre-line;
+}
+.demo-link {
+  color: #1f5f5b;
+  font-weight: 600;
+  text-decoration: underline;
+}
+@media (prefers-color-scheme: dark) {
+  .demo-link {
+    color: #8fd1c9;
+  }
+}
+.demo-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: rgba(10, 16, 15, 0.6);
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+.demo-modal__inner {
+  width: min(520px, 100%);
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+  border-radius: 12px;
+  padding: 16px 18px;
+}
+.demo-modal__inner--wide {
+  width: min(1000px, 100%);
+}
+.demo-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px;
+}
+.demo-gallery img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 6px;
+  display: block;
+}
+.demo-invoice__grid {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 6px 16px;
+  margin: 0 0 12px;
+}
+.demo-invoice__grid dt {
+  color: var(--demo-muted);
+}
+.demo-invoice__grid dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+.demo-invoice__total {
+  font-weight: 700;
+  color: var(--demo-text) !important;
+  border-top: 1px solid var(--demo-line);
+  padding-top: 6px;
+}
