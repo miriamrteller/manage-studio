@@ -41,6 +41,9 @@ function demoMode() {
   const swaps: Record<string, string> = {
     [path.join(src, 'lib/supabase.ts')]: path.join(src, 'demo/supabase.ts'),
     [path.join(src, 'lib/resolveTenantSubdomain.ts')]: path.join(src, 'demo/resolveTenantSubdomain.ts'),
+    // Until the photographer ClientPortal is on main: an adult client page
+    // without the class-school parts (children, class registration).
+    [path.join(src, 'pages/PortalDashboard.tsx')]: path.join(src, 'demo/DemoClientPortal.tsx'),
   };
   const routerShim = path.join(src, 'demo/reactRouterDom.ts');
   const stripeStub = path.join(src, 'demo/stripeStub.ts');
@@ -56,7 +59,7 @@ function demoMode() {
       if (source === 'react-router-dom' && importer && importer !== routerShim) return routerShim;
       // Stripe.js loads from js.stripe.com; the demo makes no external requests.
       if (source === '@stripe/stripe-js') return stripeStub;
-      if (!importer || !/(^|\/)(supabase|resolveTenantSubdomain)$/.test(source)) return null;
+      if (!importer || !/(^|\/)(supabase|resolveTenantSubdomain|PortalDashboard)$/.test(source)) return null;
       const resolved = await this.resolve(source, importer, { ...options, skipSelf: true });
       if (resolved && swaps[resolved.id] && !importer.startsWith(path.join(src, 'demo'))) return swaps[resolved.id];
       return null;
