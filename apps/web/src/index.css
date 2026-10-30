@@ -87,26 +87,29 @@
   --color-bg-primary: var(--color-bg-primary-cool);
   --color-bg-secondary: var(--color-bg-secondary-cool);
 
-  /* Neutral Scale (50-900, derived from primary's hue for cohesion) */
-  --color-neutral-50: #faf8f7;
-  --color-neutral-100: #f5f2f1;
-  --color-neutral-200: #eae6e5;
-  --color-neutral-300: #dcd5d2;
-  --color-neutral-400: #c4b8b2;
-  --color-neutral-500: #aca199;
-  --color-neutral-600: #948b81;
-  --color-neutral-700: #7c7369;
-  --color-neutral-800: #645b51;
-  --color-neutral-900: #4c4339;
+  /* Neutral Scale (50-900): a neutral grey with a little of the tenant
+     primary mixed in (more in the darker steps). deriveSoftTheme() writes the
+     per-tenant values; these fallbacks are the ones for the default colours. */
+  --color-neutral-50: #f8f9fa;
+  --color-neutral-100: #f2f2f5;
+  --color-neutral-200: #e3e3e8;
+  --color-neutral-300: #ced0d7;
+  --color-neutral-400: #9a9caa;
+  --color-neutral-500: #6c6d7d;
+  --color-neutral-600: #4f5262;
+  --color-neutral-700: #3d4052;
+  --color-neutral-800: #282a3a;
+  --color-neutral-900: #1b1b2c;
 
   /* ===== LAYER 2: SEMANTIC INTENT ===== */
 
   /* Text Colors */
-  /* #111827 / #4b5563 keep >= 14:1 and >= 6:1 on every derived tint
-     (#6b7280 fell to 4.2:1 on tinted surfaces). */
-  --color-text-primary: #111827; /* Ink for primary text */
-  --color-text-secondary: #4b5563; /* Muted text, AA on white and tints */
-  --color-text-muted: #9ca3af; /* Light gray for muted text */
+  /* Tenant-tinted greys from deriveSoftTheme() (fallbacks = default colours).
+     Each is pushed darker if needed: primary >= 12:1 and secondary >= 4.5:1
+     on every tint, muted >= 4.5:1 on white and the lighter tints. */
+  --color-text-primary: #1b1b2c;
+  --color-text-secondary: #4f5262;
+  --color-text-muted: #6a6b7b;
   --color-text-inverted: #f9fafb; /* White for text on dark backgrounds */
 
   /* Border Colors */

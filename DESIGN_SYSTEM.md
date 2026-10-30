@@ -41,13 +41,14 @@ for 9 sample brands plus 200 random colours.
 | `--color-primary-ink` / `--color-accent-ink` | The brand colour **as text**: unchanged for dark brands, darkened only as far as 4.5:1 on white and the lighter tints for light ones. Tailwind `text-primary`, `text-secondary`, `text-accent`, `ring-primary`, `outline-primary` use it. |
 | `--color-primary-fill` / `--color-on-primary-fill` | Solid button fill and its text colour. Equal to the brand unless no text colour reaches 4.5:1 on it. |
 | `--tint-ground`, `--tint-1/2/3`, `--tint-accent-1/2` | Brand tints at fixed WCAG luminance (0.97 / 0.93 / 0.87 / 0.78), so every brand is equally subtle. |
+| `--color-neutral-50…900`, `--color-text-primary/secondary/muted` | **Tenant-tinted greys**: Tailwind gray with up to 10% of the brand mixed in (more in darker steps). Text greys are pushed darker if needed: primary ≥ 12:1 and secondary ≥ 4.5:1 on every tint, muted ≥ 4.5:1 on white and the lighter tints. Tailwind `gray-*` classes resolve to this scale. |
 | `--wash-page`, `--gradient-header`, `--gradient-footer` | Gradients composed from the tints, mirrored under `[dir='rtl']`. Defined, not yet applied (Phase 2). |
 
 Rules:
 
 - Brand colour on **text, icons, rings or outlines** → `--color-primary-ink` (`text-primary`), never raw `var(--color-primary)`.
 - Brand colour as a **fill** → `bg-primary` / `--color-primary-fill`.
-- Text colours: `--color-text-primary` is `#111827`, `--color-text-secondary` is `#4b5563` (`#6b7280` failed AA on tints).
+- Greys are never hard-coded: use `gray-*` / `--color-neutral-*` / `--color-text-*`, which follow the tenant. No opacity modifiers on `gray-*` (they are CSS variables).
 
 ---
 

@@ -22,9 +22,13 @@ describe('createScheduleColorResolver', () => {
     }
   });
 
-  it('keeps blocked time on the neutral grey pair', () => {
+  it('puts blocked time on the tenant neutral greys with body text', () => {
     const resolve = createScheduleColorResolver([]);
     const color = resolve({ event_type: 'blocked', offering_id: null, id: 'evt-2' });
-    expect(color).toEqual({ background: '#9ca3af', border: '#6b7280', text: '#ffffff' });
+    expect(color).toEqual({
+      background: 'var(--color-neutral-300)',
+      border: 'var(--color-neutral-400)',
+      text: 'var(--color-text-primary)',
+    });
   });
 });

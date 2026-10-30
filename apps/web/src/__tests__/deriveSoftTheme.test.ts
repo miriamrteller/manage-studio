@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { deriveSoftTheme, TINT_TARGETS } from '@/lib/theme/deriveSoftTheme';
-import { AA, INK, MUTED, WHITE, contrast, luminance } from '@/lib/theme/color';
+import { AA, INK, WHITE, contrast, luminance } from '@/lib/theme/color';
 import { deriveColorSystem, getAccessibleTextColor } from '@/lib/utils';
 
 // The contrast matrix from docs/design/photographer-theme-proposal.md, section 5.
@@ -39,9 +39,11 @@ function pairings(primary: string, accent: string): [label: string, fg: string, 
     ['button text on fill', t['--color-on-primary-fill'], t['--color-primary-fill']],
     ...Object.entries(primarySurfaces).map(([s, bg]): [string, string, string] => [`primary ink on ${s}`, t['--color-primary-ink'], bg]),
     ...Object.entries(allTints).flatMap(([s, bg]): [string, string, string][] => [
-      [`body ink on ${s}`, INK, bg],
-      [`muted on ${s}`, MUTED, bg],
+      [`body text on ${s}`, t['--color-text-primary'], bg],
+      [`secondary text on ${s}`, t['--color-text-secondary'], bg],
     ]),
+    ...Object.entries(primarySurfaces).map(([s, bg]): [string, string, string] => [`muted text on ${s}`, t['--color-text-muted'], bg]),
+    ['body text on blocked-time grey', t['--color-text-primary'], t['--color-neutral-300']],
     ['accent ink on white', t['--color-accent-ink'], WHITE],
     ['accent ink on accent-1', t['--color-accent-ink'], t['--tint-accent-1']],
     ['accent ink on accent-2', t['--color-accent-ink'], t['--tint-accent-2']],
@@ -81,6 +83,27 @@ describe('deriveSoftTheme values', () => {
 
   it('accepts #rgb and uppercase input', () => {
     expect(deriveSoftTheme('#FFF', '#ABC')['--tint-ground']).toMatch(/^#[0-9a-f]{6}$/);
+  });
+});
+
+describe('tenant-tinted greys', () => {
+  it('keeps body text at >= 12:1 on every tint', () => {
+    for (const [, primary, accent] of [...SAMPLES, ...RANDOM]) {
+      const t = deriveSoftTheme(primary, accent);
+      for (const bg of [WHITE, t['--tint-ground'], t['--tint-1'], t['--tint-2'], t['--tint-3'], t['--tint-accent-1'], t['--tint-accent-2']]) {
+        expect(contrast(t['--color-text-primary'], bg)).toBeGreaterThanOrEqual(12);
+      }
+    }
+  });
+
+  it('orders the neutral scale from light to dark and tints it toward the brand', () => {
+    const t = deriveSoftTheme('#1D4ED8', '#93C5FD');
+    const steps = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900] as const;
+    const lum = steps.map((n) => luminance(t[`--color-neutral-${n}`]));
+    lum.slice(1).forEach((l, i) => expect(l).toBeLessThan(lum[i]));
+    // Blue brand: the dark greys lean blue (blue channel above red).
+    const hex = t['--color-neutral-700'];
+    expect(parseInt(hex.slice(5, 7), 16)).toBeGreaterThan(parseInt(hex.slice(1, 3), 16));
   });
 });
 

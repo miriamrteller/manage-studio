@@ -20,6 +20,12 @@ export default {
         warning: 'var(--color-warning)',
         success: 'var(--color-success)',
         info: 'var(--color-info)',
+        // Tailwind's gray-* (≈600 uses) resolve to the tenant-tinted neutral
+        // scale from deriveSoftTheme(), which is built on the same base greys.
+        // Opacity modifiers (gray-500/50) are not supported on these.
+        gray: Object.fromEntries(
+          [50, 100, 200, 300, 400, 500, 600, 700, 800, 900].map((n) => [n, `var(--color-neutral-${n})`]),
+        ),
       },
       // Brand colour used as TEXT, rings or outlines goes through the derived
       // "ink" (deriveSoftTheme): the tenant colour, darkened only as far as
