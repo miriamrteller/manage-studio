@@ -128,5 +128,12 @@
       "profile_title": "פרופיל הסטודיו",
       "school_name": "שם הסטודיו"
     }
+  },
+  "person_search": {
+    "label": "חיפוש לקוחות",
+    "placeholder": "שם, דוא\"ל, טלפון, חבילה…",
+    "empty": "לא נמצאו לקוחות תואמים",
+    "guardian": "איש קשר ראשי: {{name}}",
+    "enrolled_in": "חבילות: {{classes}}"
   }
 }

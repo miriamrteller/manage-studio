@@ -128,5 +128,12 @@
       "profile_title": "Studio profile",
       "school_name": "Studio name"
     }
+  },
+  "person_search": {
+    "label": "Search clients",
+    "placeholder": "Name, email, phone, package…",
+    "empty": "No matching clients found",
+    "guardian": "Main contact: {{name}}",
+    "enrolled_in": "Packages: {{classes}}"
   }
 }
