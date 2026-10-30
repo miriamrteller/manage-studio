@@ -457,7 +457,7 @@ export class TranzilaPaymentAdapter implements IPaymentProvider {
    */
   private async _request<T>(
     url:     string,
-    body:    Record<string, unknown>,
+    body:    object, // JSON-serialised as-is
     headers: TranzilaAuthHeaders,
   ): Promise<T> {
     const reqHeaders = {
