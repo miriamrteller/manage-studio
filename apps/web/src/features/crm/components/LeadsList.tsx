@@ -6,6 +6,7 @@ import { useTenant } from '@/hooks/useTenant';
 import { useEntityLabels } from '@/hooks/useEntityLabels';
 import { useLeads } from '../hooks/useLeads';
 import { ConvertLeadPanel } from '@/features/jobs/components/ConvertLeadPanel';
+import { CreateQuoteButton } from '@/features/quotes/components/CreateQuoteButton';
 import { LEAD_CHANNELS, LEAD_STAGES, type LeadChannel, type LeadStage } from '../services/leadService';
 
 /**
@@ -362,9 +363,12 @@ export function LeadsList() {
                       {lead.converted_account_id ? (
                         <span className="text-xs text-muted-foreground">{t('pages.crm.leads.converted')}</span>
                       ) : (
-                        <Button variant="outline" size="sm" onClick={() => setConvertingId(lead.id)}>
-                          {t('pages.crm.leads.convert')}
-                        </Button>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Button variant="outline" size="sm" onClick={() => setConvertingId(lead.id)}>
+                            {t('pages.crm.leads.convert')}
+                          </Button>
+                          {lead.stage !== 'lost' && <CreateQuoteButton leadId={lead.id} />}
+                        </div>
                       )}
                     </td>
                   )}

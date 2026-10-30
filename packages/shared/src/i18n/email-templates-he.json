@@ -227,5 +227,57 @@
   },
   "admin_announcement": {
     "preview": "הודעה מ-{schoolName}"
+  },
+  "quote_sent": {
+    "subject": "הצעת המחיר שלך מ{schoolName}",
+    "preview": "הצעת המחיר שלך מ{schoolName} מוכנה",
+    "greeting": "שלום {recipientName},",
+    "body": "תודה שפנית אלינו. הצעת המחיר שלך מוכנה: אפשר לבחור תוספות ולאשר את ההזמנה באונליין.",
+    "details_heading": "סיכום ההצעה",
+    "shoot_date_label": "תאריך הצילום",
+    "total_label": "סה״כ",
+    "valid_until_label": "בתוקף עד",
+    "cta": "לצפייה בהצעה",
+    "closing": "יש שאלות? אפשר פשוט להשיב למייל הזה."
+  },
+  "booking_confirmed": {
+    "subject": "ההזמנה שלך ב{schoolName} אושרה",
+    "preview": "ההזמנה שלך ב{schoolName} אושרה",
+    "greeting": "שלום {recipientName},",
+    "body": "תודה שאישרת את הצעת המחיר. הצילום שלך שוריין! פרטי התשלום יישלחו בהודעה נפרדת.",
+    "details_heading": "סיכום ההזמנה",
+    "shoot_date_label": "תאריך הצילום",
+    "total_label": "סה״כ",
+    "deposit_label": "מקדמה",
+    "balance_label": "יתרה",
+    "balance_due_label": "מועד תשלום היתרה",
+    "cta": "לצפייה בהזמנה",
+    "closing": "מחכים לראות אותך."
+  },
+  "shoot_reminder": {
+    "subject": "תזכורת: הצילום שלך ב{schoolName}",
+    "preview": "הצילום שלך ב{schoolName} מתקרב",
+    "greeting": "שלום {recipientName},",
+    "body": "תזכורת קצרה: הצילום שלך בעוד יומיים.",
+    "details_heading": "פרטי הצילום",
+    "shoot_date_label": "תאריך",
+    "shoot_time_label": "שעה",
+    "location_label": "מיקום",
+    "closing": "צריך לשנות משהו? אפשר פשוט להשיב למייל הזה."
+  },
+  "shoot_thank_you": {
+    "subject": "תודה מ{schoolName}",
+    "preview": "תודה מ{schoolName}",
+    "greeting": "שלום {recipientName},",
+    "body": "תודה על הצילום! אנחנו עורכים עכשיו את התמונות ונעדכן ברגע שהגלריה תהיה מוכנה.",
+    "closing": "בברכה, {schoolName}"
+  },
+  "gallery_ready": {
+    "subject": "הגלריה שלך מ{schoolName} מוכנה",
+    "preview": "הגלריה שלך מ{schoolName} מוכנה",
+    "greeting": "שלום {recipientName},",
+    "body": "התמונות מוכנות! אפשר לפתוח את הגלריה כדי לצפות ולהוריד אותן.",
+    "cta": "לפתיחת הגלריה",
+    "closing": "מקווים שתאהבו."
   }
 }

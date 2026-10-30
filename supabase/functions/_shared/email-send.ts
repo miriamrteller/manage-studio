@@ -9,6 +9,10 @@ import {
 import { renderPaymentReminderHtml } from "./render-payment-email.ts";
 import { renderAdminAnnouncementHtml } from "./render-admin-announcement-email.ts";
 import {
+  isPhotographerEmailKey,
+  renderPhotographerEmail,
+} from "./photographer-emails/render.ts";
+import {
   buildEnrolmentConfirmationSubject,
   renderEnrolmentConfirmationHtml,
 } from "./render-enrolment-confirmation-email.ts";
@@ -119,6 +123,19 @@ export async function sendRenderedEmail(
       subjectOverride ??
       renderInput.subject ??
       buildEnrolmentConfirmationSubject(language, renderInput.schoolName);
+  } else if (isPhotographerEmailKey(renderInput.templateName)) {
+    const rendered = renderPhotographerEmail({
+      key: renderInput.templateName,
+      language: renderInput.language === "he" ? "he" : "en",
+      schoolName: renderInput.schoolName,
+      primaryColor: renderInput.tenantColors?.primary_color ?? "#2563eb",
+      accentColor: renderInput.tenantColors?.accent_color ?? "#dc2626",
+      variables: Object.fromEntries(
+        Object.entries(variables).filter((entry): entry is [string, string] => typeof entry[1] === "string"),
+      ),
+    });
+    html = rendered.html;
+    subject = subjectOverride ?? renderInput.subject ?? rendered.subject;
   } else if (renderInput.templateName === EMAIL_TEMPLATE_NAMES.ADMIN_ANNOUNCEMENT) {
     html = renderAdminAnnouncementHtml({
       language: renderInput.language === "he" ? "he" : "en",

@@ -19,3 +19,15 @@ export type { default as PaymentReminderEmailProps } from './PaymentReminderEmai
 
 export { default as WaitingListOfferEmail } from './WaitingListOfferEmail.js';
 export type { default as WaitingListOfferEmailProps } from './WaitingListOfferEmail.js';
+
+// Photographer automatic emails
+export { default as QuoteSentEmail } from './photographer/QuoteSentEmail.js';
+export type { QuoteSentEmailProps } from './photographer/QuoteSentEmail.js';
+export { default as BookingConfirmedEmail } from './photographer/BookingConfirmedEmail.js';
+export type { BookingConfirmedEmailProps } from './photographer/BookingConfirmedEmail.js';
+export { default as ShootReminderEmail } from './photographer/ShootReminderEmail.js';
+export type { ShootReminderEmailProps } from './photographer/ShootReminderEmail.js';
+export { default as ShootThankYouEmail } from './photographer/ShootThankYouEmail.js';
+export type { ShootThankYouEmailProps } from './photographer/ShootThankYouEmail.js';
+export { default as GalleryReadyEmail } from './photographer/GalleryReadyEmail.js';
+export type { GalleryReadyEmailProps } from './photographer/GalleryReadyEmail.js';
