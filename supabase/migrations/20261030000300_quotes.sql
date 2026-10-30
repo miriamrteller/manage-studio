@@ -679,7 +679,10 @@ BEGIN
   -- 5. Payment requests (Thread B): deposit now, balance on the shoot date.
   -- Written straight into job_payment_requests: create_job_payment_requests()
   -- requires a signed-in tenant admin, and the accepting client is anonymous.
-  -- Mirrors that RPC (same columns, same audit action); created_by is NULL.
+  -- KEEP IN SYNC with create_job_payment_requests() in
+  -- 20261030000200_job_payment_requests.sql: same inserted columns, same
+  -- 'job_payment_request.created' audit action (created_by is NULL here).
+  -- Only reachable through accept_quote() (service role, public_token-scoped).
   SELECT COALESCE(v_q.shoot_date, (e.booked_starts_at AT TIME ZONE 'Asia/Jerusalem')::date)
   INTO v_shoot_date FROM engagements e WHERE e.id = v_engagement;
   v_balance_due := GREATEST(COALESCE(v_shoot_date, v_today), v_today);

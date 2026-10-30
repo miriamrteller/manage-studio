@@ -53,6 +53,80 @@ export function formatJobPrice(priceMinor: number | null, currency: string | nul
 }
 
 /**
+ * The agreed price for the contract's {{price}}, most specific first:
+ *   1. the accepted quote's total (quotes, Thread C),
+ *   2. else the sum of the job's non-cancelled payment requests (Thread B),
+ *   3. else the package list price (offerings.price_minor).
+ * Quoted shoots often sit on the hidden "Custom shoot" package (price 0), so
+ * the package price is only the last resort.
+ */
+export type JobContractPriceSource = "quote" | "payment_requests" | "offering" | "none";
+
+export interface JobContractPrice {
+  priceMinor: number | null;
+  currency: string | null;
+  source: JobContractPriceSource;
+}
+
+export function resolveJobContractPrice(input: {
+  acceptedQuote: { total_minor: number; currency: string | null } | null;
+  paymentRequests: Array<{ amount_minor: number; currency: string | null; status: string }>;
+  offering: { price_minor: number | null; currency: string | null } | null;
+}): JobContractPrice {
+  if (input.acceptedQuote) {
+    return { priceMinor: input.acceptedQuote.total_minor, currency: input.acceptedQuote.currency, source: "quote" };
+  }
+  const live = input.paymentRequests.filter((r) => r.status !== "cancelled");
+  if (live.length > 0) {
+    return {
+      priceMinor: live.reduce((sum, r) => sum + r.amount_minor, 0),
+      currency: live[0].currency,
+      source: "payment_requests",
+    };
+  }
+  if (input.offering && input.offering.price_minor !== null) {
+    return { priceMinor: input.offering.price_minor, currency: input.offering.currency, source: "offering" };
+  }
+  return { priceMinor: null, currency: null, source: "none" };
+}
+
+/** Structural client so the loader is testable without supabase-js. */
+export interface PriceQueryClient {
+  from(table: string): {
+    select(columns: string): {
+      eq(column: string, value: string): PriceFilter;
+    };
+  };
+}
+interface PriceFilter extends PromiseLike<{ data: unknown; error: { message: string } | null }> {
+  eq(column: string, value: string): PriceFilter;
+  neq(column: string, value: string): PriceFilter;
+  limit(count: number): PriceFilter;
+}
+
+export async function loadJobContractPrice(
+  client: PriceQueryClient,
+  params: {
+    tenantId: string;
+    engagementId: string;
+    offering: { price_minor: number | null; currency: string | null } | null;
+  },
+): Promise<JobContractPrice> {
+  const [quoteRes, requestsRes] = await Promise.all([
+    client.from("quotes").select("total_minor, currency")
+      .eq("tenant_id", params.tenantId).eq("engagement_id", params.engagementId).eq("status", "accepted").limit(1),
+    client.from("job_payment_requests").select("amount_minor, currency, status")
+      .eq("tenant_id", params.tenantId).eq("engagement_id", params.engagementId).neq("status", "cancelled"),
+  ]);
+  // A missing table (migration not applied yet) reads as "no rows", not an error page.
+  const quotes = quoteRes.error ? [] : ((quoteRes.data ?? []) as Array<{ total_minor: number; currency: string | null }>);
+  const requests = requestsRes.error
+    ? []
+    : ((requestsRes.data ?? []) as Array<{ amount_minor: number; currency: string | null; status: string }>);
+  return resolveJobContractPrice({ acceptedQuote: quotes[0] ?? null, paymentRequests: requests, offering: params.offering });
+}
+
+/**
  * Authenticated signing path: only the job's own account members (the client
  * household) or a tenant admin may sign. Guest links are scoped by token.
  */
@@ -117,6 +191,13 @@ export async function loadJobContractContext(
   ]);
 
   const location = (job.location as string | null) ?? (offering?.location as string | null) ?? "—";
+  const price = await loadJobContractPrice(service as unknown as PriceQueryClient, {
+    tenantId,
+    engagementId,
+    offering: offering
+      ? { price_minor: (offering.price_minor as number | null) ?? null, currency: (offering.currency as string | null) ?? null }
+      : null,
+  });
 
   return {
     engagementId: eng.id as string,
@@ -132,7 +213,7 @@ export async function loadJobContractContext(
       shoot_date: formatJobDate((eng.booked_starts_at as string | null) ?? null, language),
       location,
       package: (offering?.name as string | null) ?? "—",
-      price: formatJobPrice((offering?.price_minor as number | null) ?? null, (offering?.currency as string | null) ?? null, language),
+      price: formatJobPrice(price.priceMinor, price.currency, language),
     },
   };
 }
