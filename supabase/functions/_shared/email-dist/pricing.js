@@ -1,3 +1,4 @@
+/* @ts-self-types="./pricing.d.ts" */
 /**
  * Offering price resolution — gross amounts only.
  * VAT breakdown on receipts/invoices comes from the invoicing provider (Grow, Green Invoice).

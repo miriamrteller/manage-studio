@@ -72,7 +72,7 @@ export async function buildClassDetailsForEmail(
   };
 }
 
-export interface EnrolmentConfirmationEmailVariables {
+export type EnrolmentConfirmationEmailVariables = {
   recipientName: string;
   studentName: string;
   showStudentRow: boolean;

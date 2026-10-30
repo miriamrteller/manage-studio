@@ -70,7 +70,8 @@ function buildHeadline(
       ? str(strings.enrollment_confirmed_for_student)
       : str(strings.enrollment_confirmed);
 
-  return interpolateTemplate(template, {
+  // All four keys are bundled for en and he, so `template` is always set.
+  return interpolateTemplate(template ?? "", {
     className: input.className,
     studentName: input.studentName,
   });

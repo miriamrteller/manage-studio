@@ -1,3 +1,4 @@
+/* @ts-self-types="./provider-adapter.d.ts" */
 /**
  * VAT Provider Adapter — shared types & Zod schema
  *

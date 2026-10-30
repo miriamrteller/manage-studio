@@ -1,3 +1,4 @@
+/* @ts-self-types="./email.d.ts" */
 /**
  * Email i18n Loader
  * Loads email template strings from i18n JSON files

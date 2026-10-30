@@ -178,7 +178,7 @@ serve(async (req: Request) => {
 
     const supabase = service;
 
-    let externalMsgId: string | undefined;
+    let externalMsgId: string | null | undefined;
     let status: "sent" | "failed" = "sent";
     let failureReason: string | undefined;
 
@@ -572,7 +572,7 @@ async function handleAgeReviewRequestedNotification(
   const sender = resolveTenantSender(tenant as unknown as TenantSenderInput);
 
   let sentCount = 0;
-  let lastExternalId: string | undefined;
+  let lastExternalId: string | null | undefined;
   let failureReason: string | undefined;
 
   for (const recipientEmail of adminEmails) {

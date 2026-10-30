@@ -1,3 +1,4 @@
+/* @ts-self-types="./quote-pricing.d.ts" */
 /**
  * Quote totals — gross amounts only, same contract as resolveOfferingPrice().
  *

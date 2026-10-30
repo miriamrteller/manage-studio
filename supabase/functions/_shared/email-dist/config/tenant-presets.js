@@ -1,3 +1,4 @@
+/* @ts-self-types="./tenant-presets.d.ts" */
 import { z } from 'zod';
 const DEFAULT_LABELS_EN = {
     programs: {

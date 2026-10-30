@@ -1,3 +1,4 @@
+/* @ts-self-types="./merge-strings.d.ts" */
 /**
  * Deep-merge template string objects (tenant overrides on base i18n).
  */
