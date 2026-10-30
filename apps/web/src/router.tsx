@@ -36,6 +36,7 @@ import PortalDashboard from "./pages/PortalDashboard";
 import EnrolPage from "./pages/EnrolPage";
 import EnrolPayPage from "./pages/EnrolPayPage";
 import EnrolCompletePage from "./pages/EnrolCompletePage";
+import PayRequestPage from "./pages/PayRequestPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import FinanceHubPage from "./pages/FinanceHubPage";
 import PaymentsLogPage from "./pages/PaymentsLogPage";
@@ -45,6 +46,9 @@ import LeadsPage from "./pages/LeadsPage";
 import JobsPage from "./pages/JobsPage";
 import JobDetailPage from "./pages/JobDetailPage";
 import InquirePage from "./pages/InquirePage";
+import AdminQuotesPage from "./pages/AdminQuotesPage";
+import AdminQuoteEditorPage from "./pages/AdminQuoteEditorPage";
+import QuotePage from "./pages/QuotePage";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { RouteErrorFallback } from "./components/RouteErrorFallback";
 
@@ -104,9 +108,12 @@ const router = createBrowserRouter([
           { path: 'enrol', element: <EnrolPage /> },
           { path: 'enrol/pay/:engagementId', element: <EnrolPayPage /> },
           { path: 'enrol/complete', element: <EnrolCompletePage /> },
+          // Public pay link for a job (shoot) deposit/balance request — token is the capability.
+          { path: 'pay/:token', element: <PayRequestPage /> },
           { path: 'book', element: <BookingPage /> },
           { path: 'book/:offeringId', element: <BookingPage /> },
           { path: 'inquire', element: <InquirePage /> },
+          { path: 'quote/:token', element: <QuotePage /> },
           { path: 'dashboard', element: <DashboardRedirectPage /> },
 
           // ADMIN ROUTES
@@ -118,6 +125,8 @@ const router = createBrowserRouter([
           { path: "admin/leads", element: <AdminRoute><LeadsPage /></AdminRoute> },
           { path: "admin/jobs", element: <AdminRoute><JobsPage /></AdminRoute> },
           { path: "admin/jobs/:id", element: <AdminRoute><JobDetailPage /></AdminRoute> },
+          { path: "admin/quotes", element: <AdminRoute><AdminQuotesPage /></AdminRoute> },
+          { path: "admin/quotes/:id", element: <AdminRoute><AdminQuoteEditorPage /></AdminRoute> },
           { path: "admin/appointments", element: <AdminRoute><AdminAppointmentsPage /></AdminRoute> },
           { path: "admin/families/:id", element: <AdminRoute><FamilyDetailPage /></AdminRoute> },
           { path: "admin/finance", element: <AdminRoute><FinanceHubPage /></AdminRoute> },

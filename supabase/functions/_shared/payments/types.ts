@@ -24,6 +24,13 @@ export interface ChargeParams {
   savedToken?: string;
   customerRef?: string;
   installments?: number; // GAP 1: number of installments (1–12); defaults to 1
+  /**
+   * Tax-document line for providers that issue the document bundled with the
+   * charge (YPay docType 109). Defaults to the enrolment wording when absent.
+   */
+  lineItem?: { name: string; description?: string };
+  /** Hosted-page return URLs; defaults to the enrolment completion pages. */
+  returnUrls?: { success: string; failure: string };
 }
 
 export interface ChargeResult {

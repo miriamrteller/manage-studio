@@ -227,5 +227,57 @@
   },
   "admin_announcement": {
     "preview": "Announcement from {schoolName}"
+  },
+  "quote_sent": {
+    "subject": "Your quote from {schoolName}",
+    "preview": "Your quote from {schoolName} is ready",
+    "greeting": "Hi {recipientName},",
+    "body": "Thank you for getting in touch. Your quote is ready: you can choose add-ons and confirm your booking online.",
+    "details_heading": "Quote summary",
+    "shoot_date_label": "Shoot date",
+    "total_label": "Total",
+    "valid_until_label": "Valid until",
+    "cta": "View your quote",
+    "closing": "Questions? Just reply to this email."
+  },
+  "booking_confirmed": {
+    "subject": "Your booking with {schoolName} is confirmed",
+    "preview": "Your booking with {schoolName} is confirmed",
+    "greeting": "Hi {recipientName},",
+    "body": "Thank you for accepting the quote. Your shoot is booked! Payment details will follow in a separate message.",
+    "details_heading": "Booking summary",
+    "shoot_date_label": "Shoot date",
+    "total_label": "Total",
+    "deposit_label": "Deposit",
+    "balance_label": "Balance",
+    "balance_due_label": "Balance due",
+    "cta": "View your booking",
+    "closing": "We are looking forward to it."
+  },
+  "shoot_reminder": {
+    "subject": "Reminder: your shoot with {schoolName}",
+    "preview": "Your shoot with {schoolName} is coming up",
+    "greeting": "Hi {recipientName},",
+    "body": "A quick reminder that your shoot is coming up in two days.",
+    "details_heading": "Shoot details",
+    "shoot_date_label": "Date",
+    "shoot_time_label": "Time",
+    "location_label": "Location",
+    "closing": "Need to change something? Just reply to this email."
+  },
+  "shoot_thank_you": {
+    "subject": "Thank you from {schoolName}",
+    "preview": "Thank you from {schoolName}",
+    "greeting": "Hi {recipientName},",
+    "body": "Thank you for the shoot! We are editing your photos now and will let you know as soon as your gallery is ready.",
+    "closing": "Warm regards, {schoolName}"
+  },
+  "gallery_ready": {
+    "subject": "Your gallery from {schoolName} is ready",
+    "preview": "Your gallery from {schoolName} is ready",
+    "greeting": "Hi {recipientName},",
+    "body": "Your photos are ready! Open your gallery to view and download them.",
+    "cta": "Open your gallery",
+    "closing": "We hope you love them."
   }
 }

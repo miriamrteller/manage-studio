@@ -9,6 +9,7 @@ import { JobStatusBadge } from './JobsList';
 import { JobDetailsForm } from './JobDetailsForm';
 import { JobContractCard } from './JobContractCard';
 import { JobPaymentsPanel } from './JobPaymentsPanel';
+import { CreateQuoteButton } from '@/features/quotes/components/CreateQuoteButton';
 
 /**
  * Admin job ("Shoot") detail: client, package, date/time, location, status,
@@ -52,7 +53,10 @@ export function JobDetail({ engagementId }: { engagementId: string }) {
             {job.lead_id && <> · {t('pages.jobs.created_from_lead')}</>}
           </p>
         </div>
-        <JobStatusBadge status={job.job_status} />
+        <div className="flex flex-wrap items-center gap-3">
+          {job.job_status !== 'cancelled' && <CreateQuoteButton engagementId={job.engagement_id} />}
+          <JobStatusBadge status={job.job_status} />
+        </div>
       </header>
 
       <section className="card p-4 space-y-2" aria-labelledby="job-client-heading">
