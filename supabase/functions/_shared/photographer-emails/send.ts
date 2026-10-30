@@ -3,7 +3,7 @@
  * (claim_automatic_email RPC) is what makes a cron overlap or a double-click
  * send at most once; it also returns NULL when the tenant switched the email off.
  */
-import { sendHtmlEmail } from "../email-client.ts";
+import { type EmailAttachment, sendHtmlEmail } from "../email-client.ts";
 import { resolveTenantSender, type TenantSenderInput } from "../notification-from.ts";
 import type { PhotographerEmailKey } from "../photographer-email-shells/generated.ts";
 import { renderPhotographerEmail } from "./render.ts";
@@ -35,7 +35,11 @@ export async function sendAutomaticEmail(
     engagementId?: string | null;
     to: string;
     variables: Record<string, string>;
+    /** Delivered on transports that take attachments (see email-client.ts). */
+    attachments?: EmailAttachment[];
   },
+  /** Transport override for tests; production uses sendHtmlEmail. */
+  send: typeof sendHtmlEmail = sendHtmlEmail,
 ): Promise<AutomaticEmailOutcome> {
   const { data: logId, error: claimError } = await client.rpc("claim_automatic_email", {
     p_tenant_id: input.tenant.id,
@@ -57,7 +61,14 @@ export async function sendAutomaticEmail(
       accentColor: input.tenant.accent_color ?? "#dc2626",
       variables: input.variables,
     });
-    const result = await sendHtmlEmail({ to: input.to, from: sender.from, replyTo: sender.replyTo, subject, html });
+    const result = await send({
+      to: input.to,
+      from: sender.from,
+      replyTo: sender.replyTo,
+      subject,
+      html,
+      attachments: input.attachments,
+    });
     await client.rpc("complete_automatic_email", {
       p_log_id: logId, p_status: "sent", p_failure_reason: null, p_external_msg_id: result.id,
     });

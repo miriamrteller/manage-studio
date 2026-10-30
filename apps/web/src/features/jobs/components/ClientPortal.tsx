@@ -185,6 +185,23 @@ function ContractSection({ shoots, labelled }: { shoots: ClientShoot[]; labelled
   const { t } = useTranslation();
   const [openingId, setOpeningId] = useState<string | null>(null);
   const [errorId, setErrorId] = useState<string | null>(null);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [downloadErrorId, setDownloadErrorId] = useState<string | null>(null);
+
+  // The signed PDF is served only through job-contract-pdf-link, which checks
+  // the shoot belongs to the signed-in client before minting a short-lived URL.
+  const download = async (engagementId: string) => {
+    setDownloadingId(engagementId);
+    setDownloadErrorId(null);
+    try {
+      const url = await ClientPortalService.signedContractPdfUrl(engagementId);
+      window.open(url, '_blank', 'noopener');
+    } catch {
+      setDownloadErrorId(engagementId);
+    } finally {
+      setDownloadingId(null);
+    }
+  };
 
   const signNow = async (engagementId: string) => {
     setOpeningId(engagementId);
@@ -223,7 +240,24 @@ function ContractSection({ shoots, labelled }: { shoots: ClientShoot[]; labelled
                   {t('pages.client_portal.contract_open_error')}
                 </p>
               )}
+              {downloadErrorId === shoot.engagementId && (
+                <p className="mt-2 text-sm text-destructive" role="alert">
+                  {t('pages.client_portal.contract_download_error')}
+                </p>
+              )}
             </div>
+            {shoot.contractSigned && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => void download(shoot.engagementId)}
+                disabled={downloadingId === shoot.engagementId}
+              >
+                {downloadingId === shoot.engagementId
+                  ? t('pages.client_portal.contract_downloading')
+                  : t('pages.client_portal.contract_download')}
+              </Button>
+            )}
             {!shoot.contractSigned && !isCancelled(shoot) && (
               <Button
                 variant="primary"

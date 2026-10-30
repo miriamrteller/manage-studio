@@ -152,6 +152,25 @@ export class ClientPortalService extends BaseService {
   }
 
   /**
+   * Short-lived download link for the client's own signed contract PDF (edge
+   * function job-contract-pdf-link: the server checks the shoot is theirs).
+   */
+  static async signedContractPdfUrl(engagementId: string): Promise<string> {
+    const { data, error } = await supabase.functions.invoke('job-contract-pdf-link', {
+      body: { engagementId },
+    });
+    const parsed = await parseFunctionInvokeBody(data, error);
+    if (error || (parsed && typeof parsed.error === 'string')) {
+      throw new Error(functionInvokeErrorMessage(error, parsed, 'Could not download the contract'));
+    }
+    const url = (parsed ?? data)?.url;
+    if (typeof url !== 'string' || !/^https?:\/\//.test(url)) {
+      throw new Error('Could not download the contract');
+    }
+    return url;
+  }
+
+  /**
    * Fresh signing link for the client's own unsigned contract (edge function
    * client-job-contract-link). Returns an app-relative path to /enrol/complete.
    */

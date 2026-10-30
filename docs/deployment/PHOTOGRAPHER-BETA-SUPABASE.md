@@ -37,13 +37,23 @@ The four migrations added since the dev database was last pushed:
 - `20261030000300_quotes.sql`: quotes, `accept_quote`, automatic emails, a cron.
 - `20261030000400_search_clients_by_whatsapp.sql`: client search also matches
   WhatsApp numbers, and a typed `054…` matches a stored `+972 54…`.
+- `20261030000500_contract_signed_emails.sql`: allows the two signed-contract
+  email keys in `automatic_email_log` / `tenant_automatic_emails`.
 
 New or changed edge functions: `send-job-contract-link`,
-`client-job-contract-link`, `job-payment-request-public`, `record-job-payment`,
+`client-job-contract-link`, `job-contract-pdf-link` (signed-contract download),
+`job-payment-request-public`, `record-job-payment`,
 `run-job-payment-reminders`, `send-job-payment-link`, `accept-quote`,
 `run-shoot-emails`, `handle-payment-event` (YPay callback path),
-`accept-waiver`, `get-waiver-engagement`, `send-notification`, plus the type
+`accept-waiver` (now renders, stores and emails the signed contract PDF for
+shoots), `get-waiver-engagement`, `send-notification`, plus the type
 fixes from PRs #71 and #74. Deploy all functions, not a subset.
+
+Signed contract PDFs go to the existing private `legal-documents` bucket under
+`contracts/<tenant>/<engagement>/<evidence>.pdf`; no new bucket or secret.
+The contract emails use the same transport as the other automatic emails
+(`EMAIL_TRANSPORT`, `RESEND_API_KEY` or the Cloudflare pair) and
+`PLATFORM_EMAIL_DOMAIN` / `APP_ROOT_DOMAIN` for the sender and fallback links.
 
 ## Part 1: dev
 

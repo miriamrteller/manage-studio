@@ -21,6 +21,13 @@
  */
 import { getEnv } from "./edge-runtime/env.ts";
 
+/** A file to attach. Resend takes attachments; see sendHtmlEmail for Cloudflare. */
+export interface EmailAttachment {
+  filename: string;
+  content: Uint8Array;
+  contentType: string;
+}
+
 export interface SendEmailResult {
   /**
    * Cloudflare returns no provider-side message id — it reports per-recipient
@@ -77,9 +84,26 @@ function parseAddress(value: string): { address: string; name?: string } {
  * Resend transport (fallback). Same result shape as the Cloudflare path so
  * callers are transport-agnostic; Resend does return a message id.
  */
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = "";
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
+}
+
 async function sendViaResend(
   apiKey: string,
-  options: { to: string; from: string; subject: string; html: string; replyTo?: string; text?: string },
+  options: {
+    to: string;
+    from: string;
+    subject: string;
+    html: string;
+    replyTo?: string;
+    text?: string;
+    attachments?: EmailAttachment[];
+  },
 ): Promise<SendEmailResult> {
   const body: Record<string, unknown> = {
     from: options.from,
@@ -89,6 +113,13 @@ async function sendViaResend(
     text: options.text ?? htmlToText(options.html),
   };
   if (options.replyTo) body.reply_to = options.replyTo;
+  if (options.attachments?.length) {
+    body.attachments = options.attachments.map((a) => ({
+      filename: a.filename,
+      content: bytesToBase64(a.content),
+      content_type: a.contentType,
+    }));
+  }
 
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -112,6 +143,22 @@ async function sendViaResend(
   };
 }
 
+/** Which transport sendHtmlEmail() will pick with the current environment. */
+export function resolveEmailTransport(): "cloudflare" | "resend" | "none" {
+  const transport = (getEnv("EMAIL_TRANSPORT") ?? "").trim().toLowerCase();
+  const cloudflareReady = Boolean(getEnv("CLOUDFLARE_ACCOUNT_ID")?.trim() && getEnv("CLOUDFLARE_EMAIL_API_TOKEN")?.trim());
+  const resendReady = Boolean(getEnv("RESEND_API_KEY")?.trim());
+  if (transport === "cloudflare") return "cloudflare";
+  if (transport === "resend") return resendReady ? "resend" : "none";
+  if (cloudflareReady) return "cloudflare";
+  return resendReady ? "resend" : "none";
+}
+
+/** True when the active transport delivers `attachments` (Resend only). */
+export function supportsAttachments(): boolean {
+  return resolveEmailTransport() === "resend";
+}
+
 export async function sendHtmlEmail(options: {
   to: string;
   from: string;
@@ -121,6 +168,13 @@ export async function sendHtmlEmail(options: {
   replyTo?: string;
   /** Override the derived plain-text part. */
   text?: string;
+  /**
+   * Attachments are sent on the Resend transport. The Cloudflare Email Sending
+   * REST path does not take them here, so a caller that must reach the
+   * recipient either way also puts a download link in the body — see
+   * supportsAttachments().
+   */
+  attachments?: EmailAttachment[];
 }): Promise<SendEmailResult> {
   // Transport selection. Both pipes stay wired; EMAIL_TRANSPORT flips between
   // them without touching credentials:

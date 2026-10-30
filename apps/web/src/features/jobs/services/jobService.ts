@@ -244,6 +244,21 @@ export class JobService extends BaseService {
     }, 'JobService.updateSchedule');
   }
 
+  /**
+   * Short-lived download link for the signed contract PDF (edge:
+   * job-contract-pdf-link; server-side access check, private bucket).
+   */
+  static async signedContractPdfUrl(engagementId: string): Promise<{ url: string; expiresAt: string }> {
+    const { data, error } = await supabase.functions.invoke('job-contract-pdf-link', {
+      body: { engagementId },
+    });
+    if (error) throw new Error(error.message);
+    const body = (data ?? {}) as { error?: string; url?: string; expiresAt?: string };
+    if (body.error) throw new Error(body.error);
+    if (typeof body.url !== 'string' || !/^https?:\/\//.test(body.url)) throw new Error('Could not prepare the download');
+    return { url: body.url, expiresAt: body.expiresAt ?? '' };
+  }
+
   /** Emails a tokenised contract-signing link (edge: send-job-contract-link). */
   static async sendContractLink(engagementId: string, recipientEmail: string): Promise<{ emailSent: boolean }> {
     const { data, error } = await supabase.functions.invoke('send-job-contract-link', {

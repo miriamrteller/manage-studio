@@ -19,6 +19,8 @@ import BookingConfirmedEmail from '../email-templates/photographer/BookingConfir
 import ShootReminderEmail from '../email-templates/photographer/ShootReminderEmail.js';
 import ShootThankYouEmail from '../email-templates/photographer/ShootThankYouEmail.js';
 import GalleryReadyEmail from '../email-templates/photographer/GalleryReadyEmail.js';
+import ContractSignedEmail from '../email-templates/photographer/ContractSignedEmail.js';
+import ContractSignedStudioEmail from '../email-templates/photographer/ContractSignedStudioEmail.js';
 import { getEmailColors } from '../config/email-colors.js';
 import { EMAIL_TEMPLATE_NAMES, getEmailFooterStrings, getEmailStrings, interpolateTemplate, } from '../i18n/email.js';
 import { deepMergeStrings } from './merge-strings.js';
@@ -229,6 +231,24 @@ function buildComponent(input, strings, colors, footerStrings) {
                 ...common,
                 recipientName: str(v.recipientName, 'there'),
                 galleryUrl: str(v.galleryUrl, '#'),
+            });
+        case EMAIL_TEMPLATE_NAMES.CONTRACT_SIGNED_CLIENT:
+            return React.createElement(ContractSignedEmail, {
+                ...common,
+                recipientName: str(v.recipientName, 'there'),
+                shootDate: str(v.shootDate, '—'),
+                packageName: str(v.packageName, '—'),
+                signedAt: str(v.signedAt, '—'),
+                downloadUrl: str(v.downloadUrl, '#'),
+            });
+        case EMAIL_TEMPLATE_NAMES.CONTRACT_SIGNED_STUDIO:
+            return React.createElement(ContractSignedStudioEmail, {
+                ...common,
+                clientName: str(v.clientName, '—'),
+                shootDate: str(v.shootDate, '—'),
+                packageName: str(v.packageName, '—'),
+                signedAt: str(v.signedAt, '—'),
+                downloadUrl: str(v.downloadUrl, '#'),
             });
         default:
             throw new Error(`Unsupported email template: ${templateName}`);

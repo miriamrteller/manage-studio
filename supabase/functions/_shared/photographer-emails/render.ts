@@ -13,6 +13,8 @@ export const PHOTOGRAPHER_EMAIL_KEYS: readonly PhotographerEmailKey[] = [
   "shoot_reminder",
   "shoot_thank_you",
   "gallery_ready",
+  "contract_signed_client",
+  "contract_signed_studio",
 ];
 
 export function isPhotographerEmailKey(name: string): name is PhotographerEmailKey {
@@ -36,6 +38,10 @@ export function renderPhotographerEmail(input: RenderPhotographerEmailInput): { 
     accentColor: input.accentColor,
     variables: input.variables,
   });
-  const subject = PHOTOGRAPHER_EMAIL_SUBJECTS[input.key][language].split("{schoolName}").join(input.schoolName);
+  // Subjects interpolate {schoolName} and any template variable (e.g. {clientName}).
+  let subject = PHOTOGRAPHER_EMAIL_SUBJECTS[input.key][language].split("{schoolName}").join(input.schoolName);
+  for (const [name, value] of Object.entries(input.variables)) {
+    subject = subject.split(`{${name}}`).join(value);
+  }
   return { html, subject };
 }
