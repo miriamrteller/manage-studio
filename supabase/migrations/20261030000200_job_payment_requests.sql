@@ -402,9 +402,10 @@ BEGIN
 END
 $$;
 
--- What a client MAY read about their job: everything except the gallery
--- columns. Thread A's job_details_client_read policy is neutralised by the
--- restrictive policy above, so client UIs read this view (or the RPCs) instead.
+-- What a client MAY read about their job: no gallery columns and no `notes`
+-- (the photographer's internal notes). Thread A's job_details_client_read
+-- policy is neutralised by the restrictive policy above, so client UIs read
+-- this view (or the RPCs) instead.
 -- security_barrier + an explicit ownership predicate: the view runs as its
 -- owner, so it must filter rows itself rather than rely on RLS.
 DO $$
@@ -412,7 +413,7 @@ BEGIN
   IF to_regclass('public.job_details') IS NOT NULL THEN
     EXECUTE $v$
       CREATE OR REPLACE VIEW client_job_details WITH (security_barrier = true) AS
-        SELECT jd.engagement_id, jd.tenant_id, jd.job_status, jd.location, jd.notes,
+        SELECT jd.engagement_id, jd.tenant_id, jd.job_status, jd.location,
                jd.created_at, jd.updated_at,
                (jd.gallery_released_at IS NOT NULL OR job_payment_requests_all_paid(jd.engagement_id)) AS gallery_released
         FROM job_details jd
@@ -427,7 +428,7 @@ BEGIN
     $v$;
     EXECUTE 'GRANT SELECT ON client_job_details TO authenticated, service_role';
     EXECUTE $c$COMMENT ON VIEW client_job_details IS
-      'Client-safe projection of job_details: no gallery_url / gallery_released_at. Use get_client_job_gallery() for the gated link.'$c$;
+      'Client-safe projection of job_details: no gallery_url / gallery_released_at / notes. Use get_client_job_gallery() for the gated link.'$c$;
   END IF;
 END
 $$;
