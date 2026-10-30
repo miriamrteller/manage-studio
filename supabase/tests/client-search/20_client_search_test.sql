@@ -27,6 +27,8 @@ BEGIN
     ('054 123 4567',  ARRAY['Alice'],        'full local number with spaces'),
     ('+972541234567', ARRAY['Alice'],        'international form'),
     ('987654',        ARRAY['Bob'],          'emergency-contact phone still matches'),
+    ('+972 52 987',   ARRAY['Bob'],          'international form finds locally stored 052…'),
+    ('972529876543',  ARRAY['Bob'],          'full international digits find local number'),
     ('bob',           ARRAY['Bob'],          'name still matches'),
     ('dina',          ARRAY[]::TEXT[],       'other tenant never returned'),
     ('xyz',           ARRAY[]::TEXT[],       'unrelated text finds nothing')
