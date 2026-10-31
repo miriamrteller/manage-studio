@@ -82,6 +82,10 @@
       "title": "Clients",
       "waiver_required": "You must accept the contract to continue.",
       "waiver_status_label": "Contract"
+    },
+    "booking_flow": {
+      "back_to_portal": "Back to my bookings",
+      "back_to_portal_signin": "Sign in to see my bookings"
     }
   },
   "enrolment": {
@@ -109,7 +113,8 @@
     }
   },
   "nav": {
-    "manage_classes": "Manage packages"
+    "manage_classes": "Manage packages",
+    "my_account": "My bookings"
   },
   "scheduling": {
     "services": {

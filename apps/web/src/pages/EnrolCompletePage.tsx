@@ -10,6 +10,7 @@ import { WaiverSigningConsentTemplateSchema } from '@shared/schemas';
 import type { WaiverSigningConsentTemplate } from '@shared/schemas';
 import { linkAuthUserToPerson } from '@/features/enrolment/linkAuthUser';
 import { JobAfterSignNextStep } from '@/features/jobs/components/JobAfterSignNextStep';
+import { BackToPortalButton } from '@/features/jobs/components/BackToPortalButton';
 
 type PageState =
   | { kind: 'loading' }
@@ -273,8 +274,9 @@ export default function EnrolCompletePage() {
     );
   }
 
-  // Job contracts continue to the deposit (or the client portal); dance
-  // waivers keep the dashboard button exactly as before.
+  // Job contracts continue to the deposit (or the client portal), falling back
+  // to the way back to the portal; dance waivers keep the dashboard button
+  // exactly as before.
   const dashboardButton = (
     <Button type="button" variant="primary" onClick={() => { window.location.href = '/dashboard'; }} className="w-full">
       {t('pages.enrol_complete.go_to_dashboard')}
@@ -282,7 +284,11 @@ export default function EnrolCompletePage() {
   );
   const nextStep = (isJob: boolean | undefined) =>
     isJob && waiverToken ? (
-      <JobAfterSignNextStep engagementId={engagementId} waiverToken={waiverToken} fallback={dashboardButton} />
+      <JobAfterSignNextStep
+        engagementId={engagementId}
+        waiverToken={waiverToken}
+        fallback={<BackToPortalButton variant="primary" />}
+      />
     ) : (
       dashboardButton
     );

@@ -247,7 +247,9 @@
         "portal_body": "You are all set. You can see your booking at any time in your client portal.",
         "portal_button": "Go to your client portal",
         "error": "We could not load the next step. The payment link is also in your booking email."
-      }
+      },
+      "back_to_portal": "Back to my account",
+      "back_to_portal_signin": "Sign in to my account"
     },
     "client_portal": {
       "title": "My shoots",
