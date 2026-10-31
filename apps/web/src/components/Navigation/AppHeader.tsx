@@ -7,6 +7,25 @@ import { useTenant } from '@/hooks/useTenant';
 import { useLanguage } from '@/hooks/useLanguage';
 import { supabase } from '@/lib/supabase';
 import { useNavDrawer } from './NavDrawerContext';
+import { HeaderLogo } from './HeaderLogo';
+
+/** Class sets for the two header styles (tenants.chrome_style). */
+const CHROME = {
+  soft: {
+    header: 'app-header-soft',
+    icon: 'text-[var(--color-text-primary)] hover:bg-[var(--tint-2)]',
+    link: 'outline-primary',
+    pill: 'border-[var(--border-card)] text-[var(--color-text-primary)] bg-white/60 hover:bg-[var(--tint-1)]',
+    action: 'outline' as const,
+  },
+  solid: {
+    header: 'border-b border-primary-active bg-primary text-on-primary',
+    icon: 'text-on-primary hover:bg-primary-hover hover:text-on-primary',
+    link: 'outline-on-primary',
+    pill: 'border-on-primary text-on-primary bg-transparent hover:bg-primary-hover hover:text-on-primary',
+    action: 'secondary' as const,
+  },
+};
 
 export function AppHeader() {
   const { t } = useTranslation();
@@ -15,6 +34,8 @@ export function AppHeader() {
   const { user } = useCurrentUser();
   const { language, setLanguage } = useLanguage();
   const { isOpen, isPinned, toggle, menuButtonRef } = useNavDrawer();
+  const soft = tenant?.chrome_style !== 'solid';
+  const c = soft ? CHROME.soft : CHROME.solid;
 
   const toggleLanguage = async () => {
     await setLanguage(language === 'he' ? 'en' : 'he');
@@ -26,33 +47,25 @@ export function AppHeader() {
   };
 
   return (
-    <header className="border-b border-primary-active bg-primary text-on-primary sticky top-0 z-30 shrink-0" role="banner">
+    <header className={`${c.header} sticky top-0 z-30 shrink-0`} role="banner">
       <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3 min-w-0">
-          <Button ref={menuButtonRef} type="button" variant="ghost" size="sm" onClick={toggle} aria-expanded={isOpen} aria-controls="nav-drawer" aria-label={isOpen ? t('nav.close_menu') : t('nav.open_menu')} className="text-on-primary hover:bg-primary-hover hover:text-on-primary shrink-0">
+          <Button ref={menuButtonRef} type="button" variant="ghost" size="sm" onClick={toggle} aria-expanded={isOpen} aria-controls="nav-drawer" aria-label={isOpen ? t('nav.close_menu') : t('nav.open_menu')} className={`${c.icon} shrink-0`}>
             {isPinned ? <PanelLeftClose size={20} aria-hidden /> : <Menu size={20} aria-hidden />}
           </Button>
-          <Link to="/" className="flex items-center font-bold text-lg truncate hover:opacity-90 focus-visible:outline-2 outline-on-primary outline-offset-2">
-            {tenant?.logo_url ? (
-              <img
-                src={tenant.logo_url}
-                alt={tenant.name}
-                className="h-8 max-w-[160px] object-contain"
-              />
-            ) : (
-              <span className="text-on-primary">{tenant?.name || 'Ballet School'}</span>
-            )}
+          <Link to="/" className={`flex items-center font-bold text-lg truncate hover:opacity-90 focus-visible:outline-2 ${c.link} outline-offset-2`}>
+            <HeaderLogo tenant={tenant} soft={soft} />
           </Link>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <Button variant="outline" size="sm" onClick={toggleLanguage} aria-label={t('common.language')} className="border-on-primary text-on-primary bg-transparent hover:bg-primary-hover hover:text-on-primary">
+          <Button variant="outline" size="sm" onClick={toggleLanguage} aria-label={t('common.language')} className={c.pill}>
             {language === 'he' && '🇬🇧 English'}
             {language === 'en' && '🇮🇱 עברית'}
           </Button>
           {user ? (
-            <Button variant="secondary" size="sm" onClick={handleLogout} aria-label={t('nav.logout')}>{t('nav.logout')}</Button>
+            <Button variant={c.action} size="sm" onClick={handleLogout} className={soft ? c.pill : undefined} aria-label={t('nav.logout')}>{t('nav.logout')}</Button>
           ) : (
-            <Button variant="secondary" size="sm" onClick={() => navigate('/login')} aria-label={t('nav.login')}>{t('nav.login')}</Button>
+            <Button variant={c.action} size="sm" onClick={() => navigate('/login')} className={soft ? c.pill : undefined} aria-label={t('nav.login')}>{t('nav.login')}</Button>
           )}
         </div>
       </div>

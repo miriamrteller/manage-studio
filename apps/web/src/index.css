@@ -1374,3 +1374,21 @@ dialog.modal-dialog::backdrop {
 @media (prefers-reduced-transparency: reduce) {
   :root { --surface-card: #fff; --backdrop-card: none; }
 }
+
+/* ===== Soft header & footer (Phase 2b, tenants.chrome_style = 'soft') =====
+   Primary tint -> accent tint gradient (mirrored for RTL via --gradient-header)
+   over the page ground, with blur so content scrolls softly beneath the
+   sticky header. Text is body ink: >= 12:1 on every tint. */
+.app-header-soft {
+  background-color: color-mix(in srgb, var(--tint-ground) 70%, transparent);
+  background-image: var(--gradient-header);
+  -webkit-backdrop-filter: blur(12px) saturate(1.3);
+  backdrop-filter: blur(12px) saturate(1.3);
+  border-block-end: 1px solid var(--border-card);
+  color: var(--color-text-primary);
+}
+.app-footer-soft {
+  background-image: var(--gradient-footer);
+  border-block-start: 1px solid var(--border-card);
+  color: var(--color-text-primary);
+}

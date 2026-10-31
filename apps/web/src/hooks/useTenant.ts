@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { getLocale } from '../lib/language-helper';
 import { resolveTenantSubdomain } from '../lib/resolveTenantSubdomain';
 import type { TenantConfig } from '../types/auth';
+import { parseLogoTone } from '../lib/theme/logoTone';
 import { parseEntityLabelOverrides, resolveEntityLabels, resolvePresetModules, safePreset, safeVertical } from '@shared/index';
 
 export function useTenant(): TenantConfig | null {
@@ -65,6 +66,10 @@ export function useTenantQuery(): { tenant: TenantConfig | null; isLoading: bool
         font_pair: row.font_pair ?? null,
         logo_url: row.logo_url ?? null,
         logo_dark_url: row.logo_dark_url ?? null,
+        chrome_style: row.chrome_style === 'solid' ? 'solid' : 'soft',
+        logo_tone: parseLogoTone(row.logo_tone),
+        logo_dark_tone: parseLogoTone(row.logo_dark_tone),
+        logo_autofix: row.logo_autofix !== false,
       } as unknown as TenantConfig;
     },
     enabled: !!subdomain,

@@ -109,7 +109,8 @@ export function deriveSoftTheme(primaryInput: string, accentInput: string): Soft
     '--color-primary-fill-hover': mix(fill, towardState, 0.91),
     '--color-primary-fill-active': mix(fill, towardState, 0.83),
     '--color-on-primary-fill': onFill,
-    '--color-primary-ink': pushUntilContrast(primary, textSurfaces(p)),
+    // The brand ink also sits on the soft header, which fades into the accent tint.
+    '--color-primary-ink': pushUntilContrast(primary, [...textSurfaces(p), a.t1, a.t2]),
     '--color-accent-ink': pushUntilContrast(accent, textSurfaces(a)),
     '--tint-ground': p.ground,
     '--tint-1': p.t1,
