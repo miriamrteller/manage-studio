@@ -26,12 +26,6 @@ export function darkenColor(hex: string, amount: number): string {
   return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
 }
 
-export function getBackgroundForPrimaryColor(hex: string): 'warm' | 'cool' {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return r > b ? 'warm' : 'cool';
-}
-
 /**
  * Shade (toward black) or tint (toward white) by mixing, like CSS
  * color-mix(in srgb). Unlike darkenColor's even RGB subtraction this keeps

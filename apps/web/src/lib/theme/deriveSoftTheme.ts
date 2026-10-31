@@ -70,6 +70,8 @@ export interface SoftTheme extends Record<NeutralKey, string> {
   '--color-text-secondary': string;
   '--color-text-muted': string;
   '--color-primary-fill': string;
+  '--color-primary-fill-hover': string;
+  '--color-primary-fill-active': string;
   '--color-on-primary-fill': string;
   '--color-primary-ink': string;
   '--color-accent-ink': string;
@@ -94,13 +96,19 @@ export function deriveSoftTheme(primaryInput: string, accentInput: string): Soft
   // lighter "muted" grey only on white and the lighter primary tints.
   const allSurfaces = [...textSurfaces(p), p.t3, a.t1, a.t2];
   const fill = contrast(onColor(primary), primary) >= AA ? primary : pushUntilContrast(primary, [WHITE], BLACK);
+  const onFill = onColor(fill);
+  // Hover/pressed move AWAY from the text colour, so contrast only grows:
+  // darker under white text, lighter under ink.
+  const towardState = onFill === WHITE ? BLACK : WHITE;
   return {
     ...neutrals,
     '--color-text-primary': pushUntilContrast(grey(BASE_GREYS[900]), allSurfaces, BLACK, 12),
     '--color-text-secondary': pushUntilContrast(grey(BASE_GREYS[600]), allSurfaces),
     '--color-text-muted': pushUntilContrast(grey(BASE_GREYS[500]), textSurfaces(p)),
     '--color-primary-fill': fill,
-    '--color-on-primary-fill': onColor(fill),
+    '--color-primary-fill-hover': mix(fill, towardState, 0.91),
+    '--color-primary-fill-active': mix(fill, towardState, 0.83),
+    '--color-on-primary-fill': onFill,
     '--color-primary-ink': pushUntilContrast(primary, textSurfaces(p)),
     '--color-accent-ink': pushUntilContrast(accent, textSurfaces(a)),
     '--tint-ground': p.ground,

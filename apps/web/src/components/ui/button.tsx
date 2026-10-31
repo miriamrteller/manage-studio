@@ -16,10 +16,15 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const raisedFinish =
       '[background-image:var(--sheen-raised)] [box-shadow:var(--edge-emboss),var(--elevation-1)] hover:[box-shadow:var(--edge-emboss),var(--elevation-2)] active:[background-image:none] active:[box-shadow:var(--edge-emboss)]';
 
+    // Primary: the derived fill (AA text for any brand), an overlay-only sheen
+    // and a soft glow in its own colour.
+    const softPrimary =
+      '[background-image:var(--sheen-soft)] [box-shadow:var(--edge-emboss),var(--glow-primary)] hover:[box-shadow:var(--edge-emboss),var(--glow-primary-hover)] active:[background-image:none] active:[box-shadow:var(--edge-emboss)]';
+
     const variantClasses = {
       default:
         'bg-[var(--color-neutral-200)] text-[var(--color-text-primary)] hover:bg-[var(--color-neutral-300)]',
-      primary: `bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active ${raisedFinish}`,
+      primary: `bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active ${softPrimary}`,
       secondary: `bg-secondary text-on-secondary hover:bg-secondary-hover active:bg-secondary-active ${raisedFinish}`,
       outline:
         'border border-[var(--border-hairline)] text-[var(--color-text-primary)] hover:bg-[var(--tint-primary-05)] hover:border-[var(--tint-primary-25)] active:bg-[var(--tint-primary-10)]',
@@ -40,7 +45,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         disabled={isDisabled}
-        className={`rounded-control transition-opacity disabled:opacity-50 focus-visible:outline-2 outline-offset-2 interact-lift interact-scale motion-safe ${variantClasses[variant]} ${sizeClasses[size]} ${widthClass} ${className}`}
+        className={`rounded-[var(--radius-button)] transition-opacity disabled:opacity-50 focus-visible:outline-2 outline-offset-2 interact-lift interact-scale motion-safe ${variantClasses[variant]} ${sizeClasses[size]} ${widthClass} ${className}`}
         {...props}
       >
         {isLoading ? (

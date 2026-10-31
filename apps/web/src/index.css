@@ -74,18 +74,10 @@
   --color-info-hover: #0369a1;
   --color-info-active: #075985;
 
-  /* Background Colors - Two Variants (Cool vs Warm off-white) */
-  /* Cool off-white: Gray-blue tint (for cool primary colors like blue, purple, cyan) */
-  --color-bg-primary-cool: #fafbfc;
-  --color-bg-secondary-cool: #f3f4f6;
-
-  /* Warm off-white: Cream tint (for warm primary colors like red, orange, yellow) */
-  --color-bg-primary-warm: #fffbf5;
-  --color-bg-secondary-warm: #faf8f3;
-
-  /* Default to cool background (most professional) - will be overridden by useThemeInjection */
-  --color-bg-primary: var(--color-bg-primary-cool);
-  --color-bg-secondary: var(--color-bg-secondary-cool);
+  /* Page ground: the tenant's own lightest tints (deriveSoftTheme), which
+     replaced the fixed warm/cool off-whites. */
+  --color-bg-primary: var(--tint-ground);
+  --color-bg-secondary: var(--tint-1);
 
   /* Neutral Scale (50-900): a neutral grey with a little of the tenant
      primary mixed in (more in the darker steps). deriveSoftTheme() writes the
@@ -216,25 +208,25 @@
      drive the state changes.) */
   .button {
     @apply px-4 py-2 font-medium transition-colors duration-200;
-    border-radius: var(--radius-control);
+    border-radius: var(--radius-button);
     cursor: pointer;
   }
 
   .button-primary {
     @apply button;
-    background-color: var(--color-primary);
-    background-image: var(--sheen-raised);
-    color: var(--color-on-primary);
-    box-shadow: var(--edge-emboss), var(--elevation-1);
+    background-color: var(--color-primary-fill);
+    background-image: var(--sheen-soft);
+    color: var(--color-on-primary-fill);
+    box-shadow: var(--edge-emboss), var(--glow-primary);
   }
 
   .button-primary:hover {
-    background-color: var(--color-primary-hover);
-    box-shadow: var(--edge-emboss), var(--elevation-2);
+    background-color: var(--color-primary-fill-hover);
+    box-shadow: var(--edge-emboss), var(--glow-primary-hover);
   }
 
   .button-primary:active {
-    background-color: var(--color-primary-active);
+    background-color: var(--color-primary-fill-active);
     background-image: none;
     box-shadow: var(--edge-emboss);
   }
@@ -340,9 +332,11 @@
   .card {
     @apply border p-4;
     border-radius: var(--radius-surface);
-    background-color: var(--color-surface-elevated);
-    border-color: var(--border-hairline);
-    box-shadow: var(--elevation-1);
+    background-color: var(--surface-card);
+    border-color: var(--border-card);
+    box-shadow: var(--elevation-card);
+    -webkit-backdrop-filter: var(--backdrop-card);
+    backdrop-filter: var(--backdrop-card);
   }
 
   .card-hover {
@@ -351,7 +345,7 @@
   }
 
   .card-hover:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--elevation-card-hover);
   }
 }
 
@@ -359,11 +353,11 @@ body {
   font-family: var(--font-family-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  /* Ambient brand wash (DL-DESIGN-009): tenant-tinted off-white ground with
-     a soft radial brand glow at the top — this is what makes cards and
-     raised controls read as elevated instead of floating on plain white. */
+  /* Soft page wash: primary glow at the inline-start corner, accent glow at
+     the inline-end corner, faint glow at the bottom (mirrored for RTL), over
+     the tenant's lightest tint. Translucent cards let it show through. */
   background-color: var(--color-bg-primary);
-  background-image: var(--wash-brand);
+  background-image: var(--wash-page);
   background-repeat: no-repeat;
   background-attachment: fixed;
 }
@@ -1230,7 +1224,7 @@ dialog.modal-dialog::backdrop {
   --radius-full: 9999px;  /* pills */
 
   --radius-control: var(--radius-md);
-  --radius-surface: var(--radius-lg);
+  --radius-surface: 1.125rem; /* 18px: soft cards and panels */
   --radius-overlay: var(--radius-xl);
 
   /* --- Brand tint ramp (transparent washes of the tenant primary) --- */
@@ -1291,6 +1285,23 @@ dialog.modal-dialog::backdrop {
     color-mix(in srgb, var(--tint-accent-2) 88%, transparent)
   );
   --gradient-footer: linear-gradient(180deg, transparent, var(--tint-accent-1) 70%);
+  --color-primary-fill-hover: #6b2e52;
+  --color-primary-fill-active: #622a4b;
+
+  /* Soft surfaces (Phase 2a). Cards are translucent so the page wash shows
+     through; inputs and modals keep opaque --surface-base. */
+  --surface-card: color-mix(in srgb, #fff 80%, transparent);
+  --border-card: color-mix(in srgb, var(--tint-3) 55%, #fff);
+  --elevation-card: 0 1px 2px color-mix(in srgb, var(--shadow-ink) 6%, transparent),
+    0 10px 28px -8px color-mix(in srgb, var(--shadow-ink) 14%, transparent);
+  --elevation-card-hover: 0 2px 4px color-mix(in srgb, var(--shadow-ink) 8%, transparent),
+    0 18px 38px -10px color-mix(in srgb, var(--shadow-ink) 18%, transparent);
+  --backdrop-card: blur(10px) saturate(1.2);
+  --radius-button: 9999px;
+  /* Overlay-only sheen (hue-neutral) + a soft glow in the button's own colour */
+  --sheen-soft: linear-gradient(135deg, rgb(255 255 255 / 0.16), rgb(255 255 255 / 0) 55%, rgb(0 0 0 / 0.06));
+  --glow-primary: 0 6px 16px -6px color-mix(in srgb, var(--color-primary-fill) 50%, transparent);
+  --glow-primary-hover: 0 10px 22px -8px color-mix(in srgb, var(--color-primary-fill) 60%, transparent);
 
   /* --- Brand wash: ambient page/hero background gradient --- */
   --wash-brand: radial-gradient(
@@ -1332,4 +1343,34 @@ dialog.modal-dialog::backdrop {
 }
 .rounded-overlay {
   border-radius: var(--radius-overlay);
+}
+
+/* ===== Soft tables (Phase 2a) =====
+   Zero-specificity defaults for every data table, so any utility class on a
+   page still wins. FullCalendar's internal grid tables are excluded. Header
+   text is small caps-style in LTR only: Hebrew has no case and positive
+   tracking hurts its legibility. */
+:where(table:not(.fc table)) > thead > tr {
+  background-color: var(--tint-1);
+}
+:where(table:not(.fc table)) > thead > tr > th {
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+:where([dir='rtl'] table:not(.fc table)) > thead > tr > th {
+  font-size: 0.8125rem;
+  letter-spacing: 0;
+  text-transform: none;
+}
+:where(table:not(.fc table)) > tbody > tr + tr {
+  border-block-start: 1px solid var(--tint-2);
+}
+:where(table:not(.fc table)) > tbody > tr:hover {
+  background-color: var(--tint-1);
+}
+@media (prefers-reduced-transparency: reduce) {
+  :root { --surface-card: #fff; --backdrop-card: none; }
 }

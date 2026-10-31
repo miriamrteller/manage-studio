@@ -13,7 +13,7 @@ export default {
         secondary: 'var(--color-secondary)',
         'secondary-hover': 'var(--color-secondary-hover)',
         'secondary-active': 'var(--color-secondary-active)',
-        'on-primary': 'var(--color-on-primary)',
+        'on-primary': 'var(--color-on-primary-fill)',
         'on-secondary': 'var(--color-on-secondary)',
         accent: 'var(--color-secondary)',
         error: 'var(--color-error)',
@@ -34,6 +34,13 @@ export default {
         primary: 'var(--color-primary-ink)',
         secondary: 'var(--color-accent-ink)',
         accent: 'var(--color-accent-ink)',
+      },
+      // Solid brand fills go through the derived fill: the brand itself
+      // unless no text colour reaches 4.5:1 on it. on-primary follows it.
+      backgroundColor: {
+        primary: 'var(--color-primary-fill)',
+        'primary-hover': 'var(--color-primary-fill-hover)',
+        'primary-active': 'var(--color-primary-fill-active)',
       },
       ringColor: {
         primary: 'var(--color-primary-ink)',

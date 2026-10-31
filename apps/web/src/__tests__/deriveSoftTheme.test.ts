@@ -37,6 +37,8 @@ function pairings(primary: string, accent: string): [label: string, fg: string, 
   const allTints = { ...primarySurfaces, 'tint-3': t['--tint-3'], 'accent-1': t['--tint-accent-1'], 'accent-2': t['--tint-accent-2'] };
   return [
     ['button text on fill', t['--color-on-primary-fill'], t['--color-primary-fill']],
+    ['button text on fill hover', t['--color-on-primary-fill'], t['--color-primary-fill-hover']],
+    ['button text on fill pressed', t['--color-on-primary-fill'], t['--color-primary-fill-active']],
     ...Object.entries(primarySurfaces).map(([s, bg]): [string, string, string] => [`primary ink on ${s}`, t['--color-primary-ink'], bg]),
     ...Object.entries(allTints).flatMap(([s, bg]): [string, string, string][] => [
       [`body text on ${s}`, t['--color-text-primary'], bg],

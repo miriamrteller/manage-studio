@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useTenant } from './useTenant';
-import { deriveColorSystem, getAccessibleTextColor, getBackgroundForPrimaryColor } from '../lib/utils';
+import { deriveColorSystem, getAccessibleTextColor } from '../lib/utils';
 import { injectFontPair } from './useFontLoader';
 import { deriveSoftTheme } from '../lib/theme/deriveSoftTheme';
 
@@ -19,20 +19,16 @@ export function useThemeInjection(): void {
         const cssVarKey = key.split('_').join('-');
         root.style.setProperty(`--color-${cssVarKey}`, value);
       });
-      root.style.setProperty('--color-on-primary', getAccessibleTextColor(primaryColor));
       root.style.setProperty('--color-on-secondary', getAccessibleTextColor(colorSystem.secondary));
-      // Soft theme: luminance-targeted tints, contrast-safe brand ink and button fill.
-      Object.entries(deriveSoftTheme(colorSystem.primary, colorSystem.secondary)).forEach(([cssVar, value]) => {
+      // Soft theme: luminance-targeted tints, tenant greys, contrast-safe brand
+      // ink and button fill. The page ground (--color-bg-*) follows the tints
+      // in index.css, replacing the old warm/cool off-white switch.
+      const soft = deriveSoftTheme(colorSystem.primary, colorSystem.secondary);
+      Object.entries(soft).forEach(([cssVar, value]) => {
         root.style.setProperty(cssVar, value);
       });
-      const bgVariant = getBackgroundForPrimaryColor(primaryColor);
-      if (bgVariant === 'warm') {
-        root.style.setProperty('--color-bg-primary', 'var(--color-bg-primary-warm)');
-        root.style.setProperty('--color-bg-secondary', 'var(--color-bg-secondary-warm)');
-      } else {
-        root.style.setProperty('--color-bg-primary', 'var(--color-bg-primary-cool)');
-        root.style.setProperty('--color-bg-secondary', 'var(--color-bg-secondary-cool)');
-      }
+      // Text on a solid primary sits on the fill, so it follows the fill.
+      root.style.setProperty('--color-on-primary', soft['--color-on-primary-fill']);
       if (whiteLabel.logo?.url) {
         root.style.setProperty('--logo-url', `url(${whiteLabel.logo.url})`);
         if (whiteLabel.logo.height) root.style.setProperty('--logo-height', whiteLabel.logo.height);

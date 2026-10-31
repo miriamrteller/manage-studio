@@ -3,7 +3,7 @@ import type { JobStatus } from '../services/jobService';
 /** Badge classes per status (same palette the appointments page uses). */
 export const JOB_STATUS_BADGE: Record<JobStatus, string> = {
   enquiry: 'bg-gray-100 text-gray-700',
-  booked: 'bg-primary text-on-primary',
+  booked: 'bg-[var(--tint-2)] text-primary',
   shot: 'bg-blue-100 text-blue-800',
   editing: 'bg-amber-100 text-amber-800',
   delivered: 'bg-green-100 text-green-800',
