@@ -347,7 +347,7 @@ export function buildSeed(): Tables {
           vat_rate: 18,
           currency: 'ILS',
           status: 'succeeded',
-          charge_type: 'one_time',
+          charge_type: 'initial',
           provider: 'ypay',
           payment_method: 'card',
           description: `${pkg.name}: ${label}`,
