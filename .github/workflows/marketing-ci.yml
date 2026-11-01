@@ -1,0 +1,44 @@
+# PR check for the marketing site (apps/marketing). No secrets, nothing deployed.
+# Every local link/src in the site must point to an existing file.
+# Deploy: deploy-marketing.yml · Docs: docs/deployment/MARKETING-SITE.md
+
+name: marketing-ci
+
+on:
+  pull_request:
+    paths:
+      - "apps/marketing/**"
+      - "scripts/ci/check-marketing-links.mjs"
+      - ".github/workflows/marketing-ci.yml"
+      - ".github/workflows/deploy-marketing.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  links:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Links resolve to existing files
+        run: node scripts/ci/check-marketing-links.mjs apps/marketing/public
+      - name: Contact function tests
+        working-directory: apps/marketing
+        run: node --test test/*.test.mjs
+      - name: Only the expected folders in apps/marketing
+        working-directory: apps/marketing
+        run: |
+          set -uo pipefail
+          if extra=$(git ls-files | grep -vE '^(public/|functions/|test/|package\.json$|README\.md$)'); then
+            echo "::error::unexpected files in apps/marketing (served files go in public/): $extra"; exit 1
+          fi
+      - name: Contact function present
+        run: |
+          if ! compgen -G "apps/marketing/functions/api/contact.*" >/dev/null; then
+            echo "::error::apps/marketing/functions/api/contact.* is missing; the signup form would break on the next deploy."; exit 1
+          fi

@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="he">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>OpalSwift למטפלים ומאמנים — פחות ניהול, יותר טיפול</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800&amp;family=Heebo:wght@400;500;700&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<style>
+  :root{
+    --ink:#0B1437; --teal:#21D1C2; --indigo:#5B6CFF; --violet:#7B61FF;
+    --canvas:#F7F8FC; --slate:#5A6178;
+    --opal:linear-gradient(120deg,#21D1C2,#5B6CFF,#7B61FF);
+    --shadow:0 18px 50px -18px rgba(11,20,55,.35);
+    --radius:20px;
+    /* therapist accent */
+    --accent:#0D9488;
+    --accent-light:rgba(13,148,136,.12);
+    --accent-mid:rgba(13,148,136,.22);
+    --hero-glow:radial-gradient(1100px 520px at 75% -5%,rgba(13,148,136,.13),transparent),
+                radial-gradient(800px 400px at 0% 15%,rgba(33,209,194,.13),transparent);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{font-family:'Heebo','Inter',system-ui,sans-serif;color:var(--ink);background:var(--canvas);line-height:1.6;overflow-x:hidden}
+  body[dir=ltr]{font-family:'Inter',system-ui,sans-serif}
+  h1,h2,h3,.brand{font-family:'Rubik',sans-serif;line-height:1.15}
+  .wrap{max-width:1140px;margin:0 auto;padding:0 24px}
+  .grad-text{background:var(--opal);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .accent-text{color:var(--accent)}
+  .btn{display:inline-flex;align-items:center;gap:8px;border:0;border-radius:999px;padding:14px 26px;font-weight:600;font-size:16px;cursor:pointer;text-decoration:none;transition:.2s;font-family:'Rubik',sans-serif}
+  .btn-primary{background:var(--opal);color:#fff;box-shadow:0 10px 24px -8px rgba(220,38,38,.45)}
+  .btn-primary:hover{transform:translateY(-2px)}
+  .btn-ghost{background:#fff;color:var(--ink);border:1px solid rgba(11,20,55,.15)}
+  .btn-ghost:hover{border-color:var(--accent)}
+
+  /* ── NAV ── */
+  nav{position:sticky;top:0;z-index:50;background:rgba(247,248,252,.88);backdrop-filter:blur(14px);border-bottom:1px solid rgba(11,20,55,.06)}
+  .nav-in{display:flex;align-items:center;justify-content:space-between;height:70px}
+  .logo{display:flex;align-items:center;gap:10px;font-family:'Rubik';font-weight:800;font-size:22px;letter-spacing:-0.5px;background:var(--opal);-webkit-background-clip:text;background-clip:text;color:transparent;text-decoration:none}
+  .logo .gem{width:30px;height:30px}
+  .logo .sub{font-size:13px;font-weight:600;color:var(--accent);padding-inline-start:8px;border-inline-start:1px solid rgba(13,148,136,.3);margin-inline-start:4px}
+  .nav-cta{display:flex;gap:12px;align-items:center}
+  .lang-toggle{display:flex;border:1px solid rgba(11,20,55,.15);border-radius:999px;overflow:hidden;font-family:'Rubik';font-size:13px;font-weight:600}
+  .lang-toggle button{border:0;background:transparent;padding:7px 14px;cursor:pointer;color:var(--slate)}
+  .lang-toggle button.active{background:var(--ink);color:#fff}
+
+  /* ── HERO ── */
+  .hero{position:relative;background:var(--hero-glow);padding:80px 0 64px}
+  .hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:50px;align-items:center}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid rgba(13,148,136,.25);box-shadow:0 4px 20px -8px rgba(13,148,136,.3);padding:7px 14px;border-radius:999px;font-size:13px;font-weight:600;color:var(--accent);margin-bottom:22px;font-family:'Rubik'}
+  .hero h1{font-size:52px;font-weight:800;letter-spacing:-1px;margin-bottom:18px}
+  .hero p.lead{font-size:19px;color:var(--slate);max-width:520px;margin-bottom:28px}
+  .hero-cta{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+  .trust{font-size:14px;color:var(--slate);display:flex;align-items:flex-start;gap:8px}
+
+  /* hero mock */
+  .mock{background:#fff;border-radius:24px;box-shadow:var(--shadow);padding:22px;position:relative}
+  /* Road stripe on mock bar */
+  .mock .bar{height:10px;width:70px;background:linear-gradient(90deg,#0D9488,#14b8a6);border-radius:6px;;margin-bottom:16px}
+  .mock-row{display:flex;justify-content:space-between;align-items:center;padding:14px;border:1px solid rgba(11,20,55,.07);border-radius:14px;margin-bottom:10px}
+  .mock-row .l{display:flex;align-items:center;gap:12px}
+  .dot{width:38px;height:38px;border-radius:12px;background:var(--canvas);display:flex;align-items:center;justify-content:center;font-size:18px}
+  .pill{font-size:12px;font-weight:700;padding:5px 12px;border-radius:999px;font-family:'Rubik'}
+  .pill.ok{background:rgba(33,209,194,.15);color:#0a8f84}
+  .pill.auto{background:var(--accent-light);color:#0D9488}
+  .pill.pend{background:rgba(245,158,11,.15);color:#b45309}
+  .mock-foot{display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding:14px;background:var(--ink);border-radius:14px;color:#fff}
+  .mock-foot .amt{font-family:'Rubik';font-weight:800;font-size:22px}
+  .float-badge{position:absolute;bottom:-18px;inset-inline-start:-18px;background:#fff;box-shadow:var(--shadow);border-radius:14px;padding:10px 14px;font-size:13px;font-weight:700;font-family:'Rubik';display:flex;align-items:center;gap:8px}
+
+  /* ── SECTIONS ── */
+  section.block{padding:72px 0}
+  .sec-head{text-align:center;max-width:680px;margin:0 auto 48px}
+  .sec-head .kicker{font-family:'Rubik';font-weight:700;color:var(--accent);font-size:14px;letter-spacing:.5px;text-transform:uppercase;margin-bottom:12px}
+  .sec-head h2{font-size:38px;font-weight:800;letter-spacing:-.5px;margin-bottom:14px}
+  .sec-head p{font-size:18px;color:var(--slate)}
+
+  /* ── FEATURE CARDS ── */
+  .cards3{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+  .card{background:#fff;border:1px solid rgba(11,20,55,.06);border-radius:var(--radius);padding:28px;box-shadow:0 8px 30px -20px rgba(11,20,55,.25);transition:.2s}
+  .card:hover{transform:translateY(-4px);box-shadow:0 16px 40px -20px rgba(220,38,38,.3)}
+  .card .ic{width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--accent-light),var(--accent-mid));display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:18px}
+  .card h3{font-size:20px;margin-bottom:10px}
+  .card p{color:var(--slate);font-size:15.5px}
+
+  /* ── HOW IT WORKS ── */
+  .how-bg{background:var(--ink);border-radius:32px;margin:0 24px;padding:56px}
+  .how-bg .sec-head h2{color:#fff}
+  .how-bg .sec-head p{color:rgba(255,255,255,.7)}
+  .how-bg .sec-head .kicker{color:var(--accent)}
+  .flow-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:8px}
+  .flow-step{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:22px 16px;text-align:center;transition:.2s}
+  .flow-step:hover{background:rgba(220,38,38,.15);border-color:rgba(220,38,38,.4)}
+  .flow-step .em{font-size:28px;display:block;margin-bottom:12px}
+  .flow-step b{font-family:'Rubik';font-size:14px;display:block;margin-bottom:6px;color:#fff}
+  .flow-step small{color:rgba(255,255,255,.62);font-size:12.5px;display:block}
+
+  /* ── SOCIAL PROOF ── */
+  .proof-grid{display:grid;grid-template-columns:1fr 1fr;gap:28px;max-width:900px;margin:0 auto}
+  .proof-card{background:#fff;border:1px solid rgba(11,20,55,.07);border-radius:var(--radius);padding:32px;box-shadow:0 8px 30px -20px rgba(11,20,55,.2)}
+  .proof-card .ava{width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,var(--accent),#065f56);display:flex;align-items:center;justify-content:center;color:#fff;font-size:26px;margin-bottom:18px}
+  .proof-card blockquote{font-family:'Rubik';font-size:18px;font-weight:500;line-height:1.5;color:var(--ink);margin-bottom:16px}
+  .proof-card .attr{font-size:14px;color:var(--slate)}
+  .proof-card .attr b{color:var(--ink);font-weight:700}
+  .proof-card.wa{background:linear-gradient(135deg,#fff5f5,#fee2e2)}
+  .proof-card.wa blockquote{font-size:16px;color:#1a0000}
+  .wa-badge{display:inline-flex;align-items:center;gap:6px;background:#2563EB;color:#fff;font-family:'Rubik';font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;margin-bottom:14px}
+
+  /* ── PRICING ── */
+  .pricing-wrap{max-width:520px;margin:0 auto}
+  .price-card{background:#fff;border:2px solid transparent;background:linear-gradient(#fff,#fff) padding-box,var(--opal) border-box;border-radius:var(--radius);padding:32px;box-shadow:var(--shadow);position:relative}
+  .price-badge{position:absolute;top:-14px;inset-inline-start:50%;transform:translateX(-50%);background:var(--opal);color:#fff;font-family:'Rubik';font-weight:700;font-size:12px;padding:5px 18px;border-radius:999px;white-space:nowrap}
+  body[dir=rtl] .price-badge{transform:translateX(50%)}
+  .price-plan{font-family:'Rubik';font-size:16px;font-weight:700;color:var(--accent);margin-bottom:4px}
+  .price-who{color:var(--slate);font-size:14px;margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid rgba(11,20,55,.07)}
+  .price-amt{font-family:'Rubik';font-weight:800;font-size:46px;line-height:1;margin-bottom:6px}
+  .price-amt small{font-size:16px;font-weight:400;color:var(--slate)}
+  .price-annual{font-size:13px;color:var(--accent);font-weight:600;font-family:'Rubik';margin-bottom:22px}
+  .price-features{list-style:none;margin-bottom:26px;display:flex;flex-direction:column;gap:11px}
+  .price-features li{display:flex;align-items:flex-start;gap:10px;font-size:15px}
+  .price-features li::before{content:'✓';color:var(--accent);font-weight:800;font-family:'Rubik';flex-shrink:0;margin-top:2px}
+  .price-note{font-size:13px;color:var(--slate);text-align:center;margin-top:14px}
+
+  /* ── BACK LINK ── */
+  .back-bar{padding:18px 0 0}
+  .back-link{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600;color:var(--slate);text-decoration:none;font-family:'Rubik';transition:.2s}
+  .back-link:hover{color:var(--accent)}
+
+  /* ── RESPONSIVE ── */
+  @media(max-width:768px){
+    .hero-grid{grid-template-columns:1fr}
+    .cards3{grid-template-columns:1fr}
+    .flow-grid{grid-template-columns:repeat(2,1fr)}
+    .proof-grid{grid-template-columns:1fr}
+    .hero h1{font-size:38px}
+  }
+  .hero p.subhero,.hero-text p.subhero{font-size:17px;color:var(--accent);font-weight:600;font-family:'Rubik';max-width:520px;margin-bottom:20px;line-height:1.55}
+</style>
+</head>
+<body>
+<!-- NAV -->
+<nav id="opal-nav"></nav>
+<script>window.OPAL_SKIN={he:"למטפלים ומאמנים",en:"for Therapists & Coaches"}; </script>
+<script src="topbar.js"></script>
+<!-- HERO -->
+<section class="hero">
+<div class="wrap">
+<div class="back-bar">
+<a class="back-link" data-en="← All editions" data-he="← כל המהדורות" href="skins.html">← כל המהדורות</a>
+</div>
+<div class="hero-grid" style="margin-top:32px">
+<div>
+<div class="eyebrow" data-en="🧠 Therapists &amp; Coaches Edition" data-he="🧠 מהדורת מטפלים ומאמנים">🧠 מהדורת מטפלים ומאמנים</div>
+<h1 data-en='You guide transformation.&lt;br&gt;&lt;span class="grad-text"&gt;We handle the rest.&lt;/span&gt;' data-he='להנחות שינוי.&lt;br&gt;&lt;span class="grad-text"&gt;אנחנו מנחים את העסק שלך.&lt;/span&gt;'>להנחות שינוי.<br/><span class="grad-text">אנחנו מנחים את העסק שלך.</span></h1>
+<p class="subhero" data-en="Sessions, billing, and records — organized and secure." data-he="פגישות, חיוב ותיעוד — מסודרים ושמורים.">פגישות, חיוב ותיעוד — מסודרים ושמורים.</p>
+<p class="lead" data-en="You went into therapy to heal people, not to manage spreadsheets and invoices. We handle all the financial admin so you can focus on what matters most - your clients." data-he="אנחנו יודעים שאתה רוצה להתמקד במטופלים שלך, לא בניירת. אנחנו דואגים לכל הניהול הפיננסי כדי שתוכל להתרכז במה שבאת לעשות.">אנחנו יודעים שאתה רוצה להתמקד במטופלים שלך, לא בניירת. אנחנו דואגים לכל הניהול הפיננסי כדי שתוכל להתרכז במה שבאת לעשות.</p>
+<div class="hero-cta">
+<a class="btn btn-primary" data-en="Join the Beta" data-he="הצטרף לבטא" href="#pricing">הצטרף לבטא</a>
+<a class="btn btn-ghost" data-en="All editions" data-he="כל המהדורות" href="skins.html">כל המהדורות</a>
+</div>
+<p class="trust" data-en="✓ Quick to set up  ·  ✓ Hebrew-first  ·  ✓ עוסק פטור &amp; מורשה ready" data-he="✓ הגדרה מהירה  ·  ✓ ממשק בעברית  ·  ✓ תמיכה בעוסק פטור ומורשה">✓ הגדרה מהירה  ·  ✓ ממשק בעברית  ·  ✓ תמיכה בעוסק פטור ומורשה</p>
+</div>
+<!-- MOCK DASHBOARD -->
+<div class="mock">
+<div class="bar"></div>
+<div class="mock-row">
+<div class="l">
+<div class="dot">🧠</div>
+<div>
+<b data-en="David Chen - Couples therapy" data-he="יוסי רזניק - טיפול זוגי">יוסי רזניק - טיפול זוגי</b><br/>
+<small data-en="Monday 4:00 PM" data-he="יום שני 16:00" style="color:var(--slate)">יום שני 16:00</small>
+</div>
+</div>
+<span class="pill auto" data-en="Auto" data-he="אוטומטי">אוטומטי</span>
+</div>
+<div class="mock-row">
+<div class="l">
+<div class="dot">💭</div>
+<div>
+<b data-en="Lisa Abraham - CBT" data-he="דנה אברהם - CBT">דנה אברהם - CBT</b><br/>
+<small data-en="Wednesday 6:30 PM" data-he="יום רביעי 18:30" style="color:var(--slate)">יום רביעי 18:30</small>
+</div>
+</div>
+<span class="pill auto" data-en="Auto" data-he="אוטומטי">אוטומטי</span>
+</div>
+<div class="mock-row">
+<div class="l">
+<div class="dot">🌱</div>
+<div>
+<b data-en="Uri Cohen - Life coaching" data-he="אורי כהן - אימון אישי">אורי כהן - אימון אישי</b><br/>
+<small data-en="Thursday 10:00 AM" data-he="יום חמישי 10:00" style="color:var(--slate)">יום חמישי 10:00</small>
+</div>
+</div>
+<span class="pill auto" data-en="Auto" data-he="אוטומטי">אוטומטי</span>
+</div>
+<div class="mock-foot">
+<span data-en="This month's income" data-he="הכנסה החודש" style="font-size:13px;opacity:.7">הכנסה החודש</span>
+<span class="amt">₪18,750</span>
+</div>
+<div class="float-badge">👥 <span data-en="12 active clients" data-he="12 מטופלים פעילים">12 מטופלים פעילים</span></div>
+</div>
+</div>
+</div>
+</section>
+<section class="block" id="features">
+<div class="wrap">
+<div class="sec-head">
+<div class="kicker" data-en="Everything therapists need" data-he="כל מה שמטפל צריך">כל מה שמטפל צריך</div>
+<h2 data-en="Financial management built for private practice" data-he="ניהול פיננסי שמותאם לפרקטיקה פרטית">ניהול פיננסי שמותאם לפרקטיקה פרטית</h2>
+<p data-en="Less time on paperwork, more time with your clients." data-he="פחות זמן על ניירת, יותר זמן עם המטופלים שלך.">פחות זמן על ניירת, יותר זמן עם המטופלים שלך.</p>
+</div>
+<div class="cards3">
+<div class="card">
+<div class="ic">🗓️</div>
+<h3 data-en="Session-based income tracking" data-he="מעקב הכנסות לפי פגישות">מעקב הכנסות לפי פגישות</h3>
+<p data-en="Automatically log every session and charge, track payments and outstanding balances per client" data-he="תיעוד אוטומטי של כל פגישה וחיוב, עם מעקב אחר תשלומים ויתרות לקוחות">תיעוד אוטומטי של כל פגישה וחיוב, עם מעקב אחר תשלומים ויתרות לקוחות</p>
+</div>
+<div class="card">
+<div class="ic">📊</div>
+<h3 data-en="Organized financial records" data-he="רשומות פיננסיות מסודרות">רשומות פיננסיות מסודרות</h3>
+<p data-en="Complete income and expense records organized and accessible, including professional expense tracking" data-he="רשומות מלאות של הכנסות והוצאות מסודרות ונגישות, כולל מעקב אחר הוצאות מקצועיות">דוחות רבעוניים ושנתיים מוכנים להגשה, כולל מעקב אחר הוצאות מקצועיות</p>
+</div>
+<div class="card">
+<div class="ic">💳</div>
+<h3 data-en="Automated client billing" data-he="חיובים אוטומטיים ללקוחות">חיובים אוטומטיים ללקוחות</h3>
+<p data-en="Send invoices automatically after each session, with instant payment links" data-he="שליחת חשבוניות אוטומטית לאחר כל פגישה, עם אפשרות לתשלום מיידי בלינק">שליחת חשבוניות אוטומטית לאחר כל פגישה, עם אפשרות לתשלום מיידי בלינק</p>
+</div>
+</div>
+</div>
+</section>
+<!-- HOW IT WORKS -->
+<section class="block" id="how" style="padding-top:0">
+<div class="wrap">
+<div class="how-bg">
+<div class="sec-head">
+<div class="kicker" data-en="How it works" data-he="איך זה עובד">איך זה עובד</div>
+<h2 data-en="From first session to organized records in 5 steps" data-he="מפגישה ראשונה לרשומות מסודרות ב-5 צעדים">מפגישה ראשונה לרשומות מסודרות ב-5 צעדים</h2>
+<p data-en="Everything automated, everything accurate, everything tax-ready." data-he="הכל אוטומטי, הכל מדויק, הכל מוכן לרשויות המס.">הכל אוטומטי, הכל מדויק, הכל מוכן לרשויות המס.</p>
+</div>
+<div class="flow-grid">
+<div class="flow-step">
+<span class="em">👤</span>
+<b data-en="Add new client" data-he="הוספת לקוח חדש">הוספת לקוח חדש</b>
+<small data-en="Contact details and session rate" data-he="פרטי קשר ותעריף לפגישה">פרטי קשר ותעריף לפגישה</small>
+</div>
+<div class="flow-step">
+<span class="em">📅</span>
+<b data-en="Log the session" data-he="תיעוד הפגישה">תיעוד הפגישה</b>
+<small data-en="Just date and treatment type" data-he="רק תאריך וסוג טיפול">רק תאריך וסוג טיפול</small>
+</div>
+<div class="flow-step">
+<span class="em">📧</span>
+<b data-en="Send invoice" data-he="שליחת חשבונית">שליחת חשבונית</b>
+<small data-en="Automatically to client with payment link" data-he="אוטומטית ללקוח עם לינק לתשלום">אוטומטית ללקוח עם לינק לתשלום</small>
+</div>
+<div class="flow-step">
+<span class="em">💰</span>
+<b data-en="Track payments" data-he="מעקב תשלומים">מעקב תשלומים</b>
+<small data-en="Automatic balance updates" data-he="עדכון אוטומטי של יתרות">עדכון אוטומטי של יתרות</small>
+</div>
+<div class="flow-step">
+<span class="em">📋</span>
+<b data-en="Ready reports" data-he="דוחות מוכנים">דוחות מוכנים</b>
+<small data-en="Complete financial records" data-he="רשומות פיננסיות מלאות">רשומות פיננסיות מלאות</small>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- SOCIAL PROOF -->
+<section class="block" style="background:#fff">
+<div class="wrap">
+<div class="sec-head">
+<div class="kicker" data-en="What therapists say" data-he="מה אומרים מטפלים">מה אומרים מטפלים</div>
+<h2 data-en="Therapists focusing back on clients" data-he="מטפלים שחוזרים להתמקד במטופלים">מטפלים שחוזרים להתמקד במטופלים</h2>
+</div>
+<div class="proof-grid">
+<div class="proof-card">
+<div class="ava">🧘‍♀️</div>
+<blockquote data-en="“I was wasting hours on Excel and invoices instead of preparing for sessions. Now everything's automated and my records are always organized.”" data-he="״הייתי מבזבזת שעות על אקסל וחשבוניות במקום להכין את עצמי לפגישות. היום הכל אוטומטי והרשומות שלי תמיד מסודרות.״">״הייתי מבזבזת שעות על אקסל וחשבוניות במקום להכין את עצמי לפגישות. היום הכל אוטומטי והרשומות שלי תמיד מסודרות.״</blockquote>
+<div class="attr" data-en="Sarah Cohen, Psychotherapist in Israel" data-he="רותי כהן, פסיכותרפיסטית בישראל">רותי כהן, פסיכותרפיסטית בישראל</div>
+</div>
+<div class="proof-card wa">
+<div class="wa-badge">📧 Email &amp; Reminders</div>
+<blockquote data-en="“Finally I can focus on what I do best - helping people. The paperwork just happens automatically.”" data-he="״סוף סוף אני יכולה להתרכז במה שאני הכי טובה בו - לעזור לאנשים. הניירת פשוט קורית מאליה.״">״סוף סוף אני יכולה להתרכז במה שאני הכי טובה בו - לעזור לאנשים. הניירת פשוט קורית מאליה.״</blockquote>
+<div class="attr" data-en="Rachel Levy, Life Coach in Haifa" data-he="מיכל לוי, מאמנת חיים בחיפה">מיכל לוי, מאמנת חיים בחיפה</div>
+</div>
+</div>
+</div>
+</section>
+<!-- PRICING -->
+<section class="block" id="pricing" style="background:#fff">
+<div class="wrap">
+<div class="sec-head">
+<div class="kicker" data-en="Pricing" data-he="מחיר">מחיר</div>
+<h2 data-en="One simple price, everything included" data-he="מחיר אחד פשוט, הכל כלול">מחיר אחד פשוט, הכל כלול</h2>
+<p data-en="VAT-inclusive — no surprises at month end" data-he='כולל מע"מ — בלי הפתעות בסוף החודש'>כולל מע"מ — בלי הפתעות בסוף החודש</p>
+</div>
+<div class="pricing-wrap">
+<div class="price-card">
+<div class="price-badge" data-en="Most popular with private practitioners" data-he="הכי פופולרי בקרב מטפלים עצמאיים">הכי פופולרי בקרב מטפלים עצמאיים</div>
+<div class="price-plan">Essential</div>
+<div class="price-who" data-en="עוסק פטור &amp; מורשה · Independent Therapist &amp; Coach" data-he="עוסק פטור ומורשה · מטפל/ת עצמאי/ת">עוסק פטור ומורשה · מטפל/ת עצמאי/ת</div>
+<div class="price-amt">₪199 <small data-en="/ month VAT-incl." data-he="/ חודש כולל מע״מ">/ חודש כולל מע״מ</small></div>
+<ul class="price-features">
+<li data-en="Session and income tracking" data-he="מעקב אחר פגישות והכנסות">מעקב אחר פגישות והכנסות</li>
+<li data-en="Automatic client billing" data-he="חיוב אוטומטי ללקוחות">חיוב אוטומטי ללקוחות</li>
+
+<li data-en="Professional expense tracking" data-he="מעקב הוצאות מקצועיות">מעקב הוצאות מקצועיות</li>
+<li data-en="Automatic backups" data-he="גיבויים אוטומטיים">גיבויים אוטומטיים</li>
+<li data-en="Hebrew technical support" data-he="תמיכה טכנית בעברית">תמיכה טכנית בעברית</li>
+</ul>
+<p style="font-size:11.5px;color:var(--slate);opacity:0.72;margin:10px 0 18px;line-height:1.55;padding:0 2px;border-top:1px solid rgba(0,0,0,0.07);padding-top:10px" data-he="עד 100 מסמכים לחודש. רוב המשתמשים נשארים בגבולות. חריגה: 19 מסמכים ראשונים עלינו, אחר כך ₪1.50 למסמך." data-en="Up to 100 documents/month. Most users stay well within limits. Overage: first 19 extra docs on us, then ₪1.50/doc.">עד 100 מסמכים לחודש. רוב המשתמשים נשארים בגבולות. חריגה: 19 מסמכים ראשונים עלינו, אחר כך ₪1.50 למסמך.</p>
+<a class="btn btn-primary" data-en="Join the Beta" data-he="הצטרף לבטא" href="#" style="width:100%;justify-content:center">הצטרף לבטא</a>
+<p class="no-addons" data-he="<b>הכל כלול.</b> מה שאתם רואים זה מה שמקבלים." data-en="<b>All-inclusive.</b> What you see is what you get."><b>הכל כלול.</b> מה שאתם רואים זה מה שמקבלים.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- FOOTER -->
+<footer style="background:var(--ink);color:rgba(255,255,255,.6);padding:40px 0;text-align:center;font-size:14px">
+<div class="wrap">
+<div style="margin-bottom:14px"><img alt="" height="72" src="opalswift_gemstone_final.png" style="opacity:.9;filter:drop-shadow(0 3px 14px rgba(0,0,0,.35))" width="72"/></div>
+<div style="font-family:'Rubik';font-weight:700;font-size:18px;color:#fff;margin-bottom:8px">OpalSwift</div>
+<p data-en="Financial management for Israeli freelancers · עוסק פטור &amp; מורשה" data-he="ניהול פיננסי לעצמאים בישראל · עוסק פטור ועוסק מורשה">ניהול פיננסי לעצמאים בישראל · עוסק פטור ועוסק מורשה</p>
+<div style="margin-top:16px;display:flex;gap:24px;justify-content:center;flex-wrap:wrap">
+<a data-en="Home" data-he="בית" href="index.html" style="color:rgba(255,255,255,.5);text-decoration:none">בית</a>
+<a data-en="Editions" data-he="מהדורות" href="skins.html" style="color:rgba(255,255,255,.5);text-decoration:none">מהדורות</a>
+<a data-en="Pricing" data-he="מחיר" href="#pricing" style="color:rgba(255,255,255,.5);text-decoration:none">מחיר</a>
+</div>
+</div>
+</footer>
+</body>
+</html>

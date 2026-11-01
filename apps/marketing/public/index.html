@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>OpalSwift — Get paid. Stay compliant. Freelance in Israel.</title>
+<link rel="icon" type="image/png" href="favicon-64.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800&family=Heebo:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0B1437; --teal:#21D1C2; --indigo:#5B6CFF; --violet:#7B61FF;
+    --blush:#FF8FB1; --canvas:#F7F8FC; --cloud:#FFFFFF; --slate:#5A6178;
+    --opal:linear-gradient(120deg,#21D1C2,#5B6CFF,#7B61FF);
+    --shadow:0 18px 50px -18px rgba(11,20,55,.35);
+    --radius:20px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth;scroll-padding-top:70px}
+  body{font-family:'Heebo','Inter',system-ui,sans-serif;color:var(--ink);background:var(--canvas);line-height:1.6;overflow-x:hidden}
+  body[dir=ltr]{font-family:'Inter',system-ui,sans-serif}
+  h1,h2,h3,.brand{font-family:'Rubik',sans-serif;line-height:1.15}
+  .wrap{max-width:1140px;margin:0 auto;padding:0 24px}
+  .grad-text{background:var(--opal);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .btn{display:inline-flex;align-items:center;gap:8px;border:0;border-radius:999px;padding:14px 26px;font-weight:600;font-size:16px;cursor:pointer;text-decoration:none;transition:.2s;font-family:'Rubik',sans-serif}
+  .btn-primary{background:var(--opal);color:#fff;box-shadow:0 10px 24px -8px rgba(91,108,255,.6)}
+  .btn-primary:hover{transform:translateY(-2px)}
+  .btn-ghost{background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.25)}
+  .btn-ghost.dark{color:var(--ink);border-color:rgba(11,20,55,.15);background:#fff}
+
+  /* NAV */
+  nav{position:sticky;top:0;z-index:50;background:rgba(247,248,252,.85);backdrop-filter:blur(12px);border-bottom:1px solid rgba(11,20,55,.06)}
+  .nav-in{display:flex;align-items:center;justify-content:space-between;height:70px}
+  .logo{display:flex;align-items:center;gap:10px;font-family:'Rubik';font-weight:800;font-size:22px;letter-spacing:-0.5px;background:var(--opal);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .logo .gem{width:30px;height:30px}
+  .nav-links{display:flex;gap:26px;align-items:center}
+  .nav-links a{color:var(--slate);text-decoration:none;font-size:15px;font-weight:500}
+  .nav-links a:hover{color:var(--ink)}
+  .lang-toggle{display:flex;border:1px solid rgba(11,20,55,.15);border-radius:999px;overflow:hidden;font-family:'Rubik';font-size:13px;font-weight:600}
+  .lang-toggle button{border:0;background:transparent;padding:7px 14px;cursor:pointer;color:var(--slate)}
+  .lang-toggle button.active{background:var(--ink);color:#fff}
+  @media(max-width:640px){.lang-toggle button.active{display:none}.lang-toggle{border-radius:8px}}
+  .nav-cta{display:flex;gap:12px;align-items:center}
+
+  /* HERO */
+  .hero{position:relative;background:radial-gradient(1200px 600px at 80% -10%,rgba(123,97,255,.18),transparent),radial-gradient(900px 500px at 0% 10%,rgba(33,209,194,.16),transparent);padding:80px 0 60px}
+  .hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:50px;align-items:center}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid rgba(11,20,55,.08);box-shadow:var(--shadow);padding:7px 14px;border-radius:999px;font-size:13px;font-weight:600;color:var(--indigo);margin-bottom:22px;font-family:'Rubik'}
+  .hero h1{font-size:54px;font-weight:800;letter-spacing:-1px;margin-bottom:18px}
+  .hero p.subhero{font-size:19px;color:var(--indigo);font-weight:600;font-family:'Rubik';max-width:520px;margin-bottom:26px;line-height:1.5}
+  .hero p.lead{font-size:20px;color:var(--slate);max-width:520px;margin-bottom:28px}
+  .hero-cta{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:22px}
+  /* hero gem float */
+  .hero-gem-float{position:absolute;width:110px;height:110px;top:-52px;right:10px;filter:drop-shadow(0 12px 28px rgba(123,97,255,.35));pointer-events:none;z-index:2;animation:gemfloat 4s ease-in-out infinite}
+  [dir="rtl"] .hero-gem-float{right:auto;left:10px}
+  @keyframes gemfloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+  .trust{font-size:14px;color:var(--slate);display:flex;align-items:flex-start;gap:8px;max-width:520px}
+  .trust b{color:var(--ink)}
+
+  /* hero card mock */
+  .mock{background:#fff;border-radius:24px;box-shadow:var(--shadow);padding:22px;position:relative}
+  .mock .bar{height:10px;width:60px;border-radius:6px;background:var(--opal);margin-bottom:16px}
+  .mock-row{display:flex;justify-content:space-between;align-items:center;padding:14px;border:1px solid rgba(11,20,55,.07);border-radius:14px;margin-bottom:12px}
+  .mock-row .l{display:flex;align-items:center;gap:12px}
+  .dot{width:38px;height:38px;border-radius:12px;background:var(--canvas);display:flex;align-items:center;justify-content:center;font-size:18px}
+  .pill{font-size:12px;font-weight:700;padding:5px 12px;border-radius:999px;font-family:'Rubik'}
+  .pill.ok{background:rgba(33,209,194,.15);color:#0a8f84}
+  .pill.auto{background:rgba(91,108,255,.13);color:var(--indigo)}
+  .mock-foot{display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding:14px;background:var(--ink);border-radius:14px;color:#fff}
+  .mock-foot .amt{font-family:'Rubik';font-weight:800;font-size:22px}
+  .float-badge{position:absolute;bottom:-18px;inset-inline-start:-18px;background:#fff;box-shadow:var(--shadow);border-radius:14px;padding:10px 14px;font-size:13px;font-weight:700;font-family:'Rubik';display:flex;align-items:center;gap:8px}
+
+  /* URGENCY STRIP */
+  .urgency{background:var(--ink);color:#fff;padding:18px 0}
+  .urgency .wrap{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;text-align:center}
+  .urgency .tag{background:var(--opal);padding:5px 12px;border-radius:999px;font-family:'Rubik';font-weight:700;font-size:13px}
+  .urgency p{font-size:16px}
+
+  /* SECTIONS */
+  section.block{padding:72px 0}
+  .sec-head{text-align:center;max-width:680px;margin:0 auto 48px}
+  .sec-head .kicker{font-family:'Rubik';font-weight:700;color:var(--indigo);font-size:14px;letter-spacing:.5px;text-transform:uppercase;margin-bottom:12px}
+  .sec-head h2{font-size:38px;font-weight:800;letter-spacing:-.5px;margin-bottom:14px}
+  .sec-head p{font-size:18px;color:var(--slate)}
+
+  .cards3{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+  .card{background:#fff;border:1px solid rgba(11,20,55,.06);border-radius:var(--radius);padding:28px;box-shadow:0 8px 30px -20px rgba(11,20,55,.3)}
+  .card .ic{width:52px;height:52px;border-radius:14px;background:var(--opal);display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:18px}
+  .card h3{font-size:21px;margin-bottom:10px}
+  .card p{color:var(--slate);font-size:15.5px}
+  .card .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+  .card .chip{font-size:12.5px;font-weight:600;font-family:'Rubik';background:var(--canvas);border:1px solid rgba(11,20,55,.07);padding:5px 11px;border-radius:999px;color:#2c3350}
+
+  /* pain card variant */
+  .pain .ic{background:rgba(255,143,177,.16);font-size:24px}
+  .turn-line{text-align:center;max-width:720px;margin:36px auto 0;font-family:'Rubik';font-weight:600;font-size:20px;color:var(--ink)}
+  .turn-line .grad-text{font-weight:700}
+
+  /* OUTCOMES STATS */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;text-align:center}
+  .stat{background:#fff;border:1px solid rgba(11,20,55,.06);border-radius:16px;padding:24px 16px;box-shadow:0 8px 30px -22px rgba(11,20,55,.3)}
+  .stat .big{font-family:'Rubik';font-weight:800;font-size:24px;background:var(--opal);-webkit-background-clip:text;background-clip:text;color:transparent;line-height:1.15}
+  .stat .big .flag{-webkit-text-fill-color:initial;background:none}
+  .stat .lbl{color:var(--slate);font-size:13.5px;margin-top:8px}
+
+  /* TWO FLOWS */
+  .flows{display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:920px;margin:0 auto}
+  .flow{background:#fff;border:1px solid rgba(11,20,55,.06);border-radius:var(--radius);padding:28px;box-shadow:0 8px 30px -20px rgba(11,20,55,.3);display:flex;flex-direction:column}
+  .flow-cta{margin-top:auto;padding-top:18px;font-size:14px;font-weight:600;color:var(--indigo);text-decoration:none;display:inline-block}
+  .flow-cta:hover{text-decoration:underline}
+  .flow .tag{display:inline-flex;align-items:center;gap:8px;font-family:'Rubik';font-weight:700;font-size:13px;color:var(--indigo);background:rgba(91,108,255,.1);padding:5px 12px;border-radius:999px;margin-bottom:14px}
+  .flow h3{font-size:21px;margin-bottom:10px}
+  .flow p{color:var(--slate);font-size:15.5px;margin-bottom:16px}
+  .flow .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .flow .chip{font-size:12.5px;font-weight:600;font-family:'Rubik';background:var(--canvas);border:1px solid rgba(11,20,55,.07);padding:5px 11px;border-radius:999px;color:#2c3350}
+
+  /* HOW IT WORKS */
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;counter-reset:step}
+  .step{background:#fff;border-radius:var(--radius);padding:26px;border:1px solid rgba(11,20,55,.06);position:relative}
+  .step .num{font-family:'Rubik';font-weight:800;font-size:15px;color:#fff;background:var(--ink);width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:16px}
+  .step h3{font-size:18px;margin-bottom:8px}
+  .step p{color:var(--slate);font-size:14.5px}
+
+  /* ANGLO / split dark */
+  .why{background:var(--ink);color:#fff;border-radius:32px;padding:54px;margin:0 auto;max-width:1140px}
+  .why .sec-head h2{color:#fff}
+  .why .sec-head p{color:rgba(255,255,255,.7)}
+  .anglo-body{max-width:760px;margin:0 auto;text-align:center;color:rgba(255,255,255,.82);font-size:18px}
+  .anglo-body b{color:#fff}
+
+  /* bilingual badge */
+  .bilingual{display:flex;align-items:center;justify-content:center;gap:16px;background:#fff;border:1px solid rgba(11,20,55,.08);border-radius:999px;padding:14px 26px;width:fit-content;margin:34px auto 0;box-shadow:var(--shadow);font-family:'Rubik';font-weight:600;color:var(--ink)}
+  .bilingual span{font-size:22px}
+
+  /* EDITIONS STRIP */
+  .editions-wrap{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:8px;align-items:start}
+  .editions-group{}
+  .editions-group-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;padding:5px 12px;border-radius:6px;display:inline-flex;align-items:center;gap:6px;margin-bottom:14px}
+  .editions-group-label.gig{background:#e6faf8;color:#0a9e8e}
+  .editions-group-label.roster{background:#eef0ff;color:var(--indigo)}
+  .editions{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;align-items:start}
+  .edition{background:#fff;border:1px solid rgba(11,20,55,.08);border-radius:14px;padding:16px 12px;text-align:center;text-decoration:none;color:var(--ink);transition:.2s;box-shadow:0 4px 16px -8px rgba(11,20,55,.2)}
+  .edition:hover{transform:translateY(-3px);border-color:rgba(91,108,255,.4)}
+  .edition .em{font-size:26px;display:block;margin-bottom:8px}
+  .edition b{font-family:'Rubik';font-size:14px;display:block}
+  .edition small{color:var(--slate);font-size:11.5px}
+  .edition .live{display:inline-block;margin-top:7px;font-family:'Rubik';font-size:10px;font-weight:700;color:#0a8f84;background:rgba(33,209,194,.15);padding:2px 8px;border-radius:999px}
+  .edition .soon{display:inline-block;margin-top:7px;font-family:'Rubik';font-size:10px;font-weight:700;color:var(--slate);background:rgba(11,20,55,.06);padding:2px 8px;border-radius:999px}
+  .editions-cta{text-align:center;margin-top:28px}
+  .editions-cta a{font-size:14px;font-weight:700;color:var(--indigo);text-decoration:none}
+  .editions-cta a:hover{text-decoration:underline}
+
+  /* PRICING */
+  .price-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;align-items:stretch;max-width:680px;margin:0 auto}
+  .addon-note{text-align:center;color:var(--slate);font-size:14.5px;margin-top:26px;max-width:760px;margin-inline:auto}
+  .addon-note b{color:var(--ink)}
+  .price{background:#fff;border:1px solid rgba(11,20,55,.08);border-radius:var(--radius);padding:26px;display:flex;flex-direction:column}
+  .price.feat{border:2px solid transparent;background:linear-gradient(#fff,#fff) padding-box,var(--opal) border-box;box-shadow:var(--shadow);position:relative}
+  .price .badge{position:absolute;top:-13px;inset-inline-start:50%;transform:translateX(-50%);background:var(--opal);color:#fff;font-family:'Rubik';font-weight:700;font-size:12px;padding:5px 14px;border-radius:999px;white-space:nowrap}
+  body[dir=rtl] .price .badge{transform:translateX(50%)}
+  .price h3{font-size:17px;font-family:'Rubik'}
+  .price .who{color:var(--slate);font-size:13px;min-height:34px;margin:4px 0 14px}
+  .price .amt{font-family:'Rubik';font-weight:800;font-size:40px}
+  .price .vat-ex{font-size:13px;color:var(--slate);margin:-4px 0 6px;font-family:'Rubik'}
+  .price .amt small{font-size:15px;font-weight:500;color:var(--slate)}
+  .price ul{list-style:none;margin:18px 0;display:flex;flex-direction:column;gap:10px;flex:1}
+  .price li{font-size:14px;color:#2c3350;display:flex;gap:9px;align-items:flex-start}
+  .price li::before{content:"✓";color:var(--teal);font-weight:800}
+  .price .btn{width:100%;justify-content:center}
+
+  /* FOUNDER */
+  .founder{display:grid;grid-template-columns:.9fr 1.1fr;gap:40px;align-items:center;background:#fff;border-radius:32px;padding:44px;box-shadow:0 8px 40px -28px rgba(11,20,55,.4);border:1px solid rgba(11,20,55,.06)}
+  .founder .ava{width:100%;aspect-ratio:1;border-radius:24px;background:var(--opal);display:flex;align-items:center;justify-content:center;color:#fff;font-family:'Rubik';font-weight:800;font-size:52px}
+  .founder blockquote{font-size:22px;font-family:'Rubik';font-weight:500;line-height:1.4;margin-bottom:18px}
+  .founder .name{font-weight:700}
+  .founder .role{color:var(--slate);font-size:15px}
+
+  /* FAQ */
+  .faq{max-width:760px;margin:0 auto}
+  details{background:#fff;border:1px solid rgba(11,20,55,.08);border-radius:14px;padding:18px 22px;margin-bottom:12px}
+  details summary{font-family:'Rubik';font-weight:600;font-size:17px;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center}
+  details summary::after{content:"+";font-size:24px;color:var(--indigo)}
+  details[open] summary::after{content:"–"}
+  details p{margin-top:12px;color:var(--slate);font-size:15.5px}
+
+  /* FINAL CTA */
+  .final{background:var(--ink);border-radius:32px;margin:0 auto;max-width:1092px;padding:60px;text-align:center;color:#fff;position:relative;overflow:hidden}
+  .final::before{content:"";position:absolute;inset:0;background:radial-gradient(600px 300px at 50% 0%,rgba(123,97,255,.35),transparent)}
+  .final h2{font-size:40px;font-weight:800;margin-bottom:14px;position:relative}
+  .final p{color:rgba(255,255,255,.75);font-size:18px;margin-bottom:26px;position:relative}
+  .final .btn{position:relative}
+
+  footer{padding:50px 0 40px;color:var(--slate);font-size:14px}
+  .foot-in{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;border-top:1px solid rgba(11,20,55,.08);padding-top:28px}
+
+  .hide{display:none!important}
+
+  @media(max-width:900px){
+    .hero-grid,.founder{grid-template-columns:1fr}
+    .cards3,.why-grid,.steps,.price-grid,.stats{grid-template-columns:1fr 1fr}
+    .editions-wrap{grid-template-columns:1fr}.editions{grid-template-columns:repeat(3,1fr)}
+    .hero h1{font-size:40px}.sec-head h2{font-size:30px}
+    .nav-links{display:none}.why{padding:36px 24px}
+    .hero{padding:54px 0 40px}
+    .founder{padding:30px}.founder .ava{aspect-ratio:auto;min-height:150px;font-size:40px}
+  }
+  @media(max-width:600px){
+    .cards3,.why-grid,.steps,.price-grid,.flows{grid-template-columns:1fr}
+    .editions-wrap{grid-template-columns:1fr}
+    .editions{grid-template-columns:1fr 1fr}
+    .stats{grid-template-columns:1fr 1fr}
+    .hero h1{font-size:32px}.sec-head h2{font-size:26px}
+    .hero p.lead{font-size:17px}
+    .why{padding:30px 20px}.final{padding:40px 22px}
+    .wrap{padding:0 18px}
+    .urgency p{font-size:14.5px}.urgency .wrap{gap:8px}
+    .btn{padding:13px 22px;font-size:15px}
+    .founder blockquote{font-size:19px}
+    .edition{padding:12px 8px}
+    .edition .em{font-size:20px;margin-bottom:5px}
+    .edition b{font-size:12px}
+    .edition small{font-size:10.5px}
+    .editions-group-label{font-size:10px}
+  }
+  @media(max-width:400px){
+    .editions{grid-template-columns:1fr}
+    .edition{display:flex;flex-direction:row;align-items:center;text-align:start;gap:10px;padding:10px 12px}
+    .edition .em{font-size:22px;margin:0;flex-shrink:0}
+    .edition b{font-size:13px}
+    .edition small{font-size:11px;display:block}
+    .edition .live,.edition .soon{margin-top:0;margin-inline-start:auto;flex-shrink:0}
+  }
+
+  /* BETA BADGE */
+  .beta-badge{display:inline-flex;align-items:center;gap:7px;background:linear-gradient(120deg,rgba(33,209,194,.15),rgba(91,108,255,.15));border:1px solid rgba(91,108,255,.25);border-radius:999px;padding:6px 14px;font-family:'Rubik';font-weight:700;font-size:12px;letter-spacing:.04em;color:var(--indigo);margin-bottom:12px}
+  .beta-badge::before{content:"✦";font-size:10px}
+
+  /* CONTACT FORM */
+  .beta-form{max-width:540px;margin:0 auto}
+  .form-field{margin-bottom:18px}
+  .form-field label{display:block;font-family:'Rubik';font-weight:600;font-size:14px;margin-bottom:6px;color:var(--ink)}
+  .form-field input,.form-field select,.form-field textarea{width:100%;border:1.5px solid rgba(11,20,55,.15);border-radius:12px;padding:12px 16px;font-family:'Heebo','Inter',sans-serif;font-size:15px;color:var(--ink);background:#fff;transition:.2s;outline:none}
+  body[dir=ltr] .form-field input,body[dir=ltr] .form-field select,body[dir=ltr] .form-field textarea{font-family:'Inter',system-ui,sans-serif}
+  .form-field input:focus,.form-field select:focus,.form-field textarea:focus{border-color:var(--indigo);box-shadow:0 0 0 3px rgba(91,108,255,.12)}
+  .form-field textarea{resize:vertical;min-height:90px}
+  .form-success{display:none;text-align:center;padding:32px;background:rgba(33,209,194,.08);border:1px solid rgba(33,209,194,.25);border-radius:16px}
+  .form-success .fs-icon{font-size:36px;display:block;margin-bottom:10px}
+  .form-success p{font-family:'Rubik';font-weight:600;font-size:17px;color:var(--ink)}
+  /* ---- Testimonials ---- */
+  .testi-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:24px;margin-top:48px}
+  .testi-card{background:#fff;border-radius:24px;padding:32px 28px;box-shadow:0 4px 32px -12px rgba(11,20,55,.12);border:1px solid rgba(11,20,55,.06);display:flex;flex-direction:column;gap:20px}
+  .testi-card .tq{font-size:56px;line-height:1;color:var(--indigo);opacity:.18;font-family:'Rubik';font-weight:900;margin-bottom:-20px}
+  .testi-card p{font-family:'Rubik';font-size:17px;font-weight:500;line-height:1.6;color:var(--ink);flex:1}
+  .testi-card .role{font-size:13px;font-weight:700;color:var(--slate);letter-spacing:.04em;text-transform:uppercase}
+  @media(max-width:680px){.testi-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body dir="rtl" lang="he">
+
+<!-- ============ NAV ============ -->
+<nav>
+  <div class="wrap nav-in">
+    <div class="logo">
+      <img src="opalswift_color_final.svg" class="gem" alt="OpalSwift logo">
+      OpalSwift
+    </div>
+    <div class="nav-links">
+      <a href="#how" data-he="איך זה עובד" data-en="How it works">איך זה עובד</a>
+      <a href="#editions" data-he="לפי תחום" data-en="Editions">לפי תחום</a>
+      <a href="#pricing" data-he="מחירים" data-en="Pricing">מחירים</a>
+      <a href="#faq" data-he="שאלות" data-en="FAQ">שאלות</a>
+    </div>
+    <div class="nav-cta">
+      <div class="lang-toggle">
+        <button id="btn-he" class="active" onclick="setLang('he', true)">עברית</button>
+        <button id="btn-en" onclick="setLang('en', true)">EN</button>
+      </div>
+      <a href="#contact" class="btn btn-primary" style="padding:10px 20px" data-he="הצטרף לבטא" data-en="Join Beta">הצטרף לבטא</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ============ HERO ============ -->
+<header class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="eyebrow">✨ <span data-he="לעוסק פטור ולעוסק מורשה — תקין ומוכן" data-en="For solo freelancers in Israel — compliant &amp; ready">לעוסק פטור ולעוסק מורשה — תקין ומוכן</span></span>
+      <h1 data-he='יצאת לעצמאות כדי לעשות את מה שאתה אוהב.<br><span class="grad-text">הניירת רצה לבד.</span>' data-en='Freelance admin,<br><span class="grad-text">fully automated.</span>'>יצאת לעצמאות כדי לעשות את מה שאתה אוהב.<br><span class="grad-text">הניירת רצה לבד.</span></h1>
+      <p class="subhero" data-he="תתרכז במה שאתה עושה הכי טוב. אנחנו נדאג לשאר." data-en="Concentrate on what you do best. We handle the rest.">תתרכז במה שאתה עושה הכי טוב. אנחנו נדאג לשאר.</p>
+      <p class="lead" data-he="בנוי לצלמים, מורים לחוג, מעצבים ובעלי מקצוע — מוכן לתחום שלך. חיוב, תזכורות ומסמכים תקינים — רצים לבד בזמן שאתה עובד." data-en="Built for Israeli photographers, instructors, designers and tradespeople — ready for your craft from day one. Billing, reminders, and tax compliance run themselves.">בנוי לצלמים, מורים לחוג, מעצבים ובעלי מקצוע — מוכן לתחום שלך. חיוב, תזכורות ומסמכים תקינים — רצים לבד בזמן שאתה עובד.</p>
+      <div class="hero-cta">
+        <a href="#contact" class="btn btn-primary" data-he="הצטרף לבטא" data-en="Join Beta">הצטרף לבטא</a>
+        <a href="#how" class="btn btn-ghost dark" data-he="לראות איך זה עובד" data-en="See how it works">לראות איך זה עובד</a>
+      </div>
+      <div class="trust">🔒 <span data-he="עברית מלאה, ממשק גם באנגלית · מבוסס על מערכת חיוב מוסמכת" data-en="Compliant Hebrew docs, English interface · Runs on a certified billing provider">עברית מלאה, ממשק גם באנגלית · מבוסס על מערכת חיוב מוסמכת</span></div>
+    </div>
+    <div style="position:relative">
+      <img src="opalswift_gemstone_final.png" class="hero-gem-float" alt="">
+      <div class="mock">
+        <div class="bar"></div>
+        <div class="mock-row">
+          <div class="l"><div class="dot">💳</div><div><b data-he="מקדמה: 30%" data-en="Deposit: 30%">מקדמה: 30%</b><br><small style="color:var(--slate)" data-he="נכנסה לבנק בקישור תשלום" data-en="In your bank via pay-link">נכנסה לבנק בקישור תשלום</small></div></div>
+          <span class="pill auto" data-he="אוטומטי" data-en="Auto">אוטומטי</span>
+        </div>
+        <div class="mock-row">
+          <div class="l"><div class="dot">🔔</div><div><b data-he="נודניק שלח תזכורת" data-en="Reminder sent">נודניק שלח תזכורת</b><br><small style="color:var(--slate)" data-he="יתרה נגבתה — בלי שביקשת" data-en="Balance collected — you never asked">יתרה נגבתה — בלי שביקשת</small></div></div>
+          <span class="pill ok" data-he="✓ שולם" data-en="✓ Paid">✓ שולם</span>
+        </div>
+        <div class="mock-foot">
+          <div><small style="opacity:.7" data-he="מסמך תקין נשמר" data-en="Compliant doc saved">מסמך תקין נשמר</small><br><span data-he="יוני 2026" data-en="June 2026">יוני 2026</span></div>
+          <div class="amt">₪7,200</div>
+        </div>
+        <div class="float-badge">⚡ <span data-he="0 דקות עבודה" data-en="0 minutes of admin">0 דקות עבודה</span></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+
+
+<!-- ============ OUTCOMES ============ -->
+<section class="block" style="padding-bottom:8px">
+  <div class="wrap stats">
+    <div class="stat"><div class="big" data-he="כסף מהר יותר" data-en="Paid faster">כסף מהר יותר</div><div class="lbl" data-he="מקדמות, קישורי תשלום ותזכורות אוטומטיות" data-en="deposits, pay-links & auto reminders">מקדמות, קישורי תשלום ותזכורות אוטומטיות</div></div>
+    <div class="stat"><div class="big" data-he="תשלומים זורמים" data-en="Payments flow">0 רדיפות</div><div class="lbl" data-he="התזכורות גובות במקומך — בצורה מקצועית" data-en="reminders collect for you — professionally">הנודניק גובה במקומך — בלי הודעות מביכות</div></div>
+    <div class="stat"><div class="big" data-he="שעות בחזרה" data-en="Hours back">שעות בחזרה</div><div class="lbl" data-he="יום ראשון בערב חוזר אליך — הכל אוטומטי" data-en="Sunday nights are yours again — everything's automated">יום ראשון בערב חוזר אליך — בלי אקסלים</div></div>
+    <div class="stat"><div class="big" data-he="<span class=&quot;flag&quot;>🇮🇱</span> 100% לישראל" data-en="<span class=&quot;flag&quot;>🇮🇱</span> 100% Israel"><span class="flag">🇮🇱</span> 100% לישראל</div><div class="lbl" data-he="לא ייבוא מארה״ב — מותאם לרשות המסים" data-en="not a US import — tuned to the Tax Authority">לא ייבוא מארה״ב — מותאם לרשות המסים</div></div>
+  </div>
+</section>
+
+<!-- ============ PROBLEM (name the villain) ============ -->
+<section class="block">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kicker" data-he="העבודה האמיתית שלך" data-en="The real job">העבודה האמיתית שלך</div>
+      <h2 data-he="עייף להיות 'אדם הכסף המביך'?" data-en="Tired of Being the 'Awkward Money Person'?">עייף להיות 'אדם הכסף המביך'?</h2>
+      <p data-he="צלם, מעצב, מורה לחוג, בעל מקצוע או מייקר — הזמן שלך שווה יותר מניירת וגבייה." data-en="Photographer, designer, instructor, tradesperson or maker — your time deserves better than paperwork and chasing.">צלם, מעצב, מורה לחוג, בעל מקצוע או מייקר — אתה לא רואה חשבון. אבל הניירת והגבייה אוכלות לך את הזמן ואת הראש.</p>
+    </div>
+    <div class="cards3">
+      <div class="card pain"><div class="ic">😬</div><h3 data-he="המרדף המביך" data-en="The Cringe Chase">המרדף המביך</h3><p data-he="כותבים 'הזכרון עדין' בפעם השלישית, תוהים אם להוסיף יותר סימני קריאה או פחות..." data-en="Writing 'gentle reminder'... for the third time, wondering if you should add more exclamation points or fewer...">כותבים 'הזכרון עדין' בפעם השלישית, תוהים אם להוסיף יותר סימני קריאה או פחות...</p></div>
+      <div class="card pain"><div class="ic">⏳</div><h3 data-he="מורכבות המסים" data-en="Tax Complexity">טרור המסים</h3><p data-he="טובעים בטפסים של רשות המסים, גוגלים 'מעמ לעומת עוסק פטור' בשעה 2 בלילה שוב." data-en="Staring at Hebrew forms like they're ancient hieroglyphics, Googling 'מעמ vs. עוסק פטור' at 2 AM again.">טובעים בטפסים של רשות המסים, גוגלים 'מעמ לעומת עוסק פטור' בשעה 2 בלילה שוב.</p></div>
+      <div class="card pain"><div class="ic">⏰</div><h3 data-he="בור הזמן" data-en="The Time Sink">בור הזמן</h3><p data-he="ימי שני בערב הולכים על חשבוניות במקום על הטיול, כי 'אני אסדר את המס מאוחר יותר.'" data-en="Spending Sunday mornings on invoices instead of beach walks, because 'I'll figure out the tax stuff later.'">ימי שני בערב הולכים על חשבוניות במקום על הטיול, כי 'אני אסדר את המס מאוחר יותר.'</p></div>
+    </div>
+    <p class="turn-line" data-he="OpalSwift לוקח את כל זה ממך — ומשאיר לך את <span class='grad-text'>המקצוע שלך</span>." data-en="OpalSwift takes all of that off your plate — and quietly keeps you <span class='grad-text'>100% compliant</span>, in English.">OpalSwift לוקח את כל זה ממך — ומשאיר לך את <span class="grad-text">המקצוע שלך</span>.</p>
+  </div>
+</section>
+
+<!-- ============ THREE PILLARS ============ -->
+<section class="block" style="background:#fff">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kicker" data-he="מה אתה באמת מקבל" data-en="What you actually get">מה אתה באמת מקבל</div>
+      <h2 data-he="כסף. עבודות. וזמן בחזרה." data-en="Get the money. Get booked. Get your life back.">כסף. עבודות. וזמן בחזרה.</h2>
+      <p data-he="שלושה דברים שבאמת מזיזים לעסק שלך. כל היכולות בפנים, בשירות המטרה." data-en="Three things that actually move your business. Every capability sits inside, serving the outcome.">לא רשימת פיצ׳רים — שלושה דברים שבאמת מזיזים לעסק שלך. כל היכולות בפנים, בשירות המטרה.</p>
+    </div>
+    <div class="cards3">
+      <div class="card">
+        <div class="ic">📈</div>
+        <h3 data-he="נגמר הבלגן הביורוקרטי" data-en="Your Paperwork Problem, Solved">נגמר הבלגן הביורוקרטי</h3>
+        <p data-he="כל הכאבי ראש החודשיים שטיפלת בהם ידנית פשוט קורים אוטומטית." data-en="All those monthly headaches you used to handle manually just happen automatically.">כל הכאבי ראש החודשיים שטיפלת בהם ידנית פשוט קורים אוטומטית.</p>
+        <div class="chips">
+          <span class="chip" data-he="הצעת מחיר → חשבונית" data-en="Quote → invoice">הצעת מחיר → חשבונית</span>
+          <span class="chip" data-he="הוראת קבע" data-en="Recurring billing">הוראת קבע</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="ic">🏖️</div>
+        <h3 data-he="זמן חזרה, כסף נכנס" data-en="Hours Back, Money In">זמן חזרה, כסף נכנס</h3>
+        <p data-he="כל שעה שאתה לא עוסק בניירת היא שעה שאתה יכול לחייב עליה מישהו." data-en="Every hour you're not doing paperwork is an hour you can bill someone.">כל שעה שאתה לא עוסק בניירת היא שעה שאתה יכול לחייב עליה מישהו.</p>
+        <div class="chips">
+          <span class="chip" data-he="מסמכים תקינים" data-en="Compliant docs">מסמכים תקינים</span>
+          
+        </div>
+      </div>
+      <div class="card">
+        <div class="ic">💸</div>
+        <h3 data-he="נבנה בדיוק בשבילך" data-en="Built Where You Live">נבנה בדיוק בשבילך</h3>
+        <p data-he="יצרנו את זה פרילנסרים שיודעים בדיוק איך העסקים פועלים פה, לא במקום אחר." data-en="Created by freelancers who know exactly how business works here, not elsewhere.">יצרנו את זה פרילנסרים שיודעים בדיוק איך העסקים פועלים פה, לא במקום אחר.</p>
+        <div class="chips">
+          <span class="chip" data-he="מקדמה" data-en="Deposit">מקדמה</span>
+          <span class="chip" data-he="קישור לתשלום" data-en="Pay-link">קישור לתשלום</span>
+          <span class="chip" data-he="נודניק" data-en="Auto-reminders">נודניק</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ HOW IT WORKS ============ -->
+<section class="block" id="how">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kicker" data-he="איך זה עובד" data-en="How it works">איך זה עובד</div>
+      <h2 data-he="שלושה שלבים. הכסף בבנק." data-en="Three steps. Money in the bank.">שלושה שלבים. הכסף בבנק.</h2>
+    </div>
+    <div class="steps">
+      <div class="step"><div class="num">1</div><h3 data-he="שולחים הצעת מחיר" data-en="Send a quote">שולחים הצעת מחיר</h3><p data-he="הלקוח מאשר בלחיצה, קישור תשלום נשלח — והכסף בדרך לבנק שלך." data-en="The client approves in a tap, a pay-link is sent, and the money is on its way to your bank.">הלקוח מאשר בלחיצה, קישור תשלום נשלח — והכסף בדרך לבנק שלך.</p></div>
+      <div class="step"><div class="num">2</div><h3 data-he="עושים את העבודה" data-en="Do the work">עושים את העבודה</h3><p data-he="היתרה נגבית אוטומטית, והתזכורות מטפלות בכל מי שמתעכב — אתה ממשיך לעבוד." data-en="The balance collects automatically, and reminders handle anyone who's late — you keep working.">היתרה נגבית אוטומטית, ונודניק מטפל בכל מי שמתעכב — בלי שתרים טלפון.</p></div>
+      <div class="step"><div class="num">3</div><h3 data-he="הכסף בבנק, המס מסודר" data-en="Money in the bank, tax handled">הכסף בבנק, המס מסודר</h3><p data-he="כל מסמך תקין נוצר ונשמר, מוכן לרו״ח. הכל מסודר ומדויק." data-en="Every valid Hebrew document is generated and stored, ready for your accountant. Everything's organized and accurate.">כל מסמך תקין נוצר ונשמר, מוכן לרו״ח. בלי ערימת קבלות ובלי ניחושים.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TWO FLOWS ============ -->
+<section class="block" id="flows" style="background:#fff">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kicker" data-he="מתאים לאיך שאתה גובה" data-en="Fits how you get paid">מתאים לאיך שאתה גובה</div>
+      <h2 data-he="שתי דרכים לקבל תשלום. שתיהן על טייס אוטומטי." data-en="Two ways to get paid. Both on autopilot.">שתי דרכים לקבל תשלום. שתיהן על טייס אוטומטי.</h2>
+      <p data-he="בין אם אתה עובד לפי פרויקט או על הכנסה חוזרת — OpalSwift מגיע מותאם מראש לתזרים שלך." data-en="Whether you work job-by-job or on recurring income — OpalSwift arrives pre-tuned to your cash flow.">בין אם אתה עובד לפי פרויקט או על הכנסה חוזרת — OpalSwift מגיע מותאם מראש לתזרים שלך.</p>
+    </div>
+    <div class="flows">
+      <div class="flow">
+        <span class="tag">🅰 <span data-he="עבודות לפי פרויקט" data-en="Job by job">עבודות לפי פרויקט</span></span>
+        <h3 data-he="הצעת מחיר → מקדמה → יתרה" data-en="Quote → deposit → balance">הצעת מחיר → מקדמה → יתרה</h3>
+        <p data-he="שולחים הצעת מחיר, גובים מקדמה לפני שמתחילים, ובסיום מפיקים חשבונית תקינה ליתרה — הכל בלחיצה אחת." data-en="Send a quote, collect a deposit before you start, then issue a compliant balance invoice when you're done — all in one tap.">שולחים הצעת מחיר, גובים מקדמה לפני שמתחילים, ובסיום מפיקים חשבונית תקינה ליתרה — הכל בלחיצה אחת.</p>
+        <div class="chips">
+          <span class="chip" data-he="📷 צלמים" data-en="📷 Photographers">📷 צלמים</span>
+          <span class="chip" data-he="💻 מעצבים" data-en="💻 Designers">💻 מעצבים</span>
+          <span class="chip" data-he="🔧 שרברבים" data-en="🔧 Plumbers">🔧 שרברבים</span>
+          <span class="chip" data-he="🎉 מפיקי אירועים" data-en="🎉 Event planners">🎉 מפיקי אירועים</span>
+        </div>
+        <a href="#gig-group" class="flow-cta" data-he="ראה מהדורות פרויקט ←" data-en="See project editions ←">ראה מהדורות פרויקט ←</a>
+      </div>
+      <div class="flow">
+        <span class="tag">🅱 <span data-he="הכנסה חוזרת" data-en="Recurring income">הכנסה חוזרת</span></span>
+        <h3 data-he="הרשמה → הוראת קבע → קבלה" data-en="Sign-up → standing order → receipt">הרשמה → הוראת קבע → קבלה</h3>
+        <p data-he="שולחים קישור אחד; התלמיד נרשם ומגדיר הוראת קבע, וכל חודש יוצאת קבלה אוטומטית. הכסף זורם כל חודש." data-en="Send one link; the student signs up and sets a standing order, and every month a receipt goes out automatically. Money flows every month.">שולחים קישור אחד; התלמיד נרשם ומגדיר הוראת קבע, וכל חודש יוצאת קבלה אוטומטית. לא רודפים אחרי אף הורה.</p>
+        <div class="chips">
+          <span class="chip" data-he="🎨 אמנות" data-en="🎨 Art">🎨 אמנות</span>
+          <span class="chip" data-he="🎹 מוזיקה" data-en="🎹 Music">🎹 מוזיקה</span>
+          <span class="chip" data-he="🤸 ריקוד וספורט" data-en="🤸 Dance & sport">🤸 ריקוד וספורט</span>
+          <span class="chip" data-he="🧘 כושר ויוגה" data-en="🧘 Fitness & yoga">🧘 כושר ויוגה</span>
+          <span class="chip" data-he="📲 תזכורות" data-en="📲 Reminders">📲 תזכורות</span>
+        </div>
+        <a href="#roster-group" class="flow-cta" data-he="ראה מהדורות שוטפים ←" data-en="See ongoing editions ←">ראה מהדורות שוטפים ←</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ EDITIONS ============ -->
+<section class="block" id="editions">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kicker" data-he="מותאם לתחום שלך" data-en="Tailored to your craft">מותאם לתחום שלך</div>
+      <h2 data-he="כבר מסודר בשבילך." data-en="Already set up for your craft.">לא עוד כלי ריק. כבר מסודר בשבילך.</h2>
+      <p data-he="בוחרים את התחום — ונכנסים למערכת שכבר יודעת איך נראית העבודה שלך: הצעות, מסמכים ותהליך גבייה — מוכנים לעבודה." data-en="Pick your field and step into a system that already knows what your work looks like — quotes, documents, and a collection flow, ready to go.">בוחרים את התחום — ונכנסים למערכת שכבר יודעת איך נראית העבודה שלך: הצעות, מסמכים ותהליך גבייה — מוכנים לעבודה. בלי רואה חשבון ובלי הגדרות.</p>
+    </div>
+    <div class="editions-wrap">
+      <div class="editions-group" id="gig-group">
+        <div class="editions-group-label gig" data-he="🎯 פרויקטים ולקוח חד-פעמי" data-en="🎯 One-Time Projects">🎯 פרויקטים ולקוח חד-פעמי</div>
+        <div class="editions">
+          <a class="edition" href="photographer.html"><span class="em">📸</span><b data-he="צלמים" data-en="Photographer">צלמים</b><small data-he="מקדמה + הצעת מחיר" data-en="Deposit + quote">מקדמה + הצעת מחיר</small></a>
+          <a class="edition" href="trades.html"><span class="em">🔧</span><b data-he="בעלי מקצוע" data-en="Trades">בעלי מקצוע</b><small data-he="הצעת מחיר · מקדמה · חשבונית" data-en="Quote · deposit · invoice">הצעת מחיר · מקדמה · חשבונית</small></a>
+          <a class="edition" href="beautician.html"><span class="em">💅</span><b data-he="קוסמטיקה ושייטל" data-en="Beautician">קוסמטיקה ושייטל</b><small data-he="תורים · תשלום מראש · ביטולים" data-en="Appointments · pre-pay · cancellations">תורים · תשלום מראש · ביטולים</small></a>
+          <a class="edition" href="designer.html"><span class="em">✏️</span><b data-he="מעצבים" data-en="Designer">מעצבים</b><small data-he="אבני דרך · הצעת מחיר" data-en="Milestones · quote to invoice">אבני דרך · הצעת מחיר</small></a>
+          <a class="edition" href="interior.html"><span class="em">🛋️</span><b data-he="מעצבי פנים" data-en="Interior Design">מעצבי פנים</b><small data-he="ציטוט · אבני דרך · חיוב לפי שלב" data-en="Quote · milestones · stage billing">ציטוט · אבני דרך · חיוב לפי שלב</small></a>
+          <a class="edition" href="adviser.html"><span class="em">💼</span><b data-he="יועצים" data-en="Adviser">יועצים</b><small data-he="ייעוץ · הצעת מחיר · חשבונית" data-en="Consulting · quote · invoice">ייעוץ · הצעת מחיר · חשבונית</small></a>
+          <a class="edition" href="workshops.html"><span class="em">🎓</span><b data-he="סדנאות" data-en="Workshops">סדנאות</b><small data-he="רישום · תשלום מקדים" data-en="Registration · advance payment">רישום · תשלום מקדים</small></a>
+          <a class="edition" href="event-planner.html"><span class="em">🎉</span><b data-he="מפיקי אירועים" data-en="Event Planner">מפיקי אירועים</b><small data-he="אבני דרך · ספקים · מקדמות" data-en="Milestones · vendors · deposits">אבני דרך · ספקים · מקדמות</small></a>
+          <a class="edition" href="sofer-stam.html"><span class="em">✍️</span><b data-he='סופר סת"ם' data-en="Sofer STaM">סופר סת"ם</b><small data-he="שלבי כתיבה · מקדמות" data-en="Writing stages · deposits">שלבי כתיבה · מקדמות</small></a>
+        </div>
+      </div>
+      <div class="editions-group" id="roster-group">
+        <div class="editions-group-label roster" data-he="🔄 חוגים ושיעורים קבועים" data-en="🔄 Ongoing Services">🔄 חוגים ושיעורים קבועים</div>
+        <div class="editions">
+          <a class="edition" href="private-tutor.html"><span class="em">📚</span><b data-he="מורה פרטי" data-en="Tutor">מורה פרטי</b><small data-he="משפחות · תזכורת להורים" data-en="Families · parent reminders">משפחות · תזכורת להורים</small></a>
+          <a class="edition" href="classes.html"><span class="em">🏃</span><b data-he="חוגים" data-en="Classes">חוגים</b><small data-he="הוראת קבע · ילדים מרובים" data-en="Standing order · multi-child">הוראת קבע · ילדים מרובים</small></a>
+          <a class="edition" href="personal-trainer.html"><span class="em">💪</span><b data-he="מאמן כושר" data-en="Fitness Trainer">מאמן כושר</b><small data-he="ביטולים · מילואים · חבילות" data-en="Cancels · reserve duty · packs">ביטולים · מילואים · חבילות</small></a>
+          <a class="edition" href="driving-instructor.html"><span class="em">🚗</span><b data-he="מורה נהיגה" data-en="Driving Instructor">מורה נהיגה</b><small data-he="חבילות שיעורים · תשלום הורים" data-en="Lesson packs · parent billing">חבילות שיעורים · תשלום הורים</small></a>
+          <a class="edition" href="therapist.html"><span class="em">🧘</span><b data-he="מטפלים" data-en="Therapist">מטפלים</b><small data-he="תשלום מראש · תזכורות" data-en="Pre-pay · reminders">תשלום מראש · תזכורות</small></a>
+          <a class="edition" href="music-teacher.html"><span class="em">🎵</span><b data-he="מורה מוזיקה" data-en="Music Teacher">מורה מוזיקה</b><small data-he="חיוב חודשי · קרדיט שיעורים" data-en="Monthly · lesson credits">חיוב חודשי · קרדיט שיעורים</small></a>
+          <a class="edition" href="dance-teacher.html"><span class="em">🩰</span><b data-he="מורי מחול" data-en="Dance Teacher">מורי מחול</b><small data-he="שיעורים · ניהול תלמידים" data-en="Classes · student management">שיעורים · ניהול תלמידים</small></a>
+          <a class="edition" href="art-class.html"><span class="em">🎨</span><b data-he="חוג אמנות" data-en="Art Class">חוג אמנות</b><small data-he="הרשמה · חיוב חודשי" data-en="Enrolment · monthly billing">הרשמה · חיוב חודשי</small></a>
+          <a class="edition" href="swim-coach.html"><span class="em">🏊</span><b data-he="מאמן שחייה" data-en="Swim Coach">מאמן שחייה</b><small data-he="חוגי שחייה · מנויים · ביטולים" data-en="Swim classes · memberships · cancels">חוגי שחייה · מנויים · ביטולים</small></a>
+        </div>
+      </div>
+    </div>
+    <div class="editions-cta">
+      <a href="skins.html" data-he="לכל התחומים עם פירוט מלא ←" data-en="See all craft skins with full details →">לכל התחומים עם פירוט מלא ←</a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ BETA JOIN ============ -->
+<section class="block" id="pricing" style="background:#fff">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="beta-badge" data-he="בטא — הצטרף למובילים" data-en="Beta — Join the Leaders">בטא — הצטרף למובילים</span>
+      <div class="kicker" data-he="גישה מוקדמת" data-en="Early Access">גישה מוקדמת</div>
+      <h2 data-he="הצטרף לבטא של OpalSwift" data-en="Join the OpalSwift Beta">הצטרף לבטא של OpalSwift</h2>
+      <p data-he="גישה מוקדמת לפני השקה רשמית. נלווה אותך בהגדרת חשבון התשלומים והחשבוניות שלך." data-en="Early access before official launch. We'll guide you through setting up your payment and invoicing accounts.">גישה מוקדמת לפני השקה רשמית. נלווה אותך בהגדרת חשבון התשלומים והחשבוניות שלך.</p>
+      <a href="#contact" class="btn btn-primary" style="margin-top:6px;font-size:17px;padding:15px 32px" data-he="הצטרף לבטא" data-en="Join Beta">הצטרף לבטא</a>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============ CONTACT FORM ============ -->
+<section class="block" id="contact">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kicker" data-he="בואו נשוחח" data-en="Let's Talk">בואו נשוחח</div>
+      <h2 data-he="ספרו לנו על העסק שלכם" data-en="Tell Us About Your Business">ספרו לנו על העסק שלכם</h2>
+      <p data-he="מה הכי מעצבן אתכם בניהול העסק היום?" data-en="What&#39;s your biggest hassle running your business today?">מה הכי מעצבן אתכם בניהול העסק היום?</p>
+    </div>
+    <div class="beta-form">
+      <div class="form-success" id="form-success">
+        <span class="fs-icon">✅</span>
+        <p data-he="קיבלנו! נחזור אליכם בקרוב." data-en="Got it! We'll be in touch soon.">קיבלנו! נחזור אליכם בקרוב.</p>
+      </div>
+      <form id="contact-form" action="/api/contact" method="POST">
+        <div class="form-field">
+          <label for="cf-name" data-he="שם" data-en="Name">שם</label>
+          <input type="text" id="cf-name" name="name" required placeholder="" />
+        </div>
+        <div class="form-field">
+          <label for="cf-email" data-he='דוא"ל' data-en="Email">דוא"ל</label>
+          <input type="email" id="cf-email" name="email" required placeholder="" />
+        </div>
+        <div class="form-field">
+          <label for="cf-msg" data-he="מה הכי מעצבן אתכם בניהול העסק היום?" data-en="What's your biggest hassle running your business today?" data-he="מה הכי מעצבן אתכם בניהול העסק היום?">מה הכי מעצבן אתכם בניהול העסק היום?</label>
+          <textarea id="cf-msg" name="message" required></textarea>
+        </div>
+        <div style="text-align:center;margin-top:8px">
+          <button type="submit" class="btn btn-primary" style="font-size:17px;padding:15px 36px" data-he="שלחו" data-en="Send">שלחו</button>
+        </div>
+      </form>
+    </div>
+    <script>
+      document.getElementById('contact-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const form = e.target;
+        const data = new FormData(form);
+        try {
+          const res = await fetch(form.action, { method: 'POST', body: data, headers: { 'Accept': 'application/json' } });
+          if (res.ok) {
+            form.style.display = 'none';
+            document.getElementById('form-success').style.display = 'block';
+          } else {
+            alert(document.documentElement.lang === 'he' ? 'משהו השתבש. נסו שוב.' : 'Something went wrong. Please try again.');
+          }
+        } catch {
+          alert(document.documentElement.lang === 'he' ? 'משהו השתבש. נסו שוב.' : 'Something went wrong. Please try again.');
+        }
+      });
+    </script>
+  </div>
+</section>
+
+<!-- ============ ANGLO TRUST BAND ============ -->
+<section class="block" id="anglo">
+  <div class="why">
+    <div class="sec-head">
+      <div class="kicker" style="color:var(--teal)" data-he="" data-en="For olim"></div>
+      <h2 data-he="יצאת לעצמאות כדי לעשות את מה שאתה אוהב." data-en="You made the move to build something meaningful in Israel.">יצאת לעצמאות כדי לעשות את מה שאתה אוהב.</h2>
+    </div>
+    <p class="anglo-body" data-he="OpalSwift מטפל במע״מ וניירת המס בעברית מושלמת — אתה רואה רק אנגלית פשוטה. <b>מותר לך להריץ עסק ישראלי בשפת האם שלך.</b>" data-en="OpalSwift handles VAT and tax documentation in perfect Hebrew — you work in plain English. <b>You have full permission to run your Israeli business in your native language.</b>">זה המשפט שחזרנו עליו שוב ושוב: 'למה אף אחד לא הכין לי את זה?' OpalSwift מטפל במע״מ וניירת המס בעברית שלמה — כשאתה עצמך רואה רק אנגלית פשוטה. <b>התרבות היא שאתה לא חייב לעבור את האש שחוצים גם הישראלים.</b></p>
+    <div class="bilingual"><span>🇮🇱</span><span data-he="מסמכים בעברית · ממשק באנגלית" data-en="Hebrew documents · English interface">מסמכים בעברית · ממשק באנגלית</span><span>🇬🇧</span></div>
+  </div>
+</section>
+
+<!-- ============ TRIAL CTA ============ -->
+
+<!-- ============ TESTIMONIALS ============ -->
+<section class="block" style="background:#fff">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kicker" data-he="בקול שלהם" data-en="In their words">בקול שלהם</div>
+      <h2 data-he="למה הם ביקשו את זה" data-en="Why they asked for this">למה הם ביקשו את זה</h2>
+    </div>
+    <div class="testi-grid">
+      <div class="testi-card">
+        <div class="tq">"</div>
+        <p data-he="לאסוף את כל הקבלות בסוף החודש זה יכול לקחת שעות שלמות שהייתי כותבת במקום זה." data-en="Just getting all those expenses together at the end of the month — it can eat hours of time I'd otherwise be writing.">לאסוף את כל הקבלות בסוף החודש זה יכול לקחת שעות שלמות שהייתי כותבת במקום זה.</p>
+        <div class="role" data-he="כותבת" data-en="Writer">כותבת</div>
+      </div>
+      <div class="testi-card">
+        <div class="tq">"</div>
+        <p data-he="כל הזמן לרדוף אחרי אנשים עם התשלומים." data-en="Constantly reminding people to pay up.">כל הזמן לרדוף אחרי אנשים עם התשלומים.</p>
+        <div class="role" data-he="מורה לאמנות" data-en="Art Teacher">מורה לאמנות</div>
+      </div>
+      <div class="testi-card">
+        <div class="tq">"</div>
+        <p data-he="יצירתיים רבים לא מאורגנים בכלל. כמה לקוחות פוטנציאליים הולכים לאיבוד רק בגלל שאין סדר במערכת." data-en="Many creatives are super disorganised. There are so many leads lost just for lack of an organised system.">יצירתיים רבים לא מאורגנים בכלל. כמה לקוחות פוטנציאליים הולכים לאיבוד רק בגלל שאין סדר במערכת.</p>
+        <div class="role" data-he="צלם" data-en="Photographer">צלם</div>
+      </div>
+      <div class="testi-card">
+        <div class="tq">"</div>
+        <p data-he="אין לאף אחד זמן או סבלנות לשבת להתקין איזה מערכת מסובכת. רוצים שזה פשוט יעבוד." data-en="No one has time or patience to sit there setting up some complex custom system. They just want it to work.">אין לאף אחד זמן או סבלנות לשבת להתקין איזה מערכת מסובכת. רוצים שזה פשוט יעבוד.</p>
+        <div class="role" data-he="קוסמטיקאית" data-en="Beautician">קוסמטיקאית</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FOUNDER ============ -->
+<section class="block">
+  <div class="wrap">
+    <div class="founder">
+      <div class="ava">OS</div>
+      <div>
+        <div class="kicker" style="color:var(--indigo);font-family:Rubik;font-weight:700;margin-bottom:14px" data-he="נבנה בידי עצמאית, לעצמאים" data-en="Built by a freelancer, for freelancers">נבנה בידי עצמאית, לעצמאים</div>
+        <blockquote data-he="“בניתי קודם את הכלי שעושה הכל — ואז חתכתי אותו לחמשת הדברים שבאמת מכניסים לך כסף. הייתי הלקוחה הראשונה, ועכשיו גם אתם.”" data-en="“I first built the everything-tool — then cut it down to the five things that actually get you paid. I was customer number one, and now you can be too.”">“בניתי קודם את הכלי שעושה הכל — ואז חתכתי אותו לחמשת הדברים שבאמת מכניסים לך כסף. הייתי הלקוחה הראשונה, ועכשיו גם אתם.”</blockquote>
+        <div class="name" data-he="מרים — מייסדת ולקוחה ראשונה" data-en="Miriam — founder & first customer">מרים — מייסדת ולקוחה ראשונה</div>
+        <div class="role" data-he="סטודיו פיתוח עצמאי · ישראל" data-en="Independent dev studio · Israel">סטודיו פיתוח עצמאי · ישראל</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FAQ ============ -->
+<section class="block" id="faq" style="background:#fff">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kicker" data-he="שאלות נפוצות" data-en="FAQ">שאלות נפוצות</div>
+      <h2 data-he="שאלות נפוצות" data-en="Frequently asked">שאלות נפוצות</h2>
+    </div>
+    <div class="faq">
+      <details open><summary data-he="אני עוסק פטור ולא סדרתי כלום — זה יעבוד לי?" data-en="I'm an osek patur who's never organized anything — will this work for me?">אני עוסק פטור ולא סדרתי כלום — זה יעבוד לי?</summary><p data-he="כן — זו כל המהות. OpalSwift מטפל בכל הניירת והכללים, וכל מסמך שהוא מפיק תקין לחלוטין ומתקבל ברשות המסים ואצל הרו״ח. אתה פשוט מתרכז בעבודה." data-en="Yes — that's the whole point. OpalSwift handles all the paperwork and rules, and every document it generates meets Israeli tax documentation requirements. You just focus on the work.">כן — זו כל המהות. OpalSwift מטפל בכל הניירת והכללים, וכל מסמך שהוא מפיק עומד בדרישות ניירת רשות המסים. אתה פשוט מתרכז בעבודה.</p></details>
+
+      <details><summary data-he="האם זה מחליף את רואה החשבון שלי?" data-en="Does this replace my accountant?">האם זה מחליף את רואה החשבון שלי?</summary><p data-he="לא. OpalSwift מכין את כל הניירת ושומר אותה מסודרת ומדויקת — כך שכשאתה מגיע לרו״ח, הכל כבר מוכן. אנחנו לא נותנים ייעוץ מס — אנחנו חוסכים את העבודה השחורה." data-en="No. OpalSwift generates and stores all your documents, organized and accurate — so when you meet your accountant, everything's ready. We don't give tax advice — we remove the grunt work.">לא. OpalSwift מכין את כל הניירת ושומר אותה מסודרת ומדויקת — כך שכשאתה מגיע לרו״ח, הכל כבר מוכן. אנחנו לא נותנים ייעוץ מס — אנחנו חוסכים את העבודה השחורה.</p></details>
+      <details><summary data-he="אני עוסק פטור — זה רלוונטי לי?" data-en="I'm an osek patur — is this for me?">אני עוסק פטור — זה רלוונטי לי?</summary><p data-he="בהחלט — OpalSwift בנוי לפרילנסרים. חיוב, תזכורות ומסמכים תקינים, בלי מורכבות." data-en="Absolutely — OpalSwift is built for freelancers. Billing, reminders, and compliant documents, without the complexity.">בהחלט — OpalSwift בנוי לפרילנסרים. חיוב, תזכורות ומסמכים תקינים, בלי מורכבות.</p></details>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FINAL CTA ============ -->
+<section class="block">
+  <div class="wrap">
+    <div class="final">
+      <h2 data-he="תתרכז במה שאתה עושה הכי טוב. אנחנו נדאג לשאר." data-en="You do what you love. We handle everything else.">תתרכז במה שאתה עושה הכי טוב. אנחנו נדאג לשאר.</h2>
+      <p data-he="הצטרף לבטא שלנו — עצב איתנו את הכלי שתמיד רצית." data-en="Join our beta — help shape the tool you always needed.">הצטרף לבטא שלנו — עצב איתנו את הכלי שתמיד רצית.</p>
+      <a href="#contact" class="btn btn-primary" style="font-size:18px;padding:16px 34px" data-he="הצטרף לבטא" data-en="Join Beta">הצטרף לבטא</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="text-align:center;padding:0 0 18px"><img src="opalswift_gemstone_final.png" alt="" width="72" height="72" style="opacity:.88;filter:drop-shadow(0 3px 12px rgba(123,97,255,.28))"></div>
+  <div class="wrap foot-in">
+    <div class="logo" style="font-size:18px">
+      <img src="opalswift_color_final.svg" class="gem" style="width:24px;height:24px" alt="OpalSwift logo">
+      OpalSwift
+    </div>
+    <div data-he="© 2026 OpalSwift · אתה עושה את העבודה. אנחנו דואגים שתקבל את הכסף." data-en="© 2026 OpalSwift · You do the work. We make sure you get paid.">© 2026 OpalSwift · אתה עושה את העבודה. אנחנו דואגים שתקבל את הכסף.</div>
+  </div>
+</footer>
+
+<script>
+function setLang(lang, remember){
+  const isHe = lang === 'he';
+  document.documentElement.lang = lang;
+  document.documentElement.dir = isHe ? 'rtl' : 'ltr';
+  document.body.dir = isHe ? 'rtl' : 'ltr';
+  document.body.lang = lang;
+  document.getElementById('btn-he').classList.toggle('active', isHe);
+  document.getElementById('btn-en').classList.toggle('active', !isHe);
+  document.querySelectorAll('[data-he]').forEach(el=>{
+    const val = isHe ? el.getAttribute('data-he') : el.getAttribute('data-en');
+    if(val!==null) el.innerHTML = val;
+  });
+  if(remember){ try{ localStorage.setItem('os_lang', lang); }catch(e){} }
+}
+
+// Initial language: remembered choice > browser language > Hebrew fallback
+(function(){
+  let saved=null;
+  try{ saved = localStorage.getItem('os_lang'); }catch(e){}
+  const nav = (navigator.language || navigator.userLanguage || '').toLowerCase();
+  const initial = saved || (nav.startsWith('en') ? 'en' : 'he');
+  setLang(initial);
+})();
+</script>
+</body>
+</html>
