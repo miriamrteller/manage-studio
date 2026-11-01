@@ -1,6 +1,6 @@
 # Lawyer pack / חבילה לעו"ד
 
-> One page for the lawyer who reviews a studio's documents. All documents are **drafts, not legal advice**. Hebrew is what users read; **the English version prevails** (owner decision, see OPEN-QUESTIONS R14). OpalSwift is free until it is registered as an עוסק.
+> One page for the lawyer who reviews a studio's documents. All documents are **drafts, not legal advice**. Hebrew is what users read; **the English version prevails** (owner decision, see OPEN-QUESTIONS R14). OpalSwift is a free beta and will register as an עוסק before any paid service.
 
 **Read first:** [OPEN-QUESTIONS](OPEN-QUESTIONS.md) — the five questions still open, and the research answers the documents rely on, each with a confidence level. Please confirm or correct those answers; the documents follow them.
 
