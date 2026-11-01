@@ -148,7 +148,9 @@ BEGIN
   SELECT array_agg(key) INTO v_drop FROM jsonb_object_keys(v_rows) AS key WHERE key LIKE '%\_enc';
   v_result := v_result || jsonb_build_object('tenant', v_rows - coalesce(v_drop, ARRAY[]::TEXT[]));
 
-  FOREACH v_table IN ARRAY v_tables LOOP
+  -- Loop over a query result, not the array itself: plpgsql_check would
+  -- otherwise trace the array literal into format() as one table name.
+  FOR v_table IN SELECT unnest(v_tables) LOOP
     IF EXISTS (
       SELECT 1 FROM information_schema.columns c
       WHERE c.table_schema = 'public' AND c.table_name = v_table AND c.column_name = 'tenant_id'

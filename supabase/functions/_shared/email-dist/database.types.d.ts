@@ -3929,6 +3929,10 @@ export type Database = {
                 };
                 Returns: number;
             };
+            export_tenant_data: {
+                Args: never;
+                Returns: Json;
+            };
             find_contacts_by_phone: {
                 Args: {
                     p_phone: string;
@@ -4441,6 +4445,13 @@ export type Database = {
                     shoot_starts_at: string;
                     tenant_id: string;
                 }[];
+            };
+            log_sensitive_read: {
+                Args: {
+                    p_entity_id: string;
+                    p_entity_type: string;
+                };
+                Returns: undefined;
             };
             mark_quote_sent: {
                 Args: {
