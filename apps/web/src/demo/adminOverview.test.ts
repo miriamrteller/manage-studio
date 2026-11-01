@@ -42,6 +42,18 @@ describe('demo admin overview / finance / booking RPCs', () => {
     expect(bad.error?.message).toBe('Invalid date range');
   });
 
+  it('"This month" is never empty: the latest payments are dated today', async () => {
+    const { c } = adminClient();
+    const today = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const ymd = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    const monthStart = ymd(new Date(today.getFullYear(), today.getMonth(), 1));
+    const { data } = await c.rpc('get_finance_summary', { p_start_date: monthStart, p_end_date: ymd(today) });
+    const row = FinanceSummarySchema.parse((data as unknown[])[0]);
+    expect(row.net_revenue_minor).toBeGreaterThan(0);
+    expect(row.payment_count).toBeGreaterThan(0);
+  });
+
   it('get_finance_summary is admin-only', async () => {
     const { c } = adminClient();
     c.setUser(null);
