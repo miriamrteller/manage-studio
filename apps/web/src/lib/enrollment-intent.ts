@@ -10,6 +10,11 @@ export type EnrollmentIntent = {
   /** Admin enrolment wizard */
   mode?: 'admin' | 'parent';
   from?: string;
+  /**
+   * Set when /dashboard forwards a stored intent to /enrol. EnrolPage must not store it
+   * again, or every later /dashboard visit would loop back to /enrol.
+   */
+  viaDashboardRedirect?: boolean;
 };
 
 function hasIntentPayload(intent: EnrollmentIntent): boolean {

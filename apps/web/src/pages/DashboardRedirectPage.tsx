@@ -63,7 +63,7 @@ export default function DashboardRedirectPage() {
       if (tenantLoading) return;
       clearEnrollmentIntent();
       if (vertical !== 'photographer') {
-        navigate('/enrol', { replace: true, state: intent });
+        navigate('/enrol', { replace: true, state: { ...intent, viaDashboardRedirect: true } });
         return;
       }
     }
