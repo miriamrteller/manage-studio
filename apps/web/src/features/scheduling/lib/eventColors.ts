@@ -2,7 +2,13 @@ import { darkenColor, getAccessibleTextColor } from '@/lib/utils';
 import type { ScheduleEvent } from '../types';
 
 /** Neutral colour for blocked/unavailable time. */
-const BLOCKED: EventColor = { background: '#9ca3af', border: '#6b7280', text: '#ffffff' };
+// Blocked time uses the tenant-tinted neutral scale (see deriveSoftTheme), with
+// body text: >= 4.5:1 for any tenant. (Was a fixed grey with white text, 2.5:1.)
+const BLOCKED: EventColor = {
+  background: 'var(--color-neutral-300)',
+  border: 'var(--color-neutral-400)',
+  text: 'var(--color-text-primary)',
+};
 
 /**
  * Vivid palette in rainbow order (ROYGBIV → pink), with a few earthy tones at the

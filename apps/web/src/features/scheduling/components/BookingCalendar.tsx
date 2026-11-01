@@ -437,7 +437,7 @@ export function BookingCalendar({
                   onClick={() => onSelectSlot(s)}
                   className={cn(
                     'min-h-12 rounded-md border px-2 py-2.5 text-sm font-semibold transition',
-                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-ink)] focus-visible:ring-offset-2',
                     selected
                       ? 'border-[var(--color-primary)] bg-[var(--color-primary)] text-[var(--color-on-primary,#fff)] shadow-sm'
                       : 'border-gray-300 bg-white text-gray-900 hover:border-[var(--color-primary)] hover:bg-[var(--color-surface-secondary,#f9fafb)]',

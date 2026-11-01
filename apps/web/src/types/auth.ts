@@ -1,3 +1,5 @@
+import type { LogoTone } from '../lib/theme/logoTone';
+
 export type TenantWhiteLabel = {
   primary_color: string;
   secondary_color?: string;
@@ -38,7 +40,16 @@ export type TenantConfig = {
   font_pair?: string | null;
   logo_url?: string | null;
   logo_dark_url?: string | null;
+  /** Header & footer style (tenants.chrome_style): soft gradients (default) or solid brand colour. */
+  chrome_style?: ChromeStyle;
+  /** Measured logo tones (tenants.logo_tone / logo_dark_tone), used for the header logo fix. */
+  logo_tone?: LogoTone | null;
+  logo_dark_tone?: LogoTone | null;
+  /** False: show the logo exactly as uploaded, never auto-fixed. */
+  logo_autofix?: boolean;
 };
+
+export type ChromeStyle = 'soft' | 'solid';
 
 export type User = {
   id: string;
