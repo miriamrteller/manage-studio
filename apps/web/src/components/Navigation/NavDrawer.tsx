@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Pin, PinOff, X } from 'lucide-react';
+import { LifeBuoy, Pin, PinOff, X } from 'lucide-react';
 import type { FeatureKey } from '@shared/index';
 import { Button } from '@/components/ui/button';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
@@ -11,6 +11,7 @@ import { useTenant } from '@/hooks/useTenant';
 import { useBookingEnabled } from '@/features/scheduling/useBookingEnabled';
 import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
+import { useReportProblem } from '@/components/ReportProblem';
 import { useNavDrawer } from './NavDrawerContext';
 import { useNavItems } from './useNavItems';
 import { NavDrawerMenu } from './NavDrawerMenu';
@@ -42,6 +43,7 @@ function trapFocus(container: HTMLElement, event: KeyboardEvent) {
 
 export function NavDrawer() {
   const { t } = useTranslation();
+  const { canReport, openReportProblem } = useReportProblem();
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useCurrentUser();
@@ -211,6 +213,21 @@ export function NavDrawer() {
           <p className="text-sm opacity-90 truncate" title={user.email}>
             {user.email}
           </p>
+          {canReport && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                close();
+                openReportProblem();
+              }}
+              className="w-full justify-start gap-2 text-on-primary hover:bg-primary-hover hover:text-on-primary"
+            >
+              <LifeBuoy size={16} aria-hidden />
+              {t('report_problem.menu_item')}
+            </Button>
+          )}
           <Button
             type="button"
             variant="secondary"

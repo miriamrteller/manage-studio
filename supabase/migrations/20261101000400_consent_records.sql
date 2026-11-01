@@ -121,7 +121,8 @@ AS $$
   WHERE latest.granted;
 $$;
 
-REVOKE ALL ON FUNCTION marketing_optins(UUID, UUID[], TEXT) FROM PUBLIC;
+-- Tier: service (definer-execute.json). Supabase grants anon/authenticated directly; revoke both.
+REVOKE ALL ON FUNCTION marketing_optins(UUID, UUID[], TEXT) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION marketing_optins(UUID, UUID[], TEXT) TO service_role;
 
 -- -----------------------------------------------------------------------------
@@ -262,6 +263,7 @@ BEGIN
 END;
 $$;
 
+-- Tier: public (guests give consent during guest enrolment).
 REVOKE ALL ON FUNCTION record_consents(UUID, UUID, JSONB, TEXT, TEXT, UUID) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION record_consents(UUID, UUID, JSONB, TEXT, TEXT, UUID) TO anon, authenticated;
 
@@ -293,5 +295,6 @@ AS $$
     AND right(regexp_replace(coalesce(l.phone, ''), '\D', '', 'g'), 9) = needle.d;
 $$;
 
-REVOKE ALL ON FUNCTION find_contacts_by_phone(TEXT) FROM PUBLIC;
+-- Tier: service.
+REVOKE ALL ON FUNCTION find_contacts_by_phone(TEXT) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION find_contacts_by_phone(TEXT) TO service_role;

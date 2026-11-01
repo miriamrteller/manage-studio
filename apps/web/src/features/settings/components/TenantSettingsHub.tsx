@@ -13,6 +13,7 @@ import {
   bundledPaymentsNavTitle,
 } from '@/lib/bundledProviderUi';
 import { SchoolProfileForm } from './SchoolProfileForm';
+import { LegalLinksSettingsForm } from './LegalLinksSettingsForm';
 import { BrandingSettingsForm } from './BrandingSettingsForm';
 import { LocaleSettingsForm } from './LocaleSettingsForm';
 
@@ -64,6 +65,8 @@ export function TenantSettingsHub() {
       </header>
 
       <SchoolProfileForm />
+      <hr className="border-gray-200" />
+      <LegalLinksSettingsForm />
       <hr className="border-gray-200" />
       <BrandingSettingsForm />
       <hr className="border-gray-200" />

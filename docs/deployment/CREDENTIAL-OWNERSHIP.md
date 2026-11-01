@@ -93,3 +93,24 @@ Twilio number.
 
 The second is consistent with the rest of the system. It needs a migration, an
 admin UI surface, and the three functions above changed to read per tenant.
+
+---
+
+## CI / deployment credentials (GitHub)
+
+These belong to the pipeline, not to the app, and live only in GitHub
+Environments or repo secrets — never in `.env*` files committed or otherwise.
+Full table, and why each sits where it does:
+[DEV-PROD-PIPELINE.md §Secrets](DEV-PROD-PIPELINE.md#secrets-who-holds-what).
+
+| Secret | Holder | Scope |
+|---|---|---|
+| `SUPABASE_ACCESS_TOKEN` (CI token, owner's account) | Environments `production` and `development` | deploys Edge Functions, reads secret **names** |
+| `SUPABASE_PROD_DB_URL` | Environment `production` (approval-gated) and `production-nightly` (backups, drift); repo-level copy until moved | prod DB |
+| `SUPABASE_DEV_DB_URL` | repo secret (or environment `development`) | dev DB |
+| `R2_*` | repo secrets | backup bucket |
+
+Edge Function secret **values** stay in each Supabase project. Their expected
+**names** are listed in `supabase/edge-secrets.json`; deploy-prod fails its
+checks if a required name is missing or any `*_MOCK` / dev-only name is set on
+prod.

@@ -4,7 +4,8 @@
 # only thing standing between a bad day and data loss. Restore procedure
 # (full and per-tenant): docs/deployment/BACKUP-RESTORE-RUNBOOK.md
 #
-# Required repo secrets (see runbook §Setup):
+# Required secrets (see runbook §Setup; repo-level or in the
+# "production-nightly" environment):
 #   SUPABASE_PROD_DB_URL   session-pooler URL incl. password
 #   R2_ACCOUNT_ID          Cloudflare account id
 #   R2_ACCESS_KEY_ID       R2 API token key (Object Read & Write on the bucket)
@@ -28,6 +29,11 @@ jobs:
   backup:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # No reviewers on this environment: it runs unattended every night. It
+    # lets SUPABASE_PROD_DB_URL move out of repo-level secrets (where any
+    # branch's workflow could read it) — see DEV-PROD-PIPELINE.md §Secrets.
+    # Repo-level secrets keep working until then.
+    environment: production-nightly
     env:
       BUCKET: manage-studio-db-backups
       # v2 key (2026-08-17): the v1 private key was lost to temp-folder cleanup
@@ -72,55 +78,15 @@ jobs:
         with:
           version: latest
 
-      - name: Dump schema and data
+      # Same script as the pre-deploy backup in deploy-prod.yml: dump schema,
+      # data and migration history, encrypt to the v2 key, upload to R2.
+      - name: Dump, encrypt, upload
         if: steps.gate.outputs.ready == 'true'
-        run: |
-          set -euo pipefail
-          supabase db dump --db-url "${{ secrets.SUPABASE_PROD_DB_URL }}" -f schema.sql
-          supabase db dump --db-url "${{ secrets.SUPABASE_PROD_DB_URL }}" --data-only --use-copy -f data.sql
-          test -s schema.sql && test -s data.sql
-
-      - name: Build manifest
-        if: steps.gate.outputs.ready == 'true'
-        run: |
-          set -euo pipefail
-          MIGRATIONS=$(psql "${{ secrets.SUPABASE_PROD_DB_URL }}" -tAc \
-            "SELECT count(*) FROM supabase_migrations.schema_migrations")
-          STAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-          jq -n \
-            --arg stamp "$STAMP" \
-            --arg sha "$GITHUB_SHA" \
-            --arg migrations "$MIGRATIONS" \
-            --arg schema_sha256 "$(sha256sum schema.sql | cut -d' ' -f1)" \
-            --arg data_sha256 "$(sha256sum data.sql | cut -d' ' -f1)" \
-            '{created_utc:$stamp, main_sha:$sha, migrations:($migrations|tonumber),
-              schema_sha256:$schema_sha256, data_sha256:$data_sha256,
-              project_ref:"oogxajjanbyqhljxcmql"}' > manifest.json
-          cat manifest.json
-
-      - name: Encrypt
-        if: steps.gate.outputs.ready == 'true'
-        run: |
-          set -euo pipefail
-          gpg --import .github/backup-encryption-public-key.asc
-          tar czf backup.tar.gz schema.sql data.sql manifest.json
-          gpg --batch --yes --trust-model always -r "$GPG_RECIPIENT" -o backup.tar.gz.gpg -e backup.tar.gz
-          shred -u schema.sql data.sql backup.tar.gz
-
-      - name: Upload to R2
-        if: steps.gate.outputs.ready == 'true'
-        run: |
-          set -euo pipefail
-          ENDPOINT="https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com"
-          DAY=$(date -u +%F)
-          KEY="nightly/${DAY}_${GITHUB_SHA::7}"
-          aws s3 cp backup.tar.gz.gpg "s3://${BUCKET}/${KEY}.tar.gz.gpg" --endpoint-url "$ENDPOINT"
-          aws s3 cp manifest.json    "s3://${BUCKET}/${KEY}.manifest.json" --endpoint-url "$ENDPOINT"
-          if [ "$(date -u +%d)" = "01" ]; then
-            aws s3 cp "s3://${BUCKET}/${KEY}.tar.gz.gpg" "s3://${BUCKET}/monthly/${DAY}_${GITHUB_SHA::7}.tar.gz.gpg" --endpoint-url "$ENDPOINT"
-            aws s3 cp "s3://${BUCKET}/${KEY}.manifest.json" "s3://${BUCKET}/monthly/${DAY}_${GITHUB_SHA::7}.manifest.json" --endpoint-url "$ENDPOINT"
-          fi
-          aws s3 ls "s3://${BUCKET}/nightly/" --endpoint-url "$ENDPOINT" | tail -3
+        env:
+          DB_URL: ${{ secrets.SUPABASE_PROD_DB_URL }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          PREFIX: nightly
+        run: bash scripts/ci/backup-prod-to-r2.sh
 
       # Non-fatal: an Object Read & Write token cannot set bucket lifecycle
       # (AccessDenied, seen 2026-08-17) — and a failed retention step must not

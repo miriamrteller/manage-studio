@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatDueDate, formatMinor, statusBadgeVariant, statusI18nKey } from '../lib/jobPaymentFormat';
 import { JobPaymentService } from '../services/jobPaymentService';
 import { BackToPortalButton } from './BackToPortalButton';
-import { PrivacyNotice } from '@/components/legal/PrivacyNotice';
+import { PrivacyNotice } from '@/components/PrivacyNotice';
 
 interface Props {
   token: string;

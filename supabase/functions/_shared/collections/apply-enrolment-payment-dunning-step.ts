@@ -41,6 +41,16 @@ export async function applyEnrolmentPaymentDunningStep(
     return { outcome: "skipped", reason: "not_pending_payment" };
   }
 
+  // Pay-at-the-studio tenants: no pay link to send, and no day-14 cancel.
+  const { data: tenantRow } = await service
+    .from("tenants")
+    .select("payment_provider")
+    .eq("id", engagement.tenant_id)
+    .single();
+  if (tenantRow?.payment_provider === "offline") {
+    return { outcome: "skipped", reason: "offline_payments" };
+  }
+
   const attemptCount = engagement.payment_dunning_attempt_count as number;
   if (attemptCount >= 3) {
     return { outcome: "skipped", reason: "dunning_exhausted" };

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { useTenant } from '@/hooks/useTenant';
 import { recordLegalAcceptance } from '@/legal/acceptance';
+import { legalTextVersion } from '@/legal/render';
 import {
   MARKETING_KINDS,
   PHOTO_KINDS,
@@ -11,6 +12,8 @@ import {
   type ConsentState,
 } from '@/legal/consents';
 import { tenantHasEnrolmentTerms, useLegalDocument } from '@/legal/useLegalDocument';
+import { useLegalLinks } from '@/legal/useLegalLinks';
+import { isInternalLegalLink } from '@/lib/legalLinks';
 import { ConsentCheckboxes } from '@/components/legal/ConsentCheckboxes';
 
 export interface EnrolmentTermsConsentProps {
@@ -23,12 +26,26 @@ export interface EnrolmentTermsConsentProps {
   children: ReactNode;
 }
 
+function DocLink({ href, children }: { href: string; children: ReactNode }) {
+  return isInternalLegalLink(href) ? (
+    <Link to={href} target="_blank" rel="noopener noreferrer" className="underline">
+      {children}
+    </Link>
+  ) : (
+    <a href={href} target="_blank" rel="noopener noreferrer" className="underline">
+      {children}
+    </a>
+  );
+}
+
 /**
  * Before payment:
- *  - required: agree to the studio's enrolment terms + read its privacy policy
- *    (only once the studio has published them), recorded with the text version;
+ *  - required: agree to the studio's enrolment terms and confirm reading its
+ *    privacy policy — when the studio has terms (its own link, or its
+ *    published generated page); recorded in legal_acceptances with the text
+ *    version (or a hash of the link for an external page);
  *  - optional, unticked: photo/video consent per purpose and marketing opt-in
- *    per channel, each recorded with its exact wording.
+ *    per channel, each recorded with its exact wording (consent_records).
  * Marketing for a child is recorded against the parent (record_consents).
  */
 export function EnrolmentTermsConsent({
@@ -40,6 +57,7 @@ export function EnrolmentTermsConsent({
 }: EnrolmentTermsConsentProps) {
   const { t } = useTranslation();
   const tenant = useTenant();
+  const links = useLegalLinks();
   const terms = useLegalDocument('enrolment-terms');
   const privacy = useLegalDocument('studio-privacy');
   const [termsChecked, setTermsChecked] = useState(false);
@@ -49,39 +67,51 @@ export function EnrolmentTermsConsent({
   const [saving, setSaving] = useState(false);
 
   const legal = terms.legal;
-  const termsApply = !!tenant && !!legal?.published && tenantHasEnrolmentTerms(legal.vertical);
+  const termsApply = !!tenant && !!links.terms && (legal ? tenantHasEnrolmentTerms(legal.vertical) : true);
   const photoApplies = !!studentPersonId && legal?.vertical !== 'photographer';
   const marketingApplies = !!studentPersonId;
 
   if (!tenant || done || (!termsApply && !photoApplies && !marketingApplies)) return <>{children}</>;
 
-  if (terms.isLoading || privacy.isLoading) {
+  const termsHref = links.terms;
+  const privacyHref = links.privacy;
+  const needsGenerated =
+    (!!termsHref && isInternalLegalLink(termsHref)) || (!!privacyHref && isInternalLegalLink(privacyHref));
+  if (needsGenerated && (terms.isLoading || privacy.isLoading)) {
     return <p role="status">{t('common.loading')}</p>;
   }
 
   const lang = terms.lang;
   const vars = { student: studentName, studio: legal?.name ?? tenant.name };
+  const versionOf = (href: string, generated: string | undefined) =>
+    isInternalLegalLink(href) ? generated : `url:${legalTextVersion(href)}`;
 
   const handleContinue = async () => {
     setSaving(true);
     try {
-      if (termsApply && terms.doc && privacy.doc) {
-        await recordLegalAcceptance({
-          tenantId: tenant.id,
-          documents: ['enrolment_terms'],
-          version: terms.doc.version,
-          language: lang,
-          engagementId,
-          role: acceptedByRole,
-        });
-        await recordLegalAcceptance({
-          tenantId: tenant.id,
-          documents: ['studio_privacy'],
-          version: privacy.doc.version,
-          language: lang,
-          engagementId,
-          role: acceptedByRole,
-        });
+      if (termsApply && termsHref) {
+        const termsVersion = versionOf(termsHref, terms.doc?.version);
+        if (termsVersion) {
+          await recordLegalAcceptance({
+            tenantId: tenant.id,
+            documents: ['enrolment_terms'],
+            version: termsVersion,
+            language: lang,
+            engagementId,
+            role: acceptedByRole,
+          });
+        }
+        const privacyVersion = privacyHref ? versionOf(privacyHref, privacy.doc?.version) : undefined;
+        if (privacyVersion) {
+          await recordLegalAcceptance({
+            tenantId: tenant.id,
+            documents: ['studio_privacy'],
+            version: privacyVersion,
+            language: lang,
+            engagementId,
+            role: acceptedByRole,
+          });
+        }
       }
       if (studentPersonId) {
         const items = [
@@ -110,24 +140,23 @@ export function EnrolmentTermsConsent({
 
   return (
     <div className="space-y-4 rounded-lg border p-4">
-      {termsApply && (
+      {termsApply && termsHref && (
         <label className="flex items-start gap-2 text-sm">
           <input
             type="checkbox"
             className="mt-1"
             checked={termsChecked}
             onChange={(e) => setTermsChecked(e.target.checked)}
+            aria-required="true"
             data-testid="enrolment-terms-checkbox"
           />
           <span>
-            {t('legal.enrolment.agree_prefix')}{' '}
-            <Link to="/legal/enrolment-terms" target="_blank" rel="noopener noreferrer" className="underline">
-              {t('legal.docs.enrolment_terms')}
-            </Link>
-            {t('legal.enrolment.read_prefix')}{' '}
-            <Link to="/legal/studio-privacy" target="_blank" rel="noopener noreferrer" className="underline">
-              {t('legal.docs.studio_privacy')}
-            </Link>
+            {t('legal.enrolment.agree_prefix')} <DocLink href={termsHref}>{t('legal.docs.enrolment_terms')}</DocLink>
+            {privacyHref && (
+              <>
+                {t('legal.enrolment.read_prefix')} <DocLink href={privacyHref}>{t('legal.docs.studio_privacy')}</DocLink>
+              </>
+            )}
             .
           </span>
         </label>

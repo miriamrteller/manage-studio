@@ -1,0 +1,161 @@
+# PR stage for the database (like an Azure "Build + test" stage).
+#
+# Blocking checks for every PR. Jobs that only matter when supabase/** (or the
+# pipeline itself) changed are SKIPPED otherwise — a skipped job counts as
+# passed, so these can be required checks without blocking unrelated PRs.
+#
+#   migration-guard  append-only migrations, unique + ordered filenames
+#   workflow-lint    actionlint on every workflow
+#   sql-tests        repo SQL suites (supabase/tests/*/run.sh) on plain Postgres 17
+#   local-stack      throwaway Supabase in the runner: ALL migrations from zero,
+#                    seed.sql, `supabase db lint`, generated types == committed
+#
+# Nothing here talks to a hosted project or needs a secret.
+# Pipeline overview: docs/deployment/DEV-PROD-PIPELINE.md
+
+name: db-ci
+
+on:
+  # Every PR, whatever its base, so stacked PRs are checked too.
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+# A newer PR push cancels the old run. On main every merge's run finishes:
+# a cancelled run there is never re-checked, because the next merge's
+# path filter skips the DB jobs when it did not touch supabase/**.
+concurrency:
+  group: db-ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  SUPABASE_TELEMETRY_DISABLED: "1"
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      db: ${{ steps.filter.outputs.db }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            db:
+              - 'supabase/**'
+              - 'packages/shared/src/database.types.ts'
+              - 'scripts/ci/**'
+              - 'scripts/gen-database-types.mjs'
+              - '.github/workflows/db-ci.yml'
+
+  migration-guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Append-only, unique, ordered migrations
+        env:
+          # PR: compare with the target branch. Push to main: with the previous
+          # tip, so a direct push that edits an old migration is still flagged.
+          BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event.before }}
+        run: |
+          if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then BASE=origin/main; fi
+          bash scripts/ci/check-migrations.sh "$BASE"
+
+  workflow-lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: actionlint
+        run: |
+          docker run --rm -v "$PWD:/repo" --workdir /repo rhysd/actionlint:1.7.7 -color
+
+  sql-tests:
+    needs: changes
+    if: needs.changes.outputs.db == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s
+          --health-timeout 5s --health-retries 20
+    env:
+      PGHOST: localhost
+      PGPORT: "5432"
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Pipeline script unit tests
+        run: node --test scripts/ci/*.test.mjs
+      - name: SQL suites (each replays the full migration chain into a scratch DB)
+        run: |
+          set -e
+          for t in supabase/tests/*/run.sh; do
+            # security/ needs Supabase's roles and grants: it runs in local-stack.
+            [ "$t" = supabase/tests/security/run.sh ] && continue
+            echo "::group::$t"
+            bash "$t"
+            echo "::endgroup::"
+          done
+
+  local-stack:
+    needs: changes
+    if: needs.changes.outputs.db == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+      - run: pnpm install --frozen-lockfile
+
+      # Applies every migration from zero, then supabase/seed.sql — LOCAL
+      # container only. Services the schema does not need are left out.
+      - name: Start throwaway Supabase (all migrations from zero)
+        run: pnpm exec supabase start -x studio,imgproxy,vector,logflare,supavisor,realtime,edge-runtime,mailpit
+
+      - name: supabase db lint (new errors block; known ones warn)
+        run: bash scripts/ci/db-lint.sh
+
+      - name: Definer-function EXECUTE policy (supabase/security/definer-execute.json)
+        env:
+          DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: bash supabase/tests/security/run.sh
+
+      # `PostgrestVersion` follows whichever PostgREST generated the file
+      # (hosted vs local CLI), so that one line is not compared.
+      - name: Generated DB types match the committed ones
+        run: |
+          pnpm db:types:all:local
+          # intent-to-add, so newly generated (untracked) files show in the diff too
+          git add -N packages/shared/src/database.types.ts supabase/functions/_shared/email-dist
+          if ! git diff --exit-code --stat -I 'PostgrestVersion' -- packages/shared/src/database.types.ts supabase/functions/_shared/email-dist; then
+            git diff -I 'PostgrestVersion' -- packages/shared/src/database.types.ts supabase/functions/_shared/email-dist | head -300 || true
+            echo "::error::Committed database types are stale. Run 'pnpm db:reset-and-types:local' (or db:types:all after pushing to dev) and commit the result."
+            exit 1
+          fi
+
+      - name: Stop
+        if: always()
+        run: pnpm exec supabase stop --no-backup || true

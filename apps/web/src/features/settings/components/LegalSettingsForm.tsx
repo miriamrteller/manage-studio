@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
+import { LegalLinksSettingsForm } from './LegalLinksSettingsForm';
 import { supabase } from '@/lib/supabase';
 import { useTenant } from '@/hooks/useTenant';
 import {
@@ -236,6 +237,10 @@ export function LegalSettingsForm() {
           </Button>
         )}
       </div>
+
+      <hr className="border-gray-200" />
+      <p className="text-sm text-muted-foreground">{t('legal.settings.own_pages_note')}</p>
+      <LegalLinksSettingsForm />
     </section>
   );
 }

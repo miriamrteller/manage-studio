@@ -44,15 +44,30 @@ Deno.serve(withMonitoring("run-enrolment-payment-dunning", async (req) => {
     );
   }
 
-  const { data: rows, error } = await service
+  // Studios that take payment at the studio have no pay link to chase, and a place
+  // waiting for an in-person payment must not be auto-cancelled on day 14.
+  const { data: offlineTenants, error: offlineError } = await service
+    .from("tenants")
+    .select("id")
+    .eq("payment_provider", "offline");
+  if (offlineError) {
+    console.error("[run-enrolment-payment-dunning] tenant fetch error:", offlineError);
+    return jsonResponse({ error: offlineError.message }, 500);
+  }
+  const offlineTenantIds = (offlineTenants ?? []).map((t) => t.id as string);
+
+  let query = service
     .from("engagements")
     .select("id")
     .eq("status", "pending_payment")
     .lt("payment_dunning_attempt_count", 3)
     .or(
       `payment_dunning_next_at.lte.${nowIso},and(payment_dunning_next_at.is.null,payment_dunning_attempt_count.eq.0)`,
-    )
-    .limit(BATCH_LIMIT);
+    );
+  if (offlineTenantIds.length > 0) {
+    query = query.not("tenant_id", "in", `(${offlineTenantIds.join(",")})`);
+  }
+  const { data: rows, error } = await query.limit(BATCH_LIMIT);
 
   if (error) {
     console.error("[run-enrolment-payment-dunning] fetch error:", error);

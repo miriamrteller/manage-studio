@@ -75,3 +75,15 @@ Pre-deploy SQL (manual):
 ALTER DATABASE postgres SET app.settings.supabase_functions_url = 'https://<project-ref>.supabase.co';
 ALTER DATABASE postgres SET app.settings.cron_secret = '<matches supabase secrets set CRON_SECRET>';
 ```
+
+## Error monitoring (Sentry, EU region)
+
+Optional; everything is a no-op until these are set. Full owner walkthrough: [OBSERVABILITY.md](./OBSERVABILITY.md).
+
+| Variable | Where | Purpose |
+|----------|-------|---------|
+| `VITE_SENTRY_DSN` | Cloudflare Workers Builds variable | Turns on frontend error reporting and "Report a problem" (build time) |
+| `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT` | Workers Builds (token as secret) | Source-map upload during `vite build`; skipped when absent |
+| `SENTRY_DSN` | Edge function secret | Edge-function error reporting |
+| `SENTRY_ENVIRONMENT`, `SENTRY_RELEASE` | Edge function secrets (optional) | Labels on edge events |
+| `SENTRY_AUTH_TOKEN` (secret) + `SENTRY_ORG`, `SENTRY_PROJECT` (variables) | GitHub Actions | `sentry-issues.yml` opens GitHub issues for new Sentry issues |

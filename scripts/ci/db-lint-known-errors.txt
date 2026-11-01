@@ -1,0 +1,6 @@
+# Functions with `supabase db lint` errors that predate the lint check
+# (found 2026-11-01). They warn instead of failing; any OTHER function with an
+# error fails db-ci. Remove a line in the PR that fixes it.
+#
+# (empty: the two found on 2026-11-01 were fixed in
+#  20261101000100_security_definer_hardening.sql)

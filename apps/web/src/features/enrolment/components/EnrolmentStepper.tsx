@@ -42,7 +42,7 @@ import type { EnrollmentIntent } from '@/lib/enrollment-intent';
 import { persistEnrollmentIntent } from '@/lib/enrollment-intent';
 import type { Engagement } from '@shared/schemas';
 import type { EnrolmentStepperProps } from '../types/enrolmentStep';
-import { PrivacyNotice } from '@/components/legal/PrivacyNotice';
+import { PrivacyNotice } from '@/components/PrivacyNotice';
 
 export type { EnrolmentStep, EnrolmentStepperProps } from '../types/enrolmentStep';
 

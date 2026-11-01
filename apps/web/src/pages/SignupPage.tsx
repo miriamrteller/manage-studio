@@ -12,7 +12,7 @@ import { resolveAuthErrorMessage } from '@/lib/authErrors';
 import SignupStep1 from '@/features/auth/components/SignupStep1';
 import SignupStep2 from '@/features/auth/components/SignupStep2';
 import SignupStep3 from '@/features/auth/components/SignupStep3';
-import { PrivacyNotice } from '@/components/legal/PrivacyNotice';
+import { PrivacyNotice } from '@/components/PrivacyNotice';
 
 type SignupStep = 1 | 2 | 3;
 

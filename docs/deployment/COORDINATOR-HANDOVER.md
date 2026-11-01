@@ -1,6 +1,7 @@
 # Coordinator handover
 
 Written 2026-11-01 by the outgoing coordinator session (`session_01CNMzHZz6ZodEZ6p7v17QLd`).
+Updated 2026-11-01 by the current coordinator (`session_01CNMzHYVGwEsv37woknUMfi`).
 If you are the new coordinator: read this whole file, then do "First actions" at the bottom.
 
 ## Your job
@@ -25,17 +26,18 @@ English, outcome first. English unless the owner asks for Hebrew.
 | Error tracking | session_01CNMzHYye1dLyc8NrxTk49P | Sentry (EU, free), admin "Report a problem", Sentry→GitHub issues | PR 1 merged (#104). Building PR 2 (edge-function wrapper), then 3 (feedback), 4 (CI source maps + issue Action + OBSERVABILITY.md) |
 | Legal docs | session_01CNMzHWVdy3dV55o2MV1S6n | Israeli legal docs (merged #101), per-tenant legal setup, open questions | Writing TENANT-LEGAL-SETUP.md + trimming open questions to ≤5 (owner said the docs are too long) |
 | Demo (D) | session_01CNMzHZYRxzSidmckhBPWbc | Republishes the demo artifact from main; has a 2-hourly sync task | Asked to republish after #99/#101/#102 |
-| Launch audit | session_01CNMzHXYhnF8C2TwWiBr4cv | Independent launch-readiness check → docs/launch/LAUNCH-READINESS.md with a short blocker list | Started 2026-11-01; docs-only PR, reports blockers to you |
+| Launch audit | session_01CNMzHXYhnF8C2TwWiBr4cv | Independent launch-readiness check → docs/launch/LAUNCH-READINESS.md with a short blocker list | Done (#110 merged). Idle |
+| App thread | session_01CNMzHWLPLcyXX4aAMFrswS | Ballet launch gaps: offline "pay at the studio", invoicing-off setting, per-tenant legal links + enrolment-terms checkbox, then custom-domain support | Started 2026-11-01 10:14; PR 1 (offline payments) first |
 
-Threads currently report to the OLD coordinator id. Your first action re-points them (below).
+All threads report to `session_01CNMzHYVGwEsv37woknUMfi` (re-pointed 2026-11-01 09:41).
 
 ## Open PRs
 
-- #100 `ops/db-pipeline`: db-ci, deploy-dev, deploy-prod (owner approval via GitHub environment "production"), nightly db-health, backup fix. Merge when green; then tell the launch guide.
-- #103 `sec/definer-hardening-stack` (base = #100's branch): REVOKE EXECUTE on 75 SECURITY DEFINER functions callable by anon, search_path fixes, 2 lint bugs, 44 FK indexes. Merge after #100 (retarget to main if needed).
-- #105: Sentry PR 2/4, edge-function error reporting (all ~60 functions wrapped, no-op without `SENTRY_DSN`). PRs 3 (admin "Report a problem") and 4 (CI source maps + Sentry→GitHub issue Action + OBSERVABILITY.md) still to come.
-- #106: demo-only fixes (missing demo RPCs; sample payments in the current month). Merge when green; thread D republishes.
-- #107: this handover doc.
+None as of 2026-11-01 10:15. Merged today: #100, #103, #105–#111, #113. Expected next:
+- DB owner: make the Cloudflare email secrets optional in `supabase/edge-secrets.json` (Resend-only prod must pass deploy-prod's check).
+- Legal: English-prevails + free-until-registered applied to the docs; short insurance section.
+- Demo (D): ballet-studio demo artifact (separate from the photographer one).
+- App thread: PRs 1–4 above.
 
 ## Decisions already made by the owner (don't re-ask)
 
@@ -47,6 +49,11 @@ Threads currently report to the OLD coordinator id. Your first action re-points 
 - Dev Supabase (org miriamrteller, ref acmujrhavgbamdilzuew) stays Free. Prod (org OpalSwift, `manage-studio-prod`, ref oogxajjanbyqhljxcmql, Frankfurt) goes Pro.
 - DB changes go only through the GitHub pipeline; prod only with the owner's approval. The Supabase MCP connector (prod org only) is READ-ONLY for us.
 - Sentry: EU region, free plan, Replay off, admin-only "Report a problem" item (not a floating button).
+- Email transport at launch is **Resend** (`EMAIL_TRANSPORT=resend`, `RESEND_API_KEY`), not Cloudflare Workers Paid. Switching later = `EMAIL_TRANSPORT=cloudflare` + the two Cloudflare secrets; no code change.
+- Ballet school domain is **creativeballetacademy.com** (owner's own). Custom domains aren't supported yet, so launch on `creativeballet.opalswift.com` with a Cloudflare redirect from the .com; the app thread builds custom-domain support after its first three PRs.
+- Legal: OpalSwift stays free until registered as an עוסק; the **English** version of each document prevails.
+- Owner wants to try a ballet-studio demo before the photographer meeting (Tuesday). Photographer details are collected at that meeting.
+- App thread approved for: offline "pay at the studio" checkout, invoicing-off setting, per-tenant legal links + enrolment-terms checkbox.
 - First prod tenants: the owner's ballet school "Creative Ballet Academy" (subdomain `creativeballet`, dance-studio, NOT a registered business yet: manual payments only, receipts/invoicing OFF), then the photographer friend (YPay, set up before their meeting).
 
 ## Facts about prod (read-only check, 2026-11-01)
@@ -60,12 +67,12 @@ Threads currently report to the OLD coordinator id. Your first action re-points 
 ## Owner's to-do (also in the walkthrough doc)
 
 1. Supabase OpalSwift org → Pro.
-2. Cloudflare → Workers Paid; Cloudflare Email Sending token → Supabase prod Edge secret `CLOUDFLARE_EMAIL_API_TOKEN`.
-3. After #100: GitHub environments "production" (required reviewer = owner) and "development" with secrets (steps in `docs/deployment/DEV-PROD-PIPELINE.md`).
+2. Resend: sign up, verify opalswift.com, API key → Supabase prod Edge secrets `RESEND_API_KEY` + `EMAIL_TRANSPORT=resend`. (Workers Paid only if/when switching to Cloudflare email.)
+3. GitHub environments "production" (required reviewer = owner) and "development" with secrets (steps in `docs/deployment/DEV-PROD-PIPELINE.md`).
 4. Sentry signup (EU region) when the error-tracking thread sends steps.
-5. Confirm ballet school domain (creativeballetacademy.com → creativeballet.opalswift.com?).
+5. Add creativeballetacademy.com to Cloudflare and redirect it to creativeballet.opalswift.com until custom domains ship.
 6. Fill legal placeholders; lawyer review of platform terms + DPA; accountant on business registration.
-7. Photographer: subdomain, sign-in email, business name, packages; book the meeting.
+7. Photographer: everything at the Tuesday meeting (subdomain, sign-in email, business name, packages, YPay keys).
 
 ## Order of the launch
 
@@ -73,7 +80,8 @@ Threads currently report to the OLD coordinator id. Your first action re-points 
 
 ## Follow-ups not started
 
-- `docs/legal/APP-GAPS.md`: app changes the legal docs need (per-studio footer legal links, terms/privacy checkbox at signup and enrolment, marketing consent with channel/time/wording + unsubscribe line, photo-consent purpose + Hebrew typo "מנתן", privacy link on public forms). Needs a thread once the legal setup doc lands. Must feed the planned automatic onboarding.
+- Insurance for the ballet school and teachers: legal thread is writing a short section (requested 2026-11-01).
+- `docs/legal/APP-GAPS.md`: app changes the legal docs need (per-studio footer legal links, terms/privacy checkbox at signup and enrolment, marketing consent with channel/time/wording + unsubscribe line, photo-consent purpose + Hebrew typo "מנתן", privacy link on public forms). The app thread (above) owns the launch-blocking part; the rest must feed the planned automatic onboarding.
 - Replace the dance seed "Health & Liability Waiver" (bundled release is presumed unfair) with the health declaration (07b) + separate photo opt-in.
 - RLS performance rewrite (auth_rls_initplan 46, multiple_permissive_policies 675): separate PR, after launch.
 - Contract PDFs aren't attached on the Cloudflare email transport (link only); contracts signed before #86 have no PDF.
@@ -88,7 +96,7 @@ Threads currently report to the OLD coordinator id. Your first action re-points 
 - No images containing people.
 - Push only to your own designated branch; open draft PRs; merge only green PRs.
 
-## First actions for the new coordinator
+## First actions for a new coordinator (done 2026-11-01 by the current one; repeat if you take over)
 
 1. Send each active thread (table above) one message: "Coordinator changed: report to session <your id> from now on."
 2. Check #100 / #103 CI; merge when green; tell the launch guide when #100 merges.

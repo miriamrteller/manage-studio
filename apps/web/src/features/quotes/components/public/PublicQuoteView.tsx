@@ -12,7 +12,7 @@ import {
 import { PublicQuoteActions } from './PublicQuoteActions';
 import { PublicQuoteLines } from './PublicQuoteLines';
 import { PublicQuoteNextSteps } from './PublicQuoteNextSteps';
-import { PrivacyNotice } from '@/components/legal/PrivacyNotice';
+import { PrivacyNotice } from '@/components/PrivacyNotice';
 
 export function PublicQuoteView({ token }: { token: string }) {
   const { t, i18n } = useTranslation();

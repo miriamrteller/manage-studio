@@ -483,7 +483,8 @@ export function OperatorOnboardingWizard() {
             >
               <option value="grow">Grow</option>
               <option value="icount">iCount</option>
-              <option value="mock">Mock (testing)</option>
+              {/* Mock lets anyone confirm a "payment" without paying, so never offer it in a production build. */}
+              {!import.meta.env.PROD && <option value="mock">Mock (testing)</option>}
             </select>
           </div>
           <div className="space-y-2">
