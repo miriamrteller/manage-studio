@@ -3,6 +3,7 @@ import { resolveTenantAdminNotificationEmails } from "../enrolment-recipient.ts"
 import { resolveTenantSender, TENANT_SENDER_COLUMNS, type TenantSender, type TenantSenderInput } from "../notification-from.ts";
 import { sendHtmlEmail } from "../email-client.ts";
 import { formatCurrency } from "../email-dist/format.js";
+import { isTenantInvoicingOff } from "../invoicing/tenant-invoicing.ts";
 import {
   PAYMENT_DOCUMENT_ADMIN_EMAIL_SENT,
   sendPaymentDocumentAdminEmail,
@@ -180,6 +181,8 @@ export type CheckMissingDocumentsResult = {
   missingAlerted: number;
   missingFailed: number;
   missingSkipped: number;
+  /** Payments of tenants with invoicing off: no document is expected, no alert. */
+  missingInvoicingOff: number;
   adminEmailRetried: number;
   adminEmailSent: number;
   clientEmailRetried: number;
@@ -203,6 +206,7 @@ export async function runCheckMissingDocuments(
     missingAlerted: 0,
     missingFailed: 0,
     missingSkipped: 0,
+    missingInvoicingOff: 0,
     adminEmailRetried: 0,
     adminEmailSent: 0,
     clientEmailRetried: 0,
@@ -224,7 +228,20 @@ export async function runCheckMissingDocuments(
 
   result.missingScanned = missingRows?.length ?? 0;
 
+  const invoicingOffByTenant = new Map<string, boolean>();
+
   for (const row of missingRows ?? []) {
+    const rowTenantId = row.tenant_id as string;
+    let invoicingOff = invoicingOffByTenant.get(rowTenantId);
+    if (invoicingOff === undefined) {
+      invoicingOff = await isTenantInvoicingOff(service, rowTenantId);
+      invoicingOffByTenant.set(rowTenantId, invoicingOff);
+    }
+    if (invoicingOff) {
+      result.missingInvoicingOff += 1;
+      continue;
+    }
+
     const outcome = await alertAdminsMissingDocument(service, row as {
       id: string;
       tenant_id: string;

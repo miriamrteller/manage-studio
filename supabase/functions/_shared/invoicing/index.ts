@@ -38,6 +38,10 @@ export function getInvoicingProvider(slug: string | null | undefined): Invoicing
       return tranzilaProvider;
     case "yesh":
       return yeshProvider;
+    case "none":
+      // Invoicing is off. Callers must branch on isInvoicingOff() before asking for
+      // an adapter; enqueueDocument() and finalisePayment() already do.
+      throw new Error("Invoicing is off for this tenant (invoicing_provider = 'none')");
     default: {
       const _exhaustive: never = parsed;
       return _exhaustive;

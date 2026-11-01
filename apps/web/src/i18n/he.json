@@ -1956,6 +1956,24 @@
       "not_configured": "לא מוגדר",
       "saved": "פרטי התשלום נשמרו."
     },
+    "invoicing_toggle": {
+      "title": "מסמכי מס",
+      "description": "האם האפליקציה מוציאה קבלה או חשבונית על כל תשלום דרך ספק החשבוניות שלכם.",
+      "enabled_label": "להוציא מסמכי מס אוטומטית",
+      "enabled_hint": "כבוי: התשלומים נרשמים בלי קבלה או חשבונית מהאפליקציה.",
+      "off_note": "הוצאת מסמכי מס כבויה. אם הסטודיו הוא עסק רשום, עליו להוציא קבלות בעצמו על כל תשלום.",
+      "credentials_hint": "את פרטי הגישה לספק מזינים תחת ספק חשבוניות.",
+      "saved": "הגדרת מסמכי המס נשמרה.",
+      "providers": {
+        "grow": "Grow (משולם)",
+        "icount": "iCount",
+        "invoice4u": "Invoice4U",
+        "ypay": "YPay",
+        "tranzila": "Tranzila",
+        "yesh": "Yesh",
+        "green_invoice": "חשבונית ירוקה"
+      }
+    },
     "invoicing": {
       "title": "ספק חשבוניות",
       "description": "פרטי גישה למסמכי מס",

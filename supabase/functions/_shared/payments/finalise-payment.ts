@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
 import { getEnv } from "../edge-runtime/env.ts";
 import { enqueueDocument } from "../enqueue-document.ts";
+import { isTenantInvoicingOff } from "../invoicing/tenant-invoicing.ts";
 import { engagementHasSignedWaiver } from "../engagement-waiver.ts";
 import { resolveAdminLinkRecipientEmail } from "../enrolment-recipient.ts";
 import { buildEnrolmentConfirmationPayload } from "../build-enrolment-confirmation-payload.ts";
@@ -443,7 +444,12 @@ export async function finalisePayment(
     }
   }
 
-  if (!params.skipDocumentEnqueue) {
+  // Invoicing off (invoicing_provider = 'none'): the studio issues its own receipts, if
+  // any. No tax document is enqueued, so nothing retries, dies or alerts the admin.
+  const invoicingOff = !params.skipDocumentEnqueue &&
+    (await isTenantInvoicingOff(service, params.tenantId));
+
+  if (!params.skipDocumentEnqueue && !invoicingOff) {
     // Bundled providers (Grow) may have already written the document via the invoice
     // webhook before this finalise ran. Skip enqueue when the document already exists to
     // avoid a duplicate document_queue row / double issuance.

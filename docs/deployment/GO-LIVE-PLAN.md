@@ -139,9 +139,14 @@ promote dev.** Dev carries mock-payment rows, demo tenants and test seeds.
       ```sql
       UPDATE tenants
          SET payment_provider = 'none',
+             invoicing_provider = 'none',
              offline_payment_instructions = '<bank details / "pay the teacher at the first lesson">'
        WHERE subdomain = 'creativeballet';
       ```
+      `invoicing_provider = 'none'` = invoicing off: recorded payments never
+      enqueue a tax document (migration `20261101000300`). The studio issues
+      its own receipts once it is a registered business, or switches invoicing
+      on in Admin → Setup → Settings ("Tax documents").
       The owner can edit the instructions later in Admin → Setup → Settings
       ("Pay at the studio"). Each cash payment is then recorded by the admin
       (student → Record payment), which activates the enrolment.

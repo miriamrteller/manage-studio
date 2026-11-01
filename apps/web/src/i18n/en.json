@@ -1956,6 +1956,24 @@
       "not_configured": "Not configured",
       "saved": "Payment credentials saved."
     },
+    "invoicing_toggle": {
+      "title": "Tax documents",
+      "description": "Whether the app issues a receipt or invoice for every payment through your invoicing provider.",
+      "enabled_label": "Issue tax documents automatically",
+      "enabled_hint": "Off: payments are recorded without any receipt or invoice from the app.",
+      "off_note": "Invoicing is off. If the studio is a registered business, it must issue its own receipts for every payment.",
+      "credentials_hint": "Enter the provider's credentials under Invoicing provider.",
+      "saved": "Tax document setting saved.",
+      "providers": {
+        "grow": "Grow (Meshulam)",
+        "icount": "iCount",
+        "invoice4u": "Invoice4U",
+        "ypay": "YPay",
+        "tranzila": "Tranzila",
+        "yesh": "Yesh",
+        "green_invoice": "Green Invoice"
+      }
+    },
     "invoicing": {
       "title": "Invoicing provider",
       "description": "Tax document credentials",

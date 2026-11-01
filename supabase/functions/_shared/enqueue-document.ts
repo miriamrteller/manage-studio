@@ -1,6 +1,9 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
 import { getEnv } from "./edge-runtime/env.ts";
+import { isTenantInvoicingOff } from "./invoicing/tenant-invoicing.ts";
 import type { DocumentKind } from "./invoicing/types.ts";
+
+export const DOCUMENT_ENQUEUE_SKIPPED = "document_enqueue_skipped";
 
 interface EnqueueParams {
   tenantId: string;
@@ -63,7 +66,20 @@ async function processQueueInline(
 export async function enqueueDocument(
   service: SupabaseClient,
   params: EnqueueParams,
-): Promise<{ queued: boolean; queueId?: string }> {
+): Promise<{ queued: boolean; queueId?: string; skipped?: "invoicing_off" }> {
+  // Invoicing off: never queue a tax document. Without this the default resolver
+  // ('grow', no credentials) would retry, die and page the admin for every cash payment.
+  if (await isTenantInvoicingOff(service, params.tenantId)) {
+    await service.from("audit_log").insert({
+      tenant_id: params.tenantId,
+      action: DOCUMENT_ENQUEUE_SKIPPED,
+      entity_type: "payment",
+      entity_id: params.paymentId,
+      after_state: { reason: "invoicing_off", document_kind: params.documentKind },
+    });
+    return { queued: false, skipped: "invoicing_off" };
+  }
+
   const { data, error } = await service
     .from("document_queue")
     .insert({
