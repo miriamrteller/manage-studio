@@ -3,114 +3,36 @@ import { useTranslation } from 'react-i18next';
 import { useMutation } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
-
-type TenantPlan = 'essential' | 'professional';
-type TenantVertical = 'photographer' | 'beautician' | 'dance-studio' | 'generic';
-/** Stripe omitted — dormant / not for IL; adapter kept in codebase. */
-type PaymentProvider = 'grow' | 'icount' | 'mock';
-type InvoicingProvider = 'grow' | 'green_invoice' | 'icount';
+import { tenantOrigin } from '@/lib/tenantUrl';
+import {
+  createStudio,
+  resendOwnerInvite,
+  STUDIO_INVOICING_OPTIONS,
+  STUDIO_PAYMENT_OPTIONS,
+  type OwnerInviteStatus,
+  type StudioInvoicingProvider,
+  type StudioPaymentProvider,
+  type StudioSetupResult,
+} from '../services/studioSetupService';
+import { INITIAL_FORM, toSetupRequest, VERTICALS, type StudioSetupForm } from '../lib/studioSetupForm';
 
 const SUBDOMAIN_RE = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/;
 const HEX_COLOR = /^#[0-9A-Fa-f]{6}$/;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export interface ProvisionFormState {
-  name: string;
-  subdomain: string;
-  plan: TenantPlan;
-  vertical: TenantVertical;
-  primaryColor: string;
-  accentColor: string;
-  languageDefault: 'he' | 'en';
-  country: 'IL' | 'US';
-  currency: string;
-  phoneRegion: string;
-  paymentProvider: PaymentProvider;
-  invoicingProvider: InvoicingProvider;
-  ownerEmail: string;
-}
+const STEPS = ['studio', 'type', 'payments', 'look', 'owner', 'review'] as const;
+type Step = (typeof STEPS)[number];
 
-const INITIAL_STATE: ProvisionFormState = {
-  name: '',
-  subdomain: '',
-  plan: 'essential',
-  vertical: 'generic',
-  primaryColor: '#6366F1',
-  accentColor: '#8B5CF6',
-  languageDefault: 'he',
-  country: 'IL',
-  currency: 'ILS',
-  phoneRegion: 'IL',
-  paymentProvider: 'grow',
-  invoicingProvider: 'grow',
-  ownerEmail: '',
-};
-
-const STEPS = [
-  'identity',
-  'plan',
-  'vertical',
-  'branding',
-  'locale',
-  'tax',
-  'review',
-] as const;
-
-const PLAN_OPTIONS: Array<{
-  value: TenantPlan;
-  title: string;
-  description: string;
-}> = [
-  {
-    value: 'essential',
-    title: 'Essential',
-    description:
-      'Appointment-based booking. Single and deposit+ payment flows. Best for: Solo practitioners, photographers, beauticians.',
-  },
-  {
-    value: 'professional',
-    title: 'Professional',
-    description:
-      'Class enrollment with calendar-accurate terms, student & multi-child family billing. Best for: Dance studios, academies.',
-  },
-];
-
-const VERTICAL_OPTIONS: Array<{
-  value: TenantVertical;
-  label: string;
-  description: string;
-}> = [
-  {
-    value: 'photographer',
-    label: 'Photographer',
-    description: 'Shoots & galleries, gated delivery',
-  },
-  {
-    value: 'beautician',
-    label: 'Beautician / Salon',
-    description: 'Appointment booking, client cards',
-  },
-  {
-    value: 'dance-studio',
-    label: 'Dance Studio',
-    description: 'Classes, terms, family billing',
-  },
-  {
-    value: 'generic',
-    label: 'Other',
-    description: 'General purpose',
-  },
-];
-
+/** Operator wizard: create a studio, invite its owner, then show what's left to set up. */
 export function OperatorOnboardingWizard() {
   const { t } = useTranslation();
   const [stepIndex, setStepIndex] = useState(0);
-  const [form, setForm] = useState<ProvisionFormState>(INITIAL_STATE);
+  const [form, setForm] = useState<StudioSetupForm>(INITIAL_FORM);
   const [subdomainStatus, setSubdomainStatus] = useState<'idle' | 'ok' | 'taken' | 'invalid'>('idle');
   const [error, setError] = useState<string | null>(null);
-  const [createdSubdomain, setCreatedSubdomain] = useState<string | null>(null);
-  const [createdTenantId, setCreatedTenantId] = useState<string | null>(null);
+  const [created, setCreated] = useState<StudioSetupResult | null>(null);
 
-  const step = STEPS[stepIndex];
+  const step: Step = STEPS[stepIndex];
 
   const checkSubdomain = useMutation({
     mutationFn: async (subdomain: string) => {
@@ -120,95 +42,34 @@ export function OperatorOnboardingWizard() {
       if (rpcError) throw rpcError;
       return Boolean(data);
     },
-    onSuccess: (available) => {
-      setSubdomainStatus(available ? 'ok' : 'taken');
-    },
-    onError: () => setSubdomainStatus('invalid'),
   });
 
   const provision = useMutation({
-    mutationFn: async () => {
-      const { data, error: rpcError } = await supabase.rpc('provision_tenant', {
-        p_name: form.name.trim(),
-        p_subdomain: form.subdomain.trim().toLowerCase(),
-        p_plan: form.plan,
-        p_vertical: form.vertical,
-        p_owner_email: form.ownerEmail.trim() || null,
-        p_language_default: form.languageDefault,
-        p_country: form.country,
-        p_currency: form.currency.trim().toUpperCase(),
-        p_phone_region: form.phoneRegion.trim().toUpperCase(),
-        p_payment_provider: form.paymentProvider,
-        p_invoicing_provider: form.invoicingProvider,
-        p_primary_color: form.primaryColor,
-        p_accent_color: form.accentColor,
-      });
-      if (rpcError) throw rpcError;
-      return data as string;
-    },
-    onSuccess: (tenantId) => {
-      setCreatedTenantId(tenantId);
-      setCreatedSubdomain(form.subdomain.trim().toLowerCase());
-    },
+    mutationFn: () => createStudio(toSetupRequest(form)),
+    onSuccess: (result) => setCreated(result),
     onError: (err: Error) => {
-      setError(err.message || t('settings.onboarding.error_provision'));
+      setError(
+        err.message === 'email_in_other_studio'
+          ? t('studio_setup.owner_in_other_studio')
+          : err.message === 'email_is_platform_owner'
+            ? t('studio_setup.owner_is_platform_owner')
+            : err.message || t('studio_setup.error_create'),
+      );
     },
   });
 
-  const grantTenantAdmin = useMutation({
-    mutationFn: async () => {
-      if (!createdTenantId) throw new Error('Missing tenant id');
-      const email = form.ownerEmail.trim();
-      if (!email) throw new Error('Enter owner email first');
-
-      const { data: profile, error: lookupError } = await supabase
-        .from('user_profiles')
-        .select('id, role')
-        .eq('tenant_id', createdTenantId)
-        .eq('email', email)
-        .maybeSingle();
-
-      if (lookupError) throw lookupError;
-      if (!profile) {
-        throw new Error('Owner account not found yet. Ask them to complete signup, then try again.');
-      }
-
-      const currentRoles = Array.isArray(profile.role) ? profile.role : [];
-      const nextRoles = currentRoles.includes('tenant_admin')
-        ? currentRoles
-        : [...currentRoles, 'tenant_admin'];
-
-      const { error: updateError } = await supabase
-        .from('user_profiles')
-        .update({ role: nextRoles })
-        .eq('id', profile.id);
-
-      if (updateError) throw updateError;
-    },
-  });
-
-  function updateForm<K extends keyof ProvisionFormState>(key: K, value: ProvisionFormState[K]) {
+  function update<K extends keyof StudioSetupForm>(key: K, value: StudioSetupForm[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
   function canAdvance(): boolean {
     switch (step) {
-      case 'identity':
-        return (
-          form.name.trim().length > 0 &&
-          SUBDOMAIN_RE.test(form.subdomain.trim().toLowerCase()) &&
-          subdomainStatus === 'ok'
-        );
-      case 'plan':
-        return true;
-      case 'vertical':
-        return true;
-      case 'branding':
+      case 'studio':
+        return form.name.trim().length > 0 && SUBDOMAIN_RE.test(form.subdomain.trim().toLowerCase());
+      case 'look':
         return HEX_COLOR.test(form.primaryColor) && HEX_COLOR.test(form.accentColor);
-      case 'locale':
-        return form.currency.trim().length >= 3 && form.phoneRegion.trim().length >= 2;
-      case 'tax':
-        return form.paymentProvider.length > 0 && form.invoicingProvider.length > 0;
+      case 'owner':
+        return EMAIL_RE.test(form.ownerEmail.trim());
       default:
         return true;
     }
@@ -216,367 +77,276 @@ export function OperatorOnboardingWizard() {
 
   async function handleNext() {
     setError(null);
-    if (step === 'identity') {
-      const normalized = form.subdomain.trim().toLowerCase();
-      if (!SUBDOMAIN_RE.test(normalized)) {
+    if (step === 'studio') {
+      const subdomain = form.subdomain.trim().toLowerCase();
+      if (!SUBDOMAIN_RE.test(subdomain)) {
         setSubdomainStatus('invalid');
         return;
       }
-      const available = await checkSubdomain.mutateAsync(normalized);
-      if (!available) {
-        setSubdomainStatus('taken');
+      try {
+        const available = await checkSubdomain.mutateAsync(subdomain);
+        setSubdomainStatus(available ? 'ok' : 'taken');
+        if (!available) return;
+      } catch {
+        setError(t('studio_setup.error_check_address'));
         return;
       }
-      setSubdomainStatus('ok');
     }
     if (step === 'review') {
-      await provision.mutateAsync();
+      provision.mutate();
       return;
     }
     if (!canAdvance()) return;
     setStepIndex((i) => Math.min(i + 1, STEPS.length - 1));
   }
 
-  function handleBack() {
-    setError(null);
-    setStepIndex((i) => Math.max(i - 1, 0));
+  if (created) {
+    return <StudioCreated result={created} ownerEmail={form.ownerEmail.trim().toLowerCase()} name={form.name.trim()} />;
   }
 
-  if (createdSubdomain) {
-    const host = typeof window !== 'undefined' ? window.location.host : 'localhost:5173';
-    const baseHost = host.includes('.') ? host.split('.').slice(1).join('.') : host;
-    const signupUrl = `${typeof window !== 'undefined' ? window.location.protocol : 'http:'}//${createdSubdomain}.${baseHost}/signup`;
-
-    return (
-      <section className="max-w-lg space-y-4">
-        <h2 className="text-xl font-semibold">{t('settings.onboarding.success_title')}</h2>
-        <p role="status">
-          {t('settings.onboarding.success_message', { subdomain: createdSubdomain })}
-        </p>
-        <div className="rounded-md border border-border bg-muted/20 p-4 space-y-3 text-sm">
-          <p className="font-medium">Next steps</p>
-          <ol className="list-decimal ps-5 space-y-2">
-            <li>
-              Open the tenant signup page:
-              <div className="mt-1">
-                <a
-                  className="font-mono text-xs underline break-all"
-                  href={signupUrl}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                >
-                  {signupUrl}
-                </a>
-              </div>
-            </li>
-            <li>
-              Create the owner account
-              {form.ownerEmail ? ` with ${form.ownerEmail}` : ''}.
-            </li>
-            <li>
-              Grant <code>tenant_admin</code> role directly here:
-              <div className="mt-2 flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => grantTenantAdmin.mutate()}
-                  disabled={grantTenantAdmin.isPending || !form.ownerEmail.trim()}
-                >
-                  {grantTenantAdmin.isPending ? 'Granting...' : 'Grant tenant_admin'}
-                </Button>
-                {grantTenantAdmin.isSuccess && (
-                  <span className="text-xs text-green-700">Role granted successfully.</span>
-                )}
-              </div>
-              {grantTenantAdmin.isError && (
-                <p className="mt-2 text-xs text-red-600">
-                  {(grantTenantAdmin.error as Error).message}
-                </p>
-              )}
-            </li>
-          </ol>
-        </div>
-      </section>
-    );
-  }
+  const paymentLabel = (slug: StudioPaymentProvider) => t(`studio_setup.payment_${slug}`);
+  const invoicingLabel = (slug: StudioInvoicingProvider) => t(`studio_setup.invoicing_${slug}`);
 
   return (
     <div className="max-w-2xl space-y-6">
       <header className="space-y-2">
-        <h1 className="text-3xl font-bold">{t('settings.onboarding.title')}</h1>
-        <p className="text-gray-600">{t('settings.onboarding.description')}</p>
-        <p className="text-sm text-muted-foreground">
-          {t(`settings.onboarding.step_${step}`)} ({stepIndex + 1}/{STEPS.length})
+        <h1 className="text-3xl font-bold">{t('studio_setup.title')}</h1>
+        <p className="text-gray-700">{t('studio_setup.description')}</p>
+        <p className="text-sm text-gray-700">
+          {t('studio_setup.step_counter', { current: stepIndex + 1, total: STEPS.length })}
+          {' · '}
+          {t(`studio_setup.step_${step}`)}
         </p>
       </header>
 
-      {step === 'identity' && (
+      {step === 'studio' && (
         <section className="space-y-4">
           <div className="space-y-2">
-            <label className="block text-sm font-medium" htmlFor="ob-name">
-              {t('settings.onboarding.school_name')}
-            </label>
-            <input
-              id="ob-name"
-              className="form-input w-full"
-              value={form.name}
-              onChange={(e) => updateForm('name', e.target.value)}
-            />
+            <label className="block text-sm font-medium" htmlFor="ss-name">{t('studio_setup.name')}</label>
+            <input id="ss-name" className="form-input w-full" value={form.name} onChange={(e) => update('name', e.target.value)} />
           </div>
           <div className="space-y-2">
-            <label className="block text-sm font-medium" htmlFor="ob-subdomain">
-              {t('settings.onboarding.subdomain')}
-            </label>
-            <input
-              id="ob-subdomain"
-              className="form-input w-full font-mono"
-              value={form.subdomain}
-              onChange={(e) => {
-                updateForm('subdomain', e.target.value.toLowerCase());
-                setSubdomainStatus('idle');
-              }}
-              onBlur={() => {
-                const s = form.subdomain.trim().toLowerCase();
-                if (SUBDOMAIN_RE.test(s)) void checkSubdomain.mutate(s);
-                else setSubdomainStatus('invalid');
-              }}
-            />
-            <p className="text-xs text-muted-foreground">{t('settings.onboarding.subdomain_help')}</p>
-            {subdomainStatus === 'ok' && (
-              <p className="text-xs text-green-700">{t('settings.onboarding.subdomain_available')}</p>
-            )}
-            {subdomainStatus === 'taken' && (
-              <p className="text-xs text-red-600">{t('settings.onboarding.subdomain_taken')}</p>
-            )}
+            <label className="block text-sm font-medium" htmlFor="ss-subdomain">{t('studio_setup.address')}</label>
+            <div className="flex items-center gap-2" dir="ltr">
+              <input
+                id="ss-subdomain"
+                className="form-input w-full font-mono"
+                value={form.subdomain}
+                aria-describedby="ss-subdomain-help"
+                onChange={(e) => {
+                  update('subdomain', e.target.value.toLowerCase());
+                  setSubdomainStatus('idle');
+                }}
+              />
+              <span className="shrink-0 text-sm text-gray-700">.{tenantOrigin('x').replace(/^https?:\/\/x\./, '')}</span>
+            </div>
+            <p id="ss-subdomain-help" className="text-xs text-gray-700">{t('studio_setup.address_help')}</p>
+            {subdomainStatus === 'taken' && <p className="text-xs text-red-700" role="alert">{t('studio_setup.address_taken')}</p>}
+            {subdomainStatus === 'invalid' && <p className="text-xs text-red-700" role="alert">{t('studio_setup.address_invalid')}</p>}
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium" htmlFor="ss-language">{t('studio_setup.language')}</label>
+              <select id="ss-language" className="form-input w-full" value={form.languageDefault} onChange={(e) => update('languageDefault', e.target.value as 'he' | 'en')}>
+                <option value="en">English</option>
+                <option value="he">עברית</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium" htmlFor="ss-country">{t('studio_setup.country')}</label>
+              <select id="ss-country" className="form-input w-full" value={form.country} onChange={(e) => update('country', e.target.value as 'IL' | 'US')}>
+                <option value="IL">{t('studio_setup.country_il')}</option>
+                <option value="US">{t('studio_setup.country_us')}</option>
+              </select>
+            </div>
           </div>
         </section>
       )}
 
-      {step === 'plan' && (
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {PLAN_OPTIONS.map((option) => {
-            const selected = form.plan === option.value;
-            return (
-              <button
-                key={option.value}
-                type="button"
-                className={`text-start rounded-xl p-4 transition ${
-                  selected
-                    ? 'border-2 border-primary bg-primary/5'
-                    : 'border border-border cursor-pointer hover:border-primary/50'
-                }`}
-                onClick={() => updateForm('plan', option.value)}
+      {step === 'type' && (
+        <fieldset className="space-y-3">
+          <legend className="mb-2 text-sm font-medium">{t('studio_setup.type_question')}</legend>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            {VERTICALS.map((vertical) => (
+              <label
+                key={vertical}
+                className={`cursor-pointer rounded-xl p-4 ${form.vertical === vertical ? 'border-2 border-primary bg-primary/5' : 'border border-border'}`}
               >
-                <h3 className="text-base font-semibold">✦ {option.title}</h3>
-                <p className="mt-2 text-sm text-muted-foreground">{option.description}</p>
-              </button>
-            );
-          })}
+                <input
+                  type="radio"
+                  name="ss-vertical"
+                  className="sr-only"
+                  checked={form.vertical === vertical}
+                  onChange={() => update('vertical', vertical)}
+                />
+                <span className="block font-semibold">{t(`studio_setup.vertical_${vertical}`)}</span>
+                <span className="mt-1 block text-sm text-gray-700">{t(`studio_setup.vertical_${vertical}_hint`)}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      )}
+
+      {step === 'payments' && (
+        <section className="space-y-6">
+          <fieldset className="space-y-2">
+            <legend className="mb-1 text-sm font-medium">{t('studio_setup.payment_question')}</legend>
+            {STUDIO_PAYMENT_OPTIONS.map((slug) => (
+              <label key={slug} className="flex items-center gap-2">
+                <input type="radio" name="ss-payment" value={slug} checked={form.paymentProvider === slug} onChange={() => update('paymentProvider', slug)} />
+                {paymentLabel(slug)}
+              </label>
+            ))}
+          </fieldset>
+          <fieldset className="space-y-2">
+            <legend className="mb-1 text-sm font-medium">{t('studio_setup.invoicing_question')}</legend>
+            {STUDIO_INVOICING_OPTIONS.map((slug) => (
+              <label key={slug} className="flex items-center gap-2">
+                <input type="radio" name="ss-invoicing" value={slug} checked={form.invoicingProvider === slug} onChange={() => update('invoicingProvider', slug)} />
+                {invoicingLabel(slug)}
+              </label>
+            ))}
+          </fieldset>
+          <p className="text-sm text-gray-700">{t('studio_setup.payments_later')}</p>
         </section>
       )}
 
-      {step === 'vertical' && (
-        <section className="space-y-3">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {VERTICAL_OPTIONS.map((option) => {
-              const selected = form.vertical === option.value;
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  className={`text-start rounded-xl p-4 transition ${
-                    selected
-                      ? 'border-2 border-primary bg-primary/5'
-                      : 'border border-border cursor-pointer hover:border-primary/50'
-                  }`}
-                  onClick={() => updateForm('vertical', option.value)}
-                >
-                  <h3 className="text-base font-semibold">{option.label}</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">{option.description}</p>
-                </button>
-              );
-            })}
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Dance Studio automatically uses the Professional layout. Other verticals use Essential
-            by default.
-          </p>
-        </section>
-      )}
-
-      {step === 'branding' && (
-        <section className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <label className="block text-sm font-medium">{t('settings.onboarding.primary_color')}</label>
-            <input
-              type="color"
-              className="h-10 w-14"
-              value={form.primaryColor}
-              onChange={(e) => updateForm('primaryColor', e.target.value)}
-            />
-            <input
-              className="form-input font-mono"
-              value={form.primaryColor}
-              onChange={(e) => updateForm('primaryColor', e.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="block text-sm font-medium">{t('settings.onboarding.accent_color')}</label>
-            <input
-              type="color"
-              className="h-10 w-14"
-              value={form.accentColor}
-              onChange={(e) => updateForm('accentColor', e.target.value)}
-            />
-            <input
-              className="form-input font-mono"
-              value={form.accentColor}
-              onChange={(e) => updateForm('accentColor', e.target.value)}
-            />
+      {step === 'look' && (
+        <section className="space-y-4">
+          <p className="text-sm text-gray-700">{t('studio_setup.look_hint')}</p>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {(['primaryColor', 'accentColor'] as const).map((key) => (
+              <div key={key} className="space-y-2">
+                <label className="block text-sm font-medium" htmlFor={`ss-${key}`}>
+                  {t(key === 'primaryColor' ? 'studio_setup.primary_color' : 'studio_setup.accent_color')}
+                </label>
+                <div className="flex items-center gap-2" dir="ltr">
+                  <input type="color" aria-hidden="true" tabIndex={-1} className="h-10 w-14" value={form[key]} onChange={(e) => update(key, e.target.value)} />
+                  <input id={`ss-${key}`} className="form-input font-mono" value={form[key]} onChange={(e) => update(key, e.target.value)} />
+                </div>
+              </div>
+            ))}
           </div>
         </section>
       )}
 
-      {step === 'locale' && (
-        <section className="space-y-4 max-w-md">
-          <select
-            className="form-input w-full"
-            value={form.languageDefault}
-            onChange={(e) => updateForm('languageDefault', e.target.value as 'he' | 'en')}
-          >
-            <option value="he">{t('settings.hub.language_he')}</option>
-            <option value="en">{t('settings.hub.language_en')}</option>
-          </select>
-          <select
-            className="form-input w-full"
-            value={form.country}
-            onChange={(e) => updateForm('country', e.target.value as 'IL' | 'US')}
-          >
-            <option value="IL">{t('settings.hub.country_il')}</option>
-            <option value="US">{t('settings.hub.country_us')}</option>
-          </select>
+      {step === 'owner' && (
+        <section className="space-y-2">
+          <label className="block text-sm font-medium" htmlFor="ss-owner">{t('studio_setup.owner_email')}</label>
           <input
+            id="ss-owner"
+            type="email"
+            dir="ltr"
             className="form-input w-full"
-            value={form.currency}
-            onChange={(e) => updateForm('currency', e.target.value)}
-            maxLength={3}
+            value={form.ownerEmail}
+            aria-describedby="ss-owner-help"
+            onChange={(e) => update('ownerEmail', e.target.value)}
           />
-          <input
-            className="form-input w-full"
-            value={form.phoneRegion}
-            onChange={(e) => updateForm('phoneRegion', e.target.value)}
-            maxLength={2}
-          />
-        </section>
-      )}
-
-      {step === 'tax' && (
-        <section className="space-y-4 max-w-md">
-          <div className="space-y-2">
-            <label className="block text-sm font-medium" htmlFor="ob-payment-provider">
-              Payment provider
-            </label>
-            <select
-              id="ob-payment-provider"
-              className="form-input w-full"
-              value={form.paymentProvider}
-              onChange={(e) => updateForm('paymentProvider', e.target.value as PaymentProvider)}
-            >
-              <option value="grow">Grow</option>
-              <option value="icount">iCount</option>
-              {/* Mock lets anyone confirm a "payment" without paying, so never offer it in a production build. */}
-              {!import.meta.env.PROD && <option value="mock">Mock (testing)</option>}
-            </select>
-          </div>
-          <div className="space-y-2">
-            <label className="block text-sm font-medium" htmlFor="ob-invoicing-provider">
-              Invoice provider
-            </label>
-            <select
-              id="ob-invoicing-provider"
-              className="form-input w-full"
-              value={form.invoicingProvider}
-              onChange={(e) => updateForm('invoicingProvider', e.target.value as InvoicingProvider)}
-            >
-              <option value="grow">Grow</option>
-              <option value="green_invoice">Green Invoice</option>
-              <option value="icount">iCount</option>
-            </select>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            You can change providers later in tenant settings.
+          <p id="ss-owner-help" className="text-sm text-gray-700">
+            {t('studio_setup.owner_help')} {t('studio_setup.owner_not_platform')}
           </p>
         </section>
       )}
 
       {step === 'review' && (
         <section className="space-y-4">
-          <h2 className="text-lg font-semibold">{t('settings.onboarding.review_title')}</h2>
-          <dl className="text-sm space-y-1">
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">{t('settings.onboarding.school_name')}</dt>
-              <dd>{form.name}</dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">{t('settings.onboarding.subdomain')}</dt>
-              <dd className="font-mono">{form.subdomain}</dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Plan</dt>
-              <dd className="capitalize">{form.plan}</dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Vertical</dt>
-              <dd className="capitalize">{form.vertical.replace('-', ' ')}</dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Payment provider</dt>
-              <dd className="capitalize">{form.paymentProvider.replace('_', ' ')}</dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Invoice provider</dt>
-              <dd className="capitalize">{form.invoicingProvider.replace('_', ' ')}</dd>
-            </div>
+          <h2 className="text-lg font-semibold">{t('studio_setup.review_title')}</h2>
+          <dl className="space-y-1 text-sm">
+            <ReviewRow label={t('studio_setup.name')} value={form.name} />
+            <ReviewRow label={t('studio_setup.address')} value={tenantOrigin(form.subdomain.trim().toLowerCase()).replace(/^https?:\/\//, '')} ltr />
+            <ReviewRow label={t('studio_setup.language')} value={form.languageDefault === 'he' ? 'עברית' : 'English'} />
+            <ReviewRow label={t('studio_setup.step_type')} value={t(`studio_setup.vertical_${form.vertical}`)} />
+            <ReviewRow label={t('studio_setup.payment_question')} value={paymentLabel(form.paymentProvider)} />
+            <ReviewRow label={t('studio_setup.invoicing_question')} value={invoicingLabel(form.invoicingProvider)} />
+            <ReviewRow label={t('studio_setup.owner_email')} value={form.ownerEmail.trim()} ltr />
           </dl>
-          <div className="space-y-2">
-            <label className="block text-sm font-medium" htmlFor="ob-owner-email">
-              {t('settings.onboarding.admin_email')}
-            </label>
-            <input
-              id="ob-owner-email"
-              type="email"
-              className="form-input w-full"
-              value={form.ownerEmail}
-              onChange={(e) => updateForm('ownerEmail', e.target.value)}
-            />
-            <p className="text-xs text-muted-foreground">{t('settings.onboarding.admin_email_help')}</p>
-          </div>
         </section>
       )}
 
-      {error && (
-        <p className="text-sm text-red-600" role="alert">
-          {error}
-        </p>
-      )}
+      {error && <p className="text-sm text-red-700" role="alert">{error}</p>}
 
       <div className="flex gap-3">
         {stepIndex > 0 && (
-          <Button variant="outline" onClick={handleBack}>
-            {t('settings.onboarding.back')}
+          <Button variant="outline" onClick={() => { setError(null); setStepIndex((i) => Math.max(i - 1, 0)); }}>
+            {t('studio_setup.back')}
           </Button>
         )}
         <Button
           variant="primary"
-          disabled={provision.isPending || checkSubdomain.isPending}
+          disabled={provision.isPending || checkSubdomain.isPending || !canAdvance()}
           onClick={() => void handleNext()}
         >
           {step === 'review'
-            ? provision.isPending
-              ? t('settings.onboarding.provisioning')
-              : t('settings.onboarding.provision')
-            : t('settings.onboarding.next')}
+            ? provision.isPending ? t('studio_setup.creating') : t('studio_setup.create')
+            : t('studio_setup.next')}
         </Button>
       </div>
     </div>
+  );
+}
+
+function ReviewRow({ label, value, ltr }: { label: string; value: string; ltr?: boolean }) {
+  return (
+    <div className="flex justify-between gap-4">
+      <dt className="text-gray-700">{label}</dt>
+      <dd dir={ltr ? 'ltr' : undefined} className={ltr ? 'font-mono' : undefined}>{value}</dd>
+    </div>
+  );
+}
+
+const CHECKLIST = ['branding', 'classes', 'legal', 'sender', 'test_enrolment', 'lawyer'] as const;
+
+function StudioCreated({ result, ownerEmail, name }: { result: StudioSetupResult; ownerEmail: string; name: string }) {
+  const { t } = useTranslation();
+  const [owner, setOwner] = useState<OwnerInviteStatus>(result.owner);
+  const resend = useMutation({
+    mutationFn: () => resendOwnerInvite(result.tenantId, ownerEmail),
+    onSuccess: setOwner,
+  });
+  const origin = tenantOrigin(result.subdomain);
+
+  return (
+    <section className="max-w-2xl space-y-6">
+      <h1 className="text-3xl font-bold">{t('studio_setup.created_title', { name })}</h1>
+      <ul className="space-y-2">
+        <li>
+          {t('studio_setup.created_address')}{' '}
+          <a className="underline" dir="ltr" href={origin} target="_blank" rel="noreferrer noopener">{origin.replace(/^https?:\/\//, '')}</a>
+        </li>
+        <li>
+          <a className="underline" href={`${origin}/admin/setup`} target="_blank" rel="noreferrer noopener">{t('studio_setup.created_admin_link')}</a>
+        </li>
+      </ul>
+
+      <div role="status" className="rounded-md border border-border p-4 text-sm">
+        {owner.status === 'invited' && t('studio_setup.owner_invited', { email: ownerEmail })}
+        {owner.status === 'already_owner' && t('studio_setup.owner_already', { email: ownerEmail })}
+        {owner.status === 'failed' && (
+          <div className="space-y-2">
+            <p className="text-red-700">
+              {owner.reason === 'email_in_other_studio'
+                ? t('studio_setup.owner_in_other_studio')
+                : owner.reason === 'email_is_platform_owner'
+                  ? t('studio_setup.owner_is_platform_owner')
+                  : t('studio_setup.owner_invite_failed', { email: ownerEmail })}
+            </p>
+            {owner.reason === 'invite_failed' && (
+              <Button variant="outline" onClick={() => resend.mutate()} disabled={resend.isPending}>
+                {t('studio_setup.owner_resend')}
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <h2 className="text-lg font-semibold">{t('studio_setup.next_title')}</h2>
+        <ol className="list-decimal space-y-1 ps-5">
+          {CHECKLIST.map((item) => (
+            <li key={item}>{t(`studio_setup.next_${item}`)}</li>
+          ))}
+        </ol>
+      </div>
+    </section>
   );
 }
