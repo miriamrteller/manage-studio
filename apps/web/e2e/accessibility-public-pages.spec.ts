@@ -30,6 +30,8 @@ async function blockingViolations(page: Page): Promise<AxeViolation[]> {
 }
 
 test.describe('Public pages: no critical or contrast violations', () => {
+  // CI installs Chromium only (ci.yml); axe results do not depend on the engine.
+  test.skip(({ browserName }) => browserName !== 'chromium', 'axe scan runs on Chromium only');
   for (const path of PAGES) {
     for (const lang of ['en', 'he'] as const) {
       test(`${path} (${lang})`, async ({ page }) => {
