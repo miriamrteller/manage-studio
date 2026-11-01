@@ -86,6 +86,20 @@
     "booking_flow": {
       "back_to_portal": "Back to my bookings",
       "back_to_portal_signin": "Sign in to see my bookings"
+    },
+    "students": {
+      "title": "Clients",
+      "description": "View and manage your clients. Expand a row for a quick summary, or click Details for full info.",
+      "classes_column": "Shoots",
+      "enrolments_section": "Shoots",
+      "no_enrolments": "No shoots yet",
+      "no_classes": "No shoots yet",
+      "enrol_button": "New shoot",
+      "enrol_new_button": "Add client",
+      "empty_title": "No clients found",
+      "empty_message": "Add a client to get started, or adjust your filters.",
+      "filter_by_enrolment_status": "Booking status",
+      "no_billing": "No billing account linked to any shoot"
     }
   },
   "enrolment": {

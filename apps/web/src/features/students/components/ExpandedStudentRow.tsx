@@ -3,6 +3,8 @@ import { Button } from '@/components/ui/button';
 import { EnrolmentSummaryList } from '@/features/enrolment/components/EnrolmentSummaryList';
 import type { StudentEnrolmentSummary } from '@/features/enrolment/lib/enrolmentFilterOptions';
 import { resolveGuardianEmail } from '@/features/enrolment/lib/resolveGuardianEmail';
+import { ClientShootList } from '@/features/jobs/components/ClientShootList';
+import type { JobRow } from '@/features/jobs/services/jobService';
 import type { Person } from '@shared/schemas';
 
 interface ExpandedStudentRowProps {
@@ -11,6 +13,11 @@ interface ExpandedStudentRowProps {
   familyMap: Map<string, { contact_person_name: string | null; contact_phone: string | null; contact_email: string | null }>;
   contactPrefsMap: Map<string, { preferred_channel: string; whatsapp_verified: boolean; whatsapp_number: string | null }>;
   onEnrol?: (person: Person) => void;
+  /**
+   * Photographer tenants: the client's shoots. When set, the third column
+   * lists shoots instead of class enrolments and there's no guardian wording.
+   */
+  shoots?: JobRow[];
 }
 
 /**
@@ -23,7 +30,9 @@ export function ExpandedStudentRow({
   familyMap,
   contactPrefsMap,
   onEnrol,
+  shoots,
 }: ExpandedStudentRowProps) {
+  const isClient = shoots !== undefined;
   const { t } = useTranslation();
   const family = person.account_id ? familyMap.get(person.account_id) : null;
   const cp = contactPrefsMap.get(person.id);
@@ -34,7 +43,7 @@ export function ExpandedStudentRow({
   const showGuardian = !studentHasContact && !!family;
   const hasContact = studentHasContact || showGuardian;
 
-  const contactLabel = showGuardian
+  const contactLabel = showGuardian && !isClient
     ? t('pages.students.contact_section_guardian')
     : t('pages.students.contact_section');
 
@@ -107,7 +116,9 @@ export function ExpandedStudentRow({
         <p className="font-semibold text-gray-600 mb-1 text-xs uppercase tracking-wide">
           {t('pages.students.classes_column')}
         </p>
-        {enrolments.length > 0 ? (
+        {isClient && shoots.length > 0 ? (
+          <ClientShootList jobs={shoots} />
+        ) : !isClient && enrolments.length > 0 ? (
           <EnrolmentSummaryList
             enrolments={enrolments}
             returnTo="/admin/students"

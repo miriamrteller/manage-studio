@@ -9,7 +9,8 @@ import {
 
 const KEY = 'jobs';
 
-export function useJobs() {
+/** `enabled: false` skips the list fetch (e.g. pages shared with dance tenants). */
+export function useJobs({ enabled = true }: { enabled?: boolean } = {}) {
   const tenant = useTenant();
   const queryClient = useQueryClient();
 
@@ -19,7 +20,7 @@ export function useJobs() {
       if (!tenant) throw new Error('Tenant not initialized');
       return JobService.list(tenant);
     },
-    enabled: !!tenant?.id,
+    enabled: enabled && !!tenant?.id,
   });
 
   const createMutation = useMutation({
