@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAdminDashboard } from './useAdminDashboard';
 import { useEntityLabels } from '@/hooks/useEntityLabels';
+import { managePackagesPath } from '@/features/classes/lib/managePackagesPath';
 import { FinanceHealthCard } from '@/features/finance/components/FinanceHealthCard';
 import { AdminOverviewSection } from '@/features/admin-dashboard/components/AdminOverviewSection';
 import { useTenant } from '@/hooks/useTenant';
@@ -17,7 +18,7 @@ export function AdminPanel() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { overview, isLoading, error, refetch } = useAdminDashboard();
-  const { labels, modules } = useEntityLabels();
+  const { labels, modules, vertical } = useEntityLabels();
   const tenant = useTenant();
   const healthProvider = getBundledPaymentProviderSlug(tenant);
 
@@ -179,7 +180,7 @@ export function AdminPanel() {
             <Button
               variant="primary"
               fullWidth
-              onClick={() => navigate('/admin/setup/classes')}
+              onClick={() => navigate(managePackagesPath(vertical))}
               aria-label={t('pages.admin_classes.title')}
             >
               {t('common.manage')} →

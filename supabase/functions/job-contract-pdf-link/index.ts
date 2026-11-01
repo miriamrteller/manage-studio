@@ -21,10 +21,11 @@ import {
   contractPdfLocation,
   type RegeneratedContractPdf,
 } from "../_shared/contract-pdf/evidence.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
 
 const LINK_TTL_SECONDS = 10 * 60;
 
-Deno.serve(async (req) => {
+Deno.serve(withMonitoring("job-contract-pdf-link", async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
 
@@ -126,4 +127,4 @@ Deno.serve(async (req) => {
     console.error("[job-contract-pdf-link]", err);
     return jsonResponse({ error: "Internal error" }, 500);
   }
-});
+}));

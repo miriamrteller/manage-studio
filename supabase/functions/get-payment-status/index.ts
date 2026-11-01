@@ -2,6 +2,7 @@ import { corsHeaders, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/supabase.ts";
 import { extractWaiverToken, verifyWaiverToken } from "../_shared/waiver-token.ts";
 import { resolveAllowedTokenRecipientEmails } from "../_shared/token-recipient.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
 
 interface StatusBody {
   engagement_id: string;
@@ -17,7 +18,7 @@ interface StatusBody {
  * Auth mirrors create-checkout: an authenticated Bearer session scoped to the engagement's
  * tenant, or a valid enrolment WaiverToken whose email is on the engagement's recipient list.
  */
-Deno.serve(async (req) => {
+Deno.serve(withMonitoring("get-payment-status", async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
 
@@ -102,4 +103,4 @@ Deno.serve(async (req) => {
     console.error("[get-payment-status]", err);
     return jsonResponse({ error: err instanceof Error ? err.message : "Internal error" }, 500);
   }
-});
+}));

@@ -16,11 +16,12 @@ import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { loadJobContractContext } from "../_shared/job-contract.ts";
 import { decideClientContractLink } from "../_shared/jobs/client-contract-link.ts";
 import { mintJobContractSignLink } from "../_shared/jobs/contract-sign-link.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
 
 /** Short-lived: the client is redirected to the page immediately. */
 const LINK_TTL_SECONDS = 2 * 3600;
 
-Deno.serve(async (req) => {
+Deno.serve(withMonitoring("client-job-contract-link", async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
 
@@ -87,4 +88,4 @@ Deno.serve(async (req) => {
     console.error("[client-job-contract-link]", err);
     return jsonResponse({ error: "Internal error" }, 500);
   }
-});
+}));

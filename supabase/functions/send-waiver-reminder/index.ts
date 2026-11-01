@@ -32,6 +32,7 @@ import {
 } from "../_shared/notification-from.ts";
 import { tenantBaseUrl } from "../_shared/tenant-url.ts";
 import { signWaiverToken } from "../_shared/waiver-token.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
 
 const CRON_SECRET = Deno.env.get("CRON_SECRET") ?? "";
 const BATCH_LIMIT = 100;
@@ -72,7 +73,7 @@ interface PaymentRow {
   currency: string | null;
 }
 
-Deno.serve(async (req) => {
+Deno.serve(withMonitoring("send-waiver-reminder", async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204 });
   }
@@ -332,4 +333,4 @@ Deno.serve(async (req) => {
 
   console.log("[send-waiver-reminder] done:", results);
   return jsonResponse({ ok: true, processed: rows.length, results });
-});
+}));

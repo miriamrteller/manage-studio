@@ -20,6 +20,7 @@ import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { resolveTenantSender, TENANT_SENDER_COLUMNS, type TenantSenderInput } from "../_shared/notification-from.ts";
 import { tenantBaseUrl } from "../_shared/tenant-url.ts";
 import { sendHtmlEmail } from "../_shared/email-client.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
 
 const CRON_SECRET = Deno.env.get("CRON_SECRET") ?? "";
 const BATCH_LIMIT = 200;
@@ -74,7 +75,7 @@ function releasedHtml(lang: string, schoolName: string, bookUrl: string): string
   return `<div dir="${dir}"><h2>${schoolName}</h2>${body}<p><a href="${bookUrl}">${cta}</a></p></div>`;
 }
 
-Deno.serve(async (req) => {
+Deno.serve(withMonitoring("expire-scheduling-holds", async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204 });
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
 
@@ -236,4 +237,4 @@ Deno.serve(async (req) => {
   }
 
   return jsonResponse({ ok: true, remindersSent, expired, engagementsCancelled });
-});
+}));

@@ -1,6 +1,22 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
+import { execSync } from 'child_process'
+
+/**
+ * Release id for error reports: the git commit being built. Cloudflare Workers
+ * Builds sets WORKERS_CI_COMMIT_SHA, GitHub Actions sets GITHUB_SHA; local builds
+ * fall back to `git rev-parse`. Empty when none is available.
+ */
+function releaseSha(): string {
+  const fromEnv = process.env.VITE_RELEASE || process.env.WORKERS_CI_COMMIT_SHA || process.env.GITHUB_SHA
+  if (fromEnv) return fromEnv
+  try {
+    return execSync('git rev-parse HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim()
+  } catch {
+    return ''
+  }
+}
 
 /** Map Deno `npm:` specifiers in edge-function imports to Node packages for Vitest. */
 function denoNpmImportMap() {
@@ -95,9 +111,16 @@ export default defineConfig({
         define: {
           'import.meta.env.VITE_SUPABASE_URL': JSON.stringify('https://demo.supabase.invalid'),
           'import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY': JSON.stringify('demo'),
+          // The demo makes no external requests, so error reporting is always off.
+          'import.meta.env.VITE_SENTRY_DSN': JSON.stringify(''),
+          'import.meta.env.VITE_RELEASE': JSON.stringify(''),
         },
       }
-    : {}),
+    : {
+        define: {
+          'import.meta.env.VITE_RELEASE': JSON.stringify(releaseSha()),
+        },
+      }),
   server: {
     host: '0.0.0.0',
   },

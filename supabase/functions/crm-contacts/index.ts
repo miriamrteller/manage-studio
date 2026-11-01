@@ -13,6 +13,7 @@ import type {
   CrmPersonRow,
   CrmTenantRow,
 } from "../_shared/crm-contract/map-contacts.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
 
 /**
  * crm-contacts — read-only GET serving the mobile-crm v1 data contract
@@ -53,7 +54,7 @@ function corsHeadersFor(req: Request): Record<string, string> {
   };
 }
 
-Deno.serve(async (req) => {
+Deno.serve(withMonitoring("crm-contacts", async (req) => {
   const cors = corsHeadersFor(req);
   const json = (body: unknown, status = 200) =>
     new Response(JSON.stringify(body), {
@@ -148,4 +149,4 @@ Deno.serve(async (req) => {
     console.error("crm-contacts: unhandled error", err);
     return json({ error: "Internal error" }, 500);
   }
-});
+}));

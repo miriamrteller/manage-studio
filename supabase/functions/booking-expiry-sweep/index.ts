@@ -14,10 +14,11 @@
 
 import { serve }        from "https://deno.land/std@0.168.0/http/server.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
 
 type ServiceClient = ReturnType<typeof createServiceClient>;
 
-serve(async (_req: Request): Promise<Response> => {
+serve(withMonitoring("booking-expiry-sweep", async (_req: Request): Promise<Response> => {
   try {
     const supabase = createServiceClient();
 
@@ -84,7 +85,7 @@ serve(async (_req: Request): Promise<Response> => {
       headers: { "Content-Type": "application/json" },
     });
   }
-});
+}));
 
 type NudgeCandidate = {
   id:            string;

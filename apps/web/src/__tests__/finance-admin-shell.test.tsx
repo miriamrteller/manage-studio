@@ -22,6 +22,10 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
+vi.mock('@/hooks/useEntityLabels', () => ({
+  useEntityLabels: () => ({ vertical: 'dance-studio' }),
+}));
+
 function renderWithClient(ui: ReactNode) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },

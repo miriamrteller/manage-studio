@@ -1,8 +1,9 @@
 import { handleOptions, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/supabase.ts";
 import { getInvoicingProviderForTenant } from "../_shared/invoicing/index.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
 
-Deno.serve(async (req) => {
+Deno.serve(withMonitoring("verify-invoicing-credentials", async (req) => {
   const options = handleOptions(req);
   if (options) return options;
 
@@ -54,4 +55,4 @@ Deno.serve(async (req) => {
       502,
     );
   }
-});
+}));

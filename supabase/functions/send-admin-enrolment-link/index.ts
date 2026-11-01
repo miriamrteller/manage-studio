@@ -8,6 +8,7 @@ import {
   EMAIL_TEMPLATE_NAMES,
   sendRenderedEmail,
 } from "../_shared/email-send.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
 
 interface SendAdminEnrolmentLinkBody {
   engagementId: string;
@@ -30,7 +31,7 @@ function getAppBaseUrl(req: Request): string {
   }
 }
 
-Deno.serve(async (req) => {
+Deno.serve(withMonitoring("send-admin-enrolment-link", async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
 
@@ -230,5 +231,5 @@ Deno.serve(async (req) => {
     console.error("[send-admin-enrolment-link]", err);
     return jsonResponse({ error: err instanceof Error ? err.message : "Internal error" }, 500);
   }
-});
+}));
 

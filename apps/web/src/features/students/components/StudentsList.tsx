@@ -41,6 +41,10 @@ import { EnrolmentSummaryList } from '@/features/enrolment/components/EnrolmentS
 import { DEFAULT_PERSON_SORT, type PersonSortField } from '../lib/personSort';
 import { AdminEnrolStudentModal } from '@/features/enrolment/components/AdminEnrolStudentModal';
 import { resolveGuardianEmail } from '@/features/enrolment/lib/resolveGuardianEmail';
+import { useJobs } from '@/features/jobs/hooks/useJobs';
+import { ClientShootList } from '@/features/jobs/components/ClientShootList';
+import { NEW_SHOOT_PATH, newShootState } from '@/features/jobs/lib/newShootRoute';
+import type { JobRow } from '@/features/jobs/services/jobService';
 import { ExpandedStudentRow } from './ExpandedStudentRow';
 import { StudentSlideOver } from './StudentSlideOver';
 import { getStudentAgeDisplay } from '@/lib/utils';
@@ -52,7 +56,10 @@ type StatusFilter = 'active' | 'inactive' | 'all';
 
 export function StudentsList() {
   const { t } = useTranslation();
-  const { labels } = useEntityLabels();
+  const { labels, vertical } = useEntityLabels();
+  // Photographers: this page is "Clients". Bookings are shoots (/admin/jobs),
+  // so class/level/family/age/guardian UI and the /enrol flow don't apply.
+  const isPhotographer = vertical === 'photographer';
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const classIdFromUrl = searchParams.get('class');
@@ -216,6 +223,30 @@ export function StudentsList() {
     [familiesQuery.data]
   );
 
+  const { jobs } = useJobs({ enabled: isPhotographer });
+  const jobsByPerson = useMemo(() => {
+    const map = new Map<string, JobRow[]>();
+    for (const job of jobs) {
+      const list = map.get(job.person_id) ?? [];
+      list.push(job);
+      map.set(job.person_id, list);
+    }
+    return map;
+  }, [jobs]);
+
+  const openNewShoot = useCallback(
+    (person?: Person) =>
+      navigate(NEW_SHOOT_PATH, {
+        state: newShootState(person ? { id: person.id, name: person.name } : null),
+      }),
+    [navigate],
+  );
+
+  const openAddAction = () =>
+    isPhotographer
+      ? openNewShoot()
+      : navigate('/enrol', { state: { mode: 'admin', from: '/admin/students' } });
+
   const openEnrolModal = useCallback((person: Person) => {
     const family = person.account_id ? familyMap.get(person.account_id) : undefined;
     setEnrolModalStudent({
@@ -274,7 +305,9 @@ export function StudentsList() {
       columnHelper.accessor('id', {
         id: 'classes',
         header: t('pages.students.classes_column'),
-        cell: ({ row }) => (
+        cell: ({ row }) => isPhotographer ? (
+          <ClientShootList jobs={jobsByPerson.get(row.original.id) ?? []} compact />
+        ) : (
           <EnrolmentSummaryList
             enrolments={enrolmentsByPerson.get(row.original.id) ?? []}
             returnTo="/admin/students"
@@ -341,11 +374,14 @@ export function StudentsList() {
         id: 'actions',
         header: () => null,
         cell: ({ row }) => (
-          <div className="flex gap-1">
+          // Phones: stack the two pills instead of squeezing them.
+          <div className="flex flex-col items-stretch gap-1 sm:flex-row sm:items-center sm:justify-end">
             <Button
               variant="primary"
               size="sm"
-              onClick={() => openEnrolModal(row.original)}
+              onClick={() =>
+                isPhotographer ? openNewShoot(row.original) : openEnrolModal(row.original)
+              }
             >
               {t('pages.students.enrol_button')}
             </Button>
@@ -361,13 +397,17 @@ export function StudentsList() {
         size: 160,
       }),
     ],
-    [t, enrolmentsByPerson, familyMap, contactPrefsMap, openEnrolModal]
+    [t, enrolmentsByPerson, familyMap, contactPrefsMap, openEnrolModal, isPhotographer, jobsByPerson, openNewShoot]
   );
 
   const table = useReactTable({
     data: students,
     columns,
-    state: { expanded },
+    state: {
+      expanded,
+      // Photographer clients: no age ("Adult" for everyone) or guardian columns.
+      columnVisibility: isPhotographer ? { date_of_birth: false, guardian: false } : {},
+    },
     onExpandedChange: setExpanded,
     getRowCanExpand: () => true,
     getCoreRowModel: getCoreRowModel(),
@@ -545,7 +585,7 @@ export function StudentsList() {
           />
         }
         actions={
-          <Button variant="primary" onClick={() => navigate('/enrol', { state: { mode: 'admin', from: '/admin/students' } })}>
+          <Button variant="primary" onClick={openAddAction}>
             {t('pages.students.enrol_new_button')}
           </Button>
         }
@@ -589,7 +629,7 @@ export function StudentsList() {
           }}
         />
 
-        {classes.length > 0 && (
+        {!isPhotographer && classes.length > 0 && (
           <FilterMultiSelect
             id="class-filter"
             label={t('pages.students.filter_by_class')}
@@ -602,42 +642,46 @@ export function StudentsList() {
           />
         )}
 
-        <FamilyMultiSelect
-          selected={selectedFamilies}
-          onChange={(next) => {
-            setSelectedFamilies(next);
-            resetPage();
-          }}
-        />
+        {!isPhotographer && (
+          <>
+            <FamilyMultiSelect
+              selected={selectedFamilies}
+              onChange={(next) => {
+                setSelectedFamilies(next);
+                resetPage();
+              }}
+            />
 
-        <FilterMultiSelect
-          id="level-filter"
-          label={t('pages.students.filter_by_level')}
-          options={levelOptions}
-          selected={selectedLevels}
-          onChange={(next) => {
-            setSelectedLevels(next);
-            resetPage();
-          }}
-        />
+            <FilterMultiSelect
+              id="level-filter"
+              label={t('pages.students.filter_by_level')}
+              options={levelOptions}
+              selected={selectedLevels}
+              onChange={(next) => {
+                setSelectedLevels(next);
+                resetPage();
+              }}
+            />
 
-        <AgeRangeFilter
-          minAge={minAge}
-          maxAge={maxAge}
-          onMinChange={(v) => {
-            setMinAge(v);
-            resetPage();
-          }}
-          onMaxChange={(v) => {
-            setMaxAge(v);
-            resetPage();
-          }}
-          onClear={() => {
-            setMinAge(null);
-            setMaxAge(null);
-            resetPage();
-          }}
-        />
+            <AgeRangeFilter
+              minAge={minAge}
+              maxAge={maxAge}
+              onMinChange={(v) => {
+                setMinAge(v);
+                resetPage();
+              }}
+              onMaxChange={(v) => {
+                setMaxAge(v);
+                resetPage();
+              }}
+              onClear={() => {
+                setMinAge(null);
+                setMaxAge(null);
+                resetPage();
+              }}
+            />
+          </>
+        )}
       </FilterDrawer>
 
       {/* Loading */}
@@ -656,43 +700,47 @@ export function StudentsList() {
           title={t('pages.students.empty_title')}
           message={t('pages.students.empty_message')}
           actionLabel={t('pages.students.enrol_new_button')}
-          onAction={() => navigate('/enrol', { state: { mode: 'admin', from: '/admin/students' } })}
+          onAction={openAddAction}
         />
       )}
 
       {/* Table */}
       {students.length > 0 && (
-        <div className="card overflow-x-auto">
+        <div className="card overflow-x-auto max-sm:p-2">
           <table className="w-full text-sm">
             <thead className="border-b" style={{ borderColor: 'var(--color-border-default)' }}>
               <tr>
-                <th className="px-3 py-3" style={{ width: 32 }} />
+                <th className="px-1 sm:px-3 py-3" style={{ width: 32 }} />
                 <SortableHeader
                   label={t('pages.people.name_label')}
                   sortKey="name"
                   currentField={sortField}
                   currentOrder={sortOrder}
                   onSort={handleSort}
-                  className="px-3 py-3 text-start font-medium text-gray-700"
+                  className="px-2 sm:px-3 py-3 text-start font-medium text-gray-700"
                 />
-                <th className="px-3 py-3 text-start font-medium text-gray-700">
+                <th className="px-2 sm:px-3 py-3 text-start font-medium text-gray-700">
                   {t('pages.students.classes_column')}
                 </th>
-                <SortableHeader
-                  label={t('pages.people.age_label')}
-                  sortKey="date_of_birth"
-                  currentField={sortField}
-                  currentOrder={sortOrder}
-                  onSort={handleSort}
-                  className="px-3 py-3 text-start font-medium text-gray-700"
-                />
-                <th className="px-3 py-3 text-start font-medium text-gray-700">
-                  {t('pages.students.guardian_column')}
-                </th>
-                <th className="px-3 py-3 text-start font-medium text-gray-700" style={{ width: 120 }}>
+                {!isPhotographer && (
+                  <>
+                    <SortableHeader
+                      label={t('pages.people.age_label')}
+                      sortKey="date_of_birth"
+                      currentField={sortField}
+                      currentOrder={sortOrder}
+                      onSort={handleSort}
+                      className="px-2 sm:px-3 py-3 text-start font-medium text-gray-700"
+                    />
+                    <th className="px-2 sm:px-3 py-3 text-start font-medium text-gray-700">
+                      {t('pages.students.guardian_column')}
+                    </th>
+                  </>
+                )}
+                <th className="hidden sm:table-cell px-2 sm:px-3 py-3 text-start font-medium text-gray-700" style={{ width: 120 }}>
                   {t('pages.students.notifications_column')}
                 </th>
-                <th className="px-3 py-3" style={{ width: 80 }} />
+                <th className="px-2 sm:px-3 py-3" />
               </tr>
             </thead>
             <tbody>
@@ -703,20 +751,26 @@ export function StudentsList() {
                     style={{ borderColor: 'var(--color-border-default)' }}
                   >
                     {row.getVisibleCells().map((cell) => (
-                      <td key={cell.id} className="px-3 py-3">
+                      <td
+                        key={cell.id}
+                        className={`${cell.column.id === 'expander' ? 'px-1' : 'px-2'} sm:px-3 py-3${
+                          cell.column.id === 'notifications' ? ' hidden sm:table-cell' : ''
+                        }`}
+                      >
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </td>
                     ))}
                   </tr>
                   {row.getIsExpanded() && (
                     <tr className="bg-gray-50">
-                      <td colSpan={columns.length} className="px-6 py-4">
+                      <td colSpan={row.getVisibleCells().length} className="px-6 py-4">
                         <ExpandedStudentRow
                           person={row.original}
                           enrolments={enrolmentsByPerson.get(row.original.id) ?? []}
                           familyMap={familyMap}
                           contactPrefsMap={contactPrefsMap}
-                          onEnrol={openEnrolModal}
+                          onEnrol={isPhotographer ? openNewShoot : openEnrolModal}
+                          shoots={isPhotographer ? jobsByPerson.get(row.original.id) ?? [] : undefined}
                         />
                       </td>
                     </tr>

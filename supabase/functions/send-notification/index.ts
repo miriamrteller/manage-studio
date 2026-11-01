@@ -15,6 +15,7 @@ import {
   resolveTenantSender,
   type TenantSenderInput,
 } from "../_shared/notification-from.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
 
 interface NotificationPayload {
   tenantId: string;
@@ -95,7 +96,7 @@ interface TwilioVerifyResponse {
   date_created: string;
 }
 
-serve(async (req: Request) => {
+serve(withMonitoring("send-notification", async (req: Request) => {
   const options = handleOptions(req);
   if (options) return options;
 
@@ -172,7 +173,8 @@ serve(async (req: Request) => {
         },
         400,
       );
-    }    const twilioAccountSid = Deno.env.get("TWILIO_ACCOUNT_SID")!;
+    }
+    const twilioAccountSid = Deno.env.get("TWILIO_ACCOUNT_SID")!;
     const twilioAuthToken = Deno.env.get("TWILIO_AUTH_TOKEN")!;
     const twilioPhoneNumber = Deno.env.get("TWILIO_PHONE_NUMBER")!;
 
@@ -347,7 +349,7 @@ serve(async (req: Request) => {
       500,
     );
   }
-});
+}));
 
 /**
  * Helper: Get tenant configuration for email sending

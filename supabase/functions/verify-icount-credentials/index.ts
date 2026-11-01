@@ -3,6 +3,7 @@ import { getEnv } from "../_shared/edge-runtime/env.ts";
 import { MockIcountPaymentProvider } from "../_shared/payments/providers/mock-icount.ts";
 import { IcountPaymentProvider } from "../_shared/payments/providers/icount.ts";
 import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/supabase.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
 
 /**
  * Auth health ping for a tenant's iCount credentials. Uses MockIcount when ICOUNT_MOCK=true.
@@ -10,7 +11,7 @@ import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/su
  *
  * Imports providers directly (not payments/index.ts) so deploy bundle stays free of email deps.
  */
-Deno.serve(async (req) => {
+Deno.serve(withMonitoring("verify-icount-credentials", async (req) => {
   const options = handleOptions(req);
   if (options) return options;
 
@@ -57,4 +58,4 @@ Deno.serve(async (req) => {
 
   const health = await provider.verifyCredentials(tenantId);
   return jsonResponse({ ok: health.valid, provider: "icount", ...health }, health.valid ? 200 : 502);
-});
+}));

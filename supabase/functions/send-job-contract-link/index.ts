@@ -21,6 +21,7 @@ import {
   JOB_CONTRACT_EMAIL_LINK_TTL_SECONDS,
   mintJobContractSignLink,
 } from "../_shared/jobs/contract-sign-link.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
 
 interface SendJobContractLinkBody {
   engagementId: string;
@@ -40,7 +41,7 @@ function getAppBaseUrl(req: Request): string {
   }
 }
 
-Deno.serve(async (req) => {
+Deno.serve(withMonitoring("send-job-contract-link", async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
 
@@ -183,4 +184,4 @@ Deno.serve(async (req) => {
     console.error("[send-job-contract-link]", err);
     return jsonResponse({ error: err instanceof Error ? err.message : "Internal error" }, 500);
   }
-});
+}));

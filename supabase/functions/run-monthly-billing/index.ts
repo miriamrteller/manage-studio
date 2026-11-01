@@ -6,6 +6,7 @@ import {
   currentPeriodYmJerusalem,
   todayInJerusalem,
 } from "../_shared/payments/billing-time.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
 
 const CRON_SECRET = Deno.env.get("CRON_SECRET") ?? "";
 const BATCH_LIMIT = 50;
@@ -22,7 +23,7 @@ function authorizeCron(req: Request): boolean {
   return authHeader === `Bearer ${CRON_SECRET}` || cronHeader === CRON_SECRET;
 }
 
-Deno.serve(async (req) => {
+Deno.serve(withMonitoring("run-monthly-billing", async (req) => {
   if (req.method !== "POST") {
     return jsonResponse({ error: "Method not allowed" }, 405);
   }
@@ -92,4 +93,4 @@ Deno.serve(async (req) => {
   }
 
   return jsonResponse({ ok: true, processed, charged, failed });
-});
+}));
