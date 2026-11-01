@@ -16,7 +16,12 @@ import { ReportProblemProvider } from '../components/ReportProblem';
 const PUBLIC_PATHS = new Set(['/', '/classes', '/login', '/signup', '/enrol']);
 
 function isPublicRoute(pathname: string): boolean {
-  return PUBLIC_PATHS.has(pathname) || pathname.startsWith('/auth/') || pathname.startsWith('/enrol/pay/');
+  return (
+    PUBLIC_PATHS.has(pathname) ||
+    pathname.startsWith('/auth/') ||
+    pathname.startsWith('/enrol/pay/') ||
+    pathname.startsWith('/legal/')
+  );
 }
 
 function AppLayoutContent({ children }: { children: ReactNode }) {

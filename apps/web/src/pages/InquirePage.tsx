@@ -139,7 +139,7 @@ export default function InquirePage() {
           </div>
         )}
 
-        <PrivacyNotice />
+        <PrivacyNotice purpose="enquiry" />
 
         <Button type="submit" variant="primary" disabled={status === 'sending'}>
           {status === 'sending' ? t('common.loading') : t('pages.crm.inquire.submit')}

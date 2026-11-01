@@ -42,6 +42,7 @@ import type { EnrollmentIntent } from '@/lib/enrollment-intent';
 import { persistEnrollmentIntent } from '@/lib/enrollment-intent';
 import type { Engagement } from '@shared/schemas';
 import type { EnrolmentStepperProps } from '../types/enrolmentStep';
+import { PrivacyNotice } from '@/components/PrivacyNotice';
 
 export type { EnrolmentStep, EnrolmentStepperProps } from '../types/enrolmentStep';
 
@@ -750,6 +751,7 @@ export function EnrolmentStepper({
             checkoutError={checkoutError}
             isPreparing={isCheckoutPreparing || (isCreating && !checkoutEnrolmentId)}
             requireAuth={enrolmentContext.mode !== 'guest' && Boolean(user)}
+            acceptedByRole={isUnder18(personDateOfBirth) ? 'guardian' : 'self'}
             onPaymentSuccess={handlePaymentSuccess}
             onPrevious={handlePreviousStep}
             canGoBack={canGoBack}
@@ -776,7 +778,21 @@ export function EnrolmentStepper({
             onClose={() => onSuccess?.(enrolmentData as Engagement)}
           />
         )}
+        {currentStep !== 'confirmation' && enrolmentContext.mode !== 'admin' && (
+          <PrivacyNotice purpose="enrolment" className="mt-4" />
+        )}
       </div>
     </div>
   );
+}
+
+function isUnder18(dateOfBirth: string | null | undefined): boolean {
+  if (!dateOfBirth) return false;
+  const dob = new Date(dateOfBirth);
+  if (Number.isNaN(dob.getTime())) return false;
+  const now = new Date();
+  let age = now.getFullYear() - dob.getFullYear();
+  const m = now.getMonth() - dob.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < dob.getDate())) age -= 1;
+  return age < 18;
 }

@@ -13,13 +13,13 @@ Season: [[SEASON NAME, e.g. 2026–2027]] · Last updated: [[DATE]]
 ## 1. The class
 
 - Class, level, day, time and place: as shown on the enrolment page and in the confirmation email.
-- Season: from [[START DATE]] to [[END DATE]], about [[NUMBER]] lessons. There are no classes on [[HOLIDAYS — e.g. Israeli public holidays and school holidays as listed in the studio calendar]].
+- Season: from [[START DATE]] to [[END DATE]], about [[NUMBER OF LESSONS]] lessons. There are no classes on [[HOLIDAYS — e.g. Israeli public holidays and school holidays as listed in the studio calendar]].
 - The studio may change a teacher, time or room for good reason. If a change makes the class unsuitable for you, you may cancel under section 4 without a fee.
 - End-of-year performance: [[DETAILS / costume fees, if any]].
 
 ## 2. Price and payment
 
-- Price for the season: [[₪ AMOUNT]] [[incl. VAT / no VAT charged (עוסק פטור)]], or [[₪ AMOUNT]] per month for [[NUMBER]] months. Registration fee: [[₪ / none]]. Sibling discount: [[DETAILS]].
+- Price for the season: [[SEASON PRICE ₪]] [[incl. VAT / no VAT charged (עוסק פטור)]], or [[MONTHLY PRICE ₪]] per month for [[NUMBER OF MONTHS]] months. Registration fee: [[₪ / none]]. Sibling discount: [[SIBLING DISCOUNT]].
 - Payment methods: [[bank transfer / cash / Bit / card through the payment page]].
 - Payment dates: [[e.g. on the 1st of each month / in advance for the season]].
 - **How payments are recorded:** payments are recorded by the studio in its management system, and you can see them in the parent portal. [[RECEIPTS: "We issue a receipt for every payment." — once the studio is a registered business. Until then: see owner checklist; do not publish without resolving.]]
@@ -28,7 +28,7 @@ Season: [[SEASON NAME, e.g. 2026–2027]] · Last updated: [[DATE]]
 ## 3. Missed classes and make-up lessons
 
 - A class the **studio** cancels will be made up on another date or credited/refunded proportionally.
-- A class the **student** misses (illness, holiday, etc.) is not refunded. You may book a make-up lesson in a suitable class within [[30 days]], subject to space, up to [[NUMBER]] make-ups per season.
+- A class the **student** misses (illness, holiday, etc.) is not refunded. You may book a make-up lesson in a suitable class within [[30 days]], subject to space, up to [[MAX MAKE-UPS]] make-ups per season.
 - If the studio cannot operate for a long period for reasons beyond its control (for example a security situation and Home Front Command instructions), we will offer online lessons, make-up lessons or a proportional credit/refund. ([[LAWYER: check current guidance for emergency periods]])
 
 ## 4. Cancelling the enrolment
@@ -56,7 +56,7 @@ Refunds are paid in the way you paid, or as agreed.
 
 ## 6. Conduct
 
-We expect respectful behaviour toward teachers, students and parents. Dress code: [[DETAILS]]. Watching classes: [[e.g. only at open lessons]]. Filming classes by parents: [[e.g. not allowed, to protect other children's privacy]]. If a student's behaviour repeatedly puts others at risk, after talking with the parent we may end the enrolment with a proportional refund.
+We expect respectful behaviour toward teachers, students and parents. Dress code: [[DRESS CODE]]. Watching classes: [[e.g. only at open lessons]]. Filming classes by parents: [[e.g. not allowed, to protect other children's privacy]]. If a student's behaviour repeatedly puts others at risk, after talking with the parent we may end the enrolment with a proportional refund.
 
 ## 7. Photos and video
 

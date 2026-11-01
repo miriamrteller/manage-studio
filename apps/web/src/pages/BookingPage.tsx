@@ -260,7 +260,7 @@ export default function BookingPage() {
             />
           </label>
           <p className="text-sm text-gray-500">{t('scheduling.book.hold_note')}</p>
-          <PrivacyNotice />
+          <PrivacyNotice purpose="booking" />
           <Button
             variant="primary"
             className="w-full sm:w-auto"

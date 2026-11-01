@@ -1,25 +1,34 @@
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useTenant } from '@/hooks/useTenant';
-import { resolveLegalLinks } from '@/lib/legalLinks';
+import { isInternalLegalLink } from '@/lib/legalLinks';
+import { useLegalLinks } from '@/legal/useLegalLinks';
+import { cn } from '@/lib/utils';
+
+export type PrivacyNoticePurpose = 'enquiry' | 'booking' | 'payment' | 'enrolment' | 'signup' | 'quote';
 
 /**
  * One-line privacy notice for any public form that collects personal details
- * (Privacy Protection Law §11; docs/legal/APP-GAPS.md "Privacy notice on public forms").
- * The link goes to the studio's policy, or the platform's on the root site.
+ * (Privacy Protection Law §11): what the details are used for, and a link to
+ * the policy. A studio that hasn't set up its policy yet links to its
+ * /legal/studio-privacy page, which shows how to contact the studio.
  */
-export function PrivacyNotice({ className = '' }: { className?: string }) {
+export function PrivacyNotice({ purpose, className }: { purpose?: PrivacyNoticePurpose; className?: string }) {
   const { t } = useTranslation();
-  const tenant = useTenant();
-  const { privacy } = resolveLegalLinks(tenant);
+  const links = useLegalLinks();
+  const href = links.privacy ?? (links.isTenant ? '/legal/studio-privacy' : '/legal/opalswift-privacy');
 
   return (
-    <p className={`text-xs text-muted-foreground ${className}`.trim()}>
-      {t('legal.privacy_notice')}{' '}
-      {privacy ? (
-        <a href={privacy} target="_blank" rel="noopener noreferrer" className="underline">
-          {t('footer.privacy')}
+    <p className={cn('text-xs text-muted-foreground', className)} data-testid="privacy-notice">
+      {purpose ? t(`legal.notice.${purpose}`) : t('legal.privacy_notice')}{' '}
+      {isInternalLegalLink(href) ? (
+        <Link to={href} className="underline" target="_blank" rel="noopener noreferrer">
+          {t('legal.notice.policy_link')}
+        </Link>
+      ) : (
+        <a href={href} className="underline" target="_blank" rel="noopener noreferrer">
+          {t('legal.notice.policy_link')}
         </a>
-      ) : null}
+      )}
     </p>
   );
 }

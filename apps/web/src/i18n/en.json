@@ -1504,7 +1504,9 @@
     "legal_nav": "Legal",
     "privacy": "Privacy Policy",
     "terms": "Terms of Service",
-    "accessibility": "Accessibility statement"
+    "enrolment_terms": "Enrolment terms",
+    "accessibility": "Accessibility statement",
+    "cookies": "Cookies"
   },
   "scheduling": {
     "event_type": {
@@ -1897,7 +1899,8 @@
       "profile": "Studio profile",
       "locale": "Language & Region",
       "payment": "Payment Settings",
-      "invoicing": "Invoicing"
+      "invoicing": "Invoicing",
+      "legal": "Legal"
     },
     "branding": {
       "colors": "Colors",
@@ -2172,6 +2175,79 @@
     "go_home": "Go to home"
   },
   "legal": {
+    "docs": {
+      "platform_terms": "Terms of Service",
+      "dpa": "Data Processing Agreement",
+      "opalswift_privacy": "OpalSwift Privacy Policy",
+      "studio_privacy": "Privacy Policy",
+      "enrolment_terms": "Enrolment Terms",
+      "accessibility": "Accessibility Statement",
+      "cookies": "Cookie notice"
+    },
+    "page": {
+      "not_found_title": "Page not found",
+      "not_found_body": "This legal page isn't available here.",
+      "load_error": "Could not load this page. Please try again.",
+      "unpublished_title": "Not published yet",
+      "unpublished_body": "The studio hasn't published this page yet. For questions, write to {{email}}.",
+      "admin_preview": "Preview: only admins see this page until you publish it in Settings → Legal.",
+      "admin_missing": "Some details are still missing on this page.",
+      "admin_missing_count_one": "{{count}} detail still to fill in (highlighted).",
+      "admin_missing_count_other": "{{count}} details still to fill in (highlighted).",
+      "admin_edit_link": "Fill in Settings → Legal"
+    },
+    "notice": {
+      "enquiry": "We use your details only to reply to your enquiry.",
+      "booking": "We use your details to manage your booking and send you service messages.",
+      "payment": "Your payment details are entered with the payment provider; we keep a record of the payment.",
+      "enrolment": "We use these details to manage the enrolment, the class and payments.",
+      "signup": "We use your details to create your account and send you service messages.",
+      "quote": "We use your details to prepare your booking and contract.",
+      "policy_link": "Privacy policy"
+    },
+    "platform_gate": {
+      "title": "Before you continue",
+      "body": "To use OpalSwift for your studio, please read and accept these documents. You only need to do this once (and again if they change).",
+      "checkbox": "I accept the Terms of Service and the Data Processing Agreement on behalf of the studio, and I have read the Privacy Policy.",
+      "accept": "Accept and continue",
+      "error": "Could not save. Please try again."
+    },
+    "signup": {
+      "agree_prefix": "I accept the",
+      "and": "and the",
+      "read_prefix": ", and I have read the"
+    },
+    "enrolment": {
+      "agree_prefix": "I agree to the",
+      "read_prefix": ", and I have read the",
+      "continue": "Continue to payment"
+    },
+    "settings": {
+      "title": "Legal details",
+      "description": "These details fill your privacy policy, enrolment terms and accessibility statement. Fill them in, check the pages, then publish.",
+      "language_note": "Write in the language most of your clients read; your answers appear in both the Hebrew and the English pages.",
+      "choose": "Choose…",
+      "sections": {
+        "identity": "Business",
+        "contacts": "Contacts",
+        "enrolment": "Enrolment terms",
+        "photography": "Photography",
+        "retention": "How long you keep records"
+      },
+      "pages_title": "Your legal pages",
+      "missing_title": "Still missing before you can publish:",
+      "missing_receipts": "Receipts: register the business and choose a business status other than \"Not yet registered\" (an unregistered business can't promise receipts)",
+      "complete": "All details are filled in.",
+      "status_published": "Status: published — linked in the footer and at enrolment.",
+      "status_draft": "Status: draft — only admins can see the pages.",
+      "review_note": "These pages are generated from templates drafted for Israeli law. Have a lawyer review them before publishing.",
+      "publish": "Publish pages",
+      "unpublish": "Unpublish",
+      "saved": "Saved.",
+      "published": "Published.",
+      "unpublished": "Unpublished.",
+      "own_pages_note": "Already have your own pages on your website? Add the links below — they replace the generated pages in the footer and at enrolment."
+    },
     "privacy_notice": "We use your details only to handle your request and enrolment.",
     "accept_terms_prefix": "I have read and accept the",
     "terms_link": "enrolment terms",

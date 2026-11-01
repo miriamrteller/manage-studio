@@ -14,12 +14,14 @@
       "get_public_quote",
       "get_public_schedule_events_by_subdomain",
       "get_tenant_config_by_subdomain",
+      "get_tenant_legal_profile",
       "guest_enrolment_check_email",
       "guest_enrolment_create_adult",
       "guest_enrolment_create_engagement",
       "guest_enrolment_create_family",
       "guest_enrolment_request_age_review",
       "is_super_admin",
+      "record_legal_acceptance",
       "release_scheduling_hold"
     ]
   },
@@ -49,6 +51,7 @@
       "get_google_calendar_connection",
       "get_my_profile",
       "get_pending_waiver_engagement",
+      "get_platform_terms_acceptance",
       "get_schedule_events",
       "get_tenant_features",
       "get_tenant_today",

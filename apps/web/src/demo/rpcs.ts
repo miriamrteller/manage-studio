@@ -147,6 +147,28 @@ export const baseRpcs: Record<string, RpcHandler> = {
 
   get_tenant_features: (_args, ctx) => (rows(ctx, 'tenants')[0]?.enabled_features as string[]) ?? [],
 
+  /** Legal pages (/legal/:doc): the studio's legal details. */
+  get_tenant_legal_profile: (args, ctx) => {
+    const tenant = rows(ctx, 'tenants').find((t) => t.id === args.p_tenant_id);
+    if (!tenant) return [];
+    return [
+      {
+        tenant_id: tenant.id,
+        name: tenant.name,
+        contact_email: tenant.contact_email ?? '',
+        skin: tenant.skin,
+        legal_profile: tenant.legal_profile ?? {},
+        legal_pages_published: tenant.legal_pages_published === true,
+        legal_profile_updated_at: tenant.legal_profile_updated_at ?? null,
+      },
+    ];
+  },
+
+  record_legal_acceptance: (args) => (Array.isArray(args.p_documents) ? args.p_documents.length : 0),
+
+  // The demo studio has "already accepted" the platform terms.
+  get_platform_terms_acceptance: () => true,
+
   get_my_tenant_id: () => TENANT_ID,
 
   get_my_profile: (_args, ctx) => {

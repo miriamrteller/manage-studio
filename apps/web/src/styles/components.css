@@ -85,3 +85,20 @@
     animation: none;
   }
 }
+
+/* Legal pages (/legal/:doc) — generated from docs/legal templates. */
+.legal-document { line-height: 1.7; color: var(--color-text-primary, inherit); }
+.legal-document h1 { font-size: 1.75rem; font-weight: 600; margin: 0 0 1rem; }
+.legal-document h2 { font-size: 1.25rem; font-weight: 600; margin: 2rem 0 0.75rem; }
+.legal-document h3 { font-size: 1.05rem; font-weight: 600; margin: 1.5rem 0 0.5rem; }
+.legal-document p { margin: 0 0 0.85rem; }
+.legal-document ul, .legal-document ol { margin: 0 0 1rem; padding-inline-start: 1.5rem; }
+.legal-document ul { list-style: disc; }
+.legal-document ol { list-style: decimal; }
+.legal-document li { margin: 0.25rem 0; }
+.legal-document a { text-decoration: underline; }
+.legal-document table { width: 100%; border-collapse: collapse; margin: 0 0 1rem; font-size: 0.925rem; display: block; overflow-x: auto; }
+.legal-document th, .legal-document td { border: 1px solid var(--color-border, #d4d4d8); padding: 0.4rem 0.6rem; text-align: start; vertical-align: top; }
+.legal-document th { font-weight: 600; background: var(--color-surface-muted, #f4f4f5); }
+.legal-document code { font-size: 0.875em; }
+.legal-document mark.legal-missing { background: #fef3c7; color: #78350f; padding: 0 0.2rem; border-radius: 0.2rem; }

@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   useCreateStudio,
   type CreateStudioPlan,
@@ -42,6 +44,8 @@ const VERTICAL_OPTIONS: { value: CreateStudioVertical; label: string; plans: Cre
 
 export default function CreateStudioPage() {
   const { createStudio, loading, error } = useCreateStudio();
+  const { t } = useTranslation();
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   const [step, setStep] = useState<1 | 2 | 3>(1); // 1=details, 2=plan, 3=vertical
   const [studioName, setStudioName] = useState('');
@@ -238,9 +242,32 @@ export default function CreateStudioPage() {
                 <p className="text-sm font-medium text-red-800">{error}</p>
               </div>
             )}
+            <label className="flex items-start gap-2 text-sm text-gray-700">
+              <input
+                type="checkbox"
+                className="mt-1"
+                checked={termsAccepted}
+                onChange={(e) => setTermsAccepted(e.target.checked)}
+              />
+              <span>
+                {t('legal.signup.agree_prefix')}{' '}
+                <Link to="/legal/platform-terms" target="_blank" rel="noopener noreferrer" className="underline">
+                  {t('legal.docs.platform_terms')}
+                </Link>{' '}
+                {t('legal.signup.and')}{' '}
+                <Link to="/legal/dpa" target="_blank" rel="noopener noreferrer" className="underline">
+                  {t('legal.docs.dpa')}
+                </Link>
+                {t('legal.signup.read_prefix')}{' '}
+                <Link to="/legal/opalswift-privacy" target="_blank" rel="noopener noreferrer" className="underline">
+                  {t('legal.docs.opalswift_privacy')}
+                </Link>
+                .
+              </span>
+            </label>
             <button
               type="button"
-              disabled={!vertical || loading}
+              disabled={!vertical || !termsAccepted || loading}
               onClick={handleSubmit}
               className="w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >

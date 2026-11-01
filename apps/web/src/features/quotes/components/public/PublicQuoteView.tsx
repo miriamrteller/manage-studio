@@ -103,11 +103,11 @@ function QuoteBody({ quote, token, tenantId, language, onSettled }: QuoteBodyPro
         <PublicQuoteNextSteps result={accept.data ?? null} busy={accept.isPending} onResume={() => accept.mutate()} />
       )}
       {quote.status === 'accepted' && <BackToPortalButton />}
+      {open && <PrivacyNotice purpose="quote" />}
       {open && (
         <PublicQuoteActions busy={accept.isPending || decline.isPending}
           onAccept={() => accept.mutate()} onDecline={(reason) => decline.mutate(reason)} />
       )}
-      {open && <PrivacyNotice />}
     </article>
   );
 }

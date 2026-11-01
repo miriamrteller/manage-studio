@@ -70,7 +70,7 @@ Some of these providers store or access data outside Israel (in the EU and the U
 
 - Account, class and booking records: for as long as you are a client and 7 years after (the limitation period for legal claims).
 - Payment and tax records: as long as tax law requires ([[ACCOUNTANT: usually 7 years]]).
-- Health declarations: the health details are deleted [[e.g. 1]] year after the season; the signed record is kept with signed documents (below), with access restricted.
+- Health declarations: the health details are deleted [[e.g. 1 year]] after the season; the signed record is kept with signed documents (below), with access restricted.
 - Signed waivers/contracts: 7 years after the end of the service; for a child, until the child turns 25 (limitation periods do not run while a claimant is a minor).
 - Marketing consent records: as long as we send you marketing, plus [[e.g. 3]] years as proof of consent.
 

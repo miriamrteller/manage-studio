@@ -94,7 +94,10 @@ export default function SignupPage() {
 
         <FormProvider {...form}>
           {step === 1 && (
-            <SignupStep1 onSubmit={onSubmitStep1} loading={sendOtpLoading} />
+            <>
+              <SignupStep1 onSubmit={onSubmitStep1} loading={sendOtpLoading} />
+              <PrivacyNotice purpose="signup" className="mt-3" />
+            </>
           )}
           {step === 2 && (
             <SignupStep2
@@ -110,7 +113,6 @@ export default function SignupPage() {
             <SignupStep3 onSubmit={onSubmitStep3} loading={verifyOtpLoading} />
           )}
         </FormProvider>
-        <PrivacyNotice className="mt-4" />
 
         {sendOtpError && (
           <div className="rounded-md bg-red-50 p-4" role="alert" aria-live="polite">
