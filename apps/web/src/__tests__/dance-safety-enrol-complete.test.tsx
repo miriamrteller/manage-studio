@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 /**
- * Dance safety for /enrol/complete + WaiverStep: a programs/dance tenant (and
- * generic / vertical-less ones) must render the exact base waiver copy, as on
- * main. The photographer tenant gets the contract wording from the overlay on
- * the same, unchanged components.
+ * Dance safety for /enrol/complete + WaiverStep: the same components and flow
+ * for every tenant; only the document's name differs. A dance tenant calls it a
+ * "health declaration" (dance overlay; docs/legal/07b: never a waiver), generic
+ * and vertical-less tenants a neutral "form" (base), and the photographer
+ * tenant a "contract" (photographer overlay).
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
@@ -77,24 +78,34 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+const DOC: Record<'dance' | 'generic' | 'none', { Name: string; name: string; heAlready: string; heTitle: string }> = {
+  dance: { Name: 'Health declaration', name: 'health declaration', heAlready: 'הצהרת הבריאות כבר נחתמה', heTitle: 'חתמו על הצהרת הבריאות' },
+  generic: { Name: 'Form', name: 'form', heAlready: 'הטופס כבר נחתם', heTitle: 'חתמו על הטופס' },
+  none: { Name: 'Form', name: 'form', heAlready: 'הטופס כבר נחתם', heTitle: 'חתמו על הטופס' },
+};
 const DANCE_LIKE: FakeTenantKind[] = ['dance', 'generic', 'none'];
 
-describe.each(DANCE_LIKE)('EnrolCompletePage — %s tenant keeps the dance copy', (kind) => {
+describe.each(DANCE_LIKE)('EnrolCompletePage — %s tenant keeps the enrolment flow', (kind) => {
+  const doc = DOC[kind as keyof typeof DOC];
   beforeEach(() => setTenant(kind));
 
   it('already signed', async () => {
     mockGuestFetch({ alreadySigned: true });
     renderPage();
-    expect(await screen.findByText('Waiver already signed')).toBeInTheDocument();
-    expect(screen.getByText('Your waiver has been signed and your enrolment is now active.')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Sign your waiver');
+    expect(await screen.findByText(`${doc.Name} already signed`)).toBeInTheDocument();
+    expect(screen.getByText(`Your ${doc.name} has been signed and your enrolment is now active.`)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(`Sign your ${doc.name}`);
   });
 
   it('cancelled', async () => {
     mockGuestFetch({ cancelled: true });
     renderPage();
     expect(await screen.findByText('Enrolment cancelled')).toBeInTheDocument();
-    expect(screen.getByText(baseValue('pages.enrol_complete.cancelled_body'))).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        `This enrolment was cancelled because the ${doc.name} was not signed in time. A refund has been issued. Please re-enrol if you would like to rejoin.`,
+      ),
+    ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Browse classes' })).toBeInTheDocument();
   });
 
@@ -108,36 +119,36 @@ describe.each(DANCE_LIKE)('EnrolCompletePage — %s tenant keeps the dance copy'
     mockGuestFetch({ personId: PERSON_ID, offeringId: OFFERING_ID, template: TEMPLATE });
     renderPage();
     expect(
-      await screen.findByText('Please read the waiver carefully and sign below to activate your enrolment.'),
+      await screen.findByText(`Please read the ${doc.name} carefully and sign below to activate your enrolment.`),
     ).toBeInTheDocument();
-    expect(screen.getByRole('region', { name: 'Waiver document' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: `${doc.Name} document` })).toBeInTheDocument();
 
-    const checkbox = await screen.findByRole('checkbox', { name: 'I have read and accept this waiver' });
-    expect(screen.getByText('I have read and accept this waiver')).toBeInTheDocument();
+    const checkbox = await screen.findByRole('checkbox', { name: `I have read and accept this ${doc.name}` });
+    expect(screen.getByText(`I have read and accept this ${doc.name}`)).toBeInTheDocument();
     fireEvent.click(checkbox);
     fireEvent.change(screen.getByLabelText('Full legal name'), { target: { value: 'Dana Dancer' } });
     fireEvent.click(screen.getByRole('button', { name: 'Sign and Continue' }));
 
-    expect(await screen.findByText('Waiver signed — welcome!')).toBeInTheDocument();
+    expect(await screen.findByText(`${doc.Name} signed — welcome!`)).toBeInTheDocument();
     expect(
-      screen.getByText('Your waiver has been signed and your enrolment is now active. See you in class!'),
+      screen.getByText(`Your ${doc.name} has been signed and your enrolment is now active. See you in class!`),
     ).toBeInTheDocument();
     expect(invoke).toHaveBeenCalledWith('accept-waiver', expect.anything());
   });
 
-  it('Hebrew dance copy is unchanged too', async () => {
+  it('Hebrew copy names the document the same way', async () => {
     await setLanguage('he');
     mockGuestFetch({ alreadySigned: true });
     renderPage();
-    expect(await screen.findByText('הויתור כבר נחתם')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('חתמו על כתב הויתור');
+    expect(await screen.findByText(doc.heAlready)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(doc.heTitle);
   });
 });
 
 describe('WaiverStep — dance tenant (enrolment stepper usage)', () => {
   beforeEach(() => setTenant('dance'));
 
-  it('shows Student / Class context, guardian declaration and waiver wording', async () => {
+  it('shows Student / Class context, guardian declaration and health-declaration wording', async () => {
     renderInApp(
       <WaiverStep
         personId={PERSON_ID}
@@ -155,18 +166,18 @@ describe('WaiverStep — dance tenant (enrolment stepper usage)', () => {
     expect(screen.getByText('Student')).toBeInTheDocument();
     expect(screen.getByText('Class')).toBeInTheDocument();
     expect(screen.getByText('Ballet 1 — Autumn')).toBeInTheDocument();
-    expect(screen.getByRole('region', { name: 'Waiver document' })).toBeInTheDocument();
-    expect(await screen.findByText('I have read and accept this waiver')).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Health declaration document' })).toBeInTheDocument();
+    expect(await screen.findByText('I have read and accept this health declaration')).toBeInTheDocument();
     expect(
       screen.getByText(
-        'I confirm I am the parent or legal guardian of Noa and am authorised to sign this waiver on their behalf.',
+        'I confirm I am the parent or legal guardian of Noa and am authorised to sign this health declaration on their behalf.',
       ),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Sign and Continue' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Back' })).toBeInTheDocument();
   });
 
-  it('minor self-signing is still hard-blocked with the waiver wording', () => {
+  it('minor self-signing is still hard-blocked with the health-declaration wording', () => {
     renderInApp(
       <WaiverStep
         personId={PERSON_ID}
@@ -181,7 +192,11 @@ describe('WaiverStep — dance tenant (enrolment stepper usage)', () => {
       />,
     );
     expect(screen.getByText('A parent or guardian must sign')).toBeInTheDocument();
-    expect(screen.getByText(baseValue('enrolment.waiver_minor_cannot_sign_body').replace('{{studentName}}', 'Noa'))).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Noa is under 18. Israeli law requires a parent or legal guardian to sign the health declaration. Please ask a parent or guardian to log in and complete the enrolment.',
+      ),
+    ).toBeInTheDocument();
   });
 });
 

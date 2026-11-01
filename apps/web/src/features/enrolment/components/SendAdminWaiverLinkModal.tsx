@@ -135,7 +135,7 @@ export function SendAdminWaiverLinkModal({
                   }
                 }}
               >
-                {t('pages.admin_enrol.copy_waiver_link_action', { defaultValue: 'Copy waiver link' })}
+                {t('pages.admin_enrol.copy_waiver_link_action', { defaultValue: 'Copy form link' })}
               </Button>
               {copyFeedback && <p className="text-xs text-gray-600">{copyFeedback}</p>}
             </div>

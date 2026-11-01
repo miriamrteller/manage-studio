@@ -407,7 +407,7 @@ export function EnrolmentStepper({
       <div className="border border-gray-200 rounded-lg p-6 bg-white">
         <h2 className="text-xl font-semibold text-gray-900">{stepTitles[currentStep]}</h2>
         <p className="text-sm text-gray-600 mt-2">
-          {t('enrolment.step')} {currentStepIndex + 1} of {steps.length}
+          {t('enrolment.step_counter', { current: currentStepIndex + 1, total: steps.length })}
         </p>
       </div>
 
@@ -714,7 +714,7 @@ export function EnrolmentStepper({
             <div className="space-y-4">
               {!waiverFlow.waiverStatus || !waiverFlow.waiverStatus.template ? (
                 <p className="text-sm text-muted-foreground" role="status">
-                  {t('enrolment.waiver_loading', { defaultValue: 'Loading waiver…' })}
+                  {t('enrolment.waiver_loading', { defaultValue: 'Loading form…' })}
                 </p>
               ) : (
                 <p className="text-sm text-destructive" role="alert">

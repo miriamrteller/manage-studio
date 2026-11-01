@@ -251,7 +251,7 @@ function WaiverStepInner({
       {/* Scrollable waiver document region */}
       <div
         role="region"
-        aria-label={t('enrolment.waiver_document_region', { defaultValue: 'Waiver document' })}
+        aria-label={t('enrolment.waiver_document_region', { defaultValue: 'Form document' })}
         className="relative h-72 overflow-y-auto rounded-md border border-border bg-muted/30 p-4 text-sm leading-relaxed whitespace-pre-wrap focus:outline-none"
         // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- scrollable region requires tabIndex for keyboard navigation per WAI-ARIA best practices
         tabIndex={0}
@@ -276,7 +276,7 @@ function WaiverStepInner({
       {tokenExpired && (
         <p className="text-sm text-warning" role="alert">
           {t('enrolment.waiver_token_expired', {
-            defaultValue: 'Please scroll to the bottom again to re-confirm you have read the waiver.',
+            defaultValue: 'Please scroll to the bottom again to re-confirm you have read the form.',
           })}
         </p>
       )}
@@ -290,10 +290,10 @@ function WaiverStepInner({
               checked={affirmed}
               onChange={(e) => setAffirmed(e.target.checked)}
               className="mt-0.5"
-              aria-label={t('enrolment.waiver_checkbox_label', { defaultValue: 'I have read and accept this waiver' })}
+              aria-label={t('enrolment.waiver_checkbox_label', { defaultValue: 'I have read and accept this form' })}
             />
             <span className="text-sm">
-              {t('enrolment.waiver_checkbox_label', { defaultValue: 'I have read and accept this waiver' })}
+              {t('enrolment.waiver_checkbox_label', { defaultValue: 'I have read and accept this form' })}
             </span>
           </label>
 

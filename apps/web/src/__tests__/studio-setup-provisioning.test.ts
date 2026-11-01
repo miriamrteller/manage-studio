@@ -7,6 +7,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, it, expect, vi } from 'vitest';
 import {
+  exactIlikePattern,
   inviteStudioOwner,
   provisionStudio,
   ProvisionStudioSchema,
@@ -152,5 +153,35 @@ describe('inviteStudioOwner (send again)', () => {
       reason: 'email_in_other_studio',
     });
     expect(deps.assignOwner).not.toHaveBeenCalled();
+  });
+});
+
+/** Postgres ILIKE with the default backslash escape, for checking patterns in tests. */
+function ilikeMatches(pattern: string, value: string): boolean {
+  let re = '';
+  for (let i = 0; i < pattern.length; i++) {
+    const ch = pattern[i];
+    if (ch === '\\') re += pattern[++i].replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    else if (ch === '%') re += '.*';
+    else if (ch === '_') re += '.';
+    else re += ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+  return new RegExp(`^${re}$`, 'i').test(value);
+}
+
+describe('owner email lookup is exact', () => {
+  it('an underscore or percent in the email is not a wildcard', () => {
+    const pattern = exactIlikePattern('a_b@x.com');
+    expect(ilikeMatches('a_b@x.com', 'axb@x.com')).toBe(true); // the bug, unescaped
+    expect(ilikeMatches(pattern, 'axb@x.com')).toBe(false);
+    expect(ilikeMatches(pattern, 'a_b@x.com')).toBe(true);
+    expect(ilikeMatches(pattern, 'A_B@X.com')).toBe(true); // still case-insensitive
+    expect(ilikeMatches(exactIlikePattern('100%@x.com'), '100abc@x.com')).toBe(false);
+    expect(exactIlikePattern('a\\b_c%d')).toBe('a\\\\b\\_c\\%d');
+  });
+
+  it('the Edge Function uses the exact pattern', () => {
+    const src = readFileSync(resolve(__dirname, '../../../../supabase/functions/provision-studio/index.ts'), 'utf8');
+    expect(src).toMatch(/\.ilike\("email", exactIlikePattern\(email\)\)/);
   });
 });

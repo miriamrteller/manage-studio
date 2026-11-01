@@ -272,7 +272,7 @@ describe('/enrol/complete — job contract continues to the deposit', () => {
   });
 });
 
-describe('/enrol/complete — dance waiver behaves exactly as today', () => {
+describe('/enrol/complete — dance health declaration behaves as before (only its name changed)', () => {
   beforeEach(() => setTenant('dance'));
 
   it('sign → dashboard button; never asks for a job next step', async () => {
@@ -281,10 +281,10 @@ describe('/enrol/complete — dance waiver behaves exactly as today', () => {
       'job-next-step': { body: { next: 'pay_deposit', payPath: PAY_PATH, amountMinor: 1, currency: 'ILS' } },
     });
     renderSignPage();
-    fireEvent.click(await screen.findByRole('checkbox', { name: 'I have read and accept this waiver' }));
+    fireEvent.click(await screen.findByRole('checkbox', { name: 'I have read and accept this health declaration' }));
     fireEvent.change(screen.getByLabelText('Full legal name'), { target: { value: 'Dana Dancer' } });
     fireEvent.click(screen.getByRole('button', { name: 'Sign and Continue' }));
-    expect(await screen.findByText('Waiver signed — welcome!')).toBeInTheDocument();
+    expect(await screen.findByText('Health declaration signed — welcome!')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Go to my dashboard' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Pay deposit' })).not.toBeInTheDocument();
     expect(calledFunctions(fetchMock)).toEqual(['get-waiver-engagement']);
@@ -293,7 +293,7 @@ describe('/enrol/complete — dance waiver behaves exactly as today', () => {
   it('already signed → dashboard button; never asks for a job next step', async () => {
     const fetchMock = mockFunctions({ 'get-waiver-engagement': { body: { alreadySigned: true } } });
     renderSignPage();
-    expect(await screen.findByText('Waiver already signed')).toBeInTheDocument();
+    expect(await screen.findByText('Health declaration already signed')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Go to my dashboard' })).toBeInTheDocument();
     expect(calledFunctions(fetchMock)).toEqual(['get-waiver-engagement']);
   });

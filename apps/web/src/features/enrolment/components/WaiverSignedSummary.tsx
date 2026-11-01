@@ -33,7 +33,7 @@ export function WaiverSignedSummary({
         </svg>
         <div>
           <p className="text-sm font-medium text-green-800">
-            {t('enrolment.waiver_already_signed', { defaultValue: 'Waiver signed' })}
+            {t('enrolment.waiver_already_signed', { defaultValue: 'Form signed' })}
           </p>
           {signedAt && (
             <p className="text-xs text-green-700">{new Date(signedAt).toLocaleString()}</p>
@@ -43,7 +43,7 @@ export function WaiverSignedSummary({
 
       <div
         role="region"
-        aria-label={t('enrolment.waiver_document_region', { defaultValue: 'Waiver document' })}
+        aria-label={t('enrolment.waiver_document_region', { defaultValue: 'Form document' })}
         className="h-72 overflow-y-auto rounded-md border border-border bg-muted/30 p-4 text-sm leading-relaxed whitespace-pre-wrap text-muted-foreground"
       >
         {template.content}
