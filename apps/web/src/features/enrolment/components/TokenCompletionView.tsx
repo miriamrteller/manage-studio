@@ -10,6 +10,7 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { supabase } from '@/lib/supabase';
 import { formatOfferingPrice } from '@/lib/formatOfferingPrice';
 import type { ConsentTemplate } from '@shared/schemas';
+import { monthlyHintKey } from '@/features/enrolment/lib/monthlyHint';
 
 interface TokenCompletionViewProps {
   engagementId: string;
@@ -234,7 +235,7 @@ export function TokenCompletionView({ engagementId, effectiveToken }: TokenCompl
           })}
         </p>
         {context.billingMode === 'recurring' && context.billingInterval === 'monthly' && (
-          <p className="text-xs text-gray-500">{t('enrolment.checkout_monthly_hint')}</p>
+          <p className="text-xs text-gray-500">{t(monthlyHintKey(charge?.paymentProvider))}</p>
         )}
       </div>
 

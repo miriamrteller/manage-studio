@@ -1,15 +1,19 @@
 import { useQuery } from '@tanstack/react-query';
 import { useTenant } from '@/hooks/useTenant';
 import { TenantDB } from '@/lib/db';
+import { supabase } from '@/lib/supabase';
+import {
+  parseStudentBillingAccount,
+  STUDENT_BILLING_ACCOUNT_SELECT,
+  type StudentBillingAccount,
+} from '../lib/studentBillingAccount';
 import {
   PersonSchema,
   AccountSchema,
   AccountMemberSchema,
   ContactPreferencesSchema,
   EngagementSchema,
-  BillingAccountSchema,
   OfferingSchema,
-  type BillingAccount,
   type Offering,
   type Person,
   type AccountMember,
@@ -30,7 +34,7 @@ export interface EngagementWithDetails {
   billing_account_id: string | null | undefined;
   created_at: string;
   className: string | null;
-  billingAccount: BillingAccount | null;
+  billingAccount: StudentBillingAccount | null;
 }
 
 export interface StudentPayment {
@@ -199,12 +203,15 @@ export function useStudentDetail(personId: string | null) {
     queryKey: ['student-detail-billing', tenant?.id, billingIdsToFetch],
     queryFn: async () => {
       if (!tenant || billingIdsToFetch.length === 0) return [];
-      const { data, error } = await TenantDB.selectFor('billing_accounts', tenant).in(
-        'id',
-        billingIdsToFetch
-      );
+      const { data, error } = await supabase
+        .from('billing_accounts')
+        .select(STUDENT_BILLING_ACCOUNT_SELECT)
+        .eq('tenant_id', tenant.id)
+        .in('id', billingIdsToFetch);
       if (error) throw error;
-      return (data || []).map((a: unknown) => BillingAccountSchema.parse(a));
+      return (data || [])
+        .map((a: unknown) => parseStudentBillingAccount(a))
+        .filter((a): a is StudentBillingAccount => a !== null);
     },
     enabled: isReady && billingIdsToFetch.length > 0,
   });
@@ -212,7 +219,7 @@ export function useStudentDetail(personId: string | null) {
   const classMap = new Map<string, Offering>(
     (classesQuery.data ?? []).map((c) => [c.id, c])
   );
-  const billingMap = new Map<string, BillingAccount>(
+  const billingMap = new Map<string, StudentBillingAccount>(
     (billingAccountsQuery.data ?? []).map((a) => [a.id, a])
   );
 

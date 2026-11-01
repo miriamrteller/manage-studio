@@ -1,5 +1,8 @@
+import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
+import { clearEnrollmentIntent } from '@/lib/enrollment-intent';
+import queryClient from '@/lib/query-client';
 
 /**
  * Shown instead of a card form when the studio takes payment at the studio
@@ -10,6 +13,15 @@ import { Link } from 'react-router-dom';
 export function OfflinePaymentNotice({ instructions }: { instructions?: string | null }) {
   const { t } = useTranslation();
   const trimmed = instructions?.trim() || null;
+
+  // The enrolment is finished here (the place is reserved; payment happens at the studio).
+  // Clear the stored intent, or /dashboard would send the parent back to /enrol, and refresh
+  // the parent portal so the new place shows at once.
+  useEffect(() => {
+    clearEnrollmentIntent();
+    void queryClient.invalidateQueries({ queryKey: ['parent-portal'] });
+  }, []);
+
   return (
     <div className="rounded-lg border border-border bg-muted/40 p-4 space-y-2" role="status">
       <h3 className="font-semibold text-foreground">{t('enrolment.offline_payment_title')}</h3>

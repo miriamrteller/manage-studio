@@ -304,7 +304,7 @@ export function StudentSlideOver({
                               status={engagement.status}
                               engagementId={engagement.id}
                               ageOverrideAt={engagement.age_override_at}
-                              billingLabel={summary?.billingAccount?.payment_method ?? null}
+                              billingLabel={null}
                               linkContext={{
                                 studentName: person.name,
                                 className,
@@ -510,10 +510,9 @@ export function StudentSlideOver({
                   <ul className="divide-y text-sm">
                     {billingAccounts.map((ba) => (
                       <li key={ba.id} className="py-2 space-y-1">
-                        <p className="font-medium">{ba.account_holder_name}</p>
-                        <p className="text-gray-500">{ba.primary_contact_email}</p>
+                        <p className="font-medium">{ba.holderName ?? '—'}</p>
+                        {ba.holderEmail && <p className="text-gray-500">{ba.holderEmail}</p>}
                         <div className="flex gap-3 text-xs text-gray-500">
-                          <span className="capitalize">{ba.payment_method.replace('_', ' ')}</span>
                           <span
                             className={ba.status === 'active' ? 'text-green-600' : 'text-gray-400'}
                           >
