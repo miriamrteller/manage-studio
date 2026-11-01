@@ -29,6 +29,7 @@ export interface ResolvedCheckoutSession {
     currency: string | null;
     payment_provider: string;
     payment_provider_public_key: string | null;
+    offline_payment_instructions: string | null;
   };
   offering: {
     id: string;
@@ -131,7 +132,7 @@ export async function resolveCheckoutSession(
 
   const { data: tenant, error: tenantError } = await service
     .from("tenants")
-    .select("currency, payment_provider, payment_provider_public_key")
+    .select("currency, payment_provider, payment_provider_public_key, offline_payment_instructions")
     .eq("id", tenantId)
     .single();
 
@@ -227,6 +228,8 @@ export async function resolveCheckoutSession(
         currency: tenant.currency as string | null,
         payment_provider: tenant.payment_provider as string,
         payment_provider_public_key: tenant.payment_provider_public_key as string | null,
+        offline_payment_instructions:
+          (tenant.offline_payment_instructions as string | null) ?? null,
       },
       offering: {
         id: offering.id as string,

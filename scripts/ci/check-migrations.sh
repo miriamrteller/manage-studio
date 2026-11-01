@@ -63,6 +63,10 @@ while read -r path; do
   [[ -z "$path" ]] && continue
   v="$(basename "$path" | grep -oE '^[0-9]{14}' || true)"
   [[ -z "$v" ]] && continue
+  if grep -qx "$v" <(grep -v '^\s*#' scripts/ci/migration-order-exceptions.txt 2>/dev/null); then
+    echo "::notice::$(basename "$path"): older than $latest_on_base, allowed by scripts/ci/migration-order-exceptions.txt"
+    continue
+  fi
   if [[ -n "$latest_on_base" && "$v" < "$latest_on_base" || "$v" == "$latest_on_base" ]]; then
     err "$(basename "$path"): version $v is not after the newest migration on main ($latest_on_base). Rename it with a newer timestamp."
   fi

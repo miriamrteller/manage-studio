@@ -3145,6 +3145,7 @@ export type Database = {
           logo_tone: Json | null
           logo_url: string | null
           name: string
+          offline_payment_instructions: string | null
           onboarding_status: string
           payment_provider: string
           payment_provider_account_id: string | null
@@ -3158,6 +3159,7 @@ export type Database = {
           plan: Database["public"]["Enums"]["tenant_plan"]
           primary_color: string
           privacy_policy_url: string | null
+          require_admin_mfa: boolean
           skin: string
           sub_status: string
           subdomain: string
@@ -3209,6 +3211,7 @@ export type Database = {
           logo_tone?: Json | null
           logo_url?: string | null
           name: string
+          offline_payment_instructions?: string | null
           onboarding_status?: string
           payment_provider?: string
           payment_provider_account_id?: string | null
@@ -3222,6 +3225,7 @@ export type Database = {
           plan?: Database["public"]["Enums"]["tenant_plan"]
           primary_color?: string
           privacy_policy_url?: string | null
+          require_admin_mfa?: boolean
           skin?: string
           sub_status?: string
           subdomain: string
@@ -3273,6 +3277,7 @@ export type Database = {
           logo_tone?: Json | null
           logo_url?: string | null
           name?: string
+          offline_payment_instructions?: string | null
           onboarding_status?: string
           payment_provider?: string
           payment_provider_account_id?: string | null
@@ -3286,6 +3291,7 @@ export type Database = {
           plan?: Database["public"]["Enums"]["tenant_plan"]
           primary_color?: string
           privacy_policy_url?: string | null
+          require_admin_mfa?: boolean
           skin?: string
           sub_status?: string
           subdomain?: string
@@ -4088,6 +4094,7 @@ export type Database = {
           logo_tone: Json
           logo_url: string
           name: string
+          offline_payment_instructions: string
           payment_provider: string
           payment_provider_public_key: string
           payment_provider_secret_configured: boolean

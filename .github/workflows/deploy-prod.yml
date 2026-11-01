@@ -11,7 +11,7 @@
 #           c. fresh encrypted backup to R2 (+ Supabase daily backups/PITR on Pro)
 #           d. supabase db push, deploy every Edge Function
 #           e. verify:prod, verify:env, edge secret names (no *_MOCK), smoke query
-#           f. summary
+#           f. summary; a successful real deploy then starts deploy-web (the app)
 #
 # Migrations must be backward-compatible (expand → deploy app → contract): the
 # web app deploys separately and runs against the new schema before and after
@@ -284,6 +284,19 @@ jobs:
             "https://api.supabase.com/v1/projects/$PROD_REF/advisors/security") || { echo "advisors endpoint unavailable"; exit 0; }
           echo "$body" | jq -r '.lints[]? | "- [\(.level)] \(.title): \(.detail)"' | head -40 > advisors.md || true
           { echo "### Security advisors"; if [ -s advisors.md ]; then cat advisors.md; else echo "none"; fi; } >> "$GITHUB_STEP_SUMMARY"
+
+      # Tells deploy-web that this run really changed prod (not a dry run), so
+      # the app may follow. deploy-web also requires this run to succeed.
+      - name: Mark the database release for deploy-web
+        if: steps.push.outcome == 'success'
+        run: |
+          jq -n --arg sha "$GITHUB_SHA" --arg run "$GITHUB_RUN_ID" '{sha:$sha, run_id:$run, db_pushed:true}' > prod-db-deployed.json
+      - uses: actions/upload-artifact@v4
+        if: steps.push.outcome == 'success'
+        with:
+          name: prod-db-deployed
+          path: prod-db-deployed.json
+          retention-days: 7
 
       - name: Summary
         if: always() && steps.gate.outputs.ready == 'true'

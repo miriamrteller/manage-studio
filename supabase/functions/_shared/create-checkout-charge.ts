@@ -76,6 +76,7 @@ export async function createCheckoutCharge(
         alreadyPaid: false,
         billingMode: session.offering.billing_mode,
         billingInterval: session.offering.billing_interval,
+        offlineInstructions: tenant.offline_payment_instructions,
       },
     };
   }

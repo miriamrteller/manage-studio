@@ -1,5 +1,23 @@
-/** Absolute day offsets from engagement.created_at (Jerusalem calendar). */
-export const ENROLMENT_DUNNING_DAY_OFFSETS = [3, 7, 14] as const;
+/**
+ * Enrolment payment dunning ladders (Jerusalem calendar days from engagement.created_at).
+ *
+ * Online (card) payers: Day 3 and 7 reminders, cancel on day 14 (SPEC).
+ * Pay-at-the-studio tenants (payment_provider = 'offline'): reminders on day 14 and 25,
+ * cancel on day 30 — owner decision 2026-11-01. The reminders carry the studio's own
+ * payment instructions instead of a pay link.
+ */
+export type DunningLadder = readonly [number, number, number];
+
+/** Absolute day offsets from engagement.created_at (Jerusalem calendar), online payers. */
+export const ENROLMENT_DUNNING_DAY_OFFSETS: DunningLadder = [3, 7, 14] as const;
+/** Same for tenants that take payment at the studio. */
+export const OFFLINE_ENROLMENT_DUNNING_DAY_OFFSETS: DunningLadder = [14, 25, 30] as const;
+
+export function dunningLadderFor(paymentProvider: string | null | undefined): DunningLadder {
+  return paymentProvider === "offline"
+    ? OFFLINE_ENROLMENT_DUNNING_DAY_OFFSETS
+    : ENROLMENT_DUNNING_DAY_OFFSETS;
+}
 
 function jerusalemYmdFromInstant(iso: string): string {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -46,9 +64,10 @@ export function jerusalemMidnightIso(ymd: string): string {
 export function enrolmentDunningActionDueAt(
   createdAtIso: string,
   attemptNumber: 1 | 2 | 3,
+  ladder: DunningLadder = ENROLMENT_DUNNING_DAY_OFFSETS,
 ): string {
   const createdYmd = jerusalemYmdFromInstant(createdAtIso);
-  const offset = ENROLMENT_DUNNING_DAY_OFFSETS[attemptNumber - 1];
+  const offset = ladder[attemptNumber - 1];
   const dueYmd = addCalendarDaysToYmd(createdYmd, offset);
   return jerusalemMidnightIso(dueYmd);
 }
@@ -68,19 +87,20 @@ export function jerusalemCalendarDaysSinceCreated(
 }
 
 /**
- * Highest eligible attempt from SPEC Day 3/7/14 calendar policy (catch-up safe).
+ * Highest eligible attempt on the ladder (catch-up safe).
  * Returns null when no step is due yet.
  */
 export function resolveEnrolmentDunningDueAttempt(
   createdAtIso: string,
   attemptCount: number,
   now: Date = new Date(),
+  ladder: DunningLadder = ENROLMENT_DUNNING_DAY_OFFSETS,
 ): 1 | 2 | 3 | null {
   const days = jerusalemCalendarDaysSinceCreated(createdAtIso, now);
 
-  if (days >= 14 && attemptCount < 3) return 3;
-  if (days >= 7 && attemptCount < 2) return 2;
-  if (days >= 3 && attemptCount < 1) return 1;
+  if (days >= ladder[2] && attemptCount < 3) return 3;
+  if (days >= ladder[1] && attemptCount < 2) return 2;
+  if (days >= ladder[0] && attemptCount < 1) return 1;
   return null;
 }
 
@@ -88,10 +108,12 @@ export function resolveEnrolmentDunningDueAttempt(
 export function enrolmentDunningNextActionAt(
   createdAtIso: string,
   completedAttempt: number,
+  ladder: DunningLadder = ENROLMENT_DUNNING_DAY_OFFSETS,
 ): string | null {
   if (completedAttempt >= 3) return null;
   return enrolmentDunningActionDueAt(
     createdAtIso,
     (completedAttempt + 1) as 1 | 2 | 3,
+    ladder,
   );
 }
