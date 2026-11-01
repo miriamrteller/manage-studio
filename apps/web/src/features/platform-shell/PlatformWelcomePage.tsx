@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { LegalFooterLinks } from '@/components/LegalFooterLinks';
-import { OpalSwiftShell } from '@/components/OpalSwiftShell';
+import { OpalSwiftShell, OPALSWIFT_GEM_SRC } from '@/components/OpalSwiftShell';
 import { useAuthSession } from '@/hooks/useAuth';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { supabase } from '@/lib/supabase';
@@ -38,6 +38,14 @@ export default function PlatformWelcomePage() {
   } else if (!session) {
     body = (
       <>
+        <img
+          src={OPALSWIFT_GEM_SRC}
+          alt=""
+          width={72}
+          height={72}
+          className="mx-auto mb-6 h-[72px] w-[72px]"
+          style={{ filter: 'drop-shadow(0 3px 12px rgba(123, 97, 255, 0.28))' }}
+        />
         <h1 className="mb-3 text-3xl font-bold">{t('platform_welcome.headline')}</h1>
         <p className="mb-2 text-lg text-gray-700">{t('platform_welcome.intro')}</p>
         <p className="mb-8 text-gray-700">{t('platform_welcome.sign_in_hint')}</p>

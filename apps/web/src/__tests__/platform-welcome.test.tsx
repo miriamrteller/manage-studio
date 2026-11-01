@@ -81,6 +81,8 @@ describe('app.opalswift.com welcome', () => {
     expect(screen.getByRole('button', { name: 'Sign in' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'About OpalSwift' })).toHaveAttribute('href', 'https://opalswift.com');
     expect(screen.getByRole('navigation', { name: 'Legal' })).toBeInTheDocument();
+    const logos = Array.from(document.querySelectorAll('img')).map((img) => img.getAttribute('src') ?? '');
+    expect(logos.filter((src) => src.includes('opalswift-gem'))).toHaveLength(2);
     expect(screen.queryByText('studio app')).not.toBeInTheDocument();
     expect(document.body).not.toHaveTextContent(/Ballet|Classes|Studio$/);
   });
