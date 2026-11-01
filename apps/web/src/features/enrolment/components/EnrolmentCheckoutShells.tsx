@@ -238,6 +238,7 @@ export function ProviderCheckoutShell({
   billingInterval,
   mockPaymentRef,
   pageUrl,
+  offlineInstructions,
   onPaid,
   onPrevious,
 }: {
@@ -245,6 +246,8 @@ export function ProviderCheckoutShell({
   engagementId: string;
   enrolmentToken?: string;
   paymentProvider?: string | null;
+  /** payment_provider 'offline': the studio's own "how to pay" text. */
+  offlineInstructions?: string | null;
   mockPending?: boolean;
   clientSecret: string | null;
   publishableKey: string | null;
@@ -260,7 +263,7 @@ export function ProviderCheckoutShell({
   const { t } = useTranslation();
 
   if (paymentProvider === 'offline') {
-    return <OfflinePaymentNotice />;
+    return <OfflinePaymentNotice instructions={offlineInstructions} />;
   }
 
   const isMockHostedPage = isMockHostedPaymentPage(paymentProvider, pageUrl);

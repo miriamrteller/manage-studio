@@ -49,6 +49,7 @@ export function CheckoutPaymentShell({
       pageUrl={intent.pageUrl}
       billingMode={intent.billingMode}
       billingInterval={intent.billingInterval}
+      offlineInstructions={intent.offlineInstructions}
       onPaid={onPaid}
       onPrevious={onPrevious}
     />

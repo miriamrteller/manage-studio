@@ -5,6 +5,13 @@ import { resolveEnrolmentNotificationRecipient } from "../enrolment-recipient.ts
 
 export type DunningKind = "renewal" | "enrolment_unpaid";
 
+/** Pay-at-the-studio tenant: the reminder carries these instructions instead of a pay link. */
+export interface OfflineDunningInput {
+  instructions: string | null;
+  /** Day on which the unpaid place is released (ladder's last step). */
+  cancelAfterDays: number;
+}
+
 export interface DunningEmailContext {
   recipientEmail: string;
   recipientName: string;
@@ -62,12 +69,14 @@ export function buildRenewalDunningEmailCopy(input: {
   return { intro, ctaButton, dueDate, description, subject, variables: {} };
 }
 
-function buildEnrolmentUnpaidEmailCopy(input: {
+export function buildEnrolmentUnpaidEmailCopy(input: {
   language: "en" | "he";
   className: string;
   studentName: string;
   attemptCount: number;
   dueDate: string;
+  /** Pay-at-the-studio tenant: no link, pay at the studio, place released on this day. */
+  offline?: { cancelAfterDays: number };
 }): Pick<DunningEmailContext, "variables" | "subject"> & {
   intro: string;
   ctaButton: string;
@@ -76,16 +85,27 @@ function buildEnrolmentUnpaidEmailCopy(input: {
   const description = `${input.studentName} — ${input.className}`;
   const attempt = Math.min(Math.max(input.attemptCount, 1), 2) as 1 | 2;
 
-  const intros: Record<"en" | "he", Record<1 | 2, string>> = {
-    en: {
-      1: `Payment for ${input.className} is still outstanding. Please complete enrollment using the link below.`,
-      2: `Reminder: enrollment for ${input.className} is still unpaid. Please complete payment soon to secure the spot.`,
-    },
-    he: {
-      1: `התשלום עבור ${input.className} עדיין לא הושלם. נא להשלים את ההרשמה בקישור למטה.`,
-      2: `תזכורת: ההרשמה ל${input.className} עדיין לא שולמה. נא להשלים את התשלום בהקדם.`,
-    },
-  };
+  const intros: Record<"en" | "he", Record<1 | 2, string>> = input.offline
+    ? {
+      en: {
+        1: `Payment for ${input.className} is still outstanding. Please pay at the studio (cash or bank transfer) — the details are below.`,
+        2: `Reminder: enrollment for ${input.className} is still unpaid. Please pay at the studio soon — the place is released if payment is not received within ${input.offline.cancelAfterDays} days of enrolling. The details are below.`,
+      },
+      he: {
+        1: `התשלום עבור ${input.className} עדיין לא הושלם. נא לשלם בסטודיו (מזומן או העברה בנקאית) — הפרטים למטה.`,
+        2: `תזכורת: ההרשמה ל${input.className} עדיין לא שולמה. נא לשלם בסטודיו בהקדם — המקום משתחרר אם התשלום לא מתקבל בתוך ${input.offline.cancelAfterDays} ימים מההרשמה. הפרטים למטה.`,
+      },
+    }
+    : {
+      en: {
+        1: `Payment for ${input.className} is still outstanding. Please complete enrollment using the link below.`,
+        2: `Reminder: enrollment for ${input.className} is still unpaid. Please complete payment soon to secure the spot.`,
+      },
+      he: {
+        1: `התשלום עבור ${input.className} עדיין לא הושלם. נא להשלים את ההרשמה בקישור למטה.`,
+        2: `תזכורת: ההרשמה ל${input.className} עדיין לא שולמה. נא להשלים את התשלום בהקדם.`,
+      },
+    };
 
   const ctaButton = input.language === "he" ? "השלמת הרשמה ותשלום" : "Complete enrollment";
 
@@ -119,6 +139,7 @@ export async function buildDunningEmailContext(
     paymentUrl: string;
     language: "en" | "he";
     linkExpiresAt?: Date;
+    offline?: OfflineDunningInput;
   },
 ): Promise<DunningEmailContext | null> {
   const recipient = await resolveEnrolmentNotificationRecipient(
@@ -196,6 +217,7 @@ export async function buildDunningEmailContext(
     studentName,
     attemptCount: input.attemptCount,
     dueDate,
+    offline: input.offline ? { cancelAfterDays: input.offline.cancelAfterDays } : undefined,
   });
 
   return {
@@ -215,6 +237,9 @@ export async function buildDunningEmailContext(
       description: copy.description,
       intro: copy.intro,
       ctaButton: copy.ctaButton,
+      ...(input.offline
+        ? { offlinePayment: true, offlineInstructions: input.offline.instructions ?? "" }
+        : {}),
     },
   };
 }

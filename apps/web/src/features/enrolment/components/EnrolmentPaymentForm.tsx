@@ -39,6 +39,7 @@ interface CheckoutIntentData {
   pendingWebhook: boolean;
   billingMode: string | null;
   billingInterval: string | null;
+  offlineInstructions: string | null;
 }
 
 interface CheckoutIntentState extends CheckoutIntentData {
@@ -100,6 +101,8 @@ async function fetchCheckoutIntent(input: {
       pendingWebhook: Boolean(data.pendingWebhook),
       billingMode: typeof data.billingMode === 'string' ? data.billingMode : null,
       billingInterval: typeof data.billingInterval === 'string' ? data.billingInterval : null,
+      offlineInstructions:
+        typeof data.offlineInstructions === 'string' ? data.offlineInstructions : null,
     };
   })();
 
@@ -155,6 +158,7 @@ function useCheckoutIntent({
     pendingWebhook: data?.pendingWebhook ?? false,
     billingMode: data?.billingMode ?? null,
     billingInterval: data?.billingInterval ?? null,
+    offlineInstructions: data?.offlineInstructions ?? null,
     loadError: error?.message ?? null,
     isLoading: queryEnabled && isPending,
   };
@@ -188,6 +192,7 @@ function CheckoutIntentShell({
     pageUrl,
     billingMode,
     billingInterval,
+    offlineInstructions,
     loadError,
     isLoading,
   } = checkout;
@@ -238,6 +243,7 @@ function CheckoutIntentShell({
       billingInterval={billingInterval}
       mockPaymentRef={mockPaymentRef}
       pageUrl={pageUrl}
+      offlineInstructions={offlineInstructions}
       onPaid={onPaid}
       onPrevious={onPrevious}
     />
