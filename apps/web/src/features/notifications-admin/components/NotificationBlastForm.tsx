@@ -55,6 +55,7 @@ export function NotificationBlastForm({ onSentSuccess }: NotificationBlastFormPr
     resolver: zodResolver(notificationBlastSchema),
     defaultValues: {
       scope: 'all',
+      purpose: 'service',
       subject: '',
       body: '',
     },
@@ -271,6 +272,24 @@ export function NotificationBlastForm({ onSentSuccess }: NotificationBlastFormPr
           {scope === 'account' && form.formState.errors.accountId && (
             <p className="text-sm text-destructive">{form.formState.errors.accountId.message}</p>
           )}
+
+          <fieldset className="space-y-2 rounded-md border p-3">
+            <legend className="text-sm font-medium px-1">{t('legal.blast.purpose_legend')}</legend>
+            <label className="flex items-start gap-2 text-sm">
+              <input type="radio" value="service" className="mt-1" {...form.register('purpose')} />
+              <span>
+                <span className="font-medium">{t('legal.blast.service')}</span>
+                <span className="block text-xs text-muted-foreground">{t('legal.blast.service_hint')}</span>
+              </span>
+            </label>
+            <label className="flex items-start gap-2 text-sm">
+              <input type="radio" value="marketing" className="mt-1" {...form.register('purpose')} />
+              <span>
+                <span className="font-medium">{t('legal.blast.marketing')}</span>
+                <span className="block text-xs text-muted-foreground">{t('legal.blast.marketing_hint')}</span>
+              </span>
+            </label>
+          </fieldset>
 
           <FormInput
             htmlFor="blast-subject"

@@ -752,6 +752,7 @@ export function EnrolmentStepper({
             isPreparing={isCheckoutPreparing || (isCreating && !checkoutEnrolmentId)}
             requireAuth={enrolmentContext.mode !== 'guest' && Boolean(user)}
             acceptedByRole={isUnder18(personDateOfBirth) ? 'guardian' : 'self'}
+            studentName={waiverFlow.waiverPersonDisplay?.name ?? undefined}
             onPaymentSuccess={handlePaymentSuccess}
             onPrevious={handlePreviousStep}
             canGoBack={canGoBack}

@@ -1,3 +1,6 @@
+import { ConsentCheckboxes } from '@/components/legal/ConsentCheckboxes';
+import { CONSENT_WORDING_VERSION, consentWording, type ConsentState } from '@/legal/consents';
+import { useLegalLang } from '@/legal/useLegalDocument';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
@@ -36,6 +39,8 @@ interface WaiverStepProps {
   signerIsTheStudent?: boolean;
   /** When set, invalidates waiver-status cache after signing without calling useTenant(). */
   tenantIdForInvalidation?: string;
+  /** Photographer job contract: show the separate, optional portfolio opt-in. */
+  isJobContract?: boolean;
 }
 
 export function WaiverStep(props: WaiverStepProps) {
@@ -66,8 +71,11 @@ function WaiverStepInner({
   isMinorStudent,
   signerIsTheStudent,
   invalidateTenantId,
+  isJobContract,
 }: WaiverStepProps & { invalidateTenantId?: string }) {
   const { t } = useTranslation();
+  const legalLang = useLegalLang();
+  const [portfolio, setPortfolio] = useState<ConsentState>({});
   const queryClient = useQueryClient();
 
   // Stable idempotency key for the lifetime of this component mount
@@ -163,6 +171,13 @@ function WaiverStepInner({
         account_member_id: accountMemberId,
         guardian_confirmed: guardianConfirmed,
         ...(engagementId ? { engagement_id: engagementId } : {}),
+        ...(isJobContract
+          ? {
+              portfolio_consent: portfolio.portfolio === true,
+              portfolio_wording: consentWording('portfolio', legalLang),
+              consent_wording_version: CONSENT_WORDING_VERSION,
+            }
+          : {}),
       },
       headers: waiverToken ? { Authorization: `WaiverToken ${waiverToken}` } : undefined,
     });
@@ -281,6 +296,19 @@ function WaiverStepInner({
               {t('enrolment.waiver_checkbox_label', { defaultValue: 'I have read and accept this waiver' })}
             </span>
           </label>
+
+          {isJobContract && (
+            <div className="rounded-md border p-3">
+              <ConsentCheckboxes
+                legend={t('legal.consents.portfolio_legend')}
+                hint={t('legal.consents.portfolio_hint')}
+                kinds={['portfolio']}
+                value={portfolio}
+                onChange={setPortfolio}
+                lang={legalLang}
+              />
+            </div>
+          )}
 
           {/* Guardian declaration — required when signing on behalf of a minor */}
           {isMinorStudent && (

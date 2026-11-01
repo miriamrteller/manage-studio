@@ -50,6 +50,7 @@ import AdminQuotesPage from "./pages/AdminQuotesPage";
 import AdminQuoteEditorPage from "./pages/AdminQuoteEditorPage";
 import QuotePage from "./pages/QuotePage";
 import LegalPage from "./pages/LegalPage";
+import UnsubscribePage from "./pages/UnsubscribePage";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { RouteErrorFallback } from "./components/RouteErrorFallback";
 import { MonitoringContextSync } from "./lib/monitoring/MonitoringContextSync";
@@ -118,6 +119,7 @@ const router = createBrowserRouter([
           { path: 'inquire', element: <InquirePage /> },
           { path: 'quote/:token', element: <QuotePage /> },
           { path: 'legal/:doc', element: <LegalPage /> },
+          { path: 'unsubscribe/:token', element: <UnsubscribePage /> },
           { path: 'dashboard', element: <DashboardRedirectPage /> },
 
           // ADMIN ROUTES

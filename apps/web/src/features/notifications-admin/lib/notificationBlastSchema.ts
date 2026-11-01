@@ -57,6 +57,8 @@ export const notificationBlastPreviewSchema = z
 export const notificationBlastSchema = z
   .object({
     ...blastScopeFields,
+    /** 'marketing' = advertisement: opted-in recipients only, "פרסומת" + unsubscribe added on send. */
+    purpose: z.enum(['service', 'marketing']).default('service'),
     subject: z.string().trim().min(1, 'Subject is required').max(200),
     body: z.string().trim().min(1, 'Message is required').max(5000),
   })

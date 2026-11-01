@@ -1,4 +1,8 @@
-﻿import { useState, type FormEvent } from 'react';
+﻿import { ConsentCheckboxes } from '@/components/legal/ConsentCheckboxes';
+import { useTenant } from '@/hooks/useTenant';
+import { CONSENT_WORDING_VERSION, MARKETING_KINDS, consentWording, type ConsentState } from '@/legal/consents';
+import { useLegalLang } from '@/legal/useLegalDocument';
+import { useState, type FormEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
@@ -24,6 +28,9 @@ export default function InquirePage() {
   const [phone, setPhone] = useState('');
   const [message, setMessage] = useState('');
   const [honeypot, setHoneypot] = useState('');
+  const [marketing, setMarketing] = useState<ConsentState>({});
+  const lang = useLegalLang();
+  const tenant = useTenant();
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
 
   const handleSubmit = async (event: FormEvent) => {
@@ -40,6 +47,7 @@ export default function InquirePage() {
           message: message.trim() || null,
           src,
           website: honeypot || null,
+          marketingConsent: marketingPayload(marketing, lang, tenant?.name),
         },
       });
       if (error || (data && typeof data === 'object' && 'error' in data)) {
@@ -139,6 +147,15 @@ export default function InquirePage() {
           </div>
         )}
 
+        <ConsentCheckboxes
+          legend={t('legal.consents.marketing_legend')}
+          kinds={MARKETING_KINDS}
+          value={marketing}
+          onChange={setMarketing}
+          lang={lang}
+          vars={{ studio: tenant?.name }}
+        />
+
         <PrivacyNotice purpose="enquiry" />
 
         <Button type="submit" variant="primary" disabled={status === 'sending'}>
@@ -147,4 +164,12 @@ export default function InquirePage() {
       </form>
     </div>
   );
+}
+
+function marketingPayload(state: ConsentState, lang: 'he' | 'en', studio?: string) {
+  const items = MARKETING_KINDS.filter((kind) => state[kind] === true).map((kind) => ({
+    kind,
+    wording: consentWording(kind, lang, { studio }),
+  }));
+  return items.length > 0 ? { version: CONSENT_WORDING_VERSION, items } : null;
 }
