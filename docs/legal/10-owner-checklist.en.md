@@ -14,14 +14,14 @@ Status key: ☐ to do · ◐ in progress · ☑ done. "Verify" = ask the lawyer/
 5. ☑ **Security procedure** for OpalSwift — drafted: [11-security-procedure](11-security-procedure.en.md). Fix the "known gaps" list in it.
 6. ☐ **Security level** — medium (health data). Do the medium-level duties: annual incident review, training every 2 years, audit every 24 months, access logs 24 months. See doc 11.
 7. ☐ **Breach reporting:** a severe security incident must be reported to the Privacy Protection Authority **immediately** (reg. 11). Save the Authority's reporting page/contact in the incident log now: [[PPA REPORTING LINK / EMAIL — get from gov.il]].
-8. ☐ **Notice at collection (§11):** link the privacy policy on every form that collects data (enrolment, inquiry, booking, quote, signup). See README "where to link".
+8. ☐ **Notice at collection (§11):** link the privacy policy on every form that collects data (enrolment, inquiry, booking, quote, signup). See APP-GAPS.md.
 9. ☐ **Transfers abroad:** collect and file the DPAs of Supabase, Cloudflare, GitHub, Twilio, Google; check them against the PPA opinion on reg. 2(4) (13 Apr 2026). **Verify.**
 
 ## B. OpalSwift as a business
 
 10. ☐ **Register as a business (עוסק) before charging any fees.** Open files with VAT (מע"מ), Income Tax and National Insurance (ביטוח לאומי). Choose עוסק פטור / מורשה / company with an accountant (VAT exemption threshold changes yearly: [[CURRENT THRESHOLD]]). Until then, offer the platform free (beta) — the Terms say so.
 11. ☐ Fill the placeholders in the Terms, DPA and OpalSwift privacy policy (legal name, ID/business number, address, emails, city for jurisdiction, fees).
-12. ☐ Have each studio **accept the Terms and DPA** when it signs up (click-accept with a record). The app has no such checkbox yet (README).
+12. ☐ Have each studio **accept the Terms and DPA** when it signs up (click-accept with a record). The app has no such checkbox yet (APP-GAPS.md).
 13. ☐ Consider professional liability / cyber insurance. **Verify.**
 
 ## C. Creative Ballet Academy (first tenant)
@@ -54,7 +54,7 @@ Status key: ☐ to do · ◐ in progress · ☑ done. "Verify" = ask the lawyer/
 
 ## F. Open legal questions for the lawyer
 
-See README §"Questions for the lawyer".
+See [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md).
 
 ---
 

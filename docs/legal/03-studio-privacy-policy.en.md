@@ -68,10 +68,10 @@ Some of these providers store or access data outside Israel (in the EU and the U
 
 ## 3. How long we keep it
 
-- Account, class and booking records: for as long as you are a client and [[e.g. 3]] years after, for service and legal claims. ([[LAWYER: check limitation periods]])
+- Account, class and booking records: for as long as you are a client and 7 years after (the limitation period for legal claims).
 - Payment and tax records: as long as tax law requires ([[ACCOUNTANT: usually 7 years]]).
-- Health declarations: for the current season/year and [[e.g. 1]] year after, then deleted. ([[LAWYER: confirm]])
-- Signed waivers/contracts: [[e.g. 7 years]] after the end of the service ([[LAWYER: confirm]]).
+- Health declarations: the health details are deleted [[e.g. 1]] year after the season; the signed record is kept with signed documents (below), with access restricted.
+- Signed waivers/contracts: 7 years after the end of the service; for a child, until the child turns 25 (limitation periods do not run while a claimant is a minor).
 - Marketing consent records: as long as we send you marketing, plus [[e.g. 3]] years as proof of consent.
 
 ## 4. Your rights
@@ -82,7 +82,7 @@ Some of these providers store or access data outside Israel (in the EU and the U
 - **Stop marketing**: use the unsubscribe link or reply "הסר" / "STOP".
 - Ask us to delete information we no longer need. We may keep what the law requires (for example tax records) or what is needed for a legal claim.
 
-Send requests to [[EMAIL]]. We will answer within **30 days** ([[LAWYER: confirm the response period in the law and regulations]]). If you are not satisfied, you may complain to the **Privacy Protection Authority** (הרשות להגנת הפרטיות), Ministry of Justice.
+Send requests to [[EMAIL]]. We will answer within **21 days**. If you are not satisfied, you may complain to the **Privacy Protection Authority** (הרשות להגנת הפרטיות), Ministry of Justice.
 
 ## 5. Security
 
@@ -103,3 +103,4 @@ We will publish any update here and, if it is significant, tell you by email.
 - Privacy Protection (Transfer of Data to Databases Abroad) Regulations 5761-2001, reg. 2.
 - Communications Law §30A (marketing consent and opt-out).
 - Legal Capacity and Guardianship Law 5722-1962, §14 (parents are the natural guardians of a minor) — basis for guardian consent.
+- Prescription Law 5718-1958, §§5, 10 (7-year limitation; does not run during minority) — basis for retention periods.
