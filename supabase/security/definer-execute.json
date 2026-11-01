@@ -62,6 +62,7 @@
       "link_auth_user_to_guardian_for_engagement",
       "link_auth_user_to_person",
       "list_admin_quotes",
+      "log_platform_view",
       "log_sensitive_read",
       "mark_quote_sent",
       "preview_notification_blast_recipients",
@@ -110,6 +111,7 @@
       "job_resolve_client",
       "job_store_client_phone",
       "list_due_shoot_emails",
+      "log_platform_change",
       "marketing_optins",
       "provision_studio",
       "provision_tenant",
@@ -127,6 +129,7 @@
       "get_app_encryption_key",
       "get_cron_secret",
       "get_supabase_functions_url",
+      "platform_access_should_log",
       "quote_assert_tenant_admin",
       "quote_job_offering_id",
       "quote_lines_json"

@@ -2270,6 +2270,39 @@ export type Database = {
           },
         ]
       }
+      platform_access_log: {
+        Row: {
+          actor_id: string
+          area: string
+          at: string
+          detail: string | null
+          id: string
+          kind: string
+          record_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          actor_id: string
+          area: string
+          at?: string
+          detail?: string | null
+          id?: string
+          kind: string
+          record_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          actor_id?: string
+          area?: string
+          at?: string
+          detail?: string | null
+          id?: string
+          kind?: string
+          record_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
       quote_lines: {
         Row: {
           created_at: string
@@ -4329,6 +4362,10 @@ export type Database = {
           tenant_id: string
         }[]
       }
+      log_platform_view: {
+        Args: { p_area: string; p_tenant_id: string }
+        Returns: undefined
+      }
       log_sensitive_read: {
         Args: { p_entity_id: string; p_entity_type: string }
         Returns: undefined
@@ -4340,6 +4377,10 @@ export type Database = {
       marketing_optins: {
         Args: { p_kind: string; p_person_ids: string[]; p_tenant_id: string }
         Returns: string[]
+      }
+      platform_access_should_log: {
+        Args: { p_tenant_id: string }
+        Returns: boolean
       }
       preview_notification_blast_recipients: {
         Args: {

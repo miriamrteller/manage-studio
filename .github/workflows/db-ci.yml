@@ -132,9 +132,11 @@ jobs:
         run: |
           set -e
           for t in supabase/tests/*/run.sh; do
-            # security/ and definer-drift/ need Supabase's roles: they run elsewhere.
+            # security/, definer-drift/ and suites marked NEEDS_SUPABASE need
+            # Supabase's roles: they run in definer-drift / local-stack.
             [ "$t" = supabase/tests/security/run.sh ] && continue
             [ "$t" = supabase/tests/definer-drift/run.sh ] && continue
+            [ -f "$(dirname "$t")/NEEDS_SUPABASE" ] && continue
             echo "::group::$t"
             bash "$t"
             echo "::endgroup::"
@@ -219,6 +221,18 @@ jobs:
         env:
           DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
         run: bash supabase/tests/security/run.sh
+
+      - name: SQL suites that need Supabase (supabase/tests/*/NEEDS_SUPABASE)
+        env:
+          DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          set -e
+          for m in supabase/tests/*/NEEDS_SUPABASE; do
+            t="$(dirname "$m")/run.sh"
+            echo "::group::$t"
+            bash "$t"
+            echo "::endgroup::"
+          done
 
       # `PostgrestVersion` follows whichever PostgREST generated the file
       # (hosted vs local CLI), so that one line is not compared.
