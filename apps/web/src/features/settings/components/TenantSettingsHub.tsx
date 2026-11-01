@@ -16,6 +16,8 @@ import { SchoolProfileForm } from './SchoolProfileForm';
 import { LegalLinksSettingsForm } from './LegalLinksSettingsForm';
 import { BrandingSettingsForm } from './BrandingSettingsForm';
 import { LocaleSettingsForm } from './LocaleSettingsForm';
+import { OfflinePaymentsSettingsForm } from './OfflinePaymentsSettingsForm';
+import { InvoicingToggleForm } from './InvoicingToggleForm';
 
 function SettingsLinkCard({
   title,
@@ -71,6 +73,10 @@ export function TenantSettingsHub() {
       <BrandingSettingsForm />
       <hr className="border-gray-200" />
       <LocaleSettingsForm />
+      <hr className="border-gray-200" />
+      <OfflinePaymentsSettingsForm />
+      <hr className="border-gray-200" />
+      <InvoicingToggleForm />
 
       <section className="space-y-4">
         <h2 className="text-lg font-semibold text-foreground">{t('settings.hub.more_settings')}</h2>
@@ -88,11 +94,13 @@ export function TenantSettingsHub() {
                 description={t('settings.payments.description', { defaultValue: 'Payment capture credentials' })}
                 href="/admin/setup/payments"
               />
-              <SettingsLinkCard
-                title={t('settings.invoicing.title', { defaultValue: 'Invoicing provider' })}
-                description={t('settings.invoicing.description', { defaultValue: 'Tax document credentials' })}
-                href="/admin/setup/invoicing"
-              />
+              {tenant?.invoicing_provider !== 'none' && (
+                <SettingsLinkCard
+                  title={t('settings.invoicing.title', { defaultValue: 'Invoicing provider' })}
+                  description={t('settings.invoicing.description', { defaultValue: 'Tax document credentials' })}
+                  href="/admin/setup/invoicing"
+                />
+              )}
             </>
           ) : null}
           {hasFeature(FEATURES.scheduling.adminBooking) && (

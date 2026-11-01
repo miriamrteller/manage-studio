@@ -139,9 +139,12 @@ promote dev.** Dev carries mock-payment rows, demo tenants and test seeds.
       ```
       Parents then finish enrolment online and see "Pay at the studio"; the place stays
       *pending payment* until an admin clicks **Record offline payment** on the student.
-      No tax document is queued, no "missing invoice" alert is sent, and dunning neither
-      sends pay links nor cancels on day 14. To start issuing receipts later, set both
-      columns back to the provider (e.g. `'ypay'`) and save its keys.
+      No tax document is queued and no "missing invoice" alert is sent. Dunning sends no
+      pay links: reminders on day 14 and 25 repeat the studio's payment instructions, and
+      an unpaid place is released on day 30 (card payers: day 14). The admin can write the
+      instructions and flip both switches later in Admin → Setup → Settings ("How parents
+      pay", "Tax documents"); to start issuing receipts, switch both back to the provider
+      (e.g. YPay) and save its keys.
       Never use `'mock'` here: on prod it can't take payments at all.
 - [ ] Seed invoice sequences.
 - [ ] **`pnpm verify:prod`** — encryption key set and not the dev value, cron
