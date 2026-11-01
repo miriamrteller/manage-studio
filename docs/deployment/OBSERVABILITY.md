@@ -60,18 +60,15 @@ Sentry is listed as a sub-processor in our DPA.
 
 ### 5. Paste the values in three places
 
-**Cloudflare** (the website build): **Workers & Pages → opalswift-app → Settings → Build →
-Variables and secrets**. Add:
+**GitHub, website build**: the web app is built and deployed by the `deploy-web` workflow
+(see [DEV-PROD-PIPELINE.md](DEV-PROD-PIPELINE.md#web-stage)), not by Cloudflare. Repository
+**Settings → Environments → production → Variables → Add variable**: `VITE_SENTRY_DSN` = the DSN.
+The source-map upload reuses `SENTRY_AUTH_TOKEN`, `SENTRY_ORG` and `SENTRY_PROJECT` from the
+**GitHub (issues)** step below, so nothing else is needed. Changing the DSN takes effect at the next
+web deploy (Actions → deploy-web → Run workflow).
 
-| Name | Value | Type |
-|---|---|---|
-| `VITE_SENTRY_DSN` | the DSN | text |
-| `SENTRY_ORG` | org slug, e.g. `opalswift` | text |
-| `SENTRY_PROJECT` | `opalswift-app` | text |
-| `SENTRY_AUTH_TOKEN` | the token | **secret** |
-
-Then trigger a new build (**Deployments → Retry/Redeploy**, or push to `main`). Changing these values
-has no effect until the site is rebuilt.
+Do **not** connect Cloudflare's own Git builds (Workers Builds) for `opalswift-app`: it would deploy
+every push to `main` straight away, before the matching database migrations reach prod.
 
 **Supabase** (edge functions): **Project → Edge Functions → Secrets** (or *Manage secrets*). Add
 `SENTRY_DSN` with the same DSN. Optionally add `SENTRY_ENVIRONMENT` = `production`. No redeploy is needed.
