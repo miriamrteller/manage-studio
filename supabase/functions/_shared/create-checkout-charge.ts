@@ -1,6 +1,6 @@
 import { createServiceClient } from "./edge-runtime/supabase.ts";
 import { resolveCheckoutSession } from "./checkout-session.ts";
-import { getPaymentProviderForTenant } from "./payments/index.ts";
+import { getPaymentProviderForTenant, isOfflinePaymentProvider } from "./payments/index.ts";
 import type { CheckoutChargePayload } from "./checkout-bootstrap-types.ts";
 
 export type CreateCheckoutChargeResult =
@@ -56,6 +56,29 @@ export async function createCheckoutCharge(
 
   const { session } = resolved;
   const { service, tenant } = session;
+
+  // Pay at the studio: nothing to charge online. The place stays reserved
+  // (pending_payment) until an admin records the payment.
+  if (isOfflinePaymentProvider(tenant.payment_provider)) {
+    return {
+      ok: true,
+      charge: {
+        clientSecret: null,
+        paymentIntentId: null,
+        publishableKey: null,
+        amountMinor: session.totalMinor,
+        currency: session.currency,
+        paymentProvider: "offline",
+        mockCompleted: false,
+        mockPending: false,
+        pageUrl: null,
+        pendingWebhook: false,
+        alreadyPaid: false,
+        billingMode: session.offering.billing_mode,
+        billingInterval: session.offering.billing_interval,
+      },
+    };
+  }
 
   const provider = await getPaymentProviderForTenant(service, session.tenantId);
   const result = await provider.createCharge({

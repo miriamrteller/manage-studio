@@ -60,10 +60,29 @@ async function processQueueInline(
   });
 }
 
+/** True when the tenant's invoicing_provider is "none". */
+export async function tenantIssuesNoDocuments(
+  service: SupabaseClient,
+  tenantId: string,
+): Promise<boolean> {
+  const { data } = await service
+    .from("tenants")
+    .select("invoicing_provider")
+    .eq("id", tenantId)
+    .maybeSingle();
+  return data?.invoicing_provider === "none";
+}
+
 export async function enqueueDocument(
   service: SupabaseClient,
   params: EnqueueParams,
 ): Promise<{ queued: boolean; queueId?: string }> {
+  // A studio with invoicing off (e.g. not a registered business) gets no tax
+  // documents at all: nothing is queued, so nothing retries or alerts admins.
+  if (await tenantIssuesNoDocuments(service, params.tenantId)) {
+    return { queued: false };
+  }
+
   const { data, error } = await service
     .from("document_queue")
     .insert({

@@ -74,7 +74,9 @@ async function fetchCheckoutIntent(input: {
     const mockReady =
       Boolean(data?.mockCompleted) ||
       Boolean(data?.mockPending) ||
-      data?.paymentProvider === 'mock';
+      data?.paymentProvider === 'mock' ||
+      // Pay at the studio: there is no online charge to set up.
+      data?.paymentProvider === 'offline';
     const hostedPageReady = isHostedPageCheckoutReady(data?.paymentProvider, data?.pageUrl);
 
     if (error || (!data?.clientSecret && !mockReady && !hostedPageReady)) {
@@ -212,7 +214,11 @@ function CheckoutIntentShell({
 
   if (
     isLoading ||
-    (!mockPending && paymentProvider !== 'mock' && !hostedPageReady && (!clientSecret || !publishableKey))
+    (!mockPending &&
+      paymentProvider !== 'mock' &&
+      paymentProvider !== 'offline' &&
+      !hostedPageReady &&
+      (!clientSecret || !publishableKey))
   ) {
     return <p role="status">{t('common.loading')}</p>;
   }
