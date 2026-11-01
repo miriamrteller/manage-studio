@@ -1,5 +1,6 @@
 import { corsHeaders, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
 
 interface SaveResumeBody {
   resumeKey: string;
@@ -9,7 +10,7 @@ interface SaveResumeBody {
   expiresAt?: string;
 }
 
-Deno.serve(async (req) => {
+Deno.serve(withMonitoring("save-enrolment-resume", async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
 
@@ -61,5 +62,5 @@ Deno.serve(async (req) => {
     console.error("[save-enrolment-resume]", err instanceof Error ? err.message : err);
     return jsonResponse({ error: err instanceof Error ? err.message : "Internal error" }, 500);
   }
-});
+}));
 

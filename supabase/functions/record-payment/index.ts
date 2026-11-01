@@ -3,6 +3,7 @@ import { handleOptions, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/supabase.ts";
 import { resolveOfferingPrice } from "../_shared/email-dist/pricing.js";
 import { finalisePayment } from "../_shared/payments/finalise-payment.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
 
 const RecordPaymentBodySchema = z.object({
   engagement_id: z.string().uuid(),
@@ -11,7 +12,7 @@ const RecordPaymentBodySchema = z.object({
   note: z.string().max(500).optional(),
 });
 
-Deno.serve(async (req) => {
+Deno.serve(withMonitoring("record-payment", async (req) => {
   const options = handleOptions(req);
   if (options) return options;
 
@@ -134,4 +135,4 @@ Deno.serve(async (req) => {
   });
 
   return jsonResponse({ ok: true, paymentId: paymentRow.id });
-});
+}));

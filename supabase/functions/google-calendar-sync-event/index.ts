@@ -7,8 +7,9 @@
 import { handleOptions, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/supabase.ts";
 import { syncBookingEventDelete, syncBookingEventInsert } from "../_shared/sync-booking-event.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
 
-Deno.serve(async (req) => {
+Deno.serve(withMonitoring("google-calendar-sync-event", async (req) => {
   const opt = handleOptions(req);
   if (opt) return opt;
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
@@ -56,4 +57,4 @@ Deno.serve(async (req) => {
   }
 
   return jsonResponse({ ok: true });
-});
+}));

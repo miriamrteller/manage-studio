@@ -21,6 +21,7 @@ import {
   recordContractPdfFailure,
 } from "../_shared/contract-pdf/job-contract-signing.ts";
 import { AUTOMATIC_EMAIL_TENANT_COLUMNS } from "../_shared/photographer-emails/send.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
 
 // PDF policy (see _shared/contract-pdf/evidence.ts):
 // - Dance waivers: V1 behaviour — the waiver_evidence row IS the tamper-evident
@@ -30,7 +31,7 @@ import { AUTOMATIC_EMAIL_TENANT_COLUMNS } from "../_shared/photographer-emails/s
 //   the legal-documents bucket BEFORE the evidence insert, so the real
 //   pdf_sha256 is one of the sealed fields; a copy is emailed to both parties.
 
-Deno.serve(async (req) => {
+Deno.serve(withMonitoring("accept-waiver", async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
 
@@ -461,4 +462,4 @@ Deno.serve(async (req) => {
       500,
     );
   }
-});
+}));

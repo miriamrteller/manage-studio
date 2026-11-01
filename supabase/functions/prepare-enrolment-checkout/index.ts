@@ -4,8 +4,9 @@ import {
   parsePrepareEnrolmentCheckoutBody,
   prepareEnrolmentCheckout,
 } from "../_shared/prepare-enrolment-checkout.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
 
-serve(async (req) => {
+serve(withMonitoring("prepare-enrolment-checkout", async (req) => {
   const options = handleOptions(req);
   if (options) return options;
 
@@ -32,4 +33,4 @@ serve(async (req) => {
       500,
     );
   }
-});
+}));

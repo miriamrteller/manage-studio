@@ -5,6 +5,7 @@ import { enqueueDocument } from "../_shared/enqueue-document.ts";
 import { loadJobPaymentRequestById } from "../_shared/jobs/load-request.ts";
 import { markJobPaymentRequestPaid } from "../_shared/jobs/mark-request-paid.ts";
 import { canTransition } from "../_shared/jobs/payment-request-state.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
 
 /**
  * Admin "mark paid (cash / bank transfer)" for one job payment request.
@@ -18,7 +19,7 @@ const BodySchema = z.object({
   note: z.string().max(500).optional(),
 });
 
-Deno.serve(async (req) => {
+Deno.serve(withMonitoring("record-job-payment", async (req) => {
   const options = handleOptions(req);
   if (options) return options;
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
@@ -134,4 +135,4 @@ Deno.serve(async (req) => {
   await enqueueDocument(service, { tenantId, paymentId: paymentRow.id as string, documentKind: "sale" });
 
   return jsonResponse({ ok: true, paymentId: paymentRow.id });
-});
+}));

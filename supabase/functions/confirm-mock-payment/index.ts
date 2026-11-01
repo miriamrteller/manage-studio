@@ -7,6 +7,7 @@ import {
   scenarioFromMockCardNumber,
 } from "../_shared/payments/providers/mock.ts";
 import { resolveMockConfirmEligibility } from "../_shared/payments/mock-confirm-eligibility.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
 
 const ConfirmMockPaymentBodySchema = z.object({
   offering_id: z.string().uuid(),
@@ -17,7 +18,7 @@ const ConfirmMockPaymentBodySchema = z.object({
   mock_payment_ref: z.string().max(128).optional(),
 });
 
-Deno.serve(async (req) => {
+Deno.serve(withMonitoring("confirm-mock-payment", async (req) => {
   const options = handleOptions(req);
   if (options) return options;
 
@@ -93,6 +94,6 @@ Deno.serve(async (req) => {
       500,
     );
   }
-});
+}));
 
 export { MOCK_PAYMENT_DECLINED_CODE };

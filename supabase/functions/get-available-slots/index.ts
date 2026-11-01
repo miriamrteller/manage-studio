@@ -17,6 +17,7 @@ import { handleOptions, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { freeBusy, getValidAccessToken, type BusyInterval } from "../_shared/google-calendar.ts";
 import { filterHolidayDates } from "../_shared/holidays.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
 
 interface Slot {
   starts_at: string;
@@ -60,7 +61,7 @@ function eachIsoDate(start: string, end: string): string[] | null {
   return out;
 }
 
-Deno.serve(async (req) => {
+Deno.serve(withMonitoring("get-available-slots", async (req) => {
   const opt = handleOptions(req);
   if (opt) return opt;
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
@@ -173,4 +174,4 @@ Deno.serve(async (req) => {
 
   slots = slots.filter((s) => !busy!.some((b) => overlaps(s, b)));
   return jsonResponse({ slots });
-});
+}));

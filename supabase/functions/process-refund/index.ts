@@ -3,6 +3,7 @@ import { handleOptions, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/supabase.ts";
 import { enqueueDocument } from "../_shared/enqueue-document.ts";
 import { executeProviderRefund } from "../_shared/payments/refund-provider.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
 
 const ProcessRefundBodySchema = z.object({
   payment_id: z.string().uuid(),
@@ -16,7 +17,7 @@ const ProcessRefundBodySchema = z.object({
   manual: z.boolean().optional(),
 });
 
-Deno.serve(async (req) => {
+Deno.serve(withMonitoring("process-refund", async (req) => {
   const options = handleOptions(req);
   if (options) return options;
 
@@ -177,4 +178,4 @@ Deno.serve(async (req) => {
   });
 
   return jsonResponse({ ok: true, refundPaymentId: refundRow.id });
-});
+}));
