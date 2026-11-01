@@ -1853,6 +1853,7 @@
     }
   },
   "enrolment": {
+    "step_counter": "Step {{current}} of {{total}}",
     "step": "Step",
     "step_person": "Personal details",
     "step_class": "Select class",
