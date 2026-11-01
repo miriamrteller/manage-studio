@@ -271,13 +271,20 @@ export declare const PersonSchema: z.ZodObject<{
     is_minor?: boolean | undefined;
 }>;
 export type Person = z.infer<typeof PersonSchema>;
+/**
+ * billing_accounts as stored (migration 20260608001100). The payer is a person (person_id)
+ * or a household (account_id); name, email and phone live on that person. business_name /
+ * business_tax_id are the optional BUYER details for business invoices. Payment methods are
+ * not columns: cards are saved tokens (get_billing_account_payment_method), cash and bank
+ * transfers are per payment.
+ */
 export declare const BillingAccountSchema: z.ZodObject<{
     id: z.ZodString;
     tenant_id: z.ZodString;
-    account_holder_name: z.ZodString;
-    primary_contact_email: z.ZodString;
-    primary_contact_phone: z.ZodOptional<z.ZodNullable<z.ZodString>>;
-    payment_method: z.ZodDefault<z.ZodEnum<["card", "bank_transfer", "cash", "check"]>>;
+    account_id: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    person_id: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    business_name: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    business_tax_id: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     status: z.ZodDefault<z.ZodEnum<["active", "inactive", "archived"]>>;
     created_at: z.ZodEffects<z.ZodString, string, string>;
     updated_at: z.ZodEffects<z.ZodString, string, string>;
@@ -287,46 +294,37 @@ export declare const BillingAccountSchema: z.ZodObject<{
     status: "active" | "inactive" | "archived";
     created_at: string;
     updated_at: string;
-    account_holder_name: string;
-    primary_contact_email: string;
-    payment_method: "card" | "bank_transfer" | "cash" | "check";
-    primary_contact_phone?: string | null | undefined;
+    account_id?: string | null | undefined;
+    person_id?: string | null | undefined;
+    business_name?: string | null | undefined;
+    business_tax_id?: string | null | undefined;
 }, {
     id: string;
     tenant_id: string;
     created_at: string;
     updated_at: string;
-    account_holder_name: string;
-    primary_contact_email: string;
+    account_id?: string | null | undefined;
+    person_id?: string | null | undefined;
     status?: "active" | "inactive" | "archived" | undefined;
-    primary_contact_phone?: string | null | undefined;
-    payment_method?: "card" | "bank_transfer" | "cash" | "check" | undefined;
+    business_name?: string | null | undefined;
+    business_tax_id?: string | null | undefined;
 }>;
 export type BillingAccount = z.infer<typeof BillingAccountSchema>;
-export declare const BillingAccountCreateSchema: z.ZodObject<Omit<{
-    id: z.ZodString;
-    tenant_id: z.ZodString;
-    account_holder_name: z.ZodString;
-    primary_contact_email: z.ZodString;
-    primary_contact_phone: z.ZodOptional<z.ZodNullable<z.ZodString>>;
-    payment_method: z.ZodDefault<z.ZodEnum<["card", "bank_transfer", "cash", "check"]>>;
-    status: z.ZodDefault<z.ZodEnum<["active", "inactive", "archived"]>>;
-    created_at: z.ZodEffects<z.ZodString, string, string>;
-    updated_at: z.ZodEffects<z.ZodString, string, string>;
-}, "id" | "tenant_id" | "created_at" | "updated_at">, "strip", z.ZodTypeAny, {
-    status: "active" | "inactive" | "archived";
-    account_holder_name: string;
-    primary_contact_email: string;
-    payment_method: "card" | "bank_transfer" | "cash" | "check";
-    primary_contact_phone?: string | null | undefined;
-}, {
-    account_holder_name: string;
-    primary_contact_email: string;
+/** What an admin may change on a billing account: business invoice details and status. */
+export declare const BillingAccountUpdateSchema: z.ZodObject<{
+    business_name: z.ZodOptional<z.ZodNullable<z.ZodEffects<z.ZodString, string | null, string>>>;
+    business_tax_id: z.ZodOptional<z.ZodNullable<z.ZodEffects<z.ZodString, string | null, string>>>;
+    status: z.ZodOptional<z.ZodEnum<["active", "inactive", "archived"]>>;
+}, "strip", z.ZodTypeAny, {
     status?: "active" | "inactive" | "archived" | undefined;
-    primary_contact_phone?: string | null | undefined;
-    payment_method?: "card" | "bank_transfer" | "cash" | "check" | undefined;
+    business_name?: string | null | undefined;
+    business_tax_id?: string | null | undefined;
+}, {
+    status?: "active" | "inactive" | "archived" | undefined;
+    business_name?: string | null | undefined;
+    business_tax_id?: string | null | undefined;
 }>;
-export type BillingAccountCreate = z.infer<typeof BillingAccountCreateSchema>;
+export type BillingAccountUpdate = z.infer<typeof BillingAccountUpdateSchema>;
 export declare const ContactPreferencesSchema: z.ZodObject<{
     id: z.ZodString;
     tenant_id: z.ZodString;
@@ -1292,7 +1290,7 @@ export declare const PaymentLogRowSchema: z.ZodObject<{
         id: string;
         status: string;
     } | null | undefined;
-    payment_method?: "card" | "bank_transfer" | "cash" | "other" | null | undefined;
+    payment_method?: "card" | "cash" | "bank_transfer" | "other" | null | undefined;
     paid_at?: string | null | undefined;
     external_document_number?: string | null | undefined;
     invoice_url?: string | null | undefined;
@@ -1322,7 +1320,7 @@ export declare const PaymentLogRowSchema: z.ZodObject<{
         id: string;
         status: string;
     } | null | undefined;
-    payment_method?: "card" | "bank_transfer" | "cash" | "other" | null | undefined;
+    payment_method?: "card" | "cash" | "bank_transfer" | "other" | null | undefined;
     paid_at?: string | null | undefined;
     external_document_number?: string | null | undefined;
     invoice_url?: string | null | undefined;
