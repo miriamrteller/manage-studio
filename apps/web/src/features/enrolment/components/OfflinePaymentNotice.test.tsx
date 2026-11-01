@@ -22,8 +22,12 @@ describe('ProviderCheckoutShell for a pay-at-the-studio tenant', () => {
         />
       </MemoryRouter>,
     );
-    // Text may be the key or the English string, depending on whether i18n is loaded.
-    expect(screen.getByText(/offline_payment_title|Pay at the studio/)).toBeTruthy();
-    expect(screen.queryByText(/common\.loading|Loading/)).toBeNull();
+    // Language-independent: other tests may leave i18n in English, Hebrew or keys only.
+    const notice = screen.getByRole('status');
+    expect(notice.querySelector('h3')).toBeTruthy();
+    expect(screen.getByRole('link').getAttribute('href')).toBe('/dashboard');
+    // No card form or provider shell.
+    expect(document.querySelector('form')).toBeNull();
+    expect(document.querySelector('iframe')).toBeNull();
   });
 });
