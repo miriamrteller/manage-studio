@@ -1,10 +1,10 @@
 # Launch readiness audit
 
-**Date:** 2026-11-01 · **Code:** `main` @ `1d824c5` (+ open PRs #100, #103, #105) · **Prod:** read-only checks via the Supabase connector · **Scope:** first two tenants (ballet school: manual payments, no receipts; photographer: YPay).
+**Date:** 2026-11-01 · **Code:** `main` @ `1d824c5` (+ #100, merged during the audit; open #103, #105) · **Prod:** read-only checks via the Supabase connector · **Scope:** first two tenants (ballet school: manual payments, no receipts; photographer: YPay).
 
 ## Verdict: not ready yet. 8 blockers, all fixable this week
 
-1. **Prod is 2 months behind `main`.** DB has 34 of 40 migrations, Edge Functions are from Aug (no quote/contract/job-payment functions), web Worker last deployed 27 Aug. → merge #100, run deploy-prod, then rebuild + deploy the web app. *Database owner + owner*
+1. **Prod is 2 months behind `main`.** DB has 34 of 40 migrations, Edge Functions are from Aug (no quote/contract/job-payment functions), web Worker last deployed 27 Aug. → #100 merged 2026-11-01: owner sets up GitHub environments, runs deploy-prod, then rebuilds + deploys the web app. *Database owner + owner*
 2. **No email is sent at all**, and login is by email (the Auth email hook is live on prod). → Workers Paid + Cloudflare token, or set `RESEND_API_KEY` as a fallback. *Owner, launch guide*
 3. **Encryption key not set on prod.** Until it is, waiver/pay links and saved YPay keys don't work. *Owner, launch guide*
 4. **Ballet school has no working "pay at the studio" path.** Parents' online enrolment has no offline option (checkout uses the default provider `grow`, which isn't set up), and every cash payment the admin records queues a tax document (there's no "invoicing off" switch). → owner decision + small code change. Never use `mock` as a workaround. *New app thread*
@@ -82,7 +82,7 @@ Legend: ✅ Covered · ❌ Gap (needs work) · ⚠️ Risk (watch, or fix soon a
 
 | Item | Status | Evidence |
 |---|---|---|
-| DB + functions pipeline | ⚠️ | #100: `local-stack` check red, all others green (checked 2026-11-01). Blocker 1 |
+| DB + functions pipeline | ✅ merged | #100 merged 2026-11-01. Still to do: GitHub environments + secrets, then the first deploy-prod run. Blocker 1 |
 | Web app deploy | ❌ | Not automated. `DEV-PROD-PIPELINE.md` rule 4: "web deploy is not part of this pipeline yet". It's a manual `wrangler deploy` from the owner's machine with a gitignored `apps/web/.env.production`. Worker last modified 2026-08-27 |
 | `VITE_*` for prod | ⚠️ | Lives only on the owner's machine; legal URLs empty. `VITE_*` values are baked in at build time, so changing one means a rebuild + redeploy |
 | Error tracking | ⚠️ | #104 merged (web, no-op without DSN). #105 (edge) open. No DSN yet = no alerts at launch |
