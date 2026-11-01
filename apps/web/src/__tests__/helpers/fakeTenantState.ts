@@ -39,8 +39,9 @@ export function fakeTenant(kind: FakeTenantKind): Record<string, unknown> | null
   }
 }
 
-export function setTenant(kind: FakeTenantKind | null) {
-  state.tenant = kind ? fakeTenant(kind) : null;
+export function setTenant(kind: FakeTenantKind | null, extra: Record<string, unknown> = {}) {
+  const tenant = kind ? fakeTenant(kind) : null;
+  state.tenant = tenant ? { ...tenant, ...extra } : null;
 }
 
 export function setLanguageState(language: 'en' | 'he') {

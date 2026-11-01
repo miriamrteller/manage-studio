@@ -125,13 +125,7 @@
   "settings": {
     "hub": {
       "compliance_description": "Manage contract templates and signed contracts.",
-      "compliance_title": "Contracts",
-      "name_required": "Studio name is required.",
-      "page_description": "Update your studio profile, branding, and regional defaults.",
-      "page_title": "Studio settings",
-      "profile_saved": "Studio profile saved.",
-      "profile_title": "Studio profile",
-      "school_name": "Studio name"
+      "compliance_title": "Contracts"
     }
   },
   "person_search": {
