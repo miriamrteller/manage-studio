@@ -2312,7 +2312,14 @@
       "export_title": "Download all studio data",
       "export_description": "One file (JSON) with your clients, students, enrolments, payments, signed documents' details, consents and messages. Secrets such as payment-provider keys are never included. Keep the file safe: it contains personal and health information.",
       "export_button": "Download data",
-      "export_done": "Downloaded. The export has been recorded in the audit log."
+      "export_done": "Downloaded. The export has been recorded in the audit log.",
+      "require_heading": "Studio-wide rule",
+      "require_label": "Require two-step sign-in for all admins of this studio",
+      "require_help": "When on, every admin must set up two-step sign-in before they can use the admin area. Teachers, parents and clients are not affected.",
+      "require_saved_on": "Two-step sign-in is now required for all admins.",
+      "require_saved_off": "Two-step sign-in is now optional.",
+      "enrol_required_title": "Set up two-step sign-in",
+      "enrol_required_body": "This studio requires two-step sign-in for admins. Set it up to continue."
     }
   }
 }

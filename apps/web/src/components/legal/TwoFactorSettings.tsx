@@ -20,7 +20,7 @@ interface Enrolment {
  * (docs/legal/11-security-procedure §4.3). Once a verified factor exists, the
  * admin area asks for a code at sign-in (MfaChallengeGate).
  */
-export function TwoFactorSettings() {
+export function TwoFactorSettings({ onEnabled }: { onEnabled?: () => void } = {}) {
   const { t } = useTranslation();
   const [factors, setFactors] = useState<TotpFactor[] | null>(null);
   const [enrolment, setEnrolment] = useState<Enrolment | null>(null);
@@ -74,6 +74,7 @@ export function TwoFactorSettings() {
     setCode('');
     setMessage(t('legal.security.mfa_enabled'));
     await load();
+    onEnabled?.();
   };
 
   const remove = async (factorId: string) => {
