@@ -132,6 +132,9 @@
       "profile_saved": "Studio profile saved.",
       "profile_title": "Studio profile",
       "school_name": "Studio name"
+    },
+    "tabs": {
+      "profile": "Studio profile"
     }
   },
   "person_search": {

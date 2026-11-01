@@ -10,39 +10,39 @@ import { LocaleSettingsForm } from '@/features/settings/components/LocaleSetting
 import { PaymentSettingsForm } from '@/features/settings/components/PaymentSettingsForm';
 import { InvoicingSettingsForm } from '@/features/settings/components/InvoicingSettingsForm';
 
-const SECTIONS: SettingsSection[] = [
+const SETTINGS_SECTIONS: SettingsSection[] = [
   {
     id: 'branding',
+    labelKey: 'settings.tabs.branding',
     label: 'Branding',
-    labelHe: 'מיתוג',
     icon: Paintbrush,
     component: BrandingSettingsForm,
   },
   {
     id: 'profile',
+    labelKey: 'settings.tabs.profile',
     label: 'School Profile',
-    labelHe: 'פרופיל בית הספר',
     icon: Building2,
     component: SchoolProfileForm,
   },
   {
     id: 'locale',
+    labelKey: 'settings.tabs.locale',
     label: 'Language & Region',
-    labelHe: 'שפה ואזור',
     icon: Globe,
     component: LocaleSettingsForm,
   },
   {
     id: 'payment',
+    labelKey: 'settings.tabs.payment',
     label: 'Payment Settings',
-    labelHe: 'הגדרות תשלום',
     icon: CreditCard,
     component: PaymentSettingsForm,
   },
   {
     id: 'invoicing',
+    labelKey: 'settings.tabs.invoicing',
     label: 'Invoicing',
-    labelHe: 'חשבוניות',
     icon: FileText,
     component: InvoicingSettingsForm,
   },
@@ -56,7 +56,7 @@ export function TenantSettingsPage() {
 
   const activeSectionId = useMemo(() => {
     const tabParam = searchParams.get('tab');
-    const validSection = SECTIONS.find((s) => s.id === tabParam);
+    const validSection = SETTINGS_SECTIONS.find((s) => s.id === tabParam);
     return validSection ? tabParam! : DEFAULT_TAB;
   }, [searchParams]);
 
@@ -73,7 +73,7 @@ export function TenantSettingsPage() {
       </div>
 
       <SettingsLayout
-        sections={SECTIONS}
+        sections={SETTINGS_SECTIONS}
         activeSectionId={activeSectionId}
         onSectionChange={handleSectionChange}
       />

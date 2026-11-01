@@ -1,5 +1,9 @@
 {
   "common": {
+    "saveChanges": "שמירת שינויים",
+    "saving": "שומר...",
+    "saved": "נשמר!",
+    "saveFailed": "השמירה נכשלה. נסו שוב.",
     "language": "שפה",
     "save": "שמור",
     "cancel": "ביטול",
@@ -1862,6 +1866,66 @@
     "waiver_minor_cannot_sign_body": "{{studentName}} הינו/ה מתחת לגיל 18. על פי חוק, הורה או אפוטרופוס חוקי חייב לחתום על כתב הויתור. אנא בקש/י מהורה להתחבר ולהשלים את ההרשמה."
   },
   "settings": {
+    "title": "הגדרות",
+    "navigation": "ניווט בהגדרות",
+    "tabs": {
+      "branding": "מיתוג",
+      "profile": "פרופיל בית הספר",
+      "locale": "שפה ואזור",
+      "payment": "הגדרות תשלום",
+      "invoicing": "חשבוניות"
+    },
+    "branding": {
+      "colors": "צבעים",
+      "primaryColor": "צבע ראשי",
+      "accentColor": "צבע משני",
+      "fontPair": "צמד גופנים",
+      "selectFontPair": "בחירת צמד גופנים",
+      "fontPreview": "תצוגה מקדימה של הגופנים",
+      "fontPairs": {
+        "reliable": "אמין",
+        "elegant": "אלגנטי",
+        "dynamic": "דינמי",
+        "warm": "חם",
+        "bold": "נועז"
+      },
+      "logos": "לוגואים",
+      "lightLogo": "לוגו למצב בהיר",
+      "lightLogoDescription": "מוצג על רקע בהיר. PNG, JPEG, SVG או WebP (עד 2MB).",
+      "darkLogo": "לוגו למצב כהה",
+      "darkLogoDescription": "מוצג על רקע כהה. PNG, JPEG, SVG או WebP (עד 2MB).",
+      "replaceLogo": "החלפה",
+      "removeLogo": "הסרה",
+      "uploadLogo": "העלאת לוגו",
+      "uploading": "מעלה...",
+      "uploadLightLogo": "העלאת לוגו למצב בהיר",
+      "uploadDarkLogo": "העלאת לוגו למצב כהה",
+      "fileTooLarge": "הקובץ גדול מדי (עד 2MB)",
+      "uploadFailed": "ההעלאה נכשלה. נסו שוב."
+    },
+    "payments": {
+      "title": "ספק תשלומים",
+      "description": "הגדרת פרטי הגישה לסליקה.",
+      "provider": "ספק",
+      "public_key": "מפתח ציבורי",
+      "secret_key": "מפתח סודי",
+      "webhook_secret": "סוד Webhook",
+      "secret_status": "מפתח סודי",
+      "configured": "מוגדר",
+      "not_configured": "לא מוגדר",
+      "saved": "פרטי התשלום נשמרו."
+    },
+    "invoicing": {
+      "title": "ספק חשבוניות",
+      "description": "פרטי גישה למסמכי מס",
+      "provider": "ספק",
+      "api_key": "מפתח API",
+      "account_id": "מזהה חשבון",
+      "secret": "סוד",
+      "test": "בדיקת חיבור",
+      "test_ok": "החיבור תקין ({{provider}}).",
+      "saved": "פרטי החשבוניות נשמרו."
+    },
     "chrome": {
       "title": "סגנון כותרת עליונה ותחתונה",
       "intro": "רך: מעברי צבע עדינים בצבעי המותג שלכם. מלא: הכותרות בצבע המותג.",
