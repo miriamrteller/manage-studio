@@ -2,6 +2,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 import { execSync } from 'child_process'
+import { sentryVitePlugin } from '@sentry/vite-plugin'
 
 /**
  * Release id for error reports: the git commit being built. Cloudflare Workers
@@ -102,9 +103,35 @@ function demoMode() {
   };
 }
 
+/**
+ * Upload source maps to Sentry so production stack traces show real file/line.
+ * Runs only when SENTRY_AUTH_TOKEN, SENTRY_ORG and SENTRY_PROJECT are all set on
+ * the build (Workers Builds → build variables). Otherwise nothing happens and the
+ * build is unchanged. Maps are built "hidden" (no sourceMappingURL comment) and
+ * deleted from dist after upload, so they are never served (SPEC §7).
+ */
+const SENTRY_UPLOAD =
+  !DEMO_MODE && !!process.env.SENTRY_AUTH_TOKEN && !!process.env.SENTRY_ORG && !!process.env.SENTRY_PROJECT
+
+function sentryUpload() {
+  if (!SENTRY_UPLOAD) return []
+  return [
+    sentryVitePlugin({
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+      authToken: process.env.SENTRY_AUTH_TOKEN,
+      url: process.env.SENTRY_URL || 'https://de.sentry.io/',
+      telemetry: false,
+      // Must match the release the app reports (VITE_RELEASE below).
+      release: { name: releaseSha() || undefined, inject: false, setCommits: false },
+      sourcemaps: { filesToDeleteAfterUpload: ['./dist/**/*.map'] },
+    }),
+  ]
+}
+
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react(), denoNpmImportMap(), ...(DEMO_MODE ? [demoMode()] : [])],
+  plugins: [react(), denoNpmImportMap(), ...(DEMO_MODE ? [demoMode()] : []), ...sentryUpload()],
   ...(DEMO_MODE
     ? {
         base: './',
@@ -147,8 +174,9 @@ export default defineConfig({
     ],
   },
   build: {
-    // SPEC §7 — do not ship source maps to production clients
-    sourcemap: false,
+    // SPEC §7 — do not ship source maps to production clients. With Sentry upload
+    // configured, maps are built hidden and deleted after upload (sentryUpload()).
+    sourcemap: SENTRY_UPLOAD ? 'hidden' : false,
     ...(DEMO_MODE ? { outDir: 'dist-demo' } : {}),
     rollupOptions: {
       output: {
