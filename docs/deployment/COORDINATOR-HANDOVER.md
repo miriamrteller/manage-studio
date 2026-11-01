@@ -25,6 +25,7 @@ English, outcome first. English unless the owner asks for Hebrew.
 | Error tracking | session_01CNMzHYye1dLyc8NrxTk49P | Sentry (EU, free), admin "Report a problem", Sentry→GitHub issues | PR 1 merged (#104). Building PR 2 (edge-function wrapper), then 3 (feedback), 4 (CI source maps + issue Action + OBSERVABILITY.md) |
 | Legal docs | session_01CNMzHWVdy3dV55o2MV1S6n | Israeli legal docs (merged #101), per-tenant legal setup, open questions | Writing TENANT-LEGAL-SETUP.md + trimming open questions to ≤5 (owner said the docs are too long) |
 | Demo (D) | session_01CNMzHZYRxzSidmckhBPWbc | Republishes the demo artifact from main; has a 2-hourly sync task | Asked to republish after #99/#101/#102 |
+| Launch audit | session_01CNMzHXYhnF8C2TwWiBr4cv | Independent launch-readiness check → docs/launch/LAUNCH-READINESS.md with a short blocker list | Started 2026-11-01; docs-only PR, reports blockers to you |
 
 Threads currently report to the OLD coordinator id. Your first action re-points them (below).
 
