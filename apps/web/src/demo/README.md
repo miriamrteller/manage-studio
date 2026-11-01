@@ -28,6 +28,16 @@ works from any URL (it is published as a claude.ai Artifact).
 Without the flag nothing in `src/demo/` is imported, and the production build
 output is byte-identical.
 
+## Ballet studio demo
+
+`VITE_DEMO_MODE=true VITE_DEMO_STUDIO=ballet` builds the same demo for a dance
+studio ("Creative Ballet Academy") into `dist-demo-ballet/`. The plugin only
+swaps `seed.ts` for `ballet/seed.ts`; the demo code is shared. The studio takes
+payment in person (`payment_provider 'offline'`, `invoicing_provider 'none'`),
+and its waiver is the child health declaration from
+`docs/legal/07b-health-declaration` (Version A, Hebrew and English). The demo bar
+switch reads Studio / Parent.
+
 ## Files
 
 | File | Purpose |
@@ -37,6 +47,8 @@ output is byte-identical.
 | `rpcs.ts`, `functions.ts` | In-browser versions of the RPCs and Edge Functions the photographer screens call |
 | `extensions.ts` | Later features (payment requests, gallery gating, quotes) |
 | `rls.ts` | Simulated row-level security for the client view |
+| `dance.ts` | Dance flows: enrolment checkout (pay at the studio), record-payment, age review, cancel, enrolment/waiver link emails |
+| `ballet/seed.ts` | Ballet studio fixtures: season, classes by age, families, enrolments in every state, cash payments |
 | `images/` | Demo photos, `manifest.ts`, `CREDITS.md` (Unsplash License; no people) |
 
 Append `?demo-debug` before the `#` to log every fake query to the console.

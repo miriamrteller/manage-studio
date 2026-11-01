@@ -119,6 +119,29 @@ function tenantConfigRow(ctx: DemoContext): Row[] {
   return [{ ...t, tenant_subdomain: t.subdomain }];
 }
 
+/** today_classes of get_admin_dashboard_overview: this weekday's active classes in the season. */
+function todayClasses(ctx: DemoContext, seasonId: string): Row[] {
+  const dow = new Date().getDay();
+  const taking = new Set(['active', 'pending_payment', 'pending_waiver', 'admin_review', 'pending_offer']);
+  return rows(ctx, 'offerings')
+    .filter(
+      (o) => o.tenant_id === TENANT_ID && o.season_id === seasonId && o.day_of_week === dow &&
+        (o.status === 'active' || o.status === 'full'),
+    )
+    .sort((a, b) => String(a.start_time).localeCompare(String(b.start_time)))
+    .map((o) => ({
+      id: o.id,
+      name: o.name,
+      start_time: o.start_time,
+      end_time: o.end_time,
+      location: o.location ?? null,
+      max_capacity: o.max_capacity,
+      enrolled_count: rows(ctx, 'engagements').filter((e) => e.offering_id === o.id && taking.has(String(e.status))).length,
+      waitlist_count: rows(ctx, 'waitlist').filter((w) => w.offering_id === o.id).length,
+      staff_name: rows(ctx, 'staff').find((s) => s.id === o.staff_id)?.name ?? null,
+    }));
+}
+
 /** get_finance_summary for the demo tenant, dates as YYYY-MM-DD (inclusive). */
 function financeSummary(ctx: DemoContext, start: string, end: string): Row {
   const day = (v: unknown) => (typeof v === 'string' ? v.slice(0, 10) : '');
@@ -263,7 +286,7 @@ export const baseRpcs: Record<string, RpcHandler> = {
     return {
       season_id: season.id,
       season_name: season.name ?? null,
-      today_classes: [],
+      today_classes: todayClasses(ctx, season.id as string),
       term_enrolments_count: inSeason.filter((e) => e.status !== 'cancelled' && e.status !== 'withdrawn').length,
       admin_review_count: count('admin_review'),
       pending_payment_count: count('pending_payment'),

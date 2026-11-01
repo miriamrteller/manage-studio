@@ -176,6 +176,10 @@ export const baseFunctions: Record<string, FunctionHandler> = {
   'accept-waiver': (body, ctx) => {
     const engagementId =
       (body.engagement_id as string | undefined) ?? engagementFromToken(body.__authorization as string | undefined);
+    // Class enrolments (no job_details row) follow the dance rules below.
+    if (!rows(ctx, 'job_details').some((j) => j.engagement_id === engagementId)) {
+      return acceptClassWaiver(body, engagementId ?? null, ctx);
+    }
     const eng = rows(ctx, 'engagements').find((e) => e.id === engagementId);
     if (!eng) throw new DemoRpcError('Shoot not found');
     if (eng.waiver_evidence_id) return { evidence_id: eng.waiver_evidence_id };
@@ -213,3 +217,49 @@ export const baseFunctions: Record<string, FunctionHandler> = {
     return { evidence_id: evidenceId };
   },
 };
+
+/**
+ * accept-waiver for a class enrolment (supabase/functions/accept-waiver):
+ * records the evidence, then links it to a pending_payment enrolment, or (no
+ * engagement given) activates the person's pending_waiver enrolments.
+ */
+function acceptClassWaiver(body: Row, engagementId: string | null, ctx: DemoContext): Row {
+  if (!ctx.user && !engagementId) throw new DemoRpcError('Missing authorization');
+  const personId = String(body.person_id ?? '');
+  if (!personId || !body.consent_template_id || !body.typed_name) throw new DemoRpcError('Missing required fields');
+  const template = rows(ctx, 'consent_templates').find((t) => t.id === body.consent_template_id && t.status === 'active');
+  if (!template) throw new DemoRpcError('No active consent template');
+  const replay = rows(ctx, 'waiver_evidence').find((w) => w.idempotency_key && w.idempotency_key === body.idempotency_key);
+  const signedAt = ctx.now();
+  const evidenceId = (replay?.id as string | undefined) ?? ctx.uuid();
+  if (!replay) {
+    const member = rows(ctx, 'account_members').find((m) => m.id === body.account_member_id);
+    rows(ctx, 'waiver_evidence').push({
+      id: evidenceId, tenant_id: TENANT_ID, person_id: personId, account_member_id: member?.id ?? null,
+      offering_id: body.offering_id ?? null, consent_template_id: template.id, consent_version: template.version,
+      consent_version_hash: template.version_hash, wording_snapshot: template.content,
+      pdf_storage_path: '', pdf_sha256: '', record_hmac: '', viewed_at: signedAt,
+      signed_by_name: String(body.typed_name).trim(), signed_by_email: ctx.user?.email ?? null,
+      signed_by_role: member ? 'guardian' : 'self', signature_method: 'typed_name_checkbox',
+      guardian_confirmed: body.guardian_confirmed === true, status: 'signed', signed_at: signedAt,
+      idempotency_key: body.idempotency_key ?? null, created_at: signedAt,
+    });
+  }
+  const engagements = rows(ctx, 'engagements');
+  if (engagementId) {
+    const eng = engagements.find((e) => e.id === engagementId);
+    if (eng && eng.person_id === personId && eng.status === 'pending_payment' && (!body.offering_id || eng.offering_id === body.offering_id)) {
+      eng.waiver_evidence_id = evidenceId;
+      eng.updated_at = signedAt;
+    }
+  } else {
+    for (const e of engagements) {
+      if (e.person_id === personId && e.status === 'pending_waiver') {
+        e.status = 'active';
+        e.waiver_evidence_id = evidenceId;
+        e.updated_at = signedAt;
+      }
+    }
+  }
+  return { evidence_id: evidenceId, signed_at: signedAt };
+}
