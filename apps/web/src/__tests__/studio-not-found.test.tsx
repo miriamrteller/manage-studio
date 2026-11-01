@@ -8,6 +8,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { I18nextProvider } from 'react-i18next';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MemoryRouter } from 'react-router-dom';
 
 const { rpc } = vi.hoisted(() => ({ rpc: vi.fn() }));
 vi.mock('@/lib/supabase', () => ({ supabase: { rpc } }));
@@ -30,13 +31,15 @@ const row = (name: string) => ({
   payment_provider: 'grow', invoicing_provider: 'grow', enabled_features: [],
 });
 
-function renderGate() {
+function renderGate(path = '/') {
   return render(
     <I18nextProvider i18n={i18n}>
       <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-        <StudioHostGate>
-          <p>studio app</p>
-        </StudioHostGate>
+        <MemoryRouter initialEntries={[path]}>
+          <StudioHostGate>
+            <p>studio app</p>
+          </StudioHostGate>
+        </MemoryRouter>
       </QueryClientProvider>
     </I18nextProvider>,
   );
@@ -85,9 +88,9 @@ describe('StudioHostGate', () => {
     expect(rpc).toHaveBeenCalledWith('get_tenant_config_by_host', { p_host: 'app.unknownstudio.com' });
   });
 
-  it('app.opalswift.com (the shell) is unchanged and looks nothing up', () => {
+  it('app.opalswift.com (the shell) is never "not found" and looks nothing up', () => {
     setHostname('app.opalswift.com');
-    renderGate();
+    renderGate('/login');
     expect(screen.getByText('studio app')).toBeInTheDocument();
     expect(rpc).not.toHaveBeenCalled();
   });
