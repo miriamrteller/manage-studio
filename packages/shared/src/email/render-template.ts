@@ -28,6 +28,8 @@ import {
   type EmailTemplateName,
   getEmailFooterStrings,
   getEmailStrings,
+  getEmailStringsForDocument,
+  formDocumentForVertical,
   interpolateTemplate,
 } from '../i18n/email.js';
 import { deepMergeStrings } from './merge-strings.js';
@@ -53,6 +55,11 @@ export interface RenderEmailTemplateInput {
     accent_color?: string | null;
   };
   stringOverrides?: Record<string, unknown> | null;
+  /**
+   * The studio's vertical (tenants.skin). Names the document a client signs:
+   * health declaration (dance), contract (photographer) or form (others).
+   */
+  vertical?: string | null;
   /** Template-specific fields (snake_case from edge payloads) */
   variables?: Record<string, unknown>;
   subject?: string;
@@ -91,8 +98,9 @@ function mergeTemplateStrings(
   language: EmailLanguage,
   templateName: EmailTemplateName,
   overrides: Record<string, unknown> | null | undefined,
+  vertical?: string | null,
 ): Record<string, unknown> {
-  const base = getEmailStrings(language, templateName);
+  const base = getEmailStringsForDocument(language, templateName, formDocumentForVertical(vertical));
   return deepMergeStrings(base, overrides ?? undefined);
 }
 
@@ -361,6 +369,7 @@ export async function renderEmailTemplate(
     input.language,
     input.templateName,
     input.stringOverrides,
+    input.vertical,
   );
 
   const rawColors = input.tenantColors

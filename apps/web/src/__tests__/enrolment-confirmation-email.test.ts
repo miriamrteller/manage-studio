@@ -68,7 +68,7 @@ describe("renderEnrolmentConfirmationHtml", () => {
     expect(html).not.toMatch(/Student[\s\S]*Primary \(Monthly\)/);
   });
 
-  it("renders pending waiver variant with sign link", () => {
+  it("renders the pending-signature variant (neutral form wording) with sign link", () => {
     const html = renderEnrolmentConfirmationHtml({
       language: "en",
       schoolName: "Creative Ballet Academy",
@@ -84,7 +84,8 @@ describe("renderEnrolmentConfirmationHtml", () => {
       accentColor: "#e99ac4",
     });
 
-    expect(html).toContain("Sign Your Waiver");
+    expect(html).toContain("Sign Your Form");
+    expect(html).not.toMatch(/waiver/i);
     expect(html).toContain("https://example.com/enrol/complete?wt=test");
   });
 

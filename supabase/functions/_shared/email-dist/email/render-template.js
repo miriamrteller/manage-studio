@@ -22,7 +22,7 @@ import GalleryReadyEmail from '../email-templates/photographer/GalleryReadyEmail
 import ContractSignedEmail from '../email-templates/photographer/ContractSignedEmail.js';
 import ContractSignedStudioEmail from '../email-templates/photographer/ContractSignedStudioEmail.js';
 import { getEmailColors } from '../config/email-colors.js';
-import { EMAIL_TEMPLATE_NAMES, getEmailFooterStrings, getEmailStrings, interpolateTemplate, } from '../i18n/email.js';
+import { EMAIL_TEMPLATE_NAMES, getEmailFooterStrings, getEmailStringsForDocument, formDocumentForVertical, interpolateTemplate, } from '../i18n/email.js';
 import { deepMergeStrings } from './merge-strings.js';
 import { normalizeEmailColors } from './normalize-colors.js';
 export { EMAIL_TEMPLATE_NAMES };
@@ -43,8 +43,8 @@ function buildSubject(templateStrings, schoolName, fallback) {
     const subjectTemplate = str(templateStrings.subject) || str(templateStrings.preview) || fallback;
     return interpolateTemplate(subjectTemplate, { schoolName });
 }
-function mergeTemplateStrings(language, templateName, overrides) {
-    const base = getEmailStrings(language, templateName);
+function mergeTemplateStrings(language, templateName, overrides, vertical) {
+    const base = getEmailStringsForDocument(language, templateName, formDocumentForVertical(vertical));
     return deepMergeStrings(base, overrides ?? undefined);
 }
 function buildComponent(input, strings, colors, footerStrings) {
@@ -261,7 +261,7 @@ function buildComponent(input, strings, colors, footerStrings) {
  * Render a React Email template to HTML + subject line.
  */
 export async function renderEmailTemplate(input) {
-    const strings = mergeTemplateStrings(input.language, input.templateName, input.stringOverrides);
+    const strings = mergeTemplateStrings(input.language, input.templateName, input.stringOverrides, input.vertical);
     const rawColors = input.tenantColors
         ? getEmailColors(input.tenantColors)
         : getEmailColors();

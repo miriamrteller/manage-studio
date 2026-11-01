@@ -87,4 +87,17 @@ export declare function interpolateTemplate(template: string, variables: Record<
  * Throws if input is invalid
  */
 export declare function getEmailStringsValidated(language: unknown, templateName: unknown): Record<string, unknown>;
+/**
+ * What a studio calls the document a client signs before enrolling or booking.
+ * Never "waiver" (docs/legal/07b): dance studios ask for a health declaration,
+ * photographers for a contract, every other studio for a neutral form.
+ */
+export type FormDocumentKind = 'form' | 'health_declaration' | 'contract';
+export declare function formDocumentForVertical(vertical: string | null | undefined): FormDocumentKind;
+/**
+ * Template strings with the document named for the studio's type: the base
+ * strings say "form"; email-form-documents-*.json overrides the keys that name
+ * it for health declarations and contracts.
+ */
+export declare function getEmailStringsForDocument(language: EmailLanguage, templateName: EmailTemplateName, kind: FormDocumentKind): Record<string, unknown>;
 //# sourceMappingURL=email.d.ts.map

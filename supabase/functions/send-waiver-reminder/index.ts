@@ -61,6 +61,7 @@ interface PendingEngagement {
     from_email: string | null;
     from_email_verified_at: string | null;
     language_default: string | null;
+    skin?: string | null;
     primary_color: string | null;
     accent_color: string | null;
   };
@@ -104,7 +105,7 @@ Deno.serve(withMonitoring("send-waiver-reminder", async (req) => {
        waiver_48h_reminded_at, waiver_5d_reminded_at,
        people ( email, name, account_id ),
        offerings ( name ),
-       tenants ( name, language_default, primary_color, accent_color, subdomain, custom_domain, contact_email, from_email, from_email_verified_at ),
+       tenants ( name, skin, language_default, primary_color, accent_color, subdomain, custom_domain, contact_email, from_email, from_email_verified_at ),
        payments ( id, status, total_amount_minor, currency )`,
     )
     .eq("status", "pending_waiver")
@@ -207,6 +208,7 @@ Deno.serve(withMonitoring("send-waiver-reminder", async (req) => {
             renderInput: {
               templateName: EMAIL_TEMPLATE_NAMES.WAIVER_CANCELLED,
               language,
+              vertical: eng.tenants?.skin ?? null,
               schoolName,
               tenantColors: {
                 primary_color: eng.tenants?.primary_color,
@@ -250,6 +252,7 @@ Deno.serve(withMonitoring("send-waiver-reminder", async (req) => {
               renderInput: {
                 templateName: EMAIL_TEMPLATE_NAMES.WAIVER_REMINDER,
                 language,
+                vertical: eng.tenants?.skin ?? null,
                 schoolName,
                 tenantColors: {
                   primary_color: eng.tenants?.primary_color,
@@ -299,6 +302,7 @@ Deno.serve(withMonitoring("send-waiver-reminder", async (req) => {
               renderInput: {
                 templateName: EMAIL_TEMPLATE_NAMES.WAIVER_REMINDER,
                 language,
+                vertical: eng.tenants?.skin ?? null,
                 schoolName,
                 tenantColors: {
                   primary_color: eng.tenants?.primary_color,

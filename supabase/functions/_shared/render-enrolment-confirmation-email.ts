@@ -30,6 +30,8 @@ export interface RenderEnrolmentConfirmationInput {
     paymentMethodLabel: string;
   };
   pendingWaiver: boolean;
+  /** tenants.skin: dance studios name the document a health declaration. */
+  vertical?: string | null;
   signUrl?: string;
   deadlineDate?: string;
   primaryColor: string;
@@ -80,7 +82,11 @@ function buildHeadline(
 /** Render enrolment confirmation HTML without React (Deno-safe). */
 export function renderEnrolmentConfirmationHtml(input: RenderEnrolmentConfirmationInput): string {
   const lang = input.language === "he" ? "he" : "en";
-  const variant: EnrolmentConfirmationVariant = input.pendingWaiver ? "pending_waiver" : "confirmed";
+  const variant: EnrolmentConfirmationVariant = !input.pendingWaiver
+    ? "confirmed"
+    : input.vertical === "dance-studio"
+      ? "pending_health_declaration"
+      : "pending_waiver";
   const shell = ENROLMENT_CONFIRMATION_SHELLS[lang][variant];
 
   return applyEnrolmentConfirmationShell(shell, {

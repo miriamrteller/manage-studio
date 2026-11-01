@@ -13,6 +13,11 @@ export interface RenderEmailTemplateInput {
         accent_color?: string | null;
     };
     stringOverrides?: Record<string, unknown> | null;
+    /**
+     * The studio's vertical (tenants.skin). Names the document a client signs:
+     * health declaration (dance), contract (photographer) or form (others).
+     */
+    vertical?: string | null;
     /** Template-specific fields (snake_case from edge payloads) */
     variables?: Record<string, unknown>;
     subject?: string;

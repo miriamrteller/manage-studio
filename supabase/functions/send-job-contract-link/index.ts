@@ -133,6 +133,8 @@ Deno.serve(withMonitoring("send-job-contract-link", async (req) => {
           renderInput: {
             templateName: EMAIL_TEMPLATE_NAMES.WAIVER_REMINDER,
             language,
+            // A shoot's document is always a contract, whatever the studio's vertical.
+            vertical: "photographer",
             schoolName: tenant.name as string,
             tenantColors: {
               primary_color: tenant.primary_color as string | null,
