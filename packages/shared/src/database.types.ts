@@ -249,6 +249,73 @@ export type Database = {
           },
         ]
       }
+      automatic_email_log: {
+        Row: {
+          attempts: number
+          created_at: string
+          email_key: string
+          engagement_id: string | null
+          external_msg_id: string | null
+          failure_reason: string | null
+          id: string
+          quote_id: string | null
+          recipient_email: string
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          email_key: string
+          engagement_id?: string | null
+          external_msg_id?: string | null
+          failure_reason?: string | null
+          id?: string
+          quote_id?: string | null
+          recipient_email: string
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          email_key?: string
+          engagement_id?: string | null
+          external_msg_id?: string | null
+          failure_reason?: string | null
+          id?: string
+          quote_id?: string | null
+          recipient_email?: string
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automatic_email_log_engagement_id_fkey"
+            columns: ["engagement_id"]
+            isOneToOne: false
+            referencedRelation: "engagements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automatic_email_log_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automatic_email_log_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       billing_accounts: {
         Row: {
           account_id: string | null
@@ -1060,6 +1127,7 @@ export type Database = {
       }
       job_details: {
         Row: {
+          contract_pdf_pending: boolean
           created_at: string
           engagement_id: string
           gallery_released_at: string | null
@@ -1072,6 +1140,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          contract_pdf_pending?: boolean
           created_at?: string
           engagement_id: string
           gallery_released_at?: string | null
@@ -1084,6 +1153,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          contract_pdf_pending?: boolean
           created_at?: string
           engagement_id?: string
           gallery_released_at?: string | null
@@ -1112,6 +1182,104 @@ export type Database = {
           },
           {
             foreignKeyName: "job_details_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_payment_requests: {
+        Row: {
+          amount_minor: number
+          created_at: string
+          created_by: string | null
+          currency: string
+          due_date: string | null
+          due_reminder_sent_at: string | null
+          engagement_id: string
+          id: string
+          label: string
+          max_installments: number
+          overdue_reminder_sent_at: string | null
+          paid_at: string | null
+          payment_id: string | null
+          public_token: string
+          refund_note: string | null
+          refunded_at: string | null
+          sent_at: string | null
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount_minor: number
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          due_date?: string | null
+          due_reminder_sent_at?: string | null
+          engagement_id: string
+          id?: string
+          label: string
+          max_installments?: number
+          overdue_reminder_sent_at?: string | null
+          paid_at?: string | null
+          payment_id?: string | null
+          public_token?: string
+          refund_note?: string | null
+          refunded_at?: string | null
+          sent_at?: string | null
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount_minor?: number
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          due_date?: string | null
+          due_reminder_sent_at?: string | null
+          engagement_id?: string
+          id?: string
+          label?: string
+          max_installments?: number
+          overdue_reminder_sent_at?: string | null
+          paid_at?: string | null
+          payment_id?: string | null
+          public_token?: string
+          refund_note?: string | null
+          refunded_at?: string | null
+          sent_at?: string | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_payment_requests_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_payment_requests_engagement_id_fkey"
+            columns: ["engagement_id"]
+            isOneToOne: false
+            referencedRelation: "engagements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_payment_requests_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_payment_requests_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -1695,6 +1863,7 @@ export type Database = {
           id: string
           invoice_issued_at: string | null
           invoice_url: string | null
+          job_payment_request_id: string | null
           legal_hold: boolean
           offering_id: string | null
           paid_at: string | null
@@ -1739,6 +1908,7 @@ export type Database = {
           id?: string
           invoice_issued_at?: string | null
           invoice_url?: string | null
+          job_payment_request_id?: string | null
           legal_hold?: boolean
           offering_id?: string | null
           paid_at?: string | null
@@ -1783,6 +1953,7 @@ export type Database = {
           id?: string
           invoice_issued_at?: string | null
           invoice_url?: string | null
+          job_payment_request_id?: string | null
           legal_hold?: boolean
           offering_id?: string | null
           paid_at?: string | null
@@ -1838,6 +2009,13 @@ export type Database = {
             columns: ["engagement_id"]
             isOneToOne: false
             referencedRelation: "engagements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_job_payment_request_id_fkey"
+            columns: ["job_payment_request_id"]
+            isOneToOne: false
+            referencedRelation: "job_payment_requests"
             referencedColumns: ["id"]
           },
           {
@@ -1951,6 +2129,205 @@ export type Database = {
             columns: ["user_profile_id"]
             isOneToOne: false
             referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quote_lines: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          is_optional: boolean
+          is_selected: boolean
+          line_total_minor: number | null
+          offering_id: string | null
+          qty: number
+          quote_id: string
+          sort_order: number
+          tenant_id: string
+          unit_price_minor: number
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          is_optional?: boolean
+          is_selected?: boolean
+          line_total_minor?: number | null
+          offering_id?: string | null
+          qty?: number
+          quote_id: string
+          sort_order?: number
+          tenant_id: string
+          unit_price_minor: number
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          is_optional?: boolean
+          is_selected?: boolean
+          line_total_minor?: number | null
+          offering_id?: string | null
+          qty?: number
+          quote_id?: string
+          sort_order?: number
+          tenant_id?: string
+          unit_price_minor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_lines_offering_id_fkey"
+            columns: ["offering_id"]
+            isOneToOne: false
+            referencedRelation: "offerings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quote_lines_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quote_lines_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quotes: {
+        Row: {
+          accepted_at: string | null
+          accepted_result: Json | null
+          account_id: string | null
+          balance_max_installments: number
+          balance_minor: number
+          created_at: string
+          created_by: string | null
+          currency: string
+          decline_reason: string | null
+          declined_at: string | null
+          deposit_minor: number
+          deposit_percent: number
+          engagement_id: string | null
+          id: string
+          lead_id: string | null
+          notes: string | null
+          optional_selected_minor: number
+          public_token: string
+          required_minor: number
+          send_contract_on_accept: boolean
+          sent_at: string | null
+          sent_via: string | null
+          shoot_date: string | null
+          status: string
+          tenant_id: string
+          title: string | null
+          total_minor: number
+          updated_at: string
+          valid_until: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_result?: Json | null
+          account_id?: string | null
+          balance_max_installments?: number
+          balance_minor?: number
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          decline_reason?: string | null
+          declined_at?: string | null
+          deposit_minor?: number
+          deposit_percent?: number
+          engagement_id?: string | null
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          optional_selected_minor?: number
+          public_token?: string
+          required_minor?: number
+          send_contract_on_accept?: boolean
+          sent_at?: string | null
+          sent_via?: string | null
+          shoot_date?: string | null
+          status?: string
+          tenant_id: string
+          title?: string | null
+          total_minor?: number
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_result?: Json | null
+          account_id?: string | null
+          balance_max_installments?: number
+          balance_minor?: number
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          decline_reason?: string | null
+          declined_at?: string | null
+          deposit_minor?: number
+          deposit_percent?: number
+          engagement_id?: string | null
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          optional_selected_minor?: number
+          public_token?: string
+          required_minor?: number
+          send_contract_on_accept?: boolean
+          sent_at?: string | null
+          sent_via?: string | null
+          shoot_date?: string | null
+          status?: string
+          tenant_id?: string
+          title?: string | null
+          total_minor?: number
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quotes_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_engagement_id_fkey"
+            columns: ["engagement_id"]
+            isOneToOne: false
+            referencedRelation: "engagements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -2316,6 +2693,45 @@ export type Database = {
           {
             foreignKeyName: "staff_user_profile_id_fkey"
             columns: ["user_profile_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenant_automatic_emails: {
+        Row: {
+          email_key: string
+          enabled: boolean
+          tenant_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          email_key: string
+          enabled: boolean
+          tenant_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          email_key?: string
+          enabled?: boolean
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_automatic_emails_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tenant_automatic_emails_updated_by_fkey"
+            columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "user_profiles"
             referencedColumns: ["id"]
@@ -3073,11 +3489,115 @@ export type Database = {
           },
         ]
       }
+      waiver_evidence_pdfs: {
+        Row: {
+          generated_at: string
+          generated_by: string | null
+          pdf_sha256: string
+          pdf_storage_path: string
+          reason: string
+          tenant_id: string
+          waiver_evidence_id: string
+        }
+        Insert: {
+          generated_at?: string
+          generated_by?: string | null
+          pdf_sha256: string
+          pdf_storage_path: string
+          reason?: string
+          tenant_id: string
+          waiver_evidence_id: string
+        }
+        Update: {
+          generated_at?: string
+          generated_by?: string | null
+          pdf_sha256?: string
+          pdf_storage_path?: string
+          reason?: string
+          tenant_id?: string
+          waiver_evidence_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "waiver_evidence_pdfs_generated_by_fkey"
+            columns: ["generated_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "waiver_evidence_pdfs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "waiver_evidence_pdfs_waiver_evidence_id_fkey"
+            columns: ["waiver_evidence_id"]
+            isOneToOne: true
+            referencedRelation: "waiver_evidence"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
-      [_ in never]: never
+      client_job_details: {
+        Row: {
+          created_at: string | null
+          engagement_id: string | null
+          gallery_released: boolean | null
+          job_status: string | null
+          location: string | null
+          tenant_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          engagement_id?: string | null
+          gallery_released?: never
+          job_status?: string | null
+          location?: string | null
+          tenant_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          engagement_id?: string | null
+          gallery_released?: never
+          job_status?: string | null
+          location?: string | null
+          tenant_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_details_engagement_id_fkey"
+            columns: ["engagement_id"]
+            isOneToOne: true
+            referencedRelation: "engagements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_details_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
+      accept_quote: {
+        Args: {
+          p_selected_line_ids?: string[]
+          p_tenant_id: string
+          p_token: string
+        }
+        Returns: Json
+      }
       admin_enrolment_lookup_email: { Args: { p_email: string }; Returns: Json }
       admin_get_document_signed_url_path: {
         Args: { p_payment_id: string }
@@ -3122,8 +3642,27 @@ export type Database = {
         Args: { p_subdomain: string }
         Returns: boolean
       }
+      claim_automatic_email: {
+        Args: {
+          p_email_key: string
+          p_engagement_id: string
+          p_quote_id: string
+          p_recipient_email: string
+          p_tenant_id: string
+        }
+        Returns: string
+      }
       cleanup_expired_otps: { Args: never; Returns: undefined }
       cleanup_old_verification_attempts: { Args: never; Returns: number }
+      complete_automatic_email: {
+        Args: {
+          p_external_msg_id?: string
+          p_failure_reason?: string
+          p_log_id: string
+          p_status: string
+        }
+        Returns: undefined
+      }
       convert_lead_to_job: {
         Args: {
           p_booked_ends_at?: string
@@ -3166,6 +3705,10 @@ export type Database = {
         }
         Returns: Json
       }
+      create_job_payment_requests: {
+        Args: { p_engagement_id: string; p_requests: Json }
+        Returns: Json
+      }
       create_scheduling_hold: {
         Args: {
           p_client_email: string
@@ -3185,6 +3728,10 @@ export type Database = {
         Args: { p_engagement_id: string; p_reason?: string }
         Returns: Json
       }
+      decline_public_quote: {
+        Args: { p_reason?: string; p_tenant_id: string; p_token: string }
+        Returns: Json
+      }
       disconnect_tenant_google_calendar: {
         Args: { p_tenant_id: string }
         Returns: undefined
@@ -3194,6 +3741,7 @@ export type Database = {
         Returns: number
       }
       get_admin_dashboard_overview: { Args: never; Returns: Json }
+      get_admin_quote: { Args: { p_quote_id: string }; Returns: Json }
       get_app_encryption_key: { Args: never; Returns: string }
       get_available_slots: {
         Args: { p_date: string; p_offering_id: string; p_subdomain: string }
@@ -3222,6 +3770,10 @@ export type Database = {
           name: string
           price_minor: number
         }[]
+      }
+      get_client_job_gallery: {
+        Args: { p_engagement_id: string }
+        Returns: Json
       }
       get_cron_secret: { Args: never; Returns: string }
       get_engagement_person_id: {
@@ -3309,6 +3861,10 @@ export type Database = {
           updated_at: string
           waiver_required: boolean
         }[]
+      }
+      get_public_quote: {
+        Args: { p_tenant_id: string; p_token: string }
+        Returns: Json
       }
       get_public_schedule_events_by_subdomain: {
         Args: { p_end: string; p_start: string; p_subdomain: string }
@@ -3466,6 +4022,10 @@ export type Database = {
           blocked_until: string
         }[]
       }
+      is_automatic_email_enabled: {
+        Args: { p_email_key: string; p_tenant_id: string }
+        Returns: boolean
+      }
       is_minor: { Args: { date_of_birth: string }; Returns: boolean }
       is_reserved_subdomain: { Args: { p_subdomain: string }; Returns: boolean }
       is_service_role: { Args: never; Returns: boolean }
@@ -3482,6 +4042,10 @@ export type Database = {
           p_tenant_id: string
         }
         Returns: string
+      }
+      job_payment_requests_all_paid: {
+        Args: { p_engagement_id: string }
+        Returns: boolean
       }
       job_resolve_client: {
         Args: {
@@ -3508,6 +4072,25 @@ export type Database = {
       link_auth_user_to_person: {
         Args: { p_person_id: string }
         Returns: undefined
+      }
+      list_admin_quotes: { Args: never; Returns: Json }
+      list_due_shoot_emails: {
+        Args: { p_now?: string }
+        Returns: {
+          email_key: string
+          engagement_id: string
+          gallery_url: string
+          location: string
+          offering_name: string
+          recipient_email: string
+          recipient_name: string
+          shoot_starts_at: string
+          tenant_id: string
+        }[]
+      }
+      mark_quote_sent: {
+        Args: { p_quote_id: string; p_via: string }
+        Returns: Json
       }
       preview_notification_blast_recipients: {
         Args: {
@@ -3536,6 +4119,29 @@ export type Database = {
           p_vertical: string
         }
         Returns: string
+      }
+      quote_assert_tenant_admin: {
+        Args: { p_tenant_id: string }
+        Returns: undefined
+      }
+      quote_client_contact: {
+        Args: { p_quote_id: string }
+        Returns: {
+          client_email: string
+          client_name: string
+          client_phone: string
+        }[]
+      }
+      quote_deposit_minor: {
+        Args: { p_deposit_percent: number; p_total_minor: number }
+        Returns: number
+      }
+      quote_job_offering_id: { Args: { p_quote_id: string }; Returns: string }
+      quote_lines_json: { Args: { p_quote_id: string }; Returns: Json }
+      quote_recalc_totals: { Args: { p_quote_id: string }; Returns: undefined }
+      release_job_gallery: {
+        Args: { p_engagement_id: string; p_release?: boolean }
+        Returns: Json
       }
       release_scheduling_hold: {
         Args: { p_hold_id: string }
@@ -3594,6 +4200,7 @@ export type Database = {
         Args: { p_secret: string }
         Returns: undefined
       }
+      save_quote: { Args: { p_lines: Json; p_quote: Json }; Returns: string }
       save_tenant_google_credentials: {
         Args: {
           p_access_token: string
