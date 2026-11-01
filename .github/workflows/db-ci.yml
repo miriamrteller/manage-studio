@@ -26,9 +26,12 @@ permissions:
   contents: read
   pull-requests: read
 
+# A newer PR push cancels the old run. On main every merge's run finishes:
+# a cancelled run there is never re-checked, because the next merge's
+# path filter skips the DB jobs when it did not touch supabase/**.
 concurrency:
   group: db-ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   SUPABASE_TELEMETRY_DISABLED: "1"
