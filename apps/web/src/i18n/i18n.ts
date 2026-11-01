@@ -5,7 +5,9 @@ import heLang from './he.json'
 import enLang from './en.json'
 import photographerHe from './verticals/photographer.he.json'
 import photographerEn from './verticals/photographer.en.json'
-import { BASE_NAMESPACE, PHOTOGRAPHER_NAMESPACE } from './verticalNamespace'
+import danceHe from './verticals/dance.he.json'
+import danceEn from './verticals/dance.en.json'
+import { BASE_NAMESPACE, DANCE_NAMESPACE, PHOTOGRAPHER_NAMESPACE } from './verticalNamespace'
 
 // Note: FullCalendar locales are registered in plugins/calendar configuration
 // date-fns Hebrew locale is imported for use in date formatting utilities
@@ -15,11 +17,11 @@ i18n
   .use(initReactI18next)
   .init({
     resources: {
-      he: { [BASE_NAMESPACE]: heLang, [PHOTOGRAPHER_NAMESPACE]: photographerHe },
-      en: { [BASE_NAMESPACE]: enLang, [PHOTOGRAPHER_NAMESPACE]: photographerEn },
+      he: { [BASE_NAMESPACE]: heLang, [PHOTOGRAPHER_NAMESPACE]: photographerHe, [DANCE_NAMESPACE]: danceHe },
+      en: { [BASE_NAMESPACE]: enLang, [PHOTOGRAPHER_NAMESPACE]: photographerEn, [DANCE_NAMESPACE]: danceEn },
     },
     fallbackLng: 'en',
-    ns: [BASE_NAMESPACE, PHOTOGRAPHER_NAMESPACE],
+    ns: [BASE_NAMESPACE, PHOTOGRAPHER_NAMESPACE, DANCE_NAMESPACE],
     defaultNS: BASE_NAMESPACE,
     // Vertical overlays (e.g. 'photographer') hold only the keys whose wording
     // differs; anything they don't define resolves from the base namespace.

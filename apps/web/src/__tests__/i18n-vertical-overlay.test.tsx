@@ -5,6 +5,9 @@
  *    no dance vocabulary, no interpolation the call sites don't pass;
  *  - runtime: only photographer tenants resolve the overlay; dance, generic,
  *    beautician and vertical-less tenants get the base wording unchanged.
+ * Dance overlay (src/i18n/verticals/dance.*.json): the enrolment document is a
+ * "health declaration" for dance only (docs/legal/07b); every other vertical
+ * sees the neutral base "form", and nothing anywhere calls it a waiver.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { screen } from '@testing-library/react';
@@ -14,8 +17,10 @@ import enBase from '@/i18n/en.json';
 import heBase from '@/i18n/he.json';
 import enOverlay from '@/i18n/verticals/photographer.en.json';
 import heOverlay from '@/i18n/verticals/photographer.he.json';
+import enDance from '@/i18n/verticals/dance.en.json';
+import heDance from '@/i18n/verticals/dance.he.json';
 import i18n from '@/i18n/i18n';
-import { BASE_NAMESPACE, PHOTOGRAPHER_NAMESPACE, overlayNamespaceFor } from '@/i18n/verticalNamespace';
+import { BASE_NAMESPACE, DANCE_NAMESPACE, PHOTOGRAPHER_NAMESPACE, overlayNamespaceFor } from '@/i18n/verticalNamespace';
 import { renderInApp, setLanguage, setTenant, type FakeTenantKind } from './helpers/verticalHarness';
 
 vi.mock('@/hooks/useTenant', async () => (await import('./helpers/fakeTenantState')).tenantHookMock());
@@ -82,9 +87,10 @@ describe('photographer overlay files', () => {
 });
 
 describe('overlayNamespaceFor', () => {
-  it('maps photographer to its overlay and everything else to none', () => {
+  it('maps photographer and dance to their overlays and everything else to none', () => {
     expect(overlayNamespaceFor('photographer')).toBe(PHOTOGRAPHER_NAMESPACE);
-    for (const v of ['dance-studio', 'generic', 'beautician', undefined, null] as const) {
+    expect(overlayNamespaceFor('dance-studio')).toBe(DANCE_NAMESPACE);
+    for (const v of ['generic', 'beautician', undefined, null] as const) {
       expect(overlayNamespaceFor(v)).toBeNull();
     }
   });
@@ -116,7 +122,7 @@ describe('runtime resolution through LabelsProvider', () => {
     await setLanguage('en');
   });
 
-  it.each<FakeTenantKind | null>(['dance', 'generic', 'none', 'beautician', null])(
+  it.each<FakeTenantKind | null>(['generic', 'none', 'beautician', null])(
     'tenant %s never resolves the photographer overlay',
     async (kind) => {
       setTenant(kind);
@@ -172,5 +178,55 @@ describe('runtime resolution through LabelsProvider', () => {
     view.rerenderApp();
     expect(await screen.findByText(overlay.en['pages.enrol_complete.signed_heading'])).toBeInTheDocument();
     expect(screen.getByTestId('ns').textContent).toBe(PHOTOGRAPHER_NAMESPACE);
+  });
+});
+
+describe('dance overlay: health declaration for dance, neutral form for everyone else', () => {
+  const danceFlat = { en: flatten(enDance as Json), he: flatten(heDance as Json) };
+
+  it('holds only keys from the base files; Hebrew only where the wording names the document', () => {
+    for (const key of Object.keys(danceFlat.he)) expect(danceFlat.en, key).toHaveProperty([key]);
+    for (const lng of ['en', 'he'] as const) {
+      for (const key of Object.keys(danceFlat[lng])) expect(base[lng], key).toHaveProperty([key]);
+    }
+  });
+
+  it('never calls the document a waiver, in any vertical or language', () => {
+    for (const lng of ['en', 'he'] as const) {
+      for (const [key, value] of Object.entries(danceFlat[lng])) {
+        expect(value, key).not.toMatch(/waiver|ויתור/i);
+        expect(value, key).toMatch(/health declaration|הצהרת (ה)?בריאות/i);
+      }
+      for (const key of Object.keys(danceFlat.en)) {
+        expect(base[lng][key], key).not.toMatch(/waiver|ויתור/i);
+      }
+    }
+  });
+
+  it('the admin template editor is neutral "Forms" for every vertical (not overridden for dance)', () => {
+    expect(base.en['pages.waivers.title']).toBe('Forms');
+    expect(base.he['pages.waivers.title']).toBe('טפסים');
+    expect(base.en['nav.waivers']).toBe('Forms');
+    expect(danceFlat.en['pages.waivers.title']).toBeUndefined();
+    expect(danceFlat.en['nav.waivers']).toBeUndefined();
+  });
+
+  it.each([
+    ['dance', 'Health declaration signed — welcome!', 'I have read and accept this health declaration', 'הצהרת הבריאות נחתמה — ברוכים הבאים!'],
+    ['generic', 'Form signed — welcome!', 'I have read and accept this form', 'הטופס נחתם — ברוכים הבאים!'],
+    ['beautician', 'Form signed — welcome!', 'I have read and accept this form', 'הטופס נחתם — ברוכים הבאים!'],
+    ['none', 'Form signed — welcome!', 'I have read and accept this form', 'הטופס נחתם — ברוכים הבאים!'],
+  ] as const)('tenant %s sees its own wording at runtime', async (kind, heading, checkbox, heHeading) => {
+    setTenant(kind);
+    await setLanguage('en');
+    let view = renderInApp(<Probe />);
+    expect(screen.getByTestId('overridden').textContent).toBe(heading);
+    expect(screen.getByTestId('with-default').textContent).toBe(checkbox);
+    expect(screen.getByTestId('not-in-overlay').textContent).toBe(base.en['pages.enrol_complete.go_to_dashboard']);
+    view.unmount();
+    await setLanguage('he');
+    view = renderInApp(<Probe />);
+    expect(screen.getByTestId('overridden').textContent).toBe(heHeading);
+    view.unmount();
   });
 });

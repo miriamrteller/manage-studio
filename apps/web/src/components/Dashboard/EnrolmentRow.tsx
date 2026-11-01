@@ -1,12 +1,12 @@
+import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
+import { shortWeekdayName } from '@/lib/weekdayName';
 import { EnrolmentStatusAction } from '@/features/enrolment/components/EnrolmentStatusAction';
 import type { EngagementWithOffering } from './useParentPortal';
 
-const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-function formatSchedule(day: number | null, startTime: string | null): string {
+function formatSchedule(day: number | null, startTime: string | null, language: string): string {
   if (day == null && !startTime) return '';
-  const dayLabel = day != null ? DAY_NAMES[day] : '';
+  const dayLabel = day != null ? shortWeekdayName(day, language) : '';
   const timeLabel = startTime ? startTime.slice(0, 5) : '';
   if (dayLabel && timeLabel) return `${dayLabel} · ${timeLabel}`;
   return dayLabel || timeLabel;
@@ -20,7 +20,8 @@ export function EnrolmentRow({
   highlighted?: boolean;
 }) {
   const location = useLocation();
-  const schedule = formatSchedule(enrolment.classDay, enrolment.classStartTime);
+  const { i18n } = useTranslation();
+  const schedule = formatSchedule(enrolment.classDay, enrolment.classStartTime, i18n.language);
 
   return (
     <li
