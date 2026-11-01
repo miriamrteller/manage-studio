@@ -8,23 +8,34 @@ import { useJobPackages, useJobs } from '../hooks/useJobs';
 import { fromDateTimeLocal } from '../lib/jobStatus';
 import { PackageSelect } from './PackageSelect';
 
-interface JobCreateFormProps {
-  onCreated?: (engagementId: string) => void;
+export type ClientMode = 'existing' | 'new';
+
+/** Client to start the form with (e.g. "New shoot" from a row on the Clients page). */
+export interface JobCreatePrefill {
+  clientMode?: ClientMode;
+  personId?: string;
+  personName?: string;
 }
 
-type ClientMode = 'existing' | 'new';
+interface JobCreateFormProps {
+  onCreated?: (engagementId: string) => void;
+  prefill?: JobCreatePrefill | null;
+}
 
 /** Admin "new shoot": pick/create the client, choose a package and (optionally) a date. */
-export function JobCreateForm({ onCreated }: JobCreateFormProps) {
+export function JobCreateForm({ onCreated, prefill = null }: JobCreateFormProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { labels } = useEntityLabels();
   const { createJob, isCreating } = useJobs();
   const packagesQuery = useJobPackages();
 
-  const [mode, setMode] = useState<ClientMode>('existing');
-  const [personId, setPersonId] = useState<string | null>(null);
-  const [personLabel, setPersonLabel] = useState('');
+  const prefilledPerson = prefill?.personId ? prefill : null;
+  const [mode, setMode] = useState<ClientMode>(
+    prefilledPerson ? 'existing' : (prefill?.clientMode ?? 'existing'),
+  );
+  const [personId, setPersonId] = useState<string | null>(prefilledPerson?.personId ?? null);
+  const [personLabel, setPersonLabel] = useState(prefilledPerson?.personName ?? '');
   const [clientName, setClientName] = useState('');
   const [clientEmail, setClientEmail] = useState('');
   const [clientPhone, setClientPhone] = useState('');

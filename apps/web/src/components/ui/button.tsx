@@ -32,8 +32,11 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       destructive: `bg-error text-on-primary hover:bg-[var(--color-error-hover)] active:bg-[var(--color-error-active)] focus-visible:ring-2 focus-visible:ring-error ${raisedFinish}`,
     };
 
+    // sm is the compact inline/row-action size: keep the label on one line so
+    // a pill in a narrow table cell never squashes into a circle with
+    // wrapped text. Its width always follows the label (no fixed size).
     const sizeClasses = {
-      sm: 'px-3 py-1 text-sm',
+      sm: 'px-3 py-1 text-sm whitespace-nowrap',
       md: 'px-4 py-2 text-base',
       lg: 'px-6 py-3 text-lg',
     };

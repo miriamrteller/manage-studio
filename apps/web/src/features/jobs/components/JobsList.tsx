@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/shared';
 import { useEntityLabels } from '@/hooks/useEntityLabels';
@@ -8,7 +8,7 @@ import { formatAppointmentWhen } from '@/features/scheduling/lib/formatAppointme
 import { useJobs } from '../hooks/useJobs';
 import { JOB_STATUSES, type JobStatus } from '../services/jobService';
 import { JOB_STATUS_BADGE, jobStatusKey } from '../lib/jobStatus';
-import { JobCreateForm } from './JobCreateForm';
+import { JobCreateForm, type JobCreatePrefill } from './JobCreateForm';
 import { JobGalleryRowLink } from './JobGalleryLink';
 import type { JobRow } from '../services/jobService';
 
@@ -29,7 +29,11 @@ export function JobsList() {
   const { t, i18n } = useTranslation();
   const { labels } = useEntityLabels();
   const { jobs, isLoading, error } = useJobs();
-  const [showForm, setShowForm] = useState(false);
+  // "Add client" / "New shoot" on the Clients page land here with the form
+  // open (and the client preselected) via router state.
+  const location = useLocation();
+  const prefill = (location.state as { newShoot?: JobCreatePrefill } | null)?.newShoot ?? null;
+  const [showForm, setShowForm] = useState(prefill !== null);
   const [statusFilter, setStatusFilter] = useState<JobStatus | 'all'>('all');
 
   const visible = useMemo(
@@ -47,7 +51,7 @@ export function JobsList() {
       </div>
       <p className="text-sm text-muted-foreground">{t('pages.jobs.subtitle')}</p>
 
-      {showForm && <JobCreateForm onCreated={() => setShowForm(false)} />}
+      {showForm && <JobCreateForm prefill={prefill} onCreated={() => setShowForm(false)} />}
 
       <div className="flex items-center gap-2">
         <label htmlFor="job-status-filter" className="text-sm font-medium">
