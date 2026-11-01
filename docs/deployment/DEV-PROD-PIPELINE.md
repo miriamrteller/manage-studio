@@ -66,6 +66,12 @@ If you know Azure DevOps release pipelines, this is the same shape:
    `supabase/security/definer-execute.json` (public / authenticated / service /
    internal) and `REVOKE`/`GRANT` to match in the same migration. `db-ci` fails
    otherwise (`supabase/tests/security/run.sh`).
+   A definer function that exists on a hosted project but not in git (made in
+   the dashboard, or by a Supabase feature) stops the hardening migration;
+   `db-health` lists them nightly. `20261031235900` handles the two found on
+   2026-11-01 (`rls_auto_enable` moved to `extensions`, unused
+   `handle_new_user_v2` dropped) and is the one allowed out-of-order version
+   (`scripts/ci/migration-order-exceptions.txt`).
 6. **Never** `supabase db reset`, `seed*.sql` or `scripts/reseed-dev.sh` against a
    hosted project. The pipeline only ever runs `db push` (applies new migrations).
 7. **Prod has no mock flags.** deploy-prod fails its checks if any `*_MOCK` or
