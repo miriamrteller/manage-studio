@@ -1900,7 +1900,8 @@
       "locale": "Language & Region",
       "payment": "Payment Settings",
       "invoicing": "Invoicing",
-      "legal": "Legal"
+      "legal": "Legal",
+      "security": "Security"
     },
     "branding": {
       "colors": "Colors",
@@ -2288,6 +2289,30 @@
       "service_hint": "Classes, schedule changes, payments, events of enrolled students. Sent to everyone selected.",
       "marketing": "Marketing (offers, new classes, promotions)",
       "marketing_hint": "Sent only to people who opted in to email marketing. The subject starts with \"פרסומת\" and an unsubscribe link is added automatically."
+    },
+    "security": {
+      "title": "Security",
+      "description": "Protect your admin account and take a copy of your studio's data.",
+      "mfa_title": "Two-step sign-in",
+      "mfa_description": "After your email code or link, also enter a 6-digit code from an authenticator app (Google Authenticator, Microsoft Authenticator, 1Password…). Strongly recommended for every admin.",
+      "mfa_on": "Two-step sign-in is on.",
+      "mfa_start": "Turn on two-step sign-in",
+      "mfa_scan": "Scan this code with your authenticator app, then enter the 6-digit code it shows.",
+      "mfa_qr_alt": "QR code for your authenticator app",
+      "mfa_secret": "Or enter this key manually",
+      "mfa_code_label": "6-digit code",
+      "mfa_confirm": "Confirm",
+      "mfa_wrong_code": "That code didn't work. Check the time on your phone and try the newest code.",
+      "mfa_enabled": "Two-step sign-in is now on.",
+      "mfa_removed": "Two-step sign-in removed.",
+      "mfa_remove": "Remove",
+      "challenge_title": "Enter your sign-in code",
+      "challenge_body": "Open your authenticator app and enter the 6-digit code for OpalSwift.",
+      "challenge_submit": "Continue",
+      "export_title": "Download all studio data",
+      "export_description": "One file (JSON) with your clients, students, enrolments, payments, signed documents' details, consents and messages. Secrets such as payment-provider keys are never included. Keep the file safe: it contains personal and health information.",
+      "export_button": "Download data",
+      "export_done": "Downloaded. The export has been recorded in the audit log."
     }
   }
 }
