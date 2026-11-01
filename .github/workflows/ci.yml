@@ -102,7 +102,7 @@ jobs:
 
   accessibility:
     needs: detect-changes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04  # Playwright 1.59 cannot install browsers on ubuntu-latest (26.04)
     timeout-minutes: 20
     # Only run if UI files changed (on PR or push)
     if: ${{ needs.detect-changes.outputs.ui-changed == 'true' }}

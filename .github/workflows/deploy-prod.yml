@@ -234,7 +234,14 @@ jobs:
         if: steps.push.outcome == 'success' && env.DEPLOY_FUNCTIONS == 'true'
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-        run: supabase functions deploy --project-ref "$PROD_REF" --yes
+        # --use-api: bundled by Supabase, no Docker image pull (public.ecr.aws
+        # rate-limits the edge-runtime image). One retry for transient API errors.
+        run: |
+          supabase functions deploy --use-api --project-ref "$PROD_REF" --yes || {
+            echo "::warning::functions deploy failed; retrying once in 30s"
+            sleep 30
+            supabase functions deploy --use-api --project-ref "$PROD_REF" --yes
+          }
 
       # ── verification: every check runs, then the job fails if any failed ──
       - name: verify:prod
