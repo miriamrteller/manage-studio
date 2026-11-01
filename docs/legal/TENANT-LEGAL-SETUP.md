@@ -85,3 +85,7 @@ What the onboarding wizard must collect. Store each answer with the tenant, plus
 **Blocking rules**
 - No live payments while `business_status = not_registered`. Show: "Register as a business and connect an invoicing provider first."
 - Marketing sends stay disabled until the studio has published its privacy policy.
+
+## Last step: lawyer review
+
+After the studio publishes its pages, the app shows a note in Settings → Legal: "These documents are drafts based on Israeli law. Have a lawyer review them for your studio." It stays until dismissed, and comes back whenever the documents change. Hand the lawyer the document list in the [README](README.md); start with [OPEN-QUESTIONS](OPEN-QUESTIONS.md).
