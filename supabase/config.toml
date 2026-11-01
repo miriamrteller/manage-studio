@@ -300,6 +300,11 @@ enabled = true
 verify_jwt = true
 entrypoint = "./functions/admin-resend-document/index.ts"
 
+[functions.provision-studio]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/provision-studio/index.ts"
+
 [functions.send-admin-enrolment-link]
 enabled = true
 verify_jwt = true
