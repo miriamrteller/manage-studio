@@ -33,7 +33,9 @@ Threads currently report to the OLD coordinator id. Your first action re-points 
 
 - #100 `ops/db-pipeline`: db-ci, deploy-dev, deploy-prod (owner approval via GitHub environment "production"), nightly db-health, backup fix. Merge when green; then tell the launch guide.
 - #103 `sec/definer-hardening-stack` (base = #100's branch): REVOKE EXECUTE on 75 SECURITY DEFINER functions callable by anon, search_path fixes, 2 lint bugs, 44 FK indexes. Merge after #100 (retarget to main if needed).
-- Sentry PRs 2–4 from the error-tracking thread (not opened yet).
+- #105: Sentry PR 2/4, edge-function error reporting (all ~60 functions wrapped, no-op without `SENTRY_DSN`). PRs 3 (admin "Report a problem") and 4 (CI source maps + Sentry→GitHub issue Action + OBSERVABILITY.md) still to come.
+- #106: demo-only fixes (missing demo RPCs; sample payments in the current month). Merge when green; thread D republishes.
+- #107: this handover doc.
 
 ## Decisions already made by the owner (don't re-ask)
 
