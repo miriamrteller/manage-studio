@@ -28,7 +28,7 @@ This brief only adds what the photographer work changed.
 
 ## What changed since the last deploy
 
-The four migrations added since the dev database was last pushed:
+The migrations added since the dev database was last pushed:
 
 - `20261030000100_job_details.sql`: shoots (`job_details`), `create_job`,
   `convert_lead_to_job`.
@@ -41,6 +41,11 @@ The four migrations added since the dev database was last pushed:
   email keys in `automatic_email_log` / `tenant_automatic_emails`; adds
   `job_details.contract_pdf_pending` and `waiver_evidence_pdfs` (PDFs generated
   after signing when the PDF failed at signing).
+- `20261031000100_tenant_chrome_style_logo_tone.sql`: soft theme. Adds
+  `tenants.chrome_style` (`soft` by default, or `solid`), the logo tone columns
+  and `logo_autofix`, and redefines `get_tenant_config_by_subdomain` to return
+  them. Additive columns with defaults, no data rewrites. Applies to dance
+  tenants too: after the push, open one dance tenant and check the header logo.
 
 New or changed edge functions: `send-job-contract-link`,
 `client-job-contract-link`, `job-contract-pdf-link` (signed-contract download),
