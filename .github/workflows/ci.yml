@@ -121,4 +121,4 @@ jobs:
       - name: Install Playwright browsers
         run: pnpm --filter web exec playwright install --with-deps chromium
       - name: Run accessibility tests
-        run: pnpm --filter web exec playwright test e2e/accessibility-compliance.spec.ts
+        run: pnpm --filter web exec playwright test e2e/accessibility-compliance.spec.ts e2e/accessibility-public-pages.spec.ts

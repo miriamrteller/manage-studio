@@ -15,6 +15,9 @@
  * see something. Without that, a broken query or a bad role switch reads as a
  * pass, which is the classic way an RLS suite lies to you.
  *
+ * Photographer/CRM tables: anon is checked always; cross-tenant checks run when
+ * a tenant with shoots exists (seed-photographer.sql) and are skipped otherwise.
+ *
  * Fixtures: a second family is created in the same tenant, because with only
  * one account "a parent sees only their own family" passes vacuously. They are
  * removed in a finally block.
@@ -187,6 +190,69 @@ try {
 
   for (const table of ['people', 'engagements', 'payments', 'accounts', 'audit_log', 'user_profiles']) {
     expectNone(`anon CANNOT read ${table}`, asUser(null, `SELECT count(*) FROM ${table}`));
+  }
+
+  // ---- Photographer / CRM tables (2026-10 beta) ---------------------------
+  // Shoots, quotes, pay requests, leads and signed-contract PDFs hold client PII.
+  // anon must see none of them. Cross-tenant checks need a tenant with shoots
+  // (seed-photographer.sql); without one they are skipped, not passed.
+  const PHOTO_TABLES = [
+    'job_details',
+    'job_payment_requests',
+    'quotes',
+    'quote_lines',
+    'leads',
+    'waiver_evidence_pdfs',
+    'automatic_email_log',
+  ];
+  for (const table of PHOTO_TABLES) {
+    expectNone(`anon CANNOT read ${table}`, asUser(null, `SELECT count(*) FROM ${table}`));
+  }
+
+  const photoTenantId = sql(
+    `SELECT tenant_id FROM job_details GROUP BY tenant_id ORDER BY count(*) DESC LIMIT 1`,
+  );
+  const photoAdminId = photoTenantId
+    ? sql(
+        `SELECT id FROM user_profiles WHERE tenant_id = '${photoTenantId}'
+           AND 'tenant_admin' = ANY(role) AND NOT ('super_admin' = ANY(role)) LIMIT 1`,
+      )
+    : '';
+  const outsideAdminId = photoTenantId
+    ? sql(
+        `SELECT id FROM user_profiles WHERE tenant_id <> '${photoTenantId}'
+           AND 'tenant_admin' = ANY(role) AND NOT ('super_admin' = ANY(role)) LIMIT 1`,
+      )
+    : '';
+
+  if (!photoTenantId || !photoAdminId || !outsideAdminId) {
+    console.log(
+      '  \x1b[33mSKIP\x1b[0m  photographer cross-tenant checks — needs a tenant with shoots and its admin (seed-photographer.sql)',
+    );
+  } else {
+    const photoOwn = asUser(
+      photoAdminId,
+      `SELECT count(*) FROM job_details WHERE tenant_id = '${photoTenantId}'`,
+    );
+    check(
+      'positive control — photographer admin CAN see their own shoots',
+      photoOwn.rows > 0 && !photoOwn.denied,
+      photoOwn.denied ? 'denied at GRANT level' : `${photoOwn.rows} shoot(s)`,
+    );
+    for (const table of ['job_details', 'job_payment_requests', 'quotes', 'quote_lines', 'leads']) {
+      expectNone(
+        `foreign tenant_admin CANNOT see the photographer's ${table}`,
+        asUser(outsideAdminId, `SELECT count(*) FROM ${table} WHERE tenant_id = '${photoTenantId}'`),
+      );
+    }
+    if (photoTenantId !== tenantId) {
+      for (const table of ['job_details', 'job_payment_requests', 'quotes']) {
+        expectNone(
+          `dance parent CANNOT see the photographer's ${table}`,
+          asUser(parentId, `SELECT count(*) FROM ${table} WHERE tenant_id = '${photoTenantId}'`),
+        );
+      }
+    }
   }
 
   // ---- Encrypted credentials must never reach a client ---------------------
