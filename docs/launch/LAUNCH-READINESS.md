@@ -1,17 +1,18 @@
 # Launch readiness audit
 
-**Date:** 2026-11-01 · **Code:** `main` @ `1d824c5` (+ #100, merged during the audit; open #103, #105) · **Prod:** read-only checks via the Supabase connector · **Scope:** first two tenants (ballet school: manual payments, no receipts; photographer: YPay).
+**Updated:** 2026-11-01 11:15 · **Code:** `main` @ `a67a83c` · **Prod:** read-only re-check at 11:10 (still 0 tenants, 0 users, 34 migrations, no encryption key) · **Scope:** first two tenants (ballet school: pay at the studio, no receipts; photographer: YPay).
+First version: 2026-11-01 09:45 @ `1d824c5` (#110).
 
-## Verdict: not ready yet. 8 blockers, all fixable this week
+## Verdict: code is ready; the remaining blockers are owner setup steps on prod
 
-1. **Prod is 2 months behind `main`.** DB has 34 of 40 migrations, Edge Functions are from Aug (no quote/contract/job-payment functions), web Worker last deployed 27 Aug. → #100 merged 2026-11-01: owner sets up GitHub environments, runs deploy-prod, then rebuilds + deploys the web app. *Database owner + owner*
-2. **No email is sent at all**, and login is by email (the Auth email hook is live on prod). → Workers Paid + Cloudflare token, or set `RESEND_API_KEY` as a fallback. *Owner, launch guide*
-3. **Encryption key not set on prod.** Until it is, waiver/pay links and saved YPay keys don't work. *Owner, launch guide*
-4. **Ballet school has no working "pay at the studio" path.** Parents' online enrolment has no offline option (checkout uses the default provider `grow`, which isn't set up), and every cash payment the admin records queues a tax document (there's no "invoicing off" switch). → owner decision + small code change. Never use `mock` as a workaround. *New app thread*
-5. **Backups:** prod is on Free (no Supabase backups), and the nightly R2 backup last ran 27 Oct. → Pro, re-run backup-prod, check a restore before real data goes in. *Owner, launch guide*
-6. **New tenants get no waiver or contract template** (prod runs no seeds). → load 07b (health declaration) for the ballet school and 07c (contract) for the photographer in Admin → Setup → Waivers before first use. *Owner + legal thread*
-7. **Legal minimum on public forms:** a privacy-policy link next to the enrolment, inquiry, quote and pay forms, plus an enrolment-terms checkbox (APP-GAPS). Today no link shows anywhere. *New app thread, after legal setup doc*
-8. **Merge #103** (anon can execute 75 SECURITY DEFINER functions) before real data. *Database owner*
+**Done since the first audit:** #103 security hardening (blocker 8), #114 pay at the studio + invoicing off (blocker 4), #118 + #117 legal links, privacy notice, terms checkbox with stored acceptance (blocker 7), #112/#116 Resend allowed as the email transport, #119 axe scan of public pages + photographer RLS checks, #105/#111 Sentry.
+
+Still open, in launch order:
+1. **Prod is behind `main`:** 34 of 43 migrations; Edge Functions and the web Worker are from August. → owner creates GitHub environments + secrets, runs **deploy-prod**, then rebuilds and deploys the web app (still manual). *Owner + launch guide*
+2. **Email:** Resend is the decision (#115). Set `RESEND_API_KEY` + `EMAIL_TRANSPORT=resend` on prod and verify opalswift.com in Resend. Login is by email, so nothing works without it. *Not verifiable from here (secret names aren't readable via SQL).* *Owner*
+3. **Encryption key** not set on prod (only `cron_secret`, `supabase_functions_url`). *Owner*
+4. **Backups:** move to Supabase Pro, re-run backup-prod (last ran 27 Oct), check one restore. *Owner + launch guide*
+5. **Bootstrap the ballet school:** after `provision_tenant`, set `payment_provider='offline'`, `invoicing_provider='none'` (GO-LIVE-PLAN Phase B), load the 07b health declaration in Admin → Setup → Waivers, and fill in the legal profile / links in Settings. *Owner + launch guide*
 
 Everything else below is Covered, or a Risk that can follow launch.
 
@@ -24,22 +25,22 @@ Legend: ✅ Covered · ❌ Gap (needs work) · ⚠️ Risk (watch, or fix soon a
 | Flow | Status | Evidence |
 |---|---|---|
 | Photographer: lead → quote → accept → contract sign + PDF → deposit → balance → gallery → client portal | ✅ code + demo | Demo build (`VITE_DEMO_MODE=true`) + Playwright: `/admin/jobs`, `/admin/leads`, `/admin/quotes`, `/dashboard`, `/inquire` all render, 0 page errors, en + he. Functions in `supabase/functions/{accept-quote,send-job-contract-link,job-contract-pdf-generate,record-job-payment,job-payment-request-public}` |
-| Photographer on prod | ❌ | None of those functions are deployed to prod (`list_edge_functions`: 47 functions, all Aug). Blocker 1 |
+| Photographer on prod | ❌ until deploy | None of those functions are deployed to prod yet (Aug versions only). Blocker 1 |
 | Dance: class list → enrolment → health declaration → payment → parent portal | ⚠️ code only | The demo is photographer-only (`src/demo/main.tsx` starts at `#/admin/jobs`), so the dance flow can't be clicked through without a backend. Unit tests + `e2e/enrolment-features.spec.ts` need Supabase |
-| Dance: parent pays at the studio | ❌ | Public checkout (`StepCheckout`, `EnrolmentPaymentForm.tsx:74-80`) only knows card providers or `mock`; there's no offline option. Admin-side offline payment exists (`AdminEnrolmentPaymentStep.tsx:117`, `record-payment`). Blocker 4 |
-| Dance: waiver step on prod | ❌ until key | `accept-waiver` needs `WAIVER_HMAC_KEY_V1` (required in `supabase/edge-secrets.json`, #100) and the DB encryption key (link signing). No `consent_templates` row is created by any migration. Blockers 3, 6 |
+| Dance: parent pays at the studio | ✅ (#114) | `payment_provider='offline'`: checkout shows "Pay at the studio" (`OfflinePaymentNotice.tsx`), the place stays pending until an admin clicks Record offline payment. Set at bootstrap (blocker 5) |
+| Dance: waiver step on prod | ❌ until key + template | `accept-waiver` needs `WAIVER_HMAC_KEY_V1` (deploy-prod checks it) and the DB encryption key. No `consent_templates` row is created by any migration: load 07b. Blockers 3, 5 |
 | Admin basics: login, settings, branding, notifications | ✅ demo | `/login`, `/admin/setup/settings`, `/admin/notifications` render en + he, RTL |
 
 ## 2. Auth & tenancy
 
 | Item | Status | Evidence |
 |---|---|---|
-| Magic-link login | ❌ until email | Auth Send Email hook → `send-auth-email` is live on prod (HANDOVER.md); with no transport, every login email fails. Blocker 2 |
+| Magic-link login | ❌ until email | Auth Send Email hook → `send-auth-email` is live on prod; it needs the Resend secrets. Blocker 2 |
 | Tenant isolation (RLS) | ✅ | RLS + policies on all new tables (`20261030000100:73`, `…0200:136`, `…0300:139-167`, `…0500:64`) |
-| `verify:rls` coverage | ⚠️ | 37 checks cover people/payments/accounts/`*_enc` only; nothing for `job_details`, `job_payment_requests`, `quotes`, `client_job_details`, `leads` (`scripts/verify-rls.mjs`). Add before the 2nd photographer |
+| `verify:rls` coverage | ✅ (#119) | Now also checks anon on `job_details`, `job_payment_requests`, `quotes`, `quote_lines`, `leads`, `waiver_evidence_pdfs`, `automatic_email_log`, plus cross-tenant checks when a photographer tenant exists (skipped, not passed, otherwise) |
 | Subdomain routing | ✅ code / ❔ live | Worker `opalswift-app` routes `*.opalswift.com/*` + `app.` (`apps/web/wrangler.jsonc`). Live hosts couldn't be reached from the audit sandbox (proxy). Wildcard DNS was an owner step in Aug |
 | Super-admin lockdown | ✅ | `20260827000100_super_admin_lockdown.sql` is the last migration applied on prod |
-| SECURITY DEFINER hardening | ❌ | Prod advisors: `anon_security_definer_function_executable` WARN. Fix in #103 (stacked on #100, no CI status yet). Blocker 8 |
+| SECURITY DEFINER hardening | ✅ in code (#103) | Reaches prod with deploy-prod (blocker 1) |
 | Bootstrap deadlock | ✅ documented | GO-LIVE-PLAN Phase B trigger-disable steps |
 
 ## 3. Payments & tax
@@ -49,17 +50,17 @@ Legend: ✅ Covered · ❌ Gap (needs work) · ⚠️ Risk (watch, or fix soon a
 | YPay live path + callback check | ✅ | Callbacks are unsigned but verified with `getTransactionsInfo` + amount check (`_shared/payments/ypay/process-callback.ts:72-80`) |
 | YPay "failed" callback | ⚠️ | A failed callback marks the pending payment failed without verifying it (`process-callback.ts:114-118`). Low impact (needs the charge id) |
 | `*_MOCK` unset on prod | ✅ (after #100) | deploy-prod fails if any `_MOCK$` secret exists (`edge-secrets.json` `forbiddenInProdPatterns`) |
-| `confirm-mock-payment` deployed on prod | ⚠️ | Open endpoint (`verify_jwt=false`). Safe only while no tenant has `payment_provider='mock'` (`mock-confirm-eligibility.ts:18`); the super-admin wizard offers "Mock (testing)" (`OperatorOnboardingWizard.tsx:486`). Don't pick it for real tenants |
-| No provider + invoicing off (ballet) | ❌ | `record-payment` → `finalisePayment` always enqueues a sale document (`finalise-payment.ts:446-460`). The resolver has no "none" (`_shared/invoicing/index.ts:25-41`), so with default `grow` and no keys each row retries → dead → admin alert. Nothing illegal gets issued, but it's noisy and wrong. Blocker 4 |
+| `confirm-mock-payment` on prod | ✅ (#112) | `mock` provider now needs a `*_MOCK` flag (dev only), and the wizard hides Mock in prod builds. Live on prod after deploy-prod |
+| No provider + invoicing off (ballet) | ✅ (#114) | `invoicing_provider='none'`: `enqueueDocument` queues nothing, the missing-invoice watchdog skips the studio |
 | Offline receipts (photographer, YPay) | ✅ planned | Test at the meeting (PHOTOGRAPHER-BETA-SUPABASE.md Part 2 step 10) |
-| Dunning / reminders | ⚠️ | `run-enrolment-payment-dunning` sends pay links. For the ballet school they lead to a checkout that can't take payment. Turn dunning off for that tenant, or point it at offline instructions |
+| Dunning / reminders | ✅ (#114) | Offline studios are skipped: no pay-link reminders, no day-14 auto-cancel |
 
 ## 4. Email
 
 | Item | Status | Evidence |
 |---|---|---|
-| Transport | ❌ | Cloudflare account is on Workers Free → Email Sending returns 2036. Resend is still wired as a fallback (`_shared/email-client.ts:146-208`), so a `RESEND_API_KEY` would unblock launch. Blocker 2 |
-| Secret manifest vs Resend | ⚠️ | `edge-secrets.json` marks the Cloudflare vars as *required*, so a Resend-only prod fails the deploy-prod check. Adjust if Resend is used |
+| Transport | ⚠️ owner step | Decision: Resend (#115). `EMAIL_TRANSPORT=resend` + `RESEND_API_KEY` on prod; Cloudflare later is a config switch. Blocker 2 |
+| Secret manifest vs Resend | ✅ (#112, #116) | deploy-prod's secret check accepts Resend-only prod |
 | Templates en/he + RTL | ✅ | All dance and photographer templates take a language; `BaseEmailTemplate.tsx:127` sets `lang`/`dir` |
 | Sender domains | ✅ | `resolveTenantSender()`: tenant first, `<subdomain>@opalswift.com` fallback, Reply-To = studio |
 | Silent failures if sending is down | ⚠️ | Sends throw and are audited (`payment_confirmation_email_skipped`), but nobody is paged. Login just "never arrives". Sentry PR #105 would surface them |
@@ -70,11 +71,11 @@ Legend: ✅ Covered · ❌ Gap (needs work) · ⚠️ Risk (watch, or fix soon a
 
 | Item | Status | Evidence |
 |---|---|---|
-| Supabase plan | ❌ | Prod org on Free: no daily backups, no PITR, pauses when idle. Blocker 5 |
+| Supabase plan | ❌ owner step | Prod org still to move to Pro: no daily backups or PITR until then. Blocker 4 |
 | Nightly R2 backup | ⚠️ | Last ran 27 Oct (Actions minutes). #100 fixes migration history and adds a pre-deploy backup |
 | Restore runbook + rehearsal | ✅ | `BACKUP-RESTORE-RUNBOOK.md`; `scripts/restore-rehearsal.sh` (#100), rehearsed 2026-11-01 |
 | Storage files (waiver/contract PDFs, logos) | ⚠️ | Not in any backup (runbook "Known gap"). Signed contracts live only in bucket `legal-documents` |
-| DB encryption key | ❌ | `private.platform_config` has only `cron_secret`, `supabase_functions_url` (query 2026-11-01). Blocker 3. No re-encrypt path: store it in the password manager first |
+| DB encryption key | ❌ owner step | Re-checked 11:10: `private.platform_config` still has only `cron_secret`, `supabase_functions_url`. No re-encrypt path: store it in the password manager first. Blocker 3 |
 | Backup gpg private key | ✅ | Password manager only (runbook) |
 | Drift / health checks | ✅ (after #100) | `db-health.yml` nightly: drift dev + prod, advisors → `db-drift` issue |
 
@@ -82,10 +83,10 @@ Legend: ✅ Covered · ❌ Gap (needs work) · ⚠️ Risk (watch, or fix soon a
 
 | Item | Status | Evidence |
 |---|---|---|
-| DB + functions pipeline | ✅ merged | #100 merged 2026-11-01. Still to do: GitHub environments + secrets, then the first deploy-prod run. Blocker 1 |
+| DB + functions pipeline | ✅ merged (#100) | Still to do: GitHub environments + secrets, then the first deploy-prod run. deploy-dev runs on merge but finishes in seconds, so it likely skips until the environments exist. Blocker 1 |
 | Web app deploy | ❌ | Not automated. `DEV-PROD-PIPELINE.md` rule 4: "web deploy is not part of this pipeline yet". It's a manual `wrangler deploy` from the owner's machine with a gitignored `apps/web/.env.production`. Worker last modified 2026-08-27 |
-| `VITE_*` for prod | ⚠️ | Lives only on the owner's machine; legal URLs empty. `VITE_*` values are baked in at build time, so changing one means a rebuild + redeploy |
-| Error tracking | ⚠️ | #104 merged (web, no-op without DSN). #105 (edge) open. No DSN yet = no alerts at launch |
+| `VITE_*` for prod | ⚠️ | Only on the owner's machine; baked in at build time. Studio legal links now come from the database (#117/#118), so only the platform fallbacks need `VITE_*` |
+| Error tracking | ⚠️ owner step | #104, #105, #111 merged (web + edge + source maps). No DSN yet = no alerts until the owner signs up (EU) |
 | Uptime monitoring | ❌ follow-up | None found in repo/docs. Free external check on `creativeballet.opalswift.com` + the auth endpoint is enough |
 | Cron jobs on prod | ✅ | 9 jobs, `pg_cron` + `pg_net` on. New photographer crons arrive with the migrations |
 
@@ -93,34 +94,36 @@ Legend: ✅ Covered · ❌ Gap (needs work) · ⚠️ Risk (watch, or fix soon a
 
 | Gap | Blocks launch? | Why |
 |---|---|---|
-| Privacy link next to forms that collect data (enrolment, inquiry, quote, pay) | **Yes** | Privacy Law §11 notice at collection; children's data. Blocker 7 |
-| Enrolment terms checkbox (07a) | **Yes** (dance) | Season/cancellation terms must be accepted before payment |
-| Health declaration replaces bundled waiver (07b) | **Yes** | Prod has no template anyway: load 07b, not the seed waiver. Blocker 6 |
-| Per-tenant footer privacy/terms links | Yes before the photographer | A single env URL would show one studio's policy on the other's site |
-| Accessibility statement link | Strongly recommended week 1 | Text exists (06). It's a footer link |
+| Privacy link next to forms that collect data | ✅ (#118) | `PrivacyNotice` on inquiry, booking, quote, pay request, signup, enrolment checkout |
+| Enrolment terms checkbox (07a) | ✅ (#118, #117) | Required before payment when the studio has terms; #117 stores acceptances (`legal_acceptances`) |
+| Health declaration (07b) | **Yes**, owner step | Prod has no template: load 07b, not the seed waiver. Blocker 5 |
+| Per-tenant footer links | ✅ (#118, #117) | Studio links or in-app legal pages from the legal profile; platform `VITE_*` as fallback. #117 and #118 overlap here and are being reconciled by the legal thread |
+| Accessibility statement link | ✅ (#118) | Footer link (studio URL or `VITE_ACCESSIBILITY_STATEMENT_URL`) |
 | Studio signup Terms/DPA checkbox | No | Self-serve signup is gated off; first two tenants are provisioned by hand (sign on paper/email) |
 | Marketing consent per channel + unsubscribe | No, if no marketing sends | Don't use the blast composer for marketing until done |
-| Photo consent per purpose + Hebrew typo "מנתן" | Soon | Typo confirmed: `he.json` `pages.people.photo_consent_label` / `media_consent_label` |
+| Photo consent per purpose | Soon | Hebrew typo "מנתן" fixed (#112); per-purpose consent still open (APP-GAPS) |
 | MFA, 24-month access logs, full export | No | Post-launch |
 
 ## 8. Accessibility & i18n
 
 | Item | Status | Evidence |
 |---|---|---|
-| CI axe suite | ⚠️ | `e2e/accessibility-compliance.spec.ts` covers `/` and `/login` only. Enrolment, waiver, quote and pay pages aren't scanned |
-| Hebrew completeness | ✅ almost | 1,918 en keys vs 1,917 he. Missing: `pages.enrolment.enrol_myself` (dance enrolment + parent dashboard, falls back to English) |
+| CI axe suite | ✅ (#119) | Now also scans `/classes`, `/enrol`, `/inquire`, `/book`, `/signup` in en + he. It found unlabeled date-of-birth inputs on enrolment, now fixed. Waiver/quote/pay pages need data, so they're still unscanned |
+| Hebrew completeness | ✅ | `enrol_myself` added (#112); en/he key sets match |
 | RTL | ✅ | Demo in Hebrew: `dir=rtl`, no English UI text left on 9 screens (only sample data) |
 
 ## 9. Other things a CTO would check
 
 | Item | Status | Note |
 |---|---|---|
-| Ballet school "not a registered business" | ⚠️ | Taking money with no receipts is an accountant question (legal README Q16). The app must not issue documents in its name (Blocker 4) |
-| Stale functions on prod | ⚠️ | `confirm-mock-payment`, `booking-expiry-sweep` (no in-function auth), `send-otp-email` (no rate limit, gateway-locked). deploy-prod redeploys from git but doesn't delete extras |
+| Ballet school "not a registered business" | ⚠️ | Taking money with no receipts is an accountant question (legal README Q16). The app must not issue documents in its name (`invoicing_provider=none`, #114) |
+| Stale functions on prod | ⚠️ | `booking-expiry-sweep` (no in-function auth), `send-otp-email` (no rate limit, gateway-locked). deploy-prod redeploys from git but doesn't delete extras |
 | Landing site | ❔ | `opalswift.com` answers 200; no landing Worker in the account list, so check what serves it before linking policies there |
 | Demo covers photographer only | ⚠️ | A dance demo would let the owner rehearse the ballet flow without prod |
 | Seeds on prod | ✅ | Never run (guards in `seed:dev`, rules in every doc) |
 
 ---
 
-**How this was checked:** repo read at `1d824c5`; PR #100/#103 diffs and check runs; prod read-only queries (tenant/user counts, `platform_config` key *names* only, migrations, cron, buckets), `list_edge_functions`, security advisors; Cloudflare `workers_list`; demo build + Playwright smoke in en/he. No hosted system was written to and no secret value was read.
+**Re-check 11:10:** prod read-only query (tenants, users, config key names, migrations); merged PR list on `main`; local tests on combined `main` (tsc clean, vitest 1,488/1,488).
+
+**How this was checked (first audit):** repo read at `1d824c5`; PR #100/#103 diffs and check runs; prod read-only queries (tenant/user counts, `platform_config` key *names* only, migrations, cron, buckets), `list_edge_functions`, security advisors; Cloudflare `workers_list`; demo build + Playwright smoke in en/he. No hosted system was written to and no secret value was read.
