@@ -16,7 +16,6 @@ OpalSwift (and every studio site on `*.opalswift.com`) uses **only storage that 
 | `nav-drawer-pinned`, `dashboard-layout-…`, `settings-draft-…` | Local storage | Admin screen preferences and unsaved settings drafts (never passwords or secrets) | Until you clear it / save the form |
 | `enrolment-resume:…`, `enrollmentIntent`, `enrolmentResumeKey`, `portalEngagementId` | Session storage | Lets you continue an enrolment after signing in | Until you close the tab |
 | `manageStudio.authCallbackUrl`, `gcal-oauth-done:…` | Session storage | Returns you to the right page after sign-in / Google Calendar connection | Until you close the tab |
-| Sentry session id (anonymous) | Session storage | Error monitoring: counts error rates per browser session; no cookies, no IP address, no session replay | Until you close the tab |
 
 ## Third parties on payment pages
 
@@ -33,7 +32,7 @@ If we ever add analytics or marketing tools, we will update this notice and ask 
 ---
 
 ### How this was checked
-Code review of `apps/web` on [[DATE OF REVIEW — 2026-11-01]]: no analytics or tracking packages in `package.json`; fonts are self-hosted (`@fontsource/*`, no Google Fonts requests); `src/lib/monitoring.ts` wires Sentry error monitoring (EU region, approved, listed in the DPA). Per its configuration it stores only an anonymous session id in session storage and sets no cookies — re-check after install. Storage keys listed above come from `src/lib/supabase.ts`, `src/contexts/LanguageContext.tsx`, `src/components/**`, `src/features/enrolment/lib/*`, `src/lib/authCallback.ts`, `src/pages/GoogleCalendarCallbackPage.tsx`.
+Code review of `apps/web` on [[DATE OF REVIEW — 2026-11-01]]: no analytics or tracking packages in `package.json`; fonts are self-hosted (`@fontsource/*`, no Google Fonts requests); `src/lib/monitoring.ts` wires Sentry error monitoring (EU region, approved, listed in the DPA). As bundled, the Sentry SDK uses no browser storage and sets no cookies (checked in the built SDK code) — re-check after SDK upgrades. Storage keys listed above come from `src/lib/supabase.ts`, `src/contexts/LanguageContext.tsx`, `src/components/**`, `src/features/enrolment/lib/*`, `src/lib/authCallback.ts`, `src/pages/GoogleCalendarCallbackPage.tsx`.
 
 ### Sources relied on
 - Israel has no cookie-specific statute. Collecting personal data through storage is governed by the Privacy Protection Law 5741-1981 (as amended by Amendment 13), §11 (notice when collecting). *Verify with lawyer whether any Privacy Protection Authority guidance on cookies/tracking applies.*
