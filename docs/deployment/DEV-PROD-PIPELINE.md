@@ -164,7 +164,7 @@ The `db-drift` issue means a hosted project and `main` disagree:
 | | `SUPABASE_DEV_DB_URL` | dev session-pooler URL incl. password | deploy-dev, db-health |
 | Repo secrets | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` | backup bucket write | backup-prod, deploy-prod |
 | Repo secrets (today) | `SUPABASE_PROD_DB_URL`, `SUPABASE_DEV_DB_URL` | already set; keep working until moved | all of the above |
-| Each Supabase project | Edge Function secrets | `APP_URL`, `CRON_SECRET`, email, … (names in `supabase/edge-secrets.json`) | Edge Functions at runtime |
+| Each Supabase project | Edge Function secrets | `APP_URL`, `CRON_SECRET`, email, … (names in `supabase/edge-secrets.json`; see *Email transport* below) | Edge Functions at runtime |
 
 Notes:
 - An environment secret wins over a repo secret with the same name, so the
@@ -180,6 +180,20 @@ Notes:
   what each token can do.
 - Compare secret names between dev and prod at any time (names only):
   `SUPABASE_ACCESS_TOKEN=… node scripts/ci/check-edge-secret-names.mjs --compare acmujrhavgbamdilzuew oogxajjanbyqhljxcmql`
+
+**Email transport.** Prod needs exactly one working email transport, checked
+by name on every deploy (`scripts/ci/check-edge-secret-names.mjs`):
+
+| `EMAIL_TRANSPORT` | Must be set | Notes |
+|---|---|---|
+| `resend` (launch choice) | `RESEND_API_KEY` | no Cloudflare email names needed |
+| `cloudflare` | `CLOUDFLARE_ACCOUNT_ID` + `CLOUDFLARE_EMAIL_API_TOKEN` | needs Workers Paid; per-tenant branded domains |
+| not set | either of the above | Cloudflare wins when both of its names are set |
+
+A transport set without its keys (e.g. `EMAIL_TRANSPORT=cloudflare` with only
+`RESEND_API_KEY`) fails the deploy-prod checks: every email would fail. The
+check learns which word `EMAIL_TRANSPORT` holds from the digest the Supabase API
+returns, never from the value.
 
 ## Owner setup (one time)
 
