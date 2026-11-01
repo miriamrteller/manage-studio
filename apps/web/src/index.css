@@ -349,8 +349,16 @@
   }
 }
 
+/* The app has no dark theme. Pin the light scheme so a host or browser in dark
+   mode (e.g. the Claude app's artifact viewer) can't switch default text and
+   form controls to light-on-light. */
+:root {
+  color-scheme: light;
+}
+
 body {
   font-family: var(--font-family-sans);
+  color: var(--color-text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   /* Soft page wash: primary glow at the inline-start corner, accent glow at
