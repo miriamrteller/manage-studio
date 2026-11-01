@@ -9,7 +9,7 @@ import { invoiceForPayment } from './extensions';
 import { demoGallery } from './images/manifest';
 import { getInvoice, subscribeInvoice, closeInvoice, showInvoice, type DemoInvoice } from './invoice';
 import { formatIls, signedContractView } from './functions';
-import { DEMO_VIEWS } from './seed';
+import { DEMO_HOME, DEMO_VIEWS } from './seed';
 import './demo.css';
 
 const COPY = {
@@ -69,7 +69,7 @@ function useInvoice(): DemoInvoice | null {
 function switchView(view: DemoView) {
   signInAs(view);
   queryClient.clear();
-  window.location.hash = view === 'admin' ? '#/admin/jobs' : '#/dashboard';
+  window.location.hash = view === 'admin' ? DEMO_HOME.admin : DEMO_HOME.client;
 }
 
 export function DemoBar() {

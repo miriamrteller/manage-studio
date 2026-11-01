@@ -17,6 +17,9 @@ export const DEMO_INVOICE_HOST = 'https://invoices.lumen-light.demo';
 /** Signed-contract PDF links point here; the demo bar opens the contract in place. */
 export const DEMO_CONTRACT_HOST = 'https://contracts.lumen-light.demo';
 
+/** Where the demo opens, and where the demo bar's view switch lands. */
+export const DEMO_HOME = { admin: '#/admin/jobs', client: '#/dashboard' } as const;
+
 /** Labels for the demo bar's view switch. */
 export const DEMO_VIEWS = {
   en: { admin: 'Photographer', client: 'Client' },
