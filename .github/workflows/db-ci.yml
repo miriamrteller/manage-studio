@@ -70,6 +70,21 @@ jobs:
           if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then BASE=origin/main; fi
           bash scripts/ci/check-migrations.sh "$BASE"
 
+  # Every setting the code reads must be documented in .env.example (prod is
+  # configured from it); no secret may sit in a VITE_ var. Same check deploy-prod
+  # runs, so a gap shows up on the PR instead of on a prod deploy. Always runs:
+  # app and Edge Function PRs add settings too.
+  verify-env:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: verify:env
+        run: node scripts/verify-env.mjs
+
   workflow-lint:
     runs-on: ubuntu-latest
     timeout-minutes: 5
