@@ -177,6 +177,8 @@ describe('Clients page (photographer)', () => {
       extraRoutes: jobsRoute,
     });
     expect(await screen.findByRole('heading', { name: 'Shoots' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Client details' })).toBeInTheDocument();
+    expect(screen.queryByText(baseValue('pages.people.detail_title'))).toBeNull();
     expect(screen.getByRole('link', { name: 'Wedding Full Day' })).toHaveAttribute('href', '/admin/jobs/eng-1');
     expect(screen.queryByText(baseValue('pages.students.contact_section_guardian'))).toBeNull();
     expect(screen.queryByText(baseValue('pages.students.enrolments_section'))).toBeNull();
