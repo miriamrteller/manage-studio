@@ -143,7 +143,10 @@ jobs:
       - name: Generated DB types match the committed ones
         run: |
           pnpm db:types:all:local
-          if ! git diff --exit-code -I 'PostgrestVersion' -- packages/shared/src/database.types.ts supabase/functions/_shared/email-dist; then
+          # intent-to-add, so newly generated (untracked) files show in the diff too
+          git add -N packages/shared/src/database.types.ts supabase/functions/_shared/email-dist
+          if ! git diff --exit-code --stat -I 'PostgrestVersion' -- packages/shared/src/database.types.ts supabase/functions/_shared/email-dist; then
+            git diff -I 'PostgrestVersion' -- packages/shared/src/database.types.ts supabase/functions/_shared/email-dist | head -300 || true
             echo "::error::Committed database types are stale. Run 'pnpm db:reset-and-types:local' (or db:types:all after pushing to dev) and commit the result."
             exit 1
           fi

@@ -1,5 +1,40 @@
 /* @ts-self-types="./tenant-presets.d.ts" */
 import { z } from 'zod';
+export const APPOINTMENT_VERTICALS = ['photographer', 'beautician'];
+export function safeVertical(raw) {
+    if (raw === 'photographer' || raw === 'beautician' || raw === 'dance-studio' || raw === 'generic') {
+        return raw;
+    }
+    return 'generic';
+}
+export function isAppointmentVertical(vertical) {
+    return APPOINTMENT_VERTICALS.includes(vertical);
+}
+/** Vertical vocabulary layered over the preset defaults (before tenant overrides). */
+const VERTICAL_LABELS = {
+    photographer: {
+        en: {
+            contact: { singular: 'Contact', plural: 'Contacts' },
+            account: { singular: 'Client', plural: 'Clients' },
+            offering: { singular: 'Package', plural: 'Packages' },
+            season: { singular: 'Season', plural: 'Seasons' },
+            category: { singular: 'Category', plural: 'Categories' },
+            staff: { singular: 'Photographer', plural: 'Photographers' },
+            engagement: { singular: 'Shoot', plural: 'Shoots' },
+            session: { singular: 'Shoot', plural: 'Shoots' },
+        },
+        he: {
+            contact: { singular: 'איש קשר', plural: 'אנשי קשר' },
+            account: { singular: 'לקוח', plural: 'לקוחות' },
+            offering: { singular: 'חבילה', plural: 'חבילות' },
+            season: { singular: 'עונה', plural: 'עונות' },
+            category: { singular: 'קטגוריה', plural: 'קטגוריות' },
+            staff: { singular: 'צלם', plural: 'צלמים' },
+            engagement: { singular: 'צילום', plural: 'צילומים' },
+            session: { singular: 'צילום', plural: 'צילומים' },
+        },
+    },
+};
 const DEFAULT_LABELS_EN = {
     programs: {
         contact: { singular: 'Student', plural: 'Students' },
@@ -134,9 +169,10 @@ export function safePreset(raw) {
 export function resolvePresetModules(preset) {
     return PRESET_MODULES[preset];
 }
-export function resolveEntityLabels(preset, overrides = {}, locale = 'en') {
+export function resolveEntityLabels(preset, overrides = {}, locale = 'en', vertical = 'generic') {
     const defaults = DEFAULT_LABELS_BY_LOCALE[locale][preset];
-    return { ...defaults, ...overrides };
+    const verticalLabels = VERTICAL_LABELS[vertical]?.[locale] ?? {};
+    return { ...defaults, ...verticalLabels, ...overrides };
 }
 export function getDefaultRoleForPreset(preset) {
     switch (preset) {
