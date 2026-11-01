@@ -26,7 +26,7 @@ Do this for every new studio before it takes its first enrolment or booking. Stu
 **The studio checks with its own adviser:**
 - Accountant: is it registered as an עוסק, and does it issue receipts? Don't take payments without receipts.
 - Police approval for every teacher who works with children.
-- Insurance (third-party liability) and business licence.
+- Insurance (third-party liability first; see [12-insurance](12-insurance.md)) and business licence.
 
 ## Photographer
 

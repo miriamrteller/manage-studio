@@ -79,6 +79,8 @@ Personal information is handled under the Photographer's [Privacy Policy](03-stu
 
 Israeli law applies. Competent courts in [[CITY]]. This agreement is signed electronically; both sides receive a PDF copy.
 
+**Language.** This document is published in English and Hebrew. If the two versions differ, the English version prevails.
+
 ---
 
 **Signature:** typed full name + checkbox "I have read and agree to this agreement" (see [09-in-app-consent-texts](09-in-app-consent-texts.md), contract e-signature).

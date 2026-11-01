@@ -50,6 +50,8 @@ See our [Information Security Procedure summary](11-security-procedure.en.md): t
 
 We will post updates here and email account owners about significant changes.
 
+**Language.** This document is published in English and Hebrew. If the two versions differ, the English version prevails.
+
 ---
 
 ### Sources relied on
