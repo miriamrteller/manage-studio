@@ -18,10 +18,8 @@ on:
       - "supabase/**"
       - "scripts/verify-rls.mjs"
       - "scripts/lib/**"
-  push:
-    branches: [main]
-    paths:
-      - "supabase/**"
+  # Pushes to main are covered by deploy-dev.yml, which runs verify:rls
+  # right after deploying — running here too would race the deploy.
   schedule:
     - cron: "30 1 * * *" # nightly, after the backup run
   workflow_dispatch:

@@ -1,0 +1,150 @@
+# Nightly drift detection (read-only). Git is the only source of truth for the
+# schema, so anything applied on a hosted project that is not in git — or a
+# migration on main that never reached dev — is reported.
+#
+#   dev   unknown versions OR main migrations not applied  → drift
+#         + Supabase security advisors (informational)
+#   prod  unknown versions                                 → drift
+#         main migrations not yet applied                  → "awaiting release" (info)
+#
+# Opens or updates one issue labelled `db-drift`; closes it when clean.
+# Queries run in READ ONLY transactions. Secrets (skips with a notice if absent):
+#   development env / repo:        SUPABASE_DEV_DB_URL, SUPABASE_ACCESS_TOKEN (advisors)
+#   production-nightly env / repo: SUPABASE_PROD_DB_URL
+# Pipeline overview: docs/deployment/DEV-PROD-PIPELINE.md
+
+name: drift-check
+
+on:
+  schedule:
+    - cron: "15 2 * * *" # 02:15 UTC, after backup-prod and rls-check
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: drift-check
+  cancel-in-progress: false
+
+env:
+  DEV_REF: acmujrhavgbamdilzuew
+  PROD_REF: oogxajjanbyqhljxcmql
+
+jobs:
+  dev:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: development
+    outputs:
+      status: ${{ steps.drift.outputs.status }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Migration drift (dev)
+        id: drift
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DEV_DB_URL }}
+          PROJECT_REF: ${{ env.DEV_REF }}
+        run: |
+          if [ -z "$DB_URL" ]; then
+            echo "::notice::SUPABASE_DEV_DB_URL not set — dev drift check skipped."
+            printf '### dev\n\nNot checked (SUPABASE_DEV_DB_URL not configured).\n' > drift-dev.md
+            echo "status=skipped" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          set +e
+          node scripts/ci/migration-drift.mjs --env dev --md drift-dev.md
+          code=$?
+          case $code in 0) s=clean ;; 1) s=drift ;; *) s=error ;; esac
+          echo "status=$s" >> "$GITHUB_OUTPUT"
+      - name: Security advisors (dev, informational)
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          [ -n "$SUPABASE_ACCESS_TOKEN" ] || exit 0
+          body=$(curl -sf -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            "https://api.supabase.com/v1/projects/$DEV_REF/advisors/security") || { echo "advisors endpoint unavailable"; exit 0; }
+          n=$(echo "$body" | jq '[.lints[]? | select(.level == "ERROR")] | length')
+          { echo; echo "Security advisors (dev): $n at ERROR level"; echo "$body" | jq -r '.lints[]? | select(.level == "ERROR") | "- \(.title): \(.detail)"' | head -20; } >> drift-dev.md
+      - uses: actions/upload-artifact@v4
+        with:
+          name: drift-dev
+          path: drift-dev.md
+
+  prod:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production-nightly
+    outputs:
+      status: ${{ steps.drift.outputs.status }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Migration drift (prod)
+        id: drift
+        env:
+          DB_URL: ${{ secrets.SUPABASE_PROD_DB_URL }}
+          PROJECT_REF: ${{ env.PROD_REF }}
+        run: |
+          if [ -z "$DB_URL" ]; then
+            echo "::notice::SUPABASE_PROD_DB_URL not set — prod drift check skipped."
+            printf '### prod\n\nNot checked (SUPABASE_PROD_DB_URL not configured).\n' > drift-prod.md
+            echo "status=skipped" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          set +e
+          node scripts/ci/migration-drift.mjs --env prod --md drift-prod.md
+          code=$?
+          case $code in 0) s=clean ;; 1) s=drift ;; *) s=error ;; esac
+          echo "status=$s" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: drift-prod
+          path: drift-prod.md
+
+  report:
+    needs: [dev, prod]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      DEV: ${{ needs.dev.outputs.status }}
+      PROD: ${{ needs.prod.outputs.status }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: drift-*
+          merge-multiple: true
+      - name: Open, update or close the drift issue
+        run: |
+          {
+            echo "Nightly check of applied migrations vs \`main\` — run [$GITHUB_RUN_ID]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)."
+            echo
+            cat drift-dev.md 2>/dev/null || echo "### dev — no result"
+            echo
+            cat drift-prod.md 2>/dev/null || echo "### prod — no result"
+            echo
+            echo "How to resolve: docs/deployment/DEV-PROD-PIPELINE.md#drift"
+          } > body.md
+          cat body.md >> "$GITHUB_STEP_SUMMARY"
+          existing=$(gh issue list --label db-drift --state open --json number --jq '.[0].number // empty')
+          if [ "$DEV" = "drift" ] || [ "$PROD" = "drift" ] || [ "$DEV" = "error" ] || [ "$PROD" = "error" ]; then
+            gh label create db-drift --color B60205 --description "Hosted DB differs from main" 2>/dev/null || true
+            if [ -n "$existing" ]; then
+              gh issue edit "$existing" --body-file body.md
+              gh issue comment "$existing" --body "Still drifting as of $(date -u +%F) (dev: $DEV, prod: $PROD)."
+            else
+              gh issue create --title "Database drift detected" --label db-drift --body-file body.md
+            fi
+            echo "::warning::Drift detected (dev: $DEV, prod: $PROD)"
+          elif [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "Resolved: dev and prod match main as of $(date -u +%F)."
+            gh issue close "$existing" --reason completed
+          fi

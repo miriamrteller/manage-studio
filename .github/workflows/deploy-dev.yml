@@ -1,0 +1,125 @@
+# Dev stage (like an Azure "Dev" stage with no approval): every merge to main
+# that touches supabase/** is deployed to the DEV project automatically.
+#
+#   1. supabase db push        new migrations only — never reset, never seeds
+#   2. functions deploy        every Edge Function (config.toml decides verify_jwt)
+#   3. checks                  drift == 0, edge secret names, verify:rls (37 checks)
+#
+# GitHub Environment "development" (no reviewers):
+#   SUPABASE_ACCESS_TOKEN   CI token for Edge Function deploys + secret names
+#   SUPABASE_DEV_DB_URL     dev session-pooler URL incl. password (may also be
+#                           a repo-level secret — rls-check.yml uses the same)
+# Until both exist the job skips with a notice instead of failing.
+# Pipeline overview: docs/deployment/DEV-PROD-PIPELINE.md
+
+name: deploy-dev
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "supabase/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Never two dev deploys at once; a newer merge waits for the running one.
+concurrency:
+  group: supabase-deploy-dev
+  cancel-in-progress: false
+
+env:
+  DEV_REF: acmujrhavgbamdilzuew
+  SUPABASE_TELEMETRY_DISABLED: "1"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: development
+    steps:
+      - name: Check secrets are configured
+        id: gate
+        env:
+          HAS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN != '' }}
+          HAS_DB: ${{ secrets.SUPABASE_DEV_DB_URL != '' }}
+        run: |
+          if [ "$HAS_TOKEN" != "true" ] || [ "$HAS_DB" != "true" ]; then
+            echo "::notice::deploy-dev not configured yet (SUPABASE_ACCESS_TOKEN / SUPABASE_DEV_DB_URL in the 'development' environment) — skipping. See DEV-PROD-PIPELINE.md §Owner setup."
+            echo "### deploy-dev skipped — secrets not configured yet" >> "$GITHUB_STEP_SUMMARY"
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.gate.outputs.ready == 'true'
+
+      - uses: supabase/setup-cli@v1
+        if: steps.gate.outputs.ready == 'true'
+        with:
+          version: 2.109.1
+
+      - uses: actions/setup-node@v4
+        if: steps.gate.outputs.ready == 'true'
+        with:
+          node-version: "22"
+
+      - name: Migrations pending on dev
+        if: steps.gate.outputs.ready == 'true'
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DEV_DB_URL }}
+        run: |
+          {
+            echo "## Dev deploy \`${GITHUB_SHA::7}\`"
+            echo '```'
+            supabase db push --db-url "$DB_URL" --dry-run 2>&1 | { grep -v -i 'postgres://\|postgresql://' || true; }
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+      # The Supabase GitHub integration may push the same migrations on merge;
+      # one retry absorbs that race (db push is idempotent per version).
+      - name: supabase db push (dev)
+        if: steps.gate.outputs.ready == 'true'
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DEV_DB_URL }}
+        run: |
+          supabase db push --db-url "$DB_URL" --yes || { sleep 20; supabase db push --db-url "$DB_URL" --yes; }
+
+      - name: Deploy all Edge Functions (dev)
+        if: steps.gate.outputs.ready == 'true'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: supabase functions deploy --project-ref "$DEV_REF" --yes
+
+      - name: Drift check (dev must now match main)
+        if: steps.gate.outputs.ready == 'true'
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DEV_DB_URL }}
+          PROJECT_REF: ${{ env.DEV_REF }}
+        run: node scripts/ci/migration-drift.mjs --env dev | tee -a "$GITHUB_STEP_SUMMARY"
+
+      # Advisory on dev: mock flags are expected here; only required names count.
+      - name: Edge secret names (dev)
+        if: steps.gate.outputs.ready == 'true'
+        continue-on-error: true
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: node scripts/ci/check-edge-secret-names.mjs --env dev --ref "$DEV_REF"
+
+      - name: verify:rls against dev (2 attempts)
+        if: steps.gate.outputs.ready == 'true'
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DEV_DB_URL }}
+          SUPABASE_PROJECT_REF: ${{ env.DEV_REF }}
+        run: |
+          set +e
+          for attempt in 1 2; do
+            echo "== attempt $attempt"
+            node scripts/verify-rls.mjs && { echo "verify:rls passed" >> "$GITHUB_STEP_SUMMARY"; exit 0; }
+            code=$?
+            sleep 20
+          done
+          echo "::error::verify:rls failed after 2 attempts (exit $code). Dev is deployed; check whether this is an RLS regression or dev data state."
+          exit "$code"

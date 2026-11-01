@@ -1,0 +1,319 @@
+# Prod stage (like an Azure release with a pre-deployment approval).
+#
+# Start it: Actions → deploy-prod → Run workflow (branch: main), or push a tag
+# `prod-YYYY-MM-DD[-n]` on a commit that is already on main.
+#
+#   plan    (no secrets)   what git says will ship since the last successful
+#                          prod deploy: new migrations, functions, commits
+#   deploy  (environment "production" — WAITS FOR THE OWNER'S APPROVAL)
+#           a. live plan: migration list + db push --dry-run (job summary)
+#           b. dry_run=true stops here — nothing written
+#           c. fresh encrypted backup to R2 (+ Supabase daily backups/PITR on Pro)
+#           d. supabase db push, deploy every Edge Function
+#           e. verify:prod, verify:env, edge secret names (no *_MOCK), smoke query
+#           f. summary
+#
+# Migrations must be backward-compatible (expand → deploy app → contract): the
+# web app deploys separately and runs against the new schema before and after
+# its own deploy. Rules + rollback: docs/deployment/DEV-PROD-PIPELINE.md
+#
+# GitHub Environment "production" (required reviewer: owner; main + prod-* tags):
+#   SUPABASE_ACCESS_TOKEN   CI token (prod org) for Edge Function deploys
+#   SUPABASE_PROD_DB_URL    prod session-pooler URL incl. password
+# Repo secrets R2_ACCOUNT_ID / R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY (as for
+# backup-prod.yml) for the pre-deploy backup.
+# Until the production secrets exist the deploy job skips with a notice.
+
+name: deploy-prod
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Only show the live plan after approval; write nothing"
+        type: boolean
+        default: false
+      deploy_functions:
+        description: "Deploy all Edge Functions after the migrations"
+        type: boolean
+        default: true
+      allow_without_backup:
+        description: "Emergency only: continue if the R2 backup secrets are missing (Supabase Pro backups still apply)"
+        type: boolean
+        default: false
+  push:
+    tags:
+      - "prod-*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supabase-deploy-prod
+  cancel-in-progress: false
+
+env:
+  PROD_REF: oogxajjanbyqhljxcmql
+  SUPABASE_TELEMETRY_DISABLED: "1"
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      deployments: read
+      actions: read
+    outputs:
+      since: ${{ steps.plan.outputs.since }}
+      env_ok: ${{ steps.envcheck.outputs.ok }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Must run from main (or a tag on main)
+        run: |
+          git fetch -q origin main
+          if [ "$GITHUB_REF" != "refs/heads/main" ] && ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::Prod deploys run only from main or a prod-* tag on a commit already on main (got $GITHUB_REF)."
+            exit 1
+          fi
+
+      # If "production" has no required reviewer, the approval gate does not
+      # exist and the deploy would run unattended. Refuse instead.
+      - name: Production environment has an approval gate
+        id: envcheck
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! rules=$(gh api "repos/$GITHUB_REPOSITORY/environments/production" --jq '[.protection_rules[]?.type] | join(",")' 2>/dev/null); then
+            echo "::notice::The 'production' environment does not exist yet — deploy skipped, nothing was written. See DEV-PROD-PIPELINE.md §Owner setup."
+            echo "### deploy-prod skipped — 'production' environment not set up yet" >> "$GITHUB_STEP_SUMMARY"
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "production protection rules: ${rules:-none}"
+          case "$rules" in
+            *required_reviewers*) echo "ok=true" >> "$GITHUB_OUTPUT" ;;
+            *) echo "::error::The 'production' environment exists but has no required reviewer, so nothing would stop an unattended deploy. Add the owner as required reviewer (Settings → Environments → production)."; exit 1 ;;
+          esac
+
+      - name: Plan from git
+        id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Last successful run of this pipeline against production.
+          since=""
+          for id_sha in $(gh api "repos/$GITHUB_REPOSITORY/deployments?environment=production&per_page=30" --jq '.[] | "\(.id):\(.sha)"'); do
+            id=${id_sha%%:*}; sha=${id_sha#*:}
+            state=$(gh api "repos/$GITHUB_REPOSITORY/deployments/$id/statuses" --jq '.[0].state // ""')
+            if [ "$state" = "success" ] && git cat-file -e "$sha^{commit}" 2>/dev/null; then since=$sha; break; fi
+          done
+          echo "since=$since" >> "$GITHUB_OUTPUT"
+          {
+            echo "## Prod deploy plan — \`${GITHUB_SHA::7}\`"
+            echo
+            if [ -n "$since" ]; then
+              echo "Changes since the last successful prod deploy \`${since::7}\`:"
+              echo
+              echo "**New migrations**"
+              git diff --name-only --diff-filter=A "$since" "$GITHUB_SHA" -- supabase/migrations | sed 's/^/- /' | grep . || echo "- none"
+              echo
+              echo "**Edge Functions with changes** (all functions are redeployed)"
+              git diff --name-only "$since" "$GITHUB_SHA" -- supabase/functions | cut -d/ -f3 | sort -u | sed 's/^/- /' | grep . || echo "- none"
+              echo
+              echo "<details><summary>Commits</summary>"
+              echo
+              git log --oneline "$since..$GITHUB_SHA" | sed 's/^/- /'
+              echo "</details>"
+            else
+              echo "No previous pipeline deploy to prod on record, so git cannot tell what prod already has."
+              echo "The **deploy** job prints the live list (\`supabase migration list\` + \`db push --dry-run\`) right after approval."
+              echo "To see it without writing anything: run again with **dry_run** ticked."
+            fi
+            echo
+            echo "Edge Functions to deploy: $(find supabase/functions -mindepth 2 -maxdepth 2 -name index.ts | grep -v '/_' | wc -l) (every folder with an index.ts)"
+          } >> "$GITHUB_STEP_SUMMARY"
+          cat "$GITHUB_STEP_SUMMARY"
+
+  deploy:
+    needs: plan
+    if: needs.plan.outputs.env_ok == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: production
+    env:
+      DRY_RUN: ${{ inputs.dry_run == true }}
+      DEPLOY_FUNCTIONS: ${{ inputs.deploy_functions != false }}
+    steps:
+      - name: Check secrets are configured
+        id: gate
+        env:
+          HAS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN != '' }}
+          HAS_DB: ${{ secrets.SUPABASE_PROD_DB_URL != '' }}
+          HAS_R2: ${{ secrets.R2_ACCESS_KEY_ID != '' && secrets.R2_ACCOUNT_ID != '' }}
+          ALLOW_NO_BACKUP: ${{ inputs.allow_without_backup == true }}
+        run: |
+          if [ "$HAS_TOKEN" != "true" ] || [ "$HAS_DB" != "true" ]; then
+            echo "::notice::deploy-prod not configured yet (SUPABASE_ACCESS_TOKEN / SUPABASE_PROD_DB_URL in the 'production' environment) — skipping. Nothing was written."
+            echo "### deploy-prod skipped — production secrets not configured yet" >> "$GITHUB_STEP_SUMMARY"
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ "$HAS_R2" != "true" ] && [ "$ALLOW_NO_BACKUP" != "true" ] && [ "$DRY_RUN" != "true" ]; then
+            echo "::error::R2 backup secrets are missing, so no pre-deploy backup can be taken. Configure them (BACKUP-RESTORE-RUNBOOK.md §Setup) or re-run with allow_without_backup."
+            exit 1
+          fi
+          echo "ready=true" >> "$GITHUB_OUTPUT"
+          echo "backup=$HAS_R2" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        if: steps.gate.outputs.ready == 'true'
+
+      - uses: supabase/setup-cli@v1
+        if: steps.gate.outputs.ready == 'true'
+        with:
+          version: 2.109.1
+
+      - uses: actions/setup-node@v4
+        if: steps.gate.outputs.ready == 'true'
+        with:
+          node-version: "22"
+
+      - name: Live plan (read-only)
+        if: steps.gate.outputs.ready == 'true'
+        env:
+          DB_URL: ${{ secrets.SUPABASE_PROD_DB_URL }}
+        run: |
+          redact() { grep -v -i 'postgres://\|postgresql://' || true; }
+          {
+            echo "## Live plan on prod (\`$PROD_REF\`)"
+            echo "### supabase migration list"
+            echo '```'
+            supabase migration list --db-url "$DB_URL" 2>&1 | redact
+            echo '```'
+            echo "### supabase db push --dry-run"
+            echo '```'
+            supabase db push --db-url "$DB_URL" --dry-run 2>&1 | redact
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "**Dry run — stopped here. Nothing was written to prod.**" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Pre-deploy backup to R2
+        id: backup
+        if: steps.gate.outputs.ready == 'true' && env.DRY_RUN != 'true' && steps.gate.outputs.backup == 'true'
+        env:
+          DB_URL: ${{ secrets.SUPABASE_PROD_DB_URL }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+          AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+          BUCKET: manage-studio-db-backups
+          GPG_RECIPIENT: 78851A6D0ECC930F318E33E69199DE35E6163A41
+          PREFIX: predeploy
+        run: |
+          bash scripts/ci/backup-prod-to-r2.sh
+          key=$(grep '^key=' "$GITHUB_OUTPUT" | tail -1 | cut -d= -f2-)
+          echo "Pre-deploy backup: \`${key}.tar.gz.gpg\` in R2 bucket \`$BUCKET\`" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: supabase db push (prod)
+        id: push
+        if: steps.gate.outputs.ready == 'true' && env.DRY_RUN != 'true'
+        env:
+          DB_URL: ${{ secrets.SUPABASE_PROD_DB_URL }}
+        run: supabase db push --db-url "$DB_URL" --yes
+
+      - name: Deploy all Edge Functions (prod)
+        id: functions
+        if: steps.push.outcome == 'success' && env.DEPLOY_FUNCTIONS == 'true'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: supabase functions deploy --project-ref "$PROD_REF" --yes
+
+      # ── verification: every check runs, then the job fails if any failed ──
+      - name: verify:prod
+        id: v_prod
+        if: steps.push.outcome == 'success'
+        continue-on-error: true
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_PROD_DB_URL }}
+          SUPABASE_PROJECT_REF: ${{ env.PROD_REF }}
+        run: node scripts/verify-prod-config.mjs
+
+      - name: verify:env (static)
+        id: v_env
+        if: steps.push.outcome == 'success'
+        continue-on-error: true
+        run: node scripts/verify-env.mjs
+
+      - name: Edge secret names (required present, no *_MOCK)
+        id: v_secrets
+        if: steps.push.outcome == 'success'
+        continue-on-error: true
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: node scripts/ci/check-edge-secret-names.mjs --env prod --ref "$PROD_REF"
+
+      - name: Smoke query
+        id: v_smoke
+        if: steps.push.outcome == 'success'
+        continue-on-error: true
+        env:
+          DB_URL: ${{ secrets.SUPABASE_PROD_DB_URL }}
+        run: |
+          set -euo pipefail
+          psql "$DB_URL" -X -tA -v ON_ERROR_STOP=1 -c "BEGIN READ ONLY; SELECT count(*) FROM public.verticals; COMMIT;" >/dev/null
+          # Public REST path through the gateway (publishable key is public by design).
+          curl -sf -o /dev/null "https://$PROD_REF.supabase.co/rest/v1/verticals?select=id&limit=1" \
+            -H "apikey: sb_publishable_-bZQ2R-dGyWCeeN1hJo_dA_CGHhbOR9"
+          echo "smoke ok"
+
+      - name: Security advisors (informational)
+        if: steps.push.outcome == 'success'
+        continue-on-error: true
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          body=$(curl -sf -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            "https://api.supabase.com/v1/projects/$PROD_REF/advisors/security") || { echo "advisors endpoint unavailable"; exit 0; }
+          echo "$body" | jq -r '.lints[]? | "- [\(.level)] \(.title): \(.detail)"' | head -40 > advisors.md || true
+          { echo "### Security advisors"; if [ -s advisors.md ]; then cat advisors.md; else echo "none"; fi; } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Summary
+        if: always() && steps.gate.outputs.ready == 'true'
+        env:
+          R_BACKUP: ${{ steps.backup.outcome }}
+          R_PUSH: ${{ steps.push.outcome }}
+          R_FN: ${{ steps.functions.outcome }}
+          R_PROD: ${{ steps.v_prod.outcome }}
+          R_ENV: ${{ steps.v_env.outcome }}
+          R_SECRETS: ${{ steps.v_secrets.outcome }}
+          R_SMOKE: ${{ steps.v_smoke.outcome }}
+        run: |
+          {
+            echo "## Result"
+            echo "| step | outcome |"
+            echo "|---|---|"
+            echo "| pre-deploy backup (R2) | ${R_BACKUP:-skipped} |"
+            echo "| db push | ${R_PUSH:-skipped} |"
+            echo "| edge functions | ${R_FN:-skipped} |"
+            echo "| verify:prod | ${R_PROD:-skipped} |"
+            echo "| verify:env | ${R_ENV:-skipped} |"
+            echo "| edge secret names | ${R_SECRETS:-skipped} |"
+            echo "| smoke | ${R_SMOKE:-skipped} |"
+            echo
+            echo "On Pro, Supabase's own daily backups (and PITR, if enabled) also cover this deploy."
+            echo "Rollback: docs/deployment/DEV-PROD-PIPELINE.md#rollback"
+          } >> "$GITHUB_STEP_SUMMARY"
+          for r in "$R_PROD" "$R_ENV" "$R_SECRETS" "$R_SMOKE"; do
+            if [ "$r" = "failure" ]; then
+              echo "::error::Deploy finished but a verification failed — see the table in the summary."
+              exit 1
+            fi
+          done
