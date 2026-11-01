@@ -96,6 +96,8 @@ Our booking site uses only storage needed for it to work (sign-in, language, unf
 
 We will publish any update here and, if it is significant, tell you by email.
 
+**Language.** This document is published in English and Hebrew. If the two versions differ, the English version prevails.
+
 ---
 
 ### Sources relied on

@@ -8,7 +8,7 @@
 2. **Lawyer:** Do the DPAs of Supabase, Cloudflare, GitHub, Twilio, Google and Sentry meet the Privacy Protection Authority's 13 Apr 2026 opinion on transfers under reg. 2(4)?
 3. **Lawyer:** For children, the evidence-retention rule (keep until the child turns 25 — see R11) conflicts with keeping as little health data as possible. Which wins for the signed health declaration?
 4. **Accountant:** How should the ballet school regularise past payments taken without receipts? Which עוסק type fits OpalSwift and the school?
-5. **Owner:** Keep OpalSwift free until it is registered as an עוסק? Should the Hebrew version of each document prevail over the English?
+5. **Lawyer:** The owner chose English as the governing version (R14). Parents and clients will mostly read the Hebrew. Is an English-prevails clause enforceable against them? Contracts Law (General Part) 5733-1973 §25(b1) reads an unclear term against the side that drafted it. Until confirmed, keep the two versions identical.
 
 ## Resolved from research
 
@@ -29,3 +29,4 @@ Confidence: **H** = high, **M** = medium, **L** = low (act on it, but have the l
 | R11 | How long to keep signed waivers, contracts and health declarations? | 7 years after the service ends. For a minor, until the child turns 25 (prescription does not run while the claimant is a minor), with access restricted. | H | Prescription Law 5718-1958, §§5, 10 |
 | R12 | Spam-law details (WhatsApp, Hebrew marking, timing, recitals)? | Treat WhatsApp like SMS. Always start marketing with "פרסומת". Unsubscribe immediately. A notice to enrolled families about their child's own performance is a service message; selling tickets to the public is marketing. | M | Communications Law §30A; chamber-of-commerce guidance |
 | R13 | Is a small studio a "customer" under the Standard Contracts Law? | Yes. The law protects any customer of a standard contract, including businesses, so the platform liability cap must stay reasonable. The draft (12 months of fees) is reasonable. | H | Standard Contracts Law §§2–4 |
+| R14 | Price, and which language governs? | **Owner decision (Q5).** The platform is free until OpalSwift is registered as an עוסק; the terms (§3) now say so. The **English** version prevails in the terms, DPA, both privacy policies, enrolment terms and photography contract. Enforceability against Hebrew-reading consumers is open question 5. | — | Owner, 1 Nov 2026 |
