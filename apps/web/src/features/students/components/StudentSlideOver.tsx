@@ -1,5 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
+import { useEntityLabels } from '@/hooks/useEntityLabels';
+import { useJobs } from '@/features/jobs/hooks/useJobs';
+import { ClientShootList } from '@/features/jobs/components/ClientShootList';
+import { NEW_SHOOT_PATH, newShootState } from '@/features/jobs/lib/newShootRoute';
 import { Button } from '@/components/ui/button';
 import { PersonForm } from '@/features/people/components/PersonForm';
 import { PersonService } from '@/features/people/service';
@@ -44,6 +49,13 @@ export function StudentSlideOver({
   const { t, i18n } = useTranslation();
   const tenant = useTenant();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  // Photographers: a client's bookings are shoots (/admin/jobs), and there's
+  // no class enrolment, age review or guardian/family record.
+  const { vertical } = useEntityLabels();
+  const isPhotographer = vertical === 'photographer';
+  const { jobs } = useJobs({ enabled: isPhotographer });
+  const clientShoots = jobs.filter((job) => job.person_id === personId);
 
   const { person, family, guardian, members, contactPrefs, enrolments, engagementRecords, offerings, payments, isLoading, error } =
     useStudentDetail(personId);
@@ -137,7 +149,7 @@ export function StudentSlideOver({
         <div className="flex items-start justify-between p-5 border-b flex-shrink-0">
           <div>
             <h2 className="text-xl font-bold">{person?.name ?? '...'}</h2>
-            {age !== undefined && age !== null && (
+            {!isPhotographer && age !== undefined && age !== null && (
               <p className="text-sm text-gray-500">
                 {t('pages.people.age_label')}: {formatPersonAgeLabel(age, t)}
                 {dobSuffix}
@@ -230,193 +242,217 @@ export function StudentSlideOver({
 
               <hr style={{ borderColor: 'var(--color-border-default)' }} />
 
-              {/* ── 2. Enrolments ── */}
-              <section className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <h3 className="font-semibold text-gray-700">{t('pages.students.enrolments_section')}</h3>
-                  <Button variant="primary" size="sm" onClick={() => setEnrolModalOpen(true)}>
-                    {t('pages.students.enrol_button')}
-                  </Button>
-                </div>
-                {enrolments.length === 0 ? (
-                  <p className="text-sm text-gray-400">{t('pages.students.no_enrolments')}</p>
-                ) : (
-                  <ul className="divide-y text-sm" style={{ borderColor: 'var(--color-border-default)' }}>
-                    {engagementRecords.map((engagement) => {
-                      const summary = enrolments.find((entry) => entry.id === engagement.id);
-                      const className = summary?.className ?? engagement.offering_id;
-                      const offering = offerings.find((item) => item.id === engagement.offering_id);
-                      const classAges = offering
-                        ? formatAgeRange(offering.min_age ?? null, offering.max_age ?? null)
-                        : null;
-                      return (
-                        <li key={engagement.id} className="space-y-2 py-1">
-                          {engagement.status === 'admin_review' && person && (
-                            <AgeReviewAdminPanel
-                              details={{
-                                engagement,
-                                className,
-                                classAges,
-                                student: person,
-                                guardian,
-                              }}
-                              highlighted={highlightEngagementId === engagement.id}
-                              onUpdated={() => {
-                                void queryClient.invalidateQueries({
-                                  queryKey: ['student-detail-enrolments', tenant?.id, personId],
-                                });
-                              }}
-                            />
-                          )}
-                          <EnrolmentRowActions
-                            className={className}
-                            status={engagement.status}
-                            engagementId={engagement.id}
-                            ageOverrideAt={engagement.age_override_at}
-                            billingLabel={summary?.billingAccount?.payment_method ?? null}
-                            linkContext={{
-                              studentName: person.name,
-                              className,
-                              guardianEmail: resolveGuardianEmail({ person, guardian: guardian ?? undefined }),
-                              guardianName: guardian?.name ?? null,
-                            }}
-                            onCancel={
-                              canShowCancelEnrolment(engagement.status)
-                                ? () =>
-                                    setCancelTarget({
-                                      engagementId: engagement.id,
-                                      className,
-                                    })
-                                : undefined
-                            }
-                          />
-                          {engagement.status === 'pending_payment' && (
-                            recordingEngagementId === engagement.id ? (
-                              <RecordPaymentModal
-                                engagementId={engagement.id}
-                                onRecorded={() => {
-                                  invalidateFinanceCaches();
-                                  setRecordingEngagementId(null);
+              {/* ── 2. Enrolments (photographer: shoots) ── */}
+              {isPhotographer ? (
+                <section className="space-y-2">
+                  <div className="flex flex-wrap justify-between items-center gap-2">
+                    <h3 className="font-semibold text-gray-700">{t('pages.students.enrolments_section')}</h3>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() =>
+                        navigate(NEW_SHOOT_PATH, {
+                          state: newShootState({ id: person.id, name: person.name }),
+                        })
+                      }
+                    >
+                      {t('pages.students.enrol_button')}
+                    </Button>
+                  </div>
+                  <ClientShootList jobs={clientShoots} />
+                </section>
+              ) : (
+                <section className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <h3 className="font-semibold text-gray-700">{t('pages.students.enrolments_section')}</h3>
+                    <Button variant="primary" size="sm" onClick={() => setEnrolModalOpen(true)}>
+                      {t('pages.students.enrol_button')}
+                    </Button>
+                  </div>
+                  {enrolments.length === 0 ? (
+                    <p className="text-sm text-gray-400">{t('pages.students.no_enrolments')}</p>
+                  ) : (
+                    <ul className="divide-y text-sm" style={{ borderColor: 'var(--color-border-default)' }}>
+                      {engagementRecords.map((engagement) => {
+                        const summary = enrolments.find((entry) => entry.id === engagement.id);
+                        const className = summary?.className ?? engagement.offering_id;
+                        const offering = offerings.find((item) => item.id === engagement.offering_id);
+                        const classAges = offering
+                          ? formatAgeRange(offering.min_age ?? null, offering.max_age ?? null)
+                          : null;
+                        return (
+                          <li key={engagement.id} className="space-y-2 py-1">
+                            {engagement.status === 'admin_review' && person && (
+                              <AgeReviewAdminPanel
+                                details={{
+                                  engagement,
+                                  className,
+                                  classAges,
+                                  student: person,
+                                  guardian,
+                                }}
+                                highlighted={highlightEngagementId === engagement.id}
+                                onUpdated={() => {
+                                  void queryClient.invalidateQueries({
+                                    queryKey: ['student-detail-enrolments', tenant?.id, personId],
+                                  });
                                 }}
                               />
-                            ) : (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setRecordingEngagementId(engagement.id)}
-                              >
-                                {t('finance.record_payment.open', { defaultValue: 'Record offline payment' })}
-                              </Button>
-                            )
-                          )}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-              </section>
-
-              <hr style={{ borderColor: 'var(--color-border-default)' }} />
-
-              {/* ── 3. Guardian / Family ── */}
-              <section className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <h3 className="font-semibold text-gray-700">
-                    {t('pages.students.contact_section_guardian')}
-                  </h3>
-                  {family && !isEditingContact && (
-                    <Button variant="ghost" size="sm" onClick={startEditContact}>
-                      {t('common.edit')}
-                    </Button>
-                  )}
-                </div>
-
-                {!family && (
-                  <p className="text-sm text-gray-400">{t('pages.students.no_family')}</p>
-                )}
-
-                {family && !isEditingContact && (
-                  <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                    <div>
-                      <dt className="text-gray-500">{t('form.family.contact_person_name')}</dt>
-                      <dd>{guardian?.name ?? '—'}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-gray-500">{t('form.family.contact_phone')}</dt>
-                      <dd>{guardian?.emergency_contact_phone ?? '—'}</dd>
-                    </div>
-                    <div className="col-span-2">
-                      <dt className="text-gray-500">{t('form.family.contact_email')}</dt>
-                      <dd>{guardian?.email ?? '—'}</dd>
-                    </div>
-                  </dl>
-                )}
-
-                {family && isEditingContact && (
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
-                        {t('form.family.contact_person_name')}
-                      </label>
-                      <input
-                        type="text"
-                        className="form-input w-full"
-                        value={contactName}
-                        onChange={(e) => setContactName(e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
-                        {t('form.family.contact_email')}
-                      </label>
-                      <input
-                        type="email"
-                        className="form-input w-full"
-                        value={contactEmail}
-                        onChange={(e) => setContactEmail(e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
-                        {t('form.family.contact_phone')}
-                      </label>
-                      <input
-                        type="tel"
-                        className="form-input w-full"
-                        value={contactPhone}
-                        onChange={(e) => setContactPhone(e.target.value)}
-                      />
-                    </div>
-                    {contactSaveError && (
-                      <p className="text-sm text-red-600">{contactSaveError}</p>
-                    )}
-                    <div className="flex gap-2">
-                      <Button variant="primary" onClick={saveContact} disabled={contactSaving}>
-                        {contactSaving ? t('common.loading') : t('common.save')}
-                      </Button>
-                      <Button variant="outline" onClick={() => setIsEditingContact(false)}>
-                        {t('common.cancel')}
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                {members.length > 0 && (
-                  <div className="mt-3">
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
-                      {t('pages.families.members_section')}
-                    </p>
-                    <ul className="divide-y text-sm">
-                      {members.map((m) => (
-                        <li key={m.id} className="py-1.5 flex justify-between">
-                          <span>{m.name}</span>
-                          <span className="text-xs text-gray-400">{m.role}</span>
-                        </li>
-                      ))}
+                            )}
+                            <EnrolmentRowActions
+                              className={className}
+                              status={engagement.status}
+                              engagementId={engagement.id}
+                              ageOverrideAt={engagement.age_override_at}
+                              billingLabel={summary?.billingAccount?.payment_method ?? null}
+                              linkContext={{
+                                studentName: person.name,
+                                className,
+                                guardianEmail: resolveGuardianEmail({ person, guardian: guardian ?? undefined }),
+                                guardianName: guardian?.name ?? null,
+                              }}
+                              onCancel={
+                                canShowCancelEnrolment(engagement.status)
+                                  ? () =>
+                                      setCancelTarget({
+                                        engagementId: engagement.id,
+                                        className,
+                                      })
+                                  : undefined
+                              }
+                            />
+                            {engagement.status === 'pending_payment' && (
+                              recordingEngagementId === engagement.id ? (
+                                <RecordPaymentModal
+                                  engagementId={engagement.id}
+                                  onRecorded={() => {
+                                    invalidateFinanceCaches();
+                                    setRecordingEngagementId(null);
+                                  }}
+                                />
+                              ) : (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setRecordingEngagementId(engagement.id)}
+                                >
+                                  {t('finance.record_payment.open', { defaultValue: 'Record offline payment' })}
+                                </Button>
+                              )
+                            )}
+                          </li>
+                        );
+                      })}
                     </ul>
-                  </div>
-                )}
-              </section>
+                  )}
+                </section>
+              )}
+
+              {!isPhotographer && (
+                <>
+                  <hr style={{ borderColor: 'var(--color-border-default)' }} />
+
+                  {/* ── 3. Guardian / Family ── */}
+                  <section className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <h3 className="font-semibold text-gray-700">
+                        {t('pages.students.contact_section_guardian')}
+                      </h3>
+                      {family && !isEditingContact && (
+                        <Button variant="ghost" size="sm" onClick={startEditContact}>
+                          {t('common.edit')}
+                        </Button>
+                      )}
+                    </div>
+
+                    {!family && (
+                      <p className="text-sm text-gray-400">{t('pages.students.no_family')}</p>
+                    )}
+
+                    {family && !isEditingContact && (
+                      <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                        <div>
+                          <dt className="text-gray-500">{t('form.family.contact_person_name')}</dt>
+                          <dd>{guardian?.name ?? '—'}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-gray-500">{t('form.family.contact_phone')}</dt>
+                          <dd>{guardian?.emergency_contact_phone ?? '—'}</dd>
+                        </div>
+                        <div className="col-span-2">
+                          <dt className="text-gray-500">{t('form.family.contact_email')}</dt>
+                          <dd>{guardian?.email ?? '—'}</dd>
+                        </div>
+                      </dl>
+                    )}
+
+                    {family && isEditingContact && (
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-sm font-medium mb-1">
+                            {t('form.family.contact_person_name')}
+                          </label>
+                          <input
+                            type="text"
+                            className="form-input w-full"
+                            value={contactName}
+                            onChange={(e) => setContactName(e.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">
+                            {t('form.family.contact_email')}
+                          </label>
+                          <input
+                            type="email"
+                            className="form-input w-full"
+                            value={contactEmail}
+                            onChange={(e) => setContactEmail(e.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">
+                            {t('form.family.contact_phone')}
+                          </label>
+                          <input
+                            type="tel"
+                            className="form-input w-full"
+                            value={contactPhone}
+                            onChange={(e) => setContactPhone(e.target.value)}
+                          />
+                        </div>
+                        {contactSaveError && (
+                          <p className="text-sm text-red-600">{contactSaveError}</p>
+                        )}
+                        <div className="flex gap-2">
+                          <Button variant="primary" onClick={saveContact} disabled={contactSaving}>
+                            {contactSaving ? t('common.loading') : t('common.save')}
+                          </Button>
+                          <Button variant="outline" onClick={() => setIsEditingContact(false)}>
+                            {t('common.cancel')}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {members.length > 0 && (
+                      <div className="mt-3">
+                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                          {t('pages.families.members_section')}
+                        </p>
+                        <ul className="divide-y text-sm">
+                          {members.map((m) => (
+                            <li key={m.id} className="py-1.5 flex justify-between">
+                              <span>{m.name}</span>
+                              <span className="text-xs text-gray-400">{m.role}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </section>
+                </>
+              )}
 
               <hr style={{ borderColor: 'var(--color-border-default)' }} />
 
@@ -560,7 +596,7 @@ export function StudentSlideOver({
         />
       )}
 
-      {person && (
+      {person && !isPhotographer && (
         <AdminEnrolStudentModal
           isOpen={enrolModalOpen}
           personId={personId}

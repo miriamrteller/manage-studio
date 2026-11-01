@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
+import { useEntityLabels } from '@/hooks/useEntityLabels';
 import { Select } from '@/components/ui/select';
 import { FormInput } from '@/components/ui/form';
 import {
@@ -33,6 +34,10 @@ interface NotificationBlastFormProps {
 
 export function NotificationBlastForm({ onSentSuccess }: NotificationBlastFormProps = {}) {
   const { t } = useTranslation();
+  // Photographers have no levels or classes: audiences are all clients or one account.
+  const { vertical } = useEntityLabels();
+  const scopeOptions =
+    vertical === 'photographer' ? (['all', 'account'] as const) : (['all', 'level', 'class', 'account'] as const);
   const { previewRecipients, isPreviewing, sendBlast, isSending } = useNotificationBlast();
   const { levels, isLoading: levelsLoading } = useLevels({ page: 1 });
   const { classes, isLoading: classesLoading } = useClasses({ page: 1, publicOnly: false });
@@ -182,7 +187,7 @@ export function NotificationBlastForm({ onSentSuccess }: NotificationBlastFormPr
           <fieldset className="space-y-2">
             <legend className="text-sm font-medium">{t('pages.notifications.recipient_scope')}</legend>
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-4">
-              {(['all', 'level', 'class', 'account'] as const).map((value) => (
+              {scopeOptions.map((value) => (
                 <label key={value} className="flex items-center gap-2 text-sm">
                   <input
                     type="radio"
