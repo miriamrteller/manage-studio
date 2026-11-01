@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title data-he="OpalSwift לעצמאים יצירתיים | ניהול פיננסי לעיצוב ושיווק" data-en="OpalSwift for Creative Freelancers | Financial Management for Designers & Marketers">OpalSwift לעצמאים יצירתיים | ניהול פיננסי לעיצוב ושיווק</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800&family=Heebo:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0B1437; --teal:#21D1C2; --indigo:#5B6CFF; --violet:#7B61FF;
+    --canvas:#F7F8FC; --slate:#5A6178;
+    --opal:linear-gradient(120deg,#21D1C2,#5B6CFF,#7B61FF);
+    --shadow:0 18px 50px -18px rgba(11,20,55,.35);
+    --radius:20px;
+    /* Designer accent — creative violet */
+    --accent:#7C3AED;
+    --accent-light:rgba(124,58,237,.12);
+    --accent-mid:rgba(124,58,237,.22);
+    --hero-glow:radial-gradient(1100px 520px at 75% -5%,rgba(124,58,237,.13),transparent),
+                radial-gradient(800px 400px at 0% 15%,rgba(33,209,194,.13),transparent);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{font-family:'Heebo','Inter',system-ui,sans-serif;color:var(--ink);background:var(--canvas);line-height:1.6;overflow-x:hidden}
+  body[dir=ltr]{font-family:'Inter',system-ui,sans-serif}
+  h1,h2,h3,.brand{font-family:'Rubik',sans-serif;line-height:1.15}
+  .wrap{max-width:1140px;margin:0 auto;padding:0 24px}
+  .grad-text{background:var(--opal);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .accent-text{color:var(--accent)}
+  .btn{display:inline-flex;align-items:center;gap:8px;border:0;border-radius:999px;padding:14px 26px;font-weight:600;font-size:16px;cursor:pointer;text-decoration:none;transition:.2s;font-family:'Rubik',sans-serif}
+  .btn-primary{background:var(--opal);color:#fff;box-shadow:0 10px 24px -8px rgba(124,58,237,.45)}
+  .btn-primary:hover{transform:translateY(-2px)}
+  .btn-ghost{background:#fff;color:var(--ink);border:1px solid rgba(11,20,55,.15)}
+  .btn-ghost:hover{border-color:var(--accent)}
+
+  /* ── NAV ── */
+  nav{position:sticky;top:0;z-index:50;background:rgba(247,248,252,.88);backdrop-filter:blur(14px);border-bottom:1px solid rgba(11,20,55,.06)}
+  .nav-in{display:flex;align-items:center;justify-content:space-between;height:70px}
+  .logo{display:flex;align-items:center;gap:10px;font-family:'Rubik';font-weight:800;font-size:22px;letter-spacing:-0.5px;background:var(--opal);-webkit-background-clip:text;background-clip:text;color:transparent;text-decoration:none}
+  .logo .gem{width:30px;height:30px}
+  .logo .sub{font-size:13px;font-weight:600;color:var(--accent);padding-inline-start:8px;border-inline-start:1px solid rgba(124,58,237,.3);margin-inline-start:4px}
+  .nav-cta{display:flex;gap:12px;align-items:center}
+  .lang-toggle{display:flex;border:1px solid rgba(11,20,55,.15);border-radius:999px;overflow:hidden;font-family:'Rubik';font-size:13px;font-weight:600}
+  .lang-toggle button{border:0;background:transparent;padding:7px 14px;cursor:pointer;color:var(--slate)}
+  .lang-toggle button.active{background:var(--ink);color:#fff}
+
+  /* ── HERO ── */
+  .hero{position:relative;background:var(--hero-glow);padding:80px 0 64px}
+  .hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:50px;align-items:center}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid rgba(124,58,237,.25);box-shadow:0 4px 20px -8px rgba(124,58,237,.3);padding:7px 14px;border-radius:999px;font-size:13px;font-weight:600;color:var(--accent);margin-bottom:22px;font-family:'Rubik'}
+  .hero h1{font-size:52px;font-weight:800;letter-spacing:-1px;margin-bottom:18px}
+  .hero p.lead{font-size:19px;color:var(--slate);max-width:520px;margin-bottom:28px}
+  .hero-cta{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+  .trust{font-size:14px;color:var(--slate);display:flex;align-items:flex-start;gap:8px}
+
+  /* hero mock */
+  .mock{background:#fff;border-radius:24px;box-shadow:var(--shadow);padding:22px;position:relative}
+  /* Designer palette bar — evokes a colour swatch strip */
+  .mock .bar{height:8px;border-radius:6px;margin-bottom:16px;
+    background:linear-gradient(90deg,#7C3AED 0%,#5B6CFF 25%,#21D1C2 50%,#F97366 75%,#EAB308 100%)}
+  .mock-row{display:flex;justify-content:space-between;align-items:center;padding:14px;border:1px solid rgba(11,20,55,.07);border-radius:14px;margin-bottom:10px}
+  .mock-row .l{display:flex;align-items:center;gap:12px}
+  .dot{width:38px;height:38px;border-radius:12px;background:var(--canvas);display:flex;align-items:center;justify-content:center;font-size:18px}
+  .pill{font-size:12px;font-weight:700;padding:5px 12px;border-radius:999px;font-family:'Rubik'}
+  .pill.ok{background:rgba(33,209,194,.15);color:#0a8f84}
+  .pill.auto{background:var(--accent-light);color:#7C3AED}
+  .pill.pend{background:rgba(245,158,11,.15);color:#b45309}
+  .mock-foot{display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding:14px;background:var(--ink);border-radius:14px;color:#fff}
+  .mock-foot .amt{font-family:'Rubik';font-weight:800;font-size:22px}
+  .float-badge{position:absolute;bottom:-18px;inset-inline-start:-18px;background:#fff;box-shadow:var(--shadow);border-radius:14px;padding:10px 14px;font-size:13px;font-weight:700;font-family:'Rubik';display:flex;align-items:center;gap:8px}
+
+  /* ── SECTIONS ── */
+  section.block{padding:72px 0}
+  .sec-head{text-align:center;max-width:680px;margin:0 auto 48px}
+  .sec-head .kicker{font-family:'Rubik';font-weight:700;color:var(--accent);font-size:14px;letter-spacing:.5px;text-transform:uppercase;margin-bottom:12px}
+  .sec-head h2{font-size:38px;font-weight:800;letter-spacing:-.5px;margin-bottom:14px}
+  .sec-head p{font-size:18px;color:var(--slate)}
+
+  /* ── FEATURE CARDS ── */
+  .cards3{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+  .card{background:#fff;border:1px solid rgba(11,20,55,.06);border-radius:var(--radius);padding:28px;box-shadow:0 8px 30px -20px rgba(11,20,55,.25);transition:.2s}
+  .card:hover{transform:translateY(-4px);box-shadow:0 16px 40px -20px rgba(124,58,237,.3)}
+  .card .ic{width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--accent-light),var(--accent-mid));display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:18px}
+  .card h3{font-size:20px;margin-bottom:10px}
+  .card p{color:var(--slate);font-size:15.5px}
+
+  /* ── HOW IT WORKS ── */
+  .how-bg{background:var(--ink);border-radius:32px;margin:0 24px;padding:56px}
+  .how-bg .sec-head h2{color:#fff}
+  .how-bg .sec-head p{color:rgba(255,255,255,.7)}
+  .how-bg .sec-head .kicker{color:var(--accent)}
+  .flow-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:8px}
+  .flow-step{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:22px 16px;text-align:center;transition:.2s}
+  .flow-step:hover{background:rgba(124,58,237,.15);border-color:rgba(124,58,237,.4)}
+  .flow-step .em{font-size:28px;display:block;margin-bottom:12px}
+  .flow-step b{font-family:'Rubik';font-size:14px;display:block;margin-bottom:6px;color:#fff}
+  .flow-step small{color:rgba(255,255,255,.62);font-size:12.5px;display:block}
+
+  /* ── SOCIAL PROOF ── */
+  .proof-grid{display:grid;grid-template-columns:1fr 1fr;gap:28px;max-width:900px;margin:0 auto}
+  .proof-card{background:#fff;border:1px solid rgba(11,20,55,.07);border-radius:var(--radius);padding:32px;box-shadow:0 8px 30px -20px rgba(11,20,55,.2)}
+  .proof-card .ava{width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,var(--accent),#5b21b6);display:flex;align-items:center;justify-content:center;color:#fff;font-size:26px;margin-bottom:18px}
+  .proof-card blockquote{font-family:'Rubik';font-size:18px;font-weight:500;line-height:1.5;color:var(--ink);margin-bottom:16px}
+  .proof-card .attr{font-size:14px;color:var(--slate)}
+  .proof-card .attr b{color:var(--ink);font-weight:700}
+  .proof-card.wa{background:linear-gradient(135deg,#faf5ff,#ede9fe)}
+  .proof-card.wa blockquote{font-size:16px;color:#1a0030}
+  .wa-badge{display:inline-flex;align-items:center;gap:6px;background:#2563EB;color:#fff;font-family:'Rubik';font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;margin-bottom:14px}
+
+  /* ── PRICING ── */
+  .pricing-wrap{max-width:520px;margin:0 auto}
+  .price-card{background:#fff;border:2px solid transparent;background:linear-gradient(#fff,#fff) padding-box,var(--opal) border-box;border-radius:var(--radius);padding:32px;box-shadow:var(--shadow);position:relative}
+  .price-badge{position:absolute;top:-14px;inset-inline-start:50%;transform:translateX(-50%);background:var(--opal);color:#fff;font-family:'Rubik';font-weight:700;font-size:12px;padding:5px 18px;border-radius:999px;white-space:nowrap}
+  body[dir=rtl] .price-badge{transform:translateX(50%)}
+  .price-plan{font-family:'Rubik';font-size:16px;font-weight:700;color:var(--accent);margin-bottom:4px}
+  .price-who{color:var(--slate);font-size:14px;margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid rgba(11,20,55,.07)}
+  .price-amt{font-family:'Rubik';font-weight:800;font-size:46px;line-height:1;margin-bottom:6px}
+  .price-amt small{font-size:16px;font-weight:400;color:var(--slate)}
+  .price-annual{font-size:13px;color:var(--accent);font-weight:600;font-family:'Rubik';margin-bottom:22px}
+  .price-features{list-style:none;margin-bottom:26px;display:flex;flex-direction:column;gap:11px}
+  .price-features li{display:flex;align-items:flex-start;gap:10px;font-size:15px}
+  .price-note{font-size:13px;color:var(--slate);text-align:center;margin-top:14px}
+
+  /* ── BACK LINK ── */
+  .back-bar{padding:18px 0 0}
+  .back-link{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600;color:var(--slate);text-decoration:none;font-family:'Rubik';transition:.2s}
+  .back-link:hover{color:var(--accent)}
+
+  /* ── RESPONSIVE ── */
+  @media(max-width:768px){
+    .hero-grid{grid-template-columns:1fr}
+    .cards3{grid-template-columns:1fr}
+    .flow-grid{grid-template-columns:repeat(2,1fr)}
+    .proof-grid{grid-template-columns:1fr}
+    .hero h1{font-size:38px}
+  }
+  .hero p.subhero,.hero-text p.subhero{font-size:17px;color:var(--accent);font-weight:600;font-family:'Rubik';max-width:520px;margin-bottom:20px;line-height:1.55}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="opal-nav"></nav>
+<script>window.OPAL_SKIN={he:"למעצבים",en:"for Designers"};</script>
+<script src="topbar.js"></script>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="wrap">
+    <div class="back-bar">
+      <a href="skins.html" class="back-link" data-he="← כל המהדורות" data-en="← All editions">← כל המהדורות</a>
+    </div>
+    <div class="hero-grid" style="margin-top:32px">
+      <div>
+        <div class="eyebrow" data-he="🎨 מהדורת מעצבים ויוצרים" data-en="🎨 Designer & Creative Edition">🎨 מהדורת מעצבים ויוצרים</div>
+        <h1 data-he='לעצב מותגים.<br><span class="grad-text">אנחנו מעצבים את ההצלחה שלך.</span>' data-en='You design brands.<br><span class="grad-text">We design your success.</span>'>לעצב מותגים.<br><span class="grad-text">אנחנו מעצבים את ההצלחה שלך.</span></h1>
+      <p class="subhero" data-he="הצעות מחיר, חשבוניות ומע״מ — חלק כמו העיצוב שלך." data-en="Quotes, invoices, and VAT — as smooth as your designs.">הצעות מחיר, חשבוניות ומע״מ — חלק כמו העיצוב שלך.</p>
+        <p class="lead" data-he="חשבוניות, הוצאות ומע״מ במקום אחד. בלי לעצור את הזרימה היצירתית. אתה מעצב, אנחנו מנהלים את הבירוקרטיה." data-en="Invoices, expenses, and VAT in one place. Without interrupting your creative flow. You design, we handle the admin.">חשבוניות, הוצאות ומע״מ במקום אחד. בלי לעצור את הזרימה היצירתית. אתה מעצב, אנחנו מנהלים את הבירוקרטיה.</p>
+        <div class="hero-cta">
+          <a href="#pricing" class="btn btn-primary" data-he="הצטרף לבטא" data-en="Join the Beta">הצטרף לבטא</a>
+          <a href="skins.html" class="btn btn-ghost" data-he="כל המהדורות" data-en="All editions">כל המהדורות</a>
+        </div>
+        <p class="trust" data-he="✓ הגדרה מהירה &nbsp;·&nbsp; ✓ ממשק בעברית &nbsp;·&nbsp; ✓ תמיכה בעוסק פטור ומורשה" data-en="✓ Quick to set up &nbsp;·&nbsp; ✓ Hebrew-first &nbsp;·&nbsp; ✓ עוסק פטור &amp; מורשה ready">✓ הגדרה מהירה &nbsp;·&nbsp; ✓ ממשק בעברית &nbsp;·&nbsp; ✓ תמיכה בעוסק פטור ומורשה</p>
+      </div>
+
+      <!-- MOCK DASHBOARD -->
+      <div class="mock">
+        <div class="bar"></div>
+        <div class="mock-row">
+          <div class="l">
+            <div class="dot">🏢</div>
+            <div>
+              <div style="font-weight:700;font-size:14px" data-he="Studio Alpha — ברנדינג" data-en="Studio Alpha — Branding">Studio Alpha — ברנדינג</div>
+              <div style="font-size:12px;color:var(--slate)" data-he="חשבונית #112 · ₪4,200" data-en="Invoice #112 · ₪4,200">חשבונית #112 · ₪4,200</div>
+            </div>
+          </div>
+          <span class="pill ok" data-he="שולם" data-en="Paid">שולם</span>
+        </div>
+        <div class="mock-row">
+          <div class="l">
+            <div class="dot">📱</div>
+            <div>
+              <div style="font-weight:700;font-size:14px" data-he="TechVibe — UI/UX" data-en="TechVibe — UI/UX">TechVibe — UI/UX</div>
+              <div style="font-size:12px;color:var(--slate)" data-he="חשבונית #113 · ₪7,500" data-en="Invoice #113 · ₪7,500">חשבונית #113 · ₪7,500</div>
+            </div>
+          </div>
+          <span class="pill auto" data-he="תזכורת נשלחה" data-en="Reminder sent">תזכורת נשלחה</span>
+        </div>
+        <div class="mock-row">
+          <div class="l">
+            <div class="dot">🌿</div>
+            <div>
+              <div style="font-weight:700;font-size:14px" data-he="GreenLeaf — רשתות חברתיות" data-en="GreenLeaf — Social Media">GreenLeaf — רשתות חברתיות</div>
+              <div style="font-size:12px;color:var(--slate)" data-he="חשבונית #114 · ₪2,800" data-en="Invoice #114 · ₪2,800">חשבונית #114 · ₪2,800</div>
+            </div>
+          </div>
+          <span class="pill pend" data-he="ממתין לתשלום" data-en="Awaiting payment">ממתין לתשלום</span>
+        </div>
+        <div class="mock-foot">
+          <span style="font-size:13px;opacity:.7" data-he="הכנסה החודש" data-en="This month's income">הכנסה החודש</span>
+          <span class="amt">₪14,500</span>
+        </div>
+        <div class="float-badge">✨ <span data-he="3 לקוחות פעילים" data-en="3 active clients">3 לקוחות פעילים</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="block">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kicker" data-he="מה כלול" data-en="What's included">מה כלול</div>
+      <h2 data-he="הכלים שמעצב עצמאי צריך" data-en="The tools every independent designer needs">הכלים שמעצב עצמאי צריך</h2>
+      <p data-he="פחות ביורוקרטיה, יותר יצירה — OpalSwift מטפלת בכל מה שבין פרויקט לפרויקט" data-en="Less admin, more creating — OpalSwift handles everything between projects">פחות ביורוקרטיה, יותר יצירה — OpalSwift מטפלת בכל מה שבין פרויקט לפרויקט</p>
+    </div>
+    <div class="cards3">
+      <div class="card">
+        <div class="ic">📋</div>
+        <h3 data-he="חשבוניות מקצועיות תוך שניות" data-en="Professional invoices in seconds">חשבוניות מקצועיות תוך שניות</h3>
+        <p data-he="תבניות מעוצבות שמתאימות לגרפיקאים, UX designers ומנהלי רשתות. עם הלוגו שלך ופרטים מקצועיים — כולל מע״מ." data-en="Templates designed for graphic designers, UX designers, and social media managers. With your logo and professional details — VAT-inclusive.">תבניות מעוצבות שמתאימות לגרפיקאים, UX designers ומנהלי רשתות. עם הלוגו שלך ופרטים מקצועיים — כולל מע״מ.</p>
+      </div>
+      <div class="card">
+        <div class="ic">💳</div>
+        <h3 data-he="מעקב הוצאות לפי פרויקט" data-en="Expense tracking by project">מעקב הוצאות לפי פרויקט</h3>
+        <p data-he="Adobe Creative Suite, ציוד צילום, פגישות לקוחות — כל הוצאה מתויגת ללקוח הנכון ומוכנה להגשה לרו״ח." data-en="Adobe Creative Suite, photography gear, client meetings — every expense tagged to the right client, accountant-ready.">Adobe Creative Suite, ציוד צילום, פגישות לקוחות — כל הוצאה מתויגת ללקוח הנכון ומוכנה להגשה לרו״ח.</p>
+      </div>
+      <div class="card">
+        <div class="ic">📊</div>
+        <h3 data-he="מעקב עסקאות מע״מ" data-en="VAT transaction tracking">מעקב עסקאות מע״מ</h3>
+        <p data-he="המערכת עוקבת אחר כל עסקאות המע״מ אוטומטית. הרשומות שלך נשארות מסודרות ונגישות — בלי חישובים ידניים." data-en="System tracks all VAT transactions automatically. Your records stay organized and accessible — no manual calculations needed.">המערכת מכינה את כל הדוחות הרבעוניים. פשוט לבדוק, לאשר, ולהגיש — בלי חישובים ידניים ובלי לחץ של דדליין.</p>
+      </div>
+      <div class="card">
+        <div class="ic">🔔</div>
+        <h3 data-he="תזכורות תשלום אוטומטיות" data-en="Automatic payment reminders">תזכורות תשלום אוטומטיות</h3>
+        <p data-he="המערכת שולחת תזכורות ללקוחות שמאחרים לשלם. אתה מתרכז ביצירה — לא ברדיפה אחרי חובות." data-en="System sends polite reminders to late-paying clients. You focus on creating — not chasing debts.">המערכת שולחת תזכורות ללקוחות שמאחרים לשלם. אתה מתרכז ביצירה — לא ברדיפה אחרי חובות.</p>
+      </div>
+      <div class="card">
+        <div class="ic">💰</div>
+        <h3 data-he="מעקב הכנסות בזמן אמת" data-en="Real-time income tracking">מעקב הכנסות בזמן אמת</h3>
+        <p data-he="עקוב אחר סך ההכנסות שלך בכל רגע. מעקב פיננסי חכם לעצמאים עם הכנסה משתנה לפי עונה." data-en="Track your total income at any moment. Smart financial oversight for freelancers with seasonal variable income.">יודע בכל רגע כמה מס הכנסה צפוי לך. תכנון פיננסי חכם לעצמאים עם הכנסה משתנה לפי עונה.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="block" style="padding-top:0">
+  <div class="wrap">
+    <div class="how-bg">
+      <div class="sec-head">
+        <div class="kicker" data-he="איך זה עובד" data-en="How it works">איך זה עובד</div>
+        <h2 data-he="מהרשמה לחשבונית ראשונה" data-en="From sign-up to first invoice">מהרשמה לחשבונית ראשונה</h2>
+        <p data-he="לא צריך אקסל, לא צריך להבין הנהלת חשבונות — הכל מונחה ופשוט" data-en="No Excel, no accounting knowledge needed — everything is guided and simple">לא צריך אקסל, לא צריך להבין הנהלת חשבונות — הכל מונחה ופשוט</p>
+      </div>
+      <div class="flow-grid">
+        <div class="flow-step">
+          <span class="em">📝</span>
+          <b data-he="פותח חשבון" data-en="Open account">פותח חשבון</b>
+          <small data-he="מוכן להתחיל" data-en="Ready to go">מוכן להתחיל</small>
+        </div>
+        <div class="flow-step">
+          <span class="em">🎨</span>
+          <b data-he="מוסיף לקוחות ופרויקטים" data-en="Add clients & projects">מוסיף לקוחות ופרויקטים</b>
+          <small data-he="הזנת לקוחות ידנית" data-en="Add clients manually">הזנת לקוחות ידנית</small>
+        </div>
+        <div class="flow-step">
+          <span class="em">🧾</span>
+          <b data-he="שולח חשבונית" data-en="Send invoice">שולח חשבונית</b>
+          <small data-he="לקוח מקבל מייל מקצועי" data-en="Client gets professional email">לקוח מקבל מייל מקצועי</small>
+        </div>
+        <div class="flow-step">
+          <span class="em">✅</span>
+          <b data-he="תשלום מאושר" data-en="Payment confirmed">תשלום מאושר</b>
+          <small data-he="קבלה אוטומטית ללקוח" data-en="Auto receipt to client">קבלה אוטומטית ללקוח</small>
+        </div>
+        <div class="flow-step">
+          <span class="em">📊</span>
+          <b data-he="רשומות מסודרות" data-en="Records organized">רשומות מסודרות</b>
+          <small data-he="להגשה לרשות המסים" data-en="Ready for tax authority">להגשה לרשות המסים</small>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SOCIAL PROOF -->
+<section class="block">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kicker" data-he="מעצבים אומרים" data-en="Designers say">מעצבים אומרים</div>
+      <h2 data-he="מעצבים שכבר חזרו ליצור" data-en="Designers who got back to creating">מעצבים שכבר חזרו ליצור</h2>
+    </div>
+    <div class="proof-grid">
+      <div class="proof-card">
+        <div class="ava">🎨</div>
+        <blockquote data-he="&ldquo;סוף סוף יכולה להתמקד בעיצוב במקום בחישובי מע״מ. המערכת חוסכת לי שעות כל רבעון — וגם הלקוחות שלי משלמים מהר יותר.&rdquo;" data-en="&ldquo;Finally I can focus on design instead of VAT calculations. The system saves me hours every quarter — and my clients pay faster too.&rdquo;">&ldquo;סוף סוף יכולה להתמקד בעיצוב במקום בחישובי מע״מ. המערכת חוסכת לי שעות כל רבעון — וגם הלקוחות שלי משלמים מהר יותר.&rdquo;</blockquote>
+        <div class="attr" data-he="<b>דנה כהן</b> · מעצבת גרפית עצמאית, ישראל" data-en="<b>Dana Cohen</b> · Freelance graphic designer, Israel"><b>דנה כהן</b> · מעצבת גרפית עצמאית, ישראל</div>
+      </div>
+      <div class="proof-card wa">
+        <div class="wa-badge">📧 Email &amp; Reminders</div>
+        <blockquote data-he="&ldquo;מנהל 15 לקוחות ופרויקטים מרובים במקביל. OpalSwift שומר על הסדר הפיננסי בלי שאצטרך לחשוב על זה. ממש שינה לי את החיים.&rdquo;" data-en="&ldquo;Managing 15 clients and multiple parallel projects. OpalSwift keeps financial order without me having to think about it. Genuinely changed my life.&rdquo;">&ldquo;מנהל 15 לקוחות ופרויקטים מרובים במקביל. OpalSwift שומר על הסדר הפיננסי בלי שאצטרך לחשוב על זה. ממש שינה לי את החיים.&rdquo;</blockquote>
+        <div class="attr" data-he="<b>יונתן לוי</b> · UX designer עצמאי, הרצליה" data-en="<b>Yonatan Levi</b> · Freelance UX designer, Herzliya"><b>יונתן לוי</b> · UX designer עצמאי, הרצליה</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="block" style="background:#fff">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kicker" data-he="מחיר" data-en="Pricing">מחיר</div>
+      <h2 data-he="Autopilot — בדיוק בשביל מעצבים עצמאיים" data-en="Autopilot — Built for Freelance Designers">Autopilot — בדיוק בשביל מעצבים עצמאיים</h2>
+      <p data-he="כל מה שצריך למעצב לפי פרויקטים. הכל כלול." data-en="Everything a project-based designer needs. All-inclusive — everything you need.">כל מה שצריך למעצב לפי פרויקטים. הכל כלול.</p>
+    </div>
+    <div class="pricing-wrap">
+      <div class="price-card">
+        <div class="price-badge" data-he="הכי פופולרי למעצבים עצמאיים" data-en="Most popular for freelance designers">הכי פופולרי למעצבים עצמאיים</div>
+        <div class="price-plan">Essential</div>
+        <div class="price-who" data-he="למעצבים גרפיים, UI/UX ויוצרי תוכן — הכנסה לפי פרויקטים" data-en="For graphic, UI/UX &amp; content designers — project-based income">למעצבים גרפיים, UI/UX ויוצרי תוכן — הכנסה לפי פרויקטים</div>
+        <div class="price-amt">₪199 <small data-he="/ חודש כולל מע״מ" data-en="/ month VAT-incl.">/חודש כולל מע״מ</small></div>
+                <ul class="price-features">
+          <li><span class="chk">✓</span> <span data-he="חשבוניות ותיעוד מקצועי" data-en="Professional invoicing &amp; documentation">חשבוניות ותיעוד מקצועי</span></li>
+          <li><span class="chk">✓</span> <span data-he="שיתוף חשבוניות — קישור תשלום בקליק" data-en="Share invoices — payment link in one click">שיתוף חשבוניות — קישור תשלום בקליק</span></li>
+          <li><span class="chk">✓</span> <span data-he="תזכורות תשלום אוטומטיות ללקוחות" data-en="Automatic payment reminders to clients">תזכורות תשלום אוטומטיות ללקוחות</span></li>
+          <li><span class="chk">✓</span> <span data-he="מעקב הוצאות לפי לקוח ופרויקט" data-en="Expense tracking by client &amp; project">מעקב הוצאות לפי לקוח ופרויקט</span></li>
+
+          <li><span class="chk">✓</span> <span data-he="דוחות פיננסיים מוכנים לרואה החשבון" data-en="Financial reports ready for your accountant">דוחות פיננסיים מוכנים לרואה החשבון</span></li>
+          <li><span class="chk">✓</span> <span data-he="עמידה בחוק מספרי ההקצאה 2026" data-en="2026 allocation-number law compliance">עמידה בחוק מספרי ההקצאה 2026</span></li>
+        </ul>
+        <p style="font-size:11.5px;color:var(--slate);opacity:0.72;margin:10px 0 18px;line-height:1.55;padding:0 2px;border-top:1px solid rgba(0,0,0,0.07);padding-top:10px" data-he="עד 100 מסמכים לחודש. רוב המשתמשים נשארים בגבולות. חריגה: 19 מסמכים ראשונים עלינו, אחר כך ₪1.50 למסמך." data-en="Up to 100 documents/month. Most users stay well within limits. Overage: first 19 extra docs on us, then ₪1.50/doc.">עד 100 מסמכים לחודש. רוב המשתמשים נשארים בגבולות. חריגה: 19 מסמכים ראשונים עלינו, אחר כך ₪1.50 למסמך.</p>
+        <a href="#pricing" class="btn btn-primary" style="width:100%;justify-content:center" data-he="הצטרף לבטא" data-en="Join the Beta">הצטרף לבטא</a>
+        <p class="no-addons" data-he="<b>הכל כלול.</b> מה שאתם רואים זה מה שמקבלים." data-en="<b>All-inclusive.</b> What you see is what you get."><b>הכל כלול.</b> מה שאתם רואים זה מה שמקבלים.</p>
+      </div>
+      <p class="no-addons" data-he="<b>הכל כלול.</b> מה שאתם רואים זה מה שמקבלים." data-en="<b>All-inclusive.</b> What you see is what you get."><b>הכל כלול.</b> מה שאתם רואים זה מה שמקבלים.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer style="background:var(--ink);color:rgba(255,255,255,.6);padding:40px 0;text-align:center;font-size:14px">
+  <div class="wrap">
+    <div style="margin-bottom:14px"><img src="opalswift_gemstone_final.png" alt="" width="72" height="72" style="opacity:.9;filter:drop-shadow(0 3px 14px rgba(0,0,0,.35))"></div>
+    <div style="font-family:'Rubik';font-weight:700;font-size:18px;color:#fff;margin-bottom:8px">OpalSwift</div>
+    <p data-he="ניהול פיננסי לעצמאים בישראל · עוסק פטור ועוסק מורשה" data-en="Financial management for Israeli freelancers · עוסק פטור &amp; מורשה">ניהול פיננסי לעצמאים בישראל · עוסק פטור ועוסק מורשה</p>
+    <div style="margin-top:16px;display:flex;gap:24px;justify-content:center;flex-wrap:wrap">
+      <a href="index.html" style="color:rgba(255,255,255,.5);text-decoration:none" data-he="בית" data-en="Home">בית</a>
+      <a href="skins.html" style="color:rgba(255,255,255,.5);text-decoration:none" data-he="מהדורות" data-en="Editions">מהדורות</a>
+      <a href="#pricing" style="color:rgba(255,255,255,.5);text-decoration:none" data-he="מחיר" data-en="Pricing">מחיר</a>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

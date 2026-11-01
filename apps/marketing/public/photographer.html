@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>OpalSwift לצלמים — חשבוניות מהצילום, תשלומים ללא מרדף</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800&family=Heebo:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0B1437; --teal:#21D1C2; --indigo:#5B6CFF; --violet:#7B61FF;
+    --canvas:#F7F8FC; --slate:#5A6178;
+    --opal:linear-gradient(120deg,#21D1C2,#5B6CFF,#7B61FF);
+    --shadow:0 18px 50px -18px rgba(11,20,55,.35);
+    --radius:20px;
+    /* Photographer accent — coral sunset */
+    --accent:#F97366;
+    --accent-light:rgba(249,115,102,.12);
+    --accent-mid:rgba(249,115,102,.22);
+    --hero-glow:radial-gradient(1100px 520px at 75% -5%,rgba(249,115,102,.18),transparent),
+                radial-gradient(800px 400px at 0% 15%,rgba(33,209,194,.13),transparent);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{font-family:'Heebo','Inter',system-ui,sans-serif;color:var(--ink);background:var(--canvas);line-height:1.6;overflow-x:hidden}
+  body[dir=ltr]{font-family:'Inter',system-ui,sans-serif}
+  h1,h2,h3,.brand{font-family:'Rubik',sans-serif;line-height:1.15}
+  .wrap{max-width:1140px;margin:0 auto;padding:0 24px}
+  .grad-text{background:var(--opal);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .btn{display:inline-flex;align-items:center;gap:8px;border:0;border-radius:999px;padding:14px 26px;font-weight:600;font-size:16px;cursor:pointer;text-decoration:none;transition:.2s;font-family:'Rubik',sans-serif}
+  .btn-primary{background:var(--opal);color:#fff;box-shadow:0 10px 24px -8px rgba(245,158,11,.4)}
+  .btn-primary:hover{transform:translateY(-2px)}
+  .btn-ghost{background:#fff;color:var(--ink);border:1px solid rgba(11,20,55,.15)}
+  .btn-ghost:hover{border-color:var(--accent)}
+
+  /* ── NAV ── */
+  nav{position:sticky;top:0;z-index:50;background:rgba(247,248,252,.88);backdrop-filter:blur(14px);border-bottom:1px solid rgba(11,20,55,.06)}
+  .nav-in{display:flex;align-items:center;justify-content:space-between;height:70px}
+  .logo{display:flex;align-items:center;gap:10px;font-family:'Rubik';font-weight:800;font-size:22px;letter-spacing:-0.5px;background:var(--opal);-webkit-background-clip:text;background-clip:text;color:transparent;text-decoration:none}
+  .logo .gem{width:30px;height:30px}
+  .logo .sub{font-size:13px;font-weight:600;color:var(--accent);padding-inline-start:8px;border-inline-start:1px solid rgba(249,115,102,.35);margin-inline-start:4px}
+  .nav-cta{display:flex;gap:12px;align-items:center}
+  .lang-toggle{display:flex;border:1px solid rgba(11,20,55,.15);border-radius:999px;overflow:hidden;font-family:'Rubik';font-size:13px;font-weight:600}
+  .lang-toggle button{border:0;background:transparent;padding:7px 14px;cursor:pointer;color:var(--slate)}
+  .lang-toggle button.active{background:var(--ink);color:#fff}
+
+  /* ── HERO ── */
+  .hero{position:relative;background:var(--hero-glow);padding:80px 0 64px}
+  .hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:50px;align-items:center}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid rgba(249,115,102,.25);box-shadow:0 4px 20px -8px rgba(249,115,102,.25);padding:7px 14px;border-radius:999px;font-size:13px;font-weight:600;color:#b45309;margin-bottom:22px;font-family:'Rubik'}
+  .hero h1{font-size:52px;font-weight:800;letter-spacing:-1px;margin-bottom:18px}
+  .hero p.lead{font-size:19px;color:var(--slate);max-width:520px;margin-bottom:28px}
+  .hero-cta{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+  .trust{font-size:14px;color:var(--slate);display:flex;align-items:flex-start;gap:8px}
+
+  /* hero mock */
+  .mock{background:#fff;border-radius:24px;box-shadow:var(--shadow);padding:22px;position:relative}
+  .mock .bar{height:10px;width:70px;border-radius:6px;background:linear-gradient(90deg,var(--accent),#FBBF24);margin-bottom:16px}
+  .mock-row{display:flex;justify-content:space-between;align-items:center;padding:14px;border:1px solid rgba(11,20,55,.07);border-radius:14px;margin-bottom:10px}
+  .mock-row .l{display:flex;align-items:center;gap:12px}
+  .dot{width:38px;height:38px;border-radius:12px;background:var(--canvas);display:flex;align-items:center;justify-content:center;font-size:18px}
+  .pill{font-size:12px;font-weight:700;padding:5px 12px;border-radius:999px;font-family:'Rubik'}
+  .pill.ok{background:rgba(33,209,194,.15);color:#0a8f84}
+  .pill.sent{background:var(--accent-light);color:#92400e}
+  .pill.auto{background:rgba(91,108,255,.13);color:var(--indigo)}
+  .mock-foot{display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding:14px;background:var(--ink);border-radius:14px;color:#fff}
+  .mock-foot .amt{font-family:'Rubik';font-weight:800;font-size:22px}
+  .float-badge{position:absolute;bottom:-18px;inset-inline-start:-18px;background:#fff;box-shadow:var(--shadow);border-radius:14px;padding:10px 14px;font-size:13px;font-weight:700;font-family:'Rubik';display:flex;align-items:center;gap:8px}
+
+  /* ── SECTIONS ── */
+  section.block{padding:72px 0}
+  .sec-head{text-align:center;max-width:680px;margin:0 auto 48px}
+  .sec-head .kicker{font-family:'Rubik';font-weight:700;color:#b45309;font-size:14px;letter-spacing:.5px;text-transform:uppercase;margin-bottom:12px}
+  .sec-head h2{font-size:38px;font-weight:800;letter-spacing:-.5px;margin-bottom:14px}
+  .sec-head p{font-size:18px;color:var(--slate)}
+
+  /* ── CARDS ── */
+  .cards3{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+  .card{background:#fff;border:1px solid rgba(11,20,55,.06);border-radius:var(--radius);padding:28px;box-shadow:0 8px 30px -20px rgba(11,20,55,.25);transition:.2s}
+  .card:hover{transform:translateY(-4px);box-shadow:0 16px 40px -20px rgba(249,115,102,.25)}
+  .card .ic{width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--accent-light),var(--accent-mid));display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:18px}
+  .card h3{font-size:20px;margin-bottom:10px}
+  .card p{color:var(--slate);font-size:15.5px}
+
+  /* ── HOW IT WORKS ── */
+  .how-bg{background:var(--ink);border-radius:32px;margin:0 24px;padding:56px}
+  .how-bg .sec-head h2{color:#fff}
+  .how-bg .sec-head p{color:rgba(255,255,255,.7)}
+  .how-bg .sec-head .kicker{color:var(--accent)}
+  .flow-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:8px}
+  .flow-step{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:22px 16px;text-align:center;transition:.2s}
+  .flow-step:hover{background:rgba(245,158,11,.1);border-color:rgba(249,115,102,.35)}
+  .flow-step .em{font-size:28px;display:block;margin-bottom:12px}
+  .flow-step b{font-family:'Rubik';font-size:14px;display:block;margin-bottom:6px;color:#fff}
+  .flow-step small{color:rgba(255,255,255,.62);font-size:12.5px;display:block}
+
+  /* ── SOCIAL PROOF ── */
+  .proof-grid{display:grid;grid-template-columns:1fr 1fr;gap:28px;max-width:900px;margin:0 auto}
+  .proof-card{background:#fff;border:1px solid rgba(11,20,55,.07);border-radius:var(--radius);padding:32px;box-shadow:0 8px 30px -20px rgba(11,20,55,.2)}
+  .proof-card .ava{width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,var(--accent),#FBBF24);display:flex;align-items:center;justify-content:center;color:#fff;font-size:26px;margin-bottom:18px}
+  .proof-card blockquote{font-family:'Rubik';font-size:18px;font-weight:500;line-height:1.5;color:var(--ink);margin-bottom:16px}
+  .proof-card .attr{font-size:14px;color:var(--slate)}
+  .proof-card .attr b{color:var(--ink);font-weight:700}
+  .proof-card.wa{background:linear-gradient(135deg,#fffbeb,#fff7ed)}
+  .proof-card.wa blockquote{font-size:16px}
+  .wa-badge{display:inline-flex;align-items:center;gap:6px;background:#2563EB;color:#fff;font-family:'Rubik';font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;margin-bottom:14px}
+
+  /* ── PRICING ── */
+  .pricing-wrap{max-width:520px;margin:0 auto}
+  .price-card{background:#fff;border:2px solid transparent;background:linear-gradient(#fff,#fff) padding-box,var(--opal) border-box;border-radius:var(--radius);padding:32px;box-shadow:var(--shadow);position:relative}
+  .price-badge{position:absolute;top:-14px;inset-inline-start:50%;transform:translateX(-50%);background:linear-gradient(90deg,var(--accent),#FBBF24);color:#fff;font-family:'Rubik';font-weight:700;font-size:12px;padding:5px 18px;border-radius:999px;white-space:nowrap}
+  body[dir=rtl] .price-badge{transform:translateX(50%)}
+  .price-plan{font-family:'Rubik';font-size:16px;font-weight:700;color:#b45309;margin-bottom:4px}
+  .price-who{color:var(--slate);font-size:14px;margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid rgba(11,20,55,.07)}
+  .price-amt{font-family:'Rubik';font-weight:800;font-size:46px;line-height:1;margin-bottom:6px}
+  .price-amt small{font-size:16px;font-weight:400;color:var(--slate)}
+  .price-annual{font-size:13px;color:#b45309;font-weight:600;font-family:'Rubik';margin-bottom:22px}
+  .price-features{list-style:none;margin-bottom:26px;display:flex;flex-direction:column;gap:11px}
+  .price-features li{font-size:15px;color:#2c3350;display:flex;gap:10px;align-items:flex-start}
+  .price-features li .chk{color:var(--teal);font-weight:800;flex-shrink:0}
+  .price-card .btn{width:100%;justify-content:center;font-size:17px;padding:15px}
+  .no-addons{text-align:center;margin-top:20px;font-size:14px;color:var(--slate)}
+  .no-addons b{color:var(--ink)}
+
+  /* ── FINAL CTA ── */
+  .final{background:var(--ink);border-radius:32px;margin:0 auto;max-width:1092px;padding:60px;text-align:center;color:#fff;position:relative;overflow:hidden}
+  .final::before{content:"";position:absolute;inset:0;background:radial-gradient(700px 350px at 50% 0%,rgba(249,115,102,.22),transparent)}
+  .final h2{font-size:40px;font-weight:800;margin-bottom:14px;position:relative}
+  .final p{color:rgba(255,255,255,.72);font-size:18px;margin-bottom:30px;position:relative;max-width:580px;margin-inline:auto}
+  .final .btn{position:relative;font-size:18px;padding:16px 36px}
+  .final .sub{position:relative;margin-top:16px;font-size:14px;color:rgba(255,255,255,.5)}
+
+  /* ── FOOTER ── */
+  footer{padding:46px 0 38px;color:var(--slate);font-size:14px}
+  .foot-in{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;border-top:1px solid rgba(11,20,55,.08);padding-top:28px}
+  .foot-in a{color:var(--slate);text-decoration:none}.foot-in a:hover{color:var(--ink)}
+
+  /* ── RESPONSIVE ── */
+  @media(max-width:900px){
+    .hero-grid{grid-template-columns:1fr}
+    .cards3{grid-template-columns:1fr 1fr}
+    .flow-grid{grid-template-columns:repeat(3,1fr)}
+    .proof-grid{grid-template-columns:1fr}
+    .hero h1{font-size:40px}.sec-head h2{font-size:30px}
+    .how-bg{padding:36px 22px;margin:0}
+    .final{padding:42px 24px}
+  }
+  @media(max-width:600px){
+    .cards3,.flow-grid{grid-template-columns:1fr}
+    .hero h1{font-size:32px}.sec-head h2{font-size:26px}
+    .hero p.lead{font-size:17px}
+    .wrap{padding:0 18px}
+    .final{padding:36px 20px}.final h2{font-size:28px}
+  }
+  .back-bar{padding:18px 0 0}
+  .back-link{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600;color:var(--slate);text-decoration:none;font-family:"Rubik";transition:.2s}
+  .back-link:hover{color:var(--accent)}
+  .hero p.subhero,.hero-text p.subhero{font-size:17px;color:var(--accent);font-weight:600;font-family:'Rubik';max-width:520px;margin-bottom:20px;line-height:1.55}
+</style>
+</head>
+<body dir="rtl" lang="he">
+
+<!-- ══════════════ NAV ══════════════ -->
+<nav id="opal-nav"></nav>
+<script>window.OPAL_SKIN={he:"לצלמים",en:"for Photographers"};</script>
+<script src="topbar.js"></script>
+<div class="wrap">
+  <div class="back-bar">
+    <a href="skins.html" class="back-link" data-he="← כל המהדורות" data-en="← All editions">← כל המהדורות</a>
+  </div>
+</div>
+
+<!-- ══════════════ HERO ══════════════ -->
+<header class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="eyebrow">📸 <span data-he="לצלמים עצמאיים בישראל" data-en="For Israeli Photographers">לצלמים עצמאיים בישראל</span></span>
+      <h1 data-he='צילמת את הרגע.<br><span class="grad-text">הכסף יגיע מהר.</span>' data-en='You captured the moment.<br><span class="grad-text">The payment follows.</span>'>צילמת את הרגע.<br><span class="grad-text">הכסף יגיע מהר.</span></h1>
+      <p class="subhero" data-he="לצלם רגעים. אנחנו צדים הכנסות." data-en="You capture moments. We capture revenue.">לצלם רגעים. אנחנו צדים הכנסות.</p>
+      <p class="lead" data-he="OpalSwift הופך כל צילום לחשבונית מקצועית ומוציא תזכורות תשלום אוטומטיות בשבילך. תפסיק לרדוף כסף ותתחיל לצלם יותר." data-en="OpalSwift turns every shoot into a professional invoice and sends payment reminders automatically. Stop chasing money and start shooting more.">OpalSwift הופך כל צילום לחשבונית מקצועית ומוציא תזכורות תשלום אוטומטיות בשבילך. תפסיק לרדוף כסף ותתחיל לצלם יותר.</p>
+      <div class="hero-cta">
+        <a href="#pricing" class="btn btn-primary" data-he="הצטרף לבטא" data-en="Join the Beta">הצטרף לבטא</a>
+        <a href="#how" class="btn btn-ghost" data-he="לראות איך זה עובד" data-en="See how it works">לראות איך זה עובד</a>
+      </div>
+      <div class="trust">⚡ <span data-he="הגדרה פשוטה · חשבוניות תקינות · מותאם לחוק הישראלי" data-en="Quick setup · Compliant invoicing · Built for Israeli law">הגדרה פשוטה · חשבוניות תקינות · מותאם לחוק הישראלי</span></div>
+    </div>
+    <div style="position:relative">
+      <div class="mock">
+        <div class="bar"></div>
+        <div class="mock-row">
+          <div class="l"><div class="dot">💍</div><div><b data-he="חשבונית — חתונת לוי" data-en="Invoice — Levi wedding">חשבונית — חתונת לוי</b><br><small style="color:var(--slate)" data-he="נשלחה במייל ✓" data-en="Sent by email ✓">נשלחה במייל ✓</small></div></div>
+          <span class="pill sent" data-he="נשלחה" data-en="Sent">נשלחה</span>
+        </div>
+        <div class="mock-row">
+          <div class="l"><div class="dot">🔔</div><div><b data-he="תזכורת תשלום אוטומטית" data-en="Auto payment reminder">תזכורת תשלום אוטומטית</b><br><small style="color:var(--slate)" data-he="יצאה אחרי 7 ימים — בלי מגע" data-en="Sent after 7 days — no touch">יצאה אחרי 7 ימים — בלי מגע</small></div></div>
+          <span class="pill auto" data-he="אוטומטי" data-en="Auto">אוטומטי</span>
+        </div>
+        <div class="mock-row">
+          <div class="l"><div class="dot">✅</div><div><b data-he="תשלום התקבל" data-en="Payment received">תשלום התקבל</b><br><small style="color:var(--slate)" data-he="קבלה נשלחה אוטומטית" data-en="Receipt sent automatically">קבלה נשלחה אוטומטית</small></div></div>
+          <span class="pill ok" data-he="✓ שולם" data-en="✓ Paid">✓ שולם</span>
+        </div>
+        <div class="mock-foot">
+          <div><small style="opacity:.7" data-he="הכנסה החודש" data-en="This month's income">הכנסה החודש</small></div>
+          <div class="amt">₪12,400</div>
+        </div>
+        <div class="float-badge">📷 <span data-he="4 פרויקטים פעילים" data-en="4 active projects">4 פרויקטים פעילים</span></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ══════════════ FEATURES ══════════════ -->
+<section class="block">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kicker" data-he="הכל מה שצלם צריך" data-en="Everything a Photographer Needs">הכל מה שצלם צריך</div>
+      <h2 data-he="מהצילום לתשלום — בקליק" data-en="From Shoot to Payment — in One Click">מהצילום לתשלום — בקליק</h2>
+      <p data-he="כלים שנבנו בדיוק לאופן שצלמים עובדים — לפי פרויקט, עם לקוחות שלפעמים שוכחים לשלם." data-en="Tools built exactly for how photographers work — project by project, with clients who sometimes forget to pay.">כלים שנבנו בדיוק לאופן שצלמים עובדים — לפי פרויקט, עם לקוחות שלפעמים שוכחים לשלם.</p>
+    </div>
+    <div class="cards3">
+      <div class="card">
+        <div class="ic">📸</div>
+        <h3 data-he="חשבונית מוכנה — לקוח מקבל במייל" data-en="Invoice ready — client gets it by email">חשבונית מוכנה — לקוח מקבל במייל</h3>
+        <p data-he="סיימת לצלם? יוצרת חשבונית מקצועית ושולח/ת ללקוח קישור תשלום. הלקוח משלם בקלות — בלי הדפסות, בלי מפגשים." data-en="Finished shooting? Create a professional invoice and share a payment link by email. Your client pays with ease — no printing, no meetings.">סיימת לצלם? יוצרת חשבונית מקצועית ושולח/ת ללקוח קישור תשלום. הלקוח משלם בקלות — בלי הדפסות, בלי מפגשים.</p>
+      </div>
+      <div class="card">
+        <div class="ic">📋</div>
+        <h3 data-he="קבלות, מסמכים ודוחות — כבר מטופל" data-en="Receipts, docs &amp; reports — handled">קבלות, מסמכים ודוחות — כבר מטופל</h3>
+        <p data-he="כל תשלום שמתקבל מייצר קבלה תקינה אוטומטית. רשומות פיננסיות מלאות תמיד מסודרות — הכל עומד בדרישות עסקיות בישראל לעוסק." data-en="Every received payment generates a proper receipt automatically. Complete financial records always organized — fully compliant with Israeli business requirements for sole traders.">כל תשלום שמתקבל מייצר קבלה תקינה אוטומטית. רשומות פיננסיות מלאות תמיד מסודרות — הכל עומד בדרישות עסקיות בישראל לעוסק.</p>
+      </div>
+      <div class="card">
+        <div class="ic">🔔</div>
+        <h3 data-he="תזכורות תשלום — בלי מבוכה" data-en="Payment reminders — without the awkwardness">תזכורות תשלום — בלי מבוכה</h3>
+        <p data-he="תזכורות יוצאות אוטומטית למי שעדיין לא שילם — בנימה מקצועית ואחרי הזמן הנכון. לא צריך להתקשר, לא צריך לשלוח הודעה מביכה." data-en="Reminders go out automatically to anyone who hasn't paid — professional tone, right timing. No calls, no awkward messages — it just happens.">תזכורות יוצאות אוטומטית למי שעדיין לא שילם — בנימה מקצועית ואחרי הזמן הנכון. לא צריך להתקשר, לא צריך לשלוח הודעה מביכה.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ HOW IT WORKS ══════════════ -->
+<section class="block" id="how" style="padding-top:0">
+  <div class="wrap">
+    <div class="how-bg">
+      <div class="sec-head">
+        <div class="kicker" data-he="פשוט וזורם" data-en="Simple &amp; Smooth">פשוט וזורם</div>
+        <h2 data-he="מהצילום לתשלום — חמישה צעדים" data-en="From Shoot to Payment — Five Steps">מהצילום לתשלום — חמישה צעדים</h2>
+        <p data-he="בוא/י נראה איך אירוע שלם הופך לתשלום מסודר בלי שתגעי בטלפון יותר מפעמיים." data-en="See how a whole shoot turns into a clean payment without touching your phone more than twice.">בוא/י נראה איך אירוע שלם הופך לתשלום מסודר בלי שתגעי בטלפון יותר מפעמיים.</p>
+      </div>
+      <div class="flow-grid">
+        <div class="flow-step">
+          <span class="em">📸</span>
+          <b data-he="סיימת לצלם" data-en="Finished shooting">סיימת לצלם</b>
+          <small data-he="חזרת מהאירוע או מהסשן" data-en="Back from the event or session">חזרת מהאירוע או מהסשן</small>
+        </div>
+        <div class="flow-step">
+          <span class="em">⚡</span>
+          <b data-he="חשבונית מוכנה" data-en="Invoice ready">חשבונית מוכנה</b>
+          <small data-he="מלאי פרטים — חשבונית מוכנה" data-en="Fill details — invoice done">מלאי פרטים — חשבונית מוכנה</small>
+        </div>
+        <div class="flow-step">
+          <span class="em">📱</span>
+          <b data-he="שיתוף קישור" data-en="Share payment link">שיתוף קישור</b>
+          <small data-he="הלקוח מקבל קישור נוח לתשלום" data-en="Client gets a convenient payment link">הלקוח מקבל קישור נוח לתשלום</small>
+        </div>
+        <div class="flow-step">
+          <span class="em">🔔</span>
+          <b data-he="תזכורת אוטומטית" data-en="Auto reminder">תזכורת אוטומטית</b>
+          <small data-he="המערכת מזכירה — בלי מגע שלך" data-en="System reminds — without you">המערכת מזכירה — בלי מגע שלך</small>
+        </div>
+        <div class="flow-step">
+          <span class="em">✅</span>
+          <b data-he="קבלה ורשומות מוכנות" data-en="Receipt &amp; records done">קבלה ורשומות מוכנות</b>
+          <small data-he="כל הרשומות הפיננסיות מסודרות" data-en="All financial records organized">כל הרשומות הפיננסיות מסודרות</small>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ SOCIAL PROOF ══════════════ -->
+<section class="block" style="background:#fff">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kicker" data-he="מדוע OpalSwift" data-en="Why OpalSwift">מדוע OpalSwift</div>
+      <h2 data-he="בנוי מהניסיון, מוכח בשטח" data-en="Built from experience, proven in practice">בנוי מהניסיון, מוכח בשטח</h2>
+    </div>
+    <div class="proof-grid">
+      <div class="proof-card">
+        <div class="ava">📸</div>
+        <blockquote data-he='"בניתי את OpalSwift כי ראיתי צלמים מוכשרים מבזבזים שעות על חשבוניות, רדיפת תשלומים ותיאום עם רואי חשבון — במקום לצלם. צלמים מגניבים לא צריכים להיות גם רואי חשבון."' data-en='"I built OpalSwift because I watched talented photographers waste hours on invoices, chasing payments, and coordinating with accountants — instead of shooting. Great photographers shouldn\'t have to be accountants too."'>״בניתי את OpalSwift כי ראיתי צלמים מוכשרים מבזבזים שעות על חשבוניות, רדיפת תשלומים ותיאום עם רואי חשבון — במקום לצלם. צלמים מגניבים לא צריכים להיות גם רואי חשבון.״</blockquote>
+        <div class="attr"><b data-he="מירים, מייסדת OpalSwift" data-en="Miriam, OpalSwift Founder">מירים, מייסדת OpalSwift</b></div>
+      </div>
+      <div class="proof-card wa">
+        <div class="wa-badge">📧 Email &amp; Reminders</div>
+        <blockquote data-he='"מאז שהתחלתי עם OpalSwift התשלומים שלי מגיעים 40% מהר יותר. במקום לבזבז שעות על חשבוניות ותזכורות, אני מתמקד בצילום. פשוט מציל חיים 🙌"' data-en='"Since I started with OpalSwift my payments come 40% faster. Instead of wasting hours on invoices and reminders, I focus on photography. Simply life-saving 🙌"'>״מאז שהתחלתי עם OpalSwift התשלומים שלי מגיעים 40% מהר יותר. במקום לבזבז שעות על חשבוניות ותזכורות, אני מתמקד בצילום. פשוט מציל חיים 🙌״</blockquote>
+        <div class="attr"><b data-he="אורי ב., צלם חתונות — ירושלים" data-en="Uri B., Wedding photographer — Jerusalem">אורי ב., צלם חתונות — ירושלים</b> · <span data-he="בטא מוקדמת" data-en="Early beta">בטא מוקדמת</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ PRICING ══════════════ -->
+<section class="block" id="pricing">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kicker" data-he="מחיר הוגן לצלמים" data-en="Fair Pricing for Photographers">מחיר הוגן לצלמים</div>
+      <h2 data-he="Autopilot — בדיוק בשביל צלמים עצמאיים" data-en="Autopilot — Built for Freelance Photographers">Autopilot — בדיוק בשביל צלמים עצמאיים</h2>
+      <p data-he="כל מה שצריך לצלם לפי פרויקטים. הכל כלול." data-en="Everything a project-based photographer needs. All-inclusive — everything you need.">כל מה שצריך לצלם לפי פרויקטים. הכל כלול.</p>
+    </div>
+    <div class="pricing-wrap">
+      <div class="price-card">
+        <div class="price-badge" data-he="הכי פופולרי לצלמים עצמאיים" data-en="Most popular for freelance photographers">הכי פופולרי לצלמים עצמאיים</div>
+        <div class="price-plan">Essential</div>
+        <div class="price-who" data-he="לצלמי אירועים, פורטרט ומסחרי — הכנסה לפי פרויקטים" data-en="For event, portrait &amp; commercial photographers — project-based income">לצלמי אירועים, פורטרט ומסחרי — הכנסה לפי פרויקטים</div>
+        <div class="price-amt">₪199 <small data-he="/ חודש כולל מע״מ" data-en="/ month VAT-incl.">/חודש כולל מע״מ</small></div>
+                <ul class="price-features">
+          <li><span class="chk">✓</span> <span data-he="חשבוניות ותיעוד מקצועי" data-en="Professional invoicing &amp; documentation">חשבוניות ותיעוד מקצועי</span></li>
+          <li><span class="chk">✓</span> <span data-he="שיתוף חשבוניות — קישור תשלום בקליק" data-en="Share invoices — payment link in one click">שיתוף חשבוניות — קישור תשלום בקליק</span></li>
+          <li><span class="chk">✓</span> <span data-he="תזכורות תשלום אוטומטיות ללקוחות" data-en="Automatic payment reminders to clients">תזכורות תשלום אוטומטיות ללקוחות</span></li>
+          <li><span class="chk">✓</span> <span data-he="קבלות מס אוטומטיות אחרי כל תשלום" data-en="Automatic tax receipts after every payment">קבלות מס אוטומטיות אחרי כל תשלום</span></li>
+          <li><span class="chk">✓</span> <span data-he="מעקב תשלומים ומצב לקוחות בזמן אמת" data-en="Real-time payment &amp; client status tracking">מעקב תשלומים ומצב לקוחות בזמן אמת</span></li>
+          <li><span class="chk">✓</span> <span data-he="ניהול רשומות פיננסיות מלא" data-en="Complete financial record keeping">ניהול רשומות פיננסיות מלא</span></li>
+          <li><span class="chk">✓</span> <span data-he="עמידה בחוק מספרי ההקצאה 2026" data-en="2026 allocation-number law compliance">עמידה בחוק מספרי ההקצאה 2026</span></li>
+        </ul>
+        <p style="font-size:11.5px;color:var(--slate);opacity:0.72;margin:10px 0 18px;line-height:1.55;padding:0 2px;border-top:1px solid rgba(0,0,0,0.07);padding-top:10px" data-he="עד 100 מסמכים לחודש. רוב המשתמשים נשארים בגבולות. חריגה: 19 מסמכים ראשונים עלינו, אחר כך ₪1.50 למסמך." data-en="Up to 100 documents/month. Most users stay well within limits. Overage: first 19 extra docs on us, then ₪1.50/doc.">עד 100 מסמכים לחודש. רוב המשתמשים נשארים בגבולות. חריגה: 19 מסמכים ראשונים עלינו, אחר כך ₪1.50 למסמך.</p>
+        <a href="#" class="btn btn-primary" data-he="הצטרף לבטא" data-en="Join the Beta">הצטרף לבטא</a>
+      </div>
+      <p class="no-addons" data-he="<b>הכל כלול.</b> מה שאתם רואים זה מה שמקבלים." data-en="<b>All-inclusive.</b> What you see is what you get."><b>הכל כלול.</b> מה שאתם רואים זה מה שמקבלים.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ FINAL CTA ══════════════ -->
+<section class="block" style="padding-top:0">
+  <div class="wrap">
+    <div class="final">
+      <h2 data-he="פחות ניירת. יותר צילומים." data-en="Less Admin. More Shooting.">פחות ניירת. יותר צילומים.</h2>
+      <p data-he="הגדרה פשוטה — ותצא/י עם חשבונית ראשונה עוד היום." data-en="Simple setup — and send your first invoice today.">הגדרה פשוטה — ותצא/י עם חשבונית ראשונה עוד היום.</p>
+      <a href="#pricing" class="btn btn-primary" data-he="להתחיל עכשיו — חינם" data-en="Get started now — free">להתחיל עכשיו — חינם</a>
+      <div class="sub" data-he="ביטול בכל עת · אין דמי הקמה · תמיכה בעברית" data-en="Cancel anytime · No setup fee · Hebrew support">ביטול בכל עת · אין דמי הקמה · תמיכה בעברית</div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ FOOTER ══════════════ -->
+<footer>
+  <div style="text-align:center;padding:0 0 18px"><img src="opalswift_gemstone_final.png" alt="" width="72" height="72" style="opacity:.88;filter:drop-shadow(0 3px 12px rgba(123,97,255,.28))"></div>
+  <div class="wrap foot-in">
+    <a class="logo" href="index.html" style="font-size:18px">
+      <svg style="width:22px;height:22px" viewBox="0 0 56 56"><path d="M28 2 L52 28 L28 54 L4 28 Z" fill="url(#g1)"/></svg>
+      OpalSwift
+    </a>
+    <div>
+      <a href="skins.html" data-he="← כל המהדורות" data-en="← All editions">← כל המהדורות</a>
+    </div>
+    <div data-he="© 2026 OpalSwift · אתה עושה את העבודה. אנחנו דואגים שתקבל את הכסף." data-en="© 2026 OpalSwift · You do the work. We make sure you get paid.">© 2026 OpalSwift · אתה עושה את העבודה. אנחנו דואגים שתקבל את הכסף.</div>
+  </div>
+</footer>
+</body>
+</html>

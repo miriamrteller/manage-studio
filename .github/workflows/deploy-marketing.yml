@@ -1,0 +1,168 @@
+# Marketing site: the Cloudflare Pages project `opalswift` (opalswift.com apex).
+# Source: apps/marketing/public (static files) + apps/marketing/functions
+# (Pages Functions; the contact form posts to /api/contact).
+#
+# Two ways in:
+#   - automatically on a push to main that touches apps/marketing/**
+#   - Actions → deploy-marketing → Run workflow
+#
+# The deploy job uses environment "production": the owner approves it.
+# Secrets (same as deploy-web): CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID.
+# The token needs "Account → Cloudflare Pages → Edit".
+#
+# Pages secret: RESEND_API_KEY (the contact form's mail), checked before deploy.
+#
+# Guard: a Pages deploy replaces the WHOLE site, functions included. If
+# apps/marketing/functions/api/contact.* is ever missing, this workflow
+# refuses to deploy, because shipping without it would break the signup form.
+# Docs, rollback: docs/deployment/MARKETING-SITE.md
+
+name: deploy-marketing
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "apps/marketing/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-marketing
+  cancel-in-progress: false
+
+jobs:
+  # Runs before the approval prompt, so a deploy that can't be safe never
+  # asks the owner to approve it.
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Contact-form function must be in git
+        run: |
+          if ! compgen -G "apps/marketing/functions/api/contact.*" >/dev/null; then
+            echo "::error::apps/marketing/functions/api/contact.(js|ts) is missing. The live signup form posts to /api/contact, a Pages Function. Deploying without it would remove it and break the form. Add the function first (docs/deployment/MARKETING-SITE.md#the-contact-form)."
+            echo "### deploy-marketing refused — /api/contact function not in git yet" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+      - name: Link check
+        run: node scripts/ci/check-marketing-links.mjs apps/marketing/public
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Contact function tests
+        working-directory: apps/marketing
+        run: node --test test/*.test.mjs
+
+  deploy:
+    needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    env:
+      SHA: ${{ github.sha }}
+      SITE: https://opalswift.com
+    steps:
+      - name: Check secrets
+        id: gate
+        env:
+          HAS_CF: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
+        run: |
+          if [ "$HAS_CF" != "true" ]; then
+            echo "::notice::CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID not set in the 'production' environment — marketing deploy skipped."
+            echo "### deploy-marketing skipped — Cloudflare secrets not configured" >> "$GITHUB_STEP_SUMMARY"
+            echo "ready=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          echo "ready=true" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        if: steps.gate.outputs.ready == 'true'
+        with:
+          fetch-depth: 0
+
+      - name: Must be a commit on main
+        if: steps.gate.outputs.ready == 'true'
+        run: |
+          git fetch -q origin main
+          git merge-base --is-ancestor "$SHA" origin/main || { echo "::error::$SHA is not on main — marketing deploys come from main only."; exit 1; }
+
+      - uses: pnpm/action-setup@v2
+        if: steps.gate.outputs.ready == 'true'
+      - uses: actions/setup-node@v4
+        if: steps.gate.outputs.ready == 'true'
+        with:
+          node-version: "22"
+          cache: "pnpm"
+      # Only this package: wrangler is its one devDependency.
+      - run: pnpm install --frozen-lockfile --filter @opalswift/marketing
+        if: steps.gate.outputs.ready == 'true'
+
+      # The contact function sends mail with this secret. Names only are listed.
+      - name: RESEND_API_KEY must be set on the Pages project
+        if: steps.gate.outputs.ready == 'true'
+        working-directory: apps/marketing
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          WRANGLER_SEND_METRICS: "false"
+        run: |
+          set -uo pipefail
+          if ! pnpm exec wrangler pages secret list --project-name=opalswift > pages-secrets.txt 2> pages-secrets.err; then
+            echo "::error::Could not list the Pages project's secrets. If this is an authentication error, the API token needs 'Account · Cloudflare Pages · Edit' (docs/deployment/MARKETING-SITE.md#cloudflare-token-permission)."
+            tail -5 pages-secrets.err; exit 1
+          fi
+          if ! grep -qw RESEND_API_KEY pages-secrets.txt; then
+            echo "::error::RESEND_API_KEY is not set on the Pages project 'opalswift' (production). The contact form could not send mail. Add it: Workers & Pages → opalswift → Settings → Variables and Secrets → Add → Secret."
+            exit 1
+          fi
+          echo "RESEND_API_KEY is set on the Pages project."
+
+      - name: Stamp release id
+        if: steps.gate.outputs.ready == 'true'
+        # Not committed; the smoke step looks for it on the live site.
+        run: echo "$SHA" > apps/marketing/public/release.txt
+
+      # wrangler from the package's devDependency (never wrangler-action, which
+      # falls back to `npm i` and breaks inside a pnpm workspace). Run from
+      # apps/marketing so wrangler picks up ./functions.
+      - name: wrangler pages deploy (opalswift)
+        if: steps.gate.outputs.ready == 'true'
+        working-directory: apps/marketing
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          WRANGLER_SEND_METRICS: "false"
+        run: >-
+          pnpm exec wrangler pages deploy public
+          --project-name=opalswift --branch=main
+          --commit-hash="$SHA" --commit-message="deploy-marketing ${SHA::7}" --commit-dirty=true
+
+      - name: Smoke (home page, this release live, contact endpoint)
+        if: steps.gate.outputs.ready == 'true'
+        run: |
+          set -uo pipefail
+          ok=1
+          # Download to a file, THEN grep (never `curl | grep -q` under pipefail).
+          code=$(curl -s --compressed -o home.html -w '%{http_code}' --retry 3 --retry-delay 5 "$SITE/" || echo 000)
+          if [ "$code" = 200 ] && grep -q "OpalSwift" home.html; then echo "$SITE/ → 200, OpalSwift"; else echo "::error::$SITE/ → $code"; ok=0; fi
+
+          live=0
+          for _ in 1 2 3 4 5 6 7 8 9; do
+            code=$(curl -s -o release.txt -w '%{http_code}' "$SITE/release.txt?t=$RANDOM" || echo 000)
+            if [ "$code" = 200 ] && grep -q "$SHA" release.txt; then live=1; break; fi
+            sleep 10
+          done
+          echo "release ${SHA::7} live: $([ $live = 1 ] && echo yes || echo NO)"
+          [ $live = 1 ] || { echo "::error::$SITE/release.txt does not carry $SHA — the deploy went to a preview, or is not served yet."; ok=0; }
+
+          # An empty POST makes the function answer with JSON (it fails before
+          # reading any data, so no lead is created). 405 means it is gone.
+          code=$(curl -s -X POST -o contact.out -w '%{http_code}' "$SITE/api/contact" || echo 000)
+          echo "POST /api/contact (empty) → $code"
+          if [ "$code" = 405 ] || [ "$code" = 404 ]; then echo "::error::/api/contact is not answering — the contact form is broken."; ok=0; fi
+
+          echo "### Smoke: home 200, release ${SHA::7} live, /api/contact answering — $([ $ok = 1 ] && echo all OK || echo FAILED)" >> "$GITHUB_STEP_SUMMARY"
+          [ $ok = 1 ] || { echo "::error::Deployed, but the smoke check failed. Roll back: Cloudflare → Workers & Pages → opalswift → Deployments → Rollback (docs/deployment/MARKETING-SITE.md)."; exit 1; }

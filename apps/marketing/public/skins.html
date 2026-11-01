@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OpalSwift — בחרו את התחום שלך / Choose Your Craft</title>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800&family=Heebo:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  html{scroll-behavior:smooth;scroll-padding-top:70px}
+:root{--teal:#21D1C2;--indigo:#5B6CFF;--violet:#7B61FF;--dark:#0B1437;--slate:#5A6178;--bg:#F7F8FC;--white:#fff;--radius:14px;--shadow:0 4px 24px rgba(11,20,55,.09)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Heebo','Inter',system-ui,sans-serif;background:var(--bg);color:var(--dark);line-height:1.6;overflow-x:hidden}
+body[dir=ltr]{font-family:'Inter',system-ui,sans-serif}
+h1,h2,h3,.brand{font-family:'Rubik',sans-serif;line-height:1.15}
+a{text-decoration:none;color:inherit}
+.wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+.grad-text{background:linear-gradient(135deg,var(--teal),var(--indigo),var(--violet));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.btn{display:inline-flex;align-items:center;gap:8px;border:0;border-radius:999px;padding:14px 26px;font-weight:600;font-size:16px;cursor:pointer;text-decoration:none;transition:.2s;font-family:'Rubik',sans-serif}
+.btn-primary{background:linear-gradient(135deg,var(--teal),var(--indigo));color:#fff}
+.btn-ghost{background:transparent;color:var(--indigo);border:2px solid var(--indigo)}
+
+/* NAV */
+nav{position:sticky;top:0;z-index:99;background:rgba(255,255,255,.96);backdrop-filter:blur(12px);border-bottom:1px solid #edf0f7;padding:14px 0}
+.nav-in{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.logo{display:flex;align-items:center;gap:9px;font-weight:800;font-size:17px;color:var(--dark)}
+.gem{width:32px;height:32px}
+.nav-links{display:flex;gap:20px;font-size:14px;font-weight:500;color:var(--slate)}
+.nav-links a:hover{color:var(--indigo)}
+.nav-right{display:flex;align-items:center;gap:12px}
+.lang-toggle{display:flex;border:1px solid rgba(11,20,55,.15);border-radius:999px;overflow:hidden;font-family:'Rubik';font-size:13px;font-weight:600}
+.lang-toggle button{background:none;border:none;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;color:var(--slate);transition:.15s;font-family:'Rubik'}
+.lang-toggle button.active{background:var(--dark);color:#fff}
+  @media(max-width:640px){.lang-toggle button.active{display:none}.lang-toggle{border-radius:8px}}
+
+/* HERO */
+.skins-hero{padding:72px 0 56px;text-align:center;background:linear-gradient(160deg,#f8f9ff 0%,#edf5ff 100%)}
+.kicker{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--indigo);margin-bottom:14px}
+.skins-hero h1{font-size:clamp(30px,5vw,52px);font-weight:800;line-height:1.15;color:var(--dark);margin-bottom:18px}
+.skins-hero .sub{font-size:17px;color:var(--slate);max-width:580px;margin:0 auto 44px;line-height:1.65}
+
+/* ARCHETYPE PILLS */
+.arch-row{display:flex;gap:20px;justify-content:center;flex-wrap:wrap}
+.arch-pill{background:#fff;border-radius:14px;padding:16px 24px;box-shadow:var(--shadow);border:2px solid transparent;display:flex;flex-direction:column;gap:4px;min-width:260px;text-align:start}
+.arch-pill.gig{border-color:var(--teal)}
+.arch-pill.roster{border-color:var(--indigo)}
+.ap-top{display:flex;align-items:center;gap:10px}
+.ap-icon{font-size:24px}
+.ap-name{font-size:17px;font-weight:800;color:var(--dark)}
+.ap-badge{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:3px 9px;border-radius:5px;margin-inline-start:4px}
+.gig .ap-badge{background:#e6faf8;color:#0a9e8e}
+.roster .ap-badge{background:#eef0ff;color:var(--indigo)}
+.ap-desc{font-size:13px;color:var(--slate);font-weight:400;line-height:1.5}
+
+/* SKIN SECTIONS */
+.skin-section{padding:64px 0}
+.skin-section.roster-section{background:#fff}
+.sec-head{margin-bottom:36px}
+.arch-tag{display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:5px 12px;border-radius:6px;margin-bottom:12px}
+.arch-tag.gig{background:#e6faf8;color:#0a9e8e}
+.arch-tag.roster{background:#eef0ff;color:var(--indigo)}
+.sec-head h2{font-size:clamp(22px,3vw,32px);font-weight:800;line-height:1.2;margin-bottom:8px}
+.sec-head p{font-size:15px;color:var(--slate)}
+
+/* SKIN CARDS */
+.skin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.skin-card{background:#fff;border-radius:var(--radius);padding:24px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:14px;transition:.2s;border:2px solid transparent;position:relative}
+.roster-section .skin-card{background:#f9f9ff}
+.skin-card:hover{transform:translateY(-3px);border-color:#e4e6f7;box-shadow:0 8px 32px rgba(27,36,64,.13)}
+.skin-card.has-link{cursor:pointer}
+
+.card-top{display:flex;justify-content:space-between;align-items:flex-start}
+.card-icon{font-size:38px;line-height:1}
+.status-badge{font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;white-space:nowrap}
+.badge-live{background:#d1faf4;color:#0a8c7a}
+.badge-soon{background:#eef0ff;color:var(--indigo)}
+
+.card-names{display:flex;flex-direction:column;gap:2px}
+.card-he{font-size:20px;font-weight:800;color:var(--dark)}
+.card-en{font-size:13px;color:var(--slate);font-weight:500}
+
+.card-tagline{font-size:14px;color:var(--slate);line-height:1.55;border-top:1px solid #edf0f7;padding-top:12px}
+
+/* Killer feature */
+.killer{background:linear-gradient(135deg,#f0fdfc,#edf0ff);border-radius:9px;padding:11px 13px;border-inline-start:3px solid var(--teal)}
+.killer-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--teal);margin-bottom:4px}
+.killer-text{font-size:13px;font-weight:600;color:var(--dark)}
+
+/* Feature chips */
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:12px;font-weight:500;background:#f0f1f8;color:var(--dark);padding:4px 10px;border-radius:5px;border:1px solid #e4e7f2}
+
+/* Card CTA */
+.card-cta{margin-top:auto;padding-top:8px}
+.card-cta a{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:700;color:var(--indigo);transition:gap .15s}
+.card-cta a:hover{gap:10px}
+.card-cta a.teal{color:var(--teal)}
+.card-cta .coming-text{font-size:13px;color:var(--slate);font-style:italic}
+
+/* ALL SKINS GET */
+.all-features{padding:72px 0;background:linear-gradient(135deg,var(--dark) 0%,#2a3560 100%);color:#fff}
+.all-features .kicker{color:var(--teal)}
+.all-features .sec-head h2{color:#fff}
+.all-features .sec-head p{color:rgba(255,255,255,.6)}
+.feat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-top:32px}
+.feat-item{background:rgba(255,255,255,.07);border-radius:11px;padding:16px;display:flex;gap:12px}
+.feat-icon{font-size:22px;flex-shrink:0;margin-top:2px}
+.feat-text b{display:block;font-size:14px;font-weight:700;color:#fff;margin-bottom:3px}
+.feat-text span{font-size:12px;color:rgba(255,255,255,.5);line-height:1.45}
+
+/* FINAL CTA */
+.skins-cta{padding:80px 0;text-align:center;background:#fff}
+.skins-cta h2{font-size:clamp(26px,4vw,42px);font-weight:800;margin-bottom:14px}
+.skins-cta p{font-size:17px;color:var(--slate);margin-bottom:32px}
+.cta-row{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+
+/* FOOTER */
+footer{background:var(--dark);color:rgba(255,255,255,.5);padding:28px 0;font-size:13px;text-align:center}
+
+@media(max-width:640px){
+  .skin-grid{grid-template-columns:1fr}
+  .arch-row{flex-direction:column;align-items:stretch}
+  .arch-pill{min-width:unset}
+  .nav-links{display:none}
+  .feat-grid{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="opal-nav"></nav>
+
+<!-- HERO -->
+<section class="skins-hero">
+  <div class="wrap">
+    <div class="kicker" data-he="תחומים ועורות עיצוב" data-en="Craft Skins">תחומים ועורות עיצוב</div>
+    <h1 data-he='בחרו את התחום שלכם —<br><span class="grad-text">המערכת כבר מסודרת בשבילכם.</span>' data-en='Choose your craft —<br><span class="grad-text">the system already knows it.</span>'>בחרו את התחום שלכם —<br><span class="grad-text">המערכת כבר מסודרת בשבילכם.</span></h1>
+    <p class="sub" data-he="לא כלי ריק שצריך להגדיר. כל תחום מגיע עם התבניות, מסמכי הדפוס, לוח הזמנים ותהליך הגבייה שמתאים לו — מוכן לעבוד." data-en="Not a blank tool to configure. Every craft arrives pre-loaded with the right templates, documents, schedule and billing flow — ready to go.">לא כלי ריק שצריך להגדיר. כל תחום מגיע עם התבניות, מסמכי הדפוס, לוח הזמנים ותהליך הגבייה שמתאים לו — מוכן לעבוד.</p>
+
+    <div class="arch-row">
+      <a href="#onetime-section" class="arch-pill gig" style="text-decoration:none;color:inherit;cursor:pointer">
+        <div class="ap-top">
+          <span class="ap-icon">🎯</span>
+          <span class="ap-name" data-he='פרויקטים חד-פעמיים <span class="ap-badge">חד-פעמי</span>' data-en='One-Time Projects <span class="ap-badge">ONE-TIME</span>'>פרויקטים חד-פעמיים <span class="ap-badge">חד-פעמי</span></span>
+        </div>
+        <p class="ap-desc" data-he="עבודה אחת, תשלום אחד, עוברים הלאה — צלמים · אירועים · עיצוב · יופי" data-en="One job, one payment, move on — Photographers · Event Planners · Designers · Beauticians">עבודה אחת, תשלום אחד, עוברים הלאה — צלמים · אירועים · עיצוב · יופי</p>
+      </a>
+      <a href="#ongoing-section" class="arch-pill roster" style="text-decoration:none;color:inherit;cursor:pointer">
+        <div class="ap-top">
+          <span class="ap-icon">🔄</span>
+          <span class="ap-name" data-he='שירותים קבועים <span class="ap-badge">שוטף</span>' data-en='Regular Services <span class="ap-badge">MONTHLY</span>'>שירותים קבועים <span class="ap-badge">שוטף</span></span>
+        </div>
+        <p class="ap-desc" data-he="חיוב חודשי אוטומטי לתלמידים וקבוצות — חונכות · כושר אישי · מורי ריקוד · מאמני שחייה" data-en="Automatic monthly billing for students and groups — Tutoring · Personal Training · Dance Teachers · Swim Coaches">חיוב חודשי אוטומטי לתלמידים וקבוצות — חונכות · כושר אישי · מורי ריקוד · מאמני שחייה</p>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ===== GIG SKINS ===== -->
+<section class="skin-section" id="onetime-section">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="arch-tag gig" data-he="🎯 פרויקטים חד-פעמיים" data-en="🎯 One-Time Projects">🎯 פרויקטים חד-פעמיים</div>
+      <h2 data-he="עבודה לפי פרויקט — כסף לפני מסירה" data-en="Project-based work — money before delivery">עבודה לפי פרויקט — כסף לפני מסירה</h2>
+      <p data-he="מקדמה שמגנה עליך, יתרה שנגבית לפני שמוסרים, חשבוניות תקינות שנוצרות אוטומטית." data-en="Deposits that protect you, balances collected before delivery, compliant invoices created automatically.">מקדמה שמגנה עליך, יתרה שנגבית לפני שמוסרים, חשבוניות תקינות שנוצרות אוטומטית.</p>
+    </div>
+
+    <div class="skin-grid">
+
+
+      <!-- Photographer -->
+      <div class="skin-card has-link" onclick="location.href='photographer.html'">
+        <div class="card-top">
+          <span class="card-icon">📸</span>
+          <span class="status-badge badge-live" data-he="LIVE ✓" data-en="LIVE ✓">LIVE ✓</span>
+        </div>
+        <div class="card-names">
+          <div class="card-he" data-he="צלמים ואירועים" data-en="Photographer & Events">צלמים ואירועים</div>
+          <div class="card-en" data-he="חתונות · בר/בת מצווה · אירועים · סטודיו" data-en="Weddings · Bar/Bat Mitzvah · Events · Studio">חתונות · בר/בת מצווה · אירועים · סטודיו</div>
+        </div>
+      </div>
+
+
+      <!-- Trades -->
+      <div class="skin-card has-link" onclick="location.href='trades.html'">
+        <div class="card-top">
+          <span class="card-icon">🔧</span>
+        </div>
+        <div class="card-names">
+          <div class="card-he" data-he="בעל מקצוע / קבלן" data-en="Tradesperson">בעל מקצוע / קבלן</div>
+          <div class="card-en" data-he="אינסטלטור · חשמלאי · נגר · צבעי · מזגן" data-en="Plumber · Electrician · Carpenter · HVAC · Painter">אינסטלטור · חשמלאי · נגר · צבעי · מזגן</div>
+        </div>
+      </div>
+
+
+
+      <!-- Beautician & Sheitel -->
+      <div class="skin-card has-link" onclick="location.href='beautician.html'">
+        <div class="card-top">
+          <span class="card-icon">💅</span>
+        </div>
+        <div class="card-names">
+          <div class="card-he" data-he="קוסמטיקאית / שייטל" data-en="Beautician & Sheitel">קוסמטיקאית / שייטל</div>
+          <div class="card-en" data-he="טיפולי פנים · עיצוב גבות · מייקאפ · שייטל" data-en="Facials · Brow design · Makeup · Sheitel">טיפולי פנים · עיצוב גבות · מייקאפ · שייטל</div>
+        </div>
+      </div>
+
+
+      <!-- Designer -->
+      <div class="skin-card has-link" onclick="location.href='designer.html'">
+        <div class="card-top">
+          <span class="card-icon">✏️</span>
+          <span class="status-badge badge-live" data-he="LIVE ✓" data-en="LIVE ✓">LIVE ✓</span>
+        </div>
+        <div class="card-names">
+          <div class="card-he" data-he="מעצבים ומשווקים" data-en="Designer & Marketer">מעצבים ומשווקים</div>
+          <div class="card-en" data-he="עיצוב גרפי · שיווק · UX/UI · תוכן" data-en="Graphic Design · Marketing · UX/UI · Content">עיצוב גרפי · שיווק · UX/UI · תוכן</div>
+        </div>
+      </div>
+
+
+      <!-- Interior Design -->
+      <div class="skin-card has-link" onclick="location.href='interior.html'">
+        <div class="card-top">
+          <span class="card-icon">🛋️</span>
+        </div>
+        <div class="card-names">
+          <div class="card-he" data-he="מעצבי פנים" data-en="Interior Design">מעצבי פנים</div>
+          <div class="card-en" data-he="עיצוב דירות · ליווי פרויקט · ייעוץ" data-en="Residential design · project management · consultation">עיצוב דירות · ליווי פרויקט · ייעוץ</div>
+        </div>
+      </div>
+
+
+      <!-- Adviser -->
+      <div class="skin-card has-link" onclick="location.href='adviser.html'">
+        <div class="card-top">
+          <span class="card-icon">💼</span>
+          <span class="status-badge badge-live" data-he="LIVE ✓" data-en="LIVE ✓">LIVE ✓</span>
+        </div>
+        <div class="card-names">
+          <div class="card-he" data-he="יועץ/ת עצמאי/ת" data-en="Independent Adviser">יועץ/ת עצמאי/ת</div>
+          <div class="card-en" data-he="ייעוץ עסקי · HR · שיווק · ארגוני · קריירה" data-en="Business · HR · Marketing · Strategy · Career">ייעוץ עסקי · HR · שיווק · ארגוני · קריירה</div>
+        </div>
+      </div>
+
+
+      <!-- Workshops -->
+      <div class="skin-card has-link" onclick="location.href='workshops.html'">
+        <div class="card-top">
+          <span class="card-icon">🎓</span>
+          <span class="status-badge badge-live" data-he="LIVE ✓" data-en="LIVE ✓">LIVE ✓</span>
+        </div>
+        <div class="card-names">
+          <div class="card-he" data-he="מנחה סדנאות" data-en="Workshop Facilitator">מנחה סדנאות</div>
+          <div class="card-en" data-he="סדנאות בישול · צילום · רווחה · עסקים · יצירה" data-en="Cooking · Photography · Wellness · Business · Craft">סדנאות בישול · צילום · רווחה · עסקים · יצירה</div>
+        </div>
+      </div>
+
+
+      <!-- Event Planner -->
+      <div class="skin-card has-link" onclick="location.href='event-planner.html'">
+        <div class="card-top">
+          <span class="card-icon">🎪</span>
+          <span class="status-badge badge-live" data-he="LIVE ✓" data-en="LIVE ✓">LIVE ✓</span>
+        </div>
+        <div class="card-names">
+          <div class="card-he" data-he="מארגן/ת אירועים" data-en="Event Planner">מארגן/ת אירועים</div>
+          <div class="card-en" data-he="בר/בת מצווה · חתונות · אירועי חברות" data-en="Bar/Bat Mitzvah · Weddings · Corporate events">בר/בת מצווה · חתונות · אירועי חברות</div>
+        </div>
+      </div><!-- /Event Planner -->
+
+      <!-- Sofer Stam -->
+      <div class="skin-card has-link" onclick="location.href='sofer-stam.html'">
+        <div class="card-top">
+          <span class="card-icon">✍️</span>
+          <span class="status-badge badge-live" data-he="LIVE ✓" data-en="LIVE ✓">LIVE ✓</span>
+        </div>
+        <div class="card-names">
+          <div class="card-he" data-he='סופר סת"ם' data-en="Sofer STaM">סופר סת"ם</div>
+          <div class="card-en" data-he="ספרי תורה · מזוזות · תפילין · מגילות" data-en="Torah scrolls · Mezuzot · Tefillin · Megilot">ספרי תורה · מזוזות · תפילין · מגילות</div>
+        </div>
+      </div><!-- /Sofer STaM -->
+    </div><!-- /skin-grid GIG -->
+  </div>
+</section>
+
+<!-- ===== ROSTER SKINS ===== -->
+<section class="skin-section roster-section" id="ongoing-section">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="arch-tag roster" data-he="🔄 שירותים שוטפים" data-en="🔄 Ongoing Services">🔄 שירותים שוטפים</div>
+      <h2 data-he="שירות שוטף — הוראת קבע שרצה לבד" data-en="Recurring services — standing orders that run themselves">שירות שוטף — הוראת קבע שרצה לבד</h2>
+      <p data-he="לקוחות קבועים, חיוב אוטומטי בתחילת כל חודש, תזכורות שנשלחות בלי שתגעו בטלפון." data-en="Steady clients, automatic billing at the start of every month, reminders that go out without lifting a finger.">לקוחות קבועים, חיוב אוטומטי בתחילת כל חודש, תזכורות שנשלחות בלי שתגעו בטלפון.</p>
+    </div>
+
+    <div class="skin-grid">
+
+
+      <!-- Private Tutor -->
+      <div class="skin-card has-link" onclick="location.href='private-tutor.html'">
+        <div class="card-top">
+          <span class="card-icon">📚</span>
+          <span class="status-badge badge-live" data-he="LIVE ✓" data-en="LIVE ✓">LIVE ✓</span>
+        </div>
+        <div class="card-names">
+          <div class="card-he" data-he="מורה פרטי/ת" data-en="Private Tutor">מורה פרטי/ת</div>
+          <div class="card-en" data-he="מתמטיקה · אנגלית · בגרויות · כל מקצוע" data-en="Maths · English · Bagrut · All subjects">מתמטיקה · אנגלית · בגרויות · כל מקצוע</div>
+        </div>
+      </div>
+
+
+      <!-- Classes / Chug -->
+      <div class="skin-card has-link" onclick="location.href='classes.html'">
+        <div class="card-top">
+          <span class="card-icon">🎓</span>
+          <span class="status-badge badge-live" data-he="LIVE ✓" data-en="LIVE ✓">LIVE ✓</span>
+        </div>
+        <div class="card-names">
+          <div class="card-he" data-he="מדריך/ת חוג" data-en="Class Instructor">מדריך/ת חוג</div>
+          <div class="card-en" data-he="בלט · ג׳ודו · אמנות · גימנסטיקה · כל חוג" data-en="Ballet · Judo · Art · Gymnastics · Any class">בלט · ג׳ודו · אמנות · גימנסטיקה · כל חוג</div>
+        </div>
+      </div>
+
+
+      <!-- Personal Trainer -->
+      <div class="skin-card has-link" onclick="location.href='personal-trainer.html'">
+        <div class="card-top">
+          <span class="card-icon">💪</span>
+          <span class="status-badge badge-live" data-he="LIVE ✓" data-en="LIVE ✓">LIVE ✓</span>
+        </div>
+        <div class="card-names">
+          <div class="card-he" data-he="מאמן/ת כושר" data-en="Personal Trainer">מאמן/ת כושר</div>
+          <div class="card-en" data-he="כושר אישי · יוגה · פילאטיס · קרוספיט" data-en="Personal training · Yoga · Pilates · CrossFit">כושר אישי · יוגה · פילאטיס · קרוספיט</div>
+        </div>
+      </div>
+
+
+      <!-- Driving Instructor -->
+      <div class="skin-card has-link" onclick="location.href='driving-instructor.html'">
+        <div class="card-top">
+          <span class="card-icon">🚗</span>
+          <span class="status-badge badge-live" data-he="LIVE ✓" data-en="LIVE ✓">LIVE ✓</span>
+        </div>
+        <div class="card-names">
+          <div class="card-he" data-he="מורה נהיגה" data-en="Driving Instructor">מורה נהיגה</div>
+          <div class="card-en" data-he="פנימיות · כבישים · בחינות · רכב כפול" data-en="Theory · Road · Test prep · Dual-control">פנימיות · כבישים · בחינות · רכב כפול</div>
+        </div>
+      </div>
+
+
+
+      <!-- Therapist & Coach -->
+      <div class="skin-card has-link" onclick="location.href='therapist.html'">
+        <div class="card-top">
+          <span class="card-icon">🧠</span>
+          <span class="status-badge badge-live" data-he="LIVE ✓" data-en="LIVE ✓">LIVE ✓</span>
+        </div>
+        <div class="card-names">
+          <div class="card-he" data-he="מטפלים וקואצ׳ים" data-en="Therapist & Coach">מטפלים וקואצ׳ים</div>
+          <div class="card-en" data-he="טיפול · אימון · ייעוץ · סדנאות" data-en="Therapy · Coaching · Consulting · Workshops">טיפול · אימון · ייעוץ · סדנאות</div>
+        </div>
+      </div>
+
+
+      <!-- Music Teacher -->
+      <div class="skin-card has-link" onclick="location.href='music-teacher.html'">
+        <div class="card-top">
+          <span class="card-icon">🎵</span>
+          <span class="status-badge badge-live" data-he="LIVE ✓" data-en="LIVE ✓">LIVE ✓</span>
+        </div>
+        <div class="card-names">
+          <div class="card-he" data-he="מורה למוזיקה" data-en="Music Teacher">מורה למוזיקה</div>
+          <div class="card-en" data-he="פסנתר · גיטרה · כינור · שירה · תיאוריה" data-en="Piano · Guitar · Violin · Voice · Theory">פסנתר · גיטרה · כינור · שירה · תיאוריה</div>
+        </div>
+      </div>
+
+
+      <!-- Dance Teacher -->
+      <div class="skin-card has-link" onclick="location.href='dance-teacher.html'">
+        <div class="card-top">
+          <span class="card-icon">🩰</span>
+          <span class="status-badge badge-live" data-he="LIVE ✓" data-en="LIVE ✓">LIVE ✓</span>
+        </div>
+        <div class="card-names">
+          <div class="card-he" data-he="מורי מחול" data-en="Dance Teacher">מורי מחול</div>
+          <div class="card-en" data-he="ג׳אז · היפ הופ · מודרני · ריקוד עכשווי" data-en="Jazz · Hip-hop · Modern · Contemporary">ג׳אז · היפ הופ · מודרני · ריקוד עכשווי</div>
+        </div>
+      </div>
+
+
+      <!-- Art Class -->
+      <div class="skin-card has-link" onclick="location.href='art-class.html'">
+        <div class="card-top">
+          <span class="card-icon">🎨</span>
+          <span class="status-badge badge-live" data-he="LIVE ✓" data-en="LIVE ✓">LIVE ✓</span>
+        </div>
+        <div class="card-names">
+          <div class="card-he" data-he="חוג אמנות" data-en="Art Class">חוג אמנות</div>
+          <div class="card-en" data-he="ציור · פיסול · קרמיקה · אמנות ילדים" data-en="Drawing · Sculpture · Ceramics · Kids art">ציור · פיסול · קרמיקה · אמנות ילדים</div>
+        </div>
+      </div>
+
+
+      <!-- Swim Coach -->
+      <div class="skin-card has-link" onclick="location.href='swim-coach.html'">
+        <div class="card-top">
+          <span class="card-icon">🏊</span>
+          <span class="status-badge badge-live" data-he="LIVE ✓" data-en="LIVE ✓">LIVE ✓</span>
+        </div>
+        <div class="card-names">
+          <div class="card-he" data-he="מורה לשחייה" data-en="Swim Coach">מורה לשחייה</div>
+          <div class="card-en" data-he="שחייה לילדים · מבוגרים · אימון תחרותי" data-en="Kids swimming · Adults · Competitive training">שחייה לילדים · מבוגרים · אימון תחרותי</div>
+        </div>
+      </div>
+    </div><!-- /skin-grid ROSTER -->
+  </div>
+</section>
+
+<!-- ===== EVERY SKIN GETS ===== -->
+<section class="all-features">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kicker" data-he="בכל תחום, בלי תוספות" data-en="Every skin, no extras">בכל תחום, בלי תוספות</div>
+      <h2 data-he="כל תחום מגיע עם הכל כלול." data-en="Every craft skin comes with everything included.">כל תחום מגיע עם הכל כלול.</h2>
+      <p data-he="הכל מוכן לשימוש. הכל בפנים — מהיום הראשון." data-en="Everything inside — from day one.">הכל מוכן לשימוש. הכל בפנים — מהיום הראשון.</p>
+    </div>
+    <div class="feat-grid">
+      <div class="feat-item">
+        <span class="feat-icon">🇮🇱</span>
+        <div class="feat-text">
+          <b data-he="מסמכים תקינים לחלוטין" data-en="Fully compliant documents">מסמכים תקינים לחלוטין</b>
+          <span data-he="מספר הקצאה · מע״מ תקין" data-en="Allocation number · VAT compliant">מספר הקצאה · מע״מ תקין</span>
+        </div>
+      </div>
+      <div class="feat-item">
+        <span class="feat-icon">📧</span>
+        <div class="feat-text">
+          <b data-he="מיילים ותזכורות תשלום" data-en="Email blasts &amp; payment reminders">מיילים ותזכורות תשלום</b>
+          <span data-he="שליחת מיילים ללקוחות · תזכורות אוטומטיות לחשבוניות פתוחות" data-en="Send emails to clients · auto-reminders for unpaid invoices">שליחת מיילים ללקוחות · תזכורות אוטומטיות לחשבוניות פתוחות</span>
+        </div>
+      </div>
+      <div class="feat-item">
+        <span class="feat-icon">↔️</span>
+        <div class="feat-text">
+          <b data-he="עברית + אנגלית מלאה" data-en="Full Hebrew + English">עברית + אנגלית מלאה</b>
+          <span data-he="RTL + LTR · מסמכים בעברית, ממשק לפי בחירה" data-en="RTL + LTR · Hebrew docs, interface your choice">RTL + LTR · מסמכים בעברית, ממשק לפי בחירה</span>
+        </div>
+      </div>
+      <div class="feat-item">
+        <span class="feat-icon">✍️</span>
+        <div class="feat-text">
+          <b data-he="טופס ויתור חתום" data-en="Digital consent waiver">טופס ויתור חתום</b>
+          <span data-he="ממשק חתימה דיגיטלי לפני שמתחילים" data-en="Digital signature flow before work starts">ממשק חתימה דיגיטלי לפני שמתחילים</span>
+        </div>
+      </div>
+      <div class="feat-item">
+        <span class="feat-icon">💳</span>
+        <div class="feat-text">
+          <b data-he="קישורי תשלום" data-en="Online payment links">קישורי תשלום</b>
+          <span data-he="אשראי, העברה בנקאית — לקוח לוחץ ומשלם" data-en="Credit, bank transfer — client taps and pays">אשראי, העברה בנקאית — לקוח לוחץ ומשלם</span>
+        </div>
+      </div>
+      <div class="feat-item">
+        <span class="feat-icon">🔔</span>
+        <div class="feat-text">
+          <b data-he="נודניק — גביית חוב אוטומטית" data-en="Nodnik — automated dunning">נודניק — גביית חוב אוטומטית</b>
+          <span data-he="תזכורות מדורגות עד שמשלמים" data-en="Escalating reminders until paid">תזכורות מדורגות עד שמשלמים</span>
+        </div>
+      </div>
+      <div class="feat-item">
+        <span class="feat-icon">📊</span>
+        <div class="feat-text">
+          <b data-he="ייצוא לרו״ח" data-en="Accountant export">ייצוא לרו״ח</b>
+          <span data-he="רשומות מסודרות ונגישות" data-en="Records organized and accessible">רשומות מסודרות ונגישות</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== FINAL CTA ===== -->
+<section class="skins-cta">
+  <div class="wrap">
+    <div class="kicker" data-he="מוכנים להתחיל?" data-en="Ready to start?">מוכנים להתחיל?</div>
+    <h2 data-he='הצטרפו לבטא.<br><span class="grad-text">מוכן לתחום שלכם — מהיום הראשון.</span>' data-en='Join the Beta.<br><span class="grad-text">Ready for your craft — from day one.</span>'>הצטרפו לבטא.<br><span class="grad-text">מוכן לתחום שלכם — מהיום הראשון.</span></h2>
+    <p data-he="בוחרים תחום, ונכנסים למערכת שכבר יודעת מה אתם צריכים. בלי הגדרות, בלי ייעוץ, בלי כאב ראש." data-en="Pick your craft, and step into a system that already knows what you need. No setup, no advice, no headache.">בוחרים תחום, ונכנסים למערכת שכבר יודעת מה אתם צריכים. בלי הגדרות, בלי ייעוץ, בלי כאב ראש.</p>
+    <div class="cta-row">
+      <a href="index.html#pricing" class="btn btn-primary" data-he="להתחיל 14 יום חינם" data-en="Start your 14-day free trial">להתחיל 14 יום חינם</a>
+      <a href="index.html" class="btn btn-ghost" data-he="חזרה לעמוד הבית" data-en="Back to home">חזרה לעמוד הבית</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="text-align:center;padding:0 0 18px"><img src="opalswift_gemstone_final.png" alt="" width="72" height="72" style="opacity:.88;filter:drop-shadow(0 3px 12px rgba(123,97,255,.28))"></div>
+  <div class="wrap">
+    <span data-he="© 2026 OpalSwift · הניירת רצה לבד." data-en="© 2026 OpalSwift · Admin runs itself.">© 2026 OpalSwift · הניירת רצה לבד.</span>
+  </div>
+</footer>
+
+<script src="topbar.js"></script>
+</body>
+</html>

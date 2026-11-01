@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>OpalSwift לחוגים — ניהול כיתות ותשלומים הורים על טייס אוטומטי</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800&family=Heebo:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0B1437; --teal:#21D1C2; --indigo:#5B6CFF; --violet:#7B61FF;
+    --blush:#FF8FB1; --canvas:#F7F8FC; --cloud:#FFFFFF; --slate:#5A6178;
+    --opal:linear-gradient(120deg,#21D1C2,#5B6CFF,#7B61FF);
+    --shadow:0 18px 50px -18px rgba(11,20,55,.35);
+    --radius:20px;
+    --accent:#10B981;
+    --accent-light:rgba(16,185,129,.12);
+    --accent-mid:rgba(16,185,129,.22);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{font-family:'Heebo','Inter',system-ui,sans-serif;color:var(--ink);background:var(--canvas);line-height:1.6;overflow-x:hidden}
+  body[dir=ltr]{font-family:'Inter',system-ui,sans-serif}
+  h1,h2,h3,.brand{font-family:'Rubik',sans-serif;line-height:1.15}
+  .wrap{max-width:1140px;margin:0 auto;padding:0 24px}
+  .grad-text{background:var(--opal);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .btn{display:inline-flex;align-items:center;gap:8px;border:0;border-radius:999px;padding:14px 26px;font-weight:600;font-size:16px;cursor:pointer;text-decoration:none;transition:.2s;font-family:'Rubik',sans-serif}
+  .btn-primary{background:var(--opal);color:#fff;box-shadow:0 10px 24px -8px rgba(91,108,255,.6)}
+  .btn-primary:hover{transform:translateY(-2px)}
+  .btn-ghost.dark{color:var(--ink);border:1px solid rgba(11,20,55,.15);background:#fff}
+
+  nav{position:sticky;top:0;z-index:50;background:rgba(247,248,252,.85);backdrop-filter:blur(12px);border-bottom:1px solid rgba(11,20,55,.06)}
+  .nav-in{display:flex;align-items:center;justify-content:space-between;height:70px}
+  .logo{display:flex;align-items:center;gap:10px;font-family:'Rubik';font-weight:800;font-size:22px;letter-spacing:-0.5px;background:var(--opal);-webkit-background-clip:text;background-clip:text;color:transparent;text-decoration:none}
+  .logo .gem{width:30px;height:30px}
+  .logo .sub{font-size:13px;font-weight:600;color:var(--accent);padding-inline-start:8px;border-inline-start:1px solid rgba(16,185,129,.3);margin-inline-start:4px}
+  .nav-cta{display:flex;gap:12px;align-items:center}
+  .lang-toggle{display:flex;border:1px solid rgba(11,20,55,.15);border-radius:999px;overflow:hidden;font-family:'Rubik';font-size:13px;font-weight:600}
+  .lang-toggle button{border:0;background:transparent;padding:7px 14px;cursor:pointer;color:var(--slate)}
+  .lang-toggle button.active{background:var(--ink);color:#fff}
+
+  .hero{position:relative;background:radial-gradient(1200px 600px at 80% -10%,rgba(123,97,255,.18),transparent),radial-gradient(900px 500px at 0% 10%,rgba(33,209,194,.16),transparent);padding:74px 0 56px}
+  .hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:50px;align-items:center}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid rgba(16,185,129,.2);box-shadow:var(--shadow);padding:7px 14px;border-radius:999px;font-size:13px;font-weight:600;color:var(--accent);margin-bottom:22px;font-family:'Rubik'}
+  .hero h1{font-size:50px;font-weight:800;letter-spacing:-1px;margin-bottom:18px}
+  .hero p.lead{font-size:19px;color:var(--slate);max-width:520px;margin-bottom:28px}
+  .hero-cta{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+  .trust{font-size:14px;color:var(--slate)}
+
+  .mock{background:#fff;border-radius:24px;box-shadow:var(--shadow);padding:22px;position:relative}
+  .mock .bar{height:10px;width:70px;border-radius:6px;background:linear-gradient(90deg,var(--accent),var(--teal));margin-bottom:16px}
+  .mock-row{display:flex;justify-content:space-between;align-items:center;padding:14px;border:1px solid rgba(11,20,55,.07);border-radius:14px;margin-bottom:12px}
+  .mock-row .l{display:flex;align-items:center;gap:12px}
+  .dot{width:38px;height:38px;border-radius:12px;background:var(--canvas);display:flex;align-items:center;justify-content:center;font-size:18px}
+  .pill{font-size:12px;font-weight:700;padding:5px 12px;border-radius:999px;font-family:'Rubik'}
+  .pill.ok{background:rgba(33,209,194,.15);color:#0a8f84}
+  .pill.auto{background:rgba(91,108,255,.13);color:var(--indigo)}
+  .pill.wait{background:rgba(255,143,177,.18);color:#c2456b}
+  .mock-foot{display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding:14px;background:var(--ink);border-radius:14px;color:#fff}
+  .mock-foot .amt{font-family:'Rubik';font-weight:800;font-size:22px}
+  .float-badge{position:absolute;bottom:-18px;inset-inline-start:-18px;background:#fff;box-shadow:var(--shadow);border-radius:14px;padding:10px 14px;font-size:13px;font-weight:700;font-family:'Rubik';display:flex;align-items:center;gap:8px}
+
+  section.block{padding:66px 0}
+  .sec-head{text-align:center;max-width:680px;margin:0 auto 44px}
+  .sec-head .kicker{font-family:'Rubik';font-weight:700;color:var(--accent);font-size:14px;letter-spacing:.5px;text-transform:uppercase;margin-bottom:12px}
+  .sec-head h2{font-size:36px;font-weight:800;letter-spacing:-.5px;margin-bottom:14px}
+  .sec-head p{font-size:18px;color:var(--slate)}
+
+  .cards3{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+  .card{background:#fff;border:1px solid rgba(11,20,55,.06);border-radius:var(--radius);padding:28px;box-shadow:0 8px 30px -20px rgba(11,20,55,.3)}
+  .card .ic{width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--accent-light),var(--accent-mid));display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:18px}
+  .card h3{font-size:20px;margin-bottom:10px}
+  .card p{color:var(--slate);font-size:15.5px}
+
+  .flow{background:var(--ink);color:#fff;border-radius:32px;padding:50px;margin:0 24px}
+  .flow .sec-head h2{color:#fff}.flow .sec-head p{color:rgba(255,255,255,.7)}
+  .flow-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
+  .flow-step{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:20px 16px;text-align:center}
+  .flow-step .em{font-size:26px;display:block;margin-bottom:10px}
+  .flow-step b{font-family:'Rubik';font-size:14.5px;display:block;margin-bottom:5px}
+  .flow-step small{color:rgba(255,255,255,.65);font-size:12.5px}
+
+  .preset{display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:880px;margin:0 auto}
+  .preset-item{display:flex;gap:14px;align-items:flex-start;background:#fff;border:1px solid rgba(11,20,55,.07);border-radius:14px;padding:18px}
+  .preset-item .pe{font-size:24px}
+  .preset-item b{font-family:'Rubik';font-size:16px}
+  .preset-item p{color:var(--slate);font-size:14px;margin-top:2px}
+
+  .founder{display:grid;grid-template-columns:.8fr 1.2fr;gap:36px;align-items:center;background:#fff;border-radius:32px;padding:40px;box-shadow:0 8px 40px -28px rgba(11,20,55,.4);border:1px solid rgba(11,20,55,.06)}
+  .founder .ava{width:100%;aspect-ratio:1;border-radius:24px;background:var(--opal);display:flex;align-items:center;justify-content:center;color:#fff;font-size:60px}
+  .founder blockquote{font-size:21px;font-family:'Rubik';font-weight:500;line-height:1.4;margin-bottom:16px}
+  .founder .name{font-weight:700}.founder .role{color:var(--slate);font-size:15px}
+
+  /* ── PRICING ── */
+  .pricing-wrap{max-width:520px;margin:0 auto}
+  .price-card{background:#fff;border:2px solid transparent;background:linear-gradient(#fff,#fff) padding-box,var(--opal) border-box;border-radius:var(--radius);padding:32px;box-shadow:var(--shadow);position:relative}
+  .price-badge{position:absolute;top:-14px;inset-inline-start:50%;transform:translateX(50%);background:var(--accent);color:#fff;font-family:'Rubik';font-size:12px;font-weight:700;padding:5px 16px;border-radius:999px;white-space:nowrap}
+  .price-plan{font-family:'Rubik';font-size:16px;font-weight:700;color:var(--accent);margin-bottom:4px}
+  .price-who{color:var(--slate);font-size:14px;margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid rgba(11,20,55,.07)}
+  .price-amt{font-family:'Rubik';font-weight:800;font-size:46px;line-height:1;margin-bottom:6px}
+  .price-amt small{font-size:16px;font-weight:400;color:var(--slate)}
+  .price-annual{font-size:13px;color:var(--slate);margin-bottom:22px}
+  .price-features{list-style:none;margin-bottom:26px;display:flex;flex-direction:column;gap:11px}
+  .price-features li{font-size:15px;color:#2c3350;display:flex;gap:10px;align-items:flex-start}
+  .price-features li .chk{color:var(--teal);font-weight:800;flex-shrink:0}
+  .price-features li .cs{color:var(--accent);font-weight:700;font-size:12px;font-family:'Rubik';background:var(--accent-light);padding:1px 7px;border-radius:999px;margin-inline-start:6px;white-space:nowrap}
+  .price-card .btn{width:100%;justify-content:center;font-size:17px;padding:15px}
+  .no-addons{text-align:center;color:var(--slate);font-size:14px;margin-top:18px}
+
+  /* ── FINAL CTA ── */
+  .final{background:var(--ink);border-radius:32px;margin:0 auto;max-width:1092px;padding:60px;text-align:center;color:#fff;position:relative;overflow:hidden}
+  .final::before{content:"";position:absolute;inset:0;background:radial-gradient(700px 350px at 50% 0%,rgba(16,185,129,.28),transparent)}
+  .final h2{font-size:38px;font-weight:800;margin-bottom:14px;position:relative}
+  .final p{color:rgba(255,255,255,.75);font-size:18px;margin-bottom:26px;position:relative}
+  .final .sub{color:rgba(255,255,255,.5);font-size:14px;margin-top:16px;position:relative}
+  .final .btn{position:relative;font-size:18px;padding:16px 36px}
+
+  footer{padding:46px 0 40px;color:var(--slate);font-size:14px}
+  .foot-in{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;border-top:1px solid rgba(11,20,55,.08);padding-top:28px}
+  .foot-in a{color:var(--slate);text-decoration:none}.foot-in a:hover{color:var(--ink)}
+
+  @media(max-width:900px){
+    .hero-grid,.founder{grid-template-columns:1fr}
+    .cards3{grid-template-columns:1fr 1fr}
+    .flow-grid{grid-template-columns:repeat(2,1fr)}
+    .hero h1{font-size:38px}.sec-head h2{font-size:28px}.flow{padding:34px 22px}
+  }
+  @media(max-width:600px){
+    .cards3,.preset{grid-template-columns:1fr}
+    .flow-grid{grid-template-columns:1fr}
+    .hero h1{font-size:32px}
+  }
+  .back-bar{padding:18px 0 0}
+  .back-link{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600;color:var(--slate);text-decoration:none;font-family:"Rubik";transition:.2s}
+  .back-link:hover{color:var(--accent)}
+</style>
+</head>
+<body dir="rtl" lang="he">
+
+<nav id="opal-nav"></nav>
+<script>window.OPAL_SKIN={he:"לחוגים",en:"for Classes"};</script>
+<script src="topbar.js"></script>
+<div class="wrap">
+  <div class="back-bar">
+    <a href="skins.html" class="back-link" data-he="← כל המהדורות" data-en="← All editions">← כל המהדורות</a>
+  </div>
+</div>
+
+<header class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="eyebrow">🎓 <span data-he="מהדורת החוגים של OpalSwift" data-en="The OpalSwift Classes Edition">מהדורת החוגים של OpalSwift</span></span>
+      <h1 data-he='אתה מלמד את השיעור.<br><span class="grad-text">התשלומים — שלנו.</span>' data-en='You teach the class.<br><span class="grad-text">The billing is ours.</span>'>אתה מלמד את השיעור.<br><span class="grad-text">התשלומים — שלנו.</span></h1>
+      <p class="subhero" data-he="חוגים קבועים, תשלומים חלקים, תלמידים מרוצים." data-en="Recurring classes, smooth payments, happy students.">חוגים קבועים, תשלומים חלקים, תלמידים מרוצים.</p>
+      <p class="lead" data-he="הרשמה של הורים, הוראת קבע חודשית, קבלה אוטומטית לכל משפחה, והתראות לפני אי-הופעה — הכל מותקן מראש לחוגים, אמנות, ספורט, מוזיקה וכל שיעור חוזר בישראל." data-en="Parent sign-up link, automatic monthly standing orders, receipts for each family, and no-show alerts — all preloaded for art classes, sports, music, dance and any recurring instruction in Israel.">הרשמה של הורים, הוראת קבע חודשית, קבלה אוטומטית לכל משפחה, והתראות לפני אי-הופעה — הכל מותקן מראש לחוגים, אמנות, ספורט, מוזיקה וכל שיעור חוזר בישראל.</p>
+      <div class="hero-cta">
+        <a href="#pricing" class="btn btn-primary" data-he="הצטרף לבטא" data-en="Join the Beta">הצטרף לבטא</a>
+        <a href="#presets" class="btn btn-ghost dark" data-he="מה כבר מוכן בשבילי?" data-en="What's set up for me?">מה כבר מוכן בשבילי?</a>
+      </div>
+      <div class="trust">⚡ <span data-he="מוכן לעבודה — הכסף זורם אוטומטית" data-en="Ready to go — money flows automatically">מוכן לעבודה — בלי הגדרות ובלי רודף הורים</span></div>
+    </div>
+    <div style="position:relative">
+      <div class="mock">
+        <div class="bar"></div>
+        <div class="mock-row">
+          <div class="l"><div class="dot">👨‍👩‍👧‍👦</div><div><b data-he="משפחת כהן · קהל מתחילים" data-en="Cohen family · Beginner group">משפחת כהן · קהל מתחילים</b><br><small style="color:var(--slate)" data-he="הוראת קבע הוגדרה" data-en="Standing order active">הוראת קבע הוגדרה</small></div></div>
+          <span class="pill ok" data-he="✓ רשום" data-en="✓ Enrolled">✓ רשום</span>
+        </div>
+        <div class="mock-row">
+          <div class="l"><div class="dot">📧</div><div><b data-he="קבלת הרשמה שגורמת ללקוח להיראות כמו עסק" data-en="Receipt (monthly, auto)">קבלת הרשמה שגורמת ללקוח להיראות כמו עסק</b><br><small style="color:var(--slate)" data-he="מה שנשמר בקלות בארכיון הורים" data-en="What's saved to their family archive">מה שנשמר בקלות בארכיון הורים</small></div></div>
+          <span class="pill auto" data-he="אוטומטי" data-en="Auto">אוטומטי</span>
+        </div>
+        <div class="mock-foot">
+          <div><small style="opacity:.7" data-he="בחודש הבא: ₪180 — אוטומטי לגמרי" data-en="Next month: ₪180 — fully automatic">בחודש הבא: ₪180 — בלי כל מאמץ שלך</small></div>
+          <div class="amt">₪180</div>
+        </div>
+        <div class="float-badge">⚡ <span data-he="0 רדיפות" data-en="0 chasing">0 רדיפות</span></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section class="block">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kicker" data-he="מה אתה באמת מקבל" data-en="What you actually get">מה אתה באמת מקבל</div>
+      <h2 data-he="הנחמה של עסק שמטפל בעצמו" data-en="The relief of a self-managing business">הנחמה של עסק שמטפל בעצמו</h2>
+      <p data-he="כלי שמטפל בשלושת הדברים שגורמים לחוגים לעבוד." data-en="A system that handles the three things that make classes work.">לא תוספון נוסף לתוך מערכת משימות. זה כלי שמטפל בשלושת הדברים שגורמים לחוגים לעבוד.</p>
+    </div>
+    <div class="cards3">
+      <div class="card">
+        <div class="ic">💰</div>
+        <h3 data-he="הורים משלמים — אוטומטית" data-en="Parents pay — automatically">הורים משלמים בלי רדיפה</h3>
+        <p data-he="קישור הרשמה אחד; הורה מגדיר הוראת קבע בקלות, וכל חודש הכסף זורם אוטומטית — התזכורות שלנו דואגות לכל השאר." data-en="One sign-up link; parent sets a standing order once, and it collects every month automatically — our reminders handle everything else.">קישור הרשמה אחד; הורה מוגדר הוראת קבע בקלות, וכל חודש הכסף זורם בלי שתשלח הודעה. לא רודפים, לא תזכורות מביכות, לא אחוזים מפוספסים.</p>
+      </div>
+      <div class="card">
+        <div class="ic">📋</div>
+        <h3 data-he="הקבלות כבר מטופלות" data-en="Receipts are automatic">הקבלות כבר מטופלות</h3>
+        <p data-he="כל תשלום חודשי מייצר קבלה תקינה בעברית וממשק באנגלית. משפחות רואות את היתרה שלהן בפורטל, וכל הרשומות הפיננסיות נשארות מסודרות." data-en="Every monthly payment generates a legally valid receipt. Families see their balance in a parent portal, and all your financial records stay organized.">כל תשלום חודשי מייצר קבלה תקינה בעברית וממשק באנגלית. משפחות רואות את היתרה שלהן בפורטל, והרו״ח שלך מקבל עיבוד אוטומטי.</p>
+      </div>
+      <div class="card">
+        <div class="ic">🎯</div>
+        <h3 data-he="זמן בחזרה לתרגול" data-en="Time back for teaching">זמן בחזרה לתרגול</h3>
+        <p data-he="אי-הופעות, ביטולים, שינויים בהרשמה — הכל מטופל אוטומטית. אתה פשוט מתחיל את השיעור." data-en="No-shows, cancellations, enrollment changes — all handled automatically. You just teach.">אי-הופעות, ביטולים בחודשי אי, השינויים בהרשמה — הם מטופלים. לך פשוט להתחיל לשיעור בלי לדאוג שמי שלא בא אתמול הוא עדיין במערכת החודש הזה.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="presets" style="background:#fff">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kicker" data-he="דוגמאות הגדרה" data-en="Setup examples">דוגמאות הגדרה</div>
+      <h2 data-he="כל סוג חוג — כבר מוכן" data-en="Every class type — ready to go">כל סוג חוג — כבר מוכן</h2>
+    </div>
+    <div class="preset">
+      <div class="preset-item">
+        <div class="pe">🎨</div>
+        <div>
+          <b data-he="חוג ציור" data-en="Art class">חוג ציור</b>
+          <p data-he="רשמה לפי תקופה, תשלום חודשי + דמי חומרים, הורים מקבלים תמונות מהיום." data-en="Term-based enrollment, monthly + materials fee, families get photos of work.">רשמה לפי תקופה, תשלום חודשי + דמי חומרים, הורים מקבלים תמונות מהיום.</p>
+        </div>
+      </div>
+      <div class="preset-item">
+        <div class="pe">🏃</div>
+        <div>
+          <b data-he="אימון ספורט" data-en="Sports coaching">אימון ספורט</b>
+          <p data-he="כרטיסיות מקדמי או הוראת קבע שבועית, ביטולים בזמן + בדיקת אפס הופעות, כרטיסייה עם ימי בחינם." data-en="Punch cards or weekly standing order, cancellation policy, makeups & freezes.">כרטיסיות מקדמי או הוראת קבע שבועית, ביטולים בזמן + בדיקת אפס הופעות, כרטיסייה עם ימי בחינם.</p>
+        </div>
+      </div>
+      <div class="preset-item">
+        <div class="pe">🎹</div>
+        <div>
+          <b data-he="שיעורי מוזיקה פרטיים" data-en="Private music lessons">שיעורי מוזיקה פרטיים</b>
+          <p data-he="שיעורים שבועיים קבועים, ביטול 48 שעות, הרכבה מחזוקת וחיוב חוזר." data-en="Weekly recurring, 48hr cancellation policy, auto-billing with makeup scheduling.">שיעורים שבועיים קבועים, ביטול 48 שעות, הרכבה מחזוקת וחיוב חוזר.</p>
+        </div>
+      </div>
+      <div class="preset-item">
+        <div class="pe">💃</div>
+        <div>
+          <b data-he="ריקוד וזומבה" data-en="Dance / zumba">ריקוד וזומבה</b>
+          <p data-he="חבורות קבוצתיות, הוראת קבע חודשית, סדר זמנים רב-כיתתי." data-en="Group classes, monthly standing order, multi-class scheduling.">חבורות קבוצתיות, הוראת קבע חודשית, סדר זמנים רב-כיתתי.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="pricing" style="background:#f7f8ff">
+  <div class="wrap">
+    <div style="text-align:center;margin-bottom:40px">
+      <h2 style="font-size:36px;font-weight:800;margin-bottom:10px" data-he="תמחור שקוף" data-en="Simple, honest pricing">תמחור שקוף</h2>
+      <p style="color:var(--slate);font-size:17px" data-he="תשלום חודשי, ביטול בכל עת." data-en="Monthly billing, cancel any time.">תשלום חודשי, ביטול בכל עת.</p>
+    </div>
+    <div class="pricing-wrap">
+      <div class="price-card">
+        <div class="price-badge" data-he="הכי פופולרי לחוגים" data-en="Most popular for classes">הכי פופולרי לחוגים</div>
+        <div class="price-plan">Professional</div>
+        <div class="price-who" data-he="למורים ומנחים עם 10+ תלמידים" data-en="For teachers &amp; instructors with 10+ students">למורים ומנחים עם 10+ תלמידים</div>
+        <div class="price-amt">₪349 <small data-he="/ חודש כולל מע&quot;מ" data-en="/ mo VAT incl.">&nbsp;/ חודש כולל מע"מ</small></div>
+                <ul class="price-features">
+          <li><span class="chk">✦</span><span data-he="ניהול רשימות תלמידים" data-en="Student roster">ניהול רשימות תלמידים</span></li>
+          <li><span class="chk">✦</span><span data-he="הוראת קבע חודשית — גבייה אוטומטית" data-en="Monthly standing orders — automatic collection">הוראת קבע חודשית — גבייה אוטומטית</span></li>
+          <li><span class="chk">✦</span><span data-he="חשבוניות מס ′′קבלות לכל הורה בלחיצה" data-en="Tax receipts per parent, one tap">חשבוניות/קבלות לכל הורה — בלחיצה</span></li>
+          <li><span class="chk">✦</span><span data-he="תזכורות אוטומטיות לפני תשלום" data-en="Automatic reminders before payment">תזכורות אוטומטיות לפני תשלום <span class="cs">Professional</span></span></li>
+          <li><span class="chk">✦</span><span data-he="ניהול ילדים מרובים לאותו הורה" data-en="Multiple children per parent account">ילדים מרובים לאותו הורה — בחשבון אחד</span></li>
+          <li><span class="chk">✦</span><span data-he="דו&quot;ח הכנסות מוכן לדיווח לרשות המיסים" data-en="Income report ready for tax authority">דו"ח הכנסות — מוכן לדיווח</span></li>
+        </ul>
+        <p style="font-size:11.5px;color:var(--slate);opacity:0.72;margin:10px 0 18px;line-height:1.55;padding:0 2px;border-top:1px solid rgba(0,0,0,0.07);padding-top:10px" data-he="עד 200 מסמכים לחודש. רוב המשתמשים נשארים בגבולות. חריגה: 19 מסמכים ראשונים עלינו, אחר כך ₪1.50 למסמך." data-en="Up to 200 documents/month. Most users stay well within limits. Overage: first 19 extra docs on us, then ₪1.50/doc.">עד 200 מסמכים לחודש. רוב המשתמשים נשארים בגבולות. חריגה: 19 מסמכים ראשונים עלינו, אחר כך ₪1.50 למסמך.</p>
+        <a href="#" class="btn btn-primary" data-he="הצטרף לבטא" data-en="Join the Beta">הצטרף לבטא</a>
+        <div class="no-addons" data-he="הכל כלול. מוכנים מהיום הראשון." data-en="Everything included. Ready from day one.">הכל כלול. מוכנים מהיום הראשון.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Proof -->
+<section class="block" style="background:#fff">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kicker" data-he="מה אומרים מדריכים" data-en="What instructors say">מה אומרים מדריכים</div>
+      <h2 style="font-size:32px;font-weight:800" data-he="פחות אדמין. יותר שיעורים." data-en="Less admin. More classes.">פחות אדמין. יותר שיעורים.</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px">
+      <div style="background:var(--canvas);border-radius:20px;padding:28px;border:1px solid rgba(11,20,55,.07)">
+        <div style="font-size:28px;margin-bottom:12px">⭐⭐⭐⭐⭐</div>
+        <p style="font-size:15px;color:var(--slate);line-height:1.65;margin-bottom:18px" data-he="&quot;הייתי שולחת תזכורות ידניות לכל הורה. היום OpalSwift עושה את זה לבד — אני פשוט מלמדת.&quot;" data-en="&quot;I used to send manual reminders to every parent. Now OpalSwift does it automatically — I just teach.&quot;">"הייתי שולחת תזכורות ידניות לכל הורה. היום OpalSwift עושה את זה לבד — אני פשוט מלמדת."</p>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:36px;height:36px;border-radius:50%;background:var(--accent-light);display:flex;align-items:center;justify-content:center;font-size:16px">🧘</div>
+          <div><div style="font-weight:700;font-size:14px" data-he="נועה כ׳, מדריכת יוגה" data-en="Noa K., yoga instructor">נועה כ׳, מדריכת יוגה</div><div style="font-size:12px;color:var(--slate)" data-he="ישראל · 4 קבוצות" data-en="Israel · 4 groups">ישראל · 4 קבוצות</div></div>
+        </div>
+      </div>
+      <div style="background:var(--canvas);border-radius:20px;padding:28px;border:1px solid rgba(11,20,55,.07)">
+        <div style="font-size:28px;margin-bottom:12px">⭐⭐⭐⭐⭐</div>
+        <p style="font-size:15px;color:var(--slate);line-height:1.65;margin-bottom:18px" data-he="&quot;ההרשמה לחוגים שלי הייתה כאוס של ווצאפ. עכשיו יש לינק אחד, טופס נקי, וכסף שמגיע לבד.&quot;" data-en="&quot;My class sign-ups were a WhatsApp mess. Now there's one link, a clean form, and money that arrives automatically.&quot;">"ההרשמה לחוגים שלי הייתה כאוס של ווצאפ. עכשיו יש לינק אחד, טופס נקי, וכסף שמגיע לבד."</p>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:36px;height:36px;border-radius:50%;background:var(--accent-light);display:flex;align-items:center;justify-content:center;font-size:16px">🏃</div>
+          <div><div style="font-weight:700;font-size:14px" data-he="רועי מ׳, מאמן כושר" data-en="Roi M., fitness coach">רועי מ׳, מאמן כושר</div><div style="font-size:12px;color:var(--slate)" data-he="ירושלים · 6 קבוצות" data-en="Jerusalem · 6 groups">ירושלים · 6 קבוצות</div></div>
+        </div>
+      </div>
+      <div style="background:var(--canvas);border-radius:20px;padding:28px;border:1px solid rgba(11,20,55,.07)">
+        <div style="font-size:28px;margin-bottom:12px">⭐⭐⭐⭐⭐</div>
+        <p style="font-size:15px;color:var(--slate);line-height:1.65;margin-bottom:18px" data-he="&quot;ניהלתי גיליון אקסל של חייל. OpalSwift הזיז אותי לעולם אמיתי — בפחות מחצי שעה.&quot;" data-en="&quot;I managed a military-grade spreadsheet. OpalSwift moved me to the real world — in under half an hour.&quot;">"ניהלתי גיליון אקסל של חייל. OpalSwift הזיז אותי לעולם אמיתי — בפחות מחצי שעה."</p>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:36px;height:36px;border-radius:50%;background:var(--accent-light);display:flex;align-items:center;justify-content:center;font-size:16px">🎨</div>
+          <div><div style="font-weight:700;font-size:14px" data-he="שירה א׳, מורה לאמנות" data-en="Shira A., art teacher">שירה א׳, מורה לאמנות</div><div style="font-size:12px;color:var(--slate)" data-he="חיפה · 3 קבוצות" data-en="Haifa · 3 groups">חיפה · 3 קבוצות</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Final CTA -->
+<section class="block">
+  <div class="wrap">
+    <div class="final">
+      <h2 data-he="הורים מסודרים. חודשים מונעים. אתה מלמד." data-en="Parents organized. Billing automatic. You teach.">הורים מסודרים. חודשים מונעים. אתה מלמד.</h2>
+      <p data-he="הצטרפו לבטא. הרשמה, תשלומים ורשומות — מוכן מהיום הראשון." data-en="Join the beta. Sign-ups, billing and records — ready from day one.">הצטרפו לבטא. הרשמה, תשלומים ורשומות — מוכן מהיום הראשון.</p>
+      <a href="#" class="btn btn-primary" style="font-size:18px;padding:16px 34px" data-he="הצטרף לבטא" data-en="Join the Beta">הצטרף לבטא</a>
+      <div class="sub" data-he="ביטול בכל עת · אין דמי הקמה · תמיכה בעברית" data-en="Cancel anytime · No setup fees · Hebrew support">ביטול בכל עת · אין דמי הקמה · תמיכה בעברית</div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="text-align:center;padding:0 0 18px"><img src="opalswift_gemstone_final.png" alt="" width="72" height="72" style="opacity:.88;filter:drop-shadow(0 3px 12px rgba(123,97,255,.28))"></div>
+  <div class="wrap foot-in">
+    <div class="logo" style="font-size:18px">
+      <svg class="gem" style="width:24px;height:24px" viewBox="0 0 56 56"><path d="M28 2 L52 28 L28 54 L4 28 Z" fill="url(#g1)"/></svg>
+      OpalSwift
+    </div>
+    <div data-he="© 2026 OpalSwift · אתה עושה את העבודה. אנחנו דואגים שתקבל את הכסף." data-en="© 2026 OpalSwift · You do the work. We make sure you get paid.">© 2026 OpalSwift · אתה עושה את העבודה. אנחנו דואגים שתקבל את הכסף.</div>
+  </div>
+</footer>
+</body>
+</html>
