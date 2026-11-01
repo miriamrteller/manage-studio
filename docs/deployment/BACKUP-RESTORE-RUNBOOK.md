@@ -12,7 +12,11 @@ restore once after setup, and again before the first real tenant.**
 
 - Bucket: `manage-studio-db-backups` (private; **not** inside the Supabase
   project — a backup stored inside the thing it protects dies with it)
-- Object layout: `nightly/<date>_<sha>.tar.gz.gpg` + `.manifest.json`
+- Object layout: `nightly/<date>_<sha>.tar.gz.gpg` + `.manifest.json`;
+  `predeploy/<time>_<sha>…` taken by deploy-prod right before every prod
+  deploy (no lifecycle rule — add `predeploy/` 400 days in the dashboard if
+  wanted). Both made by `scripts/ci/backup-prod-to-r2.sh`. Since 2026-11-01
+  the tarball also holds `migrations.csv` (see §Migration history)
   (the manifest is plaintext: date, main SHA, migration count, checksums —
   it ties every dump to the exact app version that produced it)
 - Encryption: gpg to the `OpalSwift DB Backups v2` key
@@ -90,10 +94,45 @@ merging this before R2 is enabled is safe.
    psql "$TARGET_DB_URL" -v ON_ERROR_STOP=1 -f schema.sql
    psql "$TARGET_DB_URL" -v ON_ERROR_STOP=1 -f data.sql
    ```
+5b. Restore the migration history (§Migration history) — otherwise the next
+   `supabase db push` tries to re-run every migration.
 6. Re-point/redeploy: `supabase link` to the target ref, deploy functions,
    re-run Phase C secrets if the ref changed, update DNS-facing config
    (`VITE_SUPABASE_URL` needs a frontend rebuild if the ref changed).
 7. `pnpm verify:prod` against the restored project.
+
+## Migration history
+
+`supabase db dump` does **not** include `supabase_migrations.schema_migrations`
+(found 2026-11-01). Without it a restored project looks unmigrated, and the
+next `db push` (by hand or by deploy-prod) re-runs every migration over the
+existing tables. After step 5:
+
+```bash
+psql "$TARGET_DB_URL" -c "CREATE SCHEMA IF NOT EXISTS supabase_migrations" \
+  -c "CREATE TABLE IF NOT EXISTS supabase_migrations.schema_migrations (version text PRIMARY KEY, statements text[], name text)" \
+  -c "\copy supabase_migrations.schema_migrations (version, name) FROM 'migrations.csv' CSV HEADER"
+```
+
+Backups from before 2026-11-01 have no `migrations.csv`: the history is the
+first `manifest.migrations` files in `supabase/migrations` at `manifest.main_sha`.
+Mark them with `supabase migration repair --status applied <version> …` against
+the target, then `supabase migration list` must show local = remote.
+
+## Restore rehearsal (local, no hosted project)
+
+```bash
+gpg --import backup-private-key.asc          # from the password manager
+scripts/restore-rehearsal.sh <backup.tar.gz.gpg>
+```
+
+Decrypts, checks the manifest checksums, restores schema + data + migration
+history into a throwaway local Supabase Postgres container, compares the
+migration count with the manifest and prints row counts. Deletes everything on
+exit. **2026-11-01:** run end-to-end on a backup made by the pipeline script
+(real `supabase db dump`, throwaway gpg key, from a local replay of all
+migrations): passed. This is what surfaced the missing migration history.
+Repeat with a real R2 backup and the real key before the first paying tenant.
 
 ## Per-tenant restore (one client's data damaged, others fine)
 

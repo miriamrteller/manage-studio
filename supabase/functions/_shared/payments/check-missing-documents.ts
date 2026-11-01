@@ -209,14 +209,28 @@ export async function runCheckMissingDocuments(
     clientEmailSent: 0,
   };
 
-  const { data: missingRows, error: missingError } = await service
+  // Studios with invoicing off never get tax documents, so a payment without one is
+  // expected there. Leave them out of the scan entirely (also keeps their rows from
+  // filling the batch and starving other studios' alerts).
+  const { data: noDocTenants, error: noDocError } = await service
+    .from("tenants")
+    .select("id")
+    .eq("invoicing_provider", "none");
+  if (noDocError) throw noDocError;
+  const noDocTenantIds = (noDocTenants ?? []).map((t) => t.id as string);
+
+  let missingQuery = service
     .from("payments")
     .select(
       "id, tenant_id, total_amount_minor, currency, paid_at, provider, engagement_id, offering_id",
     )
     .eq("status", "succeeded")
     .is("external_document_id", null)
-    .lt("paid_at", cutoff)
+    .lt("paid_at", cutoff);
+  if (noDocTenantIds.length > 0) {
+    missingQuery = missingQuery.not("tenant_id", "in", `(${noDocTenantIds.join(",")})`);
+  }
+  const { data: missingRows, error: missingError } = await missingQuery
     .order("paid_at", { ascending: true })
     .limit(MISSING_DOCUMENT_BATCH_LIMIT);
 

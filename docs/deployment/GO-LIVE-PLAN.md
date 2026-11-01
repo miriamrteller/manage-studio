@@ -131,6 +131,18 @@ promote dev.** Dev carries mock-payment rows, demo tenants and test seeds.
       `verticals` (including `dance-studio`, which requires the `professional`
       plan) is seeded by migration `000200`, not by a seed file — nothing extra
       to run first.
+- [ ] **Studio that takes payment in person and issues no tax documents** (Creative
+      Ballet while it is not a registered business). Run once after `provision_tenant`:
+      ```sql
+      UPDATE tenants SET payment_provider = 'offline', invoicing_provider = 'none'
+      WHERE subdomain = 'creativeballet';
+      ```
+      Parents then finish enrolment online and see "Pay at the studio"; the place stays
+      *pending payment* until an admin clicks **Record offline payment** on the student.
+      No tax document is queued, no "missing invoice" alert is sent, and dunning neither
+      sends pay links nor cancels on day 14. To start issuing receipts later, set both
+      columns back to the provider (e.g. `'ypay'`) and save its keys.
+      Never use `'mock'` here: on prod it can't take payments at all.
 - [ ] Seed invoice sequences.
 - [ ] **`pnpm verify:prod`** — encryption key set and not the dev value, cron
       config present, `pg_cron`/`pg_net` on, no seed tenant, chain applied.

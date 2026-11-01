@@ -46,6 +46,9 @@ export function getPaymentProvider(
       return getEnv("TRANZILA_MOCK") === "true"
         ? new MockTranzilaPaymentProvider(service)
         : new TranzilaPaymentProvider(service);
+    case "offline":
+      // Callers check isOfflinePaymentTenant() first; reaching here is a bug.
+      throw new Error("This studio takes payments at the studio only (payment_provider=offline)");
     default: {
       const _exhaustive: never = parsed;
       return _exhaustive;
@@ -68,4 +71,9 @@ export async function getPaymentProviderForTenant(
   }
 
   return getPaymentProvider(service, data.payment_provider as string);
+}
+
+/** True when the studio takes no online payments (pay at the studio, recorded by an admin). */
+export function isOfflinePaymentProvider(slug: string | null | undefined): boolean {
+  return slug === "offline";
 }

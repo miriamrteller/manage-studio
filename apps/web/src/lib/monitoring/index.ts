@@ -8,7 +8,8 @@
  * queued. See docs/deployment/OBSERVABILITY.md.
  */
 import type * as SentryNS from './sdk';
-import { scrubBreadcrumb, scrubEvent } from './scrub';
+import type { ErrorEvent } from '@sentry/react';
+import { scrubBreadcrumb, scrubEvent, scrubText, scrubUrl } from './scrub';
 
 type Sentry = typeof SentryNS;
 
@@ -76,6 +77,10 @@ export function initMonitoring(): Promise<Sentry | null> {
         beforeBreadcrumb: (b) => scrubBreadcrumb(b),
         beforeSend: (event) => scrubEvent(event),
       });
+      // beforeSend only sees error events; problem reports (feedback events) get the same scrubbing here.
+      S.addEventProcessor((event) =>
+        event.type === 'feedback' ? (scrubEvent(event as unknown as ErrorEvent) as unknown as typeof event) : event,
+      );
       sentry = S;
       for (const fn of pending.splice(0)) fn(S);
       return S;
@@ -139,4 +144,29 @@ export function reportError(error: unknown, tags?: Record<string, string>): void
 /** Id of the last reported error, used to link a problem report to it. */
 export function lastErrorId(): string | undefined {
   return sentry?.lastEventId();
+}
+
+/** Roles that see "Report a problem". Clients and students do not. */
+const REPORTER_ROLES = ['tenant_admin', 'super_admin'];
+
+export function canReportProblems(roles: string[] | undefined): boolean {
+  return isMonitoringEnabled() && !!roles?.some((r) => REPORTER_ROLES.includes(r));
+}
+
+/**
+ * Sends a problem report typed by a studio admin. Only the (scrubbed) text, the
+ * page's route template and the current tags go out: no name, email or screenshot.
+ * Links the report to the last error on this page when there was one.
+ */
+export async function sendProblemReport(message: string): Promise<string | null> {
+  const text = scrubText(message.trim()).slice(0, 2000);
+  if (!text) return null;
+  const S = sentry ?? (await initMonitoring());
+  if (!S) return null;
+  return S.captureFeedback({
+    message: text,
+    url: scrubUrl(window.location.href),
+    source: 'report-problem',
+    associatedEventId: S.lastEventId(),
+  });
 }

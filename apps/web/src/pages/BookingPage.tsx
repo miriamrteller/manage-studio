@@ -10,7 +10,7 @@ import { BookingService, type AvailableSlot, type BookableOffering } from '@/fea
 import { useIsNarrowViewport } from '@/features/scheduling/hooks/useIsNarrowViewport';
 import { cn } from '@/lib/utils';
 import { formatOfferingPrice } from '@/lib/formatOfferingPrice';
-import { PrivacyNotice } from '@/components/legal/PrivacyNotice';
+import { PrivacyNotice } from '@/components/PrivacyNotice';
 
 function formatWhen(slot: AvailableSlot): string {
   const start = new Date(slot.starts_at);

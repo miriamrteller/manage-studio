@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { isRouteErrorResponse, useNavigate, useRouteError } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { reportError } from '@/lib/monitoring';
+import { useReportProblem } from '@/components/ReportProblem';
 
 /**
  * Route-level error boundary UI (react-router errorElement). Mounted on a
@@ -13,6 +14,7 @@ export function RouteErrorFallback() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const error = useRouteError();
+  const { canReport, openReportProblem } = useReportProblem();
 
   useEffect(() => {
     console.error('Route error boundary caught:', error);
@@ -43,6 +45,11 @@ export function RouteErrorFallback() {
           {t('common.back')}
         </Button>
         <Button onClick={() => navigate('/')}>{t('common.home')}</Button>
+        {canReport && (
+          <Button variant="ghost" onClick={openReportProblem}>
+            {t('report_problem.from_error')}
+          </Button>
+        )}
       </div>
     </div>
   );

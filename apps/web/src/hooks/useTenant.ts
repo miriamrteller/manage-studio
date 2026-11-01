@@ -70,6 +70,9 @@ export function useTenantQuery(): { tenant: TenantConfig | null; isLoading: bool
         logo_tone: parseLogoTone(row.logo_tone),
         logo_dark_tone: parseLogoTone(row.logo_dark_tone),
         logo_autofix: row.logo_autofix !== false,
+        privacy_policy_url: row.privacy_policy_url ?? null,
+        terms_url: row.terms_url ?? null,
+        accessibility_statement_url: row.accessibility_statement_url ?? null,
       } as unknown as TenantConfig;
     },
     enabled: !!subdomain,

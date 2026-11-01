@@ -119,6 +119,29 @@ function tenantConfigRow(ctx: DemoContext): Row[] {
   return [{ ...t, tenant_subdomain: t.subdomain }];
 }
 
+/** get_finance_summary for the demo tenant, dates as YYYY-MM-DD (inclusive). */
+function financeSummary(ctx: DemoContext, start: string, end: string): Row {
+  const day = (v: unknown) => (typeof v === 'string' ? v.slice(0, 10) : '');
+  const inRange = (v: unknown) => !!day(v) && day(v) >= start && day(v) <= end;
+  const payments = rows(ctx, 'payments').filter((p) => p.tenant_id === TENANT_ID);
+  const season = rows(ctx, 'seasons').find((s) => s.tenant_id === TENANT_ID && s.status === 'active');
+  const weekAgo = new Date(Date.now() - 7 * 86_400_000).toISOString();
+  const sum = (list: Row[]) => list.reduce((acc, r) => acc + Number(r.total_amount_minor ?? 0), 0);
+  return {
+    net_revenue_minor: sum(
+      payments.filter((p) => (p.status === 'succeeded' || p.status === 'partially_refunded') && inRange(p.paid_at)),
+    ),
+    payment_count: payments.filter(
+      (p) => p.status === 'succeeded' && (p.charge_type === 'initial' || p.charge_type === 'renewal') && inRange(p.paid_at),
+    ).length,
+    outstanding_engagements: rows(ctx, 'engagements').filter(
+      (e) => e.tenant_id === TENANT_ID && e.status === 'pending_payment' && (e.season_id ?? null) === (season?.id ?? null),
+    ).length,
+    failed_payments_7d: payments.filter((p) => p.status === 'failed' && String(p.created_at ?? '') >= weekAgo).length,
+    net_expenses_minor: sum(rows(ctx, 'expenses').filter((x) => x.tenant_id === TENANT_ID && inRange(x.expense_date))),
+  };
+}
+
 export const baseRpcs: Record<string, RpcHandler> = {
   get_tenant_config_by_subdomain: (_args, ctx) => tenantConfigRow(ctx),
 
@@ -164,6 +187,55 @@ export const baseRpcs: Record<string, RpcHandler> = {
     return rows(ctx, 'offerings')
       .filter((o) => o.tenant_id === tenant.id && o.offering_type === 'class' && o.is_public === true && o.status === 'active')
       .map((o) => ({ ...o, tenant_subdomain: tenant.subdomain, waiver_required: o.waiver_required ?? false }));
+  },
+
+  /** Like the SQL: appointment packages, only when online booking is switched on. */
+  get_bookable_offerings_by_subdomain: (args, ctx) => {
+    const sub = String(args.p_subdomain ?? '').trim();
+    if (!sub) throw new DemoRpcError('p_subdomain is required');
+    const tenant = rows(ctx, 'tenants').find((t) => t.subdomain === sub);
+    if (!tenant) return [];
+    const settings = rows(ctx, 'tenant_scheduling_settings').find((s) => s.tenant_id === tenant.id);
+    if (settings?.is_booking_enabled !== true) return [];
+    return rows(ctx, 'offerings')
+      .filter((o) => o.tenant_id === tenant.id && o.offering_type === 'appointment' && o.status === 'active')
+      .map((o) => ({
+        id: o.id,
+        name: o.name,
+        duration_mins: o.duration_mins ?? settings.slot_duration_mins ?? null,
+        price_minor: o.price_minor,
+        currency: o.currency,
+        location: o.location ?? null,
+      }));
+  },
+
+  get_finance_summary: (args, ctx) => {
+    requireAdmin(ctx);
+    const start = String(args.p_start_date ?? '');
+    const end = String(args.p_end_date ?? '');
+    if (end < start) throw new DemoRpcError('Invalid date range');
+    return [financeSummary(ctx, start, end)];
+  },
+
+  /** Like the SQL: raises P0001 without an active season (photographer tenants have none). */
+  get_admin_dashboard_overview: (_args, ctx) => {
+    requireAdmin(ctx);
+    const season = rows(ctx, 'seasons')
+      .filter((s) => s.tenant_id === TENANT_ID && s.status === 'active')
+      .sort((a, b) => String(b.created_at ?? '').localeCompare(String(a.created_at ?? '')))[0];
+    if (!season) throw new DemoRpcError('No active season found for this tenant', 'P0001');
+    const today = new Date().toISOString().slice(0, 10);
+    const inSeason = rows(ctx, 'engagements').filter((e) => e.tenant_id === TENANT_ID && e.season_id === season.id);
+    const count = (status: string) => inSeason.filter((e) => e.status === status).length;
+    return {
+      season_id: season.id,
+      season_name: season.name ?? null,
+      today_classes: [],
+      term_enrolments_count: inSeason.filter((e) => e.status !== 'cancelled' && e.status !== 'withdrawn').length,
+      admin_review_count: count('admin_review'),
+      pending_payment_count: count('pending_payment'),
+      finance: financeSummary(ctx, `${today.slice(0, 7)}-01`, today),
+    };
   },
 
   create_job: (args, ctx) => {

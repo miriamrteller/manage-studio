@@ -64,6 +64,7 @@ AS $$
   WHERE t.id = p_tenant_id;
 $$;
 
+-- Tier: public (supabase/security/definer-execute.json).
 REVOKE ALL ON FUNCTION get_tenant_legal_profile(UUID) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION get_tenant_legal_profile(UUID) TO anon, authenticated;
 
@@ -249,6 +250,7 @@ BEGIN
 END;
 $$;
 
+-- Tier: public (guests accept enrolment terms during guest checkout).
 REVOKE ALL ON FUNCTION record_legal_acceptance(UUID, TEXT[], TEXT, TEXT, UUID, TEXT) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION record_legal_acceptance(UUID, TEXT[], TEXT, TEXT, UUID, TEXT) TO anon, authenticated;
 
@@ -276,5 +278,6 @@ AS $$
   );
 $$;
 
-REVOKE ALL ON FUNCTION get_platform_terms_acceptance(UUID, TEXT) FROM PUBLIC;
+-- Tier: authenticated. Supabase grants EXECUTE to anon directly, so revoke it explicitly.
+REVOKE ALL ON FUNCTION get_platform_terms_acceptance(UUID, TEXT) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION get_platform_terms_acceptance(UUID, TEXT) TO authenticated;

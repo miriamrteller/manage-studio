@@ -130,7 +130,7 @@ function settleRequest(ctx: DemoContext, req: Row, method: string, provider: str
     vat_rate: 18,
     currency: req.currency,
     status: 'succeeded',
-    charge_type: 'one_time',
+    charge_type: 'initial',
     provider,
     payment_method: method,
     description: `${offering?.name ?? 'Shoot'}: ${req.label}`,

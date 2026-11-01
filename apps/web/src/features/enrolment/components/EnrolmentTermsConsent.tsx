@@ -4,7 +4,10 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { useTenant } from '@/hooks/useTenant';
 import { recordLegalAcceptance } from '@/legal/acceptance';
+import { legalTextVersion } from '@/legal/render';
 import { tenantHasEnrolmentTerms, useLegalDocument } from '@/legal/useLegalDocument';
+import { useLegalLinks } from '@/legal/useLegalLinks';
+import { isInternalLegalLink } from '@/lib/legalLinks';
 
 export interface EnrolmentTermsConsentProps {
   engagementId: string;
@@ -13,15 +16,30 @@ export interface EnrolmentTermsConsentProps {
   children: ReactNode;
 }
 
+function DocLink({ href, children }: { href: string; children: ReactNode }) {
+  return isInternalLegalLink(href) ? (
+    <Link to={href} target="_blank" rel="noopener noreferrer" className="underline">
+      {children}
+    </Link>
+  ) : (
+    <a href={href} target="_blank" rel="noopener noreferrer" className="underline">
+      {children}
+    </a>
+  );
+}
+
 /**
  * Required checkbox before payment: agree to the studio's enrolment terms and
- * confirm reading its privacy policy. Recorded with the exact text version.
- * Shown only once the studio has published its legal pages — a studio can't
- * ask anyone to agree to terms it hasn't published yet.
+ * confirm reading its privacy policy, recorded in legal_acceptances.
+ * Applies when the studio has terms — its own link (Settings → Legal) or its
+ * published generated page. The version recorded is the hash of the generated
+ * text, or of the link for an external page. A studio without terms yet is not
+ * blocked from enrolling anyone.
  */
 export function EnrolmentTermsConsent({ engagementId, acceptedByRole, children }: EnrolmentTermsConsentProps) {
   const { t } = useTranslation();
   const tenant = useTenant();
+  const links = useLegalLinks();
   const terms = useLegalDocument('enrolment-terms');
   const privacy = useLegalDocument('studio-privacy');
   const [checked, setChecked] = useState(false);
@@ -29,34 +47,47 @@ export function EnrolmentTermsConsent({ engagementId, acceptedByRole, children }
   const [saving, setSaving] = useState(false);
 
   const legal = terms.legal;
-  const applies = !!tenant && !!legal?.published && tenantHasEnrolmentTerms(legal.vertical);
+  const applies =
+    !!tenant && !!links.terms && (legal ? tenantHasEnrolmentTerms(legal.vertical) : true);
 
   if (!applies || done) return <>{children}</>;
 
-  if (terms.isLoading || privacy.isLoading) {
+  const termsHref = links.terms as string;
+  const privacyHref = links.privacy;
+  const needsGenerated = isInternalLegalLink(termsHref) || (!!privacyHref && isInternalLegalLink(privacyHref));
+  if (needsGenerated && (terms.isLoading || privacy.isLoading)) {
     return <p role="status">{t('common.loading')}</p>;
   }
 
+  const versionOf = (href: string, generated: string | undefined) =>
+    isInternalLegalLink(href) ? generated : `url:${legalTextVersion(href)}`;
+
   const handleContinue = async () => {
-    if (!tenant || !terms.doc || !privacy.doc) return;
+    if (!tenant) return;
     setSaving(true);
     try {
-      await recordLegalAcceptance({
-        tenantId: tenant.id,
-        documents: ['enrolment_terms'],
-        version: terms.doc.version,
-        language: terms.lang,
-        engagementId,
-        role: acceptedByRole,
-      });
-      await recordLegalAcceptance({
-        tenantId: tenant.id,
-        documents: ['studio_privacy'],
-        version: privacy.doc.version,
-        language: privacy.lang,
-        engagementId,
-        role: acceptedByRole,
-      });
+      const termsVersion = versionOf(termsHref, terms.doc?.version);
+      if (termsVersion) {
+        await recordLegalAcceptance({
+          tenantId: tenant.id,
+          documents: ['enrolment_terms'],
+          version: termsVersion,
+          language: terms.lang,
+          engagementId,
+          role: acceptedByRole,
+        });
+      }
+      const privacyVersion = privacyHref ? versionOf(privacyHref, privacy.doc?.version) : undefined;
+      if (privacyVersion) {
+        await recordLegalAcceptance({
+          tenantId: tenant.id,
+          documents: ['studio_privacy'],
+          version: privacyVersion,
+          language: privacy.lang,
+          engagementId,
+          role: acceptedByRole,
+        });
+      }
     } catch (err) {
       // The parent did tick the box; don't block the enrolment on a logging failure.
       console.warn('[EnrolmentTermsConsent] could not record acceptance', err);
@@ -74,17 +105,16 @@ export function EnrolmentTermsConsent({ engagementId, acceptedByRole, children }
           className="mt-1"
           checked={checked}
           onChange={(e) => setChecked(e.target.checked)}
+          aria-required="true"
           data-testid="enrolment-terms-checkbox"
         />
         <span>
-          {t('legal.enrolment.agree_prefix')}{' '}
-          <Link to="/legal/enrolment-terms" target="_blank" rel="noopener noreferrer" className="underline">
-            {t('legal.docs.enrolment_terms')}
-          </Link>
-          {t('legal.enrolment.read_prefix')}{' '}
-          <Link to="/legal/studio-privacy" target="_blank" rel="noopener noreferrer" className="underline">
-            {t('legal.docs.studio_privacy')}
-          </Link>
+          {t('legal.enrolment.agree_prefix')} <DocLink href={termsHref}>{t('legal.docs.enrolment_terms')}</DocLink>
+          {privacyHref && (
+            <>
+              {t('legal.enrolment.read_prefix')} <DocLink href={privacyHref}>{t('legal.docs.studio_privacy')}</DocLink>
+            </>
+          )}
           .
         </span>
       </label>

@@ -11,6 +11,7 @@ import {
 } from '../components/Navigation';
 import { cn } from '../lib/utils';
 import { LegalFooterLinks } from '../components/LegalFooterLinks';
+import { ReportProblemProvider } from '../components/ReportProblem';
 
 const PUBLIC_PATHS = new Set(['/', '/classes', '/login', '/signup', '/enrol']);
 
@@ -95,8 +96,10 @@ export function AppLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <NavDrawerProvider>
-      <AppLayoutContent>{children}</AppLayoutContent>
-    </NavDrawerProvider>
+    <ReportProblemProvider>
+      <NavDrawerProvider>
+        <AppLayoutContent>{children}</AppLayoutContent>
+      </NavDrawerProvider>
+    </ReportProblemProvider>
   );
 }
