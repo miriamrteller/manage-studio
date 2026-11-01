@@ -1,5 +1,9 @@
 {
   "common": {
+    "saveChanges": "Save Changes",
+    "saving": "Saving...",
+    "saved": "Saved!",
+    "saveFailed": "Save failed. Please try again.",
     "language": "Language",
     "save": "Save",
     "cancel": "Cancel",
@@ -1863,6 +1867,66 @@
     "waiver_minor_cannot_sign_body": "{{studentName}} is under 18. Israeli law requires a parent or legal guardian to sign the waiver. Please ask a parent or guardian to log in and complete the enrolment."
   },
   "settings": {
+    "title": "Settings",
+    "navigation": "Settings navigation",
+    "tabs": {
+      "branding": "Branding",
+      "profile": "Studio profile",
+      "locale": "Language & Region",
+      "payment": "Payment Settings",
+      "invoicing": "Invoicing"
+    },
+    "branding": {
+      "colors": "Colors",
+      "primaryColor": "Primary Color",
+      "accentColor": "Accent Color",
+      "fontPair": "Font Pair",
+      "selectFontPair": "Select Font Pair",
+      "fontPreview": "Font Preview",
+      "fontPairs": {
+        "reliable": "Reliable",
+        "elegant": "Elegant",
+        "dynamic": "Dynamic",
+        "warm": "Warm",
+        "bold": "Bold"
+      },
+      "logos": "Logos",
+      "lightLogo": "Light Mode Logo",
+      "lightLogoDescription": "Displayed on light backgrounds. PNG, JPEG, SVG, or WebP (max 2MB).",
+      "darkLogo": "Dark Mode Logo",
+      "darkLogoDescription": "Displayed on dark backgrounds. PNG, JPEG, SVG, or WebP (max 2MB).",
+      "replaceLogo": "Replace",
+      "removeLogo": "Remove",
+      "uploadLogo": "Upload Logo",
+      "uploading": "Uploading...",
+      "uploadLightLogo": "Upload light mode logo",
+      "uploadDarkLogo": "Upload dark mode logo",
+      "fileTooLarge": "File too large (max 2MB)",
+      "uploadFailed": "Upload failed. Please try again."
+    },
+    "payments": {
+      "title": "Payment provider",
+      "description": "Configure payment capture credentials.",
+      "provider": "Provider",
+      "public_key": "Publishable key",
+      "secret_key": "Secret key",
+      "webhook_secret": "Webhook secret",
+      "secret_status": "Secret key",
+      "configured": "Configured",
+      "not_configured": "Not configured",
+      "saved": "Payment credentials saved."
+    },
+    "invoicing": {
+      "title": "Invoicing provider",
+      "description": "Tax document credentials",
+      "provider": "Provider",
+      "api_key": "API key",
+      "account_id": "Account ID",
+      "secret": "Secret",
+      "test": "Test connection",
+      "test_ok": "Connection OK ({{provider}}).",
+      "saved": "Invoicing credentials saved."
+    },
     "chrome": {
       "title": "Header & footer style",
       "intro": "Soft uses gentle gradients of your brand colours. Solid fills the header and footer with your brand colour.",
@@ -1899,7 +1963,7 @@
     },
     "stripe": {
       "title": "Stripe",
-      "description": "Each school uses its own Stripe account (Standard). Secrets are encrypted and never shown again after save.",
+      "description": "Each studio uses its own Stripe account (Standard). Secrets are encrypted and never shown again after save.",
       "publishable_key": "Publishable key",
       "secret_key": "Secret key",
       "webhook_secret": "Webhook signing secret",
@@ -1970,15 +2034,15 @@
       "health_failed": "Could not connect to Invoice4U."
     },
     "hub": {
-      "page_title": "School settings",
-      "page_description": "Update your school profile, branding, and regional defaults.",
-      "profile_title": "School profile",
+      "page_title": "Studio settings",
+      "page_description": "Update your studio profile, branding, and regional defaults.",
+      "profile_title": "Studio profile",
       "profile_description": "Display name shown across the app.",
-      "school_name": "School name",
+      "school_name": "Studio name",
       "subdomain": "Subdomain",
       "subdomain_readonly": "Subdomain cannot be changed after launch. Contact support if you need a change.",
-      "name_required": "School name is required.",
-      "profile_saved": "School profile saved.",
+      "name_required": "Studio name is required.",
+      "profile_saved": "Studio profile saved.",
       "branding_title": "Branding",
       "branding_description": "Primary and accent colours applied across the site.",
       "primary_color": "Primary colour",

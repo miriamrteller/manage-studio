@@ -198,6 +198,7 @@ export function BrandingSettingsForm() {
               />
               <input
                 type="text"
+                dir="ltr"
                 value={formData.primary_color}
                 onChange={(e) => handleColorChange('primary_color', e.target.value)}
                 className="flex-1 h-10 px-3 rounded border border-[var(--border-default)] bg-[var(--surface-raised)] text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--state-focus)]"
@@ -223,6 +224,7 @@ export function BrandingSettingsForm() {
               />
               <input
                 type="text"
+                dir="ltr"
                 value={formData.accent_color}
                 onChange={(e) => handleColorChange('accent_color', e.target.value)}
                 className="flex-1 h-10 px-3 rounded border border-[var(--border-default)] bg-[var(--surface-raised)] text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--state-focus)]"
@@ -255,7 +257,7 @@ export function BrandingSettingsForm() {
               {(Object.entries(FONT_PAIRS) as [FontPairId, typeof FONT_PAIRS[FontPairId]][]).map(
                 ([id, pair]) => (
                   <option key={id} value={id}>
-                    {pair.name} — {pair.en} / {pair.he}
+                    {t(`settings.branding.fontPairs.${id}`, pair.name)} — {pair.en} / {pair.he}
                   </option>
                 )
               )}
@@ -269,6 +271,7 @@ export function BrandingSettingsForm() {
             <div className="space-y-2">
               <p
                 className="text-lg text-[var(--color-text-primary)]"
+                dir="ltr"
                 style={{ fontFamily: `"${selectedPair.en}", sans-serif` }}
               >
                 The quick brown fox jumps over the lazy dog
