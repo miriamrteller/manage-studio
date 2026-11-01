@@ -20,8 +20,9 @@ import {
   sendAutomaticEmail,
 } from "../_shared/photographer-emails/send.ts";
 import { type DueShootEmail, dueShootEmailVariables, isSafeLink } from "../_shared/photographer-emails/variables.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
 
-Deno.serve(async (req) => {
+Deno.serve(withMonitoring("run-shoot-emails", async (req) => {
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
 
   const secret = Deno.env.get("CRON_SECRET") ?? "";
@@ -73,4 +74,4 @@ Deno.serve(async (req) => {
 
   console.log("[run-shoot-emails]", JSON.stringify(counts));
   return jsonResponse({ processed: rows.length, ...counts });
-});
+}));

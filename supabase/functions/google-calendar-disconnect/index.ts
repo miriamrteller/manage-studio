@@ -5,8 +5,9 @@
 import { handleOptions, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/supabase.ts";
 import { revokeToken } from "../_shared/google-calendar.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
 
-Deno.serve(async (req) => {
+Deno.serve(withMonitoring("google-calendar-disconnect", async (req) => {
   const opt = handleOptions(req);
   if (opt) return opt;
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
@@ -41,4 +42,4 @@ Deno.serve(async (req) => {
   if (error) return jsonResponse({ error: error.message }, 500);
 
   return jsonResponse({ ok: true });
-});
+}));

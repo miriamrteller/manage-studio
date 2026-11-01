@@ -18,10 +18,11 @@ import { loadJobContractContext } from "../_shared/job-contract.ts";
 import { decideContractPdfGenerateAccess } from "../_shared/contract-pdf/access.ts";
 import { CONTRACT_PDF_BUCKET, contractPdfFilename } from "../_shared/contract-pdf/evidence.ts";
 import { regenerateContractPdf } from "../_shared/contract-pdf/regenerate.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
 
 const LINK_TTL_SECONDS = 10 * 60;
 
-Deno.serve(async (req) => {
+Deno.serve(withMonitoring("job-contract-pdf-generate", async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
 
@@ -88,4 +89,4 @@ Deno.serve(async (req) => {
     console.error("[job-contract-pdf-generate]", err);
     return jsonResponse({ error: "Internal error" }, 500);
   }
-});
+}));

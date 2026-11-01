@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { handleOptions, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createCheckoutCharge } from "../_shared/create-checkout-charge.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
 
 interface CreateCheckoutBody {
   offering_id: string;
@@ -8,7 +9,7 @@ interface CreateCheckoutBody {
   enrolment_token?: string;
 }
 
-serve(async (req) => {
+serve(withMonitoring("create-checkout", async (req) => {
   const options = handleOptions(req);
   if (options) return options;
 
@@ -48,4 +49,4 @@ serve(async (req) => {
       500,
     );
   }
-});
+}));

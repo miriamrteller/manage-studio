@@ -38,6 +38,7 @@ import {
   type QuoteNextSteps,
   resolveQuoteNextSteps,
 } from "../_shared/jobs/booking-next-steps.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
 
 const payloadSchema = z.object({
   token: z.string().regex(/^[0-9a-f]{64}$/),
@@ -45,7 +46,7 @@ const payloadSchema = z.object({
   selectedLineIds: z.array(z.string().uuid()).max(100).default([]),
 });
 
-Deno.serve(async (req) => {
+Deno.serve(withMonitoring("accept-quote", async (req) => {
   const options = handleOptions(req);
   if (options) return options;
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
@@ -109,7 +110,7 @@ Deno.serve(async (req) => {
     contract_to_follow: Boolean(result.send_contract) && !nextSteps.contractSignPath,
     ...nextSteps,
   });
-});
+}));
 
 async function loadNextSteps(
   service: ReturnType<typeof createServiceClient>,

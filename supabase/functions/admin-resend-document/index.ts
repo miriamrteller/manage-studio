@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
 
 /**
  * GAP 5 — Admin-triggered document resend.
@@ -12,7 +13,7 @@ import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
  *
  * Audit: every resend is logged to payment_document_access_log.
  */
-serve(async (req: Request) => {
+serve(withMonitoring("admin-resend-document", async (req: Request) => {
   try {
     const { payment_id, recipient_email } = await req.json() as {
       payment_id: string;
@@ -109,4 +110,4 @@ serve(async (req: Request) => {
       { status: 500, headers: { "Content-Type": "application/json" } },
     );
   }
-});
+}));

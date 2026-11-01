@@ -12,6 +12,7 @@ import {
   getEmailTemplateOverrides,
   getTenantEmailConfig,
 } from "../_shared/tenant-email.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
 
 interface SendOtpEmailRequest {
   email: string;
@@ -36,7 +37,7 @@ function retryAfterSeconds(blockedUntil: string): number {
   return Number.isFinite(seconds) && seconds > 0 ? seconds : 1;
 }
 
-Deno.serve(async (req) => {
+Deno.serve(withMonitoring("send-otp-email", async (req) => {
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), {
       status: 405,
@@ -148,4 +149,4 @@ Deno.serve(async (req) => {
       headers: { "Content-Type": "application/json" },
     });
   }
-});
+}));

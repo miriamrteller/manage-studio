@@ -8,6 +8,7 @@ import { loadPaymentByProviderRef } from "../_shared/payments/invoice4u/pending-
 import { processInvoice4uPaymentCallback } from "../_shared/payments/invoice4u/process-callback.ts";
 import { peekYpayChargeIdentifier } from "../_shared/payments/ypay/callback.ts";
 import { processYpayPaymentCallback } from "../_shared/payments/ypay/process-callback.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
 
 /**
  * Resolve the tenant before provider dispatch.
@@ -37,7 +38,7 @@ async function peekTenantId(
   }
 }
 
-Deno.serve(async (req) => {
+Deno.serve(withMonitoring("handle-payment-event", async (req) => {
   if (req.method !== "POST") {
     return jsonResponse({ error: "Method not allowed" }, 405);
   }
@@ -87,4 +88,4 @@ Deno.serve(async (req) => {
       400,
     );
   }
-});
+}));
