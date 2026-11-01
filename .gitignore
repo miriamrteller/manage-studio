@@ -6,6 +6,7 @@ yarn.lock
 # Build outputs
 dist/
 dist-demo/
+dist-demo-ballet/
 build/
 *.tsbuildinfo
 .next/

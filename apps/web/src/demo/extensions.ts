@@ -699,13 +699,38 @@ export const extraFunctions: Record<string, FunctionHandler> = {
     const vars = (body.variables ?? {}) as Row;
     if (body.templateName === 'quote_sent' && !emailEnabled(ctx, 'quote_sent')) return { success: true, skipped: true };
     const quoteUrl = vars.quoteUrl as string | undefined;
+    const studio = String(rows(ctx, 'tenants')[0]?.name ?? 'the studio');
+    const who = String(vars.recipientName ?? '');
+    const student = String(vars.studentName ?? '');
+    const cls = String(vars.className ?? '');
+    const payUrl = vars.payUrl as string | undefined;
+    // Readable subject/body for the templates the demo flows send.
+    const known: Record<string, { subject: string; body: string; link?: { label: string; href: string } }> = {
+      quote_sent: {
+        subject: 'Your photography quote',
+        body: `Hi ${who}, your quote (${String(vars.totalFormatted ?? '')}) is ready. Valid until ${String(vars.validUntil ?? '')}.`,
+        link: quoteUrl ? { label: 'View the quote', href: `#${quoteUrl.split('#')[1] ?? ''}` } : undefined,
+      },
+      enrolment_age_review_approved: {
+        subject: `Place approved: ${student} — ${cls}`,
+        body: `Hi ${who}, ${studio} approved ${student}'s place in ${cls}. Finish the enrolment to keep the place.`,
+        link: payUrl ? { label: 'Complete enrolment', href: payUrl.includes('#') ? `#${payUrl.split('#')[1]}` : payUrl } : undefined,
+      },
+      enrolment_age_review_declined: {
+        subject: `About ${student}'s request for ${cls}`,
+        body: `Hi ${who}, ${studio} could not offer ${student} a place in ${cls} this time.`,
+      },
+      enrolment_age_review_requested: {
+        subject: `Age review request: ${student} — ${cls}`,
+        body: `${who} asked for ${student} to join ${cls}, outside its age range. Review it in Students.`,
+      },
+    };
+    const msg = known[String(body.templateName ?? '')];
     sendToOutbox({
       to: String(body.recipientEmail ?? body.recipientPhone ?? ''),
-      subject: body.templateName === 'quote_sent' ? 'Your photography quote' : String(body.templateName ?? 'Message'),
-      body: body.templateName === 'quote_sent'
-        ? `Hi ${String(vars.recipientName ?? '')}, your quote (${String(vars.totalFormatted ?? '')}) is ready. Valid until ${String(vars.validUntil ?? '')}.`
-        : 'Message from Lumen & Light Photography.',
-      link: quoteUrl ? { label: 'View the quote', href: `#${quoteUrl.split('#')[1] ?? ''}` } : undefined,
+      subject: msg?.subject ?? String(body.templateName ?? 'Message'),
+      body: msg?.body ?? `Message from ${studio}.`,
+      link: msg?.link,
     });
     return { success: true };
   },

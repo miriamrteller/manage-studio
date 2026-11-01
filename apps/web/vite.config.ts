@@ -52,6 +52,12 @@ function denoNpmImportMap() {
  * so the production bundle is unchanged.
  */
 const DEMO_MODE = process.env.VITE_DEMO_MODE === 'true';
+/** Which demo studio to build: the photographer (default) or VITE_DEMO_STUDIO=ballet. */
+const DEMO_STUDIO = process.env.VITE_DEMO_STUDIO === 'ballet' ? 'ballet' : 'photographer';
+const DEMO_TITLES: Record<string, string> = {
+  photographer: 'Lumen &amp; Light Photography (demo)',
+  ballet: 'Creative Ballet Academy (demo)',
+};
 
 function demoMode() {
   const src = path.resolve(__dirname, 'src');
@@ -60,6 +66,8 @@ function demoMode() {
     [path.join(src, 'lib/resolveTenantSubdomain.ts')]: path.join(src, 'demo/resolveTenantSubdomain.ts'),
   };
   const routerShim = path.join(src, 'demo/reactRouterDom.ts');
+  // The ballet demo swaps the sample data module; the demo code itself is shared.
+  const balletSeed = path.join(src, 'demo/ballet/seed.ts');
   const stripeStub = path.join(src, 'demo/stripeStub.ts');
   return {
     name: 'demo-mode',
@@ -73,6 +81,14 @@ function demoMode() {
       if (source === 'react-router-dom' && importer && importer !== routerShim) return routerShim;
       // Stripe.js loads from js.stripe.com; the demo makes no external requests.
       if (source === '@stripe/stripe-js') return stripeStub;
+      if (
+        DEMO_STUDIO === 'ballet' &&
+        source === './seed' &&
+        importer &&
+        path.dirname(importer) === path.join(src, 'demo')
+      ) {
+        return balletSeed;
+      }
       if (!importer || !/(^|\/)(supabase|resolveTenantSubdomain)$/.test(source)) return null;
       const resolved = await this.resolve(source, importer, { ...options, skipSelf: true });
       if (resolved && swaps[resolved.id] && !importer.startsWith(path.join(src, 'demo'))) return swaps[resolved.id];
@@ -96,7 +112,7 @@ function demoMode() {
       handler(html: string) {
         return html
           .replace('/src/main.tsx', '/src/demo/main.tsx')
-          .replace(/<title>.*<\/title>/, '<title>Lumen &amp; Light Photography (demo)</title>')
+          .replace(/<title>.*<\/title>/, `<title>${DEMO_TITLES[DEMO_STUDIO]}</title>`)
           .replace(/\s*<link rel="icon"[^>]*>/, '');
       },
     },
@@ -141,6 +157,7 @@ export default defineConfig({
           // The demo makes no external requests, so error reporting is always off.
           'import.meta.env.VITE_SENTRY_DSN': JSON.stringify(''),
           'import.meta.env.VITE_RELEASE': JSON.stringify(''),
+          'import.meta.env.VITE_DEMO_STUDIO': JSON.stringify(DEMO_STUDIO),
         },
       }
     : {
@@ -177,7 +194,7 @@ export default defineConfig({
     // SPEC §7 — do not ship source maps to production clients. With Sentry upload
     // configured, maps are built hidden and deleted after upload (sentryUpload()).
     sourcemap: SENTRY_UPLOAD ? 'hidden' : false,
-    ...(DEMO_MODE ? { outDir: 'dist-demo' } : {}),
+    ...(DEMO_MODE ? { outDir: DEMO_STUDIO === 'ballet' ? 'dist-demo-ballet' : 'dist-demo' } : {}),
     rollupOptions: {
       output: {
         manualChunks: {
