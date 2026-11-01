@@ -35,6 +35,28 @@ function at(days: number, hour = 10, minute = 0): string {
   return d.toISOString();
 }
 
+/**
+ * Finance "This month" sums payments paid since the 1st, so on early days of a
+ * month the relative seed dates would all fall in the previous month (₪0).
+ * Re-date the two latest payments to earlier today (never before midnight or
+ * in the future), keeping their payment requests in step.
+ */
+function moveLatestPaymentsToToday(payments: Row[], requests: Row[], count = 2): void {
+  const now = Date.now();
+  const midnight = new Date(now);
+  midnight.setHours(0, 1, 0, 0);
+  const latest = [...payments]
+    .sort((a, b) => String(b.paid_at).localeCompare(String(a.paid_at)))
+    .slice(0, count);
+  latest.forEach((p, i) => {
+    const paidAt = new Date(Math.max(midnight.getTime(), now - (2 + i * 3) * 3_600_000)).toISOString();
+    p.paid_at = paidAt;
+    p.created_at = paidAt;
+    const req = requests.find((r) => r.payment_id === p.id);
+    if (req) req.paid_at = paidAt;
+  });
+}
+
 function day(days: number): string {
   return at(days, 12).slice(0, 10);
 }
@@ -347,7 +369,7 @@ export function buildSeed(): Tables {
           vat_rate: 18,
           currency: 'ILS',
           status: 'succeeded',
-          charge_type: 'one_time',
+          charge_type: 'initial',
           provider: 'ypay',
           payment_method: 'card',
           description: `${pkg.name}: ${label}`,
@@ -381,6 +403,8 @@ export function buildSeed(): Tables {
       });
     });
   });
+
+  moveLatestPaymentsToToday(payments, paymentRequests);
 
   const lead = (n: number, name: string, stage: string, channel: string, interest: string, offeringId: string | null, valueIls: number | null, note: string, createdDaysAgo: number, followUpDays: number | null, email: string, phone: string | null): Row => ({
     id: id(1100 + n),
