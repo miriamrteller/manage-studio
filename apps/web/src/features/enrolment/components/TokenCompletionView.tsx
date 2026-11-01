@@ -4,6 +4,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { EnrolmentPaymentSuccess } from '@/features/enrolment/components/EnrolmentPaymentSuccess';
 import { CheckoutPaymentShell } from '@/features/enrolment/components/CheckoutPaymentShell';
+import { OfflinePaymentConfirmation } from '@/features/enrolment/components/OfflinePaymentConfirmation';
+import type { OfflinePaymentRequested } from '@/features/enrolment/components/OfflinePaymentPanel';
 import { WaiverStep } from '@/features/enrolment/components/WaiverStep';
 import { useCheckoutBootstrap } from '@/features/enrolment/hooks/useCheckoutBootstrap';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
@@ -22,6 +24,7 @@ export function TokenCompletionView({ engagementId, effectiveToken }: TokenCompl
   const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useCurrentUser();
   const [paid, setPaid] = useState(false);
+  const [offlineRequest, setOfflineRequest] = useState<OfflinePaymentRequested | null>(null);
   const [waiverComplete, setWaiverComplete] = useState(false);
   const [tokenStripped, setTokenStripped] = useState(false);
   const [showSlowLoadingHelp, setShowSlowLoadingHelp] = useState(false);
@@ -187,6 +190,22 @@ export function TokenCompletionView({ engagementId, effectiveToken }: TokenCompl
     );
   }
 
+  if (offlineRequest) {
+    return (
+      <OfflinePaymentConfirmation
+        method={offlineRequest.method}
+        instructions={offlineRequest.instructions}
+        className={context.className}
+        amountMinor={context.amountMinor}
+        currency={context.currency}
+        billingMode={context.billingMode}
+        billingInterval={context.billingInterval}
+        closeLabel={t('common.close')}
+        onClose={() => navigate('/classes')}
+      />
+    );
+  }
+
   if (tokenShowWaiver && waiverTemplate) {
     return (
       <div className="max-w-lg mx-auto space-y-6">
@@ -244,6 +263,7 @@ export function TokenCompletionView({ engagementId, effectiveToken }: TokenCompl
         enrolmentToken={effectiveToken}
         charge={charge}
         onPaid={() => setPaid(true)}
+        onOfflineRequested={setOfflineRequest}
         onPrevious={() => navigate('/classes')}
       />
     </div>

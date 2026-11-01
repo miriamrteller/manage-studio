@@ -1,10 +1,19 @@
 import { z } from "npm:zod@3.22.4";
 
-/** `stripe` remains parseable (adapter code dormant) but is not offered in product UI. */
-export const PAYMENT_PROVIDER_SLUGS = ["stripe", "mock", "grow", "icount", "invoice4u", "ypay", "tranzila"] as const;
+/**
+ * `stripe` remains parseable (adapter code dormant) but is not offered in product UI.
+ * `none` = no online payment provider: the public checkout offers "pay at the studio"
+ * (cash / bank transfer) and the admin records payments by hand via record-payment.
+ */
+export const PAYMENT_PROVIDER_SLUGS = ["stripe", "mock", "grow", "icount", "invoice4u", "ypay", "tranzila", "none"] as const;
 export type PaymentProviderSlug = (typeof PAYMENT_PROVIDER_SLUGS)[number];
 
 export const PaymentProviderSlugSchema = z.enum(PAYMENT_PROVIDER_SLUGS);
+
+/** Offline-only tenant: no charge can be created online. */
+export function isOfflinePaymentProvider(value: string | null | undefined): boolean {
+  return value === "none";
+}
 
 export function parsePaymentProviderSlug(
   value: string | null | undefined,

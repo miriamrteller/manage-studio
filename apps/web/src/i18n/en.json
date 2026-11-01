@@ -1828,6 +1828,20 @@
     "step_waiver": "Waiver",
     "step_checkout": "Payment",
     "step_confirmation": "Confirmation",
+    "offline": {
+      "checkout_desc": "This studio takes payments in person. Choose how you will pay and confirm your place.",
+      "title": "Pay at the studio",
+      "desc": "There is no online payment here. Your place is reserved now and becomes final once the studio records your payment.",
+      "method_legend": "How will you pay?",
+      "method_cash": "Cash",
+      "method_bank_transfer": "Bank transfer",
+      "instructions_heading": "How to pay",
+      "instructions_fallback": "Please pay at the studio in cash or by bank transfer. Contact the studio for the details.",
+      "pending_note": "Your enrolment stays pending until the studio confirms your payment. You may receive reminders until then.",
+      "confirm_action": "Reserve my place — I will pay at the studio",
+      "confirmed_title": "Your place is reserved",
+      "confirmed_desc": "You chose to pay by {{method}} at the studio. The enrolment becomes active once the studio records your payment."
+    },
     "checkout_desc": "Review and complete payment",
     "checkout_prepare_failed": "Could not prepare enrolment for payment",
     "checkout_monthly_hint": "Monthly subscription — this amount is charged every month.",
@@ -1921,6 +1935,14 @@
       "uploadDarkLogo": "Upload dark mode logo",
       "fileTooLarge": "File too large (max 2MB)",
       "uploadFailed": "Upload failed. Please try again."
+    },
+    "offline_payments": {
+      "title": "Pay at the studio",
+      "description": "This studio takes no online payments. Parents choose cash or bank transfer at checkout, and you record each payment in the student's enrolment or in Finance. If the studio is a registered business, it must issue its own receipts.",
+      "instructions_label": "Payment instructions shown to parents",
+      "instructions_placeholder": "e.g. Bank Hapoalim, branch 123, account 456789, name Creative Ballet Academy. Or pay cash to the teacher at the first lesson.",
+      "instructions_hint": "Shown on the public checkout, on the confirmation screen and in payment reminders. Write it in the language your parents read.",
+      "saved": "Payment instructions saved."
     },
     "payments": {
       "title": "Payment provider",

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useTenant } from '@/hooks/useTenant';
 import { useFeatureGate } from '@/hooks/useFeatureGate';
 import {
+  isOfflineCheckout,
   tenantUsesBundledPayments,
 } from '@/lib/tenantProviderRouting';
 import {
@@ -15,6 +16,7 @@ import {
 import { SchoolProfileForm } from './SchoolProfileForm';
 import { BrandingSettingsForm } from './BrandingSettingsForm';
 import { LocaleSettingsForm } from './LocaleSettingsForm';
+import { OfflinePaymentSettingsForm } from './OfflinePaymentSettingsForm';
 
 function SettingsLinkCard({
   title,
@@ -68,11 +70,17 @@ export function TenantSettingsHub() {
       <BrandingSettingsForm />
       <hr className="border-gray-200" />
       <LocaleSettingsForm />
+      {isOfflineCheckout(tenant?.payment_provider) && (
+        <>
+          <hr className="border-gray-200" />
+          <OfflinePaymentSettingsForm />
+        </>
+      )}
 
       <section className="space-y-4">
         <h2 className="text-lg font-semibold text-foreground">{t('settings.hub.more_settings')}</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {tenantUsesBundledPayments(tenant) ? (
+          {isOfflineCheckout(tenant?.payment_provider) ? null : tenantUsesBundledPayments(tenant) ? (
             <SettingsLinkCard
               title={bundledPaymentsNavTitle(t)}
               description={bundledPaymentsHubDescription(t)}

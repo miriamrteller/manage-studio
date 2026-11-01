@@ -30,6 +30,8 @@ export type TenantConfig = {
   payment_provider_webhook_configured?: boolean;
   payment_provider_updated_at?: string | null;
   invoicing_provider: string;
+  /** Studio-written "pay at the studio" text; used when payment_provider === 'none'. */
+  offline_payment_instructions?: string | null;
   business_preset: string;
   /** Vertical id (tenants.skin): photographer | beautician | dance-studio | generic */
   vertical: string;

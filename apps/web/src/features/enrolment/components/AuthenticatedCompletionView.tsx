@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { EnrolmentPaymentSuccess } from '@/features/enrolment/components/EnrolmentPaymentSuccess';
 import { CheckoutPaymentShell } from '@/features/enrolment/components/CheckoutPaymentShell';
+import { OfflinePaymentConfirmation } from '@/features/enrolment/components/OfflinePaymentConfirmation';
+import type { OfflinePaymentRequested } from '@/features/enrolment/components/OfflinePaymentPanel';
 import { WaiverStep } from '@/features/enrolment/components/WaiverStep';
 import { useCheckoutBootstrap } from '@/features/enrolment/hooks/useCheckoutBootstrap';
 import { resolvePendingEnrolmentAction } from '@/features/enrolment/lib/pendingEnrolmentAction';
@@ -28,6 +30,7 @@ export function AuthenticatedCompletionView({ engagementId }: AuthenticatedCompl
   const [waiverComplete, setWaiverComplete] = useState(false);
   const [linkingWaiver, setLinkingWaiver] = useState(false);
   const [paid, setPaid] = useState(false);
+  const [offlineRequest, setOfflineRequest] = useState<OfflinePaymentRequested | null>(null);
 
   const bootstrap = useCheckoutBootstrap({
     phase: 'pay',
@@ -175,6 +178,24 @@ export function AuthenticatedCompletionView({ engagementId }: AuthenticatedCompl
     );
   }
 
+  if (offlineRequest) {
+    return (
+      <OfflinePaymentConfirmation
+        method={offlineRequest.method}
+        instructions={offlineRequest.instructions}
+        className={context.className}
+        amountMinor={context.amountMinor}
+        currency={context.currency}
+        billingMode={context.billingMode}
+        billingInterval={context.billingInterval}
+        closeLabel={
+          user && hasParentRole(user.role) ? t('pages.portal.view_enrolment') : t('common.close')
+        }
+        onClose={() => void finishCompletion()}
+      />
+    );
+  }
+
   if (showWaiverFirst && waiverTemplate) {
     return (
       <div className="max-w-lg mx-auto space-y-6">
@@ -229,6 +250,7 @@ export function AuthenticatedCompletionView({ engagementId }: AuthenticatedCompl
         engagementId={context.engagementId}
         charge={charge}
         onPaid={() => setPaid(true)}
+        onOfflineRequested={setOfflineRequest}
         onPrevious={() => void finishCompletion()}
       />
     </div>

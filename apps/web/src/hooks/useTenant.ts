@@ -57,6 +57,7 @@ export function useTenantQuery(): { tenant: TenantConfig | null; isLoading: bool
         payment_provider_webhook_configured: Boolean(row.payment_provider_webhook_configured),
         payment_provider_updated_at: row.payment_provider_updated_at ?? null,
         invoicing_provider: row.invoicing_provider ?? 'grow',
+        offline_payment_instructions: row.offline_payment_instructions ?? null,
         business_preset: preset,
         vertical,
         entity_label_overrides: overrides,

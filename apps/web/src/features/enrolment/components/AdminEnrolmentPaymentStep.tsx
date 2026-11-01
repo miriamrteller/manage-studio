@@ -10,6 +10,7 @@ import {
 } from '../lib/adminEnrolmentService';
 import { computeClassTotal } from '../lib/computeClassTotal';
 import { formatOfferingPrice } from '@/lib/formatOfferingPrice';
+import { isOfflineCheckout } from '@/lib/tenantProviderRouting';
 import type { Offering, Tenant } from '@shared/schemas';
 
 export type AdminPaymentChoice = 'pay_now' | 'send_link' | 'offline';
@@ -57,6 +58,10 @@ export function AdminEnrolmentPaymentStep({
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const guardianEmailNormalized = guardianEmail?.toLowerCase() ?? '';
+  // Studio with no online payment provider: there is no card form to offer.
+  const offlineOnly = isOfflineCheckout(
+    (tenant as Tenant & { payment_provider?: string | null }).payment_provider,
+  );
 
   const pricing = computeClassTotal(classRow, tenant);
 
@@ -194,17 +199,19 @@ export function AdminEnrolmentPaymentStep({
       <p className="text-sm text-gray-600">{t('pages.admin_enrol.payment_desc')}</p>
 
       <div className="space-y-2">
-        <Button
-          variant="outline"
-          className="w-full justify-start p-4 h-auto"
-          disabled={isSubmitting}
-          onClick={() => void handlePaymentChoice('pay_now')}
-        >
-          <div>
-            <p className="font-semibold">{t('pages.admin_enrol.pay_now_title')}</p>
-            <p className="text-sm text-gray-500">{t('pages.admin_enrol.pay_now_desc')}</p>
-          </div>
-        </Button>
+        {!offlineOnly && (
+          <Button
+            variant="outline"
+            className="w-full justify-start p-4 h-auto"
+            disabled={isSubmitting}
+            onClick={() => void handlePaymentChoice('pay_now')}
+          >
+            <div>
+              <p className="font-semibold">{t('pages.admin_enrol.pay_now_title')}</p>
+              <p className="text-sm text-gray-500">{t('pages.admin_enrol.pay_now_desc')}</p>
+            </div>
+          </Button>
+        )}
 
         <div className="rounded-lg border border-gray-200 p-4 space-y-3">
           <div>

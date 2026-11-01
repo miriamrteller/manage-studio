@@ -8,6 +8,7 @@ import { StepNotification } from './StepNotification';
 import { StepAdminCheckout } from './StepAdminCheckout';
 import { StepCheckout } from './StepCheckout';
 import { StepConfirmation } from './StepConfirmation';
+import type { OfflinePaymentRequested } from './OfflinePaymentPanel';
 import { WaiverStep } from './WaiverStep';
 import { WaiverSignedSummary } from './WaiverSignedSummary';
 import { GuestVerifyStep } from './GuestVerifyStep';
@@ -358,6 +359,18 @@ export function EnrolmentStepper({
   const mergeAndAdvance = (newData?: Partial<Engagement>) => {
     if (newData) setEnrolmentData((prev) => ({ ...prev, ...newData }));
     goToNextStep();
+  };
+
+  const [offlineRequest, setOfflineRequest] = useState<OfflinePaymentRequested | null>(null);
+
+  // The parent chose to pay at the studio: the place is held as pending_payment until the
+  // studio records the money, so show the "reserved" confirmation, not the paid one.
+  const handleOfflineRequested = (result: OfflinePaymentRequested) => {
+    if (!checkoutEnrolmentId) return;
+    setOfflineRequest(result);
+    setEnrolmentData((prev) => ({ ...prev, id: checkoutEnrolmentId, status: 'pending_payment' }));
+    sessionStorage.setItem('portalEngagementId', checkoutEnrolmentId);
+    setCurrentStep('confirmation');
   };
 
   const handlePaymentSuccess = async () => {
@@ -751,6 +764,7 @@ export function EnrolmentStepper({
             isPreparing={isCheckoutPreparing || (isCreating && !checkoutEnrolmentId)}
             requireAuth={enrolmentContext.mode !== 'guest' && Boolean(user)}
             onPaymentSuccess={handlePaymentSuccess}
+            onOfflineRequested={handleOfflineRequested}
             onPrevious={handlePreviousStep}
             canGoBack={canGoBack}
           />
@@ -768,6 +782,8 @@ export function EnrolmentStepper({
             adminLinkEmailSent={adminCompletion.adminLinkEmailSent}
             adminLinkWarning={adminCompletion.adminLinkWarning}
             adminEngagementId={checkoutEnrolmentId}
+            offlineRequest={offlineRequest}
+            offlineCharge={checkoutCharge}
             closeLabel={
               enrolmentContext.mode === 'parent'
                 ? t('pages.portal.view_enrolment', { defaultValue: 'View in portal' })

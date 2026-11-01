@@ -8,13 +8,16 @@ import { useTenant } from '@/hooks/useTenant';
 import { CheckoutPaymentShell } from './CheckoutPaymentShell';
 import { ProviderCheckoutShell } from './EnrolmentCheckoutShells';
 import type { CheckoutChargePayload } from '../lib/checkoutBootstrapTypes';
-import { isHostedPageCheckoutReady } from '@/lib/tenantProviderRouting';
+import { isHostedPageCheckoutReady, isOfflineCheckout } from '@/lib/tenantProviderRouting';
+import { OfflinePaymentPanel, type OfflinePaymentRequested } from './OfflinePaymentPanel';
 
 interface BasePaymentFormProps {
   classId: string;
   engagementId: string;
   onPaid: () => void;
   onPrevious: () => void;
+  /** Studio with no online payments: the parent asked to pay at the studio. */
+  onOfflineRequested?: (result: OfflinePaymentRequested) => void;
 }
 
 interface EnrolmentPaymentFormProps extends BasePaymentFormProps {
@@ -39,6 +42,7 @@ interface CheckoutIntentData {
   pendingWebhook: boolean;
   billingMode: string | null;
   billingInterval: string | null;
+  offlineInstructions: string | null;
 }
 
 interface CheckoutIntentState extends CheckoutIntentData {
@@ -76,8 +80,9 @@ async function fetchCheckoutIntent(input: {
       Boolean(data?.mockPending) ||
       data?.paymentProvider === 'mock';
     const hostedPageReady = isHostedPageCheckoutReady(data?.paymentProvider, data?.pageUrl);
+    const offlineReady = isOfflineCheckout(data?.paymentProvider);
 
-    if (error || (!data?.clientSecret && !mockReady && !hostedPageReady)) {
+    if (error || (!data?.clientSecret && !mockReady && !hostedPageReady && !offlineReady)) {
       throw new Error(
         error?.message ??
           (typeof data?.error === 'string' ? data.error : null) ??
@@ -98,6 +103,8 @@ async function fetchCheckoutIntent(input: {
       pendingWebhook: Boolean(data.pendingWebhook),
       billingMode: typeof data.billingMode === 'string' ? data.billingMode : null,
       billingInterval: typeof data.billingInterval === 'string' ? data.billingInterval : null,
+      offlineInstructions:
+        typeof data.offlineInstructions === 'string' ? data.offlineInstructions : null,
     };
   })();
 
@@ -153,6 +160,7 @@ function useCheckoutIntent({
     pendingWebhook: data?.pendingWebhook ?? false,
     billingMode: data?.billingMode ?? null,
     billingInterval: data?.billingInterval ?? null,
+    offlineInstructions: data?.offlineInstructions ?? null,
     loadError: error?.message ?? null,
     isLoading: queryEnabled && isPending,
   };
@@ -165,6 +173,7 @@ function CheckoutIntentShell({
   checkout,
   onPaid,
   onPrevious,
+  onOfflineRequested,
 }: {
   classId: string;
   engagementId: string;
@@ -172,6 +181,7 @@ function CheckoutIntentShell({
   checkout: CheckoutIntentState;
   onPaid: () => void;
   onPrevious: () => void;
+  onOfflineRequested?: (result: OfflinePaymentRequested) => void;
 }) {
   const { t } = useTranslation();
   const {
@@ -186,6 +196,7 @@ function CheckoutIntentShell({
     pageUrl,
     billingMode,
     billingInterval,
+    offlineInstructions,
     loadError,
     isLoading,
   } = checkout;
@@ -209,12 +220,34 @@ function CheckoutIntentShell({
   }
 
   const hostedPageReady = isHostedPageCheckoutReady(paymentProvider, pageUrl);
+  const offlineReady = isOfflineCheckout(paymentProvider);
 
   if (
     isLoading ||
-    (!mockPending && paymentProvider !== 'mock' && !hostedPageReady && (!clientSecret || !publishableKey))
+    (!mockPending &&
+      paymentProvider !== 'mock' &&
+      !hostedPageReady &&
+      !offlineReady &&
+      (!clientSecret || !publishableKey))
   ) {
     return <p role="status">{t('common.loading')}</p>;
+  }
+
+  if (offlineReady) {
+    return (
+      <OfflinePaymentPanel
+        classId={classId}
+        engagementId={engagementId}
+        enrolmentToken={enrolmentToken}
+        amountMinor={amountMinor}
+        currency={currency}
+        billingMode={billingMode}
+        billingInterval={billingInterval}
+        instructions={offlineInstructions}
+        onRequested={(result) => onOfflineRequested?.(result)}
+        onPrevious={onPrevious}
+      />
+    );
   }
 
   return (
@@ -245,6 +278,7 @@ function AuthenticatedEnrolmentPaymentForm({
   preloadedCharge,
   onPaid,
   onPrevious,
+  onOfflineRequested,
 }: BasePaymentFormProps & { requireAuth?: boolean; preloadedCharge?: CheckoutChargePayload | null }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -282,6 +316,7 @@ function AuthenticatedEnrolmentPaymentForm({
         charge={preloadedCharge}
         onPaid={onPaid}
         onPrevious={onPrevious}
+        onOfflineRequested={onOfflineRequested}
       />
     );
   }
@@ -293,6 +328,7 @@ function AuthenticatedEnrolmentPaymentForm({
       checkout={checkout}
       onPaid={onPaid}
       onPrevious={onPrevious}
+      onOfflineRequested={onOfflineRequested}
     />
   );
 }
@@ -304,6 +340,7 @@ function TokenEnrolmentPaymentForm({
   preloadedCharge,
   onPaid,
   onPrevious,
+  onOfflineRequested,
 }: BasePaymentFormProps & {
   enrolmentToken: string;
   preloadedCharge?: CheckoutChargePayload | null;
@@ -324,6 +361,7 @@ function TokenEnrolmentPaymentForm({
         charge={preloadedCharge}
         onPaid={onPaid}
         onPrevious={onPrevious}
+        onOfflineRequested={onOfflineRequested}
       />
     );
   }
@@ -336,6 +374,7 @@ function TokenEnrolmentPaymentForm({
       checkout={checkout}
       onPaid={onPaid}
       onPrevious={onPrevious}
+      onOfflineRequested={onOfflineRequested}
     />
   );
 }
@@ -348,6 +387,7 @@ export function EnrolmentPaymentForm({
   preloadedCharge,
   onPaid,
   onPrevious,
+  onOfflineRequested,
 }: EnrolmentPaymentFormProps) {
   if (enrolmentToken) {
     return (
@@ -358,6 +398,7 @@ export function EnrolmentPaymentForm({
         preloadedCharge={preloadedCharge}
         onPaid={onPaid}
         onPrevious={onPrevious}
+        onOfflineRequested={onOfflineRequested}
       />
     );
   }
@@ -370,6 +411,7 @@ export function EnrolmentPaymentForm({
       preloadedCharge={preloadedCharge}
       onPaid={onPaid}
       onPrevious={onPrevious}
+      onOfflineRequested={onOfflineRequested}
     />
   );
 }

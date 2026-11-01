@@ -9,6 +9,7 @@ import { deliverMockIcountIpn } from "./icount/mock-api.ts";
 import { buildChargeMetadata, applyMockSyncEvent } from "./providers/mock.ts";
 
 import { getPaymentProviderForTenant } from "./index.ts";
+import { isOfflinePaymentProvider } from "./registry.ts";
 
 import { renewalIdempotencyKey } from "./billing-time.ts";
 
@@ -142,6 +143,12 @@ export async function processBillingSchedule(
 
     return { outcome: "skipped" };
 
+  }
+
+  // Offline-only studio (payment_provider = 'none'): nothing can be charged online.
+  // Monthly amounts are collected and recorded by the studio itself.
+  if (isOfflinePaymentProvider(tenant.payment_provider as string | null)) {
+    return { outcome: "skipped" };
   }
 
 

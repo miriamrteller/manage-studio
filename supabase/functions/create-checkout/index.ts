@@ -41,6 +41,9 @@ serve(withMonitoring("create-checkout", async (req) => {
       pageUrl: charge.pageUrl,
       pendingWebhook: charge.pendingWebhook,
       alreadyPaid: charge.alreadyPaid,
+      billingMode: charge.billingMode ?? null,
+      billingInterval: charge.billingInterval ?? null,
+      offlineInstructions: charge.offlineInstructions ?? null,
     });
   } catch (error) {
     console.error("[create-checkout]", error);

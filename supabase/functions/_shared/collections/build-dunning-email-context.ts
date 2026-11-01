@@ -5,6 +5,11 @@ import { resolveEnrolmentNotificationRecipient } from "../enrolment-recipient.ts
 
 export type DunningKind = "renewal" | "enrolment_unpaid";
 
+/** Offline-only studio: the reminder carries these instructions instead of a pay link. */
+export interface OfflineDunningInput {
+  instructions: string | null;
+}
+
 export interface DunningEmailContext {
   recipientEmail: string;
   recipientName: string;
@@ -62,12 +67,14 @@ export function buildRenewalDunningEmailCopy(input: {
   return { intro, ctaButton, dueDate, description, subject, variables: {} };
 }
 
-function buildEnrolmentUnpaidEmailCopy(input: {
+export function buildEnrolmentUnpaidEmailCopy(input: {
   language: "en" | "he";
   className: string;
   studentName: string;
   attemptCount: number;
   dueDate: string;
+  /** true when the studio takes no online payments (pay at the studio). */
+  offline?: boolean;
 }): Pick<DunningEmailContext, "variables" | "subject"> & {
   intro: string;
   ctaButton: string;
@@ -76,16 +83,27 @@ function buildEnrolmentUnpaidEmailCopy(input: {
   const description = `${input.studentName} — ${input.className}`;
   const attempt = Math.min(Math.max(input.attemptCount, 1), 2) as 1 | 2;
 
-  const intros: Record<"en" | "he", Record<1 | 2, string>> = {
-    en: {
-      1: `Payment for ${input.className} is still outstanding. Please complete enrollment using the link below.`,
-      2: `Reminder: enrollment for ${input.className} is still unpaid. Please complete payment soon to secure the spot.`,
-    },
-    he: {
-      1: `התשלום עבור ${input.className} עדיין לא הושלם. נא להשלים את ההרשמה בקישור למטה.`,
-      2: `תזכורת: ההרשמה ל${input.className} עדיין לא שולמה. נא להשלים את התשלום בהקדם.`,
-    },
-  };
+  const intros: Record<"en" | "he", Record<1 | 2, string>> = input.offline
+    ? {
+      en: {
+        1: `Payment for ${input.className} is still outstanding. Please pay at the studio (cash or bank transfer) — the details are below.`,
+        2: `Reminder: enrollment for ${input.className} is still unpaid. Please pay at the studio soon to secure the spot — the details are below.`,
+      },
+      he: {
+        1: `התשלום עבור ${input.className} עדיין לא הושלם. נא לשלם בסטודיו (מזומן או העברה בנקאית) — הפרטים למטה.`,
+        2: `תזכורת: ההרשמה ל${input.className} עדיין לא שולמה. נא לשלם בסטודיו בהקדם כדי לשמור על המקום — הפרטים למטה.`,
+      },
+    }
+    : {
+      en: {
+        1: `Payment for ${input.className} is still outstanding. Please complete enrollment using the link below.`,
+        2: `Reminder: enrollment for ${input.className} is still unpaid. Please complete payment soon to secure the spot.`,
+      },
+      he: {
+        1: `התשלום עבור ${input.className} עדיין לא הושלם. נא להשלים את ההרשמה בקישור למטה.`,
+        2: `תזכורת: ההרשמה ל${input.className} עדיין לא שולמה. נא להשלים את התשלום בהקדם.`,
+      },
+    };
 
   const ctaButton = input.language === "he" ? "השלמת הרשמה ותשלום" : "Complete enrollment";
 
@@ -119,6 +137,7 @@ export async function buildDunningEmailContext(
     paymentUrl: string;
     language: "en" | "he";
     linkExpiresAt?: Date;
+    offline?: OfflineDunningInput;
   },
 ): Promise<DunningEmailContext | null> {
   const recipient = await resolveEnrolmentNotificationRecipient(
@@ -196,6 +215,7 @@ export async function buildDunningEmailContext(
     studentName,
     attemptCount: input.attemptCount,
     dueDate,
+    offline: Boolean(input.offline),
   });
 
   return {
@@ -215,6 +235,9 @@ export async function buildDunningEmailContext(
       description: copy.description,
       intro: copy.intro,
       ctaButton: copy.ctaButton,
+      ...(input.offline
+        ? { offlinePayment: true, offlineInstructions: input.offline.instructions ?? "" }
+        : {}),
     },
   };
 }

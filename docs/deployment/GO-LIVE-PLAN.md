@@ -131,6 +131,20 @@ promote dev.** Dev carries mock-payment rows, demo tenants and test seeds.
       `verticals` (including `dance-studio`, which requires the `professional`
       plan) is seeded by migration `000200`, not by a seed file — nothing extra
       to run first.
+- [ ] Creative Ballet takes no online payments yet (not a registered business):
+      switch the tenant to "pay at the studio" right after provisioning, so the
+      public checkout offers cash / bank transfer instead of a Grow card form and
+      reminders repeat the studio's own instructions (migration `20261101000200`).
+      Never use `mock` for this.
+      ```sql
+      UPDATE tenants
+         SET payment_provider = 'none',
+             offline_payment_instructions = '<bank details / "pay the teacher at the first lesson">'
+       WHERE subdomain = 'creativeballet';
+      ```
+      The owner can edit the instructions later in Admin → Setup → Settings
+      ("Pay at the studio"). Each cash payment is then recorded by the admin
+      (student → Record payment), which activates the enrolment.
 - [ ] Seed invoice sequences.
 - [ ] **`pnpm verify:prod`** — encryption key set and not the dev value, cron
       config present, `pg_cron`/`pg_net` on, no seed tenant, chain applied.

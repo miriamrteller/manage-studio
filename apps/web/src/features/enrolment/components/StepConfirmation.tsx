@@ -2,8 +2,11 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { buildPaymentLink } from '../lib/adminEnrolmentService';
+import type { CheckoutChargePayload } from '../lib/checkoutBootstrapTypes';
 import type { Engagement } from '@shared/schemas';
 import type { AdminPaymentChoice } from './AdminEnrolmentPaymentStep';
+import { OfflinePaymentConfirmation } from './OfflinePaymentConfirmation';
+import type { OfflinePaymentRequested } from './OfflinePaymentPanel';
 
 export interface StepConfirmationProps {
   enrolment: Engagement;
@@ -16,6 +19,9 @@ export interface StepConfirmationProps {
   adminLinkEmailSent?: boolean | null;
   adminLinkWarning?: string | null;
   adminEngagementId?: string | null;
+  /** Set when the parent chose to pay at the studio (no online payment provider). */
+  offlineRequest?: OfflinePaymentRequested | null;
+  offlineCharge?: CheckoutChargePayload | null;
   closeLabel?: string;
   onClose: () => void;
 }
@@ -31,11 +37,29 @@ export function StepConfirmation({
   adminLinkEmailSent,
   adminLinkWarning,
   adminEngagementId,
+  offlineRequest,
+  offlineCharge,
   closeLabel,
   onClose,
 }: StepConfirmationProps) {
   const { t } = useTranslation();
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
+
+  if (offlineRequest) {
+    return (
+      <OfflinePaymentConfirmation
+        method={offlineRequest.method}
+        instructions={offlineRequest.instructions}
+        className={className || null}
+        amountMinor={offlineCharge?.amountMinor ?? null}
+        currency={offlineCharge?.currency ?? null}
+        billingMode={offlineCharge?.billingMode ?? null}
+        billingInterval={offlineCharge?.billingInterval ?? null}
+        closeLabel={closeLabel ?? t('common.done')}
+        onClose={onClose}
+      />
+    );
+  }
 
   if (adminDoneMessage) {
     const adminSendLinkFlow = adminPaymentChoice === 'send_link';

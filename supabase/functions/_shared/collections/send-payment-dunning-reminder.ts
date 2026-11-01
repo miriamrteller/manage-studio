@@ -13,6 +13,7 @@ import {
 import {
   buildDunningEmailContext,
   type DunningKind,
+  type OfflineDunningInput,
 } from "./build-dunning-email-context.ts";
 
 export async function sendPaymentDunningReminder(
@@ -29,6 +30,8 @@ export async function sendPaymentDunningReminder(
     paymentUrl: string;
     recipientPersonId?: string;
     linkExpiresAt?: Date;
+    /** Set for tenants with payment_provider = 'none': no pay link, studio instructions instead. */
+    offline?: OfflineDunningInput;
   },
 ): Promise<{ sent: boolean; skipped?: string }> {
   const dunningKey = buildDunningKey(input.kind, input.subjectId, input.attemptCount);
@@ -37,7 +40,7 @@ export async function sendPaymentDunningReminder(
     return { sent: false, skipped: "already_sent" };
   }
 
-  if (!input.paymentUrl || input.paymentUrl === "#") {
+  if (!input.offline && (!input.paymentUrl || input.paymentUrl === "#")) {
     return { sent: false, skipped: "no_app_url" };
   }
 
@@ -66,6 +69,7 @@ export async function sendPaymentDunningReminder(
     paymentUrl: input.paymentUrl,
     language,
     linkExpiresAt: input.linkExpiresAt,
+    offline: input.offline,
   });
 
   if (!context) {

@@ -14,6 +14,7 @@ import {
   resolveEnrolmentDunningDueAttempt,
 } from "./enrolment-dunning-time.ts";
 import { sendPaymentDunningReminder } from "./send-payment-dunning-reminder.ts";
+import { isOfflinePaymentProvider } from "../payments/registry.ts";
 
 export async function applyEnrolmentPaymentDunningStep(
   service: SupabaseClient,
@@ -130,6 +131,33 @@ export async function applyEnrolmentPaymentDunningStep(
       entity_type: "engagement",
       entity_id: engagementId,
       after_state: { reason: "no_recipient", attempt_count: dueAttempt },
+    });
+    return { outcome: "reminded", attemptCount: dueAttempt as 1 | 2 };
+  }
+
+  // Offline-only studio (payment_provider = 'none'): there is no checkout that can take
+  // money, so the reminder repeats the studio's own "pay at the studio" instructions.
+  const { data: tenantPay } = await service
+    .from("tenants")
+    .select("payment_provider, offline_payment_instructions")
+    .eq("id", updated.tenant_id)
+    .single();
+
+  if (isOfflinePaymentProvider(tenantPay?.payment_provider as string | null)) {
+    await sendPaymentDunningReminder(service, {
+      kind: "enrolment_unpaid",
+      tenantId: updated.tenant_id as string,
+      engagementId,
+      offeringId: updated.offering_id as string,
+      personId: updated.person_id as string,
+      subjectId: engagementId,
+      attemptCount: dueAttempt,
+      nextActionAt: nextAt,
+      paymentUrl: "",
+      recipientPersonId: recipient.personId,
+      offline: {
+        instructions: (tenantPay?.offline_payment_instructions as string | null) ?? null,
+      },
     });
     return { outcome: "reminded", attemptCount: dueAttempt as 1 | 2 };
   }

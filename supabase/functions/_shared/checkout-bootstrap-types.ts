@@ -34,6 +34,11 @@ export interface CheckoutChargePayload {
   /** From offering — drives "/ month" on checkout UI. */
   billingMode?: string | null;
   billingInterval?: string | null;
+  /**
+   * paymentProvider === 'none' only: the studio's own "pay at the studio" text
+   * (tenants.offline_payment_instructions). Null when the studio wrote none.
+   */
+  offlineInstructions?: string | null;
 }
 
 export interface AppointmentCalendarDetails {

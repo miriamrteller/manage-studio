@@ -50,6 +50,11 @@ export function tenantUsesSplitProviders(tenant: TenantProviderContext | null | 
   return !tenantUsesBundledPayments(tenant);
 }
 
+/** Studio with no online payment provider: checkout offers "pay at the studio" instead. */
+export function isOfflineCheckout(paymentProvider: string | null | undefined): boolean {
+  return paymentProvider === 'none';
+}
+
 /** Hosted-page checkout (Grow / iCount / Invoice4U redirect). */
 export function isHostedPageCheckoutReady(
   paymentProvider: string | null | undefined,

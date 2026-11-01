@@ -46,6 +46,12 @@ export function getPaymentProvider(
       return getEnv("TRANZILA_MOCK") === "true"
         ? new MockTranzilaPaymentProvider(service)
         : new TranzilaPaymentProvider(service);
+    case "none":
+      // Offline-only tenant. Callers that can charge must branch on
+      // isOfflinePaymentProvider() before asking for an adapter.
+      throw new Error(
+        "Tenant has no online payment provider (payment_provider = 'none'); payments are recorded by the studio",
+      );
     default: {
       const _exhaustive: never = parsed;
       return _exhaustive;

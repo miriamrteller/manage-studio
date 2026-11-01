@@ -2,8 +2,10 @@ import { useTranslation } from 'react-i18next';
 import type { Engagement } from '@shared/schemas';
 import type { CheckoutChargePayload } from '../lib/checkoutBootstrapTypes';
 import { EnrolmentPaymentForm } from './EnrolmentPaymentForm';
+import type { OfflinePaymentRequested } from './OfflinePaymentPanel';
 import { StepBackButton } from './StepBackButton';
 import { formatOfferingPrice } from '@/lib/formatOfferingPrice';
+import { isOfflineCheckout } from '@/lib/tenantProviderRouting';
 
 export interface StepCheckoutProps {
   enrolmentData: Partial<Engagement>;
@@ -13,6 +15,8 @@ export interface StepCheckoutProps {
   isPreparing: boolean;
   requireAuth: boolean;
   onPaymentSuccess: () => void;
+  /** Studio with no online payments: the parent asked to pay at the studio. */
+  onOfflineRequested?: (result: OfflinePaymentRequested) => void;
   onPrevious: () => void;
   canGoBack?: boolean;
 }
@@ -25,6 +29,7 @@ export function StepCheckout({
   isPreparing,
   requireAuth,
   onPaymentSuccess,
+  onOfflineRequested,
   onPrevious,
   canGoBack = true,
 }: StepCheckoutProps) {
@@ -66,7 +71,11 @@ export function StepCheckout({
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">{t('enrolment.checkout_desc')}</p>
+      <p className="text-sm text-muted-foreground">
+        {isOfflineCheckout(checkoutCharge?.paymentProvider)
+          ? t('enrolment.offline.checkout_desc')
+          : t('enrolment.checkout_desc')}
+      </p>
       {checkoutCharge?.amountMinor != null && checkoutCharge.currency && (
         <div className="rounded-lg bg-muted/40 px-3 py-2 space-y-1">
           <p className="text-sm font-medium">
@@ -93,6 +102,7 @@ export function StepCheckout({
         requireAuth={requireAuth}
         preloadedCharge={checkoutCharge}
         onPaid={onPaymentSuccess}
+        onOfflineRequested={onOfflineRequested}
         onPrevious={onPrevious}
       />
     </div>
