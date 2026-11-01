@@ -5,8 +5,9 @@ import {
   flattenCompletionContext,
   loadEnrolmentCompletionContext,
 } from "../_shared/enrolment-completion-context.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
 
-Deno.serve(async (req) => {
+Deno.serve(withMonitoring("get-enrolment-completion", async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
 
@@ -34,4 +35,4 @@ Deno.serve(async (req) => {
     console.error("[get-enrolment-completion]", err);
     return jsonResponse({ error: err instanceof Error ? err.message : "Internal error" }, 500);
   }
-});
+}));

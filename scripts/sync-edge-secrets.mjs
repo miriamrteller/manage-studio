@@ -35,6 +35,9 @@ const REQUIRED = [
 
 /** Copied when non-empty in .env */
 const OPTIONAL = [
+  'SENTRY_DSN', // error reporting; see docs/deployment/OBSERVABILITY.md
+  'SENTRY_ENVIRONMENT',
+  'SENTRY_RELEASE',
   'GROW_API_BASE',
   'GROW_NOTIFY_URL',
   'GROW_MOCK',

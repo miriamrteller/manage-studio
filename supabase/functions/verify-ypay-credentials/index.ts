@@ -3,6 +3,7 @@ import { getEnv } from "../_shared/edge-runtime/env.ts";
 import { MockYpayPaymentProvider } from "../_shared/payments/providers/mock-ypay.ts";
 import { YpayPaymentProvider } from "../_shared/payments/providers/ypay.ts";
 import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/supabase.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
 
 /**
  * Auth health ping for a tenant's YPay credentials — hits accessToken.
@@ -13,7 +14,7 @@ import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/su
  * YPAY_LIVE_VERIFY=true routes this read-only check to the real API even while
  * YPAY_MOCK is on, so a QA key can be validated without arming live charges.
  */
-Deno.serve(async (req) => {
+Deno.serve(withMonitoring("verify-ypay-credentials", async (req) => {
   const options = handleOptions(req);
   if (options) return options;
 
@@ -83,4 +84,4 @@ Deno.serve(async (req) => {
       502,
     );
   }
-});
+}));

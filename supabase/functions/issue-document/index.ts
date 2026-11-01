@@ -19,6 +19,7 @@ import {
   resetStaleProcessingRows,
   type QueueRow,
 } from "../_shared/invoicing/process-queue-row.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
 
 const CRON_SECRET = Deno.env.get("CRON_SECRET") ?? "";
 
@@ -36,7 +37,7 @@ function authorizeCron(req: Request): boolean {
   return authHeader === `Bearer ${CRON_SECRET}` || cronHeader === CRON_SECRET;
 }
 
-Deno.serve(async (req) => {
+Deno.serve(withMonitoring("issue-document", async (req) => {
   if (req.method !== "POST") {
     return jsonResponse({ error: "Method not allowed" }, 405);
   }
@@ -127,4 +128,4 @@ Deno.serve(async (req) => {
 
   const outcome = await processQueueRow(service, queueRow);
   return jsonResponse({ ok: true, outcome });
-});
+}));

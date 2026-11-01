@@ -7,8 +7,9 @@
 import { handleOptions, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { freeBusy, getValidAccessToken } from "../_shared/google-calendar.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
 
-Deno.serve(async (req) => {
+Deno.serve(withMonitoring("google-calendar-freebusy", async (req) => {
   const opt = handleOptions(req);
   if (opt) return opt;
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
@@ -40,4 +41,4 @@ Deno.serve(async (req) => {
   } catch (e) {
     return jsonResponse({ error: e instanceof Error ? e.message : "freebusy failed" }, 502);
   }
-});
+}));

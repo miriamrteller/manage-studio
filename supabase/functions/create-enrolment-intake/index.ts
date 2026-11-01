@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { handleOptions, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { signWaiverToken } from "../_shared/waiver-token.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
 
 interface GuardianInput {
   name: string;
@@ -40,7 +41,7 @@ function isValidDate(value: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value));
 }
 
-serve(async (req) => {
+serve(withMonitoring("create-enrolment-intake", async (req) => {
   const options = handleOptions(req);
   if (options) return options;
 
@@ -294,4 +295,4 @@ serve(async (req) => {
       500,
     );
   }
-});
+}));

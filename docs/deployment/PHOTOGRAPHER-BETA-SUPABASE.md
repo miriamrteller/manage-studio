@@ -90,6 +90,11 @@ Report results before starting Part 2.
 
 ## Part 2: prod (owner approves each step)
 
+**Since 2026-11-01, migrations and Edge Functions reach prod only through the
+deploy-prod pipeline** ([DEV-PROD-PIPELINE.md](DEV-PROD-PIPELINE.md) §First prod
+deploy). Steps 2 and 7 below are that pipeline run; do not `supabase link` +
+`db push` by hand. The data/config steps (3–6) stay manual, owner-approved.
+
 Follow GO-LIVE-PLAN.md Phase B and Phase C in order. Photographer-specific
 points:
 

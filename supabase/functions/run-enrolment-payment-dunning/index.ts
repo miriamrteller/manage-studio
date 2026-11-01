@@ -10,6 +10,7 @@
 import { jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { applyEnrolmentPaymentDunningStep } from "../_shared/collections/apply-enrolment-payment-dunning-step.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
 
 const CRON_SECRET = Deno.env.get("CRON_SECRET") ?? "";
 const BATCH_LIMIT = 100;
@@ -21,7 +22,7 @@ function authorizeCron(req: Request): boolean {
   return authHeader === `Bearer ${CRON_SECRET}` || cronHeader === CRON_SECRET;
 }
 
-Deno.serve(async (req) => {
+Deno.serve(withMonitoring("run-enrolment-payment-dunning", async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204 });
   }
@@ -107,4 +108,4 @@ Deno.serve(async (req) => {
     processed: engagements.length,
     results,
   });
-});
+}));
