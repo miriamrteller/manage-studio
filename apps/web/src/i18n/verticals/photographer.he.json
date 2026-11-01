@@ -86,6 +86,20 @@
     "booking_flow": {
       "back_to_portal": "חזרה להזמנות שלי",
       "back_to_portal_signin": "התחברות לצפייה בהזמנות שלי"
+    },
+    "students": {
+      "title": "לקוחות",
+      "description": "צפייה וניהול של הלקוחות שלכם. הרחיבו שורה לתקציר מהיר, או לחצו על פרטים לצפייה מלאה.",
+      "classes_column": "צילומים",
+      "enrolments_section": "צילומים",
+      "no_enrolments": "אין צילומים עדיין",
+      "no_classes": "אין צילומים עדיין",
+      "enrol_button": "צילום חדש",
+      "enrol_new_button": "הוספת לקוח",
+      "empty_title": "לא נמצאו לקוחות",
+      "empty_message": "הוסיפו לקוח כדי להתחיל, או שנו את הסינון.",
+      "filter_by_enrolment_status": "סטטוס הזמנה",
+      "no_billing": "אין חשבון חיוב מקושר לצילומים"
     }
   },
   "enrolment": {
