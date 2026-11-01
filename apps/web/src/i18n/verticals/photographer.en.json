@@ -89,7 +89,8 @@
       "enrol_button": "Add client",
       "title": "Clients",
       "waiver_required": "You must accept the contract to continue.",
-      "waiver_status_label": "Contract"
+      "waiver_status_label": "Contract",
+      "detail_title": "Client details"
     },
     "booking_flow": {
       "back_to_portal": "Back to my bookings",
