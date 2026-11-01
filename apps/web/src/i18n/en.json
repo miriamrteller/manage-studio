@@ -1508,6 +1508,22 @@
     "contracts": "Contracts",
     "quotes": "Quotes"
   },
+  "platform_welcome": {
+    "headline": "Get paid. Stay compliant. Freelance in Israel.",
+    "intro": "Billing, reminders and paperwork for your business, in one place.",
+    "sign_in_hint": "Sign in to manage your studio.",
+    "sign_in": "Sign in",
+    "your_studio": "Your studio",
+    "your_studios": "Your studios",
+    "no_studios_yet": "No studios yet",
+    "new_studio": "Set up a new studio",
+    "platform_features": "Platform features",
+    "no_studio_title": "No studio yet",
+    "not_linked": "Your account isn't linked to a studio yet. Contact OpalSwift.",
+    "create_studio_hint": "Set up your studio to get started.",
+    "create_studio": "Set up my studio",
+    "about": "About OpalSwift"
+  },
   "studio_not_found": {
     "title": "Studio not found",
     "message_before": "We couldn't find a studio at ",

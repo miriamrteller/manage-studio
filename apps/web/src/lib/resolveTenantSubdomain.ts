@@ -149,3 +149,16 @@ export function resolveTenantSubdomain(): string | null {
   if (site.kind === 'subdomain') return site.subdomain;
   return customHostSubdomains.get(site.host) ?? null;
 }
+
+/**
+ * The tenant-less OpalSwift app host: `app.<root>` (app.opalswift.com, app.localhost in dev).
+ * Its root path shows OpalSwift's welcome page instead of a studio page.
+ */
+export function isPlatformAppHostname(hostname: string, rootHostname: string): boolean {
+  return hostname.trim().toLowerCase().replace(/\.$/, '') === `app.${rootHostname}`;
+}
+
+export function isPlatformAppHost(): boolean {
+  if (typeof window === 'undefined') return false;
+  return isPlatformAppHostname(window.location.hostname, appRootHostname());
+}
