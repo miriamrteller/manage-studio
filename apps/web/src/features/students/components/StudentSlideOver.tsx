@@ -24,6 +24,7 @@ import { formatAgeRange } from '@/features/enrolment/lib/check-requirements';
 import { RecordPaymentModal } from '@/features/finance/components/RecordPaymentModal';
 import { RefundPaymentModal } from '@/features/finance/components/RefundPaymentModal';
 import { formatCurrency } from '@shared/format';
+import { formatSavedCard } from '../lib/studentBillingAccount';
 
 interface StudentSlideOverProps {
   personId: string;
@@ -304,7 +305,11 @@ export function StudentSlideOver({
                               status={engagement.status}
                               engagementId={engagement.id}
                               ageOverrideAt={engagement.age_override_at}
-                              billingLabel={null}
+                              billingLabel={
+                                summary?.billingAccount?.savedCard
+                                  ? formatSavedCard(summary.billingAccount.savedCard)
+                                  : null
+                              }
                               linkContext={{
                                 studentName: person.name,
                                 className,
@@ -513,6 +518,9 @@ export function StudentSlideOver({
                         <p className="font-medium">{ba.holderName ?? '—'}</p>
                         {ba.holderEmail && <p className="text-gray-500">{ba.holderEmail}</p>}
                         <div className="flex gap-3 text-xs text-gray-500">
+                          {ba.savedCard && (
+                            <span dir="ltr" data-testid="saved-card">{formatSavedCard(ba.savedCard)}</span>
+                          )}
                           <span
                             className={ba.status === 'active' ? 'text-green-600' : 'text-gray-400'}
                           >

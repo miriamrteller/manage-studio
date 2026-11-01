@@ -4,6 +4,7 @@ import { TenantDB } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
 import {
   parseStudentBillingAccount,
+  pickSavedCard,
   STUDENT_BILLING_ACCOUNT_SELECT,
   type StudentBillingAccount,
 } from '../lib/studentBillingAccount';
@@ -209,9 +210,18 @@ export function useStudentDetail(personId: string | null) {
         .eq('tenant_id', tenant.id)
         .in('id', billingIdsToFetch);
       if (error) throw error;
-      return (data || [])
+      const accounts = (data || [])
         .map((a: unknown) => parseStudentBillingAccount(a))
         .filter((a): a is StudentBillingAccount => a !== null);
+      // Card studios: show the saved card used for monthly charges. Offline studios have none.
+      return Promise.all(
+        accounts.map(async (account) => {
+          const { data: cards } = await supabase.rpc('get_billing_account_payment_method', {
+            p_billing_account_id: account.id,
+          });
+          return { ...account, savedCard: pickSavedCard(cards) };
+        }),
+      );
     },
     enabled: isReady && billingIdsToFetch.length > 0,
   });

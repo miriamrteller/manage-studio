@@ -20,12 +20,56 @@ const RowSchema = z.object({
     .optional(),
 });
 
+export interface SavedCard {
+  brand: string | null;
+  last4: string;
+  expMonth: number | null;
+  expYear: number | null;
+}
+
 export interface StudentBillingAccount {
   id: string;
   status: string;
   holderName: string | null;
   holderEmail: string | null;
   businessName: string | null;
+  /** Card studios: the saved card used for monthly charges (get_billing_account_payment_method). */
+  savedCard?: SavedCard | null;
+}
+
+const CardRowSchema = z.object({
+  card_brand: z.string().nullable().optional(),
+  last4: z.string().nullable().optional(),
+  exp_month: z.number().nullable().optional(),
+  exp_year: z.number().nullable().optional(),
+  is_default: z.boolean().nullable().optional(),
+});
+
+/** The default saved card from get_billing_account_payment_method rows, else the first; null if none. */
+export function pickSavedCard(rows: unknown): SavedCard | null {
+  if (!Array.isArray(rows)) return null;
+  const cards = rows
+    .map((r) => CardRowSchema.safeParse(r))
+    .filter((r): r is z.SafeParseSuccess<z.infer<typeof CardRowSchema>> => r.success && Boolean(r.data.last4))
+    .map((r) => r.data);
+  const card = cards.find((c) => c.is_default) ?? cards[0];
+  if (!card?.last4) return null;
+  return {
+    brand: card.card_brand ?? null,
+    last4: card.last4,
+    expMonth: card.exp_month ?? null,
+    expYear: card.exp_year ?? null,
+  };
+}
+
+/** "Visa •••• 4242 (12/27)" — LTR-safe plain text for the billing tab. */
+export function formatSavedCard(card: SavedCard): string {
+  const brand = card.brand ? card.brand.charAt(0).toUpperCase() + card.brand.slice(1) : 'Card';
+  const exp =
+    card.expMonth && card.expYear
+      ? ` (${String(card.expMonth).padStart(2, '0')}/${String(card.expYear % 100).padStart(2, '0')})`
+      : '';
+  return `${brand} •••• ${card.last4}${exp}`;
 }
 
 export function parseStudentBillingAccount(row: unknown): StudentBillingAccount | null {
