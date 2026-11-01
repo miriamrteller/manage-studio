@@ -6,7 +6,6 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { PersonFormFields } from './PersonFormFields';
 import { PersonFormMessages } from './PersonFormMessages';
-import { ConsentFields } from './ConsentFields';
 import { calculateAge } from '@/lib/utils';
 import { bindFormSubmit } from '@/lib/bindFormSubmit';
 
@@ -87,9 +86,6 @@ export const PersonForm = ({ person, onSubmit, isLoading, variant = 'default' }:
         person={person}
         variant={variant}
       />
-
-      {/* Consent Fields */}
-      <ConsentFields register={form.register} />
 
       {/* Form buttons */}
       <div className="flex gap-2 pt-4">

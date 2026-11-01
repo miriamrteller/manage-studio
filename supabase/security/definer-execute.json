@@ -21,6 +21,7 @@
       "guest_enrolment_create_family",
       "guest_enrolment_request_age_review",
       "is_super_admin",
+      "record_consents",
       "record_legal_acceptance",
       "release_scheduling_hold"
     ]
@@ -90,6 +91,7 @@
       "complete_automatic_email",
       "disconnect_tenant_google_calendar",
       "enforce_super_admin_reserved",
+      "find_contacts_by_phone",
       "get_grow_webhook_secret",
       "get_tenant_google_credentials",
       "get_tenant_invoicing_credentials",
@@ -104,6 +106,7 @@
       "job_resolve_client",
       "job_store_client_phone",
       "list_due_shoot_emails",
+      "marketing_optins",
       "provision_tenant",
       "quote_client_contact",
       "resolve_engagement_billing_account",

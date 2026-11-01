@@ -2259,6 +2259,35 @@
     "settings_terms_url": "Terms link (enrolment / booking)",
     "settings_accessibility_url": "Accessibility statement link",
     "settings_invalid_url": "Links must start with https://",
-    "settings_saved": "Legal links saved."
+    "settings_saved": "Legal links saved.",
+    "consents": {
+      "title": "Consents",
+      "photo_legend": "Photos and video (optional)",
+      "photo_hint": "Taking part does not depend on this. You can change it at any time.",
+      "portfolio_legend": "Portfolio (optional)",
+      "portfolio_hint": "Separate from the contract. Refusing doesn't change the service or price.",
+      "marketing_legend": "News and offers (optional)",
+      "guardian_preface": "I give this consent as the parent/legal guardian of {{name}}.",
+      "no_changes": "Nothing changed.",
+      "saved": "Saved. The change is recorded with today's date.",
+      "save": "Save consents",
+      "admin_note": "Record a change only on the person's own instruction (e.g. a written request). Every change is kept in the history.",
+      "portal_heading": "Consents",
+      "portal_hint": "Choose what you agree to. You can change this at any time; marketing can also be stopped from the link in any marketing message."
+    },
+    "unsubscribe": {
+      "working": "Unsubscribing…",
+      "done_title": "You have been unsubscribed",
+      "done_body": "You won't get marketing messages from {{studio}} any more. You will still get messages about your classes, bookings and payments.",
+      "error_title": "This link didn't work",
+      "error_body": "The link may be incomplete. Reply to the message or contact the studio and they will remove you."
+    },
+    "blast": {
+      "purpose_legend": "What kind of message is this?",
+      "service": "Service update",
+      "service_hint": "Classes, schedule changes, payments, events of enrolled students. Sent to everyone selected.",
+      "marketing": "Marketing (offers, new classes, promotions)",
+      "marketing_hint": "Sent only to people who opted in to email marketing. The subject starts with \"פרסומת\" and an unsubscribe link is added automatically."
+    }
   }
 }

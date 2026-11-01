@@ -169,6 +169,32 @@ export const baseRpcs: Record<string, RpcHandler> = {
   // The demo studio has "already accepted" the platform terms.
   get_platform_terms_acceptance: () => true,
 
+  /** Consent history (photo purposes, portfolio, marketing). Latest row per kind wins. */
+  get_person_consents: (args, ctx) => {
+    const latest = new Map<string, Row>();
+    for (const r of rows(ctx, 'consent_records')) {
+      if (r.person_id === args.p_person_id) latest.set(String(r.kind), r);
+    }
+    return [...latest.values()].map((r) => ({ kind: r.kind, granted: r.granted, wording: r.wording, source: r.source, created_at: r.created_at }));
+  },
+
+  record_consents: (args, ctx) => {
+    const items = Array.isArray(args.p_items) ? (args.p_items as Row[]) : [];
+    for (const item of items) {
+      rows(ctx, 'consent_records').push({
+        id: crypto.randomUUID(),
+        tenant_id: args.p_tenant_id,
+        person_id: args.p_person_id,
+        kind: item.kind,
+        granted: item.granted === true,
+        wording: item.wording ?? null,
+        source: args.p_source,
+        created_at: new Date().toISOString(),
+      });
+    }
+    return items.length;
+  },
+
   get_my_tenant_id: () => TENANT_ID,
 
   get_my_profile: (_args, ctx) => {

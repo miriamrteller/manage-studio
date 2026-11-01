@@ -93,6 +93,18 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/get-enrolment-completion/index.ts"
 
+[functions.marketing-unsubscribe]
+enabled = true
+# Public: the signed token in the link is the only credential.
+verify_jwt = false
+entrypoint = "./functions/marketing-unsubscribe/index.ts"
+
+[functions.twilio-inbound]
+enabled = true
+# Public Twilio webhook; requests are verified by X-Twilio-Signature in-function.
+verify_jwt = false
+entrypoint = "./functions/twilio-inbound/index.ts"
+
 [functions.waiver-viewed]
 enabled = true
 verify_jwt = false
