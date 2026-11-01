@@ -159,15 +159,20 @@ export const PersonSchema = z.object({
 export type Person = z.infer<typeof PersonSchema>;
 
 // Billing account (migration 20260526001000_billing_accounts.sql)
+/**
+ * billing_accounts as stored (migration 20260608001100). The payer is a person (person_id)
+ * or a household (account_id); name, email and phone live on that person. business_name /
+ * business_tax_id are the optional BUYER details for business invoices. Payment methods are
+ * not columns: cards are saved tokens (get_billing_account_payment_method), cash and bank
+ * transfers are per payment.
+ */
 export const BillingAccountSchema = z.object({
   id: UUIDSchema,
   tenant_id: UUIDSchema,
-  account_holder_name: z.string().min(1),
-  primary_contact_email: EmailSchema,
-  primary_contact_phone: z.string().nullable().optional(),
-  payment_method: z
-    .enum(['card', 'bank_transfer', 'cash', 'check'])
-    .default('card'),
+  account_id: UUIDSchema.nullable().optional(),
+  person_id: UUIDSchema.nullable().optional(),
+  business_name: z.string().nullable().optional(),
+  business_tax_id: z.string().nullable().optional(),
   status: z.enum(['active', 'inactive', 'archived']).default('active'),
   created_at: TimestampSchema,
   updated_at: TimestampSchema,
@@ -175,14 +180,26 @@ export const BillingAccountSchema = z.object({
 
 export type BillingAccount = z.infer<typeof BillingAccountSchema>;
 
-export const BillingAccountCreateSchema = BillingAccountSchema.omit({
-  id: true,
-  tenant_id: true,
-  created_at: true,
-  updated_at: true,
+/** What an admin may change on a billing account: business invoice details and status. */
+export const BillingAccountUpdateSchema = z.object({
+  business_name: z
+    .string()
+    .trim()
+    .max(200)
+    .transform((v) => v || null)
+    .nullable()
+    .optional(),
+  business_tax_id: z
+    .string()
+    .trim()
+    .max(32)
+    .transform((v) => v || null)
+    .nullable()
+    .optional(),
+  status: z.enum(['active', 'inactive', 'archived']).optional(),
 });
 
-export type BillingAccountCreate = z.infer<typeof BillingAccountCreateSchema>;
+export type BillingAccountUpdate = z.infer<typeof BillingAccountUpdateSchema>;
 
 // Contact preferences
 export const ContactPreferencesSchema = z.object({
