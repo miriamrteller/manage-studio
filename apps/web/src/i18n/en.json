@@ -1508,9 +1508,12 @@
     "contracts": "Contracts",
     "quotes": "Quotes"
   },
+  "studio_not_found": {
+    "title": "Studio not found",
+    "message_before": "We couldn't find a studio at ",
+    "message_after": ". Check the address."
+  },
   "footer": {
-    "school_name_fallback": "Ballet School",
-    "school_management": "School Management",
     "all_rights": "All rights reserved",
     "legal_nav": "Legal",
     "privacy": "Privacy Policy",

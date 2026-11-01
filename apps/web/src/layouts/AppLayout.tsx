@@ -12,6 +12,7 @@ import {
 import { cn } from '../lib/utils';
 import { LegalFooterLinks } from '../components/LegalFooterLinks';
 import { ReportProblemProvider } from '../components/ReportProblem';
+import { currentStudioDisplayName } from '../lib/studioDisplayName';
 
 const PUBLIC_PATHS = new Set(['/', '/classes', '/login', '/signup', '/enrol']);
 
@@ -29,6 +30,7 @@ function AppLayoutContent({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
   const tenant = useTenant();
   const { isPinned } = useNavDrawer();
+  const studioName = currentStudioDisplayName(tenant);
 
   return (
     <div
@@ -53,16 +55,14 @@ function AppLayoutContent({ children }: { children: ReactNode }) {
           <div className="max-w-7xl mx-auto px-4 py-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div>
-                <h2 className="font-bold mb-2">
-                  {tenant?.name ?? t('footer.school_name_fallback')}
-                </h2>
-                <p className="text-sm opacity-80">{t('footer.school_management')}</p>
+                {studioName && <h2 dir="auto" className="font-bold mb-2">{studioName}</h2>}
               </div>
               <div className="space-y-3 text-sm opacity-80">
                 <LegalFooterLinks />
                 <p>
                   &copy; {new Date().getFullYear()}{' '}
-                  {tenant?.name ?? t('footer.school_name_fallback')}. {t('footer.all_rights')}
+                  {studioName && <><bdi>{studioName}</bdi>. </>}
+                  {t('footer.all_rights')}
                 </p>
               </div>
             </div>
