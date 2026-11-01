@@ -1508,6 +1508,22 @@
     "contracts": "חוזים",
     "quotes": "הצעות מחיר"
   },
+  "platform_welcome": {
+    "headline": "יצאת לעצמאות כדי לעשות את מה שאתה אוהב. הניירת רצה לבד.",
+    "intro": "תתרכז במה שאתה עושה הכי טוב. אנחנו נדאג לשאר.",
+    "sign_in_hint": "התחבר כדי לנהל את הסטודיו שלך.",
+    "sign_in": "התחברות",
+    "your_studio": "הסטודיו שלך",
+    "your_studios": "הסטודיואים שלך",
+    "no_studios_yet": "עדיין אין סטודיואים",
+    "new_studio": "הקמת סטודיו חדש",
+    "platform_features": "תכונות הפלטפורמה",
+    "no_studio_title": "עדיין אין סטודיו",
+    "not_linked": "החשבון שלך עדיין לא מקושר לסטודיו. צור קשר עם OpalSwift.",
+    "create_studio_hint": "הקם את הסטודיו שלך כדי להתחיל.",
+    "create_studio": "הקמת הסטודיו שלי",
+    "about": "על OpalSwift"
+  },
   "studio_not_found": {
     "title": "הסטודיו לא נמצא",
     "message_before": "לא מצאנו סטודיו בכתובת ",
