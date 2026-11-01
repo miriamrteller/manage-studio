@@ -24,3 +24,12 @@ export function resolveTenantSiteFromHostname(): TenantSite | null {
 }
 
 export function rememberCustomHostSubdomain(): void {}
+
+/** The demo always runs as one studio, never on the platform app host. */
+export function isPlatformAppHostname(): boolean {
+  return false;
+}
+
+export function isPlatformAppHost(): boolean {
+  return false;
+}
