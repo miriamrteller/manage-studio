@@ -111,8 +111,9 @@ points:
 6. Edge secrets:
    - `APP_URL` set to the real tenant URL
    - `CRON_SECRET`
-   - `EMAIL_TRANSPORT=cloudflare`, `CLOUDFLARE_ACCOUNT_ID`,
-     `CLOUDFLARE_EMAIL_API_TOKEN`, `PLATFORM_EMAIL_DOMAIN=opalswift.com`,
+   - `EMAIL_TRANSPORT=resend` and `RESEND_API_KEY` (owner's launch choice,
+     2026-11-01; the Cloudflare pair is only for `EMAIL_TRANSPORT=cloudflare`),
+     `PLATFORM_EMAIL_DOMAIN=opalswift.com`,
      `NOTIFICATION_FROM_EMAIL`
    - **Unset every `*_MOCK` flag**, especially `YPAY_MOCK`. While it is on,
      anyone can forge a "paid" callback.
