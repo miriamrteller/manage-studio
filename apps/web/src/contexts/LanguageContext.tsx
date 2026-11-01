@@ -27,7 +27,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const { user, isProfileChecked, isLoading: profileLoading } = useCurrentUser();
 
   const [language, setLanguageState] = useState<AppLanguage>(
-    () => readStoredLanguage() ?? 'he',
+    () => readStoredLanguage() ?? 'en',
   );
 
   // Hydrate from profile/tenant once per auth session — not on every profile refetch.
@@ -48,7 +48,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       isProfileChecked,
     });
 
-    setLanguageState((resolved ?? 'he') as AppLanguage);
+    setLanguageState((resolved ?? 'en') as AppLanguage);
     localStorage.setItem('language', resolved);
   }, [
     isProfileChecked,

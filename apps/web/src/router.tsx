@@ -38,6 +38,7 @@ import EnrolPayPage from "./pages/EnrolPayPage";
 import EnrolCompletePage from "./pages/EnrolCompletePage";
 import PayRequestPage from "./pages/PayRequestPage";
 import NotFoundPage from "./pages/NotFoundPage";
+import { StudioHostGate } from "./layouts/StudioHostGate";
 import FinanceHubPage from "./pages/FinanceHubPage";
 import PaymentsLogPage from "./pages/PaymentsLogPage";
 import ExpensesPage from "./pages/ExpensesPage";
@@ -58,12 +59,14 @@ import { MonitoringContextSync } from "./lib/monitoring/MonitoringContextSync";
 function RootLayout() {
   return (
     <LanguageProvider>
-      <LabelsProvider>
-        <AppLayout>
-          <MonitoringContextSync />
-          <Outlet />
-        </AppLayout>
-      </LabelsProvider>
+      <StudioHostGate>
+        <LabelsProvider>
+          <AppLayout>
+            <MonitoringContextSync />
+            <Outlet />
+          </AppLayout>
+        </LabelsProvider>
+      </StudioHostGate>
     </LanguageProvider>
   );
 }

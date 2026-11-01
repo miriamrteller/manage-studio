@@ -1508,6 +1508,11 @@
     "contracts": "Contracts",
     "quotes": "Quotes"
   },
+  "studio_not_found": {
+    "title": "Studio not found",
+    "message_before": "We couldn't find a studio at ",
+    "message_after": ". Check the address."
+  },
   "footer": {
     "all_rights": "All rights reserved",
     "legal_nav": "Legal",

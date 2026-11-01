@@ -16,10 +16,15 @@ export function useTenant(): TenantConfig | null {
  * "still resolving" from "resolved to nothing" (e.g. route guards enforcing
  * tenant membership). Shares the query cache with useTenant().
  */
-export function useTenantQuery(): { tenant: TenantConfig | null; isLoading: boolean } {
+export function useTenantQuery(): {
+  tenant: TenantConfig | null;
+  isLoading: boolean;
+  /** The lookup finished and no studio exists for this host (not set on a lookup error). */
+  notFound: boolean;
+} {
   const site = resolveTenantSite();
   const siteKey = site ? (site.kind === 'subdomain' ? site.subdomain : `host:${site.host}`) : null;
-  const { data: tenantConfig, isLoading } = useQuery({
+  const { data: tenantConfig, isLoading, isSuccess } = useQuery({
     queryKey: ['tenant', siteKey],
     queryFn: async () => {
       if (!site) return null;
@@ -28,10 +33,10 @@ export function useTenantQuery(): { tenant: TenantConfig | null; isLoading: bool
         site.kind === 'custom'
           ? await supabase.rpc('get_tenant_config_by_host', { p_host: site.host })
           : await supabase.rpc('get_tenant_config_by_subdomain', { p_subdomain: site.subdomain });
-      if (error || !data || !Array.isArray(data) || data.length === 0) {
-        console.warn('Failed to fetch tenant config:', error?.message || 'No data');
-        return null;
-      }
+      // A failed lookup is an error, not "no studio here", so it never shows the
+      // not-found page. Only an empty result means the host has no studio.
+      if (error) throw new Error(`Failed to fetch tenant config: ${error.message}`);
+      if (!data || !Array.isArray(data) || data.length === 0) return null;
       const row = data[0];
       if (site.kind === 'custom' && row.tenant_subdomain) {
         rememberCustomHostSubdomain(site.host, row.tenant_subdomain);
@@ -87,5 +92,9 @@ export function useTenantQuery(): { tenant: TenantConfig | null; isLoading: bool
     enabled: !!site,
     staleTime: 30 * 60 * 1000,
   });
-  return { tenant: tenantConfig || null, isLoading: !!site && isLoading };
+  return {
+    tenant: tenantConfig || null,
+    isLoading: !!site && isLoading,
+    notFound: !!site && isSuccess && tenantConfig === null,
+  };
 }
