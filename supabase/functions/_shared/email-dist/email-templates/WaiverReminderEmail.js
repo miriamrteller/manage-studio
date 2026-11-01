@@ -3,17 +3,17 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { Button, Text } from '@react-email/components';
 import BaseEmailTemplate from './BaseEmailTemplate.js';
 const DEFAULT_STRINGS = {
-    subject: 'Reminder: sign your waiver for {className}',
-    subject_urgent: 'URGENT: Final reminder — sign your waiver for {className}',
+    subject: 'Reminder: sign your form for {className}',
+    subject_urgent: 'URGENT: Final reminder — sign your form for {className}',
     preview: 'Action needed: your enrollment in {className} is not yet active',
     greeting: 'Hi {recipientName},',
-    body: 'This is a reminder that your enrollment in {className} will not be active until you sign the waiver.',
-    body_urgent: 'This is your FINAL reminder. Your enrollment in {className} will be cancelled if the waiver is not signed within 48 hours.',
-    waiver_warning: 'Your spot is reserved but your enrollment is NOT active. You will not be permitted to attend class until the waiver is signed. Classes missed while your waiver is pending are not eligible for refund, credit, or makeup.',
-    cta: 'Sign Your Waiver Now',
+    body: 'This is a reminder that your enrollment in {className} will not be active until you sign the form.',
+    body_urgent: 'This is your FINAL reminder. Your enrollment in {className} will be cancelled if the form is not signed within 48 hours.',
+    waiver_warning: 'Your spot is reserved but your enrollment is NOT active. You will not be permitted to attend class until the form is signed. Classes missed while your form is pending are not eligible for refund, credit, or makeup.',
+    cta: 'Sign Your Form Now',
     link_expires: 'This link expires in 1 hour. If it has expired, click the link and enter your email to receive a new one.',
     deadline_note: 'Your deadline is {deadlineDate}.',
-    cancellation_warning: 'If the waiver is not signed by this date, your enrollment will be automatically cancelled and a full refund will be issued.',
+    cancellation_warning: 'If the form is not signed by this date, your enrollment will be automatically cancelled and a full refund will be issued.',
 };
 export default function WaiverReminderEmail({ schoolName, schoolLogoUrl, language, colors, footerStrings, strings, recipientName, className, signUrl, deadlineDate, isUrgent, }) {
     const s = { ...DEFAULT_STRINGS, ...strings };

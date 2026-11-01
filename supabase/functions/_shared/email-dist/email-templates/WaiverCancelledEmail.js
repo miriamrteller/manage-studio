@@ -4,9 +4,9 @@ import { Text } from '@react-email/components';
 import BaseEmailTemplate from './BaseEmailTemplate.js';
 const DEFAULT_STRINGS = {
     subject: 'Your enrollment in {className} has been cancelled',
-    preview: 'Enrollment cancelled — waiver not signed',
+    preview: 'Enrollment cancelled — form not signed',
     greeting: 'Hi {recipientName},',
-    body: 'Your enrollment in {className} has been automatically cancelled because the required waiver was not signed before the deadline.',
+    body: 'Your enrollment in {className} has been automatically cancelled because the required form was not signed before the deadline.',
     refund_note: '{refundNote}',
     contact_note: 'If you believe this is an error, or if you would like to re-enroll, please contact us.',
 };

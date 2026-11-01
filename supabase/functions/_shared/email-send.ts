@@ -117,6 +117,7 @@ export async function sendRenderedEmail(
         paymentMethodLabel: str(paymentSummary.paymentMethodLabel, "—"),
       },
       pendingWaiver: Boolean(variables.pendingWaiver),
+      vertical: renderInput.vertical ?? null,
       signUrl: str(variables.signUrl) || undefined,
       deadlineDate: str(variables.deadlineDate) || undefined,
       primaryColor: renderInput.tenantColors?.primary_color ?? "#2563eb",

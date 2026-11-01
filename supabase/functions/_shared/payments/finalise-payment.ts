@@ -132,7 +132,7 @@ async function sendConfirmationEmail(
 
   const { data: tenantRow } = await service
     .from("tenants")
-    .select(`primary_color, accent_color, ${TENANT_SENDER_COLUMNS}`)
+    .select(`primary_color, accent_color, skin, ${TENANT_SENDER_COLUMNS}`)
     .eq("id", params.tenantId)
     .single();
 
@@ -176,6 +176,7 @@ async function sendConfirmationEmail(
       renderInput: {
         templateName: EMAIL_TEMPLATE_NAMES.ENROLMENT_CONFIRMATION,
         language: payload.language,
+        vertical: (tenantRow as { skin?: string | null }).skin ?? null,
         schoolName: payload.schoolName,
         tenantColors: {
           primary_color: tenantRow.primary_color,

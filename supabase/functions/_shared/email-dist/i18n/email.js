@@ -7,6 +7,8 @@
  */
 import enTemplates from './email-templates-en.json' with { type: 'json' };
 import heTemplates from './email-templates-he.json' with { type: 'json' };
+import enFormDocuments from './email-form-documents-en.json' with { type: 'json' };
+import heFormDocuments from './email-form-documents-he.json' with { type: 'json' };
 import { z } from 'zod';
 /**
  * Supported template names
@@ -151,4 +153,24 @@ export function getEmailStringsValidated(language, templateName) {
     const validatedLanguage = LanguageSchema.parse(language);
     const validatedTemplate = TemplateNameSchema.parse(templateName);
     return getEmailStrings(validatedLanguage, validatedTemplate);
+}
+export function formDocumentForVertical(vertical) {
+    if (vertical === 'dance-studio')
+        return 'health_declaration';
+    if (vertical === 'photographer')
+        return 'contract';
+    return 'form';
+}
+/**
+ * Template strings with the document named for the studio's type: the base
+ * strings say "form"; email-form-documents-*.json overrides the keys that name
+ * it for health declarations and contracts.
+ */
+export function getEmailStringsForDocument(language, templateName, kind) {
+    const base = getEmailStrings(language, templateName);
+    if (kind === 'form')
+        return base;
+    const overlays = (language === 'he' ? heFormDocuments : enFormDocuments);
+    const overrides = overlays[kind]?.[templateName];
+    return overrides ? { ...base, ...overrides } : base;
 }

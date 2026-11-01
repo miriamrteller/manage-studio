@@ -1,0 +1,40 @@
+{
+  "health_declaration": {
+    "enrolment_confirmation": {
+      "waiver_warning_heading": "ACTION REQUIRED: Sign your health declaration",
+      "waiver_warning_body": "Your spot is reserved but your enrollment is NOT active. You will not be permitted to attend class until the health declaration is signed. Classes missed while your health declaration is pending are not eligible for refund, credit, or makeup.",
+      "waiver_cta": "Sign Your Health Declaration Now",
+      "no_show_policy": "Deadline: {deadlineDate}. If the health declaration is not signed by this date, your enrollment will be automatically cancelled and a full refund issued."
+    },
+    "waiver_reminder": {
+      "subject": "Reminder: sign your health declaration for {className}",
+      "subject_urgent": "URGENT: Final reminder — sign your health declaration for {className}",
+      "body": "This is a reminder that your enrollment in {className} will not be active until you sign the health declaration.",
+      "body_urgent": "This is your FINAL reminder. Your enrollment in {className} will be cancelled if the health declaration is not signed within 48 hours.",
+      "waiver_warning": "Your spot is reserved but your enrollment is NOT active. You will not be permitted to attend class until the health declaration is signed. Classes missed while your health declaration is pending are not eligible for refund, credit, or makeup.",
+      "cta": "Sign Your Health Declaration Now",
+      "cancellation_warning": "If the health declaration is not signed by this date, your enrollment will be automatically cancelled and a full refund will be issued."
+    },
+    "waiver_cancelled": {
+      "preview": "Enrollment cancelled — health declaration not signed",
+      "body": "Your enrollment in {className} has been automatically cancelled because the required health declaration was not signed before the deadline."
+    }
+  },
+  "contract": {
+    "waiver_reminder": {
+      "subject": "Reminder: sign your contract for {className}",
+      "subject_urgent": "URGENT: Final reminder — sign your contract for {className}",
+      "preview": "Action needed: your booking is not yet confirmed",
+      "body": "This is a reminder that your booking for {className} is not confirmed until you sign the contract.",
+      "body_urgent": "This is your FINAL reminder. Your booking for {className} will be cancelled if the contract is not signed within 48 hours.",
+      "waiver_warning": "Your date is held but your booking is NOT confirmed until the contract is signed.",
+      "cta": "Sign Your Contract Now",
+      "cancellation_warning": "If the contract is not signed by this date, your booking will be cancelled."
+    },
+    "waiver_cancelled": {
+      "subject": "Your booking for {className} has been cancelled",
+      "preview": "Booking cancelled — contract not signed",
+      "body": "Your booking for {className} has been automatically cancelled because the contract was not signed before the deadline."
+    }
+  }
+}

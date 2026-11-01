@@ -103,7 +103,7 @@ Deno.serve(withMonitoring("send-admin-waiver-link", async (req) => {
 
     const { data: tenant } = await service
       .from("tenants")
-      .select(`id, name, language_default, primary_color, accent_color, ${TENANT_SENDER_COLUMNS}`)
+      .select(`id, name, skin, language_default, primary_color, accent_color, ${TENANT_SENDER_COLUMNS}`)
       .eq("id", tenantId)
       .single();
     if (!tenant) return jsonResponse({ error: "Tenant not found" }, 404);
@@ -179,6 +179,7 @@ Deno.serve(withMonitoring("send-admin-waiver-link", async (req) => {
           renderInput: {
             templateName: EMAIL_TEMPLATE_NAMES.WAIVER_REMINDER,
             language,
+            vertical: (tenant as { skin?: string | null }).skin ?? null,
             schoolName: tenant.name as string,
             tenantColors: {
               primary_color: tenant.primary_color as string | null,

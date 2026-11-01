@@ -84,14 +84,14 @@ const DEFAULT_STRINGS = {
   tax_invoice_label: 'Tax invoice',
   tax_invoice_notice:
     'Your official tax invoice will be sent to this email address in a separate message once it has been issued.',
-  waiver_warning_heading: 'ACTION REQUIRED: Sign your waiver',
+  waiver_warning_heading: 'ACTION REQUIRED: Sign your form',
   waiver_warning_body:
-    'Your spot is reserved but your enrollment is NOT active. You will not be permitted to attend class until the waiver is signed. Classes missed while your waiver is pending are not eligible for refund, credit, or makeup.',
-  waiver_cta: 'Sign Your Waiver Now',
+    'Your spot is reserved but your enrollment is NOT active. You will not be permitted to attend class until the form is signed. Classes missed while your form is pending are not eligible for refund, credit, or makeup.',
+  waiver_cta: 'Sign Your Form Now',
   link_expires:
     'This link expires in 1 hour. If it has expired, visit the link in this email and enter your email address to receive a new one.',
   no_show_policy:
-    'Deadline: {deadlineDate}. If the waiver is not signed by this date, your enrollment will be automatically cancelled and a full refund issued.',
+    'Deadline: {deadlineDate}. If the form is not signed by this date, your enrollment will be automatically cancelled and a full refund issued.',
   confirmation_note: 'Please contact us if you have any questions.',
 };
 
