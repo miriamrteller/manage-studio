@@ -132,6 +132,23 @@ describe('studio setup wizard', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('already has an account with another studio');
   });
 
+  it("the platform owner's own email is explained in plain words", async () => {
+    h.invoke.mockResolvedValue({
+      data: null,
+      error: Object.assign(new Error('Edge Function returned a non-2xx status code'), {
+        context: { json: async () => ({ error: 'email_is_platform_owner' }) },
+      }),
+    });
+    renderWizard();
+    await fillStudioStep();
+    next(); next(); next();
+    expect(screen.getByText(/Use an email other than your OpalSwift platform account/)).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Owner's email"), { target: { value: 'me@opalswift.com' } });
+    next();
+    fireEvent.click(screen.getByRole('button', { name: 'Create studio' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent("platform owner's account, which already manages every studio");
+  });
+
   it('a taken address stops at the first step', async () => {
     h.rpc.mockResolvedValue({ data: false, error: null });
     renderWizard();

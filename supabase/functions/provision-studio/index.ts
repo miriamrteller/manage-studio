@@ -43,12 +43,12 @@ function serviceDeps(service: ServiceClient): ProvisionStudioDeps {
     async findProfileByEmail(email) {
       const { data, error } = await service
         .from("user_profiles")
-        .select("id, tenant_id")
+        .select("id, tenant_id, role")
         .ilike("email", email)
         .limit(1)
         .maybeSingle();
       if (error) throw new Error(error.message);
-      return data as { id: string; tenant_id: string } | null;
+      return data as { id: string; tenant_id: string; role: string[] | null } | null;
     },
     async tenantSubdomain(tenantId) {
       const { data } = await service.from("tenants").select("subdomain").eq("id", tenantId).maybeSingle();

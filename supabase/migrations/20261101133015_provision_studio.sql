@@ -131,7 +131,8 @@ REVOKE ALL ON FUNCTION public.provision_studio(TEXT, TEXT, TEXT, TEXT, TEXT, TEX
 GRANT EXECUTE ON FUNCTION public.provision_studio(TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT) TO service_role;
 
 -- Makes an invited owner the studio's admin. Only for a profile that already belongs
--- to that studio, so it can never move an account between studios.
+-- to that studio, so it can never move an account between studios, and never for the
+-- platform owner (super_admin), whose role it would otherwise replace.
 CREATE OR REPLACE FUNCTION public.assign_studio_owner(p_tenant_id UUID, p_user_id UUID)
 RETURNS VOID
 LANGUAGE plpgsql
@@ -141,7 +142,9 @@ AS $$
 BEGIN
   UPDATE user_profiles
   SET role = ARRAY['tenant_admin'], updated_at = now()
-  WHERE id = p_user_id AND tenant_id = p_tenant_id;
+  WHERE id = p_user_id
+    AND tenant_id = p_tenant_id
+    AND NOT ('super_admin' = ANY (role));
 
   IF NOT FOUND THEN
     RAISE EXCEPTION 'No profile for user % in tenant %', p_user_id, p_tenant_id;

@@ -36,7 +36,7 @@ export interface StudioSetupRequest {
 export type OwnerInviteStatus =
   | { status: 'invited' }
   | { status: 'already_owner' }
-  | { status: 'failed'; reason: 'email_in_other_studio' | 'invite_failed'; message?: string };
+  | { status: 'failed'; reason: 'email_in_other_studio' | 'email_is_platform_owner' | 'invite_failed'; message?: string };
 
 export interface StudioSetupResult {
   tenantId: string;

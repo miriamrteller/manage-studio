@@ -112,6 +112,31 @@ describe('provisionStudio', () => {
   });
 });
 
+describe('the platform owner as a studio owner', () => {
+  const superAdmin = { id: 'u-owner', tenant_id: 'platform', role: ['super_admin'] };
+
+  it("refuses the platform owner's own email, before creating anything", async () => {
+    const deps = fakeDeps({ findProfileByEmail: vi.fn(async () => superAdmin) });
+    const result = await provisionStudio(deps, ProvisionStudioSchema.parse(base));
+    expect(result).toEqual({ ok: false, error: 'email_is_platform_owner' });
+    expect(deps.provisionStudio).not.toHaveBeenCalled();
+    expect(deps.assignOwner).not.toHaveBeenCalled();
+  });
+
+  it('never makes a super admin one studio\'s admin, even inside that studio', async () => {
+    const deps = fakeDeps({ findProfileByEmail: vi.fn(async () => ({ ...superAdmin, tenant_id: 'tenant-new' })) });
+    expect(await inviteStudioOwner(deps, 'tenant-new', 'owner@example.com')).toEqual({
+      status: 'failed',
+      reason: 'email_is_platform_owner',
+    });
+    expect(deps.assignOwner).not.toHaveBeenCalled();
+  });
+
+  it('assign_studio_owner skips super_admin profiles in the database too', () => {
+    expect(migration).toMatch(/AND NOT \('super_admin' = ANY \(role\)\)/);
+  });
+});
+
 describe('inviteStudioOwner (send again)', () => {
   it('an owner who already accepted is made admin, not invited twice', async () => {
     const deps = fakeDeps({ findProfileByEmail: vi.fn(async () => ({ id: 'u-1', tenant_id: 'tenant-new' })) });

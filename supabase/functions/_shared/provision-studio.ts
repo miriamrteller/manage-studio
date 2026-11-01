@@ -42,7 +42,7 @@ export interface ProvisionStudioDeps {
   /** provision_studio RPC; resolves to the new tenant id. */
   provisionStudio(input: ProvisionStudioInput): Promise<string>;
   /** The profile already using this email, if any. */
-  findProfileByEmail(email: string): Promise<{ id: string; tenant_id: string } | null>;
+  findProfileByEmail(email: string): Promise<{ id: string; tenant_id: string; role?: string[] | null } | null>;
   /** Studio subdomain for a tenant id. */
   tenantSubdomain(tenantId: string): Promise<string | null>;
   /** Sends the invite email; the account is created in the studio named by `subdomain`. */
@@ -54,7 +54,24 @@ export interface ProvisionStudioDeps {
 export type OwnerInviteResult =
   | { status: "invited" }
   | { status: "already_owner" }
-  | { status: "failed"; reason: "email_in_other_studio" | "invite_failed"; message?: string };
+  | { status: "failed"; reason: OwnerRefusal | "invite_failed"; message?: string };
+
+/**
+ * Why an owner email is refused. `email_is_platform_owner`: the platform owner's own
+ * account (super_admin) already manages every studio; making it one studio's admin
+ * would move the account and replace its platform role, so a studio owner needs a
+ * different email.
+ */
+export type OwnerRefusal = "email_in_other_studio" | "email_is_platform_owner";
+
+function refusalFor(
+  profile: { tenant_id: string; role?: string[] | null },
+  tenantId: string | null,
+): OwnerRefusal | null {
+  if ((profile.role ?? []).includes("super_admin")) return "email_is_platform_owner";
+  if (profile.tenant_id !== tenantId) return "email_in_other_studio";
+  return null;
+}
 
 /**
  * Invites the owner to the studio and makes them its admin. An email that already
@@ -68,7 +85,8 @@ export async function inviteStudioOwner(
 ): Promise<OwnerInviteResult> {
   const existing = await deps.findProfileByEmail(email);
   if (existing) {
-    if (existing.tenant_id !== tenantId) return { status: "failed", reason: "email_in_other_studio" };
+    const refusal = refusalFor(existing, tenantId);
+    if (refusal) return { status: "failed", reason: refusal };
     await deps.assignOwner(tenantId, existing.id);
     return { status: "already_owner" };
   }
@@ -85,7 +103,7 @@ export async function inviteStudioOwner(
 
 export type ProvisionStudioResult =
   | { ok: true; tenantId: string; subdomain: string; owner: OwnerInviteResult }
-  | { ok: false; error: "email_in_other_studio" };
+  | { ok: false; error: OwnerRefusal };
 
 /**
  * Creates the studio, then invites its owner. The email is checked first, so a
@@ -96,7 +114,7 @@ export async function provisionStudio(
   input: ProvisionStudioInput,
 ): Promise<ProvisionStudioResult> {
   const existing = await deps.findProfileByEmail(input.ownerEmail);
-  if (existing) return { ok: false, error: "email_in_other_studio" };
+  if (existing) return { ok: false, error: refusalFor(existing, null) ?? "email_in_other_studio" };
   const tenantId = await deps.provisionStudio(input);
   const owner = await inviteStudioOwner(deps, tenantId, input.ownerEmail);
   return { ok: true, tenantId, subdomain: input.subdomain, owner };

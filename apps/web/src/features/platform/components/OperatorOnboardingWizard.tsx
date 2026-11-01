@@ -51,7 +51,9 @@ export function OperatorOnboardingWizard() {
       setError(
         err.message === 'email_in_other_studio'
           ? t('studio_setup.owner_in_other_studio')
-          : err.message || t('studio_setup.error_create'),
+          : err.message === 'email_is_platform_owner'
+            ? t('studio_setup.owner_is_platform_owner')
+            : err.message || t('studio_setup.error_create'),
       );
     },
   });
@@ -240,7 +242,9 @@ export function OperatorOnboardingWizard() {
             aria-describedby="ss-owner-help"
             onChange={(e) => update('ownerEmail', e.target.value)}
           />
-          <p id="ss-owner-help" className="text-sm text-gray-700">{t('studio_setup.owner_help')}</p>
+          <p id="ss-owner-help" className="text-sm text-gray-700">
+            {t('studio_setup.owner_help')} {t('studio_setup.owner_not_platform')}
+          </p>
         </section>
       )}
 
@@ -320,7 +324,11 @@ function StudioCreated({ result, ownerEmail, name }: { result: StudioSetupResult
         {owner.status === 'failed' && (
           <div className="space-y-2">
             <p className="text-red-700">
-              {owner.reason === 'email_in_other_studio' ? t('studio_setup.owner_in_other_studio') : t('studio_setup.owner_invite_failed', { email: ownerEmail })}
+              {owner.reason === 'email_in_other_studio'
+                ? t('studio_setup.owner_in_other_studio')
+                : owner.reason === 'email_is_platform_owner'
+                  ? t('studio_setup.owner_is_platform_owner')
+                  : t('studio_setup.owner_invite_failed', { email: ownerEmail })}
             </p>
             {owner.reason === 'invite_failed' && (
               <Button variant="outline" onClick={() => resend.mutate()} disabled={resend.isPending}>

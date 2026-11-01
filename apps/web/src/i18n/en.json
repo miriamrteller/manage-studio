@@ -1575,6 +1575,8 @@
     "owner_email": "Owner's email",
     "owner_help": "We'll email them an invitation. When they accept it, they can manage the studio.",
     "owner_in_other_studio": "This email already has an account with another studio. Use a different email for the owner.",
+    "owner_is_platform_owner": "This is the OpalSwift platform owner's account, which already manages every studio. Use a different email for the studio's owner, for example the studio's own email.",
+    "owner_not_platform": "Use an email other than your OpalSwift platform account.",
     "review_title": "Check the details",
     "back": "Back",
     "next": "Next",
