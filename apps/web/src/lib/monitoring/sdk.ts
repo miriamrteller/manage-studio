@@ -4,6 +4,7 @@
  * keep the chunk small: no replay, tracing or feedback-widget code is bundled.
  */
 export {
+  addEventProcessor,
   breadcrumbsIntegration,
   captureException,
   captureFeedback,

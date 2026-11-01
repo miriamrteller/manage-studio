@@ -91,6 +91,20 @@
     "signing_you_in": "Signing you in…",
     "setting_up_access": "Setting up your access"
   },
+  "report_problem": {
+    "menu_item": "Report a problem",
+    "title": "Report a problem",
+    "description": "Tell us what went wrong. We'll see the page you were on and any error that just happened.",
+    "label": "What happened?",
+    "placeholder": "For example: I clicked Save on a payment and nothing happened.",
+    "privacy_hint": "Please don't include client names, phone numbers, payment or health details.",
+    "submit": "Send report",
+    "sending": "Sending…",
+    "sent": "Thanks, your report was sent. We'll look into it.",
+    "failed": "The report could not be sent. Please try again or email us.",
+    "required": "Please describe the problem.",
+    "from_error": "Report this problem"
+  },
   "errors": {
     "app_crashed_title": "Something went wrong",
     "app_crashed_description": "An unexpected error stopped this screen. Try again, or reload the page.",
