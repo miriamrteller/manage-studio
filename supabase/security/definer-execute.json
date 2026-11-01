@@ -88,6 +88,7 @@
     "$comment": "service_role (Edge Functions), cron and other definer functions only; triggers.",
     "functions": [
       "accept_quote",
+      "assign_studio_owner",
       "claim_automatic_email",
       "cleanup_expired_otps",
       "cleanup_old_verification_attempts",
@@ -110,6 +111,7 @@
       "job_store_client_phone",
       "list_due_shoot_emails",
       "marketing_optins",
+      "provision_studio",
       "provision_tenant",
       "quote_client_contact",
       "resolve_engagement_billing_account",

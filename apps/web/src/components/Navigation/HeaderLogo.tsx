@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { TenantConfig } from '@/types/auth';
 import { deriveSoftTheme } from '@/lib/theme/deriveSoftTheme';
+import { OPALSWIFT_BRAND } from '@/lib/theme/opalswiftBrand';
 import { currentStudioDisplayName } from '@/lib/studioDisplayName';
 import { analyzeLogo, chooseLogoTreatment, type HeaderSurface, type LogoTone } from '@/lib/theme/logoTone';
 
@@ -21,8 +22,9 @@ function useLogoTone(url: string | null | undefined, stored: LogoTone | null | u
 
 /** Colours the header logo sits on, for the tenant's chrome style. */
 export function headerSurface(tenant: TenantConfig | null, soft: boolean): HeaderSurface {
-  const primary = tenant?.white_label?.primary_color ?? '#76335a';
-  const accent = tenant?.white_label?.accent_color ?? '#e99ac4';
+  // No studio loaded: OpalSwift's own colours.
+  const primary = tenant?.white_label?.primary_color ?? OPALSWIFT_BRAND.primary;
+  const accent = tenant?.white_label?.accent_color ?? OPALSWIFT_BRAND.accent;
   const t = deriveSoftTheme(primary, accent);
   return soft
     ? { backgrounds: [t['--tint-2'], t['--tint-accent-2']], recolour: t['--color-primary-ink'], pill: t['--color-primary-fill'] }
