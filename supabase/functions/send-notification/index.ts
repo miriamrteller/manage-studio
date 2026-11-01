@@ -1,3 +1,4 @@
+import { buildMarketingFooter, loadMarketingFooterContext, withAdvertisementPrefix } from "./marketing.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
 import { handleOptions, jsonResponse } from "../_shared/edge-runtime/cors.ts";
@@ -39,6 +40,13 @@ interface AdminBlastPayload {
   selectedPersonIds?: string[];
   subject: string;
   body: string;
+  /**
+   * 'marketing' = an advertisement under Communications Law §30A: sent only to
+   * people who opted in to email marketing, subject starts with "פרסומת",
+   * footer carries the studio's details and a one-click unsubscribe link.
+   * Default 'service' (class, schedule and payment updates).
+   */
+  purpose?: "service" | "marketing";
 }
 
 interface BlastRecipientRow {
@@ -683,6 +691,23 @@ async function handleAdminAnnouncementBlast(
     rows = rows.filter((row) => selectedSet.has(row.person_id));
   }
 
+  const marketing = payload.purpose === "marketing";
+  if (marketing && rows.length > 0) {
+    const { data: optedIn, error: optError } = await service.rpc("marketing_optins", {
+      p_tenant_id: payload.tenantId,
+      p_person_ids: rows.map((row) => row.person_id),
+      p_kind: "marketing_email",
+    });
+    if (optError) {
+      return jsonResponse({ error: optError.message }, 400);
+    }
+    const allowed = new Set((optedIn ?? []) as string[]);
+    rows = rows.filter((row) => allowed.has(row.person_id));
+    if (rows.length === 0) {
+      return jsonResponse({ error: "No recipients have opted in to marketing email" }, 400);
+    }
+  }
+
   if (rows.length > 500) {
     return jsonResponse({ error: "Too many recipients (max 500)" }, 400);
   }
@@ -702,6 +727,9 @@ async function handleAdminAnnouncementBlast(
 
   const sender = resolveTenantSender(tenant as unknown as TenantSenderInput);
 
+  const marketingFooter = marketing ? await loadMarketingFooterContext(service, payload.tenantId) : null;
+  const sendSubject = marketing ? withAdvertisementPrefix(subject) : subject;
+
   let sent = 0;
   let failed = 0;
   const errors: string[] = [];
@@ -712,11 +740,19 @@ async function handleAdminAnnouncementBlast(
     let failureReason: string | null = null;
 
     try {
+      const rowBody = marketingFooter
+        ? body + (await buildMarketingFooter(service, marketingFooter, {
+          tenantId: payload.tenantId,
+          personId: row.person_id,
+          language,
+          studioName: tenant.name,
+        }))
+        : body;
       const result = await sendRenderedEmail({
         to: row.recipient_email,
         from: sender.from,
         replyTo: sender.replyTo,
-        subject,
+        subject: sendSubject,
         renderInput: {
           templateName: EMAIL_TEMPLATE_NAMES.ADMIN_ANNOUNCEMENT,
           language,
@@ -727,8 +763,8 @@ async function handleAdminAnnouncementBlast(
           },
           stringOverrides: overrides,
           variables: {
-            subject,
-            body,
+            subject: sendSubject,
+            body: rowBody,
             recipientName: row.recipient_name ?? undefined,
           },
         },
@@ -752,9 +788,9 @@ async function handleAdminAnnouncementBlast(
         recipient_email: row.recipient_email,
         channel: "email",
         template_name: EMAIL_TEMPLATE_NAMES.ADMIN_ANNOUNCEMENT,
-        subject,
+        subject: sendSubject,
         body_preview: body.slice(0, 200),
-        variables: { subject, body },
+        variables: { subject: sendSubject, body, purpose: marketing ? "marketing" : "service" },
         external_msg_id: externalMsgId,
         status,
         failure_reason: failureReason,

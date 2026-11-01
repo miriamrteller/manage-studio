@@ -126,6 +126,7 @@ everything; it closes itself when all is well again.
 |---|---|---|
 | Project running | ✅ Supabase API status — a paused dev is reported as *"Dev is paused — unpause it"* | Pro plan, does not pause |
 | Migrations vs `main` | ✅ drift if anything is missing or unknown | ✅ unknown = drift; missing = "awaiting release" |
+| Definer functions made outside git (not in `supabase/security/definer-execute.json`) | ✅ listed with owner, what calls them, body head (secrets redacted) | ✅ same |
 | Security advisors (ERROR level) | ✅ | after every deploy-prod (summary) |
 | RLS (37 checks) | ✅ `rls-check.yml` | — needs seeded data, so not on prod |
 | Backup | — | ✅ `backup-prod.yml` |

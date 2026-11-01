@@ -1,4 +1,4 @@
--- Pay-at-the-studio follow-up (after 20261101000100 / #114).
+-- Pay-at-the-studio follow-up (after #114).
 --
 -- tenants.offline_payment_instructions: the studio's own text for parents who pay at the
 -- studio (bank details, "pay the teacher at the first lesson", opening hours). Shown in

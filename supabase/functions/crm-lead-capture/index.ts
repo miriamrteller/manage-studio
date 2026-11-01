@@ -38,6 +38,24 @@ const payloadSchema = z.object({
   src: z.string().max(40).nullable().optional(),
   /** Honeypot — humans never see it, bots fill it. */
   website: z.string().max(200).nullable().optional(),
+  /**
+   * Marketing opt-in per channel, with the exact wording shown next to each
+   * box (Communications Law §30A proof of consent). Absent = no opt-in.
+   */
+  marketingConsent: z
+    .object({
+      version: z.string().max(64),
+      items: z
+        .array(
+          z.object({
+            kind: z.enum(["marketing_email", "marketing_sms", "marketing_whatsapp"]),
+            wording: z.string().min(1).max(2000),
+          }),
+        )
+        .max(3),
+    })
+    .nullable()
+    .optional(),
 });
 
 function corsHeadersFor(req: Request): Record<string, string> {
@@ -58,6 +76,38 @@ function corsHeadersFor(req: Request): Record<string, string> {
 function nonEmpty(value: string | null | undefined): string | null {
   const trimmed = value?.trim();
   return trimmed ? trimmed : null;
+}
+
+/** Record opt-ins as consent_records and set the lead's quick flag. Never fails the inquiry. */
+async function recordLeadMarketingConsent(
+  service: ReturnType<typeof createServiceClient>,
+  input: {
+    tenantId: string;
+    leadId: string;
+    version: string;
+    items: Array<{ kind: string; wording: string }>;
+    ip: string | null;
+    userAgent: string | null;
+  },
+): Promise<void> {
+  try {
+    const rows = input.items.map((item) => ({
+      tenant_id: input.tenantId,
+      lead_id: input.leadId,
+      kind: item.kind,
+      granted: true,
+      wording: item.wording,
+      wording_version: input.version,
+      source: "inquiry",
+      ip_address: input.ip,
+      user_agent: input.userAgent?.slice(0, 512) ?? null,
+    }));
+    const { error } = await service.from("consent_records").insert(rows);
+    if (error) throw error;
+    await service.from("leads").update({ marketing_consent: true }).eq("id", input.leadId);
+  } catch (err) {
+    console.error("crm-lead-capture: could not record marketing consent", err);
+  }
 }
 
 Deno.serve(withMonitoring("crm-lead-capture", async (req) => {
@@ -121,6 +171,18 @@ Deno.serve(withMonitoring("crm-lead-capture", async (req) => {
       sourceRef: null,
       receivedAt: new Date().toISOString(),
     });
+
+    const optIns = payload.marketingConsent?.items ?? [];
+    if (optIns.length > 0 && result.leadId) {
+      await recordLeadMarketingConsent(service, {
+        tenantId: leadTenant.id,
+        leadId: result.leadId,
+        version: payload.marketingConsent!.version,
+        items: optIns,
+        ip: ip === "unknown" ? null : ip,
+        userAgent: req.headers.get("user-agent"),
+      });
+    }
 
     if (result.outcome !== "duplicate") {
       await notifyTenantOfLead(service, leadTenant, fields, result.outcome);
