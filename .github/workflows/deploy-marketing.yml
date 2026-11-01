@@ -1,4 +1,5 @@
-# Marketing site: the Cloudflare Pages project `opalswift` (opalswift.com apex).
+# Marketing site: the Cloudflare Pages project `opalswift-il` (opalswift.com apex
+# is a CNAME to opalswift-il.pages.dev). The name lives in env.PAGES_PROJECT.
 # Source: apps/marketing/public (static files) + apps/marketing/functions
 # (Pages Functions; the contact form posts to /api/contact).
 #
@@ -32,6 +33,9 @@ permissions:
 concurrency:
   group: deploy-marketing
   cancel-in-progress: false
+
+env:
+  PAGES_PROJECT: opalswift-il
 
 jobs:
   # Runs before the approval prompt, so a deploy that can't be safe never
@@ -100,6 +104,32 @@ jobs:
       - run: pnpm install --frozen-lockfile --filter @opalswift/marketing
         if: steps.gate.outputs.ready == 'true'
 
+      # Deploy to the project's real production branch. A different --branch
+      # would make a preview deployment that never reaches opalswift.com.
+      - name: Pages project production branch
+        if: steps.gate.outputs.ready == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -uo pipefail
+          code=$(curl -s -o project.json -w '%{http_code}' \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/$PAGES_PROJECT" || echo 000)
+          branch=$(jq -r '.result.production_branch // empty' project.json 2>/dev/null || true)
+          rm -f project.json
+          case "$code" in
+            200) ;;
+            404) echo "::error::Pages project $PAGES_PROJECT not found in this Cloudflare account (the account in CLOUDFLARE_ACCOUNT_ID). It may live in another account: see docs/deployment/MARKETING-SITE.md#which-cloudflare-account."; exit 1 ;;
+            401|403) echo "::error::The API token can't read Pages (HTTP $code). It needs 'Account · Cloudflare Pages · Edit' (docs/deployment/MARKETING-SITE.md#cloudflare-token-permission)."; exit 1 ;;
+            *) echo "::error::Could not read Pages project $PAGES_PROJECT (HTTP $code)."; exit 1 ;;
+          esac
+          if [ -z "$branch" ]; then echo "::error::Pages project $PAGES_PROJECT has no production branch set."; exit 1; fi
+          echo "Production branch: $branch"
+          [ "$branch" = main ] || echo "::notice::The Pages project's production branch is '$branch', not 'main'; deploying to '$branch' so it goes to production."
+          echo "PROD_BRANCH=$branch" >> "$GITHUB_ENV"
+          echo "- Pages production branch: \`$branch\`" >> "$GITHUB_STEP_SUMMARY"
+
       # The contact function sends mail with this secret. Names only are listed.
       - name: RESEND_API_KEY must be set on the Pages project
         if: steps.gate.outputs.ready == 'true'
@@ -110,12 +140,12 @@ jobs:
           WRANGLER_SEND_METRICS: "false"
         run: |
           set -uo pipefail
-          if ! pnpm exec wrangler pages secret list --project-name=opalswift > pages-secrets.txt 2> pages-secrets.err; then
+          if ! pnpm exec wrangler pages secret list --project-name="$PAGES_PROJECT" > pages-secrets.txt 2> pages-secrets.err; then
             echo "::error::Could not list the Pages project's secrets. If this is an authentication error, the API token needs 'Account · Cloudflare Pages · Edit' (docs/deployment/MARKETING-SITE.md#cloudflare-token-permission)."
             tail -5 pages-secrets.err; exit 1
           fi
           if ! grep -qw RESEND_API_KEY pages-secrets.txt; then
-            echo "::error::RESEND_API_KEY is not set on the Pages project 'opalswift' (production). The contact form could not send mail. Add it: Workers & Pages → opalswift → Settings → Variables and Secrets → Add → Secret."
+            echo "::error::RESEND_API_KEY is not set on the Pages project $PAGES_PROJECT (production). The contact form could not send mail. Add it: Workers & Pages → $PAGES_PROJECT → Settings → Variables and Secrets → Add → Secret."
             exit 1
           fi
           echo "RESEND_API_KEY is set on the Pages project."
@@ -128,7 +158,7 @@ jobs:
       # wrangler from the package's devDependency (never wrangler-action, which
       # falls back to `npm i` and breaks inside a pnpm workspace). Run from
       # apps/marketing so wrangler picks up ./functions.
-      - name: wrangler pages deploy (opalswift)
+      - name: wrangler pages deploy (${{ env.PAGES_PROJECT }})
         if: steps.gate.outputs.ready == 'true'
         working-directory: apps/marketing
         env:
@@ -137,7 +167,7 @@ jobs:
           WRANGLER_SEND_METRICS: "false"
         run: >-
           pnpm exec wrangler pages deploy public
-          --project-name=opalswift --branch=main
+          --project-name="$PAGES_PROJECT" --branch="$PROD_BRANCH"
           --commit-hash="$SHA" --commit-message="deploy-marketing ${SHA::7}" --commit-dirty=true
 
       - name: Smoke (home page, this release live, contact endpoint)
@@ -165,4 +195,4 @@ jobs:
           if [ "$code" = 405 ] || [ "$code" = 404 ]; then echo "::error::/api/contact is not answering — the contact form is broken."; ok=0; fi
 
           echo "### Smoke: home 200, release ${SHA::7} live, /api/contact answering — $([ $ok = 1 ] && echo all OK || echo FAILED)" >> "$GITHUB_STEP_SUMMARY"
-          [ $ok = 1 ] || { echo "::error::Deployed, but the smoke check failed. Roll back: Cloudflare → Workers & Pages → opalswift → Deployments → Rollback (docs/deployment/MARKETING-SITE.md)."; exit 1; }
+          [ $ok = 1 ] || { echo "::error::Deployed, but the smoke check failed. Roll back: Cloudflare → Workers & Pages → $PAGES_PROJECT → Deployments → Rollback (docs/deployment/MARKETING-SITE.md)."; exit 1; }

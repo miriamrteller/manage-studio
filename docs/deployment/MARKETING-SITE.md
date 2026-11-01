@@ -8,7 +8,8 @@
 plain static HTML in Hebrew (default) and English (toggle in the top bar),
 with a home page, a "skins" page and one page per industry.
 
-- Hosting: Cloudflare **Pages** project `opalswift`. It was first created by
+- Hosting: Cloudflare **Pages** project **`opalswift-il`** (`opalswift.com` is a
+  CNAME to `opalswift-il.pages.dev`). It was first created by
   Direct Upload with no Git connection; since 2026-11-01 the source lives here.
 - The product app is something else: the Worker `opalswift-app` on
   `app.opalswift.com` and the studio subdomains (`apps/web`, `deploy-web.yml`).
@@ -49,7 +50,7 @@ up, add a Cloudflare rate-limiting rule for `/api/contact`.
 Logs never contain the API key or the submission, only status codes.
 
 **Settings on the Pages project** (Cloudflare → Workers & Pages →
-opalswift → Settings → Variables and Secrets, *Production*):
+opalswift-il → Settings → Variables and Secrets, *Production*):
 
 | Name | Type | Value |
 |---|---|---|
@@ -65,6 +66,17 @@ unknown. This function replaces it.
 Tests: `pnpm -C apps/marketing test` (Node's built-in runner, `fetch` mocked).
 Test files live in `apps/marketing/test/`, never in `functions/` (every file
 there becomes a public URL).
+
+## Header and footer "Sign in" link
+
+Every page links to the app (`https://app.opalswift.com`): "כניסה" / "Sign in"
+in the header, next to the main button, and "כניסה לחשבון" / "Sign in to your
+account" at the bottom of the footer. The beta button stays the main
+call-to-action.
+
+- Header: `index.html` has its own header; the other pages get theirs from
+  `public/topbar.js` (one place for 19 pages).
+- Footer: the line just before `</footer>` in every page (`.foot-signin`).
 
 ## How to edit
 
@@ -88,7 +100,7 @@ merge to main touching apps/marketing/**   (or Actions → deploy-marketing → 
   └─ check: /api/contact function present? links OK? function tests pass?
        └─ deploy (environment "production") ── ⏸ OWNER APPROVES ──►
             RESEND_API_KEY set on the Pages project?
-            wrangler pages deploy public --project-name=opalswift --branch=main
+            wrangler pages deploy public --project-name=opalswift-il --branch=<production branch>
             → smoke: home page 200, release.txt == this commit, /api/contact answers
 ```
 
@@ -96,11 +108,27 @@ merge to main touching apps/marketing/**   (or Actions → deploy-marketing → 
   never `wrangler-action` and never `npm install`.
 - The deploy writes `release.txt` (the commit id) into the upload; it is not
   committed. The smoke check reads `https://opalswift.com/release.txt`.
-- `--branch=main` is the project's production branch. If the smoke check
-  says release.txt is missing, check Pages → opalswift → Settings → Builds
-  & deployments → Production branch; it must be `main`.
+- The deploy reads the project's production branch from the Cloudflare API
+  and deploys to it (any other branch name would make a preview deployment
+  that never reaches opalswift.com). The run summary shows which branch.
 - Secrets: `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` in the
   `production` environment (the same ones deploy-web uses).
+
+### Which Cloudflare account
+
+The project name is set once, as `PAGES_PROJECT` at the top of
+`deploy-marketing.yml`. The account is whatever `CLOUDFLARE_ACCOUNT_ID` in
+the `production` environment says (the same account as `opalswift-app`).
+
+If the deploy says **"Pages project opalswift-il not found in this
+Cloudflare account"**, the project lives in a different Cloudflare account.
+To find it: log in to Cloudflare, use the account switcher (top left), and
+open Workers & Pages in each account until `opalswift-il` shows up. Then either:
+- move the site into the main account: create a Pages project there
+  (Direct Upload, any name), set `PAGES_PROJECT` to that name, deploy, then
+  move the `opalswift.com` custom domain to it; or
+- deploy to the other account: a token and account ID from that account,
+  as separate secrets (this workflow would need a small change to use them).
 
 ### Cloudflare token permission
 
@@ -117,7 +145,7 @@ authentication error (code 10000).
 ## How to roll back
 
 Fastest (no Git needed): Cloudflare dashboard → **Workers & Pages →
-opalswift → Deployments** → on the last good deployment, **⋯ → Rollback to
+opalswift-il → Deployments** → on the last good deployment, **⋯ → Rollback to
 this deployment**. That is instant and includes that deployment's functions.
 
 Then fix forward in git (revert the PR) so the next deploy doesn't bring the
