@@ -1,0 +1,10 @@
+# Migration versions allowed to be OLDER than the newest migration on main.
+# check-migrations.sh refuses that by default, because `supabase db push`
+# rejects an out-of-order version once a hosted project has applied a newer
+# one. Only add a version here when no hosted project has applied anything
+# newer than it, and say why.
+#
+# 2026-11-01: must run before 20261101000100_security_definer_hardening.sql,
+# which aborts on definer functions made outside git (dev handle_new_user_v2,
+# prod rls_auto_enable). Neither dev nor prod had applied >= 20261101000100.
+20261031235900
