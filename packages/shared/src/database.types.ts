@@ -483,6 +483,86 @@ export type Database = {
           },
         ]
       }
+      consent_records: {
+        Row: {
+          created_at: string
+          engagement_id: string | null
+          granted: boolean
+          id: string
+          ip_address: unknown
+          kind: string
+          lead_id: string | null
+          person_id: string | null
+          recorded_by: string | null
+          source: string
+          tenant_id: string
+          user_agent: string | null
+          wording: string | null
+          wording_version: string | null
+        }
+        Insert: {
+          created_at?: string
+          engagement_id?: string | null
+          granted: boolean
+          id?: string
+          ip_address?: unknown
+          kind: string
+          lead_id?: string | null
+          person_id?: string | null
+          recorded_by?: string | null
+          source: string
+          tenant_id: string
+          user_agent?: string | null
+          wording?: string | null
+          wording_version?: string | null
+        }
+        Update: {
+          created_at?: string
+          engagement_id?: string | null
+          granted?: boolean
+          id?: string
+          ip_address?: unknown
+          kind?: string
+          lead_id?: string | null
+          person_id?: string | null
+          recorded_by?: string | null
+          source?: string
+          tenant_id?: string
+          user_agent?: string | null
+          wording?: string | null
+          wording_version?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consent_records_engagement_id_fkey"
+            columns: ["engagement_id"]
+            isOneToOne: false
+            referencedRelation: "engagements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "consent_records_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "consent_records_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "consent_records_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       consent_templates: {
         Row: {
           content: string
@@ -3815,6 +3895,14 @@ export type Database = {
         Args: { p_offering_id: string; p_person_id: string }
         Returns: number
       }
+      find_contacts_by_phone: {
+        Args: { p_phone: string }
+        Returns: {
+          lead_id: string
+          person_id: string
+          tenant_id: string
+        }[]
+      }
       get_admin_dashboard_overview: { Args: never; Returns: Json }
       get_admin_quote: { Args: { p_quote_id: string }; Returns: Json }
       get_app_encryption_key: { Args: never; Returns: string }
@@ -3907,6 +3995,16 @@ export type Database = {
           current_status: string
           offering_id: string
           person_id: string
+        }[]
+      }
+      get_person_consents: {
+        Args: { p_person_id: string }
+        Returns: {
+          created_at: string
+          granted: boolean
+          kind: string
+          source: string
+          wording: string
         }[]
       }
       get_platform_terms_acceptance: {
@@ -4186,6 +4284,10 @@ export type Database = {
         Args: { p_quote_id: string; p_via: string }
         Returns: Json
       }
+      marketing_optins: {
+        Args: { p_kind: string; p_person_ids: string[]; p_tenant_id: string }
+        Returns: string[]
+      }
       preview_notification_blast_recipients: {
         Args: {
           p_account_id?: string
@@ -4233,6 +4335,17 @@ export type Database = {
       quote_job_offering_id: { Args: { p_quote_id: string }; Returns: string }
       quote_lines_json: { Args: { p_quote_id: string }; Returns: Json }
       quote_recalc_totals: { Args: { p_quote_id: string }; Returns: undefined }
+      record_consents: {
+        Args: {
+          p_engagement_id?: string
+          p_items: Json
+          p_person_id: string
+          p_source: string
+          p_tenant_id: string
+          p_wording_version: string
+        }
+        Returns: number
+      }
       record_legal_acceptance: {
         Args: {
           p_documents: string[]
