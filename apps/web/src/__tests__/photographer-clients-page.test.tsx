@@ -114,6 +114,7 @@ describe('Clients page (photographer)', () => {
   it('shows Add client / New shoot and the client’s shoots, no dance wording', async () => {
     renderList();
     expect(await screen.findByRole('button', { name: 'Add client' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Clients' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'New shoot' })).toBeInTheDocument();
     expect(screen.queryByText(/enrol/i)).toBeNull();
     expect(screen.queryByText(baseValue('pages.students.guardian_column'))).toBeNull();
@@ -162,6 +163,7 @@ describe('Clients page (photographer)', () => {
     await setLanguage('he');
     renderList();
     expect(await screen.findByRole('button', { name: 'הוספת לקוח' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'לקוחות' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'צילום חדש' })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: 'צילומים' })).toBeInTheDocument();
     expect(screen.queryByText(baseValue('pages.students.enrol_button', 'he'))).toBeNull();
@@ -190,6 +192,7 @@ describe('Students page (dance) is unchanged', () => {
   it('keeps Enrol new student → /enrol and the per-row Enrol in class', async () => {
     renderList();
     const enrolNew = await screen.findByRole('button', { name: 'Enrol new student' });
+    expect(screen.getByRole('heading', { level: 1, name: 'Students' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Enrol in class' })).toBeInTheDocument();
     expect(screen.queryByText('Add client')).toBeNull();
     expect(screen.queryByText('New shoot')).toBeNull();
