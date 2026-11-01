@@ -17,6 +17,12 @@ export const DEMO_INVOICE_HOST = 'https://invoices.lumen-light.demo';
 /** Signed-contract PDF links point here; the demo bar opens the contract in place. */
 export const DEMO_CONTRACT_HOST = 'https://contracts.lumen-light.demo';
 
+/** Labels for the demo bar's view switch. */
+export const DEMO_VIEWS = {
+  en: { admin: 'Photographer', client: 'Client' },
+  he: { admin: 'צלם/ת', client: 'לקוח' },
+} as const;
+
 const id = (n: number) => `d0000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 
 /** Package (offering) ids */

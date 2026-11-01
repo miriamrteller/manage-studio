@@ -9,14 +9,13 @@ import { invoiceForPayment } from './extensions';
 import { demoGallery } from './images/manifest';
 import { getInvoice, subscribeInvoice, closeInvoice, showInvoice, type DemoInvoice } from './invoice';
 import { formatIls, signedContractView } from './functions';
+import { DEMO_VIEWS } from './seed';
 import './demo.css';
 
 const COPY = {
   en: {
     banner: 'Demo. Data resets when you refresh. No real emails or payments.',
     view: 'View as',
-    admin: 'Photographer',
-    client: 'Client',
     outbox: 'Sent messages',
     outboxEmpty: 'Nothing sent yet. Emails and WhatsApp messages the app sends appear here.',
     close: 'Close',
@@ -34,8 +33,6 @@ const COPY = {
   he: {
     banner: 'גרסת הדגמה. הנתונים מתאפסים ברענון. לא נשלחים מיילים ולא מבוצעים תשלומים.',
     view: 'תצוגה',
-    admin: 'צלם/ת',
-    client: 'לקוח',
     outbox: 'הודעות שנשלחו',
     outboxEmpty: 'עדיין לא נשלח דבר. מיילים והודעות וואטסאפ שהמערכת שולחת יופיעו כאן.',
     close: 'סגירה',
@@ -78,7 +75,7 @@ function switchView(view: DemoView) {
 export function DemoBar() {
   const { i18n } = useTranslation();
   const lang = i18n.language?.startsWith('he') ? 'he' : 'en';
-  const c = COPY[lang];
+  const c = { ...COPY[lang], ...DEMO_VIEWS[lang] };
   const view = useView();
   const outbox = useOutbox();
   const invoice = useInvoice();
