@@ -1,45 +1,31 @@
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
 import { useTranslation } from 'react-i18next';
-import { useBillingAccount, useDeleteBillingAccount } from '../hooks';
-import { BillingAccountForm } from './BillingAccountForm';
+import { Button } from '@/components/ui/button';
+import { formatSavedCard } from '@/features/students/lib/studentBillingAccount';
+import { useBillingAccount } from '../hooks';
+import { BillingAccountEditForm } from './BillingAccountEditForm';
 
 interface BillingAccountDetailProps {
   id: string;
   onClose?: () => void;
 }
 
-/**
- * BillingAccountDetail: Display billing account details
- * - Shows all account fields
- * - Edit button opens form modal
- * - Delete button with confirmation dialog
- * - WCAG 2.1 AA compliant
- */
-export function BillingAccountDetail({
-  id,
-  onClose,
-}: BillingAccountDetailProps): React.ReactNode {
+function Row({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <dt className="font-semibold text-gray-700">{label}</dt>
+      <dd className="text-gray-900">{children}</dd>
+    </div>
+  );
+}
+
+/** One billing account: the payer, business invoice details, the saved card and status. */
+export function BillingAccountDetail({ id, onClose }: BillingAccountDetailProps): React.ReactNode {
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-
   const { data: account, isLoading, error } = useBillingAccount(id);
-  const { mutate: deleteAccount, isPending: isDeleting_ } =
-    useDeleteBillingAccount({
-      onSuccess: () => {
-        onClose?.();
-      },
-    });
 
-  if (isLoading) {
-    return (
-      <div className="p-4">
-        <p>{t('common.loading')}</p>
-      </div>
-    );
-  }
-
+  if (isLoading) return <p className="p-4" role="status">{t('common.loading')}</p>;
   if (error) {
     return (
       <div role="alert" className="p-4 bg-red-50 border border-red-200 rounded">
@@ -47,156 +33,48 @@ export function BillingAccountDetail({
       </div>
     );
   }
-
-  if (!account) {
-    return (
-      <div className="p-4">
-        <p>{t('errors.not_found')}</p>
-      </div>
-    );
-  }
-
-  if (isEditing) {
-    return (
-      <div className="space-y-4">
-        <div className="flex justify-between items-center p-4 border-b">
-          <h2 className="text-xl font-semibold">
-            {t('pages.billing.edit_title')}
-          </h2>
-          <Button
-            type="button"
-            onClick={() => setIsEditing(false)}
-            className="text-gray-500 hover:text-gray-700"
-            aria-label={t('common.close')}
-            variant="ghost"
-          >
-            ✕
-          </Button>
-        </div>
-        <BillingAccountForm
-          onSuccess={() => {
-            setIsEditing(false);
-          }}
-        />
-      </div>
-    );
-  }
+  if (!account) return <p className="p-4">{t('errors.not_found')}</p>;
+  if (isEditing) return <BillingAccountEditForm account={account} onDone={() => setIsEditing(false)} />;
 
   return (
     <div className="space-y-6 p-4">
       <div className="flex justify-between items-start">
         <div>
-          <h2 className="text-2xl font-bold">
-            {account.account_holder_name}
-          </h2>
-          <p className="text-gray-600">
-            {t(`pages.billing.status_${account.status}`)}
-          </p>
+          <h2 className="text-2xl font-bold">{account.holderName ?? t('pages.billing.holder_unknown')}</h2>
+          <p className="text-gray-600">{t(`pages.billing.status_${account.status}`)}</p>
         </div>
         {onClose && (
-          <Button
-            type="button"
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
-            aria-label={t('common.close')}
-            variant="ghost"
-          >
+          <Button type="button" onClick={onClose} aria-label={t('common.close')} variant="ghost">
             ✕
           </Button>
         )}
       </div>
 
-      {/* Account Details */}
       <dl className="space-y-4">
-        <div>
-          <dt className="font-semibold text-gray-700">
-            {t('pages.billing.email_label')}
-          </dt>
-          <dd className="text-gray-900">{account.primary_contact_email}</dd>
-        </div>
-
-        {account.primary_contact_phone && (
-          <div>
-            <dt className="font-semibold text-gray-700">
-              {t('pages.billing.phone_label')}
-            </dt>
-            <dd className="text-gray-900">{account.primary_contact_phone}</dd>
-          </div>
+        {account.holderEmail && <Row label={t('pages.billing.email_label')}>{account.holderEmail}</Row>}
+        {account.holderPhone && (
+          <Row label={t('pages.billing.phone_label')}>
+            <span dir="ltr">{account.holderPhone}</span>
+          </Row>
         )}
-
-        <div>
-          <dt className="font-semibold text-gray-700">
-            {t('pages.billing.payment_method_label')}
-          </dt>
-          <dd className="text-gray-900">
-            {t(
-              `pages.billing.payment_method_${account.payment_method}`
-            )}
-          </dd>
-        </div>
-
-        <div>
-          <dt className="font-semibold text-gray-700">
-            {t('common.status')}
-          </dt>
-          <dd className="text-gray-900">
-            {t(`pages.billing.status_${account.status}`)}
-          </dd>
-        </div>
+        <Row label={t('pages.billing.saved_card_label')}>
+          {account.savedCard ? (
+            <span dir="ltr" data-testid="billing-saved-card">{formatSavedCard(account.savedCard)}</span>
+          ) : (
+            t('pages.billing.no_saved_card')
+          )}
+        </Row>
+        {account.business_name && <Row label={t('pages.billing.business_name_label')}>{account.business_name}</Row>}
+        {account.business_tax_id && (
+          <Row label={t('pages.billing.business_tax_id_label')}>
+            <span dir="ltr">{account.business_tax_id}</span>
+          </Row>
+        )}
       </dl>
 
-      {/* Action Buttons */}
-      <div className="flex gap-2 pt-4">
-        <Button
-          type="button"
-          onClick={() => setIsEditing(true)}
-          variant="primary"
-        >
-          {t('common.edit')}
-        </Button>
-        <Button
-          type="button"
-          onClick={() => setIsDeleting(true)}
-          variant="destructive"
-          className="button-outline border-red-300 text-red-600 hover:bg-red-50"
-        >
-          {t('common.delete')}
-        </Button>
-      </div>
-
-      {/* Delete Confirmation Dialog */}
-      {isDeleting && (
-        <div
-          role="alert"
-          className="p-4 bg-red-50 border border-red-300 rounded space-y-4"
-        >
-          <p className="font-semibold text-red-900">
-            {t('pages.billing.delete_confirm', {
-              name: account.account_holder_name,
-            })}
-          </p>
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              onClick={() => deleteAccount(id)}
-              disabled={isDeleting_}
-              variant="destructive"
-              className="button-error"
-            >
-              {isDeleting_ ? t('common.loading') : t('common.confirm')}
-            </Button>
-            <Button
-              type="button"
-              onClick={() => setIsDeleting(false)}
-              disabled={isDeleting_}
-              variant="outline"
-              className="button-outline"
-            >
-              {t('common.cancel')}
-            </Button>
-          </div>
-        </div>
-      )}
+      <Button type="button" onClick={() => setIsEditing(true)} variant="primary">
+        {t('common.edit')}
+      </Button>
     </div>
   );
 }

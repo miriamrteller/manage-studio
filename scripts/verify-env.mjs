@@ -105,6 +105,8 @@ const prod = declaredIn('.env.prod');
 /** Supabase injects these into every Edge Function; they are never in .env. */
 const PLATFORM_PROVIDED = new Set([
   'SUPABASE_URL', 'SUPABASE_ANON_KEY', 'SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_DB_URL',
+  // Set by the Supabase Edge runtime on every invocation; never configured.
+  'SB_EXECUTION_ID', 'SB_REGION',
 ]);
 
 let required = new Set();

@@ -674,6 +674,17 @@
       "sign_out_and_continue": "Sign out and continue"
     },
     "billing": {
+      "account_holder_name_label": "Payer",
+      "holder_unknown": "Unnamed payer",
+      "no_saved_card": "No saved card",
+      "saved_card_label": "Saved card",
+      "business_hint": "Only when the payer wants invoices in a business name. Leave empty for private payers.",
+      "business_tax_id_label": "Business tax ID (ח.פ / ע.מ)",
+      "business_name_label": "Business name (for invoices)",
+      "empty_message": "Billing accounts appear here once students enrol.",
+      "search_placeholder": "Search by payer name or email",
+      "auto_created_note": "Billing accounts are created automatically for the payer when a student enrols.",
+      "description": "Who pays for each enrolment, their business invoice details and saved card.",
       "title": "Billing Accounts",
       "description": "Manage payment accounts and link students.",
       "list_title": "Billing Accounts List",

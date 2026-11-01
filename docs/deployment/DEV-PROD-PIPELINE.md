@@ -296,7 +296,7 @@ Optional afterwards: project → **Database** → **Backups** → enable PITR.
 
 **5. Recommended (5 minutes): make the PR checks required**
 Settings → **Branches** → rule for `main` → *Require status checks* → add
-`migration-guard`, `workflow-lint`, `sql-tests`, `local-stack`.
+`migration-guard`, `workflow-lint`, `verify-env`, `sql-tests`, `local-stack`, `definer-drift`, `web-deploy-dry-run`.
 
 **6. Optional hardening (later)**
 After the first nightly run, Settings → Environments → `production-nightly`

@@ -8,7 +8,6 @@ const PAGE_SIZE = 20;
 interface UseBillingAccountsOptions {
   page?: number;
   searchQuery?: string;
-  paymentMethods?: string[];
   statuses?: string[];
   sortField?: BillingSortField;
   sortOrder?: SortOrder;
@@ -18,7 +17,6 @@ interface UseBillingAccountsOptions {
 export function useBillingAccounts({
   page = 1,
   searchQuery = '',
-  paymentMethods = [],
   statuses = [],
   sortField = DEFAULT_BILLING_SORT.field,
   sortOrder = DEFAULT_BILLING_SORT.order,
@@ -32,7 +30,6 @@ export function useBillingAccounts({
       tenant?.id,
       page,
       searchQuery,
-      paymentMethods,
       statuses,
       sortField,
       sortOrder,
@@ -43,7 +40,6 @@ export function useBillingAccounts({
         page,
         pageSize: PAGE_SIZE,
         searchQuery,
-        paymentMethods,
         statuses,
         sortField,
         sortOrder,
