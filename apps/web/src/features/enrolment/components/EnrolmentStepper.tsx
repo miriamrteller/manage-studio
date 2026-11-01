@@ -714,7 +714,7 @@ export function EnrolmentStepper({
             <div className="space-y-4">
               {!waiverFlow.waiverStatus || !waiverFlow.waiverStatus.template ? (
                 <p className="text-sm text-muted-foreground" role="status">
-                  {t('enrolment.waiver_loading', { defaultValue: 'Loading waiver…' })}
+                  {t('enrolment.waiver_loading', { defaultValue: 'Loading form…' })}
                 </p>
               ) : (
                 <p className="text-sm text-destructive" role="alert">

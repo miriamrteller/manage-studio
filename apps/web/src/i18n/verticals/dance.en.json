@@ -1,0 +1,65 @@
+{
+  "pages": {
+    "people": {
+      "waiver_title": "Health declaration",
+      "waiver_required": "You must accept the health declaration to continue.",
+      "waiver_status_label": "Health declaration"
+    },
+    "admin_enrol": {
+      "send_link_desc": "Create the enrolment and email a link for the guardian to sign the health declaration (if required) and pay.",
+      "link_sent": "Completion link sent to {{email}}. The enrolment is pending until the health declaration is signed and payment is completed.",
+      "waiver_link_title": "Send health declaration link — {{name}}",
+      "waiver_link_desc": "Email a secure link so the guardian can sign the health declaration. The link is for the guardian, not the admin account.",
+      "send_waiver_link_action": "Send health declaration link",
+      "waiver_link_sent": "Health declaration link sent to {{email}}.",
+      "waiver_link_not_emailed": "The health declaration link was created but email delivery failed for {{email}}. Copy the link below and send it manually.",
+      "waiver_link_copy": "Health declaration link",
+      "copy_waiver_link_action": "Copy health declaration link"
+    },
+    "enrolment": {
+      "confirmation_title_pending_waiver": "Payment received — health declaration required",
+      "pending_waiver_heading": "Action required: sign your health declaration",
+      "pending_waiver_email_hint": "A link to sign your health declaration has been sent to {{email}}. Click the link to complete your enrolment.",
+      "pending_waiver_legal_notice": "Your spot is reserved but you may NOT attend class until the health declaration is signed. Classes missed while your health declaration is pending are not eligible for refund, credit, or makeup. If the health declaration is not signed within 7 days your enrolment will be automatically cancelled and a full refund issued.",
+      "guest_waiver_heading": "This class requires a signed health declaration",
+      "guest_waiver_point_inactive": "Your enrolment will NOT be active until the health declaration is signed.",
+      "guest_waiver_point_no_attend": "You may not attend class until the health declaration is signed, regardless of payment.",
+      "guest_waiver_point_no_refund": "Classes missed while your health declaration is pending are NOT eligible for refund, credit, or makeup.",
+      "guest_waiver_point_auto_cancel": "If the health declaration is not signed within 7 days, your enrolment will be automatically cancelled and a full refund issued.",
+      "guest_waiver_how_it_works_body": "After payment, a link to sign the health declaration will be emailed to {{email}}. It only takes a minute.",
+      "guest_waiver_ack_label": "I acknowledge the health declaration requirement",
+      "guest_waiver_ack_text": "I understand my enrolment is NOT active until I sign the health declaration, and that I may not attend class or receive a refund for missed classes during this period."
+    },
+    "enrol_complete": {
+      "page_title": "Sign your health declaration",
+      "no_active_template": "No active health declaration template found. Please contact us.",
+      "already_signed_heading": "Health declaration already signed",
+      "already_signed_body": "Your health declaration has been signed and your enrolment is now active.",
+      "cancelled_body": "This enrolment was cancelled because the health declaration was not signed in time. A refund has been issued. Please re-enrol if you would like to rejoin.",
+      "signed_heading": "Health declaration signed — welcome!",
+      "signed_body": "Your health declaration has been signed and your enrolment is now active. See you in class!",
+      "sign_prompt": "Please read the health declaration carefully and sign below to activate your enrolment."
+    }
+  },
+  "scheduling": {
+    "appointments": {
+      "status_pending_waiver": "Awaiting health declaration"
+    }
+  },
+  "enrolment": {
+    "step_verify_email": "Health declaration acknowledgment",
+    "step_waiver": "Health declaration",
+    "pending_action": {
+      "complete_waiver": "Sign health declaration",
+      "send_waiver_link": "Send health declaration link"
+    },
+    "waiver_document_region": "Health declaration document",
+    "waiver_checkbox_label": "I have read and accept this health declaration",
+    "waiver_token_expired": "Please scroll to the bottom again to re-confirm you have read the health declaration.",
+    "waiver_already_signed": "Health declaration signed",
+    "waiver_loading": "Loading health declaration…",
+    "waiver_no_template": "No active health declaration template is set up. Please ask a studio administrator to add a health declaration template before enrolling.",
+    "waiver_guardian_confirm": "I confirm I am the parent or legal guardian of {{studentName}} and am authorised to sign this health declaration on their behalf.",
+    "waiver_minor_cannot_sign_body": "{{studentName}} is under 18. Israeli law requires a parent or legal guardian to sign the health declaration. Please ask a parent or guardian to log in and complete the enrolment."
+  }
+}

@@ -46,8 +46,10 @@ describe('day names', () => {
 });
 
 describe('health declaration wording (docs/legal/07b)', () => {
-  it('the Hebrew enrolment step never calls it a waiver', () => {
-    const he = JSON.parse(readFileSync(resolve(__dirname, '../i18n/he.json'), 'utf8')).enrolment as Record<string, string>;
+  it('the Hebrew enrolment step never calls it a waiver; dance says health declaration', () => {
+    const read = (f: string) => JSON.parse(readFileSync(resolve(__dirname, f), 'utf8')).enrolment as Record<string, string>;
+    const base = read('../i18n/he.json');
+    const dance = read('../i18n/verticals/dance.he.json');
     const keys = [
       'step_waiver',
       'waiver_document_region',
@@ -59,8 +61,9 @@ describe('health declaration wording (docs/legal/07b)', () => {
       'waiver_minor_cannot_sign_body',
     ];
     for (const key of keys) {
-      expect(he[key], key).toMatch(/הצהרת (ה)?בריאות/);
-      expect(he[key], key).not.toMatch(/ויתור/);
+      expect(base[key], key).not.toMatch(/ויתור/);
+      expect(base[key], key).toMatch(/טופס/);
+      expect(dance[key], key).toMatch(/הצהרת (ה)?בריאות/);
     }
   });
 });
