@@ -44,11 +44,13 @@ describe('resolveEntityLabels', () => {
   it('layers photographer vocabulary over the preset (en + he)', () => {
     const en = resolveEntityLabels('services', {}, 'en', 'photographer');
     expect(en.account).toEqual({ singular: 'Client', plural: 'Clients' });
+    expect(en.contact).toEqual({ singular: 'Client', plural: 'Clients' });
     expect(en.engagement).toEqual({ singular: 'Shoot', plural: 'Shoots' });
     expect(en.offering).toEqual({ singular: 'Package', plural: 'Packages' });
 
     const he = resolveEntityLabels('services', {}, 'he', 'photographer');
     expect(he.account).toEqual({ singular: 'לקוח', plural: 'לקוחות' });
+    expect(he.contact).toEqual({ singular: 'לקוח', plural: 'לקוחות' });
     expect(he.engagement).toEqual({ singular: 'צילום', plural: 'צילומים' });
     expect(he.offering).toEqual({ singular: 'חבילה', plural: 'חבילות' });
   });
@@ -62,6 +64,11 @@ describe('resolveEntityLabels', () => {
     );
     expect(labels.engagement).toEqual({ singular: 'Session', plural: 'Sessions' });
     expect(labels.offering).toEqual({ singular: 'Package', plural: 'Packages' });
+  });
+
+  it('tenant contact override still wins over the photographer "Clients"', () => {
+    const labels = resolveEntityLabels('services', { contact: { singular: 'Customer', plural: 'Customers' } }, 'he', 'photographer');
+    expect(labels.contact).toEqual({ singular: 'Customer', plural: 'Customers' });
   });
 
   it('leaves dance/generic tenants unchanged', () => {
