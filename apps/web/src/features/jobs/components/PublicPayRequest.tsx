@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { PrivacyNotice } from '@/components/legal/PrivacyNotice';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Badge } from '@/components/ui/badge';
@@ -107,6 +108,7 @@ export function PublicPayRequest({ token, result }: Props) {
                   {t('pages.pay.installmentsAvailable', { count: request.maxInstallments })}
                 </p>
               )}
+              <PrivacyNotice purpose="pay" />
               <Button variant="primary" fullWidth isLoading={redirecting} onClick={() => void pay()}>
                 {t('pages.pay.payNow')}
               </Button>

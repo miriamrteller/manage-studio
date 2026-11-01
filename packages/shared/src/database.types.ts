@@ -700,6 +700,11 @@ export type Database = {
           season_id: string | null
           status: string
           tenant_id: string
+          terms_accepted_at: string | null
+          terms_accepted_by_email: string | null
+          terms_accepted_by_user_id: string | null
+          terms_accepted_via: string | null
+          terms_version: string | null
           updated_at: string
           waiver_48h_reminded_at: string | null
           waiver_5d_reminded_at: string | null
@@ -733,6 +738,11 @@ export type Database = {
           season_id?: string | null
           status?: string
           tenant_id: string
+          terms_accepted_at?: string | null
+          terms_accepted_by_email?: string | null
+          terms_accepted_by_user_id?: string | null
+          terms_accepted_via?: string | null
+          terms_version?: string | null
           updated_at?: string
           waiver_48h_reminded_at?: string | null
           waiver_5d_reminded_at?: string | null
@@ -766,6 +776,11 @@ export type Database = {
           season_id?: string | null
           status?: string
           tenant_id?: string
+          terms_accepted_at?: string | null
+          terms_accepted_by_email?: string | null
+          terms_accepted_by_user_id?: string | null
+          terms_accepted_via?: string | null
+          terms_version?: string | null
           updated_at?: string
           waiver_48h_reminded_at?: string | null
           waiver_5d_reminded_at?: string | null
@@ -2971,6 +2986,7 @@ export type Database = {
       tenants: {
         Row: {
           accent_color: string
+          accessibility_url: string | null
           billing_policy: Json
           business_preset: string
           chrome_style: string
@@ -2978,6 +2994,7 @@ export type Database = {
           country: string
           created_at: string
           currency: string
+          enrolment_terms_version: string
           font_pair: string | null
           from_email: string | null
           from_email_verified_at: string | null
@@ -3017,9 +3034,11 @@ export type Database = {
           phone_region_updated_at: string
           plan: Database["public"]["Enums"]["tenant_plan"]
           primary_color: string
+          privacy_policy_url: string | null
           skin: string
           sub_status: string
           subdomain: string
+          terms_url: string | null
           tranzila_terminal_name: string | null
           trial_ends_at: string | null
           updated_at: string
@@ -3030,6 +3049,7 @@ export type Database = {
         }
         Insert: {
           accent_color?: string
+          accessibility_url?: string | null
           billing_policy?: Json
           business_preset?: string
           chrome_style?: string
@@ -3037,6 +3057,7 @@ export type Database = {
           country?: string
           created_at?: string
           currency?: string
+          enrolment_terms_version?: string
           font_pair?: string | null
           from_email?: string | null
           from_email_verified_at?: string | null
@@ -3076,9 +3097,11 @@ export type Database = {
           phone_region_updated_at?: string
           plan?: Database["public"]["Enums"]["tenant_plan"]
           primary_color?: string
+          privacy_policy_url?: string | null
           skin?: string
           sub_status?: string
           subdomain: string
+          terms_url?: string | null
           tranzila_terminal_name?: string | null
           trial_ends_at?: string | null
           updated_at?: string
@@ -3089,6 +3112,7 @@ export type Database = {
         }
         Update: {
           accent_color?: string
+          accessibility_url?: string | null
           billing_policy?: Json
           business_preset?: string
           chrome_style?: string
@@ -3096,6 +3120,7 @@ export type Database = {
           country?: string
           created_at?: string
           currency?: string
+          enrolment_terms_version?: string
           font_pair?: string | null
           from_email?: string | null
           from_email_verified_at?: string | null
@@ -3135,9 +3160,11 @@ export type Database = {
           phone_region_updated_at?: string
           plan?: Database["public"]["Enums"]["tenant_plan"]
           primary_color?: string
+          privacy_policy_url?: string | null
           skin?: string
           sub_status?: string
           subdomain?: string
+          terms_url?: string | null
           tranzila_terminal_name?: string | null
           trial_ends_at?: string | null
           updated_at?: string
@@ -3897,10 +3924,12 @@ export type Database = {
         Args: { p_subdomain: string }
         Returns: {
           accent_color: string
+          accessibility_url: string
           chrome_style: string
           country: string
           currency: string
           enabled_features: string[]
+          enrolment_terms_version: string
           font_pair: string
           id: string
           invoicing_provider: string
@@ -3920,8 +3949,10 @@ export type Database = {
           payment_provider_webhook_configured: boolean
           plan: Database["public"]["Enums"]["tenant_plan"]
           primary_color: string
+          privacy_policy_url: string
           skin: string
           tenant_subdomain: string
+          terms_url: string
         }[]
       }
       get_tenant_features: { Args: { p_tenant_id: string }; Returns: string[] }

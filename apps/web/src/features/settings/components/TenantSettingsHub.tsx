@@ -18,6 +18,7 @@ import { BrandingSettingsForm } from './BrandingSettingsForm';
 import { LocaleSettingsForm } from './LocaleSettingsForm';
 import { OfflinePaymentSettingsForm } from './OfflinePaymentSettingsForm';
 import { InvoicingToggleForm } from './InvoicingToggleForm';
+import { LegalLinksSettingsForm } from './LegalLinksSettingsForm';
 
 function SettingsLinkCard({
   title,
@@ -79,6 +80,8 @@ export function TenantSettingsHub() {
       )}
       <hr className="border-gray-200" />
       <InvoicingToggleForm />
+      <hr className="border-gray-200" />
+      <LegalLinksSettingsForm />
 
       <section className="space-y-4">
         <h2 className="text-lg font-semibold text-foreground">{t('settings.hub.more_settings')}</h2>

@@ -6,6 +6,7 @@ import { useTenant } from '@/hooks/useTenant';
 import { BackToPortalButton } from '@/features/jobs/components/BackToPortalButton';
 import { QuoteTotalsSummary } from '../QuoteTotalsSummary';
 import { formatQuoteDate } from '../../lib/quoteFormat';
+import { PrivacyNotice } from '@/components/legal/PrivacyNotice';
 import {
   acceptPublicQuote, declinePublicQuote, fetchPublicQuote, type AcceptQuoteResponse, type PublicQuote,
 } from '../../services/publicQuoteService';
@@ -103,8 +104,11 @@ function QuoteBody({ quote, token, tenantId, language, onSettled }: QuoteBodyPro
       )}
       {quote.status === 'accepted' && <BackToPortalButton />}
       {open && (
-        <PublicQuoteActions busy={accept.isPending || decline.isPending}
-          onAccept={() => accept.mutate()} onDecline={(reason) => decline.mutate(reason)} />
+        <>
+          <PrivacyNotice purpose="quote" />
+          <PublicQuoteActions busy={accept.isPending || decline.isPending}
+            onAccept={() => accept.mutate()} onDecline={(reason) => decline.mutate(reason)} />
+        </>
       )}
     </article>
   );

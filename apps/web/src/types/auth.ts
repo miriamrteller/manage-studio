@@ -32,6 +32,12 @@ export type TenantConfig = {
   invoicing_provider: string;
   /** Studio-written "pay at the studio" text; used when payment_provider === 'none'. */
   offline_payment_instructions?: string | null;
+  /** The studio's own legal pages (footer links, privacy notices, terms checkbox). */
+  privacy_policy_url?: string | null;
+  terms_url?: string | null;
+  accessibility_url?: string | null;
+  /** Version label of the enrolment terms the parent accepts (stored on the engagement). */
+  enrolment_terms_version?: string | null;
   business_preset: string;
   /** Vertical id (tenants.skin): photographer | beautician | dance-studio | generic */
   vertical: string;

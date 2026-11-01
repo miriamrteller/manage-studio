@@ -1503,7 +1503,34 @@
     "all_rights": "All rights reserved",
     "legal_nav": "Legal",
     "privacy": "Privacy Policy",
-    "terms": "Terms of Service"
+    "terms": "Terms of Service",
+    "accessibility": "Accessibility Statement"
+  },
+  "legal": {
+    "privacy_policy": "Privacy Policy",
+    "terms_link": "Enrolment Terms",
+    "privacy_notice": {
+      "enrolment": "We use these details to enrol the student and contact you about the class. See the",
+      "inquiry": "We use your details only to answer your inquiry. See the",
+      "booking": "We use your details to confirm and manage this booking. See the",
+      "quote": "We use your details to prepare the quote, contract and invoice. See the",
+      "pay": "Your details are used to process this payment and issue a receipt. See the",
+      "signup": "We use your details to create and manage your studio account. See the"
+    },
+    "terms_checkbox": {
+      "before": "I have read and agree to the",
+      "middle": "and have read the",
+      "after": "."
+    },
+    "terms_checkbox_admin": {
+      "before": "The parent or guardian has read and agreed to the",
+      "middle": "(on paper or in person) and has read the",
+      "after": ". I record this on their behalf."
+    },
+    "terms_gate_intro": "Before payment, please confirm the studio's enrolment terms.",
+    "terms_continue": "Continue to payment",
+    "terms_required": "Please tick the box to continue.",
+    "terms_attest_required": "Confirm that the parent agreed to the enrolment terms, or send them the link instead."
   },
   "scheduling": {
     "event_type": {
@@ -1935,6 +1962,18 @@
       "uploadDarkLogo": "Upload dark mode logo",
       "fileTooLarge": "File too large (max 2MB)",
       "uploadFailed": "Upload failed. Please try again."
+    },
+    "legal": {
+      "title": "Legal pages",
+      "description": "Links to your studio's own privacy policy, enrolment terms and accessibility statement. They appear in the footer, next to every public form, and parents must accept the enrolment terms before paying.",
+      "privacy_policy_url": "Privacy policy URL",
+      "terms_url": "Enrolment terms URL",
+      "accessibility_url": "Accessibility statement URL",
+      "terms_version": "Enrolment terms version",
+      "terms_version_hint": "Stored with each acceptance. Change it when the terms change (e.g. 2026-11).",
+      "https_required": "Links must start with https://",
+      "invalid_url": "One of the links is not a valid web address.",
+      "saved": "Legal pages saved."
     },
     "offline_payments": {
       "title": "Pay at the studio",

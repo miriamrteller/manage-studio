@@ -47,7 +47,9 @@ export async function loadEnrolmentCompletionContext(
 
   const { data: engagement, error: engagementError } = await service
     .from("engagements")
-    .select("id, tenant_id, person_id, offering_id, status, waiver_evidence_id, booked_starts_at, booked_ends_at")
+    .select(
+      "id, tenant_id, person_id, offering_id, status, waiver_evidence_id, booked_starts_at, booked_ends_at, terms_accepted_at, terms_version",
+    )
     .eq("id", engagementId)
     .eq("tenant_id", tenantId)
     .single();
@@ -95,7 +97,7 @@ export async function loadEnrolmentCompletionContext(
 
   const { data: tenant } = await service
     .from("tenants")
-    .select("id, currency, name")
+    .select("id, currency, name, privacy_policy_url, terms_url, enrolment_terms_version")
     .eq("id", tenantId)
     .single();
 
@@ -200,7 +202,37 @@ export async function loadEnrolmentCompletionContext(
       billingMode: (offering.billing_mode as string | null) ?? null,
       billingInterval: (offering.billing_interval as string | null) ?? null,
       appointment,
+      ...resolveTermsContext({
+        termsUrl: (tenant.terms_url as string | null) ?? null,
+        privacyUrl: (tenant.privacy_policy_url as string | null) ?? null,
+        termsVersion: (tenant.enrolment_terms_version as string | null) ?? null,
+        acceptedAt: (engagement.terms_accepted_at as string | null) ?? null,
+        acceptedVersion: (engagement.terms_version as string | null) ?? null,
+        isAppointment: Boolean(appointment),
+      }),
     },
+  };
+}
+
+/**
+ * Enrolment terms gate (docs/legal/09 §1). Required only when the studio published a terms
+ * URL and this is a class enrolment; appointment bookings and studios without terms are
+ * unchanged. Already-accepted engagements never ask again.
+ */
+export function resolveTermsContext(input: {
+  termsUrl: string | null;
+  privacyUrl: string | null;
+  termsVersion: string | null;
+  acceptedAt: string | null;
+  acceptedVersion: string | null;
+  isAppointment: boolean;
+}): Pick<EnrolmentCompletionContext, "termsRequired" | "termsAccepted" | "termsVersion" | "legal"> {
+  const termsUrl = input.termsUrl?.trim() || null;
+  return {
+    termsRequired: Boolean(termsUrl) && !input.isAppointment,
+    termsAccepted: Boolean(input.acceptedAt),
+    termsVersion: input.acceptedVersion ?? input.termsVersion,
+    legal: { privacyUrl: input.privacyUrl?.trim() || null, termsUrl },
   };
 }
 
@@ -225,5 +257,9 @@ export function flattenCompletionContext(context: EnrolmentCompletionContext): R
     billingMode: context.billingMode ?? null,
     billingInterval: context.billingInterval ?? null,
     appointment: context.appointment ?? null,
+    termsRequired: context.termsRequired ?? false,
+    termsAccepted: context.termsAccepted ?? false,
+    termsVersion: context.termsVersion ?? null,
+    legal: context.legal ?? { privacyUrl: null, termsUrl: null },
   };
 }

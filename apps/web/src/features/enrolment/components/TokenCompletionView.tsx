@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { EnrolmentPaymentSuccess } from '@/features/enrolment/components/EnrolmentPaymentSuccess';
 import { CheckoutPaymentShell } from '@/features/enrolment/components/CheckoutPaymentShell';
+import { EnrolmentTermsGate } from '@/features/enrolment/components/EnrolmentTermsGate';
 import { OfflinePaymentConfirmation } from '@/features/enrolment/components/OfflinePaymentConfirmation';
 import type { OfflinePaymentRequested } from '@/features/enrolment/components/OfflinePaymentPanel';
 import { WaiverStep } from '@/features/enrolment/components/WaiverStep';
@@ -25,6 +26,7 @@ export function TokenCompletionView({ engagementId, effectiveToken }: TokenCompl
   const { user } = useCurrentUser();
   const [paid, setPaid] = useState(false);
   const [offlineRequest, setOfflineRequest] = useState<OfflinePaymentRequested | null>(null);
+  const [termsJustAccepted, setTermsJustAccepted] = useState(false);
   const [waiverComplete, setWaiverComplete] = useState(false);
   const [tokenStripped, setTokenStripped] = useState(false);
   const [showSlowLoadingHelp, setShowSlowLoadingHelp] = useState(false);
@@ -223,6 +225,22 @@ export function TokenCompletionView({ engagementId, effectiveToken }: TokenCompl
           }}
           onPrevious={() => navigate('/classes')}
           canGoBack
+        />
+      </div>
+    );
+  }
+
+  if (context.termsRequired && !context.termsAccepted && !termsJustAccepted) {
+    return (
+      <div className="max-w-lg mx-auto space-y-6">
+        <h1 className="text-2xl font-bold">{t('pages.enrol_pay.title')}</h1>
+        <EnrolmentTermsGate
+          engagementId={context.engagementId}
+          enrolmentToken={effectiveToken}
+          termsUrl={context.legal?.termsUrl ?? null}
+          privacyUrl={context.legal?.privacyUrl ?? null}
+          onAccepted={() => setTermsJustAccepted(true)}
+          onPrevious={() => navigate('/classes')}
         />
       </div>
     );

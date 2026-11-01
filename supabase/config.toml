@@ -82,6 +82,11 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/request-offline-payment/index.ts"
 
+[functions.accept-enrolment-terms]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/accept-enrolment-terms/index.ts"
+
 [functions.confirm-mock-payment]
 enabled = true
 verify_jwt = false

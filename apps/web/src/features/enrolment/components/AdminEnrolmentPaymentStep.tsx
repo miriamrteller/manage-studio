@@ -11,6 +11,9 @@ import {
 import { computeClassTotal } from '../lib/computeClassTotal';
 import { formatOfferingPrice } from '@/lib/formatOfferingPrice';
 import { isOfflineCheckout } from '@/lib/tenantProviderRouting';
+import { useTenant } from '@/hooks/useTenant';
+import { EnrolmentTermsCheckbox } from '@/components/legal/EnrolmentTermsCheckbox';
+import { acceptEnrolmentTerms } from '../lib/enrolmentTermsService';
 import type { Offering, Tenant } from '@shared/schemas';
 
 export type AdminPaymentChoice = 'pay_now' | 'send_link' | 'offline';
@@ -35,6 +38,8 @@ export interface AdminEnrolmentPaymentStepProps {
   emailInputId?: string;
   offlineMethodId?: string;
   preloadedCharge?: CheckoutChargePayload | null;
+  /** Terms already accepted for this engagement (no attestation needed). */
+  termsAlreadyAccepted?: boolean;
 }
 
 export function AdminEnrolmentPaymentStep({
@@ -49,8 +54,15 @@ export function AdminEnrolmentPaymentStep({
   emailInputId = 'payment-link-email',
   offlineMethodId = 'offline-method',
   preloadedCharge = null,
+  termsAlreadyAccepted = false,
 }: AdminEnrolmentPaymentStepProps) {
   const { t, i18n } = useTranslation();
+  const tenantConfig = useTenant();
+  // Studios that published enrolment terms: the admin attests the parent agreed before
+  // taking payment here. "Send link" needs no attestation — the parent ticks the box on the link.
+  const termsUrl = tenantConfig?.terms_url?.trim() || null;
+  const attestationNeeded = Boolean(termsUrl) && !termsAlreadyAccepted;
+  const [termsAttested, setTermsAttested] = useState(false);
   const [view, setView] = useState<'choices' | 'pay_now'>('choices');
   const [linkEmail, setLinkEmail] = useState(guardianEmail ?? '');
   const [overrideReason, setOverrideReason] = useState('');
@@ -80,6 +92,14 @@ export function AdminEnrolmentPaymentStep({
     setIsSubmitting(true);
 
     try {
+      if (choice !== 'send_link' && attestationNeeded) {
+        if (!termsAttested) {
+          setError(t('legal.terms_attest_required'));
+          return;
+        }
+        await acceptEnrolmentTerms({ engagementId });
+      }
+
       if (choice === 'pay_now') {
         setView('pay_now');
         return;
@@ -197,6 +217,19 @@ export function AdminEnrolmentPaymentStep({
       </div>
 
       <p className="text-sm text-gray-600">{t('pages.admin_enrol.payment_desc')}</p>
+
+      {attestationNeeded && (
+        <div className="rounded-lg border border-gray-200 p-4">
+          <EnrolmentTermsCheckbox
+            variant="admin"
+            checked={termsAttested}
+            onChange={setTermsAttested}
+            termsUrl={termsUrl}
+            privacyUrl={tenantConfig?.privacy_policy_url?.trim() || null}
+            disabled={isSubmitting}
+          />
+        </div>
+      )}
 
       <div className="space-y-2">
         {!offlineOnly && (

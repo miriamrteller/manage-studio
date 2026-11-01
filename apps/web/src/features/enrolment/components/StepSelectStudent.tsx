@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { PrivacyNotice } from '@/components/legal/PrivacyNotice';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { PersonSearchCombobox } from '@/components/shared/PersonSearchCombobox';
@@ -589,6 +590,7 @@ export function StepSelectStudent({
             ageReviewError={ageReviewError ?? localAgeReviewError}
           />
         </fieldset>
+        <PrivacyNotice purpose="enrolment" />
         {error && <p className="text-sm text-red-600">{error}</p>}
         <div className="flex gap-2">
           {mode !== 'guest' && (
@@ -766,6 +768,7 @@ export function StepSelectStudent({
             />
           </fieldset>
         )}
+        <PrivacyNotice purpose="enrolment" />
         {error && <p className="text-sm text-red-600">{error}</p>}
         <div className="flex gap-2">
           {mode !== 'guest' && (
@@ -840,6 +843,7 @@ export function StepSelectStudent({
             ageReviewError={ageReviewError ?? localAgeReviewError}
           />
         </fieldset>
+        <PrivacyNotice purpose="enrolment" />
         {error && <p className="text-sm text-red-600">{error}</p>}
         <div className="flex gap-2">
           <Button type="button" variant="outline" className="flex-1" onClick={() => setSubMode('choose')}>

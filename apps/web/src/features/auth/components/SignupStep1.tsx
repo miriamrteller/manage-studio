@@ -1,5 +1,6 @@
 'use client';
 import { useFormContext } from 'react-hook-form';
+import { PrivacyNotice } from '@/components/legal/PrivacyNotice';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -60,6 +61,7 @@ export default function SignupStep1({ onSubmit, loading }: SignupStep1Props) {
         )}
       </div>
 
+      <PrivacyNotice purpose="signup" />
       <Button type="submit" disabled={loading} className="w-full">
         {loading ? t('common.loading') : t('signup.step1.continue')}
       </Button>

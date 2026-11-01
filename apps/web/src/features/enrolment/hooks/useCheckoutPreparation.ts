@@ -36,9 +36,16 @@ export interface UseCheckoutPreparationParams {
   reviewSubmitted?: boolean;
 }
 
+export interface CheckoutTermsState {
+  required: boolean;
+  accepted: boolean;
+  termsUrl: string | null;
+  privacyUrl: string | null;
+}
+
 const checkoutPrepareInflight = new Map<
   string,
-  Promise<{ engagementId: string; charge: CheckoutChargePayload | null }>
+  Promise<{ engagementId: string; charge: CheckoutChargePayload | null; terms: CheckoutTermsState }>
 >();
 const WAIVER_REDIRECT_SENTINEL = '__waiver_redirect__';
 
@@ -75,6 +82,7 @@ export function useCheckoutPreparation({
 }: UseCheckoutPreparationParams) {
   const [checkoutEnrolmentId, setCheckoutEnrolmentId] = useState<string | null>(null);
   const [checkoutCharge, setCheckoutCharge] = useState<CheckoutChargePayload | null>(null);
+  const [checkoutTerms, setCheckoutTerms] = useState<CheckoutTermsState | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [isCheckoutPreparing, setIsCheckoutPreparing] = useState(false);
   const checkoutPrepareStartedRef = useRef(false);
@@ -82,6 +90,7 @@ export function useCheckoutPreparation({
   const resetCheckoutState = () => {
     setCheckoutEnrolmentId(null);
     setCheckoutCharge(null);
+    setCheckoutTerms(null);
     setCheckoutError(null);
     setIsCheckoutPreparing(false);
     checkoutPrepareStartedRef.current = false;
@@ -181,6 +190,13 @@ export function useCheckoutPreparation({
                 : {}),
             });
 
+            const terms: CheckoutTermsState = {
+              required: Boolean(result.context.termsRequired),
+              accepted: Boolean(result.context.termsAccepted),
+              termsUrl: result.context.legal?.termsUrl ?? null,
+              privacyUrl: result.context.legal?.privacyUrl ?? null,
+            };
+
             if (result.blockReason === 'waiver_required') {
               // Server can still return a newly-created engagement when payment is blocked by waiver.
               // Keep that engagement for admin follow-up actions (send link/offline), and for
@@ -189,6 +205,7 @@ export function useCheckoutPreparation({
                 return {
                   engagementId: result.context.engagementId,
                   charge: result.charge,
+                  terms,
                 };
               }
               if (showWaiverStep) {
@@ -206,6 +223,7 @@ export function useCheckoutPreparation({
             return {
               engagementId: result.context.engagementId,
               charge: result.charge,
+              terms,
             };
           })();
         if (!checkoutPrepareInflight.has(key)) {
@@ -213,9 +231,10 @@ export function useCheckoutPreparation({
         }
 
         try {
-          const { engagementId, charge } = await inflight;
+          const { engagementId, charge, terms } = await inflight;
           setCheckoutEnrolmentId(engagementId);
           setCheckoutCharge(charge);
+          setCheckoutTerms(terms);
           setEnrolmentData((prev) => ({
             ...prev,
             id: engagementId,
@@ -265,9 +284,14 @@ export function useCheckoutPreparation({
     setEnrolmentData,
   ]);
 
+  const markCheckoutTermsAccepted = () =>
+    setCheckoutTerms((prev) => (prev ? { ...prev, accepted: true } : prev));
+
   return {
     checkoutEnrolmentId,
     checkoutCharge,
+    checkoutTerms,
+    markCheckoutTermsAccepted,
     checkoutError,
     isCheckoutPreparing,
     resetCheckoutState,

@@ -16,6 +16,8 @@ export interface StepAdminCheckoutProps {
   checkoutCharge: CheckoutChargePayload | null;
   checkoutError: string | null;
   isPreparing: boolean;
+  /** Terms already accepted for this engagement (admin need not attest again). */
+  termsAlreadyAccepted?: boolean;
   onComplete: (result: {
     message: string;
     paymentChoice: AdminPaymentChoice;
@@ -33,6 +35,7 @@ export function StepAdminCheckout({
   checkoutCharge,
   checkoutError,
   isPreparing,
+  termsAlreadyAccepted = false,
   onComplete,
   onPrevious,
   canGoBack = true,
@@ -136,6 +139,7 @@ export function StepAdminCheckout({
       emailInputId="stepper-payment-link-email"
       offlineMethodId="stepper-offline-method"
       preloadedCharge={checkoutCharge}
+      termsAlreadyAccepted={termsAlreadyAccepted}
       onComplete={onComplete}
       onPrevious={onPrevious}
     />

@@ -2,7 +2,9 @@ import { useTranslation } from 'react-i18next';
 import type { Engagement } from '@shared/schemas';
 import type { CheckoutChargePayload } from '../lib/checkoutBootstrapTypes';
 import { EnrolmentPaymentForm } from './EnrolmentPaymentForm';
+import { EnrolmentTermsGate } from './EnrolmentTermsGate';
 import type { OfflinePaymentRequested } from './OfflinePaymentPanel';
+import type { CheckoutTermsState } from '../hooks/useCheckoutPreparation';
 import { StepBackButton } from './StepBackButton';
 import { formatOfferingPrice } from '@/lib/formatOfferingPrice';
 import { isOfflineCheckout } from '@/lib/tenantProviderRouting';
@@ -17,6 +19,9 @@ export interface StepCheckoutProps {
   onPaymentSuccess: () => void;
   /** Studio with no online payments: the parent asked to pay at the studio. */
   onOfflineRequested?: (result: OfflinePaymentRequested) => void;
+  /** Enrolment terms gate (docs/legal/09 §1); payment waits until accepted. */
+  terms?: CheckoutTermsState | null;
+  onTermsAccepted?: () => void;
   onPrevious: () => void;
   canGoBack?: boolean;
 }
@@ -30,6 +35,8 @@ export function StepCheckout({
   requireAuth,
   onPaymentSuccess,
   onOfflineRequested,
+  terms,
+  onTermsAccepted,
   onPrevious,
   canGoBack = true,
 }: StepCheckoutProps) {
@@ -63,6 +70,18 @@ export function StepCheckout({
         <p role="status">{t('common.loading')}</p>
         <StepBackButton onPrevious={onPrevious} canGoBack={canGoBack} className="w-full" />
       </div>
+    );
+  }
+
+  if (terms?.required && !terms.accepted) {
+    return (
+      <EnrolmentTermsGate
+        engagementId={checkoutEnrolmentId}
+        termsUrl={terms.termsUrl}
+        privacyUrl={terms.privacyUrl}
+        onAccepted={() => onTermsAccepted?.()}
+        onPrevious={canGoBack ? onPrevious : undefined}
+      />
     );
   }
 

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { useTenant } from '@/hooks/useTenant';
 import { Button } from '@/components/ui/button';
+import { PrivacyNotice } from '@/components/legal/PrivacyNotice';
 import { Input } from '@/components/ui/input';
 import { BookingCalendar } from '@/features/scheduling/components/BookingCalendar';
 import { BookingService, type AvailableSlot, type BookableOffering } from '@/features/scheduling/bookingService';
@@ -259,6 +260,7 @@ export default function BookingPage() {
             />
           </label>
           <p className="text-sm text-gray-500">{t('scheduling.book.hold_note')}</p>
+          <PrivacyNotice purpose="booking" />
           <Button
             variant="primary"
             className="w-full sm:w-auto"

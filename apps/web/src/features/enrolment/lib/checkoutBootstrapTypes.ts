@@ -71,6 +71,14 @@ export interface EnrolmentCompletionContext {
   billingInterval?: string | null;
   /** Set when this engagement is an appointment booking (booked_starts_at). */
   appointment?: AppointmentCalendarDetails | null;
+  /**
+   * Enrolment terms (docs/legal/09 §1). termsRequired = the studio published a terms URL
+   * and this is a class enrolment (not an appointment); payment waits for acceptance.
+   */
+  termsRequired?: boolean;
+  termsAccepted?: boolean;
+  termsVersion?: string | null;
+  legal?: { privacyUrl: string | null; termsUrl: string | null };
 }
 
 export type BootstrapBlockReason =

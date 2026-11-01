@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { EnrolmentPaymentSuccess } from '@/features/enrolment/components/EnrolmentPaymentSuccess';
 import { CheckoutPaymentShell } from '@/features/enrolment/components/CheckoutPaymentShell';
+import { EnrolmentTermsGate } from '@/features/enrolment/components/EnrolmentTermsGate';
 import { OfflinePaymentConfirmation } from '@/features/enrolment/components/OfflinePaymentConfirmation';
 import type { OfflinePaymentRequested } from '@/features/enrolment/components/OfflinePaymentPanel';
 import { WaiverStep } from '@/features/enrolment/components/WaiverStep';
@@ -31,6 +32,7 @@ export function AuthenticatedCompletionView({ engagementId }: AuthenticatedCompl
   const [linkingWaiver, setLinkingWaiver] = useState(false);
   const [paid, setPaid] = useState(false);
   const [offlineRequest, setOfflineRequest] = useState<OfflinePaymentRequested | null>(null);
+  const [termsJustAccepted, setTermsJustAccepted] = useState(false);
 
   const bootstrap = useCheckoutBootstrap({
     phase: 'pay',
@@ -211,6 +213,21 @@ export function AuthenticatedCompletionView({ engagementId }: AuthenticatedCompl
           onComplete={(evidenceId) => void handleWaiverComplete(evidenceId)}
           onPrevious={() => void finishCompletion()}
           canGoBack
+        />
+      </div>
+    );
+  }
+
+  if (context.termsRequired && !context.termsAccepted && !termsJustAccepted) {
+    return (
+      <div className="max-w-lg mx-auto space-y-6">
+        <h1 className="text-2xl font-bold">{t('pages.enrol_pay.title')}</h1>
+        <EnrolmentTermsGate
+          engagementId={context.engagementId}
+          termsUrl={context.legal?.termsUrl ?? null}
+          privacyUrl={context.legal?.privacyUrl ?? null}
+          onAccepted={() => setTermsJustAccepted(true)}
+          onPrevious={() => void finishCompletion()}
         />
       </div>
     );

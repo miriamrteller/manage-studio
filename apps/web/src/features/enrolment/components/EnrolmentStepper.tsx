@@ -177,8 +177,16 @@ export function EnrolmentStepper({
       reviewSubmitted,
     };
 
-  const { checkoutEnrolmentId, checkoutCharge, checkoutError, isCheckoutPreparing, resetCheckoutState, setCheckoutError } =
-    useCheckoutPreparation(checkoutParams);
+  const {
+    checkoutEnrolmentId,
+    checkoutCharge,
+    checkoutTerms,
+    markCheckoutTermsAccepted,
+    checkoutError,
+    isCheckoutPreparing,
+    resetCheckoutState,
+    setCheckoutError,
+  } = useCheckoutPreparation(checkoutParams);
 
   const handlePreviousStep = () => {
     if (currentStep === 'checkout') {
@@ -746,6 +754,7 @@ export function EnrolmentStepper({
             checkoutCharge={checkoutCharge}
             checkoutError={checkoutError}
             isPreparing={isCheckoutPreparing || (isCreating && !checkoutEnrolmentId)}
+            termsAlreadyAccepted={checkoutTerms?.accepted ?? false}
             onComplete={(result) => {
               adminCompletion.recordAdminCompletion(result);
               setCurrentStep('confirmation');
@@ -765,6 +774,8 @@ export function EnrolmentStepper({
             requireAuth={enrolmentContext.mode !== 'guest' && Boolean(user)}
             onPaymentSuccess={handlePaymentSuccess}
             onOfflineRequested={handleOfflineRequested}
+            terms={checkoutTerms}
+            onTermsAccepted={markCheckoutTermsAccepted}
             onPrevious={handlePreviousStep}
             canGoBack={canGoBack}
           />

@@ -2,6 +2,7 @@
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
+import { PrivacyNotice } from '@/components/legal/PrivacyNotice';
 import { supabase } from '@/lib/supabase';
 import { resolveTenantSubdomain } from '@/lib/resolveTenantSubdomain';
 
@@ -138,6 +139,7 @@ export default function InquirePage() {
           </div>
         )}
 
+        <PrivacyNotice purpose="inquiry" />
         <Button type="submit" variant="primary" disabled={status === 'sending'}>
           {status === 'sending' ? t('common.loading') : t('pages.crm.inquire.submit')}
         </Button>
