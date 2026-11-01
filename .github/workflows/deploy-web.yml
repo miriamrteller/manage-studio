@@ -188,15 +188,16 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
           if [ "$BUILD_ONLY" = "true" ]; then echo "**Build only — nothing deployed.**" >> "$GITHUB_STEP_SUMMARY"; fi
 
+      # wrangler is an apps/web devDependency (pnpm). wrangler-action fell back
+      # to `npm i wrangler`, which breaks inside a pnpm workspace.
       - name: wrangler deploy (opalswift-app)
         if: steps.gate.outputs.ready == 'true' && env.BUILD_ONLY != 'true'
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: apps/web
-          wranglerVersion: "4"
-          command: deploy
+        working-directory: apps/web
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          WRANGLER_SEND_METRICS: "false"
+        run: pnpm exec wrangler deploy
 
       - name: Smoke (app shell, a tenant host, this release live)
         if: steps.gate.outputs.ready == 'true' && env.BUILD_ONLY != 'true'

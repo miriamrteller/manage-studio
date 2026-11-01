@@ -41,6 +41,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       db: ${{ steps.filter.outputs.db }}
+      web: ${{ steps.filter.outputs.web }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -52,6 +53,13 @@ jobs:
               - 'packages/shared/src/database.types.ts'
               - 'scripts/ci/**'
               - 'scripts/gen-database-types.mjs'
+              - '.github/workflows/db-ci.yml'
+            web:
+              - 'apps/web/**'
+              - 'packages/**'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - '.github/workflows/deploy-web.yml'
               - '.github/workflows/db-ci.yml'
 
   migration-guard:
@@ -157,6 +165,33 @@ jobs:
       - uses: actions/checkout@v4
       - name: Drift first, then all migrations
         run: bash supabase/tests/definer-drift/run.sh
+
+  # The exact deploy path deploy-web uses (pnpm exec wrangler), minus the
+  # upload: proves wrangler resolves and the Worker config + assets are valid.
+  web-deploy-dry-run:
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+      - run: pnpm install --frozen-lockfile
+      - name: Build (placeholder prod-shaped settings)
+        env:
+          VITE_SUPABASE_URL: https://oogxajjanbyqhljxcmql.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_placeholder
+          VITE_APP_ROOT_DOMAIN: opalswift.com
+        run: pnpm run build
+      - name: wrangler deploy --dry-run
+        working-directory: apps/web
+        env:
+          WRANGLER_SEND_METRICS: "false"
+        run: pnpm exec wrangler deploy --dry-run
 
   local-stack:
     needs: changes
