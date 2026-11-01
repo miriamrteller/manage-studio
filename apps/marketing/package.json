@@ -1,0 +1,12 @@
+{
+  "name": "@opalswift/marketing",
+  "version": "1.0.0",
+  "private": true,
+  "description": "opalswift.com marketing site (static, Cloudflare Pages project \"opalswift\")",
+  "scripts": {
+    "check": "node ../../scripts/ci/check-marketing-links.mjs public"
+  },
+  "devDependencies": {
+    "wrangler": "^4.156.0"
+  }
+}
