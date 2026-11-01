@@ -51,12 +51,14 @@ import AdminQuoteEditorPage from "./pages/AdminQuoteEditorPage";
 import QuotePage from "./pages/QuotePage";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { RouteErrorFallback } from "./components/RouteErrorFallback";
+import { MonitoringContextSync } from "./lib/monitoring/MonitoringContextSync";
 
 function RootLayout() {
   return (
     <LanguageProvider>
       <LabelsProvider>
         <AppLayout>
+          <MonitoringContextSync />
           <Outlet />
         </AppLayout>
       </LabelsProvider>
