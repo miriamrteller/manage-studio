@@ -3806,6 +3806,13 @@ export type Database = {
                 };
                 Returns: undefined;
             };
+            assign_studio_owner: {
+                Args: {
+                    p_tenant_id: string;
+                    p_user_id: string;
+                };
+                Returns: undefined;
+            };
             cancel_engagement: {
                 Args: {
                     p_engagement_id: string;
@@ -4530,6 +4537,24 @@ export type Database = {
                     recipient_email: string;
                     recipient_name: string;
                 }[];
+            };
+            provision_studio: {
+                Args: {
+                    p_accent_color?: string;
+                    p_country?: string;
+                    p_currency?: string;
+                    p_invoicing_provider?: string;
+                    p_language_default?: string;
+                    p_name: string;
+                    p_owner_email: string;
+                    p_payment_provider?: string;
+                    p_phone_region?: string;
+                    p_plan: string;
+                    p_primary_color?: string;
+                    p_subdomain: string;
+                    p_vertical: string;
+                };
+                Returns: string;
             };
             provision_tenant: {
                 Args: {
