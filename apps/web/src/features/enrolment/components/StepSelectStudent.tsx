@@ -575,7 +575,7 @@ export function StepSelectStudent({
         <fieldset className="border rounded p-4 space-y-3">
           <legend className="text-sm font-semibold px-1">{t('pages.enrolment.student_section')}</legend>
           <input type="text" required className="form-input w-full" value={studentName} onChange={(e) => setStudentName(e.target.value)} placeholder={t('form.person.name')} />
-          <input type="date" required className="form-input w-full" value={studentDob} onChange={(e) => setStudentDob(e.target.value)} />
+          <input type="date" required className="form-input w-full" value={studentDob} onChange={(e) => setStudentDob(e.target.value)} aria-label={t('form.person.date_of_birth')} />
           <SelectedClassAgeAlert
             constraints={constraints}
             dateOfBirth={studentDob}
@@ -704,6 +704,7 @@ export function StepSelectStudent({
             value={adultDob}
             onChange={(e) => setAdultDob(e.target.value)}
             placeholder={t('form.person.date_of_birth')}
+            aria-label={t('form.person.date_of_birth')}
           />
           {adultDob && !Number.isNaN(adultAge) && (
             <p
@@ -825,8 +826,8 @@ export function StepSelectStudent({
         )}
         <fieldset className="border rounded p-4 space-y-3">
           <legend className="text-sm font-semibold px-1">{t('pages.enrolment.student_section')}</legend>
-          <input type="text" required className="form-input w-full" value={studentName} onChange={(e) => setStudentName(e.target.value)} />
-          <input type="date" required className="form-input w-full" value={studentDob} onChange={(e) => setStudentDob(e.target.value)} />
+          <input type="text" required className="form-input w-full" value={studentName} onChange={(e) => setStudentName(e.target.value)} aria-label={t('form.person.name')} />
+          <input type="date" required className="form-input w-full" value={studentDob} onChange={(e) => setStudentDob(e.target.value)} aria-label={t('form.person.date_of_birth')} />
           <SelectedClassAgeAlert
             constraints={constraints}
             dateOfBirth={studentDob}
