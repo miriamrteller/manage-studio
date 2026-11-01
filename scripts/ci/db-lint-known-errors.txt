@@ -2,9 +2,5 @@
 # (found 2026-11-01). They warn instead of failing; any OTHER function with an
 # error fails db-ci. Remove a line in the PR that fixes it.
 #
-# grow_webhook_secrets.secret_enc is text, pgp_sym_decrypt needs bytea, so the
-# lookup errors at runtime. Grow is not used by any prod tenant yet.
-public.get_grow_webhook_secret
-# RAISE ... USING ERRCODE = 'PGRST403' is not a valid 5-char SQLSTATE; the
-# caller is still denied, but with "invalid SQLSTATE code" instead of 403.
-public.get_admin_dashboard_overview
+# (empty: the two found on 2026-11-01 were fixed in
+#  20261101000100_security_definer_hardening.sql)
