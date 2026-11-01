@@ -19,6 +19,9 @@ export const DEMO_GALLERY_HOST = 'https://gallery.creative-ballet.demo';
 export const DEMO_INVOICE_HOST = 'https://invoices.creative-ballet.demo';
 export const DEMO_CONTRACT_HOST = 'https://contracts.creative-ballet.demo';
 
+/** Where the demo opens, and where the view switch lands. Never a photographer page (Shoots). */
+export const DEMO_HOME = { admin: '#/admin/students', client: '#/dashboard' } as const;
+
 /** Labels for the demo bar's view switch. */
 export const DEMO_VIEWS = {
   en: { admin: 'Studio', client: 'Parent' },

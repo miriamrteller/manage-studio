@@ -7,13 +7,14 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from '../App';
 import { DemoBar } from './DemoBar';
+import { DEMO_HOME } from './seed';
 import '../fonts';
 import '../index.css';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) throw new Error('Root element not found');
 
-if (!window.location.hash) window.location.hash = '#/admin/jobs';
+if (!window.location.hash) window.location.hash = DEMO_HOME.admin;
 
 ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
