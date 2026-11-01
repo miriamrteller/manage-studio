@@ -1503,7 +1503,8 @@
     "all_rights": "כל הזכויות שמורות",
     "legal_nav": "מידע משפטי",
     "privacy": "מדיניות פרטיות",
-    "terms": "תנאי שימוש"
+    "terms": "תנאי שימוש",
+    "accessibility": "הצהרת נגישות"
   },
   "scheduling": {
     "event_type": {
@@ -2165,5 +2166,19 @@
     "close_dialog": "סגור דיאלוג",
     "skip_to_content": "דלג לתוכן הראשי",
     "go_home": "חזרה לדף הבית"
+  },
+  "legal": {
+    "privacy_notice": "אנו משתמשים בפרטים שלכם רק לטיפול בפנייה ובהרשמה.",
+    "accept_terms_prefix": "קראתי ואני מסכים/ה",
+    "terms_link": "לתנאי ההרשמה",
+    "accept_terms_and_privacy": "וקראתי את",
+    "accept_terms_required": "יש לאשר את התנאים כדי להמשיך.",
+    "settings_title": "עמודים משפטיים",
+    "settings_description": "קישורים למדיניות הפרטיות, לתנאים ולהצהרת הנגישות של הסטודיו. הם יופיעו בתחתית האתר וליד כל טופס. יש להזין קישור מלא שמתחיל ב-https://",
+    "settings_privacy_url": "קישור למדיניות הפרטיות",
+    "settings_terms_url": "קישור לתנאים (הרשמה / הזמנה)",
+    "settings_accessibility_url": "קישור להצהרת הנגישות",
+    "settings_invalid_url": "קישור חייב להתחיל ב-https://",
+    "settings_saved": "הקישורים נשמרו."
   }
 }

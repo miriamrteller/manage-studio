@@ -2964,6 +2964,7 @@ export type Database = {
             tenants: {
                 Row: {
                     accent_color: string;
+                    accessibility_statement_url: string | null;
                     billing_policy: Json;
                     business_preset: string;
                     chrome_style: string;
@@ -3009,9 +3010,11 @@ export type Database = {
                     phone_region_updated_at: string;
                     plan: Database["public"]["Enums"]["tenant_plan"];
                     primary_color: string;
+                    privacy_policy_url: string | null;
                     skin: string;
                     sub_status: string;
                     subdomain: string;
+                    terms_url: string | null;
                     tranzila_terminal_name: string | null;
                     trial_ends_at: string | null;
                     updated_at: string;
@@ -3022,6 +3025,7 @@ export type Database = {
                 };
                 Insert: {
                     accent_color?: string;
+                    accessibility_statement_url?: string | null;
                     billing_policy?: Json;
                     business_preset?: string;
                     chrome_style?: string;
@@ -3067,9 +3071,11 @@ export type Database = {
                     phone_region_updated_at?: string;
                     plan?: Database["public"]["Enums"]["tenant_plan"];
                     primary_color?: string;
+                    privacy_policy_url?: string | null;
                     skin?: string;
                     sub_status?: string;
                     subdomain: string;
+                    terms_url?: string | null;
                     tranzila_terminal_name?: string | null;
                     trial_ends_at?: string | null;
                     updated_at?: string;
@@ -3080,6 +3086,7 @@ export type Database = {
                 };
                 Update: {
                     accent_color?: string;
+                    accessibility_statement_url?: string | null;
                     billing_policy?: Json;
                     business_preset?: string;
                     chrome_style?: string;
@@ -3125,9 +3132,11 @@ export type Database = {
                     phone_region_updated_at?: string;
                     plan?: Database["public"]["Enums"]["tenant_plan"];
                     primary_color?: string;
+                    privacy_policy_url?: string | null;
                     skin?: string;
                     sub_status?: string;
                     subdomain?: string;
+                    terms_url?: string | null;
                     tranzila_terminal_name?: string | null;
                     trial_ends_at?: string | null;
                     updated_at?: string;
@@ -3988,6 +3997,7 @@ export type Database = {
                 };
                 Returns: {
                     accent_color: string;
+                    accessibility_statement_url: string;
                     chrome_style: string;
                     country: string;
                     currency: string;
@@ -4010,8 +4020,10 @@ export type Database = {
                     payment_provider_webhook_configured: boolean;
                     plan: Database["public"]["Enums"]["tenant_plan"];
                     primary_color: string;
+                    privacy_policy_url: string;
                     skin: string;
                     tenant_subdomain: string;
+                    terms_url: string;
                 }[];
             };
             get_tenant_features: {

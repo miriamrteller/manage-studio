@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatDueDate, formatMinor, statusBadgeVariant, statusI18nKey } from '../lib/jobPaymentFormat';
 import { JobPaymentService } from '../services/jobPaymentService';
 import { BackToPortalButton } from './BackToPortalButton';
+import { PrivacyNotice } from '@/components/PrivacyNotice';
 
 interface Props {
   token: string;
@@ -111,6 +112,7 @@ export function PublicPayRequest({ token, result }: Props) {
                 {t('pages.pay.payNow')}
               </Button>
               <p className="text-xs text-muted-foreground">{t('pages.pay.invoiceNote')}</p>
+              <PrivacyNotice />
             </>
           )}
           {error && <p role="alert" className="text-sm text-error">{error}</p>}

@@ -30,6 +30,10 @@ export type TenantConfig = {
   payment_provider_webhook_configured?: boolean;
   payment_provider_updated_at?: string | null;
   invoicing_provider: string;
+  /** Studio legal pages (https). NULL = platform VITE_* fallback. See lib/legalLinks.ts. */
+  privacy_policy_url?: string | null;
+  terms_url?: string | null;
+  accessibility_statement_url?: string | null;
   business_preset: string;
   /** Vertical id (tenants.skin): photographer | beautician | dance-studio | generic */
   vertical: string;
