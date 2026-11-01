@@ -8,7 +8,8 @@
 plain static HTML in Hebrew (default) and English (toggle in the top bar),
 with a home page, a "skins" page and one page per industry.
 
-- Hosting: Cloudflare **Pages** project `opalswift`. It was first created by
+- Hosting: Cloudflare **Pages** project **`opalswift-il`** (`opalswift.com` is a
+  CNAME to `opalswift-il.pages.dev`). It was first created by
   Direct Upload with no Git connection; since 2026-11-01 the source lives here.
 - The product app is something else: the Worker `opalswift-app` on
   `app.opalswift.com` and the studio subdomains (`apps/web`, `deploy-web.yml`).
@@ -49,7 +50,7 @@ up, add a Cloudflare rate-limiting rule for `/api/contact`.
 Logs never contain the API key or the submission, only status codes.
 
 **Settings on the Pages project** (Cloudflare → Workers & Pages →
-opalswift → Settings → Variables and Secrets, *Production*):
+opalswift-il → Settings → Variables and Secrets, *Production*):
 
 | Name | Type | Value |
 |---|---|---|
@@ -99,7 +100,7 @@ merge to main touching apps/marketing/**   (or Actions → deploy-marketing → 
   └─ check: /api/contact function present? links OK? function tests pass?
        └─ deploy (environment "production") ── ⏸ OWNER APPROVES ──►
             RESEND_API_KEY set on the Pages project?
-            wrangler pages deploy public --project-name=opalswift --branch=<production branch>
+            wrangler pages deploy public --project-name=opalswift-il --branch=<production branch>
             → smoke: home page 200, release.txt == this commit, /api/contact answers
 ```
 
@@ -112,6 +113,22 @@ merge to main touching apps/marketing/**   (or Actions → deploy-marketing → 
   that never reaches opalswift.com). The run summary shows which branch.
 - Secrets: `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` in the
   `production` environment (the same ones deploy-web uses).
+
+### Which Cloudflare account
+
+The project name is set once, as `PAGES_PROJECT` at the top of
+`deploy-marketing.yml`. The account is whatever `CLOUDFLARE_ACCOUNT_ID` in
+the `production` environment says (the same account as `opalswift-app`).
+
+If the deploy says **"Pages project opalswift-il not found in this
+Cloudflare account"**, the project lives in a different Cloudflare account.
+To find it: log in to Cloudflare, use the account switcher (top left), and
+open Workers & Pages in each account until `opalswift-il` shows up. Then either:
+- move the site into the main account: create a Pages project there
+  (Direct Upload, any name), set `PAGES_PROJECT` to that name, deploy, then
+  move the `opalswift.com` custom domain to it; or
+- deploy to the other account: a token and account ID from that account,
+  as separate secrets (this workflow would need a small change to use them).
 
 ### Cloudflare token permission
 
@@ -128,7 +145,7 @@ authentication error (code 10000).
 ## How to roll back
 
 Fastest (no Git needed): Cloudflare dashboard → **Workers & Pages →
-opalswift → Deployments** → on the last good deployment, **⋯ → Rollback to
+opalswift-il → Deployments** → on the last good deployment, **⋯ → Rollback to
 this deployment**. That is instant and includes that deployment's functions.
 
 Then fix forward in git (revert the PR) so the next deploy doesn't bring the

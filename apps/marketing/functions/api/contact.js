@@ -4,7 +4,7 @@
 // Resend and answer {ok:true} or {ok:false,error}. The page only checks
 // res.ok. Nothing is stored.
 //
-// Settings (Cloudflare → Workers & Pages → opalswift → Settings → Variables and Secrets):
+// Settings (Cloudflare → Workers & Pages → opalswift-il → Settings → Variables and Secrets):
 //   RESEND_API_KEY  secret, required
 //   CONTACT_TO      optional, default hello@opalswift.com
 // Docs: docs/deployment/MARKETING-SITE.md#the-contact-form
