@@ -42,7 +42,7 @@ function AppLayoutContent({ children }: { children: ReactNode }) {
           {children}
         </main>
 
-        <footer className="border-t border-secondary-active bg-secondary text-on-secondary mt-16">
+        <footer className={`${tenant?.chrome_style === 'solid' ? 'border-t border-secondary-active bg-secondary text-on-secondary' : 'app-footer-soft'} mt-16`}>
           <div className="max-w-7xl mx-auto px-4 py-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div>

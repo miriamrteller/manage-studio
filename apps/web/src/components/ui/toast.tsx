@@ -73,7 +73,7 @@ const Toast = ({ id, title, description, variant, duration, onDismiss, className
           className={cn(
             'flex-shrink-0 rounded-md p-1 transition-opacity',
             'hover:opacity-70 focus:outline-none focus:ring-2 focus:ring-offset-2',
-            variant === 'default' ? 'focus:ring-[var(--color-primary)]' : 'focus:ring-white/50'
+            variant === 'default' ? 'focus:ring-[var(--color-primary-ink)]' : 'focus:ring-white/50'
           )}
           aria-label="Dismiss notification"
         >

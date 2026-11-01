@@ -2557,6 +2557,7 @@ export type Database = {
           accent_color: string
           billing_policy: Json
           business_preset: string
+          chrome_style: string
           contact_email: string
           country: string
           created_at: string
@@ -2581,7 +2582,10 @@ export type Database = {
           invoicing_secret_enc: string | null
           labels: Json
           language_default: string
+          logo_autofix: boolean
+          logo_dark_tone: Json | null
           logo_dark_url: string | null
+          logo_tone: Json | null
           logo_url: string | null
           name: string
           onboarding_status: string
@@ -2611,6 +2615,7 @@ export type Database = {
           accent_color?: string
           billing_policy?: Json
           business_preset?: string
+          chrome_style?: string
           contact_email: string
           country?: string
           created_at?: string
@@ -2635,7 +2640,10 @@ export type Database = {
           invoicing_secret_enc?: string | null
           labels?: Json
           language_default?: string
+          logo_autofix?: boolean
+          logo_dark_tone?: Json | null
           logo_dark_url?: string | null
+          logo_tone?: Json | null
           logo_url?: string | null
           name: string
           onboarding_status?: string
@@ -2665,6 +2673,7 @@ export type Database = {
           accent_color?: string
           billing_policy?: Json
           business_preset?: string
+          chrome_style?: string
           contact_email?: string
           country?: string
           created_at?: string
@@ -2689,7 +2698,10 @@ export type Database = {
           invoicing_secret_enc?: string | null
           labels?: Json
           language_default?: string
+          logo_autofix?: boolean
+          logo_dark_tone?: Json | null
           logo_dark_url?: string | null
+          logo_tone?: Json | null
           logo_url?: string | null
           name?: string
           onboarding_status?: string
@@ -3326,6 +3338,7 @@ export type Database = {
         Args: { p_subdomain: string }
         Returns: {
           accent_color: string
+          chrome_style: string
           country: string
           currency: string
           enabled_features: string[]
@@ -3334,7 +3347,10 @@ export type Database = {
           invoicing_provider: string
           labels: Json
           language_default: string
+          logo_autofix: boolean
+          logo_dark_tone: Json
           logo_dark_url: string
+          logo_tone: Json
           logo_url: string
           name: string
           payment_provider: string

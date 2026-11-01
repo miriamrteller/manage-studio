@@ -29,6 +29,27 @@ Rules:
 - Gradients on colored controls must be **overlays** (translucent white/black), never a second color — that is what keeps tenant hues intact.
 - Elevation levels 1–4 are layered (contact + ambient shadow) and brand-tinted automatically; just use `elevation-*` as before.
 
+### Soft theme tokens (Phase 1 of `docs/design/photographer-theme-proposal.md`)
+
+`deriveSoftTheme()` (`apps/web/src/lib/theme/deriveSoftTheme.ts`) runs in
+`useThemeInjection()` and writes per-tenant tokens derived from the tenant's
+primary and accent colours. Every pairing below is unit-tested at ≥ 4.5:1
+for 9 sample brands plus 200 random colours.
+
+| Token | What it is |
+|---|---|
+| `--color-primary-ink` / `--color-accent-ink` | The brand colour **as text**: unchanged for dark brands, darkened only as far as 4.5:1 on white and the lighter tints for light ones. Tailwind `text-primary`, `text-secondary`, `text-accent`, `ring-primary`, `outline-primary` use it. |
+| `--color-primary-fill` / `--color-on-primary-fill` | Solid button fill and its text colour. Equal to the brand unless no text colour reaches 4.5:1 on it. |
+| `--tint-ground`, `--tint-1/2/3`, `--tint-accent-1/2` | Brand tints at fixed WCAG luminance (0.97 / 0.93 / 0.87 / 0.78), so every brand is equally subtle. |
+| `--color-neutral-50…900`, `--color-text-primary/secondary/muted` | **Tenant-tinted greys**: Tailwind gray with up to 10% of the brand mixed in (more in darker steps). Text greys are pushed darker if needed: primary ≥ 12:1 and secondary ≥ 4.5:1 on every tint, muted ≥ 4.5:1 on white and the lighter tints. Tailwind `gray-*` classes resolve to this scale. |
+| `--wash-page`, `--gradient-header`, `--gradient-footer` | Gradients composed from the tints, mirrored under `[dir='rtl']`. Defined, not yet applied (Phase 2). |
+
+Rules:
+
+- Brand colour on **text, icons, rings or outlines** → `--color-primary-ink` (`text-primary`), never raw `var(--color-primary)`.
+- Brand colour as a **fill** → `bg-primary` / `--color-primary-fill`.
+- Greys are never hard-coded: use `gray-*` / `--color-neutral-*` / `--color-text-*`, which follow the tenant. No opacity modifiers on `gray-*` (they are CSS variables).
+
 ---
 
 ## 1. Color System
@@ -182,7 +203,7 @@ Always pair animated classes with `motion-safe:`.
 
 - **Lift on hover:** `elevation-1 hover:[box-shadow:var(--elevation-2)] motion-safe:transition-shadow duration-200 ease-out`
 - **Interactive card (keyboard):** Add `role="button"`, `tabIndex={0}`, and `onKeyDown` handler for Enter/Space (see `Card` component for reference implementation)
-- **Focus ring:** Use `focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]` — never suppress `:focus-visible`
+- **Focus ring:** Use `focus-visible:ring-2 focus-visible:ring-primary` (brand ink) — never suppress `:focus-visible`
 
 ---
 

@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { useTenant } from '@/hooks/useTenant';
 import queryClient from '@/lib/query-client';
+import { analyzeLogo } from '@/lib/theme/logoTone';
+import { ChromeStyleSettings } from './ChromeStyleSettings';
 import { FONT_PAIRS, FontPairId } from '@/hooks/useFontLoader';
 
 interface BrandingFormData {
@@ -115,10 +117,13 @@ export function BrandingSettingsForm() {
     try {
       const publicUrl = await uploadLogo(file, variant);
       const updateField = variant === 'light' ? 'logo_url' : 'logo_dark_url';
+      const toneField = variant === 'light' ? 'logo_tone' : 'logo_dark_tone';
+      // Measured from the local file (no CORS), for the header logo fix.
+      const tone = await analyzeLogo(file);
 
       const { error } = await supabase
         .from('tenants')
-        .update({ [updateField]: publicUrl })
+        .update({ [updateField]: publicUrl, [toneField]: tone })
         .eq('id', tenant.id);
 
       if (error) throw error;
@@ -141,6 +146,7 @@ export function BrandingSettingsForm() {
     if (!tenant) return;
 
     const updateField = variant === 'light' ? 'logo_url' : 'logo_dark_url';
+    const toneField = variant === 'light' ? 'logo_tone' : 'logo_dark_tone';
     const setUploading = variant === 'light' ? setIsUploadingLight : setIsUploadingDark;
 
     setUploading(true);
@@ -148,7 +154,7 @@ export function BrandingSettingsForm() {
     try {
       const { error } = await supabase
         .from('tenants')
-        .update({ [updateField]: null })
+        .update({ [updateField]: null, [toneField]: null })
         .eq('id', tenant.id);
 
       if (error) throw error;
@@ -301,6 +307,9 @@ export function BrandingSettingsForm() {
           </span>
         )}
       </div>
+
+      {/* Header & footer style + logo contrast */}
+      <ChromeStyleSettings />
 
       {/* Section 3: Logo Upload */}
       <section className="pt-6 border-t border-[var(--border-subtle)]">

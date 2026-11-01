@@ -13,13 +13,40 @@ export default {
         secondary: 'var(--color-secondary)',
         'secondary-hover': 'var(--color-secondary-hover)',
         'secondary-active': 'var(--color-secondary-active)',
-        'on-primary': 'var(--color-on-primary)',
+        'on-primary': 'var(--color-on-primary-fill)',
         'on-secondary': 'var(--color-on-secondary)',
         accent: 'var(--color-secondary)',
         error: 'var(--color-error)',
         warning: 'var(--color-warning)',
         success: 'var(--color-success)',
         info: 'var(--color-info)',
+        // Tailwind's gray-* (≈600 uses) resolve to the tenant-tinted neutral
+        // scale from deriveSoftTheme(), which is built on the same base greys.
+        // Opacity modifiers (gray-500/50) are not supported on these.
+        gray: Object.fromEntries(
+          [50, 100, 200, 300, 400, 500, 600, 700, 800, 900].map((n) => [n, `var(--color-neutral-${n})`]),
+        ),
+      },
+      // Brand colour used as TEXT, rings or outlines goes through the derived
+      // "ink" (deriveSoftTheme): the tenant colour, darkened only as far as
+      // needed for 4.5:1. Fills (bg-primary, border-primary) keep the raw brand.
+      textColor: {
+        primary: 'var(--color-primary-ink)',
+        secondary: 'var(--color-accent-ink)',
+        accent: 'var(--color-accent-ink)',
+      },
+      // Solid brand fills go through the derived fill: the brand itself
+      // unless no text colour reaches 4.5:1 on it. on-primary follows it.
+      backgroundColor: {
+        primary: 'var(--color-primary-fill)',
+        'primary-hover': 'var(--color-primary-fill-hover)',
+        'primary-active': 'var(--color-primary-fill-active)',
+      },
+      ringColor: {
+        primary: 'var(--color-primary-ink)',
+      },
+      outlineColor: {
+        primary: 'var(--color-primary-ink)',
       },
       // NOTE (DL-DESIGN-001): the spec's original plan mapped these onto the
       // *default* Tailwind spacing keys (0-10). This codebase uses stock

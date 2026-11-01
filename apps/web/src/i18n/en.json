@@ -1863,6 +1863,20 @@
     "waiver_minor_cannot_sign_body": "{{studentName}} is under 18. Israeli law requires a parent or legal guardian to sign the waiver. Please ask a parent or guardian to log in and complete the enrolment."
   },
   "settings": {
+    "chrome": {
+      "title": "Header & footer style",
+      "intro": "Soft uses gentle gradients of your brand colours. Solid fills the header and footer with your brand colour.",
+      "soft": "Soft (recommended)",
+      "solid": "Solid brand colour",
+      "preview": "Preview",
+      "saved": "Saved",
+      "save_failed": "Could not save. Please try again.",
+      "logo_fixed_other": "On this header we show your other uploaded logo, which stands out better.",
+      "logo_fixed_plate": "Your logo has its own background, so it is shown as uploaded with rounded corners.",
+      "logo_fixed_recolour": "Your logo is too light for this header, so we show it in your brand colour. Upload a darker version, or choose the solid header, to use it as-is.",
+      "logo_fixed_pill": "Your logo is hard to see on this header, so we show it on a small badge in your brand colour. Upload a darker version, or choose the solid header, to use it as-is.",
+      "autofix_off": "Show my logo exactly as uploaded (no automatic adjustments)"
+    },
     "tax": {
       "title": "Class pricing",
       "description": "How prices are stored and charged in Manage Studio.",

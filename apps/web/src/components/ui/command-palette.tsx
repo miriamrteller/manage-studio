@@ -175,7 +175,7 @@ export function CommandPalette({
                         justifyContent: 'center',
                         width: '20px',
                         height: '20px',
-                        color: 'var(--color-primary)',
+                        color: 'var(--color-primary-ink)',
                       }}
                     >
                       {item.icon}
