@@ -36,6 +36,8 @@ export interface CheckoutChargePayload {
   /** From offering — drives "/ month" on checkout UI. */
   billingMode?: string | null;
   billingInterval?: string | null;
+  /** paymentProvider 'offline' only: the studio's "pay at the studio" text, if written. */
+  offlineInstructions?: string | null;
 }
 
 export interface AppointmentCalendarDetails {
@@ -95,5 +97,6 @@ export function chargeToCheckoutIntent(charge: CheckoutChargePayload) {
     pendingWebhook: charge.pendingWebhook,
     billingMode: charge.billingMode ?? null,
     billingInterval: charge.billingInterval ?? null,
+    offlineInstructions: charge.offlineInstructions ?? null,
   };
 }

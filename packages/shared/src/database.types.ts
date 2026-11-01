@@ -3065,6 +3065,7 @@ export type Database = {
           logo_tone: Json | null
           logo_url: string | null
           name: string
+          offline_payment_instructions: string | null
           onboarding_status: string
           payment_provider: string
           payment_provider_account_id: string | null
@@ -3129,6 +3130,7 @@ export type Database = {
           logo_tone?: Json | null
           logo_url?: string | null
           name: string
+          offline_payment_instructions?: string | null
           onboarding_status?: string
           payment_provider?: string
           payment_provider_account_id?: string | null
@@ -3193,6 +3195,7 @@ export type Database = {
           logo_tone?: Json | null
           logo_url?: string | null
           name?: string
+          offline_payment_instructions?: string | null
           onboarding_status?: string
           payment_provider?: string
           payment_provider_account_id?: string | null
@@ -3989,6 +3992,7 @@ export type Database = {
           logo_tone: Json
           logo_url: string
           name: string
+          offline_payment_instructions: string
           payment_provider: string
           payment_provider_public_key: string
           payment_provider_secret_configured: boolean

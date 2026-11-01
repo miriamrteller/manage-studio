@@ -34,6 +34,8 @@ export type TenantConfig = {
   privacy_policy_url?: string | null;
   terms_url?: string | null;
   accessibility_statement_url?: string | null;
+  /** Studio-written "pay at the studio" text; used when payment_provider === 'offline'. */
+  offline_payment_instructions?: string | null;
   business_preset: string;
   /** Vertical id (tenants.skin): photographer | beautician | dance-studio | generic */
   vertical: string;
