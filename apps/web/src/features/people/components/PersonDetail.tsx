@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -7,6 +7,8 @@ import { usePerson } from '../hooks/usePerson';
 import { PersonForm } from './PersonForm';
 import { PersonService } from '../service';
 import { MedicalNotes } from './MedicalNotes';
+import { supabase } from '@/lib/supabase';
+import { PersonConsentPanel } from '@/components/legal/PersonConsentPanel';
 import { calculateAge } from '@/lib/utils';
 import { formatPersonAgeLabel, formatPersonDateOfBirthDisplay } from '@/lib/personAge';
 
@@ -31,6 +33,18 @@ export function PersonDetail({ id, onClose }: PersonDetailProps) {
   const [isEditing, setIsEditing] = useState(false);
 
   const { data: person, isLoading, error } = usePerson(id);
+  const hasHealthDetails = !!(person?.medical_notes || person?.allergies);
+
+  // Health details are especially sensitive: record that an admin viewed them
+  // (audit_log, Data Security Regulations reg. 10). Best effort, never blocks.
+  useEffect(() => {
+    if (!person?.id || !hasHealthDetails) return;
+    void supabase
+      .rpc('log_sensitive_read', { p_entity_type: 'person_health', p_entity_id: person.id })
+      .then(({ error: logError }) => {
+        if (logError) console.warn('[PersonDetail] health view not logged', logError.message);
+      });
+  }, [person?.id, hasHealthDetails]);
 
   if (isLoading) {
     return (
@@ -193,28 +207,17 @@ export function PersonDetail({ id, onClose }: PersonDetailProps) {
         </div>
       )}
 
-      {/* Consent Status */}
-      {(person.photo_consent !== undefined ||
-        person.media_consent !== undefined) && (
-        <div className="space-y-2 p-4 bg-gray-50 rounded border">
-          <h3 className="font-semibold">{t('pages.people.consent_label')}</h3>
-          {person.photo_consent !== undefined && (
-            <div className="flex items-center gap-2">
-              <span>{t('pages.people.photo_consent_label')}:</span>
-              <span className={person.photo_consent ? 'text-green-600' : 'text-gray-400'}>
-                {person.photo_consent ? '✓' : '✗'}
-              </span>
-            </div>
-          )}
-          {person.media_consent !== undefined && (
-            <div className="flex items-center gap-2">
-              <span>{t('pages.people.media_consent_label')}:</span>
-              <span className={person.media_consent ? 'text-green-600' : 'text-gray-400'}>
-                {person.media_consent ? '✓' : '✗'}
-              </span>
-            </div>
-          )}
-        </div>
+      {/* Consents (history kept in consent_records) */}
+      {tenant && (
+        <PersonConsentPanel
+          tenantId={tenant.id}
+          personId={person.id}
+          personName={person.name}
+          studioName={tenant.name}
+          photographer={tenant.vertical === 'photographer'}
+          isMinor={person.date_of_birth ? calculateAge(person.date_of_birth) < 18 : false}
+          source="admin"
+        />
       )}
 
       {/* Waiver Status */}

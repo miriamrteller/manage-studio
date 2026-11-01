@@ -2,7 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { getLocale } from '../lib/language-helper';
-import { resolveTenantSubdomain } from '../lib/resolveTenantSubdomain';
+import { rememberCustomHostSubdomain, resolveTenantSite } from '../lib/resolveTenantSubdomain';
 import type { TenantConfig } from '../types/auth';
 import { parseLogoTone } from '../lib/theme/logoTone';
 import { parseEntityLabelOverrides, resolveEntityLabels, resolvePresetModules, safePreset, safeVertical } from '@shared/index';
@@ -17,17 +17,25 @@ export function useTenant(): TenantConfig | null {
  * tenant membership). Shares the query cache with useTenant().
  */
 export function useTenantQuery(): { tenant: TenantConfig | null; isLoading: boolean } {
-  const subdomain = resolveTenantSubdomain();
+  const site = resolveTenantSite();
+  const siteKey = site ? (site.kind === 'subdomain' ? site.subdomain : `host:${site.host}`) : null;
   const { data: tenantConfig, isLoading } = useQuery({
-    queryKey: ['tenant', subdomain],
+    queryKey: ['tenant', siteKey],
     queryFn: async () => {
-      if (!subdomain) return null;
-      const { data, error } = await supabase.rpc('get_tenant_config_by_subdomain', { p_subdomain: subdomain });
+      if (!site) return null;
+      // Custom domain (e.g. app.creativeballetacademy.com) → look up by host; otherwise by subdomain.
+      const { data, error } =
+        site.kind === 'custom'
+          ? await supabase.rpc('get_tenant_config_by_host', { p_host: site.host })
+          : await supabase.rpc('get_tenant_config_by_subdomain', { p_subdomain: site.subdomain });
       if (error || !data || !Array.isArray(data) || data.length === 0) {
         console.warn('Failed to fetch tenant config:', error?.message || 'No data');
         return null;
       }
       const row = data[0];
+      if (site.kind === 'custom' && row.tenant_subdomain) {
+        rememberCustomHostSubdomain(site.host, row.tenant_subdomain);
+      }
       const whiteLabel = {
         primary_color: row.primary_color,
         accent_color: row.accent_color,
@@ -73,10 +81,11 @@ export function useTenantQuery(): { tenant: TenantConfig | null; isLoading: bool
         privacy_policy_url: row.privacy_policy_url ?? null,
         terms_url: row.terms_url ?? null,
         accessibility_statement_url: row.accessibility_statement_url ?? null,
+        offline_payment_instructions: row.offline_payment_instructions ?? null,
       } as unknown as TenantConfig;
     },
-    enabled: !!subdomain,
+    enabled: !!site,
     staleTime: 30 * 60 * 1000,
   });
-  return { tenant: tenantConfig || null, isLoading: !!subdomain && isLoading };
+  return { tenant: tenantConfig || null, isLoading: !!site && isLoading };
 }

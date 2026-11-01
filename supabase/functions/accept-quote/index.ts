@@ -157,7 +157,7 @@ async function sendBookingConfirmation(
   const recipient = contact as { client_name: string | null; client_email: string | null } | null;
   if (!recipient?.client_email) return;
 
-  const baseUrl = tenantBaseUrl(t.subdomain);
+  const baseUrl = tenantBaseUrl(t);
   const outcome = await sendAutomaticEmail(service, {
     tenant: t,
     key: "booking_confirmed",

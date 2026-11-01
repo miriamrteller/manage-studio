@@ -39,21 +39,47 @@ export function appRootDomain(): string {
   return parts.length > 2 ? parts.slice(1).join(".") : host;
 }
 
+/** The tenant fields a link needs: the subdomain, plus the optional custom domain. */
+export interface TenantUrlInput {
+  subdomain: string | null | undefined;
+  /** tenants.custom_domain, e.g. app.creativeballetacademy.com. Preferred when set. */
+  custom_domain?: string | null;
+}
+
+/** A clean host (lower-case, no scheme, path, port or trailing dot), or null. */
+export function normaliseCustomDomain(value: string | null | undefined): string | null {
+  const host = value
+    ?.trim()
+    .toLowerCase()
+    .replace(/^https?:\/\//, "")
+    .replace(/\/.*$/, "")
+    .replace(/:\d+$/, "")
+    .replace(/\.$/, "");
+  return host ? host : null;
+}
+
 /**
- * Base URL for a specific tenant, e.g. https://creativeballet.opalswift.com.
- * No trailing slash — callers append their own path.
+ * Base URL for a specific tenant: https://<custom_domain> when the tenant has one,
+ * else https://<subdomain>.<root>, e.g. https://creativeballet.opalswift.com.
+ * Accepts the tenant row (preferred: pass both columns, see TENANT_URL_COLUMNS) or,
+ * for older callers, just the subdomain. No trailing slash — callers append their path.
  */
-export function tenantBaseUrl(subdomain: string | null | undefined): string {
-  const sub = subdomain?.trim().toLowerCase();
+export function tenantBaseUrl(tenant: TenantUrlInput | string | null | undefined): string {
+  const input: TenantUrlInput =
+    typeof tenant === "string" || tenant == null ? { subdomain: tenant } : tenant;
+  const sub = input.subdomain?.trim().toLowerCase();
   if (!sub) {
     throw new Error("Cannot build a tenant URL without a subdomain.");
   }
   const root = appRootDomain();
   // localhost keeps its port and gains no subdomain — dev runs a single tenant
-  // resolved via VITE_DEV_TENANT_SUBDOMAIN, not via the hostname.
+  // resolved via VITE_DEV_TENANT_SUBDOMAIN, not via the hostname. A custom domain
+  // is ignored there too, so dev links never leave the dev machine.
   if (root.startsWith("localhost") || root.startsWith("127.0.0.1")) {
     return `http://${root}`;
   }
+  const custom = normaliseCustomDomain(input.custom_domain);
+  if (custom) return `https://${custom}`;
   return `https://${sub}.${root}`;
 }
 
@@ -93,7 +119,7 @@ export function platformAppUrl(): string {
 }
 
 /** Columns a caller must select for tenantBaseUrl() to work. */
-export const TENANT_URL_COLUMNS = "subdomain";
+export const TENANT_URL_COLUMNS = "subdomain, custom_domain";
 
 /**
  * Look the subdomain up by tenant id. For call sites that build a link before
@@ -113,5 +139,8 @@ export async function tenantBaseUrlFor(
   if (error || !data?.subdomain) {
     throw new Error(`Cannot resolve subdomain for tenant ${tenantId} — cannot build its links.`);
   }
-  return tenantBaseUrl(data.subdomain as string);
+  return tenantBaseUrl({
+    subdomain: data.subdomain as string,
+    custom_domain: (data.custom_domain as string | null | undefined) ?? null,
+  });
 }

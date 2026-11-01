@@ -1,12 +1,11 @@
 /**
  * Pay-at-the-studio / invoicing-off tenants (e.g. a studio that is not a registered
  * business yet): no tax document is ever queued, and unpaid places are not chased
- * or auto-cancelled by dunning.
+ * with pay links (they get the longer offline dunning ladder instead).
  * Run: pnpm -C apps/web test offline-studio-no-documents.test.ts
  */
 import { describe, it, expect, vi } from 'vitest';
 import { enqueueDocument } from '../../../../supabase/functions/_shared/enqueue-document.ts';
-import { applyEnrolmentPaymentDunningStep } from '../../../../supabase/functions/_shared/collections/apply-enrolment-payment-dunning-step.ts';
 
 function tenantService(tenantRow: Record<string, unknown>) {
   const insert = vi.fn(async () => ({ data: { id: 'q-1' }, error: null }));
@@ -68,10 +67,4 @@ describe('invoicing_provider = none', () => {
   });
 });
 
-describe('payment_provider = offline', () => {
-  it('dunning skips the place: no pay-link reminder, no day-14 cancel', async () => {
-    const { service } = tenantService({ payment_provider: 'offline' });
-    const result = await applyEnrolmentPaymentDunningStep(service, 'eng-1', 'https://studio.test');
-    expect(result).toEqual({ outcome: 'skipped', reason: 'offline_payments' });
-  });
-});
+// Dunning for payment_provider = 'offline' (14 / 25 / 30 ladder): offline-dunning-ladder.test.ts.

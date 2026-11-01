@@ -12,6 +12,7 @@ import {
 import { computeClassTotal } from '../lib/computeClassTotal';
 import { formatOfferingPrice } from '@/lib/formatOfferingPrice';
 import type { Offering, Tenant } from '@shared/schemas';
+import { monthlyHintKey } from '../lib/monthlyHint';
 
 export type AdminPaymentChoice = 'pay_now' | 'send_link' | 'offline';
 
@@ -161,7 +162,7 @@ export function AdminEnrolmentPaymentStep({
             {formatOfferingPrice(t, pricing.totalMinor, pricing.currency, i18n.language, classRow)}
           </p>
           {classRow.billing_mode === 'recurring' && classRow.billing_interval === 'monthly' && (
-            <p className="text-xs text-gray-500">{t('enrolment.checkout_monthly_hint')}</p>
+            <p className="text-xs text-gray-500">{t(monthlyHintKey(tenantConfig?.payment_provider))}</p>
           )}
         </div>
         <EnrolmentPaymentForm
@@ -189,7 +190,7 @@ export function AdminEnrolmentPaymentStep({
           {formatOfferingPrice(t, pricing.totalMinor, pricing.currency, i18n.language, classRow)}
         </p>
         {classRow.billing_mode === 'recurring' && classRow.billing_interval === 'monthly' && (
-          <p className="text-xs text-gray-500 mt-1">{t('enrolment.checkout_monthly_hint')}</p>
+          <p className="text-xs text-gray-500 mt-1">{t(monthlyHintKey(tenantConfig?.payment_provider))}</p>
         )}
       </div>
 

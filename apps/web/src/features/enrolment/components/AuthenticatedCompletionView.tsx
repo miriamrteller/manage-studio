@@ -15,6 +15,7 @@ import { buildPortalHighlightState } from '@/lib/portalHighlight';
 import queryClient from '@/lib/query-client';
 import { formatOfferingPrice } from '@/lib/formatOfferingPrice';
 import type { ConsentTemplate, Engagement } from '@shared/schemas';
+import { monthlyHintKey } from '@/features/enrolment/lib/monthlyHint';
 
 interface AuthenticatedCompletionViewProps {
   engagementId: string | undefined;
@@ -220,7 +221,7 @@ export function AuthenticatedCompletionView({ engagementId }: AuthenticatedCompl
           })}
         </p>
         {context.billingMode === 'recurring' && context.billingInterval === 'monthly' && (
-          <p className="text-xs text-gray-500">{t('enrolment.checkout_monthly_hint')}</p>
+          <p className="text-xs text-gray-500">{t(monthlyHintKey(charge?.paymentProvider))}</p>
         )}
       </div>
 

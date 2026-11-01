@@ -354,6 +354,7 @@ export default function EnrolCompletePage() {
           template={state.template}
           offeringId={state.offeringId}
           waiverToken={state.waiverToken ?? undefined}
+          isJobContract={state.isJob === true}
           onComplete={() => setState(state.isJob ? { kind: 'signed', isJob: true } : { kind: 'signed' })}
           onPrevious={() => { /* no back on standalone page */ }}
           canGoBack={false}

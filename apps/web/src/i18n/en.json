@@ -1834,6 +1834,7 @@
     "checkout_desc": "Review and complete payment",
     "checkout_prepare_failed": "Could not prepare enrolment for payment",
     "checkout_monthly_hint": "Monthly subscription — this amount is charged every month.",
+    "offline_monthly_hint": "Monthly fee — paid at the studio each month (cash or bank transfer).",
     "payment_confirm_pending": "Payment received. Confirmation may take a moment.",
     "payment_failed": "Payment failed",
     "payment_setup_failed": "Could not start payment",
@@ -1845,6 +1846,7 @@
     "checkout_total": "Total",
     "offline_payment_title": "Pay at the studio",
     "offline_payment_body": "Your place is reserved. This studio takes payment in person (cash or bank transfer), so there is nothing to pay online.",
+    "offline_payment_how": "How to pay",
     "offline_payment_next": "The studio will confirm the enrolment once your payment is received.",
     "offline_payment_portal_link": "Go to my account",
     "pay_now": "Pay now",
@@ -1900,7 +1902,8 @@
       "locale": "Language & Region",
       "payment": "Payment Settings",
       "invoicing": "Invoicing",
-      "legal": "Legal"
+      "legal": "Legal",
+      "security": "Security"
     },
     "branding": {
       "colors": "Colors",
@@ -1929,6 +1932,29 @@
       "uploadDarkLogo": "Upload dark mode logo",
       "fileTooLarge": "File too large (max 2MB)",
       "uploadFailed": "Upload failed. Please try again."
+    },
+    "offline_payments": {
+      "title": "How parents pay",
+      "description": "Choose whether parents pay online or at the studio.",
+      "enabled_label": "Parents pay at the studio (cash or bank transfer)",
+      "enabled_hint": "No card form online. The place is reserved until you record the payment on the student. Unpaid places are released after 30 days.",
+      "instructions_label": "Payment instructions shown to parents",
+      "instructions_placeholder": "e.g. Bank Hapoalim, branch 123, account 456789. Or pay cash to the teacher at the first lesson.",
+      "instructions_hint": "Shown on the enrolment page and in payment reminders. Write it in the language your parents read.",
+      "receipts_note": "If the studio is a registered business, it must issue its own receipts for every payment.",
+      "provider_hint": "Enter the provider's keys on its settings page.",
+      "saved": "Payment settings saved.",
+      "providers": { "grow": "Grow (Meshulam)", "icount": "iCount", "invoice4u": "Invoice4U", "ypay": "YPay", "tranzila": "Tranzila" }
+    },
+    "invoicing_toggle": {
+      "title": "Tax documents",
+      "description": "Whether the app issues a receipt or invoice for every payment through your invoicing provider.",
+      "enabled_label": "Issue tax documents automatically",
+      "enabled_hint": "Off: payments are recorded without any receipt or invoice from the app.",
+      "off_note": "Invoicing is off. If the studio is a registered business, it must issue its own receipts for every payment.",
+      "credentials_hint": "Enter the provider's credentials under Invoicing provider.",
+      "saved": "Tax document setting saved.",
+      "providers": { "grow": "Grow (Meshulam)", "icount": "iCount", "invoice4u": "Invoice4U", "ypay": "YPay", "tranzila": "Tranzila", "yesh": "Yesh", "green_invoice": "Green Invoice" }
     },
     "payments": {
       "title": "Payment provider",
@@ -2067,6 +2093,8 @@
       "school_name": "Studio name",
       "subdomain": "Subdomain",
       "subdomain_readonly": "Subdomain cannot be changed after launch. Contact support if you need a change.",
+      "custom_domain": "Custom domain",
+      "custom_domain_readonly": "Your studio's own web address. Only the OpalSwift team can change it.",
       "name_required": "Studio name is required.",
       "profile_saved": "Studio profile saved.",
       "branding_title": "Branding",
@@ -2241,6 +2269,8 @@
       "status_published": "Status: published — linked in the footer and at enrolment.",
       "status_draft": "Status: draft — only admins can see the pages.",
       "review_note": "These pages are generated from templates drafted for Israeli law. Have a lawyer review them before publishing.",
+      "lawyer_note": "These documents are drafts based on Israeli law. Have a lawyer review them for your studio.",
+      "lawyer_note_dismiss": "Got it",
       "publish": "Publish pages",
       "unpublish": "Unpublish",
       "saved": "Saved.",
@@ -2259,6 +2289,66 @@
     "settings_terms_url": "Terms link (enrolment / booking)",
     "settings_accessibility_url": "Accessibility statement link",
     "settings_invalid_url": "Links must start with https://",
-    "settings_saved": "Legal links saved."
+    "settings_saved": "Legal links saved.",
+    "consents": {
+      "title": "Consents",
+      "photo_legend": "Photos and video (optional)",
+      "photo_hint": "Taking part does not depend on this. You can change it at any time.",
+      "portfolio_legend": "Portfolio (optional)",
+      "portfolio_hint": "Separate from the contract. Refusing doesn't change the service or price.",
+      "marketing_legend": "News and offers (optional)",
+      "guardian_preface": "I give this consent as the parent/legal guardian of {{name}}.",
+      "no_changes": "Nothing changed.",
+      "saved": "Saved. The change is recorded with today's date.",
+      "save": "Save consents",
+      "admin_note": "Record a change only on the person's own instruction (e.g. a written request). Every change is kept in the history.",
+      "portal_heading": "Consents",
+      "portal_hint": "Choose what you agree to. You can change this at any time; marketing can also be stopped from the link in any marketing message."
+    },
+    "unsubscribe": {
+      "working": "Unsubscribing…",
+      "done_title": "You have been unsubscribed",
+      "done_body": "You won't get marketing messages from {{studio}} any more. You will still get messages about your classes, bookings and payments.",
+      "error_title": "This link didn't work",
+      "error_body": "The link may be incomplete. Reply to the message or contact the studio and they will remove you."
+    },
+    "blast": {
+      "purpose_legend": "What kind of message is this?",
+      "service": "Service update",
+      "service_hint": "Classes, schedule changes, payments, events of enrolled students. Sent to everyone selected.",
+      "marketing": "Marketing (offers, new classes, promotions)",
+      "marketing_hint": "Sent only to people who opted in to email marketing. The subject starts with \"פרסומת\" and an unsubscribe link is added automatically."
+    },
+    "security": {
+      "title": "Security",
+      "description": "Protect your admin account and take a copy of your studio's data.",
+      "mfa_title": "Two-step sign-in",
+      "mfa_description": "After your email code or link, also enter a 6-digit code from an authenticator app (Google Authenticator, Microsoft Authenticator, 1Password…). Strongly recommended for every admin.",
+      "mfa_on": "Two-step sign-in is on.",
+      "mfa_start": "Turn on two-step sign-in",
+      "mfa_scan": "Scan this code with your authenticator app, then enter the 6-digit code it shows.",
+      "mfa_qr_alt": "QR code for your authenticator app",
+      "mfa_secret": "Or enter this key manually",
+      "mfa_code_label": "6-digit code",
+      "mfa_confirm": "Confirm",
+      "mfa_wrong_code": "That code didn't work. Check the time on your phone and try the newest code.",
+      "mfa_enabled": "Two-step sign-in is now on.",
+      "mfa_removed": "Two-step sign-in removed.",
+      "mfa_remove": "Remove",
+      "challenge_title": "Enter your sign-in code",
+      "challenge_body": "Open your authenticator app and enter the 6-digit code for OpalSwift.",
+      "challenge_submit": "Continue",
+      "export_title": "Download all studio data",
+      "export_description": "One file (JSON) with your clients, students, enrolments, payments, signed documents' details, consents and messages. Secrets such as payment-provider keys are never included. Keep the file safe: it contains personal and health information.",
+      "export_button": "Download data",
+      "export_done": "Downloaded. The export has been recorded in the audit log.",
+      "require_heading": "Studio-wide rule",
+      "require_label": "Require two-step sign-in for all admins of this studio",
+      "require_help": "When on, every admin must set up two-step sign-in before they can use the admin area. Teachers, parents and clients are not affected.",
+      "require_saved_on": "Two-step sign-in is now required for all admins.",
+      "require_saved_off": "Two-step sign-in is now optional.",
+      "enrol_required_title": "Set up two-step sign-in",
+      "enrol_required_body": "This studio requires two-step sign-in for admins. Set it up to continue."
+    }
   }
 }

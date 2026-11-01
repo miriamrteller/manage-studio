@@ -9,6 +9,8 @@ These terms are an agreement between **[[OPALSWIFT LEGAL NAME]]** (today: Miriam
 
 The Platform is a business tool. You use it for your business, not as a consumer. If you are an individual who has not yet registered a business, you still use the Platform for business purposes.
 
+**Beta notice.** OpalSwift is in beta and free to use. It will be registered as a business (עוסק) before it becomes a paid service.
+
 ## 1. What the Platform does
 
 OpalSwift provides software for running a studio: client and student records, classes and bookings, enrolment, waivers and health declarations, contracts, payment requests through third-party payment providers, messages (email, and optionally SMS/WhatsApp), and image or gallery links. Features vary by plan and by studio type (for example, dance school or photographer).
@@ -23,7 +25,7 @@ We may improve, change or remove features. If a change materially reduces a feat
 
 ## 3. Fees
 
-- Plan and price: **free of charge.** We will not charge any fees until OpalSwift is registered as a business (עוסק). Before any paid plan starts we will give at least [[30]] days' notice, and it applies to you only if you agree to it.
+- Plan and price: **free during the beta.** If we introduce a paid plan we will give at least [[30]] days' notice, and it applies to you only if you agree to it.
 - Payment method and timing: set out in the paid plan, when one is offered.
 - We will give at least [[30]] days' notice of a price increase. It applies from the next billing period. You may cancel before then.
 - Fees paid are non-refundable except as these terms or the law say.

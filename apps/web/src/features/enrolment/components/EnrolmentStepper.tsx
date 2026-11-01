@@ -39,7 +39,7 @@ import { mapAgeReviewRpcError } from '../lib/ageReviewService';
 import { notifyAdminsAgeReviewSubmitted } from '../lib/sendAgeReviewNotifications';
 import { AgeOverridePanel } from './AgeOverridePanel';
 import type { EnrollmentIntent } from '@/lib/enrollment-intent';
-import { persistEnrollmentIntent } from '@/lib/enrollment-intent';
+import { clearEnrollmentIntent, persistEnrollmentIntent } from '@/lib/enrollment-intent';
 import type { Engagement } from '@shared/schemas';
 import type { EnrolmentStepperProps } from '../types/enrolmentStep';
 import { PrivacyNotice } from '@/components/PrivacyNotice';
@@ -360,6 +360,13 @@ export function EnrolmentStepper({
     if (newData) setEnrolmentData((prev) => ({ ...prev, ...newData }));
     goToNextStep();
   };
+
+  // Confirmation reached (card payment done, or admin finished): the enrolment no longer
+  // needs the stored intent. Without this, a header/logo click to /dashboard before closing
+  // the confirmation would loop back to /enrol.
+  useEffect(() => {
+    if (currentStep === 'confirmation') clearEnrollmentIntent();
+  }, [currentStep]);
 
   const handlePaymentSuccess = async () => {
     if (!checkoutEnrolmentId || !tenant) return;
@@ -752,6 +759,7 @@ export function EnrolmentStepper({
             isPreparing={isCheckoutPreparing || (isCreating && !checkoutEnrolmentId)}
             requireAuth={enrolmentContext.mode !== 'guest' && Boolean(user)}
             acceptedByRole={isUnder18(personDateOfBirth) ? 'guardian' : 'self'}
+            studentName={waiverFlow.waiverPersonDisplay?.name ?? undefined}
             onPaymentSuccess={handlePaymentSuccess}
             onPrevious={handlePreviousStep}
             canGoBack={canGoBack}

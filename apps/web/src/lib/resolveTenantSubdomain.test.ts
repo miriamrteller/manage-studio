@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  rememberCustomHostSubdomain,
+  resolveTenantSite,
+  resolveTenantSiteFromHostname,
   resolveTenantSubdomain,
   resolveTenantSubdomainFromHostname,
 } from './resolveTenantSubdomain';
@@ -90,5 +93,49 @@ describe('resolveTenantSubdomain — window integration', () => {
     vi.stubEnv('VITE_DEV_TENANT_SUBDOMAIN', '');
     setHostname('app.opalswift.com');
     expect(resolveTenantSubdomain()).toBeNull();
+  });
+});
+
+describe('resolveTenantSiteFromHostname — custom domains', () => {
+  const site = (hostname: string) => resolveTenantSiteFromHostname(hostname, ROOT, null);
+
+  it('keeps resolving hosts under the root domain by subdomain', () => {
+    expect(site('creativeballet.opalswift.com')).toEqual({ kind: 'subdomain', subdomain: 'creativeballet' });
+    expect(site('opalswift.com')).toBeNull();
+    expect(site('www.opalswift.com')).toBeNull();
+    expect(site('app.opalswift.com')).toBeNull();
+  });
+
+  it('treats a host outside the root domain as a custom domain', () => {
+    expect(site('app.creativeballetacademy.com')).toEqual({
+      kind: 'custom',
+      host: 'app.creativeballetacademy.com',
+    });
+    expect(site('App.CreativeBalletAcademy.com.')).toEqual({
+      kind: 'custom',
+      host: 'app.creativeballetacademy.com',
+    });
+  });
+
+  it('never looks up a host under the root domain as a custom domain', () => {
+    expect(site('evil.opalswift.com')).toEqual({ kind: 'subdomain', subdomain: 'evil' });
+    expect(site('a.b.opalswift.com')?.kind).toBe('subdomain');
+  });
+
+  it('keeps IPs and local hosts out of the custom lookup', () => {
+    expect(site('192.168.1.10')).toBeNull();
+    expect(resolveTenantSiteFromHostname('therapist.localhost', 'localhost', null)).toEqual({
+      kind: 'subdomain',
+      subdomain: 'therapist',
+    });
+  });
+
+  it('on a custom host, resolveTenantSubdomain returns the remembered tenant subdomain', () => {
+    vi.stubEnv('VITE_APP_ROOT_DOMAIN', ROOT);
+    setHostname('app.creativeballetacademy.com');
+    expect(resolveTenantSubdomain()).toBeNull();
+    rememberCustomHostSubdomain('app.creativeballetacademy.com', 'creativeballet');
+    expect(resolveTenantSubdomain()).toBe('creativeballet');
+    expect(resolveTenantSite()).toEqual({ kind: 'custom', host: 'app.creativeballetacademy.com' });
   });
 });

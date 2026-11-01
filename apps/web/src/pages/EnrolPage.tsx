@@ -8,6 +8,7 @@ import queryClient from '@/lib/query-client';
 import { hasParentRole } from '@/lib/parentRoles';
 import { buildPortalHighlightState } from '@/lib/portalHighlight';
 import {
+  clearEnrollmentIntent,
   persistEnrollmentIntent,
   readEnrollmentIntent,
   type EnrollmentIntent,
@@ -26,6 +27,9 @@ export default function EnrolPage() {
 
   const handleEnrolmentSuccess = useCallback(
     async (enrolment: Engagement) => {
+      // The enrolment is done: drop the stored intent so /dashboard stops sending the
+      // parent back to /enrol.
+      clearEnrollmentIntent();
       if (user && hasParentRole(user.role)) {
         await queryClient.invalidateQueries({ queryKey: ['parent-portal'] });
         navigate('/dashboard/portal', { state: buildPortalHighlightState(enrolment) });
@@ -42,7 +46,9 @@ export default function EnrolPage() {
       ? (location.state as { resumeKey?: string }).resumeKey
       : undefined;
   useEffect(() => {
-    if (intent) {
+    // Store the intent so it survives a sign-in round trip, but not when /dashboard just
+    // forwarded it here (it was already consumed; storing it again causes a redirect loop).
+    if (intent && !intent.viaDashboardRedirect) {
       persistEnrollmentIntent(intent);
     }
   }, [intent]);

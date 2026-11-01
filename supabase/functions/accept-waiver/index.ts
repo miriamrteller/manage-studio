@@ -371,6 +371,26 @@ Deno.serve(withMonitoring("accept-waiver", async (req) => {
           reason: pdf.failure,
         });
       }
+      // Optional portfolio opt-in ticked under the contract (separate from the
+      // contract itself). Recorded with its wording; never fails the signing.
+      if (!replay && typeof body.portfolio_consent === "boolean") {
+        const { error: consentError } = await service.from("consent_records").insert({
+          tenant_id: tenantId,
+          person_id: body.person_id,
+          kind: "portfolio",
+          granted: body.portfolio_consent,
+          wording: typeof body.portfolio_wording === "string" ? body.portfolio_wording.slice(0, 2000) : null,
+          wording_version: typeof body.consent_wording_version === "string"
+            ? body.consent_wording_version.slice(0, 64)
+            : null,
+          source: "contract",
+          engagement_id: jobContract.engagementId,
+          recorded_by: actorId ?? null,
+          ip_address: ip,
+          user_agent: userAgent?.slice(0, 512) ?? null,
+        });
+        if (consentError) console.warn("[accept-waiver] portfolio consent not recorded:", consentError.message);
+      }
       // Signed copy to the client and the photographer (idempotent per shoot; never fails the signing).
       if (contractTenant) {
         await notifyJobContractSigned(service, {

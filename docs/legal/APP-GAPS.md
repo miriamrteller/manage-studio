@@ -23,13 +23,13 @@ These are app changes the legal drafts depend on. None of them are made in the d
 
 ## Marketing consent
 
-- [ ] **Record consent per channel, with proof.**
+- [x] **Record consent per channel, with proof.** *(Done: `consent_records` history; opt-in on enrolment and the inquiry form; portal and admin can change it. Booking and parent signup forms don't offer it yet.)*
   - Today: only a single `leads.marketing_consent` boolean (`supabase/migrations/20260819000100_leads.sql`). Nothing on people/accounts, and nothing is collected at enrolment, booking or signup.
   - Fix: store per channel (email / SMS / WhatsApp), together with the time, source form, wording version and IP.
   - Add the opt-in (unticked) to the enrolment, inquiry (`InquirePage`), booking and signup forms.
   - Docs: 08 §3.
-- [ ] **Respect consent when sending.** The notification blast composer and any marketing send must send only to opted-in recipients, per channel. Service messages are unaffected.
-- [ ] **Unsubscribe.** No unsubscribe link or line exists in the email templates (`packages/shared/src/email-templates/*`) or in the SMS/WhatsApp texts.
+- [x] **Respect consent when sending.** *(Announcements now ask "service or marketing"; marketing goes only to email opt-ins.)* The notification blast composer and any marketing send must send only to opted-in recipients, per channel. Service messages are unaffected.
+- [x] **Unsubscribe.** *(Done: one-click link in marketing emails → `/unsubscribe/:token`; "פרסומת:" subject prefix; SMS/WhatsApp STOP or הסר via the new `twilio-inbound` webhook. **Owner setup:** set the Twilio number's incoming-message webhook to the `twilio-inbound` function URL and the `TWILIO_INBOUND_WEBHOOK_URL` secret to the same URL.)* No unsubscribe link or line exists in the email templates (`packages/shared/src/email-templates/*`) or in the SMS/WhatsApp texts.
   - Fix:
     - an unsubscribe link plus a one-click unsubscribe endpoint;
     - reply "הסר" / "STOP" handling for SMS and WhatsApp (`twilio-webhook-status` or a new inbound webhook);
@@ -39,16 +39,16 @@ These are app changes the legal drafts depend on. None of them are made in the d
 
 ## Photo / media consent
 
-- [ ] **Consent per purpose, with time and wording version.**
+- [x] **Consent per purpose, with time and wording version.**
   - Today: `features/people/components/ConsentFields.tsx` has two booleans (`photo_consent`, `media_consent`).
   - Fix: replace them with per-purpose options (internal use / parents' group / website and social media) plus the guardian line for minors (09 §2).
   - Store the time and wording version, and allow withdrawal from the parent portal.
 - [x] **Hebrew typo.** `apps/web/src/i18n/he.json`, `pages.people.photo_consent_label` = "אני מנתן הסכמה לצילום". It should read "אני נותן/ת הסכמה לצילום" (also check `media_consent_label`, "אני מנתן הסכמה להשתמש בתוכן מדיה").
-- [ ] **Split the seed waiver.** The `consent_templates` seed "Health & Liability Waiver" (`supabase/seed.sql`, id `…0801`) bundles the health declaration, a release of liability and indemnity, and a photo/media release.
+- [x] **Split the seed waiver.** *(Dev seed now holds the health declaration only; the release clause is gone. Existing studios' live templates are unchanged — replace them in Settings → Waivers.)* The `consent_templates` seed "Health & Liability Waiver" (`supabase/seed.sql`, id `…0801`) bundles the health declaration, a release of liability and indemnity, and a photo/media release.
   - Fix: replace it with the health declaration (07b).
   - Move photo consent to the separate opt-in above.
   - The release clause needs the lawyer's decision.
-- [ ] **Photography portfolio opt-in.** Add a separate, optional checkbox under the job contract (07c §6). Store it with the job, and let it be withdrawn later.
+- [x] **Photography portfolio opt-in.** Add a separate, optional checkbox under the job contract (07c §6). Store it with the job, and let it be withdrawn later.
 
 ## Privacy notice on public forms
 
@@ -65,7 +65,7 @@ These are app changes the legal drafts depend on. None of them are made in the d
 
 ## Related (from the security procedure, doc 11)
 
-- [ ] App-level MFA for studio admins.
-- [ ] 24-month retention for logs of access to sensitive records (extend `audit_log`, or export the Supabase logs).
-- [ ] Full data export for a studio (today only finance, waivers and schedule exports exist). The Terms and DPA promise it "on request".
-- [ ] Health data visible only to studio admins and the student's assigned teachers: check the RLS and the UI.
+- [x] App-level MFA for studio admins. *(Settings → Security: authenticator-app two-step sign-in; the admin area asks for the code once it's on. Optional per admin — the owner decides whether to make it mandatory.)*
+- [x] 24-month retention for logs of access to sensitive records. *(`audit_log` rows can't be edited or deleted before 24 months; changes to and admin views of health details are logged.)*
+- [x] Full data export for a studio. *(Settings → Security → Download all studio data: one JSON file, secrets excluded, audited. PDFs are listed, not bundled.)*
+- [x] Health data visible only to studio admins and the student's assigned teachers. *(Checked: today only studio admins, the person themselves and their parents/account can read it — teachers have no access at all, which is stricter.)*

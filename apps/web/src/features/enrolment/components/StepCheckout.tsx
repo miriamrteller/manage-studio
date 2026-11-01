@@ -5,6 +5,7 @@ import { EnrolmentPaymentForm } from './EnrolmentPaymentForm';
 import { StepBackButton } from './StepBackButton';
 import { EnrolmentTermsConsent } from './EnrolmentTermsConsent';
 import { formatOfferingPrice } from '@/lib/formatOfferingPrice';
+import { monthlyHintKey } from '../lib/monthlyHint';
 
 export interface StepCheckoutProps {
   enrolmentData: Partial<Engagement>;
@@ -15,6 +16,7 @@ export interface StepCheckoutProps {
   requireAuth: boolean;
   /** 'guardian' when a parent enrols a child under 18 (recorded with the terms acceptance). */
   acceptedByRole?: 'self' | 'guardian';
+  studentName?: string;
   onPaymentSuccess: () => void;
   onPrevious: () => void;
   canGoBack?: boolean;
@@ -28,6 +30,7 @@ export function StepCheckout({
   isPreparing,
   requireAuth,
   acceptedByRole = 'self',
+  studentName,
   onPaymentSuccess,
   onPrevious,
   canGoBack = true,
@@ -87,11 +90,16 @@ export function StepCheckout({
             )}
           </p>
           {isMonthly && (
-            <p className="text-xs text-muted-foreground">{t('enrolment.checkout_monthly_hint')}</p>
+            <p className="text-xs text-muted-foreground">{t(monthlyHintKey(checkoutCharge?.paymentProvider))}</p>
           )}
         </div>
       )}
-      <EnrolmentTermsConsent engagementId={checkoutEnrolmentId} acceptedByRole={acceptedByRole}>
+      <EnrolmentTermsConsent
+        engagementId={checkoutEnrolmentId}
+        studentPersonId={enrolmentData.person_id ?? null}
+        studentName={studentName}
+        acceptedByRole={acceptedByRole}
+      >
         <EnrolmentPaymentForm
           classId={enrolmentData.offering_id}
           engagementId={checkoutEnrolmentId}
