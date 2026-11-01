@@ -22,7 +22,7 @@ export interface AutomaticEmailTenant extends TenantSenderInput {
 }
 
 export const AUTOMATIC_EMAIL_TENANT_COLUMNS =
-  "id, name, language_default, primary_color, accent_color, subdomain, contact_email, from_email, from_email_verified_at";
+  "id, name, language_default, primary_color, accent_color, subdomain, custom_domain, contact_email, from_email, from_email_verified_at";
 
 export type AutomaticEmailOutcome = "sent" | "skipped" | "failed";
 

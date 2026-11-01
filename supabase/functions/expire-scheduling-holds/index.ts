@@ -46,6 +46,7 @@ interface TenantInfo {
   id: string;
   name: string | null;
   subdomain: string;
+  custom_domain?: string | null;
   contact_email: string;
   from_email: string | null;
   from_email_verified_at: string | null;
@@ -151,7 +152,7 @@ Deno.serve(withMonitoring("expire-scheduling-holds", async (req) => {
               tenant?.language_default ?? "he",
               tenant?.name ?? "",
               hold.starts_at,
-              `${tenantBaseUrl(tenant?.subdomain)}/book`,
+              `${tenantBaseUrl(tenant)}/book`,
             ),
           });
           remindersSent++;
@@ -227,7 +228,7 @@ Deno.serve(withMonitoring("expire-scheduling-holds", async (req) => {
             subject: (tenant.language_default !== "en")
               ? "שריון הפגישה שוחרר"
               : "Your appointment hold was released",
-            html: releasedHtml(tenant.language_default ?? "he", tenant.name ?? "", `${tenantBaseUrl(tenant.subdomain)}/book`),
+            html: releasedHtml(tenant.language_default ?? "he", tenant.name ?? "", `${tenantBaseUrl(tenant)}/book`),
           });
         } catch (e) {
           console.error("[expire-scheduling-holds] released send failed", hold.id, String(e));

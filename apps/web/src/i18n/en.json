@@ -2093,6 +2093,8 @@
       "school_name": "Studio name",
       "subdomain": "Subdomain",
       "subdomain_readonly": "Subdomain cannot be changed after launch. Contact support if you need a change.",
+      "custom_domain": "Custom domain",
+      "custom_domain_readonly": "Your studio's own web address. Only the OpalSwift team can change it.",
       "name_required": "Studio name is required.",
       "profile_saved": "Studio profile saved.",
       "branding_title": "Branding",

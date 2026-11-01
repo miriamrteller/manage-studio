@@ -79,22 +79,73 @@ export function resolveTenantSubdomainFromHostname(
   return subdomain || devFallback;
 }
 
+/** What the current hostname identifies. */
+export type TenantSite =
+  | { kind: 'subdomain'; subdomain: string }
+  /** A host outside the root domain, e.g. app.creativeballetacademy.com (tenants.custom_domain). */
+  | { kind: 'custom'; host: string };
+
+function isLocalHostname(hostname: string): boolean {
+  return (
+    hostname === 'localhost' ||
+    hostname.endsWith('.localhost') ||
+    hostname === '127.0.0.1' ||
+    /^\d+\.\d+\.\d+\.\d+$/.test(hostname)
+  );
+}
+
+/**
+ * Pure hostname → site resolution.
+ *
+ * Hosts under the root domain (and local dev hosts) resolve exactly as before, by
+ * subdomain. Any other non-local host is treated as a studio's custom domain and looked
+ * up by host (get_tenant_config_by_host). Never the reverse: a host under the root domain
+ * is never looked up as a custom domain.
+ */
+export function resolveTenantSiteFromHostname(
+  hostname: string,
+  rootHostname: string,
+  devFallback: string | null,
+): TenantSite | null {
+  const host = hostname.trim().toLowerCase().replace(/\.$/, '');
+  const underRoot = host === rootHostname || host.endsWith(`.${rootHostname}`);
+  if (underRoot || isLocalHostname(host) || isLocalHostname(rootHostname)) {
+    const subdomain = resolveTenantSubdomainFromHostname(host, rootHostname, devFallback);
+    return subdomain ? { kind: 'subdomain', subdomain } : null;
+  }
+  return host ? { kind: 'custom', host } : null;
+}
+
+export function resolveTenantSite(): TenantSite | null {
+  const devFallback = devTenantFallback();
+  if (typeof window === 'undefined') {
+    return devFallback ? { kind: 'subdomain', subdomain: devFallback } : null;
+  }
+  return resolveTenantSiteFromHostname(window.location.hostname, appRootHostname(), devFallback);
+}
+
+/**
+ * On a custom domain the subdomain is only known once the tenant config has loaded
+ * (useTenant). Callers that send the subdomain to the API (login metadata, public
+ * offerings) read it back from here.
+ */
+const customHostSubdomains = new Map<string, string>();
+
+export function rememberCustomHostSubdomain(host: string, subdomain: string): void {
+  customHostSubdomains.set(host.trim().toLowerCase(), subdomain);
+}
+
 /**
  * Resolves tenant subdomain for multi-tenant routing and auth metadata.
  *
  * Prefers the URL hostname subdomain (e.g. creativeballet.opalswift.com), falling
- * back to VITE_DEV_TENANT_SUBDOMAIN on plain localhost in dev builds only.
+ * back to VITE_DEV_TENANT_SUBDOMAIN on plain localhost in dev builds only. On a
+ * studio's custom domain it returns the subdomain of the tenant loaded for that
+ * host, or null until the tenant config has loaded.
  */
 export function resolveTenantSubdomain(): string | null {
-  const devFallback = devTenantFallback();
-
-  if (typeof window === 'undefined') {
-    return devFallback;
-  }
-
-  return resolveTenantSubdomainFromHostname(
-    window.location.hostname,
-    appRootHostname(),
-    devFallback,
-  );
+  const site = resolveTenantSite();
+  if (!site) return null;
+  if (site.kind === 'subdomain') return site.subdomain;
+  return customHostSubdomains.get(site.host) ?? null;
 }

@@ -2093,6 +2093,8 @@
       "school_name": "שם הסטודיו",
       "subdomain": "תת-דומיין",
       "subdomain_readonly": "לא ניתן לשנות תת-דומיין לאחר ההשקה. פנו לתמיכה.",
+      "custom_domain": "דומיין מותאם",
+      "custom_domain_readonly": "כתובת האינטרנט של הסטודיו. רק צוות OpalSwift יכול לשנות אותה.",
       "name_required": "שם הסטודיו נדרש.",
       "profile_saved": "פרופיל הסטודיו נשמר.",
       "branding_title": "מיתוג",

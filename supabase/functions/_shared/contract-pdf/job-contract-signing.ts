@@ -193,7 +193,7 @@ export async function notifyJobContractSigned(
   const result: NotifyResult = { client: "no_recipient", studio: "no_recipient", downloadUrl: null };
   try {
     const { tenant, job, evidence, language } = input;
-    const base = tenantBaseUrl(tenant.subdomain);
+    const base = tenantBaseUrl(tenant);
     const signedUrl = await signedDownloadUrl(client.storage, evidence);
     result.downloadUrl = signedUrl;
     const attachments = deps.attachmentsSupported() ? await attachmentFor(client.storage, evidence, input.pdfBytes) : undefined;
