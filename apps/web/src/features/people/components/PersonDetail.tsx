@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -7,6 +7,7 @@ import { usePerson } from '../hooks/usePerson';
 import { PersonForm } from './PersonForm';
 import { PersonService } from '../service';
 import { MedicalNotes } from './MedicalNotes';
+import { supabase } from '@/lib/supabase';
 import { PersonConsentPanel } from '@/components/legal/PersonConsentPanel';
 import { calculateAge } from '@/lib/utils';
 import { formatPersonAgeLabel, formatPersonDateOfBirthDisplay } from '@/lib/personAge';
@@ -32,6 +33,18 @@ export function PersonDetail({ id, onClose }: PersonDetailProps) {
   const [isEditing, setIsEditing] = useState(false);
 
   const { data: person, isLoading, error } = usePerson(id);
+  const hasHealthDetails = !!(person?.medical_notes || person?.allergies);
+
+  // Health details are especially sensitive: record that an admin viewed them
+  // (audit_log, Data Security Regulations reg. 10). Best effort, never blocks.
+  useEffect(() => {
+    if (!person?.id || !hasHealthDetails) return;
+    void supabase
+      .rpc('log_sensitive_read', { p_entity_type: 'person_health', p_entity_id: person.id })
+      .then(({ error: logError }) => {
+        if (logError) console.warn('[PersonDetail] health view not logged', logError.message);
+      });
+  }, [person?.id, hasHealthDetails]);
 
   if (isLoading) {
     return (

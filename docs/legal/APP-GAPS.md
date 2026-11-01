@@ -65,7 +65,7 @@ These are app changes the legal drafts depend on. None of them are made in the d
 
 ## Related (from the security procedure, doc 11)
 
-- [ ] App-level MFA for studio admins.
-- [ ] 24-month retention for logs of access to sensitive records (extend `audit_log`, or export the Supabase logs).
-- [ ] Full data export for a studio (today only finance, waivers and schedule exports exist). The Terms and DPA promise it "on request".
-- [ ] Health data visible only to studio admins and the student's assigned teachers: check the RLS and the UI.
+- [x] App-level MFA for studio admins. *(Settings → Security: authenticator-app two-step sign-in; the admin area asks for the code once it's on. Optional per admin — the owner decides whether to make it mandatory.)*
+- [x] 24-month retention for logs of access to sensitive records. *(`audit_log` rows can't be edited or deleted before 24 months; changes to and admin views of health details are logged.)*
+- [x] Full data export for a studio. *(Settings → Security → Download all studio data: one JSON file, secrets excluded, audited. PDFs are listed, not bundled.)*
+- [x] Health data visible only to studio admins and the student's assigned teachers. *(Checked: today only studio admins, the person themselves and their parents/account can read it — teachers have no access at all, which is stricter.)*

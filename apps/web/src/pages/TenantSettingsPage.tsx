@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Paintbrush, Building2, Globe, CreditCard, FileText, Scale } from 'lucide-react';
+import { Paintbrush, Building2, Globe, CreditCard, FileText, Scale, ShieldCheck } from 'lucide-react';
 
 import { SettingsLayout, type SettingsSection } from '@/features/settings/components/SettingsLayout';
 import { BrandingSettingsForm } from '@/features/settings/components/BrandingSettingsForm';
@@ -10,6 +10,7 @@ import { LocaleSettingsForm } from '@/features/settings/components/LocaleSetting
 import { PaymentSettingsForm } from '@/features/settings/components/PaymentSettingsForm';
 import { InvoicingSettingsForm } from '@/features/settings/components/InvoicingSettingsForm';
 import { LegalSettingsForm } from '@/features/settings/components/LegalSettingsForm';
+import { SecuritySettingsForm } from '@/features/settings/components/SecuritySettingsForm';
 
 const SETTINGS_SECTIONS: SettingsSection[] = [
   {
@@ -53,6 +54,13 @@ const SETTINGS_SECTIONS: SettingsSection[] = [
     label: 'Legal',
     icon: Scale,
     component: LegalSettingsForm,
+  },
+  {
+    id: 'security',
+    labelKey: 'settings.tabs.security',
+    label: 'Security',
+    icon: ShieldCheck,
+    component: SecuritySettingsForm,
   },
 ];
 

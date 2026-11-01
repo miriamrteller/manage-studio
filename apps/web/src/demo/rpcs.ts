@@ -169,6 +169,13 @@ export const baseRpcs: Record<string, RpcHandler> = {
   // The demo studio has "already accepted" the platform terms.
   get_platform_terms_acceptance: () => true,
 
+  log_sensitive_read: () => null,
+
+  export_tenant_data: (_args, ctx) => {
+    requireAdmin(ctx);
+    return { exported_at: new Date().toISOString(), format: 'opalswift-studio-export/v1', data: { people: rows(ctx, 'people') } };
+  },
+
   /** Consent history (photo purposes, portfolio, marketing). Latest row per kind wins. */
   get_person_consents: (args, ctx) => {
     const latest = new Map<string, Row>();
