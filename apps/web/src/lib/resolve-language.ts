@@ -10,7 +10,7 @@ export function resolveLanguage(
   if (tenantDefault === 'he' || tenantDefault === 'en') {
     return tenantDefault;
   }
-  return 'he';
+  return 'en';
 }
 
 function readStoredLanguage(): AppLanguage | null {
@@ -20,7 +20,7 @@ function readStoredLanguage(): AppLanguage | null {
 
 /**
  * Resolve UI language without flicker while auth profile is still loading.
- * Precedence: profile → (guest) localStorage → tenant default → 'he'.
+ * Precedence: profile → (guest) localStorage → tenant default → 'en'.
  */
 export function resolveEffectiveLanguage(options: {
   profileLanguage: AppLanguage | null | undefined;
@@ -35,7 +35,7 @@ export function resolveEffectiveLanguage(options: {
   }
 
   if (isAuthenticated && !isProfileChecked) {
-    return readStoredLanguage() ?? 'he';
+    return readStoredLanguage() ?? 'en';
   }
 
   if (!isAuthenticated) {

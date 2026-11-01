@@ -1508,9 +1508,12 @@
     "contracts": "חוזים",
     "quotes": "הצעות מחיר"
   },
+  "studio_not_found": {
+    "title": "הסטודיו לא נמצא",
+    "message_before": "לא מצאנו סטודיו בכתובת ",
+    "message_after": ". כדאי לבדוק את הכתובת."
+  },
   "footer": {
-    "school_name_fallback": "בית הספר לבלט",
-    "school_management": "ניהול בית הספר",
     "all_rights": "כל הזכויות שמורות",
     "legal_nav": "מידע משפטי",
     "privacy": "מדיניות פרטיות",
