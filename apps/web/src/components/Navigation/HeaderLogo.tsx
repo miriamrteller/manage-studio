@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { TenantConfig } from '@/types/auth';
 import { deriveSoftTheme } from '@/lib/theme/deriveSoftTheme';
+import { currentStudioDisplayName } from '@/lib/studioDisplayName';
 import { analyzeLogo, chooseLogoTreatment, type HeaderSurface, type LogoTone } from '@/lib/theme/logoTone';
 
 const LOGO_HEIGHT = 32;
@@ -45,7 +46,7 @@ export function HeaderLogo({ tenant, soft }: { tenant: TenantConfig | null; soft
       ),
     [tenant, soft, logoTone, logoDarkTone],
   );
-  const name = tenant?.name ?? '';
+  const name = currentStudioDisplayName(tenant);
 
   switch (treatment.kind) {
     case 'name':
@@ -53,7 +54,7 @@ export function HeaderLogo({ tenant, soft }: { tenant: TenantConfig | null; soft
       // long name is cut with an ellipsis at its end, not clipped at its start.
       return (
         <span dir="auto" className={`block min-w-0 truncate ${soft ? 'text-primary' : 'text-on-primary'}`}>
-          {name || 'Studio'}
+          {name}
         </span>
       );
     case 'recolour': {

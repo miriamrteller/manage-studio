@@ -3,10 +3,6 @@
     "loading_tenant": "טוען את פרטי הסטודיו...",
     "failed_to_load_classes": "הטעינה של החבילות נכשלה. נסו שוב."
   },
-  "footer": {
-    "school_name_fallback": "סטודיו לצילום",
-    "school_management": "ניהול הסטודיו"
-  },
   "pages": {
     "enrol_complete": {
       "page_title": "חתמו על החוזה",

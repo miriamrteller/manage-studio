@@ -3,10 +3,6 @@
     "loading_tenant": "Loading studio information...",
     "failed_to_load_classes": "Failed to load packages. Please try again."
   },
-  "footer": {
-    "school_name_fallback": "Photography Studio",
-    "school_management": "Studio Management"
-  },
   "pages": {
     "enrol_complete": {
       "page_title": "Sign your contract",
