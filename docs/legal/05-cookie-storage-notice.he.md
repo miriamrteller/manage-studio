@@ -16,6 +16,7 @@ OpalSwift (וכל אתר סטודיו בכתובת `*.opalswift.com`) משתמש
 | `nav-drawer-pinned`,‏ `dashboard-layout-…`,‏ `settings-draft-…` | אחסון מקומי | העדפות מסך ניהול וטיוטות הגדרות שלא נשמרו (לעולם לא סיסמאות או סודות) | עד שתמחקו / תשמרו את הטופס |
 | `enrolment-resume:…`,‏ `enrollmentIntent`,‏ `enrolmentResumeKey`,‏ `portalEngagementId` | אחסון סשן (Session storage) | המשך הרשמה לאחר התחברות | עד סגירת הלשונית |
 | `manageStudio.authCallbackUrl`,‏ `gcal-oauth-done:…` | אחסון סשן | חזרה לעמוד הנכון לאחר התחברות / חיבור Google Calendar | עד סגירת הלשונית |
+| מזהה סשן של Sentry (אנונימי) | אחסון סשן | ניטור שגיאות: ספירת שיעור שגיאות לכל סשן דפדפן; ללא עוגיות, ללא כתובת IP, ללא הקלטת סשן | עד סגירת הלשונית |
 
 ## צדדים שלישיים בעמודי תשלום
 
@@ -32,7 +33,7 @@ OpalSwift (וכל אתר סטודיו בכתובת `*.opalswift.com`) משתמש
 ---
 
 ### איך זה נבדק
-סקירת קוד של `apps/web` בתאריך [[תאריך הבדיקה — 1.11.2026]]: אין חבילות ניתוח או מעקב ב-`package.json`; הגופנים מאוחסנים מקומית (`@fontsource/*`, ללא פניות ל-Google Fonts); בקובץ `src/lib/monitoring.ts` יש חיבור אופציונלי ל-Sentry ש**אינו מותקן**. Sentry (אזור האיחוד האירופי, ללא הקלטת סשן) אושר ומופיע בהסכם עיבוד המידע. עם התקנתו יש לבדוק אם הרכיב שומר משהו באחסון הדפדפן ולהוסיפו לטבלה שלעיל. מפתחות האחסון שלעיל נלקחו מהקבצים `src/lib/supabase.ts`,‏ `src/contexts/LanguageContext.tsx`,‏ `src/components/**`,‏ `src/features/enrolment/lib/*`,‏ `src/lib/authCallback.ts`,‏ `src/pages/GoogleCalendarCallbackPage.tsx`.
+סקירת קוד של `apps/web` בתאריך [[תאריך הבדיקה — 1.11.2026]]: אין חבילות ניתוח או מעקב ב-`package.json`; הגופנים מאוחסנים מקומית (`@fontsource/*`, ללא פניות ל-Google Fonts); בקובץ `src/lib/monitoring.ts` מחובר ניטור שגיאות של Sentry (אזור האיחוד האירופי, אושר ומופיע בהסכם עיבוד המידע). לפי ההגדרות הוא שומר רק מזהה סשן אנונימי באחסון הסשן ואינו שומר עוגיות — לבדוק שוב לאחר ההתקנה. מפתחות האחסון שלעיל נלקחו מהקבצים `src/lib/supabase.ts`,‏ `src/contexts/LanguageContext.tsx`,‏ `src/components/**`,‏ `src/features/enrolment/lib/*`,‏ `src/lib/authCallback.ts`,‏ `src/pages/GoogleCalendarCallbackPage.tsx`.
 
 ### מקורות
 - אין בישראל חוק ייעודי לעוגיות. איסוף מידע אישי באמצעות אחסון כפוף לחוק הגנת הפרטיות, התשמ"א-1981 (בנוסחו לאחר תיקון 13), סעיף 11 (הודעה בעת איסוף). *לאמת מול עו"ד אם חלה הנחיה של הרשות להגנת הפרטיות בנושא עוגיות/מעקב.*

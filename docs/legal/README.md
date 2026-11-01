@@ -39,7 +39,7 @@ Research date: 2026-11-01. Official legal-text sites (Nevo, Wikisource) could no
 | Photography contract | `supabase/functions/_shared/job-contract.ts` merge fields | Contract text comes from the tenant's template | Load #7c as the template |
 | Inquiry / booking / quote / pay forms | `InquirePage`, `BookingPage`, `QuotePage`/`PublicQuoteView`, `PayRequestPage` | No privacy-notice link next to the form | Add a one-line notice + link to #3 (Privacy Law §11) |
 | Accessibility statement | — | None in the app | Publish #6 and link in footer |
-| Trackers | `package.json`, `index.html`, `src/lib/monitoring.ts` | No analytics/trackers; fonts self-hosted; Sentry hook present but not installed (Sentry, EU region, now approved and in the DPA) | When Sentry is installed, check its browser storage and update #5 |
+| Trackers | `package.json`, `index.html`, `src/lib/monitoring.ts` | No analytics/trackers; fonts self-hosted; Sentry hook present but not installed (Sentry, EU region, now approved and in the DPA) | #5 lists Sentry's session-storage id; re-check after Sentry (PR #104) is installed |
 | Data export | `features/finance-admin/lib/csvExport.ts`, `WaiversPage`, `ScheduleExport` | Exports exist for finance, waivers and schedules only | Terms/DPA promise a full export **on request**; consider a one-click full export |
 
 The same gaps as a schedulable checklist: [APP-GAPS.md](APP-GAPS.md).
