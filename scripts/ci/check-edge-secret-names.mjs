@@ -7,7 +7,7 @@
  *   SUPABASE_ACCESS_TOKEN=… node scripts/ci/check-edge-secret-names.mjs --env prod --ref <ref>
  *   SUPABASE_ACCESS_TOKEN=… node scripts/ci/check-edge-secret-names.mjs --compare <devRef> <prodRef>
  *
- * --env prod fails on: a missing required name, any *_MOCK name, any dev-only
+ * --env prod fails on: a missing required name, no complete `requiredOneOf` group, any *_MOCK name, any dev-only
  * name (an unset mock flag selects the LIVE adapter, a set one lets anyone
  * forge a "paid" callback — on prod they must not exist at all).
  * --env dev fails only on missing required names.
@@ -33,6 +33,10 @@ export function evaluate(names, manifest, env) {
   const warnings = [];
   for (const n of manifest.required) {
     if (!have.has(n)) errors.push(`missing required secret ${n}`);
+  }
+  const groups = manifest.requiredOneOf ?? [];
+  if (groups.length && !groups.some((g) => g.every((n) => have.has(n)))) {
+    errors.push(`missing email transport: set one of ${groups.map((g) => g.join(' + ')).join(' | ')}`);
   }
   for (const n of have) {
     const isForbidden = forbidden.some((re) => re.test(n));

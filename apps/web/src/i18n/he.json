@@ -398,8 +398,8 @@
       "emergency_contact_name_label": "שם איש קשר חירום",
       "emergency_contact_phone_label": "טלפון איש קשר חירום",
       "emergency_contact_required": "פרטי קשר חירום נדרשים תמיד",
-      "photo_consent_label": "אני מנתן הסכמה לצילום",
-      "media_consent_label": "אני מנתן הסכמה להשתמש בתוכן מדיה",
+      "photo_consent_label": "אני נותן/ת הסכמה לצילום",
+      "media_consent_label": "אני נותן/ת הסכמה לשימוש בתוכן מדיה",
       "consent_note": "הסכמה מפורשת נדרשת לאחסון או שימוש בתמונות",
       "waiver_title": "הצהרת שחרור אחריות",
       "waiver_accept_label": "אני קורא וקבל את הצהרת השחרור",
@@ -778,6 +778,7 @@
     "enrolment": {
       "person_desc": "למי אתם נרשמים היום?",
       "select_student_desc": "בחרו תלמיד/ה מהמשפחה, או הוסיפו ילד/ה חדש/ה.",
+      "enrol_myself": "אני",
       "add_new_child": "הוספת ילד/ה חדש/ה",
       "new_child_desc": "הזינו את פרטי התלמיד/ה. פרטי הקשר שלכם כבר שמורים במערכת.",
       "no_account_linked": "החשבון שלכם לא מקושר למשפחה. אנא פנו לסטודיו.",

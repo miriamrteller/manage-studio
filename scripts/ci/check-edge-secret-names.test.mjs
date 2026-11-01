@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { evaluate, compare, loadManifest } from './check-edge-secret-names.mjs';
 
 const m = loadManifest();
-const allRequired = [...m.required, 'SUPABASE_URL'];
+const allRequired = [...m.required, ...m.requiredOneOf[0], 'SUPABASE_URL'];
 
 test('prod with every required name and no mocks passes', () => {
   assert.deepEqual(evaluate(allRequired, m, 'prod').errors, []);
@@ -27,4 +27,11 @@ test('unknown names warn, HMAC versions do not', () => {
 test('compare ignores env-specific names', () => {
   const r = compare([...m.required, 'YPAY_MOCK', 'GROW_API_BASE'], [...m.required, 'APP_ROOT_DOMAIN'], m);
   assert.deepEqual(r, { onlyDev: ['GROW_API_BASE'], onlyProd: ['APP_ROOT_DOMAIN'] });
+});
+test('email: Resend alone satisfies the transport rule', () => {
+  assert.deepEqual(evaluate([...m.required, 'RESEND_API_KEY'], m, 'prod').errors, []);
+});
+test('email: no transport at all is an error', () => {
+  const { errors } = evaluate([...m.required, 'CLOUDFLARE_ACCOUNT_ID'], m, 'prod');
+  assert.ok(errors.some((e) => e.includes('email transport')));
 });
