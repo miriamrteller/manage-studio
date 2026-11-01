@@ -210,18 +210,32 @@ jobs:
             [ "$code" = 200 ] || ok=0
           done
           if [ -n "${PROBE_ASSET:-}" ]; then
+            # Download to a file, THEN search it. `curl | grep -q` fails under
+            # pipefail: grep exits on the first match, curl gets EPIPE (23) on
+            # the rest of the ~1.5 MB asset, and the pipeline reports failure
+            # even though the release id is there (deploy-web run 41308371701).
             live=0
-            for _ in 1 2 3 4 5 6; do
-              if curl -sf "https://app.$VITE_APP_ROOT_DOMAIN$PROBE_ASSET" | grep -q "$SHA"; then live=1; break; fi
+            url="https://app.$VITE_APP_ROOT_DOMAIN$PROBE_ASSET"
+            for _ in 1 2 3 4 5 6 7 8 9; do
+              info=$(curl -s --compressed -o probe.js -w '%{http_code} %{content_type}' "$url" || echo "000 -")
+              if [ "${info%% *}" = 200 ] && grep -q "$SHA" probe.js; then live=1; break; fi
               sleep 10
             done
-            echo "release ${SHA::7} live: $([ $live = 1 ] && echo yes || echo NO)"
-            [ $live = 1 ] || ok=0
+            echo "release ${SHA::7} live: $([ $live = 1 ] && echo yes || echo NO)  ($url → $info)"
+            if [ $live = 0 ]; then
+              # Say what came back, so a failure is diagnosable from the log.
+              if grep -qi '<!doctype html' probe.js 2>/dev/null; then
+                echo "::error::$PROBE_ASSET returned the app's HTML fallback, not the asset — the new build is not being served yet."
+              else
+                echo "::error::$PROBE_ASSET did not contain release $SHA (HTTP ${info%% *}, $(wc -c < probe.js 2>/dev/null || echo 0) bytes)."
+              fi
+              ok=0
+            fi
           else
             echo "::warning::no built asset carries the release id; release check skipped"
           fi
           {
             echo "### Smoke"
-            echo "- app shell and \`$SMOKE_TENANT_HOST\` answered 200: $([ $ok = 1 ] && echo yes || echo NO)"
+            echo "- app shell and \`$SMOKE_TENANT_HOST\` answered 200, release ${SHA::7} live: $([ $ok = 1 ] && echo yes || echo NO)"
           } >> "$GITHUB_STEP_SUMMARY"
           [ $ok = 1 ] || { echo "::error::Deployed, but the smoke check failed — see above. Roll back: DEV-PROD-PIPELINE.md#web-stage"; exit 1; }
