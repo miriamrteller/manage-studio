@@ -125,13 +125,7 @@
   "settings": {
     "hub": {
       "compliance_description": "ניהול תבניות חוזה וחוזים חתומים.",
-      "compliance_title": "חוזים",
-      "name_required": "שם הסטודיו נדרש.",
-      "page_description": "עדכון פרופיל הסטודיו, מיתוג והגדרות אזוריות.",
-      "page_title": "הגדרות הסטודיו",
-      "profile_saved": "פרופיל הסטודיו נשמר.",
-      "profile_title": "פרופיל הסטודיו",
-      "school_name": "שם הסטודיו"
+      "compliance_title": "חוזים"
     }
   },
   "person_search": {

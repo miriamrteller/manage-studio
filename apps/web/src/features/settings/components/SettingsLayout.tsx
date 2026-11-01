@@ -5,8 +5,10 @@ import { useLanguage } from '@/hooks/useLanguage';
 
 export interface SettingsSection {
   id: string;
+  /** i18n key for the tab label; vertical overlays (e.g. photographer) can override it. */
+  labelKey: string;
+  /** English fallback if the key is missing. */
   label: string;
-  labelHe?: string;
   icon: LucideIcon;
   component: React.ComponentType;
 }
@@ -25,19 +27,13 @@ export function SettingsLayout({
   const { t } = useTranslation();
   const { language: currentLanguage } = useLanguage();
   const direction = currentLanguage === 'he' ? 'rtl' : 'ltr';
-  const isRTL = direction === 'rtl';
 
   const activeSection = sections.find((s) => s.id === activeSectionId) ?? sections[0];
   const ActiveComponent = activeSection?.component;
 
   const getLabel = useCallback(
-    (section: SettingsSection): string => {
-      if (currentLanguage === 'he' && section.labelHe) {
-        return section.labelHe;
-      }
-      return section.label;
-    },
-    [currentLanguage]
+    (section: SettingsSection): string => t(section.labelKey, section.label),
+    [t]
   );
 
   const handleKeyDown = useCallback(
@@ -77,9 +73,10 @@ export function SettingsLayout({
 
   return (
     <div
+      // No inline flex-direction: it would beat flex-col on phones. dir="rtl"
+      // already mirrors flex-row on desktop.
       className="flex flex-col md:flex-row min-h-0 flex-1"
-      style={{ flexDirection: isRTL ? 'row-reverse' : 'row' }}
-      dir={isRTL ? 'rtl' : 'ltr'}
+      dir={direction}
     >
       {/* Desktop Sidebar */}
       <div
