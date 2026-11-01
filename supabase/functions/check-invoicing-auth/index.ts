@@ -1,11 +1,12 @@
 import { jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { getInvoicingProviderForTenant } from "../_shared/invoicing/index.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
 
 const CRON_SECRET = Deno.env.get("CRON_SECRET") ?? "";
 const BATCH_LIMIT = 20;
 
-Deno.serve(async (req) => {
+Deno.serve(withMonitoring("check-invoicing-auth", async (req) => {
   if (req.method !== "POST") {
     return jsonResponse({ error: "Method not allowed" }, 405);
   }
@@ -51,4 +52,4 @@ Deno.serve(async (req) => {
   }
 
   return jsonResponse({ ok: true, checked, warnings });
-});
+}));

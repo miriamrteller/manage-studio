@@ -7,6 +7,7 @@ import {
   notifyTenantOfLead,
   writeInboundLead,
 } from "../_shared/crm-contract/lead-ingest-core.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
 
 /**
  * crm-lead-ingest — write path for automated lead capture from EMAIL
@@ -35,7 +36,7 @@ const payloadSchema = z.object({
   }),
 });
 
-Deno.serve(async (req) => {
+Deno.serve(withMonitoring("crm-lead-ingest", async (req) => {
   const json = (body: unknown, status = 200) =>
     new Response(JSON.stringify(body), {
       status,
@@ -95,4 +96,4 @@ Deno.serve(async (req) => {
     console.error("crm-lead-ingest: unhandled error", err);
     return json({ error: "Internal error" }, 500);
   }
-});
+}));

@@ -3,6 +3,7 @@ import { handleOptions, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { createJobPaymentRequestCharge } from "../_shared/jobs/create-request-charge.ts";
 import { loadJobPaymentRequestByToken } from "../_shared/jobs/load-request.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
 
 /**
  * Public pay page backend for /pay/:token (no session — the token IS the capability).
@@ -19,7 +20,7 @@ const BodySchema = z.object({
   action: z.enum(["get", "create_charge", "status"]).default("get"),
 });
 
-Deno.serve(async (req) => {
+Deno.serve(withMonitoring("job-payment-request-public", async (req) => {
   const options = handleOptions(req);
   if (options) return options;
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
@@ -84,4 +85,4 @@ Deno.serve(async (req) => {
     console.error("[job-payment-request-public]", error);
     return jsonResponse({ error: error instanceof Error ? error.message : "Internal error" }, 500);
   }
-});
+}));

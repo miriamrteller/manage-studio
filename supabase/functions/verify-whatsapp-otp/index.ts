@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
 
 interface VerifyOtpPayload {
   phone: string;
@@ -18,7 +19,7 @@ interface TwilioVerifyResponse {
   valid: boolean;
 }
 
-serve(async (req: Request) => {
+serve(withMonitoring("verify-whatsapp-otp", async (req: Request) => {
   // CORS headers
   if (req.method === "OPTIONS") {
     return new Response("ok", {
@@ -202,4 +203,4 @@ serve(async (req: Request) => {
       }
     );
   }
-});
+}));

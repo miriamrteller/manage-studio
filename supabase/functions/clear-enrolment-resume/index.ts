@@ -1,11 +1,12 @@
 import { corsHeaders, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
 
 interface ClearResumeBody {
   resumeKey: string;
 }
 
-Deno.serve(async (req) => {
+Deno.serve(withMonitoring("clear-enrolment-resume", async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
 
@@ -25,5 +26,5 @@ Deno.serve(async (req) => {
     console.error("[clear-enrolment-resume]", err instanceof Error ? err.message : err);
     return jsonResponse({ error: err instanceof Error ? err.message : "Internal error" }, 500);
   }
-});
+}));
 

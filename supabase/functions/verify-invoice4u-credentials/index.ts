@@ -3,6 +3,7 @@ import { getEnv } from "../_shared/edge-runtime/env.ts";
 import { MockInvoice4uPaymentProvider } from "../_shared/payments/providers/mock-invoice4u.ts";
 import { Invoice4uPaymentProvider } from "../_shared/payments/providers/invoice4u.ts";
 import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/supabase.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
 
 /**
  * Auth health ping for a tenant's Invoice4U credentials.
@@ -10,7 +11,7 @@ import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/su
  *
  * Imports providers directly (not payments/index.ts) so deploy bundle stays free of email deps.
  */
-Deno.serve(async (req) => {
+Deno.serve(withMonitoring("verify-invoice4u-credentials", async (req) => {
   const options = handleOptions(req);
   if (options) return options;
 
@@ -102,4 +103,4 @@ Deno.serve(async (req) => {
       502,
     );
   }
-});
+}));

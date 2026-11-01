@@ -20,8 +20,9 @@ import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { extractWaiverToken, verifyWaiverToken } from "../_shared/waiver-token.ts";
 import { resolveAllowedTokenRecipientEmails } from "../_shared/token-recipient.ts";
 import { type NextStepRequest, resolveJobNextStep } from "../_shared/jobs/booking-next-steps.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
 
-Deno.serve(async (req) => {
+Deno.serve(withMonitoring("job-next-step", async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
 
@@ -89,4 +90,4 @@ Deno.serve(async (req) => {
     console.error("[job-next-step]", err);
     return jsonResponse({ error: "Internal error" }, 500);
   }
-});
+}));

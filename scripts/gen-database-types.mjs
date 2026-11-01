@@ -48,7 +48,7 @@ if (result.status !== 0) {
   process.exit(result.status ?? 1);
 }
 
-const content = result.stdout.toString('utf8').replace(/^\uFEFF/, '');
+let content = result.stdout.toString('utf8').replace(/^\uFEFF/, '');
 if (!content.includes('export type Database')) {
   console.error('supabase gen types did not produce expected output.');
   if (result.stderr?.length) {
@@ -58,6 +58,17 @@ if (!content.includes('export type Database')) {
 }
 
 const previous = existsSync(outPath) ? readFileSync(outPath, 'utf8') : null;
+
+// Hosted projects emit an `__InternalSupabase: { PostgrestVersion }` block that
+// `--local` generation omits. Client typing relies on it, so keep the committed
+// block rather than stripping it on every local regeneration (db-ci compares
+// local output with the committed file).
+const INTERNAL_BLOCK = /  \/\/ Allows to automatically instantiate[^\n]*\n[^\n]*\n  __InternalSupabase: \{\n[^}]*\}\n/;
+if (previous && !content.includes('__InternalSupabase: {')) {
+  const block = previous.match(INTERNAL_BLOCK)?.[0];
+  if (block) content = content.replace('export type Database = {\n', `export type Database = {\n${block}`);
+}
+
 if (content !== previous) {
   writeFileSync(outPath, content, 'utf8');
   console.log(`Wrote ${outPath}`);
