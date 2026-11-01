@@ -32,7 +32,7 @@ If we ever add analytics or marketing tools, we will update this notice and ask 
 ---
 
 ### How this was checked
-Code review of `apps/web` on [[DATE OF REVIEW — 2026-11-01]]: no analytics or tracking packages in `package.json`; fonts are self-hosted (`@fontsource/*`, no Google Fonts requests); `src/lib/monitoring.ts` has an optional Sentry hook that is **not installed** (if `VITE_SENTRY_DSN` is ever set and Sentry is added, update this notice and the sub-processor list). Storage keys listed above come from `src/lib/supabase.ts`, `src/contexts/LanguageContext.tsx`, `src/components/**`, `src/features/enrolment/lib/*`, `src/lib/authCallback.ts`, `src/pages/GoogleCalendarCallbackPage.tsx`.
+Code review of `apps/web` on [[DATE OF REVIEW — 2026-11-01]]: no analytics or tracking packages in `package.json`; fonts are self-hosted (`@fontsource/*`, no Google Fonts requests); `src/lib/monitoring.ts` has an optional Sentry hook that is **not installed**. Sentry (EU region, no session replay) is proposed; it is listed in the DPA as "proposed, only once enabled". When it is enabled, check whether its SDK writes anything to browser storage and add it to the table above. Storage keys listed above come from `src/lib/supabase.ts`, `src/contexts/LanguageContext.tsx`, `src/components/**`, `src/features/enrolment/lib/*`, `src/lib/authCallback.ts`, `src/pages/GoogleCalendarCallbackPage.tsx`.
 
 ### Sources relied on
 - Israel has no cookie-specific statute. Collecting personal data through storage is governed by the Privacy Protection Law 5741-1981 (as amended by Amendment 13), §11 (notice when collecting). *Verify with lawyer whether any Privacy Protection Authority guidance on cookies/tracking applies.*

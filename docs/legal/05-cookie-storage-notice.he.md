@@ -32,7 +32,7 @@ OpalSwift (וכל אתר סטודיו בכתובת `*.opalswift.com`) משתמש
 ---
 
 ### איך זה נבדק
-סקירת קוד של `apps/web` בתאריך [[תאריך הבדיקה — 1.11.2026]]: אין חבילות ניתוח או מעקב ב-`package.json`; הגופנים מאוחסנים מקומית (`@fontsource/*`, ללא פניות ל-Google Fonts); בקובץ `src/lib/monitoring.ts` יש חיבור אופציונלי ל-Sentry ש**אינו מותקן** (אם יוגדר `VITE_SENTRY_DSN` ויתווסף Sentry, יש לעדכן הודעה זו ואת רשימת מעבדי המשנה). מפתחות האחסון שלעיל נלקחו מהקבצים `src/lib/supabase.ts`,‏ `src/contexts/LanguageContext.tsx`,‏ `src/components/**`,‏ `src/features/enrolment/lib/*`,‏ `src/lib/authCallback.ts`,‏ `src/pages/GoogleCalendarCallbackPage.tsx`.
+סקירת קוד של `apps/web` בתאריך [[תאריך הבדיקה — 1.11.2026]]: אין חבילות ניתוח או מעקב ב-`package.json`; הגופנים מאוחסנים מקומית (`@fontsource/*`, ללא פניות ל-Google Fonts); בקובץ `src/lib/monitoring.ts` יש חיבור אופציונלי ל-Sentry ש**אינו מותקן**. מוצע להפעיל את Sentry (אזור האיחוד האירופי, ללא הקלטת סשן); הוא מופיע בהסכם עיבוד המידע כ"מוצע, רק לאחר הפעלה". עם הפעלתו יש לבדוק אם הרכיב שומר משהו באחסון הדפדפן ולהוסיפו לטבלה שלעיל. מפתחות האחסון שלעיל נלקחו מהקבצים `src/lib/supabase.ts`,‏ `src/contexts/LanguageContext.tsx`,‏ `src/components/**`,‏ `src/features/enrolment/lib/*`,‏ `src/lib/authCallback.ts`,‏ `src/pages/GoogleCalendarCallbackPage.tsx`.
 
 ### מקורות
 - אין בישראל חוק ייעודי לעוגיות. איסוף מידע אישי באמצעות אחסון כפוף לחוק הגנת הפרטיות, התשמ"א-1981 (בנוסחו לאחר תיקון 13), סעיף 11 (הודעה בעת איסוף). *לאמת מול עו"ד אם חלה הנחיה של הרשות להגנת הפרטיות בנושא עוגיות/מעקב.*
