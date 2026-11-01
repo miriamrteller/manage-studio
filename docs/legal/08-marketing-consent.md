@@ -42,7 +42,7 @@ Unticked by default. Separate from accepting the terms. Not a condition of servi
 - EN: ☐ Send me OpalSwift product news and tips by email. I can unsubscribe at any time.
 - HE: ☐ שלחו לי עדכוני מוצר וטיפים מ-OpalSwift בדוא"ל. אפשר להסיר את עצמי בכל עת.
 
-**Record kept / מה נשמר:** channel(s), timestamp, the exact wording shown, source (form / page), IP — as proof of consent. Today the app stores a single `leads.marketing_consent` boolean only; per-channel, timestamp and wording are not yet stored (see README). / ערוץ, מועד, הנוסח המדויק שהוצג, מקור (טופס/עמוד), IP — כהוכחה להסכמה. כיום האפליקציה שומרת רק שדה בוליאני אחד `leads.marketing_consent`.
+**Record kept / מה נשמר:** channel(s), timestamp, the exact wording shown, source (form / page), IP — as proof of consent. Today the app stores a single `leads.marketing_consent` boolean only; per-channel, timestamp and wording are not yet stored (see APP-GAPS.md). / ערוץ, מועד, הנוסח המדויק שהוצג, מקור (טופס/עמוד), IP — כהוכחה להסכמה. כיום האפליקציה שומרת רק שדה בוליאני אחד `leads.marketing_consent`.
 
 ## 4. Lines for every marketing message / שורות לכל הודעה שיווקית
 

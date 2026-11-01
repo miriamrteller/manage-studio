@@ -40,7 +40,7 @@ Only service providers who help us run the platform: Supabase (database and sign
 
 ## 4. Your rights
 
-You may ask to see (§13 Privacy Protection Law) and correct or delete (§14) your information, and withdraw marketing consent at any time. Write to [[PRIVACY EMAIL]]. We answer within 30 days ([[LAWYER: confirm]]). You may also complain to the Privacy Protection Authority.
+You may ask to see (§13 Privacy Protection Law) and correct or delete (§14) your information, and withdraw marketing consent at any time. Write to [[PRIVACY EMAIL]]. We answer within 21 days. You may also complain to the Privacy Protection Authority.
 
 ## 5. Security
 
