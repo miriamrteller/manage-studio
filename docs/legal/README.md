@@ -4,7 +4,7 @@
 
 Hebrew (`.he.md`) is what users read; if the two versions differ, the English version prevails (owner decision). `[[…]]` marks something to fill in.
 
-**Start here:** [TENANT-LEGAL-SETUP](TENANT-LEGAL-SETUP.md) (what to do for each new studio) · [OPEN-QUESTIONS](OPEN-QUESTIONS.md) (5 questions left, all for the lawyer or accountant) · [APP-GAPS](APP-GAPS.md) (app fixes to schedule) · [Owner checklist](10-owner-checklist.en.md)
+**Start here:** [TENANT-LEGAL-SETUP](TENANT-LEGAL-SETUP.md) · [LAWYER-PACK](LAWYER-PACK.md) (what to hand the lawyer) (what to do for each new studio) · [OPEN-QUESTIONS](OPEN-QUESTIONS.md) (5 questions left, all for the lawyer or accountant) · [APP-GAPS](APP-GAPS.md) (app fixes to schedule) · [Owner checklist](10-owner-checklist.en.md)
 
 | # | Document | For | Shown in the app |
 |---|---|---|---|
