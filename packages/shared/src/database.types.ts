@@ -1384,6 +1384,63 @@ export type Database = {
           },
         ]
       }
+      legal_acceptances: {
+        Row: {
+          accepted_at: string
+          accepted_by_role: string
+          document: string
+          document_version: string
+          engagement_id: string | null
+          id: string
+          ip_address: unknown
+          language: string | null
+          tenant_id: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          accepted_at?: string
+          accepted_by_role?: string
+          document: string
+          document_version: string
+          engagement_id?: string | null
+          id?: string
+          ip_address?: unknown
+          language?: string | null
+          tenant_id: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          accepted_at?: string
+          accepted_by_role?: string
+          document?: string
+          document_version?: string
+          engagement_id?: string | null
+          id?: string
+          ip_address?: unknown
+          language?: string | null
+          tenant_id?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legal_acceptances_engagement_id_fkey"
+            columns: ["engagement_id"]
+            isOneToOne: false
+            referencedRelation: "engagements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_acceptances_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_log: {
         Row: {
           body_preview: string | null
@@ -2999,6 +3056,9 @@ export type Database = {
           invoicing_secret_enc: string | null
           labels: Json
           language_default: string
+          legal_pages_published: boolean
+          legal_profile: Json
+          legal_profile_updated_at: string | null
           logo_autofix: boolean
           logo_dark_tone: Json | null
           logo_dark_url: string | null
@@ -3060,6 +3120,9 @@ export type Database = {
           invoicing_secret_enc?: string | null
           labels?: Json
           language_default?: string
+          legal_pages_published?: boolean
+          legal_profile?: Json
+          legal_profile_updated_at?: string | null
           logo_autofix?: boolean
           logo_dark_tone?: Json | null
           logo_dark_url?: string | null
@@ -3121,6 +3184,9 @@ export type Database = {
           invoicing_secret_enc?: string | null
           labels?: Json
           language_default?: string
+          legal_pages_published?: boolean
+          legal_profile?: Json
+          legal_profile_updated_at?: string | null
           logo_autofix?: boolean
           logo_dark_tone?: Json | null
           logo_dark_url?: string | null
@@ -3843,6 +3909,10 @@ export type Database = {
           person_id: string
         }[]
       }
+      get_platform_terms_acceptance: {
+        Args: { p_tenant_id: string; p_version: string }
+        Returns: boolean
+      }
       get_public_offerings_by_subdomain: {
         Args: { p_subdomain: string }
         Returns: {
@@ -3949,6 +4019,18 @@ export type Database = {
           invoicing_account_id: string
           invoicing_api_key: string
           invoicing_secret: string
+        }[]
+      }
+      get_tenant_legal_profile: {
+        Args: { p_tenant_id: string }
+        Returns: {
+          contact_email: string
+          legal_pages_published: boolean
+          legal_profile: Json
+          legal_profile_updated_at: string
+          name: string
+          skin: string
+          tenant_id: string
         }[]
       }
       get_tenant_payment_credentials: {
@@ -4151,6 +4233,17 @@ export type Database = {
       quote_job_offering_id: { Args: { p_quote_id: string }; Returns: string }
       quote_lines_json: { Args: { p_quote_id: string }; Returns: Json }
       quote_recalc_totals: { Args: { p_quote_id: string }; Returns: undefined }
+      record_legal_acceptance: {
+        Args: {
+          p_documents: string[]
+          p_engagement_id?: string
+          p_language?: string
+          p_role?: string
+          p_tenant_id: string
+          p_version: string
+        }
+        Returns: number
+      }
       release_job_gallery: {
         Args: { p_engagement_id: string; p_release?: boolean }
         Returns: Json
