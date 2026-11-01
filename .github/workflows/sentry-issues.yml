@@ -1,0 +1,40 @@
+name: Sentry → GitHub issues
+
+# Opens one GitHub issue per new Sentry error or "Report a problem" message, so an
+# agent session can be pointed at it. Instant alerts come from Sentry's own email;
+# this job is for triage, so it runs hourly in Israeli daytime (05:17–20:17 UTC)
+# to stay well inside the free Actions minutes. Run it by hand from the Actions tab
+# any time. Does nothing until the SENTRY_* secret and variables are set.
+on:
+  schedule:
+    - cron: '17 5-20 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: sentry-issues
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: scripts/sentry-to-github.mjs
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Open issues for new Sentry issues
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
+          SENTRY_API_BASE: ${{ vars.SENTRY_API_BASE }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/sentry-to-github.mjs
