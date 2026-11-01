@@ -135,6 +135,15 @@ export const baseRpcs: Record<string, RpcHandler> = {
 
   check_subdomain_available: () => false,
 
+  /** Public class list (Classes page). Like the SQL: active, public, offering_type 'class' only. */
+  get_public_offerings_by_subdomain: (args, ctx) => {
+    const tenant = rows(ctx, 'tenants').find((t) => t.subdomain === String(args.p_subdomain ?? '').trim());
+    if (!tenant) return [];
+    return rows(ctx, 'offerings')
+      .filter((o) => o.tenant_id === tenant.id && o.offering_type === 'class' && o.is_public === true && o.status === 'active')
+      .map((o) => ({ ...o, tenant_subdomain: tenant.subdomain, waiver_required: o.waiver_required ?? false }));
+  },
+
   create_job: (args, ctx) => {
     requireAdmin(ctx);
     if (!args.p_offering_id) throw new DemoRpcError('Package is required');

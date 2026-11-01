@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { useEntityLabels } from '@/hooks/useEntityLabels';
 import { Button } from '@/components/ui/button';
 import { OverviewStatsGrid } from './OverviewStatsGrid';
 import { QuickActionsRow } from './QuickActionsRow';
@@ -24,8 +25,11 @@ export const AdminOverviewSection = ({
 }: AdminOverviewSectionProps) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { vertical } = useEntityLabels();
 
-  // No active season — distinct UI state, not a generic error
+  // No active season — distinct UI state, not a generic error. Photographers
+  // have no seasons (the page is hidden for them), so show nothing instead.
+  if (error instanceof NoActiveSeasonError && vertical === 'photographer') return null;
   if (error instanceof NoActiveSeasonError) {
     return (
       <div className={`space-y-4 ${className}`}>

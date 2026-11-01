@@ -1,6 +1,7 @@
 {
   "errors": {
-    "loading_tenant": "Loading studio information..."
+    "loading_tenant": "Loading studio information...",
+    "failed_to_load_classes": "Failed to load packages. Please try again."
   },
   "footer": {
     "school_name_fallback": "Photography Studio",
@@ -27,7 +28,8 @@
         "description": "Manage how you receive updates from us",
         "notify_offering_cancellation": "Shoot or appointment changes and cancellations",
         "notify_announcements": "Studio news"
-      }
+      },
+      "no_upcoming": "No shoots scheduled in the next 7 days."
     },
     "waivers": {
       "title": "Contracts",
@@ -60,7 +62,12 @@
       }
     },
     "billing": {
-      "description": "Manage payment accounts and link clients."
+      "description": "Manage payment accounts and link clients.",
+      "empty_message": "Create a billing account to link clients and track payments.",
+      "linked_students": "Linked clients",
+      "add_student": "Link client",
+      "remove_student": "Unlink client",
+      "no_students": "No clients linked."
     },
     "crm": {
       "leads": {
@@ -71,7 +78,8 @@
     "notifications": {
       "account_search_placeholder": "Search by client name, contact name, or email",
       "class_label": "Package",
-      "preview_validation_error": "Choose who should receive this email first (e.g. pick a package or a client)."
+      "preview_validation_error": "Choose who should receive this email first (e.g. pick a package or a client).",
+      "scope_all": "All clients"
     },
     "people": {
       "description": "Manage your clients and their contact details.",
@@ -100,6 +108,18 @@
       "empty_message": "Add a client to get started, or adjust your filters.",
       "filter_by_enrolment_status": "Booking status",
       "no_billing": "No billing account linked to any shoot"
+    },
+    "admin_classes": {
+      "empty_message": "Add your first {{entity}} to make it available for booking.",
+      "title": "Manage packages",
+      "description": "Create, edit and delete your photography packages.",
+      "create_button": "Add package",
+      "edit_title": "Edit package",
+      "empty_title": "No packages yet"
+    },
+    "classes": {
+      "no_classes_title": "No {{entity}} available",
+      "no_classes_message": "There are currently no {{entity}} available to book online. Please check back soon or contact us for more information."
     }
   },
   "enrolment": {
@@ -124,6 +144,9 @@
       "col_class": "Package",
       "col_engagement": "Shoot",
       "family_payment": "Client payment"
+    },
+    "charge_type": {
+      "initial": "Shoot payment"
     }
   },
   "nav": {
@@ -148,5 +171,8 @@
     "empty": "No matching clients found",
     "guardian": "Main contact: {{name}}",
     "enrolled_in": "Packages: {{classes}}"
+  },
+  "form": {
+    "email_placeholder": "you@example.com"
   }
 }
