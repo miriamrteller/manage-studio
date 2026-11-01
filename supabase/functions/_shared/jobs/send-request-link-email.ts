@@ -25,8 +25,11 @@ export function buildJobPaymentLinkKey(kind: JobPaymentLinkKind, requestId: stri
   return salt ? `job_request:${requestId}:${kind}:${salt}` : `job_request:${requestId}:${kind}`;
 }
 
-export function buildJobPaymentUrl(subdomain: string, publicToken: string): string {
-  return `${tenantBaseUrl(subdomain)}/pay/${encodeURIComponent(publicToken)}`;
+export function buildJobPaymentUrl(
+  tenant: string | { subdomain: string; custom_domain?: string | null },
+  publicToken: string,
+): string {
+  return `${tenantBaseUrl(tenant)}/pay/${encodeURIComponent(publicToken)}`;
 }
 
 function copy(language: "he" | "en", kind: JobPaymentLinkKind, label: string, amount: string, due: string) {
@@ -88,7 +91,13 @@ export async function sendJobPaymentRequestLinkEmail(
   );
   if (!recipient) return { sent: false, skipped: "no_recipient" };
 
-  const paymentUrl = buildJobPaymentUrl(tenant.subdomain as string, request.public_token);
+  const paymentUrl = buildJobPaymentUrl(
+    {
+      subdomain: tenant.subdomain as string,
+      custom_domain: (tenant.custom_domain as string | null | undefined) ?? null,
+    },
+    request.public_token,
+  );
   const dunningKey = buildJobPaymentLinkKey(options.kind, request.id, options.idempotencySalt);
 
   const { data: already } = await service

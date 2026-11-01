@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { useTenant } from '@/hooks/useTenant';
@@ -37,6 +37,22 @@ export function SchoolProfileForm() {
     },
   });
 
+  // Read-only: a platform administrator sets tenants.custom_domain (docs/deployment/CUSTOM-DOMAIN.md).
+  const customDomainQuery = useQuery({
+    queryKey: ['tenant-custom-domain', tenant?.id],
+    queryFn: async () => {
+      if (!tenant?.id) return null;
+      const { data } = await supabase
+        .from('tenants')
+        .select('custom_domain')
+        .eq('id', tenant.id)
+        .maybeSingle();
+      return (data?.custom_domain as string | null | undefined) ?? null;
+    },
+    enabled: !!tenant?.id,
+  });
+  const customDomain = customDomainQuery.data ?? null;
+
   if (!tenant) return null;
 
   return (
@@ -71,6 +87,27 @@ export function SchoolProfileForm() {
         />
         <p className="text-xs text-muted-foreground">{t('settings.hub.subdomain_readonly')}</p>
       </div>
+
+      {customDomain && (
+        <div className="space-y-2">
+          <label className="block text-sm font-medium" htmlFor="school-custom-domain">
+            {t('settings.hub.custom_domain')}
+          </label>
+          <input
+            id="school-custom-domain"
+            type="text"
+            dir="ltr"
+            className="form-input w-full bg-gray-50"
+            value={customDomain}
+            readOnly
+            aria-readonly="true"
+            aria-describedby="school-custom-domain-hint"
+          />
+          <p id="school-custom-domain-hint" className="text-xs text-muted-foreground">
+            {t('settings.hub.custom_domain_readonly')}
+          </p>
+        </div>
+      )}
 
       {message && (
         <p className="text-sm" role="status">

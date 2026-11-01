@@ -29,6 +29,8 @@ import { getEnv } from "./edge-runtime/env.ts";
 
 export interface TenantSenderInput {
   subdomain: string;
+  /** tenants.custom_domain — not used for sending, only carried for tenantBaseUrl(). */
+  custom_domain?: string | null;
   contact_email: string;
   from_email?: string | null;
   from_email_verified_at?: string | null;
@@ -93,5 +95,7 @@ export function resolveTenantSender(tenant: TenantSenderInput): TenantSender {
 }
 
 /** Columns every caller must select for resolveTenantSender to work. */
+// custom_domain rides along so callers holding a sender row can also build tenant links
+// with tenantBaseUrl(row) (it prefers the custom domain).
 export const TENANT_SENDER_COLUMNS =
-  "subdomain, contact_email, from_email, from_email_verified_at";
+  "subdomain, custom_domain, contact_email, from_email, from_email_verified_at";

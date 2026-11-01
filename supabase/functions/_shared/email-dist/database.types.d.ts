@@ -3109,6 +3109,7 @@ export type Database = {
                     country: string;
                     created_at: string;
                     currency: string;
+                    custom_domain: string | null;
                     font_pair: string | null;
                     from_email: string | null;
                     from_email_verified_at: string | null;
@@ -3175,6 +3176,7 @@ export type Database = {
                     country?: string;
                     created_at?: string;
                     currency?: string;
+                    custom_domain?: string | null;
                     font_pair?: string | null;
                     from_email?: string | null;
                     from_email_verified_at?: string | null;
@@ -3241,6 +3243,7 @@ export type Database = {
                     country?: string;
                     created_at?: string;
                     currency?: string;
+                    custom_domain?: string | null;
                     font_pair?: string | null;
                     from_email?: string | null;
                     from_email_verified_at?: string | null;
@@ -4175,6 +4178,42 @@ export type Database = {
             get_supabase_functions_url: {
                 Args: never;
                 Returns: string;
+            };
+            get_tenant_config_by_host: {
+                Args: {
+                    p_host: string;
+                };
+                Returns: {
+                    accent_color: string;
+                    accessibility_statement_url: string;
+                    chrome_style: string;
+                    country: string;
+                    currency: string;
+                    enabled_features: string[];
+                    font_pair: string;
+                    id: string;
+                    invoicing_provider: string;
+                    labels: Json;
+                    language_default: string;
+                    logo_autofix: boolean;
+                    logo_dark_tone: Json;
+                    logo_dark_url: string;
+                    logo_tone: Json;
+                    logo_url: string;
+                    name: string;
+                    offline_payment_instructions: string;
+                    payment_provider: string;
+                    payment_provider_public_key: string;
+                    payment_provider_secret_configured: boolean;
+                    payment_provider_updated_at: string;
+                    payment_provider_webhook_configured: boolean;
+                    plan: Database["public"]["Enums"]["tenant_plan"];
+                    primary_color: string;
+                    privacy_policy_url: string;
+                    skin: string;
+                    tenant_subdomain: string;
+                    terms_url: string;
+                }[];
             };
             get_tenant_config_by_subdomain: {
                 Args: {

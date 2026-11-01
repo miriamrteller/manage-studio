@@ -56,6 +56,7 @@ interface PendingEngagement {
   tenants: {
     name: string | null;
     subdomain: string;
+    custom_domain?: string | null;
     contact_email: string;
     from_email: string | null;
     from_email_verified_at: string | null;
@@ -103,7 +104,7 @@ Deno.serve(withMonitoring("send-waiver-reminder", async (req) => {
        waiver_48h_reminded_at, waiver_5d_reminded_at,
        people ( email, name, account_id ),
        offerings ( name ),
-       tenants ( name, language_default, primary_color, accent_color, subdomain, contact_email, from_email, from_email_verified_at ),
+       tenants ( name, language_default, primary_color, accent_color, subdomain, custom_domain, contact_email, from_email, from_email_verified_at ),
        payments ( id, status, total_amount_minor, currency )`,
     )
     .eq("status", "pending_waiver")
@@ -240,7 +241,7 @@ Deno.serve(withMonitoring("send-waiver-reminder", async (req) => {
               em: personEmail,
               exp: expireAt,
             });
-            const signUrl = `${tenantBaseUrl(eng.tenants?.subdomain)}/enrol/complete?engagementId=${encodeURIComponent(eng.id)}&wt=${wt}`;
+            const signUrl = `${tenantBaseUrl(eng.tenants)}/enrol/complete?engagementId=${encodeURIComponent(eng.id)}&wt=${wt}`;
 
             await sendRenderedEmail({
               to: personEmail,
@@ -289,7 +290,7 @@ Deno.serve(withMonitoring("send-waiver-reminder", async (req) => {
               em: personEmail,
               exp: expireAt,
             });
-            const signUrl = `${tenantBaseUrl(eng.tenants?.subdomain)}/enrol/complete?engagementId=${encodeURIComponent(eng.id)}&wt=${wt}`;
+            const signUrl = `${tenantBaseUrl(eng.tenants)}/enrol/complete?engagementId=${encodeURIComponent(eng.id)}&wt=${wt}`;
 
             await sendRenderedEmail({
               to: personEmail,

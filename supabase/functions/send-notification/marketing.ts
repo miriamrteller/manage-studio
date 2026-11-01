@@ -11,6 +11,7 @@ export function withAdvertisementPrefix(subject: string): string {
 
 export interface MarketingFooterContext {
   subdomain: string;
+  custom_domain: string | null;
   address: string | null;
   phone: string | null;
 }
@@ -21,13 +22,14 @@ export async function loadMarketingFooterContext(
 ): Promise<MarketingFooterContext> {
   const { data } = await service
     .from("tenants")
-    .select("subdomain, legal_profile")
+    .select("subdomain, custom_domain, legal_profile")
     .eq("id", tenantId)
     .single();
   const profile = (data?.legal_profile ?? {}) as Record<string, unknown>;
   const text = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : null);
   return {
     subdomain: data?.subdomain as string,
+    custom_domain: (data?.custom_domain as string | null | undefined) ?? null,
     address: text(profile.address),
     phone: text(profile.phone),
   };
@@ -45,7 +47,7 @@ export async function buildMarketingFooter(
     pid: input.personId,
     ch: "email",
   });
-  const url = `${tenantBaseUrl(ctx.subdomain)}/unsubscribe/${token}`;
+  const url = `${tenantBaseUrl(ctx)}/unsubscribe/${token}`;
   const details = [input.studioName, ctx.address, ctx.phone].filter(Boolean).join(", ");
   return input.language === "he"
     ? `\n\n—\nהודעה זו נשלחה אליך כי הסכמת לקבל עדכונים מ-${details}.\nלהסרה מרשימת התפוצה: ${url}`
