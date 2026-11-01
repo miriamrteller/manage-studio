@@ -16,8 +16,9 @@ with a home page, a "skins" page and one page per industry.
 ```
 apps/marketing/
   public/      every file the site serves (HTML, topbar.js, images)
-  functions/   Cloudflare Pages Functions (server code), e.g. /api/contact
-  package.json only so wrangler is a pinned devDependency
+  functions/   Cloudflare Pages Functions (server code): api/contact.js
+  test/        unit tests for the functions (never inside functions/)
+  package.json wrangler as a pinned devDependency; `test` script
 ```
 
 The files in `public/` were copied unchanged from the live site on
@@ -27,23 +28,43 @@ Google Fonts.
 
 ## The contact form
 
-The beta signup form on the home page (`#contact-form`) sends name, email
-and message to **`/api/contact`** on the same site. That address is a
-**Pages Function** inside the Cloudflare project, not a static file and not
-the `lead-email-ingest` Worker (that Worker only receives lead emails).
+The beta signup form on the home page (`#contact-form`) sends `name`,
+`email` and `message` as FormData to **`/api/contact`**, a Pages Function:
+`apps/marketing/functions/api/contact.js`.
 
-**Its source code is not in git yet.** It could not be copied from the live
-site. Until `apps/marketing/functions/api/contact.js` (or `.ts`) is added:
+It emails each signup to **hello@opalswift.com** (Cloudflare Email Routing
+forwards that to the owner's Gmail) through **Resend**, from
+`no-reply@opalswift.com`, with Reply-To set to the person's email and the
+subject `OpalSwift beta: <name>`. It stores nothing. It answers `{ok:true}`,
+or `{ok:false,error}` with a 4xx/5xx status (the page only checks the status).
 
-- `deploy-marketing` **refuses to deploy** (its first job fails with a
-  clear message, before asking for approval). A Pages deploy replaces the
-  whole site, functions included, so deploying without it would break the form.
-- `marketing-ci` warns on every PR that the function is missing.
+Checks: POST only (405 otherwise), FormData or urlencoded only, same-site
+`Origin`, body ≤ 16 KB, all three fields required, name ≤ 100, email ≤ 254
+(and email-shaped), message ≤ 4000 characters. If a hidden `website`,
+`company` or `url` field is filled in (bots do this), it answers success and
+sends nothing. The current form has no such field; adding one is optional.
+There is no per-visitor rate limit (that would need storage). If spam shows
+up, add a Cloudflare rate-limiting rule for `/api/contact`.
 
-To unblock: either recover the original function source, or write a
-replacement that sends signups to the same place and uses the same
-variables/bindings (names: Cloudflare → Workers & Pages → opalswift →
-Settings → Variables and Secrets / Bindings).
+Logs never contain the API key or the submission, only status codes.
+
+**Settings on the Pages project** (Cloudflare → Workers & Pages →
+opalswift → Settings → Variables and Secrets, *Production*):
+
+| Name | Type | Value |
+|---|---|---|
+| `RESEND_API_KEY` | Secret | a Resend API key, permission "Sending access", domain opalswift.com |
+| `CONTACT_TO` | Text, optional | another recipient; default `hello@opalswift.com` |
+
+`deploy-marketing` refuses to deploy if `RESEND_API_KEY` is missing.
+
+History: until 2026-11-01 the live site ran a function whose source was
+never in git, and the project had no variables, so where it sent signups is
+unknown. This function replaces it.
+
+Tests: `pnpm -C apps/marketing test` (Node's built-in runner, `fetch` mocked).
+Test files live in `apps/marketing/test/`, never in `functions/` (every file
+there becomes a public URL).
 
 ## How to edit
 
@@ -54,18 +75,19 @@ Settings → Variables and Secrets / Bindings).
 2. Check links locally: `node scripts/ci/check-marketing-links.mjs apps/marketing/public`
    (errors = a link to a file that doesn't exist; warnings = an `#anchor`
    not on the page).
-3. Open a PR. `marketing-ci` runs the same check.
+3. Open a PR. `marketing-ci` runs the same check and the function tests.
 4. Merge. Deploy starts automatically (below).
 
 Add new pages and images under `public/`. Anything else in `apps/marketing`
-outside `public/` and `functions/` fails `marketing-ci`.
+outside `public/`, `functions/` and `test/` fails `marketing-ci`.
 
 ## How it deploys
 
 ```
 merge to main touching apps/marketing/**   (or Actions → deploy-marketing → Run workflow)
-  └─ check: /api/contact function present? links OK?
+  └─ check: /api/contact function present? links OK? function tests pass?
        └─ deploy (environment "production") ── ⏸ OWNER APPROVES ──►
+            RESEND_API_KEY set on the Pages project?
             wrangler pages deploy public --project-name=opalswift --branch=main
             → smoke: home page 200, release.txt == this commit, /api/contact answers
 ```

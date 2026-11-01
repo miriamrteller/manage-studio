@@ -27,15 +27,18 @@ jobs:
           node-version: "22"
       - name: Links resolve to existing files
         run: node scripts/ci/check-marketing-links.mjs apps/marketing/public
-      - name: Nothing outside public/ and functions/ is meant to be served
+      - name: Contact function tests
+        working-directory: apps/marketing
+        run: node --test test/*.test.mjs
+      - name: Only the expected folders in apps/marketing
+        working-directory: apps/marketing
         run: |
-          set -euo pipefail
-          extra=$(cd apps/marketing && git ls-files | grep -vE '^(public/|functions/|package\.json$|README\.md$)' || true)
-          if [ -n "$extra" ]; then echo "::error::unexpected files in apps/marketing: $extra"; exit 1; fi
-      - name: Contact-form function status
+          set -uo pipefail
+          if extra=$(git ls-files | grep -vE '^(public/|functions/|test/|package\.json$|README\.md$)'); then
+            echo "::error::unexpected files in apps/marketing (served files go in public/): $extra"; exit 1
+          fi
+      - name: Contact function present
         run: |
-          if compgen -G "apps/marketing/functions/api/contact.*" >/dev/null; then
-            echo "/api/contact function present."
-          else
-            echo "::warning::apps/marketing/functions/api/contact.* is missing — deploy-marketing will refuse to deploy until it is added."
+          if ! compgen -G "apps/marketing/functions/api/contact.*" >/dev/null; then
+            echo "::error::apps/marketing/functions/api/contact.* is missing; the signup form would break on the next deploy."; exit 1
           fi
