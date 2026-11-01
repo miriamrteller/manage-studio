@@ -18,6 +18,9 @@ import { SetPasswordDialog } from '@/components/shared/SetPasswordDialog';
 import { buildUpcomingSessions } from '@/features/enrolment/lib/upcomingSessions';
 import { formatPersonDateOfBirthDisplay } from '@/lib/personAge';
 import { readPortalHighlightState } from '@/lib/portalHighlight';
+import { useTenant } from '@/hooks/useTenant';
+import { calculateAge } from '@/lib/utils';
+import { PersonConsentPanel } from '@/components/legal/PersonConsentPanel';
 
 function formatMoney(amountMinor: number, currency: string): string {
   return (amountMinor / 100).toLocaleString(undefined, {
@@ -28,6 +31,7 @@ function formatMoney(amountMinor: number, currency: string): string {
 }
 
 export function ParentPortal() {
+  const tenant = useTenant();
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
@@ -364,6 +368,36 @@ export function ParentPortal() {
           </div>
         )}
       </section>
+      {tenant && (guardian || (children ?? []).length > 0) && (
+        <section aria-labelledby="portal-consents-heading" className="space-y-3">
+          <h3 id="portal-consents-heading" className="text-lg font-semibold text-gray-900">
+            {t('legal.consents.portal_heading')}
+          </h3>
+          <p className="text-sm text-gray-600">{t('legal.consents.portal_hint')}</p>
+          {guardian && (
+            <PersonConsentPanel
+              tenantId={tenant.id}
+              personId={guardian.personId}
+              personName={guardian.name}
+              studioName={tenant.name}
+              source="portal"
+              title={guardian.name}
+            />
+          )}
+          {(children ?? []).map((child) => (
+            <PersonConsentPanel
+              key={child.id}
+              tenantId={tenant.id}
+              personId={child.id}
+              personName={child.name}
+              studioName={tenant.name}
+              isMinor={child.date_of_birth ? calculateAge(child.date_of_birth) < 18 : true}
+              source="portal"
+              title={child.name}
+            />
+          ))}
+        </section>
+      )}
     </div>
   );
 }

@@ -15,6 +15,7 @@ export interface StepCheckoutProps {
   requireAuth: boolean;
   /** 'guardian' when a parent enrols a child under 18 (recorded with the terms acceptance). */
   acceptedByRole?: 'self' | 'guardian';
+  studentName?: string;
   onPaymentSuccess: () => void;
   onPrevious: () => void;
   canGoBack?: boolean;
@@ -28,6 +29,7 @@ export function StepCheckout({
   isPreparing,
   requireAuth,
   acceptedByRole = 'self',
+  studentName,
   onPaymentSuccess,
   onPrevious,
   canGoBack = true,
@@ -91,7 +93,12 @@ export function StepCheckout({
           )}
         </div>
       )}
-      <EnrolmentTermsConsent engagementId={checkoutEnrolmentId} acceptedByRole={acceptedByRole}>
+      <EnrolmentTermsConsent
+        engagementId={checkoutEnrolmentId}
+        studentPersonId={enrolmentData.person_id ?? null}
+        studentName={studentName}
+        acceptedByRole={acceptedByRole}
+      >
         <EnrolmentPaymentForm
           classId={enrolmentData.offering_id}
           engagementId={checkoutEnrolmentId}

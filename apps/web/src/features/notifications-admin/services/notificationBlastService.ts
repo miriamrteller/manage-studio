@@ -65,6 +65,7 @@ export async function sendBlast(
       selectedRecipientEmails,
       subject: values.subject,
       body: values.body,
+      purpose: values.purpose ?? 'service',
     },
   });
 

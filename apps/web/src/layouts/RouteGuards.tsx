@@ -6,6 +6,7 @@ import { useTenantQuery } from '../hooks/useTenant';
 import { isMemberOfTenant } from '@/lib/tenantMembership';
 import { hasParentRole } from '@/lib/parentRoles';
 import { PlatformTermsGate } from '@/components/legal/PlatformTermsGate';
+import { MfaChallengeGate } from '@/components/legal/MfaChallengeGate';
 
 /**
  * useCurrentUser, scoped to the tenant of the current subdomain: a signed-in
@@ -65,7 +66,11 @@ export function AdminRoute({ children }: { children: ReactNode }) {
     return <Navigate to="/login" state={{ from: returnToFromLocation(location) }} replace />;
   }
 
-  return <PlatformTermsGate>{children}</PlatformTermsGate>;
+  return (
+    <MfaChallengeGate>
+      <PlatformTermsGate>{children}</PlatformTermsGate>
+    </MfaChallengeGate>
+  );
 }
 
 /**

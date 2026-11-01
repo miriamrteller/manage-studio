@@ -1,3 +1,4 @@
+import { PersonConsentPanel } from '@/components/legal/PersonConsentPanel';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
@@ -91,6 +92,17 @@ export function ClientPortal() {
       )}
 
       <DetailsSection self={data?.self ?? null} onEditContact={() => setPrefsOpen(true)} />
+
+      {tenant && data?.self && (
+        <PersonConsentPanel
+          tenantId={tenant.id}
+          personId={data.self.personId}
+          personName={data.self.name}
+          studioName={tenant.name}
+          photographer
+          source="portal"
+        />
+      )}
     </div>
   );
 }

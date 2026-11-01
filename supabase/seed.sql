@@ -800,52 +800,40 @@ INSERT INTO consent_templates (id, tenant_id, name, content, version, version_ha
 VALUES (
   '00000000-0000-0000-0000-000000000801'::uuid,
   '00000000-0000-0000-0000-000000000001'::uuid,
-  'Health & Liability Waiver',
-  $waiver$כתב הצהרת בריאות, ויתור סיכונים ושחרור מאחריות – סטודיו לבלט
-Health Declaration, Assumption of Risk, and Liability Waiver – Ballet Studio
+  'Health Declaration',
+  $waiver$הצהרת בריאות לשיעורי מחול – Creative Ballet Academy
+Health Declaration for Dance Classes – Creative Ballet Academy
 
-1. הצהרת בריאות וכשירות גופנית (Health & Physical Fitness Declaration)
-עברית: אני מצהיר/ה בזאת כי בני/בתי נמצא/ת במצב בריאותי ותזונתי תקין, וכי אין כל מניעה רפואית, גופנית או נפשית להשתתפותו/ה המלאה בשיעורי בלט, חזרות, והופעות (להלן: "הפעילות"). אני מתחייב/ת לעדכן את הסטודיו בכתב ומייד על כל שינוי במצבו/ה הבריאותי של הילד/ה.
-English: I hereby declare that my child is in good physical and mental health, and suffers from no medical condition or limitation that would prevent their full participation in ballet classes, rehearsals, and recitals (hereinafter: "the Activity"). I undertake to immediately notify the Studio in writing of any change in my child's health status.
+1. שאלות (Questions) — יש לפרט אם התשובה "כן" / give a short note for any "yes"
+עברית: (1) האם רופא/ה אמר/ה אי פעם שלתלמיד/ה יש בעיה בלב, או שעליו/ה לעסוק בפעילות גופנית רק בהשגחה רפואית? (2) האם בחצי השנה האחרונה היו כאבים בחזה, התעלפות או איבוד שיווי משקל בגלל סחרחורת, בזמן מאמץ או אחריו? (3) האם יש אסתמה, אפילפסיה, סוכרת או מצב אחר שעשוי לדרוש תגובה בשיעור? (4) האם בחצי השנה האחרונה הייתה פציעה, שבר או ניתוח, או שיש בעיה במפרקים, בגב או בעצמות? (5) האם יש אלרגיה שהצוות צריך לדעת עליה, או אפיפן/משאף? (6) האם נלקחות תרופות קבועות שעשויות להשפיע על פעילות גופנית?
+English: (1) Has a doctor ever said the student has a heart condition, or should only do physical activity under medical supervision? (2) In the last 6 months, has the student had chest pain, fainting, or loss of balance from dizziness during or after exercise? (3) Asthma, epilepsy, diabetes or another condition that may need a response in class? (4) An injury, fracture or surgery in the last 6 months, or a joint, back or bone problem? (5) An allergy teachers should know about, or an EpiPen/inhaler? (6) Regular medication that may affect physical activity?
 
-2. הכרה בסיכונים טבעיים (Assumption of Inherent Risks)
-עברית: ידוע לי ומקובל עלי כי פעילות מחול ובלט, מעצם טבעה, כרוכה במאמץ פיזי וכוללת סיכונים טבעיים לפציעות גופניות (לרבות מתיחות שרירים, נקעים, נפילות וכיוצא בזה). אני מאשר/ת כי הסכמתי להשתתפות בני/בתי ניתנת מתוך מודעות מלאה לסיכונים אלו, וכי הסטודיו, מוריו ועובדיו לא יישאו באחריות לנזקי גוף הנגרמים כתוצאה מסיכונים טבעיים הכרוכים בפעילות מסוג זה.
-English: I understand and accept that dance and ballet activities, by their very nature, involve physical exertion and carry inherent risks of physical injury (including muscle strains, sprains, falls, etc.). I approve my child's participation with full awareness of these risks, and agree that the Studio, its teachers, and staff shall not be held liable for bodily injuries resulting from the natural risks inherent to this activity.
+2. הצהרה (Declaration)
+עברית: למיטב ידיעתי התשובות נכונות ומלאות. אם עניתי "כן" על שאלות 1–4 אתייעץ עם הרופא/ה, והסטודיו רשאי לבקש אישור רפואי לפני ההשתתפות. אעדכן את הסטודיו בהקדם על כל שינוי.
+English: To the best of my knowledge the answers are correct and complete. If I answered "yes" to questions 1–4, I will consult the student's doctor, and the studio may ask for a doctor's note before the student takes part. I will tell the studio promptly about any change.
 
-3. שחרור מאחריות ושיפוי (Release of Liability & Indemnification)
-עברית: בכפוף לכל דין, אני משחרר/ת את הסטודיו, בעליו, מנהליו, מוריו וכל הפועלים מטעמו, מאחריות לכל נזק (גוף או רכוש) שיגרם לילד/ה במהלך השיעורים או הרסיטלים/הופעות, למעט במקרים בהם הנזק נגרם כתוצאה מרשלנות חמורה או פושעת של הסטודיו. כמו כן, הסטודיו אינו אחראי על אובדן או גניבה של ציוד אישי בשטח הסטודיו או באולמי המופעים.
-English: Subject to applicable law, I release the Studio, its owners, directors, teachers, and agents from liability for any damage (bodily or property) caused to the child during classes or recitals, except where the damage is a direct result of the Studio's gross negligence. Furthermore, the Studio is not responsible for lost or stolen personal belongings on the premises or at recital venues.
+3. חירום (Emergency)
+עברית: במקרה חירום, אם לא ניתן להשיג אותי, אני מתיר/ה לצוות הסטודיו להזעיק שירותי חירום (מד"א 101) ולתת עזרה ראשונה בסיסית עד להגעת עזרה.
+English: In an emergency, if I cannot be reached, I authorise the studio staff to call emergency services (Magen David Adom 101) and to give basic first aid until help arrives.
 
-4. טיפול רפואי דחוף (Emergency Medical Treatment)
-עברית: במקרה חירום רפואי במהלך הפעילות, כאשר אין אפשרות ליצור איתי קשר מיידי, אני מסמיך/ה את צוות הסטודיו לנקוט בכל צעד נדרש, לרבות הזמנת מד"א או פינוי לבית חולים, לצורך הענקת טיפול רפואי ראשוני דחוף. כל ההוצאות הכרוכות בכך יחולו עלי בלבד.
-English: In the event of a medical emergency during the Activity where I cannot be reached immediately, I authorize the Studio staff to take any necessary actions, including calling Mada (Ambulance) or evacuating to a hospital for urgent first aid. Any associated costs will be borne solely by me.
-
-5. אישור צילום ומדיה - אופציונלי (Photo & Media Release - Optional)
-עברית: אני מאשר/ת לסטודיו לצלם את בני/בתי במהלך השיעורים והרסיטלים, ולהשתמש בחומרים אלו (תמונות ווידאו) לצורכי פרסום, שיווק, ורשתות חברתיות של הסטודיו, ללא כל תמורה.
-English: I authorize the Studio to photograph/video my child during classes and recitals, and to use these materials for the Studio's promotional, marketing, and social media purposes without financial compensation.$waiver$,
+(Photo and video consent is asked separately and is optional. / ההסכמה לצילום ווידאו נשאלת בנפרד והיא רשות.)$waiver$,
   1,
-  encode(digest($waiver$כתב הצהרת בריאות, ויתור סיכונים ושחרור מאחריות – סטודיו לבלט
-Health Declaration, Assumption of Risk, and Liability Waiver – Ballet Studio
+  encode(digest($waiver$הצהרת בריאות לשיעורי מחול – Creative Ballet Academy
+Health Declaration for Dance Classes – Creative Ballet Academy
 
-1. הצהרת בריאות וכשירות גופנית (Health & Physical Fitness Declaration)
-עברית: אני מצהיר/ה בזאת כי בני/בתי נמצא/ת במצב בריאותי ותזונתי תקין, וכי אין כל מניעה רפואית, גופנית או נפשית להשתתפותו/ה המלאה בשיעורי בלט, חזרות, והופעות (להלן: "הפעילות"). אני מתחייב/ת לעדכן את הסטודיו בכתב ומייד על כל שינוי במצבו/ה הבריאותי של הילד/ה.
-English: I hereby declare that my child is in good physical and mental health, and suffers from no medical condition or limitation that would prevent their full participation in ballet classes, rehearsals, and recitals (hereinafter: "the Activity"). I undertake to immediately notify the Studio in writing of any change in my child's health status.
+1. שאלות (Questions) — יש לפרט אם התשובה "כן" / give a short note for any "yes"
+עברית: (1) האם רופא/ה אמר/ה אי פעם שלתלמיד/ה יש בעיה בלב, או שעליו/ה לעסוק בפעילות גופנית רק בהשגחה רפואית? (2) האם בחצי השנה האחרונה היו כאבים בחזה, התעלפות או איבוד שיווי משקל בגלל סחרחורת, בזמן מאמץ או אחריו? (3) האם יש אסתמה, אפילפסיה, סוכרת או מצב אחר שעשוי לדרוש תגובה בשיעור? (4) האם בחצי השנה האחרונה הייתה פציעה, שבר או ניתוח, או שיש בעיה במפרקים, בגב או בעצמות? (5) האם יש אלרגיה שהצוות צריך לדעת עליה, או אפיפן/משאף? (6) האם נלקחות תרופות קבועות שעשויות להשפיע על פעילות גופנית?
+English: (1) Has a doctor ever said the student has a heart condition, or should only do physical activity under medical supervision? (2) In the last 6 months, has the student had chest pain, fainting, or loss of balance from dizziness during or after exercise? (3) Asthma, epilepsy, diabetes or another condition that may need a response in class? (4) An injury, fracture or surgery in the last 6 months, or a joint, back or bone problem? (5) An allergy teachers should know about, or an EpiPen/inhaler? (6) Regular medication that may affect physical activity?
 
-2. הכרה בסיכונים טבעיים (Assumption of Inherent Risks)
-עברית: ידוע לי ומקובל עלי כי פעילות מחול ובלט, מעצם טבעה, כרוכה במאמץ פיזי וכוללת סיכונים טבעיים לפציעות גופניות (לרבות מתיחות שרירים, נקעים, נפילות וכיוצא בזה). אני מאשר/ת כי הסכמתי להשתתפות בני/בתי ניתנת מתוך מודעות מלאה לסיכונים אלו, וכי הסטודיו, מוריו ועובדיו לא יישאו באחריות לנזקי גוף הנגרמים כתוצאה מסיכונים טבעיים הכרוכים בפעילות מסוג זה.
-English: I understand and accept that dance and ballet activities, by their very nature, involve physical exertion and carry inherent risks of physical injury (including muscle strains, sprains, falls, etc.). I approve my child's participation with full awareness of these risks, and agree that the Studio, its teachers, and staff shall not be held liable for bodily injuries resulting from the natural risks inherent to this activity.
+2. הצהרה (Declaration)
+עברית: למיטב ידיעתי התשובות נכונות ומלאות. אם עניתי "כן" על שאלות 1–4 אתייעץ עם הרופא/ה, והסטודיו רשאי לבקש אישור רפואי לפני ההשתתפות. אעדכן את הסטודיו בהקדם על כל שינוי.
+English: To the best of my knowledge the answers are correct and complete. If I answered "yes" to questions 1–4, I will consult the student's doctor, and the studio may ask for a doctor's note before the student takes part. I will tell the studio promptly about any change.
 
-3. שחרור מאחריות ושיפוי (Release of Liability & Indemnification)
-עברית: בכפוף לכל דין, אני משחרר/ת את הסטודיו, בעליו, מנהליו, מוריו וכל הפועלים מטעמו, מאחריות לכל נזק (גוף או רכוש) שיגרם לילד/ה במהלך השיעורים או הרסיטלים/הופעות, למעט במקרים בהם הנזק נגרם כתוצאה מרשלנות חמורה או פושעת של הסטודיו. כמו כן, הסטודיו אינו אחראי על אובדן או גניבה של ציוד אישי בשטח הסטודיו או באולמי המופעים.
-English: Subject to applicable law, I release the Studio, its owners, directors, teachers, and agents from liability for any damage (bodily or property) caused to the child during classes or recitals, except where the damage is a direct result of the Studio's gross negligence. Furthermore, the Studio is not responsible for lost or stolen personal belongings on the premises or at recital venues.
+3. חירום (Emergency)
+עברית: במקרה חירום, אם לא ניתן להשיג אותי, אני מתיר/ה לצוות הסטודיו להזעיק שירותי חירום (מד"א 101) ולתת עזרה ראשונה בסיסית עד להגעת עזרה.
+English: In an emergency, if I cannot be reached, I authorise the studio staff to call emergency services (Magen David Adom 101) and to give basic first aid until help arrives.
 
-4. טיפול רפואי דחוף (Emergency Medical Treatment)
-עברית: במקרה חירום רפואי במהלך הפעילות, כאשר אין אפשרות ליצור איתי קשר מיידי, אני מסמיך/ה את צוות הסטודיו לנקוט בכל צעד נדרש, לרבות הזמנת מד"א או פינוי לבית חולים, לצורך הענקת טיפול רפואי ראשוני דחוף. כל ההוצאות הכרוכות בכך יחולו עלי בלבד.
-English: In the event of a medical emergency during the Activity where I cannot be reached immediately, I authorize the Studio staff to take any necessary actions, including calling Mada (Ambulance) or evacuating to a hospital for urgent first aid. Any associated costs will be borne solely by me.
-
-5. אישור צילום ומדיה - אופציונלי (Photo & Media Release - Optional)
-עברית: אני מאשר/ת לסטודיו לצלם את בני/בתי במהלך השיעורים והרסיטלים, ולהשתמש בחומרים אלו (תמונות ווידאו) לצורכי פרסום, שיווק, ורשתות חברתיות של הסטודיו, ללא כל תמורה.
-English: I authorize the Studio to photograph/video my child during classes and recitals, and to use these materials for the Studio's promotional, marketing, and social media purposes without financial compensation.$waiver$, 'sha256'), 'hex'),
+(Photo and video consent is asked separately and is optional. / ההסכמה לצילום ווידאו נשאלת בנפרד והיא רשות.)$waiver$, 'sha256'), 'hex'),
   'active',
   now(),
   now()
