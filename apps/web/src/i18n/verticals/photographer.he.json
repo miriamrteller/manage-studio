@@ -1,6 +1,7 @@
 {
   "errors": {
-    "loading_tenant": "טוען את פרטי הסטודיו..."
+    "loading_tenant": "טוען את פרטי הסטודיו...",
+    "failed_to_load_classes": "הטעינה של החבילות נכשלה. נסו שוב."
   },
   "footer": {
     "school_name_fallback": "סטודיו לצילום",
@@ -27,7 +28,8 @@
         "description": "בחרו איך לקבל מאיתנו עדכונים",
         "notify_offering_cancellation": "שינויים וביטולים של צילומים או פגישות",
         "notify_announcements": "חדשות הסטודיו"
-      }
+      },
+      "no_upcoming": "אין צילומים מתוכננים ב-7 הימים הקרובים."
     },
     "waivers": {
       "title": "חוזים",
@@ -60,7 +62,12 @@
       }
     },
     "billing": {
-      "description": "ניהול חשבונות תשלום וקישור לקוחות."
+      "description": "ניהול חשבונות תשלום וקישור לקוחות.",
+      "empty_message": "צרו חשבון תשלום כדי לקשר לקוחות ולעקוב אחר תשלומים.",
+      "linked_students": "לקוחות מקושרים",
+      "add_student": "קישור לקוח",
+      "remove_student": "הסרת קישור",
+      "no_students": "אין לקוחות מקושרים."
     },
     "crm": {
       "leads": {
@@ -71,7 +78,8 @@
     "notifications": {
       "account_search_placeholder": "חיפוש לפי שם לקוח, איש קשר או אימייל",
       "class_label": "חבילה",
-      "preview_validation_error": "יש לבחור קודם למי נשלח האימייל (למשל חבילה או לקוח)."
+      "preview_validation_error": "יש לבחור קודם למי נשלח האימייל (למשל חבילה או לקוח).",
+      "scope_all": "כל הלקוחות"
     },
     "people": {
       "description": "ניהול הלקוחות ופרטי הקשר שלהם.",
@@ -100,6 +108,18 @@
       "empty_message": "הוסיפו לקוח כדי להתחיל, או שנו את הסינון.",
       "filter_by_enrolment_status": "סטטוס הזמנה",
       "no_billing": "אין חשבון חיוב מקושר לצילומים"
+    },
+    "admin_classes": {
+      "title": "ניהול חבילות",
+      "description": "יצירה, עריכה ומחיקה של חבילות הצילום שלך.",
+      "create_button": "הוספת חבילה",
+      "edit_title": "עריכת חבילה",
+      "empty_title": "אין חבילות עדיין",
+      "empty_message": "הוסיפו את החבילה הראשונה כדי שתהיה זמינה להזמנה."
+    },
+    "classes": {
+      "no_classes_title": "אין חבילות זמינות",
+      "no_classes_message": "אין כרגע חבילות זמינות להזמנה אונליין. חזרו לבדוק בהמשך או צרו קשר למידע נוסף."
     }
   },
   "enrolment": {
@@ -124,6 +144,9 @@
       "col_class": "חבילה",
       "col_engagement": "צילום",
       "family_payment": "תשלום לקוח"
+    },
+    "charge_type": {
+      "initial": "תשלום צילום"
     }
   },
   "nav": {
@@ -148,5 +171,8 @@
     "empty": "לא נמצאו לקוחות תואמים",
     "guardian": "איש קשר ראשי: {{name}}",
     "enrolled_in": "חבילות: {{classes}}"
+  },
+  "form": {
+    "email_placeholder": "you@example.com"
   }
 }
