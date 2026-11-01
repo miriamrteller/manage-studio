@@ -81,6 +81,8 @@ If a client asks OpalSwift directly to see, correct or delete their data, OpalSw
 
 If this DPA and the Platform Terms conflict, this DPA governs on data-protection matters. The liability terms of the Platform Terms apply. Israeli law applies.
 
+**Language.** This document is published in English and Hebrew. If the two versions differ, the English version prevails.
+
 ---
 
 ### Sources relied on

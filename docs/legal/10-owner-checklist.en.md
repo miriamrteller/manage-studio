@@ -22,7 +22,7 @@ Status key: ☐ to do · ◐ in progress · ☑ done. "Verify" = ask the lawyer/
 10. ☐ **Register as a business (עוסק) before charging any fees.** Open files with VAT (מע"מ), Income Tax and National Insurance (ביטוח לאומי). Choose עוסק פטור / מורשה / company with an accountant (VAT exemption threshold changes yearly: [[CURRENT THRESHOLD]]). Until then, offer the platform free (beta) — the Terms say so.
 11. ☐ Fill the placeholders in the Terms, DPA and OpalSwift privacy policy (legal name, ID/business number, address, emails, city for jurisdiction, fees).
 12. ☐ Have each studio **accept the Terms and DPA** when it signs up (click-accept with a record). The app has no such checkbox yet (APP-GAPS.md).
-13. ☐ Consider professional liability / cyber insurance. **Verify.**
+13. ☐ Consider professional liability / cyber insurance ([12-insurance](12-insurance.md)). **Verify.**
 
 ## C. Creative Ballet Academy (first tenant)
 

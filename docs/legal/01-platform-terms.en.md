@@ -1,5 +1,5 @@
 > **Draft, not legal advice. Have an Israeli lawyer review before publishing.**
-> Hebrew version: [01-platform-terms.he.md](01-platform-terms.he.md). If the versions differ, the Hebrew version governs ([[CONFIRM WITH LAWYER]]).
+> Hebrew version: [01-platform-terms.he.md](01-platform-terms.he.md). If the versions differ, the English version prevails (owner decision; see OPEN-QUESTIONS Q5).
 
 # OpalSwift Platform Terms of Service (for studios)
 
@@ -23,12 +23,12 @@ We may improve, change or remove features. If a change materially reduces a feat
 
 ## 3. Fees
 
-- Plan and price: [[PLAN NAME / PRICE / BILLING PERIOD — e.g. "free during beta" or "₪X per month incl./excl. VAT"]].
-- Payment method and timing: [[PAYMENT METHOD, DUE DATE]].
+- Plan and price: **free of charge.** We will not charge any fees until OpalSwift is registered as a business (עוסק). Before any paid plan starts we will give at least [[30]] days' notice, and it applies to you only if you agree to it.
+- Payment method and timing: set out in the paid plan, when one is offered.
 - We will give at least [[30]] days' notice of a price increase. It applies from the next billing period. You may cancel before then.
 - Fees paid are non-refundable except as these terms or the law say.
 - Third-party charges (payment providers, invoicing services, SMS/WhatsApp, domain) are between you and those providers.
-- Tax invoices/receipts for our fees: [[ONCE OPALSWIFT IS A REGISTERED עוסק — until then the Platform may only be offered free of charge; CONFIRM WITH ACCOUNTANT]].
+- Once we charge fees, we will issue a receipt or tax invoice for every payment.
 
 ## 4. Your data and our role
 
@@ -88,6 +88,8 @@ Israeli law applies. The competent courts in [[CITY — e.g. Tel Aviv-Jaffa]] ha
 ## 13. General
 
 These terms, the DPA and any order form are the whole agreement. If a clause is invalid, the rest still applies. You may not transfer the agreement without our consent; we may transfer it to a successor of the Platform business after giving notice. Notices: to us at [[LEGAL NOTICES EMAIL]], to you at the account owner's email.
+
+**Language.** This document is published in English and Hebrew. If the two versions differ, the English version prevails.
 
 ---
 

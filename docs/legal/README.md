@@ -2,9 +2,9 @@
 
 > **Draft, not legal advice. Have an Israeli lawyer review before publishing.** / **טיוטה, לא ייעוץ משפטי.**
 
-Hebrew (`.he.md`) is what users read. `[[…]]` marks something to fill in.
+Hebrew (`.he.md`) is what users read; if the two versions differ, the English version prevails (owner decision). `[[…]]` marks something to fill in.
 
-**Start here:** [TENANT-LEGAL-SETUP](TENANT-LEGAL-SETUP.md) (what to do for each new studio) · [OPEN-QUESTIONS](OPEN-QUESTIONS.md) (5 questions left) · [APP-GAPS](APP-GAPS.md) (app fixes to schedule) · [Owner checklist](10-owner-checklist.en.md)
+**Start here:** [TENANT-LEGAL-SETUP](TENANT-LEGAL-SETUP.md) (what to do for each new studio) · [OPEN-QUESTIONS](OPEN-QUESTIONS.md) (5 questions left, all for the lawyer or accountant) · [APP-GAPS](APP-GAPS.md) (app fixes to schedule) · [Owner checklist](10-owner-checklist.en.md)
 
 | # | Document | For | Shown in the app |
 |---|---|---|---|
@@ -21,5 +21,6 @@ Hebrew (`.he.md`) is what users read. `[[…]]` marks something to fill in.
 | 09 | Short in-app consent texts [he+en](09-in-app-consent-texts.md) | — | Checkboxes and attestations |
 | 10 | Owner checklist [he](10-owner-checklist.he.md) · [en](10-owner-checklist.en.md) | Owner (internal) | — |
 | 11 | Security procedure [he](11-security-procedure.he.md) · [en](11-security-procedure.en.md) | Owner (internal) | — |
+| 12 | Insurance for a dance school [he+en](12-insurance.md) | Studio owner (guidance) | — |
 
 The research used secondary sources, because the official legal-text sites were blocked while drafting. Each document lists its sources; anything unconfirmed says "verify".
