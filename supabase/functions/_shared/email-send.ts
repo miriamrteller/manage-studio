@@ -70,6 +70,9 @@ export async function sendRenderedEmail(
       accentColor: renderInput.tenantColors?.accent_color ?? "#dc2626",
       intro: str(variables.intro) || undefined,
       ctaButton: str(variables.ctaButton) || undefined,
+      offline: variables.offlinePayment === true
+        ? { instructions: str(variables.offlineInstructions) || null }
+        : undefined,
     });
     subject =
       subjectOverride ??

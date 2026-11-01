@@ -73,6 +73,7 @@ export function useTenantQuery(): { tenant: TenantConfig | null; isLoading: bool
         privacy_policy_url: row.privacy_policy_url ?? null,
         terms_url: row.terms_url ?? null,
         accessibility_statement_url: row.accessibility_statement_url ?? null,
+        offline_payment_instructions: row.offline_payment_instructions ?? null,
       } as unknown as TenantConfig;
     },
     enabled: !!subdomain,

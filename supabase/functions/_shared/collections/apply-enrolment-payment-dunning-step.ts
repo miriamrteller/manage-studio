@@ -9,9 +9,11 @@ import {
   hasCancellationAlreadyHandled,
 } from "./dunning-idempotency.ts";
 import {
+  dunningLadderFor,
   enrolmentDunningActionDueAt,
   enrolmentDunningNextActionAt,
   resolveEnrolmentDunningDueAttempt,
+  type DunningLadder,
 } from "./enrolment-dunning-time.ts";
 import { sendPaymentDunningReminder } from "./send-payment-dunning-reminder.ts";
 
@@ -41,15 +43,19 @@ export async function applyEnrolmentPaymentDunningStep(
     return { outcome: "skipped", reason: "not_pending_payment" };
   }
 
-  // Pay-at-the-studio tenants: no pay link to send, and no day-14 cancel.
+  // Pay-at-the-studio tenants run a longer ladder (reminders on day 14 and 25, cancel on
+  // day 30 — owner decision) and their reminders carry the studio's payment instructions
+  // instead of a pay link. Card payers keep day 3 / 7 / 14.
   const { data: tenantRow } = await service
     .from("tenants")
-    .select("payment_provider")
+    .select("payment_provider, offline_payment_instructions")
     .eq("id", engagement.tenant_id)
     .single();
-  if (tenantRow?.payment_provider === "offline") {
-    return { outcome: "skipped", reason: "offline_payments" };
-  }
+  const offlinePayments = tenantRow?.payment_provider === "offline";
+  const ladder: DunningLadder = dunningLadderFor(tenantRow?.payment_provider as string | null);
+  const offlineInstructions = offlinePayments
+    ? ((tenantRow?.offline_payment_instructions as string | null) ?? null)
+    : null;
 
   const attemptCount = engagement.payment_dunning_attempt_count as number;
   if (attemptCount >= 3) {
@@ -63,7 +69,7 @@ export async function applyEnrolmentPaymentDunningStep(
     engagement.payment_dunning_next_at === null &&
     attemptCount === 0
   ) {
-    const firstDue = enrolmentDunningActionDueAt(createdAt, 1);
+    const firstDue = enrolmentDunningActionDueAt(createdAt, 1, ladder);
     const { data: bootstrapped } = await service
       .from("engagements")
       .update({ payment_dunning_next_at: firstDue })
@@ -82,7 +88,7 @@ export async function applyEnrolmentPaymentDunningStep(
     }
   }
 
-  let dueAttempt = resolveEnrolmentDunningDueAttempt(createdAt, attemptCount, now);
+  let dueAttempt = resolveEnrolmentDunningDueAttempt(createdAt, attemptCount, now, ladder);
 
   if (
     dueAttempt === null &&
@@ -106,10 +112,11 @@ export async function applyEnrolmentPaymentDunningStep(
       createdAt,
       attemptCount,
       now,
+      ladder,
     });
   }
 
-  const nextAt = enrolmentDunningNextActionAt(createdAt, dueAttempt);
+  const nextAt = enrolmentDunningNextActionAt(createdAt, dueAttempt, ladder);
 
   const { data: updated } = await service
     .from("engagements")
@@ -140,6 +147,24 @@ export async function applyEnrolmentPaymentDunningStep(
       entity_type: "engagement",
       entity_id: engagementId,
       after_state: { reason: "no_recipient", attempt_count: dueAttempt },
+    });
+    return { outcome: "reminded", attemptCount: dueAttempt as 1 | 2 };
+  }
+
+  if (offlinePayments) {
+    // No checkout can take the money: the reminder repeats how to pay at the studio.
+    await sendPaymentDunningReminder(service, {
+      kind: "enrolment_unpaid",
+      tenantId: updated.tenant_id as string,
+      engagementId,
+      offeringId: updated.offering_id as string,
+      personId: updated.person_id as string,
+      subjectId: engagementId,
+      attemptCount: dueAttempt,
+      nextActionAt: nextAt,
+      paymentUrl: "",
+      recipientPersonId: recipient.personId,
+      offline: { instructions: offlineInstructions, cancelAfterDays: ladder[2] },
     });
     return { outcome: "reminded", attemptCount: dueAttempt as 1 | 2 };
   }
@@ -206,6 +231,7 @@ async function cancelEngagementForDunning(
     createdAt: string;
     attemptCount: number;
     now: Date;
+    ladder: DunningLadder;
   },
 ): Promise<
   | { outcome: "skipped"; reason: string }
@@ -215,8 +241,9 @@ async function cancelEngagementForDunning(
     return { outcome: "skipped", reason: "already_cancelled" };
   }
 
-  const day14Due = enrolmentDunningActionDueAt(input.createdAt, 3);
-  if (input.now < new Date(day14Due)) {
+  const cancelAfterDays = input.ladder[2];
+  const cancelDue = enrolmentDunningActionDueAt(input.createdAt, 3, input.ladder);
+  if (input.now < new Date(cancelDue)) {
     return { outcome: "skipped", reason: "not_due" };
   }
 
@@ -283,8 +310,8 @@ async function cancelEngagementForDunning(
             cancelledClassName: className,
             cancelledDate: formatDate(new Date().toISOString(), locale),
             cancellationReason: language === "he"
-              ? "התשלום לא הושלם בתוך 14 ימים"
-              : "Payment was not completed within 14 days",
+              ? `התשלום לא הושלם בתוך ${cancelAfterDays} ימים`
+              : `Payment was not completed within ${cancelAfterDays} days`,
           },
         },
       });
@@ -312,6 +339,7 @@ async function cancelEngagementForDunning(
     entity_id: input.engagementId,
     after_state: {
       attempt_count: 3,
+      cancel_after_days: cancelAfterDays,
       // TODO: process-waiting-list V2.2
     },
   });
