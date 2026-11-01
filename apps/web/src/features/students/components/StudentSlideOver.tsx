@@ -25,6 +25,7 @@ import { RecordPaymentModal } from '@/features/finance/components/RecordPaymentM
 import { RefundPaymentModal } from '@/features/finance/components/RefundPaymentModal';
 import { formatCurrency } from '@shared/format';
 import { formatSavedCard } from '../lib/studentBillingAccount';
+import { invalidateAfterOfflinePayment } from '../lib/offlinePaymentCaches';
 
 interface StudentSlideOverProps {
   personId: string;
@@ -64,10 +65,7 @@ export function StudentSlideOver({
   const [recordingEngagementId, setRecordingEngagementId] = useState<string | null>(null);
   const [refundingPaymentId, setRefundingPaymentId] = useState<string | null>(null);
 
-  const invalidateFinanceCaches = () => {
-    void queryClient.invalidateQueries({ queryKey: ['student-detail-payments', tenant?.id, personId] });
-    void queryClient.invalidateQueries({ queryKey: ['student-detail-enrolments', tenant?.id, personId] });
-  };
+  const invalidateFinanceCaches = () => invalidateAfterOfflinePayment(queryClient, tenant?.id, personId);
 
   const [isEditingPerson, setIsEditingPerson] = useState(false);
   const [isEditingContact, setIsEditingContact] = useState(false);

@@ -10,6 +10,7 @@ import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
 import { tenantBaseUrl } from "../_shared/tenant-url.ts";
 import {
+  exactIlikePattern,
   InviteOwnerSchema,
   inviteStudioOwner,
   provisionStudio,
@@ -44,7 +45,7 @@ function serviceDeps(service: ServiceClient): ProvisionStudioDeps {
       const { data, error } = await service
         .from("user_profiles")
         .select("id, tenant_id, role")
-        .ilike("email", email)
+        .ilike("email", exactIlikePattern(email))
         .limit(1)
         .maybeSingle();
       if (error) throw new Error(error.message);

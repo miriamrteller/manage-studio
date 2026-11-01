@@ -19,6 +19,7 @@ import {
 } from '@/lib/personAge';
 import { computeClassTotal } from '../lib/computeClassTotal';
 import { formatOfferingPrice } from '@/lib/formatOfferingPrice';
+import { shortWeekdayName } from '@/lib/weekdayName';
 import type { Engagement } from '@shared/schemas';
 import type { AgeOverrideState } from '../hooks/useAgeOverride';
 import { useEnrolmentClassPicker } from '../hooks/useEnrolmentClassPicker';
@@ -26,7 +27,6 @@ import { EnrolmentClassSelectList } from './EnrolmentClassSelectList';
 import { AgeOverridePanel } from './AgeOverridePanel';
 import { StepBackButton } from './StepBackButton';
 
-const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 function formatTime(t: string | null | undefined): string {
   if (!t) return '';
@@ -239,7 +239,7 @@ export function StepClass({
                 <p className="font-medium text-gray-900">{cls.name}</p>
                 {levelLabel && <p className="text-sm text-gray-700 mt-0.5">{levelLabel}</p>}
                 <p className="text-sm text-gray-500 mt-0.5">
-                  {cls.day_of_week != null ? DAY_NAMES[cls.day_of_week] : ''}
+                  {cls.day_of_week != null ? shortWeekdayName(cls.day_of_week, i18n.language) : ''}
                   {cls.start_time &&
                     `${cls.day_of_week != null ? ' · ' : ''}${formatTime(cls.start_time)}`}
                   {cls.end_time && `–${formatTime(cls.end_time)}`}
