@@ -3152,6 +3152,7 @@ export type Database = {
                     plan: Database["public"]["Enums"]["tenant_plan"];
                     primary_color: string;
                     privacy_policy_url: string | null;
+                    require_admin_mfa: boolean;
                     skin: string;
                     sub_status: string;
                     subdomain: string;
@@ -3217,6 +3218,7 @@ export type Database = {
                     plan?: Database["public"]["Enums"]["tenant_plan"];
                     primary_color?: string;
                     privacy_policy_url?: string | null;
+                    require_admin_mfa?: boolean;
                     skin?: string;
                     sub_status?: string;
                     subdomain: string;
@@ -3282,6 +3284,7 @@ export type Database = {
                     plan?: Database["public"]["Enums"]["tenant_plan"];
                     primary_color?: string;
                     privacy_policy_url?: string | null;
+                    require_admin_mfa?: boolean;
                     skin?: string;
                     sub_status?: string;
                     subdomain?: string;
