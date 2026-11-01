@@ -13,6 +13,7 @@ import { resolve, join } from 'node:path';
 import {
   tenantBaseUrl,
   appRootDomain,
+  normaliseCustomDomain,
   platformAppUrl,
 } from '../../../../supabase/functions/_shared/tenant-url.ts';
 
@@ -26,6 +27,34 @@ beforeAll(() => {
 afterAll(() => {
   process.env.APP_ROOT_DOMAIN = OLD.root;
   process.env.APP_URL = OLD.app;
+});
+
+describe('tenant base URL with a custom domain', () => {
+  it('prefers the custom domain when the tenant has one', () => {
+    expect(
+      tenantBaseUrl({ subdomain: 'creativeballet', custom_domain: 'app.creativeballetacademy.com' }),
+    ).toBe('https://app.creativeballetacademy.com');
+  });
+
+  it('falls back to the subdomain when there is no custom domain', () => {
+    expect(tenantBaseUrl({ subdomain: 'creativeballet', custom_domain: null })).toBe(
+      'https://creativeballet.opalswift.com',
+    );
+    expect(tenantBaseUrl({ subdomain: 'creativeballet', custom_domain: '  ' })).toBe(
+      'https://creativeballet.opalswift.com',
+    );
+  });
+
+  it('normalises a pasted URL to a bare host', () => {
+    expect(normaliseCustomDomain('https://App.CreativeBalletAcademy.com:443/enrol')).toBe(
+      'app.creativeballetacademy.com',
+    );
+    expect(normaliseCustomDomain(null)).toBeNull();
+  });
+
+  it('still requires a subdomain', () => {
+    expect(() => tenantBaseUrl({ subdomain: null, custom_domain: 'app.example.com' })).toThrow();
+  });
 });
 
 describe('tenant base URL', () => {

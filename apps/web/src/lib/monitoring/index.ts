@@ -8,6 +8,7 @@
  * queued. See docs/deployment/OBSERVABILITY.md.
  */
 import type * as SentryNS from './sdk';
+import { resolveTenantSite } from '../resolveTenantSubdomain';
 import type { ErrorEvent } from '@sentry/react';
 import { scrubBreadcrumb, scrubEvent, scrubText, scrubUrl } from './scrub';
 
@@ -33,7 +34,9 @@ function environment(): string {
   if (explicit) return explicit;
   if (import.meta.env.DEV) return 'development';
   const root = import.meta.env.VITE_APP_ROOT_DOMAIN as string | undefined;
-  return root && window.location.hostname.endsWith(root) ? 'production' : 'preview';
+  if (root && window.location.hostname.endsWith(root)) return 'production';
+  // A studio's custom domain (e.g. app.creativeballetacademy.com) is production too.
+  return resolveTenantSite()?.kind === 'custom' ? 'production' : 'preview';
 }
 
 function run(fn: (s: Sentry) => void): void {
