@@ -66,6 +66,17 @@ Tests: `pnpm -C apps/marketing test` (Node's built-in runner, `fetch` mocked).
 Test files live in `apps/marketing/test/`, never in `functions/` (every file
 there becomes a public URL).
 
+## Header and footer "Sign in" link
+
+Every page links to the app (`https://app.opalswift.com`): "כניסה" / "Sign in"
+in the header, next to the main button, and "כניסה לחשבון" / "Sign in to your
+account" at the bottom of the footer. The beta button stays the main
+call-to-action.
+
+- Header: `index.html` has its own header; the other pages get theirs from
+  `public/topbar.js` (one place for 19 pages).
+- Footer: the line just before `</footer>` in every page (`.foot-signin`).
+
 ## How to edit
 
 1. Branch from `main`, edit files in `apps/marketing/public/`.
@@ -88,7 +99,7 @@ merge to main touching apps/marketing/**   (or Actions → deploy-marketing → 
   └─ check: /api/contact function present? links OK? function tests pass?
        └─ deploy (environment "production") ── ⏸ OWNER APPROVES ──►
             RESEND_API_KEY set on the Pages project?
-            wrangler pages deploy public --project-name=opalswift --branch=main
+            wrangler pages deploy public --project-name=opalswift --branch=<production branch>
             → smoke: home page 200, release.txt == this commit, /api/contact answers
 ```
 
@@ -96,9 +107,9 @@ merge to main touching apps/marketing/**   (or Actions → deploy-marketing → 
   never `wrangler-action` and never `npm install`.
 - The deploy writes `release.txt` (the commit id) into the upload; it is not
   committed. The smoke check reads `https://opalswift.com/release.txt`.
-- `--branch=main` is the project's production branch. If the smoke check
-  says release.txt is missing, check Pages → opalswift → Settings → Builds
-  & deployments → Production branch; it must be `main`.
+- The deploy reads the project's production branch from the Cloudflare API
+  and deploys to it (any other branch name would make a preview deployment
+  that never reaches opalswift.com). The run summary shows which branch.
 - Secrets: `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` in the
   `production` environment (the same ones deploy-web uses).
 

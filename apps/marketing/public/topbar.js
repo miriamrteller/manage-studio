@@ -70,6 +70,7 @@
     '      <button id="btn-he" onclick="setLang(\'he\')">עברית</button>' +
     '      <button id="btn-en" onclick="setLang(\'en\')">EN</button>' +
     '    </div>' +
+    '    <a href="https://app.opalswift.com" class="nav-signin" data-he="כניסה" data-en="Sign in">כניסה</a>' +
     '    <a href="#pricing" class="btn btn-primary" style="padding:10px 20px"' +
     '       data-he="להתחיל ניסיון חינם" data-en="Start free trial">להתחיל ניסיון חינם</a>' +
     '  </div>' +
@@ -95,6 +96,8 @@
     /* hide the ACTIVE language button; show only the opposite one */
     '.lang-toggle button.active{display:none}',
     '.lang-toggle button{display:inline-block}',
+    '.nav-signin{color:inherit;opacity:.8;text-decoration:none;font-size:15px;font-weight:600;white-space:nowrap}',
+    '.nav-signin:hover{opacity:1}',
     '@media(max-width:640px){',
     '  html,body{overflow-x:hidden}',
     '  .nav-in{height:58px}',
@@ -102,8 +105,16 @@
     '  .lang-toggle button{padding:5px 9px;font-size:11px}',
     '  .lang-toggle{border-radius:8px}',
     '  .nav-cta .btn{padding:8px 14px;font-size:13px;white-space:nowrap}',
+    '  .nav-signin{font-size:13px}',
     '  .back-bar{padding:14px 0 0}',
     '  .back-link{font-size:13px}',
+    '}',
+    '@media(max-width:480px){',
+    '  #opal-nav .nav-in{gap:8px;padding:0 16px}',
+    '  .nav-cta{gap:8px}',
+    '  .nav-cta .btn{padding:7px 10px!important;font-size:12px}',
+    '  .nav-signin{font-size:12px}',
+    '  .logo{font-size:18px}',
     '}'
   ].join('\n');
   document.head.appendChild(styleTag);
