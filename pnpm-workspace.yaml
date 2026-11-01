@@ -4,3 +4,4 @@ packages:
 allowBuilds:
   esbuild: true
   ffmpeg-static: true
+  workerd: false   # local Workers runtime for `wrangler dev`; deploys do not need it
