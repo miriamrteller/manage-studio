@@ -66,6 +66,18 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Dev project is running (Free plan pauses after ~7 days idle)
+        if: steps.gate.outputs.ready == 'true'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set +e
+          bash scripts/ci/check-project-active.sh "$DEV_REF" "Dev project"
+          code=$?
+          # 3 = paused: stop with the clear message. 2 = unknown: carry on.
+          [ "$code" -eq 3 ] && exit 1
+          exit 0
+
       - name: Migrations pending on dev
         if: steps.gate.outputs.ready == 'true'
         env:

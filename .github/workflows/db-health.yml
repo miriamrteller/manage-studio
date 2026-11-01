@@ -1,4 +1,4 @@
-# Nightly drift detection (read-only). Git is the only source of truth for the
+# Nightly DB health (read-only): is dev running (Free plan pauses it), migration drift, advisors. Git is the only source of truth for the
 # schema, so anything applied on a hosted project that is not in git — or a
 # migration on main that never reached dev — is reported.
 #
@@ -13,7 +13,7 @@
 #   production-nightly env / repo: SUPABASE_PROD_DB_URL
 # Pipeline overview: docs/deployment/DEV-PROD-PIPELINE.md
 
-name: drift-check
+name: db-health
 
 on:
   schedule:
@@ -24,7 +24,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: drift-check
+  group: db-health
   cancel-in-progress: false
 
 env:
@@ -43,12 +43,22 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+      - name: Dev project is running
+        id: active
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: bash scripts/ci/check-project-active.sh "$DEV_REF" "Dev project" || true
       - name: Migration drift (dev)
         id: drift
         env:
           DB_URL: ${{ secrets.SUPABASE_DEV_DB_URL }}
           PROJECT_REF: ${{ env.DEV_REF }}
+          STATE: ${{ steps.active.outputs.state }}
         run: |
+          if [ "$STATE" = "INACTIVE" ] || [ "$STATE" = "PAUSED" ] || [ "$STATE" = "PAUSING" ]; then
+            printf '### dev\n\n**Dev is paused** (Free plan, ~7 days idle). Unpause it: supabase.com → project → Restore project. Nothing else was checked.\n' > drift-dev.md
+            echo "status=paused" >> "$GITHUB_OUTPUT"; exit 0
+          fi
           if [ -z "$DB_URL" ]; then
             echo "::notice::SUPABASE_DEV_DB_URL not set — dev drift check skipped."
             printf '### dev\n\nNot checked (SUPABASE_DEV_DB_URL not configured).\n' > drift-dev.md
@@ -135,13 +145,13 @@ jobs:
           } > body.md
           cat body.md >> "$GITHUB_STEP_SUMMARY"
           existing=$(gh issue list --label db-drift --state open --json number --jq '.[0].number // empty')
-          if [ "$DEV" = "drift" ] || [ "$PROD" = "drift" ] || [ "$DEV" = "error" ] || [ "$PROD" = "error" ]; then
+          if [ "$DEV" = "drift" ] || [ "$PROD" = "drift" ] || [ "$DEV" = "error" ] || [ "$PROD" = "error" ] || [ "$DEV" = "paused" ]; then
             gh label create db-drift --color B60205 --description "Hosted DB differs from main" 2>/dev/null || true
             if [ -n "$existing" ]; then
               gh issue edit "$existing" --body-file body.md
               gh issue comment "$existing" --body "Still drifting as of $(date -u +%F) (dev: $DEV, prod: $PROD)."
             else
-              gh issue create --title "Database drift detected" --label db-drift --body-file body.md
+              gh issue create --title "Database drift / health problem detected" --label db-drift --body-file body.md
             fi
             echo "::warning::Drift detected (dev: $DEV, prod: $PROD)"
           elif [ -n "$existing" ]; then

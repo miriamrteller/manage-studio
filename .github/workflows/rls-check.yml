@@ -67,5 +67,5 @@ jobs:
             code=$?
             sleep 20
           done
-          echo "::error::verify:rls did not pass after 2 attempts (exit $code) — check whether it is a real RLS failure or dev DB state (mid-reset / unseeded)."
+          echo "::error::verify:rls did not pass after 2 attempts (exit $code) — check whether it is a real RLS failure or dev DB state (mid-reset / unseeded / PAUSED — the Free plan pauses dev after ~7 days idle; unpause it in the Supabase dashboard)."
           exit "$code"

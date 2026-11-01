@@ -1,7 +1,7 @@
 # Dev → prod pipeline (database + Edge Functions)
 
 **Written:** 2026-11-01 · Workflows: `db-ci.yml`, `deploy-dev.yml`,
-`deploy-prod.yml`, `drift-check.yml`, `backup-prod.yml`
+`deploy-prod.yml`, `db-health.yml`, `backup-prod.yml`
 
 If you know Azure DevOps release pipelines, this is the same shape:
 
@@ -30,7 +30,7 @@ If you know Azure DevOps release pipelines, this is the same shape:
                  live plan → backup to R2 → db push → deploy all functions
                  → verify:prod · verify:env · no *_MOCK secrets · smoke query → summary
 
-  every night ─► backup-prod (encrypted dump to R2) · rls-check (dev) · drift-check (dev + prod)
+  every night ─► backup-prod (encrypted dump to R2) · rls-check (dev) · db-health (dev + prod)
 ```
 
 ---
@@ -111,6 +111,30 @@ is on `main`. You still approve it.
   `scripts/restore-rehearsal.sh <backup.tar.gz.gpg>` (needs Docker and the backup
   private key). Done on 2026-11-01 with a pipeline-made backup — see the runbook.
 
+## DB health
+
+**Nightly (GitHub, `db-health.yml`)** — one issue labelled `db-drift` collects
+everything; it closes itself when all is well again.
+
+| Check | Dev | Prod |
+|---|---|---|
+| Project running | ✅ Supabase API status — a paused dev is reported as *"Dev is paused — unpause it"* | Pro plan, does not pause |
+| Migrations vs `main` | ✅ drift if anything is missing or unknown | ✅ unknown = drift; missing = "awaiting release" |
+| Security advisors (ERROR level) | ✅ | after every deploy-prod (summary) |
+| RLS (37 checks) | ✅ `rls-check.yml` | — needs seeded data, so not on prod |
+| Backup | — | ✅ `backup-prod.yml` |
+
+**Dev is on the Free plan** (org `miriamrteller`): it pauses after ~7 days with
+no activity, and a Free organisation can have only **2 active projects**. When
+dev is paused, deploy-dev stops with that message and db-health reports it;
+unpause in the dashboard (project → *Restore project*) and re-run. The daily
+keepalive ping in backup-prod.yml usually prevents it.
+
+**Weekly prod summary, on request:** ask the DB owner thread for a "prod health
+summary". It is produced read-only through the Supabase connector: security and
+performance advisors, migrations vs `main`, recent error logs, Edge Function
+versions. Nothing is written.
+
 ## Drift
 
 The `db-drift` issue means a hosted project and `main` disagree:
@@ -129,9 +153,9 @@ The `db-drift` issue means a hosted project and `main` disagree:
 |---|---|---|---|
 | Environment `production` (reviewer: owner; `main` + `prod-*` tags) | `SUPABASE_ACCESS_TOKEN` | Supabase token for the CI user, used to deploy functions and list secret names | deploy-prod |
 | | `SUPABASE_PROD_DB_URL` | prod session-pooler URL incl. password | deploy-prod |
-| Environment `production-nightly` (no reviewer; `main` only) | `SUPABASE_PROD_DB_URL` | same URL | backup-prod, drift-check |
-| Environment `development` (no reviewer) | `SUPABASE_ACCESS_TOKEN` | Supabase token | deploy-dev, drift-check |
-| | `SUPABASE_DEV_DB_URL` | dev session-pooler URL incl. password | deploy-dev, drift-check |
+| Environment `production-nightly` (no reviewer; `main` only) | `SUPABASE_PROD_DB_URL` | same URL | backup-prod, db-health |
+| Environment `development` (no reviewer) | `SUPABASE_ACCESS_TOKEN` | Supabase token | deploy-dev, db-health |
+| | `SUPABASE_DEV_DB_URL` | dev session-pooler URL incl. password | deploy-dev, db-health |
 | Repo secrets | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` | backup bucket write | backup-prod, deploy-prod |
 | Repo secrets (today) | `SUPABASE_PROD_DB_URL`, `SUPABASE_DEV_DB_URL` | already set; keep working until moved | all of the above |
 | Each Supabase project | Edge Function secrets | `APP_URL`, `CRON_SECRET`, email, … (names in `supabase/edge-secrets.json`) | Edge Functions at runtime |
@@ -198,19 +222,24 @@ Settings → Integrations → GitHub. Preview branches for PRs are fine to keep.
 harmless (deploy-dev retries once and finds nothing to apply), but one deployer is
 cleaner, so you may turn it off.
 
-## First prod deploy: photographer beta
+## First prod release
 
 Prod has 34 migrations; `main` has 40. The 6 pending ones are exactly the list in
 [PHOTOGRAPHER-BETA-SUPABASE.md](PHOTOGRAPHER-BETA-SUPABASE.md) (checked read-only
-on 2026-11-01). The first run will therefore:
+on 2026-11-01), plus the security-hardening migration once that PR merges.
+Prod will host Creative Ballet Academy (`creativeballet`, offline payments only,
+no payment provider, invoicing off) and, later, the photographer beta tenant.
 
-1. Run deploy-prod with **dry_run** ticked, approve, and read the live plan.
-   It must list those 6 migrations and nothing else.
-2. Run deploy-prod again (no dry run), approve. Migrations + all functions go out.
-   **Expect the verify row to be red** on this first run: the encryption key,
-   Edge secrets and owner/tenant bootstrap are manual steps that come *after* the
-   push (PHOTOGRAPHER-BETA-SUPABASE.md Part 2, steps 3–6). That red is the
-   checklist telling you what is still missing, not a failed deploy.
-3. Do those manual steps (owner approves each, as before).
-4. Run deploy-prod once more. Nothing is pending, functions are redeployed, and
-   every verification must now be green.
+1. Merge this pipeline PR and the security-hardening PR; do the owner setup above.
+2. deploy-prod with **dry_run** ticked → approve → the live plan must list only
+   the expected migrations.
+3. deploy-prod for real → approve. Migrations and all functions go out.
+   **Expect the verify:prod row to be red** this time: there is no encryption
+   key, Edge secrets or tenant yet. That red is the list of what is missing.
+4. Encryption key: the owner generates it (`openssl rand -base64 32`), stores it
+   in the password manager, and runs the one-line `INSERT` from GO-LIVE-PLAN.md
+   in the prod SQL editor themselves. The key never goes into chat or git.
+5. Edge secrets (PHOTOGRAPHER-BETA-SUPABASE.md Part 2 step 6; no `*_MOCK`).
+6. Bootstrap the owner and the `creativeballet` tenant with the trigger dance in
+   HANDOVER.md — owner approves each step.
+7. deploy-prod once more. Nothing is pending; every check must now be green.

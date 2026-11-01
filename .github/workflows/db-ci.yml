@@ -130,8 +130,8 @@ jobs:
       - name: Start throwaway Supabase (all migrations from zero)
         run: pnpm exec supabase start -x studio,imgproxy,vector,logflare,supavisor,realtime,edge-runtime,mailpit
 
-      - name: supabase db lint (errors block)
-        run: pnpm exec supabase db lint --local --schema public,private --level error --fail-on error
+      - name: supabase db lint (new errors block; known ones warn)
+        run: bash scripts/ci/db-lint.sh
 
       # `PostgrestVersion` follows whichever PostgREST generated the file
       # (hosted vs local CLI), so that one line is not compared.

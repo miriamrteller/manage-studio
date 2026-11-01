@@ -134,7 +134,7 @@ jobs:
               echo "To see it without writing anything: run again with **dry_run** ticked."
             fi
             echo
-            echo "Edge Functions to deploy: $(find supabase/functions -mindepth 2 -maxdepth 2 -name index.ts | grep -v '/_' | wc -l) (every folder with an index.ts)"
+            echo "Edge Functions to deploy: $(find supabase/functions -mindepth 2 -maxdepth 2 -name index.ts | grep -cv '/_') (every folder with an index.ts)"
           } >> "$GITHUB_STEP_SUMMARY"
           cat "$GITHUB_STEP_SUMMARY"
 
