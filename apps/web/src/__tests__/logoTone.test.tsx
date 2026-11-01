@@ -115,4 +115,13 @@ describe('HeaderLogo', () => {
     renderLogo({ ...dance, name: 'Studio', logo_url: 'https://x/white.png', logo_tone: tone(0.98, { mono: true }) } as TenantConfig, false);
     expect(screen.getByRole('img', { name: 'Studio' }).tagName).toBe('IMG');
   });
+
+  it('without a logo, the name keeps its own direction and truncates at its end', () => {
+    renderLogo({ ...dance, name: 'Lumen & Light Photography', logo_url: undefined, logo_dark_url: undefined } as TenantConfig, true);
+    const el = screen.getByText('Lumen & Light Photography');
+    // dir="auto" keeps an English name LTR inside a Hebrew header, so the
+    // ellipsis lands at the end instead of the first letters being cut off.
+    expect(el.getAttribute('dir')).toBe('auto');
+    expect(el).toHaveClass('block', 'min-w-0', 'truncate');
+  });
 });

@@ -53,7 +53,7 @@ export function AppHeader() {
           <Button ref={menuButtonRef} type="button" variant="ghost" size="sm" onClick={toggle} aria-expanded={isOpen} aria-controls="nav-drawer" aria-label={isOpen ? t('nav.close_menu') : t('nav.open_menu')} className={`${c.icon} shrink-0`}>
             {isPinned ? <PanelLeftClose size={20} aria-hidden /> : <Menu size={20} aria-hidden />}
           </Button>
-          <Link to="/" className={`flex items-center font-bold text-lg truncate hover:opacity-90 focus-visible:outline-2 ${c.link} outline-offset-2`}>
+          <Link to="/" className={`flex min-w-0 items-center font-bold text-lg truncate hover:opacity-90 focus-visible:outline-2 ${c.link} outline-offset-2`}>
             <HeaderLogo tenant={tenant} soft={soft} />
           </Link>
         </div>
