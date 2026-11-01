@@ -9,6 +9,7 @@ import {
   getEmailTemplateOverrides,
   getTenantForAuthUser,
 } from "../_shared/tenant-email.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
 
 interface AuthEmailHookUser {
   email: string;
@@ -87,7 +88,7 @@ function subjectForAction(
   return `Notification from ${schoolName}`;
 }
 
-Deno.serve(async (req) => {
+Deno.serve(withMonitoring("send-auth-email", async (req) => {
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), {
       status: 405,
@@ -210,4 +211,4 @@ Deno.serve(async (req) => {
       headers: { "Content-Type": "application/json" },
     });
   }
-});
+}));

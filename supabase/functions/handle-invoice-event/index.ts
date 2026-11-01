@@ -1,6 +1,7 @@
 import { jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { handleInvoiceEventInternal } from "../_shared/payments/handle-invoice-event.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
 
 /**
  * Bundled document webhook (Grow + iCount).
@@ -8,7 +9,7 @@ import { handleInvoiceEventInternal } from "../_shared/payments/handle-invoice-e
  * Dispatches by tenant `invoicing_provider` slug — never by country or body shape alone.
  * Upserts document fields onto the matching payment row and reconciles `document_queue`.
  */
-Deno.serve(async (req) => {
+Deno.serve(withMonitoring("handle-invoice-event", async (req) => {
   if (req.method !== "POST") {
     return jsonResponse({ error: "Method not allowed" }, 405);
   }
@@ -35,4 +36,4 @@ Deno.serve(async (req) => {
       500,
     );
   }
-});
+}));

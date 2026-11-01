@@ -8,6 +8,7 @@ import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/su
 import { buildAuthUrl, isGoogleMock } from "../_shared/google-calendar.ts";
 import { signGoogleOAuthState } from "../_shared/google-oauth-state.ts";
 import { requireFeature } from "../_shared/feature-gate.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
 
 // The ONLY legitimate use of APP_URL: Google requires the redirect_uri to match
 // EXACTLY the one registered, so it must be a single concrete platform origin —
@@ -15,7 +16,7 @@ import { requireFeature } from "../_shared/feature-gate.ts";
 // tenantBaseUrl(subdomain). See _shared/tenant-url.ts.
 const APP_URL = Deno.env.get("APP_URL") ?? "";
 
-Deno.serve(async (req) => {
+Deno.serve(withMonitoring("google-calendar-oauth-start", async (req) => {
   const opt = handleOptions(req);
   if (opt) return opt;
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
@@ -64,4 +65,4 @@ Deno.serve(async (req) => {
     : buildAuthUrl(state, redirectUri);
 
   return jsonResponse({ url, state });
-});
+}));

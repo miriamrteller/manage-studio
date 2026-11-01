@@ -51,7 +51,9 @@ export function isAppointmentVertical(vertical: VerticalId): boolean {
 const VERTICAL_LABELS: Partial<Record<VerticalId, Record<EntityLabelLocale, Partial<EntityLabels>>>> = {
   photographer: {
     en: {
-      contact: { singular: 'Contact', plural: 'Contacts' },
+      // The photographer's people are their clients (owner wording), so the
+      // Clients page heading and nav agree with "Add client" / account labels.
+      contact: { singular: 'Client', plural: 'Clients' },
       account: { singular: 'Client', plural: 'Clients' },
       offering: { singular: 'Package', plural: 'Packages' },
       season: { singular: 'Season', plural: 'Seasons' },
@@ -61,7 +63,7 @@ const VERTICAL_LABELS: Partial<Record<VerticalId, Record<EntityLabelLocale, Part
       session: { singular: 'Shoot', plural: 'Shoots' },
     },
     he: {
-      contact: { singular: 'איש קשר', plural: 'אנשי קשר' },
+      contact: { singular: 'לקוח', plural: 'לקוחות' },
       account: { singular: 'לקוח', plural: 'לקוחות' },
       offering: { singular: 'חבילה', plural: 'חבילות' },
       season: { singular: 'עונה', plural: 'עונות' },

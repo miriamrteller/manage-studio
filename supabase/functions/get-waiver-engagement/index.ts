@@ -20,8 +20,9 @@ import {
 } from "../_shared/waiver-token.ts";
 import { resolveAllowedTokenRecipientEmails } from "../_shared/token-recipient.ts";
 import { loadJobContractContext, renderJobContract } from "../_shared/job-contract.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
 
-Deno.serve(async (req) => {
+Deno.serve(withMonitoring("get-waiver-engagement", async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
 
@@ -125,4 +126,4 @@ Deno.serve(async (req) => {
       500,
     );
   }
-});
+}));

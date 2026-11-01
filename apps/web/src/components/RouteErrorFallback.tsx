@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { isRouteErrorResponse, useNavigate, useRouteError } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { reportError } from '@/lib/monitoring';
 
 /**
  * Route-level error boundary UI (react-router errorElement). Mounted on a
@@ -15,6 +16,8 @@ export function RouteErrorFallback() {
 
   useEffect(() => {
     console.error('Route error boundary caught:', error);
+    // 404s and other router responses are expected; only real crashes are reported.
+    if (!isRouteErrorResponse(error)) reportError(error, { boundary: 'route' });
   }, [error]);
 
   const detail = isRouteErrorResponse(error)

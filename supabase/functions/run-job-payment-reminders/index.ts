@@ -13,6 +13,7 @@ import {
   todayInJerusalem,
 } from "../_shared/jobs/apply-request-reminder-step.ts";
 import { JOB_PAYMENT_REQUEST_COLUMNS, type JobPaymentRequestRow } from "../_shared/jobs/load-request.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
 
 const CRON_SECRET = Deno.env.get("CRON_SECRET") ?? "";
 const BATCH_LIMIT = 200;
@@ -24,7 +25,7 @@ function authorizeCron(req: Request): boolean {
   return authHeader === `Bearer ${CRON_SECRET}` || cronHeader === CRON_SECRET;
 }
 
-Deno.serve(async (req) => {
+Deno.serve(withMonitoring("run-job-payment-reminders", async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204 });
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
   if (!authorizeCron(req)) return jsonResponse({ error: "Unauthorized" }, 401);
@@ -63,4 +64,4 @@ Deno.serve(async (req) => {
 
   console.log("[run-job-payment-reminders] done:", { processed: rows?.length ?? 0, ...results });
   return jsonResponse({ ok: true, today: todayIso, processed: rows?.length ?? 0, results });
-});
+}));

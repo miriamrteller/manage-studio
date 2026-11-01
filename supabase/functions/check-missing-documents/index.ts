@@ -5,6 +5,7 @@
 import { jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { runCheckMissingDocuments } from "../_shared/payments/check-missing-documents.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
 
 const CRON_SECRET = Deno.env.get("CRON_SECRET") ?? "";
 
@@ -15,7 +16,7 @@ function authorizeCron(req: Request): boolean {
   return authHeader === `Bearer ${CRON_SECRET}` || cronHeader === CRON_SECRET;
 }
 
-Deno.serve(async (req) => {
+Deno.serve(withMonitoring("check-missing-documents", async (req) => {
   if (req.method !== "POST") {
     return jsonResponse({ error: "Method not allowed" }, 405);
   }
@@ -35,4 +36,4 @@ Deno.serve(async (req) => {
       500,
     );
   }
-});
+}));

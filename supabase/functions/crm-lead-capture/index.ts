@@ -9,6 +9,7 @@ import {
   notifyTenantOfLead,
   writeInboundLead,
 } from "../_shared/crm-contract/lead-ingest-core.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
 
 /**
  * crm-lead-capture — PUBLIC inquiry-form endpoint (step 2 of
@@ -59,7 +60,7 @@ function nonEmpty(value: string | null | undefined): string | null {
   return trimmed ? trimmed : null;
 }
 
-Deno.serve(async (req) => {
+Deno.serve(withMonitoring("crm-lead-capture", async (req) => {
   const cors = corsHeadersFor(req);
   const json = (body: unknown, status = 200) =>
     new Response(JSON.stringify(body), {
@@ -130,4 +131,4 @@ Deno.serve(async (req) => {
     console.error("crm-lead-capture: unhandled error", err);
     return json({ error: "Internal error" }, 500);
   }
-});
+}));

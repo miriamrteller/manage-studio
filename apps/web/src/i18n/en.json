@@ -92,6 +92,10 @@
     "setting_up_access": "Setting up your access"
   },
   "errors": {
+    "app_crashed_title": "Something went wrong",
+    "app_crashed_description": "An unexpected error stopped this screen. Try again, or reload the page.",
+    "app_crashed_reported": "We've been notified automatically.",
+    "reload_page": "Reload page",
     "network": "Network error. Check your connection.",
     "unauthorized": "You are not authorized to perform this action.",
     "forbidden": "You do not have permission to access this.",

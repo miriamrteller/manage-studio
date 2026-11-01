@@ -4,6 +4,7 @@ import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/su
 import { loadJobPaymentRequestById } from "../_shared/jobs/load-request.ts";
 import { isCollectable } from "../_shared/jobs/payment-request-state.ts";
 import { sendJobPaymentRequestLinkEmail } from "../_shared/jobs/send-request-link-email.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
 
 /**
  * Admin "Send pay link" (email). WhatsApp is a wa.me deep link built in the
@@ -14,7 +15,7 @@ const BodySchema = z.object({
   request_id: z.string().uuid(),
 });
 
-Deno.serve(async (req) => {
+Deno.serve(withMonitoring("send-job-payment-link", async (req) => {
   const options = handleOptions(req);
   if (options) return options;
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
@@ -71,4 +72,4 @@ Deno.serve(async (req) => {
     return jsonResponse({ ok: false, skipped: result.skipped, paymentUrl: result.paymentUrl ?? null }, 422);
   }
   return jsonResponse({ ok: true, recipientEmail: result.recipientEmail, paymentUrl: result.paymentUrl });
-});
+}));
