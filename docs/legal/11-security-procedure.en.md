@@ -8,7 +8,7 @@ Version [[1.0]] · Approved by: [[OWNER NAME]], [[DATE]] · Next review: [[DATE 
 
 ## 1. Scope and security level
 
-- **Systems:** the OpalSwift web app (`apps/web`, hosted on Cloudflare Workers), Supabase project(s) (Postgres database, Auth, Storage, Edge Functions; region eu-central-1 Frankfurt), Cloudflare (email sending, R2 backup bucket), GitHub (code, CI, backup job), and optional integrations (Twilio, Google Calendar, payment and invoicing providers).
+- **Systems:** the OpalSwift web app (`apps/web`, hosted on Cloudflare Workers), Supabase project(s) (Postgres database, Auth, Storage, Edge Functions; region eu-central-1 Frankfurt), Cloudflare (email sending, R2 backup bucket), GitHub (code, CI, backup job), Sentry (error monitoring, EU region), and optional integrations (Twilio, Google Calendar, payment and invoicing providers).
 - **Databases:** OpalSwift is the **holder** (מחזיק) of each studio's database and the **controller** of its own account database (studio admins).
 - **Security level: medium (רמת אבטחה בינונית).** Reason: studio databases include health information (health declarations, medical notes, allergies), which is in the list of data that puts a database at medium level under the Data Security Regulations. The database is not at **high** level today because it holds data on far fewer than 100,000 people and has far fewer than 100 authorised users. **Re-check the level if either number approaches those thresholds** (regulation 1 and the First Schedule; [[LAWYER: confirm]]). The account database (studio admins only, no sensitive data) would on its own be at basic level; we apply medium-level controls to everything.
 - **Production vs. development:** a separate Supabase project for production. Development uses seed/fake data only.

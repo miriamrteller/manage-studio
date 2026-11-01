@@ -29,7 +29,7 @@ We do **not** use advertising or analytics trackers, and we do not sell personal
 
 ## 2. Who we share it with
 
-Only service providers who help us run the platform: Supabase (database and sign-in; EU, Frankfurt), Cloudflare (hosting, email, encrypted backups), GitHub (backup job and code), and if you use them, Twilio (SMS/WhatsApp) and Google (calendar); and, once enabled, Sentry (error monitoring, EU region, configured to exclude IP addresses and personal details). Some are US companies and may access data from outside Israel; we rely on transfers allowed by Israeli regulations (EU adequacy / Convention 108 countries, and the providers' written undertakings). We also disclose information if the law requires it.
+Only service providers who help us run the platform: Supabase (database and sign-in; EU, Frankfurt), Cloudflare (hosting, email, encrypted backups), GitHub (backup job and code), and if you use them, Twilio (SMS/WhatsApp) and Google (calendar); and Sentry (error monitoring, EU region, configured to exclude IP addresses and personal details). Some are US companies and may access data from outside Israel; we rely on transfers allowed by Israeli regulations (EU adequacy / Convention 108 countries, and the providers' written undertakings). We also disclose information if the law requires it.
 
 ## 3. How long we keep it
 
