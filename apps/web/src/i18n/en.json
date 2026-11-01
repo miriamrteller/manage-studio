@@ -1503,7 +1503,8 @@
     "all_rights": "All rights reserved",
     "legal_nav": "Legal",
     "privacy": "Privacy Policy",
-    "terms": "Terms of Service"
+    "terms": "Terms of Service",
+    "accessibility": "Accessibility statement"
   },
   "scheduling": {
     "event_type": {
@@ -2169,5 +2170,19 @@
     "close_dialog": "Close dialog",
     "skip_to_content": "Skip to main content",
     "go_home": "Go to home"
+  },
+  "legal": {
+    "privacy_notice": "We use your details only to handle your request and enrolment.",
+    "accept_terms_prefix": "I have read and accept the",
+    "terms_link": "enrolment terms",
+    "accept_terms_and_privacy": "and have read the",
+    "accept_terms_required": "Please accept the terms to continue.",
+    "settings_title": "Legal pages",
+    "settings_description": "Links to your studio's own privacy policy, terms and accessibility statement. They appear in your site's footer and next to every form. Use full https:// links.",
+    "settings_privacy_url": "Privacy policy link",
+    "settings_terms_url": "Terms link (enrolment / booking)",
+    "settings_accessibility_url": "Accessibility statement link",
+    "settings_invalid_url": "Links must start with https://",
+    "settings_saved": "Legal links saved."
   }
 }

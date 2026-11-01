@@ -12,6 +12,7 @@ import { resolveAuthErrorMessage } from '@/lib/authErrors';
 import SignupStep1 from '@/features/auth/components/SignupStep1';
 import SignupStep2 from '@/features/auth/components/SignupStep2';
 import SignupStep3 from '@/features/auth/components/SignupStep3';
+import { PrivacyNotice } from '@/components/PrivacyNotice';
 
 type SignupStep = 1 | 2 | 3;
 
@@ -109,6 +110,7 @@ export default function SignupPage() {
             <SignupStep3 onSubmit={onSubmitStep3} loading={verifyOtpLoading} />
           )}
         </FormProvider>
+        <PrivacyNotice className="mt-4" />
 
         {sendOtpError && (
           <div className="rounded-md bg-red-50 p-4" role="alert" aria-live="polite">

@@ -1,9 +1,12 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Engagement } from '@shared/schemas';
 import type { CheckoutChargePayload } from '../lib/checkoutBootstrapTypes';
 import { EnrolmentPaymentForm } from './EnrolmentPaymentForm';
 import { StepBackButton } from './StepBackButton';
 import { formatOfferingPrice } from '@/lib/formatOfferingPrice';
+import { PrivacyNotice } from '@/components/PrivacyNotice';
+import { TermsAcceptanceCheckbox, useTermsRequired } from '@/components/TermsAcceptanceCheckbox';
 
 export interface StepCheckoutProps {
   enrolmentData: Partial<Engagement>;
@@ -29,6 +32,8 @@ export function StepCheckout({
   canGoBack = true,
 }: StepCheckoutProps) {
   const { t, i18n } = useTranslation();
+  const termsRequired = useTermsRequired();
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   if (!enrolmentData.offering_id || !enrolmentData.season_id) {
     return (
@@ -87,14 +92,23 @@ export function StepCheckout({
           )}
         </div>
       )}
-      <EnrolmentPaymentForm
-        classId={enrolmentData.offering_id}
-        engagementId={checkoutEnrolmentId}
-        requireAuth={requireAuth}
-        preloadedCharge={checkoutCharge}
-        onPaid={onPaymentSuccess}
-        onPrevious={onPrevious}
-      />
+      <TermsAcceptanceCheckbox checked={termsAccepted} onChange={setTermsAccepted} />
+      {termsRequired && !termsAccepted ? (
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">{t('legal.accept_terms_required')}</p>
+          <StepBackButton onPrevious={onPrevious} canGoBack={canGoBack} className="w-full" />
+        </div>
+      ) : (
+        <EnrolmentPaymentForm
+          classId={enrolmentData.offering_id}
+          engagementId={checkoutEnrolmentId}
+          requireAuth={requireAuth}
+          preloadedCharge={checkoutCharge}
+          onPaid={onPaymentSuccess}
+          onPrevious={onPrevious}
+        />
+      )}
+      <PrivacyNotice />
     </div>
   );
 }

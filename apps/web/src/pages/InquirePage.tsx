@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { resolveTenantSubdomain } from '@/lib/resolveTenantSubdomain';
+import { PrivacyNotice } from '@/components/PrivacyNotice';
 
 /**
  * Public inquiry form — the "website" capture channel, and via ?src= tags the
@@ -137,6 +138,8 @@ export default function InquirePage() {
             {t('pages.crm.inquire.error')}
           </div>
         )}
+
+        <PrivacyNotice />
 
         <Button type="submit" variant="primary" disabled={status === 'sending'}>
           {status === 'sending' ? t('common.loading') : t('pages.crm.inquire.submit')}
