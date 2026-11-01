@@ -15,7 +15,7 @@ app. The studio's existing website stays where it is.
 
 | Piece | What it does |
 | --- | --- |
-| `tenants.custom_domain` | Full hostname, lower-case (migration `20261101000700`). Unique. Only a super-admin, the service role or the SQL editor can change it. |
+| `tenants.custom_domain` | Full hostname, lower-case (migration `20261101000800`). Unique. Only a super-admin, the service role or the SQL editor can change it. |
 | `get_tenant_config_by_host(host)` | Public lookup the web app uses for hosts outside `VITE_APP_ROOT_DOMAIN`. Returns the same columns as `get_tenant_config_by_subdomain`. |
 | Web app (`resolveTenantSite`) | Hosts under the root domain resolve by subdomain as before. Any other host is looked up by host. |
 | Edge `tenantBaseUrl()` | Prefers `https://<custom_domain>` for every link in emails (pay, waiver, reminders, contracts, booking, unsubscribe). |
@@ -23,9 +23,15 @@ app. The studio's existing website stays where it is.
 
 ## Setup checklist
 
-Pick **A** or **B** depending on where the studio's DNS lives. You can see this in the
-Cloudflare dashboard: if the domain is listed under **Websites** in the same account as the
-`opalswift-app` Worker, use A. Otherwise use B.
+**Primary path: A.** Use it when the studio's domain is listed under **Websites** in the
+same Cloudflare account as the `opalswift-app` Worker. The owner believes this is true for
+`creativeballetacademy.com`, but has not confirmed it yet. Otherwise use **B**.
+
+> **Worker routes live only in `apps/web/wrangler.jsonc`.** The `deploy-web` workflow runs
+> `wrangler deploy`, which replaces the Worker's routes with the ones in that file. A route
+> added only in the dashboard disappears on the next web release. A route for a zone the
+> account does not have makes the deploy fail. So add the route line in a small PR, after the
+> zone is confirmed and the DNS record below exists, and let `deploy-web` apply it.
 
 ### A. The studio's domain is a Cloudflare zone in the OpalSwift account
 
@@ -36,7 +42,8 @@ Cloudflare dashboard: if the domain is listed under **Websites** in the same acc
    | `AAAA` | `app` | `100::` | Proxied |
 
    `100::` is a placeholder: the Worker answers, so there is no origin server.
-2. **Worker route**: add this to the `routes` list in `apps/web/wrangler.jsonc`, then deploy the web app.
+2. **Worker route**: once step 1 is done, add this to the `routes` list in
+   `apps/web/wrangler.jsonc` in a PR. `deploy-web` applies it after merge (owner approval).
    ```jsonc
    { "pattern": "app.creativeballetacademy.com/*", "zone_name": "creativeballetacademy.com" }
    ```
@@ -61,7 +68,8 @@ Once, on the `opalswift.com` zone:
 
 For each studio:
 3. Custom Hostnames → **Add custom hostname**: `app.creativeballetacademy.com`.
-4. **Worker route** on the `opalswift.com` zone, in `apps/web/wrangler.jsonc`, then deploy:
+4. **Worker route** on the `opalswift.com` zone, added to `apps/web/wrangler.jsonc` in a PR
+   (applied by `deploy-web`):
    ```jsonc
    { "pattern": "app.creativeballetacademy.com/*", "zone_name": "opalswift.com" }
    ```
