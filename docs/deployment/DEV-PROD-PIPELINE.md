@@ -30,6 +30,11 @@ If you know Azure DevOps release pipelines, this is the same shape:
                  live plan → backup to R2 → db push → deploy all functions
                  → verify:prod · verify:env · no *_MOCK secrets · smoke query → summary
 
+        │ deploy-prod succeeded (not a dry run) → automatically
+        ▼
+  deploy-web ── ⏸ APPROVAL ──► build with prod settings (never the demo)
+                 → wrangler deploy opalswift-app → smoke: app shell, a tenant, this release live
+
   every night ─► backup-prod (encrypted dump to R2) · rls-check (dev) · db-health (dev + prod)
 ```
 
@@ -51,15 +56,22 @@ If you know Azure DevOps release pipelines, this is the same shape:
    with defaults, new functions. You may **not** drop or rename a column/table the
    live app still reads, or add a NOT NULL without a default. To remove something:
    release 1 stops using it in the app; release 2 drops it.
-4. **Order: database first, then the app.** deploy-prod finishes, then deploy the
-   web app (Cloudflare Worker `opalswift-app`). The web deploy is not part of this
-   pipeline yet; when it is added it will be a stage after deploy-prod.
+4. **Order: database first, then the app.** A real deploy-prod that succeeds
+   starts deploy-web for the same commit, so app code never goes live before
+   its migrations. App-only changes go out with deploy-web alone (see
+   [Web stage](#web-stage)).
 5. **Every `SECURITY DEFINER` function gets an explicit access tier.** Supabase
    grants EXECUTE on new functions to `anon` and `authenticated` directly, so
    `REVOKE … FROM PUBLIC` alone restricts nothing. Add the function to a tier in
    `supabase/security/definer-execute.json` (public / authenticated / service /
    internal) and `REVOKE`/`GRANT` to match in the same migration. `db-ci` fails
    otherwise (`supabase/tests/security/run.sh`).
+   A definer function that exists on a hosted project but not in git (made in
+   the dashboard, or by a Supabase feature) stops the hardening migration;
+   `db-health` lists them nightly. `20261031235900` handles the two found on
+   2026-11-01 (`rls_auto_enable` moved to `extensions`, unused
+   `handle_new_user_v2` dropped) and is the one allowed out-of-order version
+   (`scripts/ci/migration-order-exceptions.txt`).
 6. **Never** `supabase db reset`, `seed*.sql` or `scripts/reseed-dev.sh` against a
    hosted project. The pipeline only ever runs `db push` (applies new migrations).
 7. **Prod has no mock flags.** deploy-prod fails its checks if any `*_MOCK` or
@@ -84,7 +96,7 @@ prod without your click and your approval.
 check compares dev and prod with `main` and opens (or updates, or closes) a GitHub
 issue labelled `db-drift`.
 
-## How to deploy to prod (one click + one approval)
+## How to deploy to prod (one click, then approve the database and the app)
 
 1. GitHub → **Actions** → **deploy-prod** → **Run workflow** → branch `main` → **Run workflow**.
    (Optional boxes: *dry_run* shows the live plan and writes nothing.)
@@ -95,7 +107,8 @@ issue labelled `db-drift`.
 4. The **deploy** job prints the live plan, takes a backup, applies the migrations,
    deploys the functions and runs the checks. The summary ends with a table of
    results. Green = done. Red = read which row failed.
-5. Then deploy the web app if it changed.
+5. deploy-web starts by itself for the same commit and waits for your approval
+   (same click as step 3). Approve it to ship the app.
 
 Alternative trigger: push a tag `prod-2026-11-05` (any `prod-*`) on a commit that
 is on `main`. You still approve it.
@@ -195,6 +208,60 @@ A transport set without its keys (e.g. `EMAIL_TRANSPORT=cloudflare` with only
 `RESEND_API_KEY`) fails the deploy-prod checks: every email would fail. The
 check learns which word `EMAIL_TRANSPORT` holds from the digest the Supabase API
 returns, never from the value.
+
+## Web stage
+
+`deploy-web` builds `apps/web` with prod settings and deploys the Cloudflare
+Worker `opalswift-app` (`*.opalswift.com`, `app.opalswift.com`).
+
+| How it starts | What it does |
+|---|---|
+| After a real deploy-prod succeeds | Builds and deploys that same commit, after your approval |
+| Actions → deploy-web → Run workflow | App-only release from `main`. Tick **build_only** to build and check without deploying |
+| Tag `prod-web-…` on a commit on `main` | Same as Run workflow |
+
+It refuses to deploy when:
+- `VITE_SUPABASE_URL` is not prod;
+- the "publishable" key is really a secret key;
+- `VITE_DEMO_MODE`, `VITE_DEV_TENANT_SUBDOMAIN` or any `*_MOCK` variable exists;
+- the commit is not on `main`.
+
+After deploying it checks that `app.opalswift.com` and one tenant host answer 200 and that the live
+site serves this exact build.
+
+**Rollback (app):** fastest is Cloudflare's own: Workers & Pages → opalswift-app → Deployments →
+pick the previous version → roll back. To redeploy an older commit through the pipeline, put a
+tag `prod-web-rollback-<n>` on it (it must be on `main`) and approve the run. Run workflow always
+builds the tip of `main`.
+
+### Owner setup for the web stage (one time)
+
+1. **Cloudflare API token**: dash.cloudflare.com → avatar → **My Profile → API Tokens → Create Token**
+   → template **Edit Cloudflare Workers** → *Account Resources*: your account only; *Zone Resources*:
+   `opalswift.com` only → **Continue → Create Token** → copy it.
+2. **Account ID**: Cloudflare dashboard → **Workers & Pages** → right-hand column **Account ID** → copy.
+3. GitHub → **Settings → Environments → production → Environment secrets → Add**:
+   `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
+4. Same page → **Environment variables → Add**, copying the values from your
+   `apps/web/.env.production` (these are public by design: they are built into every page):
+
+   | Variable | Required | Value |
+   |---|---|---|
+   | `VITE_SUPABASE_URL` | yes | `https://oogxajjanbyqhljxcmql.supabase.co` |
+   | `VITE_SUPABASE_PUBLISHABLE_KEY` | yes | the prod **publishable** key (`sb_publishable_…`) |
+   | `VITE_APP_ROOT_DOMAIN` | yes | `opalswift.com` |
+   | `VITE_SENTRY_DSN` | no | Sentry DSN ([OBSERVABILITY.md](OBSERVABILITY.md)) |
+   | `VITE_SENTRY_ENVIRONMENT` | no | defaults to `production` |
+   | `VITE_PRIVACY_POLICY_URL`, `VITE_TERMS_URL`, `VITE_ACCESSIBILITY_STATEMENT_URL` | no | platform fallbacks; tenants' own links come from the database |
+   | `VITE_ENABLE_SELF_SERVE_SIGNUP`, `VITE_ENABLE_FINANCE_WALKTHROUGH` | no | leave unset unless you want them on |
+   | `SMOKE_TENANT_HOST` | no | defaults to `creativeballet.opalswift.com` |
+
+   Do **not** add `VITE_DEMO_MODE` or `VITE_DEV_TENANT_SUBDOMAIN`; the workflow refuses to run with them.
+   Source maps reuse the repo's `SENTRY_AUTH_TOKEN` / `SENTRY_ORG` / `SENTRY_PROJECT`.
+5. Do **not** connect Cloudflare's Git builds (Workers Builds) to `opalswift-app`; GitHub is the only
+   deployer, so the app never ships ahead of its migrations.
+6. First run: Actions → deploy-web → Run workflow → tick **build_only** → approve. Then run it again
+   without the tick.
 
 ## Owner setup (one time)
 
