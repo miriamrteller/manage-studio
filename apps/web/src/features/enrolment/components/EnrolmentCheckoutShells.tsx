@@ -12,6 +12,7 @@ import { GrowPaymentShell } from './GrowPaymentShell';
 import { IcountPaymentShell } from './IcountPaymentShell';
 import { Invoice4uPaymentShell } from './Invoice4uPaymentShell';
 import { isMockHostedPaymentPage } from '@/lib/tenantProviderRouting';
+import { OfflinePaymentNotice } from './OfflinePaymentNotice';
 
 function PaymentFormInner({
   onPaid,
@@ -257,6 +258,10 @@ export function ProviderCheckoutShell({
   onPrevious: () => void;
 }) {
   const { t } = useTranslation();
+
+  if (paymentProvider === 'offline') {
+    return <OfflinePaymentNotice />;
+  }
 
   const isMockHostedPage = isMockHostedPaymentPage(paymentProvider, pageUrl);
 

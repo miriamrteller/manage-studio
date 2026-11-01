@@ -38,6 +38,9 @@ export function getInvoicingProvider(slug: string | null | undefined): Invoicing
       return tranzilaProvider;
     case "yesh":
       return yeshProvider;
+    case "none":
+      // enqueueDocument() never queues for these tenants; reaching here is a bug.
+      throw new Error("This studio issues no tax documents (invoicing_provider=none)");
     default: {
       const _exhaustive: never = parsed;
       return _exhaustive;

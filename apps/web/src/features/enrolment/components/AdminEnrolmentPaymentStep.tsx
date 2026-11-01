@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
+import { useTenant } from '@/hooks/useTenant';
 import { EnrolmentPaymentForm } from './EnrolmentPaymentForm';
 import { useCheckoutBootstrap } from '../hooks/useCheckoutBootstrap';
 import type { CheckoutChargePayload } from '../lib/checkoutBootstrapTypes';
@@ -50,6 +51,7 @@ export function AdminEnrolmentPaymentStep({
   preloadedCharge = null,
 }: AdminEnrolmentPaymentStepProps) {
   const { t, i18n } = useTranslation();
+  const tenantConfig = useTenant();
   const [view, setView] = useState<'choices' | 'pay_now'>('choices');
   const [linkEmail, setLinkEmail] = useState(guardianEmail ?? '');
   const [overrideReason, setOverrideReason] = useState('');
@@ -194,17 +196,20 @@ export function AdminEnrolmentPaymentStep({
       <p className="text-sm text-gray-600">{t('pages.admin_enrol.payment_desc')}</p>
 
       <div className="space-y-2">
-        <Button
-          variant="outline"
-          className="w-full justify-start p-4 h-auto"
-          disabled={isSubmitting}
-          onClick={() => void handlePaymentChoice('pay_now')}
-        >
-          <div>
-            <p className="font-semibold">{t('pages.admin_enrol.pay_now_title')}</p>
-            <p className="text-sm text-gray-500">{t('pages.admin_enrol.pay_now_desc')}</p>
-          </div>
-        </Button>
+        {/* Pay-at-the-studio tenants have no online card payment. */}
+        {tenantConfig?.payment_provider !== 'offline' && (
+          <Button
+            variant="outline"
+            className="w-full justify-start p-4 h-auto"
+            disabled={isSubmitting}
+            onClick={() => void handlePaymentChoice('pay_now')}
+          >
+            <div>
+              <p className="font-semibold">{t('pages.admin_enrol.pay_now_title')}</p>
+              <p className="text-sm text-gray-500">{t('pages.admin_enrol.pay_now_desc')}</p>
+            </div>
+          </Button>
+        )}
 
         <div className="rounded-lg border border-gray-200 p-4 space-y-3">
           <div>
