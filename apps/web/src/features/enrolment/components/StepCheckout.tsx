@@ -5,6 +5,7 @@ import { EnrolmentPaymentForm } from './EnrolmentPaymentForm';
 import { StepBackButton } from './StepBackButton';
 import { EnrolmentTermsConsent } from './EnrolmentTermsConsent';
 import { formatOfferingPrice } from '@/lib/formatOfferingPrice';
+import { monthlyHintKey } from '../lib/monthlyHint';
 
 export interface StepCheckoutProps {
   enrolmentData: Partial<Engagement>;
@@ -89,7 +90,7 @@ export function StepCheckout({
             )}
           </p>
           {isMonthly && (
-            <p className="text-xs text-muted-foreground">{t('enrolment.checkout_monthly_hint')}</p>
+            <p className="text-xs text-muted-foreground">{t(monthlyHintKey(checkoutCharge?.paymentProvider))}</p>
           )}
         </div>
       )}
