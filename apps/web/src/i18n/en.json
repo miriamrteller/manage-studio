@@ -2242,6 +2242,8 @@
       "status_published": "Status: published — linked in the footer and at enrolment.",
       "status_draft": "Status: draft — only admins can see the pages.",
       "review_note": "These pages are generated from templates drafted for Israeli law. Have a lawyer review them before publishing.",
+      "lawyer_note": "These documents are drafts based on Israeli law. Have a lawyer review them for your studio.",
+      "lawyer_note_dismiss": "Got it",
       "publish": "Publish pages",
       "unpublish": "Unpublish",
       "saved": "Saved.",

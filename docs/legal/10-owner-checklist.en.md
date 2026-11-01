@@ -51,6 +51,7 @@ Status key: ☐ to do · ◐ in progress · ☑ done. "Verify" = ask the lawyer/
 27. ☐ Marketing: only to opted-in clients; mark messages "פרסומת"; working unsubscribe (doc 08).
 28. ☐ Accessibility statement (doc 06) with a named coordinator.
 29. ☐ Keep records: consents (with wording version and time), signed documents, payments.
+30. ☐ **Lawyer review, last.** After publishing, have an Israeli lawyer review the published documents for this studio; the app reminds you in Settings → Legal until you dismiss it.
 
 ## F. Open legal questions for the lawyer
 
