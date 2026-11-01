@@ -49,7 +49,13 @@ export function HeaderLogo({ tenant, soft }: { tenant: TenantConfig | null; soft
 
   switch (treatment.kind) {
     case 'name':
-      return <span className={soft ? 'text-primary' : 'text-on-primary'}>{name || 'Ballet School'}</span>;
+      // dir="auto": a Latin name in a Hebrew page keeps its own direction, so a
+      // long name is cut with an ellipsis at its end, not clipped at its start.
+      return (
+        <span dir="auto" className={`block min-w-0 truncate ${soft ? 'text-primary' : 'text-on-primary'}`}>
+          {name || 'Studio'}
+        </span>
+      );
     case 'recolour': {
       const width = Math.min(LOGO_MAX_WIDTH, Math.round(LOGO_HEIGHT * treatment.aspect));
       const mask = `url("${treatment.src}") center / contain no-repeat`;
