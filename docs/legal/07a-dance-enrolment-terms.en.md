@@ -74,6 +74,8 @@ We send service messages about classes, payments and changes by email, SMS or Wh
 
 Israeli law applies. If these terms and the law differ, the law that protects the consumer prevails. Questions: [[EMAIL / PHONE]].
 
+**Language.** This document is published in English and Hebrew. If the two versions differ, the English version prevails.
+
 ---
 
 ### Sources relied on
