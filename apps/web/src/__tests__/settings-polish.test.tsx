@@ -3,10 +3,12 @@
  * Settings page polish:
  *  - phone layout: the shell stacks (flex-col) and nothing inline overrides it;
  *  - Branding labels are translated in Hebrew (no English fallbacks leaking);
- *  - the profile tab says "Studio profile" for photographers, dance keeps "School Profile".
+ *  - "Studio" is the default wording for every tenant (dance included). It is
+ *    only an i18n default: a tenant's own entity labels (tenants.labels) still win.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { screen } from '@testing-library/react';
+import { useEntityLabels } from '@/hooks/useEntityLabels';
 import heBase from '@/i18n/he.json';
 import TenantSettingsPage from '@/pages/TenantSettingsPage';
 import { renderInApp, setLanguage, setTenant } from './helpers/verticalHarness';
@@ -62,19 +64,63 @@ describe('Branding labels in Hebrew', () => {
   });
 });
 
-describe('Profile tab wording by vertical', () => {
+describe('Studio is the default wording', () => {
   const cases = [
-    ['dance', 'en', 'School Profile'],
-    ['dance', 'he', 'פרופיל בית הספר'],
+    ['dance', 'en', 'Studio profile'],
+    ['dance', 'he', 'פרופיל הסטודיו'],
     ['photographer', 'en', 'Studio profile'],
     ['photographer', 'he', 'פרופיל הסטודיו'],
   ] as const;
 
-  it.each(cases)('%s / %s shows "%s"', async (kind, lng, label) => {
+  it.each(cases)('%s / %s profile tab shows "%s"', async (kind, lng, label) => {
     setTenant(kind);
     await setLanguage(lng);
     renderInApp(<TenantSettingsPage />);
     // Desktop sidebar + mobile strip each render the tab.
     expect(screen.getAllByRole('tab', { name: label })).toHaveLength(2);
+    expect(screen.queryByText(/school|בית הספר/i)).toBeNull();
+  });
+});
+
+function LabelsProbe() {
+  const { labels } = useEntityLabels();
+  return (
+    <p data-testid="labels">
+      {labels.contact.singular}|{labels.offering.plural}
+    </p>
+  );
+}
+
+describe('tenant-chosen terms still win over the new default', () => {
+  beforeEach(async () => {
+    await setLanguage('en');
+  });
+
+  it('a tenant with custom labels keeps them; the default tab text is unaffected', () => {
+    const custom = {
+      contact: { singular: 'Academy pupil', plural: 'Academy pupils' },
+      offering: { singular: 'School course', plural: 'School courses' },
+    };
+    setTenant('dance', { entity_label_overrides: custom });
+    renderInApp(
+      <>
+        <LabelsProbe />
+        <TenantSettingsPage />
+      </>,
+    );
+    expect(screen.getByTestId('labels').textContent).toBe('Academy pupil|School courses');
+    expect(screen.getAllByRole('tab', { name: 'Studio profile' })).toHaveLength(2);
+  });
+
+  it('a tenant without custom labels gets the preset terms and "Studio"', () => {
+    setTenant('dance');
+    renderInApp(
+      <>
+        <LabelsProbe />
+        <TenantSettingsPage />
+      </>,
+    );
+    expect(screen.getByTestId('labels').textContent).toBe('Student|Classes');
+    expect(screen.getAllByRole('tab', { name: 'Studio profile' })).toHaveLength(2);
   });
 });

@@ -1871,7 +1871,7 @@
     "navigation": "Settings navigation",
     "tabs": {
       "branding": "Branding",
-      "profile": "School Profile",
+      "profile": "Studio profile",
       "locale": "Language & Region",
       "payment": "Payment Settings",
       "invoicing": "Invoicing"
@@ -1963,7 +1963,7 @@
     },
     "stripe": {
       "title": "Stripe",
-      "description": "Each school uses its own Stripe account (Standard). Secrets are encrypted and never shown again after save.",
+      "description": "Each studio uses its own Stripe account (Standard). Secrets are encrypted and never shown again after save.",
       "publishable_key": "Publishable key",
       "secret_key": "Secret key",
       "webhook_secret": "Webhook signing secret",
@@ -2034,15 +2034,15 @@
       "health_failed": "Could not connect to Invoice4U."
     },
     "hub": {
-      "page_title": "School settings",
-      "page_description": "Update your school profile, branding, and regional defaults.",
-      "profile_title": "School profile",
+      "page_title": "Studio settings",
+      "page_description": "Update your studio profile, branding, and regional defaults.",
+      "profile_title": "Studio profile",
       "profile_description": "Display name shown across the app.",
-      "school_name": "School name",
+      "school_name": "Studio name",
       "subdomain": "Subdomain",
       "subdomain_readonly": "Subdomain cannot be changed after launch. Contact support if you need a change.",
-      "name_required": "School name is required.",
-      "profile_saved": "School profile saved.",
+      "name_required": "Studio name is required.",
+      "profile_saved": "Studio profile saved.",
       "branding_title": "Branding",
       "branding_description": "Primary and accent colours applied across the site.",
       "primary_color": "Primary colour",

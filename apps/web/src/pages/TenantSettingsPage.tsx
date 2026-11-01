@@ -21,7 +21,7 @@ const SETTINGS_SECTIONS: SettingsSection[] = [
   {
     id: 'profile',
     labelKey: 'settings.tabs.profile',
-    label: 'School Profile',
+    label: 'Studio profile',
     icon: Building2,
     component: SchoolProfileForm,
   },

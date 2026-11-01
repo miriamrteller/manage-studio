@@ -1870,7 +1870,7 @@
     "navigation": "ניווט בהגדרות",
     "tabs": {
       "branding": "מיתוג",
-      "profile": "פרופיל בית הספר",
+      "profile": "פרופיל הסטודיו",
       "locale": "שפה ואזור",
       "payment": "הגדרות תשלום",
       "invoicing": "חשבוניות"
@@ -1962,7 +1962,7 @@
     },
     "stripe": {
       "title": "Stripe",
-      "description": "לכל בית ספר חשבון Stripe משלו (Standard). הסודות מוצפנים ולא יוצגו שוב לאחר השמירה.",
+      "description": "לכל סטודיו חשבון Stripe משלו (Standard). הסודות מוצפנים ולא יוצגו שוב לאחר השמירה.",
       "publishable_key": "מפתח ציבורי",
       "secret_key": "מפתח סודי",
       "webhook_secret": "סוד חתימת Webhook",
@@ -2033,15 +2033,15 @@
       "health_failed": "לא ניתן להתחבר ל‑Invoice4U."
     },
     "hub": {
-      "page_title": "הגדרות בית הספר",
-      "page_description": "עדכון פרופיל, מיתוג והגדרות אזוריות.",
-      "profile_title": "פרופיל בית הספר",
+      "page_title": "הגדרות הסטודיו",
+      "page_description": "עדכון פרופיל הסטודיו, מיתוג והגדרות אזוריות.",
+      "profile_title": "פרופיל הסטודיו",
       "profile_description": "שם התצוגה באפליקציה.",
-      "school_name": "שם בית הספר",
+      "school_name": "שם הסטודיו",
       "subdomain": "תת-דומיין",
       "subdomain_readonly": "לא ניתן לשנות תת-דומיין לאחר ההשקה. פנו לתמיכה.",
-      "name_required": "שם בית הספר נדרש.",
-      "profile_saved": "הפרופיל נשמר.",
+      "name_required": "שם הסטודיו נדרש.",
+      "profile_saved": "פרופיל הסטודיו נשמר.",
       "branding_title": "מיתוג",
       "branding_description": "צבעי מותג באתר.",
       "primary_color": "צבע ראשי",
