@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 import { useTenantQuery } from '../hooks/useTenant';
 import { isMemberOfTenant } from '@/lib/tenantMembership';
+import { usePlatformViewLog } from '@/hooks/usePlatformViewLog';
 import { hasParentRole } from '@/lib/parentRoles';
 import { PlatformTermsGate } from '@/components/legal/PlatformTermsGate';
 import { MfaChallengeGate } from '@/components/legal/MfaChallengeGate';
@@ -22,6 +23,7 @@ function useTenantScopedUser() {
   const { tenant, isLoading: tenantLoading } = useTenantQuery();
 
   const crossTenant = !!user && !!tenant && !isMemberOfTenant(user, tenant.id);
+  usePlatformViewLog(crossTenant ? null : user, tenant?.id);
   return {
     user: crossTenant ? null : user,
     isLoading: isLoading || tenantLoading,

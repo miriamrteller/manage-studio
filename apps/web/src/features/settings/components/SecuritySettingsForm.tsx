@@ -2,8 +2,9 @@ import { useTranslation } from 'react-i18next';
 import { TwoFactorSettings } from '@/components/legal/TwoFactorSettings';
 import { DataExportButton } from '@/components/legal/DataExportButton';
 import { RequireMfaSetting } from '@/components/legal/RequireMfaSetting';
+import { PlatformAccessLog } from '@/components/legal/PlatformAccessLog';
 
-/** Settings → Security: two-step sign-in for this admin, the studio-wide requirement, and the data export. */
+/** Settings → Security: two-step sign-in for this admin, the studio-wide requirement, the data export, and OpalSwift access. */
 export function SecuritySettingsForm() {
   const { t } = useTranslation();
   return (
@@ -15,6 +16,7 @@ export function SecuritySettingsForm() {
       <TwoFactorSettings />
       <RequireMfaSetting />
       <DataExportButton />
+      <PlatformAccessLog />
     </section>
   );
 }

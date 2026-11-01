@@ -2453,7 +2453,32 @@
       "require_saved_on": "Two-step sign-in is now required for all admins.",
       "require_saved_off": "Two-step sign-in is now optional.",
       "enrol_required_title": "Set up two-step sign-in",
-      "enrol_required_body": "This studio requires two-step sign-in for admins. Set it up to continue."
+      "enrol_required_body": "This studio requires two-step sign-in for admins. Set it up to continue.",
+      "access_heading": "OpalSwift access",
+      "access_help": "When the OpalSwift platform team opens or changes your studio's data (for example, for support), it is recorded here. Records are kept for 2 years and cannot be edited or deleted.",
+      "access_empty": "No access by OpalSwift has been recorded.",
+      "access_col_date": "Date",
+      "access_col_kind": "Type",
+      "access_col_area": "Area",
+      "access_kind_view": "Viewed",
+      "access_kind_change": "Changed",
+      "access_area": {
+        "tenants": "Studio settings",
+        "tenant_feature_overrides": "Studio features",
+        "user_profiles": "User accounts",
+        "staff": "Staff",
+        "people": "Students",
+        "accounts": "Families / accounts",
+        "account_members": "Family members",
+        "leads": "Leads",
+        "engagements": "Enrolments",
+        "attendance": "Attendance",
+        "payments": "Payments",
+        "billing_accounts": "Billing",
+        "waiver_events": "Waivers",
+        "waiver_evidence": "Waivers",
+        "consent_records": "Consents"
+      }
     }
   }
 }

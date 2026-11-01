@@ -2453,7 +2453,32 @@
       "require_saved_on": "אימות דו-שלבי נדרש כעת מכל המנהלים.",
       "require_saved_off": "אימות דו-שלבי הוא כעת רשות.",
       "enrol_required_title": "הגדרת אימות דו-שלבי",
-      "enrol_required_body": "הסטודיו מחייב אימות דו-שלבי למנהלים. הגדירו אותו כדי להמשיך."
+      "enrol_required_body": "הסטודיו מחייב אימות דו-שלבי למנהלים. הגדירו אותו כדי להמשיך.",
+      "access_heading": "גישה של OpalSwift",
+      "access_help": "כשצוות הפלטפורמה של OpalSwift פותח או משנה מידע של הסטודיו (למשל לצורך תמיכה), הדבר נרשם כאן. הרישומים נשמרים שנתיים ואי אפשר לערוך או למחוק אותם.",
+      "access_empty": "לא נרשמה גישה של OpalSwift.",
+      "access_col_date": "תאריך",
+      "access_col_kind": "סוג",
+      "access_col_area": "תחום",
+      "access_kind_view": "צפייה",
+      "access_kind_change": "שינוי",
+      "access_area": {
+        "tenants": "הגדרות הסטודיו",
+        "tenant_feature_overrides": "תכונות הסטודיו",
+        "user_profiles": "חשבונות משתמשים",
+        "staff": "צוות",
+        "people": "תלמידים",
+        "accounts": "משפחות / חשבונות",
+        "account_members": "בני משפחה",
+        "leads": "פניות",
+        "engagements": "הרשמות",
+        "attendance": "נוכחות",
+        "payments": "תשלומים",
+        "billing_accounts": "חיוב",
+        "waiver_events": "הצהרות",
+        "waiver_evidence": "הצהרות",
+        "consent_records": "הסכמות"
+      }
     }
   }
 }
