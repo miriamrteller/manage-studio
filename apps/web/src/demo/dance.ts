@@ -182,6 +182,7 @@ function offlineCharge(ctx: DemoContext, engagementId: string): Row {
     amountMinor: Number(offering?.price_minor ?? 0),
     currency: String(offering?.currency ?? 'ILS'),
     paymentProvider: 'offline',
+    offlineInstructions: (tenant?.offline_payment_instructions as string | null | undefined) ?? null,
     mockCompleted: false,
     mockPending: false,
     pageUrl: null,
@@ -217,10 +218,6 @@ export const danceFunctions: Record<string, FunctionHandler> = {
     const context = completionContext(ctx, engagementId);
     const reason = blockReason(String(context.status), Boolean(context.waiverRequired && !context.waiverAlreadySigned));
     if (body.phase === 'load' || reason) return { context, charge: null, ...(reason ? { blockReason: reason } : {}) };
-    // Demo only: the app keeps the parent portal cached for 5 minutes and nothing
-    // refreshes it after a pay-at-the-studio enrolment (reported as an app gap),
-    // so "Go to my account" would not show the new place yet.
-    if (body.mode === 'create_engagement') setTimeout(() => void queryClient.invalidateQueries({ queryKey: ['parent-portal'] }), 0);
     return { context, charge: offlineCharge(ctx, engagementId) };
   },
 
@@ -325,6 +322,16 @@ function recordPayment(body: Row, ctx: DemoContext): Row {
 }
 
 export const danceRpcs: Record<string, RpcHandler> = {
+  /** Saved cards on a billing account (payment_method_tokens). Pay-at-the-studio accounts have none. */
+  get_billing_account_payment_method: (args, ctx) => {
+    const ba = rows(ctx, 'billing_accounts').find((b) => b.id === args.p_billing_account_id);
+    if (!ba || !ctx.user) return [];
+    if (!isAdmin(ctx) && !canRead('billing_accounts', ba, ctx)) return [];
+    return rows(ctx, 'payment_method_tokens')
+      .filter((t) => t.billing_account_id === ba.id)
+      .map((t) => ({ card_brand: t.card_brand, last4: t.last4, exp_month: t.exp_month, exp_year: t.exp_year, is_default: t.is_default }));
+  },
+
   get_engagement_person_id: (args, ctx) => {
     const eng = rows(ctx, 'engagements').find((e) => e.id === args.p_engagement_id);
     return eng && canActFor(ctx, String(eng.person_id)) ? eng.person_id : null;

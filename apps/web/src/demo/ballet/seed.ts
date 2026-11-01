@@ -225,6 +225,8 @@ export function buildSeed(): Tables {
     payment_provider_webhook_configured: false,
     payment_provider_updated_at: null,
     invoicing_provider: 'none',
+    offline_payment_instructions:
+      'Pay at the studio office before your first class (cash or bank transfer). Ask the office for the bank details.\nאפשר לשלם במשרד הסטודיו לפני השיעור הראשון (מזומן או העברה בנקאית).',
     enabled_features: [
       'people:families.manage',
       'offerings:structure.configure',
