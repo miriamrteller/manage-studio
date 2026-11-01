@@ -133,6 +133,11 @@ jobs:
       - name: supabase db lint (new errors block; known ones warn)
         run: bash scripts/ci/db-lint.sh
 
+      - name: Definer-function EXECUTE policy (supabase/security/definer-execute.json)
+        env:
+          DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: bash supabase/tests/security/run.sh
+
       # `PostgrestVersion` follows whichever PostgREST generated the file
       # (hosted vs local CLI), so that one line is not compared.
       - name: Generated DB types match the committed ones

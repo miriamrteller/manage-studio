@@ -54,11 +54,17 @@ If you know Azure DevOps release pipelines, this is the same shape:
 4. **Order: database first, then the app.** deploy-prod finishes, then deploy the
    web app (Cloudflare Worker `opalswift-app`). The web deploy is not part of this
    pipeline yet; when it is added it will be a stage after deploy-prod.
-5. **Never** `supabase db reset`, `seed*.sql` or `scripts/reseed-dev.sh` against a
+5. **Every `SECURITY DEFINER` function gets an explicit access tier.** Supabase
+   grants EXECUTE on new functions to `anon` and `authenticated` directly, so
+   `REVOKE … FROM PUBLIC` alone restricts nothing. Add the function to a tier in
+   `supabase/security/definer-execute.json` (public / authenticated / service /
+   internal) and `REVOKE`/`GRANT` to match in the same migration. `db-ci` fails
+   otherwise (`supabase/tests/security/run.sh`).
+6. **Never** `supabase db reset`, `seed*.sql` or `scripts/reseed-dev.sh` against a
    hosted project. The pipeline only ever runs `db push` (applies new migrations).
-6. **Prod has no mock flags.** deploy-prod fails its checks if any `*_MOCK` or
+7. **Prod has no mock flags.** deploy-prod fails its checks if any `*_MOCK` or
    dev-only secret is set on prod (`supabase/edge-secrets.json`).
-7. Secrets and values never go in git, logs, PRs or chat. Edge Function secrets
+8. Secrets and values never go in git, logs, PRs or chat. Edge Function secrets
    live in each Supabase project; the pipeline only compares their **names**.
 
 ## What happens when…
