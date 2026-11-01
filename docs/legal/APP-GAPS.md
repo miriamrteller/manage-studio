@@ -4,22 +4,22 @@ These are app changes the legal drafts depend on. None of them are made in the d
 
 ## Legal links
 
-- [ ] **Per-studio footer links.** `apps/web/src/components/LegalFooterLinks.tsx` (used in `src/layouts/AppLayout.tsx`) shows Privacy and Terms links only when `VITE_PRIVACY_POLICY_URL` / `VITE_TERMS_URL` are set. Both are unset by default, and there is one URL for every tenant.
+- [x] **Per-studio footer links.** *(Done: Settings → Legal fills in-app `/legal/…` pages; footer links them once published.)* `apps/web/src/components/LegalFooterLinks.tsx` (used in `src/layouts/AppLayout.tsx`) shows Privacy and Terms links only when `VITE_PRIVACY_POLICY_URL` / `VITE_TERMS_URL` are set. Both are unset by default, and there is one URL for every tenant.
   - Fix: store privacy-policy and enrolment-terms URLs (or the text itself) per tenant, and show them on tenant sites. Keep the env vars for the OpalSwift root site.
   - Docs: 03, 04, 07a.
-- [ ] **Accessibility statement and cookie notice links** in the footer, on every page (root and tenant sites). Docs: 05, 06.
+- [x] **Accessibility statement and cookie notice links** in the footer, on every page (root and tenant sites). Docs: 05, 06.
 
 ## Consent checkboxes
 
-- [ ] **Studio signup: accept Terms and DPA.** `SignupPage`, `CreateStudioPage`, `PlatformOnboardPage` / `OperatorOnboardingWizard` have no checkbox.
+- [x] **Studio signup: accept Terms and DPA.** *(Done: checkbox on Create Studio + a one-time acceptance screen for admins of studios set up by hand; stored in `legal_acceptances`.)* `SignupPage`, `CreateStudioPage`, `PlatformOnboardPage` / `OperatorOnboardingWizard` have no checkbox.
   - Fix: add a required checkbox (09 §1, "Studio signup").
   - Store user, tenant, document versions, time and IP.
   - Docs: 01, 02, 04.
-- [ ] **Enrolment: accept the enrolment terms and read the privacy policy.** `features/enrolment/components/EnrolmentStepper.tsx`, `StepClass.tsx` and `GuestVerifyStep.tsx` have no such checkbox; today only the waiver, guardian and guest acknowledgements exist.
+- [x] **Enrolment: accept the enrolment terms and read the privacy policy.** *(Done for parent/guest enrolment before payment, once the studio has published its pages. Still open: admin-entered enrolments and the pay-by-link page don't ask yet.)* `features/enrolment/components/EnrolmentStepper.tsx`, `StepClass.tsx` and `GuestVerifyStep.tsx` have no such checkbox; today only the waiver, guardian and guest acknowledgements exist.
   - Fix: add a required checkbox before payment (09 §1), and the same in `AdminEnrolStudentModal` (admin attests on the parent's behalf, or sends a link).
   - Store the terms version and time.
   - Docs: 03, 07a.
-- [ ] **Quote acceptance (photography).** `PublicQuoteView` / `accept-quote`: link the contract (07c) and the privacy policy before the client accepts.
+- [x] **Quote acceptance (photography).** *(Privacy line added above Accept; the contract itself is still signed in the next step.)* `PublicQuoteView` / `accept-quote`: link the contract (07c) and the privacy policy before the client accepts.
 
 ## Marketing consent
 
@@ -43,7 +43,7 @@ These are app changes the legal drafts depend on. None of them are made in the d
   - Today: `features/people/components/ConsentFields.tsx` has two booleans (`photo_consent`, `media_consent`).
   - Fix: replace them with per-purpose options (internal use / parents' group / website and social media) plus the guardian line for minors (09 §2).
   - Store the time and wording version, and allow withdrawal from the parent portal.
-- [ ] **Hebrew typo.** `apps/web/src/i18n/he.json`, `pages.people.photo_consent_label` = "אני מנתן הסכמה לצילום". It should read "אני נותן/ת הסכמה לצילום" (also check `media_consent_label`, "אני מנתן הסכמה להשתמש בתוכן מדיה").
+- [x] **Hebrew typo.** `apps/web/src/i18n/he.json`, `pages.people.photo_consent_label` = "אני מנתן הסכמה לצילום". It should read "אני נותן/ת הסכמה לצילום" (also check `media_consent_label`, "אני מנתן הסכמה להשתמש בתוכן מדיה").
 - [ ] **Split the seed waiver.** The `consent_templates` seed "Health & Liability Waiver" (`supabase/seed.sql`, id `…0801`) bundles the health declaration, a release of liability and indemnity, and a photo/media release.
   - Fix: replace it with the health declaration (07b).
   - Move photo consent to the separate opt-in above.
@@ -52,7 +52,7 @@ These are app changes the legal drafts depend on. None of them are made in the d
 
 ## Privacy notice on public forms
 
-- [ ] **Privacy link next to every form that collects personal data.** Missing today on:
+- [x] **Privacy link next to every form that collects personal data.** Missing today on:
   - `InquirePage`;
   - `BookingPage`;
   - `QuotePage` / `PublicQuoteView`;

@@ -1,3 +1,4 @@
+import { platformTermsVersion, recordLegalAcceptance } from '@/legal/acceptance';
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { tenantOrigin } from '@/lib/tenantUrl';
@@ -99,6 +100,15 @@ export function useCreateStudio() {
         return { ok: false, message: rpcError.message };
       }
 
+      // Record acceptance of the platform terms + DPA ticked on the form. Best
+      // effort: if it fails, the admin is asked again on first sign-in
+      // (PlatformTermsGate), so nothing is lost.
+      if (session) {
+        await recordSignupAcceptance(data.subdomain).catch((err) =>
+          console.warn('[createStudio] could not record terms acceptance', err),
+        );
+      }
+
       // Step 3: Build cross-subdomain redirect URL with session tokens in hash
       // SessionHandoffPage reads hash via establishSessionFromAuthCallback()
       const base = tenantOrigin(data.subdomain);
@@ -120,4 +130,19 @@ export function useCreateStudio() {
   }
 
   return { createStudio, loading, error };
+}
+
+async function recordSignupAcceptance(subdomain: string): Promise<void> {
+  const { data: rows, error } = await supabase.rpc('get_tenant_config_by_subdomain', { p_subdomain: subdomain });
+  if (error) throw error;
+  const tenantId = Array.isArray(rows) ? rows[0]?.id : undefined;
+  if (!tenantId) throw new Error('tenant not found after provisioning');
+  const version = await platformTermsVersion();
+  await recordLegalAcceptance({
+    tenantId,
+    documents: ['platform_terms', 'dpa', 'opalswift_privacy'],
+    version,
+    language: document.documentElement.lang === 'en' ? 'en' : 'he',
+    role: 'tenant_admin',
+  });
 }

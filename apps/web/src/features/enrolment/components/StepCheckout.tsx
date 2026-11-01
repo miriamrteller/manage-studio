@@ -3,6 +3,7 @@ import type { Engagement } from '@shared/schemas';
 import type { CheckoutChargePayload } from '../lib/checkoutBootstrapTypes';
 import { EnrolmentPaymentForm } from './EnrolmentPaymentForm';
 import { StepBackButton } from './StepBackButton';
+import { EnrolmentTermsConsent } from './EnrolmentTermsConsent';
 import { formatOfferingPrice } from '@/lib/formatOfferingPrice';
 
 export interface StepCheckoutProps {
@@ -12,6 +13,8 @@ export interface StepCheckoutProps {
   checkoutError: string | null;
   isPreparing: boolean;
   requireAuth: boolean;
+  /** 'guardian' when a parent enrols a child under 18 (recorded with the terms acceptance). */
+  acceptedByRole?: 'self' | 'guardian';
   onPaymentSuccess: () => void;
   onPrevious: () => void;
   canGoBack?: boolean;
@@ -24,6 +27,7 @@ export function StepCheckout({
   checkoutError,
   isPreparing,
   requireAuth,
+  acceptedByRole = 'self',
   onPaymentSuccess,
   onPrevious,
   canGoBack = true,
@@ -87,14 +91,16 @@ export function StepCheckout({
           )}
         </div>
       )}
-      <EnrolmentPaymentForm
-        classId={enrolmentData.offering_id}
-        engagementId={checkoutEnrolmentId}
-        requireAuth={requireAuth}
-        preloadedCharge={checkoutCharge}
-        onPaid={onPaymentSuccess}
-        onPrevious={onPrevious}
-      />
+      <EnrolmentTermsConsent engagementId={checkoutEnrolmentId} acceptedByRole={acceptedByRole}>
+        <EnrolmentPaymentForm
+          classId={enrolmentData.offering_id}
+          engagementId={checkoutEnrolmentId}
+          requireAuth={requireAuth}
+          preloadedCharge={checkoutCharge}
+          onPaid={onPaymentSuccess}
+          onPrevious={onPrevious}
+        />
+      </EnrolmentTermsConsent>
     </div>
   );
 }

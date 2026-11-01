@@ -12,6 +12,7 @@ import { resolveAuthErrorMessage } from '@/lib/authErrors';
 import SignupStep1 from '@/features/auth/components/SignupStep1';
 import SignupStep2 from '@/features/auth/components/SignupStep2';
 import SignupStep3 from '@/features/auth/components/SignupStep3';
+import { PrivacyNotice } from '@/components/legal/PrivacyNotice';
 
 type SignupStep = 1 | 2 | 3;
 
@@ -93,7 +94,10 @@ export default function SignupPage() {
 
         <FormProvider {...form}>
           {step === 1 && (
-            <SignupStep1 onSubmit={onSubmitStep1} loading={sendOtpLoading} />
+            <>
+              <SignupStep1 onSubmit={onSubmitStep1} loading={sendOtpLoading} />
+              <PrivacyNotice purpose="signup" className="mt-3" />
+            </>
           )}
           {step === 2 && (
             <SignupStep2

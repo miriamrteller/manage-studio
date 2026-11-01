@@ -12,6 +12,7 @@ import {
 import { PublicQuoteActions } from './PublicQuoteActions';
 import { PublicQuoteLines } from './PublicQuoteLines';
 import { PublicQuoteNextSteps } from './PublicQuoteNextSteps';
+import { PrivacyNotice } from '@/components/legal/PrivacyNotice';
 
 export function PublicQuoteView({ token }: { token: string }) {
   const { t, i18n } = useTranslation();
@@ -102,6 +103,7 @@ function QuoteBody({ quote, token, tenantId, language, onSettled }: QuoteBodyPro
         <PublicQuoteNextSteps result={accept.data ?? null} busy={accept.isPending} onResume={() => accept.mutate()} />
       )}
       {quote.status === 'accepted' && <BackToPortalButton />}
+      {open && <PrivacyNotice purpose="quote" />}
       {open && (
         <PublicQuoteActions busy={accept.isPending || decline.isPending}
           onAccept={() => accept.mutate()} onDecline={(reason) => decline.mutate(reason)} />

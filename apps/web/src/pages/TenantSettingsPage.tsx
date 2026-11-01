@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Paintbrush, Building2, Globe, CreditCard, FileText } from 'lucide-react';
+import { Paintbrush, Building2, Globe, CreditCard, FileText, Scale } from 'lucide-react';
 
 import { SettingsLayout, type SettingsSection } from '@/features/settings/components/SettingsLayout';
 import { BrandingSettingsForm } from '@/features/settings/components/BrandingSettingsForm';
@@ -9,6 +9,7 @@ import { SchoolProfileForm } from '@/features/settings/components/SchoolProfileF
 import { LocaleSettingsForm } from '@/features/settings/components/LocaleSettingsForm';
 import { PaymentSettingsForm } from '@/features/settings/components/PaymentSettingsForm';
 import { InvoicingSettingsForm } from '@/features/settings/components/InvoicingSettingsForm';
+import { LegalSettingsForm } from '@/features/settings/components/LegalSettingsForm';
 
 const SETTINGS_SECTIONS: SettingsSection[] = [
   {
@@ -45,6 +46,13 @@ const SETTINGS_SECTIONS: SettingsSection[] = [
     label: 'Invoicing',
     icon: FileText,
     component: InvoicingSettingsForm,
+  },
+  {
+    id: 'legal',
+    labelKey: 'settings.tabs.legal',
+    label: 'Legal',
+    icon: Scale,
+    component: LegalSettingsForm,
   },
 ];
 

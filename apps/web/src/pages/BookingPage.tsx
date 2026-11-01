@@ -10,6 +10,7 @@ import { BookingService, type AvailableSlot, type BookableOffering } from '@/fea
 import { useIsNarrowViewport } from '@/features/scheduling/hooks/useIsNarrowViewport';
 import { cn } from '@/lib/utils';
 import { formatOfferingPrice } from '@/lib/formatOfferingPrice';
+import { PrivacyNotice } from '@/components/legal/PrivacyNotice';
 
 function formatWhen(slot: AvailableSlot): string {
   const start = new Date(slot.starts_at);
@@ -259,6 +260,7 @@ export default function BookingPage() {
             />
           </label>
           <p className="text-sm text-gray-500">{t('scheduling.book.hold_note')}</p>
+          <PrivacyNotice purpose="booking" />
           <Button
             variant="primary"
             className="w-full sm:w-auto"

@@ -49,6 +49,7 @@ import InquirePage from "./pages/InquirePage";
 import AdminQuotesPage from "./pages/AdminQuotesPage";
 import AdminQuoteEditorPage from "./pages/AdminQuoteEditorPage";
 import QuotePage from "./pages/QuotePage";
+import LegalPage from "./pages/LegalPage";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { RouteErrorFallback } from "./components/RouteErrorFallback";
 import { MonitoringContextSync } from "./lib/monitoring/MonitoringContextSync";
@@ -116,6 +117,7 @@ const router = createBrowserRouter([
           { path: 'book/:offeringId', element: <BookingPage /> },
           { path: 'inquire', element: <InquirePage /> },
           { path: 'quote/:token', element: <QuotePage /> },
+          { path: 'legal/:doc', element: <LegalPage /> },
           { path: 'dashboard', element: <DashboardRedirectPage /> },
 
           // ADMIN ROUTES
