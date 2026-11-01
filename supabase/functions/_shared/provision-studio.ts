@@ -38,6 +38,15 @@ export const InviteOwnerSchema = z.object({
   ownerEmail: z.string().trim().toLowerCase().email(),
 });
 
+/**
+ * An email as an exact ILIKE pattern: `_` and `%` are wildcards in LIKE, so
+ * "a_b@x.com" would also match "axb@x.com". Escapes them (and the escape
+ * character) so the lookup is an exact, case-insensitive match.
+ */
+export function exactIlikePattern(value: string): string {
+  return value.replace(/[\\%_]/g, (ch) => `\\${ch}`);
+}
+
 export interface ProvisionStudioDeps {
   /** provision_studio RPC; resolves to the new tenant id. */
   provisionStudio(input: ProvisionStudioInput): Promise<string>;
