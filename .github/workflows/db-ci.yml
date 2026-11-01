@@ -106,6 +106,8 @@ jobs:
         run: |
           set -e
           for t in supabase/tests/*/run.sh; do
+            # security/ needs Supabase's roles and grants: it runs in local-stack.
+            [ "$t" = supabase/tests/security/run.sh ] && continue
             echo "::group::$t"
             bash "$t"
             echo "::endgroup::"
