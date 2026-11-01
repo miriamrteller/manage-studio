@@ -68,19 +68,24 @@ export function InvoicingToggleForm() {
       </h2>
       <p className="text-sm text-muted-foreground">{t('settings.invoicing_toggle.description')}</p>
 
-      <label className="flex items-start gap-2 text-sm">
+      <div className="flex items-start gap-2 text-sm">
         <input
+          id="invoicing-toggle-enabled"
           type="checkbox"
           className="mt-1"
           checked={enabled}
+          aria-describedby="invoicing-toggle-enabled-hint"
           onChange={(e) => setEnabled(e.target.checked)}
         />
-        <span>
-          <span className="font-medium">{t('settings.invoicing_toggle.enabled_label')}</span>
-          <br />
-          <span className="text-muted-foreground">{t('settings.invoicing_toggle.enabled_hint')}</span>
-        </span>
-      </label>
+        <div>
+          <label htmlFor="invoicing-toggle-enabled" className="font-medium">
+            {t('settings.invoicing_toggle.enabled_label')}
+          </label>
+          <p id="invoicing-toggle-enabled-hint" className="text-muted-foreground">
+            {t('settings.invoicing_toggle.enabled_hint')}
+          </p>
+        </div>
+      </div>
 
       {enabled ? (
         <div className="space-y-2">
