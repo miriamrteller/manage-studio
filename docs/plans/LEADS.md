@@ -191,6 +191,40 @@ Steps 1–4 are the beta (about 1 week). The default card payment path is not to
   - Name, email, phone, message, marketing consent, source tags and Turnstile
     are always on the form and cannot be switched off.
 
+- **2c-i "Get leads"** (Leads page, collapsed once leads exist, and Settings).
+  It assumes the studio has **no website**: the hosted form
+  (`https://<sub>.opalswift.com/inquire`) is the default way in. It shows:
+  1. **Your enquiry form:**
+     - the link, with Copy, Open and Share buttons. Share uses the phone's own
+       share sheet and appears only where it is supported.
+     - a QR code, downloadable as a PNG, and an A4 poster as a PDF with the
+       studio's name, logo and colour and "Scan to enquire" in both languages.
+       Both are tagged `src=flyer`.
+     - a tagged link for WhatsApp, Instagram bio, Facebook, Google Business,
+       email, SMS and flyer, each with a one-line how-to. WhatsApp, email and
+       SMS also open their composer.
+  2. *(2c-ii, next PR)* Send the form to someone.
+  3. **Have your own website?** (collapsed): the embed snippet, plus 3–4 steps
+     each for Wix, WordPress, Squarespace and Google Sites.
+  4. **The lead email address**, in one line.
+  - **New lead sources:** `facebook`, `google`, `sms`, `flyer` and `direct`
+    come from links; `phone`, `walk_in`, `referral` and `other` are for leads
+    added by hand. Manual-only sources are never taken from a link. The leads
+    page filters by source. The external CRM contract still maps unknown
+    sources to "Website".
+  - The share, QR and poster parts take a form target (`/inquire` today), so
+    named forms (`/f/<slug>`) can reuse them.
+
+### Social channels: now and later
+
+- **Now (P1):** tagged links and a QR poster, above. Each lead records where it
+  came from.
+- **P2:** Meta Lead Ads, i.e. Facebook/Instagram Instant Forms delivered to us
+  by webhook, which need a Meta app and app review. Also WhatsApp
+  click-to-chat with a reference code.
+- **P3:** Instagram DMs as leads, which need Meta app review and an Instagram
+  business account.
+
 ### Google Forms fallback (no code)
 
 A studio that already uses Google Forms can keep it:
