@@ -12,8 +12,6 @@ import { useMyStudios } from './useMyStudios';
 
 const selfServeSignup = () => import.meta.env.VITE_ENABLE_SELF_SERVE_SIGNUP === 'true';
 
-const buttonStyle = { backgroundColor: OPALSWIFT_BRAND.ink, color: '#ffffff' };
-
 /**
  * app.opalswift.com: a sign-in gate, not a studio. Signed out → what OpalSwift is
  * and "Sign in". Signed in → links to the user's studios (all of them, plus
@@ -50,7 +48,7 @@ export default function PlatformWelcomePage() {
         <p className="mb-2 text-lg text-gray-700">{t('platform_welcome.intro')}</p>
         <p className="mb-8 text-gray-700">{t('platform_welcome.sign_in_hint')}</p>
         <div>
-          <Button onClick={() => navigate('/login', { state: { from: '/' } })} style={buttonStyle}>
+          <Button variant="primary" onClick={() => navigate('/login', { state: { from: '/' } })}>
             {t('platform_welcome.sign_in')}
           </Button>
         </div>
@@ -97,7 +95,7 @@ export default function PlatformWelcomePage() {
         <h1 className="mb-3 text-3xl font-bold">{t('platform_welcome.no_studio_title')}</h1>
         <p className="mb-8 text-gray-700">{t('platform_welcome.create_studio_hint')}</p>
         <div className="flex flex-wrap justify-center gap-3">
-          <Button onClick={() => navigate('/create-studio')} style={buttonStyle}>
+          <Button variant="primary" onClick={() => navigate('/create-studio')}>
             {t('platform_welcome.create_studio')}
           </Button>
           <Button variant="outline" onClick={() => void signOut()}>{t('nav.logout')}</Button>
@@ -138,8 +136,7 @@ function PlatformAdminActions() {
     <div className="flex flex-wrap justify-center gap-3">
       <Link
         to="/platform/onboard"
-        className="inline-flex items-center rounded-md px-4 py-2 font-medium focus-visible:outline-2 outline-offset-2"
-        style={buttonStyle}
+        className="button-primary inline-flex items-center focus-visible:outline-2 outline-offset-2"
       >
         {t('platform_welcome.new_studio')}
       </Link>

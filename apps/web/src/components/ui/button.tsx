@@ -18,8 +18,10 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     // Primary: the derived fill (AA text for any brand), an overlay-only sheen
     // and a soft glow in its own colour.
+    // The fill runs through the brand gradient (--gradient-primary, derived from
+    // the theme; `none` = flat on Solid chrome). Disabled drops sheen and glow.
     const softPrimary =
-      '[background-image:var(--sheen-soft)] [box-shadow:var(--edge-emboss),var(--glow-primary)] hover:[box-shadow:var(--edge-emboss),var(--glow-primary-hover)] active:[background-image:none] active:[box-shadow:var(--edge-emboss)]';
+      '[background-image:var(--sheen-soft),var(--gradient-primary)] [box-shadow:var(--edge-emboss),var(--glow-primary)] hover:[background-image:var(--sheen-soft),var(--gradient-primary-hover)] hover:[box-shadow:var(--edge-emboss),var(--glow-primary-hover)] active:[background-image:var(--gradient-primary-hover)] active:[box-shadow:var(--edge-emboss)] disabled:[background-image:var(--gradient-primary)] disabled:[box-shadow:none] focus-visible:outline-[var(--color-primary-ink)]';
 
     const variantClasses = {
       default:
