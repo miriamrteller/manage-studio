@@ -32,12 +32,23 @@ const SCHEDULE_ID = '55555555-5555-5555-5555-555555555555';
 const OFFERING_ID = '33333333-3333-3333-3333-333333333333';
 const PERSON_ID = '44444444-4444-4444-4444-444444444444';
 
+/** A select chain that accepts any filter and resolves maybeSingle to `row`. */
+function anyFilterChain(row: unknown) {
+  const chain: Record<string, unknown> = {};
+  for (const m of ['eq', 'is', 'in', 'order', 'limit']) chain[m] = () => chain;
+  chain.maybeSingle = async () => ({ data: row, error: null });
+  return chain;
+}
+
 function makeBillingService(options: {
   paymentProvider: 'grow' | 'icount' | 'invoice4u';
   tenantId: string;
   savedToken?: string | null;
+  /** Provider of the enrolment's first payment ('manual' = recorded at the studio). */
+  firstPaymentProvider?: string;
 }) {
   const token = options.savedToken === undefined ? 'saved_tok_abc' : options.savedToken;
+  const firstPaymentProvider = options.firstPaymentProvider ?? options.paymentProvider;
 
   const service = {
     from(table: string) {
@@ -101,18 +112,13 @@ function makeBillingService(options: {
 
       if (table === 'payment_method_tokens') {
         return {
-          select: () => ({
-            eq: () => ({
-              is: () => ({
-                eq: () => ({
-                  maybeSingle: async () =>
-                    token
-                      ? { data: { provider_token: token }, error: null }
-                      : { data: null, error: null },
-                }),
-              }),
-            }),
-          }),
+          select: () => anyFilterChain(token ? { id: 'tok-1', provider_token: token } : null),
+        };
+      }
+
+      if (table === 'payments') {
+        return {
+          select: () => anyFilterChain({ provider: firstPaymentProvider }),
         };
       }
 

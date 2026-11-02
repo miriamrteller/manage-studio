@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
 import { markJobPaymentRequestPaid } from "../../jobs/mark-request-paid.ts";
 import { applyBillingScheduleDunningFailure } from "../apply-billing-schedule-dunning-failure.ts";
+import { cardLinkPeriod } from "../card-link.ts";
 import { finalisePayment } from "../finalise-payment.ts";
 import { GrowPaymentProvider, type ParsedGrowNotify } from "../providers/grow.ts";
 import type { GrowPaymentRow } from "./pending-charge.ts";
@@ -33,6 +34,7 @@ export async function settleGrowPayment(
     engagementId: row.engagement_id as string,
     chargeType: row.charge_type === "renewal" ? "renewal" : "initial",
     billingScheduleId: parsed.event.metadata.billing_schedule_id,
+    paidForPeriod: cardLinkPeriod(parsed.event.providerPaymentRef) ?? undefined,
   });
 }
 

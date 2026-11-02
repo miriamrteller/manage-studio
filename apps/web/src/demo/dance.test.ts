@@ -94,8 +94,16 @@ describe('ballet demo: studio actions', () => {
     expect(pending.status).toBe('active');
     const pay = tables.payments.find((p) => p.id === (data as Row).paymentId)!;
     expect(pay).toMatchObject({ provider: 'manual', payment_method: 'cash', status: 'succeeded', invoice_url: null });
+    // Now active: recording again is the next month's fee on a monthly class, refused otherwise.
+    const offering = tables.offerings.find((o) => o.id === pending.offering_id)!;
     const again = await c.functions.invoke('record-payment', { body: { engagement_id: pending.id, method: 'cash' } });
-    expect(again.error).not.toBeNull();
+    if (offering.billing_mode === 'recurring') {
+      expect(again.error).toBeNull();
+      const monthly = tables.payments.find((p) => p.id === (again.data as Row).paymentId)!;
+      expect(monthly).toMatchObject({ charge_type: 'renewal', provider: 'manual', status: 'succeeded' });
+    } else {
+      expect(again.error).not.toBeNull();
+    }
   });
 
   it('record-payment without a signed declaration leaves the place pending_waiver', async () => {

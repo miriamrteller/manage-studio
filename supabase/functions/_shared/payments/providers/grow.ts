@@ -315,8 +315,9 @@ export class GrowPaymentProvider implements PaymentProvider {
       paymentNum: 1,
       maxPaymentNum: params.installments ?? 1, // GAP 1: installments support (1–12)
       transactionUniqueIdentifier: params.idempotencyKey,
-      // Save the card token on the first (enrolment) charge so renewals can reuse it (G6).
-      saveCardToken: params.metadata.charge_type === "initial" ? 1 : 0,
+      // Save the card token on the first (enrolment) charge so renewals can reuse it (G6), and
+      // on a card-link charge, where a parent adds a card to an active monthly plan.
+      saveCardToken: params.metadata.charge_type === "initial" || params.saveCard ? 1 : 0,
       ...(notifyUrl ? { notifyUrl } : {}),
       // The studio's tax ID for the Grow document, passed through as entered. No VAT type is
       // sent: Grow applies the VAT rules of the owner's own Grow account, and the amount is
@@ -399,7 +400,7 @@ export class GrowPaymentProvider implements PaymentProvider {
     metadata: ParsedGrowNotify["event"]["metadata"],
     body: Record<string, unknown>,
   ): Promise<void> {
-    if (metadata.charge_type !== "initial") return;
+    if (metadata.charge_type !== "initial" && metadata.save_card !== "1") return;
     const data = (body.data as Record<string, unknown> | undefined) ?? body;
     const token = (data.token ?? data.cardToken) as string | undefined;
     if (!token) return;

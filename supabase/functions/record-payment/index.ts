@@ -3,6 +3,7 @@ import { handleOptions, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/supabase.ts";
 import { resolveOfferingPrice } from "../_shared/email-dist/pricing.js";
 import { finalisePayment } from "../_shared/payments/finalise-payment.ts";
+import { recordManualRenewal } from "../_shared/payments/record-manual-renewal.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
 
 const RecordPaymentBodySchema = z.object({
@@ -53,6 +54,28 @@ Deno.serve(withMonitoring("record-payment", async (req) => {
 
   if (engagementError || !engagement || engagement.tenant_id !== tenantId) {
     return jsonResponse({ error: "Engagement not found" }, 404);
+  }
+
+  // An active enrolment on a monthly plan: record that month's fee paid at the studio.
+  if (engagement.status === "active") {
+    const result = await recordManualRenewal(service, {
+      tenantId,
+      engagement: {
+        id: engagement.id as string,
+        person_id: engagement.person_id as string,
+        offering_id: engagement.offering_id as string,
+        billing_account_id: engagement.billing_account_id as string | null,
+      },
+      method: body.method,
+      amountMinor: body.amount_minor,
+      note: body.note,
+      actorUserId: auth.user.id,
+    }, {
+      finalise: finalisePayment,
+      priceMinor: (priceMinor) => resolveOfferingPrice({ price_minor: priceMinor }).totalMinor,
+    });
+    if (!result.ok) return jsonResponse({ error: result.error, code: result.code }, result.status);
+    return jsonResponse({ ok: true, paymentId: result.paymentId, period: result.period });
   }
 
   if (engagement.status !== "pending_payment") {

@@ -97,3 +97,15 @@ export function isProviderSwitchBlockedError(error: unknown): boolean {
   const message = error && typeof error === 'object' && 'message' in error ? String(error.message) : '';
   return message.includes(PROVIDER_SWITCH_BLOCKED_ERROR);
 }
+
+/**
+ * Payment providers that can save a card on an active monthly enrolment through a card link,
+ * so later months are charged to it (payments B b). Grow only: YPay has no saved cards, and
+ * Invoice4U cannot charge a saved card yet. Mirrors CARD_LINK_PROVIDERS in
+ * supabase/functions/_shared/payments/card-link.ts (a test checks the two agree).
+ */
+export const CARD_LINK_PAYMENT_PROVIDERS = ['grow'] as const;
+
+export function cardLinkSupported(paymentProvider: string | null | undefined): boolean {
+  return (CARD_LINK_PAYMENT_PROVIDERS as readonly string[]).includes(paymentProvider ?? '');
+}

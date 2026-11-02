@@ -12,6 +12,8 @@ export const ChargeMetadataSchema = z.object({
   pretax_amount_minor: z.string().optional(),
   vat_amount_minor: z.string().optional(),
   total_amount_minor: z.string().optional(),
+  /** "1": save the card used for this charge for later renewals (card link, payments B b). */
+  save_card: z.literal("1").optional(),
 });
 
 export type ChargeMetadata = z.infer<typeof ChargeMetadataSchema>;
@@ -23,6 +25,8 @@ export interface ChargeParams {
   metadata: ChargeMetadata;
   savedToken?: string;
   customerRef?: string;
+  /** Ask the hosted page to save the card for renewals (Grow saveCardToken), not only on a first charge. */
+  saveCard?: boolean;
   installments?: number; // GAP 1: number of installments (1–12); defaults to 1
   /**
    * Tax-document line for providers that issue the document bundled with the
@@ -89,4 +93,10 @@ export interface FinalisePaymentParams {
   billingScheduleId?: string;
   actorUserId?: string | null;
   skipDocumentEnqueue?: boolean;
+  /**
+   * Renewal recorded by hand for one month (YYYY-MM, the schedule's due month): the schedule
+   * moves on exactly one month if that month is still the one due, so paying ahead works and
+   * a retry never moves it twice.
+   */
+  paidForPeriod?: string;
 }

@@ -282,12 +282,42 @@ function hasSignedWaiver(ctx: DemoContext, eng: Row): boolean {
  * 'manual', no tax document (invoicing off). The place becomes active, or
  * pending_waiver with a 7-day deadline when the declaration is not signed yet.
  */
+/**
+ * Demo of a monthly fee paid at the studio for an active monthly enrolment (record-payment's
+ * renewal path): each recording pays the next month after the last one recorded.
+ */
+function recordDemoMonthlyPayment(eng: Row, method: string, body: Row, ctx: DemoContext): Row {
+  const offering = rows(ctx, 'offerings').find((o) => o.id === eng.offering_id);
+  if (!offering || offering.billing_mode !== 'recurring') {
+    throw new DemoRpcError('This enrolment has no monthly plan to record a payment for');
+  }
+  const paid = rows(ctx, 'payments').filter((p) => p.engagement_id === eng.id && p.status === 'succeeded');
+  const first = new Date(String(paid[0]?.paid_at ?? ctx.now()));
+  const due = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + paid.length, 1));
+  const period = due.toISOString().slice(0, 7);
+  const now = ctx.now();
+  const payment = {
+    id: ctx.uuid(), tenant_id: TENANT_ID, account_id: null, person_id: eng.person_id,
+    offering_id: eng.offering_id, engagement_id: eng.id, billing_account_id: eng.billing_account_id,
+    charge_type: 'renewal', provider: 'manual', provider_payment_ref: `manual_renewal_${String(eng.id)}_${period}`,
+    payment_method: method, pretax_amount_minor: 0, vat_rate: 0, vat_amount_minor: 0,
+    total_amount_minor: Number(offering.price_minor ?? 0), currency: String(offering.currency ?? 'ILS').toUpperCase(),
+    status: 'succeeded', paid_at: now, description: (body.note as string | undefined) ?? `Monthly fee ${period}`,
+    created_by: ctx.user?.id ?? null, approved_by: ctx.user?.id ?? null, external_document_number: null,
+    invoice_url: null, created_at: now, updated_at: now,
+  };
+  rows(ctx, 'payments').push(payment);
+  setTimeout(() => void queryClient.invalidateQueries(), 0);
+  return { ok: true, paymentId: payment.id, period };
+}
+
 function recordPayment(body: Row, ctx: DemoContext): Row {
   requireAdmin(ctx);
   const method = String(body.method ?? '');
   if (method !== 'cash' && method !== 'bank_transfer') throw new DemoRpcError('Invalid request body');
   const eng = rows(ctx, 'engagements').find((e) => e.id === body.engagement_id);
   if (!eng) throw new DemoRpcError('Engagement not found');
+  if (eng.status === 'active') return recordDemoMonthlyPayment(eng, method, body, ctx);
   if (eng.status !== 'pending_payment') throw new DemoRpcError('Engagement is not pending payment');
   eng.billing_account_id ??= ensureBillingAccount(ctx, String(eng.person_id));
   if (rows(ctx, 'payments').some((p) => p.engagement_id === eng.id && p.status === 'succeeded')) {
