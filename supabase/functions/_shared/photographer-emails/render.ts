@@ -8,6 +8,7 @@ import {
   type PhotographerEmailKey,
   type PhotographerEmailLanguage,
 } from "../photographer-email-shells/generated.ts";
+import { applyEmailBrand } from "../email-brand.ts";
 
 export const PHOTOGRAPHER_EMAIL_KEYS: readonly PhotographerEmailKey[] = [
   "quote_sent",
@@ -57,12 +58,13 @@ export function renderPhotographerEmail(input: RenderPhotographerEmailInput): { 
   const variant = selectPhotographerEmailVariant(input.key, input.variables);
   const shell = (variant ? PHOTOGRAPHER_EMAIL_VARIANT_SHELLS[input.key]?.[variant]?.[language] : undefined) ??
     PHOTOGRAPHER_EMAIL_SHELLS[input.key][language];
-  const html = applyPhotographerEmailShell(shell, {
+  const shellHtml = applyPhotographerEmailShell(shell, {
     schoolName: input.schoolName,
     primaryColor: input.primaryColor,
     accentColor: input.accentColor,
     variables: input.variables,
   });
+  const html = applyEmailBrand(shellHtml, input.primaryColor, input.accentColor);
   // Subjects interpolate {schoolName} and any template variable (e.g. {clientName}).
   let subject = PHOTOGRAPHER_EMAIL_SUBJECTS[input.key][language].split("{schoolName}").join(input.schoolName);
   for (const [name, value] of Object.entries(input.variables)) {

@@ -68,7 +68,6 @@ export default function StudioOwnerWelcomeEmail({
       schoolLogoUrl={logoUrl}
       language={language}
       colors={colors}
-      gradient
       gradientAnchor={OPALSWIFT_EMAIL_ANCHOR}
       // The footer's "do not reply" line would contradict "just reply" here.
       footerStrings={{ ...footerStrings, automated_notice: text(strings, 'footer_notice') }}

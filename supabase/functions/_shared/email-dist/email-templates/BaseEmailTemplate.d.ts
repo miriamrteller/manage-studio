@@ -42,8 +42,8 @@ interface BaseEmailTemplateProps {
      */
     footerStrings?: EmailFooterStrings;
     /**
-     * Brand gradient on the header band, primary button and sign-in code (auth
-     * emails). Off = the flat primary colour, as every other email.
+     * Brand gradient on the header band, primary button and code (default). Off =
+     * the flat primary colour.
      */
     gradient?: boolean;
     /**

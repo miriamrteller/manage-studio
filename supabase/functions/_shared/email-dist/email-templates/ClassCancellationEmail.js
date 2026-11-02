@@ -1,7 +1,8 @@
 /* @ts-self-types="./ClassCancellationEmail.d.ts" */
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
-import { Button, Text, } from '@react-email/components';
+import { Text, } from '@react-email/components';
 import BaseEmailTemplate from './BaseEmailTemplate.js';
+import { EmailPrimaryButton } from './primitives/index.js';
 /**
  * Default strings (fallback when i18n/overrides not provided)
  * Matches structure in email-templates-en.json
@@ -70,16 +71,7 @@ export default function ClassCancellationEmail({ schoolName, schoolLogoUrl, reci
                             fontSize: '14px',
                             marginBottom: '20px',
                             lineHeight: '1.6',
-                        }, children: finalStrings.reschedule_instructions || DEFAULT_STRINGS.reschedule_instructions }), _jsx("div", { style: { marginBottom: '25px', textAlign: 'center' }, children: _jsx(Button, { href: rebookUrl, style: {
-                                backgroundColor: 'var(--email-primary)',
-                                color: '#ffffff',
-                                padding: '12px 32px',
-                                borderRadius: '6px',
-                                textDecoration: 'none',
-                                display: 'inline-block',
-                                fontWeight: '600',
-                                fontSize: '16px',
-                            }, children: finalStrings.cta_button || DEFAULT_STRINGS.cta_button }) })] })), _jsx(Text, { style: {
+                        }, children: finalStrings.reschedule_instructions || DEFAULT_STRINGS.reschedule_instructions }), _jsx(EmailPrimaryButton, { href: rebookUrl, children: finalStrings.cta_button || DEFAULT_STRINGS.cta_button })] })), _jsx(Text, { style: {
                     fontSize: '14px',
                     marginBottom: '10px',
                     color: 'var(--email-neutral)',
