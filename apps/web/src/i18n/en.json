@@ -1891,8 +1891,6 @@
     "address_taken": "This address is already taken.",
     "address_invalid": "Use lowercase letters, numbers and hyphens only.",
     "language": "Main language",
-    "country": "Country",
-    "country_il": "Israel",
     "type_question": "What kind of business is it?",
     "vertical_dance-studio": "Dance studio",
     "vertical_dance-studio_hint": "Classes, terms and family billing",

@@ -1891,8 +1891,6 @@
     "address_taken": "הכתובת הזו כבר תפוסה.",
     "address_invalid": "יש להשתמש באותיות קטנות באנגלית, מספרים ומקפים בלבד.",
     "language": "שפה ראשית",
-    "country": "מדינה",
-    "country_il": "ישראל",
     "type_question": "איזה סוג עסק זה?",
     "vertical_dance-studio": "סטודיו לריקוד",
     "vertical_dance-studio_hint": "שיעורים, תקופות וחיוב משפחות",

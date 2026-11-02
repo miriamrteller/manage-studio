@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { useTenant } from '@/hooks/useTenant';
 import queryClient from '@/lib/query-client';
-import { StudioCountry } from '@/components/shared/StudioCountry';
 
 type LocaleRow = {
   language_default: 'he' | 'en';
@@ -68,8 +67,6 @@ export function LocaleSettingsForm() {
         .from('tenants')
         .update({
           language_default: languageDefault,
-          // OpalSwift is for studios in Israel only.
-          country: 'IL',
           currency: currency.trim().toUpperCase(),
           phone_region: phoneRegion.trim().toUpperCase(),
         })
@@ -106,10 +103,6 @@ export function LocaleSettingsForm() {
           <option value="he">{t('settings.hub.language_he')}</option>
           <option value="en">{t('settings.hub.language_en')}</option>
         </select>
-      </div>
-
-      <div className="space-y-2">
-        <StudioCountry idPrefix="country" />
       </div>
 
       <div className="space-y-2">

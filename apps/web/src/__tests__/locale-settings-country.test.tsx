@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /**
- * Settings → Language & Region: the country is Israel, shown as text, and a
- * save always keeps it Israel. Only the main language is a choice.
+ * Settings → Language & Region: no country row; only the main language is a
+ * choice, and saving leaves the studio's stored country as it is.
  * Run: pnpm -C apps/web test locale-settings-country.test.tsx
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -58,21 +58,21 @@ afterEach(async () => {
 });
 
 describe('country in Settings → Language & Region', () => {
-  it('shows "Country: Israel" as text; saving keeps Israel', async () => {
+  it('has no country row; saving changes the language and leaves the country alone', async () => {
     renderForm();
-    expect(await screen.findByRole('group', { name: 'Country' })).toHaveTextContent('Israel');
-    expect(screen.queryByRole('combobox', { name: 'Country' })).toBeNull();
     await waitFor(() => expect(queryClient.getQueryData(['tenant-locale', 't-1'])).toBeTruthy());
+    expect(screen.queryByText('Country')).toBeNull();
+    expect(screen.queryByRole('combobox', { name: 'Country' })).toBeNull();
     fireEvent.change(screen.getByLabelText('Default language'), { target: { value: 'he' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-    await waitFor(() =>
-      expect(h.update).toHaveBeenCalledWith(expect.objectContaining({ country: 'IL', language_default: 'he' })),
-    );
+    await waitFor(() => expect(h.update).toHaveBeenCalledWith(expect.objectContaining({ language_default: 'he' })));
+    expect(h.update.mock.calls[0][0]).not.toHaveProperty('country');
   });
 
   it('works in Hebrew', async () => {
     await i18n.changeLanguage('he');
     renderForm();
-    expect(await screen.findByRole('group', { name: 'מדינה' })).toHaveTextContent('ישראל');
+    await waitFor(() => expect(queryClient.getQueryData(['tenant-locale', 't-1'])).toBeTruthy());
+    expect(screen.queryByText('מדינה')).toBeNull();
   });
 });
