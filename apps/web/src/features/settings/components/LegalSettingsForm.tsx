@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { LegalLinksSettingsForm } from './LegalLinksSettingsForm';
 import { LegalPackPanel } from '@/components/legal/LegalPackPanel';
+import { LawyerDocumentsList } from '@/components/legal/LawyerDocumentsList';
 import { supabase } from '@/lib/supabase';
 import { useTenant } from '@/hooks/useTenant';
 import {
@@ -109,6 +110,8 @@ export function LegalSettingsForm() {
     return f ? f.label[lang] : key;
   });
   const canPublish = (missing ?? ['?']).length === 0;
+  const requiredFields = fields.filter((f) => f.required && !f.defaultValue);
+  const requiredDone = requiredFields.filter((f) => (values[f.key] ?? '').trim()).length;
 
   const renderField = (f: LegalFieldDef) => {
     const id = `legal-${f.key}`;
@@ -152,6 +155,9 @@ export function LegalSettingsForm() {
           />
         )}
         {f.hint && <p className="text-xs text-muted-foreground">{f.hint[lang]}</p>}
+        {f.example && !value && (
+          <p className="text-xs text-muted-foreground">{t('legal.settings.example', { example: f.example[lang] })}</p>
+        )}
       </div>
     );
   };
@@ -164,8 +170,10 @@ export function LegalSettingsForm() {
         <p className="text-xs text-muted-foreground mt-1">{t('legal.settings.language_note')}</p>
       </div>
 
-      {/* Drafts notice, the PDF for a lawyer and the acknowledgement (replaces the dismissible note). */}
-      <LegalPackPanel tenantId={legal.tenantId} mode="acknowledge" detailsHref="#legal-details" />
+      {/* How far along the required details are (they fill every document). */}
+      <p className="text-sm font-medium" role="status" aria-live="polite">
+        {t('legal.settings.required_progress', { done: requiredDone, total: requiredFields.length })}
+      </p>
 
       {SECTION_ORDER.map((section) => {
         const sectionFields = fields.filter((f) => f.section === section);
@@ -177,6 +185,7 @@ export function LegalSettingsForm() {
             className="space-y-3 border rounded-md p-4"
           >
             <legend className="px-1 font-medium">{t(`legal.settings.sections.${section}`)}</legend>
+            <p className="text-xs text-muted-foreground">{t(`legal.settings.why.${section}`)}</p>
             {sectionFields.map(renderField)}
           </fieldset>
         );
@@ -247,6 +256,14 @@ export function LegalSettingsForm() {
           </Button>
         )}
       </div>
+
+      {/* The lawyer-reviewed versions, then the acknowledgement: after the details it depends on. */}
+      <section aria-labelledby="lawyer-documents-title" className="space-y-3 rounded-lg border border-border p-4">
+        <h3 id="lawyer-documents-title" className="font-medium">{t('legal.lawyer.title')}</h3>
+        <LawyerDocumentsList legal={legal} />
+      </section>
+
+      <LegalPackPanel tenantId={legal.tenantId} mode="acknowledge" detailsHref="#legal-details" />
 
       <hr className="border-gray-200" />
       <p className="text-sm text-muted-foreground">{t('legal.settings.own_pages_note')}</p>

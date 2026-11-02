@@ -570,6 +570,8 @@ export type Database = {
           created_at: string
           id: string
           language: string | null
+          lawyer_reviewed_at: string | null
+          lawyer_reviewed_by: string | null
           name: string
           status: string
           tenant_id: string
@@ -583,6 +585,8 @@ export type Database = {
           created_at?: string
           id?: string
           language?: string | null
+          lawyer_reviewed_at?: string | null
+          lawyer_reviewed_by?: string | null
           name: string
           status?: string
           tenant_id: string
@@ -596,6 +600,8 @@ export type Database = {
           created_at?: string
           id?: string
           language?: string | null
+          lawyer_reviewed_at?: string | null
+          lawyer_reviewed_by?: string | null
           name?: string
           status?: string
           tenant_id?: string
@@ -604,6 +610,13 @@ export type Database = {
           version_hash?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "consent_templates_lawyer_reviewed_by_fkey"
+            columns: ["lawyer_reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "consent_templates_tenant_id_fkey"
             columns: ["tenant_id"]
@@ -3144,6 +3157,63 @@ export type Database = {
           },
         ]
       }
+      tenant_legal_documents: {
+        Row: {
+          content: string | null
+          document: string
+          file_name: string | null
+          id: string
+          kind: string
+          language: string
+          status: string
+          storage_path: string | null
+          tenant_id: string
+          uploaded_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          content?: string | null
+          document: string
+          file_name?: string | null
+          id?: string
+          kind: string
+          language: string
+          status?: string
+          storage_path?: string | null
+          tenant_id: string
+          uploaded_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          content?: string | null
+          document?: string
+          file_name?: string | null
+          id?: string
+          kind?: string
+          language?: string
+          status?: string
+          storage_path?: string | null
+          tenant_id?: string
+          uploaded_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_legal_documents_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tenant_legal_documents_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenant_notification_templates: {
         Row: {
           approval_date: string | null
@@ -3324,6 +3394,7 @@ export type Database = {
           labels: Json
           language_default: string
           lead_form: Json
+          legal_pack_ack_drafts: string[]
           legal_pack_acknowledged_at: string | null
           legal_pack_required: boolean
           legal_pages_published: boolean
@@ -3396,6 +3467,7 @@ export type Database = {
           labels?: Json
           language_default?: string
           lead_form?: Json
+          legal_pack_ack_drafts?: string[]
           legal_pack_acknowledged_at?: string | null
           legal_pack_required?: boolean
           legal_pages_published?: boolean
@@ -3468,6 +3540,7 @@ export type Database = {
           labels?: Json
           language_default?: string
           lead_form?: Json
+          legal_pack_ack_drafts?: string[]
           legal_pack_acknowledged_at?: string | null
           legal_pack_required?: boolean
           legal_pages_published?: boolean
@@ -3964,7 +4037,7 @@ export type Database = {
         Returns: Json
       }
       acknowledge_studio_legal_pack: {
-        Args: { p_language: string; p_version: string }
+        Args: { p_drafts?: string[]; p_language: string; p_version: string }
         Returns: string
       }
       admin_enrolment_lookup_email: { Args: { p_email: string }; Returns: Json }
@@ -4408,11 +4481,24 @@ export type Database = {
           invoicing_secret: string
         }[]
       }
+      get_tenant_legal_documents: {
+        Args: { p_tenant_id: string }
+        Returns: {
+          content: string
+          document: string
+          file_name: string
+          kind: string
+          language: string
+          storage_path: string
+          uploaded_at: string
+        }[]
+      }
       get_tenant_legal_profile: {
         Args: { p_tenant_id: string }
         Returns: {
           contact_email: string
           language_default: string
+          legal_pack_ack_drafts: string[]
           legal_pack_acknowledged_at: string
           legal_pack_required: boolean
           legal_pages_published: boolean
@@ -4550,6 +4636,12 @@ export type Database = {
         Returns: undefined
       }
       lead_phone_key: { Args: { p_phone: string }; Returns: string }
+      legal_admin_tenant: { Args: never; Returns: string }
+      legal_document_is_public: { Args: { p_name: string }; Returns: boolean }
+      legal_pack_document_back_to_draft: {
+        Args: { p_document: string; p_tenant: string }
+        Returns: boolean
+      }
       link_auth_user_to_guardian_for_engagement: {
         Args: { p_engagement_id: string }
         Returns: undefined
@@ -4597,6 +4689,8 @@ export type Database = {
           created_at: string
           id: string
           language: string | null
+          lawyer_reviewed_at: string | null
+          lawyer_reviewed_by: string | null
           name: string
           status: string
           tenant_id: string
@@ -4755,6 +4849,10 @@ export type Database = {
           recipient_name: string
         }[]
       }
+      revert_tenant_legal_document: {
+        Args: { p_document: string }
+        Returns: boolean
+      }
       rotate_grow_webhook_key: { Args: never; Returns: string }
       save_grow_webhook_secret: {
         Args: { p_secret: string }
@@ -4796,6 +4894,35 @@ export type Database = {
         Args: { p_account_id: string; p_api_key: string; p_secret: string }
         Returns: undefined
       }
+      save_tenant_legal_document: {
+        Args: {
+          p_content?: string
+          p_document: string
+          p_file_name?: string
+          p_kind: string
+          p_language: string
+          p_storage_path?: string
+        }
+        Returns: {
+          content: string | null
+          document: string
+          file_name: string | null
+          id: string
+          kind: string
+          language: string
+          status: string
+          storage_path: string | null
+          tenant_id: string
+          uploaded_at: string
+          uploaded_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "tenant_legal_documents"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       save_tenant_payment_credentials: {
         Args: {
           p_public_key: string
@@ -4836,6 +4963,10 @@ export type Database = {
           contact_email: string
           contact_name: string
         }[]
+      }
+      set_consent_template_lawyer_reviewed: {
+        Args: { p_reviewed: boolean; p_template_id: string }
+        Returns: boolean
       }
       sign_waiver: {
         Args: {

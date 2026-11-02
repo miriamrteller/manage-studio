@@ -189,6 +189,9 @@ export const baseRpcs: Record<string, RpcHandler> = {
     ];
   },
 
+  // The demo studios use the generated drafts: no lawyer-reviewed uploads.
+  get_tenant_legal_documents: () => [],
+
   record_legal_acceptance: (args) => (Array.isArray(args.p_documents) ? args.p_documents.length : 0),
 
   // The demo studio has "already accepted" the platform terms.

@@ -2892,7 +2892,8 @@ GROW SINGLE-USER — per-tenant credentials (Meshulam dashboard → admin UI)
 [ ] Edge secrets (platform):
       GROW_NOTIFY_URL = https://<project-ref>.supabase.co/functions/v1/handle-payment-event
       GROW_API_BASE   = https://sandbox.meshulam.co.il/api/light/server/1.0
-                        (prod: https://api.meshulam.co.il/api/light/server/1.0)
+                        (prod: https://secure.meshulam.co.il/api/light/server/1.0,
+                         per developers.grow.business/reference/live-environment)
       GROW_MOCK       = unset or false for live/sandbox charges
 [ ] In Grow dashboard: payment notify URL → handle-payment-event (above)
 [ ] In Grow dashboard: document/invoice notify URL →

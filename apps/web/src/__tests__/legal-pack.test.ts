@@ -45,6 +45,7 @@ function legal(vertical: TenantLegalProfile['vertical'], languageDefault: 'he' |
     packRequired: true,
     packAcknowledgedAt: null,
     languageDefault,
+    packAckDrafts: [],
   };
 }
 

@@ -13,7 +13,7 @@
 | **Light API (primary)** | [grow-il.readme.io](https://grow-il.readme.io/docs/light-api) | Payment process, approve, token charge, refunds, webhooks |
 | **Developer portal (marketing)** | [grow.business/api-developers](https://grow.business/api-developers/) | Overview, marketplace/multi-business, Postman |
 | **Sandbox base** | `https://sandbox.meshulam.co.il/api/light/server/1.0` | Dev (`GROW_API_BASE`) |
-| **Production base** | `https://api.meshulam.co.il/api/light/server/1.0` | Live |
+| **Production base** | `https://secure.meshulam.co.il/api/light/server/1.0` | Live (per Grow's [Transition to Production Environment](https://developers.grow.business/reference/live-environment) page) |
 | **Help / ops** | [GROW-RUNBOOK.md](GROW-RUNBOOK.md) | SHAAM, webhooks, env vars |
 
 Grow uses **JSON POST** to `{base}/{methodName}` (unlike iCount API v3 form-encoding).

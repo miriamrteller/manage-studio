@@ -8,6 +8,14 @@ import { buildLegalPack } from '@/legal/legalPack';
 import { fetchTenantLegalProfile } from '@/legal/useLegalDocument';
 import { missingRequiredLegalFields } from '@/legal/fields';
 import { signedDocNoun } from '@/legal/packWording';
+import {
+  draftDocuments,
+  fetchSignedFormsReview,
+  packDocumentsFor,
+  signedFormsReviewKey,
+  useLawyerDocuments,
+} from '@/legal/lawyerDocuments';
+import { LawyerDocumentsList, packDocumentLabelKey } from './LawyerDocumentsList';
 
 export interface LegalPackPanelProps {
   tenantId: string;
@@ -18,6 +26,8 @@ export interface LegalPackPanelProps {
   mode: 'acknowledge' | 'notice';
   /** Where the admin fills in missing legal details (omit where they can't yet, e.g. right after signup). */
   detailsHref?: string;
+  /** End of onboarding: offer the lawyer-reviewed uploads in a collapsed section. */
+  offerUploads?: boolean;
 }
 
 /** Path of the printable pack (any host: it loads the studio by id). */
@@ -30,7 +40,7 @@ export function legalPackPrintPath(tenantId: string): string {
  * drafts, here they are as one PDF for a lawyer, and the admin confirms they
  * understand before the studio's legal pages and signing go live.
  */
-export function LegalPackPanel({ tenantId, mode, detailsHref }: LegalPackPanelProps) {
+export function LegalPackPanel({ tenantId, mode, detailsHref, offerUploads }: LegalPackPanelProps) {
   const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const [checked, setChecked] = useState(false);
@@ -45,6 +55,15 @@ export function LegalPackPanel({ tenantId, mode, detailsHref }: LegalPackPanelPr
     queryFn: () => buildLegalPack(legal!),
   });
 
+  const { data: uploads = [] } = useLawyerDocuments(legal ? tenantId : undefined);
+  const { data: forms = null } = useQuery({
+    queryKey: signedFormsReviewKey(tenantId),
+    enabled: !!legal && mode === 'acknowledge',
+    queryFn: () => fetchSignedFormsReview(tenantId),
+  });
+  // What the acknowledgement covers as drafts: everything not yet lawyer-reviewed.
+  const drafts = legal ? draftDocuments(packDocumentsFor(legal.vertical), uploads, forms) : [];
+
   const acknowledge = useMutation({
     mutationFn: async () => {
       if (!pack) throw new Error('not ready');
@@ -55,6 +74,7 @@ export function LegalPackPanel({ tenantId, mode, detailsHref }: LegalPackPanelPr
       const { error } = await supabase.rpc('acknowledge_studio_legal_pack', {
         p_version: pack.version,
         p_language: i18n.language?.startsWith('he') ? 'he' : 'en',
+        p_drafts: drafts,
       });
       if (error) throw error;
     },
@@ -62,6 +82,7 @@ export function LegalPackPanel({ tenantId, mode, detailsHref }: LegalPackPanelPr
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['tenant-legal-profile-by-id', tenantId] }),
         queryClient.invalidateQueries({ queryKey: ['tenant-legal-profile'] }),
+        queryClient.invalidateQueries({ queryKey: ['lawyer-documents', tenantId] }),
       ]);
     },
   });
@@ -124,7 +145,13 @@ export function LegalPackPanel({ tenantId, mode, detailsHref }: LegalPackPanelPr
                 checked={checked}
                 onChange={(e) => setChecked(e.target.checked)}
               />
-              <span>{t('legal.pack.checkbox')}</span>
+              <span>
+                {drafts.length > 0
+                  ? t('legal.pack.checkbox_drafts', {
+                      list: drafts.map((d) => t(packDocumentLabelKey(d, legal?.vertical))).join(', '),
+                    })
+                  : t('legal.pack.checkbox_all_reviewed')}
+              </span>
             </label>
             {acknowledge.isError && (
               <p className="text-sm text-red-700" role="alert">
@@ -142,6 +169,15 @@ export function LegalPackPanel({ tenantId, mode, detailsHref }: LegalPackPanelPr
             </Button>
           </div>
         )
+      )}
+
+      {offerUploads && legal && mode === 'acknowledge' && (
+        <details className="rounded-md border border-border p-3">
+          <summary className="cursor-pointer text-sm font-medium">{t('legal.lawyer.upload_now')}</summary>
+          <div className="mt-3">
+            <LawyerDocumentsList legal={legal} />
+          </div>
+        </details>
       )}
     </section>
   );
