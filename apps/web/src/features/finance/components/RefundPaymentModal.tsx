@@ -5,6 +5,26 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { formatCurrency } from '@shared/format';
 
+/** Providers whose API has no refund call: the admin refunds in their dashboard, then records it. */
+const MANUAL_REFUND_PROVIDERS: readonly string[] = ['ypay'];
+
+/** The JSON body of a non-2xx edge function response (supabase-js FunctionsHttpError). */
+async function readFunctionErrorBody(error: unknown): Promise<{ error?: string; code?: string } | null> {
+  const context = (error as { context?: { json?: () => Promise<unknown> } } | null)?.context;
+  if (!context || typeof context.json !== 'function') return null;
+  try {
+    return (await context.json()) as { error?: string; code?: string };
+  } catch {
+    return null;
+  }
+}
+
+class RefundError extends Error {
+  constructor(message: string, readonly code?: string) {
+    super(message);
+  }
+}
+
 interface RefundPaymentModalProps {
   paymentId: string;
   totalMinor: number;
@@ -28,22 +48,40 @@ export function RefundPaymentModal({
   const remainingMinor = Math.max(totalMinor - alreadyRefundedMinor, 0);
   const [reason, setReason] = useState('');
   const [message, setMessage] = useState<string | null>(null);
+  // Manual = the refund was already made in the provider's dashboard; we only record it.
+  const [manualMode, setManualMode] = useState(MANUAL_REFUND_PROVIDERS.includes(provider ?? ''));
+  const providerName = t(`settings.provider_names.${provider ?? 'manual'}`, { defaultValue: provider ?? '' });
 
   const mutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (manual: boolean) => {
       const { data, error } = await supabase.functions.invoke('process-refund', {
-        body: { payment_id: paymentId, reason: reason || undefined },
+        body: { payment_id: paymentId, reason: reason || undefined, ...(manual ? { manual: true } : {}) },
       });
-      if (error) throw error;
+      if (error) {
+        const body = await readFunctionErrorBody(error);
+        throw new RefundError(body?.error ?? error.message, body?.code);
+      }
       if (data && typeof data === 'object' && 'error' in data && data.error) {
-        throw new Error(String(data.error));
+        throw new RefundError(String(data.error), (data as { code?: string }).code);
       }
     },
-    onSuccess: () => {
-      setMessage(t('finance.refund_payment.success', { defaultValue: 'Refund processed.' }));
+    onSuccess: (_data, manual) => {
+      setMessage(
+        manual
+          ? t('finance.refund_payment.manual_success', { defaultValue: 'Refund recorded.' })
+          : t('finance.refund_payment.success', { defaultValue: 'Refund processed.' }),
+      );
       onRefunded();
     },
-    onError: (err: Error) => setMessage(err.message),
+    onError: (err: Error) => {
+      if (err instanceof RefundError && err.code === 'manual_refund_required') {
+        // The provider has no refund API (or it is not switched on): offer to record it instead.
+        setManualMode(true);
+        setMessage(null);
+        return;
+      }
+      setMessage(err.message);
+    },
   });
 
   return (
@@ -55,7 +93,16 @@ export function RefundPaymentModal({
         {t('finance.refund_payment.amount', { defaultValue: 'Refund amount' })}:{' '}
         {formatCurrency(remainingMinor, currency, i18n.language)}
       </p>
-      {provider === 'grow' && (
+      {manualMode && (
+        <p className="text-sm rounded border border-border bg-muted/40 px-3 py-2" role="note">
+          {t('finance.refund_payment.manual_note', {
+            provider: providerName,
+            defaultValue:
+              '{{provider}} refunds cannot be made from OpalSwift. First refund the payment in your {{provider}} dashboard, then press "Record refund" so OpalSwift shows it as refunded. No money is moved by this button.',
+          })}
+        </p>
+      )}
+      {!manualMode && provider === 'grow' && (
         <p className="text-xs text-muted-foreground">
           {t('finance.refund_payment.grow_note', {
             defaultValue:
@@ -63,7 +110,7 @@ export function RefundPaymentModal({
           })}
         </p>
       )}
-      {provider === 'icount' && (
+      {!manualMode && provider === 'icount' && (
         <p className="text-xs text-muted-foreground">
           {t('finance.refund_payment.icount_note', {
             defaultValue:
@@ -71,7 +118,7 @@ export function RefundPaymentModal({
           })}
         </p>
       )}
-      {provider === 'invoice4u' && (
+      {!manualMode && provider === 'invoice4u' && (
         <p className="text-xs text-muted-foreground">
           {t('finance.refund_payment.invoice4u_note', {
             defaultValue:
@@ -79,7 +126,7 @@ export function RefundPaymentModal({
           })}
         </p>
       )}
-      {provider !== 'grow' && provider !== 'icount' && provider !== 'invoice4u' && (
+      {!manualMode && provider !== 'grow' && provider !== 'icount' && provider !== 'invoice4u' && (
         <p className="text-xs text-muted-foreground">
           {t('finance.refund_payment.bundled_note', {
             defaultValue:
@@ -106,9 +153,11 @@ export function RefundPaymentModal({
           variant="primary"
           disabled={mutation.isPending || remainingMinor <= 0}
           isLoading={mutation.isPending}
-          onClick={() => mutation.mutate()}
+          onClick={() => mutation.mutate(manualMode)}
         >
-          {t('finance.refund_payment.submit', { defaultValue: 'Process refund' })}
+          {manualMode
+            ? t('finance.refund_payment.manual_submit', { defaultValue: 'Record refund' })
+            : t('finance.refund_payment.submit', { defaultValue: 'Process refund' })}
         </Button>
         <Button type="button" variant="outline" disabled={mutation.isPending} onClick={onCancel}>
           {t('common.cancel')}
