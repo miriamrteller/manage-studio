@@ -43,7 +43,7 @@ const DOCS = [
   { n: 6, title: 'Marketing consent and unsubscribe', he: 'הסכמה לדיוור והסרה', single: '08-marketing-consent.md' },
   { n: 7, title: 'In-app consent texts (incl. photo consent)', he: 'נוסחי הסכמה באפליקציה', single: '09-in-app-consent-texts.md' },
   { n: 8, title: 'Photography contract (studio template)', he: 'חוזה צילום', base: '07c-photography-contract' },
-  { n: 9, title: 'Accessibility statement', he: 'הצהרת נגישות', base: '06-accessibility-statement' },
+  { n: 9, title: 'Accessibility statement (OpalSwift)', he: 'הצהרת נגישות', base: '06-accessibility-statement.opalswift' },
   { n: 10, title: 'Beta launch: legal checklist', he: 'רשימת בדיקה להשקת הבטא', checklist: true },
 ];
 
@@ -128,7 +128,7 @@ function coverHtml() {
 <p class="meta">Built ${buildDate} from the <code>docs/legal</code> folder of the OpalSwift repository.</p>
 <p class="warn"><strong>All documents are drafts, not legal advice.</strong> Each appears in English and then in Hebrew. Hebrew is what users read; <strong>the English version prevails</strong> (owner decision). Yellow <mark>[[…]]</mark> marks are fill-ins the owner or the studio completes.</p>
 <h2>What OpalSwift is</h2>
-<p>A web app for small studios in Israel (a ballet school first, then a photographer): client and student records, classes and bookings, enrolment, waivers and health declarations, contracts, payment requests through third-party providers, messages, and galleries. The studio is the controller of its clients' data; OpalSwift is the holder (מחזיק). OpalSwift runs as a <strong>free beta</strong> and is not yet a registered business; it will register before any paid service.</p>
+<p>A web app for small studios in Israel (a ballet school first, then a photographer): client and student records, classes and bookings, enrolment, forms and health declarations, contracts, payment requests through third-party providers, messages, and galleries. The studio is the controller of its clients' data; OpalSwift is the holder (מחזיק). OpalSwift runs as a <strong>free beta</strong> and is not yet a registered business; it will register before any paid service.</p>
 <h2>What we ask you to check</h2>
 <ol>
 <li>Platform terms §9 and the beta notice: which of "as is / as available", the liability cap and the exclusions hold under the Standard Contracts Law, and whether an unregistered individual running a studio could claim consumer protection.</li>
