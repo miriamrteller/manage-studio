@@ -1,4 +1,5 @@
 import { useEffect, useId, useMemo, useState, type FormEvent } from 'react';
+import { InfoTip } from '@/components/ui/InfoTip';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import {
@@ -103,7 +104,12 @@ export function NamedFormsManager() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="space-y-1">
-          <h1 className="text-3xl font-bold">{t('pages.crm.named_forms.title')}</h1>
+          <div className="flex flex-wrap items-center gap-1">
+            <h1 className="text-3xl font-bold">{t('pages.crm.named_forms.title')}</h1>
+            <InfoTip label={t('pages.crm.help.tip_label', { topic: t('pages.crm.named_forms.title') })}>
+              {t('pages.crm.help.tip_forms')}
+            </InfoTip>
+          </div>
           <p className="text-sm text-muted-foreground">{t('pages.crm.named_forms.intro')}</p>
         </div>
         <Button variant="primary" onClick={() => setEditing('new')} disabled={editing !== null}>

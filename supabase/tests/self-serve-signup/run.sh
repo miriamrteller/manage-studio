@@ -66,6 +66,9 @@ BEGIN
   IF v_t.sub_status <> 'trialing' OR v_t.trial_ends_at IS NOT NULL THEN
     RAISE EXCEPTION 'FAIL a free-beta studio should be trialing with no end, got % %', v_t.sub_status, v_t.trial_ends_at;
   END IF;
+  IF v_t.legal_profile->>'business_status' IS DISTINCT FROM 'osek_patur' THEN
+    RAISE EXCEPTION 'FAIL a new studio should default to osek_patur, got %', v_t.legal_profile;
+  END IF;
   IF v_t.contact_email <> 'self.serve@example.test' OR v_t.payment_provider = 'mock' THEN
     RAISE EXCEPTION 'FAIL contact email or payment provider: % %', v_t.contact_email, v_t.payment_provider;
   END IF;

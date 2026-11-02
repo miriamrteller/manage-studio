@@ -63,7 +63,7 @@ export function useSetupFacts(): { facts: SetupFacts; isLoading: boolean } {
     queryKey: ['setup-guide-facts', tenantId, vertical],
     enabled: !!tenantId,
     staleTime: 30 * 1000,
-    queryFn: async (): Promise<Omit<SetupFacts, 'hasLogo' | 'paymentsReady'> & { legalPublished: boolean }> => {
+    queryFn: async (): Promise<Omit<SetupFacts, 'hasLogo' | 'paymentsReady' | 'onlinePayments' | 'paymentsConnected'> & { legalPublished: boolean }> => {
       const id = tenantId!;
       const dance = vertical === 'dance-studio';
       const [levels, seasons, offerings, enrolments, leads, quotes, legal] = await Promise.all([
@@ -89,16 +89,18 @@ export function useSetupFacts(): { facts: SetupFacts; isLoading: boolean } {
   });
 
   const provider = tenant?.payment_provider ?? 'offline';
-  const paymentsReady =
-    provider === 'offline'
-      ? Boolean(tenant?.offline_payment_instructions?.trim())
-      : Boolean(tenant?.payment_provider_secret_configured);
+  const onlinePayments = provider !== 'offline' && provider !== 'mock';
+  // Pay at the studio is "ready" once the studio has written how to pay. An online provider is
+  // chosen from the start; connecting it (saving the keys) is its own row.
+  const paymentsReady = onlinePayments || Boolean(tenant?.offline_payment_instructions?.trim());
 
   const facts: SetupFacts = {
     ...EMPTY_FACTS,
     ...(query.data ?? {}),
     hasLogo: Boolean(tenant?.logo_url || tenant?.logo_dark_url),
     paymentsReady,
+    onlinePayments,
+    paymentsConnected: onlinePayments && Boolean(tenant?.payment_provider_secret_configured),
   };
   return { facts, isLoading: !!tenantId && query.isLoading };
 }

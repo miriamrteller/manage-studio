@@ -1360,6 +1360,39 @@ export type Database = {
                     }
                 ];
             };
+            lead_digest_optouts: {
+                Row: {
+                    created_at: string;
+                    tenant_id: string;
+                    user_id: string;
+                };
+                Insert: {
+                    created_at?: string;
+                    tenant_id: string;
+                    user_id: string;
+                };
+                Update: {
+                    created_at?: string;
+                    tenant_id?: string;
+                    user_id?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "lead_digest_optouts_tenant_id_fkey";
+                        columns: ["tenant_id"];
+                        isOneToOne: false;
+                        referencedRelation: "tenants";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "lead_digest_optouts_user_id_fkey";
+                        columns: ["user_id"];
+                        isOneToOne: true;
+                        referencedRelation: "user_profiles";
+                        referencedColumns: ["id"];
+                    }
+                ];
+            };
             lead_forms: {
                 Row: {
                     active: boolean;
@@ -1439,6 +1472,7 @@ export type Database = {
                     company: string | null;
                     converted_account_id: string | null;
                     converted_at: string | null;
+                    converted_engagement_id: string | null;
                     created_at: string;
                     deal_value_minor: number | null;
                     email: string | null;
@@ -1456,6 +1490,7 @@ export type Database = {
                     phone: string | null;
                     source_ref: string | null;
                     stage: string;
+                    suggested_engagement_id: string | null;
                     tenant_id: string;
                     title: string | null;
                     updated_at: string;
@@ -1469,6 +1504,7 @@ export type Database = {
                     company?: string | null;
                     converted_account_id?: string | null;
                     converted_at?: string | null;
+                    converted_engagement_id?: string | null;
                     created_at?: string;
                     deal_value_minor?: number | null;
                     email?: string | null;
@@ -1486,6 +1522,7 @@ export type Database = {
                     phone?: string | null;
                     source_ref?: string | null;
                     stage?: string;
+                    suggested_engagement_id?: string | null;
                     tenant_id: string;
                     title?: string | null;
                     updated_at?: string;
@@ -1499,6 +1536,7 @@ export type Database = {
                     company?: string | null;
                     converted_account_id?: string | null;
                     converted_at?: string | null;
+                    converted_engagement_id?: string | null;
                     created_at?: string;
                     deal_value_minor?: number | null;
                     email?: string | null;
@@ -1516,6 +1554,7 @@ export type Database = {
                     phone?: string | null;
                     source_ref?: string | null;
                     stage?: string;
+                    suggested_engagement_id?: string | null;
                     tenant_id?: string;
                     title?: string | null;
                     updated_at?: string;
@@ -1526,6 +1565,13 @@ export type Database = {
                         columns: ["converted_account_id"];
                         isOneToOne: false;
                         referencedRelation: "accounts";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "leads_converted_engagement_id_fkey";
+                        columns: ["converted_engagement_id"];
+                        isOneToOne: false;
+                        referencedRelation: "engagements";
                         referencedColumns: ["id"];
                     },
                     {
@@ -1540,6 +1586,13 @@ export type Database = {
                         columns: ["offering_id"];
                         isOneToOne: false;
                         referencedRelation: "offerings";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "leads_suggested_engagement_id_fkey";
+                        columns: ["suggested_engagement_id"];
+                        isOneToOne: false;
+                        referencedRelation: "engagements";
                         referencedColumns: ["id"];
                     },
                     {
@@ -3258,6 +3311,8 @@ export type Database = {
                     labels: Json;
                     language_default: string;
                     lead_form: Json;
+                    legal_pack_acknowledged_at: string | null;
+                    legal_pack_required: boolean;
                     legal_pages_published: boolean;
                     legal_profile: Json;
                     legal_profile_updated_at: string | null;
@@ -3294,6 +3349,7 @@ export type Database = {
                     waiver_link_secret_enc: string | null;
                     waiver_require_otp: boolean;
                     yesh_config: Json | null;
+                    ypay_document_type: number;
                 };
                 Insert: {
                     accent_color?: string;
@@ -3327,6 +3383,8 @@ export type Database = {
                     labels?: Json;
                     language_default?: string;
                     lead_form?: Json;
+                    legal_pack_acknowledged_at?: string | null;
+                    legal_pack_required?: boolean;
                     legal_pages_published?: boolean;
                     legal_profile?: Json;
                     legal_profile_updated_at?: string | null;
@@ -3363,6 +3421,7 @@ export type Database = {
                     waiver_link_secret_enc?: string | null;
                     waiver_require_otp?: boolean;
                     yesh_config?: Json | null;
+                    ypay_document_type?: number;
                 };
                 Update: {
                     accent_color?: string;
@@ -3396,6 +3455,8 @@ export type Database = {
                     labels?: Json;
                     language_default?: string;
                     lead_form?: Json;
+                    legal_pack_acknowledged_at?: string | null;
+                    legal_pack_required?: boolean;
                     legal_pages_published?: boolean;
                     legal_profile?: Json;
                     legal_profile_updated_at?: string | null;
@@ -3432,6 +3493,7 @@ export type Database = {
                     waiver_link_secret_enc?: string | null;
                     waiver_require_otp?: boolean;
                     yesh_config?: Json | null;
+                    ypay_document_type?: number;
                 };
                 Relationships: [
                     {
@@ -3887,6 +3949,13 @@ export type Database = {
                     p_token: string;
                 };
                 Returns: Json;
+            };
+            acknowledge_studio_legal_pack: {
+                Args: {
+                    p_language: string;
+                    p_version: string;
+                };
+                Returns: string;
             };
             admin_enrolment_lookup_email: {
                 Args: {
@@ -4460,6 +4529,9 @@ export type Database = {
                 };
                 Returns: {
                     contact_email: string;
+                    language_default: string;
+                    legal_pack_acknowledged_at: string;
+                    legal_pack_required: boolean;
                     legal_pages_published: boolean;
                     legal_profile: Json;
                     legal_profile_updated_at: string;
@@ -4634,6 +4706,12 @@ export type Database = {
                     p_tenant_id: string;
                 };
                 Returns: undefined;
+            };
+            lead_phone_key: {
+                Args: {
+                    p_phone: string;
+                };
+                Returns: string;
             };
             link_auth_user_to_guardian_for_engagement: {
                 Args: {

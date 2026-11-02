@@ -39,10 +39,26 @@ describe('settings provider fields', () => {
     expect(screen.getByRole('checkbox')).toBeChecked();
   });
 
-  it('a card provider still shows its key fields', () => {
-    h.tenant = { id: 't1', payment_provider: 'ypay', invoicing_provider: 'none' };
+  it('a card provider still shows its key fields, and the studio can switch back to pay at the studio', () => {
+    h.tenant = { id: 't1', payment_provider: 'tranzila', invoicing_provider: 'none' };
     renderIt(<PaymentSettingsForm />);
     expect(screen.getByLabelText('Webhook secret')).toBeInTheDocument();
+    expect(screen.getByRole('checkbox')).not.toBeChecked();
+  });
+
+  it('Grow not connected yet: a clear "not connected" note and a Connect button, nothing broken', () => {
+    h.tenant = { id: 't1', payment_provider: 'grow', invoicing_provider: 'grow', payment_provider_secret_configured: false };
+    renderIt(<PaymentSettingsForm />);
+    expect(screen.getByText(/Not connected yet/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Connect now' })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox')).not.toBeChecked();
+  });
+
+  it('Grow connected: says so', () => {
+    h.tenant = { id: 't1', payment_provider: 'grow', invoicing_provider: 'grow', payment_provider_secret_configured: true };
+    renderIt(<PaymentSettingsForm />);
+    expect(screen.getByText(/Customers can pay by card online/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Manage connection' })).toBeInTheDocument();
   });
 
   it('no invoicing service: a plain note, no credential boxes', () => {

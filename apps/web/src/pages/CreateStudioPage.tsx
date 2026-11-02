@@ -16,6 +16,7 @@ import {
 } from '@/lib/authCallback';
 import { OperatorOnboardingWizard } from '@/features/platform/components/OperatorOnboardingWizard';
 import { TurnstileWidget } from '@/components/captcha/TurnstileWidget';
+import { LegalPackPanel } from '@/components/legal/LegalPackPanel';
 import {
   isSelfServeSignupEnabled,
   sendSelfServeConfirmation,
@@ -248,6 +249,8 @@ function StudioReady({ result, name }: { result: SelfServeStudioResult; name: st
         {t('self_serve.created_body')}{' '}
         <span dir="ltr" className="font-mono">{address}</span>
       </p>
+      <LegalPackPanel tenantId={result.tenantId} mode="acknowledge" />
+
       <div className="space-y-1">
         <h2 className="text-lg font-semibold">{t('setup_guide.ready_title')}</h2>
         <p>{t('setup_guide.ready_body')}</p>

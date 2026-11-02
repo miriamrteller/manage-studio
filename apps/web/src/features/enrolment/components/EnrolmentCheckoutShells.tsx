@@ -239,6 +239,7 @@ export function ProviderCheckoutShell({
   mockPaymentRef,
   pageUrl,
   offlineInstructions,
+  onlinePaymentNotSetUp,
   onPaid,
   onPrevious,
 }: {
@@ -248,6 +249,7 @@ export function ProviderCheckoutShell({
   paymentProvider?: string | null;
   /** payment_provider 'offline': the studio's own "how to pay" text. */
   offlineInstructions?: string | null;
+  onlinePaymentNotSetUp?: boolean;
   mockPending?: boolean;
   clientSecret: string | null;
   publishableKey: string | null;
@@ -263,7 +265,7 @@ export function ProviderCheckoutShell({
   const { t } = useTranslation();
 
   if (paymentProvider === 'offline') {
-    return <OfflinePaymentNotice instructions={offlineInstructions} />;
+    return <OfflinePaymentNotice instructions={offlineInstructions} notSetUp={onlinePaymentNotSetUp} />;
   }
 
   const isMockHostedPage = isMockHostedPaymentPage(paymentProvider, pageUrl);

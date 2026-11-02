@@ -18,8 +18,9 @@ export interface StudioSetupForm {
 }
 
 /**
- * Defaults: English, OpalSwift colours, and the safest start for a first-timer: customers
- * pay at the studio and there is no invoicing service. Both can be changed in the wizard or later.
+ * Defaults: English, OpalSwift colours, online card payment through Grow with Grow's tax
+ * documents. Nothing needs to be connected to finish setup: keys are entered later in Settings,
+ * and the studio can switch to "pay at the studio" (or another provider) at any time.
  */
 export const INITIAL_FORM: StudioSetupForm = {
   name: '',
@@ -27,8 +28,8 @@ export const INITIAL_FORM: StudioSetupForm = {
   languageDefault: 'en',
   country: 'IL',
   vertical: 'generic',
-  paymentProvider: 'offline',
-  invoicingProvider: 'none',
+  paymentProvider: 'grow',
+  invoicingProvider: 'grow',
   primaryColor: OPALSWIFT_BRAND.primary,
   accentColor: OPALSWIFT_BRAND.accent,
   ownerEmail: '',

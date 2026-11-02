@@ -39,6 +39,19 @@ export interface TenantLegalProfile {
   profile: Record<string, string>;
   published: boolean;
   updatedAt: string | null;
+  /** New studios: legal pages and signing wait for the legal pack acknowledgement. */
+  packRequired: boolean;
+  packAcknowledgedAt: string | null;
+  /** The studio's main language (its clients' signing text is written in it). */
+  languageDefault: 'he' | 'en';
+}
+
+/** Studio documents a new studio keeps unpublished until its admin acknowledges the legal pack. */
+export const LEGAL_PACK_DOCS: LegalDocId[] = ['studio-privacy', 'enrolment-terms', 'accessibility', 'cookies'];
+
+/** Whether the studio's legal pack is live (old studios always; new ones once acknowledged). */
+export function isLegalPackLive(legal: Pick<TenantLegalProfile, 'packRequired' | 'packAcknowledgedAt'>): boolean {
+  return !legal.packRequired || Boolean(legal.packAcknowledgedAt);
 }
 
 function toStringRecord(value: unknown): Record<string, string> {
@@ -51,27 +64,33 @@ function toStringRecord(value: unknown): Record<string, string> {
   return out;
 }
 
+/** One studio's legal profile (by id: works on the platform host too). */
+export async function fetchTenantLegalProfile(tenantId: string): Promise<TenantLegalProfile | null> {
+  const { data: rows, error } = await supabase.rpc('get_tenant_legal_profile', { p_tenant_id: tenantId });
+  if (error) throw error;
+  const row = Array.isArray(rows) ? rows[0] : rows;
+  if (!row) return null;
+  return {
+    tenantId: row.tenant_id,
+    name: row.name,
+    contactEmail: row.contact_email,
+    vertical: safeVertical(row.skin),
+    profile: toStringRecord(row.legal_profile),
+    published: row.legal_pages_published === true,
+    updatedAt: row.legal_profile_updated_at ?? null,
+    packRequired: row.legal_pack_required === true,
+    packAcknowledgedAt: row.legal_pack_acknowledged_at ?? null,
+    languageDefault: row.language_default === 'he' ? 'he' : 'en',
+  };
+}
+
 export function useTenantLegalProfile(): { data: TenantLegalProfile | null; isLoading: boolean } {
   const tenant = useTenant();
   const { data, isLoading } = useQuery({
     queryKey: ['tenant-legal-profile', tenant?.id],
     enabled: !!tenant?.id,
     staleTime: 5 * 60 * 1000,
-    queryFn: async (): Promise<TenantLegalProfile | null> => {
-      const { data: rows, error } = await supabase.rpc('get_tenant_legal_profile', { p_tenant_id: tenant!.id });
-      if (error) throw error;
-      const row = Array.isArray(rows) ? rows[0] : rows;
-      if (!row) return null;
-      return {
-        tenantId: row.tenant_id,
-        name: row.name,
-        contactEmail: row.contact_email,
-        vertical: safeVertical(row.skin),
-        profile: toStringRecord(row.legal_profile),
-        published: row.legal_pages_published === true,
-        updatedAt: row.legal_profile_updated_at ?? null,
-      };
-    },
+    queryFn: () => fetchTenantLegalProfile(tenant!.id),
   });
   return { data: data ?? null, isLoading: !!tenant?.id && isLoading };
 }

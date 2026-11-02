@@ -31,7 +31,7 @@ import {
 } from '../../../../supabase/functions/_shared/payments/send-payment-document-client-email.ts';
 import {
   isRetryableYpayDocumentError,
-  ypayDocTypeForVatType,
+  ypayDocTypeFor,
 } from '../../../../supabase/functions/_shared/payments/ypay/document.ts';
 import { YpayPaymentProvider } from '../../../../supabase/functions/_shared/payments/providers/ypay.ts';
 
@@ -43,7 +43,7 @@ const FUTURE = new Date(Date.now() + 60 * 60 * 1000).toISOString();
 /** The slice of fetch's init the assertions read. */
 type FetchInit = { headers: Record<string, string>; body: string };
 
-function seed(opts: { vatType?: number; paymentMethod?: string; provider?: string; invoicingProvider?: string } = {}) {
+function seed(opts: { documentType?: number; paymentMethod?: string; provider?: string; invoicingProvider?: string } = {}) {
   const fake = makeFakeSupabase({
     tenants: [
       {
@@ -54,7 +54,8 @@ function seed(opts: { vatType?: number; paymentMethod?: string; provider?: strin
         from_email: null,
         from_email_verified_at: null,
         language_default: 'he',
-        vat_type: opts.vatType ?? 1,
+        ypay_document_type: opts.documentType ?? 109,
+        vat_type: 1,
         invoicing_provider: opts.invoicingProvider ?? 'ypay',
       },
     ],
@@ -116,12 +117,12 @@ afterEach(() => {
   delete process.env.YPAY_MOCK;
 });
 
-describe('ypay docType by VAT type', () => {
-  it('VAT-exempt dealers get a receipt, everyone else an invoice-receipt', () => {
-    expect(ypayDocTypeForVatType(3)).toBe(108);
-    expect(ypayDocTypeForVatType(1)).toBe(109);
-    expect(ypayDocTypeForVatType(2)).toBe(109);
-    expect(ypayDocTypeForVatType(null)).toBe(109);
+describe('ypay docType is the studio\'s explicit choice', () => {
+  it('108 is a receipt, anything else the default invoice-receipt; VAT type is ignored', () => {
+    expect(ypayDocTypeFor(108)).toBe(108);
+    expect(ypayDocTypeFor(109)).toBe(109);
+    expect(ypayDocTypeFor(3)).toBe(109);
+    expect(ypayDocTypeFor(null)).toBe(109);
   });
 });
 
@@ -143,7 +144,7 @@ describe('ypay /document retry policy (mirrors the Deno helper test)', () => {
 
 describe('YpayInvoicingProvider.issueDocument — live /document call', () => {
   it('posts a bank-transfer invoice-receipt with the cached bearer token and returns the document', async () => {
-    const { client } = seed({ vatType: 1 });
+    const { client } = seed({ documentType: 109 });
     // Response shape from the YPay API document v2.1 ("Document Generator").
     const fetchMock = vi.fn(async () =>
       ypayResponse({ responseCode: 1, serial_number: '900061', url: 'https://ypay.co.il/fsrv/business/1658/customers/44/official/12ca76.pdf' }),
@@ -173,8 +174,8 @@ describe('YpayInvoicingProvider.issueDocument — live /document call', () => {
     expect(body).not.toHaveProperty('chargeIdentifier');
   });
 
-  it('issues a plain receipt (108) for a VAT-exempt tenant paying cash', async () => {
-    const { client } = seed({ vatType: 3, paymentMethod: 'cash' });
+  it('issues a plain receipt (108) when the studio chose a receipt, paying cash', async () => {
+    const { client } = seed({ documentType: 108, paymentMethod: 'cash' });
     const fetchMock = vi.fn(async () => ypayResponse({ responseCode: 1, serial_number: 9, url: 'https://docs.ypay.test/9.pdf' }));
     vi.stubGlobal('fetch', fetchMock);
 
@@ -259,7 +260,7 @@ describe('YpayInvoicingProvider.issueDocument — live /document call', () => {
 
   it('YPAY_MOCK returns a deterministic document without any network call', async () => {
     process.env.YPAY_MOCK = 'true';
-    const { client } = seed({ vatType: 3, paymentMethod: 'cash' });
+    const { client } = seed({ documentType: 108, paymentMethod: 'cash' });
     const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);
 
@@ -379,10 +380,10 @@ describe('client receipt email wording', () => {
   });
 });
 
-describe('YpayPaymentProvider.createCharge — card path docType follows VAT status too', () => {
-  function cardSeed(vatType: number) {
+describe('YpayPaymentProvider.createCharge — card path docType is the explicit choice too', () => {
+  function cardSeed(documentType: number) {
     const fake = makeFakeSupabase({
-      tenants: [{ id: TENANT, vat_type: vatType }],
+      tenants: [{ id: TENANT, ypay_document_type: documentType, vat_type: 3 }],
       engagements: [{ id: 'eng-1', person_id: PERSON, offering_id: 'off-1', billing_account_id: 'ba-1' }],
       billing_accounts: [{ id: 'ba-1', person_id: PERSON, account_id: null, business_name: null, business_tax_id: null }],
       people: [{ id: PERSON, name: 'Dana Levi', email: 'dana@example.com', account_id: null, emergency_contact_phone: null }],
@@ -397,12 +398,12 @@ describe('YpayPaymentProvider.createCharge — card path docType follows VAT sta
     return fake;
   }
 
-  async function chargeDocType(vatType: number): Promise<number> {
+  async function chargeDocType(documentType: number): Promise<number> {
     (globalThis as unknown as { Deno?: unknown }).Deno = {
       env: { get: (k: string) => ({ YPAY_NOTIFY_URL: 'https://edge.test/handle-payment-event', APP_URL: 'https://app.test' })[k] },
     };
     try {
-      const { client } = cardSeed(vatType);
+      const { client } = cardSeed(documentType);
       const fetchMock = vi.fn(async () => ypayResponse({ responseCode: 1, url: 'https://pay.ypay.test/x' }));
       vi.stubGlobal('fetch', fetchMock);
       const result = await new YpayPaymentProvider(client as never).createCharge({
@@ -418,11 +419,11 @@ describe('YpayPaymentProvider.createCharge — card path docType follows VAT sta
     }
   }
 
-  it('VAT-registered tenant: invoice-receipt (109) as before', async () => {
-    expect(await chargeDocType(1)).toBe(109);
+  it('chose invoice-receipt (109)', async () => {
+    expect(await chargeDocType(109)).toBe(109);
   });
 
-  it('VAT-exempt tenant: receipt (108) instead of a tax invoice it may not issue', async () => {
-    expect(await chargeDocType(3)).toBe(108);
+  it('chose receipt (108)', async () => {
+    expect(await chargeDocType(108)).toBe(108);
   });
 });
