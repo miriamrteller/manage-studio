@@ -8,7 +8,8 @@ export interface StudioSetupForm {
   name: string;
   subdomain: string;
   languageDefault: 'he' | 'en';
-  country: 'IL' | 'US';
+  /** OpalSwift is for studios in Israel only. */
+  country: 'IL';
   vertical: StudioVertical;
   paymentProvider: StudioPaymentProvider;
   invoicingProvider: StudioInvoicingProvider;
@@ -40,9 +41,6 @@ export function planForVertical(vertical: StudioVertical): 'essential' | 'profes
   return vertical === 'dance-studio' ? 'professional' : 'essential';
 }
 
-function localeForCountry(country: 'IL' | 'US') {
-  return country === 'US' ? { currency: 'USD', phoneRegion: 'US' } : { currency: 'ILS', phoneRegion: 'IL' };
-}
 
 /** The request the wizard sends for a filled-in form. */
 export function toSetupRequest(form: StudioSetupForm) {
@@ -53,8 +51,10 @@ export function toSetupRequest(form: StudioSetupForm) {
     vertical: form.vertical,
     ownerEmail: form.ownerEmail.trim().toLowerCase(),
     languageDefault: form.languageDefault,
-    country: form.country,
-    ...localeForCountry(form.country),
+    // Israel only: shekels and Israeli phone numbers.
+    country: 'IL' as const,
+    currency: 'ILS',
+    phoneRegion: 'IL',
     paymentProvider: form.paymentProvider,
     invoicingProvider: form.invoicingProvider,
     primaryColor: form.primaryColor,

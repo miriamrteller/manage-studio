@@ -1,8 +1,7 @@
 // @vitest-environment jsdom
 /**
- * Setup wizard, step 1: the country is Israel unless the owner says otherwise.
- * Payments, tax documents and legal templates are Israel-only, so another
- * country needs a warning and an explicit tick.
+ * Setup wizard, step 1: the country is Israel, shown as text. OpalSwift is for
+ * studios in Israel only, so there is no choice.
  * Run: pnpm -C apps/web test studio-setup-country.test.tsx
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -43,43 +42,18 @@ afterEach(async () => {
 });
 
 describe('country in the setup wizard', () => {
-  it('shows Israel, with no dropdown until "Not in Israel?" is pressed', () => {
+  it('shows "Country: Israel" as text, with no control', () => {
     renderWizard();
     expect(screen.getByRole('group', { name: 'Country' })).toHaveTextContent('Israel');
     expect(screen.queryByRole('combobox', { name: 'Country' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Not in Israel/ })).toBeNull();
     fillNameAndAddress();
     expect(screen.getByRole('button', { name: 'Next' })).toBeEnabled();
   });
 
-  it('another country shows the warning and needs a tick to continue', () => {
-    renderWizard();
-    fillNameAndAddress();
-    const more = screen.getByRole('button', { name: 'Not in Israel?' });
-    expect(more).toHaveAttribute('aria-expanded', 'false');
-    fireEvent.click(more);
-    const select = screen.getByRole('combobox', { name: 'Country' });
-    expect(screen.getByRole('note')).toHaveTextContent(/payment providers, tax documents and legal templates are for Israel only/);
-    expect(select).toHaveAccessibleDescription(/for Israel only/);
-    // Still Israel: nothing to confirm.
-    expect(screen.getByRole('button', { name: 'Next' })).toBeEnabled();
-
-    fireEvent.change(select, { target: { value: 'US' } });
-    expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
-    fireEvent.click(screen.getByRole('checkbox', { name: /My studio will arrange its own payments/ }));
-    expect(screen.getByRole('button', { name: 'Next' })).toBeEnabled();
-
-    // Changing the country again asks again.
-    fireEvent.change(select, { target: { value: 'IL' } });
-    fireEvent.change(select, { target: { value: 'US' } });
-    expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
-  });
-
-  it('the request keeps Israel by default; a confirmed US studio gets USD', () => {
+  it('the request is always for Israel: shekels and Israeli phone numbers', () => {
     expect(toSetupRequest({ ...INITIAL_FORM, name: 'x', subdomain: 'x' })).toMatchObject({
       country: 'IL', currency: 'ILS', phoneRegion: 'IL',
-    });
-    expect(toSetupRequest({ ...INITIAL_FORM, name: 'x', subdomain: 'x', country: 'US' })).toMatchObject({
-      country: 'US', currency: 'USD', phoneRegion: 'US',
     });
   });
 
@@ -87,9 +61,6 @@ describe('country in the setup wizard', () => {
     await i18n.changeLanguage('he');
     renderWizard();
     expect(screen.getByRole('group', { name: 'מדינה' })).toHaveTextContent('ישראל');
-    fireEvent.click(screen.getByRole('button', { name: 'לא בישראל?' }));
-    expect(screen.getByRole('note')).toHaveTextContent(/מיועדים לישראל בלבד/);
-    fireEvent.change(screen.getByRole('combobox', { name: 'מדינה' }), { target: { value: 'US' } });
-    expect(screen.getByRole('checkbox', { name: /הסטודיו שלי ידאג בעצמו/ })).toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: 'מדינה' })).toBeNull();
   });
 });

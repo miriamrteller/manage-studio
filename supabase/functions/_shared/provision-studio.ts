@@ -28,9 +28,10 @@ const ProvisionStudioFields = z.object({
   vertical: z.string().trim().min(1),
   ownerEmail: z.string().trim().toLowerCase().email(),
   languageDefault: z.enum(["he", "en"]).default("en"),
-  country: z.enum(["IL", "US"]).default("IL"),
-  currency: z.string().trim().toUpperCase().regex(/^[A-Z]{3}$/).default("ILS"),
-  phoneRegion: z.string().trim().toUpperCase().regex(/^[A-Z]{2}$/).default("IL"),
+  // OpalSwift is for studios in Israel only (payments, tax documents and legal templates are Israeli).
+  country: z.literal("IL").default("IL"),
+  currency: z.literal("ILS").default("ILS"),
+  phoneRegion: z.literal("IL").default("IL"),
   paymentProvider: z.enum(STUDIO_PAYMENT_PROVIDERS),
   invoicingProvider: z.enum(STUDIO_INVOICING_PROVIDERS),
   primaryColor: z.string().regex(HEX).default("#5B6CFF"),

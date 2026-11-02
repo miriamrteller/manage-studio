@@ -27,7 +27,7 @@ export interface StudioSetupRequest {
   vertical: string;
   ownerEmail: string;
   languageDefault: 'he' | 'en';
-  country: 'IL' | 'US';
+  country: 'IL';
   currency: string;
   phoneRegion: string;
   paymentProvider: StudioPaymentProvider;

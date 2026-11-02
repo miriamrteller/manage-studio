@@ -5,11 +5,11 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { useTenant } from '@/hooks/useTenant';
 import queryClient from '@/lib/query-client';
-import { CountryChoice, countryChoiceComplete } from '@/components/shared/CountryChoice';
+import { StudioCountry } from '@/components/shared/StudioCountry';
 
 type LocaleRow = {
   language_default: 'he' | 'en';
-  country: 'IL' | 'US';
+  country: string;
   currency: string;
   phone_region: string;
 };
@@ -18,11 +18,9 @@ export function LocaleSettingsForm() {
   const { t } = useTranslation();
   const tenant = useTenant();
   const [languageDefault, setLanguageDefault] = useState<'he' | 'en'>('he');
-  const [country, setCountry] = useState<'IL' | 'US'>('IL');
   const [currency, setCurrency] = useState('ILS');
   const [phoneRegion, setPhoneRegion] = useState('IL');
   const [message, setMessage] = useState<string | null>(null);
-  const [outsideIsraelAck, setOutsideIsraelAck] = useState(false);
 
   const { data: localeRow } = useQuery({
     queryKey: ['tenant-locale', tenant?.id],
@@ -56,7 +54,6 @@ export function LocaleSettingsForm() {
   useEffect(() => {
     if (!localeRow) return;
     setLanguageDefault(localeRow.language_default);
-    setCountry(localeRow.country);
     setCurrency(localeRow.currency);
     setPhoneRegion(localeRow.phone_region);
   }, [localeRow]);
@@ -71,7 +68,8 @@ export function LocaleSettingsForm() {
         .from('tenants')
         .update({
           language_default: languageDefault,
-          country,
+          // OpalSwift is for studios in Israel only.
+          country: 'IL',
           currency: currency.trim().toUpperCase(),
           phone_region: phoneRegion.trim().toUpperCase(),
         })
@@ -89,10 +87,6 @@ export function LocaleSettingsForm() {
   });
 
   if (!tenant) return null;
-
-  // Moving to another country needs the tick; a studio already outside Israel can save as it is.
-  const countryChanged = !!localeRow && country !== localeRow.country;
-  const countryOk = countryChoiceComplete(country, outsideIsraelAck, countryChanged);
 
   return (
     <section className="space-y-4 max-w-lg">
@@ -115,17 +109,7 @@ export function LocaleSettingsForm() {
       </div>
 
       <div className="space-y-2">
-        <CountryChoice
-          idPrefix="country"
-          value={country}
-          onChange={setCountry}
-          acknowledged={outsideIsraelAck}
-          onAcknowledgedChange={setOutsideIsraelAck}
-          requireAck={countryChanged}
-        />
-        {hasPayments && (
-          <p className="text-xs text-amber-700">{t('settings.hub.country_change_warning')}</p>
-        )}
+        <StudioCountry idPrefix="country" />
       </div>
 
       <div className="space-y-2">
@@ -171,7 +155,7 @@ export function LocaleSettingsForm() {
 
       <Button
         variant="primary"
-        disabled={saveMutation.isPending || !countryOk}
+        disabled={saveMutation.isPending}
         onClick={() => void saveMutation.mutate()}
       >
         {t('common.save')}

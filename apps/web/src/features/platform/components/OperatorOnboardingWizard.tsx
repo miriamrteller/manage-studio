@@ -30,7 +30,7 @@ import {
   turnstileSiteKey,
   type SelfServeStudioResult,
 } from '@/features/self-serve/selfServeSignup';
-import { CountryChoice, countryChoiceComplete } from '@/components/shared/CountryChoice';
+import { StudioCountry } from '@/components/shared/StudioCountry';
 
 const SUBDOMAIN_RE = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/;
 const HEX_COLOR = /^#[0-9A-Fa-f]{6}$/;
@@ -89,8 +89,6 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
   const [created, setCreated] = useState<StudioSetupResult | null>(null);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [invoicingOther, setInvoicingOther] = useState(false);
-  // Israel only by default: payments, tax documents and legal templates are Israeli.
-  const [outsideIsraelAck, setOutsideIsraelAck] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const siteKey = selfServe ? turnstileSiteKey() : null;
 
@@ -188,11 +186,9 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
 
   function canAdvance(): boolean {
     switch (step) {
-      case 'studio': {
-        const countryOk = countryChoiceComplete(form.country, outsideIsraelAck);
-        if (selfServe) return form.name.trim().length > 0 && countryOk;
-        return form.name.trim().length > 0 && SUBDOMAIN_RE.test(form.subdomain.trim().toLowerCase()) && countryOk;
-      }
+      case 'studio':
+        if (selfServe) return form.name.trim().length > 0;
+        return form.name.trim().length > 0 && SUBDOMAIN_RE.test(form.subdomain.trim().toLowerCase());
       case 'address':
         return SUBDOMAIN_RE.test(form.subdomain.trim().toLowerCase()) && subdomainStatus !== 'taken';
       case 'look':
@@ -321,13 +317,7 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
                 <option value="he">עברית</option>
               </select>
             </div>
-            <CountryChoice
-              idPrefix="ss-country"
-              value={form.country}
-              onChange={(c) => update('country', c)}
-              acknowledged={outsideIsraelAck}
-              onAcknowledgedChange={setOutsideIsraelAck}
-            />
+            <StudioCountry idPrefix="ss-country" />
           </div>
         </section>
       )}

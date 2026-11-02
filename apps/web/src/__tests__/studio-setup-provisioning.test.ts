@@ -114,6 +114,13 @@ describe('provider options', () => {
     expect(migration).not.toMatch(/p_payment_provider NOT IN \([^)]*'mock'/);
   });
 
+  it('new studios are in Israel only: shekels and Israeli phone numbers', () => {
+    expect(ProvisionStudioSchema.parse(base)).toMatchObject({ country: 'IL', currency: 'ILS', phoneRegion: 'IL' });
+    expect(ProvisionStudioSchema.safeParse({ ...base, country: 'US' }).success).toBe(false);
+    expect(ProvisionStudioSchema.safeParse({ ...base, currency: 'USD' }).success).toBe(false);
+    expect(ProvisionStudioSchema.safeParse({ ...base, phoneRegion: 'US' }).success).toBe(false);
+  });
+
   it('new studios default to English and OpalSwift colours', () => {
     const parsed = ProvisionStudioSchema.parse(base);
     expect(parsed).toMatchObject({ languageDefault: 'en', primaryColor: '#5B6CFF', accentColor: '#21D1C2', ownerEmail: 'owner@example.com' });

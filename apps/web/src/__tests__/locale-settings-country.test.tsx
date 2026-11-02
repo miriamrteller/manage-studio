@@ -1,9 +1,7 @@
 // @vitest-environment jsdom
 /**
- * Settings → Language & Region: the same country choice as the setup wizard.
- * Israel is shown; "Not in Israel?" reveals the choice and the warning; moving
- * to another country needs a tick. A studio already outside Israel sees its
- * country and can save as it is.
+ * Settings → Language & Region: the country is Israel, shown as text, and a
+ * save always keeps it Israel. Only the main language is a choice.
  * Run: pnpm -C apps/web test locale-settings-country.test.tsx
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -60,36 +58,21 @@ afterEach(async () => {
 });
 
 describe('country in Settings → Language & Region', () => {
-  it('an Israeli studio sees Israel; moving to another country needs the tick', async () => {
+  it('shows "Country: Israel" as text; saving keeps Israel', async () => {
     renderForm();
     expect(await screen.findByRole('group', { name: 'Country' })).toHaveTextContent('Israel');
     expect(screen.queryByRole('combobox', { name: 'Country' })).toBeNull();
-    // The saved settings have loaded.
     await waitFor(() => expect(queryClient.getQueryData(['tenant-locale', 't-1'])).toBeTruthy());
-    fireEvent.click(screen.getByRole('button', { name: 'Not in Israel?' }));
-    fireEvent.change(screen.getByRole('combobox', { name: 'Country' }), { target: { value: 'US' } });
-    const save = screen.getByRole('button', { name: 'Save' });
-    expect(save).toBeDisabled();
-    fireEvent.click(screen.getByRole('checkbox', { name: /My studio will arrange its own payments/ }));
-    expect(save).toBeEnabled();
-    fireEvent.click(save);
-    await waitFor(() => expect(h.update).toHaveBeenCalledWith(expect.objectContaining({ country: 'US' })));
-  });
-
-  it('a studio already outside Israel sees its country and the warning, and can save as it is', async () => {
-    h.row = { language_default: 'en', country: 'US', currency: 'USD', phone_region: 'US' };
-    renderForm();
-    const select = await screen.findByRole('combobox', { name: 'Country' });
-    await waitFor(() => expect(select).toHaveValue('US'));
-    expect(screen.getByRole('note')).toHaveTextContent(/for Israel only/);
-    expect(screen.queryByRole('checkbox', { name: /My studio will arrange/ })).toBeNull();
-    expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
+    fireEvent.change(screen.getByLabelText('Default language'), { target: { value: 'he' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() =>
+      expect(h.update).toHaveBeenCalledWith(expect.objectContaining({ country: 'IL', language_default: 'he' })),
+    );
   });
 
   it('works in Hebrew', async () => {
     await i18n.changeLanguage('he');
     renderForm();
     expect(await screen.findByRole('group', { name: 'מדינה' })).toHaveTextContent('ישראל');
-    expect(screen.getByRole('button', { name: 'לא בישראל?' })).toBeInTheDocument();
   });
 });
