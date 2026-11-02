@@ -94,6 +94,7 @@ describe('Settings → How customers pay', () => {
     expect(screen.getByLabelText('settings.offline_payments.enabled_label')).toBeDisabled();
     expect(screen.getByLabelText('settings.payments.provider')).toBeDisabled();
     expect(screen.getByText('settings.offline_payments.switch_contact_support')).toBeTruthy();
+    expect(screen.queryByText('settings.offline_payments.choose_carefully')).toBeNull();
     expect(screen.queryByRole('button', { name: 'common.save' })).toBeNull();
   });
 
@@ -101,7 +102,9 @@ describe('Settings → How customers pay', () => {
     Object.assign(tenantState, { payment_provider: 'offline', invoicing_provider: 'none' });
     wrap(<OfflinePaymentsSettingsForm />);
     expect(screen.queryByText('settings.offline_payments.switch_contact_support')).toBeNull();
+    expect(screen.queryByText('settings.offline_payments.choose_carefully')).toBeNull();
     fireEvent.click(screen.getByLabelText('settings.offline_payments.enabled_label'));
+    expect(screen.getByText('settings.offline_payments.choose_carefully')).toBeTruthy();
     fireEvent.change(screen.getByLabelText('settings.payments.provider'), { target: { value: 'invoice4u' } });
     expect(screen.queryByRole('alert')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'common.save' }));

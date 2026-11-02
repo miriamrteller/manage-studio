@@ -105,6 +105,18 @@ describe('studio setup wizard', () => {
     expect(screen.queryByRole('radio', { name: 'Issued by Tranzila' })).toBeNull();
   });
 
+  it('says to choose an online provider carefully, but not for pay at the studio', async () => {
+    renderWizard();
+    await fillStudioStep();
+    next();
+    const note = /Changing your payment provider later is complicated and needs OpalSwift support/;
+    expect(screen.getByText(note)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('radio', { name: 'Pay at the studio (cash, bank transfer or Bit)' }));
+    expect(screen.queryByText(note)).toBeNull();
+    fireEvent.click(screen.getByRole('radio', { name: 'By card online, through YPay' }));
+    expect(screen.getByText(note)).toBeInTheDocument();
+  });
+
   it('does not offer iCount or Tranzila payments until they are finished', async () => {
     renderWizard();
     await fillStudioStep();
@@ -119,7 +131,7 @@ describe('studio setup wizard', () => {
     renderWizard();
     await fillStudioStep();
     next();
-    expect(screen.getByRole('note')).toHaveTextContent(/cannot issue receipts for cash/);
+    expect(screen.getByText(/cannot issue receipts for cash/).closest('[role="note"]')).not.toBeNull();
     fireEvent.click(screen.getByRole('radio', { name: 'By card online, through YPay' }));
     expect(screen.queryByText(/cannot issue receipts for cash/)).toBeNull();
   });

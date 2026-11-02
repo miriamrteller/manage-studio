@@ -166,6 +166,11 @@ export function OfflinePaymentsSettingsForm() {
             ))}
           </select>
           <p className="text-xs text-muted-foreground">{t('settings.offline_payments.provider_hint')}</p>
+          {!locked && (
+            <p className="text-sm text-muted-foreground" role="note">
+              {t('settings.offline_payments.choose_carefully')}
+            </p>
+          )}
           {tenant.vertical === 'photographer' && !jobOnlinePaymentSupported(onlineProvider) && (
             <p className="text-sm text-muted-foreground" role="note">
               {t('settings.offline_payments.job_payments_hint')}
