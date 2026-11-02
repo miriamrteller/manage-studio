@@ -10,6 +10,7 @@ import { demoGallery } from './images/manifest';
 import { getInvoice, subscribeInvoice, closeInvoice, showInvoice, type DemoInvoice } from './invoice';
 import { formatIls, signedContractView } from './functions';
 import { DEMO_HOME, DEMO_VIEWS } from './seed';
+import { hostedFormHash } from './hostedForm';
 import './demo.css';
 
 const COPY = {
@@ -128,6 +129,13 @@ export function DemoBar() {
   // open the sample gallery or invoice in place. window.open is covered too.
   useEffect(() => {
     const openDemoTarget = (url: string): boolean => {
+      // The studio's hosted enquiry form (Leads → "Get leads"): open the demo's own
+      // form in place. A new tab at the artifact origin would load a blank page.
+      const hosted = hostedFormHash(url);
+      if (hosted) {
+        window.location.hash = hosted;
+        return true;
+      }
       if (url.startsWith(DEMO_GALLERY_HOST)) {
         setGalleryOpen(true);
         return true;
