@@ -115,6 +115,15 @@ describe('studio setup wizard', () => {
     expect(screen.getByRole('radio', { name: 'By card online, through Grow' })).toBeChecked();
   });
 
+  it('warns that Grow documents do not cover cash receipts', async () => {
+    renderWizard();
+    await fillStudioStep();
+    next();
+    expect(screen.getByRole('note')).toHaveTextContent(/cannot issue receipts for cash/);
+    fireEvent.click(screen.getByRole('radio', { name: 'By card online, through YPay' }));
+    expect(screen.queryByText(/cannot issue receipts for cash/)).toBeNull();
+  });
+
   it('drops an invoicing choice that no longer fits when the payment choice changes', async () => {
     renderWizard();
     await fillStudioStep();

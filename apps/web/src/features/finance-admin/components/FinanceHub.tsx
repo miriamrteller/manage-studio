@@ -10,6 +10,7 @@ import { useFinanceSummary, useOutstandingEngagements } from '../hooks/useFinanc
 import { computeNetProfitMinor } from '../lib/netProfit';
 import { resolvePeriodDateRange } from '../lib/periods';
 import { FinancePeriodSelector, useFinancePeriodFromUrl } from './FinancePeriodSelector';
+import { DocumentsNotIssuedCard } from './DocumentsNotIssuedCard';
 
 export function FinanceHub() {
   const { t, i18n } = useTranslation();
@@ -113,6 +114,8 @@ export function FinanceHub() {
           />
         </section>
       )}
+
+      <DocumentsNotIssuedCard />
 
       <section className="space-y-4">
         <h3 className="text-lg font-semibold">{t('finance.hub.outstanding_title')}</h3>

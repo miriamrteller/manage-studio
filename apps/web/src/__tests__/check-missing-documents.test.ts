@@ -36,7 +36,7 @@ describe('runCheckMissingDocuments', () => {
     vi.restoreAllMocks();
   });
 
-  it('alerts admins for succeeded payments without documents past grace', async () => {
+  function missingScenario(notIssued: boolean) {
     const audits: Record<string, unknown>[] = [];
     const existingSent = new Set<string>();
 
@@ -132,16 +132,37 @@ describe('runCheckMissingDocuments', () => {
             }),
           };
         }
+        if (table === 'document_queue') {
+          // Whether the payment is recorded as 'not_issued' (P2 #12).
+          const q = { eq: () => q, limit: () => q, maybeSingle: async () => ({ data: notIssued ? { id: 'q-1' } : null, error: null }) };
+          return { select: () => q };
+        }
         return {};
       },
     } as never;
 
+    return { service, audits };
+  }
+
+  it('alerts admins for succeeded payments without documents past grace', async () => {
+    const { service, audits } = missingScenario(false);
     const result = await runCheckMissingDocuments(service);
 
     expect(result.missingScanned).toBe(1);
     expect(result.missingAlerted).toBe(1);
     expect(sendHtmlEmail).toHaveBeenCalled();
     expect(audits.some((a) => a.action === PAYMENT_DOCUMENT_MISSING_ALERT_SENT)).toBe(true);
+  });
+
+  it('does not alert for a payment recorded as not issued (shown on the finance page instead)', async () => {
+    const { service, audits } = missingScenario(true);
+
+    const result = await runCheckMissingDocuments(service);
+
+    expect(result.missingScanned).toBe(1);
+    expect(result.missingAlerted).toBe(0);
+    expect(sendHtmlEmail).not.toHaveBeenCalled();
+    expect(audits.some((a) => a.action === PAYMENT_DOCUMENT_MISSING_ALERT_SENT)).toBe(false);
   });
 
   it('retries admin invoice email when document exists but sent audit missing', async () => {
@@ -248,6 +269,11 @@ describe('runCheckMissingDocuments', () => {
               }),
             }),
           };
+        }
+        if (table === 'document_queue') {
+          // No payment here is recorded as 'not_issued'.
+          const q = { eq: () => q, limit: () => q, maybeSingle: async () => ({ data: null, error: null }) };
+          return { select: () => q };
         }
         return {};
       },

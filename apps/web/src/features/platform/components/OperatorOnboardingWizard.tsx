@@ -19,6 +19,9 @@ import {
 } from '../services/studioSetupService';
 import { INITIAL_FORM, toSetupRequest, VERTICALS, type StudioSetupForm } from '../lib/studioSetupForm';
 import { invoicingOptionsFor, invoicingPairsWithPayment } from '@/lib/providerPairing';
+
+/** Invoicing that only issues documents with its own card payments (no cash receipts). */
+const BUNDLED_ONLY_INVOICING: readonly string[] = ['grow', 'icount', 'invoice4u'];
 import { platformTermsVersion } from '@/legal/acceptance';
 import { LegalPackPanel } from '@/components/legal/LegalPackPanel';
 import { TurnstileWidget } from '@/components/captcha/TurnstileWidget';
@@ -388,7 +391,12 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
               </div>
             )}
           </fieldset>
-          <p className="text-sm text-gray-700">{t('studio_setup.payments_later')}</p>
+          {BUNDLED_ONLY_INVOICING.includes(form.invoicingProvider) && (
+            <p className="text-sm text-gray-700" role="note">
+              {t('studio_setup.cash_receipts_hint', { provider: t(`settings.provider_names.${form.invoicingProvider}`) })}
+            </p>
+          )}
+                    <p className="text-sm text-gray-700">{t('studio_setup.payments_later')}</p>
         </section>
       )}
 
