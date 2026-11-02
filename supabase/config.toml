@@ -354,6 +354,12 @@ enabled = true
 verify_jwt = true
 entrypoint = "./functions/send-lead-form-link/index.ts"
 
+# Cron: daily lead follow-up digest to studio admins (step 4). CRON_SECRET auth.
+[functions.run-lead-followup-digest]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/run-lead-followup-digest/index.ts"
+
 # --- Photographer beta: job (shoot) deposit/balance payments ---------------
 # Public pay page backend: the request's public_token is the capability.
 [functions.job-payment-request-public]
