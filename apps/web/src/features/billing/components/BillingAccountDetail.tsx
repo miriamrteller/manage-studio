@@ -52,11 +52,6 @@ export function BillingAccountDetail({ id, onClose }: BillingAccountDetailProps)
 
       <dl className="space-y-4">
         {account.holderEmail && <Row label={t('pages.billing.email_label')}>{account.holderEmail}</Row>}
-        {account.holderPhone && (
-          <Row label={t('pages.billing.phone_label')}>
-            <span dir="ltr">{account.holderPhone}</span>
-          </Row>
-        )}
         <Row label={t('pages.billing.saved_card_label')}>
           {account.savedCard ? (
             <span dir="ltr" data-testid="billing-saved-card">{formatSavedCard(account.savedCard)}</span>

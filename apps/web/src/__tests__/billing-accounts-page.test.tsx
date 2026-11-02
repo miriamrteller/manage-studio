@@ -62,7 +62,7 @@ const cardRow = {
   status: 'active',
   created_at: '2026-11-01T10:00:00Z',
   updated_at: '2026-11-01T10:00:00Z',
-  payer: { name: 'Dana Levi', email: 'dana@example.com', phone: '+972501234567' },
+  payer: { name: 'Dana Levi', email: 'dana@example.com' },
   household: null,
 };
 
@@ -77,7 +77,7 @@ describe('BillingAccountSchema matches the billing_accounts table', () => {
   it('parses a real row and no longer requires phantom columns', () => {
     expect(BillingAccountSchema.parse(cardRow).status).toBe('active');
     const view = toBillingAccountView(cardRow);
-    expect(view).toMatchObject({ holderName: 'Dana Levi', holderEmail: 'dana@example.com', holderPhone: '+972501234567' });
+    expect(view).toMatchObject({ holderName: 'Dana Levi', holderEmail: 'dana@example.com' });
   });
 
   it('falls back to the household name, then the business name', () => {

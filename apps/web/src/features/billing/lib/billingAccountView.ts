@@ -5,10 +5,10 @@ import { pickSavedCard, type SavedCard } from '@/features/students/lib/studentBi
 export { pickSavedCard };
 export type { SavedCard };
 
-/** Real columns plus the payer person (name / email / phone) and household name. */
+/** Real columns plus the payer person (name / email) and household name. `people` has no phone column. */
 export const BILLING_ACCOUNT_SELECT =
   'id, tenant_id, account_id, person_id, business_name, business_tax_id, status, created_at, updated_at, ' +
-  'payer:people!billing_accounts_person_id_fkey(name, email, phone), ' +
+  'payer:people!billing_accounts_person_id_fkey(name, email), ' +
   'household:accounts!billing_accounts_account_id_fkey(name)';
 
 /** Same, with the payer join made inner so a search on payer name/email filters accounts. */
@@ -22,7 +22,6 @@ const JoinSchema = z.object({
     .object({
       name: z.string().nullable().optional(),
       email: z.string().nullable().optional(),
-      phone: z.string().nullable().optional(),
     })
     .nullable()
     .optional(),
@@ -32,7 +31,6 @@ const JoinSchema = z.object({
 export interface BillingAccountView extends BillingAccount {
   holderName: string | null;
   holderEmail: string | null;
-  holderPhone: string | null;
   /** Card studios: the saved card used for monthly charges; loaded on the detail view only. */
   savedCard?: SavedCard | null;
 }
@@ -47,7 +45,6 @@ export function toBillingAccountView(row: unknown): BillingAccountView {
     holderName:
       clean(joins.payer?.name) ?? clean(joins.household?.name) ?? clean(account.business_name),
     holderEmail: clean(joins.payer?.email),
-    holderPhone: clean(joins.payer?.phone),
   };
 }
 
