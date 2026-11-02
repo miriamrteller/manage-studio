@@ -122,7 +122,7 @@ describe('prepareLegalMarkdown', () => {
   it('gives a different version when the studio details change', async () => {
     const raw = await loadLegalTemplate('enrolment-terms', 'en');
     const a = prepareLegalMarkdown(raw, ctx('enrolment-terms', 'en', fullDanceProfile));
-    const b = prepareLegalMarkdown(raw, ctx('enrolment-terms', 'en', { ...fullDanceProfile, season_price: '3,100' }));
+    const b = prepareLegalMarkdown(raw, ctx('enrolment-terms', 'en', { ...fullDanceProfile, insurance: 'liability insurance with Other Insurer' }));
     expect(a.version).not.toEqual(b.version);
   });
 });
