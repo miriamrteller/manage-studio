@@ -1,3 +1,4 @@
+import { supabase } from '@/lib/supabase';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ConsentTemplateSchema } from '@shared/schemas';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
@@ -47,8 +48,9 @@ export function useWaiverStatus({ personId, offeringId }: UseWaiverStatusParams)
       }
 
       // 2. Get the active consent template (no active template = no gate)
-      const { data: templateRow } = await TenantDB.selectFor('consent_templates', tenant!)
-        .eq('status', 'active')
+      // The active form for this participant (child or adult health declaration by age).
+      const { data: templateRow } = await supabase
+        .rpc('pick_active_consent_template', { p_tenant_id: tenant!.id, p_person_id: personId ?? null })
         .maybeSingle();
       if (!templateRow) {
         return { required: false, template: null };

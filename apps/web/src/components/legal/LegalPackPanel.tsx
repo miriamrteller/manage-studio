@@ -45,7 +45,7 @@ export function LegalPackPanel({ tenantId, mode }: LegalPackPanelProps) {
     mutationFn: async () => {
       if (!pack) throw new Error('not ready');
       // Older studios may predate the form seeded at creation: add it first (no-op otherwise).
-      if (pack.signedTemplate) {
+      if (pack.signedForms.length > 0) {
         await supabase.functions.invoke('provision-studio', { body: { action: 'ensure_signed_template' } });
       }
       const { error } = await supabase.rpc('acknowledge_studio_legal_pack', {

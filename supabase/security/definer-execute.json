@@ -68,6 +68,7 @@
       "log_platform_view",
       "log_sensitive_read",
       "mark_quote_sent",
+      "pick_active_consent_template",
       "preview_notification_blast_recipients",
       "release_job_gallery",
       "replace_tenant_scheduling_hours",

@@ -1,19 +1,14 @@
 import { consentWording, MARKETING_KINDS, PHOTO_KINDS, type ConsentKind } from './consents';
 import type { LegalDocId } from './fields';
 import { legalTextVersion, prepareLegalMarkdown, renderLegalHtml, type LegalLang } from './render';
-import {
-  prepareSignedTemplate,
-  SIGNED_DOC_TITLES,
-  signedDocForVertical,
-  signedTemplateSource,
-  type SignedDocId,
-} from './signedTemplates';
+import { prepareSignedForm, signedFormsForVertical } from './signedTemplates';
 import { loadLegalTemplate } from './templates';
 import { tenantHasEnrolmentTerms, type TenantLegalProfile } from './useLegalDocument';
 
 /** One document of the pack, in both languages (English prevails). */
 export interface LegalPackSection {
-  id: LegalDocId | SignedDocId | 'consents';
+  /** Informational document id, a signed form's key (e.g. health-child), or 'consents'. */
+  id: string;
   title: Record<LegalLang, string>;
   /** HTML (informational documents) or plain text (signed documents and consents). */
   body: Record<LegalLang, { html?: string; text?: string }>;
@@ -25,8 +20,8 @@ export interface LegalPack {
   sections: LegalPackSection[];
   /** Hash of everything in the pack; stored with the acknowledgement. */
   version: string;
-  /** The signed template to seed for this studio, in its own language (null: none for its type). */
-  signedTemplate: { name: string; content: string } | null;
+  /** The studio's signed forms (seeded at creation), in its own language. */
+  signedForms: Array<{ key: string; name: string }>;
 }
 
 const INFO_TITLES: Partial<Record<LegalDocId, Record<LegalLang, string>>> = {
@@ -81,27 +76,25 @@ export async function buildLegalPack(legal: TenantLegalProfile): Promise<LegalPa
     sections.push(section);
   }
 
-  const signedDoc = signedDocForVertical(legal.vertical);
-  let signedTemplate: LegalPack['signedTemplate'] = null;
-  if (signedDoc) {
+  const signedForms: LegalPack['signedForms'] = [];
+  for (const form of signedFormsForVertical(legal.vertical)) {
     const section: LegalPackSection = {
-      id: signedDoc,
-      title: SIGNED_DOC_TITLES[signedDoc],
+      id: form.key,
+      title: form.title,
       body: { en: {}, he: {} },
       missing: { en: [], he: [] },
     };
     for (const lang of LANGS) {
-      const text = prepareSignedTemplate(signedTemplateSource(signedDoc, lang), signedDoc, {
+      const text = prepareSignedForm(form, {
         lang,
         tenantName: legal.name,
         contactEmail: legal.contactEmail,
         profile: legal.profile,
+        vertical: legal.vertical,
       });
       section.body[lang] = { text };
-      if (lang === legal.languageDefault) {
-        signedTemplate = { name: SIGNED_DOC_TITLES[signedDoc][lang], content: text };
-      }
     }
+    signedForms.push({ key: form.key, name: form.title[legal.languageDefault] });
     sections.push(section);
   }
 
@@ -119,5 +112,5 @@ export async function buildLegalPack(legal: TenantLegalProfile): Promise<LegalPa
   const all = sections
     .map((s) => LANGS.map((l) => s.body[l].html ?? s.body[l].text ?? '').join('\n'))
     .join('\n');
-  return { sections, version: legalTextVersion(all), signedTemplate };
+  return { sections, version: legalTextVersion(all), signedForms };
 }

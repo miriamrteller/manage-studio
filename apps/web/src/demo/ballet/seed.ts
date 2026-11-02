@@ -147,7 +147,7 @@ const ENROLMENTS: [number, string, 'active' | 'pending_payment' | 'pending_waive
   [8, CLASS.miniSun, 'pending_payment', null],
 ];
 
-/** docs/legal/07b-health-declaration (Version A, child), Hebrew then English. */
+/** docs/legal/07b-health-declaration-child (as in the demo), Hebrew then English. */
 export const HEALTH_DECLARATION = `הצהרת בריאות לשיעורי מחול — תלמיד/ה קטין/ה
 Health Declaration for Dance Classes — Child
 

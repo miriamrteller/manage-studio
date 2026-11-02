@@ -194,6 +194,10 @@ export const baseRpcs: Record<string, RpcHandler> = {
 
   log_sensitive_read: () => null,
 
+  // The demo studio has one active form for everyone.
+  pick_active_consent_template: (_args, ctx) =>
+    rows(ctx, 'consent_templates').filter((t) => t.status === 'active').slice(0, 1),
+
   export_tenant_data: (_args, ctx) => {
     requireAdmin(ctx);
     return { exported_at: new Date().toISOString(), format: 'opalswift-studio-export/v1', data: { people: rows(ctx, 'people') } };

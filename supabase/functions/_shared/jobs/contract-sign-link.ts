@@ -51,6 +51,7 @@ export async function hasActiveContractTemplate(service: SupabaseClient, tenantI
     .select("id")
     .eq("tenant_id", tenantId)
     .eq("status", "active")
+    .limit(1)
     .maybeSingle();
   return !error && Boolean(data);
 }

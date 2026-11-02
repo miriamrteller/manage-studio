@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
 import { resolveOfferingPrice } from "./email-dist/pricing.js";
 import { resolveAllowedTokenRecipientEmails } from "./token-recipient.ts";
+import { pickActiveConsentTemplate } from "./studio-legal.ts";
 import type { EnrolmentCompletionContext } from "./checkout-bootstrap-types.ts";
 import {
   resolveEnrolmentWaiverGateFromRows,
@@ -107,12 +108,7 @@ export async function loadEnrolmentCompletionContext(
 
   let template: WaiverTemplateRow | null = null;
   if (offering.waiver_required) {
-    const { data: activeTemplate } = await service
-      .from("consent_templates")
-      .select("id, version, name, content")
-      .eq("tenant_id", tenantId)
-      .eq("status", "active")
-      .maybeSingle();
+    const activeTemplate = await pickActiveConsentTemplate(service, tenantId, engagement.person_id as string);
     if (activeTemplate) {
       template = {
         id: activeTemplate.id as string,
