@@ -185,7 +185,13 @@ export async function processGrowNotifyWith(
 
   const { data: upgraded, error: upgradeError } = await service
     .from("payments")
-    .update({ status: "succeeded", paid_at: new Date().toISOString() })
+    .update({
+      status: "succeeded",
+      paid_at: new Date().toISOString(),
+      // Grow's own transaction id: refundTransaction needs it, not our reference.
+      // (parseGrowNotify falls back to our reference when Grow sends none: don't store that.)
+      provider_transaction_id: parsed.transactionId && parsed.transactionId !== ref ? parsed.transactionId : null,
+    })
     .eq("id", row.id)
     .eq("status", "pending")
     .select("id")

@@ -1,3 +1,4 @@
+import { ManualRefundRequiredError } from "../refund-errors.ts";
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
 import { getEnv } from "../../edge-runtime/env.ts";
 import type { ChargeParams, ChargeResult, PaymentEvent, PaymentProvider } from "../types.ts";
@@ -460,11 +461,21 @@ export class GrowPaymentProvider implements PaymentProvider {
   }): Promise<{ providerRefundRef: string }> {
     const { data: payment } = await this.service
       .from("payments")
-      .select("tenant_id")
+      .select("tenant_id, provider_transaction_id")
       .eq("provider_payment_ref", params.providerPaymentRef)
       .maybeSingle();
     if (!payment?.tenant_id) {
       throw new Error("Payment not found for refund");
+    }
+    // Grow refunds by ITS transaction id, stored when the payment notice settled. A payment
+    // settled before that was stored cannot be refunded from here: refund it in Grow.
+    const transactionId = payment.provider_transaction_id as string | null;
+    if (!transactionId) {
+      throw new ManualRefundRequiredError(
+        "grow",
+        "This Grow payment has no Grow transaction number on record. Refund it in the Grow " +
+          "dashboard, then record the refund here.",
+      );
     }
     const creds = await this.getCredentials(payment.tenant_id as string);
     const res = await fetch(`${growApiBase()}/refundTransaction`, {
@@ -474,7 +485,7 @@ export class GrowPaymentProvider implements PaymentProvider {
         pageCode: creds.pageCode,
         userId: creds.userId,
         apiKey: creds.apiKey,
-        transactionId: params.providerPaymentRef,
+        transactionId,
         sum: growAmountFromMinor(params.amountMinor),
       }),
     });
