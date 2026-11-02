@@ -1,7 +1,7 @@
 /**
  * Demo handlers for studio setup screens: the legal-pack confirmation
  * (Settings → Legal, Finish setup) and the YPay connect form (Settings →
- * Payments). Nothing is sent or stored outside the browser; credentials typed
+ * Payments, plus the Grow notice key). Nothing is sent or stored outside the browser; credentials typed
  * into the demo are not kept.
  */
 import { DemoRpcError, type DemoContext, type FunctionHandler, type Row, type RpcHandler } from './fakeSupabase';
@@ -54,6 +54,23 @@ export const setupRpcs: Record<string, RpcHandler> = {
     }
     tenant.ypay_credentials_set = true;
     return null;
+  },
+
+  /** get_grow_webhook_key_status: whether the studio has a Grow notice key yet. */
+  get_grow_webhook_key_status: (_args, ctx) => {
+    const tenant = adminTenant(ctx);
+    const at = tenant.grow_webhook_key_created_at as string | undefined;
+    return [{ configured: Boolean(at), key_version: at ? Number(tenant.grow_webhook_key_version ?? 1) : null, created_at: at ?? null }];
+  },
+
+  /** rotate_grow_webhook_key: a new random key, shown once (demo only, never used). */
+  rotate_grow_webhook_key: (_args, ctx) => {
+    const tenant = adminTenant(ctx);
+    const bytes = crypto.getRandomValues(new Uint8Array(24));
+    const key = `demo_${Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')}`;
+    tenant.grow_webhook_key_version = Number(tenant.grow_webhook_key_version ?? 0) + 1;
+    tenant.grow_webhook_key_created_at = new Date().toISOString();
+    return key;
   },
 };
 

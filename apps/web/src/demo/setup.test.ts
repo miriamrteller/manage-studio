@@ -40,4 +40,14 @@ describe('demo studio setup handlers', () => {
     expect(saved.error).toBeNull();
     expect((await c.functions.invoke('verify-ypay-credentials')).data).toEqual({ valid: true });
   });
+
+  it('Grow notice key: none until rotated, then configured', async () => {
+    const { c } = client();
+    const before = await c.rpc('get_grow_webhook_key_status');
+    expect((before.data as Array<Record<string, unknown>>)[0].configured).toBe(false);
+    const key = await c.rpc('rotate_grow_webhook_key');
+    expect(typeof key.data).toBe('string');
+    const after = await c.rpc('get_grow_webhook_key_status');
+    expect((after.data as Array<Record<string, unknown>>)[0]).toMatchObject({ configured: true, key_version: 1 });
+  });
 });
