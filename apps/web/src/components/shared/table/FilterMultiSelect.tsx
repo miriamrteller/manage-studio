@@ -54,7 +54,7 @@ export function FilterMultiSelect({
           className="w-full form-input"
           aria-labelledby={`${id}-label`}
         >
-          <option value="">{placeholder ?? t('common.filters.add')}</option>
+          <option value="">{placeholder ?? (selected.length === 0 ? t('common.filters.all') : t('common.filters.add'))}</option>
           {available.map((opt) => (
             <option key={opt.value} value={opt.value}>
               {opt.label}

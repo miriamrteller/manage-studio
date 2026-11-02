@@ -240,9 +240,15 @@ export function StepClass({
                 {levelLabel && <p className="text-sm text-gray-700 mt-0.5">{levelLabel}</p>}
                 <p className="text-sm text-gray-500 mt-0.5">
                   {cls.day_of_week != null ? shortWeekdayName(cls.day_of_week, i18n.language) : ''}
-                  {cls.start_time &&
-                    `${cls.day_of_week != null ? ' · ' : ''}${formatTime(cls.start_time)}`}
-                  {cls.end_time && `–${formatTime(cls.end_time)}`}
+                  {cls.start_time && (
+                    <>
+                      {cls.day_of_week != null ? ' · ' : ''}
+                      <bdi dir="ltr">
+                        {formatTime(cls.start_time)}
+                        {cls.end_time && `–${formatTime(cls.end_time)}`}
+                      </bdi>
+                    </>
+                  )}
                 </p>
                 {cls.location && (
                   <p className="text-sm text-gray-500 mt-0.5">{cls.location}</p>

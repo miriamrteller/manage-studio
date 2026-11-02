@@ -130,8 +130,7 @@ export function SettingsLayout({
         tabIndex={0}
         aria-label={t('settings.navigation', 'Settings Navigation')}
         onKeyDown={handleKeyDown}
-        className="md:hidden flex overflow-x-auto bg-[--surface-raised] border-b border-[--border-subtle] -mx-4 px-4"
-        style={{ scrollbarWidth: 'none' }}
+        className="md:hidden flex flex-wrap bg-[--surface-raised] border-b border-[--border-subtle] -mx-4 px-4"
       >
         {sections.map((section) => {
           const Icon = section.icon;

@@ -65,7 +65,8 @@
       "apply": "החל",
       "clear_all": "נקה הכל",
       "active_count": "{{count}} פעילים",
-      "add": "הוסף…",
+      "all": "הכול",
+      "add": "הוספת עוד…",
       "all_selected": "כל האפשרויות נבחרו"
     },
     "view": "צפה",
@@ -1144,6 +1145,7 @@
       "empty_message": "הוסף תקופה לפני תזמון שיעורים והרשמות."
     },
     "admin_classes": {
+      "order_hint": "קודם מוסיפים {{level}} ו{{season}}, ואז את {{entity}}.",
       "title": "ניהול שיעורים",
       "description": "צור, ערוך ומחק שיעורים עבור הסטודיו שלך.",
       "create_button": "הוסף שיעור",
@@ -1809,7 +1811,19 @@
       }
     }
   },
+  "colour_presets": {
+    "title": "בחרו סט צבעים",
+    "hint": "נקודת התחלה בלבד. אפשר לכוונן את הצבעים המדויקים למטה.",
+    "opal": "כחול אופל",
+    "rose": "ורד",
+    "forest": "יער",
+    "ocean": "אוקיינוס",
+    "plum": "שזיף",
+    "charcoal": "פחם"
+  },
   "self_serve": {
+    "need_first_name": "הזינו את השם הפרטי שלכם כדי להמשיך.",
+    "need_email": "הזינו כתובת אימייל תקינה כדי להמשיך.",
     "start_button": "התחילו בטא חינם",
     "start_title": "פתיחת סטודיו",
     "start_intro": "חינם בתקופת הבטא. לא צריך כרטיס אשראי.",
@@ -1848,6 +1862,11 @@
     "unavailable_body": "צרו קשר עם OpalSwift כדי להקים סטודיו."
   },
   "studio_setup": {
+    "need_name": "הזינו את שם הסטודיו כדי להמשיך.",
+    "need_address": "הזינו כתובת אתר (אותיות קטנות באנגלית, מספרים ומקפים) כדי להמשיך.",
+    "need_colours": "כל צבע צריך להיראות כך: #5B6CFF, או שאפשר לבחור אחד מסטי הצבעים למעלה.",
+    "need_owner_email": "הזינו את כתובת האימייל של הבעלים כדי להמשיך.",
+    "need_terms": "סמנו את התיבה לאישור התנאים כדי להמשיך.",
     "title": "הקמת סטודיו חדש",
     "description": "הקמת הסטודיו, בחירת אופן התשלום והזמנת הבעלים. אפשר לשנות הכול אחר כך בהגדרות הסטודיו.",
     "step_counter": "שלב {{current}} מתוך {{total}}",
@@ -1861,6 +1880,7 @@
     "name": "שם הסטודיו",
     "address": "כתובת אתר",
     "address_help": "אותיות קטנות באנגלית, מספרים ומקפים. זו הכתובת של אתר הסטודיו.",
+    "address_example": "לדוגמה: {{example}}",
     "address_taken": "הכתובת הזו כבר תפוסה.",
     "address_invalid": "יש להשתמש באותיות קטנות באנגלית, מספרים ומקפים בלבד.",
     "language": "שפה ראשית",
@@ -2258,6 +2278,7 @@
     }
   },
   "enrolment": {
+    "step_counter_open": "שלב {{current}}",
     "step_counter": "שלב {{current}} מתוך {{total}}",
     "step": "שלב",
     "step_person": "פרטים אישיים",
@@ -2311,7 +2332,7 @@
       "send_waiver_link": "שליחת קישור לחתימה"
     },
     "missing_class_or_term": "יש לבחור שיעור ותקופה לפני התשלום",
-    "waiver_scroll_prompt": "גלול עד הסוף כדי לאפשר חתימה",
+    "waiver_scroll_prompt": "גללו למטה וקראו עד הסוף. אז כפתור החתימה יופעל.",
     "waiver_document_region": "מסמך הטופס",
     "waiver_checkbox_label": "קראתי את הטופס ואני מאשר/ת אותו",
     "waiver_name_label": "שם מלא",
@@ -2331,6 +2352,7 @@
     "waiver_minor_cannot_sign_body": "{{studentName}} מתחת לגיל 18. על פי חוק, הורה או אפוטרופוס חוקי צריך לחתום על הטופס. אנא בקשו מהורה להתחבר ולהשלים את ההרשמה."
   },
   "settings": {
+    "provider_names": {"offline": "תשלום בסטודיו", "none": "ללא", "grow": "Grow", "icount": "iCount", "invoice4u": "Invoice4U", "ypay": "YPay", "tranzila": "Tranzila", "yesh": "Yesh Invoice", "green_invoice": "חשבונית ירוקה", "mock": "מצב ניסיון"},
     "ypay": {
       "save": "שמירת פרטי YPay",
       "title": "חיבור YPay",
@@ -2472,7 +2494,7 @@
       "provider": "ספק",
       "public_key": "מפתח ציבורי",
       "secret_key": "מפתח סודי",
-      "webhook_secret": "סוד Webhook",
+      "webhook_secret": "סוד אימות לעדכוני תשלום",
       "secret_status": "מפתח סודי",
       "configured": "מוגדר",
       "not_configured": "לא מוגדר",

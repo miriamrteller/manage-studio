@@ -58,7 +58,9 @@ export function EnrolmentClassSelectList<T extends EnrolmentClassPickerClass>({
       {classes.map((cls) => {
         const isSelected = cls.id === selectedClassId;
         const availability = getClassAvailability(cls);
-        const classAges = formatAgeRange(cls.min_age, cls.max_age);
+        const rawAges = formatAgeRange(cls.min_age, cls.max_age);
+        // Isolated left-to-right so "3–4" is not shown as "4–3" inside a Hebrew sentence.
+        const classAges = rawAges ? `\u2066${rawAges}\u2069` : rawAges;
         const classSeasonStart = classSeasonStartDate(cls);
         const classStudentAge =
           personDateOfBirth && classSeasonStart
