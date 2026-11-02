@@ -1,14 +1,16 @@
 import { supabase } from '@/lib/supabase';
 
-/** Payment choices, in the order the wizard shows them. Mirrors STUDIO_PAYMENT_PROVIDERS (edge). */
-export const STUDIO_PAYMENT_OPTIONS = ['grow', 'icount', 'invoice4u', 'ypay', 'tranzila', 'offline'] as const;
+/**
+ * Payment choices, in the order the wizard shows them. Mirrors STUDIO_PAYMENT_PROVIDERS (edge).
+ * iCount and Tranzila are not offered until they are finished (lib/providerPairing.ts).
+ */
+export const STUDIO_PAYMENT_OPTIONS = ['grow', 'invoice4u', 'ypay', 'offline'] as const;
 /**
  * Document choices. Mirrors STUDIO_INVOICING_PROVIDERS (edge). Yesh and Tranzila invoicing are
  * not offered until they are built; which ones fit a payment choice: lib/providerPairing.ts.
  */
 export const STUDIO_INVOICING_OPTIONS = [
   'grow',
-  'icount',
   'invoice4u',
   'ypay',
   'green_invoice',

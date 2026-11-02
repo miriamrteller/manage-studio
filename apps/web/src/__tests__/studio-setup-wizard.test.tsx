@@ -72,8 +72,8 @@ describe('studio setup wizard', () => {
     renderWizard();
     await fillStudioStep();
     next();
-    fireEvent.click(screen.getByRole('radio', { name: 'By card online, through iCount' }));
-    expect(screen.getByRole('radio', { name: 'Issued by iCount' })).toBeChecked();
+    fireEvent.click(screen.getByRole('radio', { name: 'By card online, through Invoice4U' }));
+    expect(screen.getByRole('radio', { name: 'Issued by Invoice4U' })).toBeChecked();
     fireEvent.click(screen.getByRole('radio', { name: 'Pay at the studio (cash, bank transfer or Bit)' }));
     expect(screen.getByRole('radio', { name: 'None (not a registered business)' })).toBeChecked();
     fireEvent.click(screen.getByRole('radio', { name: 'I already use another invoicing service' }));
@@ -103,6 +103,16 @@ describe('studio setup wizard', () => {
     expect(otherServices()).toEqual([GREEN_INVOICE]);
     expect(screen.queryByRole('radio', { name: 'Issued by Yesh Invoice' })).toBeNull();
     expect(screen.queryByRole('radio', { name: 'Issued by Tranzila' })).toBeNull();
+  });
+
+  it('does not offer iCount or Tranzila payments until they are finished', async () => {
+    renderWizard();
+    await fillStudioStep();
+    next();
+    expect(screen.queryByRole('radio', { name: 'By card online, through iCount' })).toBeNull();
+    expect(screen.queryByRole('radio', { name: /through Tranzila/ })).toBeNull();
+    expect(screen.queryByRole('radio', { name: 'Issued by iCount' })).toBeNull();
+    expect(screen.getByRole('radio', { name: 'By card online, through Grow' })).toBeChecked();
   });
 
   it('drops an invoicing choice that no longer fits when the payment choice changes', async () => {
