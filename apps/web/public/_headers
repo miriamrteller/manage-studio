@@ -12,3 +12,10 @@
   X-Frame-Options: DENY
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
+
+# Embeddable enquiry form (docs/plans/LEADS.md P1-B): the ONLY path a studio's
+# own website may frame. Everything else keeps X-Frame-Options: DENY.
+# deploy-web's smoke step checks both.
+/embed/*
+  ! X-Frame-Options
+  Content-Security-Policy: frame-ancestors https:

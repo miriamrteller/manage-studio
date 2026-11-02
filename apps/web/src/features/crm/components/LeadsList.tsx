@@ -1,4 +1,5 @@
 ﻿import { useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { WebsiteFormSettings } from '@/features/settings/components/WebsiteFormSettings';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/shared';
@@ -179,6 +180,12 @@ export function LeadsList() {
           <CopyField label={t('pages.crm.leads.capture_instagram')} value={captureLinks.instagram} />
           <CopyField label={t('pages.crm.leads.capture_whatsapp')} value={captureLinks.whatsapp} />
           <CopyField label={t('pages.crm.leads.capture_linkedin')} value={captureLinks.linkedin} />
+          <details className="pt-2">
+            <summary className="cursor-pointer text-sm font-medium">{t('pages.crm.leads.capture_embed')}</summary>
+            <div className="pt-3">
+              <WebsiteFormSettings compact />
+            </div>
+          </details>
         </section>
       )}
 
@@ -334,7 +341,14 @@ export function LeadsList() {
                       {!lead.email && !lead.phone && '—'}
                     </div>
                   </td>
-                  <td className="px-3 py-2">{t(`pages.crm.leads.channel_${lead.channel}`)}</td>
+                  <td className="px-3 py-2">
+                    {t(`pages.crm.leads.channel_${lead.channel}`)}
+                    {lead.campaign && (
+                      <span className="block text-xs text-muted-foreground" dir="auto">
+                        {lead.campaign}
+                      </span>
+                    )}
+                  </td>
                   <td className="px-3 py-2">{lead.interest ?? '—'}</td>
                   <td className="px-3 py-2">
                     <label className="sr-only" htmlFor={`lead-stage-${lead.id}`}>
