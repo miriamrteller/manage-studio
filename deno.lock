@@ -1,0 +1,125 @@
+{
+  "version": "5",
+  "specifiers": {
+    "npm:zod@3.22.4": "3.22.4"
+  },
+  "npm": {
+    "zod@3.22.4": {
+      "integrity": "sha512-iC+8Io04lddc+mVqQ9AZ7OQ2MrUKGN+oIQyq1vemgt46jwCwLfhq7/pwnBnNXXXZb8VTVLKwp9EDkx+ryxIWmg=="
+    }
+  },
+  "workspace": {
+    "packageJson": {
+      "dependencies": [
+        "npm:@react-email/components@^1.0.12",
+        "npm:@react-email/render@^2.0.8",
+        "npm:ffmpeg-static@^5.3.0",
+        "npm:husky@9",
+        "npm:libphonenumber-js@^1.13.1",
+        "npm:lint-staged@^17.0.4",
+        "npm:pnpm@^11.0.8",
+        "npm:standardwebhooks@1",
+        "npm:supabase@^2.109.1",
+        "npm:typescript@^5.3.3"
+      ]
+    },
+    "members": {
+      "apps/marketing": {
+        "packageJson": {
+          "dependencies": [
+            "npm:wrangler@^4.156.0"
+          ]
+        }
+      },
+      "apps/web": {
+        "packageJson": {
+          "dependencies": [
+            "npm:@axe-core/react@^4.8.0",
+            "npm:@dnd-kit/core@^6.3.1",
+            "npm:@dnd-kit/sortable@10",
+            "npm:@dnd-kit/utilities@^3.2.2",
+            "npm:@fontsource/assistant@^5.3.0",
+            "npm:@fontsource/crimson-text@^5.3.0",
+            "npm:@fontsource/frank-ruhl-libre@^5.3.0",
+            "npm:@fontsource/heebo@^5.3.0",
+            "npm:@fontsource/inter@^5.3.0",
+            "npm:@fontsource/miriam-libre@^5.3.0",
+            "npm:@fontsource/oswald@^5.3.0",
+            "npm:@fontsource/poppins@^5.3.0",
+            "npm:@fontsource/rubik@^5.3.0",
+            "npm:@fontsource/source-sans-3@^5.3.0",
+            "npm:@fullcalendar/core@^6.1.10",
+            "npm:@fullcalendar/daygrid@^6.1.10",
+            "npm:@fullcalendar/interaction@^6.1.10",
+            "npm:@fullcalendar/react@^6.1.10",
+            "npm:@fullcalendar/timegrid@^6.1.10",
+            "npm:@hebcal/core@^6.6.0",
+            "npm:@hookform/resolvers@^3.3.4",
+            "npm:@playwright/test@^1.40.1",
+            "npm:@sentry/react@^11.10.0",
+            "npm:@sentry/vite-plugin@^11.10.0",
+            "npm:@stripe/react-stripe-js@^2.4.0",
+            "npm:@stripe/stripe-js@^2.1.11",
+            "npm:@supabase/supabase-js@^2.38.4",
+            "npm:@tanstack/react-query-devtools@^5.25.0",
+            "npm:@tanstack/react-query@^5.25.0",
+            "npm:@tanstack/react-table@^8.21.3",
+            "npm:@testing-library/jest-dom@^6.9.1",
+            "npm:@testing-library/react@^14.1.2",
+            "npm:@testing-library/user-event@^14.5.1",
+            "npm:@types/node@25",
+            "npm:@types/react-dom@^18.2.15",
+            "npm:@types/react@^18.2.37",
+            "npm:@typescript-eslint/eslint-plugin@^6.13.1",
+            "npm:@typescript-eslint/parser@^6.13.1",
+            "npm:@vitejs/plugin-react@^4.2.1",
+            "npm:autoprefixer@^10.4.16",
+            "npm:axe-playwright@^1.2.3",
+            "npm:clsx@2",
+            "npm:cmdk@^1.1.1",
+            "npm:date-fns@^2.30.0",
+            "npm:eslint-plugin-jsx-a11y@^6.8.0",
+            "npm:eslint-plugin-react-hooks@^4.6.0",
+            "npm:eslint-plugin-react@^7.33.2",
+            "npm:eslint@^8.54.0",
+            "npm:i18next@^23.7.6",
+            "npm:jsdom@^29.1.1",
+            "npm:libphonenumber-js@^1.13.1",
+            "npm:lucide-react@0.294",
+            "npm:marked@^15.0.12",
+            "npm:postcss@^8.4.32",
+            "npm:react-dom@^18.2.0",
+            "npm:react-hook-form@^7.48.0",
+            "npm:react-i18next@^13.5.0",
+            "npm:react-router-dom@^6.20.0",
+            "npm:react@^18.2.0",
+            "npm:recharts@^2.10.4",
+            "npm:tailwind-merge@^2.2.0",
+            "npm:tailwindcss-rtl@0.9",
+            "npm:tailwindcss@^3.3.6",
+            "npm:typescript@^5.3.3",
+            "npm:vite@^5.0.8",
+            "npm:vitest@~0.34.6",
+            "npm:wrangler@^4.156.0",
+            "npm:zod@^3.22.4"
+          ]
+        }
+      },
+      "packages/shared": {
+        "packageJson": {
+          "dependencies": [
+            "npm:@hebcal/core@^6.6.0",
+            "npm:@react-email/components@^0.0.14",
+            "npm:@react-email/render@^2.0.8",
+            "npm:@types/node@25",
+            "npm:@types/react@^18.2.0",
+            "npm:date-fns@^2.30.0",
+            "npm:react@^18.2.0",
+            "npm:typescript@^5.3.3",
+            "npm:zod@^3.22.4"
+          ]
+        }
+      }
+    }
+  }
+}

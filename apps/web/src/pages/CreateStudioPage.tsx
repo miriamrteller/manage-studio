@@ -1,288 +1,228 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { Link, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Button } from '@/components/ui/button';
+import { LegalFooterLinks } from '@/components/LegalFooterLinks';
+import { OpalSwiftShell } from '@/components/OpalSwiftShell';
+import { useAuthSession } from '@/hooks/useAuth';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { supabase } from '@/lib/supabase';
+import { tenantOrigin } from '@/lib/tenantUrl';
+import { isPlatformAppHost } from '@/lib/resolveTenantSubdomain';
+import { OPALSWIFT_BRAND } from '@/lib/theme/opalswiftBrand';
 import {
-  useCreateStudio,
-  type CreateStudioPlan,
-  type CreateStudioVertical,
-  type CreateStudioFormData,
-} from '@/features/auth/hooks/useCreateStudio';
+  captureAuthCallbackUrl,
+  clearAuthCallbackUrl,
+  establishSessionFromAuthCallback,
+} from '@/lib/authCallback';
+import { OperatorOnboardingWizard } from '@/features/platform/components/OperatorOnboardingWizard';
+import { TurnstileWidget } from '@/features/self-serve/TurnstileWidget';
+import {
+  isSelfServeSignupEnabled,
+  sendSelfServeConfirmation,
+  studioHandoffUrl,
+  turnstileSiteKey,
+  type SelfServeStudioResult,
+} from '@/features/self-serve/selfServeSignup';
 
-// Derive a URL-safe subdomain slug from studio name
-function toSubdomainSlug(name: string): string {
-  return name
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 40);
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const buttonStyle = { backgroundColor: OPALSWIFT_BRAND.ink, color: '#ffffff' };
+
+/** The confirmation email's link lands here with ?token_hash=… (send-auth-email). */
+function hasAuthLinkParams(url: { search: string; hash: string }): boolean {
+  return /[?&](token_hash|code)=/.test(url.search) || /access_token=/.test(url.hash);
 }
 
-const PLAN_OPTIONS: { value: CreateStudioPlan; label: string; description: string }[] = [
-  {
-    value: 'essential',
-    label: 'Essential',
-    description: 'Appointment-based bookings, client billing, single or deposit payments.',
-  },
-  {
-    value: 'professional',
-    label: 'Professional',
-    description: 'Class enrolment, multi-term calendars, family billing, student management.',
-  },
-];
-
-const VERTICAL_OPTIONS: { value: CreateStudioVertical; label: string; plans: CreateStudioPlan[] }[] = [
-  { value: 'dance_studio', label: 'Dance Studio', plans: ['essential', 'professional'] },
-  { value: 'music_school', label: 'Music School', plans: ['essential', 'professional'] },
-  { value: 'martial_arts', label: 'Martial Arts', plans: ['essential', 'professional'] },
-  { value: 'fitness_studio', label: 'Fitness Studio', plans: ['essential', 'professional'] },
-  { value: 'beauty_clinic', label: 'Beauty Clinic', plans: ['essential'] },
-  { value: 'photography_studio', label: 'Photography Studio', plans: ['essential'] },
-  { value: 'yoga_studio', label: 'Yoga Studio', plans: ['essential', 'professional'] },
-  { value: 'tutor', label: 'Tutoring', plans: ['professional'] },
-];
-
+/**
+ * app.opalswift.com/create-studio: self-serve studio signup (free beta, no card).
+ * 1. Name + email → confirmation link (the account has no studio until step 2).
+ * 2. The link signs them in here → the setup wizard in self-serve mode.
+ * 3. Studio created → "Go to your studio" signs them in on its own address.
+ */
 export default function CreateStudioPage() {
-  const { createStudio, loading, error } = useCreateStudio();
-  const { t } = useTranslation();
-  const [termsAccepted, setTermsAccepted] = useState(false);
+  if (!isSelfServeSignupEnabled() || !isPlatformAppHost()) return <Navigate to="/login" replace />;
+  return (
+    <OpalSwiftShell footer={<LegalFooterLinks />}>
+      <SelfServeSignup />
+    </OpalSwiftShell>
+  );
+}
 
-  const [step, setStep] = useState<1 | 2 | 3>(1); // 1=details, 2=plan, 3=vertical
-  const [studioName, setStudioName] = useState('');
-  const [subdomain, setSubdomain] = useState('');
+function SelfServeSignup() {
+  const { t } = useTranslation();
+  const callbackUrl = useRef(captureAuthCallbackUrl());
+  const [linkState, setLinkState] = useState<'none' | 'checking' | 'failed'>(
+    hasAuthLinkParams(callbackUrl.current) ? 'checking' : 'none',
+  );
+  const { session, isLoading: sessionLoading } = useAuthSession();
+  const { user, isLoading: profileLoading, isProfileChecked } = useCurrentUser();
+  const [created, setCreated] = useState<{ result: SelfServeStudioResult; name: string } | null>(null);
+
+  useEffect(() => {
+    if (linkState !== 'checking') return;
+    let cancelled = false;
+    void establishSessionFromAuthCallback(callbackUrl.current).then((result) => {
+      if (cancelled) return;
+      clearAuthCallbackUrl();
+      setLinkState(result.ok ? 'none' : 'failed');
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [linkState]);
+
+  if (created) return <StudioReady result={created.result} name={created.name} />;
+
+  if (linkState === 'checking' || sessionLoading || (session && (profileLoading || !isProfileChecked))) {
+    return <p role="status">{linkState === 'checking' ? t('self_serve.signing_in') : t('common.loading')}</p>;
+  }
+
+  if (!session) return <StartForm linkFailed={linkState === 'failed'} />;
+
+  // Any profile means the account already has a studio (or is the platform owner).
+  if (user) {
+    return (
+      <>
+        <h1 className="mb-6 text-3xl font-bold">{t('self_serve.has_studio_title')}</h1>
+        <div>
+          <Link to="/" className="inline-flex items-center rounded-md px-4 py-2 font-medium" style={buttonStyle}>
+            {t('platform_welcome.your_studio')}
+          </Link>
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <div className="text-start">
+      <p className="mb-4 text-sm text-gray-700">
+        {t('self_serve.signed_in_as', { email: session.user.email ?? '' })}
+      </p>
+      <OperatorOnboardingWizard
+        mode="self_serve"
+        onSelfServeCreated={(result, name) => setCreated({ result, name })}
+      />
+    </div>
+  );
+}
+
+function StartForm({ linkFailed }: { linkFailed: boolean }) {
+  const { t, i18n } = useTranslation();
+  const language: 'he' | 'en' = i18n.language.startsWith('he') ? 'he' : 'en';
+  const siteKey = turnstileSiteKey();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [plan, setPlan] = useState<CreateStudioPlan | null>(null);
-  const [vertical, setVertical] = useState<CreateStudioVertical | null>(null);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [sentTo, setSentTo] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const availableVerticals = plan
-    ? VERTICAL_OPTIONS.filter((v) => v.plans.includes(plan))
-    : [];
+  const canSend = firstName.trim() !== '' && EMAIL_RE.test(email.trim()) && (!siteKey || Boolean(captchaToken));
 
-  const handleStudioNameChange = (name: string) => {
-    setStudioName(name);
-    setSubdomain(toSubdomainSlug(name));
-  };
-
-  const handlePlanSelect = (selected: CreateStudioPlan) => {
-    setPlan(selected);
-    setVertical(null); // reset vertical when plan changes
-    setStep(3);
-  };
-
-  const handleSubmit = async () => {
-    if (!plan || !vertical) return;
-    const formData: CreateStudioFormData = {
-      studioName,
-      subdomain,
-      firstName,
-      lastName,
-      email,
-      password,
-      plan,
-      vertical,
-    };
-    const result = await createStudio(formData);
-    if (result.ok) {
-      window.location.href = result.redirectUrl;
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (!canSend) {
+      if (siteKey && !captchaToken) setError(t('self_serve.captcha_needed'));
+      return;
     }
-  };
+    setSending(true);
+    setError(null);
+    try {
+      await sendSelfServeConfirmation({ email, firstName, lastName, language, captchaToken });
+      setSentTo(email.trim().toLowerCase());
+    } catch {
+      setError(t('self_serve.error_send'));
+    } finally {
+      setSending(false);
+    }
+  }
+
+  if (sentTo) {
+    return (
+      <>
+        <h1 className="mb-3 text-3xl font-bold">{t('self_serve.check_email_title')}</h1>
+        <p className="mb-8 text-gray-700" role="status">
+          {t('self_serve.check_email_body', { email: sentTo })}
+        </p>
+        <div>
+          <Button variant="outline" onClick={() => { setSentTo(null); setCaptchaToken(null); }}>
+            {t('self_serve.use_other_email')}
+          </Button>
+        </div>
+      </>
+    );
+  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4">
-      <div className="w-full max-w-lg space-y-8">
-        <div>
-          <h1 className="text-center text-2xl font-bold tracking-tight text-gray-900">
-            Create your studio
-          </h1>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Step {step} of 3
-          </p>
+    <form onSubmit={(e) => void onSubmit(e)} className="space-y-4 text-start" noValidate>
+      <h1 className="text-center text-3xl font-bold">{t('self_serve.start_title')}</h1>
+      <p className="text-center text-gray-700">{t('self_serve.start_intro')}</p>
+      {linkFailed && (
+        <p className="text-sm text-red-700" role="alert">{t('self_serve.link_failed')}</p>
+      )}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="space-y-2">
+          <label className="block text-sm font-medium" htmlFor="sss-first">{t('self_serve.first_name')}</label>
+          <input id="sss-first" className="form-input w-full" autoComplete="given-name" required value={firstName} onChange={(e) => setFirstName(e.target.value)} />
         </div>
-
-        {/* Step 1 — Studio + owner details */}
-        {step === 1 && (
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="create-studio-name" className="block text-sm font-medium text-gray-700">
-                Studio name
-              </label>
-              <input
-                id="create-studio-name"
-                type="text"
-                value={studioName}
-                onChange={(e) => handleStudioNameChange(e.target.value)}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                placeholder="Bella Dance Academy"
-              />
-              {subdomain && (
-                <p className="mt-1 text-xs text-gray-400">
-                  Studio URL: <span className="font-mono">{subdomain}.localhost:5173</span>
-                </p>
-              )}
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="create-studio-first-name" className="block text-sm font-medium text-gray-700">
-                  First name
-                </label>
-                <input
-                  id="create-studio-first-name"
-                  type="text"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                />
-              </div>
-              <div>
-                <label htmlFor="create-studio-last-name" className="block text-sm font-medium text-gray-700">
-                  Last name
-                </label>
-                <input
-                  id="create-studio-last-name"
-                  type="text"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                />
-              </div>
-            </div>
-            <div>
-              <label htmlFor="create-studio-email" className="block text-sm font-medium text-gray-700">
-                Email
-              </label>
-              <input
-                id="create-studio-email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              />
-            </div>
-            <div>
-              <label htmlFor="create-studio-password" className="block text-sm font-medium text-gray-700">
-                Password
-              </label>
-              <input
-                id="create-studio-password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              />
-            </div>
-            <button
-              type="button"
-              disabled={!studioName || !firstName || !lastName || !email || !password}
-              onClick={() => setStep(2)}
-              className="w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Continue
-            </button>
-            <p className="text-center text-sm text-gray-500">
-              Already have a studio?{' '}
-              <a href="/login" className="font-medium text-indigo-600 hover:underline">
-                Sign in
-              </a>
-            </p>
-          </div>
-        )}
-
-        {/* Step 2 — Plan selection */}
-        {step === 2 && (
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-gray-800">Choose your plan</h2>
-            <div className="grid gap-4">
-              {PLAN_OPTIONS.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => handlePlanSelect(option.value)}
-                  className="w-full rounded-lg border-2 border-gray-200 p-4 text-start hover:border-indigo-500 hover:bg-indigo-50 transition-colors"
-                >
-                  <p className="font-semibold text-gray-900">{option.label}</p>
-                  <p className="mt-1 text-sm text-gray-500">{option.description}</p>
-                </button>
-              ))}
-            </div>
-            <button
-              type="button"
-              onClick={() => setStep(1)}
-              className="text-sm text-gray-500 hover:underline"
-            >
-              ← Back
-            </button>
-          </div>
-        )}
-
-        {/* Step 3 — Vertical selection */}
-        {step === 3 && plan && (
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-gray-800">What type of studio?</h2>
-            <div className="grid grid-cols-2 gap-3">
-              {availableVerticals.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => setVertical(option.value)}
-                  className={`rounded-lg border-2 p-3 text-start text-sm font-medium transition-colors ${
-                    vertical === option.value
-                      ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
-                      : 'border-gray-200 text-gray-700 hover:border-indigo-300 hover:bg-indigo-50'
-                  }`}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-            {error && (
-              <div className="rounded-md bg-red-50 p-4" role="alert">
-                <p className="text-sm font-medium text-red-800">{error}</p>
-              </div>
-            )}
-            <label className="flex items-start gap-2 text-sm text-gray-700">
-              <input
-                type="checkbox"
-                className="mt-1"
-                checked={termsAccepted}
-                onChange={(e) => setTermsAccepted(e.target.checked)}
-              />
-              <span>
-                {t('legal.signup.agree_prefix')}{' '}
-                <Link to="/legal/platform-terms" target="_blank" rel="noopener noreferrer" className="underline">
-                  {t('legal.docs.platform_terms')}
-                </Link>{' '}
-                {t('legal.signup.and')}{' '}
-                <Link to="/legal/dpa" target="_blank" rel="noopener noreferrer" className="underline">
-                  {t('legal.docs.dpa')}
-                </Link>
-                {t('legal.signup.read_prefix')}{' '}
-                <Link to="/legal/opalswift-privacy" target="_blank" rel="noopener noreferrer" className="underline">
-                  {t('legal.docs.opalswift_privacy')}
-                </Link>
-                .
-              </span>
-            </label>
-            <button
-              type="button"
-              disabled={!vertical || !termsAccepted || loading}
-              onClick={handleSubmit}
-              className="w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Creating your studio…' : 'Create studio'}
-            </button>
-            <button
-              type="button"
-              onClick={() => setStep(2)}
-              className="text-sm text-gray-500 hover:underline"
-            >
-              ← Back
-            </button>
-          </div>
-        )}
+        <div className="space-y-2">
+          <label className="block text-sm font-medium" htmlFor="sss-last">{t('self_serve.last_name')}</label>
+          <input id="sss-last" className="form-input w-full" autoComplete="family-name" value={lastName} onChange={(e) => setLastName(e.target.value)} />
+        </div>
       </div>
-    </div>
+      <div className="space-y-2">
+        <label className="block text-sm font-medium" htmlFor="sss-email">{t('self_serve.email')}</label>
+        <input id="sss-email" type="email" dir="ltr" className="form-input w-full" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+      </div>
+      {siteKey && <TurnstileWidget siteKey={siteKey} language={language} onToken={setCaptchaToken} />}
+      {error && <p className="text-sm text-red-700" role="alert">{error}</p>}
+      <div className="text-center">
+        <Button type="submit" disabled={sending || !canSend} style={buttonStyle}>
+          {sending ? t('self_serve.sending') : t('self_serve.send_link')}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+const READY_CHECKLIST = ['studio_setup.next_branding', 'studio_setup.next_classes', 'self_serve.next_payments', 'studio_setup.next_legal', 'studio_setup.next_test_enrolment'] as const;
+
+function StudioReady({ result, name }: { result: SelfServeStudioResult; name: string }) {
+  const { t } = useTranslation();
+  const [going, setGoing] = useState(false);
+  const address = tenantOrigin(result.subdomain).replace(/^https?:\/\//, '');
+
+  async function goToStudio() {
+    setGoing(true);
+    const { data } = await supabase.auth.getSession();
+    const url = studioHandoffUrl(result.subdomain, data.session);
+    // The studio's address takes over this session; dropping it here stops both
+    // hosts refreshing the same token. Local only: it is not a sign-out.
+    if (data.session) await supabase.auth.signOut({ scope: 'local' });
+    window.location.assign(url);
+  }
+
+  return (
+    <section className="space-y-6 text-start">
+      <h1 className="text-center text-3xl font-bold">{t('self_serve.created_title', { name })}</h1>
+      <p>
+        {t('self_serve.created_body')}{' '}
+        <span dir="ltr" className="font-mono">{address}</span>
+      </p>
+      <div className="space-y-2">
+        <h2 className="text-lg font-semibold">{t('studio_setup.next_title')}</h2>
+        <ol className="list-decimal space-y-1 ps-5">
+          {READY_CHECKLIST.map((key) => (
+            <li key={key}>{t(key)}</li>
+          ))}
+        </ol>
+      </div>
+      <div className="text-center">
+        <Button onClick={() => void goToStudio()} disabled={going} style={buttonStyle}>
+          {t('self_serve.go_to_studio')}
+        </Button>
+      </div>
+    </section>
   );
 }

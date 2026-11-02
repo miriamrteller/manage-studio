@@ -94,6 +94,7 @@
       "cleanup_expired_otps",
       "cleanup_old_verification_attempts",
       "complete_automatic_email",
+      "create_self_serve_studio",
       "disconnect_tenant_google_calendar",
       "enforce_super_admin_reserved",
       "find_contacts_by_phone",

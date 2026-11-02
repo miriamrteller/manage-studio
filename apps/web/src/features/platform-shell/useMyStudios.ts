@@ -7,6 +7,11 @@ export interface StudioLink {
   id: string;
   name: string;
   url: string;
+  /** How the studio started: set up by OpalSwift, or self-serve signup. */
+  signupSource?: 'operator' | 'self_serve';
+  /** tenants.sub_status ('trialing' = free beta while trial_ends_at is empty). */
+  status?: string;
+  createdAt?: string;
 }
 
 /**
@@ -19,7 +24,7 @@ export function useMyStudios(user: Pick<UserProfile, 'id' | 'role' | 'tenant_id'
     queryKey: ['my-studios', user?.id, isSuperAdmin],
     enabled: Boolean(user),
     queryFn: async (): Promise<StudioLink[]> => {
-      let query = supabase.from('tenants').select('id, name, subdomain').order('name');
+      let query = supabase.from('tenants').select('id, name, subdomain, signup_source, sub_status, created_at').order('name');
       if (!isSuperAdmin) query = query.eq('id', user?.tenant_id ?? '');
       const { data, error } = await query;
       if (error) throw new Error(`Failed to load studios: ${error.message}`);
@@ -29,6 +34,9 @@ export function useMyStudios(user: Pick<UserProfile, 'id' | 'role' | 'tenant_id'
           id: row.id,
           name: row.name?.trim() || row.subdomain,
           url: tenantOrigin(row.subdomain),
+          signupSource: row.signup_source === 'self_serve' ? 'self_serve' : 'operator',
+          status: row.sub_status ?? undefined,
+          createdAt: row.created_at ?? undefined,
         }));
     },
   });

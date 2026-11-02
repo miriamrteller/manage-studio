@@ -40,6 +40,9 @@ export function platformEmailConfig(language: "en" | "he" = "en"): TenantEmailCo
   };
 }
 
+/** user_metadata.signup on an account made by "Create your studio" (apps/web selfServeSignup.ts). */
+export const SELF_SERVE_SIGNUP_METADATA = "self_serve_studio";
+
 export function isPlatformEmailConfig(config: TenantEmailConfig): boolean {
   return config.id === "";
 }
@@ -134,6 +137,11 @@ export async function getTenantForAuthUser(
     if (profile) {
       return platformEmailConfig(profile.language === "he" ? "he" : metaLanguage);
     }
+  }
+
+  // A self-serve studio signup on the platform host (no studio yet): OpalSwift's own.
+  if (user.user_metadata?.signup === SELF_SERVE_SIGNUP_METADATA) {
+    return platformEmailConfig(metaLanguage);
   }
 
   // No studio in the metadata and no studio on the profile: the platform host.
