@@ -7,7 +7,14 @@
 import { describe, expect, it } from 'vitest';
 import { loadLegalFile, loadLegalTemplate } from '@/legal/templates';
 import { prepareLegalMarkdown, stripDraftingFrame } from '@/legal/render';
-import { prepareSignedTemplate, signedDocForVertical } from '@/legal/signedTemplates';
+import {
+  prepareSignedTemplate,
+  SIGNED_DOC_FILES,
+  signedDocForVertical,
+  signedTemplateSource,
+  studioSignedTemplate,
+  type SignedDocId,
+} from '@/legal/signedTemplates';
 import { buildLegalPack } from '@/legal/legalPack';
 import { isLegalPackLive, type TenantLegalProfile } from '@/legal/useLegalDocument';
 import type { LegalDocId } from '@/legal/fields';
@@ -67,6 +74,21 @@ describe('no disclaimer inside the documents', () => {
 });
 
 describe('signed templates', () => {
+  it('the bundled sources match docs/legal (run pnpm email:bundle after editing them)', async () => {
+    for (const [doc, prefix] of Object.entries(SIGNED_DOC_FILES)) {
+      for (const lang of ['en', 'he'] as const) {
+        expect(signedTemplateSource(doc as SignedDocId, lang)).toBe((await loadLegalFile(prefix, lang)).replace(/\r\n/g, '\n'));
+      }
+    }
+  });
+
+  it('studioSignedTemplate gives each studio type its form, in its language', () => {
+    const ctx = { lang: 'he' as const, tenantName: 'Harbour Dance', contactEmail: 'o@x.test', profile: {} };
+    expect(studioSignedTemplate('dance-studio', ctx)?.name).toBe('הצהרת בריאות');
+    expect(studioSignedTemplate('photographer', { ...ctx, lang: 'en' })?.content).toContain('{{client_name}}');
+    expect(studioSignedTemplate('generic', ctx)).toBeNull();
+  });
+
   it('a dance studio signs a health declaration, a photographer a contract, others nothing', () => {
     expect(signedDocForVertical('dance-studio')).toBe('health-declaration');
     expect(signedDocForVertical('photographer')).toBe('photography-contract');

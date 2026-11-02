@@ -61,24 +61,40 @@ SELECT pg_temp.act_as(parent) FROM ids;
 SET LOCAL ROLE authenticated;
 DO $$
 BEGIN
-  PERFORM acknowledge_studio_legal_pack('v1', 'en', 'Health declaration', 'Text');
+  PERFORM acknowledge_studio_legal_pack('v1', 'en');
   RAISE EXCEPTION 'FAIL a parent acknowledged the legal pack';
 EXCEPTION WHEN raise_exception THEN
   IF SQLERRM NOT LIKE '%only a studio admin%' THEN RAISE; END IF;
 END $$;
 RESET ROLE;
 
--- 3. The admin acknowledges: evidence, published pages, the seeded template.
+-- 3. A dance studio with no health declaration cannot go live.
 SELECT pg_temp.act_as(admin) FROM ids;
 SET LOCAL ROLE authenticated;
-SELECT acknowledge_studio_legal_pack('pack-v1', 'he', 'הצהרת בריאות', 'Health text for Pack studio');
-SELECT acknowledge_studio_legal_pack('pack-v2', 'he', 'הצהרת בריאות', 'Different text');
+DO $$
+BEGIN
+  PERFORM acknowledge_studio_legal_pack('pack-v0', 'he');
+  RAISE EXCEPTION 'FAIL a dance studio went live without its health declaration';
+EXCEPTION WHEN raise_exception THEN
+  IF SQLERRM NOT LIKE '%signed_template_missing%' THEN RAISE; END IF;
+END $$;
+RESET ROLE;
+
+-- (provision-studio seeds it at creation; here, the row it would add.)
+INSERT INTO consent_templates (tenant_id, name, content, version, version_hash, status)
+SELECT studio, 'הצהרת בריאות', 'Health text for Pack studio', 1,
+       encode(sha256(convert_to('Health text for Pack studio', 'UTF8')), 'hex'), 'active' FROM ids;
+
+-- 4. The admin acknowledges: evidence and published pages.
+SELECT pg_temp.act_as(admin) FROM ids;
+SET LOCAL ROLE authenticated;
+SELECT acknowledge_studio_legal_pack('pack-v1', 'he');
+SELECT acknowledge_studio_legal_pack('pack-v2', 'he');
 RESET ROLE;
 DO $$
 DECLARE
   v_t tenants%ROWTYPE;
   v_n INT;
-  v_ct consent_templates%ROWTYPE;
 BEGIN
   SELECT * INTO v_t FROM tenants WHERE id = (SELECT studio FROM pg_temp.ids);
   IF v_t.legal_pack_acknowledged_at IS NULL OR v_t.legal_pages_published IS NOT TRUE THEN
@@ -88,20 +104,16 @@ BEGIN
   WHERE tenant_id = v_t.id AND document = 'studio_legal_pack' AND user_id = (SELECT admin FROM pg_temp.ids)
     AND accepted_by_role = 'tenant_admin' AND language = 'he' AND document_version IN ('pack-v1', 'pack-v2');
   IF v_n <> 2 THEN RAISE EXCEPTION 'FAIL expected 2 acknowledgement records, got %', v_n; END IF;
-  SELECT count(*) INTO v_n FROM consent_templates WHERE tenant_id = v_t.id;
-  IF v_n <> 1 THEN RAISE EXCEPTION 'FAIL expected exactly one seeded template, got %', v_n; END IF;
-  SELECT * INTO v_ct FROM consent_templates WHERE tenant_id = v_t.id;
-  IF v_ct.status <> 'active' OR v_ct.content <> 'Health text for Pack studio' OR v_ct.name <> 'הצהרת בריאות'
-     OR v_ct.version_hash <> encode(sha256(convert_to(v_ct.content, 'UTF8')), 'hex') THEN
-    RAISE EXCEPTION 'FAIL seeded template is wrong: % % %', v_ct.status, v_ct.name, v_ct.content;
+  IF (SELECT count(*) FROM consent_templates WHERE tenant_id = v_t.id) <> 1 THEN
+    RAISE EXCEPTION 'FAIL acknowledging changed the studio''s forms';
   END IF;
-  RAISE NOTICE 'ok  the admin''s acknowledgement is recorded, publishes the pages and seeds one active template';
+  RAISE NOTICE 'ok  a dance studio needs its form; the admin''s acknowledgement is recorded and publishes the pages';
 END $$;
 
--- 4. An old studio keeps its own form: acknowledging never replaces it.
+-- 5. An old studio keeps its own form: acknowledging never replaces it.
 SELECT pg_temp.act_as(old_admin) FROM ids;
 SET LOCAL ROLE authenticated;
-SELECT acknowledge_studio_legal_pack('pack-v1', 'en', 'Health declaration', 'Seeded text');
+SELECT acknowledge_studio_legal_pack('pack-v1', 'en');
 RESET ROLE;
 DO $$
 BEGIN
@@ -112,7 +124,16 @@ BEGIN
   RAISE NOTICE 'ok  a studio''s existing form is never replaced';
 END $$;
 
--- 5. Anonymous visitors cannot call it.
+-- 6. Rows from before 2026-11-02 were backfilled as not required.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM tenants WHERE created_at < '2026-11-02' AND legal_pack_required) THEN
+    RAISE EXCEPTION 'FAIL an older studio was marked as needing the legal pack';
+  END IF;
+  RAISE NOTICE 'ok  older studios are not gated';
+END $$;
+
+-- 7. Anonymous visitors cannot call it.
 SET LOCAL ROLE anon;
 DO $$
 BEGIN

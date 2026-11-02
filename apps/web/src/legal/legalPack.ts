@@ -3,12 +3,12 @@ import type { LegalDocId } from './fields';
 import { legalTextVersion, prepareLegalMarkdown, renderLegalHtml, type LegalLang } from './render';
 import {
   prepareSignedTemplate,
-  SIGNED_DOC_FILES,
   SIGNED_DOC_TITLES,
   signedDocForVertical,
+  signedTemplateSource,
   type SignedDocId,
 } from './signedTemplates';
-import { loadLegalFile, loadLegalTemplate } from './templates';
+import { loadLegalTemplate } from './templates';
 import { tenantHasEnrolmentTerms, type TenantLegalProfile } from './useLegalDocument';
 
 /** One document of the pack, in both languages (English prevails). */
@@ -91,7 +91,7 @@ export async function buildLegalPack(legal: TenantLegalProfile): Promise<LegalPa
       missing: { en: [], he: [] },
     };
     for (const lang of LANGS) {
-      const text = prepareSignedTemplate(await loadLegalFile(SIGNED_DOC_FILES[signedDoc], lang), signedDoc, {
+      const text = prepareSignedTemplate(signedTemplateSource(signedDoc, lang), signedDoc, {
         lang,
         tenantName: legal.name,
         contactEmail: legal.contactEmail,

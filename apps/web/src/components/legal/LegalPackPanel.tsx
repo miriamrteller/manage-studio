@@ -44,11 +44,13 @@ export function LegalPackPanel({ tenantId, mode }: LegalPackPanelProps) {
   const acknowledge = useMutation({
     mutationFn: async () => {
       if (!pack) throw new Error('not ready');
+      // Older studios may predate the form seeded at creation: add it first (no-op otherwise).
+      if (pack.signedTemplate) {
+        await supabase.functions.invoke('provision-studio', { body: { action: 'ensure_signed_template' } });
+      }
       const { error } = await supabase.rpc('acknowledge_studio_legal_pack', {
         p_version: pack.version,
         p_language: i18n.language?.startsWith('he') ? 'he' : 'en',
-        p_template_name: pack.signedTemplate?.name ?? null,
-        p_template_content: pack.signedTemplate?.content ?? null,
       });
       if (error) throw error;
     },
@@ -102,7 +104,11 @@ export function LegalPackPanel({ tenantId, mode }: LegalPackPanelProps) {
               <span>{t('legal.pack.checkbox')}</span>
             </label>
             {acknowledge.isError && (
-              <p className="text-sm text-red-700" role="alert">{t('legal.pack.error')}</p>
+              <p className="text-sm text-red-700" role="alert">
+                {/signed_template_missing/.test(acknowledge.error?.message ?? '')
+                  ? t('legal.pack.error_form_missing')
+                  : t('legal.pack.error')}
+              </p>
             )}
             <Button
               variant="primary"

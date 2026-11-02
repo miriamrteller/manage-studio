@@ -10,8 +10,8 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { I18nextProvider } from 'react-i18next';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-const h = vi.hoisted(() => ({ rpc: vi.fn(), acknowledgedAt: null as string | null }));
-vi.mock('@/lib/supabase', () => ({ supabase: { rpc: h.rpc } }));
+const h = vi.hoisted(() => ({ rpc: vi.fn(), invoke: vi.fn(), acknowledgedAt: null as string | null }));
+vi.mock('@/lib/supabase', () => ({ supabase: { rpc: h.rpc, functions: { invoke: h.invoke } } }));
 
 import i18n from '@/i18n/i18n';
 import { LegalPackPanel } from '@/components/legal/LegalPackPanel';
@@ -43,6 +43,7 @@ function renderPanel(mode: 'acknowledge' | 'notice') {
 
 beforeEach(() => {
   h.acknowledgedAt = null;
+  h.invoke.mockResolvedValue({ data: { seeded: 0 }, error: null });
   h.rpc.mockImplementation(async (name: string) => {
     if (name === 'get_tenant_legal_profile') return { data: [profileRow()], error: null };
     if (name === 'acknowledge_studio_legal_pack') {
@@ -67,7 +68,7 @@ describe('legal pack panel', () => {
     );
   });
 
-  it('confirming needs the checkbox, stores the version and seeds the health declaration', async () => {
+  it('confirming needs the checkbox, makes sure the health declaration exists, and stores the version', async () => {
     renderPanel('acknowledge');
     const confirm = screen.getByRole('button', { name: 'Confirm' });
     expect(confirm).toBeDisabled();
@@ -76,15 +77,25 @@ describe('legal pack panel', () => {
     fireEvent.click(confirm);
 
     await waitFor(() =>
-      expect(h.rpc).toHaveBeenCalledWith('acknowledge_studio_legal_pack', expect.objectContaining({
+      expect(h.rpc).toHaveBeenCalledWith('acknowledge_studio_legal_pack', {
+        p_version: expect.stringMatching(/^[0-9a-f]{8}-/),
         p_language: 'en',
-        p_template_name: 'Health declaration',
-      })),
+      }),
     );
-    const args = h.rpc.mock.calls.find(([n]) => n === 'acknowledge_studio_legal_pack')![1];
-    expect(args.p_version).toMatch(/^[0-9a-f]{8}-/);
-    expect(args.p_template_content).toContain('Harbour Dance');
+    expect(h.invoke).toHaveBeenCalledWith('provision-studio', { body: { action: 'ensure_signed_template' } });
     expect(await screen.findByRole('status')).toHaveTextContent('Confirmed on');
+  });
+
+  it('a studio without its form is told so in plain words', async () => {
+    h.rpc.mockImplementation(async (name: string) => {
+      if (name === 'get_tenant_legal_profile') return { data: [profileRow()], error: null };
+      return { data: null, error: { message: 'signed_template_missing' } };
+    });
+    renderPanel('acknowledge');
+    fireEvent.click(screen.getByRole('checkbox'));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Confirm' })).toBeEnabled());
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('form your clients sign is missing');
   });
 
   it('after setting a studio up, the platform owner sees the notice but cannot confirm for the studio', async () => {

@@ -1,20 +1,22 @@
 -- Studio legal pack: every new studio's legal documents are drafts until its
 -- admin acknowledges them ("I understand these are draft documents …").
 --
--- * tenants.legal_pack_required: new studios TRUE, existing studios FALSE
---   (backfilled), so nothing that is live today gets blocked.
+-- * tenants.legal_pack_required: TRUE for studios created on or after
+--   2026-11-02 (production's first real studios) and every new one; FALSE for
+--   older rows (dev seeds and test studios).
 -- * Until a required studio acknowledges, its public legal pages show "not
 --   published yet" and its signing flows (get-waiver-engagement, accept-waiver)
 --   refuse with studio_legal_not_ready.
 -- * acknowledge_studio_legal_pack() records the acknowledgement in
---   legal_acceptances (append-only; user, time, version), publishes the pages,
---   and seeds the studio's signed template (health declaration / photography
---   agreement) when it has none yet.
+--   legal_acceptances (append-only; user, time, version) and publishes the
+--   pages. It refuses a studio whose type needs a signed form (dance: health
+--   declaration; photographer: shoot agreement) while none is active. The form
+--   itself is seeded when the studio is created (provision-studio).
 
 ALTER TABLE public.tenants
   ADD COLUMN IF NOT EXISTS legal_pack_required BOOLEAN NOT NULL DEFAULT false,
   ADD COLUMN IF NOT EXISTS legal_pack_acknowledged_at TIMESTAMPTZ;
--- Existing rows keep FALSE (added with that default); every new studio is TRUE.
+UPDATE public.tenants SET legal_pack_required = true WHERE created_at >= '2026-11-02';
 ALTER TABLE public.tenants ALTER COLUMN legal_pack_required SET DEFAULT true;
 
 COMMENT ON COLUMN public.tenants.legal_pack_required IS
@@ -31,10 +33,8 @@ ALTER TABLE public.legal_acceptances ADD CONSTRAINT legal_acceptances_document_c
   ));
 
 CREATE OR REPLACE FUNCTION public.acknowledge_studio_legal_pack(
-  p_version          TEXT,
-  p_language         TEXT,
-  p_template_name    TEXT DEFAULT NULL,
-  p_template_content TEXT DEFAULT NULL
+  p_version  TEXT,
+  p_language TEXT
 )
 RETURNS TIMESTAMPTZ
 LANGUAGE plpgsql
@@ -79,18 +79,10 @@ BEGIN
   INSERT INTO legal_acceptances (tenant_id, user_id, document, document_version, language, accepted_by_role, ip_address, user_agent)
   VALUES (v_tenant, v_uid, 'studio_legal_pack', trim(p_version), p_language, 'tenant_admin', v_ip, v_ua);
 
-  -- The signed template, only for a studio that has none (never replaces one).
-  IF p_template_content IS NOT NULL AND length(trim(p_template_content)) > 0
-     AND NOT EXISTS (SELECT 1 FROM consent_templates ct WHERE ct.tenant_id = v_tenant) THEN
-    INSERT INTO consent_templates (tenant_id, name, content, version, version_hash, status)
-    VALUES (
-      v_tenant,
-      left(coalesce(nullif(trim(p_template_name), ''), 'Form'), 200),
-      p_template_content,
-      1,
-      encode(sha256(convert_to(p_template_content, 'UTF8')), 'hex'),
-      'active'
-    );
+  -- A studio whose clients sign a form cannot go live without one.
+  IF (SELECT skin FROM tenants WHERE id = v_tenant) IN ('dance-studio', 'photographer')
+     AND NOT EXISTS (SELECT 1 FROM consent_templates ct WHERE ct.tenant_id = v_tenant AND ct.status = 'active') THEN
+    RAISE EXCEPTION 'signed_template_missing';
   END IF;
 
   UPDATE tenants
@@ -101,11 +93,11 @@ BEGIN
 END;
 $$;
 
-COMMENT ON FUNCTION public.acknowledge_studio_legal_pack(TEXT, TEXT, TEXT, TEXT) IS
-  'A studio admin acknowledges the draft legal pack: records it, publishes the legal pages, and seeds the signed template if the studio has none.';
+COMMENT ON FUNCTION public.acknowledge_studio_legal_pack(TEXT, TEXT) IS
+  'A studio admin acknowledges the draft legal pack: records it and publishes the legal pages. Refuses while a required signed form is missing.';
 
-REVOKE ALL ON FUNCTION public.acknowledge_studio_legal_pack(TEXT, TEXT, TEXT, TEXT) FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION public.acknowledge_studio_legal_pack(TEXT, TEXT, TEXT, TEXT) TO authenticated;
+REVOKE ALL ON FUNCTION public.acknowledge_studio_legal_pack(TEXT, TEXT) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.acknowledge_studio_legal_pack(TEXT, TEXT) TO authenticated;
 
 -- The public legal pages need the gate too (and the pack needs the studio's
 -- language): same function, three more columns.

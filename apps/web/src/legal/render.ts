@@ -1,6 +1,7 @@
 import { Marked, type Tokens } from 'marked';
 import type { VerticalId } from '@shared/config/tenant-presets';
 import { LEGAL_FIELDS, type BusinessStatus, type LegalDocId } from './fields';
+import { stripDraftingFrame } from '@shared/legal/signed-template';
 
 export type LegalLang = 'he' | 'en';
 
@@ -76,20 +77,8 @@ export function escapeMarkdownValue(value: string): string {
     .replace(/([\\`*_{}[\]()#+\-.!|<>&~])/g, '\\$1');
 }
 
-/** Drop the drafting frame: the leading "Draft, not legal advice" quote block and the notes after the last `---`. */
-export function stripDraftingFrame(raw: string): string {
-  let text = raw.replace(/\r\n/g, '\n');
-  // Leading "> Draft, not legal advice …" / template instructions.
-  const lines = text.split('\n');
-  let i = 0;
-  while (i < lines.length && (lines[i].startsWith('>') || lines[i].trim() === '')) i += 1;
-  text = lines.slice(i).join('\n');
-  // Drafting notes (sources, notes for the lawyer): everything from the last
-  // horizontal rule, the same rule as the marketing site (apps/marketing/scripts/build-legal.mjs).
-  const cut = text.lastIndexOf('\n---\n');
-  if (cut >= 0) text = text.slice(0, cut);
-  return text.trimEnd() + '\n';
-}
+/** Drafting frame removal is shared with the Edge Functions. */
+export { stripDraftingFrame };
 
 function applyVariant(text: string, vertical: VerticalId): string {
   const find = (markers: string[]) => {

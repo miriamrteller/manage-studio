@@ -95,8 +95,11 @@ export default function LegalPackPrintPage() {
       `}</style>
       <p className="no-print mb-6 text-sm text-gray-700">{t('legal.pack.print_hint')}</p>
 
+      <header className="mb-4 border-b-2 border-gray-300 pb-3">
+        <p className="text-xl font-bold">{legal.name}</p>
+        <p className="text-xs text-gray-700">{today} · v{pack.version}</p>
+      </header>
       <section aria-label={COVER.en.title}>
-        <p className="text-sm text-gray-700">{legal.name} · {today} · v{pack.version}</p>
         {LANGS.map((lang) => (
           <div key={lang} dir={lang === 'he' ? 'rtl' : 'ltr'} lang={lang} className="mt-6">
             <h1 className="text-2xl font-bold">{COVER[lang].title}</h1>
@@ -124,7 +127,9 @@ export default function LegalPackPrintPage() {
             lang={lang}
             aria-label={`${section.title[lang]} (${lang === 'he' ? 'עברית' : 'English'})`}
           >
-            <p className="mb-2 text-xs text-gray-700">{section.title[lang]} · {lang === 'he' ? 'עברית' : 'English'}</p>
+            <p className="mb-2 border-b border-gray-200 pb-1 text-xs text-gray-700">
+              {legal.name} · {section.title[lang]} · {lang === 'he' ? 'עברית' : 'English'}
+            </p>
             <SectionBody section={section} lang={lang} />
           </section>
         )),

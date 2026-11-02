@@ -2480,6 +2480,7 @@
       "confirmed_on": "Confirmed on {{date}}. Your legal pages and forms are live.",
       "owner_confirms": "The studio's owner confirms this when they sign in. Until then the studio's legal pages and forms are not live.",
       "error": "That didn't save. Please try again.",
+      "error_form_missing": "The form your clients sign is missing. Please try again; if it keeps happening, contact OpalSwift.",
       "signing_not_ready": "This studio isn't ready to collect signatures yet. Please try again later or contact the studio.",
       "sign_in_needed": "Please sign in to download the legal pack.",
       "print_hint": "Use your browser's Print and choose \"Save as PDF\".",
