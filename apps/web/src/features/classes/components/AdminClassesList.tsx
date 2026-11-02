@@ -304,7 +304,12 @@ export function AdminClassesList() {
                   </Button>
                 </div>
                 {expandedClassId === classItem.id && (
-                  <ClassRequirementsPanel classId={classItem.id} className={classItem.name} />
+                  <ClassRequirementsPanel
+                    classId={classItem.id}
+                    className={classItem.name}
+                    minAge={classItem.min_age}
+                    maxAge={classItem.max_age}
+                  />
                 )}
               </li>
             );
@@ -440,6 +445,8 @@ export function AdminClassesList() {
                       <ClassRequirementsPanel
                         classId={classItem.id}
                         className={classItem.name}
+                        minAge={classItem.min_age}
+                        maxAge={classItem.max_age}
                       />
                     </td>
                   </tr>
