@@ -50,4 +50,27 @@ describe('demo studio setup handlers', () => {
     const after = await c.rpc('get_grow_webhook_key_status');
     expect((after.data as Array<Record<string, unknown>>)[0]).toMatchObject({ configured: true, key_version: 1 });
   });
+
+  it('lawyer-reviewed documents: save, list, revert; forms can be marked reviewed', async () => {
+    const { c, tables } = client();
+    expect((await c.rpc('get_tenant_legal_documents', { p_tenant_id: TENANT_ID })).data).toEqual([]);
+    const saved = await c.rpc('save_tenant_legal_document', {
+      p_document: 'enrolment-terms', p_language: 'he', p_kind: 'text', p_content: 'Reviewed terms',
+    });
+    expect(saved.error).toBeNull();
+    const list = (await c.rpc('get_tenant_legal_documents', { p_tenant_id: TENANT_ID })).data as Array<Record<string, unknown>>;
+    expect(list).toHaveLength(1);
+    expect(list[0]).toMatchObject({ document: 'enrolment-terms', kind: 'text', content: 'Reviewed terms' });
+    expect((await c.rpc('revert_tenant_legal_document', { p_document: 'enrolment-terms' })).data).toBe(true);
+    expect((await c.rpc('revert_tenant_legal_document', { p_document: 'enrolment-terms' })).data).toBe(false);
+    expect((await c.rpc('save_tenant_legal_document', { p_document: 'nope', p_language: 'he', p_kind: 'text', p_content: 'x' })).error).not.toBeNull();
+
+    const template = (tables.consent_templates ?? [])[0];
+    if (template) {
+      await c.rpc('set_consent_template_lawyer_reviewed', { p_template_id: template.id, p_reviewed: true });
+      expect(template.lawyer_reviewed_at).toBeTruthy();
+      await c.rpc('set_consent_template_lawyer_reviewed', { p_template_id: template.id, p_reviewed: false });
+      expect(template.lawyer_reviewed_at).toBeNull();
+    }
+  });
 });
