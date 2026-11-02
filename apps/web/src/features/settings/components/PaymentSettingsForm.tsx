@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { useTenant } from '@/hooks/useTenant';
 import queryClient from '@/lib/query-client';
 import { OfflinePaymentsSettingsForm, OFFLINE_PAYMENTS } from './OfflinePaymentsSettingsForm';
+import { YpaySettingsForm } from './YpaySettingsForm';
 import { tenantUsesBundledPayments } from '@/lib/tenantProviderRouting';
 import { BUNDLED_PAYMENTS_SETUP_PATH } from '@/lib/bundledProviderUi';
 
@@ -40,6 +41,14 @@ export function PaymentSettingsForm() {
         <hr className="border-gray-200" />
         <ConnectBundledCard />
       </div>
+    );
+  }
+  if (tenant?.payment_provider === 'ypay') {
+    return (
+      <>
+        {choice}
+        <YpaySettingsForm />
+      </>
     );
   }
   return (

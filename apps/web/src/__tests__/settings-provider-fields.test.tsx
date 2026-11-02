@@ -40,7 +40,7 @@ describe('settings provider fields', () => {
   });
 
   it('a card provider still shows its key fields, and the studio can switch back to pay at the studio', () => {
-    h.tenant = { id: 't1', payment_provider: 'ypay', invoicing_provider: 'none' };
+    h.tenant = { id: 't1', payment_provider: 'tranzila', invoicing_provider: 'none' };
     renderIt(<PaymentSettingsForm />);
     expect(screen.getByLabelText('Webhook secret')).toBeInTheDocument();
     expect(screen.getByRole('checkbox')).not.toBeChecked();

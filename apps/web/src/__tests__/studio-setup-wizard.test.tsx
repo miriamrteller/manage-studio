@@ -80,6 +80,14 @@ describe('studio setup wizard', () => {
     expect(screen.getByRole('radio', { name: 'Issued by Yesh Invoice' })).toBeChecked();
   });
 
+  it('YPay payments come with YPay documents, ready for the photographer', async () => {
+    renderWizard();
+    await fillStudioStep();
+    next();
+    fireEvent.click(screen.getByRole('radio', { name: 'By card online, through YPay' }));
+    expect(screen.getByRole('radio', { name: 'Issued by YPay' })).toBeChecked();
+  });
+
   it('creates a pay-at-the-studio studio with no documents, invites the owner, and shows the checklist', async () => {
     h.invoke.mockResolvedValue({
       data: { tenantId: 't-new', subdomain: 'creativeballet', owner: { status: 'invited' } },

@@ -11,17 +11,19 @@ import {
   parseYpayDocumentResponse,
   YPAY_DOC_TYPE_INVOICE_RECEIPT,
   YPAY_DOC_TYPE_RECEIPT,
-  ypayDocTypeForVatType,
+  ypayDocTypeFor,
   ypayDocumentDate,
 } from "../document.ts";
 
-Deno.test("docType follows the tenant's VAT status", () => {
-  assertEquals(ypayDocTypeForVatType(1), YPAY_DOC_TYPE_INVOICE_RECEIPT);
-  assertEquals(ypayDocTypeForVatType(2), YPAY_DOC_TYPE_INVOICE_RECEIPT);
-  assertEquals(ypayDocTypeForVatType("3"), YPAY_DOC_TYPE_RECEIPT);
-  assertEquals(ypayDocTypeForVatType(3), YPAY_DOC_TYPE_RECEIPT);
-  assertEquals(ypayDocTypeForVatType(null), YPAY_DOC_TYPE_INVOICE_RECEIPT);
-  assertEquals(ypayDocTypeForVatType(undefined), YPAY_DOC_TYPE_INVOICE_RECEIPT);
+Deno.test("docType is the studio's explicit choice; business status / VAT type is never consulted", () => {
+  assertEquals(ypayDocTypeFor(108), YPAY_DOC_TYPE_RECEIPT);
+  assertEquals(ypayDocTypeFor("108"), YPAY_DOC_TYPE_RECEIPT);
+  assertEquals(ypayDocTypeFor(109), YPAY_DOC_TYPE_INVOICE_RECEIPT);
+  // The old vat_type values (1, 2, 3) no longer mean anything here: only 108 selects a receipt.
+  assertEquals(ypayDocTypeFor(3), YPAY_DOC_TYPE_INVOICE_RECEIPT);
+  assertEquals(ypayDocTypeFor(1), YPAY_DOC_TYPE_INVOICE_RECEIPT);
+  assertEquals(ypayDocTypeFor(null), YPAY_DOC_TYPE_INVOICE_RECEIPT);
+  assertEquals(ypayDocTypeFor(undefined), YPAY_DOC_TYPE_INVOICE_RECEIPT);
 });
 
 Deno.test("payload carries the offline method, gross item and our payment id", () => {

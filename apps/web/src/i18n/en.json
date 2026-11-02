@@ -2267,6 +2267,27 @@
     "waiver_minor_cannot_sign_body": "{{studentName}} is under 18. Israeli law requires a parent or legal guardian to sign the form. Please ask a parent or guardian to log in and complete the enrolment."
   },
   "settings": {
+    "ypay": {
+      "save": "Save YPay details",
+      "title": "Connect YPay",
+      "hint": "Find your client ID and client secret in your YPay account, under the API / integration details. Ask YPay if you can't find them.",
+      "connected": "Connected: your YPay details are saved.",
+      "not_connected": "Not connected yet. Until you connect it, customers are asked to pay the studio directly.",
+      "client_id": "YPay client ID",
+      "client_secret": "YPay client secret",
+      "need_both": "Enter both the client ID and the client secret to save.",
+      "saved": "YPay details saved. Press “Test connection” to check them.",
+      "test": "Test connection",
+      "test_ok": "Connected ✓ YPay accepted your details.",
+      "test_failed": "We couldn't check the connection. Please try again.",
+      "encryption_missing": "Online payments can't be saved yet: the platform's encryption key isn't set up. Please contact OpalSwift.",
+      "document_title": "Which document does YPay issue?",
+      "document_label": "Document type",
+      "document_108": "Receipt (קבלה)",
+      "document_109": "Tax invoice-receipt (חשבונית מס-קבלה)",
+      "document_hint": "Choose what your YPay account issues. Ask YPay if unsure.",
+      "document_saved": "Saved."
+    },
     "lead_form": {
       "load_error": "Could not load your form questions. Refresh the page to try again.",
       "title": "Questions on your enquiry form",

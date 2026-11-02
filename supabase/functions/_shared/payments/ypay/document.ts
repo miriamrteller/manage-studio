@@ -27,22 +27,21 @@
  */
 import { YPAY_ERROR } from "./errors.ts";
 
-/** docType 108 = receipt (קבלה) — for VAT-exempt dealers (עוסק פטור). */
+/** docType 108 = receipt (קבלה). */
 export const YPAY_DOC_TYPE_RECEIPT = 108;
-/** docType 109 = invoice-receipt (חשבונית מס קבלה) — VAT-registered dealers. */
+/** docType 109 = invoice-receipt (חשבונית מס קבלה), the default. */
 export const YPAY_DOC_TYPE_INVOICE_RECEIPT = 109;
 
 export type YpayDocType = typeof YPAY_DOC_TYPE_RECEIPT | typeof YPAY_DOC_TYPE_INVOICE_RECEIPT;
 
-/** tenants.vat_type: 1 = VAT included, 2 = before VAT, 3 = exempt. */
-export const VAT_TYPE_EXEMPT = 3;
-
 /**
- * Which YPay document a payment receipt should be, by the tenant's VAT status.
- * An exempt dealer may not issue a tax invoice, so it gets a plain receipt.
+ * Which YPay document a payment gets: the studio's own choice (Settings -> Payment ->
+ * "Which document does YPay issue?", stored in tenants.ypay_document_type). Business status
+ * is deliberately NOT consulted: the owner picks what their YPay account issues. Anything
+ * other than 108 falls back to 109, the default.
  */
-export function ypayDocTypeForVatType(vatType: number | string | null | undefined): YpayDocType {
-  return Number(vatType) === VAT_TYPE_EXEMPT ? YPAY_DOC_TYPE_RECEIPT : YPAY_DOC_TYPE_INVOICE_RECEIPT;
+export function ypayDocTypeFor(documentType: number | string | null | undefined): YpayDocType {
+  return Number(documentType) === YPAY_DOC_TYPE_RECEIPT ? YPAY_DOC_TYPE_RECEIPT : YPAY_DOC_TYPE_INVOICE_RECEIPT;
 }
 
 /** Offline payment methods the app records (payments.payment_method). */

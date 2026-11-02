@@ -9,7 +9,7 @@ import {
   isRetryableYpayDocumentError,
   isYpayTokenError,
   parseYpayDocumentResponse,
-  ypayDocTypeForVatType,
+  ypayDocTypeFor,
   type YpayDocType,
 } from "../../payments/ypay/document.ts";
 import {
@@ -68,7 +68,7 @@ export class YpayInvoicingProvider implements InvoicingProvider {
     }
 
     const tenant = await loadTenantDocumentSettings(service, input.tenantId);
-    const docType = ypayDocTypeForVatType(tenant.vatType);
+    const docType = ypayDocTypeFor(tenant.documentType);
 
     if (ypayMock()) {
       return mockDocument(input.paymentId, docType);
@@ -181,10 +181,10 @@ async function tokenOrThrow(
 async function loadTenantDocumentSettings(
   service: SupabaseClient,
   tenantId: string,
-): Promise<{ vatType: number | null }> {
+): Promise<{ documentType: number | null }> {
   const { data, error } = await service
     .from("tenants")
-    .select("vat_type")
+    .select("ypay_document_type")
     .eq("id", tenantId)
     .maybeSingle();
   if (error) {
@@ -193,7 +193,7 @@ async function loadTenantDocumentSettings(
   if (!data) {
     throw new InvoicingProviderError(`Tenant not found: ${tenantId}`, { retryable: false });
   }
-  return { vatType: data.vat_type == null ? null : Number(data.vat_type) };
+  return { documentType: data.ypay_document_type == null ? null : Number(data.ypay_document_type) };
 }
 
 /** Converts a failed /document call into a queue-aware InvoicingProviderError. */
