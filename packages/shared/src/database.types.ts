@@ -1369,14 +1369,18 @@ export type Database = {
       }
       leads: {
         Row: {
+          answers: Json
           campaign: string | null
           channel: string
+          child_birth_date: string | null
+          child_name: string | null
           company: string | null
           converted_account_id: string | null
           converted_at: string | null
           created_at: string
           deal_value_minor: number | null
           email: string | null
+          event_date: string | null
           id: string
           interest: string | null
           last_communication_note: string | null
@@ -1394,14 +1398,18 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          answers?: Json
           campaign?: string | null
           channel?: string
+          child_birth_date?: string | null
+          child_name?: string | null
           company?: string | null
           converted_account_id?: string | null
           converted_at?: string | null
           created_at?: string
           deal_value_minor?: number | null
           email?: string | null
+          event_date?: string | null
           id?: string
           interest?: string | null
           last_communication_note?: string | null
@@ -1419,14 +1427,18 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          answers?: Json
           campaign?: string | null
           channel?: string
+          child_birth_date?: string | null
+          child_name?: string | null
           company?: string | null
           converted_account_id?: string | null
           converted_at?: string | null
           created_at?: string
           deal_value_minor?: number | null
           email?: string | null
+          event_date?: string | null
           id?: string
           interest?: string | null
           last_communication_note?: string | null
@@ -3173,6 +3185,7 @@ export type Database = {
           invoicing_secret_enc: string | null
           labels: Json
           language_default: string
+          lead_form: Json
           legal_pages_published: boolean
           legal_profile: Json
           legal_profile_updated_at: string | null
@@ -3241,6 +3254,7 @@ export type Database = {
           invoicing_secret_enc?: string | null
           labels?: Json
           language_default?: string
+          lead_form?: Json
           legal_pages_published?: boolean
           legal_profile?: Json
           legal_profile_updated_at?: string | null
@@ -3309,6 +3323,7 @@ export type Database = {
           invoicing_secret_enc?: string | null
           labels?: Json
           language_default?: string
+          lead_form?: Json
           legal_pages_published?: boolean
           legal_profile?: Json
           legal_profile_updated_at?: string | null
@@ -4041,6 +4056,7 @@ export type Database = {
           webhook_secret: string
         }[]
       }
+      get_lead_form: { Args: { p_tenant_id: string }; Returns: Json }
       get_my_account_ids: { Args: never; Returns: string[] }
       get_my_person_id: { Args: never; Returns: string }
       get_my_profile: {

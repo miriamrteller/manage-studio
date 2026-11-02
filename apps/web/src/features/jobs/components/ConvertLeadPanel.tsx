@@ -12,6 +12,10 @@ interface ConvertLeadPanelProps {
   leadName: string;
   /** Offering the lead asked about, preselected when present. */
   defaultOfferingId?: string | null;
+  /** From the enquiry form, prefilled when present. */
+  defaultLocation?: string | null;
+  /** Event date from the enquiry form, shown as a hint next to the date field. */
+  eventDate?: string | null;
   onClose: () => void;
 }
 
@@ -20,7 +24,7 @@ interface ConvertLeadPanelProps {
  * then one RPC (convert_lead_to_job) creates client + engagement + job_details
  * and marks the lead converted. Navigates to the new job on success.
  */
-export function ConvertLeadPanel({ leadId, leadName, defaultOfferingId, onClose }: ConvertLeadPanelProps) {
+export function ConvertLeadPanel({ leadId, leadName, defaultOfferingId, defaultLocation, eventDate, onClose }: ConvertLeadPanelProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { labels } = useEntityLabels();
@@ -29,7 +33,7 @@ export function ConvertLeadPanel({ leadId, leadName, defaultOfferingId, onClose 
 
   const [offeringId, setOfferingId] = useState(defaultOfferingId ?? '');
   const [startsAt, setStartsAt] = useState('');
-  const [location, setLocation] = useState('');
+  const [location, setLocation] = useState(defaultLocation ?? '');
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (event: FormEvent) => {
@@ -74,7 +78,13 @@ export function ConvertLeadPanel({ leadId, leadName, defaultOfferingId, onClose 
             className="w-full border rounded px-3 py-2"
             value={startsAt}
             onChange={(e) => setStartsAt(e.target.value)}
+            aria-describedby={eventDate ? `convert-starts-hint-${leadId}` : undefined}
           />
+          {eventDate && (
+            <p id={`convert-starts-hint-${leadId}`} className="text-xs text-muted-foreground mt-1">
+              {t('pages.crm.leads.event_date_hint', { date: eventDate })}
+            </p>
+          )}
         </div>
         <div>
           <label htmlFor={`convert-location-${leadId}`} className="block text-sm font-medium mb-1">

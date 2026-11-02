@@ -1,5 +1,7 @@
 ﻿import { useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { WebsiteFormSettings } from '@/features/settings/components/WebsiteFormSettings';
+import { answerText } from '@shared/index';
+import { answerFilterOptions, filterByAnswer } from '../lib/leadAnswers';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/shared';
@@ -8,7 +10,7 @@ import { useEntityLabels } from '@/hooks/useEntityLabels';
 import { useLeads } from '../hooks/useLeads';
 import { ConvertLeadPanel } from '@/features/jobs/components/ConvertLeadPanel';
 import { CreateQuoteButton } from '@/features/quotes/components/CreateQuoteButton';
-import { LEAD_CHANNELS, LEAD_STAGES, type LeadChannel, type LeadStage } from '../services/leadService';
+import { LEAD_CHANNELS, LEAD_STAGES, type Lead, type LeadChannel, type LeadStage } from '../services/leadService';
 
 /**
  * Admin leads page: capture-links panel (the tenant's self-onboarding —
@@ -57,7 +59,7 @@ function CopyField({ label, value }: { label: string; value: string }) {
 }
 
 interface LeadRowGroupProps {
-  lead: { id: string; name: string; offering_id: string | null };
+  lead: Pick<Lead, 'id' | 'name' | 'offering_id' | 'answers' | 'event_date'>;
   converting: boolean;
   canConvert: boolean;
   onConvert: () => void;
@@ -77,6 +79,8 @@ function LeadRowGroup({ lead, converting, canConvert, onClose, children }: LeadR
               leadId={lead.id}
               leadName={lead.name}
               defaultOfferingId={lead.offering_id}
+              defaultLocation={answerPlain(lead.answers?.event_location)}
+              eventDate={lead.event_date}
               onClose={onClose}
             />
           </td>
@@ -86,14 +90,57 @@ function LeadRowGroup({ lead, converting, canConvert, onClose, children }: LeadR
   );
 }
 
+function answerPlain(answer: { value: unknown } | undefined): string | null {
+  return answer && typeof answer.value === 'string' ? answer.value : null;
+}
+
+/** Enquiry-form answers for one lead: typed fields first, then the rest. */
+function LeadAnswers({ lead, lang }: { lead: Lead; lang: 'en' | 'he' }) {
+  const { t, i18n } = useTranslation();
+  const rows: Array<[string, string]> = [];
+  if (lead.child_name) rows.push([t('pages.crm.leads.child_name'), lead.child_name]);
+  if (lead.child_birth_date) rows.push([t('pages.crm.leads.child_birth_date'), formatDate(lead.child_birth_date, i18n.language)]);
+  if (lead.event_date) rows.push([t('pages.crm.leads.event_date'), formatDate(lead.event_date, i18n.language)]);
+  for (const answer of Object.values(lead.answers ?? {})) {
+    rows.push([answer.label[lang] || answer.label.en, answerText(answer, lang)]);
+  }
+  if (rows.length === 0) return null;
+  return (
+    <details className="mt-1">
+      <summary className="cursor-pointer text-xs text-muted-foreground">
+        {t('pages.crm.leads.form_answers', { count: rows.length })}
+      </summary>
+      <dl className="mt-1 space-y-0.5 text-xs">
+        {rows.map(([label, value], i) => (
+          <div key={i}>
+            <dt className="inline font-medium">{label}: </dt>
+            <dd className="inline" dir="auto">
+              {value}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </details>
+  );
+}
+
 export function LeadsList() {
   const { t, i18n } = useTranslation();
   const tenant = useTenant();
   const { vertical } = useEntityLabels();
   const canConvert = vertical === 'photographer';
   const [convertingId, setConvertingId] = useState<string | null>(null);
-  const { leads, isLoading, error, createLead, isCreating, updateStage, isUpdatingStage } =
+  const { leads: allLeads, isLoading, error, createLead, isCreating, updateStage, isUpdatingStage } =
     useLeads();
+  const lang: 'en' | 'he' = i18n.language?.startsWith('he') ? 'he' : 'en';
+  const [answerKey, setAnswerKey] = useState('');
+  const [answerValue, setAnswerValue] = useState('');
+  const answerOptions = useMemo(() => answerFilterOptions(allLeads, lang), [allLeads, lang]);
+  const leads = useMemo(
+    () => filterByAnswer(allLeads, answerKey, answerValue, lang),
+    [allLeads, answerKey, answerValue, lang],
+  );
+  const valuesForKey = answerOptions.find((o) => o.key === answerKey)?.values ?? [];
 
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState('');
@@ -296,8 +343,59 @@ export function LeadsList() {
         </div>
       )}
 
-      {!isLoading && leads.length === 0 && (
+      {answerOptions.length > 0 && (
+        <div className="flex flex-wrap items-end gap-3" role="search" aria-label={t('pages.crm.leads.filter_answers')}>
+          <div>
+            <label htmlFor="lead-answer-key" className="block text-sm font-medium mb-1">
+              {t('pages.crm.leads.filter_question')}
+            </label>
+            <select
+              id="lead-answer-key"
+              className="border rounded px-2 py-1"
+              value={answerKey}
+              onChange={(e) => {
+                setAnswerKey(e.target.value);
+                setAnswerValue('');
+              }}
+            >
+              <option value="">{t('pages.crm.leads.filter_any')}</option>
+              {answerOptions.map((o) => (
+                <option key={o.key} value={o.key}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          {answerKey && (
+            <div>
+              <label htmlFor="lead-answer-value" className="block text-sm font-medium mb-1">
+                {t('pages.crm.leads.filter_answer')}
+              </label>
+              <select
+                id="lead-answer-value"
+                className="border rounded px-2 py-1"
+                value={answerValue}
+                onChange={(e) => setAnswerValue(e.target.value)}
+              >
+                <option value="">{t('pages.crm.leads.filter_any')}</option>
+                {valuesForKey.map((v) => (
+                  <option key={v} value={v}>
+                    {v}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
+      )}
+
+      {!isLoading && allLeads.length === 0 && (
         <EmptyState title={t('pages.crm.leads.empty_title')} message={t('pages.crm.leads.empty_message')} />
+      )}
+      {!isLoading && allLeads.length > 0 && leads.length === 0 && (
+        <p role="status" className="text-sm text-muted-foreground">
+          {t('pages.crm.leads.filter_none')}
+        </p>
       )}
 
       {leads.length > 0 && (
@@ -349,7 +447,10 @@ export function LeadsList() {
                       </span>
                     )}
                   </td>
-                  <td className="px-3 py-2">{lead.interest ?? '—'}</td>
+                  <td className="px-3 py-2">
+                    {lead.interest ?? '—'}
+                    <LeadAnswers lead={lead} lang={lang} />
+                  </td>
                   <td className="px-3 py-2">
                     <label className="sr-only" htmlFor={`lead-stage-${lead.id}`}>
                       {t('pages.crm.leads.stage')}

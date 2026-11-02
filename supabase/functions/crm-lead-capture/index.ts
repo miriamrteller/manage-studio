@@ -12,6 +12,12 @@ import {
 import { withMonitoring } from "../_shared/monitoring.ts";
 import { verifyTurnstile } from "../_shared/turnstile.ts";
 import { leadCaptchaPasses, normaliseCampaign } from "../_shared/crm-contract/lead-capture-guard.ts";
+import {
+  formQuestions,
+  leadFormKindFor,
+  parseLeadFormConfig,
+  validateLeadAnswers,
+} from "../_shared/email-dist/leadForm.js";
 
 /**
  * crm-lead-capture — PUBLIC inquiry-form endpoint (step 2 of
@@ -47,6 +53,8 @@ const payloadSchema = z.object({
   campaign: z.string().max(500).nullable().optional(),
   /** Cloudflare Turnstile token; required only when TURNSTILE_SECRET_KEY is set. */
   captchaToken: z.string().max(4096).nullable().optional(),
+  /** Answers to the studio's extra questions, keyed by question key (validated below). */
+  answers: z.record(z.unknown()).nullable().optional(),
   /** Honeypot — humans never see it, bots fill it. */
   website: z.string().max(200).nullable().optional(),
   /**
@@ -164,13 +172,40 @@ Deno.serve(withMonitoring("crm-lead-capture", async (req) => {
 
     const { data: tenant, error: tenantError } = await service
       .from("tenants")
-      .select(LEAD_TENANT_COLUMNS)
+      .select(`${LEAD_TENANT_COLUMNS}, skin, business_preset, lead_form`)
       .eq("subdomain", payload.tenantSubdomain.toLowerCase())
       .single();
     if (tenantError || !tenant) {
       return json({ error: "Unknown tenant" }, 404);
     }
-    const leadTenant = tenant as LeadTenant;
+    const leadTenant = tenant as unknown as LeadTenant & {
+      skin: string | null;
+      business_preset: string | null;
+      lead_form: unknown;
+    };
+
+    // The studio's extra questions. Unknown keys are ignored; a required
+    // question left empty or an invalid answer refuses the enquiry (400), so
+    // the form can show which field to fix.
+    const formConfig = parseLeadFormConfig(leadTenant.lead_form);
+    const kind = leadFormKindFor(leadTenant.skin, leadTenant.business_preset);
+    const needsClasses = formConfig.presets.class_interest?.enabled === true && kind === "classes";
+    let classes: Array<{ id: string; name: string }> = [];
+    if (needsClasses) {
+      const { data: rows } = await service
+        .from("offerings")
+        .select("id, name")
+        .eq("tenant_id", leadTenant.id)
+        .eq("offering_type", "class")
+        .eq("is_public", true)
+        .eq("status", "active");
+      classes = (rows ?? []) as Array<{ id: string; name: string }>;
+    }
+    const questions = formQuestions(formConfig, kind, classes);
+    const checked = validateLeadAnswers(questions, payload.answers ?? {});
+    if (!checked.ok) {
+      return json({ error: "invalid_answers", fields: checked.invalid }, 400);
+    }
 
     const email = nonEmpty(payload.email)?.toLowerCase() ?? null;
     const contactPoint = normaliseContactPoint(email ?? `ip:${ip}`);
@@ -192,6 +227,7 @@ Deno.serve(withMonitoring("crm-lead-capture", async (req) => {
       sourceRef: null,
       receivedAt: new Date().toISOString(),
       campaign: normaliseCampaign(payload.campaign),
+      form: questions.length > 0 ? { columns: checked.columns, answers: checked.answers } : null,
     });
 
     const optIns = payload.marketingConsent?.items ?? [];

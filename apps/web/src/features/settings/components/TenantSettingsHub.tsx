@@ -19,6 +19,7 @@ import { LocaleSettingsForm } from './LocaleSettingsForm';
 import { OfflinePaymentsSettingsForm } from './OfflinePaymentsSettingsForm';
 import { InvoicingToggleForm } from './InvoicingToggleForm';
 import { WebsiteFormSettings } from './WebsiteFormSettings';
+import { LeadFormSettings } from './LeadFormSettings';
 
 function SettingsLinkCard({
   title,
@@ -80,6 +81,8 @@ export function TenantSettingsHub() {
       <InvoicingToggleForm />
       <hr className="border-gray-200" />
       <WebsiteFormSettings />
+      <hr className="border-gray-200" />
+      <LeadFormSettings />
 
       <section className="space-y-4">
         <h2 className="text-lg font-semibold text-foreground">{t('settings.hub.more_settings')}</h2>
