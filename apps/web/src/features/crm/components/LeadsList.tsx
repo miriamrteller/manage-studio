@@ -11,7 +11,8 @@ import { useEntityLabels } from '@/hooks/useEntityLabels';
 import { useLeads } from '../hooks/useLeads';
 import { ConvertLeadPanel } from '@/features/jobs/components/ConvertLeadPanel';
 import { CreateQuoteButton } from '@/features/quotes/components/CreateQuoteButton';
-import { LEAD_CHANNELS, LEAD_STAGES, type Lead, type LeadChannel, type LeadStage } from '../services/leadService';
+import { LEAD_CHANNELS, stagesFor, type Lead, type LeadChannel, type LeadStage } from '../services/leadService';
+import { LeadEnrolmentLink } from './LeadEnrolmentLink';
 
 /**
  * Admin leads page: capture-links panel (the tenant's self-onboarding —
@@ -105,8 +106,20 @@ export function LeadsList() {
   const { vertical } = useEntityLabels();
   const canConvert = vertical === 'photographer';
   const [convertingId, setConvertingId] = useState<string | null>(null);
-  const { leads: allLeads, isLoading, error, createLead, isCreating, updateStage, isUpdatingStage } =
-    useLeads();
+  const {
+    leads: allLeads,
+    isLoading,
+    error,
+    createLead,
+    isCreating,
+    updateStage,
+    isUpdatingStage,
+    enrolmentsById,
+    linkToEnrolment,
+    linkError,
+    isLinking,
+    dismissSuggestion,
+  } = useLeads();
   const lang: 'en' | 'he' = i18n.language?.startsWith('he') ? 'he' : 'en';
   const [answerKey, setAnswerKey] = useState('');
   const [answerValue, setAnswerValue] = useState('');
@@ -297,9 +310,9 @@ export function LeadsList() {
       )}
 
       {isLoading && <p role="status">{t('common.loading')}</p>}
-      {error && (
+      {(error || linkError) && (
         <div className="alert-error" role="alert">
-          {error.message}
+          {(error ?? linkError)?.message}
         </div>
       )}
 
@@ -427,6 +440,15 @@ export function LeadsList() {
                         {t('pages.crm.leads.converted')}
                       </span>
                     )}
+                    {!canConvert && (
+                      <LeadEnrolmentLink
+                        lead={lead}
+                        enrolmentsById={enrolmentsById}
+                        busy={isLinking}
+                        onLink={(choice) => linkToEnrolment({ leadId: lead.id, choice })}
+                        onDismiss={() => dismissSuggestion(lead.id)}
+                      />
+                    )}
                   </td>
                   <td className="px-3 py-2">
                     <div className="space-y-0.5">
@@ -465,7 +487,7 @@ export function LeadsList() {
                         updateStage({ id: lead.id, stage: e.target.value as LeadStage })
                       }
                     >
-                      {LEAD_STAGES.map((stage) => (
+                      {stagesFor(vertical, lead.stage).map((stage) => (
                         <option key={stage} value={stage}>
                           {t(`pages.crm.leads.stage_${stage}`)}
                         </option>

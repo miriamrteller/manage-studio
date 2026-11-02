@@ -471,6 +471,9 @@
         "stage_contacted": "Contacted",
         "stage_qualified": "Qualified",
         "stage_proposal": "Proposal",
+        "stage_trial_booked": "Trial booked",
+        "stage_trial_done": "Trial done",
+        "stage_won": "Won (enrolled)",
         "stage_lost": "Lost",
         "converted": "Converted",
         "last_contacted": "Last contacted",
@@ -553,6 +556,18 @@
         "not_found": "This form does not exist.",
         "closed_title": "This form is closed",
         "closed": "This form is no longer taking enquiries."
+      },
+      "pipeline": {
+        "enrolled": "Enrolled: {{student}} · {{offering}}",
+        "enrolled_short": "Enrolled",
+        "possible_match": "Possible match: {{student}} enrolled in {{offering}}.",
+        "confirm_match": "Yes, link",
+        "not_this_one": "Not this one",
+        "link_enrolment": "Link to an enrolment",
+        "search_label": "Which enrolment is {{name}}?",
+        "search_placeholder": "Student or class name",
+        "link": "Link",
+        "no_enrolments": "No matching class enrolments."
       },
       "get_leads": {
         "send_title": "Send the form to someone",

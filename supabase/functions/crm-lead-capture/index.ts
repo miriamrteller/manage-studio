@@ -190,9 +190,14 @@ Deno.serve(withMonitoring("crm-lead-capture", async (req) => {
       lead_form: unknown;
     };
 
-    // Named form: must exist in this studio and be open; it narrows the
-    // questions and may pre-select a class or package.
+    // Named form: narrows the questions and may pre-select a class or
+    // package. An enquiry is never dropped because of its form: if the form
+    // was switched off, passed its last day or was deleted while the visitor
+    // had the page open, the lead is saved without the form (no form_id, no
+    // pre-selected class), checked against the questions they were shown.
     let namedForm: { id: string; question_keys: string[] | null; offering_id: string | null } | null = null;
+    let closedFormKeys: string[] | null = null;
+    let unknownForm = false;
     if (payload.formSlug) {
       const { data: form } = await service
         .from("lead_forms")
@@ -200,11 +205,13 @@ Deno.serve(withMonitoring("crm-lead-capture", async (req) => {
         .eq("tenant_id", leadTenant.id)
         .eq("slug", payload.formSlug.trim().toLowerCase())
         .maybeSingle();
-      if (!form) return json({ error: "unknown_form" }, 404);
-      if (!leadFormIsOpen(form as { active: boolean; ends_on: string | null }, todayIn(FORM_TIME_ZONE))) {
-        return json({ error: "form_closed" }, 410);
+      if (!form) {
+        unknownForm = true;
+      } else if (!leadFormIsOpen(form as { active: boolean; ends_on: string | null }, todayIn(FORM_TIME_ZONE))) {
+        closedFormKeys = (form as { question_keys: string[] | null }).question_keys;
+      } else {
+        namedForm = form as { id: string; question_keys: string[] | null; offering_id: string | null };
       }
-      namedForm = form as { id: string; question_keys: string[] | null; offering_id: string | null };
     }
 
     // The studio's extra questions. Unknown keys are ignored; a required
@@ -224,7 +231,11 @@ Deno.serve(withMonitoring("crm-lead-capture", async (req) => {
         .eq("status", "active");
       classes = (rows ?? []) as Array<{ id: string; name: string }>;
     }
-    const questions = questionsForForm(formQuestions(formConfig, kind, classes), namedForm?.question_keys);
+    const allQuestions = formQuestions(formConfig, kind, classes);
+    const questions = unknownForm
+      // We can't know what a deleted form showed: keep valid answers, require none.
+      ? allQuestions.map((q) => ({ ...q, required: false }))
+      : questionsForForm(allQuestions, namedForm ? namedForm.question_keys : closedFormKeys);
     const checked = validateLeadAnswers(questions, payload.answers ?? {});
     if (!checked.ok) {
       return json({ error: "invalid_answers", fields: checked.invalid }, 400);
