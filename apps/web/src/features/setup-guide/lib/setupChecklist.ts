@@ -11,6 +11,7 @@ export type SetupRowId =
   | 'packages'
   | 'offerings'
   | 'payments'
+  | 'connect_payments'
   | 'legal'
   | 'leads'
   | 'test_enrolment'
@@ -28,6 +29,10 @@ export interface SetupFacts {
   quotes: number;
   /** Studio has said how customers pay (instructions written, or a card provider connected). */
   paymentsReady: boolean;
+  /** The studio chose online card payment (a provider, not pay-at-the-studio). */
+  onlinePayments: boolean;
+  /** Online payment keys are saved. */
+  paymentsConnected: boolean;
   /** Legal pages published. */
   legalPublished: boolean;
 }
@@ -41,6 +46,8 @@ export const EMPTY_FACTS: SetupFacts = {
   leads: 0,
   quotes: 0,
   paymentsReady: false,
+  onlinePayments: false,
+  paymentsConnected: false,
   legalPublished: false,
 };
 
@@ -52,7 +59,7 @@ export function setupFlavour(vertical: string | null | undefined): SetupFlavour 
   return 'general';
 }
 
-/** Row order per kind of studio. Dance follows the order the owner must build things in. */
+/** Row order per kind of studio. "Connect online payments" is added after "payments" only for studios on online payment. Dance follows the order the owner must build things in. */
 const ROWS: Record<SetupFlavour, readonly SetupRowId[]> = {
   dance: ['branding', 'levels', 'season', 'classes', 'payments', 'legal', 'test_enrolment'],
   photographer: ['branding', 'packages', 'payments', 'legal', 'leads', 'first_quote'],
@@ -78,6 +85,8 @@ export function isRowDone(id: SetupRowId, f: SetupFacts): boolean {
       return f.offerings > 0;
     case 'payments':
       return f.paymentsReady;
+    case 'connect_payments':
+      return f.paymentsConnected;
     case 'legal':
       return f.legalPublished;
     case 'leads':
@@ -90,7 +99,9 @@ export function isRowDone(id: SetupRowId, f: SetupFacts): boolean {
 }
 
 export function buildSetupRows(vertical: string | null | undefined, facts: SetupFacts): SetupRow[] {
-  return ROWS[setupFlavour(vertical)].map((id) => ({ id, done: isRowDone(id, facts) }));
+  return ROWS[setupFlavour(vertical)]
+    .flatMap((id): SetupRowId[] => (id === 'payments' && facts.onlinePayments ? [id, 'connect_payments'] : [id]))
+    .map((id) => ({ id, done: isRowDone(id, facts) }));
 }
 
 export interface SetupProgress {

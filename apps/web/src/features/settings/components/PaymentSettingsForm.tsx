@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -6,6 +7,8 @@ import { supabase } from '@/lib/supabase';
 import { useTenant } from '@/hooks/useTenant';
 import queryClient from '@/lib/query-client';
 import { OfflinePaymentsSettingsForm, OFFLINE_PAYMENTS } from './OfflinePaymentsSettingsForm';
+import { tenantUsesBundledPayments } from '@/lib/tenantProviderRouting';
+import { BUNDLED_PAYMENTS_SETUP_PATH } from '@/lib/bundledProviderUi';
 
 function StatusRow({ label, value }: { label: string; value: string }) {
   return (
@@ -16,11 +19,55 @@ function StatusRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-/** Paying at the studio needs no keys, so show only the "how to pay" note. */
+/**
+ * Settings → Payment. "How customers pay" is always here, so the studio can switch between
+ * paying at the studio and online card payment at any time. Paying at the studio needs no keys,
+ * so nothing else shows. An online provider shows only its own connection details.
+ */
 export function PaymentSettingsForm() {
   const tenant = useTenant();
+  const choice = (
+    <div className="space-y-8">
+      <OfflinePaymentsSettingsForm />
+      <hr className="border-gray-200" />
+    </div>
+  );
   if (tenant?.payment_provider === OFFLINE_PAYMENTS) return <OfflinePaymentsSettingsForm />;
-  return <ProviderKeysForm />;
+  if (tenantUsesBundledPayments(tenant)) {
+    return (
+      <div className="space-y-8">
+        <OfflinePaymentsSettingsForm />
+        <hr className="border-gray-200" />
+        <ConnectBundledCard />
+      </div>
+    );
+  }
+  return (
+    <>
+      {choice}
+      <ProviderKeysForm />
+    </>
+  );
+}
+
+function ConnectBundledCard() {
+  const { t } = useTranslation();
+  const tenant = useTenant();
+  const navigate = useNavigate();
+  const connected = Boolean(tenant?.payment_provider_secret_configured);
+  return (
+    <section className="space-y-3 max-w-lg" aria-labelledby="connect-bundled-title">
+      <h2 id="connect-bundled-title" className="text-lg font-semibold text-foreground">
+        {t('settings.payments.connect_title')}
+      </h2>
+      <p className="text-sm text-muted-foreground" role="status">
+        {connected ? t('settings.payments.connected_note') : t('settings.payments.not_connected_note')}
+      </p>
+      <Button type="button" variant="primary" onClick={() => navigate(BUNDLED_PAYMENTS_SETUP_PATH)}>
+        {connected ? t('settings.payments.connect_manage') : t('settings.payments.connect_now')}
+      </Button>
+    </section>
+  );
 }
 
 function ProviderKeysForm() {

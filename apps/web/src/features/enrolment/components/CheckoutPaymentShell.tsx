@@ -50,6 +50,7 @@ export function CheckoutPaymentShell({
       billingMode={intent.billingMode}
       billingInterval={intent.billingInterval}
       offlineInstructions={intent.offlineInstructions}
+      onlinePaymentNotSetUp={intent.onlinePaymentNotSetUp}
       onPaid={onPaid}
       onPrevious={onPrevious}
     />

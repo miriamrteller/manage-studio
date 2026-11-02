@@ -1713,7 +1713,11 @@
       },
       "payments": {
         "title": "Choose how customers pay",
-        "hint": "Pay at the studio is the simplest start. Write how to pay, such as cash, bank transfer or Bit."
+        "hint": "Say how customers pay: by card online, or at the studio with cash, bank transfer or Bit. You can change this any time in Settings."
+      },
+      "connect_payments": {
+        "title": "Connect online payments",
+        "hint": "Enter your payment provider’s details so customers can pay by card. Until then, customers are asked to pay the studio directly."
       },
       "legal_dance": {
         "title": "Check your legal details and health declaration",
@@ -1824,7 +1828,7 @@
     "invoicing_yesh": "Issued by Yesh Invoice",
     "invoicing_green_invoice": "Issued by Green Invoice",
     "invoicing_none": "None (not a registered business)",
-    "invoicing_existing": "I already use an invoicing service",
+    "invoicing_existing": "I already use another invoicing service",
     "invoicing_existing_which": "Which invoicing service?",
     "payments_later": "The studio connects its account with the provider later, in its own settings.",
     "look_hint": "Starts with OpalSwift's colours. The studio can upload its logo and change colours later.",
@@ -2214,6 +2218,7 @@
     "checkout_total": "Total",
     "offline_payment_title": "Pay at the studio",
     "offline_payment_body": "Your place is reserved. This studio takes payment in person (cash or bank transfer), so there is nothing to pay online.",
+    "online_not_set_up_body": "Your place is reserved. The studio hasn't set up online payment yet, so please pay the studio directly. They will tell you how.",
     "offline_payment_how": "How to pay",
     "offline_payment_next": "The studio will confirm the enrolment once your payment is received.",
     "offline_payment_portal_link": "Go to my account",
@@ -2366,6 +2371,11 @@
       "providers": { "grow": "Grow (Meshulam)", "icount": "iCount", "invoice4u": "Invoice4U", "ypay": "YPay", "tranzila": "Tranzila", "yesh": "Yesh", "green_invoice": "Green Invoice" }
     },
     "payments": {
+      "connect_title": "Connect online payments",
+      "connected_note": "Your payment details are saved. Customers can pay by card online.",
+      "not_connected_note": "Not connected yet. Until you connect it, customers are asked to pay the studio directly. Nothing breaks, and you can do it any time.",
+      "connect_now": "Connect now",
+      "connect_manage": "Manage connection",
       "title": "Payment provider",
       "description": "Configure payment capture credentials.",
       "provider": "Provider",

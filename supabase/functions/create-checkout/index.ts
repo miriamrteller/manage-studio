@@ -42,6 +42,7 @@ serve(withMonitoring("create-checkout", async (req) => {
       pendingWebhook: charge.pendingWebhook,
       alreadyPaid: charge.alreadyPaid,
       offlineInstructions: charge.offlineInstructions ?? null,
+      onlinePaymentNotSetUp: charge.onlinePaymentNotSetUp ?? false,
     });
   } catch (error) {
     console.error("[create-checkout]", error);

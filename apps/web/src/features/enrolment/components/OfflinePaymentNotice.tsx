@@ -10,7 +10,14 @@ import queryClient from '@/lib/query-client';
  * an admin records the payment later (Students → Record offline payment).
  * `instructions` is the studio's own text (tenants.offline_payment_instructions).
  */
-export function OfflinePaymentNotice({ instructions }: { instructions?: string | null }) {
+export function OfflinePaymentNotice({
+  instructions,
+  notSetUp = false,
+}: {
+  instructions?: string | null;
+  /** The studio chose online payment but has not connected it yet. */
+  notSetUp?: boolean;
+}) {
   const { t } = useTranslation();
   const trimmed = instructions?.trim() || null;
 
@@ -25,7 +32,9 @@ export function OfflinePaymentNotice({ instructions }: { instructions?: string |
   return (
     <div className="rounded-lg border border-border bg-muted/40 p-4 space-y-2" role="status">
       <h3 className="font-semibold text-foreground">{t('enrolment.offline_payment_title')}</h3>
-      <p className="text-sm text-foreground">{t('enrolment.offline_payment_body')}</p>
+      <p className="text-sm text-foreground">
+        {t(notSetUp ? 'enrolment.online_not_set_up_body' : 'enrolment.offline_payment_body')}
+      </p>
       {trimmed && (
         <div className="rounded-md bg-background/60 p-3 space-y-1" data-testid="offline-payment-instructions">
           <p className="text-sm font-medium text-foreground">{t('enrolment.offline_payment_how')}</p>

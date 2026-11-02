@@ -23,6 +23,7 @@ export function setupRowHref(id: SetupRowId, vertical: string | null | undefined
     case 'offerings':
       return managePackagesPath(vertical as Parameters<typeof managePackagesPath>[0]);
     case 'payments':
+    case 'connect_payments':
       return '/admin/setup/settings?tab=payment';
     case 'legal':
       return '/admin/setup/settings?tab=legal';
