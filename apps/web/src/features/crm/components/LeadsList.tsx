@@ -1,11 +1,10 @@
 ﻿import { useMemo, useState, type FormEvent, type ReactNode } from 'react';
-import { WebsiteFormSettings } from '@/features/settings/components/WebsiteFormSettings';
+import { GetLeadsPanel } from './GetLeadsPanel';
 import { answerText } from '@shared/index';
 import { answerFilterOptions, filterByAnswer } from '../lib/leadAnswers';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/shared';
-import { useTenant } from '@/hooks/useTenant';
 import { useEntityLabels } from '@/hooks/useEntityLabels';
 import { useLeads } from '../hooks/useLeads';
 import { ConvertLeadPanel } from '@/features/jobs/components/ConvertLeadPanel';
@@ -32,31 +31,6 @@ function formatDate(value: string | null, locale: string): string {
   }
 }
 
-function CopyField({ label, value }: { label: string; value: string }) {
-  const { t } = useTranslation();
-  const [copied, setCopied] = useState(false);
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Clipboard unavailable (permissions/http) — the value is still selectable.
-    }
-  };
-  return (
-    <div className="flex flex-wrap items-center gap-2">
-      <span className="text-sm font-medium min-w-32">{label}</span>
-      <code className="text-xs bg-muted border rounded px-2 py-1 break-all" dir="ltr">{value}</code>
-      <Button variant="outline" size="sm" onClick={copy}>
-        {copied ? t('pages.crm.leads.copied') : t('common.copy')}
-      </Button>
-      <span aria-live="polite" className="sr-only">
-        {copied ? t('pages.crm.leads.copied') : ''}
-      </span>
-    </div>
-  );
-}
 
 interface LeadRowGroupProps {
   lead: Pick<Lead, 'id' | 'name' | 'offering_id' | 'answers' | 'event_date'>;
@@ -126,7 +100,6 @@ function LeadAnswers({ lead, lang }: { lead: Lead; lang: 'en' | 'he' }) {
 
 export function LeadsList() {
   const { t, i18n } = useTranslation();
-  const tenant = useTenant();
   const { vertical } = useEntityLabels();
   const canConvert = vertical === 'photographer';
   const [convertingId, setConvertingId] = useState<string | null>(null);
@@ -136,9 +109,17 @@ export function LeadsList() {
   const [answerKey, setAnswerKey] = useState('');
   const [answerValue, setAnswerValue] = useState('');
   const answerOptions = useMemo(() => answerFilterOptions(allLeads, lang), [allLeads, lang]);
+  const [source, setSource] = useState('');
+  const sources = useMemo(() => LEAD_CHANNELS.filter((c) => allLeads.some((l) => l.channel === c)), [allLeads]);
   const leads = useMemo(
-    () => filterByAnswer(allLeads, answerKey, answerValue, lang),
-    [allLeads, answerKey, answerValue, lang],
+    () =>
+      filterByAnswer(
+        source ? allLeads.filter((l) => l.channel === source) : allLeads,
+        answerKey,
+        answerValue,
+        lang,
+      ),
+    [allLeads, source, answerKey, answerValue, lang],
   );
   const valuesForKey = answerOptions.find((o) => o.key === answerKey)?.values ?? [];
 
@@ -151,28 +132,6 @@ export function LeadsList() {
   const [note, setNote] = useState('');
   const [followUp, setFollowUp] = useState('');
 
-  const captureLinks = useMemo(() => {
-    if (!tenant?.subdomain) return null;
-    // The admin is already on the tenant's own portal, so the current origin
-    // IS the tenant site — no per-tenant config needed (self-onboard rule).
-    const formUrl = `${window.location.origin}/inquire`;
-    // The lead inbox lives on the PLATFORM email domain (Email Routing catch-all
-    // → lead-email-ingest worker), which equals the production root domain. Dev
-    // sets VITE_APP_ROOT_DOMAIN to a localhost origin for link-building, which
-    // is never an email domain — guard and fall back to the platform constant.
-    const rootDomain: string = import.meta.env.VITE_APP_ROOT_DOMAIN || '';
-    const emailDomain =
-      rootDomain && !rootDomain.includes('localhost') && !rootDomain.includes(':')
-        ? rootDomain
-        : 'opalswift.com';
-    return {
-      email: `leads-${tenant.subdomain}@${emailDomain}`,
-      form: formUrl,
-      instagram: `${formUrl}?src=instagram`,
-      whatsapp: `${formUrl}?src=whatsapp`,
-      linkedin: `${formUrl}?src=linkedin`,
-    };
-  }, [tenant?.subdomain]);
 
   const resetForm = () => {
     setName('');
@@ -216,25 +175,12 @@ export function LeadsList() {
       </div>
       <p className="text-sm text-muted-foreground">{t('pages.crm.leads.description')}</p>
 
-      {captureLinks && (
-        <section aria-labelledby="capture-links-heading" className="card p-4 space-y-3">
-          <h2 id="capture-links-heading" className="font-semibold">
-            {t('pages.crm.leads.capture_title')}
-          </h2>
-          <p className="text-sm text-muted-foreground">{t('pages.crm.leads.capture_hint')}</p>
-          <CopyField label={t('pages.crm.leads.capture_email')} value={captureLinks.email} />
-          <CopyField label={t('pages.crm.leads.capture_form')} value={captureLinks.form} />
-          <CopyField label={t('pages.crm.leads.capture_instagram')} value={captureLinks.instagram} />
-          <CopyField label={t('pages.crm.leads.capture_whatsapp')} value={captureLinks.whatsapp} />
-          <CopyField label={t('pages.crm.leads.capture_linkedin')} value={captureLinks.linkedin} />
-          <details className="pt-2">
-            <summary className="cursor-pointer text-sm font-medium">{t('pages.crm.leads.capture_embed')}</summary>
-            <div className="pt-3">
-              <WebsiteFormSettings compact />
-            </div>
-          </details>
-        </section>
-      )}
+      <details className="space-y-3" open={!isLoading && allLeads.length === 0}>
+        <summary className="cursor-pointer font-semibold">{t('pages.crm.get_leads.title')}</summary>
+        <div className="pt-3">
+          <GetLeadsPanel headingLevel={3} />
+        </div>
+      </details>
 
       {showForm && (
         <form onSubmit={handleCreate} className="card p-4 space-y-3" aria-label={t('pages.crm.leads.add')}>
@@ -343,8 +289,22 @@ export function LeadsList() {
         </div>
       )}
 
-      {answerOptions.length > 0 && (
+      {allLeads.length > 0 && (
         <div className="flex flex-wrap items-end gap-3" role="search" aria-label={t('pages.crm.leads.filter_answers')}>
+          <div>
+            <label htmlFor="lead-source" className="block text-sm font-medium mb-1">
+              {t('pages.crm.leads.filter_source')}
+            </label>
+            <select id="lead-source" className="border rounded px-2 py-1" value={source} onChange={(e) => setSource(e.target.value)}>
+              <option value="">{t('pages.crm.leads.filter_any')}</option>
+              {sources.map((c) => (
+                <option key={c} value={c}>
+                  {t(`pages.crm.leads.channel_${c}`)}
+                </option>
+              ))}
+            </select>
+          </div>
+          {answerOptions.length > 0 && (
           <div>
             <label htmlFor="lead-answer-key" className="block text-sm font-medium mb-1">
               {t('pages.crm.leads.filter_question')}
@@ -366,6 +326,7 @@ export function LeadsList() {
               ))}
             </select>
           </div>
+          )}
           {answerKey && (
             <div>
               <label htmlFor="lead-answer-value" className="block text-sm font-medium mb-1">

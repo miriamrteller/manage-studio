@@ -36,7 +36,17 @@ export interface LeadTenant {
 export const LEAD_TENANT_COLUMNS =
   "id, name, subdomain, language_default, contact_email, from_email, from_email_verified_at";
 
-export type LeadChannel = "email" | "website" | "whatsapp" | "linkedin" | "instagram";
+export const LEAD_CHANNELS = [
+  "email", "website", "whatsapp", "linkedin", "instagram",
+  "facebook", "google", "sms", "flyer", "direct",
+  "phone", "walk_in", "referral", "other",
+] as const;
+export type LeadChannel = (typeof LEAD_CHANNELS)[number];
+
+/** Tags a public link may carry (?src=). Manual-only channels (phone, walk_in, …) are not accepted from links. */
+const LINK_CHANNELS: ReadonlySet<string> = new Set([
+  "email", "whatsapp", "linkedin", "instagram", "facebook", "google", "sms", "flyer", "direct",
+]);
 
 /**
  * Capture-link source tag → leads.channel. The same public form serves every
@@ -44,18 +54,8 @@ export type LeadChannel = "email" | "website" | "whatsapp" | "linkedin" | "insta
  * unknown or missing tags are honestly `website` — never a guess.
  */
 export function channelFromSrc(src: string | null | undefined): LeadChannel {
-  switch (src?.trim().toLowerCase()) {
-    case "instagram":
-      return "instagram";
-    case "linkedin":
-      return "linkedin";
-    case "whatsapp":
-      return "whatsapp";
-    case "email":
-      return "email";
-    default:
-      return "website";
-  }
+  const tag = src?.trim().toLowerCase() ?? "";
+  return LINK_CHANNELS.has(tag) ? (tag as LeadChannel) : "website";
 }
 
 export interface LeadWriteOptions {
