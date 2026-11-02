@@ -28,6 +28,7 @@ import { buildCanonicalDocumentInput } from '../../../../supabase/functions/_sha
 import {
   paymentNeedsClientDocumentEmail,
   renderClientDocumentEmail,
+  clientDocumentKind,
 } from '../../../../supabase/functions/_shared/payments/send-payment-document-client-email.ts';
 import {
   isRetryableYpayDocumentError,
@@ -311,6 +312,17 @@ describe('document queue — offline receipt end to end', () => {
     expect(db.tables.document_queue.every((q) => q.status === 'succeeded')).toBe(true);
   });
 
+  it('the email names a receipt when the studio chose 108, even with vat_type 1', async () => {
+    process.env.YPAY_MOCK = 'true';
+    const { db, client } = seed({ documentType: 108 });
+    expect(db.tables.tenants[0].vat_type).toBe(1);
+
+    expect(await processQueueRow(client as never, queueRow(db))).toBe('succeeded');
+    const mail = (sendHtmlEmail.mock.calls[0] as unknown as [{ subject: string }])[0];
+    expect(mail.subject).toContain('קבלה');
+    expect(mail.subject).not.toContain('חשבונית');
+  });
+
   it('never calls the provider when the payment already carries a document', async () => {
     const { db, client } = seed();
     db.tables.payments[0].external_document_id = 'DOC-EXISTING';
@@ -359,24 +371,52 @@ describe('document queue — offline receipt end to end', () => {
 });
 
 describe('client receipt email wording', () => {
-  it('names the document by the tenant VAT status in both languages', () => {
+  it('names the document the provider issues, in both languages', () => {
     const he = renderClientDocumentEmail({
       language: 'he', studioName: 'סטודיו', recipientName: 'דנה', amount: '₪1,500', docNumber: '42',
-      docUrl: 'https://docs.ypay.test/42.pdf', paymentMethod: 'cash', vatExempt: true,
+      docUrl: 'https://docs.ypay.test/42.pdf', paymentMethod: 'cash', documentKind: 'receipt',
     });
     expect(he.subject).toBe('סטודיו: קבלה 42');
     expect(he.html).toContain('dir="rtl"');
     expect(he.html).toContain('במזומן');
+    expect(he.html).toContain('מצורפת בקישור');
     expect(he.html).toContain('https://docs.ypay.test/42.pdf');
 
     const en = renderClientDocumentEmail({
       language: 'en', studioName: 'Studio <x>', recipientName: '', amount: '₪1,500', docNumber: '42',
-      docUrl: '', paymentMethod: 'bank_transfer', vatExempt: false,
+      docUrl: '', paymentMethod: 'bank_transfer', documentKind: 'invoice_receipt',
     });
     expect(en.subject).toBe('Studio <x>: Invoice-receipt 42');
     expect(en.html).toContain('Studio &lt;x&gt;');
     expect(en.html).toContain('by bank transfer');
     expect(en.html).toContain('client portal');
+  });
+
+  it('uses a neutral label when the provider does not tell us the document kind', () => {
+    const he = renderClientDocumentEmail({
+      language: 'he', studioName: 'סטודיו', recipientName: '', amount: '₪1,500', docNumber: '7',
+      docUrl: 'https://docs.test/7.pdf', paymentMethod: 'cash', documentKind: null,
+    });
+    expect(he.subject).toBe('סטודיו: מסמך 7');
+    expect(he.html).toContain('מסמך מספר 7 מצורף בקישור');
+    const en = renderClientDocumentEmail({
+      language: 'en', studioName: 'Studio', recipientName: '', amount: '₪1,500', docNumber: '7',
+      docUrl: 'https://docs.test/7.pdf', paymentMethod: 'cash', documentKind: null,
+    });
+    expect(en.subject).toBe('Studio: Document 7');
+    expect(en.html).toContain('Open the document');
+  });
+
+  it('follows the YPay document setting, never the business status (vat_type)', () => {
+    expect(clientDocumentKind({ invoicing_provider: 'ypay', ypay_document_type: 108 })).toBe('receipt');
+    expect(clientDocumentKind({ invoicing_provider: 'ypay', ypay_document_type: 109 })).toBe('invoice_receipt');
+    expect(clientDocumentKind({ invoicing_provider: 'ypay', ypay_document_type: null })).toBe('invoice_receipt');
+    // vat_type 3 used to mean "receipt"; it no longer changes anything.
+    const legacy = { invoicing_provider: 'ypay', ypay_document_type: 109, vat_type: 3 };
+    expect(clientDocumentKind(legacy)).toBe('invoice_receipt');
+    for (const provider of ['green_invoice', 'grow', 'invoice4u', 'icount', 'none', null]) {
+      expect(clientDocumentKind({ invoicing_provider: provider, ypay_document_type: 108, vat_type: 3 } as never)).toBeNull();
+    }
   });
 });
 
