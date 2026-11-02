@@ -28,6 +28,9 @@ export function makeGrowFakeService(options: GrowFakeOptions = {}) {
     let patch: Row = {};
     let inserted: Row[] = [];
     let returning = false;
+    let insertError: { code: string; message: string } | null = null;
+    let order: { col: string; asc: boolean } | null = null;
+    let limitN: number | null = null;
 
     const rows = () => (tables[table] ??= []);
     const matches = () => rows().filter((row) => filters.every((f) => f(row)));
@@ -39,7 +42,12 @@ export function makeGrowFakeService(options: GrowFakeOptions = {}) {
         for (const row of hit) Object.assign(row, patch);
         return hit;
       }
-      return matches();
+      let hit = matches();
+      if (order) {
+        const { col, asc } = order;
+        hit = [...hit].sort((a, b) => (String(a[col]) < String(b[col]) ? -1 : 1) * (asc ? 1 : -1));
+      }
+      return limitN == null ? hit : hit.slice(0, limitN);
     };
 
     const builder: Record<string, unknown> = {
@@ -53,7 +61,24 @@ export function makeGrowFakeService(options: GrowFakeOptions = {}) {
           id: `${table}-${rows().length + 1}`,
           ...v,
         }));
-        rows().push(...inserted);
+        // payments.provider_payment_ref is UNIQUE, as in the database.
+        const duplicate = table === 'payments' && inserted.some((v) =>
+          v.provider_payment_ref != null &&
+          rows().some((r) => r.provider_payment_ref === v.provider_payment_ref));
+        if (duplicate) {
+          insertError = { code: '23505', message: 'duplicate key value violates unique constraint' };
+          inserted = [];
+        } else {
+          rows().push(...inserted);
+        }
+        return builder;
+      },
+      order: (col: string, opts?: { ascending?: boolean }) => {
+        order = { col, asc: opts?.ascending !== false };
+        return builder;
+      },
+      limit: (n: number) => {
+        limitN = n;
         return builder;
       },
       update: (values: Row) => {
@@ -75,6 +100,7 @@ export function makeGrowFakeService(options: GrowFakeOptions = {}) {
       },
       single: async () => {
         const [row] = run();
+        if (insertError) return { data: null, error: insertError };
         return row ? { data: row, error: null } : { data: null, error: { message: 'not found' } };
       },
       maybeSingle: async () => ({ data: run()[0] ?? null, error: null }),

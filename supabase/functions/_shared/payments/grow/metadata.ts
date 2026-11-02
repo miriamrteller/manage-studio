@@ -23,6 +23,8 @@ interface PackedAux {
   of?: string;
   pe?: string;
   ta?: string;
+  /** save_card */
+  sc?: "1";
 }
 
 export function toGrowCustomFields(metadata: ChargeMetadata): GrowCustomFields {
@@ -32,6 +34,7 @@ export function toGrowCustomFields(metadata: ChargeMetadata): GrowCustomFields {
     of: metadata.offering_id,
     pe: metadata.person_id,
     ta: metadata.total_amount_minor,
+    ...(metadata.save_card ? { sc: metadata.save_card } : {}),
   };
   return {
     cField1: metadata.tenant_id,
@@ -58,6 +61,7 @@ export function fromGrowCustomFields(fields: Partial<GrowCustomFields>): ChargeM
     offering_id: aux.of,
     person_id: aux.pe,
     total_amount_minor: aux.ta,
+    ...(aux.sc === "1" ? { save_card: "1" as const } : {}),
   });
 }
 

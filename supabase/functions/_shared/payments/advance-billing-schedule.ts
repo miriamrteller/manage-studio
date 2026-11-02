@@ -1,10 +1,15 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
 
-/** Advance billing schedule after successful renewal payment (Jerusalem month anchor). */
+/**
+ * Advance billing schedule after successful renewal payment (Jerusalem month anchor).
+ * With `paidForPeriod` (a month recorded by hand, YYYY-MM) it moves on one month only while
+ * that month is still the one due, whatever today's date is.
+ */
 export async function advanceBillingSchedule(
   service: SupabaseClient,
   billingScheduleId: string,
   paidAt: Date = new Date(),
+  options: { paidForPeriod?: string } = {},
 ): Promise<void> {
   const { data: schedule, error } = await service
     .from("billing_schedules")
@@ -16,10 +21,14 @@ export async function advanceBillingSchedule(
     throw new Error(`Billing schedule not found: ${billingScheduleId}`);
   }
 
-  const paidMonth = paidAt.toISOString().slice(0, 7);
   const nextBillingDate = schedule.next_billing_date as string;
-  if (nextBillingDate > `${paidMonth}-01`) {
-    return;
+  if (options.paidForPeriod) {
+    if (nextBillingDate.slice(0, 7) !== options.paidForPeriod) return;
+  } else {
+    const paidMonth = paidAt.toISOString().slice(0, 7);
+    if (nextBillingDate > `${paidMonth}-01`) {
+      return;
+    }
   }
 
   const current = new Date(`${nextBillingDate}T12:00:00+03:00`);
@@ -35,5 +44,6 @@ export async function advanceBillingSchedule(
       last_error: null,
       last_attempt_at: paidAt.toISOString(),
     })
-    .eq("id", billingScheduleId);
+    .eq("id", billingScheduleId)
+    .eq("next_billing_date", nextBillingDate);
 }

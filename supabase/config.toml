@@ -310,6 +310,11 @@ enabled = true
 verify_jwt = true
 entrypoint = "./functions/send-admin-enrolment-link/index.ts"
 
+[functions.send-card-link]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/send-card-link/index.ts"
+
 [functions.send-admin-waiver-link]
 enabled = true
 verify_jwt = true

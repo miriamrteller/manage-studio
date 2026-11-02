@@ -405,7 +405,9 @@ export async function finalisePayment(
     if (!params.billingScheduleId) {
       throw new Error("billingScheduleId required for renewal finalise");
     }
-    await advanceBillingSchedule(service, params.billingScheduleId);
+    await advanceBillingSchedule(service, params.billingScheduleId, new Date(), {
+      paidForPeriod: params.paidForPeriod,
+    });
   } else {
     const { status, waiverDeadline, skipped } = await activateInitialEngagement(
       service,

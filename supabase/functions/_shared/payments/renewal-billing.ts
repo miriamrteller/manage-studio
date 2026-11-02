@@ -34,6 +34,58 @@ export function providerUsesSavedTokenRenewal(
 
 
 
+/**
+ * Pay at the studio until a card is saved (payments B c): an enrolment whose first payment was
+ * recorded by hand (provider 'manual') and that has no saved card with the studio's current
+ * provider is not charged online and gets no dunning. This covers a studio that moved from pay
+ * at the studio to online: its existing students keep paying at the studio until a parent adds
+ * a card through the card link.
+ */
+export async function collectedAtStudio(
+  service: SupabaseClient,
+  params: { engagementId: string; billingAccountId: string; paymentProvider: string },
+): Promise<boolean> {
+  const { data: card } = await service
+    .from("payment_method_tokens")
+    .select("id")
+    .eq("billing_account_id", params.billingAccountId)
+    .eq("provider", params.paymentProvider)
+    .is("revoked_at", null)
+    .limit(1)
+    .maybeSingle();
+  if (card) return false;
+
+  const { data: first } = await service
+    .from("payments")
+    .select("provider")
+    .eq("engagement_id", params.engagementId)
+    .eq("charge_type", "initial")
+    .in("status", ["succeeded", "partially_refunded", "refunded"])
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  return first?.provider === "manual";
+}
+
+/** First day of the month after `periodYm` (YYYY-MM), early morning in Israel. */
+export function nextMonthCheckAt(periodYm: string): string {
+  const [year, month] = periodYm.split("-").map(Number);
+  const next = new Date(Date.UTC(year, month, 1, 6, 0, 0));
+  return next.toISOString();
+}
+
+/**
+ * A schedule paid at the studio is not charged; look at it again next month instead of every
+ * run, so these schedules never fill the run's batch and crowd out ones that can be charged.
+ * Not a dunning attempt: attempt_count and last_error stay as they are.
+ */
+async function deferStudioSchedule(service: SupabaseClient, scheduleId: string, periodYm: string) {
+  await service
+    .from("billing_schedules")
+    .update({ next_attempt_at: nextMonthCheckAt(periodYm) })
+    .eq("id", scheduleId);
+}
+
 export async function loadRenewalSavedToken(
 
   service: SupabaseClient,
@@ -147,6 +199,7 @@ export async function processBillingSchedule(
   // Pay-at-the-studio tenant: nothing can be charged online; the studio collects and
   // records monthly amounts itself.
   if (isOfflinePaymentProvider(tenant.payment_provider as string | null)) {
+    await deferStudioSchedule(service, schedule.id, periodYm);
     return { outcome: "skipped" };
   }
 
@@ -171,6 +224,15 @@ export async function processBillingSchedule(
 
 
   const paymentProvider = tenant.payment_provider as string;
+
+  if (await collectedAtStudio(service, {
+    engagementId: engagement.id as string,
+    billingAccountId,
+    paymentProvider,
+  })) {
+    await deferStudioSchedule(service, schedule.id, periodYm);
+    return { outcome: "skipped" };
+  }
 
   let savedToken: string | undefined;
 

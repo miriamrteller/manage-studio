@@ -22,6 +22,7 @@ import { AgeReviewAdminPanel } from './AgeReviewAdminPanel';
 import { CancelEnrolmentDialog } from './CancelEnrolmentDialog';
 import { formatAgeRange } from '@/features/enrolment/lib/check-requirements';
 import { RecordPaymentModal } from '@/features/finance/components/RecordPaymentModal';
+import { CardLinkButton } from '@/features/finance/components/CardLinkButton';
 import { RefundPaymentModal } from '@/features/finance/components/RefundPaymentModal';
 import { formatCurrency } from '@shared/format';
 import { formatSavedCard } from '../lib/studentBillingAccount';
@@ -324,6 +325,32 @@ export function StudentSlideOver({
                                   : undefined
                               }
                             />
+                            {engagement.status === 'active' && offering?.billing_mode === 'recurring' && (
+                              recordingEngagementId === engagement.id ? (
+                                <RecordPaymentModal
+                                  kind="monthly"
+                                  engagementId={engagement.id}
+                                  onRecorded={() => {
+                                    invalidateFinanceCaches();
+                                    setRecordingEngagementId(null);
+                                  }}
+                                />
+                              ) : (
+                                <div className="flex flex-wrap items-start gap-3">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setRecordingEngagementId(engagement.id)}
+                                  >
+                                    {t('finance.record_payment.monthly_open')}
+                                  </Button>
+                                  <CardLinkButton
+                                    engagementId={engagement.id}
+                                    paymentProvider={tenant?.payment_provider}
+                                  />
+                                </div>
+                              )
+                            )}
                             {engagement.status === 'pending_payment' && (
                               recordingEngagementId === engagement.id ? (
                                 <RecordPaymentModal

@@ -2268,7 +2268,22 @@
       "bank": "Bank transfer",
       "note": "Note (optional)",
       "submit": "Record payment",
-      "success": "Payment recorded."
+      "success": "Payment recorded.",
+      "monthly_open": "Record a monthly payment",
+      "monthly_title": "Record a monthly fee paid at the studio",
+      "monthly_hint": "This pays the next month due on the enrolment's monthly plan. Record again to pay a further month ahead.",
+      "monthly_success": "Payment recorded for {{month}}."
+    },
+    "card_link": {
+      "send": "Send card link",
+      "hint": "Emails the parent a link to pay the month that is due by card. The card is saved and later months are charged to it.",
+      "sent": "Card link sent to the parent.",
+      "not_emailed": "The card link was created but not emailed: {{reason}}",
+      "unsupported": "Saving a card isn't available with {{provider}} yet. Record monthly payments here instead.",
+      "error_card_already_saved": "A card is already saved for this enrolment, so monthly payments are charged to it.",
+      "error_card_link_unsupported": "Saving a card isn't available with this payment provider yet.",
+      "error_no_monthly_plan": "This enrolment has no monthly plan.",
+      "error_generic": "The card link could not be sent."
     },
     "refund_payment": {
       "open": "Refund",
