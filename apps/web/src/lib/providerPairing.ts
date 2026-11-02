@@ -48,3 +48,15 @@ export function invoicingPairsWithPayment(paymentProvider: string, invoicingProv
 export function invoicingOptionsFor(paymentProvider: string): string[] {
   return PAIRABLE_INVOICING_PROVIDERS.filter((slug) => invoicingPairsWithPayment(paymentProvider, slug));
 }
+
+/**
+ * Payment providers whose callback settles a photographer's job payment request (deposit /
+ * balance link): YPay, and Grow since the notice handler settles job requests (payments audit
+ * P2 #11). Others take the money but never mark the request paid, so they are not offered.
+ * `mock` is the dev/CI stand-in.
+ */
+export const JOB_ONLINE_PAYMENT_PROVIDERS = ['ypay', 'grow', 'mock'] as const;
+
+export function jobOnlinePaymentSupported(paymentProvider: string | null | undefined): boolean {
+  return (JOB_ONLINE_PAYMENT_PROVIDERS as readonly string[]).includes(paymentProvider ?? '');
+}

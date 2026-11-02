@@ -180,6 +180,7 @@ function publicRequest(ctx: DemoContext, req: Row): Row {
       logoUrl: tenant?.logo_url ?? null,
     },
     paymentProvider: 'ypay',
+    onlinePaymentAvailable: true,
   };
 }
 
