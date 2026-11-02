@@ -1,11 +1,10 @@
 // @vitest-environment jsdom
 /**
- * Settings → Legal asks only for what we don't already know: the studio's
- * name, contact email, owner, payment and invoicing providers and season fill
- * the details (editable); the providers and business email aren't asked at
- * all. Season details may still be open when confirming the legal pack (the
- * draft says "to be completed") but not when publishing. Prices are never
- * filled in: they belong to each class.
+ * Settings → Legal asks only for what we can't know: the studio's name,
+ * contact email, owner, providers and business number fill the rest, kept
+ * under "Details we filled in for you" (editable). The enrolment terms carry
+ * no prices, counts or season dates (generic wording instead), so none is
+ * asked. Confirm and Publish use one missing list.
  * Run: pnpm -C apps/web test legal-autofill.test.tsx
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -19,8 +18,7 @@ const h = vi.hoisted(() => ({
   rpc: vi.fn(),
   profile: {} as Record<string, string>,
   updates: [] as Array<Record<string, unknown>>,
-  tenantRow: { payment_provider: 'grow', invoicing_provider: 'icount', offline_payment_instructions: '' } as Record<string, string>,
-  seasons: [{ name: '2026–2027', start_date: '2026-09-01', end_date: '2027-06-30', status: 'active' }] as Array<Record<string, string>>,
+  tenantRow: { payment_provider: 'grow', invoicing_provider: 'icount', offline_payment_instructions: '', invoice_license_number: '' } as Record<string, string>,
 }));
 vi.mock('@/hooks/useCurrentUser', () => ({
   useCurrentUser: () => ({ user: { id: 'u-1', tenant_id: 't-1', full_name: 'Dana Levi' }, isLoading: false, isProfileChecked: true }),
@@ -56,9 +54,7 @@ vi.mock('@/lib/supabase', () => ({
                 ? single
                   ? h.tenantRow
                   : null
-                : table === 'seasons'
-                  ? h.seasons
-                  : [{ lawyer_reviewed_at: null }],
+                : [{ lawyer_reviewed_at: null }],
             error: null,
           }),
       };
@@ -71,7 +67,7 @@ import i18n from '@/i18n/i18n';
 import { LegalPackPanel } from '@/components/legal/LegalPackPanel';
 import { LegalSettingsForm } from '@/features/settings/components/LegalSettingsForm';
 import { legalAutofill, withLegalAutofill } from '@/legal/autofill';
-import { missingLegalDetails } from '@/legal/fields';
+import { fieldsForVertical, missingLegalDetails } from '@/legal/fields';
 import { loadLegalTemplate } from '@/legal/templates';
 import { prepareLegalMarkdown, renderLegalHtml } from '@/legal/render';
 
@@ -94,11 +90,6 @@ function profileRow() {
 const TYPED: Record<string, string> = {
   address: '1 Herzl St, Tel Aviv',
   phone: '050-1234567',
-  lesson_count: '34',
-  season_price: '3,000',
-  monthly_price: '300',
-  month_count: '10',
-  payment_dates: 'on the 1st of each month',
   insurance: 'third-party liability insurance',
 };
 
@@ -115,8 +106,7 @@ function wrap(ui: ReactNode) {
 beforeEach(() => {
   h.profile = {};
   h.updates = [];
-  h.tenantRow = { payment_provider: 'grow', invoicing_provider: 'icount', offline_payment_instructions: '' };
-  h.seasons = [{ name: '2026–2027', start_date: '2026-09-01', end_date: '2027-06-30', status: 'active' }];
+  h.tenantRow = { payment_provider: 'grow', invoicing_provider: 'icount', offline_payment_instructions: '', invoice_license_number: '' };
   h.rpc.mockImplementation(async (name: string) => {
     if (name === 'get_tenant_legal_profile') return { data: [profileRow()], error: null };
     if (name === 'acknowledge_studio_legal_pack') return { data: '2026-11-02T12:00:00Z', error: null };
@@ -136,7 +126,7 @@ describe('legalAutofill', () => {
     paymentProvider: 'grow',
     invoicingProvider: 'icount',
     offlinePayments: true,
-    season: { name: '2026–2027', start_date: '2026-09-01', end_date: '2027-06-30' },
+    businessNumber: '514123456',
   };
 
   it('fills what the studio already gave us, in English and Hebrew', () => {
@@ -148,20 +138,17 @@ describe('legalAutofill', () => {
       privacy_contact_name: 'Dana Levi',
       accessibility_contact_name: 'Dana Levi',
       payment_providers: 'Grow, iCount',
+      business_number: '514123456',
       payment_methods: "card through the payment page (Grow); bank transfer or cash, as the studio's payment instructions say",
-      season_name: '2026–2027',
-      season_start: '2026-09-01',
-      season_end: '2027-06-30',
     });
     expect(legalAutofill(src, 'he').payment_methods).toBe(
       'כרטיס אשראי בעמוד התשלום (Grow); העברה בנקאית או מזומן, לפי הנחיות הסטודיו',
     );
   });
 
-  it('never fills prices or anything about a class', () => {
-    const keys = Object.keys(legalAutofill(src, 'en'));
-    for (const k of ['season_price', 'monthly_price', 'month_count', 'lesson_count', 'registration_fee']) {
-      expect(keys).not.toContain(k);
+  it('there are no price, count or season fields any more', () => {
+    for (const k of ['season_price', 'monthly_price', 'month_count', 'lesson_count', 'registration_fee', 'sibling_discount', 'season_name', 'season_start', 'season_end', 'payment_dates', 'holidays']) {
+      expect(fieldsForVertical('dance-studio').map((f) => f.key)).not.toContain(k);
     }
   });
 
@@ -182,62 +169,70 @@ describe('legalAutofill', () => {
 describe('one missing list for Confirm and Publish', () => {
   const filled = withLegalAutofill(TYPED, legalAutofill({ tenantName: 'CB', contactEmail: 'a@b.c', ownerName: 'Dana', paymentProvider: 'grow' }, 'en'));
 
-  it('season details may wait for Confirm, not for Publish', () => {
-    expect(missingLegalDetails('dance-studio', filled, 'confirm')).toEqual([]);
-    expect(missingLegalDetails('dance-studio', filled, 'publish').map((f) => f.key)).toEqual([
-      'season_name',
-      'season_start',
-      'season_end',
+  it('a dance studio only types address, phone and insurance', () => {
+    expect(missingLegalDetails('dance-studio', withLegalAutofill({}, legalAutofill({ tenantName: 'CB', contactEmail: 'a@b.c', ownerName: 'Dana', paymentProvider: 'grow' }, 'en'))).map((f) => f.key)).toEqual([
+      'address',
+      'phone',
+      'insurance',
     ]);
+    expect(missingLegalDetails('dance-studio', filled)).toEqual([]);
   });
 
-  it('prices are still the studio\'s to give', () => {
+  it('the terms speak generically about fees, schedule and season, in both languages', async () => {
+    for (const lang of ['en', 'he'] as const) {
+      const raw = await loadLegalTemplate('enrolment-terms', lang);
+      const out = prepareLegalMarkdown(raw, {
+        doc: 'enrolment-terms',
+        lang,
+        vertical: 'dance-studio',
+        tenantName: 'CB',
+        contactEmail: 'a@b.c',
+        profile: { ...filled, business_number: '514123456' },
+        updatedAt: null,
+      });
+      const html = renderLegalHtml(out);
+      expect(html).toContain(lang === 'en' ? 'Fees: as shown for the class at registration' : 'המחיר: כפי שמוצג לחוג בעת ההרשמה');
+      expect(html).toContain(lang === 'en' ? 'as published by the studio for the current season' : 'כפי שמפרסם הסטודיו לעונה הנוכחית');
+      expect(html).not.toContain('legal-missing');
+    }
+  });
+
+  it('a detail still open shows as "to be completed" in the draft', async () => {
+    const raw = await loadLegalTemplate('enrolment-terms', 'he');
     const rest = { ...filled };
-    delete rest.season_price;
-    expect(missingLegalDetails('dance-studio', rest, 'confirm').map((f) => f.key)).toEqual(['season_price']);
-  });
-
-  it('an open detail shows as "to be completed" in the draft', async () => {
-    const raw = await loadLegalTemplate('enrolment-terms', 'en');
+    delete rest.insurance;
     const out = prepareLegalMarkdown(raw, {
-      doc: 'enrolment-terms',
-      lang: 'en',
-      vertical: 'dance-studio',
-      tenantName: 'CB',
-      contactEmail: 'a@b.c',
-      profile: filled,
-      updatedAt: null,
-    });
-    expect(renderLegalHtml(out)).toContain('[Season name – to be completed]');
-    const rawHe = await loadLegalTemplate('enrolment-terms', 'he');
-    const he = prepareLegalMarkdown(rawHe, {
       doc: 'enrolment-terms',
       lang: 'he',
       vertical: 'dance-studio',
       tenantName: 'CB',
       contactEmail: 'a@b.c',
-      profile: filled,
+      profile: rest,
       updatedAt: null,
     });
-    expect(renderLegalHtml(he)).toContain('[שם העונה – להשלמה]');
+    expect(renderLegalHtml(out)).toMatch(/\[[^\]]+ – להשלמה\]/);
   });
 });
 
 describe('Settings → Legal', () => {
-  it('pre-fills known details (editable, marked) and does not ask for providers or the business email', async () => {
+  it('shows only what the studio has to give; the rest is filled in, collapsed and editable', async () => {
     wrap(<LegalSettingsForm />);
-    const name = await screen.findByLabelText(/Legal name of the business/);
+    expect(await screen.findByLabelText(/Business address/)).toBeVisible();
+    expect(screen.getByLabelText(/Business phone/)).toBeVisible();
+    expect(screen.getByLabelText(/Insurance/)).toBeVisible();
+    const summary = await screen.findByText(/Details we filled in for you \(\d+\)/);
+    const details = summary.closest('details')!;
+    expect(details).not.toHaveAttribute('open');
+    const name = screen.getByLabelText(/Legal name of the business/);
+    expect(details).toContainElement(name);
     await waitFor(() => expect(name).toHaveValue('Creative Ballet'));
     expect(screen.getByLabelText(/Privacy contact email/)).toHaveValue('info@creativeballet.test');
     expect(screen.getByLabelText(/Privacy contact \(name or role\)/)).toHaveValue('Dana Levi');
-    expect(screen.getByLabelText(/Season name/)).toHaveValue('2026–2027');
-    expect(screen.getAllByText("Filled in from your studio's details. Check it and change it if needed.").length).toBeGreaterThan(3);
-    expect(screen.queryByLabelText(/Payment and invoicing providers/)).toBeNull();
-    expect(screen.queryByLabelText(/Business email/)).toBeNull();
-    expect(screen.getByLabelText(/Price for the season/)).toHaveValue('');
+    expect(screen.getByLabelText(/Payment and invoicing providers/)).toHaveValue('Grow, iCount');
+    expect(screen.queryByLabelText(/Price for the season/)).toBeNull();
+    expect(screen.queryByLabelText(/Season name/)).toBeNull();
 
     fireEvent.change(name, { target: { value: 'Creative Ballet Academy Ltd' } });
-    expect(screen.getByLabelText(/Legal name of the business/)).toHaveValue('Creative Ballet Academy Ltd');
     fireEvent.click(screen.getAllByRole('button', { name: 'Save' })[0]);
     await waitFor(() => expect(h.updates.length).toBeGreaterThan(0));
     expect(h.updates[0].legal_profile).toMatchObject({
@@ -246,11 +241,16 @@ describe('Settings → Legal', () => {
       email: 'info@creativeballet.test',
     });
   });
+
+  it('works in Hebrew', async () => {
+    await i18n.changeLanguage('he');
+    wrap(<LegalSettingsForm />);
+    expect(await screen.findByText(/פרטים שמילאנו בשבילך/)).toBeInTheDocument();
+  });
 });
 
 describe('legal pack Confirm', () => {
-  it('is possible with season details still open, and stores the details filled in for the studio', async () => {
-    h.seasons = [];
+  it('needs only what the studio typed, and stores the details filled in for it', async () => {
     h.profile = { ...TYPED };
     wrap(<LegalPackPanel tenantId="t-1" mode="acknowledge" detailsHref="#legal-details" />);
     fireEvent.click(await screen.findByRole('checkbox'));
@@ -268,13 +268,13 @@ describe('legal pack Confirm', () => {
     });
   });
 
-  it('still waits for a price the studio has to give', async () => {
+  it('still waits for a detail only the studio can give', async () => {
     const rest = { ...TYPED };
-    delete rest.season_price;
+    delete rest.insurance;
     h.profile = rest;
     wrap(<LegalPackPanel tenantId="t-1" mode="acknowledge" detailsHref="#legal-details" />);
     fireEvent.click(await screen.findByRole('checkbox'));
-    expect(await screen.findByText(/Price for the season/)).toBeInTheDocument();
+    expect(await screen.findByText(/Insurance/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Confirm' })).toBeDisabled();
   });
 });

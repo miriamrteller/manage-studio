@@ -38,11 +38,6 @@ export interface LegalFieldDef {
   /** Placeholders this field fills, per document. */
   placeholders: Partial<Record<LegalDocId, string[]>>;
   required?: boolean;
-  /**
-   * Required before the documents are published, but not to confirm the
-   * legal pack: until filled in, the draft shows "[… – to be completed]".
-   */
-  confirmOptional?: boolean;
 }
 
 export const BUSINESS_STATUSES = ['not_registered', 'osek_patur', 'osek_murshe', 'company'] as const;
@@ -237,65 +232,6 @@ export const LEGAL_FIELDS: LegalFieldDef[] = [
   },
   // --------------------------------------------------------------- enrolment
   {
-    key: 'season_name',
-    section: 'enrolment',
-    kind: 'text',
-    verticals: DANCE_AND_GENERIC,
-    required: true,
-    confirmOptional: true,
-    label: { en: 'Season name', he: 'שם העונה' },
-    hint: { en: 'e.g. 2026–2027', he: 'למשל תשפ"ז / 2026–2027' },
-    example: { en: "2026–27", he: "תשפ\"ז" },
-    placeholders: { 'enrolment-terms': ['[[SEASON NAME, e.g. 2026–2027]]', '[[שם העונה, למשל תשפ"ז / 2026–2027]]'] },
-  },
-  {
-    key: 'season_start',
-    section: 'enrolment',
-    kind: 'date',
-    verticals: DANCE_AND_GENERIC,
-    required: true,
-    confirmOptional: true,
-    label: { en: 'Season start date', he: 'תאריך תחילת העונה' },
-    placeholders: { 'enrolment-terms': ['[[START DATE]]', '[[תאריך התחלה]]'] },
-  },
-  {
-    key: 'season_end',
-    section: 'enrolment',
-    kind: 'date',
-    verticals: DANCE_AND_GENERIC,
-    required: true,
-    confirmOptional: true,
-    label: { en: 'Season end date', he: 'תאריך סיום העונה' },
-    placeholders: { 'enrolment-terms': ['[[END DATE]]', '[[תאריך סיום]]'] },
-  },
-  {
-    key: 'lesson_count',
-    section: 'enrolment',
-    kind: 'number',
-    verticals: DANCE_AND_GENERIC,
-    required: true,
-    label: { en: 'Number of lessons in the season (about)', he: 'מספר השיעורים בעונה (בערך)' },
-    example: { en: "34", he: "34" },
-    placeholders: { 'enrolment-terms': ['[[NUMBER OF LESSONS]]', '[[מספר שיעורים]]'] },
-  },
-  {
-    key: 'holidays',
-    section: 'enrolment',
-    kind: 'text',
-    verticals: DANCE_AND_GENERIC,
-    label: { en: 'No classes on', he: 'אין שיעורים ב…' },
-    defaultValue: {
-      en: 'Israeli public holidays and school holidays, as listed in the studio calendar',
-      he: 'חגים וחופשות, כמפורט בלוח השנה של הסטודיו',
-    },
-    placeholders: {
-      'enrolment-terms': [
-        '[[HOLIDAYS — e.g. Israeli public holidays and school holidays as listed in the studio calendar]]',
-        '[[חגים — למשל חגים וחופשות כמפורט בלוח השנה של הסטודיו]]',
-      ],
-    },
-  },
-  {
     key: 'performance_details',
     section: 'enrolment',
     kind: 'text',
@@ -303,54 +239,6 @@ export const LEGAL_FIELDS: LegalFieldDef[] = [
     label: { en: 'End-of-year performance (details, costume fees)', he: 'מופע סוף שנה (פרטים, עלות תלבושות)' },
     defaultValue: { en: 'details will be announced during the season', he: 'פרטים יימסרו במהלך העונה' },
     placeholders: { 'enrolment-terms': ['[[DETAILS / costume fees, if any]]', '[[פרטים / עלות תלבושות, אם יש]]'] },
-  },
-  {
-    key: 'season_price',
-    section: 'enrolment',
-    kind: 'text',
-    verticals: DANCE_AND_GENERIC,
-    required: true,
-    label: { en: 'Price for the season (₪)', he: 'מחיר לעונה (₪)' },
-    example: { en: "3,400", he: "3,400" },
-    placeholders: { 'enrolment-terms': ['[[SEASON PRICE ₪]]', '[[מחיר לעונה ₪]]'] },
-  },
-  {
-    key: 'monthly_price',
-    section: 'enrolment',
-    kind: 'text',
-    verticals: DANCE_AND_GENERIC,
-    required: true,
-    label: { en: 'Monthly price (₪)', he: 'מחיר חודשי (₪)' },
-    example: { en: "340", he: "340" },
-    placeholders: { 'enrolment-terms': ['[[MONTHLY PRICE ₪]]', '[[מחיר חודשי ₪]]'] },
-  },
-  {
-    key: 'month_count',
-    section: 'enrolment',
-    kind: 'number',
-    verticals: DANCE_AND_GENERIC,
-    required: true,
-    label: { en: 'Number of monthly payments', he: 'מספר התשלומים החודשיים' },
-    example: { en: "10", he: "10" },
-    placeholders: { 'enrolment-terms': ['[[NUMBER OF MONTHS]]', '[[מספר חודשים]]'] },
-  },
-  {
-    key: 'registration_fee',
-    section: 'enrolment',
-    kind: 'text',
-    verticals: DANCE_AND_GENERIC,
-    label: { en: 'Registration fee', he: 'דמי רישום' },
-    defaultValue: { en: 'none', he: 'אין' },
-    placeholders: { 'enrolment-terms': ['[[₪ / none]]', '[[₪ / אין]]'] },
-  },
-  {
-    key: 'sibling_discount',
-    section: 'enrolment',
-    kind: 'text',
-    verticals: DANCE_AND_GENERIC,
-    label: { en: 'Sibling discount', he: 'הנחת אחים' },
-    defaultValue: { en: 'none', he: 'אין' },
-    placeholders: { 'enrolment-terms': ['[[SIBLING DISCOUNT]]', '[[הנחת אחים]]'] },
   },
   {
     key: 'payment_methods',
@@ -365,22 +253,6 @@ export const LEGAL_FIELDS: LegalFieldDef[] = [
       'enrolment-terms': [
         '[[bank transfer / cash / Bit / card through the payment page]]',
         '[[העברה בנקאית / מזומן / ביט / כרטיס אשראי בעמוד התשלום]]',
-      ],
-    },
-  },
-  {
-    key: 'payment_dates',
-    section: 'enrolment',
-    kind: 'text',
-    verticals: DANCE_AND_GENERIC,
-    required: true,
-    label: { en: 'Payment dates', he: 'מועדי תשלום' },
-    hint: { en: 'e.g. on the 1st of each month', he: 'למשל ב-1 לכל חודש' },
-    example: { en: "On the 1st of each month", he: "ב-1 לכל חודש" },
-    placeholders: {
-      'enrolment-terms': [
-        '[[e.g. on the 1st of each month / in advance for the season]]',
-        '[[למשל ב-1 לכל חודש / מראש לכל העונה]]',
       ],
     },
   },
@@ -463,16 +335,13 @@ export function fieldsForVertical(vertical: VerticalId): LegalFieldDef[] {
  * Required details the studio has not filled in yet: one list for both
  * Confirm (the legal pack) and Publish. A field with a default counts as
  * filled. Pass the profile with the studio's known details already merged in
- * (withLegalAutofill). At 'confirm', season details may still be open.
+ * (withLegalAutofill).
  */
 export function missingLegalDetails(
   vertical: string | null | undefined,
   profile: Record<string, string> | null | undefined,
-  stage: 'confirm' | 'publish',
 ): LegalFieldDef[] {
-  const has = (key: string) => !!(profile?.[key] ?? '').trim();
-  const missing = fieldsForVertical(vertical as VerticalId).filter(
-    (f) => f.required && !f.defaultValue && !(stage === 'confirm' && f.confirmOptional) && !has(f.key),
+  return fieldsForVertical(vertical as VerticalId).filter(
+    (f) => f.required && !f.defaultValue && !(profile?.[f.key] ?? '').trim(),
   );
-  return missing;
 }

@@ -105,7 +105,7 @@ export function LegalPackPanel({ tenantId, mode, detailsHref, offerUploads }: Le
   const acknowledgedAt = legal?.packAcknowledgedAt ?? null;
   const lang = i18n.language?.startsWith('he') ? 'he' : 'en';
   // Confirming publishes the documents, so the details they are filled from must be there first.
-  const missing = legal ? missingLegalDetails(legal.vertical, profile, 'confirm') : [];
+  const missing = legal ? missingLegalDetails(legal.vertical, profile) : [];
   const doc = t(`legal.pack.doc.${signedDocNoun(legal?.vertical)}`);
   const dateFormat = new Intl.DateTimeFormat(i18n.language?.startsWith('he') ? 'he-IL' : 'en-GB', {
     dateStyle: 'medium',

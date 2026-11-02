@@ -16,7 +16,7 @@ import {
   type LegalFieldSection,
 } from '@/legal/fields';
 import { prepareLegalMarkdown } from '@/legal/render';
-import { HIDDEN_LEGAL_KEYS, useLegalAutofill, withLegalAutofill } from '@/legal/autofill';
+import { STUDIO_LEGAL_KEYS, useLegalAutofill, withLegalAutofill } from '@/legal/autofill';
 import { loadLegalTemplate } from '@/legal/templates';
 import {
   tenantHasEnrolmentTerms,
@@ -59,11 +59,24 @@ export function LegalSettingsForm() {
 
   const vertical = legal?.vertical ?? 'generic';
   const fields = useMemo(() => fieldsForVertical(vertical), [vertical]);
-  // Shown fields: the providers and business email come from the studio's setup.
-  const visibleFields = useMemo(
-    () => fields.filter((f) => !(HIDDEN_LEGAL_KEYS as readonly string[]).includes(f.key)),
-    [fields],
-  );
+  // Shown: what only the studio can tell us, and anything required that is still
+  // empty. The rest (filled from the studio's setup, or with a sensible default)
+  // waits under "Details we filled in for you".
+  const shownKeys = useMemo(() => {
+    const known = withLegalAutofill(legal?.profile, autofill);
+    return new Set(
+      fields
+        .filter(
+          (f) =>
+            (STUDIO_LEGAL_KEYS as readonly string[]).includes(f.key) ||
+            (f.required && !f.defaultValue && !(known[f.key] ?? '').trim()),
+        )
+        .map((f) => f.key),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- autofillKey stands for autofill
+  }, [fields, legal, autofillKey]);
+  const shownFields = fields.filter((f) => shownKeys.has(f.key));
+  const filledFields = fields.filter((f) => !shownKeys.has(f.key));
   const publishDocs: LegalDocId[] = tenantHasEnrolmentTerms(vertical)
     ? ['studio-privacy', 'enrolment-terms']
     : ['studio-privacy'];
@@ -90,7 +103,7 @@ export function LegalSettingsForm() {
         }
       }
       // The same required-details list the legal pack's Confirm uses.
-      missingLegalDetails(vertical, values, 'publish').forEach((f) => keys.add(f.key));
+      missingLegalDetails(vertical, values).forEach((f) => keys.add(f.key));
       return [...keys];
     },
   });
@@ -132,7 +145,7 @@ export function LegalSettingsForm() {
     return f ? f.label[lang] : key;
   });
   const canPublish = (missing ?? ['?']).length === 0;
-  const requiredFields = visibleFields.filter((f) => f.required && !f.defaultValue);
+  const requiredFields = fields.filter((f) => f.required && !f.defaultValue);
   const requiredDone = requiredFields.filter((f) => (values[f.key] ?? '').trim()).length;
 
   const renderField = (f: LegalFieldDef) => {
@@ -203,7 +216,7 @@ export function LegalSettingsForm() {
       </p>
 
       {SECTION_ORDER.map((section) => {
-        const sectionFields = visibleFields.filter((f) => f.section === section);
+        const sectionFields = shownFields.filter((f) => f.section === section);
         if (sectionFields.length === 0) return null;
         return (
           <fieldset
@@ -217,6 +230,16 @@ export function LegalSettingsForm() {
           </fieldset>
         );
       })}
+
+      {filledFields.length > 0 && (
+        <details className="rounded-md border p-4">
+          <summary className="cursor-pointer font-medium">
+            {t('legal.settings.filled_for_you', { count: filledFields.length })}
+          </summary>
+          <p className="mt-2 text-xs text-muted-foreground">{t('legal.settings.filled_for_you_hint')}</p>
+          <div className="mt-3 space-y-3">{filledFields.map(renderField)}</div>
+        </details>
+      )}
 
       <div className="rounded-md border p-4 space-y-3">
         <h3 className="font-medium">{t('legal.settings.pages_title')}</h3>

@@ -2942,7 +2942,10 @@
         "photography": "Why we ask: your clients need to know how their photos are delivered and how long they are kept.",
         "retention": "Why we ask: privacy law requires saying how long you keep personal data."
       },
-      "filled_from_studio": "Filled in from your studio's details. Check it and change it if needed."
+      "filled_from_studio": "Filled in from your studio's details. Check it and change it if needed.",
+      "filled_for_you_one": "Details we filled in for you (1)",
+      "filled_for_you_other": "Details we filled in for you ({{count}})",
+      "filled_for_you_hint": "Taken from your studio's setup, or a sensible default. Open to check or change them."
     },
     "privacy_notice": "We use your details only to handle your request and enrolment.",
     "accept_terms_prefix": "I have read and accept the",
