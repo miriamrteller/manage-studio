@@ -4083,6 +4083,10 @@ export type Database = {
         Args: { p_tenant_id: string; p_user_id: string }
         Returns: undefined
       }
+      cancel_active_engagement: {
+        Args: { p_engagement_id: string; p_reason?: string }
+        Returns: Json
+      }
       cancel_engagement: {
         Args: { p_engagement_id: string; p_reason?: string }
         Returns: Json

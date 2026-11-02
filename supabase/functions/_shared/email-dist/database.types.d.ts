@@ -4098,6 +4098,13 @@ export type Database = {
                 };
                 Returns: undefined;
             };
+            cancel_active_engagement: {
+                Args: {
+                    p_engagement_id: string;
+                    p_reason?: string;
+                };
+                Returns: Json;
+            };
             cancel_engagement: {
                 Args: {
                     p_engagement_id: string;

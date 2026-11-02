@@ -813,6 +813,7 @@
       "cancel_enrolment_button": "Cancel enrolment",
       "cancel_enrolment_title": "Cancel enrolment",
       "cancel_enrolment_confirm": "Cancel {{studentName}}'s enrolment in {{className}}? This releases the class slot before payment.",
+      "cancel_enrolment_confirm_active": "Cancel {{studentName}}'s enrolment in {{className}}? The place is released and monthly charges stop. Payments already made are not refunded automatically: refund them separately if needed.",
       "cancel_enrolment_reason_label": "Reason (optional)",
       "cancel_enrolment_reason_placeholder": "e.g. Wrong class selected, duplicate enrolment",
       "cancel_enrolment_success": "Enrolment cancelled.",

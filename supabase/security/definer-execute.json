@@ -41,6 +41,7 @@
       "approve_age_review_engagement",
       "assert_age_ineligible_for_offering",
       "assert_can_request_age_review",
+      "cancel_active_engagement",
       "cancel_engagement",
       "check_subdomain_available",
       "convert_lead_to_job",

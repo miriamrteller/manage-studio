@@ -7,16 +7,20 @@ import type { z } from 'zod';
 interface UseCancelEnrolmentOptions {
   personId: string;
   onSuccess?: () => void;
+  /** The enrolment is active (paid): cancel it and stop its monthly plan. */
+  active?: boolean;
 }
 
-export function useCancelEnrolment({ personId, onSuccess }: UseCancelEnrolmentOptions) {
+export function useCancelEnrolment({ personId, onSuccess, active = false }: UseCancelEnrolmentOptions) {
   const tenant = useTenant();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (input: z.infer<typeof CancelEnrolmentInputSchema>) => {
       if (!tenant) throw new Error('Tenant not initialized');
-      return EnrolmentCancellationService.cancelPrePayment(tenant, input);
+      return active
+        ? EnrolmentCancellationService.cancelActive(tenant, input)
+        : EnrolmentCancellationService.cancelPrePayment(tenant, input);
     },
     onSuccess: async () => {
       if (!tenant?.id) return;

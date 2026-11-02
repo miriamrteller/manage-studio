@@ -140,6 +140,15 @@ describe('ballet demo: studio actions', () => {
     expect(error).not.toBeNull();
   });
 
+  it('cancel_active_engagement cancels an active (paid) place', async () => {
+    const { c, tables } = client('admin');
+    const active = tables.engagements.find((e) => e.status === 'active')!;
+    const { data, error } = await c.rpc('cancel_active_engagement', { p_engagement_id: active.id, p_reason: 'Moving' });
+    expect(error).toBeNull();
+    expect((data as Row).status).toBe('cancelled');
+    expect(active.cancellation_reason).toBe('Moving');
+  });
+
   it("dashboard overview lists today's classes from the active season", async () => {
     const { c, tables } = client('admin');
     const { data, error } = await c.rpc('get_admin_dashboard_overview');
