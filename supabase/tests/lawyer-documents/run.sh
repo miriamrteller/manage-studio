@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Legal pack, part 2: lawyer-reviewed versions (20261102135215_tenant_legal_documents.sql).
+# Legal pack, part 2: lawyer-reviewed versions (20261102145408_tenant_legal_documents.sql).
 # Needs Supabase's auth and storage schemas and every migration applied (the
 # local stack), so sql-tests skips it (see NEEDS_SUPABASE).
 #
@@ -165,7 +165,8 @@ SELECT acknowledge_studio_legal_pack('pack-v2', 'he', ARRAY['studio-privacy', 'e
 RESET ROLE;
 DO $$
 BEGIN
-  IF 'signed-forms' = ANY ((SELECT legal_pack_ack_drafts FROM tenants WHERE id = (SELECT studio FROM pg_temp.ids))) THEN
+  IF EXISTS (SELECT 1 FROM tenants
+             WHERE id = (SELECT studio FROM pg_temp.ids) AND 'signed-forms' = ANY (legal_pack_ack_drafts)) THEN
     RAISE EXCEPTION 'FAIL reviewed forms were recorded as a draft';
   END IF;
 END $$;
