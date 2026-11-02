@@ -5,6 +5,9 @@ import {
   STUDIO_OWNER_WELCOME_SHELLS,
   type AuthEmailLanguage,
 } from "./auth-email-shells/generated.ts";
+import { deriveEmailBrand, OPALSWIFT_EMAIL_ANCHOR } from "./email-dist/email/brand.js";
+
+export { OPALSWIFT_EMAIL_ANCHOR };
 
 export interface RenderAuthMagicLinkInput {
   language: AuthEmailLanguage;
@@ -13,6 +16,8 @@ export interface RenderAuthMagicLinkInput {
   otpCode?: string;
   primaryColor: string;
   accentColor: string;
+  /** Colour the header/button gradient shifts toward (default: the accent; OpalSwift's own mail: its purple). */
+  gradientAnchor?: string;
 }
 
 /**
@@ -23,12 +28,15 @@ export function renderAuthMagicLinkHtml(input: RenderAuthMagicLinkInput): string
   const lang = input.language === "he" ? "he" : "en";
   const shellSet = MAGIC_LINK_SHELLS[lang];
   const shell = input.otpCode ? shellSet.withOtp : shellSet.linkOnly;
+  const brand = deriveEmailBrand(input.primaryColor, input.gradientAnchor ?? input.accentColor);
   return applyMagicLinkShell(shell, {
     magicLinkUrl: input.magicLinkUrl,
     schoolName: input.schoolName,
     otpCode: input.otpCode,
     primaryColor: input.primaryColor,
     accentColor: input.accentColor,
+    brandFill: brand.fill,
+    brandEnd: brand.end,
   });
 }
 

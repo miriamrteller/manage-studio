@@ -17,6 +17,8 @@ const PLACEHOLDER = {
   otpCode: '{{OTP_CODE}}',
   primary: '{{PRIMARY_COLOR}}',
   accent: '{{ACCENT_COLOR}}',
+  brandFill: '{{BRAND_FILL}}',
+  brandEnd: '{{BRAND_END}}',
 };
 
 /** Valid hex used only while rendering; replaced in output HTML. */
@@ -26,6 +28,7 @@ const BUILD_ACCENT = '#d4e5f6';
 /** Sentinel OTP replaced at runtime (compact display, no letter-spacing). */
 const BUILD_OTP = '123456';
 
+const { deriveEmailBrand } = await import(pathToFileURL(join(root, 'packages/shared/dist/email/brand.js')).href);
 const { EMAIL_TEMPLATE_NAMES, renderEmailTemplate } = await import(
   pathToFileURL(join(root, 'packages/shared/dist/email/render-template.js')).href,
 );
@@ -52,7 +55,17 @@ async function renderShell(language, withOtp) {
     variables,
   });
 
+  // Gradient surfaces (header band, button, code) use the AA-safe fill and the
+  // shifted end colour; both are computed at send time (email-dist/email/brand.js)
+  // from the studio's colours, so they get their own placeholders.
+  const brand = deriveEmailBrand(BUILD_PRIMARY, BUILD_ACCENT);
+  if (brand.fill.toLowerCase() === BUILD_PRIMARY || brand.end.toLowerCase() === BUILD_ACCENT) {
+    throw new Error('Build colours must differ from the derived gradient colours');
+  }
+
   return html
+    .split(brand.fill).join(PLACEHOLDER.brandFill)
+    .split(brand.end).join(PLACEHOLDER.brandEnd)
     .split(BUILD_PRIMARY).join(PLACEHOLDER.primary)
     .split(BUILD_ACCENT).join(PLACEHOLDER.accent)
     .split('var(--email-primary)').join(PLACEHOLDER.primary)
@@ -143,11 +156,15 @@ export function applyMagicLinkShell(
     otpCode?: string;
     primaryColor: string;
     accentColor: string;
+    brandFill: string;
+    brandEnd: string;
   },
 ): string {
   let html = shell
     .split(PLACEHOLDER.magicLinkUrl).join(escapeHtml(values.magicLinkUrl))
     .split(PLACEHOLDER.schoolName).join(escapeHtml(values.schoolName))
+    .split(PLACEHOLDER.brandFill).join(escapeHtml(values.brandFill))
+    .split(PLACEHOLDER.brandEnd).join(escapeHtml(values.brandEnd))
     .split(PLACEHOLDER.primary).join(escapeHtml(values.primaryColor))
     .split(PLACEHOLDER.accent).join(escapeHtml(values.accentColor));
 

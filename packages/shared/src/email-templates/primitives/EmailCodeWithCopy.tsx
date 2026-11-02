@@ -1,6 +1,8 @@
 import React from 'react';
 import { Text } from '@react-email/components';
 import { emailCodeBox } from './styles.js';
+import { emailGradient } from '../../email/brand.js';
+import { useEmailBrand } from './brand.js';
 
 interface EmailOtpCodeProps {
   code: string;
@@ -8,8 +10,12 @@ interface EmailOtpCodeProps {
 
 /** Sign-in OTP code — single selectable block (no copy button; email clients cannot run clipboard JS). */
 export function EmailOtpCode({ code }: EmailOtpCodeProps) {
+  const brand = useEmailBrand();
+  const wrapper = brand
+    ? { ...emailCodeBox.wrapper, backgroundColor: brand.fill, backgroundImage: emailGradient(brand) }
+    : emailCodeBox.wrapper;
   return (
-    <div style={emailCodeBox.wrapper}>
+    <div style={wrapper}>
       <Text style={emailCodeBox.digits}>{code}</Text>
     </div>
   );
