@@ -107,3 +107,23 @@ describe('Settings → How customers pay', () => {
     await waitFor(() => expect(update).toHaveBeenCalledWith(expect.objectContaining({ payment_provider: 'offline' })));
   });
 });
+
+describe('Settings → unfinished payment providers (iCount, Tranzila)', () => {
+  it('are not offered as a new choice, but a studio already on one still sees it', async () => {
+    const { onlinePaymentChoices } = await import('../features/settings/components/OfflinePaymentsSettingsForm');
+    expect(onlinePaymentChoices('grow')).toEqual(['grow', 'invoice4u', 'ypay']);
+    expect(onlinePaymentChoices('offline')).toEqual(['grow', 'invoice4u', 'ypay']);
+    expect(onlinePaymentChoices('icount')).toEqual(['grow', 'icount', 'invoice4u', 'ypay']);
+    expect(onlinePaymentChoices('tranzila')).toEqual(['grow', 'invoice4u', 'ypay', 'tranzila']);
+  });
+
+  it('labels a saved unfinished provider as not finished', () => {
+    Object.assign(tenantState, { payment_provider: 'icount', invoicing_provider: 'icount' });
+    wrap(<OfflinePaymentsSettingsForm />);
+    const options = Array.from(
+      (screen.getByLabelText('settings.payments.provider') as HTMLSelectElement).options,
+    ).map((o) => o.value);
+    expect(options).toEqual(['grow', 'icount', 'invoice4u', 'ypay']);
+    expect(screen.getByRole('option', { name: 'settings.offline_payments.provider_not_finished' })).toBeTruthy();
+  });
+});

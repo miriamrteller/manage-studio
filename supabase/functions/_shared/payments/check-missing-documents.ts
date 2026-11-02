@@ -38,6 +38,17 @@ async function auditExists(
   return Boolean(data);
 }
 
+async function isRecordedNotIssued(service: SupabaseClient, paymentId: string): Promise<boolean> {
+  const { data } = await service
+    .from("document_queue")
+    .select("id")
+    .eq("payment_id", paymentId)
+    .eq("status", "not_issued")
+    .limit(1)
+    .maybeSingle();
+  return Boolean(data);
+}
+
 async function alertAdminsMissingDocument(
   service: SupabaseClient,
   payment: {
@@ -239,6 +250,9 @@ export async function runCheckMissingDocuments(
   result.missingScanned = missingRows?.length ?? 0;
 
   for (const row of missingRows ?? []) {
+    // Recorded as not issued (Grow / iCount / Invoice4U have no standalone documents): the
+    // finance page lists it; an alert would only repeat that.
+    if (await isRecordedNotIssued(service, row.id as string)) continue;
     const outcome = await alertAdminsMissingDocument(service, row as {
       id: string;
       tenant_id: string;

@@ -15,7 +15,7 @@ import {
   STUDIO_PAYMENT_PROVIDERS,
   type ProvisionStudioDeps,
 } from '../../../../supabase/functions/_shared/provision-studio';
-import { UNFINISHED_INVOICING_PROVIDERS } from '../../../../supabase/functions/_shared/provider-pairing';
+import { UNFINISHED_INVOICING_PROVIDERS, UNFINISHED_PAYMENT_PROVIDERS } from '../../../../supabase/functions/_shared/provider-pairing';
 import { STUDIO_INVOICING_OPTIONS, STUDIO_PAYMENT_OPTIONS } from '@/features/platform/services/studioSetupService';
 import { INITIAL_FORM, toSetupRequest } from '@/features/platform/lib/studioSetupForm';
 
@@ -55,12 +55,25 @@ describe('provider options', () => {
   it('the wizard, the edge function and the database offer the same providers', () => {
     expect([...STUDIO_PAYMENT_OPTIONS].sort()).toEqual([...STUDIO_PAYMENT_PROVIDERS].sort());
     expect([...STUDIO_INVOICING_OPTIONS].sort()).toEqual([...STUDIO_INVOICING_PROVIDERS].sort());
-    expect(sqlList('p_payment_provider').sort()).toEqual([...STUDIO_PAYMENT_PROVIDERS].sort());
+    // The database still accepts iCount and Tranzila (existing studios); the edge function, which
+    // runs first, no longer offers them because they are not finished.
+    expect(sqlList('p_payment_provider').sort()).toEqual(
+      [...STUDIO_PAYMENT_PROVIDERS, ...UNFINISHED_PAYMENT_PROVIDERS].sort(),
+    );
     // The database still accepts Yesh and Tranzila (existing data); the edge function, which
     // runs first, no longer offers them because they are not built yet.
     expect(sqlList('p_invoicing_provider').sort()).toEqual(
-      [...STUDIO_INVOICING_PROVIDERS, ...UNFINISHED_INVOICING_PROVIDERS].sort(),
+      [...STUDIO_INVOICING_PROVIDERS, ...UNFINISHED_INVOICING_PROVIDERS, 'icount'].sort(),
     );
+  });
+
+  it('iCount and Tranzila payments are not offered until they are finished', () => {
+    for (const slug of UNFINISHED_PAYMENT_PROVIDERS) {
+      expect(STUDIO_PAYMENT_OPTIONS as readonly string[]).not.toContain(slug);
+      expect(ProvisionStudioSchema.safeParse({ ...base, paymentProvider: slug, invoicingProvider: 'none' }).success).toBe(false);
+    }
+    // iCount documents only come with iCount payments, so they are not offered either.
+    expect(STUDIO_INVOICING_OPTIONS as readonly string[]).not.toContain('icount');
   });
 
   it('Yesh and Tranzila invoicing are not offered until they are built', () => {

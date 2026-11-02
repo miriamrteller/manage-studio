@@ -5,11 +5,21 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { useTenant } from '@/hooks/useTenant';
 import queryClient from '@/lib/query-client';
-import { invoicingPairsWithPayment } from '@/lib/providerPairing';
+import { invoicingPairsWithPayment, isUnfinishedPaymentProvider } from '@/lib/providerPairing';
 
 export const OFFLINE_PAYMENTS = 'offline';
-/** Providers a studio can switch back to for online payments; `mock` is never offered. */
+/** Every online provider a studio may have stored; `mock` is never offered. */
 export const ONLINE_PAYMENT_PROVIDERS = ['grow', 'icount', 'invoice4u', 'ypay', 'tranzila'] as const;
+
+/**
+ * Pure: the online providers to list. Unfinished ones (iCount, Tranzila) are not offered as a
+ * new choice; a studio that already uses one still sees it, so the form shows what is stored.
+ */
+export function onlinePaymentChoices(savedProvider: string | null | undefined): string[] {
+  return ONLINE_PAYMENT_PROVIDERS.filter(
+    (slug) => !isUnfinishedPaymentProvider(slug) || slug === savedProvider,
+  );
+}
 const MAX_INSTRUCTIONS = 2000;
 
 /** Pure: what to store for the chosen mode. */
@@ -129,9 +139,13 @@ export function OfflinePaymentsSettingsForm() {
             value={onlineProvider}
             onChange={(e) => setOnlineProvider(e.target.value)}
           >
-            {ONLINE_PAYMENT_PROVIDERS.map((slug) => (
+            {onlinePaymentChoices(savedProvider).map((slug) => (
               <option key={slug} value={slug}>
-                {t(`settings.offline_payments.providers.${slug}`)}
+                {isUnfinishedPaymentProvider(slug)
+                  ? t('settings.offline_payments.provider_not_finished', {
+                      provider: t(`settings.offline_payments.providers.${slug}`),
+                    })
+                  : t(`settings.offline_payments.providers.${slug}`)}
               </option>
             ))}
           </select>

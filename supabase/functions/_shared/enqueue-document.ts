@@ -73,14 +73,81 @@ export async function tenantIssuesNoDocuments(
   return data?.invoicing_provider === "none";
 }
 
+/** Invoicing services that only issue a document together with their own card charge. */
+export const BUNDLED_ONLY_INVOICING = ["grow", "icount", "invoice4u"] as const;
+
+export type DocumentRoute =
+  | { route: "queue" }
+  | { route: "skip_no_documents" }
+  /** The provider issues it with its own charge; it arrives on the provider's notice. */
+  | { route: "skip_issued_with_charge" }
+  /** The provider has no standalone documents: record it as not issued (no retries, no alert). */
+  | { route: "not_issued"; reason: string };
+
+/**
+ * Pure: what to do with a document for this payment. Grow, iCount and Invoice4U have no
+ * standalone document API, so a cash / bank-transfer payment, another provider's payment or a
+ * refund can never get a document from them (payments audit P2 #12).
+ */
+export function documentRouteFor(input: {
+  invoicingProvider: string | null | undefined;
+  paymentProvider: string | null | undefined;
+  documentKind: DocumentKind;
+}): DocumentRoute {
+  const invoicing = input.invoicingProvider ?? "";
+  if (invoicing === "none") return { route: "skip_no_documents" };
+  if (!(BUNDLED_ONLY_INVOICING as readonly string[]).includes(invoicing)) return { route: "queue" };
+  if (input.documentKind === "sale" && input.paymentProvider === invoicing) {
+    return { route: "skip_issued_with_charge" };
+  }
+  return {
+    route: "not_issued",
+    reason: input.documentKind === "refund"
+      ? `${invoicing} cannot issue a refund document from OpalSwift; issue the credit document in ${invoicing}`
+      : `${invoicing} only issues documents with its own card payments; issue this receipt yourself, ` +
+        `or use Green Invoice or YPay for cash receipts`,
+  };
+}
+
 export async function enqueueDocument(
   service: SupabaseClient,
   params: EnqueueParams,
-): Promise<{ queued: boolean; queueId?: string }> {
+): Promise<{ queued: boolean; queueId?: string; notIssued?: boolean }> {
+  const [{ data: tenant }, { data: payment }] = await Promise.all([
+    service.from("tenants").select("invoicing_provider").eq("id", params.tenantId).maybeSingle(),
+    service.from("payments").select("provider").eq("id", params.paymentId).maybeSingle(),
+  ]);
+  const decision = documentRouteFor({
+    invoicingProvider: tenant?.invoicing_provider as string | null | undefined,
+    paymentProvider: payment?.provider as string | null | undefined,
+    documentKind: params.documentKind,
+  });
+
   // A studio with invoicing off (e.g. not a registered business) gets no tax
   // documents at all: nothing is queued, so nothing retries or alerts admins.
-  if (await tenantIssuesNoDocuments(service, params.tenantId)) {
+  if (decision.route === "skip_no_documents" || decision.route === "skip_issued_with_charge") {
     return { queued: false };
+  }
+
+  if (decision.route === "not_issued") {
+    // One record per payment and kind: a replayed finalise must not add a second row.
+    const { data: existing } = await service
+      .from("document_queue")
+      .select("id")
+      .eq("payment_id", params.paymentId)
+      .eq("document_kind", params.documentKind)
+      .eq("status", "not_issued")
+      .maybeSingle();
+    if (existing) return { queued: false, notIssued: true };
+    const { error: notIssuedError } = await service.from("document_queue").insert({
+      tenant_id: params.tenantId,
+      payment_id: params.paymentId,
+      document_kind: params.documentKind,
+      status: "not_issued",
+      last_error: decision.reason,
+    });
+    if (notIssuedError && !isUniqueViolation(notIssuedError)) throw notIssuedError;
+    return { queued: false, notIssued: true };
   }
 
   const { data, error } = await service

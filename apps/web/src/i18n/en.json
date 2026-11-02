@@ -1870,6 +1870,7 @@
     "need_address": "Enter a web address (lowercase letters, numbers and hyphens) to continue.",
     "need_colours": "Each colour must look like #5B6CFF, or pick one of the colour sets above.",
     "need_owner_email": "Enter the owner's email address to continue.",
+    "cash_receipts_hint": "{{provider}} issues the document with each card payment. It cannot issue receipts for cash or bank transfers you record by hand: for those, issue the receipt yourself, or choose Green Invoice or YPay for documents.",
     "need_invoicing_pairing": "That invoicing service cannot issue documents for this way of paying. Choose another, or no documents.",
     "need_terms": "Tick the box to accept the terms to continue.",
     "title": "Set up a new studio",
@@ -2122,6 +2123,19 @@
     "price_one_time": "{{amount}} (one-time)"
   },
   "finance": {
+    "documents_not_issued": {
+      "title": "Payments without a tax document",
+      "description": "These payments have no receipt or invoice from your invoicing service, and will not get one by themselves. Issue the document yourself for each one.",
+      "reason_not_issued": "Not issued: {{provider}} only issues documents with its own card payments. Issue this receipt yourself. For cash receipts in future, use Green Invoice or YPay for documents.",
+      "reason_refund": "Not issued: {{provider}} cannot issue a refund document from OpalSwift. Issue the credit document in {{provider}}.",
+      "reason_failed": "Could not be issued after several tries. Check your invoicing service, then issue the document yourself.",
+      "details": "Details",
+      "refund": "Refund",
+      "method_cash": "Cash",
+      "method_bank_transfer": "Bank transfer",
+      "method_card": "Card",
+      "method_other": "Other"
+    },
     "hub": {
       "title": "Finance dashboard",
       "description": "Revenue, expenses, and outstanding payments for your studio.",
@@ -2478,6 +2492,7 @@
       "receipts_note": "If the studio is a registered business, it must issue its own receipts for every payment.",
       "provider_hint": "Enter the provider's keys on its settings page.",
       "saved": "Payment settings saved.",
+      "provider_not_finished": "{{provider}} (not finished: card payments may not be confirmed)",
       "pairing_problem": "Your invoicing service cannot issue documents for this way of paying. To change it, first turn tax documents off (or choose Green Invoice) under Tax documents, save the new payment choice here, then choose the invoicing service again.",
       "providers": { "grow": "Grow (Meshulam)", "icount": "iCount", "invoice4u": "Invoice4U", "ypay": "YPay", "tranzila": "Tranzila" }
     },
@@ -2489,6 +2504,7 @@
       "off_note": "Invoicing is off. If the studio is a registered business, it must issue its own receipts for every payment.",
       "credentials_hint": "Enter the provider's credentials under Invoicing provider.",
       "saved": "Tax document setting saved.",
+      "cash_receipts_hint": "{{provider}} issues the document with each card payment. Cash and bank-transfer payments you record by hand get no document from it: they are listed on the Finance page so you can issue the receipt yourself. For automatic cash receipts, use Green Invoice or YPay.",
       "pairing_problem": "This invoicing service cannot issue documents for the way customers pay now. Grow, iCount and Invoice4U only issue documents with their own card payments; YPay works with YPay payments or payments at the studio; Green Invoice works with any. Choose another service, or turn tax documents off.",
       "providers": { "grow": "Grow (Meshulam)", "icount": "iCount", "invoice4u": "Invoice4U", "ypay": "YPay", "tranzila": "Tranzila", "yesh": "Yesh", "green_invoice": "Green Invoice" }
     },

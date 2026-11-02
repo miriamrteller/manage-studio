@@ -123,6 +123,13 @@ export function InvoicingToggleForm() {
             ))}
           </select>
           <p className="text-xs text-muted-foreground">{t('settings.invoicing_toggle.credentials_hint')}</p>
+          {['grow', 'icount', 'invoice4u'].includes(selectedProvider) && (
+            <p className="text-sm text-muted-foreground" role="note">
+              {t('settings.invoicing_toggle.cash_receipts_hint', {
+                provider: t(`settings.invoicing_toggle.providers.${selectedProvider}`),
+              })}
+            </p>
+          )}
           {pairingProblem && (
             <p className="text-sm text-destructive" role="alert">
               {t('settings.invoicing_toggle.pairing_problem')}

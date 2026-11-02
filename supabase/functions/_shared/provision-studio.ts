@@ -1,16 +1,19 @@
 import { z } from "npm:zod@3.22.4";
 import { invoicingPairsWithPayment } from "./provider-pairing.ts";
 
-/** Payment options the setup wizard offers: live providers only (never mock or stripe). */
-export const STUDIO_PAYMENT_PROVIDERS = ["offline", "grow", "icount", "invoice4u", "ypay", "tranzila"] as const;
+/**
+ * Payment options the setup wizard offers: finished live providers only (never mock or stripe;
+ * iCount and Tranzila are not finished, see provider-pairing.ts).
+ */
+export const STUDIO_PAYMENT_PROVIDERS = ["offline", "grow", "invoice4u", "ypay"] as const;
 /**
  * Invoicing options: `none` = no documents through OpalSwift. Yesh and Tranzila invoicing are
- * not built yet, so they are not offered (see provider-pairing.ts).
+ * not built yet, and iCount documents only come with iCount payments, which are not finished:
+ * none of the three is offered (see provider-pairing.ts).
  */
 export const STUDIO_INVOICING_PROVIDERS = [
   "none",
   "grow",
-  "icount",
   "invoice4u",
   "ypay",
   "green_invoice",

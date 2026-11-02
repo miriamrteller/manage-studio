@@ -903,7 +903,31 @@ export class FakeSupabaseClient {
     return this;
   }
 
-  async rpc(name: string, args: Row = {}) {
+  /**
+   * Like supabase-js, the result can be awaited directly or narrowed with
+   * .single() / .maybeSingle() (set-returning functions such as
+   * pick_active_consent_template are read that way).
+   */
+  rpc(name: string, args: Row = {}) {
+    const result = this.runRpc(name, args);
+    const one = (strict: boolean) =>
+      result.then(({ data, error }) => {
+        if (error) return { data: null, error };
+        const list = Array.isArray(data) ? data : data == null ? [] : [data];
+        if (list.length > 1) {
+          return { data: null, error: { message: 'JSON object requested, multiple (or no) rows returned', code: 'PGRST116' } };
+        }
+        if (list.length === 0) {
+          return strict
+            ? { data: null, error: { message: 'JSON object requested, multiple (or no) rows returned', code: 'PGRST116' } }
+            : { data: null, error: null };
+        }
+        return { data: list[0], error: null };
+      });
+    return Object.assign(result, { single: () => one(true), maybeSingle: () => one(false) });
+  }
+
+  private async runRpc(name: string, args: Row) {
     await delay(120);
     const handler = this.rpcs[name];
     if (!handler) {
