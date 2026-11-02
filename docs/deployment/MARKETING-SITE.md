@@ -106,6 +106,16 @@ if the pages and the Markdown differ. When the text changes, also update
 
 Every page's footer links to Terms · Privacy · Accessibility.
 
+## "Create your studio" button
+
+Next to the beta button in every page's hero (and in the home page's final
+section): "פתחו סטודיו" / "Create your studio" →
+`https://app.opalswift.com/create-studio`, the app's self-serve signup
+(`SELF_SERVE_PATH` in apps/web). It uses each page's secondary button style;
+the beta button stays the main one. Find them all with `data-create-studio`.
+The app page only works while self-serve signup is switched on
+(`VITE_ENABLE_SELF_SERVE_SIGNUP`); otherwise it redirects to sign-in.
+
 ## How to edit
 
 1. Branch from `main`, edit files in `apps/marketing/public/`.
