@@ -12,6 +12,7 @@ import type { AuthMode, CodeStep } from '@/hooks/useLogin';
 import { AuthMessage } from './AuthMessage';
 import { OtpCodeForm } from './OtpCodeForm';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FormInput } from '../ui/form';
 
 /**
@@ -113,61 +114,27 @@ export function LoginForm({
   return (
     <>
       {message && (
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={onMessageDismiss}
-          className="w-full text-start justify-start"
-          aria-label={t('common.dismiss_message')}
-        >
-          <AuthMessage type={message.type} text={message.text} />
-        </Button>
+        <AuthMessage
+          type={message.type}
+          text={message.text}
+          onDismiss={onMessageDismiss}
+          dismissLabel={t('common.dismiss_message')}
+        />
       )}
 
-      <div role="tablist" className="flex gap-2 border-b border-gray-300 mb-6">
-        <Button
-          role="tab"
-          variant="ghost"
-          aria-selected={authMode === 'password'}
-          aria-controls="password-panel"
-          onClick={() => handleAuthModeChange('password')}
-          className={`px-4 py-2 font-medium border-b-2 transition-colors ${
-            authMode === 'password'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          {t('pages.login.password_tab')}
-        </Button>
-        <Button
-          role="tab"
-          variant="ghost"
-          aria-selected={authMode === 'magic_link'}
-          aria-controls="magic-link-panel"
-          onClick={() => handleAuthModeChange('magic_link')}
-          className={`px-4 py-2 font-medium border-b-2 transition-colors ${
-            authMode === 'magic_link'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          {t('pages.login.magic_link_tab')}
-        </Button>
-        <Button
-          role="tab"
-          variant="ghost"
-          aria-selected={authMode === 'code'}
-          aria-controls="code-panel"
-          onClick={() => handleAuthModeChange('code')}
-          className={`px-4 py-2 font-medium border-b-2 transition-colors ${
-            authMode === 'code'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          {t('pages.login.code_tab')}
-        </Button>
-      </div>
+      <Tabs value={authMode} onValueChange={(mode) => handleAuthModeChange(mode as AuthMode)}>
+        <TabsList className="mb-6">
+          <TabsTrigger value="password" aria-controls="password-panel">
+            {t('pages.login.password_tab')}
+          </TabsTrigger>
+          <TabsTrigger value="magic_link" aria-controls="magic-link-panel">
+            {t('pages.login.magic_link_tab')}
+          </TabsTrigger>
+          <TabsTrigger value="code" aria-controls="code-panel">
+            {t('pages.login.code_tab')}
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       {showCodeVerifyStep ? (
         <div className="space-y-6" role="region" aria-label={t('pages.login.verify_code')}>

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
+import { Alert } from '@/components/ui/alert';
 import { supabase } from '@/lib/supabase';
 import { tenantOrigin } from '@/lib/tenantUrl';
 import {
@@ -263,7 +264,7 @@ export function OperatorOnboardingWizard() {
         </section>
       )}
 
-      {error && <p className="text-sm text-red-700" role="alert">{error}</p>}
+      {error && <Alert variant="destructive">{error}</Alert>}
 
       <div className="flex gap-3">
         {stepIndex > 0 && (

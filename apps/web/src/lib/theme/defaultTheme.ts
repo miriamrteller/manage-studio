@@ -13,6 +13,7 @@ import { deriveColorSystem } from '@/lib/utils';
 import { deriveSoftTheme } from './deriveSoftTheme';
 import { mix } from './color';
 import { deriveNavTheme } from './navTheme';
+import { deriveButtonGradient } from './buttonGradient';
 import { OPALSWIFT_BRAND } from './opalswiftBrand';
 
 export interface DefaultTheme {
@@ -20,12 +21,15 @@ export interface DefaultTheme {
   secondary: string;
   /** AA-safe shade for button fills and brand text (white text sits on it). */
   ink: string;
+  /** Colour the primary button gradient shifts toward (OpalSwift: its purple). */
+  gradientAnchor: string;
 }
 
 export const OPALSWIFT_THEME: DefaultTheme = {
   primary: OPALSWIFT_BRAND.primary,
   secondary: OPALSWIFT_BRAND.accent,
   ink: OPALSWIFT_BRAND.ink.toLowerCase(),
+  gradientAnchor: OPALSWIFT_BRAND.purple,
 };
 
 /** Per-skin defaults. Empty on purpose: every skin uses OPALSWIFT_THEME until it gets its own. */
@@ -49,5 +53,6 @@ export function defaultThemeTokens(skin?: string | null): Record<string, string>
   tokens['--color-primary-fill-active'] = mix(t.ink, '#000000', 0.83);
   tokens['--color-primary-ink'] = t.ink;
   Object.assign(tokens, deriveNavTheme(t.primary, t.secondary));
+  Object.assign(tokens, deriveButtonGradient(t.ink, tokens['--color-on-primary-fill'], t.gradientAnchor));
   return tokens;
 }

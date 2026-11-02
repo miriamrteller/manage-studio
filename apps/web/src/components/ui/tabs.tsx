@@ -59,7 +59,7 @@ export const TabsList = React.forwardRef<HTMLDivElement, TabsListProps>(
     <div
       ref={ref}
       role="tablist"
-      className={`flex space-x-1 border-b border-gray-200 ${className}`}
+      className={`flex gap-1 border-b border-gray-200 ${className}`}
       {...props}
     />
   ),
@@ -83,8 +83,12 @@ export const TabsTrigger = React.forwardRef<HTMLButtonElement, TabsTriggerProps>
         role="tab"
         aria-selected={isActive}
         data-state={isActive ? 'active' : 'inactive'}
-        className={`px-4 py-2 font-medium border-b-2 ${
-          isActive ? 'border-primary text-primary' : 'border-transparent hover:border-gray-300'
+        // Straight underline (no radius), overlapping the list's own border; the
+        // active colour is the AA-safe brand ink. Works the same in RTL.
+        className={`-mb-px rounded-none border-b-2 px-4 py-2 font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--color-primary-ink)] ${
+          isActive
+            ? 'border-[var(--color-primary-ink)] text-[var(--color-primary-ink)]'
+            : 'border-transparent text-gray-600 hover:border-gray-300 hover:text-gray-900'
         } ${className}`}
         onClick={(event) => {
           onValueChange(value);

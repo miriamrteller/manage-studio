@@ -4,6 +4,7 @@ import { deriveColorSystem, getAccessibleTextColor } from '../lib/utils';
 import { injectFontPair } from './useFontLoader';
 import { deriveSoftTheme } from '../lib/theme/deriveSoftTheme';
 import { deriveNavTheme } from '../lib/theme/navTheme';
+import { deriveButtonGradient } from '../lib/theme/buttonGradient';
 import { getDefaultTheme } from '../lib/theme/defaultTheme';
 
 export function useThemeInjection(): void {
@@ -30,6 +31,17 @@ export function useThemeInjection(): void {
         root.style.setProperty(cssVar, value);
       });
       Object.entries(deriveNavTheme(colorSystem.primary, colorSystem.secondary)).forEach(([cssVar, value]) => {
+        root.style.setProperty(cssVar, value);
+      });
+      // Primary buttons: subtle gradient from the studio's own colours (flat on Solid chrome).
+      Object.entries(
+        deriveButtonGradient(
+          soft['--color-primary-fill'],
+          soft['--color-on-primary-fill'],
+          colorSystem.secondary,
+          tenant.chrome_style === 'solid',
+        ),
+      ).forEach(([cssVar, value]) => {
         root.style.setProperty(cssVar, value);
       });
       // Text on a solid primary sits on the fill, so it follows the fill.

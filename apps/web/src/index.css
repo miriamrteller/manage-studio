@@ -215,19 +215,20 @@
   .button-primary {
     @apply button;
     background-color: var(--color-primary-fill);
-    background-image: var(--sheen-soft);
+    background-image: var(--sheen-soft), var(--gradient-primary);
     color: var(--color-on-primary-fill);
     box-shadow: var(--edge-emboss), var(--glow-primary);
   }
 
   .button-primary:hover {
     background-color: var(--color-primary-fill-hover);
+    background-image: var(--sheen-soft), var(--gradient-primary-hover);
     box-shadow: var(--edge-emboss), var(--glow-primary-hover);
   }
 
   .button-primary:active {
     background-color: var(--color-primary-fill-active);
-    background-image: none;
+    background-image: var(--gradient-primary-hover);
     box-shadow: var(--edge-emboss);
   }
 
@@ -1304,6 +1305,12 @@ dialog.modal-dialog::backdrop {
   --nav-border: rgb(255 255 255 / 0.14);
   --nav-text: #ffffff;
   --nav-corner-x: 100%;
+
+  /* Primary button gradient (deriveButtonGradient): fill -> a deeper, shifted shade; `none` = flat (Solid chrome). */
+  --color-primary-fill-end: #5c4fe4;
+  --color-primary-fill-end-hover: #5448cf;
+  --gradient-primary: linear-gradient(135deg, #4a58e8, #5c4fe4);
+  --gradient-primary-hover: linear-gradient(135deg, #4350d3, #5448cf);
 
   /* Soft surfaces (Phase 2a). Cards are translucent so the page wash shows
      through; inputs and modals keep opaque --surface-base. */
