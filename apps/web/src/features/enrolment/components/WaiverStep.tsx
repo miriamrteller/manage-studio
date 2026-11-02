@@ -43,6 +43,11 @@ interface WaiverStepProps {
   isJobContract?: boolean;
 }
 
+/** "Health declaration (child)v1" -> "Health declaration": parents do not need the internal variant or version. */
+export function displayTemplateName(name: string): string {
+  return name.replace(/\s*\((?:child|adult|minor)\)\s*(?:v\s*\d+)?\s*$/i, '').replace(/\s+v\d+$/i, '').trim() || name;
+}
+
 export function WaiverStep(props: WaiverStepProps) {
   if (props.tenantIdForInvalidation || props.waiverToken) {
     return <WaiverStepInner {...props} invalidateTenantId={props.tenantIdForInvalidation} />;
@@ -230,7 +235,7 @@ function WaiverStepInner({
 
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-semibold" lang={template.language ?? undefined}>{template.name}</h2>
+      <h2 className="text-xl font-semibold" lang={template.language ?? undefined}>{displayTemplateName(template.name)}</h2>
       {/* The studio has this form only in the other language: say so plainly. */}
       {template.language && template.language !== appLanguage && (
         <p className="text-sm font-medium text-amber-800" role="note">
@@ -272,7 +277,8 @@ function WaiverStepInner({
       </div>
 
       {!viewTokenReady && !tokenExpired && (
-        <p className="text-sm text-muted-foreground" aria-live="polite">
+        <p className="text-sm font-medium text-foreground" aria-live="polite">
+          <span aria-hidden="true">↓ </span>
           {t('enrolment.waiver_scroll_prompt', { defaultValue: 'Scroll to the bottom to enable signing' })}
         </p>
       )}

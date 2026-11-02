@@ -10,6 +10,7 @@ import { useEntityLabels } from '@/hooks/useEntityLabels';
 import { useSortState } from '@/hooks/useSortState';
 import { useClasses } from '../hooks/useClasses';
 import { useTerms } from '@/features/terms/hooks/useTerms';
+import { useIsNarrowViewport } from '@/features/scheduling/hooks/useIsNarrowViewport';
 import { useLevels } from '@/features/levels/hooks/useLevels';
 import { useTeachers } from '@/features/teachers/hooks/useTeachers';
 import { ClassForm, type ClassFormImageIntent } from './ClassForm';
@@ -51,6 +52,7 @@ export function AdminClassesList() {
     statuses: filterStatuses.map((s) => s.value),
     searchQuery,
   });
+  const isNarrow = useIsNarrowViewport();
   const termsData = useTerms({ page: 1 });
   const levelsData = useLevels({ page: 1 });
   const teachersData = useTeachers({ page: 1 });
@@ -169,6 +171,7 @@ export function AdminClassesList() {
       <div className="space-y-2">
         <h1 className="text-3xl font-bold">{t('pages.admin_classes.title', { entity: labels.offering.plural })}</h1>
         <p className="text-gray-600">{t('pages.admin_classes.description', { entity: labels.offering.plural.toLowerCase() })}</p>
+        <p className="text-sm text-gray-700">{t('pages.admin_classes.order_hint', { level: labels.category.singular.toLowerCase(), season: labels.season.singular.toLowerCase(), entity: labels.offering.plural.toLowerCase() })}</p>
       </div>
 
       <div className="flex justify-end">
@@ -244,7 +247,72 @@ export function AdminClassesList() {
         />
       )}
 
-      {classesData.classes.length > 0 && (
+      {classesData.classes.length > 0 && isNarrow && (
+        <ul className="space-y-3" aria-label={labels.offering.plural}>
+          {classesData.classes.map((classItem) => {
+            const ageRange = formatClassAgeRange(t, classItem.min_age, classItem.max_age);
+            const level = classItem.category_id ? levelById.get(classItem.category_id) : null;
+            return (
+              <li key={classItem.id} className="card space-y-2 border border-gray-200 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <h2 className="text-base font-semibold">{classItem.name}</h2>
+                  <p className="shrink-0 font-semibold text-primary">
+                    {tenant &&
+                      formatOfferingPrice(
+                        t,
+                        computeClassTotal(classItem, tenant).chargeMinor,
+                        currency,
+                        i18n.language,
+                        classItem,
+                      )}
+                  </p>
+                </div>
+                <p className="text-sm text-gray-700">
+                  {[termById.get(classItem.season_id), level].filter(Boolean).join(' · ')}
+                  {ageRange && (
+                    <>
+                      {' · '}
+                      <bdi dir="ltr">{ageRange}</bdi>
+                    </>
+                  )}
+                </p>
+                <p className="text-sm text-gray-700">
+                  {classItem.day_of_week != null ? `${t(`form.class.day_${classItem.day_of_week}`)}, ` : ''}
+                  <bdi dir="ltr">
+                    {formatTime(classItem.start_time, i18n.language)} –{' '}
+                    {formatTime(classItem.end_time, i18n.language)}
+                  </bdi>
+                  {classItem.location ? ` · ${classItem.location}` : ''}
+                </p>
+                <p className="text-sm text-gray-700">
+                  {t(`form.class.status_${classItem.status}`)} · {t('pages.classes.capacity')}: {classItem.max_capacity}
+                </p>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  <Button variant="secondary" size="sm" onClick={() => setEditingClass(classItem as Offering)}>
+                    {t('common.edit')}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setExpandedClassId(expandedClassId === classItem.id ? null : classItem.id)}
+                    aria-expanded={expandedClassId === classItem.id}
+                  >
+                    {t('pages.admin_classes.requirements_button')}
+                  </Button>
+                  <Button variant="destructive" size="sm" onClick={() => setDeleteConfirmId(classItem.id)}>
+                    {t('common.delete')}
+                  </Button>
+                </div>
+                {expandedClassId === classItem.id && (
+                  <ClassRequirementsPanel classId={classItem.id} className={classItem.name} />
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      {classesData.classes.length > 0 && !isNarrow && (
         <div className="card overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="border-b" style={{ borderColor: 'var(--color-border-default)' }}>
@@ -307,14 +375,16 @@ export function AdminClassesList() {
                   <td className="px-4 py-3">
                     {classItem.category_id ? levelById.get(classItem.category_id) || '—' : '—'}
                   </td>
-                  <td className="px-4 py-3">{ageRange || '—'}</td>
+                  <td className="px-4 py-3">{ageRange ? <bdi dir="ltr">{ageRange}</bdi> : '—'}</td>
                   <td className="px-4 py-3">{classItem.location || '—'}</td>
                   <td className="px-4 py-3">
                     {classItem.day_of_week != null
                       ? `${t(`form.class.day_${classItem.day_of_week}`)}, `
                       : ''}
-                    {formatTime(classItem.start_time, i18n.language)} –{' '}
-                    {formatTime(classItem.end_time, i18n.language)}
+                    <bdi dir="ltr">
+                      {formatTime(classItem.start_time, i18n.language)} –{' '}
+                      {formatTime(classItem.end_time, i18n.language)}
+                    </bdi>
                   </td>
                   <td className="px-4 py-3">{classItem.max_capacity}</td>
                   <td className="px-4 py-3">

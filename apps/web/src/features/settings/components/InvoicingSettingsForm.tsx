@@ -77,7 +77,7 @@ function InvoicingKeysForm() {
       </p>
       <p className="text-sm">
         {t('settings.invoicing.provider', { defaultValue: 'Provider' })}:{' '}
-        <strong>{tenant?.invoicing_provider ?? 'grow'}</strong>
+        <strong>{t(`settings.provider_names.${tenant?.invoicing_provider ?? 'grow'}`, { defaultValue: tenant?.invoicing_provider ?? 'grow' })}</strong>
       </p>
 
       <label className="block text-sm font-medium">
