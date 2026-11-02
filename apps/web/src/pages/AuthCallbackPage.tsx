@@ -5,7 +5,9 @@ import { Button } from '@/components/ui/button';
 import { useAuthSession } from '../hooks/useAuth';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 import queryClient from '../lib/query-client';
-import { resolveAuthErrorMessage } from '@/lib/authErrors';
+import { classifyAuthError, resolveAuthErrorMessage } from '@/lib/authErrors';
+import { lastEmailSentTo } from '@/lib/emailSendCooldown';
+import { useTenant } from '@/hooks/useTenant';
 import {
   captureAuthCallbackUrl,
   clearAuthCallbackUrl,
@@ -20,6 +22,7 @@ import { hasParentRole } from '@/lib/parentRoles';
 export default function AuthCallbackPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const tenant = useTenant();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [sessionReady, setSessionReady] = useState(false);
   const callbackUrlRef = useRef(captureAuthCallbackUrl());
@@ -139,6 +142,35 @@ export default function AuthCallbackPage() {
     navigate,
     sessionReady,
   ]);
+
+  // A link that was already used, or replaced by a newer email (each new link or
+  // code cancels the last one), e.g. an invite followed by "Send link" on /login.
+  if (errorMessage && classifyAuthError(errorMessage) === 'expired_link') {
+    const email = lastEmailSentTo();
+    const loginHref = (mode: 'magic_link' | 'code') =>
+      `/login?mode=${mode}${email ? `&email=${encodeURIComponent(email)}` : ''}`;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white px-4">
+        <div className="w-full max-w-md space-y-6">
+          <div role="alert" className="rounded-lg border border-amber-300 bg-amber-50 p-6">
+            <h1 className="mb-2 text-2xl font-bold text-gray-900">{t('auth.link_replaced_title')}</h1>
+            <p className="text-gray-800">
+              {t('auth.link_replaced_body', { studio: tenant?.name ?? 'OpalSwift' })}
+            </p>
+          </div>
+          <Button type="button" variant="primary" fullWidth onClick={() => navigate(loginHref('magic_link'))}>
+            {t('auth.link_replaced_new_link')}
+          </Button>
+          <p className="text-center text-sm text-gray-700">
+            <a className="font-medium underline" href={loginHref('code')}>
+              {t('auth.link_replaced_use_code')}
+            </a>{' '}
+            {t('auth.link_replaced_use_code_hint')}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (error) {
     return (

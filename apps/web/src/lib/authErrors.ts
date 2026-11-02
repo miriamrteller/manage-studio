@@ -34,6 +34,8 @@ const RATE_LIMIT_PATTERNS = [
   'rate limit',
   'too many requests',
   'email rate limit',
+  'over_email_send_rate_limit',
+  'you can only request this after',
   '429',
 ];
 
