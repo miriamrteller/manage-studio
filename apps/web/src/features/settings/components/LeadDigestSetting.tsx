@@ -1,4 +1,5 @@
 import { useId } from 'react';
+import { InfoTip } from '@/components/ui/InfoTip';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -42,9 +43,14 @@ export function LeadDigestSetting() {
 
   return (
     <section className="space-y-2" aria-labelledby={`${id}-title`}>
-      <h2 id={`${id}-title`} className="text-lg font-semibold text-foreground">
-        {t('settings.lead_digest.title')}
-      </h2>
+      <div className="flex flex-wrap items-center gap-1">
+        <h2 id={`${id}-title`} className="text-lg font-semibold text-foreground">
+          {t('settings.lead_digest.title')}
+        </h2>
+        <InfoTip label={t('pages.crm.help.tip_label', { topic: t('settings.lead_digest.title') })}>
+          {t('pages.crm.help.tip_digest')}
+        </InfoTip>
+      </div>
       <label className="flex items-start gap-2 text-sm">
         <input
           type="checkbox"

@@ -44,6 +44,7 @@ vi.mock('@/features/crm/lib/poster', async (orig) => ({
 }));
 
 import { GetLeadsPanel } from '@/features/crm/components/GetLeadsPanel';
+import { loadFirstLeads } from '@/features/crm/lib/firstLeads';
 import { composeHref, fileSlug, formLink, SHARE_CHANNELS } from '@/features/crm/lib/shareTargets';
 import { qrMatrix, qrSvgPath } from '@/features/crm/lib/qr';
 import { jpegPdf } from '@/features/crm/lib/poster';
@@ -138,6 +139,8 @@ describe('GetLeadsPanel', () => {
     expect((screen.getByLabelText('pages.crm.get_leads.form_link') as HTMLInputElement).value).toBe(`${origin}/inquire`);
     fireEvent.click(screen.getByRole('button', { name: 'pages.crm.get_leads.copy_link' }));
     await waitFor(() => expect(writeText).toHaveBeenCalledWith(`${origin}/inquire`));
+    // ...and ticks "Share your enquiry form link" on the Leads page checklist.
+    expect(loadFirstLeads('t-1').done).toContain('share_link');
   });
 
   it('copies a tagged link for each channel and shows how to use it', async () => {

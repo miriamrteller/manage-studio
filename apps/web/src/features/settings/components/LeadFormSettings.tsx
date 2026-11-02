@@ -1,4 +1,5 @@
 import { useEffect, useId, useState } from 'react';
+import { InfoTip } from '@/components/ui/InfoTip';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import {
@@ -148,9 +149,14 @@ export function LeadFormSettings() {
   return (
     <section className="space-y-5" aria-labelledby={`${id}-title`}>
       <div className="space-y-1">
-        <h2 id={`${id}-title`} className="text-lg font-semibold text-foreground">
-          {t('settings.lead_form.title')}
-        </h2>
+        <div className="flex flex-wrap items-center gap-1">
+          <h2 id={`${id}-title`} className="text-lg font-semibold text-foreground">
+            {t('settings.lead_form.title')}
+          </h2>
+          <InfoTip label={t('pages.crm.help.tip_label', { topic: t('settings.lead_form.title') })}>
+            {t('pages.crm.help.tip_questions')}
+          </InfoTip>
+        </div>
         <p className="text-sm text-muted-foreground">{t('settings.lead_form.description')}</p>
         <p className="text-sm" role="status">
           {t('settings.lead_form.short_hint', { count: extraCount })}

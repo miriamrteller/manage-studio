@@ -16,6 +16,8 @@ import { downloadBlob, qrMatrix, qrPng, qrSvgPath } from '../lib/qr';
 import { posterPdf, type PosterContent } from '../lib/poster';
 import { WEBSITE_PLATFORMS, WEBSITE_PLATFORM_NAMES, WEBSITE_STEPS } from '@shared/index';
 import { EmailInstructionsForm, SendFormSection } from './SendFormSection';
+import { markFirstLeadsStep } from '../lib/firstLeads';
+import { InfoTip } from '@/components/ui/InfoTip';
 
 /** Copy text; returns false when the clipboard is not available (the text stays selectable). */
 async function copyText(value: string): Promise<boolean> {
@@ -79,6 +81,8 @@ export function GetLeadsPanel({
     setTimeout(() => setStatus(message), 10);
   };
 
+  const tick = (step: Parameters<typeof markFirstLeadsStep>[1]) => markFirstLeadsStep(tenant?.id, step);
+
   const copy = async (value: string, what: string) => {
     announce((await copyText(value)) ? t('pages.crm.get_leads.copied', { what }) : t('pages.crm.get_leads.copy_failed'));
   };
@@ -86,6 +90,7 @@ export function GetLeadsPanel({
   const share = async () => {
     try {
       await navigator.share({ title: studio, text: shareMessage, url: link });
+      tick('share_link');
     } catch {
       // Cancelled by the user, or not allowed: nothing to do.
     }
@@ -109,6 +114,7 @@ export function GetLeadsPanel({
     setBusy(kind);
     try {
       const base = fileSlug(tenant.subdomain || studio);
+      tick('poster');
       if (kind === 'qr') downloadBlob(await qrPng(flyerLink), `${base}-qr.png`);
       else downloadBlob(await posterPdf(posterContent()), `${base}-poster.pdf`);
       announce(t('pages.crm.get_leads.downloaded'));
@@ -122,9 +128,14 @@ export function GetLeadsPanel({
   return (
     <section aria-labelledby={`${id}-title`} className="space-y-4">
       <div className="space-y-1">
-        <H id={`${id}-title`} className="text-lg font-semibold text-foreground">
-          {t('pages.crm.get_leads.title')}
-        </H>
+        <div className="flex flex-wrap items-center gap-1">
+          <H id={`${id}-title`} className="text-lg font-semibold text-foreground">
+            {t('pages.crm.get_leads.title')}
+          </H>
+          <InfoTip label={t('pages.crm.help.tip_label', { topic: t('pages.crm.get_leads.title') })}>
+            {t('pages.crm.help.tip_get_leads')}
+          </InfoTip>
+        </div>
         <p className="text-sm text-muted-foreground">{t('pages.crm.get_leads.intro')}</p>
       </div>
 
@@ -145,7 +156,13 @@ export function GetLeadsPanel({
             onFocus={(e) => e.currentTarget.select()}
           />
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-            <Button variant="primary" onClick={() => copy(link, t('pages.crm.get_leads.form_link'))}>
+            <Button
+              variant="primary"
+              onClick={() => {
+                tick('share_link');
+                void copy(link, t('pages.crm.get_leads.form_link'));
+              }}
+            >
               {t('pages.crm.get_leads.copy_link')}
             </Button>
             <Button variant="outline" onClick={() => window.open(link, '_blank', 'noopener,noreferrer')}>
@@ -191,7 +208,11 @@ export function GetLeadsPanel({
                 channel={channel}
                 link={formLink(origin, target, channel)}
                 message={shareMessage}
-                onCopy={copy}
+                onCopy={(value, what) => {
+                  if (channel === 'instagram') tick('instagram');
+                  else tick('share_link');
+                  void copy(value, what);
+                }}
               />
             ))}
           </ul>
@@ -211,7 +232,7 @@ export function GetLeadsPanel({
       <details className="card p-4">
         <summary className="cursor-pointer font-semibold">{t('pages.crm.get_leads.website_title')}</summary>
         <div className="pt-4 space-y-4">
-          <WebsiteFormSettings compact path={target.path} />
+          <WebsiteFormSettings compact path={target.path} onCopy={() => tick('website')} />
           <div className="grid gap-3 sm:grid-cols-2">
             {WEBSITE_PLATFORMS.map((platform) => (
               <div key={platform} className="space-y-1">
@@ -231,7 +252,12 @@ export function GetLeadsPanel({
       {/* 4. The lead inbox. */}
       {leadEmail && !formSlug && (
         <div className="card p-4 space-y-2">
-          <H2 className="font-semibold">{t('pages.crm.get_leads.email_title')}</H2>
+            <div className="flex flex-wrap items-center gap-1">
+            <H2 className="font-semibold">{t('pages.crm.get_leads.email_title')}</H2>
+            <InfoTip label={t('pages.crm.help.tip_label', { topic: t('pages.crm.get_leads.email_title') })}>
+              {t('pages.crm.help.tip_lead_email')}
+            </InfoTip>
+          </div>
           <p className="text-sm text-muted-foreground">{t('pages.crm.get_leads.email_hint')}</p>
           <div className="flex flex-wrap items-center gap-2">
             <code className="text-sm bg-muted border rounded px-2 py-1 break-all" dir="ltr">
