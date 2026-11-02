@@ -142,6 +142,16 @@ CREATE POLICY "Anyone reads published legal documents"
     AND public.legal_document_is_public(name)
   );
 
+-- Anon can only read storage objects if every SELECT policy on storage.objects
+-- is valid for anon. These three older ones applied to all roles and read
+-- tables anon has no grant on (user_profiles, people, account_members), so any
+-- anon read raised "permission denied" instead of an empty result. They all
+-- require a signed-in user (auth.uid()) to match, so limiting them to
+-- authenticated changes nobody's access.
+ALTER POLICY "Admins read own tenant waiver PDFs" ON storage.objects TO authenticated;
+ALTER POLICY "Users read own waiver PDFs" ON storage.objects TO authenticated;
+ALTER POLICY "Admins read own tenant expense receipts" ON storage.objects TO authenticated;
+
 -- ---------------------------------------------------------------------------
 -- 4. Signed forms: marked lawyer-reviewed in the Forms editor.
 -- ---------------------------------------------------------------------------
