@@ -1870,6 +1870,7 @@
     "need_address": "Enter a web address (lowercase letters, numbers and hyphens) to continue.",
     "need_colours": "Each colour must look like #5B6CFF, or pick one of the colour sets above.",
     "need_owner_email": "Enter the owner's email address to continue.",
+    "need_invoicing_pairing": "That invoicing service cannot issue documents for this way of paying. Choose another, or no documents.",
     "need_terms": "Tick the box to accept the terms to continue.",
     "title": "Set up a new studio",
     "description": "Create the studio, choose how it takes payments, and invite its owner. Everything can be changed later in the studio's settings.",
@@ -2477,6 +2478,7 @@
       "receipts_note": "If the studio is a registered business, it must issue its own receipts for every payment.",
       "provider_hint": "Enter the provider's keys on its settings page.",
       "saved": "Payment settings saved.",
+      "pairing_problem": "Your invoicing service cannot issue documents for this way of paying. To change it, first turn tax documents off (or choose Green Invoice) under Tax documents, save the new payment choice here, then choose the invoicing service again.",
       "providers": { "grow": "Grow (Meshulam)", "icount": "iCount", "invoice4u": "Invoice4U", "ypay": "YPay", "tranzila": "Tranzila" }
     },
     "invoicing_toggle": {
@@ -2487,6 +2489,7 @@
       "off_note": "Invoicing is off. If the studio is a registered business, it must issue its own receipts for every payment.",
       "credentials_hint": "Enter the provider's credentials under Invoicing provider.",
       "saved": "Tax document setting saved.",
+      "pairing_problem": "This invoicing service cannot issue documents for the way customers pay now. Grow, iCount and Invoice4U only issue documents with their own card payments; YPay works with YPay payments or payments at the studio; Green Invoice works with any. Choose another service, or turn tax documents off.",
       "providers": { "grow": "Grow (Meshulam)", "icount": "iCount", "invoice4u": "Invoice4U", "ypay": "YPay", "tranzila": "Tranzila", "yesh": "Yesh", "green_invoice": "Green Invoice" }
     },
     "payments": {

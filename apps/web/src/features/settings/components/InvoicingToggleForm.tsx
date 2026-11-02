@@ -5,8 +5,12 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { useTenant } from '@/hooks/useTenant';
 import queryClient from '@/lib/query-client';
+import { invoicingOptionsFor, invoicingPairsWithPayment } from '@/lib/providerPairing';
 
-/** Providers a studio can turn invoicing back on with. `mock` and `none` are not offered. */
+/**
+ * Every provider a studio may have stored. Only those that work with the studio's payment
+ * provider are offered (lib/providerPairing.ts); Yesh and Tranzila are not offered until built.
+ */
 export const INVOICING_ON_PROVIDERS = ['grow', 'icount', 'invoice4u', 'ypay', 'tranzila', 'yesh', 'green_invoice'] as const;
 type InvoicingOnProvider = (typeof INVOICING_ON_PROVIDERS)[number];
 
@@ -14,6 +18,15 @@ export const INVOICING_OFF = 'none';
 
 function isOnProvider(value: string | null | undefined): value is InvoicingOnProvider {
   return (INVOICING_ON_PROVIDERS as readonly string[]).includes(value ?? '');
+}
+
+/**
+ * Pure: the providers to list for this payment provider. The saved one is kept in the list
+ * even if it no longer fits, so the form shows what is stored (saving it is refused).
+ */
+export function invoicingChoicesFor(paymentProvider: string | null, current: string): string[] {
+  const choices = invoicingOptionsFor(paymentProvider ?? '').filter((slug) => slug !== INVOICING_OFF);
+  return isOnProvider(current) && !choices.includes(current) ? [current, ...choices] : choices;
 }
 
 /** Pure: the slug to store for a given toggle state. */
@@ -34,9 +47,11 @@ export function InvoicingToggleForm() {
   const current = tenant?.invoicing_provider ?? 'grow';
   const paymentProvider = tenant?.payment_provider ?? null;
   const [enabled, setEnabled] = useState(current !== INVOICING_OFF);
+  const choices = invoicingChoicesFor(paymentProvider, current);
   const [selectedProvider, setSelectedProvider] = useState<string>(
-    isOnProvider(current) ? current : isOnProvider(paymentProvider) ? paymentProvider : 'grow',
+    isOnProvider(current) ? current : choices[0] ?? 'green_invoice',
   );
+  const pairingProblem = enabled && !invoicingPairsWithPayment(paymentProvider ?? '', selectedProvider);
   const [message, setMessage] = useState<string | null>(null);
 
   // Depend on the saved slug, not the tenant object, so a refetch does not reset the form.
@@ -48,6 +63,7 @@ export function InvoicingToggleForm() {
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (!tenant?.id) throw new Error('Tenant not loaded');
+      if (pairingProblem) throw new Error(t('settings.invoicing_toggle.pairing_problem'));
       const { error } = await supabase
         .from('tenants')
         .update({ invoicing_provider: resolveInvoicingProviderToSave({ enabled, selectedProvider }) })
@@ -100,13 +116,18 @@ export function InvoicingToggleForm() {
             value={selectedProvider}
             onChange={(e) => setSelectedProvider(e.target.value)}
           >
-            {INVOICING_ON_PROVIDERS.map((slug) => (
+            {choices.map((slug) => (
               <option key={slug} value={slug}>
                 {t(`settings.invoicing_toggle.providers.${slug}`)}
               </option>
             ))}
           </select>
           <p className="text-xs text-muted-foreground">{t('settings.invoicing_toggle.credentials_hint')}</p>
+          {pairingProblem && (
+            <p className="text-sm text-destructive" role="alert">
+              {t('settings.invoicing_toggle.pairing_problem')}
+            </p>
+          )}
         </div>
       ) : (
         <p className="text-sm rounded-lg border border-border bg-muted/40 px-3 py-2" role="note">
@@ -123,7 +144,7 @@ export function InvoicingToggleForm() {
       <Button
         type="button"
         variant="primary"
-        disabled={saveMutation.isPending}
+        disabled={saveMutation.isPending || pairingProblem}
         isLoading={saveMutation.isPending}
         onClick={() => saveMutation.mutate()}
       >

@@ -105,7 +105,7 @@ export async function sendPaymentDocumentClientEmail(
 
   const { data: tenant } = await service
     .from("tenants")
-    .select(`name, language_default, vat_type, ${TENANT_SENDER_COLUMNS}`)
+    .select(`name, language_default, invoicing_provider, ypay_document_type, ${TENANT_SENDER_COLUMNS}`)
     .eq("id", params.tenantId)
     .maybeSingle();
 
@@ -139,7 +139,7 @@ export async function sendPaymentDocumentClientEmail(
     docNumber,
     docUrl,
     paymentMethod: payment.payment_method as string | null,
-    vatExempt: Number(tenant?.vat_type) === 3,
+    documentKind: clientDocumentKind(tenant),
   });
 
   try {
@@ -181,16 +181,39 @@ export interface ClientDocumentEmailInput {
   docNumber: string;
   docUrl: string;
   paymentMethod: string | null;
-  /** VAT-exempt dealers issue a receipt; others an invoice-receipt. Only affects wording. */
-  vatExempt: boolean;
+  /**
+   * What the provider issued, when we know it. Only affects wording; null = a neutral
+   * "document" label. Never inferred from the studio's business status.
+   */
+  documentKind: ClientDocumentKind | null;
 }
+
+export type ClientDocumentKind = "receipt" | "invoice_receipt";
+
+/**
+ * The document the studio's invoicing provider issues, as far as we know it:
+ * YPay issues the type set in Settings (tenants.ypay_document_type: 108 receipt, 109
+ * invoice-receipt). Other providers decide from the owner's own account and do not tell us
+ * the kind, so the email uses a neutral label.
+ */
+export function clientDocumentKind(
+  tenant: { invoicing_provider?: unknown; ypay_document_type?: unknown } | null | undefined,
+): ClientDocumentKind | null {
+  if (tenant?.invoicing_provider !== "ypay") return null;
+  return Number(tenant.ypay_document_type) === 108 ? "receipt" : "invoice_receipt";
+}
+
+const DOC_LABELS: Record<"he" | "en", Record<ClientDocumentKind | "document", string>> = {
+  he: { receipt: "קבלה", invoice_receipt: "חשבונית מס קבלה", document: "מסמך" },
+  en: { receipt: "Receipt", invoice_receipt: "Invoice-receipt", document: "Document" },
+};
 
 /** Pure renderer (covered by tests). Plain HTML — no React shell needed for a receipt note. */
 export function renderClientDocumentEmail(input: ClientDocumentEmailInput): { subject: string; html: string } {
   const he = input.language === "he";
-  const docLabel = he
-    ? input.vatExempt ? "קבלה" : "חשבונית מס קבלה"
-    : input.vatExempt ? "Receipt" : "Invoice-receipt";
+  const docLabel = DOC_LABELS[input.language][input.documentKind ?? "document"];
+  // Hebrew agreement: קבלה / חשבונית are feminine, מסמך is masculine.
+  const heAttached = input.documentKind ? "מצורפת" : "מצורף";
   const methodLabel = he
     ? input.paymentMethod === "cash" ? "במזומן" : input.paymentMethod === "bank_transfer" ? "בהעברה בנקאית" : ""
     : input.paymentMethod === "cash" ? "in cash" : input.paymentMethod === "bank_transfer" ? "by bank transfer" : "";
@@ -201,7 +224,7 @@ export function renderClientDocumentEmail(input: ClientDocumentEmailInput): { su
     ? `קיבלנו את התשלום שלך על סך ${escapeHtml(input.amount)}${methodLabel ? ` ${methodLabel}` : ""}. תודה!`
     : `We received your payment of ${escapeHtml(input.amount)}${methodLabel ? ` ${methodLabel}` : ""}. Thank you!`;
   const docLine = he
-    ? `${docLabel} מספר ${escapeHtml(input.docNumber)} מצורפת בקישור:`
+    ? `${docLabel} מספר ${escapeHtml(input.docNumber)} ${heAttached} בקישור:`
     : `${docLabel} number ${escapeHtml(input.docNumber)} is available here:`;
   const linkText = he ? `לצפייה ב${docLabel}` : `Open the ${docLabel.toLowerCase()}`;
   const noLink = he
