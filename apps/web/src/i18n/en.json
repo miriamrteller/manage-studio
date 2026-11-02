@@ -1,5 +1,6 @@
 {
   "common": {
+    "captcha_needed": "Please complete the security check.",
     "saveChanges": "Save Changes",
     "saving": "Saving...",
     "saved": "Saved!",

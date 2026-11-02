@@ -12,6 +12,7 @@ import {
 import { resolveAuthErrorMessage } from '@/lib/authErrors';
 import { buildAuthCallbackRedirect } from '@/lib/authRedirect';
 import { sendLoginEmailOtp, verifyLoginEmailOtp } from '@/lib/loginEmailOtp';
+import { useCaptcha, type Captcha } from '@/components/captcha/useCaptcha';
 import { loginOtpOptions } from '@/lib/loginOtpOptions';
 import { verifySessionBelongsToTenant } from '@/lib/tenantMembership';
 
@@ -44,6 +45,8 @@ export interface LoginState {
   } | null;
   codeStep: CodeStep;
   codeEmail: string;
+  /** CAPTCHA for the email/password calls; render `captcha.widget` by the submit button. */
+  captcha: Captcha;
 }
 
 export interface LoginActions {
@@ -64,6 +67,7 @@ export function useLogin(
   const [message, setMessage] = useState<LoginState['message']>(null);
   const [codeStep, setCodeStep] = useState<CodeStep>('send');
   const [codeEmail, setCodeEmail] = useState('');
+  const captcha = useCaptcha();
 
   const redirectAfterLogin = () => {
     setMessage({
@@ -117,7 +121,9 @@ export function useLogin(
         parsed.email,
         otpOptions,
         buildAuthCallbackRedirect('code'),
+        captcha.authOptions().captchaToken,
       );
+      captcha.reset();
 
       if (error) {
         setMessage({
@@ -202,7 +208,9 @@ export function useLogin(
         const { error } = await supabase.auth.signInWithPassword({
           email: passwordData.email,
           password: passwordData.password,
+          ...(captcha.token ? { options: captcha.authOptions() } : {}),
         });
+        captcha.reset();
 
         if (error) {
           if (error.message.includes('Invalid login credentials')) {
@@ -237,8 +245,10 @@ export function useLogin(
             shouldCreateUser: otpOptions.shouldCreateUser,
             emailRedirectTo: buildAuthCallbackRedirect('magic_link'),
             data: otpOptions.data,
+            ...captcha.authOptions(),
           },
         });
+        captcha.reset();
 
         if (error) {
           setMessage({
@@ -271,6 +281,7 @@ export function useLogin(
     message,
     codeStep,
     codeEmail,
+    captcha,
     onSubmit,
     resetMessage,
     sendEmailCode,

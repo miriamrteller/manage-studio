@@ -18,7 +18,7 @@ import {
 } from '../services/studioSetupService';
 import { INITIAL_FORM, toSetupRequest, VERTICALS, type StudioSetupForm } from '../lib/studioSetupForm';
 import { platformTermsVersion } from '@/legal/acceptance';
-import { TurnstileWidget } from '@/features/self-serve/TurnstileWidget';
+import { TurnstileWidget } from '@/components/captcha/TurnstileWidget';
 import {
   createSelfServeStudio,
   turnstileSiteKey,

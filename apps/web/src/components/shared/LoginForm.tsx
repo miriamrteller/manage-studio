@@ -9,6 +9,7 @@ import {
   type PasswordLogin as PasswordLoginData,
 } from '@/schemas';
 import type { AuthMode, CodeStep } from '@/hooks/useLogin';
+import type { Captcha } from '@/components/captcha/useCaptcha';
 import { AuthMessage } from './AuthMessage';
 import { OtpCodeForm } from './OtpCodeForm';
 import { Button } from '@/components/ui/button';
@@ -45,6 +46,8 @@ interface LoginFormProps {
   onResendEmailCode: () => Promise<void>;
   onBackToCodeSend: () => void;
   onMessageDismiss?: () => void;
+  /** CAPTCHA check (from useLogin); shown before each send or sign-in when configured. */
+  captcha?: Pick<Captcha, 'widget' | 'ready'>;
 }
 
 export function LoginForm({
@@ -57,7 +60,9 @@ export function LoginForm({
   onResendEmailCode,
   onBackToCodeSend,
   onMessageDismiss,
+  captcha,
 }: LoginFormProps) {
+  const captchaReady = captcha?.ready ?? true;
   const { t } = useTranslation();
   const [authMode, setAuthMode] = useState<AuthMode>('password');
   const [secondsRemaining, setSecondsRemaining] = useState(60);
@@ -156,9 +161,11 @@ export function LoginForm({
             </p>
           </div>
 
+          {canResend && captcha?.widget}
+
           <Button
             onClick={handleResendCode}
-            disabled={!canResend || isLoading}
+            disabled={!canResend || isLoading || !captchaReady}
             variant="outline"
             className="w-full"
           >
@@ -203,12 +210,15 @@ export function LoginForm({
             />
           )}
 
+          {captcha?.widget}
+
           <Button
             type="submit"
             variant="primary"
             size="md"
             fullWidth
             isLoading={isLoading}
+            disabled={!captchaReady}
           >
             {isLoading
               ? t('common.loading')
