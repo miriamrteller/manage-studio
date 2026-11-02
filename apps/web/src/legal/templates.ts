@@ -16,3 +16,11 @@ export async function loadLegalTemplate(doc: LegalDocId, lang: LegalLang): Promi
   if (!key) throw new Error(`Legal template not found: ${file}`);
   return loaders[key]();
 }
+
+/** Any docs/legal template by file prefix (e.g. "07b-health-declaration"). */
+export async function loadLegalFile(prefix: string, lang: LegalLang): Promise<string> {
+  const file = `${prefix}.${lang}.md`;
+  const key = Object.keys(loaders).find((k) => k.endsWith(`/${file}`));
+  if (!key) throw new Error(`Legal template not found: ${file}`);
+  return loaders[key]();
+}

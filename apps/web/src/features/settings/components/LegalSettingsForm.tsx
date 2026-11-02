@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { LegalLinksSettingsForm } from './LegalLinksSettingsForm';
-import { LawyerReviewNote } from '@/components/legal/LawyerReviewNote';
+import { LegalPackPanel } from '@/components/legal/LegalPackPanel';
 import { supabase } from '@/lib/supabase';
 import { useTenant } from '@/hooks/useTenant';
 import {
@@ -13,7 +13,7 @@ import {
   type LegalFieldDef,
   type LegalFieldSection,
 } from '@/legal/fields';
-import { legalTextVersion, prepareLegalMarkdown } from '@/legal/render';
+import { prepareLegalMarkdown } from '@/legal/render';
 import { loadLegalTemplate } from '@/legal/templates';
 import {
   tenantHasEnrolmentTerms,
@@ -72,33 +72,6 @@ export function LegalSettingsForm() {
     },
   });
 
-  // One hash for what is live: the rendered documents from the SAVED profile,
-  // both languages. Keys the "have a lawyer review" note's dismissal.
-  const { data: publishedVersion } = useQuery({
-    queryKey: ['legal-published-version', legal?.tenantId, legal?.updatedAt, vertical, legal?.published],
-    enabled: !!legal?.published,
-    staleTime: 5 * 60 * 1000,
-    queryFn: async () => {
-      const parts: string[] = [];
-      for (const doc of publishDocs) {
-        for (const l of ['he', 'en'] as const) {
-          const raw = await loadLegalTemplate(doc, l);
-          parts.push(
-            prepareLegalMarkdown(raw, {
-              doc,
-              lang: l,
-              vertical,
-              tenantName: legal!.name,
-              contactEmail: legal!.contactEmail,
-              profile: legal!.profile,
-              updatedAt: legal!.updatedAt,
-            }).version,
-          );
-        }
-      }
-      return legalTextVersion(parts.join('|'));
-    },
-  });
 
   const save = useMutation({
     mutationFn: async (opts: { publish?: boolean }) => {
@@ -190,7 +163,8 @@ export function LegalSettingsForm() {
         <p className="text-xs text-muted-foreground mt-1">{t('legal.settings.language_note')}</p>
       </div>
 
-      {legal.published && <LawyerReviewNote tenantId={legal.tenantId} version={publishedVersion ?? null} />}
+      {/* Drafts notice, the PDF for a lawyer and the acknowledgement (replaces the dismissible note). */}
+      <LegalPackPanel tenantId={legal.tenantId} mode="acknowledge" />
 
       {SECTION_ORDER.map((section) => {
         const sectionFields = fields.filter((f) => f.section === section);

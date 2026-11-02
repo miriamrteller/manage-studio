@@ -3311,6 +3311,8 @@ export type Database = {
                     labels: Json;
                     language_default: string;
                     lead_form: Json;
+                    legal_pack_acknowledged_at: string | null;
+                    legal_pack_required: boolean;
                     legal_pages_published: boolean;
                     legal_profile: Json;
                     legal_profile_updated_at: string | null;
@@ -3380,6 +3382,8 @@ export type Database = {
                     labels?: Json;
                     language_default?: string;
                     lead_form?: Json;
+                    legal_pack_acknowledged_at?: string | null;
+                    legal_pack_required?: boolean;
                     legal_pages_published?: boolean;
                     legal_profile?: Json;
                     legal_profile_updated_at?: string | null;
@@ -3449,6 +3453,8 @@ export type Database = {
                     labels?: Json;
                     language_default?: string;
                     lead_form?: Json;
+                    legal_pack_acknowledged_at?: string | null;
+                    legal_pack_required?: boolean;
                     legal_pages_published?: boolean;
                     legal_profile?: Json;
                     legal_profile_updated_at?: string | null;
@@ -3940,6 +3946,13 @@ export type Database = {
                     p_token: string;
                 };
                 Returns: Json;
+            };
+            acknowledge_studio_legal_pack: {
+                Args: {
+                    p_language: string;
+                    p_version: string;
+                };
+                Returns: string;
             };
             admin_enrolment_lookup_email: {
                 Args: {
@@ -4513,6 +4526,9 @@ export type Database = {
                 };
                 Returns: {
                     contact_email: string;
+                    language_default: string;
+                    legal_pack_acknowledged_at: string;
+                    legal_pack_required: boolean;
                     legal_pages_published: boolean;
                     legal_profile: Json;
                     legal_profile_updated_at: string;
