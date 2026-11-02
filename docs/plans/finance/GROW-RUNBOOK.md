@@ -34,7 +34,7 @@ connected, Grow may issue documents without an allocation number for amounts abo
 
 | Variable | Used by | Notes |
 | --- | --- | --- |
-| `GROW_API_BASE` | payment provider | Defaults to the sandbox base `https://sandbox.meshulam.co.il/api/light/server/1.0`. Set to the production base for live. |
+| `GROW_API_BASE` | payment provider | **Required** (no default). Sandbox base `https://sandbox.meshulam.co.il/api/light/server/1.0` on dev only; prod must use the live base (deploy-prod and `pnpm verify:prod` fail on a missing or sandbox value). |
 | `GROW_NOTIFY_URL` | `createCharge` | Public URL of the `handle-payment-event` function so Grow can post the payment notify. |
 | `GROW_MOCK` | provider factory | `true` in CI/dev to use `MockGrowPaymentProvider` and never hit the live API. |
 | `app.encryption_key` | DB | Postgres GUC used by `save_tenant_grow_credentials` to encrypt the API key. |
@@ -44,11 +44,18 @@ connected, Grow may issue documents without an allocation number for amounts abo
 
 | Webhook | Endpoint | Notes |
 | --- | --- | --- |
-| Payment notify | `handle-payment-event` | Parses the Grow notify, calls Approve Transaction on success, finalises the payment. Routed per tenant via `cField1`. |
+| Payment notify | `handle-payment-event` | Checks the webhook key, matches the notice to our pending payment row (tenant, engagement, amount), calls Approve Transaction (must return `status: 1`), then finalises. Routed per tenant via `cField1`. |
 | Document notify | `handle-invoice-event` | Idempotently writes `external_document_id` / `invoice_url` onto the payment and settles the `document_queue`. |
 
 Both functions resolve the tenant from the custom field `cField1` (= `tenant_id`), so a single
 webhook URL serves all tenants.
+
+**Webhook key (required).** Every Grow notice (payment and document) must carry the studio's
+`webhookKey`; a notice without it, with a wrong one, or for a studio with no key is rejected
+(401) and changes nothing. Settings → Payments → Grow makes a key when the credentials are first
+saved and shows it once with the notification URL; "Make a new webhook key" rotates it (the old
+key keeps working for 24 hours). Still to confirm against a live Grow account: where in Grow the
+key is entered and that Grow sends it as `webhookKey` (see `providers/grow.ts readGrowInboundKey`).
 
 ## 5. Webhook ordering and bundled documents
 

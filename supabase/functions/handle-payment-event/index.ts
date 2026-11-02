@@ -3,6 +3,8 @@ import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { handlePaymentEventInternal } from "../_shared/payments/handle-payment-event.ts";
 import { getPaymentProviderForTenant } from "../_shared/payments/index.ts";
 import { peekGrowTenantId } from "../_shared/payments/grow/metadata.ts";
+import { processGrowNotify } from "../_shared/payments/grow/process-notify.ts";
+import { GrowPaymentProvider } from "../_shared/payments/providers/grow.ts";
 import { peekInvoice4uOrderId } from "../_shared/payments/invoice4u/callback.ts";
 import { loadPaymentByProviderRef } from "../_shared/payments/invoice4u/pending-charge.ts";
 import { processInvoice4uPaymentCallback } from "../_shared/payments/invoice4u/process-callback.ts";
@@ -77,6 +79,18 @@ Deno.serve(withMonitoring("handle-payment-event", async (req) => {
     }
 
     const provider = await getPaymentProviderForTenant(service, tenantId);
+
+    // Live Grow notify — dedicated path: webhook key required, compared with our pending
+    // row (tenant, engagement, amount), approveTransaction must return status 1. Fails closed.
+    if (provider instanceof GrowPaymentProvider) {
+      const result = await processGrowNotify(service, rawBody);
+      if (result.status === "succeeded" || result.status === "failed") {
+        return jsonResponse({ received: true, ...result });
+      }
+      const httpStatus = result.status === "rejected" ? result.httpStatus : 400;
+      return jsonResponse({ error: result.status, received: false, reason: result.reason }, httpStatus);
+    }
+
     const event = await provider.constructEvent(rawBody, req.headers, tenantId);
     const result = await handlePaymentEventInternal(service, event, provider.slug);
 

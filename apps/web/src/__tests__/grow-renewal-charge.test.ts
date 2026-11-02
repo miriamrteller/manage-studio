@@ -2,10 +2,11 @@
  * G6: Grow recurring renewals charge a saved card token and round-trip billing_schedule_id.
  * Run: pnpm -C apps/web test grow-renewal-charge.test.ts
  */
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { GrowPaymentProvider } from '../../../../supabase/functions/_shared/payments/providers/grow.ts';
 import { MockGrowPaymentProvider } from '../../../../supabase/functions/_shared/payments/providers/mock-grow.ts';
 import { buildChargeMetadata } from '../../../../supabase/functions/_shared/payments/providers/mock.ts';
+import { makeGrowFakeService } from './helpers/growFakeService';
 
 const renewalMetadata = buildChargeMetadata({
   tenantId: '00000000-0000-0000-0000-0000000000aa',
@@ -22,24 +23,26 @@ const renewalMetadata = buildChargeMetadata({
 });
 
 function makeService() {
-  return {
-    rpc: async () => ({
-      data: [
-        { payment_provider_public_key: 'page_code_123', payment_provider_secret_key: 'api_key' },
+  return makeGrowFakeService({
+    tables: {
+      tenants: [{ id: renewalMetadata.tenant_id, payment_provider_account_id: 'grow_user_1' }],
+      engagements: [
+        {
+          id: renewalMetadata.engagement_id,
+          tenant_id: renewalMetadata.tenant_id,
+          person_id: '44444444-4444-4444-4444-444444444444',
+          offering_id: '33333333-3333-3333-3333-333333333333',
+        },
       ],
-      error: null,
-    }),
-    from: () => ({
-      select: () => ({
-        eq: () => ({
-          single: async () => ({ data: { payment_provider_account_id: 'grow_user_1' }, error: null }),
-        }),
-      }),
-    }),
-  } as never;
+    },
+  });
 }
 
-afterEach(() => vi.restoreAllMocks());
+beforeEach(() => vi.stubEnv('GROW_API_BASE', 'https://grow.test/api/light/server/1.0'));
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllEnvs();
+});
 
 describe('GrowPaymentProvider renewal token charge', () => {
   it('uses createTransactionWithToken and round-trips billing_schedule_id', async () => {
@@ -47,7 +50,8 @@ describe('GrowPaymentProvider renewal token charge', () => {
       .spyOn(globalThis, 'fetch')
       .mockResolvedValue(new Response(JSON.stringify({ status: 1 }), { status: 200 }));
 
-    const provider = new GrowPaymentProvider(makeService());
+    const { service, tables } = makeService();
+    const provider = new GrowPaymentProvider(service);
     const result = await provider.createCharge({
       amountMinor: 35000,
       currency: 'ILS',
@@ -58,6 +62,15 @@ describe('GrowPaymentProvider renewal token charge', () => {
 
     expect(result.pendingWebhook).toBe(true);
     expect(result.providerPaymentRef).toBe('renew-2026-06');
+    // A pending row is written first, so the notify can be checked against it.
+    expect(tables.payments).toHaveLength(1);
+    expect(tables.payments[0]).toMatchObject({
+      provider: 'grow',
+      provider_payment_ref: 'renew-2026-06',
+      status: 'pending',
+      total_amount_minor: 35000,
+      charge_type: 'renewal',
+    });
 
     const [url, init] = fetchSpy.mock.calls[0];
     expect(String(url)).toContain('createTransactionWithToken');
@@ -72,7 +85,8 @@ describe('GrowPaymentProvider renewal token charge', () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(JSON.stringify({ status: 0, err: { message: 'token expired' } }), { status: 200 }),
     );
-    const provider = new GrowPaymentProvider(makeService());
+    const { service, tables } = makeService();
+    const provider = new GrowPaymentProvider(service);
     await expect(
       provider.createCharge({
         amountMinor: 35000,
@@ -82,6 +96,8 @@ describe('GrowPaymentProvider renewal token charge', () => {
         savedToken: 'expired',
       }),
     ).rejects.toThrow(/token expired/i);
+    // Grow refused, so no notify will come: the pending row is closed as failed.
+    expect(tables.payments[0]).toMatchObject({ status: 'failed' });
   });
 });
 

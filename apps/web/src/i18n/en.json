@@ -2582,7 +2582,22 @@
       "test_connection": "Test connection",
       "health_title": "Connection status",
       "health_ok": "Connected to Grow.",
-      "health_failed": "Could not connect to Grow."
+      "health_failed": "Could not connect to Grow.",
+      "saved_with_key": "Grow credentials saved. Now add the webhook key below to your Grow account.",
+      "webhook_title": "Payment notifications",
+      "webhook_description": "Grow tells OpalSwift when a payment goes through. In your Grow account, set the notification address and webhook key below. OpalSwift ignores notifications without the right key, so payments will not be marked as paid until this is done.",
+      "webhook_url": "Notification address (URL)",
+      "webhook_key": "Webhook key",
+      "webhook_key_once": "Copy this key into Grow now. For your security it is shown only once. If you lose it, make a new one.",
+      "webhook_checking": "Checking…",
+      "webhook_key_set": "A webhook key is set. It is not shown again.",
+      "webhook_key_missing": "No webhook key yet. Payments cannot be confirmed until you make one and add it to Grow.",
+      "webhook_create": "Make a webhook key",
+      "webhook_rotate": "Make a new webhook key",
+      "webhook_rotate_hint": "The previous key keeps working for 24 hours, so you have time to update Grow.",
+      "webhook_copy": "Copy",
+      "webhook_copied": "Copied",
+      "webhook_copy_label": "Copy {{label}}"
     },
     "icount": {
       "title": "Payments & invoices (iCount)",

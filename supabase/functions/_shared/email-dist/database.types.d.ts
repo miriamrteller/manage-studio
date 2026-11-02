@@ -4275,6 +4275,14 @@ export type Database = {
                     email: string;
                 }[];
             };
+            get_grow_webhook_key_status: {
+                Args: never;
+                Returns: {
+                    configured: boolean;
+                    created_at: string;
+                    key_version: number;
+                }[];
+            };
             get_grow_webhook_secret: {
                 Args: {
                     p_tenant_id: string;
@@ -4985,6 +4993,10 @@ export type Database = {
                     recipient_email: string;
                     recipient_name: string;
                 }[];
+            };
+            rotate_grow_webhook_key: {
+                Args: never;
+                Returns: string;
             };
             save_grow_webhook_secret: {
                 Args: {

@@ -2582,7 +2582,22 @@
       "test_connection": "בדיקת חיבור",
       "health_title": "סטטוס חיבור",
       "health_ok": "מחובר ל‑Grow.",
-      "health_failed": "לא ניתן להתחבר ל‑Grow."
+      "health_failed": "לא ניתן להתחבר ל‑Grow.",
+      "saved_with_key": "פרטי Grow נשמרו. עכשיו יש להוסיף את מפתח ה‑Webhook שלמטה לחשבון Grow שלך.",
+      "webhook_title": "הודעות על תשלומים",
+      "webhook_description": "Grow מודיעה ל‑OpalSwift כשתשלום עובר. בחשבון Grow שלך יש להגדיר את כתובת ההודעות ואת מפתח ה‑Webhook שלמטה. OpalSwift מתעלמת מהודעות בלי המפתח הנכון, ולכן תשלומים לא יסומנו כשולמו עד שזה ייעשה.",
+      "webhook_url": "כתובת להודעות (URL)",
+      "webhook_key": "מפתח Webhook",
+      "webhook_key_once": "יש להעתיק את המפתח ל‑Grow עכשיו. מטעמי אבטחה הוא מוצג פעם אחת בלבד. אם הוא אבד, אפשר ליצור מפתח חדש.",
+      "webhook_checking": "בודק…",
+      "webhook_key_set": "מוגדר מפתח Webhook. הוא לא יוצג שוב.",
+      "webhook_key_missing": "עדיין אין מפתח Webhook. לא ניתן לאשר תשלומים עד שתיצרו מפתח ותוסיפו אותו ל‑Grow.",
+      "webhook_create": "יצירת מפתח Webhook",
+      "webhook_rotate": "יצירת מפתח Webhook חדש",
+      "webhook_rotate_hint": "המפתח הקודם ממשיך לעבוד 24 שעות, כדי שיהיה זמן לעדכן את Grow.",
+      "webhook_copy": "העתקה",
+      "webhook_copied": "הועתק",
+      "webhook_copy_label": "העתקת {{label}}"
     },
     "icount": {
       "title": "תשלומים וחשבוניות (iCount)",

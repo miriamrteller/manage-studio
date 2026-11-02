@@ -7,6 +7,8 @@ import { handleInvoiceEventInternal } from '../../../../supabase/functions/_shar
 import * as growProvider from '../../../../supabase/functions/_shared/payments/providers/grow.ts';
 import * as icountDocument from '../../../../supabase/functions/_shared/payments/icount/document.ts';
 import growInvoiceNotify from './fixtures/grow-invoice-notify.json';
+
+const GROW_KEY = 'grow-test-webhook-key-0000000000000001';
 import icountDocumentFixture from './fixtures/icount-document-webhook-official-example.json';
 
 const GROW_TENANT = '00000000-0000-0000-0000-0000000000aa';
@@ -109,7 +111,8 @@ function makeService(options: {
       }),
     },
     // No stored webhook key — Grow key validation is opt-in and skipped.
-    rpc: async () => ({ data: [], error: null }),
+    // Grow notices need the studio's webhook key (P1 #1); other providers ignore it.
+    rpc: async () => ({ data: [{ webhook_secret: GROW_KEY }], error: null }),
   } as never;
 
   return { service, paymentUpdates, queueUpdates };
@@ -142,7 +145,10 @@ describe('handle-invoice-event isolation (I2a-T1 … I2a-T4)', () => {
 
     const result = await handleInvoiceEventInternal(
       service,
-      JSON.stringify(growInvoiceNotify),
+      JSON.stringify({
+        ...growInvoiceNotify,
+        data: { ...(growInvoiceNotify as { data: Record<string, unknown> }).data, webhookKey: GROW_KEY },
+      }),
     );
 
     expect(result.ok).toBe(true);
