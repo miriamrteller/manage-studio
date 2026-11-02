@@ -37,6 +37,7 @@ vi.mock('@/features/crm/lib/qr', async (orig) => ({
   downloadBlob: h.downloadBlob,
   qrPng: h.qrPng,
 }));
+vi.mock('@/lib/supabase', () => ({ supabase: { functions: { invoke: vi.fn() } } }));
 vi.mock('@/features/crm/lib/poster', async (orig) => ({
   ...(await orig<typeof import('@/features/crm/lib/poster')>()),
   posterPdf: h.posterPdf,
@@ -46,6 +47,7 @@ import { GetLeadsPanel } from '@/features/crm/components/GetLeadsPanel';
 import { composeHref, fileSlug, formLink, SHARE_CHANNELS } from '@/features/crm/lib/shareTargets';
 import { qrMatrix, qrSvgPath } from '@/features/crm/lib/qr';
 import { jpegPdf } from '@/features/crm/lib/poster';
+import { WEBSITE_PLATFORMS, WEBSITE_STEPS } from '@shared/index';
 import { channelFromSrc } from '../../../../supabase/functions/_shared/crm-contract/lead-ingest-core.ts';
 
 const origin = 'https://creativeballet.opalswift.com';
@@ -183,9 +185,10 @@ describe('GetLeadsPanel', () => {
     renderPanel();
     const details = screen.getByText('pages.crm.get_leads.website_title').closest('details')!;
     expect(details.open).toBe(false);
-    for (const p of ['wix', 'wordpress', 'squarespace', 'google_sites']) {
-      expect(screen.getByText(`pages.crm.get_leads.steps_${p}.1`)).toBeTruthy();
+    for (const p of WEBSITE_PLATFORMS) {
+      expect(screen.getByText(WEBSITE_STEPS.en[p][0])).toBeTruthy();
     }
+    expect(screen.getByLabelText('pages.crm.get_leads.instructions_title')).toBeTruthy();
     expect(screen.getByText('leads-creativeballet@opalswift.com')).toBeTruthy();
     expect(screen.getByText('pages.crm.get_leads.email_hint')).toBeTruthy();
   });
