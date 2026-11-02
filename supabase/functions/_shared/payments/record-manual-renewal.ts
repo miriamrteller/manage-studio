@@ -78,7 +78,8 @@ export async function recordManualRenewal(
   }
 
   const period = (schedule.next_billing_date as string).slice(0, 7);
-  const totalMinor = input.amountMinor ?? deps.priceMinor(offering.price_minor as number);
+  const classPriceMinor = deps.priceMinor(offering.price_minor as number);
+  const totalMinor = input.amountMinor ?? classPriceMinor;
 
   const { data: paymentRow, error: insertError } = await service
     .from("payments")
@@ -132,6 +133,8 @@ export async function recordManualRenewal(
       period,
       method: input.method,
       amount_minor: totalMinor,
+      class_price_minor: classPriceMinor,
+      amount_changed: totalMinor !== classPriceMinor,
     },
   });
 

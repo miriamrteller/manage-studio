@@ -330,6 +330,8 @@ export function StudentSlideOver({
                                 <RecordPaymentModal
                                   kind="monthly"
                                   engagementId={engagement.id}
+                                  defaultAmountMinor={offering?.price_minor}
+                                  currency={offering?.currency}
                                   onRecorded={() => {
                                     invalidateFinanceCaches();
                                     setRecordingEngagementId(null);
@@ -355,6 +357,8 @@ export function StudentSlideOver({
                               recordingEngagementId === engagement.id ? (
                                 <RecordPaymentModal
                                   engagementId={engagement.id}
+                                  defaultAmountMinor={offering?.price_minor}
+                                  currency={offering?.currency}
                                   onRecorded={() => {
                                     invalidateFinanceCaches();
                                     setRecordingEngagementId(null);

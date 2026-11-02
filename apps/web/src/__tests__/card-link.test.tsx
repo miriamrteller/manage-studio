@@ -206,12 +206,12 @@ describe('RecordPaymentModal, monthly', () => {
     const { RecordPaymentModal } = await import('../features/finance/components/RecordPaymentModal');
     invoke.mockResolvedValue({ data: { ok: true, paymentId: 'p1', period: '2026-12' }, error: null });
     const onRecorded = vi.fn();
-    wrap(<RecordPaymentModal kind="monthly" engagementId={ENGAGEMENT} onRecorded={onRecorded} />);
+    wrap(<RecordPaymentModal kind="monthly" engagementId={ENGAGEMENT} onRecorded={onRecorded} defaultAmountMinor={35000} currency="ILS" />);
     expect(screen.getByText('finance.record_payment.monthly_title')).toBeTruthy();
     expect(screen.getByText('finance.record_payment.monthly_hint')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'finance.record_payment.submit' }));
     await waitFor(() =>
-      expect(invoke).toHaveBeenCalledWith('record-payment', { body: { engagement_id: ENGAGEMENT, method: 'cash', note: undefined } }),
+      expect(invoke).toHaveBeenCalledWith('record-payment', { body: { engagement_id: ENGAGEMENT, method: 'cash', note: undefined, amount_minor: 35000 } }),
     );
     await waitFor(() => expect(onRecorded).toHaveBeenCalled());
   });

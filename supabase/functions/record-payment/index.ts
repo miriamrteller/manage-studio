@@ -149,6 +149,22 @@ Deno.serve(withMonitoring("record-payment", async (req) => {
     return jsonResponse({ error: insertError?.message ?? "Insert failed" }, 500);
   }
 
+  // Who recorded what amount, against the class price (the admin may enter a different one).
+  await service.from("audit_log").insert({
+    tenant_id: tenantId,
+    action: "manual_payment_recorded",
+    entity_type: "payment",
+    entity_id: paymentRow.id,
+    actor_id: auth.user.id,
+    after_state: {
+      engagement_id: body.engagement_id,
+      method: body.method,
+      amount_minor: totalMinor,
+      class_price_minor: pricing.totalMinor,
+      amount_changed: totalMinor !== pricing.totalMinor,
+    },
+  });
+
   await finalisePayment(service, {
     tenantId,
     paymentRow: paymentRow as { id: string; engagement_id: string | null; charge_type: string },
