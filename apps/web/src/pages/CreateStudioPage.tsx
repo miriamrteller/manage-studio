@@ -213,8 +213,6 @@ function StartForm({ linkFailed }: { linkFailed: boolean }) {
   );
 }
 
-const READY_CHECKLIST = ['studio_setup.next_branding', 'studio_setup.next_classes', 'self_serve.next_payments', 'studio_setup.next_legal', 'studio_setup.next_test_enrolment'] as const;
-
 function StudioReady({ result, name }: { result: SelfServeStudioResult; name: string }) {
   const { t } = useTranslation();
   const [going, setGoing] = useState(false);
@@ -237,13 +235,9 @@ function StudioReady({ result, name }: { result: SelfServeStudioResult; name: st
         {t('self_serve.created_body')}{' '}
         <span dir="ltr" className="font-mono">{address}</span>
       </p>
-      <div className="space-y-2">
-        <h2 className="text-lg font-semibold">{t('studio_setup.next_title')}</h2>
-        <ol className="list-decimal space-y-1 ps-5">
-          {READY_CHECKLIST.map((key) => (
-            <li key={key}>{t(key)}</li>
-          ))}
-        </ol>
+      <div className="space-y-1">
+        <h2 className="text-lg font-semibold">{t('setup_guide.ready_title')}</h2>
+        <p>{t('setup_guide.ready_body')}</p>
       </div>
       <div className="text-center">
         <Button onClick={() => void goToStudio()} disabled={going} variant="primary">
