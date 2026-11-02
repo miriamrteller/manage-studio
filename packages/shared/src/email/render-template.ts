@@ -3,6 +3,7 @@ import { render } from '@react-email/render';
 import type { EmailColorConfig, EmailFooterStrings } from '../email-templates/BaseEmailTemplate.js';
 import ClassCancellationEmail from '../email-templates/ClassCancellationEmail.js';
 import MagicLinkEmail from '../email-templates/MagicLinkEmail.js';
+import StudioOwnerWelcomeEmail from '../email-templates/StudioOwnerWelcomeEmail.js';
 import OtpEmail from '../email-templates/OtpEmail.js';
 import PaymentReminderEmail from '../email-templates/PaymentReminderEmail.js';
 import WaitingListOfferEmail from '../email-templates/WaitingListOfferEmail.js';
@@ -91,7 +92,7 @@ function buildSubject(
   fallback: string,
 ): string {
   const subjectTemplate = str(templateStrings.subject) || str(templateStrings.preview) || fallback;
-  return interpolateTemplate(subjectTemplate, { schoolName });
+  return interpolateTemplate(subjectTemplate, { schoolName, studioName: schoolName });
 }
 
 function mergeTemplateStrings(
@@ -141,6 +142,18 @@ function buildComponent(
         otpCode: str(v.otpCode) || str(v.token) || undefined,
         expiresInMinutes: num(v.expiresInMinutes, 15),
         recipientName: str(v.recipientName) || undefined,
+      });
+
+    case EMAIL_TEMPLATE_NAMES.STUDIO_OWNER_WELCOME:
+      return React.createElement(StudioOwnerWelcomeEmail, {
+        studioName: schoolName,
+        studioUrl: str(v.studioUrl),
+        inviteUrl: str(v.inviteUrl) || str(v.confirmationUrl),
+        logoUrl: schoolLogoUrl,
+        language,
+        colors,
+        footerStrings,
+        strings,
       });
 
     case EMAIL_TEMPLATE_NAMES.WELCOME:

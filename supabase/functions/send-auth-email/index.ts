@@ -3,7 +3,8 @@ import { Webhook } from "https://esm.sh/standardwebhooks@1.0.0";
 import { sendHtmlEmail } from "../_shared/email-client.ts";
 
 const MAGIC_LINK_TEMPLATE = "magic_link";
-import { renderAuthMagicLinkHtml } from "../_shared/render-auth-email.ts";
+import { composeAuthEmail } from "./compose.ts";
+import { tenantBaseUrl } from "../_shared/tenant-url.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import {
   getEmailTemplateOverrides,
@@ -67,25 +68,15 @@ function shouldIncludeOtpInEmail(emailData: AuthEmailHookData): boolean {
   }
 }
 
-function subjectForAction(
-  action: string,
-  schoolName: string,
-  strings: Record<string, unknown>,
-): string {
-  if (action === "magiclink" || action === "signup") {
-    const template = String(strings.subject || strings.preview || "Sign in to {schoolName}");
-    return template.replace("{schoolName}", schoolName);
+/** The studio's address for the welcome email; null falls back to the plain invite. */
+function studioUrlFor(subdomain: string): string | null {
+  if (!subdomain) return null;
+  try {
+    return tenantBaseUrl(subdomain);
+  } catch (error) {
+    console.warn("send-auth-email: cannot build the studio address:", error);
+    return null;
   }
-  if (action === "recovery") {
-    return `Reset your password — ${schoolName}`;
-  }
-  if (action === "invite") {
-    return `You've been invited to ${schoolName}`;
-  }
-  if (action === "email_change") {
-    return `Confirm your email change — ${schoolName}`;
-  }
-  return `Notification from ${schoolName}`;
 }
 
 Deno.serve(withMonitoring("send-auth-email", async (req) => {
@@ -172,20 +163,21 @@ Deno.serve(withMonitoring("send-auth-email", async (req) => {
     const otpCode = shouldIncludeOtpInEmail(emailData)
       ? emailData.token || undefined
       : undefined;
-    const html = renderAuthMagicLinkHtml({
-      language: tenant.language,
-      schoolName: tenant.name,
-      magicLinkUrl: confirmationUrl,
+    const message = composeAuthEmail({
+      action,
+      tenant,
+      confirmationUrl,
       otpCode,
-      primaryColor: tenant.primary_color,
-      accentColor: tenant.accent_color,
+      strings,
+      studioUrl: studioUrlFor(tenant.subdomain),
     });
 
     await sendHtmlEmail({
       to: user.email,
       from: fromEmail,
-      subject: subjectForAction(action, tenant.name, strings),
-      html,
+      subject: message.subject,
+      html: message.html,
+      replyTo: message.replyTo,
     });
 
     return new Response(JSON.stringify({}), {

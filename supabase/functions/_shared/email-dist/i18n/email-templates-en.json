@@ -309,5 +309,21 @@
         "signed_at_label": "Signed at",
         "cta": "Download the signed contract",
         "closing": "This copy was sent automatically when the client signed."
+    },
+    "studio_owner_welcome": {
+        "subject": "Your studio {studioName} is ready on OpalSwift",
+        "preview": "Your studio {studioName} is ready on OpalSwift",
+        "greeting": "Welcome to OpalSwift!",
+        "intro": "Your studio {studioName} is ready. Set up your account to get started.",
+        "studio_address_label": "Your studio address:",
+        "cta_button": "Set up your account",
+        "next_heading": "What's next",
+        "next_step_1": "Sign in to your studio.",
+        "next_step_2": "Add your logo and your classes or services.",
+        "next_step_3": "Invite your first clients or families.",
+        "fallback_text": "If the button above doesn't work, copy and paste this link into your browser:",
+        "expiration_notice": "This link works for 1 hour. After that, sign in at your studio address with this email.",
+        "questions": "Questions? Just reply to this email.",
+        "footer_notice": "You are receiving this email because a studio was created for you on OpalSwift."
     }
 }

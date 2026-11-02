@@ -1,6 +1,8 @@
 import {
   applyMagicLinkShell,
+  applyStudioOwnerWelcomeShell,
   MAGIC_LINK_SHELLS,
+  STUDIO_OWNER_WELCOME_SHELLS,
   type AuthEmailLanguage,
 } from "./auth-email-shells/generated.ts";
 
@@ -28,4 +30,36 @@ export function renderAuthMagicLinkHtml(input: RenderAuthMagicLinkInput): string
     primaryColor: input.primaryColor,
     accentColor: input.accentColor,
   });
+}
+
+/** Where the welcome email's questions go (the "Reply-To" header). */
+export const STUDIO_OWNER_WELCOME_REPLY_TO = "hello@opalswift.com";
+
+/** OpalSwift's gem, served by the app Worker from apps/web/public on every host. */
+export const OPALSWIFT_LOGO_PATH = "/opalswift-gem.png";
+
+export interface RenderStudioOwnerWelcomeInput {
+  language: AuthEmailLanguage;
+  studioName: string;
+  /** e.g. https://<subdomain>.opalswift.com (no trailing slash) */
+  studioUrl: string;
+  inviteUrl: string;
+}
+
+/**
+ * The welcome a new studio owner gets with their invite link (auth action
+ * "invite", sent by provision-studio). OpalSwift-branded, in the studio's
+ * language. Answers go to hello@opalswift.com.
+ */
+export function renderStudioOwnerWelcome(
+  input: RenderStudioOwnerWelcomeInput,
+): { subject: string; html: string; replyTo: string } {
+  const lang = input.language === "he" ? "he" : "en";
+  const { subject, html } = applyStudioOwnerWelcomeShell(STUDIO_OWNER_WELCOME_SHELLS[lang], {
+    studioName: input.studioName,
+    studioUrl: input.studioUrl,
+    inviteUrl: input.inviteUrl,
+    logoUrl: `${input.studioUrl}${OPALSWIFT_LOGO_PATH}`,
+  });
+  return { subject, html, replyTo: STUDIO_OWNER_WELCOME_REPLY_TO };
 }

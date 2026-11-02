@@ -59,6 +59,46 @@ async function renderShell(language, withOtp) {
     .split('var(--email-accent)').join(PLACEHOLDER.accent);
 }
 
+/**
+ * Studio-owner welcome (the "invite" action). OpalSwift's own colours are baked
+ * in; the studio's name, address, the invite link and the logo URL are filled
+ * in at send time.
+ */
+const WELCOME_PLACEHOLDER = {
+  studioName: '{{STUDIO_NAME}}',
+  studioUrl: '{{STUDIO_URL}}',
+  inviteUrl: '{{INVITE_URL}}',
+  logoUrl: '{{LOGO_URL}}',
+};
+const OPALSWIFT_PRIMARY = '#4A58E8';
+const OPALSWIFT_ACCENT = '#21D1C2';
+
+async function renderWelcomeShell(language) {
+  const { html, subject } = await renderEmailTemplate({
+    templateName: EMAIL_TEMPLATE_NAMES.STUDIO_OWNER_WELCOME,
+    language,
+    schoolName: WELCOME_PLACEHOLDER.studioName,
+    schoolLogoUrl: WELCOME_PLACEHOLDER.logoUrl,
+    tenantColors: { primary_color: OPALSWIFT_PRIMARY, accent_color: OPALSWIFT_ACCENT },
+    variables: {
+      studioUrl: WELCOME_PLACEHOLDER.studioUrl,
+      inviteUrl: WELCOME_PLACEHOLDER.inviteUrl,
+    },
+  });
+  let out = html;
+  for (const [cssVar, hex] of [
+    ['var(--email-primary)', OPALSWIFT_PRIMARY],
+    ['var(--email-accent)', OPALSWIFT_ACCENT],
+    ['var(--email-text)', '#1f2937'],
+    ['var(--email-neutral)', '#6b7280'],
+  ]) {
+    out = out.split(cssVar).join(hex);
+  }
+  return { html: out, subject };
+}
+
+const welcomeShells = { en: await renderWelcomeShell('en'), he: await renderWelcomeShell('he') };
+
 const shells = { en: {}, he: {} };
 for (const language of ['en', 'he']) {
   shells[language].linkOnly = await renderShell(language, false);
@@ -78,6 +118,14 @@ export const MAGIC_LINK_SHELLS: Record<
   AuthEmailLanguage,
   { linkOnly: string; withOtp: string }
 > = ${JSON.stringify(shells, null, 2)} as const;
+
+const WELCOME_PLACEHOLDER = ${JSON.stringify(WELCOME_PLACEHOLDER)} as const;
+
+/** Subject and HTML for the studio-owner welcome; see applyStudioOwnerWelcomeShell. */
+export const STUDIO_OWNER_WELCOME_SHELLS: Record<
+  AuthEmailLanguage,
+  { html: string; subject: string }
+> = ${JSON.stringify(welcomeShells, null, 2)} as const;
 
 function escapeHtml(value: string): string {
   return value
@@ -118,6 +166,20 @@ export function applyMagicLinkShell(
   }
 
   return html;
+}
+
+export function applyStudioOwnerWelcomeShell(
+  shell: { html: string; subject: string },
+  values: { studioName: string; studioUrl: string; inviteUrl: string; logoUrl: string },
+): { html: string; subject: string } {
+  const html = shell.html
+    .split(WELCOME_PLACEHOLDER.studioName).join(escapeHtml(values.studioName))
+    .split(WELCOME_PLACEHOLDER.studioUrl).join(escapeHtml(values.studioUrl))
+    .split(WELCOME_PLACEHOLDER.inviteUrl).join(escapeHtml(values.inviteUrl))
+    .split(WELCOME_PLACEHOLDER.logoUrl).join(escapeHtml(values.logoUrl));
+  // A subject is plain text, not HTML: no escaping.
+  const subject = shell.subject.split(WELCOME_PLACEHOLDER.studioName).join(values.studioName);
+  return { html, subject };
 }
 `;
 
