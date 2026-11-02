@@ -37,7 +37,9 @@ export function toneFromPixels(data: Uint8ClampedArray, width: number, height: n
   const sumSq = [0, 0, 0];
   for (let i = 0; i < data.length; i += 4) {
     const alpha = data[i + 3] / 255;
-    if (alpha < 0.8) continue; // skip transparent and anti-aliased edge pixels
+    // Skip transparent and faint pixels; soft fades (alpha >= 0.5) count, so a
+    // logo with soft edges is measured by its visible colour.
+    if (alpha < 0.5) continue;
     const rgb = [data[i], data[i + 1], data[i + 2]];
     lumSum += 0.2126 * linear(rgb[0]) + 0.7152 * linear(rgb[1]) + 0.0722 * linear(rgb[2]);
     rgb.forEach((v, c) => {
