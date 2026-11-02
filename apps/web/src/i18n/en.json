@@ -2941,7 +2941,8 @@
         "enrolment": "Why we ask: your enrolment terms must state prices, dates and how payment works before anyone signs up.",
         "photography": "Why we ask: your clients need to know how their photos are delivered and how long they are kept.",
         "retention": "Why we ask: privacy law requires saying how long you keep personal data."
-      }
+      },
+      "filled_from_studio": "Filled in from your studio's details. Check it and change it if needed."
     },
     "privacy_notice": "We use your details only to handle your request and enrolment.",
     "accept_terms_prefix": "I have read and accept the",

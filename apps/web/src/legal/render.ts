@@ -177,6 +177,11 @@ function receiptsValue(ctx: LegalRenderContext): string {
     : 'Tax documents (receipts or invoices) are issued for payments as the law requires, through the invoicing provider.';
 }
 
+/** How a detail still to be filled in shows in the draft: "[Season name – to be completed]". */
+function toBeCompleted(label: string, lang: LegalLang): string {
+  return lang === 'he' ? `${label} – להשלמה` : `${label} – to be completed`;
+}
+
 /** Per-field fallbacks so a statement still reads well before every field is set. */
 function fieldFallback(key: string, ctx: LegalRenderContext): string | undefined {
   const p = ctx.profile;
@@ -256,7 +261,7 @@ export function prepareLegalMarkdown(raw: string, ctx: LegalRenderContext): Prep
       if (value) return lead + escapeMarkdownValue(value);
       if (field.defaultValue) return lead + escapeMarkdownValue(field.defaultValue[ctx.lang]);
       missing.add(field.key);
-      missingTexts.push(field.label[ctx.lang]);
+      missingTexts.push(toBeCompleted(field.label[ctx.lang], ctx.lang));
       return `${lead}${MISSING_TOKEN}${missingTexts.length - 1}X`;
     }
 
@@ -264,7 +269,7 @@ export function prepareLegalMarkdown(raw: string, ctx: LegalRenderContext): Prep
     if (ph in derived) {
       const key = ph.includes('VAT') || ph.includes('מע"מ') || !ctx.profile.business_status ? 'business_status' : 'business_number';
       missing.add(key);
-      missingTexts.push(LEGAL_FIELDS.find((f) => f.key === key)?.label[ctx.lang] ?? inner);
+      missingTexts.push(toBeCompleted(LEGAL_FIELDS.find((f) => f.key === key)?.label[ctx.lang] ?? inner, ctx.lang));
     } else {
       missing.add(ph);
       missingTexts.push(inner);

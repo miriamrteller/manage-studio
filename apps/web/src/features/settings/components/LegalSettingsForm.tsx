@@ -10,11 +10,13 @@ import { supabase } from '@/lib/supabase';
 import { useTenant } from '@/hooks/useTenant';
 import {
   fieldsForVertical,
+  missingLegalDetails,
   type LegalDocId,
   type LegalFieldDef,
   type LegalFieldSection,
 } from '@/legal/fields';
 import { prepareLegalMarkdown } from '@/legal/render';
+import { HIDDEN_LEGAL_KEYS, useLegalAutofill, withLegalAutofill } from '@/legal/autofill';
 import { loadLegalTemplate } from '@/legal/templates';
 import {
   tenantHasEnrolmentTerms,
@@ -36,14 +38,32 @@ export function LegalSettingsForm() {
   const queryClient = useQueryClient();
   const { data: legal } = useTenantLegalProfile();
   const [values, setValues] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Set<string>>(() => new Set());
   const [message, setMessage] = useState<string | null>(null);
+  // Details the studio already gave us (name, contact email, providers, season).
+  const { autofill } = useLegalAutofill(legal);
+  const autofillKey = JSON.stringify(autofill);
 
   useEffect(() => {
-    if (legal) setValues(legal.profile);
-  }, [legal]);
+    if (!legal) return;
+    // Stored details, with empty ones filled from what we know; keep what the admin is typing.
+    setValues((prev) => {
+      const next = withLegalAutofill(legal.profile, autofill);
+      touched.forEach((k) => {
+        next[k] = prev[k] ?? '';
+      });
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- autofillKey stands for autofill; touched is read, not tracked
+  }, [legal, autofillKey]);
 
   const vertical = legal?.vertical ?? 'generic';
   const fields = useMemo(() => fieldsForVertical(vertical), [vertical]);
+  // Shown fields: the providers and business email come from the studio's setup.
+  const visibleFields = useMemo(
+    () => fields.filter((f) => !(HIDDEN_LEGAL_KEYS as readonly string[]).includes(f.key)),
+    [fields],
+  );
   const publishDocs: LegalDocId[] = tenantHasEnrolmentTerms(vertical)
     ? ['studio-privacy', 'enrolment-terms']
     : ['studio-privacy'];
@@ -69,6 +89,8 @@ export function LegalSettingsForm() {
           out.missing.forEach((k) => keys.add(k));
         }
       }
+      // The same required-details list the legal pack's Confirm uses.
+      missingLegalDetails(vertical, values, 'publish').forEach((f) => keys.add(f.key));
       return [...keys];
     },
   });
@@ -110,14 +132,18 @@ export function LegalSettingsForm() {
     return f ? f.label[lang] : key;
   });
   const canPublish = (missing ?? ['?']).length === 0;
-  const requiredFields = fields.filter((f) => f.required && !f.defaultValue);
+  const requiredFields = visibleFields.filter((f) => f.required && !f.defaultValue);
   const requiredDone = requiredFields.filter((f) => (values[f.key] ?? '').trim()).length;
 
   const renderField = (f: LegalFieldDef) => {
     const id = `legal-${f.key}`;
     const value = values[f.key] ?? '';
-    const onChange = (v: string) => setValues((prev) => ({ ...prev, [f.key]: v }));
+    const onChange = (v: string) => {
+      setTouched((prev) => new Set(prev).add(f.key));
+      setValues((prev) => ({ ...prev, [f.key]: v }));
+    };
     const placeholder = f.defaultValue?.[lang];
+    const fromStudio = !!value && value === autofill[f.key] && !(legal.profile[f.key] ?? '').trim();
     return (
       <div key={f.key} className="space-y-1">
         <label htmlFor={id} className="block text-sm font-medium">
@@ -154,6 +180,7 @@ export function LegalSettingsForm() {
             onChange={(e) => onChange(e.target.value)}
           />
         )}
+        {fromStudio && <p className="text-xs text-muted-foreground">{t('legal.settings.filled_from_studio')}</p>}
         {f.hint && <p className="text-xs text-muted-foreground">{f.hint[lang]}</p>}
         {f.example && !value && (
           <p className="text-xs text-muted-foreground">{t('legal.settings.example', { example: f.example[lang] })}</p>
@@ -176,7 +203,7 @@ export function LegalSettingsForm() {
       </p>
 
       {SECTION_ORDER.map((section) => {
-        const sectionFields = fields.filter((f) => f.section === section);
+        const sectionFields = visibleFields.filter((f) => f.section === section);
         if (sectionFields.length === 0) return null;
         return (
           <fieldset

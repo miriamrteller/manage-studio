@@ -38,6 +38,11 @@ export interface LegalFieldDef {
   /** Placeholders this field fills, per document. */
   placeholders: Partial<Record<LegalDocId, string[]>>;
   required?: boolean;
+  /**
+   * Required before the documents are published, but not to confirm the
+   * legal pack: until filled in, the draft shows "[… – to be completed]".
+   */
+  confirmOptional?: boolean;
 }
 
 export const BUSINESS_STATUSES = ['not_registered', 'osek_patur', 'osek_murshe', 'company'] as const;
@@ -237,6 +242,7 @@ export const LEGAL_FIELDS: LegalFieldDef[] = [
     kind: 'text',
     verticals: DANCE_AND_GENERIC,
     required: true,
+    confirmOptional: true,
     label: { en: 'Season name', he: 'שם העונה' },
     hint: { en: 'e.g. 2026–2027', he: 'למשל תשפ"ז / 2026–2027' },
     example: { en: "2026–27", he: "תשפ\"ז" },
@@ -248,6 +254,7 @@ export const LEGAL_FIELDS: LegalFieldDef[] = [
     kind: 'date',
     verticals: DANCE_AND_GENERIC,
     required: true,
+    confirmOptional: true,
     label: { en: 'Season start date', he: 'תאריך תחילת העונה' },
     placeholders: { 'enrolment-terms': ['[[START DATE]]', '[[תאריך התחלה]]'] },
   },
@@ -257,6 +264,7 @@ export const LEGAL_FIELDS: LegalFieldDef[] = [
     kind: 'date',
     verticals: DANCE_AND_GENERIC,
     required: true,
+    confirmOptional: true,
     label: { en: 'Season end date', he: 'תאריך סיום העונה' },
     placeholders: { 'enrolment-terms': ['[[END DATE]]', '[[תאריך סיום]]'] },
   },
@@ -451,12 +459,20 @@ export function fieldsForVertical(vertical: VerticalId): LegalFieldDef[] {
   return LEGAL_FIELDS.filter((f) => !f.verticals || f.verticals.includes(vertical));
 }
 
-/** Required details the studio has not filled in yet (a field with a default counts as filled). */
-export function missingRequiredLegalFields(
+/**
+ * Required details the studio has not filled in yet: one list for both
+ * Confirm (the legal pack) and Publish. A field with a default counts as
+ * filled. Pass the profile with the studio's known details already merged in
+ * (withLegalAutofill). At 'confirm', season details may still be open.
+ */
+export function missingLegalDetails(
   vertical: string | null | undefined,
   profile: Record<string, string> | null | undefined,
+  stage: 'confirm' | 'publish',
 ): LegalFieldDef[] {
-  return fieldsForVertical(vertical as VerticalId).filter(
-    (f) => f.required && !f.defaultValue && !(profile?.[f.key] ?? '').trim(),
+  const has = (key: string) => !!(profile?.[key] ?? '').trim();
+  const missing = fieldsForVertical(vertical as VerticalId).filter(
+    (f) => f.required && !f.defaultValue && !(stage === 'confirm' && f.confirmOptional) && !has(f.key),
   );
+  return missing;
 }
