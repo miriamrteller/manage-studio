@@ -198,11 +198,13 @@ A studio that already uses Google Forms can keep it:
    responses**. Google emails the form owner on each response.
 2. In Gmail, add a filter on those emails (from `forms-receipts-noreply@google.com`)
    that forwards them to the studio's lead inbox, `leads-<subdomain>@opalswift.com`.
-   Gmail asks to confirm the forwarding address once; the confirmation email
-   arrives as a lead, and the link in it confirms.
+   Gmail asks to confirm the forwarding address once. Its confirmation email
+   lands on the Leads page as a lead; the confirmation code is in its subject
+   (shown as the lead's interest). Enter it in Gmail, then delete that lead.
 3. Each response then appears on the Leads page (channel Email). The answers
-   are in the note, not in separate fields, and the sender is Google, not the
-   parent, so the studio replies from the parent's address in the note.
+   are in the note, not in separate fields. The sender is Google, so the lead
+   has no parent email unless the Google Form collects one: ask for it in the
+   form, and reply to the address in the note.
 
 Prefer the OpalSwift form when possible: it records consent properly and fills
 the fields the pipeline uses.
