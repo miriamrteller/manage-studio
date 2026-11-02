@@ -93,6 +93,21 @@ const LEAD_COLUMNS =
   'next_follow_up_at, last_contacted_at, last_communication_note, marketing_consent, ' +
   'converted_account_id, converted_engagement_id, suggested_engagement_id, created_at';
 
+/** Why a lead can't be deleted (shown to the admin in plain words). */
+export type LeadDeleteBlock = 'converted' | 'has_quote_or_job' | 'not_deleted';
+
+export class LeadDeleteError extends Error {
+  constructor(public readonly reason: LeadDeleteBlock) {
+    super(reason);
+    this.name = 'LeadDeleteError';
+  }
+}
+
+/** A lead that became a client stays: it is the record of where the client came from. */
+export function isConvertedLead(lead: Pick<Lead, 'converted_account_id' | 'converted_engagement_id'>): boolean {
+  return Boolean(lead.converted_account_id || lead.converted_engagement_id);
+}
+
 export class LeadService extends BaseService {
   static async list(tenant: Tenant): Promise<Lead[]> {
     return this.withRetry(async () => {
@@ -212,5 +227,28 @@ export class LeadService extends BaseService {
         .eq('tenant_id', tenant.id);
       if (error) throw new Error(error.message);
     }, 'LeadService.updateStage');
+  }
+
+  /**
+   * Delete a lead (tenant admins; RLS leads_admin_manage). Its consent records
+   * go with it (ON DELETE CASCADE). A quote or job pointing at the lead blocks
+   * the delete (foreign key), so we check first and say so.
+   */
+  static async remove(tenant: Tenant, id: string): Promise<void> {
+    const [quotes, jobs] = await Promise.all([
+      supabase.from('quotes').select('id', { count: 'exact', head: true }).eq('lead_id', id),
+      supabase.from('job_details').select('id', { count: 'exact', head: true }).eq('lead_id', id),
+    ]);
+    if ((quotes.count ?? 0) + (jobs.count ?? 0) > 0) throw new LeadDeleteError('has_quote_or_job');
+    const { error, count } = await supabase
+      .from('leads')
+      .delete({ count: 'exact' })
+      .eq('id', id)
+      .eq('tenant_id', tenant.id);
+    if (error) {
+      if (error.code === '23503') throw new LeadDeleteError('has_quote_or_job');
+      throw new Error(error.message);
+    }
+    if (count === 0) throw new LeadDeleteError('not_deleted');
   }
 }

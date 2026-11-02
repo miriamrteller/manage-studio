@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { LeadsTabs } from '@/features/crm/components/LeadsTabs';
 
 const SECTIONS = ['where', 'form', 'stages', 'enrol', 'daily', 'privacy'] as const;
 
@@ -12,8 +13,9 @@ export default function LeadsHelpPage() {
   };
   return (
     <article className="max-w-2xl space-y-6">
-      <Link to="/admin/leads" className="text-sm underline">
-        {t('pages.crm.named_forms.back')}
+      <LeadsTabs />
+      <Link to="/admin/leads/get" className="text-sm underline">
+        {t('pages.crm.tabs.back_to_get')}
       </Link>
       <header className="space-y-2">
         <h1 className="text-3xl font-bold">{t('pages.crm.help.title')}</h1>
