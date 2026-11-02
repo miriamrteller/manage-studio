@@ -45,6 +45,10 @@ vi.mock('@/features/levels/hooks/useLevels', () => ({
   }),
 }));
 
+vi.mock('@/features/classes/hooks/useClasses', () => ({
+  useClasses: () => ({ updateClass: vi.fn(), isUpdating: false }),
+}));
+
 async function openLevelForm() {
   const user = userEvent.setup();
   render(<ClassRequirementsPanel classId="c1" className="Ballet" />);

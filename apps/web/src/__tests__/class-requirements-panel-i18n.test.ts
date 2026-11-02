@@ -4,14 +4,15 @@ import { describe, expect, it } from 'vitest'
 import en from '@/i18n/en.json'
 import he from '@/i18n/he.json'
 
-const PANEL = resolve(__dirname, '../features/classes/requirements/components/ClassRequirementsPanel.tsx')
+const DIR = resolve(__dirname, '../features/classes/requirements/components')
+const FILES = ['ClassRequirementsPanel.tsx', 'ClassAgeRangeForm.tsx'].map((f) => resolve(DIR, f))
 
 function lookup(tree: unknown, key: string): unknown {
   return key.split('.').reduce<unknown>((node, part) => (node as Record<string, unknown> | undefined)?.[part], tree)
 }
 
 describe('ClassRequirementsPanel translations', () => {
-  const source = readFileSync(PANEL, 'utf8')
+  const source = FILES.map((f) => readFileSync(f, 'utf8')).join('\n')
   const keys = [...new Set([...source.matchAll(/\bt\('([^']+)'/g)].map((m) => m[1]))]
 
   it('finds the keys used by the panel', () => {

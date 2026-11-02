@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { useRequirements, useRequirementTemplates } from '../hooks/useRequirements';
 import { useLevels } from '@/features/levels/hooks/useLevels';
+import { useClasses } from '@/features/classes/hooks/useClasses';
+import { ClassAgeRangeForm } from './ClassAgeRangeForm';
 import type { Category, RequirementTemplate } from '@shared/schemas';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -24,6 +26,9 @@ interface CreateFormState {
 
 /** Value of the "+ New level" option in the level dropdown. Never saved. */
 const NEW_LEVEL_OPTION = '__new_level__';
+
+/** Value of the "Age range" option in the type list. UI only: it is never sent as a requirement type. */
+const AGE_RANGE_OPTION = 'age_range';
 
 const EMPTY_CREATE: CreateFormState = {
   name: '',
@@ -60,11 +65,14 @@ function buildConfig(form: CreateFormState): Record<string, unknown> {
 interface ClassRequirementsPanelProps {
   classId: string;
   className: string;
+  /** The class's own age range (shown and edited under "Age range"; never a requirement). */
+  minAge?: number | null;
+  maxAge?: number | null;
 }
 
 type AddMode = 'link' | 'create';
 
-export function ClassRequirementsPanel({ classId, className }: ClassRequirementsPanelProps) {
+export function ClassRequirementsPanel({ classId, className, minAge, maxAge }: ClassRequirementsPanelProps) {
   const { t } = useTranslation();
 
   const { requirements, isLoading, error, linkTemplate, deleteRequirement, isLinking, isDeleting } =
@@ -72,6 +80,8 @@ export function ClassRequirementsPanel({ classId, className }: ClassRequirements
   const { templates, isLoading: templatesLoading, createTemplate, isCreating } =
     useRequirementTemplates();
   const levelsData = useLevels({ page: 1 });
+  // Only used for its update mutation (no list is fetched): ages live on the class.
+  const classesData = useClasses({ publicOnly: false, enabled: false });
 
   const nameInputRef = useRef<HTMLInputElement>(null);
   const levelSelectRef = useRef<HTMLSelectElement>(null);
@@ -79,6 +89,8 @@ export function ClassRequirementsPanel({ classId, className }: ClassRequirements
 
   const [showAdd, setShowAdd] = useState(false);
   const [addMode, setAddMode] = useState<AddMode>('link');
+  // "Age range" is a UI-only choice in the type list: it edits the class, not a requirement.
+  const [ageMode, setAgeMode] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
   const [createForm, setCreateForm] = useState<CreateFormState>(EMPTY_CREATE);
   const [createError, setCreateError] = useState<string | null>(null);
@@ -141,6 +153,7 @@ export function ClassRequirementsPanel({ classId, className }: ClassRequirements
   const closeAdd = () => {
     setShowAdd(false);
     setAddMode('link');
+    setAgeMode(false);
     setSelectedTemplateId('');
     setCreateForm(EMPTY_CREATE);
     setCreateError(null);
@@ -401,6 +414,7 @@ export function ClassRequirementsPanel({ classId, className }: ClassRequirements
               <p className="text-sm font-medium">{t('form.requirement.create_modal_title')}</p>
 
               {/* Name */}
+              {!ageMode && (
               <Field label={t('pages.admin.requirements.name_label')}>
                 <input
                   type="text"
@@ -411,31 +425,51 @@ export function ClassRequirementsPanel({ classId, className }: ClassRequirements
                   onChange={(e) => setCreateForm((f) => ({ ...f, name: e.target.value }))}
                 />
               </Field>
+              )}
 
               {/* Type */}
               <Field label={t('form.requirement.type')}>
                 <select
                   className="w-full rounded-md border px-3 py-2 text-sm"
                   style={{ borderColor: 'var(--color-border-default)' }}
-                  value={createForm.requirement_type}
-                  onChange={(e) =>
+                  value={ageMode ? AGE_RANGE_OPTION : createForm.requirement_type}
+                  onChange={(e) => {
+                    setCreateError(null);
+                    if (e.target.value === AGE_RANGE_OPTION) {
+                      setAgeMode(true);
+                      setCreateForm((f) => ({ ...EMPTY_CREATE, name: f.name, display_text: f.display_text, is_hard_block: f.is_hard_block }));
+                      return;
+                    }
+                    setAgeMode(false);
                     setCreateForm((f) => ({
                       ...EMPTY_CREATE,
                       name: f.name,
                       display_text: f.display_text,
                       is_hard_block: f.is_hard_block,
                       requirement_type: e.target.value as RequirementType,
-                    }))
-                  }
+                    }));
+                  }}
                 >
                   <option value="">{t('form.requirement.select_placeholder')}</option>
                   <option value="gender">{t('form.requirement.type_gender')}</option>
                   <option value="level">{t('form.requirement.type_level')}</option>
                   <option value="document_submitted">{t('form.requirement.type_document_submitted')}</option>
                   <option value="manual_review">{t('form.requirement.type_manual_review')}</option>
+                  <option value={AGE_RANGE_OPTION}>{t('form.requirement.type_age_range')}</option>
                 </select>
               </Field>
 
+              {ageMode && (
+                <ClassAgeRangeForm
+                  minAge={minAge}
+                  maxAge={maxAge}
+                  isSaving={classesData.isUpdating}
+                  onSave={(range, callbacks) => classesData.updateClass({ id: classId, ...range }, callbacks)}
+                />
+              )}
+
+              {!ageMode && (
+              <>
               {/* Conditional config fields */}
               {createForm.requirement_type === 'gender' && (
                 <div className="space-y-2 rounded-md border p-3"
@@ -601,6 +635,8 @@ export function ClassRequirementsPanel({ classId, className }: ClassRequirements
               >
                 {isBusy ? t('common.loading') : t('form.requirement.create_and_link_button')}
               </Button>
+              </>
+              )}
             </div>
           )}
         </div>
