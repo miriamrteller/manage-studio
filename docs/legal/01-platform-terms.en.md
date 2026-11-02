@@ -75,8 +75,8 @@ We own the Platform, its code and design. You get a non-exclusive, non-transfera
 
 - The Platform is provided "as is" and "as available", without warranties of any kind, express or implied, to the extent the law allows. You are responsible for checking that the texts you show your clients (terms, waivers, contracts) suit your business. The templates we provide are a starting point, not legal advice.
 - To the extent the law allows, neither side is liable for indirect or consequential loss (loss of profit, revenue, reputation or data that could have been restored from your own exports).
-- To the extent the law allows, our total liability under these terms in any 12-month period is limited to **the fees you paid us in those 12 months** (or **[[₪ 1,000]]** while you use a free plan, including the beta).
-- These limits do not apply to liability that cannot be limited by law, to fraud or intentional misconduct, or to a breach of our data-protection obligations caused by our gross negligence ([[CONFIRM SCOPE WITH LAWYER]]).
+- To the extent the law allows, our total liability under these terms is limited to **the greater of ₪1,000 and the fees you paid us in the 12 months before the claim**. During the free beta that means ₪1,000.
+- These limits do not apply to liability that cannot be limited by law, to fraud or intentional misconduct, or to a breach of our data-protection obligations caused by our gross negligence.
 - You will compensate us for third-party claims that arise from data or content you put into the Platform without the right to do so, or from your breach of section 5.
 
 ## 10. Term, termination and your data
@@ -109,4 +109,4 @@ These terms, the DPA and any order form are the whole agreement. If a clause is 
 - Communications Law (Telecommunications and Broadcasting) 5742-1982, §30A (marketing messages).
 - No case law is cited.
 
-**For the lawyer (beta protection).** (1) Standard Contracts Law §4(1): a blanket exclusion of liability is presumed unfair even toward business customers, so the "as is" wording, the cap and the exclusions in section 9 may be read down; which of them hold is a legal call. (2) The Consumer Protection Law should not apply to business use, but a studio run by an unregistered individual may argue it does. (3) Duties under the Privacy Protection Law and the Data Security Regulations cannot be excluded by contract; section 9 and the DPA keep them outside the cap. (4) A free service has no price to anchor the cap to; the fixed amount in section 9 needs confirming.
+**For the lawyer (beta protection).** (1) Standard Contracts Law §4(1): a blanket exclusion of liability is presumed unfair even toward business customers, so the "as is" wording, the cap and the exclusions in section 9 may be read down; which of them hold is a legal call. (2) The Consumer Protection Law should not apply to business use, but a studio run by an unregistered individual may argue it does. (3) Duties under the Privacy Protection Law and the Data Security Regulations cannot be excluded by contract; section 9 and the DPA keep them outside the cap. (4) A free service has no price to anchor the cap to; the owner set a ₪1,000 floor ("the greater of ₪1,000 and 12 months' fees"), so please confirm the floor and the scope of the carve-outs in section 9 hold.
