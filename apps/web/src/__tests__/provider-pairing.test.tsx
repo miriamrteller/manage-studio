@@ -19,7 +19,9 @@ const { update, tenantState } = vi.hoisted(() => ({
   tenantState: {} as Record<string, unknown>,
 }));
 vi.mock('@/lib/supabase', () => ({
-  supabase: { from: () => ({ update: (p: unknown) => { update(p); return { eq: async () => ({ error: null }) }; } }) },
+  supabase: { from: () => ({
+    // Provider-switch impact counts (P2 #13): nothing depends on the old provider here.
+    select: () => { const q: Record<string, unknown> = { eq: () => q, is: () => q, then: (r: (v: unknown) => unknown) => Promise.resolve({ count: 0, error: null }).then(r) }; return q; }, update: (p: unknown) => { update(p); return { eq: async () => ({ error: null }) }; } }) },
 }));
 vi.mock('@/hooks/useTenant', () => ({ useTenant: () => ({ id: 'tenant-1', ...tenantState }) }));
 vi.mock('@/lib/query-client', () => ({ default: { invalidateQueries: vi.fn() } }));
@@ -103,6 +105,7 @@ describe('Settings → How customers pay', () => {
     wrap(<OfflinePaymentsSettingsForm />);
     fireEvent.click(screen.getByLabelText('settings.offline_payments.enabled_label'));
     expect(screen.queryByRole('alert')).toBeNull();
+    await waitFor(() => expect(screen.getByRole('button', { name: 'common.save' })).not.toBeDisabled());
     fireEvent.click(screen.getByRole('button', { name: 'common.save' }));
     await waitFor(() => expect(update).toHaveBeenCalledWith(expect.objectContaining({ payment_provider: 'offline' })));
   });

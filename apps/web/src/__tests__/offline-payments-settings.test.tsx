@@ -20,7 +20,9 @@ const { update, eq, tenantState } = vi.hoisted(() => ({
 }));
 
 vi.mock('@/lib/supabase', () => ({
-  supabase: { from: () => ({ update: (p: unknown) => { update(p); return { eq: (...a: unknown[]) => eq(...a) }; } }) },
+  supabase: { from: () => ({
+    // Provider-switch impact counts (P2 #13): nothing depends on the old provider here.
+    select: () => { const q: Record<string, unknown> = { eq: () => q, is: () => q, then: (r: (v: unknown) => unknown) => Promise.resolve({ count: 0, error: null }).then(r) }; return q; }, update: (p: unknown) => { update(p); return { eq: (...a: unknown[]) => eq(...a) }; } }) },
 }));
 vi.mock('@/hooks/useTenant', () => ({ useTenant: () => ({ id: 'tenant-1', ...tenantState }) }));
 vi.mock('@/lib/query-client', () => ({ default: { invalidateQueries: vi.fn() } }));
@@ -71,6 +73,8 @@ describe('OfflinePaymentsSettingsForm', () => {
     const select = screen.getByRole('combobox', { name: 'settings.payments.provider' });
     expect(Array.from((select as HTMLSelectElement).options).map((o) => o.value)).not.toContain('mock');
     fireEvent.click(screen.getByRole('checkbox', { name: 'settings.offline_payments.enabled_label' }));
+    // Save waits for the provider-switch check (nothing depends on YPay here).
+    await waitFor(() => expect(screen.getByRole('button', { name: 'common.save' })).not.toBeDisabled());
     fireEvent.click(screen.getByRole('button', { name: 'common.save' }));
     await waitFor(() =>
       expect(update).toHaveBeenCalledWith({ payment_provider: 'offline', offline_payment_instructions: null }),

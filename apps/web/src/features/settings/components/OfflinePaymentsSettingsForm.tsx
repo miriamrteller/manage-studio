@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { useTenant } from '@/hooks/useTenant';
 import queryClient from '@/lib/query-client';
 import { invoicingPairsWithPayment, isUnfinishedPaymentProvider, jobOnlinePaymentSupported } from '@/lib/providerPairing';
+import { fetchProviderSwitchImpact, ProviderSwitchWarning, switchNeedsConfirmation } from './ProviderSwitchWarning';
 
 export const OFFLINE_PAYMENTS = 'offline';
 /** Every online provider a studio may have stored; `mock` is never offered. */
@@ -47,6 +48,16 @@ export function OfflinePaymentsSettingsForm() {
   const nextPaymentProvider = resolvePaymentProviderToSave({ offline, onlineProvider });
   // Changing how customers pay must not leave documents that the invoicing service cannot issue.
   const pairingProblem = !invoicingPairsWithPayment(nextPaymentProvider, invoicingProvider);
+  // Leaving an online provider: show what still depends on it (P2 #13).
+  const switchingAway = savedProvider !== OFFLINE_PAYMENTS && nextPaymentProvider !== savedProvider;
+  const [switchConfirmed, setSwitchConfirmed] = useState(false);
+  const switchImpact = useQuery({
+    queryKey: ['provider-switch-impact', tenant?.id, savedProvider],
+    queryFn: () => fetchProviderSwitchImpact(tenant!.id, savedProvider),
+    enabled: Boolean(tenant?.id) && switchingAway,
+  });
+  const switchBlocked =
+    switchingAway && (switchImpact.isLoading || (switchNeedsConfirmation(switchImpact.data) && !switchConfirmed));
 
   // Depend on saved primitives, not the tenant object, so a refetch with the same values
   // does not reset what the admin is typing.
@@ -57,6 +68,10 @@ export function OfflinePaymentsSettingsForm() {
   useEffect(() => {
     setInstructions(savedInstructions);
   }, [savedInstructions]);
+  // A confirmation covers one switch only: choosing another provider asks again.
+  useEffect(() => {
+    setSwitchConfirmed(false);
+  }, [nextPaymentProvider, savedProvider]);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -158,6 +173,16 @@ export function OfflinePaymentsSettingsForm() {
         </div>
       )}
 
+      {switchingAway && !pairingProblem && tenant?.id && (
+        <ProviderSwitchWarning
+          tenantId={tenant.id}
+          oldProvider={savedProvider}
+          newProvider={nextPaymentProvider}
+          confirmed={switchConfirmed}
+          onConfirmedChange={setSwitchConfirmed}
+        />
+      )}
+
       {pairingProblem && (
         <p className="text-sm text-destructive" role="alert">
           {t('settings.offline_payments.pairing_problem')}
@@ -173,7 +198,7 @@ export function OfflinePaymentsSettingsForm() {
       <Button
         type="button"
         variant="primary"
-        disabled={saveMutation.isPending || pairingProblem}
+        disabled={saveMutation.isPending || pairingProblem || switchBlocked}
         isLoading={saveMutation.isPending}
         onClick={() => saveMutation.mutate()}
       >

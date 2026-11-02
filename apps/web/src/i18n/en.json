@@ -2481,6 +2481,15 @@
       "fileTooLarge": "File too large (max 2MB)",
       "uploadFailed": "Upload failed. Please try again."
     },
+    "provider_switch": {
+      "title": "Before you switch from {{old}} to {{new}}",
+      "pending_charges": "{{count}} card payment(s) started with {{old}} have not been confirmed yet. After the switch, OpalSwift may not record them automatically: check them in your {{old}} account and record any that were paid by hand.",
+      "saved_cards": "{{count}} saved card(s) belong to {{old}} and cannot be used with {{new}}. Customers who pay monthly will need to enter their card again.",
+      "active_schedules": "{{count}} active monthly plan(s) will be charged through {{new}} from now on. Until each customer saves a card with {{new}}, those charges will fail and the usual payment reminders will be sent.",
+      "details_kept": "Your {{old}} details stay saved: refunds of past {{old}} payments keep working, and you can switch back at any time.",
+      "confirm": "I understand. Switch to {{new}}.",
+      "check_failed": "Could not check what still uses the current provider. Try again before switching."
+    },
     "offline_payments": {
       "title": "How parents pay",
       "description": "Choose whether parents pay online or at the studio.",
