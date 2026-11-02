@@ -813,6 +813,7 @@
       "cancel_enrolment_button": "ביטול הרשמה",
       "cancel_enrolment_title": "ביטול הרשמה",
       "cancel_enrolment_confirm": "לבטל את הרשמת {{studentName}} ל-{{className}}? פעולה זו משחררת את מקום השיעור לפני תשלום.",
+      "cancel_enrolment_confirm_active": "לבטל את הרשמת {{studentName}} ל-{{className}}? המקום משתחרר והחיובים החודשיים נעצרים. תשלומים שכבר בוצעו לא מוחזרים אוטומטית: אם צריך, יש לבצע החזר בנפרד.",
       "cancel_enrolment_reason_label": "סיבה (אופציונלי)",
       "cancel_enrolment_reason_placeholder": "למשל: שיעור שגוי, הרשמה כפולה",
       "cancel_enrolment_success": "ההרשמה בוטלה.",

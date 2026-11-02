@@ -17,7 +17,7 @@ import { AdminEnrolStudentModal } from '@/features/enrolment/components/AdminEnr
 import { resolveGuardianEmail } from '@/features/enrolment/lib/resolveGuardianEmail';
 import { calculateAge } from '@/lib/utils';
 import { formatPersonAgeLabel, formatPersonDateOfBirthDisplay } from '@/lib/personAge';
-import { EnrolmentRowActions, canShowCancelEnrolment } from './EnrolmentRowActions';
+import { EnrolmentRowActions, canCancelActiveEnrolment, canShowCancelEnrolment } from './EnrolmentRowActions';
 import { AgeReviewAdminPanel } from './AgeReviewAdminPanel';
 import { CancelEnrolmentDialog } from './CancelEnrolmentDialog';
 import { formatAgeRange } from '@/features/enrolment/lib/check-requirements';
@@ -37,6 +37,7 @@ interface StudentSlideOverProps {
 interface CancelTarget {
   engagementId: string;
   className: string;
+  active: boolean;
 }
 
 /**
@@ -321,6 +322,7 @@ export function StudentSlideOver({
                                       setCancelTarget({
                                         engagementId: engagement.id,
                                         className,
+                                        active: canCancelActiveEnrolment(engagement.status),
                                       })
                                   : undefined
                               }
@@ -629,6 +631,7 @@ export function StudentSlideOver({
           personId={personId}
           studentName={person.name}
           className={cancelTarget.className}
+          active={cancelTarget.active}
         />
       )}
 

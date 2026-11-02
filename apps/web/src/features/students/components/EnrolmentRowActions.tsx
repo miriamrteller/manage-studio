@@ -18,7 +18,13 @@ export const ENROLMENT_STATUS_COLORS: Record<string, { bg: string; text: string 
   pending_waiver: { bg: 'var(--color-warning-light)', text: 'var(--color-warning)' },
 };
 
+/** An ACTIVE (paid) enrolment can be cancelled too; that also stops its monthly plan. */
+export function canCancelActiveEnrolment(status: string): boolean {
+  return status === 'active';
+}
+
 export function canShowCancelEnrolment(status: string): boolean {
+  if (canCancelActiveEnrolment(status)) return true;
   if (
     !CANCELLABLE_PRE_PAYMENT_STATUSES.includes(
       status as (typeof CANCELLABLE_PRE_PAYMENT_STATUSES)[number],

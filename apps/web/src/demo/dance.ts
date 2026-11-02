@@ -411,4 +411,21 @@ export const danceRpcs: Record<string, RpcHandler> = {
     eng.updated_at = ctx.now();
     return { ...eng };
   },
+
+  /** Cancels an ACTIVE (paid) place; in the app this also stops its monthly plan. */
+  cancel_active_engagement: (args, ctx) => {
+    requireAdmin(ctx);
+    const eng = rows(ctx, 'engagements').find((e) => e.id === args.p_engagement_id);
+    if (!eng) throw new DemoRpcError('Engagement not found');
+    if (eng.status === 'cancelled') return { ...eng };
+    if (eng.status !== 'active') {
+      throw new DemoRpcError(`Engagement cannot be cancelled from status ${String(eng.status)}`);
+    }
+    eng.status = 'cancelled';
+    eng.cancelled_at = ctx.now();
+    eng.cancelled_by = ctx.user?.id ?? null;
+    eng.cancellation_reason = (args.p_reason as string | null) ?? null;
+    eng.updated_at = ctx.now();
+    return { ...eng };
+  },
 };

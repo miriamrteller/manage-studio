@@ -18,6 +18,8 @@ interface CancelEnrolmentDialogProps {
   personId: string;
   studentName: string;
   className: string;
+  /** The enrolment is active (paid): cancelling also stops its monthly charges. */
+  active?: boolean;
 }
 
 export function CancelEnrolmentDialog({
@@ -27,6 +29,7 @@ export function CancelEnrolmentDialog({
   personId,
   studentName,
   className,
+  active = false,
 }: CancelEnrolmentDialogProps) {
   const { t } = useTranslation();
   const [reason, setReason] = useState('');
@@ -36,6 +39,7 @@ export function CancelEnrolmentDialog({
 
   const cancelMutation = useCancelEnrolment({
     personId,
+    active,
     onSuccess: () => {
       setReason('');
       setErrorKey(null);
@@ -82,7 +86,10 @@ export function CancelEnrolmentDialog({
         <DialogHeader>
           <DialogTitle>{t('pages.students.cancel_enrolment_title')}</DialogTitle>
           <DialogDescription>
-            {t('pages.students.cancel_enrolment_confirm', { studentName, className })}
+            {t(active ? 'pages.students.cancel_enrolment_confirm_active' : 'pages.students.cancel_enrolment_confirm', {
+              studentName,
+              className,
+            })}
           </DialogDescription>
         </DialogHeader>
 
