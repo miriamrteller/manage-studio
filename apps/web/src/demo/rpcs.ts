@@ -183,6 +183,8 @@ export const baseRpcs: Record<string, RpcHandler> = {
         legal_profile: tenant.legal_profile ?? {},
         legal_pages_published: tenant.legal_pages_published === true,
         legal_profile_updated_at: tenant.legal_profile_updated_at ?? null,
+        legal_pack_required: tenant.legal_pack_required === true,
+        legal_pack_acknowledged_at: tenant.legal_pack_acknowledged_at ?? null,
       },
     ];
   },
