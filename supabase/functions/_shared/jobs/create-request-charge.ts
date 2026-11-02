@@ -2,6 +2,7 @@ import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.
 import { ensureBillingAccountForStudent } from "../ensure-billing-account.ts";
 import { getPaymentProviderForTenant } from "../payments/index.ts";
 import type { ChargeMetadata } from "../payments/types.ts";
+import { jobOnlinePaymentSupported } from "../provider-pairing.ts";
 import { tenantBaseUrlFor } from "../tenant-url.ts";
 import type { JobPaymentRequestRow } from "./load-request.ts";
 import { isCollectable } from "./payment-request-state.ts";
@@ -9,6 +10,9 @@ import { isCollectable } from "./payment-request-state.ts";
 export type CreateRequestChargeResult =
   | { ok: true; pageUrl: string; providerPaymentRef: string; paymentId: string | null }
   | { ok: false; error: string; status: number };
+
+/** Error code when the studio's payment provider cannot settle a job request online. */
+export const ONLINE_PAYMENT_UNAVAILABLE = "online_payment_unavailable";
 
 /**
  * Create a hosted-page charge (YPay) for a job payment request.
@@ -30,6 +34,17 @@ export async function createJobPaymentRequestCharge(
 ): Promise<CreateRequestChargeResult> {
   if (!isCollectable(request.status)) {
     return { ok: false, error: `Request is ${request.status}`, status: 409 };
+  }
+
+  // Only providers whose callback marks the request paid (P2 #11). Otherwise the client would
+  // pay and the request would stay open, so no charge is made at all.
+  const { data: tenantRow } = await service
+    .from("tenants")
+    .select("payment_provider")
+    .eq("id", request.tenant_id)
+    .maybeSingle();
+  if (!jobOnlinePaymentSupported(tenantRow?.payment_provider as string | null | undefined)) {
+    return { ok: false, error: ONLINE_PAYMENT_UNAVAILABLE, status: 409 };
   }
 
   const { data: engagement, error: engagementError } = await service

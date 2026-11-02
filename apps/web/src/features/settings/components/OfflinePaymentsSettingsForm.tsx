@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { useTenant } from '@/hooks/useTenant';
 import queryClient from '@/lib/query-client';
-import { invoicingPairsWithPayment, isUnfinishedPaymentProvider } from '@/lib/providerPairing';
+import { invoicingPairsWithPayment, isUnfinishedPaymentProvider, jobOnlinePaymentSupported } from '@/lib/providerPairing';
 
 export const OFFLINE_PAYMENTS = 'offline';
 /** Every online provider a studio may have stored; `mock` is never offered. */
@@ -150,6 +150,11 @@ export function OfflinePaymentsSettingsForm() {
             ))}
           </select>
           <p className="text-xs text-muted-foreground">{t('settings.offline_payments.provider_hint')}</p>
+          {tenant.vertical === 'photographer' && !jobOnlinePaymentSupported(onlineProvider) && (
+            <p className="text-sm text-muted-foreground" role="note">
+              {t('settings.offline_payments.job_payments_hint')}
+            </p>
+          )}
         </div>
       )}
 

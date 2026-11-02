@@ -1492,6 +1492,7 @@
       "notCollectable": "This payment request is no longer open.",
       "installmentsAvailable": "Pay in up to {{count}} card installments.",
       "invoiceNote": "A tax invoice-receipt is issued automatically on payment.",
+      "payStudioDirectly": "{{studio}} does not take card payments online for this request. Please pay {{studio}} directly, by bank transfer or as agreed.",
       "jobDate": "Shoot {{date}}"
     },
     "quotes": {
@@ -2492,6 +2493,7 @@
       "receipts_note": "If the studio is a registered business, it must issue its own receipts for every payment.",
       "provider_hint": "Enter the provider's keys on its settings page.",
       "saved": "Payment settings saved.",
+      "job_payments_hint": "Online deposit and balance links for your jobs work with YPay or Grow. With this provider, clients see a note asking them to pay you directly.",
       "provider_not_finished": "{{provider}} (not finished: card payments may not be confirmed)",
       "pairing_problem": "Your invoicing service cannot issue documents for this way of paying. To change it, first turn tax documents off (or choose Green Invoice) under Tax documents, save the new payment choice here, then choose the invoicing service again.",
       "providers": { "grow": "Grow (Meshulam)", "icount": "iCount", "invoice4u": "Invoice4U", "ypay": "YPay", "tranzila": "Tranzila" }

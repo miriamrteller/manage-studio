@@ -56,7 +56,12 @@ export function PublicPayRequest({ token, result }: Props) {
       window.location.assign(res.pageUrl);
     } catch (err) {
       setRedirecting(false);
-      setError(err instanceof Error ? err.message : t('errors.generic'));
+      const message = err instanceof Error ? err.message : '';
+      setError(
+        message.includes('online_payment_unavailable')
+          ? t('pages.pay.payStudioDirectly', { studio: request?.studio.name ?? '' })
+          : message || t('errors.generic'),
+      );
     }
   };
 
@@ -66,6 +71,8 @@ export function PublicPayRequest({ token, result }: Props) {
   }
 
   const collectable = (request.status === 'pending' || request.status === 'sent') && !request.jobCancelled;
+  // Older responses have no flag: treat them as online (the previous behaviour).
+  const onlineAvailable = request.onlinePaymentAvailable !== false;
 
   return (
     <main className="mx-auto max-w-md p-4" lang={language}>
@@ -101,7 +108,10 @@ export function PublicPayRequest({ token, result }: Props) {
             <p className="text-sm text-muted-foreground">{t('pages.pay.notCollectable')}</p>
           )}
 
-          {collectable && !awaitingWebhook && (
+          {collectable && !awaitingWebhook && !onlineAvailable && (
+            <p className="text-sm" role="note">{t('pages.pay.payStudioDirectly', { studio: request.studio.name })}</p>
+          )}
+          {collectable && !awaitingWebhook && onlineAvailable && (
             <>
               {request.maxInstallments > 1 && (
                 <p className="text-sm text-muted-foreground">
