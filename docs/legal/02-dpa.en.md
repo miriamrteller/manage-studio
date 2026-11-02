@@ -30,6 +30,7 @@ This DPA is written to meet the Privacy Protection Law 5741-1981 as amended by A
 - OpalSwift applies the security measures in its **Information Security Procedure** ([11-security-procedure.en.md](11-security-procedure.en.md)) and at least the measures required for a database at the **medium security level** (רמת אבטחה בינונית) under the Data Security Regulations, because Studio databases may hold health data. The Studio is responsible for the level that applies to its own database and for its own users, devices and passwords. ([[LAWYER: confirm level per regulation 1 and the First Schedule]].)
 - Key measures: tenant isolation enforced in the database (row-level security), least-privilege server functions, encryption in transit (HTTPS/TLS) and at rest (provider-level), separate encryption of provider credentials, signed and sealed waiver records, an audit log of sensitive actions, nightly encrypted backups, and restricted administrative access.
 - People who access Studio data on OpalSwift's behalf are bound by confidentiality and receive only the access they need. (A regulation 15 agreement item.)
+- **Platform-owner access log.** Access by OpalSwift's platform owner (super-admin) to Studio data — opening a Studio page, or inserting, changing or deleting a record — is recorded automatically with the time, the kind of access and the area, without personal data values. The Studio sees its own log in **Settings → Security → OpalSwift access**. Entries are append-only and kept for 24 months. Service tasks that run without a signed-in person (backups, scheduled jobs) are not logged.
 
 ## 4. Sub-processors
 
@@ -79,7 +80,7 @@ If a client asks OpalSwift directly to see, correct or delete their data, OpalSw
 
 ## 10. Other
 
-If this DPA and the Platform Terms conflict, this DPA governs on data-protection matters. The liability terms of the Platform Terms apply. Israeli law applies.
+If this DPA and the Platform Terms conflict, this DPA governs on data-protection matters. The liability terms of the Platform Terms apply, but OpalSwift's duties under the Privacy Protection Law and the Data Security Regulations are not reduced by the beta or by any liability cap. Israeli law applies.
 
 **Language.** This document is published in English and Hebrew. If the two versions differ, the English version prevails.
 
