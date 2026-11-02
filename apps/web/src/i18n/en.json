@@ -2418,6 +2418,22 @@
     "go_home": "Go to home"
   },
   "legal": {
+    "pack": {
+      "title": "Your legal documents",
+      "notice": "Your studio's legal documents (privacy policy, terms, accessibility statement and the forms clients sign) were created from templates based on Israeli law and filled with your details. They are drafts: have them reviewed by a lawyer.",
+      "download": "Download legal pack (PDF)",
+      "checkbox": "I understand these are draft documents and my studio will use them until I upload lawyer-reviewed versions.",
+      "confirm": "Confirm",
+      "confirming": "Saving…",
+      "confirmed_on": "Confirmed on {{date}}. Your legal pages and forms are live.",
+      "owner_confirms": "The studio's owner confirms this when they sign in. Until then the studio's legal pages and forms are not live.",
+      "error": "That didn't save. Please try again.",
+      "signing_not_ready": "This studio isn't ready to collect signatures yet. Please try again later or contact the studio.",
+      "sign_in_needed": "Please sign in to download the legal pack.",
+      "print_hint": "Use your browser's Print and choose \"Save as PDF\".",
+      "admin_banner": "Your legal documents are waiting for you. Confirm them in Settings → Legal to publish your legal pages and forms.",
+      "admin_banner_link": "Open Settings → Legal"
+    },
     "docs": {
       "platform_terms": "Terms of Service",
       "dpa": "Data Processing Agreement",

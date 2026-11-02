@@ -8,6 +8,7 @@ import SignupPage from "./pages/SignupPage";
 import AuthCallbackPage from "./pages/AuthCallbackPage";
 import CreateStudioPage from '@/pages/CreateStudioPage';
 import SessionHandoffPage from '@/pages/auth/SessionHandoffPage';
+import LegalPackPrintPage from '@/pages/LegalPackPrintPage';
 import DashboardRedirectPage from "./pages/DashboardRedirectPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import StudentsPage from "./pages/StudentsPage";
@@ -98,6 +99,15 @@ const router = createBrowserRouter([
     path: '/embed/inquire',
     element: <EmbedInquirePage />,
     errorElement: <RouteErrorFallback />,
+  },
+  // The studio's legal pack as one printable page (Save as PDF), on any host.
+  {
+    path: '/legal-pack/print',
+    element: (
+      <LanguageProvider>
+        <LegalPackPrintPage />
+      </LanguageProvider>
+    ),
   },
   {
     path: '/auth/session-handoff',

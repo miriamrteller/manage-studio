@@ -76,15 +76,17 @@ export function escapeMarkdownValue(value: string): string {
     .replace(/([\\`*_{}[\]()#+\-.!|<>&~])/g, '\\$1');
 }
 
-function stripDraftingFrame(raw: string): string {
+/** Drop the drafting frame: the leading "Draft, not legal advice" quote block and the notes after the last `---`. */
+export function stripDraftingFrame(raw: string): string {
   let text = raw.replace(/\r\n/g, '\n');
   // Leading "> Draft, not legal advice …" / template instructions.
   const lines = text.split('\n');
   let i = 0;
   while (i < lines.length && (lines[i].startsWith('>') || lines[i].trim() === '')) i += 1;
   text = lines.slice(i).join('\n');
-  // Trailing sources / "how this was checked" section.
-  const cut = text.search(/\n---\n+### /);
+  // Drafting notes (sources, notes for the lawyer): everything from the last
+  // horizontal rule, the same rule as the marketing site (apps/marketing/scripts/build-legal.mjs).
+  const cut = text.lastIndexOf('\n---\n');
   if (cut >= 0) text = text.slice(0, cut);
   return text.trimEnd() + '\n';
 }

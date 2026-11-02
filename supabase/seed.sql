@@ -1219,3 +1219,7 @@ VALUES (
   email = EXCLUDED.email,
   language = EXCLUDED.language,
   country = EXCLUDED.country;
+
+-- The seed studios stand for studios that existed before the legal pack
+-- (20261102114735): their legal pages and signing stay live without it.
+UPDATE tenants SET legal_pack_required = false;
