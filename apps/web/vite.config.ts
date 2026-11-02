@@ -5,8 +5,9 @@ import { execSync } from 'child_process'
 import { sentryVitePlugin } from '@sentry/vite-plugin'
 
 /**
- * Release id for error reports: the git commit being built. Cloudflare Workers
- * Builds sets WORKERS_CI_COMMIT_SHA, GitHub Actions sets GITHUB_SHA; local builds
+ * Release id for error reports: the git commit being built. deploy-web passes
+ * VITE_RELEASE; GitHub Actions sets GITHUB_SHA (WORKERS_CI_COMMIT_SHA is kept for
+ * Cloudflare builds); local builds
  * fall back to `git rev-parse`. Empty when none is available.
  */
 function releaseSha(): string {
@@ -122,7 +123,7 @@ function demoMode() {
 /**
  * Upload source maps to Sentry so production stack traces show real file/line.
  * Runs only when SENTRY_AUTH_TOKEN, SENTRY_ORG and SENTRY_PROJECT are all set on
- * the build (Workers Builds → build variables). Otherwise nothing happens and the
+ * the build (GitHub deploy-web: repository secret + variables). Otherwise nothing happens and the
  * build is unchanged. Maps are built "hidden" (no sourceMappingURL comment) and
  * deleted from dist after upload, so they are never served (SPEC §7).
  */

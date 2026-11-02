@@ -1,6 +1,6 @@
 > **Draft, not legal advice. Have an Israeli lawyer review before publishing.**
 > Hebrew version (the version parents will read): [07a-dance-enrolment-terms.he.md](07a-dance-enrolment-terms.he.md).
-> Template for a dance school. Fill every [[PLACEHOLDER]]. First user: Creative Ballet Academy.
+> Template for any studio that enrols students in classes or courses (dance, martial arts, music, art, tutoring and so on). Fill every [[PLACEHOLDER]]. First user: Creative Ballet Academy. The file name stays because the app loads it by name.
 
 # Enrolment Terms — [[STUDIO NAME]]
 
@@ -15,7 +15,7 @@ Season: [[SEASON NAME, e.g. 2026–2027]] · Last updated: [[DATE]]
 - Class, level, day, time and place: as shown on the enrolment page and in the confirmation email.
 - Season: from [[START DATE]] to [[END DATE]], about [[NUMBER OF LESSONS]] lessons. There are no classes on [[HOLIDAYS — e.g. Israeli public holidays and school holidays as listed in the studio calendar]].
 - The studio may change a teacher, time or room for good reason. If a change makes the class unsuitable for you, you may cancel under section 4 without a fee.
-- End-of-year performance: [[DETAILS / costume fees, if any]].
+- Events (for example an end-of-year performance, show or tournament): [[DETAILS / costume fees, if any]].
 
 ## 2. Price and payment
 
@@ -49,7 +49,7 @@ Refunds are paid in the way you paid, or as agreed.
 ## 5. Health and safety
 
 - Before the first class, the parent fills in the **health declaration** in the app and updates it if anything changes.
-- Please tell the teacher about any injury or condition affecting participation. The teacher may ask a student to sit out an exercise for safety.
+- Please tell the teacher about any injury or condition affecting participation. The teacher may ask a student to sit out an activity for safety.
 - Emergency contact: the parent gives at least one emergency contact who can be reached during class.
 - For students under [[AGE]]: a parent or an adult they authorise must bring and collect the student at the door of the studio. Tell us in writing who may collect the student.
 - The studio holds [[third-party liability insurance — insurer / policy]] ([[STUDIO: confirm]]).

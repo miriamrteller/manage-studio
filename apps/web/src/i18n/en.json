@@ -1681,6 +1681,9 @@
     "check_email_title": "Check your email",
     "check_email_body": "We sent a link to {{email}}. Open it on this device to set up your studio. The link works for 1 hour.",
     "use_other_email": "Use a different email",
+    "check_spam": "Nothing yet? Check your spam or junk folder. The email can take a few minutes.",
+    "resend": "Resend the email",
+    "resent": "We sent it again to {{email}}.",
     "error_send": "We couldn't send the email. Please try again.",
     "captcha_needed": "Please complete the check above.",
     "signing_in": "Confirming your email…",
@@ -1749,6 +1752,8 @@
     "invoicing_yesh": "Issued by Yesh Invoice",
     "invoicing_green_invoice": "Issued by Green Invoice",
     "invoicing_none": "None (not a registered business)",
+    "invoicing_existing": "I already use an invoicing service",
+    "invoicing_existing_which": "Which invoicing service?",
     "payments_later": "The studio connects its account with the provider later, in its own settings.",
     "look_hint": "Starts with OpalSwift's colours. The studio can upload its logo and change colours later.",
     "primary_color": "Main colour",
@@ -1846,6 +1851,8 @@
       "manage_services_hint": "Add and edit the 1:1 services clients can book on your booking page."
     },
     "services": {
+      "photographer_note": "Photographers don’t use bookable services. Your clients enquire, you send a quote, and they accept it online.",
+      "photographer_quotes": "Go to Quotes and send a quote",
       "title": "Bookable Services",
       "subtitle": "The one-off sessions clients can book with you online — for example workshops, 1:1 private lessons, trial classes, or consultations.",
       "not_available": "Appointment services are not available on your current plan.",
@@ -1868,6 +1875,8 @@
       "booking_disabled_warning": "Booking is disabled. Enable it in Booking Settings and save — otherwise clients will see an empty booking page even if services are listed here."
     },
     "book": {
+      "photographer_note": "This studio doesn’t take online bookings. Send an enquiry instead and the photographer will reply with a quote.",
+      "photographer_enquire": "Send an enquiry",
       "title": "Book an appointment",
       "not_enabled": "Appointment booking is not currently available.",
       "invalid_service": "That service isn’t available to book. Showing available services instead.",
@@ -2297,6 +2306,7 @@
       "saved": "Payment credentials saved."
     },
     "invoicing": {
+      "none_note": "You are not using an invoicing service, so there is nothing to connect here. If you start using one, choose it under “Tax documents” in Settings.",
       "title": "Invoicing provider",
       "description": "Tax document credentials",
       "provider": "Provider",
