@@ -15,12 +15,17 @@ export interface StudioSetupForm {
   primaryColor: string;
   accentColor: string;
   ownerEmail: string;
+  /**
+   * Answer to "Will you charge monthly fees?" (null = not answered). Pre-filled from the studio
+   * type; decides which payment providers are offered. Not sent: it only guides the choice.
+   */
+  monthlyFees: boolean | null;
 }
 
 /**
  * Defaults: English, OpalSwift colours, online card payment through Grow with Grow's tax
  * documents. Nothing needs to be connected to finish setup: keys are entered later in Settings,
- * and the studio can switch to "pay at the studio" (or another provider) at any time.
+ * and the studio can change its payment provider until its first payment.
  */
 export const INITIAL_FORM: StudioSetupForm = {
   name: '',
@@ -33,6 +38,7 @@ export const INITIAL_FORM: StudioSetupForm = {
   primaryColor: OPALSWIFT_BRAND.primary,
   accentColor: OPALSWIFT_BRAND.accent,
   ownerEmail: '',
+  monthlyFees: null,
 };
 
 /** Class-based studios (terms, family billing) use the Professional layout. */

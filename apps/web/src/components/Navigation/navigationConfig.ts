@@ -60,6 +60,8 @@ export interface NavItem {
   verticals?: VerticalId[];
   /** Hide for these verticals (class-only pages hidden for appointment verticals). */
   hideForVerticals?: VerticalId[];
+  /** Show only when there is no studio (app.opalswift.com): e.g. the platform home at "/". */
+  withoutStudioOnly?: boolean;
 }
 
 export interface NavSection {
@@ -284,8 +286,22 @@ export const navigationConfig: NavItem[] = [
     indent: true,
   },
   {
+    // The platform home lists the studios; on a studio host "/" is the studio's own home.
+    path: '/',
+    labelKey: 'nav.platform_studios',
+    requiredRoles: ['super_admin'],
+    sectionKey: 'platform',
+    withoutStudioOnly: true,
+  },
+  {
     path: '/platform/onboard',
     labelKey: 'nav.platform_onboard',
+    requiredRoles: ['super_admin'],
+    sectionKey: 'platform',
+  },
+  {
+    path: '/platform/features',
+    labelKey: 'nav.platform_features',
     requiredRoles: ['super_admin'],
     sectionKey: 'platform',
   },
@@ -381,6 +397,10 @@ export function canAccessRoute(userRoles: string[], requiredRoles: string[]): bo
  * Longest-prefix match so hub routes (e.g. /admin/finance) are not active on sub-pages.
  */
 export function resolveActiveNavPath(pathname: string, items: NavItem[]): string | null {
+  // Without a studio, "/" is the platform home (its own menu item).
+  if (pathname === '/' && items.some((item) => item.path === '/')) {
+    return '/';
+  }
   if (pathname === '/' || pathname === '/classes') {
     return '/classes';
   }

@@ -1688,7 +1688,7 @@
     "leads": "Leads",
     "finance": "Finance",
     "setup_overview": "Setup overview",
-    "platform_onboard": "Onboard tenant",
+    "platform_onboard": "Set up a new studio",
     "people": "Students & Adults",
     "families": "Families",
     "notifications": "Notifications",
@@ -1720,7 +1720,9 @@
     },
     "jobs": "Shoots",
     "contracts": "Contracts",
-    "quotes": "Quotes"
+    "quotes": "Quotes",
+    "platform_studios": "Studios",
+    "platform_features": "Platform features"
   },
   "platform_welcome": {
     "headline": "Get paid. Stay compliant. Freelance in Israel.",
@@ -1887,6 +1889,7 @@
     "need_owner_email": "Enter the owner's email address to continue.",
     "cash_receipts_hint": "{{provider}} issues the document with each card payment. It cannot issue receipts for cash or bank transfers you record by hand: for those, issue the receipt yourself, or choose Green Invoice or YPay for documents.",
     "need_invoicing_pairing": "That invoicing service cannot issue documents for this way of paying. Choose another, or no documents.",
+    "need_monthly_fees": "Answer whether you will charge monthly fees.",
     "need_terms": "Tick the box to accept the terms to continue.",
     "title": "Set up a new studio",
     "description": "Create the studio, choose how it takes payments, and invite its owner. Everything can be changed later in the studio's settings.",
@@ -1920,7 +1923,7 @@
     "payment_invoice4u": "By card online, through Invoice4U",
     "payment_ypay": "By card online, through YPay",
     "payment_tranzila": "By card online, through Tranzila",
-    "payment_offline": "Pay at the studio (cash, bank transfer or Bit)",
+    "payment_offline": "Not a registered business yet: pay at the studio",
     "invoicing_question": "Tax documents (receipts and invoices)",
     "invoicing_grow": "Issued by Grow",
     "invoicing_icount": "Issued by iCount",
@@ -2517,7 +2520,6 @@
     "offline_payments": {
       "title": "How parents pay",
       "switch_contact_support": "To change your payment provider, contact OpalSwift support.",
-      "choose_carefully": "Changing your payment provider later is complicated and needs OpalSwift support, so choose carefully.",
       "description": "Choose whether parents pay online or at the studio.",
       "enabled_label": "Parents pay at the studio (cash or bank transfer)",
       "enabled_hint": "No card form online. The place is reserved until you record the payment on the student. Unpaid places are released after 30 days.",
@@ -3051,5 +3053,15 @@
       "error_too_large": "The file is too large (up to 10 MB).",
       "upload_now": "Already have lawyer-reviewed documents? Upload them now"
     }
+  },
+  "payment_choice": {
+    "monthly_question": "Will you charge monthly fees?",
+    "monthly_yes": "Yes, monthly fees (for example a monthly class)",
+    "monthly_no": "No, one-off payments only (for example a shoot or a treatment)",
+    "monthly_answer_first": "Answer this first to choose how customers pay.",
+    "different_provider": "Different provider?",
+    "no_monthly_warning": "With {{provider}} you can't charge monthly fees. For monthly fees, choose Grow.",
+    "disclaimer": "You can change your payment provider until your first payment. After that, changing it needs OpalSwift support.",
+    "monthly_needs_grow": "Monthly fees need Grow. Contact OpalSwift support."
   }
 }
