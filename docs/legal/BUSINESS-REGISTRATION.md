@@ -6,6 +6,8 @@
 
 OpalSwift can most likely start as an **עוסק פטור** (VAT-exempt dealer): software and SaaS are not on the list of occupations that must register as עוסק מורשה, and expected turnover is far below the ceiling. Register **before the first paid plan**, not for the free beta. Move to עוסק מורשה when turnover approaches the ceiling, or earlier if business customers want tax invoices.
 
+See also the [OpalSwift billing plan](../plans/opalswift-billing-plan.md): free trial now, card capture and charging only after registration.
+
 ## עוסק פטור in one table
 
 | Topic | What it means | Source |
