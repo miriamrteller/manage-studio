@@ -25,6 +25,7 @@
     "error": "שגיאה",
     "success": "הצליח",
     "required": "שדה חובה",
+    "required_fields": "יש למלא את כל שדות החובה.",
     "optional": "אופציונלי",
     "yes": "כן",
     "no": "לא",

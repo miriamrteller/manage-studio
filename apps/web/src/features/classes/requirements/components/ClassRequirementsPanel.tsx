@@ -412,7 +412,7 @@ export function ClassRequirementsPanel({ classId, className }: ClassRequirements
               {createForm.requirement_type === 'level' && (
                 <div className="space-y-2 rounded-md border p-3"
                   style={{ borderColor: 'var(--color-border-default)', backgroundColor: 'var(--color-surface-subtle, #f9fafb)' }}>
-                  <Field label={t('form.requirement.category_id')}>
+                  <Field label={t('form.requirement.level_id')}>
                     {levelsData.isLoading ? (
                       <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>{t('common.loading')}</p>
                     ) : (

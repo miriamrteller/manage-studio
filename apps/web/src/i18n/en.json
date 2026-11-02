@@ -25,6 +25,7 @@
     "error": "Error",
     "success": "Success",
     "required": "Required",
+    "required_fields": "Please fill in all required fields.",
     "optional": "Optional",
     "yes": "Yes",
     "no": "No",
