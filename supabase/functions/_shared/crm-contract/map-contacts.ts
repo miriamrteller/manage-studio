@@ -132,6 +132,10 @@ const LEAD_STAGES: Record<string, StageV1> = {
   contacted: "Contacted",
   qualified: "Qualified",
   proposal: "Proposal",
+  // Class pipeline (step 3) onto the contract's stages.
+  trial_booked: "Qualified",
+  trial_done: "Proposal",
+  won: "Won",
   lost: "Lost",
 };
 const LEAD_CHANNELS: Record<string, ChannelV1> = {

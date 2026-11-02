@@ -224,6 +224,17 @@ describe('leads — separate entity, same pipeline', () => {
     ]);
   });
 
+  it.each([
+    ['trial_booked', 'Qualified'],
+    ['trial_done', 'Proposal'],
+    ['won', 'Won'],
+    ['qualified', 'Qualified'],
+    ['proposal', 'Proposal'],
+  ])('class-pipeline stage %s maps to contract stage %s', (stage, expected) => {
+    const [contact] = mapContacts(baseInput({ leads: [partyLead({ stage })] })).contacts;
+    expect(contact.stage).toBe(expected);
+  });
+
   it('excludes converted leads — the account takes over as the Won contact', () => {
     const input = sternFamily();
     input.leads = [

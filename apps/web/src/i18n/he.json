@@ -471,6 +471,9 @@
         "stage_contacted": "נוצר קשר",
         "stage_qualified": "רלוונטי",
         "stage_proposal": "הצעה",
+        "stage_trial_booked": "נקבע שיעור ניסיון",
+        "stage_trial_done": "היה שיעור ניסיון",
+        "stage_won": "נרשם/ה",
         "stage_lost": "אבוד",
         "converted": "הומר ללקוח",
         "last_contacted": "קשר אחרון",
@@ -553,6 +556,18 @@
         "not_found": "הטופס הזה לא קיים.",
         "closed_title": "הטופס הזה סגור",
         "closed": "הטופס הזה כבר לא מקבל פניות."
+      },
+      "pipeline": {
+        "enrolled": "נרשם/ה: {{student}} · {{offering}}",
+        "enrolled_short": "נרשם/ה",
+        "possible_match": "התאמה אפשרית: {{student}} נרשם/ה ל{{offering}}.",
+        "confirm_match": "כן, לקשר",
+        "not_this_one": "לא זה",
+        "link_enrolment": "קישור להרשמה",
+        "search_label": "לאיזו הרשמה שייך/ת {{name}}?",
+        "search_placeholder": "שם התלמיד/ה או החוג",
+        "link": "קישור",
+        "no_enrolments": "אין הרשמות לחוגים שמתאימות."
       },
       "get_leads": {
         "send_title": "שליחת הטופס למישהו",

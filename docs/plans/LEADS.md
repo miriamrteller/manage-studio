@@ -255,6 +255,34 @@ Steps 1–4 are the beta (about 1 week). The default card payment path is not to
     `lead_forms` is admin-only by RLS. Triggers keep a form's class and a
     lead's form inside the same studio.
 
+- **Step 3, class pipeline.**
+  - **Stages:** dance and other class studios see new → contacted → **trial
+    booked** → **trial done** → **won** / lost. Photographers keep new /
+    contacted / qualified / proposal / lost and their lead → quote → job flow,
+    unchanged. A lead already in another stage keeps it in its list.
+  - **Auto-link on enrolment:** a trigger runs after an enrolment in a **class**
+    (`link_lead_on_enrolment`, service tier).
+    - It collects the emails and phones of the student, the family's main
+      contact and family members. Phones are compared by their last 9 digits,
+      so `050…`, `972…` and `+972…` all match.
+    - It looks for open leads of the same studio (not won, not lost, not
+      converted).
+    - **Exactly one** match → the lead becomes **won**, with
+      `converted_account_id` (the family), `converted_at` and
+      `converted_engagement_id`.
+    - **Several** matches → each gets `suggested_engagement_id`, and the leads
+      page shows "Possible match: … — Yes, link / Not this one".
+    - Any lead can also be linked by hand ("Link to an enrolment" searches
+      recent class enrolments).
+    - Appointments (photographer jobs) are skipped.
+    - The trigger turns its own errors into warnings, so **an enrolment never
+      fails because of lead matching**.
+  - **CRM contract:** trial booked → "Qualified", trial done → "Proposal",
+    won → "Won". The contract itself is unchanged.
+  - **Named forms that closed while open in a visitor's browser:** the lead is
+    still saved, without the form link or its class. A form that was deleted
+    meanwhile → the lead is saved with no required questions.
+
 ### Social channels: now and later
 
 - **Now (P1):** tagged links and a QR poster, above. Each lead records where it
