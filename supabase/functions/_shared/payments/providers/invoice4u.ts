@@ -9,6 +9,8 @@ import { resolveInvoice4uCustomer } from "../invoice4u/customer.ts";
 import { parseClearingTerminalCapabilities } from "../invoice4u/response.ts";
 import { verifyInvoice4uPaymentSucceeded } from "../invoice4u/verify-callback.ts";
 import type { ChargeParams, ChargeResult, PaymentEvent, PaymentProvider } from "../types.ts";
+import { getEnv } from "../../edge-runtime/env.ts";
+import { ManualRefundRequiredError } from "../refund-errors.ts";
 
 /**
  * Invoice4U payment adapter — live (U2b).
@@ -205,13 +207,50 @@ export class Invoice4uPaymentProvider implements PaymentProvider {
     );
   }
 
-  async refundCharge(_params: {
+  /**
+   * Refund through ProcessApiRequestV2 with `Refund`, `PaymentId` and `Sum`
+   * (docs/plans/finance/invoice4u/API-REFERENCE.md); Invoice4U issues the credit document
+   * itself when the original payment had one.
+   *
+   * Off until the live check (stage U4-live) passes: without INVOICE4U_LIVE_REFUND=true the
+   * admin is told to refund in the Invoice4U dashboard and record it here, as before.
+   */
+  async refundCharge(params: {
     providerPaymentRef: string;
     amountMinor: number;
   }): Promise<{ providerRefundRef: string }> {
-    throw new Error(
-      "Invoice4U refundCharge is U4-live — see docs/plans/finance/invoice4u/stage-u4-live.md",
-    );
+    if (getEnv("INVOICE4U_LIVE_REFUND") !== "true") {
+      throw new ManualRefundRequiredError("invoice4u");
+    }
+
+    const { data: payment } = await this.service
+      .from("payments")
+      .select("tenant_id")
+      .eq("provider_payment_ref", params.providerPaymentRef)
+      .maybeSingle();
+    if (!payment?.tenant_id) {
+      throw new Error("Payment not found for refund");
+    }
+    const credentials = await this.getCredentials(payment.tenant_id as string);
+
+    const payload = await invoice4uPost("ProcessApiRequestV2", {
+      request: {
+        Invoice4UUserApiKey: credentials.apiKey,
+        CreditCardCompanyType: credentials.clearingCompanyType,
+        Refund: true,
+        PaymentId: params.providerPaymentRef,
+        // Major-unit decimal, as for charges.
+        Sum: params.amountMinor / 100,
+        IsQaMode: invoice4uIsQaMode(),
+      },
+    });
+
+    const refundId = payload.PaymentId ?? payload.RefundId ?? payload.ClearingTraceId;
+    return {
+      providerRefundRef: refundId != null && refundId !== ""
+        ? String(refundId)
+        : `invoice4u_ref_${params.providerPaymentRef}`,
+    };
   }
 
   /**

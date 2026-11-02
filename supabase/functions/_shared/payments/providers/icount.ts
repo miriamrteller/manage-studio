@@ -1,3 +1,4 @@
+import { ManualRefundRequiredError } from "../refund-errors.ts";
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
 import { getEnv } from "../../edge-runtime/env.ts";
 import type { ChargeParams, ChargeResult, PaymentEvent, PaymentProvider } from "../types.ts";
@@ -96,7 +97,8 @@ export class IcountPaymentProvider implements PaymentProvider {
     providerPaymentRef: string;
     amountMinor: number;
   }): Promise<{ providerRefundRef: string }> {
-    throw new Error("iCount refund adapter pending I0-live / I4");
+    // Not built yet (I0-live / I4): refund in the iCount dashboard and record it here.
+    throw new ManualRefundRequiredError("icount");
   }
 
   async verifyCredentials(_tenantId: string): Promise<{ valid: boolean; message: string }> {
