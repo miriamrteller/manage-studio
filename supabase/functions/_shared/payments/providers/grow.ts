@@ -14,11 +14,6 @@ interface GrowCredentials {
    * null = omit pageField[invoiceLicenseNumber] from payload (field not configured).
    */
   invoiceLicenseNumber: string | null;
-  /**
-   * Grow vatType for productData[N][vatType].
-   * 1 = VAT included (default), 2 = before VAT, 3 = exempt.
-   */
-  vatType: number;
 }
 
 interface GrowNotifyData {
@@ -226,7 +221,7 @@ export class GrowPaymentProvider implements PaymentProvider {
     // The Grow user id is stored in the vendor-generic account id column (not a secret).
     const { data: tenant } = await this.service
       .from("tenants")
-      .select("payment_provider_account_id, invoice_license_number, vat_type")
+      .select("payment_provider_account_id, invoice_license_number")
       .eq("id", tenantId)
       .single();
 
@@ -239,7 +234,6 @@ export class GrowPaymentProvider implements PaymentProvider {
       pageCode: cred.payment_provider_public_key,
       apiKey: cred.payment_provider_secret_key,
       invoiceLicenseNumber: (tenant.invoice_license_number as string | null) ?? null,
-      vatType: typeof tenant.vat_type === "number" ? tenant.vat_type : 1,
     };
   }
 
@@ -324,12 +318,12 @@ export class GrowPaymentProvider implements PaymentProvider {
       // Save the card token on the first (enrolment) charge so renewals can reuse it (G6).
       saveCardToken: params.metadata.charge_type === "initial" ? 1 : 0,
       ...(notifyUrl ? { notifyUrl } : {}),
-      // Gap 2 — CN-GROW-002-REV: Osek Patur / VAT type pass-through.
-      // Pure pass-through: OpalSwift never computes or validates tax values.
+      // The studio's tax ID for the Grow document, passed through as entered. No VAT type is
+      // sent: Grow applies the VAT rules of the owner's own Grow account, and the amount is
+      // the gross price as entered (business status never changes what we send).
       ...(creds.invoiceLicenseNumber
         ? { "pageField[invoiceLicenseNumber]": creds.invoiceLicenseNumber }
         : {}),
-      "productData[0][vatType]": creds.vatType,
       ...customFields,
     };
 
@@ -370,11 +364,10 @@ export class GrowPaymentProvider implements PaymentProvider {
         sum: growAmountFromMinor(params.amountMinor),
         description: `${params.metadata.charge_type} ${params.metadata.engagement_id}`,
         transactionUniqueIdentifier: params.idempotencyKey,
-        // Gap 2 — CN-GROW-002-REV: same pass-through as createCharge.
+        // Same as createCharge: tax ID passed through, no VAT type.
         ...(creds.invoiceLicenseNumber
           ? { "pageField[invoiceLicenseNumber]": creds.invoiceLicenseNumber }
           : {}),
-        "productData[0][vatType]": creds.vatType,
         ...toGrowCustomFields(params.metadata),
       }),
     });
