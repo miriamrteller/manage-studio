@@ -82,8 +82,8 @@ Optional; everything is a no-op until these are set. Full owner walkthrough: [OB
 
 | Variable | Where | Purpose |
 |----------|-------|---------|
-| `VITE_SENTRY_DSN` | Cloudflare Workers Builds variable | Turns on frontend error reporting and "Report a problem" (build time) |
-| `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT` | Workers Builds (token as secret) | Source-map upload during `vite build`; skipped when absent |
+| `VITE_SENTRY_DSN` | GitHub environment `production` variable (deploy-web build) | Turns on frontend error reporting and "Report a problem" (build time) |
+| `SENTRY_AUTH_TOKEN` (secret), `SENTRY_ORG`, `SENTRY_PROJECT` | GitHub **repository** level, so deploy-web and sentry-issues both see them | Source-map upload during the deploy-web build; skipped when absent |
 | `SENTRY_DSN` | Edge function secret | Edge-function error reporting |
 | `SENTRY_ENVIRONMENT`, `SENTRY_RELEASE` | Edge function secrets (optional) | Labels on edge events |
 | `SENTRY_AUTH_TOKEN` (secret) + `SENTRY_ORG`, `SENTRY_PROJECT` (variables) | GitHub Actions | `sentry-issues.yml` opens GitHub issues for new Sentry issues |

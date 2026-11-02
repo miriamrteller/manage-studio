@@ -140,6 +140,18 @@ describe('self-serve signup: start', () => {
     expect(h.invoke).not.toHaveBeenCalled();
   });
 
+  it('the check-email screen has a spam hint and a working Resend', async () => {
+    renderPage();
+    fireEvent.change(screen.getByLabelText('First name'), { target: { value: 'Dana' } });
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'owner@yoga.test' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Email me a link' }));
+    await screen.findByRole('heading', { name: 'Check your email' });
+    expect(screen.getByText(/spam or junk folder/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Resend the email' }));
+    await waitFor(() => expect(h.signInWithOtp).toHaveBeenCalledTimes(2));
+    expect(await screen.findByText('We sent it again to owner@yoga.test.')).toBeInTheDocument();
+  });
+
   it('with a Turnstile site key, the link is sent only after the check', async () => {
     vi.stubEnv('VITE_TURNSTILE_SITE_KEY', 'site-key-1');
     renderPage();
@@ -176,14 +188,14 @@ describe('self-serve signup: wizard', () => {
       action: 'self_serve',
       name: 'Harbour Yoga',
       subdomain: 'harbour-yoga',
-      paymentProvider: 'grow',
-      invoicingProvider: 'grow',
+      paymentProvider: 'offline',
+      invoicingProvider: 'none',
       primaryColor: '#5B6CFF',
       termsVersion: 'v-test-1',
       termsLanguage: 'en',
     });
     expect(body).not.toHaveProperty('ownerEmail');
-    expect(screen.getByText('Next: finish setup')).toBeInTheDocument();
+    expect(screen.getByText('A checklist is waiting for you')).toBeInTheDocument();
     expect(screen.getByText('harbour-yoga.opalswift.com')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Go to your studio' }));

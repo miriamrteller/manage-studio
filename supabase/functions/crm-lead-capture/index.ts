@@ -13,9 +13,13 @@ import { withMonitoring } from "../_shared/monitoring.ts";
 import { verifyTurnstile } from "../_shared/turnstile.ts";
 import { leadCaptchaPasses, normaliseCampaign } from "../_shared/crm-contract/lead-capture-guard.ts";
 import {
+  FORM_TIME_ZONE,
   formQuestions,
+  leadFormIsOpen,
   leadFormKindFor,
   parseLeadFormConfig,
+  questionsForForm,
+  todayIn,
   validateLeadAnswers,
 } from "../_shared/email-dist/leadForm.js";
 
@@ -55,6 +59,8 @@ const payloadSchema = z.object({
   captchaToken: z.string().max(4096).nullable().optional(),
   /** Answers to the studio's extra questions, keyed by question key (validated below). */
   answers: z.record(z.unknown()).nullable().optional(),
+  /** Named form (/f/<slug>); absent for the general /inquire form. */
+  formSlug: z.string().max(40).nullable().optional(),
   /** Honeypot — humans never see it, bots fill it. */
   website: z.string().max(200).nullable().optional(),
   /**
@@ -184,6 +190,23 @@ Deno.serve(withMonitoring("crm-lead-capture", async (req) => {
       lead_form: unknown;
     };
 
+    // Named form: must exist in this studio and be open; it narrows the
+    // questions and may pre-select a class or package.
+    let namedForm: { id: string; question_keys: string[] | null; offering_id: string | null } | null = null;
+    if (payload.formSlug) {
+      const { data: form } = await service
+        .from("lead_forms")
+        .select("id, active, ends_on, question_keys, offering_id")
+        .eq("tenant_id", leadTenant.id)
+        .eq("slug", payload.formSlug.trim().toLowerCase())
+        .maybeSingle();
+      if (!form) return json({ error: "unknown_form" }, 404);
+      if (!leadFormIsOpen(form as { active: boolean; ends_on: string | null }, todayIn(FORM_TIME_ZONE))) {
+        return json({ error: "form_closed" }, 410);
+      }
+      namedForm = form as { id: string; question_keys: string[] | null; offering_id: string | null };
+    }
+
     // The studio's extra questions. Unknown keys are ignored; a required
     // question left empty or an invalid answer refuses the enquiry (400), so
     // the form can show which field to fix.
@@ -201,7 +224,7 @@ Deno.serve(withMonitoring("crm-lead-capture", async (req) => {
         .eq("status", "active");
       classes = (rows ?? []) as Array<{ id: string; name: string }>;
     }
-    const questions = formQuestions(formConfig, kind, classes);
+    const questions = questionsForForm(formQuestions(formConfig, kind, classes), namedForm?.question_keys);
     const checked = validateLeadAnswers(questions, payload.answers ?? {});
     if (!checked.ok) {
       return json({ error: "invalid_answers", fields: checked.invalid }, 400);
@@ -227,7 +250,16 @@ Deno.serve(withMonitoring("crm-lead-capture", async (req) => {
       sourceRef: null,
       receivedAt: new Date().toISOString(),
       campaign: normaliseCampaign(payload.campaign),
-      form: questions.length > 0 ? { columns: checked.columns, answers: checked.answers } : null,
+      form: questions.length > 0 || namedForm?.offering_id
+        ? {
+          // The form's own class/package applies unless the visitor picked one.
+          columns: namedForm?.offering_id && !checked.columns.offering_id
+            ? { ...checked.columns, offering_id: namedForm.offering_id }
+            : checked.columns,
+          answers: checked.answers,
+        }
+        : null,
+      formId: namedForm?.id ?? null,
     });
 
     const optIns = payload.marketingConsent?.items ?? [];

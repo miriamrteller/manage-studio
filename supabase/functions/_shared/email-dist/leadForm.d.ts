@@ -116,4 +116,35 @@ export interface ValidatedAnswers {
 export declare function validateLeadAnswers(questions: FormQuestion[], raw: unknown): ValidatedAnswers;
 /** Readable text of a stored answer in one language. */
 export declare function answerText(answer: StoredAnswer, lang: LeadFormLang): string;
+/** Mirrors the lead_forms CHECK constraints. */
+export declare const RESERVED_FORM_SLUGS: readonly ["new", "edit", "admin", "api", "embed", "inquire", "f", "form", "forms", "settings", "default", "all", "www", "app", "login", "signup", "null", "undefined"];
+export declare const FORM_SLUG_RE: RegExp;
+/** Why a slug can't be used, or null when it is fine (uniqueness is checked separately). */
+export declare function formSlugProblem(slug: string): 'empty' | 'format' | 'reserved' | null;
+/** A slug suggestion from a name ("Grade 2 – Sunday" → "grade-2-sunday"); Hebrew-only names give "". */
+export declare function suggestFormSlug(name: string): string;
+/** Today's date (YYYY-MM-DD) in a time zone; the studio's day decides when a form closes. */
+export declare function todayIn(timeZone: string, now?: Date): string;
+export declare const FORM_TIME_ZONE = "Asia/Jerusalem";
+/** Open = switched on and not past its last day (the last day itself is still open). */
+export declare function leadFormIsOpen(form: {
+    active: boolean;
+    ends_on: string | null;
+}, today: string): boolean;
+/** The questions a named form asks: its chosen keys, in the studio's order; null keys = all. */
+export declare function questionsForForm(questions: FormQuestion[], keys: readonly string[] | null | undefined): FormQuestion[];
+/** What /f/<slug> needs (get_named_lead_form). */
+export interface NamedFormPublic {
+    status: 'open' | 'closed';
+    id?: string;
+    slug?: string;
+    title_en?: string | null;
+    title_he?: string | null;
+    intro_en?: string | null;
+    intro_he?: string | null;
+    image_url?: string | null;
+    question_keys?: string[] | null;
+    offering_id?: string | null;
+}
+export declare function parseNamedForm(raw: unknown): NamedFormPublic | null;
 //# sourceMappingURL=leadForm.d.ts.map

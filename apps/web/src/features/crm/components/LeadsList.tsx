@@ -1,5 +1,7 @@
 ﻿import { useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { GetLeadsPanel } from './GetLeadsPanel';
+import { Link } from 'react-router-dom';
+import { useNamedForms } from '../hooks/useNamedForms';
 import { answerText } from '@shared/index';
 import { answerFilterOptions, filterByAnswer } from '../lib/leadAnswers';
 import { useTranslation } from 'react-i18next';
@@ -110,16 +112,23 @@ export function LeadsList() {
   const [answerValue, setAnswerValue] = useState('');
   const answerOptions = useMemo(() => answerFilterOptions(allLeads, lang), [allLeads, lang]);
   const [source, setSource] = useState('');
+  const [formFilter, setFormFilter] = useState('');
+  const { forms: namedForms } = useNamedForms();
+  const formNames = useMemo(() => new Map(namedForms.map((f) => [f.id, f.name])), [namedForms]);
   const sources = useMemo(() => LEAD_CHANNELS.filter((c) => allLeads.some((l) => l.channel === c)), [allLeads]);
   const leads = useMemo(
     () =>
       filterByAnswer(
-        source ? allLeads.filter((l) => l.channel === source) : allLeads,
+        allLeads.filter(
+          (l) =>
+            (!source || l.channel === source) &&
+            (!formFilter || (formFilter === 'general' ? !l.form_id : l.form_id === formFilter)),
+        ),
         answerKey,
         answerValue,
         lang,
       ),
-    [allLeads, source, answerKey, answerValue, lang],
+    [allLeads, source, formFilter, answerKey, answerValue, lang],
   );
   const valuesForKey = answerOptions.find((o) => o.key === answerKey)?.values ?? [];
 
@@ -169,9 +178,14 @@ export function LeadsList() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl font-bold">{t('pages.crm.leads.title')}</h1>
-        <Button variant="primary" onClick={() => setShowForm((open) => !open)}>
-          {showForm ? t('common.cancel') : t('pages.crm.leads.add')}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Link to="/admin/leads/forms" className="inline-flex items-center rounded border px-3 py-2 text-sm">
+            {t('pages.crm.named_forms.title')}
+          </Link>
+          <Button variant="primary" onClick={() => setShowForm((open) => !open)}>
+            {showForm ? t('common.cancel') : t('pages.crm.leads.add')}
+          </Button>
+        </div>
       </div>
       <p className="text-sm text-muted-foreground">{t('pages.crm.leads.description')}</p>
 
@@ -304,6 +318,27 @@ export function LeadsList() {
               ))}
             </select>
           </div>
+          {namedForms.length > 0 && (
+            <div>
+              <label htmlFor="lead-form-filter" className="block text-sm font-medium mb-1">
+                {t('pages.crm.leads.filter_form')}
+              </label>
+              <select
+                id="lead-form-filter"
+                className="border rounded px-2 py-1"
+                value={formFilter}
+                onChange={(e) => setFormFilter(e.target.value)}
+              >
+                <option value="">{t('pages.crm.leads.filter_any')}</option>
+                <option value="general">{t('pages.crm.leads.form_general')}</option>
+                {namedForms.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           {answerOptions.length > 0 && (
           <div>
             <label htmlFor="lead-answer-key" className="block text-sm font-medium mb-1">
@@ -402,6 +437,11 @@ export function LeadsList() {
                   </td>
                   <td className="px-3 py-2">
                     {t(`pages.crm.leads.channel_${lead.channel}`)}
+                    {lead.form_id && formNames.get(lead.form_id) && (
+                      <span className="block text-xs text-muted-foreground" dir="auto">
+                        {t('pages.crm.leads.via_form', { name: formNames.get(lead.form_id) })}
+                      </span>
+                    )}
                     {lead.campaign && (
                       <span className="block text-xs text-muted-foreground" dir="auto">
                         {lead.campaign}

@@ -83,6 +83,9 @@ export const SECTION_LABELS: Record<NavSectionKey, string> = {
   learning: 'nav.section.learning',
 };
 
+/** The studio home with the setup checklist forced open. */
+export const SETUP_GUIDE_PATH = '/admin/setup?guide=open';
+
 /** Authenticated navigation items (flattened; grouped in the drawer) */
 export const navigationConfig: NavItem[] = [
   {
@@ -179,6 +182,14 @@ export const navigationConfig: NavItem[] = [
     labelKey: 'nav.setup_overview',
     requiredRoles: ['tenant_admin'],
     sectionKey: 'setup',
+  },
+  {
+    // Reopens the "Finish setup" checklist on the studio home (see AdminPanel).
+    path: SETUP_GUIDE_PATH,
+    labelKey: 'setup_guide.menu',
+    requiredRoles: ['tenant_admin'],
+    sectionKey: 'setup',
+    indent: true,
   },
   {
     path: '/admin/setup/settings',

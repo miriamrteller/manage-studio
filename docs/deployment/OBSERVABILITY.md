@@ -18,7 +18,7 @@ Nothing is sent anywhere until you finish the setup below. Until then the code i
 
 ## One-time setup (about 15 minutes)
 
-You need: the Cloudflare dashboard, the Supabase dashboard, and GitHub repository settings. Keep a
+You need: the Supabase dashboard and GitHub repository settings (the website is built by GitHub, not Cloudflare). Keep a
 notes file open, because you will copy four values: **DSN**, **token**, **org slug** and **project slug**.
 
 ### 1. Create the Sentry account. Pick the EU region.
@@ -89,7 +89,7 @@ For the weekly summary: **User Settings → Notifications → Weekly Reports**, 
 
 ### 7. Check it works
 
-1. Sign in to the app as a studio admin. Open the menu → **Report a problem** → type `test` → **Send report**.
+1. Make sure a web deploy has run since you added `VITE_SENTRY_DSN` (Actions → deploy-web). Then sign in to the app as a studio admin. Open the menu → **Report a problem** → type `test` → **Send report**.
 2. In Sentry, open **User Feedback**. The message appears within a minute or so.
 3. In GitHub, open **Actions → "Sentry → GitHub issues" → Run workflow**. A GitHub issue labeled
    `problem-report` appears. Close it.
@@ -136,7 +136,7 @@ untrusted, because anyone can trigger an error with odd text in it.
 
 ## Turning it off
 
-Delete `VITE_SENTRY_DSN` in Cloudflare and rebuild, and delete `SENTRY_DSN` in Supabase. Everything goes quiet,
+Delete `VITE_SENTRY_DSN` (GitHub → Settings → Environments → production → Variables) and run deploy-web again, and delete `SENTRY_DSN` in Supabase. Everything goes quiet,
 and the "Report a problem" menu item disappears. To stop the GitHub issues, delete the GitHub secret, or disable
 the workflow in the Actions tab.
 
@@ -164,7 +164,7 @@ the workflow in the Actions tab.
   - In a `catch` block that returns a friendly error, call `reportEdgeError(err, "<name>", { tenant_id })` to keep
     the detail.
   - It doesn't use the Sentry SDK. It sends a plain HTTPS request, with a 2-second timeout, and never throws.
-- **Release:** the git commit. Cloudflare's `WORKERS_CI_COMMIT_SHA`, or `GITHUB_SHA`, or `git rev-parse`; see
+- **Release:** the git commit. deploy-web passes it as `VITE_RELEASE`; otherwise `GITHUB_SHA` or `git rev-parse`; see
   `apps/web/vite.config.ts`. Edge functions can set the `SENTRY_RELEASE` secret, but don't have to.
 - **Source maps:** built "hidden", uploaded by `@sentry/vite-plugin`, then deleted from `dist`. This only happens
   when `SENTRY_AUTH_TOKEN`, `SENTRY_ORG` and `SENTRY_PROJECT` are all set on the build. If the upload fails, the

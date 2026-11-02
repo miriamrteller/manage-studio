@@ -283,3 +283,68 @@ export function answerText(answer, lang) {
         return answer.display.map((d) => d[lang] || d.en).join(', ');
     return Array.isArray(answer.value) ? answer.value.join(', ') : String(answer.value);
 }
+// ── Named forms (/f/<slug>, step 2d) ────────────────────────────────────────
+/** Mirrors the lead_forms CHECK constraints. */
+export const RESERVED_FORM_SLUGS = [
+    'new', 'edit', 'admin', 'api', 'embed', 'inquire', 'f', 'form', 'forms',
+    'settings', 'default', 'all', 'www', 'app', 'login', 'signup', 'null', 'undefined',
+];
+export const FORM_SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$/;
+/** Why a slug can't be used, or null when it is fine (uniqueness is checked separately). */
+export function formSlugProblem(slug) {
+    if (!slug)
+        return 'empty';
+    if (!FORM_SLUG_RE.test(slug))
+        return 'format';
+    if (RESERVED_FORM_SLUGS.includes(slug))
+        return 'reserved';
+    return null;
+}
+/** A slug suggestion from a name ("Grade 2 – Sunday" → "grade-2-sunday"); Hebrew-only names give "". */
+export function suggestFormSlug(name) {
+    return name
+        .toLowerCase()
+        .normalize('NFKD')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 40)
+        .replace(/-+$/g, '');
+}
+/** Today's date (YYYY-MM-DD) in a time zone; the studio's day decides when a form closes. */
+export function todayIn(timeZone, now = new Date()) {
+    // en-CA formats as YYYY-MM-DD.
+    return new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
+}
+export const FORM_TIME_ZONE = 'Asia/Jerusalem';
+/** Open = switched on and not past its last day (the last day itself is still open). */
+export function leadFormIsOpen(form, today) {
+    return form.active && (!form.ends_on || form.ends_on >= today);
+}
+/** The questions a named form asks: its chosen keys, in the studio's order; null keys = all. */
+export function questionsForForm(questions, keys) {
+    if (!keys)
+        return questions;
+    const wanted = new Set(keys);
+    return questions.filter((q) => wanted.has(q.key));
+}
+export function parseNamedForm(raw) {
+    if (!isObj(raw))
+        return null;
+    if (raw.status === 'closed')
+        return { status: 'closed' };
+    if (raw.status !== 'open' || typeof raw.id !== 'string')
+        return null;
+    const str = (v) => (typeof v === 'string' && v.trim() ? v : null);
+    return {
+        status: 'open',
+        id: raw.id,
+        slug: str(raw.slug) ?? undefined,
+        title_en: str(raw.title_en),
+        title_he: str(raw.title_he),
+        intro_en: str(raw.intro_en),
+        intro_he: str(raw.intro_he),
+        image_url: str(raw.image_url),
+        question_keys: Array.isArray(raw.question_keys) ? raw.question_keys.filter((k) => typeof k === 'string') : null,
+        offering_id: str(raw.offering_id),
+    };
+}

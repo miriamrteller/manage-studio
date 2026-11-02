@@ -35,18 +35,21 @@ export function buildEmbedSnippet(opts: {
   title: string;
   campaign?: string | null;
   lang?: EmbedLanguage;
+  /** Form path: '/inquire' (default) or '/f/<slug>'. The embed is the same path under /embed. */
+  path?: string;
 }): { url: string; iframe: string; link: string } {
   const params = new URLSearchParams({ src: 'website' });
   const campaign = opts.campaign?.trim();
   if (campaign) params.set('campaign', campaign);
   if (opts.lang) params.set('lang', opts.lang);
   const query = params.toString();
-  const url = `${opts.origin}/embed/inquire?${query}`;
+  const path = opts.path ?? '/inquire';
+  const url = `${opts.origin}/embed${path}?${query}`;
   const title = escapeAttr(opts.title);
   const iframe =
     `<iframe src="${escapeAttr(url)}" title="${title}" width="100%" height="900" ` +
     `style="border:0;max-width:640px" loading="lazy"></iframe>`;
-  return { url, iframe, link: `${opts.origin}/inquire?${query}` };
+  return { url, iframe, link: `${opts.origin}${path}?${query}` };
 }
 
 function escapeAttr(value: string): string {

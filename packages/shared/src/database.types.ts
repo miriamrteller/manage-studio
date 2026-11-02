@@ -1367,6 +1367,75 @@ export type Database = {
           },
         ]
       }
+      lead_forms: {
+        Row: {
+          active: boolean
+          created_at: string
+          ends_on: string | null
+          id: string
+          image_url: string | null
+          intro_en: string | null
+          intro_he: string | null
+          name: string
+          offering_id: string | null
+          question_keys: string[] | null
+          slug: string
+          tenant_id: string
+          title_en: string | null
+          title_he: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          ends_on?: string | null
+          id?: string
+          image_url?: string | null
+          intro_en?: string | null
+          intro_he?: string | null
+          name: string
+          offering_id?: string | null
+          question_keys?: string[] | null
+          slug: string
+          tenant_id: string
+          title_en?: string | null
+          title_he?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          ends_on?: string | null
+          id?: string
+          image_url?: string | null
+          intro_en?: string | null
+          intro_he?: string | null
+          name?: string
+          offering_id?: string | null
+          question_keys?: string[] | null
+          slug?: string
+          tenant_id?: string
+          title_en?: string | null
+          title_he?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_forms_offering_id_fkey"
+            columns: ["offering_id"]
+            isOneToOne: false
+            referencedRelation: "offerings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_forms_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leads: {
         Row: {
           answers: Json
@@ -1381,6 +1450,7 @@ export type Database = {
           deal_value_minor: number | null
           email: string | null
           event_date: string | null
+          form_id: string | null
           id: string
           interest: string | null
           last_communication_note: string | null
@@ -1410,6 +1480,7 @@ export type Database = {
           deal_value_minor?: number | null
           email?: string | null
           event_date?: string | null
+          form_id?: string | null
           id?: string
           interest?: string | null
           last_communication_note?: string | null
@@ -1439,6 +1510,7 @@ export type Database = {
           deal_value_minor?: number | null
           email?: string | null
           event_date?: string | null
+          form_id?: string | null
           id?: string
           interest?: string | null
           last_communication_note?: string | null
@@ -1461,6 +1533,13 @@ export type Database = {
             columns: ["converted_account_id"]
             isOneToOne: false
             referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_form_id_fkey"
+            columns: ["form_id"]
+            isOneToOne: false
+            referencedRelation: "lead_forms"
             referencedColumns: ["id"]
           },
           {
@@ -3186,6 +3265,8 @@ export type Database = {
           labels: Json
           language_default: string
           lead_form: Json
+          legal_pack_acknowledged_at: string | null
+          legal_pack_required: boolean
           legal_pages_published: boolean
           legal_profile: Json
           legal_profile_updated_at: string | null
@@ -3255,6 +3336,8 @@ export type Database = {
           labels?: Json
           language_default?: string
           lead_form?: Json
+          legal_pack_acknowledged_at?: string | null
+          legal_pack_required?: boolean
           legal_pages_published?: boolean
           legal_profile?: Json
           legal_profile_updated_at?: string | null
@@ -3324,6 +3407,8 @@ export type Database = {
           labels?: Json
           language_default?: string
           lead_form?: Json
+          legal_pack_acknowledged_at?: string | null
+          legal_pack_required?: boolean
           legal_pages_published?: boolean
           legal_profile?: Json
           legal_profile_updated_at?: string | null
@@ -3816,6 +3901,10 @@ export type Database = {
         }
         Returns: Json
       }
+      acknowledge_studio_legal_pack: {
+        Args: { p_language: string; p_version: string }
+        Returns: string
+      }
       admin_enrolment_lookup_email: { Args: { p_email: string }; Returns: Json }
       admin_get_document_signed_url_path: {
         Args: { p_payment_id: string }
@@ -4080,6 +4169,10 @@ export type Database = {
         }
       }
       get_my_tenant_id: { Args: never; Returns: string }
+      get_named_lead_form: {
+        Args: { p_slug: string; p_tenant_id: string }
+        Returns: Json
+      }
       get_pending_waiver_engagement: {
         Args: { p_engagement_id: string }
         Returns: {
@@ -4249,6 +4342,9 @@ export type Database = {
         Args: { p_tenant_id: string }
         Returns: {
           contact_email: string
+          language_default: string
+          legal_pack_acknowledged_at: string
+          legal_pack_required: boolean
           legal_pages_published: boolean
           legal_profile: Json
           legal_profile_updated_at: string

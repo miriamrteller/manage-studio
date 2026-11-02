@@ -15,9 +15,15 @@ export function whatsappNumber(raw: string, country?: string | null): string | n
   return digits;
 }
 
-async function sendLink(kind: Kind, email: string, name: string | null, lang: 'en' | 'he'): Promise<'ok' | string> {
+async function sendLink(
+  kind: Kind,
+  email: string,
+  name: string | null,
+  lang: 'en' | 'he',
+  formSlug?: string | null,
+): Promise<'ok' | string> {
   const { data, error } = await supabase.functions.invoke('send-lead-form-link', {
-    body: { kind, email, name, lang },
+    body: formSlug ? { kind, email, name, lang, formSlug } : { kind, email, name, lang },
   });
   if (!error && data && (data as { ok?: boolean }).ok) return 'ok';
   let code = (data as { error?: string } | null)?.error;
@@ -37,6 +43,7 @@ function errorKey(code: string): string {
     case 'invalid_email':
     case 'tenant_limit':
     case 'recipient_cooldown':
+    case 'form_closed':
       return `pages.crm.get_leads.send_error_${code}`;
     default:
       return 'pages.crm.get_leads.send_error_failed';
@@ -53,7 +60,10 @@ export function SendFormSection({
   formLinkForWhatsApp,
   shareMessage,
   country,
+  formSlug = null,
 }: {
+  /** A named form to send instead of the general form. */
+  formSlug?: string | null;
   headingLevel: 3 | 4;
   formLinkForWhatsApp: string;
   shareMessage: string;
@@ -75,7 +85,7 @@ export function SendFormSection({
     if (!email.trim() || sending) return;
     setSending(true);
     setResult(null);
-    const outcome = await sendLink('form', email.trim(), name.trim() || null, lang);
+    const outcome = await sendLink('form', email.trim(), name.trim() || null, lang, formSlug);
     setSending(false);
     if (outcome === 'ok') {
       setResult({ ok: true, text: t('pages.crm.get_leads.send_done', { email: email.trim() }) });

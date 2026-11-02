@@ -18,8 +18,8 @@ export interface StudioSetupForm {
 }
 
 /**
- * Defaults: English, OpalSwift colours, and the default studio: a registered business
- * taking card payments through a provider, with tax documents on.
+ * Defaults: English, OpalSwift colours, and the safest start for a first-timer: customers
+ * pay at the studio and there is no invoicing service. Both can be changed in the wizard or later.
  */
 export const INITIAL_FORM: StudioSetupForm = {
   name: '',
@@ -27,8 +27,8 @@ export const INITIAL_FORM: StudioSetupForm = {
   languageDefault: 'en',
   country: 'IL',
   vertical: 'generic',
-  paymentProvider: 'grow',
-  invoicingProvider: 'grow',
+  paymentProvider: 'offline',
+  invoicingProvider: 'none',
   primaryColor: OPALSWIFT_BRAND.primary,
   accentColor: OPALSWIFT_BRAND.accent,
   ownerEmail: '',

@@ -192,7 +192,16 @@ export function buildSeed(): Tables {
     primary_color: '#1F5F5B',
     accent_color: '#E8B04B',
     language_default: 'en',
-    lead_form: {},
+    // Enquiry-form questions (Settings → Enquiry form): a photographer's ready-made set.
+    lead_form: {
+      presets: {
+        event_type: { enabled: true, required: true },
+        event_date: { enabled: true, required: false },
+        event_location: { enabled: true, required: false },
+        budget_range: { enabled: true, required: false },
+      },
+      custom: [],
+    },
     country: 'IL',
     currency: 'ILS',
     font_pair: null,
@@ -427,6 +436,7 @@ export function buildSeed(): Tables {
     stage,
     channel,
     campaign: null,
+    form_id: null,
     child_name: null,
     child_birth_date: null,
     event_date: null,

@@ -67,6 +67,8 @@ export interface LeadWriteOptions {
   campaign?: string | null;
   /** Enquiry-form answers (validated by the caller): typed columns + leads.answers. */
   form?: LeadFormWrite | null;
+  /** Named form the lead came from (lead_forms.id), stored on NEW leads only. */
+  formId?: string | null;
 }
 
 export interface LeadFormWrite {
@@ -146,6 +148,7 @@ export async function writeInboundLead(
       source_ref: opts.sourceRef,
       campaign: opts.campaign ?? null,
       ...(opts.form ? { ...opts.form.columns, answers: opts.form.answers } : {}),
+      ...(opts.formId ? { form_id: opts.formId } : {}),
     })
     .select("id")
     .single();

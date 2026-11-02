@@ -285,7 +285,7 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
         <section className="space-y-6">
           <fieldset className="space-y-2">
             <legend className="mb-1 text-sm font-medium">{t('studio_setup.payment_question')}</legend>
-            {STUDIO_PAYMENT_OPTIONS.map((slug) => (
+            {[...STUDIO_PAYMENT_OPTIONS].sort((a, b) => Number(b === 'offline') - Number(a === 'offline')).map((slug) => (
               <label key={slug} className="flex items-center gap-2">
                 <input type="radio" name="ss-payment" value={slug} checked={form.paymentProvider === slug} onChange={() => update('paymentProvider', slug)} />
                 {paymentLabel(slug)}
@@ -294,12 +294,24 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
           </fieldset>
           <fieldset className="space-y-2">
             <legend className="mb-1 text-sm font-medium">{t('studio_setup.invoicing_question')}</legend>
-            {STUDIO_INVOICING_OPTIONS.map((slug) => (
-              <label key={slug} className="flex items-center gap-2">
-                <input type="radio" name="ss-invoicing" value={slug} checked={form.invoicingProvider === slug} onChange={() => update('invoicingProvider', slug)} />
-                {invoicingLabel(slug)}
-              </label>
-            ))}
+            <label className="flex items-center gap-2">
+              <input type="radio" name="ss-invoicing-mode" value="none" checked={form.invoicingProvider === 'none'} onChange={() => update('invoicingProvider', 'none')} />
+              {invoicingLabel('none')}
+            </label>
+            <label className="flex items-center gap-2">
+              <input type="radio" name="ss-invoicing-mode" value="service" checked={form.invoicingProvider !== 'none'} onChange={() => { if (form.invoicingProvider === 'none') update('invoicingProvider', 'grow'); }} />
+              {t('studio_setup.invoicing_existing')}
+            </label>
+            {form.invoicingProvider !== 'none' && (
+              <div className="ms-6 space-y-2" role="group" aria-label={t('studio_setup.invoicing_existing_which')}>
+                {STUDIO_INVOICING_OPTIONS.filter((slug) => slug !== 'none').map((slug) => (
+                  <label key={slug} className="flex items-center gap-2">
+                    <input type="radio" name="ss-invoicing" value={slug} checked={form.invoicingProvider === slug} onChange={() => update('invoicingProvider', slug)} />
+                    {invoicingLabel(slug)}
+                  </label>
+                ))}
+              </div>
+            )}
           </fieldset>
           <p className="text-sm text-gray-700">{t('studio_setup.payments_later')}</p>
         </section>

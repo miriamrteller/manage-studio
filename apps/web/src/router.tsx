@@ -48,7 +48,9 @@ import LeadsPage from "./pages/LeadsPage";
 import JobsPage from "./pages/JobsPage";
 import JobDetailPage from "./pages/JobDetailPage";
 import InquirePage from "./pages/InquirePage";
-import EmbedInquirePage from "./pages/EmbedInquirePage";
+import EmbedInquirePage, { EmbedNamedFormPage } from "./pages/EmbedInquirePage";
+import NamedFormPage from "./pages/NamedFormPage";
+import LeadFormsPage from "./pages/LeadFormsPage";
 import AdminQuotesPage from "./pages/AdminQuotesPage";
 import AdminQuoteEditorPage from "./pages/AdminQuoteEditorPage";
 import QuotePage from "./pages/QuotePage";
@@ -110,6 +112,11 @@ const router = createBrowserRouter([
     ),
   },
   {
+    path: '/embed/f/:slug',
+    element: <EmbedNamedFormPage />,
+    errorElement: <RouteErrorFallback />,
+  },
+  {
     path: '/auth/session-handoff',
     element: <SessionHandoffPage />,
   },
@@ -136,6 +143,7 @@ const router = createBrowserRouter([
           { path: 'book', element: <BookingPage /> },
           { path: 'book/:offeringId', element: <BookingPage /> },
           { path: 'inquire', element: <InquirePage /> },
+          { path: 'f/:slug', element: <NamedFormPage /> },
           { path: 'quote/:token', element: <QuotePage /> },
           { path: 'legal/:doc', element: <LegalPage /> },
           { path: 'unsubscribe/:token', element: <UnsubscribePage /> },
@@ -148,6 +156,7 @@ const router = createBrowserRouter([
           { path: "admin/families", element: <AdminRoute><FamiliesPage /></AdminRoute> },
           { path: "admin/notifications", element: <AdminRoute><NotificationsPage /></AdminRoute> },
           { path: "admin/leads", element: <AdminRoute><LeadsPage /></AdminRoute> },
+          { path: "admin/leads/forms", element: <AdminRoute><LeadFormsPage /></AdminRoute> },
           { path: "admin/jobs", element: <AdminRoute><JobsPage /></AdminRoute> },
           { path: "admin/jobs/:id", element: <AdminRoute><JobDetailPage /></AdminRoute> },
           { path: "admin/quotes", element: <AdminRoute><AdminQuotesPage /></AdminRoute> },

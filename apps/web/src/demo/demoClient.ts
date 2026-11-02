@@ -8,6 +8,7 @@ import { baseRpcs } from './rpcs';
 import { ADMIN_EMAIL, ADMIN_USER_ID, buildSeed, CLIENT_USER_ID, DEMO_CLIENT } from './seed';
 import { extraFunctions, extraRpcs, hooks, recalcQuote, views } from './extensions';
 import { danceFunctions, danceRpcs } from './dance';
+import { leadFunctions, leadRpcs } from './leads';
 
 /**
  * Embedded or private-mode browsers can throw on any storage access. The app
@@ -56,8 +57,8 @@ export const DEMO_FUNCTIONS_BASE = 'https://demo.supabase.invalid/functions/v1/'
 
 export const demoClient = new FakeSupabaseClient({
   tables: buildSeed(),
-  rpcs: { ...baseRpcs, ...extraRpcs, ...danceRpcs },
-  functions: { ...baseFunctions, ...extraFunctions, ...danceFunctions },
+  rpcs: { ...baseRpcs, ...extraRpcs, ...danceRpcs, ...leadRpcs },
+  functions: { ...baseFunctions, ...extraFunctions, ...danceFunctions, ...leadFunctions },
   hooks,
   views,
   debug: new URLSearchParams(window.location.search).has('demo-debug'),

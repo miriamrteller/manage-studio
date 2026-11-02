@@ -34,14 +34,14 @@ Status key: ☐ to do · ◐ in progress · ☑ done. "Verify" = ask the lawyer/
 16. ☐ **Staff working with children:** check whether the Law for the Prevention of Employment of Sex Offenders in Certain Institutions 5761-2001 applies to the school; in any case, get a police approval (אישור משטרה) for every teacher/assistant who works with minors, and renew per police rules. **Verify.**
 17. ☐ **Business licence** (רישוי עסקים) and premises: check with the local authority whether the studio needs a licence and whether the hall is approved for the use. **Verify.**
 18. ☐ **Insurance:** third-party liability (and employer's liability if there are employees). Enrolment terms mention it.
-19. ☐ Replace the seed "Health & Liability Waiver" with the [health declaration](07b-health-declaration.en.md); make photo consent separate; drop/rewrite the release-of-liability clause with the lawyer.
+19. ☐ Replace the seed "Health & Liability Waiver" with the [health declaration](07b-health-declaration-child.en.md); make photo consent separate; drop/rewrite the release-of-liability clause with the lawyer.
 20. ☐ Accessibility of the hall: publish physical-accessibility details (accessibility statement section).
 
 ## D. The photographer (second tenant)
 
 21. ☐ She must provide: legal name, ID / business number, **עוסק type** (פטור / מורשה / company — affects whether VAT is added to prices), address, phone, email.
 22. ☐ YPay (or other) merchant account **in her business name**, and an invoicing provider for tax documents for deposits and balances.
-23. ☐ Decide: deposit %, cancellation schedule amounts, delivery days, gallery service and retention, credit handle, portfolio policy. Fill [07c](07c-photography-contract.en.md).
+23. ☐ Decide: deposit %, cancellation schedule amounts, delivery days, gallery service and retention, credit handle, portfolio policy. Fill [07c](07c-service-agreement.en.md).
 24. ☐ **Copyright clause** must stay in the contract: without it, the client owns copyright in private/family commissioned photos (Copyright Law §35(b)).
 25. ☐ Insurance (equipment, professional liability) — optional, recommended.
 

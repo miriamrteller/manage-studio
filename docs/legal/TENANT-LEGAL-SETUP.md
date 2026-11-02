@@ -9,9 +9,23 @@ Do this for every new studio before it takes its first enrolment or booking. Stu
 2. Publish the studio's [privacy policy](03-studio-privacy-policy.he.md) (Hebrew, with English if needed) and the [accessibility statement](06-accessibility-statement.he.md).
 3. Marketing is off until the studio has a consent field and an unsubscribe line ([08](08-marketing-consent.md)).
 
+## Which template for which studio
+
+| Studio type (app skin) | Enrolment / agreement | Health declaration | Add-on |
+|---|---|---|---|
+| Dance, martial arts, gym, yoga, swimming, team sports (`dance-studio`, `generic`) | 07a enrolment terms | 07b child and/or adult, by participant age (both for mixed studios) | — |
+| Photographer (`photographer`) | 07c service agreement | — | 07c-addon-photographer |
+| Beauty and treatments (`beautician`) | 07c service agreement | — | 07c-addon-beautician |
+| Tutor, coach, personal trainer (no skin yet) | 07c service agreement | 07b for physical training | 07c-addon-coaching |
+| Any other service (`generic`, job-based) | 07c service agreement | 07b if the activity is physical | — |
+
+The base agreement and its add-on are one signed document; the health declaration is always a separate form.
+
+**Transition:** the old `07b-health-declaration.{en,he}.md` and `07c-photography-contract.{en,he}.md` stay in the folder, unchanged, because the app still loads them by name (`apps/web/src/legal/signedTemplates.ts`, the email bundle). They are superseded by the files in the table and are not in the lawyer pack; the app's switch-over removes them.
+
 ## Dance school
 
-**Attach:** privacy policy (variant A) · [enrolment terms](07a-dance-enrolment-terms.he.md) · [health declaration](07b-health-declaration.he.md) (child and adult) · photo/media consent, separate from the terms ([09 §2](09-in-app-consent-texts.md)).
+**Attach:** privacy policy (variant A) · [enrolment terms](07a-dance-enrolment-terms.he.md) · [health declaration](07b-health-declaration-child.he.md) ([child](07b-health-declaration-child.he.md) and [adult](07b-health-declaration-adult.he.md)) · photo/media consent, separate from the terms ([09 §2](09-in-app-consent-texts.md)).
 
 **The studio fills in:**
 1. Legal name and business number, or "not yet registered"
@@ -30,7 +44,7 @@ Do this for every new studio before it takes its first enrolment or booking. Stu
 
 ## Photographer
 
-**Attach:** privacy policy (variant B) · [photography contract](07c-photography-contract.he.md) · separate portfolio opt-in (07c §6).
+**Attach:** privacy policy (variant B) · [service agreement](07c-service-agreement.he.md) + [photography add-on](07c-addon-photographer.he.md) · separate portfolio opt-in (07c §6).
 
 **The studio fills in:**
 1. Legal name, עוסק type (exempt / licensed / company) and number

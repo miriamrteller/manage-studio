@@ -5,6 +5,7 @@ import { LabelsProvider } from '@/contexts/LabelsContext';
 import { StudioHostGate } from '@/layouts/StudioHostGate';
 import { InquiryForm } from '@/features/crm/components/InquiryForm';
 import { readEmbedLanguage } from '@/features/crm/lib/inquiryTags';
+import NamedFormPage from './NamedFormPage';
 
 /**
  * /embed/inquire — the enquiry form alone, for an <iframe> on the studio's own
@@ -12,6 +13,23 @@ import { readEmbedLanguage } from '@/features/crm/lib/inquiryTags';
  * allowed in a frame: public/_headers relaxes X-Frame-Options and sets
  * frame-ancestors for /embed/* only.
  */
+/** /embed/f/<slug>: a named form in an iframe. */
+export function EmbedNamedFormPage() {
+  return (
+    <EmbedLanguage>
+      <LanguageProvider>
+        <StudioHostGate>
+          <LabelsProvider>
+            <main className="min-h-0 bg-background text-foreground">
+              <NamedFormPage embedded />
+            </main>
+          </LabelsProvider>
+        </StudioHostGate>
+      </LanguageProvider>
+    </EmbedLanguage>
+  );
+}
+
 export default function EmbedInquirePage() {
   return (
     <EmbedLanguage>
