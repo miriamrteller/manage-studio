@@ -83,7 +83,7 @@ Deno.serve(withMonitoring("handle-payment-event", async (req) => {
     // Live Grow notify — dedicated path: webhook key required, compared with our pending
     // row (tenant, engagement, amount), approveTransaction must return status 1. Fails closed.
     if (provider instanceof GrowPaymentProvider) {
-      const result = await processGrowNotify(service, rawBody, provider);
+      const result = await processGrowNotify(service, rawBody);
       if (result.status === "succeeded" || result.status === "failed") {
         return jsonResponse({ received: true, ...result });
       }

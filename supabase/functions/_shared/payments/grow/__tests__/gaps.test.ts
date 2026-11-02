@@ -13,7 +13,7 @@ import {
   assertThrows,
 } from "https://deno.land/std@0.168.0/testing/asserts.ts";
 import { parseGrowInvoiceNotify, parseGrowNotify } from "../../providers/grow.ts";
-import { processGrowNotify } from "../process-notify.ts";
+import { processGrowNotifyWith as processGrowNotify } from "../process-notify-core.ts";
 
 // =============================================================================
 // Helper: minimal Grow notify body
@@ -155,6 +155,7 @@ function makeNotifyHarness(opts: { status?: string; keys?: string[] } = {}) {
       calls.settle++;
       return Promise.resolve();
     },
+    renewalFailed: () => Promise.resolve(),
   };
   return { service, deps, calls, payments };
 }
