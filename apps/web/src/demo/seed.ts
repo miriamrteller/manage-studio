@@ -425,6 +425,7 @@ export function buildSeed(): Tables {
     phone,
     stage,
     channel,
+    campaign: null,
     interest,
     offering_id: offeringId,
     deal_value_minor: valueIls == null ? null : valueIls * 100,

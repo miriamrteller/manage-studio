@@ -10,7 +10,7 @@ import { injectAxe } from 'axe-playwright';
  * loading/empty/error states. That is still the markup a parent sees first, and
  * it catches structure and contrast regressions in shared layout and forms.
  */
-const PAGES = ['/classes', '/enrol', '/inquire', '/book', '/signup'];
+const PAGES = ['/classes', '/enrol', '/inquire', '/embed/inquire', '/book', '/signup'];
 
 interface AxeViolation {
   id: string;

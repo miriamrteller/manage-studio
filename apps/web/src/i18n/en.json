@@ -470,6 +470,7 @@
         "capture_title": "Lead capture links",
         "capture_hint": "Share these anywhere — every inquiry lands here automatically. The links tag where the lead came from.",
         "capture_email": "Lead inbox",
+        "capture_embed": "Form for your website",
         "capture_form": "Inquiry form",
         "capture_instagram": "Instagram bio link",
         "capture_whatsapp": "WhatsApp status link",
@@ -482,6 +483,7 @@
       },
       "inquire": {
         "title": "Get in touch",
+        "embed_title": "Get in touch with {{studio}}",
         "subtitle": "Leave your details and we'll get back to you.",
         "name": "Your name",
         "email": "Email",
@@ -490,8 +492,8 @@
         "message_placeholder": "e.g. a birthday party, a trial class for my daughter…",
         "submit": "Send",
         "sent_title": "Thank you!",
-        "sent_message": "We received your inquiry and will get back to you soon.",
-        "error": "Something went wrong sending your inquiry. Please try again."
+        "sent_message": "We received your enquiry and will get back to you soon.",
+        "error": "Something went wrong sending your enquiry. Please try again."
       }
     },
     "notifications": {
@@ -2048,6 +2050,20 @@
     "waiver_minor_cannot_sign_body": "{{studentName}} is under 18. Israeli law requires a parent or legal guardian to sign the form. Please ask a parent or guardian to log in and complete the enrolment."
   },
   "settings": {
+    "website_form": {
+      "title": "Enquiry form on your website",
+      "description": "Paste this code into your own website (Wix, WordPress, Squarespace or any site that accepts HTML). Enquiries land on your Leads page, tagged \"Website\".",
+      "campaign_label": "Campaign tag (optional)",
+      "campaign_hint": "For example \"open-day-2026\". It is saved on each new lead, so you can see which campaign brought them.",
+      "language_label": "Form language",
+      "language_default": "Studio default",
+      "language_en": "English",
+      "language_he": "Hebrew",
+      "snippet_label": "Code to paste",
+      "link_label": "Or link to the form",
+      "iframe_title": "{{studio}} – enquiry form",
+      "note": "The form has spam protection and asks for marketing consent separately; it is never pre-ticked."
+    },
     "title": "Settings",
     "navigation": "Settings navigation",
     "tabs": {

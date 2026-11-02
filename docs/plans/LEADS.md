@@ -143,6 +143,27 @@ Only the studio's admins can see it (RLS). A lead ends when it is **converted** 
 
 Steps 1–4 are the beta (about 1 week). The default card payment path is not touched by any of this.
 
+## Built
+
+- **P1-A lead email** (#171): the worker points at prod; deploy with
+  `deploy-lead-email` ([LEAD-EMAIL.md](../deployment/LEAD-EMAIL.md)).
+- **P1-B embeddable form**: `/embed/inquire` on each studio host. It is the same
+  form as `/inquire`, without the header. A studio copies the snippet from
+  **Settings → Enquiry form on your website** (also on the Leads page).
+  - Framing: `public/_headers` drops `X-Frame-Options` and sets
+    `frame-ancestors https:` for `/embed/*` only. deploy-web's smoke checks
+    that `/` still sends `DENY`.
+  - Tags: `?src=` (or `utm_source`) picks the channel; `?campaign=` (or
+    `utm_campaign`) is saved on new leads (`leads.campaign`). Tags never imply
+    marketing consent; opt-ins are separate, unticked boxes (docs/legal 08).
+  - Spam: honeypot + rate limit as before. Turnstile when
+    `VITE_TURNSTILE_SITE_KEY` is in the build; `crm-lead-capture` requires a
+    valid token whenever `TURNSTILE_SECRET_KEY` is set on Supabase.
+  - **Owner check:** the Turnstile widget's hostnames must include
+    `opalswift.com` (covers every studio subdomain). If prod has
+    `TURNSTILE_SECRET_KEY` but the web build has no site key, the form refuses
+    every enquiry, so set both or neither.
+
 ## Owner to confirm
 - The `lead-email-ingest` worker's `CRM_INGEST_URL` (prod or dev?) and when it was last deployed.
 - Cloudflare → opalswift.com → Email Routing: is the catch-all set to "Send to Worker: lead-email-ingest"?

@@ -10,6 +10,8 @@ import {
   writeInboundLead,
 } from "../_shared/crm-contract/lead-ingest-core.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
+import { verifyTurnstile } from "../_shared/turnstile.ts";
+import { leadCaptchaPasses, normaliseCampaign } from "../_shared/crm-contract/lead-capture-guard.ts";
 
 /**
  * crm-lead-capture — PUBLIC inquiry-form endpoint (step 2 of
@@ -18,11 +20,16 @@ import { withMonitoring } from "../_shared/monitoring.ts";
  * One endpoint serves every tenant and every "social" channel: the tenant
  * site's /inquire form POSTs here, and the studio's capture links tag the
  * source (?src=instagram|linkedin|whatsapp) so the lead lands with its real
- * acquisition channel. Unknown/missing src is honestly `website`.
+ * acquisition channel. Unknown/missing src is honestly `website`. The same
+ * form also runs inside an iframe on the studio's own site (/embed/inquire);
+ * that page is on the tenant host too, so CORS is unchanged. An optional
+ * ?campaign= tag is stored on new leads (leads.campaign).
  *
  * Abuse posture (no auth by design — it's an inquiry form):
  *   - CORS allowlist: tenant portals under APP_ROOT_DOMAIN + localhost dev.
  *   - Honeypot field `website`: bots that fill it get a 200 and no row.
+ *   - Turnstile: when TURNSTILE_SECRET_KEY is set, a valid captchaToken is
+ *     required (403 captcha_failed otherwise). Same widget as the login forms.
  *   - Rate limit: the shared fail-closed limiter (5/hour) keyed on the
  *     submitter's email, falling back to the caller IP.
  *   - Writes go only to `leads`, via the shared lead-ingest-core.
@@ -36,6 +43,10 @@ const payloadSchema = z.object({
   message: z.string().max(5000).nullable().optional(),
   interest: z.string().max(200).nullable().optional(),
   src: z.string().max(40).nullable().optional(),
+  /** Free-text campaign tag (?campaign= / ?utm_campaign=), normalised server-side. */
+  campaign: z.string().max(500).nullable().optional(),
+  /** Cloudflare Turnstile token; required only when TURNSTILE_SECRET_KEY is set. */
+  captchaToken: z.string().max(4096).nullable().optional(),
   /** Honeypot — humans never see it, bots fill it. */
   website: z.string().max(200).nullable().optional(),
   /**
@@ -137,6 +148,17 @@ Deno.serve(withMonitoring("crm-lead-capture", async (req) => {
     return json({ outcome: "created" });
   }
 
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+
+  const captchaOk = await leadCaptchaPasses({
+    secret: Deno.env.get("TURNSTILE_SECRET_KEY"),
+    token: payload.captchaToken,
+    verify: (secret, token) => verifyTurnstile(secret, token, ip === "unknown" ? null : ip),
+  });
+  if (!captchaOk) {
+    return json({ error: "captcha_failed" }, 403);
+  }
+
   try {
     const service = createServiceClient();
 
@@ -151,7 +173,6 @@ Deno.serve(withMonitoring("crm-lead-capture", async (req) => {
     const leadTenant = tenant as LeadTenant;
 
     const email = nonEmpty(payload.email)?.toLowerCase() ?? null;
-    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
     const contactPoint = normaliseContactPoint(email ?? `ip:${ip}`);
     const limit = await checkAndIncrementAttempt(service, leadTenant.id, contactPoint, "email");
     if (!limit.allowed) {
@@ -170,6 +191,7 @@ Deno.serve(withMonitoring("crm-lead-capture", async (req) => {
       channel: channelFromSrc(payload.src),
       sourceRef: null,
       receivedAt: new Date().toISOString(),
+      campaign: normaliseCampaign(payload.campaign),
     });
 
     const optIns = payload.marketingConsent?.items ?? [];

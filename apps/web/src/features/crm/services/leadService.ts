@@ -23,6 +23,8 @@ export interface Lead {
   phone: string | null;
   stage: LeadStage;
   channel: LeadChannel;
+  /** Campaign tag from the enquiry link (?campaign=), set on creation. */
+  campaign: string | null;
   interest: string | null;
   offering_id: string | null;
   deal_value_minor: number | null;
@@ -48,7 +50,7 @@ export interface LeadCreateInput {
 }
 
 const LEAD_COLUMNS =
-  'id, name, company, email, phone, stage, channel, interest, offering_id, deal_value_minor, note, ' +
+  'id, name, company, email, phone, stage, channel, campaign, interest, offering_id, deal_value_minor, note, ' +
   'next_follow_up_at, last_contacted_at, last_communication_note, marketing_consent, ' +
   'converted_account_id, created_at';
 
