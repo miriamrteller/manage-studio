@@ -9,7 +9,13 @@ These terms are an agreement between **[[OPALSWIFT LEGAL NAME]]** (today: Miriam
 
 The Platform is a business tool. You use it for your business, not as a consumer. If you are an individual who has not yet registered a business, you still use the Platform for business purposes.
 
-**Beta notice.** OpalSwift is in beta and free to use. It will be registered as a business (עוסק) before it becomes a paid service.
+**Beta notice.** OpalSwift is in beta and free to use. It will be registered as a business (עוסק) before it becomes a paid service. During the beta:
+
+- the Platform is provided **"as is" and "as available"**, without warranties of any kind, to the extent the law allows (section 9);
+- we give **no uptime guarantee** and cannot promise that data will never be lost: **export your data regularly** (section 10) and keep your own copies;
+- features may change, pause or end; we will give at least [[14]] days' notice where practical, and [[30]] days before ending the beta service as a whole (section 10);
+- you may stop using the Platform at any time; the export and deletion periods in section 10 apply;
+- your dealings with your clients and with payment, invoicing and messaging providers are between you and them (sections 4 and 6).
 
 ## 1. What the Platform does
 
@@ -38,6 +44,7 @@ We may improve, change or remove features. If a change materially reduces a feat
 - For that data **you are the controller** (בעל השליטה במאגר) and **OpalSwift is a processor / holder** (מחזיק) acting on your instructions. The [Data Processing Agreement](02-dpa.en.md) is part of these terms and governs how we handle it.
 - For your own account details (name, email, login and billing data of studio admins), OpalSwift is the controller under the [OpalSwift Privacy Policy](04-opalswift-privacy-policy.en.md).
 - You are responsible for having a lawful basis and the right notices and consents for the data you put into the Platform, including: giving your clients a privacy notice (a [template is provided](03-studio-privacy-policy.en.md)), getting a guardian's consent for children's data and photos, getting separate consent for marketing messages, and keeping health data only as needed.
+- **OpalSwift access to your data.** When the OpalSwift platform team opens or changes your studio's data (for example, for support), it is recorded in a log you can see in **Settings → Security → OpalSwift access**. Entries are kept for 2 years and cannot be edited.
 
 ## 5. Acceptable use
 
@@ -58,7 +65,7 @@ Payments, tax documents, calendars, SMS/WhatsApp and email domains run through t
 
 ## 7. Availability and support
 
-We aim to keep the Platform available and to back up data nightly, but we do not promise uninterrupted service. Planned maintenance will be announced where practical. Support: [[SUPPORT CHANNEL AND HOURS]].
+We aim to keep the Platform available and to back up data nightly, but we do not promise uninterrupted or error-free service, and during the beta we make no uptime commitment. Our backups are for disaster recovery; they are not a substitute for your own exports. Planned maintenance will be announced where practical. Support: [[SUPPORT CHANNEL AND HOURS]].
 
 ## 8. Intellectual property
 
@@ -66,9 +73,9 @@ We own the Platform, its code and design. You get a non-exclusive, non-transfera
 
 ## 9. Liability
 
-- The Platform is provided "as is". You are responsible for checking that the texts you show your clients (terms, waivers, contracts) suit your business. The templates we provide are a starting point, not legal advice.
+- The Platform is provided "as is" and "as available", without warranties of any kind, express or implied, to the extent the law allows. You are responsible for checking that the texts you show your clients (terms, waivers, contracts) suit your business. The templates we provide are a starting point, not legal advice.
 - To the extent the law allows, neither side is liable for indirect or consequential loss (loss of profit, revenue, reputation or data that could have been restored from your own exports).
-- To the extent the law allows, our total liability under these terms in any 12-month period is limited to **the fees you paid us in those 12 months** (or [[₪ AMOUNT]] if you use a free plan).
+- To the extent the law allows, our total liability under these terms in any 12-month period is limited to **the fees you paid us in those 12 months** (or **[[₪ 1,000]]** while you use a free plan, including the beta).
 - These limits do not apply to liability that cannot be limited by law, to fraud or intentional misconduct, or to a breach of our data-protection obligations caused by our gross negligence ([[CONFIRM SCOPE WITH LAWYER]]).
 - You will compensate us for third-party claims that arise from data or content you put into the Platform without the right to do so, or from your breach of section 5.
 
@@ -77,6 +84,7 @@ We own the Platform, its code and design. You get a non-exclusive, non-transfera
 - These terms run until either side ends them. You can cancel at any time from settings or by email to [[SUPPORT EMAIL]]; cancellation takes effect at the end of the current paid period.
 - We may end the agreement with [[30]] days' notice, or immediately for a serious breach that is not fixed within [[7]] days of notice.
 - **Data export:** while your account is active, and for **[[30]] days after it ends**, you can export your data: some exports are built into the app (for example payments and waivers), and on request we will send a full export of your studio data (CSV/JSON, plus copies of signed waiver/contract PDFs) within [[14]] days.
+- **End of the beta:** we may end the free beta, or replace it with a paid plan under section 3, with at least [[30]] days' notice. If you do not continue, the export and deletion periods in this section apply.
 - **Deletion:** after the export window we delete your studio data from the live system within [[30]] days and from backups as backups expire (nightly backups after 30 days, monthly backups after about 13 months), unless the law requires us to keep it. Details are in the DPA.
 
 ## 11. Changes to these terms
@@ -100,3 +108,5 @@ These terms, the DPA and any order form are the whole agreement. If a clause is 
 - Privacy Protection Law 5741-1981 as amended by Amendment 13 (in force 14 Aug 2025): controller / holder (מחזיק) roles; see the DPA for section references.
 - Communications Law (Telecommunications and Broadcasting) 5742-1982, §30A (marketing messages).
 - No case law is cited.
+
+**For the lawyer (beta protection).** (1) Standard Contracts Law §4(1): a blanket exclusion of liability is presumed unfair even toward business customers, so the "as is" wording, the cap and the exclusions in section 9 may be read down; which of them hold is a legal call. (2) The Consumer Protection Law should not apply to business use, but a studio run by an unregistered individual may argue it does. (3) Duties under the Privacy Protection Law and the Data Security Regulations cannot be excluded by contract; section 9 and the DPA keep them outside the cap. (4) A free service has no price to anchor the cap to; the fixed amount in section 9 needs confirming.

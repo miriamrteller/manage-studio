@@ -31,6 +31,22 @@ A generic studio (classes, workshops) uses the dance list, with the enrolment te
 - 7 and 8: the exact wording and version of every consent is stored with the consent.
 - Sources are listed at the end of each document. Anything unconfirmed says "verify". No case law is cited anywhere.
 
+## Beta launch: legal checklist
+
+**Before inviting any studio**
+- Platform terms + DPA (1, 2) accepted at studio signup: one checkbox, recorded with the document version. Fill the `[[…]]` placeholders first: support email, legal-notices email, city for jurisdiction, the free-plan liability amount.
+- OpalSwift privacy policy (doc 04) and accessibility statement (doc 10) live from the root-site footer; cookie notice (doc 9) linked.
+- The beta notice in the terms (free; as is / as available; export your data; how the beta ends).
+- Owner's own two-step sign-in on; the security procedure (11) followed.
+
+**Before a studio goes live to its clients** (the app walks the studio through this; see [TENANT-LEGAL-SETUP](TENANT-LEGAL-SETUP.md))
+- Studio privacy policy published; enrolment terms or photography contract attached; consents in place.
+
+**Can wait**
+- Lawyer review of the whole pack (the app reminds every studio after it publishes).
+- OpalSwift's עוסק registration: needed before any paid plan, not for the free beta ([BUSINESS-REGISTRATION](BUSINESS-REGISTRATION.md)).
+- Insurance (12), the SMS "STOP" reply webhook (the unsubscribe link already works), and whether two-step sign-in becomes mandatory for studio admins.
+
 ## Where the answers go
 
 Please answer in writing per question number. The owner records each answer in the OPEN-QUESTIONS resolved table and updates the documents; the app then shows the studio a new version to re-publish.

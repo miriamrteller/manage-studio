@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { LegalFooterLinks } from '@/components/LegalFooterLinks';
@@ -9,7 +9,6 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { supabase } from '@/lib/supabase';
 import { tenantOrigin } from '@/lib/tenantUrl';
 import { isPlatformAppHost } from '@/lib/resolveTenantSubdomain';
-import { OPALSWIFT_BRAND } from '@/lib/theme/opalswiftBrand';
 import {
   captureAuthCallbackUrl,
   clearAuthCallbackUrl,
@@ -26,7 +25,6 @@ import {
 } from '@/features/self-serve/selfServeSignup';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const buttonStyle = { backgroundColor: OPALSWIFT_BRAND.ink, color: '#ffffff' };
 
 /** The confirmation email's link lands here with ?token_hash=… (send-auth-email). */
 function hasAuthLinkParams(url: { search: string; hash: string }): boolean {
@@ -50,6 +48,7 @@ export default function CreateStudioPage() {
 
 function SelfServeSignup() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const callbackUrl = useRef(captureAuthCallbackUrl());
   const [linkState, setLinkState] = useState<'none' | 'checking' | 'failed'>(
     hasAuthLinkParams(callbackUrl.current) ? 'checking' : 'none',
@@ -85,9 +84,9 @@ function SelfServeSignup() {
       <>
         <h1 className="mb-6 text-3xl font-bold">{t('self_serve.has_studio_title')}</h1>
         <div>
-          <Link to="/" className="inline-flex items-center rounded-md px-4 py-2 font-medium" style={buttonStyle}>
+          <Button variant="primary" onClick={() => navigate('/')}>
             {t('platform_welcome.your_studio')}
-          </Link>
+          </Button>
         </div>
       </>
     );
@@ -178,7 +177,7 @@ function StartForm({ linkFailed }: { linkFailed: boolean }) {
       {siteKey && <TurnstileWidget siteKey={siteKey} language={language} onToken={setCaptchaToken} />}
       {error && <p className="text-sm text-red-700" role="alert">{error}</p>}
       <div className="text-center">
-        <Button type="submit" disabled={sending || !canSend} style={buttonStyle}>
+        <Button type="submit" disabled={sending || !canSend} variant="primary">
           {sending ? t('self_serve.sending') : t('self_serve.send_link')}
         </Button>
       </div>
@@ -219,7 +218,7 @@ function StudioReady({ result, name }: { result: SelfServeStudioResult; name: st
         </ol>
       </div>
       <div className="text-center">
-        <Button onClick={() => void goToStudio()} disabled={going} style={buttonStyle}>
+        <Button onClick={() => void goToStudio()} disabled={going} variant="primary">
           {t('self_serve.go_to_studio')}
         </Button>
       </div>

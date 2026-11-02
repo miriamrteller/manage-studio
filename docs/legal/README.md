@@ -22,5 +22,6 @@ Hebrew (`.he.md`) is what users read; if the two versions differ, the English ve
 | 10 | Owner checklist [he](10-owner-checklist.he.md) · [en](10-owner-checklist.en.md) | Owner (internal) | — |
 | 11 | Security procedure [he](11-security-procedure.he.md) · [en](11-security-procedure.en.md) | Owner (internal) | — |
 | 12 | Insurance for a dance school [he+en](12-insurance.md) | Studio owner (guidance) | — |
+| 13 | Business registration: עוסק פטור, מורשה or company [en](BUSINESS-REGISTRATION.md) | Owner (guidance) | — |
 
 The research used secondary sources, because the official legal-text sites were blocked while drafting. Each document lists its sources; anything unconfirmed says "verify".

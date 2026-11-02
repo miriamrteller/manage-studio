@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Alert } from '@/components/ui/alert';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useTenant } from '@/hooks/useTenant';
@@ -115,13 +116,13 @@ export default function SignupPage() {
         </FormProvider>
 
         {sendOtpError && (
-          <div className="rounded-md bg-red-50 p-4" role="alert" aria-live="polite">
-            <p className="text-sm font-medium text-red-800">
+          <Alert variant="destructive">
+            <p className="text-sm font-medium">
               {sendOtpError instanceof Error
                 ? resolveAuthErrorMessage(sendOtpError.message, t, 'errors.signup_failed')
                 : t('errors.signup_failed')}
             </p>
-          </div>
+          </Alert>
         )}
       </div>
     </div>
