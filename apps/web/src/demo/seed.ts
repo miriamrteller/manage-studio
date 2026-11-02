@@ -192,6 +192,8 @@ export function buildSeed(): Tables {
     primary_color: '#1F5F5B',
     accent_color: '#E8B04B',
     language_default: 'en',
+    // A running studio: its legal pages are filled in and published.
+    legal_pages_published: true,
     // Enquiry-form questions (Settings → Enquiry form): a photographer's ready-made set.
     lead_form: {
       presets: {
