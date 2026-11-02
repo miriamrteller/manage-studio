@@ -25,6 +25,7 @@
       "guest_enrolment_create_family",
       "guest_enrolment_request_age_review",
       "is_super_admin",
+      "legal_document_is_public",
       "record_consents",
       "record_legal_acceptance",
       "release_scheduling_hold"

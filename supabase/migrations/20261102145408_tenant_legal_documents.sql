@@ -107,20 +107,39 @@ CREATE POLICY "Admins read own legal documents"
     AND EXISTS (SELECT 1 FROM public.user_profiles up WHERE up.id = auth.uid() AND 'tenant_admin' = ANY (up.role))
   );
 
--- Parents read a studio's current lawyer-reviewed PDF once the studio's legal pages are published.
+-- Parents read a studio's current lawyer-reviewed PDF once the studio's legal
+-- pages are published. Policies run as the caller, who cannot read
+-- tenant_legal_documents (anon has no grant; its RLS is admins only), so the
+-- check is a definer helper. Fail-closed: anything unknown is false.
+CREATE OR REPLACE FUNCTION public.legal_document_is_public(p_name TEXT)
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT coalesce((
+    SELECT true
+    FROM tenant_legal_documents d
+    JOIN tenants t ON t.id = d.tenant_id
+    WHERE d.storage_path = p_name
+      AND d.kind = 'pdf'
+      AND d.status = 'active'
+      AND t.legal_pages_published
+    LIMIT 1
+  ), false);
+$$;
+COMMENT ON FUNCTION public.legal_document_is_public(TEXT) IS
+  'Storage policy helper: whether an object in tenant-legal-documents is a studio''s current, published lawyer-reviewed PDF.';
+REVOKE ALL ON FUNCTION public.legal_document_is_public(TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.legal_document_is_public(TEXT) TO anon, authenticated;
+
 CREATE POLICY "Anyone reads published legal documents"
   ON storage.objects FOR SELECT
   TO anon, authenticated
   USING (
     bucket_id = 'tenant-legal-documents'
-    AND EXISTS (
-      SELECT 1
-      FROM public.tenant_legal_documents d
-      JOIN public.tenants t ON t.id = d.tenant_id
-      WHERE d.storage_path = storage.objects.name
-        AND d.status = 'active'
-        AND t.legal_pages_published
-    )
+    AND public.legal_document_is_public(name)
   );
 
 -- ---------------------------------------------------------------------------

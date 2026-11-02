@@ -84,6 +84,42 @@ BEGIN
   RAISE NOTICE 'ok  uploads are audited';
 END $$;
 
+-- 1b. A lawyer-reviewed PDF: the file is in storage, the admin records it.
+INSERT INTO storage.objects (bucket_id, name)
+SELECT 'tenant-legal-documents', studio::text || '/accessibility/reviewed.pdf' FROM ids;
+SELECT pg_temp.act_as(admin) FROM ids;
+SET LOCAL ROLE authenticated;
+SELECT save_tenant_legal_document('accessibility', 'he', 'pdf', NULL,
+                                  (SELECT studio FROM pg_temp.ids)::text || '/accessibility/reviewed.pdf', 'reviewed.pdf');
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM storage.objects WHERE bucket_id = 'tenant-legal-documents'
+                 AND name = (SELECT studio FROM pg_temp.ids)::text || '/accessibility/reviewed.pdf') THEN
+    RAISE EXCEPTION 'FAIL the admin cannot read their own PDF';
+  END IF;
+END $$;
+RESET ROLE;
+
+-- Before the studio publishes, nobody else reads the file (fail-closed).
+SET LOCAL ROLE anon;
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM storage.objects WHERE bucket_id = 'tenant-legal-documents') THEN
+    RAISE EXCEPTION 'FAIL anon read an unpublished lawyer PDF';
+  END IF;
+END $$;
+RESET ROLE;
+SELECT pg_temp.act_as(parent) FROM ids;
+SET LOCAL ROLE authenticated;
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM storage.objects WHERE bucket_id = 'tenant-legal-documents') THEN
+    RAISE EXCEPTION 'FAIL a parent read an unpublished lawyer PDF';
+  END IF;
+  RAISE NOTICE 'ok  an unpublished lawyer PDF is private to the studio''s admins';
+END $$;
+RESET ROLE;
+
 -- 2. Another studio's admin sees none of it.
 SELECT pg_temp.act_as(other_admin) FROM ids;
 SET LOCAL ROLE authenticated;
@@ -126,6 +162,31 @@ BEGIN
   END IF;
   RAISE NOTICE 'ok  the reviewed version is public once published';
 END $$;
+-- ...and its PDF downloads, for anon and for a signed-in parent.
+DO $$
+BEGIN
+  IF (SELECT count(*) FROM storage.objects WHERE bucket_id = 'tenant-legal-documents'
+      AND name = (SELECT studio FROM pg_temp.ids)::text || '/accessibility/reviewed.pdf') <> 1 THEN
+    RAISE EXCEPTION 'FAIL anon cannot read the published lawyer PDF';
+  END IF;
+END $$;
+RESET ROLE;
+SELECT pg_temp.act_as(parent) FROM ids;
+SET LOCAL ROLE authenticated;
+DO $$
+BEGIN
+  IF (SELECT count(*) FROM storage.objects WHERE bucket_id = 'tenant-legal-documents'
+      AND name = (SELECT studio FROM pg_temp.ids)::text || '/accessibility/reviewed.pdf') <> 1 THEN
+    RAISE EXCEPTION 'FAIL a signed-in parent cannot read the published lawyer PDF';
+  END IF;
+  -- Only the current PDF: a path that is not a recorded document stays hidden.
+  IF public.legal_document_is_public('nobody/accessibility/x.pdf') THEN
+    RAISE EXCEPTION 'FAIL an unknown path counted as public';
+  END IF;
+  RAISE NOTICE 'ok  the published lawyer PDF downloads for anon and for parents';
+END $$;
+RESET ROLE;
+SET LOCAL ROLE anon;
 DO $$
 BEGIN
   PERFORM save_tenant_legal_document('cookies', 'he', 'text', 'x');
