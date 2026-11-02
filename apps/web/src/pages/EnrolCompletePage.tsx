@@ -11,6 +11,7 @@ import type { WaiverSigningConsentTemplate } from '@shared/schemas';
 import { linkAuthUserToPerson } from '@/features/enrolment/linkAuthUser';
 import { JobAfterSignNextStep } from '@/features/jobs/components/JobAfterSignNextStep';
 import { BackToPortalButton } from '@/features/jobs/components/BackToPortalButton';
+import { resolveTenantSubdomain } from '@/lib/resolveTenantSubdomain';
 
 type PageState =
   | { kind: 'loading' }
@@ -198,6 +199,8 @@ export default function EnrolCompletePage() {
         email: resendEmail.trim(),
         options: {
           emailRedirectTo: `${window.location.origin}/auth/callback?pendingWaiverEngagementId=${encodeURIComponent(engagementId)}`,
+          // A new account belongs to this studio (the database refuses one without a studio).
+          data: { subdomain: resolveTenantSubdomain() ?? '' },
         },
       });
       setResendSent(true);

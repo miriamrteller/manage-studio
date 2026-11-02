@@ -121,6 +121,15 @@ describe('app.opalswift.com welcome', () => {
     expect(h.eqCalls).toEqual([]);
   });
 
+  it('platform owner on an empty platform (no studio of her own): "Set up a new studio"', async () => {
+    h.session = session;
+    h.user = { id: 'u-9', role: ['super_admin'], tenant_id: null };
+    h.rows = [];
+    renderAt();
+    expect(await screen.findByRole('link', { name: 'Set up a new studio' })).toHaveAttribute('href', '/platform/onboard');
+    expect(screen.queryByText("Your account isn't linked to a studio yet. Contact OpalSwift.")).not.toBeInTheDocument();
+  });
+
   it('signed in with no studio, self-serve signup off: contact OpalSwift + sign out', () => {
     vi.stubEnv('VITE_ENABLE_SELF_SERVE_SIGNUP', 'false');
     h.session = session;

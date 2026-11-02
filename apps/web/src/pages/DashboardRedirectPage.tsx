@@ -11,6 +11,7 @@ import {
   type EnrollmentIntent,
 } from '@/lib/enrollment-intent';
 import { hasParentRole } from '@/lib/parentRoles';
+import { isPlatformAppHost } from '@/lib/resolveTenantSubdomain';
 
 /**
  * DashboardRedirectPage: Smart redirect based on user role
@@ -54,6 +55,13 @@ export default function DashboardRedirectPage() {
     }
 
     if (!user) {
+      return;
+    }
+
+    // The platform host (app.<root>) has no studio pages: its home is the
+    // OpalSwift welcome page, which lists studios and "Set up a new studio".
+    if (isPlatformAppHost()) {
+      navigate('/', { replace: true });
       return;
     }
 
