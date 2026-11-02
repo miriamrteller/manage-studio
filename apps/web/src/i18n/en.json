@@ -482,6 +482,9 @@
         "capture_title": "Lead capture links",
         "capture_hint": "Share these anywhere — every inquiry lands here automatically. The links tag where the lead came from.",
         "capture_email": "Lead inbox",
+        "overdue": "Overdue",
+        "due_today": "Due today",
+        "follow_up_summary": "To follow up: {{overdue}} overdue, {{today}} today.",
         "filter_form": "Form",
         "form_general": "General form",
         "via_form": "Form: {{name}}",
@@ -2277,6 +2280,12 @@
     "waiver_minor_cannot_sign_body": "{{studentName}} is under 18. Israeli law requires a parent or legal guardian to sign the form. Please ask a parent or guardian to log in and complete the enrolment."
   },
   "settings": {
+    "lead_digest": {
+      "title": "Daily follow-up email",
+      "label": "Email me each morning with the leads to follow up that day",
+      "hint": "Sent only on days when a lead is due or overdue. This setting is just for you; other admins choose for themselves.",
+      "error": "Could not save. Please try again."
+    },
     "lead_form": {
       "load_error": "Could not load your form questions. Refresh the page to try again.",
       "title": "Questions on your enquiry form",
