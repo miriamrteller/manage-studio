@@ -692,6 +692,8 @@ export const ConsentTemplateSchema = z.object({
   audience: z.enum(['child', 'adult']).nullable().optional(),
   /** Language of the text, or null for the studio's language. */
   language: z.enum(['he', 'en']).nullable().optional(),
+  /** When a studio admin marked this version as reviewed by their lawyer. */
+  lawyer_reviewed_at: TimestampSchema.nullable().optional(),
   created_at: TimestampSchema,
   updated_at: TimestampSchema,
 });

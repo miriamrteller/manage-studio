@@ -104,8 +104,17 @@ function DraftForm({ onCreated }: { onCreated: () => void }) {
 
 function TemplateActions({ template }: { template: ConsentTemplate }) {
   const { t } = useTranslation();
-  const { approveTemplate, activateTemplate, archiveTemplate, isApproving, isActivating, isArchiving } =
-    useWaiverTemplates();
+  const {
+    approveTemplate,
+    activateTemplate,
+    archiveTemplate,
+    setLawyerReviewed,
+    isApproving,
+    isActivating,
+    isArchiving,
+    isMarkingReviewed,
+  } = useWaiverTemplates();
+  const reviewedAt = template.lawyer_reviewed_at ?? null;
 
   function handleActivate() {
     if (!window.confirm(t('pages.waivers.activate_confirm'))) return;
@@ -143,6 +152,25 @@ function TemplateActions({ template }: { template: ConsentTemplate }) {
         >
           {t('pages.waivers.archive')}
         </Button>
+      )}
+      {template.status !== 'archived' && (
+        <Button
+          size="sm"
+          variant="outline"
+          aria-pressed={!!reviewedAt}
+          onClick={() => {
+            if (reviewedAt && !window.confirm(t('pages.waivers.unmark_reviewed_confirm'))) return;
+            setLawyerReviewed({ id: template.id, reviewed: !reviewedAt });
+          }}
+          disabled={isMarkingReviewed}
+        >
+          {reviewedAt ? t('pages.waivers.unmark_reviewed') : t('pages.waivers.mark_reviewed')}
+        </Button>
+      )}
+      {reviewedAt && (
+        <span className="self-center text-sm text-green-800">
+          {t('pages.waivers.reviewed_on', { date: new Date(reviewedAt).toLocaleDateString() })}
+        </span>
       )}
     </div>
   );

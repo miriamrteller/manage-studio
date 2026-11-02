@@ -1291,7 +1291,11 @@
       "col_email": "Email",
       "col_role": "Role",
       "col_version": "Version",
-      "col_signed_at": "Signed at"
+      "col_signed_at": "Signed at",
+      "mark_reviewed": "Mark as lawyer-reviewed",
+      "unmark_reviewed": "Mark as draft",
+      "unmark_reviewed_confirm": "Mark this form as a draft again? If you confirmed it as lawyer-reviewed, you will need to confirm your legal documents again.",
+      "reviewed_on": "Lawyer-reviewed {{date}}"
     },
     "enrol_complete": {
       "page_title": "Sign your form",
@@ -2803,7 +2807,9 @@
       "details_missing_one": "{{count}} detail missing. Fill it in before you confirm.",
       "details_missing_other": "{{count}} details missing. Fill them in before you confirm.",
       "details_missing_link": "Fill in the missing details",
-      "details_missing_later": "You can fill them in under Settings → Legal once you're in your studio."
+      "details_missing_later": "You can fill them in under Settings → Legal once you're in your studio.",
+      "checkbox_drafts": "I understand that these documents are drafts: {{list}}. My studio will use them until I upload lawyer-reviewed versions.",
+      "checkbox_all_reviewed": "All my documents are lawyer-reviewed versions, and I confirm they can be published."
     },
     "docs": {
       "platform_terms": "Terms of Service",
@@ -2824,7 +2830,10 @@
       "admin_missing": "Some details are still missing on this page.",
       "admin_missing_count_one": "{{count}} detail still to fill in (highlighted).",
       "admin_missing_count_other": "{{count}} details still to fill in (highlighted).",
-      "admin_edit_link": "Fill in Settings → Legal"
+      "admin_edit_link": "Fill in Settings → Legal",
+      "lawyer_version": "The studio's lawyer-reviewed version, uploaded {{date}}.",
+      "lawyer_pdf_open": "Open the document ({{name}})",
+      "lawyer_pdf_error": "The document didn't open. Please try again."
     },
     "notice": {
       "enquiry": "We use your details only to reply to your enquiry.",
@@ -2878,7 +2887,16 @@
       "saved": "Saved.",
       "published": "Published.",
       "unpublished": "Unpublished.",
-      "own_pages_note": "Already have your own pages on your website? Add the links below — they replace the generated pages in the footer and at enrolment."
+      "own_pages_note": "Already have your own pages on your website? Add the links below — they replace the generated pages in the footer and at enrolment.",
+      "required_progress": "{{done}} of {{total}} required details filled in",
+      "example": "For example: {{example}}",
+      "why": {
+        "identity": "Why we ask: the law requires your documents to say who runs the business and how to reach you.",
+        "contacts": "Why we ask: clients need a named person to contact about their personal data and about accessibility.",
+        "enrolment": "Why we ask: your enrolment terms must state prices, dates and how payment works before anyone signs up.",
+        "photography": "Why we ask: your clients need to know how their photos are delivered and how long they are kept.",
+        "retention": "Why we ask: privacy law requires saying how long you keep personal data."
+      }
     },
     "privacy_notice": "We use your details only to handle your request and enrolment.",
     "accept_terms_prefix": "I have read and accept the",
@@ -2976,6 +2994,39 @@
         "waiver_evidence": "Waivers",
         "consent_records": "Consents"
       }
+    },
+    "lawyer": {
+      "title": "Lawyer-reviewed versions",
+      "intro": "Each document starts as a draft made from our templates. When your lawyer has reviewed one, upload their version here; it replaces the draft for your clients. Uploading never needs a new confirmation.",
+      "forms_title": {
+        "health": "Health declaration",
+        "contract": "Contract",
+        "agreement": "Service agreement"
+      },
+      "status_reviewed": "Lawyer-reviewed (uploaded {{date}})",
+      "status_reviewed_marked": "Lawyer-reviewed (marked {{date}})",
+      "status_draft_acknowledged": "Draft (acknowledged)",
+      "status_draft": "Draft (not confirmed yet)",
+      "forms_hint": "Edit the forms your clients sign in the Forms editor, then mark each one as lawyer-reviewed there.",
+      "forms_link": "Open the Forms editor",
+      "language_label": "Language of the file",
+      "language_he": "Hebrew",
+      "language_en": "English",
+      "upload_pdf": "Upload PDF",
+      "edit_text": "Paste the text",
+      "revert": "Back to the template",
+      "view": "View",
+      "text_label": "Your lawyer's text",
+      "text_hint": "Paste the reviewed text. Headings can start with #, and bold text is written **like this**.",
+      "save_text": "Save this version",
+      "saved": "Saved. Your clients now see the lawyer-reviewed version.",
+      "reverted": "Done. This document is back to the draft.",
+      "reverted_confirm_again": "Done. This document is a draft again, so please confirm your legal documents again before clients can sign up.",
+      "revert_confirm": "Go back to the draft made from our template? If you confirmed this document as lawyer-reviewed, you will need to confirm your legal documents again.",
+      "error": "That didn't save. Please try again.",
+      "error_not_pdf": "Please choose a PDF file.",
+      "error_too_large": "The file is too large (up to 10 MB).",
+      "upload_now": "Already have lawyer-reviewed documents? Upload them now"
     }
   }
 }

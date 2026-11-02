@@ -17,6 +17,7 @@
       "get_public_schedule_events_by_subdomain",
       "get_tenant_config_by_host",
       "get_tenant_config_by_subdomain",
+      "get_tenant_legal_documents",
       "get_tenant_legal_profile",
       "guest_enrolment_check_email",
       "guest_enrolment_create_adult",
@@ -24,6 +25,7 @@
       "guest_enrolment_create_family",
       "guest_enrolment_request_age_review",
       "is_super_admin",
+      "legal_document_is_public",
       "record_consents",
       "record_legal_acceptance",
       "release_scheduling_hold"
@@ -63,6 +65,7 @@
       "get_tenant_features",
       "get_tenant_today",
       "job_payment_requests_all_paid",
+      "legal_admin_tenant",
       "link_auth_user_to_guardian_for_engagement",
       "link_auth_user_to_person",
       "list_admin_quotes",
@@ -75,6 +78,7 @@
       "replace_tenant_scheduling_hours",
       "request_age_review_engagement",
       "resolve_engagement_guardian",
+      "revert_tenant_legal_document",
       "rotate_grow_webhook_key",
       "save_grow_webhook_secret",
       "save_icount_webhook_secret",
@@ -83,12 +87,14 @@
       "save_tenant_icount_credentials",
       "save_tenant_invoice4u_credentials",
       "save_tenant_invoicing_credentials",
+      "save_tenant_legal_document",
       "save_tenant_payment_credentials",
       "save_tenant_tranzila_credentials",
       "save_tenant_yesh_credentials",
       "save_tenant_ypay_credentials",
       "search_enrolment_students",
-      "search_notification_blast_accounts"
+      "search_notification_blast_accounts",
+      "set_consent_template_lawyer_reviewed"
     ]
   },
   "service": {
@@ -100,6 +106,7 @@
       "cleanup_expired_otps",
       "cleanup_old_verification_attempts",
       "complete_automatic_email",
+      "consent_template_draft_check",
       "create_self_serve_studio",
       "disconnect_tenant_google_calendar",
       "enforce_super_admin_reserved",
@@ -137,6 +144,7 @@
       "get_app_encryption_key",
       "get_cron_secret",
       "get_supabase_functions_url",
+      "legal_pack_document_back_to_draft",
       "platform_access_should_log",
       "quote_assert_tenant_admin",
       "quote_job_offering_id",

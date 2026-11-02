@@ -30,6 +30,8 @@ export interface LegalFieldDef {
   hint?: { en: string; he: string };
   /** Shown only for these verticals; all verticals when omitted. */
   verticals?: VerticalId[];
+  /** A sample answer shown under an empty field (legal tab: "for example …"). */
+  example?: { en: string; he: string };
   /** Used when the studio leaves the field empty; the field then counts as filled. */
   defaultValue?: { en: string; he: string };
   options?: Array<{ value: string; label: { en: string; he: string } }>;
@@ -52,6 +54,7 @@ export const LEGAL_FIELDS: LegalFieldDef[] = [
     required: true,
     label: { en: 'Legal name of the business', he: 'השם המשפטי של העסק' },
     hint: { en: 'As registered with the tax authority, or your full name.', he: 'כפי שרשום ברשות המסים, או שמך המלא.' },
+    example: { en: "Dana Levi, or Harbour Dance Ltd", he: "דנה לוי, או מחול הנמל בע\"מ" },
     placeholders: {
       'studio-privacy': ['[[STUDIO LEGAL NAME]]', '[[השם המשפטי של הסטודיו]]'],
       'enrolment-terms': ['[[STUDIO LEGAL NAME]]', '[[השם המשפטי של הסטודיו]]'],
@@ -77,6 +80,7 @@ export const LEGAL_FIELDS: LegalFieldDef[] = [
     kind: 'text',
     label: { en: 'ID / business number', he: 'ת"ז / מספר עוסק' },
     hint: { en: 'Leave empty if not yet registered.', he: 'אפשר להשאיר ריק אם העסק טרם נרשם.' },
+    example: { en: "514123456", he: "514123456" },
     placeholders: {},
   },
   {
@@ -85,6 +89,7 @@ export const LEGAL_FIELDS: LegalFieldDef[] = [
     kind: 'text',
     required: true,
     label: { en: 'Business address', he: 'כתובת העסק' },
+    example: { en: "12 Herzl St, Haifa", he: "רחוב הרצל 12, חיפה" },
     placeholders: {
       'studio-privacy': ['[[ADDRESS]]', '[[כתובת]]'],
       'enrolment-terms': ['[[ADDRESS]]', '[[כתובת]]'],
@@ -97,6 +102,7 @@ export const LEGAL_FIELDS: LegalFieldDef[] = [
     kind: 'tel',
     required: true,
     label: { en: 'Business phone', he: 'טלפון העסק' },
+    example: { en: "04-1234567", he: "04-1234567" },
     placeholders: {
       'studio-privacy': ['[[PHONE]]', '[[טלפון]]'],
       'enrolment-terms': ['[[PHONE]]', '[[טלפון]]'],
@@ -107,6 +113,7 @@ export const LEGAL_FIELDS: LegalFieldDef[] = [
     section: 'identity',
     kind: 'email',
     label: { en: 'Business email (defaults to the studio contact email)', he: 'דוא"ל העסק (ברירת מחדל: דוא"ל הקשר של הסטודיו)' },
+    example: { en: "office@yourstudio.co.il", he: "office@yourstudio.co.il" },
     placeholders: {
       'enrolment-terms': ['[[EMAIL]]', '[[דוא"ל]]'],
     },
@@ -118,6 +125,7 @@ export const LEGAL_FIELDS: LegalFieldDef[] = [
     kind: 'text',
     required: true,
     label: { en: 'Privacy contact (name or role)', he: 'איש/אשת קשר לפרטיות (שם או תפקיד)' },
+    example: { en: "Dana Levi (the owner)", he: "דנה לוי (הבעלים)" },
     placeholders: { 'studio-privacy': ['[[NAME / ROLE]]', '[[שם / תפקיד]]'] },
   },
   {
@@ -126,6 +134,7 @@ export const LEGAL_FIELDS: LegalFieldDef[] = [
     kind: 'email',
     required: true,
     label: { en: 'Privacy contact email', he: 'דוא"ל לפניות פרטיות' },
+    example: { en: "privacy@yourstudio.co.il", he: "privacy@yourstudio.co.il" },
     placeholders: { 'studio-privacy': ['[[EMAIL]]', '[[דוא"ל]]'] },
   },
   {
@@ -172,6 +181,7 @@ export const LEGAL_FIELDS: LegalFieldDef[] = [
     label: { en: 'Payment and invoicing providers you use', he: 'ספקי הסליקה והחשבוניות שבשימוש' },
     hint: { en: 'e.g. YPay, Grow, iCount', he: 'למשל YPay,‏ Grow,‏ iCount' },
     required: true,
+    example: { en: "Grow, Bit", he: "Grow, ביט" },
     placeholders: { 'studio-privacy': ['[[LIST — e.g. YPay, Grow, iCount]]', '[[רשימה — למשל YPay,‏ Grow,‏ iCount]]'] },
   },
   // --------------------------------------------------------------- retention
@@ -201,6 +211,7 @@ export const LEGAL_FIELDS: LegalFieldDef[] = [
     required: true,
     label: { en: 'Gallery service', he: 'שירות הגלריה' },
     hint: { en: 'e.g. Pixieset', he: 'למשל Pixieset' },
+    example: { en: "Pixieset", he: "Pixieset" },
     placeholders: {
       'studio-privacy': [
         '[[GALLERY SERVICE — e.g. Pixieset]]',
@@ -228,6 +239,7 @@ export const LEGAL_FIELDS: LegalFieldDef[] = [
     required: true,
     label: { en: 'Season name', he: 'שם העונה' },
     hint: { en: 'e.g. 2026–2027', he: 'למשל תשפ"ז / 2026–2027' },
+    example: { en: "2026–27", he: "תשפ\"ז" },
     placeholders: { 'enrolment-terms': ['[[SEASON NAME, e.g. 2026–2027]]', '[[שם העונה, למשל תשפ"ז / 2026–2027]]'] },
   },
   {
@@ -255,6 +267,7 @@ export const LEGAL_FIELDS: LegalFieldDef[] = [
     verticals: DANCE_AND_GENERIC,
     required: true,
     label: { en: 'Number of lessons in the season (about)', he: 'מספר השיעורים בעונה (בערך)' },
+    example: { en: "34", he: "34" },
     placeholders: { 'enrolment-terms': ['[[NUMBER OF LESSONS]]', '[[מספר שיעורים]]'] },
   },
   {
@@ -290,6 +303,7 @@ export const LEGAL_FIELDS: LegalFieldDef[] = [
     verticals: DANCE_AND_GENERIC,
     required: true,
     label: { en: 'Price for the season (₪)', he: 'מחיר לעונה (₪)' },
+    example: { en: "3,400", he: "3,400" },
     placeholders: { 'enrolment-terms': ['[[SEASON PRICE ₪]]', '[[מחיר לעונה ₪]]'] },
   },
   {
@@ -299,6 +313,7 @@ export const LEGAL_FIELDS: LegalFieldDef[] = [
     verticals: DANCE_AND_GENERIC,
     required: true,
     label: { en: 'Monthly price (₪)', he: 'מחיר חודשי (₪)' },
+    example: { en: "340", he: "340" },
     placeholders: { 'enrolment-terms': ['[[MONTHLY PRICE ₪]]', '[[מחיר חודשי ₪]]'] },
   },
   {
@@ -308,6 +323,7 @@ export const LEGAL_FIELDS: LegalFieldDef[] = [
     verticals: DANCE_AND_GENERIC,
     required: true,
     label: { en: 'Number of monthly payments', he: 'מספר התשלומים החודשיים' },
+    example: { en: "10", he: "10" },
     placeholders: { 'enrolment-terms': ['[[NUMBER OF MONTHS]]', '[[מספר חודשים]]'] },
   },
   {
@@ -336,6 +352,7 @@ export const LEGAL_FIELDS: LegalFieldDef[] = [
     required: true,
     label: { en: 'Payment methods', he: 'אמצעי תשלום' },
     hint: { en: 'e.g. bank transfer, Bit, card through the payment page', he: 'למשל העברה בנקאית, ביט, כרטיס אשראי בעמוד התשלום' },
+    example: { en: "Credit card, bank transfer", he: "כרטיס אשראי, העברה בנקאית" },
     placeholders: {
       'enrolment-terms': [
         '[[bank transfer / cash / Bit / card through the payment page]]',
@@ -351,6 +368,7 @@ export const LEGAL_FIELDS: LegalFieldDef[] = [
     required: true,
     label: { en: 'Payment dates', he: 'מועדי תשלום' },
     hint: { en: 'e.g. on the 1st of each month', he: 'למשל ב-1 לכל חודש' },
+    example: { en: "On the 1st of each month", he: "ב-1 לכל חודש" },
     placeholders: {
       'enrolment-terms': [
         '[[e.g. on the 1st of each month / in advance for the season]]',
@@ -384,6 +402,7 @@ export const LEGAL_FIELDS: LegalFieldDef[] = [
     required: true,
     label: { en: 'Insurance (insurer and policy type)', he: 'ביטוח (מבטח וסוג הפוליסה)' },
     hint: { en: 'e.g. third-party liability insurance with …', he: 'למשל ביטוח אחריות כלפי צד שלישי ב…' },
+    example: { en: "Third-party liability, Harel", he: "ביטוח צד ג', הראל" },
     placeholders: {
       'enrolment-terms': [
         '[[third-party liability insurance — insurer / policy]]',

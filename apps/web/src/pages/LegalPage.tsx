@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useTenant } from '@/hooks/useTenant';
 import { renderLegalHtml } from '@/legal/render';
+import { lawyerPdfUrl, useLawyerDocuments, type LawyerDocument } from '@/legal/lawyerDocuments';
 import {
   PLATFORM_DOCS,
   PUBLISHABLE_DOCS,
@@ -24,6 +26,11 @@ export default function LegalPage() {
   const { user } = useCurrentUser();
   const docId = isLegalDocId(docParam) ? docParam : null;
   const { doc, lang, legal, isLoading, error } = useLegalDocument(docId);
+  const platformPage = docId ? PLATFORM_DOCS.includes(docId) : true;
+  const { data: uploads, isLoading: uploadsLoading } = useLawyerDocuments(
+    !platformPage && legal ? legal.tenantId : undefined,
+  );
+  const lawyerVersion = uploads?.find((u) => u.document === docId) ?? null;
 
   const isAdmin = !!user?.role?.includes('tenant_admin');
   const platformDoc = docId ? PLATFORM_DOCS.includes(docId) : false;
@@ -46,7 +53,7 @@ export default function LegalPage() {
     );
   }
 
-  if (isLoading) {
+  if (isLoading || (!platformPage && !!legal && uploadsLoading)) {
     return <p role="status">{t('common.loading')}</p>;
   }
 
@@ -82,14 +89,72 @@ export default function LegalPage() {
           </Link>
         </div>
       )}
-      <article
-        className="legal-document"
-        lang={lang}
-        dir={lang === 'he' ? 'rtl' : 'ltr'}
-        // Generated from our own templates; every studio-entered value is escaped
-        // and raw HTML in the templates is escaped too (see legal/render.ts).
-        dangerouslySetInnerHTML={{ __html: renderLegalHtml(doc) }}
-      />
+      {lawyerVersion ? (
+        <LawyerVersion version={lawyerVersion} />
+      ) : (
+        <article
+          className="legal-document"
+          lang={lang}
+          dir={lang === 'he' ? 'rtl' : 'ltr'}
+          // Generated from our own templates; every studio-entered value is escaped
+          // and raw HTML in the templates is escaped too (see legal/render.ts).
+          dangerouslySetInnerHTML={{ __html: renderLegalHtml(doc) }}
+        />
+      )}
+    </div>
+  );
+}
+
+/** The studio's lawyer-reviewed version: its edited text, or its PDF. */
+function LawyerVersion({ version }: { version: LawyerDocument }) {
+  const { t, i18n } = useTranslation();
+  const [opening, setOpening] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const date = new Intl.DateTimeFormat(i18n.language?.startsWith('he') ? 'he-IL' : 'en-GB', { dateStyle: 'medium' }).format(
+    new Date(version.uploadedAt),
+  );
+
+  async function openPdf() {
+    if (!version.storagePath) return;
+    setOpening(true);
+    setFailed(false);
+    try {
+      window.open(await lawyerPdfUrl(version.storagePath), '_blank', 'noopener');
+    } catch {
+      setFailed(true);
+    } finally {
+      setOpening(false);
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">{t('legal.page.lawyer_version', { date })}</p>
+      {version.kind === 'text' ? (
+        <article
+          className="legal-document"
+          lang={version.language}
+          dir={version.language === 'he' ? 'rtl' : 'ltr'}
+          // The studio's own text: raw HTML is escaped and links are checked (legal/render.ts).
+          dangerouslySetInnerHTML={{ __html: renderLegalHtml({ markdown: version.content ?? '', missingLabels: [] }) }}
+        />
+      ) : (
+        <div className="space-y-2">
+          <button
+            type="button"
+            className="inline-flex items-center rounded-md border border-border px-4 py-2 text-sm font-medium underline-offset-2 hover:underline focus-visible:outline-2 outline-offset-2"
+            onClick={() => void openPdf()}
+            disabled={opening}
+          >
+            {opening ? t('common.loading') : t('legal.page.lawyer_pdf_open', { name: version.fileName ?? 'PDF' })}
+          </button>
+          {failed && (
+            <p role="alert" className="text-sm text-red-700">
+              {t('legal.page.lawyer_pdf_error')}
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

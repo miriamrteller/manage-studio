@@ -249,7 +249,7 @@ function StudioReady({ result, name }: { result: SelfServeStudioResult; name: st
         {t('self_serve.created_body')}{' '}
         <span dir="ltr" className="font-mono">{address}</span>
       </p>
-      <LegalPackPanel tenantId={result.tenantId} mode="acknowledge" />
+      <LegalPackPanel tenantId={result.tenantId} mode="acknowledge" offerUploads />
 
       <div className="space-y-1">
         <h2 className="text-lg font-semibold">{t('setup_guide.ready_title')}</h2>
