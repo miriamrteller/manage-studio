@@ -14,8 +14,8 @@ import {
 } from '../lib/shareTargets';
 import { downloadBlob, qrMatrix, qrPng, qrSvgPath } from '../lib/qr';
 import { posterPdf, type PosterContent } from '../lib/poster';
-
-const WEBSITE_PLATFORMS = ['wix', 'wordpress', 'squarespace', 'google_sites'] as const;
+import { WEBSITE_PLATFORMS, WEBSITE_PLATFORM_NAMES, WEBSITE_STEPS } from '@shared/index';
+import { EmailInstructionsForm, SendFormSection } from './SendFormSection';
 
 /** Copy text; returns false when the clipboard is not available (the text stays selectable). */
 async function copyText(value: string): Promise<boolean> {
@@ -189,6 +189,14 @@ export function GetLeadsPanel({ target = DEFAULT_FORM, headingLevel = 2 }: { tar
         </div>
       </div>
 
+      {/* 2. Send the form to one person. */}
+      <SendFormSection
+        headingLevel={headingLevel === 2 ? 3 : 4}
+        formLinkForWhatsApp={formLink(origin, target, 'whatsapp')}
+        shareMessage={shareMessage}
+        country={(tenant as { country?: string | null }).country}
+      />
+
       {/* 3. Only for studios with a website. */}
       <details className="card p-4">
         <summary className="cursor-pointer font-semibold">{t('pages.crm.get_leads.website_title')}</summary>
@@ -197,15 +205,16 @@ export function GetLeadsPanel({ target = DEFAULT_FORM, headingLevel = 2 }: { tar
           <div className="grid gap-3 sm:grid-cols-2">
             {WEBSITE_PLATFORMS.map((platform) => (
               <div key={platform} className="space-y-1">
-                <p className="text-sm font-medium">{t(`pages.crm.get_leads.platform_${platform}`)}</p>
+                <p className="text-sm font-medium">{WEBSITE_PLATFORM_NAMES[platform]}</p>
                 <ol className="list-decimal ps-5 text-sm space-y-0.5">
-                  {stepsFor(t(`pages.crm.get_leads.steps_${platform}`, { returnObjects: true })).map((step, i) => (
+                  {WEBSITE_STEPS[lang][platform].map((step, i) => (
                     <li key={i}>{step}</li>
                   ))}
                 </ol>
               </div>
             ))}
           </div>
+          <EmailInstructionsForm />
         </div>
       </details>
 
@@ -237,9 +246,6 @@ export function GetLeadsPanel({ target = DEFAULT_FORM, headingLevel = 2 }: { tar
   );
 }
 
-function stepsFor(value: unknown): string[] {
-  return Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string') : [];
-}
 
 function ChannelRow({
   channel,
