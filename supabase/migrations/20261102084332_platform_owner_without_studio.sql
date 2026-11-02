@@ -16,9 +16,13 @@
 -- 2. handle_new_user():
 --    - with a studio subdomain in the signup metadata: unchanged;
 --    - without one: only the reserved owner email gets a profile, as super_admin
---      with no studio. Any other email is refused, so nobody can self-create an
---      account on the platform host. This also removes the old fallback that put
---      a subdomain-less signup into 'creativeballet' (or the first tenant).
+--      with no studio. Any other email gets NO profile: the auth user exists but
+--      belongs to no studio, so RLS gives it nothing and the app treats it as "not
+--      linked to a studio". This removes the old fallback that silently put such a
+--      signup into 'creativeballet' (or the first tenant) as an account holder.
+--      It keeps provision_tenant's flow working (paid signup and the local seed
+--      create the owner's auth user first, then provision_tenant adds the profile
+--      as tenant_admin with ON CONFLICT).
 -- =============================================================================
 
 ALTER TABLE public.user_profiles ALTER COLUMN tenant_id DROP NOT NULL;
@@ -49,7 +53,9 @@ BEGIN
         updated_at = NOW();
       RETURN NEW;
     END IF;
-    RAISE EXCEPTION 'A new account needs a studio. User ID: %', NEW.id;
+    -- Anyone else: no profile, so no studio and no access until a studio is
+    -- provisioned for them (provision_tenant) or they sign up through a studio.
+    RETURN NEW;
   END IF;
 
   SELECT id, business_preset INTO v_tenant_id, v_preset FROM tenants WHERE subdomain = v_subdomain LIMIT 1;
@@ -78,4 +84,4 @@ END;
 $$;
 
 COMMENT ON FUNCTION public.handle_new_user() IS
-  'Creates the user_profiles row for a new auth user: in the studio named by raw_user_meta_data.subdomain, or, with no subdomain, only for the platform owner (super_admin, no studio). Any other subdomain-less signup is refused.';
+  'Creates the user_profiles row for a new auth user: in the studio named by raw_user_meta_data.subdomain, or, with no subdomain, only for the platform owner (super_admin, no studio). Any other subdomain-less signup gets no profile (no studio, no access) until provision_tenant links it.';

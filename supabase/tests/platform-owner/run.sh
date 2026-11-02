@@ -42,18 +42,25 @@ BEGIN
   IF v_profile.role <> ARRAY['super_admin'] THEN RAISE EXCEPTION 'FAIL owner role is %', v_profile.role; END IF;
   RAISE NOTICE 'ok  the platform owner gets a super_admin profile with no studio';
 
-  -- 2. Anyone else without a studio is refused.
-  BEGIN
-    INSERT INTO auth.users (id, email, raw_user_meta_data)
-    VALUES (v_stranger, 'someone@example.test', '{}'::jsonb);
-    RAISE EXCEPTION 'FAIL a non-owner account was created without a studio';
-  EXCEPTION WHEN raise_exception THEN
-    IF SQLERRM LIKE 'FAIL%' THEN RAISE; END IF;
-  END;
+  -- 2. Anyone else without a studio gets no profile: no studio, no role, no access
+  --    (not, as before, an account in 'creativeballet' or the first studio).
+  INSERT INTO auth.users (id, email, raw_user_meta_data)
+  VALUES (v_stranger, 'someone@example.test', '{}'::jsonb);
   IF EXISTS (SELECT 1 FROM user_profiles WHERE id = v_stranger) THEN
-    RAISE EXCEPTION 'FAIL stranger has a profile';
+    RAISE EXCEPTION 'FAIL another email without a studio got a profile';
   END IF;
-  RAISE NOTICE 'ok  another email without a studio is refused';
+  RAISE NOTICE 'ok  another email without a studio gets no profile (no studio, no access)';
+
+  -- 2b. provision_tenant can still make that account a studio's owner (paid signup).
+  PERFORM provision_tenant(
+    p_name => 'Owner test studio 2', p_subdomain => 'pown2-' || substr(md5(random()::text), 1, 8),
+    p_plan => 'essential', p_vertical => 'generic',
+    p_owner_email => 'someone@example.test', p_owner_id => v_stranger);
+  SELECT * INTO v_profile FROM user_profiles WHERE id = v_stranger;
+  IF v_profile.tenant_id IS NULL OR NOT ('tenant_admin' = ANY (v_profile.role)) THEN
+    RAISE EXCEPTION 'FAIL provision_tenant did not link the owner';
+  END IF;
+  RAISE NOTICE 'ok  provision_tenant still links a studio-less account as tenant_admin';
 
   -- 3. Studio sign-ups are unchanged.
   INSERT INTO auth.users (id, email, raw_user_meta_data)
