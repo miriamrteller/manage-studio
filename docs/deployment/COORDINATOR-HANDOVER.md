@@ -1,103 +1,102 @@
 # Coordinator handover
 
-Written 2026-11-01 by the outgoing coordinator session (`session_01CNMzHZz6ZodEZ6p7v17QLd`).
-Updated 2026-11-01 by the current coordinator (`session_01CNMzHYVGwEsv37woknUMfi`).
+Updated 2026-11-02 by the current coordinator (`session_01CNMzHYVGwEsv37woknUMfi`).
 If you are the new coordinator: read this whole file, then do "First actions" at the bottom.
 
 ## Your job
 
 You coordinate Claude Code "threads" (separate cloud sessions) that build OpalSwift / manage-studio
-for the owner (Miriam). You review their PRs, merge when GitHub CI is green, keep the browser demo
-current, and keep the owner's walkthrough doc accurate. The owner reads on a phone: short, plain
-English, outcome first. English unless the owner asks for Hebrew.
+for the owner (Miriam). You review their PRs, merge when GitHub CI is green and the diff is right,
+run prod releases (the owner approves each one), and keep the owner's walkthrough doc accurate
+through the launch guide. The owner reads on a phone: short, plain English, outcome first. English
+unless the owner asks for Hebrew. British spelling in the app ("enrolment").
 
 ## Owner's links
 
-- Launch walkthrough (Claude Doc, the owner's checklist): https://claude.ai/artifact/UQLWxSQwGpWhgGEFaDSLwG
-- Photographer demo (browser-only, kept on main by thread D): https://claude.ai/artifact/DgrRLWJjES7nNJjAEXuPfX
-- Soft-theme design mockup: https://claude.ai/artifact/C7emiFjZcJq2qdiMJqqjiZ
+- Launch walkthrough (Claude Doc; finished steps are removed, not ticked): https://claude.ai/artifact/UQLWxSQwGpWhgGEFaDSLwG
+- Ballet demo (browser-only): https://claude.ai/artifact/UDZuc2KA4ygLaED1hjLSgH
+- Photographer demo (browser-only): https://claude.ai/artifact/DgrRLWJjES7nNJjAEXuPfX
+- Billing plan: docs/plans/opalswift-billing-plan.md
 
-## Active threads (tag "launch")
+## Threads (tag "launch")
 
-| Thread | Session id | Owns | State on 2026-11-01 |
-| --- | --- | --- | --- |
-| Launch guide | session_01CNMzHYe8zjCun8sQp7frSK | Walks the owner through the walkthrough doc one step at a time; ticks it off | Waiting on owner: Supabase Pro upgrade. Waiting on you: tell it when #100 merges (then it walks the owner through GitHub environments/secrets) |
-| Database owner | session_01CNMzHa5DtCTddUW4brCgS4 | Dev→prod pipeline, security hardening, DB health, first prod release | #100 pipeline (local-stack CI still red, it is fixing); #103 security hardening stacked on #100 |
-| Error tracking | session_01CNMzHYye1dLyc8NrxTk49P | Sentry (EU, free), admin "Report a problem", Sentry→GitHub issues | PR 1 merged (#104). Building PR 2 (edge-function wrapper), then 3 (feedback), 4 (CI source maps + issue Action + OBSERVABILITY.md) |
-| Legal docs | session_01CNMzHWVdy3dV55o2MV1S6n | Israeli legal docs (merged #101), per-tenant legal setup, open questions | Writing TENANT-LEGAL-SETUP.md + trimming open questions to ≤5 (owner said the docs are too long) |
-| Demo (D) | session_01CNMzHZYRxzSidmckhBPWbc | Republishes the demo artifact from main; has a 2-hourly sync task | Asked to republish after #99/#101/#102 |
-| Launch audit | session_01CNMzHXYhnF8C2TwWiBr4cv | Independent launch-readiness check → docs/launch/LAUNCH-READINESS.md with a short blocker list | Done (#110 merged). Idle |
-| App thread | session_01CNMzHWLPLcyXX4aAMFrswS | Ballet launch gaps: offline "pay at the studio", invoicing-off setting, per-tenant legal links + enrolment-terms checkbox, then custom-domain support | Started 2026-11-01 10:14; PR 1 (offline payments) first |
+| Thread | Session id | Model | Owns | State 2026-11-02 |
+| --- | --- | --- | --- | --- |
+| Launch guide | session_01CNMzHYe8zjCun8sQp7frSK | Opus | Walks the owner through the walkthrough doc | Active |
+| Database owner | session_01CNMzHa5DtCTddUW4brCgS4 | Opus | Pipelines (deploy-dev/prod/web), DB health, access log | Idle |
+| App thread | session_01CNMzHWLPLcyXX4aAMFrswS | Opus | App features: wizard, platform login, self-serve signup | Building self-serve studio signup; next: Turnstile tokens on the 5 login forms |
+| Brand defaults | session_01CNMzHZLFkBzAaP8qi2zV2d | Sonnet | Theme tokens, favicon, buttons/alerts/tabs polish | Idle (#155, #159 merged) |
+| Billing plan | session_01CNMzHYqvfCp3KNcZM3du7b | Sonnet | docs/plans/opalswift-billing-plan.md | #160: adding pricing research + full cost table |
+| Legal docs | session_01CNMzHWVdy3dV55o2MV1S6n | Fable | Israeli legal docs | Un-archived: beta liability audit, access-log line, beta checklist, BUSINESS-REGISTRATION.md |
+| Marketing site | session_01CNMzHaWHkss2HDbfeZbK9g | Opus | apps/marketing → Pages project `opalswift-il` | Idle; next: /terms, /privacy pages + "Create your studio" button |
+| Demo (D) | session_01CNMzHZYRxzSidmckhBPWbc | Opus | Demo artifacts from main | Idle; 2-hourly sync left on by the owner |
+| Error tracking | session_01CNMzHYye1dLyc8NrxTk49P | Opus | Sentry | Waiting on the owner's Sentry signup |
 
-All threads report to `session_01CNMzHYVGwEsv37woknUMfi` (re-pointed 2026-11-01 09:41).
+Archived: Launch audit. The owner prefers cheaper models (Sonnet) for new threads unless the task needs more.
 
-## Open PRs
+## How releases work
 
-None as of 2026-11-01 10:15. Merged today: #100, #103, #105–#111, #113. Expected next:
-- DB owner: make the Cloudflare email secrets optional in `supabase/edge-secrets.json` (Resend-only prod must pass deploy-prod's check).
-- Legal: English-prevails + free-until-registered applied to the docs; short insurance section.
-- Demo (D): ballet-studio demo artifact (separate from the photographer one).
-- App thread: PRs 1–4 above.
+- Merge to main → deploy-dev runs automatically (dev Supabase `acmujrhavgbamdilzuew`).
+- Prod: run deploy-prod (owner approves), then deploy-web (owner approves). deploy-web only starts
+  itself after a fully green deploy-prod, so while verify:prod is red, start deploy-web by hand.
+- verify:prod stays red until the encryption key is in `private.platform_config` (owner adds it before
+  Tuesday's photographer meeting, then one all-green re-run). Everything else on prod is green.
+- Marketing site: deploy-marketing on push to apps/marketing/** (owner approves). Contact form =
+  Pages Function → Resend → hello@opalswift.com (Cloudflare Email Routing → owner's Gmail).
+- CI: Playwright jobs pinned to ubuntu-24.04; PR runs cancel superseded runs; Edge Functions deploy
+  with `--use-api` (no Docker pulls).
 
 ## Decisions already made by the owner (don't re-ask)
 
-- Dance tenants on YPay also get offline (cash/bank) receipts (#87).
-- Soft gradient theme is the default for ALL tenants, incl. dance; tenants can switch header/footer to Solid (#91).
-- "Studio" is the default wording for all tenants (not "school"); tenant custom labels still override (#95).
-- Photographer people are "Clients" (#99); no dance wording on photographer screens (#97, #98, #102).
-- Merge rule: merge a thread's PR when GitHub CI is green and the diff looks right ("merge when done"). Dance behaviour must not change unless the owner decided it.
-- Dev Supabase (org miriamrteller, ref acmujrhavgbamdilzuew) stays Free. Prod (org OpalSwift, `manage-studio-prod`, ref oogxajjanbyqhljxcmql, Frankfurt) goes Pro.
-- DB changes go only through the GitHub pipeline; prod only with the owner's approval. The Supabase MCP connector (prod org only) is READ-ONLY for us.
-- Sentry: EU region, free plan, Replay off, admin-only "Report a problem" item (not a floating button).
-- Email transport at launch is **Resend** (`EMAIL_TRANSPORT=resend`, `RESEND_API_KEY`), not Cloudflare Workers Paid. Switching later = `EMAIL_TRANSPORT=cloudflare` + the two Cloudflare secrets; no code change.
-- Ballet school domain is **creativeballetacademy.com** (owner's own). Custom domains aren't supported yet, so launch on `creativeballet.opalswift.com` with a Cloudflare redirect from the .com; the app thread builds custom-domain support after its first three PRs.
-- Legal: OpalSwift stays free until registered as an עוסק; the **English** version of each document prevails.
-- Owner wants to try a ballet-studio demo before the photographer meeting (Tuesday). Photographer details are collected at that meeting.
-- App thread approved for: offline "pay at the studio" checkout, invoicing-off setting, per-tenant legal links + enrolment-terms checkbox.
-- First prod tenants: the owner's ballet school "Creative Ballet Academy" (subdomain `creativeballet`, dance-studio, NOT a registered business yet: manual payments only, receipts/invoicing OFF), then the photographer friend (YPay, set up before their meeting).
+- Super admin = miriamrteller@gmail.com only (DB-enforced). She signs in on app.opalswift.com; her
+  profile has no studio. Studios need a SEPARATE owner email (the wizard refuses hers).
+- Studios are created with the in-app wizard ("Set up a new studio"), never hand-run SQL. Studio owners
+  get an OpalSwift welcome email (Reply-To hello@opalswift.com).
+- Self-serve "Create your studio" for the free beta: building now; stays behind
+  VITE_ENABLE_SELF_SERVE_SIGNUP until legal + Turnstile are ready. Free beta = sub_status 'trialing',
+  trial_ends_at NULL. Later: 30-day trial with card, auto-billed via Grow, after OpalSwift is a
+  registered business (Grow partner programme: 500 ₪ + VAT/month, unlimited studios).
+- Defaults for new studios: English, OpalSwift theme (#5B6CFF / #21D1C2, AA ink #4A58E8), dark side menu
+  with a subtle accent glow (Soft) or flat (Solid). Per-skin defaults come later.
+- App always defaults to English (no browser detection). Unknown subdomains show "Studio not found".
+  Studio name falls back to the subdomain.
+- Wording: dance = "health declaration" / "הצהרת בריאות"; photographers = "contract"; others = "form".
+  Never "waiver" to parents/clients.
+- Creative Ballet Academy: subdomain `creativeballet`, pay at the studio (offline), invoicing none,
+  separate owner email. Photographer: YPay (Tuesday meeting). app.creativeballetacademy.com later,
+  walked through with the owner.
+- Email: Resend. NOTIFICATION_FROM_EMAIL should be `OpalSwift <no-reply@opalswift.com>`.
+- Legal: free beta; English prevails; lawyer review is the last step per studio.
+- Repo stays public during build-out (free Actions minutes); go private later with trimming + a spend cap.
+- Sentry→GitHub issues every 3 hours (Israeli daytime).
+- Platform access log (#148) is permanent; studios see it under Settings → Security.
 
-## Facts about prod (read-only check, 2026-11-01)
+## Open for all studios (2026-11-02)
 
-- Empty: 0 tenants, 0 users. 34 migrations applied; main has 41+ (6 photographer-beta + #91 theme + #103 when merged).
-- No encryption key yet in `private.platform_config` (only cron_secret, supabase_functions_url). The owner generates it and runs the one-line INSERT themselves; never echo it.
-- Edge functions are from late August; all photographer/quote/contract/receipt functions missing.
-- Cloudflare Worker `opalswift-app` serves `*.opalswift.com`. Cloudflare account is on Workers FREE, so Email Sending does not work until the owner upgrades to Workers Paid ($5/mo).
-- Nightly `backup-prod` last ran 27 Oct (GitHub Actions minutes ran out 30–31 Oct; Actions resumed 1 Nov). The launch guide will have the owner re-run it once.
-
-## Owner's to-do (also in the walkthrough doc)
-
-1. Supabase OpalSwift org → Pro.
-2. Resend: sign up, verify opalswift.com, API key → Supabase prod Edge secrets `RESEND_API_KEY` + `EMAIL_TRANSPORT=resend`. (Workers Paid only if/when switching to Cloudflare email.)
-3. GitHub environments "production" (required reviewer = owner) and "development" with secrets (steps in `docs/deployment/DEV-PROD-PIPELINE.md`).
-4. Sentry signup (EU region) when the error-tracking thread sends steps.
-5. Add creativeballetacademy.com to Cloudflare and redirect it to creativeballet.opalswift.com until custom domains ship.
-6. Fill legal placeholders; lawyer review of platform terms + DPA; accountant on business registration.
-7. Photographer: everything at the Tuesday meeting (subdomain, sign-in email, business name, packages, YPay keys).
-
-## Order of the launch
-
-#100 + #103 merged → owner setup → deploy-prod dry run → real run → encryption key → owner account → creativeballet bootstrap (each SQL step shown to the owner first) → email sending on → website deploy → test enrolment → photographer tenant → meeting (YPay keys, ₪1 live test, full sample booking).
-
-## Follow-ups not started
-
-- Insurance for the ballet school and teachers: legal thread is writing a short section (requested 2026-11-01).
-- `docs/legal/APP-GAPS.md`: app changes the legal docs need (per-studio footer legal links, terms/privacy checkbox at signup and enrolment, marketing consent with channel/time/wording + unsubscribe line, photo-consent purpose + Hebrew typo "מנתן", privacy link on public forms). The app thread (above) owns the launch-blocking part; the rest must feed the planned automatic onboarding.
-- Replace the dance seed "Health & Liability Waiver" (bundled release is presumed unfair) with the health declaration (07b) + separate photo opt-in.
-- RLS performance rewrite (auth_rls_initplan 46, multiple_permissive_policies 675): separate PR, after launch.
-- Contract PDFs aren't attached on the Cloudflare email transport (link only); contracts signed before #86 have no PDF.
-- esm.sh → npm: migration for edge functions (a reminder was set for 16 Nov).
-- Stray remote branch `fix/light-color-scheme` (already merged as #94) can be deleted.
+1. Release: deploy-prod + deploy-web with #156 (welcome email) and #159 (polish). Then the owner
+   creates Creative Ballet through the wizard.
+2. Self-serve signup PR (app thread), then the Turnstile tokens PR, then the owner enables Supabase
+   CAPTCHA and the signup flag.
+3. Legal beta audit (legal thread), then /terms and /privacy on opalswift.com (marketing thread) and the
+   VITE_TERMS_URL / VITE_PRIVACY_POLICY_URL production variables.
+4. "Create your studio" button on opalswift.com once signup is live.
+5. Owner: NOTIFICATION_FROM_EMAIL value; marketing-form test; Gmail 2-step; encryption key before
+   Tuesday; optional Gmail "Send mail as" hello@, Sentry, Supabase Pro, uptime monitor, old Cloudflare
+   token clean-up.
 
 ## Rules
 
-- Never paste or print secrets, keys, passwords or connection strings. If the owner pastes one, tell them to rotate it.
-- Never run db reset or seeds on hosted projects. Never write to prod outside the pipeline.
-- Unset `*_MOCK` flags in prod (YPAY_MOCK especially).
-- No images containing people.
-- Push only to your own designated branch; open draft PRs; merge only green PRs.
+- Never paste or print secrets, keys, passwords or connection strings. If the owner pastes one, tell
+  them to rotate it.
+- Never run db reset or seeds on hosted projects. Never write to prod outside the pipeline. The
+  Supabase MCP connector is READ-ONLY for us (SELECTs to verify state are fine).
+- Unset `*_MOCK` flags in prod. No images containing people.
+- Threads push only to their own branch and open draft PRs; you merge green PRs. One open PR per thread.
+- Migrations use real UTC timestamps; SECURITY DEFINER functions go in supabase/security/definer-execute.json.
+- Keep the owner's Claude usage low: idle threads stay idle; no unnecessary subagents.
 
-## First actions for a new coordinator (done 2026-11-01 by the current one; repeat if you take over)
+## First actions for a new coordinator
 
-1. Send each active thread (table above) one message: "Coordinator changed: report to session <your id> from now on."
-2. Check #100 / #103 CI; merge when green; tell the launch guide when #100 merges.
+1. Send each active thread one message: "Coordinator changed: report to session <your id> from now on."
+2. List open PRs and pending deploy runs; continue the "Open for all studios" list.
 3. Tell the owner the handover is done, in two lines, and what you're waiting on.
