@@ -73,9 +73,20 @@ describe('setup checklist rows', () => {
     const p = setupProgress(rows, ['packages']);
     expect(p).toMatchObject({ resolved: 2, total: 6, complete: false });
     expect(p.next?.id).toBe('payments');
-    const all = setupProgress(rows, ['packages', 'payments', 'legal', 'leads', 'first_quote']);
-    expect(all.complete).toBe(true);
-    expect(all.next).toBeNull();
+    const all = setupProgress(rows, ['packages', 'payments', 'leads', 'first_quote']);
+    expect(all.complete).toBe(false);
+    expect(all.next?.id).toBe('legal');
+  });
+
+  it('the legal row cannot be skipped: going live depends on it', () => {
+    const rows = buildSetupRows('photographer', { ...EMPTY_FACTS, hasLogo: true });
+    const p = setupProgress(rows, ['packages', 'payments', 'legal', 'leads', 'first_quote']);
+    expect(p.complete).toBe(false);
+    expect(p.next?.id).toBe('legal');
+    const done = setupProgress(buildSetupRows('photographer', { ...EMPTY_FACTS, hasLogo: true, legalPublished: true }), [
+      'packages', 'payments', 'leads', 'first_quote',
+    ]);
+    expect(done.complete).toBe(true);
   });
 });
 
@@ -124,7 +135,7 @@ describe('SetupGuideCard', () => {
     expect(screen.getByRole('link', { name: 'hello@opalswift.com' })).toHaveAttribute('href', 'mailto:hello@opalswift.com');
   });
 
-  it('uses "health declaration" for dance, "contract" for photographers, "form" for others', async () => {
+  it('uses "health declaration" for dance, "contract" for photographers, "service agreement" for others', async () => {
     renderHarness();
     expect(await screen.findByText(/legal details and health declaration/)).toBeInTheDocument();
     cleanup();
@@ -134,8 +145,15 @@ describe('SetupGuideCard', () => {
     cleanup();
     h.tenant = { id: 't1', vertical: 'generic', payment_provider: 'offline' };
     renderHarness();
-    expect(await screen.findByText(/legal details and form/)).toBeInTheDocument();
+    expect(await screen.findByText(/legal details and service agreement/)).toBeInTheDocument();
     expect(screen.queryByText(/waiver/i)).toBeNull();
+  });
+
+  it('the legal row says who is waiting on it and has no Skip', async () => {
+    renderHarness();
+    expect(await screen.findByText("Parents can't sign up until you confirm your legal documents.")).toBeInTheDocument();
+    const legalRow = screen.getByRole('link', { name: /legal details and health declaration/ }).closest('li')!;
+    expect(legalRow.querySelector('button')).toBeNull();
   });
 
   it('a new Grow studio sees "Connect online payments" linking to Settings → Payments', async () => {

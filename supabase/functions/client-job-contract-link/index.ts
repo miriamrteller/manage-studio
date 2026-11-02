@@ -49,7 +49,9 @@ Deno.serve(withMonitoring("client-job-contract-link", async (req) => {
       service.from("tenants").select("language_default").eq("id", tenantId).maybeSingle(),
       service.from("people").select("id").eq("tenant_id", tenantId).eq("user_profile_id", user.id).maybeSingle(),
       service.from("account_members").select("account_id").eq("tenant_id", tenantId).eq("user_profile_id", user.id),
-      service.from("consent_templates").select("id").eq("tenant_id", tenantId).eq("status", "active").maybeSingle(),
+      // A studio may keep two active forms (child/adult health declarations); the contract is the one for everyone.
+      service.from("consent_templates").select("id").eq("tenant_id", tenantId).eq("status", "active")
+        .order("audience", { ascending: true, nullsFirst: true }).limit(1).maybeSingle(),
     ]);
 
     const job = await loadJobContractContext(service, {

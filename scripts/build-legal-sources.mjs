@@ -11,8 +11,11 @@ import { fileURLToPath } from 'node:url';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 // Template ids → docs/legal file prefixes. Follow renames in docs/legal here.
 const FILES = {
-  'health-declaration': '07b-health-declaration',
-  'photography-contract': '07c-photography-contract',
+  'health-declaration-child': '07b-health-declaration-child',
+  'health-declaration-adult': '07b-health-declaration-adult',
+  'service-agreement': '07c-service-agreement',
+  'addon-photographer': '07c-addon-photographer',
+  'addon-beautician': '07c-addon-beautician',
 };
 
 const sources = {};

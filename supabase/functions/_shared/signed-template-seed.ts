@@ -1,4 +1,4 @@
-import { studioSignedTemplate } from "./email-dist/legal/signed-template.js";
+import { studioSignedForms } from "./email-dist/legal/signed-template.js";
 
 /** The studio fields a signed template is filled with. */
 export interface SeedTenant {
@@ -14,7 +14,15 @@ export interface SeedDeps {
   /** Whether the studio already has any consent template (then nothing is seeded). */
   hasTemplate(tenantId: string): Promise<boolean>;
   /** Inserts the active template. */
-  insertTemplate(row: { tenant_id: string; name: string; content: string; version: number; version_hash: string; status: "active" }): Promise<void>;
+  insertTemplate(row: {
+    tenant_id: string;
+    name: string;
+    content: string;
+    version: number;
+    version_hash: string;
+    status: "active";
+    audience: "child" | "adult" | null;
+  }): Promise<void>;
 }
 
 export async function sha256Hex(text: string): Promise<string> {
@@ -32,27 +40,31 @@ function stringProfile(value: unknown): Record<string, string> {
 }
 
 /**
- * Gives a studio the form its clients sign (dance: health declaration;
- * photographer: shoot agreement), filled with its details, in its language.
- * Never replaces an existing template. Returns whether one was added.
+ * Gives a studio the forms its clients sign, filled with its details, in its
+ * language: dance studios both health declarations (under 18 / adults, picked
+ * by age at signing), service businesses the agreement with their type's
+ * add-on, general studios the base agreement. Never touches a studio that
+ * already has a form. Returns how many were added.
  */
-export async function seedSignedTemplate(deps: SeedDeps, tenant: SeedTenant): Promise<boolean> {
+export async function seedSignedTemplate(deps: SeedDeps, tenant: SeedTenant): Promise<number> {
+  if (await deps.hasTemplate(tenant.id)) return 0;
   const lang = tenant.language_default === "he" ? "he" : "en";
-  const template = studioSignedTemplate(tenant.skin, {
+  const forms = studioSignedForms(tenant.skin, {
     lang,
     tenantName: tenant.name,
     contactEmail: tenant.contact_email ?? "",
     profile: stringProfile(tenant.legal_profile),
   });
-  if (!template) return false;
-  if (await deps.hasTemplate(tenant.id)) return false;
-  await deps.insertTemplate({
-    tenant_id: tenant.id,
-    name: template.name,
-    content: template.content,
-    version: 1,
-    version_hash: await sha256Hex(template.content),
-    status: "active",
-  });
-  return true;
+  for (const form of forms) {
+    await deps.insertTemplate({
+      tenant_id: tenant.id,
+      name: form.name,
+      content: form.content,
+      version: 1,
+      version_hash: await sha256Hex(form.content),
+      status: "active",
+      audience: form.audience,
+    });
+  }
+  return forms.length;
 }

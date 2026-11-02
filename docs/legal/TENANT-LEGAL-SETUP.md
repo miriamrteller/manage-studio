@@ -21,7 +21,7 @@ Do this for every new studio before it takes its first enrolment or booking. Stu
 
 The base agreement and its add-on are one signed document; the health declaration is always a separate form.
 
-**Transition:** the old `07b-health-declaration.{en,he}.md` and `07c-photography-contract.{en,he}.md` stay in the folder, unchanged, because the app still loads them by name (`apps/web/src/legal/signedTemplates.ts`, the email bundle). They are superseded by the files in the table and are not in the lawyer pack; the app's switch-over removes them.
+**In the app:** every new studio gets these as its forms when it is created (`packages/shared/src/legal/signed-template.ts`): class studios both health declarations (the participant's age picks one at signing), service businesses the base agreement with their type's add-on, a general studio the base agreement.
 
 ## Dance school
 

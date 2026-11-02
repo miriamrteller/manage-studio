@@ -10,11 +10,22 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { I18nextProvider } from 'react-i18next';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-const h = vi.hoisted(() => ({ rpc: vi.fn(), invoke: vi.fn(), acknowledgedAt: null as string | null }));
+const h = vi.hoisted(() => ({
+  rpc: vi.fn(),
+  invoke: vi.fn(),
+  acknowledgedAt: null as string | null,
+  profile: null as Record<string, string> | null,
+}));
 vi.mock('@/lib/supabase', () => ({ supabase: { rpc: h.rpc, functions: { invoke: h.invoke } } }));
 
 import i18n from '@/i18n/i18n';
 import { LegalPackPanel } from '@/components/legal/LegalPackPanel';
+import { fieldsForVertical } from '@/legal/fields';
+
+/** Every required detail a dance studio fills in. */
+const FULL_PROFILE: Record<string, string> = Object.fromEntries(
+  fieldsForVertical('dance-studio').filter((f) => f.required).map((f) => [f.key, 'filled']),
+);
 
 function profileRow() {
   return {
@@ -22,7 +33,7 @@ function profileRow() {
     name: 'Harbour Dance',
     contact_email: 'office@harbour.test',
     skin: 'dance-studio',
-    legal_profile: { legal_name: 'Harbour Dance Ltd' },
+    legal_profile: h.profile ?? FULL_PROFILE,
     legal_pages_published: false,
     legal_profile_updated_at: null,
     legal_pack_required: true,
@@ -31,11 +42,11 @@ function profileRow() {
   };
 }
 
-function renderPanel(mode: 'acknowledge' | 'notice') {
+function renderPanel(mode: 'acknowledge' | 'notice', detailsHref?: string) {
   return render(
     <I18nextProvider i18n={i18n}>
       <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-        <LegalPackPanel tenantId="t-1" mode={mode} />
+        <LegalPackPanel tenantId="t-1" mode={mode} detailsHref={detailsHref} />
       </QueryClientProvider>
     </I18nextProvider>,
   );
@@ -43,6 +54,7 @@ function renderPanel(mode: 'acknowledge' | 'notice') {
 
 beforeEach(() => {
   h.acknowledgedAt = null;
+  h.profile = null;
   h.invoke.mockResolvedValue({ data: { seeded: 0 }, error: null });
   h.rpc.mockImplementation(async (name: string) => {
     if (name === 'get_tenant_legal_profile') return { data: [profileRow()], error: null };
@@ -95,7 +107,25 @@ describe('legal pack panel', () => {
     fireEvent.click(screen.getByRole('checkbox'));
     await waitFor(() => expect(screen.getByRole('button', { name: 'Confirm' })).toBeEnabled());
     fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent('form your clients sign is missing');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Your health declaration is missing');
+  });
+
+  it('cannot confirm while required details are empty, and says which and where', async () => {
+    h.profile = { legal_name: 'Harbour Dance Ltd', address: '1 Harbour St' };
+    renderPanel('acknowledge', '#legal-details');
+    fireEvent.click(screen.getByRole('checkbox'));
+    expect(await screen.findByText(/details missing\. Fill them in before you confirm\./)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Fill in the missing details' })).toHaveAttribute('href', '#legal-details');
+    expect(screen.getByRole('button', { name: 'Confirm' })).toBeDisabled();
+  });
+
+  it('business status is not a required detail', async () => {
+    h.profile = { ...FULL_PROFILE };
+    delete h.profile.business_status;
+    renderPanel('acknowledge');
+    fireEvent.click(screen.getByRole('checkbox'));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Confirm' })).toBeEnabled());
+    expect(screen.queryByText(/details? missing/)).toBeNull();
   });
 
   it('after setting a studio up, the platform owner sees the notice but cannot confirm for the studio', async () => {

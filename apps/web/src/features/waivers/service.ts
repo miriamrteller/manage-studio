@@ -29,7 +29,7 @@ export class WaiverService extends BaseService {
   ): Promise<ConsentTemplate> {
     return this.withRetry(async () => {
       const { data: existing } = await TenantDB.selectFor('consent_templates', tenant)
-        .select('version')
+        .select('version, audience')
         .eq('name', input.name)
         .order('version', { ascending: false })
         .limit(1)
@@ -42,6 +42,8 @@ export class WaiverService extends BaseService {
         version: nextVersion,
         version_hash: input.version_hash,
         status: 'draft',
+        // A new version of the child (or adult) health declaration stays that version.
+        audience: (existing?.audience as string | null | undefined) ?? null,
       })
         .select()
         .single();
@@ -71,11 +73,16 @@ export class WaiverService extends BaseService {
    */
   static async activateTemplate(tenant: Tenant, draftId: string): Promise<void> {
     return this.withRetry(async () => {
-      // 1. Archive current active (if any) — prevents two active rows
-      const { data: currentActive } = await TenantDB.selectFor('consent_templates', tenant)
-        .select('id')
-        .eq('status', 'active')
+      // 1. Archive the active form it replaces: the same audience (child / adult /
+      //    everyone), so a studio keeps one active form per audience.
+      const { data: draft } = await TenantDB.selectFor('consent_templates', tenant)
+        .select('audience')
+        .eq('id', draftId)
         .maybeSingle();
+      const audience = (draft?.audience as string | null | undefined) ?? null;
+      let activeQuery = TenantDB.selectFor('consent_templates', tenant).select('id').eq('status', 'active');
+      activeQuery = audience ? activeQuery.eq('audience', audience) : activeQuery.is('audience', null);
+      const { data: currentActive } = await activeQuery.maybeSingle();
       if (currentActive) {
         const { error: archiveError } = await TenantDB.update(
           'consent_templates',
