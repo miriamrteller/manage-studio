@@ -164,6 +164,51 @@ Steps 1–4 are the beta (about 1 week). The default card payment path is not to
     `TURNSTILE_SECRET_KEY` but the web build has no site key, the form refuses
     every enquiry, so set both or neither.
 
+- **2b questions on the form**: Settings → **Questions on your enquiry form**.
+  - **Ready-made questions** for each kind of studio, each switched on or off and
+    required or not:
+    - Dance/classes: child's name, age, date of birth, class or level of
+      interest (from the studio's public classes), previous experience,
+      preferred days.
+    - Photographers: event type, date, location, budget range.
+    - Others: service of interest, preferred date.
+  - **Answers the pipeline uses get real columns:** `leads.child_name`,
+    `child_birth_date` (for matching a student in step 3), `event_date`, and the
+    existing `offering_id` (the class). The convert-to-job panel shows the event
+    date and pre-fills the location.
+  - **Up to 5 of the studio's own questions** (short or long text, choose one,
+    choose several, number), in English and Hebrew, in the order chosen. They are
+    stored in `leads.answers` with their labels copied, so old leads still read
+    correctly after the studio edits its form. The Settings page shows how many
+    questions are on and says shorter forms get more enquiries.
+  - **Where answers show:** on the leads page under each lead, with a filter by
+    question and answer.
+  - **Checks:** the same rules (`packages/shared/src/leadForm.ts`) run in the
+    form and in `crm-lead-capture`. A missing required answer or an invalid
+    choice (e.g. another studio's class) is refused with `400 invalid_answers`.
+  - **Visitors** read questions only through `get_lead_form` (public tier);
+    `tenants.lead_form` itself is admin-only.
+  - Name, email, phone, message, marketing consent, source tags and Turnstile
+    are always on the form and cannot be switched off.
+
+### Google Forms fallback (no code)
+
+A studio that already uses Google Forms can keep it:
+1. In the Google Form: **Responses → ⋮ → Get email notifications for new
+   responses**. Google emails the form owner on each response.
+2. In Gmail, add a filter on those emails (from `forms-receipts-noreply@google.com`)
+   that forwards them to the studio's lead inbox, `leads-<subdomain>@opalswift.com`.
+   Gmail asks to confirm the forwarding address once. Its confirmation email
+   lands on the Leads page as a lead; the confirmation code is in its subject
+   (shown as the lead's interest). Enter it in Gmail, then delete that lead.
+3. Each response then appears on the Leads page (channel Email). The answers
+   are in the note, not in separate fields. The sender is Google, so the lead
+   has no parent email unless the Google Form collects one: ask for it in the
+   form, and reply to the address in the note.
+
+Prefer the OpalSwift form when possible: it records consent properly and fills
+the fields the pipeline uses.
+
 ## Owner to confirm
 - The `lead-email-ingest` worker's `CRM_INGEST_URL` (prod or dev?) and when it was last deployed.
 - Cloudflare → opalswift.com → Email Routing: is the catch-all set to "Send to Worker: lead-email-ingest"?

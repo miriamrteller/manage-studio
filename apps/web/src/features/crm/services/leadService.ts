@@ -1,6 +1,7 @@
 import { BaseService } from '@/services/base.service';
 import { supabase } from '@/lib/supabase';
 import type { Tenant } from '@shared/schemas';
+import type { StoredAnswer } from '@shared/index';
 
 /**
  * CRM leads — pipeline inquiries, a separate entity from students/families
@@ -25,6 +26,12 @@ export interface Lead {
   channel: LeadChannel;
   /** Campaign tag from the enquiry link (?campaign=), set on creation. */
   campaign: string | null;
+  /** Enquiry-form answers mapped to columns (step 2b). */
+  child_name: string | null;
+  child_birth_date: string | null;
+  event_date: string | null;
+  /** Other enquiry-form answers: { key: { label, value, display? } }. */
+  answers: Record<string, StoredAnswer> | null;
   interest: string | null;
   offering_id: string | null;
   deal_value_minor: number | null;
@@ -50,7 +57,7 @@ export interface LeadCreateInput {
 }
 
 const LEAD_COLUMNS =
-  'id, name, company, email, phone, stage, channel, campaign, interest, offering_id, deal_value_minor, note, ' +
+  'id, name, company, email, phone, stage, channel, campaign, child_name, child_birth_date, event_date, answers, interest, offering_id, deal_value_minor, note, ' +
   'next_follow_up_at, last_contacted_at, last_communication_note, marketing_consent, ' +
   'converted_account_id, created_at';
 

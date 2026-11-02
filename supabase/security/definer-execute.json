@@ -7,6 +7,7 @@
       "decline_public_quote",
       "get_available_slots",
       "get_bookable_offerings_by_subdomain",
+      "get_lead_form",
       "get_my_account_ids",
       "get_my_person_id",
       "get_my_tenant_id",

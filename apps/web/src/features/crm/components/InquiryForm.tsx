@@ -11,6 +11,9 @@ import { useLegalLang } from '@/legal/useLegalDocument';
 import { supabase } from '@/lib/supabase';
 import { resolveTenantSubdomain } from '@/lib/resolveTenantSubdomain';
 import { readInquiryTags } from '../lib/inquiryTags';
+import { validateLeadAnswers } from '@shared/index';
+import { useLeadFormQuestions } from '../hooks/useLeadFormQuestions';
+import { LeadQuestionFields } from './LeadQuestionFields';
 
 /**
  * Public enquiry form — the "website" capture channel, and via ?src= tags the
@@ -37,11 +40,20 @@ export function InquiryForm({ embedded = false }: { embedded?: boolean }) {
   const [marketing, setMarketing] = useState<ConsentState>({});
   const lang = useLegalLang();
   const tenant = useTenant();
-  const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error' | 'captcha'>('idle');
+  const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error' | 'captcha' | 'answers'>('idle');
+  const { questions } = useLeadFormQuestions();
+  const [answers, setAnswers] = useState<Record<string, unknown>>({});
+  const [invalid, setInvalid] = useState<string[]>([]);
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     if (!name.trim() || status === 'sending') return;
+    const checked = validateLeadAnswers(questions, answers);
+    setInvalid(checked.invalid);
+    if (!checked.ok) {
+      setStatus('answers');
+      return;
+    }
     if (!captcha.ready) {
       setStatus('captcha');
       return;
@@ -58,12 +70,19 @@ export function InquiryForm({ embedded = false }: { embedded?: boolean }) {
           src,
           campaign,
           captchaToken: captcha.token,
+          answers: questions.length > 0 ? answers : null,
           website: honeypot || null,
           marketingConsent: marketingPayload(marketing, lang, tenant?.name),
         },
       });
       if (error || (data && typeof data === 'object' && 'error' in data)) {
         captcha.reset();
+        const fields = await invalidFieldsFrom(error, data);
+        if (fields.length > 0) {
+          setInvalid(fields);
+          setStatus('answers');
+          return;
+        }
         setStatus('error');
         return;
       }
@@ -147,6 +166,15 @@ export function InquiryForm({ embedded = false }: { embedded?: boolean }) {
             placeholder={t('pages.crm.inquire.message_placeholder')}
           />
         </div>
+        <LeadQuestionFields
+          questions={questions}
+          values={answers}
+          invalid={invalid}
+          lang={lang}
+          onChange={(key, value) => setAnswers((prev) => ({ ...prev, [key]: value }))}
+          requiredHint={t('pages.crm.inquire.answer_required')}
+          invalidHint={t('pages.crm.inquire.answer_invalid')}
+        />
         {/* Honeypot — off-screen for humans, irresistible to bots. */}
         <div className="sr-only" aria-hidden="true">
           <label htmlFor="inquire-website">Website</label>
@@ -162,6 +190,11 @@ export function InquiryForm({ embedded = false }: { embedded?: boolean }) {
         {status === 'error' && (
           <div className="alert-error" role="alert">
             {t('pages.crm.inquire.error')}
+          </div>
+        )}
+        {status === 'answers' && invalid.length > 0 && (
+          <div className="alert-error" role="alert">
+            {t('pages.crm.inquire.answers_error')}
           </div>
         )}
         {status === 'captcha' && !captcha.ready && (
@@ -189,6 +222,25 @@ export function InquiryForm({ embedded = false }: { embedded?: boolean }) {
       </form>
     </div>
   );
+}
+
+/** Question keys the server refused (400 invalid_answers), if that is why it failed. */
+async function invalidFieldsFrom(error: unknown, data: unknown): Promise<string[]> {
+  const read = (body: unknown): string[] =>
+    body && typeof body === 'object' && (body as { error?: unknown }).error === 'invalid_answers'
+      ? ((body as { fields?: unknown }).fields as string[] | undefined)?.filter((f) => typeof f === 'string') ?? []
+      : [];
+  const fromData = read(data);
+  if (fromData.length > 0) return fromData;
+  const context = (error as { context?: { json?: () => Promise<unknown> } } | null)?.context;
+  if (context && typeof context.json === 'function') {
+    try {
+      return read(await context.json());
+    } catch {
+      return [];
+    }
+  }
+  return [];
 }
 
 function marketingPayload(state: ConsentState, lang: 'he' | 'en', studio?: string) {

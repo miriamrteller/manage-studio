@@ -65,6 +65,13 @@ export interface LeadWriteOptions {
   receivedAt: string;
   /** Campaign tag, stored on NEW leads only (an update keeps the first touch). */
   campaign?: string | null;
+  /** Enquiry-form answers (validated by the caller): typed columns + leads.answers. */
+  form?: LeadFormWrite | null;
+}
+
+export interface LeadFormWrite {
+  columns: Partial<Record<"child_name" | "child_birth_date" | "event_date" | "offering_id", string>>;
+  answers: Record<string, unknown>;
 }
 
 export interface LeadWriteResult {
@@ -96,7 +103,7 @@ export async function writeInboundLead(
   if (fields.email) {
     const { data: open } = await service
       .from("leads")
-      .select("id")
+      .select("id, answers")
       .eq("tenant_id", tenant.id)
       .eq("email", fields.email)
       .neq("stage", "lost")
@@ -110,6 +117,11 @@ export async function writeInboundLead(
         .update({
           last_contacted_at: opts.receivedAt,
           last_communication_note: fields.lastCommunicationNote,
+          // A repeat enquiry fills in or refreshes answers; it never blanks them.
+          ...(opts.form ? opts.form.columns : {}),
+          ...(opts.form && Object.keys(opts.form.answers).length > 0
+            ? { answers: { ...((open as { answers?: Record<string, unknown> }).answers ?? {}), ...opts.form.answers } }
+            : {}),
         })
         .eq("id", open.id)
         .eq("tenant_id", tenant.id);
@@ -133,6 +145,7 @@ export async function writeInboundLead(
       marketing_consent: false,
       source_ref: opts.sourceRef,
       campaign: opts.campaign ?? null,
+      ...(opts.form ? { ...opts.form.columns, answers: opts.form.answers } : {}),
     })
     .select("id")
     .single();
