@@ -5,10 +5,12 @@
  * rate limit here: nothing leaves the browser.
  */
 import {
+  formLinkEmail,
   formQuestions,
   leadFormKindFor,
   parseLeadFormConfig,
   validateLeadAnswers,
+  websiteInstructionsEmail,
 } from '@shared/index';
 import queryClient from '@/lib/query-client';
 import { DemoRpcError, type DemoContext, type FunctionHandler, type Row, type RpcHandler } from './fakeSupabase';
@@ -165,6 +167,51 @@ export const leadFunctions: Record<string, FunctionHandler> = {
     void queryClient.invalidateQueries();
     return { outcome };
   },
+};
+
+function adminTenant(ctx: DemoContext): Row {
+  if (!ctx.user) throw new DemoRpcError('Unauthorized');
+  const profile = rows(ctx, 'user_profiles').find((p) => p.id === ctx.user?.id);
+  const roles = (profile?.role as string[] | undefined) ?? [];
+  if (!roles.includes('tenant_admin')) throw new DemoRpcError('Forbidden');
+  const tenant = rows(ctx, 'tenants').find((t) => t.id === profile?.tenant_id);
+  if (!tenant) throw new DemoRpcError('Tenant not found');
+  return tenant;
+}
+
+/**
+ * send-lead-form-link: the studio emails its form link to someone, or the
+ * "add the form to your website" steps to whoever runs the site. Same email
+ * text as the real function; it goes to the demo outbox.
+ */
+leadFunctions['send-lead-form-link'] = (body, ctx) => {
+  const tenant = adminTenant(ctx);
+  const recipient = nonEmpty(body.email)?.toLowerCase() ?? '';
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient)) return { error: 'invalid_email' };
+  const kind = body.kind === 'web_instructions' ? 'web_instructions' : 'form';
+  const lang = body.lang === 'he' || body.lang === 'en' ? body.lang : tenant.language_default === 'he' ? 'he' : 'en';
+  const studio = String(tenant.name || tenant.subdomain);
+  // The studio's own host: the demo's origin, as the Settings snippet uses.
+  const formOrigin = window.location.origin;
+  const email =
+    kind === 'form'
+      ? formLinkEmail({
+          studio,
+          recipientName: nonEmpty(body.name),
+          formUrl: `${formOrigin}/inquire?src=direct`,
+          lang,
+          colour: tenant.primary_color as string | null,
+        })
+      : websiteInstructionsEmail({ studio, formOrigin, lang });
+  sendToOutbox({
+    to: recipient,
+    subject: email.subject,
+    body: email.text,
+    ...(kind === 'form'
+      ? { link: { label: lang === 'he' ? 'פתיחת הטופס' : 'Open the form', href: '#/inquire?src=direct' } }
+      : {}),
+  });
+  return { ok: true };
 };
 
 export const leadRpcs: Record<string, RpcHandler> = {

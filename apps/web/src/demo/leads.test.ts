@@ -80,4 +80,31 @@ describe('photographer demo: enquiry form → lead', () => {
     expect(lead.marketing_consent).toBe(true);
     expect(tables.consent_records.some((r) => r.lead_id === lead.id && r.kind === 'marketing_email')).toBe(true);
   });
+
+  it('send-lead-form-link emails the form link or the website steps (admin only)', async () => {
+    const { c } = client();
+    const anon = await c.functions.invoke('send-lead-form-link', { body: { kind: 'form', email: 'a@example.test' } });
+    expect(anon.error).not.toBeNull();
+
+    c.setUser({ id: ADMIN_USER_ID, email: ADMIN_EMAIL });
+    const bad = await c.functions.invoke('send-lead-form-link', { body: { kind: 'form', email: 'nope' } });
+    expect((bad.data as Row).error).toBe('invalid_email');
+
+    const form = await c.functions.invoke('send-lead-form-link', {
+      body: { kind: 'form', email: 'Friend@Example.test', name: 'Avi', lang: 'en' },
+    });
+    expect(form.data).toEqual({ ok: true });
+    expect(getOutbox()[0]).toMatchObject({
+      to: 'friend@example.test',
+      subject: 'Lumen & Light Photography: enquiry form',
+      link: { href: '#/inquire?src=direct' },
+    });
+
+    const web = await c.functions.invoke('send-lead-form-link', {
+      body: { kind: 'web_instructions', email: 'web@example.test', name: null, lang: 'he' },
+    });
+    expect(web.data).toEqual({ ok: true });
+    expect(getOutbox()[0].subject).toContain('לאתר');
+    expect(getOutbox()[0].body).toContain('<iframe');
+  });
 });
