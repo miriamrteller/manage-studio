@@ -110,6 +110,16 @@ describe('switching from one online provider to another', () => {
   });
 });
 
+describe('switching to pay at the studio', () => {
+  it('says the old details stay saved (nothing replaces them), and refunds go through the old account', async () => {
+    Object.assign(tenantState, { payment_provider: 'grow', invoicing_provider: 'green_invoice' });
+    wrap(<OfflinePaymentsSettingsForm />);
+    fireEvent.click(screen.getByLabelText('settings.offline_payments.enabled_label'));
+    expect(await screen.findByText('settings.provider_switch.details_kept_offline')).toBeTruthy();
+    expect(screen.queryByText('settings.provider_switch.details_kept')).toBeNull();
+  });
+});
+
 describe('no warning', () => {
   it('when the provider does not change', () => {
     Object.assign(tenantState, { payment_provider: 'grow', invoicing_provider: 'grow' });

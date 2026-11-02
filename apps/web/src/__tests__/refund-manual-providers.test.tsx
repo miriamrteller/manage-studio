@@ -18,6 +18,8 @@ import { makeGrowFakeService } from './helpers/growFakeService';
 
 const { invoke } = vi.hoisted(() => ({ invoke: vi.fn() }));
 vi.mock('@/lib/supabase', () => ({ supabase: { functions: { invoke } } }));
+const { tenantState } = vi.hoisted(() => ({ tenantState: { payment_provider: undefined as string | undefined } }));
+vi.mock('@/hooks/useTenant', () => ({ useTenant: () => ({ id: 'tenant-1', ...tenantState }) }));
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'en' } }),
 }));
@@ -33,6 +35,7 @@ function stubDenoEnv(vars: Record<string, string>) {
 afterEach(() => {
   cleanup();
   invoke.mockReset();
+  tenantState.payment_provider = undefined;
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
   delete (globalThis as unknown as { Deno?: unknown }).Deno;
@@ -132,6 +135,26 @@ describe('refund modal', () => {
     expect(await screen.findByRole('button', { name: 'finance.refund_payment.manual_submit' })).toBeTruthy();
     expect(screen.getByRole('note')).toHaveTextContent('finance.refund_payment.manual_note');
     expect(invoke).toHaveBeenLastCalledWith('process-refund', { body: { payment_id: 'pay-1', reason: undefined } });
+  });
+
+  it('goes straight to a manual refund for a payment taken with a previous provider', async () => {
+    // The studio now uses YPay; its Grow details were replaced when YPay was connected.
+    tenantState.payment_provider = 'ypay';
+    invoke.mockResolvedValue({ data: { ok: true }, error: null });
+    wrap('grow');
+    expect(screen.getByRole('note')).toHaveTextContent('finance.refund_payment.manual_note_previous_provider');
+    expect(screen.queryByRole('button', { name: 'finance.refund_payment.submit' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'finance.refund_payment.manual_submit' }));
+    await waitFor(() => expect(invoke).toHaveBeenCalledWith('process-refund', {
+      body: { payment_id: 'pay-1', reason: undefined, manual: true },
+    }));
+  });
+
+  it('refunds through the API when the payment is from the current provider', () => {
+    tenantState.payment_provider = 'grow';
+    wrap('grow');
+    expect(screen.getByRole('button', { name: 'finance.refund_payment.submit' })).toBeTruthy();
+    expect(screen.queryByText('finance.refund_payment.manual_note_previous_provider')).toBeNull();
   });
 
   it("shows the provider's own message for other failures", async () => {

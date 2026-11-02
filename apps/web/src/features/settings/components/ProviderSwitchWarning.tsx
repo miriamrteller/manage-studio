@@ -98,7 +98,11 @@ export function ProviderSwitchWarning({
           {data.activeSchedules > 0 && (
             <li>{t('settings.provider_switch.active_schedules', { ...names, count: data.activeSchedules })}</li>
           )}
-          <li>{t('settings.provider_switch.details_kept', names)}</li>
+          <li>
+            {newProvider === 'offline'
+              ? t('settings.provider_switch.details_kept_offline', names)
+              : t('settings.provider_switch.details_kept', names)}
+          </li>
         </ul>
       )}
       {switchNeedsConfirmation(data) && (

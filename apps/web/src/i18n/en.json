@@ -2283,6 +2283,7 @@
       "grow_note": "Grow typically allows a full refund only on the same day as the charge. The provider message is shown below if it rejects the refund.",
       "icount_note": "iCount may issue a credit note instead of reversing the charge. The provider message is shown below if the refund is rejected. Mock mode completes instantly.",
       "invoice4u_note": "Invoice4U refunds the card charge and may issue a credit document when the original payment created a tax receipt. The provider message is shown below if it rejects the refund.",
+      "manual_note_previous_provider": "This payment was taken with {{provider}}, which is no longer your payment provider, so OpalSwift cannot refund it. First refund it in your {{provider}} account, then press \"Record refund\" so OpalSwift shows it as refunded. No money is moved by this button.",
       "manual_note": "{{provider}} refunds cannot be made from OpalSwift. First refund the payment in your {{provider}} dashboard, then press \"Record refund\" so OpalSwift shows it as refunded. No money is moved by this button.",
       "manual_submit": "Record refund",
       "manual_success": "Refund recorded.",
@@ -2488,9 +2489,10 @@
     "provider_switch": {
       "title": "Before you switch from {{old}} to {{new}}",
       "pending_charges": "{{count}} card payment(s) started with {{old}} have not been confirmed yet. After the switch, OpalSwift may not record them automatically: check them in your {{old}} account and record any that were paid by hand.",
-      "saved_cards": "{{count}} saved card(s) belong to {{old}} and cannot be used with {{new}}. Customers who pay monthly will need to enter their card again.",
+      "saved_cards": "{{count}} saved card(s) belong to {{old}}. When you enter your {{new}} details they are switched off, and customers who pay monthly will need to enter their card again.",
       "active_schedules": "{{count}} active monthly plan(s) will be charged through {{new}} from now on. Until each customer saves a card with {{new}}, those charges will fail and the usual payment reminders will be sent.",
-      "details_kept": "Your {{old}} details stay saved: refunds of past {{old}} payments keep working, and you can switch back at any time.",
+      "details_kept_offline": "Your {{old}} details stay saved, so you can switch back later. Refund past {{old}} payments in your {{old}} account and record them here.",
+      "details_kept": "When you enter your {{new}} details, they replace your {{old}} details. After that, refund past {{old}} payments in your {{old}} account and record them here. To switch back later, enter your {{old}} details again.",
       "confirm": "I understand. Switch to {{new}}.",
       "check_failed": "Could not check what still uses the current provider. Try again before switching."
     },

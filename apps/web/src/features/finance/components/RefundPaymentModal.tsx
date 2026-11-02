@@ -4,6 +4,7 @@ import { useMutation } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { formatCurrency } from '@shared/format';
+import { useTenant } from '@/hooks/useTenant';
 
 /** Providers whose API has no refund call: the admin refunds in their dashboard, then records it. */
 const MANUAL_REFUND_PROVIDERS: readonly string[] = ['ypay'];
@@ -49,7 +50,14 @@ export function RefundPaymentModal({
   const [reason, setReason] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   // Manual = the refund was already made in the provider's dashboard; we only record it.
-  const [manualMode, setManualMode] = useState(MANUAL_REFUND_PROVIDERS.includes(provider ?? ''));
+  const tenant = useTenant();
+  // One credential slot per studio: a payment from a provider the studio no longer uses can only
+  // be refunded in that provider's own account (process-refund refuses the API call too).
+  const fromPreviousProvider =
+    Boolean(provider && tenant?.payment_provider) && provider !== 'manual' && provider !== tenant?.payment_provider;
+  const [manualMode, setManualMode] = useState(
+    fromPreviousProvider || MANUAL_REFUND_PROVIDERS.includes(provider ?? ''),
+  );
   const providerName = t(`settings.provider_names.${provider ?? 'manual'}`, { defaultValue: provider ?? '' });
 
   const mutation = useMutation({
@@ -93,7 +101,16 @@ export function RefundPaymentModal({
         {t('finance.refund_payment.amount', { defaultValue: 'Refund amount' })}:{' '}
         {formatCurrency(remainingMinor, currency, i18n.language)}
       </p>
-      {manualMode && (
+      {manualMode && fromPreviousProvider && (
+        <p className="text-sm rounded border border-border bg-muted/40 px-3 py-2" role="note">
+          {t('finance.refund_payment.manual_note_previous_provider', {
+            provider: providerName,
+            defaultValue:
+              'This payment was taken with {{provider}}, which is no longer your payment provider, so OpalSwift cannot refund it. First refund it in your {{provider}} account, then press "Record refund" so OpalSwift shows it as refunded. No money is moved by this button.',
+          })}
+        </p>
+      )}
+      {manualMode && !fromPreviousProvider && (
         <p className="text-sm rounded border border-border bg-muted/40 px-3 py-2" role="note">
           {t('finance.refund_payment.manual_note', {
             provider: providerName,

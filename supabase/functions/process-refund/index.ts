@@ -76,6 +76,22 @@ Deno.serve(withMonitoring("process-refund", async (req) => {
   const manualRefund = body.manual === true || original.provider === "manual";
 
   if (!manualRefund && original.provider_payment_ref) {
+    // All providers share one credential slot on the tenant: once the studio has entered
+    // another provider's details, the old provider's are gone, so an API refund of an old
+    // payment would use the wrong account. Refund it in the old provider's dashboard.
+    const { data: tenantRow } = await service
+      .from("tenants")
+      .select("payment_provider")
+      .eq("id", tenantId)
+      .maybeSingle();
+    if (tenantRow?.payment_provider && tenantRow.payment_provider !== original.provider) {
+      const err = new ManualRefundRequiredError(
+        original.provider as string,
+        `This payment was taken with ${original.provider}, which is no longer this studio's ` +
+          `payment provider. Refund it in the ${original.provider} account, then record it here.`,
+      );
+      return jsonResponse({ error: err.message, code: err.code, provider: err.provider }, 422);
+    }
     try {
       await executeProviderRefund(
         service,
