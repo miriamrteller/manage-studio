@@ -569,6 +569,7 @@ export type Database = {
           content: string
           created_at: string
           id: string
+          language: string | null
           name: string
           status: string
           tenant_id: string
@@ -581,6 +582,7 @@ export type Database = {
           content: string
           created_at?: string
           id?: string
+          language?: string | null
           name: string
           status?: string
           tenant_id: string
@@ -593,6 +595,7 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
+          language?: string | null
           name?: string
           status?: string
           tenant_id?: string
@@ -4198,6 +4201,14 @@ export type Database = {
           email: string
         }[]
       }
+      get_grow_webhook_key_status: {
+        Args: never
+        Returns: {
+          configured: boolean
+          created_at: string
+          key_version: number
+        }[]
+      }
       get_grow_webhook_secret: {
         Args: { p_tenant_id: string }
         Returns: {
@@ -4579,12 +4590,13 @@ export type Database = {
         Returns: string[]
       }
       pick_active_consent_template: {
-        Args: { p_person_id: string; p_tenant_id: string }
+        Args: { p_language?: string; p_person_id: string; p_tenant_id: string }
         Returns: {
           audience: string | null
           content: string
           created_at: string
           id: string
+          language: string | null
           name: string
           status: string
           tenant_id: string
@@ -4743,6 +4755,7 @@ export type Database = {
           recipient_name: string
         }[]
       }
+      rotate_grow_webhook_key: { Args: never; Returns: string }
       save_grow_webhook_secret: {
         Args: { p_secret: string }
         Returns: undefined

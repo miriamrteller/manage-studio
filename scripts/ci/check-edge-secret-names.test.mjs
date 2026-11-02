@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { evaluate, compare, loadManifest } from './check-edge-secret-names.mjs';
 
 const m = loadManifest();
-const allRequired = [...m.required, ...m.requiredOneOf[0], 'SUPABASE_URL'];
+const allRequired = [...m.required, ...m.requiredInProd, ...m.requiredOneOf[0], 'SUPABASE_URL'];
 
 test('prod with every required name and no mocks passes', () => {
   assert.deepEqual(evaluate(allRequired, m, 'prod').errors, []);
@@ -29,7 +29,7 @@ test('compare ignores env-specific names', () => {
   assert.deepEqual(r, { onlyDev: ['GROW_API_BASE'], onlyProd: ['APP_ROOT_DOMAIN'] });
 });
 test('email: Resend alone satisfies the transport rule', () => {
-  assert.deepEqual(evaluate([...m.required, 'RESEND_API_KEY'], m, 'prod').errors, []);
+  assert.deepEqual(evaluate([...m.required, ...m.requiredInProd, 'RESEND_API_KEY'], m, 'prod').errors, []);
 });
 test('email: no transport at all is an error', () => {
   const { errors } = evaluate([...m.required, 'CLOUDFLARE_ACCOUNT_ID'], m, 'prod');
@@ -39,7 +39,7 @@ test('email: no transport at all is an error', () => {
 // ── email transport (EMAIL_TRANSPORT must match a configured transport) ──
 import { classifyTransport } from './check-edge-secret-names.mjs';
 import { createHash } from 'node:crypto';
-const base = [...m.required, 'SUPABASE_URL'];
+const base = [...m.required, ...m.requiredInProd, 'SUPABASE_URL'];
 const CF = ['CLOUDFLARE_ACCOUNT_ID', 'CLOUDFLARE_EMAIL_API_TOKEN'];
 
 test('Resend-only prod passes with EMAIL_TRANSPORT=resend or unset', () => {
@@ -71,4 +71,32 @@ test('classifyTransport reads only the EMAIL_TRANSPORT digest', () => {
   assert.equal(classifyTransport([{ name: 'EMAIL_TRANSPORT', value: h('resend') }]), 'resend');
   assert.equal(classifyTransport([{ name: 'EMAIL_TRANSPORT', value: h('cloudflare') }]), 'cloudflare');
   assert.equal(classifyTransport([{ name: 'EMAIL_TRANSPORT', value: h('smtp') }]), 'unknown');
+});
+
+// ── Grow base URL (payments audit P1 #2) ──
+import { sandboxSecretNames } from './check-edge-secret-names.mjs';
+const sha = (v) => createHash('sha256').update(v).digest('hex');
+const prodOk = [...m.required, ...m.requiredInProd, 'RESEND_API_KEY'];
+
+test('GROW_API_BASE is required on prod but not on dev', () => {
+  const withoutGrow = prodOk.filter((n) => n !== 'GROW_API_BASE');
+  assert.match(evaluate(withoutGrow, m, 'prod').errors.join(), /GROW_API_BASE \(required on prod\)/);
+  assert.deepEqual(evaluate([...m.required, 'RESEND_API_KEY'], m, 'dev').errors, []);
+});
+test('a sandbox GROW_API_BASE on prod is an error', () => {
+  for (const url of m.sandboxValuesForbiddenInProd.GROW_API_BASE) {
+    const hits = sandboxSecretNames([{ name: 'GROW_API_BASE', value: sha(url) }], m);
+    assert.deepEqual(hits, ['GROW_API_BASE']);
+    assert.match(evaluate(prodOk, m, 'prod', { sandboxNames: hits }).errors.join(), /sandbox on prod/);
+  }
+  assert.deepEqual(sandboxSecretNames([{ name: 'GROW_API_BASE', value: 'https://sandbox.example/x' }], m), ['GROW_API_BASE']);
+});
+test('a live GROW_API_BASE passes, and other secrets are never inspected', () => {
+  assert.deepEqual(
+    sandboxSecretNames([
+      { name: 'GROW_API_BASE', value: sha('https://secure.meshulam.co.il/api/light/server/1.0') },
+      { name: 'APP_URL', value: 'https://sandbox.example' },
+    ], m),
+    [],
+  );
 });

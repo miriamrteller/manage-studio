@@ -562,6 +562,7 @@ export type Database = {
                     content: string;
                     created_at: string;
                     id: string;
+                    language: string | null;
                     name: string;
                     status: string;
                     tenant_id: string;
@@ -574,6 +575,7 @@ export type Database = {
                     content: string;
                     created_at?: string;
                     id?: string;
+                    language?: string | null;
                     name: string;
                     status?: string;
                     tenant_id: string;
@@ -586,6 +588,7 @@ export type Database = {
                     content?: string;
                     created_at?: string;
                     id?: string;
+                    language?: string | null;
                     name?: string;
                     status?: string;
                     tenant_id?: string;
@@ -4272,6 +4275,14 @@ export type Database = {
                     email: string;
                 }[];
             };
+            get_grow_webhook_key_status: {
+                Args: never;
+                Returns: {
+                    configured: boolean;
+                    created_at: string;
+                    key_version: number;
+                }[];
+            };
             get_grow_webhook_secret: {
                 Args: {
                     p_tenant_id: string;
@@ -4779,6 +4790,7 @@ export type Database = {
             };
             pick_active_consent_template: {
                 Args: {
+                    p_language?: string;
                     p_person_id: string;
                     p_tenant_id: string;
                 };
@@ -4787,6 +4799,7 @@ export type Database = {
                     content: string;
                     created_at: string;
                     id: string;
+                    language: string | null;
                     name: string;
                     status: string;
                     tenant_id: string;
@@ -4980,6 +4993,10 @@ export type Database = {
                     recipient_email: string;
                     recipient_name: string;
                 }[];
+            };
+            rotate_grow_webhook_key: {
+                Args: never;
+                Returns: string;
             };
             save_grow_webhook_secret: {
                 Args: {

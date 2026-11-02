@@ -29,7 +29,7 @@ export class WaiverService extends BaseService {
   ): Promise<ConsentTemplate> {
     return this.withRetry(async () => {
       const { data: existing } = await TenantDB.selectFor('consent_templates', tenant)
-        .select('version, audience')
+        .select('version, audience, language')
         .eq('name', input.name)
         .order('version', { ascending: false })
         .limit(1)
@@ -44,6 +44,8 @@ export class WaiverService extends BaseService {
         status: 'draft',
         // A new version of the child (or adult) health declaration stays that version.
         audience: (existing?.audience as string | null | undefined) ?? null,
+        // ...and in the same language (each language version has its own name).
+        language: (existing?.language as string | null | undefined) ?? null,
       })
         .select()
         .single();
@@ -74,20 +76,24 @@ export class WaiverService extends BaseService {
   static async activateTemplate(tenant: Tenant, draftId: string): Promise<void> {
     return this.withRetry(async () => {
       // 1. Archive the active form it replaces: the same audience (child / adult /
-      //    everyone), so a studio keeps one active form per audience.
+      //    everyone) in the same language, so a studio keeps one active form per
+      //    audience and language.
       const { data: draft } = await TenantDB.selectFor('consent_templates', tenant)
-        .select('audience')
+        .select('audience, language')
         .eq('id', draftId)
         .maybeSingle();
       const audience = (draft?.audience as string | null | undefined) ?? null;
+      const language = (draft?.language as string | null | undefined) ?? null;
       let activeQuery = TenantDB.selectFor('consent_templates', tenant).select('id').eq('status', 'active');
       activeQuery = audience ? activeQuery.eq('audience', audience) : activeQuery.is('audience', null);
-      const { data: currentActive } = await activeQuery.maybeSingle();
-      if (currentActive) {
+      activeQuery = language ? activeQuery.eq('language', language) : activeQuery.is('language', null);
+      const { data: currentActive } = await activeQuery;
+      for (const row of currentActive ?? []) {
+        if ((row.id as string) === draftId) continue;
         const { error: archiveError } = await TenantDB.update(
           'consent_templates',
           tenant,
-          currentActive.id as string,
+          row.id as string,
           { status: 'archived' },
         );
         if (archiveError) throw archiveError;

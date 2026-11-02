@@ -19,6 +19,11 @@ const TENANT_ID = '00000000-0000-0000-0000-0000000000aa';
 const PAYMENT_REF = 'idem_11111111-1111-1111-1111-111111111111';
 const DOC_ID = 'DOC-555000';
 const PDF_URL = 'https://sandbox.meshulam.co.il/docs/redacted.pdf';
+const WEBHOOK_KEY = 'grow-test-webhook-key-0000000000000001';
+const signedNotify = {
+  ...growInvoiceNotify,
+  data: { ...(growInvoiceNotify as { data: Record<string, unknown> }).data, webhookKey: WEBHOOK_KEY },
+} as Record<string, unknown>;
 
 function makeStorageService(uploadImpl?: () => Promise<{ error: unknown }>) {
   const uploads: { path: string; bytes: ArrayBuffer; options: Record<string, unknown> }[] = [];
@@ -163,13 +168,13 @@ describe('handlePaymentDocumentInternal (I4a-T3)', () => {
           upload: async () => ({ error: null }),
         }),
       },
-      // No stored webhook key — validation is opt-in and skipped.
-      rpc: async () => ({ data: [], error: null }),
+      // Notices are accepted only with the studio's stored webhook key.
+      rpc: async () => ({ data: [{ webhook_secret: WEBHOOK_KEY }], error: null }),
     } as never;
 
     const result = await handlePaymentDocumentInternal(
       service,
-      growInvoiceNotify as Record<string, unknown>,
+      signedNotify,
     );
 
     expect(result).toEqual({ ok: true });
@@ -201,12 +206,12 @@ describe('handlePaymentDocumentInternal (I4a-T3)', () => {
         }),
       }),
       storage: { from: () => ({ upload: vi.fn() }) },
-      rpc: async () => ({ data: [], error: null }),
+      rpc: async () => ({ data: [{ webhook_secret: WEBHOOK_KEY }], error: null }),
     } as never;
 
     const result = await handlePaymentDocumentInternal(
       service,
-      growInvoiceNotify as Record<string, unknown>,
+      signedNotify,
     );
 
     expect(result).toEqual({ ok: true, duplicate: true });

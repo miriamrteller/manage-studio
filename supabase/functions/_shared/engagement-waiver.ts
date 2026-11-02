@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
-import { pickActiveConsentTemplate } from "./studio-legal.ts";
+import { pickActiveConsentTemplate, signatureMatchesActiveForm } from "./studio-legal.ts";
 
 interface EngagementWaiverOptions {
   requireActiveTemplateMatch?: boolean;
@@ -60,9 +60,20 @@ export async function engagementHasSignedWaiver(
     return { satisfied: false, evidenceId: null };
   }
 
-  const templateMatches =
-    activeTemplate.id === evidence.consent_template_id &&
-    activeTemplate.version === evidence.consent_version;
+  // The signed version may be the same form in another language.
+  let signed: { id: string; version: number; status: string; audience: string | null } | null = null;
+  if (evidence.consent_template_id === activeTemplate.id) {
+    signed = { id: activeTemplate.id, version: activeTemplate.version, status: "active", audience: activeTemplate.audience };
+  } else if (evidence.consent_template_id) {
+    const { data } = await service
+      .from("consent_templates")
+      .select("id, version, status, audience")
+      .eq("id", evidence.consent_template_id)
+      .eq("tenant_id", tenantId)
+      .maybeSingle();
+    signed = (data as typeof signed) ?? null;
+  }
+  const templateMatches = signatureMatchesActiveForm(activeTemplate, signed, evidence.consent_version as number);
 
   return {
     satisfied: templateMatches,

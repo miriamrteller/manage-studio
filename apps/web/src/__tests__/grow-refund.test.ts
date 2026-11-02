@@ -2,7 +2,7 @@
  * G6: Grow refundCharge calls refundTransaction with the original transaction id.
  * Run: pnpm -C apps/web test grow-refund.test.ts
  */
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { GrowPaymentProvider } from '../../../../supabase/functions/_shared/payments/providers/grow.ts';
 
 function makeService() {
@@ -37,7 +37,11 @@ function makeService() {
   } as never;
 }
 
-afterEach(() => vi.restoreAllMocks());
+beforeEach(() => vi.stubEnv('GROW_API_BASE', 'https://grow.test/api/light/server/1.0'));
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllEnvs();
+});
 
 describe('GrowPaymentProvider.refundCharge', () => {
   it('calls refundTransaction with the original transaction id and returns the refund ref', async () => {

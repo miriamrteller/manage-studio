@@ -14,7 +14,12 @@
 
 import { corsHeaders, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
-import { pickActiveConsentTemplate, STUDIO_LEGAL_NOT_READY, studioLegalReady } from "../_shared/studio-legal.ts";
+import {
+  pickActiveConsentTemplate,
+  readerLanguage,
+  STUDIO_LEGAL_NOT_READY,
+  studioLegalReady,
+} from "../_shared/studio-legal.ts";
 import {
   extractWaiverToken,
   verifyWaiverToken,
@@ -100,7 +105,14 @@ Deno.serve(withMonitoring("get-waiver-engagement", async (req) => {
     }
 
     // The active form for this participant (child or adult health declaration by age).
-    const template = await pickActiveConsentTemplate(service, payload.tid, eng.person_id as string);
+    // In the reader's app language when the studio has that version.
+    const body = await req.json().catch(() => null) as { language?: unknown } | null;
+    const template = await pickActiveConsentTemplate(
+      service,
+      payload.tid,
+      eng.person_id as string,
+      readerLanguage(body?.language),
+    );
 
     if (!template) {
       return jsonResponse({ error: "No active consent template" }, 404);
@@ -115,6 +127,7 @@ Deno.serve(withMonitoring("get-waiver-engagement", async (req) => {
         id: template.id as string,
         version: template.version as number,
         name: template.name as string,
+        language: template.language,
         content: job
           ? renderJobContract(template.content as string, job.fields)
           : (template.content as string),

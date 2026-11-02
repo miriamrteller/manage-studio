@@ -9,16 +9,28 @@ Status: **plan only, no app code.** Written 2026-11-02. "Verified" = I read the 
 - **Leads: the marketing form and self-serve signups should land in HQ's Leads.** Today the contact form only emails hello@ and stores nothing. Fix: make it also post to HQ's lead intake (about 1 day).
 - **Clients = studios.** A studio is one client in HQ, with a link to its real studio. Links and notes are quick wins; automatic creation on signup is small work.
 - **Billing: later.** Don't charge anyone before you are registered. Use the billing plan; HQ only mirrors it.
+- **Decided 2026-11-02:** `hq`, General skin, separate login, auto-create clients, service emails + consented newsletters, WhatsApp later, quotes from first paying studio.
 - **Keep HQ separate from you as super admin.** HQ needs its own login (not miriamrteller@gmail.com), so the access log keeps working. See section 6.
 - **Biggest gaps:** no "demo booked / trial / paying" stages, no studio link on a client, no support inbox, no newsletter list. All have cheap workarounds.
 - **Start now (about 3 days of work):** create HQ, route the contact form, add a studio-sales pipeline. Everything else waits for registration.
 
 ---
 
-## Decisions for Miriam
+## Decisions (answered by Miriam, 2026-11-02)
 
-| # | Decision | My recommendation |
+| # | Decision | Answer |
 |---|---|---|
+| 1 | Subdomain | **`hq`** (check it is not reserved: `is_reserved_subdomain`). |
+| 2 | Login that runs HQ | **A separate email**, not miriamrteller@gmail.com (section 6). Address still to be chosen. |
+| 3 | Skin | **General** now. Revisit a Software/SaaS skin only if HQ feels wrong after a month. |
+| 4 | Auto-create a client in HQ on every self-serve signup | **Yes**, with a link to the studio. Terms and privacy policy must say so before it goes live. |
+| 5 | Emails to studio owners | **Service emails to everyone; newsletters only with the separate marketing tick-box.** |
+| 6 | WhatsApp | **Later.** Own phone number plus a manual "log this chat" button for now. |
+| 7 | Quotes and contracts to studios | **Only from the first paying studio.** Free beta terms until then; no priced quote before registration. |
+
+Next: Phase 1 (section 8) can start. Open item: which separate email runs HQ.
+
+---|---|---|
 | 1 | **Subdomain: `hq` or `opalswift`?** | `hq`. Short, can't be confused with the marketing site or `app.`. (Check both are not reserved: `is_reserved_subdomain`.) |
 | 2 | **Which login runs HQ?** | A separate email you control (e.g. a second Gmail, or a mailbox like `team@opalswift.com`). Never miriamrteller@gmail.com (section 6). |
 | 3 | **Use the General skin, or build a "Software / SaaS" skin?** | General now. Build the SaaS skin only if HQ feels wrong after a month. |

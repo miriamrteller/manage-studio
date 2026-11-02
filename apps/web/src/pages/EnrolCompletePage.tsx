@@ -12,6 +12,7 @@ import { JobAfterSignNextStep } from '@/features/jobs/components/JobAfterSignNex
 import { BackToPortalButton } from '@/features/jobs/components/BackToPortalButton';
 import { resolveTenantSubdomain } from '@/lib/resolveTenantSubdomain';
 import { useCaptcha } from '@/components/captcha/useCaptcha';
+import { readerLanguage } from '@/legal/readerLanguage';
 
 type PageState =
   | { kind: 'loading' }
@@ -73,7 +74,7 @@ export default function EnrolCompletePage() {
               Authorization: `WaiverToken ${waiverToken}`,
               apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string,
             },
-            body: JSON.stringify({}),
+            body: JSON.stringify({ language: readerLanguage() }),
           });
           const data = await resp.json() as Record<string, unknown>;
           if (cancelled) return;
@@ -162,7 +163,11 @@ export default function EnrolCompletePage() {
 
       // The active form for this participant (child or adult health declaration by age).
       const { data: templateRow, error: tmplError } = await supabase
-        .rpc('pick_active_consent_template', { p_tenant_id: tenant!.id, p_person_id: eng.person_id })
+        .rpc('pick_active_consent_template', {
+          p_tenant_id: tenant!.id,
+          p_person_id: eng.person_id,
+          p_language: readerLanguage(),
+        })
         .maybeSingle();
       if (cancelled) return;
 
