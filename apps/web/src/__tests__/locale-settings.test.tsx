@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 /**
- * Settings → Language & Region: no country row; only the main language is a
- * choice, and saving leaves the studio's stored country as it is.
- * Run: pnpm -C apps/web test locale-settings-country.test.tsx
+ * Settings → Language & Region: only the main language is a choice. No country,
+ * currency or phone region fields; saving writes only language_default.
+ * Run: pnpm -C apps/web test locale-settings.test.tsx
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
@@ -57,22 +57,23 @@ afterEach(async () => {
   await i18n.changeLanguage('en');
 });
 
-describe('country in Settings → Language & Region', () => {
-  it('has no country row; saving changes the language and leaves the country alone', async () => {
+describe('Settings → Language & Region', () => {
+  it('only the main language is a choice; saving writes only it', async () => {
     renderForm();
     await waitFor(() => expect(queryClient.getQueryData(['tenant-locale', 't-1'])).toBeTruthy());
-    expect(screen.queryByText('Country')).toBeNull();
-    expect(screen.queryByRole('combobox', { name: 'Country' })).toBeNull();
+    expect(screen.getAllByRole('combobox')).toHaveLength(1);
+    expect(screen.queryByRole('textbox')).toBeNull();
+    for (const label of ['Country', 'Currency', 'Phone region']) expect(screen.queryByText(label)).toBeNull();
     fireEvent.change(screen.getByLabelText('Default language'), { target: { value: 'he' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-    await waitFor(() => expect(h.update).toHaveBeenCalledWith(expect.objectContaining({ language_default: 'he' })));
-    expect(h.update.mock.calls[0][0]).not.toHaveProperty('country');
+    await waitFor(() => expect(h.update).toHaveBeenCalledWith({ language_default: 'he' }));
   });
 
   it('works in Hebrew', async () => {
     await i18n.changeLanguage('he');
     renderForm();
     await waitFor(() => expect(queryClient.getQueryData(['tenant-locale', 't-1'])).toBeTruthy());
-    expect(screen.queryByText('מדינה')).toBeNull();
+    expect(screen.getByLabelText('שפת ברירת מחדל')).toBeInTheDocument();
+    for (const label of ['מדינה', 'מטבע', 'אזור טלפון']) expect(screen.queryByText(label)).toBeNull();
   });
 });

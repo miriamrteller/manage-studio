@@ -8,17 +8,17 @@ import queryClient from '@/lib/query-client';
 
 type LocaleRow = {
   language_default: 'he' | 'en';
-  country: string;
-  currency: string;
-  phone_region: string;
 };
 
+/**
+ * Settings → Language & Region: the studio's main language. Country, currency
+ * and phone region are set when the studio is created (Israel, ILS, IL) and are
+ * not edited here.
+ */
 export function LocaleSettingsForm() {
   const { t } = useTranslation();
   const tenant = useTenant();
   const [languageDefault, setLanguageDefault] = useState<'he' | 'en'>('he');
-  const [currency, setCurrency] = useState('ILS');
-  const [phoneRegion, setPhoneRegion] = useState('IL');
   const [message, setMessage] = useState<string | null>(null);
 
   const { data: localeRow } = useQuery({
@@ -27,7 +27,7 @@ export function LocaleSettingsForm() {
       if (!tenant?.id) return null;
       const { data, error } = await supabase
         .from('tenants')
-        .select('language_default, country, currency, phone_region')
+        .select('language_default')
         .eq('id', tenant.id)
         .single();
       if (error) throw error;
@@ -36,40 +36,17 @@ export function LocaleSettingsForm() {
     enabled: Boolean(tenant?.id),
   });
 
-  const { data: hasPayments } = useQuery({
-    queryKey: ['tenant-has-payments', tenant?.id],
-    queryFn: async (): Promise<boolean> => {
-      if (!tenant?.id) return false;
-      const { count, error } = await supabase
-        .from('payments')
-        .select('id', { count: 'exact', head: true })
-        .eq('tenant_id', tenant.id);
-      if (error) throw error;
-      return (count ?? 0) > 0;
-    },
-    enabled: Boolean(tenant?.id),
-  });
-
   useEffect(() => {
     if (!localeRow) return;
     setLanguageDefault(localeRow.language_default);
-    setCurrency(localeRow.currency);
-    setPhoneRegion(localeRow.phone_region);
   }, [localeRow]);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (!tenant?.id) throw new Error('Tenant not loaded');
-      if (hasPayments && currency !== localeRow?.currency) {
-        throw new Error(t('settings.hub.currency_locked'));
-      }
       const { error } = await supabase
         .from('tenants')
-        .update({
-          language_default: languageDefault,
-          currency: currency.trim().toUpperCase(),
-          phone_region: phoneRegion.trim().toUpperCase(),
-        })
+        .update({ language_default: languageDefault })
         .eq('id', tenant.id);
       if (error) throw error;
     },
@@ -103,41 +80,6 @@ export function LocaleSettingsForm() {
           <option value="he">{t('settings.hub.language_he')}</option>
           <option value="en">{t('settings.hub.language_en')}</option>
         </select>
-      </div>
-
-      <div className="space-y-2">
-        <label className="block text-sm font-medium" htmlFor="currency">
-          {t('settings.hub.currency')}
-        </label>
-        <input
-          id="currency"
-          type="text"
-          className="form-input w-full"
-          value={currency}
-          onChange={(e) => setCurrency(e.target.value)}
-          disabled={hasPayments}
-          maxLength={3}
-          aria-describedby={hasPayments ? 'currency-locked-hint' : undefined}
-        />
-        {hasPayments && (
-          <p id="currency-locked-hint" className="text-xs text-muted-foreground">
-            {t('settings.hub.currency_locked_hint')}
-          </p>
-        )}
-      </div>
-
-      <div className="space-y-2">
-        <label className="block text-sm font-medium" htmlFor="phone-region">
-          {t('settings.hub.phone_region')}
-        </label>
-        <input
-          id="phone-region"
-          type="text"
-          className="form-input w-full"
-          value={phoneRegion}
-          onChange={(e) => setPhoneRegion(e.target.value)}
-          maxLength={2}
-        />
       </div>
 
       {message && (
