@@ -115,6 +115,7 @@ function StartForm({ linkFailed }: { linkFailed: boolean }) {
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  const [resent, setResent] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const canSend = firstName.trim() !== '' && EMAIL_RE.test(email.trim()) && (!siteKey || Boolean(captchaToken));
@@ -130,6 +131,24 @@ function StartForm({ linkFailed }: { linkFailed: boolean }) {
     try {
       await sendSelfServeConfirmation({ email, firstName, lastName, language, captchaToken });
       setSentTo(email.trim().toLowerCase());
+      setResent(false);
+      // A security-check token works once; a Resend needs a fresh one.
+      setCaptchaToken(null);
+    } catch {
+      setError(t('self_serve.error_send'));
+    } finally {
+      setSending(false);
+    }
+  }
+
+  async function onResend() {
+    if (!sentTo || (siteKey && !captchaToken)) return;
+    setSending(true);
+    setError(null);
+    try {
+      await sendSelfServeConfirmation({ email: sentTo, firstName, lastName, language, captchaToken });
+      setResent(true);
+      setCaptchaToken(null);
     } catch {
       setError(t('self_serve.error_send'));
     } finally {
@@ -141,11 +160,20 @@ function StartForm({ linkFailed }: { linkFailed: boolean }) {
     return (
       <>
         <h1 className="mb-3 text-3xl font-bold">{t('self_serve.check_email_title')}</h1>
-        <p className="mb-8 text-gray-700" role="status">
+        <p className="mb-2 text-gray-700" role="status">
           {t('self_serve.check_email_body', { email: sentTo })}
         </p>
-        <div>
-          <Button variant="outline" onClick={() => { setSentTo(null); setCaptchaToken(null); }}>
+        <p className="mb-6 text-sm text-gray-700">{t('self_serve.check_spam')}</p>
+        {siteKey && <TurnstileWidget siteKey={siteKey} language={language} onToken={setCaptchaToken} />}
+        <div aria-live="polite" className="mb-3 min-h-5 text-sm">
+          {resent && <span>{t('self_serve.resent', { email: sentTo })}</span>}
+        </div>
+        {error && <p className="mb-3 text-sm text-red-700" role="alert">{error}</p>}
+        <div className="flex flex-wrap gap-3">
+          <Button variant="primary" disabled={sending || (Boolean(siteKey) && !captchaToken)} onClick={() => void onResend()}>
+            {sending ? t('self_serve.sending') : t('self_serve.resend')}
+          </Button>
+          <Button variant="outline" onClick={() => { setSentTo(null); setCaptchaToken(null); setResent(false); setError(null); }}>
             {t('self_serve.use_other_email')}
           </Button>
         </div>

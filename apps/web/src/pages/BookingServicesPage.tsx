@@ -131,7 +131,16 @@ export default function BookingServicesPage() {
     return (
       <div className="max-w-3xl space-y-2 p-2">
         <h1 className="text-3xl font-bold">{t('scheduling.services.title')}</h1>
-        <p className="text-gray-600">{t('scheduling.services.not_available')}</p>
+        {tenant?.vertical === 'photographer' ? (
+          <>
+            <p className="text-gray-600">{t('scheduling.services.photographer_note')}</p>
+            <p>
+              <Link className="underline" to="/admin/quotes">{t('scheduling.services.photographer_quotes')}</Link>
+            </p>
+          </>
+        ) : (
+          <p className="text-gray-600">{t('scheduling.services.not_available')}</p>
+        )}
       </div>
     );
   }

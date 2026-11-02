@@ -6,7 +6,24 @@ import { supabase } from '@/lib/supabase';
 import { useTenant } from '@/hooks/useTenant';
 import queryClient from '@/lib/query-client';
 
+/** With no invoicing service there are no credentials to enter. */
 export function InvoicingSettingsForm() {
+  const { t } = useTranslation();
+  const tenant = useTenant();
+  if (tenant?.invoicing_provider === 'none') {
+    return (
+      <section className="space-y-2 max-w-lg">
+        <h2 className="text-lg font-semibold text-foreground">
+          {t('settings.invoicing.title', { defaultValue: 'Invoicing provider' })}
+        </h2>
+        <p className="text-sm text-muted-foreground">{t('settings.invoicing.none_note')}</p>
+      </section>
+    );
+  }
+  return <InvoicingKeysForm />;
+}
+
+function InvoicingKeysForm() {
   const { t } = useTranslation();
   const tenant = useTenant();
   const [accountId, setAccountId] = useState('');
