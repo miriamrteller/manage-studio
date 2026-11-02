@@ -12,7 +12,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 const h = vi.hoisted(() => ({
   session: null as unknown,
   user: null as unknown,
-  rows: [] as Array<{ id: string; name: string; subdomain: string }>,
+  rows: [] as Array<Record<string, string>>,
   eqCalls: [] as unknown[],
   rpc: vi.fn(),
 }));
@@ -87,6 +87,18 @@ describe('app.opalswift.com welcome', () => {
     expect(document.body).not.toHaveTextContent(/Ballet|Classes|Studio$/);
   });
 
+  it('signed out, self-serve signup on: "Start free beta" next to Sign in', () => {
+    vi.stubEnv('VITE_ENABLE_SELF_SERVE_SIGNUP', 'true');
+    renderAt();
+    expect(screen.getByRole('button', { name: 'Start free beta' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Sign in' })).toBeInTheDocument();
+  });
+
+  it('signed out, self-serve signup off: no "Start free beta"', () => {
+    renderAt();
+    expect(screen.queryByRole('button', { name: 'Start free beta' })).not.toBeInTheDocument();
+  });
+
   it('signed out, Hebrew', async () => {
     await i18n.changeLanguage('he');
     renderAt();
@@ -106,15 +118,24 @@ describe('app.opalswift.com welcome', () => {
     expect(screen.queryByRole('link', { name: 'Set up a new studio' })).not.toBeInTheDocument();
   });
 
-  it('platform owner with two studios: both listed, plus "Set up a new studio"', async () => {
+  it('platform owner with two studios: the Studios list (source, status, created), plus "Set up a new studio"', async () => {
     h.session = session;
     h.user = owner;
     h.rows = [
-      { id: 't-1', name: 'Creative Ballet Academy', subdomain: 'creativeballet' },
-      { id: 't-2', name: '', subdomain: 'lens-studio' },
+      { id: 't-1', name: 'Creative Ballet Academy', subdomain: 'creativeballet', signup_source: 'operator', sub_status: 'trialing', created_at: '2026-10-01T10:00:00Z' },
+      { id: 't-2', name: '', subdomain: 'lens-studio', signup_source: 'self_serve', sub_status: 'active', created_at: '2026-11-02T10:00:00Z' },
     ];
     renderAt();
-    expect(await screen.findByRole('heading', { name: 'Your studios' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Studios' })).toBeInTheDocument();
+    for (const header of ['Studio', 'How it started', 'Status', 'Created']) {
+      expect(screen.getByRole('columnheader', { name: header })).toBeInTheDocument();
+    }
+    const rows = screen.getAllByRole('row');
+    expect(rows[1]).toHaveTextContent('Set up by OpalSwift');
+    expect(rows[1]).toHaveTextContent('Free beta');
+    expect(rows[1]).toHaveTextContent('1 Oct 2026');
+    expect(rows[2]).toHaveTextContent('Self-serve');
+    expect(rows[2]).toHaveTextContent('Active');
     expect(screen.getByRole('link', { name: /Creative Ballet Academy/ })).toHaveAttribute('href', 'https://creativeballet.opalswift.com');
     expect(screen.getByRole('link', { name: /lens-studio/ })).toHaveAttribute('href', 'https://lens-studio.opalswift.com');
     expect(screen.getByRole('link', { name: 'Set up a new studio' })).toHaveAttribute('href', '/platform/onboard');

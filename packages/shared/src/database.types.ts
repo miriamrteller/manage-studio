@@ -3194,6 +3194,7 @@ export type Database = {
           primary_color: string
           privacy_policy_url: string | null
           require_admin_mfa: boolean
+          signup_source: string
           skin: string
           sub_status: string
           subdomain: string
@@ -3261,6 +3262,7 @@ export type Database = {
           primary_color?: string
           privacy_policy_url?: string | null
           require_admin_mfa?: boolean
+          signup_source?: string
           skin?: string
           sub_status?: string
           subdomain: string
@@ -3328,6 +3330,7 @@ export type Database = {
           primary_color?: string
           privacy_policy_url?: string | null
           require_admin_mfa?: boolean
+          signup_source?: string
           skin?: string
           sub_status?: string
           subdomain?: string
@@ -3924,6 +3927,28 @@ export type Database = {
           expires_at: string
           hold_id: string
         }[]
+      }
+      create_self_serve_studio: {
+        Args: {
+          p_accent_color: string
+          p_country: string
+          p_currency: string
+          p_invoicing_provider: string
+          p_ip_address?: unknown
+          p_language_default: string
+          p_name: string
+          p_payment_provider: string
+          p_phone_region: string
+          p_plan: string
+          p_primary_color: string
+          p_subdomain: string
+          p_terms_language: string
+          p_terms_version: string
+          p_user_agent?: string
+          p_user_id: string
+          p_vertical: string
+        }
+        Returns: string
       }
       decline_age_review_engagement: {
         Args: { p_engagement_id: string; p_reason?: string }

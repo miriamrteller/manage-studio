@@ -8,9 +8,8 @@ import { useAuthSession } from '@/hooks/useAuth';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { supabase } from '@/lib/supabase';
 import { OPALSWIFT_BRAND } from '@/lib/theme/opalswiftBrand';
-import { useMyStudios } from './useMyStudios';
-
-const selfServeSignup = () => import.meta.env.VITE_ENABLE_SELF_SERVE_SIGNUP === 'true';
+import { isSelfServeSignupEnabled as selfServeSignup } from '@/features/self-serve/selfServeSignup';
+import { useMyStudios, type StudioLink } from './useMyStudios';
 
 /**
  * app.opalswift.com: a sign-in gate, not a studio. Signed out → what OpalSwift is
@@ -47,10 +46,29 @@ export default function PlatformWelcomePage() {
         <h1 className="mb-3 text-3xl font-bold">{t('platform_welcome.headline')}</h1>
         <p className="mb-2 text-lg text-gray-700">{t('platform_welcome.intro')}</p>
         <p className="mb-8 text-gray-700">{t('platform_welcome.sign_in_hint')}</p>
-        <div>
-          <Button variant="primary" onClick={() => navigate('/login', { state: { from: '/' } })}>
+        <div className="flex flex-wrap justify-center gap-3">
+          {selfServeSignup() && (
+            <Button variant="primary" onClick={() => navigate('/create-studio')}>
+              {t('self_serve.start_button')}
+            </Button>
+          )}
+          <Button
+            variant={selfServeSignup() ? 'outline' : 'primary'}
+            onClick={() => navigate('/login', { state: { from: '/' } })}
+          >
             {t('platform_welcome.sign_in')}
           </Button>
+        </div>
+      </>
+    );
+  } else if (isSuperAdmin && studios && studios.length > 0) {
+    body = (
+      <>
+        <h1 className="mb-6 text-3xl font-bold">{t('platform_welcome.studios_title')}</h1>
+        <StudiosTable studios={studios} />
+        <PlatformAdminActions />
+        <div className="mt-6">
+          <Button variant="outline" onClick={() => void signOut()}>{t('nav.logout')}</Button>
         </div>
       </>
     );
@@ -143,6 +161,50 @@ function PlatformAdminActions() {
       <Link to="/platform/features" className="inline-flex items-center rounded-md border border-gray-300 px-4 py-2 font-medium">
         {t('platform_welcome.platform_features')}
       </Link>
+    </div>
+  );
+}
+
+const STATUS_KEYS: Record<string, string> = {
+  trialing: 'platform_welcome.status_trialing',
+  active: 'platform_welcome.status_active',
+  past_due: 'platform_welcome.status_past_due',
+  canceled: 'platform_welcome.status_canceled',
+};
+
+/** The platform owner's read-only list of every studio. */
+function StudiosTable({ studios }: { studios: StudioLink[] }) {
+  const { t, i18n } = useTranslation();
+  const date = new Intl.DateTimeFormat(i18n.language.startsWith('he') ? 'he-IL' : 'en-GB', { dateStyle: 'medium' });
+  return (
+    <div className="mb-8 overflow-x-auto">
+      <table className="w-full text-start text-sm">
+        <thead>
+          <tr className="border-b border-gray-200">
+            <th scope="col" className="px-2 py-2 text-start font-semibold">{t('platform_welcome.col_name')}</th>
+            <th scope="col" className="px-2 py-2 text-start font-semibold">{t('platform_welcome.col_source')}</th>
+            <th scope="col" className="px-2 py-2 text-start font-semibold">{t('platform_welcome.col_status')}</th>
+            <th scope="col" className="px-2 py-2 text-start font-semibold">{t('platform_welcome.col_created')}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {studios.map((studio) => (
+            <tr key={studio.id} className="border-b border-gray-100">
+              <td className="px-2 py-2">
+                <a href={studio.url} className="font-semibold underline" style={{ color: OPALSWIFT_BRAND.ink }}>
+                  <bdi>{studio.name}</bdi>
+                </a>
+                <span dir="ltr" className="block text-xs text-gray-700">{studio.url.replace(/^https?:\/\//, '')}</span>
+              </td>
+              <td className="px-2 py-2">
+                {t(studio.signupSource === 'self_serve' ? 'platform_welcome.source_self_serve' : 'platform_welcome.source_operator')}
+              </td>
+              <td className="px-2 py-2">{studio.status ? t(STATUS_KEYS[studio.status] ?? studio.status) : ''}</td>
+              <td className="px-2 py-2">{studio.createdAt ? date.format(new Date(studio.createdAt)) : ''}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

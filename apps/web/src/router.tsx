@@ -80,18 +80,16 @@ const router = createBrowserRouter([
       </LanguageProvider>
     ),
   },
-  // Self-serve studio signup. Disabled by default: it provisions a tenant with no
-  // payment gate, and provision_tenant is granted to service_role only. Paid signup
-  // provisions server-side from the payment webhook (SPEC §7). Set
-  // VITE_ENABLE_SELF_SERVE_SIGNUP=true (and re-grant the RPC) to use the wizard.
+  // Self-serve studio signup (free beta) on app.opalswift.com. Off unless
+  // VITE_ENABLE_SELF_SERVE_SIGNUP=true (the page then redirects to /login); the
+  // provision-studio function has its own switch, SELF_SERVE_SIGNUP_ENABLED.
   {
     path: '/create-studio',
-    element:
-      import.meta.env.VITE_ENABLE_SELF_SERVE_SIGNUP === 'true' ? (
+    element: (
+      <LanguageProvider>
         <CreateStudioPage />
-      ) : (
-        <Navigate to="/login" replace />
-      ),
+      </LanguageProvider>
+    ),
   },
   {
     path: '/auth/session-handoff',

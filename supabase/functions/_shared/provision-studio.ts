@@ -128,3 +128,96 @@ export async function provisionStudio(
   const owner = await inviteStudioOwner(deps, tenantId, input.ownerEmail);
   return { ok: true, tenantId, subdomain: input.subdomain, owner };
 }
+
+// ── Self-serve signup (free beta) ────────────────────────────────────────────
+
+/** The wizard's self-serve request: the owner is the signed-in account, so no email. */
+export const SelfServeStudioSchema = ProvisionStudioSchema.omit({ ownerEmail: true }).extend({
+  /** Version of the platform terms + DPA the owner ticked (see apps/web legal/acceptance.ts). */
+  termsVersion: z.string().trim().min(1).max(64),
+  termsLanguage: z.enum(["he", "en"]),
+  /** Cloudflare Turnstile token; required only when TURNSTILE_SECRET_KEY is set. */
+  captchaToken: z.string().max(4096).optional(),
+});
+export type SelfServeStudioInput = z.infer<typeof SelfServeStudioSchema>;
+
+/** Why a self-serve request is refused, with the HTTP status the function returns. */
+export type SelfServeRefusal =
+  | "self_serve_disabled"
+  | "email_not_confirmed"
+  | "captcha_failed"
+  | "account_has_studio"
+  | "subdomain_unavailable";
+
+export const SELF_SERVE_REFUSAL_STATUS: Record<SelfServeRefusal, number> = {
+  self_serve_disabled: 403,
+  email_not_confirmed: 403,
+  captcha_failed: 403,
+  account_has_studio: 409,
+  subdomain_unavailable: 409,
+};
+
+export interface SelfServeDeps {
+  /** SELF_SERVE_SIGNUP_ENABLED=true on the project. */
+  enabled: boolean;
+  /** Verifies a Turnstile token; null when no TURNSTILE_SECRET_KEY is set (no CAPTCHA). */
+  verifyCaptcha: ((token: string) => Promise<boolean>) | null;
+  /** create_self_serve_studio RPC; resolves to the new tenant id. */
+  createStudio(userId: string, input: SelfServeStudioInput): Promise<string>;
+}
+
+export type SelfServeResult =
+  | { ok: true; tenantId: string; subdomain: string }
+  | { ok: false; error: SelfServeRefusal | "invalid"; message?: string };
+
+/** create_self_serve_studio / provision_studio error text → a refusal code, if it is one. */
+export function selfServeRefusalFor(message: string): SelfServeRefusal | null {
+  if (message.includes("account_has_studio")) return "account_has_studio";
+  if (message.includes("email_not_confirmed")) return "email_not_confirmed";
+  if (/Subdomain (is reserved|already taken)/.test(message)) return "subdomain_unavailable";
+  // Two requests racing for the same address: the unique index wins.
+  if (message.includes("tenants_subdomain")) return "subdomain_unavailable";
+  return null;
+}
+
+/**
+ * Creates a studio for the signed-in account and makes it the studio's admin.
+ * Off unless the project enables it. The email must be confirmed; the database
+ * checks that again, and that the account has no studio yet.
+ */
+export async function selfServeStudio(
+  deps: SelfServeDeps,
+  user: { id: string; email_confirmed_at?: string | null },
+  input: SelfServeStudioInput,
+): Promise<SelfServeResult> {
+  if (!deps.enabled) return { ok: false, error: "self_serve_disabled" };
+  if (!user.email_confirmed_at) return { ok: false, error: "email_not_confirmed" };
+  if (deps.verifyCaptcha) {
+    const passed = input.captchaToken ? await deps.verifyCaptcha(input.captchaToken) : false;
+    if (!passed) return { ok: false, error: "captcha_failed" };
+  }
+  try {
+    const tenantId = await deps.createStudio(user.id, input);
+    return { ok: true, tenantId, subdomain: input.subdomain };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    const refusal = selfServeRefusalFor(message);
+    if (refusal) return { ok: false, error: refusal };
+    return { ok: false, error: "invalid", message };
+  }
+}
+
+/** Cloudflare Turnstile siteverify. */
+export async function verifyTurnstile(secret: string, token: string, ip: string | null): Promise<boolean> {
+  const form = new FormData();
+  form.append("secret", secret);
+  form.append("response", token);
+  if (ip) form.append("remoteip", ip);
+  const res = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+    method: "POST",
+    body: form,
+  });
+  if (!res.ok) return false;
+  const body = (await res.json()) as { success?: boolean };
+  return body.success === true;
+}

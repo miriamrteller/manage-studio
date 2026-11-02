@@ -45,7 +45,7 @@ export interface StudioSetupResult {
 }
 
 /** Error the server sent back, or a plain message. */
-async function functionError(error: unknown): Promise<Error> {
+export async function functionError(error: unknown): Promise<Error> {
   const context = (error as { context?: { json?: () => Promise<unknown> } } | null)?.context;
   if (context?.json) {
     try {

@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -16,22 +17,56 @@ import {
   type StudioSetupResult,
 } from '../services/studioSetupService';
 import { INITIAL_FORM, toSetupRequest, VERTICALS, type StudioSetupForm } from '../lib/studioSetupForm';
+import { platformTermsVersion } from '@/legal/acceptance';
+import { TurnstileWidget } from '@/features/self-serve/TurnstileWidget';
+import {
+  createSelfServeStudio,
+  turnstileSiteKey,
+  type SelfServeStudioResult,
+} from '@/features/self-serve/selfServeSignup';
 
 const SUBDOMAIN_RE = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/;
 const HEX_COLOR = /^#[0-9A-Fa-f]{6}$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const STEPS = ['studio', 'type', 'payments', 'look', 'owner', 'review'] as const;
-type Step = (typeof STEPS)[number];
+const OPERATOR_STEPS = ['studio', 'type', 'payments', 'look', 'owner', 'review'] as const;
+/** Self-serve: the owner is the signed-in account, and the address comes after the look. */
+const SELF_SERVE_STEPS = ['studio', 'type', 'payments', 'look', 'address', 'review'] as const;
+type Step = (typeof OPERATOR_STEPS)[number] | (typeof SELF_SERVE_STEPS)[number];
+
+export type WizardMode = 'operator' | 'self_serve';
+
+interface WizardProps {
+  /**
+   * operator (default): the platform owner creates a studio and invites its owner.
+   * self_serve: a signed-in account creates its own studio (free beta) and accepts the terms.
+   */
+  mode?: WizardMode;
+  /** self_serve: called with the new studio. */
+  onSelfServeCreated?: (result: SelfServeStudioResult, name: string) => void;
+}
+
+const SELF_SERVE_ERRORS: Record<string, string> = {
+  account_has_studio: 'self_serve.error_account_has_studio',
+  email_not_confirmed: 'self_serve.error_email_not_confirmed',
+  captcha_failed: 'self_serve.error_captcha',
+  self_serve_disabled: 'self_serve.error_disabled',
+  subdomain_unavailable: 'studio_setup.address_taken',
+};
 
 /** Operator wizard: create a studio, invite its owner, then show what's left to set up. */
-export function OperatorOnboardingWizard() {
-  const { t } = useTranslation();
+export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated }: WizardProps = {}) {
+  const { t, i18n } = useTranslation();
+  const selfServe = mode === 'self_serve';
+  const STEPS: readonly Step[] = selfServe ? SELF_SERVE_STEPS : OPERATOR_STEPS;
   const [stepIndex, setStepIndex] = useState(0);
   const [form, setForm] = useState<StudioSetupForm>(INITIAL_FORM);
   const [subdomainStatus, setSubdomainStatus] = useState<'idle' | 'ok' | 'taken' | 'invalid'>('idle');
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<StudioSetupResult | null>(null);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const siteKey = selfServe ? turnstileSiteKey() : null;
 
   const step: Step = STEPS[stepIndex];
 
@@ -42,6 +77,49 @@ export function OperatorOnboardingWizard() {
       });
       if (rpcError) throw rpcError;
       return Boolean(data);
+    },
+  });
+
+  // Self-serve: check the address as the owner types (operator checks on Next).
+  const liveSubdomain = form.subdomain.trim().toLowerCase();
+  const checkLive = selfServe && step === 'address';
+  useEffect(() => {
+    if (!checkLive) return;
+    if (!liveSubdomain) {
+      setSubdomainStatus('idle');
+      return;
+    }
+    if (!SUBDOMAIN_RE.test(liveSubdomain)) {
+      setSubdomainStatus('invalid');
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      checkSubdomain.mutate(liveSubdomain, {
+        onSuccess: (available) => setSubdomainStatus(available ? 'ok' : 'taken'),
+      });
+    }, 400);
+    return () => window.clearTimeout(timer);
+    // checkSubdomain is a stable mutation object; re-run only for a new address.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [checkLive, liveSubdomain]);
+
+  const selfServeCreate = useMutation({
+    mutationFn: async () => {
+      // The owner is the signed-in account: no owner email is sent.
+      const request: Partial<ReturnType<typeof toSetupRequest>> = toSetupRequest(form);
+      delete request.ownerEmail;
+      return createSelfServeStudio({
+        ...(request as Omit<ReturnType<typeof toSetupRequest>, 'ownerEmail'>),
+        termsVersion: await platformTermsVersion(),
+        termsLanguage: i18n.language.startsWith('he') ? 'he' : 'en',
+        ...(captchaToken ? { captchaToken } : {}),
+      });
+    },
+    onSuccess: (result) => onSelfServeCreated?.(result, form.name.trim()),
+    onError: (err: Error) => {
+      const key = SELF_SERVE_ERRORS[err.message];
+      if (err.message === 'subdomain_unavailable') setSubdomainStatus('taken');
+      setError(key ? t(key) : t('studio_setup.error_create'));
     },
   });
 
@@ -66,11 +144,16 @@ export function OperatorOnboardingWizard() {
   function canAdvance(): boolean {
     switch (step) {
       case 'studio':
+        if (selfServe) return form.name.trim().length > 0;
         return form.name.trim().length > 0 && SUBDOMAIN_RE.test(form.subdomain.trim().toLowerCase());
+      case 'address':
+        return SUBDOMAIN_RE.test(form.subdomain.trim().toLowerCase()) && subdomainStatus !== 'taken';
       case 'look':
         return HEX_COLOR.test(form.primaryColor) && HEX_COLOR.test(form.accentColor);
       case 'owner':
         return EMAIL_RE.test(form.ownerEmail.trim());
+      case 'review':
+        return !selfServe || (termsAccepted && (!siteKey || Boolean(captchaToken)));
       default:
         return true;
     }
@@ -78,7 +161,7 @@ export function OperatorOnboardingWizard() {
 
   async function handleNext() {
     setError(null);
-    if (step === 'studio') {
+    if ((step === 'studio' && !selfServe) || step === 'address') {
       const subdomain = form.subdomain.trim().toLowerCase();
       if (!SUBDOMAIN_RE.test(subdomain)) {
         setSubdomainStatus('invalid');
@@ -94,7 +177,8 @@ export function OperatorOnboardingWizard() {
       }
     }
     if (step === 'review') {
-      provision.mutate();
+      if (selfServe) selfServeCreate.mutate();
+      else provision.mutate();
       return;
     }
     if (!canAdvance()) return;
@@ -106,13 +190,39 @@ export function OperatorOnboardingWizard() {
   }
 
   const paymentLabel = (slug: StudioPaymentProvider) => t(`studio_setup.payment_${slug}`);
+  const isPending = provision.isPending || selfServeCreate.isPending;
+
+  const subdomainField = (
+    <div className="space-y-2">
+      <label className="block text-sm font-medium" htmlFor="ss-subdomain">{t('studio_setup.address')}</label>
+      <div className="flex items-center gap-2" dir="ltr">
+        <input
+          id="ss-subdomain"
+          className="form-input w-full font-mono"
+          value={form.subdomain}
+          aria-describedby="ss-subdomain-help"
+          onChange={(e) => {
+            update('subdomain', e.target.value.toLowerCase());
+            setSubdomainStatus('idle');
+          }}
+        />
+        <span className="shrink-0 text-sm text-gray-700">.{tenantOrigin('x').replace(/^https?:\/\/x\./, '')}</span>
+      </div>
+      <p id="ss-subdomain-help" className="text-xs text-gray-700">{t('studio_setup.address_help')}</p>
+      {subdomainStatus === 'taken' && <p className="text-xs text-red-700" role="alert">{t('studio_setup.address_taken')}</p>}
+      {selfServe && subdomainStatus === 'ok' && (
+        <p className="text-xs text-green-800" role="status">{t('self_serve.address_available')}</p>
+      )}
+      {subdomainStatus === 'invalid' && <p className="text-xs text-red-700" role="alert">{t('studio_setup.address_invalid')}</p>}
+    </div>
+  );
   const invoicingLabel = (slug: StudioInvoicingProvider) => t(`studio_setup.invoicing_${slug}`);
 
   return (
     <div className="max-w-2xl space-y-6">
       <header className="space-y-2">
-        <h1 className="text-3xl font-bold">{t('studio_setup.title')}</h1>
-        <p className="text-gray-700">{t('studio_setup.description')}</p>
+        <h1 className="text-3xl font-bold">{t(selfServe ? 'self_serve.wizard_title' : 'studio_setup.title')}</h1>
+        <p className="text-gray-700">{t(selfServe ? 'self_serve.wizard_description' : 'studio_setup.description')}</p>
         <p className="text-sm text-gray-700">
           {t('studio_setup.step_counter', { current: stepIndex + 1, total: STEPS.length })}
           {' · '}
@@ -126,25 +236,7 @@ export function OperatorOnboardingWizard() {
             <label className="block text-sm font-medium" htmlFor="ss-name">{t('studio_setup.name')}</label>
             <input id="ss-name" className="form-input w-full" value={form.name} onChange={(e) => update('name', e.target.value)} />
           </div>
-          <div className="space-y-2">
-            <label className="block text-sm font-medium" htmlFor="ss-subdomain">{t('studio_setup.address')}</label>
-            <div className="flex items-center gap-2" dir="ltr">
-              <input
-                id="ss-subdomain"
-                className="form-input w-full font-mono"
-                value={form.subdomain}
-                aria-describedby="ss-subdomain-help"
-                onChange={(e) => {
-                  update('subdomain', e.target.value.toLowerCase());
-                  setSubdomainStatus('idle');
-                }}
-              />
-              <span className="shrink-0 text-sm text-gray-700">.{tenantOrigin('x').replace(/^https?:\/\/x\./, '')}</span>
-            </div>
-            <p id="ss-subdomain-help" className="text-xs text-gray-700">{t('studio_setup.address_help')}</p>
-            {subdomainStatus === 'taken' && <p className="text-xs text-red-700" role="alert">{t('studio_setup.address_taken')}</p>}
-            {subdomainStatus === 'invalid' && <p className="text-xs text-red-700" role="alert">{t('studio_setup.address_invalid')}</p>}
-          </div>
+          {!selfServe && subdomainField}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <label className="block text-sm font-medium" htmlFor="ss-language">{t('studio_setup.language')}</label>
@@ -231,6 +323,8 @@ export function OperatorOnboardingWizard() {
         </section>
       )}
 
+      {step === 'address' && <section className="space-y-4">{subdomainField}</section>}
+
       {step === 'owner' && (
         <section className="space-y-2">
           <label className="block text-sm font-medium" htmlFor="ss-owner">{t('studio_setup.owner_email')}</label>
@@ -259,8 +353,43 @@ export function OperatorOnboardingWizard() {
             <ReviewRow label={t('studio_setup.step_type')} value={t(`studio_setup.vertical_${form.vertical}`)} />
             <ReviewRow label={t('studio_setup.payment_question')} value={paymentLabel(form.paymentProvider)} />
             <ReviewRow label={t('studio_setup.invoicing_question')} value={invoicingLabel(form.invoicingProvider)} />
-            <ReviewRow label={t('studio_setup.owner_email')} value={form.ownerEmail.trim()} ltr />
+            {!selfServe && <ReviewRow label={t('studio_setup.owner_email')} value={form.ownerEmail.trim()} ltr />}
           </dl>
+          {selfServe && (
+            <div className="space-y-4">
+              <label className="flex items-start gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  className="mt-1"
+                  checked={termsAccepted}
+                  onChange={(e) => setTermsAccepted(e.target.checked)}
+                />
+                <span>
+                  {t('self_serve.terms_prefix')}{' '}
+                  <Link to="/legal/platform-terms" target="_blank" rel="noopener noreferrer" className="underline">
+                    {t('legal.docs.platform_terms')}
+                  </Link>
+                  {', '}
+                  <Link to="/legal/dpa" target="_blank" rel="noopener noreferrer" className="underline">
+                    {t('legal.docs.dpa')}
+                  </Link>
+                  {` ${t('self_serve.terms_and')} `}
+                  <Link to="/legal/opalswift-privacy" target="_blank" rel="noopener noreferrer" className="underline">
+                    {t('legal.docs.opalswift_privacy')}
+                  </Link>
+                  .
+                </span>
+              </label>
+              <p className="text-sm text-gray-700">{t('self_serve.free_beta_note')}</p>
+              {siteKey && (
+                <TurnstileWidget
+                  siteKey={siteKey}
+                  language={i18n.language.startsWith('he') ? 'he' : 'en'}
+                  onToken={setCaptchaToken}
+                />
+              )}
+            </div>
+          )}
         </section>
       )}
 
@@ -274,11 +403,11 @@ export function OperatorOnboardingWizard() {
         )}
         <Button
           variant="primary"
-          disabled={provision.isPending || checkSubdomain.isPending || !canAdvance()}
+          disabled={isPending || checkSubdomain.isPending || !canAdvance()}
           onClick={() => void handleNext()}
         >
           {step === 'review'
-            ? provision.isPending ? t('studio_setup.creating') : t('studio_setup.create')
+            ? isPending ? t('studio_setup.creating') : t('studio_setup.create')
             : t('studio_setup.next')}
         </Button>
       </div>
