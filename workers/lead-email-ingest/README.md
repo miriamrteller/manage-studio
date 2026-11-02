@@ -27,39 +27,28 @@ Field mapping lives in `supabase/functions/_shared/crm-contract/parse-lead-email
 interest, cleaned body snippet → last_communication_note, stage `new`,
 channel `email`, `marketing_consent` false (opt-in), `source_ref` = Message-ID.
 
-## One-time wiring
+## Deploy and one-time wiring
 
-1. **Shared secret** (generate once, give it to both sides):
-   ```bash
-   openssl rand -base64 32
-   ```
-   ```bash
-   # Supabase side (repo root, linked to the target project):
-   npx supabase secrets set CRM_INGEST_SECRET=<value>
-   # Worker side (this directory):
-   npx wrangler secret put CRM_INGEST_SECRET
-   ```
-2. **Deploy both sides**:
-   ```bash
-   # repo root:
-   npx supabase functions deploy crm-lead-ingest
-   # this directory:
-   npm install && npx wrangler deploy
-   ```
-3. **Bind the catch-all (dashboard — one click, ONCE, platform-wide)**:
-   Cloudflare dashboard → opalswift.com → Email → Email Routing →
-   Routing rules → **Catch-all address** → Action **Send to a Worker** →
-   `lead-email-ingest` → enable. The worker captures only
-   `leads-<subdomain>@` and silently drops everything else (same outcome an
-   unrouted address had before). Do NOT create per-tenant addresses — the
-   whole point is that new tenants need no routing setup.
+Deployed by the GitHub workflow **deploy-lead-email** (owner-approved), never
+by hand. It can also set `CRM_INGEST_SECRET` on the worker and prod Supabase in
+one run. `CRM_INGEST_URL` in `wrangler.jsonc` is the **prod** function;
+`scripts/check-config.mjs` refuses anything else.
+
+Owner steps (catch-all binding, first run, test email):
+[docs/deployment/LEAD-EMAIL.md](../../docs/deployment/LEAD-EMAIL.md).
+
+Local build check (uploads nothing):
+
+```bash
+pnpm --filter @opalswift/lead-email-ingest exec wrangler deploy --dry-run
+```
 
 ## Verify
 
 Send a real email to `leads-creativeballet@opalswift.com`, then:
 
 ```bash
-npx wrangler tail lead-email-ingest
+pnpm --filter @opalswift/lead-email-ingest exec wrangler tail lead-email-ingest
 ```
 
 and confirm the lead appears in the CRM feed (`crm-contacts`) with

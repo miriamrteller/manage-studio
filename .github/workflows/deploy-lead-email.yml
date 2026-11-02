@@ -1,0 +1,210 @@
+# Lead email: the Cloudflare Email Worker `lead-email-ingest`
+# (workers/lead-email-ingest). Email to leads-<sub>@opalswift.com reaches it
+# through the Email Routing catch-all; it posts each message to the PROD
+# crm-lead-ingest Edge Function, which creates or updates the lead.
+#
+# Two ways in:
+#   - automatically on a push to main that touches workers/lead-email-ingest/**
+#   - Actions → deploy-lead-email → Run workflow
+#       tick rotate_ingest_secret to make a new CRM_INGEST_SECRET and set it on
+#       BOTH the worker and prod Supabase in this run (nobody copies it by hand)
+#
+# The deploy job uses environment "production": the owner approves it.
+# Secrets (same as deploy-web): CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID,
+# plus SUPABASE_ACCESS_TOKEN (deploy-prod's) for the secret checks / rotation.
+# wrangler comes from the package's devDependency (not wrangler-action).
+# Owner checks and rollback: docs/deployment/LEAD-EMAIL.md
+
+name: deploy-lead-email
+
+on:
+  workflow_dispatch:
+    inputs:
+      rotate_ingest_secret:
+        description: "Make a new CRM_INGEST_SECRET and set it on the worker and prod Supabase"
+        type: boolean
+        default: false
+  push:
+    branches: [main]
+    paths:
+      - "workers/lead-email-ingest/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-lead-email
+  cancel-in-progress: false
+
+env:
+  PROD_REF: oogxajjanbyqhljxcmql
+  WORKER: lead-email-ingest
+  INGEST_URL: https://oogxajjanbyqhljxcmql.supabase.co/functions/v1/crm-lead-ingest
+
+jobs:
+  # Runs before the approval prompt: a config pointing anywhere but prod never
+  # asks the owner to approve it.
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Worker must point at prod
+        run: node workers/lead-email-ingest/scripts/check-config.mjs
+
+  deploy:
+    needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    env:
+      SHA: ${{ github.sha }}
+      ROTATE: ${{ inputs.rotate_ingest_secret == true }}
+    steps:
+      - name: Check secrets
+        id: gate
+        env:
+          HAS_CF: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
+          HAS_SB: ${{ secrets.SUPABASE_ACCESS_TOKEN != '' }}
+        run: |
+          if [ "$HAS_CF" != "true" ]; then
+            echo "::notice::CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID not set in 'production' — lead email deploy skipped."
+            echo "### deploy-lead-email skipped — Cloudflare secrets not configured" >> "$GITHUB_STEP_SUMMARY"
+            echo "ready=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          if [ "$ROTATE" = "true" ] && [ "$HAS_SB" != "true" ]; then
+            echo "::error::rotate_ingest_secret needs SUPABASE_ACCESS_TOKEN in 'production' (to set the prod Edge secret)."; exit 1
+          fi
+          echo "has_sb=$HAS_SB" >> "$GITHUB_OUTPUT"
+          echo "ready=true" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        if: steps.gate.outputs.ready == 'true'
+        with:
+          fetch-depth: 0
+
+      - name: Must be a commit on main
+        if: steps.gate.outputs.ready == 'true'
+        run: |
+          git fetch -q origin main
+          git merge-base --is-ancestor "$SHA" origin/main || { echo "::error::$SHA is not on main — lead email deploys come from main only."; exit 1; }
+
+      - uses: pnpm/action-setup@v2
+        if: steps.gate.outputs.ready == 'true'
+      - uses: actions/setup-node@v4
+        if: steps.gate.outputs.ready == 'true'
+        with:
+          node-version: "22"
+          cache: "pnpm"
+      - run: pnpm install --frozen-lockfile --filter @opalswift/lead-email-ingest
+        if: steps.gate.outputs.ready == 'true'
+
+      - name: wrangler deploy (${{ env.WORKER }})
+        if: steps.gate.outputs.ready == 'true'
+        working-directory: workers/lead-email-ingest
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          WRANGLER_SEND_METRICS: "false"
+        run: pnpm exec wrangler deploy --message "deploy-lead-email ${SHA::7}"
+
+      # One new value, set on both sides in one run. Masked; never printed or
+      # stored. Between the two writes (a few seconds) an arriving email would
+      # be refused by the function and logged by the worker, not bounced.
+      - name: Rotate CRM_INGEST_SECRET (worker + prod Supabase)
+        id: rotate
+        if: steps.gate.outputs.ready == 'true' && env.ROTATE == 'true'
+        working-directory: workers/lead-email-ingest
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          WRANGLER_SEND_METRICS: "false"
+        run: |
+          set -uo pipefail
+          value=$(openssl rand -hex 32)
+          echo "::add-mask::$value"
+          body=$(jq -nc --arg v "$value" '[{name:"CRM_INGEST_SECRET",value:$v}]')
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H "Content-Type: application/json" \
+            --data "$body" "https://api.supabase.com/v1/projects/$PROD_REF/secrets" || echo 000)
+          case "$code" in
+            200|201) echo "Prod Supabase: CRM_INGEST_SECRET set." ;;
+            *) echo "::error::Could not set CRM_INGEST_SECRET on prod Supabase (HTTP $code). Nothing changed on the worker."; exit 1 ;;
+          esac
+          if ! printf '%s' "$value" | pnpm exec wrangler secret put CRM_INGEST_SECRET --name "$WORKER" >/dev/null 2>put.err; then
+            tail -5 put.err; rm -f put.err
+            echo "::error::Prod Supabase has the NEW secret but the worker does not. Re-run with rotate_ingest_secret ticked."; exit 1
+          fi
+          rm -f put.err
+          echo "Worker: CRM_INGEST_SECRET set."
+          # Authenticated POST with an empty body must answer 400 (bad payload,
+          # nothing written): proves prod holds the same value as the worker.
+          ok=0
+          for _ in 1 2 3 4 5 6; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' -X POST -H "Authorization: Bearer $value" \
+              -H "Content-Type: application/json" --data '{}' "$INGEST_URL" || echo 000)
+            [ "$code" = 400 ] && { ok=1; break; }
+            sleep 10
+          done
+          echo "Authenticated probe → $code"
+          [ $ok = 1 ] || { echo "::error::Prod Supabase did not accept the new secret (HTTP $code)."; exit 1; }
+          echo "- CRM_INGEST_SECRET rotated; worker and prod match" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Worker has CRM_INGEST_SECRET (names only)
+        if: steps.gate.outputs.ready == 'true'
+        working-directory: workers/lead-email-ingest
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          WRANGLER_SEND_METRICS: "false"
+        run: |
+          set -uo pipefail
+          pnpm exec wrangler secret list --name "$WORKER" --format json > names.json 2> names.err || { tail -5 names.err; echo "::error::Could not list the worker's secret names."; exit 1; }
+          if jq -e 'map(.name) | index("CRM_INGEST_SECRET")' names.json >/dev/null; then
+            echo "Worker: CRM_INGEST_SECRET is set."
+          else
+            echo "::error::CRM_INGEST_SECRET is not set on the worker. Re-run with rotate_ingest_secret ticked."; exit 1
+          fi
+          rm -f names.json names.err
+
+      # Unauthenticated POST: 401 = function live and its secret set; 503 = the
+      # prod secret is missing. (Same-value proof is the rotate step's probe.)
+      - name: Smoke (prod crm-lead-ingest)
+        if: steps.gate.outputs.ready == 'true'
+        run: |
+          set -uo pipefail
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$INGEST_URL" || echo 000)
+          echo "POST crm-lead-ingest (no token) → $code"
+          case "$code" in
+            401) ;;
+            503) echo "::error::CRM_INGEST_SECRET is not set on prod Supabase. Re-run with rotate_ingest_secret ticked."; exit 1 ;;
+            *) echo "::error::crm-lead-ingest is not answering as expected (HTTP $code). Is it deployed on prod (deploy-prod)?"; exit 1 ;;
+          esac
+          echo "### deploy-lead-email: ${SHA::7} live, crm-lead-ingest answering" >> "$GITHUB_STEP_SUMMARY"
+
+      # Best effort: the "Edit Cloudflare Workers" token often cannot read
+      # Email Routing. Then this only reminds the owner to check by hand.
+      - name: Email Routing catch-all → worker (best effort)
+        if: steps.gate.outputs.ready == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          set -uo pipefail
+          api=https://api.cloudflare.com/client/v4
+          zone=$(curl -s -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "$api/zones?name=opalswift.com" | jq -r '.result[0].id // empty' 2>/dev/null || true)
+          rule=""
+          [ -n "$zone" ] && rule=$(curl -s -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "$api/zones/$zone/email/routing/rules/catch_all" || true)
+          enabled=$(jq -r '.result.enabled // empty' <<<"$rule" 2>/dev/null || true)
+          target=$(jq -r '[.result.actions[]? | select(.type=="worker") | .value[]?] | join(",")' <<<"$rule" 2>/dev/null || true)
+          if [ -z "$enabled" ]; then
+            echo "::notice::Could not read the Email Routing catch-all (token lacks Email Routing read). Check by hand: docs/deployment/LEAD-EMAIL.md#owner-checks"
+          elif [ "$enabled" = true ] && [[ ",$target," == *",$WORKER,"* ]]; then
+            echo "Catch-all → $WORKER, enabled."
+            echo "- Email Routing catch-all → $WORKER (enabled)" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::The opalswift.com catch-all is not 'Send to Worker: $WORKER' (enabled=$enabled, worker=$target). Lead emails will not arrive. Fix: docs/deployment/LEAD-EMAIL.md#owner-checks"
+          fi

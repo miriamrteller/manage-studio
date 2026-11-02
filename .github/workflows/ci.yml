@@ -53,6 +53,8 @@ jobs:
       - run: pnpm install
       - name: Run linter
         run: pnpm run lint
+      - name: Lead email worker points at prod
+        run: node workers/lead-email-ingest/scripts/check-config.mjs
 
   test:
     runs-on: ubuntu-latest
