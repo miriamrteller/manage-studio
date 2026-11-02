@@ -86,6 +86,8 @@ describe('processGrowNotify — valid notice', () => {
     expect(deps.approveTransaction).toHaveBeenCalledTimes(1);
     expect(deps.persistCardToken).toHaveBeenCalledTimes(1);
     expect(tables.payments[0]).toMatchObject({ status: 'succeeded', paid_at: expect.any(String) });
+    // Grow's own transaction id is kept for refunds (our reference stays in provider_payment_ref).
+    expect(tables.payments[0]).toMatchObject({ provider_payment_ref: REF, provider_transaction_id: '9988776' });
     expect(finalisePayment).toHaveBeenCalledTimes(1);
     expect(finalisePayment).toHaveBeenCalledWith(service, expect.objectContaining({
       tenantId: TENANT,
