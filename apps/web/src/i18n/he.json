@@ -249,6 +249,11 @@
       "gender_female": "נקבה",
       "allowed_genders": "מגדרים מותרים",
       "level_id": "רמה נדרשת",
+      "new_level": "+ רמה חדשה",
+      "no_levels": "אין רמות עדיין",
+      "new_level_name": "שם הרמה החדשה",
+      "new_level_name_required": "יש להזין שם לרמה.",
+      "new_level_failed": "לא ניתן ליצור את הרמה. נסו שוב.",
       "doc_type": "סוג מסמך",
       "doc_type_hint": "למשל אישור רפואי, רישום חיסונים"
     },

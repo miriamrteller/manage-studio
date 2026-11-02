@@ -249,6 +249,11 @@
       "gender_female": "Female",
       "allowed_genders": "Allowed genders",
       "level_id": "Required level",
+      "new_level": "+ New level",
+      "no_levels": "No levels yet",
+      "new_level_name": "New level name",
+      "new_level_name_required": "Enter a name for the level.",
+      "new_level_failed": "Could not create the level. Please try again.",
       "doc_type": "Document type",
       "doc_type_hint": "e.g. Medical certificate, Vaccination record"
     },
