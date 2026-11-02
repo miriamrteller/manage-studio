@@ -58,6 +58,16 @@ describe('setup checklist rows', () => {
     expect(rows.filter((r) => r.done).map((r) => r.id)).toEqual(['branding', 'levels', 'classes']);
   });
 
+  it('adds "Connect online payments" only for studios on online payment, and ticks it when keys are saved', () => {
+    const off = buildSetupRows('generic', { ...EMPTY_FACTS });
+    expect(off.map((r) => r.id)).not.toContain('connect_payments');
+    const on = buildSetupRows('generic', { ...EMPTY_FACTS, onlinePayments: true, paymentsReady: true });
+    expect(on.map((r) => r.id)).toEqual(['branding', 'offerings', 'payments', 'connect_payments', 'legal', 'leads']);
+    expect(on.find((r) => r.id === 'connect_payments')?.done).toBe(false);
+    const saved = buildSetupRows('generic', { ...EMPTY_FACTS, onlinePayments: true, paymentsReady: true, paymentsConnected: true });
+    expect(saved.find((r) => r.id === 'connect_payments')?.done).toBe(true);
+  });
+
   it('counts skipped rows as resolved, and points at the first open row', () => {
     const rows = buildSetupRows('photographer', { ...EMPTY_FACTS, hasLogo: true });
     const p = setupProgress(rows, ['packages']);
@@ -144,6 +154,13 @@ describe('SetupGuideCard', () => {
     expect(await screen.findByText("Parents can't sign up until you confirm your legal documents.")).toBeInTheDocument();
     const legalRow = screen.getByRole('link', { name: /legal details and health declaration/ }).closest('li')!;
     expect(legalRow.querySelector('button')).toBeNull();
+  });
+
+  it('a new Grow studio sees "Connect online payments" linking to Settings → Payments', async () => {
+    h.tenant = { id: 't1', vertical: 'generic', payment_provider: 'grow', payment_provider_secret_configured: false };
+    renderHarness();
+    const link = await screen.findByRole('link', { name: /Connect online payments/ });
+    expect(link).toHaveAttribute('href', '/admin/setup/settings?tab=payment');
   });
 
   it('skip and undo update the count; the choice is kept', async () => {

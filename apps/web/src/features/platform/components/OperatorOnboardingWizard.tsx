@@ -66,6 +66,7 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<StudioSetupResult | null>(null);
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [invoicingOther, setInvoicingOther] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const siteKey = selfServe ? turnstileSiteKey() : null;
 
@@ -140,6 +141,24 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
 
   function update<K extends keyof StudioSetupForm>(key: K, value: StudioSetupForm[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
+  }
+
+  /** The invoicing service that goes with this payment choice (Grow -> Grow documents). */
+  const matchingInvoicing: StudioInvoicingProvider | null = (STUDIO_INVOICING_OPTIONS as readonly string[]).includes(form.paymentProvider)
+    ? (form.paymentProvider as StudioInvoicingProvider)
+    : null;
+
+  /** Documents follow the payment choice, unless the owner said they use another invoicing service. */
+  function choosePayment(slug: StudioPaymentProvider) {
+    setForm((prev) => ({
+      ...prev,
+      paymentProvider: slug,
+      invoicingProvider: invoicingOther
+        ? prev.invoicingProvider
+        : (STUDIO_INVOICING_OPTIONS as readonly string[]).includes(slug)
+          ? (slug as StudioInvoicingProvider)
+          : 'none',
+    }));
   }
 
   function canAdvance(): boolean {
@@ -285,24 +304,30 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
         <section className="space-y-6">
           <fieldset className="space-y-2">
             <legend className="mb-1 text-sm font-medium">{t('studio_setup.payment_question')}</legend>
-            {[...STUDIO_PAYMENT_OPTIONS].sort((a, b) => Number(b === 'offline') - Number(a === 'offline')).map((slug) => (
+            {STUDIO_PAYMENT_OPTIONS.map((slug) => (
               <label key={slug} className="flex items-center gap-2">
-                <input type="radio" name="ss-payment" value={slug} checked={form.paymentProvider === slug} onChange={() => update('paymentProvider', slug)} />
+                <input type="radio" name="ss-payment" value={slug} checked={form.paymentProvider === slug} onChange={() => choosePayment(slug)} />
                 {paymentLabel(slug)}
               </label>
             ))}
           </fieldset>
           <fieldset className="space-y-2">
             <legend className="mb-1 text-sm font-medium">{t('studio_setup.invoicing_question')}</legend>
+            {matchingInvoicing && (
+              <label className="flex items-center gap-2">
+                <input type="radio" name="ss-invoicing-mode" value="match" checked={!invoicingOther && form.invoicingProvider === matchingInvoicing} onChange={() => { setInvoicingOther(false); update('invoicingProvider', matchingInvoicing); }} />
+                {invoicingLabel(matchingInvoicing)}
+              </label>
+            )}
             <label className="flex items-center gap-2">
-              <input type="radio" name="ss-invoicing-mode" value="none" checked={form.invoicingProvider === 'none'} onChange={() => update('invoicingProvider', 'none')} />
+              <input type="radio" name="ss-invoicing-mode" value="none" checked={!invoicingOther && form.invoicingProvider === 'none'} onChange={() => { setInvoicingOther(false); update('invoicingProvider', 'none'); }} />
               {invoicingLabel('none')}
             </label>
             <label className="flex items-center gap-2">
-              <input type="radio" name="ss-invoicing-mode" value="service" checked={form.invoicingProvider !== 'none'} onChange={() => { if (form.invoicingProvider === 'none') update('invoicingProvider', 'grow'); }} />
+              <input type="radio" name="ss-invoicing-mode" value="other" checked={invoicingOther} onChange={() => { setInvoicingOther(true); if (form.invoicingProvider === 'none') update('invoicingProvider', 'yesh'); }} />
               {t('studio_setup.invoicing_existing')}
             </label>
-            {form.invoicingProvider !== 'none' && (
+            {invoicingOther && (
               <div className="ms-6 space-y-2" role="group" aria-label={t('studio_setup.invoicing_existing_which')}>
                 {STUDIO_INVOICING_OPTIONS.filter((slug) => slug !== 'none').map((slug) => (
                   <label key={slug} className="flex items-center gap-2">

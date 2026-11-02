@@ -3359,6 +3359,7 @@ export type Database = {
           waiver_link_secret_enc: string | null
           waiver_require_otp: boolean
           yesh_config: Json | null
+          ypay_document_type: number
         }
         Insert: {
           accent_color?: string
@@ -3430,6 +3431,7 @@ export type Database = {
           waiver_link_secret_enc?: string | null
           waiver_require_otp?: boolean
           yesh_config?: Json | null
+          ypay_document_type?: number
         }
         Update: {
           accent_color?: string
@@ -3501,6 +3503,7 @@ export type Database = {
           waiver_link_secret_enc?: string | null
           waiver_require_otp?: boolean
           yesh_config?: Json | null
+          ypay_document_type?: number
         }
         Relationships: [
           {

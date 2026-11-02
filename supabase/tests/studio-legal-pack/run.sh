@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Studio legal pack (20261102123446_studio_legal_pack.sql) and the child/adult
-# forms (20261102124909_consent_template_audience.sql). Needs Supabase's auth
+# forms (20261102132031_consent_template_audience.sql). Needs Supabase's auth
 # schema and every migration applied (the local stack), so sql-tests skips it
 # (see NEEDS_SUPABASE).
 #
