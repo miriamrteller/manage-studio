@@ -54,10 +54,13 @@ jobs:
           fi
       - name: Link check
         run: node scripts/ci/check-marketing-links.mjs apps/marketing/public
+      - uses: pnpm/action-setup@v2
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Contact function tests
+          cache: "pnpm"
+      - run: pnpm install --frozen-lockfile --filter @opalswift/marketing
+      - name: Function and legal-page tests
         working-directory: apps/marketing
         run: node --test test/*.test.mjs
 

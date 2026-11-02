@@ -178,6 +178,7 @@ The `db-drift` issue means a hosted project and `main` disagree:
 | | `SUPABASE_DEV_DB_URL` | dev session-pooler URL incl. password | deploy-dev, db-health |
 | Repo secrets | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` | backup bucket write | backup-prod, deploy-prod |
 | Repo secrets (today) | `SUPABASE_PROD_DB_URL`, `SUPABASE_DEV_DB_URL` | already set; keep working until moved | all of the above |
+| Cloudflare Worker `lead-email-ingest` | `CRM_INGEST_SECRET` | same value as the prod Edge secret; set by deploy-lead-email (rotate_ingest_secret) | lead email ([LEAD-EMAIL.md](LEAD-EMAIL.md)) |
 | Each Supabase project | Edge Function secrets | `APP_URL`, `CRON_SECRET`, email, … (names in `supabase/edge-secrets.json`; see *Email transport* below) | Edge Functions at runtime |
 
 Notes:
@@ -233,6 +234,9 @@ site serves this exact build.
 pick the previous version → roll back. To redeploy an older commit through the pipeline, put a
 tag `prod-web-rollback-<n>` on it (it must be on `main`) and approve the run. Run workflow always
 builds the tip of `main`.
+
+**Lead email worker:** `deploy-lead-email` deploys `workers/lead-email-ingest` (prod only, owner
+approves). See [LEAD-EMAIL.md](LEAD-EMAIL.md).
 
 ### Owner setup for the web stage (one time)
 

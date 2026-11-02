@@ -6,9 +6,12 @@
   "description": "opalswift.com marketing site (static, Cloudflare Pages project \"opalswift\")",
   "scripts": {
     "check": "node ../../scripts/ci/check-marketing-links.mjs public",
-    "test": "node --test test/*.test.mjs"
+    "test": "node --test test/*.test.mjs",
+    "build:legal": "node scripts/build-legal.mjs",
+    "check:legal": "node scripts/build-legal.mjs --check"
   },
   "devDependencies": {
+    "marked": "15.0.12",
     "wrangler": "^4.156.0"
   }
 }
