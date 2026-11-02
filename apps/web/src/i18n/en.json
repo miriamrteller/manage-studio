@@ -2281,6 +2281,26 @@
       "monthly_hint": "This pays the next month due on the enrolment's monthly plan. Record again to pay a further month ahead.",
       "monthly_success": "Payment recorded for {{month}}."
     },
+    "monthly_plan": {
+      "title": "Monthly plan",
+      "monthly_amount": "Monthly amount",
+      "class_price": "class price",
+      "student_amount": "this student's amount",
+      "one_offs": "Different amounts for coming months",
+      "change_student": "Change this student's amount",
+      "change_month": "Different amount for one month",
+      "edit_student": "This student's monthly amount (instead of the class price)",
+      "edit_month": "A different amount for one coming month",
+      "month": "Month",
+      "reason": "Reason (shown to admins; required)",
+      "use_class_price": "Use the class price",
+      "remove": "Remove",
+      "saved": "Saved.",
+      "error_note_required": "Add a reason for the different amount.",
+      "error_amount_must_be_positive": "Enter an amount above zero.",
+      "error_period_already_due": "That month is already due or past. Choose a coming month.",
+      "error_no_monthly_plan": "This enrolment has no monthly plan."
+    },
     "card_link": {
       "send": "Send card link",
       "hint": "Emails the parent a link to pay the month that is due by card. The card is saved and later months are charged to it.",

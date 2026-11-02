@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
+import { resolveMonthAmount } from "./month-amount.ts";
 import type { FinalisePaymentParams } from "./types.ts";
 
 /**
@@ -79,7 +80,14 @@ export async function recordManualRenewal(
 
   const period = (schedule.next_billing_date as string).slice(0, 7);
   const classPriceMinor = deps.priceMinor(offering.price_minor as number);
-  const totalMinor = input.amountMinor ?? classPriceMinor;
+  // The month's amount (one-off, else the student's own, else the class price); the admin may
+  // still type what was actually paid.
+  const monthAmount = await resolveMonthAmount(service, {
+    scheduleId: schedule.id as string,
+    period,
+    classPriceMinor,
+  });
+  const totalMinor = input.amountMinor ?? monthAmount.amountMinor;
 
   const { data: paymentRow, error: insertError } = await service
     .from("payments")
@@ -102,7 +110,11 @@ export async function recordManualRenewal(
         .toUpperCase(),
       status: "succeeded",
       paid_at: new Date().toISOString(),
-      description: input.note ?? `Monthly fee ${period}, ${input.method === "cash" ? "cash" : "bank transfer"}`,
+      description: input.note ??
+        [
+          `Monthly fee ${period}, ${input.method === "cash" ? "cash" : "bank transfer"}`,
+          monthAmount.source === "one_off" ? monthAmount.note : null,
+        ].filter(Boolean).join(" — "),
       created_by: input.actorUserId,
       approved_by: input.actorUserId,
     })
@@ -134,7 +146,9 @@ export async function recordManualRenewal(
       method: input.method,
       amount_minor: totalMinor,
       class_price_minor: classPriceMinor,
-      amount_changed: totalMinor !== classPriceMinor,
+      month_amount_minor: monthAmount.amountMinor,
+      month_amount_source: monthAmount.source,
+      amount_changed: totalMinor !== monthAmount.amountMinor,
     },
   });
 

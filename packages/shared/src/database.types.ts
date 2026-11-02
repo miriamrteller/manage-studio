@@ -374,8 +374,64 @@ export type Database = {
           },
         ]
       }
+      billing_month_adjustments: {
+        Row: {
+          amount_minor: number
+          billing_schedule_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          kind: string
+          note: string
+          period: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount_minor: number
+          billing_schedule_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind?: string
+          note: string
+          period: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount_minor?: number
+          billing_schedule_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind?: string
+          note?: string
+          period?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_month_adjustments_billing_schedule_id_fkey"
+            columns: ["billing_schedule_id"]
+            isOneToOne: false
+            referencedRelation: "billing_schedules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_month_adjustments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       billing_schedules: {
         Row: {
+          amount_minor: number | null
+          amount_note: string | null
           attempt_count: number
           billing_account_id: string | null
           created_at: string
@@ -391,6 +447,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          amount_minor?: number | null
+          amount_note?: string | null
           attempt_count?: number
           billing_account_id?: string | null
           created_at?: string
@@ -406,6 +464,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          amount_minor?: number | null
+          amount_note?: string | null
           attempt_count?: number
           billing_account_id?: string | null
           created_at?: string
@@ -4979,6 +5039,23 @@ export type Database = {
           contact_email: string
           contact_name: string
         }[]
+      }
+      set_billing_month_amount: {
+        Args: {
+          p_amount_minor: number
+          p_engagement_id: string
+          p_note?: string
+          p_period: string
+        }
+        Returns: Json
+      }
+      set_billing_schedule_amount: {
+        Args: {
+          p_amount_minor: number
+          p_engagement_id: string
+          p_note?: string
+        }
+        Returns: Json
       }
       set_consent_template_lawyer_reviewed: {
         Args: { p_reviewed: boolean; p_template_id: string }

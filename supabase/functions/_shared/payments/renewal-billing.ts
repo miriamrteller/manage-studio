@@ -11,6 +11,7 @@ import { buildChargeMetadata, applyMockSyncEvent } from "./providers/mock.ts";
 import { getPaymentProviderForTenant, isOfflinePaymentProvider } from "./index.ts";
 
 import { renewalIdempotencyKey } from "./billing-time.ts";
+import { resolveMonthAmount } from "./month-amount.ts";
 
 
 
@@ -259,6 +260,12 @@ export async function processBillingSchedule(
 
 
   const provider = await getPaymentProviderForTenant(service, schedule.tenant_id);
+  // This month's amount: a one-off amount, else the student's own, else the class price.
+  const monthAmount = await resolveMonthAmount(service, {
+    scheduleId: schedule.id,
+    period: periodYm,
+    classPriceMinor: pricing.totalMinor,
+  });
 
   const metadata = buildChargeMetadata({
 
@@ -278,7 +285,7 @@ export async function processBillingSchedule(
 
     vatMinor: pricing.vatMinor,
 
-    totalMinor: pricing.totalMinor,
+    totalMinor: monthAmount.amountMinor,
 
     chargeType: "renewal",
 
@@ -290,7 +297,7 @@ export async function processBillingSchedule(
 
   const chargeParams = {
 
-    amountMinor: pricing.totalMinor,
+    amountMinor: monthAmount.amountMinor,
 
     currency: (offering.currency ?? tenant.currency ?? "ILS").toUpperCase(),
 

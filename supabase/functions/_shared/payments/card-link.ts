@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
 import type { ChargeParams, ChargeResult } from "./types.ts";
 import { buildChargeMetadata } from "./providers/mock.ts";
+import { resolveMonthAmount } from "./month-amount.ts";
 
 /**
  * Card link (payments B b): an admin sends a parent a link to add a card to an ACTIVE
@@ -119,7 +120,11 @@ export async function createCardLinkCharge(
   if (!offering) return { ok: false, status: 404, code: "not_found", error: "Offering not found" };
 
   const period = (schedule.next_billing_date as string).slice(0, 7);
-  const amountMinor = deps.priceMinor(offering.price_minor as number);
+  const { amountMinor } = await resolveMonthAmount(service, {
+    scheduleId: schedule.id as string,
+    period,
+    classPriceMinor: deps.priceMinor(offering.price_minor as number),
+  });
   const currency = ((offering.currency as string | null) ?? (tenant.currency as string | null) ?? "ILS")
     .toUpperCase();
 
