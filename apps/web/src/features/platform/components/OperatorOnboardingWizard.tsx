@@ -11,14 +11,25 @@ import {
   createStudio,
   resendOwnerInvite,
   STUDIO_INVOICING_OPTIONS,
-  STUDIO_PAYMENT_OPTIONS,
   type OwnerInviteStatus,
   type StudioInvoicingProvider,
   type StudioPaymentProvider,
   type StudioSetupResult,
 } from '../services/studioSetupService';
 import { INITIAL_FORM, toSetupRequest, VERTICALS, type StudioSetupForm } from '../lib/studioSetupForm';
-import { invoicingOptionsFor, invoicingPairsWithPayment } from '@/lib/providerPairing';
+import { invoicingOptionsFor, invoicingPairsWithPayment, monthlyFeesDefaultFor } from '@/lib/providerPairing';
+import {
+  PaymentProviderChoice,
+  type ChoosablePaymentProvider,
+} from '@/features/settings/components/PaymentProviderChoice';
+import {
+  CHOICE_GROUP,
+  CHOICE_LEGEND,
+  CHOICE_NESTED,
+  CHOICE_NOTE,
+  CHOICE_RADIO,
+  CHOICE_ROW,
+} from '@/features/settings/components/choiceStyles';
 
 /** Invoicing that only issues documents with its own card payments (no cash receipts). */
 const BUNDLED_ONLY_INVOICING: readonly string[] = ['grow', 'icount', 'invoice4u'];
@@ -195,7 +206,7 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
       case 'owner':
         return EMAIL_RE.test(form.ownerEmail.trim());
       case 'payments':
-        return invoicingPairsWithPayment(form.paymentProvider, form.invoicingProvider);
+        return form.monthlyFees !== null && invoicingPairsWithPayment(form.paymentProvider, form.invoicingProvider);
       case 'review':
         return !selfServe || (termsAccepted && (!siteKey || Boolean(captchaToken)));
       default:
@@ -216,7 +227,7 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
       case 'owner':
         return 'studio_setup.need_owner_email';
       case 'payments':
-        return 'studio_setup.need_invoicing_pairing';
+        return form.monthlyFees === null ? 'studio_setup.need_monthly_fees' : 'studio_setup.need_invoicing_pairing';
       case 'review':
         return !termsAccepted ? 'studio_setup.need_terms' : 'self_serve.captcha_needed';
       default:
@@ -333,7 +344,14 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
                   name="ss-vertical"
                   className="sr-only"
                   checked={form.vertical === vertical}
-                  onChange={() => update('vertical', vertical)}
+                  onChange={() => {
+                    // The studio type pre-fills "Will you charge monthly fees?".
+                    const monthlyFees = monthlyFeesDefaultFor(vertical);
+                    setForm((prev) => ({ ...prev, vertical, monthlyFees }));
+                    if (monthlyFees && (form.paymentProvider === 'ypay' || form.paymentProvider === 'invoice4u')) {
+                      choosePayment('grow');
+                    }
+                  }}
                 />
                 <span className="block font-semibold">{t(`studio_setup.vertical_${vertical}`)}</span>
                 <span className="mt-1 block text-sm text-gray-700">{t(`studio_setup.vertical_${vertical}_hint`)}</span>
@@ -345,55 +363,52 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
 
       {step === 'payments' && (
         <section className="space-y-6">
-          <fieldset className="space-y-2">
-            <legend className="mb-1 text-sm font-medium">{t('studio_setup.payment_question')}</legend>
-            {STUDIO_PAYMENT_OPTIONS.map((slug) => (
-              <label key={slug} className="flex items-center gap-2">
-                <input type="radio" name="ss-payment" value={slug} checked={form.paymentProvider === slug} onChange={() => choosePayment(slug)} />
-                {paymentLabel(slug)}
+          <PaymentProviderChoice
+            idPrefix="ss"
+            monthlyFees={form.monthlyFees}
+            onMonthlyFeesChange={(monthlyFees) => update('monthlyFees', monthlyFees)}
+            provider={form.paymentProvider as ChoosablePaymentProvider}
+            onProviderChange={(slug) => choosePayment(slug)}
+          />
+          <fieldset>
+            <legend className={CHOICE_LEGEND}>{t('studio_setup.invoicing_question')}</legend>
+            <div className={CHOICE_GROUP}>
+              {matchingInvoicing && (
+                <label className={CHOICE_ROW}>
+                  <input type="radio" className={CHOICE_RADIO} name="ss-invoicing-mode" value="match" checked={!invoicingOther && form.invoicingProvider === matchingInvoicing} onChange={() => { setInvoicingOther(false); update('invoicingProvider', matchingInvoicing); }} />
+                  <span>{invoicingLabel(matchingInvoicing)}</span>
+                </label>
+              )}
+              <label className={CHOICE_ROW}>
+                <input type="radio" className={CHOICE_RADIO} name="ss-invoicing-mode" value="none" checked={!invoicingOther && form.invoicingProvider === 'none'} onChange={() => { setInvoicingOther(false); update('invoicingProvider', 'none'); }} />
+                <span>{invoicingLabel('none')}</span>
               </label>
-            ))}
-            {form.paymentProvider !== 'offline' && (
-              <p className="text-sm text-muted-foreground" role="note">
-                {t('settings.offline_payments.choose_carefully')}
+              {otherInvoicing.length > 0 && (
+                <label className={CHOICE_ROW}>
+                  <input type="radio" className={CHOICE_RADIO} name="ss-invoicing-mode" value="other" checked={invoicingOther} onChange={() => { setInvoicingOther(true); if (!otherInvoicing.includes(form.invoicingProvider)) update('invoicingProvider', otherInvoicing[0]); }} />
+                  <span>{t('studio_setup.invoicing_existing')}</span>
+                </label>
+              )}
+              {invoicingOther && otherInvoicing.length > 0 && (
+                <div className="py-1">
+                  <div className={CHOICE_NESTED} role="group" aria-label={t('studio_setup.invoicing_existing_which')}>
+                    {otherInvoicing.map((slug) => (
+                      <label key={slug} className={CHOICE_ROW}>
+                        <input type="radio" className={CHOICE_RADIO} name="ss-invoicing" value={slug} checked={form.invoicingProvider === slug} onChange={() => update('invoicingProvider', slug)} />
+                        <span>{invoicingLabel(slug)}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            {BUNDLED_ONLY_INVOICING.includes(form.invoicingProvider) && (
+              <p className={CHOICE_NOTE} role="note">
+                {t('studio_setup.cash_receipts_hint', { provider: t(`settings.provider_names.${form.invoicingProvider}`) })}
               </p>
             )}
           </fieldset>
-          <fieldset className="space-y-2">
-            <legend className="mb-1 text-sm font-medium">{t('studio_setup.invoicing_question')}</legend>
-            {matchingInvoicing && (
-              <label className="flex items-center gap-2">
-                <input type="radio" name="ss-invoicing-mode" value="match" checked={!invoicingOther && form.invoicingProvider === matchingInvoicing} onChange={() => { setInvoicingOther(false); update('invoicingProvider', matchingInvoicing); }} />
-                {invoicingLabel(matchingInvoicing)}
-              </label>
-            )}
-            <label className="flex items-center gap-2">
-              <input type="radio" name="ss-invoicing-mode" value="none" checked={!invoicingOther && form.invoicingProvider === 'none'} onChange={() => { setInvoicingOther(false); update('invoicingProvider', 'none'); }} />
-              {invoicingLabel('none')}
-            </label>
-            {otherInvoicing.length > 0 && (
-              <label className="flex items-center gap-2">
-                <input type="radio" name="ss-invoicing-mode" value="other" checked={invoicingOther} onChange={() => { setInvoicingOther(true); if (!otherInvoicing.includes(form.invoicingProvider)) update('invoicingProvider', otherInvoicing[0]); }} />
-                {t('studio_setup.invoicing_existing')}
-              </label>
-            )}
-            {invoicingOther && otherInvoicing.length > 0 && (
-              <div className="ms-6 space-y-2" role="group" aria-label={t('studio_setup.invoicing_existing_which')}>
-                {otherInvoicing.map((slug) => (
-                  <label key={slug} className="flex items-center gap-2">
-                    <input type="radio" name="ss-invoicing" value={slug} checked={form.invoicingProvider === slug} onChange={() => update('invoicingProvider', slug)} />
-                    {invoicingLabel(slug)}
-                  </label>
-                ))}
-              </div>
-            )}
-          </fieldset>
-          {BUNDLED_ONLY_INVOICING.includes(form.invoicingProvider) && (
-            <p className="text-sm text-gray-700" role="note">
-              {t('studio_setup.cash_receipts_hint', { provider: t(`settings.provider_names.${form.invoicingProvider}`) })}
-            </p>
-          )}
-                    <p className="text-sm text-gray-700">{t('studio_setup.payments_later')}</p>
+          <p className="text-sm text-gray-700">{t('studio_setup.payments_later')}</p>
         </section>
       )}
 

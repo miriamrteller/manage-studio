@@ -5015,6 +5015,10 @@ export type Database = {
         }
         Returns: string
       }
+      tenant_has_succeeded_payment: {
+        Args: { p_tenant_id: string }
+        Returns: boolean
+      }
       update_tenant_google_access_token: {
         Args: {
           p_access_token: string

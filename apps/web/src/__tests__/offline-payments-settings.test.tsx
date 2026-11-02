@@ -52,11 +52,12 @@ describe('OfflinePaymentsSettingsForm', () => {
     Object.assign(tenantState, { payment_provider: 'offline', offline_payment_instructions: 'Old' });
     eq.mockResolvedValue({ error: null });
     wrap(<OfflinePaymentsSettingsForm />);
-    expect(screen.getByRole('checkbox', { name: 'settings.offline_payments.enabled_label' })).toBeChecked();
-    expect(screen.getByRole('note')).toHaveTextContent('settings.offline_payments.receipts_note');
+    expect(screen.getByRole('radio', { name: 'studio_setup.payment_offline' })).toBeChecked();
+    expect(screen.getByText('settings.offline_payments.receipts_note')).toBeTruthy();
     const box = screen.getByLabelText('settings.offline_payments.instructions_label');
     expect(box).toHaveValue('Old');
     fireEvent.change(box, { target: { value: '  Bank 12  ' } });
+    // Keeping the same provider needs no "monthly fees?" answer.
     fireEvent.click(screen.getByRole('button', { name: 'common.save' }));
     await waitFor(() =>
       expect(update).toHaveBeenCalledWith({ payment_provider: 'offline', offline_payment_instructions: 'Bank 12' }),

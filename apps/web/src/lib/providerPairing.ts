@@ -62,19 +62,27 @@ export function jobOnlinePaymentSupported(paymentProvider: string | null | undef
 }
 
 /**
- * Beta rule for changing the payment provider (owner decision): the only change a studio may
- * make itself is from paying at the studio with no tax documents ('offline' + 'none') to one of
- * these online providers, with no invoicing or that provider's own. Every other change is made
- * by OpalSwift support. Mirrors payment_provider_switch_allowed() in the
- * …_block_payment_provider_switch.sql migration, whose trigger enforces it.
+ * Rule for changing the payment provider (owner decisions), enforced by the tenants trigger
+ * (…_block_payment_provider_switch.sql, loosened by …_provider_switch_until_first_payment.sql):
+ *  - before the studio's first real payment it may move freely between the providers in
+ *    SWITCH_FREE_PAYMENT_PROVIDERS, in any direction;
+ *  - after it, only from paying at the studio with no tax documents ('offline' + 'none') to one
+ *    of SWITCH_TARGET_PAYMENT_PROVIDERS, with no invoicing or that provider's own. Anything else
+ *    is made by OpalSwift support.
  */
 export const SWITCH_TARGET_PAYMENT_PROVIDERS = ['grow', 'ypay', 'invoice4u'] as const;
+export const SWITCH_FREE_PAYMENT_PROVIDERS = ['offline', 'grow', 'ypay', 'invoice4u'] as const;
 
 export function paymentProviderSwitchAllowed(
   from: { payment: string | null | undefined; invoicing: string | null | undefined },
   to: { payment: string; invoicing?: string | null },
+  /** Whether the studio has taken a real payment yet; unknown counts as yes. */
+  hasPayment: boolean | undefined = true,
 ): boolean {
   if (to.payment === from.payment) return true;
+  if (hasPayment === false && (SWITCH_FREE_PAYMENT_PROVIDERS as readonly string[]).includes(to.payment)) {
+    return true;
+  }
   return (
     from.payment === 'offline' &&
     (from.invoicing ?? 'none') === 'none' &&
@@ -83,11 +91,46 @@ export function paymentProviderSwitchAllowed(
   );
 }
 
-/** True when the studio may still choose its payment provider itself (offline, no documents). */
+/**
+ * True when the studio may still choose its payment provider itself: before its first real
+ * payment (from one of the offered providers), or while it pays at the studio with no documents.
+ * `hasPayment` unknown (still loading) counts as yes.
+ */
 export function canChoosePaymentProvider(
   tenant: { payment_provider?: string | null; invoicing_provider?: string | null } | null | undefined,
+  hasPayment: boolean | undefined = true,
 ): boolean {
+  if (
+    hasPayment === false &&
+    (SWITCH_FREE_PAYMENT_PROVIDERS as readonly string[]).includes(tenant?.payment_provider ?? '')
+  ) {
+    return true;
+  }
   return tenant?.payment_provider === 'offline' && (tenant?.invoicing_provider ?? 'none') === 'none';
+}
+
+/**
+ * Providers a studio with monthly fees can use (owner decision): Grow charges a saved card each
+ * month and pay at the studio records them by hand. YPay and Invoice4U cannot, so a studio on
+ * either cannot create a monthly class (backstop trigger on offerings).
+ */
+export const MONTHLY_FEE_PAYMENT_PROVIDERS = ['grow', 'offline', 'mock'] as const;
+
+export function monthlyFeesSupported(paymentProvider: string | null | undefined): boolean {
+  return (MONTHLY_FEE_PAYMENT_PROVIDERS as readonly string[]).includes(paymentProvider ?? '');
+}
+
+/** Pre-filled answer to "Will you charge monthly fees?" by studio type; null = must answer. */
+export function monthlyFeesDefaultFor(vertical: string | null | undefined): boolean | null {
+  if (vertical === 'dance-studio') return true;
+  if (vertical === 'photographer' || vertical === 'beautician') return false;
+  return null;
+}
+
+/** The database refuses a monthly class for a YPay / Invoice4U studio with this message. */
+export function isMonthlyFeesNeedGrowError(error: unknown): boolean {
+  const message = error && typeof error === 'object' && 'message' in error ? String(error.message) : '';
+  return message.includes('monthly_fees_need_grow');
 }
 
 /** The database refuses a switch with this message (tenants_guard_payment_provider_switch). */

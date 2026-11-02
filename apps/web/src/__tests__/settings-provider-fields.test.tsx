@@ -36,7 +36,7 @@ describe('settings provider fields', () => {
     renderIt(<PaymentSettingsForm />);
     expect(screen.queryByLabelText('Publishable key')).toBeNull();
     expect(screen.queryByLabelText('Webhook secret')).toBeNull();
-    expect(screen.getByRole('checkbox')).toBeChecked();
+    expect(screen.getByRole('radio', { name: 'Not a registered business yet: pay at the studio' })).toBeChecked();
   });
 
   it('a card provider still shows its key fields, and the studio can switch back to pay at the studio', () => {
