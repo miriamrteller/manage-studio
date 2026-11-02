@@ -16,6 +16,11 @@ on:
 permissions:
   contents: read
 
+# A newer PR push cancels the superseded run; manual runs always finish.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   links:
     runs-on: ubuntu-latest

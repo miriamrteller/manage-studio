@@ -1,7 +1,7 @@
 # Observability: how we find out when something breaks
 
 **Short version:** when the app or a server function throws an error, Sentry emails you within a minute.
-Studio admins can also press **Report a problem** in the menu. Once an hour (Israeli daytime), every new
+Studio admins can also press **Report a problem** in the menu. Every 3 hours (Israeli daytime), every new
 error or report becomes a GitHub issue that you can hand to an AI agent ("fix issue #123").
 
 Nothing is sent anywhere until you finish the setup below. Until then the code is switched off.
@@ -113,7 +113,7 @@ personal data is involved.
   To reply, look up the studio by the tenant id. We deliberately don't collect the person's name or email.
 - **Noise:** in Sentry you can **Ignore** an issue that isn't worth fixing (for example, a browser extension error).
 
-Errors and problem reports appear in Sentry immediately. The GitHub issue follows within the hour. To get it
+Errors and problem reports appear in Sentry immediately. The GitHub issue follows within 3 hours. To get it
 sooner, run the workflow by hand.
 
 ## What data leaves our systems (and what never does)

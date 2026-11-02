@@ -2,12 +2,13 @@ name: Sentry → GitHub issues
 
 # Opens one GitHub issue per new Sentry error or "Report a problem" message, so an
 # agent session can be pointed at it. Instant alerts come from Sentry's own email;
-# this job is for triage, so it runs hourly in Israeli daytime (05:17–20:17 UTC)
-# to stay well inside the free Actions minutes. Run it by hand from the Actions tab
+# this job is for triage, so it runs every 3 hours in Israeli daytime to stay well
+# inside the free Actions minutes: 05:17, 08:17, 11:17, 14:17, 17:17, 20:17 UTC =
+# 07:17–22:17 Israel winter time (08:17–23:17 in summer, IDT). Run it by hand from the Actions tab
 # any time. Does nothing until the SENTRY_* secret and variables are set.
 on:
   schedule:
-    - cron: '17 5-20 * * *'
+    - cron: '17 5-20/3 * * *'
   workflow_dispatch:
 
 permissions:

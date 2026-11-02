@@ -30,7 +30,7 @@ permissions:
 # a cancelled run there is never re-checked, because the next merge's
 # path filter skips the DB jobs when it did not touch supabase/**.
 concurrency:
-  group: db-ci-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:

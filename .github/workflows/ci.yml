@@ -11,6 +11,11 @@ permissions:
   contents: read
   pull-requests: read
 
+# A newer PR push cancels the superseded run; runs on main always finish.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   # Detect which files changed
   detect-changes:
