@@ -95,6 +95,8 @@
       "save_tenant_ypay_credentials",
       "search_enrolment_students",
       "search_notification_blast_accounts",
+      "set_billing_month_amount",
+      "set_billing_schedule_amount",
       "set_consent_template_lawyer_reviewed"
     ]
   },
@@ -142,6 +144,7 @@
   "internal": {
     "$comment": "called only by other definer functions or the database owner (cron). Nobody else gets EXECUTE; service_role is left as it was.",
     "functions": [
+      "admin_open_billing_schedule",
       "get_app_encryption_key",
       "get_cron_secret",
       "get_supabase_functions_url",

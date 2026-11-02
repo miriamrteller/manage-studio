@@ -46,6 +46,9 @@ function makeBillingService(options: {
   savedToken?: string | null;
   /** Provider of the enrolment's first payment ('manual' = recorded at the studio). */
   firstPaymentProvider?: string;
+  /** This student's monthly amount / a one-off amount for the month (payments follow-up 5). */
+  studentAmountMinor?: number | null;
+  oneOffAmountMinor?: number | null;
 }) {
   const token = options.savedToken === undefined ? 'saved_tok_abc' : options.savedToken;
   const firstPaymentProvider = options.firstPaymentProvider ?? options.paymentProvider;
@@ -116,6 +119,13 @@ function makeBillingService(options: {
         };
       }
 
+      if (table === 'billing_month_adjustments') {
+        return {
+          select: () =>
+            anyFilterChain(options.oneOffAmountMinor ? { amount_minor: options.oneOffAmountMinor, note: 'Holiday' } : null),
+        };
+      }
+
       if (table === 'payments') {
         return {
           select: () => anyFilterChain({ provider: firstPaymentProvider }),
@@ -137,6 +147,11 @@ function makeBillingService(options: {
             eq: () => ({
               single: async () => ({
                 data: scheduleRow,
+                error: null,
+              }),
+              // No student amount: the class price applies (month-amount.ts).
+              maybeSingle: async () => ({
+                data: { amount_minor: options.studentAmountMinor ?? null, amount_note: null },
                 error: null,
               }),
             }),
@@ -283,6 +298,21 @@ describe('run-monthly-billing provider isolation (I4-T1, I4-T2)', () => {
       expect.objectContaining({ type: 'payment.succeeded' }),
       'grow',
     );
+  });
+
+  it("charges the month's amount: a one-off amount, else the student's own, else the class price", async () => {
+    const growSpy = vi.spyOn(MockGrowPaymentProvider.prototype, 'createCharge');
+    const run = (opts: { studentAmountMinor?: number | null; oneOffAmountMinor?: number | null }) =>
+      processBillingSchedule(
+        makeBillingService({ paymentProvider: 'grow', tenantId: GROW_TENANT, ...opts }),
+        { id: SCHEDULE_ID, tenant_id: GROW_TENANT, engagement_id: ENGAGEMENT_ID, billing_account_id: BILLING_ACCOUNT_ID, attempt_count: 0 },
+        '2026-06',
+      );
+    await run({});
+    await run({ studentAmountMinor: 30000 });
+    await run({ studentAmountMinor: 30000, oneOffAmountMinor: 17500 });
+    expect(growSpy.mock.calls.map(([params]) => params.amountMinor)).toEqual([35000, 30000, 17500]);
+    expect(growSpy.mock.calls[2][0].metadata.total_amount_minor).toBe('17500');
   });
 
   it('I4-T2: icount tenant renewal uses chargeWithToken + mock IPN — no Grow HTTP', async () => {
