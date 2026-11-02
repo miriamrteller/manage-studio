@@ -1,10 +1,13 @@
 import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query'
 import { ZodError } from 'zod'
 import { reportError } from './monitoring'
+import { NoActiveSeasonError } from '@/features/admin-dashboard/services/adminDashboardService'
 
 /** Errors the user caused or can fix themselves are not worth an alert. */
 export function isExpectedError(error: unknown): boolean {
   if (error instanceof ZodError) return true
+  // A tenant with no active season is a normal state; the dashboard shows a friendly message for it.
+  if (error instanceof NoActiveSeasonError) return true
   const raw = (error as { message?: unknown } | null)?.message
   const msg = (typeof raw === 'string' ? raw : String(error)).toLowerCase()
   return (
