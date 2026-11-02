@@ -1707,7 +1707,9 @@
     },
     "jobs": "צילומים",
     "contracts": "חוזים",
-    "quotes": "הצעות מחיר"
+    "quotes": "הצעות מחיר",
+    "platform_studios": "סטודיואים",
+    "platform_features": "תכונות הפלטפורמה"
   },
   "platform_welcome": {
     "headline": "יצאת לעצמאות כדי לעשות את מה שאתה אוהב. הניירת רצה לבד.",

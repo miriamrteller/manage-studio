@@ -1675,7 +1675,7 @@
     "leads": "Leads",
     "finance": "Finance",
     "setup_overview": "Setup overview",
-    "platform_onboard": "Onboard tenant",
+    "platform_onboard": "Set up a new studio",
     "people": "Students & Adults",
     "families": "Families",
     "notifications": "Notifications",
@@ -1707,7 +1707,9 @@
     },
     "jobs": "Shoots",
     "contracts": "Contracts",
-    "quotes": "Quotes"
+    "quotes": "Quotes",
+    "platform_studios": "Studios",
+    "platform_features": "Platform features"
   },
   "platform_welcome": {
     "headline": "Get paid. Stay compliant. Freelance in Israel.",

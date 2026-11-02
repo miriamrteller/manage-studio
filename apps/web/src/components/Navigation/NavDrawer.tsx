@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useEntityLabels } from '@/hooks/useEntityLabels';
 import { useFeatureGate } from '@/hooks/useFeatureGate';
-import { useTenant } from '@/hooks/useTenant';
+import { useTenantQuery } from '@/hooks/useTenant';
 import { useBookingEnabled } from '@/features/scheduling/useBookingEnabled';
 import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
@@ -48,7 +48,7 @@ export function NavDrawer() {
   const location = useLocation();
   const { user } = useCurrentUser();
   const { labels, modules, vertical } = useEntityLabels();
-  const tenant = useTenant();
+  const { tenant, isLoading: tenantLoading } = useTenantQuery();
   const { hasFeature } = useFeatureGate();
   // Resolve feature flags from the authenticated gate OR the anon-safe tenant config
   // (enabled_features), so client-facing items like booking show for guests too.
@@ -76,6 +76,8 @@ export function NavDrawer() {
     tenant,
     hasFeature: hasFeatureResolved,
     vertical,
+    // No studio once the lookup is done (app.opalswift.com, or a user without one).
+    hasStudio: Boolean(tenant) || tenantLoading,
   });
 
   // Grey out booking-dependent items (e.g. /book) only when we positively know
