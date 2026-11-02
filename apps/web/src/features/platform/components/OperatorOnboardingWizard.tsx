@@ -18,6 +18,7 @@ import {
 } from '../services/studioSetupService';
 import { INITIAL_FORM, toSetupRequest, VERTICALS, type StudioSetupForm } from '../lib/studioSetupForm';
 import { platformTermsVersion } from '@/legal/acceptance';
+import { LegalPackPanel } from '@/components/legal/LegalPackPanel';
 import { TurnstileWidget } from '@/components/captcha/TurnstileWidget';
 import {
   createSelfServeStudio,
@@ -480,6 +481,9 @@ function StudioCreated({ result, ownerEmail, name }: { result: StudioSetupResult
           </div>
         )}
       </div>
+
+      {/* Drafts notice and the PDF; the studio's own admin confirms when they sign in. */}
+      <LegalPackPanel tenantId={result.tenantId} mode="notice" />
 
       <div className="space-y-2">
         <h2 className="text-lg font-semibold">{t('studio_setup.next_title')}</h2>

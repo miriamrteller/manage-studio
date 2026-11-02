@@ -42,7 +42,7 @@
     "seed:auth-parent": "node scripts/seed-auth-parent.mjs",
     "auth:check-email": "node scripts/check-auth-email-setup.mjs",
     "email:preview": "pnpm -C packages/shared build && node scripts/preview-email.mjs",
-    "email:bundle": "pnpm -C packages/shared build && node scripts/copy-email-bundle.mjs",
+    "email:bundle": "node scripts/build-legal-sources.mjs && pnpm -C packages/shared build && node scripts/copy-email-bundle.mjs",
     "deploy:email-functions": "pnpm email:bundle && supabase functions deploy send-auth-email --no-verify-jwt && supabase functions deploy send-otp-email && supabase functions deploy send-notification",
     "deploy:payment-functions": "pnpm email:bundle && supabase functions deploy confirm-mock-payment --no-verify-jwt && supabase functions deploy handle-payment-event && supabase functions deploy create-checkout --no-verify-jwt && supabase functions deploy prepare-enrolment-checkout --no-verify-jwt && supabase functions deploy get-enrolment-completion --no-verify-jwt && supabase functions deploy handle-payment-document --no-verify-jwt && supabase functions deploy admin-resend-document && supabase functions deploy check-missing-documents --no-verify-jwt && supabase functions deploy verify-grow-credentials --no-verify-jwt && supabase functions deploy verify-icount-credentials --no-verify-jwt && supabase functions deploy verify-invoice4u-credentials --no-verify-jwt",
     "deploy:scheduling-functions": "node scripts/deploy-scheduling-functions.mjs",
