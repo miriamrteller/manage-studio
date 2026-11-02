@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Studio legal pack (20261102114735_studio_legal_pack.sql). Needs Supabase's auth
+# Studio legal pack (20261102123446_studio_legal_pack.sql). Needs Supabase's auth
 # schema and every migration applied (the local stack), so sql-tests skips it
 # (see NEEDS_SUPABASE).
 #
