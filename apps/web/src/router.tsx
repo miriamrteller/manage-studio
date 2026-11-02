@@ -51,6 +51,7 @@ import InquirePage from "./pages/InquirePage";
 import EmbedInquirePage, { EmbedNamedFormPage } from "./pages/EmbedInquirePage";
 import NamedFormPage from "./pages/NamedFormPage";
 import LeadFormsPage from "./pages/LeadFormsPage";
+import LeadsHelpPage from "./pages/LeadsHelpPage";
 import AdminQuotesPage from "./pages/AdminQuotesPage";
 import AdminQuoteEditorPage from "./pages/AdminQuoteEditorPage";
 import QuotePage from "./pages/QuotePage";
@@ -157,6 +158,7 @@ const router = createBrowserRouter([
           { path: "admin/notifications", element: <AdminRoute><NotificationsPage /></AdminRoute> },
           { path: "admin/leads", element: <AdminRoute><LeadsPage /></AdminRoute> },
           { path: "admin/leads/forms", element: <AdminRoute><LeadFormsPage /></AdminRoute> },
+          { path: "admin/leads/help", element: <AdminRoute><LeadsHelpPage /></AdminRoute> },
           { path: "admin/jobs", element: <AdminRoute><JobsPage /></AdminRoute> },
           { path: "admin/jobs/:id", element: <AdminRoute><JobDetailPage /></AdminRoute> },
           { path: "admin/quotes", element: <AdminRoute><AdminQuotesPage /></AdminRoute> },

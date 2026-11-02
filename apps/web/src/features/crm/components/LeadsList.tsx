@@ -1,6 +1,7 @@
 ﻿import { useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { GetLeadsPanel } from './GetLeadsPanel';
 import { followUpState } from '../lib/followUp';
+import { FirstLeadsChecklist } from './FirstLeadsChecklist';
 import { Link } from 'react-router-dom';
 import { useNamedForms } from '../hooks/useNamedForms';
 import { answerText, FORM_TIME_ZONE, todayIn } from '@shared/index';
@@ -204,6 +205,9 @@ export function LeadsList() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl font-bold">{t('pages.crm.leads.title')}</h1>
         <div className="flex flex-wrap gap-2">
+          <Link to="/admin/leads/help" className="inline-flex items-center rounded border px-3 py-2 text-sm">
+            {t('pages.crm.help.link')}
+          </Link>
           <Link to="/admin/leads/forms" className="inline-flex items-center rounded border px-3 py-2 text-sm">
             {t('pages.crm.named_forms.title')}
           </Link>
@@ -219,7 +223,9 @@ export function LeadsList() {
         </p>
       )}
 
-      <details className="space-y-3" open={!isLoading && allLeads.length === 0}>
+      {!isLoading && <FirstLeadsChecklist leadCount={allLeads.length} />}
+
+      <details id="get-leads" className="space-y-3" open={!isLoading && allLeads.length === 0}>
         <summary className="cursor-pointer font-semibold">{t('pages.crm.get_leads.title')}</summary>
         <div className="pt-3">
           <GetLeadsPanel headingLevel={3} />

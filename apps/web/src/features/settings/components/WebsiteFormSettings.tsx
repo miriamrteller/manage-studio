@@ -1,4 +1,5 @@
 import { useId, useMemo, useState } from 'react';
+import { InfoTip } from '@/components/ui/InfoTip';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { useTenant } from '@/hooks/useTenant';
@@ -9,7 +10,16 @@ import { buildEmbedSnippet, type EmbedLanguage } from '@/features/crm/lib/inquir
  * studio's own site, plus a plain link. The admin is on the studio's own host,
  * so window.location.origin is the right form origin with no config.
  */
-export function WebsiteFormSettings({ compact = false, path = '/inquire' }: { compact?: boolean; path?: string }) {
+export function WebsiteFormSettings({
+  compact = false,
+  path = '/inquire',
+  onCopy,
+}: {
+  compact?: boolean;
+  path?: string;
+  /** Called after the code or link is copied (ticks the "first leads" checklist). */
+  onCopy?: () => void;
+}) {
   const { t } = useTranslation();
   const tenant = useTenant();
   const id = useId();
@@ -35,9 +45,14 @@ export function WebsiteFormSettings({ compact = false, path = '/inquire' }: { co
   return (
     <section aria-labelledby={`${id}-title`} className="space-y-4">
       <div className="space-y-1">
-        <Heading id={`${id}-title`} className={compact ? 'font-semibold' : 'text-lg font-semibold text-foreground'}>
-          {t('settings.website_form.title')}
-        </Heading>
+        <div className="flex flex-wrap items-center gap-1">
+          <Heading id={`${id}-title`} className={compact ? 'font-semibold' : 'text-lg font-semibold text-foreground'}>
+            {t('settings.website_form.title')}
+          </Heading>
+          <InfoTip label={t('pages.crm.help.tip_label', { topic: t('settings.website_form.title') })}>
+            {t('pages.crm.help.tip_website')}
+          </InfoTip>
+        </div>
         <p className="text-sm text-muted-foreground">{t('settings.website_form.description')}</p>
       </div>
 
@@ -76,20 +91,33 @@ export function WebsiteFormSettings({ compact = false, path = '/inquire' }: { co
         </div>
       </div>
 
-      <CopyBlock id={`${id}-snippet`} label={t('settings.website_form.snippet_label')} value={snippet.iframe} multiline />
-      <CopyBlock id={`${id}-link`} label={t('settings.website_form.link_label')} value={snippet.link} />
+      <CopyBlock id={`${id}-snippet`} label={t('settings.website_form.snippet_label')} value={snippet.iframe} multiline onCopied={onCopy} />
+      <CopyBlock id={`${id}-link`} label={t('settings.website_form.link_label')} value={snippet.link} onCopied={onCopy} />
       <p className="text-xs text-muted-foreground">{t('settings.website_form.note')}</p>
     </section>
   );
 }
 
-function CopyBlock({ id, label, value, multiline }: { id: string; label: string; value: string; multiline?: boolean }) {
+function CopyBlock({
+  id,
+  label,
+  value,
+  multiline,
+  onCopied,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  multiline?: boolean;
+  onCopied?: () => void;
+}) {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(value);
       setCopied(true);
+      onCopied?.();
       setTimeout(() => setCopied(false), 2000);
     } catch {
       // Clipboard unavailable: the text is still selectable.
