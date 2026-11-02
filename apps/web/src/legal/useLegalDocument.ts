@@ -44,6 +44,8 @@ export interface TenantLegalProfile {
   packAcknowledgedAt: string | null;
   /** The studio's main language (its clients' signing text is written in it). */
   languageDefault: 'he' | 'en';
+  /** Documents the admin acknowledged as drafts (the others were lawyer-reviewed then). */
+  packAckDrafts: string[];
 }
 
 /** Studio documents a new studio keeps unpublished until its admin acknowledges the legal pack. */
@@ -81,6 +83,7 @@ export async function fetchTenantLegalProfile(tenantId: string): Promise<TenantL
     packRequired: row.legal_pack_required === true,
     packAcknowledgedAt: row.legal_pack_acknowledged_at ?? null,
     languageDefault: row.language_default === 'he' ? 'he' : 'en',
+    packAckDrafts: Array.isArray(row.legal_pack_ack_drafts) ? (row.legal_pack_ack_drafts as string[]) : [],
   };
 }
 

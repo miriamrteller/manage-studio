@@ -1445,6 +1445,8 @@ export declare const ConsentTemplateSchema: z.ZodObject<{
     audience: z.ZodOptional<z.ZodNullable<z.ZodEnum<["child", "adult"]>>>;
     /** Language of the text, or null for the studio's language. */
     language: z.ZodOptional<z.ZodNullable<z.ZodEnum<["he", "en"]>>>;
+    /** When a studio admin marked this version as reviewed by their lawyer. */
+    lawyer_reviewed_at: z.ZodOptional<z.ZodNullable<z.ZodEffects<z.ZodString, string, string>>>;
     created_at: z.ZodEffects<z.ZodString, string, string>;
     updated_at: z.ZodEffects<z.ZodString, string, string>;
 }, "strip", z.ZodTypeAny, {
@@ -1459,6 +1461,7 @@ export declare const ConsentTemplateSchema: z.ZodObject<{
     version_hash: string;
     language?: "en" | "he" | null | undefined;
     audience?: "child" | "adult" | null | undefined;
+    lawyer_reviewed_at?: string | null | undefined;
 }, {
     id: string;
     tenant_id: string;
@@ -1471,6 +1474,7 @@ export declare const ConsentTemplateSchema: z.ZodObject<{
     version_hash: string;
     language?: "en" | "he" | null | undefined;
     audience?: "child" | "adult" | null | undefined;
+    lawyer_reviewed_at?: string | null | undefined;
 }>;
 export type ConsentTemplate = z.infer<typeof ConsentTemplateSchema>;
 /** Minimal consent template fields required for the waiver signing UI. */
@@ -1486,6 +1490,8 @@ export declare const WaiverSigningConsentTemplateSchema: z.ZodObject<Pick<{
     audience: z.ZodOptional<z.ZodNullable<z.ZodEnum<["child", "adult"]>>>;
     /** Language of the text, or null for the studio's language. */
     language: z.ZodOptional<z.ZodNullable<z.ZodEnum<["he", "en"]>>>;
+    /** When a studio admin marked this version as reviewed by their lawyer. */
+    lawyer_reviewed_at: z.ZodOptional<z.ZodNullable<z.ZodEffects<z.ZodString, string, string>>>;
     created_at: z.ZodEffects<z.ZodString, string, string>;
     updated_at: z.ZodEffects<z.ZodString, string, string>;
 }, "id" | "name" | "language" | "version" | "content">, "strip", z.ZodTypeAny, {
