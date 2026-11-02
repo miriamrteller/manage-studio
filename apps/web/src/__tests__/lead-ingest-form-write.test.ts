@@ -61,6 +61,15 @@ describe('writeInboundLead with form answers', () => {
     expect(f.inserts[0]).toMatchObject({ child_name: 'Noa', offering_id: 'off-1', answers: form.answers, marketing_consent: false });
   });
 
+  it('a lead from a named form records the form (first touch only)', async () => {
+    const created = fakeService(null);
+    await writeInboundLead(created.service, tenant, fields, { ...opts, form, formId: 'form-1' });
+    expect(created.inserts[0]).toMatchObject({ form_id: 'form-1' });
+    const repeat = fakeService({ id: 'open-1', answers: {} });
+    await writeInboundLead(repeat.service, tenant, fields, { ...opts, form, formId: 'form-2' });
+    expect(repeat.updates[0]).not.toHaveProperty('form_id');
+  });
+
   it('a repeat enquiry merges answers and keeps earlier ones', async () => {
     const earlier = { preferred_days: { label: { en: 'Preferred days', he: 'ימים מועדפים' }, value: ['mon'] } };
     const f = fakeService({ id: 'open-1', answers: earlier });

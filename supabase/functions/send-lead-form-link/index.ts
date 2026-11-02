@@ -5,6 +5,7 @@ import { resolveTenantSender, TENANT_SENDER_COLUMNS, type TenantSenderInput } fr
 import { sendHtmlEmail } from "../_shared/email-client.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
 import { formLinkEmail, websiteInstructionsEmail } from "../_shared/email-dist/leadShare.js";
+import { FORM_TIME_ZONE, leadFormIsOpen, todayIn } from "../_shared/email-dist/leadForm.js";
 import {
   LEAD_LINK_ACTIONS,
   leadLinkLimitError,
@@ -31,6 +32,8 @@ const bodySchema = z.object({
   email: z.string().max(254),
   name: z.string().max(80).nullable().optional(),
   lang: z.enum(["en", "he"]).nullable().optional(),
+  /** A named form (/f/<slug>) instead of the general /inquire form; kind "form" only. */
+  formSlug: z.string().max(40).nullable().optional(),
 });
 
 Deno.serve(withMonitoring("send-lead-form-link", async (req) => {
@@ -101,11 +104,26 @@ Deno.serve(withMonitoring("send-lead-form-link", async (req) => {
   const lang = body.lang ?? (tenant.language_default === "he" ? "he" : "en");
   const studio = (tenant.name as string) || (tenant.subdomain as string);
 
+  let formPath = "/inquire";
+  if (body.kind === "form" && body.formSlug) {
+    const { data: form } = await service
+      .from("lead_forms")
+      .select("slug, active, ends_on")
+      .eq("tenant_id", tenantId)
+      .eq("slug", body.formSlug.trim().toLowerCase())
+      .maybeSingle();
+    if (!form) return jsonResponse({ error: "unknown_form" }, 404);
+    if (!leadFormIsOpen(form as { active: boolean; ends_on: string | null }, todayIn(FORM_TIME_ZONE))) {
+      return jsonResponse({ error: "form_closed" }, 409);
+    }
+    formPath = `/f/${form.slug}`;
+  }
+
   const email = body.kind === "form"
     ? formLinkEmail({
       studio,
       recipientName: body.name ?? null,
-      formUrl: `${formOrigin}/inquire?src=direct`,
+      formUrl: `${formOrigin}${formPath}?src=direct`,
       lang,
       colour: tenant.primary_color as string | null,
     })
@@ -135,7 +153,14 @@ Deno.serve(withMonitoring("send-lead-form-link", async (req) => {
     actor_email: profile.email as string | null,
     action,
     entity_type: "lead_form",
-    after_state: { recipient_email: recipient, kind: body.kind, lang, outcome, src: body.kind === "form" ? "direct" : null },
+    after_state: {
+      recipient_email: recipient,
+      kind: body.kind,
+      lang,
+      outcome,
+      src: body.kind === "form" ? "direct" : null,
+      form: body.kind === "form" ? formPath : null,
+    },
   });
   if (outcome === "sent") {
     await service.from("notification_log").insert({

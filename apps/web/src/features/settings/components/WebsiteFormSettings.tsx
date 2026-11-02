@@ -9,7 +9,7 @@ import { buildEmbedSnippet, type EmbedLanguage } from '@/features/crm/lib/inquir
  * studio's own site, plus a plain link. The admin is on the studio's own host,
  * so window.location.origin is the right form origin with no config.
  */
-export function WebsiteFormSettings({ compact = false }: { compact?: boolean }) {
+export function WebsiteFormSettings({ compact = false, path = '/inquire' }: { compact?: boolean; path?: string }) {
   const { t } = useTranslation();
   const tenant = useTenant();
   const id = useId();
@@ -23,8 +23,9 @@ export function WebsiteFormSettings({ compact = false }: { compact?: boolean }) 
         title: t('settings.website_form.iframe_title', { studio: tenant?.name || tenant?.subdomain || '' }),
         campaign,
         lang,
+        path,
       }),
-    [t, tenant?.name, tenant?.subdomain, campaign, lang],
+    [t, tenant?.name, tenant?.subdomain, campaign, lang, path],
   );
 
   if (!tenant?.subdomain) return null;

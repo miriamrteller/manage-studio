@@ -11,6 +11,7 @@
       "get_my_account_ids",
       "get_my_person_id",
       "get_my_tenant_id",
+      "get_named_lead_form",
       "get_public_offerings_by_subdomain",
       "get_public_quote",
       "get_public_schedule_events_by_subdomain",

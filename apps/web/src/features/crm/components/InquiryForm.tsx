@@ -11,7 +11,7 @@ import { useLegalLang } from '@/legal/useLegalDocument';
 import { supabase } from '@/lib/supabase';
 import { resolveTenantSubdomain } from '@/lib/resolveTenantSubdomain';
 import { readInquiryTags } from '../lib/inquiryTags';
-import { validateLeadAnswers } from '@shared/index';
+import { validateLeadAnswers, type NamedFormPublic } from '@shared/index';
 import { useLeadFormQuestions } from '../hooks/useLeadFormQuestions';
 import { LeadQuestionFields } from './LeadQuestionFields';
 
@@ -26,7 +26,14 @@ import { LeadQuestionFields } from './LeadQuestionFields';
  * set (checked server-side), and the server's rate limit. Marketing opt-ins
  * are never pre-ticked and are sent separately from the source/campaign tags.
  */
-export function InquiryForm({ embedded = false }: { embedded?: boolean }) {
+export function InquiryForm({
+  embedded = false,
+  namedForm = null,
+}: {
+  embedded?: boolean;
+  /** A named form (/f/<slug>): its own title, intro, image, question subset and class/package. */
+  namedForm?: NamedFormPublic | null;
+}) {
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const { src, campaign } = readInquiryTags(searchParams);
@@ -41,8 +48,11 @@ export function InquiryForm({ embedded = false }: { embedded?: boolean }) {
   const lang = useLegalLang();
   const tenant = useTenant();
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error' | 'captcha' | 'answers'>('idle');
-  const { questions } = useLeadFormQuestions();
-  const [answers, setAnswers] = useState<Record<string, unknown>>({});
+  const { questions } = useLeadFormQuestions(namedForm?.question_keys ?? null);
+  // A form made for one class or package starts with it chosen.
+  const [answers, setAnswers] = useState<Record<string, unknown>>(() =>
+    namedForm?.offering_id ? { class_interest: namedForm.offering_id } : {},
+  );
   const [invalid, setInvalid] = useState<string[]>([]);
 
   const handleSubmit = async (event: FormEvent) => {
@@ -70,7 +80,8 @@ export function InquiryForm({ embedded = false }: { embedded?: boolean }) {
           src,
           campaign,
           captchaToken: captcha.token,
-          answers: questions.length > 0 ? answers : null,
+          answers: questions.length > 0 ? pickAnswers(answers, questions.map((q) => q.key)) : null,
+          formSlug: namedForm?.slug ?? null,
           website: honeypot || null,
           marketingConsent: marketingPayload(marketing, lang, tenant?.name),
         },
@@ -93,6 +104,8 @@ export function InquiryForm({ embedded = false }: { embedded?: boolean }) {
     }
   };
 
+  const namedTitle = namedForm ? (lang === 'he' ? namedForm.title_he || namedForm.title_en : namedForm.title_en || namedForm.title_he) : null;
+  const namedIntro = namedForm ? (lang === 'he' ? namedForm.intro_he || namedForm.intro_en : namedForm.intro_en || namedForm.intro_he) : null;
   const wrapper = embedded ? 'w-full max-w-lg mx-auto p-4 space-y-6' : 'max-w-lg mx-auto py-8 px-4 space-y-6';
 
   if (status === 'sent') {
@@ -107,10 +120,16 @@ export function InquiryForm({ embedded = false }: { embedded?: boolean }) {
   return (
     <div className={wrapper}>
       <div className="space-y-2">
-        <h1 className="text-2xl font-bold">
-          {embedded && tenant?.name ? t('pages.crm.inquire.embed_title', { studio: tenant.name }) : t('pages.crm.inquire.title')}
+        {namedForm?.image_url && (
+          <img src={namedForm.image_url} alt="" className="w-full max-h-56 object-cover rounded" loading="lazy" />
+        )}
+        <h1 className="text-2xl font-bold" dir="auto">
+          {namedTitle ||
+            (embedded && tenant?.name ? t('pages.crm.inquire.embed_title', { studio: tenant.name }) : t('pages.crm.inquire.title'))}
         </h1>
-        <p className="text-sm text-muted-foreground">{t('pages.crm.inquire.subtitle')}</p>
+        <p className="text-sm text-muted-foreground whitespace-pre-line" dir="auto">
+          {namedIntro || t('pages.crm.inquire.subtitle')}
+        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4" aria-label={t('pages.crm.inquire.title')}>
@@ -222,6 +241,11 @@ export function InquiryForm({ embedded = false }: { embedded?: boolean }) {
       </form>
     </div>
   );
+}
+
+/** Only the answers to questions on this form (a pre-chosen class the form doesn't ask about is the server's to apply). */
+function pickAnswers(answers: Record<string, unknown>, keys: string[]): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(answers).filter(([k]) => keys.includes(k)));
 }
 
 /** Question keys the server refused (400 invalid_answers), if that is why it failed. */

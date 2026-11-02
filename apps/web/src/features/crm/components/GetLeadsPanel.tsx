@@ -34,7 +34,16 @@ async function copyText(value: string): Promise<boolean> {
  * a site, then the lead email address. Takes a form target so the same panel
  * serves named forms later.
  */
-export function GetLeadsPanel({ target = DEFAULT_FORM, headingLevel = 2 }: { target?: FormTarget; headingLevel?: 2 | 3 }) {
+export function GetLeadsPanel({
+  target = DEFAULT_FORM,
+  headingLevel = 2,
+  formSlug = null,
+}: {
+  target?: FormTarget;
+  headingLevel?: 2 | 3;
+  /** Set for a named form: sharing, sending and embedding use /f/<slug>; the lead email section is left out. */
+  formSlug?: string | null;
+}) {
   const { t, i18n } = useTranslation();
   const tenant = useTenant();
   const id = useId();
@@ -195,13 +204,14 @@ export function GetLeadsPanel({ target = DEFAULT_FORM, headingLevel = 2 }: { tar
         formLinkForWhatsApp={formLink(origin, target, 'whatsapp')}
         shareMessage={shareMessage}
         country={(tenant as { country?: string | null }).country}
+        formSlug={formSlug}
       />
 
       {/* 3. Only for studios with a website. */}
       <details className="card p-4">
         <summary className="cursor-pointer font-semibold">{t('pages.crm.get_leads.website_title')}</summary>
         <div className="pt-4 space-y-4">
-          <WebsiteFormSettings compact />
+          <WebsiteFormSettings compact path={target.path} />
           <div className="grid gap-3 sm:grid-cols-2">
             {WEBSITE_PLATFORMS.map((platform) => (
               <div key={platform} className="space-y-1">
@@ -214,12 +224,12 @@ export function GetLeadsPanel({ target = DEFAULT_FORM, headingLevel = 2 }: { tar
               </div>
             ))}
           </div>
-          <EmailInstructionsForm />
+          {!formSlug && <EmailInstructionsForm />}
         </div>
       </details>
 
       {/* 4. The lead inbox. */}
-      {leadEmail && (
+      {leadEmail && !formSlug && (
         <div className="card p-4 space-y-2">
           <H2 className="font-semibold">{t('pages.crm.get_leads.email_title')}</H2>
           <p className="text-sm text-muted-foreground">{t('pages.crm.get_leads.email_hint')}</p>

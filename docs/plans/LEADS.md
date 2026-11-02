@@ -229,6 +229,32 @@ Steps 1–4 are the beta (about 1 week). The default card payment path is not to
   - The share, QR and poster parts take a form target (`/inquire` today), so
     named forms (`/f/<slug>`) can reuse them.
 
+- **2d named forms** (Leads → **Forms**, `/admin/leads/forms`). A studio makes
+  several forms at `https://<sub>.opalswift.com/f/<slug>`, embeddable at
+  `/embed/f/<slug>`. Each form has:
+  - an internal name, and a title and intro in en + he;
+  - an optional image (uploaded to the studio's `tenant-assets` folder);
+  - a subset of the studio's questions;
+  - an optional pre-selected class or package;
+  - an on/off switch and an optional last day;
+  - its own share links, QR, poster and send-by-email (the 2c components,
+    given the form).
+
+  `/inquire` stays the general form.
+  - **Slugs**: lowercase letters, digits and hyphens, unique per studio,
+    reserved words blocked (DB checks + `formSlugProblem`). The editor suggests
+    one from the name and checks availability as you type.
+  - **Closed**: switched off, or after the last day (Israel time) → "This form
+    is closed" with a link to the general form. The last day itself is open.
+    `crm-lead-capture` refuses closed or unknown forms (410 / 404).
+  - **Leads** record `form_id` (first touch; a deleted form leaves its leads
+    with no form). The leads page shows and filters by form, and the forms
+    list shows leads and won (converted) per form.
+  - **Public read** only through `get_named_lead_form` (public tier); it never
+    returns the internal name, and returns no details for closed forms.
+    `lead_forms` is admin-only by RLS. Triggers keep a form's class and a
+    lead's form inside the same studio.
+
 ### Social channels: now and later
 
 - **Now (P1):** tagged links and a QR poster, above. Each lead records where it

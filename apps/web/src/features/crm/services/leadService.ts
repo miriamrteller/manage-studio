@@ -30,6 +30,8 @@ export interface Lead {
   channel: LeadChannel;
   /** Campaign tag from the enquiry link (?campaign=), set on creation. */
   campaign: string | null;
+  /** Named form the lead came from (lead_forms.id), if any. */
+  form_id: string | null;
   /** Enquiry-form answers mapped to columns (step 2b). */
   child_name: string | null;
   child_birth_date: string | null;
@@ -61,7 +63,7 @@ export interface LeadCreateInput {
 }
 
 const LEAD_COLUMNS =
-  'id, name, company, email, phone, stage, channel, campaign, child_name, child_birth_date, event_date, answers, interest, offering_id, deal_value_minor, note, ' +
+  'id, name, company, email, phone, stage, channel, campaign, form_id, child_name, child_birth_date, event_date, answers, interest, offering_id, deal_value_minor, note, ' +
   'next_follow_up_at, last_contacted_at, last_communication_note, marketing_consent, ' +
   'converted_account_id, created_at';
 
