@@ -1,8 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { deriveSoftTheme } from '@/lib/theme/deriveSoftTheme';
 import { deriveColorSystem } from '@/lib/utils';
+import { defaultThemeTokens, getDefaultTheme, OPALSWIFT_THEME } from '@/lib/theme/defaultTheme';
+import { AA, contrast } from '@/lib/theme/color';
 
 const css = readFileSync(resolve(__dirname, '../index.css'), 'utf8');
 
@@ -39,18 +41,63 @@ describe('soft theme CSS: RTL mirroring', () => {
   });
 });
 
-describe('soft theme CSS: first paint matches the default (dance) tenant', () => {
-  it('uses the derived values for #76335a / #e99ac4 as :root fallbacks', () => {
-    const derived = deriveSoftTheme('#76335a', '#e99ac4');
-    for (const [name, value] of Object.entries(derived)) {
+describe('default theme: first paint is the OpalSwift theme', () => {
+  it('uses OpalSwift brand colours as :root defaults', () => {
+    expect(tokenIn(ROOT, '--color-primary')).toBe('#5b6cff');
+    expect(tokenIn(ROOT, '--color-secondary')).toBe('#21d1c2');
+    expect(tokenIn(ROOT, '--color-primary-fill')).toBe('#4a58e8');
+    expect(css).not.toMatch(/#76335a|#e99ac4/i);
+  });
+
+  it('mirrors defaultThemeTokens() in :root (no stale plum/pink)', () => {
+    for (const [name, value] of Object.entries(defaultThemeTokens())) {
       expect(tokenIn(ROOT, name), name).toBe(value);
     }
   });
 
-  it('uses the derived state colours as :root fallbacks', () => {
-    const system = deriveColorSystem('#76335a', '#e99ac4');
-    for (const [key, value] of Object.entries(system)) {
-      expect(tokenIn(ROOT, `--color-${key.replace('_', '-')}`), key).toBe(value);
+  it('falls back to OpalSwift for any skin until it has its own default', () => {
+    expect(getDefaultTheme('dance')).toBe(OPALSWIFT_THEME);
+    expect(getDefaultTheme(undefined)).toBe(OPALSWIFT_THEME);
+    expect(defaultThemeTokens('photographer')).toEqual(defaultThemeTokens());
+  });
+
+  it('keeps default text and buttons WCAG AA', () => {
+    const t = defaultThemeTokens();
+    expect(contrast(t['--color-on-primary-fill'], t['--color-primary-fill'])).toBeGreaterThanOrEqual(AA);
+    expect(contrast('#ffffff', t['--color-primary-fill-hover'])).toBeGreaterThanOrEqual(AA);
+    expect(contrast('#ffffff', t['--color-primary-fill-active'])).toBeGreaterThanOrEqual(AA);
+    for (const bg of ['#ffffff', t['--tint-ground'], t['--tint-1'], t['--tint-2']]) {
+      expect(contrast(t['--color-primary-ink'], bg), `ink on ${bg}`).toBeGreaterThanOrEqual(AA);
+      expect(contrast(t['--color-text-primary'], bg)).toBeGreaterThanOrEqual(AA);
+      expect(contrast(t['--color-text-secondary'], bg)).toBeGreaterThanOrEqual(AA);
+    }
+    expect(contrast(t['--color-accent-ink'], '#ffffff')).toBeGreaterThanOrEqual(AA);
+    // dark text on the teal secondary button
+    expect(contrast('#111111', t['--color-secondary'])).toBeGreaterThanOrEqual(AA);
+  });
+});
+
+describe('a studio with its own colours is unchanged', () => {
+  it('derives its tokens from its own colours, not from the defaults', () => {
+    const soft = deriveSoftTheme('#76335a', '#e99ac4');
+    expect(soft['--color-primary-fill']).toBe('#76335a');
+    expect(soft['--tint-ground']).toBe('#fdfcfc');
+    expect(soft['--color-primary-fill']).not.toBe(defaultThemeTokens()['--color-primary-fill']);
+    expect(deriveColorSystem('#76335a', '#e99ac4').primary_hover).toBe('#6b2e52');
+  });
+});
+
+describe('favicon', () => {
+  const html = readFileSync(resolve(__dirname, '../../index.html'), 'utf8');
+  it('links the OpalSwift favicon and apple-touch-icon', () => {
+    expect(html).toMatch(/rel="icon"[^>]*href="\/favicon\.ico"/);
+    expect(html).toMatch(/rel="icon"[^>]*href="\/favicon-64\.png"/);
+    expect(html).toMatch(/rel="apple-touch-icon"[^>]*href="\/apple-touch-icon\.png"/);
+    expect(html).not.toContain('vite.svg');
+  });
+  it('ships the linked files', () => {
+    for (const f of ['favicon.ico', 'favicon-64.png', 'apple-touch-icon.png']) {
+      expect(existsSync(resolve(__dirname, '../../public', f)), f).toBe(true);
     }
   });
 });

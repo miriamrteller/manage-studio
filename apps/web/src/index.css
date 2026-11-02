@@ -36,22 +36,22 @@
 
   /* ===== LAYER 1: CORE PRIMITIVES ===== */
   
-  /* Primary Color Family (School's custom burgundy: #76335a) */
+  /* Primary Color Family (OpalSwift default blue: #5B6CFF; a studio's own colour overrides it) */
   /* Light/hover/active/dark follow deriveColorSystem() (mix toward white /
      black), so first paint matches what useThemeInjection writes for the
      default colours. */
-  --color-primary: #76335a;
-  --color-primary-light: #986683;
-  --color-primary-hover: #6b2e52;
-  --color-primary-active: #622a4b;
-  --color-primary-dark: #642b4d;
+  --color-primary: #5b6cff;
+  --color-primary-light: #8491ff;
+  --color-primary-hover: #5362e8;
+  --color-primary-active: #4c5ad4;
+  --color-primary-dark: #4d5cd9;
 
-  /* Secondary Color Family (School's custom mauve: #e99ac4) */
-  --color-secondary: #e99ac4;
-  --color-secondary-light: #efb3d3;
-  --color-secondary-hover: #d48cb2;
-  --color-secondary-active: #c180a3;
-  --color-secondary-dark: #c683a7;
+  /* Secondary Color Family (OpalSwift default teal: #21D1C2) */
+  --color-secondary: #21d1c2;
+  --color-secondary-light: #59ddd1;
+  --color-secondary-hover: #1ebeb1;
+  --color-secondary-active: #1bada1;
+  --color-secondary-dark: #1cb2a5;
 
   /* Status Colors (Universal - not derived from primary) */
   --color-error: #dc2626;
@@ -82,16 +82,16 @@
   /* Neutral Scale (50-900): a neutral grey with a little of the tenant
      primary mixed in (more in the darker steps). deriveSoftTheme() writes the
      per-tenant values; these fallbacks are the ones for the default colours. */
-  --color-neutral-50: #f8f9fa;
-  --color-neutral-100: #f2f2f5;
-  --color-neutral-200: #e3e3e8;
-  --color-neutral-300: #ced0d7;
-  --color-neutral-400: #9a9caa;
-  --color-neutral-500: #6c6d7d;
-  --color-neutral-600: #4f5262;
-  --color-neutral-700: #3d4052;
-  --color-neutral-800: #282a3a;
-  --color-neutral-900: #1b1b2c;
+  --color-neutral-50: #f8f9fb;
+  --color-neutral-100: #f2f3f6;
+  --color-neutral-200: #e2e5eb;
+  --color-neutral-300: #cdd1dc;
+  --color-neutral-400: #989fb4;
+  --color-neutral-500: #6a728b;
+  --color-neutral-600: #4c5771;
+  --color-neutral-700: #3a4561;
+  --color-neutral-800: #25304b;
+  --color-neutral-900: #18203c;
 
   /* ===== LAYER 2: SEMANTIC INTENT ===== */
 
@@ -99,9 +99,9 @@
   /* Tenant-tinted greys from deriveSoftTheme() (fallbacks = default colours).
      Each is pushed darker if needed: primary >= 12:1 and secondary >= 4.5:1
      on every tint, muted >= 4.5:1 on white and the lighter tints. */
-  --color-text-primary: #1b1b2c;
-  --color-text-secondary: #4f5262;
-  --color-text-muted: #6a6b7b;
+  --color-text-primary: #18203c;
+  --color-text-secondary: #4c5771;
+  --color-text-muted: #666d85;
   --color-text-inverted: #f9fafb; /* White for text on dark backgrounds */
 
   /* Border Colors */
@@ -1265,21 +1265,21 @@ dialog.modal-dialog::backdrop {
 
   /* --- Soft theme (deriveSoftTheme) ---
      useThemeInjection overwrites these per tenant. The fallbacks are the
-     values derived for the default colours (#76335a / #e99ac4), so first
+     values derived for the default colours (#5B6CFF / #21D1C2), so first
      paint matches. Tints sit at fixed WCAG luminance (0.97 / 0.93 / 0.87 /
      0.78); "ink" is the brand darkened only as far as 4.5:1 on white and
      the lighter tints; "fill" is the brand unless no text colour reaches
      4.5:1 on it. */
-  --color-primary-ink: #76335a;
-  --color-accent-ink: #8c5c76;
-  --color-primary-fill: #76335a;
+  --color-primary-ink: #4a58e8;
+  --color-accent-ink: #137971;
+  --color-primary-fill: #4a58e8;
   --color-on-primary-fill: #ffffff;
-  --tint-ground: #fdfcfc;
-  --tint-1: #f9f7f8;
-  --tint-2: #f4eff2;
-  --tint-3: #ece2e8;
-  --tint-accent-1: #fdf5f9;
-  --tint-accent-2: #fbecf4;
+  --tint-ground: #fbfcff;
+  --tint-1: #f6f7ff;
+  --tint-2: #eeefff;
+  --tint-3: #e0e3ff;
+  --tint-accent-1: #e9fbf9;
+  --tint-accent-2: #d6f7f4;
 
   /* Gradients composed from the tints. Defined here; applied to the page,
      header and footer in Phase 2 (photographer-theme-proposal.md, 4.2). */
@@ -1293,8 +1293,8 @@ dialog.modal-dialog::backdrop {
     color-mix(in srgb, var(--tint-accent-2) 88%, transparent)
   );
   --gradient-footer: linear-gradient(180deg, transparent, var(--tint-accent-1) 70%);
-  --color-primary-fill-hover: #6b2e52;
-  --color-primary-fill-active: #622a4b;
+  --color-primary-fill-hover: #4350d3;
+  --color-primary-fill-active: #3d49c1;
 
   /* Soft surfaces (Phase 2a). Cards are translucent so the page wash shows
      through; inputs and modals keep opaque --surface-base. */
