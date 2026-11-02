@@ -12,11 +12,7 @@ export function isSelfServeSignupEnabled(): boolean {
   return import.meta.env.VITE_ENABLE_SELF_SERVE_SIGNUP === 'true';
 }
 
-/** Cloudflare Turnstile site key; when unset the start page shows no CAPTCHA. */
-export function turnstileSiteKey(): string | null {
-  const key = import.meta.env.VITE_TURNSTILE_SITE_KEY?.trim();
-  return key ? key : null;
-}
+export { turnstileSiteKey } from '@/components/captcha/useCaptcha';
 
 /** user_metadata.signup on these accounts; send-auth-email brands their emails as OpalSwift. */
 export const SELF_SERVE_SIGNUP_METADATA = 'self_serve_studio';

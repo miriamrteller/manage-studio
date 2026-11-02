@@ -74,6 +74,7 @@ export default function LoginPage() {
     message,
     codeStep,
     codeEmail,
+    captcha,
     onSubmit,
     resetMessage,
     verifyEmailCode,
@@ -105,6 +106,7 @@ export default function LoginPage() {
           onResendEmailCode={resendEmailCode}
           onBackToCodeSend={backToCodeSend}
           onMessageDismiss={resetMessage}
+          captcha={captcha}
         />
 
         {/* Help Text */}

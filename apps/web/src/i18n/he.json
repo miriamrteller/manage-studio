@@ -1,5 +1,6 @@
 {
   "common": {
+    "captcha_needed": "יש להשלים את בדיקת האבטחה.",
     "saveChanges": "שמירת שינויים",
     "saving": "שומר...",
     "saved": "נשמר!",

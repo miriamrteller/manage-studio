@@ -14,6 +14,7 @@ import SignupStep1 from '@/features/auth/components/SignupStep1';
 import SignupStep2 from '@/features/auth/components/SignupStep2';
 import SignupStep3 from '@/features/auth/components/SignupStep3';
 import { PrivacyNotice } from '@/components/PrivacyNotice';
+import { useCaptcha } from '@/components/captcha/useCaptcha';
 
 type SignupStep = 1 | 2 | 3;
 
@@ -24,6 +25,8 @@ export default function SignupPage() {
   const [step, setStep] = useState<SignupStep>(1);
   const [contactPoint, setContactPoint] = useState<string>('');
   const [channel, setChannel] = useState<SignupForm['channel']>('email');
+  const [captchaMissing, setCaptchaMissing] = useState(false);
+  const captcha = useCaptcha();
 
   const form = useForm<SignupForm>({
     resolver: zodResolver(signupFormSchema),
@@ -45,10 +48,25 @@ export default function SignupPage() {
     verifyOtpLoading,
   } = useSignup();
 
+  /** The email path goes through Supabase Auth, which needs a CAPTCHA token once it is on. */
+  const sendCode = async (data: SignupForm) => {
+    if (data.channel !== 'email') return sendOtpAsync(data);
+    try {
+      return await sendOtpAsync({ ...data, ...captcha.authOptions() });
+    } finally {
+      captcha.reset();
+    }
+  };
+
   const onSubmitStep1 = form.handleSubmit(async (data) => {
+    if (data.channel === 'email' && !captcha.ready) {
+      setCaptchaMissing(true);
+      return;
+    }
+    setCaptchaMissing(false);
     try {
       const contact = data.channel === 'email' ? data.email : data.phone;
-      await sendOtpAsync(data);
+      await sendCode(data);
       setContactPoint(contact || '');
       setChannel(data.channel);
       setStep(2);
@@ -62,7 +80,13 @@ export default function SignupPage() {
   };
 
   const onResend = async () => {
-    await sendOtpAsync(form.getValues());
+    const values = form.getValues();
+    if (values.channel === 'email' && !captcha.ready) {
+      setCaptchaMissing(true);
+      return;
+    }
+    setCaptchaMissing(false);
+    await sendCode(values);
   };
 
   const onSubmitStep3 = (_data: { code: string }) => {
@@ -97,9 +121,11 @@ export default function SignupPage() {
           {step === 1 && (
             <>
               <SignupStep1 onSubmit={onSubmitStep1} loading={sendOtpLoading} />
+              {captcha.widget}
               <PrivacyNotice purpose="signup" className="mt-3" />
             </>
           )}
+          {step === 2 && channel === 'email' && captcha.widget}
           {step === 2 && (
             <SignupStep2
               channel={channel}
@@ -114,6 +140,10 @@ export default function SignupPage() {
             <SignupStep3 onSubmit={onSubmitStep3} loading={verifyOtpLoading} />
           )}
         </FormProvider>
+
+        {captchaMissing && (
+          <p className="text-sm text-red-700" role="alert">{t('common.captcha_needed')}</p>
+        )}
 
         {sendOtpError && (
           <Alert variant="destructive">

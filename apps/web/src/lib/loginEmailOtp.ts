@@ -6,6 +6,8 @@ export async function sendLoginEmailOtp(
   email: string,
   options: LoginOtpOptions,
   emailRedirectTo: string,
+  /** Turnstile token, required once Supabase CAPTCHA is on. */
+  captchaToken?: string,
 ) {
   return supabase.auth.signInWithOtp({
     email,
@@ -13,6 +15,7 @@ export async function sendLoginEmailOtp(
       shouldCreateUser: options.shouldCreateUser,
       emailRedirectTo,
       data: options.data,
+      ...(captchaToken ? { captchaToken } : {}),
     },
   });
 }
