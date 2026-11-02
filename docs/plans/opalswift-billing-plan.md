@@ -1,12 +1,25 @@
 # OpalSwift billing plan: how studios sign up and pay us
 
-Status: **plan only, no app code.** Written 2026-11-02. Facts marked **(verify)** are not confirmed.
+Status: **plan only, no app code.** Written 2026-11-02, updated the same day with the "After the free beta" roadmap (section 7) and Grow's partner-programme price. Facts marked **(verify)** are not confirmed.
+
+---
+
+## Open questions (read this first)
+
+- **Grow, no-charge card save:** can a card be saved with no charge for a 30-day trial? If not, we need a ₪1 test charge that is refunded.
+- **Grow, partner programme:** is it really ₪500 + VAT a month with unlimited studios? How fast is a studio approved, and what does a studio need (registered business only, or more)?
+- **Grow, receipts:** under the partner model, who issues receipts to the studio's clients: the studio's own Grow account (expected) or OpalSwift?
+- **Grow, foreign cards and currency:** shekel-only appears likely, and tourist cards seem to carry a higher fee (3.5%). Does Grow take foreign cards or USD/EUR at all?
+- **Business type:** עוסק פטור or מורשה? It changes VAT (whether the ₪500 + VAT is partly refundable) and the prices we show.
+- **Prices:** pick the three monthly prices (suggested ₪79 / ₪149 / ₪299). Break-even on the Grow partner fee is in section 7.
+- **Card at signup:** keep it off until Grow billing is live, or ask for it from day 1 (it may cost sign-ups)?
+- **Lawyer and accountant:** paid terms, auto-renewal wording, data-retention period, VAT and receipts. Book before charging anyone.
 
 ---
 
 ## Decisions for Miriam (one page)
 
-**Short version:** build a free trial now (no card). Add card capture and auto-billing only after you are a registered business (עוסק). Ask Grow in writing about two things before building anything beyond that.
+**Short version:** build a free trial now (no card). Add card capture and auto-billing only after you are a registered business (עוסק). Ask Grow in writing about the open questions before building anything beyond that.
 
 | # | Decision | My recommendation |
 |---|---|---|
@@ -17,7 +30,7 @@ Status: **plan only, no app code.** Written 2026-11-02. Facts marked **(verify)*
 | 5 | **Who is "us" on the receipt?** Grow can issue Hebrew receipts, but only for a registered business. | Do not charge anyone before registration. The terms already say "free during beta". |
 | 6 | **Email Grow now** (questions in section 6.2). The two answers decide phase 2 and phase 3. | **Yes, this week.** It costs nothing. |
 | 7 | **Lawyer and accountant.** Terms (fees, auto-renewal, cancellation) and receipts. Listed in section 5.3. | Book both before phase 2, not before phase 1. |
-| 8 | **Studios opening their own Grow account from inside OpalSwift** (phase 3). I found no public program for this. | Treat as a "maybe". Ask Grow. Do not plan around it. |
+| 8 | **Studios opening their own Grow account from inside OpalSwift** (phase 3). You asked Grow: the partner programme is **₪500 + VAT a month, unlimited studios**. I found no public page for it, so this comes from you. | Do it after registration and after about 4–7 paying studios (break-even table in section 7). Until then studios keep using their own accounts or pay offline. |
 
 **What I could not check:** Grow's own documentation sites did not open from my work environment, so Grow facts below come from search snippets and third-party pages. Treat every Grow detail as **(verify)** until Grow confirms it by email.
 
@@ -167,24 +180,62 @@ Why this section is thin: Grow's developer sites (`developers.grow.business`, `g
 - **Who can open an account:** needs a registered business **(verify)**.
 
 ### 6.2 Can a studio open its own Grow account from inside OpalSwift (phase 3)?
-**I found no public partner, marketplace or sub-merchant onboarding API for Grow.** Searches turned up only the standard developer docs, plus plugins on Wix and Duda (which let a merchant connect an existing Grow account). So today the safe assumption is: each studio signs up with Grow itself (needing a registered business) and pastes its credentials into OpalSwift, which is what the app already does. That is a public-information finding only; Grow may run a private partner programme.
+**Update from the owner (asked Grow directly):** Grow has a partner programme at a flat **₪500 + VAT per month**, unlimited clients (studios). It starts only once OpalSwift is a registered business. I found **no public page** for this programme or an onboarding API; my searches showed only the standard developer docs and plugins on Wix and Duda, which let a merchant connect an existing Grow account. So treat the programme's terms, speed and API as unconfirmed until Grow answers in writing (questions below).
 
-**Ask Grow (support or sales, in Hebrew):**
-1. Do you have a partner/ISV programme where a platform can refer or pre-fill merchant applications for its customers? Is there an API for it?
-2. Can a platform collect the application (ID, business number, bank account) and submit it, and how fast is approval?
-3. Can we earn a referral fee or negotiate a lower rate for our studios?
-4. Can a card be saved with no charge, for a 30-day trial? What is the fee for token and recurring charges?
-5. What documents does a new business (עוסק פטור) need, and how long does approval take?
-6. Is there a notify signature, and which events fire for recurring charges?
+**Where studios are today:** Creative Ballet takes payment at the studio (cash/offline). The photographer uses YPay on her own account. Neither needs the partner programme yet.
 
-**Alternatives if Grow has no programme:**
+**Questions for Grow (refreshed; support or sales, in Hebrew):**
+1. Partner programme: is it ₪500 + VAT a month with no cap on studios? Any contract length, set-up fee, or per-studio fee? Is there an API, or a form we submit for each studio?
+2. Onboarding: what does a studio need (registered business only?), what does OpalSwift collect for it, and how fast is approval: same day, or days?
+3. Receipts: under the partner model, who issues receipts and tax documents to the studio's clients: the studio's own Grow account, or OpalSwift?
+4. Trial: can a card be saved **with no charge** (for a 30-day trial)? If not, is a ₪1 charge plus refund allowed? What are the fees for token and recurring charges?
+5. **International cards and currency:** does Grow accept foreign-issued cards, at what fee, and can it charge or settle in USD/EUR? (Needed for studios with overseas clients, and for OpalSwift billing a non-Israeli studio.)
+6. Fees for our own subscription charges (OpalSwift's Grow merchant account): processing rate, any monthly fee.
+7. Technical: is there a notify signature, and which events fire for recurring charges?
+
+**Alternatives if the partner programme does not work out:**
 - **Referral link only:** a "Open a Grow account" button that opens Grow's own signup with a partner code, then the studio pastes keys back. Slow (not "almost immediately") but low effort.
 - **Other Israeli providers** (PayMe, Tranzila, YPay, iCount, Invoice4U): the app already has code for several of these as payment options. PayMe is known for a platform/marketplace product **(verify, I did not confirm it from a primary source)**. Ask each the same questions.
-- **Stripe:** Israel support is unclear. Sources conflict: a 2026 vendor guide says some Israeli businesses can onboard locally, an older guide says Stripe is not directly supported and suggests a foreign company ([Zenind](https://www.zenind.com/help/post/how-to-open-a-stripe-account-in-israel-a-founder-s-guide), [Osome](https://osome.com/uk/blog/stripe-account-israel-osome-uk-incorp)). Stripe has staff in Israel ([Calcalist, 2022](https://calcalistech.com/ctech/articles/0,7340,L-3926338,00.html)). **Check Stripe's official supported-countries page and ask Stripe whether Connect works for Israeli businesses.** Even if it does, Israeli studios expect Grow-style local cards, bank transfers and Hebrew receipts.
+- **Stripe:** the owner's understanding is that Stripe is not available to Israeli businesses. Public sources conflict (a 2026 vendor guide says some can onboard locally; an older one says no, [Zenind](https://www.zenind.com/help/post/how-to-open-a-stripe-account-in-israel-a-founder-s-guide), [Osome](https://osome.com/uk/blog/stripe-account-israel-osome-uk-incorp)). Not a dependency of this plan; only worth a recheck if Grow cannot do foreign cards.
+
+### 6.3 International cards and foreign currency (new)
+Method: search snippets only, as Grow's own sites were blocked. **All of this is unconfirmed until Grow answers.**
+- **Currency looks shekel-only.** Green Invoice's pages on Grow's digital payments say clearing is "in shekels only" (שירות תשלומים דיגיטליים מאפשר סליקה בשקלים בלבד), and Wix's Grow help page lists the New Israeli Shekel as the only currency. Sources: [Green Invoice, Grow/Meshulam](https://www.greeninvoice.co.il/market/clearing/meshulam), [Wix help (Hebrew)](https://support.wix.com/he/article/%D7%97%D7%99%D7%91%D7%95%D7%A8-grow-%D7%A9%D7%9C-%D7%9E%D7%A9%D7%95%D7%9C%D7%9D-%D7%9B%D7%97%D7%91%D7%A8%D7%AA-%D7%A1%D7%9C%D7%99%D7%A7%D7%94). Wix also lists Israel as the only supported country for Grow ([Wix help (English)](https://support.wix.com/en/article/connecting-meshulam-as-a-payment-provider)).
+- **Foreign ("tourist") cards: possibly yes, in shekels, with a higher fee.** A Green Invoice page lists a "tourist card" clearing fee of **3.5%**. This is a reseller page, not Grow's price list, and does not say the cards work for recurring or online charges.
+- **No evidence either way** on foreign-currency settlement (USD/EUR) or on charging a foreign-issued card via saved token.
+- **What this means:** a studio's overseas client could probably pay in shekels (their bank converts), but OpalSwift billing a non-Israeli studio in USD/EUR is unlikely to work on Grow. For the first studios (all Israeli, ILS) this does not matter. Ask question 5 above; if the answer is no, the fallback for foreign studios is bank transfer or PayPal-style invoicing, handled by hand.
 
 ---
 
-## 7. Phases
+## 7. After the free beta: roadmap
+
+**Now (during the free beta):** build **Phase 1** below, the 30-day trial with no card. It is the immediate next build and needs no registration, no Grow, and no money moving.
+
+**Once OpalSwift registers as a business, in this order:**
+
+| Step | What | Needs first | Cost | Effort |
+|---|---|---|---|---|
+| 1 | **Register the business** (עוסק פטור / מורשה / company). Follow `docs/legal/BUSINESS-REGISTRATION.md` (being written by the legal thread; not duplicated here). Then fill the placeholders in the terms and update them from "free during beta" to real fee terms. | Accountant decides the type. | Accountant fee **(unknown)**; registration itself is usually free or low **(verify)**. | Days to a few weeks, mostly waiting on authorities. |
+| 2 | **Open OpalSwift's own Grow merchant account** for its subscriptions. Ask the Grow questions 4, 6 and 7 (section 6.2) first. | Step 1 done. | Processing about 1.4–1.5% per charge (reseller figures, **verify**), plus any monthly fee **(ask)**. | About 1 week to open; **Phase 2** build is about 2–3 weeks of development. |
+| 3 | **Turn on Phase 2:** card capture at signup, auto-billing at day 30, receipts, dunning. Start with 3–5 friendly studios. | Step 2, updated terms, Grow's no-charge card answer. | Same as step 2. | See Phase 2 below. |
+| 4 | **Join the Grow partner programme** so studios can open their own Grow account from inside OpalSwift (**Phase 3**). | Step 1 done; Grow confirms terms and onboarding in writing; enough paying studios (below). | **₪500 + VAT a month**, flat, unlimited studios (from the owner's call with Grow; not on a public page). | Depends on Grow's process; build about 2–4 weeks once the process is known **(estimate)**. |
+
+Effort figures are rough guesses for planning, not commitments.
+
+### Break-even on the Grow partner fee
+The fee is ₪500 + VAT per month. VAT in Israel is currently 18% **(verify)**, so about **₪590 a month**. If OpalSwift is a VAT-registered dealer (עוסק מורשה) the VAT is normally refundable, so the real cost is ₪500. If OpalSwift is exempt (עוסק פטור), the VAT is a real cost and OpalSwift also charges no VAT. **Ask the accountant.**
+
+Paying studios needed to cover the fee, by monthly price (ex-VAT; processing fees on OpalSwift's own charges ignored, they are small):
+
+| Price per studio / month | Studios to cover ₪500 | Studios to cover ₪590 |
+|---|---|---|
+| ₪79 | 7 | 8 |
+| ₪149 | 4 | 4 |
+| ₪299 | 2 | 2 |
+
+This only counts the partner fee. It is a good reason to join the programme **after** you have about 5–8 paying studios, not before. If most studios use the cheapest plan, aim for 8.
+
+### Build phases
 
 ### P1: free trial, no card (before registration)
 **Goal:** studios can sign themselves up. Nothing is charged.
@@ -202,12 +253,12 @@ Why this section is thin: Grow's developer sites (`developers.grow.business`, `g
 - Start with 3–5 friendly studios in Grow sandbox, then live with one real charge.
 - **Done when:** a test studio goes from signup to automatic charge at day 30 and receives a Hebrew receipt, and a failed charge leads to read-only without data loss.
 
-### P3: studios open their own Grow account (if Grow allows)
-- Only if Grow confirms a partner/onboarding route. Otherwise: referral link plus the current paste-your-keys flow.
+### P3: studios open their own Grow account (Grow partner programme)
+- Only after registration and written confirmation from Grow of the programme terms (₪500 + VAT a month, unlimited studios, per the owner). If Grow's process turns out to be manual, fall back to a referral link plus the current paste-your-keys flow.
 - Shape if allowed: a "Start accepting cards" step in studio settings that pre-fills the application and tracks its status.
 - Needs each studio to be a registered business; show this clearly and offer manual payment (bank transfer, Bit, cash) until they are.
 - **Done when:** a new studio can take its first card payment within a day of applying.
 
 ---
 
-*Sources are listed inline. Items marked (verify) must be confirmed with Grow, an accountant or a lawyer before building on them.*
+*Sources are listed inline. Items marked (verify) must be confirmed with Grow, an accountant or a lawyer before building on them. Grow facts come from search snippets and third-party pages (Grow's own sites were blocked), and from the owner's call with Grow for the partner programme.*
