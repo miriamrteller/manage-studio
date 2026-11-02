@@ -65,7 +65,7 @@ export function NavDrawerMenu({
       {sections.map((section) => {
         if (section.sectionKey === 'browse') {
           return (
-            <div key={section.sectionKey} className="border-b border-primary-active/40 last:border-b-0">
+            <div key={section.sectionKey} className="border-b border-[var(--nav-border)] last:border-b-0">
               <ul>
                 {section.items.map((item) => {
                   const active = activePath === item.path;
@@ -80,9 +80,9 @@ export function NavDrawerMenu({
                         aria-current={active ? 'page' : undefined}
                         className={cn(
                           'w-full px-4 py-2.5 text-start text-sm font-medium transition-colors',
-                          'focus-visible:outline-2 focus-visible:outline-on-primary focus-visible:outline-offset-[-2px]',
-                          disabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-primary-hover',
-                          active && 'bg-primary-hover',
+                          'focus-visible:outline-2 focus-visible:outline-[var(--nav-text)] focus-visible:outline-offset-[-2px]',
+                          disabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[var(--nav-hover)]',
+                          active && 'bg-[var(--nav-active)]',
                         )}
                       >
                         {navLabel(item)}
@@ -100,7 +100,7 @@ export function NavDrawerMenu({
           const active = activePath === item.path;
           const disabled = isItemDisabled?.(item) ?? false;
           return (
-            <div key={section.sectionKey} className="border-b border-primary-active/40 last:border-b-0">
+            <div key={section.sectionKey} className="border-b border-[var(--nav-border)] last:border-b-0">
               <button
                 type="button"
                 disabled={disabled}
@@ -109,9 +109,9 @@ export function NavDrawerMenu({
                 aria-current={active ? 'page' : undefined}
                 className={cn(
                   'w-full px-4 py-2.5 text-start text-sm font-medium transition-colors',
-                  'focus-visible:outline-2 focus-visible:outline-on-primary focus-visible:outline-offset-[-2px]',
-                  disabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-primary-hover',
-                  active && 'bg-primary-hover',
+                  'focus-visible:outline-2 focus-visible:outline-[var(--nav-text)] focus-visible:outline-offset-[-2px]',
+                  disabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[var(--nav-hover)]',
+                  active && 'bg-[var(--nav-active)]',
                 )}
               >
                 {navLabel(item)}
@@ -124,7 +124,7 @@ export function NavDrawerMenu({
         const sectionPanelId = `nav-section-${section.sectionKey}`;
 
         return (
-          <div key={section.sectionKey} className="border-b border-primary-active/40 last:border-b-0">
+          <div key={section.sectionKey} className="border-b border-[var(--nav-border)] last:border-b-0">
             <button
               type="button"
               onClick={() => toggleSection(section.sectionKey)}
@@ -132,7 +132,7 @@ export function NavDrawerMenu({
               aria-controls={sectionPanelId}
               className={cn(
                 'flex w-full items-center justify-between gap-2 px-4 py-2.5 text-sm font-medium transition-colors',
-                'hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-on-primary focus-visible:outline-offset-[-2px]',
+                'hover:bg-[var(--nav-hover)] focus-visible:outline-2 focus-visible:outline-[var(--nav-text)] focus-visible:outline-offset-[-2px]',
               )}
             >
               <span>{t(section.labelKey)}</span>
@@ -162,9 +162,9 @@ export function NavDrawerMenu({
                         className={cn(
                           'w-full text-start py-2 text-sm transition-colors',
                           item.indent ? 'ps-8 pe-4' : 'px-4',
-                          'focus-visible:outline-2 focus-visible:outline-on-primary focus-visible:outline-offset-[-2px]',
-                          disabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-primary-hover',
-                          active && 'bg-primary-hover font-medium',
+                          'focus-visible:outline-2 focus-visible:outline-[var(--nav-text)] focus-visible:outline-offset-[-2px]',
+                          disabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[var(--nav-hover)]',
+                          active && 'bg-[var(--nav-active)] font-medium',
                         )}
                       >
                         {navLabel(item)}

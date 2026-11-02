@@ -3,6 +3,8 @@ import { useTenant } from './useTenant';
 import { deriveColorSystem, getAccessibleTextColor } from '../lib/utils';
 import { injectFontPair } from './useFontLoader';
 import { deriveSoftTheme } from '../lib/theme/deriveSoftTheme';
+import { deriveNavTheme } from '../lib/theme/navTheme';
+import { getDefaultTheme } from '../lib/theme/defaultTheme';
 
 export function useThemeInjection(): void {
   const tenant = useTenant();
@@ -12,7 +14,7 @@ export function useThemeInjection(): void {
     try {
       const whiteLabel = tenant.white_label;
       if (!whiteLabel) { console.warn('Tenant white_label config not found, using defaults'); return; }
-      const primaryColor = whiteLabel.primary_color || '#2563eb';
+      const primaryColor = whiteLabel.primary_color || getDefaultTheme().primary;
       const secondaryColor = whiteLabel.secondary_color || whiteLabel.accent_color || undefined;
       const colorSystem = deriveColorSystem(primaryColor, secondaryColor);
       Object.entries(colorSystem).forEach(([key, value]) => {
@@ -25,6 +27,9 @@ export function useThemeInjection(): void {
       // in index.css, replacing the old warm/cool off-white switch.
       const soft = deriveSoftTheme(colorSystem.primary, colorSystem.secondary);
       Object.entries(soft).forEach(([cssVar, value]) => {
+        root.style.setProperty(cssVar, value);
+      });
+      Object.entries(deriveNavTheme(colorSystem.primary, colorSystem.secondary)).forEach(([cssVar, value]) => {
         root.style.setProperty(cssVar, value);
       });
       // Text on a solid primary sits on the fill, so it follows the fill.
