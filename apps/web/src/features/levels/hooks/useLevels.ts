@@ -79,7 +79,7 @@ export function useLevels({
     pageSize: PAGE_SIZE,
     isLoading: listQuery.isLoading,
     error: listQuery.error as Error | null,
-    createLevel: (level: Partial<Category>, callbacks?: { onSuccess?: () => void; onError?: (error: Error) => void }) => {
+    createLevel: (level: Partial<Category>, callbacks?: { onSuccess?: (created: Category) => void; onError?: (error: Error) => void }) => {
       createMutation.mutate(level, {
         onSuccess: callbacks?.onSuccess,
         onError: callbacks?.onError,

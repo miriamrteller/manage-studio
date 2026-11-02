@@ -25,6 +25,7 @@
     "error": "Error",
     "success": "Success",
     "required": "Required",
+    "required_fields": "Please fill in all required fields.",
     "optional": "Optional",
     "yes": "Yes",
     "no": "No",
@@ -248,8 +249,24 @@
       "gender_female": "Female",
       "allowed_genders": "Allowed genders",
       "level_id": "Required level",
+      "new_level": "+ New level",
+      "no_levels": "No levels yet",
+      "new_level_name": "New level name",
+      "new_level_name_required": "Enter a name for the level.",
+      "new_level_failed": "Could not create the level. Please try again.",
       "doc_type": "Document type",
-      "doc_type_hint": "e.g. Medical certificate, Vaccination record"
+      "doc_type_hint": "e.g. Medical certificate, Vaccination record",
+      "age_hint": "Saved on the class itself, not as a requirement.",
+      "age_current_range": "Currently {{min}}–{{max}} years",
+      "age_current_min": "Currently from {{min}} years",
+      "age_current_max": "Currently up to {{max}} years",
+      "age_current_none": "No ages set on this class yet",
+      "age_min_invalid": "Minimum age must be a whole number, 0 or more.",
+      "age_max_invalid": "Maximum age must be a whole number, 0 or more.",
+      "age_order_invalid": "Minimum age can't be higher than maximum age.",
+      "age_save": "Save age range",
+      "age_saved": "Age range saved.",
+      "age_save_failed": "Could not save the age range. Please try again."
     },
     "person": {
       "name": "Full Name",
@@ -2941,7 +2958,11 @@
         "enrolment": "Why we ask: your enrolment terms must state prices, dates and how payment works before anyone signs up.",
         "photography": "Why we ask: your clients need to know how their photos are delivered and how long they are kept.",
         "retention": "Why we ask: privacy law requires saying how long you keep personal data."
-      }
+      },
+      "filled_from_studio": "Filled in from your studio's details. Check it and change it if needed.",
+      "filled_for_you_one": "Details we filled in for you (1)",
+      "filled_for_you_other": "Details we filled in for you ({{count}})",
+      "filled_for_you_hint": "Taken from your studio's setup, or a sensible default. Open to check or change them."
     },
     "privacy_notice": "We use your details only to handle your request and enrolment.",
     "accept_terms_prefix": "I have read and accept the",
