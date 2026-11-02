@@ -18,14 +18,27 @@ const h = vi.hoisted(() => ({
   profile: null as Record<string, string> | null,
   uploads: [] as Array<Record<string, unknown>>,
   forms: [] as Array<{ lawyer_reviewed_at: string | null }>,
+  updates: [] as unknown[],
 }));
+vi.mock('@/hooks/useCurrentUser', () => ({ useCurrentUser: () => ({ user: null, isLoading: false, isProfileChecked: true }) }));
 vi.mock('@/lib/supabase', () => ({
   supabase: {
     rpc: h.rpc,
     functions: { invoke: h.invoke },
     // Active forms and whether each is lawyer-reviewed.
     from: () => {
-      const q = { select: () => q, eq: () => q, then: (r: (v: unknown) => unknown) => r({ data: h.forms, error: null }) };
+      const q = {
+        select: () => q,
+        eq: () => q,
+        in: () => q,
+        order: () => q,
+        maybeSingle: () => q,
+        update: (v: unknown) => {
+          h.updates.push(v);
+          return q;
+        },
+        then: (r: (v: unknown) => unknown) => r({ data: h.forms, error: null }),
+      };
       return q;
     },
   },
@@ -70,6 +83,7 @@ beforeEach(() => {
   h.profile = null;
   h.uploads = [];
   h.forms = [{ lawyer_reviewed_at: null }];
+  h.updates = [];
   h.invoke.mockResolvedValue({ data: { seeded: 0 }, error: null });
   h.rpc.mockImplementation(async (name: string) => {
     if (name === 'get_tenant_legal_profile') return { data: [profileRow()], error: null };

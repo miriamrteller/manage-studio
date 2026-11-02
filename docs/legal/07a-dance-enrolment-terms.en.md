@@ -4,7 +4,7 @@
 
 # Enrolment Terms — [[STUDIO NAME]]
 
-Season: [[SEASON NAME, e.g. 2026–2027]] · Last updated: [[DATE]]
+Last updated: [[DATE]]
 
 **Studio details (required disclosure for online enrolment):** [[STUDIO LEGAL NAME]], [[ID / BUSINESS NO. — or "not yet a registered business"]], [[ADDRESS]], [[PHONE]], [[EMAIL]].
 
@@ -13,15 +13,15 @@ Season: [[SEASON NAME, e.g. 2026–2027]] · Last updated: [[DATE]]
 ## 1. The class
 
 - Class, level, day, time and place: as shown on the enrolment page and in the confirmation email.
-- Season: from [[START DATE]] to [[END DATE]], about [[NUMBER OF LESSONS]] lessons. There are no classes on [[HOLIDAYS — e.g. Israeli public holidays and school holidays as listed in the studio calendar]].
+- Season: as published by the studio for the current season, including the class schedule and the days without classes (for example public and school holidays).
 - The studio may change a teacher, time or room for good reason. If a change makes the class unsuitable for you, you may cancel under section 4 without a fee.
 - Events (for example an end-of-year performance, show or tournament): [[DETAILS / costume fees, if any]].
 
 ## 2. Price and payment
 
-- Price for the season: [[SEASON PRICE ₪]] [[incl. VAT / no VAT charged (עוסק פטור)]], or [[MONTHLY PRICE ₪]] per month for [[NUMBER OF MONTHS]] months. Registration fee: [[₪ / none]]. Sibling discount: [[SIBLING DISCOUNT]].
+- Fees: as shown for the class at registration [[incl. VAT / no VAT charged (עוסק פטור)]].
 - Payment methods: [[bank transfer / cash / Bit / card through the payment page]].
-- Payment dates: [[e.g. on the 1st of each month / in advance for the season]].
+- Payment schedule: as shown for the class at registration.
 - **How payments are recorded:** payments are recorded by the studio in its management system, and you can see them in the parent portal. [[RECEIPTS: "We issue a receipt for every payment." — once the studio is a registered business. Until then: see owner checklist; do not publish without resolving.]]
 - Late payment: we will send a reminder. If payment is more than [[30]] days late, we may pause the student's place after a written notice of [[7]] days.
 
