@@ -451,6 +451,8 @@ export function buildSeed(): Tables {
     marketing_consent: true,
     converted_account_id: null,
     converted_at: null,
+    converted_engagement_id: null,
+    suggested_engagement_id: null,
     source_ref: null,
     created_at: at(-createdDaysAgo, 9),
     updated_at: at(-createdDaysAgo, 9),

@@ -10,8 +10,20 @@ import type { StoredAnswer } from '@shared/index';
  * No `won` stage: winning is conversion (converted_account_id), phase 3.
  */
 
-export const LEAD_STAGES = ['new', 'contacted', 'qualified', 'proposal', 'lost'] as const;
+/** Every stage the database accepts (leads_stage_check). */
+export const LEAD_STAGES = ['new', 'contacted', 'qualified', 'proposal', 'trial_booked', 'trial_done', 'won', 'lost'] as const;
 export type LeadStage = (typeof LEAD_STAGES)[number];
+
+/** Photographers: lead → quote → job (unchanged). Won = converted to a job. */
+export const PHOTOGRAPHER_STAGES: readonly LeadStage[] = ['new', 'contacted', 'qualified', 'proposal', 'lost'];
+/** Dance and other class studios: trial, then enrolled (won). */
+export const CLASS_STAGES: readonly LeadStage[] = ['new', 'contacted', 'trial_booked', 'trial_done', 'won', 'lost'];
+
+/** The stages a studio picks from; a lead already in another stage keeps it in its list. */
+export function stagesFor(vertical: string | null | undefined, current?: LeadStage): readonly LeadStage[] {
+  const base = vertical === 'photographer' ? PHOTOGRAPHER_STAGES : CLASS_STAGES;
+  return current && !base.includes(current) ? [...base, current] : base;
+}
 
 export const LEAD_CHANNELS = [
   'email', 'website', 'whatsapp', 'linkedin', 'instagram',
@@ -47,6 +59,20 @@ export interface Lead {
   last_communication_note: string | null;
   marketing_consent: boolean;
   converted_account_id: string | null;
+  /** The enrolment this lead became (auto-linked on enrolment, or by hand). */
+  converted_engagement_id: string | null;
+  /** A possible matching enrolment, when several leads matched; confirm by hand. */
+  suggested_engagement_id: string | null;
+  created_at: string;
+}
+
+/** An enrolment, as the leads page names it. */
+export interface EnrolmentChoice {
+  id: string;
+  person_id: string;
+  account_id: string | null;
+  student: string;
+  offering: string;
   created_at: string;
 }
 
@@ -65,7 +91,7 @@ export interface LeadCreateInput {
 const LEAD_COLUMNS =
   'id, name, company, email, phone, stage, channel, campaign, form_id, child_name, child_birth_date, event_date, answers, interest, offering_id, deal_value_minor, note, ' +
   'next_follow_up_at, last_contacted_at, last_communication_note, marketing_consent, ' +
-  'converted_account_id, created_at';
+  'converted_account_id, converted_engagement_id, suggested_engagement_id, created_at';
 
 export class LeadService extends BaseService {
   static async list(tenant: Tenant): Promise<Lead[]> {
@@ -105,6 +131,76 @@ export class LeadService extends BaseService {
       if (error) throw new Error(error.message);
       return data as unknown as Lead;
     }, 'LeadService.create');
+  }
+
+  /**
+   * Link a lead to an enrolment by hand: won, converted to the student's
+   * family account. Other leads that only suggested this enrolment let go of it.
+   */
+  static async linkToEnrolment(tenant: Tenant, leadId: string, choice: EnrolmentChoice): Promise<void> {
+    return this.withRetry(async () => {
+      if (!choice.account_id) throw new Error('This student has no family account yet.');
+      const { error } = await supabase
+        .from('leads')
+        .update({
+          stage: 'won',
+          converted_account_id: choice.account_id,
+          converted_at: new Date().toISOString(),
+          converted_engagement_id: choice.id,
+          suggested_engagement_id: null,
+        })
+        .eq('id', leadId)
+        .eq('tenant_id', tenant.id)
+        .is('converted_account_id', null);
+      if (error) throw new Error(error.message);
+      await supabase
+        .from('leads')
+        .update({ suggested_engagement_id: null })
+        .eq('tenant_id', tenant.id)
+        .eq('suggested_engagement_id', choice.id);
+    }, 'LeadService.linkToEnrolment');
+  }
+
+  /** Clear a wrong suggestion. */
+  static async dismissSuggestion(tenant: Tenant, leadId: string): Promise<void> {
+    return this.withRetry(async () => {
+      const { error } = await supabase
+        .from('leads')
+        .update({ suggested_engagement_id: null })
+        .eq('id', leadId)
+        .eq('tenant_id', tenant.id);
+      if (error) throw new Error(error.message);
+    }, 'LeadService.dismissSuggestion');
+  }
+
+  /** Recent class enrolments (newest first), optionally only these ids, for naming and linking. */
+  static async enrolments(tenant: Tenant, ids?: string[]): Promise<EnrolmentChoice[]> {
+    return this.withRetry(async () => {
+      let query = supabase
+        .from('engagements')
+        .select('id, person_id, created_at, people(name, account_id), offerings!inner(name, offering_type)')
+        .eq('tenant_id', tenant.id)
+        .eq('offerings.offering_type', 'class')
+        .order('created_at', { ascending: false });
+      query = ids ? query.in('id', ids) : query.limit(300);
+      const { data, error } = await query;
+      if (error) throw new Error(error.message);
+      type Row = {
+        id: string;
+        person_id: string;
+        created_at: string;
+        people: { name: string; account_id: string | null } | null;
+        offerings: { name: string } | null;
+      };
+      return ((data ?? []) as unknown as Row[]).map((r) => ({
+        id: r.id,
+        person_id: r.person_id,
+        account_id: r.people?.account_id ?? null,
+        student: r.people?.name ?? '—',
+        offering: r.offerings?.name ?? '—',
+        created_at: r.created_at,
+      }));
+    }, 'LeadService.enrolments');
   }
 
   static async updateStage(tenant: Tenant, id: string, stage: LeadStage): Promise<void> {

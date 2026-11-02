@@ -1439,6 +1439,7 @@ export type Database = {
                     company: string | null;
                     converted_account_id: string | null;
                     converted_at: string | null;
+                    converted_engagement_id: string | null;
                     created_at: string;
                     deal_value_minor: number | null;
                     email: string | null;
@@ -1456,6 +1457,7 @@ export type Database = {
                     phone: string | null;
                     source_ref: string | null;
                     stage: string;
+                    suggested_engagement_id: string | null;
                     tenant_id: string;
                     title: string | null;
                     updated_at: string;
@@ -1469,6 +1471,7 @@ export type Database = {
                     company?: string | null;
                     converted_account_id?: string | null;
                     converted_at?: string | null;
+                    converted_engagement_id?: string | null;
                     created_at?: string;
                     deal_value_minor?: number | null;
                     email?: string | null;
@@ -1486,6 +1489,7 @@ export type Database = {
                     phone?: string | null;
                     source_ref?: string | null;
                     stage?: string;
+                    suggested_engagement_id?: string | null;
                     tenant_id: string;
                     title?: string | null;
                     updated_at?: string;
@@ -1499,6 +1503,7 @@ export type Database = {
                     company?: string | null;
                     converted_account_id?: string | null;
                     converted_at?: string | null;
+                    converted_engagement_id?: string | null;
                     created_at?: string;
                     deal_value_minor?: number | null;
                     email?: string | null;
@@ -1516,6 +1521,7 @@ export type Database = {
                     phone?: string | null;
                     source_ref?: string | null;
                     stage?: string;
+                    suggested_engagement_id?: string | null;
                     tenant_id?: string;
                     title?: string | null;
                     updated_at?: string;
@@ -1526,6 +1532,13 @@ export type Database = {
                         columns: ["converted_account_id"];
                         isOneToOne: false;
                         referencedRelation: "accounts";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "leads_converted_engagement_id_fkey";
+                        columns: ["converted_engagement_id"];
+                        isOneToOne: false;
+                        referencedRelation: "engagements";
                         referencedColumns: ["id"];
                     },
                     {
@@ -1540,6 +1553,13 @@ export type Database = {
                         columns: ["offering_id"];
                         isOneToOne: false;
                         referencedRelation: "offerings";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "leads_suggested_engagement_id_fkey";
+                        columns: ["suggested_engagement_id"];
+                        isOneToOne: false;
+                        referencedRelation: "engagements";
                         referencedColumns: ["id"];
                     },
                     {
@@ -4650,6 +4670,12 @@ export type Database = {
                     p_tenant_id: string;
                 };
                 Returns: undefined;
+            };
+            lead_phone_key: {
+                Args: {
+                    p_phone: string;
+                };
+                Returns: string;
             };
             link_auth_user_to_guardian_for_engagement: {
                 Args: {

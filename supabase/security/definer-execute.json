@@ -114,6 +114,7 @@
       "job_insert",
       "job_resolve_client",
       "job_store_client_phone",
+      "link_lead_on_enrolment",
       "list_due_shoot_emails",
       "log_platform_change",
       "marketing_optins",
