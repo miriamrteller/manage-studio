@@ -159,7 +159,8 @@ export function NavDrawer() {
       aria-modal={isOverlay ? true : undefined}
       aria-label={t('nav.menu')}
       className={cn(
-        'nav-drawer-panel flex flex-col bg-primary text-on-primary border-e border-primary-active',
+        tenant?.chrome_style === 'solid' ? 'nav-drawer-solid' : 'nav-drawer-soft',
+        'nav-drawer-panel flex flex-col text-[var(--nav-text)] border-e border-[var(--nav-border)]',
         'w-[var(--nav-drawer-width)]',
         isPinned
           ? 'h-dvh max-h-dvh shrink-0 sticky top-0 overflow-hidden'
@@ -170,7 +171,7 @@ export function NavDrawer() {
       )}
     >
       {/* Header */}
-      <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-primary-active shrink-0">
+      <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-[var(--nav-border)] shrink-0">
         <h2 className="font-semibold text-base">{t('nav.menu')}</h2>
         <div className="flex items-center gap-1">
           {/* Pin: desktop only */}
@@ -181,7 +182,7 @@ export function NavDrawer() {
             onClick={togglePin}
             aria-label={isPinned ? t('nav.unpin_menu') : t('nav.pin_menu')}
             aria-pressed={isPinned}
-            className="hidden md:inline-flex text-on-primary hover:bg-primary-hover hover:text-on-primary"
+            className="hidden md:inline-flex text-[var(--nav-text)] hover:bg-[var(--nav-hover)] hover:text-[var(--nav-text)]"
           >
             {isPinned ? <PinOff size={18} aria-hidden /> : <Pin size={18} aria-hidden />}
           </Button>
@@ -192,7 +193,7 @@ export function NavDrawer() {
             size="sm"
             onClick={close}
             aria-label={t('nav.close_menu')}
-            className="text-on-primary hover:bg-primary-hover hover:text-on-primary"
+            className="text-[var(--nav-text)] hover:bg-[var(--nav-hover)] hover:text-[var(--nav-text)]"
           >
             <X size={18} aria-hidden />
           </Button>
@@ -209,7 +210,7 @@ export function NavDrawer() {
 
       {/* Account footer (authenticated) */}
       {isAuthenticated && user && (
-        <div className="shrink-0 border-t border-primary-active px-4 py-3 space-y-2">
+        <div className="shrink-0 border-t border-[var(--nav-border)] px-4 py-3 space-y-2">
           <p className="text-sm opacity-90 truncate" title={user.email}>
             {user.email}
           </p>
@@ -222,7 +223,7 @@ export function NavDrawer() {
                 close();
                 openReportProblem();
               }}
-              className="w-full justify-start gap-2 text-on-primary hover:bg-primary-hover hover:text-on-primary"
+              className="w-full justify-start gap-2 text-[var(--nav-text)] hover:bg-[var(--nav-hover)] hover:text-[var(--nav-text)]"
             >
               <LifeBuoy size={16} aria-hidden />
               {t('report_problem.menu_item')}

@@ -1296,6 +1296,15 @@ dialog.modal-dialog::backdrop {
   --color-primary-fill-hover: #4350d3;
   --color-primary-fill-active: #3d49c1;
 
+  /* Side menu (deriveNavTheme): dark base from the primary, faint accent glow in one corner. */
+  --nav-base: #252d63;
+  --nav-corner: #244671;
+  --nav-hover: rgb(255 255 255 / 0.1);
+  --nav-active: rgb(255 255 255 / 0.16);
+  --nav-border: rgb(255 255 255 / 0.14);
+  --nav-text: #ffffff;
+  --nav-corner-x: 100%;
+
   /* Soft surfaces (Phase 2a). Cards are translucent so the page wash shows
      through; inputs and modals keep opaque --surface-base. */
   --surface-card: color-mix(in srgb, #fff 80%, transparent);
@@ -1322,6 +1331,7 @@ dialog.modal-dialog::backdrop {
 /* RTL: mirror the directional soft gradients so the primary glow stays at
    inline-start. dir is set on <html>, the same element as the tokens. */
 [dir='rtl'] {
+  --nav-corner-x: 0%;
   --wash-page:
     radial-gradient(75% 60% at 100% 0%, var(--tint-3), transparent 70%),
     radial-gradient(60% 55% at 0% 0%, var(--tint-accent-2), transparent 70%),
@@ -1399,4 +1409,20 @@ dialog.modal-dialog::backdrop {
   background-image: var(--gradient-footer);
   border-block-start: 1px solid var(--border-card);
   color: var(--color-text-primary);
+}
+
+/* ===== Side menu =====
+   Soft chrome (default): dark base with a faint accent glow (~15%) in the top
+   corner. Solid chrome: the flat dark base. Text is white (--nav-text); the
+   tokens are derived so it holds WCAG AA everywhere (see navTheme.ts). */
+.nav-drawer-soft {
+  background-color: var(--nav-base);
+  background-image: radial-gradient(
+    130% 55% at var(--nav-corner-x) 0%,
+    var(--nav-corner),
+    transparent 75%
+  );
+}
+.nav-drawer-solid {
+  background-color: var(--nav-base);
 }

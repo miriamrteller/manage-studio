@@ -8,6 +8,7 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { supabase } from '@/lib/supabase';
 import { useNavDrawer } from './NavDrawerContext';
 import { HeaderLogo } from './HeaderLogo';
+import { OpalSwiftLogoLink } from '@/components/OpalSwiftShell';
 
 /** Class sets for the two header styles (tenants.chrome_style). */
 const CHROME = {
@@ -53,9 +54,14 @@ export function AppHeader() {
           <Button ref={menuButtonRef} type="button" variant="ghost" size="sm" onClick={toggle} aria-expanded={isOpen} aria-controls="nav-drawer" aria-label={isOpen ? t('nav.close_menu') : t('nav.open_menu')} className={`${c.icon} shrink-0`}>
             {isPinned ? <PanelLeftClose size={20} aria-hidden /> : <Menu size={20} aria-hidden />}
           </Button>
-          <Link to="/" className={`flex min-w-0 items-center font-bold text-lg truncate hover:opacity-90 focus-visible:outline-2 ${c.link} outline-offset-2`}>
-            <HeaderLogo tenant={tenant} soft={soft} />
-          </Link>
+          {tenant ? (
+            <Link to="/" className={`flex min-w-0 items-center font-bold text-lg truncate hover:opacity-90 focus-visible:outline-2 ${c.link} outline-offset-2`}>
+              <HeaderLogo tenant={tenant} soft={soft} />
+            </Link>
+          ) : (
+            // No studio (platform host): OpalSwift's own logo, linking to the marketing site.
+            <OpalSwiftLogoLink className={soft ? '' : 'rounded bg-white px-2 py-1'} />
+          )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <Button variant="outline" size="sm" onClick={toggleLanguage} aria-label={t('common.language')} className={c.pill}>

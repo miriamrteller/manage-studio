@@ -3,6 +3,7 @@ import { useTenant } from './useTenant';
 import { deriveColorSystem, getAccessibleTextColor } from '../lib/utils';
 import { injectFontPair } from './useFontLoader';
 import { deriveSoftTheme } from '../lib/theme/deriveSoftTheme';
+import { deriveNavTheme } from '../lib/theme/navTheme';
 import { getDefaultTheme } from '../lib/theme/defaultTheme';
 
 export function useThemeInjection(): void {
@@ -26,6 +27,9 @@ export function useThemeInjection(): void {
       // in index.css, replacing the old warm/cool off-white switch.
       const soft = deriveSoftTheme(colorSystem.primary, colorSystem.secondary);
       Object.entries(soft).forEach(([cssVar, value]) => {
+        root.style.setProperty(cssVar, value);
+      });
+      Object.entries(deriveNavTheme(colorSystem.primary, colorSystem.secondary)).forEach(([cssVar, value]) => {
         root.style.setProperty(cssVar, value);
       });
       // Text on a solid primary sits on the fill, so it follows the fill.

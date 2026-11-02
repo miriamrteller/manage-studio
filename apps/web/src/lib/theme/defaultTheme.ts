@@ -12,6 +12,7 @@
 import { deriveColorSystem } from '@/lib/utils';
 import { deriveSoftTheme } from './deriveSoftTheme';
 import { mix } from './color';
+import { deriveNavTheme } from './navTheme';
 import { OPALSWIFT_BRAND } from './opalswiftBrand';
 
 export interface DefaultTheme {
@@ -47,5 +48,6 @@ export function defaultThemeTokens(skin?: string | null): Record<string, string>
   tokens['--color-primary-fill-hover'] = mix(t.ink, '#000000', 0.91);
   tokens['--color-primary-fill-active'] = mix(t.ink, '#000000', 0.83);
   tokens['--color-primary-ink'] = t.ink;
+  Object.assign(tokens, deriveNavTheme(t.primary, t.secondary));
   return tokens;
 }
