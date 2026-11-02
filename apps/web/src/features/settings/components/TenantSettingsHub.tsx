@@ -20,6 +20,7 @@ import { OfflinePaymentsSettingsForm } from './OfflinePaymentsSettingsForm';
 import { InvoicingToggleForm } from './InvoicingToggleForm';
 import { GetLeadsPanel } from '@/features/crm/components/GetLeadsPanel';
 import { LeadFormSettings } from './LeadFormSettings';
+import { LeadDigestSetting } from './LeadDigestSetting';
 
 function SettingsLinkCard({
   title,
@@ -83,6 +84,8 @@ export function TenantSettingsHub() {
       <GetLeadsPanel />
       <hr className="border-gray-200" />
       <LeadFormSettings />
+      <hr className="border-gray-200" />
+      <LeadDigestSetting />
 
       <section className="space-y-4">
         <h2 className="text-lg font-semibold text-foreground">{t('settings.hub.more_settings')}</h2>

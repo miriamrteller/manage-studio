@@ -283,6 +283,27 @@ Steps 1–4 are the beta (about 1 week). The default card payment path is not to
     still saved, without the form link or its class. A form that was deleted
     meanwhile → the lead is saved with no required questions.
 
+- **Step 4, daily follow-up digest.** `run-lead-followup-digest` runs daily at
+  05:23 UTC (07:23 Israel winter, 08:23 summer), with the same cron pattern and
+  `CRON_SECRET` as `run-shoot-emails`.
+  - **Recipients:** every studio admin gets one email listing that studio's
+    leads due today or overdue. Only open leads count: not won, lost or
+    converted. Overdue leads come first and are marked.
+  - **No digest** for studios with nothing due.
+  - **Language:** en or he, from the admin's language, otherwise the studio
+    default.
+  - **Sending:** from the studio sender (Reply-To the studio), through
+    `sendHtmlEmail`, so `EMAIL_TRANSPORT` applies.
+  - **Once a day:** each digest is claimed in `notification_log` before sending.
+    A unique index (studio, recipient, `digest_date`) means a retry or
+    overlapping run never sends twice; failures are logged.
+  - **Opt-out per admin:** Settings → **Daily follow-up email**
+    (`lead_digest_optouts`, RLS: own row, own studio). It is on by default.
+  - **Leads page:** "Overdue" / "Due today" on each lead, plus a summary line.
+  - **Owner:** nothing to set. It uses the existing `CRON_SECRET`,
+    `APP_ROOT_DOMAIN` and email transport. It starts the morning after the
+    deploy-prod that carries it.
+
 ### Social channels: now and later
 
 - **Now (P1):** tagged links and a QR poster, above. Each lead records where it

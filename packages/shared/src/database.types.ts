@@ -1367,6 +1367,39 @@ export type Database = {
           },
         ]
       }
+      lead_digest_optouts: {
+        Row: {
+          created_at: string
+          tenant_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          tenant_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          tenant_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_digest_optouts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_digest_optouts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_forms: {
         Row: {
           active: boolean
