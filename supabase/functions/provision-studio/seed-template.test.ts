@@ -35,12 +35,14 @@ function checkFilled(row: Row) {
   assert(!row.content.includes("[["), `no placeholders left in ${row.name}`);
 }
 
-Deno.test("a new dance studio gets both health declarations, by audience, filled with its name", async () => {
+Deno.test("a new dance studio gets both health declarations, by audience, in both languages", async () => {
   const { deps, rows } = fakeDeps();
-  assertEquals(await seedSignedTemplate(deps, studio("dance-studio")), 2);
-  assertEquals(rows.map((r) => [r.name, r.audience]), [
-    ["Health declaration (under 18)", "child"],
-    ["Health declaration (adults)", "adult"],
+  assertEquals(await seedSignedTemplate(deps, studio("dance-studio")), 4);
+  assertEquals(rows.map((r) => [r.name, r.audience, r.language]), [
+    ["Health declaration (under 18)", "child", "en"],
+    ["Health declaration (adults)", "adult", "en"],
+    ["הצהרת בריאות (מתחת לגיל 18)", "child", "he"],
+    ["הצהרת בריאות (מבוגרים)", "adult", "he"],
   ]);
   for (const row of rows) {
     checkFilled(row);
@@ -50,8 +52,11 @@ Deno.test("a new dance studio gets both health declarations, by audience, filled
 
 Deno.test("a new photographer gets one agreement with the photography add-on, merge fields kept", async () => {
   const { deps, rows } = fakeDeps();
-  assertEquals(await seedSignedTemplate(deps, studio("photographer")), 1);
-  assertEquals(rows[0].name, "Photography services agreement");
+  assertEquals(await seedSignedTemplate(deps, studio("photographer")), 2);
+  assertEquals(rows.map((r) => [r.name, r.language]), [
+    ["Photography services agreement", "en"],
+    ["הסכם שירותי צילום", "he"],
+  ]);
   assertEquals(rows[0].audience, null);
   assertStringIncludes(rows[0].content, "{{client_name}}");
   checkFilled(rows[0]);
@@ -59,21 +64,22 @@ Deno.test("a new photographer gets one agreement with the photography add-on, me
 
 Deno.test("a beautician gets the agreement with its add-on; a general studio the base agreement", async () => {
   const beauty = fakeDeps();
-  assertEquals(await seedSignedTemplate(beauty.deps, studio("beautician")), 1);
+  assertEquals(await seedSignedTemplate(beauty.deps, studio("beautician")), 2);
   assertEquals(beauty.rows[0].name, "Treatment services agreement");
   checkFilled(beauty.rows[0]);
 
   const generic = fakeDeps();
-  assertEquals(await seedSignedTemplate(generic.deps, studio("generic")), 1);
+  assertEquals(await seedSignedTemplate(generic.deps, studio("generic")), 2);
   assertEquals(generic.rows[0].name, "Service agreement");
   checkFilled(generic.rows[0]);
   assert(beauty.rows[0].content.length > generic.rows[0].content.length, "the add-on is appended");
 });
 
-Deno.test("in the studio's language", async () => {
+Deno.test("the studio's own language comes first; both languages are filled", async () => {
   const { deps, rows } = fakeDeps();
   await seedSignedTemplate(deps, studio("dance-studio", "he"));
-  assertEquals(rows.map((r) => r.name), ["הצהרת בריאות (מתחת לגיל 18)", "הצהרת בריאות (מבוגרים)"]);
+  assertEquals(rows.map((r) => r.language), ["he", "he", "en", "en"]);
+  for (const row of rows) checkFilled(row);
 });
 
 Deno.test("an existing form is never replaced", async () => {

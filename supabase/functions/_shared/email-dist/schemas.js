@@ -561,6 +561,10 @@ export const ConsentTemplateSchema = z.object({
     version: z.number().int().positive(),
     version_hash: z.string().length(64),
     status: z.enum(['draft', 'approved', 'active', 'archived']),
+    /** Who signs this version (child: a guardian for a participant under 18), or null for everyone. */
+    audience: z.enum(['child', 'adult']).nullable().optional(),
+    /** Language of the text, or null for the studio's language. */
+    language: z.enum(['he', 'en']).nullable().optional(),
     created_at: TimestampSchema,
     updated_at: TimestampSchema,
 });
@@ -570,6 +574,7 @@ export const WaiverSigningConsentTemplateSchema = ConsentTemplateSchema.pick({
     version: true,
     name: true,
     content: true,
+    language: true,
 });
 export const WaiverViewedRequestSchema = z.object({
     person_id: UUIDSchema,

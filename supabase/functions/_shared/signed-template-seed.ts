@@ -22,6 +22,7 @@ export interface SeedDeps {
     version_hash: string;
     status: "active";
     audience: "child" | "adult" | null;
+    language: "he" | "en";
   }): Promise<void>;
 }
 
@@ -40,31 +41,37 @@ function stringProfile(value: unknown): Record<string, string> {
 }
 
 /**
- * Gives a studio the forms its clients sign, filled with its details, in its
- * language: dance studios both health declarations (under 18 / adults, picked
+ * Gives a studio the forms its clients sign, filled with its details, in
+ * Hebrew and English (each reader signs in their own language): dance studios both health declarations (under 18 / adults, picked
  * by age at signing), service businesses the agreement with their type's
  * add-on, general studios the base agreement. Never touches a studio that
  * already has a form. Returns how many were added.
  */
 export async function seedSignedTemplate(deps: SeedDeps, tenant: SeedTenant): Promise<number> {
   if (await deps.hasTemplate(tenant.id)) return 0;
-  const lang = tenant.language_default === "he" ? "he" : "en";
-  const forms = studioSignedForms(tenant.skin, {
-    lang,
-    tenantName: tenant.name,
-    contactEmail: tenant.contact_email ?? "",
-    profile: stringProfile(tenant.legal_profile),
-  });
-  for (const form of forms) {
-    await deps.insertTemplate({
-      tenant_id: tenant.id,
-      name: form.name,
-      content: form.content,
-      version: 1,
-      version_hash: await sha256Hex(form.content),
-      status: "active",
-      audience: form.audience,
+  // The studio's own language first.
+  const languages: Array<"he" | "en"> = tenant.language_default === "en" ? ["en", "he"] : ["he", "en"];
+  let added = 0;
+  for (const lang of languages) {
+    const forms = studioSignedForms(tenant.skin, {
+      lang,
+      tenantName: tenant.name,
+      contactEmail: tenant.contact_email ?? "",
+      profile: stringProfile(tenant.legal_profile),
     });
+    for (const form of forms) {
+      await deps.insertTemplate({
+        tenant_id: tenant.id,
+        name: form.name,
+        content: form.content,
+        version: 1,
+        version_hash: await sha256Hex(form.content),
+        status: "active",
+        audience: form.audience,
+        language: lang,
+      });
+      added += 1;
+    }
   }
-  return forms.length;
+  return added;
 }

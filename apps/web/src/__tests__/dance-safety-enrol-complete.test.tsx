@@ -253,3 +253,37 @@ describe('EnrolCompletePage — photographer tenant gets the contract wording', 
     await waitFor(() => expect(screen.getByText(/מחכים לעבוד איתך!/)).toBeInTheDocument());
   });
 });
+
+describe('WaiverStep — the form\'s language', () => {
+  beforeEach(() => setTenant('dance'));
+
+  const step = (language: 'he' | 'en' | null) => (
+    <WaiverStep
+      personId={PERSON_ID}
+      template={{ ...TEMPLATE, language }}
+      offeringId={OFFERING_ID}
+      onComplete={() => undefined}
+      onPrevious={() => undefined}
+      canGoBack={false}
+    />
+  );
+
+  it('says so when the form is only in the other language, and marks the text\'s language', async () => {
+    renderInApp(step('he'));
+    expect(await screen.findByText("This form is in Hebrew: the studio hasn't added an English version.")).toBeInTheDocument();
+    const region = screen.getByRole('region', { name: /document/i });
+    expect(region).toHaveAttribute('lang', 'he');
+    expect(region).toHaveAttribute('dir', 'rtl');
+  });
+
+  it('no note when the form is in the reader\'s language, or its language is not known', async () => {
+    renderInApp(step('en'));
+    expect(screen.queryByText(/This form is in/)).toBeNull();
+  });
+
+  it('in Hebrew, an English-only form is labelled in Hebrew', async () => {
+    await setLanguage('he');
+    renderInApp(step('en'));
+    expect(await screen.findByText('הטופס הזה באנגלית: הסטודיו עוד לא הוסיף גרסה בעברית.')).toBeInTheDocument();
+  });
+});

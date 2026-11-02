@@ -73,7 +73,8 @@ function WaiverStepInner({
   invalidateTenantId,
   isJobContract,
 }: WaiverStepProps & { invalidateTenantId?: string }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const appLanguage = i18n.language?.startsWith('he') ? 'he' : 'en';
   const legalLang = useLegalLang();
   const [portfolio, setPortfolio] = useState<ConsentState>({});
   const queryClient = useQueryClient();
@@ -229,7 +230,13 @@ function WaiverStepInner({
 
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-semibold">{template.name}</h2>
+      <h2 className="text-xl font-semibold" lang={template.language ?? undefined}>{template.name}</h2>
+      {/* The studio has this form only in the other language: say so plainly. */}
+      {template.language && template.language !== appLanguage && (
+        <p className="text-sm font-medium text-amber-800" role="note">
+          {t(template.language === 'he' ? 'enrolment.waiver_in_hebrew' : 'enrolment.waiver_in_english')}
+        </p>
+      )}
 
       {/* Context: who is signing, for whom, and for which class */}
       {(studentName || className) && (
@@ -256,6 +263,8 @@ function WaiverStepInner({
         className="relative h-72 overflow-y-auto rounded-md border border-border bg-muted/30 p-4 text-sm leading-relaxed whitespace-pre-wrap focus:outline-none"
         // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- scrollable region requires tabIndex for keyboard navigation per WAI-ARIA best practices
         tabIndex={0}
+        lang={template.language ?? undefined}
+        dir={template.language ? (template.language === 'he' ? 'rtl' : 'ltr') : undefined}
       >
         {template.content}
         {/* Sentinel: signing form only unlocks once this is fully visible */}

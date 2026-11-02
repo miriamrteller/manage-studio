@@ -37,6 +37,8 @@ export async function loadEnrolmentCompletionContext(
     tenantId: string;
     tokenEmail?: string | null;
     useRecentEvidenceFallback: boolean;
+    /** The reader's app language: the form is shown in it when the studio has that version. */
+    language?: "he" | "en" | null;
   },
 ): Promise<
   | { ok: true; context: EnrolmentCompletionContext }
@@ -108,13 +110,19 @@ export async function loadEnrolmentCompletionContext(
 
   let template: WaiverTemplateRow | null = null;
   if (offering.waiver_required) {
-    const activeTemplate = await pickActiveConsentTemplate(service, tenantId, engagement.person_id as string);
+    const activeTemplate = await pickActiveConsentTemplate(
+      service,
+      tenantId,
+      engagement.person_id as string,
+      params.language ?? null,
+    );
     if (activeTemplate) {
       template = {
         id: activeTemplate.id as string,
         version: activeTemplate.version as number,
         name: activeTemplate.name as string,
         content: activeTemplate.content as string,
+        language: activeTemplate.language,
       };
     }
   }
