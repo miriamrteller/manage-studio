@@ -51,7 +51,9 @@ Turnstile is free, and the project already uses Cloudflare.
 
    Copy the **site key** and the **secret key**.
 2. **Supabase → Edge Functions → Secrets:** `TURNSTILE_SECRET_KEY` = the secret key. From then on, creating a studio needs a passed check (the wizard shows it on the Review step).
-3. **Web build:** the site key goes in the production variable `VITE_TURNSTILE_SITE_KEY`. The deploy-web workflow does not pass that variable to the build yet. It needs one line, `VITE_TURNSTILE_SITE_KEY: ${{ vars.VITE_TURNSTILE_SITE_KEY }}` (release lane).
+3. **GitHub → Settings → Environments → production → Variables:** add `VITE_TURNSTILE_SITE_KEY` = the site key, then run deploy-prod. The start page and the wizard's Review step then show the check.
+
+deploy-web passes both web settings to the build from the production environment's variables: `VITE_ENABLE_SELF_SERVE_SIGNUP` and `VITE_TURNSTILE_SITE_KEY`. A variable that isn't set builds as empty, so the feature stays off and no check is shown.
 
 **Do not turn on Supabase → Authentication → Attack Protection → CAPTCHA yet.** Supabase then requires a CAPTCHA token on *every* email sign-in. Studio login, client signup and enrolment codes do not send one yet, so they would stop working. Only the self-serve start page sends a token today. Switch Supabase CAPTCHA on only after those forms send tokens (follow-up).
 
