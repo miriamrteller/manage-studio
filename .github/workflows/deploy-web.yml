@@ -237,7 +237,7 @@ jobs:
           fi
           # Framing: every page refuses frames except the embeddable enquiry
           # form (public/_headers). Losing DENY elsewhere fails the release.
-          frame_hdrs() { curl -s -o /dev/null -D - "https://$SMOKE_TENANT_HOST$1" | tr -d '\r' | tr 'A-Z' 'a-z'; }
+          frame_hdrs() { curl -s -o /dev/null -D - "https://$SMOKE_TENANT_HOST$1" | tr -d '\r' | tr '[:upper:]' '[:lower:]'; }
           home=$(frame_hdrs /)
           embed=$(frame_hdrs /embed/inquire)
           if grep -q '^x-frame-options: deny' <<<"$home"; then echo "/ → X-Frame-Options DENY"; else echo "::error::/ lost X-Frame-Options: DENY — any site could frame the app."; ok=0; fi
