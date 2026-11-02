@@ -10,6 +10,7 @@ import { demoGallery } from './images/manifest';
 import { getInvoice, subscribeInvoice, closeInvoice, showInvoice, type DemoInvoice } from './invoice';
 import { formatIls, signedContractView } from './functions';
 import { DEMO_HOME, DEMO_VIEWS } from './seed';
+import { hostedFormHash } from './hostedForm';
 import './demo.css';
 
 const COPY = {
@@ -29,6 +30,8 @@ const COPY = {
     contractSigned: 'Signed by',
     contractNote: 'In the live app this opens the signed PDF, which is also emailed to the client and the studio.',
     paid: 'Paid',
+    tryForm: 'Try the enquiry form',
+    backToLeads: 'Back to Leads',
   },
   he: {
     banner: 'גרסת הדגמה. הנתונים מתאפסים ברענון. לא נשלחים מיילים ולא מבוצעים תשלומים.',
@@ -46,6 +49,8 @@ const COPY = {
     contractSigned: 'נחתם על ידי',
     contractNote: 'במערכת האמיתית נפתח כאן קובץ ה-PDF החתום, שנשלח גם ללקוח וגם לסטודיו.',
     paid: 'שולם',
+    tryForm: 'לנסות את טופס הפנייה',
+    backToLeads: 'חזרה ללידים',
   },
 } as const;
 
@@ -60,6 +65,24 @@ function useOutbox(): OutboxMessage[] {
   const [, force] = useState(0);
   useEffect(() => subscribeOutbox(() => force((n) => n + 1)), []);
   return getOutbox();
+}
+
+function useHash(): string {
+  return useSyncExternalStore(
+    (cb) => {
+      window.addEventListener('hashchange', cb);
+      return () => window.removeEventListener('hashchange', cb);
+    },
+    () => window.location.hash,
+  );
+}
+
+/** Leads page ↔ the studio's public enquiry form, so a demo enquiry can be sent and then seen as a lead. */
+function leadFormShortcut(hash: string, view: DemoView): 'form' | 'leads' | null {
+  if (view !== 'admin') return null;
+  if (/^#\/admin\/leads(\b|$|\?)/.test(hash)) return 'form';
+  if (/^#\/inquire(\b|$|\?)/.test(hash)) return 'leads';
+  return null;
 }
 
 function useInvoice(): DemoInvoice | null {
@@ -79,6 +102,7 @@ export function DemoBar() {
   const view = useView();
   const outbox = useOutbox();
   const invoice = useInvoice();
+  const shortcut = leadFormShortcut(useHash(), view);
   const contract = useSyncExternalStore(subscribeContract, getContract);
   // Cash / bank transfer get a standalone receipt (קבלה); card payments the provider's tax invoice.
   const offlineReceipt = invoice?.method === 'cash' || invoice?.method === 'bank_transfer';
@@ -105,6 +129,13 @@ export function DemoBar() {
   // open the sample gallery or invoice in place. window.open is covered too.
   useEffect(() => {
     const openDemoTarget = (url: string): boolean => {
+      // The studio's hosted enquiry form (Leads → "Get leads"): open the demo's own
+      // form in place. A new tab at the artifact origin would load a blank page.
+      const hosted = hostedFormHash(url);
+      if (hosted) {
+        window.location.hash = hosted;
+        return true;
+      }
       if (url.startsWith(DEMO_GALLERY_HOST)) {
         setGalleryOpen(true);
         return true;
@@ -175,6 +206,11 @@ export function DemoBar() {
             <button type="button" aria-pressed={view === 'admin'} onClick={() => switchView('admin')}>{c.admin}</button>
             <button type="button" aria-pressed={view === 'client'} onClick={() => switchView('client')}>{c.client}</button>
           </div>
+          {shortcut && (
+            <a className="demo-btn" href={shortcut === 'form' ? '#/inquire' : '#/admin/leads'}>
+              {shortcut === 'form' ? c.tryForm : c.backToLeads}
+            </a>
+          )}
           <button
             type="button"
             className="demo-btn"

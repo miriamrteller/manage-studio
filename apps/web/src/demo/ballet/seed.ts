@@ -208,6 +208,16 @@ export function buildSeed(): Tables {
     primary_color: '#76335A',
     accent_color: '#E99AC4',
     language_default: 'en',
+    // Enquiry-form questions (Settings → Enquiry form): a dance studio's ready-made set.
+    lead_form: {
+      presets: {
+        child_name: { enabled: true, required: true },
+        child_age: { enabled: true, required: true },
+        class_interest: { enabled: true, required: false },
+        preferred_days: { enabled: true, required: false },
+      },
+      custom: [],
+    },
     country: 'IL',
     currency: 'ILS',
     phone_region: 'IL',

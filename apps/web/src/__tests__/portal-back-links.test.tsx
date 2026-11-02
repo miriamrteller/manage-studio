@@ -248,7 +248,7 @@ describe('menu per vertical', () => {
       '/classes', '/book',
       '/admin/students', '/admin/families', '/admin/notifications', '/admin/leads', '/admin/appointments',
       '/admin/finance', '/admin/finance/payments', '/admin/finance/expenses', '/admin/finance/expenses/categories',
-      '/admin/setup', '/admin/setup/settings', '/admin/setup/bundled-payments', '/admin/setup/billing',
+      '/admin/setup', '/admin/setup?guide=open', '/admin/setup/settings', '/admin/setup/bundled-payments', '/admin/setup/billing',
       '/admin/setup/levels', '/admin/setup/terms', '/admin/setup/classes', '/admin/setup/services',
       '/admin/setup/booking', '/admin/setup/waivers',
     ]);
@@ -259,7 +259,7 @@ describe('menu per vertical', () => {
       '/book',
       '/admin/jobs', '/admin/students', '/admin/notifications', '/admin/leads', '/admin/quotes', '/admin/appointments',
       '/admin/finance', '/admin/finance/payments', '/admin/finance/expenses', '/admin/finance/expenses/categories',
-      '/admin/setup', '/admin/setup/settings', '/admin/setup/billing', '/admin/setup/services',
+      '/admin/setup', '/admin/setup?guide=open', '/admin/setup/settings', '/admin/setup/billing', '/admin/setup/services',
       '/admin/setup/booking', '/admin/setup/waivers',
     ]);
   });

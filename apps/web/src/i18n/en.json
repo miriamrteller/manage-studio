@@ -1684,6 +1684,78 @@
     "no_studios_hint": "You haven't set up a studio yet. It takes a few minutes.",
     "platform_features_hint": "Turn platform features on or off for studios."
   },
+  "setup_guide": {
+    "title": "Finish setting up your studio",
+    "intro": "A few short steps and you are ready for your first customer. Each one ticks itself when you are done.",
+    "done_title": "Your studio is set up",
+    "done_body": "Everything on the list is done or skipped. You can change any of it later in Settings.",
+    "progress": "{{done}} of {{total}} done",
+    "next": "Next: {{step}}",
+    "skip": "Skip",
+    "undo_skip": "Undo skip",
+    "close": "Close",
+    "status_done": "done",
+    "status_skipped": "skipped",
+    "status_todo": "to do",
+    "help": "Need help?",
+    "ready_title": "A checklist is waiting for you",
+    "ready_body": "When you open your studio you will see a short checklist on the home page. It shows how far you are and the next step, as one big button. Open it any time from the menu: “Setup guide”.",
+    "menu": "Setup guide",
+    "rows": {
+      "branding": {
+        "title": "Add your logo and colours",
+        "hint": "Parents and clients see these on every page."
+      },
+      "levels": {
+        "title": "Add your levels",
+        "hint": "Levels group your classes, for example Beginner and Advanced. Add these first."
+      },
+      "season": {
+        "title": "Set up your season",
+        "hint": "A season is the period your classes run, for example autumn to summer."
+      },
+      "classes": {
+        "title": "Add your classes and prices",
+        "hint": "Each class needs a season and a level."
+      },
+      "packages": {
+        "title": "Add your packages and prices",
+        "hint": "What you offer, for example a mini session or a wedding day."
+      },
+      "offerings": {
+        "title": "Add what you offer, and prices",
+        "hint": "The things customers can book or buy from you."
+      },
+      "payments": {
+        "title": "Choose how customers pay",
+        "hint": "Pay at the studio is the simplest start. Write how to pay, such as cash, bank transfer or Bit."
+      },
+      "legal_dance": {
+        "title": "Check your legal details and health declaration",
+        "hint": "We fill in your privacy policy, terms and health declaration from these details."
+      },
+      "legal_photographer": {
+        "title": "Check your legal details and contract",
+        "hint": "We fill in your privacy policy, terms and contract from these details."
+      },
+      "legal_general": {
+        "title": "Check your legal details and form",
+        "hint": "We fill in your privacy policy, terms and form from these details."
+      },
+      "leads": {
+        "title": "Share your enquiry form",
+        "hint": "Get your first enquiry: copy your form link from the Get leads panel and send it to someone."
+      },
+      "test_enrolment": {
+        "title": "Try it as a parent",
+        "hint": "Open your public page and go through an enrolment, to see what parents see."
+      },
+      "first_quote": {
+        "title": "Send your first quote",
+        "hint": "Turn an enquiry into a quote your client can accept online."
+      }
+    }
+  },
   "self_serve": {
     "start_button": "Start free beta",
     "start_title": "Create your studio",
