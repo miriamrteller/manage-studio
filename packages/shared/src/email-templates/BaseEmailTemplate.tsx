@@ -11,6 +11,8 @@ import {
   Section,
   Text,
 } from '@react-email/components';
+import { deriveEmailBrand, emailGradient, OPALSWIFT_EMAIL_ANCHOR, OPALSWIFT_EMAIL_FILL } from '../email/brand.js';
+import { EmailBrandContext } from './primitives/brand.js';
 
 /**
  * Email color configuration
@@ -59,6 +61,18 @@ interface BaseEmailTemplateProps {
    * Footer strings (from i18n base.footer + tenant overrides)
    */
   footerStrings?: EmailFooterStrings;
+
+  /**
+   * Brand gradient on the header band, primary button and sign-in code (auth
+   * emails). Off = the flat primary colour, as every other email.
+   */
+  gradient?: boolean;
+
+  /**
+   * Colour the gradient shifts toward. Defaults to the studio's accent;
+   * OpalSwift's own emails pass its purple.
+   */
+  gradientAnchor?: string;
 }
 
 /**
@@ -66,7 +80,7 @@ interface BaseEmailTemplateProps {
  * These match the CSS variable defaults and provide safe fallbacks
  */
 const DEFAULT_EMAIL_COLORS: EmailColorConfig = {
-  primary: '#2563eb',
+  primary: OPALSWIFT_EMAIL_FILL,
   accent: '#dc2626',
   text: '#1f2937',
   bg: '#f9fafb',
@@ -91,6 +105,8 @@ export default function BaseEmailTemplate({
   language,
   colors,
   footerStrings,
+  gradient = false,
+  gradientAnchor,
 }: BaseEmailTemplateProps) {
   const dir = language === 'he' ? 'rtl' : 'ltr';
 
@@ -115,6 +131,12 @@ export default function BaseEmailTemplate({
       }
     : DEFAULT_EMAIL_COLORS;
 
+  // Gradient surfaces (header band, button, code): the solid fill is the
+  // bgcolor fallback, so white text is AA with or without gradient support.
+  const brand = gradient
+    ? deriveEmailBrand(emailColors.primary, gradientAnchor ?? (colors ? emailColors.accent : OPALSWIFT_EMAIL_ANCHOR))
+    : null;
+
   const footer = { ...DEFAULT_FOOTER, ...footerStrings };
   const year = new Date().getFullYear();
   const displayCopyright =
@@ -124,6 +146,7 @@ export default function BaseEmailTemplate({
   const preferencesUrl = footer.preferences_url ?? DEFAULT_FOOTER.preferences_url!;
 
   return (
+    <EmailBrandContext.Provider value={brand}>
     <Html lang={language} dir={dir}>
       <Head>
         <style>{`
@@ -163,6 +186,47 @@ export default function BaseEmailTemplate({
               boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
             }}
           >
+            {brand ? (
+            <table role="presentation" width="100%" cellPadding={0} cellSpacing={0} border={0}>
+              <tbody>
+                <tr>
+                  <td
+                    align="center"
+                    // @ts-expect-error legacy attribute, kept for Outlook
+                    bgcolor={brand.fill}
+                    style={{
+                      backgroundColor: brand.fill,
+                      backgroundImage: emailGradient(brand),
+                      padding: '28px 32px',
+                      textAlign: 'center',
+                    }}
+                  >
+                    {schoolLogoUrl ? (
+                      <Img
+                        src={schoolLogoUrl}
+                        alt={schoolName}
+                        style={{
+                          height: '48px',
+                          margin: '0 auto 12px',
+                          display: 'block',
+                        }}
+                      />
+                    ) : null}
+                    <Text
+                      style={{
+                        fontSize: '22px',
+                        fontWeight: 'bold',
+                        margin: 0,
+                        color: '#ffffff',
+                      }}
+                    >
+                      {schoolName}
+                    </Text>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            ) : (
             <Section
               style={{
                 backgroundColor: emailColors.primary,
@@ -192,6 +256,7 @@ export default function BaseEmailTemplate({
                 {schoolName}
               </Text>
             </Section>
+            )}
 
             <Section style={{ padding: '32px' }}>{children}</Section>
           </Section>
@@ -235,5 +300,6 @@ export default function BaseEmailTemplate({
         </Container>
       </Body>
     </Html>
+    </EmailBrandContext.Provider>
   );
 }

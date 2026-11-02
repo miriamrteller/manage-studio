@@ -138,7 +138,8 @@ describe('app.opalswift.com welcome', () => {
     expect(rows[2]).toHaveTextContent('Active');
     expect(screen.getByRole('link', { name: /Creative Ballet Academy/ })).toHaveAttribute('href', 'https://creativeballet.opalswift.com');
     expect(screen.getByRole('link', { name: /lens-studio/ })).toHaveAttribute('href', 'https://lens-studio.opalswift.com');
-    expect(screen.getByRole('link', { name: 'Set up a new studio' })).toHaveAttribute('href', '/platform/onboard');
+    // The shared primary Button (brand gradient), no longer a bare link.
+    expect(screen.getByRole('button', { name: 'Set up a new studio' })).toBeInTheDocument();
     expect(h.eqCalls).toEqual([]);
   });
 
@@ -147,7 +148,7 @@ describe('app.opalswift.com welcome', () => {
     h.user = { id: 'u-9', role: ['super_admin'], tenant_id: null };
     h.rows = [];
     renderAt();
-    expect(await screen.findByRole('link', { name: 'Set up a new studio' })).toHaveAttribute('href', '/platform/onboard');
+    expect(await screen.findByRole('button', { name: 'Set up a new studio' })).toBeInTheDocument();
     expect(screen.queryByText("Your account isn't linked to a studio yet. Contact OpalSwift.")).not.toBeInTheDocument();
   });
 

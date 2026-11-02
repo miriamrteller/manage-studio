@@ -14,7 +14,7 @@ function resolveColor(value: string, fallback: string): string {
 
 export function normalizeEmailColors(colors?: EmailColorConfig): EmailColorConfig {
   const defaults = {
-    primary: '#2563eb',
+    primary: '#4A58E8',
     accent: '#dc2626',
     text: '#1f2937',
     bg: '#ffffff',

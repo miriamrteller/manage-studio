@@ -61,79 +61,91 @@ export default function PlatformWelcomePage() {
         </div>
       </>
     );
-  } else if (isSuperAdmin && studios && studios.length > 0) {
-    body = (
-      <>
-        <h1 className="mb-6 text-3xl font-bold">{t('platform_welcome.studios_title')}</h1>
-        <StudiosTable studios={studios} />
-        <PlatformAdminActions />
-        <div className="mt-6">
-          <Button variant="outline" onClick={() => void signOut()}>{t('nav.logout')}</Button>
-        </div>
-      </>
-    );
-  } else if (studios && studios.length > 0) {
-    body = (
-      <>
-        <h1 className="mb-6 text-3xl font-bold">
-          {studios.length === 1 ? t('platform_welcome.your_studio') : t('platform_welcome.your_studios')}
-        </h1>
-        <ul className="mb-8 space-y-3 text-start">
-          {studios.map((studio) => (
-            <li key={studio.id}>
-              <a
-                href={studio.url}
-                className="block rounded-md border border-gray-200 px-4 py-3 hover:bg-gray-50 focus-visible:outline-2 outline-offset-2"
-              >
-                <bdi className="block font-semibold" style={{ color: OPALSWIFT_BRAND.ink }}>{studio.name}</bdi>
-                <span dir="ltr" className="block text-sm text-gray-700">{studio.url.replace(/^https?:\/\//, '')}</span>
-              </a>
-            </li>
-          ))}
-        </ul>
-        {isSuperAdmin && <PlatformAdminActions />}
-        <div className="mt-6">
-          <Button variant="outline" onClick={() => void signOut()}>{t('nav.logout')}</Button>
-        </div>
-      </>
-    );
-  } else if (isSuperAdmin) {
-    body = (
-      <>
-        <h1 className="mb-6 text-3xl font-bold">{t('platform_welcome.no_studios_yet')}</h1>
-        <PlatformAdminActions />
-        <div className="mt-6">
-          <Button variant="outline" onClick={() => void signOut()}>{t('nav.logout')}</Button>
-        </div>
-      </>
-    );
-  } else if (selfServeSignup()) {
-    body = (
-      <>
-        <h1 className="mb-3 text-3xl font-bold">{t('platform_welcome.no_studio_title')}</h1>
-        <p className="mb-8 text-gray-700">{t('platform_welcome.create_studio_hint')}</p>
-        <div className="flex flex-wrap justify-center gap-3">
+  } else {
+    // Signed in: greeting, then one "Your studios" card. Logout lives in the header.
+    const hasStudios = Boolean(studios && studios.length > 0);
+    const studiosTitle = isSuperAdmin
+      ? t('platform_welcome.studios_title')
+      : studios && studios.length === 1
+        ? t('platform_welcome.your_studio')
+        : t('platform_welcome.your_studios');
+    let card: ReactNode;
+    if (hasStudios && isSuperAdmin) {
+      card = <StudiosTable studios={studios!} />;
+    } else if (hasStudios) {
+      card = <StudioLinks studios={studios!} />;
+    } else if (isSuperAdmin) {
+      card = (
+        <EmptyStudios hint={t('platform_welcome.no_studios_hint')} title={t('platform_welcome.no_studios_yet')}>
+          <Button variant="primary" onClick={() => navigate('/platform/onboard')}>
+            {t('platform_welcome.new_studio')}
+          </Button>
+        </EmptyStudios>
+      );
+    } else if (selfServeSignup()) {
+      card = (
+        <EmptyStudios hint={t('platform_welcome.create_studio_hint')} title={t('platform_welcome.no_studio_title')}>
           <Button variant="primary" onClick={() => navigate('/create-studio')}>
             {t('platform_welcome.create_studio')}
           </Button>
-          <Button variant="outline" onClick={() => void signOut()}>{t('nav.logout')}</Button>
-        </div>
-      </>
-    );
-  } else {
+        </EmptyStudios>
+      );
+    } else {
+      card = <EmptyStudios hint={t('platform_welcome.not_linked')} title={t('platform_welcome.no_studio_title')} />;
+    }
+
     body = (
       <>
-        <h1 className="mb-3 text-3xl font-bold">{t('platform_welcome.no_studio_title')}</h1>
-        <p className="mb-8 text-gray-700">{t('platform_welcome.not_linked')}</p>
-        <div>
-          <Button variant="outline" onClick={() => void signOut()}>{t('nav.logout')}</Button>
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold">
+            {user?.full_name
+              ? t('platform_welcome.welcome_back_name', { name: user.full_name })
+              : t('platform_welcome.welcome_back')}
+          </h1>
+          {isSuperAdmin && <p className="mt-1 text-gray-700">{t('platform_welcome.signed_in_hint')}</p>}
         </div>
+
+        <section aria-labelledby="studios-heading" className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <h2 id="studios-heading" className="text-xl font-semibold">{studiosTitle}</h2>
+            {isSuperAdmin && hasStudios && (
+              <Button variant="primary" size="sm" onClick={() => navigate('/platform/onboard')}>
+                {t('platform_welcome.new_studio')}
+              </Button>
+            )}
+          </div>
+          {card}
+        </section>
+
+        {isSuperAdmin && (
+          <Link
+            to="/platform/features"
+            className="mt-4 flex items-center justify-between gap-4 rounded-xl border border-gray-200 bg-white px-5 py-4 hover:bg-gray-50 focus-visible:outline-2 outline-offset-2"
+          >
+            <span>
+              <span className="block font-semibold" style={{ color: OPALSWIFT_BRAND.ink }}>
+                {t('platform_welcome.platform_features')}
+              </span>
+              <span className="block text-sm text-gray-700">{t('platform_welcome.platform_features_hint')}</span>
+            </span>
+            <span aria-hidden="true" className="text-gray-700 rtl:rotate-180">›</span>
+          </Link>
+        )}
       </>
     );
   }
 
+  const signedIn = Boolean(session) && !(sessionLoading || profileLoading);
   return (
     <OpalSwiftShell
+      wide={signedIn}
+      headerActions={
+        signedIn ? (
+          <Button variant="ghost" size="sm" onClick={() => void signOut()}>
+            {t('nav.logout')}
+          </Button>
+        ) : undefined
+      }
       footer={
         <>
           <LegalFooterLinks />
@@ -148,20 +160,31 @@ export default function PlatformWelcomePage() {
   );
 }
 
-function PlatformAdminActions() {
-  const { t } = useTranslation();
+function EmptyStudios({ title, hint, children }: { title: string; hint: string; children?: ReactNode }) {
   return (
-    <div className="flex flex-wrap justify-center gap-3">
-      <Link
-        to="/platform/onboard"
-        className="button-primary inline-flex items-center focus-visible:outline-2 outline-offset-2"
-      >
-        {t('platform_welcome.new_studio')}
-      </Link>
-      <Link to="/platform/features" className="inline-flex items-center rounded-md border border-gray-300 px-4 py-2 font-medium">
-        {t('platform_welcome.platform_features')}
-      </Link>
+    <div className="py-6 text-center">
+      <p className="mb-1 text-lg font-semibold">{title}</p>
+      <p className="mb-5 text-gray-700">{hint}</p>
+      {children}
     </div>
+  );
+}
+
+function StudioLinks({ studios }: { studios: StudioLink[] }) {
+  return (
+    <ul className="space-y-3">
+      {studios.map((studio) => (
+        <li key={studio.id}>
+          <a
+            href={studio.url}
+            className="block rounded-md border border-gray-200 px-4 py-3 hover:bg-gray-50 focus-visible:outline-2 outline-offset-2"
+          >
+            <bdi className="block font-semibold" style={{ color: OPALSWIFT_BRAND.ink }}>{studio.name}</bdi>
+            <span dir="ltr" className="block text-sm text-gray-700">{studio.url.replace(/^https?:\/\//, '')}</span>
+          </a>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -177,7 +200,7 @@ function StudiosTable({ studios }: { studios: StudioLink[] }) {
   const { t, i18n } = useTranslation();
   const date = new Intl.DateTimeFormat(i18n.language.startsWith('he') ? 'he-IL' : 'en-GB', { dateStyle: 'medium' });
   return (
-    <div className="mb-8 overflow-x-auto">
+    <div className="overflow-x-auto">
       <table className="w-full text-start text-sm">
         <thead>
           <tr className="border-b border-gray-200">

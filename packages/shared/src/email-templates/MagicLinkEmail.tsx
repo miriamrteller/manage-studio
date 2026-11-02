@@ -83,6 +83,7 @@ export default function MagicLinkEmail({
       schoolLogoUrl={schoolLogoUrl}
       language={language}
       colors={colors}
+      gradient
       footerStrings={footerStrings}
     >
       <EmailParagraph>{greeting}</EmailParagraph>

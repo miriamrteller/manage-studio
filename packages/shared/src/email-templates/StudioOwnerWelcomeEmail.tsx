@@ -1,5 +1,6 @@
 import React from 'react';
 import BaseEmailTemplate, { type EmailColorConfig, type EmailFooterStrings } from './BaseEmailTemplate.js';
+import { OPALSWIFT_EMAIL_ANCHOR } from '../email/brand.js';
 import {
   EmailLinkBox,
   EmailMutedText,
@@ -67,6 +68,8 @@ export default function StudioOwnerWelcomeEmail({
       schoolLogoUrl={logoUrl}
       language={language}
       colors={colors}
+      gradient
+      gradientAnchor={OPALSWIFT_EMAIL_ANCHOR}
       // The footer's "do not reply" line would contradict "just reply" here.
       footerStrings={{ ...footerStrings, automated_notice: text(strings, 'footer_notice') }}
     >

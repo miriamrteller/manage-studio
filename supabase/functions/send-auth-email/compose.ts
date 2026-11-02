@@ -2,7 +2,8 @@ import {
   renderAuthMagicLinkHtml,
   renderStudioOwnerWelcome,
 } from "../_shared/render-auth-email.ts";
-import type { TenantEmailConfig } from "../_shared/tenant-email.ts";
+import { isPlatformEmailConfig, type TenantEmailConfig } from "../_shared/tenant-email.ts";
+import { OPALSWIFT_EMAIL_ANCHOR } from "../_shared/render-auth-email.ts";
 
 export interface ComposeAuthEmailInput {
   action: string;
@@ -68,6 +69,8 @@ export function composeAuthEmail(input: ComposeAuthEmailInput): AuthEmailMessage
       otpCode,
       primaryColor: tenant.primary_color,
       accentColor: tenant.accent_color,
+      // OpalSwift's own mail (platform host) shifts toward its purple; a studio's toward its accent.
+      gradientAnchor: isPlatformEmailConfig(tenant) ? OPALSWIFT_EMAIL_ANCHOR : undefined,
     }),
   };
 }

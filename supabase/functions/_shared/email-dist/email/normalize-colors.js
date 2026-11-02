@@ -12,7 +12,7 @@ function resolveColor(value, fallback) {
 }
 export function normalizeEmailColors(colors) {
     const defaults = {
-        primary: '#2563eb',
+        primary: '#4A58E8',
         accent: '#dc2626',
         text: '#1f2937',
         bg: '#ffffff',

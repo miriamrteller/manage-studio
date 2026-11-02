@@ -41,11 +41,21 @@ interface BaseEmailTemplateProps {
      * Footer strings (from i18n base.footer + tenant overrides)
      */
     footerStrings?: EmailFooterStrings;
+    /**
+     * Brand gradient on the header band, primary button and sign-in code (auth
+     * emails). Off = the flat primary colour, as every other email.
+     */
+    gradient?: boolean;
+    /**
+     * Colour the gradient shifts toward. Defaults to the studio's accent;
+     * OpalSwift's own emails pass its purple.
+     */
+    gradientAnchor?: string;
 }
 /**
  * Base email template component
  * Provides consistent branding, header/footer, and RTL support
  */
-export default function BaseEmailTemplate({ previewText, children, schoolName, schoolLogoUrl, language, colors, footerStrings, }: BaseEmailTemplateProps): import("react/jsx-runtime").JSX.Element;
+export default function BaseEmailTemplate({ previewText, children, schoolName, schoolLogoUrl, language, colors, footerStrings, gradient, gradientAnchor, }: BaseEmailTemplateProps): import("react/jsx-runtime").JSX.Element;
 export {};
 //# sourceMappingURL=BaseEmailTemplate.d.ts.map

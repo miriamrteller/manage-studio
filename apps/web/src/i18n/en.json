@@ -1534,7 +1534,12 @@
     "status_active": "Active",
     "status_past_due": "Payment overdue",
     "status_canceled": "Canceled",
-    "col_created": "Created"
+    "col_created": "Created",
+    "welcome_back": "Welcome back",
+    "welcome_back_name": "Welcome back, {{name}}",
+    "signed_in_hint": "Manage your studios and the platform from here.",
+    "no_studios_hint": "You haven't set up a studio yet. It takes a few minutes.",
+    "platform_features_hint": "Turn platform features on or off for studios."
   },
   "self_serve": {
     "start_button": "Start free beta",

@@ -1534,7 +1534,12 @@
     "status_active": "פעיל",
     "status_past_due": "תשלום באיחור",
     "status_canceled": "בוטל",
-    "col_created": "נוצר"
+    "col_created": "נוצר",
+    "welcome_back": "שמחים לראות אותך שוב",
+    "welcome_back_name": "שמחים לראות אותך שוב, {{name}}",
+    "signed_in_hint": "נהל מכאן את הסטודיואים והפלטפורמה.",
+    "no_studios_hint": "עדיין לא הקמת סטודיו. זה לוקח כמה דקות.",
+    "platform_features_hint": "הפעלה וכיבוי של תכונות הפלטפורמה לסטודיואים."
   },
   "self_serve": {
     "start_button": "התחילו בטא חינם",
