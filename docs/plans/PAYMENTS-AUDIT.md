@@ -111,7 +111,7 @@ Rule from the owner: VAT and tax-document rules are the invoicing provider's job
 | 3 | `payments/providers/grow.ts:189-202,268` | Passes `vatType` (1/2/3) from the tenant to Grow. | Let Grow decide from the owner's Grow account; stop sending it, or make it a clearly named Grow setting, not business status. |
 | 4 | `invoicing/providers/green-invoice.ts` | Always type 320 with `vatType: 0`; ignores status. | Not status-driven (good), but the type should come from the same "which document" provider setting as #1. |
 | 5 | `tenants.vat_type` column (default 1) | A hidden status field that no screen sets; it silently drives #1–#3. | Remove it, or rename it to the provider setting in #1; do not infer it from Settings → Legal. |
-| 6 | Wizard "Tax documents: None (not a registered business)" (`StudioSetupWizard`, `INITIAL_FORM`) | Choosing "none" turns document issuing off (`enqueueDocument` skips for `invoicing_provider = none`). | Fine as a provider choice, but wording ties it to business status. Reword to "I don't issue documents through OpalSwift"; changing it later is the same switch, no other behaviour. |
+| 6 | Wizard "Tax documents: None (not a registered business)" (`OperatorOnboardingWizard.tsx`, `studioSetupForm.ts`) | Choosing "none" turns document issuing off (`enqueueDocument` skips for `invoicing_provider = none`). | Fine as a provider choice, but wording ties it to business status. Reword to "I don't issue documents through OpalSwift"; changing it later is the same switch, no other behaviour. |
 
 **Same later if the status changes:** with #1–#5 fixed there is nothing to re-run: the owner changes the document setting at the provider, and old payments keep the documents they already have.
 
