@@ -110,7 +110,15 @@
     "sent": "Thanks, your report was sent. We'll look into it.",
     "failed": "The report could not be sent. Please try again or email us.",
     "required": "Please describe the problem.",
-    "from_error": "Report this problem"
+    "from_error": "Report this problem",
+    "screenshot_button": "Attach a screenshot",
+    "screenshot_warning": "Screenshots may show students' details. Only attach one if it helps.",
+    "screenshot_chosen": "Attached: {{name}}",
+    "screenshot_remove": "Remove",
+    "screenshot_remove_named": "Remove screenshot {{name}}",
+    "screenshot_error_type": "Please choose a PNG, JPG or WebP image.",
+    "screenshot_error_size": "That image is larger than 5 MB. Please choose a smaller one.",
+    "screenshot_error_read": "We couldn't read that file. Please choose another image."
   },
   "errors": {
     "app_crashed_title": "Something went wrong",

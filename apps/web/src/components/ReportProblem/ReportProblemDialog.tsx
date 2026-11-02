@@ -1,10 +1,10 @@
-import { useEffect, useId, useState, type FormEvent } from 'react';
+import { useEffect, useId, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Modal } from '@/components/ui/modal';
 import { Textarea } from '@/components/ui/textarea';
-import { sendProblemReport } from '@/lib/monitoring';
+import { SCREENSHOT_TYPES, checkScreenshot, sendProblemReport } from '@/lib/monitoring';
 
 type Status = 'idle' | 'sending' | 'sent' | 'failed';
 
@@ -15,9 +15,15 @@ export function ReportProblemDialog({ isOpen, onClose }: { isOpen: boolean; onCl
   const fieldId = `${ids}-message`;
   const hintId = `${ids}-hint`;
   const errorId = `${ids}-error`;
+  const fileId = `${ids}-screenshot`;
+  const fileWarningId = `${ids}-screenshot-warning`;
+  const fileErrorId = `${ids}-screenshot-error`;
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [message, setMessage] = useState('');
   const [status, setStatus] = useState<Status>('idle');
   const [showRequired, setShowRequired] = useState(false);
+  const [screenshot, setScreenshot] = useState<File | null>(null);
+  const [screenshotError, setScreenshotError] = useState<string | null>(null);
 
   // Fresh form every time the dialog opens.
   useEffect(() => {
@@ -25,8 +31,32 @@ export function ReportProblemDialog({ isOpen, onClose }: { isOpen: boolean; onCl
       setMessage('');
       setStatus('idle');
       setShowRequired(false);
+      setScreenshot(null);
+      setScreenshotError(null);
     }
   }, [isOpen]);
+
+  const onPickScreenshot = async (e: ChangeEvent<HTMLInputElement>) => {
+    const input = e.currentTarget;
+    const file = input.files?.[0];
+    if (!file) return;
+    const problem = await checkScreenshot(file);
+    if (problem) {
+      input.value = '';
+      setScreenshot(null);
+      setScreenshotError(t(`report_problem.screenshot_error_${problem}`));
+      return;
+    }
+    setScreenshotError(null);
+    setScreenshot(file);
+  };
+
+  const removeScreenshot = () => {
+    setScreenshot(null);
+    setScreenshotError(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    fileInputRef.current?.focus();
+  };
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -35,7 +65,7 @@ export function ReportProblemDialog({ isOpen, onClose }: { isOpen: boolean; onCl
       return;
     }
     setStatus('sending');
-    const id = await sendProblemReport(message);
+    const id = await sendProblemReport(message, screenshot);
     setStatus(id ? 'sent' : 'failed');
   };
 
@@ -81,6 +111,50 @@ export function ReportProblemDialog({ isOpen, onClose }: { isOpen: boolean; onCl
           <p id={errorId} aria-live="polite" className="text-sm text-red-700">
             {fieldError ? t('report_problem.required') : ''}
           </p>
+
+          {/* Optional screenshot, chosen by the admin. Nothing is captured automatically. */}
+          <div className="space-y-2">
+            <input
+              ref={fileInputRef}
+              id={fileId}
+              type="file"
+              accept={SCREENSHOT_TYPES.join(',')}
+              className="peer sr-only"
+              aria-describedby={screenshotError ? `${fileWarningId} ${fileErrorId}` : fileWarningId}
+              aria-invalid={screenshotError ? true : undefined}
+              onChange={onPickScreenshot}
+            />
+            <div className="flex flex-wrap items-center gap-2">
+              <label
+                htmlFor={fileId}
+                className="inline-flex cursor-pointer items-center rounded-md border px-3 py-1 text-sm peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2"
+              >
+                {t('report_problem.screenshot_button')}
+              </label>
+              {screenshot && (
+                <>
+                  <span className="text-sm" dir="auto">
+                    {t('report_problem.screenshot_chosen', { name: screenshot.name })}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={removeScreenshot}
+                    aria-label={t('report_problem.screenshot_remove_named', { name: screenshot.name })}
+                  >
+                    {t('report_problem.screenshot_remove')}
+                  </Button>
+                </>
+              )}
+            </div>
+            <p id={fileWarningId} className="text-sm text-muted-foreground">
+              {t('report_problem.screenshot_warning')}
+            </p>
+            <p id={fileErrorId} role="alert" className="text-sm text-red-700">
+              {screenshotError ?? ''}
+            </p>
+          </div>
           <div className="flex flex-wrap justify-end gap-2">
             <Button type="button" variant="outline" onClick={onClose}>
               {t('common.cancel')}

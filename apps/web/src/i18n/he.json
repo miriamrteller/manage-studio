@@ -110,7 +110,15 @@
     "sent": "תודה, הדיווח נשלח. נבדוק את זה.",
     "failed": "לא הצלחנו לשלוח את הדיווח. נסו שוב או כתבו לנו במייל.",
     "required": "נא לתאר את הבעיה.",
-    "from_error": "דיווח על הבעיה"
+    "from_error": "דיווח על הבעיה",
+    "screenshot_button": "צירוף צילום מסך",
+    "screenshot_warning": "צילום מסך עלול להציג פרטים של תלמידים. צרפו אותו רק אם הוא עוזר.",
+    "screenshot_chosen": "צורף: {{name}}",
+    "screenshot_remove": "הסרה",
+    "screenshot_remove_named": "הסרת צילום המסך {{name}}",
+    "screenshot_error_type": "נא לבחור תמונה בפורמט PNG, JPG או WebP.",
+    "screenshot_error_size": "התמונה גדולה מ-5MB. נא לבחור תמונה קטנה יותר.",
+    "screenshot_error_read": "לא הצלחנו לקרוא את הקובץ. נא לבחור תמונה אחרת."
   },
   "errors": {
     "app_crashed_title": "משהו השתבש",

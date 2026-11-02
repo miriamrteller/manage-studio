@@ -125,11 +125,33 @@ Sent to Sentry (EU):
 - browser and OS;
 - app release (git commit);
 - the studio's tenant id, the person's internal user id and their role;
-- for problem reports, the text the admin typed (also masked).
+- for problem reports, the text the admin typed (also masked);
+- for problem reports, **one screenshot, only if the admin chooses to attach it** (see below).
 
 Never sent: names, emails, phone numbers, IP addresses, cookies, form contents, request or response bodies,
-payment details, health details, children's data, screenshots or screen recordings.
+payment details, health details, children's data, or any automatic screen capture or screen recording.
 Session Replay is off.
+
+### Optional screenshot on a problem report
+
+In **Report a problem** the admin can press **Attach a screenshot** and pick one image file themselves.
+Nothing is captured automatically, and there is no feedback-widget or replay code.
+
+- Allowed: PNG, JPG or WebP, up to 5 MB. The file's content must match its type, so a renamed document is refused.
+- Next to the button the admin sees: "Screenshots may show students' details. Only attach one if it helps."
+  (Hebrew: the same, in `report_problem.screenshot_warning`.) They can remove the file before sending.
+- The image goes to Sentry as an attachment on the problem report (`captureFeedback` with the `attachments` hint).
+  It is stored in Sentry's EU region with the report, and shows with it in Sentry under **User Feedback**.
+  It is **not** copied into the GitHub issue, so AI agents working from GitHub issues never see it.
+- The text scrubbing is unchanged and **does not look inside images**: the Data Scrubber cannot blank out a name
+  that appears in a picture. That is why the warning is shown. Phone photos can also carry hidden metadata
+  (such as location); a screenshot taken on a computer normally does not.
+- The file's own name is replaced with `screenshot.png`, `.jpg` or `.webp` before sending, because file names can contain people's names.
+- Attachments count against Sentry's separate attachment quota, not the error quota.
+- If a report includes a screenshot with a child's or student's details, delete the report in Sentry once it has been dealt with.
+
+**Before this ships:** the sub-processor row in the DPA (`docs/legal/02-dpa.en.md` and `.he.md`) says "no session replay or screenshots".
+That sentence is no longer true once this goes live, so the legal text needs the owner's / lawyer's update first. It was left unchanged on purpose.
 
 GitHub issues contain the same fields (no personal data). Text copied from errors and reports is marked as
 untrusted, because anyone can trigger an error with odd text in it.
@@ -152,7 +174,8 @@ the workflow in the Actions tab.
 ## For developers
 
 - **Frontend:** `apps/web/src/lib/monitoring/`.
-  - `index.ts` holds init (lazy, only when a DSN is set), `reportError()`, `sendProblemReport()` and `canReportProblems()`.
+  - `index.ts` holds init (lazy, only when a DSN is set), `reportError()`, `sendProblemReport(message, screenshot?)`,
+    `checkScreenshot()` (type, 5 MB cap, file signature) and `canReportProblems()`.
   - `scrub.ts` holds the privacy rules, with tests in `src/__tests__/monitoring-scrub.test.ts`.
   - `MonitoringContextSync.tsx` keeps the tenant, role and route tags current.
   - Errors are captured from: both error boundaries, React Query query and mutation failures (`lib/query-client.ts`),

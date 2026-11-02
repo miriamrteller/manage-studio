@@ -63,7 +63,8 @@ export function initMonitoring(): Promise<Sentry | null> {
           httpBodies: [],
           urlQueryParams: false,
         },
-        // Errors only: no performance tracing, no session replay, no screenshots.
+        // Errors only: no performance tracing, no session replay, no automatic screenshots.
+        // The only image that ever leaves is one an admin picks themselves in "Report a problem".
         tracesSampleRate: 0,
         maxBreadcrumbs: 30,
         integrations: (defaults) =>
@@ -156,20 +157,85 @@ export function canReportProblems(roles: string[] | undefined): boolean {
   return isMonitoringEnabled() && !!roles?.some((r) => REPORTER_ROLES.includes(r));
 }
 
+/** Largest screenshot an admin can attach to a problem report. */
+export const SCREENSHOT_MAX_BYTES = 5 * 1024 * 1024;
+
+export const SCREENSHOT_TYPES = ['image/png', 'image/jpeg', 'image/webp'] as const;
+type ScreenshotType = (typeof SCREENSHOT_TYPES)[number];
+
+const SCREENSHOT_NAMES: Record<ScreenshotType, string> = {
+  'image/png': 'screenshot.png',
+  'image/jpeg': 'screenshot.jpg',
+  'image/webp': 'screenshot.webp',
+};
+
+export type ScreenshotProblem = 'type' | 'size' | 'read';
+
+function readBytes(blob: Blob): Promise<Uint8Array> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(new Uint8Array(reader.result as ArrayBuffer));
+    reader.onerror = () => reject(reader.error ?? new Error('read failed'));
+    reader.readAsArrayBuffer(blob);
+  });
+}
+
+/** True when the first bytes really are the image format the file claims to be. */
+function matchesSignature(type: ScreenshotType, b: Uint8Array): boolean {
+  const at = (i: number, ...bytes: number[]) => bytes.every((v, k) => b[i + k] === v);
+  if (type === 'image/png') return at(0, 0x89, 0x50, 0x4e, 0x47);
+  if (type === 'image/jpeg') return at(0, 0xff, 0xd8, 0xff);
+  return at(0, 0x52, 0x49, 0x46, 0x46) && at(8, 0x57, 0x45, 0x42, 0x50); // RIFF....WEBP
+}
+
+/**
+ * Checks a screenshot the admin picked: PNG, JPG or WebP, at most 5 MB, and the content
+ * must match the type (a renamed document is refused). Returns null when it is fine.
+ */
+export async function checkScreenshot(file: File): Promise<ScreenshotProblem | null> {
+  if (!(SCREENSHOT_TYPES as readonly string[]).includes(file.type)) return 'type';
+  if (file.size > SCREENSHOT_MAX_BYTES) return 'size';
+  try {
+    const head = await readBytes(file.slice(0, 12));
+    return matchesSignature(file.type as ScreenshotType, head) ? null : 'type';
+  } catch {
+    return 'read';
+  }
+}
+
 /**
  * Sends a problem report typed by a studio admin. Only the (scrubbed) text, the
- * page's route template and the current tags go out: no name, email or screenshot.
- * Links the report to the last error on this page when there was one.
+ * page's route template and the current tags go out, plus one image if the admin chose
+ * to attach it (see checkScreenshot). Nothing is captured automatically, and the picked
+ * file's own name is never sent: it is renamed to a generic one, because file names can
+ * carry people's names. Links the report to the last error on this page when there was one.
  */
-export async function sendProblemReport(message: string): Promise<string | null> {
+export async function sendProblemReport(message: string, screenshot?: File | null): Promise<string | null> {
   const text = scrubText(message.trim()).slice(0, 2000);
   if (!text) return null;
   const S = sentry ?? (await initMonitoring());
   if (!S) return null;
-  return S.captureFeedback({
-    message: text,
-    url: scrubUrl(window.location.href),
-    source: 'report-problem',
-    associatedEventId: S.lastEventId(),
-  });
+
+  let attachments: Array<{ filename: string; data: Uint8Array; contentType: string }> | undefined;
+  if (screenshot) {
+    // Re-check here as well, so nothing but a valid image can go out through this function.
+    if ((await checkScreenshot(screenshot)) !== null) return null;
+    attachments = [
+      {
+        filename: SCREENSHOT_NAMES[screenshot.type as ScreenshotType],
+        data: await readBytes(screenshot),
+        contentType: screenshot.type,
+      },
+    ];
+  }
+
+  return S.captureFeedback(
+    {
+      message: text,
+      url: scrubUrl(window.location.href),
+      source: 'report-problem',
+      associatedEventId: S.lastEventId(),
+    },
+    attachments ? { attachments } : undefined,
+  );
 }
