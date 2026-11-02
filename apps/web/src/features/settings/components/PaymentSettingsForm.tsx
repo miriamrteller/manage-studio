@@ -21,9 +21,10 @@ function StatusRow({ label, value }: { label: string; value: string }) {
 }
 
 /**
- * Settings → Payment. "How customers pay" is always here, so the studio can switch between
- * paying at the studio and online card payment at any time. Paying at the studio needs no keys,
- * so nothing else shows. An online provider shows only its own connection details.
+ * Settings → Payment. "How customers pay" is always here. During the beta a studio that pays
+ * at the studio (no tax documents) can move to online card payment; any other change goes
+ * through support (lib/providerPairing.ts). Paying at the studio needs no keys, so nothing else
+ * shows. An online provider shows only its own connection details.
  */
 export function PaymentSettingsForm() {
   const tenant = useTenant();

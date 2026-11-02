@@ -60,3 +60,40 @@ export const JOB_ONLINE_PAYMENT_PROVIDERS = ['ypay', 'grow', 'mock'] as const;
 export function jobOnlinePaymentSupported(paymentProvider: string | null | undefined): boolean {
   return (JOB_ONLINE_PAYMENT_PROVIDERS as readonly string[]).includes(paymentProvider ?? '');
 }
+
+/**
+ * Beta rule for changing the payment provider (owner decision): the only change a studio may
+ * make itself is from paying at the studio with no tax documents ('offline' + 'none') to one of
+ * these online providers, with no invoicing or that provider's own. Every other change is made
+ * by OpalSwift support. Mirrors payment_provider_switch_allowed() in the
+ * …_block_payment_provider_switch.sql migration, whose trigger enforces it.
+ */
+export const SWITCH_TARGET_PAYMENT_PROVIDERS = ['grow', 'ypay', 'invoice4u'] as const;
+
+export function paymentProviderSwitchAllowed(
+  from: { payment: string | null | undefined; invoicing: string | null | undefined },
+  to: { payment: string; invoicing?: string | null },
+): boolean {
+  if (to.payment === from.payment) return true;
+  return (
+    from.payment === 'offline' &&
+    (from.invoicing ?? 'none') === 'none' &&
+    (SWITCH_TARGET_PAYMENT_PROVIDERS as readonly string[]).includes(to.payment) &&
+    ['none', to.payment].includes(to.invoicing ?? 'none')
+  );
+}
+
+/** True when the studio may still choose its payment provider itself (offline, no documents). */
+export function canChoosePaymentProvider(
+  tenant: { payment_provider?: string | null; invoicing_provider?: string | null } | null | undefined,
+): boolean {
+  return tenant?.payment_provider === 'offline' && (tenant?.invoicing_provider ?? 'none') === 'none';
+}
+
+/** The database refuses a switch with this message (tenants_guard_payment_provider_switch). */
+export const PROVIDER_SWITCH_BLOCKED_ERROR = 'payment_provider_switch_blocked';
+
+export function isProviderSwitchBlockedError(error: unknown): boolean {
+  const message = error && typeof error === 'object' && 'message' in error ? String(error.message) : '';
+  return message.includes(PROVIDER_SWITCH_BLOCKED_ERROR);
+}

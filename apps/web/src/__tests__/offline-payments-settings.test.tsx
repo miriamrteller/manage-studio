@@ -64,16 +64,25 @@ describe('OfflinePaymentsSettingsForm', () => {
     expect(eq).toHaveBeenCalledWith('id', 'tenant-1');
   });
 
-  it('switching a card studio to pay-at-the-studio saves offline; mock is never offered', async () => {
-    Object.assign(tenantState, { payment_provider: 'ypay' });
-    eq.mockResolvedValue({ error: null });
+  it('a card studio cannot switch to pay at the studio itself; mock is never offered', () => {
+    Object.assign(tenantState, { payment_provider: 'ypay', invoicing_provider: 'ypay' });
     wrap(<OfflinePaymentsSettingsForm />);
     const select = screen.getByRole('combobox', { name: 'settings.payments.provider' });
     expect(Array.from((select as HTMLSelectElement).options).map((o) => o.value)).not.toContain('mock');
-    fireEvent.click(screen.getByRole('checkbox', { name: 'settings.offline_payments.enabled_label' }));
+    expect(screen.getByRole('checkbox', { name: 'settings.offline_payments.enabled_label' })).toBeDisabled();
+    expect(screen.getByText('settings.offline_payments.switch_contact_support')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'common.save' })).toBeNull();
+  });
+
+  it('a pay-at-the-studio studio with tax documents keeps editing its instructions, not its provider', async () => {
+    Object.assign(tenantState, { payment_provider: 'offline', invoicing_provider: 'ypay', offline_payment_instructions: '' });
+    eq.mockResolvedValue({ error: null });
+    wrap(<OfflinePaymentsSettingsForm />);
+    expect(screen.getByRole('checkbox', { name: 'settings.offline_payments.enabled_label' })).toBeDisabled();
+    fireEvent.change(screen.getByLabelText('settings.offline_payments.instructions_label'), { target: { value: 'Cash' } });
     fireEvent.click(screen.getByRole('button', { name: 'common.save' }));
     await waitFor(() =>
-      expect(update).toHaveBeenCalledWith({ payment_provider: 'offline', offline_payment_instructions: null }),
+      expect(update).toHaveBeenCalledWith({ payment_provider: 'offline', offline_payment_instructions: 'Cash' }),
     );
   });
 });

@@ -5,7 +5,13 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { useTenant } from '@/hooks/useTenant';
 import queryClient from '@/lib/query-client';
-import { invoicingPairsWithPayment, isUnfinishedPaymentProvider, jobOnlinePaymentSupported } from '@/lib/providerPairing';
+import {
+  canChoosePaymentProvider,
+  invoicingPairsWithPayment,
+  isProviderSwitchBlockedError,
+  isUnfinishedPaymentProvider,
+  jobOnlinePaymentSupported,
+} from '@/lib/providerPairing';
 
 export const OFFLINE_PAYMENTS = 'offline';
 /** Every online provider a studio may have stored; `mock` is never offered. */
@@ -47,6 +53,10 @@ export function OfflinePaymentsSettingsForm() {
   const nextPaymentProvider = resolvePaymentProviderToSave({ offline, onlineProvider });
   // Changing how customers pay must not leave documents that the invoicing service cannot issue.
   const pairingProblem = !invoicingPairsWithPayment(nextPaymentProvider, invoicingProvider);
+  // Beta: only a studio that pays at the studio with no tax documents may choose an online
+  // provider itself; any other change goes through support (the database refuses it too).
+  const locked = !canChoosePaymentProvider(tenant);
+  const savedOffline = savedProvider === OFFLINE_PAYMENTS;
 
   // Depend on saved primitives, not the tenant object, so a refetch with the same values
   // does not reset what the admin is typing.
@@ -69,7 +79,10 @@ export function OfflinePaymentsSettingsForm() {
           offline_payment_instructions: instructions.trim() || null,
         })
         .eq('id', tenant.id);
-      if (error) throw error;
+      if (error) {
+        if (isProviderSwitchBlockedError(error)) throw new Error(t('settings.offline_payments.switch_contact_support'));
+        throw error;
+      }
     },
     onSuccess: async () => {
       setMessage(t('settings.offline_payments.saved'));
@@ -93,7 +106,8 @@ export function OfflinePaymentsSettingsForm() {
           type="checkbox"
           className="mt-1"
           checked={offline}
-          aria-describedby="offline-payments-enabled-hint"
+          disabled={locked}
+          aria-describedby={locked ? 'offline-payments-enabled-hint offline-payments-locked' : 'offline-payments-enabled-hint'}
           onChange={(e) => setOffline(e.target.checked)}
         />
         <div>
@@ -137,6 +151,8 @@ export function OfflinePaymentsSettingsForm() {
             id="offline-payments-provider"
             className="form-input w-full"
             value={onlineProvider}
+            disabled={locked}
+            aria-describedby={locked ? 'offline-payments-locked' : undefined}
             onChange={(e) => setOnlineProvider(e.target.value)}
           >
             {onlinePaymentChoices(savedProvider).map((slug) => (
@@ -158,6 +174,12 @@ export function OfflinePaymentsSettingsForm() {
         </div>
       )}
 
+      {locked && (
+        <p id="offline-payments-locked" className="text-sm rounded-lg border border-border bg-muted/40 px-3 py-2">
+          {t('settings.offline_payments.switch_contact_support')}
+        </p>
+      )}
+
       {pairingProblem && (
         <p className="text-sm text-destructive" role="alert">
           {t('settings.offline_payments.pairing_problem')}
@@ -170,15 +192,18 @@ export function OfflinePaymentsSettingsForm() {
         </p>
       )}
 
-      <Button
-        type="button"
-        variant="primary"
-        disabled={saveMutation.isPending || pairingProblem}
-        isLoading={saveMutation.isPending}
-        onClick={() => saveMutation.mutate()}
-      >
-        {t('common.save')}
-      </Button>
+      {/* A locked online studio has nothing to edit here; an offline one keeps its instructions. */}
+      {(!locked || savedOffline) && (
+        <Button
+          type="button"
+          variant="primary"
+          disabled={saveMutation.isPending || pairingProblem}
+          isLoading={saveMutation.isPending}
+          onClick={() => saveMutation.mutate()}
+        >
+          {t('common.save')}
+        </Button>
+      )}
     </section>
   );
 }

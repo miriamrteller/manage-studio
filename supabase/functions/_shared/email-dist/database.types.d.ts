@@ -4894,6 +4894,15 @@ export type Database = {
                 };
                 Returns: string[];
             };
+            payment_provider_switch_allowed: {
+                Args: {
+                    p_new_invoicing: string;
+                    p_new_payment: string;
+                    p_old_invoicing: string;
+                    p_old_payment: string;
+                };
+                Returns: boolean;
+            };
             pick_active_consent_template: {
                 Args: {
                     p_language?: string;

@@ -11,6 +11,7 @@ import {
   getBundledPaymentProviderSlug,
   type BundledPaymentProviderSlug,
 } from '@/lib/tenantProviderRouting';
+import { canChoosePaymentProvider, isUnfinishedPaymentProvider } from '@/lib/providerPairing';
 import { GrowSettingsForm } from './GrowSettingsForm';
 import { IcountSettingsForm } from './IcountSettingsForm';
 import { Invoice4uSettingsForm } from './Invoice4uSettingsForm';
@@ -30,13 +31,28 @@ function BundledProviderForm({ slug }: { slug: BundledPaymentProviderSlug }) {
   }
 }
 
-/** Bundled IL setup — generic shell with equal Grow / iCount / Invoice4U choice. */
+/**
+ * Pure: the providers this page offers. Beta rule: a studio already on one keeps only that one
+ * (changing it goes through support); a studio paying at the studio with no tax documents picks
+ * among the finished ones; any other studio cannot pick here.
+ */
+export function bundledProviderChoices(
+  tenant: Parameters<typeof canChoosePaymentProvider>[0],
+): BundledPaymentProviderSlug[] {
+  const activeSlug = getBundledPaymentProviderSlug(tenant);
+  if (activeSlug) return [activeSlug];
+  if (!canChoosePaymentProvider(tenant)) return [];
+  return BUNDLED_PAYMENT_PROVIDER_OPTIONS.filter((slug) => !isUnfinishedPaymentProvider(slug));
+}
+
+/** Bundled IL setup — generic shell with the Grow / Invoice4U choice. */
 export function BundledPaymentsSettings() {
   const { t } = useTranslation();
   const tenant = useTenant();
   const activeSlug = getBundledPaymentProviderSlug(tenant);
-  const [selected, setSelected] = useState<BundledPaymentProviderSlug>(
-    activeSlug ?? BUNDLED_PAYMENT_PROVIDER_OPTIONS[0],
+  const choices = bundledProviderChoices(tenant);
+  const [selected, setSelected] = useState<BundledPaymentProviderSlug | undefined>(
+    activeSlug ?? choices[0],
   );
 
   useEffect(() => {
@@ -58,12 +74,19 @@ export function BundledPaymentsSettings() {
         </p>
       </header>
 
+      {!canChoosePaymentProvider(tenant) && (
+        <p className="text-sm rounded-lg border border-border bg-muted/40 px-3 py-2" role="note">
+          {t('settings.offline_payments.switch_contact_support')}
+        </p>
+      )}
+
+      {choices.length > 1 && (
       <fieldset className="space-y-3">
         <legend className="text-sm font-medium text-foreground">
           {t('settings.bundled.choose_provider', { defaultValue: 'Provider' })}
         </legend>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {BUNDLED_PAYMENT_PROVIDER_OPTIONS.map((slug) => {
+          {choices.map((slug) => {
             const inputId = `bundled-provider-${slug}`;
             const isActive = selected === slug;
             return (
@@ -91,8 +114,9 @@ export function BundledPaymentsSettings() {
           })}
         </div>
       </fieldset>
+      )}
 
-      <BundledProviderForm slug={selected} />
+      {selected && choices.includes(selected) && <BundledProviderForm slug={selected} />}
     </div>
   );
 }

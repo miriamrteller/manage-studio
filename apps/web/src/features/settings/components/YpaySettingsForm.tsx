@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { useTenant } from '@/hooks/useTenant';
 import queryClient from '@/lib/query-client';
 import { functionInvokeErrorMessage, parseFunctionInvokeBody } from '@/lib/parseFunctionInvokeError';
+import { isProviderSwitchBlockedError } from '@/lib/providerPairing';
 
 /** The platform's encryption key is not set, so nothing can be stored or read back. */
 export function isEncryptionKeyMissing(message: string | null | undefined): boolean {
@@ -27,7 +28,11 @@ export function YpaySettingsForm() {
   const [docMessage, setDocMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
 
   const friendly = (raw: string) =>
-    isEncryptionKeyMissing(raw) ? t('settings.ypay.encryption_missing') : raw;
+    isEncryptionKeyMissing(raw)
+      ? t('settings.ypay.encryption_missing')
+      : isProviderSwitchBlockedError({ message: raw })
+        ? t('settings.offline_payments.switch_contact_support')
+        : raw;
 
   const saveMutation = useMutation({
     mutationFn: async () => {

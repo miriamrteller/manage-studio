@@ -2487,6 +2487,7 @@
     },
     "offline_payments": {
       "title": "How parents pay",
+      "switch_contact_support": "To change your payment provider, contact OpalSwift support.",
       "description": "Choose whether parents pay online or at the studio.",
       "enabled_label": "Parents pay at the studio (cash or bank transfer)",
       "enabled_hint": "No card form online. The place is reserved until you record the payment on the student. Unpaid places are released after 30 days.",
