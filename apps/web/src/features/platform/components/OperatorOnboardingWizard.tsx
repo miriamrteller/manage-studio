@@ -353,6 +353,11 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
                 {paymentLabel(slug)}
               </label>
             ))}
+            {form.paymentProvider !== 'offline' && (
+              <p className="text-sm text-muted-foreground" role="note">
+                {t('settings.offline_payments.choose_carefully')}
+              </p>
+            )}
           </fieldset>
           <fieldset className="space-y-2">
             <legend className="mb-1 text-sm font-medium">{t('studio_setup.invoicing_question')}</legend>

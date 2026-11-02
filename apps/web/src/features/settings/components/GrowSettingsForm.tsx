@@ -12,6 +12,7 @@ import {
   GrowWebhookKeyPanel,
   rotateGrowWebhookKey,
 } from './GrowWebhookKeyPanel';
+import { isProviderSwitchBlockedError } from '@/lib/providerPairing';
 
 function StatusRow({ label, value }: { label: string; value: string }) {
   return (
@@ -64,7 +65,7 @@ export function GrowSettingsForm({ embedded = false }: { embedded?: boolean }) {
       await queryClient.invalidateQueries({ queryKey: ['tenant'] });
       await queryClient.invalidateQueries({ queryKey: GROW_WEBHOOK_KEY_STATUS_QUERY });
     },
-    onError: (err: Error) => setMessage(err.message),
+    onError: (err: Error) => setMessage(isProviderSwitchBlockedError(err) ? t('settings.offline_payments.switch_contact_support') : err.message),
   });
 
   return (

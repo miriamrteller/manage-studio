@@ -10,6 +10,7 @@ import {
   INVOICE4U_CLEARING_COMPANY_OPTIONS,
   INVOICE4U_DEFAULT_CLEARING_COMPANY,
 } from '@/lib/bundledProviderUi';
+import { isProviderSwitchBlockedError } from '@/lib/providerPairing';
 
 function StatusRow({ label, value }: { label: string; value: string }) {
   return (
@@ -56,7 +57,7 @@ export function Invoice4uSettingsForm({ embedded = false }: { embedded?: boolean
       );
       await queryClient.invalidateQueries({ queryKey: ['tenant'] });
     },
-    onError: (err: Error) => setMessage(err.message),
+    onError: (err: Error) => setMessage(isProviderSwitchBlockedError(err) ? t('settings.offline_payments.switch_contact_support') : err.message),
   });
 
   return (
