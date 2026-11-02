@@ -11,14 +11,17 @@ import {
   createStudio,
   resendOwnerInvite,
   STUDIO_INVOICING_OPTIONS,
-  STUDIO_PAYMENT_OPTIONS,
   type OwnerInviteStatus,
   type StudioInvoicingProvider,
   type StudioPaymentProvider,
   type StudioSetupResult,
 } from '../services/studioSetupService';
 import { INITIAL_FORM, toSetupRequest, VERTICALS, type StudioSetupForm } from '../lib/studioSetupForm';
-import { invoicingOptionsFor, invoicingPairsWithPayment } from '@/lib/providerPairing';
+import { invoicingOptionsFor, invoicingPairsWithPayment, monthlyFeesDefaultFor } from '@/lib/providerPairing';
+import {
+  PaymentProviderChoice,
+  type ChoosablePaymentProvider,
+} from '@/features/settings/components/PaymentProviderChoice';
 
 /** Invoicing that only issues documents with its own card payments (no cash receipts). */
 const BUNDLED_ONLY_INVOICING: readonly string[] = ['grow', 'icount', 'invoice4u'];
@@ -195,7 +198,7 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
       case 'owner':
         return EMAIL_RE.test(form.ownerEmail.trim());
       case 'payments':
-        return invoicingPairsWithPayment(form.paymentProvider, form.invoicingProvider);
+        return form.monthlyFees !== null && invoicingPairsWithPayment(form.paymentProvider, form.invoicingProvider);
       case 'review':
         return !selfServe || (termsAccepted && (!siteKey || Boolean(captchaToken)));
       default:
@@ -216,7 +219,7 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
       case 'owner':
         return 'studio_setup.need_owner_email';
       case 'payments':
-        return 'studio_setup.need_invoicing_pairing';
+        return form.monthlyFees === null ? 'studio_setup.need_monthly_fees' : 'studio_setup.need_invoicing_pairing';
       case 'review':
         return !termsAccepted ? 'studio_setup.need_terms' : 'self_serve.captcha_needed';
       default:
@@ -333,7 +336,14 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
                   name="ss-vertical"
                   className="sr-only"
                   checked={form.vertical === vertical}
-                  onChange={() => update('vertical', vertical)}
+                  onChange={() => {
+                    // The studio type pre-fills "Will you charge monthly fees?".
+                    const monthlyFees = monthlyFeesDefaultFor(vertical);
+                    setForm((prev) => ({ ...prev, vertical, monthlyFees }));
+                    if (monthlyFees && (form.paymentProvider === 'ypay' || form.paymentProvider === 'invoice4u')) {
+                      choosePayment('grow');
+                    }
+                  }}
                 />
                 <span className="block font-semibold">{t(`studio_setup.vertical_${vertical}`)}</span>
                 <span className="mt-1 block text-sm text-gray-700">{t(`studio_setup.vertical_${vertical}_hint`)}</span>
@@ -345,20 +355,13 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
 
       {step === 'payments' && (
         <section className="space-y-6">
-          <fieldset className="space-y-2">
-            <legend className="mb-1 text-sm font-medium">{t('studio_setup.payment_question')}</legend>
-            {STUDIO_PAYMENT_OPTIONS.map((slug) => (
-              <label key={slug} className="flex items-center gap-2">
-                <input type="radio" name="ss-payment" value={slug} checked={form.paymentProvider === slug} onChange={() => choosePayment(slug)} />
-                {paymentLabel(slug)}
-              </label>
-            ))}
-            {form.paymentProvider !== 'offline' && (
-              <p className="text-sm text-muted-foreground" role="note">
-                {t('settings.offline_payments.choose_carefully')}
-              </p>
-            )}
-          </fieldset>
+          <PaymentProviderChoice
+            idPrefix="ss"
+            monthlyFees={form.monthlyFees}
+            onMonthlyFeesChange={(monthlyFees) => update('monthlyFees', monthlyFees)}
+            provider={form.paymentProvider as ChoosablePaymentProvider}
+            onProviderChange={(slug) => choosePayment(slug)}
+          />
           <fieldset className="space-y-2">
             <legend className="mb-1 text-sm font-medium">{t('studio_setup.invoicing_question')}</legend>
             {matchingInvoicing && (

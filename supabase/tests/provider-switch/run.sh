@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
-# Beta provider-switch rule (…_block_payment_provider_switch.sql): the only
-# change a studio admin may make is pay at the studio (invoicing none) to
-# Grow, YPay or Invoice4U. Applies the FULL migration chain to a throwaway
-# database on a local Postgres 15+ (reusing the client-portal stubs).
+# Payment provider switching (…_block_payment_provider_switch.sql, loosened by
+# …_provider_switch_until_first_payment.sql): before its first real payment a
+# studio may change provider freely; after it, only pay at the studio (no
+# documents) to Grow, YPay or Invoice4U. Also: a YPay / Invoice4U studio cannot
+# make a class monthly. Applies the FULL migration chain to a throwaway database
+# on a local Postgres 15+ (reusing the client-portal stubs).
 #
 #   PGHOST=/tmp PGPORT=5432 PGUSER=postgres supabase/tests/provider-switch/run.sh
 set -euo pipefail

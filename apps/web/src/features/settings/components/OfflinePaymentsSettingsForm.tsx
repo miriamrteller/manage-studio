@@ -11,7 +11,15 @@ import {
   isProviderSwitchBlockedError,
   isUnfinishedPaymentProvider,
   jobOnlinePaymentSupported,
+  monthlyFeesDefaultFor,
+  SWITCH_FREE_PAYMENT_PROVIDERS,
 } from '@/lib/providerPairing';
+import { useTenantHasPayment, TENANT_HAS_PAYMENT_QUERY } from '../hooks/useTenantHasPayment';
+import {
+  isOtherPaymentProvider,
+  PaymentProviderChoice,
+  type ChoosablePaymentProvider,
+} from './PaymentProviderChoice';
 
 export const OFFLINE_PAYMENTS = 'offline';
 /** Every online provider a studio may have stored; `mock` is never offered. */
@@ -33,36 +41,51 @@ export function resolvePaymentProviderToSave(input: { offline: boolean; onlinePr
   return input.offline ? OFFLINE_PAYMENTS : input.onlineProvider;
 }
 
+/** Pure: the provider the choice starts on. Anything not offered starts on Grow. */
+export function initialChoice(savedProvider: string): ChoosablePaymentProvider {
+  return (SWITCH_FREE_PAYMENT_PROVIDERS as readonly string[]).includes(savedProvider)
+    ? (savedProvider as ChoosablePaymentProvider)
+    : 'grow';
+}
+
 /**
  * Admin → Setup → Settings: "How parents pay". Offline = tenants.payment_provider 'offline'
  * (public checkout shows "Pay at the studio" with the studio's instructions; admins record
  * each payment). Online = a provider slug; its keys live on the provider's own page.
+ *
+ * While the studio may still choose (before its first payment, or paying at the studio with no
+ * documents) it answers "Will you charge monthly fees?" and picks a provider
+ * (PaymentProviderChoice). Otherwise the choice is shown locked with "contact OpalSwift support".
  */
 export function OfflinePaymentsSettingsForm() {
   const { t } = useTranslation();
   const tenant = useTenant();
+  const hasPayment = useTenantHasPayment(tenant?.id);
   const savedProvider = tenant?.payment_provider ?? 'grow';
   const savedInstructions = tenant?.offline_payment_instructions ?? '';
-  const [offline, setOffline] = useState(savedProvider === OFFLINE_PAYMENTS);
-  const [onlineProvider, setOnlineProvider] = useState<string>(
-    savedProvider !== OFFLINE_PAYMENTS ? savedProvider : 'grow',
+  const savedOffline = savedProvider === OFFLINE_PAYMENTS;
+  const locked =
+    !canChoosePaymentProvider(tenant, hasPayment) ||
+    !(SWITCH_FREE_PAYMENT_PROVIDERS as readonly string[]).includes(savedProvider);
+
+  const [choice, setChoice] = useState<ChoosablePaymentProvider>(initialChoice(savedProvider));
+  const [monthlyFees, setMonthlyFees] = useState<boolean | null>(
+    isOtherPaymentProvider(savedProvider) ? false : monthlyFeesDefaultFor(tenant?.vertical),
   );
   const [instructions, setInstructions] = useState(savedInstructions);
   const [message, setMessage] = useState<string | null>(null);
   const invoicingProvider = tenant?.invoicing_provider ?? 'none';
-  const nextPaymentProvider = resolvePaymentProviderToSave({ offline, onlineProvider });
+  const nextPaymentProvider = locked ? savedProvider : choice;
+  const offline = nextPaymentProvider === OFFLINE_PAYMENTS;
   // Changing how customers pay must not leave documents that the invoicing service cannot issue.
   const pairingProblem = !invoicingPairsWithPayment(nextPaymentProvider, invoicingProvider);
-  // Beta: only a studio that pays at the studio with no tax documents may choose an online
-  // provider itself; any other change goes through support (the database refuses it too).
-  const locked = !canChoosePaymentProvider(tenant);
-  const savedOffline = savedProvider === OFFLINE_PAYMENTS;
+  // Changing provider needs the "monthly fees?" answer; saving the instructions does not.
+  const needsAnswer = !locked && monthlyFees === null && choice !== savedProvider;
 
   // Depend on saved primitives, not the tenant object, so a refetch with the same values
   // does not reset what the admin is typing.
   useEffect(() => {
-    setOffline(savedProvider === OFFLINE_PAYMENTS);
-    if (savedProvider !== OFFLINE_PAYMENTS) setOnlineProvider(savedProvider);
+    setChoice(initialChoice(savedProvider));
   }, [savedProvider]);
   useEffect(() => {
     setInstructions(savedInstructions);
@@ -75,7 +98,7 @@ export function OfflinePaymentsSettingsForm() {
       const { error } = await supabase
         .from('tenants')
         .update({
-          payment_provider: resolvePaymentProviderToSave({ offline, onlineProvider }),
+          payment_provider: nextPaymentProvider,
           offline_payment_instructions: instructions.trim() || null,
         })
         .eq('id', tenant.id);
@@ -87,6 +110,7 @@ export function OfflinePaymentsSettingsForm() {
     onSuccess: async () => {
       setMessage(t('settings.offline_payments.saved'));
       await queryClient.invalidateQueries({ queryKey: ['tenant'] });
+      await queryClient.invalidateQueries({ queryKey: [TENANT_HAS_PAYMENT_QUERY] });
     },
     onError: (err: Error) => setMessage(err.message),
   });
@@ -100,27 +124,66 @@ export function OfflinePaymentsSettingsForm() {
       </h2>
       <p className="text-sm text-muted-foreground">{t('settings.offline_payments.description')}</p>
 
-      <div className="flex items-start gap-2 text-sm">
-        <input
-          id="offline-payments-enabled"
-          type="checkbox"
-          className="mt-1"
-          checked={offline}
-          disabled={locked}
-          aria-describedby={locked ? 'offline-payments-enabled-hint offline-payments-locked' : 'offline-payments-enabled-hint'}
-          onChange={(e) => setOffline(e.target.checked)}
-        />
-        <div>
-          <label htmlFor="offline-payments-enabled" className="font-medium">
-            {t('settings.offline_payments.enabled_label')}
-          </label>
-          <p id="offline-payments-enabled-hint" className="text-muted-foreground">
-            {t('settings.offline_payments.enabled_hint')}
+      {locked ? (
+        <>
+          <div className="flex items-start gap-2 text-sm">
+            <input
+              id="offline-payments-enabled"
+              type="checkbox"
+              className="mt-1"
+              checked={savedOffline}
+              disabled
+              aria-describedby="offline-payments-enabled-hint offline-payments-locked"
+              readOnly
+            />
+            <div>
+              <label htmlFor="offline-payments-enabled" className="font-medium">
+                {t('settings.offline_payments.enabled_label')}
+              </label>
+              <p id="offline-payments-enabled-hint" className="text-muted-foreground">
+                {t('settings.offline_payments.enabled_hint')}
+              </p>
+            </div>
+          </div>
+          {!savedOffline && (
+            <div className="space-y-2">
+              <label className="block text-sm font-medium" htmlFor="offline-payments-provider">
+                {t('settings.payments.provider')}
+              </label>
+              <select
+                id="offline-payments-provider"
+                className="form-input w-full"
+                value={savedProvider}
+                disabled
+                aria-describedby="offline-payments-locked"
+              >
+                {onlinePaymentChoices(savedProvider).map((slug) => (
+                  <option key={slug} value={slug}>
+                    {isUnfinishedPaymentProvider(slug)
+                      ? t('settings.offline_payments.provider_not_finished', {
+                          provider: t(`settings.offline_payments.providers.${slug}`),
+                        })
+                      : t(`settings.offline_payments.providers.${slug}`)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          <p id="offline-payments-locked" className="text-sm rounded-lg border border-border bg-muted/40 px-3 py-2">
+            {t('settings.offline_payments.switch_contact_support')}
           </p>
-        </div>
-      </div>
+        </>
+      ) : (
+        <PaymentProviderChoice
+          idPrefix="settings"
+          monthlyFees={monthlyFees}
+          onMonthlyFeesChange={setMonthlyFees}
+          provider={choice}
+          onProviderChange={setChoice}
+        />
+      )}
 
-      {offline ? (
+      {offline && (
         <div className="space-y-2">
           <label className="block text-sm font-medium" htmlFor="offline-payment-instructions">
             {t('settings.offline_payments.instructions_label')}
@@ -142,46 +205,11 @@ export function OfflinePaymentsSettingsForm() {
             {t('settings.offline_payments.receipts_note')}
           </p>
         </div>
-      ) : (
-        <div className="space-y-2">
-          <label className="block text-sm font-medium" htmlFor="offline-payments-provider">
-            {t('settings.payments.provider')}
-          </label>
-          <select
-            id="offline-payments-provider"
-            className="form-input w-full"
-            value={onlineProvider}
-            disabled={locked}
-            aria-describedby={locked ? 'offline-payments-locked' : undefined}
-            onChange={(e) => setOnlineProvider(e.target.value)}
-          >
-            {onlinePaymentChoices(savedProvider).map((slug) => (
-              <option key={slug} value={slug}>
-                {isUnfinishedPaymentProvider(slug)
-                  ? t('settings.offline_payments.provider_not_finished', {
-                      provider: t(`settings.offline_payments.providers.${slug}`),
-                    })
-                  : t(`settings.offline_payments.providers.${slug}`)}
-              </option>
-            ))}
-          </select>
-          <p className="text-xs text-muted-foreground">{t('settings.offline_payments.provider_hint')}</p>
-          {!locked && (
-            <p className="text-sm text-muted-foreground" role="note">
-              {t('settings.offline_payments.choose_carefully')}
-            </p>
-          )}
-          {tenant.vertical === 'photographer' && !jobOnlinePaymentSupported(onlineProvider) && (
-            <p className="text-sm text-muted-foreground" role="note">
-              {t('settings.offline_payments.job_payments_hint')}
-            </p>
-          )}
-        </div>
       )}
 
-      {locked && (
-        <p id="offline-payments-locked" className="text-sm rounded-lg border border-border bg-muted/40 px-3 py-2">
-          {t('settings.offline_payments.switch_contact_support')}
+      {!offline && tenant.vertical === 'photographer' && !jobOnlinePaymentSupported(nextPaymentProvider) && (
+        <p className="text-sm text-muted-foreground" role="note">
+          {t('settings.offline_payments.job_payments_hint')}
         </p>
       )}
 
@@ -202,7 +230,7 @@ export function OfflinePaymentsSettingsForm() {
         <Button
           type="button"
           variant="primary"
-          disabled={saveMutation.isPending || pairingProblem}
+          disabled={saveMutation.isPending || pairingProblem || needsAnswer}
           isLoading={saveMutation.isPending}
           onClick={() => saveMutation.mutate()}
         >

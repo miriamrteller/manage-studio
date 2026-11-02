@@ -102,10 +102,14 @@ describe('Settings → How customers pay', () => {
     Object.assign(tenantState, { payment_provider: 'offline', invoicing_provider: 'none' });
     wrap(<OfflinePaymentsSettingsForm />);
     expect(screen.queryByText('settings.offline_payments.switch_contact_support')).toBeNull();
-    expect(screen.queryByText('settings.offline_payments.choose_carefully')).toBeNull();
-    fireEvent.click(screen.getByLabelText('settings.offline_payments.enabled_label'));
-    expect(screen.getByText('settings.offline_payments.choose_carefully')).toBeTruthy();
-    fireEvent.change(screen.getByLabelText('settings.payments.provider'), { target: { value: 'invoice4u' } });
+    expect(screen.getByText('payment_choice.disclaimer')).toBeTruthy();
+    // Switching needs the "monthly fees?" answer first.
+    fireEvent.click(screen.getByRole('radio', { name: 'studio_setup.payment_grow' }));
+    expect(screen.getByRole('button', { name: 'common.save' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('radio', { name: 'payment_choice.monthly_no' }));
+    fireEvent.click(screen.getByRole('button', { name: 'payment_choice.different_provider' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'studio_setup.payment_invoice4u' }));
+    expect(screen.getByText('payment_choice.no_monthly_warning')).toBeTruthy();
     expect(screen.queryByRole('alert')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'common.save' }));
     await waitFor(() => expect(update).toHaveBeenCalledWith(expect.objectContaining({ payment_provider: 'invoice4u' })));

@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { FormInput, FormSelect } from '@/components/ui/form';
 import { useTenant } from '@/hooks/useTenant';
+import { isMonthlyFeesNeedGrowError, monthlyFeesSupported } from '@/lib/providerPairing';
 import { getOfferingCoverPublicUrl } from '../lib/offeringImageStorage';
 
 const optionalUuidField = z.preprocess(
@@ -60,7 +61,11 @@ interface ClassFormProps {
   isLoading?: boolean;
 }
 
-function toFormValues(classItem: Partial<Offering> | undefined, defaultCurrency: string): OfferingFormValues {
+function toFormValues(
+  classItem: Partial<Offering> | undefined,
+  defaultCurrency: string,
+  monthlyAllowed = true,
+): OfferingFormValues {
   return {
     season_id: classItem?.season_id || '',
     category_id: classItem?.category_id ?? '',
@@ -75,7 +80,7 @@ function toFormValues(classItem: Partial<Offering> | undefined, defaultCurrency:
     start_time: classItem?.start_time || '09:00',
     end_time: classItem?.end_time || '10:00',
     is_public: (classItem?.is_public ?? true) ? 'true' : 'false',
-    billing_mode: classItem?.billing_mode ?? 'recurring',
+    billing_mode: classItem?.billing_mode ?? (monthlyAllowed ? 'recurring' : 'one_time'),
     status: classItem?.status || 'active',
     location: classItem?.location ?? '',
   };
@@ -121,9 +126,12 @@ export function ClassForm({
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [removeCover, setRemoveCover] = useState(false);
 
+  // Monthly fees need Grow (or pay at the studio): a YPay / Invoice4U studio cannot make a
+  // class monthly. A class that is monthly already stays editable.
+  const monthlyAllowed = monthlyFeesSupported(tenant?.payment_provider) || classItem?.billing_mode === 'recurring';
   const form = useForm<OfferingFormValues>({
     resolver: zodResolver(ClassFormSchema),
-    defaultValues: toFormValues(classItem, tenant?.currency || 'ILS'),
+    defaultValues: toFormValues(classItem, tenant?.currency || 'ILS', monthlyAllowed),
     mode: 'onBlur',
   });
 
@@ -171,9 +179,13 @@ export function ClassForm({
       setPendingFile(null);
       setRemoveCover(false);
       if (!classItem?.id) {
-        form.reset(toFormValues(undefined, tenant?.currency || 'ILS'));
+        form.reset(toFormValues(undefined, tenant?.currency || 'ILS', monthlyAllowed));
       }
     } catch (error) {
+      if (isMonthlyFeesNeedGrowError(error)) {
+        setSubmitError(t('payment_choice.monthly_needs_grow'));
+        return;
+      }
       if (error instanceof Error && error.message.startsWith('errors.')) {
         setSubmitError(t(error.message));
         return;
@@ -380,11 +392,17 @@ export function ClassForm({
           htmlFor="billing_mode"
           label={t('form.class.billing_frequency')}
           error={form.formState.errors.billing_mode?.message}
+          {...(monthlyAllowed ? {} : { 'aria-describedby': 'billing-mode-needs-grow' })}
           {...form.register('billing_mode')}
         >
           <option value="one_time">{t('billing.one_time', { defaultValue: 'One-time' })}</option>
-          <option value="recurring">{t('billing.monthly')}</option>
+          <option value="recurring" disabled={!monthlyAllowed}>{t('billing.monthly')}</option>
         </FormSelect>
+        {!monthlyAllowed && (
+          <p id="billing-mode-needs-grow" className="text-sm text-muted-foreground md:col-span-2" role="note">
+            {t('payment_choice.monthly_needs_grow')}
+          </p>
+        )}
 
         <FormSelect
           htmlFor="status"
