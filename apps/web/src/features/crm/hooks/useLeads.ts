@@ -55,6 +55,14 @@ export function useLeads() {
     onSuccess: invalidate,
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async (leadId: string) => {
+      if (!tenant) throw new Error('Tenant not initialized');
+      return LeadService.remove(tenant, leadId);
+    },
+    onSuccess: invalidate,
+  });
+
   const dismissMutation = useMutation({
     mutationFn: async (leadId: string) => {
       if (!tenant) throw new Error('Tenant not initialized');
@@ -75,6 +83,9 @@ export function useLeads() {
     createLead: createMutation.mutate,
     isCreating: createMutation.isPending,
     updateStage: stageMutation.mutate,
+    deleteLead: deleteMutation.mutate,
+    deleteError: deleteMutation.error as Error | null,
+    isDeleting: deleteMutation.isPending,
     isUpdatingStage: stageMutation.isPending,
   };
 }
