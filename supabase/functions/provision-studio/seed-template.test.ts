@@ -7,10 +7,18 @@ import { seedSignedTemplate, sha256Hex, type SeedDeps, type SeedTenant } from ".
 
 type Row = Parameters<SeedDeps["insertTemplate"]>[0];
 
-function fakeDeps(existing: string[] = []) {
+function fakeDeps(
+  existing: string[] = [],
+  active: Array<{ tenant: string; audience: "child" | "adult" | null; language: "he" | "en" | null }> = [],
+) {
   const rows: Row[] = [];
   const deps: SeedDeps = {
     hasTemplate: (id) => Promise.resolve(existing.includes(id) || rows.some((r) => r.tenant_id === id)),
+    activeVersions: (id) =>
+      Promise.resolve([...active.filter((a) => a.tenant === id), ...rows.filter((r) => r.tenant_id === id)].map((r) => ({
+        audience: r.audience,
+        language: r.language,
+      }))),
     insertTemplate: (row) => {
       rows.push(row);
       return Promise.resolve();
@@ -87,4 +95,22 @@ Deno.test("an existing form is never replaced", async () => {
   assertEquals(await seedSignedTemplate(deps, studio("generic")), 0);
   assertEquals(await seedSignedTemplate(deps, studio("dance-studio")), 0);
   assertEquals(rows.length, 0);
+});
+
+Deno.test("fillMissing: an existing studio gets only the versions it lacks; its forms are left alone", async () => {
+  // Created on the old release: one Hebrew health declaration for everyone.
+  const { deps, rows } = fakeDeps(["t-dance-studio"], [{ tenant: "t-dance-studio", audience: null, language: null }]);
+  assertEquals(await seedSignedTemplate(deps, studio("dance-studio", "he"), { fillMissing: true }), 4);
+  assertEquals(rows.map((r) => [r.audience, r.language]), [["child", "he"], ["adult", "he"], ["child", "en"], ["adult", "en"]]);
+  // Run again: nothing more.
+  assertEquals(await seedSignedTemplate(deps, studio("dance-studio", "he"), { fillMissing: true }), 0);
+});
+
+Deno.test("fillMissing: a studio with the Hebrew forms gets only the English ones", async () => {
+  const { deps, rows } = fakeDeps(["t-dance-studio"], [
+    { tenant: "t-dance-studio", audience: "child", language: "he" },
+    { tenant: "t-dance-studio", audience: "adult", language: null },
+  ]);
+  assertEquals(await seedSignedTemplate(deps, studio("dance-studio", "he"), { fillMissing: true }), 2);
+  assertEquals(rows.map((r) => [r.audience, r.language]), [["child", "en"], ["adult", "en"]]);
 });

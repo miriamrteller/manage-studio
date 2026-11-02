@@ -13,6 +13,8 @@ export interface SeedTenant {
 export interface SeedDeps {
   /** Whether the studio already has any consent template (then nothing is seeded). */
   hasTemplate(tenantId: string): Promise<boolean>;
+  /** The audience and language of each active form (for fillMissing). */
+  activeVersions(tenantId: string): Promise<Array<{ audience: string | null; language: string | null }>>;
   /** Inserts the active template. */
   insertTemplate(row: {
     tenant_id: string;
@@ -47,10 +49,25 @@ function stringProfile(value: unknown): Record<string, string> {
  * add-on, general studios the base agreement. Never touches a studio that
  * already has a form. Returns how many were added.
  */
-export async function seedSignedTemplate(deps: SeedDeps, tenant: SeedTenant): Promise<number> {
-  if (await deps.hasTemplate(tenant.id)) return 0;
+export async function seedSignedTemplate(
+  deps: SeedDeps,
+  tenant: SeedTenant,
+  options: { fillMissing?: boolean } = {},
+): Promise<number> {
   // The studio's own language first.
   const languages: Array<"he" | "en"> = tenant.language_default === "en" ? ["en", "he"] : ["he", "en"];
+  // fillMissing: add only the (audience, language) versions the studio has no
+  // active form for; a form with no language counts as the studio's language.
+  // Existing forms are never changed or archived.
+  let have: Set<string> | null = null;
+  if (options.fillMissing) {
+    const studioLang = languages[0];
+    have = new Set(
+      (await deps.activeVersions(tenant.id)).map((v) => `${v.audience ?? ""}|${v.language ?? studioLang}`),
+    );
+  } else if (await deps.hasTemplate(tenant.id)) {
+    return 0;
+  }
   let added = 0;
   for (const lang of languages) {
     const forms = studioSignedForms(tenant.skin, {
@@ -60,6 +77,7 @@ export async function seedSignedTemplate(deps: SeedDeps, tenant: SeedTenant): Pr
       profile: stringProfile(tenant.legal_profile),
     });
     for (const form of forms) {
+      if (have?.has(`${form.audience ?? ""}|${lang}`)) continue;
       await deps.insertTemplate({
         tenant_id: tenant.id,
         name: form.name,
