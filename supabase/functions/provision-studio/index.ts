@@ -91,6 +91,15 @@ function seedDeps(service: ServiceClient): SeedDeps {
       if (error) throw new Error(error.message);
       return (count ?? 0) > 0;
     },
+    async activeVersions(tenantId) {
+      const { data, error } = await service
+        .from("consent_templates")
+        .select("audience, language")
+        .eq("tenant_id", tenantId)
+        .eq("status", "active");
+      if (error) throw new Error(error.message);
+      return (data ?? []) as Array<{ audience: string | null; language: string | null }>;
+    },
     async insertTemplate(row) {
       const { error } = await service.from("consent_templates").insert(row);
       if (error) throw new Error(error.message);
@@ -192,13 +201,19 @@ Deno.serve(withMonitoring("provision-studio", async (req) => {
       return jsonResponse({ error: "Forbidden" }, 403);
     }
     const target = isSuperAdmin ? requested : ownTenant;
+    // fillMissing (super_admin, one named studio): add the language / audience
+    // versions an existing studio lacks; its active forms are left as they are.
+    const fillMissing = body.fillMissing === true;
+    if (fillMissing && !(isSuperAdmin && requested)) {
+      return jsonResponse({ error: "fillMissing needs a super_admin and a tenantId" }, 400);
+    }
     let query = service.from("tenants").select(SEED_TENANT_COLUMNS);
     if (target) query = query.eq("id", target);
     const { data: tenants, error } = await query;
     if (error) return jsonResponse({ error: error.message }, 500);
     let seeded = 0;
     for (const t of tenants ?? []) {
-      seeded += await seedSignedTemplate(seedDeps(service), t as SeedTenant);
+      seeded += await seedSignedTemplate(seedDeps(service), t as SeedTenant, { fillMissing });
     }
     return jsonResponse({ seeded, checked: (tenants ?? []).length });
   }

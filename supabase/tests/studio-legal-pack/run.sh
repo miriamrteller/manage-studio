@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Studio legal pack (20261102123446_studio_legal_pack.sql) and the child/adult
-# forms (20261102132031_consent_template_audience.sql). Needs Supabase's auth
+# forms (20261102132031_consent_template_audience.sql) and their languages
+# (20261102132821_consent_template_language.sql). Needs Supabase's auth
 # schema and every migration applied (the local stack), so sql-tests skips it
 # (see NEEDS_SUPABASE).
 #
@@ -185,6 +186,33 @@ BEGIN
   END IF;
   RAISE NOTICE 'ok  a studio''s existing form is never replaced';
 END $$;
+
+-- 5b. The same form in the reader's language when the studio has it.
+-- (A Hebrew studio: its older rows, with no language, are in Hebrew.)
+UPDATE tenants SET language_default = 'he' WHERE id = (SELECT studio FROM ids);
+INSERT INTO consent_templates (tenant_id, name, content, version, version_hash, status, audience, language)
+SELECT studio, 'Health declaration (under 18)', 'Child health text EN', 1,
+       encode(sha256(convert_to('Child health text EN', 'UTF8')), 'hex'), 'active', 'child', 'en' FROM ids;
+SET LOCAL ROLE service_role;
+DO $$
+DECLARE
+  v_en TEXT; v_he TEXT; v_none TEXT;
+BEGIN
+  SELECT content INTO v_en FROM pick_active_consent_template((SELECT studio FROM pg_temp.ids), (SELECT kid FROM pg_temp.ids), 'en');
+  SELECT content INTO v_he FROM pick_active_consent_template((SELECT studio FROM pg_temp.ids), (SELECT kid FROM pg_temp.ids), 'he');
+  SELECT content INTO v_none FROM pick_active_consent_template((SELECT studio FROM pg_temp.ids), (SELECT kid FROM pg_temp.ids));
+  IF v_en IS DISTINCT FROM 'Child health text EN' OR v_he IS DISTINCT FROM 'Child health text' THEN
+    RAISE EXCEPTION 'FAIL language pick: en=% he=%', v_en, v_he;
+  END IF;
+  -- The audience still comes first: an adult never gets the child form in their language.
+  IF (SELECT audience FROM pick_active_consent_template((SELECT studio FROM pg_temp.ids), (SELECT grown FROM pg_temp.ids), 'en'))
+     IS DISTINCT FROM 'adult' THEN
+    RAISE EXCEPTION 'FAIL the reader''s language outranked the participant''s age';
+  END IF;
+  IF v_none IS NULL THEN RAISE EXCEPTION 'FAIL no language given should still pick a form'; END IF;
+  RAISE NOTICE 'ok  the form is picked in the reader''s language, after the participant''s age';
+END $$;
+RESET ROLE;
 
 -- 6. Rows from before 2026-11-02 were backfilled as not required.
 DO $$

@@ -2278,6 +2278,8 @@
     }
   },
   "enrolment": {
+    "waiver_in_hebrew": "This form is in Hebrew: the studio hasn't added an English version.",
+    "waiver_in_english": "This form is in English: the studio hasn't added a Hebrew version.",
     "step_counter_open": "Step {{current}}",
     "step_counter": "Step {{current}} of {{total}}",
     "step": "Step",

@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import { ConsentTemplateSchema, type ConsentTemplate, type Tenant } from '@shared/schemas';
 import { TenantDB } from '@/lib/db';
+import { readerLanguage } from '@/legal/readerLanguage';
 
 const MINOR_AGE_MS = 18 * 365.25 * 24 * 60 * 60 * 1000;
 
@@ -75,7 +76,11 @@ export async function resolveEnrolmentWaiverGate(
 
   // The active form for this participant (child or adult health declaration by age).
   const { data: templateRow } = await supabase
-    .rpc('pick_active_consent_template', { p_tenant_id: tenant.id, p_person_id: input.personId })
+    .rpc('pick_active_consent_template', {
+      p_tenant_id: tenant.id,
+      p_person_id: input.personId,
+      p_language: readerLanguage(),
+    })
     .maybeSingle();
 
   if (!templateRow) {

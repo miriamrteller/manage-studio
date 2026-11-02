@@ -569,6 +569,7 @@ export type Database = {
           content: string
           created_at: string
           id: string
+          language: string | null
           name: string
           status: string
           tenant_id: string
@@ -581,6 +582,7 @@ export type Database = {
           content: string
           created_at?: string
           id?: string
+          language?: string | null
           name: string
           status?: string
           tenant_id: string
@@ -593,6 +595,7 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
+          language?: string | null
           name?: string
           status?: string
           tenant_id?: string
@@ -4587,12 +4590,13 @@ export type Database = {
         Returns: string[]
       }
       pick_active_consent_template: {
-        Args: { p_person_id: string; p_tenant_id: string }
+        Args: { p_language?: string; p_person_id: string; p_tenant_id: string }
         Returns: {
           audience: string | null
           content: string
           created_at: string
           id: string
+          language: string | null
           name: string
           status: string
           tenant_id: string

@@ -2278,6 +2278,8 @@
     }
   },
   "enrolment": {
+    "waiver_in_hebrew": "הטופס הזה בעברית: הסטודיו עוד לא הוסיף גרסה באנגלית.",
+    "waiver_in_english": "הטופס הזה באנגלית: הסטודיו עוד לא הוסיף גרסה בעברית.",
     "step_counter_open": "שלב {{current}}",
     "step_counter": "שלב {{current}} מתוך {{total}}",
     "step": "שלב",
