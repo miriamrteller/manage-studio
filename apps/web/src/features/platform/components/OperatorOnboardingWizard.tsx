@@ -30,6 +30,7 @@ import {
   turnstileSiteKey,
   type SelfServeStudioResult,
 } from '@/features/self-serve/selfServeSignup';
+import { CountryChoice, countryChoiceComplete } from '@/components/shared/CountryChoice';
 
 const SUBDOMAIN_RE = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/;
 const HEX_COLOR = /^#[0-9A-Fa-f]{6}$/;
@@ -89,7 +90,6 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [invoicingOther, setInvoicingOther] = useState(false);
   // Israel only by default: payments, tax documents and legal templates are Israeli.
-  const [countryOpen, setCountryOpen] = useState(false);
   const [outsideIsraelAck, setOutsideIsraelAck] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const siteKey = selfServe ? turnstileSiteKey() : null;
@@ -189,7 +189,7 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
   function canAdvance(): boolean {
     switch (step) {
       case 'studio': {
-        const countryOk = form.country === 'IL' || outsideIsraelAck;
+        const countryOk = countryChoiceComplete(form.country, outsideIsraelAck);
         if (selfServe) return form.name.trim().length > 0 && countryOk;
         return form.name.trim().length > 0 && SUBDOMAIN_RE.test(form.subdomain.trim().toLowerCase()) && countryOk;
       }
@@ -321,56 +321,13 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
                 <option value="he">עברית</option>
               </select>
             </div>
-            <div className="space-y-2">
-              {!countryOpen ? (
-                <>
-                  <p className="block text-sm font-medium" id="ss-country-label">{t('studio_setup.country')}</p>
-                  <div role="group" className="flex flex-wrap items-baseline gap-x-3" aria-labelledby="ss-country-label">
-                    <span>{t('studio_setup.country_il')}</span>
-                    <button
-                      type="button"
-                      className="text-sm underline underline-offset-2"
-                      aria-expanded={false}
-                      aria-controls="ss-country-more"
-                      onClick={() => setCountryOpen(true)}
-                    >
-                      {t('studio_setup.country_not_israel')}
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <div id="ss-country-more" className="space-y-2">
-                  <label className="block text-sm font-medium" htmlFor="ss-country">{t('studio_setup.country')}</label>
-                  <select
-                    id="ss-country"
-                    className="form-input w-full"
-                    value={form.country}
-                    aria-describedby="ss-country-warning"
-                    onChange={(e) => {
-                      update('country', e.target.value as 'IL' | 'US');
-                      setOutsideIsraelAck(false);
-                    }}
-                  >
-                    <option value="IL">{t('studio_setup.country_il')}</option>
-                    <option value="US">{t('studio_setup.country_us')}</option>
-                  </select>
-                  <p id="ss-country-warning" role="note" className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
-                    {t('studio_setup.country_outside_warning')}
-                  </p>
-                  {form.country !== 'IL' && (
-                    <label className="flex items-start gap-2 text-sm">
-                      <input
-                        type="checkbox"
-                        className="mt-1"
-                        checked={outsideIsraelAck}
-                        onChange={(e) => setOutsideIsraelAck(e.target.checked)}
-                      />
-                      <span>{t('studio_setup.country_outside_ack')}</span>
-                    </label>
-                  )}
-                </div>
-              )}
-            </div>
+            <CountryChoice
+              idPrefix="ss-country"
+              value={form.country}
+              onChange={(c) => update('country', c)}
+              acknowledged={outsideIsraelAck}
+              onAcknowledgedChange={setOutsideIsraelAck}
+            />
           </div>
         </section>
       )}

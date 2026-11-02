@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { useTenant } from '@/hooks/useTenant';
 import queryClient from '@/lib/query-client';
+import { CountryChoice, countryChoiceComplete } from '@/components/shared/CountryChoice';
 
 type LocaleRow = {
   language_default: 'he' | 'en';
@@ -21,6 +22,7 @@ export function LocaleSettingsForm() {
   const [currency, setCurrency] = useState('ILS');
   const [phoneRegion, setPhoneRegion] = useState('IL');
   const [message, setMessage] = useState<string | null>(null);
+  const [outsideIsraelAck, setOutsideIsraelAck] = useState(false);
 
   const { data: localeRow } = useQuery({
     queryKey: ['tenant-locale', tenant?.id],
@@ -88,6 +90,10 @@ export function LocaleSettingsForm() {
 
   if (!tenant) return null;
 
+  // Moving to another country needs the tick; a studio already outside Israel can save as it is.
+  const countryChanged = !!localeRow && country !== localeRow.country;
+  const countryOk = countryChoiceComplete(country, outsideIsraelAck, countryChanged);
+
   return (
     <section className="space-y-4 max-w-lg">
       <h2 className="text-lg font-semibold text-foreground">{t('settings.hub.locale_title')}</h2>
@@ -109,18 +115,14 @@ export function LocaleSettingsForm() {
       </div>
 
       <div className="space-y-2">
-        <label className="block text-sm font-medium" htmlFor="country">
-          {t('settings.hub.country')}
-        </label>
-        <select
-          id="country"
-          className="form-input w-full"
+        <CountryChoice
+          idPrefix="country"
           value={country}
-          onChange={(e) => setCountry(e.target.value as 'IL' | 'US')}
-        >
-          <option value="IL">{t('settings.hub.country_il')}</option>
-          <option value="US">{t('settings.hub.country_us')}</option>
-        </select>
+          onChange={setCountry}
+          acknowledged={outsideIsraelAck}
+          onAcknowledgedChange={setOutsideIsraelAck}
+          requireAck={countryChanged}
+        />
         {hasPayments && (
           <p className="text-xs text-amber-700">{t('settings.hub.country_change_warning')}</p>
         )}
@@ -169,7 +171,7 @@ export function LocaleSettingsForm() {
 
       <Button
         variant="primary"
-        disabled={saveMutation.isPending}
+        disabled={saveMutation.isPending || !countryOk}
         onClick={() => void saveMutation.mutate()}
       >
         {t('common.save')}
