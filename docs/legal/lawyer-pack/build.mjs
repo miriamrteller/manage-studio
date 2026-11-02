@@ -38,13 +38,17 @@ const DOCS = [
   { n: 1, title: 'Platform terms (OpalSwift ↔ studio)', he: 'תנאי שימוש בפלטפורמה', base: '01-platform-terms' },
   { n: 2, title: 'OpalSwift privacy policy', he: 'מדיניות הפרטיות של OpalSwift', base: '04-opalswift-privacy-policy' },
   { n: 3, title: 'Data processing agreement (DPA)', he: 'הסכם עיבוד מידע', base: '02-dpa' },
-  { n: 4, title: 'Dance enrolment terms (studio template)', he: 'תנאי הרשמה לחוגי מחול', base: '07a-dance-enrolment-terms' },
-  { n: 5, title: 'Health declaration (studio template)', he: 'הצהרת בריאות', base: '07b-health-declaration' },
-  { n: 6, title: 'Marketing consent and unsubscribe', he: 'הסכמה לדיוור והסרה', single: '08-marketing-consent.md' },
-  { n: 7, title: 'In-app consent texts (incl. photo consent)', he: 'נוסחי הסכמה באפליקציה', single: '09-in-app-consent-texts.md' },
-  { n: 8, title: 'Photography contract (studio template)', he: 'חוזה צילום', base: '07c-photography-contract' },
-  { n: 9, title: 'Accessibility statement (OpalSwift)', he: 'הצהרת נגישות', base: '06-accessibility-statement.opalswift' },
-  { n: 10, title: 'Beta launch: legal checklist', he: 'רשימת בדיקה להשקת הבטא', checklist: true },
+  { n: 4, title: 'Class/course enrolment terms (studio template)', he: 'תנאי הרשמה לחוגים ולקורסים', base: '07a-dance-enrolment-terms' },
+  { n: 5, title: 'Health declaration, child (studio template)', he: 'הצהרת בריאות — ילדים', base: '07b-health-declaration-child' },
+  { n: 6, title: 'Health declaration, adult (studio template)', he: 'הצהרת בריאות — בגירים', base: '07b-health-declaration-adult' },
+  { n: 7, title: 'Marketing consent and unsubscribe', he: 'הסכמה לדיוור והסרה', single: '08-marketing-consent.md' },
+  { n: 8, title: 'In-app consent texts (incl. photo consent)', he: 'נוסחי הסכמה באפליקציה', single: '09-in-app-consent-texts.md' },
+  { n: 9, title: 'Service agreement, base (studio template)', he: 'הסכם למתן שירות', base: '07c-service-agreement' },
+  { n: 10, title: 'Add-on: photography', he: 'תוספת: צילום', base: '07c-addon-photographer' },
+  { n: 11, title: 'Add-on: beauty and treatments', he: 'תוספת: טיפולי יופי', base: '07c-addon-beautician' },
+  { n: 12, title: 'Add-on: coaching and tutoring', he: 'תוספת: אימון והוראה', base: '07c-addon-coaching' },
+  { n: 13, title: 'Accessibility statement (OpalSwift)', he: 'הצהרת נגישות', base: '06-accessibility-statement.opalswift' },
+  { n: 14, title: 'Beta launch: legal checklist', he: 'רשימת בדיקה להשקת הבטא', checklist: true },
 ];
 
 // ---------------------------------------------------------------------------
@@ -133,7 +137,7 @@ function coverHtml() {
 <ol>
 <li>Platform terms §9 and the beta notice: which of "as is / as available", the liability cap and the exclusions hold under the Standard Contracts Law, and whether an unregistered individual running a studio could claim consumer protection.</li>
 <li>DPA: does it meet Amendment 13 and regulation 15 of the Data Security Regulations, and do the sub-processors' DPAs satisfy the Privacy Protection Authority's 13 April 2026 opinion on transfers abroad?</li>
-<li>Studio templates (enrolment terms, health declaration, photography contract): cancellation and refund rules against the Consumer Protection Law; the health declaration without a liability release; children's data and photo consent; retention periods.</li>
+<li>Studio templates (enrolment terms, health declarations, service agreement and its add-ons): cancellation and refund rules against the Consumer Protection Law; the health declaration without a liability release; children's data and photo consent; retention periods.</li>
 <li>Marketing consent and the in-app texts: Communications Law §30A; the level of the typed-name e-signature.</li>
 <li>The English-prevails clause against Hebrew-reading parents and clients.</li>
 </ol>
