@@ -210,6 +210,32 @@ Effort: S = under half a day, M = 1–2 days, L = more.
 - A "Try it as a parent" button that opens the studio's `/enrol` in a new tab, instead of "Do a test enrolment".
 - Hebrew copy for all of this from day one.
 
+
+## Update 2026-11-02 (re-run on main @ 99dc742: legal pack #179, fixes A #184, checklist #187)
+
+Same method and limits as above (demo builds + faked sign-in; no real email, no real database). Screenshots: `60`–`66-r2-dance-en-wizard*`, `70`–`79-r2-*-admin-home` and `-settings-legal`.
+
+**Now fixed since the first pass (seen on screen)**
+- The wizard defaults to **"Pay at the studio"** and **"None"** for tax documents, with "I already use an invoicing service" tucked behind a choice (`62-r2-dance-en-wizard2.png`). (First-pass P1 #2.)
+- The studio home now has a **"Finish setting up your studio" checklist**: "5 of 7 done", one big "Next: …" button, ticks by itself, Skip and Close, and a "Setup guide" entry. Dance and photographer rows differ ("levels / season / classes" vs "packages and prices"). Hebrew is translated and mirrored (`70`, `72`, `74-r2-*-admin-home.png`). (First-pass P1 #1 and #6.)
+- Settings → Payments for a pay-at-the-studio studio shows only the "how parents pay" note.
+
+**The legal pack (#179), seen**
+- On the "your studio is ready" screen there is a new **"Your legal documents"** card: a yellow note ("created from templates based on Israeli law… they are drafts: have them reviewed by a lawyer"), a **Download legal pack (PDF)** button, a tick box ("I understand these are draft documents…") and **Confirm** (`66-r2-dance-en-wizard6.png`). The same card sits at the top of Settings → Legal (`71`, `75-r2-dance-*-settings-legal.png`), plus a banner on the studio home until it is confirmed.
+- Until the owner confirms, the studio's legal pages and the forms parents sign stay **offline**. A parent then sees "This studio isn't ready to collect signatures yet" (`WaiverStep.tsx`, `EnrolCompletePage.tsx`), so **an owner who skips Confirm cannot enrol anyone**. The first enrolment is blocked by one tick box that is easy to leave for later.
+- The pack is generated from the filled-in legal details, and the PDF cover lists anything missing ("Anything marked as missing or ______").
+
+**Still open or new**
+1. **"Go to your studio" works without confirming** the legal pack, and the owner meets the checklist next. The checklist row "Check your legal details and health declaration" has a Skip button. Make the legal row not skippable, or make the home banner say plainly "parents can't sign up until you confirm" (today it says "Your legal documents are waiting for you").
+2. **Confirm is possible with the legal details still empty.** The card sits above the form, Confirm needs only the tick, and the panel does not show which details are missing (the PDF only marks gaps). A blank business name/address can therefore go live. Show "X details missing" on the card and disable Confirm until the required fields are filled (or ask the owner to fill them first).
+3. **Order:** the confirm card comes before the details it depends on on a phone. Put the details form first, the card last.
+4. **Hebrew wording:** the pack card uses the singular "שלך" ("המסמכים המשפטיים שלך") while the rest of the product uses the plural "שלכם".
+5. The pack text speaks of "forms clients sign" for every studio type; for a dance studio say "health declaration", for a photographer "contract" (the handover rule: never "waiver").
+6. Carried over, not yet fixed: Hebrew time/age ranges shown backwards, "Add…" filter placeholders, step counter 4 vs 5 in the parent enrolment, enquiry placeholder "daughter" for photographers, mixed English in Hebrew payment screens, YPay credential labels.
+7. Not tested (cannot, without the real stack): the real email-confirm step, the real signing flow and its PDF, and the empty-studio checklist (the demo studios are pre-filled).
+
+**Priority change:** add to P1: *"Make the legal confirmation unmissable and complete: block Confirm until the legal details are filled in, and make the checklist row and banner say that parents cannot sign up until it is done."* Effort: S–M.
+
 ## Still to do in this audit
-- Re-run the legal steps once the legal pack has merged (leads panel already re-checked).
+- Re-test on the real stack when it exists (email confirm, signing, empty studio).
 - If the real local stack becomes available: confirm the email step, the real empty-studio screens, and Grow/YPay connect.
