@@ -75,10 +75,13 @@ function CopyField({ id, label, value }: { id: string; label: string; value: str
  * once: the server keeps it encrypted and never returns it again; a new one can be made at any
  * time (the old one keeps working for 24 hours).
  */
-export function GrowWebhookKeyPanel({ newKey, onNewKey }: {
+export function GrowWebhookKeyPanel({ newKey, onNewKey, headingLevel = 3 }: {
   newKey: string | null;
   onNewKey: (key: string) => void;
+  /** Keeps the heading order right: 2 when the form sits directly under the page h1. */
+  headingLevel?: 2 | 3;
 }) {
+  const Heading = headingLevel === 2 ? 'h2' : 'h3';
   const { t } = useTranslation();
   const [error, setError] = useState<string | null>(null);
 
@@ -104,9 +107,9 @@ export function GrowWebhookKeyPanel({ newKey, onNewKey }: {
       className="space-y-3 rounded border border-border p-4"
       aria-labelledby="grow-webhook-heading"
     >
-      <h3 id="grow-webhook-heading" className="text-base font-semibold text-foreground">
+      <Heading id="grow-webhook-heading" className="text-base font-semibold text-foreground">
         {t('settings.grow.webhook_title', { defaultValue: 'Payment notifications' })}
-      </h3>
+      </Heading>
       <p className="text-sm text-muted-foreground">
         {t('settings.grow.webhook_description', {
           defaultValue:

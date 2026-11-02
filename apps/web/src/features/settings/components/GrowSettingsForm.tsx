@@ -148,7 +148,11 @@ export function GrowSettingsForm({ embedded = false }: { embedded?: boolean }) {
         {t('common.save')}
       </Button>
 
-      <GrowWebhookKeyPanel newKey={newWebhookKey} onNewKey={setNewWebhookKey} />
+      <GrowWebhookKeyPanel
+        newKey={newWebhookKey}
+        onNewKey={setNewWebhookKey}
+        headingLevel={embedded ? 2 : 3}
+      />
 
       <FinanceHealthCard provider="grow" />
     </section>
