@@ -22,8 +22,8 @@ SELECT x.id, x.n, 'lp-' || x.n || '-' || substr(md5(random()::text), 1, 8), 'lp@
 FROM ids, LATERAL (VALUES (ids.b, 'b'), (ids.c, 'c')) AS x(id, n);
 
 INSERT INTO offerings (id, tenant_id, name, offering_type, start_time, end_time)
-SELECT cls, b, 'Ballet 1', 'class', '16:00', '17:00' FROM ids
-UNION ALL SELECT cls_c, c, 'C ballet', 'class', '16:00', '17:00' FROM ids;
+SELECT cls, b, 'Ballet 1', 'class', '16:00'::time, '17:00'::time FROM ids
+UNION ALL SELECT cls_c, c, 'C ballet', 'class', '16:00'::time, '17:00'::time FROM ids;
 INSERT INTO offerings (id, tenant_id, name, offering_type, duration_mins)
 SELECT appt, b, 'Family shoot', 'appointment', 60 FROM ids;
 
