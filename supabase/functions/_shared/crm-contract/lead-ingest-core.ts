@@ -63,6 +63,8 @@ export interface LeadWriteOptions {
   /** Idempotency key (email Message-ID). Null for form posts. */
   sourceRef: string | null;
   receivedAt: string;
+  /** Campaign tag, stored on NEW leads only (an update keeps the first touch). */
+  campaign?: string | null;
 }
 
 export interface LeadWriteResult {
@@ -130,6 +132,7 @@ export async function writeInboundLead(
       last_communication_note: fields.lastCommunicationNote,
       marketing_consent: false,
       source_ref: opts.sourceRef,
+      campaign: opts.campaign ?? null,
     })
     .select("id")
     .single();

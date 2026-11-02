@@ -1362,6 +1362,7 @@ export type Database = {
             };
             leads: {
                 Row: {
+                    campaign: string | null;
                     channel: string;
                     company: string | null;
                     converted_account_id: string | null;
@@ -1386,6 +1387,7 @@ export type Database = {
                     updated_at: string;
                 };
                 Insert: {
+                    campaign?: string | null;
                     channel?: string;
                     company?: string | null;
                     converted_account_id?: string | null;
@@ -1410,6 +1412,7 @@ export type Database = {
                     updated_at?: string;
                 };
                 Update: {
+                    campaign?: string | null;
                     channel?: string;
                     company?: string | null;
                     converted_account_id?: string | null;

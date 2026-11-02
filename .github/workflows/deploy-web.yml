@@ -235,6 +235,17 @@ jobs:
           else
             echo "::warning::no built asset carries the release id; release check skipped"
           fi
+          # Framing: every page refuses frames except the embeddable enquiry
+          # form (public/_headers). Losing DENY elsewhere fails the release.
+          frame_hdrs() { curl -s -o /dev/null -D - "https://$SMOKE_TENANT_HOST$1" | tr -d '\r' | tr '[:upper:]' '[:lower:]'; }
+          home=$(frame_hdrs /)
+          embed=$(frame_hdrs /embed/inquire)
+          if grep -q '^x-frame-options: deny' <<<"$home"; then echo "/ → X-Frame-Options DENY"; else echo "::error::/ lost X-Frame-Options: DENY — any site could frame the app."; ok=0; fi
+          if grep -q '^x-frame-options' <<<"$embed" || ! grep -q '^content-security-policy:.*frame-ancestors' <<<"$embed"; then
+            echo "::warning::/embed/inquire is not framable as intended (studios' website snippets will not show). Check public/_headers."
+          else
+            echo "/embed/inquire → framable (frame-ancestors set)"
+          fi
           {
             echo "### Smoke"
             echo "- app shell and \`$SMOKE_TENANT_HOST\` answered 200, release ${SHA::7} live: $([ $ok = 1 ] && echo yes || echo NO)"

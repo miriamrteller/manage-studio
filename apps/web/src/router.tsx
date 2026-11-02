@@ -47,6 +47,7 @@ import LeadsPage from "./pages/LeadsPage";
 import JobsPage from "./pages/JobsPage";
 import JobDetailPage from "./pages/JobDetailPage";
 import InquirePage from "./pages/InquirePage";
+import EmbedInquirePage from "./pages/EmbedInquirePage";
 import AdminQuotesPage from "./pages/AdminQuotesPage";
 import AdminQuoteEditorPage from "./pages/AdminQuoteEditorPage";
 import QuotePage from "./pages/QuotePage";
@@ -90,6 +91,13 @@ const router = createBrowserRouter([
         <CreateStudioPage />
       </LanguageProvider>
     ),
+  },
+  // Enquiry form for an iframe on the studio's own site: no app chrome. The
+  // only framable path (public/_headers, /embed/*).
+  {
+    path: '/embed/inquire',
+    element: <EmbedInquirePage />,
+    errorElement: <RouteErrorFallback />,
   },
   {
     path: '/auth/session-handoff',
