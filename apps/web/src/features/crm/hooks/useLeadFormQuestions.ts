@@ -3,6 +3,7 @@ import {
   formQuestions,
   leadFormKindFor,
   parseLeadFormConfig,
+  questionsForForm,
   type ClassOption,
   type FormQuestion,
 } from '@shared/index';
@@ -14,7 +15,10 @@ import { useTenant } from '@/hooks/useTenant';
  * (get_lead_form) and, when the class question is on, its public classes.
  * Any failure shows just the built-in fields: the form must keep working.
  */
-export function useLeadFormQuestions(): { questions: FormQuestion[]; loading: boolean } {
+export function useLeadFormQuestions(
+  /** A named form's question subset (null = all the studio's questions). */
+  keys?: readonly string[] | null,
+): { questions: FormQuestion[]; loading: boolean } {
   const tenant = useTenant();
   const kind = leadFormKindFor(tenant?.vertical, tenant?.business_preset);
   const query = useQuery({
@@ -35,5 +39,5 @@ export function useLeadFormQuestions(): { questions: FormQuestion[]; loading: bo
       return formQuestions(config, kind, classes);
     },
   });
-  return { questions: query.data ?? [], loading: query.isLoading };
+  return { questions: questionsForForm(query.data ?? [], keys), loading: query.isLoading };
 }
