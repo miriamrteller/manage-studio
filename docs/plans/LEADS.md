@@ -203,9 +203,23 @@ Steps 1–4 are the beta (about 1 week). The default card payment path is not to
      - a tagged link for WhatsApp, Instagram bio, Facebook, Google Business,
        email, SMS and flyer, each with a one-line how-to. WhatsApp, email and
        SMS also open their composer.
-  2. *(2c-ii, next PR)* Send the form to someone.
+  2. **Send the form to someone** (2c-ii): first name, email and an optional
+     phone.
+     - **Send by email**: `send-lead-form-link` emails the link
+       (`src=direct`) from the studio, with Reply-To the studio's contact email.
+       The text comes from fixed templates (`packages/shared/src/leadShare.ts`),
+       so the admin types no message.
+     - **Limits**: 30 emails an hour per studio, and one per recipient every
+       10 minutes. Each send is logged in `audit_log`
+       (`leads.form_link_sent`).
+     - Sending a link creates no lead and implies no consent; the person
+       becomes a lead only by filling in the form.
+     - **Send on WhatsApp** opens a chat with that number and the link
+       (`wa.me`, free, no WhatsApp API).
   3. **Have your own website?** (collapsed): the embed snippet, plus 3–4 steps
-     each for Wix, WordPress, Squarespace and Google Sites.
+     each for Wix, WordPress, Squarespace and Google Sites. **Email these
+     instructions to my web person** sends the code and the steps
+     (`leads.web_instructions_sent`, same limits).
   4. **The lead email address**, in one line.
   - **New lead sources:** `facebook`, `google`, `sms`, `flyer` and `direct`
     come from links; `phone`, `walk_in`, `referral` and `other` are for leads

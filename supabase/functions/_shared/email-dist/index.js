@@ -8,3 +8,4 @@ export * from './quote-pricing.js';
 export * from './jobPayments.js';
 export * from './schemas.js';
 export * from './leadForm.js';
+export * from './leadShare.js';

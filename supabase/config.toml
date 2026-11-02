@@ -348,6 +348,12 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/crm-lead-capture/index.ts"
 
+# Admin: email the enquiry form link, or the website embed steps (2c-ii).
+[functions.send-lead-form-link]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/send-lead-form-link/index.ts"
+
 # --- Photographer beta: job (shoot) deposit/balance payments ---------------
 # Public pay page backend: the request's public_token is the capability.
 [functions.job-payment-request-public]
