@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAdminDashboard } from './useAdminDashboard';
 import { useEntityLabels } from '@/hooks/useEntityLabels';
@@ -8,6 +9,7 @@ import { FinanceHealthCard } from '@/features/finance/components/FinanceHealthCa
 import { AdminOverviewSection } from '@/features/admin-dashboard/components/AdminOverviewSection';
 import { useTenant } from '@/hooks/useTenant';
 import { getBundledPaymentProviderSlug } from '@/lib/tenantProviderRouting';
+import { SetupGuideCard, useSetupGuide } from '@/features/setup-guide';
 
 /**
  * AdminPanel: Smart component for admin dashboard.
@@ -22,24 +24,47 @@ export function AdminPanel() {
   const tenant = useTenant();
   const healthProvider = getBundledPaymentProviderSlug(tenant);
 
+  // "Finish setup" checklist: shown until every row is done or skipped, or the owner
+  // closes it. The menu's "Setup guide" (?guide=open) brings it back.
+  const guide = useSetupGuide();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const forced = searchParams.get('guide') === 'open';
+  const { reopen } = guide;
+  useEffect(() => {
+    if (!forced) return;
+    reopen();
+    setSearchParams({}, { replace: true });
+  }, [forced, reopen, setSearchParams]);
+  const showGuide = guide.visible;
+
   return (
     <div className="space-y-8">
-      <section>
-        <h2 className="text-2xl font-bold text-primary mb-4">
-          {t('pages.admin.setup.title')}
-        </h2>
-        <p className="text-gray-600 mb-8">
-          {t('pages.admin.setup.description')}
-        </p>
-      </section>
+      {showGuide ? (
+        guide.isLoading ? (
+          <p role="status" className="text-gray-600">{t('common.loading')}</p>
+        ) : (
+          <SetupGuideCard guide={guide} />
+        )
+      ) : (
+        <>
+          <section>
+            <h2 className="text-2xl font-bold text-primary mb-4">
+              {t('pages.admin.setup.title')}
+            </h2>
+            <p className="text-gray-600 mb-8">
+              {t('pages.admin.setup.description')}
+            </p>
+          </section>
 
-      {/* Phase 1F: Operations overview — today's classes, metrics, quick actions */}
-      <AdminOverviewSection
-        overview={overview}
-        isLoading={isLoading}
-        error={error}
-        onRefresh={refetch}
-      />
+          {/* Phase 1F: Operations overview — today's classes, metrics, quick actions */}
+          <AdminOverviewSection
+            overview={overview}
+            isLoading={isLoading}
+            error={error}
+            onRefresh={refetch}
+          />
+        </>
+      )}
 
       {healthProvider && <FinanceHealthCard provider={healthProvider} />}
 

@@ -195,7 +195,7 @@ describe('self-serve signup: wizard', () => {
       termsLanguage: 'en',
     });
     expect(body).not.toHaveProperty('ownerEmail');
-    expect(screen.getByText('Next: finish setup')).toBeInTheDocument();
+    expect(screen.getByText('A checklist is waiting for you')).toBeInTheDocument();
     expect(screen.getByText('harbour-yoga.opalswift.com')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Go to your studio' }));
