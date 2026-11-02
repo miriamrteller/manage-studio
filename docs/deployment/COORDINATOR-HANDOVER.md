@@ -39,7 +39,7 @@ You coordinate Claude Code "threads" (separate cloud sessions) that build OpalSw
 
 - **Releases today:**
   - deploy-prod run 41453185800 (main 99b4acb) was **fully green**, including verify:prod.
-  - deploy-web run 41454550453 was approved and is finishing.
+  - deploy-web run 41454550453 was green, so prod = main 99b4acb.
   - Next release: see "Releases".
 - **Database:** 0 studios, 1 user: the super admin, miriamrteller@gmail.com, with no studio.
 - **Encryption key** is in `private.platform_config`: clean 44-character base64, also in her Google Password Manager.
@@ -57,7 +57,7 @@ You coordinate Claude Code "threads" (separate cloud sessions) that build OpalSw
   - Not yet done: a "Report a problem" end-to-end test on a real studio.
 - **Self-serve signup** is built but OFF (`VITE_ENABLE_SELF_SERVE_SIGNUP` + `SELF_SERVE_SIGNUP_ENABLED`).
 - **opalswift.com:** marketing site, with /terms, /privacy and /accessibility live in en + he.
-- **Lead email:** the worker and catch-all routing are live.
+- **Lead email:** the worker and catch-all routing are live (deploy-lead-email run 41435138020 green, ingest secret rotated).
 
 ## Threads
 
@@ -80,7 +80,7 @@ You coordinate Claude Code "threads" (separate cloud sessions) that build OpalSw
 - **Brand defaults** `…HZLFkBzAaP8qi2zV2d`
 - **Marketing** `…HaWHkss2HDbfeZbK9g`: owns #167.
 - **Billing plan** `…HYqvfCp3KNcZM3du7b`
-- **Dogfooding** `…HWZ6LCLnTED9R1ZxRp`: #196.
+- **Dogfooding** `…HWZ6LCLnTED9R1ZxRp`: #196 merged.
 
 ## Open PRs
 
@@ -88,7 +88,6 @@ You coordinate Claude Code "threads" (separate cloud sessions) that build OpalSw
 | --- | --- | --- |
 | #200 | Health declaration in the reader's language (App) | CI running; merge when green |
 | #198 | Grow notices authenticated, GROW_API_BASE required (Payments) | Review and merge when green. **Before the next deploy-prod after it merges, the owner must set the Supabase secret `GROW_API_BASE` to the live Grow address**, or the deploy check fails. Give her exact steps and ask Payments for the value. |
-| #196 | Dogfooding decisions recorded (docs) | Merge when green (docs only) |
 | #167 | Marketing "Create your studio" button | HOLD until self-signup is switched on |
 
 ## Releases
@@ -96,7 +95,7 @@ You coordinate Claude Code "threads" (separate cloud sessions) that build OpalSw
 - Merge to main → deploy-dev runs automatically.
 - Prod: run **deploy-prod** (owner approves) → **deploy-web** starts itself after a green deploy-prod (owner approves).
 - To batch merges, you may cancel a deploy-prod that is still waiting for approval and start a new one.
-- **Next release** should carry #200, #198 (only once `GROW_API_BASE` is set) and #196.
+- **Next release** should carry #200 and #198 (only once `GROW_API_BASE` is set). #196 (docs) is already on main.
 - **After #200 is live:** as super_admin, call provision-studio `{"action":"ensure_signed_template","tenantId":"<Creative Ballet id>","fillMissing":true}`
   for Creative Ballet. This adds the he/en versions; ask the App thread to give the owner the exact call, or run it
   via a thread. Do it **before** the studio edits its forms.
@@ -146,13 +145,13 @@ You coordinate Claude Code "threads" (separate cloud sessions) that build OpalSw
 - **Repo:** stays public while building is fast (unlimited free CI). Go private ~2–4 weeks after launch with GitHub
   Pro + a spending limit.
 - **Supabase Pro:** upgrade this week, before Creative Ballet enrols real families.
-- **Dogfooding (#196):** hq subdomain, General skin, separate login, auto-create clients on signup, service emails plus
+- **Dogfooding (#196, merged):** hq subdomain, General skin, separate login, auto-create clients on signup, service emails plus
   consented newsletters, WhatsApp later, quotes from the first paying studio. Still open: which separate email runs HQ.
 
 ## Owner's open list
 
 1. **Today:**
-   - Create **Creative Ballet** once deploy-web 41454550453 is green: "Set up a new studio", subdomain `creativeballet`,
+   - Create **Creative Ballet** (prod is ready): "Set up a new studio", subdomain `creativeballet`,
      Dance, its own owner email, **Pay at the studio + None** (change from the Grow default).
    - The studio admin fills in Settings → Legal and confirms the legal pack.
    - Test an email to leads-creativeballet@opalswift.com.
@@ -224,6 +223,6 @@ You coordinate Claude Code "threads" (separate cloud sessions) that build OpalSw
 
 1. Message the ACTIVE threads (App, Payments hardening, Error fixer, Demo D): "Coordinator changed: report to session
    <your id> from now on."
-2. Check deploy-web 41454550453 finished green, then tell the owner she can create Creative Ballet (steps above).
-3. Watch #200, #198 and #196, and plan the next release (GROW_API_BASE first).
+2. Check whether the owner has created Creative Ballet (she got the go at ~13:50 UTC), and help her with the legal pack and leads test.
+3. Watch #200 and #198, and plan the next release (GROW_API_BASE first).
 4. Tell the owner in two lines that the handover is done and what you're waiting on.
