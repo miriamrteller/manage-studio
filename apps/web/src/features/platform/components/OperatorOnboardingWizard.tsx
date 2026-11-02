@@ -18,6 +18,7 @@ import {
   type StudioSetupResult,
 } from '../services/studioSetupService';
 import { INITIAL_FORM, toSetupRequest, VERTICALS, type StudioSetupForm } from '../lib/studioSetupForm';
+import { invoicingOptionsFor, invoicingPairsWithPayment } from '@/lib/providerPairing';
 import { platformTermsVersion } from '@/legal/acceptance';
 import { LegalPackPanel } from '@/components/legal/LegalPackPanel';
 import { TurnstileWidget } from '@/components/captcha/TurnstileWidget';
@@ -57,6 +58,22 @@ const SELF_SERVE_ERRORS: Record<string, string> = {
 };
 
 /** Operator wizard: create a studio, invite its owner, then show what's left to set up. */
+/** The invoicing service named like the payment choice, when the two work together. */
+function matchingInvoicingFor(payment: StudioPaymentProvider): StudioInvoicingProvider | null {
+  return (STUDIO_INVOICING_OPTIONS as readonly string[]).includes(payment) && invoicingPairsWithPayment(payment, payment)
+    ? (payment as StudioInvoicingProvider)
+    : null;
+}
+
+/** Invoicing services, other than the matching one and "none", that work with this payment choice. */
+function otherInvoicingFor(payment: StudioPaymentProvider): StudioInvoicingProvider[] {
+  const matching = matchingInvoicingFor(payment);
+  return invoicingOptionsFor(payment).filter(
+    (slug): slug is StudioInvoicingProvider =>
+      slug !== 'none' && slug !== matching && (STUDIO_INVOICING_OPTIONS as readonly string[]).includes(slug),
+  );
+}
+
 export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated }: WizardProps = {}) {
   const { t, i18n } = useTranslation();
   const selfServe = mode === 'self_serve';
@@ -145,20 +162,21 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
   }
 
   /** The invoicing service that goes with this payment choice (Grow -> Grow documents). */
-  const matchingInvoicing: StudioInvoicingProvider | null = (STUDIO_INVOICING_OPTIONS as readonly string[]).includes(form.paymentProvider)
-    ? (form.paymentProvider as StudioInvoicingProvider)
-    : null;
+  const matchingInvoicing = matchingInvoicingFor(form.paymentProvider);
+  /** Other invoicing services that can issue documents for this payment choice. */
+  const otherInvoicing = otherInvoicingFor(form.paymentProvider);
 
-  /** Documents follow the payment choice, unless the owner said they use another invoicing service. */
+  /**
+   * Documents follow the payment choice, unless the owner said they use another invoicing
+   * service and that service still works with the new payment choice.
+   */
   function choosePayment(slug: StudioPaymentProvider) {
+    const keepOther = invoicingOther && otherInvoicingFor(slug).includes(form.invoicingProvider);
+    if (invoicingOther && !keepOther) setInvoicingOther(false);
     setForm((prev) => ({
       ...prev,
       paymentProvider: slug,
-      invoicingProvider: invoicingOther
-        ? prev.invoicingProvider
-        : (STUDIO_INVOICING_OPTIONS as readonly string[]).includes(slug)
-          ? (slug as StudioInvoicingProvider)
-          : 'none',
+      invoicingProvider: keepOther ? prev.invoicingProvider : matchingInvoicingFor(slug) ?? 'none',
     }));
   }
 
@@ -173,6 +191,8 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
         return HEX_COLOR.test(form.primaryColor) && HEX_COLOR.test(form.accentColor);
       case 'owner':
         return EMAIL_RE.test(form.ownerEmail.trim());
+      case 'payments':
+        return invoicingPairsWithPayment(form.paymentProvider, form.invoicingProvider);
       case 'review':
         return !selfServe || (termsAccepted && (!siteKey || Boolean(captchaToken)));
       default:
@@ -192,6 +212,8 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
         return 'studio_setup.need_colours';
       case 'owner':
         return 'studio_setup.need_owner_email';
+      case 'payments':
+        return 'studio_setup.need_invoicing_pairing';
       case 'review':
         return !termsAccepted ? 'studio_setup.need_terms' : 'self_serve.captcha_needed';
       default:
@@ -349,13 +371,15 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
               <input type="radio" name="ss-invoicing-mode" value="none" checked={!invoicingOther && form.invoicingProvider === 'none'} onChange={() => { setInvoicingOther(false); update('invoicingProvider', 'none'); }} />
               {invoicingLabel('none')}
             </label>
-            <label className="flex items-center gap-2">
-              <input type="radio" name="ss-invoicing-mode" value="other" checked={invoicingOther} onChange={() => { setInvoicingOther(true); if (form.invoicingProvider === 'none') update('invoicingProvider', 'yesh'); }} />
-              {t('studio_setup.invoicing_existing')}
-            </label>
-            {invoicingOther && (
+            {otherInvoicing.length > 0 && (
+              <label className="flex items-center gap-2">
+                <input type="radio" name="ss-invoicing-mode" value="other" checked={invoicingOther} onChange={() => { setInvoicingOther(true); if (!otherInvoicing.includes(form.invoicingProvider)) update('invoicingProvider', otherInvoicing[0]); }} />
+                {t('studio_setup.invoicing_existing')}
+              </label>
+            )}
+            {invoicingOther && otherInvoicing.length > 0 && (
               <div className="ms-6 space-y-2" role="group" aria-label={t('studio_setup.invoicing_existing_which')}>
-                {STUDIO_INVOICING_OPTIONS.filter((slug) => slug !== 'none').map((slug) => (
+                {otherInvoicing.map((slug) => (
                   <label key={slug} className="flex items-center gap-2">
                     <input type="radio" name="ss-invoicing" value={slug} checked={form.invoicingProvider === slug} onChange={() => update('invoicingProvider', slug)} />
                     {invoicingLabel(slug)}
