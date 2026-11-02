@@ -6,6 +6,12 @@ import { supabase } from '@/lib/supabase';
 import { useTenant } from '@/hooks/useTenant';
 import queryClient from '@/lib/query-client';
 import { FinanceHealthCard } from '@/features/finance/components/FinanceHealthCard';
+import {
+  fetchGrowWebhookKeyStatus,
+  GROW_WEBHOOK_KEY_STATUS_QUERY,
+  GrowWebhookKeyPanel,
+  rotateGrowWebhookKey,
+} from './GrowWebhookKeyPanel';
 
 function StatusRow({ label, value }: { label: string; value: string }) {
   return (
@@ -19,7 +25,8 @@ function StatusRow({ label, value }: { label: string; value: string }) {
 /**
  * Single onboarding surface for Grow (Meshulam), which bundles payment capture and tax-document
  * issuance. Stores the Grow user id, page code, and API key via save_tenant_grow_credentials and
- * surfaces a live connection test through FinanceHealthCard.
+ * surfaces a live connection test through FinanceHealthCard. Saving the credentials also makes
+ * the webhook key Grow must send with every payment notice, if the studio has none yet.
  */
 export function GrowSettingsForm({ embedded = false }: { embedded?: boolean }) {
   const { t } = useTranslation();
@@ -28,6 +35,7 @@ export function GrowSettingsForm({ embedded = false }: { embedded?: boolean }) {
   const [pageCode, setPageCode] = useState('');
   const [apiKey, setApiKey] = useState('');
   const [message, setMessage] = useState<string | null>(null);
+  const [newWebhookKey, setNewWebhookKey] = useState<string | null>(null);
 
   const trimmedMissing = !userId.trim() || !pageCode.trim() || !apiKey.trim();
 
@@ -39,11 +47,22 @@ export function GrowSettingsForm({ embedded = false }: { embedded?: boolean }) {
         p_api_key: apiKey.trim(),
       });
       if (error) throw error;
+      // Notices are rejected without a webhook key, so make one with the first save.
+      const status = await fetchGrowWebhookKeyStatus();
+      return status.configured ? null : await rotateGrowWebhookKey();
     },
-    onSuccess: async () => {
+    onSuccess: async (createdKey) => {
       setApiKey('');
-      setMessage(t('settings.grow.saved', { defaultValue: 'Grow credentials saved.' }));
+      if (createdKey) setNewWebhookKey(createdKey);
+      setMessage(
+        createdKey
+          ? t('settings.grow.saved_with_key', {
+              defaultValue: 'Grow credentials saved. Now add the webhook key below to your Grow account.',
+            })
+          : t('settings.grow.saved', { defaultValue: 'Grow credentials saved.' }),
+      );
       await queryClient.invalidateQueries({ queryKey: ['tenant'] });
+      await queryClient.invalidateQueries({ queryKey: GROW_WEBHOOK_KEY_STATUS_QUERY });
     },
     onError: (err: Error) => setMessage(err.message),
   });
@@ -128,6 +147,8 @@ export function GrowSettingsForm({ embedded = false }: { embedded?: boolean }) {
       >
         {t('common.save')}
       </Button>
+
+      <GrowWebhookKeyPanel newKey={newWebhookKey} onNewKey={setNewWebhookKey} />
 
       <FinanceHealthCard provider="grow" />
     </section>

@@ -13,6 +13,7 @@ import {
   assertThrows,
 } from "https://deno.land/std@0.168.0/testing/asserts.ts";
 import { parseGrowInvoiceNotify, parseGrowNotify } from "../../providers/grow.ts";
+import { processGrowNotify } from "../process-notify.ts";
 
 // =============================================================================
 // Helper: minimal Grow notify body
@@ -79,7 +80,7 @@ Deno.test("GAP 2 — ChargeMetadata.allocation_number is accepted", () => {
 // =============================================================================
 // GAP 3 — Webhook replay protection: parseGrowNotify is pure, so we test
 // that the same body parses consistently (idempotent parsing).
-// The DB-level guard is tested via the constructEvent stub below.
+// The DB-level guard is tested via processGrowNotify below.
 // =============================================================================
 Deno.test("GAP 3 — parseGrowNotify is pure and idempotent for same input", () => {
   const body = makeNotifyBody();
@@ -90,199 +91,144 @@ Deno.test("GAP 3 — parseGrowNotify is pure and idempotent for same input", () 
   assertEquals(result1.event.type, "payment.succeeded");
 });
 
-Deno.test("GAP 3 — constructEvent skips approve + persistToken for already-succeeded payment", async () => {
-  const persistCalls: string[] = [];
-
-  // Stub SupabaseClient that returns an existing 'succeeded' payment
-  const stubClient = {
-    rpc: (_fn: string, _args: unknown) => Promise.resolve({ data: [], error: null }),
-    from: (table: string) => ({
-      select: (_cols: string) => ({
-        eq: (_col: string, _val: unknown) => ({
-          eq: (_col2: string, _val2: unknown) => ({
-            maybeSingle: () => {
-              if (table === "payments") {
-                return Promise.resolve({ data: { id: "pay_001", status: "succeeded" }, error: null });
-              }
-              return Promise.resolve({ data: null, error: null });
-            },
-          }),
-          maybeSingle: () => {
-            if (table === "payments") {
-              return Promise.resolve({ data: { id: "pay_001", status: "succeeded" }, error: null });
-            }
-            return Promise.resolve({ data: null, error: null });
-          },
-        }),
-      }),
-      insert: (_data: unknown) => {
-        persistCalls.push(table);
-        return Promise.resolve({ error: null });
+// processGrowNotify with a tiny in-memory payments table; approve/token/settle injected.
+const NOTIFY_KEY = "correct-key-abc";
+function makeNotifyHarness(opts: { status?: string; keys?: string[] } = {}) {
+  const data = makeNotifyBody().data as Record<string, unknown>;
+  const payments = [{
+    id: "pay_001",
+    tenant_id: data.cField1,
+    provider: "grow",
+    provider_payment_ref: "txn_abc123",
+    engagement_id: data.cField2,
+    billing_account_id: data.cField3,
+    charge_type: "initial",
+    status: opts.status ?? "pending",
+    total_amount_minor: 24000,
+    currency: "ILS",
+    job_payment_request_id: null,
+  }];
+  const calls = { approve: 0, persist: 0, settle: 0 };
+  const table = () => {
+    const filters: [string, unknown][] = [];
+    let patch: Record<string, unknown> | null = null;
+    const hit = () => payments.filter((r) => filters.every(([c, v]) => (r as Record<string, unknown>)[c] === v));
+    const b: Record<string, unknown> = {
+      select: () => b,
+      eq: (c: string, v: unknown) => {
+        filters.push([c, v]);
+        return b;
       },
-    }),
+      update: (p: Record<string, unknown>) => {
+        patch = p;
+        return b;
+      },
+      insert: () => Promise.resolve({ error: null }),
+      maybeSingle: () => {
+        const rows = hit();
+        if (patch) rows.forEach((r) => Object.assign(r, patch));
+        return Promise.resolve({ data: rows[0] ?? null, error: null });
+      },
+    };
+    return b;
   };
-
-  // Dynamically import to avoid top-level await issues in test file
-  const { GrowPaymentProvider } = await import("../../providers/grow.ts");
-  const provider = new GrowPaymentProvider(stubClient as unknown as ConstructorParameters<typeof GrowPaymentProvider>[0]);
-
-  // Override private methods to track calls
-  let approveWasCalled = false;
-  let persistWasCalled = false;
-  // deno-lint-ignore no-explicit-any
-  (provider as any).approveTransaction = () => { approveWasCalled = true; return Promise.resolve(); };
-  // deno-lint-ignore no-explicit-any
-  (provider as any).persistCardToken = () => { persistWasCalled = true; return Promise.resolve(); };
-
-  const rawBody = JSON.stringify(makeNotifyBody());
-  await provider.constructEvent(rawBody, new Headers(), "00000000-0000-0000-0000-000000000001");
-
-  assertEquals(approveWasCalled, false, "approveTransaction must not be called for already-succeeded payment");
-  assertEquals(persistWasCalled, false, "persistCardToken must not be called for already-succeeded payment");
-});
-
-Deno.test("GAP 3 — constructEvent calls approve + persist for new (not yet succeeded) payment", async () => {
-  const { GrowPaymentProvider } = await import("../../providers/grow.ts");
-
-  const stubClient = {
-    rpc: (_fn: string, _args: unknown) => Promise.resolve({ data: [], error: null }),
-    from: (_table: string) => ({
-      select: (_cols: string) => ({
-        eq: (_col: string, _val: unknown) => ({
-          eq: (_col2: string, _val2: unknown) => ({
-            maybeSingle: () => Promise.resolve({ data: null, error: null }), // no existing payment
-          }),
-          maybeSingle: () => Promise.resolve({ data: null, error: null }),
-        }),
+  const service = {
+    rpc: (fn: string) =>
+      Promise.resolve({
+        data: fn === "get_grow_webhook_secret"
+          ? (opts.keys ?? [NOTIFY_KEY]).map((k) => ({ webhook_secret: k }))
+          : [],
+        error: null,
       }),
-      insert: (_data: unknown) => Promise.resolve({ error: null }),
-    }),
-  };
-
-  const provider = new GrowPaymentProvider(stubClient as unknown as ConstructorParameters<typeof GrowPaymentProvider>[0]);
-
-  let approveWasCalled = false;
-  let persistWasCalled = false;
-  // deno-lint-ignore no-explicit-any
-  (provider as any).approveTransaction = () => { approveWasCalled = true; return Promise.resolve(); };
-  // deno-lint-ignore no-explicit-any
-  (provider as any).persistCardToken = () => { persistWasCalled = true; return Promise.resolve(); };
-
-  const rawBody = JSON.stringify(makeNotifyBody());
-  await provider.constructEvent(rawBody, new Headers(), "00000000-0000-0000-0000-000000000001");
-
-  assertEquals(approveWasCalled, true, "approveTransaction must be called for a new payment");
-  assertEquals(persistWasCalled, true, "persistCardToken must be called for a new payment");
-});
-
-// =============================================================================
-// GAP 4 — Webhook key validation
-// =============================================================================
-Deno.test("GAP 4 — constructEvent rejects when webhook key mismatches stored key", async () => {
-  const { GrowPaymentProvider } = await import("../../providers/grow.ts");
-
-  const stubClient = {
-    rpc: (fn: string, _args: unknown) => {
-      if (fn === "get_grow_webhook_secret") {
-        // Return a stored key that differs from the inbound key
-        return Promise.resolve({ data: [{ webhook_secret: "correct-key-abc" }], error: null });
-      }
-      return Promise.resolve({ data: [], error: null });
+    from: table,
+  } as unknown as Parameters<typeof processGrowNotify>[0];
+  const deps = {
+    approveTransaction: () => {
+      calls.approve++;
+      return Promise.resolve();
     },
-    from: (_table: string) => ({
-      select: (_cols: string) => ({
-        eq: (_col: string, _val: unknown) => ({
-          eq: (_col2: string, _val2: unknown) => ({
-            maybeSingle: () => Promise.resolve({ data: null, error: null }),
-          }),
-          maybeSingle: () => Promise.resolve({ data: null, error: null }),
-        }),
-      }),
-      insert: (_data: unknown) => Promise.resolve({ error: null }),
-    }),
+    persistCardToken: () => {
+      calls.persist++;
+      return Promise.resolve();
+    },
+    settle: () => {
+      calls.settle++;
+      return Promise.resolve();
+    },
   };
+  return { service, deps, calls, payments };
+}
 
-  const provider = new GrowPaymentProvider(stubClient as unknown as ConstructorParameters<typeof GrowPaymentProvider>[0]);
-
-  const body = makeNotifyBody({ webhookKey: "wrong-key-xyz" });
-  const rawBody = JSON.stringify(body);
-
-  await assertRejects(
-    () => provider.constructEvent(rawBody, new Headers(), "00000000-0000-0000-0000-000000000001"),
-    Error,
-    "webhook key mismatch",
+Deno.test("GAP 3 — replay of a settled notice skips approve + persistToken", async () => {
+  const h = makeNotifyHarness({ status: "succeeded" });
+  const result = await processGrowNotify(
+    h.service,
+    JSON.stringify(makeNotifyBody({ webhookKey: NOTIFY_KEY })),
+    h.deps,
   );
+  assertEquals(result.status, "succeeded");
+  assertEquals(h.calls.approve, 0, "approveTransaction must not be called for already-succeeded payment");
+  assertEquals(h.calls.persist, 0, "persistCardToken must not be called for already-succeeded payment");
 });
 
-Deno.test("GAP 4 — constructEvent accepts when webhook key matches", async () => {
-  const { GrowPaymentProvider } = await import("../../providers/grow.ts");
-
-  const stubClient = {
-    rpc: (fn: string, _args: unknown) => {
-      if (fn === "get_grow_webhook_secret") {
-        return Promise.resolve({ data: [{ webhook_secret: "correct-key-abc" }], error: null });
-      }
-      return Promise.resolve({ data: [], error: null });
-    },
-    from: (_table: string) => ({
-      select: (_cols: string) => ({
-        eq: (_col: string, _val: unknown) => ({
-          eq: (_col2: string, _val2: unknown) => ({
-            maybeSingle: () => Promise.resolve({ data: null, error: null }),
-          }),
-          maybeSingle: () => Promise.resolve({ data: null, error: null }),
-        }),
-      }),
-      insert: (_data: unknown) => Promise.resolve({ error: null }),
-    }),
-  };
-
-  const provider = new GrowPaymentProvider(stubClient as unknown as ConstructorParameters<typeof GrowPaymentProvider>[0]);
-
-  let approveWasCalled = false;
-  // deno-lint-ignore no-explicit-any
-  (provider as any).approveTransaction = () => { approveWasCalled = true; return Promise.resolve(); };
-  // deno-lint-ignore no-explicit-any
-  (provider as any).persistCardToken = () => Promise.resolve();
-
-  const body = makeNotifyBody({ webhookKey: "correct-key-abc" });
-  await provider.constructEvent(JSON.stringify(body), new Headers(), "");
-
-  assertEquals(approveWasCalled, true, "Should proceed normally when key matches");
+Deno.test("GAP 3 — a new pending payment is approved, settled and token-persisted once", async () => {
+  const h = makeNotifyHarness();
+  const result = await processGrowNotify(
+    h.service,
+    JSON.stringify(makeNotifyBody({ webhookKey: NOTIFY_KEY })),
+    h.deps,
+  );
+  assertEquals(result.status, "succeeded");
+  assertEquals(h.calls, { approve: 1, persist: 1, settle: 1 });
+  assertEquals(h.payments[0].status, "succeeded");
 });
 
-Deno.test("GAP 4 — constructEvent proceeds when no key is stored (opt-in validation)", async () => {
+// =============================================================================
+// GAP 4 — Webhook key validation (required: payments audit P1 #1)
+// =============================================================================
+Deno.test("GAP 4 — rejects when webhook key mismatches stored key", async () => {
+  const h = makeNotifyHarness();
+  const result = await processGrowNotify(
+    h.service,
+    JSON.stringify(makeNotifyBody({ webhookKey: "wrong-key-xyz" })),
+    h.deps,
+  );
+  assertEquals(result.status, "rejected");
+  assertEquals(h.calls.approve, 0);
+  assertEquals(h.payments[0].status, "pending");
+});
+
+Deno.test("GAP 4 — rejects when no key is stored (no longer opt-in)", async () => {
+  const h = makeNotifyHarness({ keys: [] });
+  const result = await processGrowNotify(
+    h.service,
+    JSON.stringify(makeNotifyBody({ webhookKey: "any-key" })),
+    h.deps,
+  );
+  assertEquals(result.status, "rejected");
+  assertEquals(h.calls.approve, 0);
+});
+
+Deno.test("GAP 4 — rejects a wrong amount even with the right key", async () => {
+  const h = makeNotifyHarness();
+  const result = await processGrowNotify(
+    h.service,
+    JSON.stringify(makeNotifyBody({ webhookKey: NOTIFY_KEY, sum: "1.00" })),
+    h.deps,
+  );
+  assertEquals(result.status, "amount_mismatch");
+  assertEquals(h.calls.approve, 0);
+});
+
+Deno.test("GAP 4 — constructEvent refuses (unchecked path closed)", async () => {
   const { GrowPaymentProvider } = await import("../../providers/grow.ts");
-
-  const stubClient = {
-    rpc: (fn: string, _args: unknown) => {
-      if (fn === "get_grow_webhook_secret") {
-        return Promise.resolve({ data: [], error: null }); // no key stored
-      }
-      return Promise.resolve({ data: [], error: null });
-    },
-    from: (_table: string) => ({
-      select: (_cols: string) => ({
-        eq: (_col: string, _val: unknown) => ({
-          eq: (_col2: string, _val2: unknown) => ({
-            maybeSingle: () => Promise.resolve({ data: null, error: null }),
-          }),
-          maybeSingle: () => Promise.resolve({ data: null, error: null }),
-        }),
-      }),
-      insert: (_data: unknown) => Promise.resolve({ error: null }),
-    }),
-  };
-
-  const provider = new GrowPaymentProvider(stubClient as unknown as ConstructorParameters<typeof GrowPaymentProvider>[0]);
-  // deno-lint-ignore no-explicit-any
-  (provider as any).approveTransaction = () => Promise.resolve();
-  // deno-lint-ignore no-explicit-any
-  (provider as any).persistCardToken = () => Promise.resolve();
-
-  const body = makeNotifyBody({ webhookKey: "any-key" });
-  const event = await provider.constructEvent(JSON.stringify(body), new Headers(), "");
-  assertEquals(event.type, "payment.succeeded");
+  const h = makeNotifyHarness();
+  const provider = new GrowPaymentProvider(h.service);
+  await assertRejects(
+    () => provider.constructEvent(JSON.stringify(makeNotifyBody()), new Headers(), ""),
+    Error,
+    "processGrowNotify",
+  );
 });
 
 // =============================================================================

@@ -9,7 +9,8 @@
  *   SUPABASE_ACCESS_TOKEN=… node scripts/ci/check-edge-secret-names.mjs --env prod --ref <ref>
  *   SUPABASE_ACCESS_TOKEN=… node scripts/ci/check-edge-secret-names.mjs --compare <devRef> <prodRef>
  *
- * --env prod fails on: a missing required name, no complete `requiredOneOf` group
+ * --env prod fails on: a missing required or `requiredInProd` name, a secret whose value is a
+ * known sandbox value (`sandboxValuesForbiddenInProd`, compared by digest), no complete `requiredOneOf` group
  * (or not the one EMAIL_TRANSPORT selects), any *_MOCK name, any dev-only
  * name (an unset mock flag selects the LIVE adapter, a set one lets anyone
  * forge a "paid" callback — on prod they must not exist at all).
@@ -37,8 +38,26 @@ export function loadManifest(path = join(root, 'supabase/edge-secrets.json')) {
  */
 const TRANSPORT_GROUP = { resend: 'RESEND_API_KEY', cloudflare: 'CLOUDFLARE_ACCOUNT_ID' };
 
+/**
+ * Names whose value is a known sandbox value. `secrets` is [{ name, value }] where value is the
+ * Management API's SHA-256 digest (or, if ever returned raw, the value itself). Only names
+ * listed in `sandboxValuesForbiddenInProd` are looked at; nothing is printed or kept.
+ */
+export function sandboxSecretNames(secrets, manifest) {
+  const rules = manifest.sandboxValuesForbiddenInProd ?? {};
+  const hits = [];
+  for (const [name, values] of Object.entries(rules)) {
+    const entry = secrets.find((s) => s.name === name);
+    if (!entry || entry.value == null) continue;
+    const v = String(entry.value);
+    const digests = values.map((x) => sha256(x));
+    if (digests.includes(v) || /sandbox/i.test(v)) hits.push(name);
+  }
+  return hits;
+}
+
 /** Pure: names + manifest + env (+ EMAIL_TRANSPORT value class) → { errors, warnings }. */
-export function evaluate(names, manifest, env, { transport } = {}) {
+export function evaluate(names, manifest, env, { transport, sandboxNames = [] } = {}) {
   const have = new Set(names.filter((n) => !manifest.platformProvided.includes(n)));
   const known = new Set([...manifest.required, ...manifest.optional, ...manifest.devOnly]);
   const forbidden = (manifest.forbiddenInProdPatterns ?? []).map((p) => new RegExp(p));
@@ -46,6 +65,14 @@ export function evaluate(names, manifest, env, { transport } = {}) {
   const warnings = [];
   for (const n of manifest.required) {
     if (!have.has(n)) errors.push(`missing required secret ${n}`);
+  }
+  if (env === 'prod') {
+    for (const n of manifest.requiredInProd ?? []) {
+      if (!have.has(n)) errors.push(`missing required secret ${n} (required on prod)`);
+    }
+    for (const n of sandboxNames) {
+      errors.push(`${n} points at a sandbox on prod — set it to the live address`);
+    }
   }
   const groups = manifest.requiredOneOf ?? [];
   const chosen = TRANSPORT_GROUP[transport] && groups.find((g) => g.includes(TRANSPORT_GROUP[transport]));
@@ -116,7 +143,9 @@ export async function fetchSecrets(ref, token = process.env.SUPABASE_ACCESS_TOKE
   });
   if (!res.ok) throw new Error(`Management API ${res.status} listing secrets for ${ref}`);
   const body = await res.json();
-  return body.map((s) => ({ name: s.name, value: s.name === 'EMAIL_TRANSPORT' ? s.value : undefined }));
+  // Keep a digest only where a rule needs it (email transport, sandbox values).
+  const keep = new Set(['EMAIL_TRANSPORT', ...Object.keys(loadManifest().sandboxValuesForbiddenInProd ?? {})]);
+  return body.map((s) => ({ name: s.name, value: keep.has(s.name) ? s.value : undefined }));
 }
 
 export async function fetchSecretNames(ref, token) {
@@ -139,7 +168,8 @@ async function main(argv) {
   const secrets = await fetchSecrets(ref);
   const names = secrets.map((s) => s.name);
   const transport = classifyTransport(secrets);
-  const { errors, warnings } = evaluate(names, manifest, env, { transport });
+  const sandboxNames = sandboxSecretNames(secrets, manifest);
+  const { errors, warnings } = evaluate(names, manifest, env, { transport, sandboxNames });
   console.log(`EMAIL_TRANSPORT: ${transport ?? 'not set'}`);
   console.log(`Edge secrets on ${env} (${ref}): ${names.length} name(s)`);
   for (const w of warnings) console.log(`::warning::${w}`);

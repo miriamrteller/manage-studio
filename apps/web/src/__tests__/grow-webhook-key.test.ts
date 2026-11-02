@@ -1,7 +1,7 @@
 /**
- * Grow webhook pre-shared key validation (GAP 4) on the document paths.
- * Opt-in per tenant: no stored key → accepted; stored key → the notify must
- * carry a matching `webhookKey`, and omission is rejected, not skipped.
+ * Grow webhook pre-shared key validation (GAP 4, payments audit P1 #1) on the document paths.
+ * Required: no stored key → rejected; a stored key → the notify must carry a matching
+ * `webhookKey`, and omission is rejected, not skipped.
  * Run: pnpm -C apps/web test grow-webhook-key.test.ts
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -34,10 +34,33 @@ function serviceWithKey(storedKey: string | null) {
 }
 
 describe('verifyGrowWebhookKey', () => {
-  it('accepts when no key is stored for the tenant (opt-in validation)', async () => {
+  it('rejects when no key is stored for the tenant (fails closed)', async () => {
     await expect(
       verifyGrowWebhookKey(serviceWithKey(null), TENANT_ID, {
-        data: { cField1: TENANT_ID },
+        data: { cField1: TENANT_ID, webhookKey: 'anything' },
+      }),
+    ).rejects.toBeInstanceOf(GrowWebhookKeyError);
+  });
+
+  it('rejects when the key lookup errors', async () => {
+    const service = { rpc: async () => ({ data: null, error: { message: 'boom' } }) } as never;
+    await expect(
+      verifyGrowWebhookKey(service, TENANT_ID, {
+        data: { cField1: TENANT_ID, webhookKey: STORED_KEY },
+      }),
+    ).rejects.toBeInstanceOf(GrowWebhookKeyError);
+  });
+
+  it('accepts the previous key during a rotation overlap', async () => {
+    const service = {
+      rpc: async () => ({
+        data: [{ webhook_secret: 'new-key-0000000000000000000000000000' }, { webhook_secret: STORED_KEY }],
+        error: null,
+      }),
+    } as never;
+    await expect(
+      verifyGrowWebhookKey(service, TENANT_ID, {
+        data: { cField1: TENANT_ID, webhookKey: STORED_KEY },
       }),
     ).resolves.toBeUndefined();
   });

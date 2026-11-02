@@ -3,6 +3,7 @@ import { getEnv } from "../../edge-runtime/env.ts";
 import type { ChargeParams, ChargeResult, PaymentEvent, PaymentProvider } from "../types.ts";
 import { growAmountFromMinor, minorFromGrowAmount } from "../grow/amount.ts";
 import { fromGrowCustomFields, peekGrowTenantId, toGrowCustomFields } from "../grow/metadata.ts";
+import { insertPendingGrowPayment, markPendingGrowPaymentFailed } from "../grow/pending-charge.ts";
 
 interface GrowCredentials {
   userId: string;
@@ -40,8 +41,16 @@ export interface ParsedGrowNotify {
   paymentType?: string;
 }
 
-function growApiBase(): string {
-  return getEnv("GROW_API_BASE") ?? "https://sandbox.meshulam.co.il/api/light/server/1.0";
+/**
+ * Grow API base URL. Required: there is no default, so a missing setting fails loudly instead
+ * of sending live money to the sandbox. Dev and CI set GROW_MOCK and never reach this.
+ */
+export function growApiBase(): string {
+  const base = getEnv("GROW_API_BASE")?.trim();
+  if (!base) {
+    throw new Error("GROW_API_BASE is not set — Grow is not configured on this server");
+  }
+  return base.replace(/\/+$/, "");
 }
 
 /**
@@ -139,29 +148,60 @@ export function parseGrowInvoiceNotify(body: Record<string, unknown>): ParsedGro
 /** Thrown when an inbound Grow notify fails pre-shared webhook key validation. */
 export class GrowWebhookKeyError extends Error {}
 
+/** Constant-time string compare, so the key cannot be guessed one character at a time. */
+function timingSafeEqual(a: string, b: string): boolean {
+  const enc = new TextEncoder();
+  const x = enc.encode(a);
+  const y = enc.encode(b);
+  let diff = x.length ^ y.length;
+  for (let i = 0; i < Math.max(x.length, y.length); i++) {
+    diff |= (x[i] ?? 0) ^ (y[i] ?? 0);
+  }
+  return diff === 0;
+}
+
+/** The webhook key Grow sent, from the body (`webhookKey`) or the nested `data` object. */
+export function readGrowInboundKey(body: Record<string, unknown>): string | undefined {
+  const data = (body.data as Record<string, unknown> | undefined) ?? body;
+  const key = data.webhookKey ?? body.webhookKey;
+  return typeof key === "string" && key.length > 0 ? key : undefined;
+}
+
 /**
- * GAP 4 — authenticate an inbound Grow notify against the tenant's pre-shared
- * webhook key (`grow_webhook_secrets`, encrypted, rotatable). Validation is
- * opt-in per tenant: with no key stored the notify is accepted. Once a key IS
- * stored, the notify must carry a matching `webhookKey` — a missing key is
- * rejected, not skipped, so the check cannot be bypassed by omitting the field.
+ * Authenticate an inbound Grow notify (payment or document) against the tenant's pre-shared
+ * webhook key (`grow_webhook_secrets`, encrypted, rotatable). Fails closed:
+ *   - no key stored for the tenant → rejected (the studio has not finished connecting Grow);
+ *   - key missing from the notify → rejected;
+ *   - key does not match any active key → rejected.
+ * During a rotation both the new key and the previous one (for 24 hours) are accepted.
  */
 export async function verifyGrowWebhookKey(
   service: SupabaseClient,
   tenantId: string,
   body: Record<string, unknown>,
 ): Promise<void> {
-  const { data: keyRows } = await service.rpc("get_grow_webhook_secret", {
+  const { data: keyRows, error } = await service.rpc("get_grow_webhook_secret", {
     p_tenant_id: tenantId,
   });
-  const storedKey = Array.isArray(keyRows) && keyRows.length > 0
-    ? (keyRows[0] as { webhook_secret: string }).webhook_secret
-    : null;
-  if (!storedKey) return;
+  if (error) {
+    throw new GrowWebhookKeyError("Grow webhook key could not be loaded — request rejected");
+  }
+  const storedKeys = (Array.isArray(keyRows) ? keyRows : [])
+    .map((row) => (row as { webhook_secret?: string | null }).webhook_secret)
+    .filter((key): key is string => typeof key === "string" && key.length > 0);
+  if (storedKeys.length === 0) {
+    throw new GrowWebhookKeyError(
+      "Grow webhook key not configured for this studio — request rejected",
+    );
+  }
 
-  const data = (body.data as Record<string, unknown> | undefined) ?? body;
-  const inboundKey = (data.webhookKey ?? body.webhookKey) as string | undefined;
-  if (inboundKey !== storedKey) {
+  const inboundKey = readGrowInboundKey(body);
+  // Compare against every active key without stopping early.
+  let matched = false;
+  for (const key of storedKeys) {
+    if (inboundKey !== undefined && timingSafeEqual(inboundKey, key)) matched = true;
+  }
+  if (!matched) {
     throw new GrowWebhookKeyError("Grow webhook key mismatch — request rejected");
   }
 }
@@ -243,13 +283,32 @@ export class GrowPaymentProvider implements PaymentProvider {
     const tenantId = params.metadata.tenant_id;
     const creds = await this.getCredentials(tenantId);
 
-    // Recurring renewals reuse the saved card token (server-to-server, no hosted page). The
-    // charge still confirms via the notify webhook, so we return pendingWebhook like the
-    // hosted-page path rather than finalising inline.
-    if (params.savedToken) {
-      return this.chargeWithSavedToken(params, creds);
-    }
+    // Pending row first (D5): the notify is checked against it (tenant, engagement, amount).
+    const { paymentId } = await insertPendingGrowPayment(this.service, {
+      transactionUniqueIdentifier: params.idempotencyKey,
+      amountMinor: params.amountMinor,
+      currency: params.currency,
+      metadata: params.metadata,
+    });
 
+    try {
+      // Recurring renewals reuse the saved card token (server-to-server, no hosted page). The
+      // charge still confirms via the notify webhook, so we return pendingWebhook like the
+      // hosted-page path rather than finalising inline.
+      if (params.savedToken) {
+        return await this.chargeWithSavedToken(params, creds);
+      }
+      return await this.createHostedCharge(params, creds);
+    } catch (err) {
+      await markPendingGrowPaymentFailed(this.service, paymentId);
+      throw err;
+    }
+  }
+
+  private async createHostedCharge(
+    params: ChargeParams,
+    creds: GrowCredentials,
+  ): Promise<ChargeResult> {
     const customFields = toGrowCustomFields(params.metadata);
     const notifyUrl = getEnv("GROW_NOTIFY_URL") ?? "";
 
@@ -326,40 +385,15 @@ export class GrowPaymentProvider implements PaymentProvider {
     return { providerPaymentRef: params.idempotencyKey, pendingWebhook: true };
   }
 
-  async constructEvent(rawBody: string, _headers: Headers, _tenantId: string): Promise<PaymentEvent> {
-    const body = JSON.parse(rawBody) as Record<string, unknown>;
-
-    // GAP 4: Webhook key validation — authenticate the request came from Grow
-    // before processing. Opt-in per tenant; once a key is stored, a notify
-    // without a matching key is rejected (see verifyGrowWebhookKey).
-    const tenantIdFromBody = peekGrowTenantId(body);
-    if (tenantIdFromBody) {
-      await verifyGrowWebhookKey(this.service, tenantIdFromBody, body);
-    }
-
-    const parsed = parseGrowNotify(body);
-
-    // Grow requires the merchant to acknowledge the transaction; always approve on success.
-    if (parsed.event.type === "payment.succeeded") {
-      // GAP 3: Replay protection — if this transaction reference already reached 'succeeded'
-      // in our DB, skip approveTransaction and persistCardToken to prevent double-processing.
-      const ref = parsed.event.providerPaymentRef;
-      const { data: existing } = await this.service
-        .from("payments")
-        .select("id, status")
-        .eq("provider_payment_ref", ref)
-        .maybeSingle();
-
-      if (existing?.status === "succeeded") {
-        // Already finalised — return the event without triggering side-effects again.
-        return parsed.event;
-      }
-
-      await this.approveTransaction(parsed.event.metadata.tenant_id, parsed);
-      await this.persistCardToken(parsed.event.metadata, body);
-    }
-
-    return parsed.event;
+  /**
+   * Not used for Grow: payment notices are settled by `processGrowNotify` (grow/process-notify.ts),
+   * which checks the webhook key, compares the notice with our pending row and approves the
+   * transaction. Throwing here keeps the unchecked generic path closed.
+   */
+  constructEvent(_rawBody: string, _headers: Headers, _tenantId: string): Promise<PaymentEvent> {
+    return Promise.reject(
+      new Error("Grow notices are handled by processGrowNotify, not constructEvent"),
+    );
   }
 
   /**
@@ -368,7 +402,7 @@ export class GrowPaymentProvider implements PaymentProvider {
    * monthly billing job can charge renewals without a hosted page. No-op when the notify has no
    * token or a default already exists (the unique index allows one default per account).
    */
-  private async persistCardToken(
+  async persistCardToken(
     metadata: ParsedGrowNotify["event"]["metadata"],
     body: Record<string, unknown>,
   ): Promise<void> {
@@ -397,7 +431,11 @@ export class GrowPaymentProvider implements PaymentProvider {
     });
   }
 
-  private async approveTransaction(tenantId: string, parsed: ParsedGrowNotify): Promise<void> {
+  /**
+   * Grow requires the merchant to acknowledge each successful transaction. Only a response with
+   * `status: 1` counts; anything else throws so the payment stays pending (fail closed).
+   */
+  async approveTransaction(tenantId: string, parsed: ParsedGrowNotify): Promise<void> {
     const creds = await this.getCredentials(tenantId);
     const res = await fetch(`${growApiBase()}/approveTransaction`, {
       method: "POST",
@@ -411,8 +449,14 @@ export class GrowPaymentProvider implements PaymentProvider {
         transactionTypeId: parsed.paymentType,
       }),
     });
-    if (!res.ok) {
-      throw new Error(`Grow approveTransaction failed (${res.status})`);
+    const json = (await res.json().catch(() => ({}))) as {
+      status?: number | string;
+      err?: { message?: string };
+    };
+    if (!res.ok || String(json.status) !== "1") {
+      throw new Error(
+        `Grow approveTransaction failed (${res.status}${json.err?.message ? `: ${json.err.message}` : ""})`,
+      );
     }
   }
 
