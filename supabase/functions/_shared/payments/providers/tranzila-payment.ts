@@ -1,3 +1,4 @@
+import { ManualRefundRequiredError } from "../refund-errors.ts";
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
 import { TranzilaPaymentAdapter } from "./tranzila.ts";
 import type { ChargeParams, ChargeResult, PaymentEvent, PaymentProvider } from "../types.ts";
@@ -126,11 +127,8 @@ export class TranzilaPaymentProvider implements PaymentProvider {
     providerPaymentRef: string;
     amountMinor: number;
   }): Promise<{ providerRefundRef: string }> {
-    // Refunds need the tenant to resolve credentials; callers that have it should
-    // prefer the tenant-scoped path. Kept explicit rather than silently no-op.
-    throw new Error(
-      "Tranzila refunds require a tenant-scoped call — use the adapter directly (see providers/tranzila.ts issueRefund).",
-    );
+    // Not wired yet (payments audit P2 #9): refund in the Tranzila dashboard and record it here.
+    throw new ManualRefundRequiredError("tranzila");
   }
 
   async verifyCredentials(tenantId: string): Promise<{ valid: boolean; message: string }> {

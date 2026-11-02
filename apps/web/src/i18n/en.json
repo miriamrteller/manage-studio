@@ -2283,6 +2283,9 @@
       "grow_note": "Grow typically allows a full refund only on the same day as the charge. The provider message is shown below if it rejects the refund.",
       "icount_note": "iCount may issue a credit note instead of reversing the charge. The provider message is shown below if the refund is rejected. Mock mode completes instantly.",
       "invoice4u_note": "Invoice4U refunds the card charge and may issue a credit document when the original payment created a tax receipt. The provider message is shown below if it rejects the refund.",
+      "manual_note": "{{provider}} refunds cannot be made from OpalSwift. First refund the payment in your {{provider}} dashboard, then press \"Record refund\" so OpalSwift shows it as refunded. No money is moved by this button.",
+      "manual_submit": "Record refund",
+      "manual_success": "Refund recorded.",
       "bundled_note": "The refund is sent to your payment provider. Any provider message is shown below if it fails."
     },
     "payment_history": {

@@ -1,3 +1,4 @@
+import { ManualRefundRequiredError } from "../refund-errors.ts";
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
 import { getYpayAccessToken, ypayPost, ypayVerifyAccessToken, YpayApiError } from "../ypay/client.ts";
 import { getYpayCredentials } from "../ypay/credentials.ts";
@@ -176,7 +177,10 @@ export class YpayPaymentProvider implements PaymentProvider {
     providerPaymentRef: string;
     amountMinor: number;
   }): Promise<{ providerRefundRef: string }> {
-    throw new YpayApiError("YPay refunds are not exposed by the API — process refunds in the YPay dashboard.");
+    throw new ManualRefundRequiredError(
+      "ypay",
+      "YPay refunds are not exposed by the API — refund in the YPay dashboard, then record the refund here.",
+    );
   }
 
   async verifyCredentials(tenantId: string): Promise<{ valid: boolean; message: string }> {

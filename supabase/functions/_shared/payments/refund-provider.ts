@@ -1,5 +1,8 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
 import { getPaymentProvider } from "./index.ts";
+import { ManualRefundRequiredError } from "./refund-errors.ts";
+
+export { ManualRefundRequiredError } from "./refund-errors.ts";
 
 export type RefundablePaymentRow = {
   provider: string;
@@ -18,7 +21,8 @@ export async function executeProviderRefund(
 
   const provider = getPaymentProvider(service, payment.provider);
   if (!provider.refundCharge) {
-    return;
+    // No refund API: never record a refund as done when no money moved.
+    throw new ManualRefundRequiredError(payment.provider);
   }
 
   await provider.refundCharge({

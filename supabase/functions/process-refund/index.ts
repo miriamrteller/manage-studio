@@ -2,7 +2,7 @@ import { z } from "npm:zod@3.22.4";
 import { handleOptions, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/supabase.ts";
 import { enqueueDocument } from "../_shared/enqueue-document.ts";
-import { executeProviderRefund } from "../_shared/payments/refund-provider.ts";
+import { executeProviderRefund, ManualRefundRequiredError } from "../_shared/payments/refund-provider.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
 
 const ProcessRefundBodySchema = z.object({
@@ -86,6 +86,14 @@ Deno.serve(withMonitoring("process-refund", async (req) => {
         refundAmount,
       );
     } catch (err) {
+      // No refund API for this provider: tell the modal to offer "record a refund made in the
+      // provider's dashboard" (manual) instead of a dead end.
+      if (err instanceof ManualRefundRequiredError) {
+        return jsonResponse(
+          { error: err.message, code: err.code, provider: err.provider },
+          422,
+        );
+      }
       // Surface the provider's message (e.g. Grow's same-day full-refund constraint) so the
       // refund modal can show it instead of a generic 500.
       return jsonResponse(
