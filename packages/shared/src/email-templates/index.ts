@@ -5,6 +5,9 @@ export type { default as BaseEmailTemplateProps } from './BaseEmailTemplate.js';
 export { default as MagicLinkEmail } from './MagicLinkEmail.js';
 export type { MagicLinkEmailProps } from './MagicLinkEmail.js';
 
+export { default as StudioOwnerWelcomeEmail } from './StudioOwnerWelcomeEmail.js';
+export type { StudioOwnerWelcomeEmailProps } from './StudioOwnerWelcomeEmail.js';
+
 export { default as OtpEmail } from './OtpEmail.js';
 export type { default as OtpEmailProps } from './OtpEmail.js';
 

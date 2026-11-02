@@ -18,6 +18,8 @@ import { z } from 'zod';
 export const EMAIL_TEMPLATE_NAMES = {
   OTP: 'otp',
   MAGIC_LINK: 'magic_link',
+  /** New studio owner's invite (send-auth-email, action "invite"). */
+  STUDIO_OWNER_WELCOME: 'studio_owner_welcome',
   WELCOME: 'welcome',
   PAYMENT_REMINDER: 'payment_reminder',
   CLASS_CANCELLATION: 'class_cancellation',
@@ -150,6 +152,7 @@ export function interpolateTemplate(
 const TemplateNameSchema = z.enum([
   EMAIL_TEMPLATE_NAMES.OTP,
   EMAIL_TEMPLATE_NAMES.MAGIC_LINK,
+  EMAIL_TEMPLATE_NAMES.STUDIO_OWNER_WELCOME,
   EMAIL_TEMPLATE_NAMES.WELCOME,
   EMAIL_TEMPLATE_NAMES.PAYMENT_REMINDER,
   EMAIL_TEMPLATE_NAMES.CLASS_CANCELLATION,

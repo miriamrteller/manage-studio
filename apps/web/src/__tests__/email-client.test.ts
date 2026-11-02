@@ -74,6 +74,16 @@ describe('Cloudflare Email REST wire format', () => {
     });
   });
 
+  it('takes the welcome email\'s From "OpalSwift <no-reply@…>" with Reply-To hello@', async () => {
+    await sendHtmlEmail({
+      ...base,
+      from: 'OpalSwift <no-reply@opalswift.com>',
+      replyTo: 'hello@opalswift.com',
+    });
+    expect(body().from).toEqual({ address: 'no-reply@opalswift.com', name: 'OpalSwift' });
+    expect(body().reply_to.address).toBe('hello@opalswift.com');
+  });
+
   it('carries Reply-To through as the tenant inbox', async () => {
     await sendHtmlEmail({ ...base, replyTo: 'info@creativeballetacademy.com' });
     expect(body().reply_to.address).toBe('info@creativeballetacademy.com');

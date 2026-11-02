@@ -11,6 +11,8 @@
 export declare const EMAIL_TEMPLATE_NAMES: {
     readonly OTP: "otp";
     readonly MAGIC_LINK: "magic_link";
+    /** New studio owner's invite (send-auth-email, action "invite"). */
+    readonly STUDIO_OWNER_WELCOME: "studio_owner_welcome";
     readonly WELCOME: "welcome";
     readonly PAYMENT_REMINDER: "payment_reminder";
     readonly CLASS_CANCELLATION: "class_cancellation";
