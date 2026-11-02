@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/lib/supabase';
-import { resolveTenantSubdomain } from '@/lib/resolveTenantSubdomain';
 import {
   LoginFormSchema,
   PasswordLoginSchema,
@@ -13,6 +12,7 @@ import {
 import { resolveAuthErrorMessage } from '@/lib/authErrors';
 import { buildAuthCallbackRedirect } from '@/lib/authRedirect';
 import { sendLoginEmailOtp, verifyLoginEmailOtp } from '@/lib/loginEmailOtp';
+import { loginOtpOptions } from '@/lib/loginOtpOptions';
 import { verifySessionBelongsToTenant } from '@/lib/tenantMembership';
 
 export type PostLoginRedirect = {
@@ -58,7 +58,7 @@ export interface LoginActions {
 export function useLogin(
   redirect: PostLoginRedirect = { to: '/dashboard' },
 ): LoginState & LoginActions {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<LoginState['message']>(null);
@@ -103,9 +103,9 @@ export function useLogin(
 
     try {
       const parsed = LoginFormSchema.parse({ email });
-      const subdomain = resolveTenantSubdomain();
+      const otpOptions = loginOtpOptions(parsed.email, i18n.language ?? 'en');
 
-      if (!subdomain) {
+      if (!otpOptions) {
         setMessage({
           type: 'error',
           text: t('errors.tenant_subdomain_unresolved'),
@@ -115,7 +115,7 @@ export function useLogin(
 
       const { error } = await sendLoginEmailOtp(
         parsed.email,
-        subdomain,
+        otpOptions,
         buildAuthCallbackRedirect('code'),
       );
 
@@ -221,9 +221,9 @@ export function useLogin(
         }
       } else {
         const magicLinkData = LoginFormSchema.parse(formData);
-        const subdomain = resolveTenantSubdomain();
+        const otpOptions = loginOtpOptions(magicLinkData.email, i18n.language ?? 'en');
 
-        if (!subdomain) {
+        if (!otpOptions) {
           setMessage({
             type: 'error',
             text: t('errors.tenant_subdomain_unresolved'),
@@ -234,11 +234,9 @@ export function useLogin(
         const { error } = await supabase.auth.signInWithOtp({
           email: magicLinkData.email,
           options: {
-            shouldCreateUser: false,
+            shouldCreateUser: otpOptions.shouldCreateUser,
             emailRedirectTo: buildAuthCallbackRedirect('magic_link'),
-            data: {
-              subdomain,
-            },
+            data: otpOptions.data,
           },
         });
 

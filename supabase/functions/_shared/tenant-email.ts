@@ -24,6 +24,26 @@ const DEFAULT_TENANT: TenantEmailConfig = {
   accent_color: "#e99ac4",
 };
 
+/**
+ * Sender identity for auth emails that belong to no studio: the platform host
+ * (app.opalswift.com), i.e. the platform owner's account. OpalSwift's own name and
+ * brand colours; `id` is empty because there is no tenant.
+ */
+export function platformEmailConfig(language: "en" | "he" = "en"): TenantEmailConfig {
+  return {
+    id: "",
+    name: "OpalSwift",
+    subdomain: "",
+    language,
+    primary_color: "#4A58E8",
+    accent_color: "#21D1C2",
+  };
+}
+
+export function isPlatformEmailConfig(config: TenantEmailConfig): boolean {
+  return config.id === "";
+}
+
 export function languageFromLocale(locale: string | null | undefined): "en" | "he" {
   if (!locale) return "en";
   if (locale.startsWith("he")) return "he";
@@ -98,20 +118,31 @@ export async function getTenantForAuthUser(
     if (bySubdomain) return bySubdomain;
   }
 
+  const metaLanguage = user.user_metadata?.language === "he" ? "he" : "en";
+
   if (user.email) {
     const { data: profile } = await supabase
       .from("user_profiles")
-      .select("tenant_id")
+      .select("tenant_id, language")
       .eq("email", user.email)
       .maybeSingle();
 
     if (profile?.tenant_id) {
       return getTenantEmailConfig(supabase, profile.tenant_id);
     }
+    // A profile with no studio is the platform owner (the only one allowed).
+    if (profile) {
+      return platformEmailConfig(profile.language === "he" ? "he" : metaLanguage);
+    }
   }
 
-  const fallbackId = Deno.env.get("DEFAULT_TENANT_ID") || DEFAULT_TENANT.id;
-  return getTenantEmailConfig(supabase, fallbackId);
+  // No studio in the metadata and no studio on the profile: the platform host.
+  const fallbackId = Deno.env.get("DEFAULT_TENANT_ID");
+  if (fallbackId) {
+    const { data: tenant } = await supabase.from("tenants").select("id").eq("id", fallbackId).maybeSingle();
+    if (tenant) return getTenantEmailConfig(supabase, fallbackId);
+  }
+  return platformEmailConfig(metaLanguage);
 }
 
 export async function getEmailTemplateOverrides(

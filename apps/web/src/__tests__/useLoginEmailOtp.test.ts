@@ -28,7 +28,11 @@ describe('sendLoginEmailOtp', () => {
   });
 
   it('uses shouldCreateUser false and includes emailRedirectTo', async () => {
-    await sendLoginEmailOtp('parent@example.com', 'creativeballet', 'http://localhost:5173/auth/callback');
+    await sendLoginEmailOtp(
+      'parent@example.com',
+      { shouldCreateUser: false, data: { subdomain: 'creativeballet' } },
+      'http://localhost:5173/auth/callback',
+    );
 
     expect(mockSignInWithOtp).toHaveBeenCalledWith({
       email: 'parent@example.com',
@@ -45,7 +49,11 @@ describe('sendLoginEmailOtp', () => {
       error: { message: 'Email rate limit exceeded' },
     });
 
-    const { error } = await sendLoginEmailOtp('parent@example.com', 'creativeballet', 'http://localhost:5173/auth/callback');
+    const { error } = await sendLoginEmailOtp(
+      'parent@example.com',
+      { shouldCreateUser: false, data: { subdomain: 'creativeballet' } },
+      'http://localhost:5173/auth/callback',
+    );
 
     expect(error?.message).toBe('Email rate limit exceeded');
     expect(resolveAuthErrorMessage(error!.message, t, 'errors.login_failed')).toBe(

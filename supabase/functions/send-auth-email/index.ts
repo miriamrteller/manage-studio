@@ -161,12 +161,10 @@ Deno.serve(withMonitoring("send-auth-email", async (req) => {
 
     const supabase = createServiceClient();
     const tenant = await getTenantForAuthUser(supabase, user);
-    const overrides = await getEmailTemplateOverrides(
-      supabase,
-      tenant.id,
-      MAGIC_LINK_TEMPLATE,
-      tenant.language,
-    );
+    // The platform host's emails (no studio) have no studio customisations.
+    const overrides = tenant.id
+      ? await getEmailTemplateOverrides(supabase, tenant.id, MAGIC_LINK_TEMPLATE, tenant.language)
+      : null;
 
     const confirmationUrl = buildConfirmationUrl(emailData);
     const strings = overrides ?? {};
