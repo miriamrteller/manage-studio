@@ -18,7 +18,7 @@ import { BrandingSettingsForm } from './BrandingSettingsForm';
 import { LocaleSettingsForm } from './LocaleSettingsForm';
 import { OfflinePaymentsSettingsForm } from './OfflinePaymentsSettingsForm';
 import { InvoicingToggleForm } from './InvoicingToggleForm';
-import { WebsiteFormSettings } from './WebsiteFormSettings';
+import { GetLeadsPanel } from '@/features/crm/components/GetLeadsPanel';
 import { LeadFormSettings } from './LeadFormSettings';
 
 function SettingsLinkCard({
@@ -80,7 +80,7 @@ export function TenantSettingsHub() {
       <hr className="border-gray-200" />
       <InvoicingToggleForm />
       <hr className="border-gray-200" />
-      <WebsiteFormSettings />
+      <GetLeadsPanel />
       <hr className="border-gray-200" />
       <LeadFormSettings />
 

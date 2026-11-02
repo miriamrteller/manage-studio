@@ -104,7 +104,15 @@ describe('channelFromSrc — capture-link tags → lead channel', () => {
     ['linkedin', 'linkedin'],
     ['whatsapp', 'whatsapp'],
     ['email', 'email'],
-    ['facebook', 'website'], // not in the contract enum — honestly website
+    ['facebook', 'facebook'],
+    ['google', 'google'],
+    ['sms', 'sms'],
+    ['flyer', 'flyer'],
+    ['direct', 'direct'],
+    // Manual-only channels are never taken from a public link.
+    ['phone', 'website'],
+    ['walk_in', 'website'],
+    ['referral', 'website'],
     ['tiktok', 'website'],
     [null, 'website'],
     [undefined, 'website'],
