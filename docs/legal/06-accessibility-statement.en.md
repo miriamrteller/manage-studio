@@ -37,7 +37,7 @@ We are working to fix these. If something does not work for you, please tell us 
 - Phone: [[PHONE]] · Email: [[EMAIL]]
 - Address: [[ADDRESS]]
 
-We aim to reply within [[5]] business days.
+We aim to reply within 5 business days.
 
 **For a specific studio's physical premises** (entrance, toilets, parking), contact that studio: each studio publishes its own physical accessibility details ([[STUDIO: add a short paragraph about the premises, or "the premises' accessibility details are available from the studio"]]).
 

@@ -13,7 +13,7 @@ Hebrew (`.he.md`) is what users read; if the two versions differ, the English ve
 | 03 | Studio privacy policy (dance / photo) [he](03-studio-privacy-policy.he.md) · [en](03-studio-privacy-policy.en.md) | Studio → clients | Tenant footer; next to every form |
 | 04 | OpalSwift privacy policy [he](04-opalswift-privacy-policy.he.md) · [en](04-opalswift-privacy-policy.en.md) | OpalSwift → admins | Root-site footer; signup |
 | 05 | Cookie & storage notice [he](05-cookie-storage-notice.he.md) · [en](05-cookie-storage-notice.en.md) | Everyone | Footer (no banner needed) |
-| 06 | Accessibility statement [he](06-accessibility-statement.he.md) · [en](06-accessibility-statement.en.md) | Everyone | Footer, every page |
+| 06 | Accessibility statement: studio template [he](06-accessibility-statement.he.md) · [en](06-accessibility-statement.en.md); OpalSwift's own [he](06-accessibility-statement.opalswift.he.md) · [en](06-accessibility-statement.opalswift.en.md) | Everyone | Footer, every page |
 | 07a | Dance enrolment terms [he](07a-dance-enrolment-terms.he.md) · [en](07a-dance-enrolment-terms.en.md) | School ↔ parent | Enrolment checkbox |
 | 07b | Health declaration [he](07b-health-declaration.he.md) · [en](07b-health-declaration.en.md) | School ↔ parent | Waiver step (`consent_templates`) |
 | 07c | Photography contract [he](07c-photography-contract.he.md) · [en](07c-photography-contract.en.md) | Photographer ↔ client | Job contract (`consent_templates`) |
