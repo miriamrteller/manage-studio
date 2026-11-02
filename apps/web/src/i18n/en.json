@@ -1950,7 +1950,10 @@
     "next_legal": "Add the legal links and enrolment terms.",
     "next_sender": "Set the email sender address.",
     "next_test_enrolment": "Do a test enrolment from start to finish.",
-    "next_lawyer": "Have a lawyer review the legal documents."
+    "next_lawyer": "Have a lawyer review the legal documents.",
+    "country_not_israel": "Not in Israel?",
+    "country_outside_warning": "OpalSwift's payment providers, tax documents and legal templates are for Israel only. A studio outside Israel must arrange its own payments, invoicing and legal documents, and some features may not fit.",
+    "country_outside_ack": "I understand. My studio will arrange its own payments, invoicing and legal documents."
   },
   "studio_not_found": {
     "title": "Studio not found",
