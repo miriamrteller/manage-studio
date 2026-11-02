@@ -2,7 +2,7 @@
  * G7: GrowPaymentProvider.verifyCredentials pings Grow and reports a valid/invalid health result.
  * Run: pnpm -C apps/web test verify-grow-credentials.test.ts
  */
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { GrowPaymentProvider } from '../../../../supabase/functions/_shared/payments/providers/grow.ts';
 
 function makeService(hasCreds = true) {
@@ -23,7 +23,11 @@ function makeService(hasCreds = true) {
   } as never;
 }
 
-afterEach(() => vi.restoreAllMocks());
+beforeEach(() => vi.stubEnv('GROW_API_BASE', 'https://grow.test/api/light/server/1.0'));
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllEnvs();
+});
 
 describe('GrowPaymentProvider.verifyCredentials', () => {
   it('returns valid when Grow responds with status 1', async () => {

@@ -14,6 +14,12 @@ import { fileURLToPath } from 'node:url';
 import { loadEnv } from './load-env.mjs';
 import { resolveConnectableDbUrl, resolveProjectRef } from './lib/psql-dev.mjs';
 import { DEV_PROJECT_REF } from './lib/assert-dev-project.mjs';
+import {
+  evaluate,
+  fetchSecrets,
+  loadManifest,
+  sandboxSecretNames,
+} from './ci/check-edge-secret-names.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 loadEnv();
@@ -114,6 +120,33 @@ try {
 } catch (e) {
   console.error(`\nCheck aborted: ${e.message}\n`);
   process.exit(1);
+}
+
+// --- edge function secrets (names + sandbox check; values are never read) ----
+// Needs SUPABASE_ACCESS_TOKEN (Management API). Without it this part is skipped, not passed.
+if (process.env.SUPABASE_ACCESS_TOKEN && ref) {
+  try {
+    const manifest = loadManifest();
+    const secrets = await fetchSecrets(ref);
+    const names = secrets.map((s) => s.name);
+    const sandboxNames = sandboxSecretNames(secrets, manifest);
+    for (const n of manifest.requiredInProd ?? []) {
+      record(`${n} set`, names.includes(n), names.includes(n) ? undefined : 'missing — required on prod');
+    }
+    for (const n of Object.keys(manifest.sandboxValuesForbiddenInProd ?? {})) {
+      if (!names.includes(n)) continue;
+      const bad = sandboxNames.includes(n);
+      record(`${n} is not a sandbox address`, !bad, bad ? 'points at the sandbox — live money would go nowhere' : undefined);
+    }
+    const { errors } = evaluate(names, manifest, 'prod', { sandboxNames });
+    record('edge secret names (same rules as deploy-prod)', errors.length === 0, errors.join('; ') || undefined);
+  } catch (e) {
+    record('edge secrets checked', false, e.message);
+  }
+} else {
+  console.log(
+    '  \x1b[33mSKIP\x1b[0m  edge secrets (GROW_API_BASE etc.) — set SUPABASE_ACCESS_TOKEN to check them',
+  );
 }
 
 const failed = results.filter((r) => !r.ok);
