@@ -15,6 +15,7 @@ import {
   STUDIO_PAYMENT_PROVIDERS,
   type ProvisionStudioDeps,
 } from '../../../../supabase/functions/_shared/provision-studio';
+import { UNFINISHED_INVOICING_PROVIDERS } from '../../../../supabase/functions/_shared/provider-pairing';
 import { STUDIO_INVOICING_OPTIONS, STUDIO_PAYMENT_OPTIONS } from '@/features/platform/services/studioSetupService';
 import { INITIAL_FORM, toSetupRequest } from '@/features/platform/lib/studioSetupForm';
 
@@ -55,7 +56,36 @@ describe('provider options', () => {
     expect([...STUDIO_PAYMENT_OPTIONS].sort()).toEqual([...STUDIO_PAYMENT_PROVIDERS].sort());
     expect([...STUDIO_INVOICING_OPTIONS].sort()).toEqual([...STUDIO_INVOICING_PROVIDERS].sort());
     expect(sqlList('p_payment_provider').sort()).toEqual([...STUDIO_PAYMENT_PROVIDERS].sort());
-    expect(sqlList('p_invoicing_provider').sort()).toEqual([...STUDIO_INVOICING_PROVIDERS].sort());
+    // The database still accepts Yesh and Tranzila (existing data); the edge function, which
+    // runs first, no longer offers them because they are not built yet.
+    expect(sqlList('p_invoicing_provider').sort()).toEqual(
+      [...STUDIO_INVOICING_PROVIDERS, ...UNFINISHED_INVOICING_PROVIDERS].sort(),
+    );
+  });
+
+  it('Yesh and Tranzila invoicing are not offered until they are built', () => {
+    for (const slug of UNFINISHED_INVOICING_PROVIDERS) {
+      expect(STUDIO_INVOICING_OPTIONS as readonly string[]).not.toContain(slug);
+      expect(ProvisionStudioSchema.safeParse({ ...base, invoicingProvider: slug }).success).toBe(false);
+    }
+  });
+
+  it('refuses invoicing that cannot issue documents for the payment choice', () => {
+    const ok = (paymentProvider: string, invoicingProvider: string) =>
+      ProvisionStudioSchema.safeParse({ ...base, paymentProvider, invoicingProvider }).success;
+    // Grow / iCount / Invoice4U documents only come with their own card charges.
+    expect(ok('grow', 'grow')).toBe(true);
+    expect(ok('offline', 'grow')).toBe(false);
+    expect(ok('ypay', 'icount')).toBe(false);
+    expect(ok('grow', 'invoice4u')).toBe(false);
+    // YPay: its own charges and cash / bank transfers, never another provider's card payment.
+    expect(ok('offline', 'ypay')).toBe(true);
+    expect(ok('grow', 'ypay')).toBe(false);
+    // Green Invoice and "none" work with anything.
+    for (const p of STUDIO_PAYMENT_PROVIDERS) {
+      expect(ok(p, 'green_invoice')).toBe(true);
+      expect(ok(p, 'none')).toBe(true);
+    }
   });
 
   it('pay at the studio, no documents, and YPay are accepted', () => {

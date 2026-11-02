@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { useTenant } from '@/hooks/useTenant';
 import queryClient from '@/lib/query-client';
+import { invoicingPairsWithPayment } from '@/lib/providerPairing';
 
 export const OFFLINE_PAYMENTS = 'offline';
 /** Providers a studio can switch back to for online payments; `mock` is never offered. */
@@ -32,6 +33,10 @@ export function OfflinePaymentsSettingsForm() {
   );
   const [instructions, setInstructions] = useState(savedInstructions);
   const [message, setMessage] = useState<string | null>(null);
+  const invoicingProvider = tenant?.invoicing_provider ?? 'none';
+  const nextPaymentProvider = resolvePaymentProviderToSave({ offline, onlineProvider });
+  // Changing how customers pay must not leave documents that the invoicing service cannot issue.
+  const pairingProblem = !invoicingPairsWithPayment(nextPaymentProvider, invoicingProvider);
 
   // Depend on saved primitives, not the tenant object, so a refetch with the same values
   // does not reset what the admin is typing.
@@ -46,6 +51,7 @@ export function OfflinePaymentsSettingsForm() {
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (!tenant?.id) throw new Error('Tenant not loaded');
+      if (pairingProblem) throw new Error(t('settings.offline_payments.pairing_problem'));
       const { error } = await supabase
         .from('tenants')
         .update({
@@ -133,6 +139,12 @@ export function OfflinePaymentsSettingsForm() {
         </div>
       )}
 
+      {pairingProblem && (
+        <p className="text-sm text-destructive" role="alert">
+          {t('settings.offline_payments.pairing_problem')}
+        </p>
+      )}
+
       {message && (
         <p className="text-sm text-muted-foreground" role="status">
           {message}
@@ -142,7 +154,7 @@ export function OfflinePaymentsSettingsForm() {
       <Button
         type="button"
         variant="primary"
-        disabled={saveMutation.isPending}
+        disabled={saveMutation.isPending || pairingProblem}
         isLoading={saveMutation.isPending}
         onClick={() => saveMutation.mutate()}
       >

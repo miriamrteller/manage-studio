@@ -1,22 +1,24 @@
 import { z } from "npm:zod@3.22.4";
+import { invoicingPairsWithPayment } from "./provider-pairing.ts";
 
 /** Payment options the setup wizard offers: live providers only (never mock or stripe). */
 export const STUDIO_PAYMENT_PROVIDERS = ["offline", "grow", "icount", "invoice4u", "ypay", "tranzila"] as const;
-/** Invoicing options: `none` for a studio that is not a registered business. */
+/**
+ * Invoicing options: `none` = no documents through OpalSwift. Yesh and Tranzila invoicing are
+ * not built yet, so they are not offered (see provider-pairing.ts).
+ */
 export const STUDIO_INVOICING_PROVIDERS = [
   "none",
   "grow",
   "icount",
   "invoice4u",
   "ypay",
-  "tranzila",
-  "yesh",
   "green_invoice",
 ] as const;
 
 const HEX = /^#[0-9A-Fa-f]{6}$/;
 
-export const ProvisionStudioSchema = z.object({
+const ProvisionStudioFields = z.object({
   name: z.string().trim().min(1).max(120),
   subdomain: z.string().trim().toLowerCase().regex(/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/),
   plan: z.enum(["essential", "professional"]),
@@ -30,6 +32,19 @@ export const ProvisionStudioSchema = z.object({
   invoicingProvider: z.enum(STUDIO_INVOICING_PROVIDERS),
   primaryColor: z.string().regex(HEX).default("#5B6CFF"),
   accentColor: z.string().regex(HEX).default("#21D1C2"),
+});
+
+/** Rejects an invoicing service that cannot issue documents for the chosen payment provider. */
+const PAIRING_RULE = {
+  check: (v: { paymentProvider: string; invoicingProvider: string }) =>
+    invoicingPairsWithPayment(v.paymentProvider, v.invoicingProvider),
+  message: "This invoicing service cannot issue documents for this payment provider",
+  path: ["invoicingProvider"],
+};
+
+export const ProvisionStudioSchema = ProvisionStudioFields.refine(PAIRING_RULE.check, {
+  message: PAIRING_RULE.message,
+  path: PAIRING_RULE.path,
 });
 export type ProvisionStudioInput = z.infer<typeof ProvisionStudioSchema>;
 
@@ -132,13 +147,13 @@ export async function provisionStudio(
 // ── Self-serve signup (free beta) ────────────────────────────────────────────
 
 /** The wizard's self-serve request: the owner is the signed-in account, so no email. */
-export const SelfServeStudioSchema = ProvisionStudioSchema.omit({ ownerEmail: true }).extend({
+export const SelfServeStudioSchema = ProvisionStudioFields.omit({ ownerEmail: true }).extend({
   /** Version of the platform terms + DPA the owner ticked (see apps/web legal/acceptance.ts). */
   termsVersion: z.string().trim().min(1).max(64),
   termsLanguage: z.enum(["he", "en"]),
   /** Cloudflare Turnstile token; required only when TURNSTILE_SECRET_KEY is set. */
   captchaToken: z.string().max(4096).optional(),
-});
+}).refine(PAIRING_RULE.check, { message: PAIRING_RULE.message, path: PAIRING_RULE.path });
 export type SelfServeStudioInput = z.infer<typeof SelfServeStudioSchema>;
 
 /** Why a self-serve request is refused, with the HTTP status the function returns. */
