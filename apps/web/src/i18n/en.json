@@ -2263,6 +2263,9 @@
     "record_payment": {
       "open": "Record offline payment",
       "title": "Record offline payment",
+      "amount": "Amount ({{currency}})",
+      "amount_hint": "Starts at the class price. Change it if a different amount was paid.",
+      "amount_invalid": "Enter an amount above zero, for example 350 or 350.50.",
       "method": "Method",
       "cash": "Cash",
       "bank": "Bank transfer",

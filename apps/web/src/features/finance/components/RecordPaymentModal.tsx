@@ -12,6 +12,21 @@ interface RecordPaymentModalProps {
    * active enrolment on a monthly plan; the server records the month that is due.
    */
   kind?: 'first' | 'monthly';
+  /** The class price in minor units: the amount field starts with it. */
+  defaultAmountMinor?: number | null;
+  currency?: string | null;
+}
+
+/** Pure: "350" / "350.5" / "350,50" → 35000 / 35050 / 35050; null when not a positive amount. */
+export function parseAmountToMinor(text: string): number | null {
+  const normalised = text.trim().replace(',', '.');
+  if (!/^\d+(\.\d{1,2})?$/.test(normalised)) return null;
+  const minor = Math.round(Number(normalised) * 100);
+  return minor > 0 ? minor : null;
+}
+
+function minorToText(minor: number): string {
+  return Number.isInteger(minor / 100) ? String(minor / 100) : (minor / 100).toFixed(2);
 }
 
 /** Pure: "2026-12" → "December 2026" in the admin's language. */
@@ -25,9 +40,19 @@ export function formatPeriod(period: string, language: string): string {
   });
 }
 
-export function RecordPaymentModal({ engagementId, onRecorded, kind = 'first' }: RecordPaymentModalProps) {
+export function RecordPaymentModal({
+  engagementId,
+  onRecorded,
+  kind = 'first',
+  defaultAmountMinor,
+  currency,
+}: RecordPaymentModalProps) {
   const { t, i18n } = useTranslation();
   const monthly = kind === 'monthly';
+  const [amountText, setAmountText] = useState(
+    defaultAmountMinor && defaultAmountMinor > 0 ? minorToText(defaultAmountMinor) : '',
+  );
+  const amountMinor = parseAmountToMinor(amountText);
   const [method, setMethod] = useState<'cash' | 'bank_transfer'>('cash');
   const [note, setNote] = useState('');
   const [message, setMessage] = useState<string | null>(null);
@@ -35,7 +60,7 @@ export function RecordPaymentModal({ engagementId, onRecorded, kind = 'first' }:
   const mutation = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke('record-payment', {
-        body: { engagement_id: engagementId, method, note: note || undefined },
+        body: { engagement_id: engagementId, method, note: note || undefined, amount_minor: amountMinor ?? undefined },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error as string);
@@ -72,6 +97,23 @@ export function RecordPaymentModal({ engagementId, onRecorded, kind = 'first' }:
         </select>
       </label>
       <label className="block text-sm">
+        {t('finance.record_payment.amount', { currency: currency ?? '' })}
+        <input
+          className="mt-1 w-full border border-border rounded px-3 py-2"
+          inputMode="decimal"
+          dir="ltr"
+          value={amountText}
+          aria-invalid={amountMinor == null}
+          aria-describedby={`record-payment-amount-hint-${engagementId}`}
+          onChange={(e) => setAmountText(e.target.value)}
+        />
+        <span id={`record-payment-amount-hint-${engagementId}`} className="mt-1 block text-xs text-muted-foreground">
+          {amountMinor == null
+            ? t('finance.record_payment.amount_invalid')
+            : t('finance.record_payment.amount_hint')}
+        </span>
+      </label>
+      <label className="block text-sm">
         {t('finance.record_payment.note', { defaultValue: 'Note (optional)' })}
         <input
           className="mt-1 w-full border border-border rounded px-3 py-2"
@@ -87,7 +129,7 @@ export function RecordPaymentModal({ engagementId, onRecorded, kind = 'first' }:
       <Button
         type="button"
         variant="primary"
-        disabled={mutation.isPending}
+        disabled={mutation.isPending || amountMinor == null}
         isLoading={mutation.isPending}
         onClick={() => mutation.mutate()}
       >
