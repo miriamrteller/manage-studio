@@ -4820,6 +4820,12 @@ export type Database = {
                 Args: never;
                 Returns: string;
             };
+            legal_document_is_public: {
+                Args: {
+                    p_name: string;
+                };
+                Returns: boolean;
+            };
             legal_pack_document_back_to_draft: {
                 Args: {
                     p_document: string;

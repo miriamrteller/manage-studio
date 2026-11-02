@@ -4637,6 +4637,7 @@ export type Database = {
       }
       lead_phone_key: { Args: { p_phone: string }; Returns: string }
       legal_admin_tenant: { Args: never; Returns: string }
+      legal_document_is_public: { Args: { p_name: string }; Returns: boolean }
       legal_pack_document_back_to_draft: {
         Args: { p_document: string; p_tenant: string }
         Returns: boolean
