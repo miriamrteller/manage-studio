@@ -448,13 +448,13 @@ BEGIN
     IF NOT (v_doc = ANY (v_drafts))
        AND NOT EXISTS (SELECT 1 FROM tenant_legal_documents d
                        WHERE d.tenant_id = v_tenant AND d.document = v_doc AND d.status = 'active') THEN
-      v_drafts := v_drafts || v_doc;
+      v_drafts := array_append(v_drafts, v_doc);
     END IF;
   END LOOP;
   IF NOT ('signed-forms' = ANY (v_drafts))
      AND EXISTS (SELECT 1 FROM consent_templates ct
                  WHERE ct.tenant_id = v_tenant AND ct.status = 'active' AND ct.lawyer_reviewed_at IS NULL) THEN
-    v_drafts := v_drafts || 'signed-forms';
+    v_drafts := array_append(v_drafts, 'signed-forms');
   END IF;
 
   BEGIN
