@@ -1742,8 +1742,8 @@
         "hint": "We fill in your privacy policy, terms and contract from these details."
       },
       "legal_general": {
-        "title": "Check your legal details and form",
-        "hint": "We fill in your privacy policy, terms and form from these details."
+        "title": "Check your legal details and service agreement",
+        "hint": "We fill in your privacy policy, terms and service agreement from these details."
       },
       "leads": {
         "title": "Share your enquiry form",
@@ -2639,20 +2639,31 @@
   "legal": {
     "pack": {
       "title": "Your legal documents",
-      "notice": "Your studio's legal documents (privacy policy, terms, accessibility statement and the forms clients sign) were created from templates based on Israeli law and filled with your details. They are drafts: have them reviewed by a lawyer.",
+      "notice": "Your studio's legal documents (privacy policy, terms, accessibility statement and {{doc}}) were created from templates based on Israeli law and filled with your details. They are drafts: have them reviewed by a lawyer.",
       "download": "Download legal pack (PDF)",
       "checkbox": "I understand these are draft documents and my studio will use them until I upload lawyer-reviewed versions.",
       "confirm": "Confirm",
       "confirming": "Saving…",
-      "confirmed_on": "Confirmed on {{date}}. Your legal pages and forms are live.",
-      "owner_confirms": "The studio's owner confirms this when they sign in. Until then the studio's legal pages and forms are not live.",
+      "confirmed_on": "Confirmed on {{date}}. Your legal pages and {{doc}} are live.",
+      "owner_confirms": "The studio's owner confirms this when they sign in. Until then the studio's legal pages and {{doc}} are not live.",
       "error": "That didn't save. Please try again.",
-      "error_form_missing": "The form your clients sign is missing. Please try again; if it keeps happening, contact OpalSwift.",
+      "error_form_missing": "Your {{doc}} is missing. Please try again; if it keeps happening, contact OpalSwift.",
       "signing_not_ready": "This studio isn't ready to collect signatures yet. Please try again later or contact the studio.",
       "sign_in_needed": "Please sign in to download the legal pack.",
       "print_hint": "Use your browser's Print and choose \"Save as PDF\".",
-      "admin_banner": "Your legal documents are waiting for you. Confirm them in Settings → Legal to publish your legal pages and forms.",
-      "admin_banner_link": "Open Settings → Legal"
+      "admin_banner": "Confirm them in Settings → Legal to publish your legal pages and {{doc}}.",
+      "admin_banner_link": "Open Settings → Legal",
+      "blocked_parents": "Parents can't sign up until you confirm your legal documents.",
+      "blocked_clients": "Clients can't sign up until you confirm your legal documents.",
+      "doc": {
+        "health": "health declaration",
+        "contract": "contract",
+        "agreement": "service agreement"
+      },
+      "details_missing_one": "{{count}} detail missing. Fill it in before you confirm.",
+      "details_missing_other": "{{count}} details missing. Fill them in before you confirm.",
+      "details_missing_link": "Fill in the missing details",
+      "details_missing_later": "You can fill them in under Settings → Legal once you're in your studio."
     },
     "docs": {
       "platform_terms": "Terms of Service",
