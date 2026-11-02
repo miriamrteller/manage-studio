@@ -138,11 +138,10 @@ export function prepareSignedTemplate(raw, doc, ctx) {
         '[[1 year]]': value(p.health_retention_years) ? `${value(p.health_retention_years)} year(s)` : '1 year',
         '[[שנה]]': value(p.health_retention_years) ? `${value(p.health_retention_years)} שנים` : 'שנה',
     };
-    const vat = status === 'osek_patur'
-        ? (ctx.lang === 'he' ? 'ללא מע"מ (עוסק פטור)' : 'no VAT (עוסק פטור)')
-        : status === 'osek_murshe' || status === 'company'
-            ? (ctx.lang === 'he' ? 'כולל מע"מ' : 'incl. VAT')
-            : '';
+    // Neutral for any business status: VAT and tax documents are the invoicing provider's job.
+    const vat = ctx.lang === 'he'
+        ? '(המחיר כפי שמוצג; מע"מ ומסמכי מס, ככל שנדרשים, מונפקים דרך ספק החשבוניות כנדרש בחוק)'
+        : '(prices as shown; any VAT and tax documents are issued through the invoicing provider, as the law requires)';
     studio['[[incl. VAT / no VAT — עוסק פטור]]'] = vat;
     studio['[[כולל מע"מ / ללא מע"מ — עוסק פטור]]'] = vat;
     const kind = businessKind(status, ctx.lang);

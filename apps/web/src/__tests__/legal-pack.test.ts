@@ -126,6 +126,23 @@ describe('signed templates', () => {
   });
 });
 
+describe('business status does not change the forms', () => {
+  it.each(['en', 'he'] as const)('the contract (%s) reads the same on VAT for every status', async (lang) => {
+    const raw = await loadLegalFile('07c-photography-contract', lang);
+    const build = (business_status: string) =>
+      prepareSignedTemplate(raw, 'photography-contract', {
+        lang,
+        tenantName: 'Lens Studio',
+        contactEmail: 'hi@lens.test',
+        profile: { business_status },
+      });
+    const vatLine = (text: string) => text.split('\n').find((l) => l.includes('{{price}}'));
+    const lines = ['osek_patur', 'osek_murshe', 'company', 'not_registered', ''].map((st) => vatLine(build(st)));
+    expect(new Set(lines).size).toBe(1);
+    expect(lines[0]).toMatch(lang === 'en' ? /invoicing provider/ : /ספק החשבוניות/);
+  });
+});
+
 describe('the legal pack', () => {
   it('a dance studio: privacy, terms, accessibility, cookies, health declaration and consents, in both languages', async () => {
     const pack = await buildLegalPack(legal('dance-studio', 'he'));
