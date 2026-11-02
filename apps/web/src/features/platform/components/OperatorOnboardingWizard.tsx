@@ -308,21 +308,13 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
             <input id="ss-name" className="form-input w-full" value={form.name} onChange={(e) => update('name', e.target.value)} />
           </div>
           {!selfServe && subdomainField}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <label className="block text-sm font-medium" htmlFor="ss-language">{t('studio_setup.language')}</label>
-              <select id="ss-language" className="form-input w-full" value={form.languageDefault} onChange={(e) => update('languageDefault', e.target.value as 'he' | 'en')}>
-                <option value="en">English</option>
-                <option value="he">עברית</option>
-              </select>
-            </div>
-            <div className="space-y-2">
-              <label className="block text-sm font-medium" htmlFor="ss-country">{t('studio_setup.country')}</label>
-              <select id="ss-country" className="form-input w-full" value={form.country} onChange={(e) => update('country', e.target.value as 'IL' | 'US')}>
-                <option value="IL">{t('studio_setup.country_il')}</option>
-                <option value="US">{t('studio_setup.country_us')}</option>
-              </select>
-            </div>
+          {/* The studio's country is Israel (sent as IL); only the main language is a choice. */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium" htmlFor="ss-language">{t('studio_setup.language')}</label>
+            <select id="ss-language" className="form-input w-full" value={form.languageDefault} onChange={(e) => update('languageDefault', e.target.value as 'he' | 'en')}>
+              <option value="en">English</option>
+              <option value="he">עברית</option>
+            </select>
           </div>
         </section>
       )}

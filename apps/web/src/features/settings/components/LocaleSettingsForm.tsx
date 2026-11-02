@@ -8,7 +8,7 @@ import queryClient from '@/lib/query-client';
 
 type LocaleRow = {
   language_default: 'he' | 'en';
-  country: 'IL' | 'US';
+  country: string;
   currency: string;
   phone_region: string;
 };
@@ -17,7 +17,6 @@ export function LocaleSettingsForm() {
   const { t } = useTranslation();
   const tenant = useTenant();
   const [languageDefault, setLanguageDefault] = useState<'he' | 'en'>('he');
-  const [country, setCountry] = useState<'IL' | 'US'>('IL');
   const [currency, setCurrency] = useState('ILS');
   const [phoneRegion, setPhoneRegion] = useState('IL');
   const [message, setMessage] = useState<string | null>(null);
@@ -54,7 +53,6 @@ export function LocaleSettingsForm() {
   useEffect(() => {
     if (!localeRow) return;
     setLanguageDefault(localeRow.language_default);
-    setCountry(localeRow.country);
     setCurrency(localeRow.currency);
     setPhoneRegion(localeRow.phone_region);
   }, [localeRow]);
@@ -69,7 +67,6 @@ export function LocaleSettingsForm() {
         .from('tenants')
         .update({
           language_default: languageDefault,
-          country,
           currency: currency.trim().toUpperCase(),
           phone_region: phoneRegion.trim().toUpperCase(),
         })
@@ -106,24 +103,6 @@ export function LocaleSettingsForm() {
           <option value="he">{t('settings.hub.language_he')}</option>
           <option value="en">{t('settings.hub.language_en')}</option>
         </select>
-      </div>
-
-      <div className="space-y-2">
-        <label className="block text-sm font-medium" htmlFor="country">
-          {t('settings.hub.country')}
-        </label>
-        <select
-          id="country"
-          className="form-input w-full"
-          value={country}
-          onChange={(e) => setCountry(e.target.value as 'IL' | 'US')}
-        >
-          <option value="IL">{t('settings.hub.country_il')}</option>
-          <option value="US">{t('settings.hub.country_us')}</option>
-        </select>
-        {hasPayments && (
-          <p className="text-xs text-amber-700">{t('settings.hub.country_change_warning')}</p>
-        )}
       </div>
 
       <div className="space-y-2">
