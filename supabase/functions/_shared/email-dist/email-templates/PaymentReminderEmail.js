@@ -1,7 +1,8 @@
 /* @ts-self-types="./PaymentReminderEmail.d.ts" */
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { Button, Link, Text, } from '@react-email/components';
+import { Link, Text, } from '@react-email/components';
 import BaseEmailTemplate from './BaseEmailTemplate.js';
+import { EmailPrimaryButton } from './primitives/index.js';
 /**
  * Default strings (fallback when i18n/overrides not provided)
  * Matches structure in email-templates-en.json
@@ -79,16 +80,7 @@ export default function PaymentReminderEmail({ schoolName, schoolLogoUrl, recipi
                         }, children: [_jsx("strong", { children: finalStrings.due_date_label || DEFAULT_STRINGS.due_date_label }), " ", dueDate] }), _jsxs(Text, { style: {
                             fontSize: '14px',
                             margin: '8px 0',
-                        }, children: [_jsx("strong", { children: "Class:" }), " ", enrolledClassName] })] }), _jsx("div", { style: { marginBottom: '25px', textAlign: 'center' }, children: _jsx(Button, { href: paymentUrl, style: {
-                        backgroundColor: 'var(--email-primary)',
-                        color: '#ffffff',
-                        padding: '12px 32px',
-                        borderRadius: '6px',
-                        textDecoration: 'none',
-                        display: 'inline-block',
-                        fontWeight: '600',
-                        fontSize: '16px',
-                    }, children: finalStrings.cta_button || DEFAULT_STRINGS.cta_button }) }), _jsx(Text, { style: {
+                        }, children: [_jsx("strong", { children: "Class:" }), " ", enrolledClassName] })] }), _jsx(EmailPrimaryButton, { href: paymentUrl, children: finalStrings.cta_button || DEFAULT_STRINGS.cta_button }), _jsx(Text, { style: {
                     fontSize: '14px',
                     marginBottom: '15px',
                     color: 'var(--email-neutral)',

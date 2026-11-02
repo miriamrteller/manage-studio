@@ -3,6 +3,7 @@ import {
   ADMIN_ANNOUNCEMENT_SHELLS,
   type AdminAnnouncementEmailLanguage,
 } from "./admin-announcement-email-shells/generated.ts";
+import { applyEmailBrand } from "./email-brand.ts";
 
 export interface RenderAdminAnnouncementInput {
   language: AdminAnnouncementEmailLanguage;
@@ -17,5 +18,5 @@ export interface RenderAdminAnnouncementInput {
 export function renderAdminAnnouncementHtml(input: RenderAdminAnnouncementInput): string {
   const lang = input.language === "he" ? "he" : "en";
   const shell = ADMIN_ANNOUNCEMENT_SHELLS[lang];
-  return applyAdminAnnouncementShell(shell, input);
+  return applyEmailBrand(applyAdminAnnouncementShell(shell, input), input.primaryColor, input.accentColor);
 }

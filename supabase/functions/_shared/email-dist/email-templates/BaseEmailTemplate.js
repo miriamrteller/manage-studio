@@ -23,7 +23,7 @@ const DEFAULT_FOOTER = {
  * Base email template component
  * Provides consistent branding, header/footer, and RTL support
  */
-export default function BaseEmailTemplate({ previewText, children, schoolName, schoolLogoUrl, language, colors, footerStrings, gradient = false, gradientAnchor, }) {
+export default function BaseEmailTemplate({ previewText, children, schoolName, schoolLogoUrl, language, colors, footerStrings, gradient = true, gradientAnchor, }) {
     const dir = language === 'he' ? 'rtl' : 'ltr';
     const emailColors = colors
         ? {

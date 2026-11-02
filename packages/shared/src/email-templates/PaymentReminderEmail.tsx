@@ -1,10 +1,10 @@
 import React from 'react';
 import {
-  Button,
   Link,
   Text,
 } from '@react-email/components';
 import BaseEmailTemplate, { type EmailColorConfig } from './BaseEmailTemplate.js';
+import { EmailPrimaryButton } from './primitives/index.js';
 
 interface PaymentReminderEmailProps {
   schoolName: string;
@@ -207,23 +207,9 @@ export default function PaymentReminderEmail({
         </Text>
       </div>
 
-      <div style={{ marginBottom: '25px', textAlign: 'center' }}>
-        <Button
-          href={paymentUrl}
-          style={{
-            backgroundColor: 'var(--email-primary)',
-            color: '#ffffff',
-            padding: '12px 32px',
-            borderRadius: '6px',
-            textDecoration: 'none',
-            display: 'inline-block',
-            fontWeight: '600',
-            fontSize: '16px',
-          }}
-        >
-          {finalStrings.cta_button || DEFAULT_STRINGS.cta_button}
-        </Button>
-      </div>
+      <EmailPrimaryButton href={paymentUrl}>
+        {finalStrings.cta_button || DEFAULT_STRINGS.cta_button}
+      </EmailPrimaryButton>
 
       <Text
         style={{

@@ -1,9 +1,9 @@
 import React from 'react';
 import {
-  Button,
   Text,
 } from '@react-email/components';
 import BaseEmailTemplate, { type EmailColorConfig } from './BaseEmailTemplate.js';
+import { EmailPrimaryButton } from './primitives/index.js';
 
 interface WaitingListOfferEmailProps {
   schoolName: string;
@@ -242,23 +242,9 @@ export default function WaitingListOfferEmail({
         {finalStrings.cta_text || DEFAULT_STRINGS.cta_text}
       </Text>
 
-      <div style={{ marginBottom: '25px', textAlign: 'center' }}>
-        <Button
-          href={enrollNowUrl}
-          style={{
-            backgroundColor: 'var(--email-accent)',
-            color: '#ffffff',
-            padding: '14px 40px',
-            borderRadius: '6px',
-            textDecoration: 'none',
-            display: 'inline-block',
-            fontWeight: '600',
-            fontSize: '16px',
-          }}
-        >
-          {finalStrings.cta_button || DEFAULT_STRINGS.cta_button}
-        </Button>
-      </div>
+      <EmailPrimaryButton href={enrollNowUrl}>
+        {finalStrings.cta_button || DEFAULT_STRINGS.cta_button}
+      </EmailPrimaryButton>
 
       {/* Expiry notice */}
       <div

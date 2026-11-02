@@ -3,6 +3,7 @@ import {
   PAYMENT_REMINDER_SHELLS,
   type PaymentEmailLanguage,
 } from "./payment-email-shells/generated.ts";
+import { applyEmailBrand } from "./email-brand.ts";
 
 export interface RenderPaymentReminderInput {
   language: PaymentEmailLanguage;
@@ -25,7 +26,8 @@ export interface RenderPaymentReminderInput {
 }
 
 /** The "Make Payment" button block and the plain-text link box of the generated shell. */
-const PAY_BUTTON_BLOCK = /<div style="margin-bottom:25px;text-align:center"><a href="[^"]*"[\s\S]*?<\/a><\/div>/;
+// The primary button (EmailPrimaryButton): a gradient table with a solid bgcolor fallback.
+const PAY_BUTTON_BLOCK = /<table role="presentation"[^>]*style="margin:0 auto 28px;border-collapse:separate">[\s\S]*?<\/table>/;
 const PAY_LINK_BOX = /<div style="background-color:#f3f4f6;padding:12px;border-radius:4px;margin-bottom:25px;word-break:break-all"><a [\s\S]*?<\/a><\/div>/;
 const LOGIN_HINT: Record<PaymentEmailLanguage, string> = {
   en: "Please log in to your account to make a payment or set up automatic payments.",
@@ -70,7 +72,7 @@ const HE_INTRO_PATTERN =
 export function renderPaymentReminderHtml(input: RenderPaymentReminderInput): string {
   const lang = input.language === "he" ? "he" : "en";
   const shell = PAYMENT_REMINDER_SHELLS[lang];
-  let html = applyPaymentReminderShell(shell, input);
+  let html = applyEmailBrand(applyPaymentReminderShell(shell, input), input.primaryColor, input.accentColor);
 
   if (input.intro) {
     html = html.replace(lang === "he" ? HE_INTRO_PATTERN : EN_INTRO_PATTERN, input.intro);
