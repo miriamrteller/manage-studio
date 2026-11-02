@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { useCaptcha } from '@/components/captcha/useCaptcha';
 import { Input } from '@/components/ui/input';
 import {
   FormControl,
@@ -40,6 +41,8 @@ export function SetPasswordDialog({ open, onOpenChange }: SetPasswordDialogProps
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const requiresCurrentPassword = sessionUsedPassword(session);
+  // Checking the current password is a sign-in, which Supabase CAPTCHA covers.
+  const captcha = useCaptcha();
   const schema = useMemo(
     () => createSetPasswordFormSchema(t, requiresCurrentPassword),
     [requiresCurrentPassword, t],
@@ -67,6 +70,7 @@ export function SetPasswordDialog({ open, onOpenChange }: SetPasswordDialogProps
   }, [form, open]);
 
   const onSubmit = async (data: SetPasswordForm) => {
+    if (requiresCurrentPassword && !captcha.ready) return;
     if (!user?.email) {
       setSubmitError(t('pages.portal.password.error_no_email'));
       return;
@@ -80,6 +84,7 @@ export function SetPasswordDialog({ open, onOpenChange }: SetPasswordDialogProps
         email: user.email,
         password: data.password,
         currentPassword: data.currentPassword?.trim() || undefined,
+        captchaToken: captcha.authOptions().captchaToken,
       });
       onOpenChange(false);
       form.reset();
@@ -92,6 +97,7 @@ export function SetPasswordDialog({ open, onOpenChange }: SetPasswordDialogProps
       }
     } finally {
       setSaving(false);
+      if (requiresCurrentPassword) captcha.reset();
     }
   };
 
@@ -203,6 +209,8 @@ export function SetPasswordDialog({ open, onOpenChange }: SetPasswordDialogProps
             )}
           />
 
+          {requiresCurrentPassword && captcha.widget}
+
           <div className="flex justify-end gap-3 pt-2">
             <Button
               type="button"
@@ -212,7 +220,7 @@ export function SetPasswordDialog({ open, onOpenChange }: SetPasswordDialogProps
             >
               {t('pages.portal.password.cancel')}
             </Button>
-            <Button type="submit" disabled={saving}>
+            <Button type="submit" disabled={saving || (requiresCurrentPassword && !captcha.ready)}>
               {saving ? t('pages.portal.password.saving') : t('pages.portal.password.save')}
             </Button>
           </div>

@@ -3,13 +3,13 @@
 
 # OpalSwift Privacy Policy
 
-Last updated: [[DATE]]
+Last updated: 2 November 2026
 
-This policy covers personal information that **[[OPALSWIFT LEGAL NAME]]** ([[BUSINESS STATUS & NO.]]), [[ADDRESS]] ("**OpalSwift**", "we") handles **for itself**: about studio owners, admins and staff who use the platform, people who sign up or contact us, and visitors to `opalswift.com`.
+This policy covers personal information that **Miriam Teller, trading as OpalSwift** (not yet registered as a business; free beta), Jerusalem, Israel ("**OpalSwift**", "we") handles **for itself**: about studio owners, admins and staff who use the platform, people who sign up or contact us, and visitors to `opalswift.com`.
 
 It does **not** cover information that studios keep about their own clients (parents, students, photography clients). For that, each studio is responsible and has its own privacy policy; OpalSwift only processes it on the studio's behalf under a [data processing agreement](02-dpa.en.md).
 
-Privacy contact: [[NAME]], [[PRIVACY EMAIL]].
+Privacy contact: Miriam Teller, hello@opalswift.com.
 
 ## 1. What we collect and why
 
@@ -33,14 +33,14 @@ Only service providers who help us run the platform: Supabase (database and sign
 
 ## 3. How long we keep it
 
-- Account data: while the account is open and up to [[e.g. 24 months]] after, unless you ask us to delete it sooner and we do not need it for a legal reason.
-- Billing records: as long as tax law requires ([[ACCOUNTANT: usually 7 years]]).
-- Technical logs: per the hosting provider's retention (short-term); our own audit log for [[e.g. 24 months]].
+- Account data: while the account is open and up to 24 months after, unless you ask us to delete it sooner and we do not need it for a legal reason.
+- Billing records: as long as tax law requires (7 years).
+- Technical logs: per the hosting provider's retention (short-term); our own audit log for 24 months.
 - Backups: nightly backups 30 days, monthly backups about 13 months.
 
 ## 4. Your rights
 
-You may ask to see (§13 Privacy Protection Law) and correct or delete (§14) your information, and withdraw marketing consent at any time. Write to [[PRIVACY EMAIL]]. We answer within 21 days. You may also complain to the Privacy Protection Authority.
+You may ask to see (§13 Privacy Protection Law) and correct or delete (§14) your information, and withdraw marketing consent at any time. Write to hello@opalswift.com. We answer within 21 days. You may also complain to the Privacy Protection Authority.
 
 ## 5. Security
 
