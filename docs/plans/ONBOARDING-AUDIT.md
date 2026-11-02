@@ -2,7 +2,7 @@
 
 Written 2026-11-02 on `main` @ 2d6bfa2. Screenshots (390px wide) are in `docs/plans/onboarding-audit/`.
 
-> **Status: first pass.** The "studio legal pack" and the "Get leads" panel changes had not merged when this was written. I will re-run those steps and update this file when the coordinator says they have.
+> **Status:** leads steps re-checked against main after #177 (updated 2026-11-02). The "studio legal pack" has not merged yet; I will re-run the legal steps when the coordinator says it has.
 
 ## How I tested (read this first)
 
@@ -36,7 +36,7 @@ The first 5 minutes are good: a short wizard, nothing scary. The problem comes r
 
 - The wizard: 6 short steps, "Step 3 of 6", a Back button, the address is checked while typing, Hebrew is a proper right-to-left layout.
 - The parent enrolment on a phone: 5 steps, a clear "Pay at the studio" confirmation, "Go to my account" link.
-- The leads panel: the studio's lead email, enquiry form and Instagram/WhatsApp/LinkedIn links are all in one place with Copy buttons.
+- The "Get leads" panel (after #177): one form link, QR code, poster PDF and a tagged link per channel, in plain language and in Hebrew.
 
 ---
 
@@ -120,13 +120,15 @@ Screens: `13`, `14`, `15`, `30-dance-en-settings-03-payment-settings.png`, `…0
 - The Grow/YPay connection screens were **not tested** (need the real stack, and the encryption key is not yet set in prod).
 - In Hebrew: "Webhook סוד" and the raw word "offline" are mixed into Hebrew.
 
-### 12. Leads ("Get leads") · ~2 min
-Screens: `16-dance-en-leads.png`, `16-photo-en-leads.png`. Title "Leads", a "New lead" button, and a card "Lead capture links": lead inbox address, inquiry form link, Instagram / WhatsApp / LinkedIn links, each with **Copy**, and "Form for your website" folded away.
-- Good: all in one place, copy buttons, plain language.
-- Gaps: no QR yet (planned 2c); long link text wraps on a phone; no "send this to your first parent" sentence.
+### 12. Leads ("Get leads") · ~2 min · checked against main after #177
+Screens: `50-dance-en-get-leads-after-177.png`, `50-photo-en-get-leads-after-177.png`, `50-dance-he-get-leads-after-177.png` (earlier, before #177: `16-*-leads.png`).
+- Now a "Get leads" panel at the top of the Leads page: "You do not need a website. Share your enquiry form link, and every enquiry lands on this page." Then **Form link** (Copy link, Open form), a **QR code**, "Download QR (PNG)" and "Download poster (PDF)", and one tagged link per place (WhatsApp, Instagram with "Profile → Edit profile → Links", and more). Plain language and a big improvement on the old panel.
+- Hebrew is fully translated and mirrored.
+- **Inconsistent default:** in the ballet demo the panel is open; in the photographer demo it is **collapsed** under a small "Get leads" arrow, above a table of leads. In a new studio (no leads yet) it should be open by default. Check this on a real empty studio.
+- Still missing: a "send this to your first parent/client" sentence, and a link from the finish-setup checklist to this panel (there is no checklist yet, see P1 #1).
 - The enquiry form placeholder says "e.g. a birthday party, a trial class for my daughter…" **for a photographer too** (`22-photo-en-inquire.png`).
 - Consent boxes are clear and not pre-ticked (good).
-- **Re-check after the Leads merge.**
+- The panel is not on prod yet (next deploy-prod).
 
 ### 13. First enrolment as a parent, on a phone · ~2–3 min · ~8 taps
 Screens: `40`–`45-dance-parent-*`.
@@ -184,7 +186,7 @@ Effort: S = under half a day, M = 1–2 days, L = more.
 
 | # | Fix | Effort |
 | --- | --- | --- |
-| 17 | QR code and a "send this to your first parent" sentence in Leads. | S (planned 2c) |
+| 17 | Leads: open the "Get leads" panel by default for studios with no leads; add a "send this to your first parent/client" sentence. (QR and poster are done in #177.) | S |
 | 18 | Web-address step: show an example ("my-studio → my-studio.opalswift.com"). | S |
 | 19 | Greyed-out buttons: say which field is missing. | S |
 | 20 | Mixed English in Hebrew payment screens ("offline", "Webhook"). | S |
@@ -209,5 +211,5 @@ Effort: S = under half a day, M = 1–2 days, L = more.
 - Hebrew copy for all of this from day one.
 
 ## Still to do in this audit
-- Re-run the legal pack and the leads panel once the coordinator says they have merged.
+- Re-run the legal steps once the legal pack has merged (leads panel already re-checked).
 - If the real local stack becomes available: confirm the email step, the real empty-studio screens, and Grow/YPay connect.
