@@ -47,21 +47,45 @@ afterEach(async () => {
 });
 
 describe('studio setup wizard', () => {
-  it('starts in English, defaults to pay at the studio with no invoicing, and hides the tax-document providers', async () => {
+  it('starts in English with Grow first and Grow documents, keeps pay at the studio and the other services available', async () => {
     renderWizard();
     expect(screen.getByLabelText('Main language')).toHaveValue('en');
     await fillStudioStep();
     next();
     const payRadios = screen.getAllByRole('radio').filter((r) => r.getAttribute('name') === 'ss-payment');
-    expect(payRadios[0]).toHaveAccessibleName('Pay at the studio (cash, bank transfer or Bit)');
-    expect(screen.getByRole('radio', { name: 'Pay at the studio (cash, bank transfer or Bit)' })).toBeChecked();
-    expect(screen.getByRole('radio', { name: 'None (not a registered business)' })).toBeChecked();
-    expect(screen.queryByRole('radio', { name: 'Issued by Grow' })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('radio', { name: 'I already use an invoicing service' }));
+    expect(payRadios[0]).toHaveAccessibleName('By card online, through Grow');
+    expect(screen.getByRole('radio', { name: 'By card online, through Grow' })).toBeChecked();
     expect(screen.getByRole('radio', { name: 'Issued by Grow' })).toBeChecked();
-    expect(screen.getByRole('radio', { name: 'Issued by Green Invoice' })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'None (not a registered business)' })).not.toBeChecked();
+    expect(screen.getByRole('radio', { name: 'Pay at the studio (cash, bank transfer or Bit)' })).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: 'By card online, through YPay' })).toBeInTheDocument();
+    // The other invoicing services sit behind "I already use another invoicing service".
+    expect(screen.queryByRole('radio', { name: 'Issued by Green Invoice' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('radio', { name: 'I already use another invoicing service' }));
+    expect(screen.getByRole('radio', { name: 'Issued by Green Invoice' })).toBeInTheDocument();
     expect(screen.queryByRole('radio', { name: /mock/i })).not.toBeInTheDocument();
+  });
+
+  it('documents follow the payment choice until the owner picks another invoicing service', async () => {
+    renderWizard();
+    await fillStudioStep();
+    next();
+    fireEvent.click(screen.getByRole('radio', { name: 'By card online, through iCount' }));
+    expect(screen.getByRole('radio', { name: 'Issued by iCount' })).toBeChecked();
+    fireEvent.click(screen.getByRole('radio', { name: 'Pay at the studio (cash, bank transfer or Bit)' }));
+    expect(screen.getByRole('radio', { name: 'None (not a registered business)' })).toBeChecked();
+    fireEvent.click(screen.getByRole('radio', { name: 'I already use another invoicing service' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Issued by Yesh Invoice' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'By card online, through Grow' }));
+    expect(screen.getByRole('radio', { name: 'Issued by Yesh Invoice' })).toBeChecked();
+  });
+
+  it('YPay payments come with YPay documents, ready for the photographer', async () => {
+    renderWizard();
+    await fillStudioStep();
+    next();
+    fireEvent.click(screen.getByRole('radio', { name: 'By card online, through YPay' }));
+    expect(screen.getByRole('radio', { name: 'Issued by YPay' })).toBeChecked();
   });
 
   it('creates a pay-at-the-studio studio with no documents, invites the owner, and shows the checklist', async () => {
@@ -73,7 +97,8 @@ describe('studio setup wizard', () => {
     await fillStudioStep();
     fireEvent.click(screen.getByRole('radio', { name: /Dance studio/ }));
     next();
-    expect(screen.getByRole('radio', { name: 'Pay at the studio (cash, bank transfer or Bit)' })).toBeChecked();
+    fireEvent.click(screen.getByRole('radio', { name: 'Pay at the studio (cash, bank transfer or Bit)' }));
+    expect(screen.getByRole('radio', { name: 'None (not a registered business)' })).toBeChecked();
     next();
     expect(screen.getByLabelText('Main colour')).toHaveValue('#5B6CFF');
     next();

@@ -482,6 +482,9 @@
         "capture_title": "Lead capture links",
         "capture_hint": "Share these anywhere — every inquiry lands here automatically. The links tag where the lead came from.",
         "capture_email": "Lead inbox",
+        "overdue": "Overdue",
+        "due_today": "Due today",
+        "follow_up_summary": "To follow up: {{overdue}} overdue, {{today}} today.",
         "filter_form": "Form",
         "form_general": "General form",
         "via_form": "Form: {{name}}",
@@ -568,6 +571,52 @@
         "search_placeholder": "Student or class name",
         "link": "Link",
         "no_enrolments": "No matching class enrolments."
+      },
+      "first_leads": {
+        "title": "Get your first leads",
+        "done_title": "You are ready for leads",
+        "progress": "{{done}} of {{total}} done",
+        "how_it_works": "How leads work",
+        "hide": "Hide this list",
+        "optional": "(optional)",
+        "show_me": "Show me",
+        "open_form": "Open your form",
+        "step_share_link": "Share your enquiry form link",
+        "hint_share_link": "Copy it and send it in WhatsApp groups, or to someone who asked.",
+        "step_instagram": "Put the link in your Instagram bio",
+        "hint_instagram": "Copy the Instagram link below and paste it under Edit profile → Links.",
+        "step_poster": "Print your QR poster",
+        "hint_poster": "Download the poster and hang it at the studio or near the school gate.",
+        "step_test_enquiry": "Send yourself a test enquiry",
+        "hint_test_enquiry": "Fill in your own form once. It appears on this page within seconds.",
+        "step_website": "Add the form to your website",
+        "hint_website": "Only if you have one. Copy the code under \"Have your own website?\"."
+      },
+      "help": {
+        "link": "How leads work",
+        "tip_label": "Help: {{topic}}",
+        "tip_get_leads": "Your enquiry form is a ready web page; you do not need a website. Each link below adds a tag, so every lead shows where it came from.",
+        "tip_lead_email": "Any email sent to this address becomes a lead on your Leads page. Forward enquiries here, or print it on flyers.",
+        "tip_questions": "Extra questions appear on your enquiry form. Ready-made ones fill real fields (for example the class), so the pipeline can use them. Keep the form short.",
+        "tip_digest": "Each morning, if any lead is due or overdue for follow-up, you get one email listing them. Set a follow-up date on a lead to use it.",
+        "tip_forms": "Make a separate form for a class, event or campaign, with its own link, QR code and questions. Leads show which form they came from.",
+        "tip_send": "We email this person a link to your form from your studio; replies go to you. It does not sign them up for anything.",
+        "tip_website": "Only if you have your own website: paste this code into a page and your form appears there. Enquiries still land on your Leads page.",
+        "title": "How leads work",
+        "intro": "A lead is someone who asked about your studio but has not signed up yet. Here is how they reach you and how to follow up.",
+        "where_title": "Where leads come from",
+        "where_steps": ["Your enquiry form: a ready web page at your studio address, /inquire.", "Links and the QR poster from \"Get leads\": each one is tagged, so you see the source (Instagram, WhatsApp, flyer…).", "Your lead email address: anything sent or forwarded to it becomes a lead.", "By hand: \"Add lead\" for phone calls and walk-ins."],
+        "form_title": "Your form and links",
+        "form_steps": ["Open Leads → Get leads.", "Copy your form link, or the link for a channel, and share it.", "Download the QR poster for flyers and the studio wall.", "Optional: add your own questions in Settings, or make a separate form for a class in Leads → Forms."],
+        "stages_title": "Following up",
+        "stages_steps": ["Each lead has a stage. Dance and class studios: new → contacted → trial booked → trial done → won or lost.", "Change the stage on the Leads page as you go.", "Set a follow-up date; overdue leads are marked."],
+        "enrol_title": "When a lead enrols",
+        "enrol_steps": ["When someone enrols in a class with the same email or phone as a lead, the lead becomes \"won\" by itself.", "If more than one lead could match, the Leads page asks you to choose.", "You can also link a lead to an enrolment by hand."],
+        "daily_title": "Daily reminder",
+        "daily_steps": ["Each morning you get one email listing leads to follow up that day, only when there are some.", "Turn it off for yourself in Settings → Daily follow-up email."],
+        "privacy_title": "Privacy and consent",
+        "privacy_steps": ["Enquiry details are kept only to answer the enquiry.", "Marketing messages need the separate opt-in boxes on the form, which are never ticked in advance.", "Sending someone your form link does not sign them up for anything."],
+        "contact": "Questions? Write to hello@opalswift.com."
       },
       "get_leads": {
         "send_title": "Send the form to someone",
@@ -1728,7 +1777,11 @@
       },
       "payments": {
         "title": "Choose how customers pay",
-        "hint": "Pay at the studio is the simplest start. Write how to pay, such as cash, bank transfer or Bit."
+        "hint": "Say how customers pay: by card online, or at the studio with cash, bank transfer or Bit. You can change this any time in Settings."
+      },
+      "connect_payments": {
+        "title": "Connect online payments",
+        "hint": "Enter your payment provider’s details so customers can pay by card. Until then, customers are asked to pay the studio directly."
       },
       "legal_dance": {
         "title": "Check your legal details and health declaration",
@@ -1839,7 +1892,7 @@
     "invoicing_yesh": "Issued by Yesh Invoice",
     "invoicing_green_invoice": "Issued by Green Invoice",
     "invoicing_none": "None (not a registered business)",
-    "invoicing_existing": "I already use an invoicing service",
+    "invoicing_existing": "I already use another invoicing service",
     "invoicing_existing_which": "Which invoicing service?",
     "payments_later": "The studio connects its account with the provider later, in its own settings.",
     "look_hint": "Starts with OpalSwift's colours. The studio can upload its logo and change colours later.",
@@ -2229,6 +2282,7 @@
     "checkout_total": "Total",
     "offline_payment_title": "Pay at the studio",
     "offline_payment_body": "Your place is reserved. This studio takes payment in person (cash or bank transfer), so there is nothing to pay online.",
+    "online_not_set_up_body": "Your place is reserved. The studio hasn't set up online payment yet, so please pay the studio directly. They will tell you how.",
     "offline_payment_how": "How to pay",
     "offline_payment_next": "The studio will confirm the enrolment once your payment is received.",
     "offline_payment_portal_link": "Go to my account",
@@ -2277,6 +2331,33 @@
     "waiver_minor_cannot_sign_body": "{{studentName}} is under 18. Israeli law requires a parent or legal guardian to sign the form. Please ask a parent or guardian to log in and complete the enrolment."
   },
   "settings": {
+    "ypay": {
+      "save": "Save YPay details",
+      "title": "Connect YPay",
+      "hint": "Find your client ID and client secret in your YPay account, under the API / integration details. Ask YPay if you can't find them.",
+      "connected": "Connected: your YPay details are saved.",
+      "not_connected": "Not connected yet. Until you connect it, customers are asked to pay the studio directly.",
+      "client_id": "YPay client ID",
+      "client_secret": "YPay client secret",
+      "need_both": "Enter both the client ID and the client secret to save.",
+      "saved": "YPay details saved. Press “Test connection” to check them.",
+      "test": "Test connection",
+      "test_ok": "Connected ✓ YPay accepted your details.",
+      "test_failed": "We couldn't check the connection. Please try again.",
+      "encryption_missing": "Online payments can't be saved yet: the platform's encryption key isn't set up. Please contact OpalSwift.",
+      "document_title": "Which document does YPay issue?",
+      "document_label": "Document type",
+      "document_108": "Receipt (קבלה)",
+      "document_109": "Tax invoice-receipt (חשבונית מס-קבלה)",
+      "document_hint": "Choose what your YPay account issues. Ask YPay if unsure.",
+      "document_saved": "Saved."
+    },
+    "lead_digest": {
+      "title": "Daily follow-up email",
+      "label": "Email me each morning with the leads to follow up that day",
+      "hint": "Sent only on days when a lead is due or overdue. This setting is just for you; other admins choose for themselves.",
+      "error": "Could not save. Please try again."
+    },
     "lead_form": {
       "load_error": "Could not load your form questions. Refresh the page to try again.",
       "title": "Questions on your enquiry form",
@@ -2381,6 +2462,11 @@
       "providers": { "grow": "Grow (Meshulam)", "icount": "iCount", "invoice4u": "Invoice4U", "ypay": "YPay", "tranzila": "Tranzila", "yesh": "Yesh", "green_invoice": "Green Invoice" }
     },
     "payments": {
+      "connect_title": "Connect online payments",
+      "connected_note": "Your payment details are saved. Customers can pay by card online.",
+      "not_connected_note": "Not connected yet. Until you connect it, customers are asked to pay the studio directly. Nothing breaks, and you can do it any time.",
+      "connect_now": "Connect now",
+      "connect_manage": "Manage connection",
       "title": "Payment provider",
       "description": "Configure payment capture credentials.",
       "provider": "Provider",
@@ -2643,6 +2729,23 @@
     "go_home": "Go to home"
   },
   "legal": {
+    "pack": {
+      "title": "Your legal documents",
+      "notice": "Your studio's legal documents (privacy policy, terms, accessibility statement and the forms clients sign) were created from templates based on Israeli law and filled with your details. They are drafts: have them reviewed by a lawyer.",
+      "download": "Download legal pack (PDF)",
+      "checkbox": "I understand these are draft documents and my studio will use them until I upload lawyer-reviewed versions.",
+      "confirm": "Confirm",
+      "confirming": "Saving…",
+      "confirmed_on": "Confirmed on {{date}}. Your legal pages and forms are live.",
+      "owner_confirms": "The studio's owner confirms this when they sign in. Until then the studio's legal pages and forms are not live.",
+      "error": "That didn't save. Please try again.",
+      "error_form_missing": "The form your clients sign is missing. Please try again; if it keeps happening, contact OpalSwift.",
+      "signing_not_ready": "This studio isn't ready to collect signatures yet. Please try again later or contact the studio.",
+      "sign_in_needed": "Please sign in to download the legal pack.",
+      "print_hint": "Use your browser's Print and choose \"Save as PDF\".",
+      "admin_banner": "Your legal documents are waiting for you. Confirm them in Settings → Legal to publish your legal pages and forms.",
+      "admin_banner_link": "Open Settings → Legal"
+    },
     "docs": {
       "platform_terms": "Terms of Service",
       "dpa": "Data Processing Agreement",

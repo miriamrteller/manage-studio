@@ -1,4 +1,5 @@
 import { AdminPanel } from '../components/Dashboard';
+import { LegalPackBanner } from '@/components/legal/LegalPackBanner';
 
 /**
  * AdminDashboard: Light composition page
@@ -9,5 +10,10 @@ import { AdminPanel } from '../components/Dashboard';
  */
 
 export default function AdminDashboard() {
-  return <AdminPanel />;
+  return (
+    <>
+      <LegalPackBanner />
+      <AdminPanel />
+    </>
+  );
 }

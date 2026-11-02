@@ -283,6 +283,48 @@ Steps 1–4 are the beta (about 1 week). The default card payment path is not to
     still saved, without the form link or its class. A form that was deleted
     meanwhile → the lead is saved with no required questions.
 
+- **Step 4, daily follow-up digest.** `run-lead-followup-digest` runs daily at
+  05:23 UTC (07:23 Israel winter, 08:23 summer), with the same cron pattern and
+  `CRON_SECRET` as `run-shoot-emails`.
+  - **Recipients:** every studio admin gets one email listing that studio's
+    leads due today or overdue. Only open leads count: not won, lost or
+    converted. Overdue leads come first and are marked.
+  - **No digest** for studios with nothing due.
+  - **Language:** en or he, from the admin's language, otherwise the studio
+    default.
+  - **Sending:** from the studio sender (Reply-To the studio), through
+    `sendHtmlEmail`, so `EMAIL_TRANSPORT` applies.
+  - **Once a day:** each digest is claimed in `notification_log` before sending.
+    A unique index (studio, recipient, `digest_date`) means a retry or
+    overlapping run never sends twice; failures are logged.
+  - **Opt-out per admin:** Settings → **Daily follow-up email**
+    (`lead_digest_optouts`, RLS: own row, own studio). It is on by default.
+  - **Leads page:** "Overdue" / "Due today" on each lead, plus a summary line.
+  - **Owner:** nothing to set. It uses the existing `CRON_SECRET`,
+    `APP_ROOT_DOMAIN` and email transport. It starts the morning after the
+    deploy-prod that carries it.
+
+- **Onboarding and help** (final P1 step).
+  - **"Get your first leads"** on the Leads page: share your form link, put it
+    in your Instagram bio, print your QR poster, send yourself a test enquiry,
+    and optionally add it to your website.
+    - Steps tick themselves when done in the Get leads panel (Copy link /
+      Share, the Instagram link, a QR or poster download, copying the website
+      code). The test enquiry ticks itself once the studio has any lead. Any
+      step can also be ticked by hand.
+    - Progress is kept per studio on the device, like the studio-home setup
+      guide, and "Hide this list" hides it for good.
+  - **ⓘ help** on every leads setting: Get leads, lead email address, Send the
+    form, Website form, Questions, Forms, Daily follow-up email.
+  - **"How leads work"** (`/admin/leads/help`, en + he), linked from the Leads
+    page and the checklist. Six short sections: where leads come from, your
+    form and links, following up, when a lead enrols, the daily reminder, and
+    privacy and consent.
+  - The studio-home setup guide (Onboarding thread) still links its "leads" row
+    to `/admin/leads`; this checklist continues from there. The Get leads
+    panel's route and its open/collapsed default are unchanged; it only gained
+    `id="get-leads"` so "Show me" can open it.
+
 ### Social channels: now and later
 
 - **Now (P1):** tagged links and a QR poster, above. Each lead records where it

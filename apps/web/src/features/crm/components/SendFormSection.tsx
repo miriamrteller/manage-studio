@@ -1,4 +1,5 @@
 import { useId, useState, type FormEvent } from 'react';
+import { InfoTip } from '@/components/ui/InfoTip';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
@@ -105,9 +106,14 @@ export function SendFormSection({
 
   return (
     <form onSubmit={submit} className="card p-4 space-y-3" aria-labelledby={`${id}-title`}>
-      <H id={`${id}-title`} className="font-semibold">
-        {t('pages.crm.get_leads.send_title')}
-      </H>
+      <div className="flex flex-wrap items-center gap-1">
+        <H id={`${id}-title`} className="font-semibold">
+          {t('pages.crm.get_leads.send_title')}
+        </H>
+        <InfoTip label={t('pages.crm.help.tip_label', { topic: t('pages.crm.get_leads.send_title') })}>
+          {t('pages.crm.help.tip_send')}
+        </InfoTip>
+      </div>
       <p className="text-sm text-muted-foreground">{t('pages.crm.get_leads.send_hint')}</p>
       <div className="grid gap-3 sm:grid-cols-3">
         <div>

@@ -14,6 +14,7 @@ import { corsHeaders, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
 import { tenantBaseUrl } from "../_shared/tenant-url.ts";
+import { seedSignedTemplate, type SeedDeps, type SeedTenant } from "../_shared/signed-template-seed.ts";
 import {
   exactIlikePattern,
   InviteOwnerSchema,
@@ -80,6 +81,43 @@ function serviceDeps(service: ServiceClient): ProvisionStudioDeps {
   };
 }
 
+function seedDeps(service: ServiceClient): SeedDeps {
+  return {
+    async hasTemplate(tenantId) {
+      const { count, error } = await service
+        .from("consent_templates")
+        .select("id", { count: "exact", head: true })
+        .eq("tenant_id", tenantId);
+      if (error) throw new Error(error.message);
+      return (count ?? 0) > 0;
+    },
+    async insertTemplate(row) {
+      const { error } = await service.from("consent_templates").insert(row);
+      if (error) throw new Error(error.message);
+    },
+  };
+}
+
+const SEED_TENANT_COLUMNS = "id, name, skin, language_default, contact_email, legal_profile";
+
+/**
+ * Every new studio gets the form its clients sign, right away. Best effort: a
+ * failure is logged and reported (formSeeded: false); ensure_signed_template
+ * (or the admin's acknowledgement) fills the gap, and a studio whose type needs
+ * a form cannot go live without one (acknowledge_studio_legal_pack).
+ */
+async function seedNewStudio(service: ServiceClient, tenantId: string): Promise<boolean> {
+  try {
+    const { data } = await service.from("tenants").select(SEED_TENANT_COLUMNS).eq("id", tenantId).maybeSingle();
+    if (!data) return false;
+    await seedSignedTemplate(seedDeps(service), data as SeedTenant);
+    return true;
+  } catch (err) {
+    console.error("provision-studio: seeding the signed template failed:", err);
+    return false;
+  }
+}
+
 function selfServeDeps(service: ServiceClient, req: Request): SelfServeDeps {
   const secret = Deno.env.get("TURNSTILE_SECRET_KEY")?.trim();
   const ip = req.headers.get("cf-connecting-ip") ?? req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
@@ -135,13 +173,35 @@ Deno.serve(withMonitoring("provision-studio", async (req) => {
     const parsed = SelfServeStudioSchema.safeParse(body);
     if (!parsed.success) return jsonResponse({ error: "Invalid request", issues: parsed.error.issues }, 400);
     const result = await selfServeStudio(selfServeDeps(service, req), user, parsed.data);
-    if (result.ok) return jsonResponse(result);
+    if (result.ok) return jsonResponse({ ...result, formSeeded: await seedNewStudio(service, result.tenantId) });
     if (result.error === "invalid") return jsonResponse({ error: result.message ?? "Invalid request" }, 400);
     return jsonResponse({ error: result.error }, SELF_SERVE_REFUSAL_STATUS[result.error]);
   }
 
   const { data: profile } = await service.from("user_profiles").select("role").eq("id", user.id).maybeSingle();
   const roles = (profile?.role as string[] | null) ?? [];
+
+  // Backfill: the signed form for studios that have none. A studio admin may
+  // ask for their own studio; the platform owner for one studio or all of them.
+  if (body.action === "ensure_signed_template") {
+    const isSuperAdmin = roles.includes("super_admin");
+    const { data: me } = await service.from("user_profiles").select("tenant_id").eq("id", user.id).maybeSingle();
+    const ownTenant = (me?.tenant_id as string | null) ?? null;
+    const requested = typeof body.tenantId === "string" ? body.tenantId : null;
+    if (!isSuperAdmin && !(roles.includes("tenant_admin") && ownTenant && (!requested || requested === ownTenant))) {
+      return jsonResponse({ error: "Forbidden" }, 403);
+    }
+    const target = isSuperAdmin ? requested : ownTenant;
+    let query = service.from("tenants").select(SEED_TENANT_COLUMNS);
+    if (target) query = query.eq("id", target);
+    const { data: tenants, error } = await query;
+    if (error) return jsonResponse({ error: error.message }, 500);
+    let seeded = 0;
+    for (const t of tenants ?? []) {
+      if (await seedSignedTemplate(seedDeps(service), t as SeedTenant)) seeded += 1;
+    }
+    return jsonResponse({ seeded, checked: (tenants ?? []).length });
+  }
   if (!roles.includes("super_admin")) return jsonResponse({ error: "Forbidden" }, 403);
   const deps = serviceDeps(service);
 
@@ -157,7 +217,7 @@ Deno.serve(withMonitoring("provision-studio", async (req) => {
   try {
     const result = await provisionStudio(deps, parsed.data);
     if (!result.ok) return jsonResponse({ error: result.error }, 409);
-    return jsonResponse(result);
+    return jsonResponse({ ...result, formSeeded: await seedNewStudio(service, result.tenantId) });
   } catch (err) {
     // provision_studio's messages are plain validation text (taken subdomain etc.).
     return jsonResponse({ error: err instanceof Error ? err.message : "Provisioning failed" }, 400);

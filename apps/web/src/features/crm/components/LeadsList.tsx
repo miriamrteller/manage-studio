@@ -1,8 +1,10 @@
 ﻿import { useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { GetLeadsPanel } from './GetLeadsPanel';
+import { followUpState } from '../lib/followUp';
+import { FirstLeadsChecklist } from './FirstLeadsChecklist';
 import { Link } from 'react-router-dom';
 import { useNamedForms } from '../hooks/useNamedForms';
-import { answerText } from '@shared/index';
+import { answerText, FORM_TIME_ZONE, todayIn } from '@shared/index';
 import { answerFilterOptions, filterByAnswer } from '../lib/leadAnswers';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
@@ -124,6 +126,17 @@ export function LeadsList() {
   const [answerKey, setAnswerKey] = useState('');
   const [answerValue, setAnswerValue] = useState('');
   const answerOptions = useMemo(() => answerFilterOptions(allLeads, lang), [allLeads, lang]);
+  const today = todayIn(FORM_TIME_ZONE);
+  const followUps = useMemo(() => {
+    let overdue = 0;
+    let dueToday = 0;
+    for (const l of allLeads) {
+      const state = followUpState(l, today);
+      if (state === 'overdue') overdue += 1;
+      if (state === 'today') dueToday += 1;
+    }
+    return { overdue, dueToday };
+  }, [allLeads, today]);
   const [source, setSource] = useState('');
   const [formFilter, setFormFilter] = useState('');
   const { forms: namedForms } = useNamedForms();
@@ -192,6 +205,9 @@ export function LeadsList() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl font-bold">{t('pages.crm.leads.title')}</h1>
         <div className="flex flex-wrap gap-2">
+          <Link to="/admin/leads/help" className="inline-flex items-center rounded border px-3 py-2 text-sm">
+            {t('pages.crm.help.link')}
+          </Link>
           <Link to="/admin/leads/forms" className="inline-flex items-center rounded border px-3 py-2 text-sm">
             {t('pages.crm.named_forms.title')}
           </Link>
@@ -201,8 +217,15 @@ export function LeadsList() {
         </div>
       </div>
       <p className="text-sm text-muted-foreground">{t('pages.crm.leads.description')}</p>
+      {(followUps.overdue > 0 || followUps.dueToday > 0) && (
+        <p role="status" className="text-sm font-medium">
+          {t('pages.crm.leads.follow_up_summary', { overdue: followUps.overdue, today: followUps.dueToday })}
+        </p>
+      )}
 
-      <details className="space-y-3" open={!isLoading && allLeads.length === 0}>
+      {!isLoading && <FirstLeadsChecklist leadCount={allLeads.length} />}
+
+      <details id="get-leads" className="space-y-3" open={!isLoading && allLeads.length === 0}>
         <summary className="cursor-pointer font-semibold">{t('pages.crm.get_leads.title')}</summary>
         <div className="pt-3">
           <GetLeadsPanel headingLevel={3} />
@@ -495,7 +518,15 @@ export function LeadsList() {
                     </select>
                   </td>
                   <td className="px-3 py-2">{formatDate(lead.last_contacted_at, i18n.language)}</td>
-                  <td className="px-3 py-2">{formatDate(lead.next_follow_up_at, i18n.language)}</td>
+                  <td className="px-3 py-2">
+                    {formatDate(lead.next_follow_up_at, i18n.language)}
+                    {followUpState(lead, today) === 'overdue' && (
+                      <span className="block text-xs font-medium text-red-700">{t('pages.crm.leads.overdue')}</span>
+                    )}
+                    {followUpState(lead, today) === 'today' && (
+                      <span className="block text-xs font-medium text-amber-700">{t('pages.crm.leads.due_today')}</span>
+                    )}
+                  </td>
                   {canConvert && (
                     <td className="px-3 py-2">
                       {lead.converted_account_id ? (

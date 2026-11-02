@@ -40,6 +40,7 @@ interface CheckoutIntentData {
   billingMode: string | null;
   billingInterval: string | null;
   offlineInstructions: string | null;
+  onlinePaymentNotSetUp: boolean;
 }
 
 interface CheckoutIntentState extends CheckoutIntentData {
@@ -103,6 +104,7 @@ async function fetchCheckoutIntent(input: {
       billingInterval: typeof data.billingInterval === 'string' ? data.billingInterval : null,
       offlineInstructions:
         typeof data.offlineInstructions === 'string' ? data.offlineInstructions : null,
+      onlinePaymentNotSetUp: data.onlinePaymentNotSetUp === true,
     };
   })();
 
@@ -159,6 +161,7 @@ function useCheckoutIntent({
     billingMode: data?.billingMode ?? null,
     billingInterval: data?.billingInterval ?? null,
     offlineInstructions: data?.offlineInstructions ?? null,
+    onlinePaymentNotSetUp: data?.onlinePaymentNotSetUp ?? false,
     loadError: error?.message ?? null,
     isLoading: queryEnabled && isPending,
   };
@@ -193,6 +196,7 @@ function CheckoutIntentShell({
     billingMode,
     billingInterval,
     offlineInstructions,
+    onlinePaymentNotSetUp,
     loadError,
     isLoading,
   } = checkout;
@@ -244,6 +248,7 @@ function CheckoutIntentShell({
       mockPaymentRef={mockPaymentRef}
       pageUrl={pageUrl}
       offlineInstructions={offlineInstructions}
+      onlinePaymentNotSetUp={onlinePaymentNotSetUp}
       onPaid={onPaid}
       onPrevious={onPrevious}
     />

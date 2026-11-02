@@ -140,6 +140,7 @@ function WaiverStepInner({
                 'This student is a minor. Please confirm you are signing as their parent or guardian.',
             });
           }
+          if (body.error === 'studio_legal_not_ready') return t('legal.pack.signing_not_ready');
           if (body.error) return body.error;
         }
       } catch {

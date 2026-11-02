@@ -32,6 +32,7 @@
   "authenticated": {
     "$comment": "signed-in users only; each checks role/tenant itself.",
     "functions": [
+      "acknowledge_studio_legal_pack",
       "admin_enrolment_lookup_email",
       "admin_get_document_signed_url_path",
       "admin_get_payment_document",

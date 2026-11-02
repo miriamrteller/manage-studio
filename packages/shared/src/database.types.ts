@@ -1367,6 +1367,39 @@ export type Database = {
           },
         ]
       }
+      lead_digest_optouts: {
+        Row: {
+          created_at: string
+          tenant_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          tenant_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          tenant_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_digest_optouts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_digest_optouts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_forms: {
         Row: {
           active: boolean
@@ -3285,6 +3318,8 @@ export type Database = {
           labels: Json
           language_default: string
           lead_form: Json
+          legal_pack_acknowledged_at: string | null
+          legal_pack_required: boolean
           legal_pages_published: boolean
           legal_profile: Json
           legal_profile_updated_at: string | null
@@ -3321,6 +3356,7 @@ export type Database = {
           waiver_link_secret_enc: string | null
           waiver_require_otp: boolean
           yesh_config: Json | null
+          ypay_document_type: number
         }
         Insert: {
           accent_color?: string
@@ -3354,6 +3390,8 @@ export type Database = {
           labels?: Json
           language_default?: string
           lead_form?: Json
+          legal_pack_acknowledged_at?: string | null
+          legal_pack_required?: boolean
           legal_pages_published?: boolean
           legal_profile?: Json
           legal_profile_updated_at?: string | null
@@ -3390,6 +3428,7 @@ export type Database = {
           waiver_link_secret_enc?: string | null
           waiver_require_otp?: boolean
           yesh_config?: Json | null
+          ypay_document_type?: number
         }
         Update: {
           accent_color?: string
@@ -3423,6 +3462,8 @@ export type Database = {
           labels?: Json
           language_default?: string
           lead_form?: Json
+          legal_pack_acknowledged_at?: string | null
+          legal_pack_required?: boolean
           legal_pages_published?: boolean
           legal_profile?: Json
           legal_profile_updated_at?: string | null
@@ -3459,6 +3500,7 @@ export type Database = {
           waiver_link_secret_enc?: string | null
           waiver_require_otp?: boolean
           yesh_config?: Json | null
+          ypay_document_type?: number
         }
         Relationships: [
           {
@@ -3915,6 +3957,10 @@ export type Database = {
         }
         Returns: Json
       }
+      acknowledge_studio_legal_pack: {
+        Args: { p_language: string; p_version: string }
+        Returns: string
+      }
       admin_enrolment_lookup_email: { Args: { p_email: string }; Returns: Json }
       admin_get_document_signed_url_path: {
         Args: { p_payment_id: string }
@@ -4360,6 +4406,9 @@ export type Database = {
         Args: { p_tenant_id: string }
         Returns: {
           contact_email: string
+          language_default: string
+          legal_pack_acknowledged_at: string
+          legal_pack_required: boolean
           legal_pages_published: boolean
           legal_profile: Json
           legal_profile_updated_at: string

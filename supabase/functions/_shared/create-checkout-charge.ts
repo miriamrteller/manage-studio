@@ -1,6 +1,7 @@
 import { createServiceClient } from "./edge-runtime/supabase.ts";
 import { resolveCheckoutSession } from "./checkout-session.ts";
 import { getPaymentProviderForTenant, isOfflinePaymentProvider } from "./payments/index.ts";
+import { isProviderNotConfiguredError } from "./payments/not-configured.ts";
 import type { CheckoutChargePayload } from "./checkout-bootstrap-types.ts";
 
 export type CreateCheckoutChargeResult =
@@ -59,35 +60,45 @@ export async function createCheckoutCharge(
 
   // Pay at the studio: nothing to charge online. The place stays reserved
   // (pending_payment) until an admin records the payment.
-  if (isOfflinePaymentProvider(tenant.payment_provider)) {
-    return {
-      ok: true,
-      charge: {
-        clientSecret: null,
-        paymentIntentId: null,
-        publishableKey: null,
-        amountMinor: session.totalMinor,
-        currency: session.currency,
-        paymentProvider: "offline",
-        mockCompleted: false,
-        mockPending: false,
-        pageUrl: null,
-        pendingWebhook: false,
-        alreadyPaid: false,
-        billingMode: session.offering.billing_mode,
-        billingInterval: session.offering.billing_interval,
-        offlineInstructions: tenant.offline_payment_instructions,
-      },
-    };
-  }
+  const payAtTheStudio = (onlinePaymentNotSetUp: boolean): CreateCheckoutChargeResult => ({
+    ok: true,
+    charge: {
+      clientSecret: null,
+      paymentIntentId: null,
+      publishableKey: null,
+      amountMinor: session.totalMinor,
+      currency: session.currency,
+      paymentProvider: "offline",
+      mockCompleted: false,
+      mockPending: false,
+      pageUrl: null,
+      pendingWebhook: false,
+      alreadyPaid: false,
+      billingMode: session.offering.billing_mode,
+      billingInterval: session.offering.billing_interval,
+      offlineInstructions: tenant.offline_payment_instructions,
+      onlinePaymentNotSetUp,
+    },
+  });
+
+  if (isOfflinePaymentProvider(tenant.payment_provider)) return payAtTheStudio(false);
 
   const provider = await getPaymentProviderForTenant(service, session.tenantId);
-  const result = await provider.createCharge({
-    amountMinor: session.totalMinor,
-    currency: session.currency,
-    idempotencyKey: session.idempotencyKey,
-    metadata: session.metadata,
-  });
+  let result: Awaited<ReturnType<typeof provider.createCharge>>;
+  try {
+    result = await provider.createCharge({
+      amountMinor: session.totalMinor,
+      currency: session.currency,
+      idempotencyKey: session.idempotencyKey,
+      metadata: session.metadata,
+    });
+  } catch (error) {
+    // The studio picked online payment but has not connected it yet (no keys). The place stays
+    // reserved as pending payment, exactly like pay-at-the-studio, and parents see a clear note
+    // instead of an error. Any other failure is still an error.
+    if (isProviderNotConfiguredError(error)) return payAtTheStudio(true);
+    throw error;
+  }
 
   if (result.emitSyncEvent) {
     const { applyMockSyncEvent } = await import("./payments/providers/mock.ts");

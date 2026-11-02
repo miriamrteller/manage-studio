@@ -36,6 +36,11 @@ export interface CheckoutChargePayload {
   billingInterval?: string | null;
   /** paymentProvider 'offline' only: the studio's "pay at the studio" text, if written. */
   offlineInstructions?: string | null;
+  /**
+   * Set with paymentProvider 'offline' when the studio chose online payment but has not
+   * connected it yet: parents see "the studio hasn't set up online payment yet", not an error.
+   */
+  onlinePaymentNotSetUp?: boolean;
 }
 
 export interface AppointmentCalendarDetails {

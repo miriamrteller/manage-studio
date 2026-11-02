@@ -38,6 +38,8 @@ export interface CheckoutChargePayload {
   billingInterval?: string | null;
   /** paymentProvider 'offline' only: the studio's "pay at the studio" text, if written. */
   offlineInstructions?: string | null;
+  /** Online payment was chosen but the studio has not connected it: show a clear note, not an error. */
+  onlinePaymentNotSetUp?: boolean;
 }
 
 export interface AppointmentCalendarDetails {
@@ -98,5 +100,6 @@ export function chargeToCheckoutIntent(charge: CheckoutChargePayload) {
     billingMode: charge.billingMode ?? null,
     billingInterval: charge.billingInterval ?? null,
     offlineInstructions: charge.offlineInstructions ?? null,
+    onlinePaymentNotSetUp: charge.onlinePaymentNotSetUp ?? false,
   };
 }

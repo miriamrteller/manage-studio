@@ -14,6 +14,7 @@
 
 import { corsHeaders, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
+import { STUDIO_LEGAL_NOT_READY, studioLegalReady } from "../_shared/studio-legal.ts";
 import {
   extractWaiverToken,
   verifyWaiverToken,
@@ -91,6 +92,11 @@ Deno.serve(withMonitoring("get-waiver-engagement", async (req) => {
     });
     if (!tokenEmail || !allowedEmails.has(tokenEmail)) {
       return jsonResponse({ error: "Token email mismatch" }, 401);
+    }
+
+    // A new studio signs nothing until its admin has acknowledged the draft legal pack.
+    if (!(await studioLegalReady(service, payload.tid))) {
+      return jsonResponse({ error: STUDIO_LEGAL_NOT_READY }, 409);
     }
 
     // Load the active consent template
