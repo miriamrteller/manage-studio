@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { managePackagesPath } from '@/features/classes/lib/managePackagesPath';
 import { useTenant } from '@/hooks/useTenant';
-import { setupFlavour, type SetupRowId } from '../lib/setupChecklist';
+import { canSkipRow, setupFlavour, type SetupRowId } from '../lib/setupChecklist';
+import { legalBlockedKey } from '@/legal/packWording';
 import type { SetupGuide as SetupGuideState } from '../hooks/useSetupGuide';
 
 export const HELP_EMAIL = 'hello@opalswift.com';
@@ -94,7 +95,8 @@ export function SetupGuideCard({ guide }: { guide: SetupGuideState }) {
       <ul className="divide-y divide-border">
         {rows.map((row) => {
           const key = rowKey(row.id, flavour);
-          const isSkipped = !row.done && skipped.includes(row.id);
+          const skippable = canSkipRow(row.id);
+          const isSkipped = !row.done && skippable && skipped.includes(row.id);
           const status = row.done ? t('setup_guide.status_done') : isSkipped ? t('setup_guide.status_skipped') : t('setup_guide.status_todo');
           return (
             <li key={row.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 py-3">
@@ -113,8 +115,12 @@ export function SetupGuideCard({ guide }: { guide: SetupGuideState }) {
                   <span className="sr-only"> — {status}</span>
                 </Link>
                 <p className="text-sm text-muted-foreground">{t(`setup_guide.rows.${key}.hint`)}</p>
+                {row.id === 'legal' && !row.done && (
+                  <p className="text-sm font-medium text-amber-800">{t(legalBlockedKey(vertical))}</p>
+                )}
               </div>
               {!row.done &&
+                skippable &&
                 (isSkipped ? (
                   <Button variant="outline" size="sm" onClick={() => guide.unskip(row.id)}>
                     {t('setup_guide.undo_skip')}

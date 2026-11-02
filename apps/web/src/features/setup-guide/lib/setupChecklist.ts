@@ -113,8 +113,15 @@ export interface SetupProgress {
   complete: boolean;
 }
 
+/** Rows that cannot be skipped: going live depends on them (legal: parents can't sign until it's confirmed). */
+export const UNSKIPPABLE_ROWS: readonly SetupRowId[] = ['legal'];
+
+export function canSkipRow(id: SetupRowId): boolean {
+  return !UNSKIPPABLE_ROWS.includes(id);
+}
+
 export function setupProgress(rows: SetupRow[], skipped: readonly string[]): SetupProgress {
-  const open = rows.filter((r) => !r.done && !skipped.includes(r.id));
+  const open = rows.filter((r) => !r.done && !(skipped.includes(r.id) && canSkipRow(r.id)));
   return {
     resolved: rows.length - open.length,
     total: rows.length,

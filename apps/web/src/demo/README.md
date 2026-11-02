@@ -35,7 +35,7 @@ studio ("Creative Ballet Academy") into `dist-demo-ballet/`. The plugin only
 swaps `seed.ts` for `ballet/seed.ts`; the demo code is shared. The studio takes
 payment in person (`payment_provider 'offline'`, `invoicing_provider 'none'`),
 and its waiver is the child health declaration from
-`docs/legal/07b-health-declaration` (Version A, Hebrew and English). The demo bar
+`docs/legal/07b-health-declaration-child` (Hebrew and English). The demo bar
 switch reads Studio / Parent.
 
 ## Files

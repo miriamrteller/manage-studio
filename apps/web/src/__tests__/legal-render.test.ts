@@ -84,25 +84,32 @@ describe('prepareLegalMarkdown', () => {
     expect(out.markdown).not.toContain('### B. Photography');
   });
 
-  it('reports missing fields and blocks receipts until the business is registered', async () => {
+  it('reports missing fields; the receipts sentence never depends on registration', async () => {
     const raw = await loadLegalTemplate('enrolment-terms', 'en');
     const out = prepareLegalMarkdown(
       raw,
       ctx('enrolment-terms', 'en', { ...fullDanceProfile, business_status: 'not_registered', insurance: '' }),
     );
-    expect(out.missing).toContain('receipts');
+    expect(out.missing).not.toContain('receipts');
     expect(out.missing).toContain('insurance');
-    expect(out.markdown).toContain('not yet a registered business');
+    expect(out.markdown).toContain('Tax documents (receipts or invoices) are issued');
     const html = renderLegalHtml(out);
     expect(html).toContain('class="legal-missing"');
   });
 
-  it('writes VAT wording from the business status', async () => {
+  it('uses the same VAT and receipts wording for every business status', async () => {
     const raw = await loadLegalTemplate('enrolment-terms', 'he');
-    const patur = prepareLegalMarkdown(raw, ctx('enrolment-terms', 'he', fullDanceProfile));
-    expect(patur.markdown).toContain('ללא מע"מ');
-    const murshe = prepareLegalMarkdown(raw, ctx('enrolment-terms', 'he', { ...fullDanceProfile, business_status: 'osek_murshe' }));
-    expect(murshe.markdown).toContain('כולל מע');
+    // Business status may appear only as an identity fact (the studio details line).
+    const strip = (m: string) => m.replace(/[^\n]*פרטי הסטודיו[^\n]*\n?/g, '');
+    const texts = (['osek_patur', 'osek_murshe', 'company', 'not_registered'] as const).map((status) =>
+      prepareLegalMarkdown(raw, ctx('enrolment-terms', 'he', { ...fullDanceProfile, business_status: status })).markdown,
+    );
+    for (const t of texts) {
+      expect(t).not.toContain('ללא מע"מ');
+      expect(t).not.toContain('כולל מע"מ');
+      expect(t).toContain('מסמכי מס');
+    }
+    expect(new Set(texts.map(strip)).size).toBe(1);
   });
 
   it('rewrites links between documents to app routes', async () => {

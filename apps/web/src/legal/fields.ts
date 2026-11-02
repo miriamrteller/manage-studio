@@ -61,7 +61,7 @@ export const LEGAL_FIELDS: LegalFieldDef[] = [
     key: 'business_status',
     section: 'identity',
     kind: 'select',
-    required: true,
+    // Optional (owner decision): it never changes the documents' wording, it only prints as an identity fact.
     label: { en: 'Business status', he: 'מעמד העסק' },
     options: [
       { value: 'not_registered', label: { en: 'Not yet registered', he: 'טרם נרשם כעסק' } },
@@ -430,4 +430,14 @@ export const LEGAL_FIELDS: LegalFieldDef[] = [
 
 export function fieldsForVertical(vertical: VerticalId): LegalFieldDef[] {
   return LEGAL_FIELDS.filter((f) => !f.verticals || f.verticals.includes(vertical));
+}
+
+/** Required details the studio has not filled in yet (a field with a default counts as filled). */
+export function missingRequiredLegalFields(
+  vertical: string | null | undefined,
+  profile: Record<string, string> | null | undefined,
+): LegalFieldDef[] {
+  return fieldsForVertical(vertical as VerticalId).filter(
+    (f) => f.required && !f.defaultValue && !(profile?.[f.key] ?? '').trim(),
+  );
 }

@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
+import { pickActiveConsentTemplate } from "./studio-legal.ts";
 
 interface EngagementWaiverOptions {
   requireActiveTemplateMatch?: boolean;
@@ -53,12 +54,7 @@ export async function engagementHasSignedWaiver(
     return { satisfied: true, evidenceId: evidence.id as string };
   }
 
-  const { data: activeTemplate } = await service
-    .from("consent_templates")
-    .select("id, version")
-    .eq("tenant_id", tenantId)
-    .eq("status", "active")
-    .maybeSingle();
+  const activeTemplate = await pickActiveConsentTemplate(service, tenantId, engagement.person_id as string);
 
   if (!activeTemplate) {
     return { satisfied: false, evidenceId: null };

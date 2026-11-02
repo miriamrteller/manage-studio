@@ -1,3 +1,4 @@
+import { ColourPresets } from '@/components/colour/ColourPresets';
 import React, { useEffect, useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation } from '@tanstack/react-query';
@@ -180,6 +181,15 @@ export function BrandingSettingsForm() {
         <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">
           {t('settings.branding.colors', 'Colors')}
         </h2>
+        <div className="mb-6">
+          <ColourPresets
+            primary={formData.primary_color}
+            accent={formData.accent_color}
+            onPick={(primary, accent) =>
+              setFormData((prev) => ({ ...prev, primary_color: primary, accent_color: accent }))
+            }
+          />
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div>
             <label

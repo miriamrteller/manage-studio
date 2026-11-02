@@ -5,7 +5,6 @@ import { supabase } from '@/lib/supabase';
 import { useTenant } from '@/hooks/useTenant';
 import { Button } from '@/components/ui/button';
 import { WaiverStep } from '@/features/enrolment/components/WaiverStep';
-import { TenantDB } from '@/lib/db';
 import { WaiverSigningConsentTemplateSchema } from '@shared/schemas';
 import type { WaiverSigningConsentTemplate } from '@shared/schemas';
 import { linkAuthUserToPerson } from '@/features/enrolment/linkAuthUser';
@@ -161,11 +160,9 @@ export default function EnrolCompletePage() {
       if (eng.current_status === 'active')    { setState({ kind: 'already_signed' }); return; }
       if (eng.current_status === 'cancelled') { setState({ kind: 'cancelled' });      return; }
 
-      const { data: templateRow, error: tmplError } = await TenantDB.selectFor(
-        'consent_templates',
-        tenant!,
-      )
-        .eq('status', 'active')
+      // The active form for this participant (child or adult health declaration by age).
+      const { data: templateRow, error: tmplError } = await supabase
+        .rpc('pick_active_consent_template', { p_tenant_id: tenant!.id, p_person_id: eng.person_id })
         .maybeSingle();
       if (cancelled) return;
 

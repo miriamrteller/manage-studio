@@ -95,6 +95,7 @@ export function LegalSettingsForm() {
             : t('legal.settings.saved'),
       );
       await queryClient.invalidateQueries({ queryKey: ['tenant-legal-profile'] });
+      await queryClient.invalidateQueries({ queryKey: ['tenant-legal-profile-by-id'] });
       await queryClient.invalidateQueries({ queryKey: ['legal-doc'] });
     },
     onError: (err: Error) => setMessage(err.message),
@@ -164,13 +165,17 @@ export function LegalSettingsForm() {
       </div>
 
       {/* Drafts notice, the PDF for a lawyer and the acknowledgement (replaces the dismissible note). */}
-      <LegalPackPanel tenantId={legal.tenantId} mode="acknowledge" />
+      <LegalPackPanel tenantId={legal.tenantId} mode="acknowledge" detailsHref="#legal-details" />
 
       {SECTION_ORDER.map((section) => {
         const sectionFields = fields.filter((f) => f.section === section);
         if (sectionFields.length === 0) return null;
         return (
-          <fieldset key={section} className="space-y-3 border rounded-md p-4">
+          <fieldset
+            key={section}
+            id={section === 'identity' ? 'legal-details' : undefined}
+            className="space-y-3 border rounded-md p-4"
+          >
             <legend className="px-1 font-medium">{t(`legal.settings.sections.${section}`)}</legend>
             {sectionFields.map(renderField)}
           </fieldset>

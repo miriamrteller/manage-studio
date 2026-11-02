@@ -558,6 +558,7 @@ export type Database = {
             };
             consent_templates: {
                 Row: {
+                    audience: string | null;
                     content: string;
                     created_at: string;
                     id: string;
@@ -569,6 +570,7 @@ export type Database = {
                     version_hash: string;
                 };
                 Insert: {
+                    audience?: string | null;
                     content: string;
                     created_at?: string;
                     id?: string;
@@ -580,6 +582,7 @@ export type Database = {
                     version_hash: string;
                 };
                 Update: {
+                    audience?: string | null;
                     content?: string;
                     created_at?: string;
                     id?: string;
@@ -4781,6 +4784,30 @@ export type Database = {
                     p_tenant_id: string;
                 };
                 Returns: string[];
+            };
+            pick_active_consent_template: {
+                Args: {
+                    p_person_id: string;
+                    p_tenant_id: string;
+                };
+                Returns: {
+                    audience: string | null;
+                    content: string;
+                    created_at: string;
+                    id: string;
+                    name: string;
+                    status: string;
+                    tenant_id: string;
+                    updated_at: string;
+                    version: number;
+                    version_hash: string;
+                }[];
+                SetofOptions: {
+                    from: "*";
+                    to: "consent_templates";
+                    isOneToOne: false;
+                    isSetofReturn: true;
+                };
             };
             platform_access_should_log: {
                 Args: {

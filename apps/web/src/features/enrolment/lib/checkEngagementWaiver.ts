@@ -1,3 +1,4 @@
+import { supabase } from '@/lib/supabase';
 import { ConsentTemplateSchema, type ConsentTemplate, type Tenant } from '@shared/schemas';
 import { TenantDB } from '@/lib/db';
 
@@ -72,8 +73,9 @@ export async function resolveEnrolmentWaiverGate(
     return { ...empty, isMinorStudent, studentName };
   }
 
-  const { data: templateRow } = await TenantDB.selectFor('consent_templates', tenant)
-    .eq('status', 'active')
+  // The active form for this participant (child or adult health declaration by age).
+  const { data: templateRow } = await supabase
+    .rpc('pick_active_consent_template', { p_tenant_id: tenant.id, p_person_id: input.personId })
     .maybeSingle();
 
   if (!templateRow) {

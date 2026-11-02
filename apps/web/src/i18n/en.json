@@ -65,7 +65,8 @@
       "apply": "Apply",
       "clear_all": "Clear all",
       "active_count": "{{count}} active",
-      "add": "Add…",
+      "all": "All",
+      "add": "Add another…",
       "all_selected": "All options selected"
     },
     "view": "View",
@@ -73,7 +74,7 @@
     "done": "Done",
     "no_results_found": "No results found.",
     "delete_level_confirm": "Are you sure you want to delete the level \"{{name}}\"?",
-    "delete_term_confirm": "Are you sure you want to delete the term \"{{name}}\"?",
+    "delete_term_confirm": "Are you sure you want to delete the season \"{{name}}\"?",
     "delete_class_confirm": "Are you sure you want to delete the class \"{{name}}\"?",
     "add_entity": "Add {{entity}}",
     "empty_title_entity": "No {{entity}} yet",
@@ -171,7 +172,7 @@
       "invalid_phone": "Israeli mobile format: 05X-XXXXXXX"
     },
     "term": {
-      "name": "Term Name",
+      "name": "Season Name",
       "start_date": "Start Date",
       "end_date": "End Date",
       "status": "Status",
@@ -186,7 +187,7 @@
     },
     "class": {
       "name": "Class Name",
-      "term": "Term",
+      "term": "Season",
       "level": "Level",
       "teacher": "Teacher",
       "location": "Location",
@@ -315,7 +316,7 @@
     "admin": {
       "setup": {
         "title": "System Setup",
-        "description": "Manage levels, terms, billing accounts, and classes"
+        "description": "Manage levels, seasons, billing accounts, and classes"
       },
       "requirements": {
         "title": "Requirement Templates",
@@ -331,10 +332,10 @@
       },
       "overview": {
         "title": "Operations Overview",
-        "term_enrolments": "Term Enrolments",
+        "term_enrolments": "Season Enrolments",
         "outstanding_payments": "Outstanding Payments",
-        "admin_review_queue": "Admin Review Queue",
-        "revenue_mtd": "Revenue MTD",
+        "admin_review_queue": "Needs Review",
+        "revenue_mtd": "Revenue This Month",
         "todays_classes": "Today's Classes",
         "no_classes_today": "No classes scheduled for today",
         "enrolled_of_capacity": "{{enrolled}} / {{capacity}}",
@@ -991,9 +992,9 @@
       "guardian_summary": "Guardian: {{name}}",
       "enrolled_in": "Enrolled in: {{classes}}",
       "ineligible_age": "Not eligible for the selected class age range",
-      "already_enrolled_class": "Already enrolled for this term",
-      "already_enrolled_preselected": "This student is already enrolled in the selected class for this term. View their enrolments in the portal or choose a different class.",
-      "already_enrolled_preselected_admin": "This student is already enrolled in the selected class for this term. Choose a different class to continue.",
+      "already_enrolled_class": "Already enrolled for this season",
+      "already_enrolled_preselected": "This student is already enrolled in the selected class for this season. View their enrolments in the portal or choose a different class.",
+      "already_enrolled_preselected_admin": "This student is already enrolled in the selected class for this season. Choose a different class to continue.",
       "selected_class_age_mismatch": "This student will be age {{age}} at the start of the season. The selected class is for ages {{classAges}}.",
       "selected_class_age_mismatch_adult": "This student will be an adult at the start of the season. The selected class is for ages {{classAges}}.",
       "selected_class_age_ineligible_hint": "Please go back and choose a different class, or contact the studio for help.",
@@ -1096,8 +1097,8 @@
       "date_label": "Date"
     },
     "levels_terms": {
-      "title": "Levels & Terms",
-      "description": "Manage class levels and terms.",
+      "title": "Levels & Seasons",
+      "description": "Manage class levels and seasons.",
       "levels_title": "Class Levels",
       "levels_description": "Configure class levels (beginner, intermediate, advanced)",
       "terms_title": "Learning Terms",
@@ -1105,11 +1106,11 @@
       "levels_subtitle": "Levels",
       "terms_subtitle": "Terms",
       "add_level": "Add Level",
-      "add_term": "Add Term",
+      "add_term": "Add Season",
       "level_name_label": "Level Name",
       "level_sort_order_label": "Order",
       "level_description_label": "Description",
-      "term_name_label": "Term Name",
+      "term_name_label": "Season Name",
       "term_start_date_label": "Start Date",
       "term_end_date_label": "End Date",
       "term_status_label": "Status",
@@ -1118,8 +1119,8 @@
       "term_status_completed": "Completed",
       "term_status_archived": "Archived",
       "mark_active_button": "Make Active",
-      "mark_active_confirm": "This will change the previous active term to 'Completed'.",
-      "only_one_active": "Only one term can be active at a time.",
+      "mark_active_confirm": "This will change the previous active season to 'Completed'.",
+      "only_one_active": "Only one season can be active at a time.",
       "edit_button": "Edit",
       "delete_button": "Delete",
       "delete_confirm": "Are you sure?",
@@ -1136,14 +1137,15 @@
       "empty_message": "Add levels to organise classes by skill or grade."
     },
     "terms": {
-      "title": "Learning Terms",
+      "title": "Seasons",
       "description": "Create and manage {{entity}} and other scheduling periods.",
-      "create_button": "Add Term",
+      "create_button": "Add Season",
       "edit_title": "Edit {{entity}}",
-      "empty_title": "No learning terms yet",
-      "empty_message": "Add a term before scheduling classes and enrolments."
+      "empty_title": "No seasons yet",
+      "empty_message": "Add a season before scheduling classes and enrolments."
     },
     "admin_classes": {
+      "order_hint": "Add a {{level}} and a {{season}} first, then your {{entity}}.",
       "title": "Manage {{entity}}",
       "description": "Create, edit, and delete {{entity}} for your studio.",
       "create_button": "Add {{entity}}",
@@ -1256,7 +1258,7 @@
     "waivers": {
       "title": "Forms",
       "description": "Manage form templates and view signed forms.",
-      "draft_form_title": "New Consent Template",
+      "draft_form_title": "New Form",
       "name_label": "Template name",
       "name_placeholder": "e.g. Health form 2026",
       "content_label": "Form text",
@@ -1267,10 +1269,10 @@
       "archive": "Archive",
       "evidence_title": "Signed forms",
       "export_csv": "Export CSV",
-      "no_templates": "No consent templates yet. Create one to get started.",
+      "no_templates": "No forms yet. Create one to get started.",
       "no_evidence": "No signed forms yet.",
       "no_evidence_filtered": "No forms match the current filters.",
-      "v1_limit_note": "All active classes share this form template. Per-class template assignment is available in V2.",
+      "v1_limit_note": "All active classes use the same form for now. Choosing a different form for each class is coming later.",
       "status_draft": "Draft",
       "status_approved": "Approved",
       "status_active": "Active",
@@ -1280,7 +1282,7 @@
       "filter_signer_email": "Signer email",
       "filter_email_placeholder": "Search by email…",
       "filter_class": "Class",
-      "filter_term": "Term",
+      "filter_term": "Season",
       "filter_all": "All",
       "filter_clear": "Clear filters",
       "col_student": "Student",
@@ -1679,7 +1681,7 @@
     "billing": "Billing Accounts",
     "manage": "Manage",
     "levels": "Class Levels",
-    "terms": "Learning Terms",
+    "terms": "Seasons",
     "manage_classes": "Manage Classes",
     "calendar": "Calendar",
     "booking_settings": "Booking Settings",
@@ -1792,8 +1794,8 @@
         "hint": "We fill in your privacy policy, terms and contract from these details."
       },
       "legal_general": {
-        "title": "Check your legal details and form",
-        "hint": "We fill in your privacy policy, terms and form from these details."
+        "title": "Check your legal details and service agreement",
+        "hint": "We fill in your privacy policy, terms and service agreement from these details."
       },
       "leads": {
         "title": "Share your enquiry form",
@@ -1809,7 +1811,19 @@
       }
     }
   },
+  "colour_presets": {
+    "title": "Pick a colour set",
+    "hint": "Starting point only. You can fine-tune the exact colours below.",
+    "opal": "Opal blue",
+    "rose": "Rose",
+    "forest": "Forest",
+    "ocean": "Ocean",
+    "plum": "Plum",
+    "charcoal": "Charcoal"
+  },
   "self_serve": {
+    "need_first_name": "Enter your first name to continue.",
+    "need_email": "Enter a valid email address to continue.",
     "start_button": "Start free beta",
     "start_title": "Create your studio",
     "start_intro": "Free during the beta. No card needed.",
@@ -1848,6 +1862,11 @@
     "unavailable_body": "Contact OpalSwift to set up a studio."
   },
   "studio_setup": {
+    "need_name": "Enter the studio's name to continue.",
+    "need_address": "Enter a web address (lowercase letters, numbers and hyphens) to continue.",
+    "need_colours": "Each colour must look like #5B6CFF, or pick one of the colour sets above.",
+    "need_owner_email": "Enter the owner's email address to continue.",
+    "need_terms": "Tick the box to accept the terms to continue.",
     "title": "Set up a new studio",
     "description": "Create the studio, choose how it takes payments, and invite its owner. Everything can be changed later in the studio's settings.",
     "step_counter": "Step {{current}} of {{total}}",
@@ -1861,6 +1880,7 @@
     "name": "Studio name",
     "address": "Web address",
     "address_help": "Lowercase letters, numbers and hyphens. This is where the studio's site will live.",
+    "address_example": "For example: {{example}}",
     "address_taken": "This address is already taken.",
     "address_invalid": "Use lowercase letters, numbers and hyphens only.",
     "language": "Main language",
@@ -2104,7 +2124,7 @@
       "card_expenses": "Expenses",
       "setup_card": "Finance dashboard",
       "setup_card_description": "View revenue, expenses, and payment activity.",
-      "no_active_season": "No active learning term — outstanding enrolments are not shown.",
+      "no_active_season": "No active season — outstanding enrolments are not shown.",
       "metric_revenue": "Net revenue",
       "metric_expenses": "Net expenses",
       "metric_profit": "Net profit",
@@ -2175,7 +2195,7 @@
     "period": {
       "month_current": "This month",
       "month_previous": "Last month",
-      "season_active": "Active term"
+      "season_active": "Active season"
     },
     "export": {
       "too_many": "Too many rows to export (max 5,000). Narrow your filters."
@@ -2258,6 +2278,7 @@
     }
   },
   "enrolment": {
+    "step_counter_open": "Step {{current}}",
     "step_counter": "Step {{current}} of {{total}}",
     "step": "Step",
     "step_person": "Personal details",
@@ -2310,8 +2331,8 @@
       "complete_waiver": "Sign form",
       "send_waiver_link": "Send form link"
     },
-    "missing_class_or_term": "Select a class and term before payment",
-    "waiver_scroll_prompt": "Scroll to the bottom to enable signing",
+    "missing_class_or_term": "Select a class and season before payment",
+    "waiver_scroll_prompt": "Scroll down and read to the end. Then the Sign button turns on.",
     "waiver_document_region": "Form document",
     "waiver_checkbox_label": "I have read and accept this form",
     "waiver_name_label": "Full legal name",
@@ -2331,6 +2352,7 @@
     "waiver_minor_cannot_sign_body": "{{studentName}} is under 18. Israeli law requires a parent or legal guardian to sign the form. Please ask a parent or guardian to log in and complete the enrolment."
   },
   "settings": {
+    "provider_names": {"offline": "Pay at the studio", "none": "None", "grow": "Grow", "icount": "iCount", "invoice4u": "Invoice4U", "ypay": "YPay", "tranzila": "Tranzila", "yesh": "Yesh Invoice", "green_invoice": "Green Invoice", "mock": "Test mode"},
     "ypay": {
       "save": "Save YPay details",
       "title": "Connect YPay",
@@ -2731,20 +2753,31 @@
   "legal": {
     "pack": {
       "title": "Your legal documents",
-      "notice": "Your studio's legal documents (privacy policy, terms, accessibility statement and the forms clients sign) were created from templates based on Israeli law and filled with your details. They are drafts: have them reviewed by a lawyer.",
+      "notice": "Your studio's legal documents (privacy policy, terms, accessibility statement and {{doc}}) were created from templates based on Israeli law and filled with your details. They are drafts: have them reviewed by a lawyer.",
       "download": "Download legal pack (PDF)",
       "checkbox": "I understand these are draft documents and my studio will use them until I upload lawyer-reviewed versions.",
       "confirm": "Confirm",
       "confirming": "Saving…",
-      "confirmed_on": "Confirmed on {{date}}. Your legal pages and forms are live.",
-      "owner_confirms": "The studio's owner confirms this when they sign in. Until then the studio's legal pages and forms are not live.",
+      "confirmed_on": "Confirmed on {{date}}. Your legal pages and {{doc}} are live.",
+      "owner_confirms": "The studio's owner confirms this when they sign in. Until then the studio's legal pages and {{doc}} are not live.",
       "error": "That didn't save. Please try again.",
-      "error_form_missing": "The form your clients sign is missing. Please try again; if it keeps happening, contact OpalSwift.",
+      "error_form_missing": "Your {{doc}} is missing. Please try again; if it keeps happening, contact OpalSwift.",
       "signing_not_ready": "This studio isn't ready to collect signatures yet. Please try again later or contact the studio.",
       "sign_in_needed": "Please sign in to download the legal pack.",
       "print_hint": "Use your browser's Print and choose \"Save as PDF\".",
-      "admin_banner": "Your legal documents are waiting for you. Confirm them in Settings → Legal to publish your legal pages and forms.",
-      "admin_banner_link": "Open Settings → Legal"
+      "admin_banner": "Confirm them in Settings → Legal to publish your legal pages and {{doc}}.",
+      "admin_banner_link": "Open Settings → Legal",
+      "blocked_parents": "Parents can't sign up until you confirm your legal documents.",
+      "blocked_clients": "Clients can't sign up until you confirm your legal documents.",
+      "doc": {
+        "health": "health declaration",
+        "contract": "contract",
+        "agreement": "service agreement"
+      },
+      "details_missing_one": "{{count}} detail missing. Fill it in before you confirm.",
+      "details_missing_other": "{{count}} details missing. Fill them in before you confirm.",
+      "details_missing_link": "Fill in the missing details",
+      "details_missing_later": "You can fill them in under Settings → Legal once you're in your studio."
     },
     "docs": {
       "platform_terms": "Terms of Service",

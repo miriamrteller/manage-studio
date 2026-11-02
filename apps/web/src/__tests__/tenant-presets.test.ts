@@ -13,7 +13,7 @@ describe('resolveEntityLabels', () => {
     expect(labels.contact).toEqual({ singular: 'Student', plural: 'Students' });
     expect(labels.account).toEqual({ singular: 'Family', plural: 'Families' });
     expect(labels.offering).toEqual({ singular: 'Class', plural: 'Classes' });
-    expect(labels.season).toEqual({ singular: 'Term', plural: 'Terms' });
+    expect(labels.season).toEqual({ singular: 'Season', plural: 'Seasons' });
     expect(labels.category).toEqual({ singular: 'Level', plural: 'Levels' });
     expect(labels.staff).toEqual({ singular: 'Teacher', plural: 'Teachers' });
     expect(labels.engagement).toEqual({ singular: 'Enrolment', plural: 'Enrolments' });
@@ -27,7 +27,7 @@ describe('resolveEntityLabels', () => {
     expect(labels.offering).toEqual({ singular: 'Workshop', plural: 'Workshops' });
     expect(labels.contact).toEqual({ singular: 'Student', plural: 'Students' });
     expect(labels.account).toEqual({ singular: 'Family', plural: 'Families' });
-    expect(labels.season).toEqual({ singular: 'Term', plural: 'Terms' });
+    expect(labels.season).toEqual({ singular: 'Season', plural: 'Seasons' });
     expect(labels.category).toEqual({ singular: 'Level', plural: 'Levels' });
     expect(labels.staff).toEqual({ singular: 'Teacher', plural: 'Teachers' });
     expect(labels.engagement).toEqual({ singular: 'Enrolment', plural: 'Enrolments' });

@@ -198,7 +198,7 @@ Deno.serve(withMonitoring("provision-studio", async (req) => {
     if (error) return jsonResponse({ error: error.message }, 500);
     let seeded = 0;
     for (const t of tenants ?? []) {
-      if (await seedSignedTemplate(seedDeps(service), t as SeedTenant)) seeded += 1;
+      seeded += await seedSignedTemplate(seedDeps(service), t as SeedTenant);
     }
     return jsonResponse({ seeded, checked: (tenants ?? []).length });
   }

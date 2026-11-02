@@ -148,12 +148,10 @@ function derivedValues(ctx: LegalRenderContext): Record<string, string | null> {
   const num = (p.business_number ?? '').trim();
   const email = (p.email ?? '').trim() || ctx.contactEmail;
   const phone = (p.phone ?? '').trim();
-  const vat =
-    status === 'osek_patur'
-      ? he ? 'ללא מע"מ (עוסק פטור)' : 'no VAT charged (עוסק פטור)'
-      : status === 'osek_murshe' || status === 'company'
-        ? he ? 'כולל מע"מ' : 'incl. VAT'
-        : status === 'not_registered' ? '' : null;
+  // Neutral for any business status: VAT and tax documents are the invoicing provider's job.
+  const vat = he
+    ? '(המחיר כפי שמוצג; מע"מ ומסמכי מס, ככל שנדרשים, מונפקים דרך ספק החשבוניות כנדרש בחוק)'
+    : '(prices as shown; any VAT and tax documents are issued through the invoicing provider, as the law requires)';
   const date = formatDate(ctx.updatedAt, ctx.lang);
   return {
     '[[STUDIO NAME]]': ctx.tenantName,
@@ -172,11 +170,11 @@ function derivedValues(ctx: LegalRenderContext): Record<string, string | null> {
   };
 }
 
-/** Receipts sentence: only a registered business can promise receipts. */
-function receiptsValue(ctx: LegalRenderContext): string | null {
-  const status = ctx.profile.business_status;
-  if (!status || status === 'not_registered') return null;
-  return ctx.lang === 'he' ? 'על כל תשלום תונפק קבלה.' : 'We issue a receipt for every payment.';
+/** Receipts sentence: the same for every business status (the invoicing provider issues them). */
+function receiptsValue(ctx: LegalRenderContext): string {
+  return ctx.lang === 'he'
+    ? 'מסמכי מס (קבלות או חשבוניות) מונפקים על תשלומים כנדרש בחוק, דרך ספק החשבוניות.'
+    : 'Tax documents (receipts or invoices) are issued for payments as the law requires, through the invoicing provider.';
 }
 
 /** Per-field fallbacks so a statement still reads well before every field is set. */
@@ -239,11 +237,7 @@ export function prepareLegalMarkdown(raw: string, ctx: LegalRenderContext): Prep
     if (/^\d+( days| יום)?$/.test(inner)) return lead + inner;
 
     if (ph.startsWith('[[RECEIPTS:') || ph.startsWith('[[קבלות:')) {
-      const r = receiptsValue(ctx);
-      if (r) return lead + r;
-      missing.add('receipts');
-      missingTexts.push(ctx.lang === 'he' ? 'קבלות (העסק טרם נרשם)' : 'receipts (business not registered)');
-      return `${lead}${MISSING_TOKEN}${missingTexts.length - 1}X`;
+      return lead + receiptsValue(ctx);
     }
 
     if (ph in derived) {
