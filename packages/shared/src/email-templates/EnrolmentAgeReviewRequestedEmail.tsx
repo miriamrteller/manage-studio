@@ -1,7 +1,8 @@
 import React from 'react';
-import { Button, Text } from '@react-email/components';
+import { Text } from '@react-email/components';
 import BaseEmailTemplate, { type EmailColorConfig, type EmailFooterStrings } from './BaseEmailTemplate.js';
 import { EmailDetailsTable } from './primitives/EmailDetailsTable.js';
+import { EmailPrimaryButton } from './primitives/index.js';
 
 interface EnrolmentAgeReviewRequestedEmailProps {
   schoolName: string;
@@ -81,23 +82,9 @@ export default function EnrolmentAgeReviewRequestedEmail({
       <Text style={{ fontSize: '16px', marginBottom: '10px' }}>{s.greeting}</Text>
       <Text style={{ fontSize: '16px', marginBottom: '20px', lineHeight: '1.6' }}>{s.intro}</Text>
       <EmailDetailsTable heading={s.class_label} rows={rows} />
-      <div style={{ textAlign: 'center', marginTop: '24px' }}>
-        <Button
-          href={reviewUrl}
-          style={{
-            backgroundColor: colors?.primary ?? '#2563eb',
-            color: '#ffffff',
-            padding: '12px 28px',
-            borderRadius: '6px',
-            textDecoration: 'none',
-            display: 'inline-block',
-            fontWeight: '700',
-            fontSize: '15px',
-          }}
-        >
-          {s.cta_button}
-        </Button>
-      </div>
+      <EmailPrimaryButton href={reviewUrl}>
+        {s.cta_button}
+      </EmailPrimaryButton>
     </BaseEmailTemplate>
   );
 }

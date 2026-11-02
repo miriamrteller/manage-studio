@@ -1,3 +1,4 @@
+import { deriveEmailBrand } from "./email-dist/email/brand.js";
 import {
   EMAIL_TEMPLATE_NAMES,
   getEmailStrings,
@@ -84,6 +85,8 @@ export function renderAppointmentClientConfirmationHtml(
     detailRow(str(strings.payment_method_label) ?? "Payment method", payload.paymentSummary.paymentMethodLabel),
   ].join("");
 
+  // The waiver button: gradient with a solid bgcolor fallback; white text AA on both.
+  const brand = deriveEmailBrand(primaryColor, primaryColor);
   let waiverBlock = "";
   if (payload.pendingWaiver) {
     const cta = str(strings.waiver_cta) ?? "Sign waiver";
@@ -94,7 +97,7 @@ export function renderAppointmentClientConfirmationHtml(
       <p style="margin:0 0 8px;font-weight:bold;color:#92400e;">${escapeHtml(str(strings.waiver_warning_heading) ?? "")}</p>
       <p style="margin:0 0 12px;color:#78350f;">${escapeHtml(str(strings.waiver_warning_body) ?? "")}</p>
       ${deadlineLine ? `<p style="margin:0 0 12px;color:#78350f;">${escapeHtml(deadlineLine)}</p>` : ""}
-      ${payload.signUrl ? `<p style="margin:0;"><a href="${escapeHtml(payload.signUrl)}" style="display:inline-block;padding:10px 16px;background:${primaryColor};color:#ffffff;text-decoration:none;border-radius:6px;">${escapeHtml(cta)}</a></p>` : ""}
+      ${payload.signUrl ? `<p style="margin:0;"><table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:separate;"><tr><td bgcolor="${brand.fill}" style="background-color:${brand.fill};background-image:linear-gradient(135deg, ${brand.fill}, ${brand.end});border-radius:6px;"><a href="${escapeHtml(payload.signUrl)}" style="display:inline-block;padding:10px 16px;color:#ffffff;text-decoration:none;border-radius:6px;">${escapeHtml(cta)}</a></td></tr></table></p>` : ""}
     </div>`;
   }
 

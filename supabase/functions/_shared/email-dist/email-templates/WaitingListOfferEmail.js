@@ -1,7 +1,8 @@
 /* @ts-self-types="./WaitingListOfferEmail.d.ts" */
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { Button, Text, } from '@react-email/components';
+import { Text, } from '@react-email/components';
 import BaseEmailTemplate from './BaseEmailTemplate.js';
+import { EmailPrimaryButton } from './primitives/index.js';
 /**
  * Default strings (fallback when i18n/overrides not provided)
  * Matches structure in email-templates-en.json
@@ -86,16 +87,7 @@ export default function WaitingListOfferEmail({ schoolName, schoolLogoUrl, recip
                     fontSize: '16px',
                     marginBottom: '25px',
                     lineHeight: '1.6',
-                }, children: finalStrings.cta_text || DEFAULT_STRINGS.cta_text }), _jsx("div", { style: { marginBottom: '25px', textAlign: 'center' }, children: _jsx(Button, { href: enrollNowUrl, style: {
-                        backgroundColor: 'var(--email-accent)',
-                        color: '#ffffff',
-                        padding: '14px 40px',
-                        borderRadius: '6px',
-                        textDecoration: 'none',
-                        display: 'inline-block',
-                        fontWeight: '600',
-                        fontSize: '16px',
-                    }, children: finalStrings.cta_button || DEFAULT_STRINGS.cta_button }) }), _jsxs("div", { style: {
+                }, children: finalStrings.cta_text || DEFAULT_STRINGS.cta_text }), _jsx(EmailPrimaryButton, { href: enrollNowUrl, children: finalStrings.cta_button || DEFAULT_STRINGS.cta_button }), _jsxs("div", { style: {
                     backgroundColor: '#fef3c7',
                     padding: '15px',
                     borderRadius: '6px',

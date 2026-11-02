@@ -6,6 +6,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { brandShellHtml } from './lib-email-brand-shell.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const outDir = join(root, 'supabase/functions/_shared/admin-announcement-email-shells');
@@ -42,7 +43,8 @@ async function renderShell(language) {
     subject: PLACEHOLDER.subject,
   });
 
-  return html
+  const branded = await brandShellHtml(html, root, BUILD_PRIMARY, BUILD_ACCENT);
+  return branded
     .split(BUILD_PRIMARY).join(PLACEHOLDER.primary)
     .split(BUILD_ACCENT).join(PLACEHOLDER.accent)
     .split('var(--email-primary)').join(PLACEHOLDER.primary)

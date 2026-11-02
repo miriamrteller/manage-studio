@@ -4,6 +4,7 @@ import {
   type EnrolmentConfirmationLanguage,
   type EnrolmentConfirmationVariant,
 } from "./enrolment-confirmation-email-shells/generated.ts";
+import { applyEmailBrand } from "./email-brand.ts";
 import {
   EMAIL_TEMPLATE_NAMES,
   getEmailStrings,
@@ -89,7 +90,7 @@ export function renderEnrolmentConfirmationHtml(input: RenderEnrolmentConfirmati
       : "pending_waiver";
   const shell = ENROLMENT_CONFIRMATION_SHELLS[lang][variant];
 
-  return applyEnrolmentConfirmationShell(shell, {
+  const html = applyEnrolmentConfirmationShell(shell, {
     schoolName: input.schoolName,
     recipientName: input.recipientName,
     studentName: input.studentName,
@@ -114,6 +115,7 @@ export function renderEnrolmentConfirmationHtml(input: RenderEnrolmentConfirmati
     primaryColor: input.primaryColor,
     accentColor: input.accentColor,
   });
+  return applyEmailBrand(html, input.primaryColor, input.accentColor);
 }
 
 export function buildEnrolmentConfirmationSubject(

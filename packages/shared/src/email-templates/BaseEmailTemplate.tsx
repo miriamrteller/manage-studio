@@ -63,8 +63,8 @@ interface BaseEmailTemplateProps {
   footerStrings?: EmailFooterStrings;
 
   /**
-   * Brand gradient on the header band, primary button and sign-in code (auth
-   * emails). Off = the flat primary colour, as every other email.
+   * Brand gradient on the header band, primary button and code (default). Off =
+   * the flat primary colour.
    */
   gradient?: boolean;
 
@@ -105,7 +105,7 @@ export default function BaseEmailTemplate({
   language,
   colors,
   footerStrings,
-  gradient = false,
+  gradient = true,
   gradientAnchor,
 }: BaseEmailTemplateProps) {
   const dir = language === 'he' ? 'rtl' : 'ltr';
