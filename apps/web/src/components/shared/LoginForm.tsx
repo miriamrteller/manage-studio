@@ -15,6 +15,7 @@ import { OtpCodeForm } from './OtpCodeForm';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FormInput } from '../ui/form';
+import { formatCountdown, useEmailCooldown, type CooldownReason } from '@/lib/emailSendCooldown';
 
 /**
  * LoginForm: Presentational component for login form UI
@@ -48,6 +49,61 @@ interface LoginFormProps {
   onMessageDismiss?: () => void;
   /** CAPTCHA check (from useLogin); shown before each send or sign-in when configured. */
   captcha?: Pick<Captcha, 'widget' | 'ready'>;
+  /** Start on this tab (e.g. from "Send me a new link" on an expired-link page). */
+  initialMode?: AuthMode;
+  /** Prefill the email. */
+  initialEmail?: string;
+}
+
+/**
+ * The wait before another sign-in email: what was sent, and when a new one can
+ * be asked for. The countdown is visible text; screen readers hear the message
+ * once, and again when the wait is over (not every second).
+ */
+function EmailCooldownNotice({
+  kind,
+  email,
+  seconds,
+  reason,
+}: {
+  kind: 'link' | 'code';
+  email: string;
+  seconds: number;
+  reason: CooldownReason | null;
+}) {
+  const { t } = useTranslation();
+  const [wasWaiting, setWasWaiting] = useState(false);
+  useEffect(() => {
+    if (seconds > 0) setWasWaiting(true);
+  }, [seconds]);
+  const waiting = seconds > 0;
+  const visible = !waiting
+    ? null
+    : reason === 'rate_limited'
+      ? t('pages.login.cooldown_rate_limited', { seconds })
+      : t(kind === 'link' ? 'pages.login.cooldown_sent_link' : 'pages.login.cooldown_sent_code', {
+          email,
+          time: formatCountdown(seconds),
+        });
+  const announced = waiting
+    ? reason === 'rate_limited'
+      ? t('pages.login.cooldown_sr_rate_limited')
+      : t(kind === 'link' ? 'pages.login.cooldown_sr_sent_link' : 'pages.login.cooldown_sr_sent_code', { email })
+    : wasWaiting
+      ? t('pages.login.cooldown_ready')
+      : '';
+  return (
+    <>
+      {visible && (
+        <p className="rounded-md border border-green-300 bg-green-50 p-3 text-sm text-green-900" data-testid="email-cooldown">
+          {visible}
+        </p>
+      )}
+      <p className="sr-only" role="status" aria-live="polite">
+        {announced}
+      </p>
+    </>
+  );
 }
 
 export function LoginForm({
@@ -61,11 +117,12 @@ export function LoginForm({
   onBackToCodeSend,
   onMessageDismiss,
   captcha,
+  initialMode = 'password',
+  initialEmail,
 }: LoginFormProps) {
   const captchaReady = captcha?.ready ?? true;
   const { t } = useTranslation();
-  const [authMode, setAuthMode] = useState<AuthMode>('password');
-  const [secondsRemaining, setSecondsRemaining] = useState(60);
+  const [authMode, setAuthMode] = useState<AuthMode>(initialMode);
 
   const schema = authMode === 'password' ? PasswordLoginSchema : LoginFormSchema;
 
@@ -73,33 +130,22 @@ export function LoginForm({
     resolver: zodResolver(schema),
     mode: 'onSubmit',
     reValidateMode: 'onSubmit',
+    defaultValues: initialEmail ? ({ email: initialEmail } as FormData) : undefined,
   });
 
-  const { register, handleSubmit, reset, formState: { errors, isSubmitted } } = form;
-
-  useEffect(() => {
-    if (authMode === 'code' && codeStep === 'verify') {
-      setSecondsRemaining(60);
-    }
-  }, [authMode, codeStep]);
-
-  useEffect(() => {
-    if (authMode !== 'code' || codeStep !== 'verify') return;
-    if (secondsRemaining <= 0) return;
-
-    const interval = setInterval(() => {
-      setSecondsRemaining((prev) => prev - 1);
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [authMode, codeStep, secondsRemaining]);
+  const { register, handleSubmit, reset, watch, formState: { errors, isSubmitted } } = form;
+  const typedEmail = (watch('email') as string | undefined) ?? '';
+  const showCodeVerifyStep = authMode === 'code' && codeStep === 'verify';
+  // The wait applies per email, across reloads, to both links and codes.
+  const cooldown = useEmailCooldown(showCodeVerifyStep ? codeEmail : typedEmail);
 
   const handleAuthModeChange = (mode: AuthMode) => {
     if (authMode === 'code' && mode !== 'code') {
       onBackToCodeSend();
     }
     setAuthMode(mode);
-    reset();
+    // Keep the email when switching tabs.
+    reset(typedEmail ? ({ email: typedEmail } as FormData) : undefined);
   };
 
   const handleFormSubmit = async (formData: FormData) => {
@@ -108,13 +154,12 @@ export function LoginForm({
 
   const handleResendCode = async () => {
     await onResendEmailCode();
-    setSecondsRemaining(60);
   };
 
-  const minutes = Math.floor(secondsRemaining / 60);
-  const seconds = secondsRemaining % 60;
-  const canResend = secondsRemaining === 0;
-  const showCodeVerifyStep = authMode === 'code' && codeStep === 'verify';
+  const canResend = cooldown.seconds === 0;
+  const emailWaiting = authMode !== 'password' && cooldown.seconds > 0;
+  // A link can't be re-sent while waiting; a code can still be entered (nothing is sent).
+  const linkBlocked = authMode === 'magic_link' && emailWaiting;
 
   return (
     <>
@@ -153,13 +198,7 @@ export function LoginForm({
             verifyLabelKey="pages.login.verify_code"
           />
 
-          <div className="text-center">
-            <p className="text-sm text-gray-600">{t('pages.login.resend_in')}</p>
-            <p className="text-2xl font-bold">
-              {String(minutes).padStart(2, '0')}:
-              {String(seconds).padStart(2, '0')}
-            </p>
-          </div>
+          <EmailCooldownNotice kind="code" email={codeEmail} seconds={cooldown.seconds} reason={cooldown.reason} />
 
           {canResend && captcha?.widget}
 
@@ -210,7 +249,16 @@ export function LoginForm({
             />
           )}
 
-          {captcha?.widget}
+          {authMode !== 'password' && (
+            <EmailCooldownNotice
+              kind={authMode === 'magic_link' ? 'link' : 'code'}
+              email={typedEmail}
+              seconds={cooldown.seconds}
+              reason={cooldown.reason}
+            />
+          )}
+
+          {!emailWaiting && captcha?.widget}
 
           <Button
             type="submit"
@@ -218,7 +266,7 @@ export function LoginForm({
             size="md"
             fullWidth
             isLoading={isLoading}
-            disabled={!captchaReady}
+            disabled={(!captchaReady && !emailWaiting) || linkBlocked}
           >
             {isLoading
               ? t('common.loading')
@@ -226,7 +274,9 @@ export function LoginForm({
                 ? t('pages.login.sign_in')
                 : authMode === 'magic_link'
                   ? t('pages.login.send_link')
-                  : t('pages.login.send_code')}
+                  : emailWaiting
+                    ? t('pages.login.enter_code')
+                    : t('pages.login.send_code')}
           </Button>
         </form>
       )}

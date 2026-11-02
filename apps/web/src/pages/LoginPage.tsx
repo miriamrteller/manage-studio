@@ -19,6 +19,11 @@ export default function LoginPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
+  // "Send me a new link" / "Sign in with a code" from an expired-link page.
+  const query = new URLSearchParams(location.search);
+  const modeParam = query.get('mode');
+  const initialMode = modeParam === 'magic_link' || modeParam === 'code' ? modeParam : undefined;
+  const initialEmail = query.get('email') ?? undefined;
   
   // Preserve enrollment intent (classId) through login → dashboard redirect chain
   const postLoginState =
@@ -107,6 +112,8 @@ export default function LoginPage() {
           onBackToCodeSend={backToCodeSend}
           onMessageDismiss={resetMessage}
           captcha={captcha}
+          initialMode={initialMode}
+          initialEmail={initialEmail}
         />
 
         {/* Help Text */}

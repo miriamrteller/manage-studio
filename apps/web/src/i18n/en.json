@@ -91,7 +91,12 @@
   },
   "auth": {
     "signing_you_in": "Signing you in…",
-    "setting_up_access": "Setting up your access"
+    "setting_up_access": "Setting up your access",
+    "link_replaced_title": "This link has already been used or replaced",
+    "link_replaced_body": "This link has already been used or replaced by a newer one. Check your inbox for the latest email from {{studio}} and use that link.",
+    "link_replaced_new_link": "Send me a new link",
+    "link_replaced_use_code": "Or sign in with a 6-digit code instead",
+    "link_replaced_use_code_hint": "(some work email systems open links automatically)."
   },
   "report_problem": {
     "menu_item": "Report a problem",
@@ -144,8 +149,8 @@
     "image_upload_failed": "Class saved, but image upload failed. Edit the class to try again.",
     "login_failed": "Login failed. Please try again.",
     "email_delivery_failed": "We couldn't send the login email. Try again in a few minutes and check your spam folder. If this keeps happening, contact support.",
-    "rate_limited": "Too many login attempts. Please wait a few minutes and try again.",
-    "expired_link": "This login link has expired. Request a new magic link from the login page.",
+    "rate_limited": "We've just sent you an email. Please check your inbox, then try again in a minute.",
+    "expired_link": "This link has already been used or replaced by a newer one. Check your inbox for the latest email, or ask for a new one.",
     "redirect_mismatch": "Login redirect is not configured for this site. Please contact support."
   },
   "validation": {
@@ -377,7 +382,15 @@
       "invalid_credentials": "Invalid email or password.",
       "success_redirecting": "Login successful. Redirecting...",
       "wrong_studio": "This account belongs to a different studio. Sign in on your own studio's address.",
-      "check_email": "Check your email for a sign-in link."
+      "check_email": "Check your email for a sign-in link.",
+      "cooldown_sent_link": "We've sent a link to {{email}}. Check your inbox (and spam). You can ask for a new one in {{time}}.",
+      "cooldown_sent_code": "We've sent a code to {{email}}. Check your inbox (and spam). You can ask for a new one in {{time}}.",
+      "cooldown_rate_limited": "We've just sent you an email. Please check your inbox. You can ask for a new one in {{seconds}}s.",
+      "cooldown_sr_sent_link": "We've sent a link to {{email}}. Check your inbox (and spam).",
+      "cooldown_sr_sent_code": "We've sent a code to {{email}}. Check your inbox (and spam).",
+      "cooldown_sr_rate_limited": "We've just sent you an email. Please check your inbox.",
+      "cooldown_ready": "You can ask for a new one now.",
+      "enter_code": "Enter the code"
     },
     "people": {
       "title": "Students & Adults",

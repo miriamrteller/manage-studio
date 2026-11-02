@@ -9,7 +9,8 @@ import {
   type LoginForm,
   type PasswordLogin,
 } from '@/schemas';
-import { resolveAuthErrorMessage } from '@/lib/authErrors';
+import { classifyAuthError, resolveAuthErrorMessage } from '@/lib/authErrors';
+import { emailCooldownRemaining, rateLimitWaitSeconds, startEmailCooldown } from '@/lib/emailSendCooldown';
 import { buildAuthCallbackRedirect } from '@/lib/authRedirect';
 import { sendLoginEmailOtp, verifyLoginEmailOtp } from '@/lib/loginEmailOtp';
 import { useCaptcha, type Captcha } from '@/components/captcha/useCaptcha';
@@ -101,12 +102,47 @@ export function useLogin(
     return true;
   };
 
+  /**
+   * After a sign-in email: wait before the next one (each new email replaces the
+   * last). A rate limit means an email was just sent: show the wait, not an error.
+   * Returns true when the email went out or one was sent moments ago.
+   */
+  const afterEmailSend = (
+    email: string,
+    error: { message: string; status?: number; code?: string } | null,
+  ): boolean => {
+    if (!error) {
+      startEmailCooldown(email, 'sent');
+      return true;
+    }
+    if (
+      error.status === 429 ||
+      error.code === 'over_email_send_rate_limit' ||
+      classifyAuthError(error.message) === 'rate_limited'
+    ) {
+      startEmailCooldown(email, 'rate_limited', rateLimitWaitSeconds(error.message));
+      setMessage(null);
+      return true;
+    }
+    setMessage({
+      type: 'error',
+      text: resolveAuthErrorMessage(error.message, t, 'errors.login_failed'),
+    });
+    return false;
+  };
+
   const sendEmailCode = async (email: string) => {
     setIsLoading(true);
     setMessage(null);
 
     try {
       const parsed = LoginFormSchema.parse({ email });
+      // A new code replaces the last one: never send while the wait is on.
+      if (emailCooldownRemaining(parsed.email).seconds > 0) {
+        setCodeEmail(parsed.email);
+        setCodeStep('verify');
+        return;
+      }
       const otpOptions = loginOtpOptions(parsed.email, i18n.language ?? 'en');
 
       if (!otpOptions) {
@@ -125,18 +161,10 @@ export function useLogin(
       );
       captcha.reset();
 
-      if (error) {
-        setMessage({
-          type: 'error',
-          text: resolveAuthErrorMessage(error.message, t, 'errors.login_failed'),
-        });
-      } else {
+      if (afterEmailSend(parsed.email, error)) {
+        // Sent now, or moments ago: either way a code is on its way.
         setCodeEmail(parsed.email);
         setCodeStep('verify');
-        setMessage({
-          type: 'success',
-          text: t('pages.login.code_sent'),
-        });
       }
     } catch (error) {
       setMessage({
@@ -229,6 +257,10 @@ export function useLogin(
         }
       } else {
         const magicLinkData = LoginFormSchema.parse(formData);
+        // A new link replaces the last one: never send while the wait is on.
+        if (emailCooldownRemaining(magicLinkData.email).seconds > 0) {
+          return;
+        }
         const otpOptions = loginOtpOptions(magicLinkData.email, i18n.language ?? 'en');
 
         if (!otpOptions) {
@@ -249,18 +281,8 @@ export function useLogin(
           },
         });
         captcha.reset();
-
-        if (error) {
-          setMessage({
-            type: 'error',
-            text: resolveAuthErrorMessage(error.message, t, 'errors.login_failed'),
-          });
-        } else {
-          setMessage({
-            type: 'success',
-            text: t('pages.login.check_email'),
-          });
-        }
+        // The form shows "We've sent a link to …" with the countdown.
+        afterEmailSend(magicLinkData.email, error);
       }
     } catch (error) {
       setMessage({
