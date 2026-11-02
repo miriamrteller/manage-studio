@@ -21,6 +21,8 @@ Do this for every new studio before it takes its first enrolment or booking. Stu
 
 The base agreement and its add-on are one signed document; the health declaration is always a separate form.
 
+**Transition:** the old `07b-health-declaration.{en,he}.md` and `07c-photography-contract.{en,he}.md` stay in the folder, unchanged, because the app still loads them by name (`apps/web/src/legal/signedTemplates.ts`, the email bundle). They are superseded by the files in the table and are not in the lawyer pack; the app's switch-over removes them.
+
 ## Dance school
 
 **Attach:** privacy policy (variant A) · [enrolment terms](07a-dance-enrolment-terms.he.md) · [health declaration](07b-health-declaration-child.he.md) ([child](07b-health-declaration-child.he.md) and [adult](07b-health-declaration-adult.he.md)) · photo/media consent, separate from the terms ([09 §2](09-in-app-consent-texts.md)).
