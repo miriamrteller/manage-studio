@@ -88,3 +88,20 @@ describe('demo fake supabase client', () => {
     expect(anon.data).toEqual([]);
   });
 });
+
+describe('rpc(...).single() / .maybeSingle()', () => {
+  it('narrows set-returning functions like supabase-js', async () => {
+    const { FakeSupabaseClient: Client } = await import('./fakeSupabase');
+    const c = new Client({
+      tables: {},
+      rpcs: { one: () => [{ id: 1 }], none: () => [], many: () => [{ id: 1 }, { id: 2 }], scalar: () => 5 },
+      functions: {},
+    });
+    expect(await c.rpc('one')).toEqual({ data: [{ id: 1 }], error: null });
+    expect(await c.rpc('one').maybeSingle()).toEqual({ data: { id: 1 }, error: null });
+    expect(await c.rpc('none').maybeSingle()).toEqual({ data: null, error: null });
+    expect((await c.rpc('none').single()).error?.code).toBe('PGRST116');
+    expect((await c.rpc('many').maybeSingle()).error?.code).toBe('PGRST116');
+    expect(await c.rpc('scalar').single()).toEqual({ data: 5, error: null });
+  });
+});
