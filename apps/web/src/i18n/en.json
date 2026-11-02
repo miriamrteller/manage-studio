@@ -2474,6 +2474,7 @@
       "receipts_note": "If the studio is a registered business, it must issue its own receipts for every payment.",
       "provider_hint": "Enter the provider's keys on its settings page.",
       "saved": "Payment settings saved.",
+      "provider_not_finished": "{{provider}} (not finished: card payments may not be confirmed)",
       "pairing_problem": "Your invoicing service cannot issue documents for this way of paying. To change it, first turn tax documents off (or choose Green Invoice) under Tax documents, save the new payment choice here, then choose the invoicing service again.",
       "providers": { "grow": "Grow (Meshulam)", "icount": "iCount", "invoice4u": "Invoice4U", "ypay": "YPay", "tranzila": "Tranzila" }
     },

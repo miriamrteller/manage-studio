@@ -23,6 +23,17 @@ export const PAIRABLE_INVOICING_PROVIDERS = [
 /** Invoicing services that exist in the data model but are not finished: never offered. */
 export const UNFINISHED_INVOICING_PROVIDERS = ["yesh", "tranzila"] as const;
 
+/**
+ * Payment providers that are not finished (payments audit P2 #9, #10): Tranzila reads every
+ * success as a failure, and iCount cannot confirm a payment outside mock mode. Not offered to
+ * new studios or as a new choice; a studio that already uses one keeps it.
+ */
+export const UNFINISHED_PAYMENT_PROVIDERS = ["icount", "tranzila"] as const;
+
+export function isUnfinishedPaymentProvider(slug: string | null | undefined): boolean {
+  return (UNFINISHED_PAYMENT_PROVIDERS as readonly string[]).includes(slug ?? "");
+}
+
 const BUNDLED_ONLY = new Set(["grow", "icount", "invoice4u"]);
 
 export function invoicingPairsWithPayment(paymentProvider: string, invoicingProvider: string): boolean {
