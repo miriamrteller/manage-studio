@@ -13,7 +13,11 @@ import type { StoredAnswer } from '@shared/index';
 export const LEAD_STAGES = ['new', 'contacted', 'qualified', 'proposal', 'lost'] as const;
 export type LeadStage = (typeof LEAD_STAGES)[number];
 
-export const LEAD_CHANNELS = ['email', 'website', 'whatsapp', 'linkedin', 'instagram'] as const;
+export const LEAD_CHANNELS = [
+  'email', 'website', 'whatsapp', 'linkedin', 'instagram',
+  'facebook', 'google', 'sms', 'flyer', 'direct',
+  'phone', 'walk_in', 'referral', 'other',
+] as const;
 export type LeadChannel = (typeof LEAD_CHANNELS)[number];
 
 export interface Lead {
