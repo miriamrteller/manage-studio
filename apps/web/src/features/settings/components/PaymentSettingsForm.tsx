@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { useTenant } from '@/hooks/useTenant';
 import queryClient from '@/lib/query-client';
+import { OfflinePaymentsSettingsForm, OFFLINE_PAYMENTS } from './OfflinePaymentsSettingsForm';
 
 function StatusRow({ label, value }: { label: string; value: string }) {
   return (
@@ -15,7 +16,14 @@ function StatusRow({ label, value }: { label: string; value: string }) {
   );
 }
 
+/** Paying at the studio needs no keys, so show only the "how to pay" note. */
 export function PaymentSettingsForm() {
+  const tenant = useTenant();
+  if (tenant?.payment_provider === OFFLINE_PAYMENTS) return <OfflinePaymentsSettingsForm />;
+  return <ProviderKeysForm />;
+}
+
+function ProviderKeysForm() {
   const { t } = useTranslation();
   const tenant = useTenant();
   const [publicKey, setPublicKey] = useState('');

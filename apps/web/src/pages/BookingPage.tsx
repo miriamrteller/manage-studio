@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { useTenant } from '@/hooks/useTenant';
@@ -130,7 +130,16 @@ export default function BookingPage() {
     return (
       <div className="mx-auto max-w-xl space-y-2 p-6">
         <h1 className="text-3xl font-bold">{t('scheduling.book.title')}</h1>
-        <p className="text-gray-600">{t('scheduling.book.not_enabled')}</p>
+        {tenant?.vertical === 'photographer' ? (
+          <>
+            <p className="text-gray-600">{t('scheduling.book.photographer_note')}</p>
+            <p>
+              <Link className="underline" to="/inquire">{t('scheduling.book.photographer_enquire')}</Link>
+            </p>
+          </>
+        ) : (
+          <p className="text-gray-600">{t('scheduling.book.not_enabled')}</p>
+        )}
       </div>
     );
   }

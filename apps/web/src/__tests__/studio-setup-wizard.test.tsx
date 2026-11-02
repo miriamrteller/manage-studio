@@ -47,16 +47,20 @@ afterEach(async () => {
 });
 
 describe('studio setup wizard', () => {
-  it('starts in English, offers the live providers in plain words, defaults to card + documents', async () => {
+  it('starts in English, defaults to pay at the studio with no invoicing, and hides the tax-document providers', async () => {
     renderWizard();
     expect(screen.getByLabelText('Main language')).toHaveValue('en');
     await fillStudioStep();
     next();
-    expect(screen.getByRole('radio', { name: 'By card online, through Grow' })).toBeChecked();
+    const payRadios = screen.getAllByRole('radio').filter((r) => r.getAttribute('name') === 'ss-payment');
+    expect(payRadios[0]).toHaveAccessibleName('Pay at the studio (cash, bank transfer or Bit)');
+    expect(screen.getByRole('radio', { name: 'Pay at the studio (cash, bank transfer or Bit)' })).toBeChecked();
+    expect(screen.getByRole('radio', { name: 'None (not a registered business)' })).toBeChecked();
+    expect(screen.queryByRole('radio', { name: 'Issued by Grow' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('radio', { name: 'I already use an invoicing service' }));
     expect(screen.getByRole('radio', { name: 'Issued by Grow' })).toBeChecked();
-    expect(screen.getByRole('radio', { name: 'Pay at the studio (cash, bank transfer or Bit)' })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'Issued by Green Invoice' })).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: 'By card online, through YPay' })).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: 'None (not a registered business)' })).toBeInTheDocument();
     expect(screen.queryByRole('radio', { name: /mock/i })).not.toBeInTheDocument();
   });
 
@@ -69,8 +73,7 @@ describe('studio setup wizard', () => {
     await fillStudioStep();
     fireEvent.click(screen.getByRole('radio', { name: /Dance studio/ }));
     next();
-    fireEvent.click(screen.getByRole('radio', { name: 'Pay at the studio (cash, bank transfer or Bit)' }));
-    fireEvent.click(screen.getByRole('radio', { name: 'None (not a registered business)' }));
+    expect(screen.getByRole('radio', { name: 'Pay at the studio (cash, bank transfer or Bit)' })).toBeChecked();
     next();
     expect(screen.getByLabelText('Main colour')).toHaveValue('#5B6CFF');
     next();
