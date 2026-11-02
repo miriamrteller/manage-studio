@@ -31,10 +31,30 @@ function loadImage(src: string): Promise<HTMLImageElement | null> {
   });
 }
 
+/**
+ * Heebo is always bundled by the app (src/fonts.ts) and covers Hebrew and
+ * Latin, so the poster never depends on the device's fonts. All text is drawn
+ * by the browser (shaping and right-to-left/mixed-direction ordering included);
+ * the PDF only carries the finished picture.
+ */
+export const POSTER_FONT = '"Heebo", "Inter", system-ui, -apple-system, "Segoe UI", Arial, sans-serif';
+
+/** Make sure the poster's font faces are loaded before drawing (canvas does not wait). */
+export async function loadPosterFonts(sample: string): Promise<void> {
+  const fonts = (document as Document & { fonts?: { load?: (font: string, text?: string) => Promise<unknown> } }).fonts;
+  if (!fonts?.load) return;
+  const text = `${sample} אבג Abc 123`;
+  try {
+    await Promise.all(['400', '600', '700'].map((w) => fonts.load(`${w} 48px "Heebo"`, text)));
+  } catch {
+    // Fall back to the next font in the stack.
+  }
+}
+
 function fitText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number, start: number, weight = '700') {
   let size = start;
   do {
-    ctx.font = `${weight} ${size}px system-ui, -apple-system, "Segoe UI", Arial, sans-serif`;
+    ctx.font = `${weight} ${size}px ${POSTER_FONT}`;
     if (ctx.measureText(text).width <= maxWidth) break;
     size -= 4;
   } while (size > 20);
@@ -42,6 +62,9 @@ function fitText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number, 
 
 /** Draw the poster: studio colour band, logo, name, QR code, "Scan to enquire", link. */
 export async function renderPoster(content: PosterContent): Promise<HTMLCanvasElement> {
+  await loadPosterFonts(
+    [content.studioName, content.formTitle, content.scanLine, content.scanLineOther].filter(Boolean).join(' '),
+  );
   const canvas = document.createElement('canvas');
   canvas.width = POSTER_WIDTH;
   canvas.height = POSTER_HEIGHT;
