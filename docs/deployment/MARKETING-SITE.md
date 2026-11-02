@@ -78,6 +78,34 @@ call-to-action.
   `public/topbar.js` (one place for 19 pages).
 - Footer: the line just before `</footer>` in every page (`.foot-signin`).
 
+## Legal pages (/terms, /privacy, /accessibility)
+
+Generated from `docs/legal`, which stays the source of truth:
+
+| Page | Source |
+|---|---|
+| `/terms` | `01-platform-terms.{he,en}.md` |
+| `/privacy` | `04-opalswift-privacy-policy.{he,en}.md` |
+| `/accessibility` | `06-accessibility-statement.{he,en}.md` |
+
+Each page holds both languages and follows the site's language toggle. The
+generator (`apps/marketing/scripts/build-legal.mjs`):
+- leaves out the internal "Draft, not legal advice" header and the drafting
+  notes after the last `---` (sources, notes for the lawyer);
+- fills only the contact email (hello@opalswift.com) and the "Last updated"
+  date (`PUBLISHED` in the script);
+- shows every other `[[placeholder]]` as a yellow "to be completed" mark,
+  with a note at the top of the page;
+- links `/terms` ↔ `/privacy` ↔ `/accessibility`; links to unpublished docs
+  (the DPA, the studio privacy template, the security procedure) become plain text.
+
+To change the text: edit the Markdown in `docs/legal`, then run
+`pnpm -C apps/marketing build:legal` and commit both. `marketing-ci` fails
+if the pages and the Markdown differ. When the text changes, also update
+`PUBLISHED` (the "Last updated" date) in the script.
+
+Every page's footer links to Terms · Privacy · Accessibility.
+
 ## How to edit
 
 1. Branch from `main`, edit files in `apps/marketing/public/`.
@@ -91,7 +119,7 @@ call-to-action.
 4. Merge. Deploy starts automatically (below).
 
 Add new pages and images under `public/`. Anything else in `apps/marketing`
-outside `public/`, `functions/` and `test/` fails `marketing-ci`.
+outside `public/`, `functions/`, `test/` and `scripts/` fails `marketing-ci`.
 
 ## How it deploys
 

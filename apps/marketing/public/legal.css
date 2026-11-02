@@ -1,0 +1,59 @@
+/* Legal pages (terms, privacy, accessibility): the site's colours and type. */
+:root{
+  --ink:#0B1437; --teal:#21D1C2; --indigo:#5B6CFF; --violet:#7B61FF;
+  --canvas:#F7F8FC; --cloud:#FFFFFF; --slate:#5A6178;
+  --opal:linear-gradient(120deg,#21D1C2,#5B6CFF,#7B61FF);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Heebo','Inter',system-ui,sans-serif;color:var(--ink);background:var(--canvas);line-height:1.7;overflow-x:hidden}
+body[dir=ltr]{font-family:'Inter',system-ui,sans-serif}
+h1,h2,h3{font-family:'Rubik',sans-serif;line-height:1.2}
+.wrap{max-width:1140px;margin:0 auto;padding:0 24px}
+
+/* Nav (topbar.js fills #opal-nav) */
+nav{position:sticky;top:0;z-index:50;background:rgba(247,248,252,.85);backdrop-filter:blur(12px);border-bottom:1px solid rgba(11,20,55,.06)}
+.nav-in{display:flex;align-items:center;justify-content:space-between;height:70px}
+.logo{display:flex;align-items:center;gap:10px;font-family:'Rubik';font-weight:800;font-size:22px;letter-spacing:-0.5px;background:var(--opal);-webkit-background-clip:text;background-clip:text;color:transparent;text-decoration:none}
+.logo .sub{font-size:13px;font-weight:600;color:var(--slate);-webkit-text-fill-color:var(--slate);margin-inline-start:4px}
+.lang-toggle{display:flex;border:1px solid rgba(11,20,55,.15);border-radius:999px;overflow:hidden;font-family:'Rubik';font-size:13px;font-weight:600}
+.lang-toggle button{border:0;background:transparent;padding:7px 14px;cursor:pointer;color:var(--slate)}
+.btn{display:inline-flex;align-items:center;gap:8px;border:0;border-radius:999px;padding:14px 26px;font-weight:600;font-size:16px;cursor:pointer;text-decoration:none;font-family:'Rubik',sans-serif}
+.btn-primary{background:var(--opal);color:#fff;box-shadow:0 10px 24px -8px rgba(91,108,255,.6)}
+
+/* Show the article in the current language (topbar.js sets <html lang>). */
+html[lang="en"] .doc[lang="he"],
+html:not([lang="en"]) .doc[lang="en"]{display:none}
+
+.legal{padding-bottom:40px}
+.back-bar{padding:18px 0 0}
+.back-link{color:var(--slate);text-decoration:none;font-size:14px;font-weight:500}
+.back-link:hover{color:var(--ink)}
+
+.doc{max-width:780px;margin:24px auto 0;background:var(--cloud);border:1px solid rgba(11,20,55,.07);border-radius:20px;padding:40px 44px;box-shadow:0 18px 50px -28px rgba(11,20,55,.3)}
+.doc h1{font-size:32px;font-weight:800;margin-bottom:10px;background:var(--opal);-webkit-background-clip:text;background-clip:text;color:transparent}
+.doc h2{font-size:21px;font-weight:700;margin:34px 0 10px}
+.doc h3{font-size:17px;font-weight:700;margin:24px 0 8px}
+.doc p{margin:0 0 14px}
+.doc ul,.doc ol{margin:0 0 16px;padding-inline-start:24px}
+.doc li{margin:0 0 6px}
+.doc a{color:var(--indigo);text-decoration:underline;text-underline-offset:2px;overflow-wrap:anywhere}
+.doc code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.9em;background:rgba(11,20,55,.05);padding:1px 5px;border-radius:5px;direction:ltr;unicode-bidi:isolate}
+.doc strong{font-weight:700}
+.doc table{width:100%;border-collapse:collapse;margin:8px 0 18px;font-size:15px}
+.doc th,.doc td{border:1px solid rgba(11,20,55,.1);padding:9px 12px;text-align:start;vertical-align:top}
+.doc th{background:rgba(91,108,255,.06);font-family:'Rubik';font-weight:600}
+.doc blockquote{border-inline-start:3px solid var(--teal);padding:4px 14px;margin:0 0 14px;color:var(--slate)}
+
+/* "To be completed" placeholders: clearly visible on purpose. */
+mark.tbc{background:#FFF1B8;color:#5C4400;border:1px dashed #C9A100;border-radius:5px;padding:0 5px;font-weight:600;font-size:.95em}
+.doc mark.tbc::after{content:" ✎"}
+.tbc-note{background:#FFFAE6;border:1px solid #F0D978;border-radius:12px;padding:10px 14px;font-size:14px;color:#5C4400}
+
+footer{padding:40px 0 36px;color:var(--slate);font-size:14px}
+.foot-in{display:flex;justify-content:center;align-items:center;gap:16px;border-top:1px solid rgba(11,20,55,.08);padding-top:24px}
+
+@media(max-width:640px){
+  .doc{padding:26px 18px;border-radius:16px}
+  .doc h1{font-size:25px}
+  .doc h2{font-size:19px}
+}
