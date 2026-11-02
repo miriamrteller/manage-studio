@@ -105,3 +105,14 @@ describe('rpc(...).single() / .maybeSingle()', () => {
     expect(await c.rpc('scalar').single()).toEqual({ data: 5, error: null });
   });
 });
+
+describe('delete({ count })', () => {
+  it('reports how many rows were deleted, like supabase-js', async () => {
+    const { FakeSupabaseClient: Client } = await import('./fakeSupabase');
+    const c = new Client({ tables: { notes: [{ id: 1 }, { id: 2 }] }, rpcs: {}, functions: {} });
+    const hit = await c.from('notes').delete({ count: 'exact' }).eq('id', 1);
+    expect(hit.count).toBe(1);
+    const miss = await c.from('notes').delete({ count: 'exact' }).eq('id', 99);
+    expect(miss.count).toBe(0);
+  });
+});

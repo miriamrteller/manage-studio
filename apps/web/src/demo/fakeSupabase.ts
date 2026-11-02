@@ -443,8 +443,9 @@ class QueryBuilder implements PromiseLike<DemoResult> {
     this.payload = payload;
     return this;
   }
-  delete() {
+  delete(opts?: { count?: string }) {
     this.op = 'delete';
+    if (opts?.count) this.countMode = opts.count;
     return this;
   }
 
