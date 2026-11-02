@@ -1,8 +1,10 @@
 ﻿import { useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { GetLeadsPanel } from './GetLeadsPanel';
+import { followUpState } from '../lib/followUp';
+import { FirstLeadsChecklist } from './FirstLeadsChecklist';
 import { Link } from 'react-router-dom';
 import { useNamedForms } from '../hooks/useNamedForms';
-import { answerText } from '@shared/index';
+import { answerText, FORM_TIME_ZONE, todayIn } from '@shared/index';
 import { answerFilterOptions, filterByAnswer } from '../lib/leadAnswers';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
@@ -11,7 +13,8 @@ import { useEntityLabels } from '@/hooks/useEntityLabels';
 import { useLeads } from '../hooks/useLeads';
 import { ConvertLeadPanel } from '@/features/jobs/components/ConvertLeadPanel';
 import { CreateQuoteButton } from '@/features/quotes/components/CreateQuoteButton';
-import { LEAD_CHANNELS, LEAD_STAGES, type Lead, type LeadChannel, type LeadStage } from '../services/leadService';
+import { LEAD_CHANNELS, stagesFor, type Lead, type LeadChannel, type LeadStage } from '../services/leadService';
+import { LeadEnrolmentLink } from './LeadEnrolmentLink';
 
 /**
  * Admin leads page: capture-links panel (the tenant's self-onboarding —
@@ -105,12 +108,35 @@ export function LeadsList() {
   const { vertical } = useEntityLabels();
   const canConvert = vertical === 'photographer';
   const [convertingId, setConvertingId] = useState<string | null>(null);
-  const { leads: allLeads, isLoading, error, createLead, isCreating, updateStage, isUpdatingStage } =
-    useLeads();
+  const {
+    leads: allLeads,
+    isLoading,
+    error,
+    createLead,
+    isCreating,
+    updateStage,
+    isUpdatingStage,
+    enrolmentsById,
+    linkToEnrolment,
+    linkError,
+    isLinking,
+    dismissSuggestion,
+  } = useLeads();
   const lang: 'en' | 'he' = i18n.language?.startsWith('he') ? 'he' : 'en';
   const [answerKey, setAnswerKey] = useState('');
   const [answerValue, setAnswerValue] = useState('');
   const answerOptions = useMemo(() => answerFilterOptions(allLeads, lang), [allLeads, lang]);
+  const today = todayIn(FORM_TIME_ZONE);
+  const followUps = useMemo(() => {
+    let overdue = 0;
+    let dueToday = 0;
+    for (const l of allLeads) {
+      const state = followUpState(l, today);
+      if (state === 'overdue') overdue += 1;
+      if (state === 'today') dueToday += 1;
+    }
+    return { overdue, dueToday };
+  }, [allLeads, today]);
   const [source, setSource] = useState('');
   const [formFilter, setFormFilter] = useState('');
   const { forms: namedForms } = useNamedForms();
@@ -179,6 +205,9 @@ export function LeadsList() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl font-bold">{t('pages.crm.leads.title')}</h1>
         <div className="flex flex-wrap gap-2">
+          <Link to="/admin/leads/help" className="inline-flex items-center rounded border px-3 py-2 text-sm">
+            {t('pages.crm.help.link')}
+          </Link>
           <Link to="/admin/leads/forms" className="inline-flex items-center rounded border px-3 py-2 text-sm">
             {t('pages.crm.named_forms.title')}
           </Link>
@@ -188,8 +217,15 @@ export function LeadsList() {
         </div>
       </div>
       <p className="text-sm text-muted-foreground">{t('pages.crm.leads.description')}</p>
+      {(followUps.overdue > 0 || followUps.dueToday > 0) && (
+        <p role="status" className="text-sm font-medium">
+          {t('pages.crm.leads.follow_up_summary', { overdue: followUps.overdue, today: followUps.dueToday })}
+        </p>
+      )}
 
-      <details className="space-y-3" open={!isLoading && allLeads.length === 0}>
+      {!isLoading && <FirstLeadsChecklist leadCount={allLeads.length} />}
+
+      <details id="get-leads" className="space-y-3" open={!isLoading && allLeads.length === 0}>
         <summary className="cursor-pointer font-semibold">{t('pages.crm.get_leads.title')}</summary>
         <div className="pt-3">
           <GetLeadsPanel headingLevel={3} />
@@ -297,9 +333,9 @@ export function LeadsList() {
       )}
 
       {isLoading && <p role="status">{t('common.loading')}</p>}
-      {error && (
+      {(error || linkError) && (
         <div className="alert-error" role="alert">
-          {error.message}
+          {(error ?? linkError)?.message}
         </div>
       )}
 
@@ -427,6 +463,15 @@ export function LeadsList() {
                         {t('pages.crm.leads.converted')}
                       </span>
                     )}
+                    {!canConvert && (
+                      <LeadEnrolmentLink
+                        lead={lead}
+                        enrolmentsById={enrolmentsById}
+                        busy={isLinking}
+                        onLink={(choice) => linkToEnrolment({ leadId: lead.id, choice })}
+                        onDismiss={() => dismissSuggestion(lead.id)}
+                      />
+                    )}
                   </td>
                   <td className="px-3 py-2">
                     <div className="space-y-0.5">
@@ -465,7 +510,7 @@ export function LeadsList() {
                         updateStage({ id: lead.id, stage: e.target.value as LeadStage })
                       }
                     >
-                      {LEAD_STAGES.map((stage) => (
+                      {stagesFor(vertical, lead.stage).map((stage) => (
                         <option key={stage} value={stage}>
                           {t(`pages.crm.leads.stage_${stage}`)}
                         </option>
@@ -473,7 +518,15 @@ export function LeadsList() {
                     </select>
                   </td>
                   <td className="px-3 py-2">{formatDate(lead.last_contacted_at, i18n.language)}</td>
-                  <td className="px-3 py-2">{formatDate(lead.next_follow_up_at, i18n.language)}</td>
+                  <td className="px-3 py-2">
+                    {formatDate(lead.next_follow_up_at, i18n.language)}
+                    {followUpState(lead, today) === 'overdue' && (
+                      <span className="block text-xs font-medium text-red-700">{t('pages.crm.leads.overdue')}</span>
+                    )}
+                    {followUpState(lead, today) === 'today' && (
+                      <span className="block text-xs font-medium text-amber-700">{t('pages.crm.leads.due_today')}</span>
+                    )}
+                  </td>
                   {canConvert && (
                     <td className="px-3 py-2">
                       {lead.converted_account_id ? (

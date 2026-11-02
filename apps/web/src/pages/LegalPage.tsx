@@ -6,6 +6,8 @@ import { renderLegalHtml } from '@/legal/render';
 import {
   PLATFORM_DOCS,
   PUBLISHABLE_DOCS,
+  LEGAL_PACK_DOCS,
+  isLegalPackLive,
   isLegalDocId,
   tenantHasEnrolmentTerms,
   useLegalDocument,
@@ -25,12 +27,15 @@ export default function LegalPage() {
 
   const isAdmin = !!user?.role?.includes('tenant_admin');
   const platformDoc = docId ? PLATFORM_DOCS.includes(docId) : false;
-  const needsPublishing = !!tenant && !!docId && PUBLISHABLE_DOCS.includes(docId);
+  // A new studio's pages all wait for the legal pack acknowledgement; older studios only gate these two.
+  const packPending = !!legal && !isLegalPackLive(legal);
+  const needsPublishing =
+    !!tenant && !!docId && (PUBLISHABLE_DOCS.includes(docId) || (packPending && LEGAL_PACK_DOCS.includes(docId)));
   const notAvailable =
     !docId ||
     (!tenant && (docId === 'studio-privacy' || docId === 'enrolment-terms')) ||
     (docId === 'enrolment-terms' && legal && !tenantHasEnrolmentTerms(legal.vertical));
-  const unpublished = needsPublishing && legal && !legal.published;
+  const unpublished = needsPublishing && legal && (!legal.published || packPending);
 
   if (notAvailable) {
     return (

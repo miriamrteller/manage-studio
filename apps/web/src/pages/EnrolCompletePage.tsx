@@ -82,6 +82,8 @@ export default function EnrolCompletePage() {
           if (!resp.ok) {
             if (resp.status === 401) {
               setState({ kind: 'link_expired', email: '' });
+            } else if (data.error === 'studio_legal_not_ready') {
+              setState({ kind: 'error', message: t('legal.pack.signing_not_ready') });
             } else {
               setState({ kind: 'error', message: (data.error as string) ?? t('common.error') });
             }

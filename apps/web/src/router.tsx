@@ -8,6 +8,7 @@ import SignupPage from "./pages/SignupPage";
 import AuthCallbackPage from "./pages/AuthCallbackPage";
 import CreateStudioPage from '@/pages/CreateStudioPage';
 import SessionHandoffPage from '@/pages/auth/SessionHandoffPage';
+import LegalPackPrintPage from '@/pages/LegalPackPrintPage';
 import DashboardRedirectPage from "./pages/DashboardRedirectPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import StudentsPage from "./pages/StudentsPage";
@@ -50,6 +51,7 @@ import InquirePage from "./pages/InquirePage";
 import EmbedInquirePage, { EmbedNamedFormPage } from "./pages/EmbedInquirePage";
 import NamedFormPage from "./pages/NamedFormPage";
 import LeadFormsPage from "./pages/LeadFormsPage";
+import LeadsHelpPage from "./pages/LeadsHelpPage";
 import AdminQuotesPage from "./pages/AdminQuotesPage";
 import AdminQuoteEditorPage from "./pages/AdminQuoteEditorPage";
 import QuotePage from "./pages/QuotePage";
@@ -101,6 +103,15 @@ const router = createBrowserRouter([
     element: <EmbedInquirePage />,
     errorElement: <RouteErrorFallback />,
   },
+  // The studio's legal pack as one printable page (Save as PDF), on any host.
+  {
+    path: '/legal-pack/print',
+    element: (
+      <LanguageProvider>
+        <LegalPackPrintPage />
+      </LanguageProvider>
+    ),
+  },
   {
     path: '/embed/f/:slug',
     element: <EmbedNamedFormPage />,
@@ -147,6 +158,7 @@ const router = createBrowserRouter([
           { path: "admin/notifications", element: <AdminRoute><NotificationsPage /></AdminRoute> },
           { path: "admin/leads", element: <AdminRoute><LeadsPage /></AdminRoute> },
           { path: "admin/leads/forms", element: <AdminRoute><LeadFormsPage /></AdminRoute> },
+          { path: "admin/leads/help", element: <AdminRoute><LeadsHelpPage /></AdminRoute> },
           { path: "admin/jobs", element: <AdminRoute><JobsPage /></AdminRoute> },
           { path: "admin/jobs/:id", element: <AdminRoute><JobDetailPage /></AdminRoute> },
           { path: "admin/quotes", element: <AdminRoute><AdminQuotesPage /></AdminRoute> },
