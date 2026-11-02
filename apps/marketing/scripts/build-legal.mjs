@@ -2,7 +2,9 @@
 // Builds the public legal pages of opalswift.com from docs/legal:
 //   public/terms.html          ← 01-platform-terms.{he,en}.md
 //   public/privacy.html        ← 04-opalswift-privacy-policy.{he,en}.md
-//   public/accessibility.html  ← 06-accessibility-statement.{he,en}.md
+//   public/accessibility.html  ← 06-accessibility-statement.opalswift.{he,en}.md
+//     (OpalSwift's own statement; 06-accessibility-statement.{he,en}.md is the
+//     per-studio template and is not published here)
 //
 // The Markdown is the source of truth. This script converts it as written:
 //   - drops the internal header (the "Draft, not legal advice" quote block)
@@ -32,7 +34,7 @@ const CONTACT = "hello@opalswift.com";
 export const PAGES = [
   { slug: "terms", src: "01-platform-terms", title: { en: "Terms of Service", he: "תנאי שימוש" } },
   { slug: "privacy", src: "04-opalswift-privacy-policy", title: { en: "Privacy Policy", he: "מדיניות פרטיות" } },
-  { slug: "accessibility", src: "06-accessibility-statement", title: { en: "Accessibility Statement", he: "הצהרת נגישות" } },
+  { slug: "accessibility", src: "06-accessibility-statement.opalswift", title: { en: "Accessibility Statement", he: "הצהרת נגישות" } },
 ];
 
 // docs/legal file (without .he/.en) → site path. Anything else becomes plain text.
@@ -67,7 +69,7 @@ export function convert(md, lang) {
     return `<mark class="tbc" title="${lang === "he" ? "יושלם" : "To be completed"}">${escapeHtml(k)}</mark>`;
   });
   // Links between legal docs.
-  text = text.replace(/\[([^\]]+)\]\(([\w-]+)\.(?:he|en)\.md\)/g, (_, label, file) =>
+  text = text.replace(/\[([^\]]+)\]\(([\w.-]+)\.(?:he|en)\.md\)/g, (_, label, file) =>
     LINKS[file] ? `[${label}](${LINKS[file]})` : label,
   );
   const leftover = text.match(/\]\([^)]*\.md\)/);

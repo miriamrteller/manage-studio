@@ -86,7 +86,7 @@ Generated from `docs/legal`, which stays the source of truth:
 |---|---|
 | `/terms` | `01-platform-terms.{he,en}.md` |
 | `/privacy` | `04-opalswift-privacy-policy.{he,en}.md` |
-| `/accessibility` | `06-accessibility-statement.{he,en}.md` |
+| `/accessibility` | `06-accessibility-statement.opalswift.{he,en}.md` (OpalSwift's own; the file without `.opalswift` is the per-studio template) |
 
 Each page holds both languages and follows the site's language toggle. The
 generator (`apps/marketing/scripts/build-legal.mjs`):
