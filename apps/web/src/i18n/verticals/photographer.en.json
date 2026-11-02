@@ -69,6 +69,9 @@
       "leads": {
         "description": "Enquiries that haven't booked yet — weddings, events, portrait sessions, anything in the pipeline. Booked clients live under Clients.",
         "interest_placeholder": "e.g. wedding, family portrait session"
+      },
+      "inquire": {
+        "message_placeholder": "e.g. a wedding in May, a family portrait session…"
       }
     },
     "notifications": {

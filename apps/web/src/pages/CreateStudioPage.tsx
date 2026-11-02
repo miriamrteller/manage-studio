@@ -120,6 +120,16 @@ function StartForm({ linkFailed }: { linkFailed: boolean }) {
 
   const canSend = firstName.trim() !== '' && EMAIL_RE.test(email.trim()) && (!siteKey || Boolean(captchaToken));
 
+  // Plain-words reason the button is greyed out.
+  const missingHint =
+    firstName.trim() === ''
+      ? 'self_serve.need_first_name'
+      : !EMAIL_RE.test(email.trim())
+        ? 'self_serve.need_email'
+        : siteKey && !captchaToken
+          ? 'self_serve.captcha_needed'
+          : null;
+
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     if (!canSend) {
@@ -204,8 +214,11 @@ function StartForm({ linkFailed }: { linkFailed: boolean }) {
       </div>
       {siteKey && <TurnstileWidget siteKey={siteKey} language={language} onToken={setCaptchaToken} />}
       {error && <p className="text-sm text-red-700" role="alert">{error}</p>}
+      {missingHint && (
+        <p id="sss-hint" className="text-center text-sm text-gray-700" role="status">{t(missingHint)}</p>
+      )}
       <div className="text-center">
-        <Button type="submit" disabled={sending || !canSend} variant="primary">
+        <Button type="submit" disabled={sending || !canSend} variant="primary" aria-describedby={missingHint ? 'sss-hint' : undefined}>
           {sending ? t('self_serve.sending') : t('self_serve.send_link')}
         </Button>
       </div>

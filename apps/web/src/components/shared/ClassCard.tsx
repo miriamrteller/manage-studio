@@ -60,11 +60,8 @@ export function ClassCard({ class: cls, currency }: ClassCardProps) {
 
   return (
     <div className="border border-gray-300 rounded-lg overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow">
-      {coverUrl ? (
-        <img src={coverUrl} alt="" className="w-full h-40 object-cover" loading="lazy" />
-      ) : (
-        <div className="w-full h-40 bg-gray-100" aria-hidden />
-      )}
+      {/* No photo, no box: an empty grey block looks broken. */}
+      {coverUrl && <img src={coverUrl} alt="" className="w-full h-40 object-cover" loading="lazy" />}
 
       <div className="p-6">
         {/* h2 because ClassCard is a direct subsection of the main page h1 */}
@@ -73,7 +70,10 @@ export function ClassCard({ class: cls, currency }: ClassCardProps) {
         <div className="space-y-2 mb-4 text-sm text-gray-600">
           <p>
             <span className="font-semibold">{t('pages.classes.time')}:</span>{' '}
-            {formatTime(cls.start_time, i18n.language)} – {formatTime(cls.end_time, i18n.language)}
+            {/* Isolated left-to-right so a Hebrew page shows 16:00 – 16:40, not 16:40 – 16:00. */}
+            <bdi dir="ltr">
+              {formatTime(cls.start_time, i18n.language)} – {formatTime(cls.end_time, i18n.language)}
+            </bdi>
           </p>
           {cls.category_name && (
             <p>
@@ -84,7 +84,7 @@ export function ClassCard({ class: cls, currency }: ClassCardProps) {
           {ageLabel && (
             <p>
               <span className="font-semibold">{t('pages.classes.ages')}:</span>{' '}
-              {ageLabel}
+              <bdi dir="ltr">{ageLabel}</bdi>
             </p>
           )}
           {cls.location && (

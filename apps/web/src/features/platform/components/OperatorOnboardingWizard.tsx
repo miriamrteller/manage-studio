@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
+import { ColourPresets } from '@/components/colour/ColourPresets';
 import { Alert } from '@/components/ui/alert';
 import { supabase } from '@/lib/supabase';
 import { tenantOrigin } from '@/lib/tenantUrl';
@@ -159,6 +160,26 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
     }
   }
 
+  /** Why Next is greyed out, in plain words (empty when it is not). */
+  function missingHintKey(): string | null {
+    if (canAdvance()) return null;
+    switch (step) {
+      case 'studio':
+        return form.name.trim().length === 0 ? 'studio_setup.need_name' : 'studio_setup.need_address';
+      case 'address':
+        return subdomainStatus === 'taken' ? null : 'studio_setup.need_address';
+      case 'look':
+        return 'studio_setup.need_colours';
+      case 'owner':
+        return 'studio_setup.need_owner_email';
+      case 'review':
+        return !termsAccepted ? 'studio_setup.need_terms' : 'self_serve.captcha_needed';
+      default:
+        return null;
+    }
+  }
+  const missingHint = missingHintKey();
+
   async function handleNext() {
     setError(null);
     if ((step === 'studio' && !selfServe) || step === 'address') {
@@ -208,7 +229,12 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
         />
         <span className="shrink-0 text-sm text-gray-700">.{tenantOrigin('x').replace(/^https?:\/\/x\./, '')}</span>
       </div>
-      <p id="ss-subdomain-help" className="text-xs text-gray-700">{t('studio_setup.address_help')}</p>
+      <p id="ss-subdomain-help" className="text-xs text-gray-700">
+        {t('studio_setup.address_help')}{' '}
+        {t('studio_setup.address_example', {
+          example: `my-studio → my-studio.${tenantOrigin('x').replace(/^https?:\/\/x\./, '')}`,
+        })}
+      </p>
       {subdomainStatus === 'taken' && <p className="text-xs text-red-700" role="alert">{t('studio_setup.address_taken')}</p>}
       {selfServe && subdomainStatus === 'ok' && (
         <p className="text-xs text-green-800" role="status">{t('self_serve.address_available')}</p>
@@ -319,6 +345,11 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
       {step === 'look' && (
         <section className="space-y-4">
           <p className="text-sm text-gray-700">{t('studio_setup.look_hint')}</p>
+          <ColourPresets
+            primary={form.primaryColor}
+            accent={form.accentColor}
+            onPick={(primary, accent) => setForm((f) => ({ ...f, primaryColor: primary, accentColor: accent }))}
+          />
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {(['primaryColor', 'accentColor'] as const).map((key) => (
               <div key={key} className="space-y-2">
@@ -407,6 +438,10 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
 
       {error && <Alert variant="destructive">{error}</Alert>}
 
+      {missingHint && (
+        <p id="ss-next-hint" className="text-sm text-gray-700" role="status">{t(missingHint)}</p>
+      )}
+
       <div className="flex gap-3">
         {stepIndex > 0 && (
           <Button variant="outline" onClick={() => { setError(null); setStepIndex((i) => Math.max(i - 1, 0)); }}>
@@ -416,6 +451,7 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
         <Button
           variant="primary"
           disabled={isPending || checkSubdomain.isPending || !canAdvance()}
+          aria-describedby={missingHint ? 'ss-next-hint' : undefined}
           onClick={() => void handleNext()}
         >
           {step === 'review'

@@ -61,7 +61,7 @@ function ProviderKeysForm() {
       <dl className="text-sm space-y-2">
         <StatusRow
           label={t('settings.payments.provider', { defaultValue: 'Provider' })}
-          value={tenant?.payment_provider ?? 'grow'}
+          value={t(`settings.provider_names.${tenant?.payment_provider ?? 'grow'}`, { defaultValue: tenant?.payment_provider ?? 'grow' })}
         />
         <StatusRow
           label={t('settings.payments.secret_status', { defaultValue: 'Secret key' })}

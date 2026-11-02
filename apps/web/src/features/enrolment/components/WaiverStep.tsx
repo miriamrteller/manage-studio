@@ -43,6 +43,11 @@ interface WaiverStepProps {
   isJobContract?: boolean;
 }
 
+/** "Health declaration (child)v1" -> "Health declaration": parents do not need the internal variant or version. */
+export function displayTemplateName(name: string): string {
+  return name.replace(/\s*\((?:child|adult|minor)\)\s*(?:v\s*\d+)?\s*$/i, '').replace(/\s+v\d+$/i, '').trim() || name;
+}
+
 export function WaiverStep(props: WaiverStepProps) {
   if (props.tenantIdForInvalidation || props.waiverToken) {
     return <WaiverStepInner {...props} invalidateTenantId={props.tenantIdForInvalidation} />;
@@ -228,7 +233,7 @@ function WaiverStepInner({
 
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-semibold">{template.name}</h2>
+      <h2 className="text-xl font-semibold">{displayTemplateName(template.name)}</h2>
 
       {/* Context: who is signing, for whom, and for which class */}
       {(studentName || className) && (
@@ -262,7 +267,8 @@ function WaiverStepInner({
       </div>
 
       {!viewTokenReady && !tokenExpired && (
-        <p className="text-sm text-muted-foreground" aria-live="polite">
+        <p className="text-sm font-medium text-foreground" aria-live="polite">
+          <span aria-hidden="true">↓ </span>
           {t('enrolment.waiver_scroll_prompt', { defaultValue: 'Scroll to the bottom to enable signing' })}
         </p>
       )}

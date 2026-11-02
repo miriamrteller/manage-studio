@@ -56,10 +56,10 @@ describe('finance period', () => {
     expect(screen.getAllByRole('option').map((o) => o.textContent)).toEqual(['This month', 'Last month']);
   });
 
-  it('dance: keeps "Active term"', () => {
+  it('dance: keeps the active-season option', () => {
     setTenant('dance');
     renderInApp(<FinancePeriodSelector />);
-    expect(screen.getByRole('option', { name: 'Active term' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Active season' })).toBeInTheDocument();
   });
 });
 
