@@ -33,7 +33,7 @@ FROM ids, LATERAL (VALUES (ids.admin_b, ids.b, 'nf-admin-b@example.test'),
                           (ids.admin_c, ids.c, 'nf-admin-c@example.test')) AS u(id, tenant, email)
 ON CONFLICT (id) DO UPDATE SET tenant_id = EXCLUDED.tenant_id, role = EXCLUDED.role, email = EXCLUDED.email;
 
-INSERT INTO offerings (id, tenant_id, name) SELECT offering_c, c, 'C class' FROM ids;
+INSERT INTO offerings (id, tenant_id, name, offering_type, duration_mins) SELECT offering_c, c, 'C package', 'appointment', 60 FROM ids;
 
 INSERT INTO lead_forms (id, tenant_id, slug, name, title_en)
 SELECT form_b, b, 'grade2', 'Internal B name', 'Grade 2 trial' FROM ids;
