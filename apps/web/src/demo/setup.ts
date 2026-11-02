@@ -1,10 +1,14 @@
 /**
  * Demo handlers for studio setup screens: the legal-pack confirmation
  * (Settings → Legal, Finish setup) and the YPay connect form (Settings →
- * Payments, plus the Grow notice key). Nothing is sent or stored outside the browser; credentials typed
- * into the demo are not kept.
+ * Payments, plus the Grow notice key) and lawyer-reviewed legal documents.
+ * Nothing is sent or stored outside the browser; credentials typed into the
+ * demo are not kept.
  */
 import { DemoRpcError, type DemoContext, type FunctionHandler, type Row, type RpcHandler } from './fakeSupabase';
+
+/** tenant_legal_documents.document CHECK values. */
+const LEGAL_DOCUMENTS = ['studio-privacy', 'enrolment-terms', 'accessibility', 'cookies'];
 
 function rows(ctx: DemoContext, table: string): Row[] {
   return ctx.db[table] ?? (ctx.db[table] = []);
@@ -71,6 +75,59 @@ export const setupRpcs: Record<string, RpcHandler> = {
     tenant.grow_webhook_key_version = Number(tenant.grow_webhook_key_version ?? 0) + 1;
     tenant.grow_webhook_key_created_at = new Date().toISOString();
     return key;
+  },
+
+  /** get_tenant_legal_documents: lawyer-reviewed versions the studio uploaded in this demo visit. */
+  get_tenant_legal_documents: (args, ctx) =>
+    rows(ctx, 'tenant_legal_documents')
+      .filter((d) => d.tenant_id === args.p_tenant_id)
+      .map(({ document, language, kind, content, storage_path, file_name, uploaded_at }) => ({
+        document, language, kind, content, storage_path, file_name, uploaded_at,
+      })),
+
+  /** save_tenant_legal_document: keep a lawyer-reviewed text or PDF in place of the generated draft. */
+  save_tenant_legal_document: (args, ctx) => {
+    const tenant = adminTenant(ctx);
+    const document = String(args.p_document ?? '');
+    if (!LEGAL_DOCUMENTS.includes(document)) throw new DemoRpcError('unknown document');
+    const language = args.p_language === 'en' ? 'en' : 'he';
+    const kind = args.p_kind === 'pdf' ? 'pdf' : 'text';
+    if (kind === 'text' && !String(args.p_content ?? '').trim()) throw new DemoRpcError('content is required');
+    const docs = rows(ctx, 'tenant_legal_documents');
+    const i = docs.findIndex((d) => d.tenant_id === tenant.id && d.document === document);
+    const row = {
+      tenant_id: tenant.id,
+      document,
+      language,
+      kind,
+      content: kind === 'text' ? String(args.p_content) : null,
+      storage_path: kind === 'pdf' ? String(args.p_storage_path ?? '') : null,
+      file_name: kind === 'pdf' ? String(args.p_file_name ?? '') : null,
+      uploaded_at: new Date().toISOString(),
+    };
+    if (i >= 0) docs[i] = row;
+    else docs.push(row);
+    return true;
+  },
+
+  /** revert_tenant_legal_document: back to the generated draft; true when there was an upload. */
+  revert_tenant_legal_document: (args, ctx) => {
+    const tenant = adminTenant(ctx);
+    const docs = rows(ctx, 'tenant_legal_documents');
+    const i = docs.findIndex((d) => d.tenant_id === tenant.id && d.document === args.p_document);
+    if (i < 0) return false;
+    docs.splice(i, 1);
+    return true;
+  },
+
+  /** set_consent_template_lawyer_reviewed: mark a signed form reviewed, or back to a draft. */
+  set_consent_template_lawyer_reviewed: (args, ctx) => {
+    const tenant = adminTenant(ctx);
+    const template = rows(ctx, 'consent_templates').find((t) => t.id === args.p_template_id && t.tenant_id === tenant.id);
+    if (!template) throw new DemoRpcError('form not found');
+    template.lawyer_reviewed_at = args.p_reviewed ? new Date().toISOString() : null;
+    template.lawyer_reviewed_by = args.p_reviewed ? ctx.user?.id ?? null : null;
+    return true;
   },
 };
 
