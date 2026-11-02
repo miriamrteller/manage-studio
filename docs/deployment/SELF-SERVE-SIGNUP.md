@@ -43,23 +43,36 @@ To switch it off again, set both values to `false` (or delete them) and deploy. 
 
 ## CAPTCHA (Cloudflare Turnstile)
 
-Turnstile is free, and the project already uses Cloudflare.
+Turnstile is free, and the project already uses Cloudflare. Every form that calls Supabase sign-in or sign-up shows the check when `VITE_TURNSTILE_SITE_KEY` is set, and sends its token:
+- studio login (password, magic link, email code and its resend)
+- client signup by email
+- the enrolment "send me a new link" form
+- the current-password check when changing a password
+- the self-serve start page
+
+Code verification needs no token.
+
+Do the steps in this order. Turning on Supabase CAPTCHA before the site key is live would stop every sign-in.
 
 1. **Cloudflare → Turnstile → Add widget:**
-   - Hostname: `app.opalswift.com`
+   - Hostnames: `opalswift.com` (this covers `app.` and every studio subdomain), plus each studio's custom domain, for example `app.creativeballetacademy.com`
    - Mode: Managed
 
    Copy the **site key** and the **secret key**.
-2. **Supabase → Edge Functions → Secrets:** `TURNSTILE_SECRET_KEY` = the secret key. From then on, creating a studio needs a passed check (the wizard shows it on the Review step).
-3. **GitHub → Settings → Environments → production → Variables:** add `VITE_TURNSTILE_SITE_KEY` = the site key, then run deploy-prod. The start page and the wizard's Review step then show the check.
+2. **GitHub → Settings → Environments → production → Variables:** add `VITE_TURNSTILE_SITE_KEY` = the site key. Run **deploy-prod**, then check that the login page shows the check.
+3. **Supabase → Edge Functions → Secrets:** `TURNSTILE_SECRET_KEY` = the secret key. From then on, creating a self-serve studio needs a passed check, which the wizard shows on the Review step.
+4. **Supabase → Authentication → Attack Protection → Enable CAPTCHA protection:**
+   - Provider: Turnstile
+   - Secret key: the same secret key
+
+   From then on, Supabase refuses sign-ins and sign-ups without a passed check.
 
 deploy-web passes both web settings to the build from the production environment's variables: `VITE_ENABLE_SELF_SERVE_SIGNUP` and `VITE_TURNSTILE_SITE_KEY`. A variable that isn't set builds as empty, so the feature stays off and no check is shown.
 
-**Do not turn on Supabase → Authentication → Attack Protection → CAPTCHA yet.** Supabase then requires a CAPTCHA token on *every* email sign-in. Studio login, client signup and enrolment codes do not send one yet, so they would stop working. Only the self-serve start page sends a token today. Switch Supabase CAPTCHA on only after those forms send tokens (follow-up).
+**To turn CAPTCHA off:** switch off Supabase CAPTCHA (step 4) **first**, then remove the site key and deploy.
 
-Until then, abuse is limited by:
+Other limits on abuse:
 - Supabase's own email rate limits (Authentication → Rate Limits)
 - the confirmed-email rule
 - one studio per account
 - reserved names
-- the server-side Turnstile check on studio creation

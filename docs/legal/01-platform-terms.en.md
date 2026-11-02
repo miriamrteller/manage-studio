@@ -3,9 +3,9 @@
 
 # OpalSwift Platform Terms of Service (for studios)
 
-Last updated: [[DATE]] · Version [[VERSION]]
+Last updated: 2 November 2026 · Version Beta 1.0
 
-These terms are an agreement between **[[OPALSWIFT LEGAL NAME]]** (today: Miriam Teller, an individual; [[BUSINESS STATUS — not yet a registered עוסק]]), ID/business no. [[ID / BUSINESS NO.]], address [[ADDRESS]] ("**OpalSwift**", "we") and the business or person that opens a studio account ("**Studio**", "you"). They apply to the OpalSwift web app at `*.opalswift.com` and any related service (the "**Platform**").
+These terms are an agreement between **Miriam Teller, trading as OpalSwift** (not yet registered as a business; free beta), Jerusalem, Israel ("**OpalSwift**", "we") and the business or person that opens a studio account ("**Studio**", "you"). They apply to the OpalSwift web app at `*.opalswift.com` and any related service (the "**Platform**").
 
 The Platform is a business tool. You use it for your business, not as a consumer. If you are an individual who has not yet registered a business, you still use the Platform for business purposes.
 
@@ -13,7 +13,7 @@ The Platform is a business tool. You use it for your business, not as a consumer
 
 - the Platform is provided **"as is" and "as available"**, without warranties of any kind, to the extent the law allows (section 9);
 - we give **no uptime guarantee** and cannot promise that data will never be lost: **export your data regularly** (section 10) and keep your own copies;
-- features may change, pause or end; we will give at least [[14]] days' notice where practical, and [[30]] days before ending the beta service as a whole (section 10);
+- features may change, pause or end; we will give at least 14 days' notice where practical, and 30 days before ending the beta service as a whole (section 10);
 - you may stop using the Platform at any time; the export and deletion periods in section 10 apply;
 - your dealings with your clients and with payment, invoicing and messaging providers are between you and them (sections 4 and 6).
 
@@ -21,19 +21,19 @@ The Platform is a business tool. You use it for your business, not as a consumer
 
 OpalSwift provides software for running a studio: client and student records, classes and bookings, enrolment, waivers and health declarations, contracts, payment requests through third-party payment providers, messages (email, and optionally SMS/WhatsApp), and image or gallery links. Features vary by plan and by studio type (for example, dance school or photographer).
 
-We may improve, change or remove features. If a change materially reduces a feature you pay for, we will tell you at least [[30]] days in advance and you may cancel and get a pro-rata refund of prepaid fees for the unused period.
+We may improve, change or remove features. If a change materially reduces a feature you pay for, we will tell you at least 30 days in advance and you may cancel and get a pro-rata refund of prepaid fees for the unused period.
 
 ## 2. Your account
 
 - You must give accurate details and keep them up to date.
 - You are responsible for everyone you invite (staff, teachers, assistants) and for keeping logins private. Turn on any extra sign-in protection we offer.
-- Tell us at [[SUPPORT EMAIL]] straight away if you think an account has been misused.
+- Tell us at hello@opalswift.com straight away if you think an account has been misused.
 
 ## 3. Fees
 
-- Plan and price: **free during the beta.** If we introduce a paid plan we will give at least [[30]] days' notice, and it applies to you only if you agree to it.
+- Plan and price: **free during the beta.** If we introduce a paid plan we will give at least 30 days' notice, and it applies to you only if you agree to it.
 - Payment method and timing: set out in the paid plan, when one is offered.
-- We will give at least [[30]] days' notice of a price increase. It applies from the next billing period. You may cancel before then.
+- We will give at least 30 days' notice of a price increase. It applies from the next billing period. You may cancel before then.
 - Fees paid are non-refundable except as these terms or the law say.
 - Third-party charges (payment providers, invoicing services, SMS/WhatsApp, domain) are between you and those providers.
 - Once we charge fees, we will issue a receipt or tax invoice for every payment.
@@ -65,7 +65,7 @@ Payments, tax documents, calendars, SMS/WhatsApp and email domains run through t
 
 ## 7. Availability and support
 
-We aim to keep the Platform available and to back up data nightly, but we do not promise uninterrupted or error-free service, and during the beta we make no uptime commitment. Our backups are for disaster recovery; they are not a substitute for your own exports. Planned maintenance will be announced where practical. Support: [[SUPPORT CHANNEL AND HOURS]].
+We aim to keep the Platform available and to back up data nightly, but we do not promise uninterrupted or error-free service, and during the beta we make no uptime commitment. Our backups are for disaster recovery; they are not a substitute for your own exports. Planned maintenance will be announced where practical. Support: email hello@opalswift.com (we reply within one week); phone [[PHONE]] on Sundays and Tuesdays, 09:00–10:00 and 20:00–21:00 Israel time.
 
 ## 8. Intellectual property
 
@@ -81,23 +81,23 @@ We own the Platform, its code and design. You get a non-exclusive, non-transfera
 
 ## 10. Term, termination and your data
 
-- These terms run until either side ends them. You can cancel at any time from settings or by email to [[SUPPORT EMAIL]]; cancellation takes effect at the end of the current paid period.
-- We may end the agreement with [[30]] days' notice, or immediately for a serious breach that is not fixed within [[7]] days of notice.
-- **Data export:** while your account is active, and for **[[30]] days after it ends**, you can export your data: some exports are built into the app (for example payments and waivers), and on request we will send a full export of your studio data (CSV/JSON, plus copies of signed waiver/contract PDFs) within [[14]] days.
-- **End of the beta:** we may end the free beta, or replace it with a paid plan under section 3, with at least [[30]] days' notice. If you do not continue, the export and deletion periods in this section apply.
-- **Deletion:** after the export window we delete your studio data from the live system within [[30]] days and from backups as backups expire (nightly backups after 30 days, monthly backups after about 13 months), unless the law requires us to keep it. Details are in the DPA.
+- These terms run until either side ends them. You can cancel at any time from settings or by email to hello@opalswift.com; cancellation takes effect at the end of the current paid period.
+- We may end the agreement with 30 days' notice, or immediately for a serious breach that is not fixed within 7 days of notice.
+- **Data export:** while your account is active, and for **30 days after it ends**, you can export your data: some exports are built into the app (for example payments and waivers), and on request we will send a full export of your studio data (CSV/JSON, plus copies of signed waiver/contract PDFs) within 14 days.
+- **End of the beta:** we may end the free beta, or replace it with a paid plan under section 3, with at least 30 days' notice. If you do not continue, the export and deletion periods in this section apply.
+- **Deletion:** after the export window we delete your studio data from the live system within 30 days and from backups as backups expire (nightly backups after 30 days, monthly backups after about 13 months), unless the law requires us to keep it. Details are in the DPA.
 
 ## 11. Changes to these terms
 
-We may update these terms. For material changes we will give at least [[30]] days' notice by email or in the app. If you do not agree you may cancel before the change takes effect.
+We may update these terms. For material changes we will give at least 30 days' notice by email or in the app. If you do not agree you may cancel before the change takes effect.
 
 ## 12. Law and jurisdiction
 
-Israeli law applies. The competent courts in [[CITY — e.g. Tel Aviv-Jaffa]] have exclusive jurisdiction.
+Israeli law applies. The competent courts in Jerusalem have exclusive jurisdiction.
 
 ## 13. General
 
-These terms, the DPA and any order form are the whole agreement. If a clause is invalid, the rest still applies. You may not transfer the agreement without our consent; we may transfer it to a successor of the Platform business after giving notice. Notices: to us at [[LEGAL NOTICES EMAIL]], to you at the account owner's email.
+These terms, the DPA and any order form are the whole agreement. If a clause is invalid, the rest still applies. You may not transfer the agreement without our consent; we may transfer it to a successor of the Platform business after giving notice. Notices: to us at hello@opalswift.com, to you at the account owner's email.
 
 **Language.** This document is published in English and Hebrew. If the two versions differ, the English version prevails.
 

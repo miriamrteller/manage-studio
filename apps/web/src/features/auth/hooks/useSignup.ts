@@ -9,7 +9,8 @@ export function useSignup() {
   const tenant = useTenant();
 
   const sendOtpMutation = useMutation({
-    mutationFn: async (data: SignupForm) => {
+    /** captchaToken: Turnstile token for the email path (Supabase CAPTCHA). */
+    mutationFn: async (data: SignupForm & { captchaToken?: string }) => {
       if (!tenant?.id) {
         throw new Error('Tenant not loaded');
       }
@@ -30,6 +31,7 @@ export function useSignup() {
               first_name: data.firstName,
               last_name: data.lastName,
             },
+            ...(data.captchaToken ? { captchaToken: data.captchaToken } : {}),
           },
         });
 

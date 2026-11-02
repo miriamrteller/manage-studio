@@ -15,7 +15,7 @@ import {
   establishSessionFromAuthCallback,
 } from '@/lib/authCallback';
 import { OperatorOnboardingWizard } from '@/features/platform/components/OperatorOnboardingWizard';
-import { TurnstileWidget } from '@/features/self-serve/TurnstileWidget';
+import { TurnstileWidget } from '@/components/captcha/TurnstileWidget';
 import {
   isSelfServeSignupEnabled,
   sendSelfServeConfirmation,

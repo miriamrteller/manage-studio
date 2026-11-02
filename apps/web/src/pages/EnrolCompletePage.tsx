@@ -12,6 +12,7 @@ import { linkAuthUserToPerson } from '@/features/enrolment/linkAuthUser';
 import { JobAfterSignNextStep } from '@/features/jobs/components/JobAfterSignNextStep';
 import { BackToPortalButton } from '@/features/jobs/components/BackToPortalButton';
 import { resolveTenantSubdomain } from '@/lib/resolveTenantSubdomain';
+import { useCaptcha } from '@/components/captcha/useCaptcha';
 
 type PageState =
   | { kind: 'loading' }
@@ -52,6 +53,7 @@ export default function EnrolCompletePage() {
   const [resendEmail, setResendEmail] = useState('');
   const [resendSent, setResendSent] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
+  const captcha = useCaptcha();
 
   useEffect(() => {
     if (!engagementId) return;
@@ -192,7 +194,7 @@ export default function EnrolCompletePage() {
   }, [engagementId, tenant, waiverToken, t]);
 
   const handleResend = async () => {
-    if (!resendEmail.trim()) return;
+    if (!resendEmail.trim() || !captcha.ready) return;
     setResendLoading(true);
     try {
       await supabase.auth.signInWithOtp({
@@ -201,8 +203,10 @@ export default function EnrolCompletePage() {
           emailRedirectTo: `${window.location.origin}/auth/callback?pendingWaiverEngagementId=${encodeURIComponent(engagementId)}`,
           // A new account belongs to this studio (the database refuses one without a studio).
           data: { subdomain: resolveTenantSubdomain() ?? '' },
+          ...captcha.authOptions(),
         },
       });
+      captcha.reset();
       setResendSent(true);
     } catch {
       setResendSent(true);
@@ -256,11 +260,12 @@ export default function EnrolCompletePage() {
                 placeholder={t('pages.enrol_complete.email_placeholder')}
                 onKeyDown={(e) => { if (e.key === 'Enter') void handleResend(); }}
               />
+              {captcha.widget}
               <Button
                 type="button"
                 variant="primary"
                 onClick={() => void handleResend()}
-                disabled={!resendEmail.trim() || resendLoading}
+                disabled={!resendEmail.trim() || resendLoading || !captcha.ready}
                 className="w-full"
               >
                 {resendLoading ? t('common.loading') : t('pages.enrol_complete.resend_btn')}
