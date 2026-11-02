@@ -198,4 +198,6 @@ export interface PublicJobPaymentRequest {
     logoUrl: string | null;
   };
   paymentProvider: string;
+  /** False when the studio's payment provider cannot settle the request online (YPay / Grow only). */
+  onlinePaymentAvailable?: boolean;
 }

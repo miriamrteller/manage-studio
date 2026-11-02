@@ -2,6 +2,7 @@ import { z } from "npm:zod@3.22.4";
 import { handleOptions, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { createJobPaymentRequestCharge } from "../_shared/jobs/create-request-charge.ts";
+import { jobOnlinePaymentSupported } from "../_shared/provider-pairing.ts";
 import { loadJobPaymentRequestByToken } from "../_shared/jobs/load-request.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
 
@@ -69,6 +70,8 @@ Deno.serve(withMonitoring("job-payment-request-public", async (req) => {
         logoUrl: tenant.logo_url ?? null,
       },
       paymentProvider: tenant.payment_provider,
+      /** False when the studio's provider cannot settle this request online: pay the studio directly. */
+      onlinePaymentAvailable: jobOnlinePaymentSupported(tenant.payment_provider as string | null),
     };
 
     if (body.action === "get" || body.action === "status") {
