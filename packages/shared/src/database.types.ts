@@ -3359,7 +3359,7 @@ export type Database = {
           language: string | null
           person_id: string | null
           role: string[]
-          tenant_id: string
+          tenant_id: string | null
           updated_at: string
         }
         Insert: {
@@ -3370,7 +3370,7 @@ export type Database = {
           language?: string | null
           person_id?: string | null
           role?: string[]
-          tenant_id: string
+          tenant_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -3381,7 +3381,7 @@ export type Database = {
           language?: string | null
           person_id?: string | null
           role?: string[]
-          tenant_id?: string
+          tenant_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -4025,7 +4025,7 @@ export type Database = {
           language: string | null
           person_id: string | null
           role: string[]
-          tenant_id: string
+          tenant_id: string | null
           updated_at: string
         }[]
         SetofOptions: {
