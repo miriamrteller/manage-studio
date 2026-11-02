@@ -1441,6 +1441,10 @@ export declare const ConsentTemplateSchema: z.ZodObject<{
     version: z.ZodNumber;
     version_hash: z.ZodString;
     status: z.ZodEnum<["draft", "approved", "active", "archived"]>;
+    /** Who signs this version (child: a guardian for a participant under 18), or null for everyone. */
+    audience: z.ZodOptional<z.ZodNullable<z.ZodEnum<["child", "adult"]>>>;
+    /** Language of the text, or null for the studio's language. */
+    language: z.ZodOptional<z.ZodNullable<z.ZodEnum<["he", "en"]>>>;
     created_at: z.ZodEffects<z.ZodString, string, string>;
     updated_at: z.ZodEffects<z.ZodString, string, string>;
 }, "strip", z.ZodTypeAny, {
@@ -1453,6 +1457,8 @@ export declare const ConsentTemplateSchema: z.ZodObject<{
     version: number;
     content: string;
     version_hash: string;
+    language?: "en" | "he" | null | undefined;
+    audience?: "child" | "adult" | null | undefined;
 }, {
     id: string;
     tenant_id: string;
@@ -1463,6 +1469,8 @@ export declare const ConsentTemplateSchema: z.ZodObject<{
     version: number;
     content: string;
     version_hash: string;
+    language?: "en" | "he" | null | undefined;
+    audience?: "child" | "adult" | null | undefined;
 }>;
 export type ConsentTemplate = z.infer<typeof ConsentTemplateSchema>;
 /** Minimal consent template fields required for the waiver signing UI. */
@@ -1474,18 +1482,24 @@ export declare const WaiverSigningConsentTemplateSchema: z.ZodObject<Pick<{
     version: z.ZodNumber;
     version_hash: z.ZodString;
     status: z.ZodEnum<["draft", "approved", "active", "archived"]>;
+    /** Who signs this version (child: a guardian for a participant under 18), or null for everyone. */
+    audience: z.ZodOptional<z.ZodNullable<z.ZodEnum<["child", "adult"]>>>;
+    /** Language of the text, or null for the studio's language. */
+    language: z.ZodOptional<z.ZodNullable<z.ZodEnum<["he", "en"]>>>;
     created_at: z.ZodEffects<z.ZodString, string, string>;
     updated_at: z.ZodEffects<z.ZodString, string, string>;
-}, "id" | "name" | "version" | "content">, "strip", z.ZodTypeAny, {
+}, "id" | "name" | "language" | "version" | "content">, "strip", z.ZodTypeAny, {
     id: string;
     name: string;
     version: number;
     content: string;
+    language?: "en" | "he" | null | undefined;
 }, {
     id: string;
     name: string;
     version: number;
     content: string;
+    language?: "en" | "he" | null | undefined;
 }>;
 export type WaiverSigningConsentTemplate = z.infer<typeof WaiverSigningConsentTemplateSchema>;
 export declare const WaiverViewedRequestSchema: z.ZodObject<{

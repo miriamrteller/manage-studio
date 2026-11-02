@@ -3,6 +3,8 @@ export interface WaiverTemplateRow {
   version: number;
   name: string;
   content: string;
+  /** Language of the text (he / en), or null for the studio's language. */
+  language?: "he" | "en" | null;
 }
 
 export interface EnrolmentWaiverGateInput {

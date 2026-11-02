@@ -7,10 +7,18 @@ import { seedSignedTemplate, sha256Hex, type SeedDeps, type SeedTenant } from ".
 
 type Row = Parameters<SeedDeps["insertTemplate"]>[0];
 
-function fakeDeps(existing: string[] = []) {
+function fakeDeps(
+  existing: string[] = [],
+  active: Array<{ tenant: string; audience: "child" | "adult" | null; language: "he" | "en" | null }> = [],
+) {
   const rows: Row[] = [];
   const deps: SeedDeps = {
     hasTemplate: (id) => Promise.resolve(existing.includes(id) || rows.some((r) => r.tenant_id === id)),
+    activeVersions: (id) =>
+      Promise.resolve([...active.filter((a) => a.tenant === id), ...rows.filter((r) => r.tenant_id === id)].map((r) => ({
+        audience: r.audience,
+        language: r.language,
+      }))),
     insertTemplate: (row) => {
       rows.push(row);
       return Promise.resolve();
@@ -35,12 +43,14 @@ function checkFilled(row: Row) {
   assert(!row.content.includes("[["), `no placeholders left in ${row.name}`);
 }
 
-Deno.test("a new dance studio gets both health declarations, by audience, filled with its name", async () => {
+Deno.test("a new dance studio gets both health declarations, by audience, in both languages", async () => {
   const { deps, rows } = fakeDeps();
-  assertEquals(await seedSignedTemplate(deps, studio("dance-studio")), 2);
-  assertEquals(rows.map((r) => [r.name, r.audience]), [
-    ["Health declaration (under 18)", "child"],
-    ["Health declaration (adults)", "adult"],
+  assertEquals(await seedSignedTemplate(deps, studio("dance-studio")), 4);
+  assertEquals(rows.map((r) => [r.name, r.audience, r.language]), [
+    ["Health declaration (under 18)", "child", "en"],
+    ["Health declaration (adults)", "adult", "en"],
+    ["הצהרת בריאות (מתחת לגיל 18)", "child", "he"],
+    ["הצהרת בריאות (מבוגרים)", "adult", "he"],
   ]);
   for (const row of rows) {
     checkFilled(row);
@@ -50,8 +60,11 @@ Deno.test("a new dance studio gets both health declarations, by audience, filled
 
 Deno.test("a new photographer gets one agreement with the photography add-on, merge fields kept", async () => {
   const { deps, rows } = fakeDeps();
-  assertEquals(await seedSignedTemplate(deps, studio("photographer")), 1);
-  assertEquals(rows[0].name, "Photography services agreement");
+  assertEquals(await seedSignedTemplate(deps, studio("photographer")), 2);
+  assertEquals(rows.map((r) => [r.name, r.language]), [
+    ["Photography services agreement", "en"],
+    ["הסכם שירותי צילום", "he"],
+  ]);
   assertEquals(rows[0].audience, null);
   assertStringIncludes(rows[0].content, "{{client_name}}");
   checkFilled(rows[0]);
@@ -59,21 +72,22 @@ Deno.test("a new photographer gets one agreement with the photography add-on, me
 
 Deno.test("a beautician gets the agreement with its add-on; a general studio the base agreement", async () => {
   const beauty = fakeDeps();
-  assertEquals(await seedSignedTemplate(beauty.deps, studio("beautician")), 1);
+  assertEquals(await seedSignedTemplate(beauty.deps, studio("beautician")), 2);
   assertEquals(beauty.rows[0].name, "Treatment services agreement");
   checkFilled(beauty.rows[0]);
 
   const generic = fakeDeps();
-  assertEquals(await seedSignedTemplate(generic.deps, studio("generic")), 1);
+  assertEquals(await seedSignedTemplate(generic.deps, studio("generic")), 2);
   assertEquals(generic.rows[0].name, "Service agreement");
   checkFilled(generic.rows[0]);
   assert(beauty.rows[0].content.length > generic.rows[0].content.length, "the add-on is appended");
 });
 
-Deno.test("in the studio's language", async () => {
+Deno.test("the studio's own language comes first; both languages are filled", async () => {
   const { deps, rows } = fakeDeps();
   await seedSignedTemplate(deps, studio("dance-studio", "he"));
-  assertEquals(rows.map((r) => r.name), ["הצהרת בריאות (מתחת לגיל 18)", "הצהרת בריאות (מבוגרים)"]);
+  assertEquals(rows.map((r) => r.language), ["he", "he", "en", "en"]);
+  for (const row of rows) checkFilled(row);
 });
 
 Deno.test("an existing form is never replaced", async () => {
@@ -81,4 +95,22 @@ Deno.test("an existing form is never replaced", async () => {
   assertEquals(await seedSignedTemplate(deps, studio("generic")), 0);
   assertEquals(await seedSignedTemplate(deps, studio("dance-studio")), 0);
   assertEquals(rows.length, 0);
+});
+
+Deno.test("fillMissing: an existing studio gets only the versions it lacks; its forms are left alone", async () => {
+  // Created on the old release: one Hebrew health declaration for everyone.
+  const { deps, rows } = fakeDeps(["t-dance-studio"], [{ tenant: "t-dance-studio", audience: null, language: null }]);
+  assertEquals(await seedSignedTemplate(deps, studio("dance-studio", "he"), { fillMissing: true }), 4);
+  assertEquals(rows.map((r) => [r.audience, r.language]), [["child", "he"], ["adult", "he"], ["child", "en"], ["adult", "en"]]);
+  // Run again: nothing more.
+  assertEquals(await seedSignedTemplate(deps, studio("dance-studio", "he"), { fillMissing: true }), 0);
+});
+
+Deno.test("fillMissing: a studio with the Hebrew forms gets only the English ones", async () => {
+  const { deps, rows } = fakeDeps(["t-dance-studio"], [
+    { tenant: "t-dance-studio", audience: "child", language: "he" },
+    { tenant: "t-dance-studio", audience: "adult", language: null },
+  ]);
+  assertEquals(await seedSignedTemplate(deps, studio("dance-studio", "he"), { fillMissing: true }), 2);
+  assertEquals(rows.map((r) => [r.audience, r.language]), [["child", "en"], ["adult", "en"]]);
 });

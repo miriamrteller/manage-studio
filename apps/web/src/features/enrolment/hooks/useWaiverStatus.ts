@@ -4,6 +4,7 @@ import { ConsentTemplateSchema } from '@shared/schemas';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useTenant } from '@/hooks/useTenant';
 import { TenantDB } from '@/lib/db';
+import { readerLanguage } from '@/legal/readerLanguage';
 
 interface UseWaiverStatusParams {
   personId?: string;
@@ -35,7 +36,7 @@ export function useWaiverStatus({ personId, offeringId }: UseWaiverStatusParams)
   const { user } = useCurrentUser();
 
   const query = useQuery({
-    queryKey: [WAIVER_STATUS_KEY, tenant?.id, personId, offeringId],
+    queryKey: [WAIVER_STATUS_KEY, tenant?.id, personId, offeringId, readerLanguage()],
     enabled: !!tenant?.id && !!offeringId && !!user,
     queryFn: async () => {
       // 1. Check if the offering requires a waiver
@@ -50,7 +51,11 @@ export function useWaiverStatus({ personId, offeringId }: UseWaiverStatusParams)
       // 2. Get the active consent template (no active template = no gate)
       // The active form for this participant (child or adult health declaration by age).
       const { data: templateRow } = await supabase
-        .rpc('pick_active_consent_template', { p_tenant_id: tenant!.id, p_person_id: personId ?? null })
+        .rpc('pick_active_consent_template', {
+          p_tenant_id: tenant!.id,
+          p_person_id: personId ?? null,
+          p_language: readerLanguage(),
+        })
         .maybeSingle();
       if (!templateRow) {
         return { required: false, template: null };
