@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { LoginForm } from '@/components/shared';
 import { useLogin } from '@/hooks/useLogin';
 import { persistEnrollmentIntent } from '@/lib/enrollment-intent';
+import { INACTIVITY_LIMIT_MINUTES, INACTIVITY_LOGIN_REASON } from '@/lib/inactivity/config';
 
 /**
  * LoginPage: Light composition page
@@ -24,6 +25,12 @@ export default function LoginPage() {
   const modeParam = query.get('mode');
   const initialMode = modeParam === 'magic_link' || modeParam === 'code' ? modeParam : undefined;
   const initialEmail = query.get('email') ?? undefined;
+  // Sent here by the automatic sign-out after a period without activity.
+  const signedOutForInactivity = query.get('reason') === INACTIVITY_LOGIN_REASON;
+  const inactivityDuration =
+    INACTIVITY_LIMIT_MINUTES === 60
+      ? t('pages.login.inactivity_duration_hour')
+      : t('pages.login.inactivity_duration_minutes', { count: INACTIVITY_LIMIT_MINUTES });
   
   // Preserve enrollment intent (classId) through login → dashboard redirect chain
   const postLoginState =
@@ -99,6 +106,15 @@ export default function LoginPage() {
         <p className="text-gray-600 text-center mb-8">
           {t('pages.login.subtitle')}
         </p>
+
+        {signedOutForInactivity && (
+          <p
+            role="status"
+            className="mb-6 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+          >
+            {t('pages.login.inactivity_notice', { duration: inactivityDuration })}
+          </p>
+        )}
 
         {/* Delegate form UI to component, logic to hook */}
         <LoginForm

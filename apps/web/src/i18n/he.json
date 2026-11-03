@@ -407,6 +407,9 @@
     },
     "login": {
       "title": "התחברות",
+      "inactivity_notice": "התנתקת לאחר {{duration}} ללא פעילות, כדי לשמור על החשבון שלך.",
+      "inactivity_duration_hour": "שעה",
+      "inactivity_duration_minutes": "{{count}} דקות",
       "subtitle": "הזן את פרטי ההתחברות שלך",
       "no_account": "אין לך חשבון?",
       "signup": "הירשם כאן",
