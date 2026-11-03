@@ -2568,6 +2568,24 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_owner_emails: {
+        Row: {
+          added_at: string
+          email: string
+          note: string | null
+        }
+        Insert: {
+          added_at?: string
+          email: string
+          note?: string | null
+        }
+        Update: {
+          added_at?: string
+          email?: string
+          note?: string | null
+        }
+        Relationships: []
+      }
       quote_lines: {
         Row: {
           created_at: string
@@ -4792,6 +4810,7 @@ export type Database = {
         Returns: boolean
       }
       is_minor: { Args: { date_of_birth: string }; Returns: boolean }
+      is_platform_owner_email: { Args: { p_email: string }; Returns: boolean }
       is_reserved_subdomain: { Args: { p_subdomain: string }; Returns: boolean }
       is_service_role: { Args: never; Returns: boolean }
       is_super_admin: { Args: never; Returns: boolean }
