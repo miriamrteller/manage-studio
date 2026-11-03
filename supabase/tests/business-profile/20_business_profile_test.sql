@@ -122,7 +122,7 @@ BEGIN
     RAISE EXCEPTION 'FAIL an anonymous caller changed the profile';
   EXCEPTION WHEN insufficient_privilege THEN NULL;
   END;
-  IF has_function_privilege('anon', 'set_business_profile(uuid,text,boolean,boolean,boolean)', 'EXECUTE') THEN
+  IF has_function_privilege('anon', 'set_business_profile(uuid,text,boolean,boolean,boolean,boolean)', 'EXECUTE') THEN
     RAISE EXCEPTION 'FAIL anon can execute the setter';
   END IF;
   RAISE NOTICE 'ok  clients and anonymous callers cannot change the profile';
@@ -173,6 +173,62 @@ BEGIN
   IF NOT (SELECT teaches_classes FROM tenants WHERE id = photo) THEN RAISE EXCEPTION 'FAIL setter blocked by the guard'; END IF;
   RESET ROLE;
   RAISE NOTICE 'ok  direct profile updates are refused; the setter and other columns still work';
+END $$;
+
+-- "Clients sign a health declaration": NULL until set (from the field), set only through the
+-- setter (audited), refused for a direct update and for anon; the legal profile returns it with
+-- the field's default and legal add-on.
+DO $$
+DECLARE
+  photo UUID := 'a0000000-0000-4000-8000-000000000001';
+  admin UUID := 'b0000000-0000-4000-8000-00000000000e';
+  r RECORD;
+  n INT;
+BEGIN
+  IF (SELECT health_declaration FROM tenants WHERE id = photo) IS NOT NULL THEN
+    RAISE EXCEPTION 'FAIL an existing studio has a health-declaration setting';
+  END IF;
+  SELECT * INTO r FROM get_tenant_legal_profile(photo);
+  IF r.health_declaration IS NOT NULL THEN RAISE EXCEPTION 'FAIL legal profile setting should be NULL'; END IF;
+
+  PERFORM set_config('request.jwt.claim.sub', admin::text, false);
+  SELECT count(*) INTO n FROM audit_log WHERE entity_type = 'business_profile' AND entity_id = photo;
+  PERFORM set_business_profile(photo, p_health_declaration => true);
+  IF NOT (SELECT health_declaration FROM tenants WHERE id = photo) THEN RAISE EXCEPTION 'FAIL setter did not set it'; END IF;
+  IF (SELECT count(*) FROM audit_log WHERE entity_type = 'business_profile' AND entity_id = photo) <> n + 1 THEN
+    RAISE EXCEPTION 'FAIL the change was not audited';
+  END IF;
+  PERFORM set_business_profile(photo, NULL, NULL, NULL, NULL);   -- the old five-argument call still works
+  IF NOT (SELECT health_declaration FROM tenants WHERE id = photo) THEN RAISE EXCEPTION 'FAIL NULL changed the setting'; END IF;
+
+  SET LOCAL ROLE authenticated;
+  BEGIN
+    UPDATE tenants SET health_declaration = false WHERE id = photo;
+    RAISE EXCEPTION 'FAIL a direct update of health_declaration was accepted';
+  EXCEPTION WHEN insufficient_privilege THEN
+    IF SQLERRM <> 'business_profile_use_setter' THEN RAISE; END IF;
+  END;
+  RESET ROLE;
+
+  PERFORM set_config('request.jwt.claim.sub', '', false);
+  SET LOCAL ROLE anon;
+  BEGIN
+    PERFORM set_business_profile(photo, p_health_declaration => false);
+    RAISE EXCEPTION 'FAIL anon changed the setting';
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
+  RESET ROLE;
+  IF NOT (SELECT health_declaration FROM tenants WHERE id = photo) THEN RAISE EXCEPTION 'FAIL the setting changed'; END IF;
+
+  SELECT * INTO r FROM get_tenant_legal_profile(photo);
+  IF NOT r.health_declaration THEN RAISE EXCEPTION 'FAIL legal profile lacks the setting'; END IF;
+  UPDATE verticals SET legal_addon = 'coaching', default_switches = default_switches || '{"health_declaration": true}'
+   WHERE id = (SELECT skin FROM tenants WHERE id = photo);
+  SELECT * INTO r FROM get_tenant_legal_profile(photo);
+  IF r.skin_legal_addon IS DISTINCT FROM 'coaching' OR r.skin_health_declaration IS NOT TRUE OR r.skin_name_en IS NULL THEN
+    RAISE EXCEPTION 'FAIL legal profile lacks the field''s choices: %', row(r.skin_legal_addon, r.skin_health_declaration, r.skin_name_en);
+  END IF;
+  RAISE NOTICE 'ok  health declaration: setter only (audited), refused directly and for anon; legal profile returns it and the field''s add-on';
 END $$;
 
 -- Existing-studio data step: re-run it over rows shaped like the untouched backfill and check the result.

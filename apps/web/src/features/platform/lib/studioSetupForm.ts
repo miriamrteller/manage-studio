@@ -1,5 +1,6 @@
 import { OPALSWIFT_BRAND } from '@/lib/theme/opalswiftBrand';
 import { profileFromSkin, type PaymentFlow, type Skin, type StudioProfile } from '@shared/index';
+import { fieldHealthDeclarations } from '@shared/legal/field-defaults';
 import type { StudioInvoicingProvider, StudioPaymentProvider } from '../services/studioSetupService';
 
 /** A skin id (verticals.id). The wizard lists the live skins; VERTICALS is the built-in fallback. */
@@ -22,6 +23,8 @@ export interface StudioSetupForm {
   teachesClasses: boolean;
   familyAccounts: boolean;
   clientBooking: boolean;
+  /** Clients sign a health declaration: prefilled from the field, under "Details we filled in for you". */
+  healthDeclaration: boolean;
   /** Business address and phone (both optional); stored in the studio's legal profile. */
   businessAddress: string;
   businessPhone: string;
@@ -52,6 +55,7 @@ export const INITIAL_FORM: StudioSetupForm = {
   teachesClasses: false,
   familyAccounts: false,
   clientBooking: false,
+  healthDeclaration: false,
   businessAddress: '',
   businessPhone: '',
   monthlyFees: true,
@@ -79,6 +83,22 @@ function builtInProfileDefaults(vertical: StudioVertical): StudioProfile {
     default:
       return { paymentFlow: 'both', teachesClasses: false, familyAccounts: false, clientBooking: false };
   }
+}
+
+/**
+ * "Clients sign a health declaration" for a field: the skin's own default, else sport and
+ * movement fields (dance, fitness and trainers, yoga and pilates, swimming, martial arts).
+ */
+export function healthDeclarationFor(
+  vertical: StudioVertical,
+  skin?: Pick<Skin, 'switches' | 'nameEn' | 'nameHe'> | null,
+): boolean {
+  return fieldHealthDeclarations({
+    id: vertical,
+    nameEn: skin?.nameEn,
+    nameHe: skin?.nameHe,
+    healthDeclaration: skin?.switches.healthDeclaration,
+  });
 }
 
 /** "Will you charge monthly fees?" follows the payment flow unless the owner answers otherwise. */
@@ -119,6 +139,7 @@ export function toSetupRequest(form: StudioSetupForm) {
       teachesClasses: form.teachesClasses,
       familyAccounts: form.familyAccounts,
       clientBooking: form.clientBooking,
+      healthDeclaration: form.healthDeclaration,
     },
   };
 }

@@ -3612,6 +3612,7 @@ export type Database = {
                     google_calendar_id: string | null;
                     google_calendar_refresh_token_enc: string | null;
                     google_calendar_token_expires_at: string | null;
+                    health_declaration: boolean | null;
                     id: string;
                     invoice_license_number: string | null;
                     invoicing_account_id: string | null;
@@ -3690,6 +3691,7 @@ export type Database = {
                     google_calendar_id?: string | null;
                     google_calendar_refresh_token_enc?: string | null;
                     google_calendar_token_expires_at?: string | null;
+                    health_declaration?: boolean | null;
                     id?: string;
                     invoice_license_number?: string | null;
                     invoicing_account_id?: string | null;
@@ -3768,6 +3770,7 @@ export type Database = {
                     google_calendar_id?: string | null;
                     google_calendar_refresh_token_enc?: string | null;
                     google_calendar_token_expires_at?: string | null;
+                    health_declaration?: boolean | null;
                     id?: string;
                     invoice_license_number?: string | null;
                     invoicing_account_id?: string | null;
@@ -4963,6 +4966,7 @@ export type Database = {
                 };
                 Returns: {
                     contact_email: string;
+                    health_declaration: boolean;
                     language_default: string;
                     legal_pack_ack_drafts: string[];
                     legal_pack_acknowledged_at: string;
@@ -4972,6 +4976,10 @@ export type Database = {
                     legal_profile_updated_at: string;
                     name: string;
                     skin: string;
+                    skin_health_declaration: boolean;
+                    skin_legal_addon: string;
+                    skin_name_en: string;
+                    skin_name_he: string;
                     teaches_classes: boolean;
                     tenant_id: string;
                 }[];
@@ -5663,6 +5671,7 @@ export type Database = {
                 Args: {
                     p_client_booking?: boolean;
                     p_family_accounts?: boolean;
+                    p_health_declaration?: boolean;
                     p_payment_flow?: string;
                     p_teaches_classes?: boolean;
                     p_tenant_id: string;
