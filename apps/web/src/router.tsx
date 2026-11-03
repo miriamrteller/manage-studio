@@ -62,10 +62,12 @@ import UnsubscribePage from "./pages/UnsubscribePage";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { RouteErrorFallback } from "./components/RouteErrorFallback";
 import { MonitoringContextSync } from "./lib/monitoring/MonitoringContextSync";
+import { StudioFavicon } from "./components/StudioFavicon";
 
 function RootLayout() {
   return (
     <LanguageProvider>
+      <StudioFavicon />
       <StudioHostGate>
         <LabelsProvider>
           <AppLayout>
