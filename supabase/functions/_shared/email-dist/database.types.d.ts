@@ -4762,9 +4762,11 @@ export type Database = {
                     accent_color: string;
                     accessibility_statement_url: string;
                     chrome_style: string;
+                    client_booking: boolean;
                     country: string;
                     currency: string;
                     enabled_features: string[];
+                    family_accounts: boolean;
                     font_pair: string;
                     id: string;
                     invoicing_provider: string;
@@ -4777,6 +4779,7 @@ export type Database = {
                     logo_url: string;
                     name: string;
                     offline_payment_instructions: string;
+                    payment_flow: string;
                     payment_provider: string;
                     payment_provider_public_key: string;
                     payment_provider_secret_configured: boolean;
@@ -4786,6 +4789,7 @@ export type Database = {
                     primary_color: string;
                     privacy_policy_url: string;
                     skin: string;
+                    teaches_classes: boolean;
                     tenant_subdomain: string;
                     terms_url: string;
                 }[];
@@ -4798,9 +4802,11 @@ export type Database = {
                     accent_color: string;
                     accessibility_statement_url: string;
                     chrome_style: string;
+                    client_booking: boolean;
                     country: string;
                     currency: string;
                     enabled_features: string[];
+                    family_accounts: boolean;
                     font_pair: string;
                     id: string;
                     invoicing_provider: string;
@@ -4813,6 +4819,7 @@ export type Database = {
                     logo_url: string;
                     name: string;
                     offline_payment_instructions: string;
+                    payment_flow: string;
                     payment_provider: string;
                     payment_provider_public_key: string;
                     payment_provider_secret_configured: boolean;
@@ -4822,6 +4829,7 @@ export type Database = {
                     primary_color: string;
                     privacy_policy_url: string;
                     skin: string;
+                    teaches_classes: boolean;
                     tenant_subdomain: string;
                     terms_url: string;
                 }[];

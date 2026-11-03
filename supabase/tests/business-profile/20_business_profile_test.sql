@@ -139,6 +139,20 @@ BEGIN
   RAISE NOTICE 'ok  no billing/payment function reads features';
 END $$;
 
+-- The tenant site config carries the profile, by subdomain and by custom host.
+DO $$
+DECLARE r RECORD;
+BEGIN
+  SELECT payment_flow, teaches_classes, family_accounts, client_booking INTO r FROM get_tenant_config_by_subdomain('photo');
+  IF r.payment_flow IS NULL OR r.teaches_classes IS NULL OR r.family_accounts IS NULL OR r.client_booking IS NULL THEN
+    RAISE EXCEPTION 'FAIL tenant config lacks the profile';
+  END IF;
+  UPDATE tenants SET custom_domain = 'app.photo.test' WHERE subdomain = 'photo';
+  SELECT payment_flow INTO r FROM get_tenant_config_by_host('app.photo.test');
+  IF r.payment_flow IS NULL THEN RAISE EXCEPTION 'FAIL host config lacks the profile'; END IF;
+  RAISE NOTICE 'ok  tenant config (subdomain and host) returns the profile';
+END $$;
+
 -- The columns change only through the setter: a direct UPDATE as a signed-in admin is refused,
 -- other tenant columns still update, and the setter itself still works.
 DO $$

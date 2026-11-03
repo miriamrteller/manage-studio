@@ -1,3 +1,4 @@
+import type { StudioProfile } from '@shared/index';
 import type { LogoTone } from '../lib/theme/logoTone';
 
 export type TenantWhiteLabel = {
@@ -37,6 +38,8 @@ export type TenantConfig = {
   /** Studio-written "pay at the studio" text; used when payment_provider === 'offline'. */
   offline_payment_instructions?: string | null;
   business_preset: string;
+  /** Payment flow and the three switches; a missing value reads as an existing studio (all on). */
+  profile?: StudioProfile;
   /** Vertical id (tenants.skin): photographer | beautician | dance-studio | generic */
   vertical: string;
   entity_label_overrides?: Record<string, Record<string, string>>;

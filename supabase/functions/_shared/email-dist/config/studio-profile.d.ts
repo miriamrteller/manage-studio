@@ -14,6 +14,7 @@
  * must keep working whatever is switched off.
  */
 import { type FeatureKey } from './feature-registry.js';
+import { type EntityLabelLocale, type EntityLabels, type VerticalId } from './tenant-presets.js';
 export type PaymentFlow = 'recurring' | 'project' | 'both';
 export interface StudioProfile {
     paymentFlow: PaymentFlow;
@@ -29,11 +30,22 @@ export declare const PROFILE_GATES: Partial<Record<FeatureKey, ProfileGate>>;
 export declare function profileHasGate(profile: StudioProfile, gate: ProfileGate): boolean;
 /** Gated features this profile turns on by default (core features are not listed). */
 export declare function defaultFeatureKeys(profile: StudioProfile): FeatureKey[];
-/** Map the tenants row (snake_case) to a profile. */
+/**
+ * What a studio that exists today has: everything on. A row without profile fields
+ * (an older cached response, a test fixture) reads as this, so nothing changes for it.
+ */
+export declare const EXISTING_STUDIO_PROFILE: StudioProfile;
+/** Map the tenants row (snake_case) to a profile; a missing field reads as "on". */
 export declare function profileFromTenant(row: {
-    payment_flow: string;
-    teaches_classes: boolean;
-    family_accounts: boolean;
-    client_booking: boolean;
+    payment_flow?: string | null;
+    teaches_classes?: boolean | null;
+    family_accounts?: boolean | null;
+    client_booking?: boolean | null;
 }): StudioProfile;
+/**
+ * The studio's words. A studio that teaches classes keeps the wording it has today
+ * (class vocabulary plus any skin layer). Any other studio starts from the general
+ * wording. In both cases the studio's own word overrides win last.
+ */
+export declare function resolveStudioLabels(profile: StudioProfile, overrides?: Partial<EntityLabels>, locale?: EntityLabelLocale, vertical?: VerticalId): EntityLabels;
 //# sourceMappingURL=studio-profile.d.ts.map
