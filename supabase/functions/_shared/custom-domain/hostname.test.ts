@@ -3,11 +3,11 @@
  * Run: cd supabase/functions && deno test --allow-env --allow-read --allow-net _shared/custom-domain/hostname.test.ts
  */
 import { assertEquals } from "https://deno.land/std@0.168.0/testing/asserts.ts";
-import { checkHostname } from "./hostname.ts";
+import { checkHostname, type HostnameErrorCode } from "./hostname.ts";
 
 const ok = (input: string, hostname: string, registrableDomain: string) =>
   assertEquals(checkHostname(input), { ok: true, hostname, registrableDomain });
-const bad = (input: unknown, code: string) => assertEquals(checkHostname(input), { ok: false, code });
+const bad = (input: unknown, code: HostnameErrorCode) => assertEquals(checkHostname(input), { ok: false, code });
 
 Deno.test("a subdomain of a real domain is accepted and normalised", () => {
   ok("app.creativeballetacademy.com", "app.creativeballetacademy.com", "creativeballetacademy.com");
