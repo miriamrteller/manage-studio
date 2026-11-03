@@ -550,6 +550,12 @@
         e.preventDefault();
         const form = e.target;
         const data = new FormData(form);
+        // Industry pages link here as index.html?from=<page>#contact; note which page in the message.
+        const from = (new URLSearchParams(location.search).get('from') || '').toLowerCase();
+        if (/^[a-z0-9-]{1,40}$/.test(from)) {
+          const note = '\n\n(Sent from the ' + from + ' page)';
+          data.set('message', String(data.get('message') || '').slice(0, 4000 - note.length) + note);
+        }
         try {
           const res = await fetch(form.action, { method: 'POST', body: data, headers: { 'Accept': 'application/json' } });
           if (res.ok) {

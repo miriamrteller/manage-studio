@@ -4,7 +4,8 @@
 // exists (error). A "page.html#anchor" or url(#id) whose id is not on that
 // page is a warning only: the live site already has a few, and fixing content
 // is a separate change. External links, mailto:/tel:, data: and /api/*
-// (Pages Functions) are skipped.
+// (Pages Functions) are skipped. A dead link (href="#" or href="") is an
+// error: every button must go somewhere.
 //
 //   node scripts/ci/check-marketing-links.mjs apps/marketing/public
 import { readFileSync, readdirSync, existsSync, statSync } from "node:fs";
@@ -44,6 +45,10 @@ for (const file of files.filter((f) => [".html", ".js", ".css"].includes(extname
     ...text.matchAll(/\s(?:href|src|action)=["']([^"']*)["']/g),
     ...text.matchAll(/url\(\s*["']?([^"')]+)["']?\s*\)/g),
   ].map((m) => m[1].trim());
+  for (const m of text.matchAll(/\shref=(["'])(#?)\1/g)) {
+    const line = text.slice(0, m.index).split("\n").length;
+    problems.push(`${relative(root, file)}:${line}: dead link href="${m[2]}" (point it somewhere real)`);
+  }
   for (const ref of refs) {
     if (!ref || skip.test(ref)) continue;
     const [pathPart, hash] = ref.split("#");
