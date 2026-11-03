@@ -127,7 +127,7 @@ Deno.test("Clients sign a health declaration: the studio's setting decides, else
   fake = fakeDeps();
   await seedSignedTemplate(fake.deps, {
     ...studio("swim-coach"),
-    skin_row: { name_en: "Swim coach", default_switches: { health_declaration: true }, legal_addon: null },
+    verticals: { name_en: "Swim coach", default_switches: { health_declaration: true }, legal_addon: null },
   });
   assertEquals(fake.rows.filter((r) => r.language === "en").map((r) => r.audience), ["child", "adult", null]);
   fake.rows.forEach(checkFilled);
@@ -135,7 +135,7 @@ Deno.test("Clients sign a health declaration: the studio's setting decides, else
 
 Deno.test("tutors, coaches and therapists: the agreement carries the coaching add-on", async () => {
   const { deps, rows } = fakeDeps();
-  await seedSignedTemplate(deps, { ...studio("private-tutor"), skin_row: { name_en: "Private tutor", legal_addon: "coaching" } });
+  await seedSignedTemplate(deps, { ...studio("private-tutor"), verticals: { name_en: "Private tutor", legal_addon: "coaching" } });
   const en = rows.find((r) => r.language === "en")!;
   assertEquals(en.name, "Sessions agreement");
   assertStringIncludes(en.content, "Coaching and tutoring sessions");

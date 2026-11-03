@@ -64,7 +64,10 @@ import {
 } from '@shared/index';
 import { OperatorOnboardingWizard } from '@/features/platform/components/OperatorOnboardingWizard';
 import { profileDefaultsFor } from '@/features/platform/lib/studioSetupForm';
-import { fieldFromSearch, rememberSignupField, signupFieldSearch } from '@/features/skins/wizardFields';
+import { fieldFromSearch, rememberSignupField, signupFieldSearch, skinColours } from '@/features/skins/wizardFields';
+import { formQuestions, parseLeadFormConfig, presetKeysFor } from '@shared/index';
+import { signedFormsForSkin, studioSignedForms } from '@shared/legal/signed-template';
+import { INITIAL_FORM } from '@/features/platform/lib/studioSetupForm';
 import SkinsPage from '@/features/skins/SkinsPage';
 
 const BUILT_IN_ROWS = [
@@ -197,20 +200,10 @@ describe('wizard "Your field"', () => {
   });
 
   it('a marketing industry link preselects the field', async () => {
-    // Set the URL directly: other test files can leave window.location replaced.
-    const real = Object.getOwnPropertyDescriptor(window, 'location');
-    Object.defineProperty(window, 'location', {
-      configurable: true,
-      value: { href: 'http://localhost/platform/onboard?from=swim-coach', origin: 'http://localhost', pathname: '/platform/onboard', search: '?from=swim-coach', hash: '' },
-    });
-    try {
-      wrap(<OperatorOnboardingWizard />);
-      await toTypeStep();
-      const swim = await screen.findByRole('radio', { name: /Swim coach/ }, { timeout: 5000 });
-      await waitFor(() => expect(swim).toBeChecked(), { timeout: 5000 });
-    } finally {
-      if (real) Object.defineProperty(window, 'location', real);
-    }
+    wrap(<OperatorOnboardingWizard />, '/platform/onboard?from=swim-coach');
+    await toTypeStep();
+    const swim = await screen.findByRole('radio', { name: /Swim coach/ }, { timeout: 5000 });
+    await waitFor(() => expect(swim).toBeChecked(), { timeout: 5000 });
   });
 }, 20000);
 
@@ -265,5 +258,78 @@ describe('/platform/skins', () => {
     wrap(<SkinsPage />);
     expect(await screen.findByRole('heading', { name: 'סקינים' })).toBeInTheDocument();
     expect(await screen.findByText('מאמן/ת שחייה')).toBeInTheDocument();
+  });
+});
+
+describe('skins part B: enquiry questions, colours, legal add-on', () => {
+  it('a chosen question outside the field\'s usual set still shows on the form', () => {
+    const config = parseLeadFormConfig({
+      presets: { preferred_date: { enabled: true }, experience: { enabled: true } },
+      extra: ['experience', 'preferred_date', 'nope'],
+    });
+    expect(config.extra).toEqual(['experience', 'preferred_date']);
+    expect(presetKeysFor(config, 'general')).toEqual(['service_interest', 'preferred_date', 'experience']);
+    expect(formQuestions(config, 'general').map((q) => q.key)).toEqual(['preferred_date', 'experience']);
+    // Switched on for another kind but not given by the skin: stays hidden (as before).
+    const stale = parseLeadFormConfig({ presets: { child_name: { enabled: true } } });
+    expect(formQuestions(stale, 'photography')).toEqual([]);
+  });
+
+  it('a data skin signs the agreement with its add-on; built-in skins keep their own forms', () => {
+    expect(signedFormsForSkin('swim-coach', 'photographer')[0]).toMatchObject({ doc: 'service-agreement', addon: 'addon-photographer' });
+    expect(signedFormsForSkin('swim-coach', 'coaching')[0].addon).toBe('addon-coaching');
+    expect(signedFormsForSkin('swim-coach', null)[0].addon).toBeUndefined();
+    expect(signedFormsForSkin('dance-studio', 'beautician')).toEqual(signedFormsForSkin('dance-studio'));
+    expect(signedFormsForSkin('photographer', 'beautician')[0].addon).toBe('addon-photographer');
+    const ctx = { lang: 'en' as const, tenantName: 'Pool Kids', contactEmail: 'a@b.c', profile: {} };
+    expect(studioSignedForms('dance-studio', ctx, { legalAddon: 'beautician' })).toEqual(studioSignedForms('dance-studio', ctx));
+    expect(studioSignedForms('swim-coach', ctx, { legalAddon: 'beautician' })[0].content.length).toBeGreaterThan(studioSignedForms('swim-coach', ctx)[0].content.length);
+  });
+
+  it('choosing a field brings its colours unless the owner picked their own', () => {
+    const swim = parseSkinRow({ ...SWIM, colours: { primary: '#0369A1', accent: '#14B8A6' } });
+    const plain = parseSkinRow(SWIM);
+    const start = { vertical: 'generic', primaryColor: INITIAL_FORM.primaryColor, accentColor: INITIAL_FORM.accentColor };
+    expect(skinColours(start, [swim], swim)).toEqual({ primaryColor: '#0369A1', accentColor: '#14B8A6' });
+    expect(skinColours({ ...start, primaryColor: '#111111' }, [swim], swim)).toEqual({});
+    expect(skinColours(start, [swim], plain)).toEqual({});
+    // Switching away from a skin's colours to a skin without them goes back to the defaults only via a skin that has colours.
+    expect(skinColours({ vertical: 'swim-coach', primaryColor: '#0369A1', accentColor: '#14B8A6' }, [swim], swim)).toEqual({ primaryColor: '#0369A1', accentColor: '#14B8A6' });
+  });
+
+  it('the Skins page saves enquiry questions and colours, and previews a sample studio', async () => {
+    wrap(<SkinsPage />);
+    await screen.findByRole('table', { name: 'Skins' });
+    fireEvent.click(screen.getByRole('button', { name: 'Edit Swim coach' }));
+    const preview = screen.getByRole('region', { name: 'Sample studio' });
+    expect(within(preview).getByText('Swimmers')).toBeInTheDocument();
+    expect(within(preview).getByText('Add Swimmer')).toBeInTheDocument();
+    expect(within(preview).getByText('Preferred date', { selector: 'li' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Previous experience' }));
+    fireEvent.change(screen.getByLabelText('Main colour'), { target: { value: '#0369A1' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save skin' }));
+    await screen.findByText('Swim coach is saved.');
+    expect(h.updated[0]).toMatchObject({ enquiry_presets: ['experience', 'preferred_date'], colours: { primary: '#0369A1' } });
+  });
+
+  it('a bad colour code is caught before saving', async () => {
+    wrap(<SkinsPage />);
+    await screen.findByRole('table', { name: 'Skins' });
+    fireEvent.click(screen.getByRole('button', { name: 'Edit Swim coach' }));
+    fireEvent.change(screen.getByLabelText('Accent colour'), { target: { value: 'blue' } });
+    expect(screen.getByText('Use a colour code like #5B6CFF.')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Save skin' }));
+    expect(await screen.findByText('Some answers need a look before saving.')).toBeInTheDocument();
+    expect(h.updated).toHaveLength(0);
+  });
+
+  it('every add-on a skin can choose is in the signed forms (coaching included)', async () => {
+    wrap(<SkinsPage />);
+    await screen.findByRole('table', { name: 'Skins' });
+    fireEvent.click(screen.getByRole('button', { name: 'Edit Swim coach' }));
+    expect(screen.queryByText(/This add-on is not in the signed forms yet/)).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Service-agreement add-on'), { target: { value: 'photographer' } });
+    expect(screen.queryByText(/This add-on is not in the signed forms yet/)).not.toBeInTheDocument();
+    expect(within(screen.getByRole('region', { name: 'Sample studio' })).getByText(/with the Photographer add-on/)).toBeInTheDocument();
   });
 });

@@ -11,8 +11,11 @@ export interface SeedTenant {
   legal_profile?: Record<string, unknown> | null;
   /** tenants.health_declaration (NULL: from the field). */
   health_declaration?: boolean | null;
-  /** The studio's skin row (verticals), if found: its health-declaration default and legal add-on. */
-  skin_row?: SeedSkinRow | null;
+  /**
+   * The skin row (embedded `verticals(...)`): its health-declaration default and legal add-on.
+   * PostgREST returns one object for this link; an untyped client types it as a list.
+   */
+  verticals?: SeedSkinRow | SeedSkinRow[] | null;
 }
 
 /** The parts of a verticals row the forms follow. */
@@ -23,9 +26,13 @@ export interface SeedSkinRow {
   legal_addon?: string | null;
 }
 
+function skinRow(tenant: SeedTenant): SeedSkinRow | null {
+  return (Array.isArray(tenant.verticals) ? tenant.verticals[0] : tenant.verticals) ?? null;
+}
+
 /** Which forms the studio's clients sign: its setting, else its field's default; its field's add-on. */
 export function seedScope(tenant: SeedTenant) {
-  const skin = tenant.skin_row ?? null;
+  const skin = skinRow(tenant);
   const switchValue = skin?.default_switches?.health_declaration;
   return studioFormsScope(
     {

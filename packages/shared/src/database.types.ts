@@ -3310,6 +3310,42 @@ export type Database = {
           },
         ]
       }
+      tenant_feature_optouts: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          feature_key: string
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          feature_key: string
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          feature_key?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_feature_optouts_feature_key_fkey"
+            columns: ["feature_key"]
+            isOneToOne: false
+            referencedRelation: "feature_definitions"
+            referencedColumns: ["key"]
+          },
+          {
+            foreignKeyName: "tenant_feature_optouts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenant_feature_overrides: {
         Row: {
           created_at: string
@@ -5319,6 +5355,10 @@ export type Database = {
         Args: { p_reviewed: boolean; p_template_id: string }
         Returns: boolean
       }
+      set_feature_optout: {
+        Args: { p_feature_key: string; p_off: boolean; p_tenant_id: string }
+        Returns: undefined
+      }
       sign_waiver: {
         Args: {
           p_accept_language: string
@@ -5350,6 +5390,15 @@ export type Database = {
           p_wording_snapshot: string
         }
         Returns: string
+      }
+      studio_feature_states: {
+        Args: { p_tenant_id: string }
+        Returns: {
+          description: string
+          feature_key: string
+          feature_set: string
+          is_on: boolean
+        }[]
       }
       tenant_has_succeeded_payment: {
         Args: { p_tenant_id: string }

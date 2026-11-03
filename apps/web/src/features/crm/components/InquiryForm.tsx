@@ -53,6 +53,8 @@ export function InquiryForm({
   const [marketing, setMarketing] = useState<ConsentState>({});
   const lang = useLegalLang();
   const tenant = useTenant();
+  // The class example only for studios that teach classes; a general one for everyone else.
+  const teachesClasses = (tenant?.profile?.teachesClasses ?? true) && tenant?.vertical !== 'photographer';
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error' | 'captcha' | 'answers'>('idle');
   const { questions } = useLeadFormQuestions(namedForm?.question_keys ?? null);
   // A form made for one class or package starts with it chosen.
@@ -188,7 +190,9 @@ export function InquiryForm({
             className="w-full border rounded px-3 py-2"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            placeholder={t('pages.crm.inquire.message_placeholder')}
+            placeholder={t(
+              teachesClasses ? 'pages.crm.inquire.message_placeholder_classes' : 'pages.crm.inquire.message_placeholder',
+            )}
           />
         </div>
         <LeadQuestionFields

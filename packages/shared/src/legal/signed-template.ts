@@ -126,6 +126,24 @@ export function hasHealthDeclarations(vertical: string | null | undefined, setti
 }
 
 /**
+ * The forms for a skin as the Skins page previews them (no studio setting yet). Built-in
+ * skins keep their own forms; a data skin gets the add-on its row names, when the app
+ * ships it (coaching included), and dance-style health forms only through the setting.
+ */
+export function signedFormsForSkin(skin: string | null | undefined, legalAddon?: string | null): SignedFormSpec[] {
+  const id = skin ?? '';
+  if (BUILT_IN_SKIN_IDS.includes(id) || !legalAddon) return signedFormsFor(id);
+  return signedFormsFor(id, { legalAddon: isSignedAddon(legalAddon) ? legalAddon : null });
+}
+
+/** Add-ons a data skin can bring into its signed forms today. */
+export function isShippedLegalAddon(legalAddon: string | null | undefined): boolean {
+  return isSignedAddon(legalAddon);
+}
+
+const BUILT_IN_SKIN_IDS = ['dance-studio', 'photographer', 'beautician', 'generic'];
+
+/**
  * The studio's insurance answer. Optional and never blocking: anything but an
  * explicit "We have insurance" counts as "We don't have insurance" (owner
  * decision), so an unanswered choice is never treated as insured.

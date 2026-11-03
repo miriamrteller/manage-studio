@@ -47,6 +47,8 @@ export interface TenantLegalProfile {
   name: string;
   contactEmail: string;
   vertical: VerticalId;
+  /** The skin as stored; `vertical` is its built-in code skin ('generic' for a data skin). */
+  skin: string;
   profile: Record<string, string>;
   published: boolean;
   updatedAt: string | null;
@@ -91,11 +93,13 @@ export async function fetchTenantLegalProfile(tenantId: string): Promise<TenantL
   if (error) throw error;
   const row = Array.isArray(rows) ? rows[0] : rows;
   if (!row) return null;
+  const skin = typeof row.skin === 'string' ? row.skin : 'generic';
   return {
     tenantId: row.tenant_id,
     name: row.name,
     contactEmail: row.contact_email,
     vertical: safeVertical(row.skin),
+    skin,
     profile: toStringRecord(row.legal_profile),
     published: row.legal_pages_published === true,
     updatedAt: row.legal_profile_updated_at ?? null,
