@@ -14,6 +14,10 @@ BEGIN;
 
 -- The local seed already has the owner (on a studio). Move that account aside so
 -- this transaction can sign the owner up from scratch, as on an empty production.
+-- (Its profile loses super_admin first: a login email that is not an owner address is refused
+-- for a super_admin profile, by design, since the email change now syncs to the profile.)
+UPDATE user_profiles SET role = array_remove(role, 'super_admin')
+WHERE id IN (SELECT id FROM auth.users WHERE lower(email) = 'miriamrteller@gmail.com');
 UPDATE auth.users SET email = 'owner-moved-aside@example.test'
 WHERE lower(email) = 'miriamrteller@gmail.com';
 
