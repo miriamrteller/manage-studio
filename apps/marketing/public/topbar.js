@@ -72,7 +72,7 @@
     '    </div>' +
     '    <a href="https://app.opalswift.com" class="nav-signin" data-he="כניסה" data-en="Sign in">כניסה</a>' +
     '    <a href="#pricing" class="btn btn-primary" style="padding:10px 20px"' +
-    '       data-he="להתחיל ניסיון חינם" data-en="Start free trial">להתחיל ניסיון חינם</a>' +
+    '       data-he="הצטרפו לבטא החינמית" data-en="Join the free beta">הצטרפו לבטא החינמית</a>' +
     '  </div>' +
     '</div>';
 
