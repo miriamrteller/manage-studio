@@ -43,8 +43,9 @@ export function LegalSettingsForm() {
   const [values, setValues] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Set<string>>(() => new Set());
   const [message, setMessage] = useState<string | null>(null);
-  // Details the studio already gave us (name, contact email, providers, season).
-  const { autofill } = useLegalAutofill(legal);
+  // Details the studio already gave us (name, contact email, providers, the
+  // owner's phone and the classes' shared address), each shown and editable here.
+  const { autofill } = useLegalAutofill(legal, { studioSuggestions: true });
   const autofillKey = JSON.stringify(autofill);
 
   useEffect(() => {
