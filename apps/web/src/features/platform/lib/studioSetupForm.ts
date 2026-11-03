@@ -32,9 +32,9 @@ export interface StudioSetupForm {
 }
 
 /**
- * Defaults: English, OpalSwift colours, "pay me directly" with no tax documents. Nothing needs to
- * be connected to finish setup: Grow (or another service) is connected later in Settings, and the
- * studio can change its payment provider until its first payment.
+ * Defaults: English, OpalSwift colours, online card payment through Grow with Grow's tax
+ * documents. Nothing needs to be connected to finish setup: keys are entered later in Settings,
+ * and the studio can change its payment provider until its first payment.
  */
 export const INITIAL_FORM: StudioSetupForm = {
   name: '',
@@ -42,10 +42,8 @@ export const INITIAL_FORM: StudioSetupForm = {
   languageDefault: 'en',
   country: 'IL',
   vertical: 'generic',
-  // Pay me directly (cash, bank transfer, Bit) with no tax documents until the owner connects
-  // a service in Settings. Nothing needs to be connected to finish setup.
-  paymentProvider: 'offline',
-  invoicingProvider: 'none',
+  paymentProvider: 'grow',
+  invoicingProvider: 'grow',
   primaryColor: OPALSWIFT_BRAND.primary,
   accentColor: OPALSWIFT_BRAND.accent,
   ownerEmail: '',

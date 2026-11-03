@@ -122,9 +122,9 @@ describe('provider options', () => {
     expect(migration).toMatch(/accent_color SET DEFAULT '#21D1C2'/);
   });
 
-  it('the wizard defaults to "pay me directly" with no documents (nothing needs connecting to finish)', () => {
+  it('the wizard defaults to Grow with Grow documents (nothing needs connecting to finish)', () => {
     const request = toSetupRequest({ ...INITIAL_FORM, name: 'X', subdomain: 'x', ownerEmail: 'a@b.co' });
-    expect(request).toMatchObject({ paymentProvider: 'offline', invoicingProvider: 'none', languageDefault: 'en', currency: 'ILS' });
+    expect(request).toMatchObject({ paymentProvider: 'grow', invoicingProvider: 'grow', languageDefault: 'en', currency: 'ILS' });
     expect(ProvisionStudioSchema.safeParse(request).success).toBe(true);
   });
 

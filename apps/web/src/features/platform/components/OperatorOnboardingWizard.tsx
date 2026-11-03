@@ -401,7 +401,7 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
                     const monthlyFees = monthlyFeesForFlow(defaults.paymentFlow);
                     setForm((prev) => ({ ...prev, vertical, ...defaults, monthlyFees }));
                     if (monthlyFees && (form.paymentProvider === 'ypay' || form.paymentProvider === 'invoice4u')) {
-                      choosePayment('offline');
+                      choosePayment('grow');
                     }
                   }}
                 />
@@ -425,7 +425,7 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
                         setForm((prev) => ({ ...prev, paymentFlow: flow, monthlyFees: monthlyFeesForFlow(flow) }));
                         // YPay and Invoice4U cannot charge monthly fees.
                         if (monthlyFeesForFlow(flow) && (form.paymentProvider === 'ypay' || form.paymentProvider === 'invoice4u')) {
-                          choosePayment('offline');
+                          choosePayment('grow');
                         }
                       }}
                     />

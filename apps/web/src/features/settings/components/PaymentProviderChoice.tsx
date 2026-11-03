@@ -42,14 +42,12 @@ interface PaymentProviderChoiceProps {
 /**
  * How customers pay (owner decisions), used by the setup wizard and by Settings while the studio
  * may still choose:
- *  - "Pay me directly (cash, bank transfer, Bit)" comes first and is the default, for every
- *    business, registered or not. Nothing has to be connected.
- *  - Grow is shown as "connect later": choosing it only records the choice; the keys are entered
- *    in Settings when the studio is ready.
+ *  - Grow, or "Not a registered business yet: pay at the studio".
  *  - Studios that do not charge monthly fees also get "Different provider?" revealing YPay and
  *    Invoice4U, with a warning that they cannot charge monthly fees.
- * Whether the studio charges monthly fees is not asked here: it follows the payment flow. The
- * disclaimer says when changing stops being free.
+ * Whether the studio charges monthly fees is not asked here: it follows the payment flow (monthly
+ * or both = yes). Grow is pre-selected by the caller. The disclaimer says when changing stops
+ * being free.
  */
 export function PaymentProviderChoice({
   idPrefix,
@@ -79,7 +77,6 @@ export function PaymentProviderChoice({
     <fieldset>
       <legend className={CHOICE_LEGEND}>{t('studio_setup.payment_question')}</legend>
       <div className={CHOICE_GROUP}>
-        {radio('offline')}
         {radio('grow')}
         {!monthlyFees && !othersVisible && (
           <div className="px-3 py-2">
@@ -97,6 +94,7 @@ export function PaymentProviderChoice({
             <div className={CHOICE_NESTED}>{OTHER_PAYMENT_PROVIDERS.map((slug) => radio(slug))}</div>
           </div>
         )}
+        {radio('offline')}
       </div>
       {!monthlyFees && isOtherPaymentProvider(provider) && (
         <p className={CHOICE_NOTE} role="note">
