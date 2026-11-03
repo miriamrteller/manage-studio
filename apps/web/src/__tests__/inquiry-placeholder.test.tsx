@@ -21,6 +21,7 @@ vi.mock('@/lib/supabase', () => ({
 vi.mock('@/hooks/useTenant', () => ({
   useTenant: () => ({ id: 't-1', name: 'Studio', subdomain: 's', vertical: h.vertical, profile: { teachesClasses: h.teaches } }),
 }));
+vi.mock('@/hooks/useSignedInPrefill', () => ({ useSignedInPrefill: () => ({}), useFillWhenEmpty: () => {} }));
 vi.mock('@/lib/resolveTenantSubdomain', () => ({ resolveTenantSubdomain: () => 's' }));
 vi.mock('@/legal/useLegalDocument', () => ({ useLegalLang: () => 'en' }));
 vi.mock('@/components/PrivacyNotice', () => ({ PrivacyNotice: () => null }));
