@@ -3,13 +3,16 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { useTenant } from '@/hooks/useTenant';
 import { VerticalI18nProvider } from '@/i18n/VerticalI18nProvider';
 import {
+  EXISTING_STUDIO_PROFILE,
   resolveEntityLabels,
+  resolveStudioLabels,
   resolvePresetModules,
   safePreset,
   safeVertical,
   type BusinessPreset,
   type EntityLabels,
   type PresetModules,
+  type StudioProfile,
   type VerticalId,
 } from '@shared/index';
 
@@ -19,6 +22,8 @@ export interface LabelsContextType {
   preset: BusinessPreset;
   /** Vertical id (tenants.skin). 'generic' until the tenant loads. */
   vertical: VerticalId;
+  /** How the studio is set up: payment flow and the three switches. */
+  profile: StudioProfile;
 }
 
 // Module-level constant — never recreated between renders.
@@ -28,6 +33,7 @@ const FALLBACK: LabelsContextType = {
   modules: resolvePresetModules('programs'),
   preset: 'programs',
   vertical: 'generic',
+  profile: EXISTING_STUDIO_PROFILE,
 };
 
 // Non-null default: consumers always receive valid labels with no null-checks needed.
@@ -60,16 +66,13 @@ export function LabelsProvider({ children }: { children: ReactNode }) {
     }
     const preset = safePreset(tenant.business_preset);
     const vertical = safeVertical(tenant.vertical);
+    const profile = tenant.profile ?? EXISTING_STUDIO_PROFILE;
     return {
-      labels: resolveEntityLabels(
-        preset,
-        tenant.entity_label_overrides,
-        language,
-        vertical,
-      ),
+      labels: resolveStudioLabels(profile, tenant.entity_label_overrides, language, vertical),
       modules: resolvePresetModules(preset),
       preset,
       vertical,
+      profile,
     };
   }, [tenant, language]);
 

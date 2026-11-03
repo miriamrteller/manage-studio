@@ -27,6 +27,8 @@ export declare function isAppointmentVertical(vertical: VerticalId): boolean;
 export declare function parseEntityLabelOverrides(raw: unknown): Partial<EntityLabels>;
 export declare function safePreset(raw: unknown): BusinessPreset;
 export declare function resolvePresetModules(preset: BusinessPreset): PresetModules;
+/** The skin's own vocabulary on top of the base wording (empty for skins without one). */
+export declare function resolveVerticalLabels(vertical: VerticalId, locale: EntityLabelLocale): Partial<EntityLabels>;
 export declare function resolveEntityLabels(preset: BusinessPreset, overrides?: Partial<EntityLabels>, locale?: EntityLabelLocale, vertical?: VerticalId): EntityLabels;
 export declare function getDefaultRoleForPreset(preset: BusinessPreset): string;
 //# sourceMappingURL=tenant-presets.d.ts.map

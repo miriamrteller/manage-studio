@@ -171,9 +171,13 @@ export function safePreset(raw) {
 export function resolvePresetModules(preset) {
     return PRESET_MODULES[preset];
 }
+/** The skin's own vocabulary on top of the base wording (empty for skins without one). */
+export function resolveVerticalLabels(vertical, locale) {
+    return VERTICAL_LABELS[vertical]?.[locale] ?? {};
+}
 export function resolveEntityLabels(preset, overrides = {}, locale = 'en', vertical = 'generic') {
     const defaults = DEFAULT_LABELS_BY_LOCALE[locale][preset];
-    const verticalLabels = VERTICAL_LABELS[vertical]?.[locale] ?? {};
+    const verticalLabels = resolveVerticalLabels(vertical, locale);
     return { ...defaults, ...verticalLabels, ...overrides };
 }
 export function getDefaultRoleForPreset(preset) {
