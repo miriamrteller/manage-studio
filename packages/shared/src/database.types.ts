@@ -1217,6 +1217,7 @@ export type Database = {
           deprecated_at: string | null
           description: string
           key: string
+          profile_gate: string | null
           skin_restriction: string | null
           successor_key: string | null
           tier_minimum: Database["public"]["Enums"]["tenant_plan"]
@@ -1226,6 +1227,7 @@ export type Database = {
           deprecated_at?: string | null
           description: string
           key: string
+          profile_gate?: string | null
           skin_restriction?: string | null
           successor_key?: string | null
           tier_minimum: Database["public"]["Enums"]["tenant_plan"]
@@ -1235,6 +1237,7 @@ export type Database = {
           deprecated_at?: string | null
           description?: string
           key?: string
+          profile_gate?: string | null
           skin_restriction?: string | null
           successor_key?: string | null
           tier_minimum?: Database["public"]["Enums"]["tenant_plan"]
@@ -2568,6 +2571,24 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_owner_emails: {
+        Row: {
+          added_at: string
+          email: string
+          note: string | null
+        }
+        Insert: {
+          added_at?: string
+          email: string
+          note?: string | null
+        }
+        Update: {
+          added_at?: string
+          email?: string
+          note?: string | null
+        }
+        Relationships: []
+      }
       quote_lines: {
         Row: {
           created_at: string
@@ -3542,11 +3563,13 @@ export type Database = {
           billing_policy: Json
           business_preset: string
           chrome_style: string
+          client_booking: boolean
           contact_email: string
           country: string
           created_at: string
           currency: string
           custom_domain: string | null
+          family_accounts: boolean
           font_pair: string | null
           from_email: string | null
           from_email_verified_at: string | null
@@ -3582,6 +3605,7 @@ export type Database = {
           name: string
           offline_payment_instructions: string | null
           onboarding_status: string
+          payment_flow: string
           payment_provider: string
           payment_provider_account_id: string | null
           payment_provider_public_key: string | null
@@ -3599,6 +3623,7 @@ export type Database = {
           skin: string
           sub_status: string
           subdomain: string
+          teaches_classes: boolean
           terms_url: string | null
           tranzila_terminal_name: string | null
           trial_ends_at: string | null
@@ -3615,11 +3640,13 @@ export type Database = {
           billing_policy?: Json
           business_preset?: string
           chrome_style?: string
+          client_booking?: boolean
           contact_email: string
           country?: string
           created_at?: string
           currency?: string
           custom_domain?: string | null
+          family_accounts?: boolean
           font_pair?: string | null
           from_email?: string | null
           from_email_verified_at?: string | null
@@ -3655,6 +3682,7 @@ export type Database = {
           name: string
           offline_payment_instructions?: string | null
           onboarding_status?: string
+          payment_flow?: string
           payment_provider?: string
           payment_provider_account_id?: string | null
           payment_provider_public_key?: string | null
@@ -3672,6 +3700,7 @@ export type Database = {
           skin?: string
           sub_status?: string
           subdomain: string
+          teaches_classes?: boolean
           terms_url?: string | null
           tranzila_terminal_name?: string | null
           trial_ends_at?: string | null
@@ -3688,11 +3717,13 @@ export type Database = {
           billing_policy?: Json
           business_preset?: string
           chrome_style?: string
+          client_booking?: boolean
           contact_email?: string
           country?: string
           created_at?: string
           currency?: string
           custom_domain?: string | null
+          family_accounts?: boolean
           font_pair?: string | null
           from_email?: string | null
           from_email_verified_at?: string | null
@@ -3728,6 +3759,7 @@ export type Database = {
           name?: string
           offline_payment_instructions?: string | null
           onboarding_status?: string
+          payment_flow?: string
           payment_provider?: string
           payment_provider_account_id?: string | null
           payment_provider_public_key?: string | null
@@ -3745,6 +3777,7 @@ export type Database = {
           skin?: string
           sub_status?: string
           subdomain?: string
+          teaches_classes?: boolean
           terms_url?: string | null
           tranzila_terminal_name?: string | null
           trial_ends_at?: string | null
@@ -4792,6 +4825,7 @@ export type Database = {
         Returns: boolean
       }
       is_minor: { Args: { date_of_birth: string }; Returns: boolean }
+      is_platform_owner_email: { Args: { p_email: string }; Returns: boolean }
       is_reserved_subdomain: { Args: { p_subdomain: string }; Returns: boolean }
       is_service_role: { Args: never; Returns: boolean }
       is_super_admin: { Args: never; Returns: boolean }
@@ -5184,6 +5218,16 @@ export type Database = {
           p_amount_minor: number
           p_engagement_id: string
           p_note?: string
+        }
+        Returns: Json
+      }
+      set_business_profile: {
+        Args: {
+          p_client_booking?: boolean
+          p_family_accounts?: boolean
+          p_payment_flow?: string
+          p_teaches_classes?: boolean
+          p_tenant_id: string
         }
         Returns: Json
       }
