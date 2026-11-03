@@ -6,6 +6,8 @@ import type { UserProfile } from '@/types/auth';
 export interface StudioLink {
   id: string;
   name: string;
+  /** The studio's address label, for opening it signed in (studio handoff). */
+  subdomain: string;
   url: string;
   /** How the studio started: set up by OpalSwift, or self-serve signup. */
   signupSource?: 'operator' | 'self_serve';
@@ -33,6 +35,7 @@ export function useMyStudios(user: Pick<UserProfile, 'id' | 'role' | 'tenant_id'
         .map((row) => ({
           id: row.id,
           name: row.name?.trim() || row.subdomain,
+          subdomain: row.subdomain,
           url: tenantOrigin(row.subdomain),
           signupSource: row.signup_source === 'self_serve' ? 'self_serve' : 'operator',
           status: row.sub_status ?? undefined,

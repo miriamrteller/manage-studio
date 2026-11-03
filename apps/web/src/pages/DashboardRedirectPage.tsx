@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { isPlatformOwnerOnly } from '@/components/PlatformOwnerNotice';
 import { useTranslation } from 'react-i18next';
 import { useAuthSession } from '@/hooks/useAuth';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
@@ -89,7 +90,10 @@ export default function DashboardRedirectPage() {
 
     // Determine redirect based on user role
     // Users can have multiple roles, so check in priority order
-    if (user.role.includes('tenant_admin')) {
+    if (isPlatformOwnerOnly(user)) {
+      // The platform owner on a studio address: a clear notice, not /classes.
+      navigate('/platform-owner', { replace: true });
+    } else if (user.role.includes('tenant_admin')) {
       navigate('/admin/setup', { replace: true });
     } else if (hasParentRole(user.role)) {
       navigate('/dashboard/portal', { replace: true });
