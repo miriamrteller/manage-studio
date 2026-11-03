@@ -73,4 +73,17 @@ describe('demo studio setup handlers', () => {
       expect(template.lawyer_reviewed_at).toBeNull();
     }
   });
+
+  it('link_my_guardian_accounts links unlinked memberships with the login email, once', async () => {
+    const { c, tables } = client();
+    const person = { id: 'p-link', tenant_id: TENANT_ID, name: 'Guest Parent', email: 'Guest@Example.test' };
+    (tables.people ??= []).push(person);
+    (tables.account_members ??= []).push({ id: 'am-link', tenant_id: TENANT_ID, person_id: 'p-link', role: 'account_holder', user_profile_id: null });
+    const profile = { id: 'u-guest', tenant_id: TENANT_ID, role: ['parent'], email: 'guest@example.test' };
+    (tables.user_profiles ??= []).push(profile);
+    c.setUser({ id: 'u-guest', email: 'guest@example.test' });
+    expect((await c.rpc('link_my_guardian_accounts')).data).toBe(1);
+    expect(tables.account_members.find((m) => m.id === 'am-link')?.user_profile_id).toBe('u-guest');
+    expect((await c.rpc('link_my_guardian_accounts')).data).toBe(0);
+  });
 });

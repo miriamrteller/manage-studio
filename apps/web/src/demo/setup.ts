@@ -129,6 +129,34 @@ export const setupRpcs: Record<string, RpcHandler> = {
     template.lawyer_reviewed_by = args.p_reviewed ? ctx.user?.id ?? null : null;
     return true;
   },
+
+  /**
+   * link_my_guardian_accounts: link the signed-in parent's login to unlinked family
+   * memberships whose person carries the same email. Returns how many were linked.
+   */
+  link_my_guardian_accounts: (_args, ctx) => {
+    if (!ctx.user) throw new DemoRpcError('Authentication required');
+    const profile = rows(ctx, 'user_profiles').find((p) => p.id === ctx.user?.id);
+    const tenantId = profile?.tenant_id;
+    const email = String(ctx.user.email ?? '').trim().toLowerCase();
+    if (!tenantId || !email) return 0;
+    const people = new Map(rows(ctx, 'people').map((p) => [p.id, p]));
+    let linked = 0;
+    for (const m of rows(ctx, 'account_members')) {
+      const person = people.get(m.person_id);
+      if (
+        m.tenant_id === tenantId &&
+        !m.user_profile_id &&
+        (m.role === 'account_holder' || m.role === 'member') &&
+        person?.tenant_id === tenantId &&
+        String(person.email ?? '').trim().toLowerCase() === email
+      ) {
+        m.user_profile_id = ctx.user.id;
+        linked += 1;
+      }
+    }
+    return linked;
+  },
 };
 
 export const setupFunctions: Record<string, FunctionHandler> = {
