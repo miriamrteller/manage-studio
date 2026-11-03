@@ -24,6 +24,7 @@
       "guest_enrolment_create_engagement",
       "guest_enrolment_create_family",
       "guest_enrolment_request_age_review",
+      "is_active_custom_domain",
       "is_super_admin",
       "legal_document_is_public",
       "record_consents",
@@ -48,6 +49,7 @@
       "create_expense",
       "create_job",
       "create_job_payment_requests",
+      "custom_domain_enabled",
       "decline_age_review_engagement",
       "engagement_age_at_season_start",
       "export_tenant_data",
@@ -114,6 +116,7 @@
       "complete_automatic_email",
       "consent_template_draft_check",
       "create_self_serve_studio",
+      "custom_domain_hostname_available",
       "disconnect_tenant_google_calendar",
       "enforce_super_admin_reserved",
       "find_contacts_by_phone",
@@ -141,6 +144,7 @@
       "resolve_notification_blast_recipients",
       "save_tenant_google_credentials",
       "sign_waiver",
+      "tenant_custom_domains_touch_and_audit",
       "update_tenant_google_access_token"
     ]
   },

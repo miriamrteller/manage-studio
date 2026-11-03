@@ -774,6 +774,42 @@ export type Database = {
           },
         ]
       }
+      custom_domain_rollout: {
+        Row: {
+          created_at: string
+          enabled_by: string | null
+          note: string | null
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          enabled_by?: string | null
+          note?: string | null
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          enabled_by?: string | null
+          note?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_domain_rollout_enabled_by_fkey"
+            columns: ["enabled_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custom_domain_rollout_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_queue: {
         Row: {
           attempts: number
@@ -3137,6 +3173,81 @@ export type Database = {
           },
         ]
       }
+      tenant_custom_domains: {
+        Row: {
+          activated_at: string | null
+          auto_check_until: string | null
+          cf_hostname_id: string | null
+          created_at: string
+          delete_after: string | null
+          dns_records: Json
+          error_code: string | null
+          hostname: string
+          id: string
+          last_checked_at: string | null
+          managed_by: string
+          removed_at: string | null
+          requested_by: string | null
+          ssl_status: string | null
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          activated_at?: string | null
+          auto_check_until?: string | null
+          cf_hostname_id?: string | null
+          created_at?: string
+          delete_after?: string | null
+          dns_records?: Json
+          error_code?: string | null
+          hostname: string
+          id?: string
+          last_checked_at?: string | null
+          managed_by?: string
+          removed_at?: string | null
+          requested_by?: string | null
+          ssl_status?: string | null
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          activated_at?: string | null
+          auto_check_until?: string | null
+          cf_hostname_id?: string | null
+          created_at?: string
+          delete_after?: string | null
+          dns_records?: Json
+          error_code?: string | null
+          hostname?: string
+          id?: string
+          last_checked_at?: string | null
+          managed_by?: string
+          removed_at?: string | null
+          requested_by?: string | null
+          ssl_status?: string | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_custom_domains_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tenant_custom_domains_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenant_email_customizations: {
         Row: {
           created_at: string
@@ -4265,6 +4376,11 @@ export type Database = {
         }
         Returns: string
       }
+      custom_domain_enabled: { Args: { p_tenant_id: string }; Returns: boolean }
+      custom_domain_hostname_available: {
+        Args: { p_hostname: string; p_tenant_id: string }
+        Returns: boolean
+      }
       decline_age_review_engagement: {
         Args: { p_engagement_id: string; p_reason?: string }
         Returns: Json
@@ -4670,6 +4786,7 @@ export type Database = {
           blocked_until: string
         }[]
       }
+      is_active_custom_domain: { Args: { p_host: string }; Returns: boolean }
       is_automatic_email_enabled: {
         Args: { p_email_key: string; p_tenant_id: string }
         Returns: boolean
