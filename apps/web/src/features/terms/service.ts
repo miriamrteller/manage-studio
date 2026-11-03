@@ -13,6 +13,9 @@ const TermInputSchema = z.object({
   status: z.enum(['upcoming', 'active', 'completed', 'archived']).optional(),
 });
 
+/** End date of the "Ongoing" term: classes in it have no real end date. */
+export const ONGOING_TERM_END_DATE = '2099-12-31';
+
 export type SeasonSortField = 'name' | 'start_date' | 'end_date' | 'status';
 
 export const DEFAULT_TERM_SORT: { field: SeasonSortField; order: SortOrder } = {
@@ -95,6 +98,33 @@ export class TermService extends BaseService {
 
       return SeasonSchema.parse(data);
     }, 'TermService.get');
+  }
+
+  /**
+   * The studio's "Ongoing" term (no real end date), for classes and plans that run until
+   * they are cancelled, such as monthly plans. Reused when it exists; created otherwise,
+   * active unless the studio already has an active term. Monthly billing never reads the
+   * term, so the far-off end date only keeps the existing enrolment flow working.
+   */
+  static async ensureOngoing(tenant: Tenant, name: string): Promise<Season> {
+    const { data: existing, error } = await TenantDB.selectFor('seasons', tenant)
+      .eq('end_date', ONGOING_TERM_END_DATE)
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (error) throw error;
+    if (existing) return SeasonSchema.parse(existing);
+
+    const { data: active } = await TenantDB.selectFor('seasons', tenant)
+      .eq('status', 'active')
+      .limit(1)
+      .maybeSingle();
+    return this.create(tenant, {
+      name,
+      start_date: new Date().toISOString().slice(0, 10),
+      end_date: ONGOING_TERM_END_DATE,
+      status: active ? 'upcoming' : 'active',
+    });
   }
 
   static async create(tenant: Tenant, termData: Partial<Season>) {
