@@ -59,6 +59,33 @@ interface WaiverStepProps {
   guestSignerPrefill?: { fullName?: string | null; phone?: string | null };
 }
 
+/** The signer block get_my_last_signer_details returns (any field may be missing). */
+export interface LastSignerDetails {
+  id_type?: string;
+  id_number?: string;
+  passport_country?: string;
+  phone?: string;
+  address?: string;
+  full_name?: string;
+}
+
+/**
+ * Fills only the empty signer fields from the last signer block; never overwrites
+ * anything typed. The ID type and passport country follow the ID number, so a
+ * typed ID keeps the type the signer picked.
+ */
+export function fillEmptySignerFields(d: SignerDraft, last: LastSignerDetails): SignerDraft {
+  const fillId = !d.idNumber && !!last.id_number;
+  return {
+    ...d,
+    idType: fillId ? (last.id_type === 'passport' ? 'passport' : 'israeli_id') : d.idType,
+    idNumber: d.idNumber || last.id_number || '',
+    passportCountry: d.passportCountry || (fillId ? last.passport_country ?? '' : ''),
+    phone: d.phone || last.phone || '',
+    address: d.address || last.address || '',
+  };
+}
+
 /** "Health declaration (child)v1" -> "Health declaration": parents do not need the internal variant or version. */
 export function displayTemplateName(name: string): string {
   return name.replace(/\s*\((?:child|adult|minor)\)\s*(?:v\s*\d+)?\s*$/i, '').replace(/\s+v\d+$/i, '').trim() || name;
@@ -131,27 +158,11 @@ function WaiverStepInner({
     let cancelled = false;
     void (async () => {
       const { data } = await supabase.rpc('get_my_last_signer_details');
-      const last = data as {
-        id_type?: string;
-        id_number?: string;
-        passport_country?: string;
-        phone?: string;
-        address?: string;
-        full_name?: string;
-      } | null;
+      const last = data as LastSignerDetails | null;
       if (cancelled || !last || typeof last !== 'object') return;
-      setSignerDraft((d) =>
-        d.idNumber || d.phone || d.address
-          ? d
-          : {
-              ...d,
-              idType: last.id_type === 'passport' ? 'passport' : 'israeli_id',
-              idNumber: last.id_number ?? '',
-              passportCountry: last.passport_country ?? '',
-              phone: last.phone ?? '',
-              address: last.address ?? '',
-            },
-      );
+      // Field by field: a result may carry only a phone (the caller's stored number when
+      // they have never signed), and each field fills only while it is still empty.
+      setSignerDraft((d) => fillEmptySignerFields(d, last));
       setTypedName((n) => n || last.full_name || '');
     })();
     return () => {

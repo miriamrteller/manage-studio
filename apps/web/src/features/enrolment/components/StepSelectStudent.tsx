@@ -6,6 +6,7 @@ import { GuestExistingAccountPrompt } from './GuestExistingAccountPrompt';
 import { useGuestEmailRegistrationCheck } from '../hooks/useGuestEmailRegistrationCheck';
 import { isExistingEmailError, EnrolmentIntakeService } from '../intakeService';
 import { useTenant } from '@/hooks/useTenant';
+import { useSignedInPrefill } from '@/hooks/useSignedInPrefill';
 import { EnrolmentOnboardingService } from '../onboardingService';
 import { mapAgeReviewRpcError } from '../lib/ageReviewService';
 import { filterStudentCandidates } from '../lib/filterStudentCandidates';
@@ -194,6 +195,15 @@ export function StepSelectStudent({
   const [pickChildGuardianEmail, setPickChildGuardianEmail] = useState('');
   const [linkedFamily, setLinkedFamily] = useState<GuardianAccountLookup | null>(null);
   const [localAgeReviewError, setLocalAgeReviewError] = useState<string | null>(null);
+  const signedIn = useSignedInPrefill();
+
+  /** A signed-in parent with no family yet: the guardian is them, so start from their profile. */
+  const openNewFamilyForParent = () => {
+    setGuardianName((v) => v || signedIn.name);
+    setGuardianEmail((v) => v || signedIn.email);
+    setGuardianPhone((v) => v || signedIn.phone);
+    setSubMode('new_family');
+  };
 
   const submitAgeReviewRequest = async (note: string) => {
     if (!onSubmitAgeReview || !tenant) return;
@@ -545,6 +555,7 @@ export function StepSelectStudent({
               value={guardianName}
               onChange={(e) => setGuardianName(e.target.value)}
               placeholder={t('form.person.name')}
+              aria-label={t('form.person.name')}
             />
             {mode !== 'admin' && (
               <input
@@ -557,6 +568,7 @@ export function StepSelectStudent({
                   setForceExistingEmailPrompt(false);
                 }}
                 placeholder={t('form.person.email')}
+                aria-label={t('form.person.email')}
               />
             )}
             {showGuardianExistingPrompt && onSignInRequest && (
@@ -568,6 +580,7 @@ export function StepSelectStudent({
               value={guardianPhone}
               onChange={(e) => setGuardianPhone(e.target.value)}
               placeholder={t('form.person.phone')}
+              aria-label={t('form.person.phone')}
             />
           </fieldset>
         )}
@@ -958,7 +971,7 @@ export function StepSelectStudent({
           type="button"
           variant="outline"
           className="w-full"
-          onClick={() => setSubMode(needsGuardianForm ? 'new_family' : 'new_child')}
+          onClick={() => (needsGuardianForm ? openNewFamilyForParent() : setSubMode('new_child'))}
         >
           {needsGuardianForm
             ? t('pages.enrolment.create_new_student')
