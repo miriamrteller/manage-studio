@@ -33,6 +33,10 @@ const h = vi.hoisted(() => ({
   classes: [] as Array<{ id: string; name: string }>,
   tenant: { id: 't-1', name: 'Creative Ballet', subdomain: 'creativeballet', vertical: 'dance-studio', business_preset: 'programs' },
 }));
+// Signed out: the public form starts blank (signed-in prefill: prefill-enrolment.test.tsx).
+vi.mock('@/hooks/useCurrentUser', () => ({
+  useCurrentUser: () => ({ user: null, isLoading: false, isProfileChecked: true }),
+}));
 vi.mock('@/lib/supabase', () => ({
   supabase: {
     functions: { invoke: h.invoke },

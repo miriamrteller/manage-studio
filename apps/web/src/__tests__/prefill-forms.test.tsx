@@ -15,7 +15,10 @@ vi.mock('@/hooks/useTenant', () => ({ useTenant: () => ({ id: 't-1', name: 'Crea
 vi.mock('@/hooks/useEntityLabels', () => ({
   useEntityLabels: () => ({ labels: { offering: { singular: 'Package', plural: 'Packages' } } }),
 }));
-vi.mock('@/features/finance-admin/hooks/useExpenses', () => ({ useExpenseCategories: () => ({ categories: [{ id: 'c-1', name: 'Equipment', is_vat_eligible: true }] }) }));
+vi.mock('@/features/finance-admin/hooks/useExpenses', () => ({
+  useExpenseCategories: () => ({ categories: [{ id: 'c-1', name: 'Equipment', is_vat_eligible: true }] }),
+  useKnownSuppliers: () => [],
+}));
 vi.mock('@/features/finance-admin/components/ExpenseCategorySelect', () => ({ ExpenseCategorySelect: () => null }));
 vi.mock('@/features/finance-admin/services/expenseService', () => ({ ExpenseService: {} }));
 vi.mock('@/features/jobs/hooks/useJobs', () => ({

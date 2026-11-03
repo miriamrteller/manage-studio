@@ -16,6 +16,10 @@ import type { ReactNode } from 'react';
 const h = vi.hoisted(() => ({
   invoke: vi.fn(async () => ({ data: { outcome: 'created' }, error: null })),
 }));
+// Signed out: the public form starts blank (signed-in prefill: prefill-enrolment.test.tsx).
+vi.mock('@/hooks/useCurrentUser', () => ({
+  useCurrentUser: () => ({ user: null, isLoading: false, isProfileChecked: true }),
+}));
 vi.mock('@/lib/supabase', () => ({ supabase: { functions: { invoke: h.invoke } } }));
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({

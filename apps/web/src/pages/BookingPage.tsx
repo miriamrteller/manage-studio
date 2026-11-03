@@ -3,6 +3,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { useTenant } from '@/hooks/useTenant';
+import { useFillWhenEmpty, useSignedInPrefill } from '@/hooks/useSignedInPrefill';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { BookingCalendar } from '@/features/scheduling/components/BookingCalendar';
@@ -43,6 +44,11 @@ export default function BookingPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  // Signed in: start from what OpalSwift already knows (only empty fields; still editable).
+  const known = useSignedInPrefill();
+  useFillWhenEmpty(known.name, setName);
+  useFillWhenEmpty(known.email, setEmail);
+  useFillWhenEmpty(known.phone, setPhone);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [invalidDeepLink, setInvalidDeepLink] = useState(false);

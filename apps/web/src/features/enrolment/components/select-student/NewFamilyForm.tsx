@@ -160,6 +160,7 @@ export function NewFamilyForm({
             value={guardianName}
             onChange={(e) => setGuardianName(e.target.value)}
             placeholder={t('form.person.name')}
+            aria-label={t('form.person.name')}
           />
           {mode !== 'admin' && (
             <input
@@ -172,6 +173,7 @@ export function NewFamilyForm({
                 setForceExistingEmailPrompt(false);
               }}
               placeholder={t('form.person.email')}
+              aria-label={t('form.person.email')}
             />
           )}
           {showGuardianExistingPrompt && onSignInRequest && (
@@ -183,6 +185,7 @@ export function NewFamilyForm({
             value={guardianPhone}
             onChange={(e) => setGuardianPhone(e.target.value)}
             placeholder={t('form.person.phone')}
+            aria-label={t('form.person.phone')}
           />
         </fieldset>
       )}
