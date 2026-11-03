@@ -10,6 +10,8 @@
  * Response:
  *   { personId, offeringId, tenantId, template: { id, version, name, content } }
  *   (version is a positive integer). Job contracts also carry isJob: true.
+ *   signerPrefill: { full_name, email, phone } of the person the link was sent
+ *   to. Never the ID number or address: those are typed by whoever signs.
  */
 
 import { corsHeaders, jsonResponse } from "../_shared/edge-runtime/cors.ts";
@@ -25,6 +27,7 @@ import {
   verifyWaiverToken,
 } from "../_shared/waiver-token.ts";
 import { resolveAllowedTokenRecipientEmails } from "../_shared/token-recipient.ts";
+import { loadGuestSignerPrefill } from "../_shared/guest-signer-prefill.ts";
 import { loadJobContractContext, renderJobContract } from "../_shared/job-contract.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
 
@@ -118,6 +121,13 @@ Deno.serve(withMonitoring("get-waiver-engagement", async (req) => {
       return jsonResponse({ error: "No active consent template" }, 404);
     }
 
+    // Only after the token, its email and the engagement have all checked out.
+    const signerPrefill = await loadGuestSignerPrefill(service, {
+      tenantId: payload.tid,
+      personId: eng.person_id as string,
+      tokenEmail,
+    });
+
     return jsonResponse({
       ...(job ? { isJob: true } : {}),
       personId: eng.person_id as string,
@@ -132,6 +142,7 @@ Deno.serve(withMonitoring("get-waiver-engagement", async (req) => {
           ? renderJobContract(template.content as string, job.fields)
           : (template.content as string),
       },
+      signerPrefill,
     });
   } catch (err) {
     console.error("[get-waiver-engagement]", err);

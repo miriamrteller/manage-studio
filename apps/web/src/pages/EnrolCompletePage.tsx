@@ -25,6 +25,8 @@ type PageState =
     waiverToken: string | null;
     /** Photographer job contract (get-waiver-engagement isJob): continue to the deposit after signing. */
     isJob?: boolean;
+    /** Guest link: name and phone of the person the link was sent to. */
+    signerPrefill?: { fullName: string | null; phone: string | null };
   }
   | { kind: 'already_signed'; isJob?: boolean }
   | { kind: 'cancelled' }
@@ -110,6 +112,7 @@ export default function EnrolCompletePage() {
             template: parsedTemplate.data,
             waiverToken,
             ...(data.isJob === true ? { isJob: true } : {}),
+            signerPrefill: readSignerPrefill(data.signerPrefill),
           });
         } catch (err) {
           if (cancelled) return;
@@ -367,6 +370,7 @@ export default function EnrolCompletePage() {
           offeringId={state.offeringId}
           waiverToken={state.waiverToken ?? undefined}
           isJobContract={state.isJob === true}
+          guestSignerPrefill={state.signerPrefill}
           onComplete={() => setState(state.isJob ? { kind: 'signed', isJob: true } : { kind: 'signed' })}
           onPrevious={() => { /* no back on standalone page */ }}
           canGoBack={false}
@@ -374,6 +378,14 @@ export default function EnrolCompletePage() {
       </div>
     </PageShell>
   );
+}
+
+/** Name and phone only from the guest-link response; anything else is ignored. */
+function readSignerPrefill(raw: unknown): { fullName: string | null; phone: string | null } | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const r = raw as Record<string, unknown>;
+  const str = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, 200) : null);
+  return { fullName: str(r.full_name), phone: str(r.phone) };
 }
 
 function PageShell({ children }: { children: ReactNode }) {
