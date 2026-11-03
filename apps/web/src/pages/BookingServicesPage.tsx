@@ -67,7 +67,7 @@ export default function BookingServicesPage() {
 
   function startAdd() {
     setStatus(null);
-    setForm({ ...EMPTY_FORM });
+    setForm({ ...EMPTY_FORM, currency: tenant?.currency || EMPTY_FORM.currency });
   }
 
   function startEdit(svc: AppointmentService) {

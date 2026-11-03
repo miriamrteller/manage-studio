@@ -1,11 +1,11 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { PersonSearchCombobox } from '@/components/shared';
 import { useEntityLabels } from '@/hooks/useEntityLabels';
 import { useJobPackages, useJobs } from '../hooks/useJobs';
-import { fromDateTimeLocal } from '../lib/jobStatus';
+import { addMinutesLocal, fromDateTimeLocal } from '../lib/jobStatus';
 import { PackageSelect } from './PackageSelect';
 
 export type ClientMode = 'existing' | 'new';
@@ -45,6 +45,20 @@ export function JobCreateForm({ onCreated, prefill = null }: JobCreateFormProps)
   const [location, setLocation] = useState('');
   const [notes, setNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
+
+  // The package knows its location and length: fill them in (still editable).
+  const selectedPackage = (packagesQuery.data ?? []).find((p) => p.id === offeringId);
+  const packageLocation = selectedPackage?.location ?? '';
+  const packageMinutes = selectedPackage?.duration_mins ?? null;
+  useEffect(() => {
+    if (packageLocation) setLocation((current) => current || packageLocation);
+  }, [packageLocation]);
+  // The end follows the start (start + package length) until the admin sets it themself.
+  const [endTouched, setEndTouched] = useState(false);
+  useEffect(() => {
+    const suggested = addMinutesLocal(startsAt, packageMinutes);
+    if (suggested && !endTouched) setEndsAt(suggested);
+  }, [startsAt, packageMinutes, endTouched]);
 
   const canSubmit =
     offeringId !== '' && (mode === 'existing' ? personId !== null : clientName.trim() !== '');
@@ -152,7 +166,10 @@ export function JobCreateForm({ onCreated, prefill = null }: JobCreateFormProps)
           <label htmlFor="job-ends" className="block text-sm font-medium mb-1">
             {t('pages.jobs.ends_at')}
           </label>
-          <input id="job-ends" type="datetime-local" className="w-full border rounded px-3 py-2" value={endsAt} onChange={(e) => setEndsAt(e.target.value)} disabled={!startsAt} />
+          <input id="job-ends" type="datetime-local" className="w-full border rounded px-3 py-2" value={endsAt} onChange={(e) => {
+              setEndTouched(true);
+              setEndsAt(e.target.value);
+            }} disabled={!startsAt} />
           <p className="text-xs text-muted-foreground mt-1">{t('pages.jobs.ends_hint')}</p>
         </div>
       </div>

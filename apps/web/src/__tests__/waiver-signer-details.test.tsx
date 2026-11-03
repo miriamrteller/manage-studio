@@ -15,6 +15,10 @@ vi.mock('@/hooks/useLanguage', async () => (await import('./helpers/fakeTenantSt
 
 const invoke = vi.fn();
 const rpc = vi.fn();
+const currentUser = vi.hoisted(() => ({ value: null as { full_name: string } | null }));
+vi.mock('@/hooks/useCurrentUser', () => ({
+  useCurrentUser: () => ({ user: currentUser.value, isLoading: false, isProfileChecked: true }),
+}));
 vi.mock('@/lib/supabase', () => ({
   supabase: {
     functions: { invoke: (...args: unknown[]) => invoke(...args) },
@@ -73,6 +77,7 @@ beforeEach(() => {
   );
 });
 afterEach(() => {
+  currentUser.value = null;
   vi.unstubAllGlobals();
   invoke.mockReset();
   rpc.mockReset();
@@ -166,6 +171,21 @@ describe('signer details on the signing step', () => {
     await waitFor(() => expect(screen.getByLabelText('Phone number')).toHaveValue('050-123-4567'));
     expect(screen.getByLabelText('ID number (teudat zehut)', { exact: false })).toHaveValue('123456782');
     expect(rpc).toHaveBeenCalledWith('get_my_last_signer_details');
+  });
+
+  it('with no earlier signed form, the signature name is the signed-in person (editable)', async () => {
+    currentUser.value = { full_name: 'Dana Levi' };
+    renderStep();
+    await waitFor(() => expect(screen.getByLabelText('Full legal name')).toHaveValue('Dana Levi'));
+    fireEvent.change(screen.getByLabelText('Full legal name'), { target: { value: 'Dana Cohen' } });
+    expect(screen.getByLabelText('Full legal name')).toHaveValue('Dana Cohen');
+  });
+
+  it('the name from an earlier signed form wins over the account name', async () => {
+    currentUser.value = { full_name: 'Dana Levi' };
+    rpc.mockResolvedValue({ data: { full_name: 'Dana Levi-Cohen', phone: '050-1234567' }, error: null });
+    renderStep();
+    await waitFor(() => expect(screen.getByLabelText('Full legal name')).toHaveValue('Dana Levi-Cohen'));
   });
 
   it('a guest link (no session) does not ask for a pre-fill', async () => {

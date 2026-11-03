@@ -30,6 +30,12 @@ interface ExpenseFormProps {
   }) => Promise<void>;
 }
 
+/** YYYY-MM-DD for a date in local time. */
+export function localDateString(date: Date = new Date()): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
 export function ExpenseForm({ correctsExpense, onSuccess, onCancel, onSubmit }: ExpenseFormProps) {
   const { t } = useTranslation();
   const tenant = useTenant();
@@ -42,10 +48,14 @@ export function ExpenseForm({ correctsExpense, onSuccess, onCancel, onSubmit }: 
       ? `[Correction] ${correctsExpense?.description ?? ''}`.trim()
       : '',
   );
-  const [amountInput, setAmountInput] = useState('');
-  const [supplierName, setSupplierName] = useState('');
-  const [supplierVat, setSupplierVat] = useState('');
-  const [expenseDate, setExpenseDate] = useState(new Date().toISOString().slice(0, 10));
+  // A correction reverses the expense it corrects: start from its amount and supplier (editable).
+  const [amountInput, setAmountInput] = useState(() =>
+    correctsExpense ? String(Math.abs(correctsExpense.total_amount_minor) / 100) : '',
+  );
+  const [supplierName, setSupplierName] = useState(correctsExpense?.supplier_name ?? '');
+  const [supplierVat, setSupplierVat] = useState(correctsExpense?.supplier_vat_number ?? '');
+  // Today in the studio's local time (toISOString is UTC: late evening in Israel gave yesterday).
+  const [expenseDate, setExpenseDate] = useState(() => localDateString());
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);

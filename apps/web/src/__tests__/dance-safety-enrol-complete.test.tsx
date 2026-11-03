@@ -17,6 +17,9 @@ vi.mock('@/hooks/useTenant', async () => (await import('./helpers/fakeTenantStat
 vi.mock('@/hooks/useLanguage', async () => (await import('./helpers/fakeTenantState')).languageHookMock());
 
 const invoke = vi.fn();
+vi.mock('@/hooks/useCurrentUser', () => ({
+  useCurrentUser: () => ({ user: null, isLoading: false, isProfileChecked: true }),
+}));
 vi.mock('@/lib/supabase', () => ({
   supabase: {
     functions: { invoke: (...args: unknown[]) => invoke(...args) },
