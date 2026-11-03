@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { monthlyFeesForFlow } from '@/features/platform/lib/studioSetupForm';
 import { useTenant } from '@/hooks/useTenant';
+import { useTenantLegalProfile } from '@/legal/useLegalDocument';
 import queryClient from '@/lib/query-client';
 import {
   canChoosePaymentProvider,
@@ -48,6 +49,37 @@ export function initialChoice(savedProvider: string): ChoosablePaymentProvider {
     : 'grow';
 }
 
+export interface OfflineInstructionsDraftParts {
+  /** legal_profile.legal_name, else the studio's name. */
+  name?: string | null;
+  address?: string | null;
+  phone?: string | null;
+}
+
+type DraftTranslate = (key: string, opts: Record<string, string | undefined>) => string;
+
+/**
+ * Pure: a first draft of the payment instructions from what the studio told us
+ * (name, address, phone); unknown parts are left out. Only a suggestion: it
+ * fills the empty box and is stored only if the admin saves.
+ */
+export function draftOfflineInstructions(
+  parts: OfflineInstructionsDraftParts,
+  t: DraftTranslate,
+  lng?: string,
+): string {
+  const name = (parts.name ?? '').trim();
+  const address = (parts.address ?? '').trim();
+  const phone = (parts.phone ?? '').trim();
+  const base = 'settings.offline_payments.draft';
+  const sentences: string[] = [];
+  if (name && address) sentences.push(t(`${base}.cash_at_or_transfer`, { address, name, lng }));
+  else if (address) sentences.push(t(`${base}.cash_at`, { address, lng }));
+  else if (name) sentences.push(t(`${base}.cash_or_transfer`, { name, lng }));
+  if (phone) sentences.push(t(`${base}.questions`, { phone, lng }));
+  return sentences.join(' ');
+}
+
 /**
  * Admin → Setup → Settings: "How parents pay". Offline = tenants.payment_provider 'offline'
  * (public checkout shows "Pay at the studio" with the studio's instructions; admins record
@@ -73,6 +105,23 @@ export function OfflinePaymentsSettingsForm() {
     ? false
     : monthlyFeesForFlow(tenant?.profile?.paymentFlow ?? 'recurring');
   const [instructions, setInstructions] = useState(savedInstructions);
+  // Nothing saved yet: start from a draft built from the studio's details (until the admin types).
+  const [edited, setEdited] = useState(false);
+  const { data: legal } = useTenantLegalProfile();
+  const legalProfile = legal?.profile ?? {};
+  const draft = savedInstructions.trim()
+    ? ''
+    : draftOfflineInstructions(
+        {
+          name: legalProfile.legal_name || legal?.name || tenant?.name,
+          address: legalProfile.address,
+          phone: legalProfile.phone,
+        },
+        t as unknown as DraftTranslate,
+        legal?.languageDefault,
+      );
+  const showingDraft = !edited && !!draft;
+  const shownInstructions = showingDraft ? draft : instructions;
   const [message, setMessage] = useState<string | null>(null);
   const invoicingProvider = tenant?.invoicing_provider ?? 'none';
   const nextPaymentProvider = locked ? savedProvider : choice;
@@ -87,6 +136,7 @@ export function OfflinePaymentsSettingsForm() {
   }, [savedProvider]);
   useEffect(() => {
     setInstructions(savedInstructions);
+    setEdited(false);
   }, [savedInstructions]);
 
   const saveMutation = useMutation({
@@ -97,7 +147,8 @@ export function OfflinePaymentsSettingsForm() {
         .from('tenants')
         .update({
           payment_provider: nextPaymentProvider,
-          offline_payment_instructions: instructions.trim() || null,
+          // The draft is stored only when its box is shown (paying at the studio) and the admin saves.
+          offline_payment_instructions: (offline ? shownInstructions : instructions).trim() || null,
         })
         .eq('id', tenant.id);
       if (error) {
@@ -190,11 +241,23 @@ export function OfflinePaymentsSettingsForm() {
             className="form-input w-full min-h-32"
             rows={5}
             maxLength={MAX_INSTRUCTIONS}
-            value={instructions}
-            onChange={(e) => setInstructions(e.target.value)}
+            value={shownInstructions}
+            onChange={(e) => {
+              setEdited(true);
+              setInstructions(e.target.value);
+            }}
             placeholder={t('settings.offline_payments.instructions_placeholder')}
-            aria-describedby="offline-payment-instructions-hint"
+            aria-describedby={
+              showingDraft
+                ? 'offline-payment-instructions-draft offline-payment-instructions-hint'
+                : 'offline-payment-instructions-hint'
+            }
           />
+          {showingDraft && (
+            <p id="offline-payment-instructions-draft" className="text-xs text-muted-foreground">
+              {t('settings.offline_payments.draft_hint')}
+            </p>
+          )}
           <p id="offline-payment-instructions-hint" className="text-xs text-muted-foreground">
             {t('settings.offline_payments.instructions_hint')}
           </p>

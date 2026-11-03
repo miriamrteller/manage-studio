@@ -90,7 +90,7 @@ export function JobDetail({ engagementId }: { engagementId: string }) {
         <h2 id="job-payments-heading" className="font-semibold">
           {t('pages.jobs.payments.title')}
         </h2>
-        <JobPaymentsPanel engagementId={job.engagement_id} />
+        <JobPaymentsPanel engagementId={job.engagement_id} packagePriceMinor={job.price_minor} />
       </section>
     </div>
   );
