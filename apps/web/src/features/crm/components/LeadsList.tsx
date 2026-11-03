@@ -1,5 +1,6 @@
 ﻿import { useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { followUpState } from '../lib/followUp';
+import { lastLeadChannel, rememberLeadChannel, tomorrowLocal } from '../lib/leadFormDefaults';
 import { useNavigate } from 'react-router-dom';
 import { LeadsTabs } from './LeadsTabs';
 import { useNamedForms } from '../hooks/useNamedForms';
@@ -186,20 +187,21 @@ export function LeadsList() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [channel, setChannel] = useState<LeadChannel>('website');
+  const [channel, setChannel] = useState<LeadChannel>(() => lastLeadChannel());
   const [interest, setInterest] = useState('');
   const [note, setNote] = useState('');
-  const [followUp, setFollowUp] = useState('');
+  // A lead added by hand gets a follow-up tomorrow (editable or clearable).
+  const [followUp, setFollowUp] = useState(() => tomorrowLocal());
 
 
   const resetForm = () => {
     setName('');
     setEmail('');
     setPhone('');
-    setChannel('website');
+    setChannel(lastLeadChannel());
     setInterest('');
     setNote('');
-    setFollowUp('');
+    setFollowUp(tomorrowLocal());
   };
 
   const handleCreate = (event: FormEvent) => {
@@ -217,6 +219,7 @@ export function LeadsList() {
       },
       {
         onSuccess: () => {
+          rememberLeadChannel(channel);
           resetForm();
           setShowForm(false);
         },

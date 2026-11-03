@@ -67,3 +67,25 @@ export function toSetupRequest(form: StudioSetupForm) {
     accentColor: form.accentColor,
   };
 }
+
+/**
+ * A web-address suggestion from the studio's name: lower-case Latin letters and
+ * digits joined by hyphens. Empty when the name has no Latin letters (e.g. a
+ * Hebrew name), so the admin types one.
+ */
+export function suggestSubdomain(name: string): string {
+  return name
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40)
+    .replace(/-+$/g, '');
+}
+
+/** The studio's main language: the language the person is using now. */
+export function defaultStudioLanguage(uiLanguage: string | null | undefined): StudioSetupForm['languageDefault'] {
+  return (uiLanguage ?? '').toLowerCase().startsWith('he') ? 'he' : 'en';
+}

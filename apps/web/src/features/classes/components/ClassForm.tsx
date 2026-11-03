@@ -61,6 +61,25 @@ interface ClassFormProps {
   isLoading?: boolean;
 }
 
+/**
+ * A new class starts in the studio's current term: the active one, otherwise
+ * the next upcoming one, otherwise the only term there is.
+ */
+export function defaultTermId(terms: Pick<Season, 'id' | 'status' | 'start_date'>[]): string {
+  const active = terms.find((term) => term.status === 'active');
+  if (active) return active.id;
+  const upcoming = terms
+    .filter((term) => term.status === 'upcoming')
+    .sort((a, b) => a.start_date.localeCompare(b.start_date))[0];
+  if (upcoming) return upcoming.id;
+  return terms.length === 1 ? terms[0].id : '';
+}
+
+/** A studio with one teacher: a new class is theirs. */
+export function defaultTeacherId(teachers: Pick<Staff, 'id'>[]): string {
+  return teachers.length === 1 ? teachers[0].id : '';
+}
+
 function toFormValues(
   classItem: Partial<Offering> | undefined,
   defaultCurrency: string,
@@ -134,6 +153,17 @@ export function ClassForm({
     defaultValues: toFormValues(classItem, tenant?.currency || 'ILS', monthlyAllowed),
     mode: 'onBlur',
   });
+
+  // A new class: prefill the term and teacher once they load (still editable).
+  const isNew = !classItem?.id;
+  const suggestedTerm = isNew ? defaultTermId(terms) : '';
+  const suggestedTeacher = isNew ? defaultTeacherId(teachers) : '';
+  useEffect(() => {
+    if (suggestedTerm && !form.getValues('season_id')) form.setValue('season_id', suggestedTerm);
+  }, [suggestedTerm, form]);
+  useEffect(() => {
+    if (suggestedTeacher && !form.getValues('staff_id')) form.setValue('staff_id', suggestedTeacher);
+  }, [suggestedTeacher, form]);
 
   const existingCoverUrl = useMemo(
     () =>

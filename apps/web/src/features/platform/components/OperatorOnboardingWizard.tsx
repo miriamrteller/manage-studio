@@ -16,7 +16,14 @@ import {
   type StudioPaymentProvider,
   type StudioSetupResult,
 } from '../services/studioSetupService';
-import { INITIAL_FORM, toSetupRequest, VERTICALS, type StudioSetupForm } from '../lib/studioSetupForm';
+import {
+  defaultStudioLanguage,
+  INITIAL_FORM,
+  suggestSubdomain,
+  toSetupRequest,
+  VERTICALS,
+  type StudioSetupForm,
+} from '../lib/studioSetupForm';
 import { invoicingOptionsFor, invoicingPairsWithPayment, monthlyFeesDefaultFor } from '@/lib/providerPairing';
 import {
   PaymentProviderChoice,
@@ -93,7 +100,13 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
   const selfServe = mode === 'self_serve';
   const STEPS: readonly Step[] = selfServe ? SELF_SERVE_STEPS : OPERATOR_STEPS;
   const [stepIndex, setStepIndex] = useState(0);
-  const [form, setForm] = useState<StudioSetupForm>(INITIAL_FORM);
+  // The studio's language starts as the one the person is using; the web
+  // address follows the name until they type their own (both editable).
+  const [form, setForm] = useState<StudioSetupForm>(() => ({
+    ...INITIAL_FORM,
+    languageDefault: defaultStudioLanguage(i18n.language),
+  }));
+  const [subdomainTouched, setSubdomainTouched] = useState(false);
   const [subdomainStatus, setSubdomainStatus] = useState<'idle' | 'ok' | 'taken' | 'invalid'>('idle');
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<StudioSetupResult | null>(null);
@@ -279,6 +292,7 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
           value={form.subdomain}
           aria-describedby="ss-subdomain-help"
           onChange={(e) => {
+            setSubdomainTouched(true);
             update('subdomain', e.target.value.toLowerCase());
             setSubdomainStatus('idle');
           }}
@@ -316,7 +330,15 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
         <section className="space-y-4">
           <div className="space-y-2">
             <label className="block text-sm font-medium" htmlFor="ss-name">{t('studio_setup.name')}</label>
-            <input id="ss-name" className="form-input w-full" value={form.name} onChange={(e) => update('name', e.target.value)} />
+            <input id="ss-name" className="form-input w-full" value={form.name} onChange={(e) => {
+                const name = e.target.value;
+                update('name', name);
+                if (!subdomainTouched) {
+                  update('subdomain', suggestSubdomain(name));
+                  setSubdomainStatus('idle');
+                }
+              }}
+            />
           </div>
           {!selfServe && subdomainField}
           {/* The studio's country is Israel (sent as IL); only the main language is a choice. */}

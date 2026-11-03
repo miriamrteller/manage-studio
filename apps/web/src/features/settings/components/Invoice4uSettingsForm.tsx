@@ -36,7 +36,8 @@ export function Invoice4uSettingsForm({ embedded = false }: { embedded?: boolean
       ? tenant.payment_provider_public_key
       : INVOICE4U_DEFAULT_CLEARING_COMPANY,
   );
-  const [accountLabel, setAccountLabel] = useState('');
+  // The label names this account in OpalSwift; the studio's name is the natural one (editable).
+  const [accountLabel, setAccountLabel] = useState(tenant?.name ?? '');
   const [message, setMessage] = useState<string | null>(null);
 
   const trimmedMissing = !apiKey.trim() || !clearingCompany.trim();

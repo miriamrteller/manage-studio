@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -14,9 +14,15 @@ interface ConvertLeadPanelProps {
   defaultOfferingId?: string | null;
   /** From the enquiry form, prefilled when present. */
   defaultLocation?: string | null;
-  /** Event date from the enquiry form, shown as a hint next to the date field. */
+  /** Event date from the enquiry form: prefills the date (10:00, editable) and shows as a hint. */
   eventDate?: string | null;
   onClose: () => void;
+}
+
+/** An enquiry's event date (YYYY-MM-DD) as a datetime-local value at 10:00; anything else stays blank. */
+export function eventDateToLocal(eventDate: string | null | undefined): string {
+  const date = /^\d{4}-\d{2}-\d{2}/.exec((eventDate ?? '').trim())?.[0];
+  return date ? `${date}T10:00` : '';
 }
 
 /**
@@ -32,8 +38,14 @@ export function ConvertLeadPanel({ leadId, leadName, defaultOfferingId, defaultL
   const convert = useConvertLead();
 
   const [offeringId, setOfferingId] = useState(defaultOfferingId ?? '');
-  const [startsAt, setStartsAt] = useState('');
+  const [startsAt, setStartsAt] = useState(() => eventDateToLocal(eventDate));
   const [location, setLocation] = useState(defaultLocation ?? '');
+
+  // No location from the enquiry: use the package's own, when it has one.
+  const packageLocation = (packagesQuery.data ?? []).find((p) => p.id === offeringId)?.location ?? '';
+  useEffect(() => {
+    if (packageLocation) setLocation((current) => current || packageLocation);
+  }, [packageLocation]);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (event: FormEvent) => {

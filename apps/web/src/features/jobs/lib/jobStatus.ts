@@ -30,3 +30,11 @@ export function fromDateTimeLocal(value: string): string | null {
   if (Number.isNaN(d.getTime())) return null;
   return d.toISOString();
 }
+
+/** A datetime-local value plus some minutes (local time), or '' when either is missing. */
+export function addMinutesLocal(value: string, minutes: number | null | undefined): string {
+  if (!value || !minutes) return '';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '';
+  return toDateTimeLocal(new Date(d.getTime() + minutes * 60_000).toISOString());
+}

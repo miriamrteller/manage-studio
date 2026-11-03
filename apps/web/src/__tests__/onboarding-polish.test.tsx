@@ -93,8 +93,19 @@ describe('greyed-out Next says why', () => {
     expect(nextBtn).toBeDisabled();
     expect(screen.getByText("Enter the studio's name to continue.")).toBeInTheDocument();
     expect(nextBtn).toHaveAttribute('aria-describedby', 'ss-next-hint');
-    fireEvent.change(screen.getByLabelText('Studio name'), { target: { value: 'Creative Ballet' } });
+    // A Hebrew name gives no address suggestion, so the address is asked for.
+    fireEvent.change(screen.getByLabelText('Studio name'), { target: { value: 'בלט יצירתי' } });
     expect(screen.getByText(/Enter a web address/)).toBeInTheDocument();
+  });
+
+  it('suggests the web address from a Latin name until the admin types their own', () => {
+    wrap(<OperatorOnboardingWizard />);
+    const address = screen.getByLabelText(/address/i, { selector: 'input#ss-subdomain' });
+    fireEvent.change(screen.getByLabelText('Studio name'), { target: { value: 'Creative Ballet & Co.' } });
+    expect(address).toHaveValue('creative-ballet-and-co');
+    fireEvent.change(address, { target: { value: 'cb' } });
+    fireEvent.change(screen.getByLabelText('Studio name'), { target: { value: 'Creative Ballet Academy' } });
+    expect(address).toHaveValue('cb');
   });
 
   it('shows the address example', () => {

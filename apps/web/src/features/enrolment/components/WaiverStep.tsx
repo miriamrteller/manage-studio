@@ -7,6 +7,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { useTenant } from '@/hooks/useTenant';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { invalidateWaiverStatus } from '../hooks/useWaiverStatus';
 import type { WaiverSigningConsentTemplate } from '@shared/schemas';
 import { validateSignerDetails, type SignerDetailsErrors } from '@shared/signerDetails';
@@ -115,6 +116,14 @@ function WaiverStepInner({
   });
   const [signerErrors, setSignerErrors] = useState<SignerDetailsErrors>({});
 
+  // No name from an earlier signed form: the signer is the signed-in person
+  // (or the adult student themself). Applied once that lookup has answered.
+  const { user } = useCurrentUser();
+  const signerFallbackName = ((signerIsTheStudent ? studentName : user?.full_name) ?? '').trim();
+  const [lastChecked, setLastChecked] = useState(false);
+  useEffect(() => {
+    if (!waiverToken && lastChecked && signerFallbackName) setTypedName((n) => n || signerFallbackName);
+  }, [waiverToken, lastChecked, signerFallbackName]);
   // Pre-fill from the signer's last signed form (signed-in users only; a guest link has no session).
   // Nothing typed is overwritten. The RPC returns the caller's own record only.
   useEffect(() => {
@@ -130,7 +139,9 @@ function WaiverStepInner({
         address?: string;
         full_name?: string;
       } | null;
-      if (cancelled || !last || typeof last !== 'object') return;
+      if (cancelled) return;
+      setLastChecked(true);
+      if (!last || typeof last !== 'object') return;
       setSignerDraft((d) =>
         d.idNumber || d.phone || d.address
           ? d
