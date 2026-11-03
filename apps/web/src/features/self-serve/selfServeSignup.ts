@@ -85,3 +85,17 @@ export function studioHandoffUrl(subdomain: string, session: Pick<Session, 'acce
   });
   return `${origin}/auth/session-handoff#${hash.toString()}`;
 }
+
+/**
+ * Open a studio's own address signed in, from app.<root> (the studio card on
+ * the welcome page, "Go to your studio" after signup). The studio's address
+ * takes over this session; it is dropped here (local only, not a sign-out of
+ * the account) so the two hosts never refresh the same token, which would end
+ * both sessions. Without a session, the studio's sign-in page opens.
+ */
+export async function openStudioSignedIn(subdomain: string): Promise<void> {
+  const { data } = await supabase.auth.getSession();
+  const url = studioHandoffUrl(subdomain, data.session);
+  if (data.session) await supabase.auth.signOut({ scope: 'local' });
+  window.location.assign(url);
+}

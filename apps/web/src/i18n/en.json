@@ -97,7 +97,13 @@
     "link_replaced_body": "This link has already been used or replaced by a newer one. Check your inbox for the latest email from {{studio}} and use that link.",
     "link_replaced_new_link": "Send me a new link",
     "link_replaced_use_code": "Or sign in with a 6-digit code instead",
-    "link_replaced_use_code_hint": "(some work email systems open links automatically)."
+    "link_replaced_use_code_hint": "(some work email systems open links automatically).",
+    "handoff_opening": "Opening your studio…",
+    "handoff_failed": "We couldn't sign you in on this address. Please sign in here.",
+    "handoff_sign_in": "Sign in",
+    "platform_owner_title": "You're signed in as the OpalSwift platform owner",
+    "platform_owner_body": "Studio admin pages are for the studio's own admins.",
+    "platform_owner_back": "Back to app.opalswift.com"
   },
   "report_problem": {
     "menu_item": "Report a problem",
