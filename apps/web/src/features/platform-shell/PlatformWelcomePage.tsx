@@ -39,7 +39,7 @@ export default function PlatformWelcomePage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { session, isLoading: sessionLoading } = useAuthSession();
-  const { user, isLoading: profileLoading } = useCurrentUser();
+  const { user, isLoading: profileLoading, profileTimedOut } = useCurrentUser();
   const { data: studios, isLoading: studiosLoading } = useMyStudios(user);
   const isSuperAdmin = Boolean(user?.role.includes('super_admin'));
 
@@ -60,7 +60,7 @@ export default function PlatformWelcomePage() {
   };
 
   let body: ReactNode;
-  if (loading && tooSlow) {
+  if ((loading && tooSlow) || (!loading && session && profileTimedOut)) {
     body = (
       <div role="alert" className="space-y-4">
         <h1 className="text-2xl font-bold">{t('platform_welcome.slow_title')}</h1>
