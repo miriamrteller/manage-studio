@@ -4,3 +4,5 @@
 .icon-star{color:#D97706}
 /* icons on the dark "how it works" band */
 .flow-step .em{color:rgba(255,255,255,.92)}
+/* "Coming soon" tag for features that are not built yet */
+.soon-tag{display:inline-block;margin-inline-start:6px;padding:1px 8px;border-radius:999px;font-family:'Rubik',sans-serif;font-size:11px;font-weight:700;line-height:1.6;letter-spacing:.02em;vertical-align:middle;white-space:nowrap;color:#5A6178;background:rgba(90,97,120,.12)}
