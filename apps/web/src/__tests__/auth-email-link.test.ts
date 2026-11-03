@@ -58,4 +58,19 @@ describe('auth email sign-in link', () => {
       }
     });
   }
+
+  it('carries the 6-digit code with the cross-device hint, in English and Hebrew', () => {
+    for (const [language, hint] of [
+      ['en', 'Opening this on another device? Use this code on the login page:'],
+      ['he', 'פותחים במכשיר אחר? הזינו את הקוד הזה בדף ההתחברות:'],
+    ] as const) {
+      const html = renderAuthMagicLinkHtml({
+        language, schoolName: 'S', magicLinkUrl: `${ORIGIN}/auth/callback?token_hash=pkce_x&type=magiclink`,
+        otpCode: '482913', primaryColor: '#123456', accentColor: '#654321',
+      });
+      expect(html).toContain(hint.replace(/'/g, '&#x27;'));
+      expect(html).toContain('482913');
+      expect(hrefs(html).filter((h) => h.includes('token_hash'))).toHaveLength(2); // button and text link kept
+    }
+  });
 });
