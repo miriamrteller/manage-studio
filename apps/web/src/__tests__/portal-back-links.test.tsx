@@ -263,7 +263,7 @@ describe('menu per vertical', () => {
   });
 
   it('photographer client sees the portal entry, worded "My bookings"', () => {
-    expect(paths('photographer', ['account_holder'])).toEqual(['/book', '/dashboard/portal']);
+    expect(paths('photographer', ['account_holder'])).toEqual(['/', '/book', '/dashboard/portal']);
     expect(i18n.getFixedT('en', 'photographer')('nav.my_account')).toBe('My bookings');
     expect(i18n.getFixedT('he', 'photographer')('nav.my_account')).toBe('ההזמנות שלי');
     expect(i18n.getFixedT('en')('nav.my_account')).toBe('My Account');

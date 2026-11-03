@@ -200,13 +200,13 @@ describe('admin menu: working pages at the top level', () => {
 
   it('other roles are unchanged: parents and students keep Browse and their own page', () => {
     const parent = buildNavSections(navigationConfig, ['account_holder']).flatMap((s) => s.items.map((i) => i.path));
-    expect(parent).toEqual(['/classes', '/book', '/dashboard/portal']);
+    expect(parent).toEqual(['/', '/classes', '/book', '/dashboard/portal']);
     const student = buildNavSections(navigationConfig, ['student']).flatMap((s) => s.items.map((i) => i.path));
-    expect(student).toEqual(['/classes', '/book', '/dashboard/student']);
+    expect(student).toEqual(['/', '/classes', '/book', '/dashboard/student']);
   });
 
   it('the public menu (signed out) is unchanged', () => {
     const sections = buildNavSections(publicNavigationConfig, []);
-    expect(sections.flatMap((s) => s.items.map((i) => i.path))).toEqual(['/classes', '/book', '/login', '/signup']);
+    expect(sections.flatMap((s) => s.items.map((i) => i.path))).toEqual(['/', '/classes', '/book', '/login', '/signup']);
   });
 });
