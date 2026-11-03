@@ -139,7 +139,7 @@ When the hook is enabled, Supabase **does not** send dashboard HTML templates. T
    Requires `RESEND_API_KEY`, `NOTIFICATION_FROM_EMAIL`, and `SEND_EMAIL_HOOK_SECRET` in `.env` (one variable per line, no `\` line breaks).
 3. Dashboard → **Authentication → Hooks** → **Send Email** → type **HTTPS**
 4. URL: `https://YOUR_PROJECT.supabase.co/functions/v1/send-auth-email` (replace `YOUR_PROJECT` with your ref, e.g. `acmujrhavgbamdilzuew`)
-5. Click **Generate Secret**, copy the full value (`v1,whsec_...`), put it in `.env` as `SEND_EMAIL_HOOK_SECRET=...`, then run `pnpm secrets:email`
+5. Don't generate the secret in the dashboard: run Actions → **rotate-secrets** → `SEND_EMAIL_HOOK_SECRET` (+ project). It sets the hook secret and the Edge secret together and checks they match ([SHARED-SECRETS.md](SHARED-SECRETS.md)).
 6. Optional: `DEFAULT_TENANT_ID` if auth users lack `user_metadata.subdomain` (defaults to seed tenant).
 
 **Unblock login while fixing:** Auth → Hooks → disable the Send Email hook temporarily. Auth will use the dashboard Magic Link template again until the function is deployed.

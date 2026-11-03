@@ -24,7 +24,7 @@ These belong to OpalSwift and are shared by every tenant.
 | `PLATFORM_EMAIL_DOMAIN` | Fallback sending domain for tenants with no verified branded domain |
 | `NOTIFICATION_FROM_EMAIL` | Sender for non-tenant mail only |
 | `CLOUDFLARE_ACCOUNT_ID` / `CLOUDFLARE_EMAIL_API_TOKEN` | One Cloudflare account sends for all tenants (Email Sending REST API) |
-| `CRON_SECRET` | Shared secret between `pg_cron` and the Edge Functions |
+| `CRON_SECRET` | Shared secret between `pg_cron` and the Edge Functions (two copies; rotate with **rotate-secrets**, see [SHARED-SECRETS.md](SHARED-SECRETS.md)) |
 | `WAIVER_HMAC_KEY_V<n>` | Tamper-evidence seal — see the note below |
 | `GOOGLE_CALENDAR_CLIENT_ID` / `_SECRET` | OpalSwift's OAuth **application**. Tenants connect *through* it; their tokens are per-tenant and already in the database |
 | `*_MOCK`, `*_API_BASE` | Deployment-wide behaviour, not tenant data |

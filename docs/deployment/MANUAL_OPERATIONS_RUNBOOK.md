@@ -24,10 +24,12 @@ Full checklist: [FRESH_DB_CRON_SMOKE.md](FRESH_DB_CRON_SMOKE.md)
 
 ```sql
 INSERT INTO private.platform_config (key, value) VALUES
-  ('supabase_functions_url', 'https://<project-ref>.supabase.co'),
-  ('cron_secret', '<matches supabase secrets set CRON_SECRET>')
+  ('supabase_functions_url', 'https://<project-ref>.supabase.co')
 ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
 ```
+
+`cron_secret` and the Edge secret `CRON_SECRET` are set together by Actions →
+**rotate-secrets** → `CRON_SECRET` (never by hand: [SHARED-SECRETS.md](SHARED-SECRETS.md)).
 
 Or run `pnpm smoke:cron:dev -- --print-gucs-sql` and paste the generated statement.
 
