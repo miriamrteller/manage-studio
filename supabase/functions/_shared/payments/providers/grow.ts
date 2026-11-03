@@ -461,19 +461,21 @@ export class GrowPaymentProvider implements PaymentProvider {
   }): Promise<{ providerRefundRef: string }> {
     const { data: payment } = await this.service
       .from("payments")
-      .select("tenant_id, provider_transaction_id")
+      .select("tenant_id, provider_transaction_id, provider_transaction_token")
       .eq("provider_payment_ref", params.providerPaymentRef)
       .maybeSingle();
     if (!payment?.tenant_id) {
       throw new Error("Payment not found for refund");
     }
-    // Grow refunds by ITS transaction id, stored when the payment notice settled. A payment
-    // settled before that was stored cannot be refunded from here: refund it in Grow.
+    // Grow refunds by ITS transaction id and token, both stored when the payment notice
+    // settled. A payment settled before they were stored cannot be refunded from here:
+    // refund it in Grow.
     const transactionId = payment.provider_transaction_id as string | null;
-    if (!transactionId) {
+    const transactionToken = payment.provider_transaction_token as string | null;
+    if (!transactionId || !transactionToken) {
       throw new ManualRefundRequiredError(
         "grow",
-        "This Grow payment has no Grow transaction number on record. Refund it in the Grow " +
+        "This Grow payment has no Grow transaction details on record. Refund it in the Grow " +
           "dashboard, then record the refund here.",
       );
     }
@@ -485,8 +487,10 @@ export class GrowPaymentProvider implements PaymentProvider {
         pageCode: creds.pageCode,
         userId: creds.userId,
         apiKey: creds.apiKey,
-        transactionId,
-        sum: growAmountFromMinor(params.amountMinor),
+        // Field names and types per Grow's refundTransaction reference.
+        transactionId: /^\d+$/.test(transactionId) ? Number(transactionId) : transactionId,
+        transactionToken,
+        refundSum: Number(growAmountFromMinor(params.amountMinor)),
       }),
     });
     const json = (await res.json()) as { status?: number; data?: { refundId?: string | number } };

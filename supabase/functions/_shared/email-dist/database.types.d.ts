@@ -2268,6 +2268,7 @@ export type Database = {
                     provider: string;
                     provider_payment_ref: string | null;
                     provider_transaction_id: string | null;
+                    provider_transaction_token: string | null;
                     refund_amount_minor: number | null;
                     refunded_at: string | null;
                     refunds_payment_id: string | null;
@@ -2314,6 +2315,7 @@ export type Database = {
                     provider?: string;
                     provider_payment_ref?: string | null;
                     provider_transaction_id?: string | null;
+                    provider_transaction_token?: string | null;
                     refund_amount_minor?: number | null;
                     refunded_at?: string | null;
                     refunds_payment_id?: string | null;
@@ -2360,6 +2362,7 @@ export type Database = {
                     provider?: string;
                     provider_payment_ref?: string | null;
                     provider_transaction_id?: string | null;
+                    provider_transaction_token?: string | null;
                     refund_amount_minor?: number | null;
                     refunded_at?: string | null;
                     refunds_payment_id?: string | null;
