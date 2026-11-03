@@ -27,7 +27,7 @@ function renderWizard() {
 }
 
 const next = () => fireEvent.click(screen.getByRole('button', { name: 'Next' }));
-const PAY_AT_STUDIO = 'Not a registered business yet: pay at the studio';
+const PAY_AT_STUDIO = "No card payments yet: I'll record payments myself";
 const GROW = 'By card online, through Grow';
 const YPAY_PAY = 'By card online, through YPay';
 const GROW_DOCS = 'Grow: card payments and invoices together';

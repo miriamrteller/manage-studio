@@ -42,7 +42,8 @@ interface PaymentProviderChoiceProps {
 /**
  * How customers pay (owner decisions), used by the setup wizard and by Settings while the studio
  * may still choose:
- *  - Grow, or "Not a registered business yet: pay at the studio".
+ *  - Grow, or "No card payments yet: I'll record payments myself" (every business, registered or not;
+ *    card payments can be connected later). The question is about CARD payments only.
  *  - Studios that do not charge monthly fees also get "Different provider?" revealing YPay and
  *    Invoice4U, with a warning that they cannot charge monthly fees.
  * Whether the studio charges monthly fees is not asked here: it follows the payment flow (monthly
