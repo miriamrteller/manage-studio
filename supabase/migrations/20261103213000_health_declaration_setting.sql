@@ -19,6 +19,8 @@
 ALTER TABLE tenants ADD COLUMN IF NOT EXISTS health_declaration BOOLEAN;
 COMMENT ON COLUMN tenants.health_declaration IS
   'Clients sign a health declaration. NULL = from the field (the skin''s default_switches.health_declaration; built-in skins: dance studios only). Change it with set_business_profile().';
+-- tenants SELECT is granted per column: signed-in users (through the existing RLS) may read it.
+GRANT SELECT (health_declaration) ON TABLE public.tenants TO authenticated;
 
 -- ── Guard: the setting changes only through the setter ──────────────────────
 CREATE OR REPLACE FUNCTION guard_tenant_business_profile()
