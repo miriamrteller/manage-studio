@@ -135,9 +135,16 @@ studio's website and email records (MX, SPF, DKIM) for no gain.
 8. **Supabase Auth redirect URL**: nothing to do once `auth-redirects-sync` is set up
    (it adds `https://<domain>/**` for every active custom domain). Before that, add it
    by hand under Supabase Auth → URL Configuration → Redirect URLs.
-9. **Check**: open `https://app.creativeballetacademy.com`. The studio's branding loads,
-   sign-in by email link returns to the same host, and a test reminder email links to
-   `app.creativeballetacademy.com`. The studio's own site at the apex is unchanged.
+9. **Turnstile hostname** (the bot check on sign-in, sign-up and enquiry forms). In
+   Cloudflare, open **Turnstile**, then the OpalSwift widget, then **Settings**. Under
+   **Hostname Management**, add `app.creativeballetacademy.com` and save.
+   Without it, the widget shows "Unable to connect to website" (error 110200) on the
+   custom domain and nobody can sign in there. The free plan allows 10 hostnames per widget,
+   and `opalswift.com` already uses one of them.
+10. **Check**: open `https://app.creativeballetacademy.com`. The studio's branding loads,
+   the sign-in bot check shows no error, sign-in by email link returns to the same host,
+   and a test reminder email links to `app.creativeballetacademy.com`. The studio's own
+   site at the apex is unchanged.
 
 ## Notes
 
@@ -149,7 +156,7 @@ studio's website and email records (MX, SPF, DKIM) for no gain.
 - **Removing** a self-serve domain: the studio does it in Settings (above). A path-A
   domain: set `custom_domain = NULL` with a prod task; links go back to
   `<subdomain>.opalswift.com` at once and `auth-redirects-sync` drops its redirect URL.
-  Then remove the Worker route and the DNS records.
+  Then remove the Worker route, the DNS records and the Turnstile hostname (step 9).
 
 ## Self-serve custom domains: owner setup (once)
 
@@ -208,6 +215,7 @@ The screen explains each case in plain words; this is what is behind it.
 | Domain on Cloudflare (orange cloud) and never connects | The studio's CNAME is proxied | Set it to **DNS only** (grey cloud) |
 | "Already used by another studio" | Live elsewhere, or released by another studio under 30 days ago | Wait out the 30 days or contact us |
 | "Custom addresses aren't available yet" | Cloudflare secrets not set on prod | Owner setup, steps 3–4 |
+| Sign-in on the new address says "Unable to connect to website" | The hostname isn't on the Turnstile widget yet. Self-serve doesn't add it yet. | Add it by hand, as in path A, step 9 |
 
 What happened and when: `tenant_custom_domains` (`status`, `error_code`,
 `last_checked_at`) and `audit_log` rows with `action LIKE 'custom_domain.%'`.
