@@ -7,7 +7,7 @@ const DEFAULT_STRINGS = {
     greeting_hello: 'Hello,',
     greeting_with_name: 'Hello {recipientName},',
     intro: "We received a request to sign in to your {schoolName} account. If you didn't make this request, you can ignore this message.",
-    code_heading: 'Or enter this code on the login page:',
+    code_heading: 'Opening this on another device? Use this code on the login page:',
     cta_button: 'Sign In',
     fallback_text: "If the button above doesn't work, copy and paste this link into your browser:",
     expiration_notice: 'This link expires in {expiresInMinutes} minutes',

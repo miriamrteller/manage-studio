@@ -1591,6 +1591,8 @@ export declare const WaiverEvidenceSchema: z.ZodObject<{
     status: z.ZodEnum<["signed", "superseded", "revoked"]>;
     created_at: z.ZodEffects<z.ZodString, string, string>;
     offering_id: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    /** ID or passport number with all but the last 3 characters hidden (safe for lists). Null on records signed before signer details. */
+    signer_id_masked: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     people: z.ZodOptional<z.ZodNullable<z.ZodObject<{
         name: z.ZodString;
     }, "strip", z.ZodTypeAny, {
@@ -1639,6 +1641,7 @@ export declare const WaiverEvidenceSchema: z.ZodObject<{
     signed_by_email?: string | null | undefined;
     user_agent?: string | null | undefined;
     accept_language?: string | null | undefined;
+    signer_id_masked?: string | null | undefined;
 }, {
     id: string;
     person_id: string;
@@ -1673,6 +1676,7 @@ export declare const WaiverEvidenceSchema: z.ZodObject<{
     user_agent?: string | null | undefined;
     accept_language?: string | null | undefined;
     guardian_confirmed?: boolean | undefined;
+    signer_id_masked?: string | null | undefined;
 }>;
 export type WaiverEvidence = z.infer<typeof WaiverEvidenceSchema>;
 export declare const AdminDashboardTodayClassSchema: z.ZodObject<{

@@ -14,6 +14,7 @@
  */
 import { hmacSha256Hex, sha256Hex } from "../edge-runtime/hmac.ts";
 import type { JobContractContext } from "../job-contract.ts";
+import { canonicalJson, maskIdNumber, type SignerDetailsSnapshot } from "../email-dist/signerDetails.js";
 import { type ContractPdfInput, type ContractPdfLogo, renderContractPdf } from "./render.ts";
 
 /** V1 sentinel pair: stored when no PDF exists (every dance waiver, and every job contract signed before Thread G). */
@@ -81,7 +82,11 @@ export function hasStoredPdf(row: { pdf_storage_path: string | null; pdf_sha256:
     row.pdf_sha256 !== PDF_SHA256_NONE;
 }
 
-/** The 15 fields sealed by record_hmac, in the shape accept-waiver builds (SPEC §4.2.9). */
+/**
+ * The fields sealed by record_hmac, in the shape accept-waiver builds (SPEC §4.2.9): the 15 original
+ * fields, plus `signer_details` (the sealed signer snapshot) for every record signed with it. Records
+ * signed before signer details existed have no such field and verify exactly as they always did.
+ */
 export interface WaiverRecordFields {
   accept_language: string | null;
   consent_template_id: string;
@@ -98,13 +103,37 @@ export interface WaiverRecordFields {
   signed_by_role: string;
   tenant_id: string;
   user_agent: string | null;
+  /** Sealed signer details; keyed into the HMAC (never stored as an unkeyed hash). Absent on legacy records. */
+  signer_details?: SignerDetailsSnapshot | null;
 }
 
-/** Canonical JSON: keys alphabetical, no whitespace — byte-identical to the verifier's canonicalise(). */
+/**
+ * Canonical JSON: keys alphabetical, no whitespace — byte-identical to the verifier's canonicalise().
+ * `signer_details` is included only when present, and is itself deep-sorted so Postgres' jsonb key
+ * order never changes the bytes.
+ */
 export function waiverRecordCanonical(fields: WaiverRecordFields): string {
-  return JSON.stringify(
-    Object.fromEntries(Object.entries(fields).sort(([a], [b]) => a.localeCompare(b))),
-  );
+  const entries = Object.entries(fields)
+    .filter(([key, value]) => key !== "signer_details" || (value !== undefined && value !== null))
+    .map(([key, value]) => [key, key === "signer_details" ? JSON.parse(canonicalJson(value)) : value] as [string, unknown]);
+  return JSON.stringify(Object.fromEntries(entries.sort(([a], [b]) => a.localeCompare(b))));
+}
+
+/** The masked, PDF-safe view of sealed signer details. */
+export function pdfSignerDetails(snapshot: SignerDetailsSnapshot | null | undefined): ContractPdfInput["signerDetails"] {
+  if (!snapshot) return null;
+  return {
+    fullName: snapshot.signer.full_name,
+    idKind: snapshot.signer.id_type,
+    idMasked: maskIdNumber(snapshot.signer.id_number),
+    passportCountry: snapshot.signer.passport_country,
+    phone: snapshot.signer.phone,
+    address: snapshot.signer.address,
+    child: snapshot.child
+      ? { fullName: snapshot.child.full_name, dateOfBirth: snapshot.child.date_of_birth }
+      : undefined,
+    confirmedWording: snapshot.confirmed_wording,
+  };
 }
 
 export function waiverRecordHmac(key: string, fields: WaiverRecordFields): Promise<string> {
@@ -147,6 +176,8 @@ export interface JobContractPdfInput {
   signedAt: string;
   signerEmail: string | null;
   consentVersionHash: string;
+  /** Sealed signer details (ID masked on the PDF). */
+  signerDetails?: SignerDetailsSnapshot | null;
 }
 
 /** Structural storage client (supabase-js `storage`), so tests can pass a fake. */
@@ -216,6 +247,7 @@ export async function buildJobContractPdf(
       evidenceId: input.evidenceId,
       consentVersionHash: input.consentVersionHash,
     },
+    signerDetails: pdfSignerDetails(input.signerDetails),
   });
   return { bytes, pdfSha256: await sha256Hex(bytes) };
 }

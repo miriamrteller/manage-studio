@@ -17,6 +17,8 @@ import {
   type WaiverEvidenceRow,
 } from '../../../../supabase/functions/_shared/verify-waiver-evidence.ts';
 import { hmacSha256Hex } from '../../../../supabase/functions/_shared/edge-runtime/hmac.ts';
+import { OPTIONAL_CANONICAL_FIELDS } from '../../../../supabase/functions/_shared/verify-waiver-evidence.ts';
+import { canonicalJson } from '@shared';
 
 const KEY = 'test-hmac-key-v1';
 
@@ -128,7 +130,75 @@ describe('waiver evidence verification', () => {
     const signerFields = [...block.matchAll(/^\s+([a-z0-9_]+)\s*[:,]/gm)]
       .map((m) => m[1])
       .sort();
-    expect(signerFields).toEqual([...CANONICAL_FIELDS].sort());
-    expect(signerFields).toHaveLength(15);
+    // The 15 original fields plus signer_details (sealed only when the record has it).
+    expect(signerFields).toEqual([...CANONICAL_FIELDS, ...OPTIONAL_CANONICAL_FIELDS].sort());
+    expect(signerFields).toHaveLength(16);
+  });
+});
+
+describe('waiver evidence verification with signer details', () => {
+  const details = {
+    version: 1,
+    confirmed: true,
+    confirmed_wording: 'These details are correct',
+    signer: {
+      full_name: 'A Parent',
+      id_type: 'israeli_id',
+      id_number: '123456782',
+      phone: '050-123-4567',
+      address: '1 Herzl St, Haifa',
+    },
+    child: { full_name: 'A Child', date_of_birth: '2016-01-02', dob_differs_from_profile: false },
+  };
+
+  /** Signs as accept-waiver does: 15 fields + signer_details, deep-sorted. */
+  async function signWithDetails(r: WaiverEvidenceRow, d: unknown, key: string): Promise<string> {
+    const fields: Record<string, unknown> = { ...r };
+    for (const meta of ['id', 'record_hmac', 'hmac_key_version']) delete fields[meta];
+    const all = { ...fields, signer_details: JSON.parse(canonicalJson(d)) };
+    return hmacSha256Hex(
+      key,
+      JSON.stringify(Object.fromEntries(Object.entries(all).sort(([a], [b]) => a.localeCompare(b)))),
+    );
+  }
+
+  it('accepts a record sealed with signer details', async () => {
+    const signed = { ...row, signer_details: details, record_hmac: await signWithDetails(row, details, KEY) };
+    expect((await verifyWaiverEvidence(signed)).ok).toBe(true);
+  });
+
+  it('does not care which key order Postgres returns the jsonb in', async () => {
+    const signed = { ...row, record_hmac: await signWithDetails(row, details, KEY) };
+    const reordered = {
+      child: details.child,
+      signer: { address: details.signer.address, phone: details.signer.phone, id_number: details.signer.id_number,
+        id_type: details.signer.id_type, full_name: details.signer.full_name },
+      confirmed_wording: details.confirmed_wording,
+      confirmed: true,
+      version: 1,
+    };
+    expect((await verifyWaiverEvidence({ ...signed, signer_details: reordered })).ok).toBe(true);
+  });
+
+  it('rejects a changed ID number, phone, address or child date of birth', async () => {
+    const signed = { ...row, record_hmac: await signWithDetails(row, details, KEY) };
+    const edits: Array<(d: typeof details) => typeof details> = [
+      (d) => ({ ...d, signer: { ...d.signer, id_number: '123456789' } }),
+      (d) => ({ ...d, signer: { ...d.signer, phone: '050-000-0000' } }),
+      (d) => ({ ...d, signer: { ...d.signer, address: 'Elsewhere 5' } }),
+      (d) => ({ ...d, child: { ...d.child, date_of_birth: '2015-01-02' } }),
+    ];
+    for (const edit of edits) {
+      const result = await verifyWaiverEvidence({ ...signed, signer_details: edit(details) });
+      expect(result.ok).toBe(false);
+    }
+  });
+
+  it('rejects details added to, or removed from, a record sealed without/with them', async () => {
+    const legacy = { ...row, record_hmac: await signLikeAcceptWaiver(row, KEY) };
+    expect((await verifyWaiverEvidence({ ...legacy, signer_details: null })).ok).toBe(true);
+    expect((await verifyWaiverEvidence({ ...legacy, signer_details: details })).ok).toBe(false);
+    const sealed = { ...row, signer_details: details, record_hmac: await signWithDetails(row, details, KEY) };
+    expect((await verifyWaiverEvidence({ ...sealed, signer_details: null })).ok).toBe(false);
   });
 });

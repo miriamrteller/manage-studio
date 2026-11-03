@@ -43,6 +43,12 @@ describe('scrubText', () => {
     expect(out).toContain('Key (email)=([redacted])');
   });
 
+  it('redacts a 9-digit ID number (signer details must never reach an error report)', () => {
+    const out = scrubText('sign failed for id 123456782 and "id_number":"012345674"');
+    expect(out).not.toMatch(/123456782/);
+    expect(out).not.toMatch(/012345674/);
+  });
+
   it('scrubs URLs embedded in messages', () => {
     expect(scrubText('Failed GET https://a.opalswift.com/pay/secret123?x=1')).toBe(
       'Failed GET https://a.opalswift.com/pay/:token',
