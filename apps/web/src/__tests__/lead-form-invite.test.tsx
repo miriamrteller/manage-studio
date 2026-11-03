@@ -50,18 +50,29 @@ function renderForm() {
   );
 }
 
+/** Other test files may swap window.location for a plain object: set a known one, and a history that updates it. */
+function setUrl(path: string, hash: string) {
+  const [pathname, search = ''] = path.split('?');
+  const loc = { href: `http://localhost${path}${hash}`, origin: 'http://localhost', pathname, search: search ? `?${search}` : '', hash };
+  Object.defineProperty(window, 'location', { configurable: true, value: loc });
+  vi.spyOn(window.history, 'replaceState').mockImplementation((_state, _title, url) => {
+    const next = String(url ?? '');
+    const [p, q = ''] = next.split('#')[0].split('?');
+    Object.assign(loc, { pathname: p, search: q ? `?${q}` : '', hash: next.includes('#') ? `#${next.split('#')[1]}` : '' });
+  });
+}
+
 beforeEach(() => {
   h.rpc.mockReset();
   h.rpc.mockImplementation(async () => ({ data: null, error: null }));
   // Spy on the client the form actually uses (modules can be shared across test files).
   vi.spyOn(supabase, 'rpc').mockImplementation(((fn: string, args?: unknown) => h.rpc(fn, args)) as never);
   vi.spyOn(supabase.functions, 'invoke').mockImplementation(((...a: unknown[]) => (h.invoke as (...x: unknown[]) => unknown)(...a)) as never);
-  window.history.replaceState(null, '', `/inquire?src=direct#invite=${TOKEN}`);
+  setUrl('/inquire?src=direct', `#invite=${TOKEN}`);
 });
 afterEach(() => {
   vi.restoreAllMocks();
   vi.clearAllMocks();
-  window.history.replaceState(null, '', '/');
 });
 
 describe('Send-form invite links', () => {
@@ -100,7 +111,7 @@ describe('Send-form invite links', () => {
   });
 
   it('no token: nothing is looked up', () => {
-    window.history.replaceState(null, '', '/inquire');
+    setUrl('/inquire', '');
     renderForm();
     expect(h.rpc).not.toHaveBeenCalledWith('get_lead_form_invite', expect.anything());
   });
