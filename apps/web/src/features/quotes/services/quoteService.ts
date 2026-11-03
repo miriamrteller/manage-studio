@@ -105,6 +105,23 @@ export class QuoteService extends BaseService {
     fail(error);
   }
 
+  /** The lead a new quote is made from: its name, package and event date. */
+  static async sourceLead(
+    tenantId: string,
+    leadId: string,
+  ): Promise<{ name: string | null; offering_id: string | null; event_date: string | null } | null> {
+    return this.withRetry(async () => {
+      const { data, error } = await supabase
+        .from('leads')
+        .select('name, offering_id, event_date')
+        .eq('tenant_id', tenantId)
+        .eq('id', leadId)
+        .maybeSingle();
+      fail(error);
+      return data ?? null;
+    }, 'QuoteService.sourceLead');
+  }
+
   static async packages(tenantId: string): Promise<QuotePackage[]> {
     return this.withRetry(async () => {
       const { data, error } = await supabase

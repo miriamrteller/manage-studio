@@ -272,14 +272,186 @@ export function legalTextVersion(text: string): string {
 }
 
 /**
+ * Live details in a lawyer-reviewed text: `{{detail:<id>}}` stands for one of
+ * the studio's details (a legal field key, or a derived detail below). The
+ * lawyer approves the wording; the details are inserted from Settings when the
+ * text is shown, so changing a detail updates the lawyer version too.
+ */
+export const DETAIL_TOKEN_RE = /\{\{detail:([a-z_]+)\}\}/g;
+export const detailToken = (id: string) => `{{detail:${id}}}`;
+
+/** Derived details (several fields or the tenant itself) by id: their template placeholders. */
+const DERIVED_DETAILS: Record<string, { placeholders: string[]; label: Record<LegalLang, string> }> = {
+  studio_name: {
+    placeholders: ['[[STUDIO NAME]]', '[[שם הסטודיו]]'],
+    label: { en: 'Studio name', he: 'שם הסטודיו' },
+  },
+  business_line: {
+    placeholders: [
+      '[[BUSINESS STATUS & NO. — e.g. עוסק פטור no. …, or "individual, not yet a registered business"]]',
+      '[[מעמד ומספר עוסק — למשל עוסק פטור מס\' …, או "יחיד/ה, טרם נרשם/ה כעסק"]]',
+    ],
+    label: { en: 'Business status and number', he: 'מעמד ומספר העסק' },
+  },
+  id_or_number: {
+    placeholders: ['[[ID / BUSINESS NO. — or "not yet a registered business"]]', '[[ת"ז / מס\' עוסק — או "טרם נרשם כעסק"]]'],
+    label: { en: 'ID or business number', he: 'ת"ז או מספר עוסק' },
+  },
+  studio_legal_name: {
+    placeholders: ['[[STUDIO LEGAL NAME]]', '[[השם המשפטי של הסטודיו]]'],
+    label: { en: 'Studio legal name', he: 'השם המשפטי של הסטודיו' },
+  },
+  email_phone: {
+    placeholders: ['[[EMAIL / PHONE]]', '[[דוא"ל / טלפון]]'],
+    label: { en: 'Email and phone', he: 'דוא"ל וטלפון' },
+  },
+  insurance_statement: {
+    placeholders: [],
+    label: { en: 'Insurance statement', he: 'הצהרת ביטוח' },
+  },
+};
+
+const DERIVED_ID_BY_PLACEHOLDER: Record<string, string> = Object.fromEntries(
+  Object.entries(DERIVED_DETAILS).flatMap(([id, d]) => d.placeholders.map((ph) => [ph, id])),
+);
+
+/** The details a lawyer version can hold, for the editor's "Insert a detail" list. */
+export function liveDetailOptions(vertical: VerticalId, lang: LegalLang): { id: string; label: string }[] {
+  const derived = Object.entries(DERIVED_DETAILS)
+    .filter(([id]) => id !== 'insurance_statement' || hasHealthDeclarations(vertical))
+    .map(([id, d]) => ({ id, label: d.label[lang] }));
+  const fields = LEGAL_FIELDS.filter(
+    (f) => (!f.verticals || f.verticals.includes(vertical)) && Object.keys(f.placeholders).length > 0 && f.kind !== 'checkbox',
+  ).map((f) => ({ id: f.key, label: f.label[lang] }));
+  return [...derived, ...fields];
+}
+
+/** A detail's label (chips in the editor). */
+export function liveDetailLabel(id: string, lang: LegalLang): string {
+  return DERIVED_DETAILS[id]?.label[lang] ?? LEGAL_FIELDS.find((f) => f.key === id)?.label[lang] ?? id;
+}
+
+/** The insurance sentence as one live detail (health-declaration studios only). */
+function applyInsuranceToken(text: string, ctx: LegalRenderContext): string {
+  if (!hasHealthDeclarations(ctx.vertical)) {
+    return text.replace(INSURANCE_LINE.en, '').replace(INSURANCE_LINE.he, '');
+  }
+  const token = detailToken('insurance_statement');
+  return text
+    .replace(INSURANCE_LINE.en, (line) => `- ${token}${line.endsWith('\n') ? '\n' : ''}`)
+    .replace(INSURANCE_LINE.he, (line) => `- ${token}${line.endsWith('\n') ? '\n' : ''}`);
+}
+
+function insuranceStatementValue(ctx: LegalRenderContext): string {
+  if (!hasHealthDeclarations(ctx.vertical)) return '';
+  const he = ctx.lang === 'he';
+  if (insuranceStatus(ctx.profile) !== 'insured') return NO_INSURANCE_TERMS[ctx.lang];
+  const insurer = (ctx.profile.insurance ?? '').trim();
+  if (!insurer) return INSURED_TERMS[ctx.lang];
+  const value = escapeMarkdownValue(insurer);
+  return he ? `לסטודיו ${value}.` : `The studio holds ${value}.`;
+}
+
+/**
+ * A lawyer-reviewed text with its live details filled in from the studio's
+ * current settings. Details still empty show highlighted, as in the drafts.
+ */
+export function fillLiveDetails(content: string, ctx: LegalRenderContext): PreparedLegalDoc {
+  const derived = derivedValues(ctx);
+  const missing = new Set<string>();
+  const missingTexts: string[] = [];
+  const markMissing = (key: string, label: string) => {
+    missing.add(key);
+    missingTexts.push(toBeCompleted(label, ctx.lang));
+    return `${MISSING_TOKEN}${missingTexts.length - 1}X`;
+  };
+  const markdown = content.replace(DETAIL_TOKEN_RE, (_whole, id: string) => {
+    if (id === 'insurance_statement') return insuranceStatementValue(ctx);
+    const d = DERIVED_DETAILS[id];
+    // A derived detail with no value falls back to the field that shares its
+    // placeholder (e.g. the studio's legal name), as in the drafts.
+    const ph = d?.placeholders[ctx.lang === 'he' ? 1 : 0];
+    if (d && ph) {
+      const v = derived[ph];
+      if (v) return escapeMarkdownValue(v);
+    }
+    const field = d
+      ? LEGAL_FIELDS.find((f) => (f.placeholders[ctx.doc] ?? []).includes(ph ?? ''))
+      : LEGAL_FIELDS.find((f) => f.key === id);
+    if (d && !field) return markMissing(id, d.label[ctx.lang]);
+    if (!field) return '';
+    const raw = (ctx.profile[field.key] ?? '').trim() || fieldFallback(field.key, ctx);
+    const value = raw && field.kind === 'date' && /^\d{4}-\d{2}-\d{2}$/.test(raw) ? formatDate(`${raw}T12:00:00Z`, ctx.lang) : raw;
+    if (value) return escapeMarkdownValue(value);
+    if (field.defaultValue) return escapeMarkdownValue(field.defaultValue[ctx.lang]);
+    return markMissing(field.key, field.label[ctx.lang]);
+  });
+  return { markdown, missing: [...missing], missingLabels: missingTexts, version: legalTextVersion(markdown) };
+}
+
+/** Simple details whose current value can be found in a pasted text and turned back into live fields. */
+const TOKENIZABLE_FIELDS = [
+  'legal_name', 'address', 'phone', 'email', 'business_number', 'personal_id', 'passport_number',
+  'privacy_contact_name', 'privacy_contact_email', 'accessibility_contact_name', 'accessibility_contact_email',
+  'accessibility_contact_phone', 'insurance', 'website',
+];
+
+/**
+ * Turn the studio's current detail values in a text (e.g. a lawyer's text
+ * pasted in) back into live details: exact matches only, longest value first,
+ * values of 4+ characters. Returns the text and how many were turned.
+ */
+export function tokenizeKnownValues(text: string, ctx: LegalRenderContext): { text: string; count: number } {
+  const values: { id: string; value: string }[] = [];
+  const add = (id: string, value: string | undefined | null) => {
+    const v = (value ?? '').trim();
+    if (v.length >= 4) values.push({ id, value: v });
+  };
+  // The studio name first, so a field that merely repeats it doesn't take its place;
+  // only values the studio actually entered (no fallbacks), so each maps to its own field.
+  add('studio_name', ctx.tenantName);
+  for (const key of TOKENIZABLE_FIELDS) add(key, ctx.profile[key]);
+  values.sort((a, b) => b.value.length - a.value.length);
+  let count = 0;
+  // Keep existing tokens intact: split around them.
+  const parts = text.split(/(\{\{detail:[a-z_]+\}\})/g);
+  const out = parts.map((part) => {
+    if (/^\{\{detail:[a-z_]+\}\}$/.test(part)) return part;
+    let piece = part;
+    const seen = new Set<string>();
+    for (const { id, value } of values) {
+      if (seen.has(value)) continue;
+      seen.add(value);
+      const chunks = piece.split(/(\{\{detail:[a-z_]+\}\})/g);
+      piece = chunks
+        .map((c) => {
+          if (/^\{\{detail:[a-z_]+\}\}$/.test(c)) return c;
+          const n = c.split(value).length - 1;
+          if (n === 0) return c;
+          count += n;
+          return c.split(value).join(detailToken(id));
+        })
+        .join('');
+    }
+    return piece;
+  });
+  return { text: out.join(''), count };
+}
+
+/**
  * Turn a docs/legal template into the studio's published markdown: drop the
  * drafting frame and notes, keep the right vertical variant, fill placeholders.
  * Unfilled placeholders become MISSING tokens (rendered highlighted).
  */
-export function prepareLegalMarkdown(raw: string, ctx: LegalRenderContext): PreparedLegalDoc {
+export function prepareLegalMarkdown(
+  raw: string,
+  ctx: LegalRenderContext,
+  options: { liveDetails?: boolean } = {},
+): PreparedLegalDoc {
+  const live = options.liveDetails === true;
   let text = stripDraftingFrame(raw);
   text = applyVariant(text, ctx.vertical);
-  text = applyInsurance(text, ctx);
+  text = live ? applyInsuranceToken(text, ctx) : applyInsurance(text, ctx);
   text = rewriteDocLinks(text);
 
   const derived = derivedValues(ctx);
@@ -305,6 +477,10 @@ export function prepareLegalMarkdown(raw: string, ctx: LegalRenderContext): Prep
       return lead + receiptsValue(ctx);
     }
 
+    // Live details (lawyer-version editor): the studio's details stay fields, filled on render.
+    const liveId = live ? DERIVED_ID_BY_PLACEHOLDER[ph] : undefined;
+    if (liveId) return `${lead}${detailToken(liveId)}`;
+
     if (ph in derived) {
       const v = derived[ph];
       if (v !== null && v !== undefined) return v === '' ? '' : lead + escapeMarkdownValue(v);
@@ -315,6 +491,7 @@ export function prepareLegalMarkdown(raw: string, ctx: LegalRenderContext): Prep
       // e.g. "the gallery service" line in a dance school's policy.
       return DROP_LINE_TOKEN;
     }
+    if (field && live) return `${lead}${detailToken(field.key)}`;
     if (field) {
       const raw = (ctx.profile[field.key] ?? '').trim() || fieldFallback(field.key, ctx);
       const value = raw && field.kind === 'date' && /^\d{4}-\d{2}-\d{2}$/.test(raw) ? formatDate(`${raw}T12:00:00Z`, ctx.lang) : raw;

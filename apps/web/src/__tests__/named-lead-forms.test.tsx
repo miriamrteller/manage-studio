@@ -26,6 +26,10 @@ const h = vi.hoisted(() => ({
   slugFree: vi.fn(async () => true),
   save: vi.fn(async () => 'f-new'),
 }));
+// Signed out: the public form starts blank (signed-in prefill: prefill-enrolment.test.tsx).
+vi.mock('@/hooks/useCurrentUser', () => ({
+  useCurrentUser: () => ({ user: null, isLoading: false, isProfileChecked: true }),
+}));
 vi.mock('@/lib/supabase', () => ({
   supabase: {
     functions: { invoke: h.invoke },

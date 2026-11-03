@@ -188,6 +188,26 @@ describe('signer details on the signing step', () => {
     await waitFor(() => expect(screen.getByLabelText('Full legal name')).toHaveValue('Dana Levi-Cohen'));
   });
 
+  it('never signed before: a phone-only result (their stored number) fills just the phone', async () => {
+    rpc.mockResolvedValue({ data: { phone: '052-765-4321' }, error: null });
+    renderStep();
+    await readAndName();
+    await waitFor(() => expect(screen.getByLabelText('Phone number')).toHaveValue('052-765-4321'));
+    expect(screen.getByLabelText('ID number (teudat zehut)', { exact: false })).toHaveValue('');
+    expect(screen.getByLabelText('Full legal name')).toHaveValue('Dana Levi');
+  });
+
+  it('a phone typed before the pre-fill answers is kept, and the other fields still fill', async () => {
+    let answer: (v: unknown) => void = () => undefined;
+    rpc.mockReturnValue(new Promise((r) => { answer = r; }));
+    renderStep();
+    await readAndName();
+    fireEvent.change(screen.getByLabelText('Phone number'), { target: { value: '054-111-2222' } });
+    answer({ data: { phone: '052-765-4321', address: '1 Herzl St, Haifa' }, error: null });
+    await waitFor(() => expect(screen.getByLabelText('Home address', { exact: false })).toHaveValue('1 Herzl St, Haifa'));
+    expect(screen.getByLabelText('Phone number')).toHaveValue('054-111-2222');
+  });
+
   it('a guest link (no session) does not ask for a pre-fill', async () => {
     renderInApp(
       <WaiverStep

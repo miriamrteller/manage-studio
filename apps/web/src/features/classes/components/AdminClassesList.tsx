@@ -1,5 +1,6 @@
 import { Fragment, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import { formatTime } from '@shared/format';
 import { formatOfferingPrice } from '@/lib/formatOfferingPrice';
 import { Button } from '@/components/ui/button';
@@ -309,6 +310,13 @@ export function AdminClassesList() {
                   >
                     {t('pages.admin_classes.requirements_button')}
                   </Button>
+                  <Link
+                    to={`/admin/notifications?offering=${encodeURIComponent(classItem.id)}`}
+                    className="inline-flex items-center rounded-[var(--radius-button)] border border-[var(--border-hairline)] px-3 py-1 text-sm whitespace-nowrap text-[var(--color-text-primary)] hover:bg-[var(--tint-primary-05)] focus-visible:outline-2 outline-offset-2"
+                    aria-label={t('pages.admin_classes.email_class_label', { name: classItem.name })}
+                  >
+                    {t('pages.admin_classes.email_class')}
+                  </Link>
                   <Button variant="destructive" size="sm" onClick={() => setDeleteConfirmId(classItem.id)}>
                     {t('common.delete')}
                   </Button>
@@ -438,6 +446,13 @@ export function AdminClassesList() {
                       >
                         {t('pages.admin_classes.requirements_button')}
                       </Button>
+                      <Link
+                        to={`/admin/notifications?offering=${encodeURIComponent(classItem.id)}`}
+                        className="inline-flex items-center rounded-[var(--radius-button)] border border-[var(--border-hairline)] px-3 py-1 text-sm whitespace-nowrap text-[var(--color-text-primary)] hover:bg-[var(--tint-primary-05)] focus-visible:outline-2 outline-offset-2"
+                        aria-label={t('pages.admin_classes.email_class_label', { name: classItem.name })}
+                      >
+                        {t('pages.admin_classes.email_class')}
+                      </Link>
                       <Button
                         variant="destructive"
                         size="sm"

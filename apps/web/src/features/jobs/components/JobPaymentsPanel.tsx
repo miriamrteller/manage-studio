@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useJobPaymentRequests } from '../hooks/useJobPaymentRequests';
 import { JOB_CONTACT_SELECT, jobContactFromRow, type JobContact, type JobContactRow } from '../lib/jobContact';
-import { formatMinor, isoDateInJerusalem } from '../lib/jobPaymentFormat';
+import { defaultRequestTotalMinor, formatMinor, isoDateInJerusalem } from '../lib/jobPaymentFormat';
 import type { JobPaymentRequest } from '../services/jobPaymentService';
 import { JobGalleryGate } from './JobGalleryGate';
 import { JobPaymentRequestForm } from './JobPaymentRequestForm';
@@ -16,6 +16,8 @@ import { ManualPaymentDialog, type ManualAction } from './ManualPaymentDialog';
 
 interface Props {
   engagementId: string;
+  /** The shoot's package price (minor units): a new request starts from what is left of it. */
+  packagePriceMinor?: number | null;
 }
 
 /**
@@ -23,7 +25,7 @@ interface Props {
  * Deposit/balance requests, pay links (email + WhatsApp), manual cash/bank
  * payments, manual refunds, invoice links, and the gallery gate.
  */
-export function JobPaymentsPanel({ engagementId }: Props) {
+export function JobPaymentsPanel({ engagementId, packagePriceMinor }: Props) {
   const { t, i18n } = useTranslation();
   const tenant = useTenant();
   const language = i18n.language;
@@ -101,6 +103,7 @@ export function JobPaymentsPanel({ engagementId }: Props) {
           <JobPaymentRequestForm
             currency={currency}
             jobDate={isoDateInJerusalem(contactQuery.data?.bookedStartsAt)}
+            defaultTotalMinor={defaultRequestTotalMinor(packagePriceMinor, requests)}
             isSubmitting={create.isPending}
             onCancel={() => setShowForm(false)}
             onSubmit={async (reqs) => {

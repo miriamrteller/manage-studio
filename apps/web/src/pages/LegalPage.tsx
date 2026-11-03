@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useTenant } from '@/hooks/useTenant';
-import { renderLegalHtml } from '@/legal/render';
+import { fillLiveDetails, renderLegalHtml } from '@/legal/render';
 import { lawyerPdfUrl, useLawyerDocuments, type LawyerDocument } from '@/legal/lawyerDocuments';
 import {
   PLATFORM_DOCS,
@@ -11,9 +11,12 @@ import {
   LEGAL_PACK_DOCS,
   isLegalPackLive,
   isLegalDocId,
+  studioRenderContext,
   tenantHasEnrolmentTerms,
   useLegalDocument,
+  type TenantLegalProfile,
 } from '@/legal/useLegalDocument';
+import type { LegalDocId } from '@/legal/fields';
 
 /**
  * /legal/:doc — a studio's legal page, generated from the templates in
@@ -90,7 +93,7 @@ export default function LegalPage() {
         </div>
       )}
       {lawyerVersion ? (
-        <LawyerVersion version={lawyerVersion} />
+        <LawyerVersion version={lawyerVersion} legal={legal ?? null} docId={docId} />
       ) : (
         <article
           className="legal-document"
@@ -106,7 +109,15 @@ export default function LegalPage() {
 }
 
 /** The studio's lawyer-reviewed version: its edited text, or its PDF. */
-function LawyerVersion({ version }: { version: LawyerDocument }) {
+function LawyerVersion({
+  version,
+  legal,
+  docId,
+}: {
+  version: LawyerDocument;
+  legal: TenantLegalProfile | null;
+  docId: LegalDocId;
+}) {
   const { t, i18n } = useTranslation();
   const [opening, setOpening] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -136,7 +147,14 @@ function LawyerVersion({ version }: { version: LawyerDocument }) {
           lang={version.language}
           dir={version.language === 'he' ? 'rtl' : 'ltr'}
           // The studio's own text: raw HTML is escaped and links are checked (legal/render.ts).
-          dangerouslySetInnerHTML={{ __html: renderLegalHtml({ markdown: version.content ?? '', missingLabels: [] }) }}
+          // Its studio details are live fields, filled from the current settings.
+          dangerouslySetInnerHTML={{
+            __html: renderLegalHtml(
+              legal
+                ? fillLiveDetails(version.content ?? '', studioRenderContext(legal, docId, version.language))
+                : { markdown: version.content ?? '', missingLabels: [] },
+            ),
+          }}
         />
       ) : (
         <div className="space-y-2">
