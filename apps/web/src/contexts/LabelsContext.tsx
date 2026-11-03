@@ -2,6 +2,7 @@ import { createContext, ReactNode, useMemo } from 'react';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useTenant } from '@/hooks/useTenant';
 import { VerticalI18nProvider } from '@/i18n/VerticalI18nProvider';
+import { useStudioSkin } from '@/features/skins/useSkins';
 import {
   EXISTING_STUDIO_PROFILE,
   resolveEntityLabels,
@@ -9,6 +10,7 @@ import {
   resolvePresetModules,
   safePreset,
   safeVertical,
+  skinLabelsFor,
   type BusinessPreset,
   type EntityLabels,
   type PresetModules,
@@ -56,6 +58,8 @@ export const LabelsContext = createContext<LabelsContextType>(FALLBACK);
 export function LabelsProvider({ children }: { children: ReactNode }) {
   const tenant = useTenant();
   const { language } = useLanguage();
+  // A data skin's own wording (built-in skins keep their code wording and fetch nothing).
+  const { data: skin } = useStudioSkin(tenant?.skin);
 
   const value = useMemo<LabelsContextType>(() => {
     if (!tenant) {
@@ -68,13 +72,13 @@ export function LabelsProvider({ children }: { children: ReactNode }) {
     const vertical = safeVertical(tenant.vertical);
     const profile = tenant.profile ?? EXISTING_STUDIO_PROFILE;
     return {
-      labels: resolveStudioLabels(profile, tenant.entity_label_overrides, language, vertical),
+      labels: resolveStudioLabels(profile, tenant.entity_label_overrides, language, vertical, skinLabelsFor(skin, language)),
       modules: resolvePresetModules(preset),
       preset,
       vertical,
       profile,
     };
-  }, [tenant, language]);
+  }, [tenant, language, skin]);
 
   return (
     <LabelsContext.Provider value={value}>

@@ -73,6 +73,7 @@ export function useTenantQuery(): {
         invoicing_provider: row.invoicing_provider ?? 'grow',
         business_preset: preset,
         vertical,
+        skin: typeof row.skin === 'string' ? row.skin : vertical,
         entity_label_overrides: overrides,
         profile,
         entity_labels: resolveStudioLabels(profile, overrides, 'en', vertical),
