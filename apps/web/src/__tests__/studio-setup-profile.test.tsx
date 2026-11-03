@@ -55,7 +55,7 @@ afterEach(async () => {
 describe('business profile in the setup wizard', () => {
   it('a new form starts general: both payment flows, every switch off', () => {
     expect(toSetupRequest({ ...INITIAL_FORM, name: 'x', subdomain: 'x' }).profile).toEqual({
-      paymentFlow: 'both', teachesClasses: false, familyAccounts: false, clientBooking: false,
+      paymentFlow: 'both', teachesClasses: false, familyAccounts: false, clientBooking: false, healthDeclaration: false,
     });
   });
 

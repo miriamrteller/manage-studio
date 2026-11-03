@@ -1,7 +1,7 @@
 import { consentWording, MARKETING_KINDS, PHOTO_KINDS, type ConsentKind } from './consents';
 import type { LegalDocId } from './fields';
 import { legalTextVersion, prepareLegalMarkdown, renderLegalHtml, type LegalLang } from './render';
-import { prepareSignedForm, signedFormsForSkin } from './signedTemplates';
+import { prepareSignedForm, signedFormsFor } from './signedTemplates';
 import { loadLegalTemplate } from './templates';
 import { tenantHasEnrolmentTerms, type TenantLegalProfile } from './useLegalDocument';
 
@@ -70,6 +70,7 @@ export async function buildLegalPack(legal: TenantLegalProfile): Promise<LegalPa
         profile: legal.profile,
         updatedAt: legal.updatedAt,
         teachesClasses: legal.teachesClasses !== false,
+        healthDeclarations: legal.healthDeclarations,
       });
       section.body[lang] = { html: renderLegalHtml(prepared) };
       section.missing[lang] = prepared.missingLabels;
@@ -78,7 +79,7 @@ export async function buildLegalPack(legal: TenantLegalProfile): Promise<LegalPa
   }
 
   const signedForms: LegalPack['signedForms'] = [];
-  for (const form of signedFormsForSkin(legal.skin ?? legal.vertical, legal.legalAddon)) {
+  for (const form of signedFormsFor(legal.vertical, { healthDeclarations: legal.healthDeclarations, legalAddon: legal.legalAddon })) {
     const section: LegalPackSection = {
       id: form.key,
       title: form.title,
