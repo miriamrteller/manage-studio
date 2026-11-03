@@ -1,89 +1,25 @@
 import { useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Button } from '@/components/ui/button';
-import { PersonSearchCombobox } from '@/components/shared/PersonSearchCombobox';
-import { GuestExistingAccountPrompt } from './GuestExistingAccountPrompt';
 import { useGuestEmailRegistrationCheck } from '../hooks/useGuestEmailRegistrationCheck';
-import { isExistingEmailError, EnrolmentIntakeService } from '../intakeService';
-import { useTenant } from '@/hooks/useTenant';
-import { EnrolmentOnboardingService } from '../onboardingService';
-import { mapAgeReviewRpcError } from '../lib/ageReviewService';
-import { filterStudentCandidates } from '../lib/filterStudentCandidates';
-import { isAgeEligible } from '../lib/check-requirements';
-import { ADULT_AGE_THRESHOLD, ageAt, formatEnrolmentStudentAgeLine } from '@/lib/personAge';
-import {
-  SelectedClassAgeAlert,
-  useSelectedClassAgeValidation,
-} from '../lib/selectedClassAgeValidation';
-import type { PersonSearchResult } from '@/features/people/types';
-import {
-  filterEnrolmentPersonSearchResults,
-  isEnrolmentGuardianOnly,
-  isEnrolmentPersonSearchSelectable,
-} from '../lib/enrolmentPersonSearch';
+import { ADULT_AGE_THRESHOLD, ageAt } from '@/lib/personAge';
+import { useSelectedClassAgeValidation } from '../lib/selectedClassAgeValidation';
 import { useAdminGuardianEmailLookup } from '../hooks/useAdminGuardianEmailLookup';
-import { useFamilyStudents, partitionFamilyStudents } from '../hooks/useFamilyStudents';
-import type { Person } from '@shared/schemas';
+import { useSelectStudentFields } from '../hooks/useSelectStudentFields';
+import { useStepSelectStudentAgeReview } from '../hooks/useStepSelectStudentAgeReview';
 import type { EnrolmentConstraints, EnrolmentMode } from '../hooks/useEnrolmentContext';
 import type { AgeEnrolmentActor } from '../lib/ageEnrolmentPolicy';
 import type { GuardianAccountLookup, GuardianProfile } from '../onboardingService';
 import type { StudentWithEnrolments } from '../hooks/useAccountStudents';
-import { GuardianProfileSetupPanel } from './GuardianProfileSetupPanel';
-
-interface EnrolmentPersonSearchComboboxProps {
-  onSelectPerson: (person: Person, dateOfBirth: string | null) => void;
-  onSelectGuardian: (result: PersonSearchResult) => void;
-  constraints: EnrolmentConstraints;
-  isAdultIntake?: boolean;
-  disabled?: boolean;
-}
-
-function EnrolmentPersonSearchCombobox({
-  onSelectPerson,
-  onSelectGuardian,
-  constraints,
-  isAdultIntake = false,
-  disabled = false,
-}: EnrolmentPersonSearchComboboxProps) {
-  const { t } = useTranslation();
-
-  return (
-    <PersonSearchCombobox
-      disabled={disabled}
-      label={t('pages.enrolment.admin_search_label')}
-      placeholder={t('pages.enrolment.admin_search_placeholder')}
-      emptyMessage={t('pages.enrolment.admin_search_empty')}
-      filterResults={(results) => filterEnrolmentPersonSearchResults(results, constraints)}
-      isSelectable={(result) =>
-        isEnrolmentPersonSearchSelectable(result, constraints, isAdultIntake)
-      }
-      renderResultBadge={(result) =>
-        isEnrolmentGuardianOnly(result, isAdultIntake)
-          ? t('pages.enrolment.admin_badge_family')
-          : t('pages.enrolment.admin_badge_student')
-      }
-      renderIneligibleHint={(result) => {
-        if (isEnrolmentGuardianOnly(result, isAdultIntake)) {
-          return t('pages.enrolment.admin_parent_pick_child');
-        }
-        return constraints.ageBand ? t('pages.enrolment.ineligible_age') : null;
-      }}
-      renderSubtitle={(result) => {
-        if (isEnrolmentGuardianOnly(result, isAdultIntake)) {
-          return t('pages.enrolment.admin_parent_row_hint');
-        }
-        return undefined;
-      }}
-      onSelect={(person, result) => {
-        if (isEnrolmentGuardianOnly(result, isAdultIntake)) {
-          onSelectGuardian(result);
-          return;
-        }
-        onSelectPerson(person, person.date_of_birth ?? null);
-      }}
-    />
-  );
-}
+import { AdminChooseStep } from './select-student/AdminChooseStep';
+import { AdminPickChildStep } from './select-student/AdminPickChildStep';
+import { NewFamilyForm } from './select-student/NewFamilyForm';
+import { NewAdultForm } from './select-student/NewAdultForm';
+import { NewChildForm } from './select-student/NewChildForm';
+import { StudentChooser } from './select-student/StudentChooser';
+import type {
+  SelectStudentFormState,
+  SelectStudentSubMode,
+  SharedAgeAlertProps,
+} from './select-student/types';
 
 interface StepSelectStudentProps {
   mode: EnrolmentMode;
@@ -130,9 +66,7 @@ interface StepSelectStudentProps {
   onSignInRequest?: () => void;
 }
 
-type SubMode = 'choose' | 'new_child' | 'new_adult' | 'new_family' | 'pick_child';
-
-function initialSubMode(mode: EnrolmentMode, isAdultIntake: boolean): SubMode {
+function initialSubMode(mode: EnrolmentMode, isAdultIntake: boolean): SelectStudentSubMode {
   if (mode === 'guest') {
     return isAdultIntake ? 'new_adult' : 'new_family';
   }
@@ -174,124 +108,16 @@ export function StepSelectStudent({
     enrolmentActor !== 'admin' &&
     Boolean(onSubmitAgeReview);
 
-  const { t } = useTranslation();
-  const tenant = useTenant();
-  const [subMode, setSubMode] = useState<SubMode>(() => initialSubMode(mode, isAdultIntake));
+  const [subMode, setSubMode] = useState<SelectStudentSubMode>(() => initialSubMode(mode, isAdultIntake));
   const [error, setError] = useState<string | null>(null);
   const [forceExistingEmailPrompt, setForceExistingEmailPrompt] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [studentName, setStudentName] = useState('');
-  const [studentDob, setStudentDob] = useState('');
-  const [adultName, setAdultName] = useState('');
-  const [adultEmail, setAdultEmail] = useState('');
-  const [adultPhone, setAdultPhone] = useState('');
-  const [adultDob, setAdultDob] = useState('');
-  const [guardianName, setGuardianName] = useState('');
-  const [guardianEmail, setGuardianEmail] = useState('');
-  const [guardianPhone, setGuardianPhone] = useState('');
+  const fields = useSelectStudentFields();
+  const { studentDob, adultEmail, adultDob, guardianEmail } = fields;
   const [pickChildAccountId, setPickChildAccountId] = useState<string | null>(null);
   const [pickChildGuardianName, setPickChildGuardianName] = useState('');
   const [pickChildGuardianEmail, setPickChildGuardianEmail] = useState('');
   const [linkedFamily, setLinkedFamily] = useState<GuardianAccountLookup | null>(null);
-  const [localAgeReviewError, setLocalAgeReviewError] = useState<string | null>(null);
-
-  const submitAgeReviewRequest = async (note: string) => {
-    if (!onSubmitAgeReview || !tenant) return;
-    setLocalAgeReviewError(null);
-    setIsSubmitting(true);
-    try {
-      let personId = '';
-      let resolvedStudentName = studentName;
-
-      if (subMode === 'new_family') {
-        const guardianNameForSubmit = resolvedLinkedFamily?.guardianName ?? guardianName;
-        if (mode === 'guest') {
-          if (!guardianEmail) throw new Error(t('pages.enrolment.guardian_email_required'));
-          const result = await EnrolmentIntakeService.createGuestFamily(tenant, {
-            guardian: {
-              name: guardianNameForSubmit,
-              email: guardianEmail,
-              phone: guardianPhone,
-            },
-            student: { name: studentName, dateOfBirth: studentDob },
-          });
-          personId = result.studentPersonId;
-        } else if (resolvedLinkedFamily?.accountId) {
-          const person = await EnrolmentOnboardingService.createChildForAccount(
-            tenant,
-            resolvedLinkedFamily.accountId,
-            {
-              student_name: studentName,
-              student_date_of_birth: studentDob,
-            },
-          );
-          personId = person.id;
-        } else {
-          const person = await EnrolmentOnboardingService.createStudentWithGuardianEmail(tenant, {
-            student_name: studentName,
-            student_date_of_birth: studentDob,
-            guardian_name: guardianNameForSubmit,
-            guardian_email: guardianEmail || undefined,
-            guardian_phone: guardianPhone || undefined,
-            guardian_role: 'account_holder',
-          });
-          personId = person.id;
-        }
-      } else if (subMode === 'new_adult') {
-        resolvedStudentName = adultName;
-        if (adultNeedsGuardian) {
-          const person = await EnrolmentOnboardingService.createStudentWithGuardianEmail(tenant, {
-            student_name: adultName,
-            student_date_of_birth: adultDob,
-            guardian_name: guardianName,
-            guardian_email: guardianEmail || undefined,
-            guardian_phone: guardianPhone || undefined,
-            guardian_role: 'account_holder',
-          });
-          personId = person.id;
-        } else if (mode === 'guest') {
-          if (!adultEmail) throw new Error(t('pages.enrolment.guardian_email_required'));
-          const result = await EnrolmentIntakeService.createGuestAdult(tenant, {
-            name: adultName,
-            email: adultEmail,
-            phone: adultPhone,
-            dateOfBirth: adultDob,
-          });
-          personId = result.personId;
-        } else {
-          const { person } = await EnrolmentOnboardingService.createAdultSolo(tenant, {
-            name: adultName,
-            email: adultEmail || undefined,
-            phone: adultPhone || undefined,
-            date_of_birth: adultDob || undefined,
-          });
-          personId = person.id;
-        }
-      } else if (subMode === 'new_child') {
-        if (!guardian?.accountId) throw new Error(t('pages.enrolment.no_account_linked'));
-        const person = await EnrolmentOnboardingService.createChildForAccount(tenant, guardian.accountId, {
-          student_name: studentName,
-          student_date_of_birth: studentDob,
-        });
-        personId = person.id;
-      } else {
-        throw new Error(t('pages.enrolment.age_review_error_generic'));
-      }
-
-      await onSubmitAgeReview({ note, personId, studentName: resolvedStudentName });
-    } catch (err) {
-      if (isExistingEmailError(err)) {
-        setForceExistingEmailPrompt(true);
-        setLocalAgeReviewError(null);
-      } else {
-        const message = err instanceof Error ? err.message : String(err);
-        setLocalAgeReviewError(t(mapAgeReviewRpcError(message)));
-      }
-      throw err;
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   const guestEmailCheckEnabled = mode === 'guest' && Boolean(onSignInRequest);
   const adminEmailCheckEnabled = mode === 'admin' && subMode === 'new_family';
@@ -317,30 +143,6 @@ export function StepSelectStudent({
     (adultEmailCheck.registered || forceExistingEmailPrompt) &&
     subMode === 'new_adult';
 
-  const { eligible, ineligible } = useMemo(
-    () =>
-      filterStudentCandidates(
-        students,
-        { ...constraints, actor: mode === 'admin' ? 'admin' : mode === 'guest' ? 'guest' : 'parent' },
-        guardianPersonId,
-      ),
-    [students, constraints, guardianPersonId, mode],
-  );
-
-  // Age eligibility for the guardian themselves — used to offer self-enrolment in parent mode.
-  const guardianAgeEligible = useMemo(() => {
-    if (!guardian) return true;
-    if (!constraints.ageBand) return true;
-    const { min_age, max_age } = constraints.ageBand;
-    if (min_age == null && max_age == null) return true;
-    if (!guardian.dateOfBirth) return true;
-    return isAgeEligible(
-      constraints.ageBand,
-      { date_of_birth: guardian.dateOfBirth },
-      { referenceDate: constraints.seasonStartDate ?? undefined },
-    );
-  }, [guardian, constraints]);
-
   const studentDobAgeCheck = useSelectedClassAgeValidation(constraints, studentDob, {
     actor: mode === 'admin' ? 'admin' : mode === 'guest' ? 'guest' : 'parent',
     ageOverrideConfirmed: canBypassAgeBlock ? true : undefined,
@@ -356,62 +158,71 @@ export function StepSelectStudent({
     return adultAge < ADULT_AGE_THRESHOLD;
   }, [adultDob, adultAge]);
 
-  const ineligibleIds = useMemo(
-    () => new Set(ineligible.map((item) => item.person.id)),
-    [ineligible],
-  );
+  const { submitAgeReviewRequest, localAgeReviewError } = useStepSelectStudentAgeReview({
+    mode,
+    subMode,
+    fields,
+    guardian,
+    resolvedLinkedFamily,
+    adultNeedsGuardian,
+    onSubmitAgeReview,
+    setIsSubmitting,
+    setForceExistingEmailPrompt,
+  });
 
-  const needsGuardianForm = mode === 'guest' || mode === 'admin' || !guardian?.accountId;
+  const studentDobBlocked =
+    studentDobAgeCheck.blocked && !canBypassAgeBlock && !showAgeReviewInsteadOfNext;
+  const adultDobBlocked =
+    adultDobAgeCheck.blocked && !canBypassAgeBlock && !showAgeReviewInsteadOfNext;
 
-  const handleSelect = (person: StudentWithEnrolments) => {
-    if (ineligibleIds.has(person.id)) return;
-    onSelectPerson(person.id, person.date_of_birth ?? null);
+  const ageAlert: SharedAgeAlertProps = {
+    constraints,
+    actor: enrolmentActor,
+    ageOverrideConfirmed,
+    className: selectedClassName,
+    onSubmitAgeReview: showAgeReviewInsteadOfNext ? submitAgeReviewRequest : undefined,
+    onBrowseClasses,
+    ageReviewSubmitting: ageReviewSubmitting || isSubmitting,
+    ageReviewError: ageReviewError ?? localAgeReviewError,
+  };
+
+  const formState: SelectStudentFormState = {
+    error,
+    setError,
+    isSubmitting,
+    setIsSubmitting,
+    setForceExistingEmailPrompt,
+  };
+
+  const clearPickChild = () => {
+    setPickChildAccountId(null);
+    setPickChildGuardianName('');
+    setPickChildGuardianEmail('');
   };
 
   if (mode === 'admin' && subMode === 'choose') {
     return (
-      <div className="space-y-4">
-        <p className="text-sm text-gray-600">{t('pages.enrolment.admin_select_desc')}</p>
-        <EnrolmentPersonSearchCombobox
-          constraints={constraints}
-          isAdultIntake={isAdultIntake}
-          onSelectPerson={(person, dob) => onSelectPerson(person.id, dob)}
-          onSelectGuardian={(result) => {
-            if (!result.familyAccountId) return;
-            setPickChildAccountId(result.familyAccountId);
-            setPickChildGuardianName(result.person.name);
-            setPickChildGuardianEmail(result.person.email ?? result.guardianEmail ?? '');
-            setSubMode('pick_child');
-          }}
-        />
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full"
-          onClick={() => {
-            setLinkedFamily(null);
-            setGuardianEmail('');
-            setGuardianName('');
-            setGuardianPhone('');
-            setSubMode('new_family');
-          }}
-        >
-          {t('pages.enrolment.add_child_to_family')}
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full"
-          onClick={() => setSubMode('new_adult')}
-        >
-          {isAdultIntake
-            ? t('pages.enrolment.create_new_adult')
-            : t('pages.enrolment.person_new_adult')}
-        </Button>
-        <Button type="button" variant="ghost" className="w-full" onClick={onCancel}>
-          {t('common.cancel')}
-        </Button>
-      </div>
+      <AdminChooseStep
+        constraints={constraints}
+        isAdultIntake={isAdultIntake}
+        onSelectPerson={onSelectPerson}
+        onSelectGuardian={(result) => {
+          if (!result.familyAccountId) return;
+          setPickChildAccountId(result.familyAccountId);
+          setPickChildGuardianName(result.person.name);
+          setPickChildGuardianEmail(result.person.email ?? result.guardianEmail ?? '');
+          setSubMode('pick_child');
+        }}
+        onNewFamily={() => {
+          setLinkedFamily(null);
+          fields.setGuardianEmail('');
+          fields.setGuardianName('');
+          fields.setGuardianPhone('');
+          setSubMode('new_family');
+        }}
+        onNewAdult={() => setSubMode('new_adult')}
+        onCancel={onCancel}
+      />
     );
   }
 
@@ -431,17 +242,13 @@ export function StepSelectStudent({
             guardianEmail: pickChildGuardianEmail || null,
           });
           if (pickChildGuardianEmail) {
-            setGuardianEmail(pickChildGuardianEmail);
+            fields.setGuardianEmail(pickChildGuardianEmail);
           }
-          setPickChildAccountId(null);
-          setPickChildGuardianName('');
-          setPickChildGuardianEmail('');
+          clearPickChild();
           setSubMode('new_family');
         }}
         onBack={() => {
-          setPickChildAccountId(null);
-          setPickChildGuardianName('');
-          setPickChildGuardianEmail('');
+          clearPickChild();
           setSubMode('choose');
         }}
       />
@@ -449,633 +256,78 @@ export function StepSelectStudent({
   }
 
   if (subMode === 'new_family') {
-    const clearLinkedFamily = () => {
-      setLinkedFamily(null);
-      setGuardianEmail('');
-      setGuardianName('');
-      setGuardianPhone('');
-    };
-
     return (
-      <form
-        className="space-y-4"
-        onSubmit={async (e) => {
-          e.preventDefault();
-          setError(null);
-          setForceExistingEmailPrompt(false);
-          if (showGuardianExistingPrompt) return;
-          if (studentDobAgeCheck.blocked && !canBypassAgeBlock && !showAgeReviewInsteadOfNext) return;
-          setIsSubmitting(true);
-          try {
-            const guardianNameForSubmit =
-              resolvedLinkedFamily?.guardianName ?? guardianName;
-            await onCreateMinorWithGuardian({
-              student_name: studentName,
-              student_date_of_birth: studentDob,
-              guardian_name: guardianNameForSubmit,
-              guardian_email: guardianEmail || undefined,
-              guardian_phone: showAdminExistingFamily ? undefined : guardianPhone || undefined,
-              existing_account_id: resolvedLinkedFamily?.accountId,
-            });
-          } catch (err) {
-            if (isExistingEmailError(err)) {
-              setForceExistingEmailPrompt(true);
-              setError(null);
-            } else {
-              setError(err instanceof Error ? err.message : t('common.error'));
-            }
-          } finally {
-            setIsSubmitting(false);
-          }
-        }}
-      >
-        <p className="text-sm text-gray-600">
-          {mode === 'guest'
-            ? t('pages.enrolment.guest_new_family_desc')
-            : showAdminExistingFamily
-              ? t('pages.enrolment.admin_add_child_desc')
-              : t('pages.enrolment.new_minor_desc')}
-        </p>
-
-        {showAdminExistingFamily && resolvedLinkedFamily ? (
-          <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm space-y-2">
-            <p className="font-medium">{t('pages.enrolment.linked_family')}</p>
-            <p>{resolvedLinkedFamily.guardianName}</p>
-            {(resolvedLinkedFamily.guardianEmail ?? guardianEmail) && (
-              <p>{resolvedLinkedFamily.guardianEmail ?? guardianEmail}</p>
-            )}
-            <Button type="button" variant="outline" size="sm" onClick={clearLinkedFamily}>
-              {t('pages.enrolment.change_family')}
-            </Button>
-          </div>
-        ) : (
-          <fieldset className="border rounded p-4 space-y-3">
-            <legend className="text-sm font-semibold px-1">{t('pages.enrolment.guardian_section')}</legend>
-            {mode === 'admin' && (
-              <input
-                type="email"
-                required
-                className="form-input w-full"
-                value={guardianEmail}
-                onChange={(e) => {
-                  setGuardianEmail(e.target.value);
-                  setForceExistingEmailPrompt(false);
-                  setLinkedFamily(null);
-                }}
-                placeholder={t('form.person.email')}
-              />
-            )}
-            {mode === 'admin' && adminGuardianLookup.isChecking && (
-              <p className="text-sm text-gray-500" role="status">
-                {t('common.loading')}
-              </p>
-            )}
-            {mode === 'admin' &&
-              !adminGuardianLookup.isChecking &&
-              guardianEmail.trim() &&
-              !resolvedLinkedFamily && (
-                <p className="text-sm text-gray-600" role="status">
-                  {t('pages.enrolment.admin_new_family_hint')}
-                </p>
-              )}
-            <input
-              type="text"
-              required
-              className="form-input w-full"
-              value={guardianName}
-              onChange={(e) => setGuardianName(e.target.value)}
-              placeholder={t('form.person.name')}
-            />
-            {mode !== 'admin' && (
-              <input
-                type="email"
-                required
-                className="form-input w-full"
-                value={guardianEmail}
-                onChange={(e) => {
-                  setGuardianEmail(e.target.value);
-                  setForceExistingEmailPrompt(false);
-                }}
-                placeholder={t('form.person.email')}
-              />
-            )}
-            {showGuardianExistingPrompt && onSignInRequest && (
-              <GuestExistingAccountPrompt onSignIn={onSignInRequest} />
-            )}
-            <input
-              type="tel"
-              className="form-input w-full"
-              value={guardianPhone}
-              onChange={(e) => setGuardianPhone(e.target.value)}
-              placeholder={t('form.person.phone')}
-            />
-          </fieldset>
-        )}
-
-        <fieldset className="border rounded p-4 space-y-3">
-          <legend className="text-sm font-semibold px-1">{t('pages.enrolment.student_section')}</legend>
-          <input type="text" required className="form-input w-full" value={studentName} onChange={(e) => setStudentName(e.target.value)} placeholder={t('form.person.name')} />
-          <input type="date" required className="form-input w-full" value={studentDob} onChange={(e) => setStudentDob(e.target.value)} aria-label={t('form.person.date_of_birth')} />
-          <SelectedClassAgeAlert
-            constraints={constraints}
-            dateOfBirth={studentDob}
-            actor={enrolmentActor}
-            ageOverrideConfirmed={ageOverrideConfirmed}
-            studentName={studentName || t('pages.enrolment.student_section')}
-            className={selectedClassName}
-            onSubmitAgeReview={showAgeReviewInsteadOfNext ? submitAgeReviewRequest : undefined}
-            onBrowseClasses={onBrowseClasses}
-            ageReviewSubmitting={ageReviewSubmitting || isSubmitting}
-            ageReviewError={ageReviewError ?? localAgeReviewError}
-          />
-        </fieldset>
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        <div className="flex gap-2">
-          {mode !== 'guest' && (
-            <Button type="button" variant="outline" className="flex-1" onClick={() => {
-              clearLinkedFamily();
-              setSubMode('choose');
-            }}>
-              {t('common.back')}
-            </Button>
-          )}
-          {mode === 'guest' && onCancel && (
-            <Button type="button" variant="outline" className="flex-1" onClick={onCancel}>
-              {t('common.cancel')}
-            </Button>
-          )}
-          <Button
-            type="submit"
-            variant="primary"
-            className="flex-1"
-            disabled={
-              isSubmitting ||
-              showGuardianExistingPrompt ||
-              guardianEmailCheck.isChecking ||
-              (studentDobAgeCheck.blocked && !canBypassAgeBlock && !showAgeReviewInsteadOfNext)
-            }
-          >
-            {isSubmitting ? t('common.loading') : t('common.next')}
-          </Button>
-        </div>
-      </form>
+      <NewFamilyForm
+        mode={mode}
+        fields={fields}
+        formState={formState}
+        ageAlert={ageAlert}
+        studentDobBlocked={studentDobBlocked}
+        showGuardianExistingPrompt={showGuardianExistingPrompt}
+        showAdminExistingFamily={showAdminExistingFamily}
+        resolvedLinkedFamily={resolvedLinkedFamily}
+        adminLookupChecking={adminGuardianLookup.isChecking}
+        guardianEmailChecking={guardianEmailCheck.isChecking}
+        onUnlinkFamily={() => setLinkedFamily(null)}
+        onCreateMinorWithGuardian={onCreateMinorWithGuardian}
+        onBack={() => setSubMode('choose')}
+        onCancel={onCancel}
+        onSignInRequest={onSignInRequest}
+      />
     );
   }
 
   if (subMode === 'new_adult') {
     return (
-      <form
-        className="space-y-4"
-        onSubmit={async (e) => {
-          e.preventDefault();
-          setError(null);
-          setForceExistingEmailPrompt(false);
-          if (showAdultExistingPrompt) return;
-          if (adultDobAgeCheck.blocked && !canBypassAgeBlock && !showAgeReviewInsteadOfNext) return;
-          setIsSubmitting(true);
-          try {
-            if (adultNeedsGuardian) {
-              await onCreateMinorWithGuardian({
-                student_name: adultName,
-                student_date_of_birth: adultDob,
-                guardian_name: guardianName,
-                guardian_email: guardianEmail || undefined,
-                guardian_phone: guardianPhone || undefined,
-              });
-              return;
-            }
-            await onCreateAdult({
-              name: adultName,
-              email: adultEmail || undefined,
-              phone: adultPhone || undefined,
-              date_of_birth: adultDob || undefined,
-            });
-          } catch (err) {
-            if (isExistingEmailError(err)) {
-              setForceExistingEmailPrompt(true);
-              setError(null);
-            } else {
-              setError(err instanceof Error ? err.message : t('common.error'));
-            }
-          } finally {
-            setIsSubmitting(false);
-          }
-        }}
-      >
-        <p className="text-sm text-gray-600">
-          {mode === 'guest'
-            ? t('pages.enrolment.guest_adult_desc')
-            : t('pages.enrolment.new_adult_desc')}
-        </p>
-        <fieldset className="border rounded p-4 space-y-3">
-          <legend className="text-sm font-semibold px-1">{t('pages.enrolment.personal_section')}</legend>
-          <input
-            type="text"
-            required
-            className="form-input w-full"
-            value={adultName}
-            onChange={(e) => setAdultName(e.target.value)}
-            placeholder={t('form.person.name')}
-          />
-          <input
-            type="email"
-            required={mode === 'guest'}
-            className="form-input w-full"
-            value={adultEmail}
-            onChange={(e) => {
-              setAdultEmail(e.target.value);
-              setForceExistingEmailPrompt(false);
-            }}
-            placeholder={t('form.person.email')}
-          />
-          {showAdultExistingPrompt && onSignInRequest && (
-            <GuestExistingAccountPrompt onSignIn={onSignInRequest} />
-          )}
-          <input
-            type="tel"
-            className="form-input w-full"
-            value={adultPhone}
-            onChange={(e) => setAdultPhone(e.target.value)}
-            placeholder={t('form.person.phone')}
-          />
-          <input
-            type="date"
-            className="form-input w-full"
-            value={adultDob}
-            onChange={(e) => setAdultDob(e.target.value)}
-            placeholder={t('form.person.date_of_birth')}
-            aria-label={t('form.person.date_of_birth')}
-          />
-          {adultDob && !Number.isNaN(adultAge) && (
-            <p
-              className={[
-                'inline-flex w-fit rounded-full border px-2 py-0.5 text-xs font-medium',
-                adultNeedsGuardian
-                  ? 'border-amber-300 bg-amber-50 text-amber-800'
-                  : 'border-green-300 bg-green-50 text-green-800',
-              ].join(' ')}
-              role="status"
-            >
-              {adultNeedsGuardian
-                ? t('pages.enrolment.status_minor', { defaultValue: 'Minor - guardian required' })
-                : t('pages.enrolment.status_adult', { defaultValue: 'Adult - no guardian needed' })}
-            </p>
-          )}
-          <SelectedClassAgeAlert
-            constraints={constraints}
-            dateOfBirth={adultDob}
-            actor={enrolmentActor}
-            ageOverrideConfirmed={ageOverrideConfirmed}
-            studentName={adultName || t('pages.enrolment.personal_section')}
-            className={selectedClassName}
-            onSubmitAgeReview={showAgeReviewInsteadOfNext ? submitAgeReviewRequest : undefined}
-            onBrowseClasses={onBrowseClasses}
-            ageReviewSubmitting={ageReviewSubmitting || isSubmitting}
-            ageReviewError={ageReviewError ?? localAgeReviewError}
-          />
-        </fieldset>
-        {adultNeedsGuardian && (
-          <fieldset className="border rounded p-4 space-y-3">
-            <legend className="text-sm font-semibold px-1">{t('pages.enrolment.guardian_section')}</legend>
-            <p className="text-sm text-gray-600">
-              {t('pages.enrolment.minor_requires_guardian', {
-                defaultValue: 'Student is under 18. Please add guardian details.',
-              })}
-            </p>
-            <input
-              type="text"
-              required
-              className="form-input w-full"
-              value={guardianName}
-              onChange={(e) => setGuardianName(e.target.value)}
-              placeholder={t('form.person.name')}
-            />
-            <input
-              type="email"
-              required
-              className="form-input w-full"
-              value={guardianEmail}
-              onChange={(e) => setGuardianEmail(e.target.value)}
-              placeholder={t('form.person.email')}
-            />
-            <input
-              type="tel"
-              className="form-input w-full"
-              value={guardianPhone}
-              onChange={(e) => setGuardianPhone(e.target.value)}
-              placeholder={t('form.person.phone')}
-            />
-          </fieldset>
-        )}
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        <div className="flex gap-2">
-          {mode !== 'guest' && (
-            <Button type="button" variant="outline" className="flex-1" onClick={() => setSubMode('choose')}>
-              {t('common.back')}
-            </Button>
-          )}
-          {mode === 'guest' && onCancel && (
-            <Button type="button" variant="outline" className="flex-1" onClick={onCancel}>
-              {t('common.cancel')}
-            </Button>
-          )}
-          <Button
-            type="submit"
-            variant="primary"
-            className="flex-1"
-            disabled={
-              isSubmitting ||
-              showAdultExistingPrompt ||
-              adultEmailCheck.isChecking ||
-              (adultDobAgeCheck.blocked && !canBypassAgeBlock && !showAgeReviewInsteadOfNext)
-            }
-          >
-            {isSubmitting ? t('common.loading') : t('common.next')}
-          </Button>
-        </div>
-      </form>
+      <NewAdultForm
+        mode={mode}
+        fields={fields}
+        formState={formState}
+        ageAlert={ageAlert}
+        adultDobBlocked={adultDobBlocked}
+        adultAge={adultAge}
+        adultNeedsGuardian={adultNeedsGuardian}
+        showAdultExistingPrompt={showAdultExistingPrompt}
+        adultEmailChecking={adultEmailCheck.isChecking}
+        onCreateAdult={onCreateAdult}
+        onCreateMinorWithGuardian={onCreateMinorWithGuardian}
+        onBack={() => setSubMode('choose')}
+        onCancel={onCancel}
+        onSignInRequest={onSignInRequest}
+      />
     );
   }
 
   if (subMode === 'new_child') {
     return (
-      <form
-        className="space-y-4"
-        onSubmit={async (e) => {
-          e.preventDefault();
-          setError(null);
-          if (studentDobAgeCheck.blocked && !canBypassAgeBlock && !showAgeReviewInsteadOfNext) return;
-          setIsSubmitting(true);
-          try {
-            await onCreateMinor({ student_name: studentName, student_date_of_birth: studentDob });
-          } catch (err) {
-            setError(err instanceof Error ? err.message : t('common.error'));
-          } finally {
-            setIsSubmitting(false);
-          }
-        }}
-      >
-        <p className="text-sm text-gray-600">{t('pages.enrolment.new_child_desc')}</p>
-        {guardian && (
-          <div className="rounded border border-gray-200 bg-gray-50 p-4 text-sm space-y-1">
-            <p className="font-medium">{t('pages.enrolment.guardian_section')}</p>
-            <p>{guardian.name}</p>
-            {guardian.email && <p>{guardian.email}</p>}
-            {guardian.phone && <p>{guardian.phone}</p>}
-          </div>
-        )}
-        <fieldset className="border rounded p-4 space-y-3">
-          <legend className="text-sm font-semibold px-1">{t('pages.enrolment.student_section')}</legend>
-          <input type="text" required className="form-input w-full" value={studentName} onChange={(e) => setStudentName(e.target.value)} aria-label={t('form.person.name')} />
-          <input type="date" required className="form-input w-full" value={studentDob} onChange={(e) => setStudentDob(e.target.value)} aria-label={t('form.person.date_of_birth')} />
-          <SelectedClassAgeAlert
-            constraints={constraints}
-            dateOfBirth={studentDob}
-            actor={enrolmentActor}
-            ageOverrideConfirmed={ageOverrideConfirmed}
-            studentName={studentName || t('pages.enrolment.student_section')}
-            className={selectedClassName}
-            onSubmitAgeReview={showAgeReviewInsteadOfNext ? submitAgeReviewRequest : undefined}
-            onBrowseClasses={onBrowseClasses}
-            ageReviewSubmitting={ageReviewSubmitting || isSubmitting}
-            ageReviewError={ageReviewError ?? localAgeReviewError}
-          />
-        </fieldset>
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        <div className="flex gap-2">
-          <Button type="button" variant="outline" className="flex-1" onClick={() => setSubMode('choose')}>
-            {t('common.back')}
-          </Button>
-          <Button
-            type="submit"
-            variant="primary"
-            className="flex-1"
-            disabled={
-              isSubmitting ||
-              (studentDobAgeCheck.blocked && !canBypassAgeBlock && !showAgeReviewInsteadOfNext)
-            }
-          >
-            {isSubmitting ? t('common.loading') : t('common.next')}
-          </Button>
-        </div>
-      </form>
+      <NewChildForm
+        guardian={guardian}
+        fields={fields}
+        formState={formState}
+        ageAlert={ageAlert}
+        studentDobBlocked={studentDobBlocked}
+        onCreateMinor={onCreateMinor}
+        onBack={() => setSubMode('choose')}
+      />
     );
   }
 
   return (
-    <div className="space-y-4">
-      <p className="text-sm text-gray-600">{t('pages.enrolment.select_student_desc')}</p>
-
-      {guardianSetupRequired && (guardian || (guardianAccountId && guardianAccountMemberId)) && (
-        <GuardianProfileSetupPanel
-          mode={guardian ? 'update_dob' : 'create'}
-          personId={guardian?.personId}
-          defaultName={guardian?.name ?? ''}
-          defaultDateOfBirth={guardian?.dateOfBirth ?? ''}
-          accountId={guardian?.accountId ?? guardianAccountId!}
-          accountMemberId={guardian?.accountMemberId ?? guardianAccountMemberId!}
-          onComplete={(personId, dateOfBirth) => onSelectPerson(personId, dateOfBirth)}
-        />
-      )}
-
-      {studentsLoading && <p role="status">{t('common.loading')}</p>}
-      {studentsError && (
-        <p role="alert" className="text-sm text-red-600">
-          {studentsError.message}
-        </p>
-      )}
-
-      {!studentsLoading && mode === 'parent' && !guardianSetupRequired && (
-        <ul className="space-y-2" aria-label={t('pages.enrolment.select_student_desc')}>
-          {eligible.map((student) => (
-            <li key={student.id}>
-              <button
-                type="button"
-                onClick={() => handleSelect(student)}
-                className="w-full rounded-lg border-2 border-blue-600 p-4 text-start hover:bg-blue-50 transition"
-              >
-                <span className="block font-medium">{student.name}</span>
-                <span className="block text-sm text-gray-600">
-                  {[
-                    formatEnrolmentStudentAgeLine(student.date_of_birth, t),
-                    student.activeClassNames.length > 0
-                      ? t('pages.enrolment.enrolled_in', { classes: student.activeClassNames.join(', ') })
-                      : t('pages.enrolment.no_current_enrolments'),
-                  ]
-                    .filter(Boolean)
-                    .join(' · ')}
-                </span>
-              </button>
-            </li>
-          ))}
-          {ineligible.map(({ person, reason }) => (
-            <li key={person.id}>
-              <div className="w-full rounded-lg border border-gray-200 p-4 opacity-60">
-                <span className="block font-medium">{person.name}</span>
-                <span className="block text-xs text-amber-700">
-                  {reason === 'age'
-                    ? t('pages.enrolment.ineligible_age')
-                    : t('pages.enrolment.ineligible_account')}
-                </span>
-              </div>
-            </li>
-          ))}
-          {guardian && guardianAgeEligible && (
-            <li key={guardian.personId}>
-              <button
-                type="button"
-                onClick={() => onSelectPerson(guardian.personId, guardian.dateOfBirth ?? null)}
-                className="w-full rounded-lg border-2 border-blue-600 p-4 text-start hover:bg-blue-50 transition"
-              >
-                <span className="block font-medium">
-                  {guardian.name}{' '}
-                  <span className="text-sm font-normal text-gray-500">({t('pages.enrolment.enrol_myself')})</span>
-                </span>
-                <span className="block text-sm text-gray-600">
-                  {formatEnrolmentStudentAgeLine(guardian.dateOfBirth, t) || t('pages.enrolment.no_current_enrolments')}
-                </span>
-              </button>
-            </li>
-          )}
-          {guardian && !guardianAgeEligible && (
-            <li key={`guardian-ineligible-${guardian.personId}`}>
-              <div className="w-full rounded-lg border border-gray-200 p-4 opacity-60">
-                <span className="block font-medium">
-                  {guardian.name}{' '}
-                  <span className="text-sm font-normal text-gray-500">({t('pages.enrolment.enrol_myself')})</span>
-                </span>
-                <span className="block text-xs text-amber-700">
-                  {t('pages.enrolment.ineligible_age')}
-                </span>
-              </div>
-            </li>
-          )}
-        </ul>
-      )}
-
-      {mode === 'parent' && !guardianSetupRequired && (
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full"
-          onClick={() => setSubMode(needsGuardianForm ? 'new_family' : 'new_child')}
-        >
-          {needsGuardianForm
-            ? t('pages.enrolment.create_new_student')
-            : t('pages.enrolment.add_new_child')}
-        </Button>
-      )}
-
-      {mode === 'admin' && !isAdultIntake && (
-        <>
-          <Button type="button" variant="outline" className="w-full" onClick={() => setSubMode('new_adult')}>
-            {t('pages.enrolment.person_new_adult')}
-          </Button>
-        </>
-      )}
-
-      {mode === 'admin' && isAdultIntake && (
-        <Button type="button" variant="outline" className="w-full" onClick={() => setSubMode('new_adult')}>
-          {t('pages.enrolment.create_new_adult')}
-        </Button>
-      )}
-
-      <Button type="button" variant="ghost" className="w-full" onClick={onCancel}>
-        {t('common.cancel')}
-      </Button>
-    </div>
-  );
-}
-
-function AdminPickChildStep({
-  accountId,
-  guardianName,
-  constraints,
-  onSelectPerson,
-  onAddNewChild,
-  onBack,
-}: {
-  accountId: string;
-  guardianName: string;
-  constraints: EnrolmentConstraints;
-  onSelectPerson: (personId: string, dateOfBirth: string | null) => void;
-  onAddNewChild: () => void;
-  onBack: () => void;
-}) {
-  const { t } = useTranslation();
-  const familyQuery = useFamilyStudents(accountId, true);
-  const { eligible, ineligible } = useMemo(
-    () =>
-      partitionFamilyStudents(
-        familyQuery.data?.students ?? [],
-        familyQuery.data?.guardianPersonId ?? null,
-        constraints,
-      ),
-    [familyQuery.data, constraints],
-  );
-
-  return (
-    <div className="space-y-4">
-      <p className="text-sm text-gray-600">
-        {t('pages.enrolment.admin_pick_child_desc', { name: guardianName })}
-      </p>
-
-      {familyQuery.isLoading && <p role="status">{t('common.loading')}</p>}
-      {familyQuery.error instanceof Error && (
-        <p role="alert" className="text-sm text-red-600">
-          {familyQuery.error.message}
-        </p>
-      )}
-
-      {!familyQuery.isLoading && eligible.length === 0 && ineligible.length === 0 && (
-        <p className="text-sm text-gray-500">{t('pages.enrolment.admin_no_children')}</p>
-      )}
-
-      {!familyQuery.isLoading && (
-        <ul className="space-y-2" aria-label={t('pages.enrolment.admin_pick_child_desc', { name: guardianName })}>
-          {eligible.map((student) => (
-            <li key={student.id}>
-              <button
-                type="button"
-                onClick={() => onSelectPerson(student.id, student.date_of_birth ?? null)}
-                className="w-full rounded-lg border-2 border-blue-600 p-4 text-start hover:bg-blue-50 transition"
-              >
-                <span className="block font-medium">{student.name}</span>
-                <span className="block text-sm text-gray-600">
-                  {[
-                    formatEnrolmentStudentAgeLine(student.date_of_birth, t),
-                    student.activeClassNames.length > 0
-                      ? t('pages.enrolment.enrolled_in', { classes: student.activeClassNames.join(', ') })
-                      : t('pages.enrolment.no_current_enrolments'),
-                  ]
-                    .filter(Boolean)
-                    .join(' · ')}
-                </span>
-              </button>
-            </li>
-          ))}
-          {ineligible.map(({ person, reason }) => (
-            <li key={person.id}>
-              <div className="w-full rounded-lg border border-gray-200 p-4 opacity-60">
-                <span className="block font-medium">{person.name}</span>
-                <span className="block text-xs text-amber-700">
-                  {reason === 'age'
-                    ? t('pages.enrolment.ineligible_age')
-                    : t('pages.enrolment.ineligible_account')}
-                </span>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <Button type="button" variant="outline" className="w-full" onClick={onAddNewChild}>
-        {t('pages.enrolment.add_new_child_to_family')}
-      </Button>
-
-      <Button type="button" variant="outline" className="w-full" onClick={onBack}>
-        {t('common.back')}
-      </Button>
-    </div>
+    <StudentChooser
+      mode={mode}
+      isAdultIntake={isAdultIntake}
+      constraints={constraints}
+      guardian={guardian}
+      guardianSetupRequired={guardianSetupRequired}
+      guardianAccountId={guardianAccountId}
+      guardianAccountMemberId={guardianAccountMemberId}
+      students={students}
+      guardianPersonId={guardianPersonId}
+      studentsLoading={studentsLoading}
+      studentsError={studentsError}
+      onSelectPerson={onSelectPerson}
+      onChangeSubMode={setSubMode}
+      onCancel={onCancel}
+    />
   );
 }
