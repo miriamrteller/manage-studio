@@ -11,7 +11,7 @@ import {
   recordConsents,
   type ConsentState,
 } from '@/legal/consents';
-import { tenantHasEnrolmentTerms, useLegalDocument } from '@/legal/useLegalDocument';
+import { legalHasEnrolmentTerms, useLegalDocument } from '@/legal/useLegalDocument';
 import { useLegalLinks } from '@/legal/useLegalLinks';
 import { isInternalLegalLink } from '@/lib/legalLinks';
 import { ConsentCheckboxes } from '@/components/legal/ConsentCheckboxes';
@@ -67,7 +67,7 @@ export function EnrolmentTermsConsent({
   const [saving, setSaving] = useState(false);
 
   const legal = terms.legal;
-  const termsApply = !!tenant && !!links.terms && (legal ? tenantHasEnrolmentTerms(legal.vertical) : true);
+  const termsApply = !!tenant && !!links.terms && (legal ? legalHasEnrolmentTerms(legal) : true);
   const photoApplies = !!studentPersonId && legal?.vertical !== 'photographer';
   const marketingApplies = !!studentPersonId;
 

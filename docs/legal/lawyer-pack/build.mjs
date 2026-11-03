@@ -46,7 +46,7 @@ const DOCS = [
   { n: 1, title: 'Platform terms (OpalSwift ↔ studio)', he: 'תנאי שימוש בפלטפורמה', base: '01-platform-terms' },
   { n: 2, title: 'OpalSwift privacy policy', he: 'מדיניות הפרטיות של OpalSwift', base: '04-opalswift-privacy-policy' },
   { n: 3, title: 'Data processing agreement (DPA)', he: 'הסכם עיבוד מידע', base: '02-dpa' },
-  { n: 4, title: 'Class/course enrolment terms (studio template)', he: 'תנאי הרשמה לחוגים ולקורסים', base: '07a-dance-enrolment-terms' },
+  { n: 4, title: 'Class/course enrolment terms (studio template)', he: 'תנאי הרשמה לחוגים ולקורסים', base: '07a-class-enrolment-terms' },
   { n: 5, title: 'Health declaration, child (studio template)', he: 'הצהרת בריאות — ילדים', base: '07b-health-declaration-child' },
   { n: 6, title: 'Health declaration, adult (studio template)', he: 'הצהרת בריאות — בגירים', base: '07b-health-declaration-adult' },
   { n: 7, title: 'Marketing consent and unsubscribe', he: 'הסכמה לדיוור והסרה', single: '08-marketing-consent.md' },

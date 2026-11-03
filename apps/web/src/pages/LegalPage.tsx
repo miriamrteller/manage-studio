@@ -12,7 +12,7 @@ import {
   isLegalPackLive,
   isLegalDocId,
   studioRenderContext,
-  tenantHasEnrolmentTerms,
+  legalHasEnrolmentTerms,
   useLegalDocument,
   type TenantLegalProfile,
 } from '@/legal/useLegalDocument';
@@ -44,7 +44,7 @@ export default function LegalPage() {
   const notAvailable =
     !docId ||
     (!tenant && (docId === 'studio-privacy' || docId === 'enrolment-terms')) ||
-    (docId === 'enrolment-terms' && legal && !tenantHasEnrolmentTerms(legal.vertical));
+    (docId === 'enrolment-terms' && legal && !legalHasEnrolmentTerms(legal));
   const unpublished = needsPublishing && legal && (!legal.published || packPending);
 
   if (notAvailable) {
