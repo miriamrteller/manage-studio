@@ -321,6 +321,7 @@
   },
   "pages": {
     "home": {
+      "fallback_name": "our studio",
       "your_area": "Your account",
       "open_dashboard": "Open your dashboard",
       "intro_dance": "Welcome to {{name}}. See what is on, or send us a question.",

@@ -44,7 +44,8 @@ export default function HomePage() {
   const hasBooking = studioHasBooking(sectionInput);
   const introKey = homeIntroKey(sectionInput);
   const Icon = VERTICAL_ICON[introKey];
-  const studioName = currentStudioDisplayName(tenant) ?? '';
+  // Never an empty heading: a studio with no name on record (or one still loading) reads as "our studio".
+  const studioName = currentStudioDisplayName(tenant) || t('pages.home.fallback_name');
   const { primary, secondary } = homeButtons(sectionInput);
 
   const { classes } = useClasses({ enabled: hasClasses });

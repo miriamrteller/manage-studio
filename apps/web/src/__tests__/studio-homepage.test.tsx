@@ -132,6 +132,13 @@ describe('homepage per business type', () => {
     expect(screen.getAllByRole('heading', { level: 2 }).map((x) => x.textContent)).toEqual(['Get in touch']);
   });
 
+  it('never has an empty heading, even when the studio has no name on record', () => {
+    setTenant('dance', { name: '', subdomain: '' });
+    renderInApp(<HomePage />, { path: '/' });
+    const h1 = screen.getByRole('heading', { level: 1 });
+    expect(h1.textContent?.trim()).toBeTruthy();
+  });
+
   it('has no images (no people, no photos): only decorative icons', () => {
     h.classes = [CLASS];
     const { container } = renderHome('dance');
