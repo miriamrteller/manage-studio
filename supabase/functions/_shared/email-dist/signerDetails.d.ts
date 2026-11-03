@@ -57,11 +57,6 @@ export type SignerDetailsErrorCode = 'confirm_required' | 'signer_name_required'
 export type SignerDetailsErrors = Partial<Record<'confirmed' | 'signer.full_name' | 'signer.id_number' | 'signer.passport_country' | 'signer.phone' | 'signer.address' | 'child.full_name' | 'child.date_of_birth', SignerDetailsErrorCode>>;
 /** Digits only, left-padded to 9. Returns null when it is not 5 to 9 digits. */
 export declare function normaliseIsraeliId(raw: string): string | null;
-/**
- * The Israeli ID check digit (the same rule as the Population Authority's): multiply the digits
- * alternately by 1 and 2, add the digits of each product, and the total must be divisible by 10.
- */
-export declare function isValidIsraeliId(raw: string): boolean;
 export declare function normalisePassport(raw: string): string;
 /** A real calendar date in YYYY-MM-DD, not in the future and not before 1900. */
 export declare function isValidBirthDate(value: string, today?: Date): boolean;

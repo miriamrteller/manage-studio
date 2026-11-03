@@ -14,6 +14,7 @@
  *
  * The ID number is sensitive: it lives only in the signed snapshot. Never log it.
  */
+import { isValidIsraeliId } from './legal/personalIdentity.js';
 export const SIGNER_DETAILS_VERSION = 1;
 // ── Israeli ID ────────────────────────────────────────────────────────────────
 /** Digits only, left-padded to 9. Returns null when it is not 5 to 9 digits. */
@@ -23,23 +24,7 @@ export function normaliseIsraeliId(raw) {
         return null;
     return digits.padStart(9, '0');
 }
-/**
- * The Israeli ID check digit (the same rule as the Population Authority's): multiply the digits
- * alternately by 1 and 2, add the digits of each product, and the total must be divisible by 10.
- */
-export function isValidIsraeliId(raw) {
-    const id = normaliseIsraeliId(raw);
-    if (!id || id === '000000000')
-        return false;
-    let sum = 0;
-    for (let i = 0; i < 9; i++) {
-        let product = Number(id[i]) * ((i % 2) + 1);
-        if (product > 9)
-            product -= 9;
-        sum += product;
-    }
-    return sum % 10 === 0;
-}
+// The Israeli ID check digit lives in ./legal/personalIdentity.ts (one shared validator).
 const PASSPORT_PATTERN = /^[A-Z0-9]{5,20}$/;
 const PHONE_CHARS = /^[0-9+\-()\s.]{7,25}$/;
 export function normalisePassport(raw) {

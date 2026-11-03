@@ -1,0 +1,6 @@
+/* Shared line icons (icons.svg). Size follows font-size, colour follows currentColor. */
+.icon{width:1em;height:1em;display:inline-block;flex-shrink:0;vertical-align:-.125em;overflow:visible}
+/* rating stars: amber dark enough for 3:1 on white */
+.icon-star{color:#D97706}
+/* icons on the dark "how it works" band */
+.flow-step .em{color:rgba(255,255,255,.92)}

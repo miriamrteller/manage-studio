@@ -10,6 +10,7 @@ import { supabase } from '@/lib/supabase';
 import { useTenant } from '@/hooks/useTenant';
 import {
   fieldsForVertical,
+  legalFieldLabel,
   missingLegalDetails,
   type LegalDocId,
   type LegalFieldDef,
@@ -17,6 +18,7 @@ import {
 } from '@/legal/fields';
 import { prepareLegalMarkdown } from '@/legal/render';
 import { STUDIO_LEGAL_KEYS, useLegalAutofill, withLegalAutofill } from '@/legal/autofill';
+import { isValidIsraeliId } from '@shared/legal/personalIdentity';
 import { loadLegalTemplate } from '@/legal/templates';
 import {
   tenantHasEnrolmentTerms,
@@ -75,8 +77,13 @@ export function LegalSettingsForm() {
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps -- autofillKey stands for autofill
   }, [fields, legal, autofillKey]);
-  const shownFields = fields.filter((f) => shownKeys.has(f.key));
-  const filledFields = fields.filter((f) => !shownKeys.has(f.key));
+  // Not yet registered: the person's own name and ID are asked for (never filled in for them).
+  const personal = values.business_status === 'not_registered';
+  const visible = (f: LegalFieldDef) => !f.showWhen || f.showWhen(values);
+  const isShown = (f: LegalFieldDef) =>
+    shownKeys.has(f.key) || (personal && ['legal_name', 'personal_id', 'no_israeli_id', 'passport_number', 'passport_country'].includes(f.key));
+  const shownFields = fields.filter((f) => visible(f) && isShown(f));
+  const filledFields = fields.filter((f) => visible(f) && !isShown(f));
   const publishDocs: LegalDocId[] = tenantHasEnrolmentTerms(vertical)
     ? ['studio-privacy', 'enrolment-terms']
     : ['studio-privacy'];
@@ -103,7 +110,7 @@ export function LegalSettingsForm() {
         }
       }
       // The same required-details list the legal pack's Confirm uses.
-      missingLegalDetails(vertical, values).forEach((f) => keys.add(f.key));
+      missingLegalDetails(vertical, values, 'publish', legal!.name).forEach((f) => keys.add(f.key));
       return [...keys];
     },
   });
@@ -142,7 +149,7 @@ export function LegalSettingsForm() {
   const missingLabels = (missing ?? []).map((key) => {
     if (key === 'receipts') return t('legal.settings.missing_receipts');
     const f = fields.find((x) => x.key === key);
-    return f ? f.label[lang] : key;
+    return f ? legalFieldLabel(f, values, lang) : key;
   });
   const canPublish = (missing ?? ['?']).length === 0;
   const requiredFields = fields.filter((f) => f.required && !f.defaultValue);
@@ -157,11 +164,30 @@ export function LegalSettingsForm() {
     };
     const placeholder = f.defaultValue?.[lang];
     const fromStudio = !!value && value === autofill[f.key] && !(legal.profile[f.key] ?? '').trim();
+    const label = legalFieldLabel(f, values, lang);
+    const invalidId = f.key === 'personal_id' && !!value.trim() && !isValidIsraeliId(value);
+    if (f.kind === 'checkbox') {
+      return (
+        <div key={f.key} className="flex items-center gap-2">
+          <input
+            id={id}
+            type="checkbox"
+            checked={value === 'yes'}
+            onChange={(e) => onChange(e.target.checked ? 'yes' : '')}
+          />
+          <label htmlFor={id} className="text-sm">
+            {label}
+          </label>
+        </div>
+      );
+    }
     return (
       <div key={f.key} className="space-y-1">
         <label htmlFor={id} className="block text-sm font-medium">
-          {f.label[lang]}
-          {f.required && <span aria-hidden="true"> *</span>}
+          {label}
+          {(f.required || (personal && ['personal_id', 'passport_number', 'passport_country'].includes(f.key))) && (
+            <span aria-hidden="true"> *</span>
+          )}
         </label>
         {f.kind === 'select' ? (
           <select id={id} className="form-input w-full" value={value} onChange={(e) => onChange(e.target.value)}>
@@ -190,8 +216,16 @@ export function LegalSettingsForm() {
             value={value}
             placeholder={placeholder}
             required={f.required}
+            aria-invalid={invalidId || undefined}
+            aria-describedby={invalidId ? `${id}-error` : undefined}
+            inputMode={f.key === 'personal_id' ? 'numeric' : undefined}
             onChange={(e) => onChange(e.target.value)}
           />
+        )}
+        {invalidId && (
+          <p id={`${id}-error`} className="text-xs text-red-700">
+            {t('legal.settings.invalid_israeli_id')}
+          </p>
         )}
         {fromStudio && <p className="text-xs text-muted-foreground">{t('legal.settings.filled_from_studio')}</p>}
         {f.hint && <p className="text-xs text-muted-foreground">{f.hint[lang]}</p>}

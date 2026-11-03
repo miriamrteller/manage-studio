@@ -2,6 +2,7 @@ import { Marked, type Tokens } from 'marked';
 import type { VerticalId } from '@shared/config/tenant-presets';
 import { LEGAL_FIELDS, type BusinessStatus, type LegalDocId } from './fields';
 import { stripDraftingFrame } from '@shared/legal/signed-template';
+import { personalIdentity, personalIdentityText } from '@shared/legal/personalIdentity';
 
 export type LegalLang = 'he' | 'en';
 
@@ -123,12 +124,18 @@ function formatDate(iso: string | null, lang: LegalLang): string {
   }).format(d);
 }
 
-function businessLine(status: BusinessStatus | undefined, num: string, lang: LegalLang): string | null {
+function businessLine(
+  status: BusinessStatus | undefined,
+  num: string,
+  lang: LegalLang,
+  person: string | null,
+): string | null {
   if (!status) return null;
   const he = lang === 'he';
   switch (status) {
     case 'not_registered':
-      return he ? 'יחיד/ה, טרם נרשם/ה כעסק' : 'individual, not yet a registered business';
+      // The person's ID (or passport) stands in for a business number.
+      return person ? (he ? `טרם נרשם/ה כעסק; ${person}` : `not yet a registered business; ${person}`) : null;
     case 'osek_patur':
       return num ? (he ? `עוסק פטור מס' ${num}` : `עוסק פטור (exempt dealer) no. ${num}`) : null;
     case 'osek_murshe':
@@ -147,6 +154,17 @@ function derivedValues(ctx: LegalRenderContext): Record<string, string | null> {
   const status = p.business_status as BusinessStatus | undefined;
   const num = (p.business_number ?? '').trim();
   const email = (p.email ?? '').trim() || ctx.contactEmail;
+  // Not yet registered: run by a person, identified by their ID or passport.
+  const unregistered = status === 'not_registered';
+  const identity = unregistered ? personalIdentity(p) : null;
+  const person = identity ? personalIdentityText(identity, ctx.lang) : null;
+  const fullName = (p.legal_name ?? '').trim();
+  const runBy =
+    unregistered && fullName && fullName.toLowerCase() !== ctx.tenantName.trim().toLowerCase()
+      ? he
+        ? `${ctx.tenantName}, בניהול ${fullName}`
+        : `${ctx.tenantName}, run by ${fullName}`
+      : null;
   const phone = (p.phone ?? '').trim();
   // Neutral for any business status: VAT and tax documents are the invoicing provider's job.
   const vat = he
@@ -158,11 +176,13 @@ function derivedValues(ctx: LegalRenderContext): Record<string, string | null> {
     '[[שם הסטודיו]]': ctx.tenantName,
     '[[DATE]]': date,
     '[[תאריך]]': date,
-    '[[BUSINESS STATUS & NO. — e.g. עוסק פטור no. …, or "individual, not yet a registered business"]]': businessLine(status, num, ctx.lang),
-    '[[מעמד ומספר עוסק — למשל עוסק פטור מס\' …, או "יחיד/ה, טרם נרשם/ה כעסק"]]': businessLine(status, num, ctx.lang),
-    '[[ID / BUSINESS NO. — or "not yet a registered business"]]':
-      status === 'not_registered' ? 'not yet a registered business' : num || null,
-    '[[ת"ז / מס\' עוסק — או "טרם נרשם כעסק"]]': status === 'not_registered' ? 'טרם נרשם כעסק' : num || null,
+    '[[BUSINESS STATUS & NO. — e.g. עוסק פטור no. …, or "individual, not yet a registered business"]]': businessLine(status, num, ctx.lang, person),
+    '[[מעמד ומספר עוסק — למשל עוסק פטור מס\' …, או "יחיד/ה, טרם נרשם/ה כעסק"]]': businessLine(status, num, ctx.lang, person),
+    '[[ID / BUSINESS NO. — or "not yet a registered business"]]': unregistered ? person : num || null,
+    '[[ת"ז / מס\' עוסק — או "טרם נרשם כעסק"]]': unregistered ? person : num || null,
+    // "Creative Ballet, run by Dana Levi" when the studio is not yet a business.
+    '[[STUDIO LEGAL NAME]]': runBy,
+    '[[השם המשפטי של הסטודיו]]': runBy,
     '[[incl. VAT / no VAT charged (עוסק פטור)]]': vat,
     '[[כולל מע"מ / ללא מע"מ (עוסק פטור)]]': vat,
     '[[EMAIL / PHONE]]': phone ? `${email} / ${phone}` : email,
@@ -267,7 +287,12 @@ export function prepareLegalMarkdown(raw: string, ctx: LegalRenderContext): Prep
 
     // Derived placeholder without a value (e.g. business number not set yet).
     if (ph in derived) {
-      const key = ph.includes('VAT') || ph.includes('מע"מ') || !ctx.profile.business_status ? 'business_status' : 'business_number';
+      const key =
+        ph.includes('VAT') || ph.includes('מע"מ') || !ctx.profile.business_status
+          ? 'business_status'
+          : ctx.profile.business_status === 'not_registered'
+            ? ctx.profile.no_israeli_id === 'yes' ? 'passport_number' : 'personal_id'
+            : 'business_number';
       missing.add(key);
       missingTexts.push(toBeCompleted(LEGAL_FIELDS.find((f) => f.key === key)?.label[ctx.lang] ?? inner, ctx.lang));
     } else {

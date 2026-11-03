@@ -1,4 +1,5 @@
 import { SIGNED_TEMPLATE_FILES, SIGNED_TEMPLATE_SOURCES } from './signed-template-sources.js';
+import { personalIdentity, personalIdentityText } from './personalIdentity.js';
 
 export type LegalLang = 'he' | 'en';
 type BusinessStatus = 'not_registered' | 'osek_patur' | 'osek_murshe' | 'company';
@@ -268,7 +269,10 @@ export function fillSignedText(markdown: string, ctx: SignedTemplateContext): st
     numberRemoved = text !== before;
   }
   for (const key of ['ADDRESS', 'כתובת', 'PHONE', 'טלפון', 'EMAIL', 'דוא"ל']) studio[key] = studio[key] || BLANK;
-  const kind = businessKind(status, ctx.lang);
+  // Not yet registered: the person's ID (or passport) stands in for the business number.
+  const identity = status === 'not_registered' ? personalIdentity(p) : null;
+  const baseKind = businessKind(status, ctx.lang);
+  const kind = baseKind && identity ? `${baseKind}; ${personalIdentityText(identity, ctx.lang)}` : baseKind;
   if (kind) {
     studio['עוסק פטור / עוסק מורשה / company'] = kind;
     studio['עוסק פטור / עוסק מורשה / חברה'] = kind;

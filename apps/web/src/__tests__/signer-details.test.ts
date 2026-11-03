@@ -3,13 +3,13 @@ import {
   SIGNER_DETAILS_VERSION,
   canonicalJson,
   isValidBirthDate,
-  isValidIsraeliId,
   maskIdNumber,
   normaliseIsraeliId,
   sealSignerDetails,
   validateSignerDetails,
   type SignerDetailsInput,
 } from '@shared/signerDetails';
+import { isValidIsraeliId } from '@shared/legal/personalIdentity';
 
 const good: SignerDetailsInput = {
   signer: { full_name: 'Dana Levi', id_type: 'israeli_id', id_number: '123456782', phone: '050-123-4567', address: '5 Herzl St, Tel Aviv' },

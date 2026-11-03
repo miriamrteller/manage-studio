@@ -1,5 +1,6 @@
 /* @ts-self-types="./signed-template.d.ts" */
 import { SIGNED_TEMPLATE_FILES, SIGNED_TEMPLATE_SOURCES } from './signed-template-sources.js';
+import { personalIdentity, personalIdentityText } from './personalIdentity.js';
 /**
  * Drop the drafting frame: the leading "Draft, not legal advice" quote block and
  * the notes after the last `---` (the same rule as the marketing site).
@@ -210,7 +211,10 @@ export function fillSignedText(markdown, ctx) {
     }
     for (const key of ['ADDRESS', 'כתובת', 'PHONE', 'טלפון', 'EMAIL', 'דוא"ל'])
         studio[key] = studio[key] || BLANK;
-    const kind = businessKind(status, ctx.lang);
+    // Not yet registered: the person's ID (or passport) stands in for the business number.
+    const identity = status === 'not_registered' ? personalIdentity(p) : null;
+    const baseKind = businessKind(status, ctx.lang);
+    const kind = baseKind && identity ? `${baseKind}; ${personalIdentityText(identity, ctx.lang)}` : baseKind;
     if (kind) {
         studio['עוסק פטור / עוסק מורשה / company'] = kind;
         studio['עוסק פטור / עוסק מורשה / חברה'] = kind;

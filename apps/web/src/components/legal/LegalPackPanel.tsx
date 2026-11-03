@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { buildLegalPack } from '@/legal/legalPack';
 import { fetchTenantLegalProfile } from '@/legal/useLegalDocument';
-import { missingLegalDetails } from '@/legal/fields';
+import { legalFieldLabel, missingLegalDetails } from '@/legal/fields';
 import { autofilledKeys, useLegalAutofill, withLegalAutofill } from '@/legal/autofill';
 import { signedDocNoun } from '@/legal/packWording';
 import {
@@ -143,7 +143,7 @@ export function LegalPackPanel({ tenantId, mode, detailsHref, offerUploads }: Le
                 <p className="font-medium text-amber-800">
                   {t('legal.pack.details_missing', { count: missing.length })}
                 </p>
-                <p className="text-muted-foreground">{missing.map((f) => f.label[lang]).join(' · ')}</p>
+                <p className="text-muted-foreground">{missing.map((f) => legalFieldLabel(f, profile, lang)).join(' · ')}</p>
                 {detailsHref ? (
                   <a href={detailsHref} className="font-medium underline">
                     {t('legal.pack.details_missing_link')}
