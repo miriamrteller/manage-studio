@@ -109,3 +109,41 @@ studio's website and email records (MX, SPF, DKIM) for no gain.
   `tenants.from_email` and its own DNS records (see GO-LIVE-PLAN.md).
 - **Removing** a custom domain: set `custom_domain = NULL`. Links go back to
   `<subdomain>.opalswift.com` at once. Then remove the Worker route and the DNS records.
+
+## Self-serve custom domains: owner setup (once)
+
+Studios connect their own address from **Settings → Your own web address**
+(Cloudflare for SaaS). Do these once, in this order. Steps 1–2 must be done
+before the `*/*` route in `apps/web/wrangler.jsonc` is released.
+
+1. **Keep the marketing site out of the app** (Cloudflare → `opalswift.com` →
+   Workers Routes → *Add route*): route `opalswift.com/*`, Worker **None**.
+   `www.opalswift.com` already goes to the app's `*.opalswift.com/*` route, as
+   today; nothing changes for it.
+2. **Cloudflare for SaaS** (Cloudflare → `opalswift.com`):
+   - DNS → *Add record*: `AAAA`, name `proxy-fallback`, IPv6 `100::`, **Proxied**.
+   - SSL/TLS → Custom Hostnames → enable Cloudflare for SaaS, then set
+     **Fallback Origin** to `proxy-fallback.opalswift.com`. Wait for *Active*.
+3. **Cloudflare API token** (My Profile → API Tokens → *Create Token* →
+   *Custom token*): permissions *Zone · SSL and Certificates · Edit* and
+   *Zone · Zone · Read*; zone resources *Include · Specific zone ·
+   opalswift.com*. Copy the token, and the **Zone ID** from the zone's Overview.
+4. **Supabase prod Edge secrets** (Project → Edge Functions → Secrets):
+   `CLOUDFLARE_SAAS_API_TOKEN`, `CLOUDFLARE_SAAS_ZONE_ID`, and
+   `CUSTOM_DOMAIN_OWN_ZONES` = `creativeballetacademy.com` (domains that are
+   zones in our own account; OpalSwift connects those by hand, path A).
+5. **Redirect allowlist sync**: `SUPABASE_AUTH_SYNC_TOKEN` (GitHub environment
+   `production-nightly`) and `GITHUB_DISPATCH_TOKEN` (Supabase prod Edge secret);
+   steps in PR #279's description. Then run *auth-redirects-sync* with *dry_run*.
+6. **Release** the web app (deploy-web) and check: `https://opalswift.com` still
+   shows the marketing site, `https://app.opalswift.com` the app.
+7. **Turn it on for one studio** (SQL editor, prod):
+   ```sql
+   INSERT INTO custom_domain_rollout (tenant_id, note)
+   SELECT id, 'first self-serve test' FROM tenants WHERE subdomain = '<studio>';
+   ```
+   Its admin now sees *Your own web address* in Settings.
+
+Until steps 2–4 are done the screen answers "Custom addresses aren't available
+yet" and nothing is created. Removing a studio from `custom_domain_rollout`
+hides the screen; domains already connected keep working.
