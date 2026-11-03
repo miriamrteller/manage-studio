@@ -3204,6 +3204,22 @@
       "error_not_pdf": "Please choose a PDF file.",
       "error_too_large": "The file is too large (up to 10 MB).",
       "upload_now": "Already have lawyer-reviewed documents? Upload them now"
+    },
+    "no_insurance_send_reminder": {
+      "text": "Reminder: your studio has no insurance recorded. Parents will see this in the form. Consider getting liability and personal-accident insurance.",
+      "dismiss": "Dismiss"
+    },
+    "no_insurance_form_update": {
+      "intro_one": "Your health declaration was made before you recorded that the studio has no insurance, so it doesn't tell parents yet.",
+      "intro_other": "Your {{count}} health declarations were made before you recorded that the studio has no insurance, so they don't tell parents yet.",
+      "action_one": "Add the insurance note to my health declaration",
+      "action_other": "Add the insurance note to my health declarations",
+      "confirm_title": "Add the insurance note?",
+      "confirm_body": "This makes a new version of the form with one more line: the studio has no insurance covering participants, and personal accident insurance is recommended. The new version is used from now on, and parents who already signed will need to sign it again. You can do this now or later.",
+      "confirm": "Add it and use the new version",
+      "later": "Not now",
+      "failed": "The form could not be updated. Please try again.",
+      "done": "Done. The new version with the insurance note is in use; parents will sign it next time."
     }
   },
   "payment_choice": {

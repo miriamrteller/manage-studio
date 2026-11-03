@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { LegalLinksSettingsForm } from './LegalLinksSettingsForm';
+import { NoInsuranceFormUpdate } from '@/components/legal/NoInsuranceFormUpdate';
 import { LegalPackPanel } from '@/components/legal/LegalPackPanel';
 import { LawyerDocumentsList } from '@/components/legal/LawyerDocumentsList';
 import { supabase } from '@/lib/supabase';
@@ -353,6 +354,7 @@ export function LegalSettingsForm() {
         <LawyerDocumentsList legal={legal} />
       </section>
 
+      <NoInsuranceFormUpdate />
       <LegalPackPanel tenantId={legal.tenantId} mode="acknowledge" detailsHref="#legal-details" />
 
       <hr className="border-gray-200" />

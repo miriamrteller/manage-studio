@@ -4,6 +4,7 @@ import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
 import { AdminEnrolmentService } from '../lib/adminEnrolmentService';
 import type { Tenant } from '@shared/schemas';
+import { NoInsuranceSendReminder } from '@/components/legal/NoInsuranceSendReminder';
 
 export interface SendAdminWaiverLinkModalProps {
   open: boolean;
@@ -152,6 +153,8 @@ export function SendAdminWaiverLinkModal({
           </div>
 
           <p className="text-sm text-gray-600">{t('pages.admin_enrol.waiver_link_desc')}</p>
+
+          <NoInsuranceSendReminder />
 
           <label className="block text-sm font-medium" htmlFor="waiver-link-email">
             {t('pages.admin_enrol.recipient_email')}
