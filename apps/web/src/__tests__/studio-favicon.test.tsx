@@ -2,7 +2,8 @@
 /**
  * The browser-tab icon on a studio host is the studio's logo; OpalSwift's icon
  * stays when there is no logo (and on app.opalswift.com, which has no studio).
- * A new upload (a new URL) replaces the icon.
+ * A new upload (a new URL) replaces the icon. The tab title is the studio's
+ * name, or "OpalSwift" with no studio; never "Management System".
  * Run: pnpm -C apps/web test studio-favicon.test.tsx
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -12,7 +13,9 @@ const h = vi.hoisted(() => ({ tenant: null as Record<string, unknown> | null }))
 vi.mock('@/hooks/useTenant', () => ({ useTenant: () => h.tenant }));
 
 import { StudioFavicon } from '@/components/StudioFavicon';
-import { applyFavicon, studioFaviconUrl } from '@/lib/studioFavicon';
+import { applyFavicon, studioFaviconUrl, studioTabTitle } from '@/lib/studioFavicon';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 const LOGO = 'https://cdn.example/logos/t-1/light-111.png';
 
@@ -28,6 +31,7 @@ const hrefs = () =>
 beforeEach(() => {
   headLinks();
   h.tenant = null;
+  document.title = 'Management System';
 });
 
 describe('which logo becomes the icon', () => {
@@ -88,5 +92,33 @@ describe('the tab icon', () => {
     applyFavicon(null);
     applyFavicon(null);
     expect(hrefs()).toEqual(['/favicon.ico', '/favicon-64.png', '/apple-touch-icon.png']);
+  });
+});
+
+describe('the tab title', () => {
+  it("is the studio's name on a studio host", () => {
+    h.tenant = { name: 'Creative Ballet' };
+    render(<StudioFavicon />);
+    expect(document.title).toBe('Creative Ballet');
+  });
+
+  it('is OpalSwift with no studio (app.opalswift.com) or a studio with no name', () => {
+    render(<StudioFavicon />);
+    expect(document.title).toBe('OpalSwift');
+    expect(studioTabTitle({ name: '  ' })).toBe('OpalSwift');
+  });
+
+  it('follows a rename', () => {
+    h.tenant = { name: 'Creative Ballet' };
+    const { rerender } = render(<StudioFavicon />);
+    h.tenant = { name: 'Creative Ballet Academy' };
+    rerender(<StudioFavicon />);
+    expect(document.title).toBe('Creative Ballet Academy');
+  });
+
+  it('index.html defaults to OpalSwift, never "Management System"', () => {
+    const html = readFileSync(resolve(__dirname, '../../index.html'), 'utf8');
+    expect(html).toContain('<title>OpalSwift</title>');
+    expect(html).not.toContain('Management System');
   });
 });

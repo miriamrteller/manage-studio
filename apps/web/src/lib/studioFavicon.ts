@@ -62,3 +62,10 @@ export function applyFavicon(url: string | null, doc: Document = document): void
     }
   });
 }
+
+export const PLATFORM_TITLE = 'OpalSwift';
+
+/** The browser-tab title: the studio's name on a studio host, otherwise OpalSwift. */
+export function studioTabTitle(tenant: { name?: string | null } | null | undefined): string {
+  return tenant?.name?.trim() || PLATFORM_TITLE;
+}
