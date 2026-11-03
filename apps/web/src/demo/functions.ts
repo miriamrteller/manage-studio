@@ -92,6 +92,31 @@ export function engagementFromToken(token: string | null | undefined): string | 
   return raw.startsWith('demo-') ? raw.slice(5) : null;
 }
 
+/**
+ * get-waiver-engagement signerPrefill (_shared/guest-signer-prefill.ts): the
+ * name, email and phone of the person the link was sent to, the account holder
+ * first. Never the ID number or address. A demo link carries no email, so the
+ * first of them with an email on file is the one it was sent to.
+ */
+export function demoSignerPrefill(ctx: DemoContext, personId: string): { full_name: string | null; email: string; phone: string | null } | null {
+  const people = rows(ctx, 'people');
+  const person = people.find((p) => p.id === personId);
+  if (!person) return null;
+  const holderId = person.account_id
+    ? rows(ctx, 'account_members').find((m) => m.account_id === person.account_id && m.role === 'account_holder')?.person_id
+    : undefined;
+  const ids = [holderId, personId].filter((id, i, all): id is string => Boolean(id) && all.indexOf(id) === i);
+  const signer = ids.map((id) => people.find((p) => p.id === id)).find((p) => String(p?.email ?? '').trim());
+  if (!signer) return null;
+  const prefs = rows(ctx, 'contact_preferences').find((c) => c.person_id === signer.id);
+  const phone = String(prefs?.whatsapp_number ?? prefs?.voice_number ?? '').trim();
+  return {
+    full_name: String(signer.name ?? '').trim() || null,
+    email: String(signer.email).trim().toLowerCase(),
+    phone: phone || null,
+  };
+}
+
 /** The deposit accept_quote created for this shoot (first request id, when deposit > 0). */
 export function demoDepositRequest(ctx: DemoContext, engagementId: string): Row | null {
   const quote = rows(ctx, 'quotes').find((q) => q.engagement_id === engagementId && q.status === 'accepted');
@@ -130,7 +155,14 @@ export const baseFunctions: Record<string, FunctionHandler> = {
     if (!engagementId) throw new DemoRpcError('Invalid or expired link');
     const c = renderContract(ctx, engagementId);
     if (c.signed) return { alreadySigned: true, isJob: true };
-    return { isJob: true, personId: c.personId, offeringId: c.offeringId, template: c.template };
+    const signerPrefill = demoSignerPrefill(ctx, c.personId);
+    return {
+      isJob: true,
+      personId: c.personId,
+      offeringId: c.offeringId,
+      template: c.template,
+      ...(signerPrefill ? { signerPrefill } : {}),
+    };
   },
 
   // After signing: the unpaid deposit, else the client portal (mirrors job-next-step).
