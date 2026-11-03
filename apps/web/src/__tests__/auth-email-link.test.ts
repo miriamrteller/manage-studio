@@ -21,6 +21,12 @@ function hrefs(html: string): string[] {
   return [...html.matchAll(/href="([^"]*)"/g)].map((m) => m[1].replace(/&amp;/g, '&'));
 }
 
+/** The visible "copy this link" text (what the owner could paste successfully). */
+function visibleLinkText(html: string): string {
+  const m = html.match(/<a href="[^"]*token_hash[^"]*"[^>]*target="_blank">([^<]*)<\/a>/);
+  return (m?.[1] ?? '').replace(/&amp;/g, '&');
+}
+
 describe('auth email sign-in link', () => {
   for (const [name, redirectTo, type] of [
     ['magic link', `${ORIGIN}/auth/callback?login_method=magic_link`, 'magiclink'],
@@ -36,6 +42,8 @@ describe('auth email sign-in link', () => {
         language: 'en', schoolName: 'Creative Ballet', magicLinkUrl: link, otpCode: '123456',
         primaryColor: '#123456', accentColor: '#654321',
       });
+      // The button's href is exactly the link shown as text under it.
+      expect(hrefs(html).find((h) => h.includes('token_hash'))).toBe(visibleLinkText(html));
       const own = hrefs(html).filter((h) => h.includes('token_hash'));
       expect(own).toHaveLength(2); // the button and the "copy this link" line
       for (const h of own) {
