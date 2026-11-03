@@ -94,7 +94,7 @@ const FAMILIES: Family[] = [
     n: 1, name: 'Levi family', guardian: 'Noa Levi', email: 'noa.levi@example.com', phone: '052-418-2290',
     children: [
       { n: 1, name: 'Maya Levi', age: 6, months: 3 },
-      { n: 2, name: 'Ari Levi', age: 9, months: 7 },
+      { n: 2, name: 'Tamar Levi', age: 9, months: 7 },
     ],
   },
   {
@@ -108,7 +108,7 @@ const FAMILIES: Family[] = [
   {
     n: 4, name: 'Peretz family', guardian: 'Avi Peretz', email: 'avi.peretz@example.com', phone: '053-209-8841',
     children: [
-      { n: 5, name: 'Eitan Peretz', age: 7, months: 9 },
+      { n: 5, name: 'Ella Peretz', age: 7, months: 9 },
       { n: 6, name: 'Hila Peretz', age: 11, months: 1 },
     ],
   },
@@ -118,7 +118,7 @@ const FAMILIES: Family[] = [
   },
   {
     n: 6, name: 'Katz family', guardian: 'Orly Katz', email: 'orly.katz@example.com', phone: '054-118-6620',
-    children: [{ n: 8, name: 'Tom Katz', age: 5, months: 8 }],
+    children: [{ n: 8, name: 'Romi Katz', age: 5, months: 8 }],
   },
 ];
 
