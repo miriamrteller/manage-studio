@@ -122,7 +122,7 @@ describe('vertical nav visibility', () => {
     for (const vertical of ['dance-studio', 'generic'] as const) {
       const paths = adminPaths(vertical);
       expect(paths).not.toContain('/admin/jobs');
-      expect(paths).toContain('/classes');
+      expect(paths).not.toContain('/classes'); // the public pages are not in the admin menu
       expect(paths).toContain('/admin/setup/levels');
       expect(paths).toContain('/admin/setup/terms');
       expect(paths).toContain('/admin/setup/classes');
@@ -140,5 +140,73 @@ describe('vertical nav visibility', () => {
     const publicClasses = publicNavigationConfig.find((item) => item.path === '/classes');
     expect(publicClasses && matchesVertical(publicClasses, 'photographer')).toBe(false);
     expect(publicClasses && matchesVertical(publicClasses, 'dance-studio')).toBe(true);
+  });
+});
+
+describe('admin menu: working pages at the top level', () => {
+  const adminMenu = (vertical: 'photographer' | 'dance-studio' | 'generic' | 'beautician') =>
+    buildNavSections(
+      navigationConfig.filter((item) => matchesVertical(item, vertical)),
+      ['tenant_admin'],
+    );
+  const paths = (vertical: 'photographer' | 'dance-studio' | 'generic' | 'beautician') =>
+    adminMenu(vertical).flatMap((section) => section.items.map((item) => item.path));
+
+  it('has no Browse or Administration group to open: the working pages are one flat list, Leads first', () => {
+    for (const vertical of ['dance-studio', 'generic', 'photographer', 'beautician'] as const) {
+      const sections = adminMenu(vertical);
+      expect(sections.map((s) => s.sectionKey)).toEqual(['main', 'finance', 'setup']);
+      expect(sections[0].items[0].path).toBe('/admin/leads');
+    }
+  });
+
+  it('dance and generic: Leads, Students, Families, Classes, Appointments, Notifications', () => {
+    for (const vertical of ['dance-studio', 'generic'] as const) {
+      expect(adminMenu(vertical)[0].items.map((i) => i.path)).toEqual([
+        '/admin/leads', '/admin/students', '/admin/families', '/admin/setup/classes',
+        '/admin/appointments', '/admin/notifications',
+      ]);
+    }
+  });
+
+  it('photographer: Leads, Clients, Shoots, Quotes, Appointments, Notifications (no families or classes)', () => {
+    expect(adminMenu('photographer')[0].items.map((i) => i.path)).toEqual([
+      '/admin/leads', '/admin/students', '/admin/jobs', '/admin/quotes', '/admin/appointments', '/admin/notifications',
+    ]);
+  });
+
+  it('beautician: Leads, Clients, Appointments, Notifications (only what fits an appointment business)', () => {
+    expect(adminMenu('beautician')[0].items.map((i) => i.path)).toEqual([
+      '/admin/leads', '/admin/students', '/admin/appointments', '/admin/notifications',
+    ]);
+  });
+
+  it('"Manage classes" moved out of Setup (it is Classes at the top now), no duplicate entry', () => {
+    for (const vertical of ['dance-studio', 'generic'] as const) {
+      const all = paths(vertical);
+      expect(all.filter((p) => p === '/admin/setup/classes')).toHaveLength(1);
+      const setup = adminMenu(vertical).find((s) => s.sectionKey === 'setup')!;
+      expect(setup.items.map((i) => i.path)).not.toContain('/admin/setup/classes');
+    }
+  });
+
+  it('Finance and Setup stay as groups', () => {
+    for (const vertical of ['dance-studio', 'photographer']) {
+      const sections = adminMenu(vertical as 'dance-studio' | 'photographer');
+      expect(sections.find((s) => s.sectionKey === 'finance')!.items.length).toBeGreaterThan(1);
+      expect(sections.find((s) => s.sectionKey === 'setup')!.items.length).toBeGreaterThan(1);
+    }
+  });
+
+  it('other roles are unchanged: parents and students keep Browse and their own page', () => {
+    const parent = buildNavSections(navigationConfig, ['account_holder']).flatMap((s) => s.items.map((i) => i.path));
+    expect(parent).toEqual(['/classes', '/book', '/dashboard/portal']);
+    const student = buildNavSections(navigationConfig, ['student']).flatMap((s) => s.items.map((i) => i.path));
+    expect(student).toEqual(['/classes', '/book', '/dashboard/student']);
+  });
+
+  it('the public menu (signed out) is unchanged', () => {
+    const sections = buildNavSections(publicNavigationConfig, []);
+    expect(sections.flatMap((s) => s.items.map((i) => i.path))).toEqual(['/classes', '/book', '/login', '/signup']);
   });
 });
