@@ -53,6 +53,20 @@ async function count(table: 'categories' | 'seasons' | 'offerings' | 'engagement
   return n ?? 0;
 }
 
+/** Payments that went through (refunded later still counts: the client paid). 0 if unreadable. */
+async function countPaid(tenantId: string): Promise<number> {
+  try {
+    const { count: n, error } = await supabase
+      .from('payments')
+      .select('id', { count: 'exact', head: true })
+      .eq('tenant_id', tenantId)
+      .in('status', ['succeeded', 'refunded', 'partially_refunded']);
+    return error ? 0 : n ?? 0;
+  } catch {
+    return 0;
+  }
+}
+
 /** Everything the checklist ticks itself from. Counts only, no personal data. */
 export function useSetupFacts(): { facts: SetupFacts; isLoading: boolean } {
   const tenant = useTenant();
@@ -66,7 +80,7 @@ export function useSetupFacts(): { facts: SetupFacts; isLoading: boolean } {
     queryFn: async (): Promise<Omit<SetupFacts, 'hasLogo' | 'paymentsReady' | 'onlinePayments' | 'paymentsConnected'> & { legalPublished: boolean }> => {
       const id = tenantId!;
       const dance = vertical === 'dance-studio';
-      const [levels, seasons, offerings, enrolments, leads, quotes, legal] = await Promise.all([
+      const [levels, seasons, offerings, enrolments, leads, quotes, legal, paidClients] = await Promise.all([
         dance ? count('categories', id) : Promise.resolve(0),
         dance ? count('seasons', id) : Promise.resolve(0),
         count('offerings', id, true),
@@ -74,6 +88,7 @@ export function useSetupFacts(): { facts: SetupFacts; isLoading: boolean } {
         count('leads', id),
         vertical === 'photographer' ? count('quotes', id) : Promise.resolve(0),
         supabase.rpc('get_tenant_legal_profile', { p_tenant_id: id }),
+        countPaid(id),
       ]);
       const row = Array.isArray(legal.data) ? legal.data[0] : legal.data;
       return {
@@ -84,6 +99,7 @@ export function useSetupFacts(): { facts: SetupFacts; isLoading: boolean } {
         leads,
         quotes,
         legalPublished: row?.legal_pages_published === true,
+        paidClients,
       };
     },
   });
@@ -107,6 +123,8 @@ export function useSetupFacts(): { facts: SetupFacts; isLoading: boolean } {
 
 export interface SetupGuide {
   rows: SetupRow[];
+  /** The facts the rows tick from (the celebrations read leads and paid clients). */
+  facts: SetupFacts;
   skipped: string[];
   progress: SetupProgress;
   closed: boolean;
@@ -155,6 +173,7 @@ export function useSetupGuide(): SetupGuide {
   }, [update]);
   return {
     rows,
+    facts,
     skipped: saved.skipped,
     progress,
     closed: saved.closed,

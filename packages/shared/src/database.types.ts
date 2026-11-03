@@ -3601,6 +3601,7 @@ export type Database = {
           accessibility_statement_url: string | null
           billing_policy: Json
           business_preset: string
+          celebrations: Json
           chrome_style: string
           client_booking: boolean
           contact_email: string
@@ -3679,6 +3680,7 @@ export type Database = {
           accessibility_statement_url?: string | null
           billing_policy?: Json
           business_preset?: string
+          celebrations?: Json
           chrome_style?: string
           client_booking?: boolean
           contact_email: string
@@ -3757,6 +3759,7 @@ export type Database = {
           accessibility_statement_url?: string | null
           billing_policy?: Json
           business_preset?: string
+          celebrations?: Json
           chrome_style?: string
           client_booking?: boolean
           contact_email?: string

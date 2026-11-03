@@ -129,9 +129,11 @@ describe('SetupGuideCard', () => {
     h.tenant = { ...h.tenant, logo_url: 'https://x/logo.png' };
     h.counts = { categories: 1 };
     renderHarness();
-    expect(await screen.findByText('2 of 7 done')).toBeInTheDocument();
-    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '2');
-    expect(screen.getByRole('link', { name: 'Next: Set up your season' })).toHaveAttribute('href', '/admin/setup/terms');
+    // The set-up wizard counts as a step already done: 3 of 8.
+    expect(await screen.findByText("You're 38% there")).toBeInTheDocument();
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '38');
+    expect(screen.getByText('Level: Open for enquiries')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /^Next: Set up your season\s*About 3 minutes$/ })).toHaveAttribute('href', '/admin/setup/terms');
     expect(screen.getByRole('link', { name: 'hello@opalswift.com' })).toHaveAttribute('href', 'mailto:hello@opalswift.com');
   });
 
@@ -165,21 +167,21 @@ describe('SetupGuideCard', () => {
 
   it('skip and undo update the count; the choice is kept', async () => {
     renderHarness();
-    await screen.findByText('0 of 7 done');
+    await screen.findByText("You're 13% there");
     fireEvent.click(screen.getAllByRole('button', { name: 'Skip' })[0]);
-    expect(screen.getByText('1 of 7 done')).toBeInTheDocument();
+    expect(screen.getByText("You're 25% there")).toBeInTheDocument();
     expect(JSON.parse(window.localStorage.getItem('setup-guide:t1')!).skipped).toEqual(['branding']);
     fireEvent.click(screen.getByRole('button', { name: 'Undo skip' }));
-    expect(screen.getByText('0 of 7 done')).toBeInTheDocument();
+    expect(screen.getByText("You're 13% there")).toBeInTheDocument();
   });
 
   it('close hides it and reopen brings it back, even when everything is done', async () => {
     renderHarness();
-    await screen.findByText('0 of 7 done');
+    await screen.findByText("You're 13% there");
     fireEvent.click(screen.getByRole('button', { name: 'Close' }));
     expect(screen.getByText('hidden')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'reopen' }));
-    expect(await screen.findByText('0 of 7 done')).toBeInTheDocument();
+    expect(await screen.findByText("You're 13% there")).toBeInTheDocument();
   });
 
   it('hides itself once every row is done', async () => {
@@ -193,6 +195,7 @@ describe('SetupGuideCard', () => {
   it('is in Hebrew too', async () => {
     await i18n.changeLanguage('he');
     renderHarness();
-    expect(await screen.findByText('0 מתוך 7 הושלמו')).toBeInTheDocument();
+    expect(await screen.findByText('הגעתם ל-13%')).toBeInTheDocument();
+    expect(screen.getByText('שלב: מתחילים')).toBeInTheDocument();
   });
 });
