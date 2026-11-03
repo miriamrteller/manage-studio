@@ -1,16 +1,25 @@
 // Cloudflare Pages Function: POST /api/contact
 // The beta/contact form on the home page (#contact-form) posts FormData here
 // with fields name, email, message. We email it to hello@opalswift.com via
-// Resend and answer {ok:true} or {ok:false,error}. The page only checks
-// res.ok. Nothing is stored.
+// Resend and, at the same time, file it as a lead in OpalSwift HQ's Leads (the
+// "hq" studio, channel website) through crm-lead-ingest. We answer {ok:true}
+// or {ok:false,error}; the page only checks res.ok. The email decides the
+// answer: if it went out, the visitor sees success even when filing the lead
+// failed (that is logged). Until the lead settings are set, or before the hq
+// studio exists, only the email is sent.
 //
 // Settings (Cloudflare → Workers & Pages → opalswift-il → Settings → Variables and Secrets):
-//   RESEND_API_KEY  secret, required
-//   CONTACT_TO      optional, default hello@opalswift.com
+//   RESEND_API_KEY      secret, required
+//   CONTACT_TO          optional, default hello@opalswift.com
+//   HQ_LEAD_INGEST_URL  optional, https://<project-ref>.supabase.co/functions/v1/crm-lead-ingest
+//   CRM_INGEST_SECRET   secret, optional: the same value as the Supabase Edge Function secret
+//   HQ_SUBDOMAIN        optional, default hq
 // Docs: docs/deployment/MARKETING-SITE.md#the-contact-form
 
 export const LIMITS = { body: 16 * 1024, name: 100, email: 254, message: 4000 };
 const DEFAULT_TO = "hello@opalswift.com";
+const DEFAULT_HQ = "hq";
+const LEAD_TIMEOUT_MS = 5000;
 const FROM = "OpalSwift <no-reply@opalswift.com>";
 // Hidden fields a person never fills in; if a bot does, pretend it worked.
 const HONEYPOTS = ["website", "company", "url"];
@@ -30,6 +39,34 @@ const multiLine = (s) =>
   s.replace(/\r\n?/g, "\n").replace(/[\u0000-\u0009\u000b-\u001f\u007f]/g, "").trim();
 const escapeHtml = (s) =>
   s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+
+/**
+ * File the enquiry in HQ's Leads. Never throws and never logs the submission
+ * or the secret: only whether it worked, or the status it got.
+ */
+export async function fileHqLead(env, { name, email, message }) {
+  const url = oneLine(env.HQ_LEAD_INGEST_URL || "");
+  const secret = env.CRM_INGEST_SECRET || "";
+  if (!url || !secret) return "skipped";
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { authorization: `Bearer ${secret}`, "content-type": "application/json" },
+      body: JSON.stringify({
+        tenantSubdomain: oneLine(env.HQ_SUBDOMAIN || "") || DEFAULT_HQ,
+        contact: { submissionId: crypto.randomUUID(), name, email, message },
+      }),
+      signal: AbortSignal.timeout(LEAD_TIMEOUT_MS),
+    });
+    if (res.ok) return "filed";
+    // 404 = the hq studio doesn't exist yet; 401/503 = the secret doesn't match or isn't set.
+    console.error(`contact: HQ lead not filed, crm-lead-ingest answered ${res.status}`);
+    return "failed";
+  } catch {
+    console.error("contact: HQ lead not filed, could not reach crm-lead-ingest");
+    return "failed";
+  }
+}
 
 export async function handleContact({ request, env }) {
   // Same-site form only: browsers always send Origin on a fetch POST.
@@ -90,6 +127,9 @@ export async function handleContact({ request, env }) {
     `<p><b>Name:</b> ${escapeHtml(name)}<br><b>Email:</b> ${escapeHtml(email)}</p>` +
     `<p style="white-space:pre-wrap">${escapeHtml(message)}</p>`;
 
+  // The lead is filed alongside the email; it never changes the answer.
+  const lead = fileHqLead(env, { name, email, message });
+
   let res;
   try {
     res = await fetch("https://api.resend.com/emails", {
@@ -106,8 +146,10 @@ export async function handleContact({ request, env }) {
     });
   } catch {
     console.error("contact: could not reach Resend");
+    await lead;
     return fail(502, "Could not send");
   }
+  await lead;
   if (!res.ok) {
     // Status only: never the submission or the key.
     console.error(`contact: Resend answered ${res.status}`);

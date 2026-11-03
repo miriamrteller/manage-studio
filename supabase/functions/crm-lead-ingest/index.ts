@@ -1,6 +1,5 @@
-import { z } from "npm:zod@3.22.4";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
-import { parseLeadEmail } from "../_shared/crm-contract/parse-lead-email.ts";
+import { type IngestPayload, leadFromPayload, payloadSchema } from "./payload.ts";
 import {
   LEAD_TENANT_COLUMNS,
   type LeadTenant,
@@ -10,31 +9,23 @@ import {
 import { withMonitoring } from "../_shared/monitoring.ts";
 
 /**
- * crm-lead-ingest — write path for automated lead capture from EMAIL
- * (phase 2b; docs/plans/crm-lead-capture-channels.md).
- *
- * Called by the Cloudflare Email Worker (workers/lead-email-ingest) whenever
- * an inquiry lands on a leads-<subdomain>@opalswift.com address. Creates or
- * refreshes a row in `leads` via the shared lead-ingest-core (dedupe rules +
- * studio notification live there); never touches people/accounts.
+ * crm-lead-ingest — server-to-server write path for automated lead capture
+ * (phase 2b; docs/plans/crm-lead-capture-channels.md). Two callers:
+ *   - EMAIL: the Cloudflare Email Worker (workers/lead-email-ingest), whenever
+ *     an inquiry lands on a leads-<subdomain>@opalswift.com address
+ *     (`message`, channel email).
+ *   - WEBSITE: the opalswift.com contact form (apps/marketing/functions/api/
+ *     contact.js) files each enquiry in the hq studio's Leads (`contact`,
+ *     channel website; docs/plans/OPALSWIFT-ON-OPALSWIFT.md).
+ * Creates or refreshes a row in `leads` via the shared lead-ingest-core
+ * (dedupe rules + studio notification live there); never touches
+ * people/accounts.
  *
  * Auth: `Authorization: Bearer <CRM_INGEST_SECRET>` — machine-to-machine,
  * same shape as the CRON_SECRET functions but FAIL-CLOSED: with no secret
  * configured the function refuses every request instead of allowing them
  * (this endpoint writes and is internet-reachable).
  */
-
-const payloadSchema = z.object({
-  tenantSubdomain: z.string().min(1),
-  message: z.object({
-    messageId: z.string().min(1),
-    fromName: z.string().nullable(),
-    fromEmail: z.string().nullable(),
-    subject: z.string().nullable(),
-    text: z.string().nullable(),
-    receivedAt: z.string().datetime({ offset: true }).nullable(),
-  }),
-});
 
 Deno.serve(withMonitoring("crm-lead-ingest", async (req) => {
   const json = (body: unknown, status = 200) =>
@@ -56,7 +47,7 @@ Deno.serve(withMonitoring("crm-lead-ingest", async (req) => {
     return json({ error: "Unauthorized" }, 401);
   }
 
-  let payload: z.infer<typeof payloadSchema>;
+  let payload: IngestPayload;
   try {
     payload = payloadSchema.parse(await req.json());
   } catch (err) {
@@ -77,12 +68,8 @@ Deno.serve(withMonitoring("crm-lead-ingest", async (req) => {
       return json({ error: "Unknown tenant" }, 404);
     }
 
-    const fields = parseLeadEmail(payload.message);
-    const result = await writeInboundLead(service, tenant as LeadTenant, fields, {
-      channel: "email",
-      sourceRef: payload.message.messageId,
-      receivedAt: payload.message.receivedAt ?? new Date().toISOString(),
-    });
+    const { fields, opts } = leadFromPayload(payload, new Date().toISOString());
+    const result = await writeInboundLead(service, tenant as LeadTenant, fields, opts);
 
     if (result.outcome !== "duplicate") {
       await notifyTenantOfLead(service, tenant as LeadTenant, fields, result.outcome);

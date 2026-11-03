@@ -36,8 +36,18 @@ The beta signup form on the home page (`#contact-form`) sends `name`,
 It emails each signup to **hello@opalswift.com** (Cloudflare Email Routing
 forwards that to the owner's Gmail) through **Resend**, from
 `no-reply@opalswift.com`, with Reply-To set to the person's email and the
-subject `OpalSwift beta: <name>`. It stores nothing. It answers `{ok:true}`,
-or `{ok:false,error}` with a 4xx/5xx status (the page only checks the status).
+subject `OpalSwift beta: <name>`. It answers `{ok:true}`, or
+`{ok:false,error}` with a 4xx/5xx status (the page only checks the status).
+
+At the same time it files the enquiry as a lead in **OpalSwift HQ's Leads**
+(the `hq` studio, channel *website*; name, email, and the message as the
+note) by calling the Supabase Edge Function `crm-lead-ingest`
+server-to-server with `CRM_INGEST_SECRET`. The email decides the answer: if
+it went out, the visitor sees success even if filing the lead failed, and the
+failure is logged (status only). Without the two lead settings below, or
+before the `hq` studio exists (the function answers 404), only the email is
+sent. Each submission carries its own id, so a retried call never makes a
+second lead; a returning visitor's enquiry is added to their open lead.
 
 Checks: POST only (405 otherwise), FormData or urlencoded only, same-site
 `Origin`, body ≤ 16 KB, all three fields required, name ≤ 100, email ≤ 254
@@ -56,6 +66,9 @@ opalswift-il → Settings → Variables and Secrets, *Production*):
 |---|---|---|
 | `RESEND_API_KEY` | Secret | a Resend API key, permission "Sending access", domain opalswift.com |
 | `CONTACT_TO` | Text, optional | another recipient; default `hello@opalswift.com` |
+| `HQ_LEAD_INGEST_URL` | Text, optional | `https://<prod project ref>.supabase.co/functions/v1/crm-lead-ingest` |
+| `CRM_INGEST_SECRET` | Secret, optional | the **same value** as the prod Supabase Edge Function secret `CRM_INGEST_SECRET` |
+| `HQ_SUBDOMAIN` | Text, optional | the studio that receives the leads; default `hq` |
 
 `deploy-marketing` refuses to deploy if `RESEND_API_KEY` is missing.
 
