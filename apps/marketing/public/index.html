@@ -22,6 +22,14 @@
   body[dir=ltr]{font-family:'Inter',system-ui,sans-serif}
   h1,h2,h3,.brand{font-family:'Rubik',sans-serif;line-height:1.15}
   .wrap{max-width:1140px;margin:0 auto;padding:0 24px}
+  .icon{width:1em;height:1em;display:inline-block;flex-shrink:0;vertical-align:-.125em;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .eyebrow .icon{font-size:15px}
+  .trust .icon{font-size:16px;margin-top:3px;color:var(--indigo)}
+  .float-badge .icon{font-size:16px;color:var(--violet)}
+  .chip{display:inline-flex;align-items:center;gap:6px}
+  .chip .icon{font-size:14px;color:var(--indigo)}
+  .flow .tag .icon,.editions-group-label .icon{font-size:14px}
+  .bilingual .bi-ic{display:flex;color:var(--indigo)}
   .grad-text{background:var(--opal);-webkit-background-clip:text;background-clip:text;color:transparent}
   .btn{display:inline-flex;align-items:center;gap:8px;border:0;border-radius:999px;padding:14px 26px;font-weight:600;font-size:16px;cursor:pointer;text-decoration:none;transition:.2s;font-family:'Rubik',sans-serif}
   .btn-primary{background:var(--opal);color:#fff;box-shadow:0 10px 24px -8px rgba(91,108,255,.6)}
@@ -63,7 +71,7 @@
   .mock .bar{height:10px;width:60px;border-radius:6px;background:var(--opal);margin-bottom:16px}
   .mock-row{display:flex;justify-content:space-between;align-items:center;padding:14px;border:1px solid rgba(11,20,55,.07);border-radius:14px;margin-bottom:12px}
   .mock-row .l{display:flex;align-items:center;gap:12px}
-  .dot{width:38px;height:38px;border-radius:12px;background:var(--canvas);display:flex;align-items:center;justify-content:center;font-size:18px}
+  .dot{width:38px;height:38px;border-radius:12px;background:var(--canvas);display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--indigo)}
   .pill{font-size:12px;font-weight:700;padding:5px 12px;border-radius:999px;font-family:'Rubik'}
   .pill.ok{background:rgba(33,209,194,.15);color:#0a8f84}
   .pill.auto{background:rgba(91,108,255,.13);color:var(--indigo)}
@@ -86,14 +94,14 @@
 
   .cards3{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
   .card{background:#fff;border:1px solid rgba(11,20,55,.06);border-radius:var(--radius);padding:28px;box-shadow:0 8px 30px -20px rgba(11,20,55,.3)}
-  .card .ic{width:52px;height:52px;border-radius:14px;background:var(--opal);display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:18px}
+  .card .ic{width:52px;height:52px;border-radius:14px;background:var(--opal);display:flex;align-items:center;justify-content:center;font-size:26px;color:#fff;margin-bottom:18px}
   .card h3{font-size:21px;margin-bottom:10px}
   .card p{color:var(--slate);font-size:15.5px}
   .card .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
   .card .chip{font-size:12.5px;font-weight:600;font-family:'Rubik';background:var(--canvas);border:1px solid rgba(11,20,55,.07);padding:5px 11px;border-radius:999px;color:#2c3350}
 
   /* pain card variant */
-  .pain .ic{background:rgba(255,143,177,.16);font-size:24px}
+  .pain .ic{background:rgba(255,143,177,.16);color:#c2416e}
   .turn-line{text-align:center;max-width:720px;margin:36px auto 0;font-family:'Rubik';font-weight:600;font-size:20px;color:var(--ink)}
   .turn-line .grad-text{font-weight:700}
 
@@ -131,7 +139,8 @@
 
   /* bilingual badge */
   .bilingual{display:flex;align-items:center;justify-content:center;gap:16px;background:#fff;border:1px solid rgba(11,20,55,.08);border-radius:999px;padding:14px 26px;width:fit-content;margin:34px auto 0;box-shadow:var(--shadow);font-family:'Rubik';font-weight:600;color:var(--ink)}
-  .bilingual span{font-size:22px}
+  .bilingual .bi-ic{font-size:22px}
+  @media(max-width:600px){.bilingual{gap:10px;padding:12px 18px;font-size:14px}.bilingual .bi-ic{font-size:18px}}
 
   /* EDITIONS STRIP */
   .editions-wrap{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:8px;align-items:start}
@@ -139,10 +148,11 @@
   .editions-group-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;padding:5px 12px;border-radius:6px;display:inline-flex;align-items:center;gap:6px;margin-bottom:14px}
   .editions-group-label.gig{background:#e6faf8;color:#0a9e8e}
   .editions-group-label.roster{background:#eef0ff;color:var(--indigo)}
-  .editions{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;align-items:start}
-  .edition{background:#fff;border:1px solid rgba(11,20,55,.08);border-radius:14px;padding:16px 12px;text-align:center;text-decoration:none;color:var(--ink);transition:.2s;box-shadow:0 4px 16px -8px rgba(11,20,55,.2)}
+  .editions{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;align-items:stretch}
+  .edition{display:flex;flex-direction:column;align-items:center;background:#fff;border:1px solid rgba(11,20,55,.08);border-radius:14px;padding:16px 12px;text-align:center;text-decoration:none;color:var(--ink);transition:.2s;box-shadow:0 4px 16px -8px rgba(11,20,55,.2)}
   .edition:hover{transform:translateY(-3px);border-color:rgba(91,108,255,.4)}
-  .edition .em{font-size:26px;display:block;margin-bottom:8px}
+  .edition .em{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:10px;flex-shrink:0;background:#eef0ff;color:var(--indigo)}
+  #gig-group .edition .em{background:#e6faf8;color:#0a9e8e}
   .edition b{font-family:'Rubik';font-size:14px;display:block}
   .edition small{color:var(--slate);font-size:11.5px}
   .edition .live{display:inline-block;margin-top:7px;font-family:'Rubik';font-size:10px;font-weight:700;color:#0a8f84;background:rgba(33,209,194,.15);padding:2px 8px;border-radius:999px}
@@ -218,18 +228,18 @@
     .btn{padding:13px 22px;font-size:15px}
     .founder blockquote{font-size:19px}
     .edition{padding:12px 8px}
-    .edition .em{font-size:20px;margin-bottom:5px}
+    .edition .em{width:38px;height:38px;font-size:19px;margin-bottom:8px}
     .edition b{font-size:12px}
     .edition small{font-size:10.5px}
     .editions-group-label{font-size:10px}
   }
   @media(max-width:400px){
     .editions{grid-template-columns:1fr}
-    .edition{display:flex;flex-direction:row;align-items:center;text-align:start;gap:10px;padding:10px 12px}
-    .edition .em{font-size:22px;margin:0;flex-shrink:0}
-    .edition b{font-size:13px}
-    .edition small{font-size:11px;display:block}
-    .edition .live,.edition .soon{margin-top:0;margin-inline-start:auto;flex-shrink:0}
+    .edition{display:grid;grid-template-columns:auto 1fr;column-gap:12px;align-items:center;text-align:start;padding:10px 12px}
+    .edition .em{grid-row:1 / span 2;width:38px;height:38px;font-size:19px;margin:0}
+    .edition b{font-size:13px;grid-column:2}
+    .edition small{font-size:11px;display:block;grid-column:2}
+    .edition .live,.edition .soon{margin-top:0;grid-column:3;grid-row:1 / span 2}
   }
 
   /* BETA BADGE */
@@ -245,7 +255,7 @@
   .form-field input:focus,.form-field select:focus,.form-field textarea:focus{border-color:var(--indigo);box-shadow:0 0 0 3px rgba(91,108,255,.12)}
   .form-field textarea{resize:vertical;min-height:90px}
   .form-success{display:none;text-align:center;padding:32px;background:rgba(33,209,194,.08);border:1px solid rgba(33,209,194,.25);border-radius:16px}
-  .form-success .fs-icon{font-size:36px;display:block;margin-bottom:10px}
+  .form-success .fs-icon{font-size:40px;display:block;margin-bottom:10px;color:#0a8f84}
   .form-success p{font-family:'Rubik';font-weight:600;font-size:17px;color:var(--ink)}
   /* ---- Testimonials ---- */
   .testi-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:24px;margin-top:48px}
@@ -261,6 +271,7 @@
 </style>
 </head>
 <body dir="rtl" lang="he">
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none"><symbol id="i-camera" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"/><circle cx="12" cy="13" r="3"/></symbol><symbol id="i-wrench" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"/></symbol><symbol id="i-scissors" viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.12 15.88M14.47 14.48 20 20M8.12 8.12 12 12"/></symbol><symbol id="i-pencil" viewBox="0 0 24 24"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/><path d="m15 5 4 4"/></symbol><symbol id="i-sofa" viewBox="0 0 24 24"><path d="M20 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v3"/><path d="M2 11v5a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-5a2 2 0 0 0-4 0v2H6v-2a2 2 0 0 0-4 0z"/><path d="M4 18v2M20 18v2"/></symbol><symbol id="i-briefcase" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2M2 13h20"/></symbol><symbol id="i-grad" viewBox="0 0 24 24"><path d="M22 10 12 5 2 10l10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5M22 10v6"/></symbol><symbol id="i-party" viewBox="0 0 24 24"><path d="M5.8 11.3 2 22l10.7-3.8"/><path d="M11 13c1.9 1.9 2.8 4.2 2 5s-3.1-.1-5-2-2.8-4.2-2-5 3.1.1 5 2z"/><path d="M14 10l1.5-1.5M15 3l-.5 2M21 9l-2 .5M19 3l-1.5 1.5"/></symbol><symbol id="i-feather" viewBox="0 0 24 24"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><path d="M16 8 2 22M17.5 15H9"/></symbol><symbol id="i-book" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></symbol><symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="m9 16 2 2 4-4"/></symbol><symbol id="i-dumbbell" viewBox="0 0 24 24"><rect x="5" y="6" width="3" height="12" rx="1"/><rect x="16" y="6" width="3" height="12" rx="1"/><path d="M2.5 9.5v5M21.5 9.5v5M8 12h8"/></symbol><symbol id="i-car" viewBox="0 0 24 24"><path d="M5 17H3v-5l2-5h14l2 5v5h-2M3 12h18M9.5 17h5"/><circle cx="7.5" cy="17" r="2"/><circle cx="16.5" cy="17" r="2"/></symbol><symbol id="i-leaf" viewBox="0 0 24 24"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></symbol><symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></symbol><symbol id="i-sparkles" viewBox="0 0 24 24"><path d="M10 3l1.9 5.1L17 10l-5.1 1.9L10 17l-1.9-5.1L3 10l5.1-1.9z"/><path d="M18 14l.8 2.2L21 17l-2.2.8L18 20l-.8-2.2L15 17l2.2-.8z"/></symbol><symbol id="i-palette" viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.93 0 1.65-.75 1.65-1.69 0-.44-.18-.84-.44-1.13-.29-.29-.44-.65-.44-1.13a1.64 1.64 0 0 1 1.67-1.67h2c3.05 0 5.55-2.5 5.55-5.55C21.97 6.01 17.46 2 12 2z"/><circle cx="13.5" cy="6.5" r="1"/><circle cx="17.5" cy="10.5" r="1"/><circle cx="8.5" cy="7.5" r="1"/><circle cx="6.5" cy="12.5" r="1"/></symbol><symbol id="i-waves" viewBox="0 0 24 24"><path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5s2.4 2 5 2 2.5-2 5-2c1.3 0 1.9.5 2.5 1M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2s2.4 2 5 2 2.5-2 5-2c1.3 0 1.9.5 2.5 1M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2s2.4 2 5 2 2.5-2 5-2c1.3 0 1.9.5 2.5 1"/></symbol><symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></symbol><symbol id="i-repeat" viewBox="0 0 24 24"><path d="m17 2 4 4-4 4M3 11v-1a4 4 0 0 1 4-4h14M7 22l-4-4 4-4M21 13v1a4 4 0 0 1-4 4H3"/></symbol><symbol id="i-msg" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M12 7v4M12 14h.01"/></symbol><symbol id="i-file" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></symbol><symbol id="i-filecheck" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 15l2 2 4-4"/></symbol><symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol><symbol id="i-trend" viewBox="0 0 24 24"><path d="m22 7-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/></symbol><symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></symbol><symbol id="i-pin" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></symbol><symbol id="i-card" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></symbol><symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></symbol><symbol id="i-laptop" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M2 20h20"/></symbol><symbol id="i-activity" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></symbol><symbol id="i-lock" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol><symbol id="i-zap" viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9z"/></symbol><symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m8 12 3 3 5-5"/></symbol><symbol id="i-monitor" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></symbol></svg>
 
 <!-- ============ NAV ============ -->
 <nav>
@@ -281,7 +292,7 @@
         <button id="btn-en" onclick="setLang('en', true)">EN</button>
       </div>
       <a href="https://app.opalswift.com" class="nav-signin" data-he="כניסה" data-en="Sign in">כניסה</a>
-      <a href="#contact" class="btn btn-primary" style="padding:10px 20px" data-he="הצטרף לבטא" data-en="Join Beta">הצטרף לבטא</a>
+      <a href="#contact" class="btn btn-primary" style="padding:10px 20px" data-he="הצטרפו לבטא" data-en="Join Beta">הצטרפו לבטא</a>
     </div>
   </div>
 </nav>
@@ -290,33 +301,33 @@
 <header class="hero">
   <div class="wrap hero-grid">
     <div>
-      <span class="eyebrow">✨ <span data-he="לעוסק פטור ולעוסק מורשה — תקין ומוכן" data-en="For solo freelancers in Israel — compliant &amp; ready">לעוסק פטור ולעוסק מורשה — תקין ומוכן</span></span>
-      <h1 data-he='יצאת לעצמאות כדי לעשות את מה שאתה אוהב.<br><span class="grad-text">הניירת רצה לבד.</span>' data-en='Freelance admin,<br><span class="grad-text">fully automated.</span>'>יצאת לעצמאות כדי לעשות את מה שאתה אוהב.<br><span class="grad-text">הניירת רצה לבד.</span></h1>
-      <p class="subhero" data-he="תתרכז במה שאתה עושה הכי טוב. אנחנו נדאג לשאר." data-en="Concentrate on what you do best. We handle the rest.">תתרכז במה שאתה עושה הכי טוב. אנחנו נדאג לשאר.</p>
-      <p class="lead" data-he="בנוי לצלמים, מורים לחוג, מעצבים ובעלי מקצוע — מוכן לתחום שלך. חיוב, תזכורות ומסמכים תקינים — רצים לבד בזמן שאתה עובד." data-en="Built for Israeli photographers, instructors, designers and tradespeople — ready for your craft from day one. Billing, reminders, and tax compliance run themselves.">בנוי לצלמים, מורים לחוג, מעצבים ובעלי מקצוע — מוכן לתחום שלך. חיוב, תזכורות ומסמכים תקינים — רצים לבד בזמן שאתה עובד.</p>
+      <span class="eyebrow"><svg class="icon" aria-hidden="true"><use href="#i-sparkles"/></svg><span data-he="לעוסק פטור ולעוסק מורשה — הכל תקין, הכל מוכן" data-en="For solo freelancers in Israel — compliant &amp; ready">לעוסק פטור ולעוסק מורשה — הכל תקין, הכל מוכן</span></span>
+      <h1 data-he='יצאתם לעצמאות כדי לעשות את מה שאתם אוהבים.<br><span class="grad-text">הניירת כבר מסתדרת לבד.</span>' data-en='Freelance admin,<br><span class="grad-text">fully automated.</span>'>יצאתם לעצמאות כדי לעשות את מה שאתם אוהבים.<br><span class="grad-text">הניירת כבר מסתדרת לבד.</span></h1>
+      <p class="subhero" data-he="תתמקדו במה שאתם טובים בו. את השאר תשאירו לנו." data-en="Concentrate on what you do best. We handle the rest.">תתמקדו במה שאתם טובים בו. את השאר תשאירו לנו.</p>
+      <p class="lead" data-he="לצלמים, למורים לחוגים, למעצבים ולבעלי מקצוע — מותאם לתחום שלכם מהיום הראשון. חיוב, תזכורות ומסמכים תקינים קורים לבד, בזמן שאתם עובדים." data-en="Built for Israeli photographers, instructors, designers and tradespeople — ready for your craft from day one. Billing, reminders, and tax compliance run themselves.">לצלמים, למורים לחוגים, למעצבים ולבעלי מקצוע — מותאם לתחום שלכם מהיום הראשון. חיוב, תזכורות ומסמכים תקינים קורים לבד, בזמן שאתם עובדים.</p>
       <div class="hero-cta">
-        <a href="#contact" class="btn btn-primary" data-he="הצטרף לבטא" data-en="Join Beta">הצטרף לבטא</a>
+        <a href="#contact" class="btn btn-primary" data-he="הצטרפו לבטא" data-en="Join Beta">הצטרפו לבטא</a>
         <a href="#how" class="btn btn-ghost dark" data-he="לראות איך זה עובד" data-en="See how it works">לראות איך זה עובד</a>
       </div>
-      <div class="trust">🔒 <span data-he="עברית מלאה, ממשק גם באנגלית · מבוסס על מערכת חיוב מוסמכת" data-en="Compliant Hebrew docs, English interface · Runs on a certified billing provider">עברית מלאה, ממשק גם באנגלית · מבוסס על מערכת חיוב מוסמכת</span></div>
+      <div class="trust"><svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg><span data-he="מסמכים תקינים בעברית, ממשק גם באנגלית · עובד על גבי ספק חיוב מוסמך" data-en="Compliant Hebrew docs, English interface · Runs on a certified billing provider">מסמכים תקינים בעברית, ממשק גם באנגלית · עובד על גבי ספק חיוב מוסמך</span></div>
     </div>
     <div style="position:relative">
       <img src="opalswift_gemstone_final.png" class="hero-gem-float" alt="">
       <div class="mock">
         <div class="bar"></div>
         <div class="mock-row">
-          <div class="l"><div class="dot">💳</div><div><b data-he="מקדמה: 30%" data-en="Deposit: 30%">מקדמה: 30%</b><br><small style="color:var(--slate)" data-he="נכנסה לבנק בקישור תשלום" data-en="In your bank via pay-link">נכנסה לבנק בקישור תשלום</small></div></div>
+          <div class="l"><div class="dot"><svg class="icon" aria-hidden="true"><use href="#i-card"/></svg></div><div><b data-he="מקדמה: 30%" data-en="Deposit: 30%">מקדמה: 30%</b><br><small style="color:var(--slate)" data-he="נכנסה לחשבון דרך קישור תשלום" data-en="In your bank via pay-link">נכנסה לחשבון דרך קישור תשלום</small></div></div>
           <span class="pill auto" data-he="אוטומטי" data-en="Auto">אוטומטי</span>
         </div>
         <div class="mock-row">
-          <div class="l"><div class="dot">🔔</div><div><b data-he="נודניק שלח תזכורת" data-en="Reminder sent">נודניק שלח תזכורת</b><br><small style="color:var(--slate)" data-he="יתרה נגבתה — בלי שביקשת" data-en="Balance collected — you never asked">יתרה נגבתה — בלי שביקשת</small></div></div>
+          <div class="l"><div class="dot"><svg class="icon" aria-hidden="true"><use href="#i-bell"/></svg></div><div><b data-he="הנודניק שלח תזכורת" data-en="Reminder sent">הנודניק שלח תזכורת</b><br><small style="color:var(--slate)" data-he="היתרה שולמה — בלי שביקשתם" data-en="Balance collected — you never asked">היתרה שולמה — בלי שביקשתם</small></div></div>
           <span class="pill ok" data-he="✓ שולם" data-en="✓ Paid">✓ שולם</span>
         </div>
         <div class="mock-foot">
           <div><small style="opacity:.7" data-he="מסמך תקין נשמר" data-en="Compliant doc saved">מסמך תקין נשמר</small><br><span data-he="יוני 2026" data-en="June 2026">יוני 2026</span></div>
           <div class="amt">₪7,200</div>
         </div>
-        <div class="float-badge">⚡ <span data-he="0 דקות עבודה" data-en="0 minutes of admin">0 דקות עבודה</span></div>
+        <div class="float-badge"><svg class="icon" aria-hidden="true"><use href="#i-zap"/></svg><span data-he="0 דקות של ניירת" data-en="0 minutes of admin">0 דקות של ניירת</span></div>
       </div>
     </div>
   </div>
@@ -328,9 +339,9 @@
 <section class="block" style="padding-bottom:8px">
   <div class="wrap stats">
     <div class="stat"><div class="big" data-he="כסף מהר יותר" data-en="Paid faster">כסף מהר יותר</div><div class="lbl" data-he="מקדמות, קישורי תשלום ותזכורות אוטומטיות" data-en="deposits, pay-links & auto reminders">מקדמות, קישורי תשלום ותזכורות אוטומטיות</div></div>
-    <div class="stat"><div class="big" data-he="תשלומים זורמים" data-en="Payments flow">0 רדיפות</div><div class="lbl" data-he="התזכורות גובות במקומך — בצורה מקצועית" data-en="reminders collect for you — professionally">הנודניק גובה במקומך — בלי הודעות מביכות</div></div>
-    <div class="stat"><div class="big" data-he="שעות בחזרה" data-en="Hours back">שעות בחזרה</div><div class="lbl" data-he="יום ראשון בערב חוזר אליך — הכל אוטומטי" data-en="Sunday nights are yours again — everything's automated">יום ראשון בערב חוזר אליך — בלי אקסלים</div></div>
-    <div class="stat"><div class="big" data-he="<span class=&quot;flag&quot;>🇮🇱</span> 100% לישראל" data-en="<span class=&quot;flag&quot;>🇮🇱</span> 100% Israel"><span class="flag">🇮🇱</span> 100% לישראל</div><div class="lbl" data-he="לא ייבוא מארה״ב — מותאם לרשות המסים" data-en="not a US import — tuned to the Tax Authority">לא ייבוא מארה״ב — מותאם לרשות המסים</div></div>
+    <div class="stat"><div class="big" data-he="התשלומים נכנסים" data-en="Payments flow">התשלומים נכנסים</div><div class="lbl" data-he="התזכורות גובות במקומכם — בנימוס ובמקצועיות" data-en="reminders collect for you — professionally">התזכורות גובות במקומכם — בנימוס ובמקצועיות</div></div>
+    <div class="stat"><div class="big" data-he="שעות בחזרה" data-en="Hours back">שעות בחזרה</div><div class="lbl" data-he="ערבי ראשון חוזרים להיות שלכם — הכל קורה אוטומטית" data-en="Sunday nights are yours again — everything's automated">ערבי ראשון חוזרים להיות שלכם — הכל קורה אוטומטית</div></div>
+    <div class="stat"><div class="big" data-he="100% ישראלי" data-en="100% Israel">100% ישראלי</div><div class="lbl" data-he="לא עוד כלי אמריקאי מתורגם — בנוי לפי דרישות רשות המסים" data-en="not a US import — tuned to the Tax Authority">לא עוד כלי אמריקאי מתורגם — בנוי לפי דרישות רשות המסים</div></div>
   </div>
 </section>
 
@@ -338,16 +349,16 @@
 <section class="block">
   <div class="wrap">
     <div class="sec-head">
-      <div class="kicker" data-he="העבודה האמיתית שלך" data-en="The real job">העבודה האמיתית שלך</div>
-      <h2 data-he="עייף להיות 'אדם הכסף המביך'?" data-en="Tired of Being the 'Awkward Money Person'?">עייף להיות 'אדם הכסף המביך'?</h2>
-      <p data-he="צלם, מעצב, מורה לחוג, בעל מקצוע או מייקר — הזמן שלך שווה יותר מניירת וגבייה." data-en="Photographer, designer, instructor, tradesperson or maker — your time deserves better than paperwork and chasing.">צלם, מעצב, מורה לחוג, בעל מקצוע או מייקר — אתה לא רואה חשבון. אבל הניירת והגבייה אוכלות לך את הזמן ואת הראש.</p>
+      <div class="kicker" data-he="העבודה שמאחורי העבודה" data-en="The real job">העבודה שמאחורי העבודה</div>
+      <h2 data-he="נמאס לכם להיות אלה שרודפים אחרי הכסף?" data-en="Tired of Being the 'Awkward Money Person'?">נמאס לכם להיות אלה שרודפים אחרי הכסף?</h2>
+      <p data-he="צלמים, מעצבים, מורים לחוגים, בעלי מקצוע או יוצרים — הזמן שלכם שווה יותר מניירת ומרדף אחרי תשלומים." data-en="Photographer, designer, instructor, tradesperson or maker — your time deserves better than paperwork and chasing.">צלמים, מעצבים, מורים לחוגים, בעלי מקצוע או יוצרים — הזמן שלכם שווה יותר מניירת ומרדף אחרי תשלומים.</p>
     </div>
     <div class="cards3">
-      <div class="card pain"><div class="ic">😬</div><h3 data-he="המרדף המביך" data-en="The Cringe Chase">המרדף המביך</h3><p data-he="כותבים 'הזכרון עדין' בפעם השלישית, תוהים אם להוסיף יותר סימני קריאה או פחות..." data-en="Writing 'gentle reminder'... for the third time, wondering if you should add more exclamation points or fewer...">כותבים 'הזכרון עדין' בפעם השלישית, תוהים אם להוסיף יותר סימני קריאה או פחות...</p></div>
-      <div class="card pain"><div class="ic">⏳</div><h3 data-he="מורכבות המסים" data-en="Tax Complexity">טרור המסים</h3><p data-he="טובעים בטפסים של רשות המסים, גוגלים 'מעמ לעומת עוסק פטור' בשעה 2 בלילה שוב." data-en="Staring at Hebrew forms like they're ancient hieroglyphics, Googling 'מעמ vs. עוסק פטור' at 2 AM again.">טובעים בטפסים של רשות המסים, גוגלים 'מעמ לעומת עוסק פטור' בשעה 2 בלילה שוב.</p></div>
-      <div class="card pain"><div class="ic">⏰</div><h3 data-he="בור הזמן" data-en="The Time Sink">בור הזמן</h3><p data-he="ימי שני בערב הולכים על חשבוניות במקום על הטיול, כי 'אני אסדר את המס מאוחר יותר.'" data-en="Spending Sunday mornings on invoices instead of beach walks, because 'I'll figure out the tax stuff later.'">ימי שני בערב הולכים על חשבוניות במקום על הטיול, כי 'אני אסדר את המס מאוחר יותר.'</p></div>
+      <div class="card pain"><div class="ic"><svg class="icon" aria-hidden="true"><use href="#i-msg"/></svg></div><h3 data-he="המרדף המביך" data-en="The Cringe Chase">המרדף המביך</h3><p data-he="שולחים 'רק תזכורת קטנה' בפעם השלישית, ומתלבטים אם להוסיף עוד סימן קריאה או להוריד אחד..." data-en="Writing 'gentle reminder'... for the third time, wondering if you should add more exclamation points or fewer...">שולחים 'רק תזכורת קטנה' בפעם השלישית, ומתלבטים אם להוסיף עוד סימן קריאה או להוריד אחד...</p></div>
+      <div class="card pain"><div class="ic"><svg class="icon" aria-hidden="true"><use href="#i-file"/></svg></div><h3 data-he="כאב הראש של המס" data-en="Tax Complexity">כאב הראש של המס</h3><p data-he="טובעים בטפסים של רשות המסים ומגגלים שוב, בשתיים בלילה, 'מה ההבדל בין עוסק פטור לעוסק מורשה'." data-en="Staring at Hebrew forms like they're ancient hieroglyphics, Googling 'מעמ vs. עוסק פטור' at 2 AM again.">טובעים בטפסים של רשות המסים ומגגלים שוב, בשתיים בלילה, 'מה ההבדל בין עוסק פטור לעוסק מורשה'.</p></div>
+      <div class="card pain"><div class="ic"><svg class="icon" aria-hidden="true"><use href="#i-clock"/></svg></div><h3 data-he="הזמן שהולך לאיבוד" data-en="The Time Sink">הזמן שהולך לאיבוד</h3><p data-he="ימי שישי בבוקר הולכים על חשבוניות במקום על הים, כי 'את ענייני המס אסדר אחר כך'." data-en="Spending Sunday mornings on invoices instead of beach walks, because 'I'll figure out the tax stuff later.'">ימי שישי בבוקר הולכים על חשבוניות במקום על הים, כי 'את ענייני המס אסדר אחר כך'.</p></div>
     </div>
-    <p class="turn-line" data-he="OpalSwift לוקח את כל זה ממך — ומשאיר לך את <span class='grad-text'>המקצוע שלך</span>." data-en="OpalSwift takes all of that off your plate — and quietly keeps you <span class='grad-text'>100% compliant</span>, in English.">OpalSwift לוקח את כל זה ממך — ומשאיר לך את <span class="grad-text">המקצוע שלך</span>.</p>
+    <p class="turn-line" data-he="OpalSwift מוריד מכם את כל זה — ומשאיר לכם זמן <span class='grad-text'>למקצוע שלכם</span>." data-en="OpalSwift takes all of that off your plate — and quietly keeps you <span class='grad-text'>100% compliant</span>, in English.">OpalSwift מוריד מכם את כל זה — ומשאיר לכם זמן <span class='grad-text'>למקצוע שלכם</span>.</p>
   </div>
 </section>
 
@@ -355,33 +366,33 @@
 <section class="block" style="background:#fff">
   <div class="wrap">
     <div class="sec-head">
-      <div class="kicker" data-he="מה אתה באמת מקבל" data-en="What you actually get">מה אתה באמת מקבל</div>
-      <h2 data-he="כסף. עבודות. וזמן בחזרה." data-en="Get the money. Get booked. Get your life back.">כסף. עבודות. וזמן בחזרה.</h2>
-      <p data-he="שלושה דברים שבאמת מזיזים לעסק שלך. כל היכולות בפנים, בשירות המטרה." data-en="Three things that actually move your business. Every capability sits inside, serving the outcome.">לא רשימת פיצ׳רים — שלושה דברים שבאמת מזיזים לעסק שלך. כל היכולות בפנים, בשירות המטרה.</p>
+      <div class="kicker" data-he="מה מקבלים" data-en="What you actually get">מה מקבלים</div>
+      <h2 data-he="יותר כסף. יותר עבודות. יותר זמן." data-en="Get the money. Get booked. Get your life back.">יותר כסף. יותר עבודות. יותר זמן.</h2>
+      <p data-he="שלושה דברים שבאמת עושים הבדל לעסק. כל השאר כבר בפנים, ועובד בשבילם." data-en="Three things that actually move your business. Every capability sits inside, serving the outcome.">שלושה דברים שבאמת עושים הבדל לעסק. כל השאר כבר בפנים, ועובד בשבילם.</p>
     </div>
     <div class="cards3">
       <div class="card">
-        <div class="ic">📈</div>
-        <h3 data-he="נגמר הבלגן הביורוקרטי" data-en="Your Paperwork Problem, Solved">נגמר הבלגן הביורוקרטי</h3>
-        <p data-he="כל הכאבי ראש החודשיים שטיפלת בהם ידנית פשוט קורים אוטומטית." data-en="All those monthly headaches you used to handle manually just happen automatically.">כל הכאבי ראש החודשיים שטיפלת בהם ידנית פשוט קורים אוטומטית.</p>
+        <div class="ic"><svg class="icon" aria-hidden="true"><use href="#i-trend"/></svg></div>
+        <h3 data-he="נגמר הבלגן של הניירת" data-en="Your Paperwork Problem, Solved">נגמר הבלגן של הניירת</h3>
+        <p data-he="כל כאבי הראש של סוף החודש, שטיפלתם בהם ידנית, קורים עכשיו לבד." data-en="All those monthly headaches you used to handle manually just happen automatically.">כל כאבי הראש של סוף החודש, שטיפלתם בהם ידנית, קורים עכשיו לבד.</p>
         <div class="chips">
           <span class="chip" data-he="הצעת מחיר → חשבונית" data-en="Quote → invoice">הצעת מחיר → חשבונית</span>
           <span class="chip" data-he="הוראת קבע" data-en="Recurring billing">הוראת קבע</span>
         </div>
       </div>
       <div class="card">
-        <div class="ic">🏖️</div>
-        <h3 data-he="זמן חזרה, כסף נכנס" data-en="Hours Back, Money In">זמן חזרה, כסף נכנס</h3>
-        <p data-he="כל שעה שאתה לא עוסק בניירת היא שעה שאתה יכול לחייב עליה מישהו." data-en="Every hour you're not doing paperwork is an hour you can bill someone.">כל שעה שאתה לא עוסק בניירת היא שעה שאתה יכול לחייב עליה מישהו.</p>
+        <div class="ic"><svg class="icon" aria-hidden="true"><use href="#i-sun"/></svg></div>
+        <h3 data-he="זמן חוזר, כסף נכנס" data-en="Hours Back, Money In">זמן חוזר, כסף נכנס</h3>
+        <p data-he="כל שעה שלא הולכת על ניירת היא שעה שאפשר לחייב עליה לקוח." data-en="Every hour you're not doing paperwork is an hour you can bill someone.">כל שעה שלא הולכת על ניירת היא שעה שאפשר לחייב עליה לקוח.</p>
         <div class="chips">
           <span class="chip" data-he="מסמכים תקינים" data-en="Compliant docs">מסמכים תקינים</span>
           
         </div>
       </div>
       <div class="card">
-        <div class="ic">💸</div>
-        <h3 data-he="נבנה בדיוק בשבילך" data-en="Built Where You Live">נבנה בדיוק בשבילך</h3>
-        <p data-he="יצרנו את זה פרילנסרים שיודעים בדיוק איך העסקים פועלים פה, לא במקום אחר." data-en="Created by freelancers who know exactly how business works here, not elsewhere.">יצרנו את זה פרילנסרים שיודעים בדיוק איך העסקים פועלים פה, לא במקום אחר.</p>
+        <div class="ic"><svg class="icon" aria-hidden="true"><use href="#i-pin"/></svg></div>
+        <h3 data-he="נבנה כאן, בשבילכם" data-en="Built Where You Live">נבנה כאן, בשבילכם</h3>
+        <p data-he="נבנה על ידי עצמאים שמכירים מקרוב איך עובדים כאן, בישראל — לא בחו״ל." data-en="Created by freelancers who know exactly how business works here, not elsewhere.">נבנה על ידי עצמאים שמכירים מקרוב איך עובדים כאן, בישראל — לא בחו״ל.</p>
         <div class="chips">
           <span class="chip" data-he="מקדמה" data-en="Deposit">מקדמה</span>
           <span class="chip" data-he="קישור לתשלום" data-en="Pay-link">קישור לתשלום</span>
@@ -397,12 +408,12 @@
   <div class="wrap">
     <div class="sec-head">
       <div class="kicker" data-he="איך זה עובד" data-en="How it works">איך זה עובד</div>
-      <h2 data-he="שלושה שלבים. הכסף בבנק." data-en="Three steps. Money in the bank.">שלושה שלבים. הכסף בבנק.</h2>
+      <h2 data-he="שלושה צעדים, והכסף בחשבון." data-en="Three steps. Money in the bank.">שלושה צעדים, והכסף בחשבון.</h2>
     </div>
     <div class="steps">
-      <div class="step"><div class="num">1</div><h3 data-he="שולחים הצעת מחיר" data-en="Send a quote">שולחים הצעת מחיר</h3><p data-he="הלקוח מאשר בלחיצה, קישור תשלום נשלח — והכסף בדרך לבנק שלך." data-en="The client approves in a tap, a pay-link is sent, and the money is on its way to your bank.">הלקוח מאשר בלחיצה, קישור תשלום נשלח — והכסף בדרך לבנק שלך.</p></div>
-      <div class="step"><div class="num">2</div><h3 data-he="עושים את העבודה" data-en="Do the work">עושים את העבודה</h3><p data-he="היתרה נגבית אוטומטית, והתזכורות מטפלות בכל מי שמתעכב — אתה ממשיך לעבוד." data-en="The balance collects automatically, and reminders handle anyone who's late — you keep working.">היתרה נגבית אוטומטית, ונודניק מטפל בכל מי שמתעכב — בלי שתרים טלפון.</p></div>
-      <div class="step"><div class="num">3</div><h3 data-he="הכסף בבנק, המס מסודר" data-en="Money in the bank, tax handled">הכסף בבנק, המס מסודר</h3><p data-he="כל מסמך תקין נוצר ונשמר, מוכן לרו״ח. הכל מסודר ומדויק." data-en="Every valid Hebrew document is generated and stored, ready for your accountant. Everything's organized and accurate.">כל מסמך תקין נוצר ונשמר, מוכן לרו״ח. בלי ערימת קבלות ובלי ניחושים.</p></div>
+      <div class="step"><div class="num">1</div><h3 data-he="שולחים הצעת מחיר" data-en="Send a quote">שולחים הצעת מחיר</h3><p data-he="הלקוח מאשר בלחיצה ומקבל קישור לתשלום — והכסף כבר בדרך אליכם." data-en="The client approves in a tap, a pay-link is sent, and the money is on its way to your bank.">הלקוח מאשר בלחיצה ומקבל קישור לתשלום — והכסף כבר בדרך אליכם.</p></div>
+      <div class="step"><div class="num">2</div><h3 data-he="עושים את העבודה" data-en="Do the work">עושים את העבודה</h3><p data-he="היתרה נגבית אוטומטית, והתזכורות מטפלות במי שמתעכב — ואתם ממשיכים לעבוד." data-en="The balance collects automatically, and reminders handle anyone who's late — you keep working.">היתרה נגבית אוטומטית, והתזכורות מטפלות במי שמתעכב — ואתם ממשיכים לעבוד.</p></div>
+      <div class="step"><div class="num">3</div><h3 data-he="הכסף בחשבון, המס מסודר" data-en="Money in the bank, tax handled">הכסף בחשבון, המס מסודר</h3><p data-he="כל מסמך תקין מופק ונשמר, מוכן לרואה החשבון. הכל מסודר ומדויק." data-en="Every valid Hebrew document is generated and stored, ready for your accountant. Everything's organized and accurate.">כל מסמך תקין מופק ונשמר, מוכן לרואה החשבון. הכל מסודר ומדויק.</p></div>
     </div>
   </div>
 </section>
@@ -411,35 +422,35 @@
 <section class="block" id="flows" style="background:#fff">
   <div class="wrap">
     <div class="sec-head">
-      <div class="kicker" data-he="מתאים לאיך שאתה גובה" data-en="Fits how you get paid">מתאים לאיך שאתה גובה</div>
-      <h2 data-he="שתי דרכים לקבל תשלום. שתיהן על טייס אוטומטי." data-en="Two ways to get paid. Both on autopilot.">שתי דרכים לקבל תשלום. שתיהן על טייס אוטומטי.</h2>
-      <p data-he="בין אם אתה עובד לפי פרויקט או על הכנסה חוזרת — OpalSwift מגיע מותאם מראש לתזרים שלך." data-en="Whether you work job-by-job or on recurring income — OpalSwift arrives pre-tuned to your cash flow.">בין אם אתה עובד לפי פרויקט או על הכנסה חוזרת — OpalSwift מגיע מותאם מראש לתזרים שלך.</p>
+      <div class="kicker" data-he="לפי הדרך שבה אתם גובים" data-en="Fits how you get paid">לפי הדרך שבה אתם גובים</div>
+      <h2 data-he="שתי דרכים לגבות. שתיהן על טייס אוטומטי." data-en="Two ways to get paid. Both on autopilot.">שתי דרכים לגבות. שתיהן על טייס אוטומטי.</h2>
+      <p data-he="עובדים לפי פרויקט או עם הכנסה חודשית קבועה? OpalSwift מגיע מוכן מראש לתזרים שלכם." data-en="Whether you work job-by-job or on recurring income — OpalSwift arrives pre-tuned to your cash flow.">עובדים לפי פרויקט או עם הכנסה חודשית קבועה? OpalSwift מגיע מוכן מראש לתזרים שלכם.</p>
     </div>
     <div class="flows">
       <div class="flow">
-        <span class="tag">🅰 <span data-he="עבודות לפי פרויקט" data-en="Job by job">עבודות לפי פרויקט</span></span>
+        <span class="tag"><svg class="icon" aria-hidden="true"><use href="#i-filecheck"/></svg><span data-he="לפי פרויקט" data-en="Job by job">לפי פרויקט</span></span>
         <h3 data-he="הצעת מחיר → מקדמה → יתרה" data-en="Quote → deposit → balance">הצעת מחיר → מקדמה → יתרה</h3>
         <p data-he="שולחים הצעת מחיר, גובים מקדמה לפני שמתחילים, ובסיום מפיקים חשבונית תקינה ליתרה — הכל בלחיצה אחת." data-en="Send a quote, collect a deposit before you start, then issue a compliant balance invoice when you're done — all in one tap.">שולחים הצעת מחיר, גובים מקדמה לפני שמתחילים, ובסיום מפיקים חשבונית תקינה ליתרה — הכל בלחיצה אחת.</p>
         <div class="chips">
-          <span class="chip" data-he="📷 צלמים" data-en="📷 Photographers">📷 צלמים</span>
-          <span class="chip" data-he="💻 מעצבים" data-en="💻 Designers">💻 מעצבים</span>
-          <span class="chip" data-he="🔧 שרברבים" data-en="🔧 Plumbers">🔧 שרברבים</span>
-          <span class="chip" data-he="🎉 מפיקי אירועים" data-en="🎉 Event planners">🎉 מפיקי אירועים</span>
+          <span class="chip"><svg class="icon" aria-hidden="true"><use href="#i-camera"/></svg><span data-he="צלמים" data-en="Photographers">צלמים</span></span>
+          <span class="chip"><svg class="icon" aria-hidden="true"><use href="#i-laptop"/></svg><span data-he="מעצבים" data-en="Designers">מעצבים</span></span>
+          <span class="chip"><svg class="icon" aria-hidden="true"><use href="#i-wrench"/></svg><span data-he="שרברבים" data-en="Plumbers">שרברבים</span></span>
+          <span class="chip"><svg class="icon" aria-hidden="true"><use href="#i-party"/></svg><span data-he="מפיקי אירועים" data-en="Event planners">מפיקי אירועים</span></span>
         </div>
-        <a href="#gig-group" class="flow-cta" data-he="ראה מהדורות פרויקט ←" data-en="See project editions ←">ראה מהדורות פרויקט ←</a>
+        <a href="#gig-group" class="flow-cta" data-he="לכל תחומי הפרויקטים ←" data-en="See project editions →">לכל תחומי הפרויקטים ←</a>
       </div>
       <div class="flow">
-        <span class="tag">🅱 <span data-he="הכנסה חוזרת" data-en="Recurring income">הכנסה חוזרת</span></span>
+        <span class="tag"><svg class="icon" aria-hidden="true"><use href="#i-repeat"/></svg><span data-he="הכנסה קבועה" data-en="Recurring income">הכנסה קבועה</span></span>
         <h3 data-he="הרשמה → הוראת קבע → קבלה" data-en="Sign-up → standing order → receipt">הרשמה → הוראת קבע → קבלה</h3>
-        <p data-he="שולחים קישור אחד; התלמיד נרשם ומגדיר הוראת קבע, וכל חודש יוצאת קבלה אוטומטית. הכסף זורם כל חודש." data-en="Send one link; the student signs up and sets a standing order, and every month a receipt goes out automatically. Money flows every month.">שולחים קישור אחד; התלמיד נרשם ומגדיר הוראת קבע, וכל חודש יוצאת קבלה אוטומטית. לא רודפים אחרי אף הורה.</p>
+        <p data-he="שולחים קישור אחד: התלמיד נרשם ומגדיר הוראת קבע, ובכל חודש יוצאת קבלה אוטומטית. הכסף פשוט נכנס, חודש אחרי חודש." data-en="Send one link; the student signs up and sets a standing order, and every month a receipt goes out automatically. Money flows every month.">שולחים קישור אחד: התלמיד נרשם ומגדיר הוראת קבע, ובכל חודש יוצאת קבלה אוטומטית. הכסף פשוט נכנס, חודש אחרי חודש.</p>
         <div class="chips">
-          <span class="chip" data-he="🎨 אמנות" data-en="🎨 Art">🎨 אמנות</span>
-          <span class="chip" data-he="🎹 מוזיקה" data-en="🎹 Music">🎹 מוזיקה</span>
-          <span class="chip" data-he="🤸 ריקוד וספורט" data-en="🤸 Dance & sport">🤸 ריקוד וספורט</span>
-          <span class="chip" data-he="🧘 כושר ויוגה" data-en="🧘 Fitness & yoga">🧘 כושר ויוגה</span>
-          <span class="chip" data-he="📲 תזכורות" data-en="📲 Reminders">📲 תזכורות</span>
+          <span class="chip"><svg class="icon" aria-hidden="true"><use href="#i-palette"/></svg><span data-he="אמנות" data-en="Art">אמנות</span></span>
+          <span class="chip"><svg class="icon" aria-hidden="true"><use href="#i-music"/></svg><span data-he="מוזיקה" data-en="Music">מוזיקה</span></span>
+          <span class="chip"><svg class="icon" aria-hidden="true"><use href="#i-activity"/></svg><span data-he="מחול וספורט" data-en="Dance & sport">מחול וספורט</span></span>
+          <span class="chip"><svg class="icon" aria-hidden="true"><use href="#i-dumbbell"/></svg><span data-he="כושר ויוגה" data-en="Fitness & yoga">כושר ויוגה</span></span>
+          <span class="chip"><svg class="icon" aria-hidden="true"><use href="#i-bell"/></svg><span data-he="תזכורות" data-en="Reminders">תזכורות</span></span>
         </div>
-        <a href="#roster-group" class="flow-cta" data-he="ראה מהדורות שוטפים ←" data-en="See ongoing editions ←">ראה מהדורות שוטפים ←</a>
+        <a href="#roster-group" class="flow-cta" data-he="לכל תחומי החוגים והשיעורים ←" data-en="See ongoing editions →">לכל תחומי החוגים והשיעורים ←</a>
       </div>
     </div>
   </div>
@@ -449,42 +460,42 @@
 <section class="block" id="editions">
   <div class="wrap">
     <div class="sec-head">
-      <div class="kicker" data-he="מותאם לתחום שלך" data-en="Tailored to your craft">מותאם לתחום שלך</div>
-      <h2 data-he="כבר מסודר בשבילך." data-en="Already set up for your craft.">לא עוד כלי ריק. כבר מסודר בשבילך.</h2>
-      <p data-he="בוחרים את התחום — ונכנסים למערכת שכבר יודעת איך נראית העבודה שלך: הצעות, מסמכים ותהליך גבייה — מוכנים לעבודה." data-en="Pick your field and step into a system that already knows what your work looks like — quotes, documents, and a collection flow, ready to go.">בוחרים את התחום — ונכנסים למערכת שכבר יודעת איך נראית העבודה שלך: הצעות, מסמכים ותהליך גבייה — מוכנים לעבודה. בלי רואה חשבון ובלי הגדרות.</p>
+      <div class="kicker" data-he="מותאם לתחום שלכם" data-en="Tailored to your craft">מותאם לתחום שלכם</div>
+      <h2 data-he="הכל כבר מוכן בשבילכם." data-en="Already set up for your craft.">הכל כבר מוכן בשבילכם.</h2>
+      <p data-he="בוחרים תחום ונכנסים למערכת שכבר מכירה את העבודה שלכם: הצעות מחיר, מסמכים ותהליך גבייה — הכל מוכן מהרגע הראשון." data-en="Pick your field and step into a system that already knows what your work looks like — quotes, documents, and a collection flow, ready to go.">בוחרים תחום ונכנסים למערכת שכבר מכירה את העבודה שלכם: הצעות מחיר, מסמכים ותהליך גבייה — הכל מוכן מהרגע הראשון.</p>
     </div>
     <div class="editions-wrap">
       <div class="editions-group" id="gig-group">
-        <div class="editions-group-label gig" data-he="🎯 פרויקטים ולקוח חד-פעמי" data-en="🎯 One-Time Projects">🎯 פרויקטים ולקוח חד-פעמי</div>
+        <div class="editions-group-label gig"><svg class="icon" aria-hidden="true"><use href="#i-target"/></svg><span data-he="פרויקטים ועבודות חד-פעמיות" data-en="One-Time Projects">פרויקטים ועבודות חד-פעמיות</span></div>
         <div class="editions">
-          <a class="edition" href="photographer.html"><span class="em">📸</span><b data-he="צלמים" data-en="Photographer">צלמים</b><small data-he="מקדמה + הצעת מחיר" data-en="Deposit + quote">מקדמה + הצעת מחיר</small></a>
-          <a class="edition" href="trades.html"><span class="em">🔧</span><b data-he="בעלי מקצוע" data-en="Trades">בעלי מקצוע</b><small data-he="הצעת מחיר · מקדמה · חשבונית" data-en="Quote · deposit · invoice">הצעת מחיר · מקדמה · חשבונית</small></a>
-          <a class="edition" href="beautician.html"><span class="em">💅</span><b data-he="קוסמטיקה ושייטל" data-en="Beautician">קוסמטיקה ושייטל</b><small data-he="תורים · תשלום מראש · ביטולים" data-en="Appointments · pre-pay · cancellations">תורים · תשלום מראש · ביטולים</small></a>
-          <a class="edition" href="designer.html"><span class="em">✏️</span><b data-he="מעצבים" data-en="Designer">מעצבים</b><small data-he="אבני דרך · הצעת מחיר" data-en="Milestones · quote to invoice">אבני דרך · הצעת מחיר</small></a>
-          <a class="edition" href="interior.html"><span class="em">🛋️</span><b data-he="מעצבי פנים" data-en="Interior Design">מעצבי פנים</b><small data-he="ציטוט · אבני דרך · חיוב לפי שלב" data-en="Quote · milestones · stage billing">ציטוט · אבני דרך · חיוב לפי שלב</small></a>
-          <a class="edition" href="adviser.html"><span class="em">💼</span><b data-he="יועצים" data-en="Adviser">יועצים</b><small data-he="ייעוץ · הצעת מחיר · חשבונית" data-en="Consulting · quote · invoice">ייעוץ · הצעת מחיר · חשבונית</small></a>
-          <a class="edition" href="workshops.html"><span class="em">🎓</span><b data-he="סדנאות" data-en="Workshops">סדנאות</b><small data-he="רישום · תשלום מקדים" data-en="Registration · advance payment">רישום · תשלום מקדים</small></a>
-          <a class="edition" href="event-planner.html"><span class="em">🎉</span><b data-he="מפיקי אירועים" data-en="Event Planner">מפיקי אירועים</b><small data-he="אבני דרך · ספקים · מקדמות" data-en="Milestones · vendors · deposits">אבני דרך · ספקים · מקדמות</small></a>
-          <a class="edition" href="sofer-stam.html"><span class="em">✍️</span><b data-he='סופר סת"ם' data-en="Sofer STaM">סופר סת"ם</b><small data-he="שלבי כתיבה · מקדמות" data-en="Writing stages · deposits">שלבי כתיבה · מקדמות</small></a>
+          <a class="edition" href="photographer.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-camera"/></svg></span><b data-he="צלמים" data-en="Photographer">צלמים</b><small data-he="הצעת מחיר · מקדמה" data-en="Deposit + quote">הצעת מחיר · מקדמה</small></a>
+          <a class="edition" href="trades.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-wrench"/></svg></span><b data-he="בעלי מקצוע" data-en="Trades">בעלי מקצוע</b><small data-he="הצעת מחיר · מקדמה · חשבונית" data-en="Quote · deposit · invoice">הצעת מחיר · מקדמה · חשבונית</small></a>
+          <a class="edition" href="beautician.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-scissors"/></svg></span><b data-he="קוסמטיקה ושייטל" data-en="Beautician">קוסמטיקה ושייטל</b><small data-he="תורים · תשלום מראש · ביטולים" data-en="Appointments · pre-pay · cancellations">תורים · תשלום מראש · ביטולים</small></a>
+          <a class="edition" href="designer.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-pencil"/></svg></span><b data-he="מעצבים" data-en="Designer">מעצבים</b><small data-he="אבני דרך · הצעת מחיר" data-en="Milestones · quote to invoice">אבני דרך · הצעת מחיר</small></a>
+          <a class="edition" href="interior.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-sofa"/></svg></span><b data-he="מעצבי פנים" data-en="Interior Design">מעצבי פנים</b><small data-he="הצעת מחיר · אבני דרך · חיוב לפי שלבים" data-en="Quote · milestones · stage billing">הצעת מחיר · אבני דרך · חיוב לפי שלבים</small></a>
+          <a class="edition" href="adviser.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-briefcase"/></svg></span><b data-he="יועצים" data-en="Adviser">יועצים</b><small data-he="ייעוץ · הצעת מחיר · חשבונית" data-en="Consulting · quote · invoice">ייעוץ · הצעת מחיר · חשבונית</small></a>
+          <a class="edition" href="workshops.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-grad"/></svg></span><b data-he="סדנאות" data-en="Workshops">סדנאות</b><small data-he="הרשמה · תשלום מראש" data-en="Registration · advance payment">הרשמה · תשלום מראש</small></a>
+          <a class="edition" href="event-planner.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-party"/></svg></span><b data-he="מפיקי אירועים" data-en="Event Planner">מפיקי אירועים</b><small data-he="אבני דרך · ספקים · מקדמות" data-en="Milestones · vendors · deposits">אבני דרך · ספקים · מקדמות</small></a>
+          <a class="edition" href="sofer-stam.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-feather"/></svg></span><b data-he='סופר סת"ם' data-en="Sofer STaM">סופר סת"ם</b><small data-he="שלבי כתיבה · מקדמות" data-en="Writing stages · deposits">שלבי כתיבה · מקדמות</small></a>
         </div>
       </div>
       <div class="editions-group" id="roster-group">
-        <div class="editions-group-label roster" data-he="🔄 חוגים ושיעורים קבועים" data-en="🔄 Ongoing Services">🔄 חוגים ושיעורים קבועים</div>
+        <div class="editions-group-label roster"><svg class="icon" aria-hidden="true"><use href="#i-repeat"/></svg><span data-he="חוגים ושיעורים קבועים" data-en="Ongoing Services">חוגים ושיעורים קבועים</span></div>
         <div class="editions">
-          <a class="edition" href="private-tutor.html"><span class="em">📚</span><b data-he="מורה פרטי" data-en="Tutor">מורה פרטי</b><small data-he="משפחות · תזכורת להורים" data-en="Families · parent reminders">משפחות · תזכורת להורים</small></a>
-          <a class="edition" href="classes.html"><span class="em">🏃</span><b data-he="חוגים" data-en="Classes">חוגים</b><small data-he="הוראת קבע · ילדים מרובים" data-en="Standing order · multi-child">הוראת קבע · ילדים מרובים</small></a>
-          <a class="edition" href="personal-trainer.html"><span class="em">💪</span><b data-he="מאמן כושר" data-en="Fitness Trainer">מאמן כושר</b><small data-he="ביטולים · מילואים · חבילות" data-en="Cancels · reserve duty · packs">ביטולים · מילואים · חבילות</small></a>
-          <a class="edition" href="driving-instructor.html"><span class="em">🚗</span><b data-he="מורה נהיגה" data-en="Driving Instructor">מורה נהיגה</b><small data-he="חבילות שיעורים · תשלום הורים" data-en="Lesson packs · parent billing">חבילות שיעורים · תשלום הורים</small></a>
-          <a class="edition" href="therapist.html"><span class="em">🧘</span><b data-he="מטפלים" data-en="Therapist">מטפלים</b><small data-he="תשלום מראש · תזכורות" data-en="Pre-pay · reminders">תשלום מראש · תזכורות</small></a>
-          <a class="edition" href="music-teacher.html"><span class="em">🎵</span><b data-he="מורה מוזיקה" data-en="Music Teacher">מורה מוזיקה</b><small data-he="חיוב חודשי · קרדיט שיעורים" data-en="Monthly · lesson credits">חיוב חודשי · קרדיט שיעורים</small></a>
-          <a class="edition" href="dance-teacher.html"><span class="em">🩰</span><b data-he="מורי מחול" data-en="Dance Teacher">מורי מחול</b><small data-he="שיעורים · ניהול תלמידים" data-en="Classes · student management">שיעורים · ניהול תלמידים</small></a>
-          <a class="edition" href="art-class.html"><span class="em">🎨</span><b data-he="חוג אמנות" data-en="Art Class">חוג אמנות</b><small data-he="הרשמה · חיוב חודשי" data-en="Enrolment · monthly billing">הרשמה · חיוב חודשי</small></a>
-          <a class="edition" href="swim-coach.html"><span class="em">🏊</span><b data-he="מאמן שחייה" data-en="Swim Coach">מאמן שחייה</b><small data-he="חוגי שחייה · מנויים · ביטולים" data-en="Swim classes · memberships · cancels">חוגי שחייה · מנויים · ביטולים</small></a>
+          <a class="edition" href="private-tutor.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-book"/></svg></span><b data-he="מורים פרטיים" data-en="Tutor">מורים פרטיים</b><small data-he="משפחות · תזכורות להורים" data-en="Families · parent reminders">משפחות · תזכורות להורים</small></a>
+          <a class="edition" href="classes.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-calendar"/></svg></span><b data-he="חוגים" data-en="Classes">חוגים</b><small data-he="הוראת קבע · כמה ילדים במשפחה" data-en="Standing order · multi-child">הוראת קבע · כמה ילדים במשפחה</small></a>
+          <a class="edition" href="personal-trainer.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-dumbbell"/></svg></span><b data-he="מאמני כושר" data-en="Fitness Trainer">מאמני כושר</b><small data-he="ביטולים · מילואים · חבילות" data-en="Cancels · reserve duty · packs">ביטולים · מילואים · חבילות</small></a>
+          <a class="edition" href="driving-instructor.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-car"/></svg></span><b data-he="מורי נהיגה" data-en="Driving Instructor">מורי נהיגה</b><small data-he="חבילות שיעורים · תשלום ע״י ההורים" data-en="Lesson packs · parent billing">חבילות שיעורים · תשלום ע״י ההורים</small></a>
+          <a class="edition" href="therapist.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-leaf"/></svg></span><b data-he="מטפלים" data-en="Therapist">מטפלים</b><small data-he="תשלום מראש · תזכורות" data-en="Pre-pay · reminders">תשלום מראש · תזכורות</small></a>
+          <a class="edition" href="music-teacher.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-music"/></svg></span><b data-he="מורים למוזיקה" data-en="Music Teacher">מורים למוזיקה</b><small data-he="חיוב חודשי · יתרת שיעורים" data-en="Monthly · lesson credits">חיוב חודשי · יתרת שיעורים</small></a>
+          <a class="edition" href="dance-teacher.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-sparkles"/></svg></span><b data-he="מורי מחול" data-en="Dance Teacher">מורי מחול</b><small data-he="שיעורים · ניהול תלמידים" data-en="Classes · student management">שיעורים · ניהול תלמידים</small></a>
+          <a class="edition" href="art-class.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-palette"/></svg></span><b data-he="חוגי אמנות" data-en="Art Class">חוגי אמנות</b><small data-he="הרשמה · חיוב חודשי" data-en="Enrolment · monthly billing">הרשמה · חיוב חודשי</small></a>
+          <a class="edition" href="swim-coach.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-waves"/></svg></span><b data-he="מאמני שחייה" data-en="Swim Coach">מאמני שחייה</b><small data-he="חוגי שחייה · מנויים · ביטולים" data-en="Swim classes · memberships · cancels">חוגי שחייה · מנויים · ביטולים</small></a>
         </div>
       </div>
     </div>
     <div class="editions-cta">
-      <a href="skins.html" data-he="לכל התחומים עם פירוט מלא ←" data-en="See all craft skins with full details →">לכל התחומים עם פירוט מלא ←</a>
+      <a href="skins.html" data-he="לכל התחומים, עם פירוט מלא ←" data-en="See all craft skins with full details →">לכל התחומים, עם פירוט מלא ←</a>
     </div>
   </div>
 </section>
@@ -493,11 +504,11 @@
 <section class="block" id="pricing" style="background:#fff">
   <div class="wrap">
     <div class="sec-head">
-      <span class="beta-badge" data-he="בטא — הצטרף למובילים" data-en="Beta — Join the Leaders">בטא — הצטרף למובילים</span>
+      <span class="beta-badge" data-he="בטא — הצטרפו ראשונים" data-en="Beta — Join the Leaders">בטא — הצטרפו ראשונים</span>
       <div class="kicker" data-he="גישה מוקדמת" data-en="Early Access">גישה מוקדמת</div>
-      <h2 data-he="הצטרף לבטא של OpalSwift" data-en="Join the OpalSwift Beta">הצטרף לבטא של OpalSwift</h2>
-      <p data-he="גישה מוקדמת לפני השקה רשמית. נלווה אותך בהגדרת חשבון התשלומים והחשבוניות שלך." data-en="Early access before official launch. We'll guide you through setting up your payment and invoicing accounts.">גישה מוקדמת לפני השקה רשמית. נלווה אותך בהגדרת חשבון התשלומים והחשבוניות שלך.</p>
-      <a href="#contact" class="btn btn-primary" style="margin-top:6px;font-size:17px;padding:15px 32px" data-he="הצטרף לבטא" data-en="Join Beta">הצטרף לבטא</a>
+      <h2 data-he="הצטרפו לבטא של OpalSwift" data-en="Join the OpalSwift Beta">הצטרפו לבטא של OpalSwift</h2>
+      <p data-he="גישה מוקדמת, עוד לפני ההשקה הרשמית. נלווה אתכם בהקמת חשבון התשלומים והחשבוניות." data-en="Early access before official launch. We'll guide you through setting up your payment and invoicing accounts.">גישה מוקדמת, עוד לפני ההשקה הרשמית. נלווה אתכם בהקמת חשבון התשלומים והחשבוניות.</p>
+      <a href="#contact" class="btn btn-primary" style="margin-top:6px;font-size:17px;padding:15px 32px" data-he="הצטרפו לבטא" data-en="Join Beta">הצטרפו לבטא</a>
     </div>
 
   </div>
@@ -507,13 +518,13 @@
 <section class="block" id="contact">
   <div class="wrap">
     <div class="sec-head">
-      <div class="kicker" data-he="בואו נשוחח" data-en="Let's Talk">בואו נשוחח</div>
+      <div class="kicker" data-he="בואו נדבר" data-en="Let's Talk">בואו נדבר</div>
       <h2 data-he="ספרו לנו על העסק שלכם" data-en="Tell Us About Your Business">ספרו לנו על העסק שלכם</h2>
       <p data-he="מה הכי מעצבן אתכם בניהול העסק היום?" data-en="What&#39;s your biggest hassle running your business today?">מה הכי מעצבן אתכם בניהול העסק היום?</p>
     </div>
     <div class="beta-form">
       <div class="form-success" id="form-success">
-        <span class="fs-icon">✅</span>
+        <span class="fs-icon"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg></span>
         <p data-he="קיבלנו! נחזור אליכם בקרוב." data-en="Got it! We'll be in touch soon.">קיבלנו! נחזור אליכם בקרוב.</p>
       </div>
       <form id="contact-form" action="/api/contact" method="POST">
@@ -522,15 +533,15 @@
           <input type="text" id="cf-name" name="name" required placeholder="" />
         </div>
         <div class="form-field">
-          <label for="cf-email" data-he='דוא"ל' data-en="Email">דוא"ל</label>
+          <label for="cf-email" data-he='אימייל' data-en="Email">אימייל</label>
           <input type="email" id="cf-email" name="email" required placeholder="" />
         </div>
         <div class="form-field">
-          <label for="cf-msg" data-he="מה הכי מעצבן אתכם בניהול העסק היום?" data-en="What's your biggest hassle running your business today?" data-he="מה הכי מעצבן אתכם בניהול העסק היום?">מה הכי מעצבן אתכם בניהול העסק היום?</label>
+          <label for="cf-msg" data-he="מה הכי מעצבן אתכם בניהול העסק היום?" data-en="What's your biggest hassle running your business today?">מה הכי מעצבן אתכם בניהול העסק היום?</label>
           <textarea id="cf-msg" name="message" required></textarea>
         </div>
         <div style="text-align:center;margin-top:8px">
-          <button type="submit" class="btn btn-primary" style="font-size:17px;padding:15px 36px" data-he="שלחו" data-en="Send">שלחו</button>
+          <button type="submit" class="btn btn-primary" style="font-size:17px;padding:15px 36px" data-he="שליחה" data-en="Send">שליחה</button>
         </div>
       </form>
     </div>
@@ -560,10 +571,10 @@
   <div class="why">
     <div class="sec-head">
       <div class="kicker" style="color:var(--teal)" data-he="" data-en="For olim"></div>
-      <h2 data-he="יצאת לעצמאות כדי לעשות את מה שאתה אוהב." data-en="You made the move to build something meaningful in Israel.">יצאת לעצמאות כדי לעשות את מה שאתה אוהב.</h2>
+      <h2 data-he="עליתם לארץ כדי לבנות כאן משהו משלכם." data-en="You made the move to build something meaningful in Israel.">עליתם לארץ כדי לבנות כאן משהו משלכם.</h2>
     </div>
-    <p class="anglo-body" data-he="OpalSwift מטפל במע״מ וניירת המס בעברית מושלמת — אתה רואה רק אנגלית פשוטה. <b>מותר לך להריץ עסק ישראלי בשפת האם שלך.</b>" data-en="OpalSwift handles VAT and tax documentation in perfect Hebrew — you work in plain English. <b>You have full permission to run your Israeli business in your native language.</b>">זה המשפט שחזרנו עליו שוב ושוב: 'למה אף אחד לא הכין לי את זה?' OpalSwift מטפל במע״מ וניירת המס בעברית שלמה — כשאתה עצמך רואה רק אנגלית פשוטה. <b>התרבות היא שאתה לא חייב לעבור את האש שחוצים גם הישראלים.</b></p>
-    <div class="bilingual"><span>🇮🇱</span><span data-he="מסמכים בעברית · ממשק באנגלית" data-en="Hebrew documents · English interface">מסמכים בעברית · ממשק באנגלית</span><span>🇬🇧</span></div>
+    <p class="anglo-body" data-he="OpalSwift מטפל במע״מ ובניירת המס בעברית תקנית — ואתם עובדים באנגלית פשוטה. <b>מותר לנהל עסק ישראלי בשפת האם שלכם.</b>" data-en="OpalSwift handles VAT and tax documentation in perfect Hebrew — you work in plain English. <b>You have full permission to run your Israeli business in your native language.</b>">OpalSwift מטפל במע״מ ובניירת המס בעברית תקנית — ואתם עובדים באנגלית פשוטה. <b>מותר לנהל עסק ישראלי בשפת האם שלכם.</b></p>
+    <div class="bilingual"><span class="bi-ic"><svg class="icon" aria-hidden="true"><use href="#i-file"/></svg></span><span data-he="מסמכים בעברית · ממשק באנגלית" data-en="Hebrew documents · English interface">מסמכים בעברית · ממשק באנגלית</span><span class="bi-ic"><svg class="icon" aria-hidden="true"><use href="#i-monitor"/></svg></span></div>
   </div>
 </section>
 
@@ -573,28 +584,28 @@
 <section class="block" style="background:#fff">
   <div class="wrap">
     <div class="sec-head">
-      <div class="kicker" data-he="בקול שלהם" data-en="In their words">בקול שלהם</div>
-      <h2 data-he="למה הם ביקשו את זה" data-en="Why they asked for this">למה הם ביקשו את זה</h2>
+      <div class="kicker" data-he="במילים שלהם" data-en="In their words">במילים שלהם</div>
+      <h2 data-he="למה הם ביקשו כלי כזה" data-en="Why they asked for this">למה הם ביקשו כלי כזה</h2>
     </div>
     <div class="testi-grid">
       <div class="testi-card">
         <div class="tq">"</div>
-        <p data-he="לאסוף את כל הקבלות בסוף החודש זה יכול לקחת שעות שלמות שהייתי כותבת במקום זה." data-en="Just getting all those expenses together at the end of the month — it can eat hours of time I'd otherwise be writing.">לאסוף את כל הקבלות בסוף החודש זה יכול לקחת שעות שלמות שהייתי כותבת במקום זה.</p>
+        <p data-he="רק לאסוף את כל ההוצאות בסוף החודש — זה יכול לגזול שעות שבהן יכולתי לכתוב." data-en="Just getting all those expenses together at the end of the month — it can eat hours of time I'd otherwise be writing.">רק לאסוף את כל ההוצאות בסוף החודש — זה יכול לגזול שעות שבהן יכולתי לכתוב.</p>
         <div class="role" data-he="כותבת" data-en="Writer">כותבת</div>
       </div>
       <div class="testi-card">
         <div class="tq">"</div>
-        <p data-he="כל הזמן לרדוף אחרי אנשים עם התשלומים." data-en="Constantly reminding people to pay up.">כל הזמן לרדוף אחרי אנשים עם התשלומים.</p>
+        <p data-he="כל הזמן להזכיר לאנשים לשלם." data-en="Constantly reminding people to pay up.">כל הזמן להזכיר לאנשים לשלם.</p>
         <div class="role" data-he="מורה לאמנות" data-en="Art Teacher">מורה לאמנות</div>
       </div>
       <div class="testi-card">
         <div class="tq">"</div>
-        <p data-he="יצירתיים רבים לא מאורגנים בכלל. כמה לקוחות פוטנציאליים הולכים לאיבוד רק בגלל שאין סדר במערכת." data-en="Many creatives are super disorganised. There are so many leads lost just for lack of an organised system.">יצירתיים רבים לא מאורגנים בכלל. כמה לקוחות פוטנציאליים הולכים לאיבוד רק בגלל שאין סדר במערכת.</p>
+        <p data-he="הרבה אנשי יצירה ממש לא מאורגנים. כל כך הרבה פניות הולכות לאיבוד רק כי אין מערכת מסודרת." data-en="Many creatives are super disorganised. There are so many leads lost just for lack of an organised system.">הרבה אנשי יצירה ממש לא מאורגנים. כל כך הרבה פניות הולכות לאיבוד רק כי אין מערכת מסודרת.</p>
         <div class="role" data-he="צלם" data-en="Photographer">צלם</div>
       </div>
       <div class="testi-card">
         <div class="tq">"</div>
-        <p data-he="אין לאף אחד זמן או סבלנות לשבת להתקין איזה מערכת מסובכת. רוצים שזה פשוט יעבוד." data-en="No one has time or patience to sit there setting up some complex custom system. They just want it to work.">אין לאף אחד זמן או סבלנות לשבת להתקין איזה מערכת מסובכת. רוצים שזה פשוט יעבוד.</p>
+        <p data-he="לאף אחד אין זמן או סבלנות לשבת ולהקים איזו מערכת מסובכת. רוצים שזה פשוט יעבוד." data-en="No one has time or patience to sit there setting up some complex custom system. They just want it to work.">לאף אחד אין זמן או סבלנות לשבת ולהקים איזו מערכת מסובכת. רוצים שזה פשוט יעבוד.</p>
         <div class="role" data-he="קוסמטיקאית" data-en="Beautician">קוסמטיקאית</div>
       </div>
     </div>
@@ -608,7 +619,7 @@
       <div class="ava">OS</div>
       <div>
         <div class="kicker" style="color:var(--indigo);font-family:Rubik;font-weight:700;margin-bottom:14px" data-he="נבנה בידי עצמאית, לעצמאים" data-en="Built by a freelancer, for freelancers">נבנה בידי עצמאית, לעצמאים</div>
-        <blockquote data-he="“בניתי קודם את הכלי שעושה הכל — ואז חתכתי אותו לחמשת הדברים שבאמת מכניסים לך כסף. הייתי הלקוחה הראשונה, ועכשיו גם אתם.”" data-en="“I first built the everything-tool — then cut it down to the five things that actually get you paid. I was customer number one, and now you can be too.”">“בניתי קודם את הכלי שעושה הכל — ואז חתכתי אותו לחמשת הדברים שבאמת מכניסים לך כסף. הייתי הלקוחה הראשונה, ועכשיו גם אתם.”</blockquote>
+        <blockquote data-he="“קודם בניתי כלי שעושה הכל — ואז קיצצתי אותו לחמשת הדברים שבאמת מכניסים כסף. אני הייתי הלקוחה הראשונה. עכשיו תורכם.”" data-en="“I first built the everything-tool — then cut it down to the five things that actually get you paid. I was customer number one, and now you can be too.”">“קודם בניתי כלי שעושה הכל — ואז קיצצתי אותו לחמשת הדברים שבאמת מכניסים כסף. אני הייתי הלקוחה הראשונה. עכשיו תורכם.”</blockquote>
         <div class="name" data-he="מרים — מייסדת ולקוחה ראשונה" data-en="Miriam — founder & first customer">מרים — מייסדת ולקוחה ראשונה</div>
         <div class="role" data-he="סטודיו פיתוח עצמאי · ישראל" data-en="Independent dev studio · Israel">סטודיו פיתוח עצמאי · ישראל</div>
       </div>
@@ -624,10 +635,10 @@
       <h2 data-he="שאלות נפוצות" data-en="Frequently asked">שאלות נפוצות</h2>
     </div>
     <div class="faq">
-      <details open><summary data-he="אני עוסק פטור ולא סדרתי כלום — זה יעבוד לי?" data-en="I'm an osek patur who's never organized anything — will this work for me?">אני עוסק פטור ולא סדרתי כלום — זה יעבוד לי?</summary><p data-he="כן — זו כל המהות. OpalSwift מטפל בכל הניירת והכללים, וכל מסמך שהוא מפיק תקין לחלוטין ומתקבל ברשות המסים ואצל הרו״ח. אתה פשוט מתרכז בעבודה." data-en="Yes — that's the whole point. OpalSwift handles all the paperwork and rules, and every document it generates meets Israeli tax documentation requirements. You just focus on the work.">כן — זו כל המהות. OpalSwift מטפל בכל הניירת והכללים, וכל מסמך שהוא מפיק עומד בדרישות ניירת רשות המסים. אתה פשוט מתרכז בעבודה.</p></details>
+      <details open><summary data-he="אני עוסק פטור ועוד לא סידרתי כלום — זה יתאים לי?" data-en="I'm an osek patur who's never organized anything — will this work for me?">אני עוסק פטור ועוד לא סידרתי כלום — זה יתאים לי?</summary><p data-he="כן, בדיוק בשביל זה הוא נבנה. OpalSwift מטפל בכל הניירת והכללים, וכל מסמך שהוא מפיק עומד בדרישות רשות המסים. אתם פשוט מתרכזים בעבודה." data-en="Yes — that's the whole point. OpalSwift handles all the paperwork and rules, and every document it generates meets Israeli tax documentation requirements. You just focus on the work.">כן, בדיוק בשביל זה הוא נבנה. OpalSwift מטפל בכל הניירת והכללים, וכל מסמך שהוא מפיק עומד בדרישות רשות המסים. אתם פשוט מתרכזים בעבודה.</p></details>
 
-      <details><summary data-he="האם זה מחליף את רואה החשבון שלי?" data-en="Does this replace my accountant?">האם זה מחליף את רואה החשבון שלי?</summary><p data-he="לא. OpalSwift מכין את כל הניירת ושומר אותה מסודרת ומדויקת — כך שכשאתה מגיע לרו״ח, הכל כבר מוכן. אנחנו לא נותנים ייעוץ מס — אנחנו חוסכים את העבודה השחורה." data-en="No. OpalSwift generates and stores all your documents, organized and accurate — so when you meet your accountant, everything's ready. We don't give tax advice — we remove the grunt work.">לא. OpalSwift מכין את כל הניירת ושומר אותה מסודרת ומדויקת — כך שכשאתה מגיע לרו״ח, הכל כבר מוכן. אנחנו לא נותנים ייעוץ מס — אנחנו חוסכים את העבודה השחורה.</p></details>
-      <details><summary data-he="אני עוסק פטור — זה רלוונטי לי?" data-en="I'm an osek patur — is this for me?">אני עוסק פטור — זה רלוונטי לי?</summary><p data-he="בהחלט — OpalSwift בנוי לפרילנסרים. חיוב, תזכורות ומסמכים תקינים, בלי מורכבות." data-en="Absolutely — OpalSwift is built for freelancers. Billing, reminders, and compliant documents, without the complexity.">בהחלט — OpalSwift בנוי לפרילנסרים. חיוב, תזכורות ומסמכים תקינים, בלי מורכבות.</p></details>
+      <details><summary data-he="זה מחליף את רואה החשבון?" data-en="Does this replace my accountant?">זה מחליף את רואה החשבון?</summary><p data-he="לא. OpalSwift מפיק ושומר את כל המסמכים, מסודרים ומדויקים — כך שכשמגיעים לרואה החשבון, הכל כבר מוכן. אנחנו לא נותנים ייעוץ מס; אנחנו חוסכים לכם את העבודה השחורה." data-en="No. OpalSwift generates and stores all your documents, organized and accurate — so when you meet your accountant, everything's ready. We don't give tax advice — we remove the grunt work.">לא. OpalSwift מפיק ושומר את כל המסמכים, מסודרים ומדויקים — כך שכשמגיעים לרואה החשבון, הכל כבר מוכן. אנחנו לא נותנים ייעוץ מס; אנחנו חוסכים לכם את העבודה השחורה.</p></details>
+      <details><summary data-he="אני עוסק פטור — זה בשבילי?" data-en="I'm an osek patur — is this for me?">אני עוסק פטור — זה בשבילי?</summary><p data-he="בהחלט. OpalSwift נבנה בשביל עצמאים: חיוב, תזכורות ומסמכים תקינים — בלי סיבוכים." data-en="Absolutely — OpalSwift is built for freelancers. Billing, reminders, and compliant documents, without the complexity.">בהחלט. OpalSwift נבנה בשביל עצמאים: חיוב, תזכורות ומסמכים תקינים — בלי סיבוכים.</p></details>
     </div>
   </div>
 </section>
@@ -636,9 +647,9 @@
 <section class="block">
   <div class="wrap">
     <div class="final">
-      <h2 data-he="תתרכז במה שאתה עושה הכי טוב. אנחנו נדאג לשאר." data-en="You do what you love. We handle everything else.">תתרכז במה שאתה עושה הכי טוב. אנחנו נדאג לשאר.</h2>
-      <p data-he="הצטרף לבטא שלנו — עצב איתנו את הכלי שתמיד רצית." data-en="Join our beta — help shape the tool you always needed.">הצטרף לבטא שלנו — עצב איתנו את הכלי שתמיד רצית.</p>
-      <a href="#contact" class="btn btn-primary" style="font-size:18px;padding:16px 34px" data-he="הצטרף לבטא" data-en="Join Beta">הצטרף לבטא</a>
+      <h2 data-he="אתם עושים את מה שאתם אוהבים. את כל השאר תשאירו לנו." data-en="You do what you love. We handle everything else.">אתם עושים את מה שאתם אוהבים. את כל השאר תשאירו לנו.</h2>
+      <p data-he="הצטרפו לבטא ועזרו לנו לבנות את הכלי שתמיד חסר לכם." data-en="Join our beta — help shape the tool you always needed.">הצטרפו לבטא ועזרו לנו לבנות את הכלי שתמיד חסר לכם.</p>
+      <a href="#contact" class="btn btn-primary" style="font-size:18px;padding:16px 34px" data-he="הצטרפו לבטא" data-en="Join Beta">הצטרפו לבטא</a>
     </div>
   </div>
 </section>
@@ -650,7 +661,7 @@
       <img src="opalswift_color_final.svg" class="gem" style="width:24px;height:24px" alt="OpalSwift logo">
       OpalSwift
     </div>
-    <div data-he="© 2026 OpalSwift · אתה עושה את העבודה. אנחנו דואגים שתקבל את הכסף." data-en="© 2026 OpalSwift · You do the work. We make sure you get paid.">© 2026 OpalSwift · אתה עושה את העבודה. אנחנו דואגים שתקבל את הכסף.</div>
+    <div data-he="© 2026 OpalSwift · אתם עושים את העבודה. אנחנו דואגים שתקבלו את הכסף." data-en="© 2026 OpalSwift · You do the work. We make sure you get paid.">© 2026 OpalSwift · אתם עושים את העבודה. אנחנו דואגים שתקבלו את הכסף.</div>
   </div>
   <div class="foot-legal" style="text-align:center;padding:14px 0 0;font-size:14px"><a href="/terms" style="color:inherit;opacity:.75" data-he="תנאי שימוש" data-en="Terms">תנאי שימוש</a> · <a href="/privacy" style="color:inherit;opacity:.75" data-he="פרטיות" data-en="Privacy">פרטיות</a> · <a href="/accessibility" style="color:inherit;opacity:.75" data-he="נגישות" data-en="Accessibility">נגישות</a></div>
   <div class="foot-signin" style="text-align:center;padding:14px 0 0;font-size:14px"><a href="https://app.opalswift.com" style="color:inherit;opacity:.75" data-he="כניסה לחשבון" data-en="Sign in to your account">כניסה לחשבון</a></div>
