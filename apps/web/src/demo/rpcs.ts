@@ -245,7 +245,12 @@ export const baseRpcs: Record<string, RpcHandler> = {
     const mine = rows(ctx, 'waiver_evidence')
       .filter((w) => w.signer_details && w.signed_by_email && w.signed_by_email === ctx.user?.email)
       .sort((a, b) => String(b.signed_at).localeCompare(String(a.signed_at)))[0];
-    return (mine?.signer_details as { signer?: unknown } | undefined)?.signer ?? null;
+    const last = (mine?.signer_details as { signer?: unknown } | undefined)?.signer;
+    if (last) return last;
+    // No earlier signature in this visit: the demo parent's prefilled details, if the seed has them.
+    const email = String(ctx.user?.email ?? '').toLowerCase();
+    const profile = rows(ctx, 'demo_signer_profiles').find((p) => String(p.email).toLowerCase() === email);
+    return profile?.signer ?? null;
   },
 
   get_signed_record_details: (args, ctx) =>

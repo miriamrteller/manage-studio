@@ -126,6 +126,19 @@ const FAMILIES: Family[] = [
 export const DEMO_FAMILY = FAMILIES[0];
 export const DEMO_CLIENT = { n: DEMO_FAMILY.n, name: DEMO_FAMILY.guardian, email: DEMO_FAMILY.email };
 
+/**
+ * The demo parent's signer details, so signing the health declaration is the
+ * "These details are correct" tick plus Sign. Made-up values: 000000018 only
+ * passes the ID check digit, and the address is not a real one.
+ */
+export const DEMO_SIGNER = {
+  full_name: DEMO_FAMILY.guardian,
+  id_type: 'israeli_id' as const,
+  id_number: '000000018',
+  phone: DEMO_FAMILY.phone,
+  address: '1 Demo Street, Tel Aviv',
+};
+
 const accountId = (n: number) => id(400 + n);
 const guardianId = (n: number) => id(500 + n);
 const childId = (n: number) => id(550 + n);
@@ -438,6 +451,9 @@ export function buildSeed(): Tables {
     categories,
     staff,
     offerings,
+    // Demo only (no such table in the app): signer details used to prefill the
+    // signing step for a parent who has not signed anything yet in this visit.
+    demo_signer_profiles: [{ email: DEMO_FAMILY.email, signer: DEMO_SIGNER }],
     consent_templates: [
       {
         id: id(901), tenant_id: TENANT_ID, name: 'Health declaration (child)', content: HEALTH_DECLARATION,
