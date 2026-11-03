@@ -274,6 +274,7 @@ function DocumentActions(props: {
             }}
             language={language}
             vertical={props.legal.vertical}
+            healthDeclarations={props.legal.healthDeclarations}
             onPasteText={(pasted) => tokenizeKnownValues(pasted, renderCtx(language)).text}
           />
           {note && (

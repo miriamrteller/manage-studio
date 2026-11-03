@@ -37,7 +37,8 @@ export interface LegalFieldDef {
    * 'classes' for any class business, 'dance_classes' for a dance studio that
    * teaches classes (dance wording: performances, dress code, watching/filming).
    */
-  needs?: 'classes' | 'dance_classes';
+  /** classes: studios that teach classes; dance_classes: dance studios that do; health: studios whose clients sign a health declaration. */
+  needs?: 'classes' | 'dance_classes' | 'health';
   /** A sample answer shown under an empty field (legal tab: "for example …"). */
   example?: { en: string; he: string };
   /** Used when the studio leaves the field empty; the field then counts as filled. */
@@ -62,9 +63,7 @@ export type BusinessStatus = (typeof BUSINESS_STATUSES)[number];
 /** Every studio type that can teach classes (photographers don't). */
 const CLASS_VERTICALS: VerticalId[] = ['dance-studio', 'generic', 'beautician'];
 /** Studios that collect health declarations; only they see anything about insurance. */
-const HEALTH_VERTICALS: VerticalId[] = (['dance-studio', 'generic', 'beautician', 'photographer'] as VerticalId[]).filter(
-  (v) => hasHealthDeclarations(v),
-);
+
 
 export const LEGAL_FIELDS: LegalFieldDef[] = [
   // ---------------------------------------------------------------- identity
@@ -255,7 +254,7 @@ export const LEGAL_FIELDS: LegalFieldDef[] = [
     key: 'health_retention_years',
     section: 'retention',
     kind: 'text',
-    verticals: HEALTH_VERTICALS,
+    needs: 'health',
     label: { en: 'Delete health details this long after the season', he: 'מחיקת פרטים רפואיים לאחר תום העונה, בתוך' },
     defaultValue: { en: '1 year', he: 'שנה' },
     placeholders: { 'studio-privacy': ['[[e.g. 1 year]]', '[[למשל שנה]]'] },
@@ -352,7 +351,7 @@ export const LEGAL_FIELDS: LegalFieldDef[] = [
     key: 'insurance_status',
     section: 'enrolment',
     kind: 'select',
-    verticals: HEALTH_VERTICALS,
+    needs: 'health',
     defaultValue: { en: 'none', he: 'none' },
     label: { en: 'Insurance', he: 'ביטוח' },
     options: [
@@ -365,7 +364,7 @@ export const LEGAL_FIELDS: LegalFieldDef[] = [
     key: 'insurance',
     section: 'enrolment',
     kind: 'text',
-    verticals: HEALTH_VERTICALS,
+    needs: 'health',
     showWhen: (p) => insuranceStatus(p) === 'insured',
     label: { en: 'Insurance (insurer and policy type)', he: 'ביטוח (מבטח וסוג הפוליסה)' },
     hint: { en: 'e.g. third-party liability insurance with …', he: 'למשל ביטוח אחריות כלפי צד שלישי ב…' },
@@ -418,16 +417,29 @@ export const LEGAL_FIELDS: LegalFieldDef[] = [
 ];
 
 /** Whether a field applies to this studio: its type, and whether it teaches classes. */
-export function fieldApplies(f: LegalFieldDef, vertical: VerticalId, teachesClasses = true): boolean {
+/**
+ * What else decides a studio's fields: whether it teaches classes (tenants.teaches_classes;
+ * existing studios: true) and whether its clients sign a health declaration (unknown: by skin).
+ * A boolean is the teachesClasses value.
+ */
+export type LegalFieldScope = boolean | { teachesClasses?: boolean; healthDeclarations?: boolean };
+
+function readScope(scope: LegalFieldScope): { teachesClasses: boolean; healthDeclarations?: boolean } {
+  return typeof scope === 'boolean' ? { teachesClasses: scope } : { teachesClasses: scope.teachesClasses !== false, healthDeclarations: scope.healthDeclarations };
+}
+
+export function fieldApplies(f: LegalFieldDef, vertical: VerticalId, scope: LegalFieldScope = true): boolean {
+  const { teachesClasses, healthDeclarations } = readScope(scope);
   if (f.verticals && !f.verticals.includes(vertical)) return false;
   if (f.needs === 'classes') return teachesClasses;
   if (f.needs === 'dance_classes') return teachesClasses && vertical === 'dance-studio';
+  if (f.needs === 'health') return hasHealthDeclarations(vertical, healthDeclarations);
   return true;
 }
 
-/** The legal fields this studio is asked (teachesClasses: tenants.teaches_classes; existing studios: true). */
-export function fieldsForVertical(vertical: VerticalId, teachesClasses = true): LegalFieldDef[] {
-  return LEGAL_FIELDS.filter((f) => fieldApplies(f, vertical, teachesClasses));
+/** The legal fields this studio is asked. */
+export function fieldsForVertical(vertical: VerticalId, scope: LegalFieldScope = true): LegalFieldDef[] {
+  return LEGAL_FIELDS.filter((f) => fieldApplies(f, vertical, scope));
 }
 
 /** The label to show for a field, given the details entered so far. */
@@ -443,9 +455,9 @@ export function legalFieldLabel(
 export function visibleLegalFields(
   vertical: string | null | undefined,
   profile: Record<string, string | undefined>,
-  teachesClasses = true,
+  scope: LegalFieldScope = true,
 ): LegalFieldDef[] {
-  return fieldsForVertical(vertical as VerticalId, teachesClasses).filter((f) => !f.showWhen || f.showWhen(profile));
+  return fieldsForVertical(vertical as VerticalId, scope).filter((f) => !f.showWhen || f.showWhen(profile));
 }
 
 /**
@@ -463,10 +475,10 @@ export function missingLegalDetails(
   profile: Record<string, string> | null | undefined,
   stage: 'confirm' | 'publish' = 'confirm',
   tenantName?: string | null,
-  teachesClasses = true,
+  scope: LegalFieldScope = true,
 ): LegalFieldDef[] {
   const p = profile ?? {};
-  const missing = fieldsForVertical(vertical as VerticalId, teachesClasses).filter(
+  const missing = fieldsForVertical(vertical as VerticalId, scope).filter(
     (f) => f.required && !f.defaultValue && (!f.showWhen || f.showWhen(p)) && !(p[f.key] ?? '').trim(),
   );
   if (stage === 'publish' && p.business_status === 'not_registered') {

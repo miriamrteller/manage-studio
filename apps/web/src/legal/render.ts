@@ -16,6 +16,8 @@ export interface LegalRenderContext {
   updatedAt: string | null;
   /** tenants.teaches_classes (unknown = true): class wording and fields only for studios that teach classes. */
   teachesClasses?: boolean;
+  /** Clients sign a health declaration (the studio's setting or its field's default; unknown: by skin). */
+  healthDeclarations?: boolean;
 }
 
 export interface PreparedLegalDoc {
@@ -253,7 +255,7 @@ const INSURANCE_LINE = {
  * - "We have insurance": the insurer named, or a plain statement until it is.
  */
 function applyInsurance(text: string, ctx: LegalRenderContext): string {
-  if (!hasHealthDeclarations(ctx.vertical)) {
+  if (!hasHealthDeclarations(ctx.vertical, ctx.healthDeclarations)) {
     return text.replace(INSURANCE_LINE.en, '').replace(INSURANCE_LINE.he, '');
   }
   const status = insuranceStatus(ctx.profile);
@@ -344,12 +346,20 @@ const DERIVED_ID_BY_PLACEHOLDER: Record<string, string> = Object.fromEntries(
 );
 
 /** The details a lawyer version can hold, for the editor's "Insert a detail" list. */
-export function liveDetailOptions(vertical: VerticalId, lang: LegalLang): { id: string; label: string }[] {
+export function liveDetailOptions(
+  vertical: VerticalId,
+  lang: LegalLang,
+  healthDeclarations?: boolean,
+): { id: string; label: string }[] {
   const derived = Object.entries(DERIVED_DETAILS)
-    .filter(([id]) => id !== 'insurance_statement' || hasHealthDeclarations(vertical))
+    .filter(([id]) => id !== 'insurance_statement' || hasHealthDeclarations(vertical, healthDeclarations))
     .map(([id, d]) => ({ id, label: d.label[lang] }));
   const fields = LEGAL_FIELDS.filter(
-    (f) => (!f.verticals || f.verticals.includes(vertical)) && Object.keys(f.placeholders).length > 0 && f.kind !== 'checkbox',
+    (f) =>
+      (!f.verticals || f.verticals.includes(vertical)) &&
+      (f.needs !== 'health' || hasHealthDeclarations(vertical, healthDeclarations)) &&
+      Object.keys(f.placeholders).length > 0 &&
+      f.kind !== 'checkbox',
   ).map((f) => ({ id: f.key, label: f.label[lang] }));
   return [...derived, ...fields];
 }
@@ -361,7 +371,7 @@ export function liveDetailLabel(id: string, lang: LegalLang): string {
 
 /** The insurance sentence as one live detail (health-declaration studios only). */
 function applyInsuranceToken(text: string, ctx: LegalRenderContext): string {
-  if (!hasHealthDeclarations(ctx.vertical)) {
+  if (!hasHealthDeclarations(ctx.vertical, ctx.healthDeclarations)) {
     return text.replace(INSURANCE_LINE.en, '').replace(INSURANCE_LINE.he, '');
   }
   const token = detailToken('insurance_statement');
@@ -371,7 +381,7 @@ function applyInsuranceToken(text: string, ctx: LegalRenderContext): string {
 }
 
 function insuranceStatementValue(ctx: LegalRenderContext): string {
-  if (!hasHealthDeclarations(ctx.vertical)) return '';
+  if (!hasHealthDeclarations(ctx.vertical, ctx.healthDeclarations)) return '';
   const he = ctx.lang === 'he';
   if (insuranceStatus(ctx.profile) !== 'insured') return NO_INSURANCE_TERMS[ctx.lang];
   const insurer = (ctx.profile.insurance ?? '').trim();
@@ -516,7 +526,7 @@ export function prepareLegalMarkdown(
     }
 
     const field = byPlaceholder.get(ph);
-    if (field && !fieldApplies(field, ctx.vertical, ctx.teachesClasses !== false)) {
+    if (field && !fieldApplies(field, ctx.vertical, { teachesClasses: ctx.teachesClasses !== false, healthDeclarations: ctx.healthDeclarations })) {
       // e.g. "the gallery service" line in a dance school's policy.
       return DROP_LINE_TOKEN;
     }

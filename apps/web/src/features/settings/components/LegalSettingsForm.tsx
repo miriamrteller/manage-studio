@@ -65,7 +65,11 @@ export function LegalSettingsForm() {
 
   const vertical = legal?.vertical ?? 'generic';
   const teachesClasses = legal?.teachesClasses !== false;
-  const fields = useMemo(() => fieldsForVertical(vertical, teachesClasses), [vertical, teachesClasses]);
+  const healthDeclarations = legal?.healthDeclarations;
+  const fields = useMemo(
+    () => fieldsForVertical(vertical, { teachesClasses, healthDeclarations }),
+    [vertical, teachesClasses, healthDeclarations],
+  );
   // Shown: what only the studio can tell us, and anything required that is still
   // empty. The rest (filled from the studio's setup, or with a sensible default)
   // waits under "Details we filled in for you".
@@ -95,7 +99,7 @@ export function LegalSettingsForm() {
 
   // What is still missing, checked against the real templates in both languages.
   const { data: missing } = useQuery({
-    queryKey: ['legal-missing', legal?.tenantId, JSON.stringify(values), vertical, teachesClasses],
+    queryKey: ['legal-missing', legal?.tenantId, JSON.stringify(values), vertical, teachesClasses, healthDeclarations],
     enabled: !!legal,
     queryFn: async () => {
       const keys = new Set<string>();
@@ -116,7 +120,7 @@ export function LegalSettingsForm() {
         }
       }
       // The same required-details list the legal pack's Confirm uses.
-      missingLegalDetails(vertical, values, 'publish', legal!.name, teachesClasses).forEach((f) => keys.add(f.key));
+      missingLegalDetails(vertical, values, 'publish', legal!.name, { teachesClasses, healthDeclarations }).forEach((f) => keys.add(f.key));
       return [...keys];
     },
   });

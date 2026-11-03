@@ -31,6 +31,8 @@ export const BusinessProfileSchema = z.object({
   teachesClasses: z.boolean().default(false),
   familyAccounts: z.boolean().default(false),
   clientBooking: z.boolean().default(false),
+  /** Clients sign a health declaration (prefilled from the field). Missing: from the field. */
+  healthDeclaration: z.boolean().optional(),
 });
 export type BusinessProfileInput = z.infer<typeof BusinessProfileSchema>;
 

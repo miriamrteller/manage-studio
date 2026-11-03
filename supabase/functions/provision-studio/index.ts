@@ -98,6 +98,7 @@ function serviceDeps(service: ServiceClient): ProvisionStudioDeps {
           teaches_classes: profile.teachesClasses,
           family_accounts: profile.familyAccounts,
           client_booking: profile.clientBooking,
+          ...(profile.healthDeclaration === undefined ? {} : { health_declaration: profile.healthDeclaration }),
         })
         .eq("id", tenantId);
       if (error) throw new Error(error.message);
@@ -131,7 +132,8 @@ function seedDeps(service: ServiceClient): SeedDeps {
   };
 }
 
-const SEED_TENANT_COLUMNS = "id, name, skin, language_default, contact_email, legal_profile, verticals(legal_addon)";
+const SEED_TENANT_COLUMNS =
+  "id, name, skin, language_default, contact_email, legal_profile, health_declaration, verticals(name_en, name_he, default_switches, legal_addon)";
 
 /**
  * Every new studio gets the form its clients sign, right away. Best effort: a
@@ -200,6 +202,7 @@ function selfServeDeps(service: ServiceClient, req: Request): SelfServeDeps {
           teaches_classes: profile.teachesClasses,
           family_accounts: profile.familyAccounts,
           client_booking: profile.clientBooking,
+          ...(profile.healthDeclaration === undefined ? {} : { health_declaration: profile.healthDeclaration }),
         })
         .eq("id", tenantId);
       if (error) throw new Error(error.message);
