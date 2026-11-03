@@ -1,4 +1,4 @@
-import type { MouseEvent, ReactNode } from 'react';
+import { useEffect, useState, type MouseEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -7,9 +7,28 @@ import { OpalSwiftShell, OPALSWIFT_GEM_SRC } from '@/components/OpalSwiftShell';
 import { useAuthSession } from '@/hooks/useAuth';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { supabase } from '@/lib/supabase';
+import { dropSavedSession } from '@/lib/inactivity/signOutForInactivity';
+import { withTimeout } from '@/lib/withTimeout';
 import { OPALSWIFT_BRAND } from '@/lib/theme/opalswiftBrand';
 import { isSelfServeSignupEnabled as selfServeSignup, openStudioSignedIn } from '@/features/self-serve/selfServeSignup';
 import { useMyStudios, type StudioLink } from './useMyStudios';
+
+/** After this long on "Loading..." the page offers a way out instead of waiting any longer. */
+export const SLOW_LOADING_MS = 8_000;
+
+/** True once `active` has stayed true for `ms`; resets when it turns false. */
+export function useLoadingTooLong(active: boolean, ms: number): boolean {
+  const [tooLong, setTooLong] = useState(false);
+  useEffect(() => {
+    if (!active) {
+      setTooLong(false);
+      return;
+    }
+    const timer = window.setTimeout(() => setTooLong(true), ms);
+    return () => window.clearTimeout(timer);
+  }, [active, ms]);
+  return tooLong;
+}
 
 /**
  * app.opalswift.com: a sign-in gate, not a studio. Signed out → what OpalSwift is
@@ -29,8 +48,34 @@ export default function PlatformWelcomePage() {
     navigate('/', { replace: true });
   };
 
+  const loading = sessionLoading || Boolean(session && (profileLoading || (user && studiosLoading)));
+  const tooSlow = useLoadingTooLong(loading, SLOW_LOADING_MS);
+
+  // Sign in again from scratch: drop the saved session here (even if the sign-out call hangs),
+  // then open the sign-in page. The way out of a stuck "Loading...".
+  const signInAgain = async () => {
+    await withTimeout(supabase.auth.signOut({ scope: 'local' }), 3_000, null).catch(() => null);
+    dropSavedSession();
+    window.location.assign('/login');
+  };
+
   let body: ReactNode;
-  if (sessionLoading || (session && (profileLoading || (user && studiosLoading)))) {
+  if (loading && tooSlow) {
+    body = (
+      <div role="alert" className="space-y-4">
+        <h1 className="text-2xl font-bold">{t('platform_welcome.slow_title')}</h1>
+        <p className="text-gray-700">{t('platform_welcome.slow_body')}</p>
+        <div className="flex flex-wrap justify-center gap-3">
+          <Button variant="primary" onClick={() => window.location.reload()}>
+            {t('platform_welcome.slow_reload')}
+          </Button>
+          <Button variant="outline" onClick={() => void signInAgain()}>
+            {t('platform_welcome.slow_sign_in_again')}
+          </Button>
+        </div>
+      </div>
+    );
+  } else if (loading) {
     body = <p role="status">{t('common.loading')}</p>;
   } else if (!session) {
     body = (

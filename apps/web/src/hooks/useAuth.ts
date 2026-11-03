@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import type { Session } from '@supabase/supabase-js';
+import { AUTH_WAIT_MS, withTimeout } from '../lib/withTimeout';
 
 /**
  * Internal auth hook: manages session state + auto-logout on 401
@@ -13,11 +14,22 @@ export function useAuthSession() {
   useEffect(() => {
     let mounted = true;
 
-    void supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
-      if (!mounted) return;
-      setSession(initialSession);
-      setIsLoading(false);
-    });
+    // Never wait forever: a saved session whose refresh never answers would leave every page that
+    // waits on this on "Loading...". After the limit we carry on signed out; a late answer still
+    // arrives through onAuthStateChange below.
+    void withTimeout(supabase.auth.getSession(), AUTH_WAIT_MS, null)
+      .then((result) => {
+        if (!mounted) return;
+        if (result === null) console.warn('[auth] session did not load in time; continuing signed out');
+        setSession(result ? result.data.session : null);
+        setIsLoading(false);
+      })
+      .catch((err) => {
+        if (!mounted) return;
+        console.warn('[auth] could not read the session:', err instanceof Error ? err.message : err);
+        setSession(null);
+        setIsLoading(false);
+      });
 
     const {
       data: { subscription },
