@@ -13,12 +13,15 @@ interface RecipientPreviewTableProps {
   recipients: BlastRecipientPreview[];
   selectedEmails: Set<string>;
   onSelectedEmailsChange: (emails: Set<string>) => void;
+  /** Replaces the generic "no one matches" text, e.g. when the reason is known. */
+  emptyMessage?: string;
 }
 
 export function RecipientPreviewTable({
   recipients,
   selectedEmails,
   onSelectedEmailsChange,
+  emptyMessage,
 }: RecipientPreviewTableProps) {
   const { t } = useTranslation();
   const selectAllRef = useRef<HTMLInputElement>(null);
@@ -49,7 +52,7 @@ export function RecipientPreviewTable({
   if (recipients.length === 0) {
     return (
       <p className="text-sm text-muted-foreground" role="status">
-        {t('pages.notifications.preview_empty')}
+        {emptyMessage ?? t('pages.notifications.preview_empty')}
       </p>
     );
   }

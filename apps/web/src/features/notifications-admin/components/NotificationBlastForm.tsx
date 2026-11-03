@@ -27,6 +27,7 @@ import { RecipientPreviewTable } from './RecipientPreviewTable';
 import { AccountBlastPicker, formatAccountLabel } from './AccountBlastPicker';
 import type { BlastAccountSearchResult } from '../lib/notificationBlastSchema';
 import { normalizeRecipientEmail } from '../lib/recipientHumanSearch';
+import type { AccountExclusion } from '../lib/accountExclusion';
 
 interface NotificationBlastFormProps {
   onSentSuccess?: () => void;
@@ -38,7 +39,7 @@ export function NotificationBlastForm({ onSentSuccess }: NotificationBlastFormPr
   const { vertical } = useEntityLabels();
   const scopeOptions =
     vertical === 'photographer' ? (['all', 'account'] as const) : (['all', 'level', 'class', 'account'] as const);
-  const { previewRecipients, isPreviewing, sendBlast, isSending } = useNotificationBlast();
+  const { explainAccountExclusion, previewRecipients, isPreviewing, sendBlast, isSending } = useNotificationBlast();
   const { levels, isLoading: levelsLoading } = useLevels({ page: 1 });
   const { classes, isLoading: classesLoading } = useClasses({ page: 1, publicOnly: false });
 
@@ -48,6 +49,8 @@ export function NotificationBlastForm({ onSentSuccess }: NotificationBlastFormPr
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
+  // Why a hand-picked account will not get this email (opted out, no email, ...).
+  const [accountExclusion, setAccountExclusion] = useState<AccountExclusion | null>(null);
   const [sendSuccess, setSendSuccess] = useState<string | null>(null);
   const [selectedAccountLabel, setSelectedAccountLabel] = useState<string | null>(null);
 
@@ -84,6 +87,7 @@ export function NotificationBlastForm({ onSentSuccess }: NotificationBlastFormPr
     setSelectedRecipientEmails(new Set());
     setPreviewValidated(false);
     setPreviewError(null);
+    setAccountExclusion(null);
     setSendSuccess(null);
   };
 
@@ -119,6 +123,9 @@ export function NotificationBlastForm({ onSentSuccess }: NotificationBlastFormPr
         new Set(rows.map((row) => normalizeRecipientEmail(row.recipient_email))),
       );
       setPreviewValidated(true);
+      if (parsed.data.scope === 'account' && parsed.data.accountId) {
+        setAccountExclusion(await explainAccountExclusion(parsed.data.accountId, form.getValues('purpose') ?? 'service'));
+      }
     } catch (error) {
       setPreviewError(error instanceof Error ? error.message : t('pages.notifications.error_generic'));
     }
@@ -336,7 +343,13 @@ export function NotificationBlastForm({ onSentSuccess }: NotificationBlastFormPr
                   {t('pages.notifications.preview_over_limit', { max: BLAST_MAX_RECIPIENTS })}
                 </p>
               )}
+              {accountExclusion && previewRows.length > 0 && (
+                <p className="text-sm text-amber-800" role="status">
+                  {t(`pages.notifications.exclusion_${accountExclusion}`)}
+                </p>
+              )}
               <RecipientPreviewTable
+                emptyMessage={accountExclusion ? t(`pages.notifications.exclusion_${accountExclusion}`) : undefined}
                 recipients={previewRows}
                 selectedEmails={selectedRecipientEmails}
                 onSelectedEmailsChange={setSelectedRecipientEmails}
