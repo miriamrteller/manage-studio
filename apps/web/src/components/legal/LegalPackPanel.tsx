@@ -67,7 +67,7 @@ export function LegalPackPanel({ tenantId, mode, detailsHref, offerUploads }: Le
     queryFn: () => fetchSignedFormsReview(tenantId),
   });
   // What the acknowledgement covers as drafts: everything not yet lawyer-reviewed.
-  const drafts = legal ? draftDocuments(packDocumentsFor(legal.vertical), uploads, forms) : [];
+  const drafts = legal ? draftDocuments(packDocumentsFor(legal.vertical, legal.teachesClasses !== false), uploads, forms) : [];
 
   const acknowledge = useMutation({
     mutationFn: async () => {
@@ -106,7 +106,7 @@ export function LegalPackPanel({ tenantId, mode, detailsHref, offerUploads }: Le
   const acknowledgedAt = legal?.packAcknowledgedAt ?? null;
   const lang = i18n.language?.startsWith('he') ? 'he' : 'en';
   // Confirming publishes the documents, so the details they are filled from must be there first.
-  const missing = legal ? missingLegalDetails(legal.vertical, profile) : [];
+  const missing = legal ? missingLegalDetails(legal.vertical, profile, 'confirm', null, legal.teachesClasses !== false) : [];
   const doc = t(`legal.pack.doc.${signedDocNoun(legal?.vertical)}`);
   const dateFormat = new Intl.DateTimeFormat(i18n.language?.startsWith('he') ? 'he-IL' : 'en-GB', {
     dateStyle: 'medium',
