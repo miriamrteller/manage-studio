@@ -51,6 +51,12 @@ interface WaiverStepProps {
   isJobContract?: boolean;
   /** The student's date of birth on file (YYYY-MM-DD), to pre-fill the child block. */
   studentDateOfBirth?: string | null;
+  /**
+   * Guest link only: the name and phone of the person the link was sent to
+   * (get-waiver-engagement signerPrefill). The ID number and address are never
+   * prefilled on a guest link.
+   */
+  guestSignerPrefill?: { fullName?: string | null; phone?: string | null };
 }
 
 /** "Health declaration (child)v1" -> "Health declaration": parents do not need the internal variant or version. */
@@ -88,6 +94,7 @@ function WaiverStepInner({
   invalidateTenantId,
   isJobContract,
   studentDateOfBirth,
+  guestSignerPrefill,
 }: WaiverStepProps & { invalidateTenantId?: string }) {
   const { t, i18n } = useTranslation();
   const appLanguage = i18n.language?.startsWith('he') ? 'he' : 'en';
@@ -105,13 +112,15 @@ function WaiverStepInner({
   const [tokenExpired, setTokenExpired] = useState(false);
   const [viewError, setViewError] = useState<string | null>(null);
   const [affirmed, setAffirmed] = useState(false);
-  const [typedName, setTypedName] = useState('');
+  const guestPrefill = waiverToken ? guestSignerPrefill : undefined;
+  const [typedName, setTypedName] = useState(guestPrefill?.fullName ?? '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [signerDraft, setSignerDraft] = useState<SignerDraft>({
     ...EMPTY_SIGNER_DRAFT,
     childName: studentName ?? '',
     childDob: studentDateOfBirth ?? '',
+    phone: guestPrefill?.phone ?? '',
   });
   const [signerErrors, setSignerErrors] = useState<SignerDetailsErrors>({});
 
