@@ -69,6 +69,7 @@
       "legal_admin_tenant",
       "link_auth_user_to_guardian_for_engagement",
       "link_auth_user_to_person",
+      "link_my_guardian_accounts",
       "list_admin_quotes",
       "log_platform_view",
       "log_sensitive_read",
