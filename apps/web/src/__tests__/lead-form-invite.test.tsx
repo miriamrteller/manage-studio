@@ -50,6 +50,9 @@ function renderForm() {
   );
 }
 
+// The real location, put back after each test so later files see a normal URL.
+const realLocation = Object.getOwnPropertyDescriptor(window, 'location');
+
 /** Other test files may swap window.location for a plain object: set a known one, and a history that updates it. */
 function setUrl(path: string, hash: string) {
   const [pathname, search = ''] = path.split('?');
@@ -71,6 +74,7 @@ beforeEach(() => {
   setUrl('/inquire?src=direct', `#invite=${TOKEN}`);
 });
 afterEach(() => {
+  if (realLocation) Object.defineProperty(window, 'location', realLocation);
   vi.restoreAllMocks();
   vi.clearAllMocks();
 });
