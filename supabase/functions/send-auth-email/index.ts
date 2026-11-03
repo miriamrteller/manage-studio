@@ -55,17 +55,13 @@ function buildConfirmationUrl(emailData: AuthEmailHookData): string {
   return url.toString();
 }
 
-/** Magic Link tab: button only. Email Code tab: code + button (code matches on-page entry). */
+/**
+ * Every sign-in email carries the 6-digit code as well as the button, so someone who opens the
+ * email on another device (where the one-time link may not work) can type the code instead.
+ * Nothing to include when Auth sent no code (it always does for OTP and magic-link sign-in).
+ */
 function shouldIncludeOtpInEmail(emailData: AuthEmailHookData): boolean {
-  const redirectTo = emailData.redirect_to?.trim();
-  if (!redirectTo) return true;
-
-  try {
-    const method = new URL(redirectTo).searchParams.get("login_method");
-    return method !== "magic_link";
-  } catch {
-    return true;
-  }
+  return Boolean(emailData.token?.trim());
 }
 
 /** The studio's address for the welcome email; null falls back to the plain invite. */

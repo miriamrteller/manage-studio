@@ -2,6 +2,7 @@
  * In-browser versions of the Edge Functions the photographer screens invoke.
  * Nothing leaves the browser: emails land in the demo outbox.
  */
+import { maskIdNumber, sealSignerDetails, validateSignerDetails } from '@shared/signerDetails';
 import { DemoRpcError, type DemoContext, type FunctionHandler, type Row } from './fakeSupabase';
 import { sendToOutbox } from './outbox';
 import { canRead } from './rls';
@@ -232,6 +233,11 @@ function acceptClassWaiver(body: Row, engagementId: string | null, ctx: DemoCont
   const replay = rows(ctx, 'waiver_evidence').find((w) => w.idempotency_key && w.idempotency_key === body.idempotency_key);
   const signedAt = ctx.now();
   const evidenceId = (replay?.id as string | undefined) ?? ctx.uuid();
+  // Signer details are validated with the same shared rules as the real function; the demo keeps
+  // them in the evidence row so the admin "Signed details" dialog has something to show.
+  const checked = validateSignerDetails(body.signer_details, { requireChild: false });
+  if (!checked.ok) throw new DemoRpcError('signer_details_invalid');
+  const sealed = sealSignerDetails(checked.value, null);
   if (!replay) {
     const member = rows(ctx, 'account_members').find((m) => m.id === body.account_member_id);
     rows(ctx, 'waiver_evidence').push({
@@ -243,6 +249,7 @@ function acceptClassWaiver(body: Row, engagementId: string | null, ctx: DemoCont
       signed_by_role: member ? 'guardian' : 'self', signature_method: 'typed_name_checkbox',
       guardian_confirmed: body.guardian_confirmed === true, status: 'signed', signed_at: signedAt,
       idempotency_key: body.idempotency_key ?? null, created_at: signedAt,
+      signer_details: sealed, signer_id_masked: maskIdNumber(sealed.signer.id_number),
     });
   }
   const engagements = rows(ctx, 'engagements');

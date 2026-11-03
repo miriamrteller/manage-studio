@@ -1,3 +1,4 @@
+import { PlatformOwnerNotice } from '@/components/PlatformOwnerNotice';
 import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
 import { AppLayout } from "./layouts/AppLayout";
 import { AdminRoute, ParentRoute, StudentRoute, SuperAdminRoute } from "./layouts/RouteGuards";
@@ -121,6 +122,10 @@ const router = createBrowserRouter([
   {
     path: '/auth/session-handoff',
     element: <SessionHandoffPage />,
+  },
+  {
+    path: '/platform-owner',
+    element: <PlatformOwnerNotice />,
   },
   {
     path: '/',

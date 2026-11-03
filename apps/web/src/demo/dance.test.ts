@@ -24,6 +24,11 @@ function client(as: 'admin' | 'parent' = 'parent') {
 
 const person = (tables: Record<string, Row[]>, name: string) => tables.people.find((p) => p.name === name)!;
 const latest = (tables: Record<string, Row[]>) => tables.engagements[tables.engagements.length - 1];
+const SIGNER = {
+  signer: { full_name: 'Noa Levi', id_type: 'israeli_id', id_number: '123456782', phone: '050-123-4567', address: '1 Herzl St, Haifa' },
+  confirmed: true,
+  confirmed_wording: 'These details are correct',
+};
 
 describe('ballet demo: enrol, sign, pay at the studio', () => {
   it('creates a pending_payment place with a billing account and returns the offline charge', async () => {
@@ -44,7 +49,7 @@ describe('ballet demo: enrol, sign, pay at the studio', () => {
     await c.functions.invoke('accept-waiver', {
       body: {
         person_id: tamar.id, offering_id: CLASS.grade2Sun, consent_template_id: tables.consent_templates[0].id,
-        consent_version: 1, typed_name: 'Noa Levi', idempotency_key: 'k0', engagement_id: eng.id, guardian_confirmed: true,
+        consent_version: 1, typed_name: 'Noa Levi', idempotency_key: 'k0', engagement_id: eng.id, guardian_confirmed: true, signer_details: SIGNER,
       },
     });
     const pay = await c.functions.invoke('prepare-enrolment-checkout', {
@@ -77,7 +82,7 @@ describe('ballet demo: enrol, sign, pay at the studio', () => {
     const { data, error } = await c.functions.invoke('accept-waiver', {
       body: {
         person_id: tamar.id, offering_id: CLASS.grade2Sun, consent_template_id: template.id, consent_version: 1,
-        typed_name: 'Noa Levi', idempotency_key: 'k1', engagement_id: eng.id, guardian_confirmed: true,
+        typed_name: 'Noa Levi', idempotency_key: 'k1', engagement_id: eng.id, guardian_confirmed: true, signer_details: SIGNER,
       },
     });
     expect(error).toBeNull();

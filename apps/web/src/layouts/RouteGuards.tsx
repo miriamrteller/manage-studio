@@ -8,6 +8,7 @@ import { usePlatformViewLog } from '@/hooks/usePlatformViewLog';
 import { hasParentRole } from '@/lib/parentRoles';
 import { PlatformTermsGate } from '@/components/legal/PlatformTermsGate';
 import { MfaChallengeGate } from '@/components/legal/MfaChallengeGate';
+import { PlatformOwnerNotice, isPlatformOwnerOnly } from '@/components/PlatformOwnerNotice';
 
 /**
  * useCurrentUser, scoped to the tenant of the current subdomain: a signed-in
@@ -64,6 +65,11 @@ export function AdminRoute({ children }: { children: ReactNode }) {
     return <LoadingState />;
   }
 
+  if (isPlatformOwnerOnly(user)) {
+    // Studio pages are for the studio's own people, not the platform owner.
+    return <PlatformOwnerNotice />;
+  }
+
   if (!user || !user.role.includes('tenant_admin')) {
     return <Navigate to="/login" state={{ from: returnToFromLocation(location) }} replace />;
   }
@@ -86,6 +92,11 @@ export function TeacherRoute({ children }: { children: ReactNode }) {
     return <LoadingState />;
   }
 
+  if (isPlatformOwnerOnly(user)) {
+    // Studio pages are for the studio's own people, not the platform owner.
+    return <PlatformOwnerNotice />;
+  }
+
   if (!user || !user.role.includes('teacher')) {
     return <Navigate to="/login" state={{ from: returnToFromLocation(location) }} replace />;
   }
@@ -102,6 +113,11 @@ export function ParentRoute({ children }: { children: ReactNode }) {
 
   if (isLoading) {
     return <LoadingState />;
+  }
+
+  if (isPlatformOwnerOnly(user)) {
+    // Studio pages are for the studio's own people, not the platform owner.
+    return <PlatformOwnerNotice />;
   }
 
   if (!user || !hasParentRole(user.role)) {
@@ -143,6 +159,10 @@ export function StudentRoute({ children }: { children: ReactNode }) {
   const hasStudentRole = user?.role.some((r: string) =>
     ['student', 'adult_student'].includes(r)
   );
+
+  if (isPlatformOwnerOnly(user)) {
+    return <PlatformOwnerNotice />;
+  }
 
   if (!user || !hasStudentRole) {
     return <Navigate to="/login" state={{ from: returnToFromLocation(location) }} replace />;

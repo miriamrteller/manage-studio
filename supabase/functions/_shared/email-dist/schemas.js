@@ -626,6 +626,8 @@ export const WaiverEvidenceSchema = z.object({
     status: z.enum(['signed', 'superseded', 'revoked']),
     created_at: TimestampSchema,
     offering_id: UUIDSchema.nullable().optional(),
+    /** ID or passport number with all but the last 3 characters hidden (safe for lists). Null on records signed before signer details. */
+    signer_id_masked: z.string().nullable().optional(),
     // Joined display fields — present only when fetched via listEvidence (admin)
     people: z.object({ name: z.string() }).nullable().optional(),
     offerings: z.object({ name: z.string() }).nullable().optional(),

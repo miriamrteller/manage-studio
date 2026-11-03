@@ -6,7 +6,6 @@ import { LegalFooterLinks } from '@/components/LegalFooterLinks';
 import { OpalSwiftShell } from '@/components/OpalSwiftShell';
 import { useAuthSession } from '@/hooks/useAuth';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
-import { supabase } from '@/lib/supabase';
 import { tenantOrigin } from '@/lib/tenantUrl';
 import { isPlatformAppHost } from '@/lib/resolveTenantSubdomain';
 import {
@@ -20,7 +19,7 @@ import { LegalPackPanel } from '@/components/legal/LegalPackPanel';
 import {
   isSelfServeSignupEnabled,
   sendSelfServeConfirmation,
-  studioHandoffUrl,
+  openStudioSignedIn,
   turnstileSiteKey,
   type SelfServeStudioResult,
 } from '@/features/self-serve/selfServeSignup';
@@ -234,12 +233,7 @@ function StudioReady({ result, name }: { result: SelfServeStudioResult; name: st
 
   async function goToStudio() {
     setGoing(true);
-    const { data } = await supabase.auth.getSession();
-    const url = studioHandoffUrl(result.subdomain, data.session);
-    // The studio's address takes over this session; dropping it here stops both
-    // hosts refreshing the same token. Local only: it is not a sign-out.
-    if (data.session) await supabase.auth.signOut({ scope: 'local' });
-    window.location.assign(url);
+    await openStudioSignedIn(result.subdomain);
   }
 
   return (

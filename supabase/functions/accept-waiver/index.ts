@@ -13,6 +13,7 @@ import {
   extractWaiverToken,
   verifyWaiverToken,
 } from "../_shared/waiver-token.ts";
+import { sealSignerDetails, validateSignerDetails } from "../_shared/email-dist/signerDetails.js";
 import { NO_PDF, prepareWaiverPdf, waiverRecordHmac, type WaiverPdfArtifact } from "../_shared/contract-pdf/evidence.ts";
 import {
   type ContractEmailTenant,
@@ -196,6 +197,21 @@ Deno.serve(withMonitoring("accept-waiver", async (req) => {
 
     const guardianConfirmed: boolean = body.guardian_confirmed === true;
 
+    // --- Signer details (name, ID or passport, phone, address, child, "these are correct" tick) ---
+    // Validated here with the same rules as the form; the database repeats them in sign_waiver().
+    // The child block is required when the person is clearly a minor (2 day margin, matching the
+    // database). NEVER log `body.signer_details` or the sealed copy: it holds the ID number.
+    const adultCutoff = new Date();
+    adultCutoff.setUTCFullYear(adultCutoff.getUTCFullYear() - 18);
+    adultCutoff.setUTCDate(adultCutoff.getUTCDate() + 2);
+    const clearlyMinor: boolean = Boolean(student?.date_of_birth) &&
+      String(student!.date_of_birth).slice(0, 10) > adultCutoff.toISOString().slice(0, 10);
+    const signerValidation = validateSignerDetails(body.signer_details, { requireChild: clearlyMinor });
+    if (!signerValidation.ok) {
+      return jsonResponse({ error: "signer_details_invalid", fields: signerValidation.errors }, 400);
+    }
+    const signerDetails = sealSignerDetails(signerValidation.value, student?.date_of_birth as string | null);
+
     if (isMinor && !guardianConfirmed) {
       return jsonResponse(
         {
@@ -277,13 +293,14 @@ Deno.serve(withMonitoring("accept-waiver", async (req) => {
           signedAt,
           signerEmail: signedByEmail,
           consentVersionHash: consent_version_hash,
+          signerDetails,
         });
       }
     }
     const storagePath = pdf.storagePath;
     const pdf_sha256 = pdf.pdfSha256;
 
-    // --- record_hmac over the canonical alphabetically-sorted 15-field JSON (SPEC §4.2.9) ---
+    // --- record_hmac over the canonical alphabetically-sorted JSON: 15 fields + signer_details (SPEC §4.2.9) ---
     const record_hmac = await waiverRecordHmac(hmacKey, {
       accept_language:     acceptLang,
       consent_template_id: body.consent_template_id,
@@ -300,6 +317,7 @@ Deno.serve(withMonitoring("accept-waiver", async (req) => {
       signed_by_role:      signedByRole,
       tenant_id:           tenantId,
       user_agent:          userAgent,
+      signer_details:      signerDetails,    // 16th field, keyed into the HMAC (sealed with the record)
     });
 
     // --- Atomic DB write via sign_waiver() SECURITY DEFINER RPC ---
@@ -333,10 +351,12 @@ Deno.serve(withMonitoring("accept-waiver", async (req) => {
       p_actor_id: actorId,
       p_offering_id: offeringId,
       p_guardian_confirmed: guardianConfirmed,
+      p_signer_details: signerDetails,
     });
 
     if (rpcError) {
       // PDF was uploaded but RPC failed — log for manual cleanup; idempotency_key helps locate orphaned file
+      // rpcError carries only a code/message (never the arguments), so no signer details are logged.
       console.error(
         "[accept-waiver] sign_waiver RPC failed after PDF upload:",
         rpcError,

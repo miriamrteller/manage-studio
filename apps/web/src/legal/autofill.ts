@@ -20,6 +20,8 @@ export interface LegalAutofillSources {
   offlinePayments?: boolean;
   /** The business number the studio gave its invoicing provider. */
   businessNumber?: string | null;
+  /** legal_profile.business_status: an unregistered studio is run by a person, named in full. */
+  businessStatus?: string | null;
 }
 
 /**
@@ -49,13 +51,14 @@ export function legalAutofill(src: LegalAutofillSources, lang: LegalLang): Recor
     if (v) out[key] = v;
   };
 
-  set('legal_name', src.tenantName);
+  // Not yet a business: the legal party is the owner in person, not the studio's name.
+  set('legal_name', src.businessStatus === 'not_registered' ? src.ownerName : src.tenantName);
   set('email', src.contactEmail);
   set('privacy_contact_email', src.contactEmail);
   set('accessibility_contact_email', src.contactEmail);
   set('privacy_contact_name', src.ownerName);
   set('accessibility_contact_name', src.ownerName);
-  set('business_number', src.businessNumber);
+  if (src.businessStatus !== 'not_registered') set('business_number', src.businessNumber);
 
   const online = providerName(src.paymentProvider);
   const invoicing = providerName(src.invoicingProvider);
@@ -127,7 +130,13 @@ export function useLegalAutofill(legal: TenantLegalProfile | null | undefined): 
   const ownerName = user && user.tenant_id === legal.tenantId ? user.full_name : null;
   return {
     autofill: legalAutofill(
-      { tenantName: legal.name, contactEmail: legal.contactEmail, ownerName, ...(data ?? {}) },
+      {
+        tenantName: legal.name,
+        contactEmail: legal.contactEmail,
+        ownerName,
+        businessStatus: legal.profile.business_status ?? null,
+        ...(data ?? {}),
+      },
       legal.languageDefault,
     ),
     isLoading,
