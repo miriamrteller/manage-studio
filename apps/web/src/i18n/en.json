@@ -2568,6 +2568,98 @@
     "waiver_minor_cannot_sign_body": "{{studentName}} is under 18. Israeli law requires a parent or legal guardian to sign the form. Please ask a parent or guardian to log in and complete the enrolment."
   },
   "settings": {
+    "custom_domain": {
+      "title": "Your own web address",
+      "description": "Use an address on your own domain, such as app.yourstudio.com, for your studio's pages, links and emails. Your existing website stays as it is.",
+      "input_label": "Address to use",
+      "input_hint": "A part of your domain such as app.yourstudio.com. Not the main domain or www, which stay on your website.",
+      "connect": "Connect",
+      "records_intro": "Add these records where your domain's DNS is managed. Nothing else on your domain changes.",
+      "records_caption": "DNS records to add",
+      "col_type": "Type",
+      "col_name": "Name",
+      "col_value": "Value",
+      "purpose": {
+        "route": "Points the address to your studio",
+        "ownership": "Shows the domain is yours",
+        "certificate": "Lets us issue the secure (https) certificate"
+      },
+      "copy": "Copy",
+      "copied": "Copied",
+      "provider_label": "Where is your domain managed?",
+      "providers": {
+        "cloudflare": {
+          "name": "Cloudflare",
+          "steps": "Cloudflare → your domain → DNS → Records → Add record. Add each record above. For the CNAME, set Proxy status to DNS only (grey cloud)."
+        },
+        "godaddy": {
+          "name": "GoDaddy",
+          "steps": "GoDaddy → My Products → your domain → DNS → Add New Record. In Name, enter only the part before your domain (for example app)."
+        },
+        "namecheap": {
+          "name": "Namecheap",
+          "steps": "Namecheap → Domain List → Manage → Advanced DNS → Add New Record. In Host, enter only the part before your domain (for example app)."
+        },
+        "wix": {
+          "name": "Wix",
+          "steps": "Wix → Domains → your domain → Manage DNS Records. Add the CNAME and TXT records in their sections."
+        },
+        "squarespace": {
+          "name": "Squarespace",
+          "steps": "Squarespace → Domains → your domain → DNS → Custom records → Add record."
+        },
+        "israeli": {
+          "name": "Box / Israeli registrars",
+          "steps": "In your registrar's control panel (Box, LiveDNS, Domain The Net and others), open the domain's DNS or zone records and add each record. If you can't find it, send these records to their support."
+        },
+        "other": {
+          "name": "Other",
+          "steps": "Open your domain's DNS settings and add each record exactly as shown. If someone else manages your domain, send them this page."
+        }
+      },
+      "status_pending": "Checking. This usually takes a few minutes after the records are added, sometimes a few hours.",
+      "status_paused": "Paused. Press Check now when your records are in place.",
+      "status_failed": "Not connected. Check the records, then press Check now.",
+      "status_active": "Connected ✓",
+      "check_now": "Check now",
+      "active_since": "Connected since {{date}}. Links and emails now use this address.",
+      "delete_after": "If this address isn't connected by {{date}}, we stop and you can start again.",
+      "managed_pending": "We'll connect {{hostname}} for you. Your domain is already with us, so there's nothing for you to add.",
+      "managed_connected": "{{hostname}} is connected ✓ (set up by OpalSwift).",
+      "remove_label": "To remove this address, type {{hostname}}",
+      "remove": "Remove address",
+      "remove_hint": "Links and emails go back to your OpalSwift address straight away. Afterwards, delete the records you added.",
+      "codes": {
+        "dns_not_ready": "We can't see your records yet. DNS changes can take a few hours.",
+        "dns_not_pointing": "This address points somewhere else. Check the CNAME record above.",
+        "ownership_txt_missing": "We can't see the ownership record (TXT) yet.",
+        "caa_blocked": "A CAA record on your domain blocks our certificate. Allow letsencrypt.org and pki.goog, or remove the CAA record.",
+        "hostname_blocked": "This address can't be used. Please contact us.",
+        "hostname_missing": "Something went wrong on our side. Remove the address and connect it again.",
+        "expired_unactivated": "This address wasn't connected within 30 days. You can connect it again.",
+        "opalswift_connects": "We'll connect this address for you.",
+        "empty": "Enter an address.",
+        "invalid": "That doesn't look like a web address.",
+        "too_long": "That address is too long.",
+        "path_or_port": "Enter only the address, without / or : parts.",
+        "ip_address": "Enter a name, not an IP address.",
+        "wildcard": "Enter one exact address, without *.",
+        "unknown_suffix": "That domain ending isn't recognised.",
+        "apex": "Use a part of your domain, such as app.yourstudio.com, not the main domain.",
+        "www": "www stays on your website. Use another name, such as app.",
+        "reserved": "That name is reserved for email or other services. Try app.",
+        "blocked_domain": "That domain can't be used.",
+        "hostname_taken": "This address is already used by another studio.",
+        "already_has_domain": "Your studio already has an address. Remove it first.",
+        "no_domain": "There's no address to check.",
+        "confirm_mismatch": "Type the address exactly to remove it.",
+        "managed_by_opalswift": "This address is managed by OpalSwift. Contact us to change it.",
+        "cloudflare_unavailable": "We couldn't reach our domain service. Please try again in a minute.",
+        "not_configured": "Custom addresses aren't available yet.",
+        "not_enabled": "Custom addresses aren't available for your studio yet.",
+        "unknown": "Something went wrong. Please try again."
+      }
+    },
     "provider_names": {"offline": "Pay at the studio", "none": "None", "grow": "Grow", "icount": "iCount", "invoice4u": "Invoice4U", "ypay": "YPay", "tranzila": "Tranzila", "yesh": "Yesh Invoice", "green_invoice": "Green Invoice", "mock": "Test mode"},
     "ypay": {
       "save": "Save YPay details",

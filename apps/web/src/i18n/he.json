@@ -2568,6 +2568,98 @@
     "waiver_minor_cannot_sign_body": "{{studentName}} מתחת לגיל 18. על פי חוק, הורה או אפוטרופוס חוקי צריך לחתום על הטופס. אנא בקשו מהורה להתחבר ולהשלים את ההרשמה."
   },
   "settings": {
+    "custom_domain": {
+      "title": "כתובת אינטרנט משלכם",
+      "description": "השתמשו בכתובת על הדומיין שלכם, למשל app.yourstudio.com, לדפי הסטודיו, לקישורים ולמיילים. האתר הקיים שלכם נשאר כמו שהוא.",
+      "input_label": "הכתובת לשימוש",
+      "input_hint": "חלק מהדומיין שלכם, למשל app.yourstudio.com. לא הדומיין הראשי ולא www, שנשארים באתר שלכם.",
+      "connect": "חיבור",
+      "records_intro": "הוסיפו את הרשומות האלה במקום שבו מנוהל ה-DNS של הדומיין. שום דבר אחר בדומיין לא משתנה.",
+      "records_caption": "רשומות DNS להוספה",
+      "col_type": "סוג",
+      "col_name": "שם",
+      "col_value": "ערך",
+      "purpose": {
+        "route": "מפנה את הכתובת לסטודיו שלכם",
+        "ownership": "מראה שהדומיין שלכם",
+        "certificate": "מאפשר לנו להנפיק אישור אבטחה (https)"
+      },
+      "copy": "העתקה",
+      "copied": "הועתק",
+      "provider_label": "איפה מנוהל הדומיין שלכם?",
+      "providers": {
+        "cloudflare": {
+          "name": "Cloudflare",
+          "steps": "Cloudflare ← הדומיין שלכם ← DNS ← Records ← Add record. הוסיפו כל רשומה מלמעלה. ב-CNAME, הגדירו Proxy status ל-DNS only (ענן אפור)."
+        },
+        "godaddy": {
+          "name": "GoDaddy",
+          "steps": "GoDaddy ← My Products ← הדומיין שלכם ← DNS ← Add New Record. בשדה Name, הזינו רק את החלק שלפני הדומיין (למשל app)."
+        },
+        "namecheap": {
+          "name": "Namecheap",
+          "steps": "Namecheap ← Domain List ← Manage ← Advanced DNS ← Add New Record. בשדה Host, הזינו רק את החלק שלפני הדומיין (למשל app)."
+        },
+        "wix": {
+          "name": "Wix",
+          "steps": "Wix ← Domains ← הדומיין שלכם ← Manage DNS Records. הוסיפו את רשומות ה-CNAME וה-TXT בחלקים שלהן."
+        },
+        "squarespace": {
+          "name": "Squarespace",
+          "steps": "Squarespace ← Domains ← הדומיין שלכם ← DNS ← Custom records ← Add record."
+        },
+        "israeli": {
+          "name": "Box / רשמים ישראליים",
+          "steps": "בלוח הבקרה של הרשם (Box, LiveDNS, דומיין דה נט ואחרים), פתחו את רשומות ה-DNS או ה-Zone של הדומיין והוסיפו כל רשומה. אם לא מוצאים, שלחו את הרשומות לתמיכה שלהם."
+        },
+        "other": {
+          "name": "אחר",
+          "steps": "פתחו את הגדרות ה-DNS של הדומיין והוסיפו כל רשומה בדיוק כפי שמופיעה. אם מישהו אחר מנהל את הדומיין, שלחו לו את הדף הזה."
+        }
+      },
+      "status_pending": "בבדיקה. בדרך כלל זה לוקח כמה דקות אחרי הוספת הרשומות, לפעמים כמה שעות.",
+      "status_paused": "מושהה. לחצו על \"בדיקה עכשיו\" כשהרשומות במקום.",
+      "status_failed": "לא מחובר. בדקו את הרשומות ולחצו על \"בדיקה עכשיו\".",
+      "status_active": "מחובר ✓",
+      "check_now": "בדיקה עכשיו",
+      "active_since": "מחובר מאז {{date}}. קישורים ומיילים משתמשים עכשיו בכתובת הזו.",
+      "delete_after": "אם הכתובת לא תחובר עד {{date}}, נעצור ותוכלו להתחיל מחדש.",
+      "managed_pending": "אנחנו נחבר את {{hostname}} בשבילכם. הדומיין שלכם כבר אצלנו, כך שאין מה להוסיף.",
+      "managed_connected": "{{hostname}} מחובר ✓ (הוגדר על ידי OpalSwift).",
+      "remove_label": "כדי להסיר את הכתובת, הקלידו {{hostname}}",
+      "remove": "הסרת הכתובת",
+      "remove_hint": "קישורים ומיילים חוזרים מיד לכתובת OpalSwift שלכם. אחר כך מחקו את הרשומות שהוספתם.",
+      "codes": {
+        "dns_not_ready": "אנחנו עדיין לא רואים את הרשומות. שינויי DNS יכולים לקחת כמה שעות.",
+        "dns_not_pointing": "הכתובת מפנה למקום אחר. בדקו את רשומת ה-CNAME למעלה.",
+        "ownership_txt_missing": "אנחנו עדיין לא רואים את רשומת הבעלות (TXT).",
+        "caa_blocked": "רשומת CAA בדומיין חוסמת את אישור האבטחה שלנו. אפשרו את letsencrypt.org ו-pki.goog, או הסירו את רשומת ה-CAA.",
+        "hostname_blocked": "אי אפשר להשתמש בכתובת הזו. צרו איתנו קשר.",
+        "hostname_missing": "משהו השתבש אצלנו. הסירו את הכתובת וחברו אותה מחדש.",
+        "expired_unactivated": "הכתובת לא חוברה תוך 30 יום. אפשר לחבר אותה מחדש.",
+        "opalswift_connects": "אנחנו נחבר את הכתובת הזו בשבילכם.",
+        "empty": "הזינו כתובת.",
+        "invalid": "זה לא נראה כמו כתובת אינטרנט.",
+        "too_long": "הכתובת ארוכה מדי.",
+        "path_or_port": "הזינו רק את הכתובת, בלי / או :.",
+        "ip_address": "הזינו שם, לא כתובת IP.",
+        "wildcard": "הזינו כתובת אחת מדויקת, בלי *.",
+        "unknown_suffix": "סיומת הדומיין לא מוכרת.",
+        "apex": "השתמשו בחלק מהדומיין, למשל app.yourstudio.com, לא בדומיין הראשי.",
+        "www": "www נשאר באתר שלכם. בחרו שם אחר, למשל app.",
+        "reserved": "השם הזה שמור למייל או לשירותים אחרים. נסו app.",
+        "blocked_domain": "אי אפשר להשתמש בדומיין הזה.",
+        "hostname_taken": "סטודיו אחר כבר משתמש בכתובת הזו.",
+        "already_has_domain": "לסטודיו כבר יש כתובת. הסירו אותה קודם.",
+        "no_domain": "אין כתובת לבדוק.",
+        "confirm_mismatch": "הקלידו את הכתובת בדיוק כדי להסיר אותה.",
+        "managed_by_opalswift": "הכתובת מנוהלת על ידי OpalSwift. צרו איתנו קשר כדי לשנות אותה.",
+        "cloudflare_unavailable": "לא הצלחנו להגיע לשירות הדומיינים שלנו. נסו שוב בעוד דקה.",
+        "not_configured": "כתובות מותאמות עדיין לא זמינות.",
+        "not_enabled": "כתובות מותאמות עדיין לא זמינות לסטודיו שלכם.",
+        "unknown": "משהו השתבש. נסו שוב."
+      }
+    },
     "provider_names": {"offline": "תשלום בסטודיו", "none": "ללא", "grow": "Grow", "icount": "iCount", "invoice4u": "Invoice4U", "ypay": "YPay", "tranzila": "Tranzila", "yesh": "Yesh Invoice", "green_invoice": "חשבונית ירוקה", "mock": "מצב ניסיון"},
     "ypay": {
       "save": "שמירת פרטי YPay",
