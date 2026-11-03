@@ -28,6 +28,19 @@ export abstract class BaseService {
     return false;
   }
 
+  /**
+   * Supabase returns errors as plain objects ({ message, code, details }), not Error instances.
+   * Keep their message instead of "[object Object]", so the cause is readable and a permission
+   * error is recognised as permanent.
+   */
+  protected static toError(error: unknown): Error {
+    if (error instanceof Error) return error;
+    if (error && typeof error === 'object' && typeof (error as { message?: unknown }).message === 'string') {
+      return new Error((error as { message: string }).message);
+    }
+    return new Error(String(error));
+  }
+
   protected static async withRetry<T>(
     fn: () => Promise<T>,
     operationName: string
@@ -38,7 +51,7 @@ export abstract class BaseService {
       try {
         return await fn();
       } catch (error) {
-        const err = error instanceof Error ? error : new Error(String(error));
+        const err = BaseService.toError(error);
 
         if (this.isNonRetryableError(err)) {
           throw err;
