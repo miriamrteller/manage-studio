@@ -42,8 +42,8 @@ to), so these are the exception for now. When one changes, the owner updates
 
 ## One copy only (no shared-secret rotation needed)
 
-- GitHub: `CLOUDFLARE_API_TOKEN` (`production`), `R2_*`, `FILES_BACKUP_*`, `SUPABASE_PROD_S3_*`, `SENTRY_AUTH_TOKEN`, `SUPABASE_DEV_DB_URL`.
-- Supabase Edge secrets: `WAIVER_HMAC_KEY_V<n>`, `CLOUDFLARE_EMAIL_API_TOKEN`, `TURNSTILE_SECRET_KEY`, `TRANZILA_CALLBACK_SECRET`, `GOOGLE_CALENDAR_CLIENT_SECRET`, `TWILIO_AUTH_TOKEN`, `ANTHROPIC_API_KEY`. The provider's own dashboard holds the original; we hold one copy.
+- GitHub: `CLOUDFLARE_API_TOKEN` (`production`), `R2_*`, `FILES_BACKUP_*`, `SUPABASE_PROD_S3_*`, `SENTRY_AUTH_TOKEN`, `SUPABASE_DEV_DB_URL`, `SUPABASE_AUTH_SYNC_TOKEN` (`production-nightly`; its own Supabase token, used only by auth-redirects-sync).
+- Supabase Edge secrets: `WAIVER_HMAC_KEY_V<n>`, `CLOUDFLARE_EMAIL_API_TOKEN`, `TURNSTILE_SECRET_KEY`, `TRANZILA_CALLBACK_SECRET`, `GOOGLE_CALENDAR_CLIENT_SECRET`, `TWILIO_AUTH_TOKEN`, `ANTHROPIC_API_KEY`, `CLOUDFLARE_SAAS_API_TOKEN`, `GITHUB_DISPATCH_TOKEN` (fine-grained GitHub token, Actions: write on this repo only; custom-domain uses it to start auth-redirects-sync). The provider's own dashboard holds the original; we hold one copy.
 - DB: `private.platform_config.encryption_key` (never in git or GitHub; [GO-LIVE-PLAN.md](GO-LIVE-PLAN.md)).
 
 Not secrets (public by design), so not listed: `CLOUDFLARE_ACCOUNT_ID`,

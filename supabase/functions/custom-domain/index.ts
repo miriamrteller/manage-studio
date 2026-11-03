@@ -47,6 +47,32 @@ function publicView(row: DomainRow | null) {
 
 type Service = ReturnType<typeof createServiceClient>;
 
+/**
+ * Starts .github/workflows/auth-redirects-sync.yml so the new or removed domain
+ * reaches Supabase's redirect allowlist within a minute. Best-effort: without
+ * GITHUB_DISPATCH_TOKEN, or if GitHub is down, the nightly run catches up.
+ */
+async function dispatchRedirectSync(): Promise<void> {
+  const token = Deno.env.get("GITHUB_DISPATCH_TOKEN") ?? "";
+  if (!token) return;
+  const repo = Deno.env.get("GITHUB_DISPATCH_REPO") || "miriamrteller/manage-studio";
+  try {
+    const res = await fetch(`https://api.github.com/repos/${repo}/actions/workflows/auth-redirects-sync.yml/dispatches`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+        "User-Agent": "opalswift-custom-domain",
+      },
+      body: JSON.stringify({ ref: "main" }),
+    });
+    if (!res.ok) console.warn(`[custom-domain] redirect sync dispatch failed: HTTP ${res.status}`);
+  } catch (err) {
+    console.warn("[custom-domain] redirect sync dispatch failed", err);
+  }
+}
+
 function buildDeps(service: Service): Deps | null {
   const token = Deno.env.get("CLOUDFLARE_SAAS_API_TOKEN") ?? "";
   const zoneId = Deno.env.get("CLOUDFLARE_SAAS_ZONE_ID") ?? "";
@@ -99,8 +125,7 @@ function buildDeps(service: Service): Deps | null {
       if (error) throw new Error(error.message);
       return (data as DomainRow[] | null) ?? [];
     },
-    // The redirect-allowlist sync (step 4) is dispatched here.
-    activeDomainsChanged: () => Promise.resolve(),
+    activeDomainsChanged: dispatchRedirectSync,
   };
 }
 
