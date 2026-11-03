@@ -10,6 +10,7 @@
  */
 import type { JobContractContext } from "../job-contract.ts";
 import { sha256Hex } from "../edge-runtime/hmac.ts";
+import type { SignerDetailsSnapshot } from "../email-dist/signerDetails.js";
 import {
   CONTRACT_PDF_BUCKET,
   CONTRACT_PDF_CONTENT_TYPE,
@@ -18,6 +19,7 @@ import {
   type ContractPdfTenant,
   defaultContractPdfDeps,
   hasStoredPdf,
+  pdfSignerDetails,
   type RegeneratedContractPdf,
   regeneratedContractPdfStoragePath,
 } from "./evidence.ts";
@@ -40,6 +42,7 @@ export interface SealedEvidenceRow {
   signed_at: string;
   signed_by_name: string;
   signed_by_email: string | null;
+  signer_details?: SignerDetailsSnapshot | null;
 }
 
 export type RegenerateResult =
@@ -64,7 +67,7 @@ export async function regenerateContractPdf(
   const { data: evidence } = await client
     .from("waiver_evidence")
     .select(
-      "id, pdf_storage_path, pdf_sha256, wording_snapshot, consent_template_id, consent_version, consent_version_hash, signed_at, signed_by_name, signed_by_email",
+      "id, pdf_storage_path, pdf_sha256, wording_snapshot, consent_template_id, consent_version, consent_version_hash, signed_at, signed_by_name, signed_by_email, signer_details",
     )
     .eq("id", job.waiverEvidenceId)
     .eq("tenant_id", tenantId)
@@ -115,6 +118,7 @@ export async function regenerateContractPdf(
       consentVersionHash: row.consent_version_hash,
       generatedAfterSigningAt: now.toISOString(),
     },
+    signerDetails: pdfSignerDetails(row.signer_details),
   });
   const pdfSha256 = await sha256Hex(bytes);
   const path = regeneratedContractPdfStoragePath(tenantId, job.engagementId, row.id, now);

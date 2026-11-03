@@ -3888,6 +3888,8 @@ export type Database = {
           signed_by_email: string | null
           signed_by_name: string
           signed_by_role: string
+          signer_details: Json | null
+          signer_id_masked: string | null
           status: string
           tenant_id: string
           user_agent: string | null
@@ -3917,6 +3919,8 @@ export type Database = {
           signed_by_email?: string | null
           signed_by_name: string
           signed_by_role?: string
+          signer_details?: Json | null
+          signer_id_masked?: string | null
           status?: string
           tenant_id: string
           user_agent?: string | null
@@ -3946,6 +3950,8 @@ export type Database = {
           signed_by_email?: string | null
           signed_by_name?: string
           signed_by_role?: string
+          signer_details?: Json | null
+          signer_id_masked?: string | null
           status?: string
           tenant_id?: string
           user_agent?: string | null
@@ -4358,6 +4364,7 @@ export type Database = {
       get_lead_form: { Args: { p_tenant_id: string }; Returns: Json }
       get_my_account_ids: { Args: never; Returns: string[] }
       get_my_person_id: { Args: never; Returns: string }
+      get_my_last_signer_details: { Args: never; Returns: Json }
       get_my_profile: {
         Args: never
         Returns: {
@@ -4461,6 +4468,10 @@ export type Database = {
         }[]
       }
       get_supabase_functions_url: { Args: never; Returns: string }
+      get_signed_record_details: {
+        Args: { p_evidence_id: string }
+        Returns: Json
+      }
       get_tenant_config_by_host: {
         Args: { p_host: string }
         Returns: {
@@ -5086,6 +5097,7 @@ export type Database = {
           p_signed_by_email: string
           p_signed_by_name: string
           p_signed_by_role: string
+          p_signer_details?: Json
           p_tenant_id: string
           p_user_agent: string
           p_viewed_at: string

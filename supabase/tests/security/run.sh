@@ -77,6 +77,27 @@ if [[ -n "$leaked" ]]; then
 fi
 echo "tenants column grants checked"
 
+# ── waiver_evidence column grants ─────────────────────────────────────────────
+# signer_details holds the signer's ID number: no direct SELECT for anon or
+# authenticated (get_signed_record_details() is the only reader). Every OTHER
+# column must stay readable, or lists that name them fail with "permission denied".
+sd_leak=$("${PSQL[@]}" -c "
+  SELECT (has_column_privilege('anon', 'public.waiver_evidence', 'signer_details', 'SELECT')
+       OR has_column_privilege('authenticated', 'public.waiver_evidence', 'signer_details', 'SELECT'))::text")
+if [[ "$sd_leak" != "false" ]]; then
+  echo "FAIL waiver_evidence.signer_details is readable by anon/authenticated"; fail=1
+fi
+we_missing=$("${PSQL[@]}" -c "
+  SELECT string_agg(column_name, ', ' ORDER BY ordinal_position)
+  FROM information_schema.columns
+  WHERE table_schema = 'public' AND table_name = 'waiver_evidence'
+    AND column_name <> 'signer_details'
+    AND NOT has_column_privilege('authenticated', 'public.waiver_evidence', column_name, 'SELECT')")
+if [[ -n "$we_missing" ]]; then
+  echo "FAIL waiver_evidence columns not readable by authenticated (GRANT SELECT (col) in the migration that adds them): $we_missing"; fail=1
+fi
+echo "waiver_evidence column grants checked"
+
 # ── behaviour ─────────────────────────────────────────────────────────────────
 "${PSQL[@]}" <<'SQL' || fail=1
 DO $$

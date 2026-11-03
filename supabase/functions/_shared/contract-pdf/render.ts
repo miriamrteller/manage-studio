@@ -55,6 +55,20 @@ export interface ContractPdfInput {
     /** Set when the PDF was rendered after signing (admin retry), from the sealed wording. */
     generatedAfterSigningAt?: string | null;
   };
+  /**
+   * Signer details sealed with the record. The ID number is MASKED here (all but the last 3
+   * characters): the PDF is emailed to both parties, and the full number stays in the sealed record.
+   */
+  signerDetails?: {
+    fullName: string;
+    idKind: "israeli_id" | "passport";
+    idMasked: string;
+    passportCountry?: string;
+    phone: string;
+    address: string;
+    child?: { fullName: string; dateOfBirth: string };
+    confirmedWording: string;
+  } | null;
 }
 
 const STRINGS: Record<ContractPdfLanguage, Record<string, string>> = {
@@ -72,6 +86,16 @@ const STRINGS: Record<ContractPdfLanguage, Record<string, string>> = {
     evidence_id: "Evidence ID",
     wording_hash: "Wording SHA-256",
     version: "Contract version",
+    signer_details: "Signer details",
+    signer_name: "Full name",
+    signer_id: "ID number",
+    signer_passport: "Passport number",
+    signer_country: "Passport country",
+    signer_phone: "Phone",
+    signer_address: "Address",
+    child_name: "Child's name",
+    child_dob: "Child's date of birth",
+    confirmed: "Confirmed by signer",
     method: "Method",
     method_value: "Typed name and confirmation checkbox, recorded by the server",
     note: "This document reproduces the wording the signer read and accepted. The signed record identified by the evidence ID above is the authoritative copy; the hash lets anyone confirm this wording is unchanged.",
@@ -94,6 +118,16 @@ const STRINGS: Record<ContractPdfLanguage, Record<string, string>> = {
     evidence_id: "מזהה ראיה",
     wording_hash: "תקציר SHA-256 של הנוסח",
     version: "גרסת החוזה",
+    signer_details: "פרטי החותם/ת",
+    signer_name: "שם מלא",
+    signer_id: "מספר תעודת זהות",
+    signer_passport: "מספר דרכון",
+    signer_country: "מדינת הדרכון",
+    signer_phone: "טלפון",
+    signer_address: "כתובת",
+    child_name: "שם הילד/ה",
+    child_dob: "תאריך לידה של הילד/ה",
+    confirmed: "אושר על ידי החותם/ת",
     method: "אופן החתימה",
     method_value: "הקלדת שם ותיבת אישור, נרשמו בשרת",
     note: "מסמך זה משחזר את הנוסח שהחותם/ת קרא/ה ואישר/ה. הרשומה החתומה שמזוהה במזהה הראיה לעיל היא העותק המחייב; ה-hash מאפשר לכל אחד לוודא שהנוסח לא השתנה.",
@@ -310,6 +344,26 @@ export async function renderContractPdf(input: ContractPdfInput): Promise<Uint8A
   w.space(12);
   w.rule();
   w.space(6);
+
+  // --- Signer details (sealed with the record; ID number masked) ---
+  const sd = input.signerDetails;
+  if (sd) {
+    w.ensure(BODY_LEADING * 9);
+    w.paragraphs(s.signer_details, fonts.bold, 12, 18, MUTED);
+    w.row(s.signer_name, sd.fullName, fonts);
+    w.row(sd.idKind === "passport" ? s.signer_passport : s.signer_id, sd.idMasked, fonts);
+    if (sd.idKind === "passport" && sd.passportCountry) w.row(s.signer_country, sd.passportCountry, fonts);
+    w.row(s.signer_phone, sd.phone, fonts);
+    w.row(s.signer_address, sd.address, fonts);
+    if (sd.child) {
+      w.row(s.child_name, sd.child.fullName, fonts);
+      w.row(s.child_dob, sd.child.dateOfBirth, fonts);
+    }
+    w.row(s.confirmed, sd.confirmedWording, fonts);
+    w.space(8);
+    w.rule();
+    w.space(6);
+  }
 
   // --- Signature block ---
   w.ensure(BODY_LEADING * 9);
