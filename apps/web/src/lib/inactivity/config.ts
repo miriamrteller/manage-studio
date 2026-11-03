@@ -19,3 +19,17 @@ export const MAX_SIGN_OUT_DEFERRAL_MS = 5 * 60 * 1000;
 export const INACTIVITY_LOGIN_REASON = 'inactivity';
 
 export const INACTIVITY_LOGIN_PATH = `/login?reason=${INACTIVITY_LOGIN_REASON}`;
+
+let enabled = true;
+
+/**
+ * The demo build has no real sign-in, so its entry point (demo/main.tsx) turns the automatic
+ * sign-out off before rendering. Everything else keeps it on.
+ */
+export function setInactivitySignOutEnabled(value: boolean): void {
+  enabled = value;
+}
+
+export function isInactivitySignOutEnabled(): boolean {
+  return enabled;
+}

@@ -16,7 +16,12 @@ vi.mock('@/lib/query-client', () => ({ default: { isMutating: h.isMutating, clea
 
 import { InactivityGuard } from '@/components/Auth/InactivityGuard';
 import { LAST_ACTIVITY_KEY, SIGNED_OUT_KEY, readLastActivity } from '@/lib/inactivity/activityStore';
-import { ACTIVITY_THROTTLE_MS, INACTIVITY_LOGIN_PATH, MAX_SIGN_OUT_DEFERRAL_MS } from '@/lib/inactivity/config';
+import {
+  ACTIVITY_THROTTLE_MS,
+  INACTIVITY_LOGIN_PATH,
+  MAX_SIGN_OUT_DEFERRAL_MS,
+  setInactivitySignOutEnabled,
+} from '@/lib/inactivity/config';
 
 const MIN = 60 * 1000;
 const START = new Date('2026-11-03T09:00:00Z').getTime();
@@ -46,7 +51,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.useRealTimers();
-  vi.unstubAllEnvs();
+  setInactivitySignOutEnabled(true);
 });
 
 describe('InactivityGuard', () => {
@@ -69,8 +74,8 @@ describe('InactivityGuard', () => {
     expect(localStorage.getItem(LAST_ACTIVITY_KEY)).toBeNull();
   });
 
-  it('does nothing in the demo build', async () => {
-    vi.stubEnv('VITE_DEMO_MODE', 'true');
+  it('does nothing in the demo build (its entry point turns it off)', async () => {
+    setInactivitySignOutEnabled(false);
     render(<InactivityGuard />);
     await advance(3 * 60 * MIN);
     expect(h.signOut).not.toHaveBeenCalled();

@@ -14,6 +14,7 @@ import {
   INACTIVITY_LIMIT_MS,
   INACTIVITY_LOGIN_PATH,
   MAX_SIGN_OUT_DEFERRAL_MS,
+  isInactivitySignOutEnabled,
 } from '@/lib/inactivity/config';
 import { signOutForInactivity } from '@/lib/inactivity/signOutForInactivity';
 
@@ -37,7 +38,7 @@ export function InactivityGuard() {
   const lastWriteRef = useRef(0);
 
   useEffect(() => {
-    if (!signedIn || import.meta.env.VITE_DEMO_MODE === 'true') return;
+    if (!signedIn || !isInactivitySignOutEnabled()) return;
 
     let timer: ReturnType<typeof setTimeout> | undefined;
     let deferredSince: number | null = null;
