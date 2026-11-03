@@ -11,11 +11,50 @@ app. The studio's existing website stays where it is.
 - `<subdomain>.opalswift.com` keeps working. Emails and links switch to the custom domain
   once it is set on the tenant.
 
+## Two ways to connect
+
+- **Self-serve (usual):** the studio admin connects the address in **Settings → Your own
+  web address**. Cloudflare for SaaS checks the DNS records and issues the certificate;
+  nobody at OpalSwift does anything. Owner setup (once): see the last section.
+- **By OpalSwift (path A):** when the studio's domain is a zone in our own Cloudflare
+  account (listed in `CUSTOM_DOMAIN_OWN_ZONES`, e.g. `creativeballetacademy.com`). The
+  screen says "We'll connect this for you"; follow *Setup checklist → A* below.
+
+## Self-serve: what happens
+
+1. The admin types the address (prefilled `app.<their domain>`) and presses **Connect**.
+   The `custom-domain` Edge Function checks it (`_shared/custom-domain/hostname.ts`:
+   a subdomain only, no www, no reserved names, not ours, not used by another studio or
+   released by one in the last 30 days), creates the Cloudflare custom hostname and
+   stores a row in `tenant_custom_domains`.
+2. The screen shows three records to add at the studio's DNS provider: a **CNAME** to
+   `proxy-fallback.opalswift.com`, a **TXT** that proves the domain is theirs, and a
+   **TXT** for the certificate. Their apex, `www` and email records stay as they are.
+3. The poller (pg_cron, every 10 minutes, only while something is pending) checks it
+   for **24 hours**. Then the domain is **paused**; **Check now** checks at once and
+   opens a new 24-hour window. While paused the Cloudflare hostname is kept.
+4. When Cloudflare reports the hostname and certificate **active**: `tenants.custom_domain`
+   is set (links and emails switch), `auth-redirects-sync` adds `https://<domain>/**` to
+   Supabase's redirect URLs, and the screen shows **Connected ✓**.
+5. Never connected after **30 days**: the Cloudflare hostname is deleted and the
+   studio can start again.
+
+**Removing:** the admin types the address to confirm. Cloudflare first, then
+`tenants.custom_domain` is cleared (links go back to `<subdomain>.opalswift.com` at
+once), then the redirect URL is removed. The address stays locked to that studio for
+30 days, so nobody else can take it while its CNAME may still point at us.
+
+**Rollout:** only studios in `custom_domain_rollout` see the screen (a prod task adds
+one; `supabase/prod-tasks/*_custom_domain_rollout_first_studio.sql`).
+
 ## How it works (code)
 
 | Piece | What it does |
 | --- | --- |
-| `tenants.custom_domain` | Full hostname, lower-case (migration `20261101000800`). Unique. Only a super-admin, the service role or the SQL editor can change it. |
+| `tenants.custom_domain` | Full hostname, lower-case (migration `20261101000800`). Unique. Only a super-admin, the service role or the SQL editor can change it. Self-serve sets it when the domain becomes active. |
+| `tenant_custom_domains` | Self-serve state per studio: status, records to show, 24-hour window, 30-day dates (migration `20261103120000`). Written only by `custom-domain`; studio admins read their own. Every status change is in `audit_log`. |
+| `custom-domain` Edge Function | status / request / check / remove for the studio's admin; poll for pg_cron (`20261103124800`). Rules and tests: `_shared/custom-domain/`. |
+| `auth-redirects-sync` workflow | Keeps Supabase Auth's redirect URLs in step with active custom domains (nightly, and started on every activation or removal). |
 | `get_tenant_config_by_host(host)` | Public lookup the web app uses for hosts outside `VITE_APP_ROOT_DOMAIN`. Returns the same columns as `get_tenant_config_by_subdomain`. |
 | Web app (`resolveTenantSite`) | Hosts under the root domain resolve by subdomain as before. Any other host is looked up by host. |
 | Edge `tenantBaseUrl()` | Prefers `https://<custom_domain>` for every link in emails (pay, waiver, reminders, contracts, booking, unsubscribe). |
@@ -93,9 +132,9 @@ studio's website and email records (MX, SPF, DKIM) for no gain.
    UPDATE tenants SET custom_domain = 'app.creativeballetacademy.com'
    WHERE subdomain = 'creativeballet';
    ```
-8. **Supabase Auth** → URL Configuration → Redirect URLs: add
-   `https://app.creativeballetacademy.com/auth/callback`. Keep the opalswift URLs.
-   The Site URL stays as it is.
+8. **Supabase Auth redirect URL**: nothing to do once `auth-redirects-sync` is set up
+   (it adds `https://<domain>/**` for every active custom domain). Before that, add it
+   by hand under Supabase Auth → URL Configuration → Redirect URLs.
 9. **Check**: open `https://app.creativeballetacademy.com`. The studio's branding loads,
    sign-in by email link returns to the same host, and a test reminder email links to
    `app.creativeballetacademy.com`. The studio's own site at the apex is unchanged.
@@ -107,8 +146,10 @@ studio's website and email records (MX, SPF, DKIM) for no gain.
   set, so parents end up on one host.
 - **Branded sender address** (`info@creativeballetacademy.com`) is separate: it uses
   `tenants.from_email` and its own DNS records (see GO-LIVE-PLAN.md).
-- **Removing** a custom domain: set `custom_domain = NULL`. Links go back to
-  `<subdomain>.opalswift.com` at once. Then remove the Worker route and the DNS records.
+- **Removing** a self-serve domain: the studio does it in Settings (above). A path-A
+  domain: set `custom_domain = NULL` with a prod task; links go back to
+  `<subdomain>.opalswift.com` at once and `auth-redirects-sync` drops its redirect URL.
+  Then remove the Worker route and the DNS records.
 
 ## Self-serve custom domains: owner setup (once)
 
@@ -152,3 +193,21 @@ before the `*/*` route in `apps/web/wrangler.jsonc` is released.
 Until steps 2–4 are done the screen answers "Custom addresses aren't available
 yet" and nothing is created. Removing a studio from `custom_domain_rollout`
 hides the screen; domains already connected keep working.
+
+## Troubleshooting (self-serve)
+
+The screen explains each case in plain words; this is what is behind it.
+
+| The studio sees | Usually | Fix |
+| --- | --- | --- |
+| "We can't see your records yet" | DNS not saved or still spreading (minutes to hours) | Wait, then **Check now** |
+| "This address points somewhere else" | CNAME missing, wrong target, or an old A record for the same name | One CNAME to `proxy-fallback.opalswift.com`, nothing else for that name |
+| "We can't see the ownership record" | The `_cf-custom-hostname…` TXT missing or mistyped | Copy it again with the Copy button |
+| "A CAA record … blocks our certificate" | The domain allows only some certificate authorities | Allow `letsencrypt.org` and `pki.goog`, or remove the CAA record |
+| Paused | 24 hours without success | Fix the records, then **Check now** |
+| Domain on Cloudflare (orange cloud) and never connects | The studio's CNAME is proxied | Set it to **DNS only** (grey cloud) |
+| "Already used by another studio" | Live elsewhere, or released by another studio under 30 days ago | Wait out the 30 days or contact us |
+| "Custom addresses aren't available yet" | Cloudflare secrets not set on prod | Owner setup, steps 3–4 |
+
+What happened and when: `tenant_custom_domains` (`status`, `error_code`,
+`last_checked_at`) and `audit_log` rows with `action LIKE 'custom_domain.%'`.
