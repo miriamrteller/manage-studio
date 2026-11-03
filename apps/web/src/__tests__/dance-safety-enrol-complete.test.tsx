@@ -11,6 +11,7 @@ import { fireEvent, screen, waitFor } from '@testing-library/react';
 import EnrolCompletePage from '@/pages/EnrolCompletePage';
 import { WaiverStep } from '@/features/enrolment/components/WaiverStep';
 import { baseValue, renderInApp, setLanguage, setTenant, type FakeTenantKind } from './helpers/verticalHarness';
+import { fillSignerDetails } from './helpers/signerDetails';
 
 vi.mock('@/hooks/useTenant', async () => (await import('./helpers/fakeTenantState')).tenantHookMock());
 vi.mock('@/hooks/useLanguage', async () => (await import('./helpers/fakeTenantState')).languageHookMock());
@@ -127,6 +128,7 @@ describe.each(DANCE_LIKE)('EnrolCompletePage — %s tenant keeps the enrolment f
     expect(screen.getByText(`I have read and accept this ${doc.name}`)).toBeInTheDocument();
     fireEvent.click(checkbox);
     fireEvent.change(screen.getByLabelText('Full legal name'), { target: { value: 'Dana Dancer' } });
+    fillSignerDetails();
     fireEvent.click(screen.getByRole('button', { name: 'Sign and Continue' }));
 
     expect(await screen.findByText(`${doc.Name} signed — welcome!`)).toBeInTheDocument();
@@ -214,6 +216,7 @@ describe('EnrolCompletePage — photographer tenant gets the contract wording', 
     const checkbox = await screen.findByRole('checkbox', { name: 'I have read and accept this contract' });
     fireEvent.click(checkbox);
     fireEvent.change(screen.getByLabelText('Full legal name'), { target: { value: 'Pat Client' } });
+    fillSignerDetails();
     fireEvent.click(screen.getByRole('button', { name: 'Sign contract' }));
 
     expect(await screen.findByText('Contract signed — thank you!')).toBeInTheDocument();
@@ -248,6 +251,7 @@ describe('EnrolCompletePage — photographer tenant gets the contract wording', 
     fireEvent.change(screen.getByLabelText(baseValue('enrolment.waiver_name_label', 'he')), {
       target: { value: 'לקוח' },
     });
+    fillSignerDetails({ lang: 'he' });
     fireEvent.click(screen.getByRole('button', { name: 'חתימה על החוזה' }));
     expect(await screen.findByText('החוזה נחתם — תודה!')).toBeInTheDocument();
     await waitFor(() => expect(screen.getByText(/מחכים לעבוד איתך!/)).toBeInTheDocument());

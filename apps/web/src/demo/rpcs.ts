@@ -241,6 +241,16 @@ export const baseRpcs: Record<string, RpcHandler> = {
     return rows(ctx, 'user_profiles').filter((p) => p.id === ctx.user?.id);
   },
 
+  get_my_last_signer_details: (_args, ctx) => {
+    const mine = rows(ctx, 'waiver_evidence')
+      .filter((w) => w.signer_details && w.signed_by_email && w.signed_by_email === ctx.user?.email)
+      .sort((a, b) => String(b.signed_at).localeCompare(String(a.signed_at)))[0];
+    return (mine?.signer_details as { signer?: unknown } | undefined)?.signer ?? null;
+  },
+
+  get_signed_record_details: (args, ctx) =>
+    rows(ctx, 'waiver_evidence').find((w) => w.id === args.p_evidence_id)?.signer_details ?? null,
+
   get_my_person_id: (_args, ctx) => rows(ctx, 'user_profiles').find((p) => p.id === ctx.user?.id)?.person_id ?? null,
 
   check_subdomain_available: () => false,

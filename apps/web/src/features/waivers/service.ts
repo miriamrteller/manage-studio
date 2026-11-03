@@ -11,6 +11,20 @@ export interface WaiverEvidenceFilters {
   seasonId?: string;
 }
 
+/**
+ * Every waiver_evidence column the admin list needs. NOT select('*'): signer_details (the full ID
+ * number) has no SELECT grant for clients, so a star would fail with "permission denied", and any
+ * future sensitive column must be opted in here on purpose.
+ */
+export const WAIVER_EVIDENCE_LIST_COLUMNS = [
+  'id', 'tenant_id', 'person_id', 'account_member_id', 'offering_id', 'consent_template_id',
+  'consent_version', 'consent_version_hash', 'wording_snapshot', 'pdf_storage_path', 'pdf_sha256',
+  'record_hmac', 'hmac_key_version', 'viewed_at', 'signed_by_name', 'signed_by_email',
+  'signed_by_role', 'signature_method', 'guardian_confirmed', 'signed_at', 'ip_address',
+  'user_agent', 'accept_language', 'idempotency_key', 'otp_verify_sid', 'status', 'created_at',
+  'signer_id_masked',
+].join(', ');
+
 export class WaiverService extends BaseService {
   /** List all consent templates for the tenant ordered by version descending. */
   static async listTemplates(tenant: Tenant): Promise<ConsentTemplate[]> {
@@ -154,7 +168,7 @@ export class WaiverService extends BaseService {
       // Build query with relational joins for display columns.
       let q = supabase
         .from('waiver_evidence')
-        .select('*, people!person_id(name), offerings!offering_id(name)', { count: 'exact' })
+        .select(`${WAIVER_EVIDENCE_LIST_COLUMNS}, people!person_id(name), offerings!offering_id(name)`, { count: 'exact' })
         .eq('tenant_id', tenant.id);
 
       if (personIds)          q = q.in('person_id', personIds);

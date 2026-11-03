@@ -12,6 +12,7 @@ import { PublicQuoteView } from '@/features/quotes/components/public/PublicQuote
 import { buildBookingProgress } from '@/features/jobs/lib/bookingProgress';
 import { safePayPath, safeSignPath } from '@/features/jobs/lib/bookingFlowPaths';
 import { renderInApp, setLanguage, setTenant } from './helpers/verticalHarness';
+import { fillSignerDetails } from './helpers/signerDetails';
 
 vi.mock('@/hooks/useTenant', async () => (await import('./helpers/fakeTenantState')).tenantHookMock());
 vi.mock('@/hooks/useLanguage', async () => (await import('./helpers/fakeTenantState')).languageHookMock());
@@ -91,6 +92,7 @@ function renderSignPage() {
 async function signContract(name = 'Pat Client') {
   fireEvent.click(await screen.findByRole('checkbox', { name: 'I have read and accept this contract' }));
   fireEvent.change(screen.getByLabelText('Full legal name'), { target: { value: name } });
+  fillSignerDetails();
   fireEvent.click(screen.getByRole('button', { name: 'Sign contract' }));
 }
 
@@ -283,6 +285,7 @@ describe('/enrol/complete — dance health declaration behaves as before (only i
     renderSignPage();
     fireEvent.click(await screen.findByRole('checkbox', { name: 'I have read and accept this health declaration' }));
     fireEvent.change(screen.getByLabelText('Full legal name'), { target: { value: 'Dana Dancer' } });
+    fillSignerDetails();
     fireEvent.click(screen.getByRole('button', { name: 'Sign and Continue' }));
     expect(await screen.findByText('Health declaration signed — welcome!')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Go to my dashboard' })).toBeInTheDocument();

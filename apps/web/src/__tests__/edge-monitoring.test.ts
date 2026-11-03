@@ -27,6 +27,10 @@ describe('parseDsn', () => {
 });
 
 describe('scrubMessage', () => {
+  it('redacts a 9-digit ID number (signer details)', () => {
+    expect(scrubMessage('rpc failed for id 123456782')).not.toMatch(/123456782/);
+  });
+
   it('masks personal data and secrets but keeps uuids', () => {
     const out = scrubMessage(
       'insert failed Key (phone)=(0541234567) for dana@example.com at https://api.x.com/v1/pay?key=SECRET tenant 3f6c2a1e-9b0d-4c3e-8f21-7a5b6c4d3e2f apikey tok_FAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKE00',

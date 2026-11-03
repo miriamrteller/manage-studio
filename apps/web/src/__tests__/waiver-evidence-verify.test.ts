@@ -153,7 +153,8 @@ describe('waiver evidence verification with signer details', () => {
 
   /** Signs as accept-waiver does: 15 fields + signer_details, deep-sorted. */
   async function signWithDetails(r: WaiverEvidenceRow, d: unknown, key: string): Promise<string> {
-    const { id: _id, record_hmac: _h, hmac_key_version: _v, ...fields } = r;
+    const fields: Record<string, unknown> = { ...r };
+    for (const meta of ['id', 'record_hmac', 'hmac_key_version']) delete fields[meta];
     const all = { ...fields, signer_details: JSON.parse(canonicalJson(d)) };
     return hmacSha256Hex(
       key,
