@@ -78,6 +78,9 @@ Israeli law applies. If these terms and the law differ, the law that protects th
 
 ---
 
+### Awaiting lawyer review (see [AWAITING-LAWYER-REVIEW](AWAITING-LAWYER-REVIEW.md))
+- [[LAWYER: confirm]] A studio that is not yet a registered business is identified as "<studio>, run by <full name>" with the person's Israeli ID number (ת.ז.), or, for someone without one, a passport number and the issuing country. This number appears in the published document. Confirm the wording, that publishing an ID number is required or justified here, and the foreign-resident (passport) case.
+
 ### Sources relied on
 - Consumer Protection Law 5741-1981: §13C–13D (continuing transaction — consumer may cancel at any time; cancellation effective within 3 business days; pay only for the period until then); §14C (distance sale — 14 days to cancel, required disclosure, cancellation fee cap, refund); §14C(d) (exceptions — *verify whether classes/leisure exception applies*); §14C1 (extended period for seniors, people with disabilities, new immigrants — *verify conditions*).
 - Consumer Protection (Cancellation of Transaction) Regulations 5771-2010: cancellation fee — 5% of the price or ₪100, the lower; refund rules. *Secondary sources mention a specific rule for courses/classes in reg. 2 — verify with lawyer.*

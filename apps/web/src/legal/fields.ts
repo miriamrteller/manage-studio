@@ -1,4 +1,5 @@
 import type { VerticalId } from '@shared/config/tenant-presets';
+import { personalIdentity } from '@shared/legal/personalIdentity';
 
 /**
  * Studio legal fields: what a studio fills in once (Settings → Legal, or the
@@ -18,7 +19,7 @@ export type LegalDocId =
   | 'dpa'
   | 'opalswift-privacy';
 
-export type LegalFieldKind = 'text' | 'textarea' | 'email' | 'tel' | 'date' | 'number' | 'select';
+export type LegalFieldKind = 'text' | 'textarea' | 'email' | 'tel' | 'date' | 'number' | 'select' | 'checkbox';
 
 export type LegalFieldSection = 'identity' | 'contacts' | 'enrolment' | 'photography' | 'retention';
 
@@ -38,7 +39,15 @@ export interface LegalFieldDef {
   /** Placeholders this field fills, per document. */
   placeholders: Partial<Record<LegalDocId, string[]>>;
   required?: boolean;
+  /** Shown only when this holds for the details entered so far (e.g. not yet registered). */
+  showWhen?: (profile: Record<string, string | undefined>) => boolean;
+  /** Another label in that case (e.g. "Your full name" for an unregistered individual). */
+  labelWhen?: { when: (profile: Record<string, string | undefined>) => boolean; label: { en: string; he: string } };
 }
+
+const notRegistered = (p: Record<string, string | undefined>) => p.business_status === 'not_registered';
+const hasIsraeliId = (p: Record<string, string | undefined>) => notRegistered(p) && p.no_israeli_id !== 'yes';
+const noIsraeliId = (p: Record<string, string | undefined>) => notRegistered(p) && p.no_israeli_id === 'yes';
 
 export const BUSINESS_STATUSES = ['not_registered', 'osek_patur', 'osek_murshe', 'company'] as const;
 export type BusinessStatus = (typeof BUSINESS_STATUSES)[number];
@@ -53,6 +62,10 @@ export const LEGAL_FIELDS: LegalFieldDef[] = [
     kind: 'text',
     required: true,
     label: { en: 'Legal name of the business', he: 'השם המשפטי של העסק' },
+    labelWhen: {
+      when: notRegistered,
+      label: { en: 'Your full name (as on your ID)', he: 'שמך המלא (כפי שמופיע בתעודה)' },
+    },
     hint: { en: 'As registered with the tax authority, or your full name.', he: 'כפי שרשום ברשות המסים, או שמך המלא.' },
     example: { en: "Dana Levi, or Harbour Dance Ltd", he: "דנה לוי, או מחול הנמל בע\"מ" },
     placeholders: {
@@ -78,9 +91,50 @@ export const LEGAL_FIELDS: LegalFieldDef[] = [
     key: 'business_number',
     section: 'identity',
     kind: 'text',
-    label: { en: 'ID / business number', he: 'ת"ז / מספר עוסק' },
-    hint: { en: 'Leave empty if not yet registered.', he: 'אפשר להשאיר ריק אם העסק טרם נרשם.' },
+    label: { en: 'Business number', he: 'מספר עוסק / ח.פ.' },
     example: { en: "514123456", he: "514123456" },
+    showWhen: (p) => !notRegistered(p),
+    placeholders: {},
+  },
+  // Not yet registered: the person's own identity stands in for a business number
+  // (shared/legal/personalIdentity). One of the two is required to publish.
+  {
+    key: 'personal_id',
+    section: 'identity',
+    kind: 'text',
+    label: { en: 'Your ID number (ת.ז.)', he: 'מספר תעודת הזהות שלך (ת.ז.)' },
+    hint: {
+      en: 'Shown in your published documents, because a studio that is not yet a registered business is run by you personally.',
+      he: 'מופיע במסמכים שמתפרסמים, כי סטודיו שטרם נרשם כעסק מנוהל על ידך באופן אישי.',
+    },
+    example: { en: '123456782', he: '123456782' },
+    showWhen: hasIsraeliId,
+    placeholders: {},
+  },
+  {
+    key: 'no_israeli_id',
+    section: 'identity',
+    kind: 'checkbox',
+    label: { en: "I don't have an Israeli ID number", he: 'אין לי תעודת זהות ישראלית' },
+    showWhen: notRegistered,
+    placeholders: {},
+  },
+  {
+    key: 'passport_number',
+    section: 'identity',
+    kind: 'text',
+    label: { en: 'Passport number', he: 'מספר דרכון' },
+    hint: { en: 'Shown in your published documents.', he: 'מופיע במסמכים שמתפרסמים.' },
+    showWhen: noIsraeliId,
+    placeholders: {},
+  },
+  {
+    key: 'passport_country',
+    section: 'identity',
+    kind: 'text',
+    label: { en: 'Country that issued the passport', he: 'המדינה שהנפיקה את הדרכון' },
+    example: { en: 'France', he: 'צרפת' },
+    showWhen: noIsraeliId,
     placeholders: {},
   },
   {
@@ -331,17 +385,57 @@ export function fieldsForVertical(vertical: VerticalId): LegalFieldDef[] {
   return LEGAL_FIELDS.filter((f) => !f.verticals || f.verticals.includes(vertical));
 }
 
+/** The label to show for a field, given the details entered so far. */
+export function legalFieldLabel(
+  f: LegalFieldDef,
+  profile: Record<string, string | undefined>,
+  lang: 'en' | 'he',
+): string {
+  return (f.labelWhen?.when(profile) ? f.labelWhen.label : f.label)[lang];
+}
+
+/** Fields to show for the details entered so far. */
+export function visibleLegalFields(
+  vertical: string | null | undefined,
+  profile: Record<string, string | undefined>,
+): LegalFieldDef[] {
+  return fieldsForVertical(vertical as VerticalId).filter((f) => !f.showWhen || f.showWhen(profile));
+}
+
 /**
  * Required details the studio has not filled in yet: one list for both
  * Confirm (the legal pack) and Publish. A field with a default counts as
  * filled. Pass the profile with the studio's known details already merged in
  * (withLegalAutofill).
+ *
+ * Publish also needs, for a studio that is not yet a registered business,
+ * the person behind it: their full name (not just the studio's name) and a
+ * valid Israeli ID, or a passport number and country. Confirm does not.
  */
 export function missingLegalDetails(
   vertical: string | null | undefined,
   profile: Record<string, string> | null | undefined,
+  stage: 'confirm' | 'publish' = 'confirm',
+  tenantName?: string | null,
 ): LegalFieldDef[] {
-  return fieldsForVertical(vertical as VerticalId).filter(
-    (f) => f.required && !f.defaultValue && !(profile?.[f.key] ?? '').trim(),
+  const p = profile ?? {};
+  const missing = fieldsForVertical(vertical as VerticalId).filter(
+    (f) => f.required && !f.defaultValue && !(p[f.key] ?? '').trim(),
   );
+  if (stage === 'publish' && p.business_status === 'not_registered') {
+    const byKey = (k: string) => LEGAL_FIELDS.find((f) => f.key === k)!;
+    const name = (p.legal_name ?? '').trim();
+    if (name && tenantName && name.toLowerCase() === tenantName.trim().toLowerCase() && !missing.some((f) => f.key === 'legal_name')) {
+      missing.push(byKey('legal_name'));
+    }
+    if (!personalIdentity(p)) {
+      if (p.no_israeli_id === 'yes') {
+        if (!(p.passport_number ?? '').trim()) missing.push(byKey('passport_number'));
+        if (!(p.passport_country ?? '').trim()) missing.push(byKey('passport_country'));
+      } else {
+        missing.push(byKey('personal_id'));
+      }
+    }
+  }
+  return missing;
 }

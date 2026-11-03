@@ -100,6 +100,9 @@ We will publish any update here and, if it is significant, tell you by email.
 
 ---
 
+### Awaiting lawyer review (see [AWAITING-LAWYER-REVIEW](AWAITING-LAWYER-REVIEW.md))
+- [[LAWYER: confirm]] A studio that is not yet a registered business is identified as "<studio>, run by <full name>" with the person's Israeli ID number (ת.ז.), or, for someone without one, a passport number and the issuing country. This number appears in the published document. Confirm the wording, that publishing an ID number is required or justified here, and the foreign-resident (passport) case.
+
 ### Sources relied on
 - Privacy Protection Law 5741-1981 (as amended by Amendment 13, in force 14 Aug 2025): §11 (notice when collecting: whether there is a legal duty to provide the data, purposes, recipients); §13 (right of access); §14 (correction); "information of special sensitivity" (health data); §2(6)/§2(4) (use of a person's image for profit / publication that may humiliate — privacy infringement; relevant to photo consent). *Verify section numbering after Amendment 13 and the response period for requests with lawyer.*
 - Privacy Protection (Transfer of Data to Databases Abroad) Regulations 5761-2001, reg. 2.
