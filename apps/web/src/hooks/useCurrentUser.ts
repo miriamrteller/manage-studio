@@ -4,6 +4,14 @@ import { useAuthSession } from './useAuth';
 import { AUTH_WAIT_MS, withTimeout } from '../lib/withTimeout';
 import type { UserProfile } from '../types/auth';
 
+/** The profile call did not answer in time (the session itself is fine). Not retried: waiting again is the same wait. */
+export class ProfileTimeoutError extends Error {
+  constructor() {
+    super('Profile did not load in time');
+    this.name = 'ProfileTimeoutError';
+  }
+}
+
 /**
  * Fetches current user profile from Supabase auth + user_profiles table
  * - Returns null if no auth session
@@ -15,6 +23,8 @@ export function useCurrentUser(): {
   user: UserProfile | null;
   isLoading: boolean;
   isProfileChecked: boolean;
+  /** True when the profile call timed out on a valid session: the page can offer "try again". */
+  profileTimedOut: boolean;
 } {
   const { session, isLoading: sessionLoading } = useAuthSession();
   const profileQueryEnabled = !!session?.user.id && !sessionLoading;
@@ -23,6 +33,7 @@ export function useCurrentUser(): {
     data: userProfile,
     isLoading: profileLoading,
     isFetched: profileFetched,
+    error: profileError,
   } = useQuery({
     queryKey: ['currentUser', session?.user.id],
     queryFn: async () => {
@@ -42,7 +53,7 @@ export function useCurrentUser(): {
       const rpcResult = await withTimeout(supabase.rpc('get_my_profile'), AUTH_WAIT_MS * 2, null);
       if (rpcResult === null) {
         console.warn('Profile did not load in time');
-        return null;
+        throw new ProfileTimeoutError();
       }
       const { data, error } = rpcResult;
 
@@ -96,6 +107,7 @@ export function useCurrentUser(): {
     },
     enabled: profileQueryEnabled,
     staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: (failureCount, error) => !(error instanceof ProfileTimeoutError) && failureCount < 1,
   });
 
   return {
@@ -103,5 +115,6 @@ export function useCurrentUser(): {
     isLoading:
       sessionLoading || (profileQueryEnabled && (profileLoading || !profileFetched)),
     isProfileChecked: !profileQueryEnabled || profileFetched,
+    profileTimedOut: profileError instanceof ProfileTimeoutError,
   };
 }
