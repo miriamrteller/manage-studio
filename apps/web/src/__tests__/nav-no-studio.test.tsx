@@ -33,7 +33,7 @@ describe('menu without a studio', () => {
   it('a super_admin sees only the platform items', () => {
     const sections = nav({ roles: ['super_admin'], hasStudio: false });
     expect(sections.map((s) => s.sectionKey)).toEqual(['platform']);
-    expect(paths(sections)).toEqual(['/', '/platform/onboard', '/platform/features']);
+    expect(paths(sections)).toEqual(['/', '/platform/onboard', '/platform/features', '/platform/skins']);
   });
 
   it('even with studio roles, no studio pages show without a studio', () => {

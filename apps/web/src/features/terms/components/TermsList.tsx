@@ -296,6 +296,7 @@ export const TermsList = () => {
             </div>
             <TermForm
               term={editingTerm || undefined}
+              existingTerms={termsData.terms}
               onSubmit={handleFormSubmit}
               isLoading={termsData.isCreating || termsData.isUpdating}
             />

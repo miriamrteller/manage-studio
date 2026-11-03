@@ -62,3 +62,19 @@ export function isoDateInJerusalem(iso: string | null | undefined): string | nul
   const d = get('day');
   return y && m && d ? `${y}-${m}-${d}` : null;
 }
+
+/**
+ * Starting total for a new payment request: the package price, less what is already
+ * requested (pending, sent or paid). Null when nothing is left or the price is unknown.
+ */
+export function defaultRequestTotalMinor(
+  packagePriceMinor: number | null | undefined,
+  requests: ReadonlyArray<{ amount_minor: number; status: JobPaymentRequestStatus }>,
+): number | null {
+  if (packagePriceMinor == null || !Number.isFinite(packagePriceMinor) || packagePriceMinor <= 0) return null;
+  const requested = requests
+    .filter((r) => r.status === 'pending' || r.status === 'sent' || r.status === 'paid')
+    .reduce((sum, r) => sum + r.amount_minor, 0);
+  const left = packagePriceMinor - requested;
+  return left > 0 ? left : null;
+}

@@ -7,7 +7,8 @@ import type { TenantLegalProfile } from './useLegalDocument';
 /**
  * Legal details the studio already gave us elsewhere: the studio's name and
  * contact email, the owner's name, the payment and invoicing providers and
- * the business number used for invoices. They fill Settings → Legal so the
+ * the business number used for invoices, the owner's phone and the address
+ * all the classes share. They fill Settings → Legal so the
  * admin only types what we can't know (each filled detail stays editable).
  */
 export interface LegalAutofillSources {
@@ -22,6 +23,10 @@ export interface LegalAutofillSources {
   businessNumber?: string | null;
   /** legal_profile.business_status: an unregistered studio is run by a person, named in full. */
   businessStatus?: string | null;
+  /** The owner's own phone (their WhatsApp number, or the phone on their sign-in). */
+  ownerPhone?: string | null;
+  /** The one location every class with a location shares (offerings.location). */
+  classLocation?: string | null;
 }
 
 /**
@@ -67,6 +72,8 @@ export function legalAutofill(src: LegalAutofillSources, lang: LegalLang): Recor
   set('privacy_contact_name', src.ownerName);
   set('accessibility_contact_name', src.ownerName);
   if (src.businessStatus !== 'not_registered') set('business_number', src.businessNumber);
+  set('phone', src.ownerPhone);
+  set('address', src.classLocation);
 
   const online = providerName(src.paymentProvider);
   const invoicing = providerName(src.invoicingProvider);
@@ -99,7 +106,75 @@ export function autofilledKeys(profile: Record<string, string> | null | undefine
   return Object.keys(autofill).filter((k) => !(profile?.[k] ?? '').trim());
 }
 
-async function loadSources(tenantId: string): Promise<Partial<LegalAutofillSources>> {
+/**
+ * The studio's address, if every class that has a location gives the same one
+ * (ignoring case and spacing); cancelled classes don't count. Otherwise none.
+ */
+export function sharedClassLocation(rows: Array<{ location?: string | null; status?: string | null }>): string | null {
+  const norm = (v: string) => v.trim().replace(/\s+/g, ' ').toLowerCase();
+  let first: string | null = null;
+  for (const r of rows) {
+    if (r.status === 'cancelled') continue;
+    const loc = (r.location ?? '').trim();
+    if (!loc) continue;
+    if (first === null) first = loc;
+    else if (norm(first) !== norm(loc)) return null;
+  }
+  return first;
+}
+
+/** Each source on its own: one that can't be read leaves only its own detail empty. */
+async function optional<T>(load: () => Promise<T>): Promise<T | null> {
+  try {
+    return await load();
+  } catch {
+    return null;
+  }
+}
+
+async function loadClassLocation(tenantId: string): Promise<string | null> {
+  const { data } = await supabase.from('offerings').select('location, status').eq('tenant_id', tenantId);
+  return Array.isArray(data) ? sharedClassLocation(data as Array<{ location?: string | null; status?: string | null }>) : null;
+}
+
+/** The signed-in owner's phone: their own WhatsApp number (RLS: own row), else their sign-in phone. */
+async function loadOwnerPhone(tenantId: string, userId: string): Promise<string | null> {
+  const person = await optional(async () => {
+    const { data } = await supabase
+      .from('people')
+      .select('id')
+      .eq('tenant_id', tenantId)
+      .eq('user_profile_id', userId)
+      .limit(1)
+      .maybeSingle();
+    return (data as { id?: string } | null)?.id ?? null;
+  });
+  if (person) {
+    const whatsapp = await optional(async () => {
+      const { data } = await supabase
+        .from('contact_preferences')
+        .select('whatsapp_number')
+        .eq('person_id', person)
+        .limit(1)
+        .maybeSingle();
+      return ((data as { whatsapp_number?: string | null } | null)?.whatsapp_number ?? '').trim() || null;
+    });
+    if (whatsapp) return whatsapp;
+  }
+  return optional(async () => {
+    const { data } = await supabase.auth.getUser();
+    return (data?.user?.phone ?? '').trim() || null;
+  });
+}
+
+async function loadSources(
+  tenantId: string,
+  { ownerUserId, studioSuggestions }: { ownerUserId: string | null; studioSuggestions: boolean },
+): Promise<Partial<LegalAutofillSources>> {
+  const [classLocation, ownerPhone] = await Promise.all([
+    studioSuggestions ? optional(() => loadClassLocation(tenantId)) : Promise.resolve(null),
+    ownerUserId ? optional(() => loadOwnerPhone(tenantId, ownerUserId)) : Promise.resolve(null),
+  ]);
   const { data } = await supabase
     .from('tenants')
     .select('payment_provider, invoicing_provider, offline_payment_instructions, invoice_license_number')
@@ -111,24 +186,37 @@ async function loadSources(tenantId: string): Promise<Partial<LegalAutofillSourc
     invoicingProvider: t.invoicing_provider ?? null,
     offlinePayments: !!(t.offline_payment_instructions ?? '').trim(),
     businessNumber: t.invoice_license_number ?? null,
+    classLocation,
+    ownerPhone,
   };
 }
 
-/** Loads the sources for one studio (any host: by id) and returns the suggestions. */
-export function useLegalAutofill(legal: TenantLegalProfile | null | undefined): {
+/**
+ * Loads the sources for one studio (any host: by id) and returns the suggestions.
+ * The phone and address are only suggested where the admin sees and edits them
+ * (Settings → Legal, `studioSuggestions`): the owner's own number or a class
+ * location is never published on Confirm without them having seen it.
+ */
+export function useLegalAutofill(
+  legal: TenantLegalProfile | null | undefined,
+  opts: { studioSuggestions?: boolean } = {},
+): {
   autofill: Record<string, string>;
   isLoading: boolean;
 } {
   const { user } = useCurrentUser();
   const tenantId = legal?.tenantId;
+  // The owner's own phone only when they look at their own studio.
+  const studioSuggestions = !!opts.studioSuggestions;
+  const ownerUserId = studioSuggestions && user && tenantId && user.tenant_id === tenantId ? user.id : null;
   const { data, isLoading } = useQuery({
-    queryKey: ['legal-autofill-sources', tenantId],
+    queryKey: ['legal-autofill-sources', tenantId, studioSuggestions, ownerUserId],
     enabled: !!tenantId,
     staleTime: 5 * 60 * 1000,
     // Suggestions only: if a source can't be read, the admin simply types the detail.
     queryFn: async () => {
       try {
-        return await loadSources(tenantId!);
+        return await loadSources(tenantId!, { ownerUserId, studioSuggestions });
       } catch {
         return null;
       }

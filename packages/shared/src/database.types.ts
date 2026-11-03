@@ -3888,25 +3888,64 @@ export type Database = {
       }
       verticals: {
         Row: {
+          colours: Json
           created_at: string
+          default_switches: Json
           display_name: string
+          enquiry_presets: string[]
+          hint_en: string
+          hint_he: string
           id: string
           is_active: boolean
+          label_overrides: Json
+          legal_addon: string | null
+          marketing_pages: string[]
+          name_en: string
+          name_he: string
           plan_restriction: Database["public"]["Enums"]["tenant_plan"] | null
+          sort_order: number
+          status: string
+          updated_at: string
         }
         Insert: {
+          colours?: Json
           created_at?: string
+          default_switches?: Json
           display_name: string
+          enquiry_presets?: string[]
+          hint_en?: string
+          hint_he?: string
           id: string
           is_active?: boolean
+          label_overrides?: Json
+          legal_addon?: string | null
+          marketing_pages?: string[]
+          name_en: string
+          name_he: string
           plan_restriction?: Database["public"]["Enums"]["tenant_plan"] | null
+          sort_order?: number
+          status?: string
+          updated_at?: string
         }
         Update: {
+          colours?: Json
           created_at?: string
+          default_switches?: Json
           display_name?: string
+          enquiry_presets?: string[]
+          hint_en?: string
+          hint_he?: string
           id?: string
           is_active?: boolean
+          label_overrides?: Json
+          legal_addon?: string | null
+          marketing_pages?: string[]
+          name_en?: string
+          name_he?: string
           plan_restriction?: Database["public"]["Enums"]["tenant_plan"] | null
+          sort_order?: number
+          status?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -4956,6 +4995,30 @@ export type Database = {
       platform_access_should_log: {
         Args: { p_tenant_id: string }
         Returns: boolean
+      }
+      platform_set_feature_override: {
+        Args: {
+          p_enabled: boolean
+          p_feature_key: string
+          p_note?: string
+          p_tenant_id: string
+        }
+        Returns: undefined
+      }
+      platform_tenant_feature_states: {
+        Args: { p_tenant_id: string }
+        Returns: {
+          default_on: boolean
+          description: string
+          effective: boolean
+          feature_key: string
+          feature_set: string
+          override_enabled: boolean
+          override_note: string
+          profile_gate: string
+          skin_restriction: string
+          tier_minimum: Database["public"]["Enums"]["tenant_plan"]
+        }[]
       }
       preview_notification_blast_recipients: {
         Args: {

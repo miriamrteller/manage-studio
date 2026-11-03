@@ -1,8 +1,9 @@
 import { OPALSWIFT_BRAND } from '@/lib/theme/opalswiftBrand';
-import type { PaymentFlow, StudioProfile } from '@shared/index';
+import { profileFromSkin, type PaymentFlow, type Skin, type StudioProfile } from '@shared/index';
 import type { StudioInvoicingProvider, StudioPaymentProvider } from '../services/studioSetupService';
 
-export type StudioVertical = 'dance-studio' | 'photographer' | 'beautician' | 'generic';
+/** A skin id (verticals.id). The wizard lists the live skins; VERTICALS is the built-in fallback. */
+export type StudioVertical = string;
 export const VERTICALS: StudioVertical[] = ['dance-studio', 'photographer', 'beautician', 'generic'];
 
 export interface StudioSetupForm {
@@ -21,11 +22,14 @@ export interface StudioSetupForm {
   teachesClasses: boolean;
   familyAccounts: boolean;
   clientBooking: boolean;
+  /** Business address and phone (both optional); stored in the studio's legal profile. */
+  businessAddress: string;
+  businessPhone: string;
   /**
-   * Answer to "Will you charge monthly fees?" (null = not answered). Pre-filled from the studio
-   * type; decides which payment providers are offered. Not sent: it only guides the choice.
+   * Whether the studio charges monthly fees. Not asked: derived from the payment flow (monthly or
+   * both = yes). Decides which payment providers are offered. Not sent: it only guides the choice.
    */
-  monthlyFees: boolean | null;
+  monthlyFees: boolean;
 }
 
 /**
@@ -48,14 +52,22 @@ export const INITIAL_FORM: StudioSetupForm = {
   teachesClasses: false,
   familyAccounts: false,
   clientBooking: false,
-  monthlyFees: null,
+  businessAddress: '',
+  businessPhone: '',
+  monthlyFees: true,
 };
 
 /**
  * What the studio type pre-fills for the business profile. Only a starting point: the wizard shows
  * every answer and the owner changes any of it (and again later in Settings, "Your business").
  */
-export function profileDefaultsFor(vertical: StudioVertical): StudioProfile {
+export function profileDefaultsFor(vertical: StudioVertical, skin?: Pick<Skin, 'switches'> | null): StudioProfile {
+  // The skin's default switches (Skins page) win; the built-in values below fill any gap.
+  if (skin) return profileFromSkin(skin, builtInProfileDefaults(vertical));
+  return builtInProfileDefaults(vertical);
+}
+
+function builtInProfileDefaults(vertical: StudioVertical): StudioProfile {
   switch (vertical) {
     case 'dance-studio':
       return { paymentFlow: 'recurring', teachesClasses: true, familyAccounts: true, clientBooking: false };
@@ -98,6 +110,10 @@ export function toSetupRequest(form: StudioSetupForm) {
     invoicingProvider: form.invoicingProvider,
     primaryColor: form.primaryColor,
     accentColor: form.accentColor,
+    contact: {
+      ...(form.businessAddress.trim() ? { address: form.businessAddress.trim() } : {}),
+      ...(form.businessPhone.trim() ? { phone: form.businessPhone.trim() } : {}),
+    },
     profile: {
       paymentFlow: form.paymentFlow,
       teachesClasses: form.teachesClasses,

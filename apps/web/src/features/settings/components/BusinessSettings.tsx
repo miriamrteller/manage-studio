@@ -1,7 +1,7 @@
 import { useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation } from '@tanstack/react-query';
-import type { PaymentFlow, StudioProfile } from '@shared/index';
+import { EXISTING_STUDIO_PROFILE, type PaymentFlow, type StudioProfile } from '@shared/index';
 import { Button } from '@/components/ui/button';
 import { useTenant } from '@/hooks/useTenant';
 import { supabase } from '@/lib/supabase';
@@ -28,7 +28,8 @@ export function BusinessSettings() {
   const { t } = useTranslation();
   const tenant = useTenant();
   const id = useId();
-  const saved = tenant?.profile;
+  // A tenant payload without a profile (an older cached one) reads as an existing studio.
+  const saved = tenant ? (tenant.profile ?? EXISTING_STUDIO_PROFILE) : undefined;
   const [draft, setDraft] = useState<StudioProfile | null>(saved ?? null);
   const [notice, setNotice] = useState<number | null>(null);
 
