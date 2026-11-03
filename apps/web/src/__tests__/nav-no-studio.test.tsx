@@ -44,7 +44,7 @@ describe('menu without a studio', () => {
 
   it('on a studio host nothing changes; "Studios" (the platform home) is not shown', () => {
     const sections = nav({ roles: ['super_admin', 'tenant_admin'], hasStudio: true });
-    expect(paths(sections)).toContain('/classes');
+    expect(paths(sections)).not.toContain('/classes'); // a studio admin's menu has no public Browse pages
     expect(paths(sections)).toContain('/admin/students');
     expect(paths(sections)).toContain('/platform/onboard');
     expect(paths(sections)).not.toContain('/');

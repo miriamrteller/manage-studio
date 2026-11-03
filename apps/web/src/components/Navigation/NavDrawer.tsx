@@ -95,7 +95,7 @@ export function NavDrawer() {
       case '/admin/jobs':
         return labels.engagement.plural;
       case '/admin/students':
-        return vertical === 'photographer' ? labels.contact.plural : t(item.labelKey);
+        return vertical === 'photographer' || vertical === 'beautician' ? labels.contact.plural : t(item.labelKey);
       case '/admin/setup/services':
         return vertical === 'photographer' ? labels.offering.plural : t(item.labelKey);
       case '/admin/setup/waivers':
@@ -107,8 +107,8 @@ export function NavDrawer() {
       case '/admin/setup/terms':
         return labels.season.plural;
       case '/admin/setup/classes':
-        // Prefer dedicated i18n key so Hebrew is "ניהול שיעורים", not "ניהול" + plural.
-        return t('nav.manage_classes');
+        // Top-level "Classes" in the studio's own word for them (Hebrew: "שיעורים").
+        return labels.offering.plural;
       default:
         return t(item.labelKey);
     }

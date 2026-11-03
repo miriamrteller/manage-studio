@@ -28,7 +28,7 @@ export {
 
 export type NavSectionKey =
   | 'browse'
-  | 'administration'
+  | 'main'
   | 'finance'
   | 'setup'
   | 'platform'
@@ -79,7 +79,7 @@ export interface NavTenantContext {
 
 export const SECTION_LABELS: Record<NavSectionKey, string> = {
   browse: 'nav.section.browse',
-  administration: 'nav.section.administration',
+  main: 'nav.section.main',
   finance: 'nav.section.finance',
   setup: 'nav.section.setup',
   platform: 'nav.section.platform',
@@ -107,52 +107,62 @@ export const navigationConfig: NavItem[] = [
     featureKey: FEATURES.scheduling.clientBooking,
     disableWhenBookingOff: true,
   },
+  // The studio admin's working pages, at the top level (no group to open). Leads first, then the
+  // business's core pages in the order the work flows. Admins do not see the public "Browse" pages.
   {
-    path: '/admin/jobs',
-    labelKey: 'nav.jobs',
+    path: '/admin/leads',
+    labelKey: 'nav.leads',
     requiredRoles: ['tenant_admin'],
-    sectionKey: 'administration',
-    verticals: ['photographer'],
+    sectionKey: 'main',
   },
   {
     path: '/admin/students',
     labelKey: 'nav.students',
     requiredRoles: ['tenant_admin'],
-    sectionKey: 'administration',
+    sectionKey: 'main',
   },
   {
     path: '/admin/families',
     labelKey: 'nav.families',
     requiredRoles: ['tenant_admin'],
-    sectionKey: 'administration',
-    // Dance family accounts; photographers work from Contacts and Shoots. Route kept for deep links.
-    hideForVerticals: ['photographer'],
+    sectionKey: 'main',
+    // Family accounts belong to class businesses; appointment businesses work from Contacts/Clients.
+    hideForVerticals: ['photographer', 'beautician'],
   },
   {
-    path: '/admin/notifications',
-    labelKey: 'nav.notifications',
+    // The studio's classes (the page that used to sit under Setup as "Manage classes").
+    path: '/admin/setup/classes',
+    labelKey: 'nav.classes',
     requiredRoles: ['tenant_admin'],
-    sectionKey: 'administration',
+    sectionKey: 'main',
+    hideForVerticals: ['photographer', 'beautician'],
   },
   {
-    path: '/admin/leads',
-    labelKey: 'nav.leads',
+    path: '/admin/jobs',
+    labelKey: 'nav.jobs',
     requiredRoles: ['tenant_admin'],
-    sectionKey: 'administration',
+    sectionKey: 'main',
+    verticals: ['photographer'],
   },
   {
     path: '/admin/quotes',
     labelKey: 'nav.quotes',
     requiredRoles: ['tenant_admin'],
-    sectionKey: 'administration',
+    sectionKey: 'main',
     verticals: ['photographer'],
   },
   {
     path: '/admin/appointments',
     labelKey: 'nav.appointments',
     requiredRoles: ['tenant_admin'],
-    sectionKey: 'administration',
+    sectionKey: 'main',
     featureKey: FEATURES.scheduling.clientBooking,
+  },
+  {
+    path: '/admin/notifications',
+    labelKey: 'nav.notifications',
+    requiredRoles: ['tenant_admin'],
+    sectionKey: 'main',
   },
   {
     path: '/admin/finance',
@@ -257,14 +267,6 @@ export const navigationConfig: NavItem[] = [
     moduleKey: 'scheduling',
   },
   {
-    path: '/admin/setup/classes',
-    hideForVerticals: ['photographer'],
-    labelKey: 'nav.manage_classes',
-    requiredRoles: ['tenant_admin'],
-    sectionKey: 'setup',
-    indent: true,
-  },
-  {
     path: '/admin/setup/services',
     labelKey: 'nav.booking_services',
     requiredRoles: ['tenant_admin'],
@@ -356,7 +358,7 @@ export const publicNavigationConfig: NavItem[] = [
 
 const SECTION_ORDER: NavSectionKey[] = [
   'browse',
-  'administration',
+  'main',
   'finance',
   'setup',
   'platform',
@@ -429,7 +431,13 @@ export function buildNavSections(
   userRoles: string[] | null,
 ): NavSection[] {
   const roles = userRoles ?? [];
-  const visibleItems = items.filter((item) => canAccessRoute(roles, item.requiredRoles));
+  // A studio admin works from their own pages; the public "Browse" pages (what a client sees)
+  // are not in their menu. Every other role keeps them.
+  const isStudioAdmin = roles.includes('tenant_admin');
+  const visibleItems = items.filter(
+    (item) =>
+      canAccessRoute(roles, item.requiredRoles) && !(isStudioAdmin && item.sectionKey === 'browse'),
+  );
 
   const grouped = new Map<NavSectionKey, NavItem[]>();
   for (const item of visibleItems) {

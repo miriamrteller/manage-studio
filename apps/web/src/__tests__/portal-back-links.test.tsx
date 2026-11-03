@@ -243,21 +243,19 @@ describe('menu per vertical', () => {
       roles,
     ).flatMap((section) => section.items.map((item) => item.path));
 
-  it('dance admin menu is unchanged', () => {
+  it('dance admin menu: working pages first (Leads, Students, Families, Classes, Appointments, Notifications), then Finance and Setup', () => {
     expect(paths('dance-studio', ['tenant_admin'])).toEqual([
-      '/classes', '/book',
-      '/admin/students', '/admin/families', '/admin/notifications', '/admin/leads', '/admin/appointments',
+      '/admin/leads', '/admin/students', '/admin/families', '/admin/setup/classes', '/admin/appointments', '/admin/notifications',
       '/admin/finance', '/admin/finance/payments', '/admin/finance/expenses', '/admin/finance/expenses/categories',
       '/admin/setup', '/admin/setup?guide=open', '/admin/setup/settings', '/admin/setup/bundled-payments', '/admin/setup/billing',
-      '/admin/setup/levels', '/admin/setup/terms', '/admin/setup/classes', '/admin/setup/services',
+      '/admin/setup/levels', '/admin/setup/terms', '/admin/setup/services',
       '/admin/setup/booking', '/admin/setup/waivers',
     ]);
   });
 
-  it('photographer admin menu drops family accounts and bundled payments, keeps booking', () => {
+  it('photographer admin menu: Leads, Clients, Shoots, Quotes, Appointments, Notifications; no family accounts or bundled payments', () => {
     expect(paths('photographer', ['tenant_admin'])).toEqual([
-      '/book',
-      '/admin/jobs', '/admin/students', '/admin/notifications', '/admin/leads', '/admin/quotes', '/admin/appointments',
+      '/admin/leads', '/admin/students', '/admin/jobs', '/admin/quotes', '/admin/appointments', '/admin/notifications',
       '/admin/finance', '/admin/finance/payments', '/admin/finance/expenses', '/admin/finance/expenses/categories',
       '/admin/setup', '/admin/setup?guide=open', '/admin/setup/settings', '/admin/setup/billing', '/admin/setup/services',
       '/admin/setup/booking', '/admin/setup/waivers',

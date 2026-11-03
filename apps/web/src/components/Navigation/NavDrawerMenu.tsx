@@ -63,7 +63,7 @@ export function NavDrawerMenu({
   return (
     <nav className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain py-1" aria-label={t('nav.menu')}>
       {sections.map((section) => {
-        if (section.sectionKey === 'browse') {
+        if (section.sectionKey === 'browse' || section.sectionKey === 'main') {
           return (
             <div key={section.sectionKey} className="border-b border-[var(--nav-border)] last:border-b-0">
               <ul>
