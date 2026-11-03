@@ -120,13 +120,32 @@ points:
 7. Deploy every edge function to prod.
 8. `pnpm verify:prod`, `pnpm verify:rls` and `pnpm verify:env` must all pass.
 9. Stop here. The photographer's YPay keys and the ₪1 live test happen with
-   her at the meeting.
+   her at the meeting. Before it, her YPay account needs **API access switched
+   on** (a paid YPay add-on, about ₪50 + VAT a month per YPay's FAQ), and she
+   needs her YPay client ID and client secret. Owner-facing steps:
+   [YPAY-SETUP-GUIDE.md](../launch/YPAY-SETUP-GUIDE.md).
+
+   At the meeting, in order:
+   1. **Settings → Payment Settings → Connect YPay**: enter the YPay client ID
+      and client secret, press **Save YPay details**, then **Test connection**
+      (expect "Connected ✓ YPay accepted your details.").
+   2. **Which document does YPay issue?**: 108 Receipt (קבלה) for an exempt
+      dealer, 109 Tax invoice-receipt (חשבונית מס-קבלה) for a licensed dealer.
+      Stored in `tenants.ypay_document_type`; sent to YPay unchanged.
+   3. The ₪1 card test: a ₪1 payment request on a test shoot, **Send pay
+      link**, pay, check the request shows Paid, the "Invoice N" link and the
+      client email.
+   4. One bank-transfer receipt (step 10).
+   5. One refund: refund the ₪1 in the YPay dashboard, then **Record refund**
+      on the request in OpalSwift (full amount only; no money moves, no credit
+      document is issued by OpalSwift).
 10. **At the meeting, after the ₪1 card test: one offline receipt.** Mark a
     small payment request paid as "bank transfer" in the job's payments panel
-    and check in the YPay dashboard that a קבלה / חשבונית מס קבלה (by the
-    tenant's `vat_type`) was issued with payment method העברה בנקאית and the
-    right amount, that the "Receipt N" link in the panel opens it, and that
-    the client email arrived. The request body follows the YPay API document
+    and check in the YPay dashboard that the document type chosen in
+    **Which document does YPay issue?** (`tenants.ypay_document_type`: 108
+    קבלה or 109 חשבונית מס-קבלה) was issued with payment method העברה בנקאית
+    and the right amount, that the "Receipt N" link in the panel opens it, and
+    that the client email arrived. The request body follows the YPay API document
     v2.1 (`supabase/functions/_shared/payments/ypay/document.ts`); if YPay
     answers a 3xxx error the `document_queue` row goes dead and admins are
     alerted — nothing wrong is issued. Fix, redeploy `issue-document`, requeue.

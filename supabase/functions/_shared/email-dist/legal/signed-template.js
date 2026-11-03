@@ -61,6 +61,24 @@ export const SIGNED_FORMS_BY_SKIN = {
 export function signedFormsForVertical(vertical) {
     return SIGNED_FORMS_BY_SKIN[vertical ?? ''] ?? SIGNED_FORMS_BY_SKIN.generic;
 }
+/**
+ * The forms for a studio's skin. Built-in skins keep their own forms. A data skin
+ * (Skins page) signs the general agreement plus the add-on its row names, when that
+ * add-on is one the app ships (unknown or unshipped add-ons: the agreement only).
+ */
+export function signedFormsForSkin(skin, legalAddon) {
+    const id = skin ?? '';
+    if (id in SIGNED_FORMS_BY_SKIN || !legalAddon)
+        return signedFormsForVertical(id);
+    const addon = `addon-${legalAddon}`;
+    if (!(addon in SIGNED_TEMPLATE_FILES))
+        return signedFormsForVertical(id);
+    return SIGNED_FORMS_BY_SKIN.generic.map((form) => ({ ...form, addon: addon }));
+}
+/** Add-ons a data skin can bring into its signed forms today. */
+export function isShippedLegalAddon(legalAddon) {
+    return Boolean(legalAddon) && `addon-${legalAddon}` in SIGNED_TEMPLATE_FILES;
+}
 /** Studios whose clients sign a health declaration: the only ones asked about insurance. */
 export function hasHealthDeclarations(vertical) {
     return signedFormsForVertical(vertical).some((f) => f.doc.startsWith('health-declaration'));
@@ -164,8 +182,10 @@ export function signedTemplateSource(doc, lang) {
     return SIGNED_TEMPLATE_SOURCES[doc][lang];
 }
 /** The forms for a studio's type, filled: what provisioning stores as its active consent templates. */
-export function studioSignedForms(vertical, ctx) {
-    return signedFormsForVertical(vertical).map((form) => ({
+export function studioSignedForms(vertical, ctx, 
+/** A data skin's add-on (verticals.legal_addon); ignored for built-in skins. */
+legalAddon) {
+    return signedFormsForSkin(vertical, legalAddon).map((form) => ({
         key: form.key,
         name: form.title[ctx.lang],
         audience: form.audience ?? null,
