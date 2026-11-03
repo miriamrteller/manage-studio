@@ -135,6 +135,7 @@
   .back-link{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600;color:var(--slate);text-decoration:none;font-family:"Rubik";transition:.2s}
   .back-link:hover{color:var(--accent)}
 </style>
+<link rel="stylesheet" href="icons.css">
 </head>
 <body dir="rtl" lang="he">
 
@@ -150,7 +151,7 @@
 <header class="hero">
   <div class="wrap hero-grid">
     <div>
-      <span class="eyebrow">🎓 <span data-he="מהדורת החוגים של OpalSwift" data-en="The OpalSwift Classes Edition">מהדורת החוגים של OpalSwift</span></span>
+      <span class="eyebrow"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-grad"/></svg> <span data-he="מהדורת החוגים של OpalSwift" data-en="The OpalSwift Classes Edition">מהדורת החוגים של OpalSwift</span></span>
       <h1 data-he='אתה מלמד את השיעור.<br><span class="grad-text">התשלומים — שלנו.</span>' data-en='You teach the class.<br><span class="grad-text">The billing is ours.</span>'>אתה מלמד את השיעור.<br><span class="grad-text">התשלומים — שלנו.</span></h1>
       <p class="subhero" data-he="חוגים קבועים, תשלומים חלקים, תלמידים מרוצים." data-en="Recurring classes, smooth payments, happy students.">חוגים קבועים, תשלומים חלקים, תלמידים מרוצים.</p>
       <p class="lead" data-he="הרשמה של הורים, הוראת קבע חודשית, קבלה אוטומטית לכל משפחה, והתראות לפני אי-הופעה — הכל מותקן מראש לחוגים, אמנות, ספורט, מוזיקה וכל שיעור חוזר בישראל." data-en="Parent sign-up link, automatic monthly standing orders, receipts for each family, and no-show alerts — all preloaded for art classes, sports, music, dance and any recurring instruction in Israel.">הרשמה של הורים, הוראת קבע חודשית, קבלה אוטומטית לכל משפחה, והתראות לפני אי-הופעה — הכל מותקן מראש לחוגים, אמנות, ספורט, מוזיקה וכל שיעור חוזר בישראל.</p>
@@ -158,24 +159,24 @@
         <a href="#pricing" class="btn btn-primary" data-he="הצטרף לבטא" data-en="Join the Beta">הצטרף לבטא</a>
         <a href="#presets" class="btn btn-ghost dark" data-he="מה כבר מוכן בשבילי?" data-en="What's set up for me?">מה כבר מוכן בשבילי?</a>
       </div>
-      <div class="trust">⚡ <span data-he="מוכן לעבודה — הכסף זורם אוטומטית" data-en="Ready to go — money flows automatically">מוכן לעבודה — בלי הגדרות ובלי רודף הורים</span></div>
+      <div class="trust"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-zap"/></svg> <span data-he="מוכן לעבודה — הכסף זורם אוטומטית" data-en="Ready to go — money flows automatically">מוכן לעבודה — בלי הגדרות ובלי רודף הורים</span></div>
     </div>
     <div style="position:relative">
       <div class="mock">
         <div class="bar"></div>
         <div class="mock-row">
-          <div class="l"><div class="dot">👨‍👩‍👧‍👦</div><div><b data-he="משפחת כהן · קהל מתחילים" data-en="Cohen family · Beginner group">משפחת כהן · קהל מתחילים</b><br><small style="color:var(--slate)" data-he="הוראת קבע הוגדרה" data-en="Standing order active">הוראת קבע הוגדרה</small></div></div>
+          <div class="l"><div class="dot"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-home"/></svg></div><div><b data-he="משפחת כהן · קהל מתחילים" data-en="Cohen family · Beginner group">משפחת כהן · קהל מתחילים</b><br><small style="color:var(--slate)" data-he="הוראת קבע הוגדרה" data-en="Standing order active">הוראת קבע הוגדרה</small></div></div>
           <span class="pill ok" data-he="✓ רשום" data-en="✓ Enrolled">✓ רשום</span>
         </div>
         <div class="mock-row">
-          <div class="l"><div class="dot">📧</div><div><b data-he="קבלת הרשמה שגורמת ללקוח להיראות כמו עסק" data-en="Receipt (monthly, auto)">קבלת הרשמה שגורמת ללקוח להיראות כמו עסק</b><br><small style="color:var(--slate)" data-he="מה שנשמר בקלות בארכיון הורים" data-en="What's saved to their family archive">מה שנשמר בקלות בארכיון הורים</small></div></div>
+          <div class="l"><div class="dot"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-mail"/></svg></div><div><b data-he="קבלת הרשמה שגורמת ללקוח להיראות כמו עסק" data-en="Receipt (monthly, auto)">קבלת הרשמה שגורמת ללקוח להיראות כמו עסק</b><br><small style="color:var(--slate)" data-he="מה שנשמר בקלות בארכיון הורים" data-en="What's saved to their family archive">מה שנשמר בקלות בארכיון הורים</small></div></div>
           <span class="pill auto" data-he="אוטומטי" data-en="Auto">אוטומטי</span>
         </div>
         <div class="mock-foot">
           <div><small style="opacity:.7" data-he="בחודש הבא: ₪180 — אוטומטי לגמרי" data-en="Next month: ₪180 — fully automatic">בחודש הבא: ₪180 — בלי כל מאמץ שלך</small></div>
           <div class="amt">₪180</div>
         </div>
-        <div class="float-badge">⚡ <span data-he="0 רדיפות" data-en="0 chasing">0 רדיפות</span></div>
+        <div class="float-badge"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-zap"/></svg> <span data-he="0 רדיפות" data-en="0 chasing">0 רדיפות</span></div>
       </div>
     </div>
   </div>
@@ -190,17 +191,17 @@
     </div>
     <div class="cards3">
       <div class="card">
-        <div class="ic">💰</div>
+        <div class="ic"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-wallet"/></svg></div>
         <h3 data-he="הורים משלמים — אוטומטית" data-en="Parents pay — automatically">הורים משלמים בלי רדיפה</h3>
         <p data-he="קישור הרשמה אחד; הורה מגדיר הוראת קבע בקלות, וכל חודש הכסף זורם אוטומטית — התזכורות שלנו דואגות לכל השאר." data-en="One sign-up link; parent sets a standing order once, and it collects every month automatically — our reminders handle everything else.">קישור הרשמה אחד; הורה מוגדר הוראת קבע בקלות, וכל חודש הכסף זורם בלי שתשלח הודעה. לא רודפים, לא תזכורות מביכות, לא אחוזים מפוספסים.</p>
       </div>
       <div class="card">
-        <div class="ic">📋</div>
+        <div class="ic"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-clipboard"/></svg></div>
         <h3 data-he="הקבלות כבר מטופלות" data-en="Receipts are automatic">הקבלות כבר מטופלות</h3>
         <p data-he="כל תשלום חודשי מייצר קבלה תקינה בעברית וממשק באנגלית. משפחות רואות את היתרה שלהן בפורטל, וכל הרשומות הפיננסיות נשארות מסודרות." data-en="Every monthly payment generates a legally valid receipt. Families see their balance in a parent portal, and all your financial records stay organized.">כל תשלום חודשי מייצר קבלה תקינה בעברית וממשק באנגלית. משפחות רואות את היתרה שלהן בפורטל, והרו״ח שלך מקבל עיבוד אוטומטי.</p>
       </div>
       <div class="card">
-        <div class="ic">🎯</div>
+        <div class="ic"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-target"/></svg></div>
         <h3 data-he="זמן בחזרה לתרגול" data-en="Time back for teaching">זמן בחזרה לתרגול</h3>
         <p data-he="אי-הופעות, ביטולים, שינויים בהרשמה — הכל מטופל אוטומטית. אתה פשוט מתחיל את השיעור." data-en="No-shows, cancellations, enrollment changes — all handled automatically. You just teach.">אי-הופעות, ביטולים בחודשי אי, השינויים בהרשמה — הם מטופלים. לך פשוט להתחיל לשיעור בלי לדאוג שמי שלא בא אתמול הוא עדיין במערכת החודש הזה.</p>
       </div>
@@ -216,28 +217,28 @@
     </div>
     <div class="preset">
       <div class="preset-item">
-        <div class="pe">🎨</div>
+        <div class="pe"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-palette"/></svg></div>
         <div>
           <b data-he="חוג ציור" data-en="Art class">חוג ציור</b>
           <p data-he="רשמה לפי תקופה, תשלום חודשי + דמי חומרים, הורים מקבלים תמונות מהיום." data-en="Term-based enrollment, monthly + materials fee, families get photos of work.">רשמה לפי תקופה, תשלום חודשי + דמי חומרים, הורים מקבלים תמונות מהיום.</p>
         </div>
       </div>
       <div class="preset-item">
-        <div class="pe">🏃</div>
+        <div class="pe"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-activity"/></svg></div>
         <div>
           <b data-he="אימון ספורט" data-en="Sports coaching">אימון ספורט</b>
           <p data-he="כרטיסיות מקדמי או הוראת קבע שבועית, ביטולים בזמן + בדיקת אפס הופעות, כרטיסייה עם ימי בחינם." data-en="Punch cards or weekly standing order, cancellation policy, makeups & freezes.">כרטיסיות מקדמי או הוראת קבע שבועית, ביטולים בזמן + בדיקת אפס הופעות, כרטיסייה עם ימי בחינם.</p>
         </div>
       </div>
       <div class="preset-item">
-        <div class="pe">🎹</div>
+        <div class="pe"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-piano"/></svg></div>
         <div>
           <b data-he="שיעורי מוזיקה פרטיים" data-en="Private music lessons">שיעורי מוזיקה פרטיים</b>
           <p data-he="שיעורים שבועיים קבועים, ביטול 48 שעות, הרכבה מחזוקת וחיוב חוזר." data-en="Weekly recurring, 48hr cancellation policy, auto-billing with makeup scheduling.">שיעורים שבועיים קבועים, ביטול 48 שעות, הרכבה מחזוקת וחיוב חוזר.</p>
         </div>
       </div>
       <div class="preset-item">
-        <div class="pe">💃</div>
+        <div class="pe"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-sparkles"/></svg></div>
         <div>
           <b data-he="ריקוד וזומבה" data-en="Dance / zumba">ריקוד וזומבה</b>
           <p data-he="חבורות קבוצתיות, הוראת קבע חודשית, סדר זמנים רב-כיתתי." data-en="Group classes, monthly standing order, multi-class scheduling.">חבורות קבוצתיות, הוראת קבע חודשית, סדר זמנים רב-כיתתי.</p>
@@ -284,26 +285,26 @@
     </div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px">
       <div style="background:var(--canvas);border-radius:20px;padding:28px;border:1px solid rgba(11,20,55,.07)">
-        <div style="font-size:28px;margin-bottom:12px">⭐⭐⭐⭐⭐</div>
+        <div style="font-size:28px;margin-bottom:12px"><svg class="icon icon-star" aria-hidden="true"><use href="icons.svg#i-star"/></svg><svg class="icon icon-star" aria-hidden="true"><use href="icons.svg#i-star"/></svg><svg class="icon icon-star" aria-hidden="true"><use href="icons.svg#i-star"/></svg><svg class="icon icon-star" aria-hidden="true"><use href="icons.svg#i-star"/></svg><svg class="icon icon-star" aria-hidden="true"><use href="icons.svg#i-star"/></svg></div>
         <p style="font-size:15px;color:var(--slate);line-height:1.65;margin-bottom:18px" data-he="&quot;הייתי שולחת תזכורות ידניות לכל הורה. היום OpalSwift עושה את זה לבד — אני פשוט מלמדת.&quot;" data-en="&quot;I used to send manual reminders to every parent. Now OpalSwift does it automatically — I just teach.&quot;">"הייתי שולחת תזכורות ידניות לכל הורה. היום OpalSwift עושה את זה לבד — אני פשוט מלמדת."</p>
         <div style="display:flex;align-items:center;gap:10px">
-          <div style="width:36px;height:36px;border-radius:50%;background:var(--accent-light);display:flex;align-items:center;justify-content:center;font-size:16px">🧘</div>
+          <div style="width:36px;height:36px;border-radius:50%;background:var(--accent-light);display:flex;align-items:center;justify-content:center;font-size:16px"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-leaf"/></svg></div>
           <div><div style="font-weight:700;font-size:14px" data-he="נועה כ׳, מדריכת יוגה" data-en="Noa K., yoga instructor">נועה כ׳, מדריכת יוגה</div><div style="font-size:12px;color:var(--slate)" data-he="ישראל · 4 קבוצות" data-en="Israel · 4 groups">ישראל · 4 קבוצות</div></div>
         </div>
       </div>
       <div style="background:var(--canvas);border-radius:20px;padding:28px;border:1px solid rgba(11,20,55,.07)">
-        <div style="font-size:28px;margin-bottom:12px">⭐⭐⭐⭐⭐</div>
+        <div style="font-size:28px;margin-bottom:12px"><svg class="icon icon-star" aria-hidden="true"><use href="icons.svg#i-star"/></svg><svg class="icon icon-star" aria-hidden="true"><use href="icons.svg#i-star"/></svg><svg class="icon icon-star" aria-hidden="true"><use href="icons.svg#i-star"/></svg><svg class="icon icon-star" aria-hidden="true"><use href="icons.svg#i-star"/></svg><svg class="icon icon-star" aria-hidden="true"><use href="icons.svg#i-star"/></svg></div>
         <p style="font-size:15px;color:var(--slate);line-height:1.65;margin-bottom:18px" data-he="&quot;ההרשמה לחוגים שלי הייתה כאוס של ווצאפ. עכשיו יש לינק אחד, טופס נקי, וכסף שמגיע לבד.&quot;" data-en="&quot;My class sign-ups were a WhatsApp mess. Now there's one link, a clean form, and money that arrives automatically.&quot;">"ההרשמה לחוגים שלי הייתה כאוס של ווצאפ. עכשיו יש לינק אחד, טופס נקי, וכסף שמגיע לבד."</p>
         <div style="display:flex;align-items:center;gap:10px">
-          <div style="width:36px;height:36px;border-radius:50%;background:var(--accent-light);display:flex;align-items:center;justify-content:center;font-size:16px">🏃</div>
+          <div style="width:36px;height:36px;border-radius:50%;background:var(--accent-light);display:flex;align-items:center;justify-content:center;font-size:16px"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-activity"/></svg></div>
           <div><div style="font-weight:700;font-size:14px" data-he="רועי מ׳, מאמן כושר" data-en="Roi M., fitness coach">רועי מ׳, מאמן כושר</div><div style="font-size:12px;color:var(--slate)" data-he="ירושלים · 6 קבוצות" data-en="Jerusalem · 6 groups">ירושלים · 6 קבוצות</div></div>
         </div>
       </div>
       <div style="background:var(--canvas);border-radius:20px;padding:28px;border:1px solid rgba(11,20,55,.07)">
-        <div style="font-size:28px;margin-bottom:12px">⭐⭐⭐⭐⭐</div>
+        <div style="font-size:28px;margin-bottom:12px"><svg class="icon icon-star" aria-hidden="true"><use href="icons.svg#i-star"/></svg><svg class="icon icon-star" aria-hidden="true"><use href="icons.svg#i-star"/></svg><svg class="icon icon-star" aria-hidden="true"><use href="icons.svg#i-star"/></svg><svg class="icon icon-star" aria-hidden="true"><use href="icons.svg#i-star"/></svg><svg class="icon icon-star" aria-hidden="true"><use href="icons.svg#i-star"/></svg></div>
         <p style="font-size:15px;color:var(--slate);line-height:1.65;margin-bottom:18px" data-he="&quot;ניהלתי גיליון אקסל של חייל. OpalSwift הזיז אותי לעולם אמיתי — בפחות מחצי שעה.&quot;" data-en="&quot;I managed a military-grade spreadsheet. OpalSwift moved me to the real world — in under half an hour.&quot;">"ניהלתי גיליון אקסל של חייל. OpalSwift הזיז אותי לעולם אמיתי — בפחות מחצי שעה."</p>
         <div style="display:flex;align-items:center;gap:10px">
-          <div style="width:36px;height:36px;border-radius:50%;background:var(--accent-light);display:flex;align-items:center;justify-content:center;font-size:16px">🎨</div>
+          <div style="width:36px;height:36px;border-radius:50%;background:var(--accent-light);display:flex;align-items:center;justify-content:center;font-size:16px"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-palette"/></svg></div>
           <div><div style="font-weight:700;font-size:14px" data-he="שירה א׳, מורה לאמנות" data-en="Shira A., art teacher">שירה א׳, מורה לאמנות</div><div style="font-size:12px;color:var(--slate)" data-he="חיפה · 3 קבוצות" data-en="Haifa · 3 groups">חיפה · 3 קבוצות</div></div>
         </div>
       </div>
