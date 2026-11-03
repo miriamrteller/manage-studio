@@ -1,13 +1,13 @@
 # Dev → prod pipeline (database + Edge Functions)
 
-**Written:** 2026-11-01 · Workflows: `db-ci.yml`, `deploy-dev.yml`,
+**Written:** 2026-11-01 · Workflows: `ci.yml` (database jobs; db-ci.yml was merged into it), `deploy-dev.yml`,
 `deploy-prod.yml`, `db-health.yml`, `backup-prod.yml`
 
 If you know Azure DevOps release pipelines, this is the same shape:
 
 | Azure DevOps | Here (GitHub Actions) |
 |---|---|
-| Build + tests on a pull request | **db-ci** runs on every PR |
+| Build + tests on a pull request | **CI** runs on every PR |
 | "Dev" stage, auto after merge | **deploy-dev** runs on every merge to `main` |
 | "Prod" stage with pre-deployment approval | **deploy-prod**: you start it, then approve it |
 | Approvers on the stage | Required reviewer on the GitHub Environment `production` |
@@ -15,7 +15,7 @@ If you know Azure DevOps release pipelines, this is the same shape:
 | Release history | Actions → deploy-prod runs, and the repo's Environments page |
 
 ```
-  PR opened ──► db-ci (blocking)
+  PR opened ──► CI (blocking)
                  ├─ migration guard: old migrations untouched, new ones named + ordered
                  ├─ SQL test suites (Postgres 17)
                  ├─ throwaway Supabase: ALL migrations from zero + seed + db lint
@@ -47,7 +47,7 @@ If you know Azure DevOps release pipelines, this is the same shape:
    project. Data fixes and one-time config rows (encryption key, cron config,
    tenant bootstrap) are the exception — they are data, not schema.
 2. **Migrations are append-only.** Once a migration file is on `main` it is never
-   edited, renamed or deleted. Fix forward with a new file. `db-ci` blocks the PR
+   edited, renamed or deleted. Fix forward with a new file. CI blocks the PR
    otherwise. New files: `YYYYMMDDHHMMSS_snake_case.sql`, newer than every file
    already on `main`.
 3. **Every migration must be backward-compatible** (expand → deploy app → contract).
@@ -64,7 +64,7 @@ If you know Azure DevOps release pipelines, this is the same shape:
    grants EXECUTE on new functions to `anon` and `authenticated` directly, so
    `REVOKE … FROM PUBLIC` alone restricts nothing. Add the function to a tier in
    `supabase/security/definer-execute.json` (public / authenticated / service /
-   internal) and `REVOKE`/`GRANT` to match in the same migration. `db-ci` fails
+   internal) and `REVOKE`/`GRANT` to match in the same migration. CI fails
    otherwise (`supabase/tests/security/run.sh`).
    A definer function that exists on a hosted project but not in git (made in
    the dashboard, or by a Supabase feature) stops the hardening migration;
@@ -81,7 +81,7 @@ If you know Azure DevOps release pipelines, this is the same shape:
 
 ## What happens when…
 
-**…a PR is opened.** `db-ci` runs. Jobs that only matter for database changes are
+**…a PR is opened.** CI runs. Jobs that only matter for database changes are
 skipped (and count as passed) when the PR does not touch `supabase/**`. If the
 types check fails, regenerate and commit: `pnpm db:reset-and-types:local`.
 
@@ -335,3 +335,20 @@ no payment provider, invoicing off) and, later, the photographer beta tenant.
 6. Bootstrap the owner and the `creativeballet` tenant with the trigger dance in
    HANDOVER.md — owner approves each step.
 7. deploy-prod once more. Nothing is pending; every check must now be green.
+
+## Keeping CI minutes down without skipping checks
+
+CI (`.github/workflows/ci.yml`) has one `checks` job that always runs: the
+migration guard, `verify:env`, actionlint, the pipeline script tests, and the
+decision about which suites a change needs (`scripts/ci/classify-changes.mjs`).
+
+- A suite is skipped only when every changed file is on its skip list. Docs
+  (not `docs/legal`, which the app bundles) and `apps/marketing` skip the app and
+  database suites; `apps/web/**` skips the Edge Functions. Anything else, a
+  workflow or `scripts/ci` change, or a manual run, runs everything. A skipped
+  job counts as passed for branch protection.
+- After a merge, a push to `main` whose exact file tree already passed on its PR
+  reuses that result (`scripts/ci/tested-tree.mjs`): the PR run must be this
+  repository's `ci.yml`, not from a fork, fully green, with every suite the push
+  needs concluded success. Otherwise everything runs. Run CI by hand
+  (*Run workflow*) to force a full run.

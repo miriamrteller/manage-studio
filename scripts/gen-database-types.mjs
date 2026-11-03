@@ -61,7 +61,7 @@ const previous = existsSync(outPath) ? readFileSync(outPath, 'utf8') : null;
 
 // Hosted projects emit an `__InternalSupabase: { PostgrestVersion }` block that
 // `--local` generation omits. Client typing relies on it, so keep the committed
-// block rather than stripping it on every local regeneration (db-ci compares
+// block rather than stripping it on every local regeneration (CI compares
 // local output with the committed file).
 const INTERNAL_BLOCK = /  \/\/ Allows to automatically instantiate[^\n]*\n[^\n]*\n  __InternalSupabase: \{\n[^}]*\}\n/;
 if (previous && !content.includes('__InternalSupabase: {')) {

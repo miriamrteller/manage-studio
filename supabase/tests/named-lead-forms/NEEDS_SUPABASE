@@ -1,1 +1,1 @@
-Runs in db-ci local-stack (needs Supabase roles + auth schema), not sql-tests.
+Runs in the CI local-stack job (needs Supabase roles + auth schema), not sql-tests.

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Migration guard — blocking in CI (db-ci.yml).
+# Migration guard — blocking in CI (ci.yml, checks job).
 #
 # 1. Append-only: a migration file that already exists on the base branch
 #    (main) may not be modified, renamed or deleted. Fix forward with a new file.

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Definer-function EXECUTE policy test. Needs a database with Supabase's roles
 # and default privileges and every migration applied — the local stack
-# (`supabase start`, db-ci local-stack job) or the supabase/postgres image.
+# (`supabase start`, CI local-stack job) or the supabase/postgres image.
 # Plain Postgres has no anon/authenticated defaults and would prove nothing.
 #
 #   DB_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres supabase/tests/security/run.sh

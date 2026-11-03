@@ -1,47 +1,142 @@
 name: CI
 
+# One workflow for the app and the database (it used to be ci.yml + db-ci.yml).
+#
+#   checks          always: migration guard, env docs, actionlint, and which
+#                   suites this change needs (scripts/ci/classify-changes.mjs)
+#   lint, test, build (+ wrangler dry-run), edge-functions, accessibility
+#   sql-tests, definer-drift, local-stack (database changes only)
+#
+# A suite is skipped only when every changed file is on its skip list; a
+# skipped job reports success, so required checks stay satisfiable. After a
+# merge, a push whose exact file tree already passed on its PR reuses that
+# result (scripts/ci/tested-tree.mjs); on any doubt everything runs.
+# Pipeline overview: docs/deployment/DEV-PROD-PIPELINE.md
+
 on:
   push:
     branches: [main, develop]
+  # Every PR, whatever its base, so stacked PRs are checked too.
   pull_request:
-    branches: [main, develop]
+  workflow_dispatch:
 
-# Grant all jobs the minimum permissions needed to checkout private repo
 permissions:
   contents: read
   pull-requests: read
+  actions: read # tested-tree lookup
 
 # A newer PR push cancels the superseded run; runs on main always finish.
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+env:
+  SUPABASE_TELEMETRY_DISABLED: "1"
+
 jobs:
-  # Detect which files changed
-  detect-changes:
+  checks:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     outputs:
-      ui-changed: ${{ steps.filter.outputs.ui }}
+      web: ${{ steps.plan.outputs.web }}
+      edge: ${{ steps.plan.outputs.edge }}
+      a11y: ${{ steps.plan.outputs.a11y }}
+      db: ${{ steps.plan.outputs.db }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: dorny/paths-filter@v3
-        id: filter
+      - uses: actions/setup-node@v4
         with:
-          filters: |
-            ui:
-              # Only components, layouts, pages, and styles (visible changes)
-              - 'apps/web/src/components/**'
-              - 'apps/web/src/features/**'
-              - 'apps/web/src/layouts/**'
-              - 'apps/web/src/pages/**'
-              - 'apps/web/src/**/*.tsx'
-              - 'apps/web/src/**/*.css'
-              - 'apps/web/e2e/**'
-              - '.github/workflows/ci.yml'
+          node-version: "22"
+
+      - name: Which suites this change needs
+        id: classify
+        env:
+          EVENT: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          : > changed.txt
+          if [ "$EVENT" = "pull_request" ]; then
+            # The checkout is the PR merged into its base; the first parent is the base.
+            git diff --name-only HEAD^1 HEAD > changed.txt || : > changed.txt
+          elif [ "$EVENT" = "push" ] && [ -n "$BEFORE" ] && [ "$BEFORE" != "0000000000000000000000000000000000000000" ]; then
+            git diff --name-only "$BEFORE" HEAD > changed.txt || : > changed.txt
+          fi
+          echo "Changed files: $(wc -l < changed.txt)"
+          node scripts/ci/classify-changes.mjs changed.txt | tee -a "$GITHUB_OUTPUT"
+          echo "tree=$(git rev-parse 'HEAD^{tree}')" >> "$GITHUB_OUTPUT"
+
+      # PR runs leave a marker naming the exact tree they test. It only points
+      # at this run; a later push trusts it only if this whole run is green.
+      - name: Marker for this tree
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        run: echo "${{ github.run_id }}" > tested-tree.txt
+      - uses: actions/upload-artifact@v4
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        with:
+          name: tested-tree-${{ steps.classify.outputs.tree }}
+          path: tested-tree.txt
+          retention-days: 14
+
+      - name: Reuse an identical tree that already passed?
+        id: reuse
+        if: github.event_name == 'push'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          TREE: ${{ steps.classify.outputs.tree }}
+          WEB: ${{ steps.classify.outputs.web }}
+          EDGE: ${{ steps.classify.outputs.edge }}
+          A11Y: ${{ steps.classify.outputs.a11y }}
+          DB: ${{ steps.classify.outputs.db }}
+        run: |
+          jobs="checks"
+          [ "$WEB" = true ] && jobs="$jobs,lint,test,build"
+          [ "$EDGE" = true ] && jobs="$jobs,edge-functions"
+          [ "$A11Y" = true ] && jobs="$jobs,accessibility"
+          [ "$DB" = true ] && jobs="$jobs,sql-tests,definer-drift,local-stack"
+          node scripts/ci/tested-tree.mjs "$TREE" "$jobs" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Plan
+        id: plan
+        env:
+          REUSE: ${{ steps.reuse.outputs.reuse }}
+          RUN_URL: ${{ steps.reuse.outputs.run_url }}
+          WEB: ${{ steps.classify.outputs.web }}
+          EDGE: ${{ steps.classify.outputs.edge }}
+          A11Y: ${{ steps.classify.outputs.a11y }}
+          DB: ${{ steps.classify.outputs.db }}
+        run: |
+          if [ "$REUSE" = true ]; then
+            echo "### Same file tree already passed every needed check: $RUN_URL" >> "$GITHUB_STEP_SUMMARY"
+            WEB=false; EDGE=false; A11Y=false; DB=false
+          fi
+          { echo "web=$WEB"; echo "edge=$EDGE"; echo "a11y=$A11Y"; echo "db=$DB"; } | tee -a "$GITHUB_OUTPUT"
+
+      - name: Pipeline script unit tests
+        run: node --test scripts/ci/*.test.mjs
+
+      - name: Append-only, unique, ordered migrations
+        env:
+          # PR: compare with the target branch. Push: with the previous tip, so a
+          # direct push that edits an old migration is still flagged.
+          BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event.before }}
+        run: |
+          if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then BASE=origin/main; fi
+          bash scripts/ci/check-migrations.sh "$BASE"
+
+      # Every setting the code reads must be documented in .env.example (prod is
+      # configured from it); no secret may sit in a VITE_ var. Same check
+      # deploy-prod runs, so a gap shows up on the PR instead of on a prod deploy.
+      - name: verify:env
+        run: node scripts/verify-env.mjs
+
+      - name: actionlint
+        run: docker run --rm -v "$PWD:/repo" --workdir /repo rhysd/actionlint:1.7.7 -color
 
   lint:
+    needs: checks
+    if: needs.checks.outputs.web == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -57,6 +152,8 @@ jobs:
         run: node workers/lead-email-ingest/scripts/check-config.mjs
 
   test:
+    needs: checks
+    if: needs.checks.outputs.web == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -69,8 +166,13 @@ jobs:
       - name: Run unit tests
         run: pnpm --filter web test
 
+  # Also the exact deploy path deploy-web uses (pnpm exec wrangler), minus the
+  # upload: proves wrangler resolves and the Worker config + assets are valid.
   build:
+    needs: checks
+    if: needs.checks.outputs.web == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v2
@@ -78,18 +180,35 @@ jobs:
         with:
           node-version: "22"
           cache: "pnpm"
-      - run: pnpm install
-      - name: Build
+      - run: pnpm install --frozen-lockfile
+      - name: Build (placeholder prod-shaped settings)
+        env:
+          VITE_SUPABASE_URL: https://oogxajjanbyqhljxcmql.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_placeholder
+          VITE_APP_ROOT_DOMAIN: opalswift.com
         run: pnpm run build
+      - name: wrangler deploy --dry-run
+        working-directory: apps/web
+        env:
+          WRANGLER_SEND_METRICS: "false"
+        run: pnpm exec wrangler deploy --dry-run
 
   # Supabase Edge Functions (Deno). Nothing else checks these before deploy.
   edge-functions:
+    needs: checks
+    if: needs.checks.outputs.edge == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
+      # Downloaded npm:/https: modules. A miss only means a slower run.
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/deno
+          key: deno-${{ runner.os }}-${{ hashFiles('supabase/functions/**/deno.json', 'supabase/functions/**/deno.lock', 'supabase/functions/**/*.ts') }}
+          restore-keys: deno-${{ runner.os }}-
       - name: Type-check
         run: bash scripts/check-edge-functions.sh
       # Lint rules left off on purpose:
@@ -108,12 +227,11 @@ jobs:
         run: deno test --node-modules-dir=none --allow-env --allow-read --allow-net
 
   accessibility:
-    needs: detect-changes
+    needs: checks
     runs-on: ubuntu-24.04  # Playwright 1.59 cannot install browsers on ubuntu-latest (26.04)
     timeout-minutes: 20
-    # Only run if UI files changed (on PR or push)
-    if: ${{ needs.detect-changes.outputs.ui-changed == 'true' }}
-    # Blocker on main and develop when UI paths change
+    # Only when visible UI changed. Blocker on main and develop.
+    if: needs.checks.outputs.a11y == 'true'
     continue-on-error: false
     steps:
       - uses: actions/checkout@v4
@@ -129,3 +247,124 @@ jobs:
         run: pnpm --filter web exec playwright install --with-deps chromium
       - name: Run accessibility tests
         run: pnpm --filter web exec playwright test e2e/accessibility-compliance.spec.ts e2e/accessibility-public-pages.spec.ts
+
+  sql-tests:
+    needs: checks
+    if: needs.checks.outputs.db == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s
+          --health-timeout 5s --health-retries 20
+    env:
+      PGHOST: localhost
+      PGPORT: "5432"
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: SQL suites (each replays the full migration chain into a scratch DB)
+        run: |
+          set -e
+          for t in supabase/tests/*/run.sh; do
+            # security/, definer-drift/ and suites marked NEEDS_SUPABASE need
+            # Supabase's roles: they run in definer-drift / local-stack.
+            [ "$t" = supabase/tests/security/run.sh ] && continue
+            [ "$t" = supabase/tests/definer-drift/run.sh ] && continue
+            [ -f "$(dirname "$t")/NEEDS_SUPABASE" ] && continue
+            echo "::group::$t"
+            bash "$t"
+            echo "::endgroup::"
+          done
+
+
+  # The real order on hosted projects: definer functions made outside git
+  # exist first, then every migration applies. Supabase Postgres image only
+  # (roles, auth schema, supautils), no other services.
+  definer-drift:
+    needs: checks
+    if: needs.checks.outputs.db == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: public.ecr.aws/supabase/postgres:17.6.1.143
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ["54398:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres -h 127.0.0.1" --health-interval 5s
+          --health-timeout 5s --health-retries 30
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: "54398"
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - name: Drift first, then all migrations
+        run: bash supabase/tests/definer-drift/run.sh
+
+  local-stack:
+    needs: checks
+    if: needs.checks.outputs.db == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+      - run: pnpm install --frozen-lockfile
+
+      # Applies every migration from zero, then supabase/seed.sql — LOCAL
+      # container only. Services the schema does not need are left out.
+      - name: Start throwaway Supabase (all migrations from zero)
+        run: pnpm exec supabase start -x studio,imgproxy,vector,logflare,supavisor,realtime,edge-runtime,mailpit
+
+      - name: supabase db lint (new errors block; known ones warn)
+        run: bash scripts/ci/db-lint.sh
+
+      - name: Definer-function EXECUTE policy (supabase/security/definer-execute.json)
+        env:
+          DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: bash supabase/tests/security/run.sh
+
+      - name: SQL suites that need Supabase (supabase/tests/*/NEEDS_SUPABASE)
+        env:
+          DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          set -e
+          for m in supabase/tests/*/NEEDS_SUPABASE; do
+            t="$(dirname "$m")/run.sh"
+            echo "::group::$t"
+            bash "$t"
+            echo "::endgroup::"
+          done
+
+      # `PostgrestVersion` follows whichever PostgREST generated the file
+      # (hosted vs local CLI), so that one line is not compared.
+      - name: Generated DB types match the committed ones
+        run: |
+          pnpm db:types:all:local
+          # intent-to-add, so newly generated (untracked) files show in the diff too
+          git add -N packages/shared/src/database.types.ts supabase/functions/_shared/email-dist
+          if ! git diff --exit-code --stat -I 'PostgrestVersion' -- packages/shared/src/database.types.ts supabase/functions/_shared/email-dist; then
+            git diff -I 'PostgrestVersion' -- packages/shared/src/database.types.ts supabase/functions/_shared/email-dist | head -300 || true
+            echo "::error::Committed database types are stale. Run 'pnpm db:reset-and-types:local' (or db:types:all after pushing to dev) and commit the result."
+            exit 1
+          fi
+
+      - name: Stop
+        if: always()
+        run: pnpm exec supabase stop --no-backup || true

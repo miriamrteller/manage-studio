@@ -5,7 +5,7 @@
 # i.e. the real order on dev/prod: drift first, then every migration.
 #
 # Needs the Supabase Postgres image (roles, auth schema, supautils), not plain
-# Postgres. db-ci runs it as the `definer-drift` job; locally:
+# Postgres. CI runs it as the `definer-drift` job; locally:
 #   docker run -d -p 54399:5432 -e POSTGRES_PASSWORD=postgres supabase/postgres:17.6.1.143
 #   PGHOST=127.0.0.1 PGPORT=54399 PGPASSWORD=postgres supabase/tests/definer-drift/run.sh
 set -euo pipefail

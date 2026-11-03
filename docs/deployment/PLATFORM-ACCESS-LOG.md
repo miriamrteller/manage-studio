@@ -5,7 +5,7 @@ account, reserved by `20260827000100_super_admin_lockdown.sql`) opens or
 changes their data: **Settings → Security → OpalSwift access**.
 
 Migration: `supabase/migrations/20261101140810_platform_access_log.sql`.
-Tests: `supabase/tests/platform-access-log/run.sh` (db-ci `local-stack`).
+Tests: `supabase/tests/platform-access-log/run.sh` (CI `local-stack`).
 
 ## What is recorded
 

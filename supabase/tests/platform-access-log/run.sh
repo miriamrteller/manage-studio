@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Platform access log (20261101140810_platform_access_log.sql). Needs Supabase's
-# roles, auth schema and every migration applied — the local stack (db-ci
+# roles, auth schema and every migration applied — the local stack (CI
 # local-stack job) — so sql-tests skips it (see NEEDS_SUPABASE).
 #
 #   DB_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres supabase/tests/platform-access-log/run.sh
