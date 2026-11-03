@@ -1,0 +1,74 @@
+# Keeps prod Supabase Auth's redirect allowlist in step with the studios'
+# active custom domains (scripts/ci/sync-auth-redirects.mjs), so sign-in links
+# return to a studio's own address and nobody edits the Supabase dashboard.
+#
+# Runs nightly as a reconcile, and on demand: the custom-domain Edge Function
+# starts it (workflow_dispatch) when a domain becomes active or is removed.
+# Only entries for custom-domain hosts are added or removed; opalswift.com,
+# localhost and hand-added entries for other hosts are never touched.
+#
+# Secrets (environment production-nightly, no reviewers so it runs unattended):
+#   SUPABASE_AUTH_SYNC_TOKEN  a Supabase personal access token made for this job only
+#   SUPABASE_PROD_DB_URL      already there (backup-prod, db-health)
+# Until the token exists the job skips with a notice.
+
+name: auth-redirects-sync
+
+on:
+  schedule:
+    - cron: "40 1 * * *" # 01:40 UTC nightly, after the backup
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Only show what would change"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+# Back-to-back dispatches queue instead of racing each other's PATCH.
+concurrency:
+  group: auth-redirects-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: production-nightly
+    steps:
+      - name: Check secrets are configured
+        id: gate
+        run: |
+          if [ -z "${{ secrets.SUPABASE_AUTH_SYNC_TOKEN }}" ] || [ -z "${{ secrets.SUPABASE_PROD_DB_URL }}" ]; then
+            echo "::notice::SUPABASE_AUTH_SYNC_TOKEN not configured yet — skipping (see docs/deployment/CUSTOM-DOMAIN.md)."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.gate.outputs.ready == 'true'
+        with:
+          sparse-checkout: scripts/ci/sync-auth-redirects.mjs
+          sparse-checkout-cone-mode: false
+
+      - uses: actions/setup-node@v4
+        if: steps.gate.outputs.ready == 'true'
+        with:
+          node-version: "22"
+
+      - name: Reconcile the redirect allowlist
+        if: steps.gate.outputs.ready == 'true'
+        env:
+          SUPABASE_AUTH_SYNC_TOKEN: ${{ secrets.SUPABASE_AUTH_SYNC_TOKEN }}
+          SUPABASE_PROD_DB_URL: ${{ secrets.SUPABASE_PROD_DB_URL }}
+          PROJECT_REF: oogxajjanbyqhljxcmql
+          DRY_RUN: ${{ inputs.dry_run == true }}
+        run: |
+          if [ "$DRY_RUN" = "true" ]; then
+            node scripts/ci/sync-auth-redirects.mjs --dry-run
+          else
+            node scripts/ci/sync-auth-redirects.mjs
+          fi
