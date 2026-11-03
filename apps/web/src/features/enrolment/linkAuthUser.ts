@@ -32,3 +32,18 @@ export async function linkGuardianForEngagement(engagementId: string): Promise<v
     throw new Error(error.message);
   }
 }
+
+/**
+ * Links the signed-in user to every family account row in their own studio that carries
+ * their (verified) email and is not linked yet. Safe to call on every sign-in: it never
+ * changes an existing link. Returns how many rows were linked.
+ */
+export async function linkMyGuardianAccounts(): Promise<number> {
+  const { data, error } = await supabase.rpc('link_my_guardian_accounts');
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return typeof data === 'number' ? data : 0;
+}

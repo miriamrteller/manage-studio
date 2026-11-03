@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { buildLegalPack } from '@/legal/legalPack';
 import { fetchTenantLegalProfile } from '@/legal/useLegalDocument';
-import { missingRequiredLegalFields } from '@/legal/fields';
+import { missingLegalDetails } from '@/legal/fields';
+import { autofilledKeys, useLegalAutofill, withLegalAutofill } from '@/legal/autofill';
 import { signedDocNoun } from '@/legal/packWording';
 import {
   draftDocuments,
@@ -49,10 +50,13 @@ export function LegalPackPanel({ tenantId, mode, detailsHref, offerUploads }: Le
     queryKey: ['tenant-legal-profile-by-id', tenantId],
     queryFn: () => fetchTenantLegalProfile(tenantId),
   });
+  // Empty details filled from what the studio already gave us (saved on Confirm).
+  const { autofill } = useLegalAutofill(legal);
+  const profile = legal ? withLegalAutofill(legal.profile, autofill) : {};
   const { data: pack } = useQuery({
-    queryKey: ['legal-pack', tenantId, legal?.updatedAt, legal?.vertical],
+    queryKey: ['legal-pack', tenantId, legal?.updatedAt, legal?.vertical, JSON.stringify(profile)],
     enabled: !!legal,
-    queryFn: () => buildLegalPack(legal!),
+    queryFn: () => buildLegalPack({ ...legal!, profile }),
   });
 
   const { data: uploads = [] } = useLawyerDocuments(legal ? tenantId : undefined);
@@ -66,13 +70,24 @@ export function LegalPackPanel({ tenantId, mode, detailsHref, offerUploads }: Le
 
   const acknowledge = useMutation({
     mutationFn: async () => {
-      if (!pack) throw new Error('not ready');
+      if (!pack || !legal) throw new Error('not ready');
+      let confirmed = pack;
+      // Store the details filled in for the studio, so the published documents carry them.
+      if (autofilledKeys(legal.profile, autofill).length > 0) {
+        const { error: saveError } = await supabase
+          .from('tenants')
+          .update({ legal_profile: withLegalAutofill(legal.profile, autofill) })
+          .eq('id', tenantId);
+        if (saveError) throw saveError;
+        const fresh = await fetchTenantLegalProfile(tenantId);
+        if (fresh) confirmed = await buildLegalPack(fresh);
+      }
       // Older studios may predate the form seeded at creation: add it first (no-op otherwise).
-      if (pack.signedForms.length > 0) {
+      if (confirmed.signedForms.length > 0) {
         await supabase.functions.invoke('provision-studio', { body: { action: 'ensure_signed_template' } });
       }
       const { error } = await supabase.rpc('acknowledge_studio_legal_pack', {
-        p_version: pack.version,
+        p_version: confirmed.version,
         p_language: i18n.language?.startsWith('he') ? 'he' : 'en',
         p_drafts: drafts,
       });
@@ -90,7 +105,7 @@ export function LegalPackPanel({ tenantId, mode, detailsHref, offerUploads }: Le
   const acknowledgedAt = legal?.packAcknowledgedAt ?? null;
   const lang = i18n.language?.startsWith('he') ? 'he' : 'en';
   // Confirming publishes the documents, so the details they are filled from must be there first.
-  const missing = legal ? missingRequiredLegalFields(legal.vertical, legal.profile) : [];
+  const missing = legal ? missingLegalDetails(legal.vertical, profile) : [];
   const doc = t(`legal.pack.doc.${signedDocNoun(legal?.vertical)}`);
   const dateFormat = new Intl.DateTimeFormat(i18n.language?.startsWith('he') ? 'he-IL' : 'en-GB', {
     dateStyle: 'medium',

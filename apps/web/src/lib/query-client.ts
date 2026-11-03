@@ -8,6 +8,8 @@ export function isExpectedError(error: unknown): boolean {
   if (error instanceof ZodError) return true
   // A tenant with no active season is a normal state; the dashboard shows a friendly message for it.
   if (error instanceof NoActiveSeasonError) return true
+  // A login with no family account yet: the parent sees a clear message; nothing broke.
+  if ((error as { name?: unknown } | null)?.name === 'NoFamilyAccountError') return true
   const raw = (error as { message?: unknown } | null)?.message
   const msg = (typeof raw === 'string' ? raw : String(error)).toLowerCase()
   return (

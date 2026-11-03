@@ -52,6 +52,31 @@ for f in "${!tier[@]}"; do
 done
 echo "definer EXECUTE policy: ${#seen[@]} functions checked"
 
+# ── tenants column grants ─────────────────────────────────────────────────────
+# tenants has column-level SELECT grants: every column except the secret
+# *_enc ones must be readable by authenticated, or a select naming it fails
+# with "permission denied for table tenants". A new column needs
+# GRANT SELECT (col) ON TABLE public.tenants TO authenticated in its migration.
+missing=$("${PSQL[@]}" -c "
+  SELECT string_agg(column_name, ', ' ORDER BY ordinal_position)
+  FROM information_schema.columns
+  WHERE table_schema = 'public' AND table_name = 'tenants'
+    AND column_name NOT LIKE '%\\_enc'
+    AND NOT has_column_privilege('authenticated', 'public.tenants', column_name, 'SELECT')")
+if [[ -n "$missing" ]]; then
+  echo "FAIL tenants columns not readable by authenticated (grant them in the migration that adds them): $missing"; fail=1
+fi
+leaked=$("${PSQL[@]}" -c "
+  SELECT string_agg(column_name, ', ' ORDER BY ordinal_position)
+  FROM information_schema.columns
+  WHERE table_schema = 'public' AND table_name = 'tenants' AND column_name LIKE '%\\_enc'
+    AND (has_column_privilege('authenticated', 'public.tenants', column_name, 'SELECT')
+         OR has_column_privilege('anon', 'public.tenants', column_name, 'SELECT'))")
+if [[ -n "$leaked" ]]; then
+  echo "FAIL secret tenants columns readable by anon/authenticated: $leaked"; fail=1
+fi
+echo "tenants column grants checked"
+
 # ── behaviour ─────────────────────────────────────────────────────────────────
 "${PSQL[@]}" <<'SQL' || fail=1
 DO $$

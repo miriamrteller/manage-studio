@@ -1,10 +1,12 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { useRequirements, useRequirementTemplates } from '../hooks/useRequirements';
 import { useLevels } from '@/features/levels/hooks/useLevels';
-import type { RequirementTemplate } from '@shared/schemas';
+import { useClasses } from '@/features/classes/hooks/useClasses';
+import { ClassAgeRangeForm } from './ClassAgeRangeForm';
+import type { Category, RequirementTemplate } from '@shared/schemas';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -21,6 +23,12 @@ interface CreateFormState {
   category_id: string;
   doc_type: string;
 }
+
+/** Value of the "+ New level" option in the level dropdown. Never saved. */
+const NEW_LEVEL_OPTION = '__new_level__';
+
+/** Value of the "Age range" option in the type list. UI only: it is never sent as a requirement type. */
+const AGE_RANGE_OPTION = 'age_range';
 
 const EMPTY_CREATE: CreateFormState = {
   name: '',
@@ -57,11 +65,14 @@ function buildConfig(form: CreateFormState): Record<string, unknown> {
 interface ClassRequirementsPanelProps {
   classId: string;
   className: string;
+  /** The class's own age range (shown and edited under "Age range"; never a requirement). */
+  minAge?: number | null;
+  maxAge?: number | null;
 }
 
 type AddMode = 'link' | 'create';
 
-export function ClassRequirementsPanel({ classId, className }: ClassRequirementsPanelProps) {
+export function ClassRequirementsPanel({ classId, className, minAge, maxAge }: ClassRequirementsPanelProps) {
   const { t } = useTranslation();
 
   const { requirements, isLoading, error, linkTemplate, deleteRequirement, isLinking, isDeleting } =
@@ -69,16 +80,69 @@ export function ClassRequirementsPanel({ classId, className }: ClassRequirements
   const { templates, isLoading: templatesLoading, createTemplate, isCreating } =
     useRequirementTemplates();
   const levelsData = useLevels({ page: 1 });
+  // Only used for its update mutation (no list is fetched): ages live on the class.
+  const classesData = useClasses({ publicOnly: false, enabled: false });
 
   const nameInputRef = useRef<HTMLInputElement>(null);
+  const levelSelectRef = useRef<HTMLSelectElement>(null);
+  const newLevelInputRef = useRef<HTMLInputElement>(null);
 
   const [showAdd, setShowAdd] = useState(false);
   const [addMode, setAddMode] = useState<AddMode>('link');
+  // "Age range" is a UI-only choice in the type list: it edits the class, not a requirement.
+  const [ageMode, setAgeMode] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
   const [createForm, setCreateForm] = useState<CreateFormState>(EMPTY_CREATE);
   const [createError, setCreateError] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [linkError, setLinkError] = useState<string | null>(null);
+  // Inline "+ New level" form inside the Level requirement
+  const [addingLevel, setAddingLevel] = useState(false);
+  const [newLevelName, setNewLevelName] = useState('');
+  const [newLevelError, setNewLevelError] = useState<string | null>(null);
+  // Levels created here that the cached list may not contain yet
+  const [createdLevels, setCreatedLevels] = useState<Category[]>([]);
+  const levelOptions = [
+    ...levelsData.levels,
+    ...createdLevels.filter((c) => !levelsData.levels.some((l) => l.id === c.id)),
+  ];
+
+  useEffect(() => {
+    if (addingLevel) newLevelInputRef.current?.focus();
+  }, [addingLevel]);
+
+  const cancelNewLevel = () => {
+    setAddingLevel(false);
+    setNewLevelName('');
+    setNewLevelError(null);
+    levelSelectRef.current?.focus();
+  };
+
+  const saveNewLevel = () => {
+    const name = newLevelName.trim();
+    if (!name) {
+      setNewLevelError(t('form.requirement.new_level_name_required'));
+      newLevelInputRef.current?.focus();
+      return;
+    }
+    setNewLevelError(null);
+    levelsData.createLevel(
+      { name },
+      {
+        onSuccess: (created) => {
+          setCreatedLevels((prev) => [...prev, created]);
+          setCreateForm((f) => ({ ...f, category_id: created.id }));
+          setAddingLevel(false);
+          setNewLevelName('');
+          setTimeout(() => levelSelectRef.current?.focus(), 0);
+        },
+        onError: (err) => {
+          setNewLevelError(err instanceof Error && err.message ? err.message : t('form.requirement.new_level_failed'));
+          newLevelInputRef.current?.focus();
+        },
+      },
+    );
+  };
 
   // Templates not yet linked to this class
   const linkedTemplateIds = new Set(
@@ -89,10 +153,14 @@ export function ClassRequirementsPanel({ classId, className }: ClassRequirements
   const closeAdd = () => {
     setShowAdd(false);
     setAddMode('link');
+    setAgeMode(false);
     setSelectedTemplateId('');
     setCreateForm(EMPTY_CREATE);
     setCreateError(null);
     setLinkError(null);
+    setAddingLevel(false);
+    setNewLevelName('');
+    setNewLevelError(null);
   };
 
   // ── Link existing ──────────────────────────────────────────────────────────
@@ -346,6 +414,7 @@ export function ClassRequirementsPanel({ classId, className }: ClassRequirements
               <p className="text-sm font-medium">{t('form.requirement.create_modal_title')}</p>
 
               {/* Name */}
+              {!ageMode && (
               <Field label={t('pages.admin.requirements.name_label')}>
                 <input
                   type="text"
@@ -356,31 +425,51 @@ export function ClassRequirementsPanel({ classId, className }: ClassRequirements
                   onChange={(e) => setCreateForm((f) => ({ ...f, name: e.target.value }))}
                 />
               </Field>
+              )}
 
               {/* Type */}
               <Field label={t('form.requirement.type')}>
                 <select
                   className="w-full rounded-md border px-3 py-2 text-sm"
                   style={{ borderColor: 'var(--color-border-default)' }}
-                  value={createForm.requirement_type}
-                  onChange={(e) =>
+                  value={ageMode ? AGE_RANGE_OPTION : createForm.requirement_type}
+                  onChange={(e) => {
+                    setCreateError(null);
+                    if (e.target.value === AGE_RANGE_OPTION) {
+                      setAgeMode(true);
+                      setCreateForm((f) => ({ ...EMPTY_CREATE, name: f.name, display_text: f.display_text, is_hard_block: f.is_hard_block }));
+                      return;
+                    }
+                    setAgeMode(false);
                     setCreateForm((f) => ({
                       ...EMPTY_CREATE,
                       name: f.name,
                       display_text: f.display_text,
                       is_hard_block: f.is_hard_block,
                       requirement_type: e.target.value as RequirementType,
-                    }))
-                  }
+                    }));
+                  }}
                 >
                   <option value="">{t('form.requirement.select_placeholder')}</option>
                   <option value="gender">{t('form.requirement.type_gender')}</option>
                   <option value="level">{t('form.requirement.type_level')}</option>
                   <option value="document_submitted">{t('form.requirement.type_document_submitted')}</option>
                   <option value="manual_review">{t('form.requirement.type_manual_review')}</option>
+                  <option value={AGE_RANGE_OPTION}>{t('form.requirement.type_age_range')}</option>
                 </select>
               </Field>
 
+              {ageMode && (
+                <ClassAgeRangeForm
+                  minAge={minAge}
+                  maxAge={maxAge}
+                  isSaving={classesData.isUpdating}
+                  onSave={(range, callbacks) => classesData.updateClass({ id: classId, ...range }, callbacks)}
+                />
+              )}
+
+              {!ageMode && (
+              <>
               {/* Conditional config fields */}
               {createForm.requirement_type === 'gender' && (
                 <div className="space-y-2 rounded-md border p-3"
@@ -412,23 +501,83 @@ export function ClassRequirementsPanel({ classId, className }: ClassRequirements
               {createForm.requirement_type === 'level' && (
                 <div className="space-y-2 rounded-md border p-3"
                   style={{ borderColor: 'var(--color-border-default)', backgroundColor: 'var(--color-surface-subtle, #f9fafb)' }}>
-                  <Field label={t('form.requirement.category_id')}>
+                  <Field label={t('form.requirement.level_id')} htmlFor="requirement-level-select">
                     {levelsData.isLoading ? (
                       <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>{t('common.loading')}</p>
                     ) : (
-                      <select
-                        className="w-full rounded-md border px-3 py-2 text-sm"
-                        style={{ borderColor: 'var(--color-border-default)' }}
-                        value={createForm.category_id}
-                        onChange={(e) => setCreateForm((f) => ({ ...f, category_id: e.target.value }))}
-                      >
-                        <option value="">—</option>
-                        {levelsData.levels.map((l) => (
-                          <option key={l.id} value={l.id}>{l.name}</option>
-                        ))}
-                      </select>
+                      <>
+                        <select
+                          id="requirement-level-select"
+                          ref={levelSelectRef}
+                          className="w-full rounded-md border px-3 py-2 text-sm"
+                          style={{ borderColor: 'var(--color-border-default)' }}
+                          value={addingLevel ? NEW_LEVEL_OPTION : createForm.category_id}
+                          aria-describedby={levelOptions.length === 0 ? 'requirement-no-levels' : undefined}
+                          onChange={(e) => {
+                            if (e.target.value === NEW_LEVEL_OPTION) {
+                              setAddingLevel(true);
+                              setCreateForm((f) => ({ ...f, category_id: '' }));
+                            } else {
+                              setAddingLevel(false);
+                              setNewLevelError(null);
+                              setCreateForm((f) => ({ ...f, category_id: e.target.value }));
+                            }
+                          }}
+                        >
+                          <option value="">—</option>
+                          {levelOptions.map((l) => (
+                            <option key={l.id} value={l.id}>{l.name}</option>
+                          ))}
+                          <option value={NEW_LEVEL_OPTION}>{t('form.requirement.new_level')}</option>
+                        </select>
+                        {levelOptions.length === 0 && (
+                          <p id="requirement-no-levels" className="mt-1 text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                            {t('form.requirement.no_levels')}
+                          </p>
+                        )}
+                      </>
                     )}
                   </Field>
+
+                  {addingLevel && (
+                    <div className="space-y-2">
+                      <Field label={t('form.requirement.new_level_name')} htmlFor="requirement-new-level-name">
+                        <input
+                          id="requirement-new-level-name"
+                          ref={newLevelInputRef}
+                          type="text"
+                          className="w-full rounded-md border px-3 py-2 text-sm"
+                          style={{ borderColor: 'var(--color-border-default)' }}
+                          value={newLevelName}
+                          aria-invalid={newLevelError ? true : undefined}
+                          aria-describedby={newLevelError ? 'requirement-new-level-error' : undefined}
+                          onChange={(e) => setNewLevelName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              saveNewLevel();
+                            } else if (e.key === 'Escape') {
+                              e.preventDefault();
+                              cancelNewLevel();
+                            }
+                          }}
+                        />
+                      </Field>
+                      {newLevelError && (
+                        <p id="requirement-new-level-error" role="alert" className="text-sm" style={{ color: 'var(--color-danger, #dc2626)' }}>
+                          {newLevelError}
+                        </p>
+                      )}
+                      <div className="flex gap-2">
+                        <Button variant="primary" size="sm" onClick={saveNewLevel} disabled={levelsData.isCreating}>
+                          {levelsData.isCreating ? t('common.loading') : t('common.save')}
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={cancelNewLevel} disabled={levelsData.isCreating}>
+                          {t('common.cancel')}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -486,6 +635,8 @@ export function ClassRequirementsPanel({ classId, className }: ClassRequirements
               >
                 {isBusy ? t('common.loading') : t('form.requirement.create_and_link_button')}
               </Button>
+              </>
+              )}
             </div>
           )}
         </div>
@@ -495,10 +646,10 @@ export function ClassRequirementsPanel({ classId, className }: ClassRequirements
 }
 
 // ── Small helper to keep label/input pairs tidy ───────────────────────────────
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, htmlFor, children }: { label: string; htmlFor?: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>
+      <label htmlFor={htmlFor} className="block text-xs font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>
         {label}
       </label>
       {children}

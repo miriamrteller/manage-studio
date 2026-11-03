@@ -1,8 +1,7 @@
 ﻿import { useMemo, useState, type FormEvent, type ReactNode } from 'react';
-import { GetLeadsPanel } from './GetLeadsPanel';
 import { followUpState } from '../lib/followUp';
-import { FirstLeadsChecklist } from './FirstLeadsChecklist';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { LeadsTabs } from './LeadsTabs';
 import { useNamedForms } from '../hooks/useNamedForms';
 import { answerText, FORM_TIME_ZONE, todayIn } from '@shared/index';
 import { answerFilterOptions, filterByAnswer } from '../lib/leadAnswers';
@@ -13,14 +12,22 @@ import { useEntityLabels } from '@/hooks/useEntityLabels';
 import { useLeads } from '../hooks/useLeads';
 import { ConvertLeadPanel } from '@/features/jobs/components/ConvertLeadPanel';
 import { CreateQuoteButton } from '@/features/quotes/components/CreateQuoteButton';
-import { LEAD_CHANNELS, stagesFor, type Lead, type LeadChannel, type LeadStage } from '../services/leadService';
+import {
+  LEAD_CHANNELS,
+  LeadDeleteError,
+  isConvertedLead,
+  stagesFor,
+  type Lead,
+  type LeadChannel,
+  type LeadStage,
+} from '../services/leadService';
 import { LeadEnrolmentLink } from './LeadEnrolmentLink';
 
 /**
- * Admin leads page: capture-links panel (the tenant's self-onboarding —
- * copy-paste plumbing, no platform ops), a manual "new lead" form for
- * walk-ins/phone/WhatsApp inquiries, and the pipeline list with inline stage
- * updates. Leads are a separate entity from students/families by design.
+ * Admin leads page (the Leads tab): the pipeline first — a manual "new lead"
+ * form for walk-ins/phone/WhatsApp inquiries, follow-ups, filters and the list
+ * with inline stage updates. Getting leads (links, embed, QR, forms, help) is
+ * the sibling Get leads tab. Leads are a separate entity from students/families.
  */
 
 function formatDate(value: string | null, locale: string): string {
@@ -53,7 +60,7 @@ function LeadRowGroup({ lead, converting, canConvert, onClose, children }: LeadR
       {children}
       {canConvert && converting && (
         <tr>
-          <td colSpan={8} className="px-3 py-2">
+          <td colSpan={9} className="px-3 py-2">
             <ConvertLeadPanel
               leadId={lead.id}
               leadName={lead.name}
@@ -121,7 +128,24 @@ export function LeadsList() {
     linkError,
     isLinking,
     dismissSuggestion,
+    deleteLead,
+    deleteError,
+    isDeleting,
   } = useLeads();
+  const navigate = useNavigate();
+  const [deleted, setDeleted] = useState<string | null>(null);
+  const handleDelete = (lead: Lead) => {
+    if (isConvertedLead(lead)) return;
+    if (!window.confirm(t('pages.crm.leads.delete_confirm', { name: lead.name }))) return;
+    setDeleted(null);
+    deleteLead(lead.id, { onSuccess: () => setDeleted(t('pages.crm.leads.deleted', { name: lead.name })) });
+  };
+  const deleteMessage =
+    deleteError instanceof LeadDeleteError
+      ? t(`pages.crm.leads.delete_blocked_${deleteError.reason}`)
+      : deleteError
+        ? t('pages.crm.leads.delete_failed')
+        : null;
   const lang: 'en' | 'he' = i18n.language?.startsWith('he') ? 'he' : 'en';
   const [answerKey, setAnswerKey] = useState('');
   const [answerValue, setAnswerValue] = useState('');
@@ -204,18 +228,11 @@ export function LeadsList() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl font-bold">{t('pages.crm.leads.title')}</h1>
-        <div className="flex flex-wrap gap-2">
-          <Link to="/admin/leads/help" className="inline-flex items-center rounded border px-3 py-2 text-sm">
-            {t('pages.crm.help.link')}
-          </Link>
-          <Link to="/admin/leads/forms" className="inline-flex items-center rounded border px-3 py-2 text-sm">
-            {t('pages.crm.named_forms.title')}
-          </Link>
-          <Button variant="primary" onClick={() => setShowForm((open) => !open)}>
-            {showForm ? t('common.cancel') : t('pages.crm.leads.add')}
-          </Button>
-        </div>
+        <Button variant="primary" onClick={() => setShowForm((open) => !open)}>
+          {showForm ? t('common.cancel') : t('pages.crm.leads.add')}
+        </Button>
       </div>
+      <LeadsTabs />
       <p className="text-sm text-muted-foreground">{t('pages.crm.leads.description')}</p>
       {(followUps.overdue > 0 || followUps.dueToday > 0) && (
         <p role="status" className="text-sm font-medium">
@@ -223,14 +240,6 @@ export function LeadsList() {
         </p>
       )}
 
-      {!isLoading && <FirstLeadsChecklist leadCount={allLeads.length} />}
-
-      <details id="get-leads" className="space-y-3" open={!isLoading && allLeads.length === 0}>
-        <summary className="cursor-pointer font-semibold">{t('pages.crm.get_leads.title')}</summary>
-        <div className="pt-3">
-          <GetLeadsPanel headingLevel={3} />
-        </div>
-      </details>
 
       {showForm && (
         <form onSubmit={handleCreate} className="card p-4 space-y-3" aria-label={t('pages.crm.leads.add')}>
@@ -338,6 +347,14 @@ export function LeadsList() {
           {(error ?? linkError)?.message}
         </div>
       )}
+      {deleteMessage && (
+        <div className="alert-error" role="alert">
+          {deleteMessage}
+        </div>
+      )}
+      <p role="status" className="sr-only">
+        {deleted ?? ''}
+      </p>
 
       {allLeads.length > 0 && (
         <div className="flex flex-wrap items-end gap-3" role="search" aria-label={t('pages.crm.leads.filter_answers')}>
@@ -422,7 +439,12 @@ export function LeadsList() {
       )}
 
       {!isLoading && allLeads.length === 0 && (
-        <EmptyState title={t('pages.crm.leads.empty_title')} message={t('pages.crm.leads.empty_message')} />
+        <EmptyState
+          title={t('pages.crm.leads.empty_title')}
+          message={t('pages.crm.leads.empty_message_get')}
+          actionLabel={t('pages.crm.leads.empty_action')}
+          onAction={() => navigate('/admin/leads/get')}
+        />
       )}
       {!isLoading && allLeads.length > 0 && leads.length === 0 && (
         <p role="status" className="text-sm text-muted-foreground">
@@ -443,6 +465,9 @@ export function LeadsList() {
                 <th className="px-3 py-2 text-start">{t('pages.crm.leads.last_contacted')}</th>
                 <th className="px-3 py-2 text-start">{t('pages.crm.leads.follow_up')}</th>
                 {canConvert && <th className="px-3 py-2 text-start">{t('pages.crm.leads.convert')}</th>}
+                <th className="px-3 py-2 text-start">
+                  <span className="sr-only">{t('pages.crm.leads.actions')}</span>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -541,6 +566,34 @@ export function LeadsList() {
                       )}
                     </td>
                   )}
+                  <td className="px-3 py-2">
+                    {isConvertedLead(lead) ? (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled
+                          aria-describedby={`lead-delete-why-${lead.id}`}
+                          aria-label={t('pages.crm.leads.delete_named', { name: lead.name })}
+                        >
+                          {t('pages.crm.leads.delete')}
+                        </Button>
+                        <span id={`lead-delete-why-${lead.id}`} className="block text-xs text-muted-foreground">
+                          {t('pages.crm.leads.delete_blocked_converted')}
+                        </span>
+                      </>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={isDeleting}
+                        aria-label={t('pages.crm.leads.delete_named', { name: lead.name })}
+                        onClick={() => handleDelete(lead)}
+                      >
+                        {t('pages.crm.leads.delete')}
+                      </Button>
+                    )}
+                  </td>
                 </tr>
                 </LeadRowGroup>
               ))}

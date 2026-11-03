@@ -4915,6 +4915,10 @@ export type Database = {
                 };
                 Returns: undefined;
             };
+            link_my_guardian_accounts: {
+                Args: never;
+                Returns: number;
+            };
             list_admin_quotes: {
                 Args: never;
                 Returns: Json;

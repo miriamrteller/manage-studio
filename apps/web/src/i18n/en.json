@@ -25,6 +25,7 @@
     "error": "Error",
     "success": "Success",
     "required": "Required",
+    "required_fields": "Please fill in all required fields.",
     "optional": "Optional",
     "yes": "Yes",
     "no": "No",
@@ -151,6 +152,7 @@
     "session_setup_failed": "Session Setup Failed",
     "contact_support": "If this problem persists, please contact support.",
     "dashboard_load_failed": "Failed to load dashboard. Please try refreshing the page.",
+    "no_family_account": "We couldn't find your family account. Please sign in with the same email you used to enrol, or contact the studio.",
     "image_too_large": "Image must be 2 MB or smaller.",
     "image_invalid_type": "Please choose a JPEG, PNG, or WebP image.",
     "image_dimensions": "Image dimensions are too large to process.",
@@ -256,8 +258,24 @@
       "gender_female": "Female",
       "allowed_genders": "Allowed genders",
       "level_id": "Required level",
+      "new_level": "+ New level",
+      "no_levels": "No levels yet",
+      "new_level_name": "New level name",
+      "new_level_name_required": "Enter a name for the level.",
+      "new_level_failed": "Could not create the level. Please try again.",
       "doc_type": "Document type",
-      "doc_type_hint": "e.g. Medical certificate, Vaccination record"
+      "doc_type_hint": "e.g. Medical certificate, Vaccination record",
+      "age_hint": "Saved on the class itself, not as a requirement.",
+      "age_current_range": "Currently {{min}}–{{max}} years",
+      "age_current_min": "Currently from {{min}} years",
+      "age_current_max": "Currently up to {{max}} years",
+      "age_current_none": "No ages set on this class yet",
+      "age_min_invalid": "Minimum age must be a whole number, 0 or more.",
+      "age_max_invalid": "Maximum age must be a whole number, 0 or more.",
+      "age_order_invalid": "Minimum age can't be higher than maximum age.",
+      "age_save": "Save age range",
+      "age_saved": "Age range saved.",
+      "age_save_failed": "Could not save the age range. Please try again."
     },
     "person": {
       "name": "Full Name",
@@ -530,7 +548,18 @@
         "empty_message": "Share your capture links, or add a lead manually when someone calls or messages.",
         "convert": "Convert to shoot",
         "convert_hint": "Creates the client and a shoot from this lead. Pick a package and an optional date.",
-        "open_job": "Open shoot"
+        "open_job": "Open shoot",
+        "empty_message_get": "Share your enquiry link or QR code, and new enquiries will appear here.",
+        "empty_action": "Get leads",
+        "actions": "Actions",
+        "delete": "Delete",
+        "delete_named": "Delete {{name}}",
+        "delete_confirm": "Delete this lead ({{name}})? This can't be undone.",
+        "deleted": "{{name}} was deleted.",
+        "delete_failed": "The lead couldn't be deleted. Please try again.",
+        "delete_blocked_converted": "This lead became a client, so it can't be deleted.",
+        "delete_blocked_has_quote_or_job": "This lead has a quote or a job. Delete those first.",
+        "delete_blocked_not_deleted": "The lead couldn't be deleted. It may already be gone; refresh the page."
       },
       "named_forms": {
         "title": "Forms",
@@ -706,6 +735,15 @@
         "sent_title": "Thank you!",
         "sent_message": "We received your enquiry and will get back to you soon.",
         "error": "Something went wrong sending your enquiry. Please try again."
+      },
+      "tabs": {
+        "label": "Leads sections",
+        "leads": "Leads",
+        "get_leads": "Get leads",
+        "more_title": "Forms and help",
+        "forms_hint": "Make enquiry forms for different classes or events, each with its own link.",
+        "help_hint": "Step by step: where leads come from and what to do with them.",
+        "back_to_get": "Back to Get leads"
       }
     },
     "notifications": {
@@ -775,6 +813,10 @@
       "preview_selected_count": "{{selected}} of {{total}} selected",
       "preview_count": "{{count}} recipients",
       "preview_empty": "No one matches your current filters.",
+      "exclusion_no_email": "This account's contact has no email address on file, so there is nobody to email. Add an email to the contact first.",
+      "exclusion_email_opted_out": "This account's contact has switched off email, so they will not receive this message.",
+      "exclusion_announcements_off": "This account's contact has switched off announcement emails, so they will not receive this message.",
+      "exclusion_no_marketing_consent": "This account's contact has not agreed to marketing email, so this advertisement will not be sent to them. Choose \"Service update\" for an operational message.",
       "preview_over_limit": "Maximum {{max}} recipients per send. Narrow your selection.",
       "send_button": "Send email",
       "send_disabled_no_preview": "Load the list above to see who will receive this email before sending.",
@@ -2949,7 +2991,11 @@
         "enrolment": "Why we ask: your enrolment terms must state prices, dates and how payment works before anyone signs up.",
         "photography": "Why we ask: your clients need to know how their photos are delivered and how long they are kept.",
         "retention": "Why we ask: privacy law requires saying how long you keep personal data."
-      }
+      },
+      "filled_from_studio": "Filled in from your studio's details. Check it and change it if needed.",
+      "filled_for_you_one": "Details we filled in for you (1)",
+      "filled_for_you_other": "Details we filled in for you ({{count}})",
+      "filled_for_you_hint": "Taken from your studio's setup, or a sensible default. Open to check or change them."
     },
     "privacy_notice": "We use your details only to handle your request and enrolment.",
     "accept_terms_prefix": "I have read and accept the",

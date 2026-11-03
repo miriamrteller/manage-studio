@@ -13,7 +13,7 @@ import {
   clearAuthCallbackUrl,
   establishSessionFromAuthCallback,
 } from '@/lib/authCallback';
-import { linkGuardianForEngagement } from '@/features/enrolment/linkAuthUser';
+import { linkGuardianForEngagement, linkMyGuardianAccounts } from '@/features/enrolment/linkAuthUser';
 import { hasParentRole } from '@/lib/parentRoles';
 
 /**
@@ -99,6 +99,14 @@ export default function AuthCallbackPage() {
     }
 
     const linkPortal = async () => {
+      // Connect this login to any family account that carries its verified email, so a
+      // parent who enrolled as a guest finds their family on first sign-in. Never blocks sign-in.
+      try {
+        await linkMyGuardianAccounts();
+      } catch (linkError) {
+        console.warn('Family account link after auth callback:', linkError);
+      }
+
       const resumeKey = sessionStorage.getItem('enrolmentResumeKey');
       if (resumeKey) {
         sessionStorage.removeItem('enrolmentResumeKey');
