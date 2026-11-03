@@ -5,15 +5,30 @@ import { QuoteEditor } from '@/features/quotes/components/QuoteEditor';
 import { QuoteSendPanel } from '@/features/quotes/components/QuoteSendPanel';
 import { AcceptedQuotePanel } from '@/features/quotes/components/AcceptedQuotePanel';
 import { QuoteStatusBadge } from '@/features/quotes/components/QuoteStatusBadge';
-import { useQuote } from '@/features/quotes/hooks/useQuotes';
+import { useNewQuotePrefill, useQuote } from '@/features/quotes/hooks/useQuotes';
 import { draftFromQuote, newQuoteDraft } from '@/features/quotes/lib/quoteDraft';
+
+/** A new quote, started from what the lead or shoot already says (package, date, client). */
+function NewQuoteEditor({ leadId, engagementId, currency }: { leadId: string | null; engagementId: string | null; currency: string }) {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { prefill, isLoading } = useNewQuotePrefill({ leadId, engagementId });
+  if (isLoading) return <p role="status">{t('common.loading')}</p>;
+  return (
+    <QuoteEditor
+      initial={newQuoteDraft({ leadId, engagementId }, new Date(), prefill ?? undefined)}
+      currency={currency}
+      editable
+      onSaved={(savedId) => navigate(`/admin/quotes/${savedId}`, { replace: true })}
+    />
+  );
+}
 
 /** /admin/quotes/new?lead=…|engagement=… and /admin/quotes/:id */
 export default function AdminQuoteEditorPage() {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
   const tenant = useTenant();
   const quoteId = id && id !== 'new' ? id : null;
   const { data: quote, isLoading, error } = useQuote(quoteId);
@@ -31,12 +46,7 @@ export default function AdminQuoteEditorPage() {
       <div className="space-y-6">
         {back}
         <h1 className="text-3xl font-bold">{t('pages.quotes.new_title')}</h1>
-        <QuoteEditor
-          initial={newQuoteDraft({ leadId, engagementId })}
-          currency={currency}
-          editable
-          onSaved={(savedId) => navigate(`/admin/quotes/${savedId}`, { replace: true })}
-        />
+        <NewQuoteEditor leadId={leadId} engagementId={engagementId} currency={currency} />
       </div>
     );
   }

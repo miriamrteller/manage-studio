@@ -1,5 +1,5 @@
-import type { QuoteDraft } from './quoteSchemas';
-import type { QuoteDetail } from '../services/quoteService';
+import type { QuoteDraft, QuoteLineDraft } from './quoteSchemas';
+import type { QuoteDetail, QuotePackage } from '../services/quoteService';
 
 const DEFAULT_DEPOSIT_PERCENT = 30;
 const DEFAULT_VALIDITY_DAYS = 14;
@@ -9,20 +9,83 @@ function isoDateInJerusalem(date: Date): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jerusalem' }).format(date);
 }
 
-export function newQuoteDraft(source: { leadId: string | null; engagementId: string | null }, now = new Date()): QuoteDraft {
+/** What OpalSwift already knows about the quote's lead or shoot (all editable in the editor). */
+export interface QuoteDraftPrefill {
+  title: string | null;
+  shoot_date: string | null;
+  lines: QuoteLineDraft[];
+}
+
+export interface QuoteSourceLead {
+  name: string | null;
+  offering_id: string | null;
+  event_date: string | null;
+}
+
+export interface QuoteSourceJob {
+  client_name: string | null;
+  offering_id: string | null;
+  package_name: string | null;
+  price_minor: number | null;
+  booked_starts_at: string | null;
+}
+
+const ISO_DATE_PREFIX = /^(\d{4}-\d{2}-\d{2})/;
+
+/**
+ * A new quote from a lead or a shoot starts with its package as the first line, its shoot
+ * date, and a "<package> – <client>" title. The shoot wins over the lead when both are given.
+ */
+export function quotePrefillFromSource(source: {
+  lead?: QuoteSourceLead | null;
+  job?: QuoteSourceJob | null;
+  packages: QuotePackage[];
+}): QuoteDraftPrefill {
+  const { lead, job, packages } = source;
+  const offeringId = job?.offering_id ?? lead?.offering_id ?? null;
+  const pkg = offeringId ? packages.find((p) => p.id === offeringId) : undefined;
+  const packageName = (job?.package_name ?? pkg?.name ?? '').trim();
+  const priceMinor = job?.price_minor ?? pkg?.price_minor ?? null;
+  const clientName = (job?.client_name ?? lead?.name ?? '').trim();
+
+  const lines: QuoteLineDraft[] =
+    offeringId && packageName && priceMinor != null
+      ? [{
+          offering_id: offeringId, description: packageName, qty: 1, unit_price_minor: priceMinor,
+          is_optional: false, is_selected: true,
+        }]
+      : [];
+
+  let shootDate: string | null = null;
+  if (job?.booked_starts_at) {
+    const when = new Date(job.booked_starts_at);
+    shootDate = Number.isNaN(when.getTime()) ? null : isoDateInJerusalem(when);
+  } else if (lead?.event_date) {
+    shootDate = ISO_DATE_PREFIX.exec(lead.event_date)?.[1] ?? null;
+  }
+
+  const title = [packageName, clientName].filter(Boolean).join(' – ') || null;
+  return { title, shoot_date: shootDate, lines };
+}
+
+export function newQuoteDraft(
+  source: { leadId: string | null; engagementId: string | null },
+  now = new Date(),
+  prefill?: QuoteDraftPrefill,
+): QuoteDraft {
   const validUntil = new Date(now.getTime() + DEFAULT_VALIDITY_DAYS * 24 * 60 * 60 * 1000);
   return {
     id: null,
     lead_id: source.leadId,
     engagement_id: source.engagementId,
-    title: null,
-    shoot_date: null,
+    title: prefill?.title ?? null,
+    shoot_date: prefill?.shoot_date ?? null,
     valid_until: isoDateInJerusalem(validUntil),
     notes: null,
     deposit_percent: DEFAULT_DEPOSIT_PERCENT,
     balance_max_installments: 1,
     send_contract_on_accept: false,
-    lines: [],
+    lines: prefill?.lines ?? [],
   };
 }
 

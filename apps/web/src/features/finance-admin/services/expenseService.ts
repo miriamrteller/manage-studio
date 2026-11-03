@@ -10,6 +10,7 @@ import {
 import { z } from 'zod';
 import type { Tenant } from '@shared/schemas';
 import { receiptStoragePath } from '../lib/financeAdminUtils';
+import type { SupplierExpenseRow } from '../lib/expenseSuppliers';
 
 export const EXPENSES_PAGE_SIZE = 50;
 export const RECEIPT_BUCKET = 'expense-receipts';
@@ -82,6 +83,22 @@ export class ExpenseService extends BaseService {
         pageSize,
       };
     }, 'ExpenseService.list');
+  }
+
+  /** Supplier name + VAT number of the studio's latest expenses (newest first), for prefill. */
+  static async supplierHistory(tenant: Tenant): Promise<SupplierExpenseRow[]> {
+    return this.withRetry(async () => {
+      const { data, error } = await supabase
+        .from('expenses')
+        .select('supplier_name, supplier_vat_number')
+        .eq('tenant_id', tenant.id)
+        .not('supplier_name', 'is', null)
+        .order('expense_date', { ascending: false })
+        .order('created_at', { ascending: false })
+        .limit(500);
+      if (error) throw error;
+      return (data ?? []) as SupplierExpenseRow[];
+    }, 'ExpenseService.supplierHistory');
   }
 
   static async createExpense(

@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { FormInput, FormSelect } from '../../../components/ui/form';
+import { nextTermDefaults } from '../lib/nextTerm';
 
 // Schema source: SPEC.md — Terms table
 // Columns: id, tenant_id, name, start_date, end_date, status, created_at
@@ -26,18 +27,20 @@ const TermFormSchema = z.object({
 
 interface TermFormProps {
   term?: Partial<Season>;
+  /** The studio's terms: a new term starts right after the latest one (editable). */
+  existingTerms?: Partial<Season>[];
   onSubmit: (data: Partial<Season>) => Promise<void>;
   isLoading?: boolean;
 }
 
-export const TermForm = ({ term, onSubmit, isLoading }: TermFormProps) => {
+export const TermForm = ({ term, existingTerms = [], onSubmit, isLoading }: TermFormProps) => {
   const { t } = useTranslation();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
   const form = useForm({
     resolver: zodResolver(TermFormSchema),
-    defaultValues: term || {},
+    defaultValues: (term || nextTermDefaults(existingTerms)) as Partial<Season>,
     mode: 'onBlur',
   });
 
