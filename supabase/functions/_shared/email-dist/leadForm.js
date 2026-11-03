@@ -93,6 +93,15 @@ export const PRESETS_BY_KIND = {
     photography: ['event_type', 'event_date', 'event_location', 'budget_range'],
     general: ['service_interest', 'preferred_date'],
 };
+/**
+ * The ready-made questions a studio can switch: its kind's set, then the extra
+ * ones its skin gave it (`extra`). Questions switched on for another kind (for
+ * example after a change of skin) stay hidden.
+ */
+export function presetKeysFor(config, kind) {
+    const own = PRESETS_BY_KIND[kind];
+    return [...own, ...(config.extra ?? []).filter((k) => !own.includes(k))];
+}
 export const MAX_CUSTOM_QUESTIONS = 5;
 export const MAX_CUSTOM_OPTIONS = 12;
 export const MAX_LABEL_LENGTH = 120;
@@ -157,7 +166,10 @@ export function parseLeadFormConfig(raw) {
             custom.push(question);
         }
     }
-    return { presets, custom };
+    const extra = Array.isArray(raw.extra)
+        ? Object.keys(PRESET_QUESTIONS).filter((k) => raw.extra.includes(k))
+        : [];
+    return extra.length > 0 ? { presets, custom, extra } : { presets, custom };
 }
 /** Problems that stop the studio saving its config (shown in Settings). */
 export function leadFormConfigErrors(config) {
@@ -176,7 +188,7 @@ export function leadFormConfigErrors(config) {
 /** The questions shown for this studio, in order: ready-made first, then custom. */
 export function formQuestions(config, kind, classes = []) {
     const out = [];
-    for (const key of PRESETS_BY_KIND[kind]) {
+    for (const key of presetKeysFor(config, kind)) {
         const setting = config.presets[key];
         if (!setting?.enabled)
             continue;
