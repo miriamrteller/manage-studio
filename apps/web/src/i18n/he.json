@@ -100,7 +100,10 @@
     "link_replaced_use_code_hint": "(יש מערכות דואר של עבודה שפותחות קישורים אוטומטית).",
     "handoff_opening": "פותחים את הסטודיו…",
     "handoff_failed": "לא הצלחנו לחבר אותך בכתובת הזו. אפשר להתחבר כאן.",
-    "handoff_sign_in": "כניסה"
+    "handoff_sign_in": "כניסה",
+    "platform_owner_title": "נכנסת כבעלת הפלטפורמה של OpalSwift",
+    "platform_owner_body": "דפי הניהול של הסטודיו מיועדים למנהלי הסטודיו עצמו.",
+    "platform_owner_back": "חזרה ל-app.opalswift.com"
   },
   "report_problem": {
     "menu_item": "דיווח על בעיה",
