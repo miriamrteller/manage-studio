@@ -78,6 +78,18 @@ function serviceDeps(service: ServiceClient): ProvisionStudioDeps {
       const { error } = await service.rpc("assign_studio_owner", { p_tenant_id: tenantId, p_user_id: userId });
       if (error) throw new Error(error.message);
     },
+    async applyProfile(tenantId, profile) {
+      const { error } = await service
+        .from("tenants")
+        .update({
+          payment_flow: profile.paymentFlow,
+          teaches_classes: profile.teachesClasses,
+          family_accounts: profile.familyAccounts,
+          client_booking: profile.clientBooking,
+        })
+        .eq("id", tenantId);
+      if (error) throw new Error(error.message);
+    },
   };
 }
 
@@ -155,6 +167,18 @@ function selfServeDeps(service: ServiceClient, req: Request): SelfServeDeps {
       });
       if (error) throw new Error(error.message);
       return data as string;
+    },
+    async applyProfile(tenantId, profile) {
+      const { error } = await service
+        .from("tenants")
+        .update({
+          payment_flow: profile.paymentFlow,
+          teaches_classes: profile.teachesClasses,
+          family_accounts: profile.familyAccounts,
+          client_booking: profile.clientBooking,
+        })
+        .eq("id", tenantId);
+      if (error) throw new Error(error.message);
     },
   };
 }

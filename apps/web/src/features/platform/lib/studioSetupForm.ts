@@ -1,4 +1,5 @@
 import { OPALSWIFT_BRAND } from '@/lib/theme/opalswiftBrand';
+import type { PaymentFlow, StudioProfile } from '@shared/index';
 import type { StudioInvoicingProvider, StudioPaymentProvider } from '../services/studioSetupService';
 
 export type StudioVertical = 'dance-studio' | 'photographer' | 'beautician' | 'generic';
@@ -15,6 +16,11 @@ export interface StudioSetupForm {
   primaryColor: string;
   accentColor: string;
   ownerEmail: string;
+  /** How clients pay and which areas the studio uses; pre-filled from the studio type, always editable. */
+  paymentFlow: PaymentFlow;
+  teachesClasses: boolean;
+  familyAccounts: boolean;
+  clientBooking: boolean;
   /**
    * Answer to "Will you charge monthly fees?" (null = not answered). Pre-filled from the studio
    * type; decides which payment providers are offered. Not sent: it only guides the choice.
@@ -38,8 +44,35 @@ export const INITIAL_FORM: StudioSetupForm = {
   primaryColor: OPALSWIFT_BRAND.primary,
   accentColor: OPALSWIFT_BRAND.accent,
   ownerEmail: '',
+  paymentFlow: 'both',
+  teachesClasses: false,
+  familyAccounts: false,
+  clientBooking: false,
   monthlyFees: null,
 };
+
+/**
+ * What the studio type pre-fills for the business profile. Only a starting point: the wizard shows
+ * every answer and the owner changes any of it (and again later in Settings, "Your business").
+ */
+export function profileDefaultsFor(vertical: StudioVertical): StudioProfile {
+  switch (vertical) {
+    case 'dance-studio':
+      return { paymentFlow: 'recurring', teachesClasses: true, familyAccounts: true, clientBooking: false };
+    case 'photographer':
+      return { paymentFlow: 'project', teachesClasses: false, familyAccounts: false, clientBooking: true };
+    case 'beautician':
+      // Paid per visit, so "per project" matches the old "no monthly fees" answer; the owner can change it.
+      return { paymentFlow: 'project', teachesClasses: false, familyAccounts: false, clientBooking: true };
+    default:
+      return { paymentFlow: 'both', teachesClasses: false, familyAccounts: false, clientBooking: false };
+  }
+}
+
+/** "Will you charge monthly fees?" follows the payment flow unless the owner answers otherwise. */
+export function monthlyFeesForFlow(flow: PaymentFlow): boolean {
+  return flow !== 'project';
+}
 
 /** Class-based studios (terms, family billing) use the Professional layout. */
 export function planForVertical(vertical: StudioVertical): 'essential' | 'professional' {
@@ -65,6 +98,12 @@ export function toSetupRequest(form: StudioSetupForm) {
     invoicingProvider: form.invoicingProvider,
     primaryColor: form.primaryColor,
     accentColor: form.accentColor,
+    profile: {
+      paymentFlow: form.paymentFlow,
+      teachesClasses: form.teachesClasses,
+      familyAccounts: form.familyAccounts,
+      clientBooking: form.clientBooking,
+    },
   };
 }
 
