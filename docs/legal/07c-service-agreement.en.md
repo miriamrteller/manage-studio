@@ -69,6 +69,9 @@ Israeli law applies. If these terms and the law differ, the law that protects th
 
 ---
 
+### Awaiting lawyer review (see [AWAITING-LAWYER-REVIEW](AWAITING-LAWYER-REVIEW.md))
+- [[LAWYER: confirm]] A studio that is not yet a registered business is identified as "<studio>, run by <full name>" with the person's Israeli ID number (ת.ז.), or, for someone without one, a passport number and the issuing country. This number appears in the published document. Confirm the wording, that publishing an ID number is required or justified here, and the foreign-resident (passport) case.
+
 ### Drafting notes
 
 - The app fills `{{shoot_date}}` for any job date; the token name is historical. The add-on files reuse the same tokens.
