@@ -1,58 +1,37 @@
 import { supabase } from '../../../lib/supabase';
-import type { FeatureDefinition, FeatureOverride, TenantOption } from '../types/feature-admin';
-
-export async function fetchAllFeatureDefinitions(): Promise<FeatureDefinition[]> {
-  const { data, error } = await supabase
-    .from('feature_definitions')
-    .select('feature_key, label, description, category, tier_minimum, skin_restriction, default_enabled')
-    .order('category')
-    .order('feature_key');
-
-  if (error) throw new Error(`Failed to fetch feature definitions: ${error.message}`);
-  return data ?? [];
-}
+import type { FeatureState, TenantOption } from '../types/feature-admin';
 
 export async function fetchTenants(): Promise<TenantOption[]> {
-  const { data, error } = await supabase
-    .from('tenants')
-    .select('id, name, subdomain, plan')
-    .order('name');
-
-  if (error) throw new Error(`Failed to fetch tenants: ${error.message}`);
-  return data ?? [];
+  const { data, error } = await supabase.from('tenants').select('id, name, subdomain, plan').order('name');
+  if (error) throw new Error(`Failed to fetch studios: ${error.message}`);
+  return (data ?? []) as TenantOption[];
 }
 
-export async function fetchTenantOverrides(tenantId: string): Promise<FeatureOverride[]> {
-  const { data, error } = await supabase
-    .from('tenant_feature_overrides')
-    .select('id, tenant_id, feature_key, enabled, updated_at')
-    .eq('tenant_id', tenantId);
-
-  if (error) throw new Error(`Failed to fetch overrides: ${error.message}`);
-  return data ?? [];
+/** Every feature for one studio: its set, default and the owner's override (operator only). */
+export async function fetchFeatureStates(tenantId: string): Promise<FeatureState[]> {
+  const { data, error } = await supabase.rpc('platform_tenant_feature_states', { p_tenant_id: tenantId });
+  if (error) throw new Error(`Failed to fetch features: ${error.message}`);
+  return (data ?? []) as FeatureState[];
 }
 
-export async function upsertOverride(
+/** enabled: true = grant, false = remove, null = back to the default. Audited in the database. */
+export async function setFeatureOverride(
   tenantId: string,
   featureKey: string,
-  enabled: boolean,
+  enabled: boolean | null,
 ): Promise<void> {
-  const { error } = await supabase
-    .from('tenant_feature_overrides')
-    .upsert(
-      { tenant_id: tenantId, feature_key: featureKey, enabled, updated_at: new Date().toISOString() },
-      { onConflict: 'tenant_id,feature_key' },
-    );
-
-  if (error) throw new Error(`Failed to upsert override: ${error.message}`);
+  const { error } = await supabase.rpc('platform_set_feature_override', {
+    p_tenant_id: tenantId,
+    p_feature_key: featureKey,
+    p_enabled: enabled,
+  });
+  if (error) throw new Error(`Failed to change feature: ${error.message}`);
 }
 
-export async function deleteOverride(tenantId: string, featureKey: string): Promise<void> {
-  const { error } = await supabase
-    .from('tenant_feature_overrides')
-    .delete()
-    .eq('tenant_id', tenantId)
-    .eq('feature_key', featureKey);
-
-  if (error) throw new Error(`Failed to delete override: ${error.message}`);
+/**
+ * Pure: the override to store when the owner flips a feature to `next`. Flipping back to what
+ * the studio gets by default clears the override, so later plan or profile changes apply again.
+ */
+export function overrideFor(state: Pick<FeatureState, 'default_on'>, next: boolean): boolean | null {
+  return next === state.default_on ? null : next;
 }

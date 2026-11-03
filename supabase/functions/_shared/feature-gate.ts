@@ -7,12 +7,40 @@
  *
  * Behaviour:
  *   - 5-minute in-memory TTL cache per tenant (cache is per Deno isolate — resets on cold start).
- *   - Fail-open on Supabase timeout or error: logs a warning and allows the request through.
+ *   - When the features cannot be read (timeout or error): EXTRAS (paid add-ons, see
+ *     EXTRAS_FEATURE_KEYS) fail closed with a 503; every other key (CORE and the business
+ *     sets) is let through with a warning, so a database hiccup never blocks everyday work.
  *   - Throws Response(403) JSON if the feature is not in the tenant's enabled set.
  *
  * The RPC `get_tenant_features(p_tenant_id)` is created by the Batch 3 SQL migration.
  */
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.105.3';
+
+/**
+ * Paid add-ons: features with no business-profile gate that need the Professional plan
+ * (feature_definitions.tier_minimum = 'professional' AND profile_gate IS NULL).
+ * supabase/tests/feature-admin checks this list against the database.
+ */
+export const EXTRAS_FEATURE_KEYS: ReadonlySet<string> = new Set([
+  "comms:documents.whatsapp",
+  "comms:otp.whatsapp",
+  "comms:reminders.voice",
+  "comms:reminders.whatsapp",
+  "finance:expenses.advanced",
+  "finance:export.bkmv",
+  "finance:reports.annual",
+  "finance:reports.realtime",
+  "finance:threshold.radar",
+  "platform:admin.super",
+  "platform:domains.custom",
+  "platform:themes.customize",
+  "scheduling:ai.assistant",
+  "ui:content.ai",
+  "ui:documents.queue",
+  "ui:downloads.selfServe",
+  "ui:payments.enhanced",
+  "ui:pdfs.branded",
+]);
 
 const featureCache = new Map<string, { features: Set<string>; expiry: number }>();
 const CACHE_TTL_MS = 5 * 60 * 1000;
@@ -21,7 +49,7 @@ const SUPABASE_TIMEOUT_MS = 3_000;
 async function fetchFeatures(
   tenantId: string,
   supabaseAdmin: SupabaseClient
-): Promise<Set<string>> {
+): Promise<Set<string> | null> {
   const cached = featureCache.get(tenantId);
   const now = Date.now();
 
@@ -41,7 +69,7 @@ async function fetchFeatures(
 
     if (error) {
       console.error('[FEATURE_GATE] fetch failed', { tenantId, error: error.message });
-      return new Set();
+      return null;
     }
 
     const features = new Set(data as string[]);
@@ -49,7 +77,7 @@ async function fetchFeatures(
     return features;
   } catch (err) {
     console.error('[FEATURE_GATE] fetch timeout', { tenantId, error: String(err) });
-    return new Set();
+    return null;
   }
 }
 
@@ -60,8 +88,15 @@ export async function requireFeature(
 ): Promise<void> {
   const features = await fetchFeatures(tenantId, supabaseAdmin);
 
-  if (features.size === 0) {
-    console.warn('[FEATURE_GATE] fail-open (empty feature set)', { tenantId, featureKey });
+  if (features === null) {
+    if (EXTRAS_FEATURE_KEYS.has(featureKey)) {
+      console.warn('[FEATURE_GATE] fail-closed (features unavailable)', { tenantId, featureKey });
+      throw new Response(
+        JSON.stringify({ error: 'feature_check_unavailable', feature: featureKey }),
+        { status: 503, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+    console.warn('[FEATURE_GATE] fail-open (features unavailable)', { tenantId, featureKey });
     return;
   }
 
@@ -84,5 +119,5 @@ export async function getTenantFeatures(
   tenantId: string,
   supabaseAdmin: SupabaseClient
 ): Promise<Set<string>> {
-  return fetchFeatures(tenantId, supabaseAdmin);
+  return (await fetchFeatures(tenantId, supabaseAdmin)) ?? new Set();
 }

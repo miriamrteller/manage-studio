@@ -3375,5 +3375,43 @@
     "no_monthly_warning": "With {{provider}} you can't charge monthly fees. For monthly fees, choose Grow.",
     "disclaimer": "You can change your payment provider until your first payment. After that, changing it needs OpalSwift support.",
     "monthly_needs_grow": "Monthly fees need Grow. Contact OpalSwift support."
+  },
+  "platform_features": {
+    "title": "Studio features",
+    "intro": "Choose a studio to set which features it has. Switching a feature away from its default is saved as your choice; \"Back to default\" removes it. Money is never affected: monthly fees and payments carry on whatever is switched off.",
+    "studio": "Studio",
+    "choose_studio": "Choose a studio",
+    "pick_hint": "Choose a studio above to see its features.",
+    "override_count_one": "{{count}} feature set by you",
+    "override_count_other": "{{count}} features set by you",
+    "default_on": "On by default",
+    "default_off": "Off by default",
+    "granted": "switched on by you",
+    "removed": "switched off by you",
+    "reset": "Back to default",
+    "save_failed": "That change wasn't saved. Please try again.",
+    "load_failed": "The features couldn't be loaded. Please try again.",
+    "plans": {
+      "essential": "Essential",
+      "professional": "Professional"
+    },
+    "sets": {
+      "core": "Core",
+      "monthly": "Monthly fees",
+      "projects": "Projects",
+      "booking": "Booking",
+      "classes": "Classes",
+      "families": "Families",
+      "extras": "Extras"
+    },
+    "set_hints": {
+      "core": "Every studio has these.",
+      "monthly": "On when the studio charges monthly fees.",
+      "projects": "On when the studio charges per project (quote, deposit, balance).",
+      "booking": "On when clients book time slots.",
+      "classes": "On when the studio teaches classes.",
+      "families": "On when parents pay for children.",
+      "extras": "Included with the Professional plan."
+    }
   }
 }

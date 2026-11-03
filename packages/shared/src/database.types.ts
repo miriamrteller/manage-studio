@@ -4957,6 +4957,30 @@ export type Database = {
         Args: { p_tenant_id: string }
         Returns: boolean
       }
+      platform_set_feature_override: {
+        Args: {
+          p_enabled: boolean | null
+          p_feature_key: string
+          p_note?: string
+          p_tenant_id: string
+        }
+        Returns: undefined
+      }
+      platform_tenant_feature_states: {
+        Args: { p_tenant_id: string }
+        Returns: {
+          default_on: boolean
+          description: string
+          effective: boolean
+          feature_key: string
+          feature_set: string
+          override_enabled: boolean | null
+          override_note: string | null
+          profile_gate: string | null
+          skin_restriction: string | null
+          tier_minimum: Database["public"]["Enums"]["tenant_plan"]
+        }[]
+      }
       preview_notification_blast_recipients: {
         Args: {
           p_account_id?: string
