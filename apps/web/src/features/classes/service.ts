@@ -32,6 +32,7 @@ const ClassInputSchema = z.object({
   start_time: TimeSchema.nullable().optional(),
   end_time: TimeSchema.nullable().optional(),
   is_public: z.boolean().optional(),
+  waiver_required: z.boolean().optional(),
   delivery_mode: z.enum(['scheduled', 'intangible']).optional(),
   billing_mode: z.enum(['one_time', 'recurring']).optional(),
   billing_interval: z.enum(['monthly', 'quarterly', 'annual']).nullable().optional(),
