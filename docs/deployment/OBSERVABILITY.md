@@ -157,8 +157,7 @@ Two optional helpers sit next to the button. Both reduce, but do not remove, the
 
 Both load only when used (separate small chunks, about 5 KB gzip together), so they add nothing to the normal app load.
 
-**Before this ships:** the sub-processor row in the DPA (`docs/legal/02-dpa.en.md` and `.he.md`) says "no session replay or screenshots".
-That sentence is no longer true once this goes live, so the legal text needs the owner's / lawyer's update first. It was left unchanged on purpose.
+**DPA:** the Sentry sub-processor row in the DPA (`docs/legal/02-dpa.en.md` and `.he.md`) now says that screenshots are sent only when a studio admin chooses to attach one, that the admin can black out details or send a text-hidden snapshot first, and that a screenshot may still show personal data on that screen. It ships with this feature. The wording still needs the lawyer's review like the rest of the DPA draft.
 
 GitHub issues contain the same fields (no personal data). Text copied from errors and reports is marked as
 untrusted, because anyone can trigger an error with odd text in it.
