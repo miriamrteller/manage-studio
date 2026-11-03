@@ -5,6 +5,7 @@
  */
 import { assert, assertEquals } from "https://deno.land/std@0.168.0/testing/asserts.ts";
 import type { CfCustomHostname, CloudflareSaas } from "./cloudflare.ts";
+import type { TurnstileHostnames } from "./turnstile.ts";
 import {
   checkDomain,
   type Deps,
@@ -19,13 +20,32 @@ const T1 = "tenant-1";
 const T2 = "tenant-2";
 const HOST = "app.harbour-yoga.com";
 
-function setup(opts: { enabled?: boolean; ownZones?: string[]; cfFails?: boolean } = {}) {
+function setup(
+  opts: { enabled?: boolean; ownZones?: string[]; cfFails?: boolean; widgetLimit?: number; noTurnstile?: boolean } = {},
+) {
   let clock = new Date("2026-11-03T10:00:00Z");
   const rows: DomainRow[] = [];
   const cfHosts = new Map<string, CfCustomHostname>();
   const tenantDomain = new Map<string, string | null>();
   const calls = { cfCreate: 0, cfGet: 0, cfRemove: 0, changed: 0 };
   let seq = 0;
+  // The Turnstile widget's hostname list (opalswift.com is always on it).
+  const widget = { domains: ["opalswift.com"], fails: false, limit: opts.widgetLimit ?? 10 };
+  const alerts: { message: string; tags: Record<string, string> }[] = [];
+  const turnstile: TurnstileHostnames = {
+    add(hostname) {
+      if (widget.fails) return Promise.reject(new Error("down"));
+      if (widget.domains.includes(hostname)) return Promise.resolve("already_listed");
+      if (widget.domains.length >= widget.limit) return Promise.resolve("full");
+      widget.domains.push(hostname);
+      return Promise.resolve("added");
+    },
+    remove(hostname) {
+      if (widget.fails) return Promise.reject(new Error("down"));
+      widget.domains = widget.domains.filter((d) => d !== hostname);
+      return Promise.resolve();
+    },
+  };
   const cf: CloudflareSaas = {
     create(hostname) {
       calls.cfCreate++;
@@ -76,9 +96,14 @@ function setup(opts: { enabled?: boolean; ownZones?: string[]; cfFails?: boolean
       calls.changed++;
       return Promise.resolve();
     },
+    turnstile: opts.noTurnstile ? null : turnstile,
+    alert: (message, tags) => {
+      alerts.push({ message, tags });
+      return Promise.resolve();
+    },
   };
   return {
-    deps, rows, cfHosts, tenantDomain, calls,
+    deps, rows, cfHosts, tenantDomain, calls, widget, alerts,
     advance(hours: number) {
       clock = new Date(clock.getTime() + hours * 3_600_000);
     },
@@ -201,4 +226,99 @@ Deno.test("remove: needs the hostname typed again; deletes at Cloudflare first, 
   assertEquals(s.tenantDomain.get(T1), null);
   assertEquals(s.calls.changed, 2); // activated, then removed
   assertEquals(await removeDomain(s.deps, T1, HOST), { error: "no_domain" });
+});
+
+Deno.test("turnstile: the domain is put on the widget before it goes live", async () => {
+  const s = setup();
+  const row = await requestDomain(s.deps, T1, "u1", HOST);
+  assert(isRow(row));
+  s.activate(row.cf_hostname_id!);
+  const checked = await checkDomain(s.deps, row, false);
+  assert(isRow(checked));
+  assertEquals(checked.status, "active");
+  assertEquals(s.widget.domains, ["opalswift.com", HOST]);
+  assertEquals(s.tenantDomain.get(T1), HOST);
+  assertEquals(s.alerts.length, 0);
+});
+
+Deno.test("turnstile: a full widget keeps the domain waiting, alerts the owner once, then goes live when a slot frees", async () => {
+  const s = setup({ widgetLimit: 1 });
+  const row = await requestDomain(s.deps, T1, "u1", HOST);
+  assert(isRow(row));
+  s.activate(row.cf_hostname_id!);
+  const first = await checkDomain(s.deps, row, false);
+  assert(isRow(first));
+  assertEquals(first.status, "pending");
+  assertEquals(first.error_code, "turnstile_full");
+  assertEquals(s.tenantDomain.get(T1), undefined);
+  assertEquals(s.calls.changed, 0);
+  assertEquals(s.alerts.length, 1);
+  assertEquals(s.alerts[0].tags.hostname, HOST);
+
+  await pollDomains(s.deps); // still full: no second alert
+  assertEquals(s.alerts.length, 1);
+  assertEquals(s.rows[0].error_code, "turnstile_full");
+
+  s.widget.limit = 10; // the owner frees a slot
+  await pollDomains(s.deps);
+  assertEquals(s.rows[0].status, "active");
+  assertEquals(s.rows[0].error_code, null);
+  assertEquals(s.tenantDomain.get(T1), HOST);
+});
+
+Deno.test("turnstile: widget API down — the poller waits, Check now reports it, nothing goes live", async () => {
+  const s = setup();
+  const row = await requestDomain(s.deps, T1, "u1", HOST);
+  assert(isRow(row));
+  s.activate(row.cf_hostname_id!);
+  s.widget.fails = true;
+  const polled = await checkDomain(s.deps, row, false);
+  assert(isRow(polled));
+  assertEquals(polled.status, "pending");
+  assertEquals(await checkDomain(s.deps, row, true), { error: "cloudflare_unavailable" });
+  assertEquals(s.tenantDomain.get(T1), undefined);
+});
+
+Deno.test("turnstile: removing a live domain frees its slot; a failure alerts but never blocks removal", async () => {
+  const s = setup();
+  const row = await requestDomain(s.deps, T1, "u1", HOST);
+  assert(isRow(row));
+  s.activate(row.cf_hostname_id!);
+  await checkDomain(s.deps, row, false);
+  const removed = await removeDomain(s.deps, T1, HOST);
+  assert(isRow(removed));
+  assertEquals(s.widget.domains, ["opalswift.com"]);
+
+  const s2 = setup();
+  const row2 = await requestDomain(s2.deps, T1, "u1", HOST);
+  assert(isRow(row2));
+  s2.activate(row2.cf_hostname_id!);
+  await checkDomain(s2.deps, row2, false);
+  s2.widget.fails = true;
+  const removed2 = await removeDomain(s2.deps, T1, HOST);
+  assert(isRow(removed2));
+  assertEquals(removed2.status, "removed");
+  assertEquals(s2.tenantDomain.get(T1), null);
+  assertEquals(s2.alerts.length, 1);
+});
+
+Deno.test("turnstile: Check now on a live domain puts it back on the widget if it went missing", async () => {
+  const s = setup();
+  const row = await requestDomain(s.deps, T1, "u1", HOST);
+  assert(isRow(row));
+  s.activate(row.cf_hostname_id!);
+  await checkDomain(s.deps, row, false);
+  s.widget.domains = ["opalswift.com"]; // dropped by hand or by a racing write
+  await checkDomain(s.deps, s.rows[0], true);
+  assertEquals(s.widget.domains, ["opalswift.com", HOST]);
+});
+
+Deno.test("turnstile: without a site key (no bot check in the app) domains go live as before", async () => {
+  const s = setup({ noTurnstile: true });
+  const row = await requestDomain(s.deps, T1, "u1", HOST);
+  assert(isRow(row));
+  s.activate(row.cf_hostname_id!);
+  const checked = await checkDomain(s.deps, row, false);
+  assert(isRow(checked));
+  assertEquals(checked.status, "active");
 });

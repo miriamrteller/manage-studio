@@ -33,15 +33,20 @@ app. The studio's existing website stays where it is.
 3. The poller (pg_cron, every 10 minutes, only while something is pending) checks it
    for **24 hours**. Then the domain is **paused**; **Check now** checks at once and
    opens a new 24-hour window. While paused the Cloudflare hostname is kept.
-4. When Cloudflare reports the hostname and certificate **active**: `tenants.custom_domain`
-   is set (links and emails switch), `auth-redirects-sync` adds `https://<domain>/**` to
-   Supabase's redirect URLs, and the screen shows **Connected ✓**.
+4. When Cloudflare reports the hostname and certificate **active**, the address is first
+   added to the Turnstile widget (the sign-in bot check), so sign-in works from the first
+   visit. Then `tenants.custom_domain` is set (links and emails switch),
+   `auth-redirects-sync` adds `https://<domain>/**` to Supabase's redirect URLs, and the
+   screen shows **Connected ✓**. If the widget is full (10 hostnames on the free plan;
+   `opalswift.com` and `creativeballetacademy.com` use two), the domain waits as
+   `turnstile_full`. The studio sees "nothing more for you to do", the owner gets one
+   Sentry alert, and the domain goes live on the next check after a slot is freed.
 5. Never connected after **30 days**: the Cloudflare hostname is deleted and the
    studio can start again.
 
 **Removing:** the admin types the address to confirm. Cloudflare first, then
 `tenants.custom_domain` is cleared (links go back to `<subdomain>.opalswift.com` at
-once), then the redirect URL is removed. The address stays locked to that studio for
+once), then the redirect URL and the Turnstile hostname are removed. The address stays locked to that studio for
 30 days, so nobody else can take it while its CNAME may still point at us.
 
 **Rollout:** only studios in `custom_domain_rollout` see the screen (a prod task adds
@@ -54,6 +59,7 @@ one; `supabase/prod-tasks/*_custom_domain_rollout_first_studio.sql`).
 | `tenants.custom_domain` | Full hostname, lower-case (migration `20261101000800`). Unique. Only a super-admin, the service role or the SQL editor can change it. Self-serve sets it when the domain becomes active. |
 | `tenant_custom_domains` | Self-serve state per studio: status, records to show, 24-hour window, 30-day dates (migration `20261103120000`). Written only by `custom-domain`; studio admins read their own. Every status change is in `audit_log`. |
 | `custom-domain` Edge Function | status / request / check / remove for the studio's admin; poll for pg_cron (`20261103124800`). Rules and tests: `_shared/custom-domain/`. |
+| `_shared/custom-domain/turnstile.ts` | Adds a domain to the Turnstile widget's hostname list before it goes live, and takes it off on removal (Cloudflare API, `TURNSTILE_SITE_KEY`, `CLOUDFLARE_ACCOUNT_ID`). An exact hostname only; a listed parent domain doesn't count. "Check now" on a live domain re-adds it if it went missing. |
 | `auth-redirects-sync` workflow | Keeps Supabase Auth's redirect URLs in step with active custom domains (nightly, and started on every activation or removal). |
 | `get_tenant_config_by_host(host)` | Public lookup the web app uses for hosts outside `VITE_APP_ROOT_DOMAIN`. Returns the same columns as `get_tenant_config_by_subdomain`. |
 | Web app (`resolveTenantSite`) | Hosts under the root domain resolve by subdomain as before. Any other host is looked up by host. |
@@ -174,8 +180,10 @@ before the `*/*` route in `apps/web/wrangler.jsonc` is released.
      **Fallback Origin** to `proxy-fallback.opalswift.com`. Wait for *Active*.
 3. **Cloudflare API token** (My Profile → API Tokens → *Create Token* →
    *Custom token*): permissions *Zone · SSL and Certificates · Edit* and
-   *Zone · Zone · Read*; zone resources *Include · Specific zone ·
-   opalswift.com*. Copy the token, and the **Zone ID** from the zone's Overview.
+   *Zone · Zone · Read*, and *Account · Turnstile · Edit*; zone resources
+   *Include · Specific zone · opalswift.com*, account resources *Include · the
+   OpalSwift account*. Copy the token, and the **Zone ID** from the zone's
+   Overview.
 4. **Supabase prod Edge secrets** (Project → Edge Functions → Secrets):
    `CLOUDFLARE_SAAS_API_TOKEN`, `CLOUDFLARE_SAAS_ZONE_ID`, and
    `CUSTOM_DOMAIN_OWN_ZONES` = `creativeballetacademy.com` (domains that are
@@ -183,6 +191,11 @@ before the `*/*` route in `apps/web/wrangler.jsonc` is released.
    `CUSTOM_DOMAIN_CNAME_TARGET` is optional: leave it unset, it defaults to
    `proxy-fallback.opalswift.com` (set it only if the fallback record has
    another name).
+   Also `TURNSTILE_SITE_KEY`: the same value as the web app's
+   `VITE_TURNSTILE_SITE_KEY` (public). It needs `CLOUDFLARE_ACCOUNT_ID`, which
+   email already uses, so it is usually set; if not, it is on any domain's
+   Overview page. Without the site key, domains go live without touching the
+   widget (only right if the app has no bot check).
 5. **Redirect allowlist sync**: `SUPABASE_AUTH_SYNC_TOKEN` (GitHub environment
    `production-nightly`) and `GITHUB_DISPATCH_TOKEN` (Supabase prod Edge secret);
    steps in PR #279's description. Then run *auth-redirects-sync* with *dry_run*.
@@ -215,7 +228,8 @@ The screen explains each case in plain words; this is what is behind it.
 | Domain on Cloudflare (orange cloud) and never connects | The studio's CNAME is proxied | Set it to **DNS only** (grey cloud) |
 | "Already used by another studio" | Live elsewhere, or released by another studio under 30 days ago | Wait out the 30 days or contact us |
 | "Custom addresses aren't available yet" | Cloudflare secrets not set on prod | Owner setup, steps 3–4 |
-| Sign-in on the new address says "Unable to connect to website" | The hostname isn't on the Turnstile widget yet. Self-serve doesn't add it yet. | Add it by hand, as in path A, step 9 |
+| "Your address is ready … nothing more for you to do" (`turnstile_full`) | The Turnstile widget's hostname list is full (Sentry alert: "Turnstile widget is full") | Free a slot (Turnstile → widget → Hostname Management: remove an unused hostname), or set `TURNSTILE_HOSTNAME_LIMIT` after an upgrade. The next check puts it live |
+| Sign-in on the new address says "Unable to connect to website" | The hostname is missing from the Turnstile widget (path A, or removed by hand) | Path A: step 9. Self-serve: the studio presses **Check now** |
 
 What happened and when: `tenant_custom_domains` (`status`, `error_code`,
 `last_checked_at`) and `audit_log` rows with `action LIKE 'custom_domain.%'`.

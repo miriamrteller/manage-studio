@@ -135,4 +135,11 @@ describe('CustomDomainSettings', () => {
     expect(screen.queryByRole('button', { name: 'settings.custom_domain.check_now' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'settings.custom_domain.remove' })).toBeNull();
   });
+
+  it('waiting for a Turnstile slot shows a plain "nothing to do" line, not an error', async () => {
+    rpc.mockResolvedValue({ data: true });
+    respond({ status: { domain: { ...pending, error_code: 'turnstile_full' } } });
+    wrap(<CustomDomainSettings />);
+    expect(await screen.findByText('settings.custom_domain.codes.turnstile_full')).toBeTruthy();
+  });
 });
