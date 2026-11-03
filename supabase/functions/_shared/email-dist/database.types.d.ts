@@ -4451,13 +4451,13 @@ export type Database = {
                 Args: never;
                 Returns: string[];
             };
-            get_my_person_id: {
-                Args: never;
-                Returns: string;
-            };
             get_my_last_signer_details: {
                 Args: never;
                 Returns: Json;
+            };
+            get_my_person_id: {
+                Args: never;
+                Returns: string;
             };
             get_my_profile: {
                 Args: never;
@@ -4587,15 +4587,15 @@ export type Database = {
                     title: string;
                 }[];
             };
-            get_supabase_functions_url: {
-                Args: never;
-                Returns: string;
-            };
             get_signed_record_details: {
                 Args: {
                     p_evidence_id: string;
                 };
                 Returns: Json;
+            };
+            get_supabase_functions_url: {
+                Args: never;
+                Returns: string;
             };
             get_tenant_config_by_host: {
                 Args: {
@@ -4853,6 +4853,12 @@ export type Database = {
             };
             is_super_admin: {
                 Args: never;
+                Returns: boolean;
+            };
+            is_valid_israeli_id: {
+                Args: {
+                    p_id: string;
+                };
                 Returns: boolean;
             };
             job_insert: {
