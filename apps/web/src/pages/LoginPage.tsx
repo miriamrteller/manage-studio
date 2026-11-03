@@ -6,6 +6,8 @@ import { LoginForm } from '@/components/shared';
 import { useLogin } from '@/hooks/useLogin';
 import { persistEnrollmentIntent } from '@/lib/enrollment-intent';
 import { INACTIVITY_LIMIT_MINUTES, INACTIVITY_LOGIN_REASON } from '@/lib/inactivity/config';
+import { isPlatformAppHost } from '@/lib/resolveTenantSubdomain';
+import { goToPlatformSignup } from '@/lib/platformSignup';
 
 /**
  * LoginPage: Light composition page
@@ -138,7 +140,7 @@ export default function LoginPage() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate('/signup')}
+            onClick={() => (isPlatformAppHost() ? goToPlatformSignup(navigate) : navigate('/signup'))}
             className="text-primary hover:underline focus-visible:outline-2 outline-primary outline-offset-2"
           >
             {t('pages.login.signup')}

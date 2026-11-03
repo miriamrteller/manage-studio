@@ -18,7 +18,7 @@ export function useSignup() {
       if (data.channel === 'email') {
         const subdomain = resolveTenantSubdomain();
         if (!subdomain) {
-          throw new Error('Could not determine school subdomain');
+          throw new Error('Could not determine studio subdomain');
         }
 
         const { error } = await supabase.auth.signInWithOtp({
