@@ -1,128 +1,93 @@
-import type { FeatureDefinition, FeatureOverride } from '../types/feature-admin';
-import { useResetFeature, useToggleFeature } from '../hooks/useFeatureAdmin';
+import { useTranslation } from 'react-i18next';
+import { FEATURE_SETS, type FeatureState } from '../types/feature-admin';
+import { useSetFeatureOverride } from '../hooks/useFeatureAdmin';
+import { overrideFor } from '../services/featureAdminService';
 
 interface Props {
-  features: FeatureDefinition[];
-  overrides: FeatureOverride[];
+  features: FeatureState[];
   tenantId: string;
 }
 
-const CATEGORY_ORDER = [
-  'scheduling',
-  'billing',
-  'messaging',
-  'finance',
-  'documents',
-  'admin',
-  'platform',
-];
-
-const CATEGORY_LABELS: Record<string, string> = {
-  scheduling: 'Scheduling',
-  billing: 'Billing',
-  messaging: 'Messaging',
-  finance: 'Finance',
-  documents: 'Documents',
-  admin: 'Admin',
-  platform: 'Platform',
-};
-
-function badgeClass(value: string | null) {
-  if (!value) return '';
-  return value === 'essential'
-    ? 'badge badge-sm badge-outline badge-info'
-    : 'badge badge-sm badge-outline badge-accent';
+/** Pure: features grouped by set, in the owner's order; unknown sets go last. */
+export function groupBySet(features: FeatureState[]): [string, FeatureState[]][] {
+  const order = [...FEATURE_SETS, ...new Set(features.map((f) => f.feature_set))];
+  return [...new Set(order)]
+    .map((set) => [set, features.filter((f) => f.feature_set === set)] as [string, FeatureState[]])
+    .filter(([, items]) => items.length > 0);
 }
 
-export function FeatureTogglePanel({ features, overrides, tenantId }: Props) {
-  const toggleMutation = useToggleFeature(tenantId);
-  const resetMutation = useResetFeature(tenantId);
-
-  const overrideMap = new Map(overrides.map((o) => [o.feature_key, o]));
-
-  // Group features by category in defined order
-  const grouped = CATEGORY_ORDER.reduce<Record<string, FeatureDefinition[]>>((acc, cat) => {
-    const items = features.filter((f) => f.category === cat);
-    if (items.length > 0) acc[cat] = items;
-    return acc;
-  }, {});
-
-  // Catch any categories not in CATEGORY_ORDER
-  features.forEach((f) => {
-    if (!grouped[f.category]) grouped[f.category] = [];
-    if (!grouped[f.category].includes(f)) grouped[f.category].push(f);
-  });
+/**
+ * What one studio HAS, by set. The switch shows whether the studio has the feature now; flipping
+ * it away from the default stores the owner's grant or removal, flipping it back clears it.
+ */
+export function FeatureTogglePanel({ features, tenantId }: Props) {
+  const { t } = useTranslation();
+  const mutation = useSetFeatureOverride(tenantId);
 
   return (
     <div className="space-y-8">
-      {Object.entries(grouped).map(([category, items]) => (
-        <section key={category}>
-          <h3 className="text-sm font-semibold uppercase tracking-wider text-base-content/50 mb-3">
-            {CATEGORY_LABELS[category] ?? category}
-          </h3>
-          <div className="divide-y divide-base-200 rounded-xl border border-base-200 bg-base-100">
+      {mutation.isError && (
+        <p role="alert" className="text-sm text-red-700">
+          {t('platform_features.save_failed')}
+        </p>
+      )}
+      {groupBySet(features).map(([set, items]) => (
+        <section key={set} aria-labelledby={`feature-set-${set}`}>
+          <h2 id={`feature-set-${set}`} className="mb-1 text-base font-semibold">
+            {t(`platform_features.sets.${set}`, { defaultValue: set })}
+          </h2>
+          <p className="mb-3 text-sm text-muted-foreground">
+            {t(`platform_features.set_hints.${set}`, { defaultValue: '' })}
+          </p>
+          <ul className="divide-y divide-border rounded-lg border border-border">
             {items.map((feature) => {
-              const override = overrideMap.get(feature.feature_key);
-              const isOverridden = override !== undefined;
-              // Effective state: override wins, else default
-              const effectiveEnabled = isOverridden ? override!.enabled : feature.default_enabled;
-
+              const id = `feature-${feature.feature_key.replace(/[^a-z0-9]/gi, '-')}`;
+              const overridden = feature.override_enabled !== null;
               return (
-                <div
-                  key={feature.feature_key}
-                  className="flex items-start justify-between gap-4 px-4 py-3"
-                >
+                <li key={feature.feature_key} className="flex items-start justify-between gap-4 px-4 py-3">
                   <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-medium text-sm">{feature.label}</span>
-                      {feature.tier_minimum && (
-                        <span className={badgeClass(feature.tier_minimum)}>
-                          {feature.tier_minimum}
-                        </span>
-                      )}
-                      {feature.skin_restriction && (
-                        <span className={badgeClass(feature.skin_restriction)}>
-                          skin: {feature.skin_restriction}
-                        </span>
-                      )}
-                      {isOverridden && (
-                        <span className="badge badge-sm badge-warning">overridden</span>
-                      )}
-                    </div>
-                    <p className="text-xs text-base-content/60 mt-0.5">{feature.description}</p>
-                    <code className="text-xs text-base-content/40">{feature.feature_key}</code>
+                    <label htmlFor={id} className="text-sm font-medium">
+                      {feature.description}
+                    </label>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {feature.default_on ? t('platform_features.default_on') : t('platform_features.default_off')}
+                      {overridden &&
+                        ` · ${feature.override_enabled ? t('platform_features.granted') : t('platform_features.removed')}`}
+                    </p>
+                    <code dir="ltr" className="text-xs text-muted-foreground">
+                      {feature.feature_key}
+                    </code>
                   </div>
-
-                  <div className="flex items-center gap-2 shrink-0 pt-0.5">
-                    {isOverridden && (
+                  <div className="flex shrink-0 items-center gap-2 pt-0.5">
+                    {overridden && (
                       <button
-                        className="btn btn-xs btn-ghost text-base-content/40"
-                        title="Reset to default"
-                        onClick={() => resetMutation.mutate(feature.feature_key)}
-                        disabled={resetMutation.isPending}
+                        type="button"
+                        className="text-xs font-medium text-primary underline underline-offset-2"
+                        onClick={() => mutation.mutate({ featureKey: feature.feature_key, enabled: null })}
+                        disabled={mutation.isPending}
                       >
-                        reset
+                        {t('platform_features.reset')}
                       </button>
                     )}
                     <input
+                      id={id}
                       type="checkbox"
-                      className="toggle toggle-sm toggle-primary"
-                      checked={effectiveEnabled}
+                      role="switch"
+                      className="h-5 w-5"
+                      checked={feature.effective}
                       onChange={(e) =>
-                        toggleMutation.mutate({
+                        mutation.mutate({
                           featureKey: feature.feature_key,
-                          enabled: e.target.checked,
-                          isCurrentlyOverridden: isOverridden,
-                          defaultEnabled: feature.default_enabled,
+                          enabled: overrideFor(feature, e.target.checked),
                         })
                       }
-                      disabled={toggleMutation.isPending}
+                      disabled={mutation.isPending}
                     />
                   </div>
-                </div>
+                </li>
               );
             })}
-          </div>
+          </ul>
         </section>
       ))}
     </div>
