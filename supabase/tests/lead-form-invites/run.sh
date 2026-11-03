@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Admin "Send form" invites (20261103203500_lead_form_invites.sql): a visitor
+# Admin "Send form" invites (20261103221500_lead_form_invites.sql): a visitor
 # gets the name and email only with the right, unexpired token for that
 # studio; nobody reads the table directly; the purge removes old invites.
 # Needs the local stack (see NEEDS_SUPABASE).
