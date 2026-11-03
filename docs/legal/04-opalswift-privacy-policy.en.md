@@ -5,11 +5,11 @@
 
 Last updated: 3 November 2026
 
-This policy covers personal information that **Miriam Teller, trading as OpalSwift** (not yet registered as a business; free beta), Jerusalem, Israel ("**OpalSwift**", "we") handles **for itself**: about studio owners, admins and staff who use the platform, people who sign up or contact us, and visitors to `opalswift.com`.
+This policy covers personal information that **OpalSwift** (not yet registered as a business; free beta), Jerusalem, Israel ("**OpalSwift**", "we") handles **for itself**: about studio owners, admins and staff who use the platform, people who sign up or contact us, and visitors to `opalswift.com`.
 
 It does **not** cover information that studios keep about their own clients (parents, students, photography clients). For that, each studio is responsible and has its own privacy policy; OpalSwift only processes it on the studio's behalf under a [data processing agreement](02-dpa.en.md).
 
-Privacy contact: Miriam Teller, hello@opalswift.com.
+Privacy contact: OpalSwift, hello@opalswift.com.
 
 ## 1. What we collect and why
 
@@ -57,6 +57,7 @@ We will post updates here and email account owners about significant changes.
 ---
 
 ### Awaiting lawyer review (see [AWAITING-LAWYER-REVIEW](AWAITING-LAWYER-REVIEW.md))
+- [[LAWYER: confirm]] Operator identity removed at the owner's request; OpalSwift is about to be registered. Add the registered business name and number here on registration.
 - [[LAWYER: confirm]] §1, the contact-form enquiries row (purpose; kept in OpalSwift's own customer list).
 - [[LAWYER: confirm]] §2, Resend added as a provider, and the Sentry screenshot sentence (matches the DPA).
 - [[LAWYER: confirm]] §3, the retention period for website enquiries (24 months after the last contact; owner decision).

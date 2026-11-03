@@ -5,7 +5,7 @@
 
 Last updated: 2 November 2026 · Version Beta 1.0
 
-These terms are an agreement between **Miriam Teller, trading as OpalSwift** (not yet registered as a business; free beta), Jerusalem, Israel ("**OpalSwift**", "we") and the business or person that opens a studio account ("**Studio**", "you"). They apply to the OpalSwift web app at `*.opalswift.com` and any related service (the "**Platform**").
+These terms are an agreement between **OpalSwift** (not yet registered as a business; free beta), Jerusalem, Israel, hello@opalswift.com ("**OpalSwift**", "we") and the business or person that opens a studio account ("**Studio**", "you"). They apply to the OpalSwift web app at `*.opalswift.com` and any related service (the "**Platform**").
 
 The Platform is a business tool. You use it for your business, not as a consumer. If you are an individual who has not yet registered a business, you still use the Platform for business purposes.
 
@@ -102,6 +102,9 @@ These terms, the DPA and any order form are the whole agreement. If a clause is 
 **Language.** This document is published in English and Hebrew. If the two versions differ, the English version prevails.
 
 ---
+
+### Awaiting lawyer review (see [AWAITING-LAWYER-REVIEW](AWAITING-LAWYER-REVIEW.md))
+- [[LAWYER: confirm]] Operator identity removed at the owner's request; OpalSwift is about to be registered. Add the registered business name and number here on registration.
 
 ### Sources relied on
 - Standard Contracts Law 5743-1982, §§3–4 (unfair terms in standard contracts; liability exemptions are presumed unfair). Relevant because these are standard terms; keep the liability cap reasonable. *Verify with lawyer whether a studio that is a small unregistered individual could be treated as a "customer" under that law (it applies to business customers too).*

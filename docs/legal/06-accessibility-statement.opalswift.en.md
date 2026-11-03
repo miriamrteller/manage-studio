@@ -33,7 +33,7 @@ We are working to fix these. If something does not work for you, please tell us 
 
 ## Accessibility coordinator
 
-- Name: Miriam Teller
+- Name: OpalSwift accessibility contact
 - Phone: coming soon; in the meantime, please contact us by email · Email: hello@opalswift.com
 - Address: Jerusalem, Israel
 
@@ -42,6 +42,9 @@ We aim to reply within 5 business days.
 Date of last accessibility review: November 2026.
 
 ---
+
+### Awaiting lawyer review (see [AWAITING-LAWYER-REVIEW](AWAITING-LAWYER-REVIEW.md))
+- [[LAWYER: confirm]] Operator identity removed at the owner's request; OpalSwift is about to be registered. Add the registered business name and number here on registration.
 
 ### Sources relied on
 - Equal Rights for Persons with Disabilities Law 5758-1998.
