@@ -1,12 +1,13 @@
 import { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Paintbrush, Building2, Briefcase, Globe, CreditCard, FileText, Scale, ShieldCheck, Users } from 'lucide-react';
+import { Paintbrush, Building2, Briefcase, Globe, ToggleRight, CreditCard, FileText, Scale, ShieldCheck, Users } from 'lucide-react';
 
 import { SettingsLayout, type SettingsSection } from '@/features/settings/components/SettingsLayout';
 import { BrandingSettingsForm } from '@/features/settings/components/BrandingSettingsForm';
 import { SchoolProfileForm } from '@/features/settings/components/SchoolProfileForm';
 import { BusinessSettings } from '@/features/settings/components/BusinessSettings';
+import { StudioFeatureSettings } from '@/features/settings/components/StudioFeatureSettings';
 import { LocaleSettingsForm } from '@/features/settings/components/LocaleSettingsForm';
 import { PaymentSettingsForm } from '@/features/settings/components/PaymentSettingsForm';
 import { InvoicingSettingsForm } from '@/features/settings/components/InvoicingSettingsForm';
@@ -59,6 +60,13 @@ const SETTINGS_SECTIONS: SettingsSection[] = [
     label: 'Your business',
     icon: Briefcase,
     component: BusinessSettings,
+  },
+  {
+    id: 'features',
+    labelKey: 'settings.tabs.features',
+    label: 'Features',
+    icon: ToggleRight,
+    component: StudioFeatureSettings,
   },
   {
     id: 'locale',
