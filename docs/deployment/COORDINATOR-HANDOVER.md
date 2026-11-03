@@ -196,6 +196,11 @@ You coordinate Claude Code "threads" (separate cloud sessions) that build OpalSw
   - There's no coaching/tutor skin key yet.
   - The lawyer review is outstanding.
   - Sentry data-retention period: the legal docs say "verify ~30 days". Confirm it in Sentry's settings and update the docs.
+- **Studio-granted support access** (owner-approved for later):
+  - A studio admin can allow OpalSwift support access from Settings → Security for a chosen period (up to 5 days), revocable any time.
+  - While it is on, the super_admin can use that studio's admin pages, fully recorded in the OpalSwift access log.
+  - Until then the platform owner sees a notice on a studio's address instead of its admin pages (#247).
+  - Needs a lawyer check of the DPA wording.
 - **Leads:** P1 is complete (#171–#199). P2/P3 wait for the owner's go-ahead. Named forms aren't in the demo.
 - **Brand:** per-skin default themes later.
 - **Engineering:**
