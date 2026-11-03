@@ -11,15 +11,21 @@
 #           c. fresh encrypted backup to R2 (+ Supabase daily backups/PITR on Pro)
 #           d. supabase db push, deploy every Edge Function
 #           e. verify:prod, verify:env, edge secret names (no *_MOCK), smoke query
-#           f. summary; a successful real deploy then starts deploy-web (the app)
+#           f. only if every check passed: build + deploy the web app from this
+#              same commit (.github/actions/web-release), in this same job, so
+#              the one approval covers the database AND the app
+#           g. summary
 #
 # Migrations must be backward-compatible (expand → deploy app → contract): the
-# web app deploys separately and runs against the new schema before and after
-# its own deploy. Rules + rollback: docs/deployment/DEV-PROD-PIPELINE.md
+# old app runs against the new schema until the web step finishes. Untick
+# deploy_web for a database-only release. App-only releases: deploy-web.
+# Rules + rollback: docs/deployment/DEV-PROD-PIPELINE.md
 #
 # GitHub Environment "production" (required reviewer: owner; main + prod-* tags):
 #   SUPABASE_ACCESS_TOKEN   CI token (prod org) for Edge Function deploys
 #   SUPABASE_PROD_DB_URL    prod session-pooler URL incl. password
+#   CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, SENTRY_AUTH_TOKEN + the VITE_*
+#                           variables: the web step (see deploy-web.yml)
 # Repo secrets R2_ACCOUNT_ID / R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY (as for
 # backup-prod.yml) for the pre-deploy backup.
 # Until the production secrets exist the deploy job skips with a notice.
@@ -35,6 +41,10 @@ on:
         default: false
       deploy_functions:
         description: "Deploy all Edge Functions after the migrations"
+        type: boolean
+        default: true
+      deploy_web:
+        description: "Deploy the web app from this commit after the database checks pass"
         type: boolean
         default: true
       allow_without_backup:
@@ -142,11 +152,12 @@ jobs:
     needs: plan
     if: needs.plan.outputs.env_ok == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 75
     environment: production
     env:
       DRY_RUN: ${{ inputs.dry_run == true }}
       DEPLOY_FUNCTIONS: ${{ inputs.deploy_functions != false }}
+      DEPLOY_WEB: ${{ inputs.deploy_web != false }}
     steps:
       - name: Check secrets are configured
         id: gate
@@ -292,18 +303,34 @@ jobs:
           echo "$body" | jq -r '.lints[]? | "- [\(.level)] \(.title): \(.detail)"' | head -40 > advisors.md || true
           { echo "### Security advisors"; if [ -s advisors.md ]; then cat advisors.md; else echo "none"; fi; } >> "$GITHUB_STEP_SUMMARY"
 
-      # Tells deploy-web that this run really changed prod (not a dry run), so
-      # the app may follow. deploy-web also requires this run to succeed.
-      - name: Mark the database release for deploy-web
+      # The app ships only after a real database deploy whose checks all
+      # passed. A failed or skipped step above, or a cancel, skips it too.
+      - name: Database checks passed
+        id: verdict
         if: steps.push.outcome == 'success'
+        env:
+          R_PROD: ${{ steps.v_prod.outcome }}
+          R_ENV: ${{ steps.v_env.outcome }}
+          R_SECRETS: ${{ steps.v_secrets.outcome }}
+          R_SMOKE: ${{ steps.v_smoke.outcome }}
         run: |
-          jq -n --arg sha "$GITHUB_SHA" --arg run "$GITHUB_RUN_ID" '{sha:$sha, run_id:$run, db_pushed:true}' > prod-db-deployed.json
-      - uses: actions/upload-artifact@v4
-        if: steps.push.outcome == 'success'
+          for r in "$R_PROD" "$R_ENV" "$R_SECRETS" "$R_SMOKE"; do
+            if [ "$r" != "success" ]; then
+              echo "::error::Database deployed but a verification failed — see the table in the summary. The web app was NOT deployed."
+              exit 1
+            fi
+          done
+
+      - name: Deploy the web app (same commit)
+        id: web
+        if: steps.verdict.outcome == 'success' && env.DEPLOY_WEB == 'true'
+        uses: ./.github/actions/web-release
         with:
-          name: prod-db-deployed
-          path: prod-db-deployed.json
-          retention-days: 7
+          sha: ${{ github.sha }}
+          vars-json: ${{ toJSON(vars) }}
+          cloudflare-api-token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          cloudflare-account-id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          sentry-auth-token: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
       - name: Summary
         if: always() && steps.gate.outputs.ready == 'true'
@@ -315,7 +342,10 @@ jobs:
           R_ENV: ${{ steps.v_env.outcome }}
           R_SECRETS: ${{ steps.v_secrets.outcome }}
           R_SMOKE: ${{ steps.v_smoke.outcome }}
+          R_WEB: ${{ steps.web.outcome }}
+          R_WEB_READY: ${{ steps.web.outputs.ready }}
         run: |
+          if [ "$R_WEB" = success ] && [ "$R_WEB_READY" != true ]; then R_WEB="skipped (no Cloudflare secrets)"; fi
           {
             echo "## Result"
             echo "| step | outcome |"
@@ -327,13 +357,8 @@ jobs:
             echo "| verify:env | ${R_ENV:-skipped} |"
             echo "| edge secret names | ${R_SECRETS:-skipped} |"
             echo "| smoke | ${R_SMOKE:-skipped} |"
+            echo "| web app | ${R_WEB:-skipped} |"
             echo
             echo "On Pro, Supabase's own daily backups (and PITR, if enabled) also cover this deploy."
             echo "Rollback: docs/deployment/DEV-PROD-PIPELINE.md#rollback"
           } >> "$GITHUB_STEP_SUMMARY"
-          for r in "$R_PROD" "$R_ENV" "$R_SECRETS" "$R_SMOKE"; do
-            if [ "$r" = "failure" ]; then
-              echo "::error::Deploy finished but a verification failed — see the table in the summary."
-              exit 1
-            fi
-          done

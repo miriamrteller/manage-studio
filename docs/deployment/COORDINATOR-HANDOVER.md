@@ -93,7 +93,7 @@ You coordinate Claude Code "threads" (separate cloud sessions) that build OpalSw
 ## Releases
 
 - Merge to main → deploy-dev runs automatically.
-- Prod: run **deploy-prod** (owner approves) → **deploy-web** starts itself after a green deploy-prod (owner approves).
+- Prod: run **deploy-prod** (owner approves once): database, functions, checks, then the web app from the same commit. App-only: **deploy-web** (owner approves).
 - To batch merges, you may cancel a deploy-prod that is still waiting for approval and start a new one.
 - **Next release** should carry #200 and #198 (only once `GROW_API_BASE` is set). #196 (docs) is already on main.
 - **After #200 is live:** as super_admin, call provision-studio `{"action":"ensure_signed_template","tenantId":"<Creative Ballet id>","fillMissing":true}`

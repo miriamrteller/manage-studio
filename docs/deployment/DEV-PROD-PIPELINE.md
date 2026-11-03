@@ -28,12 +28,13 @@ If you know Azure DevOps release pipelines, this is the same shape:
         ▼
   deploy-prod ── plan (what will ship) ──► ⏸ WAITS FOR YOUR APPROVAL ──►
                  live plan → backup to R2 → db push → deploy all functions
-                 → verify:prod · verify:env · no *_MOCK secrets · smoke query → summary
+                 → verify:prod · verify:env · no *_MOCK secrets · smoke query
+                 → all checks green: web app from the SAME commit, same approval
+                   (build with prod settings, never the demo → wrangler deploy
+                   opalswift-app → smoke: app shell, a tenant, this release live)
+                 → summary
 
-        │ deploy-prod succeeded (not a dry run) → automatically
-        ▼
-  deploy-web ── ⏸ APPROVAL ──► build with prod settings (never the demo)
-                 → wrangler deploy opalswift-app → smoke: app shell, a tenant, this release live
+  deploy-web ── ⏸ APPROVAL ──► app-only release (same web steps), Run workflow or prod-web-* tag
 
   every night ─► backup-prod (encrypted dump to R2) · rls-check (dev) · db-health (dev + prod)
 ```
@@ -56,9 +57,10 @@ If you know Azure DevOps release pipelines, this is the same shape:
    with defaults, new functions. You may **not** drop or rename a column/table the
    live app still reads, or add a NOT NULL without a default. To remove something:
    release 1 stops using it in the app; release 2 drops it.
-4. **Order: database first, then the app.** A real deploy-prod that succeeds
-   starts deploy-web for the same commit, so app code never goes live before
-   its migrations. App-only changes go out with deploy-web alone (see
+4. **Order: database first, then the app.** deploy-prod deploys the web app
+   from the same commit, in the same approved job, only after the database
+   deploy and all its checks passed, so app code never goes live before its
+   migrations. App-only changes go out with deploy-web alone (see
    [Web stage](#web-stage)).
 5. **Every `SECURITY DEFINER` function gets an explicit access tier.** Supabase
    grants EXECUTE on new functions to `anon` and `authenticated` directly, so
@@ -96,19 +98,20 @@ prod without your click and your approval.
 check compares dev and prod with `main` and opens (or updates, or closes) a GitHub
 issue labelled `db-drift`.
 
-## How to deploy to prod (one click, then approve the database and the app)
+## How to deploy to prod (one click, one approval)
 
 1. GitHub → **Actions** → **deploy-prod** → **Run workflow** → branch `main` → **Run workflow**.
-   (Optional boxes: *dry_run* shows the live plan and writes nothing.)
+   (Optional boxes: *dry_run* shows the live plan and writes nothing;
+   untick *deploy_web* for a database-only release.)
 2. Open the run. The **plan** job's summary lists the new migrations and changed
    functions since the last prod deploy.
 3. GitHub emails you "Review pending deployment". In the run, click
    **Review deployments** → tick **production** → **Approve and deploy**.
 4. The **deploy** job prints the live plan, takes a backup, applies the migrations,
-   deploys the functions and runs the checks. The summary ends with a table of
-   results. Green = done. Red = read which row failed.
-5. deploy-web starts by itself for the same commit and waits for your approval
-   (same click as step 3). Approve it to ship the app.
+   deploys the functions and runs the checks. If every check passed it then
+   builds and deploys the web app from the same commit (no second approval).
+   The summary ends with a table of results. Green = done. Red = read which
+   row failed; a failed database check means the app was not deployed.
 
 Alternative trigger: push a tag `prod-2026-11-05` (any `prod-*`) on a commit that
 is on `main`. You still approve it.
@@ -212,12 +215,15 @@ returns, never from the value.
 
 ## Web stage
 
-`deploy-web` builds `apps/web` with prod settings and deploys the Cloudflare
-Worker `opalswift-app` (`*.opalswift.com`, `app.opalswift.com`).
+The web steps (`.github/actions/web-release`) build `apps/web` with prod
+settings and deploy the Cloudflare Worker `opalswift-app` (`*.opalswift.com`,
+`app.opalswift.com`). They run inside deploy-prod for a normal release, and
+in `deploy-web` for an app-only release. Both jobs use the `production`
+environment, so each run needs your approval once.
 
 | How it starts | What it does |
 |---|---|
-| After a real deploy-prod succeeds | Builds and deploys that same commit, after your approval |
+| Inside deploy-prod, after the database checks pass | Builds and deploys that same commit, covered by deploy-prod's approval |
 | Actions → deploy-web → Run workflow | App-only release from `main`. Tick **build_only** to build and check without deploying |
 | Tag `prod-web-…` on a commit on `main` | Same as Run workflow |
 
