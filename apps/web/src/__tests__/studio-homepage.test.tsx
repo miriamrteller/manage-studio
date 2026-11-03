@@ -34,6 +34,7 @@ import {
   studioHasBooking,
   studioHasClasses,
 } from '@/lib/studioSections';
+import { profileForSkin } from './helpers/skinProfiles';
 
 const CLASS = { id: 'c1', name: 'Ballet Grade 2', category_name: 'Ballet' };
 const SERVICE = { id: 's1', name: 'Family session', duration_mins: 60, price_minor: 90000, currency: 'ILS', location: null };
@@ -52,12 +53,12 @@ beforeEach(async () => {
 });
 
 describe('studio sections (the one "does this studio have X" check)', () => {
-  it('class businesses have classes; appointment businesses do not', () => {
-    expect(studioHasClasses({ vertical: 'dance-studio' })).toBe(true);
-    expect(studioHasClasses({ vertical: 'generic' })).toBe(true);
-    expect(studioHasClasses({ vertical: null })).toBe(true);
-    expect(studioHasClasses({ vertical: 'photographer' })).toBe(false);
-    expect(studioHasClasses({ vertical: 'beautician' })).toBe(false);
+  it('classes follow the classes switch, not the skin', () => {
+    expect(studioHasClasses({ profile: profileForSkin('dance-studio') })).toBe(true);
+    expect(studioHasClasses({})).toBe(true);
+    expect(studioHasClasses({ profile: profileForSkin('photographer') })).toBe(false);
+    expect(studioHasClasses({ profile: profileForSkin('beautician') })).toBe(false);
+    expect(studioHasClasses({ vertical: 'photographer', profile: profileForSkin('dance-studio') })).toBe(true);
   });
 
   it('booking follows the feature flag', () => {
@@ -66,13 +67,16 @@ describe('studio sections (the one "does this studio have X" check)', () => {
   });
 
   it('the hero buttons fit the business', () => {
-    expect(homeButtons({ vertical: 'dance-studio' })).toEqual({
+    const booking = ['scheduling:booking.client'];
+    expect(homeButtons({ profile: profileForSkin('dance-studio') })).toEqual({
       primary: { kind: 'classes', path: '/classes' }, secondary: { kind: 'enquiry', path: '/inquire' },
     });
-    expect(homeButtons({ vertical: 'photographer' }).primary.kind).toBe('enquiry');
-    expect(homeButtons({ vertical: 'photographer', enabledFeatures: ['scheduling:booking.client'] }).secondary?.kind).toBe('book');
-    expect(homeButtons({ vertical: 'beautician', enabledFeatures: ['scheduling:booking.client'] }).primary.kind).toBe('book');
-    expect(homeButtons({ vertical: 'beautician' }).primary.kind).toBe('enquiry');
+    const photographer = profileForSkin('photographer');
+    expect(homeButtons({ profile: photographer }).primary.kind).toBe('enquiry');
+    expect(homeButtons({ profile: photographer, enabledFeatures: booking }).secondary?.kind).toBe('book');
+    const beautician = profileForSkin('beautician');
+    expect(homeButtons({ profile: beautician, enabledFeatures: booking }).primary.kind).toBe('book');
+    expect(homeButtons({ profile: beautician }).primary.kind).toBe('enquiry');
   });
 });
 

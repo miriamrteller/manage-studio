@@ -47,7 +47,7 @@ export function NavDrawer() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useCurrentUser();
-  const { labels, modules, vertical } = useEntityLabels();
+  const { labels, modules, vertical, profile } = useEntityLabels();
   const { tenant, isLoading: tenantLoading } = useTenantQuery();
   const { hasFeature } = useFeatureGate();
   // Resolve feature flags from the authenticated gate OR the anon-safe tenant config
@@ -75,7 +75,7 @@ export function NavDrawer() {
     modules,
     tenant,
     hasFeature: hasFeatureResolved,
-    vertical,
+    profile,
     // No studio once the lookup is done (app.opalswift.com, or a user without one).
     hasStudio: Boolean(tenant) || tenantLoading,
   });
@@ -95,9 +95,12 @@ export function NavDrawer() {
       case '/admin/jobs':
         return labels.engagement.plural;
       case '/admin/students':
-        return vertical === 'photographer' || vertical === 'beautician' ? labels.contact.plural : t(item.labelKey);
+        // A studio that does not teach classes has Clients, not Students.
+        return !profile.teachesClasses || vertical === 'photographer' || vertical === 'beautician'
+          ? labels.contact.plural
+          : t(item.labelKey);
       case '/admin/setup/services':
-        return vertical === 'photographer' ? labels.offering.plural : t(item.labelKey);
+        return !profile.teachesClasses || vertical === 'photographer' ? labels.offering.plural : t(item.labelKey);
       case '/admin/setup/waivers':
         return vertical === 'photographer' ? t('nav.contracts') : t(item.labelKey);
       case '/admin/families':

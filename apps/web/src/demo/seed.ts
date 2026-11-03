@@ -188,6 +188,11 @@ export function buildSeed(): Tables {
     subdomain: TENANT_SUBDOMAIN,
     skin: 'photographer',
     business_preset: 'services',
+    // Sells projects (Jobs, Quotes); no classes, no families.
+    payment_flow: 'both',
+    teaches_classes: false,
+    family_accounts: false,
+    client_booking: true,
     plan: 'essential',
     primary_color: '#1F5F5B',
     accent_color: '#E8B04B',

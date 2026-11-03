@@ -14,6 +14,13 @@
  * must keep working whatever is switched off.
  */
 import { FEATURES, type FeatureKey } from './feature-registry.js'
+import {
+  resolveEntityLabels,
+  resolveVerticalLabels,
+  type EntityLabelLocale,
+  type EntityLabels,
+  type VerticalId,
+} from './tenant-presets.js'
 
 export type PaymentFlow = 'recurring' | 'project' | 'both'
 
@@ -72,18 +79,73 @@ export function defaultFeatureKeys(profile: StudioProfile): FeatureKey[] {
     .map(([key]) => key)
 }
 
-/** Map the tenants row (snake_case) to a profile. */
+/**
+ * What a typical studio that exists today has: monthly plans, classes, families and booking on,
+ * no projects. A row without profile fields (an older cached response, a test fixture, the
+ * moment before the studio loads) reads as this, so the menu does not flicker or change.
+ */
+export const EXISTING_STUDIO_PROFILE: StudioProfile = {
+  paymentFlow: 'recurring',
+  teachesClasses: true,
+  familyAccounts: true,
+  clientBooking: true,
+}
+
+/** Map the tenants row (snake_case) to a profile; a missing field reads as an existing studio, an unknown flow as both. */
 export function profileFromTenant(row: {
-  payment_flow: string
-  teaches_classes: boolean
-  family_accounts: boolean
-  client_booking: boolean
+  payment_flow?: string | null
+  teaches_classes?: boolean | null
+  family_accounts?: boolean | null
+  client_booking?: boolean | null
 }): StudioProfile {
   const flow = row.payment_flow
   return {
-    paymentFlow: flow === 'recurring' || flow === 'project' ? flow : 'both',
-    teachesClasses: row.teaches_classes,
-    familyAccounts: row.family_accounts,
-    clientBooking: row.client_booking,
+    paymentFlow:
+      flow === 'recurring' || flow === 'project' || flow === 'both' ? flow : flow == null ? EXISTING_STUDIO_PROFILE.paymentFlow : 'both',
+    teachesClasses: row.teaches_classes ?? true,
+    familyAccounts: row.family_accounts ?? true,
+    clientBooking: row.client_booking ?? true,
   }
+}
+
+/**
+ * General wording for a studio that does not teach classes: a Client buys a Service
+ * and has Projects and Sessions. Nothing here is class vocabulary.
+ */
+const GENERAL_LABELS: Record<EntityLabelLocale, EntityLabels> = {
+  en: {
+    contact: { singular: 'Client', plural: 'Clients' },
+    account: { singular: 'Client', plural: 'Clients' },
+    offering: { singular: 'Service', plural: 'Services' },
+    season: { singular: 'Season', plural: 'Seasons' },
+    category: { singular: 'Category', plural: 'Categories' },
+    staff: { singular: 'Team member', plural: 'Team' },
+    engagement: { singular: 'Project', plural: 'Projects' },
+    session: { singular: 'Session', plural: 'Sessions' },
+  },
+  he: {
+    contact: { singular: 'לקוח', plural: 'לקוחות' },
+    account: { singular: 'לקוח', plural: 'לקוחות' },
+    offering: { singular: 'שירות', plural: 'שירותים' },
+    season: { singular: 'עונה', plural: 'עונות' },
+    category: { singular: 'קטגוריה', plural: 'קטגוריות' },
+    staff: { singular: 'איש צוות', plural: 'צוות' },
+    engagement: { singular: 'פרויקט', plural: 'פרויקטים' },
+    session: { singular: 'מפגש', plural: 'מפגשים' },
+  },
+}
+
+/**
+ * The studio's words. A studio that teaches classes keeps the wording it has today
+ * (class vocabulary plus any skin layer). Any other studio starts from the general
+ * wording. In both cases the studio's own word overrides win last.
+ */
+export function resolveStudioLabels(
+  profile: StudioProfile,
+  overrides: Partial<EntityLabels> = {},
+  locale: EntityLabelLocale = 'en',
+  vertical: VerticalId = 'generic',
+): EntityLabels {
+  if (profile.teachesClasses) return resolveEntityLabels('programs', overrides, locale, vertical)
+  return { ...GENERAL_LABELS[locale], ...resolveVerticalLabels(vertical, locale), ...overrides }
 }

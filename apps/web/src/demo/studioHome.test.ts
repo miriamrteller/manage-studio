@@ -1,14 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { matchesVertical, navigationConfig } from '@/components/Navigation/navigationConfig';
+import { matchesProfile, navigationConfig } from '@/components/Navigation/navigationConfig';
 import * as photographer from './seed';
 import * as ballet from './ballet/seed';
+import { profileFromTenant } from '@shared/index';
 
 /** Photographer-only pages: Shoots, quotes, contracts. */
 const PHOTOGRAPHER_PAGES = /^#?\/admin\/(jobs|quotes)\b/;
 const PHOTOGRAPHER_FEATURES = ['billing:delivery.gated', 'media:portfolio.public', 'media:storage.extended', 'ui:theme.photographer'];
 
-const visiblePaths = (vertical: string) =>
-  navigationConfig.filter((item) => matchesVertical(item, vertical as never)).map((item) => item.path);
+/** The menu a demo tenant gets from its own seeded profile (the same columns the real config returns). */
+const visiblePaths = (demo: typeof photographer | typeof ballet) => {
+  const profile = profileFromTenant(demo.buildSeed().tenants[0] as never);
+  return navigationConfig.filter((item) => matchesProfile(item, profile)).map((item) => item.path);
+};
 
 describe('ballet demo shows no photographer features', () => {
   it('opens and switches views onto dance pages, never Shoots or quotes', () => {
@@ -30,7 +34,7 @@ describe('ballet demo shows no photographer features', () => {
   });
 
   it('the dance menu has no Shoots or quotes', () => {
-    expect(visiblePaths('dance-studio').filter((p) => PHOTOGRAPHER_PAGES.test(p ?? ''))).toEqual([]);
+    expect(visiblePaths(ballet).filter((p) => PHOTOGRAPHER_PAGES.test(p ?? ''))).toEqual([]);
   });
 });
 
@@ -40,7 +44,7 @@ describe('photographer demo still shows its features', () => {
   });
 
   it('the photographer menu has Shoots and quotes', () => {
-    const paths = visiblePaths('photographer');
+    const paths = visiblePaths(photographer);
     expect(paths).toContain('/admin/jobs');
     expect(paths).toContain('/admin/quotes');
   });

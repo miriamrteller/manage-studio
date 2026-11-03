@@ -1,6 +1,6 @@
 import { PARENT_ROLE_NAMES } from '@/lib/parentRoles';
-import type { PresetModules, FeatureKey, VerticalId } from '@shared/index';
-import { FEATURES } from '@shared/index';
+import type { PresetModules, FeatureKey, ProfileGate, StudioProfile } from '@shared/index';
+import { EXISTING_STUDIO_PROFILE, FEATURES, profileHasGate } from '@shared/index';
 import {
   tenantUsesSplitProviders,
   tenantUsesBundledPayments,
@@ -56,10 +56,11 @@ export interface NavItem {
    * viewer can read that setting (tenant admins) — see useBookingEnabled.
    */
   disableWhenBookingOff?: boolean;
-  /** Show only for these verticals (tenants.skin). Omit = every vertical. */
-  verticals?: VerticalId[];
-  /** Hide for these verticals (class-only pages hidden for appointment verticals). */
-  hideForVerticals?: VerticalId[];
+  /**
+   * Show only when the studio's business profile has this (payment flow or switch).
+   * Omit = core page, always shown. Hiding never deletes data and never blocks a deep link.
+   */
+  needs?: ProfileGate;
   /** Show only when there is no studio (app.opalswift.com): e.g. the platform home at "/". */
   withoutStudioOnly?: boolean;
   /** Signed-out item that also works with no studio (app.opalswift.com): log in, sign up. */
@@ -104,7 +105,7 @@ export const navigationConfig: NavItem[] = [
     labelKey: 'nav.classes',
     requiredRoles: [],
     sectionKey: 'browse',
-    hideForVerticals: ['photographer', 'beautician'],
+    needs: 'teaches_classes',
   },
   {
     path: '/book',
@@ -133,8 +134,8 @@ export const navigationConfig: NavItem[] = [
     labelKey: 'nav.families',
     requiredRoles: ['tenant_admin'],
     sectionKey: 'main',
-    // Family accounts belong to class businesses; appointment businesses work from Contacts/Clients.
-    hideForVerticals: ['photographer', 'beautician'],
+    // Family accounts (parents pay for children) are a switch; other studios work from Clients.
+    needs: 'family_accounts',
   },
   {
     // The studio's classes (the page that used to sit under Setup as "Manage classes").
@@ -142,21 +143,21 @@ export const navigationConfig: NavItem[] = [
     labelKey: 'nav.classes',
     requiredRoles: ['tenant_admin'],
     sectionKey: 'main',
-    hideForVerticals: ['photographer', 'beautician'],
+    needs: 'teaches_classes',
   },
   {
     path: '/admin/jobs',
     labelKey: 'nav.jobs',
     requiredRoles: ['tenant_admin'],
     sectionKey: 'main',
-    verticals: ['photographer'],
+    needs: 'project',
   },
   {
     path: '/admin/quotes',
     labelKey: 'nav.quotes',
     requiredRoles: ['tenant_admin'],
     sectionKey: 'main',
-    verticals: ['photographer'],
+    needs: 'project',
   },
   {
     path: '/admin/appointments',
@@ -227,7 +228,7 @@ export const navigationConfig: NavItem[] = [
     indent: true,
     tenantFilter: 'bundled',
     // Class-billing provider setup; still linked from the Settings hub.
-    hideForVerticals: ['photographer'],
+    needs: 'teaches_classes',
   },
   {
     path: '/admin/setup/payments',
@@ -257,7 +258,7 @@ export const navigationConfig: NavItem[] = [
   },
   {
     path: '/admin/setup/levels',
-    hideForVerticals: ['photographer'],
+    needs: 'teaches_classes',
     labelKey: 'nav.levels',
     requiredRoles: ['tenant_admin'],
     sectionKey: 'setup',
@@ -266,7 +267,7 @@ export const navigationConfig: NavItem[] = [
   },
   {
     path: '/admin/setup/terms',
-    hideForVerticals: ['photographer'],
+    needs: 'teaches_classes',
     labelKey: 'nav.terms',
     requiredRoles: ['tenant_admin'],
     sectionKey: 'setup',
@@ -344,7 +345,7 @@ export const publicNavigationConfig: NavItem[] = [
     labelKey: 'nav.classes',
     requiredRoles: [],
     sectionKey: 'browse',
-    hideForVerticals: ['photographer', 'beautician'],
+    needs: 'teaches_classes',
   },
   {
     path: '/book',
@@ -380,12 +381,10 @@ const SECTION_ORDER: NavSectionKey[] = [
   'learning',
 ];
 
-/** Vertical visibility: `verticals` is an allow-list, `hideForVerticals` a deny-list. */
-export function matchesVertical(item: NavItem, vertical: VerticalId | null | undefined): boolean {
-  const v = vertical ?? 'generic';
-  if (item.verticals && !item.verticals.includes(v)) return false;
-  if (item.hideForVerticals && item.hideForVerticals.includes(v)) return false;
-  return true;
+/** Profile visibility: an item with `needs` shows only when the studio's profile has it. */
+export function matchesProfile(item: NavItem, profile: StudioProfile | null | undefined): boolean {
+  if (!item.needs) return true;
+  return profileHasGate(profile ?? EXISTING_STUDIO_PROFILE, item.needs);
 }
 
 export function matchesTenantFilter(

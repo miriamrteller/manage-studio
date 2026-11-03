@@ -16,12 +16,13 @@ import { backToPortalTarget } from '@/features/jobs/components/BackToPortalButto
 import {
   buildNavSections,
   matchesTenantFilter,
-  matchesVertical,
+  matchesProfile,
   navigationConfig,
   type NavItem,
 } from '@/components/Navigation/navigationConfig';
 import type { VerticalId } from '@shared/index';
 import { renderInApp, setLanguage, setTenant } from './helpers/verticalHarness';
+import { profileForSkin } from './helpers/skinProfiles';
 
 vi.mock('@/hooks/useTenant', async () => (await import('./helpers/fakeTenantState')).tenantHookMock());
 vi.mock('@/hooks/useLanguage', async () => (await import('./helpers/fakeTenantState')).languageHookMock());
@@ -239,7 +240,7 @@ describe('menu per vertical', () => {
   const ilTenant = { country: 'IL', payment_provider: 'grow' };
   const paths = (vertical: VerticalId, roles: string[]) =>
     buildNavSections(
-      navigationConfig.filter((item: NavItem) => matchesVertical(item, vertical) && matchesTenantFilter(item, ilTenant)),
+      navigationConfig.filter((item: NavItem) => matchesProfile(item, profileForSkin(vertical)) && matchesTenantFilter(item, ilTenant)),
       roles,
     ).flatMap((section) => section.items.map((item) => item.path));
 

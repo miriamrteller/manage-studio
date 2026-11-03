@@ -90,3 +90,39 @@ Deno.test("the request carries no owner email and needs the terms version", () =
   assertEquals("ownerEmail" in input, false);
   assertEquals(SelfServeStudioSchema.safeParse({ ...input, paymentProvider: "mock" }).success, false);
 });
+
+Deno.test("a request without a business profile starts general: both payment flows, every switch off", () => {
+  assertEquals(input.profile, {
+    paymentFlow: "both",
+    teachesClasses: false,
+    familyAccounts: false,
+    clientBooking: false,
+  });
+});
+
+Deno.test("the business profile the wizard sends is stored on the new studio", async () => {
+  const stored: unknown[] = [];
+  const chosen = SelfServeStudioSchema.parse({
+    ...input,
+    profile: { paymentFlow: "recurring", teachesClasses: true, familyAccounts: true },
+  });
+  const d = deps({
+    applyProfile(tenantId, profile) {
+      stored.push([tenantId, profile]);
+      return Promise.resolve();
+    },
+  });
+  assertEquals((await selfServeStudio(d, confirmed, chosen)).ok, true);
+  assertEquals(stored, [
+    ["t-new", { paymentFlow: "recurring", teachesClasses: true, familyAccounts: true, clientBooking: false }],
+  ]);
+});
+
+Deno.test("a profile that cannot be stored never fails the signup (the studio exists; Settings can change it)", async () => {
+  const d = deps({ applyProfile: () => Promise.reject(new Error("db down")) });
+  assertEquals(await selfServeStudio(d, confirmed, input), { ok: true, tenantId: "t-new", subdomain: "harbour-yoga" });
+});
+
+Deno.test("an unknown payment flow is rejected", () => {
+  assertEquals(SelfServeStudioSchema.safeParse({ ...input, profile: { paymentFlow: "weekly" } }).success, false);
+});

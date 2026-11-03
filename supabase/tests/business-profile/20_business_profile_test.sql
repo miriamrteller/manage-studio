@@ -139,6 +139,20 @@ BEGIN
   RAISE NOTICE 'ok  no billing/payment function reads features';
 END $$;
 
+-- The tenant site config carries the profile, by subdomain and by custom host.
+DO $$
+DECLARE r RECORD;
+BEGIN
+  SELECT payment_flow, teaches_classes, family_accounts, client_booking INTO r FROM get_tenant_config_by_subdomain('photo');
+  IF r.payment_flow IS NULL OR r.teaches_classes IS NULL OR r.family_accounts IS NULL OR r.client_booking IS NULL THEN
+    RAISE EXCEPTION 'FAIL tenant config lacks the profile';
+  END IF;
+  UPDATE tenants SET custom_domain = 'app.photo.test' WHERE subdomain = 'photo';
+  SELECT payment_flow INTO r FROM get_tenant_config_by_host('app.photo.test');
+  IF r.payment_flow IS NULL THEN RAISE EXCEPTION 'FAIL host config lacks the profile'; END IF;
+  RAISE NOTICE 'ok  tenant config (subdomain and host) returns the profile';
+END $$;
+
 -- The columns change only through the setter: a direct UPDATE as a signed-in admin is refused,
 -- other tenant columns still update, and the setter itself still works.
 DO $$
@@ -159,4 +173,29 @@ BEGIN
   IF NOT (SELECT teaches_classes FROM tenants WHERE id = photo) THEN RAISE EXCEPTION 'FAIL setter blocked by the guard'; END IF;
   RESET ROLE;
   RAISE NOTICE 'ok  direct profile updates are refused; the setter and other columns still work';
+END $$;
+
+-- Existing-studio data step: re-run it over rows shaped like the untouched backfill and check the result.
+UPDATE tenants SET skin = 'photographer', payment_flow = 'both', teaches_classes = true, family_accounts = true, client_booking = true
+ WHERE subdomain = 'photo';
+UPDATE tenants SET skin = 'generic', payment_flow = 'both', teaches_classes = true, family_accounts = true, client_booking = true
+ WHERE subdomain = 'dance';
+INSERT INTO tenants (name, subdomain, contact_email, skin) VALUES ('Fresh', 'fresh', 'f@x.test', 'generic');
+\ir ../../migrations/20261103133114_business_profile_existing_studios.sql
+DO $$
+DECLARE r RECORD;
+BEGIN
+  SELECT * INTO r FROM tenants WHERE subdomain = 'photo';
+  IF NOT (r.payment_flow = 'both' AND NOT r.teaches_classes AND NOT r.family_accounts AND r.client_booking) THEN
+    RAISE EXCEPTION 'FAIL photographer profile wrong: %', row(r.payment_flow, r.teaches_classes, r.family_accounts, r.client_booking);
+  END IF;
+  SELECT * INTO r FROM tenants WHERE subdomain = 'dance';
+  IF NOT (r.payment_flow = 'recurring' AND r.teaches_classes AND r.family_accounts AND r.client_booking) THEN
+    RAISE EXCEPTION 'FAIL class studio profile wrong: %', row(r.payment_flow, r.teaches_classes, r.family_accounts, r.client_booking);
+  END IF;
+  SELECT * INTO r FROM tenants WHERE subdomain = 'fresh';
+  IF NOT (r.payment_flow = 'both' AND NOT r.teaches_classes AND NOT r.family_accounts AND NOT r.client_booking) THEN
+    RAISE EXCEPTION 'FAIL a new studio was touched: %', row(r.payment_flow, r.teaches_classes, r.family_accounts, r.client_booking);
+  END IF;
+  RAISE NOTICE 'ok  existing studios keep their menu (photographer: projects; class studios: classes); a new studio is untouched';
 END $$;

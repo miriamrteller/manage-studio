@@ -218,6 +218,11 @@ export function resolvePresetModules(preset: BusinessPreset): PresetModules {
   return PRESET_MODULES[preset];
 }
 
+/** The skin's own vocabulary on top of the base wording (empty for skins without one). */
+export function resolveVerticalLabels(vertical: VerticalId, locale: EntityLabelLocale): Partial<EntityLabels> {
+  return VERTICAL_LABELS[vertical]?.[locale] ?? {};
+}
+
 export function resolveEntityLabels(
   preset: BusinessPreset,
   overrides: Partial<EntityLabels> = {},
@@ -225,7 +230,7 @@ export function resolveEntityLabels(
   vertical: VerticalId = 'generic',
 ): EntityLabels {
   const defaults = DEFAULT_LABELS_BY_LOCALE[locale][preset];
-  const verticalLabels = VERTICAL_LABELS[vertical]?.[locale] ?? {};
+  const verticalLabels = resolveVerticalLabels(vertical, locale);
   return { ...defaults, ...verticalLabels, ...overrides };
 }
 

@@ -5,7 +5,7 @@ import { getLocale } from '../lib/language-helper';
 import { rememberCustomHostSubdomain, resolveTenantSite } from '../lib/resolveTenantSubdomain';
 import type { TenantConfig } from '../types/auth';
 import { parseLogoTone } from '../lib/theme/logoTone';
-import { parseEntityLabelOverrides, resolveEntityLabels, resolvePresetModules, safePreset, safeVertical } from '@shared/index';
+import { parseEntityLabelOverrides, profileFromTenant, resolvePresetModules, resolveStudioLabels, safePreset, safeVertical } from '@shared/index';
 
 export function useTenant(): TenantConfig | null {
   return useTenantQuery().tenant;
@@ -50,6 +50,7 @@ export function useTenantQuery(): {
       const preset = safePreset(row.business_preset);
       const overrides = parseEntityLabelOverrides(row.labels);
       const vertical = safeVertical(row.skin);
+      const profile = profileFromTenant(row);
       return {
         id: row.id,
         name: row.name,
@@ -73,7 +74,8 @@ export function useTenantQuery(): {
         business_preset: preset,
         vertical,
         entity_label_overrides: overrides,
-        entity_labels: resolveEntityLabels(preset, overrides, 'en', vertical),
+        profile,
+        entity_labels: resolveStudioLabels(profile, overrides, 'en', vertical),
         modules: resolvePresetModules(preset),
         enabled_features: Array.isArray(row.enabled_features) ? row.enabled_features : [],
         font_pair: row.font_pair ?? null,

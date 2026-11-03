@@ -217,6 +217,11 @@ export function buildSeed(): Tables {
     subdomain: TENANT_SUBDOMAIN,
     skin: 'dance-studio',
     business_preset: 'programs',
+    // Monthly plans, classes and families; no projects.
+    payment_flow: 'recurring',
+    teaches_classes: true,
+    family_accounts: true,
+    client_booking: true,
     plan: 'professional',
     primary_color: '#76335A',
     accent_color: '#E99AC4',
