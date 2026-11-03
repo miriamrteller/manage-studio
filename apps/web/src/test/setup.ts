@@ -1,6 +1,7 @@
 import '@testing-library/jest-dom';
 import { afterEach } from 'vitest';
 import { cleanup } from '@testing-library/react';
+import i18n from '@/i18n/i18n';
 
 /**
  * Edge-function modules read `Deno.env` at import time. Vitest runs in Node —
@@ -27,3 +28,11 @@ process.env.PLATFORM_EMAIL_DOMAIN ??= 'opalswift.test';
 afterEach(() => {
   cleanup();
 });
+
+/**
+ * Every test file starts with the app's own i18n instance, in English.
+ * react-i18next and i18next live in node_modules, which Vitest does not reload between files, so
+ * without this a file that renders translated components only passed when an earlier file had
+ * initialised i18n (alone it rendered bare keys). A test that needs Hebrew sets it itself.
+ */
+await i18n.changeLanguage('en');
