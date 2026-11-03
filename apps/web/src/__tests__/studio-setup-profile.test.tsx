@@ -91,4 +91,19 @@ describe('business profile in the setup wizard', () => {
     // Nothing blocks: Next is still available.
     expect(screen.getByRole('button', { name: 'Next' })).toBeEnabled();
   });
+
+  it('the first screen also asks for the business address and phone, optional', () => {
+    renderWizard();
+    const address = screen.getByLabelText('Business address (optional)');
+    const phone = screen.getByLabelText('Business phone (optional)');
+    fireEvent.change(screen.getByLabelText('Studio name'), { target: { value: 'Creative Ballet' } });
+    fireEvent.change(screen.getByLabelText('Web address'), { target: { value: 'creativeballet' } });
+    // Optional: Next works with both empty, and with them filled in.
+    expect(screen.getByRole('button', { name: 'Next' })).toBeEnabled();
+    fireEvent.change(address, { target: { value: '12 Herzl St, Haifa' } });
+    fireEvent.change(phone, { target: { value: '04-1234567' } });
+    expect(address).toHaveValue('12 Herzl St, Haifa');
+    expect(phone).toHaveValue('04-1234567');
+    expect(screen.getByRole('button', { name: 'Next' })).toBeEnabled();
+  });
 });

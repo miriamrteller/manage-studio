@@ -127,6 +127,13 @@ describe('provider options', () => {
     expect(request).toMatchObject({ paymentProvider: 'grow', invoicingProvider: 'grow', languageDefault: 'en', currency: 'ILS' });
     expect(ProvisionStudioSchema.safeParse(request).success).toBe(true);
   });
+
+  it('the optional business address and phone are sent only when filled in', () => {
+    const base = { ...INITIAL_FORM, name: 'X', subdomain: 'x', ownerEmail: 'a@b.co' };
+    expect(toSetupRequest(base).contact).toEqual({});
+    expect(toSetupRequest({ ...base, businessAddress: ' 12 Herzl St, Haifa ', businessPhone: '' }).contact).toEqual({ address: '12 Herzl St, Haifa' });
+    expect(toSetupRequest({ ...base, businessAddress: 'A', businessPhone: '04-1234567' }).contact).toEqual({ address: 'A', phone: '04-1234567' });
+  });
 });
 
 describe('provisionStudio', () => {

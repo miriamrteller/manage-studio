@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useMutation } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
+import { monthlyFeesForFlow } from '@/features/platform/lib/studioSetupForm';
 import { useTenant } from '@/hooks/useTenant';
 import queryClient from '@/lib/query-client';
 import {
@@ -11,7 +12,6 @@ import {
   isProviderSwitchBlockedError,
   isUnfinishedPaymentProvider,
   jobOnlinePaymentSupported,
-  monthlyFeesDefaultFor,
   SWITCH_FREE_PAYMENT_PROVIDERS,
 } from '@/lib/providerPairing';
 import { useTenantHasPayment, TENANT_HAS_PAYMENT_QUERY } from '../hooks/useTenantHasPayment';
@@ -54,8 +54,7 @@ export function initialChoice(savedProvider: string): ChoosablePaymentProvider {
  * each payment). Online = a provider slug; its keys live on the provider's own page.
  *
  * While the studio may still choose (before its first payment, or paying at the studio with no
- * documents) it answers "Will you charge monthly fees?" and picks a provider
- * (PaymentProviderChoice). Otherwise the choice is shown locked with "contact OpalSwift support".
+ * documents) it picks a provider (PaymentProviderChoice); monthly fees follow its payment flow. Otherwise the choice is shown locked with "contact OpalSwift support".
  */
 export function OfflinePaymentsSettingsForm() {
   const { t } = useTranslation();
@@ -69,9 +68,10 @@ export function OfflinePaymentsSettingsForm() {
     !(SWITCH_FREE_PAYMENT_PROVIDERS as readonly string[]).includes(savedProvider);
 
   const [choice, setChoice] = useState<ChoosablePaymentProvider>(initialChoice(savedProvider));
-  const [monthlyFees, setMonthlyFees] = useState<boolean | null>(
-    isOtherPaymentProvider(savedProvider) ? false : monthlyFeesDefaultFor(tenant?.vertical),
-  );
+  // Not asked: monthly fees follow the studio's payment flow (YPay / Invoice4U mean "no monthly").
+  const monthlyFees = isOtherPaymentProvider(savedProvider)
+    ? false
+    : monthlyFeesForFlow(tenant?.profile?.paymentFlow ?? 'recurring');
   const [instructions, setInstructions] = useState(savedInstructions);
   const [message, setMessage] = useState<string | null>(null);
   const invoicingProvider = tenant?.invoicing_provider ?? 'none';
@@ -79,8 +79,6 @@ export function OfflinePaymentsSettingsForm() {
   const offline = nextPaymentProvider === OFFLINE_PAYMENTS;
   // Changing how customers pay must not leave documents that the invoicing service cannot issue.
   const pairingProblem = !invoicingPairsWithPayment(nextPaymentProvider, invoicingProvider);
-  // Changing provider needs the "monthly fees?" answer; saving the instructions does not.
-  const needsAnswer = !locked && monthlyFees === null && choice !== savedProvider;
 
   // Depend on saved primitives, not the tenant object, so a refetch with the same values
   // does not reset what the admin is typing.
@@ -177,7 +175,6 @@ export function OfflinePaymentsSettingsForm() {
         <PaymentProviderChoice
           idPrefix="settings"
           monthlyFees={monthlyFees}
-          onMonthlyFeesChange={setMonthlyFees}
           provider={choice}
           onProviderChange={setChoice}
         />
@@ -230,7 +227,7 @@ export function OfflinePaymentsSettingsForm() {
         <Button
           type="button"
           variant="primary"
-          disabled={saveMutation.isPending || pairingProblem || needsAnswer}
+          disabled={saveMutation.isPending || pairingProblem}
           isLoading={saveMutation.isPending}
           onClick={() => saveMutation.mutate()}
         >

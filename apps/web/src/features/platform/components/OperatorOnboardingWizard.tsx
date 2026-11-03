@@ -26,7 +26,7 @@ import {
   VERTICALS,
   type StudioSetupForm,
 } from '../lib/studioSetupForm';
-import { invoicingOptionsFor, invoicingPairsWithPayment, monthlyFeesDefaultFor } from '@/lib/providerPairing';
+import { invoicingOptionsFor, invoicingPairsWithPayment } from '@/lib/providerPairing';
 import {
   PaymentProviderChoice,
   type ChoosablePaymentProvider,
@@ -221,7 +221,7 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
       case 'owner':
         return EMAIL_RE.test(form.ownerEmail.trim());
       case 'payments':
-        return form.monthlyFees !== null && invoicingPairsWithPayment(form.paymentProvider, form.invoicingProvider);
+        return invoicingPairsWithPayment(form.paymentProvider, form.invoicingProvider);
       case 'review':
         return !selfServe || (termsAccepted && (!siteKey || Boolean(captchaToken)));
       default:
@@ -242,7 +242,7 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
       case 'owner':
         return 'studio_setup.need_owner_email';
       case 'payments':
-        return form.monthlyFees === null ? 'studio_setup.need_monthly_fees' : 'studio_setup.need_invoicing_pairing';
+        return 'studio_setup.need_invoicing_pairing';
       case 'review':
         return !termsAccepted ? 'studio_setup.need_terms' : 'self_serve.captcha_needed';
       default:
@@ -351,6 +351,32 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
               <option value="he">עברית</option>
             </select>
           </div>
+          {/* Optional: the legal documents (privacy, terms, accessibility) pre-fill from these. */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium" htmlFor="ss-business-address">{t('studio_setup.business_address')}</label>
+            <input
+              id="ss-business-address"
+              className="form-input w-full"
+              autoComplete="street-address"
+              value={form.businessAddress}
+              onChange={(e) => update('businessAddress', e.target.value)}
+              aria-describedby="ss-business-contact-hint"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium" htmlFor="ss-business-phone">{t('studio_setup.business_phone')}</label>
+            <input
+              id="ss-business-phone"
+              type="tel"
+              className="form-input w-full"
+              dir="ltr"
+              autoComplete="tel"
+              value={form.businessPhone}
+              onChange={(e) => update('businessPhone', e.target.value)}
+              aria-describedby="ss-business-contact-hint"
+            />
+            <p id="ss-business-contact-hint" className="text-xs text-muted-foreground">{t('studio_setup.business_contact_hint')}</p>
+          </div>
         </section>
       )}
 
@@ -372,7 +398,7 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
                     // The studio type pre-fills how clients pay, the three switches and
                     // "Will you charge monthly fees?"; the owner can change every answer.
                     const defaults = profileDefaultsFor(vertical);
-                    const monthlyFees = monthlyFeesDefaultFor(vertical) ?? monthlyFeesForFlow(defaults.paymentFlow);
+                    const monthlyFees = monthlyFeesForFlow(defaults.paymentFlow);
                     setForm((prev) => ({ ...prev, vertical, ...defaults, monthlyFees }));
                     if (monthlyFees && (form.paymentProvider === 'ypay' || form.paymentProvider === 'invoice4u')) {
                       choosePayment('grow');
@@ -395,7 +421,13 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
                       type="radio"
                       name="ss-flow"
                       checked={form.paymentFlow === flow}
-                      onChange={() => setForm((prev) => ({ ...prev, paymentFlow: flow, monthlyFees: monthlyFeesForFlow(flow) }))}
+                      onChange={() => {
+                        setForm((prev) => ({ ...prev, paymentFlow: flow, monthlyFees: monthlyFeesForFlow(flow) }));
+                        // YPay and Invoice4U cannot charge monthly fees.
+                        if (monthlyFeesForFlow(flow) && (form.paymentProvider === 'ypay' || form.paymentProvider === 'invoice4u')) {
+                          choosePayment('grow');
+                        }
+                      }}
                     />
                     <span>{t(`settings.business.flow_${flow}`)}</span>
                   </label>
@@ -436,7 +468,6 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
           <PaymentProviderChoice
             idPrefix="ss"
             monthlyFees={form.monthlyFees}
-            onMonthlyFeesChange={(monthlyFees) => update('monthlyFees', monthlyFees)}
             provider={form.paymentProvider as ChoosablePaymentProvider}
             onProviderChange={(slug) => choosePayment(slug)}
           />

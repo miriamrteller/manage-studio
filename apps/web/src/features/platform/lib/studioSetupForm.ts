@@ -21,11 +21,14 @@ export interface StudioSetupForm {
   teachesClasses: boolean;
   familyAccounts: boolean;
   clientBooking: boolean;
+  /** Business address and phone (both optional); stored in the studio's legal profile. */
+  businessAddress: string;
+  businessPhone: string;
   /**
-   * Answer to "Will you charge monthly fees?" (null = not answered). Pre-filled from the studio
-   * type; decides which payment providers are offered. Not sent: it only guides the choice.
+   * Whether the studio charges monthly fees. Not asked: derived from the payment flow (monthly or
+   * both = yes). Decides which payment providers are offered. Not sent: it only guides the choice.
    */
-  monthlyFees: boolean | null;
+  monthlyFees: boolean;
 }
 
 /**
@@ -48,7 +51,9 @@ export const INITIAL_FORM: StudioSetupForm = {
   teachesClasses: false,
   familyAccounts: false,
   clientBooking: false,
-  monthlyFees: null,
+  businessAddress: '',
+  businessPhone: '',
+  monthlyFees: true,
 };
 
 /**
@@ -98,6 +103,10 @@ export function toSetupRequest(form: StudioSetupForm) {
     invoicingProvider: form.invoicingProvider,
     primaryColor: form.primaryColor,
     accentColor: form.accentColor,
+    contact: {
+      ...(form.businessAddress.trim() ? { address: form.businessAddress.trim() } : {}),
+      ...(form.businessPhone.trim() ? { phone: form.businessPhone.trim() } : {}),
+    },
     profile: {
       paymentFlow: form.paymentFlow,
       teachesClasses: form.teachesClasses,
