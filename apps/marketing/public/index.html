@@ -22,6 +22,14 @@
   body[dir=ltr]{font-family:'Inter',system-ui,sans-serif}
   h1,h2,h3,.brand{font-family:'Rubik',sans-serif;line-height:1.15}
   .wrap{max-width:1140px;margin:0 auto;padding:0 24px}
+  .icon{width:1em;height:1em;display:inline-block;flex-shrink:0;vertical-align:-.125em;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .eyebrow .icon{font-size:15px}
+  .trust .icon{font-size:16px;margin-top:3px;color:var(--indigo)}
+  .float-badge .icon{font-size:16px;color:var(--violet)}
+  .chip{display:inline-flex;align-items:center;gap:6px}
+  .chip .icon{font-size:14px;color:var(--indigo)}
+  .flow .tag .icon,.editions-group-label .icon{font-size:14px}
+  .bilingual .bi-ic{display:flex;color:var(--indigo)}
   .grad-text{background:var(--opal);-webkit-background-clip:text;background-clip:text;color:transparent}
   .btn{display:inline-flex;align-items:center;gap:8px;border:0;border-radius:999px;padding:14px 26px;font-weight:600;font-size:16px;cursor:pointer;text-decoration:none;transition:.2s;font-family:'Rubik',sans-serif}
   .btn-primary{background:var(--opal);color:#fff;box-shadow:0 10px 24px -8px rgba(91,108,255,.6)}
@@ -63,7 +71,7 @@
   .mock .bar{height:10px;width:60px;border-radius:6px;background:var(--opal);margin-bottom:16px}
   .mock-row{display:flex;justify-content:space-between;align-items:center;padding:14px;border:1px solid rgba(11,20,55,.07);border-radius:14px;margin-bottom:12px}
   .mock-row .l{display:flex;align-items:center;gap:12px}
-  .dot{width:38px;height:38px;border-radius:12px;background:var(--canvas);display:flex;align-items:center;justify-content:center;font-size:18px}
+  .dot{width:38px;height:38px;border-radius:12px;background:var(--canvas);display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--indigo)}
   .pill{font-size:12px;font-weight:700;padding:5px 12px;border-radius:999px;font-family:'Rubik'}
   .pill.ok{background:rgba(33,209,194,.15);color:#0a8f84}
   .pill.auto{background:rgba(91,108,255,.13);color:var(--indigo)}
@@ -86,14 +94,14 @@
 
   .cards3{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
   .card{background:#fff;border:1px solid rgba(11,20,55,.06);border-radius:var(--radius);padding:28px;box-shadow:0 8px 30px -20px rgba(11,20,55,.3)}
-  .card .ic{width:52px;height:52px;border-radius:14px;background:var(--opal);display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:18px}
+  .card .ic{width:52px;height:52px;border-radius:14px;background:var(--opal);display:flex;align-items:center;justify-content:center;font-size:26px;color:#fff;margin-bottom:18px}
   .card h3{font-size:21px;margin-bottom:10px}
   .card p{color:var(--slate);font-size:15.5px}
   .card .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
   .card .chip{font-size:12.5px;font-weight:600;font-family:'Rubik';background:var(--canvas);border:1px solid rgba(11,20,55,.07);padding:5px 11px;border-radius:999px;color:#2c3350}
 
   /* pain card variant */
-  .pain .ic{background:rgba(255,143,177,.16);font-size:24px}
+  .pain .ic{background:rgba(255,143,177,.16);color:#c2416e}
   .turn-line{text-align:center;max-width:720px;margin:36px auto 0;font-family:'Rubik';font-weight:600;font-size:20px;color:var(--ink)}
   .turn-line .grad-text{font-weight:700}
 
@@ -131,7 +139,8 @@
 
   /* bilingual badge */
   .bilingual{display:flex;align-items:center;justify-content:center;gap:16px;background:#fff;border:1px solid rgba(11,20,55,.08);border-radius:999px;padding:14px 26px;width:fit-content;margin:34px auto 0;box-shadow:var(--shadow);font-family:'Rubik';font-weight:600;color:var(--ink)}
-  .bilingual span{font-size:22px}
+  .bilingual .bi-ic{font-size:22px}
+  @media(max-width:600px){.bilingual{gap:10px;padding:12px 18px;font-size:14px}.bilingual .bi-ic{font-size:18px}}
 
   /* EDITIONS STRIP */
   .editions-wrap{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:8px;align-items:start}
@@ -139,10 +148,11 @@
   .editions-group-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;padding:5px 12px;border-radius:6px;display:inline-flex;align-items:center;gap:6px;margin-bottom:14px}
   .editions-group-label.gig{background:#e6faf8;color:#0a9e8e}
   .editions-group-label.roster{background:#eef0ff;color:var(--indigo)}
-  .editions{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;align-items:start}
-  .edition{background:#fff;border:1px solid rgba(11,20,55,.08);border-radius:14px;padding:16px 12px;text-align:center;text-decoration:none;color:var(--ink);transition:.2s;box-shadow:0 4px 16px -8px rgba(11,20,55,.2)}
+  .editions{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;align-items:stretch}
+  .edition{display:flex;flex-direction:column;align-items:center;background:#fff;border:1px solid rgba(11,20,55,.08);border-radius:14px;padding:16px 12px;text-align:center;text-decoration:none;color:var(--ink);transition:.2s;box-shadow:0 4px 16px -8px rgba(11,20,55,.2)}
   .edition:hover{transform:translateY(-3px);border-color:rgba(91,108,255,.4)}
-  .edition .em{font-size:26px;display:block;margin-bottom:8px}
+  .edition .em{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:10px;flex-shrink:0;background:#eef0ff;color:var(--indigo)}
+  #gig-group .edition .em{background:#e6faf8;color:#0a9e8e}
   .edition b{font-family:'Rubik';font-size:14px;display:block}
   .edition small{color:var(--slate);font-size:11.5px}
   .edition .live{display:inline-block;margin-top:7px;font-family:'Rubik';font-size:10px;font-weight:700;color:#0a8f84;background:rgba(33,209,194,.15);padding:2px 8px;border-radius:999px}
@@ -218,18 +228,18 @@
     .btn{padding:13px 22px;font-size:15px}
     .founder blockquote{font-size:19px}
     .edition{padding:12px 8px}
-    .edition .em{font-size:20px;margin-bottom:5px}
+    .edition .em{width:38px;height:38px;font-size:19px;margin-bottom:8px}
     .edition b{font-size:12px}
     .edition small{font-size:10.5px}
     .editions-group-label{font-size:10px}
   }
   @media(max-width:400px){
     .editions{grid-template-columns:1fr}
-    .edition{display:flex;flex-direction:row;align-items:center;text-align:start;gap:10px;padding:10px 12px}
-    .edition .em{font-size:22px;margin:0;flex-shrink:0}
-    .edition b{font-size:13px}
-    .edition small{font-size:11px;display:block}
-    .edition .live,.edition .soon{margin-top:0;margin-inline-start:auto;flex-shrink:0}
+    .edition{display:grid;grid-template-columns:auto 1fr;column-gap:12px;align-items:center;text-align:start;padding:10px 12px}
+    .edition .em{grid-row:1 / span 2;width:38px;height:38px;font-size:19px;margin:0}
+    .edition b{font-size:13px;grid-column:2}
+    .edition small{font-size:11px;display:block;grid-column:2}
+    .edition .live,.edition .soon{margin-top:0;grid-column:3;grid-row:1 / span 2}
   }
 
   /* BETA BADGE */
@@ -245,7 +255,7 @@
   .form-field input:focus,.form-field select:focus,.form-field textarea:focus{border-color:var(--indigo);box-shadow:0 0 0 3px rgba(91,108,255,.12)}
   .form-field textarea{resize:vertical;min-height:90px}
   .form-success{display:none;text-align:center;padding:32px;background:rgba(33,209,194,.08);border:1px solid rgba(33,209,194,.25);border-radius:16px}
-  .form-success .fs-icon{font-size:36px;display:block;margin-bottom:10px}
+  .form-success .fs-icon{font-size:40px;display:block;margin-bottom:10px;color:#0a8f84}
   .form-success p{font-family:'Rubik';font-weight:600;font-size:17px;color:var(--ink)}
   /* ---- Testimonials ---- */
   .testi-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:24px;margin-top:48px}
@@ -261,6 +271,7 @@
 </style>
 </head>
 <body dir="rtl" lang="he">
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none"><symbol id="i-camera" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"/><circle cx="12" cy="13" r="3"/></symbol><symbol id="i-wrench" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"/></symbol><symbol id="i-scissors" viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.12 15.88M14.47 14.48 20 20M8.12 8.12 12 12"/></symbol><symbol id="i-pencil" viewBox="0 0 24 24"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/><path d="m15 5 4 4"/></symbol><symbol id="i-sofa" viewBox="0 0 24 24"><path d="M20 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v3"/><path d="M2 11v5a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-5a2 2 0 0 0-4 0v2H6v-2a2 2 0 0 0-4 0z"/><path d="M4 18v2M20 18v2"/></symbol><symbol id="i-briefcase" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2M2 13h20"/></symbol><symbol id="i-grad" viewBox="0 0 24 24"><path d="M22 10 12 5 2 10l10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5M22 10v6"/></symbol><symbol id="i-party" viewBox="0 0 24 24"><path d="M5.8 11.3 2 22l10.7-3.8"/><path d="M11 13c1.9 1.9 2.8 4.2 2 5s-3.1-.1-5-2-2.8-4.2-2-5 3.1.1 5 2z"/><path d="M14 10l1.5-1.5M15 3l-.5 2M21 9l-2 .5M19 3l-1.5 1.5"/></symbol><symbol id="i-feather" viewBox="0 0 24 24"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><path d="M16 8 2 22M17.5 15H9"/></symbol><symbol id="i-book" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></symbol><symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="m9 16 2 2 4-4"/></symbol><symbol id="i-dumbbell" viewBox="0 0 24 24"><rect x="5" y="6" width="3" height="12" rx="1"/><rect x="16" y="6" width="3" height="12" rx="1"/><path d="M2.5 9.5v5M21.5 9.5v5M8 12h8"/></symbol><symbol id="i-car" viewBox="0 0 24 24"><path d="M5 17H3v-5l2-5h14l2 5v5h-2M3 12h18M9.5 17h5"/><circle cx="7.5" cy="17" r="2"/><circle cx="16.5" cy="17" r="2"/></symbol><symbol id="i-leaf" viewBox="0 0 24 24"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></symbol><symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></symbol><symbol id="i-sparkles" viewBox="0 0 24 24"><path d="M10 3l1.9 5.1L17 10l-5.1 1.9L10 17l-1.9-5.1L3 10l5.1-1.9z"/><path d="M18 14l.8 2.2L21 17l-2.2.8L18 20l-.8-2.2L15 17l2.2-.8z"/></symbol><symbol id="i-palette" viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.93 0 1.65-.75 1.65-1.69 0-.44-.18-.84-.44-1.13-.29-.29-.44-.65-.44-1.13a1.64 1.64 0 0 1 1.67-1.67h2c3.05 0 5.55-2.5 5.55-5.55C21.97 6.01 17.46 2 12 2z"/><circle cx="13.5" cy="6.5" r="1"/><circle cx="17.5" cy="10.5" r="1"/><circle cx="8.5" cy="7.5" r="1"/><circle cx="6.5" cy="12.5" r="1"/></symbol><symbol id="i-waves" viewBox="0 0 24 24"><path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5s2.4 2 5 2 2.5-2 5-2c1.3 0 1.9.5 2.5 1M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2s2.4 2 5 2 2.5-2 5-2c1.3 0 1.9.5 2.5 1M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2s2.4 2 5 2 2.5-2 5-2c1.3 0 1.9.5 2.5 1"/></symbol><symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></symbol><symbol id="i-repeat" viewBox="0 0 24 24"><path d="m17 2 4 4-4 4M3 11v-1a4 4 0 0 1 4-4h14M7 22l-4-4 4-4M21 13v1a4 4 0 0 1-4 4H3"/></symbol><symbol id="i-msg" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M12 7v4M12 14h.01"/></symbol><symbol id="i-file" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></symbol><symbol id="i-filecheck" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 15l2 2 4-4"/></symbol><symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol><symbol id="i-trend" viewBox="0 0 24 24"><path d="m22 7-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/></symbol><symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></symbol><symbol id="i-pin" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></symbol><symbol id="i-card" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></symbol><symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></symbol><symbol id="i-laptop" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M2 20h20"/></symbol><symbol id="i-activity" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></symbol><symbol id="i-lock" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol><symbol id="i-zap" viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9z"/></symbol><symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m8 12 3 3 5-5"/></symbol><symbol id="i-monitor" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></symbol></svg>
 
 <!-- ============ NAV ============ -->
 <nav>
@@ -290,7 +301,7 @@
 <header class="hero">
   <div class="wrap hero-grid">
     <div>
-      <span class="eyebrow">✨ <span data-he="לעוסק פטור ולעוסק מורשה — הכל תקין, הכל מוכן" data-en="For solo freelancers in Israel — compliant &amp; ready">לעוסק פטור ולעוסק מורשה — הכל תקין, הכל מוכן</span></span>
+      <span class="eyebrow"><svg class="icon" aria-hidden="true"><use href="#i-sparkles"/></svg><span data-he="לעוסק פטור ולעוסק מורשה — הכל תקין, הכל מוכן" data-en="For solo freelancers in Israel — compliant &amp; ready">לעוסק פטור ולעוסק מורשה — הכל תקין, הכל מוכן</span></span>
       <h1 data-he='יצאתם לעצמאות כדי לעשות את מה שאתם אוהבים.<br><span class="grad-text">הניירת כבר מסתדרת לבד.</span>' data-en='Freelance admin,<br><span class="grad-text">fully automated.</span>'>יצאתם לעצמאות כדי לעשות את מה שאתם אוהבים.<br><span class="grad-text">הניירת כבר מסתדרת לבד.</span></h1>
       <p class="subhero" data-he="תתמקדו במה שאתם טובים בו. את השאר תשאירו לנו." data-en="Concentrate on what you do best. We handle the rest.">תתמקדו במה שאתם טובים בו. את השאר תשאירו לנו.</p>
       <p class="lead" data-he="לצלמים, למורים לחוגים, למעצבים ולבעלי מקצוע — מותאם לתחום שלכם מהיום הראשון. חיוב, תזכורות ומסמכים תקינים קורים לבד, בזמן שאתם עובדים." data-en="Built for Israeli photographers, instructors, designers and tradespeople — ready for your craft from day one. Billing, reminders, and tax compliance run themselves.">לצלמים, למורים לחוגים, למעצבים ולבעלי מקצוע — מותאם לתחום שלכם מהיום הראשון. חיוב, תזכורות ומסמכים תקינים קורים לבד, בזמן שאתם עובדים.</p>
@@ -298,25 +309,25 @@
         <a href="#contact" class="btn btn-primary" data-he="הצטרפו לבטא" data-en="Join Beta">הצטרפו לבטא</a>
         <a href="#how" class="btn btn-ghost dark" data-he="לראות איך זה עובד" data-en="See how it works">לראות איך זה עובד</a>
       </div>
-      <div class="trust">🔒 <span data-he="מסמכים תקינים בעברית, ממשק גם באנגלית · עובד על גבי ספק חיוב מוסמך" data-en="Compliant Hebrew docs, English interface · Runs on a certified billing provider">מסמכים תקינים בעברית, ממשק גם באנגלית · עובד על גבי ספק חיוב מוסמך</span></div>
+      <div class="trust"><svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg><span data-he="מסמכים תקינים בעברית, ממשק גם באנגלית · עובד על גבי ספק חיוב מוסמך" data-en="Compliant Hebrew docs, English interface · Runs on a certified billing provider">מסמכים תקינים בעברית, ממשק גם באנגלית · עובד על גבי ספק חיוב מוסמך</span></div>
     </div>
     <div style="position:relative">
       <img src="opalswift_gemstone_final.png" class="hero-gem-float" alt="">
       <div class="mock">
         <div class="bar"></div>
         <div class="mock-row">
-          <div class="l"><div class="dot">💳</div><div><b data-he="מקדמה: 30%" data-en="Deposit: 30%">מקדמה: 30%</b><br><small style="color:var(--slate)" data-he="נכנסה לחשבון דרך קישור תשלום" data-en="In your bank via pay-link">נכנסה לחשבון דרך קישור תשלום</small></div></div>
+          <div class="l"><div class="dot"><svg class="icon" aria-hidden="true"><use href="#i-card"/></svg></div><div><b data-he="מקדמה: 30%" data-en="Deposit: 30%">מקדמה: 30%</b><br><small style="color:var(--slate)" data-he="נכנסה לחשבון דרך קישור תשלום" data-en="In your bank via pay-link">נכנסה לחשבון דרך קישור תשלום</small></div></div>
           <span class="pill auto" data-he="אוטומטי" data-en="Auto">אוטומטי</span>
         </div>
         <div class="mock-row">
-          <div class="l"><div class="dot">🔔</div><div><b data-he="הנודניק שלח תזכורת" data-en="Reminder sent">הנודניק שלח תזכורת</b><br><small style="color:var(--slate)" data-he="היתרה שולמה — בלי שביקשתם" data-en="Balance collected — you never asked">היתרה שולמה — בלי שביקשתם</small></div></div>
+          <div class="l"><div class="dot"><svg class="icon" aria-hidden="true"><use href="#i-bell"/></svg></div><div><b data-he="הנודניק שלח תזכורת" data-en="Reminder sent">הנודניק שלח תזכורת</b><br><small style="color:var(--slate)" data-he="היתרה שולמה — בלי שביקשתם" data-en="Balance collected — you never asked">היתרה שולמה — בלי שביקשתם</small></div></div>
           <span class="pill ok" data-he="✓ שולם" data-en="✓ Paid">✓ שולם</span>
         </div>
         <div class="mock-foot">
           <div><small style="opacity:.7" data-he="מסמך תקין נשמר" data-en="Compliant doc saved">מסמך תקין נשמר</small><br><span data-he="יוני 2026" data-en="June 2026">יוני 2026</span></div>
           <div class="amt">₪7,200</div>
         </div>
-        <div class="float-badge">⚡ <span data-he="0 דקות של ניירת" data-en="0 minutes of admin">0 דקות של ניירת</span></div>
+        <div class="float-badge"><svg class="icon" aria-hidden="true"><use href="#i-zap"/></svg><span data-he="0 דקות של ניירת" data-en="0 minutes of admin">0 דקות של ניירת</span></div>
       </div>
     </div>
   </div>
@@ -330,7 +341,7 @@
     <div class="stat"><div class="big" data-he="כסף מהר יותר" data-en="Paid faster">כסף מהר יותר</div><div class="lbl" data-he="מקדמות, קישורי תשלום ותזכורות אוטומטיות" data-en="deposits, pay-links & auto reminders">מקדמות, קישורי תשלום ותזכורות אוטומטיות</div></div>
     <div class="stat"><div class="big" data-he="התשלומים נכנסים" data-en="Payments flow">התשלומים נכנסים</div><div class="lbl" data-he="התזכורות גובות במקומכם — בנימוס ובמקצועיות" data-en="reminders collect for you — professionally">התזכורות גובות במקומכם — בנימוס ובמקצועיות</div></div>
     <div class="stat"><div class="big" data-he="שעות בחזרה" data-en="Hours back">שעות בחזרה</div><div class="lbl" data-he="ערבי ראשון חוזרים להיות שלכם — הכל קורה אוטומטית" data-en="Sunday nights are yours again — everything's automated">ערבי ראשון חוזרים להיות שלכם — הכל קורה אוטומטית</div></div>
-    <div class="stat"><div class="big" data-he="<span class=&quot;flag&quot;>🇮🇱</span> 100% ישראלי" data-en="<span class=&quot;flag&quot;>🇮🇱</span> 100% Israel"><span class="flag">🇮🇱</span> 100% ישראלי</div><div class="lbl" data-he="לא עוד כלי אמריקאי מתורגם — בנוי לפי דרישות רשות המסים" data-en="not a US import — tuned to the Tax Authority">לא עוד כלי אמריקאי מתורגם — בנוי לפי דרישות רשות המסים</div></div>
+    <div class="stat"><div class="big" data-he="100% ישראלי" data-en="100% Israel">100% ישראלי</div><div class="lbl" data-he="לא עוד כלי אמריקאי מתורגם — בנוי לפי דרישות רשות המסים" data-en="not a US import — tuned to the Tax Authority">לא עוד כלי אמריקאי מתורגם — בנוי לפי דרישות רשות המסים</div></div>
   </div>
 </section>
 
@@ -343,9 +354,9 @@
       <p data-he="צלמים, מעצבים, מורים לחוגים, בעלי מקצוע או יוצרים — הזמן שלכם שווה יותר מניירת ומרדף אחרי תשלומים." data-en="Photographer, designer, instructor, tradesperson or maker — your time deserves better than paperwork and chasing.">צלמים, מעצבים, מורים לחוגים, בעלי מקצוע או יוצרים — הזמן שלכם שווה יותר מניירת ומרדף אחרי תשלומים.</p>
     </div>
     <div class="cards3">
-      <div class="card pain"><div class="ic">😬</div><h3 data-he="המרדף המביך" data-en="The Cringe Chase">המרדף המביך</h3><p data-he="שולחים 'רק תזכורת קטנה 🙂' בפעם השלישית, ומתלבטים אם להוסיף עוד סימן קריאה או להוריד אחד..." data-en="Writing 'gentle reminder'... for the third time, wondering if you should add more exclamation points or fewer...">שולחים 'רק תזכורת קטנה 🙂' בפעם השלישית, ומתלבטים אם להוסיף עוד סימן קריאה או להוריד אחד...</p></div>
-      <div class="card pain"><div class="ic">⏳</div><h3 data-he="כאב הראש של המס" data-en="Tax Complexity">כאב הראש של המס</h3><p data-he="טובעים בטפסים של רשות המסים ומגגלים שוב, בשתיים בלילה, 'מה ההבדל בין עוסק פטור לעוסק מורשה'." data-en="Staring at Hebrew forms like they're ancient hieroglyphics, Googling 'מעמ vs. עוסק פטור' at 2 AM again.">טובעים בטפסים של רשות המסים ומגגלים שוב, בשתיים בלילה, 'מה ההבדל בין עוסק פטור לעוסק מורשה'.</p></div>
-      <div class="card pain"><div class="ic">⏰</div><h3 data-he="הזמן שהולך לאיבוד" data-en="The Time Sink">הזמן שהולך לאיבוד</h3><p data-he="ימי שישי בבוקר הולכים על חשבוניות במקום על הים, כי 'את ענייני המס אסדר אחר כך'." data-en="Spending Sunday mornings on invoices instead of beach walks, because 'I'll figure out the tax stuff later.'">ימי שישי בבוקר הולכים על חשבוניות במקום על הים, כי 'את ענייני המס אסדר אחר כך'.</p></div>
+      <div class="card pain"><div class="ic"><svg class="icon" aria-hidden="true"><use href="#i-msg"/></svg></div><h3 data-he="המרדף המביך" data-en="The Cringe Chase">המרדף המביך</h3><p data-he="שולחים 'רק תזכורת קטנה' בפעם השלישית, ומתלבטים אם להוסיף עוד סימן קריאה או להוריד אחד..." data-en="Writing 'gentle reminder'... for the third time, wondering if you should add more exclamation points or fewer...">שולחים 'רק תזכורת קטנה' בפעם השלישית, ומתלבטים אם להוסיף עוד סימן קריאה או להוריד אחד...</p></div>
+      <div class="card pain"><div class="ic"><svg class="icon" aria-hidden="true"><use href="#i-file"/></svg></div><h3 data-he="כאב הראש של המס" data-en="Tax Complexity">כאב הראש של המס</h3><p data-he="טובעים בטפסים של רשות המסים ומגגלים שוב, בשתיים בלילה, 'מה ההבדל בין עוסק פטור לעוסק מורשה'." data-en="Staring at Hebrew forms like they're ancient hieroglyphics, Googling 'מעמ vs. עוסק פטור' at 2 AM again.">טובעים בטפסים של רשות המסים ומגגלים שוב, בשתיים בלילה, 'מה ההבדל בין עוסק פטור לעוסק מורשה'.</p></div>
+      <div class="card pain"><div class="ic"><svg class="icon" aria-hidden="true"><use href="#i-clock"/></svg></div><h3 data-he="הזמן שהולך לאיבוד" data-en="The Time Sink">הזמן שהולך לאיבוד</h3><p data-he="ימי שישי בבוקר הולכים על חשבוניות במקום על הים, כי 'את ענייני המס אסדר אחר כך'." data-en="Spending Sunday mornings on invoices instead of beach walks, because 'I'll figure out the tax stuff later.'">ימי שישי בבוקר הולכים על חשבוניות במקום על הים, כי 'את ענייני המס אסדר אחר כך'.</p></div>
     </div>
     <p class="turn-line" data-he="OpalSwift מוריד מכם את כל זה — ומשאיר לכם זמן <span class='grad-text'>למקצוע שלכם</span>." data-en="OpalSwift takes all of that off your plate — and quietly keeps you <span class='grad-text'>100% compliant</span>, in English.">OpalSwift מוריד מכם את כל זה — ומשאיר לכם זמן <span class='grad-text'>למקצוע שלכם</span>.</p>
   </div>
@@ -361,7 +372,7 @@
     </div>
     <div class="cards3">
       <div class="card">
-        <div class="ic">📈</div>
+        <div class="ic"><svg class="icon" aria-hidden="true"><use href="#i-trend"/></svg></div>
         <h3 data-he="נגמר הבלגן של הניירת" data-en="Your Paperwork Problem, Solved">נגמר הבלגן של הניירת</h3>
         <p data-he="כל כאבי הראש של סוף החודש, שטיפלתם בהם ידנית, קורים עכשיו לבד." data-en="All those monthly headaches you used to handle manually just happen automatically.">כל כאבי הראש של סוף החודש, שטיפלתם בהם ידנית, קורים עכשיו לבד.</p>
         <div class="chips">
@@ -370,7 +381,7 @@
         </div>
       </div>
       <div class="card">
-        <div class="ic">🏖️</div>
+        <div class="ic"><svg class="icon" aria-hidden="true"><use href="#i-sun"/></svg></div>
         <h3 data-he="זמן חוזר, כסף נכנס" data-en="Hours Back, Money In">זמן חוזר, כסף נכנס</h3>
         <p data-he="כל שעה שלא הולכת על ניירת היא שעה שאפשר לחייב עליה לקוח." data-en="Every hour you're not doing paperwork is an hour you can bill someone.">כל שעה שלא הולכת על ניירת היא שעה שאפשר לחייב עליה לקוח.</p>
         <div class="chips">
@@ -379,7 +390,7 @@
         </div>
       </div>
       <div class="card">
-        <div class="ic">💸</div>
+        <div class="ic"><svg class="icon" aria-hidden="true"><use href="#i-pin"/></svg></div>
         <h3 data-he="נבנה כאן, בשבילכם" data-en="Built Where You Live">נבנה כאן, בשבילכם</h3>
         <p data-he="נבנה על ידי עצמאים שמכירים מקרוב איך עובדים כאן, בישראל — לא בחו״ל." data-en="Created by freelancers who know exactly how business works here, not elsewhere.">נבנה על ידי עצמאים שמכירים מקרוב איך עובדים כאן, בישראל — לא בחו״ל.</p>
         <div class="chips">
@@ -417,29 +428,29 @@
     </div>
     <div class="flows">
       <div class="flow">
-        <span class="tag">🅰 <span data-he="לפי פרויקט" data-en="Job by job">לפי פרויקט</span></span>
+        <span class="tag"><svg class="icon" aria-hidden="true"><use href="#i-filecheck"/></svg><span data-he="לפי פרויקט" data-en="Job by job">לפי פרויקט</span></span>
         <h3 data-he="הצעת מחיר → מקדמה → יתרה" data-en="Quote → deposit → balance">הצעת מחיר → מקדמה → יתרה</h3>
         <p data-he="שולחים הצעת מחיר, גובים מקדמה לפני שמתחילים, ובסיום מפיקים חשבונית תקינה ליתרה — הכל בלחיצה אחת." data-en="Send a quote, collect a deposit before you start, then issue a compliant balance invoice when you're done — all in one tap.">שולחים הצעת מחיר, גובים מקדמה לפני שמתחילים, ובסיום מפיקים חשבונית תקינה ליתרה — הכל בלחיצה אחת.</p>
         <div class="chips">
-          <span class="chip" data-he="📷 צלמים" data-en="📷 Photographers">📷 צלמים</span>
-          <span class="chip" data-he="💻 מעצבים" data-en="💻 Designers">💻 מעצבים</span>
-          <span class="chip" data-he="🔧 שרברבים" data-en="🔧 Plumbers">🔧 שרברבים</span>
-          <span class="chip" data-he="🎉 מפיקי אירועים" data-en="🎉 Event planners">🎉 מפיקי אירועים</span>
+          <span class="chip"><svg class="icon" aria-hidden="true"><use href="#i-camera"/></svg><span data-he="צלמים" data-en="Photographers">צלמים</span></span>
+          <span class="chip"><svg class="icon" aria-hidden="true"><use href="#i-laptop"/></svg><span data-he="מעצבים" data-en="Designers">מעצבים</span></span>
+          <span class="chip"><svg class="icon" aria-hidden="true"><use href="#i-wrench"/></svg><span data-he="שרברבים" data-en="Plumbers">שרברבים</span></span>
+          <span class="chip"><svg class="icon" aria-hidden="true"><use href="#i-party"/></svg><span data-he="מפיקי אירועים" data-en="Event planners">מפיקי אירועים</span></span>
         </div>
-        <a href="#gig-group" class="flow-cta" data-he="לכל תחומי הפרויקטים ←" data-en="See project editions ←">לכל תחומי הפרויקטים ←</a>
+        <a href="#gig-group" class="flow-cta" data-he="לכל תחומי הפרויקטים ←" data-en="See project editions →">לכל תחומי הפרויקטים ←</a>
       </div>
       <div class="flow">
-        <span class="tag">🅱 <span data-he="הכנסה קבועה" data-en="Recurring income">הכנסה קבועה</span></span>
+        <span class="tag"><svg class="icon" aria-hidden="true"><use href="#i-repeat"/></svg><span data-he="הכנסה קבועה" data-en="Recurring income">הכנסה קבועה</span></span>
         <h3 data-he="הרשמה → הוראת קבע → קבלה" data-en="Sign-up → standing order → receipt">הרשמה → הוראת קבע → קבלה</h3>
         <p data-he="שולחים קישור אחד: התלמיד נרשם ומגדיר הוראת קבע, ובכל חודש יוצאת קבלה אוטומטית. הכסף פשוט נכנס, חודש אחרי חודש." data-en="Send one link; the student signs up and sets a standing order, and every month a receipt goes out automatically. Money flows every month.">שולחים קישור אחד: התלמיד נרשם ומגדיר הוראת קבע, ובכל חודש יוצאת קבלה אוטומטית. הכסף פשוט נכנס, חודש אחרי חודש.</p>
         <div class="chips">
-          <span class="chip" data-he="🎨 אמנות" data-en="🎨 Art">🎨 אמנות</span>
-          <span class="chip" data-he="🎹 מוזיקה" data-en="🎹 Music">🎹 מוזיקה</span>
-          <span class="chip" data-he="🤸 מחול וספורט" data-en="🤸 Dance & sport">🤸 מחול וספורט</span>
-          <span class="chip" data-he="🧘 כושר ויוגה" data-en="🧘 Fitness & yoga">🧘 כושר ויוגה</span>
-          <span class="chip" data-he="📲 תזכורות" data-en="📲 Reminders">📲 תזכורות</span>
+          <span class="chip"><svg class="icon" aria-hidden="true"><use href="#i-palette"/></svg><span data-he="אמנות" data-en="Art">אמנות</span></span>
+          <span class="chip"><svg class="icon" aria-hidden="true"><use href="#i-music"/></svg><span data-he="מוזיקה" data-en="Music">מוזיקה</span></span>
+          <span class="chip"><svg class="icon" aria-hidden="true"><use href="#i-activity"/></svg><span data-he="מחול וספורט" data-en="Dance & sport">מחול וספורט</span></span>
+          <span class="chip"><svg class="icon" aria-hidden="true"><use href="#i-dumbbell"/></svg><span data-he="כושר ויוגה" data-en="Fitness & yoga">כושר ויוגה</span></span>
+          <span class="chip"><svg class="icon" aria-hidden="true"><use href="#i-bell"/></svg><span data-he="תזכורות" data-en="Reminders">תזכורות</span></span>
         </div>
-        <a href="#roster-group" class="flow-cta" data-he="לכל תחומי החוגים והשיעורים ←" data-en="See ongoing editions ←">לכל תחומי החוגים והשיעורים ←</a>
+        <a href="#roster-group" class="flow-cta" data-he="לכל תחומי החוגים והשיעורים ←" data-en="See ongoing editions →">לכל תחומי החוגים והשיעורים ←</a>
       </div>
     </div>
   </div>
@@ -455,31 +466,31 @@
     </div>
     <div class="editions-wrap">
       <div class="editions-group" id="gig-group">
-        <div class="editions-group-label gig" data-he="🎯 פרויקטים ועבודות חד-פעמיות" data-en="🎯 One-Time Projects">🎯 פרויקטים ועבודות חד-פעמיות</div>
+        <div class="editions-group-label gig"><svg class="icon" aria-hidden="true"><use href="#i-target"/></svg><span data-he="פרויקטים ועבודות חד-פעמיות" data-en="One-Time Projects">פרויקטים ועבודות חד-פעמיות</span></div>
         <div class="editions">
-          <a class="edition" href="photographer.html"><span class="em">📸</span><b data-he="צלמים" data-en="Photographer">צלמים</b><small data-he="הצעת מחיר · מקדמה" data-en="Deposit + quote">הצעת מחיר · מקדמה</small></a>
-          <a class="edition" href="trades.html"><span class="em">🔧</span><b data-he="בעלי מקצוע" data-en="Trades">בעלי מקצוע</b><small data-he="הצעת מחיר · מקדמה · חשבונית" data-en="Quote · deposit · invoice">הצעת מחיר · מקדמה · חשבונית</small></a>
-          <a class="edition" href="beautician.html"><span class="em">💅</span><b data-he="קוסמטיקה ושייטל" data-en="Beautician">קוסמטיקה ושייטל</b><small data-he="תורים · תשלום מראש · ביטולים" data-en="Appointments · pre-pay · cancellations">תורים · תשלום מראש · ביטולים</small></a>
-          <a class="edition" href="designer.html"><span class="em">✏️</span><b data-he="מעצבים" data-en="Designer">מעצבים</b><small data-he="אבני דרך · הצעת מחיר" data-en="Milestones · quote to invoice">אבני דרך · הצעת מחיר</small></a>
-          <a class="edition" href="interior.html"><span class="em">🛋️</span><b data-he="מעצבי פנים" data-en="Interior Design">מעצבי פנים</b><small data-he="הצעת מחיר · אבני דרך · חיוב לפי שלבים" data-en="Quote · milestones · stage billing">הצעת מחיר · אבני דרך · חיוב לפי שלבים</small></a>
-          <a class="edition" href="adviser.html"><span class="em">💼</span><b data-he="יועצים" data-en="Adviser">יועצים</b><small data-he="ייעוץ · הצעת מחיר · חשבונית" data-en="Consulting · quote · invoice">ייעוץ · הצעת מחיר · חשבונית</small></a>
-          <a class="edition" href="workshops.html"><span class="em">🎓</span><b data-he="סדנאות" data-en="Workshops">סדנאות</b><small data-he="הרשמה · תשלום מראש" data-en="Registration · advance payment">הרשמה · תשלום מראש</small></a>
-          <a class="edition" href="event-planner.html"><span class="em">🎉</span><b data-he="מפיקי אירועים" data-en="Event Planner">מפיקי אירועים</b><small data-he="אבני דרך · ספקים · מקדמות" data-en="Milestones · vendors · deposits">אבני דרך · ספקים · מקדמות</small></a>
-          <a class="edition" href="sofer-stam.html"><span class="em">✍️</span><b data-he='סופר סת"ם' data-en="Sofer STaM">סופר סת"ם</b><small data-he="שלבי כתיבה · מקדמות" data-en="Writing stages · deposits">שלבי כתיבה · מקדמות</small></a>
+          <a class="edition" href="photographer.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-camera"/></svg></span><b data-he="צלמים" data-en="Photographer">צלמים</b><small data-he="הצעת מחיר · מקדמה" data-en="Deposit + quote">הצעת מחיר · מקדמה</small></a>
+          <a class="edition" href="trades.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-wrench"/></svg></span><b data-he="בעלי מקצוע" data-en="Trades">בעלי מקצוע</b><small data-he="הצעת מחיר · מקדמה · חשבונית" data-en="Quote · deposit · invoice">הצעת מחיר · מקדמה · חשבונית</small></a>
+          <a class="edition" href="beautician.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-scissors"/></svg></span><b data-he="קוסמטיקה ושייטל" data-en="Beautician">קוסמטיקה ושייטל</b><small data-he="תורים · תשלום מראש · ביטולים" data-en="Appointments · pre-pay · cancellations">תורים · תשלום מראש · ביטולים</small></a>
+          <a class="edition" href="designer.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-pencil"/></svg></span><b data-he="מעצבים" data-en="Designer">מעצבים</b><small data-he="אבני דרך · הצעת מחיר" data-en="Milestones · quote to invoice">אבני דרך · הצעת מחיר</small></a>
+          <a class="edition" href="interior.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-sofa"/></svg></span><b data-he="מעצבי פנים" data-en="Interior Design">מעצבי פנים</b><small data-he="הצעת מחיר · אבני דרך · חיוב לפי שלבים" data-en="Quote · milestones · stage billing">הצעת מחיר · אבני דרך · חיוב לפי שלבים</small></a>
+          <a class="edition" href="adviser.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-briefcase"/></svg></span><b data-he="יועצים" data-en="Adviser">יועצים</b><small data-he="ייעוץ · הצעת מחיר · חשבונית" data-en="Consulting · quote · invoice">ייעוץ · הצעת מחיר · חשבונית</small></a>
+          <a class="edition" href="workshops.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-grad"/></svg></span><b data-he="סדנאות" data-en="Workshops">סדנאות</b><small data-he="הרשמה · תשלום מראש" data-en="Registration · advance payment">הרשמה · תשלום מראש</small></a>
+          <a class="edition" href="event-planner.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-party"/></svg></span><b data-he="מפיקי אירועים" data-en="Event Planner">מפיקי אירועים</b><small data-he="אבני דרך · ספקים · מקדמות" data-en="Milestones · vendors · deposits">אבני דרך · ספקים · מקדמות</small></a>
+          <a class="edition" href="sofer-stam.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-feather"/></svg></span><b data-he='סופר סת"ם' data-en="Sofer STaM">סופר סת"ם</b><small data-he="שלבי כתיבה · מקדמות" data-en="Writing stages · deposits">שלבי כתיבה · מקדמות</small></a>
         </div>
       </div>
       <div class="editions-group" id="roster-group">
-        <div class="editions-group-label roster" data-he="🔄 חוגים ושיעורים קבועים" data-en="🔄 Ongoing Services">🔄 חוגים ושיעורים קבועים</div>
+        <div class="editions-group-label roster"><svg class="icon" aria-hidden="true"><use href="#i-repeat"/></svg><span data-he="חוגים ושיעורים קבועים" data-en="Ongoing Services">חוגים ושיעורים קבועים</span></div>
         <div class="editions">
-          <a class="edition" href="private-tutor.html"><span class="em">📚</span><b data-he="מורים פרטיים" data-en="Tutor">מורים פרטיים</b><small data-he="משפחות · תזכורות להורים" data-en="Families · parent reminders">משפחות · תזכורות להורים</small></a>
-          <a class="edition" href="classes.html"><span class="em">🏃</span><b data-he="חוגים" data-en="Classes">חוגים</b><small data-he="הוראת קבע · כמה ילדים במשפחה" data-en="Standing order · multi-child">הוראת קבע · כמה ילדים במשפחה</small></a>
-          <a class="edition" href="personal-trainer.html"><span class="em">💪</span><b data-he="מאמני כושר" data-en="Fitness Trainer">מאמני כושר</b><small data-he="ביטולים · מילואים · חבילות" data-en="Cancels · reserve duty · packs">ביטולים · מילואים · חבילות</small></a>
-          <a class="edition" href="driving-instructor.html"><span class="em">🚗</span><b data-he="מורי נהיגה" data-en="Driving Instructor">מורי נהיגה</b><small data-he="חבילות שיעורים · תשלום ע״י ההורים" data-en="Lesson packs · parent billing">חבילות שיעורים · תשלום ע״י ההורים</small></a>
-          <a class="edition" href="therapist.html"><span class="em">🧘</span><b data-he="מטפלים" data-en="Therapist">מטפלים</b><small data-he="תשלום מראש · תזכורות" data-en="Pre-pay · reminders">תשלום מראש · תזכורות</small></a>
-          <a class="edition" href="music-teacher.html"><span class="em">🎵</span><b data-he="מורים למוזיקה" data-en="Music Teacher">מורים למוזיקה</b><small data-he="חיוב חודשי · יתרת שיעורים" data-en="Monthly · lesson credits">חיוב חודשי · יתרת שיעורים</small></a>
-          <a class="edition" href="dance-teacher.html"><span class="em">🩰</span><b data-he="מורי מחול" data-en="Dance Teacher">מורי מחול</b><small data-he="שיעורים · ניהול תלמידים" data-en="Classes · student management">שיעורים · ניהול תלמידים</small></a>
-          <a class="edition" href="art-class.html"><span class="em">🎨</span><b data-he="חוגי אמנות" data-en="Art Class">חוגי אמנות</b><small data-he="הרשמה · חיוב חודשי" data-en="Enrolment · monthly billing">הרשמה · חיוב חודשי</small></a>
-          <a class="edition" href="swim-coach.html"><span class="em">🏊</span><b data-he="מאמני שחייה" data-en="Swim Coach">מאמני שחייה</b><small data-he="חוגי שחייה · מנויים · ביטולים" data-en="Swim classes · memberships · cancels">חוגי שחייה · מנויים · ביטולים</small></a>
+          <a class="edition" href="private-tutor.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-book"/></svg></span><b data-he="מורים פרטיים" data-en="Tutor">מורים פרטיים</b><small data-he="משפחות · תזכורות להורים" data-en="Families · parent reminders">משפחות · תזכורות להורים</small></a>
+          <a class="edition" href="classes.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-calendar"/></svg></span><b data-he="חוגים" data-en="Classes">חוגים</b><small data-he="הוראת קבע · כמה ילדים במשפחה" data-en="Standing order · multi-child">הוראת קבע · כמה ילדים במשפחה</small></a>
+          <a class="edition" href="personal-trainer.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-dumbbell"/></svg></span><b data-he="מאמני כושר" data-en="Fitness Trainer">מאמני כושר</b><small data-he="ביטולים · מילואים · חבילות" data-en="Cancels · reserve duty · packs">ביטולים · מילואים · חבילות</small></a>
+          <a class="edition" href="driving-instructor.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-car"/></svg></span><b data-he="מורי נהיגה" data-en="Driving Instructor">מורי נהיגה</b><small data-he="חבילות שיעורים · תשלום ע״י ההורים" data-en="Lesson packs · parent billing">חבילות שיעורים · תשלום ע״י ההורים</small></a>
+          <a class="edition" href="therapist.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-leaf"/></svg></span><b data-he="מטפלים" data-en="Therapist">מטפלים</b><small data-he="תשלום מראש · תזכורות" data-en="Pre-pay · reminders">תשלום מראש · תזכורות</small></a>
+          <a class="edition" href="music-teacher.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-music"/></svg></span><b data-he="מורים למוזיקה" data-en="Music Teacher">מורים למוזיקה</b><small data-he="חיוב חודשי · יתרת שיעורים" data-en="Monthly · lesson credits">חיוב חודשי · יתרת שיעורים</small></a>
+          <a class="edition" href="dance-teacher.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-sparkles"/></svg></span><b data-he="מורי מחול" data-en="Dance Teacher">מורי מחול</b><small data-he="שיעורים · ניהול תלמידים" data-en="Classes · student management">שיעורים · ניהול תלמידים</small></a>
+          <a class="edition" href="art-class.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-palette"/></svg></span><b data-he="חוגי אמנות" data-en="Art Class">חוגי אמנות</b><small data-he="הרשמה · חיוב חודשי" data-en="Enrolment · monthly billing">הרשמה · חיוב חודשי</small></a>
+          <a class="edition" href="swim-coach.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-waves"/></svg></span><b data-he="מאמני שחייה" data-en="Swim Coach">מאמני שחייה</b><small data-he="חוגי שחייה · מנויים · ביטולים" data-en="Swim classes · memberships · cancels">חוגי שחייה · מנויים · ביטולים</small></a>
         </div>
       </div>
     </div>
@@ -513,7 +524,7 @@
     </div>
     <div class="beta-form">
       <div class="form-success" id="form-success">
-        <span class="fs-icon">✅</span>
+        <span class="fs-icon"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg></span>
         <p data-he="קיבלנו! נחזור אליכם בקרוב." data-en="Got it! We'll be in touch soon.">קיבלנו! נחזור אליכם בקרוב.</p>
       </div>
       <form id="contact-form" action="/api/contact" method="POST">
@@ -563,7 +574,7 @@
       <h2 data-he="עליתם לארץ כדי לבנות כאן משהו משלכם." data-en="You made the move to build something meaningful in Israel.">עליתם לארץ כדי לבנות כאן משהו משלכם.</h2>
     </div>
     <p class="anglo-body" data-he="OpalSwift מטפל במע״מ ובניירת המס בעברית תקנית — ואתם עובדים באנגלית פשוטה. <b>מותר לנהל עסק ישראלי בשפת האם שלכם.</b>" data-en="OpalSwift handles VAT and tax documentation in perfect Hebrew — you work in plain English. <b>You have full permission to run your Israeli business in your native language.</b>">OpalSwift מטפל במע״מ ובניירת המס בעברית תקנית — ואתם עובדים באנגלית פשוטה. <b>מותר לנהל עסק ישראלי בשפת האם שלכם.</b></p>
-    <div class="bilingual"><span>🇮🇱</span><span data-he="מסמכים בעברית · ממשק באנגלית" data-en="Hebrew documents · English interface">מסמכים בעברית · ממשק באנגלית</span><span>🇬🇧</span></div>
+    <div class="bilingual"><span class="bi-ic"><svg class="icon" aria-hidden="true"><use href="#i-file"/></svg></span><span data-he="מסמכים בעברית · ממשק באנגלית" data-en="Hebrew documents · English interface">מסמכים בעברית · ממשק באנגלית</span><span class="bi-ic"><svg class="icon" aria-hidden="true"><use href="#i-monitor"/></svg></span></div>
   </div>
 </section>
 
