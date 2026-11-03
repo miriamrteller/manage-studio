@@ -5212,7 +5212,7 @@ export type Database = {
             };
             platform_set_feature_override: {
                 Args: {
-                    p_enabled: boolean | null;
+                    p_enabled: boolean;
                     p_feature_key: string;
                     p_note?: string;
                     p_tenant_id: string;
@@ -5229,10 +5229,10 @@ export type Database = {
                     effective: boolean;
                     feature_key: string;
                     feature_set: string;
-                    override_enabled: boolean | null;
-                    override_note: string | null;
-                    profile_gate: string | null;
-                    skin_restriction: string | null;
+                    override_enabled: boolean;
+                    override_note: string;
+                    profile_gate: string;
+                    skin_restriction: string;
                     tier_minimum: Database["public"]["Enums"]["tenant_plan"];
                 }[];
             };

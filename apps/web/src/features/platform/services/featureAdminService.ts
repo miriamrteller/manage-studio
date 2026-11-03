@@ -23,7 +23,8 @@ export async function setFeatureOverride(
   const { error } = await supabase.rpc('platform_set_feature_override', {
     p_tenant_id: tenantId,
     p_feature_key: featureKey,
-    p_enabled: enabled,
+    // NULL clears the override; generated types cannot express a nullable argument.
+    p_enabled: enabled as boolean,
   });
   if (error) throw new Error(`Failed to change feature: ${error.message}`);
 }
