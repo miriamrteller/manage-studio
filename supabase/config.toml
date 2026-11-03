@@ -71,6 +71,13 @@ verify_jwt = false
 import_map = "./functions/send-auth-email/deno.json"
 entrypoint = "./functions/send-auth-email/index.ts"
 
+[functions.custom-domain]
+enabled = true
+# Studio admins (user JWT) and the cron (CRON_SECRET) both call it: checked in-function.
+verify_jwt = false
+import_map = "./functions/custom-domain/deno.json"
+entrypoint = "./functions/custom-domain/index.ts"
+
 [functions.create-enrolment-intake]
 enabled = true
 verify_jwt = false
