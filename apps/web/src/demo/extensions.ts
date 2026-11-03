@@ -456,6 +456,26 @@ export const views: Record<string, ViewHandler> = {
 };
 
 export const extraRpcs: Record<string, RpcHandler> = {
+  // Settings → Your business. Null keeps a field as it is, like the real function.
+  set_business_profile: (args, ctx) => {
+    requireAdmin(ctx, 'set_business_profile');
+    const tenant = rows(ctx, 'tenants').find((t) => t.id === args.p_tenant_id);
+    if (!tenant) throw new DemoRpcError('set_business_profile: not your studio');
+    const flow = args.p_payment_flow;
+    if (flow != null && !['recurring', 'project', 'both'].includes(String(flow))) {
+      throw new DemoRpcError('set_business_profile: invalid payment flow', '22023');
+    }
+    if (flow != null) tenant.payment_flow = flow;
+    for (const [arg, column] of [
+      ['p_teaches_classes', 'teaches_classes'],
+      ['p_family_accounts', 'family_accounts'],
+      ['p_client_booking', 'client_booking'],
+    ] as const) {
+      if (args[arg] != null) tenant[column] = Boolean(args[arg]);
+    }
+    return null;
+  },
+
   search_enrolment_students: (args, ctx) => {
     if (!ctx.user) throw new DemoRpcError('Authentication required');
     if (!isAdmin(ctx)) throw new DemoRpcError('Forbidden');
