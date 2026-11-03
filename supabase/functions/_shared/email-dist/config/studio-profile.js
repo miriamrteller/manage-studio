@@ -29,6 +29,7 @@ export const PROFILE_GATES = {
     [FEATURES.billing.dunning]: 'recurring',
     [FEATURES.billing.quotes]: 'project',
     [FEATURES.billing.gatedDelivery]: 'project',
+    [FEATURES.media.galleryGated]: 'project',
     [FEATURES.scheduling.clientBooking]: 'client_booking',
     [FEATURES.scheduling.adminBooking]: 'client_booking',
     [FEATURES.scheduling.googleCalendar]: 'client_booking',

@@ -5,12 +5,8 @@
 --     owner can grant or remove it per studio (the FK blocked that before).
 --     Not seeded on purpose: billing:payments.stripe (not offered; its menu items
 --     must stay hidden) and billing:payments.mock (test-only provider).
---  2. Tiers follow the owner-approved feature sets: everything a business needs
---     (CORE and the business sets MONTHLY / PROJECTS / BOOKING / CLASSES /
---     FAMILIES, chosen by the business profile) is in every plan ('essential');
---     only EXTRAS (no profile gate, 'professional') depend on the plan.
---     Nothing changes for any studio today: every studio is trialing, which
---     gets the professional set.
+--  2. Plan tiers are NOT changed here: the owner is choosing the plans (Project /
+--     Studio by business type), and the tier mapping follows in its own change.
 --  3. get_tenant_features keeps its signature and result. Its defaults part
 --     moves to private.tenant_default_features so the platform page can show
 --     "on by default" next to the owner's override.
@@ -48,20 +44,11 @@ INSERT INTO feature_definitions (key, description, tier_minimum, skin_restrictio
   ('comms:documents.email',      'Documents sent by email',                           'essential', NULL, NULL),
   ('ui:admin.panel',             'Studio admin area',                                 'essential', NULL, NULL),
   ('ui:client.portal',           'Client portal',                                     'essential', NULL, NULL),
-  ('media:gallery.gated',        'Gallery released after payment',                    'essential', NULL, 'project')
+  ('media:gallery.gated',        'Gallery released after payment',                    'essential', NULL, NULL)
 ON CONFLICT (key) DO NOTHING;
 
--- ── 2. Tiers: business sets are in every plan; only EXTRAS need Professional ─
-UPDATE feature_definitions SET tier_minimum = 'essential'
-WHERE key IN (
-  'billing:recurring.enabled', 'billing:dunning.enabled',            -- MONTHLY
-  'offerings:structure.configure', 'offerings:booking.public',
-  'scheduling:calendar.view',                                        -- CLASSES
-  'people:families.manage',                                          -- FAMILIES
-  'scheduling:penalties.capture',                                    -- BOOKING
-  'ui:onboarding.checklist',                                         -- CORE: the setup checklist
-  'ui:theme.dance-studio'                                            -- the skin decides, as for the other themes
-);
+-- Same form as #289 so the PROFILE_GATES sync test sees it.
+UPDATE feature_definitions SET profile_gate = 'project' WHERE key = 'media:gallery.gated';
 
 -- ── 3. Defaults, then the owner's overrides (same result as before) ─────────
 CREATE OR REPLACE FUNCTION private.tenant_default_features(p_tenant_id UUID)

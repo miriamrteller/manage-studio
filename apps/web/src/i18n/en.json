@@ -3411,7 +3411,7 @@
       "booking": "On when clients book time slots.",
       "classes": "On when the studio teaches classes.",
       "families": "On when parents pay for children.",
-      "extras": "Included with the Professional plan."
+      "extras": "Not tied to the business profile; only with the Professional plan for now."
     }
   }
 }

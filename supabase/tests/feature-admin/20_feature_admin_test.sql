@@ -17,33 +17,25 @@ BEGIN
   END IF;
   RAISE NOTICE 'ok  registry keys seeded, stripe and mock left out';
 
-  -- 2. Only EXTRAS (no profile gate) need Professional.
-  SELECT count(*) INTO n FROM feature_definitions WHERE profile_gate IS NOT NULL AND tier_minimum <> 'essential';
-  IF n <> 0 THEN RAISE EXCEPTION 'FAIL % business-set features still need Professional', n; END IF;
-
-  -- An Essential studio that has finished its trial keeps every business set it has, but no EXTRAS.
-  UPDATE tenants SET plan = 'essential', sub_status = 'active', trial_ends_at = NULL,
-                     payment_flow = 'both', teaches_classes = true, family_accounts = true, client_booking = true
-  WHERE id = photo;
-  f := get_tenant_features(photo);
-  IF NOT (f @> ARRAY['billing:recurring.enabled', 'billing:dunning.enabled', 'people:families.manage',
-                     'offerings:structure.configure', 'scheduling:calendar.view', 'scheduling:penalties.capture',
-                     'billing:quotes.generate', 'people:contacts.manage', 'ui:onboarding.checklist']) THEN
-    RAISE EXCEPTION 'FAIL essential studio lost a business set: %', f;
+  -- 2. Tiers are unchanged here (the plan mapping comes with the owner's plans), and the
+  --    free beta (trialing, no end date) still gets everything.
+  IF (SELECT tier_minimum FROM feature_definitions WHERE key = 'billing:recurring.enabled') <> 'professional' THEN
+    RAISE EXCEPTION 'FAIL tiers changed';
   END IF;
-  IF f && ARRAY['finance:export.bkmv', 'comms:reminders.whatsapp', 'platform:domains.custom', 'ui:content.ai'] THEN
-    RAISE EXCEPTION 'FAIL essential studio got EXTRAS: %', f;
+  IF (SELECT profile_gate FROM feature_definitions WHERE key = 'media:gallery.gated') <> 'project' THEN
+    RAISE EXCEPTION 'FAIL gallery gate missing';
   END IF;
-  UPDATE tenants SET plan = 'professional' WHERE id = photo;
-  IF NOT ('finance:export.bkmv' = ANY(get_tenant_features(photo))) THEN
-    RAISE EXCEPTION 'FAIL professional studio is missing EXTRAS';
-  END IF;
-  -- The free beta (trialing, no end date) still gets everything.
   UPDATE tenants SET plan = 'essential', sub_status = 'trialing', trial_ends_at = NULL WHERE id = photo;
-  IF NOT ('finance:export.bkmv' = ANY(get_tenant_features(photo))) THEN
-    RAISE EXCEPTION 'FAIL beta studio lost EXTRAS';
+  f := get_tenant_features(photo);
+  IF NOT ('finance:export.bkmv' = ANY(f) AND 'people:contacts.manage' = ANY(f)) THEN
+    RAISE EXCEPTION 'FAIL beta studio lost features: %', f;
   END IF;
-  RAISE NOTICE 'ok  essential = CORE + business sets; professional and the beta add EXTRAS';
+  UPDATE tenants SET sub_status = 'active' WHERE id = photo;
+  f := get_tenant_features(photo);
+  IF 'finance:export.bkmv' = ANY(f) OR NOT ('people:contacts.manage' = ANY(f)) THEN
+    RAISE EXCEPTION 'FAIL essential studio features wrong: %', f;
+  END IF;
+  RAISE NOTICE 'ok  tiers unchanged; the beta gets everything; essential keeps core';
 
   -- 3. A studio admin can neither read the states nor set an override.
   PERFORM set_config('request.jwt.claim.sub', admin::text, false);

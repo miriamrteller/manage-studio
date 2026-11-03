@@ -7,7 +7,7 @@
  *
  * Behaviour:
  *   - 5-minute in-memory TTL cache per tenant (cache is per Deno isolate — resets on cold start).
- *   - When the features cannot be read (timeout or error): EXTRAS (paid add-ons, see
+ *   - When the features cannot be read (timeout or error): plan-only keys (see
  *     EXTRAS_FEATURE_KEYS) fail closed with a 503; every other key (CORE and the business
  *     sets) is let through with a warning, so a database hiccup never blocks everyday work.
  *   - Throws Response(403) JSON if the feature is not in the tenant's enabled set.
@@ -17,7 +17,7 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.105.3';
 
 /**
- * Paid add-ons: features with no business-profile gate that need the Professional plan
+ * Plan-only features: no business-profile gate and the Professional plan
  * (feature_definitions.tier_minimum = 'professional' AND profile_gate IS NULL).
  * supabase/tests/feature-admin checks this list against the database.
  */
@@ -37,9 +37,11 @@ export const EXTRAS_FEATURE_KEYS: ReadonlySet<string> = new Set([
   "scheduling:ai.assistant",
   "ui:content.ai",
   "ui:documents.queue",
+  "ui:onboarding.checklist",
   "ui:downloads.selfServe",
   "ui:payments.enhanced",
   "ui:pdfs.branded",
+  "ui:theme.dance-studio",
 ]);
 
 const featureCache = new Map<string, { features: Set<string>; expiry: number }>();
