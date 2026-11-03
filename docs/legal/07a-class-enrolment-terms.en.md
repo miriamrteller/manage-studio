@@ -1,6 +1,6 @@
 > **Draft, not legal advice. Have an Israeli lawyer review before publishing.**
-> Hebrew version (the version parents will read): [07a-dance-enrolment-terms.he.md](07a-dance-enrolment-terms.he.md).
-> Template for any studio that enrols students in classes or courses (dance, martial arts, music, art, tutoring and so on). Fill every [[PLACEHOLDER]]. First user: Creative Ballet Academy. The file name stays because the app loads it by name.
+> Hebrew version (the version parents will read): [07a-class-enrolment-terms.he.md](07a-class-enrolment-terms.he.md).
+> Template for any studio that enrols students in classes or courses (dance, martial arts, music, art, tutoring and so on). Fill every [[PLACEHOLDER]]. Lines marked [[DANCE CLASSES ONLY]] are for dance studios; lines marked [[OTHER CLASSES ONLY]] are the general version every other class business gets.
 
 # Enrolment Terms — [[STUDIO NAME]]
 
@@ -15,7 +15,8 @@ Last updated: [[DATE]]
 - Class, level, day, time and place: as shown on the enrolment page and in the confirmation email.
 - Season: as published by the studio for the current season, including the class schedule and the days without classes (for example public and school holidays).
 - The studio may change a teacher, time or room for good reason. If a change makes the class unsuitable for you, you may cancel under section 4 without a fee.
-- Events (for example an end-of-year performance, show or tournament): [[DETAILS / costume fees, if any]].
+- [[DANCE CLASSES ONLY]] Events (for example an end-of-year performance, show or tournament): [[DETAILS / costume fees, if any]].
+- [[OTHER CLASSES ONLY]] Events (for example an exhibition or open lesson), if any: as the studio announces them, with any costs stated in advance.
 
 ## 2. Price and payment
 
@@ -56,7 +57,13 @@ Refunds are paid in the way you paid, or as agreed.
 
 ## 6. Conduct
 
-We expect respectful behaviour toward teachers, students and parents. Dress code: [[DRESS CODE]]. Watching classes: [[e.g. only at open lessons]]. Filming classes by parents: [[e.g. not allowed, to protect other children's privacy]]. If a student's behaviour repeatedly puts others at risk, after talking with the parent we may end the enrolment with a proportional refund.
+We expect respectful behaviour toward teachers, students and parents.
+
+[[DANCE CLASSES ONLY]] Dress code: [[DRESS CODE]]. Watching classes: [[e.g. only at open lessons]]. Filming classes by parents: [[e.g. not allowed, to protect other children's privacy]].
+
+[[OTHER CLASSES ONLY]] Clothing and equipment: as the studio tells you for each class. Watching or filming classes: only with the studio's permission, to protect other students' privacy.
+
+If a student's behaviour repeatedly puts others at risk, after talking with the parent we may end the enrolment with a proportional refund.
 
 ## 7. Photos and video
 
@@ -79,6 +86,7 @@ Israeli law applies. If these terms and the law differ, the law that protects th
 ---
 
 ### Awaiting lawyer review (see [AWAITING-LAWYER-REVIEW](AWAITING-LAWYER-REVIEW.md))
+- [[LAWYER: confirm]] One template for every class business: the dance lines (performances and costume fees; dress code, watching and filming rules) apply only to dance studios; other class businesses get the general lines ("Events … as the studio announces them"; "Clothing and equipment … Watching or filming classes only with the studio's permission"). Studios that don't teach classes use the service agreement instead of these terms. File renamed from 07a-dance-enrolment-terms.
 - [[LAWYER: confirm]] "We don't have insurance": the terms then say "The studio does not currently hold insurance covering participants. We recommend personal accident insurance." and the health declaration's Declaration adds "I know that the studio does not currently hold insurance covering participants, and that personal accident insurance is recommended." (part of what the signer signs; no separate step).
 - [[LAWYER: confirm]] Insurance is optional and never blocks (owner decision). Only studios whose clients sign a health declaration (dance and other movement classes) are asked about it. An unanswered choice counts as "We don't have insurance" and uses the sentence above. "We have insurance" with no insurer named yet reads "The studio holds third-party liability insurance." Studios without health declarations (general, beauty) have no insurance sentence in their terms.
 - [[LAWYER: confirm]] A studio that is not yet a registered business is identified as "<studio>, run by <full name>" with the person's Israeli ID number (ת.ז.), or, for someone without one, a passport number and the issuing country. This number appears in the published document. Confirm the wording, that publishing an ID number is required or justified here, and the foreign-resident (passport) case.

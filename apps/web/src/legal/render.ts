@@ -1,6 +1,6 @@
 import { Marked, type Tokens } from 'marked';
 import type { VerticalId } from '@shared/config/tenant-presets';
-import { LEGAL_FIELDS, type BusinessStatus, type LegalDocId } from './fields';
+import { fieldApplies, LEGAL_FIELDS, type BusinessStatus, type LegalDocId } from './fields';
 import { hasHealthDeclarations, insuranceStatus, stripDraftingFrame } from '@shared/legal/signed-template';
 import { personalIdentity, personalIdentityText } from '@shared/legal/personalIdentity';
 
@@ -14,6 +14,8 @@ export interface LegalRenderContext {
   contactEmail: string;
   profile: Record<string, string | undefined>;
   updatedAt: string | null;
+  /** tenants.teaches_classes (unknown = true): class wording and fields only for studios that teach classes. */
+  teachesClasses?: boolean;
 }
 
 export interface PreparedLegalDoc {
@@ -34,7 +36,7 @@ export const LEGAL_DOC_FILES: Record<LegalDocId, string> = {
   'opalswift-privacy': '04-opalswift-privacy-policy',
   cookies: '05-cookie-storage-notice',
   accessibility: '06-accessibility-statement',
-  'enrolment-terms': '07a-dance-enrolment-terms',
+  'enrolment-terms': '07a-class-enrolment-terms',
 };
 
 const FILE_PREFIX_TO_DOC: Record<string, LegalDocId> = {
@@ -104,6 +106,32 @@ function applyVariant(text: string, vertical: VerticalId): string {
     text.slice(endIdx);
   for (const m of [...VARIANT_A, ...VARIANT_B]) out = out.split(m).join('');
   return out.replace(/\n{3,}/g, '\n\n');
+}
+
+/**
+ * Lines for dance studios that teach classes, and their general version for
+ * other class businesses (e.g. art classes): a line starting with one of these
+ * markers is kept only for its kind of studio, and the marker is removed.
+ */
+const DANCE_LINE = ['[[DANCE CLASSES ONLY]]', '[[רק לחוגי מחול]]'];
+const OTHER_CLASSES_LINE = ['[[OTHER CLASSES ONLY]]', '[[רק לחוגים אחרים]]'];
+
+export function isDanceClasses(ctx: Pick<LegalRenderContext, 'vertical' | 'teachesClasses'>): boolean {
+  return ctx.vertical === 'dance-studio' && ctx.teachesClasses !== false;
+}
+
+function applyClassVariants(text: string, ctx: LegalRenderContext): string {
+  const dance = isDanceClasses(ctx);
+  return text
+    .split('\n')
+    .flatMap((line) => {
+      const d = DANCE_LINE.find((m) => line.includes(m));
+      const o = OTHER_CLASSES_LINE.find((m) => line.includes(m));
+      if (d) return dance ? [line.replace(`${d} `, '').replace(d, '')] : [];
+      if (o) return dance ? [] : [line.replace(`${o} `, '').replace(o, '')];
+      return [line];
+    })
+    .join('\n');
 }
 
 function rewriteDocLinks(text: string): string {
@@ -451,6 +479,7 @@ export function prepareLegalMarkdown(
   const live = options.liveDetails === true;
   let text = stripDraftingFrame(raw);
   text = applyVariant(text, ctx.vertical);
+  text = applyClassVariants(text, ctx);
   text = live ? applyInsuranceToken(text, ctx) : applyInsurance(text, ctx);
   text = rewriteDocLinks(text);
 
@@ -487,7 +516,7 @@ export function prepareLegalMarkdown(
     }
 
     const field = byPlaceholder.get(ph);
-    if (field?.verticals && !field.verticals.includes(ctx.vertical)) {
+    if (field && !fieldApplies(field, ctx.vertical, ctx.teachesClasses !== false)) {
       // e.g. "the gallery service" line in a dance school's policy.
       return DROP_LINE_TOKEN;
     }

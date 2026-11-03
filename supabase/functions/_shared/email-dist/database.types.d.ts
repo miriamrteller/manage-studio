@@ -4969,6 +4969,7 @@ export type Database = {
                     legal_profile_updated_at: string;
                     name: string;
                     skin: string;
+                    teaches_classes: boolean;
                     tenant_id: string;
                 }[];
             };
