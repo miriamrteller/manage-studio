@@ -102,6 +102,7 @@
       "search_notification_blast_accounts",
       "set_billing_month_amount",
       "set_billing_schedule_amount",
+      "set_business_profile",
       "set_consent_template_lawyer_reviewed"
     ]
   },
