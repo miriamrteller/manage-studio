@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { useTenant } from '@/hooks/useTenant';
 import queryClient from '@/lib/query-client';
-import { analyzeLogo } from '@/lib/theme/logoTone';
-import { LOGO_CACHE_SECONDS, TENANT_ASSETS_BUCKET, logoObjectPath, logoPathFromUrl } from '@/lib/tenantLogoStorage';
+import { TENANT_ASSETS_BUCKET, logoPathFromUrl } from '@/lib/tenantLogoStorage';
+import { uploadTenantLogo } from '@/lib/tenantLogoUpload';
 import { ChromeStyleSettings } from './ChromeStyleSettings';
 import { FONT_PAIRS, FontPairId } from '@/hooks/useFontLoader';
 
@@ -74,25 +74,6 @@ export function BrandingSettingsForm() {
     saveBrandingMutation.mutate(formData);
   };
 
-  const uploadLogo = async (
-    file: File,
-    variant: 'light' | 'dark'
-  ): Promise<string> => {
-    if (!tenant) throw new Error('No tenant');
-
-    // A new name per upload: the new logo shows at once, never a cached old one.
-    const path = logoObjectPath(tenant.id, variant, file.name);
-
-    const { error: uploadError } = await supabase.storage
-      .from(TENANT_ASSETS_BUCKET)
-      .upload(path, file, { upsert: false, cacheControl: LOGO_CACHE_SECONDS, contentType: file.type || undefined });
-
-    if (uploadError) throw uploadError;
-
-    const { data } = supabase.storage.from(TENANT_ASSETS_BUCKET).getPublicUrl(path);
-    return data.publicUrl;
-  };
-
   /** Remove the replaced logo file (best effort; the tenant row is what counts). */
   const removeOldLogo = async (oldUrl: string | null | undefined, newUrl: string | null) => {
     if (!tenant) return;
@@ -124,18 +105,7 @@ export function BrandingSettingsForm() {
 
     try {
       const previousUrl = variant === 'light' ? tenant.logo_url : tenant.logo_dark_url;
-      const publicUrl = await uploadLogo(file, variant);
-      const updateField = variant === 'light' ? 'logo_url' : 'logo_dark_url';
-      const toneField = variant === 'light' ? 'logo_tone' : 'logo_dark_tone';
-      // Measured from the local file (no CORS), for the header logo fix.
-      const tone = await analyzeLogo(file);
-
-      const { error } = await supabase
-        .from('tenants')
-        .update({ [updateField]: publicUrl, [toneField]: tone })
-        .eq('id', tenant.id);
-
-      if (error) throw error;
+      const publicUrl = await uploadTenantLogo(tenant.id, file, variant);
 
       await removeOldLogo(previousUrl, publicUrl);
       queryClient.invalidateQueries({ queryKey: ['tenant'] });
