@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { MouseEvent, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,7 @@ import { useAuthSession } from '@/hooks/useAuth';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { supabase } from '@/lib/supabase';
 import { OPALSWIFT_BRAND } from '@/lib/theme/opalswiftBrand';
-import { isSelfServeSignupEnabled as selfServeSignup } from '@/features/self-serve/selfServeSignup';
+import { isSelfServeSignupEnabled as selfServeSignup, openStudioSignedIn } from '@/features/self-serve/selfServeSignup';
 import { useMyStudios, type StudioLink } from './useMyStudios';
 
 /**
@@ -170,6 +170,19 @@ function EmptyStudios({ title, hint, children }: { title: string; hint: string; 
   );
 }
 
+/**
+ * A studio's address, opened signed in: a plain click hands this session to
+ * the studio (/auth/session-handoff); a new-tab or modified click keeps the
+ * plain address (it opens the studio's sign-in).
+ */
+function openSignedIn(studio: StudioLink) {
+  return (event: MouseEvent<HTMLAnchorElement>) => {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    void openStudioSignedIn(studio.subdomain);
+  };
+}
+
 function StudioLinks({ studios }: { studios: StudioLink[] }) {
   return (
     <ul className="space-y-3">
@@ -177,6 +190,7 @@ function StudioLinks({ studios }: { studios: StudioLink[] }) {
         <li key={studio.id}>
           <a
             href={studio.url}
+            onClick={openSignedIn(studio)}
             className="block rounded-md border border-gray-200 px-4 py-3 hover:bg-gray-50 focus-visible:outline-2 outline-offset-2"
           >
             <bdi className="block font-semibold" style={{ color: OPALSWIFT_BRAND.ink }}>{studio.name}</bdi>
@@ -214,7 +228,12 @@ function StudiosTable({ studios }: { studios: StudioLink[] }) {
           {studios.map((studio) => (
             <tr key={studio.id} className="border-b border-gray-100">
               <td className="px-2 py-2">
-                <a href={studio.url} className="font-semibold underline" style={{ color: OPALSWIFT_BRAND.ink }}>
+                <a
+                  href={studio.url}
+                  onClick={openSignedIn(studio)}
+                  className="font-semibold underline"
+                  style={{ color: OPALSWIFT_BRAND.ink }}
+                >
                   <bdi>{studio.name}</bdi>
                 </a>
                 <span dir="ltr" className="block text-xs text-gray-700">{studio.url.replace(/^https?:\/\//, '')}</span>
