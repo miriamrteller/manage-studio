@@ -86,6 +86,8 @@ export function LiveDetailEditor(props: {
   onChange: (value: string) => void;
   language: LegalLang;
   vertical: VerticalId;
+  /** Clients sign a health declaration (offers the insurance sentence). */
+  healthDeclarations?: boolean;
   /** Turns pasted plain text's known values into details; returns the converted text. */
   onPasteText?: (text: string) => string;
 }) {
@@ -94,7 +96,7 @@ export function LiveDetailEditor(props: {
   const pickerId = useId();
   const lastEmitted = useRef<string | null>(null);
   const [detail, setDetail] = useState('');
-  const options = liveDetailOptions(props.vertical, props.language);
+  const options = liveDetailOptions(props.vertical, props.language, props.healthDeclarations);
 
   // Rebuild the DOM only when the value changes from outside (not on each keystroke).
   useEffect(() => {

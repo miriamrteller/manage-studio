@@ -2105,7 +2105,8 @@
     "next_legal": "Add the legal links and enrolment terms.",
     "next_sender": "Set the email sender address.",
     "next_test_enrolment": "Do a test enrolment from start to finish.",
-    "next_lawyer": "Have a lawyer review the legal documents."
+    "next_lawyer": "Have a lawyer review the legal documents.",
+    "filled_for_you": "Details we filled in for you"
   },
   "studio_not_found": {
     "title": "Studio not found",
@@ -2733,7 +2734,9 @@
       "dismiss": "Dismiss",
       "save": "Save",
       "saved": "Saved.",
-      "error": "Could not save. Please try again."
+      "error": "Could not save. Please try again.",
+      "health_label": "Clients sign a health declaration",
+      "health_hint": "Before they start, clients (or a parent, for children) fill in a short health form. Usual for dance, fitness, yoga, swimming and martial arts."
     },
     "lead_digest": {
       "title": "Daily follow-up email",

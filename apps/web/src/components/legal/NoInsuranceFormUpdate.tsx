@@ -63,7 +63,7 @@ export function NoInsuranceFormUpdate() {
     );
   }
   if (!tenant || !legal || legal.tenantId !== tenant.id) return null;
-  if (!hasHealthDeclarations(legal.vertical) || insuranceStatus(legal.profile) !== 'none' || forms.length === 0) return null;
+  if (!hasHealthDeclarations(legal.vertical, legal.healthDeclarations) || insuranceStatus(legal.profile) !== 'none' || forms.length === 0) return null;
 
   return (
     <div className="space-y-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">

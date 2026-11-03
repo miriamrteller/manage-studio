@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { supabase } from '@/lib/supabase';
 import { useTenant } from '@/hooks/useTenant';
 import { safeVertical, type VerticalId } from '@shared/config/tenant-presets';
+import { studioFormsScope } from '@shared/legal/field-defaults';
+import type { SignedAddon } from '@shared/legal/signed-template';
 import type { LegalDocId } from './fields';
 import { prepareLegalMarkdown, type LegalLang, type LegalRenderContext, type PreparedLegalDoc } from './render';
 import { loadLegalTemplate } from './templates';
@@ -57,6 +59,12 @@ export interface TenantLegalProfile {
   packAckDrafts: string[];
   /** tenants.teaches_classes: enrolment terms and class fields only when true (unknown = true). */
   teachesClasses?: boolean;
+  /** Clients sign a health declaration: the studio's setting, or its field's default. */
+  healthDeclarations?: boolean;
+  /** tenants.health_declaration as stored (null: from the field). */
+  healthDeclarationSetting?: boolean | null;
+  /** The add-on the studio's agreement carries, from its field. */
+  legalAddon?: SignedAddon | null;
 }
 
 /** Studio documents a new studio keeps unpublished until its admin acknowledges the legal pack. */
@@ -97,7 +105,24 @@ export async function fetchTenantLegalProfile(tenantId: string): Promise<TenantL
     packAckDrafts: Array.isArray(row.legal_pack_ack_drafts) ? (row.legal_pack_ack_drafts as string[]) : [],
     // Older databases (before the column was returned): a studio teaches classes.
     teachesClasses: row.teaches_classes !== false,
+    ...legalScopeFromRow(row),
   };
+}
+
+/** The studio's health-declaration setting and add-on, from the RPC row (older databases: from the skin). */
+function legalScopeFromRow(row: Record<string, unknown>) {
+  const setting = typeof row.health_declaration === 'boolean' ? row.health_declaration : null;
+  const scope = studioFormsScope(
+    {
+      id: typeof row.skin === 'string' ? row.skin : null,
+      nameEn: typeof row.skin_name_en === 'string' ? row.skin_name_en : null,
+      nameHe: typeof row.skin_name_he === 'string' ? row.skin_name_he : null,
+      healthDeclaration: typeof row.skin_health_declaration === 'boolean' ? row.skin_health_declaration : null,
+      legalAddon: typeof row.skin_legal_addon === 'string' ? row.skin_legal_addon : null,
+    },
+    setting,
+  );
+  return { healthDeclarations: scope.healthDeclarations, healthDeclarationSetting: setting, legalAddon: scope.legalAddon };
 }
 
 export function useTenantLegalProfile(): { data: TenantLegalProfile | null; isLoading: boolean } {
@@ -131,6 +156,7 @@ export function studioRenderContext(legal: TenantLegalProfile, doc: LegalDocId, 
     profile: legal.profile,
     updatedAt: legal.updatedAt,
     teachesClasses: legal.teachesClasses !== false,
+    healthDeclarations: legal.healthDeclarations,
   };
 }
 
@@ -143,7 +169,10 @@ export function useLegalDocument(doc: LegalDocId | null, langOverride?: LegalLan
   const needsProfile = !!tenant && !platformDoc;
 
   const query = useQuery({
-    queryKey: ['legal-doc', doc, lang, platformDoc ? 'platform' : legal?.tenantId, legal?.updatedAt, legal?.teachesClasses],
+    queryKey: [
+      'legal-doc', doc, lang, platformDoc ? 'platform' : legal?.tenantId, legal?.updatedAt, legal?.teachesClasses,
+      legal?.healthDeclarations,
+    ],
     enabled: !!doc && (!needsProfile || !!legal),
     staleTime: 5 * 60 * 1000,
     queryFn: async (): Promise<PreparedLegalDoc> => {
@@ -157,6 +186,7 @@ export function useLegalDocument(doc: LegalDocId | null, langOverride?: LegalLan
         profile: platformDoc || !legal ? {} : legal.profile,
         updatedAt: platformDoc || !legal ? null : legal.updatedAt,
         teachesClasses: platformDoc || !legal ? true : legal.teachesClasses !== false,
+        healthDeclarations: platformDoc || !legal ? undefined : legal.healthDeclarations,
       });
     },
   });

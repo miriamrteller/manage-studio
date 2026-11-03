@@ -21,6 +21,7 @@ import {
   INITIAL_FORM,
   suggestSubdomain,
   monthlyFeesForFlow,
+  healthDeclarationFor,
   profileDefaultsFor,
   toSetupRequest,
   type StudioSetupForm,
@@ -130,7 +131,8 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
     const skin = liveSkins?.find((s) => s.id === vertical) ?? null;
     const defaults = profileDefaultsFor(vertical, skin);
     const monthlyFees = monthlyFeesForFlow(defaults.paymentFlow);
-    setForm((prev) => ({ ...prev, vertical, ...defaults, monthlyFees }));
+    const healthDeclaration = healthDeclarationFor(vertical, skin);
+    setForm((prev) => ({ ...prev, vertical, ...defaults, healthDeclaration, monthlyFees }));
     if (monthlyFees && (form.paymentProvider === 'ypay' || form.paymentProvider === 'invoice4u')) {
       choosePayment('grow');
     }
@@ -479,6 +481,24 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
                 </div>
               ))}
             </fieldset>
+            {/* Fully inferable from the field: shown filled in, and editable. */}
+            <details className="rounded-md border border-border p-3 text-sm">
+              <summary className="cursor-pointer font-medium">{t('studio_setup.filled_for_you')}</summary>
+              <div className="mt-2">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={form.healthDeclaration}
+                    onChange={(e) => update('healthDeclaration', e.target.checked)}
+                    aria-describedby="ss-health-hint"
+                  />
+                  <span>{t('settings.business.health_label')}</span>
+                </label>
+                <p id="ss-health-hint" className="ms-6 text-xs text-muted-foreground">
+                  {t('settings.business.health_hint')}
+                </p>
+              </div>
+            </details>
           </div>
         </fieldset>
       )}

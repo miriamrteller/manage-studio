@@ -98,6 +98,7 @@ function serviceDeps(service: ServiceClient): ProvisionStudioDeps {
           teaches_classes: profile.teachesClasses,
           family_accounts: profile.familyAccounts,
           client_booking: profile.clientBooking,
+          ...(profile.healthDeclaration === undefined ? {} : { health_declaration: profile.healthDeclaration }),
         })
         .eq("id", tenantId);
       if (error) throw new Error(error.message);
@@ -131,7 +132,18 @@ function seedDeps(service: ServiceClient): SeedDeps {
   };
 }
 
-const SEED_TENANT_COLUMNS = "id, name, skin, language_default, contact_email, legal_profile";
+const SEED_TENANT_COLUMNS = "id, name, skin, language_default, contact_email, legal_profile, health_declaration";
+
+/** Adds the studio's skin row (its health-declaration default and legal add-on). Best effort: none found, the skin's built-in rules apply. */
+async function withSkinRow(service: ServiceClient, tenant: SeedTenant): Promise<SeedTenant> {
+  if (!tenant.skin) return tenant;
+  const { data } = await service
+    .from("verticals")
+    .select("name_en, name_he, default_switches, legal_addon")
+    .eq("id", tenant.skin)
+    .maybeSingle();
+  return { ...tenant, skin_row: (data as SeedTenant["skin_row"]) ?? null };
+}
 
 /**
  * Every new studio gets the form its clients sign, right away. Best effort: a
@@ -143,7 +155,7 @@ async function seedNewStudio(service: ServiceClient, tenantId: string): Promise<
   try {
     const { data } = await service.from("tenants").select(SEED_TENANT_COLUMNS).eq("id", tenantId).maybeSingle();
     if (!data) return false;
-    await seedSignedTemplate(seedDeps(service), data as SeedTenant);
+    await seedSignedTemplate(seedDeps(service), await withSkinRow(service, data as SeedTenant));
     return true;
   } catch (err) {
     console.error("provision-studio: seeding the signed template failed:", err);
@@ -200,6 +212,7 @@ function selfServeDeps(service: ServiceClient, req: Request): SelfServeDeps {
           teaches_classes: profile.teachesClasses,
           family_accounts: profile.familyAccounts,
           client_booking: profile.clientBooking,
+          ...(profile.healthDeclaration === undefined ? {} : { health_declaration: profile.healthDeclaration }),
         })
         .eq("id", tenantId);
       if (error) throw new Error(error.message);
@@ -261,7 +274,7 @@ Deno.serve(withMonitoring("provision-studio", async (req) => {
     if (error) return jsonResponse({ error: error.message }, 500);
     let seeded = 0;
     for (const t of tenants ?? []) {
-      seeded += await seedSignedTemplate(seedDeps(service), t as SeedTenant, { fillMissing });
+      seeded += await seedSignedTemplate(seedDeps(service), await withSkinRow(service, t as SeedTenant), { fillMissing });
     }
     return jsonResponse({ seeded, checked: (tenants ?? []).length });
   }

@@ -32,38 +32,59 @@ const HEALTH_FORMS = [
         title: { en: 'Health declaration (adults)', he: 'הצהרת בריאות (מבוגרים)' },
     },
 ];
-/**
- * The forms each studio type (tenants.skin) gets. Class studios with both ages
- * get both health declarations; service businesses the base agreement plus
- * their skin's add-on; a general studio the base agreement only.
- */
-export const SIGNED_FORMS_BY_SKIN = {
-    'dance-studio': HEALTH_FORMS,
-    photographer: [
-        {
-            key: 'agreement',
-            doc: 'service-agreement',
-            addon: 'addon-photographer',
-            title: { en: 'Photography services agreement', he: 'הסכם שירותי צילום' },
-        },
-    ],
-    beautician: [
-        {
-            key: 'agreement',
-            doc: 'service-agreement',
-            addon: 'addon-beautician',
-            title: { en: 'Treatment services agreement', he: 'הסכם שירותי טיפול' },
-        },
-    ],
-    generic: [{ key: 'agreement', doc: 'service-agreement', title: { en: 'Service agreement', he: 'הסכם שירות' } }],
+/** The add-on documents a studio's agreement can carry (verticals.legal_addon). */
+export const ADDON_DOCS = {
+    photographer: 'addon-photographer',
+    beautician: 'addon-beautician',
+    coaching: 'addon-coaching',
 };
-/** The forms a studio type signs (unknown types: the general studio's). */
-export function signedFormsForVertical(vertical) {
-    return SIGNED_FORMS_BY_SKIN[vertical ?? ''] ?? SIGNED_FORMS_BY_SKIN.generic;
+export function isSignedAddon(value) {
+    return typeof value === 'string' && value in ADDON_DOCS;
 }
-/** Studios whose clients sign a health declaration: the only ones asked about insurance. */
-export function hasHealthDeclarations(vertical) {
-    return signedFormsForVertical(vertical).some((f) => f.doc.startsWith('health-declaration'));
+/** What each add-on's agreement is called. */
+const AGREEMENT_TITLES = {
+    photographer: { en: 'Photography services agreement', he: 'הסכם שירותי צילום' },
+    beautician: { en: 'Treatment services agreement', he: 'הסכם שירותי טיפול' },
+    coaching: { en: 'Sessions agreement', he: 'הסכם פגישות' },
+    none: { en: 'Service agreement', he: 'הסכם שירות' },
+};
+/** The add-on each built-in skin has always had (a skin row's legal_addon says the same). */
+const BUILT_IN_ADDONS = { photographer: 'photographer', beautician: 'beautician' };
+/** Today's rule, by skin: only dance studios' clients sign a health declaration. */
+export function defaultHealthDeclarations(vertical) {
+    return vertical === 'dance-studio';
+}
+/**
+ * The forms a studio's clients sign. A health declaration (both ages) when the
+ * studio's clients sign one ("Clients sign a health declaration"; dance studios
+ * by default). Every studio but a dance studio also has the service agreement,
+ * with its field's add-on (photography, treatments, coaching), if any.
+ */
+export function signedFormsFor(vertical, scope = {}) {
+    const forms = [];
+    if (scope.healthDeclarations ?? defaultHealthDeclarations(vertical))
+        forms.push(...HEALTH_FORMS);
+    if (vertical !== 'dance-studio') {
+        const addon = scope.legalAddon === undefined ? BUILT_IN_ADDONS[vertical ?? ''] ?? null : scope.legalAddon;
+        forms.push({
+            key: 'agreement',
+            doc: 'service-agreement',
+            ...(addon ? { addon: ADDON_DOCS[addon] } : {}),
+            title: AGREEMENT_TITLES[addon ?? 'none'],
+        });
+    }
+    return forms;
+}
+/** The forms a studio type signs by default (unknown types: the general studio's). */
+export function signedFormsForVertical(vertical) {
+    return signedFormsFor(vertical);
+}
+/**
+ * Whether the studio's clients sign a health declaration: the studio's setting,
+ * or, when it has none, its field's default. Only those studios are asked about insurance.
+ */
+export function hasHealthDeclarations(vertical, setting) {
+    return setting ?? defaultHealthDeclarations(vertical);
 }
 /**
  * The studio's insurance answer. Optional and never blocking: anything but an
@@ -77,6 +98,7 @@ export function insuranceStatus(profile) {
 const SERVICE_TYPE = {
     photographer: { en: 'photography', he: 'צילום' },
     beautician: { en: 'beauty treatment', he: 'טיפול יופי' },
+    coaching: { en: 'coaching or tutoring', he: 'אימון או הוראה' },
 };
 /** A blank the signer or the studio fills in. */
 const BLANK = '______';
@@ -114,6 +136,15 @@ const DEFAULTS = {
     // Beauty add-on
     'orally / in writing / in the app': 'orally or in writing',
     'בעל פה / בכתב / באפליקציה': 'בעל פה או בכתב',
+    // Coaching add-on
+    'in full in advance / in N instalments': 'in full in advance',
+    'מראש במלואה / ב-N תשלומים': 'מראש במלואה',
+    'in the app / by message': 'in the app or by message',
+    'באפליקציה / בהודעה': 'באפליקציה או בהודעה',
+    'unless both agree': 'unless both agree',
+    'אלא אם שני הצדדים מסכימים': 'אלא אם שני הצדדים מסכימים',
+    'is present / may be present': 'may be present',
+    'נוכח/ת / רשאי/ת להיות נוכח/ת': 'רשאי/ת להיות נוכח/ת',
 };
 /** Placeholders whose text is the default ("or a free re-shoot, where possible"). */
 const KEEP_INNER = /^(or |או |treatments that require it|טיפולים שמחייבים זאת)/;
@@ -121,9 +152,15 @@ const KEEP_INNER = /^(or |או |treatments that require it|טיפולים שמח
 const BY_PREFIX = [
     [/^(PRICES|מחירים) —/, { en: 'as agreed in the quote', he: 'כפי שסוכם בהצעת המחיר' }],
     [/^(list|רשימה): /, { en: '', he: '' }],
+    // Coaching add-on: where sessions happen.
+    [/^(in person at |פנים אל פנים ב-)/, { en: 'in person or online by video', he: 'פנים אל פנים או מקוון בווידאו' }],
 ];
+/** Optional alternatives that are dropped (the clause reads complete without them). */
+const DROP_PREFIX = /^(\/ is charged at |\/ מחויבת ב-)/;
 /** The photography add-on's [[NUMBER]]s after the business number: delivery days, gallery months, archive months. */
 const NUMBER_DEFAULTS = ['30', '6', '12'];
+/** The coaching add-on's: session minutes, sessions in a package, months it is valid, extension months. */
+const NUMBER_DEFAULTS_BY_ADDON = { coaching: ['60', '10', '6', '3'] };
 function businessKind(status, lang) {
     const he = lang === 'he';
     switch (status) {
@@ -163,9 +200,9 @@ export function markdownToPlainText(md) {
 export function signedTemplateSource(doc, lang) {
     return SIGNED_TEMPLATE_SOURCES[doc][lang];
 }
-/** The forms for a studio's type, filled: what provisioning stores as its active consent templates. */
-export function studioSignedForms(vertical, ctx) {
-    return signedFormsForVertical(vertical).map((form) => ({
+/** The forms for a studio, filled: what provisioning stores as its active consent templates. */
+export function studioSignedForms(vertical, ctx, scope = {}) {
+    return signedFormsFor(vertical, scope).map((form) => ({
         key: form.key,
         name: form.title[ctx.lang],
         audience: form.audience ?? null,
@@ -177,7 +214,8 @@ export function prepareSignedForm(form, ctx) {
     const parts = [stripDraftingFrame(signedTemplateSource(form.doc, ctx.lang))];
     if (form.addon)
         parts.push(stripDraftingFrame(signedTemplateSource(form.addon, ctx.lang)));
-    return fillSignedText(parts.join('\n\n'), ctx);
+    const addon = Object.keys(ADDON_DOCS).find((k) => ADDON_DOCS[k] === form.addon) ?? null;
+    return fillSignedText(parts.join('\n\n'), { ...ctx, addon });
 }
 /**
  * "We don't have insurance" (legal_profile.insurance_status other than 'insured'): the
@@ -201,7 +239,8 @@ export function fillSignedText(markdown, ctx) {
     const status = p.business_status;
     const legalName = value(p.legal_name) || ctx.tenantName;
     const email = value(p.email) || ctx.contactEmail;
-    const serviceType = SERVICE_TYPE[ctx.vertical ?? '']?.[ctx.lang] ?? (ctx.lang === 'he' ? 'השירות' : 'the service');
+    const serviceType = SERVICE_TYPE[ctx.addon ?? ctx.vertical ?? '']?.[ctx.lang] ?? (ctx.lang === 'he' ? 'השירות' : 'the service');
+    const numberDefaults = (ctx.addon && NUMBER_DEFAULTS_BY_ADDON[ctx.addon]) || NUMBER_DEFAULTS;
     const retention = value(p.health_retention_years);
     // Neutral for any business status: VAT and tax documents are the invoicing provider's job.
     const vat = ctx.lang === 'he'
@@ -258,6 +297,12 @@ export function fillSignedText(markdown, ctx) {
             return serviceType;
         if (DEFAULTS[inner] !== undefined)
             return DEFAULTS[inner];
+        if (DROP_PREFIX.test(inner))
+            return '';
+        // The package extension: kept, as an option (the add-on's drafting note recommends it).
+        if (/^\/ (may be extended once by|ניתן להאריך פעם אחת ב-)/.test(inner)) {
+            return ctx.lang === 'he' ? `או ש${inner.slice(2)}` : `or ${inner.slice(2)}`;
+        }
         for (const [re, out] of BY_PREFIX) {
             if (re.test(inner))
                 return out[ctx.lang] || inner.replace(re, '').replace(/,? (and so on|וכד')$/, '');
@@ -269,7 +314,7 @@ export function fillSignedText(markdown, ctx) {
                 firstNumber = false;
                 return value(p.business_number) || BLANK;
             }
-            return NUMBER_DEFAULTS[numberIndex++] ?? BLANK;
+            return numberDefaults[numberIndex++] ?? BLANK;
         }
         // Plain numbers and periods ("14", "6 months", "48") are already the default.
         if (/^[\d–-]+( days| months| יום| חודשים)?$/.test(inner))

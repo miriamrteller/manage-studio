@@ -106,7 +106,7 @@ export function LegalPackPanel({ tenantId, mode, detailsHref, offerUploads }: Le
   const acknowledgedAt = legal?.packAcknowledgedAt ?? null;
   const lang = i18n.language?.startsWith('he') ? 'he' : 'en';
   // Confirming publishes the documents, so the details they are filled from must be there first.
-  const missing = legal ? missingLegalDetails(legal.vertical, profile, 'confirm', null, legal.teachesClasses !== false) : [];
+  const missing = legal ? missingLegalDetails(legal.vertical, profile, 'confirm', null, { teachesClasses: legal.teachesClasses !== false, healthDeclarations: legal.healthDeclarations }) : [];
   const doc = t(`legal.pack.doc.${signedDocNoun(legal?.vertical)}`);
   const dateFormat = new Intl.DateTimeFormat(i18n.language?.startsWith('he') ? 'he-IL' : 'en-GB', {
     dateStyle: 'medium',
@@ -139,7 +139,7 @@ export function LegalPackPanel({ tenantId, mode, detailsHref, offerUploads }: Le
       ) : (
         mode === 'acknowledge' && (
           <div className="space-y-3">
-            {hasHealthDeclarations(legal?.vertical) && insuranceStatus(profile) === 'none' && (
+            {hasHealthDeclarations(legal?.vertical, legal?.healthDeclarations) && insuranceStatus(profile) === 'none' && (
               <p className="text-sm text-amber-800" role="note">
                 {t('legal.pack.no_insurance_reminder')}
               </p>

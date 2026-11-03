@@ -5,6 +5,7 @@ export declare const SIGNED_TEMPLATE_FILES: {
     readonly "service-agreement": "07c-service-agreement";
     readonly "addon-photographer": "07c-addon-photographer";
     readonly "addon-beautician": "07c-addon-beautician";
+    readonly "addon-coaching": "07c-addon-coaching";
 };
 export declare const SIGNED_TEMPLATE_SOURCES: Record<keyof typeof SIGNED_TEMPLATE_FILES, Record<'en' | 'he', string>>;
 //# sourceMappingURL=signed-template-sources.d.ts.map
