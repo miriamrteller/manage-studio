@@ -138,3 +138,25 @@ BEGIN
   IF bad IS NOT NULL THEN RAISE EXCEPTION 'FAIL money functions read features: %', bad; END IF;
   RAISE NOTICE 'ok  no billing/payment function reads features';
 END $$;
+
+-- The columns change only through the setter: a direct UPDATE as a signed-in admin is refused,
+-- other tenant columns still update, and the setter itself still works.
+DO $$
+DECLARE
+  photo UUID := 'a0000000-0000-4000-8000-000000000001';
+  admin UUID := 'b0000000-0000-4000-8000-00000000000e';
+BEGIN
+  PERFORM set_config('request.jwt.claim.sub', admin::text, false);
+  SET LOCAL ROLE authenticated;
+  BEGIN
+    UPDATE tenants SET teaches_classes = true WHERE id = photo;
+    RAISE EXCEPTION 'FAIL a direct update of the profile was accepted';
+  EXCEPTION WHEN insufficient_privilege THEN
+    IF SQLERRM <> 'business_profile_use_setter' THEN RAISE; END IF;
+  END;
+  UPDATE tenants SET name = name WHERE id = photo;   -- other columns unaffected
+  PERFORM set_business_profile(photo, NULL, true, NULL, NULL);
+  IF NOT (SELECT teaches_classes FROM tenants WHERE id = photo) THEN RAISE EXCEPTION 'FAIL setter blocked by the guard'; END IF;
+  RESET ROLE;
+  RAISE NOTICE 'ok  direct profile updates are refused; the setter and other columns still work';
+END $$;
