@@ -3881,6 +3881,8 @@ export type Database = {
                     signed_by_email: string | null;
                     signed_by_name: string;
                     signed_by_role: string;
+                    signer_details: Json | null;
+                    signer_id_masked: string | null;
                     status: string;
                     tenant_id: string;
                     user_agent: string | null;
@@ -3910,6 +3912,8 @@ export type Database = {
                     signed_by_email?: string | null;
                     signed_by_name: string;
                     signed_by_role?: string;
+                    signer_details?: Json | null;
+                    signer_id_masked?: string | null;
                     status?: string;
                     tenant_id: string;
                     user_agent?: string | null;
@@ -3939,6 +3943,8 @@ export type Database = {
                     signed_by_email?: string | null;
                     signed_by_name?: string;
                     signed_by_role?: string;
+                    signer_details?: Json | null;
+                    signer_id_masked?: string | null;
                     status?: string;
                     tenant_id?: string;
                     user_agent?: string | null;
@@ -4445,6 +4451,10 @@ export type Database = {
                 Args: never;
                 Returns: string[];
             };
+            get_my_last_signer_details: {
+                Args: never;
+                Returns: Json;
+            };
             get_my_person_id: {
                 Args: never;
                 Returns: string;
@@ -4576,6 +4586,12 @@ export type Database = {
                     starts_at: string;
                     title: string;
                 }[];
+            };
+            get_signed_record_details: {
+                Args: {
+                    p_evidence_id: string;
+                };
+                Returns: Json;
             };
             get_supabase_functions_url: {
                 Args: never;
@@ -4837,6 +4853,12 @@ export type Database = {
             };
             is_super_admin: {
                 Args: never;
+                Returns: boolean;
+            };
+            is_valid_israeli_id: {
+                Args: {
+                    p_id: string;
+                };
                 Returns: boolean;
             };
             job_insert: {
@@ -5383,6 +5405,7 @@ export type Database = {
                     p_signed_by_email: string;
                     p_signed_by_name: string;
                     p_signed_by_role: string;
+                    p_signer_details?: Json;
                     p_tenant_id: string;
                     p_user_agent: string;
                     p_viewed_at: string;

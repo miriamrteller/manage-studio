@@ -9,6 +9,14 @@ import { supabase } from '@/lib/supabase';
 import { useTenant } from '@/hooks/useTenant';
 import { invalidateWaiverStatus } from '../hooks/useWaiverStatus';
 import type { WaiverSigningConsentTemplate } from '@shared/schemas';
+import { validateSignerDetails, type SignerDetailsErrors } from '@shared/signerDetails';
+import {
+  buildSignerInput,
+  EMPTY_SIGNER_DRAFT,
+  firstErrorFieldId,
+  SignerDetailsForm,
+  type SignerDraft,
+} from './SignerDetailsForm';
 
 interface WaiverStepProps {
   personId: string;
@@ -41,6 +49,8 @@ interface WaiverStepProps {
   tenantIdForInvalidation?: string;
   /** Photographer job contract: show the separate, optional portfolio opt-in. */
   isJobContract?: boolean;
+  /** The student's date of birth on file (YYYY-MM-DD), to pre-fill the child block. */
+  studentDateOfBirth?: string | null;
 }
 
 /** "Health declaration (child)v1" -> "Health declaration": parents do not need the internal variant or version. */
@@ -77,6 +87,7 @@ function WaiverStepInner({
   signerIsTheStudent,
   invalidateTenantId,
   isJobContract,
+  studentDateOfBirth,
 }: WaiverStepProps & { invalidateTenantId?: string }) {
   const { t, i18n } = useTranslation();
   const appLanguage = i18n.language?.startsWith('he') ? 'he' : 'en';
@@ -97,6 +108,47 @@ function WaiverStepInner({
   const [typedName, setTypedName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [signerDraft, setSignerDraft] = useState<SignerDraft>({
+    ...EMPTY_SIGNER_DRAFT,
+    childName: studentName ?? '',
+    childDob: studentDateOfBirth ?? '',
+  });
+  const [signerErrors, setSignerErrors] = useState<SignerDetailsErrors>({});
+
+  // Pre-fill from the signer's last signed form (signed-in users only; a guest link has no session).
+  // Nothing typed is overwritten. The RPC returns the caller's own record only.
+  useEffect(() => {
+    if (waiverToken) return;
+    let cancelled = false;
+    void (async () => {
+      const { data } = await supabase.rpc('get_my_last_signer_details');
+      const last = data as {
+        id_type?: string;
+        id_number?: string;
+        passport_country?: string;
+        phone?: string;
+        address?: string;
+        full_name?: string;
+      } | null;
+      if (cancelled || !last || typeof last !== 'object') return;
+      setSignerDraft((d) =>
+        d.idNumber || d.phone || d.address
+          ? d
+          : {
+              ...d,
+              idType: last.id_type === 'passport' ? 'passport' : 'israeli_id',
+              idNumber: last.id_number ?? '',
+              passportCountry: last.passport_country ?? '',
+              phone: last.phone ?? '',
+              address: last.address ?? '',
+            },
+      );
+      setTypedName((n) => n || last.full_name || '');
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [waiverToken]);
 
   // IntersectionObserver: fires once when the bottom sentinel scrolls into view.
   // This triggers the server-side "viewed" event and issues a signed view_token.
@@ -147,6 +199,7 @@ function WaiverStepInner({
             });
           }
           if (body.error === 'studio_legal_not_ready') return t('legal.pack.signing_not_ready');
+          if (body.error === 'signer_details_invalid') return t('enrolment.signer.error.server');
           if (body.error) return body.error;
         }
       } catch {
@@ -161,6 +214,19 @@ function WaiverStepInner({
 
   async function handleSubmit() {
     if (!viewTokenRef.current || !affirmed || typedName.trim().length < 2) return;
+
+    // Check the signer details here first (the server and database repeat the same rules).
+    const confirmedWording = t('enrolment.signer.confirm');
+    const signerInput = buildSignerInput(signerDraft, typedName.trim(), confirmedWording, Boolean(isMinorStudent));
+    const checked = validateSignerDetails(signerInput, { requireChild: Boolean(isMinorStudent) });
+    if (!checked.ok) {
+      setSignerErrors(checked.errors);
+      const focusId = firstErrorFieldId(checked.errors);
+      if (focusId) document.getElementById(focusId)?.focus();
+      return;
+    }
+    setSignerErrors({});
+
     setIsSubmitting(true);
     setSubmitError(null);
 
@@ -177,6 +243,7 @@ function WaiverStepInner({
         // account_members.id for guardian waivers (not accountId / accounts.id)
         account_member_id: accountMemberId,
         guardian_confirmed: guardianConfirmed,
+        signer_details: signerInput,
         ...(engagementId ? { engagement_id: engagementId } : {}),
         ...(isJobContract
           ? {
@@ -210,6 +277,7 @@ function WaiverStepInner({
     affirmed &&
     typedName.trim().length >= 2 &&
     (!isMinorStudent || guardianConfirmed) &&
+    signerDraft.confirmed &&
     !isSubmitting;
 
   // Plan 4: hard block when a minor's own account attempts self-signing
@@ -357,6 +425,13 @@ function WaiverStepInner({
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
+
+          <SignerDetailsForm
+            draft={signerDraft}
+            onChange={setSignerDraft}
+            errors={signerErrors}
+            showChild={Boolean(isMinorStudent)}
+          />
         </div>
       )}
 

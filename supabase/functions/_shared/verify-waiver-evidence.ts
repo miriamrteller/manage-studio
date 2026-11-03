@@ -12,10 +12,11 @@
  * WAIVER_HMAC_CURRENT_VERSION moves to 2. It is also why an old key can never be
  * deleted.
  *
- * The canonical form must match accept-waiver byte for byte — same 15 fields,
+ * The canonical form must match accept-waiver byte for byte — same 15 fields (plus signer_details when the record has it),
  * same alphabetical ordering, same JSON.stringify. Any drift makes every record
  * appear tampered with, so the field list is asserted rather than assumed.
  */
+import { canonicalJson } from "./email-dist/signerDetails.js";
 import { getHmacKey, hmacSha256Hex, timingSafeEqual } from "./edge-runtime/hmac.ts";
 
 /** The 15 canonical fields, alphabetically — mirrors accept-waiver/index.ts. */
@@ -37,9 +38,15 @@ export const CANONICAL_FIELDS = [
   "user_agent",
 ] as const;
 
+/**
+ * Sealed only on records signed with signer details; legacy records have it NULL and verify over
+ * the 15 fields above, unchanged. Not readable by anon/authenticated: verify with the service role.
+ */
+export const OPTIONAL_CANONICAL_FIELDS = ["signer_details"] as const;
+
 /** Columns a caller must select to verify a record. */
 export const WAIVER_EVIDENCE_VERIFY_COLUMNS =
-  `id, record_hmac, hmac_key_version, ${CANONICAL_FIELDS.join(", ")}`;
+  `id, record_hmac, hmac_key_version, ${[...CANONICAL_FIELDS, ...OPTIONAL_CANONICAL_FIELDS].join(", ")}`;
 
 export type WaiverEvidenceRow = Record<string, unknown> & {
   id: string;
@@ -66,6 +73,10 @@ function canonicalise(row: WaiverEvidenceRow): string {
     }
     return [field, value] as [string, unknown];
   });
+  // signer_details is deep-sorted: Postgres hands jsonb keys back in its own order.
+  if (row.signer_details != null) {
+    entries.push(["signer_details", JSON.parse(canonicalJson(row.signer_details))]);
+  }
   return JSON.stringify(
     Object.fromEntries(entries.sort(([a], [b]) => a.localeCompare(b))),
   );

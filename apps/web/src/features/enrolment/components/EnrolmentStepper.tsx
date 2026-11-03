@@ -702,6 +702,7 @@ export function EnrolmentStepper({
               offeringId={(enrolmentData.offering_id ?? initialClassId)!}
               accountMemberId={enrolmentContext.guardian?.accountMemberId}
               studentName={waiverFlow.waiverPersonDisplay?.name ?? undefined}
+              studentDateOfBirth={waiverFlow.waiverPersonDisplay?.date_of_birth ?? null}
               className={selectedClassName || undefined}
               termName={waiverFlow.waiverTermDisplay?.name}
               isMinorStudent={waiverFlow.isMinorStudent}

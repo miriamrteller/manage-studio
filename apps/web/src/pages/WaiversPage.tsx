@@ -8,6 +8,7 @@ import { useTenant } from '@/hooks/useTenant';
 import { TenantDB } from '@/lib/db';
 import type { ConsentTemplate } from '@shared/schemas';
 import type { WaiverEvidenceFilters } from '@/features/waivers/service';
+import { SignedDetailsDialog } from '@/features/waivers/components/SignedDetailsDialog';
 
 /** Compute SHA-256 hex of a string in the browser. */
 async function sha256Hex(text: string): Promise<string> {
@@ -229,6 +230,7 @@ function EvidenceSection() {
   });
 
   const { data, isLoading } = useWaiverEvidence(page, filters);
+  const [detailsFor, setDetailsFor] = useState<{ id: string; name: string } | null>(null);
 
   const hasFilters = !!(rawStudent || rawEmail || offeringId || seasonId);
 
@@ -342,9 +344,11 @@ function EvidenceSection() {
                 <th className="px-3 py-2 text-start font-medium">{t('pages.waivers.col_class')}</th>
                 <th className="px-3 py-2 text-start font-medium">{t('pages.waivers.col_signed_by')}</th>
                 <th className="px-3 py-2 text-start font-medium">{t('pages.waivers.col_email')}</th>
+                <th className="px-3 py-2 text-start font-medium">{t('pages.waivers.col_id')}</th>
                 <th className="px-3 py-2 text-start font-medium">{t('pages.waivers.col_role')}</th>
                 <th className="px-3 py-2 text-start font-medium">{t('pages.waivers.col_version')}</th>
                 <th className="px-3 py-2 text-start font-medium">{t('pages.waivers.col_signed_at')}</th>
+                <th className="px-3 py-2 text-start font-medium"><span className="sr-only">{t('pages.waivers.col_details')}</span></th>
               </tr>
             </thead>
             <tbody>
@@ -354,15 +358,34 @@ function EvidenceSection() {
                   <td className="px-3 py-2">{e.offerings?.name ?? '—'}</td>
                   <td className="px-3 py-2">{e.signed_by_name}</td>
                   <td className="px-3 py-2 text-xs text-muted-foreground">{e.signed_by_email}</td>
+                  <td className="px-3 py-2 font-mono text-xs" dir="ltr">{e.signer_id_masked ?? '—'}</td>
                   <td className="px-3 py-2">{e.signed_by_role}</td>
                   <td className="px-3 py-2">{e.consent_version}</td>
                   <td className="px-3 py-2 whitespace-nowrap">{new Date(e.signed_at).toLocaleString()}</td>
+                  <td className="px-3 py-2">
+                    {e.signer_id_masked && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setDetailsFor({ id: e.id, name: e.signed_by_name })}
+                        aria-label={t('pages.waivers.view_details_for', { name: e.signed_by_name })}
+                      >
+                        {t('pages.waivers.view_details')}
+                      </Button>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       )}
+
+      <SignedDetailsDialog
+        evidenceId={detailsFor?.id ?? null}
+        signerName={detailsFor?.name ?? ''}
+        onClose={() => setDetailsFor(null)}
+      />
 
       {data && data.total > 50 && (
         <div className="flex gap-2 items-center">
