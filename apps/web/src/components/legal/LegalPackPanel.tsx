@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { buildLegalPack } from '@/legal/legalPack';
 import { fetchTenantLegalProfile } from '@/legal/useLegalDocument';
+import { hasHealthDeclarations, insuranceStatus } from '@shared/legal/signed-template';
 import { legalFieldLabel, missingLegalDetails } from '@/legal/fields';
 import { autofilledKeys, useLegalAutofill, withLegalAutofill } from '@/legal/autofill';
 import { signedDocNoun } from '@/legal/packWording';
@@ -138,7 +139,7 @@ export function LegalPackPanel({ tenantId, mode, detailsHref, offerUploads }: Le
       ) : (
         mode === 'acknowledge' && (
           <div className="space-y-3">
-            {profile.insurance_status === 'none' && (
+            {hasHealthDeclarations(legal?.vertical) && insuranceStatus(profile) === 'none' && (
               <p className="text-sm text-amber-800" role="note">
                 {t('legal.pack.no_insurance_reminder')}
               </p>

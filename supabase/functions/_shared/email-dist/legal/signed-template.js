@@ -61,6 +61,18 @@ export const SIGNED_FORMS_BY_SKIN = {
 export function signedFormsForVertical(vertical) {
     return SIGNED_FORMS_BY_SKIN[vertical ?? ''] ?? SIGNED_FORMS_BY_SKIN.generic;
 }
+/** Studios whose clients sign a health declaration: the only ones asked about insurance. */
+export function hasHealthDeclarations(vertical) {
+    return signedFormsForVertical(vertical).some((f) => f.doc.startsWith('health-declaration'));
+}
+/**
+ * The studio's insurance answer. Optional and never blocking: anything but an
+ * explicit "We have insurance" counts as "We don't have insurance" (owner
+ * decision), so an unanswered choice is never treated as insured.
+ */
+export function insuranceStatus(profile) {
+    return profile?.insurance_status === 'insured' ? 'insured' : 'none';
+}
 /** What the service is called in the agreement, by studio type. */
 const SERVICE_TYPE = {
     photographer: { en: 'photography', he: 'צילום' },
@@ -168,7 +180,7 @@ export function prepareSignedForm(form, ctx) {
     return fillSignedText(parts.join('\n\n'), ctx);
 }
 /**
- * "We don't have insurance" (legal_profile.insurance_status = 'none'): the
+ * "We don't have insurance" (legal_profile.insurance_status other than 'insured'): the
  * health declaration's Declaration list tells the signer so, as part of the
  * text they sign (sealed with it). No extra step. Awaiting lawyer review.
  */
@@ -177,7 +189,7 @@ export const NO_INSURANCE_DECLARATION = {
     he: 'ידוע לי שלסטודיו אין כרגע ביטוח המכסה משתתפים, ושמומלץ לעשות ביטוח תאונות אישיות.',
 };
 function addInsuranceDisclosure(markdown, ctx) {
-    if (ctx.profile.insurance_status !== 'none')
+    if (insuranceStatus(ctx.profile) === 'insured')
         return markdown;
     return markdown.replace(/(## 2\. (?:Declaration|הצהרה)\n\n(?:- .*\n)+)/, (list) => `${list}- ${NO_INSURANCE_DECLARATION[ctx.lang]}\n`);
 }

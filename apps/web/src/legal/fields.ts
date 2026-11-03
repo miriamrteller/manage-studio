@@ -1,5 +1,6 @@
 import type { VerticalId } from '@shared/config/tenant-presets';
 import { personalIdentity } from '@shared/legal/personalIdentity';
+import { hasHealthDeclarations, insuranceStatus } from '@shared/legal/signed-template';
 
 /**
  * Studio legal fields: what a studio fills in once (Settings → Legal, or the
@@ -53,6 +54,10 @@ export const BUSINESS_STATUSES = ['not_registered', 'osek_patur', 'osek_murshe',
 export type BusinessStatus = (typeof BUSINESS_STATUSES)[number];
 
 const DANCE_AND_GENERIC: VerticalId[] = ['dance-studio', 'generic', 'beautician'];
+/** Studios that collect health declarations; only they see anything about insurance. */
+const HEALTH_VERTICALS: VerticalId[] = (['dance-studio', 'generic', 'beautician', 'photographer'] as VerticalId[]).filter(
+  (v) => hasHealthDeclarations(v),
+);
 
 export const LEGAL_FIELDS: LegalFieldDef[] = [
   // ---------------------------------------------------------------- identity
@@ -328,14 +333,16 @@ export const LEGAL_FIELDS: LegalFieldDef[] = [
     defaultValue: { en: '10', he: '10' },
     placeholders: { 'enrolment-terms': ['[[AGE]]', '[[גיל]]'] },
   },
-  // The studio says whether it is insured; "we don't have insurance" never
-  // blocks anything (owner decision): the terms and the health declaration
-  // then tell parents so (render.ts, shared signed-template).
+  // Insurance is optional and never blocks anything (owner decision). Only
+  // studios with health declarations see it; the choice starts at "We don't
+  // have insurance" (an unanswered choice counts the same), and the terms and
+  // the health declaration then tell parents so (render.ts, shared signed-template).
   {
     key: 'insurance_status',
     section: 'enrolment',
     kind: 'select',
-    verticals: DANCE_AND_GENERIC,
+    verticals: HEALTH_VERTICALS,
+    defaultValue: { en: 'none', he: 'none' },
     label: { en: 'Insurance', he: 'ביטוח' },
     options: [
       { value: 'insured', label: { en: 'We have insurance', he: 'יש לנו ביטוח' } },
@@ -347,9 +354,8 @@ export const LEGAL_FIELDS: LegalFieldDef[] = [
     key: 'insurance',
     section: 'enrolment',
     kind: 'text',
-    verticals: DANCE_AND_GENERIC,
-    required: true,
-    showWhen: (p) => p.insurance_status !== 'none',
+    verticals: HEALTH_VERTICALS,
+    showWhen: (p) => insuranceStatus(p) === 'insured',
     label: { en: 'Insurance (insurer and policy type)', he: 'ביטוח (מבטח וסוג הפוליסה)' },
     hint: { en: 'e.g. third-party liability insurance with …', he: 'למשל ביטוח אחריות כלפי צד שלישי ב…' },
     example: { en: "Third-party liability, Harel", he: "ביטוח צד ג', הראל" },

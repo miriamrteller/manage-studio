@@ -8,6 +8,7 @@ import { useTenantLegalProfile } from '@/legal/useLegalDocument';
 import { useWaiverTemplates } from '@/features/waivers/hooks/useWaiverTemplates';
 import { WaiverService } from '@/features/waivers/service';
 import { formsMissingNoInsuranceNote, withNoInsuranceNote } from '@/legal/noInsuranceForm';
+import { hasHealthDeclarations, insuranceStatus } from '@shared/legal/signed-template';
 
 async function sha256Hex(text: string): Promise<string> {
   const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
@@ -62,7 +63,7 @@ export function NoInsuranceFormUpdate() {
     );
   }
   if (!tenant || !legal || legal.tenantId !== tenant.id) return null;
-  if (legal.profile.insurance_status !== 'none' || forms.length === 0) return null;
+  if (!hasHealthDeclarations(legal.vertical) || insuranceStatus(legal.profile) !== 'none' || forms.length === 0) return null;
 
   return (
     <div className="space-y-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
