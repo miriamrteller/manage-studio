@@ -12,7 +12,7 @@
  */
 import { createRequire } from 'node:module';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -27,6 +27,14 @@ const { chromium } = createRequire(import.meta.url)('playwright');
 const OUT_PDF = path.join(here, 'OpalSwift-lawyer-pack.pdf');
 const OUT_DOCX = path.join(here, 'OpalSwift-lawyer-pack.docx');
 const work = path.join(process.env.LAWYER_PACK_WORK ?? tmpdir(), 'lawyer-pack-build');
+
+// Only ONE current pack may exist: remove every PDF/DOCX already in this
+// folder (older, renamed or versioned copies) and the previous work files
+// before building, so nothing stale can linger next to the new pack.
+for (const name of readdirSync(here)) {
+  if (/\.(pdf|docx)$/i.test(name)) rmSync(path.join(here, name));
+}
+rmSync(work, { recursive: true, force: true });
 mkdirSync(work, { recursive: true });
 
 const buildDate = new Date().toISOString().slice(0, 10);
