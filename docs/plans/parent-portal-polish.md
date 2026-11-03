@@ -407,6 +407,6 @@ pnpm -C apps/web test parent-portal-guardian.test.ts   # regression
 
 - Invoice download changes (payments table already has links)
 - Parent self-service withdrawal (Unenrol Phase 3) — [IMPLEMENTATION_STATUS.md](../IMPLEMENTATION_STATUS.md) §6.x #7
-- Notification blast composer — [notification-blast-composer.md](notification-blast-composer.md)
+- Notification blast composer — [notification-blast-composer.md](archive/notification-blast-composer.md)
 
 **Deferred follow-ups (documented in this plan):** Step 7 (`notify_*`), Step 8 (WhatsApp OTP verify).

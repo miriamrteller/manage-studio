@@ -133,7 +133,7 @@ describe('other roles', () => {
     auth.roles = ['account_holder'];
     renderMenu('dance', '/dashboard/portal');
     const labels = menuLabels();
-    expect(labels.slice(0, 3)).toEqual(['Classes', 'Book', 'My Account']);
+    expect(labels.slice(0, 4)).toEqual(['Home', 'Classes', 'Book', 'My Account']);
     expect(labels).not.toContain('Leads');
   });
 });

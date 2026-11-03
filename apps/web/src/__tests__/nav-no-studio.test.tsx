@@ -60,11 +60,12 @@ describe('menu without a studio', () => {
     expect(paths(sections)).toEqual(expect.arrayContaining(['/classes', '/login', '/signup']));
   });
 
-  it('"/" highlights Studios without a studio, Classes on a studio host', () => {
+  it('"/" highlights Studios without a studio, Home on a studio host', () => {
     const platformItems = navigationConfig.filter((i) => i.sectionKey === 'platform');
     expect(resolveActiveNavPath('/', platformItems)).toBe('/');
     const studioItems = navigationConfig.filter((i) => !i.withoutStudioOnly);
-    expect(resolveActiveNavPath('/', studioItems)).toBe('/classes');
+    expect(resolveActiveNavPath('/', studioItems)).toBe('/');
+    expect(resolveActiveNavPath('/classes', studioItems)).toBe('/classes');
   });
 
   it('labels in English and Hebrew', async () => {

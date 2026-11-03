@@ -81,7 +81,7 @@ Produce one authoritative, linearly ordered migration chain that:
 
 1. This document end-to-end.
 2. `SPEC.md` §4.2.0 + squash notes (2026-06-08, 06-24, 07-05).
-3. `docs/plans/v1-migration-squash-20260705.md` (pattern reference).
+3. `docs/plans/archive/v1-migration-squash-20260705.md` (pattern reference).
 4. Current `supabase/migrations/20260608000200` … `04200` + Jul `202607*` files.
 5. `supabase/reset_dev_db.sql`, `supabase/seed.sql`, `supabase/seed-finance.sql`.
 6. Payment merge decisions in chat (pgp, no bookings table, payments columns for Yesh/Tranzila).

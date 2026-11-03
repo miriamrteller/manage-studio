@@ -1,16 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
 import { StepSelectStudent } from './StepSelectStudent';
 import { StepClass } from './StepClass';
 import { StepNotification } from './StepNotification';
 import { StepAdminCheckout } from './StepAdminCheckout';
 import { StepCheckout } from './StepCheckout';
 import { StepConfirmation } from './StepConfirmation';
-import { WaiverStep } from './WaiverStep';
-import { WaiverSignedSummary } from './WaiverSignedSummary';
 import { GuestVerifyStep } from './GuestVerifyStep';
+import { EnrolmentStepHeader } from './stepper/EnrolmentStepHeader';
+import { PersonStepPanel } from './stepper/PersonStepPanel';
+import { WaiverStepPanel } from './stepper/WaiverStepPanel';
 import { useEnrolment } from '../hooks/useEnrolment';
 import { useEnrolmentContext } from '../hooks/useEnrolmentContext';
 import { useAccountStudents } from '../hooks/useAccountStudents';
@@ -20,24 +20,16 @@ import { useCheckoutPreparation, type UseCheckoutPreparationParams } from '../ho
 import { useWaiverFlowState } from '../hooks/useWaiverFlowState';
 import { useAdminCompletionState } from '../hooks/useAdminCompletionState';
 import { useAgeOverride } from '../hooks/useAgeOverride';
+import { useEnrolmentAgeReviewRequest } from '../hooks/useEnrolmentAgeReviewRequest';
+import { useEnrolmentPaymentSuccess } from '../hooks/useEnrolmentPaymentSuccess';
+import { useEnrolmentPersonCreation } from '../hooks/useEnrolmentPersonCreation';
 import { useTenant } from '@/hooks/useTenant';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
-import {
-  EnrolmentOnboardingService,
-  type NewAdultOnboardingInput,
-  type NewMinorOnboardingInput,
-} from '../onboardingService';
-import { EnrolmentIntakeService } from '../intakeService';
-import { EnrolmentService } from '../service';
 import { isOfferingEnrolled } from '../lib/enrolled-offerings';
+import { isUnder18 } from '../lib/isUnder18';
 import { usePersonExistingEnrolments } from '../hooks/usePersonExistingEnrolments';
-import { hasParentRole } from '@/lib/parentRoles';
 import { getSelectedClassAgeError } from '../lib/selectedClassAgeValidation';
-import { evaluateAgeEnrolment, type AgeEnrolmentActor } from '../lib/ageEnrolmentPolicy';
-import { formatAgeRange } from '../lib/check-requirements';
-import { mapAgeReviewRpcError } from '../lib/ageReviewService';
-import { notifyAdminsAgeReviewSubmitted } from '../lib/sendAgeReviewNotifications';
-import { AgeOverridePanel } from './AgeOverridePanel';
+import type { AgeEnrolmentActor } from '../lib/ageEnrolmentPolicy';
 import type { EnrollmentIntent } from '@/lib/enrollment-intent';
 import { clearEnrollmentIntent, persistEnrollmentIntent } from '@/lib/enrollment-intent';
 import type { Engagement } from '@shared/schemas';
@@ -81,8 +73,6 @@ export function EnrolmentStepper({
   const [personStepSkipped, setPersonStepSkipped] = useState(false);
   const [guestGuardianEmail, setGuestGuardianEmail] = useState<string | null>(null);
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
-  const [ageReviewSubmitting, setAgeReviewSubmitting] = useState(false);
-  const [ageReviewError, setAgeReviewError] = useState<string | null>(null);
 
   const { classAgeOverride, setClassAgeOverride, handleClassAgeOverrideChange } = useAgeOverride();
   const classPreselected = Boolean(initialClassId && initialTermId);
@@ -266,75 +256,20 @@ export function EnrolmentStepper({
     goToNextStep();
   };
 
-  const handleAgeReviewRequest = async (input: {
-    note: string;
-    personId: string;
-    studentName: string;
-  }) => {
-    if (!tenant || !initialClassId || !initialTermId) {
-      throw new Error(t('pages.enrolment.age_review_error_generic'));
-    }
-
-    setAgeReviewSubmitting(true);
-    setAgeReviewError(null);
-
-    try {
-      const classAges = enrolmentContext.constraints.ageBand
-        ? formatAgeRange(
-            enrolmentContext.constraints.ageBand.min_age,
-            enrolmentContext.constraints.ageBand.max_age,
-          )
-        : null;
-      const studentAge = personDateOfBirth
-        ? evaluateAgeEnrolment({
-            dateOfBirth: personDateOfBirth,
-            ageBand: enrolmentContext.constraints.ageBand,
-            seasonStartDate: enrolmentContext.constraints.seasonStartDate,
-            actor: enrolmentActor,
-          }).studentAge
-        : null;
-
-      const requestResult =
-        enrolmentContext.mode === 'guest'
-          ? await EnrolmentIntakeService.requestGuestAgeReview(tenant, {
-              studentPersonId: input.personId,
-              offeringId: initialClassId,
-              seasonId: initialTermId,
-              note: input.note,
-            })
-          : await EnrolmentIntakeService.requestAgeReview(tenant, {
-              personId: input.personId,
-              offeringId: initialClassId,
-              seasonId: initialTermId,
-              note: input.note,
-            });
-
-      setEnrolmentData((prev) => ({
-        ...prev,
-        person_id: input.personId,
-        offering_id: initialClassId,
-        season_id: initialTermId,
-        id: requestResult.engagementId,
-        status: 'admin_review',
-      }));
-      setReviewSubmitted(true);
-
-      await notifyAdminsAgeReviewSubmitted(tenant, {
-        engagementId: requestResult.engagementId,
-        studentName: input.studentName,
-        className: selectedClassName,
-        studentAge,
-        classAgeRange: classAges,
-        parentNote: input.note,
-      });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      setAgeReviewError(t(mapAgeReviewRpcError(message)));
-      throw err;
-    } finally {
-      setAgeReviewSubmitting(false);
-    }
-  };
+  const { handleAgeReviewRequest, ageReviewSubmitting, ageReviewError } =
+    useEnrolmentAgeReviewRequest({
+      tenant,
+      mode: enrolmentContext.mode,
+      constraints: enrolmentContext.constraints,
+      initialClassId,
+      initialTermId,
+      personDateOfBirth,
+      enrolmentActor,
+      selectedClassName,
+      setEnrolmentData,
+      setReviewSubmitted,
+      t,
+    });
 
   const handleClassNext = (
     newData?: Partial<Engagement>,
@@ -368,290 +303,86 @@ export function EnrolmentStepper({
     if (currentStep === 'confirmation') clearEnrollmentIntent();
   }, [currentStep]);
 
-  const handlePaymentSuccess = async () => {
-    if (!checkoutEnrolmentId || !tenant) return;
+  const handlePaymentSuccess = useEnrolmentPaymentSuccess({
+    tenant,
+    checkoutEnrolmentId,
+    setCurrentStep,
+    setEnrolmentData,
+    setCheckoutError,
+    t,
+  });
 
-    const poll = async (attempts = 10): Promise<Engagement | null> => {
-      const enrolment = await EnrolmentService.get(
-        {
-          id: tenant.id,
-          name: tenant.name,
-          subdomain: tenant.subdomain,
-          language: tenant.language_default ?? tenant.language,
-          country: tenant.country,
-          currency: tenant.currency,
-        },
-        checkoutEnrolmentId,
-      );
-      if (enrolment.status === 'active' || enrolment.status === 'pending_waiver') return enrolment;
-      if (attempts <= 0) return enrolment;
-      await new Promise((r) => setTimeout(r, 1500));
-      return poll(attempts - 1);
-    };
-
-    try {
-      const enrolment = await poll();
-      setCurrentStep('confirmation');
-      if (enrolment) {
-        setEnrolmentData(enrolment);
-      }
-      sessionStorage.setItem('portalEngagementId', checkoutEnrolmentId);
-    } catch (error) {
-      console.error('Failed to confirm enrolment after payment:', error);
-      setCheckoutError(t('enrolment.payment_confirm_pending'));
-    }
-  };
+  const personCreation = useEnrolmentPersonCreation({
+    tenant,
+    enrolmentContext,
+    enrolmentData,
+    handlePersonNext,
+    setGuestGuardianEmail,
+    t,
+  });
 
   return (
     <div className="w-full max-w-2xl mx-auto space-y-6">
-      <div className="border border-gray-200 rounded-lg p-6 bg-white">
-        <h2 className="text-xl font-semibold text-gray-900">{stepTitles[currentStep]}</h2>
-        <p className="text-sm text-gray-600 mt-2">
-          {currentStep === 'person' || currentStep === 'class'
-            ? // Whether a health declaration step follows is only known once the class is chosen,
-              // so the total is shown from then on and never changes.
-              t('enrolment.step_counter_open', { current: currentStepIndex + 1 })
-            : t('enrolment.step_counter', { current: currentStepIndex + 1, total: steps.length })}
-        </p>
-      </div>
-
-      <div className="flex gap-2">
-        {steps.map((step, index) => (
-          <div
-            key={step}
-            className="flex-1 h-1 rounded-full transition-colors"
-            style={{
-              backgroundColor:
-                index < currentStepIndex
-                  ? 'var(--color-success)'
-                  : index === currentStepIndex
-                    ? 'var(--color-info)'
-                    : 'var(--color-neutral-300)',
-            }}
-          />
-        ))}
-      </div>
+      <EnrolmentStepHeader
+        currentStep={currentStep}
+        currentStepIndex={currentStepIndex}
+        steps={steps}
+        stepTitles={stepTitles}
+      />
 
       <div className="border border-gray-200 rounded-lg p-6 bg-white">
         {currentStep === 'person' && (
-          <>
-            {enrolmentContext.isLoading && (
-              <p role="status">{t('common.loading')}</p>
-            )}
-            {enrolmentContext.error && (
-              <p role="alert" className="text-sm text-red-600">
-                {enrolmentContext.error.message}
-              </p>
-            )}
-            {!enrolmentContext.isLoading &&
-              classPreselected &&
-              enrolledKeysLoading && (
-                <p role="status">{t('common.loading')}</p>
-              )}
-            {!enrolmentContext.isLoading && classPreselected && preselectedAlreadyEnrolled && (
-              <div
-                className="rounded-md border border-green-300 bg-green-50 p-4 text-sm text-green-900 space-y-3"
-                role="status"
-              >
-                <p>
-                  {enrolmentContext.mode === 'admin'
-                    ? t('pages.enrolment.already_enrolled_preselected_admin')
-                    : t('pages.enrolment.already_enrolled_preselected')}
-                </p>
-                {user && hasParentRole(user.role) && enrolmentContext.mode !== 'admin' && (
-                  <Button type="button" variant="primary" onClick={() => navigate('/dashboard/portal')}>
-                    {t('pages.portal.view_enrolment')}
-                  </Button>
-                )}
-                {enrolmentContext.mode === 'admin' && (
-                  <Button type="button" variant="primary" onClick={() => navigate('/classes')}>
-                    {t('pages.enrol_complete.browse_classes')}
-                  </Button>
-                )}
-              </div>
-            )}
-            {!enrolmentContext.isLoading && reviewSubmitted && (
-              <div
-                className="rounded-md border border-green-300 bg-green-50 p-4 text-sm text-green-900 space-y-2"
-                role="status"
-              >
-                <p className="font-semibold">{t('pages.enrolment.age_review_submitted_title')}</p>
-                <p>{t('pages.enrolment.age_review_submitted_body')}</p>
-                <Button type="button" variant="outline" onClick={() => navigate('/classes')}>
-                  {t('pages.enrol_complete.browse_classes')}
-                </Button>
-              </div>
-            )}
-            {!enrolmentContext.isLoading && !reviewSubmitted && !enrolmentContext.canSkipPersonStep && (
-              <>
-                {personAgeError && (
-                  <div
-                    className="mb-4 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800 space-y-2"
-                    role="alert"
-                  >
-                    <p>{personAgeError}</p>
-                    {classPreselected && enrolmentContext.mode === 'admin' && attemptedPersonDob && (
-                      <AgeOverridePanel
-                        showMismatchWarning={false}
-                        studentAge={
-                          evaluateAgeEnrolment({
-                            dateOfBirth: attemptedPersonDob,
-                            ageBand: enrolmentContext.constraints.ageBand,
-                            seasonStartDate: enrolmentContext.constraints.seasonStartDate,
-                            actor: 'admin',
-                          }).studentAge
-                        }
-                        classAges={
-                          evaluateAgeEnrolment({
-                            dateOfBirth: attemptedPersonDob,
-                            ageBand: enrolmentContext.constraints.ageBand,
-                            seasonStartDate: enrolmentContext.constraints.seasonStartDate,
-                            actor: 'admin',
-                          }).classAges
-                        }
-                        confirmed={classAgeOverride.confirmed}
-                        reason={classAgeOverride.reason}
-                        onConfirmedChange={(confirmed) =>
-                          setClassAgeOverride((prev) => ({ ...prev, confirmed }))
-                        }
-                        onReasonChange={(reason) =>
-                          setClassAgeOverride((prev) => ({ ...prev, reason }))
-                        }
-                      />
-                    )}
-                  </div>
-                )}
-                <StepSelectStudent
-                  mode={enrolmentContext.mode}
-                  isAdultIntake={enrolmentContext.isAdultIntake}
-                  constraints={enrolmentContext.constraints}
-                  allowAgeOverride={classPreselected && enrolmentContext.mode === 'admin'}
-                  ageOverrideConfirmed={classAgeOverride.confirmed}
-                  classPreselected={classPreselected}
-                  selectedClassName={selectedClassName}
-                  enrolmentActor={enrolmentActor}
-                  onSubmitAgeReview={classPreselected ? handleAgeReviewRequest : undefined}
-                  ageReviewSubmitting={ageReviewSubmitting}
-                  ageReviewError={ageReviewError}
-                  onBrowseClasses={() => navigate('/classes')}
-                  guardian={enrolmentContext.guardian}
-                  guardianSetupRequired={enrolmentContext.guardianSetupRequired}
-                  guardianAccountId={enrolmentContext.guardianAccountId}
-                  guardianAccountMemberId={enrolmentContext.guardianAccountMemberId}
-                  students={accountStudentsQuery.data?.students ?? []}
-                  guardianPersonId={accountStudentsQuery.data?.guardianPersonId ?? null}
-                  studentsLoading={accountStudentsQuery.isLoading}
-                  studentsError={
-                    enrolmentContext.error
-                      ? null
-                      : accountStudentsQuery.error instanceof Error
-                        ? accountStudentsQuery.error
-                        : null
-                  }
-                  onSelectPerson={(personId, dob) =>
-                    handlePersonNext({ ...enrolmentData, person_id: personId }, dob)
-                  }
-                  onCreateMinor={async (fields) => {
-                    if (!tenant || !enrolmentContext.guardian?.accountId) {
-                      throw new Error(t('pages.enrolment.no_account_linked'));
-                    }
-                    const person = await EnrolmentOnboardingService.createChildForAccount(
-                      tenant,
-                      enrolmentContext.guardian.accountId,
-                      fields,
-                    );
-                    handlePersonNext(
-                      { ...enrolmentData, person_id: person.id },
-                      fields.student_date_of_birth,
-                    );
-                  }}
-                  onCreateAdult={async (fields) => {
-                    if (!tenant) throw new Error(t('common.error'));
-                    if (enrolmentContext.mode === 'guest') {
-                      if (!fields.email) {
-                        throw new Error(t('pages.enrolment.guardian_email_required'));
-                      }
-                      const result = await EnrolmentIntakeService.createGuestAdult(tenant, {
-                        name: fields.name,
-                        email: fields.email,
-                        phone: fields.phone,
-                        dateOfBirth: fields.date_of_birth,
-                      });
-                      setGuestGuardianEmail(result.email);
-                      handlePersonNext(
-                        { ...enrolmentData, person_id: result.personId },
-                        fields.date_of_birth ?? null,
-                      );
-                      return;
-                    }
-                    const { person } = await EnrolmentOnboardingService.createAdultSolo(
-                      tenant,
-                      fields as NewAdultOnboardingInput,
-                    );
-                    handlePersonNext(
-                      { ...enrolmentData, person_id: person.id },
-                      person.date_of_birth ?? null,
-                    );
-                  }}
-                  onCreateMinorWithGuardian={async (fields) => {
-                    if (!tenant) throw new Error(t('common.error'));
-                    if (enrolmentContext.mode === 'guest') {
-                      if (!fields.guardian_email) {
-                        throw new Error(t('pages.enrolment.guardian_email_required'));
-                      }
-                      const result = await EnrolmentIntakeService.createGuestFamily(tenant, {
-                        guardian: {
-                          name: fields.guardian_name,
-                          email: fields.guardian_email,
-                          phone: fields.guardian_phone,
-                        },
-                        student: {
-                          name: fields.student_name,
-                          dateOfBirth: fields.student_date_of_birth,
-                        },
-                      });
-                      setGuestGuardianEmail(result.guardianEmail);
-                      handlePersonNext(
-                        { ...enrolmentData, person_id: result.studentPersonId },
-                        fields.student_date_of_birth,
-                      );
-                      return;
-                    }
-                    if (fields.existing_account_id) {
-                      const person = await EnrolmentOnboardingService.createChildForAccount(
-                        tenant,
-                        fields.existing_account_id,
-                        {
-                          student_name: fields.student_name,
-                          student_date_of_birth: fields.student_date_of_birth,
-                        },
-                      );
-                      handlePersonNext(
-                        { ...enrolmentData, person_id: person.id },
-                        fields.student_date_of_birth,
-                      );
-                      return;
-                    }
-                    const person = await EnrolmentOnboardingService.createStudentWithGuardianEmail(
-                      tenant,
-                      {
-                        ...fields,
-                        guardian_role: 'account_holder',
-                      } as NewMinorOnboardingInput,
-                    );
-                    handlePersonNext(
-                      { ...enrolmentData, person_id: person.id },
-                      fields.student_date_of_birth,
-                    );
-                  }}
-                  onCancel={onCancel}
-                  onSignInRequest={
-                    enrolmentContext.mode === 'guest' ? handleGuestSignIn : undefined
-                  }
-                />
-              </>
-            )}
-          </>
+          <PersonStepPanel
+            enrolmentContext={enrolmentContext}
+            user={user}
+            classPreselected={classPreselected}
+            enrolledKeysLoading={enrolledKeysLoading}
+            preselectedAlreadyEnrolled={preselectedAlreadyEnrolled}
+            reviewSubmitted={reviewSubmitted}
+            personAgeError={personAgeError}
+            attemptedPersonDob={attemptedPersonDob}
+            classAgeOverride={classAgeOverride}
+            setClassAgeOverride={setClassAgeOverride}
+          >
+            <StepSelectStudent
+              mode={enrolmentContext.mode}
+              isAdultIntake={enrolmentContext.isAdultIntake}
+              constraints={enrolmentContext.constraints}
+              allowAgeOverride={classPreselected && enrolmentContext.mode === 'admin'}
+              ageOverrideConfirmed={classAgeOverride.confirmed}
+              classPreselected={classPreselected}
+              selectedClassName={selectedClassName}
+              enrolmentActor={enrolmentActor}
+              onSubmitAgeReview={classPreselected ? handleAgeReviewRequest : undefined}
+              ageReviewSubmitting={ageReviewSubmitting}
+              ageReviewError={ageReviewError}
+              onBrowseClasses={() => navigate('/classes')}
+              guardian={enrolmentContext.guardian}
+              guardianSetupRequired={enrolmentContext.guardianSetupRequired}
+              guardianAccountId={enrolmentContext.guardianAccountId}
+              guardianAccountMemberId={enrolmentContext.guardianAccountMemberId}
+              students={accountStudentsQuery.data?.students ?? []}
+              guardianPersonId={accountStudentsQuery.data?.guardianPersonId ?? null}
+              studentsLoading={accountStudentsQuery.isLoading}
+              studentsError={
+                enrolmentContext.error
+                  ? null
+                  : accountStudentsQuery.error instanceof Error
+                    ? accountStudentsQuery.error
+                    : null
+              }
+              onSelectPerson={(personId, dob) =>
+                handlePersonNext({ ...enrolmentData, person_id: personId }, dob)
+              }
+              onCreateMinor={personCreation.onCreateMinor}
+              onCreateAdult={personCreation.onCreateAdult}
+              onCreateMinorWithGuardian={personCreation.onCreateMinorWithGuardian}
+              onCancel={onCancel}
+              onSignInRequest={
+                enrolmentContext.mode === 'guest' ? handleGuestSignIn : undefined
+              }
+            />
+          </PersonStepPanel>
         )}
 
         {currentStep === 'class' && (
@@ -686,58 +417,19 @@ export function EnrolmentStepper({
           />
         )}
 
-        {currentStep === 'waiver' &&
-          (waiverFlow.waiverSignedInFlow && waiverFlow.waiverStatus?.template ? (
-            <WaiverSignedSummary
-              template={waiverFlow.waiverStatus.template}
-              signedAt={waiverFlow.waiverSignedAt}
-              canGoBack={canGoBack}
-              onPrevious={handlePreviousStep}
-              onContinue={() => goToNextStep()}
-            />
-          ) : waiverFlow.waiverStatus?.template ? (
-            <WaiverStep
-              personId={enrolmentData.person_id!}
-              template={waiverFlow.waiverStatus.template}
-              offeringId={(enrolmentData.offering_id ?? initialClassId)!}
-              accountMemberId={enrolmentContext.guardian?.accountMemberId}
-              studentName={waiverFlow.waiverPersonDisplay?.name ?? undefined}
-              studentDateOfBirth={waiverFlow.waiverPersonDisplay?.date_of_birth ?? null}
-              className={selectedClassName || undefined}
-              termName={waiverFlow.waiverTermDisplay?.name}
-              isMinorStudent={waiverFlow.isMinorStudent}
-              signerIsTheStudent={waiverFlow.signerIsTheStudent}
-              tenantIdForInvalidation={tenant?.id}
-              onComplete={(evidenceId) => {
-                waiverFlow.markWaiverSigned(evidenceId);
-                goToNextStep();
-              }}
-              onPrevious={handlePreviousStep}
-              canGoBack={canGoBack}
-            />
-          ) : (
-            <div className="space-y-4">
-              {!waiverFlow.waiverStatus || !waiverFlow.waiverStatus.template ? (
-                <p className="text-sm text-muted-foreground" role="status">
-                  {t('enrolment.waiver_loading', { defaultValue: 'Loading form…' })}
-                </p>
-              ) : (
-                <p className="text-sm text-destructive" role="alert">
-                  {t('enrolment.waiver_no_template', {
-                    defaultValue:
-                      'No active waiver template is set up. Please ask a studio administrator to add a waiver template before enrolling.',
-                  })}
-                </p>
-              )}
-              <div className="flex justify-between pt-2">
-                {canGoBack && (
-                  <Button variant="outline" onClick={handlePreviousStep}>
-                    {t('common.back')}
-                  </Button>
-                )}
-              </div>
-            </div>
-          ))}
+        {currentStep === 'waiver' && (
+          <WaiverStepPanel
+            waiverFlow={waiverFlow}
+            enrolmentData={enrolmentData}
+            enrolmentContext={enrolmentContext}
+            initialClassId={initialClassId}
+            selectedClassName={selectedClassName}
+            tenantId={tenant?.id}
+            canGoBack={canGoBack}
+            onPrevious={handlePreviousStep}
+            onNext={() => goToNextStep()}
+          />
+        )}
 
         {currentStep === 'checkout' && enrolmentContext.mode === 'admin' && (
           <StepAdminCheckout
@@ -797,15 +489,4 @@ export function EnrolmentStepper({
       </div>
     </div>
   );
-}
-
-function isUnder18(dateOfBirth: string | null | undefined): boolean {
-  if (!dateOfBirth) return false;
-  const dob = new Date(dateOfBirth);
-  if (Number.isNaN(dob.getTime())) return false;
-  const now = new Date();
-  let age = now.getFullYear() - dob.getFullYear();
-  const m = now.getMonth() - dob.getMonth();
-  if (m < 0 || (m === 0 && now.getDate() < dob.getDate())) age -= 1;
-  return age < 18;
 }

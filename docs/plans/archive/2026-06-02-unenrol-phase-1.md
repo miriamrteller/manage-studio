@@ -36,7 +36,7 @@ Cross-checked migrations `20260526000100`–`20260526002800`, `packages/shared`,
 ---
 | **Created** | 2026-06-02 |
 | **Scope** | Admin cancels unpaid / not-yet-active enrolments |
-| **Out of scope** | Refunds, post-payment withdrawal, parent self-service, waitlist automation (see [IMPLEMENTATION_STATUS.md](../IMPLEMENTATION_STATUS.md)) |
+| **Out of scope** | Refunds, post-payment withdrawal, parent self-service, waitlist automation (see [IMPLEMENTATION_STATUS.md](../../IMPLEMENTATION_STATUS.md)) |
 | **Depends on** | Existing `engagements` table, `EnrolmentService`, `StudentSlideOver` |
 | **SPEC refs** | §4.2.6 (engagements), §4.5 (financial immutability — not touched in Phase 1), §6.x backlog items 6–7 |
 
@@ -478,7 +478,7 @@ Confirm existing policy `"admins manage engagements"` allows UPDATE via RPC (`SE
 
 | Item | Tracker |
 | --- | --- |
-| Post-payment withdrawal + refund wizard | [IMPLEMENTATION_STATUS.md](../IMPLEMENTATION_STATUS.md) — Unenrol Phase 2 |
+| Post-payment withdrawal + refund wizard | [IMPLEMENTATION_STATUS.md](../../IMPLEMENTATION_STATUS.md) — Unenrol Phase 2 |
 | Parent-initiated withdrawal requests | IMPLEMENTATION_STATUS — Unenrol Phase 3 |
 | Waitlist auto-offer on cancel | SPEC.md §V2.2 |
 | Pro-rata refund policy engine | IMPLEMENTATION_STATUS — Unenrol Phase 2 |

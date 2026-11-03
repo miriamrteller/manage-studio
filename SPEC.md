@@ -432,7 +432,7 @@ Manage Studio is the **system of record for enrolment pricing consistency**. Thi
 7. Run `pnpm -C apps/web test` and `pnpm -C apps/web exec tsc --noEmit`. Fixtures
    that mock tenant rows usually need the new column too.
 
-**Implementation plan (agent checklist):** [docs/plans/2026-06-02-vat-pricing.md](docs/plans/2026-06-02-vat-pricing.md)
+**Implementation plan (agent checklist):** [docs/plans/archive/2026-06-02-vat-pricing.md](docs/plans/archive/2026-06-02-vat-pricing.md)
 
 **Status:** Implemented — `packages/shared/src/pricing.ts`, `create-checkout`, catalogue/pay UI, `/admin/setup/tax`. Verify after deploy: `pnpm email:bundle`. Track in [docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md).
 
@@ -2819,7 +2819,7 @@ Screens:
 
 **Excluded:** `business_preset`, `subdomain` edits, terminology overrides in v1 (wizard-only until second tenant).
 
-**Phase D (label display wiring):** Complete. See [docs/plans/phase-d-display-wiring.md](docs/plans/phase-d-display-wiring.md). Former “D4 admin label editor” removed from Phase D — belongs in §9 V3.0.
+**Phase D (label display wiring):** Complete. See [docs/plans/archive/phase-d-display-wiring.md](docs/plans/archive/phase-d-display-wiring.md). Former “D4 admin label editor” removed from Phase D — belongs in §9 V3.0.
 
 ### 6.x — Deferred backlog (post–V1 payment slice)
 
@@ -2833,7 +2833,7 @@ Items intentionally **not** in the first finance migration or V1 checkout scope:
 6. **Unenrol Phase 3 — parent withdrawal requests & refund policy** — parent-initiated request queue; tenant-configurable pro-rata rules; optional account credit. Depends on Phase 1G parent portal.
 7. **Teachers admin UI** — `/admin/setup/teachers` CRUD, schema alignment, nav. V1 uses `staff` table + class-form `staff_id` only. See [§8 V2.11](#v211--teachers-admin-module).
 
-**Shipped (V1):** Guest checkout + guest enrolment — [docs/plans/2026-06-02-guest-enrollment-portal-provisioning.md](docs/plans/2026-06-02-guest-enrollment-portal-provisioning.md) (`guest_enrolment_*` RPCs, `create-enrolment-intake`, signed `enrolment_token`, `/enrol` without login gate). Admin cancel pre-payment enrolment — [docs/plans/2026-06-02-unenrol-phase-1.md](docs/plans/2026-06-02-unenrol-phase-1.md). Age override + parent review — [docs/plans/2026-06-02-age-override-and-review-request.md](docs/plans/2026-06-02-age-override-and-review-request.md). Parent self-enrolment (Myself) — [docs/plans/parent-self-enrolment/00-overview.md](docs/plans/parent-self-enrolment/00-overview.md). **Payment dunning (renewal + enrolment unpaid)** — [docs/plans/payment-dunning-notifications.md](docs/plans/payment-dunning-notifications.md), [docs/plans/enrolment-payment-dunning.md](docs/plans/enrolment-payment-dunning.md) (`run-enrolment-payment-dunning`, Day 3/7/14).
+**Shipped (V1):** Guest checkout + guest enrolment — [docs/plans/archive/2026-06-02-guest-enrollment-portal-provisioning.md](docs/plans/archive/2026-06-02-guest-enrollment-portal-provisioning.md) (`guest_enrolment_*` RPCs, `create-enrolment-intake`, signed `enrolment_token`, `/enrol` without login gate). Admin cancel pre-payment enrolment — [docs/plans/archive/2026-06-02-unenrol-phase-1.md](docs/plans/archive/2026-06-02-unenrol-phase-1.md). Age override + parent review — [docs/plans/archive/2026-06-02-age-override-and-review-request.md](docs/plans/archive/2026-06-02-age-override-and-review-request.md). Parent self-enrolment (Myself) — [docs/plans/parent-self-enrolment/00-overview.md](docs/plans/parent-self-enrolment/00-overview.md). **Payment dunning (renewal + enrolment unpaid)** — [docs/plans/payment-dunning-notifications.md](docs/plans/payment-dunning-notifications.md), [docs/plans/enrolment-payment-dunning.md](docs/plans/enrolment-payment-dunning.md) (`run-enrolment-payment-dunning`, Day 3/7/14).
 
 Track live status in [docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md).
 
@@ -2974,7 +2974,7 @@ Teacher attendance register per session. Absent students automatically credited.
 
 Database webhook on enrolment cancellation → `process-waiting-list` Edge Function → offer sent via WhatsApp + email with 48-hour payment link.
 
-**Prerequisite:** Pre-payment cancellation (Unenrol Phase 1) must emit a reliable cancellation event; see [docs/plans/2026-06-02-unenrol-phase-1.md](docs/plans/2026-06-02-unenrol-phase-1.md).
+**Prerequisite:** Pre-payment cancellation (Unenrol Phase 1) must emit a reliable cancellation event; see [docs/plans/archive/2026-06-02-unenrol-phase-1.md](docs/plans/archive/2026-06-02-unenrol-phase-1.md).
 
 ### V2.3 — Class cancellation cascade
 

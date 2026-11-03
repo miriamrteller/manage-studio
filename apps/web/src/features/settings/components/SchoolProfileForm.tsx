@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { useTenant } from '@/hooks/useTenant';
 import queryClient from '@/lib/query-client';
+import { useCustomDomainEnabled } from './CustomDomainSettings';
 
 export function SchoolProfileForm() {
   const { t } = useTranslation();
@@ -51,7 +52,9 @@ export function SchoolProfileForm() {
     },
     enabled: !!tenant?.id,
   });
-  const customDomain = customDomainQuery.data ?? null;
+  // Studios in the self-serve rollout manage it in CustomDomainSettings instead.
+  const selfServe = useCustomDomainEnabled(tenant?.id).data === true;
+  const customDomain = selfServe ? null : customDomainQuery.data ?? null;
 
   if (!tenant) return null;
 
