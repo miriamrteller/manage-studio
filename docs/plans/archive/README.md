@@ -6,9 +6,7 @@ For active plans see [../README.md](../README.md). For live status see [../../IM
 
 | File | Reason archived |
 | --- | --- |
-| [SPEC_old.md](SPEC_old.md) | Superseded by root [SPEC.md](../../../SPEC.md) |
 | [2026-05-08-phase1a.md](2026-05-08-phase1a.md) | Phase 1A skeleton — shipped |
-| [saas-remediation-v2.md](saas-remediation-v2.md) | Superseded by [../finance/00-overview.md](../finance/00-overview.md) |
 | [class-images-and-age-display.md](class-images-and-age-display.md) | Shipped (`cover_image_path`, age on cards) |
 | [admin-enrolment-completion-link.md](admin-enrolment-completion-link.md) | Shipped (completion links, waiver gate) |
 | [prepare-enrolment-checkout.md](prepare-enrolment-checkout.md) | Shipped (`prepare-enrolment-checkout` edge function) |
