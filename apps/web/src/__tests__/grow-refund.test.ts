@@ -1,12 +1,13 @@
 /**
- * G6: Grow refundCharge calls refundTransaction with Grow's own transaction id, stored on the
- * payment when the notice settled it (not our provider_payment_ref, which Grow does not know).
+ * G6: Grow refundCharge calls refundTransaction with Grow's own transaction id and token, stored
+ * on the payment when the notice settled it (not our provider_payment_ref, which Grow does not
+ * know), and the amount as refundSum.
  * Run: pnpm -C apps/web test grow-refund.test.ts
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { GrowPaymentProvider } from '../../../../supabase/functions/_shared/payments/providers/grow.ts';
 
-function makeService(transactionId: string | null = 'GROW-TXN-9988776') {
+function makeService(transactionId: string | null = '9988776', transactionToken: string | null = 'tok_9988776') {
   return {
     rpc: async () => ({
       data: [
@@ -20,7 +21,11 @@ function makeService(transactionId: string | null = 'GROW-TXN-9988776') {
           select: () => ({
             eq: () => ({
               maybeSingle: async () => ({
-                data: { tenant_id: '00000000-0000-0000-0000-0000000000aa', provider_transaction_id: transactionId },
+                data: {
+                  tenant_id: '00000000-0000-0000-0000-0000000000aa',
+                  provider_transaction_id: transactionId,
+                  provider_transaction_token: transactionToken,
+                },
                 error: null,
               }),
             }),
@@ -63,13 +68,25 @@ describe('GrowPaymentProvider.refundCharge', () => {
     const [url, init] = fetchSpy.mock.calls[0];
     expect(String(url)).toContain('refundTransaction');
     const body = JSON.parse((init as { body?: string }).body as string);
-    expect(body.transactionId).toBe('GROW-TXN-9988776');
-    expect(body.sum).toBe('350.00');
+    // Grow's refundTransaction fields: transactionId (integer), transactionToken, refundSum (number).
+    expect(body.transactionId).toBe(9988776);
+    expect(body.transactionToken).toBe('tok_9988776');
+    expect(body.refundSum).toBe(350);
+    expect(body).not.toHaveProperty('sum');
   });
 
   it('asks for a manual refund when no Grow transaction id is on record (older payments)', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const provider = new GrowPaymentProvider(makeService(null));
+    await expect(
+      provider.refundCharge!({ providerPaymentRef: 'grow_txn_777', amountMinor: 35000 }),
+    ).rejects.toMatchObject({ code: 'manual_refund_required', provider: 'grow' });
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('asks for a manual refund when the transaction token is missing (paid before it was stored)', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const provider = new GrowPaymentProvider(makeService('9988776', null));
     await expect(
       provider.refundCharge!({ providerPaymentRef: 'grow_txn_777', amountMinor: 35000 }),
     ).rejects.toMatchObject({ code: 'manual_refund_required', provider: 'grow' });
