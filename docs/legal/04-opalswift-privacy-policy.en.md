@@ -35,7 +35,7 @@ Only service providers who help us run the platform: Supabase (database and sign
 ## 3. How long we keep it
 
 - Account data: while the account is open and up to 24 months after, unless you ask us to delete it sooner and we do not need it for a legal reason.
-- Website enquiries: [[RETENTION PERIOD — e.g. 24 months after our last contact with you]].
+- Website enquiries: up to 24 months after our last contact with you, unless you ask us to delete them sooner.
 - Billing records: as long as tax law requires (7 years).
 - Technical logs: per the hosting provider's retention (short-term); our own audit log for 24 months.
 - Backups: nightly backups 30 days, monthly backups about 13 months.
@@ -59,7 +59,7 @@ We will post updates here and email account owners about significant changes.
 ### Awaiting lawyer review (see [AWAITING-LAWYER-REVIEW](AWAITING-LAWYER-REVIEW.md))
 - [[LAWYER: confirm]] §1, the contact-form enquiries row (purpose; kept in OpalSwift's own customer list).
 - [[LAWYER: confirm]] §2, Resend added as a provider, and the Sentry screenshot sentence (matches the DPA).
-- [[VERIFY]] §3, the retention period for website enquiries (not decided).
+- [[LAWYER: confirm]] §3, the retention period for website enquiries (24 months after the last contact; owner decision).
 
 ### Sources relied on
 - Privacy Protection Law 5741-1981 as amended by Amendment 13: §11 (notice at collection), §§13–14 (access, correction).
