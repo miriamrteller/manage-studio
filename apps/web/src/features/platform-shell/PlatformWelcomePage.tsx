@@ -176,6 +176,20 @@ export default function PlatformWelcomePage() {
             <span aria-hidden="true" className="text-gray-700 rtl:rotate-180">›</span>
           </Link>
         )}
+        {isSuperAdmin && (
+          <Link
+            to="/platform/skins"
+            className="mt-4 flex items-center justify-between gap-4 rounded-xl border border-gray-200 bg-white px-5 py-4 hover:bg-gray-50 focus-visible:outline-2 outline-offset-2"
+          >
+            <span>
+              <span className="block font-semibold" style={{ color: OPALSWIFT_BRAND.ink }}>
+                {t('platform_welcome.platform_skins')}
+              </span>
+              <span className="block text-sm text-gray-700">{t('platform_welcome.platform_skins_hint')}</span>
+            </span>
+            <span aria-hidden="true" className="text-gray-700 rtl:rotate-180">›</span>
+          </Link>
+        )}
       </>
     );
   }

@@ -48,5 +48,7 @@ export declare function profileFromTenant(row: {
  * (class vocabulary plus any skin layer). Any other studio starts from the general
  * wording. In both cases the studio's own word overrides win last.
  */
-export declare function resolveStudioLabels(profile: StudioProfile, overrides?: Partial<EntityLabels>, locale?: EntityLabelLocale, vertical?: VerticalId): EntityLabels;
+export declare function resolveStudioLabels(profile: StudioProfile, overrides?: Partial<EntityLabels>, locale?: EntityLabelLocale, vertical?: VerticalId, 
+/** A data skin's own wording (skinLabelsFor); the studio's own words still win. */
+skinLabels?: Partial<EntityLabels>): EntityLabels;
 //# sourceMappingURL=studio-profile.d.ts.map

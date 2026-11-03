@@ -55,6 +55,8 @@
 
   /* ── nav HTML ───────────────────────────────────────────── */
   var skin = window.OPAL_SKIN || null;
+  /* page name for the beta form's "from" hint, e.g. art-class */
+  var page = (location.pathname.split('/').pop() || '').replace(/\.html$/, '').replace(/[^a-z0-9-]/gi, '') || 'site';
   var subHTML = skin
     ? '<span class="sub" data-he="' + skin.he + '" data-en="' + skin.en + '">' + skin.he + '</span>'
     : '';
@@ -71,7 +73,7 @@
     '      <button id="btn-en" onclick="setLang(\'en\')">EN</button>' +
     '    </div>' +
     '    <a href="https://app.opalswift.com" class="nav-signin" data-he="כניסה" data-en="Sign in">כניסה</a>' +
-    '    <a href="#pricing" class="btn btn-primary" style="padding:10px 20px"' +
+    '    <a href="index.html?from=' + page + '#contact" class="btn btn-primary" style="padding:10px 20px"' +
     '       data-he="הצטרפו לבטא החינמית" data-en="Join the free beta">הצטרפו לבטא החינמית</a>' +
     '  </div>' +
     '</div>';
