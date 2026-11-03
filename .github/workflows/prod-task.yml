@@ -1,0 +1,173 @@
+# Prod task: run ONE reviewed, one-off DATA change on prod. Replaces pasting
+# SQL into the Supabase SQL editor. How to write one: docs/deployment/PROD-TASKS.md
+#
+# Start it: Actions → prod-task → Run workflow (branch: main) → file name.
+#
+#   check  (no secrets)   the file is on main, is named right and holds data
+#                         statements only (scripts/ci/prod-task.mjs check)
+#   run    (environment "production" — WAITS FOR THE OWNER'S APPROVAL)
+#          refuses a file that already ran, then runs it in ONE transaction
+#          together with its row in private.prod_task_runs (run once). Prints
+#          the row count of each statement, never row data. dry_run rolls
+#          everything back and records nothing.
+#
+# Secrets: SUPABASE_PROD_DB_URL in the "production" environment (the same one
+# deploy-prod uses). Schema changes are migrations, never prod tasks.
+
+name: prod-task
+
+on:
+  workflow_dispatch:
+    inputs:
+      file:
+        description: "File in supabase/prod-tasks/, e.g. 20261103121500_fix_lead_status.sql"
+        required: true
+        type: string
+      dry_run:
+        description: "Run it, show the row counts, then roll back (nothing kept, nothing recorded)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+# Same queue as deploy-prod, so a task never runs during a prod deploy.
+concurrency:
+  group: supabase-deploy-prod
+  cancel-in-progress: false
+
+env:
+  TASK_FILE: ${{ inputs.file }}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      path: ${{ steps.check.outputs.path }}
+      sha256: ${{ steps.check.outputs.sha256 }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: File is on main and is a data-only task
+        id: check
+        env:
+          DRY_RUN: ${{ inputs.dry_run == true }}
+        run: |
+          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            echo "::error::Prod tasks run only from main (got $GITHUB_REF). Merge the task's PR first."; exit 1
+          fi
+          name=$(basename -- "$TASK_FILE")
+          if [ "$name" != "$TASK_FILE" ]; then
+            echo "::error::Give the file name only (no folders), e.g. 20261103121500_fix_lead_status.sql"; exit 1
+          fi
+          path="supabase/prod-tasks/$name"
+          if [ ! -f "$path" ] || ! git ls-files --error-unmatch -- "$path" >/dev/null 2>&1; then
+            echo "::error::$path is not on main."; exit 1
+          fi
+          node scripts/ci/prod-task.mjs check "$path"
+          sha256=$(sha256sum "$path" | cut -d' ' -f1)
+          echo "path=$path" >> "$GITHUB_OUTPUT"
+          echo "sha256=$sha256" >> "$GITHUB_OUTPUT"
+          {
+            echo "## Prod task \`$name\`"
+            echo "- file: [$path]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/$GITHUB_SHA/$path) at \`${GITHUB_SHA::7}\`"
+            echo "- sha256: \`$sha256\`"
+            echo "- mode: $([ "$DRY_RUN" = true ] && echo 'dry run (rolled back, not recorded)' || echo 'real (kept and recorded)')"
+            echo
+            echo "Read the file before approving."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  run:
+    needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    env:
+      TASK_PATH: ${{ needs.check.outputs.path }}
+      TASK_SHA256: ${{ needs.check.outputs.sha256 }}
+      DRY_RUN: ${{ inputs.dry_run == true }}
+    steps:
+      - name: Check secrets are configured
+        env:
+          HAS_DB: ${{ secrets.SUPABASE_PROD_DB_URL != '' }}
+        run: |
+          [ "$HAS_DB" = true ] || { echo "::error::SUPABASE_PROD_DB_URL is not set in the 'production' environment."; exit 1; }
+
+      - uses: actions/checkout@v4
+
+      - name: Same file as checked
+        run: |
+          [ "$(sha256sum "$TASK_PATH" | cut -d' ' -f1)" = "$TASK_SHA256" ] || { echo "::error::$TASK_PATH changed between check and run."; exit 1; }
+
+      - name: Not run before
+        env:
+          DB_URL: ${{ secrets.SUPABASE_PROD_DB_URL }}
+        run: |
+          set -euo pipefail
+          name=$(basename "$TASK_PATH")
+          state=$(psql "$DB_URL" -X -tA -v ON_ERROR_STOP=1 -v f="$name" 2>/dev/null <<'SQL'
+          SELECT CASE
+            WHEN to_regclass('private.prod_task_runs') IS NULL THEN 'no-table'
+            WHEN EXISTS (SELECT 1 FROM private.prod_task_runs WHERE file_name = :'f') THEN 'ran'
+            ELSE 'new' END;
+          SQL
+          ) || { echo "::error::Could not reach the prod database."; exit 1; }
+          case "$state" in
+            new) echo "$name has not run on prod yet." ;;
+            ran) echo "::error::$name already ran on prod (see private.prod_task_runs). Each task runs once: write a new file for a new change."; exit 1 ;;
+            no-table) echo "::error::private.prod_task_runs does not exist on prod yet. Run deploy-prod first (migration *_prod_task_runs)."; exit 1 ;;
+            *) echo "::error::unexpected answer from prod"; exit 1 ;;
+          esac
+
+      - name: Run the task (one transaction, row counts only)
+        env:
+          DB_URL: ${{ secrets.SUPABASE_PROD_DB_URL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -uo pipefail
+          name=$(basename "$TASK_PATH")
+          end=$([ "$DRY_RUN" = true ] && echo ROLLBACK || echo COMMIT)
+          wrap="$RUNNER_TEMP/prod-task-wrapper.sql"
+          out="$RUNNER_TEMP/prod-task.out"
+          err="$RUNNER_TEMP/prod-task.err"
+          # Our wrapper owns the transaction. The task file itself may not
+          # contain BEGIN/COMMIT or backslash commands (checked above).
+          cat > "$wrap" <<SQL
+          \\set ON_ERROR_STOP on
+          \\set VERBOSITY sqlstate
+          BEGIN;
+          SET LOCAL lock_timeout = '10s';
+          SET LOCAL statement_timeout = '5min';
+          INSERT INTO private.prod_task_runs (file_name, sha256, git_sha, run_url, actor)
+            VALUES (:'f', :'sha', :'git_sha', :'run_url', :'actor');
+          \\echo ==PROD-TASK-START==
+          \\i $GITHUB_WORKSPACE/$TASK_PATH
+          \\echo ==PROD-TASK-END==
+          $end;
+          SQL
+          psql "$DB_URL" -X -P pager=off -f "$wrap" \
+            -v f="$name" -v sha="$TASK_SHA256" -v git_sha="$GITHUB_SHA" \
+            -v run_url="$RUN_URL" -v actor="$GITHUB_ACTOR" >"$out" 2>"$err"
+          rc=$?
+          # Only the task's own output, then strip every row of data.
+          awk '/^==PROD-TASK-END==$/{t=0} t{print} /^==PROD-TASK-START==$/{t=1}' "$out" > "$out.task"
+          finished=$(grep -c '^==PROD-TASK-END==$' "$out" || true)
+          counts=$(node scripts/ci/prod-task.mjs report "$out.task" "$err")
+          rm -f "$out" "$out.task" "$err"
+          echo "$counts"
+          if [ "$rc" = 0 ] && [ "$finished" = 1 ]; then
+            result=$([ "$DRY_RUN" = true ] && echo "dry run: ran, then ROLLED BACK — nothing kept, nothing recorded" || echo "COMMITTED and recorded in private.prod_task_runs")
+          else
+            result="FAILED — rolled back, nothing kept, nothing recorded"
+          fi
+          {
+            echo "## Result: $result"
+            echo '```'
+            echo "$counts"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$rc" != 0 ] || [ "$finished" != 1 ]; then
+            echo "::error::The task failed (psql exit $rc) and was rolled back. Error codes are above; the detail is hidden because it can contain data."
+            exit 1
+          fi
