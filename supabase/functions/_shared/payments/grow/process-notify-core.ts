@@ -191,6 +191,8 @@ export async function processGrowNotifyWith(
       // Grow's own transaction id: refundTransaction needs it, not our reference.
       // (parseGrowNotify falls back to our reference when Grow sends none: don't store that.)
       provider_transaction_id: parsed.transactionId && parsed.transactionId !== ref ? parsed.transactionId : null,
+      // Grow's refundTransaction also needs the transaction token from this notice.
+      provider_transaction_token: parsed.transactionToken ?? null,
     })
     .eq("id", row.id)
     .eq("status", "pending")
