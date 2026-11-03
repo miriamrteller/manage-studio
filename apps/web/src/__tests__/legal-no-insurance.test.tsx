@@ -183,17 +183,17 @@ describe('Settings → Legal', () => {
     const choice = await screen.findByLabelText(/^Insurance$/);
     expect(choice).toHaveValue('none');
     expect(screen.queryByLabelText(/Insurance \(insurer and policy type\)/)).toBeNull();
-    expect(screen.getByText(/Most studios working with children need liability and personal-accident insurance/)).toHaveAttribute('role', 'note');
+    expect(screen.getByText(/If you work with children or physical activity, liability and personal-accident insurance is usually recommended/)).toHaveAttribute('role', 'note');
     fireEvent.change(choice, { target: { value: 'insured' } });
     const policy = screen.getByLabelText(/Insurance \(insurer and policy type\)/);
     expect(policy).not.toBeRequired();
-    expect(screen.queryByText(/Most studios working with children/)).toBeNull();
+    expect(screen.queryByText(/If you work with children or physical activity/)).toBeNull();
   });
 
   it('in Hebrew', async () => {
     await i18n.changeLanguage('he');
     setup({ insurance_status: 'none' });
-    expect(await screen.findByText(/רוב הסטודיואים שעובדים עם ילדים צריכים ביטוח/)).toBeInTheDocument();
+    expect(await screen.findByText(/אם אתם עובדים עם ילדים או בפעילות גופנית/)).toBeInTheDocument();
   });
 });
 
@@ -231,6 +231,16 @@ describe('optional everywhere (owner bug fix)', () => {
       const out = await terms(lang, { ...BASE, insurance_status: 'insured' });
       expect(out.markdown).toContain(INSURED_TERMS[lang]);
       expect(out.missing).not.toContain('insurance');
+    }
+  });
+});
+
+describe('Settings → Legal wording', () => {
+  it('no longer claims the terms state prices or dates (they say "as shown at registration")', () => {
+    for (const lng of ['en', 'he']) {
+      const why = i18n.getResource(lng, 'translation', 'legal.settings.why.enrolment') as string;
+      expect(why).toBeTruthy();
+      expect(why).not.toMatch(/price|date|מחיר|מועד/i);
     }
   });
 });
