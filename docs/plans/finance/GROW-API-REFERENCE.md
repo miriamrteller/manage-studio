@@ -28,7 +28,7 @@ Grow uses **JSON POST** to `{base}/{methodName}` (unlike iCount API v3 form-enco
 | `createCharge` (hosted) | `createPaymentProcess` | [create payment process](https://grow-il.readme.io/reference/createpaymentprocess) | Returns `authCode` / page URL |
 | `chargeWithToken` | `createTransactionWithToken` | Search readme | Renewals (`G6`) |
 | Post-notify ack | `approveTransaction` | Search readme | **Mandatory** after successful notify |
-| `refundCharge` | `refundTransaction` | Search readme | Same-day vs partial rules |
+| `refundCharge` | `refundTransaction` | [refund transaction](https://developers.grow.business/reference/refund-transaction) | Body: `transactionId` (integer), `transactionToken`, `refundSum` (number), optional `stopDirectDebit`; both ids come from the payment notice (`payments.provider_transaction_id` / `provider_transaction_token`). Same-day refund = full cancellation only; at most 2 API refunds; needs Grow to enable refund permission. The reference documents `multipart/form-data`; we send JSON like every other call: confirm in the sandbox test. |
 | Webhooks | *(incoming)* | Notify + invoice notify | Parsed in `parseGrowNotify` — not outbound REST |
 
 **Credentials (manual today):**
