@@ -26,7 +26,7 @@ import {
   type StudioSetupForm,
 } from '../lib/studioSetupForm';
 import { useLiveSkins } from '@/features/skins/useSkins';
-import { fieldFromSearch, signupFieldSearch, wizardFieldOptions } from '@/features/skins/wizardFields';
+import { fieldFromSearch, signupFieldSearch, skinColours, usePageSearch, wizardFieldOptions } from '@/features/skins/wizardFields';
 import { invoicingOptionsFor, invoicingPairsWithPayment } from '@/lib/providerPairing';
 import {
   PaymentProviderChoice,
@@ -130,18 +130,19 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
     const skin = liveSkins?.find((s) => s.id === vertical) ?? null;
     const defaults = profileDefaultsFor(vertical, skin);
     const monthlyFees = monthlyFeesForFlow(defaults.paymentFlow);
-    setForm((prev) => ({ ...prev, vertical, ...defaults, monthlyFees }));
+    setForm((prev) => ({ ...prev, vertical, ...defaults, monthlyFees, ...skinColours(prev, liveSkins, skin) }));
     if (monthlyFees && (form.paymentProvider === 'ypay' || form.paymentProvider === 'invoice4u')) {
       choosePayment('grow');
     }
   }
 
   // A marketing industry page link (?field=<skin> or ?from=<page>) preselects the field once.
+  const search = usePageSearch();
   const fieldPrefilled = useRef(false);
   useEffect(() => {
     if (fieldPrefilled.current || !liveSkins) return;
     fieldPrefilled.current = true;
-    const preset = fieldFromSearch(signupFieldSearch(window.location.search), liveSkins);
+    const preset = fieldFromSearch(signupFieldSearch(search), liveSkins);
     if (preset && form.vertical === INITIAL_FORM.vertical) chooseField(preset);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once, when the skins arrive
   }, [liveSkins]);

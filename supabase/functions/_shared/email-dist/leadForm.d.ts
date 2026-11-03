@@ -43,6 +43,12 @@ export interface PresetDef {
 }
 export declare const PRESET_QUESTIONS: Record<PresetKey, PresetDef>;
 export declare const PRESETS_BY_KIND: Record<LeadFormKind, PresetKey[]>;
+/**
+ * The ready-made questions a studio can switch: its kind's set, then the extra
+ * ones its skin gave it (`extra`). Questions switched on for another kind (for
+ * example after a change of skin) stay hidden.
+ */
+export declare function presetKeysFor(config: Pick<LeadFormConfig, 'extra'>, kind: LeadFormKind): PresetKey[];
 export declare const MAX_CUSTOM_QUESTIONS = 5;
 export declare const MAX_CUSTOM_OPTIONS = 12;
 export declare const MAX_LABEL_LENGTH = 120;
@@ -64,6 +70,11 @@ export interface CustomQuestion {
 export interface LeadFormConfig {
     presets: Partial<Record<PresetKey, PresetSetting>>;
     custom: CustomQuestion[];
+    /**
+     * Ready-made questions this studio offers beyond its kind's set: chosen by its
+     * skin when it was created (verticals.enquiry_presets). Absent for most studios.
+     */
+    extra?: PresetKey[];
 }
 export declare const EMPTY_LEAD_FORM: LeadFormConfig;
 /**
