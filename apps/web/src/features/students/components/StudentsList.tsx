@@ -1,12 +1,10 @@
-import { Fragment, useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   useReactTable,
   getCoreRowModel,
   getExpandedRowModel,
-  flexRender,
-  createColumnHelper,
   type ExpandedState,
 } from '@tanstack/react-table';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -17,42 +15,26 @@ import { useSortState } from '@/hooks/useSortState';
 import { TenantDB } from '@/lib/db';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/shared';
-import {
-  AgeRangeFilter,
-  FilterDrawer,
-  FilterMultiSelect,
-  FilterToolbar,
-  SortableHeader,
-  type ActiveFilterChip,
-  type FilterOption,
-} from '@/components/shared/table';
+import { FilterToolbar } from '@/components/shared/table';
 import { PersonSearch } from '@/features/people/components/PersonSearch';
-import { FamilyMultiSelect } from '@/features/families/components/FamilyMultiSelect';
 import { useClasses } from '@/features/classes/hooks/useClasses';
 import { useLevels } from '@/features/levels/hooks/useLevels';
 import { useStudents } from '../hooks/useStudents';
+import { useStudentListFilters } from '../hooks/useStudentListFilters';
+import { useStudentsListLookups } from '../hooks/useStudentsListLookups';
 import { STUDENT_LIST_DISPLAY_ENROLMENT_STATUSES } from '../lib/resolveEnrolledPersonIds';
-import {
-  filterEnrolmentsByStatus,
-  getEnrolmentStatusFilterOptions,
-  type StudentEnrolmentSummary,
-} from '@/features/enrolment/lib/enrolmentFilterOptions';
-import { EnrolmentSummaryList } from '@/features/enrolment/components/EnrolmentSummaryList';
 import { DEFAULT_PERSON_SORT, type PersonSortField } from '../lib/personSort';
 import { AdminEnrolStudentModal } from '@/features/enrolment/components/AdminEnrolStudentModal';
 import { resolveGuardianEmail } from '@/features/enrolment/lib/resolveGuardianEmail';
 import { useJobs } from '@/features/jobs/hooks/useJobs';
-import { ClientShootList } from '@/features/jobs/components/ClientShootList';
 import { NEW_SHOOT_PATH, newShootState } from '@/features/jobs/lib/newShootRoute';
 import type { JobRow } from '@/features/jobs/services/jobService';
-import { ExpandedStudentRow } from './ExpandedStudentRow';
 import { StudentSlideOver } from './StudentSlideOver';
-import { getStudentAgeDisplay } from '@/lib/utils';
+import { useStudentsListColumns } from './students-list/useStudentsListColumns';
+import { StudentsFilterDrawer } from './students-list/StudentsFilterDrawer';
+import { StudentsTable } from './students-list/StudentsTable';
+import { StudentsPagination } from './students-list/StudentsPagination';
 import type { Person } from '@shared/schemas';
-
-const columnHelper = createColumnHelper<Person>();
-
-type StatusFilter = 'active' | 'inactive' | 'all';
 
 export function StudentsList() {
   const { t } = useTranslation();
@@ -67,14 +49,7 @@ export function StudentsList() {
   const tenant = useTenant();
   const queryClient = useQueryClient();
 
-  const [selectedEnrolmentStatuses, setSelectedEnrolmentStatuses] = useState<FilterOption[]>([]);
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('active');
-  const [selectedClasses, setSelectedClasses] = useState<FilterOption[]>([]);
-  const [selectedLevels, setSelectedLevels] = useState<FilterOption[]>([]);
-  const [selectedFamilies, setSelectedFamilies] = useState<FilterOption[]>([]);
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [minAge, setMinAge] = useState<number | null>(null);
-  const [maxAge, setMaxAge] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery);
   const [page, setPage] = useState(1);
@@ -90,6 +65,8 @@ export function StudentsList() {
     guardianName?: string | null;
   } | null>(null);
 
+  const resetPage = useCallback(() => setPage(1), []);
+
   const { sortField, sortOrder, toggleSort } = useSortState<PersonSortField>(
     DEFAULT_PERSON_SORT.field,
     DEFAULT_PERSON_SORT.order
@@ -97,6 +74,16 @@ export function StudentsList() {
 
   const { classes } = useClasses({ publicOnly: false });
   const { levels } = useLevels({ page: 1 });
+  const filters = useStudentListFilters({ classes, classIdFromUrl, resetPage });
+  const {
+    statusFilter,
+    selectedClasses,
+    selectedLevels,
+    selectedEnrolmentStatuses,
+    selectedFamilies,
+    minAge,
+    maxAge,
+  } = filters;
   const { students, total, pageSize, isLoading, error } = useStudents({
     page,
     status: statusFilter,
@@ -126,102 +113,11 @@ export function StudentsList() {
     enabled: !!tenant?.id && personIds.length > 0,
   });
 
-  // Fetch families for students that have a account_id
-  const accountIds = [...new Set(students.flatMap((s) => (s.account_id ? [s.account_id] : [])))];
-  const familiesQuery = useQuery({
-    queryKey: ['students-list-families', tenant?.id, accountIds],
-    queryFn: async () => {
-      if (!tenant || accountIds.length === 0) return [];
-      const { data, error } = await TenantDB.selectFor('accounts', tenant)
-        .in('id', accountIds)
-        .select('id, name, person_id, guardian:people!accounts_person_id_fkey(name, email, emergency_contact_phone)');
-      if (error) throw error;
-      return (data ?? []).map((row) => {
-        const guardian = row.guardian as {
-          name?: string;
-          email?: string | null;
-          emergency_contact_phone?: string | null;
-        } | null;
-        return {
-          id: row.id as string,
-          contact_person_name: guardian?.name ?? null,
-          contact_email: guardian?.email ?? null,
-          contact_phone: guardian?.emergency_contact_phone ?? null,
-        };
-      });
-    },
-    enabled: !!tenant?.id && accountIds.length > 0,
+  const { enrolmentsByPerson, familyMap, contactPrefsMap } = useStudentsListLookups({
+    students,
+    enrolments: enrolmentsQuery.data,
+    enrolmentStatusFilterValues: selectedEnrolmentStatuses.map((s) => s.value),
   });
-
-  // Fetch class names for the enrolments
-  const classIds = [
-    ...new Set((enrolmentsQuery.data ?? []).map((e: { offering_id: string }) => e.offering_id)),
-  ];
-  const classNamesQuery = useQuery({
-    queryKey: ['students-list-class-names', tenant?.id, classIds],
-    queryFn: async () => {
-      if (!tenant || classIds.length === 0) return [];
-      const { data, error } = await TenantDB.selectFor('offerings', tenant).in('id', classIds);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!tenant?.id && classIds.length > 0,
-  });
-
-  // Fetch contact_preferences for current page
-  const contactPrefsQuery = useQuery({
-    queryKey: ['students-list-contact-prefs', tenant?.id, personIds],
-    queryFn: async () => {
-      if (!tenant || personIds.length === 0) return [];
-      const { data, error } = await TenantDB.selectFor('contact_preferences', tenant).in(
-        'person_id',
-        personIds
-      );
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!tenant?.id && personIds.length > 0,
-  });
-
-  // Build lookup maps
-  const classNameMap = useMemo(
-    () =>
-      new Map<string, string>(
-        (classNamesQuery.data ?? []).map((c: { id: string; name: string }) => [c.id, c.name])
-      ),
-    [classNamesQuery.data]
-  );
-  const enrolmentStatusFilterValues = selectedEnrolmentStatuses.map((s) => s.value);
-
-  const enrolmentsByPerson = useMemo(() => {
-    const map = new Map<string, StudentEnrolmentSummary[]>();
-    for (const e of enrolmentsQuery.data ?? []) {
-      const existing = map.get(e.person_id) ?? [];
-      const cn = classNameMap.get(e.offering_id) ?? e.offering_id;
-      existing.push({
-        id: e.id as string,
-        offeringId: e.offering_id as string,
-        className: cn,
-        status: e.status as StudentEnrolmentSummary['status'],
-      });
-      map.set(e.person_id, existing);
-    }
-    if (enrolmentStatusFilterValues.length === 0) return map;
-    const filtered = new Map<string, StudentEnrolmentSummary[]>();
-    for (const [personId, entries] of map) {
-      const next = filterEnrolmentsByStatus(entries, enrolmentStatusFilterValues);
-      if (next.length > 0) filtered.set(personId, next);
-    }
-    return filtered;
-  }, [enrolmentsQuery.data, classNameMap, enrolmentStatusFilterValues]);
-
-  const familyMap = useMemo(
-    () =>
-      new Map<string, { contact_person_name: string | null; contact_phone: string | null; contact_email: string | null }>(
-        (familiesQuery.data ?? []).map((f: { id: string; contact_person_name: string | null; contact_phone: string | null; contact_email: string | null }) => [f.id, f])
-      ),
-    [familiesQuery.data]
-  );
 
   const { jobs } = useJobs({ enabled: isPhotographer });
   const jobsByPerson = useMemo(() => {
@@ -262,143 +158,16 @@ export function StudentsList() {
     });
   }, [familyMap]);
 
-  const contactPrefsMap = useMemo(
-    () =>
-      new Map<string, { preferred_channel: string; whatsapp_verified: boolean; whatsapp_number: string | null }>(
-        (contactPrefsQuery.data ?? []).map(
-          (cp: { person_id: string; preferred_channel: string; whatsapp_verified: boolean; whatsapp_number: string | null }) => [
-            cp.person_id,
-            cp,
-          ]
-        )
-      ),
-    [contactPrefsQuery.data]
-  );
-
-  const columns = useMemo(
-    () => [
-      columnHelper.display({
-        id: 'expander',
-        header: () => null,
-        cell: ({ row }) => (
-          <button
-            onClick={row.getToggleExpandedHandler()}
-            className="p-1 text-gray-400 hover:text-gray-700 transition-colors"
-            aria-label={row.getIsExpanded() ? t('common.close') : t('pages.students.expand_row')}
-          >
-            <svg
-              className={`w-4 h-4 transition-transform ${row.getIsExpanded() ? 'rotate-90' : ''}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-        ),
-        size: 32,
-      }),
-      columnHelper.accessor('name', {
-        header: t('pages.people.name_label'),
-        cell: (info) => <span className="font-medium">{info.getValue()}</span>,
-      }),
-      columnHelper.accessor('id', {
-        id: 'classes',
-        header: t('pages.students.classes_column'),
-        cell: ({ row }) => isPhotographer ? (
-          <ClientShootList jobs={jobsByPerson.get(row.original.id) ?? []} compact />
-        ) : (
-          <EnrolmentSummaryList
-            enrolments={enrolmentsByPerson.get(row.original.id) ?? []}
-            returnTo="/admin/students"
-            compact
-            audience="admin"
-            linkContext={{
-              studentName: row.original.name,
-              guardianEmail: resolveGuardianEmail({
-                person: row.original,
-                family: row.original.account_id
-                  ? familyMap.get(row.original.account_id)
-                  : undefined,
-              }),
-              guardianName: row.original.account_id
-                ? familyMap.get(row.original.account_id)?.contact_person_name ?? null
-                : null,
-            }}
-          />
-        ),
-      }),
-      columnHelper.accessor('date_of_birth', {
-        header: t('pages.people.age_label'),
-        cell: (info) => {
-          const display = getStudentAgeDisplay(info.getValue());
-          if (display.kind === 'adult') {
-            return t('pages.students.age_adult');
-          }
-          if (display.kind === 'age') {
-            return `${display.value}`;
-          }
-          return <span className="text-gray-400">—</span>;
-        },
-        size: 60,
-      }),
-      columnHelper.accessor('account_id', {
-        id: 'guardian',
-        header: t('pages.students.guardian_column'),
-        cell: ({ row }) => {
-          const fid = row.original.account_id;
-          if (!fid) return <span className="text-gray-400 text-xs">—</span>;
-          const family = familyMap.get(fid) as { contact_person_name: string | null } | undefined;
-          return family?.contact_person_name ?? <span className="text-gray-400 text-xs">—</span>;
-        },
-      }),
-      columnHelper.accessor('id', {
-        id: 'notifications',
-        header: t('pages.students.notifications_column'),
-        cell: ({ row }) => {
-          const cp = contactPrefsMap.get(row.original.id);
-          if (!cp) return <span className="text-gray-400 text-xs">—</span>;
-          const channel = cp.preferred_channel;
-          if (channel === 'whatsapp') {
-            return (
-              <span className="flex items-center gap-1 text-xs text-green-700">
-                💬 WhatsApp{cp.whatsapp_verified ? ' ✓' : ''}
-              </span>
-            );
-          }
-          return <span className="text-xs text-blue-700">✉ {t('pages.students.email_channel')}</span>;
-        },
-        size: 120,
-      }),
-      columnHelper.display({
-        id: 'actions',
-        header: () => null,
-        cell: ({ row }) => (
-          // Phones: stack the two pills instead of squeezing them.
-          <div className="flex flex-col items-stretch gap-1 sm:flex-row sm:items-center sm:justify-end">
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() =>
-                isPhotographer ? openNewShoot(row.original) : openEnrolModal(row.original)
-              }
-            >
-              {t('pages.students.enrol_button')}
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setSlideOverPersonId(row.original.id)}
-            >
-              {t('pages.students.details_button')}
-            </Button>
-          </div>
-        ),
-        size: 160,
-      }),
-    ],
-    [t, enrolmentsByPerson, familyMap, contactPrefsMap, openEnrolModal, isPhotographer, jobsByPerson, openNewShoot]
-  );
+  const columns = useStudentsListColumns({
+    isPhotographer,
+    enrolmentsByPerson,
+    familyMap,
+    contactPrefsMap,
+    jobsByPerson,
+    openEnrolModal,
+    openNewShoot,
+    openDetails: setSlideOverPersonId,
+  });
 
   const table = useReactTable({
     data: students,
@@ -415,21 +184,9 @@ export function StudentsList() {
     getRowId: (row) => row.id,
   });
 
-  const handleStatusFilter = (s: StatusFilter) => {
-    setStatusFilter(s);
-    setPage(1);
-  };
-
   const handleSort = (field: PersonSortField) => {
     toggleSort(field, () => setPage(1));
   };
-
-  const resetPage = () => setPage(1);
-
-  const classOptions = useMemo(
-    () => classes.map((c: { id: string; name: string }) => ({ value: c.id, label: c.name })),
-    [classes]
-  );
 
   useEffect(() => {
     if (!engagementIdFromUrl || !tenant?.id) return;
@@ -452,115 +209,6 @@ export function StudentsList() {
     };
   }, [engagementIdFromUrl, tenant]);
 
-  useEffect(() => {
-    if (!classIdFromUrl || classOptions.length === 0) return;
-    const match = classOptions.find((option) => option.value === classIdFromUrl);
-    if (!match) return;
-    setSelectedClasses((prev) =>
-      prev.some((option) => option.value === match.value) ? prev : [match]
-    );
-  }, [classIdFromUrl, classOptions]);
-
-  const levelOptions = useMemo(
-    () => levels.map((l) => ({ value: l.id, label: l.name })),
-    [levels]
-  );
-
-  const enrolmentStatusOptions = useMemo(() => getEnrolmentStatusFilterOptions(t), [t]);
-
-  const activeFilterCount = useMemo(() => {
-    let count = 0;
-    if (statusFilter !== 'active') count++;
-    count += selectedClasses.length;
-    count += selectedLevels.length;
-    count += selectedFamilies.length;
-    count += selectedEnrolmentStatuses.length;
-    if (minAge != null || maxAge != null) count++;
-    return count;
-  }, [statusFilter, selectedClasses, selectedLevels, selectedFamilies, selectedEnrolmentStatuses, minAge, maxAge]);
-
-  const activeFilterChips = useMemo((): ActiveFilterChip[] => {
-    const chips: ActiveFilterChip[] = [];
-    if (statusFilter !== 'active') {
-      chips.push({
-        key: 'status',
-        label: t(`pages.students.status_${statusFilter}`),
-        onRemove: () => {
-          setStatusFilter('active');
-          resetPage();
-        },
-      });
-    }
-    for (const cls of selectedClasses) {
-      chips.push({
-        key: `class-${cls.value}`,
-        label: cls.label,
-        onRemove: () => {
-          setSelectedClasses((prev) => prev.filter((c) => c.value !== cls.value));
-          resetPage();
-        },
-      });
-    }
-    for (const level of selectedLevels) {
-      chips.push({
-        key: `level-${level.value}`,
-        label: level.label,
-        onRemove: () => {
-          setSelectedLevels((prev) => prev.filter((l) => l.value !== level.value));
-          resetPage();
-        },
-      });
-    }
-    for (const family of selectedFamilies) {
-      chips.push({
-        key: `family-${family.value}`,
-        label: family.label,
-        onRemove: () => {
-          setSelectedFamilies((prev) => prev.filter((f) => f.value !== family.value));
-          resetPage();
-        },
-      });
-    }
-    for (const enrolmentStatus of selectedEnrolmentStatuses) {
-      chips.push({
-        key: `enrolment-status-${enrolmentStatus.value}`,
-        label: enrolmentStatus.label,
-        onRemove: () => {
-          setSelectedEnrolmentStatuses((prev) =>
-            prev.filter((s) => s.value !== enrolmentStatus.value),
-          );
-          resetPage();
-        },
-      });
-    }
-    if (minAge != null || maxAge != null) {
-      const parts = [];
-      if (minAge != null) parts.push(`${t('common.filters.age_min')}: ${minAge}`);
-      if (maxAge != null) parts.push(`${t('common.filters.age_max')}: ${maxAge}`);
-      chips.push({
-        key: 'age',
-        label: parts.join(' – '),
-        onRemove: () => {
-          setMinAge(null);
-          setMaxAge(null);
-          resetPage();
-        },
-      });
-    }
-    return chips;
-  }, [statusFilter, selectedClasses, selectedLevels, selectedFamilies, selectedEnrolmentStatuses, minAge, maxAge, t]);
-
-  const handleClearAllFilters = () => {
-    setStatusFilter('active');
-    setSelectedClasses([]);
-    setSelectedLevels([]);
-    setSelectedFamilies([]);
-    setSelectedEnrolmentStatuses([]);
-    setMinAge(null);
-    setMaxAge(null);
-    resetPage();
-  };
-
   return (
     <div className="space-y-4 p-4">
       {/* Header */}
@@ -572,8 +220,8 @@ export function StudentsList() {
       {/* Compact toolbar + collapsible filter drawer */}
       <FilterToolbar
         onOpenFilters={() => setFiltersOpen(true)}
-        activeFilterCount={activeFilterCount}
-        activeFilters={activeFilterChips}
+        activeFilterCount={filters.activeFilterCount}
+        activeFilters={filters.activeFilterChips}
         searchSlot={
           <PersonSearch
             value={searchQuery}
@@ -591,98 +239,15 @@ export function StudentsList() {
         }
       />
 
-      <FilterDrawer
+      <StudentsFilterDrawer
         open={filtersOpen}
         onClose={() => setFiltersOpen(false)}
-        title={t('common.filters.title')}
-        activeCount={activeFilterCount}
-        onClearAll={handleClearAllFilters}
-      >
-        <div className="space-y-1">
-          <span className="block text-sm font-medium">{t('common.status')}</span>
-          <div className="flex flex-wrap gap-2">
-            {(['active', 'inactive', 'all'] as StatusFilter[]).map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => handleStatusFilter(s)}
-                className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                  statusFilter === s
-                    ? 'bg-gray-900 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                {t(`pages.students.status_${s}`)}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <FilterMultiSelect
-          id="enrolment-status-filter"
-          label={t('pages.students.filter_by_enrolment_status')}
-          options={enrolmentStatusOptions}
-          selected={selectedEnrolmentStatuses}
-          onChange={(next) => {
-            setSelectedEnrolmentStatuses(next);
-            resetPage();
-          }}
-        />
-
-        {!isPhotographer && classes.length > 0 && (
-          <FilterMultiSelect
-            id="class-filter"
-            label={t('pages.students.filter_by_class')}
-            options={classOptions}
-            selected={selectedClasses}
-            onChange={(next) => {
-              setSelectedClasses(next);
-              resetPage();
-            }}
-          />
-        )}
-
-        {!isPhotographer && (
-          <>
-            <FamilyMultiSelect
-              selected={selectedFamilies}
-              onChange={(next) => {
-                setSelectedFamilies(next);
-                resetPage();
-              }}
-            />
-
-            <FilterMultiSelect
-              id="level-filter"
-              label={t('pages.students.filter_by_level')}
-              options={levelOptions}
-              selected={selectedLevels}
-              onChange={(next) => {
-                setSelectedLevels(next);
-                resetPage();
-              }}
-            />
-
-            <AgeRangeFilter
-              minAge={minAge}
-              maxAge={maxAge}
-              onMinChange={(v) => {
-                setMinAge(v);
-                resetPage();
-              }}
-              onMaxChange={(v) => {
-                setMaxAge(v);
-                resetPage();
-              }}
-              onClear={() => {
-                setMinAge(null);
-                setMaxAge(null);
-                resetPage();
-              }}
-            />
-          </>
-        )}
-      </FilterDrawer>
+        filters={filters}
+        isPhotographer={isPhotographer}
+        hasClasses={classes.length > 0}
+        levels={levels}
+        resetPage={resetPage}
+      />
 
       {/* Loading */}
       {isLoading && <div className="py-8 text-center text-gray-500">{t('common.loading')}</div>}
@@ -706,106 +271,23 @@ export function StudentsList() {
 
       {/* Table */}
       {students.length > 0 && (
-        <div className="card overflow-x-auto max-sm:p-2">
-          <table className="w-full text-sm">
-            <thead className="border-b" style={{ borderColor: 'var(--color-border-default)' }}>
-              <tr>
-                <th className="px-1 sm:px-3 py-3" style={{ width: 32 }} />
-                <SortableHeader
-                  label={t('pages.people.name_label')}
-                  sortKey="name"
-                  currentField={sortField}
-                  currentOrder={sortOrder}
-                  onSort={handleSort}
-                  className="px-2 sm:px-3 py-3 text-start font-medium text-gray-700"
-                />
-                <th className="px-2 sm:px-3 py-3 text-start font-medium text-gray-700">
-                  {t('pages.students.classes_column')}
-                </th>
-                {!isPhotographer && (
-                  <>
-                    <SortableHeader
-                      label={t('pages.people.age_label')}
-                      sortKey="date_of_birth"
-                      currentField={sortField}
-                      currentOrder={sortOrder}
-                      onSort={handleSort}
-                      className="px-2 sm:px-3 py-3 text-start font-medium text-gray-700"
-                    />
-                    <th className="px-2 sm:px-3 py-3 text-start font-medium text-gray-700">
-                      {t('pages.students.guardian_column')}
-                    </th>
-                  </>
-                )}
-                <th className="hidden sm:table-cell px-2 sm:px-3 py-3 text-start font-medium text-gray-700" style={{ width: 120 }}>
-                  {t('pages.students.notifications_column')}
-                </th>
-                <th className="px-2 sm:px-3 py-3" />
-              </tr>
-            </thead>
-            <tbody>
-              {table.getRowModel().rows.map((row) => (
-                <Fragment key={row.id}>
-                  <tr
-                    className="border-b hover:bg-gray-50 transition-colors"
-                    style={{ borderColor: 'var(--color-border-default)' }}
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <td
-                        key={cell.id}
-                        className={`${cell.column.id === 'expander' ? 'px-1' : 'px-2'} sm:px-3 py-3${
-                          cell.column.id === 'notifications' ? ' hidden sm:table-cell' : ''
-                        }`}
-                      >
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </td>
-                    ))}
-                  </tr>
-                  {row.getIsExpanded() && (
-                    <tr className="bg-gray-50">
-                      <td colSpan={row.getVisibleCells().length} className="px-6 py-4">
-                        <ExpandedStudentRow
-                          person={row.original}
-                          enrolments={enrolmentsByPerson.get(row.original.id) ?? []}
-                          familyMap={familyMap}
-                          contactPrefsMap={contactPrefsMap}
-                          onEnrol={isPhotographer ? openNewShoot : openEnrolModal}
-                          shoots={isPhotographer ? jobsByPerson.get(row.original.id) ?? [] : undefined}
-                        />
-                      </td>
-                    </tr>
-                  )}
-                </Fragment>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <StudentsTable
+          table={table}
+          isPhotographer={isPhotographer}
+          sortField={sortField}
+          sortOrder={sortOrder}
+          onSort={handleSort}
+          enrolmentsByPerson={enrolmentsByPerson}
+          familyMap={familyMap}
+          contactPrefsMap={contactPrefsMap}
+          jobsByPerson={jobsByPerson}
+          onEnrol={isPhotographer ? openNewShoot : openEnrolModal}
+        />
       )}
 
       {/* Pagination */}
       {total > pageSize && (
-        <div className="flex justify-between items-center pt-2">
-          <Button
-            variant="outline"
-            onClick={() => setPage(Math.max(1, page - 1))}
-            disabled={page === 1}
-          >
-            {t('common.previous')}
-          </Button>
-          <span className="text-sm text-gray-600">
-            {t('common.page_n', { page })} — {t('common.showing_results', {
-              count: Math.min(pageSize, total - (page - 1) * pageSize),
-              total,
-            })}
-          </span>
-          <Button
-            variant="outline"
-            onClick={() => setPage(page + 1)}
-            disabled={page * pageSize >= total}
-          >
-            {t('common.next')}
-          </Button>
-        </div>
+        <StudentsPagination page={page} pageSize={pageSize} total={total} onPageChange={setPage} />
       )}
 
       {/* Slide-over */}
