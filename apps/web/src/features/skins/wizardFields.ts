@@ -1,7 +1,7 @@
 import { useContext } from 'react';
 import { UNSAFE_LocationContext } from 'react-router-dom';
 import { skinForMarketingPage, skinHint, skinName, type Skin } from '@shared/index';
-import { VERTICALS } from '@/features/platform/lib/studioSetupForm';
+import { INITIAL_FORM, VERTICALS } from '@/features/platform/lib/studioSetupForm';
 
 export interface FieldOption {
   id: string;
@@ -55,6 +55,31 @@ export function signupFieldSearch(search: string): string {
   } catch {
     return '';
   }
+}
+
+/**
+ * The look step's colours after choosing a field: the skin's colours, unless the
+ * owner already picked their own (anything other than the default or the previous
+ * field's colours). A skin without colours keeps whatever is there.
+ */
+export function skinColours(
+  form: { vertical: string; primaryColor: string; accentColor: string },
+  liveSkins: Skin[] | undefined,
+  skin: Skin | null,
+): { primaryColor?: string; accentColor?: string } {
+  if (!skin?.colours.primary && !skin?.colours.accent) return {};
+  const previous = liveSkins?.find((s) => s.id === form.vertical);
+  const same = (a: string | undefined, b: string) => (a ?? '').toLowerCase() === b.toLowerCase();
+  const untouched =
+    (same(INITIAL_FORM.primaryColor, form.primaryColor) && same(INITIAL_FORM.accentColor, form.accentColor)) ||
+    (previous != null &&
+      same(previous.colours.primary ?? INITIAL_FORM.primaryColor, form.primaryColor) &&
+      same(previous.colours.accent ?? INITIAL_FORM.accentColor, form.accentColor));
+  if (!untouched) return {};
+  return {
+    primaryColor: skin.colours.primary ?? INITIAL_FORM.primaryColor,
+    accentColor: skin.colours.accent ?? INITIAL_FORM.accentColor,
+  };
 }
 
 /** The page's query string: the router's when there is one, else the browser's. */

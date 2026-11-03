@@ -131,7 +131,7 @@ function seedDeps(service: ServiceClient): SeedDeps {
   };
 }
 
-const SEED_TENANT_COLUMNS = "id, name, skin, language_default, contact_email, legal_profile";
+const SEED_TENANT_COLUMNS = "id, name, skin, language_default, contact_email, legal_profile, verticals(legal_addon)";
 
 /**
  * Every new studio gets the form its clients sign, right away. Best effort: a

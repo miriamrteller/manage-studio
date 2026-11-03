@@ -26,7 +26,7 @@ import {
   type StudioSetupForm,
 } from '../lib/studioSetupForm';
 import { useLiveSkins } from '@/features/skins/useSkins';
-import { fieldFromSearch, signupFieldSearch, usePageSearch, wizardFieldOptions } from '@/features/skins/wizardFields';
+import { fieldFromSearch, signupFieldSearch, skinColours, usePageSearch, wizardFieldOptions } from '@/features/skins/wizardFields';
 import { invoicingOptionsFor, invoicingPairsWithPayment } from '@/lib/providerPairing';
 import {
   PaymentProviderChoice,
@@ -130,7 +130,7 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
     const skin = liveSkins?.find((s) => s.id === vertical) ?? null;
     const defaults = profileDefaultsFor(vertical, skin);
     const monthlyFees = monthlyFeesForFlow(defaults.paymentFlow);
-    setForm((prev) => ({ ...prev, vertical, ...defaults, monthlyFees }));
+    setForm((prev) => ({ ...prev, vertical, ...defaults, monthlyFees, ...skinColours(prev, liveSkins, skin) }));
     if (monthlyFees && (form.paymentProvider === 'ypay' || form.paymentProvider === 'invoice4u')) {
       choosePayment('grow');
     }

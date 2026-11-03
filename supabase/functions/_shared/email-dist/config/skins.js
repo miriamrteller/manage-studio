@@ -146,6 +146,10 @@ export function skinErrors(skin) {
         errors.push('name_en');
     if (!skin.nameHe.trim() || skin.nameHe.trim().length > 80)
         errors.push('name_he');
+    if (skin.colours.primary && !HEX.test(skin.colours.primary))
+        errors.push('colour_primary');
+    if (skin.colours.accent && !HEX.test(skin.colours.accent))
+        errors.push('colour_accent');
     for (const locale of ['en', 'he']) {
         for (const key of SKIN_NOUN_KEYS) {
             const pair = skin.labels[locale]?.[key];

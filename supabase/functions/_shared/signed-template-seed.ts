@@ -8,6 +8,8 @@ export interface SeedTenant {
   language_default: string | null;
   contact_email: string | null;
   legal_profile?: Record<string, unknown> | null;
+  /** The skin row (embedded): a data skin's legal add-on. */
+  verticals?: { legal_addon: string | null } | null;
 }
 
 export interface SeedDeps {
@@ -75,7 +77,7 @@ export async function seedSignedTemplate(
       tenantName: tenant.name,
       contactEmail: tenant.contact_email ?? "",
       profile: stringProfile(tenant.legal_profile),
-    });
+    }, tenant.verticals?.legal_addon ?? null);
     for (const form of forms) {
       if (have?.has(`${form.audience ?? ""}|${lang}`)) continue;
       await deps.insertTemplate({
