@@ -135,3 +135,31 @@ DO $$ BEGIN
   END IF;
   RAISE NOTICE 'ok  function grants';
 END $$;
+
+-- Poller (6/8): one job, every 10 minutes, and it calls the function only when
+-- some row needs it (a quiet run is just the SQL check).
+CREATE FUNCTION pg_temp.poll_calls() RETURNS INT LANGUAGE plpgsql AS $$
+DECLARE cmd TEXT; n INT;
+BEGIN
+  SELECT command INTO cmd FROM cron.job WHERE command ILIKE '%/functions/v1/custom-domain%';
+  EXECUTE 'SELECT count(*) FROM (' || regexp_replace(cmd, ';[[:space:]]*$', '') || ') calls' INTO n;
+  RETURN n;
+END $$;
+DO $$
+BEGIN
+  IF (SELECT count(*) FROM cron.job WHERE command ILIKE '%/functions/v1/custom-domain%') <> 1 THEN
+    RAISE EXCEPTION 'FAIL poller not scheduled exactly once';
+  END IF;
+  IF (SELECT schedule FROM cron.job WHERE command ILIKE '%/functions/v1/custom-domain%') <> '*/10 * * * *' THEN
+    RAISE EXCEPTION 'FAIL poller schedule';
+  END IF;
+  -- app.next.com (T1) is pending from the lock test above.
+  IF pg_temp.poll_calls() <> 1 THEN RAISE EXCEPTION 'FAIL pending row did not trigger a call'; END IF;
+  UPDATE tenant_custom_domains SET status = 'paused' WHERE hostname = 'app.next.com';
+  IF pg_temp.poll_calls() <> 0 THEN RAISE EXCEPTION 'FAIL a paused row inside its 30 days triggered a call'; END IF;
+  UPDATE tenant_custom_domains SET delete_after = now() - interval '1 minute' WHERE hostname = 'app.next.com';
+  IF pg_temp.poll_calls() <> 1 THEN RAISE EXCEPTION 'FAIL a row due for deletion did not trigger a call'; END IF;
+  UPDATE tenant_custom_domains SET status = 'active', delete_after = NULL, activated_at = now() WHERE hostname = 'app.next.com';
+  IF pg_temp.poll_calls() <> 0 THEN RAISE EXCEPTION 'FAIL an active-only table triggered a call'; END IF;
+  RAISE NOTICE 'ok  poller: one job, calls only when needed';
+END $$;
