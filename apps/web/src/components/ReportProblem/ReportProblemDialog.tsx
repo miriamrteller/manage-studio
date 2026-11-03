@@ -1,10 +1,13 @@
-import { useEffect, useId, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
+import { Suspense, lazy, useEffect, useId, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Modal } from '@/components/ui/modal';
 import { Textarea } from '@/components/ui/textarea';
 import { SCREENSHOT_TYPES, checkScreenshot, sendProblemReport } from '@/lib/monitoring';
+
+// Loaded only when the admin opens "Hide details", so it adds nothing to the normal app load.
+const ScreenshotRedactor = lazy(() => import('./ScreenshotRedactor').then((m) => ({ default: m.ScreenshotRedactor })));
 
 type Status = 'idle' | 'sending' | 'sent' | 'failed';
 
@@ -18,12 +21,16 @@ export function ReportProblemDialog({ isOpen, onClose }: { isOpen: boolean; onCl
   const fileId = `${ids}-screenshot`;
   const fileWarningId = `${ids}-screenshot-warning`;
   const fileErrorId = `${ids}-screenshot-error`;
+  const snapshotHintId = `${ids}-snapshot-hint`;
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const redactButtonRef = useRef<HTMLButtonElement>(null);
   const [message, setMessage] = useState('');
   const [status, setStatus] = useState<Status>('idle');
   const [showRequired, setShowRequired] = useState(false);
   const [screenshot, setScreenshot] = useState<File | null>(null);
   const [screenshotError, setScreenshotError] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [snapshotBusy, setSnapshotBusy] = useState(false);
 
   // Fresh form every time the dialog opens.
   useEffect(() => {
@@ -33,6 +40,8 @@ export function ReportProblemDialog({ isOpen, onClose }: { isOpen: boolean; onCl
       setShowRequired(false);
       setScreenshot(null);
       setScreenshotError(null);
+      setEditing(false);
+      setSnapshotBusy(false);
     }
   }, [isOpen]);
 
@@ -49,6 +58,30 @@ export function ReportProblemDialog({ isOpen, onClose }: { isOpen: boolean; onCl
     }
     setScreenshotError(null);
     setScreenshot(file);
+  };
+
+  // Optional: a picture of the page behind this window with all text, form values and images
+  // replaced by solid blocks, built from the page itself (see lib/monitoring/pageSnapshot.ts).
+  const takeSnapshot = async () => {
+    setSnapshotBusy(true);
+    setScreenshotError(null);
+    try {
+      const { capturePageSnapshot } = await import('@/lib/monitoring/pageSnapshot');
+      const file = await capturePageSnapshot();
+      const problem = await checkScreenshot(file);
+      if (problem) {
+        setScreenshotError(t(`report_problem.screenshot_error_${problem}`));
+        return;
+      }
+      setScreenshot(file);
+    } catch (err) {
+      const code = (err as { code?: string } | null)?.code;
+      setScreenshotError(
+        t(code === 'too_large' ? 'report_problem.snapshot_error_too_large' : 'report_problem.snapshot_error_failed'),
+      );
+    } finally {
+      setSnapshotBusy(false);
+    }
   };
 
   const removeScreenshot = () => {
@@ -82,7 +115,22 @@ export function ReportProblemDialog({ isOpen, onClose }: { isOpen: boolean; onCl
         {status === 'failed' && <p className="mb-4 font-medium text-red-700">{t('report_problem.failed')}</p>}
       </div>
 
-      {status === 'sent' ? (
+      {editing && screenshot ? (
+        <Suspense fallback={<p className="text-sm">{t('common.loading')}</p>}>
+          <ScreenshotRedactor
+            file={screenshot}
+            onDone={(file) => {
+              setScreenshot(file);
+              setEditing(false);
+              setTimeout(() => redactButtonRef.current?.focus(), 0);
+            }}
+            onCancel={() => {
+              setEditing(false);
+              setTimeout(() => redactButtonRef.current?.focus(), 0);
+            }}
+          />
+        </Suspense>
+      ) : status === 'sent' ? (
         <div className="flex justify-end">
           <Button type="button" variant="primary" onClick={onClose}>
             {t('common.close')}
@@ -131,8 +179,28 @@ export function ReportProblemDialog({ isOpen, onClose }: { isOpen: boolean; onCl
               >
                 {t('report_problem.screenshot_button')}
               </label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={takeSnapshot}
+                isLoading={snapshotBusy}
+                disabled={snapshotBusy}
+                aria-describedby={snapshotHintId}
+              >
+                {snapshotBusy ? t('report_problem.snapshot_busy') : t('report_problem.snapshot_button')}
+              </Button>
               {screenshot && (
                 <>
+                  <Button
+                    ref={redactButtonRef}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setEditing(true)}
+                  >
+                    {t('report_problem.redact_button')}
+                  </Button>
                   <span className="text-sm" dir="auto">
                     {t('report_problem.screenshot_chosen', { name: screenshot.name })}
                   </span>
@@ -150,6 +218,9 @@ export function ReportProblemDialog({ isOpen, onClose }: { isOpen: boolean; onCl
             </div>
             <p id={fileWarningId} className="text-sm text-muted-foreground">
               {t('report_problem.screenshot_warning')}
+            </p>
+            <p id={snapshotHintId} className="text-sm text-muted-foreground">
+              {t('report_problem.snapshot_hint')}
             </p>
             <p id={fileErrorId} role="alert" className="text-sm text-red-700">
               {screenshotError ?? ''}
