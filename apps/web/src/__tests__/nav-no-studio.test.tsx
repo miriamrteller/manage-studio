@@ -50,9 +50,14 @@ describe('menu without a studio', () => {
     expect(paths(sections)).not.toContain('/');
   });
 
-  it('signed-out visitors keep the public menu', () => {
+  it('signed-out visitors see only Log in and Sign up (no studio pages like Classes)', () => {
     const sections = nav({ roles: [], hasStudio: false, authenticated: false });
-    expect(paths(sections)).toContain('/login');
+    expect(paths(sections)).toEqual(['/login', '/signup']);
+  });
+
+  it('signed-out visitors on a studio host keep the full public menu', () => {
+    const sections = nav({ roles: [], hasStudio: true, authenticated: false });
+    expect(paths(sections)).toEqual(expect.arrayContaining(['/classes', '/login', '/signup']));
   });
 
   it('"/" highlights Studios without a studio, Classes on a studio host', () => {

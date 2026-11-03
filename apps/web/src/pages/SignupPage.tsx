@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Alert } from '@/components/ui/alert';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { useTenant } from '@/hooks/useTenant';
+import { useTenantQuery } from '@/hooks/useTenant';
 import { signupFormSchema, type SignupForm } from '@/schemas/auth';
 import { useSignup } from '@/features/auth/hooks/useSignup';
 import { resolveAuthErrorMessage } from '@/lib/authErrors';
@@ -21,7 +21,7 @@ type SignupStep = 1 | 2 | 3;
 export default function SignupPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const tenant = useTenant();
+  const { tenant, isLoading: tenantLoading } = useTenantQuery();
   const [step, setStep] = useState<SignupStep>(1);
   const [contactPoint, setContactPoint] = useState<string>('');
   const [channel, setChannel] = useState<SignupForm['channel']>('email');
@@ -100,7 +100,12 @@ export default function SignupPage() {
   };
 
   if (!tenant) {
-    return <div>{t('errors.loading_tenant')}</div>;
+    // Still looking up the studio, or the lookup failed: never wait forever.
+    return (
+      <div className="p-6 text-center" role="status">
+        {tenantLoading ? t('errors.loading_tenant') : t('errors.studio_load_failed')}
+      </div>
+    );
   }
 
   return (

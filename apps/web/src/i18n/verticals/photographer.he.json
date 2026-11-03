@@ -1,6 +1,5 @@
 {
   "errors": {
-    "loading_tenant": "טוען את פרטי הסטודיו...",
     "failed_to_load_classes": "הטעינה של החבילות נכשלה. נסו שוב."
   },
   "pages": {
