@@ -146,7 +146,10 @@ export function resolveStudioLabels(
   overrides: Partial<EntityLabels> = {},
   locale: EntityLabelLocale = 'en',
   vertical: VerticalId = 'generic',
+  /** A data skin's own wording (skinLabelsFor); the studio's own words still win. */
+  skinLabels: Partial<EntityLabels> = {},
 ): EntityLabels {
-  if (profile.teachesClasses) return resolveEntityLabels('programs', overrides, locale, vertical)
-  return { ...GENERAL_LABELS[locale], ...resolveVerticalLabels(vertical, locale), ...overrides }
+  const words = { ...skinLabels, ...overrides }
+  if (profile.teachesClasses) return resolveEntityLabels('programs', words, locale, vertical)
+  return { ...GENERAL_LABELS[locale], ...resolveVerticalLabels(vertical, locale), ...words }
 }

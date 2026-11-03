@@ -503,15 +503,15 @@ export declare const CategorySchema: z.ZodObject<{
 }, "strip", z.ZodTypeAny, {
     id: string;
     tenant_id: string;
+    sort_order: number;
     name: string;
     created_at: string;
-    sort_order: number;
 }, {
     id: string;
     tenant_id: string;
+    sort_order: number;
     name: string;
     created_at: string;
-    sort_order: number;
 }>;
 export type Category = z.infer<typeof CategorySchema>;
 export declare const OfferingSchema: z.ZodEffects<z.ZodObject<{
@@ -1088,10 +1088,10 @@ export declare const ExpenseCategorySchema: z.ZodObject<{
 }, "strip", z.ZodTypeAny, {
     id: string;
     tenant_id: string;
+    sort_order: number;
     name: string;
     created_at: string;
     updated_at: string;
-    sort_order: number;
     is_vat_eligible: boolean;
     is_active: boolean;
     description?: string | null | undefined;
@@ -1290,7 +1290,7 @@ export declare const PaymentLogRowSchema: z.ZodObject<{
         id: string;
         status: string;
     } | null | undefined;
-    payment_method?: "card" | "cash" | "bank_transfer" | "other" | null | undefined;
+    payment_method?: "other" | "card" | "cash" | "bank_transfer" | null | undefined;
     paid_at?: string | null | undefined;
     external_document_number?: string | null | undefined;
     invoice_url?: string | null | undefined;
@@ -1320,7 +1320,7 @@ export declare const PaymentLogRowSchema: z.ZodObject<{
         id: string;
         status: string;
     } | null | undefined;
-    payment_method?: "card" | "cash" | "bank_transfer" | "other" | null | undefined;
+    payment_method?: "other" | "card" | "cash" | "bank_transfer" | null | undefined;
     paid_at?: string | null | undefined;
     external_document_number?: string | null | undefined;
     invoice_url?: string | null | undefined;
@@ -1452,7 +1452,7 @@ export declare const ConsentTemplateSchema: z.ZodObject<{
 }, "strip", z.ZodTypeAny, {
     id: string;
     tenant_id: string;
-    status: "active" | "archived" | "approved" | "draft";
+    status: "draft" | "active" | "archived" | "approved";
     name: string;
     created_at: string;
     updated_at: string;
@@ -1465,7 +1465,7 @@ export declare const ConsentTemplateSchema: z.ZodObject<{
 }, {
     id: string;
     tenant_id: string;
-    status: "active" | "archived" | "approved" | "draft";
+    status: "draft" | "active" | "archived" | "approved";
     name: string;
     created_at: string;
     updated_at: string;

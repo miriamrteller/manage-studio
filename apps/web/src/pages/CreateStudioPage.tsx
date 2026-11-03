@@ -13,6 +13,7 @@ import {
   clearAuthCallbackUrl,
   establishSessionFromAuthCallback,
 } from '@/lib/authCallback';
+import { rememberSignupField } from '@/features/skins/wizardFields';
 import { OperatorOnboardingWizard } from '@/features/platform/components/OperatorOnboardingWizard';
 import { TurnstileWidget } from '@/components/captcha/TurnstileWidget';
 import { LegalPackPanel } from '@/components/legal/LegalPackPanel';
@@ -49,6 +50,8 @@ export default function CreateStudioPage() {
 function SelfServeSignup() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  // Remember a marketing link's field before the auth callback clears the address.
+  useState(() => rememberSignupField(window.location.search));
   const callbackUrl = useRef(captureAuthCallbackUrl());
   const [linkState, setLinkState] = useState<'none' | 'checking' | 'failed'>(
     hasAuthLinkParams(callbackUrl.current) ? 'checking' : 'none',

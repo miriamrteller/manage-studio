@@ -318,6 +318,12 @@ export const navigationConfig: NavItem[] = [
     sectionKey: 'platform',
   },
   {
+    path: '/platform/skins',
+    labelKey: 'nav.platform_skins',
+    requiredRoles: ['super_admin'],
+    sectionKey: 'platform',
+  },
+  {
     path: '/dashboard/portal',
     labelKey: 'nav.my_account',
     requiredRoles: [...PARENT_ROLE_NAMES],
