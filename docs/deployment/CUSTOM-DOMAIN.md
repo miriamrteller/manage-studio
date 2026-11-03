@@ -132,17 +132,22 @@ before the `*/*` route in `apps/web/wrangler.jsonc` is released.
    `CLOUDFLARE_SAAS_API_TOKEN`, `CLOUDFLARE_SAAS_ZONE_ID`, and
    `CUSTOM_DOMAIN_OWN_ZONES` = `creativeballetacademy.com` (domains that are
    zones in our own account; OpalSwift connects those by hand, path A).
+   `CUSTOM_DOMAIN_CNAME_TARGET` is optional: leave it unset, it defaults to
+   `proxy-fallback.opalswift.com` (set it only if the fallback record has
+   another name).
 5. **Redirect allowlist sync**: `SUPABASE_AUTH_SYNC_TOKEN` (GitHub environment
    `production-nightly`) and `GITHUB_DISPATCH_TOKEN` (Supabase prod Edge secret);
    steps in PR #279's description. Then run *auth-redirects-sync* with *dry_run*.
-6. **Release** the web app (deploy-web) and check: `https://opalswift.com` still
-   shows the marketing site, `https://app.opalswift.com` the app.
-7. **Turn it on for one studio** (SQL editor, prod):
-   ```sql
-   INSERT INTO custom_domain_rollout (tenant_id, note)
-   SELECT id, 'first self-serve test' FROM tenants WHERE subdomain = '<studio>';
-   ```
-   Its admin now sees *Your own web address* in Settings.
+6. **Run a release** (Actions → deploy-prod; one approval covers the web app) and
+   check: `https://opalswift.com` still shows the marketing site,
+   `https://app.opalswift.com` the app, `https://app.creativeballetacademy.com`
+   Creative Ballet.
+7. **Turn it on for one studio** with a prod task (no hand SQL;
+   [PROD-TASKS.md](PROD-TASKS.md)): in
+   `supabase/prod-tasks/*_custom_domain_rollout_first_studio.sql`, replace the
+   placeholder with the test studio's subdomain in a small PR, merge, then
+   Actions → prod-task → that file (dry run first). Its admin then sees
+   *Your own web address* in Settings.
 
 Until steps 2–4 are done the screen answers "Custom addresses aren't available
 yet" and nothing is created. Removing a studio from `custom_domain_rollout`
