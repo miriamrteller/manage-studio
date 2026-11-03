@@ -25,8 +25,11 @@ sender → opalswift.com MX → Email Routing catch-all
   (then approve).
 - Or **Actions → deploy-lead-email → Run workflow**.
   - Tick **rotate_ingest_secret** to make a new `CRM_INGEST_SECRET` and set it
-    on the worker **and** on prod Supabase in the same run. Nobody copies the
-    value; it is never shown. The run then proves both sides match.
+    on the worker, on prod Supabase **and** on the marketing site's contact
+    form (Pages project `opalswift-il`) in the same run. Nobody copies the
+    value; it is never shown. The run then proves the worker and Supabase
+    match. Afterwards run **deploy-marketing** so the contact form picks it up.
+  - Never set this secret by hand in one place only: all three must match.
 
 Each run checks:
 - the worker has a `CRM_INGEST_SECRET` (names only);

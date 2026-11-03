@@ -7,7 +7,8 @@
 #   - automatically on a push to main that touches workers/lead-email-ingest/**
 #   - Actions → deploy-lead-email → Run workflow
 #       tick rotate_ingest_secret to make a new CRM_INGEST_SECRET and set it on
-#       BOTH the worker and prod Supabase in this run (nobody copies it by hand)
+#       the worker, prod Supabase AND the marketing site's contact form in this
+#       run (nobody copies it by hand); then run deploy-marketing
 #
 # The deploy job uses environment "production": the owner approves it.
 # Secrets (same as deploy-web): CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID,
@@ -21,7 +22,7 @@ on:
   workflow_dispatch:
     inputs:
       rotate_ingest_secret:
-        description: "Make a new CRM_INGEST_SECRET and set it on the worker and prod Supabase"
+        description: "Make a new CRM_INGEST_SECRET and set it on the worker, prod Supabase and the marketing site"
         type: boolean
         default: false
   push:
@@ -39,6 +40,7 @@ concurrency:
 env:
   PROD_REF: oogxajjanbyqhljxcmql
   WORKER: lead-email-ingest
+  PAGES_PROJECT: opalswift-il
   INGEST_URL: https://oogxajjanbyqhljxcmql.supabase.co/functions/v1/crm-lead-ingest
 
 jobs:
@@ -141,6 +143,15 @@ jobs:
           fi
           rm -f put.err
           echo "Worker: CRM_INGEST_SECRET set."
+          # Third copy: the marketing site's contact form (Pages project) files
+          # hq leads with the same secret. Pages uses it from its next deploy.
+          if ! printf '%s' "$value" | pnpm exec wrangler pages secret put CRM_INGEST_SECRET --project-name "$PAGES_PROJECT" >/dev/null 2>put.err; then
+            tail -5 put.err; rm -f put.err
+            echo "::error::Supabase and the worker have the NEW secret but the marketing site does not. Re-run with rotate_ingest_secret ticked."; exit 1
+          fi
+          rm -f put.err
+          echo "Marketing site: CRM_INGEST_SECRET set (live from its next deploy)."
+          echo "- Marketing site has the new secret: run **deploy-marketing** so the contact form uses it" >> "$GITHUB_STEP_SUMMARY"
           # Authenticated POST with an empty body must answer 400 (bad payload,
           # nothing written): proves prod holds the same value as the worker.
           ok=0
