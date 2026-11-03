@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Paintbrush, Building2, Briefcase, Globe, CreditCard, FileText, Scale, ShieldCheck } from 'lucide-react';
+import { Paintbrush, Building2, Briefcase, Globe, CreditCard, FileText, Scale, ShieldCheck, Users } from 'lucide-react';
 
 import { SettingsLayout, type SettingsSection } from '@/features/settings/components/SettingsLayout';
 import { BrandingSettingsForm } from '@/features/settings/components/BrandingSettingsForm';
@@ -10,8 +10,33 @@ import { BusinessSettings } from '@/features/settings/components/BusinessSetting
 import { LocaleSettingsForm } from '@/features/settings/components/LocaleSettingsForm';
 import { PaymentSettingsForm } from '@/features/settings/components/PaymentSettingsForm';
 import { InvoicingSettingsForm } from '@/features/settings/components/InvoicingSettingsForm';
+import { InvoicingToggleForm } from '@/features/settings/components/InvoicingToggleForm';
+import { LeadFormSettings } from '@/features/settings/components/LeadFormSettings';
+import { LeadDigestSetting } from '@/features/settings/components/LeadDigestSetting';
 import { LegalSettingsForm } from '@/features/settings/components/LegalSettingsForm';
 import { SecuritySettingsForm } from '@/features/settings/components/SecuritySettingsForm';
+
+/** Tax documents on/off and the invoicing service first, then that service's credentials. */
+function InvoicingSection() {
+  return (
+    <div className="space-y-10">
+      <InvoicingToggleForm />
+      <hr className="border-gray-200" />
+      <InvoicingSettingsForm />
+    </div>
+  );
+}
+
+/** How enquiries reach the studio: the questions on the enquiry form and the daily follow-up email. */
+function LeadsSection() {
+  return (
+    <div className="space-y-10">
+      <LeadFormSettings />
+      <hr className="border-gray-200" />
+      <LeadDigestSetting />
+    </div>
+  );
+}
 
 const SETTINGS_SECTIONS: SettingsSection[] = [
   {
@@ -54,7 +79,14 @@ const SETTINGS_SECTIONS: SettingsSection[] = [
     labelKey: 'settings.tabs.invoicing',
     label: 'Invoicing',
     icon: FileText,
-    component: InvoicingSettingsForm,
+    component: InvoicingSection,
+  },
+  {
+    id: 'leads',
+    labelKey: 'settings.tabs.leads',
+    label: 'Leads',
+    icon: Users,
+    component: LeadsSection,
   },
   {
     id: 'legal',
