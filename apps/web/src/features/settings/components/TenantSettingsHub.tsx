@@ -22,6 +22,7 @@ import { InvoicingToggleForm } from './InvoicingToggleForm';
 import { GetLeadsPanel } from '@/features/crm/components/GetLeadsPanel';
 import { LeadFormSettings } from './LeadFormSettings';
 import { LeadDigestSetting } from './LeadDigestSetting';
+import { BusinessSettings } from './BusinessSettings';
 
 function SettingsLinkCard({
   title,
@@ -71,6 +72,8 @@ export function TenantSettingsHub() {
       </header>
 
       <SchoolProfileForm />
+      <BusinessSettings />
+      <hr className="border-gray-200" />
       <CustomDomainSettings />
       <hr className="border-gray-200" />
       <LegalLinksSettingsForm />

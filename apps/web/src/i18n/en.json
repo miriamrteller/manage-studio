@@ -2699,6 +2699,26 @@
       "document_hint": "Choose what your YPay account issues. Ask YPay if unsure.",
       "document_saved": "Saved."
     },
+    "business": {
+      "title": "Your business",
+      "intro": "How you charge and which areas you use. Switch an area off and it is hidden: nothing is deleted, and you can switch it back on any time.",
+      "flow_legend": "How do clients pay you?",
+      "flow_recurring": "Monthly",
+      "flow_project": "Per project",
+      "flow_both": "Both",
+      "switches_legend": "Areas you use",
+      "classes_label": "I teach classes",
+      "classes_hint": "Classes, levels, seasons and the timetable.",
+      "families_label": "Parents pay for children",
+      "families_hint": "Family accounts.",
+      "booking_label": "Clients book time slots",
+      "booking_hint": "Calendar booking, Google Calendar sync and no-show rules.",
+      "classes_off_notice": "You still have active enrolments ({{count}}). They stay as they are and keep billing; only the class pages are hidden.",
+      "dismiss": "Dismiss",
+      "save": "Save",
+      "saved": "Saved.",
+      "error": "Could not save. Please try again."
+    },
     "lead_digest": {
       "title": "Daily follow-up email",
       "label": "Email me each morning with the leads to follow up that day",
