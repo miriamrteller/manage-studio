@@ -26,7 +26,7 @@ import {
   type StudioSetupForm,
 } from '../lib/studioSetupForm';
 import { useLiveSkins } from '@/features/skins/useSkins';
-import { fieldFromSearch, signupFieldSearch, wizardFieldOptions } from '@/features/skins/wizardFields';
+import { fieldFromSearch, signupFieldSearch, usePageSearch, wizardFieldOptions } from '@/features/skins/wizardFields';
 import { invoicingOptionsFor, invoicingPairsWithPayment } from '@/lib/providerPairing';
 import {
   PaymentProviderChoice,
@@ -137,11 +137,12 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
   }
 
   // A marketing industry page link (?field=<skin> or ?from=<page>) preselects the field once.
+  const search = usePageSearch();
   const fieldPrefilled = useRef(false);
   useEffect(() => {
     if (fieldPrefilled.current || !liveSkins) return;
     fieldPrefilled.current = true;
-    const preset = fieldFromSearch(signupFieldSearch(window.location.search), liveSkins);
+    const preset = fieldFromSearch(signupFieldSearch(search), liveSkins);
     if (preset && form.vertical === INITIAL_FORM.vertical) chooseField(preset);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once, when the skins arrive
   }, [liveSkins]);

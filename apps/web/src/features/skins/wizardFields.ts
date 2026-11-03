@@ -1,3 +1,5 @@
+import { useContext } from 'react';
+import { UNSAFE_LocationContext } from 'react-router-dom';
 import { skinForMarketingPage, skinHint, skinName, type Skin } from '@shared/index';
 import { VERTICALS } from '@/features/platform/lib/studioSetupForm';
 
@@ -53,4 +55,10 @@ export function signupFieldSearch(search: string): string {
   } catch {
     return '';
   }
+}
+
+/** The page's query string: the router's when there is one, else the browser's. */
+export function usePageSearch(): string {
+  const routed = useContext(UNSAFE_LocationContext) as { location?: { search?: string } } | null;
+  return routed?.location?.search ?? window.location.search;
 }
