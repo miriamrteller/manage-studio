@@ -42,6 +42,8 @@ export type TenantConfig = {
   profile?: StudioProfile;
   /** Vertical id (tenants.skin): photographer | beautician | dance-studio | generic */
   vertical: string;
+  /** The studio's skin id as stored (tenants.skin); `vertical` is its built-in code skin ('generic' for a data skin). */
+  skin?: string;
   entity_label_overrides?: Record<string, Record<string, string>>;
   entity_labels?: Record<string, string>;
   modules?: string[];
