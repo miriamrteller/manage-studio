@@ -10,6 +10,10 @@ import { DemoBar } from './DemoBar';
 import { DEMO_HOME, TENANT_ID } from './seed';
 import '../fonts';
 import '../index.css';
+import { setInactivitySignOutEnabled } from '../lib/inactivity/config';
+
+// The demo has no real sign-in: the automatic sign-out after inactivity stays off.
+setInactivitySignOutEnabled(false);
 
 const rootElement = document.getElementById('root');
 if (!rootElement) throw new Error('Root element not found');

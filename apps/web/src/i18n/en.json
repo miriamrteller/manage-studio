@@ -407,6 +407,9 @@
     },
     "login": {
       "title": "Login",
+      "inactivity_notice": "You were signed out after {{duration}} without activity, to keep your account safe.",
+      "inactivity_duration_hour": "an hour",
+      "inactivity_duration_minutes": "{{count}} minutes",
       "subtitle": "Enter your login details",
       "no_account": "Don't have an account?",
       "signup": "Sign up here",

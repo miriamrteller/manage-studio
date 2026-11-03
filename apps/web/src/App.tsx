@@ -1,6 +1,7 @@
 import { QueryClientProvider } from "@tanstack/react-query";
 import { I18nextProvider } from "react-i18next";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { InactivityGuard } from "./components/Auth/InactivityGuard";
 import { RouterProvider } from "react-router-dom";
 import { useThemeInjection } from "./hooks/useThemeInjection";
 import i18n from "./i18n/i18n";
@@ -18,6 +19,7 @@ export default function App() {
       <I18nextProvider i18n={i18n}>
         <ErrorBoundary>
           <ThemeInjector />
+          <InactivityGuard />
           <RouterProvider router={router} />
         </ErrorBoundary>
       </I18nextProvider>
