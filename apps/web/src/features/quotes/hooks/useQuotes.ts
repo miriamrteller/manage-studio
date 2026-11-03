@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTenant } from '@/hooks/useTenant';
+import { useJob } from '@/features/jobs/hooks/useJobs';
 import type { AutomaticEmailKey, QuoteDraft } from '../lib/quoteSchemas';
+import { quotePrefillFromSource, type QuoteDraftPrefill } from '../lib/quoteDraft';
 import { QuoteService, type QuoteSendVia } from '../services/quoteService';
 
 export function useQuoteList() {
@@ -27,6 +29,32 @@ export function useQuotePackages() {
     queryFn: () => (tenant ? QuoteService.packages(tenant.id) : Promise.resolve([])),
     enabled: !!tenant?.id,
   });
+}
+
+/**
+ * What a new quote can start from: the lead's or the shoot's package, date and client.
+ * `isLoading` only while those load; a failed load just leaves the quote blank (never blocks).
+ */
+export function useNewQuotePrefill(source: { leadId: string | null; engagementId: string | null }): {
+  prefill: QuoteDraftPrefill | null;
+  isLoading: boolean;
+} {
+  const tenant = useTenant();
+  const packages = useQuotePackages();
+  const leadQuery = useQuery({
+    queryKey: ['quote-source-lead', tenant?.id, source.leadId],
+    queryFn: () => (tenant && source.leadId ? QuoteService.sourceLead(tenant.id, source.leadId) : Promise.resolve(null)),
+    enabled: !!tenant?.id && !!source.leadId,
+  });
+  const { job, isLoading: jobLoading } = useJob(source.engagementId ?? undefined);
+
+  const isLoading =
+    packages.isLoading || (!!source.leadId && leadQuery.isLoading) || (!!source.engagementId && jobLoading);
+  if (isLoading) return { prefill: null, isLoading: true };
+  return {
+    prefill: quotePrefillFromSource({ lead: leadQuery.data ?? null, job, packages: packages.data ?? [] }),
+    isLoading: false,
+  };
 }
 
 export function useQuoteMutations() {

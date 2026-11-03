@@ -9,6 +9,7 @@ import { FormInput, FormSelect } from '@/components/ui/form';
 import { useTenant } from '@/hooks/useTenant';
 import { isMonthlyFeesNeedGrowError, monthlyFeesSupported } from '@/lib/providerPairing';
 import { getOfferingCoverPublicUrl } from '../lib/offeringImageStorage';
+import { useDefaultClassLocation } from '../hooks/useDefaultClassLocation';
 
 const optionalUuidField = z.preprocess(
   (val) => (val === '' ? null : val),
@@ -156,6 +157,14 @@ export function ClassForm({
 
   const previewUrl = removeCover ? null : (pendingPreviewUrl ?? existingCoverUrl);
 
+  // New class: start the location at the studio's usual one (only into an empty, untouched field).
+  const defaultLocation = useDefaultClassLocation(!classItem?.id);
+  useEffect(() => {
+    if (!defaultLocation || classItem?.id) return;
+    if (form.getFieldState('location').isDirty || form.getValues('location')) return;
+    form.setValue('location', defaultLocation);
+  }, [defaultLocation, classItem?.id, form]);
+
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] ?? null;
     setPendingFile(file);
@@ -179,7 +188,10 @@ export function ClassForm({
       setPendingFile(null);
       setRemoveCover(false);
       if (!classItem?.id) {
-        form.reset(toFormValues(undefined, tenant?.currency || 'ILS', monthlyAllowed));
+        form.reset({
+          ...toFormValues(undefined, tenant?.currency || 'ILS', monthlyAllowed),
+          location: defaultLocation ?? '',
+        });
       }
     } catch (error) {
       if (isMonthlyFeesNeedGrowError(error)) {

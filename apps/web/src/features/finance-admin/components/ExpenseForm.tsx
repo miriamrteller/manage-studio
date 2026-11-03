@@ -1,11 +1,12 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTenant } from '@/hooks/useTenant';
 import { Button } from '@/components/ui/button';
 import { computeExpenseAmounts } from '../lib/expenseAmounts';
 import { normalizeIsraeliTaxId } from '../lib/financeAdminUtils';
 import { ExpenseService } from '../services/expenseService';
-import { useExpenseCategories } from '../hooks/useExpenses';
+import { useExpenseCategories, useKnownSuppliers } from '../hooks/useExpenses';
+import { findKnownSupplier } from '../lib/expenseSuppliers';
 import { ExpenseCategorySelect } from './ExpenseCategorySelect';
 import type { Expense } from '@shared/schemas';
 
@@ -51,6 +52,22 @@ export function ExpenseForm({ correctsExpense, onSuccess, onCancel, onSubmit }: 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const selectedCategory = categories.find((c) => c.id === categoryId);
+
+  // Earlier suppliers: suggest their names; a known name fills its VAT number into an empty field.
+  const suppliers = useKnownSuppliers();
+  const supplierListId = useId();
+  const vatVisible = Boolean(selectedCategory?.is_vat_eligible);
+  const knownVat = findKnownSupplier(suppliers, supplierName)?.vatNumber ?? null;
+  // What we filled last: replaced when the name changes, but typed VAT numbers are never touched.
+  const autoVatRef = useRef<string | null>(null);
+  useEffect(() => {
+    const next = vatVisible && knownVat ? knownVat : '';
+    const previousAuto = autoVatRef.current;
+    if (!next && !previousAuto) return;
+    setSupplierVat((current) => (!current.trim() || current === previousAuto ? next : current));
+    autoVatRef.current = next || null;
+  }, [vatVisible, knownVat]);
+
   const amountMinor = Math.round(parseFloat(amountInput || '0') * 100);
 
   const breakdown = computeExpenseAmounts({
@@ -145,10 +162,19 @@ export function ExpenseForm({ correctsExpense, onSuccess, onCancel, onSubmit }: 
           className="w-full border rounded px-3 py-2"
           value={supplierName}
           onChange={(e) => setSupplierName(e.target.value)}
+          list={suppliers.length > 0 ? supplierListId : undefined}
+          autoComplete="off"
         />
+        {suppliers.length > 0 && (
+          <datalist id={supplierListId}>
+            {suppliers.map((s) => (
+              <option key={s.name} value={s.name} />
+            ))}
+          </datalist>
+        )}
       </label>
 
-      {selectedCategory?.is_vat_eligible && (
+      {vatVisible && (
         <label className="block text-sm">
           <span className="block font-medium mb-1">{t('finance.expenses.supplier_vat')}</span>
           <input

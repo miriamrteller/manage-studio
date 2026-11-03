@@ -7,6 +7,7 @@ import {
   EXPENSES_PAGE_SIZE,
   type ExpensesListFilters,
 } from '../services/expenseService';
+import { knownSuppliers, type KnownSupplier } from '../lib/expenseSuppliers';
 
 export function useExpenses({
   page = 1,
@@ -120,4 +121,19 @@ export function useExpenseCategories(enabled = true) {
     isUpdating: updateMutation.isPending,
     isDeleting: deleteMutation.isPending,
   };
+}
+
+/** Suppliers from the studio's earlier expenses (name suggestions + their VAT number). */
+export function useKnownSuppliers(enabled = true): KnownSupplier[] {
+  const tenant = useTenant();
+  const query = useQuery({
+    queryKey: ['expense-suppliers', tenant?.id],
+    queryFn: async () => {
+      if (!tenant) throw new Error('Tenant not initialized');
+      return knownSuppliers(await ExpenseService.supplierHistory(tenant));
+    },
+    enabled: enabled && !!tenant?.id,
+    staleTime: 5 * 60 * 1000,
+  });
+  return query.data ?? [];
 }
