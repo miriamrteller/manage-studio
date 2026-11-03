@@ -62,6 +62,8 @@ export interface NavItem {
   hideForVerticals?: VerticalId[];
   /** Show only when there is no studio (app.opalswift.com): e.g. the platform home at "/". */
   withoutStudioOnly?: boolean;
+  /** Signed-out item that also works with no studio (app.opalswift.com): log in, sign up. */
+  worksWithoutStudio?: boolean;
 }
 
 export interface NavSection {
@@ -341,12 +343,14 @@ export const publicNavigationConfig: NavItem[] = [
     labelKey: 'nav.login',
     requiredRoles: [],
     sectionKey: 'browse',
+    worksWithoutStudio: true,
   },
   {
     path: '/signup',
     labelKey: 'nav.signup',
     requiredRoles: [],
     sectionKey: 'browse',
+    worksWithoutStudio: true,
   },
 ];
 

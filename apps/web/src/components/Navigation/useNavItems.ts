@@ -48,7 +48,11 @@ export function useNavItems({
         (item.featureKey === undefined || hasFeature === undefined || hasFeature(item.featureKey)) &&
         matchesTenantFilter(item, tenant) &&
         matchesVertical(item, vertical) &&
-        (hasStudio ? !item.withoutStudioOnly : !isAuthenticated || item.sectionKey === 'platform'),
+        (hasStudio
+          ? !item.withoutStudioOnly
+          : isAuthenticated
+            ? item.sectionKey === 'platform'
+            : !!item.worksWithoutStudio),
     );
     return buildNavSections(items, isAuthenticated ? userRoles : []);
   }, [userRoles, isAuthenticated, modules, tenant, hasFeature, vertical, hasStudio]);

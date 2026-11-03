@@ -166,8 +166,8 @@
     "email_invalid": "Invalid email address.",
     "phone_invalid": "Invalid phone number.",
     "failed_to_load_classes": "Failed to load classes. Please try again.",
-    "loading_tenant": "Loading school information...",
-    "tenant_subdomain_unresolved": "Could not determine your school. Set VITE_DEV_TENANT_SUBDOMAIN or use your school's subdomain URL.",
+    "loading_tenant": "Loading studio information...",
+    "tenant_subdomain_unresolved": "Could not determine your studio. Set VITE_DEV_TENANT_SUBDOMAIN or use your studio's subdomain URL.",
     "signup_failed": "Signup failed. Please try again.",
     "invalid_callback": "Invalid authentication callback. Please try logging in again.",
     "session_exchange_failed": "Failed to establish your session. Please try logging in again.",
@@ -188,7 +188,8 @@
     "email_delivery_failed": "We couldn't send the login email. Try again in a few minutes and check your spam folder. If this keeps happening, contact support.",
     "rate_limited": "We've just sent you an email. Please check your inbox, then try again in a minute.",
     "expired_link": "This link has already been used or replaced by a newer one. Check your inbox for the latest email, or ask for a new one.",
-    "redirect_mismatch": "Login redirect is not configured for this site. Please contact support."
+    "redirect_mismatch": "Login redirect is not configured for this site. Please contact support.",
+    "studio_load_failed": "We couldn't load this studio. Please refresh the page."
   },
   "validation": {
     "required": "This field is required.",
@@ -204,7 +205,7 @@
   },
   "form": {
     "email": "Email",
-    "email_placeholder": "example@school.com",
+    "email_placeholder": "example@studio.com",
     "cancel": "Cancel",
     "family": {
       "name": "Family Name",
@@ -959,7 +960,8 @@
       "already_paid_appointment_desc": "Your appointment is confirmed. Thank you!",
       "secure_link_required": "This page requires a secure completion link. Open the full link from the email, or sign in to continue.",
       "admin_session_block": "This completion link is for the guardian. Sign out of the admin account or open the link in a private window.",
-      "sign_out_and_continue": "Sign out and continue"
+      "sign_out_and_continue": "Sign out and continue",
+      "error_recovery_help": "If this link has expired or was opened incorrectly, retry first. If it still fails, request a new completion link from the studio."
     },
     "billing": {
       "account_holder_name_label": "Payer",
@@ -1299,7 +1301,7 @@
       "upcoming_for": "For {{personName}}",
       "preferences": {
         "title": "Notification Preferences",
-        "description": "Manage how you receive updates from the school",
+        "description": "Manage how you receive updates from the studio",
         "email_opted_in": "Email Notifications",
         "email_opted_in_desc": "Receive updates via email",
         "whatsapp_opted_in": "WhatsApp Notifications",
@@ -1322,7 +1324,7 @@
         "notify_payment_due": "Payment reminders",
         "notify_waitlist": "Waiting list offers",
         "notify_schedule_change": "Schedule changes",
-        "notify_announcements": "School announcements",
+        "notify_announcements": "Studio announcements",
         "error_save": "Could not save preferences. Please try again."
       },
       "password": {
@@ -1850,7 +1852,12 @@
     "welcome_back_name": "Welcome back, {{name}}",
     "signed_in_hint": "Manage your studios and the platform from here.",
     "no_studios_hint": "You haven't set up a studio yet. It takes a few minutes.",
-    "platform_features_hint": "Turn platform features on or off for studios."
+    "platform_features_hint": "Turn platform features on or off for studios.",
+    "signup_redirecting": "Taking you to OpalSwift sign-up…",
+    "signup_redirect_link": "Continue",
+    "studio_only_title": "This page belongs to a studio",
+    "studio_only_body": "Classes, booking and enrolment live on each studio's own address (for example, yourstudio.opalswift.com). Open the link your studio gave you.",
+    "studio_only_home": "Go to OpalSwift home"
   },
   "setup_guide": {
     "title": "Finish setting up your studio",
@@ -2065,7 +2072,9 @@
   "studio_not_found": {
     "title": "Studio not found",
     "message_before": "We couldn't find a studio at ",
-    "message_after": ". Check the address."
+    "message_after": ". Check the address.",
+    "opalswift_hint": "Looking for OpalSwift itself?",
+    "opalswift_link": "Go to opalswift.com"
   },
   "footer": {
     "all_rights": "All rights reserved",
@@ -2872,7 +2881,7 @@
     },
     "onboarding": {
       "title": "Provision new tenant",
-      "description": "Create and configure a tenant for a new industry or school.",
+      "description": "Create and configure a tenant for a new industry or studio.",
       "step_identity": "Identity",
       "step_plan": "Plan",
       "step_vertical": "Vertical",
@@ -2883,17 +2892,17 @@
       "step_integrations": "Integrations",
       "step_starter": "Starter data",
       "step_review": "Review",
-      "school_name": "School / business name",
+      "school_name": "Studio / business name",
       "subdomain": "Subdomain",
       "subdomain_help": "Lowercase letters, numbers, and hyphens only.",
       "subdomain_taken": "This subdomain is already in use.",
       "subdomain_available": "Subdomain is available.",
       "business_preset": "Industry preset",
-      "preset_programs": "Programs (dance school)",
+      "preset_programs": "Programs (dance studio)",
       "preset_services": "Services (freelance / consulting)",
       "preset_catalog": "Catalog (retail / gallery)",
       "labels_intro": "Rename key concepts so the app matches your industry. These words appear in navigation, page titles, buttons, and messages.",
-      "labels_how": "Each row has two fields: how to refer to one item (singular) and many items (plural). For example, a dance school might use \"Class\" / \"Classes\" while a retailer uses \"Product\" / \"Products\".",
+      "labels_how": "Each row has two fields: how to refer to one item (singular) and many items (plural). For example, a dance studio might use \"Class\" / \"Classes\" while a retailer uses \"Product\" / \"Products\".",
       "labels_defaults": "Your {{preset}} preset already sets sensible defaults (shown as placeholders). Leave fields empty to keep those defaults — you can skip this step and click Next.",
       "labels_concept": "Concept",
       "labels_singular": "Singular",
@@ -2924,7 +2933,7 @@
       "country": "Country",
       "currency": "Currency",
       "phone_region": "Phone region",
-      "integrations_skip": "Integrations can be configured later in school settings.",
+      "integrations_skip": "Integrations can be configured later in studio settings.",
       "starter_seed": "Default expense categories will be created automatically.",
       "admin_email": "Admin email (for invite instructions)",
       "admin_email_help": "After provisioning, invite this user to sign up with the new subdomain.",

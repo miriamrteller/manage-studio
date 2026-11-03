@@ -1,6 +1,5 @@
 {
   "errors": {
-    "loading_tenant": "Loading studio information...",
     "failed_to_load_classes": "Failed to load packages. Please try again."
   },
   "pages": {

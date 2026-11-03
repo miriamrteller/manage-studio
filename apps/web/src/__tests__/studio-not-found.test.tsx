@@ -68,10 +68,11 @@ describe('StudioHostGate', () => {
       "We couldn't find a studio at creativeballet.opalswift.com. Check the address.",
     );
     expect(screen.queryByText('studio app')).not.toBeInTheDocument();
-    // The only link is the OpalSwift logo, to the marketing site.
+    // The only links (the logo and "Go to opalswift.com") lead to the marketing site.
     const links = screen.getAllByRole('link');
-    expect(links).toHaveLength(1);
-    expect(links[0]).toHaveAttribute('href', 'https://opalswift.com');
+    expect(links).toHaveLength(2);
+    for (const link of links) expect(link).toHaveAttribute('href', 'https://opalswift.com');
+    expect(screen.getByRole('link', { name: 'Go to opalswift.com' })).toBeInTheDocument();
     expect(screen.queryByText(/sign in|log in|enrol/i)).not.toBeInTheDocument();
   });
 

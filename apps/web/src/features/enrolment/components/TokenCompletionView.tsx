@@ -125,7 +125,7 @@ export function TokenCompletionView({ engagementId, effectiveToken }: TokenCompl
         <p className="text-sm text-gray-600">
           {t('pages.enrol_pay.error_recovery_help', {
             defaultValue:
-              'If this link has expired or was opened incorrectly, retry first. If it still fails, request a new completion link from the school.',
+              'If this link has expired or was opened incorrectly, retry first. If it still fails, request a new completion link from the studio.',
           })}
         </p>
         <div className="space-y-2">
