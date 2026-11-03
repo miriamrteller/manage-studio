@@ -13,6 +13,15 @@
 #
 # Until those exist the job exits early with a notice instead of failing, so
 # this can merge before R2 is enabled on the account.
+#
+# The `files` job backs up every Storage bucket (scripts/ci/backup-files-to-r2.sh)
+# into the same R2 bucket under files/. Extra secrets, same places:
+#   SUPABASE_PROD_S3_ACCESS_KEY_ID      Supabase → Project Settings → Storage →
+#   SUPABASE_PROD_S3_SECRET_ACCESS_KEY  S3 access keys (prod project)
+#   FILES_BACKUP_PASSWORD               rclone crypt password and salt: long random
+#   FILES_BACKUP_SALT                   strings, also kept in the password manager
+# Without them the files job skips with a notice. If either job fails, `report`
+# opens (or updates) one issue labelled backup-failed.
 
 name: backup-prod
 
@@ -24,6 +33,9 @@ on:
 concurrency:
   group: backup-prod
   cancel-in-progress: false
+
+permissions:
+  contents: read
 
 jobs:
   backup:
@@ -105,3 +117,74 @@ jobs:
               ]}'; then
             echo "::warning::Could not set R2 lifecycle rules (token lacks bucket admin). Backup itself SUCCEEDED. Set the rules once in the dashboard or upgrade the token — see BACKUP-RESTORE-RUNBOOK.md."
           fi
+
+  # Every Storage bucket, incrementally, encrypted (rclone crypt). Runs next to
+  # the database backup; a few seconds on a quiet night.
+  files:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production-nightly
+    steps:
+      - name: Check secrets are configured
+        id: gate
+        run: |
+          if [ -z "${{ secrets.SUPABASE_PROD_S3_ACCESS_KEY_ID }}" ] || [ -z "${{ secrets.FILES_BACKUP_PASSWORD }}" ] \
+            || [ -z "${{ secrets.FILES_BACKUP_SALT }}" ] || [ -z "${{ secrets.R2_ACCESS_KEY_ID }}" ]; then
+            echo "::notice::Files backup secrets not configured yet — skipping (see BACKUP-RESTORE-RUNBOOK.md §Files)."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.gate.outputs.ready == 'true'
+        with:
+          sparse-checkout: scripts/ci/backup-files-to-r2.sh
+          sparse-checkout-cone-mode: false
+
+      - name: Install rclone
+        if: steps.gate.outputs.ready == 'true'
+        run: sudo apt-get install -y -qq rclone >/dev/null && rclone version | head -1
+
+      - name: Sync Storage → R2 (encrypted)
+        if: steps.gate.outputs.ready == 'true'
+        env:
+          SUPABASE_PROJECT_REF: oogxajjanbyqhljxcmql
+          SUPABASE_S3_REGION: eu-central-1
+          SUPABASE_S3_ACCESS_KEY_ID: ${{ secrets.SUPABASE_PROD_S3_ACCESS_KEY_ID }}
+          SUPABASE_S3_SECRET_ACCESS_KEY: ${{ secrets.SUPABASE_PROD_S3_SECRET_ACCESS_KEY }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: manage-studio-db-backups
+          FILES_BACKUP_PASSWORD: ${{ secrets.FILES_BACKUP_PASSWORD }}
+          FILES_BACKUP_SALT: ${{ secrets.FILES_BACKUP_SALT }}
+        run: bash scripts/ci/backup-files-to-r2.sh
+
+  # Only runs when a backup failed: one open issue, updated each night it fails.
+  report:
+    needs: [backup, files]
+    if: failure()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      DB: ${{ needs.backup.result }}
+      FILES: ${{ needs.files.result }}
+    steps:
+      - name: Open or update the backup-failed issue
+        run: |
+          run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          body="Nightly backup failed on $(date -u +%F): database $DB, files $FILES. Run: $run_url
+          Restore and setup: docs/deployment/BACKUP-RESTORE-RUNBOOK.md"
+          gh label create backup-failed --color B60205 --description "Nightly prod backup failed" 2>/dev/null || true
+          existing=$(gh issue list --label backup-failed --state open --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "$body"
+          else
+            gh issue create --title "Nightly prod backup failed" --label backup-failed --body "$body"
+          fi
+          echo "::warning::Backup failed (database: $DB, files: $FILES)"
