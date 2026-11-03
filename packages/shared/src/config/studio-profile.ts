@@ -47,6 +47,7 @@ export const PROFILE_GATES: Partial<Record<FeatureKey, ProfileGate>> = {
   [FEATURES.billing.dunning]: 'recurring',
   [FEATURES.billing.quotes]: 'project',
   [FEATURES.billing.gatedDelivery]: 'project',
+  [FEATURES.media.galleryGated]: 'project',
   [FEATURES.scheduling.clientBooking]: 'client_booking',
   [FEATURES.scheduling.adminBooking]: 'client_booking',
   [FEATURES.scheduling.googleCalendar]: 'client_booking',
@@ -145,7 +146,10 @@ export function resolveStudioLabels(
   overrides: Partial<EntityLabels> = {},
   locale: EntityLabelLocale = 'en',
   vertical: VerticalId = 'generic',
+  /** A data skin's own wording (skinLabelsFor); the studio's own words still win. */
+  skinLabels: Partial<EntityLabels> = {},
 ): EntityLabels {
-  if (profile.teachesClasses) return resolveEntityLabels('programs', overrides, locale, vertical)
-  return { ...GENERAL_LABELS[locale], ...resolveVerticalLabels(vertical, locale), ...overrides }
+  const words = { ...skinLabels, ...overrides }
+  if (profile.teachesClasses) return resolveEntityLabels('programs', words, locale, vertical)
+  return { ...GENERAL_LABELS[locale], ...resolveVerticalLabels(vertical, locale), ...words }
 }

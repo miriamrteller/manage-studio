@@ -1,76 +1,60 @@
 import { useState } from 'react';
-import { useFeatureDefinitions, useTenantOverrides, useTenants } from '../hooks/useFeatureAdmin';
+import { useTranslation } from 'react-i18next';
+import { useFeatureStates, useTenants } from '../hooks/useFeatureAdmin';
 import { FeatureTogglePanel } from './FeatureTogglePanel';
 
+/** /platform/features: the owner chooses a studio and sets which features it has. */
 export function TenantFeatureManager() {
-  const [selectedTenantId, setSelectedTenantId] = useState<string | null>(null);
-
+  const { t } = useTranslation();
+  const [tenantId, setTenantId] = useState<string | null>(null);
   const { data: tenants = [], isLoading: tenantsLoading } = useTenants();
-  const { data: features = [], isLoading: featuresLoading } = useFeatureDefinitions();
-  const { data: overrides = [], isLoading: overridesLoading } = useTenantOverrides(selectedTenantId);
-
-  const selectedTenant = tenants.find((t) => t.id === selectedTenantId);
-  const isLoading = tenantsLoading || featuresLoading;
+  const states = useFeatureStates(tenantId);
+  const overrides = (states.data ?? []).filter((f) => f.override_enabled !== null).length;
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold">Feature Flags</h1>
-        <p className="text-base-content/60 text-sm mt-1">
-          Manage per-tenant feature overrides. Changes take effect immediately.
-        </p>
+        <h1 className="text-2xl font-bold">{t('platform_features.title')}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">{t('platform_features.intro')}</p>
       </div>
 
-      {/* Tenant selector */}
-      <div className="flex items-center gap-4">
-        <label htmlFor="tenant-feature-manager-select" className="text-sm font-medium shrink-0">
-          Tenant
+      <div className="flex flex-wrap items-center gap-4">
+        <label htmlFor="tenant-feature-manager-select" className="shrink-0 text-sm font-medium">
+          {t('platform_features.studio')}
         </label>
-        {tenantsLoading ? (
-          <span className="loading loading-spinner loading-sm" />
-        ) : (
-          <select
-            id="tenant-feature-manager-select"
-            className="select select-bordered select-sm w-72"
-            value={selectedTenantId ?? ''}
-            onChange={(e) => setSelectedTenantId(e.target.value || null)}
-          >
-            <option value="">— select a tenant —</option>
-            {tenants.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name} ({t.subdomain}) {t.plan ? `· ${t.plan}` : ''}
-              </option>
-            ))}
-          </select>
-        )}
-        {selectedTenant && (
-          <span className="text-xs text-base-content/50">
-            {overrides.length} override{overrides.length !== 1 ? 's' : ''} active
+        <select
+          id="tenant-feature-manager-select"
+          className="form-input w-full max-w-xs"
+          value={tenantId ?? ''}
+          disabled={tenantsLoading}
+          onChange={(e) => setTenantId(e.target.value || null)}
+        >
+          <option value="">{t('platform_features.choose_studio')}</option>
+          {tenants.map((tenant) => (
+            <option key={tenant.id} value={tenant.id}>
+              {tenant.name} ({tenant.subdomain}){tenant.plan ? ` · ${t(`platform_features.plans.${tenant.plan}`)}` : ''}
+            </option>
+          ))}
+        </select>
+        {tenantId && states.data && (
+          <span className="text-xs text-muted-foreground" role="status">
+            {t('platform_features.override_count', { count: overrides })}
           </span>
         )}
       </div>
 
-      {/* Feature list */}
-      {!selectedTenantId && (
-        <div className="rounded-xl border border-dashed border-base-300 p-12 text-center text-base-content/40 text-sm">
-          Select a tenant above to manage its features
-        </div>
+      {!tenantId && (
+        <p className="rounded-lg border border-dashed border-border p-12 text-center text-sm text-muted-foreground">
+          {t('platform_features.pick_hint')}
+        </p>
       )}
-
-      {selectedTenantId && (isLoading || overridesLoading) && (
-        <div className="flex justify-center py-12">
-          <span className="loading loading-spinner loading-md" />
-        </div>
+      {tenantId && states.isLoading && <p role="status">{t('common.loading')}</p>}
+      {tenantId && states.isError && (
+        <p role="alert" className="text-sm text-red-700">
+          {t('platform_features.load_failed')}
+        </p>
       )}
-
-      {selectedTenantId && !isLoading && !overridesLoading && (
-        <FeatureTogglePanel
-          features={features}
-          overrides={overrides}
-          tenantId={selectedTenantId}
-        />
-      )}
+      {tenantId && states.data && <FeatureTogglePanel features={states.data} tenantId={tenantId} />}
     </div>
   );
 }

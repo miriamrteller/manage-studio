@@ -1,5 +1,6 @@
 import { Fragment, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import { formatTime } from '@shared/format';
 import { formatOfferingPrice } from '@/lib/formatOfferingPrice';
 import { Button } from '@/components/ui/button';
@@ -9,7 +10,9 @@ import { useTenant } from '@/hooks/useTenant';
 import { useEntityLabels } from '@/hooks/useEntityLabels';
 import { useSortState } from '@/hooks/useSortState';
 import { useClasses } from '../hooks/useClasses';
+import { useQueryClient } from '@tanstack/react-query';
 import { useTerms } from '@/features/terms/hooks/useTerms';
+import { TermService } from '@/features/terms/service';
 import { useIsNarrowViewport } from '@/features/scheduling/hooks/useIsNarrowViewport';
 import { useLevels } from '@/features/levels/hooks/useLevels';
 import { useTeachers } from '@/features/teachers/hooks/useTeachers';
@@ -54,6 +57,7 @@ export function AdminClassesList() {
   });
   const isNarrow = useIsNarrowViewport();
   const termsData = useTerms({ page: 1 });
+  const queryClient = useQueryClient();
   const levelsData = useLevels({ page: 1 });
   const teachersData = useTeachers({ page: 1 });
 
@@ -69,6 +73,13 @@ export function AdminClassesList() {
   const handleFormSubmit = async (data: Partial<Offering>, imageIntent: ClassFormImageIntent) => {
     if (!tenant?.id) {
       throw new Error(t('errors.loading_tenant'));
+    }
+
+    // No term (the studio has none yet): the class runs with no end date, in "Ongoing".
+    if (!data.season_id) {
+      const ongoing = await TermService.ensureOngoing(tenant, t('form.class.ongoing_term_name'));
+      data = { ...data, season_id: ongoing.id };
+      void queryClient.invalidateQueries({ queryKey: ['terms', tenant.id] });
     }
 
     if (editingClass?.id) {
@@ -299,6 +310,13 @@ export function AdminClassesList() {
                   >
                     {t('pages.admin_classes.requirements_button')}
                   </Button>
+                  <Link
+                    to={`/admin/notifications?offering=${encodeURIComponent(classItem.id)}`}
+                    className="inline-flex items-center rounded-[var(--radius-button)] border border-[var(--border-hairline)] px-3 py-1 text-sm whitespace-nowrap text-[var(--color-text-primary)] hover:bg-[var(--tint-primary-05)] focus-visible:outline-2 outline-offset-2"
+                    aria-label={t('pages.admin_classes.email_class_label', { name: classItem.name })}
+                  >
+                    {t('pages.admin_classes.email_class')}
+                  </Link>
                   <Button variant="destructive" size="sm" onClick={() => setDeleteConfirmId(classItem.id)}>
                     {t('common.delete')}
                   </Button>
@@ -428,6 +446,13 @@ export function AdminClassesList() {
                       >
                         {t('pages.admin_classes.requirements_button')}
                       </Button>
+                      <Link
+                        to={`/admin/notifications?offering=${encodeURIComponent(classItem.id)}`}
+                        className="inline-flex items-center rounded-[var(--radius-button)] border border-[var(--border-hairline)] px-3 py-1 text-sm whitespace-nowrap text-[var(--color-text-primary)] hover:bg-[var(--tint-primary-05)] focus-visible:outline-2 outline-offset-2"
+                        aria-label={t('pages.admin_classes.email_class_label', { name: classItem.name })}
+                      >
+                        {t('pages.admin_classes.email_class')}
+                      </Link>
                       <Button
                         variant="destructive"
                         size="sm"

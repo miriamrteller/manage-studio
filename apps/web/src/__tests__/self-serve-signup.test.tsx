@@ -72,8 +72,6 @@ async function fillWizard(address = 'harbour-yoga') {
   next();
   await screen.findByText('What kind of business is it?');
   next();
-  // A general studio answers "Will you charge monthly fees?" before choosing how to be paid.
-  fireEvent.click(screen.getByRole('radio', { name: /^Yes, monthly fees/ }));
   next();
   next();
   fireEvent.change(screen.getByLabelText('Web address'), { target: { value: address } });
@@ -215,7 +213,6 @@ describe('self-serve signup: wizard', () => {
     next();
     await screen.findByText('What kind of business is it?');
     next();
-    fireEvent.click(screen.getByRole('radio', { name: /^Yes, monthly fees/ }));
     next();
     next();
     fireEvent.change(screen.getByLabelText('Web address'), { target: { value: 'billing' } });

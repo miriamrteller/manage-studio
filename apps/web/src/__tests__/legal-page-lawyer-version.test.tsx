@@ -73,6 +73,20 @@ describe('legal page: lawyer-reviewed version', () => {
     expect(screen.getByText(/lawyer-reviewed version, uploaded 2 Nov 2026/)).toBeInTheDocument();
   });
 
+  it('its studio details are live: filled from the current settings', () => {
+    h.uploads = [{
+      document: 'cookies', language: 'en', kind: 'text',
+      content: '# Cookies\n\nAsk {{detail:studio_name}} at {{detail:email}}. Phone: {{detail:phone}}.',
+      storagePath: null, fileName: null, uploadedAt: '2026-11-02T10:00:00Z',
+    }];
+    const { container } = renderPage();
+    const article = container.querySelector('article')!;
+    expect(article).toHaveTextContent('Ask Harbour at o@x.test.');
+    expect(article).not.toHaveTextContent('{{detail');
+    // A detail not set yet is highlighted as "to be completed", like the drafts.
+    expect(article.querySelector('mark.legal-missing')).toHaveTextContent(/to be completed/);
+  });
+
   it('a PDF opens from a button', () => {
     h.uploads = [{
       document: 'cookies', language: 'en', kind: 'pdf', content: null,

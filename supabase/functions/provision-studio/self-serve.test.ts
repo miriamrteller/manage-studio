@@ -126,3 +126,26 @@ Deno.test("a profile that cannot be stored never fails the signup (the studio ex
 Deno.test("an unknown payment flow is rejected", () => {
   assertEquals(SelfServeStudioSchema.safeParse({ ...input, profile: { paymentFlow: "weekly" } }).success, false);
 });
+
+Deno.test("the business address and phone from the first wizard screen are stored; blank ones are not", async () => {
+  const stored: unknown[] = [];
+  const withContact = SelfServeStudioSchema.parse({ ...input, contact: { address: " 12 Herzl St, Haifa ", phone: "04-1234567" } });
+  const d = deps({
+    applyContact(tenantId, contact) {
+      stored.push([tenantId, contact]);
+      return Promise.resolve();
+    },
+  });
+  assertEquals((await selfServeStudio(d, confirmed, withContact)).ok, true);
+  assertEquals(stored, [["t-new", { address: "12 Herzl St, Haifa", phone: "04-1234567" }]]);
+
+  stored.length = 0;
+  assertEquals((await selfServeStudio(d, confirmed, input)).ok, true); // no contact given
+  assertEquals(stored, []);
+});
+
+Deno.test("a contact that cannot be stored never fails the signup", async () => {
+  const withContact = SelfServeStudioSchema.parse({ ...input, contact: { phone: "04-1234567" } });
+  const d = deps({ applyContact: () => Promise.reject(new Error("db down")) });
+  assertEquals((await selfServeStudio(d, confirmed, withContact)).ok, true);
+});

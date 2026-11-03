@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation } from '@tanstack/react-query';
@@ -23,10 +23,11 @@ import {
   monthlyFeesForFlow,
   profileDefaultsFor,
   toSetupRequest,
-  VERTICALS,
   type StudioSetupForm,
 } from '../lib/studioSetupForm';
-import { invoicingOptionsFor, invoicingPairsWithPayment, monthlyFeesDefaultFor } from '@/lib/providerPairing';
+import { useLiveSkins } from '@/features/skins/useSkins';
+import { fieldFromSearch, signupFieldSearch, wizardFieldOptions } from '@/features/skins/wizardFields';
+import { invoicingOptionsFor, invoicingPairsWithPayment } from '@/lib/providerPairing';
 import {
   PaymentProviderChoice,
   type ChoosablePaymentProvider,
@@ -118,6 +119,32 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
   const siteKey = selfServe ? turnstileSiteKey() : null;
 
   const step: Step = STEPS[stepIndex];
+
+  // "Your field": the live skins (drafts hidden); the built-in list if they cannot load.
+  const { data: liveSkins } = useLiveSkins();
+  const fieldOptions = wizardFieldOptions(liveSkins, i18n.language);
+
+  function chooseField(vertical: string) {
+    // The studio type pre-fills how clients pay, the three switches and
+    // "Will you charge monthly fees?"; the owner can change every answer.
+    const skin = liveSkins?.find((s) => s.id === vertical) ?? null;
+    const defaults = profileDefaultsFor(vertical, skin);
+    const monthlyFees = monthlyFeesForFlow(defaults.paymentFlow);
+    setForm((prev) => ({ ...prev, vertical, ...defaults, monthlyFees }));
+    if (monthlyFees && (form.paymentProvider === 'ypay' || form.paymentProvider === 'invoice4u')) {
+      choosePayment('grow');
+    }
+  }
+
+  // A marketing industry page link (?field=<skin> or ?from=<page>) preselects the field once.
+  const fieldPrefilled = useRef(false);
+  useEffect(() => {
+    if (fieldPrefilled.current || !liveSkins) return;
+    fieldPrefilled.current = true;
+    const preset = fieldFromSearch(signupFieldSearch(window.location.search), liveSkins);
+    if (preset && form.vertical === INITIAL_FORM.vertical) chooseField(preset);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once, when the skins arrive
+  }, [liveSkins]);
 
   const checkSubdomain = useMutation({
     mutationFn: async (subdomain: string) => {
@@ -221,7 +248,7 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
       case 'owner':
         return EMAIL_RE.test(form.ownerEmail.trim());
       case 'payments':
-        return form.monthlyFees !== null && invoicingPairsWithPayment(form.paymentProvider, form.invoicingProvider);
+        return invoicingPairsWithPayment(form.paymentProvider, form.invoicingProvider);
       case 'review':
         return !selfServe || (termsAccepted && (!siteKey || Boolean(captchaToken)));
       default:
@@ -242,7 +269,7 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
       case 'owner':
         return 'studio_setup.need_owner_email';
       case 'payments':
-        return form.monthlyFees === null ? 'studio_setup.need_monthly_fees' : 'studio_setup.need_invoicing_pairing';
+        return 'studio_setup.need_invoicing_pairing';
       case 'review':
         return !termsAccepted ? 'studio_setup.need_terms' : 'self_serve.captcha_needed';
       default:
@@ -351,6 +378,32 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
               <option value="he">עברית</option>
             </select>
           </div>
+          {/* Optional: the legal documents (privacy, terms, accessibility) pre-fill from these. */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium" htmlFor="ss-business-address">{t('studio_setup.business_address')}</label>
+            <input
+              id="ss-business-address"
+              className="form-input w-full"
+              autoComplete="street-address"
+              value={form.businessAddress}
+              onChange={(e) => update('businessAddress', e.target.value)}
+              aria-describedby="ss-business-contact-hint"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium" htmlFor="ss-business-phone">{t('studio_setup.business_phone')}</label>
+            <input
+              id="ss-business-phone"
+              type="tel"
+              className="form-input w-full"
+              dir="ltr"
+              autoComplete="tel"
+              value={form.businessPhone}
+              onChange={(e) => update('businessPhone', e.target.value)}
+              aria-describedby="ss-business-contact-hint"
+            />
+            <p id="ss-business-contact-hint" className="text-xs text-muted-foreground">{t('studio_setup.business_contact_hint')}</p>
+          </div>
         </section>
       )}
 
@@ -358,7 +411,7 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
         <fieldset className="space-y-3">
           <legend className="mb-2 text-sm font-medium">{t('studio_setup.type_question')}</legend>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            {VERTICALS.map((vertical) => (
+            {fieldOptions.map(({ id: vertical, name, hint }) => (
               <label
                 key={vertical}
                 className={`cursor-pointer rounded-xl p-4 ${form.vertical === vertical ? 'border-2 border-primary bg-primary/5' : 'border border-border'}`}
@@ -368,19 +421,12 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
                   name="ss-vertical"
                   className="sr-only"
                   checked={form.vertical === vertical}
-                  onChange={() => {
-                    // The studio type pre-fills how clients pay, the three switches and
-                    // "Will you charge monthly fees?"; the owner can change every answer.
-                    const defaults = profileDefaultsFor(vertical);
-                    const monthlyFees = monthlyFeesDefaultFor(vertical) ?? monthlyFeesForFlow(defaults.paymentFlow);
-                    setForm((prev) => ({ ...prev, vertical, ...defaults, monthlyFees }));
-                    if (monthlyFees && (form.paymentProvider === 'ypay' || form.paymentProvider === 'invoice4u')) {
-                      choosePayment('grow');
-                    }
-                  }}
+                  onChange={() => chooseField(vertical)}
                 />
-                <span className="block font-semibold">{t(`studio_setup.vertical_${vertical}`)}</span>
-                <span className="mt-1 block text-sm text-gray-700">{t(`studio_setup.vertical_${vertical}_hint`)}</span>
+                <span className="block font-semibold">{name ?? t(`studio_setup.vertical_${vertical}`)}</span>
+                {(hint ?? t(`studio_setup.vertical_${vertical}_hint`)) && (
+                  <span className="mt-1 block text-sm text-gray-700">{hint ?? t(`studio_setup.vertical_${vertical}_hint`)}</span>
+                )}
               </label>
             ))}
           </div>
@@ -395,7 +441,13 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
                       type="radio"
                       name="ss-flow"
                       checked={form.paymentFlow === flow}
-                      onChange={() => setForm((prev) => ({ ...prev, paymentFlow: flow, monthlyFees: monthlyFeesForFlow(flow) }))}
+                      onChange={() => {
+                        setForm((prev) => ({ ...prev, paymentFlow: flow, monthlyFees: monthlyFeesForFlow(flow) }));
+                        // YPay and Invoice4U cannot charge monthly fees.
+                        if (monthlyFeesForFlow(flow) && (form.paymentProvider === 'ypay' || form.paymentProvider === 'invoice4u')) {
+                          choosePayment('grow');
+                        }
+                      }}
                     />
                     <span>{t(`settings.business.flow_${flow}`)}</span>
                   </label>
@@ -436,7 +488,6 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
           <PaymentProviderChoice
             idPrefix="ss"
             monthlyFees={form.monthlyFees}
-            onMonthlyFeesChange={(monthlyFees) => update('monthlyFees', monthlyFees)}
             provider={form.paymentProvider as ChoosablePaymentProvider}
             onProviderChange={(slug) => choosePayment(slug)}
           />
@@ -533,7 +584,7 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
             <ReviewRow label={t('studio_setup.name')} value={form.name} />
             <ReviewRow label={t('studio_setup.address')} value={tenantOrigin(form.subdomain.trim().toLowerCase()).replace(/^https?:\/\//, '')} ltr />
             <ReviewRow label={t('studio_setup.language')} value={form.languageDefault === 'he' ? 'עברית' : 'English'} />
-            <ReviewRow label={t('studio_setup.step_type')} value={t(`studio_setup.vertical_${form.vertical}`)} />
+            <ReviewRow label={t('studio_setup.step_type')} value={fieldOptions.find((o) => o.id === form.vertical)?.name ?? t(`studio_setup.vertical_${form.vertical}`)} />
             <ReviewRow label={t('settings.business.flow_legend')} value={t(`settings.business.flow_${form.paymentFlow}`)} />
             <ReviewRow label={t('studio_setup.payment_question')} value={paymentLabel(form.paymentProvider)} />
             <ReviewRow label={t('studio_setup.invoicing_question')} value={invoicingLabel(form.invoicingProvider)} />

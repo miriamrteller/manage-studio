@@ -9,6 +9,7 @@ import { FormInput, FormSelect } from '@/components/ui/form';
 import { useTenant } from '@/hooks/useTenant';
 import { isMonthlyFeesNeedGrowError, monthlyFeesSupported } from '@/lib/providerPairing';
 import { getOfferingCoverPublicUrl } from '../lib/offeringImageStorage';
+import { useDefaultClassLocation } from '../hooks/useDefaultClassLocation';
 
 const optionalUuidField = z.preprocess(
   (val) => (val === '' ? null : val),
@@ -28,7 +29,8 @@ const optionalLocationField = z.preprocess(
 );
 
 const ClassFormSchema = z.object({
-  season_id: z.string().uuid('Term is required'),
+  // Empty only when the studio has no terms: the class then goes in the "Ongoing" term.
+  season_id: z.union([z.string().uuid('Term is required'), z.literal('')]),
   category_id: optionalUuidField,
   staff_id: optionalUuidField,
   name: z.string().min(1, 'Class name required'),
@@ -44,6 +46,7 @@ const ClassFormSchema = z.object({
   start_time: TimeSchema,
   end_time: TimeSchema,
   is_public: z.enum(['true', 'false']).optional(),
+  waiver_required: z.enum(['true', 'false']).optional(),
   billing_mode: z.enum(['one_time', 'recurring']).optional(),
   status: z.enum(['active', 'cancelled', 'full']).optional(),
   location: optionalLocationField,
@@ -99,6 +102,8 @@ function toFormValues(
     start_time: classItem?.start_time || '09:00',
     end_time: classItem?.end_time || '10:00',
     is_public: (classItem?.is_public ?? true) ? 'true' : 'false',
+    // New classes need a signed form, as the database default; a studio can say no (e.g. a plan).
+    waiver_required: (classItem?.waiver_required ?? true) ? 'true' : 'false',
     billing_mode: classItem?.billing_mode ?? (monthlyAllowed ? 'recurring' : 'one_time'),
     status: classItem?.status || 'active',
     location: classItem?.location ?? '',
@@ -109,7 +114,7 @@ function toClassPayload(values: OfferingFormValues): Partial<Offering> {
   const billingMode = values.billing_mode ?? 'one_time';
 
   return {
-    season_id: values.season_id,
+    season_id: values.season_id || null,
     category_id: values.category_id || null,
     staff_id: values.staff_id || null,
     name: values.name,
@@ -122,6 +127,7 @@ function toClassPayload(values: OfferingFormValues): Partial<Offering> {
     start_time: values.start_time,
     end_time: values.end_time,
     is_public: values.is_public === 'true',
+    waiver_required: values.waiver_required !== 'false',
     delivery_mode: 'scheduled',
     billing_mode: billingMode,
     billing_interval: billingMode === 'recurring' ? 'monthly' : null,
@@ -148,8 +154,17 @@ export function ClassForm({
   // Monthly fees need Grow (or pay at the studio): a YPay / Invoice4U studio cannot make a
   // class monthly. A class that is monthly already stays editable.
   const monthlyAllowed = monthlyFeesSupported(tenant?.payment_provider) || classItem?.billing_mode === 'recurring';
+  // With terms, one must be chosen; with none, the class goes in "Ongoing" (season_id empty).
+  const hasTerms = terms.length > 0;
+  const schema = useMemo(
+    () =>
+      hasTerms
+        ? ClassFormSchema.extend({ season_id: z.string().uuid(t('form.class.term_required')) })
+        : ClassFormSchema,
+    [hasTerms, t],
+  );
   const form = useForm<OfferingFormValues>({
-    resolver: zodResolver(ClassFormSchema),
+    resolver: zodResolver(schema),
     defaultValues: toFormValues(classItem, tenant?.currency || 'ILS', monthlyAllowed),
     mode: 'onBlur',
   });
@@ -186,6 +201,14 @@ export function ClassForm({
 
   const previewUrl = removeCover ? null : (pendingPreviewUrl ?? existingCoverUrl);
 
+  // New class: start the location at the studio's usual one (only into an empty, untouched field).
+  const defaultLocation = useDefaultClassLocation(!classItem?.id);
+  useEffect(() => {
+    if (!defaultLocation || classItem?.id) return;
+    if (form.getFieldState('location').isDirty || form.getValues('location')) return;
+    form.setValue('location', defaultLocation);
+  }, [defaultLocation, classItem?.id, form]);
+
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] ?? null;
     setPendingFile(file);
@@ -209,7 +232,10 @@ export function ClassForm({
       setPendingFile(null);
       setRemoveCover(false);
       if (!classItem?.id) {
-        form.reset(toFormValues(undefined, tenant?.currency || 'ILS', monthlyAllowed));
+        form.reset({
+          ...toFormValues(undefined, tenant?.currency || 'ILS', monthlyAllowed),
+          location: defaultLocation ?? '',
+        });
       }
     } catch (error) {
       if (isMonthlyFeesNeedGrowError(error)) {
@@ -298,20 +324,26 @@ export function ClassForm({
         )}
       </div>
 
-      <FormSelect
-        htmlFor="season_id"
-        label={t('form.class.term')}
-        error={form.formState.errors.season_id?.message}
-        required
-        {...form.register('season_id')}
-      >
-        <option value="">-- {t('common.select')} --</option>
-        {terms.map((term) => (
-          <option key={term.id} value={term.id}>
-            {term.name}
-          </option>
-        ))}
-      </FormSelect>
+      {hasTerms ? (
+        <FormSelect
+          htmlFor="season_id"
+          label={t('form.class.term')}
+          error={form.formState.errors.season_id?.message}
+          required
+          {...form.register('season_id')}
+        >
+          <option value="">-- {t('common.select')} --</option>
+          {terms.map((term) => (
+            <option key={term.id} value={term.id}>
+              {term.name}
+            </option>
+          ))}
+        </FormSelect>
+      ) : (
+        <p className="text-sm text-muted-foreground" role="note">
+          {t('form.class.ongoing_term_note')}
+        </p>
+      )}
 
       <FormSelect
         htmlFor="category_id"
@@ -451,6 +483,17 @@ export function ClassForm({
         label={t('form.class.is_public')}
         error={form.formState.errors.is_public?.message}
         {...form.register('is_public')}
+      >
+        <option value="true">{t('common.yes')}</option>
+        <option value="false">{t('common.no')}</option>
+      </FormSelect>
+
+      <FormSelect
+        htmlFor="waiver_required"
+        label={t('form.class.waiver_required')}
+        helperText={t('form.class.waiver_required_help')}
+        error={form.formState.errors.waiver_required?.message}
+        {...form.register('waiver_required')}
       >
         <option value="true">{t('common.yes')}</option>
         <option value="false">{t('common.no')}</option>

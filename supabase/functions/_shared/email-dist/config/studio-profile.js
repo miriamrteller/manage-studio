@@ -29,6 +29,7 @@ export const PROFILE_GATES = {
     [FEATURES.billing.dunning]: 'recurring',
     [FEATURES.billing.quotes]: 'project',
     [FEATURES.billing.gatedDelivery]: 'project',
+    [FEATURES.media.galleryGated]: 'project',
     [FEATURES.scheduling.clientBooking]: 'client_booking',
     [FEATURES.scheduling.adminBooking]: 'client_booking',
     [FEATURES.scheduling.googleCalendar]: 'client_booking',
@@ -110,8 +111,11 @@ const GENERAL_LABELS = {
  * (class vocabulary plus any skin layer). Any other studio starts from the general
  * wording. In both cases the studio's own word overrides win last.
  */
-export function resolveStudioLabels(profile, overrides = {}, locale = 'en', vertical = 'generic') {
+export function resolveStudioLabels(profile, overrides = {}, locale = 'en', vertical = 'generic', 
+/** A data skin's own wording (skinLabelsFor); the studio's own words still win. */
+skinLabels = {}) {
+    const words = { ...skinLabels, ...overrides };
     if (profile.teachesClasses)
-        return resolveEntityLabels('programs', overrides, locale, vertical);
-    return { ...GENERAL_LABELS[locale], ...resolveVerticalLabels(vertical, locale), ...overrides };
+        return resolveEntityLabels('programs', words, locale, vertical);
+    return { ...GENERAL_LABELS[locale], ...resolveVerticalLabels(vertical, locale), ...words };
 }

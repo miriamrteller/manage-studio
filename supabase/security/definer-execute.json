@@ -79,6 +79,8 @@
       "log_sensitive_read",
       "mark_quote_sent",
       "pick_active_consent_template",
+      "platform_set_feature_override",
+      "platform_tenant_feature_states",
       "preview_notification_blast_recipients",
       "release_job_gallery",
       "replace_tenant_scheduling_hours",
@@ -162,7 +164,8 @@
       "quote_assert_tenant_admin",
       "quote_job_offering_id",
       "quote_lines_json",
-      "sync_profile_email_from_auth"
+      "sync_profile_email_from_auth",
+      "tenant_default_features"
     ]
   }
 }

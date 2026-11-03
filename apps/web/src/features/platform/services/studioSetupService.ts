@@ -37,6 +37,8 @@ export interface StudioSetupRequest {
   accentColor: string;
   /** How clients pay and which areas the studio uses (stored on the new studio). */
   profile: StudioProfile;
+  /** Optional business address and phone, stored in the studio's legal profile. */
+  contact: { address?: string; phone?: string };
 }
 
 export type OwnerInviteStatus =
