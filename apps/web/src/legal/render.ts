@@ -1,7 +1,7 @@
 import { Marked, type Tokens } from 'marked';
 import type { VerticalId } from '@shared/config/tenant-presets';
 import { LEGAL_FIELDS, type BusinessStatus, type LegalDocId } from './fields';
-import { stripDraftingFrame } from '@shared/legal/signed-template';
+import { hasHealthDeclarations, insuranceStatus, stripDraftingFrame } from '@shared/legal/signed-template';
 import { personalIdentity, personalIdentityText } from '@shared/legal/personalIdentity';
 
 export type LegalLang = 'he' | 'en';
@@ -206,11 +206,34 @@ export const NO_INSURANCE_TERMS: Record<LegalLang, string> = {
   he: 'לסטודיו אין כרגע ביטוח המכסה משתתפים. אנו ממליצים לעשות ביטוח תאונות אישיות.',
 };
 
+/** "We have insurance" with no insurer named yet: a plain statement, never a blank to fill. */
+export const INSURED_TERMS: Record<LegalLang, string> = {
+  en: 'The studio holds third-party liability insurance.',
+  he: 'לסטודיו ביטוח אחריות כלפי צד שלישי.',
+};
+
+const INSURANCE_LINE = {
+  en: /^[ \t]*- The studio holds \[\[third-party liability insurance[^\]]*\]\](?: \(\[\[STUDIO: confirm\]\]\))?\.[ \t]*\n?/m,
+  he: /^[ \t]*- לסטודיו \[\[ביטוח אחריות כלפי צד שלישי[^\]]*\]\](?: \(\[\[סטודיו: לאשר\]\]\))?\.[ \t]*\n?/m,
+};
+
+/**
+ * The insurance sentence in the enrolment terms. Insurance is optional and
+ * never blocks (owner decision; awaiting lawyer review):
+ * - studios without health declarations: no insurance sentence at all;
+ * - no answer or "We don't have insurance": the studio says it isn't insured;
+ * - "We have insurance": the insurer named, or a plain statement until it is.
+ */
 function applyInsurance(text: string, ctx: LegalRenderContext): string {
-  if (ctx.profile.insurance_status !== 'none') return text;
+  if (!hasHealthDeclarations(ctx.vertical)) {
+    return text.replace(INSURANCE_LINE.en, '').replace(INSURANCE_LINE.he, '');
+  }
+  const status = insuranceStatus(ctx.profile);
+  if (status === 'insured' && (ctx.profile.insurance ?? '').trim()) return text;
+  const sentence = status === 'insured' ? INSURED_TERMS : NO_INSURANCE_TERMS;
   return text
-    .replace(/The studio holds \[\[third-party liability insurance[^\]]*\]\](?: \(\[\[STUDIO: confirm\]\]\))?\./, NO_INSURANCE_TERMS.en)
-    .replace(/לסטודיו \[\[ביטוח אחריות כלפי צד שלישי[^\]]*\]\](?: \(\[\[סטודיו: לאשר\]\]\))?\./, NO_INSURANCE_TERMS.he);
+    .replace(INSURANCE_LINE.en, (line) => `- ${sentence.en}${line.endsWith('\n') ? '\n' : ''}`)
+    .replace(INSURANCE_LINE.he, (line) => `- ${sentence.he}${line.endsWith('\n') ? '\n' : ''}`);
 }
 
 /** How a detail still to be filled in shows in the draft: "[Season name – to be completed]". */

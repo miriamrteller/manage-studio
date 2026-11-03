@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTenantLegalProfile } from '@/legal/useLegalDocument';
+import { hasHealthDeclarations, insuranceStatus } from '@shared/legal/signed-template';
 
 const dismissKey = (tenantId: string) => `no-insurance-send-reminder-dismissed:${tenantId}`;
 
@@ -23,7 +24,7 @@ export function NoInsuranceSendReminder() {
   const tenantId = legal?.tenantId ?? '';
   const [dismissed, setDismissed] = useState(() => (tenantId ? readDismissed(tenantId) : false));
 
-  if (!legal || legal.profile.insurance_status !== 'none') return null;
+  if (!legal || !hasHealthDeclarations(legal.vertical) || insuranceStatus(legal.profile) !== 'none') return null;
   if (dismissed || readDismissed(tenantId)) return null;
 
   const dismiss = () => {
