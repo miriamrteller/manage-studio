@@ -197,8 +197,7 @@ describe('wizard "Your field"', () => {
   });
 
   it('a marketing industry link preselects the field', async () => {
-    window.history.replaceState({}, '', '/platform/onboard?from=swim-coach');
-    wrap(<OperatorOnboardingWizard />);
+    wrap(<OperatorOnboardingWizard />, '/platform/onboard?from=swim-coach');
     await toTypeStep();
     const swim = await screen.findByRole('radio', { name: /Swim coach/ }, { timeout: 5000 });
     await waitFor(() => expect(swim).toBeChecked(), { timeout: 5000 });
