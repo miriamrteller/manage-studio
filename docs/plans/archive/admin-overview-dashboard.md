@@ -233,6 +233,6 @@ pages.admin.overview.quick_actions
 ## Out of scope / follow-ups
 
 - Dedicated `/admin` route (optional later — nav currently uses `/admin/setup`)
-- Teacher payroll on overview (SPEC mentions it — defer until [V2.11 teachers admin](teachers-admin-module.md))
+- Teacher payroll on overview (SPEC mentions it — defer until [V2.11 teachers admin](../teachers-admin-module.md))
 - CSV export from overview
 - Real-time refresh / websockets

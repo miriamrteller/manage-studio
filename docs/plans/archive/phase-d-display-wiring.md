@@ -4,7 +4,7 @@
 
 Phase D wires `tenants.business_preset` and `tenants.labels` into the React UI so entity nouns (Class, Family, Term, etc.) are driven by the preset rather than hardcoded strings.
 
-This phase is **read-only display wiring**. Tenant provisioning UI belongs under [V3.0 operator onboarding](v3-0-operator-onboarding-wizard.md) and [tenant settings hub](tenant-settings-hub.md).
+This phase is **read-only display wiring**. Tenant provisioning UI belongs under [V3.0 operator onboarding](../v3-0-operator-onboarding-wizard.md) and [tenant settings hub](tenant-settings-hub.md).
 
 ## Sub-phases
 
@@ -28,5 +28,5 @@ This phase is **read-only display wiring**. Tenant provisioning UI belongs under
 ## Next work (not Phase D)
 
 - [Tenant settings hub](tenant-settings-hub.md) — day-2 admin edits
-- [V3.0 operator onboarding wizard](v3-0-operator-onboarding-wizard.md) — second industry tenant
+- [V3.0 operator onboarding wizard](../v3-0-operator-onboarding-wizard.md) — second industry tenant
 - Code rename epic (old D5) — optional hygiene

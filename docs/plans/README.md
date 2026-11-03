@@ -3,26 +3,25 @@
 Agent-optimized implementation plans. Create before coding (see `.instructions.md` workflow).
 
 **Live status:** [IMPLEMENTATION_STATUS.md](../IMPLEMENTATION_STATUS.md)  
-**Archived (shipped / superseded):** [archive/](archive/)
+**Archived (shipped / superseded):** [archive/](archive/) — finished plans move there; only one current copy of each plan is kept.
 
 ## Active & upcoming
 
 | Date | Feature | Status |
 | --- | --- | --- |
+| 2026-11-02 | [Leads: where they come from](LEADS.md) | **ACTIVE** — plan; lead form / channels / digest work references it |
+| 2026-11-02 | [Onboarding audit](ONBOARDING-AUDIT.md) | **ACTIVE** — legal steps to re-run; screenshots in [onboarding-audit/](onboarding-audit/) |
+| 2026-11-02 | [Payments and invoicing audit](PAYMENTS-AUDIT.md) | Audit — findings open |
+| 2026-11-02 | [OpalSwift billing plan](opalswift-billing-plan.md) | Plan only |
+| 2026-11-02 | [OpalSwift on OpalSwift (dogfooding)](OPALSWIFT-ON-OPALSWIFT.md) | Plan only |
+| 2026-10-30 | [Light Blue gap analysis](lightblue-gap-analysis.md) | Photographer gap list — open items |
+| 2026-10-30 | Photographer beta threads: [A — shoots/contracts](2026-10-30-photographer-beta-a.md) · [B — payments](2026-10-30-photographer-b-payments.md) · [C — quotes](2026-10-30-photographer-c-quotes.md) · [G — contract PDF](2026-10-30-photographer-g-contract-pdf.md) · [H — offline receipts](2026-10-30-photographer-h-offline-receipts.md) | Beta — follow-ups open |
 | 2026-08-19 | [CRM lead capture — multi-tenant, all channels](crm-lead-capture-channels.md) | **ACTIVE** — email ingest shipped (PR #52→#54→#55 stack); step 1 (self-onboard hardening) in progress; step 2 = capture endpoint + admin leads page |
 | 2026-07 | [Native scheduling + Google Calendar](scheduling/00-overview.md) | **S0–S5 ✅** — [GCal](scheduling/google-calendar-integration.md) · [deploy/test](scheduling/deployment-and-testing.md); live payments/WhatsApp last |
 | 2026-07-20 | [Invoice4U IL bundled](finance/invoice4u/00-overview.md) | **ACTIVE** — overnight mock U1→U4-mock on `feat/invoice4u-provider` |
 | 2026-06-29 | [iCount IL (mock-first)](finance/icount/00-overview.md) | **Mock phase ✅** — fallback; live deferred |
 | 2026-07-16 | [V1 migration fourth squash + payment merge](v1-migration-squash-20260716.md) | **Shipped** on `main` (PR #17) — fresh DB reset → push → seed → types still recommended |
-| 2026-07-05 | [V1 migration third squash](v1-migration-squash-20260705.md) | **Shipped** — folded into `20260608*` base chain |
-| 2026-07-05 | [V1 pg_cron scheduled jobs](v1-pg-cron-scheduled-jobs.md) | **Shipped** — implemented in `20260608002800` (fourth squash) |
-| 2026-07-05 | [Enrolment unpaid dunning §6.x #8](enrolment-payment-dunning.md) | ✅ Shipped — PR #11 (same) |
-| 2026-07-05 | [Notification log — message detail viewer](notification-log-detail-viewer.md) | ✅ Shipped — dialog from stored `subject` / `variables` / `body_preview` |
-| 2026-07-05 | [Notification log — recipient search](notification-log-recipient-search.md) | ✅ Shipped — debounced email/phone filter on History tab |
-| 2026-07-01 | [Notification log viewer](notification-log-page.md) | ✅ Shipped — History tab on `/admin/notifications` |
-| 2026-06-30 | [Notification blast composer](notification-blast-composer.md) | ✅ Shipped |
-| 2026-06-29 | [Parent portal polish](parent-portal-polish.md) | ✅ Shipped |
-| 2026-06-28 | [Admin operations overview](admin-overview-dashboard.md) | ✅ Shipped |
+| 2026-06-29 | [Parent portal polish](parent-portal-polish.md) | ✅ Shipped — Step 8 (WhatsApp OTP verify) still deferred |
 | 2026-06-28 | [Grow live sandbox E2E](grow-live-e2e-verification.md) | Manual QA — optional |
 | 2026-06-07 | [Code rename epic (ex-D5)](code-rename-epic.md) | Deferred |
 
@@ -32,25 +31,21 @@ Agent-optimized implementation plans. Create before coding (see `.instructions.m
 | --- | --- | --- |
 | 2026-07 | People directory CSV export | **V2 start** — Phase 1F polish; not required for V1 runtime |
 | 2026-07 | Classes list occupancy + waitlist bar | **V2 start** — overview already shows occupancy/waitlist |
-| 2026-07 | [Waiting list automation](../SPEC.md) (V2.2) | Schema + overview counts in V1; `process-waiting-list` stays V2.2 |
-| 2026-07 | Minimal CRM (V2.13) | Notes, follow-ups, light lead/family pipeline — [SPEC §8 V2.13](../SPEC.md) |
-| 2026-07 | Payment / invoice audit polish (V2.15) | Detail timeline UI; optional column history / decline rows — [SPEC §8 V2.15](../SPEC.md); after prod hardening |
+| 2026-07 | [Waiting list automation](../../SPEC.md) (V2.2) | Schema + overview counts in V1; `process-waiting-list` stays V2.2 |
+| 2026-07 | Minimal CRM (V2.13) | Notes, follow-ups, light lead/family pipeline — [SPEC §8 V2.13](../../SPEC.md) |
+| 2026-07 | Payment / invoice audit polish (V2.15) | Detail timeline UI; optional column history / decline rows — [SPEC §8 V2.15](../../SPEC.md); after prod hardening |
 | 2026-07-01 | [Teachers admin module](teachers-admin-module.md) | **V2.11** — agent plan ready; not V1 scope |
 
-## Shipped reference (keep for SPEC links)
+## Shipped, kept in place
+
+Kept here because a script, a Cursor rule, code or open payments work still points at them.
 
 | Date | Feature | Status |
 | --- | --- | --- |
-| 2026-06-28 | [Parent self-enrolment P1–P3](parent-self-enrolment/00-overview.md) | ✅ Complete |
+| 2026-06-28 | [Parent self-enrolment P1–P3](parent-self-enrolment/00-overview.md) | ✅ Complete — read by `pnpm parent-self-enrolment:prompt` |
 | 2026-07-05 | [Payment dunning V1](payment-dunning-notifications.md) | ✅ Shipped — renewal + enrolment unpaid ([enrolment plan](enrolment-payment-dunning.md)) |
-| 2026-06-28 | [Age override PR B](age-override-pr-b.md) | ✅ Complete — [index](2026-06-02-age-override-and-review-request.md) |
-| 2026-06-25 | Age override PR A | ✅ — [archive/age-override-pr-a.md](archive/age-override-pr-a.md) |
-| 2026-06-24 | Offering `location` | Complete |
-| 2026-06-07 | [Phase D — label display wiring](phase-d-display-wiring.md) | Complete |
-| 2026-06-07 | [Tenant settings hub](tenant-settings-hub.md) | Implemented |
-| 2026-06-07 | [V3.0 operator onboarding wizard](v3-0-operator-onboarding-wizard.md) | Scaffold |
-| 2026-06-02 | [Unenrol Phase 1](2026-06-02-unenrol-phase-1.md) | Complete |
-| 2026-06-02 | [VAT pricing](2026-06-02-vat-pricing.md) | Complete |
-| 2026-06-02 | [Guest enrollment & portal](2026-06-02-guest-enrollment-portal-provisioning.md) | Complete |
-| — | [Finance / Grow G0–G7](finance/00-overview.md) | Code shipped; live E2E manual |
-| — | [Admin finance F1–F6](admin-dashboard-finance/00-overview.md) | Complete |
+| 2026-06-07 | [V3.0 operator onboarding wizard](v3-0-operator-onboarding-wizard.md) | Scaffold — polish / follow-up open |
+| — | [Finance / Grow G0–G7](finance/00-overview.md) | Code shipped; live E2E manual — read by `pnpm finance:prompt` |
+| — | [Admin finance F1–F6](admin-dashboard-finance/00-overview.md) | Complete — read by `pnpm finance-admin:prompt` |
+
+Everything else that has shipped (age override, guest enrolment, unenrol, VAT pricing, admin overview, notification log/blast, Phase D, settings hub, offering `location`, V1 squash + pg_cron) is in [archive/](archive/README.md).

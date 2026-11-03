@@ -736,7 +736,7 @@ When status → `pending_waiver`:
 ## Agent Prompt (copy-paste to start)
 
 ```
-Implement Admin Enrolment Completion Link per docs/plans/admin-enrolment-completion-link.md
+Implement Admin Enrolment Completion Link per docs/plans/archive/admin-enrolment-completion-link.md
 
 PHASE 0 FIRST (prerequisite):
 - Create supabase/functions/_shared/engagement-waiver.ts

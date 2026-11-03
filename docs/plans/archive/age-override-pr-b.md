@@ -6,7 +6,7 @@ Let **guests and parents** request studio review when age-blocked (`admin_review
 
 **Repo:** `manage-studio`  
 **SPEC:** §4.2.5 · [overview](2026-06-02-age-override-and-review-request.md)  
-**Requires PR A merged first:** [PR A — harden admin override](archive/age-override-pr-a.md) (policy module, guest age guard, `engagement_age_at_season_start` SQL helper) — ✅ complete
+**Requires PR A merged first:** [PR A — harden admin override](age-override-pr-a.md) (policy module, guest age guard, `engagement_age_at_season_start` SQL helper) — ✅ complete
 
 ---
 
@@ -319,7 +319,7 @@ https://{tenantSubdomain}.{APP_DOMAIN}/admin/students?engagement={engagementId}
 
 Use tenant subdomain from config; no auth tokens.
 
-**payUrl on approve:** Reuse existing admin completion / enrol pay link pattern from `docs/plans/admin-enrolment-completion-link.md` — e.g. `/enrol/pay/{engagementId}?token=...` via existing edge function if engagement has token, OR `/enrol` with state. **Do not invent new payment flow.**
+**payUrl on approve:** Reuse existing admin completion / enrol pay link pattern from `docs/plans/archive/admin-enrolment-completion-link.md` — e.g. `/enrol/pay/{engagementId}?token=...` via existing edge function if engagement has token, OR `/enrol` with state. **Do not invent new payment flow.**
 
 ```bash
 pnpm email:bundle
@@ -445,4 +445,4 @@ Deploy edge functions only if `send-notification` changed.
 2. Files changed
 3. Commands run + outcomes
 4. Blockers
-5. Update [IMPLEMENTATION_STATUS.md](../IMPLEMENTATION_STATUS.md) row to ✅ when complete
+5. Update [IMPLEMENTATION_STATUS.md](../../IMPLEMENTATION_STATUS.md) row to ✅ when complete
