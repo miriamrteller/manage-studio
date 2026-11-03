@@ -261,7 +261,10 @@
       "status_active": "Active",
       "status_full": "Full",
       "status_cancelled": "Cancelled",
-      "is_public": "Show on public class list"
+      "is_public": "Show on public class list",
+      "term_required": "Choose a term",
+      "ongoing_term_note": "Your studio has no terms yet, so this class runs with no end date (in a term called \"Ongoing\"). You can add terms later.",
+      "ongoing_term_name": "Ongoing"
     },
     "requirement": {
       "type": "Requirement type",

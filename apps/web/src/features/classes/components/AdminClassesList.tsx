@@ -9,7 +9,9 @@ import { useTenant } from '@/hooks/useTenant';
 import { useEntityLabels } from '@/hooks/useEntityLabels';
 import { useSortState } from '@/hooks/useSortState';
 import { useClasses } from '../hooks/useClasses';
+import { useQueryClient } from '@tanstack/react-query';
 import { useTerms } from '@/features/terms/hooks/useTerms';
+import { TermService } from '@/features/terms/service';
 import { useIsNarrowViewport } from '@/features/scheduling/hooks/useIsNarrowViewport';
 import { useLevels } from '@/features/levels/hooks/useLevels';
 import { useTeachers } from '@/features/teachers/hooks/useTeachers';
@@ -54,6 +56,7 @@ export function AdminClassesList() {
   });
   const isNarrow = useIsNarrowViewport();
   const termsData = useTerms({ page: 1 });
+  const queryClient = useQueryClient();
   const levelsData = useLevels({ page: 1 });
   const teachersData = useTeachers({ page: 1 });
 
@@ -69,6 +72,13 @@ export function AdminClassesList() {
   const handleFormSubmit = async (data: Partial<Offering>, imageIntent: ClassFormImageIntent) => {
     if (!tenant?.id) {
       throw new Error(t('errors.loading_tenant'));
+    }
+
+    // No term (the studio has none yet): the class runs with no end date, in "Ongoing".
+    if (!data.season_id) {
+      const ongoing = await TermService.ensureOngoing(tenant, t('form.class.ongoing_term_name'));
+      data = { ...data, season_id: ongoing.id };
+      void queryClient.invalidateQueries({ queryKey: ['terms', tenant.id] });
     }
 
     if (editingClass?.id) {
