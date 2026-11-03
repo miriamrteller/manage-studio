@@ -116,6 +116,9 @@ jobs:
       - name: Pipeline script unit tests
         run: node --test scripts/ci/*.test.mjs
 
+      - name: Prod tasks are data-only (supabase/prod-tasks)
+        run: node scripts/ci/prod-task.mjs check
+
       - name: Append-only, unique, ordered migrations
         env:
           # PR: compare with the target branch. Push: with the previous tip, so a

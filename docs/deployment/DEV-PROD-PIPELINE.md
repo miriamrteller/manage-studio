@@ -44,8 +44,10 @@ If you know Azure DevOps release pipelines, this is the same shape:
 
 1. **Git is the only source of truth** for the schema and the Edge Functions.
    No schema edits in the Supabase dashboard, SQL editor, CLI or MCP on either
-   project. Data fixes and one-time config rows (encryption key, cron config,
-   tenant bootstrap) are the exception — they are data, not schema.
+   project. Data fixes and one-time config rows (cron config, tenant bootstrap)
+   are the exception — they are data, not schema — and go through a reviewed
+   **prod task** ([PROD-TASKS.md](PROD-TASKS.md)), not the SQL editor. Only
+   values that must never be in git (the encryption key) stay manual.
 2. **Migrations are append-only.** Once a migration file is on `main` it is never
    edited, renamed or deleted. Fix forward with a new file. CI blocks the PR
    otherwise. New files: `YYYYMMDDHHMMSS_snake_case.sql`, newer than every file
