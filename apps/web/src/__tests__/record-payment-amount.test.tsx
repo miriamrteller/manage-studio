@@ -52,6 +52,20 @@ describe('RecordPaymentModal amount', () => {
     );
   });
 
+  it('records a Bit payment', async () => {
+    invoke.mockResolvedValue({ data: { ok: true, paymentId: 'p1' }, error: null });
+    wrap(<RecordPaymentModal engagementId="eng-1" defaultAmountMinor={35000} currency="ILS" onRecorded={vi.fn()} />);
+    const method = screen.getByLabelText(/finance.record_payment.method/) as HTMLSelectElement;
+    expect(screen.getByRole('option', { name: 'payment_methods.bit' })).toBeTruthy();
+    fireEvent.change(method, { target: { value: 'bit' } });
+    fireEvent.click(screen.getByRole('button', { name: 'finance.record_payment.submit' }));
+    await waitFor(() =>
+      expect(invoke).toHaveBeenCalledWith('record-payment', {
+        body: expect.objectContaining({ engagement_id: 'eng-1', method: 'bit' }),
+      }),
+    );
+  });
+
   it('sends a different amount the admin typed, and blocks an invalid one', async () => {
     invoke.mockResolvedValue({ data: { ok: true, paymentId: 'p1', period: '2026-12' }, error: null });
     wrap(<RecordPaymentModal kind="monthly" engagementId="eng-1" onRecorded={vi.fn()} defaultAmountMinor={35000} currency="ILS" />);

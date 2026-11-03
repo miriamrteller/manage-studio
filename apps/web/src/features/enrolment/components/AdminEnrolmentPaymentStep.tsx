@@ -277,6 +277,7 @@ export function AdminEnrolmentPaymentStep({
           >
             <option value="cash">{t('pages.admin_enrol.method_cash')}</option>
             <option value="bank_transfer">{t('pages.admin_enrol.method_bank')}</option>
+            <option value="bit">{t('payment_methods.bit')}</option>
           </select>
           <Button
             variant="outline"

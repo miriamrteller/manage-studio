@@ -62,7 +62,7 @@ export class YpayInvoicingProvider implements InvoicingProvider {
     if (!isOfflinePaymentMethod(input.paymentMethod)) {
       throw new InvoicingProviderError(
         "YPay issues the document with the charge for card payments; standalone /document " +
-          `is only for cash / bank transfer (payment_method=${input.paymentMethod ?? "null"}).`,
+          `is only for cash / bank transfer / Bit (payment_method=${input.paymentMethod ?? "null"}).`,
         { retryable: false },
       );
     }

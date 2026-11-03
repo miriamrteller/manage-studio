@@ -123,6 +123,7 @@
         "payment_method_card": "{brand} ending in {last4}",
         "payment_method_cash": "Cash",
         "payment_method_bank_transfer": "Bank transfer",
+        "payment_method_bit": "Bit",
         "payment_method_check": "Check",
         "payment_method_other": "Other",
         "waiver_warning_heading": "ACTION REQUIRED: Sign your form",
@@ -148,6 +149,7 @@
         "payment_method_card": "{brand} ending in {last4}",
         "payment_method_cash": "Cash",
         "payment_method_bank_transfer": "Bank transfer",
+        "payment_method_bit": "Bit",
         "payment_method_check": "Check",
         "payment_method_other": "Other",
         "waiver_warning_heading": "ACTION REQUIRED: Sign your form",
@@ -174,6 +176,7 @@
         "payment_method_card": "{brand} ending in {last4}",
         "payment_method_cash": "Cash",
         "payment_method_bank_transfer": "Bank transfer",
+        "payment_method_bit": "Bit",
         "payment_method_check": "Check",
         "payment_method_other": "Other"
     },

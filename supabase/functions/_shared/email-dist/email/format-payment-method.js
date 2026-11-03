@@ -20,6 +20,7 @@ export function formatPaymentMethodDisplay(input) {
     const keyMap = {
         cash: 'payment_method_cash',
         bank_transfer: 'payment_method_bank_transfer',
+        bit: 'payment_method_bit',
         check: 'payment_method_check',
         other: 'payment_method_other',
     };

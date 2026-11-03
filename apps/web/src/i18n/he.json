@@ -3516,5 +3516,8 @@
     "saving": "שומר…",
     "cancel": "ביטול",
     "save_failed": "לא הצלחנו לשמור את הסקין: {{reason}}"
+  },
+  "payment_methods": {
+    "bit": "ביט"
   }
 }

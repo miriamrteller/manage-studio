@@ -123,6 +123,7 @@
         "payment_method_card": "{brand} המסתיים ב-{last4}",
         "payment_method_cash": "מזומן",
         "payment_method_bank_transfer": "העברה בנקאית",
+        "payment_method_bit": "ביט",
         "payment_method_check": "צ'ק",
         "payment_method_other": "אחר",
         "waiver_warning_heading": "נדרשת פעולה: חתמו על הטופס",
@@ -148,6 +149,7 @@
         "payment_method_card": "{brand} המסתיים ב-{last4}",
         "payment_method_cash": "מזומן",
         "payment_method_bank_transfer": "העברה בנקאית",
+        "payment_method_bit": "ביט",
         "payment_method_check": "צ'ק",
         "payment_method_other": "אחר",
         "waiver_warning_heading": "נדרשת פעולה: חתמו על הטופס",
@@ -174,6 +176,7 @@
         "payment_method_card": "{brand} המסתיים ב-{last4}",
         "payment_method_cash": "מזומן",
         "payment_method_bank_transfer": "העברה בנקאית",
+        "payment_method_bit": "ביט",
         "payment_method_check": "צ'ק",
         "payment_method_other": "אחר"
     },

@@ -3508,5 +3508,8 @@
     "saving": "Saving…",
     "cancel": "Cancel",
     "save_failed": "The skin could not be saved: {{reason}}"
+  },
+  "payment_methods": {
+    "bit": "Bit"
   }
 }
