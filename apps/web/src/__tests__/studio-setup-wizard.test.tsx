@@ -209,6 +209,22 @@ describe('studio setup wizard', () => {
     expect(screen.getByRole('radio', { name: 'Issued by YPay' })).toBeChecked();
   });
 
+  it('colours: swatches first, own hex colours behind "Choose your own colour"; operators leave the logo to the owner', async () => {
+    renderWizard();
+    await fillStudioStep();
+    fireEvent.click(screen.getByRole('radio', { name: /Dance studio/ }));
+    next();
+    fireEvent.click(screen.getByRole('radio', { name: PAY_AT_STUDIO }));
+    next();
+    expect(screen.getByRole('group', { name: 'Pick a colour set' })).toBeInTheDocument();
+    const own = screen.getByText('Choose your own colour');
+    const details = own.closest('details')!;
+    expect(details).not.toHaveAttribute('open');
+    expect(details).toContainElement(screen.getByLabelText('Main colour'));
+    expect(screen.getByText('The studio owner can add a logo later in Settings → Branding.')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Logo (optional)')).toBeNull();
+  });
+
   it('creates a pay-at-the-studio studio with no documents, invites the owner, and shows the checklist', async () => {
     h.invoke.mockResolvedValue({
       data: { tenantId: 't-new', subdomain: 'creativeballet', owner: { status: 'invited' } },

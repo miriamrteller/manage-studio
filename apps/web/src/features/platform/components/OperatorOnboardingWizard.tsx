@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
-import { ColourPresets } from '@/components/colour/ColourPresets';
+import { COLOUR_PRESETS, ColourPresets } from '@/components/colour/ColourPresets';
+import { LOGO_ACCEPT, MAX_LOGO_BYTES, uploadTenantLogo } from '@/lib/tenantLogoUpload';
 import { Alert } from '@/components/ui/alert';
 import { supabase } from '@/lib/supabase';
 import { tenantOrigin } from '@/lib/tenantUrl';
@@ -109,6 +110,18 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
     languageDefault: defaultStudioLanguage(i18n.language),
   }));
   const [subdomainTouched, setSubdomainTouched] = useState(false);
+  // Optional logo (self-serve): uploaded right after the studio is created.
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoError, setLogoError] = useState<string | null>(null);
+  // Starts open only if the colours aren't one of the swatches (decided once, so typing never closes it).
+  const [customColours] = useState(
+    () =>
+      !COLOUR_PRESETS.some(
+        (p) =>
+          p.primary.toLowerCase() === INITIAL_FORM.primaryColor.toLowerCase() &&
+          p.accent.toLowerCase() === INITIAL_FORM.accentColor.toLowerCase(),
+      ),
+  );
   const [subdomainStatus, setSubdomainStatus] = useState<'idle' | 'ok' | 'taken' | 'invalid'>('idle');
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<StudioSetupResult | null>(null);
@@ -164,7 +177,17 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
         ...(captchaToken ? { captchaToken } : {}),
       });
     },
-    onSuccess: (result) => onSelfServeCreated?.(result, form.name.trim()),
+    onSuccess: async (result) => {
+      // Never blocks: if the logo can't be saved now, it can be added in Settings → Branding.
+      if (logoFile) {
+        try {
+          await uploadTenantLogo(result.tenantId, logoFile);
+        } catch (err) {
+          console.error('Setup logo upload failed', err);
+        }
+      }
+      onSelfServeCreated?.(result, form.name.trim());
+    },
     onError: (err: Error) => {
       const key = SELF_SERVE_ERRORS[err.message];
       if (err.message === 'subdomain_unavailable') setSubdomainStatus('taken');
@@ -490,19 +513,53 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
             accent={form.accentColor}
             onPick={(primary, accent) => setForm((f) => ({ ...f, primaryColor: primary, accentColor: accent }))}
           />
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {(['primaryColor', 'accentColor'] as const).map((key) => (
-              <div key={key} className="space-y-2">
-                <label className="block text-sm font-medium" htmlFor={`ss-${key}`}>
-                  {t(key === 'primaryColor' ? 'studio_setup.primary_color' : 'studio_setup.accent_color')}
-                </label>
-                <div className="flex items-center gap-2" dir="ltr">
-                  <input type="color" aria-hidden="true" tabIndex={-1} className="h-10 w-14" value={form[key]} onChange={(e) => update(key, e.target.value)} />
-                  <input id={`ss-${key}`} className="form-input font-mono" value={form[key]} onChange={(e) => update(key, e.target.value)} />
+          {/* Own colours (hex) only for those who want them: the swatches cover most studios. */}
+          <details className="space-y-2" open={customColours || undefined}>
+            <summary className="cursor-pointer text-sm font-medium underline underline-offset-2">
+              {t('studio_setup.choose_own_colour')}
+            </summary>
+            <div className="mt-2 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {(['primaryColor', 'accentColor'] as const).map((key) => (
+                <div key={key} className="space-y-2">
+                  <label className="block text-sm font-medium" htmlFor={`ss-${key}`}>
+                    {t(key === 'primaryColor' ? 'studio_setup.primary_color' : 'studio_setup.accent_color')}
+                  </label>
+                  <div className="flex items-center gap-2" dir="ltr">
+                    <input type="color" aria-hidden="true" tabIndex={-1} className="h-10 w-14" value={form[key]} onChange={(e) => update(key, e.target.value)} />
+                    <input id={`ss-${key}`} className="form-input font-mono" value={form[key]} onChange={(e) => update(key, e.target.value)} />
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </details>
+          {selfServe ? (
+            <div className="space-y-1">
+              <label className="block text-sm font-medium" htmlFor="ss-logo">
+                {t('studio_setup.logo_label')}
+              </label>
+              <input
+                id="ss-logo"
+                type="file"
+                accept={LOGO_ACCEPT}
+                aria-describedby="ss-logo-help"
+                onChange={(e) => {
+                  const file = e.target.files?.[0] ?? null;
+                  setLogoError(file && file.size > MAX_LOGO_BYTES ? t('studio_setup.logo_too_large') : null);
+                  setLogoFile(file && file.size <= MAX_LOGO_BYTES ? file : null);
+                }}
+              />
+              <p id="ss-logo-help" className="text-xs text-gray-700">
+                {logoFile ? t('studio_setup.logo_chosen', { name: logoFile.name }) : t('studio_setup.logo_optional')}
+              </p>
+              {logoError && (
+                <p role="alert" className="text-xs text-red-700">
+                  {logoError}
+                </p>
+              )}
+            </div>
+          ) : (
+            <p className="text-xs text-gray-700">{t('studio_setup.logo_owner_later')}</p>
+          )}
         </section>
       )}
 
