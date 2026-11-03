@@ -25,7 +25,8 @@ vi.mock('@/lib/inactivity/signOutForInactivity', () => ({
 import { enforceInactivityOnLoad } from '@/lib/inactivity/enforceOnLoad';
 import { LAST_ACTIVITY_KEY, readLastActivity } from '@/lib/inactivity/activityStore';
 
-let replaceState: ReturnType<typeof vi.spyOn>;
+const replaceState = vi.fn();
+const realLocation = window.location;
 const HOUR = 60 * 60 * 1000;
 const NOW = new Date('2026-11-04T09:00:00Z').getTime();
 
@@ -36,17 +37,21 @@ beforeEach(() => {
   h.signOutDelay = 0;
   h.getSession.mockReset();
   h.getSession.mockImplementation(async () => ({ data: { session: h.session } }));
-  // Assert the call, not the real address bar: other test files in the same run can replace history.
-  replaceState = vi.spyOn(window.history, 'replaceState').mockImplementation(() => undefined);
+  // Assert the call, not a real page load.
+  replaceState.mockReset();
+  Object.defineProperty(window, 'location', { configurable: true, value: { ...realLocation, replace: replaceState } });
 });
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  Object.defineProperty(window, 'location', { configurable: true, value: realLocation });
+  vi.restoreAllMocks();
+});
 
 describe('enforceInactivityOnLoad (browser reopened the next day)', () => {
   it('signs out a stale session and switches the address to the sign-in page with the notice', async () => {
     localStorage.setItem(LAST_ACTIVITY_KEY, String(NOW - 20 * HOUR));
     expect(await enforceInactivityOnLoad(NOW)).toBe(true);
     expect(h.order).toEqual(['signed-out']);
-    expect(replaceState).toHaveBeenCalledWith(null, '', '/login?reason=inactivity');
+    expect(replaceState).toHaveBeenCalledWith('/login?reason=inactivity');
   });
 
   it('does not touch a recent session, and does not even look it up (no delay on a normal load)', async () => {
@@ -76,6 +81,21 @@ describe('enforceInactivityOnLoad (browser reopened the next day)', () => {
     expect(h.order).toEqual([]);
     expect(readLastActivity()).toBeNull();
     expect(replaceState).not.toHaveBeenCalled();
+  });
+
+  it('a session lookup that never answers still signs the stale user out, within the wait limit', async () => {
+    vi.useFakeTimers();
+    try {
+      h.getSession.mockImplementation(() => new Promise(() => undefined)); // stuck refresh
+      localStorage.setItem(LAST_ACTIVITY_KEY, String(NOW - 20 * HOUR));
+      const result = enforceInactivityOnLoad(NOW);
+      await vi.advanceTimersByTimeAsync(6_100);
+      await expect(result).resolves.toBe(true);
+      expect(h.order).toEqual(['signed-out']);
+      expect(replaceState).toHaveBeenCalledWith('/login?reason=inactivity');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('if the session lookup fails it does not sign anyone out or block the app', async () => {
@@ -111,13 +131,38 @@ describe('the app does not draw anything until that check has finished', () => {
     render.mockImplementation(() => h.order.push('rendered'));
   });
 
-  it('renders only after a stale session has been signed out', async () => {
+  it('renders only after the check has finished and nobody was signed out', async () => {
     await import('../main');
     await Promise.resolve();
     expect(render).not.toHaveBeenCalled(); // no dashboard while the check runs
-    finishCheck(true);
+    finishCheck(false);
     await vi.waitFor(() => expect(render).toHaveBeenCalledTimes(1));
     expect(h.order).toEqual(['check-finished', 'rendered']);
+  });
+
+  it('after a sign-out the page is reloading, so it does not draw the old page; a safety timer still draws if the reload never happens', async () => {
+    vi.useFakeTimers();
+    try {
+      await import('../main');
+      finishCheck(true);
+      await vi.advanceTimersByTimeAsync(100);
+      expect(render).not.toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(8_000);
+      expect(render).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('draws within the safety limit even when the check never finishes', async () => {
+    vi.useFakeTimers();
+    try {
+      await import('../main');
+      await vi.advanceTimersByTimeAsync(8_100);
+      expect(render).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('still renders if the check itself fails', async () => {

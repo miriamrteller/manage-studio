@@ -13,12 +13,31 @@ if (!rootElement) throw new Error('Root element not found')
 
 // A browser reopened after a long break still holds a valid saved session. Sign it out BEFORE
 // anything is drawn, so no signed-in page flashes up. Normally this returns at once.
+const renderApp = () =>
+  ReactDOM.createRoot(rootElement).render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>,
+  )
+
+// Safety net: whatever the check does, the app is on screen within a few seconds.
+let rendered = false
+const renderOnce = () => {
+  if (rendered) return
+  rendered = true
+  renderApp()
+}
+const safetyTimer = window.setTimeout(renderOnce, 8000)
+
 enforceInactivityOnLoad()
-  .catch((err) => console.warn('[inactivity] load check failed:', err instanceof Error ? err.message : err))
-  .finally(() => {
-    ReactDOM.createRoot(rootElement).render(
-      <React.StrictMode>
-        <App />
-      </React.StrictMode>,
-    )
+  .then((signedOut) => {
+    // After a sign-out the page is reloading onto the sign-in address; drawing now would flash the old page.
+    if (signedOut) return
+    window.clearTimeout(safetyTimer)
+    renderOnce()
+  })
+  .catch((err) => {
+    console.warn('[inactivity] load check failed:', err instanceof Error ? err.message : err)
+    window.clearTimeout(safetyTimer)
+    renderOnce()
   })

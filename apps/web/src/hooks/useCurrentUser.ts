@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useAuthSession } from './useAuth';
+import { AUTH_WAIT_MS, withTimeout } from '../lib/withTimeout';
 import type { UserProfile } from '../types/auth';
 
 /**
@@ -29,13 +30,21 @@ export function useCurrentUser(): {
       const {
         data: { session: currentSession },
         error: sessionError,
-      } = await supabase.auth.getSession();
+      } = await withTimeout(supabase.auth.getSession(), AUTH_WAIT_MS, {
+        data: { session: null },
+        error: null,
+      });
 
       if (sessionError || !currentSession?.user.id) {
         return null;
       }
 
-      const { data, error } = await supabase.rpc('get_my_profile');
+      const rpcResult = await withTimeout(supabase.rpc('get_my_profile'), AUTH_WAIT_MS * 2, null);
+      if (rpcResult === null) {
+        console.warn('Profile did not load in time');
+        return null;
+      }
+      const { data, error } = rpcResult;
 
       if (error?.code === 'PGRST202') {
         // RPC not deployed yet — fall back to direct table read

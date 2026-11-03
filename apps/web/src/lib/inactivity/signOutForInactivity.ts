@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import queryClient from '@/lib/query-client';
+import { withTimeout } from '@/lib/withTimeout';
 import { clearLastActivity, markSignedOutForInactivity } from './activityStore';
 
 /**
@@ -9,11 +10,25 @@ import { clearLastActivity, markSignedOutForInactivity } from './activityStore';
  */
 export async function signOutForInactivity(): Promise<void> {
   try {
-    await supabase.auth.signOut({ scope: 'local' });
+    // Bounded: a sign-out that never answers (stuck lock or network) must not hold the app back.
+    await withTimeout(supabase.auth.signOut({ scope: 'local' }), 3_000, null);
   } catch (err) {
     console.warn('[inactivity] sign-out call failed:', err instanceof Error ? err.message : err);
   }
+  dropSavedSession();
   queryClient.clear();
   clearLastActivity();
   markSignedOutForInactivity();
+}
+
+/** Removes the saved session from this browser directly, whatever the sign-out call did. */
+export function dropSavedSession(): void {
+  try {
+    if (typeof localStorage === 'undefined') return;
+    for (const key of Object.keys(localStorage)) {
+      if (key.startsWith('sb-') && key.includes('-auth-token')) localStorage.removeItem(key);
+    }
+  } catch {
+    // storage unavailable: nothing saved to drop
+  }
 }

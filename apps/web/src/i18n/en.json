@@ -1823,6 +1823,10 @@
     "platform_features": "Platform features"
   },
   "platform_welcome": {
+    "slow_title": "This is taking longer than expected",
+    "slow_body": "We could not finish loading your account. Try again, or sign in again.",
+    "slow_reload": "Try again",
+    "slow_sign_in_again": "Sign in again",
     "headline": "Get paid. Stay compliant. Freelance in Israel.",
     "intro": "Billing, reminders and paperwork for your business, in one place.",
     "sign_in_hint": "Sign in to manage your studio.",
