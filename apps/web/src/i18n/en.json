@@ -494,6 +494,7 @@
       "delete_note": "To request data removal, please contact support. Hard deletion is not permitted under data retention policy."
     },
     "families": {
+      "email_family": "Email this family",
       "title": "Families",
       "description": "Family records are created automatically when a student enrols. Contact details can be edited here.",
       "empty_title": "No families yet",
@@ -778,6 +779,8 @@
       }
     },
     "notifications": {
+      "body_greeting": "Hi,",
+      "body_template_hint": "We started your message with a greeting and your studio’s name. Write between them and change anything.",
       "title": "Notifications",
       "description": "Send email announcements and review delivery history for your studio.",
       "tab_compose": "Compose",
@@ -1241,6 +1244,8 @@
       "empty_message": "Add a season before scheduling classes and enrolments."
     },
     "admin_classes": {
+      "email_class": "Email participants",
+      "email_class_label": "Email the participants of {{name}}",
       "order_hint": "Add a {{level}} and a {{season}} first, then your {{entity}}.",
       "title": "Manage {{entity}}",
       "description": "Create, edit, and delete {{entity}} for your studio.",
@@ -2680,6 +2685,8 @@
       "instructions_label": "Payment instructions shown to parents",
       "instructions_placeholder": "e.g. Bank Hapoalim, branch 123, account 456789. Or pay cash to the teacher at the first lesson.",
       "instructions_hint": "Shown on the enrolment page and in payment reminders. Write it in the language your parents read.",
+      "draft_hint": "We drafted this from your studio details. Add your bank details and edit as needed.",
+      "draft": { "cash_at_or_transfer": "Pay in cash at {{address}}, or by bank transfer to {{name}}.", "cash_at": "Pay in cash at {{address}}.", "cash_or_transfer": "Pay in cash at the studio, or by bank transfer to {{name}}.", "questions": "Questions: {{phone}}." },
       "receipts_note": "If the studio is a registered business, it must issue its own receipts for every payment.",
       "provider_hint": "Enter the provider's keys on its settings page.",
       "saved": "Payment settings saved.",
