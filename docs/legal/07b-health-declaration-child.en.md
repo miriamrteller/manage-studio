@@ -43,6 +43,9 @@ Full name: [[typed]] · Date and time: [[auto]]
 
 ---
 
+### Awaiting lawyer review (see [AWAITING-LAWYER-REVIEW](AWAITING-LAWYER-REVIEW.md))
+- [[LAWYER: confirm]] "We don't have insurance": the terms then say "The studio does not currently hold insurance covering participants. We recommend personal accident insurance." and the health declaration's Declaration adds "I know that the studio does not currently hold insurance covering participants, and that personal accident insurance is recommended." (part of what the signer signs; no separate step).
+
 ### Drafting notes (not shown to parents)
 
 - **When the law requires a declaration.** Sports Law 5748-1988 requires medical examinations or health declarations for *athletes* in competitive sport and for students of *recognised training institutions*; ordinary, non-competitive classes are not covered as far as we found — **if the studio enters participants in competitions run by a recognised sports association, verify with lawyer**. The Gyms (Licensing and Supervision) Law 5754-1994 makes a health declaration **mandatory for a licensed gym**; a studio that is a licensed gym must use the form the law prescribes — **verify**. Swimming pools have their own licensing and safety rules — **verify**. For everyone else this is good practice: it keeps participants safe and shows the studio acted reasonably (Torts Ordinance [New Version], negligence §§35–36).

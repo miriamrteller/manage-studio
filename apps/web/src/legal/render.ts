@@ -197,6 +197,22 @@ function receiptsValue(ctx: LegalRenderContext): string {
     : 'Tax documents (receipts or invoices) are issued for payments as the law requires, through the invoicing provider.';
 }
 
+/**
+ * "We don't have insurance": the enrolment terms say so instead of naming a
+ * policy (owner decision; awaiting lawyer review).
+ */
+export const NO_INSURANCE_TERMS: Record<LegalLang, string> = {
+  en: 'The studio does not currently hold insurance covering participants. We recommend personal accident insurance.',
+  he: 'לסטודיו אין כרגע ביטוח המכסה משתתפים. אנו ממליצים לעשות ביטוח תאונות אישיות.',
+};
+
+function applyInsurance(text: string, ctx: LegalRenderContext): string {
+  if (ctx.profile.insurance_status !== 'none') return text;
+  return text
+    .replace(/The studio holds \[\[third-party liability insurance[^\]]*\]\](?: \(\[\[STUDIO: confirm\]\]\))?\./, NO_INSURANCE_TERMS.en)
+    .replace(/לסטודיו \[\[ביטוח אחריות כלפי צד שלישי[^\]]*\]\](?: \(\[\[סטודיו: לאשר\]\]\))?\./, NO_INSURANCE_TERMS.he);
+}
+
 /** How a detail still to be filled in shows in the draft: "[Season name – to be completed]". */
 function toBeCompleted(label: string, lang: LegalLang): string {
   return lang === 'he' ? `${label} – להשלמה` : `${label} – to be completed`;
@@ -240,6 +256,7 @@ export function legalTextVersion(text: string): string {
 export function prepareLegalMarkdown(raw: string, ctx: LegalRenderContext): PreparedLegalDoc {
   let text = stripDraftingFrame(raw);
   text = applyVariant(text, ctx.vertical);
+  text = applyInsurance(text, ctx);
   text = rewriteDocLinks(text);
 
   const derived = derivedValues(ctx);

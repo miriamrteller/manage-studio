@@ -53,6 +53,12 @@ export interface StudioSignedForm {
 export declare function studioSignedForms(vertical: string | null | undefined, ctx: SignedTemplateContext): StudioSignedForm[];
 /** A form's text: the document (and its add-on), filled with the studio's details. */
 export declare function prepareSignedForm(form: SignedFormSpec, ctx: SignedTemplateContext): string;
+/**
+ * "We don't have insurance" (legal_profile.insurance_status = 'none'): the
+ * health declaration's Declaration list tells the signer so, as part of the
+ * text they sign (sealed with it). No extra step. Awaiting lawyer review.
+ */
+export declare const NO_INSURANCE_DECLARATION: Record<LegalLang, string>;
 /** Fill a signed document's placeholders and turn it into plain text. */
 export declare function fillSignedText(markdown: string, ctx: SignedTemplateContext): string;
 //# sourceMappingURL=signed-template.d.ts.map

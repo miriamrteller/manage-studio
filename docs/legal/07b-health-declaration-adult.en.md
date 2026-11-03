@@ -40,6 +40,9 @@ Full name: [[typed]] · Date and time: [[auto]]
 
 ---
 
+### Awaiting lawyer review (see [AWAITING-LAWYER-REVIEW](AWAITING-LAWYER-REVIEW.md))
+- [[LAWYER: confirm]] "We don't have insurance": the terms then say "The studio does not currently hold insurance covering participants. We recommend personal accident insurance." and the health declaration's Declaration adds "I know that the studio does not currently hold insurance covering participants, and that personal accident insurance is recommended." (part of what the signer signs; no separate step).
+
 ### Drafting notes (not shown to participants)
 
 - Same legal position as the child version: good practice for ordinary classes; mandatory under the Gyms Law for a licensed gym (use the prescribed form — **verify**); the Sports Law applies to competitive athletes and recognised training institutions (**verify** if participants compete); pools have their own rules (**verify**).

@@ -224,9 +224,27 @@ export function prepareSignedForm(form: SignedFormSpec, ctx: SignedTemplateConte
   return fillSignedText(parts.join('\n\n'), ctx);
 }
 
+/**
+ * "We don't have insurance" (legal_profile.insurance_status = 'none'): the
+ * health declaration's Declaration list tells the signer so, as part of the
+ * text they sign (sealed with it). No extra step. Awaiting lawyer review.
+ */
+export const NO_INSURANCE_DECLARATION: Record<LegalLang, string> = {
+  en: 'I know that the studio does not currently hold insurance covering participants, and that personal accident insurance is recommended.',
+  he: 'ידוע לי שלסטודיו אין כרגע ביטוח המכסה משתתפים, ושמומלץ לעשות ביטוח תאונות אישיות.',
+};
+
+function addInsuranceDisclosure(markdown: string, ctx: SignedTemplateContext): string {
+  if (ctx.profile.insurance_status !== 'none') return markdown;
+  return markdown.replace(
+    /(## 2\. (?:Declaration|הצהרה)\n\n(?:- .*\n)+)/,
+    (list) => `${list}- ${NO_INSURANCE_DECLARATION[ctx.lang]}\n`,
+  );
+}
+
 /** Fill a signed document's placeholders and turn it into plain text. */
 export function fillSignedText(markdown: string, ctx: SignedTemplateContext): string {
-  let text = dropSigningInstructions(tidyHeadings(markdown));
+  let text = dropSigningInstructions(tidyHeadings(addInsuranceDisclosure(markdown, ctx)));
 
   const p = ctx.profile;
   const value = (v: string | undefined) => (v ?? '').trim();

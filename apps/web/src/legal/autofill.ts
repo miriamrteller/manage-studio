@@ -29,7 +29,15 @@ export interface LegalAutofillSources {
  * Settings → Legal. Everything else sits under "Details we filled in for you",
  * unless it is required and still empty.
  */
-export const STUDIO_LEGAL_KEYS = ['address', 'phone', 'insurance', 'gallery_service', 'business_status', 'business_number'] as const;
+export const STUDIO_LEGAL_KEYS = [
+  'address',
+  'phone',
+  'insurance_status',
+  'insurance',
+  'gallery_service',
+  'business_status',
+  'business_number',
+] as const;
 
 const PROVIDER_NAMES: Record<string, string> = {
   grow: 'Grow',

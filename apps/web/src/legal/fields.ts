@@ -328,12 +328,28 @@ export const LEGAL_FIELDS: LegalFieldDef[] = [
     defaultValue: { en: '10', he: '10' },
     placeholders: { 'enrolment-terms': ['[[AGE]]', '[[גיל]]'] },
   },
+  // The studio says whether it is insured; "we don't have insurance" never
+  // blocks anything (owner decision): the terms and the health declaration
+  // then tell parents so (render.ts, shared signed-template).
+  {
+    key: 'insurance_status',
+    section: 'enrolment',
+    kind: 'select',
+    verticals: DANCE_AND_GENERIC,
+    label: { en: 'Insurance', he: 'ביטוח' },
+    options: [
+      { value: 'insured', label: { en: 'We have insurance', he: 'יש לנו ביטוח' } },
+      { value: 'none', label: { en: "We don't have insurance", he: 'אין לנו ביטוח' } },
+    ],
+    placeholders: {},
+  },
   {
     key: 'insurance',
     section: 'enrolment',
     kind: 'text',
     verticals: DANCE_AND_GENERIC,
     required: true,
+    showWhen: (p) => p.insurance_status !== 'none',
     label: { en: 'Insurance (insurer and policy type)', he: 'ביטוח (מבטח וסוג הפוליסה)' },
     hint: { en: 'e.g. third-party liability insurance with …', he: 'למשל ביטוח אחריות כלפי צד שלישי ב…' },
     example: { en: "Third-party liability, Harel", he: "ביטוח צד ג', הראל" },
@@ -420,7 +436,7 @@ export function missingLegalDetails(
 ): LegalFieldDef[] {
   const p = profile ?? {};
   const missing = fieldsForVertical(vertical as VerticalId).filter(
-    (f) => f.required && !f.defaultValue && !(p[f.key] ?? '').trim(),
+    (f) => f.required && !f.defaultValue && (!f.showWhen || f.showWhen(p)) && !(p[f.key] ?? '').trim(),
   );
   if (stage === 'publish' && p.business_status === 'not_registered') {
     const byKey = (k: string) => LEGAL_FIELDS.find((f) => f.key === k)!;
