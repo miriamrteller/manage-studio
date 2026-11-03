@@ -1,5 +1,6 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useLeadFormInvite } from '../hooks/useLeadFormInvite';
 import { useTranslation } from 'react-i18next';
 import { ConsentCheckboxes } from '@/components/legal/ConsentCheckboxes';
 import { PrivacyNotice } from '@/components/PrivacyNotice';
@@ -47,6 +48,14 @@ export function InquiryForm({
   const [marketing, setMarketing] = useState<ConsentState>({});
   const lang = useLegalLang();
   const tenant = useTenant();
+  // An admin's "Send form" link: start with the name and email they typed.
+  const invite = useLeadFormInvite(tenant?.id);
+  useEffect(() => {
+    if (!invite.prefill) return;
+    const { name: invitedName, email: invitedEmail } = invite.prefill;
+    setName((v) => v || invitedName);
+    setEmail((v) => v || invitedEmail);
+  }, [invite.prefill]);
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error' | 'captcha' | 'answers'>('idle');
   const { questions } = useLeadFormQuestions(namedForm?.question_keys ?? null);
   // A form made for one class or package starts with it chosen.
@@ -82,6 +91,7 @@ export function InquiryForm({
           captchaToken: captcha.token,
           answers: questions.length > 0 ? pickAnswers(answers, questions.map((q) => q.key)) : null,
           formSlug: namedForm?.slug ?? null,
+          invite: invite.token,
           website: honeypot || null,
           marketingConsent: marketingPayload(marketing, lang, tenant?.name),
         },

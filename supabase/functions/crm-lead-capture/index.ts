@@ -11,6 +11,7 @@ import {
 } from "../_shared/crm-contract/lead-ingest-core.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
 import { verifyTurnstile } from "../_shared/turnstile.ts";
+import { cleanInviteToken, inviteTokenHash } from "../_shared/lead-form-invite.ts";
 import { leadCaptchaPasses, normaliseCampaign } from "../_shared/crm-contract/lead-capture-guard.ts";
 import {
   FORM_TIME_ZONE,
@@ -61,6 +62,8 @@ const payloadSchema = z.object({
   answers: z.record(z.unknown()).nullable().optional(),
   /** Named form (/f/<slug>); absent for the general /inquire form. */
   formSlug: z.string().max(40).nullable().optional(),
+  /** Token from an admin's "Send form" link (#invite=…): links the lead to that invite. */
+  invite: z.string().max(128).nullable().optional(),
   /** Honeypot — humans never see it, bots fill it. */
   website: z.string().max(200).nullable().optional(),
   /**
@@ -283,6 +286,19 @@ Deno.serve(withMonitoring("crm-lead-capture", async (req) => {
         ip: ip === "unknown" ? null : ip,
         userAgent: req.headers.get("user-agent"),
       });
+    }
+
+    // Came from an admin's "Send form" link: mark the invite answered and link the lead.
+    const inviteToken = cleanInviteToken(payload.invite);
+    if (inviteToken && result.leadId) {
+      const { error: inviteError } = await service
+        .from("lead_form_invites")
+        .update({ used_at: new Date().toISOString(), lead_id: result.leadId })
+        .eq("tenant_id", leadTenant.id)
+        .eq("token_hash", await inviteTokenHash(inviteToken))
+        .gt("expires_at", new Date().toISOString())
+        .is("used_at", null);
+      if (inviteError) console.error("crm-lead-capture: invite not updated", inviteError.message);
     }
 
     if (result.outcome !== "duplicate") {

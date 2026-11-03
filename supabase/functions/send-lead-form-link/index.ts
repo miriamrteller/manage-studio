@@ -12,6 +12,7 @@ import {
   normaliseRecipient,
   RECIPIENT_COOLDOWN_MINUTES,
 } from "../_shared/crm-contract/lead-link-guard.ts";
+import { INVITE_TTL_DAYS, inviteTokenHash, inviteUrl, newInviteToken } from "../_shared/lead-form-invite.ts";
 
 /**
  * send-lead-form-link — a studio admin emails, from the studio:
@@ -105,10 +106,11 @@ Deno.serve(withMonitoring("send-lead-form-link", async (req) => {
   const studio = (tenant.name as string) || (tenant.subdomain as string);
 
   let formPath = "/inquire";
+  let formId: string | null = null;
   if (body.kind === "form" && body.formSlug) {
     const { data: form } = await service
       .from("lead_forms")
-      .select("slug, active, ends_on")
+      .select("id, slug, active, ends_on")
       .eq("tenant_id", tenantId)
       .eq("slug", body.formSlug.trim().toLowerCase())
       .maybeSingle();
@@ -117,13 +119,33 @@ Deno.serve(withMonitoring("send-lead-form-link", async (req) => {
       return jsonResponse({ error: "form_closed" }, 409);
     }
     formPath = `/f/${form.slug}`;
+    formId = (form as { id: string }).id;
+  }
+
+  // The link prefills the form with the name and email typed here: a random
+  // token in the URL fragment (never the details themselves); only its hash is
+  // stored. If it can't be stored, the link still works without the prefill.
+  let formUrl = `${formOrigin}${formPath}?src=direct`;
+  if (body.kind === "form") {
+    const token = newInviteToken();
+    const { error: inviteError } = await service.from("lead_form_invites").insert({
+      tenant_id: tenantId,
+      token_hash: await inviteTokenHash(token),
+      recipient_email: recipient,
+      recipient_name: body.name?.trim() || null,
+      form_id: formId,
+      created_by: profile.id,
+      expires_at: new Date(Date.now() + INVITE_TTL_DAYS * 24 * 60 * 60 * 1000).toISOString(),
+    });
+    if (inviteError) console.error("send-lead-form-link: invite not stored", inviteError.message);
+    else formUrl = inviteUrl(formUrl, token);
   }
 
   const email = body.kind === "form"
     ? formLinkEmail({
       studio,
       recipientName: body.name ?? null,
-      formUrl: `${formOrigin}${formPath}?src=direct`,
+      formUrl,
       lang,
       colour: tenant.primary_color as string | null,
     })
