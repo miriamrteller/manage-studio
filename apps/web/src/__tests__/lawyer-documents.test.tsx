@@ -162,10 +162,18 @@ describe('the documents list', () => {
     expect(h.upload).not.toHaveBeenCalled();
   });
 
+  const paste = (el: HTMLElement, text: string) =>
+    fireEvent.paste(el, { clipboardData: { getData: () => text } });
+
   it('saves pasted text in the chosen language', async () => {
     renderList(legal());
-    fireEvent.click((await screen.findAllByRole('button', { name: 'Paste the text' }))[1]);
-    fireEvent.change(screen.getByLabelText("Your lawyer's text"), { target: { value: '# Terms\n\nReviewed.' } });
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Edit the text' }))[1]);
+    const editor = screen.getByRole('textbox', { name: "Your lawyer's text" });
+    // It starts from the current draft; the lawyer's text replaces it.
+    await waitFor(() => expect(editor.textContent).not.toBe(''));
+    editor.replaceChildren();
+    fireEvent.input(editor);
+    paste(editor, '# Terms\n\nReviewed.');
     fireEvent.click(screen.getByRole('button', { name: 'Save this version' }));
     await waitFor(() =>
       expect(h.rpc).toHaveBeenCalledWith('save_tenant_legal_document', {
@@ -175,6 +183,31 @@ describe('the documents list', () => {
         p_content: '# Terms\n\nReviewed.',
       }),
     );
+  });
+
+  it('starts from the draft with the studio details as live fields (chips), saved as tokens', async () => {
+    renderList(legal());
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Edit the text' }))[0]);
+    const editor = screen.getByRole('textbox', { name: "Your lawyer's text" });
+    await waitFor(() => expect(editor.querySelector('[data-detail]')).not.toBeNull());
+    const chip = editor.querySelector<HTMLElement>('[data-detail]')!;
+    expect(chip.getAttribute('contenteditable')).toBe('false');
+    expect(chip).toHaveAttribute('aria-label');
+    fireEvent.click(screen.getByRole('button', { name: 'Save this version' }));
+    await waitFor(() => expect(h.rpc).toHaveBeenCalledWith('save_tenant_legal_document', expect.anything()));
+    const call = h.rpc.mock.calls.find((c: unknown[]) => c[0] === 'save_tenant_legal_document')!;
+    expect((call[1] as { p_content: string }).p_content).toMatch(/\{\{detail:[a-z_]+\}\}/);
+  });
+
+  it('pasted text: today’s detail values become live fields again', async () => {
+    renderList(legal());
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Edit the text' }))[1]);
+    const editor = screen.getByRole('textbox', { name: "Your lawyer's text" });
+    await waitFor(() => expect(editor.textContent).not.toBe(''));
+    editor.replaceChildren();
+    fireEvent.input(editor);
+    paste(editor, `Run by ${legal().name}.`);
+    expect(editor.querySelector('[data-detail="studio_name"]')).not.toBeNull();
   });
 
   it('going back to the template says when the pack must be confirmed again', async () => {

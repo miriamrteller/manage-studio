@@ -102,3 +102,5 @@
 .legal-document th { font-weight: 600; background: var(--color-surface-muted, #f4f4f5); }
 .legal-document code { font-size: 0.875em; }
 .legal-document mark.legal-missing { background: #fef3c7; color: #78350f; padding: 0 0.2rem; border-radius: 0.2rem; }
+/* Live studio details in the lawyer-version editor: fixed chips, filled from Settings. */
+.legal-detail-chip { display: inline-block; margin: 0 0.1rem; padding: 0 0.35rem; border-radius: 0.25rem; background: #e0e7ff; color: #312e81; border: 1px solid #a5b4fc; font-family: inherit; white-space: nowrap; cursor: default; user-select: all; }

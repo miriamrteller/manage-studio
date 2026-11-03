@@ -178,3 +178,26 @@ export async function lawyerPdfUrl(storagePath: string): Promise<string> {
   if (error || !data) throw error ?? new Error('download failed');
   return URL.createObjectURL(data);
 }
+
+/** Details that also feed the derived lines (business line, "run by", contacts) in every document. */
+const IDENTITY_KEYS = ['legal_name', 'business_status', 'business_number', 'personal_id', 'passport_number', 'passport_country', 'no_israeli_id', 'email', 'phone', 'address'];
+
+/**
+ * Lawyer-reviewed PDFs that use any of the changed details (a PDF can't
+ * update itself). Text versions keep their details live, so they never need it.
+ */
+export function pdfsAffectedByChange(
+  uploads: LawyerDocument[],
+  changedKeys: string[],
+  placeholdersByKey: Record<string, Partial<Record<string, string[]>>>,
+): UploadableDoc[] {
+  if (changedKeys.length === 0) return [];
+  return uploads
+    .filter((u) => u.kind === 'pdf')
+    .map((u) => u.document)
+    .filter(
+      (doc, i, all) =>
+        all.indexOf(doc) === i &&
+        changedKeys.some((k) => IDENTITY_KEYS.includes(k) || (placeholdersByKey[k]?.[doc]?.length ?? 0) > 0),
+    );
+}
