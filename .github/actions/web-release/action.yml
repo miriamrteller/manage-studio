@@ -1,0 +1,207 @@
+# Build and deploy the web app (Cloudflare Worker `opalswift-app`) from the
+# commit that is already checked out. Used by two workflows, always inside a
+# job that has environment "production" (so the owner has approved it):
+#   - deploy-prod, right after the database deploy and its checks pass
+#   - deploy-web, for app-only releases (Run workflow / prod-web-* tag)
+#
+# The caller checks out the commit first and passes `sha` (that commit).
+# Settings come from the production environment's VARIABLES via `vars-json`
+# (VITE_* are public by design: they are inlined into every visitor's browser).
+# Missing Cloudflare secrets → skipped with a notice (output deployed=false).
+# The demo build, dev settings and *_MOCK variables are refused.
+
+name: web-release
+description: Build apps/web with prod settings, deploy opalswift-app, smoke-check the live release
+
+inputs:
+  sha:
+    description: The commit being released (already checked out)
+    required: true
+  build-only:
+    description: "'true' to build and check without deploying"
+    default: "false"
+  vars-json:
+    description: toJSON(vars) of the production environment
+    required: true
+  cloudflare-api-token:
+    description: CLOUDFLARE_API_TOKEN
+    default: ""
+  cloudflare-account-id:
+    description: CLOUDFLARE_ACCOUNT_ID
+    default: ""
+  sentry-auth-token:
+    description: SENTRY_AUTH_TOKEN (optional, source maps)
+    default: ""
+
+outputs:
+  ready:
+    description: "'true' when the build ran (Cloudflare secrets present or build-only)"
+    value: ${{ steps.gate.outputs.ready }}
+
+runs:
+  using: composite
+  steps:
+    - name: Check secrets and settings
+      id: gate
+      shell: bash
+      env:
+        SHA: ${{ inputs.sha }}
+        BUILD_ONLY: ${{ inputs.build-only }}
+        HAS_CF: ${{ inputs.cloudflare-api-token != '' && inputs.cloudflare-account-id != '' }}
+        ALL_VARS: ${{ inputs.vars-json }}
+        PROD_REF: oogxajjanbyqhljxcmql
+      run: |
+        fail=0
+        if [ "$HAS_CF" != "true" ] && [ "$BUILD_ONLY" != "true" ]; then
+          echo "::notice::CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID not set in the 'production' environment — web deploy skipped. See DEV-PROD-PIPELINE.md#web-stage."
+          echo "### Web deploy skipped — Cloudflare secrets not configured yet" >> "$GITHUB_STEP_SUMMARY"
+          echo "ready=false" >> "$GITHUB_OUTPUT"; exit 0
+        fi
+        # Build settings for the later steps: the environment variables below,
+        # with their defaults. Single-line values only.
+        get() { jq -r --arg k "$1" '.[$k] // ""' <<<"$ALL_VARS"; }
+        {
+          for v in VITE_SUPABASE_URL VITE_SUPABASE_PUBLISHABLE_KEY VITE_APP_ROOT_DOMAIN VITE_SENTRY_DSN \
+                   VITE_PRIVACY_POLICY_URL VITE_TERMS_URL VITE_ACCESSIBILITY_STATEMENT_URL \
+                   VITE_ENABLE_SELF_SERVE_SIGNUP VITE_TURNSTILE_SITE_KEY VITE_ENABLE_FINANCE_WALKTHROUGH \
+                   SENTRY_ORG SENTRY_PROJECT; do
+            val=$(get "$v")
+            case "$val" in *$'\n'*) echo "::error::Variable $v has more than one line." >&2; exit 1 ;; esac
+            printf -v "$v" '%s' "$val"
+            echo "$v=$val"
+          done
+          env_name=$(get VITE_SENTRY_ENVIRONMENT); echo "VITE_SENTRY_ENVIRONMENT=${env_name:-production}"
+          smoke=$(get SMOKE_TENANT_HOST); echo "SMOKE_TENANT_HOST=${smoke:-creativeballet.opalswift.com}"
+          echo "WEB_SHA=$SHA"
+          echo "WEB_BUILD_ONLY=$BUILD_ONLY"
+          echo "PROD_REF=$PROD_REF"
+        } >> "$GITHUB_ENV"
+        for v in VITE_SUPABASE_URL VITE_SUPABASE_PUBLISHABLE_KEY VITE_APP_ROOT_DOMAIN; do
+          [ -n "${!v}" ] || { echo "::error::Environment variable $v is not set in 'production' (Settings → Environments → production → Variables)."; fail=1; }
+        done
+        case "$VITE_SUPABASE_URL" in
+          *"$PROD_REF"*) ;;
+          "") ;;
+          *) echo "::error::VITE_SUPABASE_URL is not the prod project ($PROD_REF) — refusing to ship an app pointed at another database."; fail=1 ;;
+        esac
+        case "$VITE_SUPABASE_PUBLISHABLE_KEY" in
+          sb_secret_*|*service_role*) echo "::error::VITE_SUPABASE_PUBLISHABLE_KEY holds a SECRET key. It would ship to every browser — rotate it now and use the publishable key."; fail=1 ;;
+        esac
+        # Demo/dev settings and mock flags never reach prod, whatever their value.
+        bad=$(jq -r 'keys[] | select(. == "VITE_DEMO_MODE" or . == "VITE_DEV_TENANT_SUBDOMAIN" or test("_MOCK$"))' <<<"$ALL_VARS")
+        if [ -n "$bad" ]; then
+          echo "::error::Remove these variables before deploying to production: ${bad//$'\n'/ }"; fail=1
+        fi
+        [ "$fail" = 0 ] || exit 1
+        # The checked-out tree must be the commit we were told to release.
+        [ "$(git rev-parse HEAD)" = "$SHA" ] || { echo "::error::checked-out commit $(git rev-parse HEAD) is not $SHA"; exit 1; }
+        echo "ready=true" >> "$GITHUB_OUTPUT"
+
+    - uses: pnpm/action-setup@v2
+      if: steps.gate.outputs.ready == 'true'
+    - uses: actions/setup-node@v4
+      if: steps.gate.outputs.ready == 'true'
+      with:
+        node-version: "22"
+        cache: "pnpm"
+    - name: pnpm install
+      if: steps.gate.outputs.ready == 'true'
+      shell: bash
+      run: pnpm install --frozen-lockfile
+
+    - name: Build (prod settings; never the demo)
+      if: steps.gate.outputs.ready == 'true'
+      shell: bash
+      env:
+        VITE_DEMO_MODE: ""
+        VITE_RELEASE: ${{ inputs.sha }}
+        SENTRY_AUTH_TOKEN: ${{ inputs.sentry-auth-token }}
+      run: |
+        set -euo pipefail
+        SHA=$WEB_SHA
+        # A stray env file would override the variables above.
+        if ls apps/web/.env.production* apps/web/.env.local >/dev/null 2>&1; then
+          echo "::error::an .env file is committed in apps/web"; exit 1
+        fi
+        pnpm run build
+        dist=apps/web/dist
+        test -f "$dist/index.html"
+        grep -rlq "$PROD_REF" "$dist/assets" || { echo "::error::built bundle does not reference the prod project"; exit 1; }
+        if grep -rlq "sb_secret_" "$dist"; then echo "::error::a secret key ended up in the bundle"; exit 1; fi
+        # The asset that carries this release id, for the live check below.
+        probe=$(grep -rl "$SHA" "$dist/assets" --include='*.js' | head -1 || true)
+        echo "PROBE_ASSET=${probe#"$dist"}" >> "$GITHUB_ENV"
+        {
+          echo "## Web build \`${SHA::7}\`"
+          echo "- Supabase: \`$VITE_SUPABASE_URL\`"
+          echo "- Root domain: \`$VITE_APP_ROOT_DOMAIN\`"
+          echo "- Sentry: $([ -n "$VITE_SENTRY_DSN" ] && echo on || echo off), source maps: $([ -n "${SENTRY_AUTH_TOKEN:-}" ] && [ -n "$SENTRY_ORG" ] && echo uploaded || echo skipped)"
+          echo "- Release probe: \`${probe#"$dist"}\`"
+        } >> "$GITHUB_STEP_SUMMARY"
+        if [ "$WEB_BUILD_ONLY" = "true" ]; then echo "**Build only — nothing deployed.**" >> "$GITHUB_STEP_SUMMARY"; fi
+
+    # wrangler is an apps/web devDependency (pnpm). wrangler-action fell back
+    # to `npm i wrangler`, which breaks inside a pnpm workspace.
+    - name: wrangler deploy (opalswift-app)
+      if: steps.gate.outputs.ready == 'true' && inputs.build-only != 'true'
+      shell: bash
+      working-directory: apps/web
+      env:
+        CLOUDFLARE_API_TOKEN: ${{ inputs.cloudflare-api-token }}
+        CLOUDFLARE_ACCOUNT_ID: ${{ inputs.cloudflare-account-id }}
+        WRANGLER_SEND_METRICS: "false"
+      run: pnpm exec wrangler deploy
+
+    - name: Smoke (app shell, a tenant host, this release live)
+      if: steps.gate.outputs.ready == 'true' && inputs.build-only != 'true'
+      shell: bash
+      run: |
+        set -uo pipefail
+        SHA=$WEB_SHA
+        ok=1
+        for host in "app.$VITE_APP_ROOT_DOMAIN" "$SMOKE_TENANT_HOST"; do
+          code=$(curl -s -o /dev/null -w '%{http_code}' --retry 3 --retry-delay 5 "https://$host/")
+          echo "https://$host/ → $code"
+          [ "$code" = 200 ] || ok=0
+        done
+        if [ -n "${PROBE_ASSET:-}" ]; then
+          # Download to a file, THEN search it. `curl | grep -q` fails under
+          # pipefail: grep exits on the first match, curl gets EPIPE (23) on
+          # the rest of the ~1.5 MB asset, and the pipeline reports failure
+          # even though the release id is there (deploy-web run 41308371701).
+          live=0
+          url="https://app.$VITE_APP_ROOT_DOMAIN$PROBE_ASSET"
+          for _ in 1 2 3 4 5 6 7 8 9; do
+            info=$(curl -s --compressed -o probe.js -w '%{http_code} %{content_type}' "$url" || echo "000 -")
+            if [ "${info%% *}" = 200 ] && grep -q "$SHA" probe.js; then live=1; break; fi
+            sleep 10
+          done
+          echo "release ${SHA::7} live: $([ $live = 1 ] && echo yes || echo NO)  ($url → $info)"
+          if [ $live = 0 ]; then
+            # Say what came back, so a failure is diagnosable from the log.
+            if grep -qi '<!doctype html' probe.js 2>/dev/null; then
+              echo "::error::$PROBE_ASSET returned the app's HTML fallback, not the asset — the new build is not being served yet."
+            else
+              echo "::error::$PROBE_ASSET did not contain release $SHA (HTTP ${info%% *}, $(wc -c < probe.js 2>/dev/null || echo 0) bytes)."
+            fi
+            ok=0
+          fi
+        else
+          echo "::warning::no built asset carries the release id; release check skipped"
+        fi
+        # Framing: every page refuses frames except the embeddable enquiry
+        # form (public/_headers). Losing DENY elsewhere fails the release.
+        frame_hdrs() { curl -s -o /dev/null -D - "https://$SMOKE_TENANT_HOST$1" | tr -d '\r' | tr '[:upper:]' '[:lower:]'; }
+        home=$(frame_hdrs /)
+        embed=$(frame_hdrs /embed/inquire)
+        if grep -q '^x-frame-options: deny' <<<"$home"; then echo "/ → X-Frame-Options DENY"; else echo "::error::/ lost X-Frame-Options: DENY — any site could frame the app."; ok=0; fi
+        if grep -q '^x-frame-options' <<<"$embed" || ! grep -q '^content-security-policy:.*frame-ancestors' <<<"$embed"; then
+          echo "::warning::/embed/inquire is not framable as intended (studios' website snippets will not show). Check public/_headers."
+        else
+          echo "/embed/inquire → framable (frame-ancestors set)"
+        fi
+        {
+          echo "### Smoke"
+          echo "- app shell and \`$SMOKE_TENANT_HOST\` answered 200, release ${SHA::7} live: $([ $ok = 1 ] && echo yes || echo NO)"
+        } >> "$GITHUB_STEP_SUMMARY"
+        [ $ok = 1 ] || { echo "::error::Deployed, but the smoke check failed — see above. Roll back: DEV-PROD-PIPELINE.md#web-stage"; exit 1; }
