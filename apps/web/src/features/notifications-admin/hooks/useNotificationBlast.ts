@@ -1,7 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import { useTenant } from '@/hooks/useTenant';
 import type { NotificationBlastFormValues } from '../lib/notificationBlastSchema';
-import { previewRecipients, sendBlast } from '../services/notificationBlastService';
+import { explainAccountExclusion, previewRecipients, sendBlast } from '../services/notificationBlastService';
 
 export function useNotificationBlast() {
   const tenant = useTenant();
@@ -31,6 +31,7 @@ export function useNotificationBlast() {
   });
 
   return {
+    explainAccountExclusion,
     previewRecipients: previewMutation.mutateAsync,
     isPreviewing: previewMutation.isPending,
     previewError: previewMutation.error,

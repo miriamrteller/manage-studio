@@ -28,9 +28,9 @@ const latest = (tables: Record<string, Row[]>) => tables.engagements[tables.enga
 describe('ballet demo: enrol, sign, pay at the studio', () => {
   it('creates a pending_payment place with a billing account and returns the offline charge', async () => {
     const { c, tables } = client();
-    const ari = person(tables, 'Ari Levi');
+    const tamar = person(tables, 'Tamar Levi');
     const { data, error } = await c.functions.invoke('prepare-enrolment-checkout', {
-      body: { phase: 'pay', mode: 'create_engagement', person_id: ari.id, offering_id: CLASS.grade2Sun, season_id: SEASON_ID },
+      body: { phase: 'pay', mode: 'create_engagement', person_id: tamar.id, offering_id: CLASS.grade2Sun, season_id: SEASON_ID },
     });
     expect(error).toBeNull();
     // Unsigned: the place is reserved but payment is blocked on the declaration.
@@ -38,12 +38,12 @@ describe('ballet demo: enrol, sign, pay at the studio', () => {
     expect(res.charge).toBeNull();
     expect(res.blockReason).toBe('waiver_required');
     const eng = latest(tables);
-    expect(eng).toMatchObject({ person_id: ari.id, offering_id: CLASS.grade2Sun, status: 'pending_payment' });
+    expect(eng).toMatchObject({ person_id: tamar.id, offering_id: CLASS.grade2Sun, status: 'pending_payment' });
     expect(eng.billing_account_id).toBeTruthy();
 
     await c.functions.invoke('accept-waiver', {
       body: {
-        person_id: ari.id, offering_id: CLASS.grade2Sun, consent_template_id: tables.consent_templates[0].id,
+        person_id: tamar.id, offering_id: CLASS.grade2Sun, consent_template_id: tables.consent_templates[0].id,
         consent_version: 1, typed_name: 'Noa Levi', idempotency_key: 'k0', engagement_id: eng.id, guardian_confirmed: true,
       },
     });
@@ -68,15 +68,15 @@ describe('ballet demo: enrol, sign, pay at the studio', () => {
 
   it('accept-waiver links the declaration to a pending_payment place', async () => {
     const { c, tables } = client();
-    const ari = person(tables, 'Ari Levi');
+    const tamar = person(tables, 'Tamar Levi');
     await c.functions.invoke('prepare-enrolment-checkout', {
-      body: { phase: 'pay', mode: 'create_engagement', person_id: ari.id, offering_id: CLASS.grade2Sun, season_id: SEASON_ID },
+      body: { phase: 'pay', mode: 'create_engagement', person_id: tamar.id, offering_id: CLASS.grade2Sun, season_id: SEASON_ID },
     });
     const eng = latest(tables);
     const template = tables.consent_templates[0];
     const { data, error } = await c.functions.invoke('accept-waiver', {
       body: {
-        person_id: ari.id, offering_id: CLASS.grade2Sun, consent_template_id: template.id, consent_version: 1,
+        person_id: tamar.id, offering_id: CLASS.grade2Sun, consent_template_id: template.id, consent_version: 1,
         typed_name: 'Noa Levi', idempotency_key: 'k1', engagement_id: eng.id, guardian_confirmed: true,
       },
     });
