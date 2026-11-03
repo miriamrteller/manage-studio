@@ -2,13 +2,13 @@ import { useMemo } from 'react';
 import {
   buildNavSections,
   matchesTenantFilter,
-  matchesVertical,
+  matchesProfile,
   navigationConfig,
   publicNavigationConfig,
   type NavSection,
   type NavTenantContext,
 } from './navigationConfig';
-import type { PresetModules, FeatureKey, VerticalId } from '@shared/index';
+import type { PresetModules, FeatureKey, StudioProfile } from '@shared/index';
 
 export interface UseNavItemsOptions {
   userRoles: string[] | null;
@@ -17,8 +17,8 @@ export interface UseNavItemsOptions {
   tenant?: NavTenantContext | null;
   /** When provided, items with a featureKey are hidden unless the feature is enabled. */
   hasFeature?: (key: FeatureKey) => boolean;
-  /** Tenant vertical (tenants.skin); hides class-only pages for appointment verticals. */
-  vertical?: VerticalId | null;
+  /** The studio's payment flow and switches; hides pages the studio does not use. */
+  profile?: StudioProfile | null;
   /**
    * False when there is no studio (app.opalswift.com): signed-in users then see only
    * platform items, since studio pages have nothing to show. Defaults to true.
@@ -37,7 +37,7 @@ export function useNavItems({
   modules,
   tenant,
   hasFeature,
-  vertical,
+  profile,
   hasStudio = true,
 }: UseNavItemsOptions): UseNavItemsResult {
   const sections = useMemo(() => {
@@ -47,7 +47,7 @@ export function useNavItems({
         (item.moduleKey === undefined || modules?.[item.moduleKey] !== false) &&
         (item.featureKey === undefined || hasFeature === undefined || hasFeature(item.featureKey)) &&
         matchesTenantFilter(item, tenant) &&
-        matchesVertical(item, vertical) &&
+        matchesProfile(item, profile) &&
         (hasStudio
           ? !item.withoutStudioOnly
           : isAuthenticated
@@ -55,7 +55,7 @@ export function useNavItems({
             : !!item.worksWithoutStudio),
     );
     return buildNavSections(items, isAuthenticated ? userRoles : []);
-  }, [userRoles, isAuthenticated, modules, tenant, hasFeature, vertical, hasStudio]);
+  }, [userRoles, isAuthenticated, modules, tenant, hasFeature, profile, hasStudio]);
 
   return { sections, isAuthenticated };
 }
