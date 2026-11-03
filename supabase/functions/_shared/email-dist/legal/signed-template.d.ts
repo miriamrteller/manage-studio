@@ -30,6 +30,14 @@ export interface SignedFormSpec {
 export declare const SIGNED_FORMS_BY_SKIN: Record<string, SignedFormSpec[]>;
 /** The forms a studio type signs (unknown types: the general studio's). */
 export declare function signedFormsForVertical(vertical: string | null | undefined): SignedFormSpec[];
+/**
+ * The forms for a studio's skin. Built-in skins keep their own forms. A data skin
+ * (Skins page) signs the general agreement plus the add-on its row names, when that
+ * add-on is one the app ships (unknown or unshipped add-ons: the agreement only).
+ */
+export declare function signedFormsForSkin(skin: string | null | undefined, legalAddon?: string | null): SignedFormSpec[];
+/** Add-ons a data skin can bring into its signed forms today. */
+export declare function isShippedLegalAddon(legalAddon: string | null | undefined): boolean;
 /** Studios whose clients sign a health declaration: the only ones asked about insurance. */
 export declare function hasHealthDeclarations(vertical: string | null | undefined): boolean;
 /**
@@ -58,7 +66,9 @@ export interface StudioSignedForm {
     audience: SignedAudience | null;
 }
 /** The forms for a studio's type, filled: what provisioning stores as its active consent templates. */
-export declare function studioSignedForms(vertical: string | null | undefined, ctx: SignedTemplateContext): StudioSignedForm[];
+export declare function studioSignedForms(vertical: string | null | undefined, ctx: SignedTemplateContext, 
+/** A data skin's add-on (verticals.legal_addon); ignored for built-in skins. */
+legalAddon?: string | null): StudioSignedForm[];
 /** A form's text: the document (and its add-on), filled with the studio's details. */
 export declare function prepareSignedForm(form: SignedFormSpec, ctx: SignedTemplateContext): string;
 /**

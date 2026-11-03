@@ -14,6 +14,8 @@ import {
   type Skin,
 } from '@shared/index';
 import { useAllSkins, useSaveSkin, useSkinUsage } from './useSkins';
+import { ColoursField, EnquiryQuestionsField, SkinPreview } from './SkinExtras';
+import { isShippedLegalAddon } from '@shared/legal/signed-template';
 
 type Editing = { skin: Skin; isNew: boolean; wasLive: boolean } | null;
 
@@ -391,8 +393,15 @@ function SkinEditor({ initial, isNew, wasLive, studios, takenIds, onDone, onCanc
             <option key={addon} value={addon}>{t(`skins.legal_${addon}`)}</option>
           ))}
         </select>
-        <p id={field('legal-hint')} className="text-sm text-gray-700">{t('skins.legal_hint')}</p>
+        <p id={field('legal-hint')} className="text-sm text-gray-700">
+          {t('skins.legal_hint')}
+          {skin.legalAddon && !isShippedLegalAddon(skin.legalAddon) && <span className="block">{t('skins.legal_not_shipped')}</span>}
+        </p>
       </fieldset>
+
+      <EnquiryQuestionsField skin={skin} onChange={(keys) => set('enquiryPresets', keys)} />
+      <ColoursField skin={skin} onChange={(colours) => set('colours', colours)} />
+      <SkinPreview skin={skin} />
 
       {showErrors && errors.length > 0 && <Alert variant="destructive">{t('skins.fix_errors')}</Alert>}
       {saveError && <Alert variant="destructive">{saveError}</Alert>}

@@ -106,7 +106,9 @@
       "set_billing_month_amount",
       "set_billing_schedule_amount",
       "set_business_profile",
-      "set_consent_template_lawyer_reviewed"
+      "set_consent_template_lawyer_reviewed",
+      "set_feature_optout",
+      "studio_feature_states"
     ]
   },
   "service": {
@@ -156,6 +158,7 @@
     "$comment": "called only by other definer functions or the database owner (cron). Nobody else gets EXECUTE; service_role is left as it was.",
     "functions": [
       "admin_open_billing_schedule",
+      "assert_studio_admin",
       "get_app_encryption_key",
       "get_cron_secret",
       "get_supabase_functions_url",
