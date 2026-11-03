@@ -27,8 +27,17 @@ export function isLegalDocId(value: string | undefined): value is LegalDocId {
 }
 
 /** Photographers sign a per-job contract instead of general enrolment terms. */
-export function tenantHasEnrolmentTerms(vertical: VerticalId): boolean {
-  return vertical !== 'photographer';
+/**
+ * Enrolment terms are for studios that teach classes (tenants.teaches_classes;
+ * owner decision). Others use the service agreement. Photographers never.
+ */
+export function tenantHasEnrolmentTerms(vertical: VerticalId, teachesClasses = true): boolean {
+  return vertical !== 'photographer' && teachesClasses;
+}
+
+/** The legal scope of a studio: its type and whether it teaches classes. */
+export function legalHasEnrolmentTerms(legal: Pick<TenantLegalProfile, 'vertical' | 'teachesClasses'>): boolean {
+  return tenantHasEnrolmentTerms(legal.vertical, legal.teachesClasses !== false);
 }
 
 export interface TenantLegalProfile {
@@ -46,6 +55,8 @@ export interface TenantLegalProfile {
   languageDefault: 'he' | 'en';
   /** Documents the admin acknowledged as drafts (the others were lawyer-reviewed then). */
   packAckDrafts: string[];
+  /** tenants.teaches_classes: enrolment terms and class fields only when true (unknown = true). */
+  teachesClasses?: boolean;
 }
 
 /** Studio documents a new studio keeps unpublished until its admin acknowledges the legal pack. */
@@ -84,6 +95,8 @@ export async function fetchTenantLegalProfile(tenantId: string): Promise<TenantL
     packAcknowledgedAt: row.legal_pack_acknowledged_at ?? null,
     languageDefault: row.language_default === 'he' ? 'he' : 'en',
     packAckDrafts: Array.isArray(row.legal_pack_ack_drafts) ? (row.legal_pack_ack_drafts as string[]) : [],
+    // Older databases (before the column was returned): a studio teaches classes.
+    teachesClasses: row.teaches_classes !== false,
   };
 }
 
@@ -117,6 +130,7 @@ export function studioRenderContext(legal: TenantLegalProfile, doc: LegalDocId, 
     contactEmail: legal.contactEmail,
     profile: legal.profile,
     updatedAt: legal.updatedAt,
+    teachesClasses: legal.teachesClasses !== false,
   };
 }
 
@@ -129,7 +143,7 @@ export function useLegalDocument(doc: LegalDocId | null, langOverride?: LegalLan
   const needsProfile = !!tenant && !platformDoc;
 
   const query = useQuery({
-    queryKey: ['legal-doc', doc, lang, platformDoc ? 'platform' : legal?.tenantId, legal?.updatedAt],
+    queryKey: ['legal-doc', doc, lang, platformDoc ? 'platform' : legal?.tenantId, legal?.updatedAt, legal?.teachesClasses],
     enabled: !!doc && (!needsProfile || !!legal),
     staleTime: 5 * 60 * 1000,
     queryFn: async (): Promise<PreparedLegalDoc> => {
@@ -142,6 +156,7 @@ export function useLegalDocument(doc: LegalDocId | null, langOverride?: LegalLan
         contactEmail: platformDoc || !legal ? '' : legal.contactEmail,
         profile: platformDoc || !legal ? {} : legal.profile,
         updatedAt: platformDoc || !legal ? null : legal.updatedAt,
+        teachesClasses: platformDoc || !legal ? true : legal.teachesClasses !== false,
       });
     },
   });

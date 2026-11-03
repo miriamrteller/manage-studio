@@ -31,10 +31,10 @@ export interface LawyerDocument {
 }
 
 /** The documents this studio must cover, in the order the pack lists them. */
-export function packDocumentsFor(vertical: VerticalId): PackDocument[] {
+export function packDocumentsFor(vertical: VerticalId, teachesClasses = true): PackDocument[] {
   return [
     'studio-privacy',
-    ...(tenantHasEnrolmentTerms(vertical) ? (['enrolment-terms'] as const) : []),
+    ...(tenantHasEnrolmentTerms(vertical, teachesClasses) ? (['enrolment-terms'] as const) : []),
     'accessibility',
     'cookies',
     'signed-forms',
