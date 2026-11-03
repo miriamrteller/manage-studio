@@ -150,6 +150,13 @@ Nothing is captured automatically, and there is no feedback-widget or replay cod
 - Attachments count against Sentry's separate attachment quota, not the error quota.
 - If a report includes a screenshot with a child's or student's details, delete the report in Sentry once it has been dealt with.
 
+Two optional helpers sit next to the button. Both reduce, but do not remove, the chance of personal data in an image, so the warning stays:
+
+- **Hide details:** after an image is attached, the admin can draw solid black boxes over it (mouse, touch or keyboard). Pressing Done burns the boxes into the pixels and re-encodes the image as a new PNG, which also drops hidden metadata. Skipping it sends the image as attached.
+- **Snapshot with text hidden:** takes a picture of the page behind the dialog, built in the app from the page itself (no OCR, no capture library): all text and form values are replaced by solid blocks and images are blocked out, while layout and colours are kept. It covers the visible part of the page only. If a browser cannot draw it, the admin is told and can attach a screenshot instead.
+
+Both load only when used (separate small chunks, about 5 KB gzip together), so they add nothing to the normal app load.
+
 **Before this ships:** the sub-processor row in the DPA (`docs/legal/02-dpa.en.md` and `.he.md`) says "no session replay or screenshots".
 That sentence is no longer true once this goes live, so the legal text needs the owner's / lawyer's update first. It was left unchanged on purpose.
 
@@ -176,6 +183,7 @@ the workflow in the Actions tab.
 - **Frontend:** `apps/web/src/lib/monitoring/`.
   - `index.ts` holds init (lazy, only when a DSN is set), `reportError()`, `sendProblemReport(message, screenshot?)`,
     `checkScreenshot()` (type, 5 MB cap, file signature) and `canReportProblems()`.
+    `pageSnapshot.ts` builds the text-hidden snapshot; `components/ReportProblem/ScreenshotRedactor.tsx` is the Hide details editor.
   - `scrub.ts` holds the privacy rules, with tests in `src/__tests__/monitoring-scrub.test.ts`.
   - `MonitoringContextSync.tsx` keeps the tenant, role and route tags current.
   - Errors are captured from: both error boundaries, React Query query and mutation failures (`lib/query-client.ts`),
