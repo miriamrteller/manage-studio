@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { useTenant } from '@/hooks/useTenant';
 import { safeVertical, type VerticalId } from '@shared/config/tenant-presets';
 import type { LegalDocId } from './fields';
-import { prepareLegalMarkdown, type LegalLang, type PreparedLegalDoc } from './render';
+import { prepareLegalMarkdown, type LegalLang, type LegalRenderContext, type PreparedLegalDoc } from './render';
 import { loadLegalTemplate } from './templates';
 
 /** Documents that belong to OpalSwift itself, not to a studio. */
@@ -107,6 +107,19 @@ export function useLegalLang(): LegalLang {
  * A legal document as this visitor should see it: studio documents filled
  * with the studio's details, OpalSwift documents as written.
  */
+/** The render context for a studio document (drafts and lawyer versions use the same details). */
+export function studioRenderContext(legal: TenantLegalProfile, doc: LegalDocId, lang: LegalLang): LegalRenderContext {
+  return {
+    doc,
+    lang,
+    vertical: legal.vertical,
+    tenantName: legal.name,
+    contactEmail: legal.contactEmail,
+    profile: legal.profile,
+    updatedAt: legal.updatedAt,
+  };
+}
+
 export function useLegalDocument(doc: LegalDocId | null, langOverride?: LegalLang) {
   const tenant = useTenant();
   const { data: legal, isLoading: profileLoading } = useTenantLegalProfile();

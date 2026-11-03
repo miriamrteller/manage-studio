@@ -6,11 +6,13 @@ import { Button } from '@/components/ui/button';
 import { LegalLinksSettingsForm } from './LegalLinksSettingsForm';
 import { NoInsuranceFormUpdate } from '@/components/legal/NoInsuranceFormUpdate';
 import { LegalPackPanel } from '@/components/legal/LegalPackPanel';
-import { LawyerDocumentsList } from '@/components/legal/LawyerDocumentsList';
+import { LawyerDocumentsList, packDocumentLabelKey } from '@/components/legal/LawyerDocumentsList';
+import { pdfsAffectedByChange, useLawyerDocuments, type UploadableDoc } from '@/legal/lawyerDocuments';
 import { supabase } from '@/lib/supabase';
 import { useTenant } from '@/hooks/useTenant';
 import {
   fieldsForVertical,
+  LEGAL_FIELDS,
   legalFieldLabel,
   missingLegalDetails,
   type LegalDocId,
@@ -117,6 +119,10 @@ export function LegalSettingsForm() {
   });
 
 
+  const { data: lawyerUploads } = useLawyerDocuments(legal?.tenantId);
+  const hasLawyerPdf = (lawyerUploads ?? []).some((u) => u.kind === 'pdf');
+  const [pdfsToUpdate, setPdfsToUpdate] = useState<UploadableDoc[]>([]);
+
   const save = useMutation({
     mutationFn: async (opts: { publish?: boolean }) => {
       if (!tenant?.id) throw new Error('Tenant not loaded');
@@ -131,6 +137,16 @@ export function LegalSettingsForm() {
       if (error) throw error;
     },
     onSuccess: async (_d, opts) => {
+      // Lawyer-reviewed PDFs don't update with the details: say which ones to replace.
+      const before = legal?.profile ?? {};
+      const changed = fields.map((f) => f.key).filter((k) => (before[k] ?? '').trim() !== (values[k] ?? '').trim());
+      setPdfsToUpdate(
+        pdfsAffectedByChange(
+          lawyerUploads ?? [],
+          changed,
+          Object.fromEntries(LEGAL_FIELDS.map((f) => [f.key, f.placeholders])),
+        ),
+      );
       setMessage(
         opts.publish === true
           ? t('legal.settings.published')
@@ -257,6 +273,8 @@ export function LegalSettingsForm() {
         <p className="text-xs text-muted-foreground mt-1">{t('legal.settings.language_note')}</p>
       </div>
 
+      {hasLawyerPdf && <p className="text-xs text-muted-foreground">{t('legal.lawyer.pdf_fields_hint')}</p>}
+
       {/* How far along the required details are (they fill every document). */}
       <p className="text-sm font-medium" role="status" aria-live="polite">
         {t('legal.settings.required_progress', { done: requiredDone, total: requiredFields.length })}
@@ -354,8 +372,21 @@ export function LegalSettingsForm() {
         )}
       </div>
 
+      {pdfsToUpdate.length > 0 && (
+        <div role="status" className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+          <p>
+            {t('legal.lawyer.pdf_not_updated', {
+              docs: pdfsToUpdate.map((d) => t(packDocumentLabelKey(d, legal.vertical))).join(', '),
+            })}
+          </p>
+          <a href="#lawyer-documents" className="font-medium underline">
+            {t('legal.lawyer.pdf_not_updated_link')}
+          </a>
+        </div>
+      )}
+
       {/* The lawyer-reviewed versions, then the acknowledgement: after the details it depends on. */}
-      <section aria-labelledby="lawyer-documents-title" className="space-y-3 rounded-lg border border-border p-4">
+      <section id="lawyer-documents" aria-labelledby="lawyer-documents-title" className="space-y-3 rounded-lg border border-border p-4">
         <h3 id="lawyer-documents-title" className="font-medium">{t('legal.lawyer.title')}</h3>
         <LawyerDocumentsList legal={legal} />
       </section>
