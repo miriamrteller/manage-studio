@@ -1433,3 +1433,22 @@ dialog.modal-dialog::backdrop {
 .nav-drawer-solid {
   background-color: var(--nav-base);
 }
+
+/* Setup celebrations: one slow fall of confetti (nothing flashes); none with reduced motion. */
+.setup-confetti-piece {
+  position: absolute;
+  top: -12px;
+  width: 8px;
+  height: 12px;
+  border-radius: 2px;
+  animation-name: setup-confetti-fall;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+@keyframes setup-confetti-fall {
+  from { transform: translateY(0) rotate(0deg); opacity: 1; }
+  to { transform: translateY(100vh) rotate(540deg); opacity: 0.2; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .setup-confetti-piece { display: none; }
+}

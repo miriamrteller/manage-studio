@@ -35,6 +35,8 @@ export interface SetupFacts {
   paymentsConnected: boolean;
   /** Legal pages published. */
   legalPublished: boolean;
+  /** Clients who have paid (a payment that went through): the "first paid client" moment. */
+  paidClients: number;
 }
 
 export const EMPTY_FACTS: SetupFacts = {
@@ -49,6 +51,7 @@ export const EMPTY_FACTS: SetupFacts = {
   onlinePayments: false,
   paymentsConnected: false,
   legalPublished: false,
+  paidClients: 0,
 };
 
 export type SetupFlavour = 'dance' | 'photographer' | 'general';

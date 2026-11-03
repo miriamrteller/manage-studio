@@ -197,11 +197,20 @@ describe('wizard "Your field"', () => {
   });
 
   it('a marketing industry link preselects the field', async () => {
-    window.history.replaceState({}, '', '/platform/onboard?from=swim-coach');
-    wrap(<OperatorOnboardingWizard />);
-    await toTypeStep();
-    const swim = await screen.findByRole('radio', { name: /Swim coach/ }, { timeout: 5000 });
-    await waitFor(() => expect(swim).toBeChecked(), { timeout: 5000 });
+    // Set the URL directly: other test files can leave window.location replaced.
+    const real = Object.getOwnPropertyDescriptor(window, 'location');
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: { href: 'http://localhost/platform/onboard?from=swim-coach', origin: 'http://localhost', pathname: '/platform/onboard', search: '?from=swim-coach', hash: '' },
+    });
+    try {
+      wrap(<OperatorOnboardingWizard />);
+      await toTypeStep();
+      const swim = await screen.findByRole('radio', { name: /Swim coach/ }, { timeout: 5000 });
+      await waitFor(() => expect(swim).toBeChecked(), { timeout: 5000 });
+    } finally {
+      if (real) Object.defineProperty(window, 'location', real);
+    }
   });
 }, 20000);
 

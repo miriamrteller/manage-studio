@@ -9,7 +9,7 @@ import { FinanceHealthCard } from '@/features/finance/components/FinanceHealthCa
 import { AdminOverviewSection } from '@/features/admin-dashboard/components/AdminOverviewSection';
 import { useTenant } from '@/hooks/useTenant';
 import { getBundledPaymentProviderSlug } from '@/lib/tenantProviderRouting';
-import { SetupGuideCard, useSetupGuide } from '@/features/setup-guide';
+import { CelebrationBanner, SetupGuideCard, useCelebrations, useSetupGuide } from '@/features/setup-guide';
 
 /**
  * AdminPanel: Smart component for admin dashboard.
@@ -36,14 +36,24 @@ export function AdminPanel() {
     setSearchParams({}, { replace: true });
   }, [forced, reopen, setSearchParams]);
   const showGuide = guide.visible;
+  // Setup finished, first enquiry, first paid client: celebrated once per studio.
+  const celebrations = useCelebrations({
+    ready: !guide.isLoading,
+    setupComplete: guide.progress.complete,
+    leads: guide.facts.leads,
+    paidClients: guide.facts.paidClients,
+  });
 
   return (
     <div className="space-y-8">
+      {celebrations.active && (
+        <CelebrationBanner moment={celebrations.active} fewer={celebrations.fewer} onDismiss={celebrations.dismiss} />
+      )}
       {showGuide ? (
         guide.isLoading ? (
           <p role="status" className="text-gray-600">{t('common.loading')}</p>
         ) : (
-          <SetupGuideCard guide={guide} />
+          <SetupGuideCard guide={guide} fewer={celebrations.fewer} onFewerChange={celebrations.setFewer} />
         )
       ) : (
         <>
