@@ -65,5 +65,10 @@ jobs:
           SUPABASE_AUTH_SYNC_TOKEN: ${{ secrets.SUPABASE_AUTH_SYNC_TOKEN }}
           SUPABASE_PROD_DB_URL: ${{ secrets.SUPABASE_PROD_DB_URL }}
           PROJECT_REF: oogxajjanbyqhljxcmql
-          DRY_RUN: ${{ inputs.dry_run && '--dry-run' || '' }}
-        run: node scripts/ci/sync-auth-redirects.mjs $DRY_RUN
+          DRY_RUN: ${{ inputs.dry_run == true }}
+        run: |
+          if [ "$DRY_RUN" = "true" ]; then
+            node scripts/ci/sync-auth-redirects.mjs --dry-run
+          else
+            node scripts/ci/sync-auth-redirects.mjs
+          fi
