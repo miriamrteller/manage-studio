@@ -21,6 +21,44 @@ export const STUDIO_INVOICING_PROVIDERS = [
 
 const HEX = /^#[0-9A-Fa-f]{6}$/;
 
+/**
+ * How the studio works: how clients pay and which areas it uses. Decides what is on by default
+ * (see get_tenant_features). Optional: a request without it starts general (both payment flows,
+ * every switch off).
+ */
+export const BusinessProfileSchema = z.object({
+  paymentFlow: z.enum(["recurring", "project", "both"]).default("both"),
+  teachesClasses: z.boolean().default(false),
+  familyAccounts: z.boolean().default(false),
+  clientBooking: z.boolean().default(false),
+});
+export type BusinessProfileInput = z.infer<typeof BusinessProfileSchema>;
+
+const GENERAL_BUSINESS_PROFILE: BusinessProfileInput = {
+  paymentFlow: "both",
+  teachesClasses: false,
+  familyAccounts: false,
+  clientBooking: false,
+};
+
+/**
+ * Stores the profile on a freshly created studio. Best effort: the studio already exists, so a
+ * failure is logged and the studio keeps the general defaults (the owner can change them in
+ * Settings, "Your business") instead of the whole signup failing.
+ */
+async function applyProfileBestEffort(
+  deps: { applyProfile?(tenantId: string, profile: BusinessProfileInput): Promise<void> },
+  tenantId: string,
+  profile: BusinessProfileInput,
+): Promise<void> {
+  if (!deps.applyProfile) return;
+  try {
+    await deps.applyProfile(tenantId, profile);
+  } catch (err) {
+    console.error("provision-studio: storing the business profile failed:", err);
+  }
+}
+
 const ProvisionStudioFields = z.object({
   name: z.string().trim().min(1).max(120),
   subdomain: z.string().trim().toLowerCase().regex(/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/),
@@ -35,6 +73,7 @@ const ProvisionStudioFields = z.object({
   invoicingProvider: z.enum(STUDIO_INVOICING_PROVIDERS),
   primaryColor: z.string().regex(HEX).default("#5B6CFF"),
   accentColor: z.string().regex(HEX).default("#21D1C2"),
+  profile: BusinessProfileSchema.default(GENERAL_BUSINESS_PROFILE),
 });
 
 /** Rejects an invoicing service that cannot issue documents for the chosen payment provider. */
@@ -76,6 +115,8 @@ export interface ProvisionStudioDeps {
   inviteUser(email: string, subdomain: string): Promise<{ userId: string }>;
   /** assign_studio_owner RPC. */
   assignOwner(tenantId: string, userId: string): Promise<void>;
+  /** Stores the business profile on the new studio (best effort). */
+  applyProfile?(tenantId: string, profile: BusinessProfileInput): Promise<void>;
 }
 
 export type OwnerInviteResult =
@@ -143,6 +184,7 @@ export async function provisionStudio(
   const existing = await deps.findProfileByEmail(input.ownerEmail);
   if (existing) return { ok: false, error: refusalFor(existing, null) ?? "email_in_other_studio" };
   const tenantId = await deps.provisionStudio(input);
+  await applyProfileBestEffort(deps, tenantId, input.profile);
   const owner = await inviteStudioOwner(deps, tenantId, input.ownerEmail);
   return { ok: true, tenantId, subdomain: input.subdomain, owner };
 }
@@ -182,6 +224,8 @@ export interface SelfServeDeps {
   verifyCaptcha: ((token: string) => Promise<boolean>) | null;
   /** create_self_serve_studio RPC; resolves to the new tenant id. */
   createStudio(userId: string, input: SelfServeStudioInput): Promise<string>;
+  /** Stores the business profile on the new studio (best effort). */
+  applyProfile?(tenantId: string, profile: BusinessProfileInput): Promise<void>;
 }
 
 export type SelfServeResult =
@@ -216,6 +260,7 @@ export async function selfServeStudio(
   }
   try {
     const tenantId = await deps.createStudio(user.id, input);
+    await applyProfileBestEffort(deps, tenantId, input.profile);
     return { ok: true, tenantId, subdomain: input.subdomain };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

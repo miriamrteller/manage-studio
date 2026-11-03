@@ -1,3 +1,4 @@
+import type { StudioProfile } from '@shared/index';
 import { supabase } from '@/lib/supabase';
 
 /**
@@ -34,6 +35,8 @@ export interface StudioSetupRequest {
   invoicingProvider: StudioInvoicingProvider;
   primaryColor: string;
   accentColor: string;
+  /** How clients pay and which areas the studio uses (stored on the new studio). */
+  profile: StudioProfile;
 }
 
 export type OwnerInviteStatus =

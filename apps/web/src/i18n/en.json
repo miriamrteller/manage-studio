@@ -2033,6 +2033,7 @@
     "address_taken": "This address is already taken.",
     "address_invalid": "Use lowercase letters, numbers and hyphens only.",
     "language": "Main language",
+    "profile_hint": "We filled these in from your business type. Change anything; you can also change it later in Settings.",
     "type_question": "What kind of business is it?",
     "vertical_dance-studio": "Dance studio",
     "vertical_dance-studio_hint": "Classes, terms and family billing",

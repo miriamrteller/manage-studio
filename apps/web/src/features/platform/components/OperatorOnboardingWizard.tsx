@@ -20,6 +20,8 @@ import {
   defaultStudioLanguage,
   INITIAL_FORM,
   suggestSubdomain,
+  monthlyFeesForFlow,
+  profileDefaultsFor,
   toSetupRequest,
   VERTICALS,
   type StudioSetupForm,
@@ -367,9 +369,11 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
                   className="sr-only"
                   checked={form.vertical === vertical}
                   onChange={() => {
-                    // The studio type pre-fills "Will you charge monthly fees?".
-                    const monthlyFees = monthlyFeesDefaultFor(vertical);
-                    setForm((prev) => ({ ...prev, vertical, monthlyFees }));
+                    // The studio type pre-fills how clients pay, the three switches and
+                    // "Will you charge monthly fees?"; the owner can change every answer.
+                    const defaults = profileDefaultsFor(vertical);
+                    const monthlyFees = monthlyFeesDefaultFor(vertical) ?? monthlyFeesForFlow(defaults.paymentFlow);
+                    setForm((prev) => ({ ...prev, vertical, ...defaults, monthlyFees }));
                     if (monthlyFees && (form.paymentProvider === 'ypay' || form.paymentProvider === 'invoice4u')) {
                       choosePayment('grow');
                     }
@@ -379,6 +383,48 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
                 <span className="mt-1 block text-sm text-gray-700">{t(`studio_setup.vertical_${vertical}_hint`)}</span>
               </label>
             ))}
+          </div>
+          <div className="space-y-4 pt-4">
+            <p className="text-sm text-gray-700">{t('studio_setup.profile_hint')}</p>
+            <fieldset className="space-y-2">
+              <legend className="text-sm font-medium">{t('settings.business.flow_legend')}</legend>
+              <div className="flex flex-wrap gap-4">
+                {(['recurring', 'project', 'both'] as const).map((flow) => (
+                  <label key={flow} className="flex items-center gap-2 text-sm">
+                    <input
+                      type="radio"
+                      name="ss-flow"
+                      checked={form.paymentFlow === flow}
+                      onChange={() => setForm((prev) => ({ ...prev, paymentFlow: flow, monthlyFees: monthlyFeesForFlow(flow) }))}
+                    />
+                    <span>{t(`settings.business.flow_${flow}`)}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+            <fieldset className="space-y-2">
+              <legend className="text-sm font-medium">{t('settings.business.switches_legend')}</legend>
+              {(
+                [
+                  ['teachesClasses', 'classes'],
+                  ['familyAccounts', 'families'],
+                  ['clientBooking', 'booking'],
+                ] as const
+              ).map(([field, key]) => (
+                <label key={key} className="flex items-start gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    className="mt-1"
+                    checked={form[field]}
+                    onChange={(e) => update(field, e.target.checked)}
+                  />
+                  <span>
+                    <span className="block">{t(`settings.business.${key}_label`)}</span>
+                    <span className="block text-xs text-muted-foreground">{t(`settings.business.${key}_hint`)}</span>
+                  </span>
+                </label>
+              ))}
+            </fieldset>
           </div>
         </fieldset>
       )}
@@ -486,6 +532,7 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
             <ReviewRow label={t('studio_setup.address')} value={tenantOrigin(form.subdomain.trim().toLowerCase()).replace(/^https?:\/\//, '')} ltr />
             <ReviewRow label={t('studio_setup.language')} value={form.languageDefault === 'he' ? 'עברית' : 'English'} />
             <ReviewRow label={t('studio_setup.step_type')} value={t(`studio_setup.vertical_${form.vertical}`)} />
+            <ReviewRow label={t('settings.business.flow_legend')} value={t(`settings.business.flow_${form.paymentFlow}`)} />
             <ReviewRow label={t('studio_setup.payment_question')} value={paymentLabel(form.paymentProvider)} />
             <ReviewRow label={t('studio_setup.invoicing_question')} value={invoicingLabel(form.invoicingProvider)} />
             {!selfServe && <ReviewRow label={t('studio_setup.owner_email')} value={form.ownerEmail.trim()} ltr />}
