@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { useEntityLabels } from '@/hooks/useEntityLabels';
+import { useTenant } from '@/hooks/useTenant';
 import { Select } from '@/components/ui/select';
 import { FormInput } from '@/components/ui/form';
 import {
@@ -28,6 +30,36 @@ import { AccountBlastPicker, formatAccountLabel } from './AccountBlastPicker';
 import type { BlastAccountSearchResult } from '../lib/notificationBlastSchema';
 import { normalizeRecipientEmail } from '../lib/recipientHumanSearch';
 import type { AccountExclusion } from '../lib/accountExclusion';
+import { fetchBlastAccount } from '../services/notificationBlastService';
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Pure: an id from the link (`?offering=` / `?account=`), only if it looks like one. */
+export function presetId(value: string | null | undefined): string | null {
+  const v = (value ?? '').trim();
+  return UUID_RE.test(v) ? v : null;
+}
+
+/** Pure: the class to preset, only if it is one of the classes the form lists. */
+export function presetOfferingId(
+  value: string | null | undefined,
+  classes: ReadonlyArray<{ id: string }>,
+): string | null {
+  const id = presetId(value);
+  return id && classes.some((c) => c.id === id) ? id : null;
+}
+
+/** Pure: the greeting and sign-off a new message starts with (empty without a studio name). */
+export function blastBodyTemplate(studioName: string | null | undefined, greeting: string): string {
+  const name = (studioName ?? '').trim();
+  return name ? `${greeting}\n\n\n\n— ${name}` : '';
+}
+
+/** Pure: whether the body says something beyond the greeting and sign-off we started it with. */
+export function blastBodyHasMessage(body: string, template: string): boolean {
+  const norm = (v: string) => v.replace(/\s+/g, ' ').trim();
+  return norm(body) !== '' && (!template || norm(body) !== norm(template));
+}
 
 interface NotificationBlastFormProps {
   onSentSuccess?: () => void;
@@ -42,6 +74,10 @@ export function NotificationBlastForm({ onSentSuccess }: NotificationBlastFormPr
   const { explainAccountExclusion, previewRecipients, isPreviewing, sendBlast, isSending } = useNotificationBlast();
   const { levels, isLoading: levelsLoading } = useLevels({ page: 1 });
   const { classes, isLoading: classesLoading } = useClasses({ page: 1, publicOnly: false });
+  const tenant = useTenant();
+  const [searchParams] = useSearchParams();
+  // The message starts with a greeting and the studio's sign-off (editable).
+  const bodyTemplate = blastBodyTemplate(tenant?.name, t('pages.notifications.body_greeting'));
 
   const [previewRows, setPreviewRows] = useState<BlastRecipientPreview[] | null>(null);
   const [selectedRecipientEmails, setSelectedRecipientEmails] = useState<Set<string>>(new Set());
@@ -67,7 +103,9 @@ export function NotificationBlastForm({ onSentSuccess }: NotificationBlastFormPr
 
   form.watch(['subject', 'body', 'scope', 'categoryId', 'offeringId', 'accountId']);
   const scope = form.watch('scope');
-  const composeValid = notificationBlastSchema.safeParse(form.getValues()).success;
+  const composeValid =
+    notificationBlastSchema.safeParse(form.getValues()).success &&
+    blastBodyHasMessage(form.getValues('body') ?? '', bodyTemplate);
   const previewCount = previewRows?.length ?? 0;
   const selectedCount = previewRows
     ? previewRows.filter((row) =>
@@ -81,6 +119,52 @@ export function NotificationBlastForm({ onSentSuccess }: NotificationBlastFormPr
     previewRows !== null &&
     selectedCount > 0 &&
     !overLimit;
+
+  // Start an empty, untouched message with the greeting and sign-off.
+  useEffect(() => {
+    if (!bodyTemplate) return;
+    if ((form.getValues('body') ?? '') !== '' || form.getFieldState('body').isDirty) return;
+    form.setValue('body', bodyTemplate);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- form is stable
+  }, [bodyTemplate]);
+
+  // "Email this class / family" links: ?offering=<id> or ?account=<id> (ids only).
+  // Applied once, and only for a class the form lists or an account of this studio.
+  const presetApplied = useRef(false);
+  const mounted = useRef(false);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+  const offeringParam = searchParams.get('offering');
+  const accountParam = searchParams.get('account');
+  useEffect(() => {
+    if (presetApplied.current) return;
+    const canClass = (scopeOptions as readonly string[]).includes('class');
+    if (offeringParam && canClass) {
+      if (classesLoading) return;
+      presetApplied.current = true;
+      const id = presetOfferingId(offeringParam, classes);
+      if (id) {
+        form.setValue('scope', 'class');
+        form.setValue('offeringId', id);
+      }
+      return;
+    }
+    const accountId = presetId(accountParam);
+    presetApplied.current = true;
+    if (!accountId) return;
+    void fetchBlastAccount(accountId).then((account) => {
+      // Never override a choice the admin made meanwhile.
+      if (!mounted.current || !account || form.getValues('scope') !== 'all' || form.getValues('accountId')) return;
+      form.setValue('scope', 'account');
+      form.setValue('accountId', account.account_id);
+      setSelectedAccountLabel(formatAccountLabel(account));
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- form and scopeOptions are stable per render
+  }, [offeringParam, accountParam, classesLoading, classes]);
 
   const resetPreview = () => {
     setPreviewRows(null);
@@ -136,7 +220,7 @@ export function NotificationBlastForm({ onSentSuccess }: NotificationBlastFormPr
     setSendSuccess(null);
 
     const valid = await form.trigger();
-    if (!valid) {
+    if (!valid || !blastBodyHasMessage(form.getValues('body') ?? '', bodyTemplate)) {
       setConfirmOpen(false);
       return;
     }
@@ -165,7 +249,7 @@ export function NotificationBlastForm({ onSentSuccess }: NotificationBlastFormPr
 
   const handleOpenConfirm = async () => {
     const valid = await form.trigger();
-    if (!valid) {
+    if (!valid || !blastBodyHasMessage(form.getValues('body') ?? '', bodyTemplate)) {
       return;
     }
     setConfirmOpen(true);
@@ -315,8 +399,14 @@ export function NotificationBlastForm({ onSentSuccess }: NotificationBlastFormPr
               id="blast-body"
               className="form-input w-full min-h-[160px]"
               maxLength={5000}
+              aria-describedby={bodyTemplate ? 'blast-body-hint' : undefined}
               {...form.register('body', { onChange: () => resetPreview() })}
             />
+            {bodyTemplate && (
+              <p id="blast-body-hint" className="text-xs text-muted-foreground">
+                {t('pages.notifications.body_template_hint')}
+              </p>
+            )}
             {form.formState.errors.body && (
               <p className="text-sm text-destructive">{form.formState.errors.body.message}</p>
             )}

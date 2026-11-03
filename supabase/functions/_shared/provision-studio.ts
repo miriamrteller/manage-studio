@@ -34,6 +34,16 @@ export const BusinessProfileSchema = z.object({
 });
 export type BusinessProfileInput = z.infer<typeof BusinessProfileSchema>;
 
+/**
+ * The business address and phone the owner gave on the wizard's first screen (both optional).
+ * They go into the studio's legal profile, which the legal documents pre-fill from.
+ */
+export const BusinessContactSchema = z.object({
+  address: z.string().trim().max(300).optional(),
+  phone: z.string().trim().max(40).optional(),
+});
+export type BusinessContactInput = z.infer<typeof BusinessContactSchema>;
+
 const GENERAL_BUSINESS_PROFILE: BusinessProfileInput = {
   paymentFlow: "both",
   teachesClasses: false,
@@ -59,6 +69,20 @@ async function applyProfileBestEffort(
   }
 }
 
+/** Stores the optional address / phone on a new studio; best effort like the profile. */
+async function applyContactBestEffort(
+  deps: { applyContact?(tenantId: string, contact: BusinessContactInput): Promise<void> },
+  tenantId: string,
+  contact: BusinessContactInput,
+): Promise<void> {
+  if (!deps.applyContact || (!contact.address && !contact.phone)) return;
+  try {
+    await deps.applyContact(tenantId, contact);
+  } catch (err) {
+    console.error("provision-studio: storing the business contact failed:", err);
+  }
+}
+
 const ProvisionStudioFields = z.object({
   name: z.string().trim().min(1).max(120),
   subdomain: z.string().trim().toLowerCase().regex(/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/),
@@ -74,6 +98,7 @@ const ProvisionStudioFields = z.object({
   primaryColor: z.string().regex(HEX).default("#5B6CFF"),
   accentColor: z.string().regex(HEX).default("#21D1C2"),
   profile: BusinessProfileSchema.default(GENERAL_BUSINESS_PROFILE),
+  contact: BusinessContactSchema.default({}),
 });
 
 /** Rejects an invoicing service that cannot issue documents for the chosen payment provider. */
@@ -117,6 +142,8 @@ export interface ProvisionStudioDeps {
   assignOwner(tenantId: string, userId: string): Promise<void>;
   /** Stores the business profile on the new studio (best effort). */
   applyProfile?(tenantId: string, profile: BusinessProfileInput): Promise<void>;
+  /** Stores the business address / phone in the legal profile (best effort). */
+  applyContact?(tenantId: string, contact: BusinessContactInput): Promise<void>;
 }
 
 export type OwnerInviteResult =
@@ -185,6 +212,7 @@ export async function provisionStudio(
   if (existing) return { ok: false, error: refusalFor(existing, null) ?? "email_in_other_studio" };
   const tenantId = await deps.provisionStudio(input);
   await applyProfileBestEffort(deps, tenantId, input.profile);
+  await applyContactBestEffort(deps, tenantId, input.contact);
   const owner = await inviteStudioOwner(deps, tenantId, input.ownerEmail);
   return { ok: true, tenantId, subdomain: input.subdomain, owner };
 }
@@ -226,6 +254,8 @@ export interface SelfServeDeps {
   createStudio(userId: string, input: SelfServeStudioInput): Promise<string>;
   /** Stores the business profile on the new studio (best effort). */
   applyProfile?(tenantId: string, profile: BusinessProfileInput): Promise<void>;
+  /** Stores the business address / phone in the legal profile (best effort). */
+  applyContact?(tenantId: string, contact: BusinessContactInput): Promise<void>;
 }
 
 export type SelfServeResult =
@@ -261,6 +291,7 @@ export async function selfServeStudio(
   try {
     const tenantId = await deps.createStudio(user.id, input);
     await applyProfileBestEffort(deps, tenantId, input.profile);
+    await applyContactBestEffort(deps, tenantId, input.contact);
     return { ok: true, tenantId, subdomain: input.subdomain };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

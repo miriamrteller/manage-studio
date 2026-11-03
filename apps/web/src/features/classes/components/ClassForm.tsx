@@ -9,6 +9,7 @@ import { FormInput, FormSelect } from '@/components/ui/form';
 import { useTenant } from '@/hooks/useTenant';
 import { isMonthlyFeesNeedGrowError, monthlyFeesSupported } from '@/lib/providerPairing';
 import { getOfferingCoverPublicUrl } from '../lib/offeringImageStorage';
+import { useDefaultClassLocation } from '../hooks/useDefaultClassLocation';
 
 const optionalUuidField = z.preprocess(
   (val) => (val === '' ? null : val),
@@ -44,6 +45,7 @@ const ClassFormSchema = z.object({
   start_time: TimeSchema,
   end_time: TimeSchema,
   is_public: z.enum(['true', 'false']).optional(),
+  waiver_required: z.enum(['true', 'false']).optional(),
   billing_mode: z.enum(['one_time', 'recurring']).optional(),
   status: z.enum(['active', 'cancelled', 'full']).optional(),
   location: optionalLocationField,
@@ -99,6 +101,8 @@ function toFormValues(
     start_time: classItem?.start_time || '09:00',
     end_time: classItem?.end_time || '10:00',
     is_public: (classItem?.is_public ?? true) ? 'true' : 'false',
+    // New classes need a signed form, as the database default; a studio can say no (e.g. a plan).
+    waiver_required: (classItem?.waiver_required ?? true) ? 'true' : 'false',
     billing_mode: classItem?.billing_mode ?? (monthlyAllowed ? 'recurring' : 'one_time'),
     status: classItem?.status || 'active',
     location: classItem?.location ?? '',
@@ -122,6 +126,7 @@ function toClassPayload(values: OfferingFormValues): Partial<Offering> {
     start_time: values.start_time,
     end_time: values.end_time,
     is_public: values.is_public === 'true',
+    waiver_required: values.waiver_required !== 'false',
     delivery_mode: 'scheduled',
     billing_mode: billingMode,
     billing_interval: billingMode === 'recurring' ? 'monthly' : null,
@@ -186,6 +191,14 @@ export function ClassForm({
 
   const previewUrl = removeCover ? null : (pendingPreviewUrl ?? existingCoverUrl);
 
+  // New class: start the location at the studio's usual one (only into an empty, untouched field).
+  const defaultLocation = useDefaultClassLocation(!classItem?.id);
+  useEffect(() => {
+    if (!defaultLocation || classItem?.id) return;
+    if (form.getFieldState('location').isDirty || form.getValues('location')) return;
+    form.setValue('location', defaultLocation);
+  }, [defaultLocation, classItem?.id, form]);
+
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] ?? null;
     setPendingFile(file);
@@ -209,7 +222,10 @@ export function ClassForm({
       setPendingFile(null);
       setRemoveCover(false);
       if (!classItem?.id) {
-        form.reset(toFormValues(undefined, tenant?.currency || 'ILS', monthlyAllowed));
+        form.reset({
+          ...toFormValues(undefined, tenant?.currency || 'ILS', monthlyAllowed),
+          location: defaultLocation ?? '',
+        });
       }
     } catch (error) {
       if (isMonthlyFeesNeedGrowError(error)) {
@@ -451,6 +467,17 @@ export function ClassForm({
         label={t('form.class.is_public')}
         error={form.formState.errors.is_public?.message}
         {...form.register('is_public')}
+      >
+        <option value="true">{t('common.yes')}</option>
+        <option value="false">{t('common.no')}</option>
+      </FormSelect>
+
+      <FormSelect
+        htmlFor="waiver_required"
+        label={t('form.class.waiver_required')}
+        helperText={t('form.class.waiver_required_help')}
+        error={form.formState.errors.waiver_required?.message}
+        {...form.register('waiver_required')}
       >
         <option value="true">{t('common.yes')}</option>
         <option value="false">{t('common.no')}</option>

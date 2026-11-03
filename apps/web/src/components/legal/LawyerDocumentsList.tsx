@@ -1,4 +1,4 @@
-import { useId, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -17,7 +17,10 @@ import {
   type UploadableDoc,
 } from '@/legal/lawyerDocuments';
 import { signedDocNoun } from '@/legal/packWording';
-import type { TenantLegalProfile } from '@/legal/useLegalDocument';
+import { studioRenderContext, type TenantLegalProfile } from '@/legal/useLegalDocument';
+import { prepareLegalMarkdown, tokenizeKnownValues } from '@/legal/render';
+import { loadLegalTemplate } from '@/legal/templates';
+import { countLiveDetails, LiveDetailEditor } from './LiveDetailEditor';
 
 /** i18n key of a pack document's name. */
 export function packDocumentLabelKey(doc: PackDocument, vertical: string | null | undefined): string {
@@ -127,6 +130,7 @@ export function LawyerDocumentsList({ legal }: { legal: TenantLegalProfile }) {
               ) : (
                 <DocumentActions
                   doc={doc}
+                  legal={legal}
                   defaultLanguage={legal.languageDefault}
                   hasUpload={!!current}
                   currentText={current?.kind === 'text' ? current.content ?? '' : ''}
@@ -153,6 +157,7 @@ export function LawyerDocumentsList({ legal }: { legal: TenantLegalProfile }) {
 
 function DocumentActions(props: {
   doc: UploadableDoc;
+  legal: TenantLegalProfile;
   defaultLanguage: 'he' | 'en';
   hasUpload: boolean;
   currentText: string;
@@ -167,6 +172,38 @@ function DocumentActions(props: {
   const id = useId();
   const [language, setLanguage] = useState<'he' | 'en'>(props.defaultLanguage);
   const [text, setText] = useState(props.currentText);
+  const [startedFromDraft, setStartedFromDraft] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
+  const renderCtx = (lang: 'he' | 'en') => studioRenderContext(props.legal, props.doc, lang);
+
+  // Opening the editor: a new version starts from the current draft with the
+  // studio's details as live fields; an older text without them gets its
+  // details turned into live fields (exact matches of today's values).
+  useEffect(() => {
+    if (!props.editing) return;
+    let cancelled = false;
+    if (props.currentText.trim()) {
+      if (countLiveDetails(props.currentText) === 0) {
+        const { text: converted, count } = tokenizeKnownValues(props.currentText, renderCtx(language));
+        if (count > 0) {
+          setText(converted);
+          setNote(t('legal.lawyer.details_converted', { count }));
+        }
+      }
+      return;
+    }
+    if (text.trim()) return;
+    void (async () => {
+      const raw = await loadLegalTemplate(props.doc, language);
+      if (cancelled) return;
+      setText(prepareLegalMarkdown(raw, renderCtx(language), { liveDetails: true }).markdown);
+      setStartedFromDraft(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runs when the editor opens or the language changes
+  }, [props.editing, language]);
 
   return (
     <div className="space-y-2">
@@ -178,7 +215,11 @@ function DocumentActions(props: {
           id={`${id}-lang`}
           className="form-input w-auto"
           value={language}
-          onChange={(e) => setLanguage(e.target.value === 'en' ? 'en' : 'he')}
+          onChange={(e) => {
+            setLanguage(e.target.value === 'en' ? 'en' : 'he');
+            // A draft nobody has edited yet follows the language.
+            if (startedFromDraft) setText('');
+          }}
         >
           <option value="he">{t('legal.lawyer.language_he')}</option>
           <option value="en">{t('legal.lawyer.language_en')}</option>
@@ -204,6 +245,7 @@ function DocumentActions(props: {
         <Button size="sm" variant="outline" onClick={props.onEdit} disabled={props.busy} aria-expanded={props.editing}>
           {t('legal.lawyer.edit_text')}
         </Button>
+        <p className="w-full text-xs text-muted-foreground">{t('legal.lawyer.prefer_editor_hint')}</p>
         {props.hasUpload && (
           <Button size="sm" variant="outline" onClick={props.onRevert} disabled={props.busy}>
             {t('legal.lawyer.revert')}
@@ -215,19 +257,30 @@ function DocumentActions(props: {
       </div>
       {props.editing && (
         <div className="space-y-2">
-          <label htmlFor={`${id}-text`} className="block text-sm font-medium">
+          <p id={`${id}-text-label`} className="block text-sm font-medium">
             {t('legal.lawyer.text_label')}
-          </label>
-          <p className="text-xs text-muted-foreground">{t('legal.lawyer.text_hint')}</p>
-          <textarea
+          </p>
+          <p id={`${id}-text-hint`} className="text-xs text-muted-foreground">
+            {t('legal.lawyer.text_hint')} {t('legal.lawyer.live_details_hint')}
+          </p>
+          <LiveDetailEditor
             id={`${id}-text`}
-            className="form-input w-full font-mono text-sm"
-            rows={10}
-            dir={language === 'he' ? 'rtl' : 'ltr'}
-            lang={language}
+            labelledBy={`${id}-text-label`}
+            describedBy={`${id}-text-hint`}
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(v) => {
+              setText(v);
+              setStartedFromDraft(false);
+            }}
+            language={language}
+            vertical={props.legal.vertical}
+            onPasteText={(pasted) => tokenizeKnownValues(pasted, renderCtx(language)).text}
           />
+          {note && (
+            <p role="status" className="text-sm">
+              {note}
+            </p>
+          )}
           <Button size="sm" variant="primary" disabled={props.busy || !text.trim()} onClick={() => props.onSaveText(text, language)}>
             {t('legal.lawyer.save_text')}
           </Button>

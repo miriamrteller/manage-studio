@@ -10,6 +10,8 @@ interface Props {
   currency: string;
   /** Shoot date (YYYY-MM-DD, Asia/Jerusalem) — balance due defaults to it. */
   jobDate: string | null;
+  /** Starting total in minor units (the package price still to request); editable. */
+  defaultTotalMinor?: number | null;
   onSubmit: (requests: JobPaymentRequestInput[]) => Promise<unknown>;
   onCancel: () => void;
   isSubmitting: boolean;
@@ -26,11 +28,13 @@ function toMinor(major: string): number {
  * Add requests: one amount, or the quick "deposit X% now + balance due on the
  * shoot date" split. Amounts are entered in shekels and stored in agorot.
  */
-export function JobPaymentRequestForm({ currency, jobDate, onSubmit, onCancel, isSubmitting }: Props) {
+export function JobPaymentRequestForm({ currency, jobDate, defaultTotalMinor, onSubmit, onCancel, isSubmitting }: Props) {
   const { t } = useTranslation();
   const [mode, setMode] = useState<Mode>('split');
   const [label, setLabel] = useState('');
-  const [amount, setAmount] = useState('');
+  const [amount, setAmount] = useState(() =>
+    defaultTotalMinor != null && defaultTotalMinor > 0 ? String(defaultTotalMinor / 100) : '',
+  );
   const [dueDate, setDueDate] = useState<string>(jobDate ? isoDateMinusDays(jobDate, 7) : '');
   const [depositPercent, setDepositPercent] = useState('30');
   const [installments, setInstallments] = useState('1');

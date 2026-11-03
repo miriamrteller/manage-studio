@@ -6,6 +6,7 @@ import {
 import type { Tenant } from '@shared/schemas';
 import { pickAccountExclusion, type AccountExclusion } from '../lib/accountExclusion';
 import type {
+  BlastAccountSearchResult,
   BlastRecipientPreview,
   NotificationBlastFormValues,
 } from '../lib/notificationBlastSchema';
@@ -94,6 +95,33 @@ export async function sendBlast(
         }
       : {}),
   };
+}
+
+/**
+ * One account of this studio by id, labelled like a search result (for the
+ * `?account=` preset). Reads with the admin's own session (RLS: their studio
+ * only). Null when it doesn't exist or can't be read; never throws.
+ */
+export async function fetchBlastAccount(accountId: string): Promise<BlastAccountSearchResult | null> {
+  try {
+    const { data: account } = await supabase
+      .from('accounts')
+      .select('id, name, person_id')
+      .eq('id', accountId)
+      .maybeSingle();
+    if (!account?.id) return null;
+    const { data: contact } = account.person_id
+      ? await supabase.from('people').select('name, email').eq('id', account.person_id).maybeSingle()
+      : { data: null };
+    return {
+      account_id: account.id,
+      account_name: account.name ?? null,
+      contact_name: contact?.name ?? null,
+      contact_email: contact?.email ?? null,
+    };
+  } catch {
+    return null;
+  }
 }
 
 /**

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useFamilyDetail } from '../hooks/useFamilyDetail';
 import { FamilyService } from '../service';
@@ -85,11 +85,16 @@ export function FamilyDetail({ id }: FamilyDetailProps) {
           </h1>
           <p className="text-sm text-gray-500">{t('pages.families.detail_subtitle')}</p>
         </div>
-        {!isEditing && (
-          <Button variant="secondary" onClick={startEditing}>
-            {t('common.edit')}
-          </Button>
-        )}
+        <div className="flex flex-wrap gap-2">
+          <Link to={`/admin/notifications?account=${encodeURIComponent(id)}`} className="inline-flex items-center rounded-[var(--radius-button)] border border-[var(--border-hairline)] px-4 py-2 text-base whitespace-nowrap text-[var(--color-text-primary)] hover:bg-[var(--tint-primary-05)] focus-visible:outline-2 outline-offset-2">
+            {t('pages.families.email_family')}
+          </Link>
+          {!isEditing && (
+            <Button variant="secondary" onClick={startEditing}>
+              {t('common.edit')}
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Contact info */}

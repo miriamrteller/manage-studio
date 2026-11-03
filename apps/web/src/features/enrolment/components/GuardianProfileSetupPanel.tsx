@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { useTenant } from '@/hooks/useTenant';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useFillWhenEmpty, useSignedInPrefill } from '@/hooks/useSignedInPrefill';
 import { EnrolmentOnboardingService } from '../onboardingService';
 
 interface GuardianProfileSetupPanelProps {
@@ -35,6 +36,10 @@ export function GuardianProfileSetupPanel({
   const [name, setName] = useState(defaultName);
   const [dateOfBirth, setDateOfBirth] = useState(defaultDateOfBirth);
   const [phone, setPhone] = useState('');
+  // First-time setup: start from what the signed-in parent's profile already says.
+  const known = useSignedInPrefill();
+  useFillWhenEmpty(known.name, setName, mode === 'create');
+  useFillWhenEmpty(known.phone, setPhone, mode === 'create');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 

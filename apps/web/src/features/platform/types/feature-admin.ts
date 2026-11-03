@@ -1,19 +1,21 @@
-export interface FeatureDefinition {
-  feature_key: string;
-  label: string;
-  description: string;
-  category: string;
-  tier_minimum: 'essential' | 'professional' | null;
-  skin_restriction: 'essential' | 'professional' | null;
-  default_enabled: boolean;
-}
+/** The sets the owner approved; each feature belongs to exactly one. */
+export const FEATURE_SETS = ['core', 'monthly', 'projects', 'booking', 'classes', 'families', 'extras'] as const;
+export type FeatureSet = (typeof FEATURE_SETS)[number];
 
-export interface FeatureOverride {
-  id: string;
-  tenant_id: string;
+/** One feature for one studio, from platform_tenant_feature_states. */
+export interface FeatureState {
   feature_key: string;
-  enabled: boolean;
-  updated_at: string;
+  description: string;
+  feature_set: string;
+  tier_minimum: 'essential' | 'professional';
+  profile_gate: string | null;
+  skin_restriction: string | null;
+  /** On from the studio's plan and business profile, before the owner's override. */
+  default_on: boolean;
+  /** true = granted by the owner, false = removed by the owner, null = default. */
+  override_enabled: boolean | null;
+  override_note: string | null;
+  effective: boolean;
 }
 
 export interface TenantOption {

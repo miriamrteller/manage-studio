@@ -189,6 +189,40 @@ BEGIN
   RAISE NOTICE 'ok  pre-fill returns only the caller''s own latest signer block';
 END $$;
 
+-- ── pre-fill phone fallback: the caller's own stored phone when no earlier phone ──
+DO $$
+DECLARE d JSONB;
+BEGIN
+  PERFORM set_config('request.jwt.claim.sub', '', false);
+  -- "other" has never signed; their own household row holds a phone. The parent's
+  -- person row also holds one, which "other" must never see.
+  INSERT INTO contact_preferences (tenant_id, account_member_id, whatsapp_number) VALUES
+   ('a0000000-0000-4000-8000-000000000001','e1000000-0000-4000-8000-0000000000c2','052-765-4321');
+  INSERT INTO contact_preferences (tenant_id, person_id, whatsapp_number) VALUES
+   ('a0000000-0000-4000-8000-000000000001','c0000000-0000-4000-8000-0000000000c1','053-000-0000');
+
+  PERFORM pg_temp.as_user('b0000000-0000-4000-8000-0000000000c4');
+  d := get_my_last_signer_details();
+  IF d IS DISTINCT FROM '{"phone":"052-765-4321"}'::jsonb THEN
+    RAISE EXCEPTION 'FAIL never-signed caller should get only their own stored phone, got %', d;
+  END IF;
+
+  -- The parent's last signed block already has a phone: it wins over the stored one.
+  PERFORM pg_temp.as_user('b0000000-0000-4000-8000-0000000000c3');
+  d := get_my_last_signer_details();
+  IF d ->> 'phone' <> '+33 1 23 45 67 89' AND d ->> 'phone' <> '050-123-4567' THEN
+    RAISE EXCEPTION 'FAIL signed phone was replaced by the stored one: %', d;
+  END IF;
+  IF d ->> 'full_name' <> 'Dana Levi' THEN RAISE EXCEPTION 'FAIL fallback changed the signed block'; END IF;
+
+  -- An admin with no person/member row gets nothing, even though RLS would let them see every row.
+  PERFORM pg_temp.as_user('b0000000-0000-4000-8000-0000000000c1');
+  IF get_my_last_signer_details() IS NOT NULL THEN RAISE EXCEPTION 'FAIL admin got someone else''s phone'; END IF;
+  PERFORM set_config('request.jwt.claim.sub', '', false);
+  IF get_my_last_signer_details() IS NOT NULL THEN RAISE EXCEPTION 'FAIL anonymous got a phone'; END IF;
+  RAISE NOTICE 'ok  pre-fill falls back to the caller''s own stored phone, never another person''s';
+END $$;
+
 -- ── column lock-down ──
 DO $$
 BEGIN

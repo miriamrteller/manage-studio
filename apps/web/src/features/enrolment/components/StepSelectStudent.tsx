@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useSignedInPrefill } from '@/hooks/useSignedInPrefill';
 import { useGuestEmailRegistrationCheck } from '../hooks/useGuestEmailRegistrationCheck';
 import { ADULT_AGE_THRESHOLD, ageAt } from '@/lib/personAge';
 import { useSelectedClassAgeValidation } from '../lib/selectedClassAgeValidation';
@@ -118,6 +119,17 @@ export function StepSelectStudent({
   const [pickChildGuardianName, setPickChildGuardianName] = useState('');
   const [pickChildGuardianEmail, setPickChildGuardianEmail] = useState('');
   const [linkedFamily, setLinkedFamily] = useState<GuardianAccountLookup | null>(null);
+  const signedIn = useSignedInPrefill();
+
+  /** A signed-in parent with no family yet: the guardian is them, so start from their profile. */
+  const changeSubMode = (next: SelectStudentSubMode) => {
+    if (next === 'new_family' && mode === 'parent') {
+      fields.setGuardianName((v) => v || signedIn.name);
+      fields.setGuardianEmail((v) => v || signedIn.email);
+      fields.setGuardianPhone((v) => v || signedIn.phone);
+    }
+    setSubMode(next);
+  };
 
   const guestEmailCheckEnabled = mode === 'guest' && Boolean(onSignInRequest);
   const adminEmailCheckEnabled = mode === 'admin' && subMode === 'new_family';
@@ -326,7 +338,7 @@ export function StepSelectStudent({
       studentsLoading={studentsLoading}
       studentsError={studentsError}
       onSelectPerson={onSelectPerson}
-      onChangeSubMode={setSubMode}
+      onChangeSubMode={changeSubMode}
       onCancel={onCancel}
     />
   );

@@ -7,6 +7,7 @@ import { PrivacyNotice } from '@/components/PrivacyNotice';
 import { Button } from '@/components/ui/button';
 import { useCaptcha } from '@/components/captcha/useCaptcha';
 import { useTenant } from '@/hooks/useTenant';
+import { useFillWhenEmpty, useSignedInPrefill } from '@/hooks/useSignedInPrefill';
 import { CONSENT_WORDING_VERSION, MARKETING_KINDS, consentWording, type ConsentState } from '@/legal/consents';
 import { useLegalLang } from '@/legal/useLegalDocument';
 import { supabase } from '@/lib/supabase';
@@ -43,6 +44,11 @@ export function InquiryForm({
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  // Signed in: start from what OpalSwift already knows (only empty fields; still editable).
+  const known = useSignedInPrefill();
+  useFillWhenEmpty(known.name, setName);
+  useFillWhenEmpty(known.email, setEmail);
+  useFillWhenEmpty(known.phone, setPhone);
   const [message, setMessage] = useState('');
   const [honeypot, setHoneypot] = useState('');
   const [marketing, setMarketing] = useState<ConsentState>({});
