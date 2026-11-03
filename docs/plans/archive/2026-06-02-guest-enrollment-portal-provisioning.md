@@ -402,7 +402,7 @@ Each phase is independently mergeable. Complete phases in order.
    - Document RPCs and edge functions.
    - Remove “login required at /enrol” if documented.
 
-4. **Update `docs/plans/2026-06-02-enrollment-flow.md`**
+4. **Update `docs/plans/archive/2026-06-02-enrollment-flow.md`**
    - Cross-link this plan.
 
 #### Acceptance criteria

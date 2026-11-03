@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 /**
  * Documents when auth↔person linking must run.
- * See linkAuthUser.ts and docs/plans/2026-06-02-guest-enrollment-portal-provisioning.md
+ * See linkAuthUser.ts and docs/plans/archive/2026-06-02-guest-enrollment-portal-provisioning.md
  */
 describe('enrolment auth linking policy', () => {
   it('must not link at pending_payment / checkout prepare', () => {

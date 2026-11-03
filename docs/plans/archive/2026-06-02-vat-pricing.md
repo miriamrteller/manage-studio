@@ -1,8 +1,8 @@
 # VAT pricing consistency — implementation plan
 
-**SPEC (normative):** §2.5.1–§2.5.3 in [SPEC.md](../../SPEC.md)  
+**SPEC (normative):** §2.5.1–§2.5.3 in [SPEC.md](../../../SPEC.md)  
 **Status:** Implemented (2026-06-02) — run manual verify + `pnpm email:bundle` on deploy  
-**Tracking:** [docs/IMPLEMENTATION_STATUS.md](../IMPLEMENTATION_STATUS.md)
+**Tracking:** [docs/IMPLEMENTATION_STATUS.md](../../IMPLEMENTATION_STATUS.md)
 
 ## Locked decisions
 

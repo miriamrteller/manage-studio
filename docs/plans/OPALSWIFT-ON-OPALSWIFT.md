@@ -129,7 +129,7 @@ Hard rule: no charge, quote with a price, or receipt until OpalSwift is register
 ## 5. Communications
 
 - **Service emails (welcome, setup help, terms changes):** already sent by the platform with the OpalSwift look and Reply-To hello@. Nothing to build.
-- **Onboarding emails from HQ:** the notification blast composer (`docs/plans/notification-blast-composer.md`) already lets a studio email its accounts. Use it from HQ to email "all studios", with a filter by status once the mirror (section 3) exists. **Quick win:** send to a hand-picked list.
+- **Onboarding emails from HQ:** the notification blast composer (`docs/plans/archive/notification-blast-composer.md`) already lets a studio email its accounts. Use it from HQ to email "all studios", with a filter by status once the mirror (section 3) exists. **Quick win:** send to a hand-picked list.
 - **Newsletters:** only to owners who ticked the separate marketing tick-box (consent records, docs/legal 08). Always include an unsubscribe link. Keep consent date and wording. Check which sender and domain limits apply before the first send (verify Resend plan limits).
 - **Announcements about the platform** (outages, price changes, terms): service emails, sent to all studio owners, not newsletters. Terms promise 30 days' notice for fees.
 - **WhatsApp:** later. Start with a personal number and a manual "log chat" (Leads plan P2-E).

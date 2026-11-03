@@ -31,28 +31,28 @@ Rough completion against [SPEC.md §6 V1 Implementation](../SPEC.md#6-v1-impleme
 
 | Feature | Plan | Schema | App code | Notes |
 | ------- | ---- | ------ | -------- | ----- |
-| VAT / gross pricing | [2026-06-02-vat-pricing.md](plans/2026-06-02-vat-pricing.md) | ✅ | ✅ | **Refactored 2026-06-28:** `resolveOfferingPrice` gross-only; VAT on tax documents via Grow/GI — not app-split |
-| Phase D — label display wiring | [phase-d-display-wiring.md](plans/phase-d-display-wiring.md) | ✅ | ✅ | Complete |
-| Tenant settings hub | [tenant-settings-hub.md](plans/tenant-settings-hub.md) | ✅ | ✅ | `/admin/setup/settings` |
+| VAT / gross pricing | [2026-06-02-vat-pricing.md](plans/archive/2026-06-02-vat-pricing.md) | ✅ | ✅ | **Refactored 2026-06-28:** `resolveOfferingPrice` gross-only; VAT on tax documents via Grow/GI — not app-split |
+| Phase D — label display wiring | [phase-d-display-wiring.md](plans/archive/phase-d-display-wiring.md) | ✅ | ✅ | Complete |
+| Tenant settings hub | [tenant-settings-hub.md](plans/archive/tenant-settings-hub.md) | ✅ | ✅ | `/admin/setup/settings` |
 | V3.0 operator onboarding | [v3-0-operator-onboarding-wizard.md](plans/v3-0-operator-onboarding-wizard.md) | ✅ | ✅ | Scaffold at `/platform/onboard` |
 | Admin nav (finance + families) | — | — | ✅ | Finance sub-nav, `/admin/families`, Grow vs non-Grow setup filters (`2ed53c6`) |
 | Offering `location` | SPEC §4.2.5 | ✅ | ✅ | Admin, public, portal, enrolment, email |
-| Unenrol Phase 1 (pre-payment cancel) | [2026-06-02-unenrol-phase-1.md](plans/2026-06-02-unenrol-phase-1.md) | ✅ `02300` | ✅ | `cancel_engagement` + admin UI |
+| Unenrol Phase 1 (pre-payment cancel) | [2026-06-02-unenrol-phase-1.md](plans/archive/2026-06-02-unenrol-phase-1.md) | ✅ `02300` | ✅ | `cancel_engagement` + admin UI |
 | Admin dashboard finance (F1–F6) | [admin-dashboard-finance/00-overview.md](plans/admin-dashboard-finance/00-overview.md) | ✅ `01600` (expenses, `get_finance_summary`) | ✅ | Hub, payments log, expenses, P&L, CSV |
 | Finance baseline (Stages 1–9) | [finance/00-overview.md](plans/finance/00-overview.md) | ✅ `01600` (folded incrementals) | ✅ | Provider abstraction, mock/Stripe/GI adapters |
 | Grow extension (G0–G6) | [finance/00-overview.md](plans/finance/00-overview.md) | ✅ consolidated | ✅ | Grow fields merged into `01600` / `00200`; dropped redundant `250004`/`250006` migrations |
 | Grow G7 settings + verify | [finance/stage-g7-settings-cleanup.md](plans/finance/stage-g7-settings-cleanup.md) | ✅ | ✅ | `GrowSettingsForm`, `verify-grow-credentials`, `FinanceHealthCard` — **live sandbox E2E still manual** |
 | **iCount extension (I0–I4a mock)** | [finance/icount/00-overview.md](plans/finance/icount/00-overview.md) | ✅ `01600` / `00200` | ✅ | Mock-phase complete: `IcountSettingsForm`, bundled checkout, IPN/document adapters, `ICOUNT_MOCK` — **I0-live, I5 default flip deferred** |
-| Notification log viewer | [notification-log-page.md](plans/notification-log-page.md) | ✅ | ✅ | `NotificationLog` mounted on `/admin/notifications` History tab; full i18n (EN + HE), Template column, `sent_at ?? created_at` date |
-| Notification log detail viewer | [notification-log-detail-viewer.md](plans/notification-log-detail-viewer.md) | ✅ | ✅ | Row click / View opens dialog with subject, body, metadata; `otp_code` redacted |
-| Notification log recipient search | [notification-log-recipient-search.md](plans/notification-log-recipient-search.md) | ✅ | ✅ | Debounced name/email/phone filter on History tab |
+| Notification log viewer | [notification-log-page.md](plans/archive/notification-log-page.md) | ✅ | ✅ | `NotificationLog` mounted on `/admin/notifications` History tab; full i18n (EN + HE), Template column, `sent_at ?? created_at` date |
+| Notification log detail viewer | [notification-log-detail-viewer.md](plans/archive/notification-log-detail-viewer.md) | ✅ | ✅ | Row click / View opens dialog with subject, body, metadata; `otp_code` redacted |
+| Notification log recipient search | [notification-log-recipient-search.md](plans/archive/notification-log-recipient-search.md) | ✅ | ✅ | Debounced name/email/phone filter on History tab |
 | **Age override (PR A)** | [archive/age-override-pr-a.md](plans/archive/age-override-pr-a.md) | ✅ `02100` | ✅ | Policy module, panel, snapshot, guest age gate, tests |
-| **Parent age review (PR B)** | [age-override-pr-b.md](plans/age-override-pr-b.md) | ✅ `02200` | ✅ | Shipped `baa6dd1` — **manual E2E smoke recommended** before prod |
+| **Parent age review (PR B)** | [age-override-pr-b.md](plans/archive/age-override-pr-b.md) | ✅ `02200` | ✅ | Shipped `baa6dd1` — **manual E2E smoke recommended** before prod |
 | **Parent self-enrolment (P1–P3)** | [parent-self-enrolment/00-overview.md](plans/parent-self-enrolment/00-overview.md) | — | ✅ | `resolveGuardianProfile`, portal **Myself**, `GuardianProfileSetupPanel` (`f0c327a`) |
-| **Phase 1F admin operations overview** | [admin-overview-dashboard.md](plans/admin-overview-dashboard.md) | ✅ `02000` | ✅ | RPC, service, hook, 6 components, 7 tests, i18n — **PR #5 complete** |
-| Notification blast composer | [notification-blast-composer.md](plans/notification-blast-composer.md) | ✅ `00600` | ✅ | `/admin/notifications`, preview RPC, `admin_blast` send, `AdminAnnouncementEmail`, schema tests — **manual Resend smoke recommended** |
+| **Phase 1F admin operations overview** | [admin-overview-dashboard.md](plans/archive/admin-overview-dashboard.md) | ✅ `02000` | ✅ | RPC, service, hook, 6 components, 7 tests, i18n — **PR #5 complete** |
+| Notification blast composer | [notification-blast-composer.md](plans/archive/notification-blast-composer.md) | ✅ `00600` | ✅ | `/admin/notifications`, preview RPC, `admin_blast` send, `AdminAnnouncementEmail`, schema tests — **manual Resend smoke recommended** |
 | Parent portal polish (Phase 1G) | [parent-portal-polish.md](plans/parent-portal-polish.md) | — | ✅ | Merged PR #8; **Step 7 `notify_*` ✅** (2026-07-19); Step 8 WhatsApp OTP deferred (**last**) |
-| **Guest checkout + guest enrolment** | [2026-06-02-guest-enrollment-portal-provisioning.md](plans/2026-06-02-guest-enrollment-portal-provisioning.md) | ✅ `guest_enrolment_*` | ✅ | `/enrol` no login gate; `create-enrolment-intake`; `resolveCheckoutSession` JWT or `enrolment_token`; admin payment link reuses `PAYMENT_REMINDER` |
+| **Guest checkout + guest enrolment** | [2026-06-02-guest-enrollment-portal-provisioning.md](plans/archive/2026-06-02-guest-enrollment-portal-provisioning.md) | ✅ `guest_enrolment_*` | ✅ | `/enrol` no login gate; `create-enrolment-intake`; `resolveCheckoutSession` JWT or `enrolment_token`; admin payment link reuses `PAYMENT_REMINDER` |
 | Teachers admin module (V2.11) | [teachers-admin-module.md](plans/teachers-admin-module.md) | ✅ `staff` | 🟡 partial | **Deferred V2.11** — `TeacherService` / `useTeachers` + class-form `staff_id`; no admin page |
 | **Payment dunning — collections layer + renewal emails** | [payment-dunning-notifications.md](plans/payment-dunning-notifications.md) | ✅ `00600` + `01300` | ✅ | `_shared/collections/`, `applyBillingScheduleDunningFailure`, `PAYMENT_REMINDER` renewal track, `notification_log.dunning_key` |
 | **Enrolment unpaid dunning (§6.x #8)** | [enrolment-payment-dunning.md](plans/enrolment-payment-dunning.md) | ✅ `01300` + `02600` cron | ✅ | `run-enrolment-payment-dunning` cron Day 3/7/14; `applyEnrolmentPaymentDunningStep`; `CLASS_CANCELLATION` on day 14 |
