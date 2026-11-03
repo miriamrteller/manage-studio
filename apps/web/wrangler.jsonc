@@ -24,7 +24,12 @@
   // deployed from its own Worker.
   "routes": [
     { "pattern": "*.opalswift.com/*", "zone_name": "opalswift.com" },
-    { "pattern": "app.opalswift.com/*", "zone_name": "opalswift.com" }
+    { "pattern": "app.opalswift.com/*", "zone_name": "opalswift.com" },
+
+    // Studio custom domains on zones in this Cloudflare account (path A in
+    // docs/deployment/CUSTOM-DOMAIN.md). Exact hostname only: never the apex or www,
+    // which stay on the studio's own website.
+    { "pattern": "app.creativeballetacademy.com/*", "zone_name": "creativeballetacademy.com" }
   ],
 
   "observability": {
