@@ -111,8 +111,11 @@ const GENERAL_LABELS = {
  * (class vocabulary plus any skin layer). Any other studio starts from the general
  * wording. In both cases the studio's own word overrides win last.
  */
-export function resolveStudioLabels(profile, overrides = {}, locale = 'en', vertical = 'generic') {
+export function resolveStudioLabels(profile, overrides = {}, locale = 'en', vertical = 'generic', 
+/** A data skin's own wording (skinLabelsFor); the studio's own words still win. */
+skinLabels = {}) {
+    const words = { ...skinLabels, ...overrides };
     if (profile.teachesClasses)
-        return resolveEntityLabels('programs', overrides, locale, vertical);
-    return { ...GENERAL_LABELS[locale], ...resolveVerticalLabels(vertical, locale), ...overrides };
+        return resolveEntityLabels('programs', words, locale, vertical);
+    return { ...GENERAL_LABELS[locale], ...resolveVerticalLabels(vertical, locale), ...words };
 }
