@@ -14,6 +14,7 @@ import type { ReactNode } from 'react';
 
 const h = vi.hoisted(() => ({
   profile: {} as Record<string, string>,
+  vertical: 'dance-studio',
   templates: [] as Array<Record<string, unknown>>,
   createDraft: vi.fn(),
   activateTemplate: vi.fn(),
@@ -25,7 +26,7 @@ vi.mock('@/hooks/useTenant', () => ({
 }));
 vi.mock('@/lib/supabase', () => ({ supabase: { rpc: vi.fn(), functions: { invoke: vi.fn() } } }));
 vi.mock('@/legal/useLegalDocument', () => ({
-  useTenantLegalProfile: () => ({ data: { tenantId: 't-1', profile: h.profile }, isLoading: false }),
+  useTenantLegalProfile: () => ({ data: { tenantId: 't-1', vertical: h.vertical, profile: h.profile }, isLoading: false }),
 }));
 vi.mock('@/features/waivers/hooks/useWaiverTemplates', () => ({
   useWaiverTemplates: () => ({ templates: h.templates }),
@@ -51,7 +52,8 @@ const ctx = (lang: 'he' | 'en', profile: Record<string, string>) => ({
 const healthForm = (lang: 'he' | 'en', profile: Record<string, string> = {}) =>
   studioSignedForms('dance-studio', ctx(lang, profile))[0];
 
-function stored(lang: 'he' | 'en', profile: Record<string, string> = {}) {
+/** A form stored before the no-insurance sentence existed (as an insured studio's form reads). */
+function stored(lang: 'he' | 'en', profile: Record<string, string> = { insurance_status: 'insured' }) {
   const f = healthForm(lang, profile);
   return { id: `${lang}-1`, name: f.name, content: f.content, status: 'active', language: lang, audience: f.audience };
 }
@@ -76,6 +78,7 @@ beforeAll(() => {
 
 beforeEach(() => {
   h.profile = { insurance_status: 'none' };
+  h.vertical = 'dance-studio';
   h.templates = [];
   h.createDraft.mockImplementation(async (_t, input: { name: string }) => ({ id: `new-${input.name}` }));
   h.activateTemplate.mockResolvedValue(undefined);
@@ -171,6 +174,26 @@ describe('reminder before sending a form link', () => {
     h.profile = { insurance_status: 'insured' };
     wrap(<NoInsuranceSendReminder />);
     expect(screen.queryByRole('note')).not.toBeInTheDocument();
+  });
+
+  it('a dance studio that never answered sees it; studios without health declarations never do', () => {
+    h.profile = {};
+    const { unmount } = wrap(<NoInsuranceSendReminder />);
+    expect(screen.getByRole('note')).toBeInTheDocument();
+    unmount();
+    window.sessionStorage.clear();
+    for (const vertical of ['generic', 'beautician', 'photographer']) {
+      h.vertical = vertical;
+      const r = wrap(
+        <>
+          <NoInsuranceSendReminder />
+          <NoInsuranceFormUpdate />
+        </>,
+      );
+      expect(screen.queryByRole('note')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button')).not.toBeInTheDocument();
+      r.unmount();
+    }
   });
 
   it('is in Hebrew when Hebrew is chosen', async () => {

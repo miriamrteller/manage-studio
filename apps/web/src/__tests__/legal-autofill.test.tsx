@@ -169,11 +169,10 @@ describe('legalAutofill', () => {
 describe('one missing list for Confirm and Publish', () => {
   const filled = withLegalAutofill(TYPED, legalAutofill({ tenantName: 'CB', contactEmail: 'a@b.c', ownerName: 'Dana', paymentProvider: 'grow' }, 'en'));
 
-  it('a dance studio only types address, phone and insurance', () => {
+  it('a dance studio only types address and phone (insurance is optional)', () => {
     expect(missingLegalDetails('dance-studio', withLegalAutofill({}, legalAutofill({ tenantName: 'CB', contactEmail: 'a@b.c', ownerName: 'Dana', paymentProvider: 'grow' }, 'en'))).map((f) => f.key)).toEqual([
       'address',
       'phone',
-      'insurance',
     ]);
     expect(missingLegalDetails('dance-studio', filled)).toEqual([]);
   });
@@ -219,7 +218,9 @@ describe('Settings → Legal', () => {
     wrap(<LegalSettingsForm />);
     expect(await screen.findByLabelText(/Business address/)).toBeVisible();
     expect(screen.getByLabelText(/Business phone/)).toBeVisible();
-    expect(screen.getByLabelText(/Insurance \(insurer and policy type\)/)).toBeVisible();
+    // Insurance is optional: the choice starts at "We don't have insurance", no policy field.
+    expect(screen.getByLabelText(/^Insurance$/)).toHaveValue('none');
+    expect(screen.queryByLabelText(/Insurance \(insurer and policy type\)/)).toBeNull();
     const summary = await screen.findByText(/Details we filled in for you \(\d+\)/);
     const details = summary.closest('details')!;
     expect(details).not.toHaveAttribute('open');
@@ -270,11 +271,11 @@ describe('legal pack Confirm', () => {
 
   it('still waits for a detail only the studio can give', async () => {
     const rest = { ...TYPED };
-    delete rest.insurance;
+    delete rest.phone;
     h.profile = rest;
     wrap(<LegalPackPanel tenantId="t-1" mode="acknowledge" detailsHref="#legal-details" />);
     fireEvent.click(await screen.findByRole('checkbox'));
-    expect(await screen.findByText(/Insurance/)).toBeInTheDocument();
+    expect(await screen.findByText(/Business phone/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Confirm' })).toBeDisabled();
   });
 });

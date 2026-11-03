@@ -30,6 +30,14 @@ export interface SignedFormSpec {
 export declare const SIGNED_FORMS_BY_SKIN: Record<string, SignedFormSpec[]>;
 /** The forms a studio type signs (unknown types: the general studio's). */
 export declare function signedFormsForVertical(vertical: string | null | undefined): SignedFormSpec[];
+/** Studios whose clients sign a health declaration: the only ones asked about insurance. */
+export declare function hasHealthDeclarations(vertical: string | null | undefined): boolean;
+/**
+ * The studio's insurance answer. Optional and never blocking: anything but an
+ * explicit "We have insurance" counts as "We don't have insurance" (owner
+ * decision), so an unanswered choice is never treated as insured.
+ */
+export declare function insuranceStatus(profile: Record<string, string | undefined> | null | undefined): 'insured' | 'none';
 export interface SignedTemplateContext {
     lang: LegalLang;
     tenantName: string;
@@ -54,7 +62,7 @@ export declare function studioSignedForms(vertical: string | null | undefined, c
 /** A form's text: the document (and its add-on), filled with the studio's details. */
 export declare function prepareSignedForm(form: SignedFormSpec, ctx: SignedTemplateContext): string;
 /**
- * "We don't have insurance" (legal_profile.insurance_status = 'none'): the
+ * "We don't have insurance" (legal_profile.insurance_status other than 'insured'): the
  * health declaration's Declaration list tells the signer so, as part of the
  * text they sign (sealed with it). No extra step. Awaiting lawyer review.
  */

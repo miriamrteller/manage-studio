@@ -43,7 +43,8 @@ vi.mock('@/lib/supabase', () => ({
 import i18n from '@/i18n/i18n';
 import { fieldsForVertical, missingLegalDetails } from '@/legal/fields';
 import { loadLegalTemplate } from '@/legal/templates';
-import { NO_INSURANCE_TERMS, prepareLegalMarkdown, type LegalLang } from '@/legal/render';
+import { INSURED_TERMS, NO_INSURANCE_TERMS, prepareLegalMarkdown, type LegalLang } from '@/legal/render';
+import type { VerticalId } from '@shared/config/tenant-presets';
 import { NO_INSURANCE_DECLARATION, studioSignedForms } from '@shared/legal/signed-template';
 import { LegalSettingsForm } from '@/features/settings/components/LegalSettingsForm';
 
@@ -60,11 +61,11 @@ const BASE: Record<string, string> = {
 };
 const NONE = { ...BASE, insurance_status: 'none' };
 
-async function terms(lang: LegalLang, profile: Record<string, string>) {
+async function terms(lang: LegalLang, profile: Record<string, string>, vertical: VerticalId = 'dance-studio') {
   return prepareLegalMarkdown(await loadLegalTemplate('enrolment-terms', lang), {
     doc: 'enrolment-terms',
     lang,
-    vertical: 'dance-studio',
+    vertical,
     tenantName: 'Creative Ballet',
     contactEmail: 'a@b.c',
     profile,
@@ -89,9 +90,15 @@ describe('Confirm and Publish', () => {
     expect(missingLegalDetails('dance-studio', NONE, 'publish')).toEqual([]);
   });
 
-  it('otherwise the insurer and policy are still asked for', () => {
-    expect(missingLegalDetails('dance-studio', BASE).map((f) => f.key)).toEqual(['insurance']);
-    expect(missingLegalDetails('dance-studio', { ...BASE, insurance_status: 'insured' }).map((f) => f.key)).toEqual(['insurance']);
+  it('insurance is never required: no answer, or "We have insurance" with no insurer named', () => {
+    for (const vertical of ['dance-studio', 'generic', 'beautician', 'photographer']) {
+      for (const stage of ['confirm', 'publish'] as const) {
+        const keys = (p: Record<string, string>) =>
+          missingLegalDetails(vertical, p, stage).map((f) => f.key).filter((k) => k.startsWith('insurance'));
+        expect(keys(BASE)).toEqual([]);
+        expect(keys({ ...BASE, insurance_status: 'insured' })).toEqual([]);
+      }
+    }
   });
 });
 
@@ -171,18 +178,69 @@ describe('Settings → Legal', () => {
     );
   }
 
-  it('choosing "We don\'t have insurance" hides the policy field and shows the (informational) notice', async () => {
+  it('starts at "We don\'t have insurance" (no policy field, informational notice); the policy field is optional', async () => {
     setup({});
     const choice = await screen.findByLabelText(/^Insurance$/);
-    expect(screen.getByLabelText(/Insurance \(insurer and policy type\)/)).toBeInTheDocument();
-    fireEvent.change(choice, { target: { value: 'none' } });
+    expect(choice).toHaveValue('none');
     expect(screen.queryByLabelText(/Insurance \(insurer and policy type\)/)).toBeNull();
-    expect(screen.getByText(/Most studios working with children need liability and personal-accident insurance/)).toHaveAttribute('role', 'note');
+    expect(screen.getByText(/If you work with children or physical activity, liability and personal-accident insurance is usually recommended/)).toHaveAttribute('role', 'note');
+    fireEvent.change(choice, { target: { value: 'insured' } });
+    const policy = screen.getByLabelText(/Insurance \(insurer and policy type\)/);
+    expect(policy).not.toBeRequired();
+    expect(screen.queryByText(/If you work with children or physical activity/)).toBeNull();
   });
 
   it('in Hebrew', async () => {
     await i18n.changeLanguage('he');
     setup({ insurance_status: 'none' });
-    expect(await screen.findByText(/רוב הסטודיואים שעובדים עם ילדים צריכים ביטוח/)).toBeInTheDocument();
+    expect(await screen.findByText(/אם אתם עובדים עם ילדים או בפעילות גופנית/)).toBeInTheDocument();
+  });
+});
+
+describe('optional everywhere (owner bug fix)', () => {
+  it('only studios with health declarations are asked about insurance', () => {
+    expect(fieldsForVertical('dance-studio').map((f) => f.key)).toEqual(expect.arrayContaining(['insurance_status', 'insurance']));
+    for (const vertical of ['generic', 'beautician', 'photographer'] as const) {
+      const keys = fieldsForVertical(vertical).map((f) => f.key);
+      expect(keys).not.toContain('insurance_status');
+      expect(keys).not.toContain('insurance');
+    }
+  });
+
+  it.each(['generic', 'beautician'] as const)('%s terms say nothing about insurance (en + he)', async (vertical) => {
+    for (const lang of ['en', 'he'] as const) {
+      const out = await terms(lang, BASE, vertical);
+      expect(out.markdown).not.toMatch(/insurance|ביטוח/i);
+      expect(out.missing).not.toContain('insurance');
+    }
+  });
+
+  it('a dance studio that never answered is treated as "We don\'t have insurance"', async () => {
+    for (const lang of ['en', 'he'] as const) {
+      const out = await terms(lang, BASE);
+      expect(out.markdown).toContain(NO_INSURANCE_TERMS[lang]);
+      expect(out.missing).not.toContain('insurance');
+    }
+    for (const form of studioSignedForms('dance-studio', ctx('en', BASE))) {
+      expect(form.content).toContain(NO_INSURANCE_DECLARATION.en);
+    }
+  });
+
+  it('"We have insurance" with no insurer named yet reads as a plain statement, nothing to complete', async () => {
+    for (const lang of ['en', 'he'] as const) {
+      const out = await terms(lang, { ...BASE, insurance_status: 'insured' });
+      expect(out.markdown).toContain(INSURED_TERMS[lang]);
+      expect(out.missing).not.toContain('insurance');
+    }
+  });
+});
+
+describe('Settings → Legal wording', () => {
+  it('no longer claims the terms state prices or dates (they say "as shown at registration")', () => {
+    for (const lng of ['en', 'he']) {
+      const why = i18n.getResource(lng, 'translation', 'legal.settings.why.enrolment') as string;
+      expect(why).toBeTruthy();
+      expect(why).not.toMatch(/price|date|מחיר|מועד/i);
+    }
   });
 });

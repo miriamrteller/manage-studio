@@ -26,6 +26,7 @@ const fullDanceProfile: Record<string, string> = {
   month_count: '10',
   payment_methods: 'bank transfer, Bit',
   payment_dates: 'on the 1st of each month',
+  insurance_status: 'insured',
   insurance: 'third-party liability insurance with Example Insurance',
 };
 
@@ -88,10 +89,10 @@ describe('prepareLegalMarkdown', () => {
     const raw = await loadLegalTemplate('enrolment-terms', 'en');
     const out = prepareLegalMarkdown(
       raw,
-      ctx('enrolment-terms', 'en', { ...fullDanceProfile, business_status: 'not_registered', insurance: '' }),
+      ctx('enrolment-terms', 'en', { ...fullDanceProfile, business_status: 'not_registered' }),
     );
     expect(out.missing).not.toContain('receipts');
-    expect(out.missing).toContain('insurance');
+    expect(out.missing).toContain('personal_id');
     expect(out.markdown).toContain('Tax documents (receipts or invoices) are issued');
     const html = renderLegalHtml(out);
     expect(html).toContain('class="legal-missing"');

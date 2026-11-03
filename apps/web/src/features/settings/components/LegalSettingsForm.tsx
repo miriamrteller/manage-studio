@@ -191,7 +191,13 @@ export function LegalSettingsForm() {
           )}
         </label>
         {f.kind === 'select' ? (
-          <select id={id} className="form-input w-full" value={value} onChange={(e) => onChange(e.target.value)}>
+          <select
+            id={id}
+            className="form-input w-full"
+            // An unanswered choice shows (and means) its default, never the first option.
+            value={value || f.defaultValue?.[lang] || ''}
+            onChange={(e) => onChange(e.target.value)}
+          >
             <option value="">{t('legal.settings.choose')}</option>
             {f.options?.map((o) => (
               <option key={o.value} value={o.value}>
@@ -228,7 +234,7 @@ export function LegalSettingsForm() {
             {t('legal.settings.invalid_israeli_id')}
           </p>
         )}
-        {f.key === 'insurance_status' && value === 'none' && (
+        {f.key === 'insurance_status' && value !== 'insured' && (
           // Informational only: "no insurance" never blocks Confirm or Publish.
           <p role="note" className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
             {t('legal.settings.no_insurance_notice')}
