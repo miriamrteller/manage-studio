@@ -75,7 +75,7 @@ export function NavDrawer() {
     modules,
     tenant,
     hasFeature: hasFeatureResolved,
-    vertical,
+    profile,
     // No studio once the lookup is done (app.opalswift.com, or a user without one).
     hasStudio: Boolean(tenant) || tenantLoading,
   });

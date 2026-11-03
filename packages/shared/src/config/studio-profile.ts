@@ -80,17 +80,18 @@ export function defaultFeatureKeys(profile: StudioProfile): FeatureKey[] {
 }
 
 /**
- * What a studio that exists today has: everything on. A row without profile fields
- * (an older cached response, a test fixture) reads as this, so nothing changes for it.
+ * What a typical studio that exists today has: monthly plans, classes, families and booking on,
+ * no projects. A row without profile fields (an older cached response, a test fixture, the
+ * moment before the studio loads) reads as this, so the menu does not flicker or change.
  */
 export const EXISTING_STUDIO_PROFILE: StudioProfile = {
-  paymentFlow: 'both',
+  paymentFlow: 'recurring',
   teachesClasses: true,
   familyAccounts: true,
   clientBooking: true,
 }
 
-/** Map the tenants row (snake_case) to a profile; a missing field reads as "on". */
+/** Map the tenants row (snake_case) to a profile; a missing field reads as an existing studio, an unknown flow as both. */
 export function profileFromTenant(row: {
   payment_flow?: string | null
   teaches_classes?: boolean | null
@@ -99,7 +100,8 @@ export function profileFromTenant(row: {
 }): StudioProfile {
   const flow = row.payment_flow
   return {
-    paymentFlow: flow === 'recurring' || flow === 'project' ? flow : 'both',
+    paymentFlow:
+      flow === 'recurring' || flow === 'project' || flow === 'both' ? flow : flow == null ? EXISTING_STUDIO_PROFILE.paymentFlow : 'both',
     teachesClasses: row.teaches_classes ?? true,
     familyAccounts: row.family_accounts ?? true,
     clientBooking: row.client_booking ?? true,

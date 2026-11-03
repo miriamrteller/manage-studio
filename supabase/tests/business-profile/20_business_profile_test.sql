@@ -174,3 +174,28 @@ BEGIN
   RESET ROLE;
   RAISE NOTICE 'ok  direct profile updates are refused; the setter and other columns still work';
 END $$;
+
+-- Existing-studio data step: re-run it over rows shaped like the untouched backfill and check the result.
+UPDATE tenants SET skin = 'photographer', payment_flow = 'both', teaches_classes = true, family_accounts = true, client_booking = true
+ WHERE subdomain = 'photo';
+UPDATE tenants SET skin = 'generic', payment_flow = 'both', teaches_classes = true, family_accounts = true, client_booking = true
+ WHERE subdomain = 'dance';
+INSERT INTO tenants (name, subdomain, contact_email, skin) VALUES ('Fresh', 'fresh', 'f@x.test', 'generic');
+\ir ../../migrations/20261103133114_business_profile_existing_studios.sql
+DO $$
+DECLARE r RECORD;
+BEGIN
+  SELECT * INTO r FROM tenants WHERE subdomain = 'photo';
+  IF NOT (r.payment_flow = 'both' AND NOT r.teaches_classes AND NOT r.family_accounts AND r.client_booking) THEN
+    RAISE EXCEPTION 'FAIL photographer profile wrong: %', row(r.payment_flow, r.teaches_classes, r.family_accounts, r.client_booking);
+  END IF;
+  SELECT * INTO r FROM tenants WHERE subdomain = 'dance';
+  IF NOT (r.payment_flow = 'recurring' AND r.teaches_classes AND r.family_accounts AND r.client_booking) THEN
+    RAISE EXCEPTION 'FAIL class studio profile wrong: %', row(r.payment_flow, r.teaches_classes, r.family_accounts, r.client_booking);
+  END IF;
+  SELECT * INTO r FROM tenants WHERE subdomain = 'fresh';
+  IF NOT (r.payment_flow = 'both' AND NOT r.teaches_classes AND NOT r.family_accounts AND NOT r.client_booking) THEN
+    RAISE EXCEPTION 'FAIL a new studio was touched: %', row(r.payment_flow, r.teaches_classes, r.family_accounts, r.client_booking);
+  END IF;
+  RAISE NOTICE 'ok  existing studios keep their menu (photographer: projects; class studios: classes); a new studio is untouched';
+END $$;

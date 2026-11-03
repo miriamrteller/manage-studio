@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   buildNavSections,
   matchesTenantFilter,
-  matchesVertical,
+  matchesProfile,
   navigationConfig,
   publicNavigationConfig,
   resolveActiveNavPath,
@@ -10,6 +10,7 @@ import {
   tenantUsesIcount,
 } from '@/components/Navigation/navigationConfig';
 import { BUNDLED_PAYMENTS_SETUP_PATH } from '@/lib/bundledProviderUi';
+import { profileForSkin } from './helpers/skinProfiles';
 
 describe('navigationConfig', () => {
   it('includes admin students, families, and finance sub-pages for tenant_admin', () => {
@@ -100,10 +101,10 @@ describe('navigationConfig', () => {
   });
 });
 
-describe('vertical nav visibility', () => {
+describe('profile nav visibility (menu per existing skin)', () => {
   const adminPaths = (vertical: 'photographer' | 'dance-studio' | 'generic') =>
     buildNavSections(
-      navigationConfig.filter((item) => matchesVertical(item, vertical)),
+      navigationConfig.filter((item) => matchesProfile(item, profileForSkin(vertical))),
       ['tenant_admin'],
     ).flatMap((section) => section.items.map((item) => item.path));
 
@@ -129,24 +130,55 @@ describe('vertical nav visibility', () => {
     }
   });
 
-  it('treats a missing vertical as generic', () => {
+  it('treats a missing profile as an existing class studio', () => {
     const jobs = navigationConfig.find((item) => item.path === '/admin/jobs');
     const classes = navigationConfig.find((item) => item.path === '/classes');
-    expect(jobs && matchesVertical(jobs, null)).toBe(false);
-    expect(classes && matchesVertical(classes, undefined)).toBe(true);
+    expect(jobs && matchesProfile(jobs, null)).toBe(false);
+    expect(classes && matchesProfile(classes, undefined)).toBe(true);
   });
 
   it('hides the public classes browse link for photographers only', () => {
     const publicClasses = publicNavigationConfig.find((item) => item.path === '/classes');
-    expect(publicClasses && matchesVertical(publicClasses, 'photographer')).toBe(false);
-    expect(publicClasses && matchesVertical(publicClasses, 'dance-studio')).toBe(true);
+    expect(publicClasses && matchesProfile(publicClasses, profileForSkin('photographer'))).toBe(false);
+    expect(publicClasses && matchesProfile(publicClasses, profileForSkin('dance-studio'))).toBe(true);
+  });
+});
+
+describe('menu follows the switches, not the skin', () => {
+  const menu = (profile: Parameters<typeof matchesProfile>[1]) =>
+    buildNavSections(
+      navigationConfig.filter((item) => matchesProfile(item, profile)),
+      ['tenant_admin'],
+    ).flatMap((section) => section.items.map((item) => item.path));
+  const general = { paymentFlow: 'both', teachesClasses: false, familyAccounts: false, clientBooking: false } as const;
+
+  it('a new general studio sees projects and quotes but no class pages or families', () => {
+    const paths = menu(general);
+    expect(paths).toEqual(expect.arrayContaining(['/admin/jobs', '/admin/quotes', '/admin/leads']));
+    for (const gone of ['/admin/setup/classes', '/admin/setup/levels', '/admin/setup/terms', '/admin/families']) {
+      expect(paths).not.toContain(gone);
+    }
+  });
+
+  it('each switch brings back exactly its pages', () => {
+    expect(menu({ ...general, teachesClasses: true })).toEqual(
+      expect.arrayContaining(['/admin/setup/classes', '/admin/setup/levels', '/admin/setup/terms']),
+    );
+    expect(menu({ ...general, teachesClasses: true })).not.toContain('/admin/families');
+    expect(menu({ ...general, familyAccounts: true })).toContain('/admin/families');
+  });
+
+  it('a monthly-only studio has no jobs or quotes; per-project and both studios do', () => {
+    expect(menu({ ...general, paymentFlow: 'recurring' })).not.toContain('/admin/jobs');
+    expect(menu({ ...general, paymentFlow: 'project' })).toContain('/admin/quotes');
+    expect(menu({ ...general, paymentFlow: 'both' })).toContain('/admin/jobs');
   });
 });
 
 describe('admin menu: working pages at the top level', () => {
   const adminMenu = (vertical: 'photographer' | 'dance-studio' | 'generic' | 'beautician') =>
     buildNavSections(
-      navigationConfig.filter((item) => matchesVertical(item, vertical)),
+      navigationConfig.filter((item) => matchesProfile(item, profileForSkin(vertical))),
       ['tenant_admin'],
     );
   const paths = (vertical: 'photographer' | 'dance-studio' | 'generic' | 'beautician') =>

@@ -33,9 +33,19 @@ export function fakeTenant(kind: FakeTenantKind): Record<string, unknown> | null
       // Older rows: no skin/vertical at all.
       return { ...base, business_preset: 'programs' };
     case 'beautician':
-      return { ...base, business_preset: 'services', vertical: 'beautician' };
+      return {
+        ...base,
+        business_preset: 'services',
+        vertical: 'beautician',
+        profile: { paymentFlow: 'recurring', teachesClasses: false, familyAccounts: false, clientBooking: true },
+      };
     case 'photographer':
-      return { ...base, business_preset: 'services', vertical: 'photographer' };
+      return {
+        ...base,
+        business_preset: 'services',
+        vertical: 'photographer',
+        profile: { paymentFlow: 'both', teachesClasses: false, familyAccounts: false, clientBooking: true },
+      };
   }
 }
 

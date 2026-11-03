@@ -39,7 +39,7 @@ export default function HomePage() {
   const { labels } = useEntityLabels();
   const { data: legal } = useTenantLegalProfile();
 
-  const sectionInput = { vertical: tenant?.vertical, enabledFeatures: tenant?.enabled_features };
+  const sectionInput = { vertical: tenant?.vertical, enabledFeatures: tenant?.enabled_features, profile: tenant?.profile };
   const hasClasses = studioHasClasses(sectionInput);
   const hasBooking = studioHasBooking(sectionInput);
   const introKey = homeIntroKey(sectionInput);

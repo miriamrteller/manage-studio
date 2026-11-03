@@ -31,11 +31,12 @@ export declare function profileHasGate(profile: StudioProfile, gate: ProfileGate
 /** Gated features this profile turns on by default (core features are not listed). */
 export declare function defaultFeatureKeys(profile: StudioProfile): FeatureKey[];
 /**
- * What a studio that exists today has: everything on. A row without profile fields
- * (an older cached response, a test fixture) reads as this, so nothing changes for it.
+ * What a typical studio that exists today has: monthly plans, classes, families and booking on,
+ * no projects. A row without profile fields (an older cached response, a test fixture, the
+ * moment before the studio loads) reads as this, so the menu does not flicker or change.
  */
 export declare const EXISTING_STUDIO_PROFILE: StudioProfile;
-/** Map the tenants row (snake_case) to a profile; a missing field reads as "on". */
+/** Map the tenants row (snake_case) to a profile; a missing field reads as an existing studio, an unknown flow as both. */
 export declare function profileFromTenant(row: {
     payment_flow?: string | null;
     teaches_classes?: boolean | null;
