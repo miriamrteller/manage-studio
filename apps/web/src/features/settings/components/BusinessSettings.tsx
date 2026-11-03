@@ -91,21 +91,20 @@ export function BusinessSettings() {
             ['clientBooking', 'booking'],
           ] as const
         ).map(([field, key]) => (
-          <label key={key} className="flex items-start gap-2 text-sm">
-            <input
-              type="checkbox"
-              className="mt-1"
-              checked={draft[field]}
-              onChange={(e) => set({ [field]: e.target.checked })}
-              aria-describedby={`${id}-${key}-hint`}
-            />
-            <span>
-              <span className="block">{t(`settings.business.${key}_label`)}</span>
-              <span id={`${id}-${key}-hint`} className="block text-xs text-muted-foreground">
-                {t(`settings.business.${key}_hint`)}
-              </span>
-            </span>
-          </label>
+          <div key={key} className="text-sm">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={draft[field]}
+                onChange={(e) => set({ [field]: e.target.checked })}
+                aria-describedby={`${id}-${key}-hint`}
+              />
+              <span>{t(`settings.business.${key}_label`)}</span>
+            </label>
+            <p id={`${id}-${key}-hint`} className="ms-6 text-xs text-muted-foreground">
+              {t(`settings.business.${key}_hint`)}
+            </p>
+          </div>
         ))}
       </fieldset>
 
