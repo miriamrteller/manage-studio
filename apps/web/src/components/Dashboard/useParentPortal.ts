@@ -9,10 +9,8 @@ import {
   type Engagement,
 } from '@shared/schemas';
 import type { GuardianProfile } from '@/features/enrolment/onboardingService';
-import {
-  collectPortalPersonIds,
-  resolveGuardianProfile,
-} from '@/features/enrolment/lib/resolveGuardianProfile';
+import { collectPortalPersonIds, NoFamilyAccountError } from '@/features/enrolment/lib/resolveGuardianProfile';
+import { resolveGuardianWithLink } from '@/features/enrolment/lib/resolveGuardianWithLink';
 
 export interface EngagementWithOffering extends Engagement {
   className: string | null;
@@ -79,7 +77,7 @@ export function useParentPortal(): ParentPortalState {
         throw new Error('User not authenticated');
       }
 
-      const guardianResult = await resolveGuardianProfile({
+      const guardianResult = await resolveGuardianWithLink({
         tenant,
         userProfileId: user.id,
         userEmail: user.email,
@@ -153,6 +151,8 @@ export function useParentPortal(): ParentPortalState {
 
       return { guardian, guardianMissing, children, enrolmentsByPerson, payments };
     },
+    // "No family account yet" will not change by asking again.
+    retry: (failureCount, err) => !(err instanceof NoFamilyAccountError) && failureCount < 1,
     enabled: !!tenant?.id && !!user?.id,
   });
 

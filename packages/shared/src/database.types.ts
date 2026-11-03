@@ -4717,6 +4717,7 @@ export type Database = {
         Args: { p_person_id: string }
         Returns: undefined
       }
+      link_my_guardian_accounts: { Args: never; Returns: number }
       list_admin_quotes: { Args: never; Returns: Json }
       list_due_shoot_emails: {
         Args: { p_now?: string }

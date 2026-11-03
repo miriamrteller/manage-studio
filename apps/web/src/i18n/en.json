@@ -144,6 +144,7 @@
     "session_setup_failed": "Session Setup Failed",
     "contact_support": "If this problem persists, please contact support.",
     "dashboard_load_failed": "Failed to load dashboard. Please try refreshing the page.",
+    "no_family_account": "We couldn't find your family account. Please sign in with the same email you used to enrol, or contact the studio.",
     "image_too_large": "Image must be 2 MB or smaller.",
     "image_invalid_type": "Please choose a JPEG, PNG, or WebP image.",
     "image_dimensions": "Image dimensions are too large to process.",

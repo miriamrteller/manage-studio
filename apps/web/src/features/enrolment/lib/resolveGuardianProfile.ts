@@ -21,6 +21,14 @@ async function writeMemberBackfillAudit(tenant: Tenant, accountMemberId: string)
   }
 }
 
+/** The login has no family account yet (nothing links it to a family). Not a failure of the app. */
+export class NoFamilyAccountError extends Error {
+  constructor(message = 'No family account linked to this login.') {
+    super(message);
+    this.name = 'NoFamilyAccountError';
+  }
+}
+
 export const GUARDIAN_MEMBER_ROLES = ['account_holder', 'member'] as const;
 
 export type ResolveGuardianProfileInput = {
@@ -71,7 +79,7 @@ async function fetchParentAccountId(userProfileId: string): Promise<string> {
   const rows = data ?? [];
   const accountIds = [...new Set(rows.map((row) => row.account_id))];
   if (accountIds.length === 0) {
-    throw new Error('No family account linked to this login.');
+    throw new NoFamilyAccountError();
   }
   if (accountIds.length > 1) {
     const primary = rows.find((row) => row.role === 'account_holder');

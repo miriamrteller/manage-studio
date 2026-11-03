@@ -7,6 +7,7 @@ import {
   filterEnrolmentsByStatus,
   getEnrolmentStatusFilterOptions,
 } from '@/features/enrolment/lib/enrolmentFilterOptions';
+import { NoFamilyAccountError } from '@/features/enrolment/lib/resolveGuardianProfile';
 import { useParentPortal, type EngagementWithOffering } from './useParentPortal';
 import { EditChildModal } from './EditChildModal';
 import { AddChildModal } from './AddChildModal';
@@ -128,7 +129,7 @@ export function ParentPortal() {
   if (error) {
     return (
       <div role="alert" className="bg-red-50 border border-red-200 rounded p-4 text-red-700">
-        {t('errors.dashboard_load_failed')}
+        {error instanceof NoFamilyAccountError ? t('errors.no_family_account') : t('errors.dashboard_load_failed')}
       </div>
     );
   }
