@@ -138,6 +138,11 @@ export function LegalPackPanel({ tenantId, mode, detailsHref, offerUploads }: Le
       ) : (
         mode === 'acknowledge' && (
           <div className="space-y-3">
+            {profile.insurance_status === 'none' && (
+              <p className="text-sm text-amber-800" role="note">
+                {t('legal.pack.no_insurance_reminder')}
+              </p>
+            )}
             {missing.length > 0 && (
               <div className="text-sm" role="status">
                 <p className="font-medium text-amber-800">

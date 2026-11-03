@@ -79,6 +79,7 @@ Israeli law applies. If these terms and the law differ, the law that protects th
 ---
 
 ### Awaiting lawyer review (see [AWAITING-LAWYER-REVIEW](AWAITING-LAWYER-REVIEW.md))
+- [[LAWYER: confirm]] "We don't have insurance": the terms then say "The studio does not currently hold insurance covering participants. We recommend personal accident insurance." and the health declaration's Declaration adds "I know that the studio does not currently hold insurance covering participants, and that personal accident insurance is recommended." (part of what the signer signs; no separate step).
 - [[LAWYER: confirm]] A studio that is not yet a registered business is identified as "<studio>, run by <full name>" with the person's Israeli ID number (ת.ז.), or, for someone without one, a passport number and the issuing country. This number appears in the published document. Confirm the wording, that publishing an ID number is required or justified here, and the foreign-resident (passport) case.
 
 ### Sources relied on

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { LegalLinksSettingsForm } from './LegalLinksSettingsForm';
+import { NoInsuranceFormUpdate } from '@/components/legal/NoInsuranceFormUpdate';
 import { LegalPackPanel } from '@/components/legal/LegalPackPanel';
 import { LawyerDocumentsList } from '@/components/legal/LawyerDocumentsList';
 import { supabase } from '@/lib/supabase';
@@ -227,6 +228,12 @@ export function LegalSettingsForm() {
             {t('legal.settings.invalid_israeli_id')}
           </p>
         )}
+        {f.key === 'insurance_status' && value === 'none' && (
+          // Informational only: "no insurance" never blocks Confirm or Publish.
+          <p role="note" className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+            {t('legal.settings.no_insurance_notice')}
+          </p>
+        )}
         {fromStudio && <p className="text-xs text-muted-foreground">{t('legal.settings.filled_from_studio')}</p>}
         {f.hint && <p className="text-xs text-muted-foreground">{f.hint[lang]}</p>}
         {f.example && !value && (
@@ -347,6 +354,7 @@ export function LegalSettingsForm() {
         <LawyerDocumentsList legal={legal} />
       </section>
 
+      <NoInsuranceFormUpdate />
       <LegalPackPanel tenantId={legal.tenantId} mode="acknowledge" detailsHref="#legal-details" />
 
       <hr className="border-gray-200" />

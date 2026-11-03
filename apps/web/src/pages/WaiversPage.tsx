@@ -9,6 +9,7 @@ import { TenantDB } from '@/lib/db';
 import type { ConsentTemplate } from '@shared/schemas';
 import type { WaiverEvidenceFilters } from '@/features/waivers/service';
 import { SignedDetailsDialog } from '@/features/waivers/components/SignedDetailsDialog';
+import { NoInsuranceFormUpdate } from '@/components/legal/NoInsuranceFormUpdate';
 
 /** Compute SHA-256 hex of a string in the browser. */
 async function sha256Hex(text: string): Promise<string> {
@@ -417,6 +418,8 @@ export default function WaiversPage() {
 
       {/* V1 architectural limit note */}
       <p className="text-xs text-muted-foreground italic">{t('pages.waivers.v1_limit_note')}</p>
+
+      <NoInsuranceFormUpdate />
 
       {showForm && <DraftForm onCreated={() => setShowForm(false)} />}
 

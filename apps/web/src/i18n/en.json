@@ -2988,7 +2988,8 @@
       "details_missing_link": "Fill in the missing details",
       "details_missing_later": "You can fill them in under Settings → Legal once you're in your studio.",
       "checkbox_drafts": "I understand that these documents are drafts: {{list}}. My studio will use them until I upload lawyer-reviewed versions.",
-      "checkbox_all_reviewed": "All my documents are lawyer-reviewed versions, and I confirm they can be published."
+      "checkbox_all_reviewed": "All my documents are lawyer-reviewed versions, and I confirm they can be published.",
+      "no_insurance_reminder": "Reminder: your studio has no insurance yet. Your terms and health declaration tell parents so. You can add your insurance in Settings → Legal any time."
     },
     "docs": {
       "platform_terms": "Terms of Service",
@@ -3080,7 +3081,8 @@
       "filled_for_you_one": "Details we filled in for you (1)",
       "filled_for_you_other": "Details we filled in for you ({{count}})",
       "filled_for_you_hint": "Taken from your studio's setup, or a sensible default. Open to check or change them.",
-      "invalid_israeli_id": "This isn't a valid Israeli ID number. Check the 9 digits."
+      "invalid_israeli_id": "This isn't a valid Israeli ID number. Check the 9 digits.",
+      "no_insurance_notice": "Most studios working with children need liability and personal-accident insurance. Check with an insurance agent. Until you have it, your terms and health declaration will tell parents the studio isn't insured."
     },
     "privacy_notice": "We use your details only to handle your request and enrolment.",
     "accept_terms_prefix": "I have read and accept the",
@@ -3211,6 +3213,22 @@
       "error_not_pdf": "Please choose a PDF file.",
       "error_too_large": "The file is too large (up to 10 MB).",
       "upload_now": "Already have lawyer-reviewed documents? Upload them now"
+    },
+    "no_insurance_send_reminder": {
+      "text": "Reminder: your studio has no insurance recorded. Parents will see this in the form. Consider getting liability and personal-accident insurance.",
+      "dismiss": "Dismiss"
+    },
+    "no_insurance_form_update": {
+      "intro_one": "Your health declaration was made before you recorded that the studio has no insurance, so it doesn't tell parents yet.",
+      "intro_other": "Your {{count}} health declarations were made before you recorded that the studio has no insurance, so they don't tell parents yet.",
+      "action_one": "Add the insurance note to my health declaration",
+      "action_other": "Add the insurance note to my health declarations",
+      "confirm_title": "Add the insurance note?",
+      "confirm_body": "This makes a new version of the form with one more line: the studio has no insurance covering participants, and personal accident insurance is recommended. The new version is used from now on, and parents who already signed will need to sign it again. You can do this now or later.",
+      "confirm": "Add it and use the new version",
+      "later": "Not now",
+      "failed": "The form could not be updated. Please try again.",
+      "done": "Done. The new version with the insurance note is in use; parents will sign it next time."
     }
   },
   "payment_choice": {

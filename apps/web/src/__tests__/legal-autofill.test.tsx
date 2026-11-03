@@ -219,7 +219,7 @@ describe('Settings → Legal', () => {
     wrap(<LegalSettingsForm />);
     expect(await screen.findByLabelText(/Business address/)).toBeVisible();
     expect(screen.getByLabelText(/Business phone/)).toBeVisible();
-    expect(screen.getByLabelText(/Insurance/)).toBeVisible();
+    expect(screen.getByLabelText(/Insurance \(insurer and policy type\)/)).toBeVisible();
     const summary = await screen.findByText(/Details we filled in for you \(\d+\)/);
     const details = summary.closest('details')!;
     expect(details).not.toHaveAttribute('open');

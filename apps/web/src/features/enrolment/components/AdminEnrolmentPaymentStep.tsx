@@ -12,6 +12,7 @@ import {
 import { computeClassTotal } from '../lib/computeClassTotal';
 import { formatOfferingPrice } from '@/lib/formatOfferingPrice';
 import type { Offering, Tenant } from '@shared/schemas';
+import { NoInsuranceSendReminder } from '@/components/legal/NoInsuranceSendReminder';
 import { monthlyHintKey } from '../lib/monthlyHint';
 
 export type AdminPaymentChoice = 'pay_now' | 'send_link' | 'offline';
@@ -217,6 +218,7 @@ export function AdminEnrolmentPaymentStep({
             <p className="font-semibold">{t('pages.admin_enrol.send_link_title')}</p>
             <p className="text-sm text-gray-500">{t('pages.admin_enrol.send_link_desc')}</p>
           </div>
+          <NoInsuranceSendReminder />
           <label className="block text-sm font-medium" htmlFor={emailInputId}>
             {t('pages.admin_enrol.recipient_email')}
           </label>
