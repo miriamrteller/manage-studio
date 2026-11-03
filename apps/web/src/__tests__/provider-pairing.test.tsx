@@ -99,14 +99,13 @@ describe('Settings → How customers pay', () => {
   });
 
   it('a studio paying at the studio with no documents can move online', async () => {
-    Object.assign(tenantState, { payment_provider: 'offline', invoicing_provider: 'none' });
+    Object.assign(tenantState, { payment_provider: 'offline', invoicing_provider: 'none', profile: { paymentFlow: 'project' } });
     wrap(<OfflinePaymentsSettingsForm />);
     expect(screen.queryByText('settings.offline_payments.switch_contact_support')).toBeNull();
     expect(screen.getByText('payment_choice.disclaimer')).toBeTruthy();
-    // Switching needs the "monthly fees?" answer first.
+    // No "monthly fees?" question: switching is not held up by one.
     fireEvent.click(screen.getByRole('radio', { name: 'studio_setup.payment_grow' }));
-    expect(screen.getByRole('button', { name: 'common.save' })).toBeDisabled();
-    fireEvent.click(screen.getByRole('radio', { name: 'payment_choice.monthly_no' }));
+    expect(screen.getByRole('button', { name: 'common.save' })).toBeEnabled();
     fireEvent.click(screen.getByRole('button', { name: 'payment_choice.different_provider' }));
     fireEvent.click(screen.getByRole('radio', { name: 'studio_setup.payment_invoice4u' }));
     expect(screen.getByText('payment_choice.no_monthly_warning')).toBeTruthy();

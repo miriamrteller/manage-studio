@@ -122,10 +122,17 @@ describe('provider options', () => {
     expect(migration).toMatch(/accent_color SET DEFAULT '#21D1C2'/);
   });
 
-  it('the wizard defaults to Grow with Grow documents (nothing needs connecting to finish)', () => {
+  it('the wizard defaults to "pay me directly" with no documents (nothing needs connecting to finish)', () => {
     const request = toSetupRequest({ ...INITIAL_FORM, name: 'X', subdomain: 'x', ownerEmail: 'a@b.co' });
-    expect(request).toMatchObject({ paymentProvider: 'grow', invoicingProvider: 'grow', languageDefault: 'en', currency: 'ILS' });
+    expect(request).toMatchObject({ paymentProvider: 'offline', invoicingProvider: 'none', languageDefault: 'en', currency: 'ILS' });
     expect(ProvisionStudioSchema.safeParse(request).success).toBe(true);
+  });
+
+  it('the optional business address and phone are sent only when filled in', () => {
+    const base = { ...INITIAL_FORM, name: 'X', subdomain: 'x', ownerEmail: 'a@b.co' };
+    expect(toSetupRequest(base).contact).toEqual({});
+    expect(toSetupRequest({ ...base, businessAddress: ' 12 Herzl St, Haifa ', businessPhone: '' }).contact).toEqual({ address: '12 Herzl St, Haifa' });
+    expect(toSetupRequest({ ...base, businessAddress: 'A', businessPhone: '04-1234567' }).contact).toEqual({ address: 'A', phone: '04-1234567' });
   });
 });
 

@@ -111,13 +111,17 @@ describe('rules', () => {
 });
 
 describe('Settings → How customers pay', () => {
-  it('a Grow studio with no payment yet may still change provider', async () => {
-    Object.assign(tenantState, { payment_provider: 'grow', invoicing_provider: 'none', vertical: 'photographer' });
+  it('a Grow studio with no payment yet may still change provider (no "monthly fees?" question)', async () => {
+    Object.assign(tenantState, {
+      payment_provider: 'grow', invoicing_provider: 'none', vertical: 'photographer',
+      profile: { paymentFlow: 'project' },
+    });
     paymentsCount.value = 0;
     wrap(<OfflinePaymentsSettingsForm />);
     // Locked until we know there is no payment, then the choice opens.
-    expect(await screen.findByRole('radio', { name: 'payment_choice.monthly_no' })).toBeChecked();
-    expect(screen.getByRole('radio', { name: 'studio_setup.payment_grow' })).toBeChecked();
+    expect(await screen.findByRole('radio', { name: 'studio_setup.payment_grow' })).toBeChecked();
+    expect(screen.queryByRole('radio', { name: 'payment_choice.monthly_no' })).toBeNull();
+    expect(screen.queryByRole('radio', { name: 'payment_choice.monthly_yes' })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'payment_choice.different_provider' }));
     fireEvent.click(screen.getByRole('radio', { name: 'studio_setup.payment_ypay' }));
     fireEvent.click(screen.getByRole('button', { name: 'common.save' }));

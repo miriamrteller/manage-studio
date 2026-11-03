@@ -78,6 +78,18 @@ function serviceDeps(service: ServiceClient): ProvisionStudioDeps {
       const { error } = await service.rpc("assign_studio_owner", { p_tenant_id: tenantId, p_user_id: userId });
       if (error) throw new Error(error.message);
     },
+    async applyContact(tenantId, contact) {
+      const { data, error: readError } = await service.from("tenants").select("legal_profile").eq("id", tenantId).maybeSingle();
+      if (readError) throw new Error(readError.message);
+      const current = (data?.legal_profile as Record<string, unknown> | null) ?? {};
+      const next = {
+        ...current,
+        ...(contact.address ? { address: contact.address } : {}),
+        ...(contact.phone ? { phone: contact.phone } : {}),
+      };
+      const { error } = await service.from("tenants").update({ legal_profile: next }).eq("id", tenantId);
+      if (error) throw new Error(error.message);
+    },
     async applyProfile(tenantId, profile) {
       const { error } = await service
         .from("tenants")
@@ -167,6 +179,18 @@ function selfServeDeps(service: ServiceClient, req: Request): SelfServeDeps {
       });
       if (error) throw new Error(error.message);
       return data as string;
+    },
+    async applyContact(tenantId, contact) {
+      const { data, error: readError } = await service.from("tenants").select("legal_profile").eq("id", tenantId).maybeSingle();
+      if (readError) throw new Error(readError.message);
+      const current = (data?.legal_profile as Record<string, unknown> | null) ?? {};
+      const next = {
+        ...current,
+        ...(contact.address ? { address: contact.address } : {}),
+        ...(contact.phone ? { phone: contact.phone } : {}),
+      };
+      const { error } = await service.from("tenants").update({ legal_profile: next }).eq("id", tenantId);
+      if (error) throw new Error(error.message);
     },
     async applyProfile(tenantId, profile) {
       const { error } = await service

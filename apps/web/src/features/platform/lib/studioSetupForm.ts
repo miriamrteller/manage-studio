@@ -21,17 +21,20 @@ export interface StudioSetupForm {
   teachesClasses: boolean;
   familyAccounts: boolean;
   clientBooking: boolean;
+  /** Business address and phone (both optional); stored in the studio's legal profile. */
+  businessAddress: string;
+  businessPhone: string;
   /**
-   * Answer to "Will you charge monthly fees?" (null = not answered). Pre-filled from the studio
-   * type; decides which payment providers are offered. Not sent: it only guides the choice.
+   * Whether the studio charges monthly fees. Not asked: derived from the payment flow (monthly or
+   * both = yes). Decides which payment providers are offered. Not sent: it only guides the choice.
    */
-  monthlyFees: boolean | null;
+  monthlyFees: boolean;
 }
 
 /**
- * Defaults: English, OpalSwift colours, online card payment through Grow with Grow's tax
- * documents. Nothing needs to be connected to finish setup: keys are entered later in Settings,
- * and the studio can change its payment provider until its first payment.
+ * Defaults: English, OpalSwift colours, "pay me directly" with no tax documents. Nothing needs to
+ * be connected to finish setup: Grow (or another service) is connected later in Settings, and the
+ * studio can change its payment provider until its first payment.
  */
 export const INITIAL_FORM: StudioSetupForm = {
   name: '',
@@ -39,8 +42,10 @@ export const INITIAL_FORM: StudioSetupForm = {
   languageDefault: 'en',
   country: 'IL',
   vertical: 'generic',
-  paymentProvider: 'grow',
-  invoicingProvider: 'grow',
+  // Pay me directly (cash, bank transfer, Bit) with no tax documents until the owner connects
+  // a service in Settings. Nothing needs to be connected to finish setup.
+  paymentProvider: 'offline',
+  invoicingProvider: 'none',
   primaryColor: OPALSWIFT_BRAND.primary,
   accentColor: OPALSWIFT_BRAND.accent,
   ownerEmail: '',
@@ -48,7 +53,9 @@ export const INITIAL_FORM: StudioSetupForm = {
   teachesClasses: false,
   familyAccounts: false,
   clientBooking: false,
-  monthlyFees: null,
+  businessAddress: '',
+  businessPhone: '',
+  monthlyFees: true,
 };
 
 /**
@@ -98,6 +105,10 @@ export function toSetupRequest(form: StudioSetupForm) {
     invoicingProvider: form.invoicingProvider,
     primaryColor: form.primaryColor,
     accentColor: form.accentColor,
+    contact: {
+      ...(form.businessAddress.trim() ? { address: form.businessAddress.trim() } : {}),
+      ...(form.businessPhone.trim() ? { phone: form.businessPhone.trim() } : {}),
+    },
     profile: {
       paymentFlow: form.paymentFlow,
       teachesClasses: form.teachesClasses,

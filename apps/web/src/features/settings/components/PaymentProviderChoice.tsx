@@ -33,32 +33,33 @@ export function providerForMonthlyAnswer(
 interface PaymentProviderChoiceProps {
   /** Keeps ids unique when the choice appears twice on a page. */
   idPrefix: string;
-  monthlyFees: boolean | null;
-  onMonthlyFeesChange: (monthlyFees: boolean) => void;
+  /** Whether the studio charges monthly fees. Not asked: derived from the payment flow. */
+  monthlyFees: boolean;
   provider: ChoosablePaymentProvider;
   onProviderChange: (provider: ChoosablePaymentProvider) => void;
 }
 
 /**
- * "Will you charge monthly fees?" then how customers pay (owner decision, payments follow-up 4),
- * used by the setup wizard and by Settings while the studio may still choose:
- *  - Yes: Grow, or "Not a registered business yet: pay at the studio".
- *  - No: the same, plus "Different provider?" revealing YPay and Invoice4U, with a warning that
- *    they cannot charge monthly fees.
- * Unanswered: Grow and pay at the studio are shown; the caller requires an answer before moving
- * on or switching. Grow is pre-selected by the caller. The disclaimer says when changing stops
- * being free.
+ * How customers pay (owner decisions), used by the setup wizard and by Settings while the studio
+ * may still choose:
+ *  - "Pay me directly (cash, bank transfer, Bit)" comes first and is the default, for every
+ *    business, registered or not. Nothing has to be connected.
+ *  - Grow is shown as "connect later": choosing it only records the choice; the keys are entered
+ *    in Settings when the studio is ready.
+ *  - Studios that do not charge monthly fees also get "Different provider?" revealing YPay and
+ *    Invoice4U, with a warning that they cannot charge monthly fees.
+ * Whether the studio charges monthly fees is not asked here: it follows the payment flow. The
+ * disclaimer says when changing stops being free.
  */
 export function PaymentProviderChoice({
   idPrefix,
   monthlyFees,
-  onMonthlyFeesChange,
   provider,
   onProviderChange,
 }: PaymentProviderChoiceProps) {
   const { t } = useTranslation();
   const [showOthers, setShowOthers] = useState(isOtherPaymentProvider(provider));
-  const othersVisible = monthlyFees === false && (showOthers || isOtherPaymentProvider(provider));
+  const othersVisible = !monthlyFees && (showOthers || isOtherPaymentProvider(provider));
 
   const radio = (slug: ChoosablePaymentProvider) => (
     <label key={slug} className={CHOICE_ROW}>
@@ -75,64 +76,38 @@ export function PaymentProviderChoice({
   );
 
   return (
-    <div className="space-y-6">
-      <fieldset>
-        <legend className={CHOICE_LEGEND}>{t('payment_choice.monthly_question')}</legend>
-        <div className={CHOICE_GROUP}>
-          {([true, false] as const).map((answer) => (
-            <label key={String(answer)} className={CHOICE_ROW}>
-              <input
-                type="radio"
-                className={CHOICE_RADIO}
-                name={`${idPrefix}-monthly`}
-                value={answer ? 'yes' : 'no'}
-                checked={monthlyFees === answer}
-                onChange={() => {
-                  onMonthlyFeesChange(answer);
-                  const next = providerForMonthlyAnswer(answer, provider);
-                  if (next !== provider) onProviderChange(next);
-                }}
-              />
-              <span>{t(answer ? 'payment_choice.monthly_yes' : 'payment_choice.monthly_no')}</span>
-            </label>
-          ))}
-        </div>
-        {monthlyFees === null && <p className={CHOICE_NOTE}>{t('payment_choice.monthly_answer_first')}</p>}
-      </fieldset>
-
-      <fieldset>
-        <legend className={CHOICE_LEGEND}>{t('studio_setup.payment_question')}</legend>
-        <div className={CHOICE_GROUP}>
-          {radio('grow')}
-          {monthlyFees === false && !othersVisible && (
-            <div className="px-3 py-2">
-              <button
-                type="button"
-                className="ms-8 text-sm font-medium text-primary underline underline-offset-2"
-                onClick={() => setShowOthers(true)}
-              >
-                {t('payment_choice.different_provider')}
-              </button>
-            </div>
-          )}
-          {othersVisible && (
-            <div id={`${idPrefix}-other-providers`} className="py-1">
-              <div className={CHOICE_NESTED}>{OTHER_PAYMENT_PROVIDERS.map((slug) => radio(slug))}</div>
-            </div>
-          )}
-          {radio('offline')}
-        </div>
-        {monthlyFees === false && isOtherPaymentProvider(provider) && (
-          <p className={CHOICE_NOTE} role="note">
-            {t('payment_choice.no_monthly_warning', {
-              provider: t(`settings.offline_payments.providers.${provider}`),
-            })}
-          </p>
+    <fieldset>
+      <legend className={CHOICE_LEGEND}>{t('studio_setup.payment_question')}</legend>
+      <div className={CHOICE_GROUP}>
+        {radio('offline')}
+        {radio('grow')}
+        {!monthlyFees && !othersVisible && (
+          <div className="px-3 py-2">
+            <button
+              type="button"
+              className="ms-8 text-sm font-medium text-primary underline underline-offset-2"
+              onClick={() => setShowOthers(true)}
+            >
+              {t('payment_choice.different_provider')}
+            </button>
+          </div>
         )}
+        {othersVisible && (
+          <div id={`${idPrefix}-other-providers`} className="py-1">
+            <div className={CHOICE_NESTED}>{OTHER_PAYMENT_PROVIDERS.map((slug) => radio(slug))}</div>
+          </div>
+        )}
+      </div>
+      {!monthlyFees && isOtherPaymentProvider(provider) && (
         <p className={CHOICE_NOTE} role="note">
-          {t('payment_choice.disclaimer')}
+          {t('payment_choice.no_monthly_warning', {
+            provider: t(`settings.offline_payments.providers.${provider}`),
+          })}
         </p>
-      </fieldset>
-    </div>
+      )}
+      <p className={CHOICE_NOTE} role="note">
+        {t('payment_choice.disclaimer')}
+      </p>
+    </fieldset>
   );
 }
