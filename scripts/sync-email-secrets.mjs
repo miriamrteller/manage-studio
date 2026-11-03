@@ -41,8 +41,9 @@ const required = [
   'RESEND_API_KEY',
   'EMAIL_TRANSPORT',
   'NOTIFICATION_FROM_EMAIL',
-  'SEND_EMAIL_HOOK_SECRET',
 ];
+// SEND_EMAIL_HOOK_SECRET is NOT pushed from .env: it has a second copy in
+// Auth → Hooks, so only the rotate-secrets workflow sets it (both copies).
 
 const missing = required.filter((k) => !env[k]);
 if (missing.length) {

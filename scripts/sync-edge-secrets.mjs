@@ -19,7 +19,6 @@ const outPath = join(root, 'supabase', '.temp', 'edge-secrets.env');
 /** Must be present in .env */
 const REQUIRED = [
   'APP_URL',
-  'CRON_SECRET',
   // Cloudflare Email Sending (replaced Resend). The sending domain must be
   // onboarded first: npx wrangler email sending enable <domain>
   'CLOUDFLARE_ACCOUNT_ID',
@@ -30,8 +29,14 @@ const REQUIRED = [
   // Required: resolveTenantSender() throws without it rather than guessing.
   'PLATFORM_EMAIL_DOMAIN',
   'NOTIFICATION_FROM_EMAIL',
-  'SEND_EMAIL_HOOK_SECRET',
 ];
+
+/**
+ * Shared secrets: each has a second copy outside Edge secrets, so only the
+ * rotate-secrets workflow sets them (all copies at once). Never pushed from
+ * .env, even if present. docs/deployment/SHARED-SECRETS.md
+ */
+const PIPELINE_ONLY = ['CRON_SECRET', 'SEND_EMAIL_HOOK_SECRET', 'CRM_INGEST_SECRET'];
 
 /** Copied when non-empty in .env */
 const OPTIONAL = [
@@ -135,6 +140,10 @@ for (const key of hmacKeys) {
 }
 if (env.WAIVER_HMAC_CURRENT_VERSION) {
   secrets.WAIVER_HMAC_CURRENT_VERSION = env.WAIVER_HMAC_CURRENT_VERSION;
+}
+
+for (const key of PIPELINE_ONLY) {
+  if (env[key]) console.log(`Skipping ${key}: shared secret, set only by the pipeline (docs/deployment/SHARED-SECRETS.md)`);
 }
 
 const projectUrl = resolveSupabaseUrl(env);

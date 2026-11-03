@@ -96,10 +96,11 @@ promote dev.** Dev carries mock-payment rows, demo tenants and test seeds.
       Supabase denies setting custom GUCs, which is why the fallback table exists):
       ```sql
       INSERT INTO private.platform_config (key, value) VALUES
-        ('supabase_functions_url', 'https://<new-ref>.supabase.co'),
-        ('cron_secret',            '<matches Edge CRON_SECRET>')
+        ('supabase_functions_url', 'https://<new-ref>.supabase.co')
       ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
       ```
+      Then Actions → **rotate-secrets** → `CRON_SECRET` sets the DB row and the
+      Edge secret together ([SHARED-SECRETS.md](SHARED-SECRETS.md)).
 - [ ] Verify `pg_cron` + `pg_net` enabled and `cron.job` lists the scheduled jobs.
 - [ ] **RLS spot-check with real data**: a parent sees only their own family; a
       teacher sees only their own tenant. Worth doing by hand — it is the one
@@ -180,7 +181,7 @@ unverifiable.
 - [ ] `APP_URL=https://creativeballet.opalswift.com` — **not** localhost. Dunning
       links, waiver/pay links and the Google Calendar `redirect_uri` all derive
       from it.
-- [ ] `CRON_SECRET` — same value as the DB GUC above.
+- [ ] `CRON_SECRET` — set by **rotate-secrets** (step above), never by hand.
 - [ ] `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_EMAIL_API_TOKEN`, `NOTIFICATION_FROM_EMAIL`
 - [ ] Provider base URLs pointed at **production**, not sandbox.
 - [ ] **Unset every mock flag**: `GROW_MOCK`, `ICOUNT_MOCK`, `INVOICE4U_MOCK`,

@@ -9,3 +9,7 @@ OpalSwift (manage-studio): React app in `apps/web`, Supabase in `supabase/`, sha
 - **No images of people, anywhere:** icons, illustrations, avatars, demo data, marketing.
 - **Everything legal goes on the lawyer list.** Any change to legal wording (`docs/legal`, templates, consent/waiver text, DPA, privacy, terms) is marked `[[LAWYER: confirm]]` and added to `docs/legal/AWAITING-LAWYER-REVIEW.md`.
 - **Only one current copy of any document.** Generated outputs (e.g. the lawyer pack) replace old versions, and superseded copies are deleted (git keeps history).
+
+## Pipeline rules
+
+- **Never set a shared secret by hand in one place.** A secret with copies in more than one place (Supabase, Cloudflare workers/Pages, GitHub, the DB) changes only through its pipeline rotation, which sets and verifies every copy. List and rotations: `docs/deployment/SHARED-SECRETS.md`.
