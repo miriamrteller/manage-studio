@@ -153,6 +153,28 @@ BEGIN
   RAISE NOTICE 'ok  tenant config (subdomain and host) returns the profile';
 END $$;
 
+-- The columns change only through the setter: a direct UPDATE as a signed-in admin is refused,
+-- other tenant columns still update, and the setter itself still works.
+DO $$
+DECLARE
+  photo UUID := 'a0000000-0000-4000-8000-000000000001';
+  admin UUID := 'b0000000-0000-4000-8000-00000000000e';
+BEGIN
+  PERFORM set_config('request.jwt.claim.sub', admin::text, false);
+  SET LOCAL ROLE authenticated;
+  BEGIN
+    UPDATE tenants SET teaches_classes = true WHERE id = photo;
+    RAISE EXCEPTION 'FAIL a direct update of the profile was accepted';
+  EXCEPTION WHEN insufficient_privilege THEN
+    IF SQLERRM <> 'business_profile_use_setter' THEN RAISE; END IF;
+  END;
+  UPDATE tenants SET name = name WHERE id = photo;   -- other columns unaffected
+  PERFORM set_business_profile(photo, NULL, true, NULL, NULL);
+  IF NOT (SELECT teaches_classes FROM tenants WHERE id = photo) THEN RAISE EXCEPTION 'FAIL setter blocked by the guard'; END IF;
+  RESET ROLE;
+  RAISE NOTICE 'ok  direct profile updates are refused; the setter and other columns still work';
+END $$;
+
 -- Existing-studio data step: re-run it over rows shaped like the untouched backfill and check the result.
 UPDATE tenants SET skin = 'photographer', payment_flow = 'both', teaches_classes = true, family_accounts = true, client_booking = true
  WHERE subdomain = 'photo';
