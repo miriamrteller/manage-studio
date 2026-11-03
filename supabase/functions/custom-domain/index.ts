@@ -6,7 +6,8 @@
  *   request  { hostname }          create the Cloudflare for SaaS hostname, return the DNS records
  *   check                          "Check now": check at once, open a new 24-hour window
  *   remove   { confirmHostname }   the hostname typed again; deletes at Cloudflare, then here
- * Cron (Authorization: Bearer <CRON_SECRET>, fail-closed), body { action: "poll" }:
+ * Cron (x-cron-secret or Bearer <CRON_SECRET>, fail-closed), body { action: "poll" }:
+ *   (pg_cron every 10 minutes: migration 20261103124800_custom_domain_poller.sql)
  *   poll                           check pending domains inside their window, pause expired
  *                                  ones, delete never-activated ones after 30 days
  *
@@ -143,8 +144,10 @@ Deno.serve(withMonitoring("custom-domain", async (req) => {
   const service = createServiceClient();
 
   if (body.action === "poll") {
+    // pg_cron sends x-cron-secret (same as the other jobs); Bearer also accepted.
     const cronSecret = Deno.env.get("CRON_SECRET") ?? "";
-    if (!cronSecret || bearer !== cronSecret) return jsonResponse({ error: "Unauthorized" }, 401);
+    const sent = req.headers.get("x-cron-secret") ?? bearer;
+    if (!cronSecret || sent !== cronSecret) return jsonResponse({ error: "Unauthorized" }, 401);
     const deps = buildDeps(service);
     if (!deps) return jsonResponse({ skipped: "not_configured" });
     return jsonResponse(await pollDomains(deps));
