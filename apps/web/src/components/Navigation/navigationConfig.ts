@@ -93,11 +93,18 @@ export const SETUP_GUIDE_PATH = '/admin/setup?guide=open';
 /** Authenticated navigation items (flattened; grouped in the drawer) */
 export const navigationConfig: NavItem[] = [
   {
+    // The studio's public homepage. Not shown in the studio admin's own menu (see buildNavSections).
+    path: '/',
+    labelKey: 'nav.home',
+    requiredRoles: [],
+    sectionKey: 'browse',
+  },
+  {
     path: '/classes',
     labelKey: 'nav.classes',
     requiredRoles: [],
     sectionKey: 'browse',
-    hideForVerticals: ['photographer'],
+    hideForVerticals: ['photographer', 'beautician'],
   },
   {
     path: '/book',
@@ -326,11 +333,18 @@ export const navigationConfig: NavItem[] = [
 /** Unauthenticated navigation items */
 export const publicNavigationConfig: NavItem[] = [
   {
+    // The studio's public homepage. Not shown in the studio admin's own menu (see buildNavSections).
+    path: '/',
+    labelKey: 'nav.home',
+    requiredRoles: [],
+    sectionKey: 'browse',
+  },
+  {
     path: '/classes',
     labelKey: 'nav.classes',
     requiredRoles: [],
     sectionKey: 'browse',
-    hideForVerticals: ['photographer'],
+    hideForVerticals: ['photographer', 'beautician'],
   },
   {
     path: '/book',
@@ -407,7 +421,11 @@ export function resolveActiveNavPath(pathname: string, items: NavItem[]): string
   if (pathname === '/' && items.some((item) => item.path === '/')) {
     return '/';
   }
-  if (pathname === '/' || pathname === '/classes') {
+  if (pathname === '/') {
+    // The studio homepage is its own menu item (Home).
+    return items.some((item) => item.path === '/') ? '/' : null;
+  }
+  if (pathname === '/classes') {
     return '/classes';
   }
 

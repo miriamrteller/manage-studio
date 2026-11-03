@@ -320,6 +320,22 @@
     }
   },
   "pages": {
+    "home": {
+      "fallback_name": "our studio",
+      "your_area": "Your account",
+      "open_dashboard": "Open your dashboard",
+      "intro_dance": "Welcome to {{name}}. See what is on, or send us a question.",
+      "intro_generic": "Welcome to {{name}}. See what we offer, or get in touch.",
+      "intro_photographer": "Photography by {{name}}. Tell us about your shoot and we will get back to you.",
+      "intro_beautician": "Welcome to {{name}}. Book your next appointment online, or get in touch.",
+      "cta_classes": "See {{items}}",
+      "cta_book": "Book",
+      "cta_enquiry": "Send an enquiry",
+      "all_classes": "All {{items}}",
+      "book_title": "Book online",
+      "minutes": "{{count}} min",
+      "contact_title": "Get in touch"
+    },
     "booking_flow": {
       "after_sign": {
         "pay_heading": "Next: pay the deposit",
@@ -1773,6 +1789,7 @@
     }
   },
   "nav": {
+    "home": "Home",
     "classes": "Classes",
     "login": "Login",
     "logout": "Logout",

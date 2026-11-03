@@ -320,6 +320,22 @@
     }
   },
   "pages": {
+    "home": {
+      "fallback_name": "הסטודיו שלנו",
+      "your_area": "החשבון שלך",
+      "open_dashboard": "פתיחת לוח הבקרה",
+      "intro_dance": "ברוכים הבאים אל {{name}}. אפשר לראות מה מתקיים אצלנו, או לשלוח לנו שאלה.",
+      "intro_generic": "ברוכים הבאים אל {{name}}. אפשר לראות מה אנחנו מציעים, או ליצור קשר.",
+      "intro_photographer": "צילום של {{name}}. ספרו לנו על הצילום שלכם ונחזור אליכם.",
+      "intro_beautician": "ברוכים הבאים אל {{name}}. אפשר לקבוע את התור הבא אונליין, או ליצור קשר.",
+      "cta_classes": "לצפייה ב{{items}}",
+      "cta_book": "קביעת תור",
+      "cta_enquiry": "שליחת פנייה",
+      "all_classes": "כל ה{{items}}",
+      "book_title": "קביעת תור אונליין",
+      "minutes": "{{count}} דק׳",
+      "contact_title": "יצירת קשר"
+    },
     "booking_flow": {
       "after_sign": {
         "pay_heading": "הצעד הבא: תשלום המקדמה",
@@ -1773,6 +1789,7 @@
     }
   },
   "nav": {
+    "home": "בית",
     "classes": "שיעורים",
     "login": "התחברות",
     "logout": "התנתקות",

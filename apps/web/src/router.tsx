@@ -3,7 +3,8 @@ import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
 import { AppLayout } from "./layouts/AppLayout";
 import { AdminRoute, ParentRoute, StudentRoute, SuperAdminRoute } from "./layouts/RouteGuards";
 import { LabelsProvider } from "./contexts/LabelsContext";
-import { ClassesPage } from "./pages/ClassesPage";
+import ClassesRoute from "./pages/ClassesRoute";
+import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import AuthCallbackPage from "./pages/AuthCallbackPage";
@@ -140,8 +141,8 @@ const router = createBrowserRouter([
         // fallback inside RootLayout's outlet, so the header and nav keep working.
         errorElement: <RouteErrorFallback />,
         children: [
-          { index: true, element: <ClassesPage /> },
-          { path: 'classes', element: <ClassesPage /> },
+          { index: true, element: <HomePage /> },
+          { path: 'classes', element: <ClassesRoute /> },
           { path: 'login', element: <LoginPage /> },
           { path: 'signup', element: <SignupPage /> },
           { path: 'enrol', element: <EnrolEntryRoute /> },
