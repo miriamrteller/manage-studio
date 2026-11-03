@@ -156,3 +156,27 @@ describe('backstop: monthly classes need Grow', () => {
     expect(screen.queryByText('payment_choice.monthly_needs_grow')).toBeNull();
   });
 });
+
+describe('"Needs a signed form" on a class', () => {
+  it('new classes need a form; an admin can choose No, and the choice is saved', async () => {
+    Object.assign(tenantState, { payment_provider: 'offline', currency: 'ILS' });
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    const term = { id: '11111111-1111-4111-8111-111111111111', name: 'Ongoing', status: 'active', start_date: '2026-01-01' };
+    wrap(<ClassForm terms={[term] as never} levels={[]} teachers={[]} onSubmit={onSubmit} />);
+    const select = screen.getByLabelText('form.class.waiver_required') as HTMLSelectElement;
+    expect(select.value).toBe('true');
+    expect(screen.getByText('form.class.waiver_required_help')).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText(/form.class.name/), { target: { value: 'Studio plan' } });
+    fireEvent.change(select, { target: { value: 'false' } });
+    fireEvent.click(screen.getByRole('button', { name: 'common.create' }));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalled());
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({ waiver_required: false, name: 'Studio plan' });
+  });
+
+  it('an existing class keeps its own setting', () => {
+    Object.assign(tenantState, { payment_provider: 'offline', currency: 'ILS' });
+    wrap(<ClassForm classItem={{ id: 'c1', name: 'Plan', waiver_required: false }} terms={[]} levels={[]} teachers={[]} onSubmit={vi.fn()} />);
+    expect((screen.getByLabelText('form.class.waiver_required') as HTMLSelectElement).value).toBe('false');
+  });
+});
