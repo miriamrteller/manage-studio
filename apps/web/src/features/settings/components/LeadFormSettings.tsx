@@ -5,7 +5,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import {
   CUSTOM_TYPES,
   MAX_CUSTOM_QUESTIONS,
-  PRESETS_BY_KIND,
+  presetKeysFor,
   PRESET_QUESTIONS,
   leadFormConfigErrors,
   leadFormKindFor,
@@ -143,7 +143,8 @@ export function LeadFormSettings() {
     save.mutate(next);
   };
 
-  const presetKeys = PRESETS_BY_KIND[kind];
+  // The kind's set plus any extra ready-made questions the studio's skin gave it.
+  const presetKeys = presetKeysFor(config, kind);
   const extraCount = presetKeys.filter((k) => config.presets[k]?.enabled).length + config.custom.length;
 
   return (

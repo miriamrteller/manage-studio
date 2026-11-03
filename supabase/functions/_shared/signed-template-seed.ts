@@ -8,6 +8,11 @@ export interface SeedTenant {
   language_default: string | null;
   contact_email: string | null;
   legal_profile?: Record<string, unknown> | null;
+  /**
+   * The skin row (embedded `verticals(legal_addon)`): a data skin's legal add-on.
+   * PostgREST returns one object for this link; an untyped client types it as a list.
+   */
+  verticals?: { legal_addon: string | null } | Array<{ legal_addon: string | null }> | null;
 }
 
 export interface SeedDeps {
@@ -40,6 +45,11 @@ function stringProfile(value: unknown): Record<string, string> {
     if (typeof v === "string") out[k] = v;
   }
   return out;
+}
+
+function skinLegalAddon(tenant: SeedTenant): string | null {
+  const row = Array.isArray(tenant.verticals) ? tenant.verticals[0] : tenant.verticals;
+  return row?.legal_addon ?? null;
 }
 
 /**
@@ -75,7 +85,7 @@ export async function seedSignedTemplate(
       tenantName: tenant.name,
       contactEmail: tenant.contact_email ?? "",
       profile: stringProfile(tenant.legal_profile),
-    });
+    }, skinLegalAddon(tenant));
     for (const form of forms) {
       if (have?.has(`${form.audience ?? ""}|${lang}`)) continue;
       await deps.insertTemplate({
