@@ -155,11 +155,13 @@
       "get_app_encryption_key",
       "get_cron_secret",
       "get_supabase_functions_url",
+      "is_platform_owner_email",
       "legal_pack_document_back_to_draft",
       "platform_access_should_log",
       "quote_assert_tenant_admin",
       "quote_job_offering_id",
-      "quote_lines_json"
+      "quote_lines_json",
+      "sync_profile_email_from_auth"
     ]
   }
 }

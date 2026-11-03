@@ -143,7 +143,7 @@ export function useLogin(
         setCodeStep('verify');
         return;
       }
-      const otpOptions = loginOtpOptions(parsed.email, i18n.language ?? 'en');
+      const otpOptions = loginOtpOptions(i18n.language ?? 'en');
 
       if (!otpOptions) {
         setMessage({
@@ -261,7 +261,7 @@ export function useLogin(
         if (emailCooldownRemaining(magicLinkData.email).seconds > 0) {
           return;
         }
-        const otpOptions = loginOtpOptions(magicLinkData.email, i18n.language ?? 'en');
+        const otpOptions = loginOtpOptions(i18n.language ?? 'en');
 
         if (!otpOptions) {
           setMessage({

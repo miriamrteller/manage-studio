@@ -10,7 +10,7 @@ import type { UserProfile } from '@/types/auth';
  * The ONE exception is `super_admin`, the platform-owner role: it works on
  * every subdomain (matching the `is_super_admin()` bypass policies in RLS).
  * That role must belong to exactly one deliberate platform account
- * (miriamrteller in dev) and must NEVER be granted to per-tenant admins or
+ * (the platform owner) and must NEVER be granted to per-tenant admins or
  * demo accounts — any account that holds it is an all-tenants key.
  */
 export function isMemberOfTenant(

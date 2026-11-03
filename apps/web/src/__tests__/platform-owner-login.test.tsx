@@ -44,15 +44,15 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllEnvs());
 
 describe('who may sign in from which host', () => {
-  it('platform host: the owner may get an account; anyone else may not', () => {
+  it('platform host: no account is created from the sign-in page (the owner already has one; the app does not know who the owner is)', () => {
     setHostname('app.opalswift.com');
-    expect(loginOtpOptions('MiriamRTeller@gmail.com', 'he')).toEqual({ shouldCreateUser: true, data: { language: 'he' } });
-    expect(loginOtpOptions('someone@example.com', 'en')).toEqual({ shouldCreateUser: false, data: { language: 'en' } });
+    expect(loginOtpOptions('he')).toEqual({ shouldCreateUser: false, data: { language: 'he' } });
+    expect(loginOtpOptions('en')).toEqual({ shouldCreateUser: false, data: { language: 'en' } });
   });
 
   it('studio host: unchanged (its subdomain, never creates an account)', () => {
     setHostname('creativeballet.opalswift.com');
-    expect(loginOtpOptions('miriamrteller@gmail.com', 'en')).toEqual({
+    expect(loginOtpOptions('en')).toEqual({
       shouldCreateUser: false,
       data: { subdomain: 'creativeballet' },
     });
@@ -60,7 +60,7 @@ describe('who may sign in from which host', () => {
 
   it('a host that is neither a studio nor the platform host is refused', () => {
     setHostname('opalswift.com');
-    expect(loginOtpOptions('miriamrteller@gmail.com', 'en')).toBeNull();
+    expect(loginOtpOptions('en')).toBeNull();
   });
 });
 
@@ -69,12 +69,12 @@ describe('useLogin on the platform host', () => {
     setHostname('app.opalswift.com');
     const { result } = renderHook(() => useLogin(), { wrapper: ({ children }) => <MemoryRouter>{children}</MemoryRouter> });
     await act(async () => {
-      await result.current.onSubmit({ email: 'miriamrteller@gmail.com' } as unknown as FormData, 'magic_link');
+      await result.current.onSubmit({ email: 'owner@example.test' } as unknown as FormData, 'magic_link');
     });
     expect(h.signInWithOtp).toHaveBeenCalledWith({
-      email: 'miriamrteller@gmail.com',
+      email: 'owner@example.test',
       options: expect.objectContaining({
-        shouldCreateUser: true,
+        shouldCreateUser: false,
         data: { language: 'he' },
         emailRedirectTo: 'https://app.opalswift.com/auth/callback?login_method=magic_link',
       }),
@@ -126,7 +126,7 @@ describe('auth email for an account with no studio', () => {
 
   it('the owner (profile without a studio) gets OpalSwift branding in her language', async () => {
     const config = await getTenantForAuthUser(fakeSupabase({ tenant_id: null, language: 'he' }), {
-      email: 'miriamrteller@gmail.com',
+      email: 'owner@example.test',
       user_metadata: {},
     });
     expect(config).toMatchObject({ id: '', name: 'OpalSwift', language: 'he', primary_color: '#4A58E8' });
@@ -134,7 +134,7 @@ describe('auth email for an account with no studio', () => {
 
   it('no profile yet (first sign-in) and no studio: OpalSwift, language from the sign-in page', async () => {
     const config = await getTenantForAuthUser(fakeSupabase(null), {
-      email: 'miriamrteller@gmail.com',
+      email: 'owner@example.test',
       user_metadata: { language: 'he' },
     });
     expect(config).toMatchObject({ name: 'OpalSwift', language: 'he' });
