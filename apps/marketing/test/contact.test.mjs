@@ -154,3 +154,82 @@ test("Resend unreachable → 502", async () => {
   const res = await call(post(form(good)));
   assert.equal(res.status, 502);
 });
+
+// ---- Filing the enquiry in HQ's Leads (crm-lead-ingest) -------------------
+const INGEST = "https://ref.supabase.co/functions/v1/crm-lead-ingest";
+const LEAD_ENV = { ...ENV, HQ_LEAD_INGEST_URL: INGEST, CRM_INGEST_SECRET: "ingest-secret-value" };
+function routeFetch(handlers) {
+  globalThis.fetch = async (url, init) => {
+    calls.push({ url, init, body: JSON.parse(init.body) });
+    const h = handlers[url];
+    if (h instanceof Error) throw h;
+    return new Response("{}", { status: h ?? 200 });
+  };
+}
+
+test("with the lead settings: emails AND files a website lead in hq", async () => {
+  const res = await call(post(form(good)), LEAD_ENV);
+  assert.equal(res.status, 200);
+  assert.deepEqual(await res.json(), { ok: true });
+  const lead = calls.find((c) => c.url === INGEST);
+  assert.ok(lead, "crm-lead-ingest was called");
+  assert.ok(calls.some((c) => c.url === "https://api.resend.com/emails"), "the email still goes out");
+  assert.equal(lead.init.method, "POST");
+  assert.equal(lead.init.headers.authorization, "Bearer ingest-secret-value");
+  assert.equal(lead.body.tenantSubdomain, "hq");
+  assert.equal(lead.body.contact.name, good.name);
+  assert.equal(lead.body.contact.email, good.email);
+  assert.equal(lead.body.contact.message, good.message);
+  assert.match(lead.body.contact.submissionId, /^[0-9a-f-]{36}$/);
+});
+
+test("HQ_SUBDOMAIN picks another studio", async () => {
+  await call(post(form(good)), { ...LEAD_ENV, HQ_SUBDOMAIN: "hq-test" });
+  assert.equal(calls.find((c) => c.url === INGEST).body.tenantSubdomain, "hq-test");
+});
+
+test("without the lead settings: only the email (as before)", async () => {
+  for (const env of [ENV, { ...ENV, HQ_LEAD_INGEST_URL: INGEST }, { ...ENV, CRM_INGEST_SECRET: "x" }]) {
+    calls = [];
+    const res = await call(post(form(good)), env);
+    assert.equal(res.status, 200);
+    assert.deepEqual(calls.map((c) => c.url), ["https://api.resend.com/emails"]);
+  }
+});
+
+test("hq not created yet (404) or a wrong secret (401): still success, logged without the submission", async () => {
+  for (const status of [404, 401, 503, 500]) {
+    calls = [];
+    logged = [];
+    routeFetch({ [INGEST]: status });
+    const res = await call(post(form(good)), LEAD_ENV);
+    assert.equal(res.status, 200);
+    assert.deepEqual(await res.json(), { ok: true });
+    assert.equal(logged.length, 1);
+    assert.match(logged[0], new RegExp(`answered ${status}`));
+    for (const secret of [good.name, good.email, "Invoices", "ingest-secret-value"]) {
+      assert.ok(!logged[0].includes(secret), `log must not contain ${secret}`);
+    }
+  }
+});
+
+test("crm-lead-ingest unreachable: still success, logged", async () => {
+  routeFetch({ [INGEST]: new Error("network down") });
+  const res = await call(post(form(good)), LEAD_ENV);
+  assert.equal(res.status, 200);
+  assert.match(logged.join("\n"), /could not reach crm-lead-ingest/);
+});
+
+test("the email failing still fails the request (the lead is only a copy)", async () => {
+  routeFetch({ "https://api.resend.com/emails": 500 });
+  const res = await call(post(form(good)), LEAD_ENV);
+  assert.equal(res.status, 502);
+  assert.ok(calls.some((c) => c.url === INGEST), "the lead was still filed");
+});
+
+test("honeypot and invalid submissions file no lead", async () => {
+  await call(post(form({ ...good, website: "http://spam" })), LEAD_ENV);
+  await call(post(form({ ...good, email: "nope" })), LEAD_ENV);
+  await call(post(form({ ...good, message: "" })), LEAD_ENV);
+  assert.equal(calls.filter((c) => c.url === INGEST).length, 0);
+});
