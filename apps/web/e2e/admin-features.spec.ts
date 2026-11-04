@@ -3,14 +3,14 @@ import { loginAsAdmin, seededE2eEnabled } from './helpers/auth';
 
 /**
  * Admin + platform surfaces — admin user language=en (English headings).
- * Requires seeded admin (miriamrteller@gmail.com).
+ * Requires seeded admin (admin@opalswift.com).
  */
 test.describe('Admin features', () => {
   test.skip(!seededE2eEnabled(), 'Set PLAYWRIGHT_SEEDED_E2E=1 (or run locally with seed)');
   // Hosted admin user must exist with password (not created by seed:auth-parent).
   test.skip(
     process.env.PLAYWRIGHT_ADMIN_E2E !== '1',
-    'Set PLAYWRIGHT_ADMIN_E2E=1 after admin password login works (miriamrteller@gmail.com)',
+    'Set PLAYWRIGHT_ADMIN_E2E=1 after admin password login works (admin@opalswift.com)',
   );
 
   test.beforeEach(async ({ page }) => {

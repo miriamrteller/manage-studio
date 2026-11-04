@@ -37,6 +37,9 @@ scenario() { # $1 name, $2 provider_id style: email|uid
   createdb -T "$BASE" "$db"
   psql -X -q -v ON_ERROR_STOP=1 -d "$db" -v style="$2" <<'SQL'
 \set owner 'b0000000-0000-4000-8000-0000000000f1'
+-- After release 2 the table holds only the new address; the task still has to work when the owner is on
+-- an earlier owner address, so one is added here the way a migration would.
+INSERT INTO platform_owner_emails (email, note) VALUES ('previous-owner@example.test', 'test only');
 INSERT INTO auth.users (id, email, email_confirmed_at, raw_user_meta_data)
   SELECT :'owner', (SELECT email FROM platform_owner_emails WHERE email <> 'admin@opalswift.com' LIMIT 1), now() - interval '3 days', '{}';
 INSERT INTO auth.identities (user_id, provider, provider_id, identity_data)
@@ -67,8 +70,8 @@ for style in email uid; do
   pid="$(q "$db" "select provider_id from auth.identities where user_id='b0000000-0000-4000-8000-0000000000f1'")"
   if [ "$style" = email ]; then [ "$pid" = "admin@opalswift.com" ] || fail "[$style] provider_id not moved"; else [ "$pid" = "b0000000-0000-4000-8000-0000000000f1" ] || fail "[$style] provider_id should stay the user id"; fi
   [ "$(q "$db" "select email||'|'||array_to_string(role,',') from user_profiles where id='b0000000-0000-4000-8000-0000000000f1'")" = "admin@opalswift.com|super_admin" ] || fail "[$style] profile did not follow or lost super_admin"
-  [ "$(q "$db" "select count(*) from platform_owner_emails")" = "2" ] || fail "[$style] platform_owner_emails must keep both addresses until release 2"
-  echo "ok  [$style identity] dry run changes nothing; the real run moves the login, the identity and the profile, keeps the confirmed date and super_admin, leaves both owner addresses"
+  [ "$(q "$db" "select count(*) from platform_owner_emails")" = "2" ] || fail "[$style] the task must not change platform_owner_emails"
+  echo "ok  [$style identity] dry run changes nothing; the real run moves the login, the identity and the profile, keeps the confirmed date and super_admin, leaves the owner address list alone"
 done
 
 # Refusals: each rolls back whole.

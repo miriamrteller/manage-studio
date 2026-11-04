@@ -164,7 +164,7 @@ describe('seed.sql snapshot', () => {
 
   it('includes parent test account and seed children', () => {
     expect(seed).toContain('miriamrstern@gmail.com');
-    expect(seed).toContain('miriamrteller@gmail.com');
+    expect(seed).toContain('admin@opalswift.com');
     expect(anyClassHasAgeBand([{ min_age: 3, max_age: 4 }])).toBe(true);
   });
 });
