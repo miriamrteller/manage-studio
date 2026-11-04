@@ -50,7 +50,7 @@ export function tenantUsesSplitProviders(tenant: TenantProviderContext | null | 
   return !tenantUsesBundledPayments(tenant);
 }
 
-/** Hosted-page checkout (Grow / iCount / Invoice4U / YPay). */
+/** Hosted-page checkout (Grow / iCount / Invoice4U / Takbull / YPay). */
 export function isHostedPageCheckoutReady(
   paymentProvider: string | null | undefined,
   pageUrl: string | null | undefined,
@@ -59,9 +59,18 @@ export function isHostedPageCheckoutReady(
     (paymentProvider === 'grow' ||
       paymentProvider === 'icount' ||
       paymentProvider === 'invoice4u' ||
+      paymentProvider === 'takbull' ||
       paymentProvider === 'ypay') &&
     Boolean(pageUrl)
   );
+}
+
+/**
+ * A phone, where Takbull's Bit link opens the Bit app (IsMobile). The docs only describe Bit
+ * on a phone, so Bit is offered there only.
+ */
+export function isPhoneBrowser(userAgent: string = typeof navigator === 'undefined' ? '' : navigator.userAgent): boolean {
+  return /Android|iPhone|iPad|iPod/i.test(userAgent);
 }
 
 export function isMockHostedPaymentPage(

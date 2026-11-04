@@ -11,6 +11,7 @@ import {
 import { GrowPaymentShell } from './GrowPaymentShell';
 import { IcountPaymentShell } from './IcountPaymentShell';
 import { Invoice4uPaymentShell } from './Invoice4uPaymentShell';
+import { TakbullBitButton } from './TakbullBitButton';
 import { YpayRedirectShell } from './YpayRedirectShell';
 import { isMockHostedPaymentPage } from '@/lib/tenantProviderRouting';
 import { OfflinePaymentNotice } from './OfflinePaymentNotice';
@@ -320,6 +321,20 @@ export function ProviderCheckoutShell({
         enrolmentToken={enrolmentToken}
         onPaid={onPaid}
         onPrevious={onPrevious}
+      />
+    );
+  }
+
+  if (paymentProvider === 'takbull' && pageUrl) {
+    return (
+      <GrowPaymentShell
+        provider="takbull"
+        engagementId={engagementId}
+        pageUrl={pageUrl}
+        enrolmentToken={enrolmentToken}
+        onPaid={onPaid}
+        onPrevious={onPrevious}
+        above={<TakbullBitButton classId={classId} engagementId={engagementId} enrolmentToken={enrolmentToken} />}
       />
     );
   }

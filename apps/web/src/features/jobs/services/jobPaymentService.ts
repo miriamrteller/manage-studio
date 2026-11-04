@@ -183,8 +183,18 @@ export class JobPaymentService extends BaseService {
   static async publicRequest(
     token: string,
     action: 'get' | 'create_charge' | 'status' = 'get',
+    /** Takbull: pay with Bit; on a phone the link opens the Bit app. */
+    options: { payWith?: 'bit'; isMobile?: boolean } = {},
   ): Promise<{ request: PublicJobPaymentRequest; pageUrl?: string }> {
-    return invoke('job-payment-request-public', { token, action }, 'Payment request unavailable');
+    return invoke(
+      'job-payment-request-public',
+      {
+        token,
+        action,
+        ...(options.payWith === 'bit' ? { pay_with: 'bit', is_mobile: options.isMobile === true } : {}),
+      },
+      'Payment request unavailable',
+    );
   }
 
   static payUrlFor(token: string): string {

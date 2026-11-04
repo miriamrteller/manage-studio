@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
@@ -12,7 +12,9 @@ interface GrowPaymentShellProps {
   enrolmentToken?: string;
   onPaid: () => void;
   onPrevious: () => void;
-  provider?: 'grow' | 'icount' | 'invoice4u' | 'ypay';
+  provider?: 'grow' | 'icount' | 'invoice4u' | 'takbull' | 'ypay';
+  /** Shown above the page, e.g. Takbull's "Pay with Bit" on a phone. */
+  above?: ReactNode;
 }
 
 type PollPhase = 'paying' | 'timeout' | 'failed';
@@ -24,7 +26,7 @@ interface PaymentStatus {
 }
 
 /**
- * Hosted-page checkout shell (Grow / iCount / Invoice4U / YPay). Embeds the hosted page
+ * Hosted-page checkout shell (Grow / iCount / Invoice4U / Takbull, and the mock YPay page). Embeds the hosted page
  * (or a mock panel) and polls `get-payment-status` until the webhook finalises.
  */
 export function GrowPaymentShell({
@@ -34,6 +36,7 @@ export function GrowPaymentShell({
   onPaid,
   onPrevious,
   provider = 'grow',
+  above,
 }: GrowPaymentShellProps) {
   const { t } = useTranslation();
   const [phase, setPhase] = useState<PollPhase>('paying');
@@ -47,9 +50,11 @@ export function GrowPaymentShell({
       ? 'icount'
       : provider === 'invoice4u'
         ? 'invoice4u'
-        : provider === 'ypay'
-          ? 'ypay'
-          : 'grow';
+        : provider === 'takbull'
+          ? 'takbull'
+          : provider === 'ypay'
+            ? 'ypay'
+            : 'grow';
 
   const checkStatus = useCallback(async (): Promise<PaymentStatus> => {
     const { data, error } = await supabase.functions.invoke('get-payment-status', {
@@ -114,6 +119,7 @@ export function GrowPaymentShell({
 
   return (
     <div className="space-y-4">
+      {above}
       {isMockPage ? (
         <div
           className="w-full border border-dashed border-border rounded-lg p-6 text-center space-y-2 bg-muted/30"
