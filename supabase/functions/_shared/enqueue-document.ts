@@ -116,6 +116,16 @@ export function documentRouteFor(input: {
       reason: "Green Invoice issues receipts for this studio, so no credit invoice is issued; record the refund in Green Invoice",
     };
   }
+  // Takbull issues the document with its own card charge, and with a refund made through it
+  // (process-refund queues nothing then). A refund of a Takbull card payment recorded by hand
+  // is money Takbull didn't move, and its standalone documents are for cash, transfer or Bit.
+  if (invoicing === "takbull" && input.paymentProvider === "takbull") {
+    if (input.documentKind === "sale") return { route: "skip_issued_with_charge" };
+    return {
+      route: "not_issued",
+      reason: "This refund of a Takbull card payment was recorded by hand; issue the credit document in Takbull",
+    };
+  }
   if ((NO_DOCUMENTS_YET_INVOICING as readonly string[]).includes(invoicing)) {
     return {
       route: "not_issued",
