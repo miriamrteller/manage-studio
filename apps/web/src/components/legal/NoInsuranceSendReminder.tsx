@@ -24,7 +24,7 @@ export function NoInsuranceSendReminder() {
   const tenantId = legal?.tenantId ?? '';
   const [dismissed, setDismissed] = useState(() => (tenantId ? readDismissed(tenantId) : false));
 
-  if (!legal || !hasHealthDeclarations(legal.vertical) || insuranceStatus(legal.profile) !== 'none') return null;
+  if (!legal || !hasHealthDeclarations(legal.vertical, legal.healthDeclarations) || insuranceStatus(legal.profile) !== 'none') return null;
   if (dismissed || readDismissed(tenantId)) return null;
 
   const dismiss = () => {

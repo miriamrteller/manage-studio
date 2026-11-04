@@ -1,3 +1,4 @@
+import { useEffect, useId, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
@@ -7,6 +8,8 @@ import { useTenant } from '@/hooks/useTenant';
 import { canSkipRow, setupFlavour, type SetupRowId } from '../lib/setupChecklist';
 import { legalBlockedKey } from '@/legal/packWording';
 import type { SetupGuide as SetupGuideState } from '../hooks/useSetupGuide';
+import { funProgress, newlyDone, ROW_MINUTES } from '../lib/setupFun';
+import { GemBadge } from './Celebration';
 
 export const HELP_EMAIL = 'hello@opalswift.com';
 
@@ -42,14 +45,66 @@ function rowKey(id: SetupRowId, flavour: ReturnType<typeof setupFlavour>): strin
   return id === 'legal' ? `legal_${flavour}` : id;
 }
 
-export function SetupGuideCard({ guide }: { guide: SetupGuideState }) {
+const seenKey = (tenantId: string) => `setup-guide-done:${tenantId}`;
+
+function readSeen(tenantId: string | undefined): string[] | null {
+  if (!tenantId) return null;
+  try {
+    const raw = window.localStorage.getItem(seenKey(tenantId));
+    const parsed: unknown = raw ? JSON.parse(raw) : null;
+    return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === 'string') : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeSeen(tenantId: string | undefined, ids: string[]) {
+  if (!tenantId) return;
+  try {
+    window.localStorage.setItem(seenKey(tenantId), JSON.stringify(ids));
+  } catch {
+    /* storage blocked: no cheers on this device */
+  }
+}
+
+/** A short cheer when a row ticks itself (since this device last saw the list). */
+function useCheer(tenantId: string | undefined, doneIds: string[], enabled: boolean): [string | null, () => void] {
+  const [cheer, setCheer] = useState<string | null>(null);
+  const doneKey = doneIds.join(',');
+  useEffect(() => {
+    if (!tenantId) return;
+    const fresh = newlyDone(doneIds, readSeen(tenantId));
+    writeSeen(tenantId, doneIds);
+    if (enabled && fresh.length > 0) setCheer(fresh[fresh.length - 1]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- doneKey stands for doneIds
+  }, [tenantId, doneKey, enabled]);
+  return [cheer, () => setCheer(null)];
+}
+
+export function SetupGuideCard({
+  guide,
+  fewer = false,
+  onFewerChange,
+}: {
+  guide: SetupGuideState;
+  /** "Fewer celebrations": no cheers. */
+  fewer?: boolean;
+  onFewerChange?: (value: boolean) => void;
+}) {
   const { t } = useTranslation();
   const tenant = useTenant();
   const vertical = tenant?.vertical;
   const flavour = setupFlavour(vertical);
   const { rows, skipped, progress } = guide;
-  const percent = progress.total === 0 ? 0 : Math.round((progress.resolved / progress.total) * 100);
+  const fun = funProgress(progress);
+  const levelName = t(`setup_guide.levels.${fun.level}`);
   const titleId = 'setup-guide-title';
+  const fewerId = useId();
+  const [cheer, clearCheer] = useCheer(
+    tenant?.id,
+    rows.filter((r) => r.done).map((r) => r.id),
+    !fewer && !guide.isLoading,
+  );
 
   return (
     <section aria-labelledby={titleId} className="card space-y-4 border border-gray-200">
@@ -67,21 +122,52 @@ export function SetupGuideCard({ guide }: { guide: SetupGuideState }) {
         </Button>
       </header>
 
-      <div className="space-y-1">
-        <p className="text-sm font-medium" aria-live="polite">
-          {t('setup_guide.progress', { done: progress.resolved, total: progress.total })}
-        </p>
+      <div className="space-y-2">
+        <div className="flex items-center gap-3">
+          <GemBadge level={fun.levelNumber} />
+          <div>
+            <p className="text-sm font-semibold">{t('setup_guide.level', { level: levelName })}</p>
+            <p className="text-sm" aria-live="polite">
+              {t('setup_guide.percent', { percent: fun.percent })}
+            </p>
+          </div>
+        </div>
         <div
           role="progressbar"
-          aria-label={t('setup_guide.progress', { done: progress.resolved, total: progress.total })}
+          aria-label={t('setup_guide.progress_label')}
           aria-valuemin={0}
-          aria-valuemax={progress.total}
-          aria-valuenow={progress.resolved}
+          aria-valuemax={100}
+          aria-valuenow={fun.percent}
+          aria-valuetext={`${t('setup_guide.percent', { percent: fun.percent })} ${t('setup_guide.level', { level: levelName })}`}
           className="h-2 w-full overflow-hidden rounded-full bg-muted"
         >
-          <div className="h-full bg-primary transition-all" style={{ width: `${percent}%` }} />
+          <div className="h-full bg-primary transition-all" style={{ width: `${fun.percent}%` }} />
         </div>
       </div>
+
+      {cheer && (
+        <div className="flex items-start justify-between gap-3 rounded-md border border-primary/30 bg-primary/5 p-3 text-sm">
+          <p role="status" aria-live="polite">
+            <span aria-hidden="true">✨ </span>
+            {t(`setup_guide.cheers.${cheer}`)}
+          </p>
+          <Button variant="ghost" size="sm" onClick={clearCheer}>
+            {t('setup_guide.celebrate.dismiss')}
+          </Button>
+        </div>
+      )}
+
+      {progress.complete && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-primary/30 p-3">
+          <p className="font-medium">{t('setup_guide.live')}</p>
+          <Link
+            to="/admin/leads/get"
+            className="inline-flex items-center rounded-[var(--radius-button)] bg-primary px-4 py-2 text-sm font-medium text-on-primary hover:bg-primary-hover outline-offset-2 focus-visible:outline-2"
+          >
+            {t('setup_guide.celebrate.share_link')}
+          </Link>
+        </div>
+      )}
 
       {progress.next && (
         <Link
@@ -89,6 +175,10 @@ export function SetupGuideCard({ guide }: { guide: SetupGuideState }) {
           className="block w-full rounded-[var(--radius-button)] bg-primary px-6 py-3 text-center text-lg font-medium text-on-primary hover:bg-primary-hover active:bg-primary-active outline-offset-2 focus-visible:outline-2"
         >
           {t('setup_guide.next', { step: t(`setup_guide.rows.${rowKey(progress.next.id, flavour)}.title`) })}
+          <span className="block text-sm font-normal">
+            {t('setup_guide.minutes', { count: ROW_MINUTES[progress.next.id] })}
+            {fun.remaining <= 2 && ` · ${t('setup_guide.to_go', { count: fun.remaining })}`}
+          </span>
         </Link>
       )}
 
@@ -134,6 +224,13 @@ export function SetupGuideCard({ guide }: { guide: SetupGuideState }) {
           );
         })}
       </ul>
+
+      {onFewerChange && (
+        <label htmlFor={fewerId} className="flex items-center gap-2 text-sm">
+          <input id={fewerId} type="checkbox" checked={fewer} onChange={(e) => onFewerChange(e.target.checked)} />
+          <span>{t('setup_guide.fewer')}</span>
+        </label>
+      )}
 
       <p className="text-sm">
         {t('setup_guide.help')}{' '}

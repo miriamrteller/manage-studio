@@ -1511,6 +1511,77 @@ export type Database = {
                     }
                 ];
             };
+            lead_form_invites: {
+                Row: {
+                    created_at: string;
+                    created_by: string | null;
+                    expires_at: string;
+                    form_id: string | null;
+                    id: string;
+                    lead_id: string | null;
+                    recipient_email: string;
+                    recipient_name: string | null;
+                    tenant_id: string;
+                    token_hash: string;
+                    used_at: string | null;
+                };
+                Insert: {
+                    created_at?: string;
+                    created_by?: string | null;
+                    expires_at?: string;
+                    form_id?: string | null;
+                    id?: string;
+                    lead_id?: string | null;
+                    recipient_email: string;
+                    recipient_name?: string | null;
+                    tenant_id: string;
+                    token_hash: string;
+                    used_at?: string | null;
+                };
+                Update: {
+                    created_at?: string;
+                    created_by?: string | null;
+                    expires_at?: string;
+                    form_id?: string | null;
+                    id?: string;
+                    lead_id?: string | null;
+                    recipient_email?: string;
+                    recipient_name?: string | null;
+                    tenant_id?: string;
+                    token_hash?: string;
+                    used_at?: string | null;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "lead_form_invites_created_by_fkey";
+                        columns: ["created_by"];
+                        isOneToOne: false;
+                        referencedRelation: "user_profiles";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "lead_form_invites_form_id_fkey";
+                        columns: ["form_id"];
+                        isOneToOne: false;
+                        referencedRelation: "lead_forms";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "lead_form_invites_lead_id_fkey";
+                        columns: ["lead_id"];
+                        isOneToOne: false;
+                        referencedRelation: "leads";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "lead_form_invites_tenant_id_fkey";
+                        columns: ["tenant_id"];
+                        isOneToOne: false;
+                        referencedRelation: "tenants";
+                        referencedColumns: ["id"];
+                    }
+                ];
+            };
             lead_forms: {
                 Row: {
                     active: boolean;
@@ -3594,6 +3665,7 @@ export type Database = {
                     accessibility_statement_url: string | null;
                     billing_policy: Json;
                     business_preset: string;
+                    celebrations: Json;
                     chrome_style: string;
                     client_booking: boolean;
                     contact_email: string;
@@ -3611,6 +3683,7 @@ export type Database = {
                     google_calendar_id: string | null;
                     google_calendar_refresh_token_enc: string | null;
                     google_calendar_token_expires_at: string | null;
+                    health_declaration: boolean | null;
                     id: string;
                     invoice_license_number: string | null;
                     invoicing_account_id: string | null;
@@ -3671,6 +3744,7 @@ export type Database = {
                     accessibility_statement_url?: string | null;
                     billing_policy?: Json;
                     business_preset?: string;
+                    celebrations?: Json;
                     chrome_style?: string;
                     client_booking?: boolean;
                     contact_email: string;
@@ -3688,6 +3762,7 @@ export type Database = {
                     google_calendar_id?: string | null;
                     google_calendar_refresh_token_enc?: string | null;
                     google_calendar_token_expires_at?: string | null;
+                    health_declaration?: boolean | null;
                     id?: string;
                     invoice_license_number?: string | null;
                     invoicing_account_id?: string | null;
@@ -3748,6 +3823,7 @@ export type Database = {
                     accessibility_statement_url?: string | null;
                     billing_policy?: Json;
                     business_preset?: string;
+                    celebrations?: Json;
                     chrome_style?: string;
                     client_booking?: boolean;
                     contact_email?: string;
@@ -3765,6 +3841,7 @@ export type Database = {
                     google_calendar_id?: string | null;
                     google_calendar_refresh_token_enc?: string | null;
                     google_calendar_token_expires_at?: string | null;
+                    health_declaration?: boolean | null;
                     id?: string;
                     invoice_license_number?: string | null;
                     invoicing_account_id?: string | null;
@@ -4682,6 +4759,13 @@ export type Database = {
                 };
                 Returns: Json;
             };
+            get_lead_form_invite: {
+                Args: {
+                    p_tenant_id: string;
+                    p_token: string;
+                };
+                Returns: Json;
+            };
             get_my_account_ids: {
                 Args: never;
                 Returns: string[];
@@ -4960,6 +5044,7 @@ export type Database = {
                 };
                 Returns: {
                     contact_email: string;
+                    health_declaration: boolean;
                     language_default: string;
                     legal_pack_ack_drafts: string[];
                     legal_pack_acknowledged_at: string;
@@ -4969,6 +5054,11 @@ export type Database = {
                     legal_profile_updated_at: string;
                     name: string;
                     skin: string;
+                    skin_health_declaration: boolean;
+                    skin_legal_addon: string;
+                    skin_name_en: string;
+                    skin_name_he: string;
+                    teaches_classes: boolean;
                     tenant_id: string;
                 }[];
             };
@@ -5360,6 +5450,10 @@ export type Database = {
                 };
                 Returns: string;
             };
+            purge_expired_lead_form_invites: {
+                Args: never;
+                Returns: number;
+            };
             quote_assert_tenant_admin: {
                 Args: {
                     p_tenant_id: string;
@@ -5659,6 +5753,7 @@ export type Database = {
                 Args: {
                     p_client_booking?: boolean;
                     p_family_accounts?: boolean;
+                    p_health_declaration?: boolean;
                     p_payment_flow?: string;
                     p_teaches_classes?: boolean;
                     p_tenant_id: string;

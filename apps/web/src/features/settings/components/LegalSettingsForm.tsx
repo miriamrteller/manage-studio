@@ -64,7 +64,12 @@ export function LegalSettingsForm() {
   }, [legal, autofillKey]);
 
   const vertical = legal?.vertical ?? 'generic';
-  const fields = useMemo(() => fieldsForVertical(vertical), [vertical]);
+  const teachesClasses = legal?.teachesClasses !== false;
+  const healthDeclarations = legal?.healthDeclarations;
+  const fields = useMemo(
+    () => fieldsForVertical(vertical, { teachesClasses, healthDeclarations }),
+    [vertical, teachesClasses, healthDeclarations],
+  );
   // Shown: what only the studio can tell us, and anything required that is still
   // empty. The rest (filled from the studio's setup, or with a sensible default)
   // waits under "Details we filled in for you".
@@ -88,13 +93,13 @@ export function LegalSettingsForm() {
     shownKeys.has(f.key) || (personal && ['legal_name', 'personal_id', 'no_israeli_id', 'passport_number', 'passport_country'].includes(f.key));
   const shownFields = fields.filter((f) => visible(f) && isShown(f));
   const filledFields = fields.filter((f) => visible(f) && !isShown(f));
-  const publishDocs: LegalDocId[] = tenantHasEnrolmentTerms(vertical)
+  const publishDocs: LegalDocId[] = tenantHasEnrolmentTerms(vertical, teachesClasses)
     ? ['studio-privacy', 'enrolment-terms']
     : ['studio-privacy'];
 
   // What is still missing, checked against the real templates in both languages.
   const { data: missing } = useQuery({
-    queryKey: ['legal-missing', legal?.tenantId, JSON.stringify(values), vertical],
+    queryKey: ['legal-missing', legal?.tenantId, JSON.stringify(values), vertical, teachesClasses, healthDeclarations],
     enabled: !!legal,
     queryFn: async () => {
       const keys = new Set<string>();
@@ -109,12 +114,13 @@ export function LegalSettingsForm() {
             contactEmail: legal!.contactEmail,
             profile: values,
             updatedAt: legal!.updatedAt,
+            teachesClasses,
           });
           out.missing.forEach((k) => keys.add(k));
         }
       }
       // The same required-details list the legal pack's Confirm uses.
-      missingLegalDetails(vertical, values, 'publish', legal!.name).forEach((f) => keys.add(f.key));
+      missingLegalDetails(vertical, values, 'publish', legal!.name, { teachesClasses, healthDeclarations }).forEach((f) => keys.add(f.key));
       return [...keys];
     },
   });
@@ -315,7 +321,7 @@ export function LegalSettingsForm() {
               {t('legal.docs.studio_privacy')}
             </Link>
           </li>
-          {tenantHasEnrolmentTerms(vertical) && (
+          {tenantHasEnrolmentTerms(vertical, teachesClasses) && (
             <li>
               <Link className="underline" to="/legal/enrolment-terms" target="_blank" rel="noopener noreferrer">
                 {t('legal.docs.enrolment_terms')}

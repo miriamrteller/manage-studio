@@ -1,5 +1,5 @@
 > **Draft, not legal advice. Have an Israeli lawyer review before publishing.**
-> Hebrew version: [07c-addon-coaching.he.md](07c-addon-coaching.he.md). Attached to the [Service Agreement](07c-service-agreement.en.md) for tutors, coaches and trainers (private lessons, personal training, consulting sessions); on its subjects it prevails over the base. The app has no skin key for this type yet; see the drafting notes.
+> Hebrew version: [07c-addon-coaching.he.md](07c-addon-coaching.he.md). Attached to the [Service Agreement](07c-service-agreement.en.md) for tutors, coaches and trainers (private lessons, personal training, consulting sessions); on its subjects it prevails over the base. The app attaches it for tutors, coaches and therapists, chosen from the studio's field; see the drafting notes.
 
 # Add-on: Coaching and tutoring sessions
 
@@ -30,7 +30,7 @@ For a Client under 18, the parent or legal guardian signs, is the contact for bo
 
 ### Drafting notes
 
-- **App wiring.** The app's skin keys are `photographer`, `beautician`, `dance-studio` and `generic`. This add-on waits for a coaching or tutoring skin; until then a studio can attach it by hand.
+- **App wiring.** The app attaches this add-on when the studio's field is set to it on the platform's Skins page, or, if the field sets nothing, when the field's name says tutor, coach or therapist. The agreement is then called "Sessions agreement". Until the studio edits its form, the blanks are filled with: 60-minute sessions, in person or online by video; a package of 10 sessions valid for 6 months, which can be extended once by 3 months on request; paid in full in advance; booked in the app or by message; a late cancellation counts as used (no extra charge); a parent may be present. [[LAWYER: confirm]]
 - **Expiry of prepaid sessions.** An expiry that leaves the Client with nothing for a prepaid package may be read as unfair in a standard contract (Standard Contracts Law §4); the extension option in section A and a reasonable validity period reduce that risk — **verify with lawyer**.
 - **Language.** If the English and Hebrew versions differ, the English version prevails.
 

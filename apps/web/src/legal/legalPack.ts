@@ -1,7 +1,7 @@
 import { consentWording, MARKETING_KINDS, PHOTO_KINDS, type ConsentKind } from './consents';
 import type { LegalDocId } from './fields';
 import { legalTextVersion, prepareLegalMarkdown, renderLegalHtml, type LegalLang } from './render';
-import { prepareSignedForm, signedFormsForSkin } from './signedTemplates';
+import { prepareSignedForm, signedFormsFor } from './signedTemplates';
 import { loadLegalTemplate } from './templates';
 import { tenantHasEnrolmentTerms, type TenantLegalProfile } from './useLegalDocument';
 
@@ -32,10 +32,10 @@ const INFO_TITLES: Partial<Record<LegalDocId, Record<LegalLang, string>>> = {
 };
 
 /** The studio's informational documents, by type. */
-export function legalPackInfoDocs(vertical: TenantLegalProfile['vertical']): LegalDocId[] {
+export function legalPackInfoDocs(vertical: TenantLegalProfile['vertical'], teachesClasses = true): LegalDocId[] {
   return [
     'studio-privacy',
-    ...(tenantHasEnrolmentTerms(vertical) ? (['enrolment-terms'] as LegalDocId[]) : []),
+    ...(tenantHasEnrolmentTerms(vertical, teachesClasses) ? (['enrolment-terms'] as LegalDocId[]) : []),
     'accessibility',
     'cookies',
   ];
@@ -53,7 +53,7 @@ const LANGS: LegalLang[] = ['en', 'he'];
 export async function buildLegalPack(legal: TenantLegalProfile): Promise<LegalPack> {
   const sections: LegalPackSection[] = [];
 
-  for (const doc of legalPackInfoDocs(legal.vertical)) {
+  for (const doc of legalPackInfoDocs(legal.vertical, legal.teachesClasses !== false)) {
     const section: LegalPackSection = {
       id: doc,
       title: INFO_TITLES[doc] ?? { en: doc, he: doc },
@@ -69,6 +69,8 @@ export async function buildLegalPack(legal: TenantLegalProfile): Promise<LegalPa
         contactEmail: legal.contactEmail,
         profile: legal.profile,
         updatedAt: legal.updatedAt,
+        teachesClasses: legal.teachesClasses !== false,
+        healthDeclarations: legal.healthDeclarations,
       });
       section.body[lang] = { html: renderLegalHtml(prepared) };
       section.missing[lang] = prepared.missingLabels;
@@ -77,7 +79,7 @@ export async function buildLegalPack(legal: TenantLegalProfile): Promise<LegalPa
   }
 
   const signedForms: LegalPack['signedForms'] = [];
-  for (const form of signedFormsForSkin(legal.skin ?? legal.vertical, legal.legalAddon)) {
+  for (const form of signedFormsFor(legal.vertical, { healthDeclarations: legal.healthDeclarations, legalAddon: legal.legalAddon })) {
     const section: LegalPackSection = {
       id: form.key,
       title: form.title,

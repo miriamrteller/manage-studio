@@ -114,3 +114,35 @@ Deno.test("fillMissing: a studio with the Hebrew forms gets only the English one
   assertEquals(await seedSignedTemplate(deps, studio("dance-studio", "he"), { fillMissing: true }), 2);
   assertEquals(rows.map((r) => [r.audience, r.language]), [["child", "en"], ["adult", "en"]]);
 });
+
+Deno.test("Clients sign a health declaration: the studio's setting decides, else its field", async () => {
+  // A dance studio that turned it off: no health forms (and no agreement: it has enrolment terms).
+  let fake = fakeDeps();
+  assertEquals(await seedSignedTemplate(fake.deps, { ...studio("dance-studio"), health_declaration: false }), 0);
+  // A general studio that turned it on: both health declarations and the agreement.
+  fake = fakeDeps();
+  await seedSignedTemplate(fake.deps, { ...studio("generic"), health_declaration: true });
+  assertEquals(fake.rows.filter((r) => r.language === "en").map((r) => r.audience), ["child", "adult", null]);
+  // A swim-coach skin row that says so, with no studio setting yet.
+  fake = fakeDeps();
+  await seedSignedTemplate(fake.deps, {
+    ...studio("swim-coach"),
+    verticals: { name_en: "Swim coach", default_switches: { health_declaration: true }, legal_addon: null },
+  });
+  assertEquals(fake.rows.filter((r) => r.language === "en").map((r) => r.audience), ["child", "adult", null]);
+  fake.rows.forEach(checkFilled);
+});
+
+Deno.test("tutors, coaches and therapists: the agreement carries the coaching add-on", async () => {
+  const { deps, rows } = fakeDeps();
+  await seedSignedTemplate(deps, { ...studio("private-tutor"), verticals: { name_en: "Private tutor", legal_addon: "coaching" } });
+  const en = rows.find((r) => r.language === "en")!;
+  assertEquals(en.name, "Sessions agreement");
+  assertStringIncludes(en.content, "Coaching and tutoring sessions");
+  assertStringIncludes(en.content, "A session lasts 60 minutes, in person or online by video.");
+  assertStringIncludes(en.content, "expire or may be extended once by 3 months on request");
+  rows.forEach(checkFilled);
+  const he = rows.find((r) => r.language === "he")!;
+  assertStringIncludes(he.content, "פגישה נמשכת 60 דקות, פנים אל פנים או מקוון בווידאו.");
+  assertStringIncludes(he.content, "פוקעות או שניתן להאריך פעם אחת ב-3 חודשים לפי בקשה");
+});

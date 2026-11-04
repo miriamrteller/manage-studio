@@ -1900,7 +1900,6 @@
     "intro": "A few short steps and you are ready for your first customer. Each one ticks itself when you are done.",
     "done_title": "Your studio is set up",
     "done_body": "Everything on the list is done or skipped. You can change any of it later in Settings.",
-    "progress": "{{done}} of {{total}} done",
     "next": "Next: {{step}}",
     "skip": "Skip",
     "undo_skip": "Undo skip",
@@ -1969,6 +1968,51 @@
         "title": "Send your first quote",
         "hint": "Turn an enquiry into a quote your client can accept online."
       }
+    },
+    "percent": "You're {{percent}}% there",
+    "progress_label": "Setup progress",
+    "level": "Level: {{level}}",
+    "minutes_one": "About 1 minute",
+    "minutes_other": "About {{count}} minutes",
+    "to_go_one": "1 to go",
+    "to_go_other": "{{count}} to go",
+    "live": "Your studio is live! Share your link so clients can find you.",
+    "fewer": "Fewer celebrations",
+    "levels": {
+      "getting_started": "Getting started",
+      "open_for_enquiries": "Open for enquiries",
+      "ready_for_clients": "Ready for clients",
+      "fully_set_up": "Fully set up"
+    },
+    "cheers": {
+      "branding": "Looking good! Your studio is starting to look like yours.",
+      "levels": "Levels added. Your classes have a home.",
+      "season": "Season set. Now you know when things run.",
+      "classes": "Classes are in. Clients can see what you offer.",
+      "packages": "Packages are in. Clients can see what you offer.",
+      "offerings": "Your offer is in. Clients can see what you do.",
+      "payments": "Payments sorted. Clients know how to pay you.",
+      "connect_payments": "Online payments connected. Money can come in.",
+      "legal": "Legal pages done. Clients can sign up with confidence.",
+      "leads": "Your first enquiry is in!",
+      "test_enrolment": "Test enrolment done. You know how it feels for clients.",
+      "first_quote": "First quote sent. Nice work!"
+    },
+    "celebrate": {
+      "setup_done": {
+        "title": "Your studio is live!",
+        "body": "Every step is done. Share your link so clients can find you."
+      },
+      "first_enquiry": {
+        "title": "Your first enquiry!",
+        "body": "Someone wants to hear from you. Reply soon: quick answers win clients."
+      },
+      "first_paid": {
+        "title": "Your first paid client!",
+        "body": "The first payment came in. This is where it starts."
+      },
+      "share_link": "Share your link",
+      "dismiss": "Close"
     }
   },
   "colour_presets": {
@@ -2107,6 +2151,7 @@
     "next_sender": "Set the email sender address.",
     "next_test_enrolment": "Do a test enrolment from start to finish.",
     "next_lawyer": "Have a lawyer review the legal documents.",
+    "filled_for_you": "Details we filled in for you",
     "choose_own_colour": "Choose your own colour",
     "logo_label": "Logo (optional)",
     "logo_optional": "PNG, JPG, SVG or WebP, up to 2 MB. You can skip this and add it later in Settings → Branding.",
@@ -2794,7 +2839,9 @@
       "dismiss": "Dismiss",
       "save": "Save",
       "saved": "Saved.",
-      "error": "Could not save. Please try again."
+      "error": "Could not save. Please try again.",
+      "health_label": "Clients sign a health declaration",
+      "health_hint": "Before they start, clients (or a parent, for children) fill in a short health form. Usual for dance, fitness, yoga, swimming and martial arts."
     },
     "lead_digest": {
       "title": "Daily follow-up email",

@@ -277,13 +277,13 @@ describe('skins part B: enquiry questions, colours, legal add-on', () => {
 
   it('a data skin signs the agreement with its add-on; built-in skins keep their own forms', () => {
     expect(signedFormsForSkin('swim-coach', 'photographer')[0]).toMatchObject({ doc: 'service-agreement', addon: 'addon-photographer' });
-    expect(signedFormsForSkin('swim-coach', 'coaching')[0].addon).toBeUndefined();
+    expect(signedFormsForSkin('swim-coach', 'coaching')[0].addon).toBe('addon-coaching');
     expect(signedFormsForSkin('swim-coach', null)[0].addon).toBeUndefined();
     expect(signedFormsForSkin('dance-studio', 'beautician')).toEqual(signedFormsForSkin('dance-studio'));
     expect(signedFormsForSkin('photographer', 'beautician')[0].addon).toBe('addon-photographer');
     const ctx = { lang: 'en' as const, tenantName: 'Pool Kids', contactEmail: 'a@b.c', profile: {} };
-    expect(studioSignedForms('dance-studio', ctx, 'beautician')).toEqual(studioSignedForms('dance-studio', ctx));
-    expect(studioSignedForms('swim-coach', ctx, 'beautician')[0].content.length).toBeGreaterThan(studioSignedForms('swim-coach', ctx)[0].content.length);
+    expect(studioSignedForms('dance-studio', ctx, { legalAddon: 'beautician' })).toEqual(studioSignedForms('dance-studio', ctx));
+    expect(studioSignedForms('swim-coach', ctx, { legalAddon: 'beautician' })[0].content.length).toBeGreaterThan(studioSignedForms('swim-coach', ctx)[0].content.length);
   });
 
   it('choosing a field brings its colours unless the owner picked their own', () => {
@@ -323,11 +323,11 @@ describe('skins part B: enquiry questions, colours, legal add-on', () => {
     expect(h.updated).toHaveLength(0);
   });
 
-  it('says when an add-on is not in the signed forms yet', async () => {
+  it('every add-on a skin can choose is in the signed forms (coaching included)', async () => {
     wrap(<SkinsPage />);
     await screen.findByRole('table', { name: 'Skins' });
     fireEvent.click(screen.getByRole('button', { name: 'Edit Swim coach' }));
-    expect(screen.getByText(/This add-on is not in the signed forms yet/)).toBeInTheDocument();
+    expect(screen.queryByText(/This add-on is not in the signed forms yet/)).not.toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('Service-agreement add-on'), { target: { value: 'photographer' } });
     expect(screen.queryByText(/This add-on is not in the signed forms yet/)).not.toBeInTheDocument();
     expect(within(screen.getByRole('region', { name: 'Sample studio' })).getByText(/with the Photographer add-on/)).toBeInTheDocument();

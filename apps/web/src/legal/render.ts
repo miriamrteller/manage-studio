@@ -1,6 +1,6 @@
 import { Marked, type Tokens } from 'marked';
 import type { VerticalId } from '@shared/config/tenant-presets';
-import { LEGAL_FIELDS, type BusinessStatus, type LegalDocId } from './fields';
+import { fieldApplies, LEGAL_FIELDS, type BusinessStatus, type LegalDocId } from './fields';
 import { hasHealthDeclarations, insuranceStatus, stripDraftingFrame } from '@shared/legal/signed-template';
 import { personalIdentity, personalIdentityText } from '@shared/legal/personalIdentity';
 
@@ -14,6 +14,10 @@ export interface LegalRenderContext {
   contactEmail: string;
   profile: Record<string, string | undefined>;
   updatedAt: string | null;
+  /** tenants.teaches_classes (unknown = true): class wording and fields only for studios that teach classes. */
+  teachesClasses?: boolean;
+  /** Clients sign a health declaration (the studio's setting or its field's default; unknown: by skin). */
+  healthDeclarations?: boolean;
 }
 
 export interface PreparedLegalDoc {
@@ -34,7 +38,7 @@ export const LEGAL_DOC_FILES: Record<LegalDocId, string> = {
   'opalswift-privacy': '04-opalswift-privacy-policy',
   cookies: '05-cookie-storage-notice',
   accessibility: '06-accessibility-statement',
-  'enrolment-terms': '07a-dance-enrolment-terms',
+  'enrolment-terms': '07a-class-enrolment-terms',
 };
 
 const FILE_PREFIX_TO_DOC: Record<string, LegalDocId> = {
@@ -104,6 +108,32 @@ function applyVariant(text: string, vertical: VerticalId): string {
     text.slice(endIdx);
   for (const m of [...VARIANT_A, ...VARIANT_B]) out = out.split(m).join('');
   return out.replace(/\n{3,}/g, '\n\n');
+}
+
+/**
+ * Lines for dance studios that teach classes, and their general version for
+ * other class businesses (e.g. art classes): a line starting with one of these
+ * markers is kept only for its kind of studio, and the marker is removed.
+ */
+const DANCE_LINE = ['[[DANCE CLASSES ONLY]]', '[[רק לחוגי מחול]]'];
+const OTHER_CLASSES_LINE = ['[[OTHER CLASSES ONLY]]', '[[רק לחוגים אחרים]]'];
+
+export function isDanceClasses(ctx: Pick<LegalRenderContext, 'vertical' | 'teachesClasses'>): boolean {
+  return ctx.vertical === 'dance-studio' && ctx.teachesClasses !== false;
+}
+
+function applyClassVariants(text: string, ctx: LegalRenderContext): string {
+  const dance = isDanceClasses(ctx);
+  return text
+    .split('\n')
+    .flatMap((line) => {
+      const d = DANCE_LINE.find((m) => line.includes(m));
+      const o = OTHER_CLASSES_LINE.find((m) => line.includes(m));
+      if (d) return dance ? [line.replace(`${d} `, '').replace(d, '')] : [];
+      if (o) return dance ? [] : [line.replace(`${o} `, '').replace(o, '')];
+      return [line];
+    })
+    .join('\n');
 }
 
 function rewriteDocLinks(text: string): string {
@@ -225,7 +255,7 @@ const INSURANCE_LINE = {
  * - "We have insurance": the insurer named, or a plain statement until it is.
  */
 function applyInsurance(text: string, ctx: LegalRenderContext): string {
-  if (!hasHealthDeclarations(ctx.vertical)) {
+  if (!hasHealthDeclarations(ctx.vertical, ctx.healthDeclarations)) {
     return text.replace(INSURANCE_LINE.en, '').replace(INSURANCE_LINE.he, '');
   }
   const status = insuranceStatus(ctx.profile);
@@ -316,12 +346,20 @@ const DERIVED_ID_BY_PLACEHOLDER: Record<string, string> = Object.fromEntries(
 );
 
 /** The details a lawyer version can hold, for the editor's "Insert a detail" list. */
-export function liveDetailOptions(vertical: VerticalId, lang: LegalLang): { id: string; label: string }[] {
+export function liveDetailOptions(
+  vertical: VerticalId,
+  lang: LegalLang,
+  healthDeclarations?: boolean,
+): { id: string; label: string }[] {
   const derived = Object.entries(DERIVED_DETAILS)
-    .filter(([id]) => id !== 'insurance_statement' || hasHealthDeclarations(vertical))
+    .filter(([id]) => id !== 'insurance_statement' || hasHealthDeclarations(vertical, healthDeclarations))
     .map(([id, d]) => ({ id, label: d.label[lang] }));
   const fields = LEGAL_FIELDS.filter(
-    (f) => (!f.verticals || f.verticals.includes(vertical)) && Object.keys(f.placeholders).length > 0 && f.kind !== 'checkbox',
+    (f) =>
+      (!f.verticals || f.verticals.includes(vertical)) &&
+      (f.needs !== 'health' || hasHealthDeclarations(vertical, healthDeclarations)) &&
+      Object.keys(f.placeholders).length > 0 &&
+      f.kind !== 'checkbox',
   ).map((f) => ({ id: f.key, label: f.label[lang] }));
   return [...derived, ...fields];
 }
@@ -333,7 +371,7 @@ export function liveDetailLabel(id: string, lang: LegalLang): string {
 
 /** The insurance sentence as one live detail (health-declaration studios only). */
 function applyInsuranceToken(text: string, ctx: LegalRenderContext): string {
-  if (!hasHealthDeclarations(ctx.vertical)) {
+  if (!hasHealthDeclarations(ctx.vertical, ctx.healthDeclarations)) {
     return text.replace(INSURANCE_LINE.en, '').replace(INSURANCE_LINE.he, '');
   }
   const token = detailToken('insurance_statement');
@@ -343,7 +381,7 @@ function applyInsuranceToken(text: string, ctx: LegalRenderContext): string {
 }
 
 function insuranceStatementValue(ctx: LegalRenderContext): string {
-  if (!hasHealthDeclarations(ctx.vertical)) return '';
+  if (!hasHealthDeclarations(ctx.vertical, ctx.healthDeclarations)) return '';
   const he = ctx.lang === 'he';
   if (insuranceStatus(ctx.profile) !== 'insured') return NO_INSURANCE_TERMS[ctx.lang];
   const insurer = (ctx.profile.insurance ?? '').trim();
@@ -451,6 +489,7 @@ export function prepareLegalMarkdown(
   const live = options.liveDetails === true;
   let text = stripDraftingFrame(raw);
   text = applyVariant(text, ctx.vertical);
+  text = applyClassVariants(text, ctx);
   text = live ? applyInsuranceToken(text, ctx) : applyInsurance(text, ctx);
   text = rewriteDocLinks(text);
 
@@ -487,7 +526,7 @@ export function prepareLegalMarkdown(
     }
 
     const field = byPlaceholder.get(ph);
-    if (field?.verticals && !field.verticals.includes(ctx.vertical)) {
+    if (field && !fieldApplies(field, ctx.vertical, { teachesClasses: ctx.teachesClasses !== false, healthDeclarations: ctx.healthDeclarations })) {
       // e.g. "the gallery service" line in a dance school's policy.
       return DROP_LINE_TOKEN;
     }

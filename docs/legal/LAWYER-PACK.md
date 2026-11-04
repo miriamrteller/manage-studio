@@ -11,7 +11,7 @@
 | 1 | Platform terms (OpalSwift ↔ studio) | [en](01-platform-terms.en.md) | [he](01-platform-terms.he.md) | ✓ | ✓ |
 | 2 | Data processing agreement | [en](02-dpa.en.md) | [he](02-dpa.he.md) | ✓ | ✓ |
 | 3 | Studio privacy policy (variant A dance, B photographer) | [en](03-studio-privacy-policy.en.md) | [he](03-studio-privacy-policy.he.md) | ✓ | ✓ |
-| 4 | Class/course enrolment terms | [en](07a-dance-enrolment-terms.en.md) | [he](07a-dance-enrolment-terms.he.md) | ✓ | — |
+| 4 | Class/course enrolment terms | [en](07a-class-enrolment-terms.en.md) | [he](07a-class-enrolment-terms.he.md) | ✓ | — |
 | 5 | Health declaration, child (sport-neutral) | [en](07b-health-declaration-child.en.md) | [he](07b-health-declaration-child.he.md) | ✓ | — |
 | 5b | Health declaration, adult | [en](07b-health-declaration-adult.en.md) | [he](07b-health-declaration-adult.he.md) | ✓ | — |
 | 6 | Service agreement (base, any provider) | [en](07c-service-agreement.en.md) | [he](07c-service-agreement.he.md) | — | ✓ |
