@@ -115,11 +115,13 @@ describe('persistPaymentDocumentFields', () => {
       externalDocumentId: DOC_ID,
       externalDocumentNumber: '1001',
       documentUrl: PDF_URL,
+      documentKind: 'tax_invoice_receipt',
       skipIfPresent: false,
     });
 
     expect(result).toEqual({ status: 'applied', pdfStored: true });
     expect(paymentUpdates[0]).toMatchObject({
+      issued_document_kind: 'tax_invoice_receipt',
       external_document_id: DOC_ID,
       external_document_number: '1001',
       invoice_url: PDF_URL,

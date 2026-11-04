@@ -23,6 +23,7 @@ export class MockInvoicingProvider implements InvoicingProvider {
       externalDocumentId: `mock-doc-${input.paymentId}`,
       externalDocumentNumber: number,
       documentUrl: `https://mock.invoicing.local/${input.paymentId}`,
+      documentKind: input.documentKind === "refund" ? "credit_note" : "tax_invoice_receipt",
     };
   }
 

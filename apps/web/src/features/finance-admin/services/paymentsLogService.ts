@@ -39,6 +39,8 @@ export class PaymentsLogService extends BaseService {
           pretax_amount_minor, vat_amount_minor, total_amount_minor, currency,
           status, charge_type, provider, payment_method,
           paid_at, created_at, external_document_number, invoice_url,
+          external_document_id, issued_document_kind, allocation_number, refunds_payment_id,
+          document_queue(status, document_kind, created_at),
           person:people!payments_person_id_fkey(id, name),
           offering:offerings!payments_offering_id_fkey(id, name),
           engagement:engagements!payments_engagement_id_fkey(id, status)

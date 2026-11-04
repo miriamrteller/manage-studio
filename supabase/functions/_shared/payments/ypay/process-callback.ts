@@ -2,6 +2,7 @@ import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.
 import { getEnv } from "../../edge-runtime/env.ts";
 import { markJobPaymentRequestPaid } from "../../jobs/mark-request-paid.ts";
 import { applyBundledDocumentNotify } from "../bundled-document.ts";
+import { documentKindFromYpayDocType, type IssuedDocumentKind } from "../document-kind.ts";
 import { finalisePayment } from "../finalise-payment.ts";
 import { auditPaymentFailed } from "../payment-audit.ts";
 import type { ChargeMetadata } from "../types.ts";
@@ -144,6 +145,7 @@ export async function processYpayPaymentCallback(
         providerPaymentRef: transactionId,
         externalDocumentId: parsed.document.externalDocumentId,
         documentUrl: parsed.document.documentUrl,
+        documentKind: await ypayCardDocumentKind(service, pending.tenant_id, parsed.document.documentType),
       });
     }
     return {
@@ -217,6 +219,7 @@ export async function processYpayPaymentCallback(
       providerPaymentRef: transactionId,
       externalDocumentId: parsed.document.externalDocumentId,
       documentUrl: parsed.document.documentUrl,
+      documentKind: await ypayCardDocumentKind(service, pending.tenant_id, parsed.document.documentType),
     });
   }
 
@@ -226,4 +229,29 @@ export async function processYpayPaymentCallback(
     status: "succeeded",
     jobPaymentRequest: pending.job_payment_request_id ?? undefined,
   };
+}
+
+/**
+ * Which document YPay issued with a card charge: the type YPay reports on the callback,
+ * else the type we asked for (tenants.ypay_document_type, sent unchanged at createCharge).
+ * Null when neither is readable; the payment then shows "document issued by YPay" only.
+ */
+async function ypayCardDocumentKind(
+  service: SupabaseClient,
+  tenantId: string,
+  reportedType: string | undefined,
+): Promise<IssuedDocumentKind | null> {
+  const reported = documentKindFromYpayDocType(reportedType);
+  if (reported) return reported;
+  try {
+    const { data } = await service
+      .from("tenants")
+      .select("ypay_document_type")
+      .eq("id", tenantId)
+      .maybeSingle();
+    // Same default as createCharge: anything but 108 is sent as 109.
+    return Number(data?.ypay_document_type) === 108 ? "receipt" : "tax_invoice_receipt";
+  } catch {
+    return null;
+  }
 }
