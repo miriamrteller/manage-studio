@@ -366,6 +366,11 @@ enabled = true
 verify_jwt = true
 entrypoint = "./functions/send-lead-form-link/index.ts"
 
+[functions.notify-problem-report]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/notify-problem-report/index.ts"
+
 # Cron: daily lead follow-up digest to studio admins (step 4). CRON_SECRET auth.
 [functions.run-lead-followup-digest]
 enabled = true
