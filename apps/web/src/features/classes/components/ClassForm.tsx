@@ -238,8 +238,10 @@ export function ClassForm({
         });
       }
     } catch (error) {
+      // The DB guard (monthly classes need a provider that can charge monthly): the form's
+      // ordinary save error, no provider wording.
       if (isMonthlyFeesNeedGrowError(error)) {
-        setSubmitError(t('payment_choice.monthly_needs_grow'));
+        setSubmitError(t('common.error'));
         return;
       }
       if (error instanceof Error && error.message.startsWith('errors.')) {
@@ -454,17 +456,12 @@ export function ClassForm({
           htmlFor="billing_mode"
           label={t('form.class.billing_frequency')}
           error={form.formState.errors.billing_mode?.message}
-          {...(monthlyAllowed ? {} : { 'aria-describedby': 'billing-mode-needs-grow' })}
           {...form.register('billing_mode')}
         >
           <option value="one_time">{t('billing.one_time', { defaultValue: 'One-time' })}</option>
-          <option value="recurring" disabled={!monthlyAllowed}>{t('billing.monthly')}</option>
+          {/* Only offered where the studio's provider can charge monthly; a monthly class stays editable. */}
+          {monthlyAllowed && <option value="recurring">{t('billing.monthly')}</option>}
         </FormSelect>
-        {!monthlyAllowed && (
-          <p id="billing-mode-needs-grow" className="text-sm text-muted-foreground md:col-span-2" role="note">
-            {t('payment_choice.monthly_needs_grow')}
-          </p>
-        )}
 
         <FormSelect
           htmlFor="status"

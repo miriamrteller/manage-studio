@@ -139,19 +139,33 @@ describe('Settings → How customers pay', () => {
 });
 
 describe('backstop: monthly classes need Grow', () => {
-  it('a YPay studio cannot pick a monthly class, and is told why', () => {
+  it('a YPay studio is not offered a monthly class (no dead-end option, no note)', () => {
     Object.assign(tenantState, { payment_provider: 'ypay', currency: 'ILS' });
     wrap(<ClassForm terms={[]} levels={[]} teachers={[]} onSubmit={vi.fn()} />);
-    const option = screen.getByRole('option', { name: 'billing.monthly' }) as HTMLOptionElement;
-    expect(option.disabled).toBe(true);
-    expect(screen.getByText('payment_choice.monthly_needs_grow')).toBeTruthy();
+    expect(screen.queryByRole('option', { name: 'billing.monthly' })).toBeNull();
+    expect(screen.queryByText('payment_choice.monthly_needs_grow')).toBeNull();
     expect((screen.getByLabelText('form.class.billing_frequency') as HTMLSelectElement).value).toBe('one_time');
+  });
+
+  it('a monthly class a YPay studio already has keeps its Monthly option', () => {
+    Object.assign(tenantState, { payment_provider: 'ypay', currency: 'ILS' });
+    wrap(
+      <ClassForm
+        classItem={{ id: 'c-1', name: 'Ballet', billing_mode: 'recurring' } as never}
+        terms={[]}
+        levels={[]}
+        teachers={[]}
+        onSubmit={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole('option', { name: 'billing.monthly' })).toBeInTheDocument();
+    expect((screen.getByLabelText('form.class.billing_frequency') as HTMLSelectElement).value).toBe('recurring');
   });
 
   it('a Grow studio keeps monthly classes, the default', () => {
     Object.assign(tenantState, { payment_provider: 'grow', currency: 'ILS' });
     wrap(<ClassForm terms={[]} levels={[]} teachers={[]} onSubmit={vi.fn()} />);
-    expect((screen.getByRole('option', { name: 'billing.monthly' }) as HTMLOptionElement).disabled).toBe(false);
+    expect(screen.getByRole('option', { name: 'billing.monthly' })).toBeInTheDocument();
     expect((screen.getByLabelText('form.class.billing_frequency') as HTMLSelectElement).value).toBe('recurring');
     expect(screen.queryByText('payment_choice.monthly_needs_grow')).toBeNull();
   });

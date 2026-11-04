@@ -33,3 +33,17 @@ export function documentKindFromGreenInvoiceType(
   if (n === 330) return "credit_note";
   return null;
 }
+
+/**
+ * Takbull DocumentType: 320 tax invoice-receipt, 400 receipt; credits 330 / 355
+ * (tax invoice credit) and 401 (receipt credit). Anything else: unknown.
+ */
+export function documentKindFromTakbullType(
+  type: number | string | null | undefined,
+): IssuedDocumentKind | null {
+  const n = Number(type);
+  if (n === 320) return "tax_invoice_receipt";
+  if (n === 400) return "receipt";
+  if (n === 330 || n === 355 || n === 401) return "credit_note";
+  return null;
+}

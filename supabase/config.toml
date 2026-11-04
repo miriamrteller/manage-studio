@@ -332,6 +332,18 @@ enabled = true
 verify_jwt = true
 entrypoint = "./functions/verify-ypay-credentials/index.ts"
 
+# Takbull calls it with the order in the query string and can't send a JWT; every notice is
+# re-checked with Takbull before anything settles (takbull/process-ipn.ts).
+[functions.takbull-ipn]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/takbull-ipn/index.ts"
+
+[functions.verify-takbull-credentials]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/verify-takbull-credentials/index.ts"
+
 # Only reachable from WhatsAppOtpVerifier, which is not rendered anywhere.
 [functions.verify-whatsapp-otp]
 enabled = true

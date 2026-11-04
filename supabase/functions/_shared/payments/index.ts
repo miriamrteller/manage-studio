@@ -11,6 +11,7 @@ import { IcountPaymentProvider } from "./providers/icount.ts";
 import { Invoice4uPaymentProvider } from "./providers/invoice4u.ts";
 import { YpayPaymentProvider } from "./providers/ypay.ts";
 import { TranzilaPaymentProvider } from "./providers/tranzila-payment.ts";
+import { TakbullPaymentProvider } from "./providers/takbull.ts";
 import { StripePaymentProvider } from "./providers/stripe.ts";
 import { parsePaymentProviderSlug, type PaymentProviderSlug } from "./registry.ts";
 import type { PaymentProvider } from "./types.ts";
@@ -46,6 +47,9 @@ export function getPaymentProvider(
       return getEnv("TRANZILA_MOCK") === "true"
         ? new MockTranzilaPaymentProvider(service)
         : new TranzilaPaymentProvider(service);
+    case "takbull":
+      // TAKBULL_MOCK is handled inside (takbull/index.ts): the same provider, an in-memory Takbull.
+      return new TakbullPaymentProvider(service);
     case "offline":
       // Callers check isOfflinePaymentTenant() first; reaching here is a bug.
       throw new Error("This studio takes payments at the studio only (payment_provider=offline)");

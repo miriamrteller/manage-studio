@@ -5,7 +5,7 @@ import { z } from "npm:zod@3.22.4";
  * `offline`: the studio takes no online payments. Parents finish enrolment and pay at
  * the studio; an admin records the payment (record-payment). No adapter exists for it.
  */
-export const PAYMENT_PROVIDER_SLUGS = ["stripe", "mock", "grow", "icount", "invoice4u", "ypay", "tranzila", "offline"] as const;
+export const PAYMENT_PROVIDER_SLUGS = ["stripe", "mock", "grow", "icount", "invoice4u", "ypay", "tranzila", "takbull", "offline"] as const;
 export type PaymentProviderSlug = (typeof PAYMENT_PROVIDER_SLUGS)[number];
 
 export const PaymentProviderSlugSchema = z.enum(PAYMENT_PROVIDER_SLUGS);
