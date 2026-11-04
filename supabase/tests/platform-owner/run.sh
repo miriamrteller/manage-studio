@@ -39,7 +39,7 @@ DECLARE
 BEGIN
   -- 1. The owner signs up on the platform host: no studio in the metadata.
   INSERT INTO auth.users (id, email, raw_user_meta_data)
-  VALUES (v_owner, 'MiriamRTeller@gmail.com', '{"language":"he"}'::jsonb);
+  VALUES (v_owner, 'Admin@OpalSwift.com', '{"language":"he"}'::jsonb);
   SELECT * INTO v_profile FROM user_profiles WHERE id = v_owner;
   IF NOT FOUND THEN RAISE EXCEPTION 'FAIL owner got no profile'; END IF;
   IF v_profile.tenant_id IS NOT NULL THEN RAISE EXCEPTION 'FAIL owner profile has a studio'; END IF;
