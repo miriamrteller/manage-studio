@@ -9,7 +9,7 @@ import queryClient from '@/lib/query-client';
 import { TENANT_ASSETS_BUCKET, logoPathFromUrl } from '@/lib/tenantLogoStorage';
 import { uploadTenantLogo } from '@/lib/tenantLogoUpload';
 import { ChromeStyleSettings } from './ChromeStyleSettings';
-import { FONT_PAIRS, FontPairId } from '@/hooks/useFontLoader';
+import { DEFAULT_FONT_PAIR, FONT_PAIRS, FontPairId, resolveFontPair } from '@/hooks/useFontLoader';
 
 interface BrandingFormData {
   primary_color: string;
@@ -24,7 +24,7 @@ export function BrandingSettingsForm() {
   const [formData, setFormData] = useState<BrandingFormData>({
     primary_color: '#6366f1',
     accent_color: '#ec4899',
-    font_pair: 'reliable',
+    font_pair: DEFAULT_FONT_PAIR,
   });
 
   const [isUploadingLight, setIsUploadingLight] = useState(false);
@@ -39,7 +39,8 @@ export function BrandingSettingsForm() {
       setFormData({
         primary_color: tenant.white_label?.primary_color ?? '#6366f1',
         accent_color: tenant.white_label?.accent_color ?? '#ec4899',
-        font_pair: (tenant.font_pair as FontPairId) ?? 'reliable',
+        // No choice yet → the OpalSwift pairing, shown selected and changeable.
+        font_pair: resolveFontPair(tenant.font_pair).id,
       });
     }
   }, [tenant]);
@@ -149,8 +150,6 @@ export function BrandingSettingsForm() {
     }
   };
 
-  const selectedPair = FONT_PAIRS[formData.font_pair];
-
   if (!tenant) {
     return null;
   }
@@ -231,52 +230,67 @@ export function BrandingSettingsForm() {
         <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">
           {t('settings.branding.fontPair', 'Font Pair')}
         </h2>
-        <div className="space-y-4">
-          <div>
-            <label
-              htmlFor="font-pair-select"
-              className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2"
-            >
-              {t('settings.branding.selectFontPair', 'Select Font Pair')}
-            </label>
-            <select
-              id="font-pair-select"
-              value={formData.font_pair}
-              onChange={(e) => handleFontPairChange(e.target.value as FontPairId)}
-              className="w-full h-10 px-3 rounded border border-[var(--border-default)] bg-[var(--surface-raised)] text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--state-focus)]"
-            >
-              {(Object.entries(FONT_PAIRS) as [FontPairId, typeof FONT_PAIRS[FontPairId]][]).map(
-                ([id, pair]) => (
-                  <option key={id} value={id}>
-                    {t(`settings.branding.fontPairs.${id}`, pair.name)} — {pair.en} / {pair.he}
-                  </option>
-                )
-              )}
-            </select>
+        <fieldset>
+          <legend className="text-sm text-[var(--color-text-secondary)] mb-3">
+            {t('settings.branding.fontPairHint')}
+          </legend>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {(Object.values(FONT_PAIRS)).map((pair) => {
+              const heading = pair.heading ?? { en: pair.en, he: pair.he };
+              const selected = formData.font_pair === pair.id;
+              const headingStyle = (family: string) => ({
+                fontFamily: `"${family}", sans-serif`,
+                fontSynthesis: pair.headingSingleWeight ? 'none' : undefined,
+              });
+              return (
+                <label
+                  key={pair.id}
+                  className={`block cursor-pointer rounded-lg border p-4 bg-[var(--surface-raised)] focus-within:ring-2 focus-within:ring-[var(--state-focus)] ${
+                    selected ? 'border-[var(--color-primary)] ring-1 ring-[var(--color-primary)]' : 'border-[var(--border-default)]'
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="font-pair"
+                      value={pair.id}
+                      checked={selected}
+                      onChange={() => handleFontPairChange(pair.id)}
+                    />
+                    <span className="text-sm font-medium text-[var(--color-text-primary)]">
+                      {t(`settings.branding.fontPairs.${pair.id}`, pair.name)}
+                    </span>
+                  </span>
+                  <span className="block text-xs text-[var(--color-text-secondary)] mt-1" dir="ltr">
+                    {t('settings.branding.fontPairFonts', {
+                      heading: heading.en === heading.he ? heading.en : `${heading.en} / ${heading.he}`,
+                      body: `${pair.en} / ${pair.he}`,
+                    })}
+                  </span>
+                  {/* Previews: text only. A pair's font files download only where its text is shown. */}
+                  <span className="block mt-3 space-y-2" aria-hidden="true">
+                    <span className="block" dir="ltr" lang="en">
+                      <span className="block text-lg font-semibold text-[var(--color-text-primary)]" style={headingStyle(heading.en)}>
+                        {t('settings.branding.fontPreviewHeadingEn')}
+                      </span>
+                      <span className="block text-sm text-[var(--color-text-primary)]" style={{ fontFamily: `"${pair.en}", sans-serif` }}>
+                        {t('settings.branding.fontPreviewBodyEn')}
+                      </span>
+                    </span>
+                    <span className="block" dir="rtl" lang="he">
+                      <span className="block text-lg font-semibold text-[var(--color-text-primary)]" style={headingStyle(heading.he)}>
+                        {t('settings.branding.fontPreviewHeadingHe')}
+                      </span>
+                      <span className="block text-sm text-[var(--color-text-primary)]" style={{ fontFamily: `"${pair.he}", sans-serif` }}>
+                        {t('settings.branding.fontPreviewBodyHe')}
+                      </span>
+                    </span>
+                  </span>
+                </label>
+              );
+            })}
           </div>
-
-          <div className="p-4 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-sunken)]">
-            <p className="text-sm text-[var(--color-text-secondary)] mb-3">
-              {t('settings.branding.fontPreview', 'Font Preview')}
-            </p>
-            <div className="space-y-2">
-              <p
-                className="text-lg text-[var(--color-text-primary)]"
-                dir="ltr"
-                style={{ fontFamily: `"${selectedPair.en}", sans-serif` }}
-              >
-                The quick brown fox jumps over the lazy dog
-              </p>
-              <p
-                className="text-lg text-[var(--color-text-primary)]"
-                dir="rtl"
-                style={{ fontFamily: `"${selectedPair.he}", sans-serif` }}
-              >
-                שועל חום מהיר קופץ מעל הכלב העצלן
-              </p>
-            </div>
-          </div>
-        </div>
+        </fieldset>
       </section>
 
       {/* Save Button for Colors + Font */}

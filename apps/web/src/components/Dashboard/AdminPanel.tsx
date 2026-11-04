@@ -210,7 +210,9 @@ export function AdminPanel() {
               {`${t('common.manage')} ${labels.offering.plural}`}
             </h3>
             <p className="text-sm text-gray-600">
-              {t('pages.admin_classes.description', { entity: labels.offering.plural })}
+              {vertical === 'photographer'
+                ? t('pages.admin_classes.packages_description')
+                : t('pages.admin_classes.description', { entity: labels.offering.plural })}
             </p>
             <Button
               variant="primary"

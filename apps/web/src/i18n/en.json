@@ -1307,6 +1307,7 @@
       "empty_message": "Add a season before scheduling classes and enrolments."
     },
     "admin_classes": {
+      "packages_description": "Create, edit and delete your packages.",
       "email_class": "Email participants",
       "email_class_label": "Email the participants of {{name}}",
       "order_hint": "Add a {{level}} and a {{season}} first, then your {{entity}}.",
@@ -3153,14 +3154,18 @@
       "primaryColor": "Primary Color",
       "accentColor": "Accent Color",
       "fontPair": "Font Pair",
-      "selectFontPair": "Select Font Pair",
-      "fontPreview": "Font Preview",
       "fontPairs": {
         "reliable": "Reliable",
         "elegant": "Elegant",
         "dynamic": "Dynamic",
         "warm": "Warm",
-        "bold": "Bold"
+        "bold": "Bold",
+        "opalswift": "OpalSwift (default)",
+        "classic": "Classic",
+        "literary": "Literary",
+        "studio": "Studio",
+        "statement": "Statement",
+        "soft": "Soft"
       },
       "logos": "Logos",
       "lightLogo": "Light Mode Logo",
@@ -3174,7 +3179,13 @@
       "uploadLightLogo": "Upload light mode logo",
       "uploadDarkLogo": "Upload dark mode logo",
       "fileTooLarge": "File too large (max 2MB)",
-      "uploadFailed": "Upload failed. Please try again."
+      "uploadFailed": "Upload failed. Please try again.",
+      "fontPairHint": "Headings and text across your studio's pages. Each choice covers English and Hebrew.",
+      "fontPreviewHeadingEn": "Spring term is open",
+      "fontPreviewBodyEn": "Book your place in a few taps.",
+      "fontPreviewHeadingHe": "ההרשמה לאביב פתוחה",
+      "fontPreviewBodyHe": "שריינו מקום בכמה הקשות.",
+      "fontPairFonts": "Headings: {{heading}} · Text: {{body}}"
     },
     "offline_payments": {
       "title": "How parents pay",

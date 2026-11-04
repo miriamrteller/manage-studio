@@ -5,6 +5,7 @@ import { VerticalI18nProvider } from '@/i18n/VerticalI18nProvider';
 import { useStudioSkin } from '@/features/skins/useSkins';
 import {
   EXISTING_STUDIO_PROFILE,
+  resolveClassLabels,
   resolveEntityLabels,
   resolveStudioLabels,
   resolvePresetModules,
@@ -20,6 +21,8 @@ import {
 
 export interface LabelsContextType {
   labels: EntityLabels;
+  /** The word for a class on class pages: always class wording, never a skin's word. */
+  classLabels: EntityLabels['offering'];
   modules: PresetModules;
   preset: BusinessPreset;
   /** Vertical id (tenants.skin). 'generic' until the tenant loads. */
@@ -32,6 +35,7 @@ export interface LabelsContextType {
 // Used as the context default and as the loading fallback before tenant data arrives.
 const FALLBACK: LabelsContextType = {
   labels: resolveEntityLabels('programs', {}, 'he'),
+  classLabels: resolveClassLabels({}, 'he'),
   modules: resolvePresetModules('programs'),
   preset: 'programs',
   vertical: 'generic',
@@ -66,6 +70,7 @@ export function LabelsProvider({ children }: { children: ReactNode }) {
       return {
         ...FALLBACK,
         labels: resolveEntityLabels('programs', {}, language),
+        classLabels: resolveClassLabels({}, language),
       };
     }
     const preset = safePreset(tenant.business_preset);
@@ -73,6 +78,7 @@ export function LabelsProvider({ children }: { children: ReactNode }) {
     const profile = tenant.profile ?? EXISTING_STUDIO_PROFILE;
     return {
       labels: resolveStudioLabels(profile, tenant.entity_label_overrides, language, vertical, skinLabelsFor(skin, language)),
+      classLabels: resolveClassLabels(tenant.entity_label_overrides, language),
       modules: resolvePresetModules(preset),
       preset,
       vertical,

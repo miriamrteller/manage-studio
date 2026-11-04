@@ -51,16 +51,16 @@ describe('Branding labels in Hebrew', () => {
       he.branding.primaryColor,
       he.branding.accentColor,
       he.branding.fontPair,
-      he.branding.selectFontPair,
-      he.branding.fontPreview,
+      he.branding.fontPairHint,
+      he.branding.fontPairs.opalswift,
       heBase.common.saveChanges,
     ]) {
       expect(screen.getAllByText(text).length, text).toBeGreaterThan(0);
     }
-    for (const english of ['Settings', 'Colors', 'Primary Color', 'Accent Color', 'Font Pair', 'Select Font Pair', 'Font Preview', 'Save Changes']) {
+    for (const english of ['Settings', 'Colors', 'Primary Color', 'Accent Color', 'Font Pair', 'Headings and text across your studio\'s pages. Each choice covers English and Hebrew.', 'Save Changes']) {
       expect(screen.queryByText(english), english).toBeNull();
     }
-    expect(screen.getByRole('option', { name: /^אמין/ })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /^אמין/ })).toBeInTheDocument();
   });
 });
 

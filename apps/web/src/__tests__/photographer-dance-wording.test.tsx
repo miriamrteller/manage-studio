@@ -9,6 +9,7 @@ import { NotificationBlastForm } from '@/features/notifications-admin/components
 import { FinancePeriodSelector } from '@/features/finance-admin/components/FinancePeriodSelector';
 import { managePackagesPath } from '@/features/classes/lib/managePackagesPath';
 import i18n from '@/i18n/i18n';
+import { resolveClassLabels } from '@shared/index';
 import { renderInApp, setLanguage, setTenant } from './helpers/verticalHarness';
 
 vi.mock('@/hooks/useTenant', async () => (await import('./helpers/fakeTenantState')).tenantHookMock());
@@ -65,9 +66,9 @@ describe('finance period', () => {
 
 describe('manage packages link', () => {
   it('photographers go to Packages, dance to the class manager', () => {
-    expect(managePackagesPath('photographer')).toBe('/admin/setup/services');
-    expect(managePackagesPath('dance-studio')).toBe('/admin/setup/classes');
-    expect(managePackagesPath(null)).toBe('/admin/setup/classes');
+    expect(managePackagesPath('photographer')).toBe('/admin/packages');
+    expect(managePackagesPath('dance-studio')).toBe('/admin/classes');
+    expect(managePackagesPath(null)).toBe('/admin/classes');
   });
 });
 
@@ -76,10 +77,16 @@ describe('photographer overlay wording', () => {
   it.each([
     ['finance.charge_type.initial', 'Shoot payment', 'תשלום צילום'],
     ['pages.billing.empty_message', 'Create a billing account to link clients and track payments.', 'צרו חשבון תשלום כדי לקשר לקוחות ולעקוב אחר תשלומים.'],
-    ['pages.admin_classes.title', 'Manage packages', 'ניהול חבילות'],
-    ['pages.admin_classes.description', 'Create, edit and delete your photography packages.', 'יצירה, עריכה ומחיקה של חבילות הצילום שלך.'],
   ])('%s', (key, en, he) => {
     expect(t('en', key)).toBe(en);
     expect(t('he', key)).toBe(he);
+  });
+
+  it('class pages keep class wording for photographers', () => {
+    expect(t('en', 'pages.admin_classes.title')).toBe('Manage {{entity}}');
+    expect(t('he', 'pages.admin_classes.title')).toBe('ניהול שיעורים');
+    expect(resolveClassLabels({}, 'en')).toEqual({ singular: 'Class', plural: 'Classes' });
+    expect(resolveClassLabels({}, 'he')).toEqual({ singular: 'שיעור', plural: 'שיעורים' });
+    expect(resolveClassLabels({ offering: { singular: 'Workshop', plural: 'Workshops' } }, 'en').plural).toBe('Workshops');
   });
 });

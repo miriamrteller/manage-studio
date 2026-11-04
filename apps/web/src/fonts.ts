@@ -16,7 +16,8 @@
  * serves.
  */
 
-/* Reliable: Inter + Heebo. Heebo is also the base stack in index.css and the
+/* OpalSwift (default) and Reliable: Inter + Heebo body (OpalSwift adds Rubik
+ * headings, imported under Warm). Heebo is also the base stack in index.css and the
  * Hebrew fallback for every other pair, so it must always be bundled. */
 import '@fontsource/inter/latin-300.css';
 import '@fontsource/inter/latin-ext-300.css';
@@ -117,6 +118,10 @@ import '@fontsource/rubik/hebrew-600.css';
 import '@fontsource/rubik/latin-700.css';
 import '@fontsource/rubik/latin-ext-700.css';
 import '@fontsource/rubik/hebrew-700.css';
+/* 800: OpalSwift pairing headings (the marketing site's extra-bold). */
+import '@fontsource/rubik/latin-800.css';
+import '@fontsource/rubik/latin-ext-800.css';
+import '@fontsource/rubik/hebrew-800.css';
 
 /* Bold: Oswald + Miriam Libre (Miriam Libre only ships 400/700) */
 import '@fontsource/oswald/latin-300.css';
@@ -135,3 +140,29 @@ import '@fontsource/miriam-libre/hebrew-400.css';
 import '@fontsource/miriam-libre/latin-700.css';
 import '@fontsource/miriam-libre/latin-ext-700.css';
 import '@fontsource/miriam-libre/hebrew-700.css';
+
+/* Literary: Crimson Text + Noto Serif Hebrew */
+import '@fontsource/noto-serif-hebrew/latin-400.css';
+import '@fontsource/noto-serif-hebrew/latin-ext-400.css';
+import '@fontsource/noto-serif-hebrew/hebrew-400.css';
+import '@fontsource/noto-serif-hebrew/latin-500.css';
+import '@fontsource/noto-serif-hebrew/latin-ext-500.css';
+import '@fontsource/noto-serif-hebrew/hebrew-500.css';
+import '@fontsource/noto-serif-hebrew/latin-600.css';
+import '@fontsource/noto-serif-hebrew/latin-ext-600.css';
+import '@fontsource/noto-serif-hebrew/hebrew-600.css';
+import '@fontsource/noto-serif-hebrew/latin-700.css';
+import '@fontsource/noto-serif-hebrew/latin-ext-700.css';
+import '@fontsource/noto-serif-hebrew/hebrew-700.css';
+
+/* Heading-only faces (Studio, Statement, Soft). Each ships a single weight,
+ * so those pairs turn off faux bold on headings (headingSingleWeight). */
+import '@fontsource/secular-one/latin-400.css';
+import '@fontsource/secular-one/latin-ext-400.css';
+import '@fontsource/secular-one/hebrew-400.css';
+import '@fontsource/suez-one/latin-400.css';
+import '@fontsource/suez-one/latin-ext-400.css';
+import '@fontsource/suez-one/hebrew-400.css';
+import '@fontsource/varela-round/latin-400.css';
+import '@fontsource/varela-round/latin-ext-400.css';
+import '@fontsource/varela-round/hebrew-400.css';

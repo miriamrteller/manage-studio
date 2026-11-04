@@ -223,6 +223,17 @@ export function resolveVerticalLabels(vertical: VerticalId, locale: EntityLabelL
   return VERTICAL_LABELS[vertical]?.[locale] ?? {};
 }
 
+/**
+ * The word for a class on class pages. Classes always use class wording (never a skin's word
+ * such as "Package"); only the studio's own word for its offerings wins.
+ */
+export function resolveClassLabels(
+  overrides: Partial<EntityLabels> = {},
+  locale: EntityLabelLocale = 'en',
+): EntityLabels['offering'] {
+  return overrides.offering ?? DEFAULT_LABELS_BY_LOCALE[locale].programs.offering;
+}
+
 export function resolveEntityLabels(
   preset: BusinessPreset,
   overrides: Partial<EntityLabels> = {},
