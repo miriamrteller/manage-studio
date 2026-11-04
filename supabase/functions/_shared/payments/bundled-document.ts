@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
 import { fetchAndStoreBundledDocumentPdf } from "./bundled-document-pdf.ts";
 import { sendPaymentDocumentAdminEmail } from "./send-payment-document-admin-email.ts";
+import type { IssuedDocumentKind } from "./document-kind.ts";
 
 /** Canonical bundled document fields — shared by Grow, iCount, and Invoice4U. */
 export interface ParsedBundledDocument {
@@ -9,6 +10,8 @@ export interface ParsedBundledDocument {
   externalDocumentId: string;
   externalDocumentNumber?: string;
   documentUrl?: string;
+  /** Which document was issued, when the provider tells us. */
+  documentKind?: IssuedDocumentKind | null;
 }
 
 export type BundledDocumentResult =
@@ -28,6 +31,8 @@ export async function persistPaymentDocumentFields(
     externalDocumentId: string;
     externalDocumentNumber?: string | null;
     documentUrl?: string | null;
+    /** Which document was issued (receipt / tax invoice-receipt / credit); null = unknown. */
+    documentKind?: IssuedDocumentKind | null;
     /** When true, skip update if payment already has this (or any) document id. */
     skipIfPresent?: boolean;
   },
@@ -62,6 +67,7 @@ export async function persistPaymentDocumentFields(
       external_document_id: params.externalDocumentId,
       external_document_number: params.externalDocumentNumber ?? null,
       invoice_url: params.documentUrl ?? null,
+      issued_document_kind: params.documentKind ?? null,
       invoice_issued_at: now,
       document_stored_at: pdfPath ? now : null,
       document_pdf_path: pdfPath,
@@ -79,6 +85,7 @@ export async function persistPaymentDocumentFields(
       external_document_id: params.externalDocumentId,
       external_document_number: params.externalDocumentNumber ?? null,
       invoice_url: params.documentUrl ?? null,
+      issued_document_kind: params.documentKind ?? null,
       document_pdf_path: pdfPath,
       pdf_stored: Boolean(pdfPath),
       provider_payment_ref: params.providerPaymentRef,
@@ -129,6 +136,7 @@ export async function applyBundledDocumentNotify(
     externalDocumentId: parsed.externalDocumentId,
     externalDocumentNumber: parsed.externalDocumentNumber,
     documentUrl: parsed.documentUrl,
+    documentKind: parsed.documentKind ?? null,
     skipIfPresent: false,
   });
 

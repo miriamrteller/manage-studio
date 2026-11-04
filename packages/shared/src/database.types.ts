@@ -2336,6 +2336,7 @@ export type Database = {
           id: string
           invoice_issued_at: string | null
           invoice_url: string | null
+          issued_document_kind: string | null
           job_payment_request_id: string | null
           legal_hold: boolean
           offering_id: string | null
@@ -2383,6 +2384,7 @@ export type Database = {
           id?: string
           invoice_issued_at?: string | null
           invoice_url?: string | null
+          issued_document_kind?: string | null
           job_payment_request_id?: string | null
           legal_hold?: boolean
           offering_id?: string | null
@@ -2430,6 +2432,7 @@ export type Database = {
           id?: string
           invoice_issued_at?: string | null
           invoice_url?: string | null
+          issued_document_kind?: string | null
           job_payment_request_id?: string | null
           legal_hold?: boolean
           offering_id?: string | null

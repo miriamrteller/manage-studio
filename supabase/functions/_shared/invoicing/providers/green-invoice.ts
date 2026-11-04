@@ -9,6 +9,7 @@ import type {
 } from "../types.ts";
 import { InvoicingProviderError } from "../types.ts";
 import { giDocumentType, giPaymentRows } from "./green-invoice-document.ts";
+import { documentKindFromGreenInvoiceType } from "../../payments/document-kind.ts";
 
 const TokenResponseSchema = z.object({
   token: z.string(),
@@ -111,6 +112,7 @@ export class GreenInvoiceProvider implements InvoicingProvider {
       externalDocumentId: doc.id,
       externalDocumentNumber: String(doc.number),
       documentUrl: href,
+      documentKind: documentKindFromGreenInvoiceType(body.type as number),
     };
   }
 

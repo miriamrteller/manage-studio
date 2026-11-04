@@ -158,6 +158,7 @@ describe('YpayInvoicingProvider.issueDocument — live /document call', () => {
       externalDocumentId: '900061',
       externalDocumentNumber: '900061',
       documentUrl: 'https://ypay.co.il/fsrv/business/1658/customers/44/official/12ca76.pdf',
+      documentKind: 'tax_invoice_receipt',
     });
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, FetchInit];
@@ -184,6 +185,7 @@ describe('YpayInvoicingProvider.issueDocument — live /document call', () => {
 
     expect(result.externalDocumentId).toBe('9');
     expect(result.externalDocumentNumber).toBe('9');
+    expect(result.documentKind).toBe('receipt');
     const body = JSON.parse(String((fetchMock.mock.calls[0] as unknown as [string, FetchInit])[1].body));
     expect(body.docType).toBe(108);
     // v2.1 Payment Methods: 1 = cash.
@@ -305,6 +307,7 @@ describe('document queue — offline receipt end to end', () => {
     const payment = db.tables.payments[0];
     expect(payment.external_document_id).toBe(`mock-ypay-doc-${PAYMENT}`);
     expect(payment.external_document_number).toMatch(/^YPAY-MOCK-109-/);
+    expect(payment.issued_document_kind).toBe('tax_invoice_receipt');
     expect(payment.invoice_url).toContain('mock.ypay.local');
     expect(payment.invoice_issued_at).toBeTruthy();
     expect(db.tables.document_queue[0].status).toBe('succeeded');

@@ -1220,6 +1220,26 @@ export declare const ExpenseCreateInputSchema: z.ZodObject<{
     p_corrects_expense_id?: string | null | undefined;
 }>;
 export type ExpenseCreateInput = z.infer<typeof ExpenseCreateInputSchema>;
+/**
+ * Tax document actually issued for a payment (payments.issued_document_kind).
+ * Null = unknown (the provider issued it and didn't say which) or none yet.
+ */
+export declare const IssuedDocumentKindSchema: z.ZodEnum<["receipt", "tax_invoice_receipt", "credit_note"]>;
+export type IssuedDocumentKind = z.infer<typeof IssuedDocumentKindSchema>;
+/** Document queue rows embedded on a payment (latest attempt decides the "no document" reason). */
+export declare const PaymentLogDocumentQueueSchema: z.ZodObject<{
+    status: z.ZodString;
+    document_kind: z.ZodString;
+    created_at: z.ZodEffects<z.ZodString, string, string>;
+}, "strip", z.ZodTypeAny, {
+    status: string;
+    created_at: string;
+    document_kind: string;
+}, {
+    status: string;
+    created_at: string;
+    document_kind: string;
+}>;
 export declare const PaymentLogRowSchema: z.ZodObject<{
     id: z.ZodString;
     person_id: z.ZodOptional<z.ZodNullable<z.ZodString>>;
@@ -1238,6 +1258,23 @@ export declare const PaymentLogRowSchema: z.ZodObject<{
     created_at: z.ZodEffects<z.ZodString, string, string>;
     external_document_number: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     invoice_url: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    external_document_id: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    issued_document_kind: z.ZodOptional<z.ZodNullable<z.ZodEnum<["receipt", "tax_invoice_receipt", "credit_note"]>>>;
+    allocation_number: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    refunds_payment_id: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    document_queue: z.ZodOptional<z.ZodArray<z.ZodObject<{
+        status: z.ZodString;
+        document_kind: z.ZodString;
+        created_at: z.ZodEffects<z.ZodString, string, string>;
+    }, "strip", z.ZodTypeAny, {
+        status: string;
+        created_at: string;
+        document_kind: string;
+    }, {
+        status: string;
+        created_at: string;
+        document_kind: string;
+    }>, "many">>;
     person: z.ZodOptional<z.ZodNullable<z.ZodObject<{
         id: z.ZodString;
         name: z.ZodString;
@@ -1282,6 +1319,12 @@ export declare const PaymentLogRowSchema: z.ZodObject<{
     person_id?: string | null | undefined;
     engagement_id?: string | null | undefined;
     offering_id?: string | null | undefined;
+    refunds_payment_id?: string | null | undefined;
+    document_queue?: {
+        status: string;
+        created_at: string;
+        document_kind: string;
+    }[] | undefined;
     offering?: {
         id: string;
         name: string;
@@ -1294,6 +1337,9 @@ export declare const PaymentLogRowSchema: z.ZodObject<{
     paid_at?: string | null | undefined;
     external_document_number?: string | null | undefined;
     invoice_url?: string | null | undefined;
+    external_document_id?: string | null | undefined;
+    issued_document_kind?: "receipt" | "tax_invoice_receipt" | "credit_note" | null | undefined;
+    allocation_number?: string | null | undefined;
     person?: {
         id: string;
         name: string;
@@ -1312,6 +1358,12 @@ export declare const PaymentLogRowSchema: z.ZodObject<{
     person_id?: string | null | undefined;
     engagement_id?: string | null | undefined;
     offering_id?: string | null | undefined;
+    refunds_payment_id?: string | null | undefined;
+    document_queue?: {
+        status: string;
+        created_at: string;
+        document_kind: string;
+    }[] | undefined;
     offering?: {
         id: string;
         name: string;
@@ -1324,6 +1376,9 @@ export declare const PaymentLogRowSchema: z.ZodObject<{
     paid_at?: string | null | undefined;
     external_document_number?: string | null | undefined;
     invoice_url?: string | null | undefined;
+    external_document_id?: string | null | undefined;
+    issued_document_kind?: "receipt" | "tax_invoice_receipt" | "credit_note" | null | undefined;
+    allocation_number?: string | null | undefined;
     person?: {
         id: string;
         name: string;
