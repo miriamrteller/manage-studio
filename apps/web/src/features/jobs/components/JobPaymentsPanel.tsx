@@ -124,7 +124,7 @@ export function JobPaymentsPanel({ engagementId, packagePriceMinor }: Props) {
         isSubmitting={recordManualPayment.isPending || recordManualRefund.isPending}
         onClose={() => setManual(null)}
         onMarkPaid={(id, method, note) => recordManualPayment.mutateAsync({ id, method, note })}
-        onRefund={(paymentId, reason) => recordManualRefund.mutateAsync({ paymentId, reason })}
+        onRefund={(paymentId, reason, amountMinor) => recordManualRefund.mutateAsync({ paymentId, reason, amountMinor })}
       />
     </Card>
   );

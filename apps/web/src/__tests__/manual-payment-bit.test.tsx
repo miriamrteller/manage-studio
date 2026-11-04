@@ -10,6 +10,7 @@ import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/re
 vi.mock('@/features/finance/hooks/useManualPaymentMethods', () => ({
   useManualPaymentMethods: () => ['cash', 'bank_transfer', 'bit'],
 }));
+vi.mock('@/hooks/useTenant', () => ({ useTenant: () => ({ id: 't1', invoicing_provider: 'ypay' }) }));
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key, i18n: { language: 'en' } }),
 }));
