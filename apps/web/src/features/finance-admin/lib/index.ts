@@ -6,3 +6,4 @@ export * from './financeAdminUtils';
 export * from './paymentDocuments';
 export * from './pagedFetch';
 export * from './accountantExport';
+export * from './financeCharts';
