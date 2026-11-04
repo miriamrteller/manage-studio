@@ -1,6 +1,6 @@
 # Takbull integration plan
 
-Status: plan, not built. Owner direction (2026-11-04): Takbull may become the default for new
+Status: being built. PR 1 (client, keys, Test connection) merged as #352; PR 2 (card payments + takbull-ipn) in progress. Owner direction (2026-11-04): Takbull may become the default for new
 studios. Source for every Takbull fact below: the official API docs,
 https://api.takbull.co.il/ApiDocs (read 2026-11-04). Anything the docs don't state is listed under
 "Open questions" and is not designed around.
@@ -58,8 +58,8 @@ What already exists and Takbull plugs into:
    - The notice handler stores the invoice id and number with `persistPaymentDocumentFields`, plus the issued document kind.
    - **Payments recorded by hand** (cash, transfer, Bit) and manual refunds go through the queue to a Takbull invoicing adapter that calls `DocumentApi/Create`: `cashes`, `wireTransfers`, `customPayments` (Bit), and `isNegativeDocument` for refunds.
    - So Takbull is **not** bundled-only: Bit / PayBox stays visible for recorded payments, and the no-document notes don't apply.
-5. **Which document**, receipt 400 or tax invoice-receipt 320: an explicit studio setting, prefilled from business status and never switched by it. This is the same rule as #340 (Green Invoice). We send it on every request, and also push it as `DefaultDocumentType` through `UpdateDocumentSettings`. *Owner:* one shared column for every provider, or a Takbull-only one like YPay's and Green Invoice's.
-6. **Who emails the document:** we do, with our en/he email and the studio as sender. So we send `sendToCustomer: false`, and the Takbull document email is off in the studio's document settings. *Owner to confirm* (otherwise clients get two emails).
+5. **Which document**, receipt 400 or tax invoice-receipt 320: an explicit studio setting, prefilled from business status and never switched by it. This is the same rule as #340 (Green Invoice). We send it on every request, and also push it as `DefaultDocumentType` through `UpdateDocumentSettings`. **Owner decided:** a Takbull-only column, `tenants.takbull_document_type` (PR 2), like YPay's and Green Invoice's.
+6. **Who emails the document (owner decided):** Takbull emails the official document. OpalSwift sends its own confirmation, without a second copy of the document. Our document email only goes out for payments recorded by hand, which Takbull doesn't know about.
 7. **Studio keys** (`API_Key`, `API_Secret`) are stored encrypted, like the other providers:
    - saved through a `save_tenant_takbull_credentials` SECURITY DEFINER RPC (listed in `supabase/security/definer-execute.json`);
    - checked by a `verify-takbull-credentials` function, using a read-only call: `GetDocumentSettings`.
@@ -67,7 +67,8 @@ What already exists and Takbull plugs into:
    - The parent key is stored once, in Supabase edge secrets (`supabase/edge-secrets.json`). If it ever has a second copy, it goes into `docs/deployment/SHARED-SECRETS.md` with a rotation.
    - The child's keys arrive in Takbull's account notice and are stored encrypted by the server; they are never shown or logged.
    - The owner's ID number and bank details pass straight through to Takbull and are **never stored** by us. This goes on the lawyer list.
-   - *Owner:* who pays the Takbull package (`SubscriptionPayer`: us or the studio).
+   - **Who pays (owner decided):** OpalSwift pays a Takbull platform price on the parent side, and each studio pays only its own per-transaction fees, on its own merchant account. So `CreateAccount` uses `SubscriptionPayer: "Parent"` with the package OpalSwift agrees with Takbull. The package id is configuration, not hardcoded. Takbull's platform price is not confirmed yet.
+   - Confirmed in the docs: the UPay clearing account is opened in the studio's own name (its business number, the owner's ID, its own bank account), so the studio is always the merchant.
 
 ## The PRs (each hidden from studios until the last)
 
@@ -106,6 +107,23 @@ What already exists and Takbull plugs into:
 - **Bit:** card-side Bit becomes possible online. Recorded Bit stays as it is.
 - **Demo seed and fixtures:** a Takbull studio.
 - **Lawyer list:** Takbull as a data sub-processor (privacy policy, DPA), and the onboarding pass-through of ID and bank data. `[[LAWYER: confirm]]`
+
+## OpalSwift's own billing of studios (owner decision; not built yet)
+
+OpalSwift itself only needs Takbull. OpalSwift bills studios for their plan (trial, then paid) as a **Takbull merchant**, with its own Takbull account. There is no Grow account for OpalSwift.
+
+- **Card at sign-up, or when the trial ends:** a Takbull payment page for OpalSwift's own account. The card token is kept for monthly charges.
+- **Monthly charge:** `ChargeToken` on OpalSwift's own account, from a platform billing job. This is a separate schedule from the studios' billing of their clients.
+- **Documents to studios:** issued by OpalSwift's Takbull account (`CreateDocument` with the charge), addressed to the studio's business.
+- **Separation:** OpalSwift's own keys are a platform secret (Supabase edge secrets; `docs/deployment/SHARED-SECRETS.md` if it ever has a second copy). They are never stored in `tenants`.
+
+What currently assumes Grow for platform billing:
+
+- **App code:** none. There is no platform-subscription billing code yet; `tenants.sub_status` / `trial_ends_at` are set at sign-up or by hand.
+- **`docs/plans/opalswift-billing-plan.md`:** built on Grow (partner programme, no-charge card save, receipts, break-even incl. the Grow fee). It gets rewritten for Takbull when platform billing is planned, under the one-current-copy rule.
+- **`docs/plans/OPALSWIFT-ON-OPALSWIFT.md`** and **`docs/deployment/COORDINATOR-HANDOVER.md`:** a few Grow mentions, to update in the same pass.
+
+The providers studios use for their own clients don't change.
 
 ## Open questions (for Takbull, not in the docs)
 

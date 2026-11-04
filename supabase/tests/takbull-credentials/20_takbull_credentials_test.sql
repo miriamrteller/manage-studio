@@ -63,3 +63,32 @@ BEGIN
   IF tenant_takbull_connected() THEN RAISE EXCEPTION 'FAIL a parent sees connected'; END IF;
   RAISE NOTICE 'ok  empty keys refused; parents can neither save nor see them';
 END $$;
+
+-- PR 2: the document type is prefilled from business status at creation, and takbull_orders is
+-- server-only.
+DO $$
+DECLARE
+  v SMALLINT;
+  n INT;
+BEGIN
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', false);
+  INSERT INTO tenants (id, name, subdomain, contact_email, legal_profile)
+  VALUES ('a0000000-0000-4000-8000-0000000000e1', 'Exempt', 'tb-exempt', 'e@x.test', '{"business_status": "osek_patur"}'),
+         ('a0000000-0000-4000-8000-0000000000e2', 'Company', 'tb-company', 'c@x.test', '{"business_status": "company"}');
+  SELECT takbull_document_type INTO v FROM tenants WHERE id = 'a0000000-0000-4000-8000-0000000000e1';
+  IF v <> 400 THEN RAISE EXCEPTION 'FAIL exempt dealer prefilled %', v; END IF;
+  SELECT takbull_document_type INTO v FROM tenants WHERE id = 'a0000000-0000-4000-8000-0000000000e2';
+  IF v <> 320 THEN RAISE EXCEPTION 'FAIL company prefilled %', v; END IF;
+  UPDATE tenants SET legal_profile = '{"business_status": "company"}' WHERE id = 'a0000000-0000-4000-8000-0000000000e1';
+  SELECT takbull_document_type INTO v FROM tenants WHERE id = 'a0000000-0000-4000-8000-0000000000e1';
+  IF v <> 400 THEN RAISE EXCEPTION 'FAIL business status switched it to %', v; END IF;
+  RAISE NOTICE 'ok  Takbull document type prefilled at creation, never switched';
+
+  SELECT count(*) INTO n FROM information_schema.role_table_grants
+  WHERE table_name = 'takbull_orders' AND grantee IN ('anon', 'authenticated');
+  IF n <> 0 THEN RAISE EXCEPTION 'FAIL takbull_orders granted to clients (%)', n; END IF;
+  IF NOT (SELECT relrowsecurity FROM pg_class WHERE relname = 'takbull_orders') THEN
+    RAISE EXCEPTION 'FAIL takbull_orders without RLS';
+  END IF;
+  RAISE NOTICE 'ok  takbull_orders is server-only';
+END $$;

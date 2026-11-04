@@ -4,7 +4,8 @@ import type { TakbullCredentials } from "./client.ts";
 /** Thrown when a studio has no Takbull keys saved (not a Takbull fault). */
 export class TakbullNotConnectedError extends Error {
   constructor() {
-    super("Takbull is not connected for this studio");
+    // "not configured": checkout treats this as "online payment not set up" (pay at the studio).
+    super("Takbull credentials not configured for this studio");
     this.name = "TakbullNotConnectedError";
   }
 }

@@ -3434,6 +3434,48 @@ export type Database = {
                     }
                 ];
             };
+            takbull_orders: {
+                Row: {
+                    created_at: string;
+                    metadata: Json;
+                    payment_id: string;
+                    save_card: boolean;
+                    tenant_id: string;
+                    uniq_id: string | null;
+                };
+                Insert: {
+                    created_at?: string;
+                    metadata: Json;
+                    payment_id: string;
+                    save_card?: boolean;
+                    tenant_id: string;
+                    uniq_id?: string | null;
+                };
+                Update: {
+                    created_at?: string;
+                    metadata?: Json;
+                    payment_id?: string;
+                    save_card?: boolean;
+                    tenant_id?: string;
+                    uniq_id?: string | null;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "takbull_orders_payment_id_fkey";
+                        columns: ["payment_id"];
+                        isOneToOne: true;
+                        referencedRelation: "payments";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "takbull_orders_tenant_id_fkey";
+                        columns: ["tenant_id"];
+                        isOneToOne: false;
+                        referencedRelation: "tenants";
+                        referencedColumns: ["id"];
+                    }
+                ];
+            };
             tenant_automatic_emails: {
                 Row: {
                     email_key: string;
@@ -3977,6 +4019,7 @@ export type Database = {
                     takbull_api_key_enc: string | null;
                     takbull_api_secret_enc: string | null;
                     takbull_credentials_updated_at: string | null;
+                    takbull_document_type: number;
                     teaches_classes: boolean;
                     terms_url: string | null;
                     tranzila_terminal_name: string | null;
@@ -4062,6 +4105,7 @@ export type Database = {
                     takbull_api_key_enc?: string | null;
                     takbull_api_secret_enc?: string | null;
                     takbull_credentials_updated_at?: string | null;
+                    takbull_document_type?: number;
                     teaches_classes?: boolean;
                     terms_url?: string | null;
                     tranzila_terminal_name?: string | null;
@@ -4147,6 +4191,7 @@ export type Database = {
                     takbull_api_key_enc?: string | null;
                     takbull_api_secret_enc?: string | null;
                     takbull_credentials_updated_at?: string | null;
+                    takbull_document_type?: number;
                     teaches_classes?: boolean;
                     terms_url?: string | null;
                     tranzila_terminal_name?: string | null;
