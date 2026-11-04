@@ -55,41 +55,93 @@ const HEALTH_FORMS: SignedFormSpec[] = [
   },
 ];
 
-/**
- * The forms each studio type (tenants.skin) gets. Class studios with both ages
- * get both health declarations; service businesses the base agreement plus
- * their skin's add-on; a general studio the base agreement only.
- */
-export const SIGNED_FORMS_BY_SKIN: Record<string, SignedFormSpec[]> = {
-  'dance-studio': HEALTH_FORMS,
-  photographer: [
-    {
-      key: 'agreement',
-      doc: 'service-agreement',
-      addon: 'addon-photographer',
-      title: { en: 'Photography services agreement', he: 'הסכם שירותי צילום' },
-    },
-  ],
-  beautician: [
-    {
-      key: 'agreement',
-      doc: 'service-agreement',
-      addon: 'addon-beautician',
-      title: { en: 'Treatment services agreement', he: 'הסכם שירותי טיפול' },
-    },
-  ],
-  generic: [{ key: 'agreement', doc: 'service-agreement', title: { en: 'Service agreement', he: 'הסכם שירות' } }],
+/** The add-on documents a studio's agreement can carry (verticals.legal_addon). */
+export const ADDON_DOCS = {
+  photographer: 'addon-photographer',
+  beautician: 'addon-beautician',
+  coaching: 'addon-coaching',
+} as const satisfies Record<string, SignedDocId>;
+export type SignedAddon = keyof typeof ADDON_DOCS;
+
+export function isSignedAddon(value: unknown): value is SignedAddon {
+  return typeof value === 'string' && value in ADDON_DOCS;
+}
+
+/** What each add-on's agreement is called. */
+const AGREEMENT_TITLES: Record<SignedAddon | 'none', Record<LegalLang, string>> = {
+  photographer: { en: 'Photography services agreement', he: 'הסכם שירותי צילום' },
+  beautician: { en: 'Treatment services agreement', he: 'הסכם שירותי טיפול' },
+  coaching: { en: 'Sessions agreement', he: 'הסכם פגישות' },
+  none: { en: 'Service agreement', he: 'הסכם שירות' },
 };
 
-/** The forms a studio type signs (unknown types: the general studio's). */
-export function signedFormsForVertical(vertical: string | null | undefined): SignedFormSpec[] {
-  return SIGNED_FORMS_BY_SKIN[vertical ?? ''] ?? SIGNED_FORMS_BY_SKIN.generic;
+/** The add-on each built-in skin has always had (a skin row's legal_addon says the same). */
+const BUILT_IN_ADDONS: Record<string, SignedAddon> = { photographer: 'photographer', beautician: 'beautician' };
+
+/** Today's rule, by skin: only dance studios' clients sign a health declaration. */
+export function defaultHealthDeclarations(vertical: string | null | undefined): boolean {
+  return vertical === 'dance-studio';
 }
 
-/** Studios whose clients sign a health declaration: the only ones asked about insurance. */
-export function hasHealthDeclarations(vertical: string | null | undefined): boolean {
-  return signedFormsForVertical(vertical).some((f) => f.doc.startsWith('health-declaration'));
+/** What decides a studio's forms. Anything not given follows its skin, as before. */
+export interface SignedFormsScope {
+  /** tenants.health_declaration (NULL: from the field). */
+  healthDeclarations?: boolean | null;
+  /** verticals.legal_addon of the studio's skin; undefined: the built-in skin's own. */
+  legalAddon?: SignedAddon | null;
 }
+
+/**
+ * The forms a studio's clients sign. A health declaration (both ages) when the
+ * studio's clients sign one ("Clients sign a health declaration"; dance studios
+ * by default). Every studio but a dance studio also has the service agreement,
+ * with its field's add-on (photography, treatments, coaching), if any.
+ */
+export function signedFormsFor(vertical: string | null | undefined, scope: SignedFormsScope = {}): SignedFormSpec[] {
+  const forms: SignedFormSpec[] = [];
+  if (scope.healthDeclarations ?? defaultHealthDeclarations(vertical)) forms.push(...HEALTH_FORMS);
+  if (vertical !== 'dance-studio') {
+    const addon = scope.legalAddon === undefined ? BUILT_IN_ADDONS[vertical ?? ''] ?? null : scope.legalAddon;
+    forms.push({
+      key: 'agreement',
+      doc: 'service-agreement',
+      ...(addon ? { addon: ADDON_DOCS[addon] } : {}),
+      title: AGREEMENT_TITLES[addon ?? 'none'],
+    });
+  }
+  return forms;
+}
+
+/** The forms a studio type signs by default (unknown types: the general studio's). */
+export function signedFormsForVertical(vertical: string | null | undefined): SignedFormSpec[] {
+  return signedFormsFor(vertical);
+}
+
+/**
+ * Whether the studio's clients sign a health declaration: the studio's setting,
+ * or, when it has none, its field's default. Only those studios are asked about insurance.
+ */
+export function hasHealthDeclarations(vertical: string | null | undefined, setting?: boolean | null): boolean {
+  return setting ?? defaultHealthDeclarations(vertical);
+}
+
+/**
+ * The forms for a skin as the Skins page previews them (no studio setting yet). Built-in
+ * skins keep their own forms; a data skin gets the add-on its row names, when the app
+ * ships it (coaching included), and dance-style health forms only through the setting.
+ */
+export function signedFormsForSkin(skin: string | null | undefined, legalAddon?: string | null): SignedFormSpec[] {
+  const id = skin ?? '';
+  if (BUILT_IN_SKIN_IDS.includes(id) || !legalAddon) return signedFormsFor(id);
+  return signedFormsFor(id, { legalAddon: isSignedAddon(legalAddon) ? legalAddon : null });
+}
+
+/** Add-ons a data skin can bring into its signed forms today. */
+export function isShippedLegalAddon(legalAddon: string | null | undefined): boolean {
+  return isSignedAddon(legalAddon);
+}
+
+const BUILT_IN_SKIN_IDS = ['dance-studio', 'photographer', 'beautician', 'generic'];
 
 /**
  * The studio's insurance answer. Optional and never blocking: anything but an
@@ -104,6 +156,7 @@ export function insuranceStatus(profile: Record<string, string | undefined> | nu
 const SERVICE_TYPE: Record<string, Record<LegalLang, string>> = {
   photographer: { en: 'photography', he: 'צילום' },
   beautician: { en: 'beauty treatment', he: 'טיפול יופי' },
+  coaching: { en: 'coaching or tutoring', he: 'אימון או הוראה' },
 };
 
 export interface SignedTemplateContext {
@@ -113,6 +166,8 @@ export interface SignedTemplateContext {
   profile: Record<string, string | undefined>;
   /** tenants.skin (names the service in the agreement). */
   vertical?: string | null;
+  /** The agreement's add-on (names the service; its own default numbers). Set by prepareSignedForm. */
+  addon?: SignedAddon | null;
 }
 
 
@@ -155,6 +210,15 @@ const DEFAULTS: Record<string, string> = {
   // Beauty add-on
   'orally / in writing / in the app': 'orally or in writing',
   'בעל פה / בכתב / באפליקציה': 'בעל פה או בכתב',
+  // Coaching add-on
+  'in full in advance / in N instalments': 'in full in advance',
+  'מראש במלואה / ב-N תשלומים': 'מראש במלואה',
+  'in the app / by message': 'in the app or by message',
+  'באפליקציה / בהודעה': 'באפליקציה או בהודעה',
+  'unless both agree': 'unless both agree',
+  'אלא אם שני הצדדים מסכימים': 'אלא אם שני הצדדים מסכימים',
+  'is present / may be present': 'may be present',
+  'נוכח/ת / רשאי/ת להיות נוכח/ת': 'רשאי/ת להיות נוכח/ת',
 };
 
 /** Placeholders whose text is the default ("or a free re-shoot, where possible"). */
@@ -164,10 +228,17 @@ const KEEP_INNER = /^(or |או |treatments that require it|טיפולים שמח
 const BY_PREFIX: Array<[RegExp, Record<LegalLang, string>]> = [
   [/^(PRICES|מחירים) —/, { en: 'as agreed in the quote', he: 'כפי שסוכם בהצעת המחיר' }],
   [/^(list|רשימה): /, { en: '', he: '' }],
+  // Coaching add-on: where sessions happen.
+  [/^(in person at |פנים אל פנים ב-)/, { en: 'in person or online by video', he: 'פנים אל פנים או מקוון בווידאו' }],
 ];
+
+/** Optional alternatives that are dropped (the clause reads complete without them). */
+const DROP_PREFIX = /^(\/ is charged at |\/ מחויבת ב-)/;
 
 /** The photography add-on's [[NUMBER]]s after the business number: delivery days, gallery months, archive months. */
 const NUMBER_DEFAULTS = ['30', '6', '12'];
+/** The coaching add-on's: session minutes, sessions in a package, months it is valid, extension months. */
+const NUMBER_DEFAULTS_BY_ADDON: Partial<Record<SignedAddon, string[]>> = { coaching: ['60', '10', '6', '3'] };
 
 function businessKind(status: BusinessStatus | undefined, lang: LegalLang): string | null {
   const he = lang === 'he';
@@ -221,9 +292,13 @@ export interface StudioSignedForm {
   audience: SignedAudience | null;
 }
 
-/** The forms for a studio's type, filled: what provisioning stores as its active consent templates. */
-export function studioSignedForms(vertical: string | null | undefined, ctx: SignedTemplateContext): StudioSignedForm[] {
-  return signedFormsForVertical(vertical).map((form) => ({
+/** The forms for a studio, filled: what provisioning stores as its active consent templates. */
+export function studioSignedForms(
+  vertical: string | null | undefined,
+  ctx: SignedTemplateContext,
+  scope: SignedFormsScope = {},
+): StudioSignedForm[] {
+  return signedFormsFor(vertical, scope).map((form) => ({
     key: form.key,
     name: form.title[ctx.lang],
     audience: form.audience ?? null,
@@ -235,7 +310,8 @@ export function studioSignedForms(vertical: string | null | undefined, ctx: Sign
 export function prepareSignedForm(form: SignedFormSpec, ctx: SignedTemplateContext): string {
   const parts = [stripDraftingFrame(signedTemplateSource(form.doc, ctx.lang))];
   if (form.addon) parts.push(stripDraftingFrame(signedTemplateSource(form.addon, ctx.lang)));
-  return fillSignedText(parts.join('\n\n'), ctx);
+  const addon = (Object.keys(ADDON_DOCS) as SignedAddon[]).find((k) => ADDON_DOCS[k] === form.addon) ?? null;
+  return fillSignedText(parts.join('\n\n'), { ...ctx, addon });
 }
 
 /**
@@ -265,7 +341,9 @@ export function fillSignedText(markdown: string, ctx: SignedTemplateContext): st
   const status = p.business_status as BusinessStatus | undefined;
   const legalName = value(p.legal_name) || ctx.tenantName;
   const email = value(p.email) || ctx.contactEmail;
-  const serviceType = SERVICE_TYPE[ctx.vertical ?? '']?.[ctx.lang] ?? (ctx.lang === 'he' ? 'השירות' : 'the service');
+  const serviceType =
+    SERVICE_TYPE[ctx.addon ?? ctx.vertical ?? '']?.[ctx.lang] ?? (ctx.lang === 'he' ? 'השירות' : 'the service');
+  const numberDefaults = (ctx.addon && NUMBER_DEFAULTS_BY_ADDON[ctx.addon]) || NUMBER_DEFAULTS;
   const retention = value(p.health_retention_years);
   // Neutral for any business status: VAT and tax documents are the invoicing provider's job.
   const vat =
@@ -319,6 +397,11 @@ export function fillSignedText(markdown: string, ctx: SignedTemplateContext): st
     if (inner in studio) return studio[inner];
     if (inner.startsWith('SERVICE TYPE') || inner.startsWith('סוג השירות')) return serviceType;
     if (DEFAULTS[inner] !== undefined) return DEFAULTS[inner];
+    if (DROP_PREFIX.test(inner)) return '';
+    // The package extension: kept, as an option (the add-on's drafting note recommends it).
+    if (/^\/ (may be extended once by|ניתן להאריך פעם אחת ב-)/.test(inner)) {
+      return ctx.lang === 'he' ? `או ש${inner.slice(2)}` : `or ${inner.slice(2)}`;
+    }
     for (const [re, out] of BY_PREFIX) {
       if (re.test(inner)) return out[ctx.lang] || inner.replace(re, '').replace(/,? (and so on|וכד')$/, '');
     }
@@ -328,7 +411,7 @@ export function fillSignedText(markdown: string, ctx: SignedTemplateContext): st
         firstNumber = false;
         return value(p.business_number) || BLANK;
       }
-      return NUMBER_DEFAULTS[numberIndex++] ?? BLANK;
+      return numberDefaults[numberIndex++] ?? BLANK;
     }
     // Plain numbers and periods ("14", "6 months", "48") are already the default.
     if (/^[\d–-]+( days| months| יום| חודשים)?$/.test(inner)) return inner;

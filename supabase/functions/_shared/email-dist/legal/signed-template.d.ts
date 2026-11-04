@@ -22,16 +22,45 @@ export interface SignedFormSpec {
     audience?: SignedAudience;
     title: Record<LegalLang, string>;
 }
+/** The add-on documents a studio's agreement can carry (verticals.legal_addon). */
+export declare const ADDON_DOCS: {
+    readonly photographer: "addon-photographer";
+    readonly beautician: "addon-beautician";
+    readonly coaching: "addon-coaching";
+};
+export type SignedAddon = keyof typeof ADDON_DOCS;
+export declare function isSignedAddon(value: unknown): value is SignedAddon;
+/** Today's rule, by skin: only dance studios' clients sign a health declaration. */
+export declare function defaultHealthDeclarations(vertical: string | null | undefined): boolean;
+/** What decides a studio's forms. Anything not given follows its skin, as before. */
+export interface SignedFormsScope {
+    /** tenants.health_declaration (NULL: from the field). */
+    healthDeclarations?: boolean | null;
+    /** verticals.legal_addon of the studio's skin; undefined: the built-in skin's own. */
+    legalAddon?: SignedAddon | null;
+}
 /**
- * The forms each studio type (tenants.skin) gets. Class studios with both ages
- * get both health declarations; service businesses the base agreement plus
- * their skin's add-on; a general studio the base agreement only.
+ * The forms a studio's clients sign. A health declaration (both ages) when the
+ * studio's clients sign one ("Clients sign a health declaration"; dance studios
+ * by default). Every studio but a dance studio also has the service agreement,
+ * with its field's add-on (photography, treatments, coaching), if any.
  */
-export declare const SIGNED_FORMS_BY_SKIN: Record<string, SignedFormSpec[]>;
-/** The forms a studio type signs (unknown types: the general studio's). */
+export declare function signedFormsFor(vertical: string | null | undefined, scope?: SignedFormsScope): SignedFormSpec[];
+/** The forms a studio type signs by default (unknown types: the general studio's). */
 export declare function signedFormsForVertical(vertical: string | null | undefined): SignedFormSpec[];
-/** Studios whose clients sign a health declaration: the only ones asked about insurance. */
-export declare function hasHealthDeclarations(vertical: string | null | undefined): boolean;
+/**
+ * Whether the studio's clients sign a health declaration: the studio's setting,
+ * or, when it has none, its field's default. Only those studios are asked about insurance.
+ */
+export declare function hasHealthDeclarations(vertical: string | null | undefined, setting?: boolean | null): boolean;
+/**
+ * The forms for a skin as the Skins page previews them (no studio setting yet). Built-in
+ * skins keep their own forms; a data skin gets the add-on its row names, when the app
+ * ships it (coaching included), and dance-style health forms only through the setting.
+ */
+export declare function signedFormsForSkin(skin: string | null | undefined, legalAddon?: string | null): SignedFormSpec[];
+/** Add-ons a data skin can bring into its signed forms today. */
+export declare function isShippedLegalAddon(legalAddon: string | null | undefined): boolean;
 /**
  * The studio's insurance answer. Optional and never blocking: anything but an
  * explicit "We have insurance" counts as "We don't have insurance" (owner
@@ -45,6 +74,8 @@ export interface SignedTemplateContext {
     profile: Record<string, string | undefined>;
     /** tenants.skin (names the service in the agreement). */
     vertical?: string | null;
+    /** The agreement's add-on (names the service; its own default numbers). Set by prepareSignedForm. */
+    addon?: SignedAddon | null;
 }
 /** Markdown → the plain text the signing step shows (it renders text, not markdown). */
 export declare function markdownToPlainText(md: string): string;
@@ -57,8 +88,8 @@ export interface StudioSignedForm {
     content: string;
     audience: SignedAudience | null;
 }
-/** The forms for a studio's type, filled: what provisioning stores as its active consent templates. */
-export declare function studioSignedForms(vertical: string | null | undefined, ctx: SignedTemplateContext): StudioSignedForm[];
+/** The forms for a studio, filled: what provisioning stores as its active consent templates. */
+export declare function studioSignedForms(vertical: string | null | undefined, ctx: SignedTemplateContext, scope?: SignedFormsScope): StudioSignedForm[];
 /** A form's text: the document (and its add-on), filled with the studio's details. */
 export declare function prepareSignedForm(form: SignedFormSpec, ctx: SignedTemplateContext): string;
 /**

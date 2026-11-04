@@ -1,4 +1,5 @@
 import { studioSignedForms } from "./email-dist/legal/signed-template.js";
+import { studioFormsScope } from "./email-dist/legal/field-defaults.js";
 
 /** The studio fields a signed template is filled with. */
 export interface SeedTenant {
@@ -8,6 +9,41 @@ export interface SeedTenant {
   language_default: string | null;
   contact_email: string | null;
   legal_profile?: Record<string, unknown> | null;
+  /** tenants.health_declaration (NULL: from the field). */
+  health_declaration?: boolean | null;
+  /**
+   * The skin row (embedded `verticals(...)`): its health-declaration default and legal add-on.
+   * PostgREST returns one object for this link; an untyped client types it as a list.
+   */
+  verticals?: SeedSkinRow | SeedSkinRow[] | null;
+}
+
+/** The parts of a verticals row the forms follow. */
+export interface SeedSkinRow {
+  name_en?: string | null;
+  name_he?: string | null;
+  default_switches?: Record<string, unknown> | null;
+  legal_addon?: string | null;
+}
+
+function skinRow(tenant: SeedTenant): SeedSkinRow | null {
+  return (Array.isArray(tenant.verticals) ? tenant.verticals[0] : tenant.verticals) ?? null;
+}
+
+/** Which forms the studio's clients sign: its setting, else its field's default; its field's add-on. */
+export function seedScope(tenant: SeedTenant) {
+  const skin = skinRow(tenant);
+  const switchValue = skin?.default_switches?.health_declaration;
+  return studioFormsScope(
+    {
+      id: tenant.skin,
+      nameEn: skin?.name_en ?? null,
+      nameHe: skin?.name_he ?? null,
+      healthDeclaration: typeof switchValue === "boolean" ? switchValue : null,
+      legalAddon: skin?.legal_addon ?? null,
+    },
+    tenant.health_declaration,
+  );
 }
 
 export interface SeedDeps {
@@ -44,9 +80,10 @@ function stringProfile(value: unknown): Record<string, string> {
 
 /**
  * Gives a studio the forms its clients sign, filled with its details, in
- * Hebrew and English (each reader signs in their own language): dance studios both health declarations (under 18 / adults, picked
- * by age at signing), service businesses the agreement with their type's
- * add-on, general studios the base agreement. Never touches a studio that
+ * Hebrew and English (each reader signs in their own language): both health
+ * declarations (under 18 / adults, picked by age at signing) when its clients
+ * sign one ("Clients sign a health declaration"; dance studios by default), and
+ * every studio but a dance studio the agreement with its field's add-on. Never touches a studio that
  * already has a form. Returns how many were added.
  */
 export async function seedSignedTemplate(
@@ -69,13 +106,18 @@ export async function seedSignedTemplate(
     return 0;
   }
   let added = 0;
+  const scope = seedScope(tenant);
   for (const lang of languages) {
-    const forms = studioSignedForms(tenant.skin, {
-      lang,
-      tenantName: tenant.name,
-      contactEmail: tenant.contact_email ?? "",
-      profile: stringProfile(tenant.legal_profile),
-    });
+    const forms = studioSignedForms(
+      tenant.skin,
+      {
+        lang,
+        tenantName: tenant.name,
+        contactEmail: tenant.contact_email ?? "",
+        profile: stringProfile(tenant.legal_profile),
+      },
+      scope,
+    );
     for (const form of forms) {
       if (have?.has(`${form.audience ?? ""}|${lang}`)) continue;
       await deps.insertTemplate({

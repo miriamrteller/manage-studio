@@ -215,8 +215,8 @@ export function renderClientDocumentEmail(input: ClientDocumentEmailInput): { su
   // Hebrew agreement: קבלה / חשבונית are feminine, מסמך is masculine.
   const heAttached = input.documentKind ? "מצורפת" : "מצורף";
   const methodLabel = he
-    ? input.paymentMethod === "cash" ? "במזומן" : input.paymentMethod === "bank_transfer" ? "בהעברה בנקאית" : ""
-    : input.paymentMethod === "cash" ? "in cash" : input.paymentMethod === "bank_transfer" ? "by bank transfer" : "";
+    ? input.paymentMethod === "cash" ? "במזומן" : input.paymentMethod === "bank_transfer" ? "בהעברה בנקאית" : input.paymentMethod === "bit" ? "בביט / פייבוקס" : ""
+    : input.paymentMethod === "cash" ? "in cash" : input.paymentMethod === "bank_transfer" ? "by bank transfer" : input.paymentMethod === "bit" ? "by Bit / PayBox" : "";
   const greeting = he
     ? `שלום${input.recipientName ? ` ${escapeHtml(input.recipientName)}` : ""},`
     : `Hi${input.recipientName ? ` ${escapeHtml(input.recipientName)}` : ""},`;

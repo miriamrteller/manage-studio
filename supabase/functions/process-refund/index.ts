@@ -4,6 +4,7 @@ import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/su
 import { enqueueDocument } from "../_shared/enqueue-document.ts";
 import { executeProviderRefund, ManualRefundRequiredError } from "../_shared/payments/refund-provider.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
+import { planRefund } from "../_shared/payments/refund-amounts.ts";
 
 const ProcessRefundBodySchema = z.object({
   payment_id: z.string().uuid(),
@@ -65,13 +66,15 @@ Deno.serve(withMonitoring("process-refund", async (req) => {
     return jsonResponse({ error: "Payment is not refundable" }, 409);
   }
 
-  const alreadyRefunded = (original.refund_amount_minor as number | null) ?? 0;
-  const remaining = (original.total_amount_minor as number) - alreadyRefunded;
-  const refundAmount = body.amount_minor ?? remaining;
-
-  if (refundAmount <= 0 || refundAmount > remaining) {
+  const plan = planRefund({
+    totalMinor: original.total_amount_minor as number,
+    alreadyRefundedMinor: original.refund_amount_minor as number | null,
+    requestedMinor: body.amount_minor,
+  });
+  if (!plan.ok) {
     return jsonResponse({ error: "Invalid refund amount" }, 400);
   }
+  const refundAmount = plan.amountMinor;
 
   const manualRefund = body.manual === true || original.provider === "manual";
 
@@ -103,10 +106,7 @@ Deno.serve(withMonitoring("process-refund", async (req) => {
     }
   }
 
-  const newRefundTotal = alreadyRefunded + refundAmount;
-  const newStatus = newRefundTotal >= (original.total_amount_minor as number)
-    ? "refunded"
-    : "partially_refunded";
+  const { newRefundTotal, newStatus } = plan;
 
   await service
     .from("payments")
@@ -166,7 +166,7 @@ Deno.serve(withMonitoring("process-refund", async (req) => {
 
   // Photographer deposit/balance: a FULL refund releases the request from the
   // "all paid" gallery gate (refunded_manual); partial refunds keep it paid.
-  if (original.job_payment_request_id && newStatus === "refunded") {
+  if (original.job_payment_request_id && plan.releasesJobRequest) {
     await service
       .from("job_payment_requests")
       .update({

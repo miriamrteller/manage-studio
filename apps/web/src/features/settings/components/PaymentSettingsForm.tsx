@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { BitPaymentSetting } from './BitPaymentSetting';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation } from '@tanstack/react-query';
@@ -27,6 +28,15 @@ function StatusRow({ label, value }: { label: string; value: string }) {
  * shows. An online provider shows only its own connection details.
  */
 export function PaymentSettingsForm() {
+  return (
+    <div className="space-y-8">
+      <PaymentSettingsBody />
+      <BitPaymentSetting />
+    </div>
+  );
+}
+
+function PaymentSettingsBody() {
   const tenant = useTenant();
   const choice = (
     <div className="space-y-8">

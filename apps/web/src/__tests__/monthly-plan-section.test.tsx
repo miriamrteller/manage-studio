@@ -111,7 +111,7 @@ describe('MonthlyPlanSection', () => {
     expect(screen.getByText('Sibling')).toBeTruthy();
 
     // Recording the due month starts at its one-off amount.
-    fireEvent.click(screen.getByRole('button', { name: 'finance.record_payment.monthly_open' }));
+    fireEvent.click(screen.getByRole('button', { name: 'finance.record_payment.open' }));
     expect(screen.getByLabelText(/finance.record_payment.amount/)).toHaveValue('100');
   });
 

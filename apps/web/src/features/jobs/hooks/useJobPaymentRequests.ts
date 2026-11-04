@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { ManualPaymentMethod } from '@/features/finance/lib/manualPaymentMethods';
 import { useTenant } from '@/hooks/useTenant';
 import {
   JobPaymentService,
@@ -55,14 +56,14 @@ export function useJobPaymentRequests(engagementId: string | undefined) {
   });
 
   const recordManualPayment = useMutation({
-    mutationFn: (params: { id: string; method: 'cash' | 'bank_transfer'; note?: string }) =>
-      JobPaymentService.recordManualPayment(params.id, params.method, params.note),
+    mutationFn: (params: { id: string; method: ManualPaymentMethod; note?: string; sendConfirmation?: boolean }) =>
+      JobPaymentService.recordManualPayment(params.id, params.method, params.note, params.sendConfirmation),
     onSuccess: invalidate,
   });
 
   const recordManualRefund = useMutation({
-    mutationFn: (params: { paymentId: string; reason?: string }) =>
-      JobPaymentService.recordManualRefund(params.paymentId, params.reason),
+    mutationFn: (params: { paymentId: string; reason?: string; amountMinor?: number }) =>
+      JobPaymentService.recordManualRefund(params.paymentId, params.reason, params.amountMinor),
     onSuccess: invalidate,
   });
 

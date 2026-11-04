@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import {
   FORM_TIME_ZONE,
-  PRESETS_BY_KIND,
+  presetKeysFor,
   PRESET_QUESTIONS,
   formSlugProblem,
   leadFormIsOpen,
@@ -71,7 +71,7 @@ function useStudioQuestionChoices() {
     const config = query.data;
     if (!config) return [] as Array<{ key: string; label: string }>;
     return [
-      ...PRESETS_BY_KIND[kind]
+      ...presetKeysFor(config, kind)
         .filter((k) => config.presets[k]?.enabled)
         .map((k) => ({ key: k as string, label: PRESET_QUESTIONS[k].label[lang] })),
       ...config.custom.map((q) => ({ key: `c_${q.id}`, label: q.label[lang] || q.label.en })),

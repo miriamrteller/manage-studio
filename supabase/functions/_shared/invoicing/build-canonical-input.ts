@@ -29,6 +29,7 @@ function parsePaymentMethod(value: string | null): CanonicalDocumentInput["payme
     case "card":
     case "cash":
     case "bank_transfer":
+    case "bit":
     case "other":
       return value;
     default:

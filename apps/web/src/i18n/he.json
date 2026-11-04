@@ -783,7 +783,8 @@
         "email": "אימייל",
         "phone": "טלפון",
         "message": "במה אתם מתעניינים?",
-        "message_placeholder": "למשל יום הולדת, שיעור ניסיון לבת שלי…",
+        "message_placeholder": "למשל מה אתם מחפשים ומתי",
+        "message_placeholder_classes": "למשל שיעור ניסיון לבת שלי, או מה אתם מחפשים ומתי",
         "submit": "שליחה",
         "sent_title": "תודה!",
         "sent_message": "קיבלנו את הפנייה ונחזור אליכם בהקדם.",
@@ -955,7 +956,6 @@
       "email_required": "נדרשת כתובת דוא\"ל לשליחת קישור השלמה.",
       "link_sent": "קישור השלמה נשלח ל-{{email}}. ההרשמה ממתינה לחתימה על הטופס ולהשלמת התשלום.",
       "link_copy": "קישור השלמה",
-      "offline_title": "רישום תשלום לא מקוון",
       "offline_desc": "סמן כשולם כשהתקבל מזומן, צ'ק או העברה בנקאית.",
       "offline_method": "אמצעי תשלום",
       "offline_action": "אשר הרשמה כשולמה",
@@ -1553,12 +1553,12 @@
         "copyLink": "העתקת קישור",
         "linkSentTo": "הקישור לתשלום נשלח במייל אל {{email}}.",
         "whatsappMessage": "היי, מצורף קישור לתשלום מ{{studio}} עבור {{label}} ({{amount}}): {{url}}",
-        "markPaid": "סימון כשולם (מזומן/העברה)",
         "reopen": "פתיחה מחדש",
         "invoice": "חשבונית {{number}}",
         "invoicePending": "החשבונית בהפקה",
         "receipt": "קבלה {{number}}",
         "receiptPending": "הקבלה בהפקה",
+        "partlyRefunded": "הוחזרו חלקית {{amount}}",
         "recordRefund": "רישום החזר",
         "status": {
           "pending": "טרם נשלח",
@@ -1586,7 +1586,6 @@
           "save": "יצירה"
         },
         "manual": {
-          "paidTitle": "רישום תשלום שהתקבל",
           "refundTitle": "רישום החזר ידני",
           "method": "אמצעי תשלום",
           "method_cash": "מזומן",
@@ -1899,7 +1898,6 @@
     "intro": "כמה צעדים קצרים ואתם מוכנים ללקוח הראשון. כל צעד מסומן לבד כשהוא מושלם.",
     "done_title": "הסטודיו שלכם מוכן",
     "done_body": "כל מה שברשימה הושלם או דולג. אפשר לשנות הכול מאוחר יותר בהגדרות.",
-    "progress": "{{done}} מתוך {{total}} הושלמו",
     "next": "הצעד הבא: {{step}}",
     "skip": "דילוג",
     "undo_skip": "ביטול דילוג",
@@ -1968,6 +1966,53 @@
         "title": "שליחת הצעת המחיר הראשונה",
         "hint": "הפכו פנייה להצעת מחיר שהלקוח יכול לאשר אונליין."
       }
+    },
+    "percent": "הגעתם ל-{{percent}}%",
+    "progress_label": "התקדמות ההגדרה",
+    "level": "שלב: {{level}}",
+    "minutes_one": "בערך דקה",
+    "minutes_two": "בערך שתי דקות",
+    "minutes_other": "בערך {{count}} דקות",
+    "to_go_one": "עוד צעד אחד",
+    "to_go_two": "עוד שני צעדים",
+    "to_go_other": "עוד {{count}} צעדים",
+    "live": "הסטודיו שלכם באוויר! כדאי לשתף את הקישור כדי שלקוחות ימצאו אתכם.",
+    "fewer": "פחות חגיגות",
+    "levels": {
+      "getting_started": "מתחילים",
+      "open_for_enquiries": "פתוח לפניות",
+      "ready_for_clients": "מוכן ללקוחות",
+      "fully_set_up": "הכול מוכן"
+    },
+    "cheers": {
+      "branding": "נראה מצוין! הסטודיו מתחיל להיראות כמו שלכם.",
+      "levels": "הרמות נוספו. לחוגים יש בית.",
+      "season": "העונה הוגדרה. עכשיו ברור מתי הכול קורה.",
+      "classes": "החוגים בפנים. לקוחות רואים מה יש לכם להציע.",
+      "packages": "החבילות בפנים. לקוחות רואים מה יש לכם להציע.",
+      "offerings": "ההצעה שלכם בפנים. לקוחות רואים מה אתם עושים.",
+      "payments": "התשלומים מסודרים. לקוחות יודעים איך לשלם.",
+      "connect_payments": "התשלומים המקוונים מחוברים. הכסף יכול להגיע.",
+      "legal": "המסמכים המשפטיים מוכנים. לקוחות נרשמים בביטחון.",
+      "leads": "הפנייה הראשונה הגיעה!",
+      "test_enrolment": "הרשמת הניסיון הושלמה. עכשיו אתם יודעים איך זה מרגיש ללקוחות.",
+      "first_quote": "הצעת המחיר הראשונה נשלחה. כל הכבוד!"
+    },
+    "celebrate": {
+      "setup_done": {
+        "title": "הסטודיו שלכם באוויר!",
+        "body": "כל הצעדים הושלמו. כדאי לשתף את הקישור כדי שלקוחות ימצאו אתכם."
+      },
+      "first_enquiry": {
+        "title": "הפנייה הראשונה!",
+        "body": "מישהו רוצה לשמוע מכם. כדאי לענות מהר: תשובה מהירה מביאה לקוחות."
+      },
+      "first_paid": {
+        "title": "הלקוח המשלם הראשון!",
+        "body": "התשלום הראשון הגיע. מכאן זה מתחיל."
+      },
+      "share_link": "שיתוף הקישור",
+      "dismiss": "סגירה"
     }
   },
   "colour_presets": {
@@ -2077,7 +2122,7 @@
     "invoicing_existing": "אני כבר משתמש/ת בשירות חשבוניות אחר",
     "invoicing_existing_which": "באיזה שירות חשבוניות?",
     "payments_later": "הסטודיו מחבר את החשבון אצל הספק בהמשך, בהגדרות שלו.",
-    "look_hint": "מתחילים בצבעים של OpalSwift. הסטודיו יכול להעלות לוגו ולשנות צבעים בהמשך.",
+    "look_hint": "בחרו צבעים ואם תרצו גם לוגו. אפשר לשנות את שניהם בהמשך.",
     "primary_color": "צבע ראשי",
     "accent_color": "צבע משני",
     "owner_email": "האימייל של הבעלים",
@@ -2105,7 +2150,14 @@
     "next_legal": "הוספת קישורים משפטיים ותנאי הרשמה.",
     "next_sender": "הגדרת כתובת השולח של האימיילים.",
     "next_test_enrolment": "ביצוע הרשמת ניסיון מההתחלה עד הסוף.",
-    "next_lawyer": "בדיקת המסמכים המשפטיים על ידי עורך דין."
+    "next_lawyer": "בדיקת המסמכים המשפטיים על ידי עורך דין.",
+    "filled_for_you": "פרטים שמילאנו בשבילך",
+    "choose_own_colour": "בחירת צבע משלכם",
+    "logo_label": "לוגו (לא חובה)",
+    "logo_optional": "PNG,‏ JPG,‏ SVG או WebP, עד 2MB. אפשר לדלג ולהוסיף בהמשך בהגדרות ← מיתוג.",
+    "logo_chosen": "{{name}} יתווסף כשהסטודיו ייווצר.",
+    "logo_too_large": "הקובץ גדול מ-2MB. בחרו קובץ קטן יותר, או דלגו בינתיים.",
+    "logo_owner_later": "בעל/ת הסטודיו יוכל/תוכל להוסיף לוגו בהמשך בהגדרות ← מיתוג."
   },
   "studio_not_found": {
     "title": "הסטודיו לא נמצא",
@@ -2281,6 +2333,13 @@
     "price_one_time": "{{amount}} (חד פעמי)"
   },
   "finance": {
+    "no_document": {
+      "send_label": "לשלוח למשלם אישור תשלום במייל",
+      "send_hint": "הסטודיו שלכם לא מפיק מסמכי מס, ולכן באישור כתוב שהוא אינו קבלה או חשבונית.",
+      "nudge": "כדי להפיק קבלות, חברו את שירות החשבוניות.",
+      "nudge_link": "הגדרות ← חשבוניות",
+      "dismiss": "סגירה"
+    },
     "documents_not_issued": {
       "title": "תשלומים ללא מסמך מס",
       "description": "לתשלומים האלה אין קבלה או חשבונית משירות החשבוניות שלכם, והם לא יקבלו אותה מעצמם. הפיקו את המסמך בעצמכם לכל אחד מהם.",
@@ -2421,8 +2480,8 @@
       "sort_order": "סדר תצוגה"
     },
     "record_payment": {
-      "open": "רישום תשלום ידני",
-      "title": "רישום תשלום ידני",
+      "open": "רישום תשלום",
+      "title": "רישום תשלום",
       "amount": "סכום ({{currency}})",
       "amount_hint": "מתחיל במחיר השיעור. אפשר לשנות אם שולם סכום אחר.",
       "amount_invalid": "יש להזין סכום גדול מאפס, למשל 350 או 350.50.",
@@ -2432,8 +2491,7 @@
       "note": "הערה (לא חובה)",
       "submit": "רישום תשלום",
       "success": "התשלום נרשם.",
-      "monthly_open": "רישום תשלום חודשי",
-      "monthly_title": "רישום תשלום חודשי ששולם בסטודיו",
+      "monthly_title": "רישום תשלום חודשי",
       "monthly_hint": "התשלום נרשם לחודש הבא שמגיע לתשלום בתוכנית החודשית של ההרשמה. רישום נוסף משלם חודש נוסף מראש.",
       "monthly_success": "התשלום נרשם עבור {{month}}."
     },
@@ -2469,6 +2527,15 @@
       "error_generic": "לא ניתן היה לשלוח את הקישור להוספת כרטיס."
     },
     "refund_payment": {
+      "how_much": "כמה להחזיר",
+      "already_refunded": "כבר הוחזרו {{amount}} · נשארו {{remaining}}",
+      "full": "החזר מלא ({{amount}})",
+      "partial": "החזר חלקי",
+      "partial_amount": "סכום להחזר ({{currency}})",
+      "partial_invalid": "הזינו סכום עד {{remaining}}",
+      "document_credit_note": "תופק תעודת זיכוי על ההחזר הזה.",
+      "document_in_provider": "{{provider}} לא מפיקה מסמך זיכוי על החזרים שנעשים מ-OpalSwift: הפיקו אותו ב-{{provider}}.",
+      "document_none": "לא מופק מסמך: הסטודיו שלכם לא מפיק מסמכי מס.",
       "open": "החזר",
       "title": "החזר תשלום",
       "amount": "סכום ההחזר",
@@ -2716,6 +2783,60 @@
       "document_hint": "בחרו מה חשבון ה-YPay שלכם מפיק. אם לא בטוחים, שאלו את YPay.",
       "document_saved": "נשמר."
     },
+    "features": {
+      "title": "תכונות",
+      "intro": "כל מה שיש לסטודיו שלכם מעבר לבסיס. כבו את מה שאתם לא משתמשים בו, ואפשר להפעיל שוב בכל עת. כיבוי רק מסתיר: דמי חודש, תשלומים וקבלות ממשיכים, ושום דבר לא נמחק.",
+      "none": "עדיין אין מה לכבות.",
+      "load_failed": "לא הצלחנו לטעון את התכונות. נסו שוב.",
+      "save_failed": "השינוי לא נשמר. נסו שוב.",
+      "sets": {
+        "monthly": "דמי חודש",
+        "projects": "פרויקטים",
+        "booking": "הזמנת תורים",
+        "classes": "חוגים",
+        "families": "משפחות",
+        "extras": "תוספות"
+      },
+      "keys": {
+        "billing_recurring_enabled": "דמי חודש",
+        "billing_dunning_enabled": "תזכורות על דמי חודש שלא שולמו",
+        "billing_quotes_generate": "הצעות מחיר",
+        "billing_delivery_gated": "מקדמה תחילה, יתרה לפני המסירה",
+        "media_gallery_gated": "גלריה שנפתחת אחרי התשלום",
+        "scheduling_booking_client": "לקוחות מזמינים תורים באתר",
+        "scheduling_booking_admin": "הזמנת תורים עבור לקוחות",
+        "scheduling_integration_google_calendar": "סנכרון עם Google Calendar",
+        "scheduling_penalties_capture": "דמי ביטול מאוחר ואי-הגעה",
+        "offerings_structure_configure": "תקופות ורמות",
+        "offerings_booking_public": "הרשמה ציבורית לחוגים",
+        "scheduling_calendar_view": "מערכת שעות של החוגים",
+        "people_families_manage": "חשבונות משפחה (הורים משלמים עבור ילדים)",
+        "comms_documents_whatsapp": "מסמכים בוואטסאפ",
+        "comms_otp_whatsapp": "קודי כניסה בוואטסאפ",
+        "comms_reminders_voice": "תזכורות בשיחה קולית",
+        "comms_reminders_whatsapp": "תזכורות בוואטסאפ",
+        "finance_expenses_advanced": "הוצאות מתקדמות",
+        "finance_export_bkmv": "ייצוא לרשות המסים (במבנה אחיד)",
+        "finance_reports_annual": "דוח שנתי",
+        "finance_reports_realtime": "רווח והפסד בזמן אמת",
+        "finance_threshold_radar": "מעקב אחרי תקרת עוסק פטור",
+        "platform_domains_custom": "כתובת אתר משלכם",
+        "platform_themes_customize": "צבעים ועיצוב משלכם",
+        "scheduling_ai_assistant": "עוזר לתזמון",
+        "ui_content_ai": "עזרה בכתיבה",
+        "ui_documents_queue": "תור מסמכים",
+        "ui_downloads_selfServe": "לקוחות מורידים את המסמכים שלהם",
+        "ui_onboarding_checklist": "רשימת צעדים להקמה",
+        "ui_payments_enhanced": "מסכי תשלום משופרים",
+        "ui_pdfs_branded": "קובצי PDF עם המיתוג שלכם",
+        "ui_theme_dance_studio": "מראה של סטודיו למחול",
+        "ui_theme_photographer": "מראה של צלם",
+        "ui_theme_beautician": "מראה של סטודיו ליופי",
+        "media_portfolio_public": "תיק עבודות ציבורי",
+        "media_storage_extended": "נפח אחסון נוסף",
+        "scheduling_appointments_calcom": "תורים דרך Cal.com"
+      }
+    },
     "business": {
       "title": "העסק שלכם",
       "intro": "איך אתם גובים תשלום ובאילו תחומים אתם משתמשים. כיבוי תחום מסתיר אותו: שום דבר לא נמחק, ואפשר להחזיר אותו בכל עת.",
@@ -2734,7 +2855,9 @@
       "dismiss": "סגירה",
       "save": "שמירה",
       "saved": "נשמר.",
-      "error": "השמירה לא הצליחה. נסו שוב."
+      "error": "השמירה לא הצליחה. נסו שוב.",
+      "health_label": "לקוחות חותמים על הצהרת בריאות",
+      "health_hint": "לפני שמתחילים, הלקוחות (או הורה, לילדים) ממלאים טופס בריאות קצר. מקובל במחול, כושר, יוגה, שחייה ואומנויות לחימה."
     },
     "lead_digest": {
       "title": "מייל מעקב יומי",
@@ -2789,6 +2912,7 @@
       "branding": "מיתוג",
       "profile": "פרופיל הסטודיו",
       "business": "העסק שלכם",
+      "features": "תכונות",
       "locale": "שפה ואזור",
       "payment": "הגדרות תשלום",
       "invoicing": "חשבוניות",
@@ -2856,6 +2980,10 @@
       "providers": { "grow": "Grow (משולם)", "icount": "iCount", "invoice4u": "Invoice4U", "ypay": "YPay", "tranzila": "Tranzila", "yesh": "Yesh", "green_invoice": "חשבונית ירוקה" }
     },
     "payments": {
+      "bit_title": "ביט / פייבוקס",
+      "bit_label": "לקבל תשלומי ביט / פייבוקס שאתם רושמים בעצמכם",
+      "bit_hint": "{{provider}} לא יכולה להפיק קבלה על תשלום בביט / פייבוקס שנרשם כאן, ולכן תפיקו את הקבלה בעצמכם. הורים יכולים לשלם בביט גם בעמוד התשלום בכרטיס, ושם מופקת קבלה.",
+      "bit_error": "השינוי לא נשמר. נסו שוב.",
       "connect_title": "חיבור תשלום אונליין",
       "connected_note": "פרטי התשלום שלכם שמורים. לקוחות יכולים לשלם בכרטיס אונליין.",
       "not_connected_note": "עדיין לא מחובר. עד שתחברו, לקוחות מתבקשים לשלם לסטודיו ישירות. שום דבר לא נשבר, ואפשר לחבר בכל רגע.",
@@ -3516,6 +3644,32 @@
     "save": "שמירת הסקין",
     "saving": "שומר…",
     "cancel": "ביטול",
-    "save_failed": "לא הצלחנו לשמור את הסקין: {{reason}}"
+    "save_failed": "לא הצלחנו לשמור את הסקין: {{reason}}",
+    "section_enquiry": "שאלות בטופס הפנייה",
+    "enquiry_hint": "שאלות מוכנות שטופס הפנייה של סטודיו חדש מתחיל איתן. הן מופעלות ולא חובה, והבעלים משנים אותן בהגדרות. אם לא מסמנים כלום: השאלות הרגילות של התחום.",
+    "enquiry_group_classes": "שיעורים",
+    "enquiry_group_photography": "אירועים וצילומים",
+    "enquiry_group_general": "כללי",
+    "section_colours": "צבעים",
+    "colours_hint": "צבעי ההתחלה של המראה של סטודיו חדש. אם משאירים ריק, משתמשים בצבעים של OpalSwift. הבעלים יכולים לשנות אותם באשף ההקמה.",
+    "colour_primary": "צבע ראשי",
+    "colour_accent": "צבע משני",
+    "error_colour": "השתמשו בקוד צבע כמו ‎#5B6CFF.",
+    "colours_reset": "שימוש בצבעים של OpalSwift",
+    "section_preview": "סטודיו לדוגמה",
+    "preview_hint": "כך מתחיל סטודיו חדש בסקין הזה. דוגמה בלבד; לא מוצג סטודיו אמיתי.",
+    "preview_unnamed": "סקין חדש",
+    "preview_studio": "סטודיו לדוגמה: {{field}}",
+    "preview_menu": "תפריט",
+    "preview_add": "הוספת {{noun}}",
+    "preview_switches": "מופעל",
+    "preview_enquiry": "שאלות בטופס הפנייה",
+    "preview_enquiry_usual": "השאלות הרגילות של התחום.",
+    "preview_forms": "טפסים שהלקוחות חותמים עליהם",
+    "preview_with_addon": "(עם ה{{addon}})",
+    "legal_not_shipped": "התוספת הזו עדיין לא נמצאת בטפסים לחתימה, ולכן סטודיואים חדשים מקבלים רק את ההסכם הבסיסי."
+  },
+  "payment_methods": {
+    "bit": "ביט / פייבוקס"
   }
 }

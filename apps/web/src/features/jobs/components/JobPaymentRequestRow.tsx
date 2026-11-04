@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { isManualPaymentMethod } from '@/features/finance/lib/manualPaymentMethods';
 import { useTranslation } from 'react-i18next';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -29,7 +30,10 @@ export function JobPaymentRequestRow({
   const collectable = request.status === 'pending' || request.status === 'sent';
   const amount = formatMinor(request.amount_minor, request.currency, language);
   // Cash / bank money gets a receipt (קבלה) issued standalone; card charges carry the provider's invoice.
-  const offline = request.payment?.payment_method === 'cash' || request.payment?.payment_method === 'bank_transfer';
+  const offline = isManualPaymentMethod(request.payment?.payment_method);
+  // A partial refund keeps the request paid; refunds stay possible while money is left.
+  const partlyRefundedMinor = request.payment?.refund_amount_minor ?? 0;
+  const refundableMinor = Math.max((request.payment?.total_amount_minor ?? request.amount_minor) - partlyRefundedMinor, 0);
   const documentKey = offline ? 'pages.jobs.payments.receipt' : 'pages.jobs.payments.invoice';
   const documentPendingKey = offline ? 'pages.jobs.payments.receiptPending' : 'pages.jobs.payments.invoicePending';
   const waMessage = t('pages.jobs.payments.whatsappMessage', { studio: studioName, label: request.label, amount, url: payUrl });
@@ -71,7 +75,7 @@ export function JobPaymentRequestRow({
               {copied ? t('pages.crm.leads.copied') : t('pages.jobs.payments.copyLink')}
             </Button>
             <Button size="sm" variant="outline" disabled={busy} onClick={onMarkPaid}>
-              {t('pages.jobs.payments.markPaid')}
+              {t('finance.record_payment.open')}
             </Button>
             <Button size="sm" variant="ghost" disabled={busy} onClick={onCancel}>
               {t('common.cancel')}
@@ -92,9 +96,18 @@ export function JobPaymentRequestRow({
             ) : (
               <span className="text-sm text-muted-foreground">{t(documentPendingKey)}</span>
             )}
-            <Button size="sm" variant="ghost" disabled={busy} onClick={onRefund}>
-              {t('pages.jobs.payments.recordRefund')}
-            </Button>
+            {partlyRefundedMinor > 0 && (
+              <span className="text-sm text-muted-foreground">
+                {t('pages.jobs.payments.partlyRefunded', {
+                  amount: formatMinor(partlyRefundedMinor, request.currency, language),
+                })}
+              </span>
+            )}
+            {refundableMinor > 0 && (
+              <Button size="sm" variant="ghost" disabled={busy} onClick={onRefund}>
+                {t('pages.jobs.payments.recordRefund')}
+              </Button>
+            )}
           </>
         )}
         {request.status === 'refunded_manual' && request.payment?.invoice_url && (

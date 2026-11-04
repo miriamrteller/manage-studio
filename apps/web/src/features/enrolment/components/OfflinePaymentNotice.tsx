@@ -7,7 +7,7 @@ import queryClient from '@/lib/query-client';
 /**
  * Shown instead of a card form when the studio takes payment at the studio
  * (payment_provider = "offline"). The place is reserved as "pending payment";
- * an admin records the payment later (Students → Record offline payment).
+ * an admin records the payment later (Students → Record a payment).
  * `instructions` is the studio's own text (tenants.offline_payment_instructions).
  */
 export function OfflinePaymentNotice({

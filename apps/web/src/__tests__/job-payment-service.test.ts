@@ -38,6 +38,13 @@ describe('JobPaymentService', () => {
     });
   });
 
+  it('records a partial manual refund with its amount', async () => {
+    await JobPaymentService.recordManualRefund('pay-1', undefined, 12500);
+    expect(mockInvoke).toHaveBeenCalledWith('process-refund', {
+      body: { payment_id: 'pay-1', reason: undefined, manual: true, amount_minor: 12500 },
+    });
+  });
+
   it('sends the pay link through send-job-payment-link', async () => {
     const res = await JobPaymentService.sendLink('req-1');
     expect(mockInvoke).toHaveBeenCalledWith('send-job-payment-link', { body: { request_id: 'req-1' } });

@@ -37,7 +37,7 @@ export function LawyerDocumentsList({ legal }: { legal: TenantLegalProfile }) {
   const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const tenantId = legal.tenantId;
-  const docs = packDocumentsFor(legal.vertical);
+  const docs = packDocumentsFor(legal.vertical, legal.teachesClasses !== false);
   const { data: uploads = [] } = useLawyerDocuments(tenantId);
   const { data: forms = null } = useQuery({
     queryKey: signedFormsReviewKey(tenantId),
@@ -274,6 +274,7 @@ function DocumentActions(props: {
             }}
             language={language}
             vertical={props.legal.vertical}
+            healthDeclarations={props.legal.healthDeclarations}
             onPasteText={(pasted) => tokenizeKnownValues(pasted, renderCtx(language)).text}
           />
           {note && (

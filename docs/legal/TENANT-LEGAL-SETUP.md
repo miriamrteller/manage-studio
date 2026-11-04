@@ -25,7 +25,7 @@ The base agreement and its add-on are one signed document; the health declaratio
 
 ## Dance school
 
-**Attach:** privacy policy (variant A) · [enrolment terms](07a-dance-enrolment-terms.he.md) · [health declaration](07b-health-declaration-child.he.md) ([child](07b-health-declaration-child.he.md) and [adult](07b-health-declaration-adult.he.md)) · photo/media consent, separate from the terms ([09 §2](09-in-app-consent-texts.md)).
+**Attach:** privacy policy (variant A) · [enrolment terms](07a-class-enrolment-terms.he.md) · [health declaration](07b-health-declaration-child.he.md) ([child](07b-health-declaration-child.he.md) and [adult](07b-health-declaration-adult.he.md)) · photo/media consent, separate from the terms ([09 §2](09-in-app-consent-texts.md)).
 
 **The studio fills in:**
 1. Legal name and business number, or "not yet registered"

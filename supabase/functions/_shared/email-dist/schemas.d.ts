@@ -1233,7 +1233,7 @@ export declare const PaymentLogRowSchema: z.ZodObject<{
     status: z.ZodEnum<["pending", "succeeded", "failed", "refunded", "partially_refunded", "disputed"]>;
     charge_type: z.ZodEnum<["initial", "renewal", "setup", "adjustment", "refund"]>;
     provider: z.ZodString;
-    payment_method: z.ZodOptional<z.ZodNullable<z.ZodEnum<["card", "cash", "bank_transfer", "other"]>>>;
+    payment_method: z.ZodOptional<z.ZodNullable<z.ZodEnum<["card", "cash", "bank_transfer", "bit", "other"]>>>;
     paid_at: z.ZodOptional<z.ZodNullable<z.ZodEffects<z.ZodString, string, string>>>;
     created_at: z.ZodEffects<z.ZodString, string, string>;
     external_document_number: z.ZodOptional<z.ZodNullable<z.ZodString>>;
@@ -1290,7 +1290,7 @@ export declare const PaymentLogRowSchema: z.ZodObject<{
         id: string;
         status: string;
     } | null | undefined;
-    payment_method?: "other" | "card" | "cash" | "bank_transfer" | null | undefined;
+    payment_method?: "other" | "card" | "cash" | "bank_transfer" | "bit" | null | undefined;
     paid_at?: string | null | undefined;
     external_document_number?: string | null | undefined;
     invoice_url?: string | null | undefined;
@@ -1320,7 +1320,7 @@ export declare const PaymentLogRowSchema: z.ZodObject<{
         id: string;
         status: string;
     } | null | undefined;
-    payment_method?: "other" | "card" | "cash" | "bank_transfer" | null | undefined;
+    payment_method?: "other" | "card" | "cash" | "bank_transfer" | "bit" | null | undefined;
     paid_at?: string | null | undefined;
     external_document_number?: string | null | undefined;
     invoice_url?: string | null | undefined;

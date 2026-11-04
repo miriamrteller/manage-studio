@@ -16,6 +16,7 @@ const FILES = {
   'service-agreement': '07c-service-agreement',
   'addon-photographer': '07c-addon-photographer',
   'addon-beautician': '07c-addon-beautician',
+  'addon-coaching': '07c-addon-coaching',
 };
 
 const sources = {};

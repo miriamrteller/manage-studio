@@ -1,7 +1,9 @@
 import { supabase } from '@/lib/supabase';
 import type { Tenant } from '@shared/schemas';
 
-export type OfflinePaymentMethod = 'cash' | 'bank_transfer';
+import type { ManualPaymentMethod } from '@/features/finance/lib/manualPaymentMethods';
+
+export type OfflinePaymentMethod = ManualPaymentMethod;
 export interface SendCompletionLinkResult {
   paymentUrl: string;
   emailSent: boolean;
@@ -36,12 +38,14 @@ export class AdminEnrolmentService {
     engagementId: string,
     paymentMethod: OfflinePaymentMethod,
     note?: string,
+    sendConfirmation?: boolean,
   ): Promise<{ paymentId: string }> {
     const { data, error } = await supabase.functions.invoke('record-payment', {
       body: {
         engagement_id: engagementId,
         method: paymentMethod,
         note: note || undefined,
+        ...(sendConfirmation === false ? { send_confirmation: false } : {}),
       },
     });
 

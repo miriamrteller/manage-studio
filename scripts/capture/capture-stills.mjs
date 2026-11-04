@@ -222,7 +222,7 @@ async function captureAdminCashPayment(browser) {
     }
     await offlinePanel.waitFor({ timeout: 45_000 });
 
-    // Record offline payment — method defaults to Cash.
+    // Record a payment — method defaults to Cash.
     await page.getByRole('button', { name: UI.offlineConfirm }).click();
     await page.getByText(UI.offlineRecorded).waitFor({ timeout: 45_000 });
 

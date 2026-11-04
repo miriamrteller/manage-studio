@@ -14,6 +14,8 @@ import { formatOfferingPrice } from '@/lib/formatOfferingPrice';
 import type { Offering, Tenant } from '@shared/schemas';
 import { NoInsuranceSendReminder } from '@/components/legal/NoInsuranceSendReminder';
 import { monthlyHintKey } from '../lib/monthlyHint';
+import { useManualPaymentMethods } from '@/features/finance/hooks/useManualPaymentMethods';
+import { NoDocumentConfirmationOption } from '@/features/finance/components/NoDocumentConfirmationOption';
 
 export type AdminPaymentChoice = 'pay_now' | 'send_link' | 'offline';
 
@@ -57,6 +59,8 @@ export function AdminEnrolmentPaymentStep({
   const [view, setView] = useState<'choices' | 'pay_now'>('choices');
   const [linkEmail, setLinkEmail] = useState(guardianEmail ?? '');
   const [overrideReason, setOverrideReason] = useState('');
+  const manualMethods = useManualPaymentMethods();
+  const [sendConfirmation, setSendConfirmation] = useState(true);
   const [offlineMethod, setOfflineMethod] = useState<OfflinePaymentMethod>('cash');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -118,7 +122,7 @@ export function AdminEnrolmentPaymentStep({
         return;
       }
 
-      await AdminEnrolmentService.recordOfflinePayment(engagementId, offlineMethod);
+      await AdminEnrolmentService.recordOfflinePayment(engagementId, offlineMethod, undefined, sendConfirmation);
 
       onComplete({
         message: t('pages.admin_enrol.offline_recorded'),
@@ -263,7 +267,7 @@ export function AdminEnrolmentPaymentStep({
 
         <div className="rounded-lg border border-gray-200 p-4 space-y-3">
           <div>
-            <p className="font-semibold">{t('pages.admin_enrol.offline_title')}</p>
+            <p className="font-semibold">{t('finance.record_payment.title')}</p>
             <p className="text-sm text-gray-500">{t('pages.admin_enrol.offline_desc')}</p>
           </div>
           <label className="block text-sm font-medium" htmlFor={offlineMethodId}>
@@ -277,7 +281,9 @@ export function AdminEnrolmentPaymentStep({
           >
             <option value="cash">{t('pages.admin_enrol.method_cash')}</option>
             <option value="bank_transfer">{t('pages.admin_enrol.method_bank')}</option>
+            {manualMethods.includes('bit') && <option value="bit">{t('payment_methods.bit')}</option>}
           </select>
+          <NoDocumentConfirmationOption checked={sendConfirmation} onChange={setSendConfirmation} />
           <Button
             variant="outline"
             className="w-full"

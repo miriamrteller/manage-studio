@@ -15,14 +15,38 @@ The local Supabase stack cannot run in this cloud box (Docker image downloads ar
 
 Nothing here was run against a real Grow, iCount, Invoice4U, YPay, Tranzila, Yesh or Green Invoice account. "Works" below means "the code is complete and tested with fakes", unless I say it was seen live. Almost nothing has been seen live: the repo's own notes say Grow live sandbox E2E is "still manual", iCount live is "deferred", and Invoice4U live ("U0-live") is not done (`docs/IMPLEMENTATION_STATUS.md`).
 
+## Update 2026-11-03: what has been fixed since
+
+Checked against `main` @ 1e6a58d by reading the code (not run against real providers). The original audit below is kept as written; items fixed since are marked **[Fixed 2026-11-03]**.
+
+| Audit item | Now | Where |
+| --- | --- | --- |
+| YPay credential screen (P1 #4, risk #4, "Connect: keys in / verify") | **Fixed.** Settings → Payment Settings shows **Connect YPay**: "YPay client ID", "YPay client secret", **Save YPay details** (`save_tenant_ypay_credentials`) and **Test connection** (`verify-ypay-credentials`). No webhook box. | `apps/web/src/features/settings/components/YpaySettingsForm.tsx` (#195) |
+| Business status picks YPay's document type (P1 #3, risk #3, business-status table row 1) | **Fixed.** An explicit setting, **Which document does YPay issue?** (108 Receipt / 109 Tax invoice-receipt), stored in `tenants.ypay_document_type` (default 109) and sent unchanged for card and cash documents. | migration `20261102125213_ypay_document_type.sql`; `payments/ypay/document.ts`; `YpaySettingsForm.tsx` (#195) |
+| Document email wording by `vat_type` (business-status row 2) | **Fixed.** The email label follows the document type, not business status. | `payments/send-payment-document-client-email.ts` (#203) |
+| Grow `vatType` from business status (business-status row 3) | **Fixed.** Grow gets the gross price as entered; business status never changes what is sent. | `payments/providers/grow.ts` (#203) |
+| Grow notices not authenticated (P1 #1, risk #1, Grow webhook column) | **Fixed.** A webhook key is required: saving Grow keys creates one (`rotate_grow_webhook_key`) and the settings screen shows the notification URL and key (`GrowWebhookKeyPanel` in `GrowSettingsForm`). Notices without the right key are rejected (fail closed). | `providers/grow.ts`, `apps/web/src/features/settings/components/GrowWebhookKeyPanel.tsx` (#198) |
+| Grow amount/tenant trusted from the notice; `approveTransaction` only checked HTTP ok | **Fixed.** Grow charges write a pending row first; the notice must match its tenant, engagement, billing account and amount. `approveTransaction` must answer status 1. Replays are no-ops. | `payments/grow/process-notify-core.ts` (#198) |
+| `GROW_API_BASE` optional, sandbox default (P1 #2, risk #2) | **Fixed.** No default in code; required on prod (`edge-secrets.json` `requiredInProd`); deploy-prod and `pnpm verify:prod` fail when it is missing or a sandbox address. | `supabase/edge-secrets.json`, `.github/workflows/deploy-prod.yml` (#198) |
+| Grow job payment requests never marked paid (Grow row, P2 #11) | **Fixed in code.** `grow/process-notify.ts` calls `markJobPaymentRequestPaid`. Online job pay links are offered only with YPay or Grow; with any other provider the pay page asks the client to pay the studio directly. | `payments/grow/process-notify.ts` (#198), `jobs/create-request-charge.ts` (#208) |
+| iCount and Tranzila offered although unfinished | **Hidden.** `UNFINISHED_PAYMENT_PROVIDERS = ['icount', 'tranzila']`. | `apps/web/src/lib/providerPairing.ts` (#206) |
+
+**Unchanged:**
+- **Grow and YPay have still never been tested live.** Every "works" is code plus tests with fakes until the ₪1 test at the photographer meeting (YPay) and a Grow sandbox/live run.
+- **Tranzila is still broken**: the bridge reads success as `status === "paid" / "succeeded"` (`providers/tranzila-payment.ts:105`), the adapter returns `"completed"` (`providers/tranzila.ts:143`). Hidden, see above.
+
+**New open risk: Grow `webhookKey` on per-payment notices.** Our Grow code now rejects any notice without `webhookKey`. Grow's docs only show `webhookKey` on account-level webhooks. If the per-payment `notifyUrl` message doesn't carry it, every real Grow payment stays unpaid (fails closed, no money lost, but nothing settles). Not yet confirmed; [GROW-RUNBOOK.md](finance/GROW-RUNBOOK.md) §4 says the same. The owner has emailed Grow.
+
+**[Fixed by #321]** **New gap: partial refunds can't be recorded.** `RefundPaymentModal` (finance) and the shoot's `ManualPaymentDialog` record a refund of the full remaining amount only; there is no amount field. For YPay the owner refunds part in YPay and must not press Record refund. *Now both dialogs offer Full refund or Partial refund with an amount (up to what is left) and say which credit document applies (`RefundAmountChoice.tsx`, #321).*
+
 ## YPay × photographer (for tomorrow's meeting)
 
 **Would it work in prod today, once the encryption key is in? Almost: yes for the money path, with three things to fix or do by hand.** Checked from code and the tests that ran [T] (YPay and job-payment tests all pass); never seen against the real YPay (the repo's own plan does a ₪1 live test at the meeting: `docs/deployment/PHOTOGRAPHER-BETA-SUPABASE.md` steps 9–10).
 
 | Step | Status | What happens / file |
 | --- | --- | --- |
-| **Connect: keys in** | **Partly** | Works, but through the wrong-looking form. Settings → Payments shows the generic Stripe-style form: type the YPay **client ID into "Publishable key"** and the **client secret into "Secret key"**; leave "Webhook secret" empty (it does nothing for YPay). It is saved by `save_tenant_payment_credentials` and read back by `payments/ypay/credentials.ts`. A proper `save_tenant_ypay_credentials` exists in the database (migration 20260722000200) but no screen uses it. [D][C] |
-| **Connect: verify** | **Not on screen** | `verify-ypay-credentials` (checks the keys against YPay's token call) exists, but no button calls it. At the meeting the first real check will be the ₪1 payment. [C] |
+| **Connect: keys in** | **Partly** **[Fixed 2026-11-03: Connect YPay form, see Update]** | Works, but through the wrong-looking form. Settings → Payments shows the generic Stripe-style form: type the YPay **client ID into "Publishable key"** and the **client secret into "Secret key"**; leave "Webhook secret" empty (it does nothing for YPay). It is saved by `save_tenant_payment_credentials` and read back by `payments/ypay/credentials.ts`. A proper `save_tenant_ypay_credentials` exists in the database (migration 20260722000200) but no screen uses it. [D][C] |
+| **Connect: verify** | **Not on screen** **[Fixed 2026-11-03: Test connection]** | `verify-ypay-credentials` (checks the keys against YPay's token call) exists, but no button calls it. At the meeting the first real check will be the ₪1 payment. [C] |
 | **Connect: stored encrypted** | **Works once the key is in** | `pgp_sym_encrypt` with `get_app_encryption_key()`. **Without the key, saving fails with "app.encryption_key is not configured"** and nothing is stored. Insert the key first (GO-LIVE-PLAN Phase B). [C] |
 | **Quote → accept** | **Works** | `accept-quote` makes the job, a deposit request and a balance request, and emails the booking confirmation with the deposit pay link. [C][T] |
 | **Deposit / balance: pay** | **Works in code** | Client opens `/pay/:token` → `job-payment-request-public` → `providers/ypay.ts createCharge`: pending payment row first, hosted YPay page, gross amount, installments, return URLs back to the pay page. YPay needs the client's **email and name** (it errors if missing). `YPAY_API_BASE` defaults to the real YPay host, so no extra setting. Needs `APP_URL` (already a required secret). [T][C] |
@@ -37,9 +61,9 @@ Nothing here was run against a real Grow, iCount, Invoice4U, YPay, Tranzila, Yes
 3. Create the studio with payments **YPay** and invoicing **YPay** (the wizard allows it; the other combinations are riskier).
 4. Know which dealer type she is (see below) and ask YPay which document type her account accepts.
 
-**At the meeting** (adds to the existing plan): enter keys using the labels above, run the ₪1 card payment, check the document and that the request turned "paid", then one bank-transfer receipt, then a refund done in YPay and recorded manually.
+**At the meeting** (adds to the existing plan): enter keys in **Connect YPay** (YPay client ID / YPay client secret; the "labels above" are gone since #195), run the ₪1 card payment, check the document and that the request turned "paid", then one bank-transfer receipt, then a refund done in YPay and recorded manually.
 
-**Fix soon** (P1 list below): label the credential form and add "Test connection"; remove the business-status switch on the document type.
+**Fix soon** (P1 list below) **[both fixed 2026-11-03]**: label the credential form and add "Test connection"; remove the business-status switch on the document type.
 
 ## Summary (phone-readable)
 
@@ -57,10 +81,10 @@ Nothing here was run against a real Grow, iCount, Invoice4U, YPay, Tranzila, Yes
 | Green Invoice | Built, but always issues a tax invoice-receipt. Wrong for an exempt dealer (עוסק פטור). |
 
 **Biggest risks (P1)**
-1. **Grow payment notices are not authenticated** unless a webhook key is stored, and nothing in the Grow settings screen sets one. The amount comes from the notice, not from our records. A parent could mark their own enrolment as paid. (Invoice4U and YPay were built to avoid exactly this.)
-2. **Grow talks to the Grow sandbox unless `GROW_API_BASE` is set** (it is an optional secret). Live money would go nowhere.
-3. **A hidden field decides the document type.** `tenants.vat_type` (default "VAT included", no screen sets it) picks YPay's document type (108 receipt / 109 invoice-receipt), the wording in our own document email, and Grow's `vatType`. The owner's rule is that business status must not change what the app does: see the table in "Business status must not change what our app does".
-4. **YPay owners must type their credentials into boxes labelled "Publishable key / Secret key / Webhook secret"**, and there is no "Test connection" button for YPay (the check exists on the server; the screen never calls it). Tranzila has no credential screen at all.
+1. **[Fixed 2026-11-03]** **Grow payment notices are not authenticated** unless a webhook key is stored, and nothing in the Grow settings screen sets one. The amount comes from the notice, not from our records. A parent could mark their own enrolment as paid. (Invoice4U and YPay were built to avoid exactly this.)
+2. **[Fixed 2026-11-03]** **Grow talks to the Grow sandbox unless `GROW_API_BASE` is set** (it is an optional secret). Live money would go nowhere.
+3. **[Fixed 2026-11-03 for YPay, the email and Grow]** **A hidden field decides the document type.** `tenants.vat_type` (default "VAT included", no screen sets it) picks YPay's document type (108 receipt / 109 invoice-receipt), the wording in our own document email, and Grow's `vatType`. The owner's rule is that business status must not change what the app does: see the table in "Business status must not change what our app does".
+4. **[Fixed 2026-11-03 for YPay; Tranzila is hidden]** **YPay owners must type their credentials into boxes labelled "Publishable key / Secret key / Webhook secret"**, and there is no "Test connection" button for YPay (the check exists on the server; the screen never calls it). Tranzila has no credential screen at all.
 5. **Cash payments + the wrong invoicing service.** Recording a cash payment only produces a document if the invoicing service supports standalone documents (YPay, Green Invoice). Grow, iCount, Invoice4U, Tranzila and Yesh refuse standalone documents, so a "Pay at the studio" studio with one of those ends up with documents stuck as "dead" and an alert. The wizard does not stop that combination.
 6. **No encryption key in prod yet.** Saving any provider's keys will fail loudly (by design). Parents of a studio that picked a card provider but did not connect it see a raw server message.
 
@@ -106,9 +130,9 @@ Rule from the owner: VAT and tax-document rules are the invoicing provider's job
 
 | # | Where | What it does | Fix |
 | --- | --- | --- | --- |
-| 1 | `payments/ypay/document.ts` `ypayDocTypeForVatType`, used by `providers/ypay.ts` (card) and `invoicing/providers/ypay.ts` (cash) | Chooses document type 108 (receipt) or 109 (invoice-receipt) by `vat_type = 3`. YPay's API requires a type (0 is rejected). | Replace with one explicit provider setting, "Which document does YPay issue for this studio?" (default 109, or 108), set once by the owner and changeable; the app sends it unchanged. Better still, if YPay can report what the account may issue, read it from YPay. Not tied to any legal-status field. |
-| 2 | `payments/send-payment-document-client-email.ts:142,184-193` | The app's own email says "Receipt" or "Invoice-receipt" by `vat_type`. | Use the document type the provider actually returned (or no label), not a guess from status. |
-| 3 | `payments/providers/grow.ts:189-202,268` | Passes `vatType` (1/2/3) from the tenant to Grow. | Let Grow decide from the owner's Grow account; stop sending it, or make it a clearly named Grow setting, not business status. |
+| 1 **[Fixed]** | `payments/ypay/document.ts` `ypayDocTypeForVatType`, used by `providers/ypay.ts` (card) and `invoicing/providers/ypay.ts` (cash) | Chooses document type 108 (receipt) or 109 (invoice-receipt) by `vat_type = 3`. YPay's API requires a type (0 is rejected). | Replace with one explicit provider setting, "Which document does YPay issue for this studio?" (default 109, or 108), set once by the owner and changeable; the app sends it unchanged. Better still, if YPay can report what the account may issue, read it from YPay. Not tied to any legal-status field. |
+| 2 **[Fixed]** | `payments/send-payment-document-client-email.ts:142,184-193` | The app's own email says "Receipt" or "Invoice-receipt" by `vat_type`. | Use the document type the provider actually returned (or no label), not a guess from status. |
+| 3 **[Fixed]** | `payments/providers/grow.ts:189-202,268` | Passes `vatType` (1/2/3) from the tenant to Grow. | Let Grow decide from the owner's Grow account; stop sending it, or make it a clearly named Grow setting, not business status. |
 | 4 | `invoicing/providers/green-invoice.ts` | Always type 320 with `vatType: 0`; ignores status. | Not status-driven (good), but the type should come from the same "which document" provider setting as #1. |
 | 5 | `tenants.vat_type` column (default 1) | A hidden status field that no screen sets; it silently drives #1–#3. | Remove it, or rename it to the provider setting in #1; do not infer it from Settings → Legal. |
 | 6 | Wizard "Tax documents: None (not a registered business)" (`OperatorOnboardingWizard.tsx`, `studioSetupForm.ts`) | Choosing "none" turns document issuing off (`enqueueDocument` skips for `invoicing_provider = none`). | Fine as a provider choice, but wording ties it to business status. Reword to "I don't issue documents through OpalSwift"; changing it later is the same switch, no other behaviour. |
@@ -137,10 +161,10 @@ P1 = must fix before a studio takes real money. Effort: S = under half a day, M 
 
 | # | Fix | Effort |
 | --- | --- | --- |
-| 1 | **Authenticate Grow notices**: require a stored webhook key (generate one when keys are saved, show the URL + key to paste into Grow) and reject if absent; compare the notified `sum` and tenant/engagement with our pending record, as Invoice4U/YPay do; require `approveTransaction` to return status 1. | M |
-| 2 | **Grow base URL**: make `GROW_API_BASE` required in prod (move to `required` in `edge-secrets.json`, fail verify-prod when it contains `sandbox`). | S |
-| 3 | **Remove the business-status switch** (see "Business status must not change what our app does"): one explicit provider setting for which document YPay/Green Invoice issues, send amounts unchanged, drop `vat_type` inference from the email and Grow code. | S–M |
-| 4 | **YPay (and Tranzila) credential screen** (first: YPay; the photographer's own path): proper labels ("Client ID", "Client secret"), a "Test connection" button calling `verify-ypay-credentials`; hide the webhook box. This is the photographer's own path. | S–M |
+| 1 | **[Fixed 2026-11-03]** **Authenticate Grow notices**: require a stored webhook key (generate one when keys are saved, show the URL + key to paste into Grow) and reject if absent; compare the notified `sum` and tenant/engagement with our pending record, as Invoice4U/YPay do; require `approveTransaction` to return status 1. | M |
+| 2 | **[Fixed 2026-11-03]** **Grow base URL**: make `GROW_API_BASE` required in prod (move to `required` in `edge-secrets.json`, fail verify-prod when it contains `sandbox`). | S |
+| 3 | **[Fixed 2026-11-03 for YPay and Grow]** **Remove the business-status switch** (see "Business status must not change what our app does"): one explicit provider setting for which document YPay/Green Invoice issues, send amounts unchanged, drop `vat_type` inference from the email and Grow code. | S–M |
+| 4 | **[Fixed 2026-11-03 for YPay]** **YPay (and Tranzila) credential screen** (first: YPay; the photographer's own path): proper labels ("Client ID", "Client secret"), a "Test connection" button calling `verify-ypay-credentials`; hide the webhook box. This is the photographer's own path. | S–M |
 | 5 | **Wizard/Settings combination rules**: offline or Grow/iCount/Invoice4U payments only pair with an invoicing service that can issue standalone documents (YPay, Green Invoice) or "none"; hide Yesh and Tranzila invoicing until built. | S |
 | 6 | **Unconnected provider guard**: block saving "card" in the wizard/Settings until keys verify (or auto-fall back to "pay at the studio" with a banner); show parents a friendly "this studio isn't taking card payments yet" instead of a raw error. | M |
 | 7 | **Encryption key in prod** before anyone connects a provider (GO-LIVE-PLAN Phase B). | S (owner step) |
@@ -152,7 +176,7 @@ P1 = must fix before a studio takes real money. Effort: S = under half a day, M 
 | --- | --- | --- |
 | 9 | **Tranzila**: fix the status mapping (`completed`), return and verify the engagement metadata, add a pending row, verify the notice server-side, add tests and a settings screen. Or hide Tranzila from the wizard until done. | L |
 | 10 | **iCount live**: wire `ipn.ts` into `constructEvent`, add a real `verifyCredentials`, a refund call. Or hide iCount until then. | L |
-| 11 | **Job payment requests for non-YPay providers**: settle `job_payment_request` in the generic callback, or restrict the photographer's online path to YPay and say so in Settings. | M |
+| 11 | **[Fixed 2026-11-03: Grow settles; others get no online link]** **Job payment requests for non-YPay providers**: settle `job_payment_request` in the generic callback, or restrict the photographer's online path to YPay and say so in Settings. | M |
 | 12 | **Standalone documents** for Grow/iCount/Invoice4U cash payments are impossible: tell the owner at setup ("receipts for cash need Green Invoice or YPay"), and surface `dead` document rows on the finance page. | S–M |
 | 13 | **Switching provider**: warn about open charges, saved cards and billing schedules; keep old provider credentials until the last open item is closed. | M |
 | 14 | **Refund support**: Invoice4U refund call, Tranzila refund; show YPay's "refund in the YPay dashboard" in the refund modal and record it as manual. | M |

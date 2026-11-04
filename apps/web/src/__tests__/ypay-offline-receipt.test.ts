@@ -191,6 +191,18 @@ describe('YpayInvoicingProvider.issueDocument — live /document call', () => {
     expect(body.methods[0].total).toBe(body.items[0].price);
   });
 
+  it('records a Bit payment as YPay\'s app method (6)', async () => {
+    const { client } = seed({ documentType: 109, paymentMethod: 'bit' });
+    const fetchMock = vi.fn(async () => ypayResponse({ responseCode: 1, serial_number: 10, url: 'https://docs.ypay.test/10.pdf' }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await new YpayInvoicingProvider().issueDocument(client as never, await canonical(client));
+
+    const body = JSON.parse(String((fetchMock.mock.calls[0] as unknown as [string, FetchInit])[1].body));
+    // v2.1 Payment Methods: 6 = app (Bit).
+    expect(body.methods[0].type).toBe(6);
+  });
+
   it('maps a rejected payment-method payload (3011) to a non-retryable error', async () => {
     const { client } = seed();
     vi.stubGlobal('fetch', vi.fn(async () => ypayResponse({ responseCode: 3011 })));

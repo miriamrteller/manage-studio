@@ -783,7 +783,8 @@
         "email": "Email",
         "phone": "Phone",
         "message": "What are you interested in?",
-        "message_placeholder": "e.g. a birthday party, a trial class for my daughter…",
+        "message_placeholder": "e.g. what you're looking for and when",
+        "message_placeholder_classes": "e.g. a trial class for my daughter, or what you're looking for and when",
         "submit": "Send",
         "sent_title": "Thank you!",
         "sent_message": "We received your enquiry and will get back to you soon.",
@@ -955,7 +956,6 @@
       "email_required": "An email address is required to send a completion link.",
       "link_sent": "Completion link sent to {{email}}. The enrolment is pending until the form is signed and payment is completed.",
       "link_copy": "Completion link",
-      "offline_title": "Record offline payment",
       "offline_desc": "Mark as paid when cash, check, or bank transfer was received in person.",
       "offline_method": "Payment method",
       "offline_action": "Confirm enrolment as paid",
@@ -1553,12 +1553,12 @@
         "copyLink": "Copy link",
         "linkSentTo": "Pay link emailed to {{email}}.",
         "whatsappMessage": "Hi, here is your payment link from {{studio}} for {{label}} ({{amount}}): {{url}}",
-        "markPaid": "Mark paid (cash/bank)",
         "reopen": "Reopen",
         "invoice": "Invoice {{number}}",
         "invoicePending": "Invoice pending",
         "receipt": "Receipt {{number}}",
         "receiptPending": "Receipt pending",
+        "partlyRefunded": "Partly refunded {{amount}}",
         "recordRefund": "Record refund",
         "status": {
           "pending": "Not sent",
@@ -1586,7 +1586,6 @@
           "save": "Create"
         },
         "manual": {
-          "paidTitle": "Record offline payment",
           "refundTitle": "Record manual refund",
           "method": "Payment method",
           "method_cash": "Cash",
@@ -1899,7 +1898,6 @@
     "intro": "A few short steps and you are ready for your first customer. Each one ticks itself when you are done.",
     "done_title": "Your studio is set up",
     "done_body": "Everything on the list is done or skipped. You can change any of it later in Settings.",
-    "progress": "{{done}} of {{total}} done",
     "next": "Next: {{step}}",
     "skip": "Skip",
     "undo_skip": "Undo skip",
@@ -1968,6 +1966,51 @@
         "title": "Send your first quote",
         "hint": "Turn an enquiry into a quote your client can accept online."
       }
+    },
+    "percent": "You're {{percent}}% there",
+    "progress_label": "Setup progress",
+    "level": "Level: {{level}}",
+    "minutes_one": "About 1 minute",
+    "minutes_other": "About {{count}} minutes",
+    "to_go_one": "1 to go",
+    "to_go_other": "{{count}} to go",
+    "live": "Your studio is live! Share your link so clients can find you.",
+    "fewer": "Fewer celebrations",
+    "levels": {
+      "getting_started": "Getting started",
+      "open_for_enquiries": "Open for enquiries",
+      "ready_for_clients": "Ready for clients",
+      "fully_set_up": "Fully set up"
+    },
+    "cheers": {
+      "branding": "Looking good! Your studio is starting to look like yours.",
+      "levels": "Levels added. Your classes have a home.",
+      "season": "Season set. Now you know when things run.",
+      "classes": "Classes are in. Clients can see what you offer.",
+      "packages": "Packages are in. Clients can see what you offer.",
+      "offerings": "Your offer is in. Clients can see what you do.",
+      "payments": "Payments sorted. Clients know how to pay you.",
+      "connect_payments": "Online payments connected. Money can come in.",
+      "legal": "Legal pages done. Clients can sign up with confidence.",
+      "leads": "Your first enquiry is in!",
+      "test_enrolment": "Test enrolment done. You know how it feels for clients.",
+      "first_quote": "First quote sent. Nice work!"
+    },
+    "celebrate": {
+      "setup_done": {
+        "title": "Your studio is live!",
+        "body": "Every step is done. Share your link so clients can find you."
+      },
+      "first_enquiry": {
+        "title": "Your first enquiry!",
+        "body": "Someone wants to hear from you. Reply soon: quick answers win clients."
+      },
+      "first_paid": {
+        "title": "Your first paid client!",
+        "body": "The first payment came in. This is where it starts."
+      },
+      "share_link": "Share your link",
+      "dismiss": "Close"
     }
   },
   "colour_presets": {
@@ -2077,7 +2120,7 @@
     "invoicing_existing": "I already use another invoicing service",
     "invoicing_existing_which": "Which invoicing service?",
     "payments_later": "The studio connects its account with the provider later, in its own settings.",
-    "look_hint": "Starts with OpalSwift's colours. The studio can upload its logo and change colours later.",
+    "look_hint": "Pick your colours and, if you like, your logo. You can change both later.",
     "primary_color": "Main colour",
     "accent_color": "Accent colour",
     "owner_email": "Owner's email",
@@ -2105,7 +2148,14 @@
     "next_legal": "Add the legal links and enrolment terms.",
     "next_sender": "Set the email sender address.",
     "next_test_enrolment": "Do a test enrolment from start to finish.",
-    "next_lawyer": "Have a lawyer review the legal documents."
+    "next_lawyer": "Have a lawyer review the legal documents.",
+    "filled_for_you": "Details we filled in for you",
+    "choose_own_colour": "Choose your own colour",
+    "logo_label": "Logo (optional)",
+    "logo_optional": "PNG, JPG, SVG or WebP, up to 2 MB. You can skip this and add it later in Settings → Branding.",
+    "logo_chosen": "{{name}} will be added when your studio is created.",
+    "logo_too_large": "That file is over 2 MB. Choose a smaller one, or skip this for now.",
+    "logo_owner_later": "The studio owner can add a logo later in Settings → Branding."
   },
   "studio_not_found": {
     "title": "Studio not found",
@@ -2281,6 +2331,13 @@
     "price_one_time": "{{amount}} (one-time)"
   },
   "finance": {
+    "no_document": {
+      "send_label": "Email the payer a payment confirmation",
+      "send_hint": "Your studio doesn't issue tax documents, so this confirmation says it is not a receipt or an invoice.",
+      "nudge": "To issue receipts, connect your invoicing.",
+      "nudge_link": "Settings → Invoicing",
+      "dismiss": "Dismiss"
+    },
     "documents_not_issued": {
       "title": "Payments without a tax document",
       "description": "These payments have no receipt or invoice from your invoicing service, and will not get one by themselves. Issue the document yourself for each one.",
@@ -2421,8 +2478,8 @@
       "sort_order": "Sort order"
     },
     "record_payment": {
-      "open": "Record offline payment",
-      "title": "Record offline payment",
+      "open": "Record a payment",
+      "title": "Record a payment",
       "amount": "Amount ({{currency}})",
       "amount_hint": "Starts at the class price. Change it if a different amount was paid.",
       "amount_invalid": "Enter an amount above zero, for example 350 or 350.50.",
@@ -2432,8 +2489,7 @@
       "note": "Note (optional)",
       "submit": "Record payment",
       "success": "Payment recorded.",
-      "monthly_open": "Record a monthly payment",
-      "monthly_title": "Record a monthly fee paid at the studio",
+      "monthly_title": "Record a monthly payment",
       "monthly_hint": "This pays the next month due on the enrolment's monthly plan. Record again to pay a further month ahead.",
       "monthly_success": "Payment recorded for {{month}}."
     },
@@ -2469,6 +2525,15 @@
       "error_generic": "The card link could not be sent."
     },
     "refund_payment": {
+      "how_much": "How much to refund",
+      "already_refunded": "Already refunded {{amount}} · {{remaining}} left",
+      "full": "Full refund ({{amount}})",
+      "partial": "Partial refund",
+      "partial_amount": "Amount to refund ({{currency}})",
+      "partial_invalid": "Enter an amount up to {{remaining}}",
+      "document_credit_note": "A credit note will be issued for this refund.",
+      "document_in_provider": "{{provider}} doesn't issue a credit document for refunds made from OpalSwift: issue it in {{provider}}.",
+      "document_none": "No document is issued: your studio doesn't issue tax documents.",
       "open": "Refund",
       "title": "Refund payment",
       "amount": "Refund amount",
@@ -2716,6 +2781,60 @@
       "document_hint": "Choose what your YPay account issues. Ask YPay if unsure.",
       "document_saved": "Saved."
     },
+    "features": {
+      "title": "Features",
+      "intro": "Everything your studio has, beyond the basics. Switch off what you don't use and turn it back on any time. Switching off only hides it: monthly fees, payments and receipts carry on, and nothing is deleted.",
+      "none": "There is nothing to switch off yet.",
+      "load_failed": "Your features couldn't be loaded. Please try again.",
+      "save_failed": "That change wasn't saved. Please try again.",
+      "sets": {
+        "monthly": "Monthly fees",
+        "projects": "Projects",
+        "booking": "Booking",
+        "classes": "Classes",
+        "families": "Families",
+        "extras": "Extras"
+      },
+      "keys": {
+        "billing_recurring_enabled": "Monthly fees",
+        "billing_dunning_enabled": "Reminders for unpaid monthly fees",
+        "billing_quotes_generate": "Quotes",
+        "billing_delivery_gated": "Deposit first, balance before delivery",
+        "media_gallery_gated": "Gallery released after payment",
+        "scheduling_booking_client": "Clients book time slots online",
+        "scheduling_booking_admin": "Book time slots for clients",
+        "scheduling_integration_google_calendar": "Google Calendar sync",
+        "scheduling_penalties_capture": "Late-cancellation and no-show fees",
+        "offerings_structure_configure": "Terms and levels",
+        "offerings_booking_public": "Public class sign-up",
+        "scheduling_calendar_view": "Class timetable",
+        "people_families_manage": "Family accounts (parents pay for children)",
+        "comms_documents_whatsapp": "Documents by WhatsApp",
+        "comms_otp_whatsapp": "Sign-in codes by WhatsApp",
+        "comms_reminders_voice": "Voice-call reminders",
+        "comms_reminders_whatsapp": "WhatsApp reminders",
+        "finance_expenses_advanced": "Advanced expenses",
+        "finance_export_bkmv": "Tax authority export (BKMV)",
+        "finance_reports_annual": "Annual report",
+        "finance_reports_realtime": "Live profit and loss",
+        "finance_threshold_radar": "VAT threshold watch",
+        "platform_domains_custom": "Your own web address",
+        "platform_themes_customize": "Custom colours and theme",
+        "scheduling_ai_assistant": "Scheduling assistant",
+        "ui_content_ai": "Writing help",
+        "ui_documents_queue": "Documents queue",
+        "ui_downloads_selfServe": "Clients download their own documents",
+        "ui_onboarding_checklist": "Setup checklist",
+        "ui_payments_enhanced": "Enhanced payment screens",
+        "ui_pdfs_branded": "Branded PDFs",
+        "ui_theme_dance_studio": "Dance studio look",
+        "ui_theme_photographer": "Photographer look",
+        "ui_theme_beautician": "Beauty studio look",
+        "media_portfolio_public": "Public portfolio",
+        "media_storage_extended": "Extra storage",
+        "scheduling_appointments_calcom": "Cal.com appointments"
+      }
+    },
     "business": {
       "title": "Your business",
       "intro": "How you charge and which areas you use. Switch an area off and it is hidden: nothing is deleted, and you can switch it back on any time.",
@@ -2734,7 +2853,9 @@
       "dismiss": "Dismiss",
       "save": "Save",
       "saved": "Saved.",
-      "error": "Could not save. Please try again."
+      "error": "Could not save. Please try again.",
+      "health_label": "Clients sign a health declaration",
+      "health_hint": "Before they start, clients (or a parent, for children) fill in a short health form. Usual for dance, fitness, yoga, swimming and martial arts."
     },
     "lead_digest": {
       "title": "Daily follow-up email",
@@ -2789,6 +2910,7 @@
       "branding": "Branding",
       "profile": "Studio profile",
       "business": "Your business",
+      "features": "Features",
       "locale": "Language & Region",
       "payment": "Payment Settings",
       "invoicing": "Invoicing",
@@ -2856,6 +2978,10 @@
       "providers": { "grow": "Grow (Meshulam)", "icount": "iCount", "invoice4u": "Invoice4U", "ypay": "YPay", "tranzila": "Tranzila", "yesh": "Yesh", "green_invoice": "Green Invoice" }
     },
     "payments": {
+      "bit_title": "Bit / PayBox",
+      "bit_label": "Accept Bit / PayBox payments you record yourself",
+      "bit_hint": "{{provider}} can't make a receipt for a Bit / PayBox payment recorded here, so you'll issue that receipt yourself. Parents can also pay by Bit on your card payment page, which comes with a receipt.",
+      "bit_error": "That change wasn't saved. Please try again.",
       "connect_title": "Connect online payments",
       "connected_note": "Your payment details are saved. Customers can pay by card online.",
       "not_connected_note": "Not connected yet. Until you connect it, customers are asked to pay the studio directly. Nothing breaks, and you can do it any time.",
@@ -3508,6 +3634,32 @@
     "save": "Save skin",
     "saving": "Saving…",
     "cancel": "Cancel",
-    "save_failed": "The skin could not be saved: {{reason}}"
+    "save_failed": "The skin could not be saved: {{reason}}",
+    "section_enquiry": "Enquiry questions",
+    "enquiry_hint": "Ready-made questions a new studio's enquiry form starts with. They are switched on and optional, and the owner changes them in Settings. None ticked: the field's usual set.",
+    "enquiry_group_classes": "Classes",
+    "enquiry_group_photography": "Events and shoots",
+    "enquiry_group_general": "General",
+    "section_colours": "Colours",
+    "colours_hint": "Starting colours for a new studio's look. Left empty, OpalSwift's colours are used. The owner can change them in the set-up wizard.",
+    "colour_primary": "Main colour",
+    "colour_accent": "Accent colour",
+    "error_colour": "Use a colour code like #5B6CFF.",
+    "colours_reset": "Use OpalSwift's colours",
+    "section_preview": "Sample studio",
+    "preview_hint": "How a new studio on this skin starts. Sample only; no real studio is shown.",
+    "preview_unnamed": "New skin",
+    "preview_studio": "Sample studio: {{field}}",
+    "preview_menu": "Menu",
+    "preview_add": "Add {{noun}}",
+    "preview_switches": "Switched on",
+    "preview_enquiry": "Enquiry questions",
+    "preview_enquiry_usual": "The field's usual questions.",
+    "preview_forms": "Forms clients sign",
+    "preview_with_addon": "(with the {{addon}})",
+    "legal_not_shipped": "This add-on is not in the signed forms yet, so new studios get the base agreement only."
+  },
+  "payment_methods": {
+    "bit": "Bit / PayBox"
   }
 }

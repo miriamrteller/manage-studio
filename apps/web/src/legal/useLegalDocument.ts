@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { supabase } from '@/lib/supabase';
 import { useTenant } from '@/hooks/useTenant';
 import { safeVertical, type VerticalId } from '@shared/config/tenant-presets';
+import { studioFormsScope } from '@shared/legal/field-defaults';
+import type { SignedAddon } from '@shared/legal/signed-template';
 import type { LegalDocId } from './fields';
 import { prepareLegalMarkdown, type LegalLang, type LegalRenderContext, type PreparedLegalDoc } from './render';
 import { loadLegalTemplate } from './templates';
@@ -27,8 +29,17 @@ export function isLegalDocId(value: string | undefined): value is LegalDocId {
 }
 
 /** Photographers sign a per-job contract instead of general enrolment terms. */
-export function tenantHasEnrolmentTerms(vertical: VerticalId): boolean {
-  return vertical !== 'photographer';
+/**
+ * Enrolment terms are for studios that teach classes (tenants.teaches_classes;
+ * owner decision). Others use the service agreement. Photographers never.
+ */
+export function tenantHasEnrolmentTerms(vertical: VerticalId, teachesClasses = true): boolean {
+  return vertical !== 'photographer' && teachesClasses;
+}
+
+/** The legal scope of a studio: its type and whether it teaches classes. */
+export function legalHasEnrolmentTerms(legal: Pick<TenantLegalProfile, 'vertical' | 'teachesClasses'>): boolean {
+  return tenantHasEnrolmentTerms(legal.vertical, legal.teachesClasses !== false);
 }
 
 export interface TenantLegalProfile {
@@ -36,6 +47,8 @@ export interface TenantLegalProfile {
   name: string;
   contactEmail: string;
   vertical: VerticalId;
+  /** The skin as stored; `vertical` is its built-in code skin ('generic' for a data skin). */
+  skin: string;
   profile: Record<string, string>;
   published: boolean;
   updatedAt: string | null;
@@ -46,6 +59,14 @@ export interface TenantLegalProfile {
   languageDefault: 'he' | 'en';
   /** Documents the admin acknowledged as drafts (the others were lawyer-reviewed then). */
   packAckDrafts: string[];
+  /** tenants.teaches_classes: enrolment terms and class fields only when true (unknown = true). */
+  teachesClasses?: boolean;
+  /** Clients sign a health declaration: the studio's setting, or its field's default. */
+  healthDeclarations?: boolean;
+  /** tenants.health_declaration as stored (null: from the field). */
+  healthDeclarationSetting?: boolean | null;
+  /** The add-on the studio's agreement carries, from its field. */
+  legalAddon?: SignedAddon | null;
 }
 
 /** Studio documents a new studio keeps unpublished until its admin acknowledges the legal pack. */
@@ -72,11 +93,13 @@ export async function fetchTenantLegalProfile(tenantId: string): Promise<TenantL
   if (error) throw error;
   const row = Array.isArray(rows) ? rows[0] : rows;
   if (!row) return null;
+  const skin = typeof row.skin === 'string' ? row.skin : 'generic';
   return {
     tenantId: row.tenant_id,
     name: row.name,
     contactEmail: row.contact_email,
     vertical: safeVertical(row.skin),
+    skin,
     profile: toStringRecord(row.legal_profile),
     published: row.legal_pages_published === true,
     updatedAt: row.legal_profile_updated_at ?? null,
@@ -84,7 +107,26 @@ export async function fetchTenantLegalProfile(tenantId: string): Promise<TenantL
     packAcknowledgedAt: row.legal_pack_acknowledged_at ?? null,
     languageDefault: row.language_default === 'he' ? 'he' : 'en',
     packAckDrafts: Array.isArray(row.legal_pack_ack_drafts) ? (row.legal_pack_ack_drafts as string[]) : [],
+    // Older databases (before the column was returned): a studio teaches classes.
+    teachesClasses: row.teaches_classes !== false,
+    ...legalScopeFromRow(row),
   };
+}
+
+/** The studio's health-declaration setting and add-on, from the RPC row (older databases: from the skin). */
+function legalScopeFromRow(row: Record<string, unknown>) {
+  const setting = typeof row.health_declaration === 'boolean' ? row.health_declaration : null;
+  const scope = studioFormsScope(
+    {
+      id: typeof row.skin === 'string' ? row.skin : null,
+      nameEn: typeof row.skin_name_en === 'string' ? row.skin_name_en : null,
+      nameHe: typeof row.skin_name_he === 'string' ? row.skin_name_he : null,
+      healthDeclaration: typeof row.skin_health_declaration === 'boolean' ? row.skin_health_declaration : null,
+      legalAddon: typeof row.skin_legal_addon === 'string' ? row.skin_legal_addon : null,
+    },
+    setting,
+  );
+  return { healthDeclarations: scope.healthDeclarations, healthDeclarationSetting: setting, legalAddon: scope.legalAddon };
 }
 
 export function useTenantLegalProfile(): { data: TenantLegalProfile | null; isLoading: boolean } {
@@ -117,6 +159,8 @@ export function studioRenderContext(legal: TenantLegalProfile, doc: LegalDocId, 
     contactEmail: legal.contactEmail,
     profile: legal.profile,
     updatedAt: legal.updatedAt,
+    teachesClasses: legal.teachesClasses !== false,
+    healthDeclarations: legal.healthDeclarations,
   };
 }
 
@@ -129,7 +173,10 @@ export function useLegalDocument(doc: LegalDocId | null, langOverride?: LegalLan
   const needsProfile = !!tenant && !platformDoc;
 
   const query = useQuery({
-    queryKey: ['legal-doc', doc, lang, platformDoc ? 'platform' : legal?.tenantId, legal?.updatedAt],
+    queryKey: [
+      'legal-doc', doc, lang, platformDoc ? 'platform' : legal?.tenantId, legal?.updatedAt, legal?.teachesClasses,
+      legal?.healthDeclarations,
+    ],
     enabled: !!doc && (!needsProfile || !!legal),
     staleTime: 5 * 60 * 1000,
     queryFn: async (): Promise<PreparedLegalDoc> => {
@@ -142,6 +189,8 @@ export function useLegalDocument(doc: LegalDocId | null, langOverride?: LegalLan
         contactEmail: platformDoc || !legal ? '' : legal.contactEmail,
         profile: platformDoc || !legal ? {} : legal.profile,
         updatedAt: platformDoc || !legal ? null : legal.updatedAt,
+        teachesClasses: platformDoc || !legal ? true : legal.teachesClasses !== false,
+        healthDeclarations: platformDoc || !legal ? undefined : legal.healthDeclarations,
       });
     },
   });

@@ -3,7 +3,13 @@ import { useTranslation } from 'react-i18next';
 import { useMutation } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
-import { formatCurrency } from '@shared/format';
+import { useTenant } from '@/hooks/useTenant';
+import {
+  RefundAmountChoice,
+  refundAmountToSend,
+  refundDocumentNoteKey,
+  type RefundAmountValue,
+} from './RefundAmountChoice';
 
 /** Providers whose API has no refund call: the admin refunds in their dashboard, then records it. */
 const MANUAL_REFUND_PROVIDERS: readonly string[] = ['ypay'];
@@ -44,7 +50,9 @@ export function RefundPaymentModal({
   onRefunded,
   onCancel,
 }: RefundPaymentModalProps) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
+  const tenant = useTenant();
+  const [amount, setAmount] = useState<RefundAmountValue>({ kind: 'full', text: '' });
   const remainingMinor = Math.max(totalMinor - alreadyRefundedMinor, 0);
   const [reason, setReason] = useState('');
   const [message, setMessage] = useState<string | null>(null);
@@ -52,10 +60,23 @@ export function RefundPaymentModal({
   const [manualMode, setManualMode] = useState(MANUAL_REFUND_PROVIDERS.includes(provider ?? ''));
   const providerName = t(`settings.provider_names.${provider ?? 'manual'}`, { defaultValue: provider ?? '' });
 
+  // Full: undefined (the server refunds what is left); partial: the typed amount; null = invalid.
+  const amountMinor = refundAmountToSend(amount, remainingMinor);
+  const documentNote = t(refundDocumentNoteKey(tenant?.invoicing_provider), {
+    provider: t(`settings.offline_payments.providers.${tenant?.invoicing_provider ?? ''}`, {
+      defaultValue: tenant?.invoicing_provider ?? '',
+    }),
+  });
+
   const mutation = useMutation({
     mutationFn: async (manual: boolean) => {
       const { data, error } = await supabase.functions.invoke('process-refund', {
-        body: { payment_id: paymentId, reason: reason || undefined, ...(manual ? { manual: true } : {}) },
+        body: {
+          payment_id: paymentId,
+          reason: reason || undefined,
+          ...(amountMinor !== undefined ? { amount_minor: amountMinor } : {}),
+          ...(manual ? { manual: true } : {}),
+        },
       });
       if (error) {
         const body = await readFunctionErrorBody(error);
@@ -89,10 +110,13 @@ export function RefundPaymentModal({
       <h3 className="font-semibold">
         {t('finance.refund_payment.title', { defaultValue: 'Refund payment' })}
       </h3>
-      <p className="text-sm text-muted-foreground">
-        {t('finance.refund_payment.amount', { defaultValue: 'Refund amount' })}:{' '}
-        {formatCurrency(remainingMinor, currency, i18n.language)}
-      </p>
+      <RefundAmountChoice
+        value={amount}
+        onChange={setAmount}
+        totalMinor={totalMinor}
+        alreadyRefundedMinor={alreadyRefundedMinor}
+        currency={currency}
+      />
       {manualMode && (
         <p className="text-sm rounded border border-border bg-muted/40 px-3 py-2" role="note">
           {t('finance.refund_payment.manual_note', {
@@ -134,6 +158,9 @@ export function RefundPaymentModal({
           })}
         </p>
       )}
+      <p className="text-xs text-muted-foreground">
+        {documentNote}
+      </p>
       <label className="block text-sm">
         {t('finance.refund_payment.reason', { defaultValue: 'Reason (optional)' })}
         <input
@@ -151,7 +178,7 @@ export function RefundPaymentModal({
         <Button
           type="button"
           variant="primary"
-          disabled={mutation.isPending || remainingMinor <= 0}
+          disabled={mutation.isPending || remainingMinor <= 0 || amountMinor === null}
           isLoading={mutation.isPending}
           onClick={() => mutation.mutate(manualMode)}
         >

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useTenant } from '@/hooks/useTenant';
 import { supabase } from '@/lib/supabase';
 import queryClient from '@/lib/query-client';
+import { useTenantLegalProfile } from '@/legal/useLegalDocument';
 
 const FLOWS: PaymentFlow[] = ['recurring', 'project', 'both'];
 
@@ -32,10 +33,17 @@ export function BusinessSettings() {
   const saved = tenant ? (tenant.profile ?? EXISTING_STUDIO_PROFILE) : undefined;
   const [draft, setDraft] = useState<StudioProfile | null>(saved ?? null);
   const [notice, setNotice] = useState<number | null>(null);
+  // "Clients sign a health declaration": the studio's setting, or its field's default until it sets one.
+  const { data: legal } = useTenantLegalProfile();
+  const savedHealth = legal?.healthDeclarations;
+  const [health, setHealth] = useState<boolean | undefined>(savedHealth);
 
   useEffect(() => {
     if (saved) setDraft(saved);
   }, [saved]);
+  useEffect(() => {
+    if (savedHealth !== undefined) setHealth(savedHealth);
+  }, [savedHealth]);
 
   const save = useMutation({
     mutationFn: async (profile: StudioProfile) => {
@@ -45,17 +53,22 @@ export function BusinessSettings() {
         p_teaches_classes: profile.teachesClasses,
         p_family_accounts: profile.familyAccounts,
         p_client_booking: profile.clientBooking,
+        // Sent only when changed, so a studio that never chose keeps following its field.
+        ...(health !== undefined && health !== savedHealth ? { p_health_declaration: health } : {}),
       });
       if (error) throw error;
       // Informational only: running enrolments keep running when classes are hidden.
       const switchedClassesOff = Boolean(saved?.teachesClasses) && !profile.teachesClasses;
       setNotice(switchedClassesOff ? await countActiveEnrolments() : null);
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tenant'] }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['tenant'] });
+      void queryClient.invalidateQueries({ queryKey: ['tenant-legal-profile'] });
+    },
   });
 
   if (!tenant || !draft) return null;
-  const dirty = JSON.stringify(draft) !== JSON.stringify(saved);
+  const dirty = JSON.stringify(draft) !== JSON.stringify(saved) || health !== savedHealth;
 
   const set = (patch: Partial<StudioProfile>) => setDraft({ ...draft, ...patch });
 
@@ -108,6 +121,26 @@ export function BusinessSettings() {
           </div>
         ))}
       </fieldset>
+
+      {health !== undefined && (
+        <details className="rounded-md border border-border p-3 text-sm">
+          <summary className="cursor-pointer font-medium">{t('studio_setup.filled_for_you')}</summary>
+          <div className="mt-2">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={health}
+                onChange={(e) => setHealth(e.target.checked)}
+                aria-describedby={`${id}-health-hint`}
+              />
+              <span>{t('settings.business.health_label')}</span>
+            </label>
+            <p id={`${id}-health-hint`} className="ms-6 text-xs text-muted-foreground">
+              {t('settings.business.health_hint')}
+            </p>
+          </div>
+        </details>
+      )}
 
       {notice !== null && notice > 0 && (
         <div role="status" className="flex items-start justify-between gap-3 rounded border border-gray-200 p-3 text-sm">

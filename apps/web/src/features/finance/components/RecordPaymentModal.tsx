@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { ManualPaymentMethod } from '../lib/manualPaymentMethods';
+import { useManualPaymentMethods } from '../hooks/useManualPaymentMethods';
+import { NoDocumentConfirmationOption } from './NoDocumentConfirmationOption';
 import { useMutation } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
@@ -53,14 +56,23 @@ export function RecordPaymentModal({
     defaultAmountMinor && defaultAmountMinor > 0 ? minorToText(defaultAmountMinor) : '',
   );
   const amountMinor = parseAmountToMinor(amountText);
-  const [method, setMethod] = useState<'cash' | 'bank_transfer'>('cash');
+  const methods = useManualPaymentMethods();
+  const [method, setMethod] = useState<ManualPaymentMethod>('cash');
   const [note, setNote] = useState('');
+  const [sendConfirmation, setSendConfirmation] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
 
   const mutation = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke('record-payment', {
-        body: { engagement_id: engagementId, method, note: note || undefined, amount_minor: amountMinor ?? undefined },
+        body: {
+          engagement_id: engagementId,
+          method,
+          note: note || undefined,
+          amount_minor: amountMinor ?? undefined,
+          // Only an untick is sent: the server's default is to confirm.
+          ...(sendConfirmation ? {} : { send_confirmation: false }),
+        },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error as string);
@@ -82,7 +94,7 @@ export function RecordPaymentModal({
       <h3 className="font-semibold">
         {monthly
           ? t('finance.record_payment.monthly_title')
-          : t('finance.record_payment.title', { defaultValue: 'Record offline payment' })}
+          : t('finance.record_payment.title')}
       </h3>
       {monthly && <p className="text-sm text-muted-foreground">{t('finance.record_payment.monthly_hint')}</p>}
       <label className="block text-sm">
@@ -90,10 +102,11 @@ export function RecordPaymentModal({
         <select
           className="mt-1 w-full border border-border rounded px-3 py-2"
           value={method}
-          onChange={(e) => setMethod(e.target.value as 'cash' | 'bank_transfer')}
+          onChange={(e) => setMethod(e.target.value as ManualPaymentMethod)}
         >
           <option value="cash">{t('finance.record_payment.cash', { defaultValue: 'Cash' })}</option>
           <option value="bank_transfer">{t('finance.record_payment.bank', { defaultValue: 'Bank transfer' })}</option>
+          {methods.includes('bit') && <option value="bit">{t('payment_methods.bit')}</option>}
         </select>
       </label>
       <label className="block text-sm">
@@ -121,6 +134,7 @@ export function RecordPaymentModal({
           onChange={(e) => setNote(e.target.value)}
         />
       </label>
+      <NoDocumentConfirmationOption checked={sendConfirmation} onChange={setSendConfirmation} />
       {message && (
         <p className="text-sm text-muted-foreground" role="status">
           {message}

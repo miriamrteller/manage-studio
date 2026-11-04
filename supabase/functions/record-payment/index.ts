@@ -5,13 +5,26 @@ import { resolveOfferingPrice } from "../_shared/email-dist/pricing.js";
 import { finalisePayment } from "../_shared/payments/finalise-payment.ts";
 import { recordManualRenewal } from "../_shared/payments/record-manual-renewal.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
+import { sendNoDocumentPaymentConfirmation } from "../_shared/payments/send-payment-confirmation-email.ts";
 
 const RecordPaymentBodySchema = z.object({
   engagement_id: z.string().uuid(),
-  method: z.enum(["cash", "bank_transfer"]),
+  method: z.enum(["cash", "bank_transfer", "bit"]),
   amount_minor: z.number().int().positive().optional(),
   note: z.string().max(500).optional(),
+  /** Email the payer a "not a tax document" confirmation (invoicing "none" only). Default on. */
+  send_confirmation: z.boolean().optional(),
 });
+
+/** A plain "not a tax document" confirmation for studios with no invoicing; never fails the request. */
+async function confirmToPayer(service: Parameters<typeof sendNoDocumentPaymentConfirmation>[0], tenantId: string, paymentId: string, wanted: boolean | undefined) {
+  if (wanted === false) return;
+  try {
+    await sendNoDocumentPaymentConfirmation(service, { tenantId, paymentId });
+  } catch (err) {
+    console.error("[confirmToPayer] failed", paymentId, err);
+  }
+}
 
 Deno.serve(withMonitoring("record-payment", async (req) => {
   const options = handleOptions(req);
@@ -75,6 +88,7 @@ Deno.serve(withMonitoring("record-payment", async (req) => {
       priceMinor: (priceMinor) => resolveOfferingPrice({ price_minor: priceMinor }).totalMinor,
     });
     if (!result.ok) return jsonResponse({ error: result.error, code: result.code }, result.status);
+    await confirmToPayer(service, tenantId, result.paymentId, body.send_confirmation);
     return jsonResponse({ ok: true, paymentId: result.paymentId, period: result.period });
   }
 
@@ -173,5 +187,6 @@ Deno.serve(withMonitoring("record-payment", async (req) => {
     actorUserId: auth.user.id,
   });
 
+  await confirmToPayer(service, tenantId, paymentRow.id as string, body.send_confirmation);
   return jsonResponse({ ok: true, paymentId: paymentRow.id });
 }));
