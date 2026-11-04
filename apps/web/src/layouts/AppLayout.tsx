@@ -21,6 +21,7 @@ function isPublicRoute(pathname: string): boolean {
     PUBLIC_PATHS.has(pathname) ||
     pathname.startsWith('/auth/') ||
     pathname.startsWith('/enrol/pay/') ||
+    pathname.startsWith('/enrol/return/') ||
     pathname.startsWith('/legal/') ||
     pathname.startsWith('/unsubscribe/')
   );

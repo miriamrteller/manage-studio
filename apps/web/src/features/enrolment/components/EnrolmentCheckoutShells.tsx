@@ -12,6 +12,7 @@ import { GrowPaymentShell } from './GrowPaymentShell';
 import { IcountPaymentShell } from './IcountPaymentShell';
 import { Invoice4uPaymentShell } from './Invoice4uPaymentShell';
 import { TakbullBitButton } from './TakbullBitButton';
+import { YpayRedirectShell } from './YpayRedirectShell';
 import { isMockHostedPaymentPage } from '@/lib/tenantProviderRouting';
 import { OfflinePaymentNotice } from './OfflinePaymentNotice';
 
@@ -334,6 +335,27 @@ export function ProviderCheckoutShell({
         onPaid={onPaid}
         onPrevious={onPrevious}
         above={<TakbullBitButton classId={classId} engagementId={engagementId} enrolmentToken={enrolmentToken} />}
+      />
+    );
+  }
+
+  // YPay: a full redirect to YPay's page (only the mock page stays in the app, for tests).
+  if (paymentProvider === 'ypay' && pageUrl) {
+    return pageUrl.includes('mock.ypay.local') ? (
+      <GrowPaymentShell
+        provider="ypay"
+        engagementId={engagementId}
+        pageUrl={pageUrl}
+        enrolmentToken={enrolmentToken}
+        onPaid={onPaid}
+        onPrevious={onPrevious}
+      />
+    ) : (
+      <YpayRedirectShell
+        engagementId={engagementId}
+        pageUrl={pageUrl}
+        enrolmentToken={enrolmentToken}
+        onPrevious={onPrevious}
       />
     );
   }

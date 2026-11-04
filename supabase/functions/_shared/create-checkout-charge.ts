@@ -3,6 +3,7 @@ import { resolveCheckoutSession } from "./checkout-session.ts";
 import { getPaymentProviderForTenant, isOfflinePaymentProvider } from "./payments/index.ts";
 import { isProviderNotConfiguredError } from "./payments/not-configured.ts";
 import type { CheckoutChargePayload } from "./checkout-bootstrap-types.ts";
+import { ypayEnrolmentReturnUrls } from "./payments/ypay/enrolment-return.ts";
 
 export type CreateCheckoutChargeResult =
   | { ok: true; charge: CheckoutChargePayload }
@@ -99,6 +100,9 @@ export async function createCheckoutCharge(
       idempotencyKey: session.idempotencyKey,
       metadata: session.metadata,
       ...(body.pay_with === "bit" ? { payWith: "bit" as const, isMobile: body.is_mobile === true } : {}),
+      ...(tenant.payment_provider === "ypay"
+        ? { returnUrls: await ypayEnrolmentReturnUrls(service, session.tenantId, body.engagement_id) }
+        : {}),
     });
   } catch (error) {
     // The studio picked online payment but has not connected it yet (no keys). The place stays

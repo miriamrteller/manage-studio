@@ -12,7 +12,7 @@ interface GrowPaymentShellProps {
   enrolmentToken?: string;
   onPaid: () => void;
   onPrevious: () => void;
-  provider?: 'grow' | 'icount' | 'invoice4u' | 'takbull';
+  provider?: 'grow' | 'icount' | 'invoice4u' | 'takbull' | 'ypay';
   /** Shown above the page, e.g. Takbull's "Pay with Bit" on a phone. */
   above?: ReactNode;
 }
@@ -26,7 +26,7 @@ interface PaymentStatus {
 }
 
 /**
- * Hosted-page checkout shell (Grow / iCount / Invoice4U / Takbull). Embeds the hosted page
+ * Hosted-page checkout shell (Grow / iCount / Invoice4U / Takbull, and the mock YPay page). Embeds the hosted page
  * (or a mock panel) and polls `get-payment-status` until the webhook finalises.
  */
 export function GrowPaymentShell({
@@ -46,7 +46,15 @@ export function GrowPaymentShell({
   onPaidRef.current = onPaid;
 
   const i18nPrefix =
-    provider === 'icount' ? 'icount' : provider === 'invoice4u' ? 'invoice4u' : provider === 'takbull' ? 'takbull' : 'grow';
+    provider === 'icount'
+      ? 'icount'
+      : provider === 'invoice4u'
+        ? 'invoice4u'
+        : provider === 'takbull'
+          ? 'takbull'
+          : provider === 'ypay'
+            ? 'ypay'
+            : 'grow';
 
   const checkStatus = useCallback(async (): Promise<PaymentStatus> => {
     const { data, error } = await supabase.functions.invoke('get-payment-status', {
@@ -97,14 +105,17 @@ export function GrowPaymentShell({
   const isMockPage =
     (provider === 'icount' && pageUrl.includes('mock.icount.local')) ||
     (provider === 'invoice4u' && pageUrl.includes('mock.invoice4u.local')) ||
-    (provider === 'grow' && pageUrl.includes('mock.grow.local'));
+    (provider === 'grow' && pageUrl.includes('mock.grow.local')) ||
+    (provider === 'ypay' && pageUrl.includes('mock.ypay.local'));
 
   const mockTestId =
     provider === 'icount'
       ? 'icount-mock-page'
       : provider === 'invoice4u'
         ? 'invoice4u-mock-page'
-        : 'grow-mock-page';
+        : provider === 'ypay'
+          ? 'ypay-mock-page'
+          : 'grow-mock-page';
 
   return (
     <div className="space-y-4">

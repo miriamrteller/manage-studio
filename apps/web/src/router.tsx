@@ -42,6 +42,7 @@ import BookingPage from "./pages/BookingPage";
 import PortalDashboard from "./pages/PortalDashboard";
 import { EnrolEntryRoute } from "./layouts/EnrolEntryRoute";
 import EnrolPayPage from "./pages/EnrolPayPage";
+import EnrolReturnPage from "./pages/EnrolReturnPage";
 import EnrolCompletePage from "./pages/EnrolCompletePage";
 import PayRequestPage from "./pages/PayRequestPage";
 import NotFoundPage from "./pages/NotFoundPage";
@@ -169,6 +170,8 @@ const router = createBrowserRouter([
           { path: 'signup', element: <SignupPage /> },
           { path: 'enrol', element: <EnrolEntryRoute /> },
           { path: 'enrol/pay/:engagementId', element: <EnrolPayPage /> },
+          // Where YPay sends the parent back after its payment page.
+          { path: 'enrol/return/:engagementId', element: <EnrolReturnPage /> },
           { path: 'enrol/complete', element: <EnrolCompletePage /> },
           // Public pay link for a job (shoot) deposit/balance request — token is the capability.
           { path: 'pay/:token', element: <PayRequestPage /> },
