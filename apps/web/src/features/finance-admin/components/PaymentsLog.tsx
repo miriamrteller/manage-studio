@@ -15,9 +15,12 @@ import { exportPaymentsCsv } from '../lib/csvExport';
 import { datedCsvFilename } from '../lib/financeAdminUtils';
 import { fetchAllPages } from '../lib/pagedFetch';
 import { AccountantExportCard } from './AccountantExportCard';
+import { CsvLanguageSelect } from './CsvLanguageSelect';
+import { csvT, useCsvLanguage } from '../lib/csvLanguage';
 
 export function PaymentsLog() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const { language: csvLanguage, setLanguage: setCsvLanguage } = useCsvLanguage(i18n.language);
   const tenant = useTenant();
   const {
     filters,
@@ -63,7 +66,7 @@ export function PaymentsLog() {
       const exportRows = await fetchAllPages((p, pageSize) =>
         PaymentsLogService.list(tenant, { page: p, pageSize, filters: effectiveFilters }),
       );
-      exportPaymentsCsv(exportRows, datedCsvFilename('payments', tenant.subdomain), t);
+      exportPaymentsCsv(exportRows, datedCsvFilename('payments', tenant.subdomain), csvT(i18n, csvLanguage));
     } catch (err) {
       setExportError(err instanceof Error ? err.message : t('common.error'));
     }
@@ -84,7 +87,8 @@ export function PaymentsLog() {
         onPayerSearchChange={setPayerSearch}
       />
 
-      <div className="flex gap-3">
+      <div className="flex flex-wrap items-end gap-3">
+        <CsvLanguageSelect value={csvLanguage} onChange={setCsvLanguage} />
         <Button variant="outline" onClick={handleExport}>
           {t('finance.payments.export')}
         </Button>

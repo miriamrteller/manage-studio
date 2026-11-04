@@ -2436,6 +2436,19 @@
       "preparing": "Preparing the file… {{count}} rows",
       "failed": "Couldn't prepare the file. Try again."
     },
+    "csv": {
+      "language": "File language",
+      "enrolment_id": "Enrolment ID",
+      "expenses": {
+        "expense_date": "Expense date",
+        "category": "Category",
+        "description": "Description",
+        "supplier_name": "Supplier",
+        "supplier_vat_number": "Supplier business number",
+        "corrects_expense_id": "Corrects expense",
+        "expense_id": "Expense ID"
+      }
+    },
     "accountant_export": {
       "title": "For your accountant",
       "intro": "Every payment and refund in the period, with its tax document (type, number, link) or why there is none, and the VAT from the document issued.",

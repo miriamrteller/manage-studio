@@ -223,3 +223,60 @@ describe('buildAccountantCsv', () => {
     await i18n.changeLanguage('en');
   });
 });
+
+describe('CSV language (owner request: English or Hebrew)', () => {
+  it('the same rows in Hebrew and English: labels change, dates and amounts do not', async () => {
+    const { csvT } = await import('@/features/finance-admin/lib/csvLanguage');
+    const rows = [row({ total_amount_minor: 11800, payment_method: 'cash' })];
+    const he = buildAccountantCsv(rows, { tenant: { invoicing_provider: 'ypay' }, t: csvT(i18n, 'he') });
+    const en = buildAccountantCsv(rows, { tenant: { invoicing_provider: 'ypay' }, t: csvT(i18n, 'en') });
+    expect(he).toContain('סוג מסמך');
+    expect(he).toContain('חשבונית מס-קבלה');
+    expect(he).toContain('מזומן');
+    expect(en).toContain('Document type');
+    expect(en).toContain('Tax invoice-receipt');
+    expect(en).toContain('Cash');
+    for (const csv of [he, en]) {
+      expect(csv).toContain('10/09/2026');
+      expect(csv).toContain('118.00');
+      expect(csv).toContain('18.00');
+    }
+  });
+
+  it('payments and expenses CSVs follow the chosen language too', async () => {
+    const { csvT } = await import('@/features/finance-admin/lib/csvLanguage');
+    const { buildPaymentsCsv, buildExpensesCsv } = await import('@/features/finance-admin/lib/csvExport');
+    const payments = [row({ total_amount_minor: 5000, payment_method: 'bank_transfer' })];
+    expect(buildPaymentsCsv(payments, csvT(i18n, 'he'))).toContain('העברה בנקאית');
+    expect(buildPaymentsCsv(payments, csvT(i18n, 'en'))).toContain('Bank transfer');
+    expect(buildPaymentsCsv(payments, csvT(i18n, 'en'))).toContain('50.00');
+
+    const expense = {
+      id: 'e1',
+      tenant_id: 't1',
+      expense_date: '2026-10-05',
+      description: 'Rent',
+      pretax_amount_minor: 10000,
+      vat_amount_minor: 1800,
+      total_amount_minor: 11800,
+      currency: 'ILS',
+      category: { name: 'Rent' },
+    } as never;
+    const heExp = buildExpensesCsv([expense], csvT(i18n, 'he'));
+    const enExp = buildExpensesCsv([expense], csvT(i18n, 'en'));
+    expect(heExp).toContain('תאריך הוצאה');
+    expect(enExp).toContain('Expense date');
+    for (const csv of [heExp, enExp]) {
+      expect(csv).toContain('05/10/2026');
+      expect(csv).toContain('118.00');
+    }
+  });
+
+  it('prefills from the app language', async () => {
+    const { csvLanguageFromApp } = await import('@/features/finance-admin/lib/csvLanguage');
+    expect(csvLanguageFromApp('he')).toBe('he');
+    expect(csvLanguageFromApp('he-IL')).toBe('he');
+    expect(csvLanguageFromApp('en')).toBe('en');
+    expect(csvLanguageFromApp(undefined)).toBe('en');
+  });
+});
