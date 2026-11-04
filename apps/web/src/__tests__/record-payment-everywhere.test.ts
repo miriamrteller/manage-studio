@@ -1,6 +1,6 @@
 /**
  * Record a payment, PR 4: one button, "Record a payment" / "רישום תשלום", in every flow where a
- * studio records money it was paid directly (first payment, monthly plan, admin enrol, project).
+ * studio records money it was paid directly (first payment, monthly plan, admin enrol, project, booking).
  * Run: pnpm -C apps/web test record-payment-everywhere.test.ts
  */
 import { readFileSync } from 'node:fs';
@@ -27,6 +27,7 @@ describe('"Record a payment" in every flow', () => {
     ['admin enrol (paid at the studio)', 'features/enrolment/components/AdminEnrolmentPaymentStep.tsx', 'finance.record_payment.title'],
     ['project payment dialog', 'features/jobs/components/ManualPaymentDialog.tsx', 'finance.record_payment.title'],
     ['record dialog', 'features/finance/components/RecordPaymentModal.tsx', 'finance.record_payment.title'],
+    ['booking (appointments)', 'pages/AdminAppointmentsPage.tsx', 'finance.record_payment.open'],
   ])('%s uses it', (_flow, file, key) => {
     expect(read(file)).toContain(`'${key}'`);
   });
