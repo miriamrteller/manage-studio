@@ -122,7 +122,7 @@ describe('Settings → How customers pay', () => {
     expect(await screen.findByRole('radio', { name: 'studio_setup.payment_grow' })).toBeChecked();
     expect(screen.queryByRole('radio', { name: 'payment_choice.monthly_no' })).toBeNull();
     expect(screen.queryByRole('radio', { name: 'payment_choice.monthly_yes' })).toBeNull();
-    // Every provider is listed (no "Different provider?" step).
+    fireEvent.click(screen.getByRole('button', { name: 'payment_choice.different_provider' }));
     fireEvent.click(screen.getByRole('radio', { name: 'studio_setup.payment_ypay' }));
     fireEvent.click(screen.getByRole('button', { name: 'common.save' }));
     await waitFor(() => expect(update).toHaveBeenCalledWith(expect.objectContaining({ payment_provider: 'ypay' })));

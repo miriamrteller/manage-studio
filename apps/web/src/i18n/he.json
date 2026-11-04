@@ -3645,16 +3645,15 @@
   "provider_limits": {
     "payment": {
       "grow": {
-        "recorded_receipts": "קבלות על מזומן, העברה בנקאית או ביט שאתם רושמים דורשות שירות קבלות נפרד, כמו חשבונית ירוקה."
+        "recorded_receipts": "OpalSwift לא יכולה להפיק קבלות Grow על מזומן, העברה בנקאית או ביט שאתם רושמים. לשם כך השתמשו בשירות קבלות נפרד, כמו חשבונית ירוקה."
       },
       "ypay": {
-        "no_saved_cards": "אין שמירת כרטיסים, ולכן אין חיובים חודשיים אוטומטיים.",
-        "refunds_in_provider": "החזרים כספיים מתבצעים ב-YPay."
+        "no_monthly": "OpalSwift עדיין לא יכולה להריץ חיובים חודשיים אוטומטיים דרך YPay.",
+        "no_refunds": "OpalSwift עדיין לא יכולה להחזיר תשלומי כרטיס של YPay: בצעו את ההחזר ב-YPay."
       },
       "invoice4u": {
-        "no_monthly_yet": "עדיין אין חיובים חודשיים אוטומטיים דרך OpalSwift.",
-        "refunds_in_provider": "החזרים כספיים מתבצעים ב-Invoice4U.",
-        "recorded_receipts": "קבלות על מזומן, העברה בנקאית או ביט שאתם רושמים דורשות שירות קבלות נפרד, כמו חשבונית ירוקה."
+        "no_monthly": "OpalSwift עדיין לא יכולה להריץ חיובים חודשיים אוטומטיים דרך Invoice4U.",
+        "recorded_receipts": "OpalSwift לא יכולה להפיק קבלות Invoice4U על מזומן, העברה בנקאית או ביט שאתם רושמים. לשם כך השתמשו בשירות קבלות נפרד, כמו חשבונית ירוקה."
       },
       "offline": {
         "no_cards": "אין תשלום בכרטיס: אתם רושמים כל תשלום בעצמכם."
@@ -3662,29 +3661,25 @@
     },
     "invoicing": {
       "grow": {
-        "own_charges_only": "מפיק מסמכים רק לתשלומי כרטיס דרך Grow, לא למזומן, העברה בנקאית או ביט שאתם רושמים.",
-        "refunds_in_provider": "מסמכי זיכוי מופקים ב-Grow.",
-        "branding_check": "הלוגו שלכם על המסמכים: בדקו עם Grow."
+        "own_charges_only": "OpalSwift מפיקה מסמכי Grow רק לתשלומי כרטיס דרך Grow, לא למזומן, העברה בנקאית או ביט שאתם רושמים.",
+        "no_refund_documents": "OpalSwift לא יכולה להפיק מסמכי זיכוי דרך Grow: הפיקו אותם ב-Grow."
       },
       "invoice4u": {
-        "own_charges_only": "מפיק מסמכים רק לתשלומי כרטיס דרך Invoice4U, לא למזומן, העברה בנקאית או ביט שאתם רושמים.",
-        "refunds_in_provider": "מסמכי זיכוי מופקים ב-Invoice4U.",
-        "branding_check": "הלוגו שלכם על המסמכים: בדקו עם Invoice4U."
+        "own_charges_only": "OpalSwift מפיקה מסמכי Invoice4U רק לתשלומי כרטיס דרך Invoice4U, לא למזומן, העברה בנקאית או ביט שאתם רושמים.",
+        "no_refund_documents": "OpalSwift לא יכולה להפיק מסמכי זיכוי דרך Invoice4U: הפיקו אותם ב-Invoice4U."
       },
       "ypay": {
-        "ypay_payments_only": "עובד רק עם תשלומי כרטיס דרך YPay או תשלום בסטודיו.",
-        "no_linked_deposits": "קבלות על מקדמה ויתרה לא מקושרות לחשבונית אחת: בדקו עם YPay.",
-        "refunds_in_provider": "מסמכי זיכוי מופקים ב-YPay.",
-        "branding_check": "הלוגו שלכם על המסמכים: בדקו עם YPay."
+        "ypay_payments_only": "OpalSwift משתמשת במסמכי YPay רק עם תשלומי כרטיס דרך YPay או תשלום בסטודיו.",
+        "no_refund_documents": "OpalSwift לא יכולה להפיק מסמכי זיכוי דרך YPay: הפיקו אותם ב-YPay."
       },
       "green_invoice": {
-        "documents_only": "מסמכים בלבד: תשלומי כרטיס עוברים דרך ספק התשלומים שלכם.",
-        "receipt_refunds": "אם אתם מפיקים קבלות (עוסק פטור), החזרים נרשמים בחשבונית ירוקה.",
-        "branding_check": "הלוגו שלכם על המסמכים: בדקו עם חשבונית ירוקה."
+        "documents_only": "OpalSwift משתמשת בחשבונית ירוקה למסמכים בלבד: תשלומי כרטיס עוברים דרך ספק התשלומים שלכם.",
+        "receipt_refunds": "אם חשבונית ירוקה מפיקה עבורכם קבלות, OpalSwift לא מפיקה מסמך זיכוי: רשמו את ההחזר בחשבונית ירוקה."
       }
     }
   },
   "payment_choice": {
+    "different_provider": "ספק אחר?",
     "no_monthly_warning": "עם {{provider}} אי אפשר לגבות תשלום חודשי. לתשלום חודשי, בחרו ב־Grow.",
     "disclaimer": "אפשר להחליף את ספק התשלומים עד התשלום הראשון. אחרי זה, החלפה דורשת פנייה לתמיכה של OpalSwift.",
     "monthly_needs_grow": "תשלום חודשי דורש Grow. פנו לתמיכה של OpalSwift."

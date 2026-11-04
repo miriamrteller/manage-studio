@@ -1,8 +1,7 @@
 // @vitest-environment jsdom
 /**
- * "What it can't do" lines under every provider option (owner decision 2026-11-04): every
- * offered provider stays listed, each line exists in English and Hebrew, unverified points read
- * "check with <provider>", and nothing blocks the choice.
+ * "What OpalSwift can't do" lines under every provider option (owner decision 2026-11-04):
+ * every offered provider has them, in English and Hebrew, stating only confirmed facts.
  */
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
@@ -15,7 +14,9 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'en' } }),
 }));
 
-import { PAYMENT_CHOICES, PaymentProviderChoice } from '@/features/settings/components/PaymentProviderChoice';
+import { PaymentProviderChoice } from '@/features/settings/components/PaymentProviderChoice';
+
+const PAYMENT_CHOICES = ['grow', 'ypay', 'invoice4u', 'offline'];
 
 afterEach(cleanup);
 
@@ -43,11 +44,14 @@ describe('provider limits', () => {
     }
   });
 
-  it('branding is never claimed: it reads "check with <provider>"', () => {
-    for (const slug of OFFERED_INVOICING) {
-      const key = `provider_limits.invoicing.${slug}.branding_check`;
-      expect(String(lookup(en, key))).toMatch(/check with/);
-      expect(String(lookup(he, key))).toMatch(/בדקו עם/);
+  it('states only what OpalSwift does: no hedged "check with" lines', () => {
+    const keys = [
+      ...PAYMENT_CHOICES.flatMap((s) => providerLimitKeys('payment', s)),
+      ...OFFERED_INVOICING.flatMap((s) => providerLimitKeys('invoicing', s)),
+    ];
+    for (const key of keys) {
+      expect(String(lookup(en, key))).not.toMatch(/check with/i);
+      expect(String(lookup(he, key))).not.toMatch(/בדקו עם/);
     }
   });
 
@@ -60,17 +64,20 @@ describe('provider limits', () => {
 });
 
 describe('How customers pay', () => {
-  it('lists every provider with its lines; a monthly studio picking YPay gets a note, not a block', () => {
+  it('each option points at its lines (YPay behind "Different provider?" as before)', () => {
     const onChange = vi.fn();
-    render(<PaymentProviderChoice idPrefix="t" monthlyFees provider="ypay" onProviderChange={onChange} />);
-    for (const slug of PAYMENT_CHOICES) {
-      expect(screen.getByRole('radio', { name: `studio_setup.payment_${slug}` })).toBeTruthy();
-    }
-    expect(screen.getByRole('radio', { name: 'studio_setup.payment_ypay' })).toHaveAccessibleDescription(
-      'provider_limits.payment.ypay.no_saved_cards provider_limits.payment.ypay.refunds_in_provider',
+    render(<PaymentProviderChoice idPrefix="t" monthlyFees={false} provider="grow" onProviderChange={onChange} />);
+    expect(screen.getByRole('radio', { name: 'studio_setup.payment_grow' })).toHaveAccessibleDescription(
+      'provider_limits.payment.grow.recorded_receipts',
     );
-    expect(screen.getByText('payment_choice.no_monthly_warning')).toBeTruthy();
-    fireEvent.click(screen.getByRole('radio', { name: 'studio_setup.payment_grow' }));
-    expect(onChange).toHaveBeenCalledWith('grow');
+    expect(screen.getByRole('radio', { name: 'studio_setup.payment_offline' })).toHaveAccessibleDescription(
+      'provider_limits.payment.offline.no_cards',
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'payment_choice.different_provider' }));
+    expect(screen.getByRole('radio', { name: 'studio_setup.payment_ypay' })).toHaveAccessibleDescription(
+      'provider_limits.payment.ypay.no_monthly provider_limits.payment.ypay.no_refunds',
+    );
+    fireEvent.click(screen.getByRole('radio', { name: 'studio_setup.payment_ypay' }));
+    expect(onChange).toHaveBeenCalledWith('ypay');
   });
 });
