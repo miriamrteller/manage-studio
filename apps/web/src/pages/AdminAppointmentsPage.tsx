@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { FEATURES } from '@shared/index';
@@ -10,6 +10,8 @@ import { AppointmentRowActions } from '@/features/scheduling/components/Appointm
 import { formatAppointmentWhen } from '@/features/scheduling/lib/formatAppointmentWhen';
 import { GoogleCalendarService } from '@/features/scheduling/googleCalendarService';
 import type { AppointmentCloseAction } from '@/features/scheduling/lib/resolveAppointmentPenalty';
+import { Button } from '@/components/ui/button';
+import { RecordPaymentModal } from '@/features/finance/components/RecordPaymentModal';
 
 const STATUS_STYLES: Record<string, string> = {
   active: 'bg-green-100 text-green-800',
@@ -42,6 +44,8 @@ export default function AdminAppointmentsPage() {
   const { hasFeature, isLoading: gateLoading } = useFeatureGate();
   const [closingId, setClosingId] = useState<string | null>(null);
   const [syncingId, setSyncingId] = useState<string | null>(null);
+  // "Record a payment" on a booking waiting for payment (paid directly: cash / transfer / Bit).
+  const [recordingId, setRecordingId] = useState<string | null>(null);
 
   const canView =
     hasFeature(FEATURES.scheduling.clientBooking) || hasFeature(FEATURES.scheduling.adminBooking);
@@ -132,7 +136,8 @@ export default function AdminAppointmentsPage() {
             </thead>
             <tbody>
               {rows.map((row) => (
-                <tr key={row.id} className="border-b border-gray-100">
+                <Fragment key={row.id}>
+                <tr className="border-b border-gray-100">
                   <td className="p-2">
                     {formatAppointmentWhen(row.booked_starts_at, i18n.language)}
                   </td>
@@ -176,8 +181,32 @@ export default function AdminAppointmentsPage() {
                       onClose={closeAppointment}
                       onAddToGoogle={addToGoogleCalendar}
                     />
+                    {row.status === 'pending_payment' && recordingId !== row.id && (
+                      <Button type="button" variant="outline" size="sm" className="mt-1" onClick={() => setRecordingId(row.id)}>
+                        {t('finance.record_payment.open')}
+                      </Button>
+                    )}
                   </td>
                 </tr>
+                {recordingId === row.id && (
+                  <tr className="border-b border-gray-100">
+                    <td colSpan={5} className="p-2">
+                      <RecordPaymentModal
+                        engagementId={row.id}
+                        defaultAmountMinor={row.price_minor ?? undefined}
+                        currency={row.currency ?? tenant?.currency ?? 'ILS'}
+                        onRecorded={() => {
+                          setRecordingId(null);
+                          void queryClient.invalidateQueries({ queryKey: ['appointments'] });
+                        }}
+                      />
+                      <Button type="button" variant="ghost" size="sm" className="mt-2" onClick={() => setRecordingId(null)}>
+                        {t('common.cancel')}
+                      </Button>
+                    </td>
+                  </tr>
+                )}
+                </Fragment>
               ))}
             </tbody>
           </table>
