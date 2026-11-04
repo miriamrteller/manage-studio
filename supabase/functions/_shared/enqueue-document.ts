@@ -76,6 +76,13 @@ export async function tenantIssuesNoDocuments(
 /** Invoicing services that only issue a document together with their own card charge. */
 export const BUNDLED_ONLY_INVOICING = ["grow", "icount", "invoice4u"] as const;
 
+/**
+ * Unfinished invoicing services: their document call is not built yet (live API access
+ * pending), so no document of any kind can come from OpalSwift. Recorded as not issued
+ * instead of failing in the queue (payments audit follow-up).
+ */
+export const NO_DOCUMENTS_YET_INVOICING = ["tranzila", "yesh"] as const;
+
 export type DocumentRoute =
   | { route: "queue" }
   | { route: "skip_no_documents" }
@@ -96,6 +103,12 @@ export function documentRouteFor(input: {
 }): DocumentRoute {
   const invoicing = input.invoicingProvider ?? "";
   if (invoicing === "none") return { route: "skip_no_documents" };
+  if ((NO_DOCUMENTS_YET_INVOICING as readonly string[]).includes(invoicing)) {
+    return {
+      route: "not_issued",
+      reason: `${invoicing} documents can't be issued from OpalSwift yet; issue this document in ${invoicing}`,
+    };
+  }
   if (!(BUNDLED_ONLY_INVOICING as readonly string[]).includes(invoicing)) return { route: "queue" };
   if (input.documentKind === "sale" && input.paymentProvider === invoicing) {
     return { route: "skip_issued_with_charge" };

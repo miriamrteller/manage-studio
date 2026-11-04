@@ -2168,7 +2168,10 @@
     "logo_optional": "PNG, JPG, SVG or WebP, up to 2 MB. You can skip this and add it later in Settings → Branding.",
     "logo_chosen": "{{name}} will be added when your studio is created.",
     "logo_too_large": "That file is over 2 MB. Choose a smaller one, or skip this for now.",
-    "logo_owner_later": "The studio owner can add a logo later in Settings → Branding."
+    "logo_owner_later": "The studio owner can add a logo later in Settings → Branding.",
+    "business_email": "Business email (clients see this)",
+    "business_email_hint": "Replies to the studio's emails and new-enquiry alerts go here. It can be different from the login email, and you can change it later in Settings.",
+    "need_business_email": "Enter a valid business email, or put back the login email."
   },
   "studio_not_found": {
     "title": "Studio not found",
@@ -3155,6 +3158,15 @@
       "custom_domain_readonly": "Your studio's own web address. Only the OpalSwift team can change it.",
       "name_required": "Studio name is required.",
       "profile_saved": "Studio profile saved.",
+      "studio_email": "Studio email",
+      "studio_email_hint": "Clients see this: replies to your emails and new-enquiry alerts go here. Your login email does not change.",
+      "studio_email_invalid": "Enter a valid email address for the studio.",
+      "studio_email_legal_offer_one": "Your legal pages still show {{from}} in 1 place. Use {{to}} there too?",
+      "studio_email_legal_offer_other": "Your legal pages still show {{from}} in {{count}} places. Use {{to}} there too?",
+      "studio_email_legal_yes": "Update legal pages",
+      "studio_email_legal_no": "Not now",
+      "studio_email_legal_updated": "Legal pages now use the new studio email.",
+      "studio_email_legal_error": "Could not update the legal pages. You can change the emails in Settings → Legal.",
       "branding_title": "Branding",
       "branding_description": "Primary and accent colours applied across the site.",
       "primary_color": "Primary colour",

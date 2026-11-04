@@ -87,7 +87,10 @@ function serviceDeps(service: ServiceClient): ProvisionStudioDeps {
         ...(contact.address ? { address: contact.address } : {}),
         ...(contact.phone ? { phone: contact.phone } : {}),
       };
-      const { error } = await service.from("tenants").update({ legal_profile: next }).eq("id", tenantId);
+      const { error } = await service
+        .from("tenants")
+        .update({ legal_profile: next, ...(contact.email ? { contact_email: contact.email } : {}) })
+        .eq("id", tenantId);
       if (error) throw new Error(error.message);
     },
     async applyProfile(tenantId, profile) {
@@ -191,7 +194,10 @@ function selfServeDeps(service: ServiceClient, req: Request): SelfServeDeps {
         ...(contact.address ? { address: contact.address } : {}),
         ...(contact.phone ? { phone: contact.phone } : {}),
       };
-      const { error } = await service.from("tenants").update({ legal_profile: next }).eq("id", tenantId);
+      const { error } = await service
+        .from("tenants")
+        .update({ legal_profile: next, ...(contact.email ? { contact_email: contact.email } : {}) })
+        .eq("id", tenantId);
       if (error) throw new Error(error.message);
     },
     async applyProfile(tenantId, profile) {

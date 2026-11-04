@@ -335,4 +335,49 @@ describe('studio setup wizard', () => {
     expect(screen.getByRole('heading', { name: 'הקמת סטודיו חדש' })).toBeInTheDocument();
     expect(screen.getByText(/שלב 1 מתוך 6/)).toBeInTheDocument();
   });
+
+  it('business email (clients see this): follows the owner email until changed, then is sent separately', async () => {
+    h.invoke.mockResolvedValue({ data: { tenantId: 't-new', subdomain: 'creativeballet', owner: { status: 'invited' } }, error: null });
+    renderWizard();
+    await fillStudioStep();
+    fireEvent.click(screen.getByRole('radio', { name: /Dance studio/ }));
+    next();
+    fireEvent.click(screen.getByRole('radio', { name: PAY_AT_STUDIO }));
+    next();
+    next();
+    fireEvent.change(screen.getByLabelText("Owner's email"), { target: { value: 'owner@example.com' } });
+    const business = screen.getByLabelText('Business email (clients see this)');
+    expect(business).toHaveValue('owner@example.com');
+    // A typo is not accepted (it would fail the whole studio); the hint says what to do.
+    fireEvent.change(business, { target: { value: 'hello@' } });
+    expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
+    expect(screen.getByText('Enter a valid business email, or put back the login email.')).toBeInTheDocument();
+    fireEvent.change(business, { target: { value: 'Hello@CreativeBallet.co.il' } });
+    next();
+    expect(screen.getByText('Hello@CreativeBallet.co.il')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Create studio' }));
+    await screen.findByRole('heading', { name: 'Creative Ballet is ready' });
+    expect(h.invoke).toHaveBeenCalledWith('provision-studio', {
+      body: expect.objectContaining({
+        ownerEmail: 'owner@example.com',
+        contact: { email: 'hello@creativeballet.co.il' },
+      }),
+    });
+  });
+
+  it('business email left as the owner email: nothing extra is sent (the owner email stays the studio email)', async () => {
+    h.invoke.mockResolvedValue({ data: { tenantId: 't-new', subdomain: 'creativeballet', owner: { status: 'invited' } }, error: null });
+    renderWizard();
+    await fillStudioStep();
+    fireEvent.click(screen.getByRole('radio', { name: /Dance studio/ }));
+    next();
+    fireEvent.click(screen.getByRole('radio', { name: PAY_AT_STUDIO }));
+    next();
+    next();
+    fireEvent.change(screen.getByLabelText("Owner's email"), { target: { value: 'owner@example.com' } });
+    next();
+    fireEvent.click(screen.getByRole('button', { name: 'Create studio' }));
+    await screen.findByRole('heading', { name: 'Creative Ballet is ready' });
+    expect(h.invoke.mock.calls[0][1].body.contact).toEqual({});
+  });
 });

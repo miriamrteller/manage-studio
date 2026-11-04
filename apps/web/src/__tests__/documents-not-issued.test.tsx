@@ -50,6 +50,17 @@ describe('documentRouteFor', () => {
     }
   });
 
+  it('Tranzila and Yesh (no document call yet) record every document as not issued, never queue it', () => {
+    for (const p of ['tranzila', 'yesh']) {
+      for (const paymentProvider of ['manual', p]) {
+        for (const documentKind of ['sale', 'refund'] as const) {
+          const route = documentRouteFor({ invoicingProvider: p, paymentProvider, documentKind });
+          expect(route.route).toBe('not_issued');
+        }
+      }
+    }
+  });
+
   it('records cash payments and refunds as not issued', () => {
     for (const p of ['grow', 'icount', 'invoice4u']) {
       expect(documentRouteFor({ invoicingProvider: p, paymentProvider: 'manual', documentKind: 'sale' }).route).toBe('not_issued');
