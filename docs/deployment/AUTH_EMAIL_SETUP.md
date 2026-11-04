@@ -114,6 +114,20 @@ origin the person used, so every studio origin needs an entry: a wildcard such a
 `https://<custom domain>/**` (see CUSTOM-DOMAIN.md). The reset email is sent by the Send Email
 Hook (`send-auth-email`, action `recovery`).
 
+### Changing the login email (Settings → Security, portals)
+
+"Change login email" uses Supabase's **secure email change**: a confirmation goes to the current
+and the new address, and the login changes only after both are confirmed.
+
+- Auth → Providers → Email: **Secure email change** on (the default; local: `double_confirm_changes`).
+- Auth → Emails → Security notifications: turn on **Email address changed**, so the old address
+  gets "Your login email was changed to … If this wasn't you, contact OpalSwift."
+- Both go through the Send Email Hook (`send-auth-email`): `email_change` sends two emails
+  (current address: `token` + `token_hash_new`; new address: `token_new` + `token_hash`, the
+  names are reversed, see `send-auth-email/recipients.ts`), and `email_changed_notification`
+  sends the notice to `old_email`.
+- The links return to `${origin}/auth/callback?next=email-change`, the same allow-list entries as sign-in.
+
 ### Email provider (Auth → Providers → Email)
 
 - Email provider **enabled**

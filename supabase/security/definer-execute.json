@@ -78,6 +78,7 @@
       "list_admin_quotes",
       "log_platform_view",
       "log_sensitive_read",
+      "login_email_status",
       "mark_quote_sent",
       "pick_active_consent_template",
       "platform_set_feature_override",

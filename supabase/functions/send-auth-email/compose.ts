@@ -74,3 +74,33 @@ export function composeAuthEmail(input: ComposeAuthEmailInput): AuthEmailMessage
     }),
   };
 }
+
+const HELP_EMAIL = "hello@opalswift.com";
+
+function escapeHtml(value: string): string {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+/**
+ * The notice to the OLD address after a login-email change (Supabase
+ * email_changed_notification). No link: it only says what happened and who to contact.
+ */
+export function composeLoginEmailChangedNotice(input: { tenant: TenantEmailConfig; newEmail: string }): AuthEmailMessage {
+  const he = input.tenant.language === "he";
+  const studio = escapeHtml(input.tenant.name);
+  const newEmail = escapeHtml(input.newEmail);
+  const subject = he ? `אימייל ההתחברות שלך שונה — ${input.tenant.name}` : `Your login email was changed — ${input.tenant.name}`;
+  const lines = he
+    ? [
+      `אימייל ההתחברות שלך ב-${studio} שונה ל-<strong dir="ltr">${newEmail}</strong>.`,
+      `אם לא ביצעת את השינוי, יש לפנות ל-OpalSwift: <a href="mailto:${HELP_EMAIL}">${HELP_EMAIL}</a>.`,
+    ]
+    : [
+      `Your login email for ${studio} was changed to <strong>${newEmail}</strong>.`,
+      `If this wasn't you, contact OpalSwift: <a href="mailto:${HELP_EMAIL}">${HELP_EMAIL}</a>.`,
+    ];
+  const html = `<!doctype html><html lang="${he ? "he" : "en"}" dir="${he ? "rtl" : "ltr"}"><body style="font-family:Arial,sans-serif;font-size:16px;line-height:1.5;color:#1f2937;padding:24px">${
+    lines.map((l) => `<p>${l}</p>`).join("")
+  }</body></html>`;
+  return { subject, html, replyTo: HELP_EMAIL };
+}

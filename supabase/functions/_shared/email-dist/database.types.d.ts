@@ -5332,6 +5332,12 @@ export type Database = {
                 };
                 Returns: undefined;
             };
+            login_email_status: {
+                Args: {
+                    p_email: string;
+                };
+                Returns: string;
+            };
             mark_quote_sent: {
                 Args: {
                     p_quote_id: string;

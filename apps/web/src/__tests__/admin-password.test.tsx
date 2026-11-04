@@ -11,6 +11,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { I18nextProvider } from 'react-i18next';
 import { MemoryRouter } from 'react-router-dom';
 import type { ReactNode } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const h = vi.hoisted(() => ({
   session: null as null | { user: { email: string } },
@@ -26,6 +27,8 @@ vi.mock('@/lib/supabase', () => ({
 vi.mock('@/components/shared/SetPasswordDialog', () => ({
   SetPasswordDialog: ({ open }: { open: boolean }) => (open ? <div role="dialog" aria-label="password dialog" /> : null),
 }));
+vi.mock('@/components/shared/ChangeLoginEmail', () => ({ ChangeLoginEmail: () => <section aria-label="change login email" /> }));
+vi.mock('@/hooks/useTenant', () => ({ useTenant: () => null }));
 vi.mock('@/components/legal/TwoFactorSettings', () => ({ TwoFactorSettings: () => null }));
 vi.mock('@/components/legal/RequireMfaSetting', () => ({ RequireMfaSetting: () => null }));
 vi.mock('@/components/legal/DataExportButton', () => ({ DataExportButton: () => null }));
@@ -44,7 +47,9 @@ import { SecuritySettingsForm } from '@/features/settings/components/SecuritySet
 const wrap = (node: ReactNode) =>
   render(
     <I18nextProvider i18n={i18n}>
-      <MemoryRouter>{node}</MemoryRouter>
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter>{node}</MemoryRouter>
+      </QueryClientProvider>
     </I18nextProvider>,
   );
 
@@ -156,6 +161,7 @@ describe('Settings → Security', () => {
   it('admins can set or change their login password there', () => {
     wrap(<SecuritySettingsForm />);
     expect(screen.getByRole('heading', { name: 'Login password' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'change login email' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Set or change your password' }));
     expect(screen.getByRole('dialog', { name: 'password dialog' })).toBeInTheDocument();
   });

@@ -11,6 +11,7 @@ import AuthCallbackPage from "./pages/AuthCallbackPage";
 import CreateStudioPage from '@/pages/CreateStudioPage';
 import SessionHandoffPage from '@/pages/auth/SessionHandoffPage';
 import NewPasswordPage from '@/pages/auth/NewPasswordPage';
+import EmailChangedPage from '@/pages/auth/EmailChangedPage';
 import LegalPackPrintPage from '@/pages/LegalPackPrintPage';
 import DashboardRedirectPage from "./pages/DashboardRedirectPage";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -89,6 +90,15 @@ const router = createBrowserRouter([
     element: (
       <LanguageProvider>
         <AuthCallbackPage />
+      </LanguageProvider>
+    ),
+  },
+  // Login-email change confirmations land here (through /auth/callback).
+  {
+    path: '/auth/email-changed',
+    element: (
+      <LanguageProvider>
+        <EmailChangedPage />
       </LanguageProvider>
     ),
   },

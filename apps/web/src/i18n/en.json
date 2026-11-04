@@ -3775,5 +3775,23 @@
   },
   "payment_methods": {
     "bit": "Bit / PayBox"
+  },
+  "login_email": {
+    "change_title": "Change login email",
+    "change_description": "The email you sign in with. We send a confirmation to both your current and your new address; it changes only after you confirm, and your current login keeps working until then.",
+    "dialog_description": "Your login changes only after you confirm from both addresses.",
+    "new_label": "New login email",
+    "also_business": "Also use this as my business email",
+    "send": "Send confirmation",
+    "sent": "We sent a confirmation link to {{from}} and to {{to}}. Open both. Until then, keep signing in with {{from}}.",
+    "refused_taken": "That email already has an OpalSwift account (perhaps at another studio). Use a different address.",
+    "refused_reserved": "That address is reserved for OpalSwift. Use a different one.",
+    "refused_same": "That is already your login email.",
+    "refused_invalid": "Enter a valid email address.",
+    "error": "We could not send the confirmation. Try again in a minute.",
+    "confirmed_title": "Thanks, confirmed",
+    "confirmed_body": "If you have now confirmed from both addresses, your new login email is active. If not, open the link we sent to the other address.",
+    "continue": "Continue",
+    "sign_in": "Sign in"
   }
 }
