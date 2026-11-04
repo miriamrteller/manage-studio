@@ -2420,7 +2420,10 @@
       "filter_date_to": "שולם עד",
       "filter_payer_search": "חיפוש משלם",
       "export": "ייצוא CSV",
-      "detail_title": "פרטי תשלום"
+      "detail_title": "פרטי תשלום",
+      "col_vat_split": "לפני מע\"מ / מע\"מ",
+      "vat_split_value": "{{pretax}} + {{vat}} מע\"מ ({{rate}}%)",
+      "vat_split_note": "מחושב לפי המסמך שהופק; המסמך עצמו הוא הקובע."
     },
     "charge_type": {
       "initial": "תשלום הרשמה",
