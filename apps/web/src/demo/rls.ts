@@ -11,6 +11,8 @@ const PUBLIC_TABLES = new Set(['tenants', 'offerings', 'consent_templates', 'cat
 // they go through get_client_job_gallery / get_public_quote.
 const ADMIN_ONLY = new Set([
   'leads', 'audit_log', 'notification_log', 'job_details', 'quotes', 'quote_lines', 'tenant_automatic_emails',
+  // Photo shop: the client sees its shop only through client-photo-shop.
+  'tenant_photo_shop_settings', 'job_photo_shops', 'job_photo_orders', 'job_photo_order_items',
 ]);
 const BY_ACCOUNT = new Set(['accounts']);
 const BY_ACCOUNT_COL = new Set(['people', 'account_members']);

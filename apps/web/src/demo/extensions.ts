@@ -17,6 +17,7 @@ import {
 import { contractSignHref, demoContractSignPath, demoDepositRequest, formatIls } from './functions';
 import { showInvoice } from './invoice';
 import { sendToOutbox } from './outbox';
+import { photoOrderFollowsPayment } from './photoShopHandlers';
 import { insertJob, resolveClient } from './rpcs';
 import { canRead } from './rls';
 import { ADMIN_USER_ID, DEMO_INVOICE_HOST, TENANT_ID } from './seed';
@@ -140,6 +141,7 @@ function settleRequest(ctx: DemoContext, req: Row, method: string, provider: str
     invoice_url: `${DEMO_INVOICE_HOST}/${paymentId}`,
   });
   Object.assign(req, { status: 'paid', paid_at: ctx.now(), payment_id: paymentId, updated_at: ctx.now() });
+  photoOrderFollowsPayment(ctx, req);
   maybeGalleryReadyEmail(ctx, req.engagement_id as string);
   return paymentId;
 }
