@@ -17,9 +17,9 @@ BEGIN;
 -- (Its profile loses super_admin first: a login email that is not an owner address is refused
 -- for a super_admin profile, by design, since the email change now syncs to the profile.)
 UPDATE user_profiles SET role = array_remove(role, 'super_admin')
-WHERE id IN (SELECT id FROM auth.users WHERE lower(email) = 'miriamrteller@gmail.com');
+WHERE id IN (SELECT id FROM auth.users WHERE lower(email) = 'admin@opalswift.com');
 UPDATE auth.users SET email = 'owner-moved-aside@example.test'
-WHERE lower(email) = 'miriamrteller@gmail.com';
+WHERE lower(email) = 'admin@opalswift.com';
 
 CREATE TEMP TABLE ids ON COMMIT DROP AS SELECT
   gen_random_uuid() AS owner, gen_random_uuid() AS stranger,

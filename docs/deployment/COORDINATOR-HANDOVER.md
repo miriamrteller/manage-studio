@@ -41,7 +41,7 @@ You coordinate Claude Code "threads" (separate cloud sessions) that build OpalSw
   - deploy-prod run 41453185800 (main 99b4acb) was **fully green**, including verify:prod.
   - deploy-web run 41454550453 was green, so prod = main 99b4acb.
   - Next release: see "Releases".
-- **Database:** 0 studios, 1 user: the super admin, miriamrteller@gmail.com, with no studio.
+- **Database:** 0 studios, 1 user: the super admin, admin@opalswift.com, with no studio.
 - **Encryption key** is in `private.platform_config`: clean 44-character base64, also in her Google Password Manager.
   It must **never change again**; changing it orphans every saved credential.
 - **Auth:**
@@ -109,7 +109,7 @@ You coordinate Claude Code "threads" (separate cloud sessions) that build OpalSw
 
 ## Owner decisions (don't re-ask)
 
-- **Accounts:** the super admin is miriamrteller@gmail.com only. Studios need a separate owner email.
+- **Accounts:** the super admin is admin@opalswift.com only. Studios need a separate owner email.
 - **Defaults for new studios:**
   - English, OpalSwift theme (#5B6CFF / #21D1C2, AA ink #4A58E8), gradient primary buttons, dark side menu.
   - Payments: **Grow** (payment + Grow documents). "Pay at the studio" and "None" are available but not the default.

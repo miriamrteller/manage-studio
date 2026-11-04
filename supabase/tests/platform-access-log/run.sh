@@ -27,11 +27,11 @@ FROM ids, LATERAL (VALUES (ids.home, 'home'), (ids.b, 'b'), (ids.c, 'c')) AS x(i
 -- The super_admin is reserved for one email (20260827000100); reuse the
 -- seeded account when present.
 UPDATE ids SET sa = coalesce(
-  (SELECT id FROM auth.users WHERE lower(email) = 'miriamrteller@gmail.com' LIMIT 1), gen_random_uuid());
+  (SELECT id FROM auth.users WHERE lower(email) = 'admin@opalswift.com' LIMIT 1), gen_random_uuid());
 
 INSERT INTO auth.users (id, email, raw_user_meta_data)
 SELECT u.id, u.email, jsonb_build_object('subdomain', t.subdomain)
-FROM ids, LATERAL (VALUES (ids.sa, 'miriamrteller@gmail.com', ids.home),
+FROM ids, LATERAL (VALUES (ids.sa, 'admin@opalswift.com', ids.home),
                           (ids.admin_b, 'pal-admin-b@example.test', ids.b),
                           (ids.admin_c, 'pal-admin-c@example.test', ids.c)) AS u(id, email, tenant)
 JOIN tenants t ON t.id = u.tenant
@@ -39,7 +39,7 @@ ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO user_profiles (id, tenant_id, role, email)
 SELECT u.id, u.tenant, u.role, u.email
-FROM ids, LATERAL (VALUES (ids.sa, ids.home, ARRAY['super_admin', 'tenant_admin'], 'miriamrteller@gmail.com'),
+FROM ids, LATERAL (VALUES (ids.sa, ids.home, ARRAY['super_admin', 'tenant_admin'], 'admin@opalswift.com'),
                           (ids.admin_b, ids.b, ARRAY['tenant_admin'], 'pal-admin-b@example.test'),
                           (ids.admin_c, ids.c, ARRAY['tenant_admin'], 'pal-admin-c@example.test')) AS u(id, tenant, role, email)
 ON CONFLICT (id) DO UPDATE SET tenant_id = EXCLUDED.tenant_id, role = EXCLUDED.role, email = EXCLUDED.email;

@@ -57,7 +57,7 @@ Dev seed checklist (linked Supabase — not local Docker)
 
 Finance test logins (see supabase/seed-finance.sql header):
   Parent: miriamrstern@gmail.com / devPassword123
-  Admin:  miriamrteller@gmail.com / devPassword123
+  Admin:  admin@opalswift.com / devPassword123
 `);
 }
 
