@@ -83,6 +83,7 @@
       "log_sensitive_read",
       "login_email_status",
       "mark_quote_sent",
+      "my_login_has_password",
       "pick_active_consent_template",
       "platform_set_feature_override",
       "platform_tenant_feature_states",

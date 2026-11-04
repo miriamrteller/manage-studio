@@ -9,6 +9,7 @@ import { hasParentRole } from '@/lib/parentRoles';
 import { PlatformTermsGate } from '@/components/legal/PlatformTermsGate';
 import { MfaChallengeGate } from '@/components/legal/MfaChallengeGate';
 import { PlatformOwnerNotice, isPlatformOwnerOnly } from '@/components/PlatformOwnerNotice';
+import { SetPasswordPrompt } from '@/features/auth/components/SetPasswordPrompt';
 
 /**
  * useCurrentUser, scoped to the tenant of the current subdomain: a signed-in
@@ -76,7 +77,10 @@ export function AdminRoute({ children }: { children: ReactNode }) {
 
   return (
     <MfaChallengeGate>
-      <PlatformTermsGate>{children}</PlatformTermsGate>
+      <PlatformTermsGate>
+        {children}
+        <SetPasswordPrompt />
+      </PlatformTermsGate>
     </MfaChallengeGate>
   );
 }
@@ -101,7 +105,12 @@ export function TeacherRoute({ children }: { children: ReactNode }) {
     return <Navigate to="/login" state={{ from: returnToFromLocation(location) }} replace />;
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      <SetPasswordPrompt />
+    </>
+  );
 }
 
 /**
@@ -124,7 +133,12 @@ export function ParentRoute({ children }: { children: ReactNode }) {
     return <Navigate to="/login" state={{ from: returnToFromLocation(location) }} replace />;
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      <SetPasswordPrompt />
+    </>
+  );
 }
 
 /**
@@ -142,7 +156,12 @@ export function SuperAdminRoute({ children }: { children: ReactNode }) {
     return <Navigate to="/login" state={{ from: returnToFromLocation(location) }} replace />;
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      <SetPasswordPrompt />
+    </>
+  );
 }
 
 /**
@@ -168,5 +187,10 @@ export function StudentRoute({ children }: { children: ReactNode }) {
     return <Navigate to="/login" state={{ from: returnToFromLocation(location) }} replace />;
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      <SetPasswordPrompt />
+    </>
+  );
 }
