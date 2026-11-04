@@ -10,6 +10,7 @@ import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/re
 vi.mock('@/features/finance/hooks/useManualPaymentMethods', () => ({
   useManualPaymentMethods: () => ['cash', 'bank_transfer', 'bit'],
 }));
+vi.mock('@/hooks/useTenant', () => ({ useTenant: () => ({ id: 't1', invoicing_provider: 'ypay' }) }));
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key, i18n: { language: 'en' } }),
 }));
@@ -47,7 +48,7 @@ describe('manual payment methods', () => {
     );
     fireEvent.click(screen.getByRole('radio', { name: 'payment_methods.bit' }));
     fireEvent.click(screen.getByRole('button', { name: 'pages.jobs.payments.manual.confirmPaid' }));
-    await waitFor(() => expect(onMarkPaid).toHaveBeenCalledWith('jpr-1', 'bit', undefined));
+    await waitFor(() => expect(onMarkPaid).toHaveBeenCalledWith('jpr-1', 'bit', undefined, true));
   });
 });
 

@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ManualPaymentMethod } from '@/features/finance/lib/manualPaymentMethods';
 import { useManualPaymentMethods } from '@/features/finance/hooks/useManualPaymentMethods';
+import { NoDocumentConfirmationOption } from '@/features/finance/components/NoDocumentConfirmationOption';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Modal } from '@/components/ui/modal';
@@ -18,7 +19,7 @@ interface Props {
   language: string;
   isSubmitting: boolean;
   onClose: () => void;
-  onMarkPaid: (requestId: string, method: ManualPaymentMethod, note?: string) => Promise<unknown>;
+  onMarkPaid: (requestId: string, method: ManualPaymentMethod, note?: string, sendConfirmation?: boolean) => Promise<unknown>;
   onRefund: (paymentId: string, reason?: string) => Promise<unknown>;
 }
 
@@ -31,6 +32,7 @@ export function ManualPaymentDialog({ action, language, isSubmitting, onClose, o
   const methods = useManualPaymentMethods();
   const [method, setMethod] = useState<ManualPaymentMethod>('bank_transfer');
   const [note, setNote] = useState('');
+  const [sendConfirmation, setSendConfirmation] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   if (!action) return null;
@@ -46,7 +48,7 @@ export function ManualPaymentDialog({ action, language, isSubmitting, onClose, o
         if (!request.payment_id) throw new Error(t('pages.jobs.payments.manual.noPayment'));
         await onRefund(request.payment_id, note || undefined);
       } else {
-        await onMarkPaid(request.id, method, note || undefined);
+        await onMarkPaid(request.id, method, note || undefined, sendConfirmation);
       }
       setNote('');
       onClose();
@@ -83,6 +85,7 @@ export function ManualPaymentDialog({ action, language, isSubmitting, onClose, o
           <Label htmlFor="jpr-note">{isRefund ? t('pages.jobs.payments.manual.reason') : t('pages.jobs.payments.manual.note')}</Label>
           <Textarea id="jpr-note" value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} rows={2} />
         </div>
+        {!isRefund && <NoDocumentConfirmationOption checked={sendConfirmation} onChange={setSendConfirmation} />}
         {error && <p role="alert" className="text-sm text-error">{error}</p>}
         <div className="flex gap-2">
           <Button type="submit" variant={isRefund ? 'destructive' : 'primary'} size="sm" isLoading={isSubmitting}>

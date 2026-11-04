@@ -2333,6 +2333,13 @@
     "price_one_time": "{{amount}} (one-time)"
   },
   "finance": {
+    "no_document": {
+      "send_label": "Email the payer a payment confirmation",
+      "send_hint": "Your studio doesn't issue tax documents, so this confirmation says it is not a receipt or an invoice.",
+      "nudge": "To issue receipts, connect your invoicing.",
+      "nudge_link": "Settings → Invoicing",
+      "dismiss": "Dismiss"
+    },
     "documents_not_issued": {
       "title": "Payments without a tax document",
       "description": "These payments have no receipt or invoice from your invoicing service, and will not get one by themselves. Issue the document yourself for each one.",

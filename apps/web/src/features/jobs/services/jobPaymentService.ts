@@ -140,8 +140,13 @@ export class JobPaymentService extends BaseService {
     id: string,
     method: ManualPaymentMethod,
     note?: string,
+    sendConfirmation?: boolean,
   ): Promise<{ paymentId: string }> {
-    return invoke('record-job-payment', { request_id: id, method, note }, 'Could not record the payment');
+    return invoke(
+      'record-job-payment',
+      { request_id: id, method, note, ...(sendConfirmation === false ? { send_confirmation: false } : {}) },
+      'Could not record the payment',
+    );
   }
 
   static async recordManualRefund(paymentId: string, reason?: string): Promise<{ refundPaymentId: string }> {

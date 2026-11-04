@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ManualPaymentMethod } from '../lib/manualPaymentMethods';
 import { useManualPaymentMethods } from '../hooks/useManualPaymentMethods';
+import { NoDocumentConfirmationOption } from './NoDocumentConfirmationOption';
 import { useMutation } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
@@ -58,12 +59,20 @@ export function RecordPaymentModal({
   const methods = useManualPaymentMethods();
   const [method, setMethod] = useState<ManualPaymentMethod>('cash');
   const [note, setNote] = useState('');
+  const [sendConfirmation, setSendConfirmation] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
 
   const mutation = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke('record-payment', {
-        body: { engagement_id: engagementId, method, note: note || undefined, amount_minor: amountMinor ?? undefined },
+        body: {
+          engagement_id: engagementId,
+          method,
+          note: note || undefined,
+          amount_minor: amountMinor ?? undefined,
+          // Only an untick is sent: the server's default is to confirm.
+          ...(sendConfirmation ? {} : { send_confirmation: false }),
+        },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error as string);
@@ -125,6 +134,7 @@ export function RecordPaymentModal({
           onChange={(e) => setNote(e.target.value)}
         />
       </label>
+      <NoDocumentConfirmationOption checked={sendConfirmation} onChange={setSendConfirmation} />
       {message && (
         <p className="text-sm text-muted-foreground" role="status">
           {message}

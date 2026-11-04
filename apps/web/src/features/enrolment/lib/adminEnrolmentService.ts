@@ -38,12 +38,14 @@ export class AdminEnrolmentService {
     engagementId: string,
     paymentMethod: OfflinePaymentMethod,
     note?: string,
+    sendConfirmation?: boolean,
   ): Promise<{ paymentId: string }> {
     const { data, error } = await supabase.functions.invoke('record-payment', {
       body: {
         engagement_id: engagementId,
         method: paymentMethod,
         note: note || undefined,
+        ...(sendConfirmation === false ? { send_confirmation: false } : {}),
       },
     });
 
