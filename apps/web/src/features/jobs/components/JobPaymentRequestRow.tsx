@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { isManualPaymentMethod } from '@/features/finance/lib/manualPaymentMethods';
 import { useTranslation } from 'react-i18next';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -29,7 +30,7 @@ export function JobPaymentRequestRow({
   const collectable = request.status === 'pending' || request.status === 'sent';
   const amount = formatMinor(request.amount_minor, request.currency, language);
   // Cash / bank money gets a receipt (קבלה) issued standalone; card charges carry the provider's invoice.
-  const offline = request.payment?.payment_method === 'cash' || request.payment?.payment_method === 'bank_transfer';
+  const offline = isManualPaymentMethod(request.payment?.payment_method);
   const documentKey = offline ? 'pages.jobs.payments.receipt' : 'pages.jobs.payments.invoice';
   const documentPendingKey = offline ? 'pages.jobs.payments.receiptPending' : 'pages.jobs.payments.invoicePending';
   const waMessage = t('pages.jobs.payments.whatsappMessage', { studio: studioName, label: request.label, amount, url: payUrl });

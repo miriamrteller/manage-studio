@@ -1,4 +1,5 @@
 import { BaseService } from '@/services/base.service';
+import type { ManualPaymentMethod } from '@/features/finance/lib/manualPaymentMethods';
 import { supabase } from '@/lib/supabase';
 import { functionInvokeErrorMessage, parseFunctionInvokeBody } from '@/lib/parseFunctionInvokeError';
 
@@ -137,7 +138,7 @@ export class JobPaymentService extends BaseService {
 
   static async recordManualPayment(
     id: string,
-    method: 'cash' | 'bank_transfer',
+    method: ManualPaymentMethod,
     note?: string,
   ): Promise<{ paymentId: string }> {
     return invoke('record-job-payment', { request_id: id, method, note }, 'Could not record the payment');

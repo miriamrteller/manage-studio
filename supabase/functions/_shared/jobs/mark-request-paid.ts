@@ -29,7 +29,7 @@ export async function markJobPaymentRequestPaid(
     requestId: string;
     paymentId: string;
     actorUserId?: string | null;
-    /** 'card' for provider charges; 'cash' | 'bank_transfer' for manual. */
+    /** 'card' for provider charges; 'cash' | 'bank_transfer' | 'bit' for manual. */
     method: string;
   },
 ): Promise<MarkRequestPaidResult> {

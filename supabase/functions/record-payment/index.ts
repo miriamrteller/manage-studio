@@ -8,7 +8,7 @@ import { withMonitoring } from "../_shared/monitoring.ts";
 
 const RecordPaymentBodySchema = z.object({
   engagement_id: z.string().uuid(),
-  method: z.enum(["cash", "bank_transfer"]),
+  method: z.enum(["cash", "bank_transfer", "bit"]),
   amount_minor: z.number().int().positive().optional(),
   note: z.string().max(500).optional(),
 });

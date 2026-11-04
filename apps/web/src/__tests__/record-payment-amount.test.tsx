@@ -12,6 +12,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const { invoke } = vi.hoisted(() => ({ invoke: vi.fn() }));
 vi.mock('@/lib/supabase', () => ({ supabase: { functions: { invoke } } }));
+vi.mock('@/features/finance/hooks/useManualPaymentMethods', () => ({
+  useManualPaymentMethods: () => ['cash', 'bank_transfer', 'bit'],
+}));
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key, i18n: { language: 'en' } }),
 }));
@@ -48,6 +51,20 @@ describe('RecordPaymentModal amount', () => {
     await waitFor(() =>
       expect(invoke).toHaveBeenCalledWith('record-payment', {
         body: expect.objectContaining({ engagement_id: 'eng-1', method: 'cash', amount_minor: 35000 }),
+      }),
+    );
+  });
+
+  it('records a Bit payment', async () => {
+    invoke.mockResolvedValue({ data: { ok: true, paymentId: 'p1' }, error: null });
+    wrap(<RecordPaymentModal engagementId="eng-1" defaultAmountMinor={35000} currency="ILS" onRecorded={vi.fn()} />);
+    const method = screen.getByLabelText(/finance.record_payment.method/) as HTMLSelectElement;
+    expect(screen.getByRole('option', { name: 'payment_methods.bit' })).toBeTruthy();
+    fireEvent.change(method, { target: { value: 'bit' } });
+    fireEvent.click(screen.getByRole('button', { name: 'finance.record_payment.submit' }));
+    await waitFor(() =>
+      expect(invoke).toHaveBeenCalledWith('record-payment', {
+        body: expect.objectContaining({ engagement_id: 'eng-1', method: 'bit' }),
       }),
     );
   });

@@ -1,5 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { ManualPaymentMethod } from '@/features/finance/lib/manualPaymentMethods';
+import { useManualPaymentMethods } from '@/features/finance/hooks/useManualPaymentMethods';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Modal } from '@/components/ui/modal';
@@ -16,7 +18,7 @@ interface Props {
   language: string;
   isSubmitting: boolean;
   onClose: () => void;
-  onMarkPaid: (requestId: string, method: 'cash' | 'bank_transfer', note?: string) => Promise<unknown>;
+  onMarkPaid: (requestId: string, method: ManualPaymentMethod, note?: string) => Promise<unknown>;
   onRefund: (paymentId: string, reason?: string) => Promise<unknown>;
 }
 
@@ -26,7 +28,8 @@ interface Props {
  */
 export function ManualPaymentDialog({ action, language, isSubmitting, onClose, onMarkPaid, onRefund }: Props) {
   const { t } = useTranslation();
-  const [method, setMethod] = useState<'cash' | 'bank_transfer'>('bank_transfer');
+  const methods = useManualPaymentMethods();
+  const [method, setMethod] = useState<ManualPaymentMethod>('bank_transfer');
   const [note, setNote] = useState('');
   const [error, setError] = useState<string | null>(null);
 
@@ -68,10 +71,10 @@ export function ManualPaymentDialog({ action, language, isSubmitting, onClose, o
         ) : (
           <fieldset className="space-y-1">
             <legend className="text-sm font-medium">{t('pages.jobs.payments.manual.method')}</legend>
-            {(['bank_transfer', 'cash'] as const).map((m) => (
+            {(['bank_transfer', 'cash', 'bit'] as const).filter((m) => methods.includes(m)).map((m) => (
               <label key={m} className="flex items-center gap-2 text-sm">
                 <input type="radio" name="jpr-method" value={m} checked={method === m} onChange={() => setMethod(m)} />
-                {t(`pages.jobs.payments.manual.method_${m}`)}
+                {m === 'bit' ? t('payment_methods.bit') : t(`pages.jobs.payments.manual.method_${m}`)}
               </label>
             ))}
           </fieldset>

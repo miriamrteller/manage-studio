@@ -605,7 +605,7 @@ export const PaymentLogRowSchema = z.object({
   ]),
   charge_type: z.enum(['initial', 'renewal', 'setup', 'adjustment', 'refund']),
   provider: z.string(),
-  payment_method: z.enum(['card', 'cash', 'bank_transfer', 'other']).nullable().optional(),
+  payment_method: z.enum(['card', 'cash', 'bank_transfer', 'bit', 'other']).nullable().optional(),
   paid_at: TimestampSchema.nullable().optional(),
   created_at: TimestampSchema,
   external_document_number: z.string().nullable().optional(),

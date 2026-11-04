@@ -51,7 +51,9 @@ describe('settings provider fields', () => {
     renderIt(<PaymentSettingsForm />);
     expect(screen.getByText(/Not connected yet/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Connect now' })).toBeInTheDocument();
-    expect(screen.getByRole('checkbox')).not.toBeChecked();
+    // Grow can't receipt a Bit / PayBox payment recorded here: the studio may accept it anyway (off).
+    expect(screen.getByRole('checkbox', { name: /Accept Bit \/ PayBox/ })).not.toBeChecked();
+    for (const box of screen.getAllByRole('checkbox')) expect(box).not.toBeChecked();
   });
 
   it('Grow connected: says so', () => {

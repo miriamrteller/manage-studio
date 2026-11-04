@@ -19,7 +19,7 @@ export interface ManualRenewalInput {
     offering_id: string;
     billing_account_id: string | null;
   };
-  method: "cash" | "bank_transfer";
+  method: "cash" | "bank_transfer" | "bit";
   amountMinor?: number;
   note?: string;
   actorUserId: string;
@@ -37,6 +37,13 @@ export type ManualRenewalResult =
 
 /** Schedules a payment can still be recorded against (cancelled plans are closed). */
 const OPEN_SCHEDULE_STATUSES = ["active", "paused", "suspended"];
+
+/** Plain English for the payment description (the receipt line uses the studio's own wording). */
+const MANUAL_METHOD_TEXT: Record<ManualRenewalInput["method"], string> = {
+  cash: "cash",
+  bank_transfer: "bank transfer",
+  bit: "Bit / PayBox",
+};
 
 export function manualRenewalRef(scheduleId: string, period: string): string {
   return `manual_renewal_${scheduleId}_${period}`;
@@ -112,7 +119,7 @@ export async function recordManualRenewal(
       paid_at: new Date().toISOString(),
       description: input.note ??
         [
-          `Monthly fee ${period}, ${input.method === "cash" ? "cash" : "bank transfer"}`,
+          `Monthly fee ${period}, ${MANUAL_METHOD_TEXT[input.method]}`,
           monthAmount.source === "one_off" ? monthAmount.note : null,
         ].filter(Boolean).join(" — "),
       created_by: input.actorUserId,

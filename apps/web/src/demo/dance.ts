@@ -314,7 +314,7 @@ function recordDemoMonthlyPayment(eng: Row, method: string, body: Row, ctx: Demo
 function recordPayment(body: Row, ctx: DemoContext): Row {
   requireAdmin(ctx);
   const method = String(body.method ?? '');
-  if (method !== 'cash' && method !== 'bank_transfer') throw new DemoRpcError('Invalid request body');
+  if (method !== 'cash' && method !== 'bank_transfer' && method !== 'bit') throw new DemoRpcError('Invalid request body');
   const eng = rows(ctx, 'engagements').find((e) => e.id === body.engagement_id);
   if (!eng) throw new DemoRpcError('Engagement not found');
   if (eng.status === 'active') return recordDemoMonthlyPayment(eng, method, body, ctx);

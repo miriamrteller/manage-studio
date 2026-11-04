@@ -45,10 +45,10 @@ export function ypayDocTypeFor(documentType: number | string | null | undefined)
 }
 
 /** Offline payment methods the app records (payments.payment_method). */
-export type OfflinePaymentMethod = "cash" | "bank_transfer";
+export type OfflinePaymentMethod = "cash" | "bank_transfer" | "bit";
 
 export function isOfflinePaymentMethod(value: string | null | undefined): value is OfflinePaymentMethod {
-  return value === "cash" || value === "bank_transfer";
+  return value === "cash" || value === "bank_transfer" || value === "bit";
 }
 
 /** Request field that carries the payment-method array (v2.1 "methods: Method[]", mandatory). */
@@ -58,6 +58,8 @@ export const METHOD_FIELD = "methods";
 export const YPAY_METHOD_TYPE: Record<OfflinePaymentMethod, number> = {
   cash: 1,
   bank_transfer: 2,
+  // Bit is a payment app: YPay's "app" method.
+  bit: 6,
 };
 
 export interface YpayDocumentPayloadInput {
