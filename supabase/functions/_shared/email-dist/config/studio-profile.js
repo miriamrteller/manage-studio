@@ -38,6 +38,7 @@ export const PROFILE_GATES = {
     [FEATURES.offerings.publicBooking]: 'teaches_classes',
     [FEATURES.scheduling.calendarView]: 'teaches_classes',
     [FEATURES.people.families]: 'family_accounts',
+    [FEATURES.billing.photoShop]: 'opt_in',
 };
 export function profileHasGate(profile, gate) {
     switch (gate) {
@@ -51,6 +52,8 @@ export function profileHasGate(profile, gate) {
             return profile.familyAccounts;
         case 'client_booking':
             return profile.clientBooking;
+        case 'opt_in':
+            return false;
     }
 }
 /** Gated features this profile turns on by default (core features are not listed). */

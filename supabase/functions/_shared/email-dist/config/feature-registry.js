@@ -120,6 +120,8 @@ export const FEATURES = {
         dunning: 'billing:dunning.enabled',
         /** Payment-gated file and gallery delivery */
         gatedDelivery: 'billing:delivery.gated',
+        /** Photo shop: clients buy downloads from the studio's own gallery (SmugMug). Beta, opt-in only. */
+        photoShop: 'billing:photo_shop',
     },
     // Financial management and reporting
     finance: {

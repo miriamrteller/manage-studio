@@ -114,6 +114,8 @@ export declare const FEATURES: {
         readonly dunning: "billing:dunning.enabled";
         /** Payment-gated file and gallery delivery */
         readonly gatedDelivery: "billing:delivery.gated";
+        /** Photo shop: clients buy downloads from the studio's own gallery (SmugMug). Beta, opt-in only. */
+        readonly photoShop: "billing:photo_shop";
     };
     readonly finance: {
         /** Financial health monitoring dashboard */
