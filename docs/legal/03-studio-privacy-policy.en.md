@@ -50,6 +50,7 @@ You are not legally required to give us your information. But without the items 
 | Contract and deposit records | The agreement between us | Required |
 | **Images** of you and anyone photographed | Delivering your gallery and the service you ordered | Required for the service |
 | Gallery link and access | Sending you your images. Galleries are hosted by [[GALLERY SERVICE — e.g. Pixieset]]; access is by private link [[and password]] | — |
+| Photos you buy from us online | Selling you the photos you choose and sending you the download link. We keep which photos you bought (the gallery's reference and file name), the price and the download link we sent, with your order and payment records. The photos stay in [[GALLERY SERVICE]]; the previews you see in your account come from there | Required to buy photos |
 | Use of images in our portfolio, website or social media | **Only with your separate opt-in** (and a guardian's opt-in for minors) | Optional |
 
 - We keep your final images for [[e.g. 12 months]] after delivery so you can ask for a copy, then delete them unless you asked us to keep them. ([[PHOTOGRAPHER: set period]])
@@ -101,6 +102,7 @@ We will publish any update here and, if it is significant, tell you by email.
 ---
 
 ### Awaiting lawyer review (see [AWAITING-LAWYER-REVIEW](AWAITING-LAWYER-REVIEW.md))
+- [[LAWYER: confirm]] New row in B, "Photos you buy from us online": the photo shop, where clients buy digital downloads of their photos in their account. Confirm the wording and that the order record (photos bought, price, download link) is covered by the retention periods in §3.
 - [[LAWYER: confirm]] A studio that is not yet a registered business is identified as "<studio>, run by <full name>" with the person's Israeli ID number (ת.ז.), or, for someone without one, a passport number and the issuing country. This number appears in the published document. Confirm the wording, that publishing an ID number is required or justified here, and the foreign-resident (passport) case.
 
 ### Sources relied on

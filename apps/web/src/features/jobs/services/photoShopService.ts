@@ -89,12 +89,17 @@ export class PhotoShopService {
     return (data ?? []) as unknown as PhotoOrder[];
   }
 
-  static async deliver(orderId: string, deliveryUrl: string): Promise<void> {
-    const { error } = await supabase.rpc('deliver_job_photo_order', {
-      p_order_id: orderId,
-      p_delivery_url: deliveryUrl.trim(),
+  /** Saves the download link and emails the client (deliver-photo-order). */
+  static async deliver(orderId: string, deliveryUrl: string): Promise<{ emailed: boolean }> {
+    const { data, error } = await supabase.functions.invoke('deliver-photo-order', {
+      body: { orderId, deliveryUrl: deliveryUrl.trim() },
     });
-    if (error) throw error;
+    if (error) {
+      const ctx = (error as { context?: Response }).context;
+      const body = ctx && typeof ctx.json === 'function' ? await ctx.json().catch(() => null) : null;
+      throw new Error(typeof body?.error === 'string' ? body.error : error.message);
+    }
+    return { emailed: Boolean((data as { emailed?: boolean } | null)?.emailed) };
   }
 
   static async getDefaults(tenantId: string): Promise<StudioPhotoShopDefaults> {
