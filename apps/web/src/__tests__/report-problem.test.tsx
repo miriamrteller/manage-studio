@@ -7,6 +7,10 @@ vi.mock('@/lib/monitoring', async (orig) => ({
   ...(await orig<typeof import('@/lib/monitoring')>()),
   sendProblemReport: (m: string) => sendProblemReport(m),
 }));
+const notifyOwner = vi.fn().mockResolvedValue(undefined);
+vi.mock('@/lib/monitoring/notifyOwner', () => ({
+  notifyOwnerOfProblemReport: (m: string, id: string | null) => notifyOwner(m, id),
+}));
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key, i18n: { language: 'en' } }),
 }));
@@ -23,6 +27,8 @@ beforeAll(() => {
 afterEach(() => {
   cleanup();
   sendProblemReport.mockReset();
+  notifyOwner.mockReset();
+  notifyOwner.mockResolvedValue(undefined);
 });
 
 describe('ReportProblemDialog', () => {
@@ -41,6 +47,16 @@ describe('ReportProblemDialog', () => {
     fireEvent.click(screen.getByRole('button', { name: 'report_problem.submit' }));
     await waitFor(() => expect(screen.getByText('report_problem.sent')).toBeTruthy());
     expect(sendProblemReport).toHaveBeenCalledWith('Save did nothing');
+    expect(notifyOwner).toHaveBeenCalledWith('Save did nothing', 'evt1');
+  });
+
+  it('a failing owner email never changes the result the admin sees', async () => {
+    sendProblemReport.mockResolvedValue('evt1');
+    notifyOwner.mockRejectedValue(new Error('email down'));
+    render(<ReportProblemDialog isOpen onClose={() => {}} />);
+    fireEvent.change(screen.getByLabelText(/report_problem.label/), { target: { value: 'Save did nothing' } });
+    fireEvent.click(screen.getByRole('button', { name: 'report_problem.submit' }));
+    await waitFor(() => expect(screen.getByText('report_problem.sent')).toBeTruthy());
   });
 
   it('shows an error when the report could not be sent', async () => {
@@ -49,6 +65,7 @@ describe('ReportProblemDialog', () => {
     fireEvent.change(screen.getByLabelText(/report_problem.label/), { target: { value: 'x' } });
     fireEvent.click(screen.getByRole('button', { name: 'report_problem.submit' }));
     expect(await screen.findByText('report_problem.failed')).toBeTruthy();
+    expect(notifyOwner).not.toHaveBeenCalled();
   });
 });
 

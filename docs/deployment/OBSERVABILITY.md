@@ -204,5 +204,12 @@ the workflow in the Actions tab.
   **The repository is public, so these issues never contain typed text or event messages.** A problem report
   is titled `[Problem report] #<Sentry short id>` and holds only the Sentry link, studio, route, release and
   times; an error issue keeps the error type and where it happened. Read the report itself in Sentry (private).
+- **Owner email on each problem report:** after Sentry accepts a report, the app calls the edge function
+  `notify-problem-report`, which emails support@ (the owner) privately (studio, page, time, the message, a link to the Sentry
+  event; the screenshot stays in Sentry). Best effort: if it fails the admin still sees "sent". It needs the same
+  email settings as other platform email (`NOTIFICATION_FROM_EMAIL` plus the email transport). Optional Edge
+  secrets: `SUPPORT_EMAIL` (default `support@opalswift.com`, a Cloudflare forward to the owner) and `SENTRY_EVENT_URL_BASE`
+  (default `https://opalswift.sentry.io/organizations/opalswift/eventids/`). Deploy it with the other functions
+  (deploy-prod). At most 10 a studio an hour.
 - **Trying it locally:** put a real DSN in `apps/web/.env.local` as `VITE_SENTRY_DSN` and set
   `VITE_SENTRY_ENVIRONMENT=development`, so production alerts stay clean.

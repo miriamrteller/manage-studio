@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Modal } from '@/components/ui/modal';
 import { Textarea } from '@/components/ui/textarea';
 import { SCREENSHOT_TYPES, checkScreenshot, sendProblemReport } from '@/lib/monitoring';
+import { notifyOwnerOfProblemReport } from '@/lib/monitoring/notifyOwner';
 
 // Loaded only when the admin opens "Hide details", so it adds nothing to the normal app load.
 const ScreenshotRedactor = lazy(() => import('./ScreenshotRedactor').then((m) => ({ default: m.ScreenshotRedactor })));
@@ -99,6 +100,8 @@ export function ReportProblemDialog({ isOpen, onClose }: { isOpen: boolean; onCl
     }
     setStatus('sending');
     const id = await sendProblemReport(message, screenshot);
+    // Also tell the owner by email, without waiting for it or letting it affect the result.
+    if (id) notifyOwnerOfProblemReport(message, id).catch(() => {});
     setStatus(id ? 'sent' : 'failed');
   };
 
