@@ -37,7 +37,7 @@ Checked against `main` @ 1e6a58d by reading the code (not run against real provi
 
 **New open risk: Grow `webhookKey` on per-payment notices.** Our Grow code now rejects any notice without `webhookKey`. Grow's docs only show `webhookKey` on account-level webhooks. If the per-payment `notifyUrl` message doesn't carry it, every real Grow payment stays unpaid (fails closed, no money lost, but nothing settles). Not yet confirmed; [GROW-RUNBOOK.md](finance/GROW-RUNBOOK.md) §4 says the same. The owner has emailed Grow.
 
-**New gap: partial refunds can't be recorded.** `RefundPaymentModal` (finance) and the shoot's `ManualPaymentDialog` record a refund of the full remaining amount only; there is no amount field. For YPay the owner refunds part in YPay and must not press Record refund.
+**[Fixed by #321]** **New gap: partial refunds can't be recorded.** `RefundPaymentModal` (finance) and the shoot's `ManualPaymentDialog` record a refund of the full remaining amount only; there is no amount field. For YPay the owner refunds part in YPay and must not press Record refund. *Now both dialogs offer Full refund or Partial refund with an amount (up to what is left) and say which credit document applies (`RefundAmountChoice.tsx`, #321).*
 
 ## YPay × photographer (for tomorrow's meeting)
 
