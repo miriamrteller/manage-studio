@@ -18,6 +18,9 @@ export interface AppointmentRow {
   cancellation_reason: string | null;
   penalty_applied_at: string | null;
   offering_name: string | null;
+  /** The booking's price (the offering's), for "Record a payment". */
+  price_minor: number | null;
+  currency: string | null;
   client_name: string | null;
   client_email: string | null;
 }
@@ -28,14 +31,14 @@ export class AppointmentsService extends BaseService {
       const { data, error } = await supabase
         .from('engagements')
         .select(
-          'id, status, booked_starts_at, booked_ends_at, google_event_id, payment_received_at, cancellation_reason, penalty_applied_at, offerings(name), people(name, email)',
+          'id, status, booked_starts_at, booked_ends_at, google_event_id, payment_received_at, cancellation_reason, penalty_applied_at, offerings(name, price_minor, currency), people(name, email)',
         )
         .eq('tenant_id', tenant.id)
         .not('booked_starts_at', 'is', null)
         .order('booked_starts_at', { ascending: false });
       if (error) throw error;
       return (data ?? []).map((row: Record<string, unknown>) => {
-        const offering = row.offerings as { name?: string } | null;
+        const offering = row.offerings as { name?: string; price_minor?: number; currency?: string } | null;
         const person = row.people as { name?: string; email?: string } | null;
         return {
           id: row.id as string,
@@ -47,6 +50,8 @@ export class AppointmentsService extends BaseService {
           cancellation_reason: (row.cancellation_reason as string | null) ?? null,
           penalty_applied_at: (row.penalty_applied_at as string | null) ?? null,
           offering_name: offering?.name ?? null,
+          price_minor: offering?.price_minor ?? null,
+          currency: offering?.currency ?? null,
           client_name: person?.name ?? null,
           client_email: person?.email ?? null,
         };
