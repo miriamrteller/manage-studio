@@ -187,10 +187,11 @@ describe('studio setup wizard', () => {
     projectFlow();
     next();
     fireEvent.click(screen.getByRole('radio', { name: GROW }));
-    expect(screen.getByText(/cannot issue receipts for cash/).closest('[role="note"]')).not.toBeNull();
+    expect(screen.getByText(/OpalSwift issues Grow documents only for Grow card payments/)).toBeInTheDocument();
     differentProvider();
     fireEvent.click(screen.getByRole('radio', { name: YPAY_PAY }));
-    expect(screen.queryByText(/cannot issue receipts for cash/)).toBeNull();
+    expect(screen.queryByText(/OpalSwift issues Grow documents only/)).toBeNull();
+    expect(screen.getByText(/OpalSwift uses YPay documents only with YPay card payments/)).toBeInTheDocument();
   });
 
   it('drops an invoicing choice that no longer fits when the payment choice changes', async () => {

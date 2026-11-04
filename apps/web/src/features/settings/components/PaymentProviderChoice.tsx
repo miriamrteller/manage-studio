@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ProviderLimits } from '@/components/providers/ProviderLimits';
+import { providerLimitKeys } from '@/lib/providerLimits';
 import {
   CHOICE_GROUP,
   CHOICE_LEGEND,
@@ -48,7 +50,8 @@ interface PaymentProviderChoiceProps {
  *    Invoice4U, with a warning that they cannot charge monthly fees.
  * Whether the studio charges monthly fees is not asked here: it follows the payment flow (monthly
  * or both = yes). Grow is pre-selected by the caller. The disclaimer says when changing stops
- * being free.
+ * being free. Each option shows short, confirmed lines on what OpalSwift can't do with it
+ * (lib/providerLimits.ts).
  */
 export function PaymentProviderChoice({
   idPrefix,
@@ -60,19 +63,27 @@ export function PaymentProviderChoice({
   const [showOthers, setShowOthers] = useState(isOtherPaymentProvider(provider));
   const othersVisible = !monthlyFees && (showOthers || isOtherPaymentProvider(provider));
 
-  const radio = (slug: ChoosablePaymentProvider) => (
-    <label key={slug} className={CHOICE_ROW}>
-      <input
-        type="radio"
-        className={CHOICE_RADIO}
-        name={`${idPrefix}-payment`}
-        value={slug}
-        checked={provider === slug}
-        onChange={() => onProviderChange(slug)}
-      />
-      <span>{t(`studio_setup.payment_${slug}`)}</span>
-    </label>
-  );
+  const radio = (slug: ChoosablePaymentProvider) => {
+    const limitsId = `${idPrefix}-payment-${slug}-limits`;
+    const hasLimits = providerLimitKeys('payment', slug).length > 0;
+    return (
+      <div key={slug}>
+        <label className={CHOICE_ROW}>
+          <input
+            type="radio"
+            className={CHOICE_RADIO}
+            name={`${idPrefix}-payment`}
+            value={slug}
+            checked={provider === slug}
+            aria-describedby={hasLimits ? limitsId : undefined}
+            onChange={() => onProviderChange(slug)}
+          />
+          <span>{t(`studio_setup.payment_${slug}`)}</span>
+        </label>
+        <ProviderLimits kind="payment" slug={slug} id={limitsId} className="ms-11 pb-2 pe-3" />
+      </div>
+    );
+  };
 
   return (
     <fieldset>
