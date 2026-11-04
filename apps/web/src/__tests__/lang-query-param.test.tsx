@@ -43,16 +43,28 @@ describe('with the link applied', () => {
 describe('consumeLangParam', () => {
   beforeEach(() => localStorage.clear());
 
+  function fakeWindow(href: string) {
+    const calls: string[] = [];
+    return {
+      calls,
+      win: {
+        location: { href },
+        history: { state: null, replaceState: (_s: unknown, _t: string, url?: string | URL | null) => void calls.push(String(url)) },
+      },
+    };
+  }
+
   it('saves the language and drops the param from the address', () => {
-    window.history.replaceState(null, '', '/classes?lang=he&x=1');
-    expect(consumeLangParam()).toBe('he');
+    const { win, calls } = fakeWindow('https://app.example.com/classes?lang=he&x=1');
+    expect(consumeLangParam(win)).toBe('he');
     expect(localStorage.getItem('language')).toBe('he');
-    expect(window.location.pathname + window.location.search).toBe('/classes?x=1');
+    expect(calls).toEqual(['/classes?x=1']);
   });
 
   it('does nothing without the param', () => {
-    window.history.replaceState(null, '', '/classes');
-    expect(consumeLangParam()).toBeNull();
+    const { win, calls } = fakeWindow('https://app.example.com/classes');
+    expect(consumeLangParam(win)).toBeNull();
     expect(localStorage.getItem('language')).toBeNull();
+    expect(calls).toEqual([]);
   });
 });

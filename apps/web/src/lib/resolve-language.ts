@@ -71,12 +71,14 @@ export function readLangParam(href: string): { lang: AppLanguage | null; cleaned
  * language toggle) and drop it from the address. A signed-in user's saved profile
  * language still wins after sign-in, because hydration prefers the profile.
  */
-export function consumeLangParam(): AppLanguage | null {
+export function consumeLangParam(
+  win: { location: { href: string }; history: Pick<History, 'state' | 'replaceState'> } = window,
+): AppLanguage | null {
   try {
-    const { lang, cleaned } = readLangParam(window.location.href);
+    const { lang, cleaned } = readLangParam(win.location.href);
     if (cleaned === null) return null;
     if (lang) localStorage.setItem('language', lang);
-    window.history.replaceState(window.history.state, '', cleaned);
+    win.history.replaceState(win.history.state, '', cleaned);
     return lang;
   } catch {
     return null;
