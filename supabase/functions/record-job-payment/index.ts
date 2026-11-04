@@ -2,6 +2,7 @@ import { z } from "npm:zod@3.22.4";
 import { handleOptions, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/supabase.ts";
 import { enqueueDocument } from "../_shared/enqueue-document.ts";
+import { paidAtFor } from "../_shared/payments/paid-on.ts";
 import { loadJobPaymentRequestById } from "../_shared/jobs/load-request.ts";
 import { markJobPaymentRequestPaid } from "../_shared/jobs/mark-request-paid.ts";
 import { canTransition } from "../_shared/jobs/payment-request-state.ts";
@@ -18,6 +19,8 @@ const BodySchema = z.object({
   request_id: z.string().uuid(),
   method: z.enum(["cash", "bank_transfer", "bit"]),
   note: z.string().max(500).optional(),
+  /** YYYY-MM-DD the money was received; defaults to today. */
+  paid_on: z.string().optional(),
   /** Email the payer a "not a tax document" confirmation (invoicing "none" only). Default on. */
   send_confirmation: z.boolean().optional(),
 });
@@ -58,6 +61,9 @@ Deno.serve(withMonitoring("record-job-payment", async (req) => {
     return jsonResponse({ error: "tenant_admin role required" }, 403);
   }
   const tenantId = profile.tenant_id as string;
+
+  const paid = paidAtFor(body.paid_on);
+  if (!paid.ok) return jsonResponse({ error: paid.error }, 400);
 
   const request = await loadJobPaymentRequestById(service, body.request_id);
   if (!request || request.tenant_id !== tenantId) {
@@ -101,7 +107,7 @@ Deno.serve(withMonitoring("record-job-payment", async (req) => {
       total_amount_minor: request.amount_minor,
       currency: request.currency.toUpperCase(),
       status: "succeeded",
-      paid_at: new Date().toISOString(),
+      paid_at: paid.paidAt,
       description: body.note ?? `${request.label} — manual ${body.method}`,
       created_by: auth.user.id,
       approved_by: auth.user.id,
