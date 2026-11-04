@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useTenant } from './useTenant';
 import { deriveColorSystem, getAccessibleTextColor } from '../lib/utils';
-import { injectFontPair } from './useFontLoader';
+import { useFontLoader } from './useFontLoader';
 import { deriveSoftTheme } from '../lib/theme/deriveSoftTheme';
 import { deriveNavTheme } from '../lib/theme/navTheme';
 import { deriveButtonGradient } from '../lib/theme/buttonGradient';
@@ -9,6 +9,8 @@ import { getDefaultTheme } from '../lib/theme/defaultTheme';
 
 export function useThemeInjection(): void {
   const tenant = useTenant();
+  // Fonts apply with or without a studio: no studio or no choice → OpalSwift's own pairing.
+  useFontLoader();
   useEffect(() => {
     if (!tenant) return;
     const root = document.documentElement;
@@ -54,8 +56,6 @@ export function useThemeInjection(): void {
         root.style.setProperty('--logo-dark-url', `url(${whiteLabel.logo_dark.url})`);
         if (whiteLabel.logo_dark.height) root.style.setProperty('--logo-dark-height', whiteLabel.logo_dark.height);
       }
-      // 5. Inject font pair CSS custom properties
-      injectFontPair(tenant.font_pair ?? 'reliable');
       console.log(`✅ White-label theme applied for "${tenant.name}"`);
     } catch (error) {
       console.error('Failed to inject theme:', error);
