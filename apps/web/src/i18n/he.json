@@ -1560,6 +1560,7 @@
         "invoicePending": "החשבונית בהפקה",
         "receipt": "קבלה {{number}}",
         "receiptPending": "הקבלה בהפקה",
+        "partlyRefunded": "הוחזרו חלקית {{amount}}",
         "recordRefund": "רישום החזר",
         "status": {
           "pending": "טרם נשלח",
@@ -2530,6 +2531,15 @@
       "error_generic": "לא ניתן היה לשלוח את הקישור להוספת כרטיס."
     },
     "refund_payment": {
+      "how_much": "כמה להחזיר",
+      "already_refunded": "כבר הוחזרו {{amount}} · נשארו {{remaining}}",
+      "full": "החזר מלא ({{amount}})",
+      "partial": "החזר חלקי",
+      "partial_amount": "סכום להחזר ({{currency}})",
+      "partial_invalid": "הזינו סכום עד {{remaining}}",
+      "document_credit_note": "תופק תעודת זיכוי על ההחזר הזה.",
+      "document_in_provider": "{{provider}} לא מפיקה מסמך זיכוי על החזרים שנעשים מ-OpalSwift: הפיקו אותו ב-{{provider}}.",
+      "document_none": "לא מופק מסמך: הסטודיו שלכם לא מפיק מסמכי מס.",
       "open": "החזר",
       "title": "החזר תשלום",
       "amount": "סכום ההחזר",

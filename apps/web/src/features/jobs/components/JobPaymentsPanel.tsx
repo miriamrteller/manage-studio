@@ -126,7 +126,7 @@ export function JobPaymentsPanel({ engagementId, packagePriceMinor }: Props) {
         onMarkPaid={(id, method, note, sendConfirmation) =>
           recordManualPayment.mutateAsync({ id, method, note, sendConfirmation })
         }
-        onRefund={(paymentId, reason) => recordManualRefund.mutateAsync({ paymentId, reason })}
+        onRefund={(paymentId, reason, amountMinor) => recordManualRefund.mutateAsync({ paymentId, reason, amountMinor })}
       />
     </Card>
   );

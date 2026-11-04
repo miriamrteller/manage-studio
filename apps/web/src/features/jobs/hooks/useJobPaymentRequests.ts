@@ -62,8 +62,8 @@ export function useJobPaymentRequests(engagementId: string | undefined) {
   });
 
   const recordManualRefund = useMutation({
-    mutationFn: (params: { paymentId: string; reason?: string }) =>
-      JobPaymentService.recordManualRefund(params.paymentId, params.reason),
+    mutationFn: (params: { paymentId: string; reason?: string; amountMinor?: number }) =>
+      JobPaymentService.recordManualRefund(params.paymentId, params.reason, params.amountMinor),
     onSuccess: invalidate,
   });
 

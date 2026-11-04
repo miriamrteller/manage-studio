@@ -1560,6 +1560,7 @@
         "invoicePending": "Invoice pending",
         "receipt": "Receipt {{number}}",
         "receiptPending": "Receipt pending",
+        "partlyRefunded": "Partly refunded {{amount}}",
         "recordRefund": "Record refund",
         "status": {
           "pending": "Not sent",
@@ -2528,6 +2529,15 @@
       "error_generic": "The card link could not be sent."
     },
     "refund_payment": {
+      "how_much": "How much to refund",
+      "already_refunded": "Already refunded {{amount}} · {{remaining}} left",
+      "full": "Full refund ({{amount}})",
+      "partial": "Partial refund",
+      "partial_amount": "Amount to refund ({{currency}})",
+      "partial_invalid": "Enter an amount up to {{remaining}}",
+      "document_credit_note": "A credit note will be issued for this refund.",
+      "document_in_provider": "{{provider}} doesn't issue a credit document for refunds made from OpalSwift: issue it in {{provider}}.",
+      "document_none": "No document is issued: your studio doesn't issue tax documents.",
       "open": "Refund",
       "title": "Refund payment",
       "amount": "Refund amount",

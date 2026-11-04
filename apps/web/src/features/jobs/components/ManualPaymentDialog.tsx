@@ -1,5 +1,12 @@
 import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useTenant } from '@/hooks/useTenant';
+import {
+  RefundAmountChoice,
+  refundAmountToSend,
+  refundDocumentNoteKey,
+  type RefundAmountValue,
+} from '@/features/finance/components/RefundAmountChoice';
 import type { ManualPaymentMethod } from '@/features/finance/lib/manualPaymentMethods';
 import { useManualPaymentMethods } from '@/features/finance/hooks/useManualPaymentMethods';
 import { NoDocumentConfirmationOption } from '@/features/finance/components/NoDocumentConfirmationOption';
@@ -20,7 +27,7 @@ interface Props {
   isSubmitting: boolean;
   onClose: () => void;
   onMarkPaid: (requestId: string, method: ManualPaymentMethod, note?: string, sendConfirmation?: boolean) => Promise<unknown>;
-  onRefund: (paymentId: string, reason?: string) => Promise<unknown>;
+  onRefund: (paymentId: string, reason?: string, amountMinor?: number) => Promise<unknown>;
 }
 
 /**
@@ -29,16 +36,22 @@ interface Props {
  */
 export function ManualPaymentDialog({ action, language, isSubmitting, onClose, onMarkPaid, onRefund }: Props) {
   const { t } = useTranslation();
+  const tenant = useTenant();
   const methods = useManualPaymentMethods();
   const [method, setMethod] = useState<ManualPaymentMethod>('bank_transfer');
   const [note, setNote] = useState('');
   const [sendConfirmation, setSendConfirmation] = useState(true);
+  const [refundAmount, setRefundAmount] = useState<RefundAmountValue>({ kind: 'full', text: '' });
   const [error, setError] = useState<string | null>(null);
 
   if (!action) return null;
   const { request } = action;
   const amount = formatMinor(request.amount_minor, request.currency, language);
   const isRefund = action.kind === 'refund';
+  const paidMinor = request.payment?.total_amount_minor ?? request.amount_minor;
+  const refundedMinor = request.payment?.refund_amount_minor ?? 0;
+  const remainingMinor = Math.max(paidMinor - refundedMinor, 0);
+  const refundMinor = refundAmountToSend(refundAmount, remainingMinor);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -46,7 +59,8 @@ export function ManualPaymentDialog({ action, language, isSubmitting, onClose, o
     try {
       if (isRefund) {
         if (!request.payment_id) throw new Error(t('pages.jobs.payments.manual.noPayment'));
-        await onRefund(request.payment_id, note || undefined);
+        if (refundMinor === null) return;
+        await onRefund(request.payment_id, note || undefined, refundMinor);
       } else {
         await onMarkPaid(request.id, method, note || undefined, sendConfirmation);
       }
@@ -69,7 +83,23 @@ export function ManualPaymentDialog({ action, language, isSubmitting, onClose, o
           <bdi>{request.label}</bdi> · <bdi dir="ltr">{amount}</bdi>
         </p>
         {isRefund ? (
-          <p className="text-sm text-muted-foreground">{t('pages.jobs.payments.manual.refundHint')}</p>
+          <>
+            <p className="text-sm text-muted-foreground">{t('pages.jobs.payments.manual.refundHint')}</p>
+            <RefundAmountChoice
+              value={refundAmount}
+              onChange={setRefundAmount}
+              totalMinor={paidMinor}
+              alreadyRefundedMinor={refundedMinor}
+              currency={request.currency}
+            />
+            <p className="text-xs text-muted-foreground">
+              {t(refundDocumentNoteKey(tenant?.invoicing_provider), {
+                provider: t(`settings.offline_payments.providers.${tenant?.invoicing_provider ?? ''}`, {
+                  defaultValue: tenant?.invoicing_provider ?? '',
+                }),
+              })}
+            </p>
+          </>
         ) : (
           <fieldset className="space-y-1">
             <legend className="text-sm font-medium">{t('pages.jobs.payments.manual.method')}</legend>
@@ -88,7 +118,13 @@ export function ManualPaymentDialog({ action, language, isSubmitting, onClose, o
         {!isRefund && <NoDocumentConfirmationOption checked={sendConfirmation} onChange={setSendConfirmation} />}
         {error && <p role="alert" className="text-sm text-error">{error}</p>}
         <div className="flex gap-2">
-          <Button type="submit" variant={isRefund ? 'destructive' : 'primary'} size="sm" isLoading={isSubmitting}>
+          <Button
+            type="submit"
+            variant={isRefund ? 'destructive' : 'primary'}
+            size="sm"
+            isLoading={isSubmitting}
+            disabled={isRefund && refundMinor === null}
+          >
             {isRefund ? t('pages.jobs.payments.manual.confirmRefund') : t('pages.jobs.payments.manual.confirmPaid')}
           </Button>
           <Button type="button" variant="ghost" size="sm" onClick={onClose}>{t('common.cancel')}</Button>
