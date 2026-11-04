@@ -94,7 +94,7 @@ export function RecordPaymentModal({
       <h3 className="font-semibold">
         {monthly
           ? t('finance.record_payment.monthly_title')
-          : t('finance.record_payment.title', { defaultValue: 'Record offline payment' })}
+          : t('finance.record_payment.title')}
       </h3>
       {monthly && <p className="text-sm text-muted-foreground">{t('finance.record_payment.monthly_hint')}</p>}
       <label className="block text-sm">
