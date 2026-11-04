@@ -9,10 +9,10 @@ import { resolveMonthAmount } from "./month-amount.ts";
  * with "save this card" on; when it is paid, that month is settled as a renewal and the card
  * is saved, so later months are charged to it by the monthly run.
  *
- * Only Grow can do this today. YPay has no saved cards, and Invoice4U saves a card but cannot
+ * Grow and Takbull can do this. YPay has no saved cards, and Invoice4U saves a card but cannot
  * charge it yet (token charging is not live), so for both the button is hidden.
  */
-export const CARD_LINK_PROVIDERS = ["grow"] as const;
+export const CARD_LINK_PROVIDERS = ["grow", "takbull"] as const;
 
 export function cardLinkSupported(paymentProvider: string | null | undefined): boolean {
   return (CARD_LINK_PROVIDERS as readonly string[]).includes(paymentProvider ?? "");

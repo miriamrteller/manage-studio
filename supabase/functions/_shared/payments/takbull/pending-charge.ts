@@ -34,7 +34,16 @@ const ROW_COLUMNS =
 
 export async function insertPendingTakbullPayment(
   service: SupabaseClient,
-  params: { amountMinor: number; currency: string; metadata: ChargeMetadata; saveCard: boolean },
+  params: {
+    amountMinor: number;
+    currency: string;
+    metadata: ChargeMetadata;
+    saveCard: boolean;
+    /** One charge attempt (unique): a renewal month + attempt, or a card link + month. */
+    chargeKey?: string | null;
+    /** The month (YYYY-MM) a renewal or card-link payment pays. */
+    paidForPeriod?: string | null;
+  },
 ): Promise<{ paymentId: string; ref: string }> {
   const { metadata, amountMinor, currency } = params;
 
@@ -84,8 +93,15 @@ export async function insertPendingTakbullPayment(
     tenant_id: metadata.tenant_id,
     metadata,
     save_card: params.saveCard,
+    charge_key: params.chargeKey ?? null,
+    paid_for_period: params.paidForPeriod ?? null,
   });
-  if (orderError) throw orderError;
+  if (orderError) {
+    // Lost a race for the same charge attempt: drop our row, the other one stands.
+    await service.from("payments").delete().eq("id", paymentId).eq("status", "pending");
+    if ((orderError as { code?: string }).code === "23505") throw new TakbullDuplicateChargeError();
+    throw orderError;
+  }
   await auditPaymentPendingCreated(service, {
     tenantId: metadata.tenant_id,
     paymentId,
@@ -99,18 +115,58 @@ export async function insertPendingTakbullPayment(
   return { paymentId, ref };
 }
 
+/** The same charge attempt was already sent to Takbull: nothing is charged again. */
+export class TakbullDuplicateChargeError extends Error {
+  constructor() {
+    super("This Takbull charge attempt was already sent");
+    this.name = "TakbullDuplicateChargeError";
+  }
+}
+
 export interface TakbullOrderRow {
   payment_id: string;
   tenant_id: string;
   uniq_id: string | null;
   metadata: ChargeMetadata;
   save_card: boolean;
+  charge_key?: string | null;
+  paid_for_period?: string | null;
+}
+
+const ORDER_COLUMNS = "payment_id, tenant_id, uniq_id, metadata, save_card, charge_key, paid_for_period";
+
+/**
+ * The order already made for a charge attempt, with its payment's status, or null. A pending
+ * or paid attempt is never sent to Takbull again; a failed one is replaced by the next attempt.
+ */
+export async function findTakbullChargeAttempt(
+  service: SupabaseClient,
+  chargeKey: string,
+): Promise<(TakbullOrderRow & { status: string | null }) | null> {
+  const { data, error } = await service
+    .from("takbull_orders")
+    .select(ORDER_COLUMNS)
+    .eq("charge_key", chargeKey)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+  const { data: payment } = await service
+    .from("payments")
+    .select("status")
+    .eq("id", (data as TakbullOrderRow).payment_id)
+    .maybeSingle();
+  return { ...(data as TakbullOrderRow), status: (payment?.status as string | null) ?? null };
+}
+
+/** A failed attempt frees its key, so a card link can be sent again for the same month. */
+export async function releaseTakbullChargeKey(service: SupabaseClient, paymentId: string): Promise<void> {
+  await service.from("takbull_orders").update({ charge_key: null }).eq("payment_id", paymentId);
 }
 
 export async function loadTakbullOrder(service: SupabaseClient, paymentId: string): Promise<TakbullOrderRow | null> {
   const { data, error } = await service
     .from("takbull_orders")
-    .select("payment_id, tenant_id, uniq_id, metadata, save_card")
+    .select(ORDER_COLUMNS)
     .eq("payment_id", paymentId)
     .maybeSingle();
   if (error) throw error;
@@ -131,6 +187,7 @@ export async function setTakbullOrderRef(service: SupabaseClient, paymentId: str
 
 export async function markTakbullOrderFailed(service: SupabaseClient, paymentId: string): Promise<void> {
   await service.from("payments").update({ status: "failed" }).eq("id", paymentId).eq("status", "pending");
+  await releaseTakbullChargeKey(service, paymentId);
 }
 
 /** The Takbull payment for a notice: by our id (order_reference), checked against Takbull's ids. */

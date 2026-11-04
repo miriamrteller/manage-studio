@@ -35,6 +35,7 @@ Deno.serve(withMonitoring("takbull-ipn", async (req) => {
           uniqId: ipn.uniqId ?? row.provider_payment_ref,
           amountMinor: row.total_amount_minor,
           currency: row.currency,
+          orderReference: row.id,
         })),
     }
     : {});

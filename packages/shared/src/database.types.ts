@@ -3443,24 +3443,30 @@ export type Database = {
       }
       takbull_orders: {
         Row: {
+          charge_key: string | null
           created_at: string
           metadata: Json
+          paid_for_period: string | null
           payment_id: string
           save_card: boolean
           tenant_id: string
           uniq_id: string | null
         }
         Insert: {
+          charge_key?: string | null
           created_at?: string
           metadata: Json
+          paid_for_period?: string | null
           payment_id: string
           save_card?: boolean
           tenant_id: string
           uniq_id?: string | null
         }
         Update: {
+          charge_key?: string | null
           created_at?: string
           metadata?: Json
+          paid_for_period?: string | null
           payment_id?: string
           save_card?: boolean
           tenant_id?: string
