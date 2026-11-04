@@ -75,7 +75,7 @@ export function JobPaymentRequestRow({
               {copied ? t('pages.crm.leads.copied') : t('pages.jobs.payments.copyLink')}
             </Button>
             <Button size="sm" variant="outline" disabled={busy} onClick={onMarkPaid}>
-              {t('pages.jobs.payments.markPaid')}
+              {t('finance.record_payment.open')}
             </Button>
             <Button size="sm" variant="ghost" disabled={busy} onClick={onCancel}>
               {t('common.cancel')}

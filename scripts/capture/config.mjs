@@ -123,7 +123,7 @@ export const UI = {
   myChildren: 'My children',
   enrolNewStudent: 'Enrol new student',
   addChildToFamily: 'Add new child to a family',
-  offlinePanel: 'Record offline payment',
+  offlinePanel: 'Record a payment',
   offlineConfirm: 'Confirm enrolment as paid',
   offlineRecorded: 'Enrolment recorded as active with offline payment.',
   paymentDetailTitle: 'Payment details',
