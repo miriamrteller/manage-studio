@@ -137,10 +137,12 @@ points:
       client email.
    4. One bank-transfer receipt (step 10).
    5. One refund: refund the ₪1 in the YPay dashboard, then **Record refund**
-      on the request in OpalSwift (full amount only; no money moves, no credit
-      document is issued by OpalSwift).
-10. **At the meeting, after the ₪1 card test: one offline receipt.** Mark a
-    small payment request paid as "bank transfer" in the job's payments panel
+      on the request in OpalSwift (Full refund or Partial refund; no money
+      moves, no credit document is issued by OpalSwift).
+10. **At the meeting, after the ₪1 card test: one offline receipt.** Press
+    **Record a payment** (until the next release the live app still says
+    **Mark paid (cash/bank)**) on a small payment request in the job's
+    payments panel, choose "Bank transfer",
     and check in the YPay dashboard that the document type chosen in
     **Which document does YPay issue?** (`tenants.ypay_document_type`: 108
     קבלה or 109 חשבונית מס-קבלה) was issued with payment method העברה בנקאית

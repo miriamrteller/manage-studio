@@ -32,7 +32,7 @@ Until YPay is connected, clients are asked to pay you directly. Nothing is block
 1. Create a shoot with a small payment request, for example ₪1, with your own name and email as the client.
 2. Press **Send pay link**, open the email and pay by card.
 3. Check: the request shows **Paid**, an **Invoice** number appears on it, and the email with the document arrives.
-4. Press **Mark paid (cash/bank)** on a second ₪1 request, choose **Bank transfer**, and check a **Receipt** number appears and the receipt is in YPay.
+4. Press **Record a payment** on a second ₪1 request, choose **Bank transfer**, and check a **Receipt** number appears and the receipt is in YPay.
 5. Refund the card ₪1 in YPay, then press **Record refund** in OpalSwift (see section 8).
 
 ## 4. Payment requests
@@ -73,8 +73,9 @@ The top of the Payments section shows **Paid** and **Outstanding** for the shoot
 
 ## 7. Cash, bank transfers and Bit / PayBox
 
-- On the payment request, press **Mark paid (cash/bank)**.
+- On the payment request, press **Record a payment**. (Until the next release, the live app still calls this button **Mark paid (cash/bank)** / סימון כשולם (מזומן/העברה), and its dialog **Record offline payment**.)
 - Choose **Cash**, **Bank transfer** or **Bit / PayBox**, add a note if you like, and press **Record payment**.
+- There is no "Email the payer a payment confirmation" tick here: that appears only for studios that don't issue tax documents. With YPay, the receipt YPay emails is the client's confirmation.
 - OpalSwift asks YPay to issue the receipt or invoice, with the right payment method and amount. YPay emails it to the client, and its number appears on the request.
 
 ## 8. Refunds
@@ -140,7 +141,7 @@ The figures are for managing your business, not a tax return. Your accountant sh
 | Add payment request | הוספת בקשת תשלום |
 | Send pay link | שליחת קישור לתשלום |
 | Copy link | העתקת קישור |
-| Mark paid (cash/bank) | סימון כשולם (מזומן/העברה) |
+| Record a payment (until the next release: Mark paid (cash/bank)) | רישום תשלום (עד הגרסה הבאה: סימון כשולם (מזומן/העברה)) |
 | Bit / PayBox | ביט / פייבוקס |
 | Full refund / Partial refund | החזר מלא / החזר חלקי |
 | Record refund | רישום החזר |
