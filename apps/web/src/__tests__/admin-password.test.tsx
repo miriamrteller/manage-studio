@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * Passwords for studio admins: "Set or change your password" in Settings → Security,
+ * Passwords for studio admins: "Set or change your password" in Settings → Sign-in & security,
  * "Forgot password?" on the login Password tab (a reset email that returns through
  * /auth/callback to /auth/new-password), and the new-password screen.
  * Emailed links and codes are unchanged.
@@ -27,7 +27,9 @@ vi.mock('@/lib/supabase', () => ({
 vi.mock('@/components/shared/SetPasswordDialog', () => ({
   SetPasswordDialog: ({ open }: { open: boolean }) => (open ? <div role="dialog" aria-label="password dialog" /> : null),
 }));
-vi.mock('@/components/shared/ChangeLoginEmail', () => ({ ChangeLoginEmail: () => <section aria-label="change login email" /> }));
+vi.mock('@/components/shared/ChangeLoginEmail', () => ({
+  ChangeLoginEmailDialog: ({ open }: { open: boolean }) => (open ? <div role="dialog" aria-label="change login email" /> : null),
+}));
 vi.mock('@/hooks/useTenant', () => ({ useTenant: () => null }));
 vi.mock('@/components/legal/TwoFactorSettings', () => ({ TwoFactorSettings: () => null }));
 vi.mock('@/components/legal/RequireMfaSetting', () => ({ RequireMfaSetting: () => null }));
@@ -157,11 +159,15 @@ describe('/auth/new-password', () => {
   });
 });
 
-describe('Settings → Security', () => {
-  it('shows the login email: you sign in with it, clients never see it', () => {
+describe('Settings → Sign-in & security', () => {
+  it('shows the login email read-only, with Change opening the secure change', () => {
     h.session = { user: { email: 'owner@lumen.test' } };
     wrap(<SecuritySettingsForm />);
+    expect(screen.getByRole('heading', { name: 'Sign-in & security' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Login email' })).toBeInTheDocument();
+    expect(screen.queryByRole('textbox')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Change' }));
+    expect(screen.getByRole('dialog', { name: 'change login email' })).toBeInTheDocument();
     expect(screen.getByText('owner@lumen.test')).toBeInTheDocument();
     expect(screen.getByText('You sign in with this. Clients never see it.')).toBeInTheDocument();
   });
@@ -169,7 +175,6 @@ describe('Settings → Security', () => {
   it('admins can set or change their login password there', () => {
     wrap(<SecuritySettingsForm />);
     expect(screen.getByRole('heading', { name: 'Login password' })).toBeInTheDocument();
-    expect(screen.getByRole('region', { name: 'change login email' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Set or change your password' }));
     expect(screen.getByRole('dialog', { name: 'password dialog' })).toBeInTheDocument();
   });

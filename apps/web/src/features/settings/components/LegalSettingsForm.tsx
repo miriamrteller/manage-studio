@@ -31,6 +31,9 @@ import {
 
 const SECTION_ORDER: LegalFieldSection[] = ['identity', 'contacts', 'enrolment', 'photography', 'retention'];
 
+/** "Email on your legal pages" lives on Settings → Studio profile, under "Details we filled in for you". */
+const ON_STUDIO_PROFILE = 'email';
+
 /**
  * Settings → Legal: the studio's legal details. They fill the studio's
  * privacy policy, enrolment terms and accessibility statement (/legal/…).
@@ -91,8 +94,10 @@ export function LegalSettingsForm() {
   const visible = (f: LegalFieldDef) => !f.showWhen || f.showWhen(values);
   const isShown = (f: LegalFieldDef) =>
     shownKeys.has(f.key) || (personal && ['legal_name', 'personal_id', 'no_israeli_id', 'passport_number', 'passport_country'].includes(f.key));
-  const shownFields = fields.filter((f) => visible(f) && isShown(f));
-  const filledFields = fields.filter((f) => visible(f) && !isShown(f));
+  // The legal pages' email is set on Studio profile, next to the business email.
+  const onThisPage = (f: LegalFieldDef) => f.key !== ON_STUDIO_PROFILE;
+  const shownFields = fields.filter((f) => onThisPage(f) && visible(f) && isShown(f));
+  const filledFields = fields.filter((f) => onThisPage(f) && visible(f) && !isShown(f));
   const publishDocs: LegalDocId[] = tenantHasEnrolmentTerms(vertical, teachesClasses)
     ? ['studio-privacy', 'enrolment-terms']
     : ['studio-privacy'];
@@ -135,7 +140,8 @@ export function LegalSettingsForm() {
       if (!tenant?.id) throw new Error('Tenant not loaded');
       const clean: Record<string, string> = {};
       for (const f of fields) {
-        const v = (values[f.key] ?? '').trim();
+        // Kept exactly as stored (empty = it follows the business email); Studio profile edits it.
+        const v = (f.key === ON_STUDIO_PROFILE ? String(legal?.profile[f.key] ?? '') : (values[f.key] ?? '')).trim();
         if (v) clean[f.key] = v.slice(0, 2000);
       }
       const update: Record<string, unknown> = { legal_profile: clean };
@@ -265,11 +271,6 @@ export function LegalSettingsForm() {
         )}
         {fromStudio && <p className="text-xs text-muted-foreground">{t('legal.settings.filled_from_studio')}</p>}
         {f.hint && <p className="text-xs text-muted-foreground">{f.hint[lang]}</p>}
-        {f.key === 'email' && legal.contactEmail && value.trim().toLowerCase() !== legal.contactEmail.trim().toLowerCase() && (
-          <Button type="button" variant="outline" size="sm" onClick={() => onChange(legal.contactEmail)}>
-            {t('legal.settings.use_business_email', { email: legal.contactEmail })}
-          </Button>
-        )}
         {f.example && !value && (
           <p className="text-xs text-muted-foreground">{t('legal.settings.example', { example: f.example[lang] })}</p>
         )}

@@ -100,6 +100,13 @@ What already exists and Takbull plugs into:
      - `documentDate` is not sent (its format isn't documented), so Takbull dates the document itself.
 6. **Online Bit, instalments and project payment links.**
    - What: `PaymentMethodType: 21` with the `IsMobile` deep link in the checkout shells; `DealType: 2` for instalments; `takbull` in `JOB_ONLINE_PAYMENT_PROVIDERS`.
+   - How (built):
+     - **The Takbull checkout page:** the enrolment checkout shows Takbull's payment page in the hosted-page shell, and waits for the notice like Grow. Until now there was no Takbull shell.
+     - **Bit, on a phone only:** "Pay with Bit" makes a Bit order (`PaymentMethodType: 21`, `IsMobile: true`) and opens the link Takbull returns, which opens the Bit app. The docs only describe Bit on a phone (open question 10), so it isn't offered on a computer.
+       - Where: the enrolment checkout and the project pay page (`/pay/:token`).
+       - Bit is one payment: no instalments with Bit.
+     - **Instalments:** unchanged from PR 2. `DealType: 2` with `MaxNumberOfPayments` and `NumberOfPayments: 1`. The docs don't say what `MaxNumberOfPayments` does (open question 10); at worst the client pays in one go.
+     - **Project payment links:** `takbull` in `JOB_ONLINE_PAYMENT_PROVIDERS` (web + edge). `takbull-ipn` already settles the request (PR 2).
 7. **Open the studio's Takbull account from signup** (after the owner's agreement and legal review).
    - What: `CreateAccount`, prefilled from the studio profile (name, business number, business status → BusinessType, address, phone, email, MCC from the field); the account notice; `UpdateDocumentSettings`.
 8. **Make it the default.**
@@ -148,5 +155,6 @@ The providers studios use for their own clients don't change.
 6. Allocation numbers (מספר הקצאה) on tax invoices.
 7. Are payment notices retried? (Retries are documented only for account notices.)
 8. Sandbox credentials and test cards.
+10. Bit on a computer: does Takbull's page show Bit (for example, a QR code)? And on the card page, does `MaxNumberOfPayments` let the client choose up to that many instalments?
 
 The sample keys in the docs' examples look like real keys. Takbull should confirm they aren't live.

@@ -53,7 +53,7 @@ A data security officer (ממונה על אבטחת מידע) is not legally req
 
 ### 4.3 Sign-in for app users
 - Email one-time codes / magic links via Supabase Auth (PKCE flow); optional SMS/WhatsApp codes via Twilio Verify for waiver signing.
-- App-level MFA for studio admins: available in Settings → Security (authenticator app); the admin area then asks for the code at sign-in. Turn it on for every admin ([[ACTION]]).
+- App-level MFA for studio admins: available in Settings → Sign-in & security (authenticator app) [[LAWYER: confirm]]; the admin area then asks for the code at sign-in. Turn it on for every admin ([[ACTION]]).
 
 ### 4.4 AI agents and automation
 - AI coding agents work on the code through branches and pull requests that the owner reviews and merges. They must not commit secrets or real personal data.

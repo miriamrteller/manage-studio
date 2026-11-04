@@ -24,14 +24,14 @@ BEGIN
   IF has_function_privilege('anon', 'login_email_status(text)', 'EXECUTE') THEN RAISE EXCEPTION 'FAIL anon can execute'; END IF;
   RAISE NOTICE 'ok  login_email_status is for signed-in users only';
 
-  -- 2. A confirmed change without the tick: profile copies it, business email stays.
-  UPDATE tenants SET contact_email = 'admin@x.test' WHERE id = photo;
+  -- 2. A confirmed change: profile copies it; a separate business email stays.
+  UPDATE tenants SET contact_email = 'studio@x.test' WHERE id = photo;
   UPDATE auth.users SET email = 'admin2@x.test', raw_user_meta_data = '{"business_email_follow": false}' WHERE id = admin;
   SELECT email INTO v FROM user_profiles WHERE id = admin;
   IF v <> 'admin2@x.test' THEN RAISE EXCEPTION 'FAIL profile not synced: %', v; END IF;
   SELECT contact_email INTO v FROM tenants WHERE id = photo;
-  IF v <> 'admin@x.test' THEN RAISE EXCEPTION 'FAIL business email changed without the tick: %', v; END IF;
-  RAISE NOTICE 'ok  confirmed change: profile follows; business email untouched without the tick';
+  IF v <> 'studio@x.test' THEN RAISE EXCEPTION 'FAIL separate business email changed: %', v; END IF;
+  RAISE NOTICE 'ok  confirmed change: profile follows; a separate business email is untouched';
 
   -- 3. With the tick: the studio's business email follows.
   UPDATE auth.users SET email = 'hello@lumen.test', raw_user_meta_data = '{"business_email_follow": true}' WHERE id = admin;

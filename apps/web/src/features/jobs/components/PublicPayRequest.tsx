@@ -8,6 +8,7 @@ import { formatDueDate, formatMinor, statusBadgeVariant, statusI18nKey } from '.
 import { JobPaymentService } from '../services/jobPaymentService';
 import { BackToPortalButton } from './BackToPortalButton';
 import { PrivacyNotice } from '@/components/PrivacyNotice';
+import { isPhoneBrowser } from '@/lib/tenantProviderRouting';
 
 interface Props {
   token: string;
@@ -47,11 +48,15 @@ export function PublicPayRequest({ token, result }: Props) {
     return () => clearTimeout(id);
   }, [awaitingWebhook, polls, query]);
 
-  const pay = async () => {
+  const pay = async (payWith?: 'bit') => {
     setError(null);
     setRedirecting(true);
     try {
-      const res = await JobPaymentService.publicRequest(token, 'create_charge');
+      const res = await JobPaymentService.publicRequest(
+        token,
+        'create_charge',
+        payWith === 'bit' ? { payWith: 'bit', isMobile: true } : {},
+      );
       if (!res.pageUrl) throw new Error(t('pages.pay.noPage'));
       window.location.assign(res.pageUrl);
     } catch (err) {
@@ -121,6 +126,12 @@ export function PublicPayRequest({ token, result }: Props) {
               <Button variant="primary" fullWidth isLoading={redirecting} onClick={() => void pay()}>
                 {t('pages.pay.payNow')}
               </Button>
+              {/* Takbull on a phone: Bit opens the Bit app (one payment). */}
+              {request.paymentProvider === 'takbull' && isPhoneBrowser() && (
+                <Button variant="secondary" fullWidth isLoading={redirecting} onClick={() => void pay('bit')}>
+                  {t('pages.pay.payWithBit')}
+                </Button>
+              )}
               <p className="text-xs text-muted-foreground">{t('pages.pay.invoiceNote')}</p>
               <PrivacyNotice purpose="payment" />
             </>

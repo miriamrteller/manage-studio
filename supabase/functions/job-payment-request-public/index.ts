@@ -19,6 +19,9 @@ import { withMonitoring } from "../_shared/monitoring.ts";
 const BodySchema = z.object({
   token: z.string().min(16).max(128),
   action: z.enum(["get", "create_charge", "status"]).default("get"),
+  /** Takbull: pay with Bit; on a phone the answer opens the Bit app. */
+  pay_with: z.enum(["card", "bit"]).optional(),
+  is_mobile: z.boolean().optional(),
 });
 
 Deno.serve(withMonitoring("job-payment-request-public", async (req) => {
@@ -80,6 +83,7 @@ Deno.serve(withMonitoring("job-payment-request-public", async (req) => {
 
     const charge = await createJobPaymentRequestCharge(service, request, {
       tenantLabel: tenant.name as string,
+      ...(body.pay_with === "bit" ? { payWith: "bit" as const, isMobile: body.is_mobile === true } : {}),
     });
     if (!charge.ok) return jsonResponse({ error: charge.error, request: publicView }, charge.status);
 

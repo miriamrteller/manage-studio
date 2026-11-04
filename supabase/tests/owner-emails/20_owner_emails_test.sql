@@ -106,3 +106,28 @@ BEGIN
   END IF;
   RAISE NOTICE 'ok  no client role can read the owner emails or call the helpers';
 END $$;
+
+-- 9. A studio admin's business email follows the login while the two match, and only then.
+DO $$
+DECLARE
+  admin_id UUID := 'b0000000-0000-4000-8000-0000000000e6';
+  v_tenant UUID;
+  v_sub    TEXT;
+BEGIN
+  SELECT id, subdomain INTO v_tenant, v_sub FROM tenants LIMIT 1;
+  INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES (admin_id, 'studio-admin@example.test', jsonb_build_object('subdomain', v_sub));
+  UPDATE user_profiles SET role = ARRAY['tenant_admin'], tenant_id = v_tenant WHERE id = admin_id;
+
+  UPDATE tenants SET contact_email = 'Studio-Admin@example.test' WHERE id = v_tenant;
+  UPDATE auth.users SET email = 'studio-admin2@example.test' WHERE id = admin_id;
+  IF (SELECT contact_email FROM tenants WHERE id = v_tenant) <> 'studio-admin2@example.test' THEN
+    RAISE EXCEPTION 'FAIL a matching business email did not follow the login';
+  END IF;
+
+  UPDATE tenants SET contact_email = 'office@example.test' WHERE id = v_tenant;
+  UPDATE auth.users SET email = 'studio-admin3@example.test' WHERE id = admin_id;
+  IF (SELECT contact_email FROM tenants WHERE id = v_tenant) <> 'office@example.test' THEN
+    RAISE EXCEPTION 'FAIL a separate business email was changed by a login change';
+  END IF;
+  RAISE NOTICE 'ok  the business email follows the login only while they match';
+END $$;
