@@ -149,3 +149,17 @@ Deno.test("a contact that cannot be stored never fails the signup", async () => 
   const d = deps({ applyContact: () => Promise.reject(new Error("db down")) });
   assertEquals((await selfServeStudio(d, confirmed, withContact)).ok, true);
 });
+
+Deno.test("the business email (clients see this) is stored with the contact; a bad one is refused", async () => {
+  const stored: unknown[] = [];
+  const withEmail = SelfServeStudioSchema.parse({ ...input, contact: { email: " Hello@Lumen.Studio " } });
+  const d = deps({
+    applyContact(tenantId, contact) {
+      stored.push([tenantId, contact]);
+      return Promise.resolve();
+    },
+  });
+  assertEquals((await selfServeStudio(d, confirmed, withEmail)).ok, true);
+  assertEquals(stored, [["t-new", { email: "hello@lumen.studio" }]]);
+  assertEquals(SelfServeStudioSchema.safeParse({ ...input, contact: { email: "not-an-email" } }).success, false);
+});

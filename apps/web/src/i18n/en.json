@@ -2155,7 +2155,10 @@
     "logo_optional": "PNG, JPG, SVG or WebP, up to 2 MB. You can skip this and add it later in Settings → Branding.",
     "logo_chosen": "{{name}} will be added when your studio is created.",
     "logo_too_large": "That file is over 2 MB. Choose a smaller one, or skip this for now.",
-    "logo_owner_later": "The studio owner can add a logo later in Settings → Branding."
+    "logo_owner_later": "The studio owner can add a logo later in Settings → Branding.",
+    "business_email": "Business email (clients see this)",
+    "business_email_hint": "Replies to the studio's emails and new-enquiry alerts go here. It can be different from the login email, and you can change it later in Settings.",
+    "need_business_email": "Enter a valid business email, or put back the login email."
   },
   "studio_not_found": {
     "title": "Studio not found",
