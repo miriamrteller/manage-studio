@@ -19,7 +19,9 @@ BEGIN
   PERFORM set_config('request.jwt.claims', '{"role":"authenticated"}', false);
   PERFORM save_tenant_takbull_credentials('  key-1234  ', ' secret-abcd ');
   SELECT * INTO r FROM tenants WHERE id = photo;
-  IF r.takbull_api_key <> 'key-1234' THEN RAISE EXCEPTION 'FAIL key not trimmed/stored: %', r.takbull_api_key; END IF;
+  IF r.takbull_api_key_enc IS NULL OR position('key-1234' IN encode(r.takbull_api_key_enc, 'escape')) > 0 THEN
+    RAISE EXCEPTION 'FAIL key not encrypted';
+  END IF;
   IF r.takbull_api_secret_enc IS NULL OR position('secret-abcd' IN encode(r.takbull_api_secret_enc, 'escape')) > 0 THEN
     RAISE EXCEPTION 'FAIL secret not encrypted';
   END IF;

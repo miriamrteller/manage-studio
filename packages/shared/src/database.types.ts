@@ -3740,7 +3740,7 @@ export type Database = {
           skin: string
           sub_status: string
           subdomain: string
-          takbull_api_key: string | null
+          takbull_api_key_enc: string | null
           takbull_api_secret_enc: string | null
           takbull_credentials_updated_at: string | null
           teaches_classes: boolean
@@ -3825,7 +3825,7 @@ export type Database = {
           skin?: string
           sub_status?: string
           subdomain: string
-          takbull_api_key?: string | null
+          takbull_api_key_enc?: string | null
           takbull_api_secret_enc?: string | null
           takbull_credentials_updated_at?: string | null
           teaches_classes?: boolean
@@ -3910,7 +3910,7 @@ export type Database = {
           skin?: string
           sub_status?: string
           subdomain?: string
-          takbull_api_key?: string | null
+          takbull_api_key_enc?: string | null
           takbull_api_secret_enc?: string | null
           takbull_credentials_updated_at?: string | null
           teaches_classes?: boolean
