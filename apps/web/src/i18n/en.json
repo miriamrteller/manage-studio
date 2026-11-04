@@ -2081,7 +2081,6 @@
     "need_address": "Enter a web address (lowercase letters, numbers and hyphens) to continue.",
     "need_colours": "Each colour must look like #5B6CFF, or pick one of the colour sets above.",
     "need_owner_email": "Enter the owner's email address to continue.",
-    "cash_receipts_hint": "{{provider}} issues the document with each card payment. It cannot issue receipts for cash or bank transfers you record by hand: for those, issue the receipt yourself, or choose Green Invoice or YPay for documents.",
     "need_invoicing_pairing": "That invoicing service cannot issue documents for this way of paying. Choose another, or no documents.",
     "need_terms": "Tick the box to accept the terms to continue.",
     "title": "Set up a new studio",
@@ -3075,7 +3074,6 @@
       "off_note": "Invoicing is off. If the studio is a registered business, it must issue its own receipts for every payment.",
       "credentials_hint": "Enter the provider's credentials under Invoicing provider.",
       "saved": "Tax document setting saved.",
-      "cash_receipts_hint": "{{provider}} issues the document with each card payment. Cash and bank-transfer payments you record by hand get no document from it: they are listed on the Finance page so you can issue the receipt yourself. For automatic cash receipts, use Green Invoice or YPay.",
       "pairing_problem": "This invoicing service cannot issue documents for the way customers pay now. Grow, iCount and Invoice4U only issue documents with their own card payments; YPay works with YPay payments or payments at the studio; Green Invoice works with any. Choose another service, or turn tax documents off.",
       "providers": { "grow": "Grow (Meshulam)", "icount": "iCount", "invoice4u": "Invoice4U", "ypay": "YPay", "tranzila": "Tranzila", "yesh": "Yesh", "green_invoice": "Green Invoice" }
     },
@@ -3636,8 +3634,49 @@
       "done": "Done. The new version with the insurance note is in use; parents will sign it next time."
     }
   },
+  "provider_limits": {
+    "payment": {
+      "grow": {
+        "recorded_receipts": "Receipts for cash, bank transfer or Bit you record need a separate receipts service, such as Green Invoice."
+      },
+      "ypay": {
+        "no_saved_cards": "No saved cards, so no automatic monthly charges.",
+        "refunds_in_provider": "Refunds are made in YPay."
+      },
+      "invoice4u": {
+        "no_monthly_yet": "No automatic monthly charges through OpalSwift yet.",
+        "refunds_in_provider": "Refunds are made in Invoice4U.",
+        "recorded_receipts": "Receipts for cash, bank transfer or Bit you record need a separate receipts service, such as Green Invoice."
+      },
+      "offline": {
+        "no_cards": "No card payments: you record each payment yourself."
+      }
+    },
+    "invoicing": {
+      "grow": {
+        "own_charges_only": "Issues documents only for Grow card payments, not for cash, bank transfer or Bit you record.",
+        "refunds_in_provider": "Refund documents are made in Grow.",
+        "branding_check": "Your own logo on documents: check with Grow."
+      },
+      "invoice4u": {
+        "own_charges_only": "Issues documents only for Invoice4U card payments, not for cash, bank transfer or Bit you record.",
+        "refunds_in_provider": "Refund documents are made in Invoice4U.",
+        "branding_check": "Your own logo on documents: check with Invoice4U."
+      },
+      "ypay": {
+        "ypay_payments_only": "Works only with YPay card payments or payments at the studio.",
+        "no_linked_deposits": "Deposit and balance receipts aren’t linked to one invoice: check with YPay.",
+        "refunds_in_provider": "Refund documents are made in YPay.",
+        "branding_check": "Your own logo on documents: check with YPay."
+      },
+      "green_invoice": {
+        "documents_only": "Documents only: card payments go through your payment provider.",
+        "receipt_refunds": "If you issue receipts (exempt dealer), refunds are recorded in Green Invoice.",
+        "branding_check": "Your own logo on documents: check with Green Invoice."
+      }
+    }
+  },
   "payment_choice": {
-    "different_provider": "Different provider?",
     "no_monthly_warning": "With {{provider}} you can't charge monthly fees. For monthly fees, choose Grow.",
     "disclaimer": "You can change your payment provider until your first payment. After that, changing it needs OpalSwift support.",
     "monthly_needs_grow": "Monthly fees need Grow. Contact OpalSwift support."

@@ -109,9 +109,12 @@ describe('Settings → How customers pay', () => {
     // No "monthly fees?" question: switching is not held up by one.
     fireEvent.click(screen.getByRole('radio', { name: 'studio_setup.payment_grow' }));
     expect(screen.getByRole('button', { name: 'common.save' })).toBeEnabled();
-    fireEvent.click(screen.getByRole('button', { name: 'payment_choice.different_provider' }));
+    // Every provider is listed, with what it can't do; a studio without monthly fees gets no warning.
     fireEvent.click(screen.getByRole('radio', { name: 'studio_setup.payment_invoice4u' }));
-    expect(screen.getByText('payment_choice.no_monthly_warning')).toBeTruthy();
+    expect(screen.getByRole('radio', { name: 'studio_setup.payment_invoice4u' })).toHaveAccessibleDescription(
+      'provider_limits.payment.invoice4u.no_monthly_yet provider_limits.payment.invoice4u.refunds_in_provider provider_limits.payment.invoice4u.recorded_receipts',
+    );
+    expect(screen.queryByText('payment_choice.no_monthly_warning')).toBeNull();
     expect(screen.queryByRole('alert')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'common.save' }));
     await waitFor(() => expect(update).toHaveBeenCalledWith(expect.objectContaining({ payment_provider: 'invoice4u' })));

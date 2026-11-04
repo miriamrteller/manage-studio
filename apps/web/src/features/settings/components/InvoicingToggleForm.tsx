@@ -6,6 +6,8 @@ import { supabase } from '@/lib/supabase';
 import { useTenant } from '@/hooks/useTenant';
 import queryClient from '@/lib/query-client';
 import { invoicingOptionsFor, invoicingPairsWithPayment } from '@/lib/providerPairing';
+import { providerLimitKeys } from '@/lib/providerLimits';
+import { ProviderLimits } from '@/components/providers/ProviderLimits';
 
 /**
  * Every provider a studio may have stored. Only those that work with the studio's payment
@@ -173,6 +175,7 @@ export function InvoicingToggleForm() {
             id="invoicing-toggle-provider"
             className="form-input w-full"
             value={selectedProvider}
+            aria-describedby={providerLimitKeys('invoicing', selectedProvider).length > 0 ? 'invoicing-toggle-limits' : undefined}
             onChange={(e) => setSelectedProvider(e.target.value)}
           >
             {choices.map((slug) => (
@@ -182,13 +185,7 @@ export function InvoicingToggleForm() {
             ))}
           </select>
           <p className="text-xs text-muted-foreground">{t('settings.invoicing_toggle.credentials_hint')}</p>
-          {['grow', 'icount', 'invoice4u'].includes(selectedProvider) && (
-            <p className="text-sm text-muted-foreground" role="note">
-              {t('settings.invoicing_toggle.cash_receipts_hint', {
-                provider: t(`settings.invoicing_toggle.providers.${selectedProvider}`),
-              })}
-            </p>
-          )}
+          <ProviderLimits kind="invoicing" slug={selectedProvider} id="invoicing-toggle-limits" />
           {showGiDocument && (
             <div className="space-y-1 pt-2">
               <label className="block text-sm font-medium" htmlFor="gi-document-type">
