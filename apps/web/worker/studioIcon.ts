@@ -72,18 +72,51 @@ export async function fetchStudioIcon(
     logo_tone: parseLogoTone(row.logo_tone),
     logo_dark_tone: parseLogoTone(row.logo_dark_tone),
   });
-  return { iconUrl: safeHttpsUrl(url), name: typeof row.name === 'string' ? row.name : null };
+  return { iconUrl: tenantAssetUrl(url, base), name: typeof row.name === 'string' ? row.name : null };
 }
 
-/** Only an https address may go into the page. */
-export function safeHttpsUrl(value: string | null | undefined): string | null {
-  if (!value) return null;
+/** Where studio logos live: the public tenant-assets bucket of our own project. */
+export const TENANT_ASSET_PATH = '/storage/v1/object/public/tenant-assets/';
+
+/**
+ * Only a logo stored in our own tenant-assets bucket may be used as the studio icon, in the page and
+ * for /favicon.ico. A logo address pointing anywhere else (an admin edit, a bad import) is ignored, so
+ * the studio's own origin can never be made to serve someone else's content.
+ */
+export function tenantAssetUrl(value: string | null | undefined, supabaseUrl: string | undefined): string | null {
+  if (!value || !supabaseUrl) return null;
   try {
     const u = new URL(value);
-    return u.protocol === 'https:' ? u.toString() : null;
+    const own = new URL(supabaseUrl);
+    if (u.protocol !== 'https:' || own.protocol !== 'https:' || u.origin !== own.origin) return null;
+    if (!u.pathname.startsWith(TENANT_ASSET_PATH) || u.pathname.includes('..')) return null;
+    return u.toString();
   } catch {
     return null;
   }
+}
+
+/** Image types a browser tab or home screen can use. SVG is left out on purpose: it can carry script. */
+const ICON_TYPES = /^image\/(png|jpeg|webp|gif|x-icon|vnd\.microsoft\.icon)\s*(;|$)/i;
+
+export const isIconContentType = (value: string | null | undefined): boolean => ICON_TYPES.test((value ?? '').trim());
+
+/**
+ * The response for /favicon.ico and /apple-touch-icon.png: the logo's bytes, but only when the file
+ * really is a plain image. Anything else returns null and the caller falls back to the default icons.
+ * Locked down so even a wrong file could not run as a page: nosniff and an empty content policy.
+ */
+export function iconProxyResponse(image: Response, cacheSeconds: number): Response | null {
+  const type = image.headers.get('Content-Type');
+  if (!image.ok || !isIconContentType(type)) return null;
+  return new Response(image.body, {
+    headers: {
+      'Content-Type': type as string,
+      'Cache-Control': `public, max-age=${cacheSeconds}`,
+      'X-Content-Type-Options': 'nosniff',
+      'Content-Security-Policy': "default-src 'none'",
+    },
+  });
 }
 
 const escapeAttr = (v: string) => v.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');

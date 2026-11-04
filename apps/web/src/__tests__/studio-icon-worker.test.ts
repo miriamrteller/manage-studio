@@ -3,7 +3,9 @@ import {
   fetchStudioIcon,
   lookupForHost,
   rewriteIconLinks,
-  safeHttpsUrl,
+  iconProxyResponse,
+  isIconContentType,
+  tenantAssetUrl,
 } from '../../worker/studioIcon';
 
 const INDEX = `<!doctype html>
@@ -19,7 +21,8 @@ const INDEX = `<!doctype html>
   <body><div id="root"></div></body>
 </html>`;
 
-const LOGO = 'https://x.supabase.co/storage/v1/object/public/tenant-assets/t1/logo.png';
+const SB = 'https://p.supabase.co';
+const LOGO = `${SB}/storage/v1/object/public/tenant-assets/t1/logo.png`;
 
 describe('lookupForHost', () => {
   it('a studio subdomain and a custom host are studios; OpalSwift own hosts are not', () => {
@@ -62,18 +65,56 @@ describe('rewriteIconLinks', () => {
   });
 });
 
-describe('safeHttpsUrl', () => {
-  it('only lets an https address through', () => {
-    expect(safeHttpsUrl(LOGO)).toBe(LOGO);
-    expect(safeHttpsUrl('http://x.test/a.png')).toBeNull();
-    expect(safeHttpsUrl('javascript:alert(1)')).toBeNull();
-    expect(safeHttpsUrl('not a url')).toBeNull();
-    expect(safeHttpsUrl(null)).toBeNull();
+describe('tenantAssetUrl', () => {
+  it('accepts only a logo in our own tenant-assets bucket', () => {
+    expect(tenantAssetUrl(LOGO, SB)).toBe(LOGO);
+    expect(tenantAssetUrl(LOGO, `${SB}/`)).toBe(LOGO);
+  });
+
+  it('refuses anything else: other origins, other buckets or paths, http, odd values', () => {
+    expect(tenantAssetUrl('https://evil.example.com/storage/v1/object/public/tenant-assets/a.png', SB)).toBeNull();
+    expect(tenantAssetUrl(`${SB}/storage/v1/object/public/other-bucket/a.png`, SB)).toBeNull();
+    expect(tenantAssetUrl(`${SB}/storage/v1/object/public/tenant-assets/../../x`, SB)).toBeNull();
+    expect(tenantAssetUrl(`${SB}/rest/v1/rpc/anything`, SB)).toBeNull();
+    expect(tenantAssetUrl(`http://p.supabase.co/storage/v1/object/public/tenant-assets/a.png`, 'http://p.supabase.co')).toBeNull();
+    expect(tenantAssetUrl('https://p.supabase.co.evil.test/storage/v1/object/public/tenant-assets/a.png', SB)).toBeNull();
+    expect(tenantAssetUrl('javascript:alert(1)', SB)).toBeNull();
+    expect(tenantAssetUrl('not a url', SB)).toBeNull();
+    expect(tenantAssetUrl(null, SB)).toBeNull();
+    expect(tenantAssetUrl(LOGO, undefined)).toBeNull();
+  });
+});
+
+describe('icon proxy', () => {
+  const image = (type: string | null, init: { status?: number } = {}) =>
+    new Response('bytes', { ...init, headers: type ? { 'Content-Type': type } : {} });
+
+  it('passes a plain image through, locked down', () => {
+    for (const type of ['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/x-icon', 'image/vnd.microsoft.icon', 'image/png; charset=binary']) {
+      const out = iconProxyResponse(image(type), 300);
+      expect(out, type).not.toBeNull();
+      expect(out!.headers.get('Content-Type')).toBe(type);
+      expect(out!.headers.get('Content-Security-Policy')).toBe("default-src 'none'");
+      expect(out!.headers.get('X-Content-Type-Options')).toBe('nosniff');
+      expect(out!.headers.get('Cache-Control')).toBe('public, max-age=300');
+    }
+  });
+
+  it('falls back (null) for anything that is not a plain image', () => {
+    for (const type of ['text/html', 'text/html; charset=utf-8', 'image/svg+xml', 'application/javascript', 'application/octet-stream', 'text/plain', 'image/pngx', null]) {
+      expect(iconProxyResponse(image(type), 300), String(type)).toBeNull();
+    }
+    expect(isIconContentType('IMAGE/PNG')).toBe(true);
+  });
+
+  it('falls back for a failed or redirected response', () => {
+    expect(iconProxyResponse(image('image/png', { status: 404 }), 300)).toBeNull();
+    expect(iconProxyResponse(image('image/png', { status: 302 }), 300)).toBeNull();
   });
 });
 
 describe('fetchStudioIcon', () => {
-  const env = { SUPABASE_URL: 'https://p.supabase.co/', SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_x' };
+  const env = { SUPABASE_URL: `${SB}/`, SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_x' };
   const reply = (rows: unknown, ok = true) => vi.fn().mockResolvedValue({ ok, status: ok ? 200 : 500, json: async () => rows });
 
   it('asks the public lookup for the host and returns the logo and name', async () => {
@@ -89,6 +130,12 @@ describe('fetchStudioIcon', () => {
     const f = reply([{ name: 'X', logo_url: LOGO }]);
     await fetchStudioIcon({ kind: 'subdomain', subdomain: 'creativeballet' }, env, f as unknown as typeof fetch);
     expect(f.mock.calls[0][0]).toContain('get_tenant_config_by_subdomain');
+  });
+
+  it('ignores a logo address outside our own tenant-assets bucket', async () => {
+    const f = reply([{ name: 'X', logo_url: 'https://evil.example.com/storage/v1/object/public/tenant-assets/a.png' }]);
+    const out = await fetchStudioIcon({ kind: 'host', host: 'h.test' }, env, f as unknown as typeof fetch);
+    expect(out).toEqual({ iconUrl: null, name: 'X' });
   });
 
   it('has no icon when there is no studio, no logo, or no settings; a failed lookup throws (so the page falls back)', async () => {

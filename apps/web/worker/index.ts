@@ -7,7 +7,7 @@
  * (missing settings, timeout, no logo) the visitor gets exactly what they got before: the
  * OpalSwift icons, with the app's own script still swapping the icon after load.
  */
-import { fetchStudioIcon, lookupForHost, rewriteIconLinks, type IconEnv, type StudioIcon } from './studioIcon';
+import { fetchStudioIcon, iconProxyResponse, lookupForHost, rewriteIconLinks, type IconEnv, type StudioIcon } from './studioIcon';
 
 interface Env extends IconEnv {
   ASSETS: { fetch(request: Request): Promise<Response> };
@@ -55,15 +55,9 @@ export default {
       if (!studio?.iconUrl) return pass();
 
       if (isIconPath) {
-        const image = await fetch(studio.iconUrl);
-        if (!image.ok) return pass();
-        return new Response(image.body, {
-          headers: {
-            'Content-Type': image.headers.get('Content-Type') ?? 'image/png',
-            'Cache-Control': `public, max-age=${CACHE_SECONDS}`,
-            'X-Content-Type-Options': 'nosniff',
-          },
-        });
+        // No redirects: a logo that moves elsewhere is not served from the studio's address.
+        const image = await fetch(studio.iconUrl, { redirect: 'manual' });
+        return iconProxyResponse(image, CACHE_SECONDS) ?? pass();
       }
 
       const res = await pass();
