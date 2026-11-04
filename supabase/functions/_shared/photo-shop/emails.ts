@@ -1,5 +1,5 @@
 /**
- * Photo shop emails (plain announcement layout):
+ * Photo shop emails (plain announcement layout, no React):
  *  - to the studio when an order is paid (or free): the photos to put in a
  *    download gallery, with their gallery keys and file names;
  *  - to the client when the studio sends the download link.
@@ -8,61 +8,12 @@
  */
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
 import { formatCurrency } from "../email-dist/format.js";
-import { EMAIL_TEMPLATE_NAMES, sendRenderedEmail } from "../email-send.ts";
+import { sendHtmlEmail } from "../email-client.ts";
+import { renderAdminAnnouncementHtml } from "../render-admin-announcement-email.ts";
 import { resolveEnrolmentNotificationRecipient } from "../enrolment-recipient.ts";
 import { resolveTenantSender, TENANT_SENDER_COLUMNS, type TenantSenderInput } from "../notification-from.ts";
 import { tenantBaseUrl } from "../tenant-url.ts";
-
-type Lang = "he" | "en";
-
-export interface StudioOrderEmailInput {
-  language: Lang;
-  clientName: string;
-  totalFormatted: string;
-  photos: { fileName: string; key: string }[];
-  shootUrl: string;
-}
-
-export function buildStudioOrderEmail(i: StudioOrderEmailInput): { subject: string; body: string } {
-  const list = i.photos.map((p) => `• ${p.fileName} (${p.key})`).join("\n");
-  if (i.language === "he") {
-    return {
-      subject: `הזמנת תמונות חדשה: ${i.clientName} (${i.photos.length})`,
-      body:
-        `${i.clientName} קנה/תה ${i.photos.length} תמונות, בסך ${i.totalFormatted}.\n\n` +
-        `התמונות:\n${list}\n\n` +
-        `יש ליצור ב-SmugMug גלריית הורדה עם התמונות האלה, להדביק את הקישור בהזמנה וללחוץ על שליחה:\n${i.shootUrl}`,
-    };
-  }
-  return {
-    subject: `New photo order: ${i.clientName} (${i.photos.length})`,
-    body:
-      `${i.clientName} bought ${i.photos.length} photos, ${i.totalFormatted} in total.\n\n` +
-      `The photos:\n${list}\n\n` +
-      `Make a download gallery on SmugMug with these photos, paste its link into the order and press Send:\n${i.shootUrl}`,
-  };
-}
-
-export function buildClientDeliveredEmail(
-  i: { language: Lang; studioName: string; photoCount: number; downloadUrl: string; portalUrl: string },
-): { subject: string; body: string } {
-  if (i.language === "he") {
-    return {
-      subject: "התמונות שלך מוכנות להורדה",
-      body:
-        `${i.studioName} שלח/ה את ${i.photoCount === 1 ? "התמונה שקנית" : `${i.photoCount} התמונות שקנית`}.\n\n` +
-        `להורדה:\n${i.downloadUrl}\n\n` +
-        `הקישור נמצא גם בחשבון שלך:\n${i.portalUrl}`,
-    };
-  }
-  return {
-    subject: "Your photos are ready to download",
-    body:
-      `${i.studioName} has sent ${i.photoCount === 1 ? "the photo you bought" : `the ${i.photoCount} photos you bought`}.\n\n` +
-      `Download them here:\n${i.downloadUrl}\n\n` +
-      `The link is also in your account:\n${i.portalUrl}`,
-  };
-}
+import { buildClientDeliveredEmail, buildStudioOrderEmail, type Lang } from "./email-copy.ts";
 
 interface Loaded {
   order: {
@@ -130,22 +81,16 @@ async function send(
   let failure: string | null = null;
   let externalId: string | null = null;
   try {
-    const result = await sendRenderedEmail({
-      to: p.to,
-      from: sender.from,
-      replyTo: sender.replyTo,
+    // Plain announcement layout, rendered without React so payment code that imports this stays light.
+    const html = renderAdminAnnouncementHtml({
+      language,
+      schoolName: l.tenant.name as string,
       subject: p.subject,
-      renderInput: {
-        templateName: EMAIL_TEMPLATE_NAMES.ADMIN_ANNOUNCEMENT,
-        language,
-        schoolName: l.tenant.name as string,
-        tenantColors: {
-          primary_color: l.tenant.primary_color as string | null,
-          accent_color: l.tenant.accent_color as string | null,
-        },
-        variables,
-      },
+      body: p.body,
+      primaryColor: (l.tenant.primary_color as string | null) ?? "#2563eb",
+      accentColor: (l.tenant.accent_color as string | null) ?? "#dc2626",
     });
+    const result = await sendHtmlEmail({ to: p.to, from: sender.from, replyTo: sender.replyTo, subject: p.subject, html });
     externalId = result.id ?? null;
   } catch (err) {
     status = "failed";
