@@ -468,7 +468,11 @@
       "cooldown_sr_sent_code": "We've sent a code to {{email}}. Check your inbox (and spam).",
       "cooldown_sr_rate_limited": "We've just sent you an email. Please check your inbox.",
       "cooldown_ready": "You can ask for a new one now.",
-      "enter_code": "Enter the code"
+      "enter_code": "Enter the code",
+      "forgot_password": "Forgot password?",
+      "forgot_needs_email": "Type your email above, then press \"Forgot password?\" again.",
+      "reset_sent": "If there is an account for {{email}}, we've emailed it a link to set a new password. Signing in with an emailed link or code still works.",
+      "reset_error": "We could not send the email. Try again in a minute, or sign in with an emailed link."
     },
     "people": {
       "title": "Students & Adults",
@@ -1761,6 +1765,15 @@
         "server_error": "Something went wrong on our side. Please try again in a moment.",
         "generic": "Something went wrong. Please try again."
       }
+    },
+    "new_password": {
+      "title": "Choose a new password",
+      "intro": "Signed in as {{email}}. Choose a new password for next time.",
+      "save": "Save the new password",
+      "saved": "Your new password is saved.",
+      "continue": "Continue",
+      "no_session": "This link has expired or was already used. Ask for a new one from the sign-in page.",
+      "back_to_login": "Back to sign in"
     }
   },
   "signup": {
@@ -2155,7 +2168,10 @@
     "logo_optional": "PNG, JPG, SVG or WebP, up to 2 MB. You can skip this and add it later in Settings → Branding.",
     "logo_chosen": "{{name}} will be added when your studio is created.",
     "logo_too_large": "That file is over 2 MB. Choose a smaller one, or skip this for now.",
-    "logo_owner_later": "The studio owner can add a logo later in Settings → Branding."
+    "logo_owner_later": "The studio owner can add a logo later in Settings → Branding.",
+    "business_email": "Business email (clients see this)",
+    "business_email_hint": "Replies to the studio's emails and new-enquiry alerts go here. It can be different from the login email, and you can change it later in Settings.",
+    "need_business_email": "Enter a valid business email, or put back the login email."
   },
   "studio_not_found": {
     "title": "Studio not found",
@@ -3046,6 +3062,12 @@
       "providers": { "grow": "Grow (Meshulam)", "icount": "iCount", "invoice4u": "Invoice4U", "ypay": "YPay", "tranzila": "Tranzila" }
     },
     "invoicing_toggle": {
+      "gi_document_label": "Which document does Green Invoice issue?",
+      "gi_document_400": "Receipt (קבלה)",
+      "gi_document_320": "Tax invoice-receipt (חשבונית מס קבלה)",
+      "gi_document_hint": "We filled this in from your business status. Change it if your accountant advises otherwise; changing your business status later won’t change it.",
+      "gi_document_differs_400": "Your business status usually issues a receipt. Check with your accountant if you’re unsure.",
+      "gi_document_differs_320": "Your business status usually issues a tax invoice-receipt. Check with your accountant if you’re unsure.",
       "title": "Tax documents",
       "description": "Whether the app issues a receipt or invoice for every payment through your invoicing provider.",
       "enabled_label": "Issue tax documents automatically",
@@ -3223,6 +3245,15 @@
       "custom_domain_readonly": "Your studio's own web address. Only the OpalSwift team can change it.",
       "name_required": "Studio name is required.",
       "profile_saved": "Studio profile saved.",
+      "studio_email": "Studio email",
+      "studio_email_hint": "Clients see this: replies to your emails and new-enquiry alerts go here. Your login email does not change.",
+      "studio_email_invalid": "Enter a valid email address for the studio.",
+      "studio_email_legal_offer_one": "Your legal pages still show {{from}} in 1 place. Use {{to}} there too?",
+      "studio_email_legal_offer_other": "Your legal pages still show {{from}} in {{count}} places. Use {{to}} there too?",
+      "studio_email_legal_yes": "Update legal pages",
+      "studio_email_legal_no": "Not now",
+      "studio_email_legal_updated": "Legal pages now use the new studio email.",
+      "studio_email_legal_error": "Could not update the legal pages. You can change the emails in Settings → Legal.",
       "branding_title": "Branding",
       "branding_description": "Primary and accent colours applied across the site.",
       "primary_color": "Primary colour",
@@ -3540,7 +3571,10 @@
         "waiver_events": "Waivers",
         "waiver_evidence": "Waivers",
         "consent_records": "Consents"
-      }
+      },
+      "password_title": "Login password",
+      "password_description": "Set a password to sign in without waiting for an email. Emailed links and codes keep working.",
+      "password_button": "Set or change your password"
     },
     "lawyer": {
       "title": "Lawyer-reviewed versions",

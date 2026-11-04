@@ -43,6 +43,11 @@ export type BusinessProfileInput = z.infer<typeof BusinessProfileSchema>;
 export const BusinessContactSchema = z.object({
   address: z.string().trim().max(300).optional(),
   phone: z.string().trim().max(40).optional(),
+  /**
+   * "Business email (clients see this)": tenants.contact_email (Reply-To on client emails,
+   * enquiry alerts). Separate from the login; when missing, the owner's email stays the studio email.
+   */
+  email: z.string().trim().toLowerCase().email().max(254).optional(),
 });
 export type BusinessContactInput = z.infer<typeof BusinessContactSchema>;
 
@@ -77,7 +82,7 @@ async function applyContactBestEffort(
   tenantId: string,
   contact: BusinessContactInput,
 ): Promise<void> {
-  if (!deps.applyContact || (!contact.address && !contact.phone)) return;
+  if (!deps.applyContact || (!contact.address && !contact.phone && !contact.email)) return;
   try {
     await deps.applyContact(tenantId, contact);
   } catch (err) {

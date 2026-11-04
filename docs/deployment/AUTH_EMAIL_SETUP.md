@@ -105,6 +105,15 @@ https://YOUR_PRODUCTION_DOMAIN/auth/callback
 
 The app sets `emailRedirectTo` to `${window.location.origin}/auth/callback` in `useLogin.ts` and `useSignup.ts`.
 
+"Forgot password?" (login Password tab) uses the same callback: `resetPasswordForEmail` with
+`redirectTo` = `${window.location.origin}/auth/callback?next=new-password`
+(`features/auth/lib/passwordReset.ts`). The callback signs the person in from the link and opens
+`/auth/new-password`. Like sign-in links (which already carry `?login_method=…`), it returns to the
+origin the person used, so every studio origin needs an entry: a wildcard such as
+`https://*.<root domain>/**` covers studio subdomains, and each custom domain needs its own
+`https://<custom domain>/**` (see CUSTOM-DOMAIN.md). The reset email is sent by the Send Email
+Hook (`send-auth-email`, action `recovery`).
+
 ### Email provider (Auth → Providers → Email)
 
 - Email provider **enabled**

@@ -94,6 +94,7 @@ export default function LoginPage() {
     verifyEmailCode,
     resendEmailCode,
     backToCodeSend,
+    forgotPassword,
   } = useLogin({
     to: resumeKey ? '/enrol' : returnTo ?? '/dashboard',
     state: postLoginState,
@@ -132,6 +133,7 @@ export default function LoginPage() {
           captcha={captcha}
           initialMode={initialMode}
           initialEmail={initialEmail}
+          onForgotPassword={forgotPassword}
         />
 
         {/* Help Text */}
