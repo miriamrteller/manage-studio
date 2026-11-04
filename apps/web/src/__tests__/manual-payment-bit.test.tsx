@@ -7,6 +7,9 @@
 import { describe, it, expect, vi, afterEach, beforeAll } from 'vitest';
 import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/react';
 
+vi.mock('@/features/finance/hooks/useManualPaymentMethods', () => ({
+  useManualPaymentMethods: () => ['cash', 'bank_transfer', 'bit'],
+}));
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key, i18n: { language: 'en' } }),
 }));
@@ -45,5 +48,22 @@ describe('manual payment methods', () => {
     fireEvent.click(screen.getByRole('radio', { name: 'payment_methods.bit' }));
     fireEvent.click(screen.getByRole('button', { name: 'pages.jobs.payments.manual.confirmPaid' }));
     await waitFor(() => expect(onMarkPaid).toHaveBeenCalledWith('jpr-1', 'bit', undefined));
+  });
+});
+
+describe('Bit / PayBox only where it can be receipted (owner decision 2026-11-04)', () => {
+  it('is shown when the invoicing issues its receipt or the studio issues no documents', async () => {
+    const { manualPaymentMethodsFor } = await import('../features/finance/lib/manualPaymentMethods');
+    for (const invoicingProvider of ['ypay', 'green_invoice', 'none', 'mock']) {
+      expect(manualPaymentMethodsFor({ invoicingProvider, acceptUnreceiptedBit: false })).toContain('bit');
+    }
+  });
+
+  it('is hidden for Grow, iCount and Invoice4U unless the studio accepts it anyway', async () => {
+    const { manualPaymentMethodsFor } = await import('../features/finance/lib/manualPaymentMethods');
+    for (const invoicingProvider of ['grow', 'icount', 'invoice4u']) {
+      expect(manualPaymentMethodsFor({ invoicingProvider, acceptUnreceiptedBit: false })).toEqual(['cash', 'bank_transfer']);
+      expect(manualPaymentMethodsFor({ invoicingProvider, acceptUnreceiptedBit: true })).toContain('bit');
+    }
   });
 });

@@ -42,7 +42,7 @@ const OPEN_SCHEDULE_STATUSES = ["active", "paused", "suspended"];
 const MANUAL_METHOD_TEXT: Record<ManualRenewalInput["method"], string> = {
   cash: "cash",
   bank_transfer: "bank transfer",
-  bit: "Bit",
+  bit: "Bit / PayBox",
 };
 
 export function manualRenewalRef(scheduleId: string, period: string): string {

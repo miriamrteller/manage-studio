@@ -6,7 +6,7 @@ describe('formatPaymentMethodDisplay', () => {
     payment_method_card: '{brand} ending in {last4}',
     payment_method_cash: 'Cash',
     payment_method_bank_transfer: 'Bank transfer',
-    payment_method_bit: 'Bit',
+    payment_method_bit: 'Bit / PayBox',
     payment_method_check: 'Check',
     payment_method_other: 'Other',
   };
@@ -41,6 +41,6 @@ describe('formatPaymentMethodDisplay', () => {
   });
 
   it('formats Bit', () => {
-    expect(formatPaymentMethodDisplay({ method: 'bit', strings })).toBe('Bit');
+    expect(formatPaymentMethodDisplay({ method: 'bit', strings })).toBe('Bit / PayBox');
   });
 });
