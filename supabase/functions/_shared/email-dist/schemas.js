@@ -521,10 +521,11 @@ export const PaymentLogRowSchema = z.object({
     refunds_payment_id: UUIDSchema.nullable().optional(),
     document_queue: z.array(PaymentLogDocumentQueueSchema).optional(),
     /** Only on the accountant export: the payer's business details, when billed to a business. */
-    billing_account: z
+    // One object for this many-to-one embed; a one-element list is accepted too.
+    billing_account: z.preprocess((v) => (Array.isArray(v) ? (v[0] ?? null) : v), z
         .object({ business_name: z.string().nullable(), business_tax_id: z.string().nullable() })
         .nullable()
-        .optional(),
+        .optional()),
     person: PaymentLogPersonSchema.optional(),
     offering: PaymentLogOfferingSchema.optional(),
     engagement: PaymentLogEngagementSchema.optional(),

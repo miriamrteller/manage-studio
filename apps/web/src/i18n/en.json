@@ -2456,6 +2456,37 @@
       "preparing": "Preparing the file… {{count}} rows",
       "failed": "Couldn't prepare the file. Try again."
     },
+    "charts": {
+      "title": "Money in",
+      "received_12m": "Received in the last 12 months",
+      "waiting": "Waiting for payment (open payment requests)",
+      "waiting_count_one": "{{count}} open request",
+      "waiting_count_other": "{{count}} open requests",
+      "by_month": "Received by month, refunds subtracted (last 12 months)",
+      "by_method": "Received by payment method (last 12 months)",
+      "net_received": "Received",
+      "show_table": "Show as a table",
+      "col_month": "Month",
+      "col_paid": "Paid",
+      "col_refunds": "Refunds",
+      "col_count": "Payments",
+      "empty": "No payments yet.",
+      "load_failed": "Couldn't load the figures. Try again."
+    },
+    "vat_summary": {
+      "title": "VAT period summary",
+      "gross": "Received (refunds subtracted)",
+      "vat_documents": "On tax invoice-receipts",
+      "pretax": "Before VAT",
+      "vat": "VAT",
+      "receipts": "On receipts (no VAT)",
+      "unknown_type": "Documents of unknown type (see the provider)",
+      "refunds": "Refunds",
+      "without_document": "Without a document",
+      "without_document_count_one": "{{count}} payment",
+      "without_document_count_other": "{{count}} payments",
+      "note": "Help for your accountant, not a VAT return. Worked out from the documents issued; the documents themselves are the record."
+    },
     "csv": {
       "language": "File language",
       "enrolment_id": "Enrolment ID",

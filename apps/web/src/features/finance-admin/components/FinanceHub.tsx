@@ -11,6 +11,8 @@ import { computeNetProfitMinor } from '../lib/netProfit';
 import { resolvePeriodDateRange } from '../lib/periods';
 import { FinancePeriodSelector, useFinancePeriodFromUrl } from './FinancePeriodSelector';
 import { DocumentsNotIssuedCard } from './DocumentsNotIssuedCard';
+import { FinanceCharts } from './FinanceCharts';
+import { VatPeriodSummaryCard } from './VatPeriodSummaryCard';
 
 export function FinanceHub() {
   const { t, i18n } = useTranslation();
@@ -116,6 +118,10 @@ export function FinanceHub() {
       )}
 
       <DocumentsNotIssuedCard />
+
+      <VatPeriodSummaryCard />
+
+      <FinanceCharts />
 
       <section className="space-y-4">
         <h3 className="text-lg font-semibold">{t('finance.hub.outstanding_title')}</h3>
