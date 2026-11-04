@@ -31,7 +31,8 @@ export interface StudioProfile {
   clientBooking: boolean
 }
 
-export type ProfileGate = 'recurring' | 'project' | 'teaches_classes' | 'family_accounts' | 'client_booking'
+/** opt_in: never switched on by the profile or plan, only by a per-studio override (beta features). */
+export type ProfileGate = 'recurring' | 'project' | 'teaches_classes' | 'family_accounts' | 'client_booking' | 'opt_in'
 
 /** A new studio starts general: both payment flows, every switch off. */
 export const GENERAL_PROFILE: StudioProfile = {
@@ -56,6 +57,7 @@ export const PROFILE_GATES: Partial<Record<FeatureKey, ProfileGate>> = {
   [FEATURES.offerings.publicBooking]: 'teaches_classes',
   [FEATURES.scheduling.calendarView]: 'teaches_classes',
   [FEATURES.people.families]: 'family_accounts',
+  [FEATURES.billing.photoShop]: 'opt_in',
 }
 
 export function profileHasGate(profile: StudioProfile, gate: ProfileGate): boolean {
@@ -70,6 +72,8 @@ export function profileHasGate(profile: StudioProfile, gate: ProfileGate): boole
       return profile.familyAccounts
     case 'client_booking':
       return profile.clientBooking
+    case 'opt_in':
+      return false
   }
 }
 

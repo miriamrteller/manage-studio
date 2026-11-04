@@ -1,0 +1,153 @@
+// @vitest-environment jsdom
+/**
+ * Photo shop on the shoot page (beta): hidden without the flag; prefilled
+ * prices behind "Details we filled in for you"; saving sends the edits; a paid
+ * order is delivered with an https link only. EN + HE text present.
+ */
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { JobPhotoShopCard } from '@/features/jobs/components/JobPhotoShopCard';
+import type { JobPhotoShop, PhotoOrder } from '@/features/jobs/services/photoShopService';
+import { isDeliveryLink, majorToMinor, minorToMajor } from '@/features/jobs/services/photoShopService';
+import { renderInApp, setLanguage, setTenant } from './helpers/verticalHarness';
+
+vi.mock('@/hooks/useTenant', async () => (await import('./helpers/fakeTenantState')).tenantHookMock());
+vi.mock('@/hooks/useLanguage', async () => (await import('./helpers/fakeTenantState')).languageHookMock());
+vi.mock('@/lib/supabase', () => ({ supabase: { from: vi.fn(), rpc: vi.fn(), functions: { invoke: vi.fn() } } }));
+
+const state = vi.hoisted(() => ({
+  flag: true,
+  shop: null as unknown as JobPhotoShop,
+  orders: [] as PhotoOrder[],
+  saveShop: vi.fn(),
+  deliver: vi.fn(),
+}));
+
+vi.mock('@/hooks/useFeatureGate', () => ({
+  useFeatureGate: () => ({ hasFeature: (k: string) => state.flag && k === 'billing:photo_shop', isLoading: false }),
+}));
+vi.mock('@/features/jobs/services/photoShopService', async (orig) => {
+  const real = await orig<typeof import('@/features/jobs/services/photoShopService')>();
+  return {
+    ...real,
+    PhotoShopService: {
+      getShop: async () => state.shop,
+      listOrders: async () => state.orders,
+      saveShop: (id: string, patch: unknown) => state.saveShop(id, patch),
+      deliver: (id: string, url: string) => state.deliver(id, url),
+    },
+  };
+});
+
+const shop = (over: Partial<JobPhotoShop> = {}): JobPhotoShop => ({
+  engagement_id: 'e1',
+  provider: 'smugmug',
+  gallery_key: null,
+  gallery_name: null,
+  included_photos: 20,
+  price_per_photo_minor: 3000,
+  all_photos_price_minor: null,
+  currency: 'ILS',
+  closes_at: '2027-02-02T21:59:59.000Z',
+  saved: false,
+  ...over,
+});
+
+const paidOrder: PhotoOrder = {
+  id: 'o1',
+  status: 'paid',
+  photo_count: 3,
+  included_count: 2,
+  total_minor: 3000,
+  currency: 'ILS',
+  all_photos: false,
+  delivery_url: null,
+  created_at: '2026-11-04T10:00:00Z',
+  paid_at: '2026-11-04T10:05:00Z',
+  delivered_at: null,
+  items: [
+    { image_key: 'k1', file_name: 'IMG_0001.jpg', included: true, price_minor: 0 },
+    { image_key: 'k2', file_name: 'IMG_0002.jpg', included: true, price_minor: 0 },
+    { image_key: 'k3', file_name: 'IMG_0003.jpg', included: false, price_minor: 3000 },
+  ],
+};
+
+describe('photo shop helpers', () => {
+  it('converts prices and checks delivery links', () => {
+    expect(majorToMinor('30')).toBe(3000);
+    expect(majorToMinor('12,5')).toBe(1250);
+    expect(majorToMinor('')).toBeNull();
+    expect(majorToMinor('0')).toBeNull();
+    expect(minorToMajor(3000)).toBe('30');
+    expect(minorToMajor(1250)).toBe('12.50');
+    expect(isDeliveryLink('https://studio.smugmug.com/Alice')).toBe(true);
+    expect(isDeliveryLink('http://studio.smugmug.com/Alice')).toBe(false);
+    expect(isDeliveryLink('javascript:alert(1)')).toBe(false);
+  });
+});
+
+describe('JobPhotoShopCard', () => {
+  beforeEach(async () => {
+    setTenant('photographer');
+    await setLanguage('en');
+    state.flag = true;
+    state.shop = shop();
+    state.orders = [];
+    state.saveShop.mockReset().mockImplementation(async (_id: string, patch: Partial<JobPhotoShop>) => shop({ ...patch, saved: true }));
+    state.deliver.mockReset().mockResolvedValue(undefined);
+  });
+
+  it('is hidden without the photo shop flag', () => {
+    state.flag = false;
+    const { container } = renderInApp(<JobPhotoShopCard engagementId="e1" />);
+    expect(container.textContent).not.toContain('Photo shop');
+  });
+
+  it('shows the prefilled prices and saves edits', async () => {
+    renderInApp(<JobPhotoShopCard engagementId="e1" />);
+    expect(await screen.findByText(/20 photos included · ₪30(\.00)? per photo/)).toBeTruthy();
+    expect(screen.getByText('Details we filled in for you')).toBeTruthy();
+    expect(screen.getByText(/Not saved yet/)).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText('Price per photo (ILS)'), { target: { value: '45' } });
+    fireEvent.change(screen.getByLabelText('All photos price (ILS, optional)'), { target: { value: '400' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(state.saveShop).toHaveBeenCalled());
+    expect(state.saveShop.mock.calls[0][1]).toMatchObject({
+      included_photos: 20,
+      price_per_photo_minor: 4500,
+      all_photos_price_minor: 40000,
+    });
+    expect(await screen.findByText('Saved.')).toBeTruthy();
+  });
+
+  it('with 0 included, the summary says nothing about included photos', async () => {
+    state.shop = shop({ included_photos: 0 });
+    renderInApp(<JobPhotoShopCard engagementId="e1" />);
+    await screen.findByText(/^₪30(\.00)? per photo · open until/);
+    expect(screen.queryByText(/included ·/)).toBeNull();
+  });
+
+  it('delivers a paid order with an https link only', async () => {
+    state.orders = [paidOrder];
+    renderInApp(<JobPhotoShopCard engagementId="e1" />);
+    expect(await screen.findByText('Paid, to deliver')).toBeTruthy();
+    const input = screen.getByLabelText('Download gallery link');
+    const send = screen.getByRole('button', { name: 'Send' }) as HTMLButtonElement;
+    fireEvent.change(input, { target: { value: 'http://studio.smugmug.com/x' } });
+    expect(send.disabled).toBe(true);
+    fireEvent.change(input, { target: { value: 'https://studio.smugmug.com/Alice-download' } });
+    expect(send.disabled).toBe(false);
+    fireEvent.click(send);
+    await waitFor(() => expect(state.deliver).toHaveBeenCalledWith('o1', 'https://studio.smugmug.com/Alice-download'));
+  });
+
+  it('has Hebrew text', async () => {
+    await setLanguage('he');
+    state.orders = [paidOrder];
+    renderInApp(<JobPhotoShopCard engagementId="e1" />);
+    expect(await screen.findByText('חנות תמונות')).toBeTruthy();
+    expect(await screen.findByText('שולם, למסירה')).toBeTruthy();
+    expect(screen.getByText('פרטים שמילאנו בשבילך')).toBeTruthy();
+  });
+});

@@ -391,7 +391,45 @@
       "details_phone": "Phone",
       "details_missing": "We couldn't find your client details. Please contact us.",
       "edit_contact": "Contact preferences",
-      "for_shoot": "For {{name}}"
+      "for_shoot": "For {{name}}",
+      "photo_shop": {
+        "title": "Buy your photos",
+        "included_left_one": "{{count}} photo included in your package",
+        "included_left_other": "{{count}} photos included in your package",
+        "per_photo": "{{price}} per photo",
+        "open_until": "you can buy until {{date}}",
+        "closed": "buying has closed",
+        "photo_alt": "Preview of {{name}}",
+        "add": "Add to cart",
+        "in_cart": "In cart",
+        "bought": "Bought",
+        "awaiting": "In an order waiting for payment",
+        "cart_count_one": "{{count}} photo in your cart",
+        "cart_count_other": "{{count}} photos in your cart",
+        "cart_included_one": "{{count}} included",
+        "cart_included_other": "{{count}} included",
+        "no_price": "The studio hasn't set a price for extra photos yet. You can take the included ones.",
+        "suggest_all": "All {{count}} photos cost {{price}}, no more than your cart.",
+        "terms": "Photos are sold as digital downloads. Once the studio sends your download link, the purchase can't be cancelled.",
+        "pay": "Pay {{price}}",
+        "take_free": "Get these photos",
+        "buy_all": "Buy all {{count}} photos for {{price}}",
+        "ordered_free": "Done. The studio will send you a download link.",
+        "order_photos_one": "{{count}} photo",
+        "order_photos_other": "{{count}} photos",
+        "download": "Download your photos",
+        "pay_now": "Pay now",
+        "preparing": "The studio is preparing your download",
+        "errors": {
+          "already_bought": "One of these photos was just bought. Please refresh the page.",
+          "not_in_gallery": "One of these photos is no longer in the gallery. Please refresh the page.",
+          "shop_closed": "Buying has closed for this gallery.",
+          "no_price": "The studio hasn't set a price for extra photos yet.",
+          "no_all_photos_price": "The studio doesn't offer all photos at one price.",
+          "no_photos": "Choose at least one photo.",
+          "server_error": "Something went wrong. Please try again."
+        }
+      }
     },
     "admin": {
       "setup": {
@@ -1619,6 +1657,47 @@
         "pay": "Pay",
         "openGallery": "Open your gallery",
         "galleryLocked": "Your gallery will be available once all payments are completed."
+      },
+      "photo_shop": {
+        "title": "Photo shop",
+        "beta": "Beta",
+        "gallery": "Gallery",
+        "gallery_none": "Not chosen yet",
+        "gallery_coming": "Choosing your SmugMug proofing gallery comes next. You can set the prices now.",
+        "summary_included_one": "{{count}} photo included",
+        "summary_included_other": "{{count}} photos included",
+        "summary_per_photo": "{{price}} per photo",
+        "summary_all": "all photos {{price}}",
+        "summary_open_until": "open until {{date}}",
+        "no_price_hint": "Clients can only take the included photos until you set a price per photo.",
+        "filled_hint": "From the package and your photo shop defaults in Settings → Payment Settings. You can change them for this shoot.",
+        "included": "Photos included",
+        "included_hint": "At no extra cost. 0 means every photo is paid for.",
+        "per_photo": "Price per photo ({{currency}})",
+        "all_photos": "All photos price ({{currency}}, optional)",
+        "all_photos_hint": "Leave empty to sell photos one by one only.",
+        "open_until": "Clients can buy until",
+        "open_until_hint": "After this, clients still see what they bought.",
+        "saved": "Saved.",
+        "not_saved_yet": "Not saved yet. These are the suggested values.",
+        "orders": "Orders",
+        "no_orders": "No orders yet.",
+        "order_photos_one": "{{count}} photo",
+        "order_photos_other": "{{count}} photos",
+        "order_included_one": "{{count}} included",
+        "order_included_other": "{{count}} included",
+        "file_names": "File names",
+        "delivery_link": "Download gallery link",
+        "delivery_hint": "Make a download gallery on SmugMug with these photos, paste its link and press Send.",
+        "send": "Send",
+        "change_link": "Change link",
+        "status": {
+          "awaiting_payment": "Waiting for payment",
+          "paid": "Paid, to deliver",
+          "delivered": "Delivered",
+          "cancelled": "Cancelled",
+          "refunded": "Refunded"
+        }
       }
     },
     "pay": {
@@ -2262,7 +2341,8 @@
       "removed": "Service removed.",
       "duration_suffix": "min",
       "settings_hint": "Add and manage your bookable services on this page. When clients can book them — availability hours and booking rules — is set under",
-      "booking_disabled_warning": "Booking is disabled. Enable it in Booking Settings and save — otherwise clients will see an empty booking page even if services are listed here."
+      "booking_disabled_warning": "Booking is disabled. Enable it in Booking Settings and save — otherwise clients will see an empty booking page even if services are listed here.",
+      "photos_included": "Photos included in the package"
     },
     "book": {
       "photographer_note": "This studio doesn’t take online bookings. Send an enquiry instead and the photographer will reply with a quote.",
@@ -3392,6 +3472,15 @@
       "back": "Back",
       "next": "Next",
       "skip_integrations": "Skip for now"
+    },
+    "photo_shop": {
+      "title": "Photo shop",
+      "intro": "Suggested prices for each new shoot's photo shop. You can change them on any shoot.",
+      "per_photo": "Price per photo ({{currency}})",
+      "all_photos": "All photos price ({{currency}}, optional)",
+      "all_photos_hint": "Leave empty to sell photos one by one only.",
+      "open_days": "Days a gallery stays open for buying",
+      "saved": "Saved."
     }
   },
   "accessibility": {

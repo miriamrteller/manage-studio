@@ -22,7 +22,8 @@ export interface StudioProfile {
     familyAccounts: boolean;
     clientBooking: boolean;
 }
-export type ProfileGate = 'recurring' | 'project' | 'teaches_classes' | 'family_accounts' | 'client_booking';
+/** opt_in: never switched on by the profile or plan, only by a per-studio override (beta features). */
+export type ProfileGate = 'recurring' | 'project' | 'teaches_classes' | 'family_accounts' | 'client_booking' | 'opt_in';
 /** A new studio starts general: both payment flows, every switch off. */
 export declare const GENERAL_PROFILE: StudioProfile;
 /** Keys that need a profile setting. Anything not listed here is core. */
