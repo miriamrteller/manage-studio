@@ -179,11 +179,11 @@ describe('CardLinkButton', () => {
     expect(await screen.findByRole('status')).toHaveTextContent('finance.card_link.error_card_already_saved');
   });
 
-  it('YPay and Invoice4U: no button, a "not available yet" note instead', () => {
+  it('YPay and Invoice4U: no button and no note (monthly payments are recorded instead)', () => {
     for (const provider of ['ypay', 'invoice4u']) {
-      wrap(<CardLinkButton engagementId={ENGAGEMENT} paymentProvider={provider} />);
+      const { container } = wrap(<CardLinkButton engagementId={ENGAGEMENT} paymentProvider={provider} />);
       expect(screen.queryByRole('button')).toBeNull();
-      expect(screen.getByRole('note')).toHaveTextContent('finance.card_link.unsupported');
+      expect(container).toBeEmptyDOMElement();
       cleanup();
     }
   });

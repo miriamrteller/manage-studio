@@ -332,6 +332,11 @@ enabled = true
 verify_jwt = true
 entrypoint = "./functions/verify-ypay-credentials/index.ts"
 
+[functions.verify-takbull-credentials]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/verify-takbull-credentials/index.ts"
+
 # Only reachable from WhatsAppOtpVerifier, which is not rendered anywhere.
 [functions.verify-whatsapp-otp]
 enabled = true

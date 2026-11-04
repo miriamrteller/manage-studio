@@ -3974,6 +3974,9 @@ export type Database = {
                     skin: string;
                     sub_status: string;
                     subdomain: string;
+                    takbull_api_key_enc: string | null;
+                    takbull_api_secret_enc: string | null;
+                    takbull_credentials_updated_at: string | null;
                     teaches_classes: boolean;
                     terms_url: string | null;
                     tranzila_terminal_name: string | null;
@@ -4056,6 +4059,9 @@ export type Database = {
                     skin?: string;
                     sub_status?: string;
                     subdomain: string;
+                    takbull_api_key_enc?: string | null;
+                    takbull_api_secret_enc?: string | null;
+                    takbull_credentials_updated_at?: string | null;
                     teaches_classes?: boolean;
                     terms_url?: string | null;
                     tranzila_terminal_name?: string | null;
@@ -4138,6 +4144,9 @@ export type Database = {
                     skin?: string;
                     sub_status?: string;
                     subdomain?: string;
+                    takbull_api_key_enc?: string | null;
+                    takbull_api_secret_enc?: string | null;
+                    takbull_credentials_updated_at?: string | null;
                     teaches_classes?: boolean;
                     terms_url?: string | null;
                     tranzila_terminal_name?: string | null;
@@ -5354,6 +5363,15 @@ export type Database = {
                     payment_provider_webhook_secret: string;
                 }[];
             };
+            get_tenant_takbull_credentials: {
+                Args: {
+                    p_tenant_id: string;
+                };
+                Returns: {
+                    api_key: string;
+                    api_secret: string;
+                }[];
+            };
             get_tenant_today: {
                 Args: {
                     p_tenant_id: string;
@@ -6004,6 +6022,13 @@ export type Database = {
                 };
                 Returns: undefined;
             };
+            save_tenant_takbull_credentials: {
+                Args: {
+                    p_api_key: string;
+                    p_api_secret: string;
+                };
+                Returns: undefined;
+            };
             save_tenant_tranzila_credentials: {
                 Args: {
                     p_app_key: string;
@@ -6135,6 +6160,10 @@ export type Database = {
                 Args: {
                     p_tenant_id: string;
                 };
+                Returns: boolean;
+            };
+            tenant_takbull_connected: {
+                Args: never;
                 Returns: boolean;
             };
             update_tenant_google_access_token: {

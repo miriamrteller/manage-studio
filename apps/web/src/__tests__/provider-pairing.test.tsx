@@ -111,7 +111,8 @@ describe('Settings → How customers pay', () => {
     expect(screen.getByRole('button', { name: 'common.save' })).toBeEnabled();
     fireEvent.click(screen.getByRole('button', { name: 'payment_choice.different_provider' }));
     fireEvent.click(screen.getByRole('radio', { name: 'studio_setup.payment_invoice4u' }));
-    expect(screen.getByText('payment_choice.no_monthly_warning')).toBeTruthy();
+    // No monthly-fees wording any more (owner: Takbull for everyone).
+    expect(screen.queryByText('payment_choice.no_monthly_warning')).toBeNull();
     expect(screen.queryByRole('alert')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'common.save' }));
     await waitFor(() => expect(update).toHaveBeenCalledWith(expect.objectContaining({ payment_provider: 'invoice4u' })));
