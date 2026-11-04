@@ -5089,6 +5089,7 @@ export type Database = {
         Args: { p_entity_id: string; p_entity_type: string }
         Returns: undefined
       }
+      login_email_status: { Args: { p_email: string }; Returns: string }
       mark_quote_sent: {
         Args: { p_quote_id: string; p_via: string }
         Returns: Json

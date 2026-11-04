@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { useTenant } from '@/hooks/useTenant';
 import queryClient from '@/lib/query-client';
+import { Link } from 'react-router-dom';
+import { useAuthSession } from '@/hooks/useAuth';
 import { useCustomDomainEnabled } from './CustomDomainSettings';
 
 /** Legal-page emails that were filled from the studio email (they follow it when it changes). */
@@ -33,6 +35,8 @@ interface StudioRow {
 export function SchoolProfileForm() {
   const { t } = useTranslation();
   const tenant = useTenant();
+  const { session } = useAuthSession();
+  const loginEmail = session?.user.email ?? '';
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState<string | null>(null);
@@ -154,7 +158,7 @@ export function SchoolProfileForm() {
 
       <div className="space-y-2">
         <label className="block text-sm font-medium" htmlFor="school-email">
-          {t('settings.hub.studio_email')}
+          {t('settings.hub.business_email')}
         </label>
         <input
           id="school-email"
@@ -167,7 +171,10 @@ export function SchoolProfileForm() {
           aria-describedby="school-email-hint"
         />
         <p id="school-email-hint" className="text-xs text-muted-foreground">
-          {t('settings.hub.studio_email_hint')}
+          {loginEmail ? t('settings.hub.business_email_hint', { login: loginEmail }) : t('settings.hub.business_email_hint_no_login')}{' '}
+          <Link className="underline" to="/admin/setup/settings?tab=security">
+            {t('settings.hub.change_login_link')}
+          </Link>
         </p>
       </div>
 

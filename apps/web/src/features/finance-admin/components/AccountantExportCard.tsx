@@ -1,16 +1,14 @@
 import { useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase';
 import { useTenant } from '@/hooks/useTenant';
 import { Button } from '@/components/ui/button';
 import { PaymentsLogService } from '../services/paymentsLogService';
+import { useVatReportPeriod } from '../hooks/useAccountantData';
 import {
   ACCOUNTANT_PERIOD_KEYS,
   accountantPeriodRange,
   parseVatReportPeriod,
   type AccountantPeriodKey,
-  type VatReportPeriod,
 } from '../lib/periods';
 import { fetchAllPages } from '../lib/pagedFetch';
 import { ACCOUNTANT_EXPORT_STATUSES, buildAccountantCsv } from '../lib/accountantExport';
@@ -31,33 +29,9 @@ export function AccountantExportCard() {
   const { t, i18n } = useTranslation();
   const { language, setLanguage } = useCsvLanguage(i18n.language);
   const tenant = useTenant();
-  const queryClient = useQueryClient();
   const ids = useId();
 
-  const vatPeriodQuery = useQuery({
-    queryKey: ['tenant-vat-report-period', tenant?.id],
-    queryFn: async (): Promise<VatReportPeriod> => {
-      const { data } = await supabase
-        .from('tenants')
-        .select('vat_report_period')
-        .eq('id', tenant!.id)
-        .maybeSingle();
-      return parseVatReportPeriod(data?.vat_report_period);
-    },
-    enabled: !!tenant?.id,
-  });
-  const vatPeriod = vatPeriodQuery.data ?? 'bi_monthly';
-
-  const saveVatPeriod = useMutation({
-    mutationFn: async (value: VatReportPeriod) => {
-      const { error } = await supabase.from('tenants').update({ vat_report_period: value }).eq('id', tenant!.id);
-      if (error) throw error;
-      return value;
-    },
-    onSuccess: (value) => {
-      queryClient.setQueryData(['tenant-vat-report-period', tenant?.id], value);
-    },
-  });
+  const { vatPeriod, setVatPeriod } = useVatReportPeriod();
 
   const [choice, setChoice] = useState<PeriodChoice>('vat_previous');
   const initial = accountantPeriodRange('vat_previous', vatPeriod);
@@ -172,7 +146,7 @@ export function AccountantExportCard() {
             id={`${ids}-vat`}
             className="rounded border px-3 py-2"
             value={vatPeriod}
-            onChange={(e) => saveVatPeriod.mutate(parseVatReportPeriod(e.target.value))}
+            onChange={(e) => setVatPeriod(parseVatReportPeriod(e.target.value))}
           >
             <option value="bi_monthly">{t('finance.accountant_export.vat_period_options.bi_monthly')}</option>
             <option value="monthly">{t('finance.accountant_export.vat_period_options.monthly')}</option>

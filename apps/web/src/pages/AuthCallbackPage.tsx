@@ -26,6 +26,9 @@ export default function AuthCallbackPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [sessionReady, setSessionReady] = useState(false);
   const callbackUrlRef = useRef(captureAuthCallbackUrl());
+  // The callback runs once; it navigates through a ref so it never re-runs (a link verifies only once).
+  const navigateRef = useRef(navigate);
+  navigateRef.current = navigate;
 
   const { session, isLoading: sessionLoading } = useAuthSession();
   const { user, isLoading: isUserLoading, isProfileChecked } = useCurrentUser();
@@ -40,6 +43,14 @@ export default function AuthCallbackPage() {
 
       if (!result.ok) {
         setErrorMessage(result.message);
+        return;
+      }
+
+      // A login-email change link: confirmed here; there may be no session (another device),
+      // so it goes straight to its own page instead of the usual sign-in routing.
+      if (new URLSearchParams(callbackUrlRef.current.search).get('type') === 'email_change') {
+        clearAuthCallbackUrl();
+        navigateRef.current('/auth/email-changed', { replace: true });
         return;
       }
 

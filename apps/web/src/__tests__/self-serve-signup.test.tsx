@@ -209,7 +209,7 @@ describe('self-serve signup: wizard', () => {
   it('business email (clients see this): starts as the account email; a different one is sent with the studio', async () => {
     h.invoke.mockResolvedValue({ data: { tenantId: 't-new', subdomain: 'harbour-yoga' }, error: null });
     renderPage();
-    const business = await screen.findByLabelText('Business email (clients see this)');
+    const business = await screen.findByLabelText('Business email');
     await waitFor(() => expect(business).toHaveValue('owner@yoga.test'));
     fireEvent.change(business, { target: { value: 'hello@harbouryoga.co.il' } });
     await fillWizard();

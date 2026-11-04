@@ -84,6 +84,16 @@ No row cap: exports page through 1,000 rows at a time. (The old export asked for
 5,000-row page, but the API returns at most 1,000 rows per request, so it could silently stop
 at 1,000.) The plain "Export CSV" on the payments log and the expenses export page the same way.
 
+## Finance hub: VAT summary and charts (PR4)
+
+- **VAT period summary** (last or this VAT period, from the VAT setting): received (refunds
+  subtracted); on tax invoice-receipts, with before VAT and VAT; on receipts (no VAT); documents
+  of unknown type; refunds; payments without a document (amount and count). All from the
+  documents issued. A helper for the accountant, not a VAT return [[ACCOUNTANT: confirm]].
+- **Money in**: received in the last 12 months; waiting for payment (open payment requests);
+  received by month (refunds subtracted) and by payment method. One hue, hover tooltip, and a
+  "Show as a table" view for each chart.
+
 ## PRs
 
 1. Record the document type per payment; "no document" reasons; VAT split helper.

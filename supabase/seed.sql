@@ -596,7 +596,7 @@ BEGIN
       '00000000-0000-0000-0000-000000000000'::uuid,
       'authenticated',
       'authenticated',
-      'miriamrteller@gmail.com',
+      'admin@opalswift.com',
       v_encrypted_pw,
       now(),
       '{"provider":"email","providers":["email"]}'::jsonb,
@@ -621,7 +621,7 @@ BEGIN
     ) VALUES (
       '51149671-b030-4931-9a0d-ca1862ae4f0b'::uuid,
       '51149671-b030-4931-9a0d-ca1862ae4f0b'::uuid,
-      '{"sub":"51149671-b030-4931-9a0d-ca1862ae4f0b","email":"miriamrteller@gmail.com"}'::jsonb,
+      '{"sub":"51149671-b030-4931-9a0d-ca1862ae4f0b","email":"admin@opalswift.com"}'::jsonb,
       'email',
       '51149671-b030-4931-9a0d-ca1862ae4f0b',
       now(),
@@ -632,7 +632,7 @@ BEGIN
 END $$;
 
 -- ============================================================================
--- ADMIN USER — requires matching auth.users row (miriamrteller@gmail.com)
+-- ADMIN USER — requires matching auth.users row (admin@opalswift.com)
 -- ============================================================================
 INSERT INTO user_profiles (
   id,
@@ -649,7 +649,7 @@ INSERT INTO user_profiles (
   -- account allowed to carry it — per-tenant/demo admins get tenant_admin
   -- only, or they too would become all-tenants keys.
   ARRAY['super_admin', 'tenant_admin'],
-  'miriamrteller@gmail.com',
+  'admin@opalswift.com',
   'en',
   'IL'
 ) ON CONFLICT (id) DO UPDATE SET

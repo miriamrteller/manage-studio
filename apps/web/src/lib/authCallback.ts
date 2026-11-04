@@ -115,6 +115,17 @@ async function waitForAuthSession(timeoutMs = 4000): Promise<Session | null> {
 export async function establishSessionFromAuthCallback(
   url: AuthCallbackUrlParts = readAuthCallbackUrl(),
 ): Promise<AuthCallbackResult> {
+  // A login-email change link confirms the change, so it is always verified, even when
+  // someone is already signed in here (the usual case: the person who asked for it).
+  const changeParams = parseSearchParams(url.search);
+  const changeHash = changeParams.get('token_hash');
+  if (changeHash && changeParams.get('type') === 'email_change') {
+    const authError = readAuthError(changeParams, parseHashParams(url.hash));
+    if (authError) return { ok: false, message: authError };
+    const { error } = await supabase.auth.verifyOtp({ token_hash: changeHash, type: 'email_change' });
+    return error ? { ok: false, message: error.message } : { ok: true };
+  }
+
   const {
     data: { session: existingSession },
     error: existingSessionError,

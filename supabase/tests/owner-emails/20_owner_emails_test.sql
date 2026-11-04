@@ -1,4 +1,6 @@
 -- Platform owner emails (platform_owner_emails). Plain Postgres + the client-portal stub schema.
+-- After release 2 the table holds ONE address (admin@opalswift.com). The "owner changes address"
+-- mechanism is still tested, with a temporary second address added the way a migration would.
 DO $$
 DECLARE
   owner_id  UUID := 'b0000000-0000-4000-8000-0000000000e1';
@@ -8,16 +10,16 @@ DECLARE
   v_sub     TEXT;
   v_auth    TEXT;
 BEGIN
-  -- 1. The table holds both addresses; the helper normalises case and spaces.
-  IF NOT is_platform_owner_email('  MiriamRTeller@Gmail.com ') THEN RAISE EXCEPTION 'FAIL old owner address not accepted'; END IF;
-  IF NOT is_platform_owner_email('admin@opalswift.com') THEN RAISE EXCEPTION 'FAIL new owner address not accepted'; END IF;
-  IF is_platform_owner_email('someone@example.test') OR is_platform_owner_email(NULL) OR is_platform_owner_email('') THEN
+  -- 1. The table holds only the owner address; the helper normalises case and spaces.
+  IF NOT is_platform_owner_email('  Admin@OpalSwift.com ') THEN RAISE EXCEPTION 'FAIL owner address not accepted'; END IF;
+  IF (SELECT count(*) FROM platform_owner_emails) <> 1 THEN RAISE EXCEPTION 'FAIL the table should hold exactly one address after release 2'; END IF;
+  IF is_platform_owner_email('former-owner@example.test') OR is_platform_owner_email('someone@example.test') OR is_platform_owner_email(NULL) OR is_platform_owner_email('') THEN
     RAISE EXCEPTION 'FAIL a non-owner address was accepted';
   END IF;
-  RAISE NOTICE 'ok  both owner addresses accepted (case and spaces ignored); others and NULL are not';
+  RAISE NOTICE 'ok  the owner address is accepted (case and spaces ignored); others and NULL are not';
 
-  -- 2. Sign-up on the platform host with the CURRENT address: super_admin, no studio. A stranger gets nothing.
-  INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES (owner_id, 'MiriamRTeller@gmail.com', '{}'::jsonb);
+  -- 2. Sign-up on the platform host with the owner address: super_admin, no studio. A stranger gets nothing.
+  INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES (owner_id, 'Admin@OpalSwift.com', '{}'::jsonb);
   SELECT * INTO v_profile FROM user_profiles WHERE id = owner_id;
   IF NOT FOUND OR v_profile.tenant_id IS NOT NULL OR v_profile.role <> ARRAY['super_admin'] THEN
     RAISE EXCEPTION 'FAIL owner profile is wrong';
@@ -51,14 +53,15 @@ BEGIN
     IF SQLERRM NOT LIKE '%reserved for the platform owner%' THEN RAISE; END IF;
   END;
   SELECT lower(email) INTO v_auth FROM auth.users WHERE id = owner_id;
-  IF v_auth <> 'miriamrteller@gmail.com' THEN RAISE EXCEPTION 'FAIL the failed change left the login at %', v_auth; END IF;
+  IF v_auth <> 'admin@opalswift.com' THEN RAISE EXCEPTION 'FAIL the failed change left the login at %', v_auth; END IF;
   RAISE NOTICE 'ok  a login change to a non-owner address is refused whole (the login stays as it was)';
 
-  -- 5. THE SWITCH: the same account changes its login email to the new owner address. The profile
-  --    follows, keeps super_admin and no studio: no lockout, same user id.
-  UPDATE auth.users SET email = 'admin@opalswift.com' WHERE id = owner_id;
+  -- 5. THE SWITCH MECHANISM: a migration adds the next owner address, the same account changes its login
+  --    email to it, and the profile follows, keeps super_admin and no studio: no lockout, same user id.
+  INSERT INTO platform_owner_emails (email, note) VALUES ('next-owner@example.test', 'test only');
+  UPDATE auth.users SET email = 'next-owner@example.test' WHERE id = owner_id;
   SELECT * INTO v_profile FROM user_profiles WHERE id = owner_id;
-  IF v_profile.email IS DISTINCT FROM 'admin@opalswift.com' THEN RAISE EXCEPTION 'FAIL profile email did not follow (%)', v_profile.email; END IF;
+  IF v_profile.email IS DISTINCT FROM 'next-owner@example.test' THEN RAISE EXCEPTION 'FAIL profile email did not follow (%)', v_profile.email; END IF;
   IF v_profile.role <> ARRAY['super_admin'] OR v_profile.tenant_id IS NOT NULL THEN RAISE EXCEPTION 'FAIL the owner lost super_admin or gained a studio'; END IF;
   UPDATE user_profiles SET updated_at = now() WHERE id = owner_id;   -- a later profile write still works
   RAISE NOTICE 'ok  the owner changes login email; the profile follows and keeps super_admin (no lockout)';
@@ -70,22 +73,23 @@ BEGIN
   END IF;
   RAISE NOTICE 'ok  any login-email change now syncs to the profile';
 
-  -- 7. Release 2: the old address leaves the table. The owner (now on the new address) is unaffected;
-  --    the old address no longer qualifies; a fresh sign-up with the new address still works.
-  DELETE FROM platform_owner_emails WHERE email = 'miriamrteller@gmail.com';
-  IF is_platform_owner_email('miriamrteller@gmail.com') THEN RAISE EXCEPTION 'FAIL removed address still accepted'; END IF;
+  -- 7. Removing an address from the table: the removed address no longer qualifies and a fresh sign-up
+  --    with it gets nothing; a fresh sign-up with the remaining owner address still works.
+  UPDATE auth.users SET email = 'admin@opalswift.com' WHERE id = owner_id;
+  DELETE FROM platform_owner_emails WHERE email = 'next-owner@example.test';
+  IF is_platform_owner_email('next-owner@example.test') THEN RAISE EXCEPTION 'FAIL removed address still accepted'; END IF;
   UPDATE user_profiles SET role = ARRAY['super_admin'] WHERE id = owner_id;
   DELETE FROM user_profiles WHERE id = owner_id;
   DELETE FROM auth.users WHERE id = owner_id;
   INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES (owner_id, 'admin@opalswift.com', '{}'::jsonb);
   IF NOT EXISTS (SELECT 1 FROM user_profiles WHERE id = owner_id AND role = ARRAY['super_admin']) THEN
-    RAISE EXCEPTION 'FAIL fresh sign-up with the new address got no super_admin profile';
+    RAISE EXCEPTION 'FAIL fresh sign-up with the owner address got no super_admin profile';
   END IF;
-  INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES ('b0000000-0000-4000-8000-0000000000e5', 'miriamrteller@gmail.com', '{}'::jsonb);
+  INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES ('b0000000-0000-4000-8000-0000000000e5', 'next-owner@example.test', '{}'::jsonb);
   IF EXISTS (SELECT 1 FROM user_profiles WHERE id = 'b0000000-0000-4000-8000-0000000000e5') THEN
     RAISE EXCEPTION 'FAIL the removed address got a platform profile';
   END IF;
-  RAISE NOTICE 'ok  after the old address is removed: the new one still works, the old one gets nothing';
+  RAISE NOTICE 'ok  after an address is removed: the remaining one still works, the removed one gets nothing';
 END $$;
 
 -- 8. Private: no client role can read the table or call the helper.

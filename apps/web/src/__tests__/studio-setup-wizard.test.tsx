@@ -187,10 +187,11 @@ describe('studio setup wizard', () => {
     projectFlow();
     next();
     fireEvent.click(screen.getByRole('radio', { name: GROW }));
-    expect(screen.getByText(/cannot issue receipts for cash/).closest('[role="note"]')).not.toBeNull();
+    expect(screen.getByText(/OpalSwift issues Grow documents only for Grow card payments/)).toBeInTheDocument();
     differentProvider();
     fireEvent.click(screen.getByRole('radio', { name: YPAY_PAY }));
-    expect(screen.queryByText(/cannot issue receipts for cash/)).toBeNull();
+    expect(screen.queryByText(/OpalSwift issues Grow documents only/)).toBeNull();
+    expect(screen.getByText(/OpalSwift uses YPay documents only with YPay card payments/)).toBeInTheDocument();
   });
 
   it('drops an invoicing choice that no longer fits when the payment choice changes', async () => {
@@ -346,8 +347,9 @@ describe('studio setup wizard', () => {
     next();
     next();
     fireEvent.change(screen.getByLabelText("Owner's email"), { target: { value: 'owner@example.com' } });
-    const business = screen.getByLabelText('Business email (clients see this)');
+    const business = screen.getByLabelText('Business email');
     expect(business).toHaveValue('owner@example.com');
+    expect(screen.getByText(/You sign in with your login email: owner@example.com/)).toBeInTheDocument();
     // A typo is not accepted (it would fail the whole studio); the hint says what to do.
     fireEvent.change(business, { target: { value: 'hello@' } });
     expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();

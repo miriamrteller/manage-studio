@@ -27,6 +27,6 @@
       "@shared/*": ["../../packages/shared/src/*"]
     }
   },
-  "include": ["src"],
+  "include": ["src", "worker"],
   "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx", "src/__tests__/**/*", "src/test/**/*"]
 }

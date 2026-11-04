@@ -6,7 +6,7 @@
 # Run from the repo root. Requires the Supabase CLI and a running local stack.
 #
 # Dev accounts created (password for ALL: devPassword123):
-#   ALL subdomains                 → miriamrteller@gmail.com        (super_admin — platform owner)
+#   ALL subdomains                 → admin@opalswift.com        (super_admin — platform owner)
 #   creativeballet.localhost:5173  → miriamrstern@gmail.com         (account_holder / parent)
 #   studioaviv.localhost:5173      → admin@studioaviv.example.com   (tenant_admin)
 #   therapist.localhost:5173       → owner@therapist.test           (tenant_admin)
@@ -14,7 +14,7 @@
 #   photographer.localhost:5173    → owner@photographer.test        (tenant_admin)
 #   sofer.localhost:5173           → owner@sofer.test               (tenant_admin)
 #
-# miriamrteller@gmail.com is the ONE platform-owner account (home tenant:
+# admin@opalswift.com is the ONE platform-owner account (home tenant:
 # creativeballet) and signs in on every subdomain. Every OTHER account works
 # ONLY on its own subdomain — anywhere else it must be rejected with
 # "This account belongs to a different studio".

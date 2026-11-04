@@ -214,6 +214,17 @@ describe('one missing list for Confirm and Publish', () => {
 });
 
 describe('Settings → Legal', () => {
+  it('"Email on your legal pages" (usually the business email) offers to use the business email when it differs', async () => {
+    wrap(<LegalSettingsForm />);
+    const field = await screen.findByLabelText('Email on your legal pages');
+    await waitFor(() => expect(field).toHaveValue('info@creativeballet.test'));
+    expect(screen.getByText('Usually your business email.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Use my business email/ })).toBeNull();
+    fireEvent.change(field, { target: { value: 'legal@other.test' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Use my business email (info@creativeballet.test)' }));
+    expect(field).toHaveValue('info@creativeballet.test');
+  });
+
   it('shows only what the studio has to give; the rest is filled in, collapsed and editable', async () => {
     wrap(<LegalSettingsForm />);
     expect(await screen.findByLabelText(/Business address/)).toBeVisible();
