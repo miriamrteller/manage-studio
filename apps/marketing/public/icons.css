@@ -5,4 +5,5 @@
 /* icons on the dark "how it works" band */
 .flow-step .em{color:rgba(255,255,255,.92)}
 /* "Coming soon" tag for features that are not built yet */
-.soon-tag{display:inline-block;margin-inline-start:6px;padding:1px 8px;border-radius:999px;font-family:'Rubik',sans-serif;font-size:11px;font-weight:700;line-height:1.6;letter-spacing:.02em;vertical-align:middle;white-space:nowrap;color:#5A6178;background:rgba(90,97,120,.12)}
+/* a 3-column card grid with fewer cards: same column width, centred, no empty slot (phones keep 1 column) */
+@media(min-width:769px){.cards3.fit-2{grid-template-columns:repeat(2,1fr);max-width:780px;margin-inline:auto}.cards3.fit-1{grid-template-columns:1fr;max-width:420px;margin-inline:auto}}
