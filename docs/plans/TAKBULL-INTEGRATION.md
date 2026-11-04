@@ -83,6 +83,11 @@ What already exists and Takbull plugs into:
    - What: `chargeWithToken` → `ChargeToken`; the result comes back through the same notice handler, with dunning on failure; `takbull` in the renewal and card-link lists.
 4. **Refunds.**
    - What: `refundCharge` → `Refund`, full (type 2) or partial (type 4) with document. It needs Takbull's `transactionInternalNumber`, stored as `provider_payment_ref` once the notice settles; `refundDocumentNoteKey` covers Takbull too.
+   - How (built):
+     - The whole payment, with nothing refunded before, is type 2 with no amount. Anything else, including what is left after a partial refund, is type 4 with `RefundAmount`. Docs: types 1–4, and "Required for partial refund".
+     - Takbull's refusal (`internalCode` not 0) reaches the admin and nothing is recorded. A payment with no transaction number is refunded in Takbull and recorded here.
+     - A refund made through Takbull queues no document of ours, since Takbull issues it ("with document"). A refund recorded by hand is still queued (the Takbull invoicing adapter is PR 5).
+     - The docs don't say which document type types 2 / 4 issue, or when `documentId` is set; neither is relied on.
 5. **Documents for recorded payments.**
    - What: the Takbull invoicing adapter (`DocumentApi/Create`); the 400/320 setting; pairing (`takbull` invoicing with `takbull` or offline payments); issued-document-kind mapping; the accountant export.
 6. **Online Bit, instalments and project payment links.**

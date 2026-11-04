@@ -27,14 +27,17 @@ export function minorToAmountText(minor: number): string {
 
 /**
  * Pure: what document a refund gets, by the studio's invoicing (shown before the admin confirms).
- * green_invoice issues a credit note; YPay, Grow, iCount and Invoice4U don't from OpalSwift, so
- * the studio issues it in their own system; with no invoicing there is no document.
+ * green_invoice issues a credit note; Takbull issues its credit document with the refund; YPay,
+ * Grow, iCount and Invoice4U don't from OpalSwift, so the studio issues it in their own system;
+ * with no invoicing there is no document.
  */
 export function refundDocumentNoteKey(invoicingProvider: string | null | undefined): string {
   switch (invoicingProvider) {
     case 'green_invoice':
     case 'mock':
       return 'finance.refund_payment.document_credit_note';
+    case 'takbull':
+      return 'finance.refund_payment.document_takbull';
     case 'none':
       return 'finance.refund_payment.document_none';
     default:
