@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ProviderLimits } from '@/components/providers/ProviderLimits';
+import { providerLimitKeys } from '@/lib/providerLimits';
 import { useMutation } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
@@ -204,7 +206,11 @@ export function OfflinePaymentsSettingsForm() {
                 className="form-input w-full"
                 value={savedProvider}
                 disabled
-                aria-describedby="offline-payments-locked"
+                aria-describedby={
+                  providerLimitKeys('payment', savedProvider).length > 0
+                    ? 'offline-payments-limits offline-payments-locked'
+                    : 'offline-payments-locked'
+                }
               >
                 {onlinePaymentChoices(savedProvider).map((slug) => (
                   <option key={slug} value={slug}>
@@ -216,6 +222,7 @@ export function OfflinePaymentsSettingsForm() {
                   </option>
                 ))}
               </select>
+              <ProviderLimits kind="payment" slug={savedProvider} id="offline-payments-limits" />
             </div>
           )}
           <p id="offline-payments-locked" className="text-sm rounded-lg border border-border bg-muted/40 px-3 py-2">

@@ -2081,7 +2081,6 @@
     "need_address": "Enter a web address (lowercase letters, numbers and hyphens) to continue.",
     "need_colours": "Each colour must look like #5B6CFF, or pick one of the colour sets above.",
     "need_owner_email": "Enter the owner's email address to continue.",
-    "cash_receipts_hint": "{{provider}} issues the document with each card payment. It cannot issue receipts for cash or bank transfers you record by hand: for those, issue the receipt yourself, or choose Green Invoice or YPay for documents.",
     "need_invoicing_pairing": "That invoicing service cannot issue documents for this way of paying. Choose another, or no documents.",
     "need_terms": "Tick the box to accept the terms to continue.",
     "title": "Set up a new studio",
@@ -2456,6 +2455,37 @@
       "preparing": "Preparing the file… {{count}} rows",
       "failed": "Couldn't prepare the file. Try again."
     },
+    "charts": {
+      "title": "Money in",
+      "received_12m": "Received in the last 12 months",
+      "waiting": "Waiting for payment (open payment requests)",
+      "waiting_count_one": "{{count}} open request",
+      "waiting_count_other": "{{count}} open requests",
+      "by_month": "Received by month, refunds subtracted (last 12 months)",
+      "by_method": "Received by payment method (last 12 months)",
+      "net_received": "Received",
+      "show_table": "Show as a table",
+      "col_month": "Month",
+      "col_paid": "Paid",
+      "col_refunds": "Refunds",
+      "col_count": "Payments",
+      "empty": "No payments yet.",
+      "load_failed": "Couldn't load the figures. Try again."
+    },
+    "vat_summary": {
+      "title": "VAT period summary",
+      "gross": "Received (refunds subtracted)",
+      "vat_documents": "On tax invoice-receipts",
+      "pretax": "Before VAT",
+      "vat": "VAT",
+      "receipts": "On receipts (no VAT)",
+      "unknown_type": "Documents of unknown type (see the provider)",
+      "refunds": "Refunds",
+      "without_document": "Without a document",
+      "without_document_count_one": "{{count}} payment",
+      "without_document_count_other": "{{count}} payments",
+      "note": "Help for your accountant, not a VAT return. Worked out from the documents issued; the documents themselves are the record."
+    },
     "csv": {
       "language": "File language",
       "enrolment_id": "Enrolment ID",
@@ -2578,6 +2608,26 @@
       "sort_order": "Sort order"
     },
     "record_payment": {
+      "any": {
+        "client": "Who paid",
+        "client_placeholder": "Search your clients by name, email or phone",
+        "not_in_list": "Someone not in the list",
+        "new_name": "Their name",
+        "new_email": "Email (optional)",
+        "new_hint": "They're added to your clients. With an email they get the receipt or confirmation.",
+        "search_instead": "Search your clients instead",
+        "change_client": "Change",
+        "for": "What it's for",
+        "open_items": "Their open items",
+        "what_you_sell": "What you sell",
+        "other": "Other",
+        "item_first": "{{name}}: first payment",
+        "item_monthly": "{{name}}: monthly fee",
+        "amount_hint": "Starts at the price of what it's for. Change it if a different amount was paid.",
+        "date": "Date paid",
+        "what_for": "What it's for (optional)",
+        "need_payer": "Choose who paid, or add someone not in the list."
+      },
       "open": "Record a payment",
       "title": "Record a payment",
       "amount": "Amount ({{currency}})",
@@ -3089,7 +3139,6 @@
       "off_note": "Invoicing is off. If the studio is a registered business, it must issue its own receipts for every payment.",
       "credentials_hint": "Enter the provider's credentials under Invoicing provider.",
       "saved": "Tax document setting saved.",
-      "cash_receipts_hint": "{{provider}} issues the document with each card payment. Cash and bank-transfer payments you record by hand get no document from it: they are listed on the Finance page so you can issue the receipt yourself. For automatic cash receipts, use Green Invoice or YPay.",
       "pairing_problem": "This invoicing service cannot issue documents for the way customers pay now. Grow, iCount and Invoice4U only issue documents with their own card payments; YPay works with YPay payments or payments at the studio; Green Invoice works with any. Choose another service, or turn tax documents off.",
       "providers": { "grow": "Grow (Meshulam)", "icount": "iCount", "invoice4u": "Invoice4U", "ypay": "YPay", "tranzila": "Tranzila", "yesh": "Yesh", "green_invoice": "Green Invoice" }
     },
@@ -3653,6 +3702,40 @@
       "later": "Not now",
       "failed": "The form could not be updated. Please try again.",
       "done": "Done. The new version with the insurance note is in use; parents will sign it next time."
+    }
+  },
+  "provider_limits": {
+    "payment": {
+      "grow": {
+        "recorded_receipts": "OpalSwift can’t issue Grow receipts for cash, bank transfer or Bit you record. For those, use a separate receipts service, such as Green Invoice."
+      },
+      "ypay": {
+        "no_refunds": "OpalSwift can’t refund YPay card payments yet: make the refund in YPay."
+      },
+      "invoice4u": {
+        "recorded_receipts": "OpalSwift can’t issue Invoice4U receipts for cash, bank transfer or Bit you record. For those, use a separate receipts service, such as Green Invoice."
+      },
+      "offline": {
+        "no_cards": "No card payments: you record each payment yourself."
+      }
+    },
+    "invoicing": {
+      "grow": {
+        "own_charges_only": "OpalSwift issues Grow documents only for Grow card payments, not for cash, bank transfer or Bit you record.",
+        "no_refund_documents": "OpalSwift can’t issue refund documents through Grow: issue them in Grow."
+      },
+      "invoice4u": {
+        "own_charges_only": "OpalSwift issues Invoice4U documents only for Invoice4U card payments, not for cash, bank transfer or Bit you record.",
+        "no_refund_documents": "OpalSwift can’t issue refund documents through Invoice4U: issue them in Invoice4U."
+      },
+      "ypay": {
+        "ypay_payments_only": "OpalSwift uses YPay documents only with YPay card payments or payments at the studio.",
+        "no_refund_documents": "OpalSwift can’t issue refund documents through YPay: issue them in YPay."
+      },
+      "green_invoice": {
+        "documents_only": "OpalSwift uses Green Invoice for documents only: card payments go through your payment provider.",
+        "receipt_refunds": "If Green Invoice issues receipts for you, OpalSwift doesn’t issue a refund document: record the refund in Green Invoice."
+      }
     }
   },
   "payment_choice": {

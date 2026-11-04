@@ -17,9 +17,9 @@ BEGIN;
 -- (Its profile loses super_admin first: a login email that is not an owner address is refused
 -- for a super_admin profile, by design, since the email change now syncs to the profile.)
 UPDATE user_profiles SET role = array_remove(role, 'super_admin')
-WHERE id IN (SELECT id FROM auth.users WHERE lower(email) = 'miriamrteller@gmail.com');
+WHERE id IN (SELECT id FROM auth.users WHERE lower(email) = 'admin@opalswift.com');
 UPDATE auth.users SET email = 'owner-moved-aside@example.test'
-WHERE lower(email) = 'miriamrteller@gmail.com';
+WHERE lower(email) = 'admin@opalswift.com';
 
 CREATE TEMP TABLE ids ON COMMIT DROP AS SELECT
   gen_random_uuid() AS owner, gen_random_uuid() AS stranger,
@@ -39,7 +39,7 @@ DECLARE
 BEGIN
   -- 1. The owner signs up on the platform host: no studio in the metadata.
   INSERT INTO auth.users (id, email, raw_user_meta_data)
-  VALUES (v_owner, 'MiriamRTeller@gmail.com', '{"language":"he"}'::jsonb);
+  VALUES (v_owner, 'Admin@OpalSwift.com', '{"language":"he"}'::jsonb);
   SELECT * INTO v_profile FROM user_profiles WHERE id = v_owner;
   IF NOT FOUND THEN RAISE EXCEPTION 'FAIL owner got no profile'; END IF;
   IF v_profile.tenant_id IS NOT NULL THEN RAISE EXCEPTION 'FAIL owner profile has a studio'; END IF;

@@ -6,7 +6,7 @@ import type { Page } from '@playwright/test';
  */
 export const SEED_USERS = {
   parentEmail: 'miriamrstern@gmail.com',
-  adminEmail: 'miriamrteller@gmail.com',
+  adminEmail: 'admin@opalswift.com',
   password: process.env.E2E_PARENT_PASSWORD ?? process.env.E2E_ADMIN_PASSWORD ?? 'devPassword123',
 } as const;
 

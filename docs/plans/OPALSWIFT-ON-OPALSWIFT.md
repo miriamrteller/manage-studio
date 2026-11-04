@@ -10,7 +10,7 @@ Status: **plan only, no app code.** Written 2026-11-02. "Verified" = I read the 
 - **Clients = studios.** A studio is one client in HQ, with a link to its real studio. Links and notes are quick wins; automatic creation on signup is small work.
 - **Billing: later.** Don't charge anyone before you are registered. Use the billing plan; HQ only mirrors it.
 - **Decided 2026-11-02:** `hq`, General skin, separate login, auto-create clients, service emails + consented newsletters, WhatsApp later, quotes from first paying studio.
-- **Keep HQ separate from you as super admin.** HQ needs its own login (not miriamrteller@gmail.com), so the access log keeps working. See section 6.
+- **Keep HQ separate from you as super admin.** HQ needs its own login (not the owner's personal address), so the access log keeps working. See section 6.
 - **Biggest gaps:** no "demo booked / trial / paying" stages, no studio link on a client, no support inbox, no newsletter list. All have cheap workarounds.
 - **Start now (about 3 days of work):** create HQ, route the contact form, add a studio-sales pipeline. Everything else waits for registration.
 
@@ -21,7 +21,7 @@ Status: **plan only, no app code.** Written 2026-11-02. "Verified" = I read the 
 | # | Decision | Answer |
 |---|---|---|
 | 1 | Subdomain | **`hq`** (check it is not reserved: `is_reserved_subdomain`). |
-| 2 | Login that runs HQ | **A separate email**, not miriamrteller@gmail.com (section 6). Address still to be chosen. |
+| 2 | Login that runs HQ | **A separate email**, not the owner's personal address (section 6). Address still to be chosen. |
 | 3 | Skin | **General** now. Revisit a Software/SaaS skin only if HQ feels wrong after a month. |
 | 4 | Auto-create a client in HQ on every self-serve signup | **Yes**, with a link to the studio. Terms and privacy policy must say so before it goes live. |
 | 5 | Emails to studio owners | **Service emails to everyone; newsletters only with the separate marketing tick-box.** |
@@ -32,7 +32,7 @@ Next: Phase 1 (section 8) can start. Open item: which separate email runs HQ.
 
 ---|---|---|
 | 1 | **Subdomain: `hq` or `opalswift`?** | `hq`. Short, can't be confused with the marketing site or `app.`. (Check both are not reserved: `is_reserved_subdomain`.) |
-| 2 | **Which login runs HQ?** | A separate email you control (e.g. a second Gmail, or a mailbox like `team@opalswift.com`). Never miriamrteller@gmail.com (section 6). |
+| 2 | **Which login runs HQ?** | A separate email you control (e.g. a second Gmail, or a mailbox like `team@opalswift.com`). Never the owner's personal address (section 6). |
 | 3 | **Use the General skin, or build a "Software / SaaS" skin?** | General now. Build the SaaS skin only if HQ feels wrong after a month. |
 | 4 | **Should every self-serve signup create a client in HQ automatically?** | Yes, once self-signup is on, with a link to the studio. Needs your OK because it copies owner details into HQ. Terms and privacy policy should say so. |
 | 5 | **Send product news to studio owners?** | Service emails (welcome, setup help, changes to terms) to everyone. Newsletters only with the separate marketing tick-box. |
@@ -141,7 +141,7 @@ Hard rule: no charge, quote with a price, or receipt until OpalSwift is register
 Verified: the platform access log (`platform_access_log`) records every time the super admin opens or changes data of **any studio other than the super admin's own profile studio**. Service-role, cron and Edge Function writes are never logged. The super admin cannot be a studio user: self-serve refuses an account that already has a profile, and the platform owner has none.
 
 What this means for HQ:
-- **Don't make miriamrteller@gmail.com the HQ admin.** If the super admin had HQ as "own studio", viewing it would not be logged, and HQ's studios would see a hole in the story. Use a separate login (decision 2).
+- **Don't make the owner's personal address the HQ admin.** If the super admin had HQ as "own studio", viewing it would not be logged, and HQ's studios would see a hole in the story. Use a separate login (decision 2).
 - When the super admin opens HQ (to fix something), that **is** logged, and HQ's admin sees it in Settings → Security → OpalSwift access. That is correct and shows we treat HQ like any customer.
 - HQ's data (leads, notes, owner emails) is the business's own data; the super-admin Studios page shows only studio facts (status, plan, dates). Keep it that way: no "open HQ's clients" shortcut in the platform view.
 - The auto-sync (section 3) runs server-side with the service role. It writes only to HQ and reads only the studio facts above. Document it in the privacy policy ("we keep your studio name, owner email and plan to support you").

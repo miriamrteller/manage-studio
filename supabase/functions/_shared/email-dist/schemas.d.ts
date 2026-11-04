@@ -1277,7 +1277,7 @@ export declare const PaymentLogRowSchema: z.ZodObject<{
         document_kind: string;
     }>, "many">>;
     /** Only on the accountant export: the payer's business details, when billed to a business. */
-    billing_account: z.ZodOptional<z.ZodNullable<z.ZodObject<{
+    billing_account: z.ZodEffects<z.ZodOptional<z.ZodNullable<z.ZodObject<{
         business_name: z.ZodNullable<z.ZodString>;
         business_tax_id: z.ZodNullable<z.ZodString>;
     }, "strip", z.ZodTypeAny, {
@@ -1286,7 +1286,10 @@ export declare const PaymentLogRowSchema: z.ZodObject<{
     }, {
         business_name: string | null;
         business_tax_id: string | null;
-    }>>>;
+    }>>>, {
+        business_name: string | null;
+        business_tax_id: string | null;
+    } | null | undefined, unknown>;
     person: z.ZodOptional<z.ZodNullable<z.ZodObject<{
         id: z.ZodString;
         name: z.ZodString;
@@ -1397,10 +1400,7 @@ export declare const PaymentLogRowSchema: z.ZodObject<{
     issued_document_kind?: "receipt" | "tax_invoice_receipt" | "credit_note" | null | undefined;
     invoice_issued_at?: string | null | undefined;
     allocation_number?: string | null | undefined;
-    billing_account?: {
-        business_name: string | null;
-        business_tax_id: string | null;
-    } | null | undefined;
+    billing_account?: unknown;
     person?: {
         id: string;
         name: string;

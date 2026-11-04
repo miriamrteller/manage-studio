@@ -43,11 +43,11 @@ import {
   CHOICE_ROW,
 } from '@/features/settings/components/choiceStyles';
 
-/** Invoicing that only issues documents with its own card payments (no cash receipts). */
-const BUNDLED_ONLY_INVOICING: readonly string[] = ['grow', 'icount', 'invoice4u'];
 import { platformTermsVersion } from '@/legal/acceptance';
 import { LegalPackPanel } from '@/components/legal/LegalPackPanel';
 import { TurnstileWidget } from '@/components/captcha/TurnstileWidget';
+import { ProviderLimits } from '@/components/providers/ProviderLimits';
+import { providerLimitKeys } from '@/lib/providerLimits';
 import {
   createSelfServeStudio,
   turnstileSiteKey,
@@ -612,10 +612,10 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
                 </div>
               )}
             </div>
-            {BUNDLED_ONLY_INVOICING.includes(form.invoicingProvider) && (
-              <p className={CHOICE_NOTE} role="note">
-                {t('studio_setup.cash_receipts_hint', { provider: t(`settings.provider_names.${form.invoicingProvider}`) })}
-              </p>
+            {providerLimitKeys('invoicing', form.invoicingProvider).length > 0 && (
+              <div className={CHOICE_NOTE}>
+                <ProviderLimits kind="invoicing" slug={form.invoicingProvider} id="ss-invoicing-limits" />
+              </div>
             )}
           </fieldset>
           <p className="text-sm text-gray-700">{t('studio_setup.payments_later')}</p>
