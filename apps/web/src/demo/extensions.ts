@@ -455,7 +455,51 @@ export const views: Record<string, ViewHandler> = {
       })),
 };
 
+/**
+ * Settings → Features: the demo studios' switchable features, with the set and
+ * description the real feature_definitions give them. Anything else they have
+ * is core (always on, not listed), as in private.feature_studio_switchable.
+ */
+const SWITCHABLE_FEATURES: Record<string, { description: string; set: string }> = {
+  'billing:delivery.gated': { description: 'Payment-gated file and gallery delivery', set: 'projects' },
+  'people:families.manage': { description: 'Family and account relationship management', set: 'families' },
+  'offerings:structure.configure': { description: 'Level, term, and session configuration', set: 'classes' },
+  'finance:reports.realtime': { description: 'Real-time profit & loss dashboard', set: 'extras' },
+};
+
+function adminStudio(ctx: DemoContext, tenantId: unknown, fn: string): Row {
+  requireAdmin(ctx, fn);
+  const tenant = rows(ctx, 'tenants').find((t) => t.id === tenantId);
+  if (!tenant) throw new DemoRpcError(`${fn}: not your studio`);
+  return tenant;
+}
+
 export const extraRpcs: Record<string, RpcHandler> = {
+  studio_feature_states: (args, ctx) => {
+    const tenant = adminStudio(ctx, args.p_tenant_id, 'studio_feature_states');
+    const off = new Set((tenant.feature_optouts as string[] | undefined) ?? []);
+    return ((tenant.enabled_features as string[] | undefined) ?? [])
+      .filter((key) => key in SWITCHABLE_FEATURES)
+      .sort()
+      .map((key) => ({
+        feature_key: key,
+        description: SWITCHABLE_FEATURES[key].description,
+        feature_set: SWITCHABLE_FEATURES[key].set,
+        is_on: !off.has(key),
+      }));
+  },
+
+  set_feature_optout: (args, ctx) => {
+    const tenant = adminStudio(ctx, args.p_tenant_id, 'set_feature_optout');
+    const key = String(args.p_feature_key);
+    if (!(key in SWITCHABLE_FEATURES)) throw new DemoRpcError(key.includes(':') ? 'core_feature' : 'unknown_feature', '23514');
+    const off = new Set((tenant.feature_optouts as string[] | undefined) ?? []);
+    if (args.p_off) off.add(key);
+    else off.delete(key);
+    tenant.feature_optouts = [...off];
+    return null;
+  },
+
   // Settings → Your business. Null keeps a field as it is, like the real function.
   set_business_profile: (args, ctx) => {
     requireAdmin(ctx, 'set_business_profile');
