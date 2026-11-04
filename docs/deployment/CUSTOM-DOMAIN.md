@@ -19,6 +19,7 @@ app. The studio's existing website stays where it is.
 | `get_tenant_config_by_host(host)` | Public lookup the web app uses for hosts outside `VITE_APP_ROOT_DOMAIN`. Returns the same columns as `get_tenant_config_by_subdomain`. |
 | Web app (`resolveTenantSite`) | Hosts under the root domain resolve by subdomain as before. Any other host is looked up by host. |
 | Edge `tenantBaseUrl()` | Prefers `https://<custom_domain>` for every link in emails (pay, waiver, reminders, contracts, booking, unsubscribe). |
+| Studio icon in the page (`apps/web/worker`) | The `opalswift-app` Worker puts the studio's logo into the HTML's icon links and the tab title, and answers `/favicon.ico` and `/apple-touch-icon.png` with it, for any studio host (subdomain or custom domain). Safari, iOS and home-screen icons read these instead of the app's script. A changed logo shows within 5 minutes. It uses the same public lookup as the app (`SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `APP_ROOT_DOMAIN`, passed by the deploy step). If the lookup fails or the studio has no logo, the visitor gets the OpalSwift icons and the app's script still swaps the icon. |
 | Sign-in | Login links return to the origin the parent used (`window.location.origin`). That origin must be on the Supabase redirect allowlist. |
 
 ## Setup checklist

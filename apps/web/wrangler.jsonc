@@ -5,9 +5,16 @@
 
   // Vite build output. `not_found_handling` serves index.html for unmatched paths so
   // client-side routes (/login, /admin/...) survive a hard refresh.
+  // The Worker (worker/index.ts) puts a studio's own icon into the HTML and answers /favicon.ico
+  // for a studio host; every other request passes straight through to the assets. It needs
+  // SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY and APP_ROOT_DOMAIN: the deploy step passes the same
+  // public values the browser bundle uses (.github/actions/web-release). Without them it does nothing.
+  "main": "worker/index.ts",
   "assets": {
     "directory": "./dist",
-    "not_found_handling": "single-page-application"
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": true
   },
 
   // Tenants are served from a wildcard, so this must be a ROUTE, not a Custom Domain —
