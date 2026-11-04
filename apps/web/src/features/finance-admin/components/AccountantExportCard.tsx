@@ -14,6 +14,8 @@ import { fetchAllPages } from '../lib/pagedFetch';
 import { ACCOUNTANT_EXPORT_STATUSES, buildAccountantCsv } from '../lib/accountantExport';
 import { downloadCsv } from '../lib/csvExport';
 import { datedCsvFilename } from '../lib/financeAdminUtils';
+import { csvT, useCsvLanguage } from '../lib/csvLanguage';
+import { CsvLanguageSelect } from './CsvLanguageSelect';
 
 type PeriodChoice = AccountantPeriodKey | 'custom';
 
@@ -24,7 +26,8 @@ type PeriodChoice = AccountantPeriodKey | 'custom';
  * is editable and nothing blocks the download.
  */
 export function AccountantExportCard() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const { language, setLanguage } = useCsvLanguage(i18n.language);
   const tenant = useTenant();
   const ids = useId();
 
@@ -72,7 +75,7 @@ export function AccountantExportCard() {
       const originalDocumentNumbers = missingOriginals.length
         ? await PaymentsLogService.documentNumbersByPaymentIds(tenant, missingOriginals)
         : undefined;
-      const csv = buildAccountantCsv(rows, { tenant, originalDocumentNumbers, t });
+      const csv = buildAccountantCsv(rows, { tenant, originalDocumentNumbers, t: csvT(i18n, language) });
       downloadCsv(csv, datedCsvFilename(`accountant-${from}-${to}`, tenant.subdomain));
     } catch {
       setError(t('finance.export.failed'));
@@ -149,6 +152,8 @@ export function AccountantExportCard() {
             <option value="monthly">{t('finance.accountant_export.vat_period_options.monthly')}</option>
           </select>
         </label>
+
+        <CsvLanguageSelect value={language} onChange={setLanguage} />
 
         <Button variant="outline" onClick={handleDownload} disabled={progress !== null}>
           {t('finance.accountant_export.download')}

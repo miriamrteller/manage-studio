@@ -12,10 +12,13 @@ import { ExpenseService } from '../services/expenseService';
 import { exportExpensesCsv } from '../lib/csvExport';
 import { datedCsvFilename } from '../lib/financeAdminUtils';
 import { fetchAllPages } from '../lib/pagedFetch';
+import { csvT, useCsvLanguage } from '../lib/csvLanguage';
+import { CsvLanguageSelect } from './CsvLanguageSelect';
 import type { Expense } from '@shared/schemas';
 
 export function ExpensesList() {
   const { t, i18n } = useTranslation();
+  const { language: csvLanguage, setLanguage: setCsvLanguage } = useCsvLanguage(i18n.language);
   const tenant = useTenant();
   const [page, setPage] = useState(1);
   const [dateFrom, setDateFrom] = useState<string | null>(null);
@@ -56,7 +59,7 @@ export function ExpensesList() {
       const rows = await fetchAllPages((page, pageSize) =>
         ExpenseService.list(tenant, { page, pageSize, filters }),
       );
-      exportExpensesCsv(rows, datedCsvFilename('expenses', tenant.subdomain));
+      exportExpensesCsv(rows, datedCsvFilename('expenses', tenant.subdomain), csvT(i18n, csvLanguage));
     } catch (err) {
       setExportError(err instanceof Error ? err.message : t('common.error'));
     }
@@ -71,7 +74,8 @@ export function ExpensesList() {
             {t('finance.expenses.categories_link')}
           </Link>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-end gap-2">
+          <CsvLanguageSelect value={csvLanguage} onChange={setCsvLanguage} />
           <Button variant="outline" onClick={handleExport}>{t('finance.expenses.export')}</Button>
           <Button variant="primary" onClick={() => setShowForm(true)}>
             {t('finance.expenses.add')}

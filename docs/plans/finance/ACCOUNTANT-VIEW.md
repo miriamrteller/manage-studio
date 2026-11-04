@@ -68,6 +68,11 @@ last quarter, last / this year, or any dates. One CSV row per paid payment and r
 (UTF-8 with BOM, Hebrew headers for Hebrew studios, amounts in shekels, dates DD/MM/YYYY in
 Israel time):
 
+**File language**: Hebrew or English (owner request 2026-11-04), prefilled from the app
+language and remembered in the browser. It sets the headers, document types, no-document
+reasons and method names; dates (DD/MM/YYYY) and amounts (plain numbers) are the same in both.
+The payments log and expenses CSVs have the same choice.
+
 paid date · document date · document type · number · link · allocation number · no-document
 reason · payer · business name and number (when billed to a business) · item · before VAT ·
 VAT · VAT rate · total · currency · method · provider · payment reason · status · refund of

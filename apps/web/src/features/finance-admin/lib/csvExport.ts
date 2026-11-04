@@ -2,74 +2,93 @@ import type { TFunction } from 'i18next';
 import type { PaymentLogRow, Expense } from '@shared/schemas';
 import { buildCsvContent } from '../lib/financeAdminUtils';
 import { getPayerDisplay } from '../lib/paymentsLogDisplay';
+import { formatIsraeliDate, formatMinorAmount } from './accountantExport';
 
-export function exportPaymentsCsv(
-  rows: PaymentLogRow[],
-  filename: string,
-  t: TFunction,
-): void {
+/** YYYY-MM-DD (a calendar date) → DD/MM/YYYY. */
+function israeliDay(ymd: string | null | undefined): string {
+  if (!ymd) return '';
+  const [y, m, d] = ymd.slice(0, 10).split('-');
+  return d && m && y ? `${d}/${m}/${y}` : ymd;
+}
+
+/**
+ * Payments log CSV. `t` is fixed to the file's language (csvT), so headers and labels follow
+ * the language chosen for the file; dates are DD/MM/YYYY and amounts plain numbers in both.
+ */
+export function buildPaymentsCsv(rows: PaymentLogRow[], t: TFunction): string {
+  const col = (key: string) => t(`finance.accountant_export.col.${key}`);
   const headers = [
-    'paid_date',
-    'payer_name',
-    'offering_title',
-    'total_minor',
-    'currency',
-    'status',
-    'charge_type',
-    'provider',
-    'payment_method',
-    'external_document_number',
-    'engagement_id',
-    'payment_id',
+    col('paid_date'),
+    col('payer'),
+    col('item'),
+    col('total'),
+    col('currency'),
+    col('status'),
+    col('payment_reason'),
+    col('provider'),
+    col('method'),
+    col('document_number'),
+    t('finance.csv.enrolment_id'),
+    col('payment_id'),
   ];
 
   const familyLabel = t('finance.payments.family_payment');
   const csvRows = rows.map((row) => {
     const payer = getPayerDisplay(row, familyLabel);
     return [
-      row.paid_at?.slice(0, 10) ?? '',
+      formatIsraeliDate(row.paid_at),
       payer.label ?? '',
       row.offering?.name ?? '',
-      String(row.total_amount_minor),
+      formatMinorAmount(row.total_amount_minor),
       row.currency,
-      row.status,
-      row.charge_type,
-      row.provider,
-      row.payment_method ?? '',
+      t(`finance.payment_status.${row.status}`, { defaultValue: row.status }),
+      t(`finance.charge_type.${row.charge_type}`, { defaultValue: row.charge_type }),
+      t([`settings.provider_names.${row.provider}`, `finance.provider.${row.provider}`], {
+        defaultValue: row.provider,
+      }),
+      row.payment_method
+        ? t(`finance.payment_method.${row.payment_method}`, { defaultValue: row.payment_method })
+        : '',
       row.external_document_number ?? '',
       row.engagement_id ?? '',
       row.id,
     ];
   });
 
-  downloadCsv(buildCsvContent(headers, csvRows), filename);
+  return buildCsvContent(headers, csvRows);
 }
 
-export function exportExpensesCsv(
+export function exportPaymentsCsv(rows: PaymentLogRow[], filename: string, t: TFunction): void {
+  downloadCsv(buildPaymentsCsv(rows, t), filename);
+}
+
+/** Expenses CSV in the file's language (see buildPaymentsCsv). */
+export function buildExpensesCsv(
   rows: Array<Expense & { category?: { name: string } | null }>,
-  filename: string,
-): void {
+  t: TFunction,
+): string {
+  const col = (key: string) => t(`finance.csv.expenses.${key}`);
   const headers = [
-    'expense_date',
-    'category_name',
-    'description',
-    'pretax_minor',
-    'vat_minor',
-    'total_minor',
-    'currency',
-    'supplier_name',
-    'supplier_vat_number',
-    'corrects_expense_id',
-    'expense_id',
+    col('expense_date'),
+    col('category'),
+    col('description'),
+    t('finance.accountant_export.col.pretax'),
+    t('finance.accountant_export.col.vat'),
+    t('finance.accountant_export.col.total'),
+    t('finance.accountant_export.col.currency'),
+    col('supplier_name'),
+    col('supplier_vat_number'),
+    col('corrects_expense_id'),
+    col('expense_id'),
   ];
 
   const csvRows = rows.map((row) => [
-    row.expense_date,
+    israeliDay(row.expense_date),
     row.category?.name ?? '',
     row.description,
-    String(row.pretax_amount_minor),
-    String(row.vat_amount_minor),
-    String(row.total_amount_minor),
+    formatMinorAmount(row.pretax_amount_minor),
+    formatMinorAmount(row.vat_amount_minor),
+    formatMinorAmount(row.total_amount_minor),
     row.currency,
     row.supplier_name ?? '',
     row.supplier_vat_number ?? '',
@@ -77,7 +96,15 @@ export function exportExpensesCsv(
     row.id,
   ]);
 
-  downloadCsv(buildCsvContent(headers, csvRows), filename);
+  return buildCsvContent(headers, csvRows);
+}
+
+export function exportExpensesCsv(
+  rows: Array<Expense & { category?: { name: string } | null }>,
+  filename: string,
+  t: TFunction,
+): void {
+  downloadCsv(buildExpensesCsv(rows, t), filename);
 }
 
 export function downloadCsv(content: string, filename: string): void {

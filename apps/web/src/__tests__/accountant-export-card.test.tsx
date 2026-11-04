@@ -11,7 +11,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { accountantPeriodRange } from '@/features/finance-admin/lib/periods';
 
 vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (key: string) => key, i18n: { language: 'en' } }),
+  useTranslation: () => ({ t: (key: string) => key, i18n: { language: 'en', getFixedT: () => (key: string) => key } }),
 }));
 vi.mock('@/hooks/useTenant', () => ({
   useTenant: () => ({ id: 't1', subdomain: 'studio', invoicing_provider: 'ypay' }),
