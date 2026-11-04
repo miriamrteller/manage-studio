@@ -50,7 +50,7 @@ Each request shows a status:
 |---|---|
 | Not sent | Created, link not sent yet |
 | Link sent | The client has the pay link |
-| Paid | Paid by card, or marked paid for cash or bank transfer |
+| Paid | Paid by card, or marked paid for cash, bank transfer or Bit / PayBox. After a partial refund it still shows Paid, with "Partly refunded" |
 | Cancelled | You cancelled it. Press **Reopen** to use it again |
 | Refunded | You recorded a refund |
 
@@ -71,28 +71,28 @@ The top of the Payments section shows **Paid** and **Outstanding** for the shoot
 - In their client page (**My shoots**), under **Payments**, they see what's due, what's paid, and a **Receipt** link (or "Receipt on its way" for a few minutes).
 - **Gallery:** if you've added a gallery link to the shoot, it stays hidden until everything is paid. You can press **Release anyway** to open it early, or **Lock again**.
 
-## 7. Cash and bank transfers
+## 7. Cash, bank transfers and Bit / PayBox
 
 - On the payment request, press **Mark paid (cash/bank)**.
-- Choose **Cash** or **Bank transfer**, add a note if you like, and press **Record payment**.
+- Choose **Cash**, **Bank transfer** or **Bit / PayBox**, add a note if you like, and press **Record payment**.
 - OpalSwift asks YPay to issue the receipt or invoice, with the right payment method and amount. YPay emails it to the client, and its number appears on the request.
 
 ## 8. Refunds
 
 YPay doesn't allow refunds from other apps, so a refund has two steps:
 1. **Refund the client in YPay** (or by bank transfer). This is where the money moves.
-2. **Record it in OpalSwift.** On the paid request, press **Record refund**, add a reason if you like, and press **Record refund** again to confirm. The request shows **Refunded**. This button moves no money.
+2. **Record it in OpalSwift.** On the paid request, press **Record refund**. Choose **Full refund** (the default: everything left on the payment) or **Partial refund**, add a reason if you like, and press **Record refund** again to confirm. After a full refund the request shows **Refunded**. This button moves no money.
 
-Then **issue the credit document in YPay** (a credit invoice or a negative receipt). OpalSwift can't issue it for you.
+Then **issue the credit document in YPay** (a credit invoice or a negative receipt). OpalSwift can't issue it for you; the refund dialog tells you which credit document applies and where to issue it.
 
-**Partial refunds:** OpalSwift can only record a refund of the full amount for now. For a partial refund, refund it and issue the credit document in YPay. Don't press Record refund, or OpalSwift will show the whole payment as refunded.
+**Partial refunds:** choose **Partial refund** and enter the amount (it starts at what is left, and can't be more). Refund the same amount in YPay first, and issue the credit document there. The request stays **Paid** and shows "Partly refunded" with the amount; **Record refund** stays available while money is left.
 
 ## 9. Receipts and invoices
 
 - **Card payments:** YPay issues the document with the payment and emails the client.
-- **Cash and bank transfers:** OpalSwift asks YPay to issue it when you mark the request paid.
+- **Cash, bank transfers and Bit / PayBox:** OpalSwift asks YPay to issue the receipt when you mark the request paid (YPay records Bit / PayBox as a payment app).
 - **Where to find them:**
-  - on the payment request: card payments show "Invoice 123", cash and bank transfers show "Receipt 123" (the word is the same whichever document type you chose; press it to open the document);
+  - on the payment request: card payments show "Invoice 123"; cash, bank transfers and Bit / PayBox show "Receipt 123" (the word is the same whichever document type you chose; press it to open the document);
   - in the client's page;
   - in your YPay account.
 - **"Invoice pending"** or **"Receipt pending"** means YPay hasn't confirmed it yet. It usually appears within minutes.
@@ -141,4 +141,6 @@ The figures are for managing your business, not a tax return. Your accountant sh
 | Send pay link | שליחת קישור לתשלום |
 | Copy link | העתקת קישור |
 | Mark paid (cash/bank) | סימון כשולם (מזומן/העברה) |
+| Bit / PayBox | ביט / פייבוקס |
+| Full refund / Partial refund | החזר מלא / החזר חלקי |
 | Record refund | רישום החזר |
