@@ -48,7 +48,7 @@ describe('manual payment methods', () => {
     );
     fireEvent.click(screen.getByRole('radio', { name: 'payment_methods.bit' }));
     fireEvent.click(screen.getByRole('button', { name: 'pages.jobs.payments.manual.confirmPaid' }));
-    await waitFor(() => expect(onMarkPaid).toHaveBeenCalledWith('jpr-1', 'bit', undefined));
+    await waitFor(() => expect(onMarkPaid).toHaveBeenCalledWith('jpr-1', 'bit', undefined, true));
   });
 });
 

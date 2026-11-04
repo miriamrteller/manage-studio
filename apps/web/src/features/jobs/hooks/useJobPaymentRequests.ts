@@ -56,8 +56,8 @@ export function useJobPaymentRequests(engagementId: string | undefined) {
   });
 
   const recordManualPayment = useMutation({
-    mutationFn: (params: { id: string; method: ManualPaymentMethod; note?: string }) =>
-      JobPaymentService.recordManualPayment(params.id, params.method, params.note),
+    mutationFn: (params: { id: string; method: ManualPaymentMethod; note?: string; sendConfirmation?: boolean }) =>
+      JobPaymentService.recordManualPayment(params.id, params.method, params.note, params.sendConfirmation),
     onSuccess: invalidate,
   });
 
