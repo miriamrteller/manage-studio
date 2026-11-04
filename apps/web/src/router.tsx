@@ -36,6 +36,7 @@ import AdminAppointmentsPage from "./pages/AdminAppointmentsPage";
 import BookingSettingsPage from "./pages/BookingSettingsPage";
 import BookingServicesPage from "./pages/BookingServicesPage";
 import GoogleCalendarCallbackPage from "./pages/GoogleCalendarCallbackPage";
+import SmugMugCallbackPage from "./pages/SmugMugCallbackPage";
 import WaiversPage from "./pages/WaiversPage";
 import BookingPage from "./pages/BookingPage";
 import PortalDashboard from "./pages/PortalDashboard";
@@ -211,6 +212,7 @@ const router = createBrowserRouter([
           { path: "admin/setup/booking", element: <AdminRoute><BookingSettingsPage /></AdminRoute> },
           { path: "admin/setup/services", element: <AdminRoute><BookingServicesPage /></AdminRoute> },
           { path: "admin/setup/integrations/google/callback", element: <AdminRoute><GoogleCalendarCallbackPage /></AdminRoute> },
+          { path: "admin/setup/integrations/smugmug/callback", element: <AdminRoute><SmugMugCallbackPage /></AdminRoute> },
           { path: "admin/setup/settings", element: <AdminRoute><TenantSettingsPage /></AdminRoute> },
           { path: "admin/setup/tax", element: <AdminRoute><Navigate to="/admin/setup/classes" replace /></AdminRoute> },
           { path: "admin/setup/stripe", element: <AdminRoute><StripeSettingsPage /></AdminRoute> },

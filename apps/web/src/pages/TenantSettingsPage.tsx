@@ -17,6 +17,7 @@ import { LeadDigestSetting } from '@/features/settings/components/LeadDigestSett
 import { LegalSettingsForm } from '@/features/settings/components/LegalSettingsForm';
 import { SecuritySettingsForm } from '@/features/settings/components/SecuritySettingsForm';
 import { PhotoShopDefaultsSetting } from '@/features/settings/components/PhotoShopDefaultsSetting';
+import { SmugMugSetting } from '@/features/settings/components/SmugMugSetting';
 
 /** Tax documents on/off and the invoicing service first, then that service's credentials. */
 function InvoicingSection() {
@@ -29,12 +30,13 @@ function InvoicingSection() {
   );
 }
 
-/** How clients pay, then the photo shop defaults (shown only when the studio has the photo shop). */
+/** How clients pay, then the photo shop defaults and SmugMug (shown only when the studio has the photo shop). */
 function PaymentSection() {
   return (
     <div className="space-y-10">
       <PaymentSettingsForm />
       <PhotoShopDefaultsSetting />
+      <SmugMugSetting />
     </div>
   );
 }
