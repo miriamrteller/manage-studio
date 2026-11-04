@@ -10,6 +10,7 @@ import SignupPage from "./pages/SignupPage";
 import AuthCallbackPage from "./pages/AuthCallbackPage";
 import CreateStudioPage from '@/pages/CreateStudioPage';
 import SessionHandoffPage from '@/pages/auth/SessionHandoffPage';
+import NewPasswordPage from '@/pages/auth/NewPasswordPage';
 import LegalPackPrintPage from '@/pages/LegalPackPrintPage';
 import DashboardRedirectPage from "./pages/DashboardRedirectPage";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -88,6 +89,15 @@ const router = createBrowserRouter([
     element: (
       <LanguageProvider>
         <AuthCallbackPage />
+      </LanguageProvider>
+    ),
+  },
+  // "Forgot password?" emails land here (through /auth/callback, which signs the person in).
+  {
+    path: '/auth/new-password',
+    element: (
+      <LanguageProvider>
+        <NewPasswordPage />
       </LanguageProvider>
     ),
   },

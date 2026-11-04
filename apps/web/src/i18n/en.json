@@ -468,7 +468,11 @@
       "cooldown_sr_sent_code": "We've sent a code to {{email}}. Check your inbox (and spam).",
       "cooldown_sr_rate_limited": "We've just sent you an email. Please check your inbox.",
       "cooldown_ready": "You can ask for a new one now.",
-      "enter_code": "Enter the code"
+      "enter_code": "Enter the code",
+      "forgot_password": "Forgot password?",
+      "forgot_needs_email": "Type your email above, then press \"Forgot password?\" again.",
+      "reset_sent": "If there is an account for {{email}}, we've emailed it a link to set a new password. Signing in with an emailed link or code still works.",
+      "reset_error": "We could not send the email. Try again in a minute, or sign in with an emailed link."
     },
     "people": {
       "title": "Students & Adults",
@@ -1761,6 +1765,15 @@
         "server_error": "Something went wrong on our side. Please try again in a moment.",
         "generic": "Something went wrong. Please try again."
       }
+    },
+    "new_password": {
+      "title": "Choose a new password",
+      "intro": "Signed in as {{email}}. Choose a new password for next time.",
+      "save": "Save the new password",
+      "saved": "Your new password is saved.",
+      "continue": "Continue",
+      "no_session": "This link has expired or was already used. Ask for a new one from the sign-in page.",
+      "back_to_login": "Back to sign in"
     }
   },
   "signup": {
@@ -3459,7 +3472,10 @@
         "waiver_events": "Waivers",
         "waiver_evidence": "Waivers",
         "consent_records": "Consents"
-      }
+      },
+      "password_title": "Login password",
+      "password_description": "Set a password to sign in without waiting for an email. Emailed links and codes keep working.",
+      "password_button": "Set or change your password"
     },
     "lawyer": {
       "title": "Lawyer-reviewed versions",
