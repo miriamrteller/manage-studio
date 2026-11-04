@@ -6,7 +6,7 @@
  * studio. The message text was already scrubbed in the app before it left the browser.
  */
 
-export const DEFAULT_PROBLEM_REPORT_TO = "admin@opalswift.com";
+export const DEFAULT_SUPPORT_EMAIL = "support@opalswift.com";
 export const DEFAULT_SENTRY_EVENT_BASE = "https://opalswift.sentry.io/organizations/opalswift/eventids/";
 export const MAX_REPORT_CHARS = 2000;
 

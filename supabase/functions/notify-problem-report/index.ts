@@ -5,7 +5,7 @@ import { sendHtmlEmail } from "../_shared/email-client.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
 import {
   buildProblemReportEmail,
-  DEFAULT_PROBLEM_REPORT_TO,
+  DEFAULT_SUPPORT_EMAIL,
   MAX_REPORT_CHARS,
 } from "../_shared/problem-report-email.ts";
 
@@ -18,7 +18,7 @@ import {
  * Only a signed-in studio admin can call it. The studio name and subdomain come from the
  * caller's own profile, never from the request. The text is the already-scrubbed message.
  * At most 10 per studio per hour, so a loop cannot flood the owner's inbox.
- * Goes to PROBLEM_REPORT_TO (default admin@opalswift.com), from the platform sender.
+ * Goes to SUPPORT_EMAIL (default support@opalswift.com), from the platform sender.
  */
 
 const bodySchema = z.object({
@@ -76,7 +76,7 @@ Deno.serve(withMonitoring("notify-problem-report", async (req) => {
 
   const from = Deno.env.get("NOTIFICATION_FROM_EMAIL")?.trim();
   if (!from) return jsonResponse({ error: "email_not_configured" }, 503);
-  const to = Deno.env.get("PROBLEM_REPORT_TO")?.trim() || DEFAULT_PROBLEM_REPORT_TO;
+  const to = Deno.env.get("SUPPORT_EMAIL")?.trim() || DEFAULT_SUPPORT_EMAIL;
   const sentryBase = Deno.env.get("SENTRY_EVENT_URL_BASE")?.trim() || undefined;
 
   const email = buildProblemReportEmail({

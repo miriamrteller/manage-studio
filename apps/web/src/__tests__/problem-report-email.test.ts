@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildProblemReportEmail,
-  DEFAULT_PROBLEM_REPORT_TO,
+  DEFAULT_SUPPORT_EMAIL,
   sentryEventUrl,
 } from '../../../../supabase/functions/_shared/problem-report-email.ts';
 
@@ -17,8 +17,8 @@ const base = {
 };
 
 describe('problem report email to the owner', () => {
-  it('goes to the owner by default', () => {
-    expect(DEFAULT_PROBLEM_REPORT_TO).toBe('admin@opalswift.com');
+  it('goes to the support address by default', () => {
+    expect(DEFAULT_SUPPORT_EMAIL).toBe('support@opalswift.com');
   });
 
   it('has the studio, page, time, message and a link to the Sentry event', () => {
