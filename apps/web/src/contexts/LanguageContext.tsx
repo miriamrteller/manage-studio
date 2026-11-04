@@ -5,7 +5,7 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useTenant } from '@/hooks/useTenant';
 import { supabase } from '@/lib/supabase';
 import queryClient from '@/lib/query-client';
-import { resolveEffectiveLanguage, type AppLanguage } from '@/lib/resolve-language';
+import { consumeLangParam, resolveEffectiveLanguage, type AppLanguage } from '@/lib/resolve-language';
 import { DocumentLanguageSync } from '@/components/DocumentLanguageSync';
 import type { UserProfile } from '@/types/auth';
 
@@ -27,7 +27,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const { user, isProfileChecked, isLoading: profileLoading } = useCurrentUser();
 
   const [language, setLanguageState] = useState<AppLanguage>(
-    () => readStoredLanguage() ?? 'en',
+    () => consumeLangParam() ?? readStoredLanguage() ?? 'en',
   );
 
   // Hydrate from profile/tenant once per auth session — not on every profile refetch.
