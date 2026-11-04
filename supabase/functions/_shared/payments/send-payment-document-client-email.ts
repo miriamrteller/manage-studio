@@ -105,7 +105,7 @@ export async function sendPaymentDocumentClientEmail(
 
   const { data: tenant } = await service
     .from("tenants")
-    .select(`name, language_default, invoicing_provider, ypay_document_type, ${TENANT_SENDER_COLUMNS}`)
+    .select(`name, language_default, invoicing_provider, ypay_document_type, green_invoice_document_type, ${TENANT_SENDER_COLUMNS}`)
     .eq("id", params.tenantId)
     .maybeSingle();
 
@@ -191,16 +191,25 @@ export interface ClientDocumentEmailInput {
 export type ClientDocumentKind = "receipt" | "invoice_receipt";
 
 /**
- * The document the studio's invoicing provider issues, as far as we know it:
- * YPay issues the type set in Settings (tenants.ypay_document_type: 108 receipt, 109
+ * The document the studio's invoicing provider issues, as far as we know it: YPay and
+ * Green Invoice issue the type set in Settings (tenants.ypay_document_type: 108 receipt /
+ * 109 invoice-receipt; tenants.green_invoice_document_type: 400 receipt / 320
  * invoice-receipt). Other providers decide from the owner's own account and do not tell us
  * the kind, so the email uses a neutral label.
  */
 export function clientDocumentKind(
-  tenant: { invoicing_provider?: unknown; ypay_document_type?: unknown } | null | undefined,
+  tenant:
+    | { invoicing_provider?: unknown; ypay_document_type?: unknown; green_invoice_document_type?: unknown }
+    | null
+    | undefined,
 ): ClientDocumentKind | null {
-  if (tenant?.invoicing_provider !== "ypay") return null;
-  return Number(tenant.ypay_document_type) === 108 ? "receipt" : "invoice_receipt";
+  if (tenant?.invoicing_provider === "ypay") {
+    return Number(tenant.ypay_document_type) === 108 ? "receipt" : "invoice_receipt";
+  }
+  if (tenant?.invoicing_provider === "green_invoice") {
+    return Number(tenant.green_invoice_document_type) === 400 ? "receipt" : "invoice_receipt";
+  }
+  return null;
 }
 
 const DOC_LABELS: Record<"he" | "en", Record<ClientDocumentKind | "document", string>> = {

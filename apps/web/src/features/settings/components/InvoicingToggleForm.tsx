@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { useTenant } from '@/hooks/useTenant';
@@ -29,6 +29,31 @@ export function invoicingChoicesFor(paymentProvider: string | null, current: str
   return isOnProvider(current) && !choices.includes(current) ? [current, ...choices] : choices;
 }
 
+export type GreenInvoiceDocumentType = 400 | 320;
+
+/**
+ * Pure: the Green Invoice document a business status suggests. Exempt dealers and studios not
+ * yet registered issue a receipt (400); licensed dealers and companies a tax invoice-receipt
+ * (320). Same mapping as private.green_invoice_type_for_status. [[ACCOUNTANT: confirm]]
+ */
+export function suggestedGreenInvoiceDocumentType(businessStatus: string | null | undefined): GreenInvoiceDocumentType {
+  return businessStatus === 'osek_patur' || businessStatus === 'not_registered' ? 400 : 320;
+}
+
+/**
+ * Pure: what the "Which document does Green Invoice issue?" choice starts on. A studio already
+ * on Green Invoice sees its saved choice; one switching to it gets the suggestion from its
+ * business status. Business status never changes a saved choice.
+ */
+export function initialGreenInvoiceDocumentType(input: {
+  currentProvider: string | null | undefined;
+  saved: number | null | undefined;
+  businessStatus: string | null | undefined;
+}): GreenInvoiceDocumentType {
+  if (input.currentProvider === 'green_invoice') return Number(input.saved) === 400 ? 400 : 320;
+  return suggestedGreenInvoiceDocumentType(input.businessStatus);
+}
+
 /** Pure: the slug to store for a given toggle state. */
 export function resolveInvoicingProviderToSave(input: {
   enabled: boolean;
@@ -54,6 +79,34 @@ export function InvoicingToggleForm() {
   const pairingProblem = enabled && !invoicingPairsWithPayment(paymentProvider ?? '', selectedProvider);
   const [message, setMessage] = useState<string | null>(null);
 
+  const docQuery = useQuery({
+    queryKey: ['green-invoice-document-type', tenant?.id],
+    enabled: !!tenant?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('tenants')
+        .select('green_invoice_document_type, legal_profile')
+        .eq('id', tenant!.id)
+        .single();
+      if (error) throw error;
+      const profile = (data?.legal_profile ?? {}) as { business_status?: string | null };
+      return {
+        saved: Number(data?.green_invoice_document_type) === 400 ? 400 : 320,
+        businessStatus: profile.business_status ?? null,
+      } as { saved: GreenInvoiceDocumentType; businessStatus: string | null };
+    },
+  });
+  const [giType, setGiType] = useState<GreenInvoiceDocumentType | null>(null);
+  const giTypeShown =
+    giType ??
+    initialGreenInvoiceDocumentType({
+      currentProvider: current,
+      saved: docQuery.data?.saved,
+      businessStatus: docQuery.data?.businessStatus,
+    });
+  const suggestion = docQuery.data ? suggestedGreenInvoiceDocumentType(docQuery.data.businessStatus) : null;
+  const showGiDocument = enabled && selectedProvider === 'green_invoice';
+
   // Depend on the saved slug, not the tenant object, so a refetch does not reset the form.
   useEffect(() => {
     setEnabled(current !== INVOICING_OFF);
@@ -64,15 +117,21 @@ export function InvoicingToggleForm() {
     mutationFn: async () => {
       if (!tenant?.id) throw new Error('Tenant not loaded');
       if (pairingProblem) throw new Error(t('settings.invoicing_toggle.pairing_problem'));
+      const provider = resolveInvoicingProviderToSave({ enabled, selectedProvider });
       const { error } = await supabase
         .from('tenants')
-        .update({ invoicing_provider: resolveInvoicingProviderToSave({ enabled, selectedProvider }) })
+        .update({
+          invoicing_provider: provider,
+          ...(provider === 'green_invoice' ? { green_invoice_document_type: giTypeShown } : {}),
+        })
         .eq('id', tenant.id);
       if (error) throw error;
     },
     onSuccess: async () => {
       setMessage(t('settings.invoicing_toggle.saved'));
+      setGiType(null);
       await queryClient.invalidateQueries({ queryKey: ['tenant'] });
+      await queryClient.invalidateQueries({ queryKey: ['green-invoice-document-type'] });
     },
     onError: (err: Error) => setMessage(err.message),
   });
@@ -129,6 +188,32 @@ export function InvoicingToggleForm() {
                 provider: t(`settings.invoicing_toggle.providers.${selectedProvider}`),
               })}
             </p>
+          )}
+          {showGiDocument && (
+            <div className="space-y-1 pt-2">
+              <label className="block text-sm font-medium" htmlFor="gi-document-type">
+                {t('settings.invoicing_toggle.gi_document_label')}
+              </label>
+              <select
+                id="gi-document-type"
+                className="form-input w-full"
+                aria-describedby="gi-document-hint"
+                value={giTypeShown}
+                disabled={docQuery.isLoading}
+                onChange={(e) => setGiType(Number(e.target.value) === 400 ? 400 : 320)}
+              >
+                <option value={400}>{t('settings.invoicing_toggle.gi_document_400')}</option>
+                <option value={320}>{t('settings.invoicing_toggle.gi_document_320')}</option>
+              </select>
+              <p id="gi-document-hint" className="text-xs text-muted-foreground">
+                {t('settings.invoicing_toggle.gi_document_hint')}
+              </p>
+              {suggestion !== null && giTypeShown !== suggestion && (
+                <p className="text-sm text-muted-foreground" role="note">
+                  {t(suggestion === 400 ? 'settings.invoicing_toggle.gi_document_differs_400' : 'settings.invoicing_toggle.gi_document_differs_320')}
+                </p>
+              )}
+            </div>
           )}
           {pairingProblem && (
             <p className="text-sm text-destructive" role="alert">
