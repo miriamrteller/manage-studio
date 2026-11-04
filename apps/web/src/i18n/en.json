@@ -2401,7 +2401,10 @@
       "filter_date_to": "Paid to",
       "filter_payer_search": "Search payer",
       "export": "Export CSV",
-      "detail_title": "Payment details"
+      "detail_title": "Payment details",
+      "col_vat_split": "Before VAT / VAT",
+      "vat_split_value": "{{pretax}} + {{vat}} VAT ({{rate}}%)",
+      "vat_split_note": "Worked out from the document issued; the document itself is the record."
     },
     "charge_type": {
       "initial": "Enrolment payment",

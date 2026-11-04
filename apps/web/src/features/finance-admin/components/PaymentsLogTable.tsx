@@ -5,8 +5,8 @@ import {
   getCaptureSourceLabelKey,
   getPayerDisplay,
   getPaymentCaptureSource,
-  paymentDocumentLinkClassName,
 } from '../lib/paymentsLogDisplay';
+import { PaymentDocumentCell } from './PaymentDocumentCell';
 
 interface PaymentsLogTableProps {
   rows: PaymentLogRow[];
@@ -37,7 +37,6 @@ export function PaymentsLogTable({ rows, onRowClick }: PaymentsLogTableProps) {
           {rows.map((row) => {
             const payer = getPayerDisplay(row, t('finance.payments.family_payment'));
             const dateLabel = row.paid_at?.slice(0, 10) ?? row.created_at.slice(0, 10);
-            const hasDocument = row.external_document_number && row.invoice_url;
 
             return (
               <tr
@@ -66,19 +65,7 @@ export function PaymentsLogTable({ rows, onRowClick }: PaymentsLogTableProps) {
                     : '—'}
                 </td>
                 <td className="px-3 py-2">
-                  {hasDocument ? (
-                    <a
-                      href={row.invoice_url!}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={paymentDocumentLinkClassName}
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {row.external_document_number}
-                    </a>
-                  ) : (
-                    '—'
-                  )}
+                  <PaymentDocumentCell row={row} />
                 </td>
                 <td className="px-3 py-2">{row.engagement?.status ?? '—'}</td>
               </tr>

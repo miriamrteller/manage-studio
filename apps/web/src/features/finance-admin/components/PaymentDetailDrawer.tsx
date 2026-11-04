@@ -1,4 +1,6 @@
 import { useTranslation } from 'react-i18next';
+import { useQuery } from '@tanstack/react-query';
+import { useTenant } from '@/hooks/useTenant';
 import { formatCurrency } from '@shared/format';
 import { Button } from '@/components/ui/button';
 import type { PaymentLogRow } from '@shared/schemas';
@@ -6,9 +8,10 @@ import {
   getCaptureSourceLabelKey,
   getPayerDisplay,
   getPaymentCaptureSource,
-  paymentDocumentLinkClassName,
 } from '../lib/paymentsLogDisplay';
-import { getProviderLabelKey } from '../services/paymentsLogService';
+import { paymentDocumentStatus, vatSplitFromDocument } from '../lib/paymentDocuments';
+import { getProviderLabelKey, PaymentsLogService } from '../services/paymentsLogService';
+import { PaymentDocumentCell } from './PaymentDocumentCell';
 
 interface PaymentDetailDrawerProps {
   row: PaymentLogRow;
@@ -19,6 +22,22 @@ export function PaymentDetailDrawer({ row, onClose }: PaymentDetailDrawerProps) 
   const { t, i18n } = useTranslation();
   const payer = getPayerDisplay(row, t('finance.payments.family_payment'));
   const captureSource = getPaymentCaptureSource(row.provider);
+  const tenant = useTenant();
+  const doc = paymentDocumentStatus(row, tenant);
+  // VAT from the document issued, never from business status.
+  const split = vatSplitFromDocument(
+    row.total_amount_minor,
+    doc.issued ? doc.kind : null,
+    row.paid_at ?? row.created_at,
+  );
+  const originalQuery = useQuery({
+    queryKey: ['payment-original-document', tenant?.id, row.refunds_payment_id],
+    queryFn: async () => {
+      const map = await PaymentsLogService.documentNumbersByPaymentIds(tenant!, [row.refunds_payment_id!]);
+      return map.get(row.refunds_payment_id!) ?? null;
+    },
+    enabled: !!tenant?.id && !!row.refunds_payment_id,
+  });
 
   return (
   <>
@@ -84,26 +103,38 @@ export function PaymentDetailDrawer({ row, onClose }: PaymentDetailDrawerProps) 
         <div>
           <dt className="font-medium">{t('finance.payments.col_document')}</dt>
           <dd>
-            {row.external_document_number && row.invoice_url ? (
-              <a
-                href={row.invoice_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={paymentDocumentLinkClassName}
-              >
-                {row.external_document_number}
-              </a>
-            ) : (
-              '—'
-            )}
+            <PaymentDocumentCell row={row} />
           </dd>
         </div>
+        {split.vatMinor !== null && (
+          <div>
+            <dt className="font-medium">{t('finance.payments.col_vat_split')}</dt>
+            <dd>
+              {t('finance.payments.vat_split_value', {
+                pretax: formatCurrency(split.pretaxMinor ?? 0, row.currency, i18n.language),
+                vat: formatCurrency(split.vatMinor, row.currency, i18n.language),
+                rate: Math.round((split.vatRate ?? 0) * 100),
+              })}
+              <span className="block text-muted-foreground">{t('finance.payments.vat_split_note')}</span>
+            </dd>
+          </div>
+        )}
+        {row.refunds_payment_id && (
+          <div>
+            <dt className="font-medium">{t('finance.accountant_export.col.refund_of_document')}</dt>
+            <dd>
+              {originalQuery.data === undefined
+                ? '…'
+                : (originalQuery.data ?? t('finance.accountant_export.refund_of_unknown'))}
+            </dd>
+          </div>
+        )}
         <div>
           <dt className="font-medium">{t('finance.payments.col_engagement')}</dt>
           <dd>{row.engagement_id ?? '—'}</dd>
         </div>
         <div>
-          <dt className="font-medium">Payment ID</dt>
+          <dt className="font-medium">{t('finance.accountant_export.col.payment_id')}</dt>
           <dd>{row.id}</dd>
         </div>
       </dl>
