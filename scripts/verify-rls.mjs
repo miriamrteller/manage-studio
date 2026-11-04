@@ -266,6 +266,7 @@ try {
     'invoicing_secret_enc',
     'google_calendar_access_token_enc',
     'google_calendar_refresh_token_enc',
+    'takbull_api_secret_enc',
   ];
   for (const [label, uid] of [
     ['anon', null],
