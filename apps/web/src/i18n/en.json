@@ -3152,7 +3152,7 @@
       "invoicing": "Invoicing",
       "leads": "Leads",
       "legal": "Legal",
-      "security": "Security"
+      "security": "Sign-in & security"
     },
     "branding": {
       "colors": "Colors",
@@ -3420,7 +3420,10 @@
       "business_email": "Business email",
       "business_email_hint": "Clients see this. Their replies and new-enquiry alerts come here. You sign in with your login email: {{login}}.",
       "business_email_hint_no_login": "Clients see this. Their replies and new-enquiry alerts come here. You sign in with your login email, not this one.",
-      "change_login_link": "Change it in Security"
+      "business_same_as_login": "Same as my login email ({{login}})",
+      "business_follows_login": "Clients see this. Their replies and new-enquiry alerts come here. If you change your login email, this changes with it.",
+      "filled_for_you": "Details we filled in for you",
+      "change_login_link": "Change it in Sign-in & security"
     },
     "onboarding": {
       "title": "Provision new tenant",
@@ -3729,7 +3732,7 @@
       "marketing_hint": "Sent only to people who opted in to email marketing. The subject starts with \"פרסומת\" and an unsubscribe link is added automatically."
     },
     "security": {
-      "title": "Security",
+      "title": "Sign-in & security",
       "description": "Protect your admin account and take a copy of your studio's data.",
       "mfa_title": "Two-step sign-in",
       "mfa_description": "After your email code or link, also enter a 6-digit code from an authenticator app (Google Authenticator, Microsoft Authenticator, 1Password…). Strongly recommended for every admin.",
@@ -3787,7 +3790,8 @@
       "password_description": "Set a password to sign in without waiting for an email. Emailed links and codes keep working.",
       "password_button": "Set or change your password",
       "login_email_title": "Login email",
-      "login_email_hint": "You sign in with this. Clients never see it."
+      "login_email_hint": "You sign in with this. Clients never see it.",
+      "login_email_change": "Change"
     },
     "lawyer": {
       "title": "Lawyer-reviewed versions",
@@ -4026,7 +4030,6 @@
     "change_description": "The email you sign in with. We send a confirmation to both your current and your new address; it changes only after you confirm, and your current login keeps working until then.",
     "dialog_description": "Your login changes only after you confirm from both addresses.",
     "new_label": "New login email",
-    "also_business": "Also use this as my business email",
     "send": "Send confirmation",
     "sent": "We sent a confirmation link to {{from}} and to {{to}}. Open both. Until then, keep signing in with {{from}}.",
     "refused_taken": "That email already has an OpalSwift account (perhaps at another studio). Use a different address.",

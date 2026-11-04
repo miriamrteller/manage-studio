@@ -214,15 +214,10 @@ describe('one missing list for Confirm and Publish', () => {
 });
 
 describe('Settings → Legal', () => {
-  it('"Email on your legal pages" (usually the business email) offers to use the business email when it differs', async () => {
+  it('"Email on your legal pages" is not here: it lives on Studio profile', async () => {
     wrap(<LegalSettingsForm />);
-    const field = await screen.findByLabelText('Email on your legal pages');
-    await waitFor(() => expect(field).toHaveValue('info@creativeballet.test'));
-    expect(screen.getByText('Usually your business email.')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Use my business email/ })).toBeNull();
-    fireEvent.change(field, { target: { value: 'legal@other.test' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Use my business email (info@creativeballet.test)' }));
-    expect(field).toHaveValue('info@creativeballet.test');
+    expect(await screen.findByLabelText(/Business address/)).toBeVisible();
+    expect(screen.queryByLabelText('Email on your legal pages')).toBeNull();
   });
 
   it('shows only what the studio has to give; the rest is filled in, collapsed and editable', async () => {
@@ -250,8 +245,9 @@ describe('Settings → Legal', () => {
     expect(h.updates[0].legal_profile).toMatchObject({
       legal_name: 'Creative Ballet Academy Ltd',
       payment_providers: 'Grow, iCount',
-      email: 'info@creativeballet.test',
     });
+    // Kept as stored (here: not set, so it follows the business email); Studio profile edits it.
+    expect(h.updates[0].legal_profile).not.toHaveProperty('email');
   });
 
   it('works in Hebrew', async () => {

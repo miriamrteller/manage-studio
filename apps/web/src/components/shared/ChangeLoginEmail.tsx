@@ -1,4 +1,4 @@
-import { useEffect, useId, useState, type FormEvent } from 'react';
+import { useId, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -22,13 +22,13 @@ type Status =
   | { kind: 'error'; message: string };
 
 /**
- * "Change login email" (Settings → Security, and the client/parent portals).
+ * "Change login email" (Settings → Sign-in & security, and the client/parent portals).
  * Supabase's secure email change: a confirmation goes to BOTH addresses and the login
  * changes only once both are confirmed; the old login keeps working until then.
- * A studio admin can also move the studio's business email to the new login
- * (applied by the database when the change is confirmed).
+ * A studio's business email that matches the old login follows it (the database does
+ * that when the change is confirmed; see Studio profile → "Same as my login email").
  */
-export function ChangeLoginEmail({ businessEmail }: { businessEmail?: string | null }) {
+export function ChangeLoginEmail() {
   const { t } = useTranslation();
   const id = useId();
   const { session } = useAuthSession();
@@ -36,11 +36,6 @@ export function ChangeLoginEmail({ businessEmail }: { businessEmail?: string | n
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<Status>({ kind: 'idle' });
-  // Ticked when the business email still equals the login (it was copied from it).
-  const offerBusiness = businessEmail !== undefined;
-  const sameAsLogin = !!businessEmail && !!current && businessEmail.trim().toLowerCase() === current.trim().toLowerCase();
-  const [alsoBusiness, setAlsoBusiness] = useState(sameAsLogin);
-  useEffect(() => setAlsoBusiness(sameAsLogin), [sameAsLogin]);
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -59,7 +54,7 @@ export function ChangeLoginEmail({ businessEmail }: { businessEmail?: string | n
         return;
       }
       const { error } = await supabase.auth.updateUser(
-        { email: next, data: { business_email_follow: offerBusiness && alsoBusiness } },
+        { email: next },
         { emailRedirectTo: emailChangeRedirect() },
       );
       if (error) {
@@ -97,12 +92,6 @@ export function ChangeLoginEmail({ businessEmail }: { businessEmail?: string | n
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
-        {offerBusiness && (
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={alsoBusiness} onChange={(e) => setAlsoBusiness(e.target.checked)} />
-            <span>{t('login_email.also_business')}</span>
-          </label>
-        )}
         <div>
           <Button type="submit" variant="outline" size="sm" disabled={busy} isLoading={busy}>
             {t('login_email.send')}
