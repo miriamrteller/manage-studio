@@ -11,6 +11,7 @@ import { z } from 'zod';
 import type { Tenant } from '@shared/schemas';
 import { receiptStoragePath } from '../lib/financeAdminUtils';
 import type { SupplierExpenseRow } from '../lib/expenseSuppliers';
+import type { ExpenseCatalogItem, ExpenseCatalogNames } from '../lib/expenseCategoryName';
 
 export const EXPENSES_PAGE_SIZE = 50;
 export const RECEIPT_BUCKET = 'expense-receipts';
@@ -23,7 +24,10 @@ const ExpenseCategoryInputSchema = z.object({
   is_vat_eligible: z.boolean().optional(),
   is_active: z.boolean().optional(),
   sort_order: z.number().int().nonnegative().optional(),
+  catalog_key: z.string().nullable().optional(),
 });
+
+const CATEGORY_COLUMNS = '*, catalog:expense_category_catalog(name_en, name_he)';
 
 export interface ExpensesListFilters {
   dateFrom?: string | null;
@@ -50,7 +54,7 @@ export class ExpenseService extends BaseService {
         .select(
           `
           *,
-          category:expense_categories!expenses_category_id_fkey(id, name)
+          category:expense_categories!expenses_category_id_fkey(id, name, catalog:expense_category_catalog(name_en, name_he))
         `,
           { count: 'exact' },
         )
@@ -75,7 +79,7 @@ export class ExpenseService extends BaseService {
 
       const rows = (data ?? []).map((row) => ({
         ...ExpenseSchema.parse(row),
-        category: row.category as { id: string; name: string } | null,
+        category: row.category as { id: string; name: string; catalog?: ExpenseCatalogNames | null } | null,
       }));
 
       return {
@@ -159,7 +163,10 @@ export class ExpenseService extends BaseService {
 export class ExpenseCategoryService extends BaseService {
   static async list(tenant: Tenant) {
     return this.withRetry(async () => {
-      const { data, error } = await TenantDB.selectFor('expense_categories', tenant)
+      const { data, error } = await supabase
+        .from('expense_categories')
+        .select(CATEGORY_COLUMNS)
+        .eq('tenant_id', tenant.id)
         .order('sort_order', { ascending: true })
         .order('name', { ascending: true });
 
@@ -172,7 +179,7 @@ export class ExpenseCategoryService extends BaseService {
     return this.withRetry(async () => {
       const parsed = ExpenseCategoryInputSchema.parse(input);
       const { data, error } = await TenantDB.insert('expense_categories', tenant, parsed)
-        .select()
+        .select(CATEGORY_COLUMNS)
         .single();
       if (error) throw error;
       await this.logAudit(tenant, 'CREATE', 'expense_categories', data.id);
@@ -184,12 +191,40 @@ export class ExpenseCategoryService extends BaseService {
     return this.withRetry(async () => {
       const parsed = ExpenseCategoryInputSchema.partial().parse(input);
       const { data, error } = await TenantDB.update('expense_categories', tenant, id, parsed)
-        .select()
+        .select(CATEGORY_COLUMNS)
         .single();
       if (error) throw error;
       await this.logAudit(tenant, 'UPDATE', 'expense_categories', id);
       return ExpenseCategorySchema.parse(data);
     }, 'ExpenseCategoryService.update');
+  }
+
+  /**
+   * Switch a common category on or off for the studio. On: the studio's row for it is
+   * switched back on, or a same-named row of its own becomes it, or a new row is added
+   * (Hebrew name stored, shown in the reader's language). Off: the row is switched off;
+   * expenses already filed under it keep it.
+   */
+  static async setCatalogEnabled(
+    tenant: Tenant,
+    item: ExpenseCatalogItem,
+    on: boolean,
+    current: ExpenseCategory[],
+  ) {
+    const own = current.find((c) => c.catalog_key === item.key);
+    if (own) return this.update(tenant, own.id, { is_active: on });
+    if (!on) return null;
+    const sameName = current.find(
+      (c) => !c.catalog_key && [item.name_he, item.name_en].some((n) => n.trim().toLowerCase() === c.name.trim().toLowerCase()),
+    );
+    if (sameName) return this.update(tenant, sameName.id, { catalog_key: item.key, is_active: true });
+    return this.create(tenant, {
+      name: item.name_he,
+      catalog_key: item.key,
+      is_vat_eligible: item.is_vat_eligible,
+      is_active: true,
+      sort_order: item.sort_order,
+    });
   }
 
   static async delete(tenant: Tenant, id: string) {
@@ -198,5 +233,33 @@ export class ExpenseCategoryService extends BaseService {
       if (error) throw error;
       await this.logAudit(tenant, 'DELETE', 'expense_categories', id);
     }, 'ExpenseCategoryService.delete');
+  }
+}
+
+/** The common categories, and which ones each skin starts with. */
+export class ExpenseCatalogService extends BaseService {
+  static async catalog(): Promise<ExpenseCatalogItem[]> {
+    return this.withRetry(async () => {
+      const { data, error } = await supabase
+        .from('expense_category_catalog')
+        .select('key, name_en, name_he, is_vat_eligible, sort_order')
+        .order('sort_order', { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as ExpenseCatalogItem[];
+    }, 'ExpenseCatalogService.catalog');
+  }
+
+  /** The skin's list and the generic one (the fallback for a skin without its own). */
+  static async skinSets(skin: string | null | undefined): Promise<{ skin: string[] | null; generic: string[] | null }> {
+    return this.withRetry(async () => {
+      const ids = [...new Set([skin ?? 'generic', 'generic'])];
+      const { data, error } = await supabase.from('verticals').select('id, expense_categories').in('id', ids);
+      if (error) throw error;
+      const rows = (data ?? []) as { id: string; expense_categories: string[] | null }[];
+      return {
+        skin: rows.find((r) => r.id === (skin ?? 'generic'))?.expense_categories ?? null,
+        generic: rows.find((r) => r.id === 'generic')?.expense_categories ?? null,
+      };
+    }, 'ExpenseCatalogService.skinSets');
   }
 }

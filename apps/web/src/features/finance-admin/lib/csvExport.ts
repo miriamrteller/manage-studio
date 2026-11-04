@@ -3,6 +3,7 @@ import type { PaymentLogRow, Expense } from '@shared/schemas';
 import { buildCsvContent } from '../lib/financeAdminUtils';
 import { getPayerDisplay } from '../lib/paymentsLogDisplay';
 import { formatIsraeliDate, formatMinorAmount } from './accountantExport';
+import { expenseCategoryName, type ExpenseCatalogNames } from './expenseCategoryName';
 
 /** YYYY-MM-DD (a calendar date) → DD/MM/YYYY. */
 function israeliDay(ymd: string | null | undefined): string {
@@ -64,7 +65,7 @@ export function exportPaymentsCsv(rows: PaymentLogRow[], filename: string, t: TF
 
 /** Expenses CSV in the file's language (see buildPaymentsCsv). */
 export function buildExpensesCsv(
-  rows: Array<Expense & { category?: { name: string } | null }>,
+  rows: Array<Expense & { category?: { name: string; catalog?: ExpenseCatalogNames | null } | null }>,
   t: TFunction,
 ): string {
   const col = (key: string) => t(`finance.csv.expenses.${key}`);
@@ -84,7 +85,7 @@ export function buildExpensesCsv(
 
   const csvRows = rows.map((row) => [
     israeliDay(row.expense_date),
-    row.category?.name ?? '',
+    expenseCategoryName(row.category, t('finance.csv.lang_code') === 'he' ? 'he' : 'en'),
     row.description,
     formatMinorAmount(row.pretax_amount_minor),
     formatMinorAmount(row.vat_amount_minor),
@@ -100,7 +101,7 @@ export function buildExpensesCsv(
 }
 
 export function exportExpensesCsv(
-  rows: Array<Expense & { category?: { name: string } | null }>,
+  rows: Array<Expense & { category?: { name: string; catalog?: ExpenseCatalogNames | null } | null }>,
   filename: string,
   t: TFunction,
 ): void {

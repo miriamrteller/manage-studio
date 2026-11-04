@@ -4,10 +4,12 @@ import type { ExpenseCategory } from '@shared/schemas';
 import {
   ExpenseService,
   ExpenseCategoryService,
+  ExpenseCatalogService,
   EXPENSES_PAGE_SIZE,
   type ExpensesListFilters,
 } from '../services/expenseService';
 import { knownSuppliers, type KnownSupplier } from '../lib/expenseSuppliers';
+import { splitExpenseCatalog, type ExpenseCatalogItem } from '../lib/expenseCategoryName';
 
 export function useExpenses({
   page = 1,
@@ -97,6 +99,14 @@ export function useExpenseCategories(enabled = true) {
     onSuccess: invalidate,
   });
 
+  const catalogMutation = useMutation({
+    mutationFn: async ({ item, on }: { item: ExpenseCatalogItem; on: boolean }) => {
+      if (!tenant) throw new Error('Tenant not initialized');
+      return ExpenseCategoryService.setCatalogEnabled(tenant, item, on, listQuery.data ?? []);
+    },
+    onSuccess: invalidate,
+  });
+
   return {
     categories: listQuery.data ?? [],
     isLoading: listQuery.isLoading,
@@ -117,6 +127,9 @@ export function useExpenseCategories(enabled = true) {
       id: string,
       callbacks?: { onSuccess?: () => void; onError?: (error: Error) => void },
     ) => deleteMutation.mutate(id, callbacks),
+    setCatalogEnabled: (item: ExpenseCatalogItem, on: boolean) => catalogMutation.mutate({ item, on }),
+    isSwitching: catalogMutation.isPending,
+    switchError: catalogMutation.error as Error | null,
     isCreating: createMutation.isPending,
     isUpdating: updateMutation.isPending,
     isDeleting: deleteMutation.isPending,
@@ -136,4 +149,25 @@ export function useKnownSuppliers(enabled = true): KnownSupplier[] {
     staleTime: 5 * 60 * 1000,
   });
   return query.data ?? [];
+}
+
+/** The common categories, split into this studio's skin set and the rest. */
+export function useExpenseCatalog(enabled = true) {
+  const tenant = useTenant();
+  const skin = (tenant as { skin?: string | null } | null)?.skin ?? null;
+  const query = useQuery({
+    queryKey: ['expense-category-catalog', skin],
+    enabled: enabled && !!tenant?.id,
+    staleTime: 60 * 60 * 1000,
+    queryFn: async () => {
+      const [catalog, sets] = await Promise.all([ExpenseCatalogService.catalog(), ExpenseCatalogService.skinSets(skin)]);
+      return splitExpenseCatalog(catalog, sets.skin, sets.generic);
+    },
+  });
+  return {
+    suggested: query.data?.suggested ?? [],
+    more: query.data?.more ?? [],
+    isLoading: query.isLoading,
+    error: query.error as Error | null,
+  };
 }

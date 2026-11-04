@@ -1076,6 +1076,7 @@ export type Database = {
             };
             expense_categories: {
                 Row: {
+                    catalog_key: string | null;
                     color: string | null;
                     created_at: string;
                     description: string | null;
@@ -1088,6 +1089,7 @@ export type Database = {
                     updated_at: string;
                 };
                 Insert: {
+                    catalog_key?: string | null;
                     color?: string | null;
                     created_at?: string;
                     description?: string | null;
@@ -1100,6 +1102,7 @@ export type Database = {
                     updated_at?: string;
                 };
                 Update: {
+                    catalog_key?: string | null;
                     color?: string | null;
                     created_at?: string;
                     description?: string | null;
@@ -1113,6 +1116,13 @@ export type Database = {
                 };
                 Relationships: [
                     {
+                        foreignKeyName: "expense_categories_catalog_key_fkey";
+                        columns: ["catalog_key"];
+                        isOneToOne: false;
+                        referencedRelation: "expense_category_catalog";
+                        referencedColumns: ["key"];
+                    },
+                    {
                         foreignKeyName: "expense_categories_tenant_id_fkey";
                         columns: ["tenant_id"];
                         isOneToOne: false;
@@ -1120,6 +1130,30 @@ export type Database = {
                         referencedColumns: ["id"];
                     }
                 ];
+            };
+            expense_category_catalog: {
+                Row: {
+                    is_vat_eligible: boolean;
+                    key: string;
+                    name_en: string;
+                    name_he: string;
+                    sort_order: number;
+                };
+                Insert: {
+                    is_vat_eligible: boolean;
+                    key: string;
+                    name_en: string;
+                    name_he: string;
+                    sort_order: number;
+                };
+                Update: {
+                    is_vat_eligible?: boolean;
+                    key?: string;
+                    name_en?: string;
+                    name_he?: string;
+                    sort_order?: number;
+                };
+                Relationships: [];
             };
             expenses: {
                 Row: {
@@ -4330,6 +4364,7 @@ export type Database = {
                     default_switches: Json;
                     display_name: string;
                     enquiry_presets: string[];
+                    expense_categories: string[] | null;
                     hint_en: string;
                     hint_he: string;
                     id: string;
@@ -4350,6 +4385,7 @@ export type Database = {
                     default_switches?: Json;
                     display_name: string;
                     enquiry_presets?: string[];
+                    expense_categories?: string[] | null;
                     hint_en?: string;
                     hint_he?: string;
                     id: string;
@@ -4370,6 +4406,7 @@ export type Database = {
                     default_switches?: Json;
                     display_name?: string;
                     enquiry_presets?: string[];
+                    expense_categories?: string[] | null;
                     hint_en?: string;
                     hint_he?: string;
                     id?: string;

@@ -189,6 +189,7 @@
       "quote_assert_tenant_admin",
       "quote_job_offering_id",
       "quote_lines_json",
+      "seed_expense_categories",
       "sync_profile_email_from_auth",
       "tenant_default_features"
     ]
