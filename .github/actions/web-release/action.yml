@@ -150,7 +150,12 @@ runs:
         CLOUDFLARE_API_TOKEN: ${{ inputs.cloudflare-api-token }}
         CLOUDFLARE_ACCOUNT_ID: ${{ inputs.cloudflare-account-id }}
         WRANGLER_SEND_METRICS: "false"
-      run: pnpm exec wrangler deploy
+      # The Worker reads the same public values the browser bundle was built with (see wrangler.jsonc).
+      run: |
+        pnpm exec wrangler deploy \
+          --var "SUPABASE_URL:$VITE_SUPABASE_URL" \
+          --var "SUPABASE_PUBLISHABLE_KEY:$VITE_SUPABASE_PUBLISHABLE_KEY" \
+          --var "APP_ROOT_DOMAIN:$VITE_APP_ROOT_DOMAIN"
 
     - name: Smoke (app shell, a tenant host, this release live)
       if: steps.gate.outputs.ready == 'true' && inputs.build-only != 'true'

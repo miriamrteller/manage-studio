@@ -55,4 +55,6 @@ coverage/
 
 # Sensitive
 *client_secret*.json
-
+
+# Cloudflare local dev state
+.wrangler/
