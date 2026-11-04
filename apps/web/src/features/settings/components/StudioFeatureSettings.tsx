@@ -19,11 +19,25 @@ export function featureLabelKey(featureKey: string): string {
   return `settings.features.keys.${featureKey.replace(/[^a-zA-Z0-9]/g, '_')}`;
 }
 
-/** Pure: the studio's features grouped by set, in order. */
+/**
+ * Features that exist only as a name in the registry: nothing in the app does them yet,
+ * so a studio is never shown a switch for them. Remove a key here once it is built.
+ */
+export const NOT_BUILT_FEATURE_KEYS: ReadonlySet<string> = new Set([
+  'finance:export.bkmv',
+  'finance:threshold.radar',
+  'scheduling:ai.assistant',
+  'ui:content.ai',
+  'ui:onboarding.checklist',
+  'ui:payments.enhanced',
+]);
+
+/** Pure: the studio's built features grouped by set, in order. */
 export function groupStudioFeatures(features: StudioFeature[]): [string, StudioFeature[]][] {
-  const sets = [...new Set([...SET_ORDER, ...features.map((f) => f.feature_set)])];
+  const built = features.filter((f) => !NOT_BUILT_FEATURE_KEYS.has(f.feature_key));
+  const sets = [...new Set([...SET_ORDER, ...built.map((f) => f.feature_set)])];
   return sets
-    .map((set) => [set, features.filter((f) => f.feature_set === set)] as [string, StudioFeature[]])
+    .map((set) => [set, built.filter((f) => f.feature_set === set)] as [string, StudioFeature[]])
     .filter(([, items]) => items.length > 0);
 }
 
