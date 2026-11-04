@@ -2608,6 +2608,26 @@
       "sort_order": "Sort order"
     },
     "record_payment": {
+      "any": {
+        "client": "Who paid",
+        "client_placeholder": "Search your clients by name, email or phone",
+        "not_in_list": "Someone not in the list",
+        "new_name": "Their name",
+        "new_email": "Email (optional)",
+        "new_hint": "They're added to your clients. With an email they get the receipt or confirmation.",
+        "search_instead": "Search your clients instead",
+        "change_client": "Change",
+        "for": "What it's for",
+        "open_items": "Their open items",
+        "what_you_sell": "What you sell",
+        "other": "Other",
+        "item_first": "{{name}}: first payment",
+        "item_monthly": "{{name}}: monthly fee",
+        "amount_hint": "Starts at the price of what it's for. Change it if a different amount was paid.",
+        "date": "Date paid",
+        "what_for": "What it's for (optional)",
+        "need_payer": "Choose who paid, or add someone not in the list."
+      },
       "open": "Record a payment",
       "title": "Record a payment",
       "amount": "Amount ({{currency}})",

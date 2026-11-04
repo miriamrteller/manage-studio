@@ -22,6 +22,8 @@ export interface ManualRenewalInput {
   method: "cash" | "bank_transfer" | "bit";
   amountMinor?: number;
   note?: string;
+  /** When the money was received (ISO); defaults to now. */
+  paidAt?: string;
   actorUserId: string;
 }
 
@@ -116,7 +118,7 @@ export async function recordManualRenewal(
       currency: ((offering.currency as string | null) ?? (tenant.currency as string | null) ?? "ILS")
         .toUpperCase(),
       status: "succeeded",
-      paid_at: new Date().toISOString(),
+      paid_at: input.paidAt ?? new Date().toISOString(),
       description: input.note ??
         [
           `Monthly fee ${period}, ${MANUAL_METHOD_TEXT[input.method]}`,

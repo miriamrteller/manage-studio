@@ -6,6 +6,9 @@ import { finalisePayment } from "../_shared/payments/finalise-payment.ts";
 import { recordManualRenewal } from "../_shared/payments/record-manual-renewal.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
 import { sendNoDocumentPaymentConfirmation } from "../_shared/payments/send-payment-confirmation-email.ts";
+import { paidAtFor } from "../_shared/payments/paid-on.ts";
+import { recordStandalonePayment, StandalonePaymentSchema } from "../_shared/payments/record-standalone-payment.ts";
+import { enqueueDocument } from "../_shared/enqueue-document.ts";
 
 const RecordPaymentBodySchema = z.object({
   engagement_id: z.string().uuid(),
@@ -14,6 +17,8 @@ const RecordPaymentBodySchema = z.object({
   note: z.string().max(500).optional(),
   /** Email the payer a "not a tax document" confirmation (invoicing "none" only). Default on. */
   send_confirmation: z.boolean().optional(),
+  /** YYYY-MM-DD the money was received; defaults to today. */
+  paid_on: z.string().optional(),
 });
 
 /** A plain "not a tax document" confirmation for studios with no invoicing; never fails the request. */
@@ -39,12 +44,22 @@ Deno.serve(withMonitoring("record-payment", async (req) => {
     return jsonResponse({ error: auth.error }, auth.status);
   }
 
-  let body: z.infer<typeof RecordPaymentBodySchema>;
+  let raw: unknown;
   try {
-    body = RecordPaymentBodySchema.parse(await req.json());
+    raw = await req.json();
   } catch {
     return jsonResponse({ error: "Invalid request body" }, 400);
   }
+  // Linked to an enrolment / monthly plan / booking (engagement_id), or a standalone payment
+  // from Finance -> Payments (who paid + what it's for).
+  const linked = RecordPaymentBodySchema.safeParse(raw);
+  const standalone = linked.success ? null : StandalonePaymentSchema.safeParse(raw);
+  if (!linked.success && !standalone?.success) {
+    return jsonResponse({ error: "Invalid request body" }, 400);
+  }
+  const paidOn = linked.success ? linked.data.paid_on : standalone?.success ? standalone.data.paid_on : undefined;
+  const paid = paidAtFor(paidOn);
+  if (!paid.ok) return jsonResponse({ error: paid.error }, 400);
 
   const service = createServiceClient();
   const { data: profile } = await service
@@ -58,6 +73,23 @@ Deno.serve(withMonitoring("record-payment", async (req) => {
   }
 
   const tenantId = profile.tenant_id as string;
+
+  if (!linked.success) {
+    const input = standalone?.success ? standalone.data : null;
+    if (!input) return jsonResponse({ error: "Invalid request body" }, 400);
+    const result = await recordStandalonePayment(service, {
+      tenantId,
+      actorUserId: auth.user.id,
+      body: input,
+      paidAt: paid.paidAt,
+    });
+    if (!result.ok) return jsonResponse({ error: result.error }, result.status);
+    // Offline money still gets its receipt from the studio's invoicing service, where it can.
+    await enqueueDocument(service, { tenantId, paymentId: result.paymentId, documentKind: "sale" });
+    await confirmToPayer(service, tenantId, result.paymentId, input.send_confirmation);
+    return jsonResponse({ ok: true, paymentId: result.paymentId, personId: result.personId });
+  }
+  const body = linked.data;
 
   const { data: engagement, error: engagementError } = await service
     .from("engagements")
@@ -82,6 +114,7 @@ Deno.serve(withMonitoring("record-payment", async (req) => {
       method: body.method,
       amountMinor: body.amount_minor,
       note: body.note,
+      paidAt: paid.paidAt,
       actorUserId: auth.user.id,
     }, {
       finalise: finalisePayment,
@@ -151,7 +184,7 @@ Deno.serve(withMonitoring("record-payment", async (req) => {
       total_amount_minor: totalMinor,
       currency: (offering.currency ?? tenant.currency ?? "ILS").toUpperCase(),
       status: "succeeded",
-      paid_at: new Date().toISOString(),
+      paid_at: paid.paidAt,
       description: body.note ?? `Manual ${body.method} payment`,
       created_by: auth.user.id,
       approved_by: auth.user.id,

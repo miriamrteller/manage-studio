@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useTenant } from '@/hooks/useTenant';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,7 @@ import { datedCsvFilename } from '../lib/financeAdminUtils';
 import { fetchAllPages } from '../lib/pagedFetch';
 import { AccountantExportCard } from './AccountantExportCard';
 import { CsvLanguageSelect } from './CsvLanguageSelect';
+import { RecordAnyPaymentForm } from '@/features/finance/components/RecordAnyPaymentForm';
 import { csvT, useCsvLanguage } from '../lib/csvLanguage';
 
 export function PaymentsLog() {
@@ -33,6 +34,8 @@ export function PaymentsLog() {
   const debouncedPayerSearch = useDebounce(payerSearch, 300);
   const [selectedRow, setSelectedRow] = useState<PaymentLogRow | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
+  const [recording, setRecording] = useState(false);
+  const queryClient = useQueryClient();
 
   const payerIdsQuery = useQuery({
     queryKey: ['payments-payer-search', tenant?.id, debouncedPayerSearch],
@@ -74,9 +77,20 @@ export function PaymentsLog() {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-2">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl font-bold">{t('finance.payments.title')}</h1>
+        <Button variant="primary" aria-expanded={recording} onClick={() => setRecording((v) => !v)}>
+          {t('finance.record_payment.open')}
+        </Button>
       </div>
+
+      {recording && (
+        <RecordAnyPaymentForm
+          onRecorded={() => {
+            void queryClient.invalidateQueries({ queryKey: ['payments-log'] });
+          }}
+        />
+      )}
 
       <AccountantExportCard />
 
