@@ -2169,9 +2169,10 @@
     "logo_chosen": "{{name}} will be added when your studio is created.",
     "logo_too_large": "That file is over 2 MB. Choose a smaller one, or skip this for now.",
     "logo_owner_later": "The studio owner can add a logo later in Settings → Branding.",
-    "business_email": "Business email (clients see this)",
-    "business_email_hint": "Replies to the studio's emails and new-enquiry alerts go here. It can be different from the login email, and you can change it later in Settings.",
-    "need_business_email": "Enter a valid business email, or put back the login email."
+    "business_email": "Business email",
+    "business_email_hint": "Clients see this. Their replies and new-enquiry alerts come here. You sign in with your login email: {{login}}.",
+    "need_business_email": "Enter a valid business email, or put back the login email.",
+    "business_email_hint_no_login": "Clients see this. Their replies and new-enquiry alerts come here. You sign in with your login email, not this one."
   },
   "studio_not_found": {
     "title": "Studio not found",
@@ -3248,14 +3249,12 @@
       "custom_domain_readonly": "Your studio's own web address. Only the OpalSwift team can change it.",
       "name_required": "Studio name is required.",
       "profile_saved": "Studio profile saved.",
-      "studio_email": "Studio email",
-      "studio_email_hint": "Clients see this: replies to your emails and new-enquiry alerts go here. Your login email does not change.",
-      "studio_email_invalid": "Enter a valid email address for the studio.",
+      "studio_email_invalid": "Enter a valid business email.",
       "studio_email_legal_offer_one": "Your legal pages still show {{from}} in 1 place. Use {{to}} there too?",
       "studio_email_legal_offer_other": "Your legal pages still show {{from}} in {{count}} places. Use {{to}} there too?",
       "studio_email_legal_yes": "Update legal pages",
       "studio_email_legal_no": "Not now",
-      "studio_email_legal_updated": "Legal pages now use the new studio email.",
+      "studio_email_legal_updated": "Legal pages now use the new business email.",
       "studio_email_legal_error": "Could not update the legal pages. You can change the emails in Settings → Legal.",
       "branding_title": "Branding",
       "branding_description": "Primary and accent colours applied across the site.",
@@ -3272,7 +3271,11 @@
       "more_settings": "More settings",
       "compliance_title": "Forms & consent",
       "compliance_description": "Manage form templates and signed forms.",
-      "coming_soon": "Coming soon."
+      "coming_soon": "Coming soon.",
+      "business_email": "Business email",
+      "business_email_hint": "Clients see this. Their replies and new-enquiry alerts come here. You sign in with your login email: {{login}}.",
+      "business_email_hint_no_login": "Clients see this. Their replies and new-enquiry alerts come here. You sign in with your login email, not this one.",
+      "change_login_link": "Change it in Security"
     },
     "onboarding": {
       "title": "Provision new tenant",
@@ -3477,7 +3480,8 @@
       "filled_for_you_other": "Details we filled in for you ({{count}})",
       "filled_for_you_hint": "Taken from your studio's setup, or a sensible default. Open to check or change them.",
       "invalid_israeli_id": "This isn't a valid Israeli ID number. Check the 9 digits.",
-      "no_insurance_notice": "If you work with children or physical activity, liability and personal-accident insurance is usually recommended. Check with an insurance agent. Until you have it, your terms and health declaration will say you're not insured."
+      "no_insurance_notice": "If you work with children or physical activity, liability and personal-accident insurance is usually recommended. Check with an insurance agent. Until you have it, your terms and health declaration will say you're not insured.",
+      "use_business_email": "Use my business email ({{email}})"
     },
     "privacy_notice": "We use your details only to handle your request and enrolment.",
     "accept_terms_prefix": "I have read and accept the",
@@ -3577,7 +3581,9 @@
       },
       "password_title": "Login password",
       "password_description": "Set a password to sign in without waiting for an email. Emailed links and codes keep working.",
-      "password_button": "Set or change your password"
+      "password_button": "Set or change your password",
+      "login_email_title": "Login email",
+      "login_email_hint": "You sign in with this. Clients never see it."
     },
     "lawyer": {
       "title": "Lawyer-reviewed versions",
