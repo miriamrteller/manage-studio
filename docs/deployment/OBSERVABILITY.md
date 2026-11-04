@@ -201,5 +201,8 @@ the workflow in the Actions tab.
   build still succeeds.
 - **GitHub issues:** `scripts/sentry-to-github.mjs` (tests: `apps/web/src/__tests__/sentry-to-github.test.ts`),
   run by `.github/workflows/sentry-issues.yml`. `DRY_RUN=1` prints instead of creating.
+  **The repository is public, so these issues never contain typed text or event messages.** A problem report
+  is titled `[Problem report] #<Sentry short id>` and holds only the Sentry link, studio, route, release and
+  times; an error issue keeps the error type and where it happened. Read the report itself in Sentry (private).
 - **Trying it locally:** put a real DSN in `apps/web/.env.local` as `VITE_SENTRY_DSN` and set
   `VITE_SENTRY_ENVIRONMENT=development`, so production alerts stay clean.
