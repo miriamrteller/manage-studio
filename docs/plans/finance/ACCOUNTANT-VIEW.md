@@ -59,6 +59,24 @@ Code: `supabase/functions/_shared/payments/document-kind.ts` (provider codes),
 - Our split is computed from the gross; the provider's document is the legal record and its
   rounding can differ by one agora.
 
+## Accountant export (PR2)
+
+Finance → Payments log → **For your accountant**: period prefilled with the last VAT period
+(studio setting "VAT report every: 2 months / month", `tenants.vat_report_period`, default
+2 months; changes only this prefill). Presets: last / this VAT period, last / this month,
+last quarter, last / this year, or any dates. One CSV row per paid payment and refund
+(UTF-8 with BOM, Hebrew headers for Hebrew studios, amounts in shekels, dates DD/MM/YYYY in
+Israel time):
+
+paid date · document date · document type · number · link · allocation number · no-document
+reason · payer · business name and number (when billed to a business) · item · before VAT ·
+VAT · VAT rate · total · currency · method · provider · payment reason · status · refund of
+document · payment id.
+
+No row cap: exports page through 1,000 rows at a time. (The old export asked for one
+5,000-row page, but the API returns at most 1,000 rows per request, so it could silently stop
+at 1,000.) The plain "Export CSV" on the payments log and the expenses export page the same way.
+
 ## PRs
 
 1. Record the document type per payment; "no document" reasons; VAT split helper.

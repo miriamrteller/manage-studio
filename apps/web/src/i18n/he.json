@@ -2426,7 +2426,8 @@
       "card": "כרטיס",
       "cash": "מזומן",
       "bank_transfer": "העברה בנקאית",
-      "other": "אחר"
+      "other": "אחר",
+      "bit": "ביט"
     },
     "period": {
       "month_current": "החודש",
@@ -2434,7 +2435,73 @@
       "season_active": "תקופה פעילה"
     },
     "export": {
-      "too_many": "יותר מדי שורות לייצוא (מקסימום 5,000). צמצמ/י הסינון."
+      "preparing": "מכין את הקובץ… {{count}} שורות",
+      "failed": "לא הצלחנו להכין את הקובץ. נסו שוב."
+    },
+    "accountant_export": {
+      "title": "לרואה החשבון",
+      "intro": "כל התשלומים וההחזרים בתקופה, עם מסמך המס (סוג, מספר, קישור) או הסיבה שאין, והמע\"מ לפי המסמך שהופק.",
+      "period": "תקופה",
+      "from": "מתאריך",
+      "to": "עד תאריך",
+      "vat_period": "דיווח מע\"מ כל",
+      "vat_period_options": {
+        "bi_monthly": "חודשיים",
+        "monthly": "חודש"
+      },
+      "download": "הורדה לרואה החשבון (CSV)",
+      "empty": "אין תשלומים בתקופה הזו.",
+      "note": "עזרה בלבד, לא ייעוץ מס. המסמך של הספק הוא המסמך הקובע; הסכומים כאן מחושבים מהסכום הכולל ועשויים להיות שונים באגורה. כדאי לבדוק את כללי המע\"מ עם רואה החשבון.",
+      "periods": {
+        "vat_previous": "תקופת המע\"מ הקודמת",
+        "vat_current": "תקופת המע\"מ הנוכחית",
+        "month_previous": "החודש הקודם",
+        "month_current": "החודש",
+        "quarter_previous": "הרבעון הקודם",
+        "year_previous": "השנה הקודמת",
+        "year_current": "השנה",
+        "custom": "תאריכים אחרים"
+      },
+      "col": {
+        "paid_date": "תאריך תשלום",
+        "document_date": "תאריך מסמך",
+        "document_type": "סוג מסמך",
+        "document_number": "מספר מסמך",
+        "document_link": "קישור למסמך",
+        "allocation_number": "מספר הקצאה",
+        "no_document_reason": "אין מסמך כי",
+        "payer": "משלם",
+        "business_name": "שם העסק",
+        "business_tax_id": "מספר עוסק",
+        "item": "פריט",
+        "pretax": "לפני מע\"מ",
+        "vat": "מע\"מ",
+        "vat_rate": "שיעור מע\"מ",
+        "total": "סה\"כ",
+        "currency": "מטבע",
+        "method": "אמצעי תשלום",
+        "provider": "ספק",
+        "payment_reason": "סיבת התשלום",
+        "status": "סטטוס",
+        "refund_of_document": "החזר על מסמך",
+        "payment_id": "מזהה תשלום"
+      },
+      "document_kind": {
+        "receipt": "קבלה",
+        "tax_invoice_receipt": "חשבונית מס-קבלה",
+        "credit_note": "מסמך זיכוי",
+        "unknown": "מסמך שהפיק {{provider}}"
+      },
+      "no_document": {
+        "not_paid": "לא שולם",
+        "pending": "ממתין לשירות החשבוניות",
+        "failed": "שירות החשבוניות נכשל; ראו בכספים",
+        "not_issued": "שירות החשבוניות לא יכול להפיק מסמך לתשלום הזה",
+        "no_invoicing": "העסק לא מפיק מסמכים דרך OpalSwift",
+        "refund_in_provider": "מסמך ההחזר הופק ב-YPay",
+        "missing": "עוד לא הופק"
+      },
+      "refund_of_unknown": "(המקור ללא מסמך)"
     },
     "expenses": {
       "title": "הוצאות",
@@ -2559,7 +2626,8 @@
       "partially_refunded": "הוחזר חלקית",
       "refunded": "הוחזר",
       "pending": "ממתין",
-      "failed": "נכשל"
+      "failed": "נכשל",
+      "disputed": "במחלוקת"
     }
   },
   "enrolment": {

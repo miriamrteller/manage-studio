@@ -3744,6 +3744,7 @@ export type Database = {
           tranzila_terminal_name: string | null
           trial_ends_at: string | null
           updated_at: string
+          vat_report_period: string
           vat_type: number
           waiver_link_secret_enc: string | null
           waiver_require_otp: boolean
@@ -3824,6 +3825,7 @@ export type Database = {
           tranzila_terminal_name?: string | null
           trial_ends_at?: string | null
           updated_at?: string
+          vat_report_period?: string
           vat_type?: number
           waiver_link_secret_enc?: string | null
           waiver_require_otp?: boolean
@@ -3904,6 +3906,7 @@ export type Database = {
           tranzila_terminal_name?: string | null
           trial_ends_at?: string | null
           updated_at?: string
+          vat_report_period?: string
           vat_type?: number
           waiver_link_secret_enc?: string | null
           waiver_require_otp?: boolean

@@ -2424,7 +2424,8 @@
       "card": "Card",
       "cash": "Cash",
       "bank_transfer": "Bank transfer",
-      "other": "Other"
+      "other": "Other",
+      "bit": "Bit"
     },
     "period": {
       "month_current": "This month",
@@ -2432,7 +2433,73 @@
       "season_active": "Active season"
     },
     "export": {
-      "too_many": "Too many rows to export (max 5,000). Narrow your filters."
+      "preparing": "Preparing the file… {{count}} rows",
+      "failed": "Couldn't prepare the file. Try again."
+    },
+    "accountant_export": {
+      "title": "For your accountant",
+      "intro": "Every payment and refund in the period, with its tax document (type, number, link) or why there is none, and the VAT from the document issued.",
+      "period": "Period",
+      "from": "From",
+      "to": "To",
+      "vat_period": "VAT report every",
+      "vat_period_options": {
+        "bi_monthly": "2 months",
+        "monthly": "Month"
+      },
+      "download": "Download for accountant (CSV)",
+      "empty": "No payments in this period.",
+      "note": "Help only, not tax advice. The provider's document is the legal record; amounts here are worked out from the total and can differ by one agora. Check the VAT rules with your accountant.",
+      "periods": {
+        "vat_previous": "Last VAT period",
+        "vat_current": "This VAT period",
+        "month_previous": "Last month",
+        "month_current": "This month",
+        "quarter_previous": "Last quarter",
+        "year_previous": "Last year",
+        "year_current": "This year",
+        "custom": "Custom dates"
+      },
+      "col": {
+        "paid_date": "Paid date",
+        "document_date": "Document date",
+        "document_type": "Document type",
+        "document_number": "Document number",
+        "document_link": "Document link",
+        "allocation_number": "Allocation number",
+        "no_document_reason": "No document because",
+        "payer": "Payer",
+        "business_name": "Business name",
+        "business_tax_id": "Business number",
+        "item": "Item",
+        "pretax": "Before VAT",
+        "vat": "VAT",
+        "vat_rate": "VAT rate",
+        "total": "Total",
+        "currency": "Currency",
+        "method": "Method",
+        "provider": "Provider",
+        "payment_reason": "Payment reason",
+        "status": "Status",
+        "refund_of_document": "Refund of document",
+        "payment_id": "Payment ID"
+      },
+      "document_kind": {
+        "receipt": "Receipt",
+        "tax_invoice_receipt": "Tax invoice-receipt",
+        "credit_note": "Credit document",
+        "unknown": "Document issued by {{provider}}"
+      },
+      "no_document": {
+        "not_paid": "Not paid",
+        "pending": "Waiting for the invoicing service",
+        "failed": "The invoicing service failed; see Finance",
+        "not_issued": "The invoicing service can't issue a document for this payment",
+        "no_invoicing": "The studio doesn't issue documents through OpalSwift",
+        "refund_in_provider": "Refund document made in YPay",
+        "missing": "Not issued yet"
+      },
+      "refund_of_unknown": "(original without a document)"
     },
     "expenses": {
       "title": "Expenses",
@@ -2557,7 +2624,8 @@
       "partially_refunded": "Partially refunded",
       "refunded": "Refunded",
       "pending": "Pending",
-      "failed": "Failed"
+      "failed": "Failed",
+      "disputed": "Disputed"
     }
   },
   "enrolment": {

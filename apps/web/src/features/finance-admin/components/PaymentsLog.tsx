@@ -13,6 +13,8 @@ import { PaymentsLogService } from '../services/paymentsLogService';
 import type { PaymentLogRow } from '@shared/schemas';
 import { exportPaymentsCsv } from '../lib/csvExport';
 import { datedCsvFilename } from '../lib/financeAdminUtils';
+import { fetchAllPages } from '../lib/pagedFetch';
+import { AccountantExportCard } from './AccountantExportCard';
 
 export function PaymentsLog() {
   const { t } = useTranslation();
@@ -57,20 +59,10 @@ export function PaymentsLog() {
     if (!tenant) return;
     setExportError(null);
     try {
-      const { totalCount: exportTotal } = await PaymentsLogService.list(tenant, {
-        page: 1,
-        pageSize: 1,
-        filters: effectiveFilters,
-      });
-      if (exportTotal > 5000) {
-        setExportError(t('finance.export.too_many'));
-        return;
-      }
-      const { rows: exportRows } = await PaymentsLogService.list(tenant, {
-        page: 1,
-        pageSize: 5000,
-        filters: effectiveFilters,
-      });
+      // Every matching row, page by page: no row cap.
+      const exportRows = await fetchAllPages((p, pageSize) =>
+        PaymentsLogService.list(tenant, { page: p, pageSize, filters: effectiveFilters }),
+      );
       exportPaymentsCsv(exportRows, datedCsvFilename('payments', tenant.subdomain), t);
     } catch (err) {
       setExportError(err instanceof Error ? err.message : t('common.error'));
@@ -82,6 +74,8 @@ export function PaymentsLog() {
       <div className="space-y-2">
         <h1 className="text-3xl font-bold">{t('finance.payments.title')}</h1>
       </div>
+
+      <AccountantExportCard />
 
       <PaymentsLogFiltersBar
         filters={filters}

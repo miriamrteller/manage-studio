@@ -80,7 +80,7 @@ export function exportExpensesCsv(
   downloadCsv(buildCsvContent(headers, csvRows), filename);
 }
 
-function downloadCsv(content: string, filename: string): void {
+export function downloadCsv(content: string, filename: string): void {
   const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');

@@ -11,6 +11,7 @@ import { ExpenseForm } from './ExpenseForm';
 import { ExpenseService } from '../services/expenseService';
 import { exportExpensesCsv } from '../lib/csvExport';
 import { datedCsvFilename } from '../lib/financeAdminUtils';
+import { fetchAllPages } from '../lib/pagedFetch';
 import type { Expense } from '@shared/schemas';
 
 export function ExpensesList() {
@@ -51,20 +52,10 @@ export function ExpensesList() {
     if (!tenant) return;
     setExportError(null);
     try {
-      const { totalCount: exportTotal } = await ExpenseService.list(tenant, {
-        page: 1,
-        pageSize: 1,
-        filters,
-      });
-      if (exportTotal > 5000) {
-        setExportError(t('finance.export.too_many'));
-        return;
-      }
-      const { rows } = await ExpenseService.list(tenant, {
-        page: 1,
-        pageSize: 5000,
-        filters,
-      });
+      // Every matching row, page by page: no row cap.
+      const rows = await fetchAllPages((page, pageSize) =>
+        ExpenseService.list(tenant, { page, pageSize, filters }),
+      );
       exportExpensesCsv(rows, datedCsvFilename('expenses', tenant.subdomain));
     } catch (err) {
       setExportError(err instanceof Error ? err.message : t('common.error'));
