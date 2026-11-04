@@ -73,6 +73,12 @@ export default function AuthCallbackPage() {
       return;
     }
 
+    // A "Forgot password?" link: signed in from the email, now choose a new password.
+    if (new URLSearchParams(callbackUrlRef.current.search).get('next') === 'new-password') {
+      navigate('/auth/new-password', { replace: true });
+      return;
+    }
+
     if (!isProfileChecked) {
       return;
     }

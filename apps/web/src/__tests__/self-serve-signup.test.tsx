@@ -206,6 +206,20 @@ describe('self-serve signup: wizard', () => {
     expect(h.signOut).toHaveBeenCalledWith({ scope: 'local' });
   });
 
+  it('business email (clients see this): starts as the account email; a different one is sent with the studio', async () => {
+    h.invoke.mockResolvedValue({ data: { tenantId: 't-new', subdomain: 'harbour-yoga' }, error: null });
+    renderPage();
+    const business = await screen.findByLabelText('Business email (clients see this)');
+    await waitFor(() => expect(business).toHaveValue('owner@yoga.test'));
+    fireEvent.change(business, { target: { value: 'hello@harbouryoga.co.il' } });
+    await fillWizard();
+    expect(screen.getByText('hello@harbouryoga.co.il')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByRole('button', { name: 'Create studio' }));
+    await screen.findByRole('heading', { name: 'Harbour Yoga is ready' });
+    expect(h.invoke.mock.calls[0][1].body.contact).toEqual({ email: 'hello@harbouryoga.co.il' });
+  });
+
   it('a taken or reserved address is refused as you type', async () => {
     h.rpc.mockResolvedValue({ data: false, error: null });
     renderPage();

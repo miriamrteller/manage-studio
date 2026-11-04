@@ -17,7 +17,20 @@ const MD_BREAKPOINT = 768;
 
 function readPinnedPreference(): boolean {
   if (typeof window === 'undefined') return false;
-  return localStorage.getItem(STORAGE_KEY) === 'true';
+  try {
+    return localStorage.getItem(STORAGE_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+/** Saving the pin must never break the menu (private windows, blocked storage). */
+function writePinnedPreference(pinned: boolean): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, pinned ? 'true' : 'false');
+  } catch {
+    /* the menu still works for this visit */
+  }
 }
 
 function canPin(): boolean {
@@ -57,20 +70,15 @@ export function NavDrawerProvider({ children }: { children: ReactNode }) {
   const isOverlay = mode === 'overlay';
   const isOpen = mode !== 'closed';
 
-  const persistPinned = useCallback((pinned: boolean) => {
-    localStorage.setItem(STORAGE_KEY, pinned ? 'true' : 'false');
-  }, []);
-
   const openOverlay = useCallback(() => {
     setMode('overlay');
   }, []);
 
+  // Closing (menu button, Escape, Report a problem, sign out) only hides the menu for now.
+  // The saved pin changes only through pin() and unpin().
   const close = useCallback(() => {
-    if (mode === 'pinned') {
-      persistPinned(false);
-    }
     setMode('closed');
-  }, [mode, persistPinned]);
+  }, []);
 
   const toggle = useCallback(() => {
     if (mode === 'closed') {
@@ -82,14 +90,14 @@ export function NavDrawerProvider({ children }: { children: ReactNode }) {
 
   const pin = useCallback(() => {
     if (!canPin()) return;
-    persistPinned(true);
+    writePinnedPreference(true);
     setMode('pinned');
-  }, [persistPinned]);
+  }, []);
 
   const unpin = useCallback(() => {
-    persistPinned(false);
+    writePinnedPreference(false);
     setMode('closed');
-  }, [persistPinned]);
+  }, []);
 
   const togglePin = useCallback(() => {
     if (mode === 'pinned') {
@@ -106,18 +114,17 @@ export function NavDrawerProvider({ children }: { children: ReactNode }) {
     }
   }, [mode]);
 
-  // Auto-unpin on mobile resize
+  // Too narrow to stay pinned: hide it, but keep the saved choice for when the window is wide again.
   useEffect(() => {
     const handleResize = () => {
       if (mode === 'pinned' && !canPin()) {
-        persistPinned(false);
         setMode('closed');
       }
     };
 
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [mode, persistPinned]);
+  }, [mode]);
 
   // Body scroll lock for overlay mode only
   useEffect(() => {
