@@ -108,13 +108,6 @@ export function PaymentProviderChoice({
         )}
         {radio('offline')}
       </div>
-      {!monthlyFees && isOtherPaymentProvider(provider) && (
-        <p className={CHOICE_NOTE} role="note">
-          {t('payment_choice.no_monthly_warning', {
-            provider: t(`settings.offline_payments.providers.${provider}`),
-          })}
-        </p>
-      )}
       <p className={CHOICE_NOTE} role="note">
         {t('payment_choice.disclaimer')}
       </p>

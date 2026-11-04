@@ -142,7 +142,7 @@ describe('studio setup wizard', () => {
     ).toBeInTheDocument();
   });
 
-  it('per project (photographer): "Different provider?" shows YPay and Invoice4U, with a warning', async () => {
+  it('per project (photographer): "Different provider?" shows YPay and Invoice4U, with no monthly-fees warning', async () => {
     renderWizard();
     await fillStudioStep();
     fireEvent.click(screen.getByRole('radio', { name: /Photograph/ }));
@@ -151,7 +151,8 @@ describe('studio setup wizard', () => {
     expect(screen.queryByRole('radio', { name: YPAY_PAY })).toBeNull();
     differentProvider();
     fireEvent.click(screen.getByRole('radio', { name: YPAY_PAY }));
-    expect(screen.getByText("With YPay you can't charge monthly fees. For monthly fees, choose Grow.")).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: YPAY_PAY })).toBeChecked();
+    expect(screen.queryByText(/can't charge monthly fees/)).toBeNull();
   });
 
   it('switching the payment flow to monthly moves a YPay choice back to Grow', async () => {
