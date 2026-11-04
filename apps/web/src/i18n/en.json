@@ -2761,6 +2761,7 @@
       "partial_amount": "Amount to refund ({{currency}})",
       "partial_invalid": "Enter an amount up to {{remaining}}",
       "document_credit_note": "A credit note will be issued for this refund.",
+      "document_takbull": "Takbull will issue the credit document with this refund.",
       "document_in_provider": "{{provider}} doesn't issue a credit document for refunds made from OpalSwift: issue it in {{provider}}.",
       "document_none": "No document is issued: your studio doesn't issue tax documents.",
       "open": "Refund",
