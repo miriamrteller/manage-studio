@@ -1,7 +1,4 @@
 {
-  "errors": {
-    "failed_to_load_classes": "הטעינה של החבילות נכשלה. נסו שוב."
-  },
   "pages": {
     "enrol_complete": {
       "page_title": "חתמו על החוזה",
@@ -107,18 +104,6 @@
       "empty_message": "הוסיפו לקוח כדי להתחיל, או שנו את הסינון.",
       "filter_by_enrolment_status": "סטטוס הזמנה",
       "no_billing": "אין חשבון חיוב מקושר לצילומים"
-    },
-    "admin_classes": {
-      "title": "ניהול חבילות",
-      "description": "יצירה, עריכה ומחיקה של חבילות הצילום שלך.",
-      "create_button": "הוספת חבילה",
-      "edit_title": "עריכת חבילה",
-      "empty_title": "אין חבילות עדיין",
-      "empty_message": "הוסיפו את החבילה הראשונה כדי שתהיה זמינה להזמנה."
-    },
-    "classes": {
-      "no_classes_title": "אין חבילות זמינות",
-      "no_classes_message": "אין כרגע חבילות זמינות להזמנה אונליין. חזרו לבדוק בהמשך או צרו קשר למידע נוסף."
     }
   },
   "enrolment": {

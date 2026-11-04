@@ -139,7 +139,7 @@ export const navigationConfig: NavItem[] = [
   },
   {
     // The studio's classes (the page that used to sit under Setup as "Manage classes").
-    path: '/admin/setup/classes',
+    path: '/admin/classes',
     labelKey: 'nav.classes',
     requiredRoles: ['tenant_admin'],
     sectionKey: 'main',
@@ -275,7 +275,7 @@ export const navigationConfig: NavItem[] = [
     moduleKey: 'scheduling',
   },
   {
-    path: '/admin/setup/services',
+    path: '/admin/packages',
     labelKey: 'nav.booking_services',
     requiredRoles: ['tenant_admin'],
     sectionKey: 'setup',

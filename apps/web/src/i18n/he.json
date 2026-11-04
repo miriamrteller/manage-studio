@@ -103,7 +103,12 @@
     "handoff_sign_in": "כניסה",
     "platform_owner_title": "נכנסת כבעלת הפלטפורמה של OpalSwift",
     "platform_owner_body": "דפי הניהול של הסטודיו מיועדים למנהלי הסטודיו עצמו.",
-    "platform_owner_back": "חזרה ל-app.opalswift.com"
+    "platform_owner_back": "חזרה ל-app.opalswift.com",
+    "set_password_prompt": {
+      "title": "הגדרת סיסמה",
+      "description": "בחרו סיסמה, ובפעם הבאה תוכלו להיכנס מהר יותר עם האימייל והסיסמה, בלי לחכות לקישור.",
+      "not_now": "לא עכשיו"
+    }
   },
   "report_problem": {
     "menu_item": "דיווח על בעיה",
@@ -1311,6 +1316,7 @@
       "empty_message": "הוסף תקופה לפני תזמון שיעורים והרשמות."
     },
     "admin_classes": {
+      "packages_description": "יצירה, עריכה ומחיקה של החבילות שלך.",
       "email_class": "מייל למשתתפים",
       "email_class_label": "שליחת מייל למשתתפים ב{{name}}",
       "order_hint": "קודם מוסיפים {{level}} ו{{season}}, ואז את {{entity}}.",
@@ -2770,6 +2776,7 @@
       "partial_amount": "סכום להחזר ({{currency}})",
       "partial_invalid": "הזינו סכום עד {{remaining}}",
       "document_credit_note": "תופק תעודת זיכוי על ההחזר הזה.",
+      "document_takbull": "מסמך הזיכוי יופק בתקבול יחד עם ההחזר.",
       "document_in_provider": "{{provider}} לא מפיקה מסמך זיכוי על החזרים שנעשים מ-OpalSwift: הפיקו אותו ב-{{provider}}.",
       "document_none": "לא מופק מסמך: הסטודיו שלכם לא מפיק מסמכי מס.",
       "open": "החזר",

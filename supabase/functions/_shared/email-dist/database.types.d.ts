@@ -5723,6 +5723,10 @@ export type Database = {
                 };
                 Returns: string[];
             };
+            my_login_has_password: {
+                Args: never;
+                Returns: boolean;
+            };
             payment_provider_switch_allowed: {
                 Args: {
                     p_new_invoicing: string;

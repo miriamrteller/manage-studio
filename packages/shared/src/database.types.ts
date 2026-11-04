@@ -5451,6 +5451,7 @@ export type Database = {
         Args: { p_kind: string; p_person_ids: string[]; p_tenant_id: string }
         Returns: string[]
       }
+      my_login_has_password: { Args: never; Returns: boolean }
       payment_provider_switch_allowed: {
         Args: {
           p_new_invoicing: string

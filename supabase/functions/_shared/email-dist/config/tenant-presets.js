@@ -175,6 +175,13 @@ export function resolvePresetModules(preset) {
 export function resolveVerticalLabels(vertical, locale) {
     return VERTICAL_LABELS[vertical]?.[locale] ?? {};
 }
+/**
+ * The word for a class on class pages. Classes always use class wording (never a skin's word
+ * such as "Package"); only the studio's own word for its offerings wins.
+ */
+export function resolveClassLabels(overrides = {}, locale = 'en') {
+    return overrides.offering ?? DEFAULT_LABELS_BY_LOCALE[locale].programs.offering;
+}
 export function resolveEntityLabels(preset, overrides = {}, locale = 'en', vertical = 'generic') {
     const defaults = DEFAULT_LABELS_BY_LOCALE[locale][preset];
     const verticalLabels = resolveVerticalLabels(vertical, locale);

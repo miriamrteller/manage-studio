@@ -30,7 +30,7 @@ import { deleteOfferingCover, uploadOfferingCover } from '../lib/offeringImageSt
 export function AdminClassesList() {
   const { t, i18n } = useTranslation();
   const tenant = useTenant();
-  const { labels } = useEntityLabels();
+  const { labels, classLabels } = useEntityLabels();
   const [page, setPage] = useState(1);
   const { sortField, sortOrder, toggleSort } = useSortState<OfferingSortField>(
     DEFAULT_CLASS_SORT.field,
@@ -180,14 +180,14 @@ export function AdminClassesList() {
   return (
     <div className="space-y-4 p-4">
       <div className="space-y-2">
-        <h1 className="text-3xl font-bold">{t('pages.admin_classes.title', { entity: labels.offering.plural })}</h1>
-        <p className="text-gray-600">{t('pages.admin_classes.description', { entity: labels.offering.plural.toLowerCase() })}</p>
-        <p className="text-sm text-gray-700">{t('pages.admin_classes.order_hint', { level: labels.category.singular.toLowerCase(), season: labels.season.singular.toLowerCase(), entity: labels.offering.plural.toLowerCase() })}</p>
+        <h1 className="text-3xl font-bold">{t('pages.admin_classes.title', { entity: classLabels.plural })}</h1>
+        <p className="text-gray-600">{t('pages.admin_classes.description', { entity: classLabels.plural.toLowerCase() })}</p>
+        <p className="text-sm text-gray-700">{t('pages.admin_classes.order_hint', { level: labels.category.singular.toLowerCase(), season: labels.season.singular.toLowerCase(), entity: classLabels.plural.toLowerCase() })}</p>
       </div>
 
       <div className="flex justify-end">
         <Button variant="primary" onClick={() => setIsCreating(true)}>
-          {t('pages.admin_classes.create_button', { entity: labels.offering.singular })}
+          {t('pages.admin_classes.create_button', { entity: classLabels.singular })}
         </Button>
       </div>
 
@@ -251,15 +251,15 @@ export function AdminClassesList() {
 
       {!classesData.isLoading && classesData.classes.length === 0 && (
         <EmptyState
-          title={t('pages.admin_classes.empty_title', { entity: labels.offering.plural })}
-          message={t('pages.admin_classes.empty_message', { entity: labels.offering.singular.toLowerCase() })}
-          actionLabel={t('pages.admin_classes.create_button', { entity: labels.offering.singular })}
+          title={t('pages.admin_classes.empty_title', { entity: classLabels.plural })}
+          message={t('pages.admin_classes.empty_message', { entity: classLabels.singular.toLowerCase() })}
+          actionLabel={t('pages.admin_classes.create_button', { entity: classLabels.singular })}
           onAction={() => setIsCreating(true)}
         />
       )}
 
       {classesData.classes.length > 0 && isNarrow && (
-        <ul className="space-y-3" aria-label={labels.offering.plural}>
+        <ul className="space-y-3" aria-label={classLabels.plural}>
           {classesData.classes.map((classItem) => {
             const ageRange = formatClassAgeRange(t, classItem.min_age, classItem.max_age);
             const level = classItem.category_id ? levelById.get(classItem.category_id) : null;
@@ -519,8 +519,8 @@ export function AdminClassesList() {
             <div className="flex items-center justify-between border-b p-4">
               <h2 className="text-xl font-semibold">
                 {editingClass
-                  ? t('pages.admin_classes.edit_title', { entity: labels.offering.singular })
-                  : t('pages.admin_classes.create_button', { entity: labels.offering.singular })}
+                  ? t('pages.admin_classes.edit_title', { entity: classLabels.singular })
+                  : t('pages.admin_classes.create_button', { entity: classLabels.singular })}
               </h2>
               <Button
                 type="button"

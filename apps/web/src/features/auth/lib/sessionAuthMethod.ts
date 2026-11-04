@@ -34,3 +34,15 @@ export function sessionUsedPassword(session: Session | null): boolean {
     return false;
   }
 }
+
+/** The id of this sign-in (the JWT session_id claim); a new sign-in gets a new one. */
+export function sessionIdOf(session: Session | null): string | null {
+  if (!session?.access_token) return null;
+
+  try {
+    const payload = decodeJwtPayload(session.access_token) as { session_id?: unknown };
+    return typeof payload.session_id === 'string' ? payload.session_id : null;
+  } catch {
+    return null;
+  }
+}

@@ -2,7 +2,11 @@ import { z } from "npm:zod@3.22.4";
 import { handleOptions, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/supabase.ts";
 import { enqueueDocument } from "../_shared/enqueue-document.ts";
-import { executeProviderRefund, ManualRefundRequiredError } from "../_shared/payments/refund-provider.ts";
+import {
+  executeProviderRefund,
+  ManualRefundRequiredError,
+  refundDocumentIssuedWithRefund,
+} from "../_shared/payments/refund-provider.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
 import { planRefund } from "../_shared/payments/refund-amounts.ts";
 
@@ -179,11 +183,15 @@ Deno.serve(withMonitoring("process-refund", async (req) => {
       .eq("status", "paid");
   }
 
-  await enqueueDocument(service, {
-    tenantId,
-    paymentId: refundRow.id as string,
-    documentKind: "refund",
-  });
+  // Takbull issues its own credit document with a refund made through it (RefundType 2 / 4):
+  // queueing one here would make a second. A refund recorded by hand still gets queued.
+  if (!refundDocumentIssuedWithRefund({ provider: original.provider as string, manual: manualRefund })) {
+    await enqueueDocument(service, {
+      tenantId,
+      paymentId: refundRow.id as string,
+      documentKind: "refund",
+    });
+  }
 
   return jsonResponse({ ok: true, refundPaymentId: refundRow.id });
 }));

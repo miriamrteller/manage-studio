@@ -22,7 +22,7 @@ test.describe('Booking features', () => {
     );
 
     test('services admin can open add/edit affordance', async ({ page }) => {
-      await loginAsAdmin(page, '/admin/setup/services');
+      await loginAsAdmin(page, '/admin/packages');
       await expect(page.getByRole('heading', { level: 1 })).toContainText(/Service/i);
       const add = page.getByRole('button', { name: /Add service|Add/i }).first();
       if (await add.isVisible().catch(() => false)) {

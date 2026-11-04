@@ -22,6 +22,7 @@ vi.mock('@/hooks/useEntityLabels', () => ({ useEntityLabels: () => ({ vertical: 
 vi.mock('@/hooks/usePlatformViewLog', () => ({ usePlatformViewLog: () => undefined }));
 vi.mock('@/components/legal/MfaChallengeGate', () => ({ MfaChallengeGate: ({ children }: { children: unknown }) => children }));
 vi.mock('@/components/legal/PlatformTermsGate', () => ({ PlatformTermsGate: ({ children }: { children: unknown }) => children }));
+vi.mock('@/features/auth/components/SetPasswordPrompt', () => ({ SetPasswordPrompt: () => null }));
 
 import i18n from '@/i18n/i18n';
 import { AdminRoute, ParentRoute } from '@/layouts/RouteGuards';

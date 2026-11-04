@@ -103,7 +103,12 @@
     "handoff_sign_in": "Sign in",
     "platform_owner_title": "You're signed in as the OpalSwift platform owner",
     "platform_owner_body": "Studio admin pages are for the studio's own admins.",
-    "platform_owner_back": "Back to app.opalswift.com"
+    "platform_owner_back": "Back to app.opalswift.com",
+    "set_password_prompt": {
+      "title": "Set a password",
+      "description": "Choose a password so you can sign in faster next time, with your email and password instead of waiting for a link.",
+      "not_now": "Not now"
+    }
   },
   "report_problem": {
     "menu_item": "Report a problem",
@@ -1307,6 +1312,7 @@
       "empty_message": "Add a season before scheduling classes and enrolments."
     },
     "admin_classes": {
+      "packages_description": "Create, edit and delete your packages.",
       "email_class": "Email participants",
       "email_class_label": "Email the participants of {{name}}",
       "order_hint": "Add a {{level}} and a {{season}} first, then your {{entity}}.",
@@ -2761,6 +2767,7 @@
       "partial_amount": "Amount to refund ({{currency}})",
       "partial_invalid": "Enter an amount up to {{remaining}}",
       "document_credit_note": "A credit note will be issued for this refund.",
+      "document_takbull": "Takbull will issue the credit document with this refund.",
       "document_in_provider": "{{provider}} doesn't issue a credit document for refunds made from OpalSwift: issue it in {{provider}}.",
       "document_none": "No document is issued: your studio doesn't issue tax documents.",
       "open": "Refund",

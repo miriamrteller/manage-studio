@@ -45,6 +45,16 @@ describe('rules', () => {
     ]);
   });
 
+  it('never lists a feature that is not built yet', () => {
+    const groups = groupStudioFeatures([
+      f('finance:export.bkmv', 'extras'),
+      f('ui:content.ai', 'extras'),
+      f('scheduling:ai.assistant', 'extras'),
+      f('billing:quotes.generate', 'projects'),
+    ]);
+    expect(groups).toEqual([['projects', [f('billing:quotes.generate', 'projects')]]]);
+  });
+
   it('every switchable feature has an English and a Hebrew label', () => {
     const keys = [
       'billing:recurring.enabled', 'billing:dunning.enabled', 'billing:quotes.generate', 'billing:delivery.gated',
