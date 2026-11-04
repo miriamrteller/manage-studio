@@ -475,6 +475,19 @@ function adminStudio(ctx: DemoContext, tenantId: unknown, fn: string): Row {
 }
 
 export const extraRpcs: Record<string, RpcHandler> = {
+  // Settings → Security: may this account switch its login to p_email?
+  login_email_status: (args, ctx) => {
+    if (!ctx.user) throw new DemoRpcError('Not authorized', '42501');
+    const email = String(args.p_email ?? '').trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'invalid';
+    if (email === String(ctx.user.email ?? '').toLowerCase()) return 'same';
+    if (email.endsWith('@opalswift.com')) return 'reserved';
+    const taken = rows(ctx, 'user_profiles').some(
+      (p) => String(p.email ?? '').toLowerCase() === email && p.id !== ctx.user?.id,
+    );
+    return taken ? 'taken' : 'ok';
+  },
+
   studio_feature_states: (args, ctx) => {
     const tenant = adminStudio(ctx, args.p_tenant_id, 'studio_feature_states');
     const off = new Set((tenant.feature_optouts as string[] | undefined) ?? []);
