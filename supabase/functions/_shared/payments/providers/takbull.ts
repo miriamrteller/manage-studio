@@ -73,12 +73,17 @@ export function buildTakbullOrder(input: {
   lineName: string;
   lineDescription?: string;
   installments?: number;
+  /** Bit (PaymentMethodType 21); on a phone, IsMobile asks for the link that opens the Bit app. */
+  payWith?: "bit";
+  isMobile?: boolean;
   ipnUrl: string;
   successUrl: string;
   cancelUrl: string;
 }): TakbullOrderRequest {
   const total = input.amountMinor / 100;
-  const instalments = input.installments && input.installments > 1 ? Math.min(input.installments, 36) : 1;
+  const bit = input.payWith === "bit";
+  // Bit is one payment: the docs give instalments (DealType 2) for the card page only.
+  const instalments = !bit && input.installments && input.installments > 1 ? Math.min(input.installments, 36) : 1;
   const currency = input.currency.toUpperCase();
   return {
     order_reference: input.paymentId,
@@ -88,6 +93,7 @@ export function buildTakbullOrder(input: {
     IPNAddress: input.ipnUrl,
     DisplayType: "redirect",
     PostProcessMethod: "0",
+    ...(bit ? { PaymentMethodType: 21 as const, ...(input.isMobile ? { IsMobile: true } : {}) } : {}),
     Language: input.language,
     ...(currency === "ILS" || currency === "USD" || currency === "EUR" ? { Currency: currency } : {}),
     CustomerFullName: input.payer.name,
@@ -186,21 +192,26 @@ export class TakbullPaymentProvider implements PaymentProvider {
       lineName: params.lineItem?.name ?? "Enrolment",
       lineDescription: params.lineItem?.description,
       installments: params.installments,
+      payWith: params.payWith,
+      isMobile: params.isMobile,
       ipnUrl: takbullIpnUrl(),
       successUrl: params.returnUrls?.success ?? appUrl("/enrol/complete"),
       cancelUrl: params.returnUrls?.failure ?? appUrl("/enrol/failed"),
     });
 
     let uniqId: string;
+    let bitAppUrl: string | undefined;
     try {
-      ({ uniqId } = await api.getPaymentPageRedirectUrl(order));
+      ({ uniqId, url: bitAppUrl } = await api.getPaymentPageRedirectUrl(order));
     } catch (err) {
       await markTakbullOrderFailed(this.service, paymentId);
       throw err;
     }
     await setTakbullOrderRef(this.service, paymentId, uniqId);
 
-    return { providerPaymentRef: uniqId, pageUrl: takbullPaymentPageUrl(uniqId), pendingWebhook: true };
+    // Bit on a phone: Takbull's link opens the Bit app; otherwise its payment page.
+    const pageUrl = params.payWith === "bit" && params.isMobile && bitAppUrl ? bitAppUrl : takbullPaymentPageUrl(uniqId);
+    return { providerPaymentRef: uniqId, pageUrl, pendingWebhook: true };
   }
 
   /**

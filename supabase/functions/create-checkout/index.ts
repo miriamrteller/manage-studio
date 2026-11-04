@@ -7,6 +7,8 @@ interface CreateCheckoutBody {
   offering_id: string;
   engagement_id: string;
   enrolment_token?: string;
+  pay_with?: "card" | "bit";
+  is_mobile?: boolean;
 }
 
 serve(withMonitoring("create-checkout", async (req) => {
@@ -23,7 +25,13 @@ serve(withMonitoring("create-checkout", async (req) => {
       return jsonResponse({ error: "offering_id and engagement_id are required" }, 400);
     }
 
-    const result = await createCheckoutCharge(req, body);
+    const result = await createCheckoutCharge(req, {
+      offering_id: body.offering_id,
+      engagement_id: body.engagement_id,
+      enrolment_token: body.enrolment_token,
+      pay_with: body.pay_with === "bit" ? "bit" : undefined,
+      is_mobile: body.is_mobile === true,
+    });
     if (!result.ok) {
       return jsonResponse({ error: result.error }, result.status);
     }

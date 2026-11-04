@@ -33,6 +33,12 @@ export interface ChargeParams {
    * charge (YPay docType 109). Defaults to the enrolment wording when absent.
    */
   lineItem?: { name: string; description?: string };
+  /**
+   * Takbull only: pay with Bit (PaymentMethodType 21) instead of a card. On a phone
+   * (isMobile) Takbull answers with a link that opens the Bit app.
+   */
+  payWith?: "bit";
+  isMobile?: boolean;
   /** Hosted-page return URLs; defaults to the enrolment completion pages. */
   returnUrls?: { success: string; failure: string };
 }

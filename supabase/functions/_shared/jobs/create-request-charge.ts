@@ -30,7 +30,7 @@ export const ONLINE_PAYMENT_UNAVAILABLE = "online_payment_unavailable";
 export async function createJobPaymentRequestCharge(
   service: SupabaseClient,
   request: JobPaymentRequestRow,
-  options: { tenantLabel?: string } = {},
+  options: { tenantLabel?: string; payWith?: "bit"; isMobile?: boolean } = {},
 ): Promise<CreateRequestChargeResult> {
   if (!isCollectable(request.status)) {
     return { ok: false, error: `Request is ${request.status}`, status: 409 };
@@ -96,6 +96,7 @@ export async function createJobPaymentRequestCharge(
     idempotencyKey: `jpr_${request.id}_${Date.now()}`,
     metadata,
     installments: request.max_installments > 1 ? request.max_installments : undefined,
+    ...(options.payWith === "bit" ? { payWith: "bit" as const, isMobile: options.isMobile === true } : {}),
     lineItem: {
       name: request.label,
       description: options.tenantLabel ? `${options.tenantLabel} — ${request.label}` : request.label,
