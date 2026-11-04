@@ -1485,6 +1485,212 @@ export type Database = {
           },
         ]
       }
+      job_photo_order_items: {
+        Row: {
+          created_at: string
+          engagement_id: string
+          file_name: string
+          id: string
+          image_key: string
+          included: boolean
+          order_id: string
+          price_minor: number
+          tenant_id: string
+          voided_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          engagement_id: string
+          file_name: string
+          id?: string
+          image_key: string
+          included?: boolean
+          order_id: string
+          price_minor: number
+          tenant_id: string
+          voided_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          engagement_id?: string
+          file_name?: string
+          id?: string
+          image_key?: string
+          included?: boolean
+          order_id?: string
+          price_minor?: number
+          tenant_id?: string
+          voided_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_photo_order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "job_photo_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_photo_order_items_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_photo_orders: {
+        Row: {
+          all_photos: boolean
+          cancelled_at: string | null
+          created_at: string
+          currency: string
+          delivered_at: string | null
+          delivery_url: string | null
+          engagement_id: string
+          id: string
+          included_count: number
+          job_payment_request_id: string | null
+          paid_at: string | null
+          person_id: string | null
+          photo_count: number
+          refunded_at: string | null
+          status: string
+          tenant_id: string
+          total_minor: number
+          updated_at: string
+        }
+        Insert: {
+          all_photos?: boolean
+          cancelled_at?: string | null
+          created_at?: string
+          currency: string
+          delivered_at?: string | null
+          delivery_url?: string | null
+          engagement_id: string
+          id?: string
+          included_count?: number
+          job_payment_request_id?: string | null
+          paid_at?: string | null
+          person_id?: string | null
+          photo_count: number
+          refunded_at?: string | null
+          status?: string
+          tenant_id: string
+          total_minor: number
+          updated_at?: string
+        }
+        Update: {
+          all_photos?: boolean
+          cancelled_at?: string | null
+          created_at?: string
+          currency?: string
+          delivered_at?: string | null
+          delivery_url?: string | null
+          engagement_id?: string
+          id?: string
+          included_count?: number
+          job_payment_request_id?: string | null
+          paid_at?: string | null
+          person_id?: string | null
+          photo_count?: number
+          refunded_at?: string | null
+          status?: string
+          tenant_id?: string
+          total_minor?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_photo_orders_engagement_id_fkey"
+            columns: ["engagement_id"]
+            isOneToOne: false
+            referencedRelation: "job_photo_shops"
+            referencedColumns: ["engagement_id"]
+          },
+          {
+            foreignKeyName: "job_photo_orders_job_payment_request_id_fkey"
+            columns: ["job_payment_request_id"]
+            isOneToOne: true
+            referencedRelation: "job_payment_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_photo_orders_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_photo_orders_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_photo_shops: {
+        Row: {
+          all_photos_price_minor: number | null
+          closes_at: string
+          created_at: string
+          currency: string
+          engagement_id: string
+          gallery_key: string | null
+          gallery_name: string | null
+          included_photos: number
+          price_per_photo_minor: number | null
+          provider: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          all_photos_price_minor?: number | null
+          closes_at: string
+          created_at?: string
+          currency?: string
+          engagement_id: string
+          gallery_key?: string | null
+          gallery_name?: string | null
+          included_photos?: number
+          price_per_photo_minor?: number | null
+          provider?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          all_photos_price_minor?: number | null
+          closes_at?: string
+          created_at?: string
+          currency?: string
+          engagement_id?: string
+          gallery_key?: string | null
+          gallery_name?: string | null
+          included_photos?: number
+          price_per_photo_minor?: number | null
+          provider?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_photo_shops_engagement_id_fkey"
+            columns: ["engagement_id"]
+            isOneToOne: true
+            referencedRelation: "engagements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_photo_shops_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_digest_optouts: {
         Row: {
           created_at: string
@@ -2050,6 +2256,7 @@ export type Database = {
           min_age: number | null
           name: string
           offering_type: string
+          photos_included: number
           price_minor: number
           renewal_policy: string
           season_id: string | null
@@ -2080,6 +2287,7 @@ export type Database = {
           min_age?: number | null
           name: string
           offering_type?: string
+          photos_included?: number
           price_minor?: number
           renewal_policy?: string
           season_id?: string | null
@@ -2110,6 +2318,7 @@ export type Database = {
           min_age?: number | null
           name?: string
           offering_type?: string
+          photos_included?: number
           price_minor?: number
           renewal_policy?: string
           season_id?: string | null
@@ -3578,6 +3787,38 @@ export type Database = {
           },
         ]
       }
+      tenant_photo_shop_settings: {
+        Row: {
+          all_photos_price_minor: number | null
+          gallery_open_days: number
+          price_per_photo_minor: number | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          all_photos_price_minor?: number | null
+          gallery_open_days?: number
+          price_per_photo_minor?: number | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          all_photos_price_minor?: number | null
+          gallery_open_days?: number
+          price_per_photo_minor?: number | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_photo_shop_settings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenant_scheduling_hours: {
         Row: {
           created_at: string
@@ -4548,6 +4789,16 @@ export type Database = {
         Args: { p_engagement_id: string; p_requests: Json }
         Returns: Json
       }
+      create_job_photo_order: {
+        Args: {
+          p_all_photos?: boolean
+          p_engagement_id: string
+          p_items: Json
+          p_label?: string
+          p_person_id: string
+        }
+        Returns: Json
+      }
       create_scheduling_hold: {
         Args: {
           p_client_email: string
@@ -4596,6 +4847,10 @@ export type Database = {
       }
       decline_public_quote: {
         Args: { p_reason?: string; p_tenant_id: string; p_token: string }
+        Returns: Json
+      }
+      deliver_job_photo_order: {
+        Args: { p_delivery_url: string; p_order_id: string }
         Returns: Json
       }
       disconnect_tenant_google_calendar: {
@@ -4650,6 +4905,10 @@ export type Database = {
         Args: { p_engagement_id: string }
         Returns: Json
       }
+      get_client_photo_shop: {
+        Args: { p_engagement_id: string }
+        Returns: Json
+      }
       get_cron_secret: { Args: never; Returns: string }
       get_engagement_person_id: {
         Args: { p_engagement_id: string }
@@ -4686,6 +4945,7 @@ export type Database = {
           webhook_secret: string
         }[]
       }
+      get_job_photo_shop: { Args: { p_engagement_id: string }; Returns: Json }
       get_lead_form: { Args: { p_tenant_id: string }; Returns: Json }
       get_lead_form_invite: {
         Args: { p_tenant_id: string; p_token: string }
@@ -5123,6 +5383,12 @@ export type Database = {
         }
         Returns: boolean
       }
+      photo_shop_is_admin: { Args: { p_tenant_id: string }; Returns: boolean }
+      photo_shop_is_client: {
+        Args: { p_engagement_id: string }
+        Returns: boolean
+      }
+      photo_shop_prefill: { Args: { p_engagement_id: string }; Returns: Json }
       pick_active_consent_template: {
         Args: { p_language?: string; p_person_id: string; p_tenant_id: string }
         Returns: {
@@ -5328,6 +5594,10 @@ export type Database = {
       save_icount_webhook_secret: {
         Args: { p_secret: string }
         Returns: undefined
+      }
+      save_job_photo_shop: {
+        Args: { p_engagement_id: string; p_settings: Json }
+        Returns: Json
       }
       save_quote: { Args: { p_lines: Json; p_quote: Json }; Returns: string }
       save_tenant_google_credentials: {
