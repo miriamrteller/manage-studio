@@ -259,11 +259,20 @@ Default: `month_current`. Persist in URL; hub reads `useSearchParams`.
 
 ## CSV export columns (F6)
 
-Payments: `paid_date`, `payer_name`, `offering_title`, `pretax_minor`, `vat_minor`, `total_minor`, `currency`, `status`, `charge_type`, `provider`, `payment_method`, `external_document_number`, `engagement_id`, `payment_id`
+Headers and labels (status, payment reason, provider, method) are in the language chosen for the
+file ("File language": Hebrew or English, prefilled from the app language). Dates are DD/MM/YYYY
+(Israel time) and amounts plain shekel numbers (e.g. `118.00`) in both languages. No row cap
+(paged, 1,000 rows per request).
 
-Expenses: `expense_date`, `category_name`, `description`, `pretax_minor`, `vat_minor`, `total_minor`, `currency`, `supplier_name`, `supplier_vat_number`, `corrects_expense_id`, `expense_id`
+Payments: paid date, payer, item, total, currency, status, payment reason, provider, method,
+document number, enrolment ID, payment ID.
 
-Encoding: UTF-8 with BOM (`\uFEFF` prefix). Filename: `{kind}-{subdomain}-{period}.csv`.
+Expenses: expense date, category, description, before VAT, VAT, total, currency, supplier,
+supplier business number, corrects expense, expense ID.
+
+Accountant export: see [ACCOUNTANT-VIEW.md](../finance/ACCOUNTANT-VIEW.md).
+
+Encoding: UTF-8 with BOM (`\uFEFF` prefix). Filename: `{kind}-{subdomain}-{date}.csv`.
 
 ## Forbidden
 

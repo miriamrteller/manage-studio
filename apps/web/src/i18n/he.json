@@ -2441,6 +2441,19 @@
       "preparing": "מכין את הקובץ… {{count}} שורות",
       "failed": "לא הצלחנו להכין את הקובץ. נסו שוב."
     },
+    "csv": {
+      "language": "שפת הקובץ",
+      "enrolment_id": "מזהה הרשמה",
+      "expenses": {
+        "expense_date": "תאריך הוצאה",
+        "category": "קטגוריה",
+        "description": "תיאור",
+        "supplier_name": "ספק",
+        "supplier_vat_number": "מספר עוסק של הספק",
+        "corrects_expense_id": "מתקן את ההוצאה",
+        "expense_id": "מזהה הוצאה"
+      }
+    },
     "accountant_export": {
       "title": "לרואה החשבון",
       "intro": "כל התשלומים וההחזרים בתקופה, עם מסמך המס (סוג, מספר, קישור) או הסיבה שאין, והמע\"מ לפי המסמך שהופק.",
