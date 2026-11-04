@@ -346,8 +346,9 @@ describe('studio setup wizard', () => {
     next();
     next();
     fireEvent.change(screen.getByLabelText("Owner's email"), { target: { value: 'owner@example.com' } });
-    const business = screen.getByLabelText('Business email (clients see this)');
+    const business = screen.getByLabelText('Business email');
     expect(business).toHaveValue('owner@example.com');
+    expect(screen.getByText(/You sign in with your login email: owner@example.com/)).toBeInTheDocument();
     // A typo is not accepted (it would fail the whole studio); the hint says what to do.
     fireEvent.change(business, { target: { value: 'hello@' } });
     expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();

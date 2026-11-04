@@ -119,3 +119,26 @@ describe('PaymentDetailDrawer', () => {
     expect(screen.queryByText('finance.payments.col_vat_split')).not.toBeInTheDocument();
   });
 });
+
+describe('PaymentsLogTable', () => {
+  it('shows each payment\'s document in the Document column', async () => {
+    const { PaymentsLogTable } = await import('@/features/finance-admin/components/PaymentsLogTable');
+    wrap(
+      <PaymentsLogTable
+        rows={[
+          base(),
+          base({
+            id: '00000000-0000-0000-0000-000000000002',
+            external_document_id: null,
+            external_document_number: null,
+            invoice_url: null,
+            issued_document_kind: null,
+            status: 'pending',
+          }),
+        ]}
+      />,
+    );
+    expect(screen.getByRole('link', { name: '1001' })).toBeInTheDocument();
+    expect(screen.getByText('finance.accountant_export.no_document.not_paid')).toBeInTheDocument();
+  });
+});
