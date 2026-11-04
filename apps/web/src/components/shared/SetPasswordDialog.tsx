@@ -31,9 +31,21 @@ import { bindFormSubmit } from '@/lib/bindFormSubmit';
 interface SetPasswordDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Wording for the "set a password" case (defaults to the settings wording). */
+  setTitle?: string;
+  setDescription?: string;
+  cancelLabel?: string;
+  onSaved?: () => void;
 }
 
-export function SetPasswordDialog({ open, onOpenChange }: SetPasswordDialogProps) {
+export function SetPasswordDialog({
+  open,
+  onOpenChange,
+  setTitle,
+  setDescription,
+  cancelLabel,
+  onSaved,
+}: SetPasswordDialogProps) {
   const { t } = useTranslation();
   const { session } = useAuthSession();
   const { user } = useCurrentUser();
@@ -86,6 +98,7 @@ export function SetPasswordDialog({ open, onOpenChange }: SetPasswordDialogProps
         currentPassword: data.currentPassword?.trim() || undefined,
         captchaToken: captcha.authOptions().captchaToken,
       });
+      onSaved?.();
       onOpenChange(false);
       form.reset();
     } catch (error) {
@@ -116,12 +129,12 @@ export function SetPasswordDialog({ open, onOpenChange }: SetPasswordDialogProps
           <DialogTitle>
             {requiresCurrentPassword
               ? t('pages.portal.password.change_title')
-              : t('pages.portal.password.set_title')}
+              : (setTitle ?? t('pages.portal.password.set_title'))}
           </DialogTitle>
           <DialogDescription>
             {requiresCurrentPassword
               ? t('pages.portal.password.change_description')
-              : t('pages.portal.password.set_description')}
+              : (setDescription ?? t('pages.portal.password.set_description'))}
           </DialogDescription>
         </DialogHeader>
 
@@ -218,7 +231,7 @@ export function SetPasswordDialog({ open, onOpenChange }: SetPasswordDialogProps
               onClick={() => handleOpenChange(false)}
               disabled={saving}
             >
-              {t('pages.portal.password.cancel')}
+              {cancelLabel ?? t('pages.portal.password.cancel')}
             </Button>
             <Button type="submit" disabled={saving || (requiresCurrentPassword && !captcha.ready)}>
               {saving ? t('pages.portal.password.saving') : t('pages.portal.password.save')}

@@ -103,7 +103,12 @@
     "handoff_sign_in": "Sign in",
     "platform_owner_title": "You're signed in as the OpalSwift platform owner",
     "platform_owner_body": "Studio admin pages are for the studio's own admins.",
-    "platform_owner_back": "Back to app.opalswift.com"
+    "platform_owner_back": "Back to app.opalswift.com",
+    "set_password_prompt": {
+      "title": "Set a password",
+      "description": "Choose a password so you can sign in faster next time, with your email and password instead of waiting for a link.",
+      "not_now": "Not now"
+    }
   },
   "report_problem": {
     "menu_item": "Report a problem",

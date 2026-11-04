@@ -103,7 +103,12 @@
     "handoff_sign_in": "כניסה",
     "platform_owner_title": "נכנסת כבעלת הפלטפורמה של OpalSwift",
     "platform_owner_body": "דפי הניהול של הסטודיו מיועדים למנהלי הסטודיו עצמו.",
-    "platform_owner_back": "חזרה ל-app.opalswift.com"
+    "platform_owner_back": "חזרה ל-app.opalswift.com",
+    "set_password_prompt": {
+      "title": "הגדרת סיסמה",
+      "description": "בחרו סיסמה, ובפעם הבאה תוכלו להיכנס מהר יותר עם האימייל והסיסמה, בלי לחכות לקישור.",
+      "not_now": "לא עכשיו"
+    }
   },
   "report_problem": {
     "menu_item": "דיווח על בעיה",
