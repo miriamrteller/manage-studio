@@ -21,6 +21,8 @@ const BodySchema = z.object({
   note: z.string().max(500).optional(),
   /** YYYY-MM-DD the money was received; defaults to today. */
   paid_on: z.string().optional(),
+  /** What was actually paid (a discount, say); defaults to the request's amount. */
+  amount_minor: z.number().int().positive().optional(),
   /** Email the payer a "not a tax document" confirmation (invoicing "none" only). Default on. */
   send_confirmation: z.boolean().optional(),
 });
@@ -104,7 +106,7 @@ Deno.serve(withMonitoring("record-job-payment", async (req) => {
       pretax_amount_minor: 0,
       vat_rate: 0,
       vat_amount_minor: 0,
-      total_amount_minor: request.amount_minor,
+      total_amount_minor: body.amount_minor ?? request.amount_minor,
       currency: request.currency.toUpperCase(),
       status: "succeeded",
       paid_at: paid.paidAt,
@@ -147,6 +149,9 @@ Deno.serve(withMonitoring("record-job-payment", async (req) => {
       job_payment_request_id: request.id,
       method: body.method,
       manual: true,
+      amount_minor: body.amount_minor ?? request.amount_minor,
+      request_amount_minor: request.amount_minor,
+      amount_changed: body.amount_minor !== undefined && body.amount_minor !== request.amount_minor,
     },
   });
 

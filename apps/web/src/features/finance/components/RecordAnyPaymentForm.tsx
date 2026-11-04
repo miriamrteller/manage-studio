@@ -56,7 +56,7 @@ export function recordPaymentRequest(input: {
     return { fn: 'record-payment', body: { engagement_id: item.engagementId, amount_minor: input.amountMinor, ...shared } };
   }
   if (item?.kind === 'job') {
-    return { fn: 'record-job-payment', body: { request_id: item.requestId, ...shared } };
+    return { fn: 'record-job-payment', body: { request_id: item.requestId, amount_minor: input.amountMinor, ...shared } };
   }
   const payer =
     'personId' in input.payer
@@ -112,7 +112,8 @@ export function RecordAnyPaymentForm({ onRecorded }: { onRecorded: () => void })
   // Prefill: the client's first open item, otherwise "Other".
   const chosenKey = itemKey ?? open[0]?.key ?? OTHER;
   const item = [...open, ...sells].find((i) => i.key === chosenKey) ?? null;
-  const shownAmount = item?.kind === 'job' ? minorToText(item.amountMinor) : amountText ?? minorToText(item?.amountMinor);
+  // Prefilled from the item, always editable (a partial payment, a discount).
+  const shownAmount = amountText ?? minorToText(item?.amountMinor);
   const amountMinor = parseAmountToMinor(shownAmount);
   const method: ManualPaymentMethod =
     methodChoice && methods.includes(methodChoice)
@@ -279,17 +280,14 @@ export function RecordAnyPaymentForm({ onRecorded }: { onRecorded: () => void })
           inputMode="decimal"
           dir="ltr"
           value={shownAmount}
-          readOnly={item?.kind === 'job'}
           aria-invalid={amountMinor === null}
           aria-describedby={`${id}-amount-hint`}
           onChange={(e) => setAmountText(e.target.value)}
         />
         <span id={`${id}-amount-hint`} className="mt-1 block text-xs text-muted-foreground">
-          {item?.kind === 'job'
-            ? t('finance.record_payment.any.job_amount_hint')
-            : amountMinor === null
-              ? t('finance.record_payment.amount_invalid')
-              : t('finance.record_payment.any.amount_hint')}
+          {amountMinor === null
+            ? t('finance.record_payment.amount_invalid')
+            : t('finance.record_payment.any.amount_hint')}
         </span>
       </label>
 

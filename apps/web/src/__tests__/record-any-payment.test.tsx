@@ -103,7 +103,7 @@ describe('where the payment goes', () => {
         payer: { personId: 'p1', name: 'Dana' },
         item: { kind: 'job', key: 'job:r1', requestId: 'r1', name: 'Deposit', amountMinor: 50000 },
       }),
-    ).toEqual({ fn: 'record-job-payment', body: { request_id: 'r1', method: 'cash', paid_on: '2026-11-01' } });
+    ).toEqual({ fn: 'record-job-payment', body: { request_id: 'r1', amount_minor: 35000, method: 'cash', paid_on: '2026-11-01' } });
   });
   it('anything else is a standalone payment, with the offering when one is picked', () => {
     expect(
@@ -170,7 +170,7 @@ describe('the form', () => {
     );
   });
 
-  it("a client's open items come first; picking one prefills its amount and records it there", async () => {
+  it("a client's open items come first; picking one prefills its amount (editable) and records it there", async () => {
     h.chosen = { id: 'p1', name: 'Dana' };
     h.tables.engagements = [
       { id: 'e1', status: 'pending_payment', offering: { id: 'o1', name: 'Ballet', price_minor: 30000, billing_mode: 'one_time' } },
@@ -184,10 +184,12 @@ describe('the form', () => {
     fireEvent.change(screen.getByLabelText('finance.record_payment.any.for'), { target: { value: 'offering:o9' } });
     expect(screen.getByLabelText(/finance.record_payment.amount/)).toHaveValue('90');
     fireEvent.change(screen.getByLabelText('finance.record_payment.any.for'), { target: { value: 'first:e1' } });
+    // Prefilled, always editable: a partial payment or a discount.
+    fireEvent.change(screen.getByLabelText(/finance.record_payment.amount/), { target: { value: '250' } });
     fireEvent.click(screen.getByRole('button', { name: 'finance.record_payment.submit' }));
     await waitFor(() =>
       expect(h.invoke).toHaveBeenCalledWith('record-payment', {
-        body: { engagement_id: 'e1', amount_minor: 30000, method: 'cash' },
+        body: { engagement_id: 'e1', amount_minor: 25000, method: 'cash' },
       }),
     );
   });

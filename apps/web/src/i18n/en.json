@@ -2624,7 +2624,6 @@
         "item_first": "{{name}}: first payment",
         "item_monthly": "{{name}}: monthly fee",
         "amount_hint": "Starts at the price of what it's for. Change it if a different amount was paid.",
-        "job_amount_hint": "The amount is set on the payment request.",
         "date": "Date paid",
         "what_for": "What it's for (optional)",
         "need_payer": "Choose who paid, or add someone not in the list."
