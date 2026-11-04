@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ContactPreferencesEditor } from '@/components/shared/ContactPreferencesEditor';
 import { SetPasswordDialog } from '@/components/shared/SetPasswordDialog';
+import { ChangeLoginEmailDialog } from '@/components/shared/ChangeLoginEmail';
 import { useTenant } from '@/hooks/useTenant';
 import { useContactPreferences } from '@/features/notifications/hooks/useContactPreferences';
 import { useClientPortal } from '../hooks/useClientPortal';
@@ -28,6 +29,7 @@ export function ClientPortal() {
   const { data, isLoading, error } = useClientPortal();
   const [prefsOpen, setPrefsOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
+  const [loginEmailOpen, setLoginEmailOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -63,11 +65,15 @@ export function ClientPortal() {
           <Button variant="outline" onClick={() => setPasswordOpen(true)}>
             {t('pages.portal.login_password')}
           </Button>
+          <Button variant="outline" onClick={() => setLoginEmailOpen(true)}>
+            {t('login_email.change_title')}
+          </Button>
         </div>
       </section>
 
       <ContactPreferencesEditor open={prefsOpen} onOpenChange={setPrefsOpen} />
       <SetPasswordDialog open={passwordOpen} onOpenChange={setPasswordOpen} />
+      <ChangeLoginEmailDialog open={loginEmailOpen} onOpenChange={setLoginEmailOpen} />
 
       <ShootsSection shoots={shoots} />
 
