@@ -19,6 +19,7 @@ import {
   type ExternalDocumentResult,
   type InvoicingProvider,
 } from "../types.ts";
+import { documentKindFromYpayDocType } from "../../payments/document-kind.ts";
 
 /**
  * YPay invoicing adapter.
@@ -119,7 +120,7 @@ export class YpayInvoicingProvider implements InvoicingProvider {
         { retryable: false },
       );
     }
-    return parsed;
+    return { ...parsed, documentKind: documentKindFromYpayDocType(docType) };
   }
 
   async checkAuthHealth(service: SupabaseClient, tenantId: string): Promise<AuthHealthResult> {
@@ -142,6 +143,7 @@ function mockDocument(paymentId: string, docType: YpayDocType): ExternalDocument
     externalDocumentId: `mock-ypay-doc-${paymentId}`,
     externalDocumentNumber: `YPAY-MOCK-${docType}-${short}`,
     documentUrl: `https://mock.ypay.local/document/${paymentId}`,
+    documentKind: documentKindFromYpayDocType(docType),
   };
 }
 

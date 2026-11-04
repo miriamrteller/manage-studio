@@ -22,9 +22,11 @@ export class PaymentsLogService extends BaseService {
       page?: number;
       pageSize?: number;
       filters?: PaymentsLogFilters;
+      /** Accountant export: oldest paid first, plus the payer's business details. */
+      forExport?: boolean;
     } = {},
   ) {
-    const { page = 1, pageSize = PAYMENTS_LOG_PAGE_SIZE, filters = {} } = options;
+    const { page = 1, pageSize = PAYMENTS_LOG_PAGE_SIZE, filters = {}, forExport = false } = options;
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
@@ -39,15 +41,25 @@ export class PaymentsLogService extends BaseService {
           pretax_amount_minor, vat_amount_minor, total_amount_minor, currency,
           status, charge_type, provider, payment_method,
           paid_at, created_at, external_document_number, invoice_url,
+          external_document_id, issued_document_kind, invoice_issued_at, allocation_number, refunds_payment_id,
+          document_queue(status, document_kind, created_at),
           person:people!payments_person_id_fkey(id, name),
           offering:offerings!payments_offering_id_fkey(id, name),
-          engagement:engagements!payments_engagement_id_fkey(id, status)
+          engagement:engagements!payments_engagement_id_fkey(id, status)${
+            forExport
+              ? ', billing_account:billing_accounts!payments_billing_account_id_fkey(business_name, business_tax_id)'
+              : ''
+          }
         `,
           { count: 'exact' },
         )
-        .eq('tenant_id', tenant.id)
-        .order('created_at', { ascending: false })
-        .range(from, to);
+        .eq('tenant_id', tenant.id);
+
+      // A unique tie-breaker (id) keeps pages stable while an export pages through.
+      query = forExport
+        ? query.order('paid_at', { ascending: true, nullsFirst: false }).order('id', { ascending: true })
+        : query.order('created_at', { ascending: false }).order('id', { ascending: false });
+      query = query.range(from, to);
 
       if (filters.statuses?.length) {
         query = query.in('status', filters.statuses);
@@ -84,6 +96,27 @@ export class PaymentsLogService extends BaseService {
         pageSize,
       };
     }, 'PaymentsLogService.list');
+  }
+
+  /** Document numbers of original payments, for "refund of" in the accountant export. */
+  static async documentNumbersByPaymentIds(
+    tenant: Tenant,
+    ids: string[],
+  ): Promise<Map<string, string | null>> {
+    const result = new Map<string, string | null>();
+    for (let i = 0; i < ids.length; i += 200) {
+      const chunk = ids.slice(i, i + 200);
+      const { data, error } = await supabase
+        .from('payments')
+        .select('id, external_document_number')
+        .eq('tenant_id', tenant.id)
+        .in('id', chunk);
+      if (error) throw error;
+      for (const row of data ?? []) {
+        result.set(row.id as string, (row.external_document_number as string | null) ?? null);
+      }
+    }
+    return result;
   }
 
   static async searchPayerPersonIds(tenant: Tenant, search: string): Promise<string[]> {

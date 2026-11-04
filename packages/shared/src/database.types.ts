@@ -2336,6 +2336,7 @@ export type Database = {
           id: string
           invoice_issued_at: string | null
           invoice_url: string | null
+          issued_document_kind: string | null
           job_payment_request_id: string | null
           legal_hold: boolean
           offering_id: string | null
@@ -2383,6 +2384,7 @@ export type Database = {
           id?: string
           invoice_issued_at?: string | null
           invoice_url?: string | null
+          issued_document_kind?: string | null
           job_payment_request_id?: string | null
           legal_hold?: boolean
           offering_id?: string | null
@@ -2430,6 +2432,7 @@ export type Database = {
           id?: string
           invoice_issued_at?: string | null
           invoice_url?: string | null
+          issued_document_kind?: string | null
           job_payment_request_id?: string | null
           legal_hold?: boolean
           offering_id?: string | null
@@ -3691,6 +3694,7 @@ export type Database = {
           google_calendar_id: string | null
           google_calendar_refresh_token_enc: string | null
           google_calendar_token_expires_at: string | null
+          green_invoice_document_type: number
           health_declaration: boolean | null
           id: string
           invoice_license_number: string | null
@@ -3741,6 +3745,7 @@ export type Database = {
           tranzila_terminal_name: string | null
           trial_ends_at: string | null
           updated_at: string
+          vat_report_period: string
           vat_type: number
           waiver_link_secret_enc: string | null
           waiver_require_otp: boolean
@@ -3771,6 +3776,7 @@ export type Database = {
           google_calendar_id?: string | null
           google_calendar_refresh_token_enc?: string | null
           google_calendar_token_expires_at?: string | null
+          green_invoice_document_type?: number
           health_declaration?: boolean | null
           id?: string
           invoice_license_number?: string | null
@@ -3821,6 +3827,7 @@ export type Database = {
           tranzila_terminal_name?: string | null
           trial_ends_at?: string | null
           updated_at?: string
+          vat_report_period?: string
           vat_type?: number
           waiver_link_secret_enc?: string | null
           waiver_require_otp?: boolean
@@ -3851,6 +3858,7 @@ export type Database = {
           google_calendar_id?: string | null
           google_calendar_refresh_token_enc?: string | null
           google_calendar_token_expires_at?: string | null
+          green_invoice_document_type?: number
           health_declaration?: boolean | null
           id?: string
           invoice_license_number?: string | null
@@ -3901,6 +3909,7 @@ export type Database = {
           tranzila_terminal_name?: string | null
           trial_ends_at?: string | null
           updated_at?: string
+          vat_report_period?: string
           vat_type?: number
           waiver_link_secret_enc?: string | null
           waiver_require_otp?: boolean

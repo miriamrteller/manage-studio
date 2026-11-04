@@ -1,0 +1,93 @@
+# Accountant view: documents, VAT and export
+
+Owner request (2026-11-04): make the finance area useful for a studio's accountant.
+This file is the one place for the tax facts and decisions behind it. Draft, not tax advice:
+every tax statement below is marked [[ACCOUNTANT: confirm]] and listed in
+[AWAITING-LAWYER-REVIEW.md](../../legal/AWAITING-LAWYER-REVIEW.md) (row 16).
+
+## Rule: VAT follows the document issued, not business status
+
+The owner's rule (see [PAYMENTS-AUDIT.md](../PAYMENTS-AUDIT.md), "Business status must
+not change what our app does") stays: prices are gross, providers issue the documents, and
+business status never switches app behaviour.
+
+So the finance page and the export show VAT **from the document that was actually issued**
+for each payment (`payments.issued_document_kind`):
+
+| Document issued | Shown |
+| --- | --- |
+| Receipt (קבלה) | Gross; VAT 0 |
+| Tax invoice-receipt (חשבונית מס-קבלה) | Pretax / VAT / gross, VAT included in the gross at the rate on the payment date |
+| Credit document (חשבונית זיכוי) | Same split, negative |
+| Unknown (the provider issued it and didn't say which) | Gross only, "document issued by <provider>" |
+| No document | Gross only, with the reason (not paid, waiting, failed, can't be issued, studio issues no documents, refund made in YPay, missing) |
+
+A studio that changes status mid-year needs nothing special: payments before the change keep
+their receipts, payments after it carry their tax invoice-receipts.
+
+Where the type comes from:
+- **YPay**: the type YPay reports on the card callback, else the explicit setting "Which document
+  does YPay issue?" (`tenants.ypay_document_type`, 108 receipt / 109 tax invoice-receipt), which is
+  what we sent.
+- **Green Invoice**: the explicit setting "Which document does Green Invoice issue?"
+  (`tenants.green_invoice_document_type`, 400 receipt / 320 tax invoice-receipt, #340); 330 credit
+  for a refund. Documents issued before that setting were all 320.
+- **Grow, iCount, Invoice4U**: their account decides and they don't tell us: unknown.
+  (Owner decision 2026-11-04: gross only for these for now; Grow's future is open, revisit later.)
+
+Existing documents are backfilled from the same settings
+(migration `20261104101635_payments_issued_document_kind.sql`).
+
+Code: `supabase/functions/_shared/payments/document-kind.ts` (provider codes),
+`apps/web/src/features/finance-admin/lib/paymentDocuments.ts` (document status, VAT split).
+
+## Tax facts [[ACCOUNTANT: confirm]]
+
+- **VAT statuses** stay two: *osek patur* (עוסק פטור: charges no VAT, issues receipts) and
+  *osek murshe* / company (עוסק מורשה / חברה: charges VAT, issues tax invoices or tax
+  invoice-receipts). Osek patur turnover cap 2026 ≈ ₪122,833.
+- **"Osek zair" (עסק זעיר, from 2026) is an income-tax track, not a VAT status.** Patur and
+  murshe businesses with turnover up to the same cap can choose it for a flat 30% expense
+  deduction without receipts. It changes nothing in VAT or in which document is issued, so the
+  app needs no new VAT branch.
+  Sources: [Bizportal](https://www.bizportal.co.il/guides/news/article/20045314),
+  [Capitax, VAT](https://www.capitax.co.il/content/2/3399). Not yet checked on the Tax Authority's
+  own site.
+- **VAT rate**: 17% until 31.12.2024, 18% from 1.1.2025 (`israelVatRateOn`).
+- **VAT reporting period**: every two months or monthly, depending on the business. The app
+  doesn't guess: a studio setting, prefilled "every 2 months" (PR2).
+- **Allocation numbers** (מספר הקצאה, "Israel invoice") matter for tax invoices to businesses;
+  `payments.allocation_number` goes in the export.
+- Our split is computed from the gross; the provider's document is the legal record and its
+  rounding can differ by one agora.
+
+## Accountant export (PR2)
+
+Finance → Payments log → **For your accountant**: period prefilled with the last VAT period
+(studio setting "VAT report every: 2 months / month", `tenants.vat_report_period`, default
+2 months; changes only this prefill). Presets: last / this VAT period, last / this month,
+last quarter, last / this year, or any dates. One CSV row per paid payment and refund
+(UTF-8 with BOM, Hebrew headers for Hebrew studios, amounts in shekels, dates DD/MM/YYYY in
+Israel time):
+
+**File language**: Hebrew or English (owner request 2026-11-04), prefilled from the app
+language and remembered in the browser. It sets the headers, document types, no-document
+reasons and method names; dates (DD/MM/YYYY) and amounts (plain numbers) are the same in both.
+The payments log and expenses CSVs have the same choice.
+
+paid date · document date · document type · number · link · allocation number · no-document
+reason · payer · business name and number (when billed to a business) · item · before VAT ·
+VAT · VAT rate · total · currency · method · provider · payment reason · status · refund of
+document · payment id.
+
+No row cap: exports page through 1,000 rows at a time. (The old export asked for one
+5,000-row page, but the API returns at most 1,000 rows per request, so it could silently stop
+at 1,000.) The plain "Export CSV" on the payments log and the expenses export page the same way.
+
+## PRs
+
+1. Record the document type per payment; "no document" reasons; VAT split helper.
+2. Accountant export: no row cap (paged), period presets (month, VAT period, quarter, year),
+   all columns, UTF-8 BOM; VAT period setting; expenses export cap removed too.
+3. Payments log: document column (type, number, link or reason); refunds link to the original.
+4. Charts and a VAT-period summary.

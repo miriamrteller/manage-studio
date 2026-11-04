@@ -4,11 +4,12 @@ import { refreshInvoicingToken } from "../refresh-token.ts";
 import type {
   AuthHealthResult,
   CanonicalDocumentInput,
-  DocumentKind,
   ExternalDocumentResult,
   InvoicingProvider,
 } from "../types.ts";
 import { InvoicingProviderError } from "../types.ts";
+import { giDocumentType, giPaymentRows } from "./green-invoice-document.ts";
+import { documentKindFromGreenInvoiceType } from "../../payments/document-kind.ts";
 
 const TokenResponseSchema = z.object({
   token: z.string(),
@@ -26,10 +27,6 @@ function apiBase(): string {
   return Deno.env.get("GREEN_INVOICE_API_BASE") ?? "https://api.greeninvoice.co.il/api/v1";
 }
 
-function giDocumentType(kind: DocumentKind): number {
-  return kind === "refund" ? 330 : 320;
-}
-
 export class GreenInvoiceProvider implements InvoicingProvider {
   readonly slug = "green_invoice";
 
@@ -43,9 +40,15 @@ export class GreenInvoiceProvider implements InvoicingProvider {
   ): Promise<ExternalDocumentResult> {
     const token = await refreshInvoicingToken(service, input.tenantId, this);
     const base = apiBase();
+    const { data: tenant } = await service
+      .from("tenants")
+      .select("green_invoice_document_type")
+      .eq("id", input.tenantId)
+      .maybeSingle();
+    const type = giDocumentType(input.documentKind, tenant?.green_invoice_document_type as number | null | undefined);
 
     const body: Record<string, unknown> = {
-      type: giDocumentType(input.documentKind),
+      type,
       lang: input.language,
       currency: input.currency,
       vatType: 0,
@@ -65,6 +68,9 @@ export class GreenInvoiceProvider implements InvoicingProvider {
           : {}),
       },
     };
+
+    const payment = giPaymentRows(input);
+    if (payment.length > 0) body.payment = payment;
 
     if (input.documentKind === "refund" && input.originalExternalDocumentId) {
       body.linkedDocumentIds = [input.originalExternalDocumentId];
@@ -106,6 +112,7 @@ export class GreenInvoiceProvider implements InvoicingProvider {
       externalDocumentId: doc.id,
       externalDocumentNumber: String(doc.number),
       documentUrl: href,
+      documentKind: documentKindFromGreenInvoiceType(body.type as number),
     };
   }
 

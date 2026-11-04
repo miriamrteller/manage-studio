@@ -29,6 +29,11 @@ export interface StudioSetupForm {
   businessAddress: string;
   businessPhone: string;
   /**
+   * "Business email (clients see this)": the studio email (Reply-To, enquiry alerts), separate
+   * from the login. null = not edited, so it follows the owner's email (and is not sent).
+   */
+  businessEmail: string | null;
+  /**
    * Whether the studio charges monthly fees. Not asked: derived from the payment flow (monthly or
    * both = yes). Decides which payment providers are offered. Not sent: it only guides the choice.
    */
@@ -58,6 +63,7 @@ export const INITIAL_FORM: StudioSetupForm = {
   healthDeclaration: false,
   businessAddress: '',
   businessPhone: '',
+  businessEmail: null,
   monthlyFees: true,
 };
 
@@ -133,6 +139,7 @@ export function toSetupRequest(form: StudioSetupForm) {
     contact: {
       ...(form.businessAddress.trim() ? { address: form.businessAddress.trim() } : {}),
       ...(form.businessPhone.trim() ? { phone: form.businessPhone.trim() } : {}),
+      ...(form.businessEmail?.trim() ? { email: form.businessEmail.trim().toLowerCase() } : {}),
     },
     profile: {
       paymentFlow: form.paymentFlow,

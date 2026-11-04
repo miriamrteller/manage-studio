@@ -11,10 +11,14 @@ import { ExpenseForm } from './ExpenseForm';
 import { ExpenseService } from '../services/expenseService';
 import { exportExpensesCsv } from '../lib/csvExport';
 import { datedCsvFilename } from '../lib/financeAdminUtils';
+import { fetchAllPages } from '../lib/pagedFetch';
+import { csvT, useCsvLanguage } from '../lib/csvLanguage';
+import { CsvLanguageSelect } from './CsvLanguageSelect';
 import type { Expense } from '@shared/schemas';
 
 export function ExpensesList() {
   const { t, i18n } = useTranslation();
+  const { language: csvLanguage, setLanguage: setCsvLanguage } = useCsvLanguage(i18n.language);
   const tenant = useTenant();
   const [page, setPage] = useState(1);
   const [dateFrom, setDateFrom] = useState<string | null>(null);
@@ -51,21 +55,11 @@ export function ExpensesList() {
     if (!tenant) return;
     setExportError(null);
     try {
-      const { totalCount: exportTotal } = await ExpenseService.list(tenant, {
-        page: 1,
-        pageSize: 1,
-        filters,
-      });
-      if (exportTotal > 5000) {
-        setExportError(t('finance.export.too_many'));
-        return;
-      }
-      const { rows } = await ExpenseService.list(tenant, {
-        page: 1,
-        pageSize: 5000,
-        filters,
-      });
-      exportExpensesCsv(rows, datedCsvFilename('expenses', tenant.subdomain));
+      // Every matching row, page by page: no row cap.
+      const rows = await fetchAllPages((page, pageSize) =>
+        ExpenseService.list(tenant, { page, pageSize, filters }),
+      );
+      exportExpensesCsv(rows, datedCsvFilename('expenses', tenant.subdomain), csvT(i18n, csvLanguage));
     } catch (err) {
       setExportError(err instanceof Error ? err.message : t('common.error'));
     }
@@ -80,7 +74,8 @@ export function ExpensesList() {
             {t('finance.expenses.categories_link')}
           </Link>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-end gap-2">
+          <CsvLanguageSelect value={csvLanguage} onChange={setCsvLanguage} />
           <Button variant="outline" onClick={handleExport}>{t('finance.expenses.export')}</Button>
           <Button variant="primary" onClick={() => setShowForm(true)}>
             {t('finance.expenses.add')}

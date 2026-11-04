@@ -53,6 +53,8 @@ interface LoginFormProps {
   initialMode?: AuthMode;
   /** Prefill the email. */
   initialEmail?: string;
+  /** "Forgot password?" on the Password tab: emails a link to set a new password. */
+  onForgotPassword?: (email: string) => Promise<void>;
 }
 
 /**
@@ -119,6 +121,7 @@ export function LoginForm({
   captcha,
   initialMode = 'password',
   initialEmail,
+  onForgotPassword,
 }: LoginFormProps) {
   const captchaReady = captcha?.ready ?? true;
   const { t } = useTranslation();
@@ -146,6 +149,18 @@ export function LoginForm({
     setAuthMode(mode);
     // Keep the email when switching tabs.
     reset(typedEmail ? ({ email: typedEmail } as FormData) : undefined);
+  };
+
+  // "Forgot password?" needs the email typed above; it says so instead of failing.
+  const [forgotHint, setForgotHint] = useState(false);
+  const handleForgotPassword = async () => {
+    const email = typedEmail.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setForgotHint(true);
+      return;
+    }
+    setForgotHint(false);
+    await onForgotPassword?.(email);
   };
 
   const handleFormSubmit = async (formData: FormData) => {
@@ -247,6 +262,24 @@ export function LoginForm({
               }
               {...register('password' as const)}
             />
+          )}
+
+          {authMode === 'password' && onForgotPassword && (
+            <div className="space-y-1">
+              <button
+                type="button"
+                className="text-sm font-medium text-primary underline-offset-2 hover:underline focus-visible:outline-2 outline-offset-2 disabled:opacity-50"
+                onClick={() => void handleForgotPassword()}
+                disabled={isLoading || !captchaReady}
+              >
+                {t('pages.login.forgot_password')}
+              </button>
+              {forgotHint && (
+                <p className="text-sm text-gray-700" role="status">
+                  {t('pages.login.forgot_needs_email')}
+                </p>
+              )}
+            </div>
           )}
 
           {authMode !== 'password' && (

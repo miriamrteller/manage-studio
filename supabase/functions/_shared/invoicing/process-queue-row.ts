@@ -103,6 +103,7 @@ export async function processQueueRow(
       externalDocumentId: result.externalDocumentId,
       externalDocumentNumber: result.externalDocumentNumber,
       documentUrl: result.documentUrl,
+      documentKind: result.documentKind ?? null,
       skipIfPresent: true,
     });
 
