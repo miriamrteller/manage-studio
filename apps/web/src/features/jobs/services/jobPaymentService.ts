@@ -42,6 +42,8 @@ export interface JobPaymentRequest {
     invoice_url: string | null;
     external_document_number: string | null;
     status: string;
+    total_amount_minor?: number | null;
+    refund_amount_minor?: number | null;
   } | null;
 }
 
@@ -65,7 +67,7 @@ export interface JobGalleryState {
 const COLUMNS =
   'id, tenant_id, engagement_id, label, amount_minor, currency, due_date, status, payment_id, ' +
   'sent_at, paid_at, max_installments, public_token, refunded_at, created_at, ' +
-  'payment:payments!job_payment_requests_payment_id_fkey(id, payment_method, invoice_url, external_document_number, status)';
+  'payment:payments!job_payment_requests_payment_id_fkey(id, payment_method, invoice_url, external_document_number, status, total_amount_minor, refund_amount_minor)';
 
 async function invoke<T>(name: string, body: Record<string, unknown>, fallback: string): Promise<T> {
   const { data, error } = await supabase.functions.invoke(name, { body });
@@ -143,10 +145,15 @@ export class JobPaymentService extends BaseService {
     return invoke('record-job-payment', { request_id: id, method, note }, 'Could not record the payment');
   }
 
-  static async recordManualRefund(paymentId: string, reason?: string): Promise<{ refundPaymentId: string }> {
+  /** amountMinor: a partial refund; omitted = refund what is left. */
+  static async recordManualRefund(
+    paymentId: string,
+    reason?: string,
+    amountMinor?: number,
+  ): Promise<{ refundPaymentId: string }> {
     return invoke(
       'process-refund',
-      { payment_id: paymentId, reason, manual: true },
+      { payment_id: paymentId, reason, manual: true, ...(amountMinor !== undefined ? { amount_minor: amountMinor } : {}) },
       'Could not record the refund',
     );
   }
