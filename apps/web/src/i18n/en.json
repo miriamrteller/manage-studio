@@ -3646,11 +3646,9 @@
         "recorded_receipts": "OpalSwift can’t issue Grow receipts for cash, bank transfer or Bit you record. For those, use a separate receipts service, such as Green Invoice."
       },
       "ypay": {
-        "no_monthly": "OpalSwift can’t run automatic monthly charges through YPay yet.",
         "no_refunds": "OpalSwift can’t refund YPay card payments yet: make the refund in YPay."
       },
       "invoice4u": {
-        "no_monthly": "OpalSwift can’t run automatic monthly charges through Invoice4U yet.",
         "recorded_receipts": "OpalSwift can’t issue Invoice4U receipts for cash, bank transfer or Bit you record. For those, use a separate receipts service, such as Green Invoice."
       },
       "offline": {

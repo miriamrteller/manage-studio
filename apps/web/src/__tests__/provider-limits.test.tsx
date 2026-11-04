@@ -55,6 +55,17 @@ describe('provider limits', () => {
     }
   });
 
+  it('no line speaks about monthly charges (owner instruction)', () => {
+    const keys = [
+      ...PAYMENT_CHOICES.flatMap((s) => providerLimitKeys('payment', s)),
+      ...OFFERED_INVOICING.flatMap((s) => providerLimitKeys('invoicing', s)),
+    ];
+    for (const key of keys) {
+      expect(String(lookup(en, key))).not.toMatch(/monthly/i);
+      expect(String(lookup(he, key))).not.toMatch(/חודשי/);
+    }
+  });
+
   it('unfinished providers stay hidden: no lines and not offered', () => {
     expect(providerLimitKeys('invoicing', 'tranzila')).toEqual([]);
     expect(providerLimitKeys('invoicing', 'yesh')).toEqual([]);
@@ -75,7 +86,7 @@ describe('How customers pay', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: 'payment_choice.different_provider' }));
     expect(screen.getByRole('radio', { name: 'studio_setup.payment_ypay' })).toHaveAccessibleDescription(
-      'provider_limits.payment.ypay.no_monthly provider_limits.payment.ypay.no_refunds',
+      'provider_limits.payment.ypay.no_refunds',
     );
     fireEvent.click(screen.getByRole('radio', { name: 'studio_setup.payment_ypay' }));
     expect(onChange).toHaveBeenCalledWith('ypay');

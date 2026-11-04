@@ -13,11 +13,10 @@ export type ProviderLimitKind = 'payment' | 'invoicing';
 const PAYMENT_LIMITS: Record<string, readonly string[]> = {
   // Grow documents come only with Grow's own charges (enqueue-document BUNDLED_ONLY_INVOICING).
   grow: ['recorded_receipts'],
-  // payments/providers/ypay.ts: chargeWithToken and refundCharge throw.
-  ypay: ['no_monthly', 'no_refunds'],
-  // payments/providers/invoice4u.ts: renewals (ChargeWithToken) not implemented; documents only
-  // with its own charges.
-  invoice4u: ['no_monthly', 'recorded_receipts'],
+  // payments/providers/ypay.ts: refundCharge throws.
+  ypay: ['no_refunds'],
+  // Invoice4U documents come only with its own charges.
+  invoice4u: ['recorded_receipts'],
   offline: ['no_cards'],
 };
 
