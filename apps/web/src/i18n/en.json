@@ -2995,7 +2995,7 @@
         "unknown": "Something went wrong. Please try again."
       }
     },
-    "provider_names": {"offline": "Pay at the studio", "none": "None", "grow": "Grow", "icount": "iCount", "invoice4u": "Invoice4U", "ypay": "YPay", "tranzila": "Tranzila", "yesh": "Yesh Invoice", "green_invoice": "Green Invoice", "mock": "Test mode"},
+    "provider_names": {"offline": "Pay at the studio", "none": "None", "grow": "Grow", "icount": "iCount", "invoice4u": "Invoice4U", "ypay": "YPay", "tranzila": "Tranzila", "yesh": "Yesh Invoice", "green_invoice": "Green Invoice", "takbull": "Takbull", "mock": "Test mode"},
     "ypay": {
       "save": "Save YPay details",
       "title": "Connect YPay",

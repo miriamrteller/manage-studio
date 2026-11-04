@@ -90,6 +90,14 @@ What already exists and Takbull plugs into:
      - The docs don't say which document type types 2 / 4 issue, or when `documentId` is set; neither is relied on.
 5. **Documents for recorded payments.**
    - What: the Takbull invoicing adapter (`DocumentApi/Create`); the 400/320 setting; pairing (`takbull` invoicing with `takbull` or offline payments); issued-document-kind mapping; the accountant export.
+   - How (built):
+     - `TakbullInvoicingProvider` (`invoicing/providers/takbull.ts`) documents cash (`cashes`), bank transfer (`wireTransfers`) and Bit (`customPayments`, `creationDate` required) recorded by hand. The type is the studio's setting (400 / 320). `sendToCustomer: false`, because OpalSwift emails the client for money recorded by hand (decision 6).
+     - Refunds recorded by hand: `isNegativeDocument`, 401 for a receipt studio and 330 for a tax invoice-receipt studio (lawyer list row 23, `[[ACCOUNTANT: confirm]]`).
+     - Card money is never documented here: a Takbull card payment's document comes with the charge (`documentRouteFor`: `skip_issued_with_charge`). A refund of a Takbull card payment recorded by hand is `not_issued`, to be done in Takbull.
+     - Takbull returns the document number and id but no link (none in the docs), so the client email has no link.
+     - Pairing: `takbull` invoicing pairs with `takbull` or `offline` payments (web + edge), but is **not** in `PAIRABLE_INVOICING_PROVIDERS`, so it isn't offered until PR 8.
+     - The accountant export uses the issued document kind; "Takbull" / "תקבול" added to the provider names.
+     - `documentDate` is not sent (its format isn't documented), so Takbull dates the document itself.
 6. **Online Bit, instalments and project payment links.**
    - What: `PaymentMethodType: 21` with the `IsMobile` deep link in the checkout shells; `DealType: 2` for instalments; `takbull` in `JOB_ONLINE_PAYMENT_PROVIDERS`.
 7. **Open the studio's Takbull account from signup** (after the owner's agreement and legal review).
