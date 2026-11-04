@@ -1,9 +1,12 @@
+import { TakbullApiError } from "./client.ts";
 import type {
   TakbullApi,
   TakbullChargeTokenRequest,
+  TakbullChargeTokenResult,
   TakbullDocumentRequest,
   TakbullDocumentResult,
   TakbullDocumentSettings,
+  TakbullOrder,
   TakbullOrderRequest,
   TakbullRedirectUrlResult,
   TakbullRefundRequest,
@@ -14,7 +17,8 @@ import type {
 /**
  * In-memory Takbull for tests and dev (TAKBULL_MOCK=true; never set in prod, see
  * supabase/edge-secrets.json). Same interface as the live client; it never reaches the
- * network. Keys starting with "invalid" are refused, so "Test connection" can be tried.
+ * network. Keys starting with "invalid" are refused, so "Test connection" can be tried, and
+ * saved cards starting with "declined" are declined, so dunning can be tried.
  */
 export class MockTakbullApi implements TakbullApi {
   private seq = 0;
@@ -81,11 +85,48 @@ export class MockTakbullApi implements TakbullApi {
     return this.orders.get(uniqId)?.transactionInternalNumber;
   }
 
-  chargeToken(request: TakbullChargeTokenRequest): Promise<TakbullValidation> {
+  getOrder(orderUniqId: string): Promise<TakbullOrder> {
+    const order = this.orders.get(orderUniqId);
+    if (!order) return Promise.resolve({});
+    return Promise.resolve({
+      uniqId: orderUniqId,
+      orderStatus: 3,
+      order_reference: order.order_reference,
+      orderTotalSum: order.OrderTotalSum,
+      transactions: [{ transactionId: order.transactionInternalNumber, amount: order.OrderTotalSum, status: 1 }],
+    });
+  }
+
+  chargeToken(request: TakbullChargeTokenRequest): Promise<TakbullChargeTokenResult> {
     this.checkKeys();
     this.tokenCharges.push(request);
-    return Promise.resolve({ internalCode: 0, internalDescription: "OK" });
+    if (request.CreditCard.CardExternalToken.startsWith("declined")) {
+      return Promise.reject(
+        new TakbullApiError("Card declined", { endpoint: "api/ExtranalAPI/ChargeToken", code: 33, retryable: false }),
+      );
+    }
+    // The charge makes an order of its own; its notice names it (uniqId) and the transaction.
+    const uniqId = crypto.randomUUID();
+    const transactionInternalNumber = this.next();
+    this.orders.set(uniqId, { ...request, RedirectAddress: request.RedirectAddress ?? "", transactionInternalNumber });
+    this.transactions.set(transactionInternalNumber, {
+      transactionId: transactionInternalNumber,
+      amount: request.OrderTotalSum,
+      transactionType: 10,
+      currency: request.Currency ?? "ILS",
+      paymentMethod: 3,
+      numberOfPayments: 1,
+      status: 1,
+      statusCode: 0,
+      isDocumentCreated: request.CreateDocument === true,
+      ...(request.CreateDocument ? { invoiceUniqId: crypto.randomUUID(), documentNumber: 40000 + this.seq } : {}),
+    });
+    this.lastTokenOrder = { uniqId, transactionInternalNumber };
+    return Promise.resolve({ internalCode: 0, internalDescription: "OK", orderId: this.seq, orderStatus: 0 });
   }
+
+  /** The order the last saved-card charge made, for tests (and dev) to build its notice from. */
+  lastTokenOrder: { uniqId: string; transactionInternalNumber: string } | null = null;
 
   refund(request: TakbullRefundRequest): Promise<TakbullValidation> {
     this.checkKeys();
@@ -119,10 +160,16 @@ export class MockTakbullApi implements TakbullApi {
  * Dev / CI only (TAKBULL_MOCK): an account that confirms one known order, so the notice for a
  * payment created in an earlier request settles (the in-memory mock forgets between requests).
  */
-export function mockTakbullApproving(order: { uniqId: string; amountMinor: number; currency: string }): MockTakbullApi {
+export function mockTakbullApproving(order: {
+  uniqId: string;
+  amountMinor: number;
+  currency: string;
+  /** Our payment id, which a saved-card order's GetOrder must name. */
+  orderReference?: string;
+}): MockTakbullApi {
   const api = new MockTakbullApi();
   api.orders.set(order.uniqId, {
-    order_reference: "mock",
+    order_reference: order.orderReference ?? "mock",
     OrderTotalSum: order.amountMinor / 100,
     RedirectAddress: "",
     transactionInternalNumber: "mock",

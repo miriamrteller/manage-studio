@@ -12,12 +12,13 @@ import { getPaymentProviderForTenant, isOfflinePaymentProvider } from "./index.t
 
 import { renewalIdempotencyKey } from "./billing-time.ts";
 import { resolveMonthAmount } from "./month-amount.ts";
+import { takbullRenewalKey } from "./providers/takbull.ts";
 
 
 
 /** Bundled providers that charge renewals via a saved card token (mock or live). */
 
-export const RENEWAL_TOKEN_PROVIDERS = ["grow", "icount", "invoice4u"] as const;
+export const RENEWAL_TOKEN_PROVIDERS = ["grow", "icount", "invoice4u", "takbull"] as const;
 
 export type RenewalTokenProvider = (typeof RENEWAL_TOKEN_PROVIDERS)[number];
 
@@ -361,6 +362,16 @@ export async function processBillingSchedule(
 
       }
 
+    } else if (paymentProvider === "takbull") {
+      // ChargeToken; the result comes back through takbull-ipn (settle, or dunning on a
+      // decline). One key per attempt, so a run never charges an attempt that is still waiting.
+      if (!provider.chargeWithToken) {
+        throw new Error("Takbull chargeWithToken not implemented");
+      }
+      await provider.chargeWithToken({
+        ...chargeParams,
+        idempotencyKey: takbullRenewalKey(chargeParams.idempotencyKey, schedule.attempt_count),
+      });
     } else {
 
       const result = await provider.createCharge(chargeParams);
@@ -378,6 +389,10 @@ export async function processBillingSchedule(
     return { outcome: "charged" };
 
   } catch (err) {
+    // This attempt was already sent and is waiting for its notice (or is paid): not a failure.
+    if (err instanceof Error && err.name === "TakbullDuplicateChargeError") {
+      return { outcome: "skipped" };
+    }
     const { applyBillingScheduleDunningFailure } = await import(
       "./apply-billing-schedule-dunning-failure.ts"
     );

@@ -4,10 +4,16 @@ import { applyBundledDocumentNotify } from "../bundled-document.ts";
 import { documentKindFromTakbullType } from "../document-kind.ts";
 import { finalisePayment } from "../finalise-payment.ts";
 import { auditPaymentFailed } from "../payment-audit.ts";
-import type { TakbullApi, TakbullTransaction, TakbullValidation } from "./client.ts";
+import type { TakbullApi, TakbullOrder, TakbullTransaction, TakbullValidation } from "./client.ts";
 import { takbullApiForTenant } from "./index.ts";
 import { takbullPaymentMethod, type TakbullIpn } from "./ipn.ts";
-import { loadTakbullOrder, loadTakbullPayment, type TakbullOrderRow, type TakbullPaymentRow } from "./pending-charge.ts";
+import {
+  loadTakbullOrder,
+  loadTakbullPayment,
+  releaseTakbullChargeKey,
+  type TakbullOrderRow,
+  type TakbullPaymentRow,
+} from "./pending-charge.ts";
 
 export type TakbullIpnResult =
   | { status: "succeeded"; paymentId: string; duplicate: boolean }
@@ -29,6 +35,29 @@ const ORDER_NOT_PAID = new Set([1, 5, 9]); // failed · cancelled · abandoned
 /** GetTransaction status: 1 approved · 2 declined · 4 pending · 6 failed. */
 const TX_APPROVED = 1;
 const TX_DECLINED = new Set([2, 6]);
+
+/**
+ * Pure: does Takbull's order belong to our payment? A saved-card charge (ChargeToken) makes an
+ * order whose id we only learn from its notice, so before trusting that order we ask Takbull
+ * for it (GetOrder): it must carry our payment id as order_reference, and when both sides name
+ * the transaction, the notice's transaction must be one of the order's.
+ */
+export function takbullOrderIsOurs(input: {
+  paymentId: string;
+  order: TakbullOrder;
+  transaction: TakbullTransaction | null;
+  transactionInternalNumber: string | null;
+}): boolean {
+  if (input.order.order_reference !== input.paymentId) return false;
+  const orderTxIds = (input.order.transactions ?? [])
+    .map((t) => (t.transactionId == null ? "" : String(t.transactionId)))
+    .filter((id) => id !== "");
+  if (orderTxIds.length === 0 || !input.transaction) return true;
+  const ours = [input.transaction.transactionId, input.transactionInternalNumber]
+    .filter((id): id is string => id != null && id !== "")
+    .map(String);
+  return ours.some((id) => orderTxIds.includes(id));
+}
 
 /**
  * Pure: what Takbull's own answers say about the payment. The notice itself only names the
@@ -117,6 +146,8 @@ async function settle(
     engagementId: order.metadata.engagement_id,
     chargeType: order.metadata.charge_type,
     billingScheduleId: order.metadata.billing_schedule_id,
+    // A renewal or card link pays one month: the plan moves past exactly that month.
+    paidForPeriod: order.paid_for_period ?? undefined,
     // Takbull issued the document with the charge: nothing to queue.
     skipDocumentEnqueue: tx.isDocumentCreated === true,
   });
@@ -156,6 +187,23 @@ export async function processTakbullIpn(
   const api = await (deps.apiFor ?? ((r: TakbullPaymentRow) => takbullApiForTenant(service, r.tenant_id)))(row);
   const validation = await api.validateNotification(uniqId);
   const transaction = ipn.transactionInternalNumber ? await api.getTransaction(ipn.transactionInternalNumber) : null;
+
+  // A saved-card charge: the order is Takbull's own, so it must name our payment before it counts.
+  if (!order.uniq_id) {
+    const takbullOrder = await api.getOrder(uniqId);
+    if (!takbullOrderIsOurs({
+      paymentId: row.id,
+      order: takbullOrder,
+      transaction,
+      transactionInternalNumber: ipn.transactionInternalNumber,
+    })) {
+      await audit(service, row, "payment.unverified_callback", { reason: "Takbull order is not this payment's", notice_uniq_id: uniqId });
+      return { status: "unverified", paymentId: row.id, reason: "order not ours" };
+    }
+    // From now on only this Takbull order can settle the payment.
+    await service.from("takbull_orders").update({ uniq_id: uniqId }).eq("payment_id", row.id).is("uniq_id", null);
+  }
+
   const outcome = takbullOutcome({ expectedMinor: row.total_amount_minor, validation, transaction });
 
   if (outcome === "unverified") {
@@ -175,7 +223,23 @@ export async function processTakbullIpn(
     return { status: "amount_mismatch", paymentId: row.id };
   }
   if (outcome === "failed") {
-    await service.from("payments").update({ status: "failed" }).eq("id", row.id).eq("status", "pending");
+    const { data: failed } = await service
+      .from("payments")
+      .update({ status: "failed" })
+      .eq("id", row.id)
+      .eq("status", "pending")
+      .select("id")
+      .maybeSingle();
+    // Another notice already failed it: dunning counts one attempt once.
+    if (!failed) return { status: "failed", paymentId: row.id, duplicate: true };
+    await releaseTakbullChargeKey(service, row.id);
+    if (row.charge_type === "renewal" && order.metadata.billing_schedule_id) {
+      const { applyBillingScheduleDunningFailure } = await import("../apply-billing-schedule-dunning-failure.ts");
+      await applyBillingScheduleDunningFailure(service, {
+        billingScheduleId: order.metadata.billing_schedule_id,
+        failureMessage: ipn.statusDescription ?? "Takbull: card charge failed",
+      });
+    }
     await auditPaymentFailed(service, {
       tenantId: row.tenant_id,
       entityId: row.id,

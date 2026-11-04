@@ -1,6 +1,6 @@
 # Takbull integration plan
 
-Status: being built. PR 1 (client, keys, Test connection) merged as #352; PR 2 (card payments + takbull-ipn) in progress. Owner direction (2026-11-04): Takbull may become the default for new
+Status: being built. PR 1 (client, keys, Test connection) merged as #352; PR 2 (card payments + takbull-ipn) merged as #355; PR 3 (monthly fees) in progress. Owner direction (2026-11-04): Takbull may become the default for new
 studios. Source for every Takbull fact below: the official API docs,
 https://api.takbull.co.il/ApiDocs (read 2026-11-04). Anything the docs don't state is listed under
 "Open questions" and is not designed around.
@@ -81,6 +81,13 @@ What already exists and Takbull plugs into:
    - Tests: replay, amount mismatch, unverified notice, late redirect.
 3. **Monthly fees.**
    - What: `chargeWithToken` → `ChargeToken`; the result comes back through the same notice handler, with dunning on failure; `takbull` in the renewal and card-link lists.
+   - How (built):
+     - The payment is pending before `ChargeToken` is called, with our payment id as `order_reference` and the notice URL as `IPNAddress` (both in the docs' ChargeToken example). The docs say IPN is sent to the `IPNAddress` configured for the order; sandbox must confirm it is sent for ChargeToken orders (open question 9).
+     - `ChargeToken` answers with Takbull's `orderId` (a number), not the order's `uniqId`. So the notice for a saved-card charge is only trusted once `GetOrder` for its `uniqId` names our payment id as `order_reference` (and lists the notice's transaction). That `uniqId` is then pinned to the payment.
+     - A refusal (`internalCode` not 0, or `orderStatus` failed / cancelled / abandoned) marks the payment failed and the monthly run applies dunning. A declined notice does the same, once.
+     - Each renewal attempt has its own key (`takbull_orders.charge_key`, unique), so an attempt still waiting for its notice is never charged again. The month paid (`paid_for_period`) moves the plan past exactly that month, for renewals and card links.
+     - Card link: sending it again reuses the page still waiting to be paid.
+     - `takbull` joins `RENEWAL_TOKEN_PROVIDERS`, `CARD_LINK_PROVIDERS` (web + edge) and `MONTHLY_FEE_PAYMENT_PROVIDERS`. Still hidden: no studio can choose Takbull.
 4. **Refunds.**
    - What: `refundCharge` → `Refund`, full (type 2) or partial (type 4) with document. It needs Takbull's `transactionInternalNumber`, stored as `provider_payment_ref` once the notice settles; `refundDocumentNoteKey` covers Takbull too.
 5. **Documents for recorded payments.**
@@ -135,5 +142,6 @@ The providers studios use for their own clients don't change.
 6. Allocation numbers (מספר הקצאה) on tax invoices.
 7. Are payment notices retried? (Retries are documented only for account notices.)
 8. Sandbox credentials and test cards.
+9. Does a `ChargeToken` charge send its notice to the `IPNAddress` in the request, and does that notice carry the new order's `uniqId` and `transactionInternalNumber`? (The docs show `IPNAddress` in the ChargeToken example but don't describe its notice.) Is `DocumentType` honoured on `ChargeToken`, or only the account's `DefaultDocumentType`?
 
 The sample keys in the docs' examples look like real keys. Takbull should confirm they aren't live.

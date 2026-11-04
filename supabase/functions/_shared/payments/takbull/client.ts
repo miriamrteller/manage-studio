@@ -140,6 +140,25 @@ export interface TakbullTransaction {
   documentNumber?: number;
 }
 
+/**
+ * GetOrder (GET ?orderUniqId=). The docs list these fields among others; orderStatus uses the
+ * order table: 0 pending · 1 failed · 2 processing · 3 completed · 4 on hold · 5 cancelled ·
+ * 6 refunded · 7 removed · 8 resubmit · 9 abandoned.
+ */
+export interface TakbullOrder {
+  uniqId?: string;
+  orderStatus?: number;
+  order_reference?: string;
+  orderTotalSum?: number;
+  transactions?: Array<{ transactionId?: string; amount?: number; status?: number }>;
+}
+
+/** ChargeToken's answer (docs example): orderId is Takbull's number for the order it made. */
+export interface TakbullChargeTokenResult extends TakbullValidation {
+  orderId?: number;
+  providerCode?: number;
+}
+
 export interface TakbullChargeTokenRequest
   extends Omit<TakbullOrderRequest, "RedirectAddress" | "DisplayType" | "PostProcessMethod" | "IsMobile" | "PaymentMethodType"> {
   RedirectAddress?: string;
@@ -191,7 +210,8 @@ export interface TakbullApi {
   getPaymentPageRedirectUrl(order: TakbullOrderRequest): Promise<TakbullRedirectUrlResult>;
   validateNotification(uniqId: string): Promise<TakbullValidation>;
   getTransaction(transactionInternalNumber: string): Promise<TakbullTransaction>;
-  chargeToken(request: TakbullChargeTokenRequest): Promise<TakbullValidation>;
+  getOrder(orderUniqId: string): Promise<TakbullOrder>;
+  chargeToken(request: TakbullChargeTokenRequest): Promise<TakbullChargeTokenResult>;
   refund(request: TakbullRefundRequest): Promise<TakbullValidation>;
   createDocument(request: TakbullDocumentRequest): Promise<TakbullDocumentResult>;
   getDocumentSettings(params?: { childMid?: string; lang?: "he" | "en" }): Promise<TakbullDocumentSettings>;
@@ -298,7 +318,14 @@ export class TakbullClient implements TakbullApi {
     });
   }
 
-  async chargeToken(request: TakbullChargeTokenRequest): Promise<TakbullValidation> {
+  async getOrder(orderUniqId: string): Promise<TakbullOrder> {
+    return await this.call<TakbullOrder>("api/ExtranalAPI/GetOrder", {
+      method: "GET",
+      query: { orderUniqId },
+    });
+  }
+
+  async chargeToken(request: TakbullChargeTokenRequest): Promise<TakbullChargeTokenResult> {
     return this.orderCall("api/ExtranalAPI/ChargeToken", request);
   }
 
@@ -306,8 +333,8 @@ export class TakbullClient implements TakbullApi {
     return this.orderCall("api/ExtranalAPI/Refund", request);
   }
 
-  private async orderCall(endpoint: string, body: unknown): Promise<TakbullValidation> {
-    const r = await this.call<TakbullValidation>(endpoint, { method: "POST", body });
+  private async orderCall<T extends TakbullValidation = TakbullValidation>(endpoint: string, body: unknown): Promise<T> {
+    const r = await this.call<T>(endpoint, { method: "POST", body });
     if (r.internalCode !== 0) {
       throw new TakbullApiError(r.internalDescription || `Takbull ${endpoint} failed (${r.internalCode})`, {
         endpoint,

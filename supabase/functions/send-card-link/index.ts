@@ -17,7 +17,7 @@ import { getPaymentProviderForTenant } from "../_shared/payments/index.ts";
 /**
  * Admin → student → active monthly enrolment → "Send card link" (payments B b). Creates the
  * provider's payment page for the month that is due, with "save this card" on, and emails it
- * to the parent. Grow only; see _shared/payments/card-link.ts.
+ * to the parent. Grow and Takbull; see _shared/payments/card-link.ts.
  */
 const BodySchema = z.object({ engagement_id: z.string().uuid() });
 

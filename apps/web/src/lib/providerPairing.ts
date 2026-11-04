@@ -110,11 +110,11 @@ export function canChoosePaymentProvider(
 }
 
 /**
- * Providers a studio with monthly fees can use (owner decision): Grow charges a saved card each
- * month and pay at the studio records them by hand. YPay and Invoice4U cannot, so a studio on
- * either cannot create a monthly class (backstop trigger on offerings).
+ * Providers a studio with monthly fees can use (owner decision): Grow and Takbull charge a
+ * saved card each month and pay at the studio records them by hand. YPay and Invoice4U cannot,
+ * so a studio on either cannot create a monthly class (backstop trigger on offerings).
  */
-export const MONTHLY_FEE_PAYMENT_PROVIDERS = ['grow', 'offline', 'mock'] as const;
+export const MONTHLY_FEE_PAYMENT_PROVIDERS = ['grow', 'takbull', 'offline', 'mock'] as const;
 
 export function monthlyFeesSupported(paymentProvider: string | null | undefined): boolean {
   return (MONTHLY_FEE_PAYMENT_PROVIDERS as readonly string[]).includes(paymentProvider ?? '');
@@ -143,11 +143,11 @@ export function isProviderSwitchBlockedError(error: unknown): boolean {
 
 /**
  * Payment providers that can save a card on an active monthly enrolment through a card link,
- * so later months are charged to it (payments B b). Grow only: YPay has no saved cards, and
- * Invoice4U cannot charge a saved card yet. Mirrors CARD_LINK_PROVIDERS in
+ * so later months are charged to it (payments B b). Grow and Takbull: YPay has no saved cards,
+ * and Invoice4U cannot charge a saved card yet. Mirrors CARD_LINK_PROVIDERS in
  * supabase/functions/_shared/payments/card-link.ts (a test checks the two agree).
  */
-export const CARD_LINK_PAYMENT_PROVIDERS = ['grow'] as const;
+export const CARD_LINK_PAYMENT_PROVIDERS = ['grow', 'takbull'] as const;
 
 export function cardLinkSupported(paymentProvider: string | null | undefined): boolean {
   return (CARD_LINK_PAYMENT_PROVIDERS as readonly string[]).includes(paymentProvider ?? '');
