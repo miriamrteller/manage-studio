@@ -50,7 +50,7 @@ export function tenantUsesSplitProviders(tenant: TenantProviderContext | null | 
   return !tenantUsesBundledPayments(tenant);
 }
 
-/** Hosted-page checkout (Grow / iCount / Invoice4U redirect). */
+/** Hosted-page checkout (Grow / iCount / Invoice4U / YPay). */
 export function isHostedPageCheckoutReady(
   paymentProvider: string | null | undefined,
   pageUrl: string | null | undefined,
@@ -58,7 +58,8 @@ export function isHostedPageCheckoutReady(
   return (
     (paymentProvider === 'grow' ||
       paymentProvider === 'icount' ||
-      paymentProvider === 'invoice4u') &&
+      paymentProvider === 'invoice4u' ||
+      paymentProvider === 'ypay') &&
     Boolean(pageUrl)
   );
 }

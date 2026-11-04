@@ -323,6 +323,19 @@ export function ProviderCheckoutShell({
     );
   }
 
+  if (paymentProvider === 'ypay' && pageUrl) {
+    return (
+      <GrowPaymentShell
+        provider="ypay"
+        engagementId={engagementId}
+        pageUrl={pageUrl}
+        enrolmentToken={enrolmentToken}
+        onPaid={onPaid}
+        onPrevious={onPrevious}
+      />
+    );
+  }
+
   if (!clientSecret || !publishableKey) {
     return <p role="status">{t('common.loading')}</p>;
   }

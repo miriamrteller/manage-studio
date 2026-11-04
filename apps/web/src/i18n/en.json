@@ -2848,6 +2848,12 @@
     "invoice4u_waiting": "Waiting for payment confirmation… this can take a few seconds.",
     "invoice4u_timeout": "We have not received confirmation yet. If you completed payment, please wait a moment and retry.",
     "invoice4u_retry": "Retry",
+    "ypay_payment_title": "Secure payment",
+    "ypay_mock_title": "Mock YPay payment page",
+    "ypay_mock_hint": "Mock mode is on, so the payment page is simulated. The payment confirms when the test callback arrives.",
+    "ypay_waiting": "Waiting for payment confirmation… this can take a few seconds.",
+    "ypay_timeout": "We haven't received confirmation yet. If you've paid, wait a moment and try again.",
+    "ypay_retry": "Try again",
     "pending_action": {
       "complete_payment": "Complete payment",
       "complete_waiver": "Sign form",
