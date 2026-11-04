@@ -153,6 +153,14 @@ describe('/auth/new-password', () => {
 });
 
 describe('Settings → Security', () => {
+  it('shows the login email: you sign in with it, clients never see it', () => {
+    h.session = { user: { email: 'owner@lumen.test' } };
+    wrap(<SecuritySettingsForm />);
+    expect(screen.getByRole('heading', { name: 'Login email' })).toBeInTheDocument();
+    expect(screen.getByText('owner@lumen.test')).toBeInTheDocument();
+    expect(screen.getByText('You sign in with this. Clients never see it.')).toBeInTheDocument();
+  });
+
   it('admins can set or change their login password there', () => {
     wrap(<SecuritySettingsForm />);
     expect(screen.getByRole('heading', { name: 'Login password' })).toBeInTheDocument();
