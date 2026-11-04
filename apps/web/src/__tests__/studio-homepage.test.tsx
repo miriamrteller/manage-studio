@@ -37,7 +37,7 @@ import {
 import { profileForSkin } from './helpers/skinProfiles';
 
 const CLASS = { id: 'c1', name: 'Ballet Grade 2', category_name: 'Ballet' };
-const SERVICE = { id: 's1', name: 'Family session', duration_mins: 60, price_minor: 90000, currency: 'ILS', location: null };
+const SERVICE = { id: 's1', name: 'Family session', duration_mins: 60, price_minor: 90000, currency: 'ILS', location: null, online_booking: true, price_display: 'show' };
 
 function renderHome(kind: FakeTenantKind, extra: Record<string, unknown> = {}) {
   setTenant(kind, extra);

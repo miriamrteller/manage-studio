@@ -18,7 +18,7 @@ import {
   studioHasClasses,
   type HomeCta,
 } from '@/lib/studioSections';
-import { formatCurrency } from '@shared/format';
+import { formatPackagePrice } from '@/lib/formatPackagePrice';
 import type { PublicOffering } from '@/schemas';
 
 const VERTICAL_ICON = { dance: Music, generic: Store, photographer: Camera, beautician: Sparkles } as const;
@@ -69,7 +69,8 @@ export default function HomePage() {
       : t(`pages.home.cta_${cta.kind}`);
 
   const classPreview = ((classes as PublicOffering[]) ?? []).slice(0, PREVIEW_COUNT);
-  const services = offerings.slice(0, SERVICE_COUNT);
+  // Only packages clients can book online link to a time picker.
+  const services = offerings.filter((o) => o.online_booking).slice(0, SERVICE_COUNT);
   const profile = legal?.profile ?? {};
   const address = legal?.published ? profile.address : undefined;
   const phone = legal?.published ? profile.phone : undefined;
@@ -138,7 +139,7 @@ export default function HomePage() {
                 <h3 dir="auto" className="font-semibold">{s.name}</h3>
                 <p className="mt-1 text-sm text-muted-foreground">
                   {[s.duration_mins ? t('pages.home.minutes', { count: s.duration_mins }) : null,
-                    s.price_minor > 0 ? formatCurrency(s.price_minor, s.currency || currency, locale) : null]
+                    formatPackagePrice(t, s.price_minor, s.price_display, s.currency || currency, locale)]
                     .filter(Boolean)
                     .join(' · ')}
                 </p>

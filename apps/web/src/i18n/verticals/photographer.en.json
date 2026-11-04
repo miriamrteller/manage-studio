@@ -139,8 +139,18 @@
   },
   "scheduling": {
     "services": {
-      "none": "No services yet. Click “Add service” to create your first one — for example a mini session or a consultation.",
-      "subtitle": "The sessions clients can book with you online — for example mini sessions, portrait sessions or consultations."
+      "title": "Packages",
+      "subtitle": "Your packages, their prices and how clients book them.",
+      "add": "Add package",
+      "edit": "Edit package",
+      "name": "Package name",
+      "duration": "Shoot length (minutes)",
+      "save": "Save package",
+      "saved": "Package saved.",
+      "removed": "Package removed.",
+      "remove_confirm": "Remove this package? Existing bookings are kept.",
+      "none": "No packages yet. Click “Add package” to create your first one — for example a mini session or a wedding day.",
+      "settings_hint": "Add and manage your packages on this page. When clients can book them — working hours and booking rules — is set under"
     }
   },
   "settings": {

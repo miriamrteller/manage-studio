@@ -8,12 +8,17 @@ import { useFeatureGate } from '@/hooks/useFeatureGate';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Select } from '@/components/ui/select';
 import {
+  PRICE_DISPLAYS,
   ServicesService,
+  safePriceDisplay,
   type AppointmentService,
+  type PriceDisplay,
 } from '@/features/scheduling/servicesService';
 import { BookingSettingsService } from '@/features/scheduling/bookingSettingsService';
-import { formatOfferingPrice } from '@/lib/formatOfferingPrice';
+import { formatPackagePrice } from '@/lib/formatPackagePrice';
+import { formatCurrency } from '@shared/format';
 import { usePhotoShopEnabled } from '@/features/jobs/hooks/usePhotoShop';
 
 interface ServiceFormState {
@@ -25,6 +30,18 @@ interface ServiceFormState {
   location: string;
   is_public: boolean;
   photos_included: number;
+  online_booking: boolean;
+  price_display: PriceDisplay;
+  deposit_major: number;
+  /** The deposit follows the price (30%) until the owner types their own. */
+  deposit_edited: boolean;
+}
+
+/** Deposit we fill in for a new package: 30% of the price, the quote default. */
+const DEFAULT_DEPOSIT_SHARE = 0.3;
+
+function suggestedDeposit(priceMajor: number): number {
+  return Math.round(Math.max(0, priceMajor) * DEFAULT_DEPOSIT_SHARE);
 }
 
 const EMPTY_FORM: ServiceFormState = {
@@ -36,6 +53,10 @@ const EMPTY_FORM: ServiceFormState = {
   location: '',
   is_public: true,
   photos_included: 0,
+  online_booking: true,
+  price_display: 'show',
+  deposit_major: 0,
+  deposit_edited: false,
 };
 
 export default function BookingServicesPage() {
@@ -85,11 +106,28 @@ export default function BookingServicesPage() {
       location: svc.location ?? '',
       is_public: svc.is_public,
       photos_included: svc.photos_included,
+      online_booking: svc.online_booking,
+      price_display: svc.price_display,
+      deposit_major:
+        svc.deposit_minor === null ? suggestedDeposit(svc.price_minor / 100) : svc.deposit_minor / 100,
+      deposit_edited: svc.deposit_minor !== null,
     });
   }
 
   function patchForm(patch: Partial<ServiceFormState>) {
     setForm((prev) => (prev ? { ...prev, ...patch } : prev));
+  }
+
+  function setPrice(priceMajor: number) {
+    setForm((prev) =>
+      prev
+        ? {
+            ...prev,
+            price_major: priceMajor,
+            ...(prev.deposit_edited ? {} : { deposit_major: suggestedDeposit(priceMajor) }),
+          }
+        : prev,
+    );
   }
 
   async function handleSave() {
@@ -104,6 +142,9 @@ export default function BookingServicesPage() {
         currency: form.currency,
         location: form.location.trim() || null,
         is_public: form.is_public,
+        online_booking: form.online_booking,
+        price_display: form.price_display,
+        deposit_minor: Math.max(0, Math.round(form.deposit_major * 100)),
         ...(photoShop ? { photos_included: Math.max(0, Math.floor(form.photos_included || 0)) } : {}),
       };
       if (form.id) {
@@ -200,14 +241,20 @@ export default function BookingServicesPage() {
             <div className="min-w-0">
               <p className="truncate font-medium">{svc.name}</p>
               <p className="text-sm text-gray-500">
-                {svc.duration_mins} {t('scheduling.services.duration_suffix')} ·{' '}
-                {formatOfferingPrice(
-                  t,
-                  svc.price_minor,
-                  svc.currency || 'ILS',
-                  i18n.language,
-                  { billing_mode: 'one_time' },
-                )}
+                {[
+                  `${svc.duration_mins} ${t('scheduling.services.duration_suffix')}`,
+                  formatPackagePrice(t, svc.price_minor, svc.price_display, svc.currency || 'ILS', i18n.language),
+                  svc.deposit_minor
+                    ? t('scheduling.services.deposit_list', {
+                        amount: formatCurrency(svc.deposit_minor, svc.currency || 'ILS', i18n.language),
+                      })
+                    : null,
+                  svc.online_booking && svc.price_display !== 'on_request'
+                    ? null
+                    : t('scheduling.services.enquiry_only'),
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
               </p>
             </div>
             <div className="flex shrink-0 gap-2">
@@ -231,6 +278,24 @@ export default function BookingServicesPage() {
             <Field label={t('scheduling.services.name')}>
               <Input value={form.name} onChange={(e) => patchForm({ name: e.target.value })} />
             </Field>
+            <Field label={t('scheduling.services.price')}>
+              <Input
+                type="number"
+                min={0}
+                step="0.01"
+                value={form.price_major}
+                onChange={(e) => setPrice(Number(e.target.value))}
+              />
+            </Field>
+            <Field label={t('scheduling.services.deposit')} hint={form.deposit_edited ? undefined : t('scheduling.services.deposit_hint')}>
+              <Input
+                type="number"
+                min={0}
+                step="0.01"
+                value={form.deposit_major}
+                onChange={(e) => patchForm({ deposit_major: Number(e.target.value), deposit_edited: true })}
+              />
+            </Field>
             <Field label={t('scheduling.services.duration')}>
               <Input
                 type="number"
@@ -239,40 +304,58 @@ export default function BookingServicesPage() {
                 onChange={(e) => patchForm({ duration_mins: Number(e.target.value) })}
               />
             </Field>
-            <Field label={t('scheduling.services.price')}>
-              <Input
-                type="number"
-                min={0}
-                step="0.01"
-                value={form.price_major}
-                onChange={(e) => patchForm({ price_major: Number(e.target.value) })}
-              />
+            <Field label={t('scheduling.services.price_display')}>
+              <Select
+                value={form.price_display}
+                onChange={(e) => patchForm({ price_display: safePriceDisplay(e.target.value) })}
+              >
+                {PRICE_DISPLAYS.map((d) => (
+                  <option key={d} value={d}>
+                    {t(`scheduling.price_display.${d}`)}
+                  </option>
+                ))}
+              </Select>
             </Field>
-            <Field label={t('scheduling.services.location')}>
-              <Input
-                value={form.location}
-                onChange={(e) => patchForm({ location: e.target.value })}
+          </div>
+          <div className="space-y-1">
+            <label className="flex items-center gap-2">
+              <Checkbox
+                checked={form.online_booking}
+                onCheckedChange={(c) => patchForm({ online_booking: Boolean(c) })}
               />
-            </Field>
-            {photoShop && (
-              <Field label={t('scheduling.services.photos_included')}>
+              <span className="text-sm font-medium">{t('scheduling.services.online_booking')}</span>
+            </label>
+            <p className="text-sm text-gray-500">{t('scheduling.services.online_booking_hint')}</p>
+          </div>
+          <details className="rounded-md border border-gray-200 p-3">
+            <summary className="cursor-pointer text-sm font-medium">{t('studio_setup.filled_for_you')}</summary>
+            <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Field label={t('scheduling.services.location')}>
                 <Input
-                  type="number"
-                  min={0}
-                  inputMode="numeric"
-                  value={form.photos_included}
-                  onChange={(e) => patchForm({ photos_included: Number(e.target.value) })}
+                  value={form.location}
+                  onChange={(e) => patchForm({ location: e.target.value })}
                 />
               </Field>
-            )}
-          </div>
-          <label className="flex items-center gap-2">
-            <Checkbox
-              checked={form.is_public}
-              onCheckedChange={(c) => patchForm({ is_public: Boolean(c) })}
-            />
-            <span className="text-sm font-medium">{t('scheduling.services.is_public')}</span>
-          </label>
+              {photoShop && (
+                <Field label={t('scheduling.services.photos_included')}>
+                  <Input
+                    type="number"
+                    min={0}
+                    inputMode="numeric"
+                    value={form.photos_included}
+                    onChange={(e) => patchForm({ photos_included: Number(e.target.value) })}
+                  />
+                </Field>
+              )}
+            </div>
+            <label className="mt-3 flex items-center gap-2">
+              <Checkbox
+                checked={form.is_public}
+                onCheckedChange={(c) => patchForm({ is_public: Boolean(c) })}
+              />
+              <span className="text-sm font-medium">{t('scheduling.services.is_public')}</span>
+            </label>
+          </details>
           <div className="flex gap-2">
             <Button
               variant="primary"
@@ -296,11 +379,12 @@ export default function BookingServicesPage() {
   );
 }
 
-function Field({ label, children }: { label: string; children: ReactNode }) {
+function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
   return (
     <label className="block space-y-1">
       <span className="text-sm font-medium text-gray-700">{label}</span>
       {children}
+      {hint && <span className="block text-xs text-gray-500">{hint}</span>}
     </label>
   );
 }

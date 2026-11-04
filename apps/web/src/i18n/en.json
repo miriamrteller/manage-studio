@@ -2348,7 +2348,21 @@
       "duration_suffix": "min",
       "settings_hint": "Add and manage your bookable services on this page. When clients can book them — availability hours and booking rules — is set under",
       "booking_disabled_warning": "Booking is disabled. Enable it in Booking Settings and save — otherwise clients will see an empty booking page even if services are listed here.",
-      "photos_included": "Photos included in the package"
+      "photos_included": "Photos included in the package",
+      "deposit": "Deposit",
+      "deposit_hint": "Filled in as 30% of the price. You can change it.",
+      "deposit_list": "Deposit {{amount}}",
+      "price_display": "How the price shows",
+      "online_booking": "Clients can book a time online",
+      "online_booking_hint": "When this is off, clients send an enquiry instead.",
+      "enquiry_only": "Enquiry only"
+    },
+    "price_display": {
+      "show": "Show the price",
+      "from": "“From” the price",
+      "on_request": "Price on request",
+      "from_label": "From {{amount}}",
+      "on_request_label": "Price on request"
     },
     "book": {
       "photographer_note": "This studio doesn’t take online bookings. Send an enquiry instead and the photographer will reply with a quote.",

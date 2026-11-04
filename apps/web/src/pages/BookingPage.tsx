@@ -10,7 +10,7 @@ import { BookingCalendar } from '@/features/scheduling/components/BookingCalenda
 import { BookingService, type AvailableSlot, type BookableOffering } from '@/features/scheduling/bookingService';
 import { useIsNarrowViewport } from '@/features/scheduling/hooks/useIsNarrowViewport';
 import { cn } from '@/lib/utils';
-import { formatOfferingPrice } from '@/lib/formatOfferingPrice';
+import { formatPackagePrice } from '@/lib/formatPackagePrice';
 import { PrivacyNotice } from '@/components/PrivacyNotice';
 
 function formatWhen(slot: AvailableSlot): string {
@@ -59,7 +59,11 @@ export default function BookingPage() {
     enabled: !!subdomain,
   });
 
-  const offerings = useMemo(() => offeringsQuery.data ?? [], [offeringsQuery.data]);
+  // Only packages clients can book online get a time picker here.
+  const offerings = useMemo(
+    () => (offeringsQuery.data ?? []).filter((o) => o.online_booking),
+    [offeringsQuery.data],
+  );
   const activeOffering = useMemo(
     () => offerings.find((o) => o.id === selectedOffering) ?? null,
     [offerings, selectedOffering],
@@ -202,17 +206,12 @@ export default function BookingPage() {
                   >
                     <div className="font-medium leading-snug">{o.name}</div>
                     <div className="text-xs text-gray-500 sm:text-sm">
-                      {o.duration_mins
-                        ? t('scheduling.book.duration_mins', { count: o.duration_mins })
-                        : ''}
-                      {' · '}
-                      {formatOfferingPrice(
-                        t,
-                        o.price_minor,
-                        o.currency || 'ILS',
-                        i18n.language,
-                        { billing_mode: 'one_time' },
-                      )}
+                      {[
+                        o.duration_mins ? t('scheduling.book.duration_mins', { count: o.duration_mins }) : null,
+                        formatPackagePrice(t, o.price_minor, o.price_display, o.currency || 'ILS', i18n.language),
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
                     </div>
                   </button>
                 </li>

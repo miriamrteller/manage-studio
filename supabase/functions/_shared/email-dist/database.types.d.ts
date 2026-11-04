@@ -2239,6 +2239,7 @@ export type Database = {
                     currency: string;
                     day_of_week: number | null;
                     delivery_mode: string;
+                    deposit_minor: number | null;
                     duration_mins: number | null;
                     end_time: string | null;
                     id: string;
@@ -2249,7 +2250,9 @@ export type Database = {
                     min_age: number | null;
                     name: string;
                     offering_type: string;
+                    online_booking: boolean;
                     photos_included: number;
+                    price_display: string;
                     price_minor: number;
                     renewal_policy: string;
                     season_id: string | null;
@@ -2270,6 +2273,7 @@ export type Database = {
                     currency?: string;
                     day_of_week?: number | null;
                     delivery_mode?: string;
+                    deposit_minor?: number | null;
                     duration_mins?: number | null;
                     end_time?: string | null;
                     id?: string;
@@ -2280,7 +2284,9 @@ export type Database = {
                     min_age?: number | null;
                     name: string;
                     offering_type?: string;
+                    online_booking?: boolean;
                     photos_included?: number;
+                    price_display?: string;
                     price_minor?: number;
                     renewal_policy?: string;
                     season_id?: string | null;
@@ -2301,6 +2307,7 @@ export type Database = {
                     currency?: string;
                     day_of_week?: number | null;
                     delivery_mode?: string;
+                    deposit_minor?: number | null;
                     duration_mins?: number | null;
                     end_time?: string | null;
                     id?: string;
@@ -2311,7 +2318,9 @@ export type Database = {
                     min_age?: number | null;
                     name?: string;
                     offering_type?: string;
+                    online_booking?: boolean;
                     photos_included?: number;
+                    price_display?: string;
                     price_minor?: number;
                     renewal_policy?: string;
                     season_id?: string | null;
@@ -5022,6 +5031,8 @@ export type Database = {
                     id: string;
                     location: string;
                     name: string;
+                    online_booking: boolean;
+                    price_display: string;
                     price_minor: number;
                 }[];
             };

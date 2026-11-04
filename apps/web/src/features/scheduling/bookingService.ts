@@ -4,9 +4,13 @@ export interface BookableOffering {
   id: string;
   name: string;
   duration_mins: number | null;
-  price_minor: number;
+  /** Null when the price is on request. */
+  price_minor: number | null;
   currency: string;
   location: string | null;
+  /** Clients can pick a time and book online (false = enquire). */
+  online_booking: boolean;
+  price_display: 'show' | 'from' | 'on_request';
 }
 
 export interface AvailableSlot {
