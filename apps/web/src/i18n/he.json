@@ -3004,7 +3004,7 @@
         "unknown": "משהו השתבש. נסו שוב."
       }
     },
-    "provider_names": {"offline": "תשלום בסטודיו", "none": "ללא", "grow": "Grow", "icount": "iCount", "invoice4u": "Invoice4U", "ypay": "YPay", "tranzila": "Tranzila", "yesh": "Yesh Invoice", "green_invoice": "חשבונית ירוקה", "mock": "מצב ניסיון"},
+    "provider_names": {"offline": "תשלום בסטודיו", "none": "ללא", "grow": "Grow", "icount": "iCount", "invoice4u": "Invoice4U", "ypay": "YPay", "tranzila": "Tranzila", "yesh": "Yesh Invoice", "green_invoice": "חשבונית ירוקה", "takbull": "תקבול", "mock": "מצב ניסיון"},
     "ypay": {
       "save": "שמירת פרטי YPay",
       "title": "חיבור YPay",

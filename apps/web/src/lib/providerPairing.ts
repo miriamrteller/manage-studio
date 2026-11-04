@@ -8,6 +8,9 @@
  *  - ypay issues the document with its own card charge, and standalone documents for cash /
  *    bank transfer, but refuses other providers' card payments: ypay or offline payments.
  *  - green_invoice issues standalone documents for any payment.
+ *  - takbull issues the document with its own card charge, and standalone documents for money
+ *    recorded by hand: takbull or offline payments. Not offered yet (hidden until Takbull is
+ *    launched), so it is not in PAIRABLE_INVOICING_PROVIDERS.
  *  - none: no documents through OpalSwift; pairs with anything.
  *  - yesh and tranzila invoicing are not built yet, so they are never offered.
  */
@@ -41,6 +44,7 @@ export function invoicingPairsWithPayment(paymentProvider: string, invoicingProv
   if (invoicingProvider === 'none' || invoicingProvider === 'green_invoice') return true;
   if (BUNDLED_ONLY.has(invoicingProvider)) return invoicingProvider === paymentProvider;
   if (invoicingProvider === 'ypay') return paymentProvider === 'ypay' || paymentProvider === 'offline';
+  if (invoicingProvider === 'takbull') return paymentProvider === 'takbull' || paymentProvider === 'offline';
   return false;
 }
 
