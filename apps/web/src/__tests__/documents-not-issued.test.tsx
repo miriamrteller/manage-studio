@@ -50,6 +50,26 @@ describe('documentRouteFor', () => {
     }
   });
 
+  it('Green Invoice refunds for a receipt studio (400) are recorded as not issued; 320 studios get a credit invoice', () => {
+    expect(documentRouteFor({ invoicingProvider: 'green_invoice', paymentProvider: 'manual', documentKind: 'refund', greenInvoiceDocumentType: 400 }).route)
+      .toBe('not_issued');
+    expect(documentRouteFor({ invoicingProvider: 'green_invoice', paymentProvider: 'manual', documentKind: 'refund', greenInvoiceDocumentType: 320 }))
+      .toEqual({ route: 'queue' });
+    expect(documentRouteFor({ invoicingProvider: 'green_invoice', paymentProvider: 'manual', documentKind: 'sale', greenInvoiceDocumentType: 400 }))
+      .toEqual({ route: 'queue' });
+  });
+
+  it('Tranzila and Yesh (no document call yet) record every document as not issued, never queue it', () => {
+    for (const p of ['tranzila', 'yesh']) {
+      for (const paymentProvider of ['manual', p]) {
+        for (const documentKind of ['sale', 'refund'] as const) {
+          const route = documentRouteFor({ invoicingProvider: p, paymentProvider, documentKind });
+          expect(route.route).toBe('not_issued');
+        }
+      }
+    }
+  });
+
   it('records cash payments and refunds as not issued', () => {
     for (const p of ['grow', 'icount', 'invoice4u']) {
       expect(documentRouteFor({ invoicingProvider: p, paymentProvider: 'manual', documentKind: 'sale' }).route).toBe('not_issued');

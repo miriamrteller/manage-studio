@@ -18,8 +18,8 @@ function Sync() {
   const { pathname } = useLocation();
 
   useEffect(() => {
-    setMonitoringContext({ tenantId: tenant?.id, userId: user?.id, role: primaryRole(user?.role) });
-  }, [tenant?.id, user?.id, user?.role]);
+    setMonitoringContext({ tenantId: tenant?.id, tenantSubdomain: tenant?.subdomain, userId: user?.id, role: primaryRole(user?.role) });
+  }, [tenant?.id, tenant?.subdomain, user?.id, user?.role]);
 
   useEffect(() => {
     setMonitoringRoute(scrubPath(pathname));

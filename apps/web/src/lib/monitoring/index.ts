@@ -99,6 +99,8 @@ export function initMonitoring(): Promise<Sentry | null> {
 
 export type MonitoringContext = {
   tenantId?: string | null;
+  /** The studio's address part (e.g. "creativeballet"), so reports name the studio. */
+  tenantSubdomain?: string | null;
   userId?: string | null;
   /** Highest role, e.g. "admin" or "parent". Never a name or email. */
   role?: string | null;
@@ -108,6 +110,7 @@ export type MonitoringContext = {
 export function setMonitoringContext(ctx: MonitoringContext): void {
   run((S) => {
     S.setTag('tenant_id', ctx.tenantId ?? 'none');
+    S.setTag('tenant', ctx.tenantSubdomain ?? 'none');
     S.setTag('role', ctx.role ?? 'anonymous');
     S.setUser(ctx.userId ? { id: ctx.userId } : null);
   });

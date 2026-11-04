@@ -128,6 +128,27 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<StudioSetupResult | null>(null);
   const [termsAccepted, setTermsAccepted] = useState(false);
+  // Self-serve: the signed-in account's email prefills "Business email" (the owner can change it).
+  const [accountEmail, setAccountEmail] = useState('');
+  useEffect(() => {
+    if (!selfServe) return;
+    let alive = true;
+    void (async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (alive) setAccountEmail(data.session?.user.email ?? '');
+      } catch {
+        /* no session available: the field starts empty and stays optional */
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [selfServe]);
+  const ownerEmailDefault = selfServe ? accountEmail : form.ownerEmail.trim();
+  const businessEmail = form.businessEmail ?? ownerEmailDefault;
+  // A typed business email must be an address; untouched, it simply follows the owner's email.
+  const businessEmailOk = form.businessEmail === null || EMAIL_RE.test(form.businessEmail.trim());
   const [invoicingOther, setInvoicingOther] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const siteKey = selfServe ? turnstileSiteKey() : null;
@@ -265,14 +286,14 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
   function canAdvance(): boolean {
     switch (step) {
       case 'studio':
-        if (selfServe) return form.name.trim().length > 0;
+        if (selfServe) return form.name.trim().length > 0 && businessEmailOk;
         return form.name.trim().length > 0 && SUBDOMAIN_RE.test(form.subdomain.trim().toLowerCase());
       case 'address':
         return SUBDOMAIN_RE.test(form.subdomain.trim().toLowerCase()) && subdomainStatus !== 'taken';
       case 'look':
         return HEX_COLOR.test(form.primaryColor) && HEX_COLOR.test(form.accentColor);
       case 'owner':
-        return EMAIL_RE.test(form.ownerEmail.trim());
+        return EMAIL_RE.test(form.ownerEmail.trim()) && businessEmailOk;
       case 'payments':
         return invoicingPairsWithPayment(form.paymentProvider, form.invoicingProvider);
       case 'review':
@@ -287,13 +308,14 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
     if (canAdvance()) return null;
     switch (step) {
       case 'studio':
-        return form.name.trim().length === 0 ? 'studio_setup.need_name' : 'studio_setup.need_address';
+        if (form.name.trim().length === 0) return 'studio_setup.need_name';
+        return selfServe && !businessEmailOk ? 'studio_setup.need_business_email' : 'studio_setup.need_address';
       case 'address':
         return subdomainStatus === 'taken' ? null : 'studio_setup.need_address';
       case 'look':
         return 'studio_setup.need_colours';
       case 'owner':
-        return 'studio_setup.need_owner_email';
+        return EMAIL_RE.test(form.ownerEmail.trim()) ? 'studio_setup.need_business_email' : 'studio_setup.need_owner_email';
       case 'payments':
         return 'studio_setup.need_invoicing_pairing';
       case 'review':
@@ -369,6 +391,24 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
   );
   const invoicingLabel = (slug: StudioInvoicingProvider) => t(`studio_setup.invoicing_${slug}`);
 
+  const businessEmailField = (
+    <div className="space-y-2">
+      <label className="block text-sm font-medium" htmlFor="ss-business-email">{t('studio_setup.business_email')}</label>
+      <input
+        id="ss-business-email"
+        type="email"
+        dir="ltr"
+        autoComplete="email"
+        className="form-input w-full"
+        value={businessEmail}
+        onChange={(e) => update('businessEmail', e.target.value)}
+        aria-describedby="ss-business-email-hint"
+        aria-invalid={!businessEmailOk}
+      />
+      <p id="ss-business-email-hint" className="text-xs text-muted-foreground">{t('studio_setup.business_email_hint')}</p>
+    </div>
+  );
+
   return (
     <div className="max-w-2xl space-y-6">
       <header className="space-y-2">
@@ -430,6 +470,7 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
             />
             <p id="ss-business-contact-hint" className="text-xs text-muted-foreground">{t('studio_setup.business_contact_hint')}</p>
           </div>
+          {selfServe && businessEmailField}
         </section>
       )}
 
@@ -652,6 +693,7 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
           <p id="ss-owner-help" className="text-sm text-gray-700">
             {t('studio_setup.owner_help')} {t('studio_setup.owner_not_platform')}
           </p>
+          <div className="pt-2">{businessEmailField}</div>
         </section>
       )}
 
@@ -667,6 +709,7 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
             <ReviewRow label={t('studio_setup.payment_question')} value={paymentLabel(form.paymentProvider)} />
             <ReviewRow label={t('studio_setup.invoicing_question')} value={invoicingLabel(form.invoicingProvider)} />
             {!selfServe && <ReviewRow label={t('studio_setup.owner_email')} value={form.ownerEmail.trim()} ltr />}
+            {businessEmail.trim() && <ReviewRow label={t('studio_setup.business_email')} value={businessEmail.trim()} ltr />}
           </dl>
           {selfServe && (
             <div className="space-y-4">

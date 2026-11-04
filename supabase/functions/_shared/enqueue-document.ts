@@ -76,6 +76,13 @@ export async function tenantIssuesNoDocuments(
 /** Invoicing services that only issue a document together with their own card charge. */
 export const BUNDLED_ONLY_INVOICING = ["grow", "icount", "invoice4u"] as const;
 
+/**
+ * Unfinished invoicing services: their document call is not built yet (live API access
+ * pending), so no document of any kind can come from OpalSwift. Recorded as not issued
+ * instead of failing in the queue (payments audit follow-up).
+ */
+export const NO_DOCUMENTS_YET_INVOICING = ["tranzila", "yesh"] as const;
+
 export type DocumentRoute =
   | { route: "queue" }
   | { route: "skip_no_documents" }
@@ -93,9 +100,28 @@ export function documentRouteFor(input: {
   invoicingProvider: string | null | undefined;
   paymentProvider: string | null | undefined;
   documentKind: DocumentKind;
+  /** tenants.green_invoice_document_type: 400 receipt, 320 tax invoice-receipt. */
+  greenInvoiceDocumentType?: number | string | null;
 }): DocumentRoute {
   const invoicing = input.invoicingProvider ?? "";
   if (invoicing === "none") return { route: "skip_no_documents" };
+  // A credit invoice (330) only offsets a tax invoice. A studio issuing receipts (400) records
+  // the refund in Green Invoice itself. [[ACCOUNTANT: confirm]]
+  if (
+    invoicing === "green_invoice" && input.documentKind === "refund" &&
+    Number(input.greenInvoiceDocumentType) === 400
+  ) {
+    return {
+      route: "not_issued",
+      reason: "Green Invoice issues receipts for this studio, so no credit invoice is issued; record the refund in Green Invoice",
+    };
+  }
+  if ((NO_DOCUMENTS_YET_INVOICING as readonly string[]).includes(invoicing)) {
+    return {
+      route: "not_issued",
+      reason: `${invoicing} documents can't be issued from OpalSwift yet; issue this document in ${invoicing}`,
+    };
+  }
   if (!(BUNDLED_ONLY_INVOICING as readonly string[]).includes(invoicing)) return { route: "queue" };
   if (input.documentKind === "sale" && input.paymentProvider === invoicing) {
     return { route: "skip_issued_with_charge" };
@@ -114,13 +140,15 @@ export async function enqueueDocument(
   params: EnqueueParams,
 ): Promise<{ queued: boolean; queueId?: string; notIssued?: boolean }> {
   const [{ data: tenant }, { data: payment }] = await Promise.all([
-    service.from("tenants").select("invoicing_provider").eq("id", params.tenantId).maybeSingle(),
+    service.from("tenants").select("invoicing_provider, green_invoice_document_type").eq("id", params.tenantId)
+      .maybeSingle(),
     service.from("payments").select("provider").eq("id", params.paymentId).maybeSingle(),
   ]);
   const decision = documentRouteFor({
     invoicingProvider: tenant?.invoicing_provider as string | null | undefined,
     paymentProvider: payment?.provider as string | null | undefined,
     documentKind: params.documentKind,
+    greenInvoiceDocumentType: tenant?.green_invoice_document_type as number | null | undefined,
   });
 
   // A studio with invoicing off (e.g. not a registered business) gets no tax

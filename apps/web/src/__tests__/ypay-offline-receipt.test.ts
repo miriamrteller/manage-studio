@@ -203,6 +203,8 @@ describe('YpayInvoicingProvider.issueDocument — live /document call', () => {
     const body = JSON.parse(String((fetchMock.mock.calls[0] as unknown as [string, FetchInit])[1].body));
     // v2.1 Payment Methods: 6 = app (Bit).
     expect(body.methods[0].type).toBe(6);
+    // v2.1: app_type names the app for method 6.
+    expect(body.methods[0].app_type).toBe('bit');
   });
 
   it('maps a rejected payment-method payload (3011) to a non-retryable error', async () => {
@@ -429,9 +431,17 @@ describe('client receipt email wording', () => {
     // vat_type 3 used to mean "receipt"; it no longer changes anything.
     const legacy = { invoicing_provider: 'ypay', ypay_document_type: 109, vat_type: 3 };
     expect(clientDocumentKind(legacy)).toBe('invoice_receipt');
-    for (const provider of ['green_invoice', 'grow', 'invoice4u', 'icount', 'none', null]) {
+    for (const provider of ['grow', 'invoice4u', 'icount', 'none', null]) {
       expect(clientDocumentKind({ invoicing_provider: provider, ypay_document_type: 108, vat_type: 3 } as never)).toBeNull();
     }
+  });
+
+  it('follows the Green Invoice document setting', () => {
+    expect(clientDocumentKind({ invoicing_provider: 'green_invoice', green_invoice_document_type: 400 })).toBe('receipt');
+    expect(clientDocumentKind({ invoicing_provider: 'green_invoice', green_invoice_document_type: 320 })).toBe('invoice_receipt');
+    // The YPay setting never applies to Green Invoice.
+    expect(clientDocumentKind({ invoicing_provider: 'green_invoice', ypay_document_type: 108, green_invoice_document_type: 320 }))
+      .toBe('invoice_receipt');
   });
 });
 

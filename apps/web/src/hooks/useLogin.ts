@@ -12,6 +12,7 @@ import {
 import { classifyAuthError, resolveAuthErrorMessage } from '@/lib/authErrors';
 import { emailCooldownRemaining, rateLimitWaitSeconds, startEmailCooldown } from '@/lib/emailSendCooldown';
 import { buildAuthCallbackRedirect } from '@/lib/authRedirect';
+import { sendPasswordReset } from '@/features/auth/lib/passwordReset';
 import { sendLoginEmailOtp, verifyLoginEmailOtp } from '@/lib/loginEmailOtp';
 import { useCaptcha, type Captcha } from '@/components/captcha/useCaptcha';
 import { loginOtpOptions } from '@/lib/loginOtpOptions';
@@ -57,6 +58,8 @@ export interface LoginActions {
   verifyEmailCode: (code: string) => Promise<void>;
   resendEmailCode: () => Promise<void>;
   backToCodeSend: () => void;
+  /** "Forgot password?": emails a link to set a new password (same message whether or not the account exists). */
+  forgotPassword: (email: string) => Promise<void>;
 }
 
 export function useLogin(
@@ -298,6 +301,20 @@ export function useLogin(
     setMessage(null);
   };
 
+  const forgotPassword = async (email: string) => {
+    setIsLoading(true);
+    try {
+      await sendPasswordReset(email, captcha.authOptions().captchaToken);
+      setMessage({ type: 'success', text: t('pages.login.reset_sent', { email: email.trim().toLowerCase() }) });
+    } catch (error) {
+      const text = error instanceof Error ? error.message : '';
+      setMessage({ type: 'error', text: resolveAuthErrorMessage(text, t, 'pages.login.reset_error') });
+    } finally {
+      captcha.reset();
+      setIsLoading(false);
+    }
+  };
+
   return {
     isLoading,
     message,
@@ -310,5 +327,6 @@ export function useLogin(
     verifyEmailCode,
     resendEmailCode,
     backToCodeSend,
+    forgotPassword,
   };
 }

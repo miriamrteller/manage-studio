@@ -29,12 +29,14 @@ Where the type comes from:
 - **YPay**: the type YPay reports on the card callback, else the explicit setting "Which document
   does YPay issue?" (`tenants.ypay_document_type`, 108 receipt / 109 tax invoice-receipt), which is
   what we sent.
-- **Green Invoice**: 320 tax invoice-receipt for a sale, 330 credit for a refund (fixed today).
+- **Green Invoice**: the explicit setting "Which document does Green Invoice issue?"
+  (`tenants.green_invoice_document_type`, 400 receipt / 320 tax invoice-receipt, #340); 330 credit
+  for a refund. Documents issued before that setting were all 320.
 - **Grow, iCount, Invoice4U**: their account decides and they don't tell us: unknown.
   (Owner decision 2026-11-04: gross only for these for now; Grow's future is open, revisit later.)
 
 Existing documents are backfilled from the same settings
-(migration `20261104092459_payments_issued_document_kind.sql`).
+(migration `20261104101635_payments_issued_document_kind.sql`).
 
 Code: `supabase/functions/_shared/payments/document-kind.ts` (provider codes),
 `apps/web/src/features/finance-admin/lib/paymentDocuments.ts` (document status, VAT split).

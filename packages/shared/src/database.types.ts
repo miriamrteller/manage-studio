@@ -3694,6 +3694,7 @@ export type Database = {
           google_calendar_id: string | null
           google_calendar_refresh_token_enc: string | null
           google_calendar_token_expires_at: string | null
+          green_invoice_document_type: number
           health_declaration: boolean | null
           id: string
           invoice_license_number: string | null
@@ -3775,6 +3776,7 @@ export type Database = {
           google_calendar_id?: string | null
           google_calendar_refresh_token_enc?: string | null
           google_calendar_token_expires_at?: string | null
+          green_invoice_document_type?: number
           health_declaration?: boolean | null
           id?: string
           invoice_license_number?: string | null
@@ -3856,6 +3858,7 @@ export type Database = {
           google_calendar_id?: string | null
           google_calendar_refresh_token_enc?: string | null
           google_calendar_token_expires_at?: string | null
+          green_invoice_document_type?: number
           health_declaration?: boolean | null
           id?: string
           invoice_license_number?: string | null

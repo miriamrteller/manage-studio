@@ -16,8 +16,15 @@ export function isManualPaymentMethod(value: string | null | undefined): value i
  */
 export const RECEIPT_WITH_OWN_CHARGES_ONLY = ['grow', 'icount', 'invoice4u'] as const;
 
+/** Unfinished invoicing services: no documents from OpalSwift yet (enqueue-document.ts NO_DOCUMENTS_YET_INVOICING). */
+export const NO_DOCUMENTS_YET = ['tranzila', 'yesh'] as const;
+
 export function invoicingReceiptsRecordedPayments(invoicingProvider: string | null | undefined): boolean {
-  return !(RECEIPT_WITH_OWN_CHARGES_ONLY as readonly string[]).includes(invoicingProvider ?? '');
+  const slug = invoicingProvider ?? '';
+  return (
+    !(RECEIPT_WITH_OWN_CHARGES_ONLY as readonly string[]).includes(slug) &&
+    !(NO_DOCUMENTS_YET as readonly string[]).includes(slug)
+  );
 }
 
 /**
