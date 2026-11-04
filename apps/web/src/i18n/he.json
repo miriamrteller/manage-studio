@@ -1311,6 +1311,7 @@
       "empty_message": "הוסף תקופה לפני תזמון שיעורים והרשמות."
     },
     "admin_classes": {
+      "packages_description": "יצירה, עריכה ומחיקה של החבילות שלך.",
       "email_class": "מייל למשתתפים",
       "email_class_label": "שליחת מייל למשתתפים ב{{name}}",
       "order_hint": "קודם מוסיפים {{level}} ו{{season}}, ואז את {{entity}}.",

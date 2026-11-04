@@ -116,7 +116,7 @@ describe('profile nav visibility (menu per existing skin)', () => {
     expect(paths).not.toContain('/classes');
     expect(paths).not.toContain('/admin/setup/levels');
     expect(paths).not.toContain('/admin/setup/terms');
-    expect(paths).not.toContain('/admin/setup/classes');
+    expect(paths).not.toContain('/admin/classes');
   });
 
   it('dance and generic tenants are unchanged (no jobs, class pages intact)', () => {
@@ -126,7 +126,7 @@ describe('profile nav visibility (menu per existing skin)', () => {
       expect(paths).not.toContain('/classes'); // the public pages are not in the admin menu
       expect(paths).toContain('/admin/setup/levels');
       expect(paths).toContain('/admin/setup/terms');
-      expect(paths).toContain('/admin/setup/classes');
+      expect(paths).toContain('/admin/classes');
     }
   });
 
@@ -155,14 +155,14 @@ describe('menu follows the switches, not the skin', () => {
   it('a new general studio sees projects and quotes but no class pages or families', () => {
     const paths = menu(general);
     expect(paths).toEqual(expect.arrayContaining(['/admin/jobs', '/admin/quotes', '/admin/leads']));
-    for (const gone of ['/admin/setup/classes', '/admin/setup/levels', '/admin/setup/terms', '/admin/families']) {
+    for (const gone of ['/admin/classes', '/admin/setup/levels', '/admin/setup/terms', '/admin/families']) {
       expect(paths).not.toContain(gone);
     }
   });
 
   it('each switch brings back exactly its pages', () => {
     expect(menu({ ...general, teachesClasses: true })).toEqual(
-      expect.arrayContaining(['/admin/setup/classes', '/admin/setup/levels', '/admin/setup/terms']),
+      expect.arrayContaining(['/admin/classes', '/admin/setup/levels', '/admin/setup/terms']),
     );
     expect(menu({ ...general, teachesClasses: true })).not.toContain('/admin/families');
     expect(menu({ ...general, familyAccounts: true })).toContain('/admin/families');
@@ -195,7 +195,7 @@ describe('admin menu: working pages at the top level', () => {
   it('dance and generic: Leads, Students, Families, Classes, Appointments, Notifications', () => {
     for (const vertical of ['dance-studio', 'generic'] as const) {
       expect(adminMenu(vertical)[0].items.map((i) => i.path)).toEqual([
-        '/admin/leads', '/admin/students', '/admin/families', '/admin/setup/classes',
+        '/admin/leads', '/admin/students', '/admin/families', '/admin/classes',
         '/admin/appointments', '/admin/notifications',
       ]);
     }
@@ -216,9 +216,9 @@ describe('admin menu: working pages at the top level', () => {
   it('"Manage classes" moved out of Setup (it is Classes at the top now), no duplicate entry', () => {
     for (const vertical of ['dance-studio', 'generic'] as const) {
       const all = paths(vertical);
-      expect(all.filter((p) => p === '/admin/setup/classes')).toHaveLength(1);
+      expect(all.filter((p) => p === '/admin/classes')).toHaveLength(1);
       const setup = adminMenu(vertical).find((s) => s.sectionKey === 'setup')!;
-      expect(setup.items.map((i) => i.path)).not.toContain('/admin/setup/classes');
+      expect(setup.items.map((i) => i.path)).not.toContain('/admin/classes');
     }
   });
 

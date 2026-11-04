@@ -1307,6 +1307,7 @@
       "empty_message": "Add a season before scheduling classes and enrolments."
     },
     "admin_classes": {
+      "packages_description": "Create, edit and delete your packages.",
       "email_class": "Email participants",
       "email_class_label": "Email the participants of {{name}}",
       "order_hint": "Add a {{level}} and a {{season}} first, then your {{entity}}.",
