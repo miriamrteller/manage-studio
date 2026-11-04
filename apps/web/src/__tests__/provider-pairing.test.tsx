@@ -83,7 +83,10 @@ describe('Settings → Tax documents', () => {
     fireEvent.change(screen.getByLabelText('settings.invoicing.provider'), { target: { value: 'green_invoice' } });
     expect(screen.queryByRole('alert')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'common.save' }));
-    await waitFor(() => expect(update).toHaveBeenCalledWith({ invoicing_provider: 'green_invoice' }));
+    // Green Invoice is saved with its document choice (here the default, nothing loaded).
+    await waitFor(() =>
+      expect(update).toHaveBeenCalledWith({ invoicing_provider: 'green_invoice', green_invoice_document_type: 320 }),
+    );
   });
 });
 

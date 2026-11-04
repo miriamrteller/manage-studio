@@ -35,7 +35,7 @@ const event = {
 describe('buildIssue', () => {
   it('includes marker, tenant, route, commit link and frames', () => {
     const gh = buildIssue(issue, event, 'o/r');
-    expect(gh.title).toBe('[Sentry] TypeError: cannot read x');
+    expect(gh.title).toBe('[Sentry] TypeError in src/pages/JobDetailPage.tsx');
     expect(gh.body.startsWith(MARKER('4242'))).toBe(true);
     expect(gh.body).toContain('| Tenant id | t-1 |');
     expect(gh.body).toContain('| Route | /admin/jobs/:id |');
@@ -44,14 +44,36 @@ describe('buildIssue', () => {
     expect(gh.labels).toEqual(['sentry', 'bug']);
   });
 
-  it('labels problem reports and uses the typed text as title', () => {
+  it('problem reports carry no typed text: title is the short id, body has link and facts only', () => {
+    const typed = 'Ruth Cohen\'s daughter Dana cannot be saved';
     const gh = buildIssue(
-      { ...issue, issueCategory: 'feedback', title: 'User Feedback' },
-      { tags: [], contexts: { feedback: { message: 'Save does nothing' } } },
+      { ...issue, issueCategory: 'feedback', title: typed, shortId: 'WEB-1B', metadata: { message: typed } },
+      {
+        tags: [
+          { key: 'tenant', value: 'creativeballet' },
+          { key: 'route', value: '/admin/students/:id?name=Dana' },
+        ],
+        contexts: { feedback: { message: typed, name: 'Ruth Cohen', contact_email: 'ruth@example.com' } },
+      },
       'o/r',
     );
-    expect(gh.title).toBe('[Problem report] Save does nothing');
+    expect(gh.title).toBe('[Problem report] #WEB-1B');
     expect(gh.labels).toEqual(['sentry', 'problem-report']);
+    const all = `${gh.title}\n${gh.body}`;
+    for (const leak of ['Ruth', 'Dana', 'cannot be saved', 'example.com']) expect(all).not.toContain(leak);
+    expect(gh.body).toContain('https://acme.sentry.io/issues/4242/');
+    expect(gh.body).toContain('| Studio | creativeballet |');
+    expect(gh.body).toContain('| Route | /admin/students/:id |');
+  });
+
+  it('error issues keep type and culprit but not the event message', () => {
+    const gh = buildIssue(
+      { ...issue, title: 'Error: no row for ruth@example.com', metadata: { type: 'Error', value: 'no row for ruth@example.com' } },
+      event,
+      'o/r',
+    );
+    expect(`${gh.title}\n${gh.body}`).not.toContain('ruth@example.com');
+    expect(gh.title).toBe('[Sentry] Error in src/pages/JobDetailPage.tsx');
   });
 
   it('neutralises mentions, fences and comment markers in untrusted text', () => {

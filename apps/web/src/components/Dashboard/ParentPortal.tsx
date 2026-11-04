@@ -16,6 +16,7 @@ import { GuardianSelfSection, GuardianSetupRequiredCard } from './GuardianSelfSe
 import { UpcomingSessionsSection } from './UpcomingSessionsSection';
 import { ContactPreferencesEditor } from '@/components/shared/ContactPreferencesEditor';
 import { SetPasswordDialog } from '@/components/shared/SetPasswordDialog';
+import { ChangeLoginEmailDialog } from '@/components/shared/ChangeLoginEmail';
 import { buildUpcomingSessions } from '@/features/enrolment/lib/upcomingSessions';
 import { formatPersonDateOfBirthDisplay } from '@/lib/personAge';
 import { readPortalHighlightState } from '@/lib/portalHighlight';
@@ -42,6 +43,7 @@ export function ParentPortal() {
   const [showAddChild, setShowAddChild] = useState(false);
   const [prefsOpen, setPrefsOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
+  const [loginEmailOpen, setLoginEmailOpen] = useState(false);
   const [selectedEnrolmentStatuses, setSelectedEnrolmentStatuses] = useState<FilterOption[]>([]);
   const [showSuccessBanner, setShowSuccessBanner] = useState(Boolean(portalHighlight?.enrolmentSuccess));
   const scrolledRef = useRef(false);
@@ -171,6 +173,9 @@ export function ParentPortal() {
           <Button variant="outline" onClick={() => setPasswordOpen(true)}>
             {t('pages.portal.login_password')}
           </Button>
+          <Button variant="outline" onClick={() => setLoginEmailOpen(true)}>
+            {t('login_email.change_title')}
+          </Button>
           <Button variant="primary" onClick={() => navigate('/enrol')}>
             {t('pages.portal.enrol_new')}
           </Button>
@@ -179,6 +184,7 @@ export function ParentPortal() {
 
       <ContactPreferencesEditor open={prefsOpen} onOpenChange={setPrefsOpen} />
       <SetPasswordDialog open={passwordOpen} onOpenChange={setPasswordOpen} />
+      <ChangeLoginEmailDialog open={loginEmailOpen} onOpenChange={setLoginEmailOpen} />
 
       {guardian && (
         <GuardianSelfSection

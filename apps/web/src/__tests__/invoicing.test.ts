@@ -7,7 +7,10 @@ import {
   STALE_PROCESSING_MINUTES,
 } from "../../../../supabase/functions/_shared/invoicing/backoff.ts";
 import { MockInvoicingProvider } from "../../../../supabase/functions/_shared/invoicing/providers/mock.ts";
-import { giDocumentTypeForKind } from "./invoicing-gi-mapper.ts";
+import {
+  giDocumentType,
+  giPaymentRows,
+} from "../../../../supabase/functions/_shared/invoicing/providers/green-invoice-document.ts";
 
 const InvoicingProviderSlugSchema = z.enum(["green_invoice", "mock"]);
 
@@ -78,9 +81,22 @@ describe("invoicing registry slugs", () => {
   });
 });
 
-describe("Green Invoice document type mapper", () => {
-  it("maps sale and refund kinds", () => {
-    expect(giDocumentTypeForKind("sale")).toBe(320);
-    expect(giDocumentTypeForKind("refund")).toBe(330);
+describe("Green Invoice document type", () => {
+  it("issues the studio's chosen sale document; refunds get a credit invoice", () => {
+    expect(giDocumentType("sale", 400)).toBe(400);
+    expect(giDocumentType("sale", 320)).toBe(320);
+    expect(giDocumentType("sale", null)).toBe(320);
+    expect(giDocumentType("sale", "400")).toBe(400);
+    expect(giDocumentType("refund", 320)).toBe(330);
+  });
+
+  it("adds how and when the money came in to a sale document, none to a credit invoice", () => {
+    expect(giPaymentRows({ documentKind: "sale", paymentMethod: "cash", paidAt: "2026-11-03T10:00:00Z", totalAmountMinor: 12050 }))
+      .toEqual([{ type: 1, price: 120.5, date: "2026-11-03" }]);
+    expect(giPaymentRows({ documentKind: "sale", paymentMethod: "bit", paidAt: null, totalAmountMinor: 100 }, "2026-11-04"))
+      .toEqual([{ type: 10, price: 1, date: "2026-11-04" }]);
+    expect(giPaymentRows({ documentKind: "sale", paymentMethod: null, paidAt: null, totalAmountMinor: 100 }, "2026-11-04")[0].type)
+      .toBe(3);
+    expect(giPaymentRows({ documentKind: "refund", paymentMethod: "cash", paidAt: null, totalAmountMinor: 100 })).toEqual([]);
   });
 });

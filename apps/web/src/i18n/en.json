@@ -2169,9 +2169,10 @@
     "logo_chosen": "{{name}} will be added when your studio is created.",
     "logo_too_large": "That file is over 2 MB. Choose a smaller one, or skip this for now.",
     "logo_owner_later": "The studio owner can add a logo later in Settings → Branding.",
-    "business_email": "Business email (clients see this)",
-    "business_email_hint": "Replies to the studio's emails and new-enquiry alerts go here. It can be different from the login email, and you can change it later in Settings.",
-    "need_business_email": "Enter a valid business email, or put back the login email."
+    "business_email": "Business email",
+    "business_email_hint": "Clients see this. Their replies and new-enquiry alerts come here. You sign in with your login email: {{login}}.",
+    "need_business_email": "Enter a valid business email, or put back the login email.",
+    "business_email_hint_no_login": "Clients see this. Their replies and new-enquiry alerts come here. You sign in with your login email, not this one."
   },
   "studio_not_found": {
     "title": "Studio not found",
@@ -2417,7 +2418,10 @@
       "filter_date_to": "Paid to",
       "filter_payer_search": "Search payer",
       "export": "Export CSV",
-      "detail_title": "Payment details"
+      "detail_title": "Payment details",
+      "col_vat_split": "Before VAT / VAT",
+      "vat_split_value": "{{pretax}} + {{vat}} VAT ({{rate}}%)",
+      "vat_split_note": "Worked out from the document issued; the document itself is the record."
     },
     "charge_type": {
       "initial": "Enrolment payment",
@@ -2440,7 +2444,8 @@
       "card": "Card",
       "cash": "Cash",
       "bank_transfer": "Bank transfer",
-      "other": "Other"
+      "other": "Other",
+      "bit": "Bit"
     },
     "period": {
       "month_current": "This month",
@@ -2448,7 +2453,86 @@
       "season_active": "Active season"
     },
     "export": {
-      "too_many": "Too many rows to export (max 5,000). Narrow your filters."
+      "preparing": "Preparing the file… {{count}} rows",
+      "failed": "Couldn't prepare the file. Try again."
+    },
+    "csv": {
+      "language": "File language",
+      "enrolment_id": "Enrolment ID",
+      "expenses": {
+        "expense_date": "Expense date",
+        "category": "Category",
+        "description": "Description",
+        "supplier_name": "Supplier",
+        "supplier_vat_number": "Supplier business number",
+        "corrects_expense_id": "Corrects expense",
+        "expense_id": "Expense ID"
+      }
+    },
+    "accountant_export": {
+      "title": "For your accountant",
+      "intro": "Every payment and refund in the period, with its tax document (type, number, link) or why there is none, and the VAT from the document issued.",
+      "period": "Period",
+      "from": "From",
+      "to": "To",
+      "vat_period": "VAT report every",
+      "vat_period_options": {
+        "bi_monthly": "2 months",
+        "monthly": "Month"
+      },
+      "download": "Download for accountant (CSV)",
+      "empty": "No payments in this period.",
+      "note": "Help only, not tax advice. The provider's document is the legal record; amounts here are worked out from the total and can differ by one agora. Check the VAT rules with your accountant.",
+      "periods": {
+        "vat_previous": "Last VAT period",
+        "vat_current": "This VAT period",
+        "month_previous": "Last month",
+        "month_current": "This month",
+        "quarter_previous": "Last quarter",
+        "year_previous": "Last year",
+        "year_current": "This year",
+        "custom": "Custom dates"
+      },
+      "col": {
+        "paid_date": "Paid date",
+        "document_date": "Document date",
+        "document_type": "Document type",
+        "document_number": "Document number",
+        "document_link": "Document link",
+        "allocation_number": "Allocation number",
+        "no_document_reason": "No document because",
+        "payer": "Payer",
+        "business_name": "Business name",
+        "business_tax_id": "Business number",
+        "item": "Item",
+        "pretax": "Before VAT",
+        "vat": "VAT",
+        "vat_rate": "VAT rate",
+        "total": "Total",
+        "currency": "Currency",
+        "method": "Method",
+        "provider": "Provider",
+        "payment_reason": "Payment reason",
+        "status": "Status",
+        "refund_of_document": "Refund of document",
+        "payment_id": "Payment ID"
+      },
+      "document_kind": {
+        "receipt": "Receipt",
+        "tax_invoice_receipt": "Tax invoice-receipt",
+        "credit_note": "Credit document",
+        "unknown": "Document issued by {{provider}}"
+      },
+      "no_document": {
+        "not_paid": "Not paid",
+        "pending": "Waiting for the invoicing service",
+        "failed": "The invoicing service failed; see Finance",
+        "not_issued": "The invoicing service can't issue a document for this payment",
+        "no_invoicing": "The studio doesn't issue documents through OpalSwift",
+        "refund_in_provider": "Refund document made in YPay",
+        "missing": "Not issued yet"
+      },
+      "refund_of_unknown": "(original without a document)"
     },
     "expenses": {
       "title": "Expenses",
@@ -2573,7 +2657,8 @@
       "partially_refunded": "Partially refunded",
       "refunded": "Refunded",
       "pending": "Pending",
-      "failed": "Failed"
+      "failed": "Failed",
+      "disputed": "Disputed"
     }
   },
   "enrolment": {
@@ -2981,6 +3066,12 @@
       "providers": { "grow": "Grow (Meshulam)", "icount": "iCount", "invoice4u": "Invoice4U", "ypay": "YPay", "tranzila": "Tranzila" }
     },
     "invoicing_toggle": {
+      "gi_document_label": "Which document does Green Invoice issue?",
+      "gi_document_400": "Receipt (קבלה)",
+      "gi_document_320": "Tax invoice-receipt (חשבונית מס קבלה)",
+      "gi_document_hint": "We filled this in from your business status. Change it if your accountant advises otherwise; changing your business status later won’t change it.",
+      "gi_document_differs_400": "Your business status usually issues a receipt. Check with your accountant if you’re unsure.",
+      "gi_document_differs_320": "Your business status usually issues a tax invoice-receipt. Check with your accountant if you’re unsure.",
       "title": "Tax documents",
       "description": "Whether the app issues a receipt or invoice for every payment through your invoicing provider.",
       "enabled_label": "Issue tax documents automatically",
@@ -3158,14 +3249,12 @@
       "custom_domain_readonly": "Your studio's own web address. Only the OpalSwift team can change it.",
       "name_required": "Studio name is required.",
       "profile_saved": "Studio profile saved.",
-      "studio_email": "Studio email",
-      "studio_email_hint": "Clients see this: replies to your emails and new-enquiry alerts go here. Your login email does not change.",
-      "studio_email_invalid": "Enter a valid email address for the studio.",
+      "studio_email_invalid": "Enter a valid business email.",
       "studio_email_legal_offer_one": "Your legal pages still show {{from}} in 1 place. Use {{to}} there too?",
       "studio_email_legal_offer_other": "Your legal pages still show {{from}} in {{count}} places. Use {{to}} there too?",
       "studio_email_legal_yes": "Update legal pages",
       "studio_email_legal_no": "Not now",
-      "studio_email_legal_updated": "Legal pages now use the new studio email.",
+      "studio_email_legal_updated": "Legal pages now use the new business email.",
       "studio_email_legal_error": "Could not update the legal pages. You can change the emails in Settings → Legal.",
       "branding_title": "Branding",
       "branding_description": "Primary and accent colours applied across the site.",
@@ -3182,7 +3271,11 @@
       "more_settings": "More settings",
       "compliance_title": "Forms & consent",
       "compliance_description": "Manage form templates and signed forms.",
-      "coming_soon": "Coming soon."
+      "coming_soon": "Coming soon.",
+      "business_email": "Business email",
+      "business_email_hint": "Clients see this. Their replies and new-enquiry alerts come here. You sign in with your login email: {{login}}.",
+      "business_email_hint_no_login": "Clients see this. Their replies and new-enquiry alerts come here. You sign in with your login email, not this one.",
+      "change_login_link": "Change it in Security"
     },
     "onboarding": {
       "title": "Provision new tenant",
@@ -3387,7 +3480,8 @@
       "filled_for_you_other": "Details we filled in for you ({{count}})",
       "filled_for_you_hint": "Taken from your studio's setup, or a sensible default. Open to check or change them.",
       "invalid_israeli_id": "This isn't a valid Israeli ID number. Check the 9 digits.",
-      "no_insurance_notice": "If you work with children or physical activity, liability and personal-accident insurance is usually recommended. Check with an insurance agent. Until you have it, your terms and health declaration will say you're not insured."
+      "no_insurance_notice": "If you work with children or physical activity, liability and personal-accident insurance is usually recommended. Check with an insurance agent. Until you have it, your terms and health declaration will say you're not insured.",
+      "use_business_email": "Use my business email ({{email}})"
     },
     "privacy_notice": "We use your details only to handle your request and enrolment.",
     "accept_terms_prefix": "I have read and accept the",
@@ -3487,7 +3581,9 @@
       },
       "password_title": "Login password",
       "password_description": "Set a password to sign in without waiting for an email. Emailed links and codes keep working.",
-      "password_button": "Set or change your password"
+      "password_button": "Set or change your password",
+      "login_email_title": "Login email",
+      "login_email_hint": "You sign in with this. Clients never see it."
     },
     "lawyer": {
       "title": "Lawyer-reviewed versions",
@@ -3688,5 +3784,23 @@
   },
   "payment_methods": {
     "bit": "Bit / PayBox"
+  },
+  "login_email": {
+    "change_title": "Change login email",
+    "change_description": "The email you sign in with. We send a confirmation to both your current and your new address; it changes only after you confirm, and your current login keeps working until then.",
+    "dialog_description": "Your login changes only after you confirm from both addresses.",
+    "new_label": "New login email",
+    "also_business": "Also use this as my business email",
+    "send": "Send confirmation",
+    "sent": "We sent a confirmation link to {{from}} and to {{to}}. Open both. Until then, keep signing in with {{from}}.",
+    "refused_taken": "That email already has an OpalSwift account (perhaps at another studio). Use a different address.",
+    "refused_reserved": "That address is reserved for OpalSwift. Use a different one.",
+    "refused_same": "That is already your login email.",
+    "refused_invalid": "Enter a valid email address.",
+    "error": "We could not send the confirmation. Try again in a minute.",
+    "confirmed_title": "Thanks, confirmed",
+    "confirmed_body": "If you have now confirmed from both addresses, your new login email is active. If not, open the link we sent to the other address.",
+    "continue": "Continue",
+    "sign_in": "Sign in"
   }
 }

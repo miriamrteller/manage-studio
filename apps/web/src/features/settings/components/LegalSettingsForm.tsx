@@ -265,6 +265,11 @@ export function LegalSettingsForm() {
         )}
         {fromStudio && <p className="text-xs text-muted-foreground">{t('legal.settings.filled_from_studio')}</p>}
         {f.hint && <p className="text-xs text-muted-foreground">{f.hint[lang]}</p>}
+        {f.key === 'email' && legal.contactEmail && value.trim().toLowerCase() !== legal.contactEmail.trim().toLowerCase() && (
+          <Button type="button" variant="outline" size="sm" onClick={() => onChange(legal.contactEmail)}>
+            {t('legal.settings.use_business_email', { email: legal.contactEmail })}
+          </Button>
+        )}
         {f.example && !value && (
           <p className="text-xs text-muted-foreground">{t('legal.settings.example', { example: f.example[lang] })}</p>
         )}

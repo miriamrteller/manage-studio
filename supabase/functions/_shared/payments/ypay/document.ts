@@ -133,6 +133,8 @@ export function buildYpayDocumentPayload(input: YpayDocumentPayloadInput): Recor
         type: YPAY_METHOD_TYPE[input.paymentMethod],
         total,
         date,
+        // v2.1: app_type names the app for method 6 ("bit" / "paybox"). We record one Bit / PayBox method.
+        ...(input.paymentMethod === "bit" ? { app_type: "bit" } : {}),
       },
     ],
   };

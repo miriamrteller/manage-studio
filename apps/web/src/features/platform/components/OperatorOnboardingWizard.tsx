@@ -405,7 +405,11 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
         aria-describedby="ss-business-email-hint"
         aria-invalid={!businessEmailOk}
       />
-      <p id="ss-business-email-hint" className="text-xs text-muted-foreground">{t('studio_setup.business_email_hint')}</p>
+      <p id="ss-business-email-hint" className="text-xs text-muted-foreground">
+        {ownerEmailDefault
+          ? t('studio_setup.business_email_hint', { login: ownerEmailDefault })
+          : t('studio_setup.business_email_hint_no_login')}
+      </p>
     </div>
   );
 

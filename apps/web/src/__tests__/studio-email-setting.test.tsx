@@ -10,6 +10,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { I18nextProvider } from 'react-i18next';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MemoryRouter } from 'react-router-dom';
 
 const h = vi.hoisted(() => ({
   row: { contact_email: 'owner@login.test', legal_profile: {} as Record<string, unknown> },
@@ -17,6 +18,7 @@ const h = vi.hoisted(() => ({
   authUpdates: 0,
 }));
 
+vi.mock('@/hooks/useAuth', () => ({ useAuthSession: () => ({ session: { user: { email: 'owner@login.test' } }, isLoading: false }) }));
 vi.mock('@/hooks/useTenant', () => ({ useTenant: () => ({ id: 't1', name: 'Lumen', subdomain: 'lumen' }) }));
 vi.mock('@/lib/query-client', () => ({ default: { invalidateQueries: vi.fn(async () => {}) } }));
 vi.mock('@/lib/supabase', () => ({
@@ -44,7 +46,9 @@ function renderForm() {
   return render(
     <I18nextProvider i18n={i18n}>
       <QueryClientProvider client={new QueryClient()}>
-        <SchoolProfileForm />
+        <MemoryRouter>
+          <SchoolProfileForm />
+        </MemoryRouter>
       </QueryClientProvider>
     </I18nextProvider>,
   );
@@ -63,9 +67,10 @@ afterEach(async () => {
 describe('studio email', () => {
   it('starts from the current studio email and saves a new one on the studio only', async () => {
     renderForm();
-    const field = await screen.findByLabelText('Studio email');
+    const field = await screen.findByLabelText('Business email');
     await waitFor(() => expect(field).toHaveValue('owner@login.test'));
-    expect(screen.getByText(/Your login email does not change/)).toBeInTheDocument();
+    expect(screen.getByText(/You sign in with your login email: owner@login.test/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Change it in Security' })).toHaveAttribute('href', '/admin/setup/settings?tab=security');
     fireEvent.change(field, { target: { value: 'hello@lumen.studio' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
     await waitFor(() => expect(h.updates[0]).toEqual({ name: 'Lumen', contact_email: 'hello@lumen.studio' }));
@@ -76,18 +81,18 @@ describe('studio email', () => {
 
   it('refuses an address that is not an email, without saving', async () => {
     renderForm();
-    const field = await screen.findByLabelText('Studio email');
+    const field = await screen.findByLabelText('Business email');
     await waitFor(() => expect(field).toHaveValue('owner@login.test'));
     fireEvent.change(field, { target: { value: 'not-an-email' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-    expect(await screen.findByText('Enter a valid email address for the studio.')).toBeInTheDocument();
+    expect(await screen.findByText('Enter a valid business email.')).toBeInTheDocument();
     expect(h.updates).toEqual([]);
   });
 
   it('offers to update legal emails that still hold the old address; "Not now" leaves them', async () => {
     h.row.legal_profile = { email: 'owner@login.test', privacy_contact_email: 'OWNER@login.test', accessibility_contact_email: 'other@x.test' };
     renderForm();
-    const field = await screen.findByLabelText('Studio email');
+    const field = await screen.findByLabelText('Business email');
     await waitFor(() => expect(field).toHaveValue('owner@login.test'));
     fireEvent.change(field, { target: { value: 'hello@lumen.studio' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
@@ -100,7 +105,7 @@ describe('studio email', () => {
   it('"Update legal pages" changes only those emails', async () => {
     h.row.legal_profile = { email: 'owner@login.test', privacy_contact_email: 'owner@login.test', accessibility_contact_email: 'other@x.test', phone: '050' };
     renderForm();
-    const field = await screen.findByLabelText('Studio email');
+    const field = await screen.findByLabelText('Business email');
     await waitFor(() => expect(field).toHaveValue('owner@login.test'));
     fireEvent.change(field, { target: { value: 'hello@lumen.studio' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
@@ -110,7 +115,7 @@ describe('studio email', () => {
         legal_profile: { email: 'hello@lumen.studio', privacy_contact_email: 'hello@lumen.studio', accessibility_contact_email: 'other@x.test', phone: '050' },
       }),
     );
-    expect(await screen.findByText('Legal pages now use the new studio email.')).toBeInTheDocument();
+    expect(await screen.findByText('Legal pages now use the new business email.')).toBeInTheDocument();
   });
 
   it('finds copied emails case-insensitively', () => {
@@ -121,6 +126,6 @@ describe('studio email', () => {
   it('is in Hebrew too', async () => {
     await i18n.changeLanguage('he');
     renderForm();
-    expect(await screen.findByLabelText('אימייל הסטודיו')).toBeInTheDocument();
+    expect(await screen.findByLabelText('אימייל העסק')).toBeInTheDocument();
   });
 });

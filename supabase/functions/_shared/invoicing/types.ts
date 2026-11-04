@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
+import type { IssuedDocumentKind } from "../payments/document-kind.ts";
 
 export type DocumentKind = "sale" | "refund";
 
@@ -31,6 +32,8 @@ export interface ExternalDocumentResult {
   externalDocumentId: string;
   externalDocumentNumber: string;
   documentUrl: string;
+  /** Which document the provider issued, when we know it (payments.issued_document_kind). */
+  documentKind?: IssuedDocumentKind | null;
 }
 
 export interface AuthHealthResult {

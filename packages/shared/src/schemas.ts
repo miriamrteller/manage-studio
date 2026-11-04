@@ -585,6 +585,21 @@ const PaymentLogEngagementSchema = z.object({
   status: z.string(),
 }).nullable();
 
+/**
+ * Tax document actually issued for a payment (payments.issued_document_kind).
+ * Null = unknown (the provider issued it and didn't say which) or none yet.
+ */
+export const IssuedDocumentKindSchema = z.enum(['receipt', 'tax_invoice_receipt', 'credit_note']);
+export type IssuedDocumentKind = z.infer<typeof IssuedDocumentKindSchema>;
+
+/** Document queue rows embedded on a payment (latest attempt decides the "no document" reason). */
+export const PaymentLogDocumentQueueSchema = z.object({
+  // Strings, not enums: a new queue status must not break the payments log.
+  status: z.string(),
+  document_kind: z.string(),
+  created_at: TimestampSchema,
+});
+
 export const PaymentLogRowSchema = z.object({
   id: UUIDSchema,
   person_id: UUIDSchema.nullable().optional(),
@@ -610,6 +625,17 @@ export const PaymentLogRowSchema = z.object({
   created_at: TimestampSchema,
   external_document_number: z.string().nullable().optional(),
   invoice_url: z.string().nullable().optional(),
+  external_document_id: z.string().nullable().optional(),
+  issued_document_kind: IssuedDocumentKindSchema.nullable().optional(),
+  invoice_issued_at: TimestampSchema.nullable().optional(),
+  allocation_number: z.string().nullable().optional(),
+  refunds_payment_id: UUIDSchema.nullable().optional(),
+  document_queue: z.array(PaymentLogDocumentQueueSchema).optional(),
+  /** Only on the accountant export: the payer's business details, when billed to a business. */
+  billing_account: z
+    .object({ business_name: z.string().nullable(), business_tax_id: z.string().nullable() })
+    .nullable()
+    .optional(),
   person: PaymentLogPersonSchema.optional(),
   offering: PaymentLogOfferingSchema.optional(),
   engagement: PaymentLogEngagementSchema.optional(),
