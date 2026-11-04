@@ -62,7 +62,7 @@ describe('Bit / PayBox only where it can be receipted (owner decision 2026-11-04
 
   it('is hidden for Grow, iCount and Invoice4U unless the studio accepts it anyway', async () => {
     const { manualPaymentMethodsFor } = await import('../features/finance/lib/manualPaymentMethods');
-    for (const invoicingProvider of ['grow', 'icount', 'invoice4u']) {
+    for (const invoicingProvider of ['grow', 'icount', 'invoice4u', 'tranzila', 'yesh']) {
       expect(manualPaymentMethodsFor({ invoicingProvider, acceptUnreceiptedBit: false })).toEqual(['cash', 'bank_transfer']);
       expect(manualPaymentMethodsFor({ invoicingProvider, acceptUnreceiptedBit: true })).toContain('bit');
     }
