@@ -5835,7 +5835,6 @@ export type Database = {
         Args: { p_pending: string; p_tenant_id: string }
         Returns: undefined
       }
-      smugmug_admin_tenant_id: { Args: never; Returns: string }
       sign_waiver: {
         Args: {
           p_accept_language: string
@@ -5868,6 +5867,7 @@ export type Database = {
         }
         Returns: string
       }
+      smugmug_admin_tenant_id: { Args: never; Returns: string }
       studio_feature_states: {
         Args: { p_tenant_id: string }
         Returns: {

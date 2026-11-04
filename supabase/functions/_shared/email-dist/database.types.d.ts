@@ -6218,10 +6218,6 @@ export type Database = {
                 };
                 Returns: undefined;
             };
-            smugmug_admin_tenant_id: {
-                Args: never;
-                Returns: string;
-            };
             sign_waiver: {
                 Args: {
                     p_accept_language: string;
@@ -6252,6 +6248,10 @@ export type Database = {
                     p_viewed_at: string;
                     p_wording_snapshot: string;
                 };
+                Returns: string;
+            };
+            smugmug_admin_tenant_id: {
+                Args: never;
                 Returns: string;
             };
             studio_feature_states: {
