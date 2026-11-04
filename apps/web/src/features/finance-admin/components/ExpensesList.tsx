@@ -10,6 +10,7 @@ import { useExpenses, useExpenseCategories } from '../hooks/useExpenses';
 import { ExpenseForm } from './ExpenseForm';
 import { ExpenseService } from '../services/expenseService';
 import { exportExpensesCsv } from '../lib/csvExport';
+import { expenseCategoryName, expenseLanguage } from '../lib/expenseCategoryName';
 import { datedCsvFilename } from '../lib/financeAdminUtils';
 import { fetchAllPages } from '../lib/pagedFetch';
 import { csvT, useCsvLanguage } from '../lib/csvLanguage';
@@ -145,7 +146,7 @@ export function ExpensesList() {
                 {expenses.map((expense) => (
                   <tr key={expense.id}>
                     <td className="px-3 py-2">{expense.expense_date}</td>
-                    <td className="px-3 py-2">{expense.category?.name ?? '—'}</td>
+                    <td className="px-3 py-2">{expense.category ? expenseCategoryName(expense.category, expenseLanguage(i18n.language)) : '—'}</td>
                     <td className="px-3 py-2">{expense.description}</td>
                     <td className="px-3 py-2">
                       {formatCurrency(expense.total_amount_minor, expense.currency, i18n.language)}

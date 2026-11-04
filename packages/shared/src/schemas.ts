@@ -521,6 +521,9 @@ export const ExpenseCategorySchema = z.object({
   is_vat_eligible: z.boolean().default(true),
   is_active: z.boolean().default(true),
   sort_order: z.number().int().nonnegative().default(0),
+  /** Set when the row is a common category (expense_category_catalog): shown in the reader's language. */
+  catalog_key: z.string().nullable().optional(),
+  catalog: z.object({ name_en: z.string(), name_he: z.string() }).nullable().optional(),
   created_at: TimestampSchema,
   updated_at: TimestampSchema,
 });

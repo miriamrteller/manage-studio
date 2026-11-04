@@ -2584,6 +2584,7 @@
     },
     "csv": {
       "language": "שפת הקובץ",
+      "lang_code": "he",
       "enrolment_id": "מזהה הרשמה",
       "expenses": {
         "expense_date": "תאריך הוצאה",
@@ -2701,7 +2702,11 @@
       "name": "שם",
       "vat_eligible": "חייב במע״מ",
       "active": "פעיל",
-      "sort_order": "סדר תצוגה"
+      "sort_order": "סדר תצוגה",
+      "common_title": "קטגוריות נפוצות",
+      "common_hint": "הפעילו את אלה שאתם צריכים. קטגוריה כבויה לא תופיע בהוצאות חדשות, והוצאות שכבר נרשמו בה נשארות בה.",
+      "common_suggested": "מתאימות לסוג העסק שלכם",
+      "common_more": "קטגוריות נוספות"
     },
     "record_payment": {
       "any": {
