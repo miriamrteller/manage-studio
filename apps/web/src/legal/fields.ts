@@ -177,7 +177,8 @@ export const LEGAL_FIELDS: LegalFieldDef[] = [
     key: 'email',
     section: 'identity',
     kind: 'email',
-    label: { en: 'Business email (defaults to the studio contact email)', he: 'דוא"ל העסק (ברירת מחדל: דוא"ל הקשר של הסטודיו)' },
+    label: { en: 'Email on your legal pages', he: 'האימייל בעמודים המשפטיים' },
+    hint: { en: 'Usually your business email.', he: 'בדרך כלל אימייל העסק שלכם.' },
     example: { en: "office@yourstudio.co.il", he: "office@yourstudio.co.il" },
     placeholders: {
       'enrolment-terms': ['[[EMAIL]]', '[[דוא"ל]]'],
