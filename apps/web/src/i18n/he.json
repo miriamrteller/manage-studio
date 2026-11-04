@@ -3161,14 +3161,18 @@
       "primaryColor": "צבע ראשי",
       "accentColor": "צבע משני",
       "fontPair": "צמד גופנים",
-      "selectFontPair": "בחירת צמד גופנים",
-      "fontPreview": "תצוגה מקדימה של הגופנים",
       "fontPairs": {
         "reliable": "אמין",
         "elegant": "אלגנטי",
         "dynamic": "דינמי",
         "warm": "חם",
-        "bold": "נועז"
+        "bold": "נועז",
+        "opalswift": "OpalSwift (ברירת מחדל)",
+        "classic": "קלאסי",
+        "literary": "ספרותי",
+        "studio": "סטודיו",
+        "statement": "בולט",
+        "soft": "רך"
       },
       "logos": "לוגואים",
       "lightLogo": "לוגו למצב בהיר",
@@ -3182,7 +3186,13 @@
       "uploadLightLogo": "העלאת לוגו למצב בהיר",
       "uploadDarkLogo": "העלאת לוגו למצב כהה",
       "fileTooLarge": "הקובץ גדול מדי (עד 2MB)",
-      "uploadFailed": "ההעלאה נכשלה. נסו שוב."
+      "uploadFailed": "ההעלאה נכשלה. נסו שוב.",
+      "fontPairHint": "הכותרות והטקסט בכל דפי הסטודיו. כל אפשרות כוללת אנגלית ועברית.",
+      "fontPreviewHeadingEn": "Spring term is open",
+      "fontPreviewBodyEn": "Book your place in a few taps.",
+      "fontPreviewHeadingHe": "ההרשמה לאביב פתוחה",
+      "fontPreviewBodyHe": "שריינו מקום בכמה הקשות.",
+      "fontPairFonts": "כותרות: {{heading}} · טקסט: {{body}}"
     },
     "offline_payments": {
       "title": "איך ההורים משלמים",
