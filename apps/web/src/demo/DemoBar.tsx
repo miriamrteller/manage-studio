@@ -25,7 +25,7 @@ const COPY = {
     invoiceTitle: 'Receipt / tax invoice',
     receiptTitle: 'Receipt',
     method: 'Paid by',
-    methods: { cash: 'Cash', bank_transfer: 'Bank transfer', card: 'Card' } as Record<string, string>,
+    methods: { cash: 'Cash', bank_transfer: 'Bank transfer', bit: 'Bit / PayBox', card: 'Card' } as Record<string, string>,
     invoiceNote: 'Sample document. In the live app the payment provider issues this.',
     contractSigned: 'Signed by',
     contractNote: 'In the live app this opens the signed PDF, which is also emailed to the client and the studio.',
@@ -44,7 +44,7 @@ const COPY = {
     invoiceTitle: 'קבלה / חשבונית מס',
     receiptTitle: 'קבלה',
     method: 'אמצעי תשלום',
-    methods: { cash: 'מזומן', bank_transfer: 'העברה בנקאית', card: 'כרטיס אשראי' } as Record<string, string>,
+    methods: { cash: 'מזומן', bank_transfer: 'העברה בנקאית', bit: 'ביט / פייבוקס', card: 'כרטיס אשראי' } as Record<string, string>,
     invoiceNote: 'מסמך לדוגמה. במערכת האמיתית ספק התשלומים מפיק אותו.',
     contractSigned: 'נחתם על ידי',
     contractNote: 'במערכת האמיתית נפתח כאן קובץ ה-PDF החתום, שנשלח גם ללקוח וגם לסטודיו.',
@@ -105,7 +105,7 @@ export function DemoBar() {
   const shortcut = leadFormShortcut(useHash(), view);
   const contract = useSyncExternalStore(subscribeContract, getContract);
   // Cash / bank transfer get a standalone receipt (קבלה); card payments the provider's tax invoice.
-  const offlineReceipt = invoice?.method === 'cash' || invoice?.method === 'bank_transfer';
+  const offlineReceipt = invoice?.method === 'cash' || invoice?.method === 'bank_transfer' || invoice?.method === 'bit';
   const [outboxOpen, setOutboxOpen] = useState(false);
   const [seen, setSeen] = useState(0);
   const [galleryOpen, setGalleryOpen] = useState(false);

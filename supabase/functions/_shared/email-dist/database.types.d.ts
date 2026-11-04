@@ -3662,6 +3662,7 @@ export type Database = {
             tenants: {
                 Row: {
                     accent_color: string;
+                    accept_unreceipted_bit: boolean;
                     accessibility_statement_url: string | null;
                     billing_policy: Json;
                     business_preset: string;
@@ -3741,6 +3742,7 @@ export type Database = {
                 };
                 Insert: {
                     accent_color?: string;
+                    accept_unreceipted_bit?: boolean;
                     accessibility_statement_url?: string | null;
                     billing_policy?: Json;
                     business_preset?: string;
@@ -3820,6 +3822,7 @@ export type Database = {
                 };
                 Update: {
                     accent_color?: string;
+                    accept_unreceipted_bit?: boolean;
                     accessibility_statement_url?: string | null;
                     billing_policy?: Json;
                     business_preset?: string;

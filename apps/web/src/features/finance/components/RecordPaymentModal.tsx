@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { ManualPaymentMethod } from '../lib/manualPaymentMethods';
+import { useManualPaymentMethods } from '../hooks/useManualPaymentMethods';
 import { useMutation } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
@@ -53,7 +55,8 @@ export function RecordPaymentModal({
     defaultAmountMinor && defaultAmountMinor > 0 ? minorToText(defaultAmountMinor) : '',
   );
   const amountMinor = parseAmountToMinor(amountText);
-  const [method, setMethod] = useState<'cash' | 'bank_transfer'>('cash');
+  const methods = useManualPaymentMethods();
+  const [method, setMethod] = useState<ManualPaymentMethod>('cash');
   const [note, setNote] = useState('');
   const [message, setMessage] = useState<string | null>(null);
 
@@ -90,10 +93,11 @@ export function RecordPaymentModal({
         <select
           className="mt-1 w-full border border-border rounded px-3 py-2"
           value={method}
-          onChange={(e) => setMethod(e.target.value as 'cash' | 'bank_transfer')}
+          onChange={(e) => setMethod(e.target.value as ManualPaymentMethod)}
         >
           <option value="cash">{t('finance.record_payment.cash', { defaultValue: 'Cash' })}</option>
           <option value="bank_transfer">{t('finance.record_payment.bank', { defaultValue: 'Bank transfer' })}</option>
+          {methods.includes('bit') && <option value="bit">{t('payment_methods.bit')}</option>}
         </select>
       </label>
       <label className="block text-sm">

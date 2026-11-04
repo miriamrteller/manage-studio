@@ -2974,6 +2974,10 @@
       "providers": { "grow": "Grow (Meshulam)", "icount": "iCount", "invoice4u": "Invoice4U", "ypay": "YPay", "tranzila": "Tranzila", "yesh": "Yesh", "green_invoice": "Green Invoice" }
     },
     "payments": {
+      "bit_title": "Bit / PayBox",
+      "bit_label": "Accept Bit / PayBox payments you record yourself",
+      "bit_hint": "{{provider}} can't make a receipt for a Bit / PayBox payment recorded here, so you'll issue that receipt yourself. Parents can also pay by Bit on your card payment page, which comes with a receipt.",
+      "bit_error": "That change wasn't saved. Please try again.",
       "connect_title": "Connect online payments",
       "connected_note": "Your payment details are saved. Customers can pay by card online.",
       "not_connected_note": "Not connected yet. Until you connect it, customers are asked to pay the studio directly. Nothing breaks, and you can do it any time.",
@@ -3650,5 +3654,8 @@
     "preview_forms": "Forms clients sign",
     "preview_with_addon": "(with the {{addon}})",
     "legal_not_shipped": "This add-on is not in the signed forms yet, so new studios get the base agreement only."
+  },
+  "payment_methods": {
+    "bit": "Bit / PayBox"
   }
 }
