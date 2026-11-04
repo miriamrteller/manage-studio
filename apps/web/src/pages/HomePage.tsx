@@ -36,7 +36,7 @@ export default function HomePage() {
   const navigate = useNavigate();
   const tenant = useTenant();
   const { user } = useCurrentUser();
-  const { labels } = useEntityLabels();
+  const { classLabels } = useEntityLabels();
   const { data: legal } = useTenantLegalProfile();
 
   const sectionInput = { vertical: tenant?.vertical, enabledFeatures: tenant?.enabled_features, profile: tenant?.profile };
@@ -62,7 +62,7 @@ export default function HomePage() {
       : null;
 
   // "See classes" in the middle of a sentence: lower case in English (Hebrew has no case).
-  const itemsWord = labels.offering.plural.toLocaleLowerCase(i18n.language?.startsWith('he') ? 'he' : 'en');
+  const itemsWord = classLabels.plural.toLocaleLowerCase(i18n.language?.startsWith('he') ? 'he' : 'en');
   const buttonLabel = (cta: HomeCta) =>
     cta.kind === 'classes'
       ? t('pages.home.cta_classes', { items: itemsWord })
@@ -113,7 +113,7 @@ export default function HomePage() {
       </section>
 
       {hasClasses && classPreview.length > 0 && (
-        <HomeSection title={labels.offering.plural} id="home-classes">
+        <HomeSection title={classLabels.plural} id="home-classes">
           <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {classPreview.map((c) => (
               <li key={c.id} className="rounded-xl border border-border p-4">

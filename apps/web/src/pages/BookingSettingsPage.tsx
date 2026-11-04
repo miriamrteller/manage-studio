@@ -227,7 +227,7 @@ export default function BookingSettingsPage() {
       <section className="card border border-gray-200 space-y-2 p-4">
         <h2 className="text-lg font-semibold">{t('scheduling.booking.manage_services')}</h2>
         <p className="text-sm text-gray-500">{t('scheduling.booking.manage_services_hint')}</p>
-        <Link to="/admin/setup/services">
+        <Link to="/admin/packages">
           <Button variant="outline" size="sm">
             {t('nav.booking_services')}
           </Button>

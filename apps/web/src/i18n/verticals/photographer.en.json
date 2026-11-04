@@ -1,7 +1,4 @@
 {
-  "errors": {
-    "failed_to_load_classes": "Failed to load packages. Please try again."
-  },
   "pages": {
     "enrol_complete": {
       "page_title": "Sign your contract",
@@ -107,18 +104,6 @@
       "empty_message": "Add a client to get started, or adjust your filters.",
       "filter_by_enrolment_status": "Booking status",
       "no_billing": "No billing account linked to any shoot"
-    },
-    "admin_classes": {
-      "empty_message": "Add your first {{entity}} to make it available for booking.",
-      "title": "Manage packages",
-      "description": "Create, edit and delete your photography packages.",
-      "create_button": "Add package",
-      "edit_title": "Edit package",
-      "empty_title": "No packages yet"
-    },
-    "classes": {
-      "no_classes_title": "No {{entity}} available",
-      "no_classes_message": "There are currently no {{entity}} available to book online. Please check back soon or contact us for more information."
     }
   },
   "enrolment": {

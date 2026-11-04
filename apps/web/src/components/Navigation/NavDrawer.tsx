@@ -47,7 +47,7 @@ export function NavDrawer() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useCurrentUser();
-  const { labels, modules, vertical, profile } = useEntityLabels();
+  const { labels, classLabels, modules, vertical, profile } = useEntityLabels();
   const { tenant, isLoading: tenantLoading } = useTenantQuery();
   const { hasFeature } = useFeatureGate();
   // Resolve feature flags from the authenticated gate OR the anon-safe tenant config
@@ -91,7 +91,7 @@ export function NavDrawer() {
   function navLabel(item: NavItem): string {
     switch (item.path) {
       case '/classes':
-        return labels.offering.plural;
+        return classLabels.plural;
       case '/admin/jobs':
         return labels.engagement.plural;
       case '/admin/students':
@@ -99,7 +99,7 @@ export function NavDrawer() {
         return !profile.teachesClasses || vertical === 'photographer' || vertical === 'beautician'
           ? labels.contact.plural
           : t(item.labelKey);
-      case '/admin/setup/services':
+      case '/admin/packages':
         return !profile.teachesClasses || vertical === 'photographer' ? labels.offering.plural : t(item.labelKey);
       case '/admin/setup/waivers':
         return vertical === 'photographer' ? t('nav.contracts') : t(item.labelKey);
@@ -109,9 +109,9 @@ export function NavDrawer() {
         return labels.category.plural;
       case '/admin/setup/terms':
         return labels.season.plural;
-      case '/admin/setup/classes':
-        // Top-level "Classes" in the studio's own word for them (Hebrew: "שיעורים").
-        return labels.offering.plural;
+      case '/admin/classes':
+        // Always class wording (Hebrew: "שיעורים"), never a skin's word such as "Packages".
+        return classLabels.plural;
       default:
         return t(item.labelKey);
     }

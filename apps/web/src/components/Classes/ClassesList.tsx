@@ -32,7 +32,7 @@ type ClassesView = 'calendar' | 'list';
 export function ClassesList() {
   const { t } = useTranslation();
   const tenant = useTenant();
-  const { labels } = useEntityLabels();
+  const { classLabels } = useEntityLabels();
   const { classes, isLoading, error } = useClasses();
 
   const calendarEnabled = tenant?.enabled_features?.includes(FEATURES.scheduling.calendarView) ?? false;
@@ -45,7 +45,7 @@ export function ClassesList() {
     <section>
       <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
         {/* Always render a single <h1> for page hierarchy, even in empty state */}
-        <h1 className="text-2xl font-bold">{labels.offering.plural}</h1>
+        <h1 className="text-2xl font-bold">{classLabels.plural}</h1>
 
         {calendarEnabled && (
           <div
@@ -88,8 +88,8 @@ export function ClassesList() {
       {/* Empty state: accessible, positive message with action */}
       {!error && !isLoading && activeView === 'list' && !offerings.length && (
         <EmptyState
-          title={t('pages.classes.no_classes_title', { entity: labels.offering.plural })}
-          message={t('pages.classes.no_classes_message', { entity: labels.offering.plural.toLowerCase() })}
+          title={t('pages.classes.no_classes_title', { entity: classLabels.plural })}
+          message={t('pages.classes.no_classes_message', { entity: classLabels.plural.toLowerCase() })}
           actionLabel={t('pages.classes.contact_support')}
           onAction={() => window.open('mailto:support@creativeballetacademy.com')}
         />
