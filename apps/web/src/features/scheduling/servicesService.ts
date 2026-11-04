@@ -18,6 +18,8 @@ export interface AppointmentService {
   location: string | null;
   is_public: boolean;
   status: string;
+  /** Photos the package includes in the photo shop (beta). */
+  photos_included: number;
 }
 
 const ServiceInputSchema = z.object({
@@ -28,6 +30,7 @@ const ServiceInputSchema = z.object({
   location: z.string().max(500).nullable().optional(),
   is_public: z.boolean().optional(),
   status: z.enum(['active', 'cancelled']).optional(),
+  photos_included: z.number().int().min(0).max(10000).optional(),
 });
 
 export type ServiceInput = z.input<typeof ServiceInputSchema>;
@@ -42,6 +45,7 @@ function toService(row: Record<string, unknown>): AppointmentService {
     location: (row.location as string | null) ?? null,
     is_public: Boolean(row.is_public),
     status: (row.status as string) ?? 'active',
+    photos_included: (row.photos_included as number | null) ?? 0,
   };
 }
 

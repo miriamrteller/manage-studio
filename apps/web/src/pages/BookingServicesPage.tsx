@@ -14,6 +14,7 @@ import {
 } from '@/features/scheduling/servicesService';
 import { BookingSettingsService } from '@/features/scheduling/bookingSettingsService';
 import { formatOfferingPrice } from '@/lib/formatOfferingPrice';
+import { usePhotoShopEnabled } from '@/features/jobs/hooks/usePhotoShop';
 
 interface ServiceFormState {
   id: string | null;
@@ -23,6 +24,7 @@ interface ServiceFormState {
   currency: string;
   location: string;
   is_public: boolean;
+  photos_included: number;
 }
 
 const EMPTY_FORM: ServiceFormState = {
@@ -33,6 +35,7 @@ const EMPTY_FORM: ServiceFormState = {
   currency: 'ILS',
   location: '',
   is_public: true,
+  photos_included: 0,
 };
 
 export default function BookingServicesPage() {
@@ -40,6 +43,7 @@ export default function BookingServicesPage() {
   const tenant = useTenant();
   const { hasFeature, isLoading: gateLoading } = useFeatureGate();
   const canManage = hasFeature(FEATURES.scheduling.adminBooking);
+  const photoShop = usePhotoShopEnabled();
 
   const [form, setForm] = useState<ServiceFormState | null>(null);
   const [saving, setSaving] = useState(false);
@@ -80,6 +84,7 @@ export default function BookingServicesPage() {
       currency: svc.currency,
       location: svc.location ?? '',
       is_public: svc.is_public,
+      photos_included: svc.photos_included,
     });
   }
 
@@ -99,6 +104,7 @@ export default function BookingServicesPage() {
         currency: form.currency,
         location: form.location.trim() || null,
         is_public: form.is_public,
+        ...(photoShop ? { photos_included: Math.max(0, Math.floor(form.photos_included || 0)) } : {}),
       };
       if (form.id) {
         await ServicesService.update(tenant as never, form.id, input);
@@ -248,6 +254,17 @@ export default function BookingServicesPage() {
                 onChange={(e) => patchForm({ location: e.target.value })}
               />
             </Field>
+            {photoShop && (
+              <Field label={t('scheduling.services.photos_included')}>
+                <Input
+                  type="number"
+                  min={0}
+                  inputMode="numeric"
+                  value={form.photos_included}
+                  onChange={(e) => patchForm({ photos_included: Number(e.target.value) })}
+                />
+              </Field>
+            )}
           </div>
           <label className="flex items-center gap-2">
             <Checkbox

@@ -10,6 +10,7 @@ import { JobDetailsForm } from './JobDetailsForm';
 import { JobContractCard } from './JobContractCard';
 import { JobBookingProgress } from './JobBookingProgress';
 import { JobPaymentsPanel } from './JobPaymentsPanel';
+import { JobPhotoShopCard } from './JobPhotoShopCard';
 import { CreateQuoteButton } from '@/features/quotes/components/CreateQuoteButton';
 
 /**
@@ -92,6 +93,8 @@ export function JobDetail({ engagementId }: { engagementId: string }) {
         </h2>
         <JobPaymentsPanel engagementId={job.engagement_id} packagePriceMinor={job.price_minor} />
       </section>
+
+      <JobPhotoShopCard engagementId={job.engagement_id} />
     </div>
   );
 }
