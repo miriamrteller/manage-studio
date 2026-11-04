@@ -154,3 +154,18 @@ describe('provider document codes', () => {
     expect(documentKindFromGreenInvoiceType(1)).toBeNull();
   });
 });
+
+describe('Green Invoice: the document recorded follows the studio setting (#340)', () => {
+  it('400 setting → receipt, 320 setting → tax invoice-receipt, refunds → credit document', async () => {
+    const { giDocumentType } = await import(
+      '../../../../supabase/functions/_shared/invoicing/providers/green-invoice-document.ts'
+    );
+    const kindFor = (kind: 'sale' | 'refund', setting: number | null) =>
+      documentKindFromGreenInvoiceType(giDocumentType(kind, setting));
+    expect(kindFor('sale', 400)).toBe('receipt');
+    expect(kindFor('sale', 320)).toBe('tax_invoice_receipt');
+    expect(kindFor('sale', null)).toBe('tax_invoice_receipt');
+    expect(kindFor('refund', 400)).toBe('credit_note');
+    expect(kindFor('refund', 320)).toBe('credit_note');
+  });
+});
