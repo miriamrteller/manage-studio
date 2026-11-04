@@ -22,6 +22,7 @@ import { getTenantFeatures } from "../_shared/feature-gate.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
 import { GalleryNotReadyError, listGalleryPhotos } from "../_shared/photo-shop/gallery.ts";
 import { photoOrderLabel, resolveOrderItems } from "../_shared/photo-shop/order-items.ts";
+import { notifyStudioPhotoOrderPaid } from "../_shared/photo-shop/emails.ts";
 
 const FEATURE = "billing:photo_shop";
 
@@ -129,6 +130,12 @@ Deno.serve(withMonitoring("client-photo-shop", async (req) => {
       return jsonResponse({ error: code }, code === "order_failed" ? 500 : 409);
     }
     const o = order as Record<string, unknown>;
+    // Free orders are paid at once; paid ones email the studio when the payment lands.
+    if (o.status === "paid") {
+      await notifyStudioPhotoOrderPaid(service, o.order_id as string).catch((e) =>
+        console.error("[client-photo-shop] studio email failed", e)
+      );
+    }
     return jsonResponse({
       orderId: o.order_id,
       status: o.status,

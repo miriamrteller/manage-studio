@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
 import { loadJobPaymentRequestById } from "./load-request.ts";
 import { canTransition } from "./payment-request-state.ts";
+import { notifyIfPhotoOrderPaid } from "../photo-shop/emails.ts";
 
 export const JOB_PAYMENT_REQUEST_PAID = "job_payment_request.paid";
 export const JOB_PAYMENT_REQUEST_DUPLICATE_PAYMENT = "job_payment_request.duplicate_payment";
@@ -99,6 +100,9 @@ export async function markJobPaymentRequestPaid(
       label: request.label,
     },
   });
+
+  // A photo shop order follows its request (DB trigger); tell the studio which photos to deliver.
+  await notifyIfPhotoOrderPaid(service, request.id);
 
   return { outcome: "paid" };
 }
