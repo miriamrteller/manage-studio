@@ -49,15 +49,8 @@ export function CardLinkButton({ engagementId, paymentProvider }: {
 
   if (paymentProvider === 'offline' || !paymentProvider) return null;
 
-  if (!cardLinkSupported(paymentProvider)) {
-    return (
-      <p className="text-sm text-muted-foreground" role="note">
-        {t('finance.card_link.unsupported', {
-          provider: t(`settings.offline_payments.providers.${paymentProvider}`, { defaultValue: paymentProvider }),
-        })}
-      </p>
-    );
-  }
+  // No card saving with this provider: no button (monthly payments are recorded instead).
+  if (!cardLinkSupported(paymentProvider)) return null;
 
   return (
     <div className="space-y-1">

@@ -2668,7 +2668,6 @@
       "hint": "Emails the parent a link to pay the month that is due by card. The card is saved and later months are charged to it.",
       "sent": "Card link sent to the parent.",
       "not_emailed": "The card link was created but not emailed: {{reason}}",
-      "unsupported": "Saving a card isn't available with {{provider}} yet. Record monthly payments here instead.",
       "error_card_already_saved": "A card is already saved for this enrolment, so monthly payments are charged to it.",
       "error_card_link_unsupported": "Saving a card isn't available with this payment provider yet.",
       "error_no_monthly_plan": "This enrolment has no monthly plan.",
@@ -3730,9 +3729,7 @@
   },
   "payment_choice": {
     "different_provider": "Different provider?",
-    "no_monthly_warning": "With {{provider}} you can't charge monthly fees. For monthly fees, choose Grow.",
-    "disclaimer": "You can change your payment provider until your first payment. After that, changing it needs OpalSwift support.",
-    "monthly_needs_grow": "Monthly fees need Grow. Contact OpalSwift support."
+    "disclaimer": "You can change your payment provider until your first payment. After that, changing it needs OpalSwift support."
   },
   "platform_features": {
     "title": "Studio features",
