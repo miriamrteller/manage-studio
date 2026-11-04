@@ -16,6 +16,7 @@ import {
   normaliseCustomDomain,
   platformAppUrl,
 } from '../../../../supabase/functions/_shared/tenant-url.ts';
+import { SMUGMUG_CALLBACK_PATH } from '../../../../supabase/functions/_shared/photo-shop/smugmug/oauth.ts';
 
 const FUNCTIONS_DIR = resolve(__dirname, '../../../../supabase/functions');
 
@@ -96,6 +97,10 @@ describe('platformAppUrl', () => {
 });
 
 describe('APP_URL is confined to OAuth redirect URIs', () => {
+  it('the SmugMug callback path is the fixed one photographers register', () => {
+    expect(SMUGMUG_CALLBACK_PATH).toBe('/admin/setup/integrations/smugmug/callback');
+  });
+
   function edgeFiles(dir: string, out: string[] = []): string[] {
     for (const name of readdirSync(dir)) {
       if (name === 'email-dist' || name === '__tests__') continue;
@@ -116,8 +121,10 @@ describe('APP_URL is confined to OAuth redirect URIs', () => {
         .replace(/^\s*\/\/.*$/gm, '');
       for (const m of src.matchAll(/\$\{APP_URL\}([^\s`"']*)/g)) {
         const path = m[1];
-        // The Google redirect_uri is the one legitimate use.
+        // OAuth redirect URIs are the legitimate uses: Google Calendar, and the fixed
+        // SmugMug callback every photographer registers with SmugMug.
         if (path.includes('/admin/setup/integrations/google/callback')) continue;
+        if (path === '${SMUGMUG_CALLBACK_PATH}' || path.includes('/admin/setup/integrations/smugmug/callback')) continue;
         offenders.push(`${file.replace(FUNCTIONS_DIR, '')} → \${APP_URL}${path}`);
       }
     }

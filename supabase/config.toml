@@ -339,6 +339,12 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/takbull-ipn/index.ts"
 
+# Photo shop: Test connection / Connect SmugMug with the studio's own key (admins only).
+[functions.smugmug-connection]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/smugmug-connection/index.ts"
+
 [functions.verify-takbull-credentials]
 enabled = true
 verify_jwt = true

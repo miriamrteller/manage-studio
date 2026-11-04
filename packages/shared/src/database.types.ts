@@ -4021,6 +4021,13 @@ export type Database = {
           require_admin_mfa: boolean
           signup_source: string
           skin: string
+          smugmug_access_secret_enc: string | null
+          smugmug_access_token_enc: string | null
+          smugmug_api_key_enc: string | null
+          smugmug_api_secret_enc: string | null
+          smugmug_connected_at: string | null
+          smugmug_credentials_updated_at: string | null
+          smugmug_oauth_pending_enc: string | null
           sub_status: string
           subdomain: string
           takbull_api_key_enc: string | null
@@ -4107,6 +4114,13 @@ export type Database = {
           require_admin_mfa?: boolean
           signup_source?: string
           skin?: string
+          smugmug_access_secret_enc?: string | null
+          smugmug_access_token_enc?: string | null
+          smugmug_api_key_enc?: string | null
+          smugmug_api_secret_enc?: string | null
+          smugmug_connected_at?: string | null
+          smugmug_credentials_updated_at?: string | null
+          smugmug_oauth_pending_enc?: string | null
           sub_status?: string
           subdomain: string
           takbull_api_key_enc?: string | null
@@ -4193,6 +4207,13 @@ export type Database = {
           require_admin_mfa?: boolean
           signup_source?: string
           skin?: string
+          smugmug_access_secret_enc?: string | null
+          smugmug_access_token_enc?: string | null
+          smugmug_api_key_enc?: string | null
+          smugmug_api_secret_enc?: string | null
+          smugmug_connected_at?: string | null
+          smugmug_credentials_updated_at?: string | null
+          smugmug_oauth_pending_enc?: string | null
           sub_status?: string
           subdomain?: string
           takbull_api_key_enc?: string | null
@@ -4902,6 +4923,7 @@ export type Database = {
         Args: { p_tenant_id: string }
         Returns: undefined
       }
+      disconnect_tenant_smugmug: { Args: never; Returns: undefined }
       engagement_age_at_season_start: {
         Args: { p_offering_id: string; p_person_id: string }
         Returns: number
@@ -5241,6 +5263,16 @@ export type Database = {
           payment_provider_public_key: string
           payment_provider_secret_key: string
           payment_provider_webhook_secret: string
+        }[]
+      }
+      get_tenant_smugmug_credentials: {
+        Args: { p_tenant_id: string }
+        Returns: {
+          access_secret: string
+          access_token: string
+          api_key: string
+          api_secret: string
+          oauth_pending: string
         }[]
       }
       get_tenant_takbull_credentials: {
@@ -5714,6 +5746,19 @@ export type Database = {
         }
         Returns: undefined
       }
+      save_tenant_smugmug_access_token: {
+        Args: {
+          p_access_secret: string
+          p_access_token: string
+          p_actor_id: string
+          p_tenant_id: string
+        }
+        Returns: undefined
+      }
+      save_tenant_smugmug_credentials: {
+        Args: { p_api_key: string; p_api_secret: string }
+        Returns: undefined
+      }
       save_tenant_takbull_credentials: {
         Args: { p_api_key: string; p_api_secret: string }
         Returns: undefined
@@ -5787,6 +5832,10 @@ export type Database = {
         Args: { p_feature_key: string; p_off: boolean; p_tenant_id: string }
         Returns: undefined
       }
+      set_tenant_smugmug_oauth_pending: {
+        Args: { p_pending: string; p_tenant_id: string }
+        Returns: undefined
+      }
       sign_waiver: {
         Args: {
           p_accept_language: string
@@ -5819,6 +5868,7 @@ export type Database = {
         }
         Returns: string
       }
+      smugmug_admin_tenant_id: { Args: never; Returns: string }
       studio_feature_states: {
         Args: { p_tenant_id: string }
         Returns: {
@@ -5831,6 +5881,15 @@ export type Database = {
       tenant_has_succeeded_payment: {
         Args: { p_tenant_id: string }
         Returns: boolean
+      }
+      tenant_smugmug_status: {
+        Args: never
+        Returns: {
+          connected: boolean
+          connected_at: string
+          has_keys: boolean
+          keys_updated_at: string
+        }[]
       }
       tenant_takbull_connected: { Args: never; Returns: boolean }
       update_tenant_google_access_token: {
