@@ -62,3 +62,73 @@ export function resolvePeriodDateRange(
   }
   return getJerusalemMonthRange();
 }
+
+/** How often the studio reports VAT (tenants.vat_report_period). */
+export type VatReportPeriod = 'bi_monthly' | 'monthly';
+
+export function parseVatReportPeriod(value: unknown): VatReportPeriod {
+  return value === 'monthly' ? 'monthly' : 'bi_monthly';
+}
+
+/** Accountant export period presets. */
+export type AccountantPeriodKey =
+  | 'vat_previous'
+  | 'vat_current'
+  | 'month_previous'
+  | 'month_current'
+  | 'quarter_previous'
+  | 'year_previous'
+  | 'year_current';
+
+export const ACCOUNTANT_PERIOD_KEYS: readonly AccountantPeriodKey[] = [
+  'vat_previous',
+  'vat_current',
+  'month_previous',
+  'month_current',
+  'quarter_previous',
+  'year_previous',
+  'year_current',
+];
+
+function monthsRange(year: number, firstMonth: number, months: number): DateRange {
+  // firstMonth is 1-based; may be <= 0 (previous year), normalised by Date.
+  const start = new Date(year, firstMonth - 1, 1);
+  const end = new Date(year, firstMonth - 1 + months, 0);
+  const ymd = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return { startDate: ymd(start), endDate: ymd(end) };
+}
+
+/**
+ * Date range (Asia/Jerusalem calendar, inclusive) for an accountant export preset.
+ * Bi-monthly VAT periods are Jan–Feb, Mar–Apr, May–Jun, Jul–Aug, Sep–Oct, Nov–Dec.
+ */
+export function accountantPeriodRange(
+  key: AccountantPeriodKey,
+  vatPeriod: VatReportPeriod,
+  reference: Date = new Date(),
+): DateRange {
+  const { year, month } = jerusalemYmd(reference);
+  const y = parseInt(year, 10);
+  const m = parseInt(month, 10);
+  switch (key) {
+    case 'month_current':
+      return monthsRange(y, m, 1);
+    case 'month_previous':
+      return monthsRange(y, m - 1, 1);
+    case 'vat_current':
+    case 'vat_previous': {
+      const length = vatPeriod === 'monthly' ? 1 : 2;
+      const first = Math.floor((m - 1) / length) * length + 1;
+      return monthsRange(y, key === 'vat_current' ? first : first - length, length);
+    }
+    case 'quarter_previous': {
+      const first = Math.floor((m - 1) / 3) * 3 + 1;
+      return monthsRange(y, first - 3, 3);
+    }
+    case 'year_current':
+      return monthsRange(y, 1, 12);
+    case 'year_previous':
+      return monthsRange(y - 1, 1, 12);
+  }
+}

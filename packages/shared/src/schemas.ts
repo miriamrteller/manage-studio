@@ -627,9 +627,15 @@ export const PaymentLogRowSchema = z.object({
   invoice_url: z.string().nullable().optional(),
   external_document_id: z.string().nullable().optional(),
   issued_document_kind: IssuedDocumentKindSchema.nullable().optional(),
+  invoice_issued_at: TimestampSchema.nullable().optional(),
   allocation_number: z.string().nullable().optional(),
   refunds_payment_id: UUIDSchema.nullable().optional(),
   document_queue: z.array(PaymentLogDocumentQueueSchema).optional(),
+  /** Only on the accountant export: the payer's business details, when billed to a business. */
+  billing_account: z
+    .object({ business_name: z.string().nullable(), business_tax_id: z.string().nullable() })
+    .nullable()
+    .optional(),
   person: PaymentLogPersonSchema.optional(),
   offering: PaymentLogOfferingSchema.optional(),
   engagement: PaymentLogEngagementSchema.optional(),

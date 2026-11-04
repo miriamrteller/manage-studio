@@ -56,6 +56,8 @@ export class ExpenseService extends BaseService {
         )
         .eq('tenant_id', tenant.id)
         .order('expense_date', { ascending: false })
+        // Unique tie-breaker so export pages don't skip or repeat rows.
+        .order('id', { ascending: false })
         .range(from, to);
 
       if (filters.dateFrom) {

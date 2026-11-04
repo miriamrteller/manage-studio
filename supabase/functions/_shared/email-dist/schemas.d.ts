@@ -1260,6 +1260,7 @@ export declare const PaymentLogRowSchema: z.ZodObject<{
     invoice_url: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     external_document_id: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     issued_document_kind: z.ZodOptional<z.ZodNullable<z.ZodEnum<["receipt", "tax_invoice_receipt", "credit_note"]>>>;
+    invoice_issued_at: z.ZodOptional<z.ZodNullable<z.ZodEffects<z.ZodString, string, string>>>;
     allocation_number: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     refunds_payment_id: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     document_queue: z.ZodOptional<z.ZodArray<z.ZodObject<{
@@ -1275,6 +1276,17 @@ export declare const PaymentLogRowSchema: z.ZodObject<{
         created_at: string;
         document_kind: string;
     }>, "many">>;
+    /** Only on the accountant export: the payer's business details, when billed to a business. */
+    billing_account: z.ZodOptional<z.ZodNullable<z.ZodObject<{
+        business_name: z.ZodNullable<z.ZodString>;
+        business_tax_id: z.ZodNullable<z.ZodString>;
+    }, "strip", z.ZodTypeAny, {
+        business_name: string | null;
+        business_tax_id: string | null;
+    }, {
+        business_name: string | null;
+        business_tax_id: string | null;
+    }>>>;
     person: z.ZodOptional<z.ZodNullable<z.ZodObject<{
         id: z.ZodString;
         name: z.ZodString;
@@ -1339,7 +1351,12 @@ export declare const PaymentLogRowSchema: z.ZodObject<{
     invoice_url?: string | null | undefined;
     external_document_id?: string | null | undefined;
     issued_document_kind?: "receipt" | "tax_invoice_receipt" | "credit_note" | null | undefined;
+    invoice_issued_at?: string | null | undefined;
     allocation_number?: string | null | undefined;
+    billing_account?: {
+        business_name: string | null;
+        business_tax_id: string | null;
+    } | null | undefined;
     person?: {
         id: string;
         name: string;
@@ -1378,7 +1395,12 @@ export declare const PaymentLogRowSchema: z.ZodObject<{
     invoice_url?: string | null | undefined;
     external_document_id?: string | null | undefined;
     issued_document_kind?: "receipt" | "tax_invoice_receipt" | "credit_note" | null | undefined;
+    invoice_issued_at?: string | null | undefined;
     allocation_number?: string | null | undefined;
+    billing_account?: {
+        business_name: string | null;
+        business_tax_id: string | null;
+    } | null | undefined;
     person?: {
         id: string;
         name: string;
