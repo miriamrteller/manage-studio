@@ -267,7 +267,7 @@ export function AdminEnrolmentPaymentStep({
 
         <div className="rounded-lg border border-gray-200 p-4 space-y-3">
           <div>
-            <p className="font-semibold">{t('pages.admin_enrol.offline_title')}</p>
+            <p className="font-semibold">{t('finance.record_payment.title')}</p>
             <p className="text-sm text-gray-500">{t('pages.admin_enrol.offline_desc')}</p>
           </div>
           <label className="block text-sm font-medium" htmlFor={offlineMethodId}>

@@ -253,7 +253,7 @@ export function MonthlyPlanSection({
       ) : (
         <div className="flex flex-wrap items-start gap-3">
           <Button variant="outline" size="sm" onClick={() => setRecording(true)}>
-            {t('finance.record_payment.monthly_open')}
+            {t('finance.record_payment.open')}
           </Button>
           {schedule && schedule.status !== 'cancelled' && (
             <>

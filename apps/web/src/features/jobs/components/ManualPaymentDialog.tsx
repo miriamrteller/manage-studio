@@ -75,7 +75,7 @@ export function ManualPaymentDialog({ action, language, isSubmitting, onClose, o
     <Modal
       isOpen
       onClose={onClose}
-      title={isRefund ? t('pages.jobs.payments.manual.refundTitle') : t('pages.jobs.payments.manual.paidTitle')}
+      title={isRefund ? t('pages.jobs.payments.manual.refundTitle') : t('finance.record_payment.title')}
       size="sm"
     >
       <form onSubmit={submit} className="space-y-3">

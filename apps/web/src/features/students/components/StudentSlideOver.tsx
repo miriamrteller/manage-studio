@@ -353,7 +353,7 @@ export function StudentSlideOver({
                                   size="sm"
                                   onClick={() => setRecordingEngagementId(engagement.id)}
                                 >
-                                  {t('finance.record_payment.open', { defaultValue: 'Record offline payment' })}
+                                  {t('finance.record_payment.open')}
                                 </Button>
                               )
                             )}
