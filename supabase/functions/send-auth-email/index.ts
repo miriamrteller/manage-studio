@@ -3,7 +3,8 @@ import { Webhook } from "https://esm.sh/standardwebhooks@1.0.0";
 import { sendHtmlEmail } from "../_shared/email-client.ts";
 
 const MAGIC_LINK_TEMPLATE = "magic_link";
-import { composeAuthEmail } from "./compose.ts";
+import { composeAuthEmail, composeLoginEmailChangedNotice } from "./compose.ts";
+import { authEmailRecipients } from "./recipients.ts";
 import { tenantBaseUrl } from "../_shared/tenant-url.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import {
@@ -14,12 +15,19 @@ import { withMonitoring } from "../_shared/monitoring.ts";
 
 interface AuthEmailHookUser {
   email: string;
+  /** Set during an email change: the address being changed to. */
+  new_email?: string | null;
   user_metadata?: Record<string, unknown>;
 }
 
 interface AuthEmailHookData {
   token: string;
   token_hash: string;
+  /** email_change with secure change on: see recipients.ts (the names are reversed). */
+  token_new?: string;
+  token_hash_new?: string;
+  /** email_changed_notification: the address the login was changed from. */
+  old_email?: string;
   redirect_to: string;
   email_action_type: string;
   site_url: string;
@@ -36,13 +44,14 @@ const AUTH_EMAIL_ACTIONS = new Set([
   "recovery",
   "invite",
   "email_change",
+  "email_changed_notification",
 ]);
 
 /**
  * Link straight to the app callback with token_hash so sign-in works from any
  * browser/device (Supabase /verify + PKCE requires the same browser that requested the code).
  */
-function buildConfirmationUrl(emailData: AuthEmailHookData): string {
+function buildConfirmationUrl(emailData: AuthEmailHookData, tokenHash: string = emailData.token_hash): string {
   const redirectTo = emailData.redirect_to?.trim() || emailData.site_url?.trim();
   if (!redirectTo) {
     throw new Error("Missing redirect_to for auth email link");
@@ -50,7 +59,7 @@ function buildConfirmationUrl(emailData: AuthEmailHookData): string {
 
   const url = new URL(redirectTo);
   url.searchParams.delete("login_method");
-  url.searchParams.set("token_hash", emailData.token_hash);
+  url.searchParams.set("token_hash", tokenHash);
   url.searchParams.set("type", emailData.email_action_type);
   return url.toString();
 }
@@ -153,28 +162,30 @@ Deno.serve(withMonitoring("send-auth-email", async (req) => {
       ? await getEmailTemplateOverrides(supabase, tenant.id, MAGIC_LINK_TEMPLATE, tenant.language)
       : null;
 
-    const confirmationUrl = buildConfirmationUrl(emailData);
     const strings = overrides ?? {};
 
-    const otpCode = shouldIncludeOtpInEmail(emailData)
-      ? emailData.token || undefined
-      : undefined;
-    const message = composeAuthEmail({
-      action,
-      tenant,
-      confirmationUrl,
-      otpCode,
-      strings,
-      studioUrl: studioUrlFor(tenant.subdomain),
-    });
+    // One email for most actions; an email change can need two (both addresses confirm),
+    // and the "login email changed" notice goes to the old address.
+    for (const planned of authEmailRecipients(user, emailData)) {
+      const message = action === "email_changed_notification"
+        ? composeLoginEmailChangedNotice({ tenant, newEmail: user.email })
+        : composeAuthEmail({
+          action,
+          tenant,
+          confirmationUrl: buildConfirmationUrl(emailData, planned.tokenHash),
+          otpCode: shouldIncludeOtpInEmail(emailData) ? planned.token : undefined,
+          strings,
+          studioUrl: studioUrlFor(tenant.subdomain),
+        });
 
-    await sendHtmlEmail({
-      to: user.email,
-      from: fromEmail,
-      subject: message.subject,
-      html: message.html,
-      replyTo: message.replyTo,
-    });
+      await sendHtmlEmail({
+        to: planned.to,
+        from: fromEmail,
+        subject: message.subject,
+        html: message.html,
+        replyTo: message.replyTo,
+      });
+    }
 
     return new Response(JSON.stringify({}), {
       status: 200,
