@@ -391,7 +391,45 @@
       "details_phone": "Phone",
       "details_missing": "We couldn't find your client details. Please contact us.",
       "edit_contact": "Contact preferences",
-      "for_shoot": "For {{name}}"
+      "for_shoot": "For {{name}}",
+      "photo_shop": {
+        "title": "Buy your photos",
+        "included_left_one": "{{count}} photo included in your package",
+        "included_left_other": "{{count}} photos included in your package",
+        "per_photo": "{{price}} per photo",
+        "open_until": "you can buy until {{date}}",
+        "closed": "buying has closed",
+        "photo_alt": "Preview of {{name}}",
+        "add": "Add to cart",
+        "in_cart": "In cart",
+        "bought": "Bought",
+        "awaiting": "In an order waiting for payment",
+        "cart_count_one": "{{count}} photo in your cart",
+        "cart_count_other": "{{count}} photos in your cart",
+        "cart_included_one": "{{count}} included",
+        "cart_included_other": "{{count}} included",
+        "no_price": "The studio hasn't set a price for extra photos yet. You can take the included ones.",
+        "suggest_all": "All {{count}} photos cost {{price}}, no more than your cart.",
+        "terms": "Photos are sold as digital downloads. Once the studio sends your download link, the purchase can't be cancelled.",
+        "pay": "Pay {{price}}",
+        "take_free": "Get these photos",
+        "buy_all": "Buy all {{count}} photos for {{price}}",
+        "ordered_free": "Done. The studio will send you a download link.",
+        "order_photos_one": "{{count}} photo",
+        "order_photos_other": "{{count}} photos",
+        "download": "Download your photos",
+        "pay_now": "Pay now",
+        "preparing": "The studio is preparing your download",
+        "errors": {
+          "already_bought": "One of these photos was just bought. Please refresh the page.",
+          "not_in_gallery": "One of these photos is no longer in the gallery. Please refresh the page.",
+          "shop_closed": "Buying has closed for this gallery.",
+          "no_price": "The studio hasn't set a price for extra photos yet.",
+          "no_all_photos_price": "The studio doesn't offer all photos at one price.",
+          "no_photos": "Choose at least one photo.",
+          "server_error": "Something went wrong. Please try again."
+        }
+      }
     },
     "admin": {
       "setup": {

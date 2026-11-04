@@ -14,13 +14,14 @@ import { JobPaymentService, type JobPaymentRequest } from '../services/jobPaymen
 import { formatDueDate, formatMinor, localeFor } from '../lib/jobPaymentFormat';
 import { JOB_STATUS_BADGE, jobStatusKey } from '../lib/jobStatus';
 import { ClientJobGalleryCard } from './ClientJobGalleryCard';
+import { ClientPhotoShop } from './ClientPhotoShop';
 
 /**
  * ClientPortal — the photographer client's own portal (an adult client: no
  * children, no date of birth, no "enrol"). Rendered by PortalDashboard for
  * photographer tenants only; every other vertical keeps ParentPortal.
  *
- * Sections: My shoots, Contract, Payments, Gallery, My details.
+ * Sections: My shoots, Contract, Payments, Gallery, Photo shop (beta), My details.
  */
 export function ClientPortal() {
   const { t } = useTranslation();
@@ -96,6 +97,16 @@ export function ClientPortal() {
           </ul>
         </section>
       )}
+
+      {shoots
+        .filter((shoot) => !isCancelled(shoot))
+        .map((shoot) => (
+          <ClientPhotoShop
+            key={`photo-shop-${shoot.engagementId}`}
+            engagementId={shoot.engagementId}
+            caption={multipleShoots ? <ShootCaption shoot={shoot} /> : undefined}
+          />
+        ))}
 
       <DetailsSection self={data?.self ?? null} onEditContact={() => setPrefsOpen(true)} />
 
