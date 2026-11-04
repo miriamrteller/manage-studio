@@ -2981,6 +2981,12 @@
       "providers": { "grow": "Grow (Meshulam)", "icount": "iCount", "invoice4u": "Invoice4U", "ypay": "YPay", "tranzila": "Tranzila" }
     },
     "invoicing_toggle": {
+      "gi_document_label": "Which document does Green Invoice issue?",
+      "gi_document_400": "Receipt (קבלה)",
+      "gi_document_320": "Tax invoice-receipt (חשבונית מס קבלה)",
+      "gi_document_hint": "We filled this in from your business status. Change it if your accountant advises otherwise; changing your business status later won’t change it.",
+      "gi_document_differs_400": "Your business status usually issues a receipt. Check with your accountant if you’re unsure.",
+      "gi_document_differs_320": "Your business status usually issues a tax invoice-receipt. Check with your accountant if you’re unsure.",
       "title": "Tax documents",
       "description": "Whether the app issues a receipt or invoice for every payment through your invoicing provider.",
       "enabled_label": "Issue tax documents automatically",
