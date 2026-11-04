@@ -114,3 +114,33 @@ export class MockTakbullApi implements TakbullApi {
     return Promise.resolve({ ...this.settings });
   }
 }
+
+/**
+ * Dev / CI only (TAKBULL_MOCK): an account that confirms one known order, so the notice for a
+ * payment created in an earlier request settles (the in-memory mock forgets between requests).
+ */
+export function mockTakbullApproving(order: { uniqId: string; amountMinor: number; currency: string }): MockTakbullApi {
+  const api = new MockTakbullApi();
+  api.orders.set(order.uniqId, {
+    order_reference: "mock",
+    OrderTotalSum: order.amountMinor / 100,
+    RedirectAddress: "",
+    transactionInternalNumber: "mock",
+  });
+  const tx = {
+    transactionId: "mock",
+    amount: order.amountMinor / 100,
+    transactionType: 10,
+    currency: order.currency,
+    paymentMethod: 3,
+    cardToken: `mock-token-${order.uniqId.slice(0, 8)}`,
+    cardTokenExpirationMonth: 12,
+    cardTokenExpirationYear: 30,
+    last4DigitsCardNumber: "4242",
+    status: 1,
+    statusCode: 0,
+    isDocumentCreated: false,
+  };
+  api.getTransaction = () => Promise.resolve(tx);
+  return api;
+}
