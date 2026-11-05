@@ -93,7 +93,7 @@ describe('leads page markers', () => {
     [{ next_follow_up_at: '2026-11-01T00:00:00+00:00', stage: 'won' }, null],
     [{ next_follow_up_at: '2026-11-01T00:00:00+00:00', converted_account_id: 'a' }, null],
   ])('%o → %s', (over, expected) => {
-    expect(followUpState({ stage: 'new', converted_account_id: null, next_follow_up_at: null, ...over } as never, today)).toBe(expected);
+    expect(followUpState({ stage: 'new', converted_account_id: null, ...over } as never, today)).toBe(expected);
   });
 });
 

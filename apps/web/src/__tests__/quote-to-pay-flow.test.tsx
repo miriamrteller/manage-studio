@@ -65,7 +65,7 @@ function publicQuote(status: 'sent' | 'accepted') {
 
 /** Route fetches by function name; records every call. */
 function mockFunctions(handlers: Record<string, { body: Record<string, unknown>; status?: number }>) {
-  const fetchMock = vi.fn(async (url: string) => {
+  const fetchMock = vi.fn(async (url: string, _init?: RequestInit) => {
     const name = String(url).split('/functions/v1/')[1] ?? '';
     const handler = handlers[name];
     if (!handler) return new Response('{}', { status: 404 });

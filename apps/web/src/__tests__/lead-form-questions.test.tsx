@@ -22,7 +22,7 @@ import {
 } from '@shared/index';
 
 const h = vi.hoisted(() => ({
-  invoke: vi.fn(async () => ({ data: { outcome: 'created' }, error: null as unknown })),
+  invoke: vi.fn(async (..._args: unknown[]): Promise<{ data: unknown; error: unknown }> => ({ data: { outcome: 'created' }, error: null })),
   rpc: vi.fn(async (name: string): Promise<{ data: unknown; error: unknown }> => {
     if (name === 'get_lead_form') return { data: h.form, error: null };
     if (name === 'get_public_offerings_by_subdomain') return { data: h.classes, error: null };
@@ -65,6 +65,7 @@ vi.mock('@/lib/query-client', () => ({ default: { invalidateQueries: vi.fn(async
 import { InquiryForm } from '@/features/crm/components/InquiryForm';
 import { LeadFormSettings, parseOptionLines } from '@/features/settings/components/LeadFormSettings';
 import { answerFilterOptions, filterByAnswer } from '@/features/crm/lib/leadAnswers';
+import type { StoredAnswer } from '@shared/index';
 
 function wrap(ui: ReactNode, url = '/inquire') {
   return render(
@@ -277,7 +278,7 @@ describe('Settings editor', () => {
 describe('leads page answer filter', () => {
   const label = { en: 'Previous experience', he: 'ניסיון קודם' };
   const days = { en: 'Preferred days', he: 'ימים מועדפים' };
-  const leads = [
+  const leads: { id: string; answers: Record<string, StoredAnswer> | null }[] = [
     { id: '1', answers: { experience: { label, value: 'none', display: [{ en: 'None yet', he: 'אין עדיין' }] } } },
     { id: '2', answers: { experience: { label, value: 'more', display: [{ en: 'More than a year', he: 'יותר משנה' }] }, preferred_days: { label: days, value: ['mon', 'wed'], display: [{ en: 'Monday', he: 'שני' }, { en: 'Wednesday', he: 'רביעי' }] } } },
     { id: '3', answers: null },

@@ -37,7 +37,7 @@ function flatten(obj: Json, prefix = '', out: Record<string, string> = {}): Reco
   return out;
 }
 
-const base = { en: flatten(enBase as Json), he: flatten(heBase as Json) };
+const base = { en: flatten(enBase as unknown as Json), he: flatten(heBase as unknown as Json) };
 const overlay = { en: flatten(enOverlay as Json), he: flatten(heOverlay as Json) };
 
 /** Visible wording only: interpolation variable names ({{classes}}) are code, not copy. */

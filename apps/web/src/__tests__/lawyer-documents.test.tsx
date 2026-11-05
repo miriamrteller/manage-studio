@@ -52,6 +52,7 @@ const legal = (over: Partial<TenantLegalProfile> = {}): TenantLegalProfile => ({
   name: 'Harbour Dance',
   contactEmail: 'office@harbour.test',
   vertical: 'dance-studio',
+  skin: 'dance-studio',
   profile: {},
   published: true,
   updatedAt: null,

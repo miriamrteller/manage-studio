@@ -39,6 +39,7 @@ function legal(vertical: TenantLegalProfile['vertical'], languageDefault: 'he' |
     name: 'Harbour Dance',
     contactEmail: 'office@harbour.test',
     vertical,
+    skin: vertical,
     profile,
     published: false,
     updatedAt: '2026-11-02T10:00:00Z',

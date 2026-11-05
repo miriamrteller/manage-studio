@@ -25,7 +25,9 @@ const renewalMetadata = buildChargeMetadata({
   billingScheduleId: '55555555-5555-5555-5555-555555555555',
 });
 
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 describe('MockIcountPaymentProvider renewal flow', () => {
   it('createCharge ignores savedToken and returns hosted page', async () => {

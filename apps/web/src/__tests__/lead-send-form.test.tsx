@@ -27,7 +27,9 @@ import {
   normaliseRecipient,
 } from '../../../../supabase/functions/_shared/crm-contract/lead-link-guard.ts';
 
-afterEach(() => vi.clearAllMocks());
+afterEach(() => {
+  vi.clearAllMocks();
+});
 
 describe('email templates (built on the server, no free text)', () => {
   it('form link email: the link tagged src=direct, studio and name escaped, nothing about marketing', () => {

@@ -47,5 +47,15 @@
     "browser": true,
     "es2021": true,
     "node": true
-  }
+  },
+  "overrides": [
+    {
+      "files": ["*.ts", "*.tsx"],
+      "rules": {
+        "no-undef": "off",
+        "no-unused-vars": "off",
+        "no-redeclare": "off"
+      }
+    }
+  ]
 }

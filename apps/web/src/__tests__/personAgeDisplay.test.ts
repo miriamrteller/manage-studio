@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import { fakeT } from '@/test/fakeT';
 import {
   enrolmentAgeMismatchMessage,
   enrolmentShowingForAgeMessage,
@@ -10,7 +11,7 @@ import {
   personAgeLabel,
 } from '@/lib/personAge';
 
-const t = vi.fn((key: string, opts?: Record<string, unknown>) => {
+const t = fakeT((key, opts) => {
   if (key === 'pages.students.age_adult') return 'Adult';
   if (key === 'person_search.adult') return 'Adult';
   if (key === 'common.age_18_plus') return '18+';

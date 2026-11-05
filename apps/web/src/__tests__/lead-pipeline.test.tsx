@@ -30,7 +30,9 @@ vi.mock('@/features/crm/services/leadService', async (orig) => {
 import { CLASS_STAGES, PHOTOGRAPHER_STAGES, stagesFor, type EnrolmentChoice } from '@/features/crm/services/leadService';
 import { LeadEnrolmentLink } from '@/features/crm/components/LeadEnrolmentLink';
 
-afterEach(() => vi.clearAllMocks());
+afterEach(() => {
+  vi.clearAllMocks();
+});
 
 describe('stages per kind of studio', () => {
   it('photographers keep their pipeline exactly', () => {

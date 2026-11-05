@@ -41,7 +41,9 @@ beforeEach(() => {
   vi.spyOn(console, 'warn').mockImplementation(() => undefined);
   h.rpc.mockReset();
 });
-afterEach(() => vi.useRealTimers());
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 describe('useCurrentUser when the profile call never answers', () => {
   it('reports a timeout after the wait limit, without retrying (no second wait)', async () => {
