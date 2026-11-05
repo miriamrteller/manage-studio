@@ -3,7 +3,7 @@
  * Exchanges the OAuth code (POSTed by the frontend callback page with the admin's
  * Bearer token), stores encrypted tokens, and returns the connected email.
  */
-import { handleOptions, jsonResponse } from "../_shared/edge-runtime/cors.ts";
+import { handleOptions, jsonResponse, internalError } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/supabase.ts";
 import { exchangeCode, fetchGoogleEmail } from "../_shared/google-calendar.ts";
 import { verifyGoogleOAuthState } from "../_shared/google-oauth-state.ts";
@@ -80,6 +80,6 @@ Deno.serve(withMonitoring("google-calendar-oauth-callback", async (req) => {
     return jsonResponse({ ok: true, email });
   } catch (e) {
     console.error("[google-calendar-oauth-callback]", e);
-    return jsonResponse({ error: e instanceof Error ? e.message : "OAuth failed" }, 500);
+    return internalError("google-calendar-oauth-callback", e);
   }
 }));

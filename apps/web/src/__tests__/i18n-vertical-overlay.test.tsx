@@ -191,6 +191,10 @@ describe('dance overlay: health declaration for dance, neutral form for everyone
     }
   });
 
+  it('en and he define the same keys, so Hebrew dance studios get the same wording', () => {
+    expect(Object.keys(danceFlat.he).sort()).toEqual(Object.keys(danceFlat.en).sort());
+  });
+
   it('never calls the document a waiver, in any vertical or language', () => {
     for (const lng of ['en', 'he'] as const) {
       for (const [key, value] of Object.entries(danceFlat[lng])) {

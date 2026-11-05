@@ -6,7 +6,7 @@ import { z } from 'zod';
  * NO ANY TYPES - all data validated at runtime
  */
 // Base types
-export const UUIDSchema = z.string().uuid();
+export const UUIDSchema = z.string().guid();
 export const EmailSchema = z.string().email('Invalid email address');
 export const PhoneSchema = z.string().regex(/^\+972\d{9}$/, 'Must be a valid Israeli phone number');
 export const CurrencySchema = z.number().int().nonnegative();
@@ -301,7 +301,7 @@ export const RequirementTemplateSchema = z.object({
     tenant_id: UUIDSchema,
     name: z.string(),
     requirement_type: z.string(),
-    config: z.record(z.unknown()),
+    config: z.record(z.string(), z.unknown()),
     display_text: z.string().nullable().optional(),
     is_hard_block: z.boolean().default(true),
     created_at: TimestampSchema,
@@ -313,7 +313,7 @@ export const OfferingRequirementSchema = z.object({
     tenant_id: UUIDSchema,
     offering_id: UUIDSchema,
     requirement_template_id: UUIDSchema.nullable().optional(),
-    config: z.record(z.unknown()).nullable().optional(),
+    config: z.record(z.string(), z.unknown()).nullable().optional(),
     created_at: TimestampSchema,
 });
 // Enrolment (person enrolled in a class for a term)
@@ -343,7 +343,7 @@ export const EngagementSchema = z.object({
     updated_at: TimestampSchema.optional(),
 });
 export const CancelEnrolmentInputSchema = z.object({
-    engagementId: z.string().uuid(),
+    engagementId: z.string().guid(),
     reason: z.string().max(500).optional(),
 });
 // Class session (individual meeting of a class)
@@ -398,7 +398,7 @@ export const AuditLogSchema = z.object({
     entity_id: UUIDSchema.nullable().optional(),
     before_state: z.record(z.string(), z.unknown()).nullable().optional(),
     after_state: z.record(z.string(), z.unknown()).nullable().optional(),
-    ip_address: z.string().ip().nullable().optional(),
+    ip_address: z.union([z.ipv4(), z.ipv6()]).nullable().optional(),
     created_at: TimestampSchema,
 });
 // Tenant notification templates (per-tenant email/WhatsApp templates)

@@ -1,4 +1,4 @@
-import { corsHeaders, jsonResponse } from "../_shared/edge-runtime/cors.ts";
+import { corsHeaders, jsonResponse, internalError } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
 
@@ -29,7 +29,7 @@ Deno.serve(withMonitoring("load-enrolment-resume", async (req) => {
     return jsonResponse({ state: draft.state_json });
   } catch (err) {
     console.error("[load-enrolment-resume]", err instanceof Error ? err.message : err);
-    return jsonResponse({ error: err instanceof Error ? err.message : "Internal error" }, 500);
+    return internalError("load-enrolment-resume", err);
   }
 }));
 

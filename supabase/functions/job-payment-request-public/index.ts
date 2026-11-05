@@ -1,5 +1,5 @@
 import { z } from "npm:zod@4.6.7";
-import { handleOptions, jsonResponse } from "../_shared/edge-runtime/cors.ts";
+import { handleOptions, jsonResponse, internalError } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { createJobPaymentRequestCharge } from "../_shared/jobs/create-request-charge.ts";
 import { jobOnlinePaymentSupported } from "../_shared/provider-pairing.ts";
@@ -90,6 +90,6 @@ Deno.serve(withMonitoring("job-payment-request-public", async (req) => {
     return jsonResponse({ request: publicView, pageUrl: charge.pageUrl });
   } catch (error) {
     console.error("[job-payment-request-public]", error);
-    return jsonResponse({ error: error instanceof Error ? error.message : "Internal error" }, 500);
+    return internalError("job-payment-request-public", error);
   }
 }));

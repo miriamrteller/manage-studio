@@ -1,4 +1,4 @@
-import { handleOptions, jsonResponse } from "../_shared/edge-runtime/cors.ts";
+import { handleOptions, jsonResponse, internalError } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { signWaiverToken } from "../_shared/waiver-token.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
@@ -90,7 +90,7 @@ Deno.serve(withMonitoring("create-enrolment-intake", async (req) => {
         .single();
 
       if (guardianError || !guardianRow) {
-        return jsonResponse({ error: guardianError?.message ?? "Failed to create guardian" }, 500);
+        return internalError("create-enrolment-intake", guardianError ?? "Failed to create guardian");
       }
 
       const { data: accountRow, error: accountError } = await service
@@ -104,7 +104,7 @@ Deno.serve(withMonitoring("create-enrolment-intake", async (req) => {
         .single();
 
       if (accountError || !accountRow) {
-        return jsonResponse({ error: accountError?.message ?? "Failed to create family account" }, 500);
+        return internalError("create-enrolment-intake", accountError ?? "Failed to create family account");
       }
 
       const { data: studentRow, error: studentError } = await service
@@ -121,7 +121,7 @@ Deno.serve(withMonitoring("create-enrolment-intake", async (req) => {
         .single();
 
       if (studentError || !studentRow) {
-        return jsonResponse({ error: studentError?.message ?? "Failed to create student" }, 500);
+        return internalError("create-enrolment-intake", studentError ?? "Failed to create student");
       }
 
       const { error: memberError } = await service.from("account_members").insert({
@@ -133,7 +133,7 @@ Deno.serve(withMonitoring("create-enrolment-intake", async (req) => {
       });
 
       if (memberError) {
-        return jsonResponse({ error: memberError.message }, 500);
+        return internalError("create-enrolment-intake", memberError);
       }
 
       return jsonResponse({
@@ -273,7 +273,7 @@ Deno.serve(withMonitoring("create-enrolment-intake", async (req) => {
         .single();
 
       if (engagementError || !engagement) {
-        return jsonResponse({ error: engagementError?.message ?? "Failed to create engagement" }, 500);
+        return internalError("create-enrolment-intake", engagementError ?? "Failed to create engagement");
       }
 
       const enrolmentToken = await signWaiverToken(service, {
