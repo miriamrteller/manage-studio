@@ -59,3 +59,6 @@ coverage/
 # Cloudflare local dev state
 .wrangler/
 apps/web/wrangler.dev.generated.json
+
+# Local email previews (pnpm email:preview)
+/tmp/

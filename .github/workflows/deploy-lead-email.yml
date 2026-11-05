@@ -94,7 +94,7 @@ jobs:
           git fetch -q origin main
           git merge-base --is-ancestor "$SHA" origin/main || { echo "::error::$SHA is not on main — lead email deploys come from main only."; exit 1; }
 
-      - uses: pnpm/action-setup@v2
+      - uses: pnpm/action-setup@v4
         if: steps.gate.outputs.ready == 'true'
       - uses: actions/setup-node@v4
         if: steps.gate.outputs.ready == 'true'
