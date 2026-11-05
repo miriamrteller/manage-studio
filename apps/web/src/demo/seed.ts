@@ -6,6 +6,7 @@
 import type { Row, Tables } from './fakeSupabase';
 import { demoImages } from './images/manifest';
 import { SHOP_GALLERY_KEY, SHOP_GALLERY_NAME, demoGalleryPhotos } from './photoShop';
+import { EXPENSE_CATALOG, expenseVerticals, seedExpenseCategories } from './expenseCatalog';
 
 export const TENANT_ID = 'd0000000-0000-4000-8000-000000000001';
 export const ADMIN_USER_ID = 'd0000000-0000-4000-8000-00000000a001';
@@ -187,6 +188,9 @@ export function buildSeed(): Tables {
     id: TENANT_ID,
     name: 'Lumen & Light Photography',
     subdomain: TENANT_SUBDOMAIN,
+    // Photo shop: SmugMug keys saved and connected (see smugmug.ts).
+    smugmug_credentials_updated_at: at(-60),
+    smugmug_connected_at: at(-59),
     skin: 'photographer',
     business_preset: 'services',
     // Sells projects (Jobs, Quotes); no classes, no families.
@@ -652,5 +656,9 @@ export function buildSeed(): Tables {
     seasons: [],
     categories: [],
     staff: [],
+    expense_category_catalog: EXPENSE_CATALOG.map((c) => ({ ...c })),
+    verticals: expenseVerticals(),
+    expense_categories: seedExpenseCategories(TENANT_ID, 'photographer', at(-200), (n) => id(1500 + n)),
+    expenses: [],
   };
 }

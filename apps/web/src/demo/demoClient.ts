@@ -8,6 +8,7 @@ import { baseRpcs } from './rpcs';
 import { ADMIN_EMAIL, ADMIN_USER_ID, buildSeed, CLIENT_USER_ID, DEMO_CLIENT } from './seed';
 import { extraFunctions, extraRpcs, hooks, recalcQuote, views } from './extensions';
 import { photoShopFunctions, photoShopRpcs } from './photoShopHandlers';
+import { smugmugFunctions, smugmugRpcs } from './smugmug';
 import { danceFunctions, danceRpcs } from './dance';
 import { leadFunctions, leadRpcs } from './leads';
 import { setupFunctions, setupRpcs } from './setup';
@@ -59,8 +60,8 @@ export const DEMO_FUNCTIONS_BASE = 'https://demo.supabase.invalid/functions/v1/'
 
 export const demoClient = new FakeSupabaseClient({
   tables: buildSeed(),
-  rpcs: { ...baseRpcs, ...extraRpcs, ...danceRpcs, ...leadRpcs, ...setupRpcs, ...photoShopRpcs },
-  functions: { ...baseFunctions, ...extraFunctions, ...danceFunctions, ...leadFunctions, ...setupFunctions, ...photoShopFunctions },
+  rpcs: { ...baseRpcs, ...extraRpcs, ...danceRpcs, ...leadRpcs, ...setupRpcs, ...photoShopRpcs, ...smugmugRpcs },
+  functions: { ...baseFunctions, ...extraFunctions, ...danceFunctions, ...leadFunctions, ...setupFunctions, ...photoShopFunctions, ...smugmugFunctions },
   hooks,
   views,
   debug: new URLSearchParams(window.location.search).has('demo-debug'),

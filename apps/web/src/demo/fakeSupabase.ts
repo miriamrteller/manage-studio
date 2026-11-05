@@ -63,6 +63,12 @@ const IRREGULAR_SINGULAR: Record<string, string> = {
 /** Tables whose primary key is a foreign key (1:1 children). */
 const PK_COLUMN: Record<string, string> = {
   job_details: 'engagement_id',
+  expense_category_catalog: 'key',
+};
+
+/** Foreign keys that don't follow the `<singular target>_id` naming: `parent>target` → column. */
+const EMBED_FK: Record<string, string> = {
+  'expense_categories>expense_category_catalog': 'catalog_key',
 };
 
 function singular(table: string): string {
@@ -331,6 +337,7 @@ function resolveEmbed(db: Tables, parentTable: string, parent: Row, field: Selec
       }
     }
   }
+  if (!fkCol && EMBED_FK[`${parentTable}>${target}`]) fkCol = EMBED_FK[`${parentTable}>${target}`];
   if (!fkCol) {
     const guess = `${singular(target)}_id`;
     if (guess in parent && guess !== PK_COLUMN[parentTable]) fkCol = guess;
