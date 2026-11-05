@@ -170,6 +170,9 @@ export default defineConfig({
     host: '0.0.0.0',
   },
   resolve: {
+    // Edge-function code under supabase/ imports react (email renderer) but has no
+    // node_modules of its own; resolve it from this app, as one copy.
+    dedupe: ['react', 'react-dom'],
     alias: [
       { find: '@shared', replacement: path.resolve(__dirname, '../../packages/shared/src') },
       { find: '@', replacement: path.resolve(__dirname, './src') },
@@ -223,8 +226,9 @@ export default defineConfig({
     environment: 'jsdom',
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
     setupFiles: ['./src/test/setup.ts'],
-    // Parallel workers OOM on Windows when transforming edge-function graphs.
-    threads: false,
+    // Parallel workers OOM on Windows when transforming edge-function graphs,
+    // so cap them; one file at a time made the suite ~7x slower on Vitest 5.
+    maxWorkers: 2,
     // Provide placeholder Supabase config so modules that read import.meta.env
     // at init time don't throw in the CI/Vitest environment.
     env: {
