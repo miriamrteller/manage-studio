@@ -88,7 +88,7 @@ runs:
           sb_secret_*|*service_role*) echo "::error::VITE_SUPABASE_PUBLISHABLE_KEY holds a SECRET key. It would ship to every browser — rotate it now and use the publishable key."; fail=1 ;;
         esac
         # Demo/dev settings and mock flags never reach prod, whatever their value.
-        bad=$(jq -r 'keys[] | select(. == "VITE_DEMO_MODE" or . == "VITE_DEV_TENANT_SUBDOMAIN" or test("_MOCK$"))' <<<"$ALL_VARS")
+        bad=$(jq -r 'keys[] | select(. == "VITE_DEMO_MODE" or . == "VITE_DEV_TENANT_SUBDOMAIN" or . == "VITE_DEV_STUDIO_PICKER" or test("_MOCK$"))' <<<"$ALL_VARS")
         if [ -n "$bad" ]; then
           echo "::error::Remove these variables before deploying to production: ${bad//$'\n'/ }"; fail=1
         fi
@@ -114,6 +114,7 @@ runs:
       shell: bash
       env:
         VITE_DEMO_MODE: ""
+        VITE_DEV_STUDIO_PICKER: ""
         VITE_RELEASE: ${{ inputs.sha }}
         SENTRY_AUTH_TOKEN: ${{ inputs.sentry-auth-token }}
       run: |

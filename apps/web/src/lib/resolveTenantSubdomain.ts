@@ -1,6 +1,7 @@
 /// <reference types="vite/client" />
 
 import { appRootHostname } from './tenantUrl';
+import { DEV_PLATFORM_CHOICE, isDevPickerActive, readDevStudioChoice } from './devStudioPicker';
 
 /**
  * Hostnames that never identify a tenant.
@@ -121,6 +122,11 @@ export function resolveTenantSite(): TenantSite | null {
   if (typeof window === 'undefined') {
     return devFallback ? { kind: 'subdomain', subdomain: devFallback } : null;
   }
+  if (isDevPickerActive()) {
+    // Dev website: one address for every test studio, picked from a list (devStudioPicker.ts).
+    const choice = readDevStudioChoice();
+    return choice && choice !== DEV_PLATFORM_CHOICE ? { kind: 'subdomain', subdomain: choice } : null;
+  }
   return resolveTenantSiteFromHostname(window.location.hostname, appRootHostname(), devFallback);
 }
 
@@ -160,5 +166,8 @@ export function isPlatformAppHostname(hostname: string, rootHostname: string): b
 
 export function isPlatformAppHost(): boolean {
   if (typeof window === 'undefined') return false;
+  if (isDevPickerActive()) {
+    return readDevStudioChoice() === DEV_PLATFORM_CHOICE;
+  }
   return isPlatformAppHostname(window.location.hostname, appRootHostname());
 }

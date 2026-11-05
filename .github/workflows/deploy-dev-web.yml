@@ -1,20 +1,23 @@
 # Dev website: every merge to main that touches the web app is built against
 # the DEV Supabase project and deployed to its own Cloudflare Worker,
-# `opalswift-app-dev`, on its own address. Nothing here touches production:
+# `opalswift-app-dev`, on its free address
+# https://opalswift-app-dev.<account subdomain>.workers.dev. Nothing here
+# touches production:
 #   - the live Worker `opalswift-app` and its routes (*.opalswift.com) are never
-#     named; the dev Worker gets a config generated below with ONLY dev routes;
+#     named; the dev Worker gets a config generated below with no routes at all;
 #   - the build must point at the dev project and must not use opalswift.com.
+# A free address has no per-studio part, so the dev build turns on the studio
+# picker (VITE_DEV_STUDIO_PICKER, apps/web/src/lib/devStudioPicker.ts): one
+# test studio per skin, picked from a list.
 #
 # GitHub Environment "development" (no reviewers, so it runs by itself):
 #   secrets   CLOUDFLARE_DEV_API_TOKEN   its own token, used only here
 #             CLOUDFLARE_ACCOUNT_ID      the same account id as production (not a secret)
 #   variables VITE_SUPABASE_URL          https://acmujrhavgbamdilzuew.supabase.co
 #             VITE_SUPABASE_PUBLISHABLE_KEY  the dev publishable key
-#             DEV_ROOT_DOMAIN            e.g. opalswift-dev.com or dev.opalswift.com
-#             DEV_ZONE_NAME              the Cloudflare zone that holds it, e.g.
-#                                        opalswift-dev.com or opalswift.com
-#             VITE_SENTRY_DSN, SMOKE_TENANT_SUBDOMAIN (optional)
-# Until the token and the domain exist the job skips with a notice.
+#             DEV_STUDIOS (optional)     the picker's list; default below
+#             VITE_SENTRY_DSN (optional)
+# Until the token exists the job skips with a notice.
 # Owner setup: docs/deployment/DEV-PROD-PIPELINE.md#dev-website
 
 name: deploy-dev-web
@@ -43,6 +46,8 @@ env:
   DEV_REF: acmujrhavgbamdilzuew
   PROD_REF: oogxajjanbyqhljxcmql
   DEV_WORKER: opalswift-app-dev
+  # One test studio per skin: dance, photography, beauty, general.
+  DEFAULT_DEV_STUDIOS: creativeballet,lensstudio,velvetbeauty,artclass
 
 jobs:
   deploy:
@@ -56,12 +61,10 @@ jobs:
           HAS_CF: ${{ secrets.CLOUDFLARE_DEV_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
-          DEV_ROOT_DOMAIN: ${{ vars.DEV_ROOT_DOMAIN }}
-          DEV_ZONE_NAME: ${{ vars.DEV_ZONE_NAME }}
           ALL_VARS: ${{ toJSON(vars) }}
         run: |
-          if [ "$HAS_CF" != "true" ] || [ -z "$DEV_ROOT_DOMAIN" ] || [ -z "$DEV_ZONE_NAME" ]; then
-            echo "::notice::Dev website not set up yet (CLOUDFLARE_DEV_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, DEV_ROOT_DOMAIN, DEV_ZONE_NAME in the 'development' environment) — skipping. See DEV-PROD-PIPELINE.md#dev-website."
+          if [ "$HAS_CF" != "true" ]; then
+            echo "::notice::Dev website not set up yet (CLOUDFLARE_DEV_API_TOKEN and CLOUDFLARE_ACCOUNT_ID in the 'development' environment) — skipping. See DEV-PROD-PIPELINE.md#dev-website."
             echo "### Dev website skipped — not set up yet" >> "$GITHUB_STEP_SUMMARY"
             echo "ready=false" >> "$GITHUB_OUTPUT"; exit 0
           fi
@@ -75,24 +78,32 @@ jobs:
           case "$VITE_SUPABASE_PUBLISHABLE_KEY" in
             sb_secret_*|*service_role*) echo "::error::VITE_SUPABASE_PUBLISHABLE_KEY holds a SECRET key. It would ship to every browser — rotate it and use the publishable key."; fail=1 ;;
           esac
-          # The live address is never the dev root: tenants on opalswift.com are real studios.
-          case "$DEV_ROOT_DOMAIN" in
-            opalswift.com|www.opalswift.com|app.opalswift.com) echo "::error::DEV_ROOT_DOMAIN must not be the live domain."; fail=1 ;;
-            *.*) ;;
-            *) echo "::error::DEV_ROOT_DOMAIN '$DEV_ROOT_DOMAIN' is not a domain."; fail=1 ;;
-          esac
-          case "$DEV_ROOT_DOMAIN" in
-            "$DEV_ZONE_NAME"|*".$DEV_ZONE_NAME") ;;
-            *) echo "::error::DEV_ROOT_DOMAIN must be in the zone DEV_ZONE_NAME."; fail=1 ;;
-          esac
           bad=$(jq -r 'keys[] | select(. == "VITE_DEMO_MODE")' <<<"$ALL_VARS")
           [ -z "$bad" ] || { echo "::error::Remove VITE_DEMO_MODE: the dev website runs the real app against the dev database."; fail=1; }
           [ "$fail" = 0 ] || exit 1
           echo "ready=true" >> "$GITHUB_OUTPUT"
 
+      # The free address is <worker>.<account subdomain>.workers.dev; ask Cloudflare for the subdomain.
+      - name: Find the dev address
+        if: steps.gate.outputs.ready == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_DEV_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          resp=$(curl -sS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/subdomain")
+          sub=$(jq -r '.result.subdomain // ""' <<<"$resp")
+          if [ -z "$sub" ] || ! [[ "$sub" =~ ^[a-z0-9-]+$ ]]; then
+            echo "::error::Could not read the account's workers.dev subdomain. Check the token has Account → Workers Scripts → Edit, and that Workers & Pages → Settings shows a workers.dev subdomain."
+            jq -c '.errors // empty' <<<"$resp" || true
+            exit 1
+          fi
+          echo "DEV_HOST=$DEV_WORKER.$sub.workers.dev" >> "$GITHUB_ENV"
+
       - uses: actions/checkout@v4
         if: steps.gate.outputs.ready == 'true'
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v2
         if: steps.gate.outputs.ready == 'true'
       - uses: actions/setup-node@v4
         if: steps.gate.outputs.ready == 'true'
@@ -103,17 +114,17 @@ jobs:
         if: steps.gate.outputs.ready == 'true'
         run: pnpm install --frozen-lockfile
 
-      - name: Build (dev database)
+      - name: Build (dev database, studio picker on)
         if: steps.gate.outputs.ready == 'true'
         env:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
-          VITE_APP_ROOT_DOMAIN: ${{ vars.DEV_ROOT_DOMAIN }}
           VITE_SENTRY_DSN: ${{ vars.VITE_SENTRY_DSN }}
           VITE_SENTRY_ENVIRONMENT: development
           VITE_ENABLE_SELF_SERVE_SIGNUP: ${{ vars.VITE_ENABLE_SELF_SERVE_SIGNUP }}
           VITE_TURNSTILE_SITE_KEY: ${{ vars.VITE_TURNSTILE_SITE_KEY }}
           VITE_ENABLE_FINANCE_WALKTHROUGH: ${{ vars.VITE_ENABLE_FINANCE_WALKTHROUGH }}
+          DEV_STUDIOS: ${{ vars.DEV_STUDIOS }}
           VITE_DEMO_MODE: ""
           VITE_RELEASE: ${{ github.sha }}
         run: |
@@ -121,6 +132,8 @@ jobs:
           if ls apps/web/.env.production* apps/web/.env.local >/dev/null 2>&1; then
             echo "::error::an .env file is committed in apps/web"; exit 1
           fi
+          export VITE_APP_ROOT_DOMAIN="$DEV_HOST"
+          export VITE_DEV_STUDIO_PICKER="${DEV_STUDIOS:-$DEFAULT_DEV_STUDIOS}"
           pnpm run build
           dist=apps/web/dist
           test -f "$dist/index.html"
@@ -132,28 +145,22 @@ jobs:
       - name: Write the dev Worker config
         if: steps.gate.outputs.ready == 'true'
         working-directory: apps/web
-        env:
-          DEV_ROOT_DOMAIN: ${{ vars.DEV_ROOT_DOMAIN }}
-          DEV_ZONE_NAME: ${{ vars.DEV_ZONE_NAME }}
         run: |
           set -euo pipefail
           compat=$(sed -n 's/.*"compatibility_date": *"\([^"]*\)".*/\1/p' wrangler.jsonc | head -1)
           [ -n "$compat" ] || { echo "::error::compatibility_date not found in wrangler.jsonc"; exit 1; }
-          jq -n --arg name "$DEV_WORKER" --arg compat "$compat" --arg root "$DEV_ROOT_DOMAIN" --arg zone "$DEV_ZONE_NAME" '{
+          jq -n --arg name "$DEV_WORKER" --arg compat "$compat" '{
             name: $name,
             compatibility_date: $compat,
             main: "worker/index.ts",
             assets: { directory: "./dist", binding: "ASSETS", not_found_handling: "single-page-application", run_worker_first: true },
-            workers_dev: false,
-            routes: [
-              { pattern: ("*." + $root + "/*"), zone_name: $zone },
-              { pattern: ("app." + $root + "/*"), zone_name: $zone }
-            ],
+            workers_dev: true,
+            preview_urls: false,
             observability: { enabled: true }
           }' > wrangler.dev.generated.json
           cat wrangler.dev.generated.json
-          grep -q '"opalswift-app"' wrangler.dev.generated.json && { echo "::error::dev config names the live Worker"; exit 1; }
-          if grep -q '"\*\.opalswift\.com/\*"\|"app\.opalswift\.com/\*"' wrangler.dev.generated.json; then echo "::error::dev config carries a live route"; exit 1; fi
+          if grep -q '"opalswift-app"' wrangler.dev.generated.json; then echo "::error::dev config names the live Worker"; exit 1; fi
+          if grep -qi 'opalswift\.com' wrangler.dev.generated.json; then echo "::error::dev config mentions the live domain"; exit 1; fi
 
       - name: wrangler deploy (opalswift-app-dev)
         if: steps.gate.outputs.ready == 'true'
@@ -164,30 +171,22 @@ jobs:
           WRANGLER_SEND_METRICS: "false"
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
-          DEV_ROOT_DOMAIN: ${{ vars.DEV_ROOT_DOMAIN }}
         run: |
           pnpm exec wrangler deploy --config wrangler.dev.generated.json \
             --var "SUPABASE_URL:$VITE_SUPABASE_URL" \
             --var "SUPABASE_PUBLISHABLE_KEY:$VITE_SUPABASE_PUBLISHABLE_KEY" \
-            --var "APP_ROOT_DOMAIN:$DEV_ROOT_DOMAIN"
+            --var "APP_ROOT_DOMAIN:$DEV_HOST"
 
-      - name: Smoke (app shell and a dev studio answer)
+      - name: Smoke (the dev address answers)
         if: steps.gate.outputs.ready == 'true'
-        env:
-          DEV_ROOT_DOMAIN: ${{ vars.DEV_ROOT_DOMAIN }}
-          SMOKE_TENANT_SUBDOMAIN: ${{ vars.SMOKE_TENANT_SUBDOMAIN }}
         run: |
           set -uo pipefail
-          ok=1
-          for host in "app.$DEV_ROOT_DOMAIN" "${SMOKE_TENANT_SUBDOMAIN:-creativeballet}.$DEV_ROOT_DOMAIN"; do
-            code=$(curl -s -o /dev/null -w '%{http_code}' --retry 3 --retry-delay 5 "https://$host/")
-            echo "https://$host/ → $code"
-            [ "$code" = 200 ] || ok=0
-          done
+          code=$(curl -s -o /dev/null -w '%{http_code}' --retry 5 --retry-delay 10 --retry-all-errors "https://$DEV_HOST/")
+          echo "https://$DEV_HOST/ → $code"
           {
             echo "## Dev website \`${GITHUB_SHA::7}\`"
-            echo "- Address: https://app.$DEV_ROOT_DOMAIN (studios: https://<studio>.$DEV_ROOT_DOMAIN)"
+            echo "- Address: https://$DEV_HOST (pick a test studio on the start page)"
             echo "- Database: dev (\`$DEV_REF\`)"
-            echo "- Answering: $([ $ok = 1 ] && echo yes || echo NO)"
+            echo "- Answering: $([ "$code" = 200 ] && echo yes || echo "NO ($code)")"
           } >> "$GITHUB_STEP_SUMMARY"
-          [ $ok = 1 ] || { echo "::error::Deployed, but the dev site did not answer 200 — check DNS for the dev domain (DEV-PROD-PIPELINE.md#dev-website)."; exit 1; }
+          [ "$code" = 200 ] || { echo "::error::Deployed, but https://$DEV_HOST/ did not answer 200."; exit 1; }
