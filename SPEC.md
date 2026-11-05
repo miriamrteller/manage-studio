@@ -2342,7 +2342,7 @@ pnpm dlx shadcn@latest init   # New York style, Zinc, CSS variables: yes
 - [ ] FullCalendar Hebrew locale imported *(deps present; admin calendar UI deferred — not V1-shipped)*
 - [ ] All Tailwind spacing uses `ms-`, `me-` not `ml-`, `mr-`
 - [ ] **WCAG 2.1 AA:** Install `@axe-core/react`, `axe-playwright`, `eslint-plugin-jsx-a11y` (run `pnpm dlx snyk test` first)
-- [ ] **WCAG 2.1 AA:** Configure ESLint with jsx-a11y plugin and rules in `.eslintrc.json`
+- [ ] **WCAG 2.1 AA:** Configure ESLint with jsx-a11y plugin and rules in `apps/web/eslint.config.js`
 - [ ] **WCAG 2.1 AA:** Create `e2e/accessibility-compliance.spec.ts` with heading structure, form validation, focus trap tests
 - [ ] **WCAG 2.1 AA:** Add pnpm scripts to `package.json`: `a11y:lint`, `a11y:axe`, `a11y:e2e`
 - [ ] **WCAG 2.1 AA:** Add axe-core CI job to `.github/workflows/ci.yml` **(blocks merge if violations found — non-negotiable)**
