@@ -640,7 +640,7 @@ Tenant must obtain local legal counsel approval for waiver wording, consent UX, 
 ### 3.1 Monorepo
 
 ```
-ballet-school-system/
+opalswift/
 ├── apps/
 │   └── web/                          # React/Vite frontend
 ├── packages/
@@ -669,9 +669,6 @@ ballet-school-system/
 │   │   ├── 20260608000300_people.sql
 │   │   ├── … (00200–02800; see 4.2.0)
 │   │   └── 20260608002800_scheduled_jobs.sql
-│   ├── migrations_backup/incremental_20260716/  # fourth squash archive (2026-07-16)
-│   ├── migrations_backup/incremental_20260705/  # third squash archive (2026-07-05)
-│   ├── migrations_backup/legacy_20260608/  # superseded pre-consolidation migrations
 │   ├── reset_dev_db.sql               # Dev-only: drop schema + clear migration history
 │   ├── scripts/                       # link-parent-user.sql, verify-seed.sql
 │   ├── functions/
@@ -855,12 +852,12 @@ Landing pages and public class listings need data before a user logs in. The acc
 
 #### 4.2.0 Implemented schema index (V1 slice)
 
-- **2026-07-16 — fourth squash:** folded scheduling/features/Google (`03000`–`04200`) into the base chain; merged Rapyd/Yesh/Tranzila onto `tenants`/`payments` (no `tenant_configs` / parallel `bookings`). Archived under `supabase/migrations_backup/incremental_20260716/`. Authoritative chain: `20260608000200`–`20260608002800` (28 files). Plan: [v1-migration-squash-20260716.md](docs/plans/v1-migration-squash-20260716.md).
-- **2026-07-05 — third squash:** folded `20260625*`–`20260705*` incrementals into the base `20260608*` chain; archived originals under `supabase/migrations_backup/incremental_20260705/`.
+- **2026-07-16 — fourth squash:** folded scheduling/features/Google (`03000`–`04200`) into the base chain; merged Rapyd/Yesh/Tranzila onto `tenants`/`payments` (no `tenant_configs` / parallel `bookings`). Archived under `supabase/migrations_backup/incremental_20260716/`. (The `supabase/migrations_backup/` archives were removed on 2026-11-05; they remain in git history.) Authoritative chain: `20260608000200`–`20260608002800` (28 files). Plan: [v1-migration-squash-20260716.md](docs/plans/v1-migration-squash-20260716.md).
+- **2026-07-05 — third squash:** folded `20260625*`–`20260705*` incrementals into the base `20260608*` chain; archived originals under `supabase/migrations_backup/incremental_20260705/`. (The `supabase/migrations_backup/` archives were removed on 2026-11-05; they remain in git history.)
 
-> **2026-06-08 — consolidated chain.** The original 34-file history (`20260526*`–`20260610*`) was rewritten into the `20260608*` chain below, baking every `ALTER` into its base `CREATE TABLE`. The superseded files are retained read-only under `supabase/migrations_backup/legacy_20260608/`. Filename order = apply order.
+> **2026-06-08 — consolidated chain.** The original 34-file history (`20260526*`–`20260610*`) was rewritten into the `20260608*` chain below, baking every `ALTER` into its base `CREATE TABLE`. The superseded files are retained read-only under `supabase/migrations_backup/legacy_20260608/`. Filename order = apply order. (The `supabase/migrations_backup/` archives were removed on 2026-11-05; they remain in git history.)
 
-> **2026-06-24 — second squash.** Seven post-consolidation incrementals (`20260609*`–`20260624*`) were folded into the base chain (encryption platform config, grow provisioning, enrolment resume drafts, offering location, waiver auth fix). Archived at `supabase/migrations_backup/incremental_20260624/`.
+> **2026-06-24 — second squash.** Seven post-consolidation incrementals (`20260609*`–`20260624*`) were folded into the base chain (encryption platform config, grow provisioning, enrolment resume drafts, offering location, waiver auth fix). Archived at `supabase/migrations_backup/incremental_20260624/`. (The `supabase/migrations_backup/` archives were removed on 2026-11-05; they remain in git history.)
 
 | File | Creates / updates | Depends on |
 |------|-------------------|------------|
@@ -2134,7 +2131,7 @@ The following tables and features are designed but NOT in V1 migrations. Do not 
 ### 4.4 SPEC Issues Resolution (v3 updates — 2026-05-20)
 
 **2026-06-08 — Migrations consolidated to 25-file chain (`20260608000200`–`20260608002500`):**
-- Supersedes the 34-file `20260526*`–`20260610*` history; superseded files retained read-only under `supabase/migrations_backup/legacy_20260608/`. Authoritative index is §4.2.0.
+- Supersedes the 34-file `20260526*`–`20260610*` history; superseded files retained read-only under `supabase/migrations_backup/legacy_20260608/`. Authoritative index is §4.2.0. (The `supabase/migrations_backup/` archives were removed on 2026-11-05; they remain in git history.)
 - Every `ALTER TABLE` baked into its base `CREATE TABLE` (no stacked alters): `tenants.from_email`; `offerings.waiver_required` + `cover_image_path`; `engagements` age-override + waiver-deadline + `waiver_evidence_id` FK; `waiver_evidence.offering_id` + `guardian_confirmed`.
 - `waiver_evidence`/`waiver_events` reordered before `engagements` so `waiver_evidence_id` is a real FK. `sign_waiver()` is the single 26-param signature (`SET search_path = public`).
 - `pending_waiver` status threaded through `link_auth_user_to_person()`, `search_enrolment_students()`, `cancel_engagement()`, `link_auth_user_to_guardian_for_engagement()`.
@@ -2311,8 +2308,8 @@ Multi-region support — dynamic connection routing based on `tenant.region`, re
 ### Phase 1A — Project skeleton (Days 1–3)
 
 ```bash
-pnpm dlx create-turbo@latest ballet-school-system --package-manager pnpm
-cd ballet-school-system
+pnpm dlx create-turbo@latest opalswift --package-manager pnpm
+cd opalswift
 pnpm create vite@latest apps/web -- --template react-ts
 cd apps/web
 

@@ -8,7 +8,7 @@ Living checklist for in-flight SPEC features. Normative design remains in [SPEC.
 
 ## V1 phase progress (SPEC §6)
 
-- Migration chain: **29 files** — squashed `20260608000200`–`20260608002800` (PR #17) + `02900` S5 penalties; prior incrementals under `supabase/migrations_backup/`.
+- Migration chain: **29 files** — squashed `20260608000200`–`20260608002800` (PR #17) + `02900` S5 penalties; prior incrementals are in git history (the `supabase/migrations_backup/` folder was removed on 2026-11-05).
 
 Rough completion against [SPEC.md §6 V1 Implementation](../SPEC.md#6-v1-implementation). Not a hour estimate — feature presence only.
 
