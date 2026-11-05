@@ -1,4 +1,4 @@
-import { corsHeaders, jsonResponse } from "../_shared/edge-runtime/cors.ts";
+import { corsHeaders, jsonResponse, internalError } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
 
@@ -56,7 +56,7 @@ Deno.serve(withMonitoring("save-enrolment-resume", async (req) => {
         { onConflict: "resume_key" },
       );
 
-    if (error) return jsonResponse({ error: error.message }, 500);
+    if (error) return internalError("save-enrolment-resume", error);
     return jsonResponse({ success: true });
   } catch (err) {
     console.error("[save-enrolment-resume]", err instanceof Error ? err.message : err);

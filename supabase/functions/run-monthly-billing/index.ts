@@ -1,5 +1,5 @@
 import { z } from "npm:zod@3.22.4";
-import { jsonResponse } from "../_shared/edge-runtime/cors.ts";
+import { jsonResponse, internalError } from "../_shared/edge-runtime/cors.ts";
 import { rejectUnlessCron } from "../_shared/edge-runtime/cron-auth.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { processBillingSchedule } from "../_shared/payments/renewal-billing.ts";
@@ -54,7 +54,7 @@ Deno.serve(withMonitoring("run-monthly-billing", async (req) => {
 
   const { data: schedules, error } = await query;
   if (error) {
-    return jsonResponse({ error: error.message }, 500);
+    return internalError("run-monthly-billing", error);
   }
 
   let processed = 0;

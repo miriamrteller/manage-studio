@@ -11,7 +11,7 @@
 //      ); $$
 // );
 import { z } from "npm:zod@3.22.4";
-import { jsonResponse } from "../_shared/edge-runtime/cors.ts";
+import { jsonResponse, internalError } from "../_shared/edge-runtime/cors.ts";
 import { rejectUnlessCron } from "../_shared/edge-runtime/cron-auth.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { DOCUMENT_BATCH_SIZE } from "../_shared/invoicing/backoff.ts";
@@ -73,7 +73,7 @@ Deno.serve(withMonitoring("issue-document", async (req) => {
       .limit(DOCUMENT_BATCH_SIZE);
 
     if (error) {
-      return jsonResponse({ error: error.message }, 500);
+      return internalError("issue-document", error);
     }
 
     for (const row of (dueRows ?? []) as QueueRow[]) {

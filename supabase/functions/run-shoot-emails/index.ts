@@ -11,7 +11,7 @@
  * Auth: x-cron-secret / Bearer CRON_SECRET. Fails closed when the secret is
  * unset — this endpoint sends email.
  */
-import { jsonResponse } from "../_shared/edge-runtime/cors.ts";
+import { jsonResponse, internalError } from "../_shared/edge-runtime/cors.ts";
 import { rejectUnlessCron } from "../_shared/edge-runtime/cron-auth.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import {
@@ -33,7 +33,7 @@ Deno.serve(withMonitoring("run-shoot-emails", async (req) => {
   const { data, error } = await service.rpc("list_due_shoot_emails", {});
   if (error) {
     console.error("[run-shoot-emails] list_due_shoot_emails:", error.message);
-    return jsonResponse({ error: error.message }, 500);
+    return internalError("run-shoot-emails", error);
   }
   const rows = (data ?? []) as DueShootEmail[];
   if (rows.length === 0) return jsonResponse({ processed: 0 });
@@ -41,7 +41,7 @@ Deno.serve(withMonitoring("run-shoot-emails", async (req) => {
   const tenantIds = [...new Set(rows.map((row) => row.tenant_id))];
   const { data: tenants, error: tenantError } = await service
     .from("tenants").select(AUTOMATIC_EMAIL_TENANT_COLUMNS).in("id", tenantIds);
-  if (tenantError) return jsonResponse({ error: tenantError.message }, 500);
+  if (tenantError) return internalError("run-shoot-emails", tenantError);
   const tenantById = new Map(
     ((tenants ?? []) as unknown as AutomaticEmailTenant[]).map((tenant) => [tenant.id, tenant]),
   );

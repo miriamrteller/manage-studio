@@ -19,7 +19,7 @@
  * Refuses every request when CRON_SECRET is not set.
  */
 
-import { jsonResponse } from "../_shared/edge-runtime/cors.ts";
+import { jsonResponse, internalError } from "../_shared/edge-runtime/cors.ts";
 import { rejectUnlessCron } from "../_shared/edge-runtime/cron-auth.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import {
@@ -105,7 +105,7 @@ Deno.serve(withMonitoring("send-waiver-reminder", async (req) => {
 
   if (fetchError) {
     console.error("[send-waiver-reminder] fetch error:", fetchError);
-    return jsonResponse({ error: fetchError.message }, 500);
+    return internalError("send-waiver-reminder", fetchError);
   }
 
   const rows = (engagements ?? []) as unknown as PendingEngagement[];

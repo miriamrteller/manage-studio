@@ -1,5 +1,5 @@
 import { z } from "npm:zod@3.22.4";
-import { handleOptions, jsonResponse } from "../_shared/edge-runtime/cors.ts";
+import { handleOptions, jsonResponse, internalError } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/supabase.ts";
 import { resolveOfferingPrice } from "../_shared/email-dist/pricing.js";
 import { finalisePayment } from "../_shared/payments/finalise-payment.ts";
@@ -193,7 +193,7 @@ Deno.serve(withMonitoring("record-payment", async (req) => {
     .single();
 
   if (insertError || !paymentRow) {
-    return jsonResponse({ error: insertError?.message ?? "Insert failed" }, 500);
+    return internalError("record-payment", insertError ?? "Insert failed");
   }
 
   // Who recorded what amount, against the class price (the admin may enter a different one).

@@ -5,7 +5,7 @@
  * link DUE_SOON_DAYS before due_date and one overdue reminder afterwards, for
  * every collectable job payment request. Idempotent per request/kind.
  */
-import { jsonResponse } from "../_shared/edge-runtime/cors.ts";
+import { jsonResponse, internalError } from "../_shared/edge-runtime/cors.ts";
 import { rejectUnlessCron } from "../_shared/edge-runtime/cron-auth.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import {
@@ -40,7 +40,7 @@ Deno.serve(withMonitoring("run-job-payment-reminders", async (req) => {
 
   if (error) {
     console.error("[run-job-payment-reminders] fetch error:", error);
-    return jsonResponse({ error: error.message }, 500);
+    return internalError("run-job-payment-reminders", error);
   }
 
   const results: Record<string, string[]> = { reminded: [], skipped: [], errors: [] };

@@ -16,7 +16,7 @@
  * Refuses every request when CRON_SECRET is not set.
  */
 
-import { jsonResponse } from "../_shared/edge-runtime/cors.ts";
+import { jsonResponse, internalError } from "../_shared/edge-runtime/cors.ts";
 import { rejectUnlessCron } from "../_shared/edge-runtime/cron-auth.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { resolveTenantSender, TENANT_SENDER_COLUMNS, type TenantSenderInput } from "../_shared/notification-from.ts";
@@ -175,7 +175,7 @@ Deno.serve(withMonitoring("expire-scheduling-holds", async (req) => {
 
   if (dueErr) {
     console.error("[expire-scheduling-holds] due fetch error", dueErr);
-    return jsonResponse({ error: dueErr.message }, 500);
+    return internalError("expire-scheduling-holds", dueErr);
   }
 
   for (const hold of (dueHolds ?? []) as HoldRow[]) {

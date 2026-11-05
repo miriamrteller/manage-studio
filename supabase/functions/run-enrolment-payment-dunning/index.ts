@@ -7,7 +7,7 @@
  * Processes unpaid pending_payment engagements on Day 3 / 7 / 14 ladder.
  */
 
-import { jsonResponse } from "../_shared/edge-runtime/cors.ts";
+import { jsonResponse, internalError } from "../_shared/edge-runtime/cors.ts";
 import { rejectUnlessCron } from "../_shared/edge-runtime/cron-auth.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { applyEnrolmentPaymentDunningStep } from "../_shared/collections/apply-enrolment-payment-dunning-step.ts";
@@ -50,7 +50,7 @@ Deno.serve(withMonitoring("run-enrolment-payment-dunning", async (req) => {
 
   if (error) {
     console.error("[run-enrolment-payment-dunning] fetch error:", error);
-    return jsonResponse({ error: error.message }, 500);
+    return internalError("run-enrolment-payment-dunning", error);
   }
 
   const engagements = rows ?? [];
